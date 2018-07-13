@@ -5,14 +5,14 @@
     "anonymousAuthentication": true,
     "iisExpress": {
       "applicationUrl": "http://localhost:6053",
-      "sslPort": 44390
+      "sslPort": 44380
     }
   },
   "profiles": {
     "IIS Express": {
       "commandName": "IISExpress",
       "launchBrowser": true,
-      "launchUrl": "v1",
+      "launchUrl": "v1/index.html",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
@@ -20,7 +20,7 @@
     "Meowv": {
       "commandName": "Project",
       "launchBrowser": true,
-      "launchUrl": "v1",
+      "launchUrl": "v1/index.html",
       "applicationUrl": "https://localhost:5001;http://localhost:5000",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
