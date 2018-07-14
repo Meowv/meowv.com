@@ -1,9 +1,9 @@
-﻿namespace Meowv.Helper
+﻿namespace Meowv.Processor.Job
 {
     /// <summary>
     /// 招聘渠道
     /// </summary>
-    public enum RecruitmentEnum
+    public enum JobRecruitment
     {
         /// <summary>
         /// 智联招聘

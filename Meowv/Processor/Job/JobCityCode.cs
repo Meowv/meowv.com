@@ -2,12 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Meowv.Helper
+namespace Meowv.Processor.Job
 {
-    /// <summary>
-    /// 城市区域编码
-    /// </summary>
-    public class CityCode
+    public class JobCityCode
     {
         public static Dictionary<string, string[]> codes = new Dictionary<string, string[]>();
 
@@ -17,7 +14,7 @@ namespace Meowv.Helper
         /// <param name="recruitment">招聘渠道</param>
         /// <param name="city">区域</param>
         /// <returns></returns>
-        public static string GetCityCode(RecruitmentEnum recruitment, string city)
+        public static string GetCityCode(JobRecruitment recruitment, string city)
         {
             city = city.Trim().TrimEnd('市');
             if (codes.Count <= 0)
