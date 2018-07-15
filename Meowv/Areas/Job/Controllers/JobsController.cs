@@ -184,6 +184,89 @@ namespace Meowv.Areas.Job.Controllers
         }
 
         /// <summary>
+        /// 获取 猎聘网 招聘数据
+        /// </summary>
+        /// <param name="city">城市</param>
+        /// <param name="key">关键词</param>
+        /// <param name="index">页码</param>
+        /// <returns></returns>
+        [HttpGet, Route("liepin")]
+        public async Task<JsonResult<List<JobEntity>>> GetJob_Liepin(string city, string key, int index)
+        {
+            try
+            {
+                var cache = GetJobCacheObject();
+                var data = cache.GetData();
+                if (data != null)
+                    return new JsonResult<List<JobEntity>> { Result = data.Data };
+
+                var cityCode = JobCityCode.GetCityCode(JobRecruitment._liepin, city);
+                var url = $"http://www.liepin.com/zhaopin/?key={key}&dqs={cityCode}&curPage={index}";
+                using (var http = new HttpClient())
+                {
+                    var htmlContent = await http.GetStreamAsync(url);
+                    var parser = new HtmlParser();
+                    var jobInfos = parser.Parse(htmlContent)
+                        .QuerySelectorAll("ul.sojob-list li")
+                        .Where(x => x.QuerySelectorAll(".job-info h3 a").FirstOrDefault() != null)
+                        .Select(x => new JobEntity()
+                        {
+                            PositionName = x.QuerySelectorAll(".job-info h3 a").FirstOrDefault().TextContent.Trim(),
+                            CompanyName = x.QuerySelectorAll(".company-name a").FirstOrDefault().TextContent,
+                            Salary = x.QuerySelectorAll(".text-warning").FirstOrDefault().TextContent,
+                            WorkingPlace = x.QuerySelectorAll(".area").FirstOrDefault().TextContent,
+                            ReleaseDate = x.QuerySelectorAll(".time-info time").FirstOrDefault().TextContent,
+                            DetailUrl = x.QuerySelectorAll(".job-info h3 a").FirstOrDefault().Attributes.FirstOrDefault(d => d.Name == "href").Value
+                        }).ToList();
+
+                    cache.AddData(jobInfos);
+
+                    return new JsonResult<List<JobEntity>> { Result = jobInfos };
+                }
+            }
+            catch (Exception e)
+            {
+                return new JsonResult<List<JobEntity>> { Reason = e.Message };
+            }
+        }
+
+        /// <summary>
+        /// 获取 猎聘网 招聘详情数据
+        /// </summary>
+        /// <param name="url">详情页URL</param>
+        /// <returns></returns>
+        [HttpGet, Route("liepin_detail")]
+        public async Task<JsonResult<JobDetailEntity>> GetJob_Liepin(string url)
+        {
+            try
+            {
+                using (var http = new HttpClient())
+                {
+                    var htmlContent = await http.GetStreamAsync(url);
+                    var parser = new HtmlParser();
+                    var jobDetailInfo = parser.Parse(htmlContent)
+                        .QuerySelectorAll(".wrap")
+                        .Where(x => x.QuerySelectorAll(".job-qualifications").FirstOrDefault() != null)
+                        .Select(x => new JobDetailEntity()
+                        {
+                            Experience = x.QuerySelectorAll(".job-qualifications span")[1].TextContent,
+                            Education = x.QuerySelectorAll(".job-qualifications span")[0].TextContent,
+                            CompanyNature = x.QuerySelectorAll(".new-compintro li")[0].TextContent,
+                            CompanySize = x.QuerySelectorAll(".new-compintro li")[1].TextContent,
+                            Requirement = x.QuerySelectorAll(".job-item.main-message").FirstOrDefault().TextContent.Replace("职位描述：", ""),
+                            CompanyIntroducation = x.QuerySelectorAll(".job-item.main-message.noborder").FirstOrDefault().TextContent
+                        }).FirstOrDefault();
+
+                    return new JsonResult<JobDetailEntity> { Result = jobDetailInfo };
+                }
+            }
+            catch (Exception e)
+            {
+                return new JsonResult<JobDetailEntity> { Reason = e.Message };
+            }
+        }
+
+        /// <summary>
         /// 获取缓存对象
         /// </summary>
         /// <param name="minutes">分钟</param>
