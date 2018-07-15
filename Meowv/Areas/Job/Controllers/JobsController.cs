@@ -1,5 +1,6 @@
 ﻿using AngleSharp.Parser.Html;
-using Meowv.Models;
+using Meowv.Models.Job;
+using Meowv.Models.JsonResult;
 using Meowv.Processor.Job;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -22,33 +23,42 @@ namespace Meowv.Areas.Job.Controllers
         /// <param name="index">页码</param>
         /// <returns></returns>
         [HttpGet, Route("zhaopin")]
-        public async Task<List<JobEntity>> GetJob_Zhaopin(string city, string key, int index)
+        public async Task<JsonResult<List<JobEntity>>> GetJob_Zhaopin(string city, string key, int index)
         {
-            var cache = GetJobCacheObject();
-            var data = cache.GetData();
-            if (data != null) return data.Data;
-
-            var cityCode = JobCityCode.GetCityCode(JobRecruitment._zhaopin, city);
-            var url = $"http://sou.zhaopin.com/jobs/searchresult.ashx?jl={cityCode}&kw={key}&p={index}";
-            using (var http = new HttpClient())
+            try
             {
-                var htmlContent = await http.GetStringAsync(url);
-                var parser = new HtmlParser();
-                var jobInfos = parser.Parse(htmlContent)
-                    .QuerySelectorAll(".newlist_list_content table")
-                    .Where(x => x.QuerySelectorAll(".zwmc a").FirstOrDefault() != null)
-                    .Select(x => new JobEntity()
-                    {
-                        PositionName = x.QuerySelectorAll(".zwmc a").FirstOrDefault().TextContent.Trim(),
-                        CompanyName = x.QuerySelectorAll(".gsmc a").FirstOrDefault().TextContent,
-                        Salary = x.QuerySelectorAll(".zwyx").FirstOrDefault().TextContent,
-                        WorkingPlace = x.QuerySelectorAll(".gzdd").FirstOrDefault().TextContent,
-                        ReleaseDate = x.QuerySelectorAll(".gxsj span").FirstOrDefault().TextContent,
-                        DetailUrl = x.QuerySelectorAll(".zwmc a").FirstOrDefault().Attributes.FirstOrDefault(d => d.Name == "href").Value,
-                    }).ToList();
+                var cache = GetJobCacheObject();
+                var data = cache.GetData();
+                if (data != null)
+                    return new JsonResult<List<JobEntity>> { Result = data.Data };
 
-                cache.AddData(jobInfos);
-                return jobInfos;
+                var cityCode = JobCityCode.GetCityCode(JobRecruitment._zhaopin, city);
+                var url = $"http://sou.zhaopin.com/jobs/searchresult.ashx?jl={cityCode}&kw={key}&p={index}";
+                using (var http = new HttpClient())
+                {
+                    var htmlContent = await http.GetStringAsync(url);
+                    var parser = new HtmlParser();
+                    var jobInfos = parser.Parse(htmlContent)
+                        .QuerySelectorAll(".newlist_list_content table")
+                        .Where(x => x.QuerySelectorAll(".zwmc a").FirstOrDefault() != null)
+                        .Select(x => new JobEntity()
+                        {
+                            PositionName = x.QuerySelectorAll(".zwmc a").FirstOrDefault().TextContent.Trim(),
+                            CompanyName = x.QuerySelectorAll(".gsmc a").FirstOrDefault().TextContent,
+                            Salary = x.QuerySelectorAll(".zwyx").FirstOrDefault().TextContent,
+                            WorkingPlace = x.QuerySelectorAll(".gzdd").FirstOrDefault().TextContent,
+                            ReleaseDate = x.QuerySelectorAll(".gxsj span").FirstOrDefault().TextContent,
+                            DetailUrl = x.QuerySelectorAll(".zwmc a").FirstOrDefault().Attributes.FirstOrDefault(d => d.Name == "href").Value,
+                        }).ToList();
+
+                    cache.AddData(jobInfos);
+
+                    return new JsonResult<List<JobEntity>> { Result = jobInfos };
+                }
+            }
+            catch (Exception e)
+            {
+                return new JsonResult<List<JobEntity>> { Reason = e.Message };
             }
         }
 
@@ -58,25 +68,33 @@ namespace Meowv.Areas.Job.Controllers
         /// <param name="url">详情页URL</param>
         /// <returns></returns>
         [HttpGet, Route("zhaopin_detail")]
-        public async Task<JobDetailEntity> GetJob_Zhaopin(string url)
+        public async Task<JsonResult<JobDetailEntity>> GetJob_Zhaopin(string url)
         {
-            using (var http = new HttpClient())
+            try
             {
-                var htmlContent = await http.GetStringAsync(url);
-                var parser = new HtmlParser();
-                var jobDetailInfo = parser.Parse(htmlContent)
-                    .QuerySelectorAll(".terminalpage")
-                    .Where(x => x.QuerySelectorAll(".terminalpage-left .terminal-ul li").FirstOrDefault() != null)
-                    .Select(x => new JobDetailEntity()
-                    {
-                        Experience = x.QuerySelectorAll(".terminalpage-left .terminal-ul li")[4].TextContent,
-                        Education = x.QuerySelectorAll(".terminalpage-left .terminal-ul li")[5].TextContent,
-                        CompanyNature = x.QuerySelectorAll(".terminalpage-right .terminal-company li")[1].TextContent,
-                        CompanySize = x.QuerySelectorAll(".terminalpage-right .terminal-company li")[0].TextContent,
-                        Requirement = x.QuerySelectorAll(".tab-cont-box .tab-inner-cont")[0].TextContent.Replace("职位描述：", ""),
-                        CompanyIntroducation = x.QuerySelectorAll(".tab-cont-box .tab-inner-cont")[1].TextContent,
-                    }).FirstOrDefault();
-                return jobDetailInfo;
+                using (var http = new HttpClient())
+                {
+                    var htmlContent = await http.GetStringAsync(url);
+                    var parser = new HtmlParser();
+                    var jobDetailInfo = parser.Parse(htmlContent)
+                        .QuerySelectorAll(".terminalpage")
+                        .Where(x => x.QuerySelectorAll(".terminalpage-left .terminal-ul li").FirstOrDefault() != null)
+                        .Select(x => new JobDetailEntity()
+                        {
+                            Experience = x.QuerySelectorAll(".terminalpage-left .terminal-ul li")[4].TextContent,
+                            Education = x.QuerySelectorAll(".terminalpage-left .terminal-ul li")[5].TextContent,
+                            CompanyNature = x.QuerySelectorAll(".terminalpage-right .terminal-company li")[1].TextContent,
+                            CompanySize = x.QuerySelectorAll(".terminalpage-right .terminal-company li")[0].TextContent,
+                            Requirement = x.QuerySelectorAll(".tab-cont-box .tab-inner-cont")[0].TextContent.Replace("职位描述：", ""),
+                            CompanyIntroducation = x.QuerySelectorAll(".tab-cont-box .tab-inner-cont")[1].TextContent,
+                        }).FirstOrDefault();
+
+                    return new JsonResult<JobDetailEntity> { Result = jobDetailInfo };
+                }
+            }
+            catch (Exception e)
+            {
+                return new JsonResult<JobDetailEntity> { Reason = e.Message };
             }
         }
 
@@ -88,34 +106,80 @@ namespace Meowv.Areas.Job.Controllers
         /// <param name="index">页码</param>
         /// <returns></returns>
         [HttpGet, Route("51job")]
-        public async Task<List<JobEntity>> GetJob_51Job(string city, string key, int index)
+        public async Task<JsonResult<List<JobEntity>>> GetJob_51Job(string city, string key, int index)
         {
-            var cache = GetJobCacheObject();
-            var data = cache.GetData();
-            if (data != null) return data.Data;
-
-            var cityCode = JobCityCode.GetCityCode(JobRecruitment._51job, city);
-            var url = $"http://search.51job.com/jobsearch/search_result.php?jobarea={cityCode}&keyword={key}&curr_page={index}";
-            using (var http = new HttpClient())
+            try
             {
-                var htmlBytes = await http.GetByteArrayAsync(url);
-                var htmlContent = Encoding.GetEncoding("GBK").GetString(htmlBytes);
-                var parser = new HtmlParser();
-                var jobInfos = (await parser.ParseAsync(htmlContent))
-                    .QuerySelectorAll(".dw_table div.el")
-                    .Where(x => x.QuerySelectorAll(".t1 span a").FirstOrDefault() != null)
-                    .Select(x => new JobEntity()
-                    {
-                        PositionName = x.QuerySelectorAll(".t1 span a").FirstOrDefault().TextContent.Trim(),
-                        CompanyName = x.QuerySelectorAll(".t2 a").FirstOrDefault().TextContent,
-                        Salary = x.QuerySelectorAll(".t3").FirstOrDefault().TextContent,
-                        WorkingPlace = x.QuerySelectorAll(".t4").FirstOrDefault().TextContent,
-                        ReleaseDate = x.QuerySelectorAll(".t5").FirstOrDefault().TextContent,
-                        DetailUrl = x.QuerySelectorAll(".t1 span a").FirstOrDefault().Attributes.FirstOrDefault(d => d.Name == "href").Value
-                    }).ToList();
+                var cache = GetJobCacheObject();
+                var data = cache.GetData();
+                if (data != null)
+                    return new JsonResult<List<JobEntity>> { Result = data.Data };
 
-                cache.AddData(jobInfos);
-                return jobInfos;
+                var cityCode = JobCityCode.GetCityCode(JobRecruitment._51job, city);
+                var url = $"http://search.51job.com/jobsearch/search_result.php?jobarea={cityCode}&keyword={key}&curr_page={index}";
+                using (var http = new HttpClient())
+                {
+                    var htmlBytes = await http.GetByteArrayAsync(url);
+                    var htmlContent = Encoding.GetEncoding("GBK").GetString(htmlBytes);
+                    var parser = new HtmlParser();
+                    var jobInfos = (await parser.ParseAsync(htmlContent))
+                        .QuerySelectorAll(".dw_table div.el")
+                        .Where(x => x.QuerySelectorAll(".t1 span a").FirstOrDefault() != null)
+                        .Select(x => new JobEntity()
+                        {
+                            PositionName = x.QuerySelectorAll(".t1 span a").FirstOrDefault().TextContent.Trim(),
+                            CompanyName = x.QuerySelectorAll(".t2 a").FirstOrDefault().TextContent,
+                            Salary = x.QuerySelectorAll(".t3").FirstOrDefault().TextContent,
+                            WorkingPlace = x.QuerySelectorAll(".t4").FirstOrDefault().TextContent,
+                            ReleaseDate = x.QuerySelectorAll(".t5").FirstOrDefault().TextContent,
+                            DetailUrl = x.QuerySelectorAll(".t1 span a").FirstOrDefault().Attributes.FirstOrDefault(d => d.Name == "href").Value
+                        }).ToList();
+
+                    cache.AddData(jobInfos);
+
+                    return new JsonResult<List<JobEntity>> { Result = jobInfos };
+                }
+            }
+            catch (Exception e)
+            {
+                return new JsonResult<List<JobEntity>> { Reason = e.Message };
+            }
+        }
+
+        /// <summary>
+        /// 获取 前程无忧 招聘详情数据
+        /// </summary>
+        /// <param name="url">详情页URL</param>
+        /// <returns></returns>
+        [HttpGet, Route("51job_detail")]
+        public async Task<JsonResult<JobDetailEntity>> GetJob_51Job(string url)
+        {
+            try
+            {
+                using (var http = new HttpClient())
+                {
+                    var htmlBytes = await http.GetByteArrayAsync(url);
+                    var htmlContent = Encoding.GetEncoding("GBK").GetString(htmlBytes);
+                    var parser = new HtmlParser();
+                    var jobDetailInfo = parser.Parse(htmlContent)
+                        .QuerySelectorAll(".tCompanyPage")
+                        .Where(x => x.QuerySelectorAll(".tBorderTop_box .t1 span").FirstOrDefault() != null)
+                        .Select(x => new JobDetailEntity()
+                        {
+                            Experience = x.QuerySelectorAll(".tBorderTop_box .t1 span")[0].TextContent,
+                            Education = x.QuerySelectorAll(".tBorderTop_box .t1 span")[1].TextContent,
+                            CompanyNature = x.QuerySelectorAll(".msg.ltype")[0].TextContent.Split('|')[0].Trim(),
+                            CompanySize = x.QuerySelectorAll(".msg.ltype")[0].TextContent.Split('|')[1].Trim(),
+                            Requirement = x.QuerySelectorAll(".bmsg.job_msg.inbox")[0].TextContent.Replace("职位描述：", ""),
+                            CompanyIntroducation = x.QuerySelectorAll(".tmsg.inbox")[0].TextContent,
+                        }).FirstOrDefault();
+
+                    return new JsonResult<JobDetailEntity> { Result = jobDetailInfo };
+                }
+            }
+            catch (Exception e)
+            {
+                return new JsonResult<JobDetailEntity> { Reason = e.Message };
             }
         }
 

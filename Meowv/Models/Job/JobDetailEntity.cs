@@ -1,7 +1,7 @@
-﻿namespace Meowv.Models
+﻿namespace Meowv.Models.Job
 {
     /// <summary>
-    /// 工作详情
+    /// 招聘信息详情
     /// </summary>
     public class JobDetailEntity
     {
