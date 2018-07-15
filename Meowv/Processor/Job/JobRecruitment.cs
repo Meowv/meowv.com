@@ -23,7 +23,7 @@
         /// <summary>
         /// Boss直聘
         /// </summary>
-        _bosszhipin = 3,
+        _zhipin = 3,
 
         /// <summary>
         /// 拉勾网

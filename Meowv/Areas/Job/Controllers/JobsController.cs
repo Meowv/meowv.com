@@ -267,6 +267,54 @@ namespace Meowv.Areas.Job.Controllers
         }
 
         /// <summary>
+        /// 获取 Boss直聘 招聘数据
+        /// </summary>
+        /// <param name="city">城市</param>
+        /// <param name="key">关键词</param>
+        /// <param name="index">页码</param>
+        /// <returns></returns>
+        [HttpGet, Route("zhipin")]
+        public async Task<JsonResult<List<JobEntity>>> GetJob_Zhipin(string city, string key, int index)
+        {
+            try
+            {
+                var cache = GetJobCacheObject();
+                var data = cache.GetData();
+                if (data != null)
+                    return new JsonResult<List<JobEntity>> { Result = data.Data };
+
+                var cityCode = JobCityCode.GetCityCode(JobRecruitment._zhipin, city);
+                var url = $"http://www.zhipin.com/c{cityCode}/h_{cityCode}/?query={key}&page={1}";
+                using (var http = new HttpClient())
+                {
+                    var htmlContent = await http.GetStreamAsync(url);
+                    var parser = new HtmlParser();
+                    var jobInfos = parser.Parse(htmlContent)
+                        .QuerySelectorAll(".job-list ul li")
+                        .Where(x => x.QuerySelectorAll(".info-primary h3").FirstOrDefault() != null)
+                        .Select(x => new JobEntity()
+                        {
+                            PositionName = x.QuerySelectorAll(".info-primary h3 .job-title").FirstOrDefault().TextContent.Trim(),
+                            CompanyName = x.QuerySelectorAll(".company-text h3").FirstOrDefault().TextContent,
+                            Salary = x.QuerySelectorAll(".info-primary h3 .red").FirstOrDefault().TextContent,
+                            WorkingPlace = x.QuerySelectorAll(".info-primary p").FirstOrDefault().TextContent.Split("  ")[0],
+                            ReleaseDate = x.QuerySelectorAll(".info-publis p").FirstOrDefault().TextContent.Replace("发布于", ""),
+                            DetailUrl = $"http://www.zhipin.com{x.QuerySelectorAll("a").FirstOrDefault().Attributes.FirstOrDefault(d => d.Name == "href").Value}"
+                        }).ToList();
+
+                    cache.AddData(jobInfos);
+
+                    return new JsonResult<List<JobEntity>> { Result = jobInfos };
+                }
+            }
+            catch (Exception e)
+            {
+                return new JsonResult<List<JobEntity>> { Reason = e.Message };
+            }
+        }
+
+
+        /// <summary>
         /// 获取缓存对象
         /// </summary>
         /// <param name="minutes">分钟</param>
