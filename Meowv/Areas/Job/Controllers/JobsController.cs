@@ -313,6 +313,41 @@ namespace Meowv.Areas.Job.Controllers
             }
         }
 
+        /// <summary>
+        /// 获取 Boss直聘 招聘详情数据
+        /// </summary>
+        /// <param name="url">详情页URL</param>
+        /// <returns></returns>
+        [HttpGet, Route("zhipin_detail")]
+        public async Task<JsonResult<JobDetailEntity>> GetJob_Zhipin(string url)
+        {
+            try
+            {
+                using (var http = new HttpClient())
+                {
+                    var htmlContent = await http.GetStreamAsync(url);
+                    var parser = new HtmlParser();
+                    var jobDetailInfo = parser.Parse(htmlContent)
+                        .QuerySelectorAll("#main")
+                        .Where(x => x.QuerySelectorAll(".job-banner .info-primary p").FirstOrDefault() != null)
+                        .Select(x => new JobDetailEntity()
+                        {
+                            Experience = x.QuerySelectorAll(".job-banner .info-primary p").FirstOrDefault().TextContent.Split("：")[2].Replace("学历", ""),
+                            Education = x.QuerySelectorAll(".job-banner .info-primary p").FirstOrDefault().TextContent.Split("：")[3],
+                            CompanyNature = x.QuerySelectorAll(".job-banner .info-company p").FirstOrDefault().InnerHtml.Split("<em class=\"vline\"></em>")[0].Contains("人") ? "" : x.QuerySelectorAll(".job-banner .info-company p").FirstOrDefault().InnerHtml.Split("<em class=\"vline\"></em>")[0],
+                            CompanySize = x.QuerySelectorAll(".job-banner .info-company p").FirstOrDefault().InnerHtml.Split("<em class=\"vline\"></em>")[1].Contains("人") ? x.QuerySelectorAll(".job-banner .info-company p").FirstOrDefault().InnerHtml.Split("<em class=\"vline\"></em>")[1] : "",
+                            Requirement = x.QuerySelectorAll(".detail-content").FirstOrDefault().InnerHtml.Contains("职位描述") ? x.QuerySelectorAll(".job-sec div.text").FirstOrDefault().TextContent : "",
+                            CompanyIntroducation = x.QuerySelectorAll(".detail-content").FirstOrDefault().InnerHtml.Contains("公司介绍") ? x.QuerySelectorAll(".job-sec.company-info div.text").FirstOrDefault().TextContent : ""
+                        }).FirstOrDefault();
+
+                    return new JsonResult<JobDetailEntity> { Result = jobDetailInfo };
+                }
+            }
+            catch (Exception e)
+            {
+                return new JsonResult<JobDetailEntity> { Reason = e.Message };
+            }
+        }
 
         /// <summary>
         /// 获取缓存对象
