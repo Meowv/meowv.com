@@ -46,11 +46,11 @@ namespace Meowv.Areas.Job.Controllers
                         .Select(x => new JobEntity()
                         {
                             PositionName = x.QuerySelectorAll(".zwmc a").FirstOrDefault().TextContent.Trim(),
-                            CompanyName = x.QuerySelectorAll(".gsmc a").FirstOrDefault().TextContent,
-                            Salary = x.QuerySelectorAll(".zwyx").FirstOrDefault().TextContent,
-                            WorkingPlace = x.QuerySelectorAll(".gzdd").FirstOrDefault().TextContent,
-                            ReleaseDate = x.QuerySelectorAll(".gxsj span").FirstOrDefault().TextContent,
-                            DetailUrl = x.QuerySelectorAll(".zwmc a").FirstOrDefault().Attributes.FirstOrDefault(d => d.Name == "href").Value,
+                            CompanyName = x.QuerySelectorAll(".gsmc a").FirstOrDefault().TextContent.Trim(),
+                            Salary = x.QuerySelectorAll(".zwyx").FirstOrDefault().TextContent.Trim(),
+                            WorkingPlace = x.QuerySelectorAll(".gzdd").FirstOrDefault().TextContent.Trim(),
+                            ReleaseDate = x.QuerySelectorAll(".gxsj span").FirstOrDefault().TextContent.Trim(),
+                            DetailUrl = x.QuerySelectorAll(".zwmc a").FirstOrDefault().Attributes.FirstOrDefault(d => d.Name == "href").Value.Trim(),
                         }).ToList();
 
                     cache.AddData(jobInfos);
@@ -83,12 +83,12 @@ namespace Meowv.Areas.Job.Controllers
                         .Where(x => x.QuerySelectorAll(".terminalpage-left .terminal-ul li").FirstOrDefault() != null)
                         .Select(x => new JobDetailEntity()
                         {
-                            Experience = x.QuerySelectorAll(".terminalpage-left .terminal-ul li")[4].TextContent,
-                            Education = x.QuerySelectorAll(".terminalpage-left .terminal-ul li")[5].TextContent,
-                            CompanyNature = x.QuerySelectorAll(".terminalpage-right .terminal-company li")[1].TextContent,
-                            CompanySize = x.QuerySelectorAll(".terminalpage-right .terminal-company li")[0].TextContent,
-                            Requirement = x.QuerySelectorAll(".tab-cont-box .tab-inner-cont")[0].TextContent.Replace("职位描述：", ""),
-                            CompanyIntroducation = x.QuerySelectorAll(".tab-cont-box .tab-inner-cont")[1].TextContent,
+                            Experience = x.QuerySelectorAll(".terminalpage-left .terminal-ul li")[4].TextContent.Trim(),
+                            Education = x.QuerySelectorAll(".terminalpage-left .terminal-ul li")[5].TextContent.Trim(),
+                            CompanyNature = x.QuerySelectorAll(".terminalpage-right .terminal-company li")[1].TextContent.Trim(),
+                            CompanySize = x.QuerySelectorAll(".terminalpage-right .terminal-company li")[0].TextContent.Trim(),
+                            Requirement = x.QuerySelectorAll(".tab-cont-box .tab-inner-cont")[0].TextContent.Replace("职位描述：", "").Trim(),
+                            CompanyIntroducation = x.QuerySelectorAll(".tab-cont-box .tab-inner-cont")[1].TextContent.Trim(),
                         }).FirstOrDefault();
 
                     return new JsonResult<JobDetailEntity> { Result = jobDetailInfo };
@@ -130,11 +130,11 @@ namespace Meowv.Areas.Job.Controllers
                         .Select(x => new JobEntity()
                         {
                             PositionName = x.QuerySelectorAll(".t1 span a").FirstOrDefault().TextContent.Trim(),
-                            CompanyName = x.QuerySelectorAll(".t2 a").FirstOrDefault().TextContent,
-                            Salary = x.QuerySelectorAll(".t3").FirstOrDefault().TextContent,
-                            WorkingPlace = x.QuerySelectorAll(".t4").FirstOrDefault().TextContent,
-                            ReleaseDate = x.QuerySelectorAll(".t5").FirstOrDefault().TextContent,
-                            DetailUrl = x.QuerySelectorAll(".t1 span a").FirstOrDefault().Attributes.FirstOrDefault(d => d.Name == "href").Value
+                            CompanyName = x.QuerySelectorAll(".t2 a").FirstOrDefault().TextContent.Trim(),
+                            Salary = x.QuerySelectorAll(".t3").FirstOrDefault().TextContent.Trim(),
+                            WorkingPlace = x.QuerySelectorAll(".t4").FirstOrDefault().TextContent.Trim(),
+                            ReleaseDate = x.QuerySelectorAll(".t5").FirstOrDefault().TextContent.Trim(),
+                            DetailUrl = x.QuerySelectorAll(".t1 span a").FirstOrDefault().Attributes.FirstOrDefault(d => d.Name == "href").Value.Trim()
                         }).ToList();
 
                     cache.AddData(jobInfos);
@@ -168,12 +168,12 @@ namespace Meowv.Areas.Job.Controllers
                         .Where(x => x.QuerySelectorAll(".tBorderTop_box .t1 span").FirstOrDefault() != null)
                         .Select(x => new JobDetailEntity()
                         {
-                            Experience = x.QuerySelectorAll(".tBorderTop_box .t1 span")[0].TextContent,
-                            Education = x.QuerySelectorAll(".tBorderTop_box .t1 span")[1].TextContent,
+                            Experience = x.QuerySelectorAll(".tBorderTop_box .t1 span")[0].TextContent.Trim(),
+                            Education = x.QuerySelectorAll(".tBorderTop_box .t1 span")[1].TextContent.Trim(),
                             CompanyNature = x.QuerySelectorAll(".msg.ltype")[0].TextContent.Split('|')[0].Trim(),
                             CompanySize = x.QuerySelectorAll(".msg.ltype")[0].TextContent.Split('|')[1].Trim(),
-                            Requirement = x.QuerySelectorAll(".bmsg.job_msg.inbox")[0].TextContent.Replace("职位描述：", ""),
-                            CompanyIntroducation = x.QuerySelectorAll(".tmsg.inbox")[0].TextContent,
+                            Requirement = x.QuerySelectorAll(".bmsg.job_msg.inbox")[0].TextContent.Replace("职位描述：", "").Trim(),
+                            CompanyIntroducation = x.QuerySelectorAll(".tmsg.inbox")[0].TextContent.Trim(),
                         }).FirstOrDefault();
 
                     return new JsonResult<JobDetailEntity> { Result = jobDetailInfo };
@@ -214,11 +214,11 @@ namespace Meowv.Areas.Job.Controllers
                         .Select(x => new JobEntity()
                         {
                             PositionName = x.QuerySelectorAll(".job-info h3 a").FirstOrDefault().TextContent.Trim(),
-                            CompanyName = x.QuerySelectorAll(".company-name a").FirstOrDefault().TextContent,
-                            Salary = x.QuerySelectorAll(".text-warning").FirstOrDefault().TextContent,
-                            WorkingPlace = x.QuerySelectorAll(".area").FirstOrDefault().TextContent,
-                            ReleaseDate = x.QuerySelectorAll(".time-info time").FirstOrDefault().TextContent,
-                            DetailUrl = x.QuerySelectorAll(".job-info h3 a").FirstOrDefault().Attributes.FirstOrDefault(d => d.Name == "href").Value
+                            CompanyName = x.QuerySelectorAll(".company-name a").FirstOrDefault().TextContent.Trim(),
+                            Salary = x.QuerySelectorAll(".text-warning").FirstOrDefault().TextContent.Trim(),
+                            WorkingPlace = x.QuerySelectorAll(".area").FirstOrDefault().TextContent.Trim(),
+                            ReleaseDate = x.QuerySelectorAll(".time-info time").FirstOrDefault().TextContent.Trim(),
+                            DetailUrl = x.QuerySelectorAll(".job-info h3 a").FirstOrDefault().Attributes.FirstOrDefault(d => d.Name == "href").Value.Trim()
                         }).ToList();
 
                     cache.AddData(jobInfos);
@@ -251,12 +251,12 @@ namespace Meowv.Areas.Job.Controllers
                         .Where(x => x.QuerySelectorAll(".job-qualifications").FirstOrDefault() != null)
                         .Select(x => new JobDetailEntity()
                         {
-                            Experience = x.QuerySelectorAll(".job-qualifications span")[1].TextContent,
-                            Education = x.QuerySelectorAll(".job-qualifications span")[0].TextContent,
-                            CompanyNature = x.QuerySelectorAll(".new-compintro li")[0].TextContent,
-                            CompanySize = x.QuerySelectorAll(".new-compintro li")[1].TextContent,
-                            Requirement = x.QuerySelectorAll(".job-item.main-message").FirstOrDefault().TextContent.Replace("职位描述：", ""),
-                            CompanyIntroducation = x.QuerySelectorAll(".job-item.main-message.noborder").FirstOrDefault().TextContent
+                            Experience = x.QuerySelectorAll(".job-qualifications span")[1].TextContent.Trim(),
+                            Education = x.QuerySelectorAll(".job-qualifications span")[0].TextContent.Trim(),
+                            CompanyNature = x.QuerySelectorAll(".new-compintro li")[0].TextContent.Trim(),
+                            CompanySize = x.QuerySelectorAll(".new-compintro li")[1].TextContent.Trim(),
+                            Requirement = x.QuerySelectorAll(".job-item.main-message").FirstOrDefault().TextContent.Replace("职位描述：", "").Trim(),
+                            CompanyIntroducation = x.QuerySelectorAll(".job-item.main-message.noborder").FirstOrDefault().TextContent.Trim()
                         }).FirstOrDefault();
 
                     return new JsonResult<JobDetailEntity> { Result = jobDetailInfo };
@@ -297,11 +297,11 @@ namespace Meowv.Areas.Job.Controllers
                         .Select(x => new JobEntity()
                         {
                             PositionName = x.QuerySelectorAll(".info-primary h3 .job-title").FirstOrDefault().TextContent.Trim(),
-                            CompanyName = x.QuerySelectorAll(".company-text h3").FirstOrDefault().TextContent,
-                            Salary = x.QuerySelectorAll(".info-primary h3 .red").FirstOrDefault().TextContent,
-                            WorkingPlace = x.QuerySelectorAll(".info-primary p").FirstOrDefault().TextContent.Split("  ")[0],
-                            ReleaseDate = x.QuerySelectorAll(".info-publis p").FirstOrDefault().TextContent.Replace("发布于", ""),
-                            DetailUrl = $"http://www.zhipin.com{x.QuerySelectorAll("a").FirstOrDefault().Attributes.FirstOrDefault(d => d.Name == "href").Value}"
+                            CompanyName = x.QuerySelectorAll(".company-text h3").FirstOrDefault().TextContent.Trim(),
+                            Salary = x.QuerySelectorAll(".info-primary h3 .red").FirstOrDefault().TextContent.Trim(),
+                            WorkingPlace = x.QuerySelectorAll(".info-primary p").FirstOrDefault().TextContent.Split("  ")[0].Trim(),
+                            ReleaseDate = x.QuerySelectorAll(".info-publis p").FirstOrDefault().TextContent.Replace("发布于", "").Trim(),
+                            DetailUrl = $"http://www.zhipin.com{x.QuerySelectorAll("a").FirstOrDefault().Attributes.FirstOrDefault(d => d.Name == "href").Value.Trim()}"
                         }).ToList();
 
                     cache.AddData(jobInfos);
@@ -334,12 +334,12 @@ namespace Meowv.Areas.Job.Controllers
                         .Where(x => x.QuerySelectorAll(".job-banner .info-primary p").FirstOrDefault() != null)
                         .Select(x => new JobDetailEntity()
                         {
-                            Experience = x.QuerySelectorAll(".job-banner .info-primary p").FirstOrDefault().TextContent.Split("：")[2].Replace("学历", ""),
-                            Education = x.QuerySelectorAll(".job-banner .info-primary p").FirstOrDefault().TextContent.Split("：")[3],
-                            CompanyNature = x.QuerySelectorAll(".job-banner .info-company p").FirstOrDefault().InnerHtml.Split("<em class=\"vline\"></em>")[0].Contains("人") ? "" : x.QuerySelectorAll(".job-banner .info-company p").FirstOrDefault().InnerHtml.Split("<em class=\"vline\"></em>")[0],
-                            CompanySize = x.QuerySelectorAll(".job-banner .info-company p").FirstOrDefault().InnerHtml.Split("<em class=\"vline\"></em>")[1].Contains("人") ? x.QuerySelectorAll(".job-banner .info-company p").FirstOrDefault().InnerHtml.Split("<em class=\"vline\"></em>")[1] : "",
-                            Requirement = x.QuerySelectorAll(".detail-content").FirstOrDefault().InnerHtml.Contains("职位描述") ? x.QuerySelectorAll(".job-sec div.text").FirstOrDefault().TextContent : "",
-                            CompanyIntroducation = x.QuerySelectorAll(".detail-content").FirstOrDefault().InnerHtml.Contains("公司介绍") ? x.QuerySelectorAll(".job-sec.company-info div.text").FirstOrDefault().TextContent : ""
+                            Experience = x.QuerySelectorAll(".job-banner .info-primary p").FirstOrDefault().TextContent.Split("：")[2].Replace("学历", "").Trim(),
+                            Education = x.QuerySelectorAll(".job-banner .info-primary p").FirstOrDefault().TextContent.Split("：")[3].Trim(),
+                            CompanyNature = x.QuerySelectorAll(".job-banner .info-company p").FirstOrDefault().InnerHtml.Split("<em class=\"vline\"></em>")[0].Contains("人") ? "" : x.QuerySelectorAll(".job-banner .info-company p").FirstOrDefault().InnerHtml.Split("<em class=\"vline\"></em>")[0].Trim(),
+                            CompanySize = x.QuerySelectorAll(".job-banner .info-company p").FirstOrDefault().InnerHtml.Split("<em class=\"vline\"></em>")[1].Contains("人") ? x.QuerySelectorAll(".job-banner .info-company p").FirstOrDefault().InnerHtml.Split("<em class=\"vline\"></em>")[1].Trim() : "",
+                            Requirement = x.QuerySelectorAll(".detail-content").FirstOrDefault().InnerHtml.Contains("职位描述") ? x.QuerySelectorAll(".job-sec div.text").FirstOrDefault().TextContent.Trim() : "",
+                            CompanyIntroducation = x.QuerySelectorAll(".detail-content").FirstOrDefault().InnerHtml.Contains("公司介绍") ? x.QuerySelectorAll(".job-sec.company-info div.text").FirstOrDefault().TextContent.Trim() : ""
                         }).FirstOrDefault();
 
                     return new JsonResult<JobDetailEntity> { Result = jobDetailInfo };
@@ -383,12 +383,12 @@ namespace Meowv.Areas.Job.Controllers
                     var resultDatas = lagouData.Content.PositionResult.Result;
                     var jobInfos = resultDatas.Select(x => new JobEntity()
                     {
-                        PositionName = x.PositionName,
-                        CompanyName = x.CompanyShortName,
-                        Salary = x.Salary,
-                        WorkingPlace = x.District + (x.BusinessZones == null ? "" : x.BusinessZones.Length <= 0 ? "" : x.BusinessZones[0]),
-                        ReleaseDate = DateTime.Parse(x.CreateTime).ToString("yyyy-MM-dd"),
-                        DetailUrl = $"https://www.lagou.com/jobs/{x.PositionId}.html"
+                        PositionName = x.PositionName.Trim(),
+                        CompanyName = x.CompanyShortName.Trim(),
+                        Salary = x.Salary.Trim(),
+                        WorkingPlace = x.District.Trim() + (x.BusinessZones == null ? "" : x.BusinessZones.Length <= 0 ? "" : x.BusinessZones[0].Trim()),
+                        ReleaseDate = DateTime.Parse(x.CreateTime).ToString("yyyy-MM-dd").Trim(),
+                        DetailUrl = $"https://www.lagou.com/jobs/{x.PositionId.Trim()}.html"
                     }).ToList();
 
                     cache.AddData(jobInfos);
