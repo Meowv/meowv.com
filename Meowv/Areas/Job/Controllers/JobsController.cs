@@ -3,10 +3,12 @@ using Meowv.Models.Job;
 using Meowv.Models.JsonResult;
 using Meowv.Processor.Job;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -338,6 +340,93 @@ namespace Meowv.Areas.Job.Controllers
                             CompanySize = x.QuerySelectorAll(".job-banner .info-company p").FirstOrDefault().InnerHtml.Split("<em class=\"vline\"></em>")[1].Contains("人") ? x.QuerySelectorAll(".job-banner .info-company p").FirstOrDefault().InnerHtml.Split("<em class=\"vline\"></em>")[1] : "",
                             Requirement = x.QuerySelectorAll(".detail-content").FirstOrDefault().InnerHtml.Contains("职位描述") ? x.QuerySelectorAll(".job-sec div.text").FirstOrDefault().TextContent : "",
                             CompanyIntroducation = x.QuerySelectorAll(".detail-content").FirstOrDefault().InnerHtml.Contains("公司介绍") ? x.QuerySelectorAll(".job-sec.company-info div.text").FirstOrDefault().TextContent : ""
+                        }).FirstOrDefault();
+
+                    return new JsonResult<JobDetailEntity> { Result = jobDetailInfo };
+                }
+            }
+            catch (Exception e)
+            {
+                return new JsonResult<JobDetailEntity> { Reason = e.Message };
+            }
+        }
+
+        /// <summary>
+        /// 获取 拉勾网 招聘数据
+        /// </summary>
+        /// <param name="city">城市</param>
+        /// <param name="key">关键词</param>
+        /// <param name="index">页码</param>
+        /// <returns></returns>
+        [HttpGet, Route("lagou")]
+        public async Task<JsonResult<List<JobEntity>>> GetJob_Lagou(string city, string key, int index)
+        {
+            try
+            {
+                var cache = GetJobCacheObject();
+                var data = cache.GetData();
+                if (data != null)
+                    return new JsonResult<List<JobEntity>> { Result = data.Data };
+
+                var fromUrlContent = new StringContent($"first=false&pn={index}&kd={key}");
+                fromUrlContent.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
+                var url = $"https://www.lagou.com/jobs/positionAjax.json?px=new&city={city}&needAddtionalResult=false&isSchoolJob=0";
+                using (var http = new HttpClient())
+                {
+                    http.DefaultRequestHeaders.Add("Referer", "https://www.lagou.com/jobs/list_.net");
+                    http.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0");
+                    http.DefaultRequestHeaders.Add("X-Requested-With", "XMLHttpRequest");
+
+                    var responseMsg = await http.PostAsync(new Uri(url), fromUrlContent);
+                    var htmlContent = await responseMsg.Content.ReadAsStringAsync();
+                    var lagouData = JsonConvert.DeserializeObject<JobLagouData>(htmlContent);
+                    var resultDatas = lagouData.Content.PositionResult.Result;
+                    var jobInfos = resultDatas.Select(x => new JobEntity()
+                    {
+                        PositionName = x.PositionName,
+                        CompanyName = x.CompanyShortName,
+                        Salary = x.Salary,
+                        WorkingPlace = x.District + (x.BusinessZones == null ? "" : x.BusinessZones.Length <= 0 ? "" : x.BusinessZones[0]),
+                        ReleaseDate = DateTime.Parse(x.CreateTime).ToString("yyyy-MM-dd"),
+                        DetailUrl = $"https://www.lagou.com/jobs/{x.PositionId}.html"
+                    }).ToList();
+
+                    cache.AddData(jobInfos);
+
+                    return new JsonResult<List<JobEntity>> { Result = jobInfos };
+                }
+            }
+            catch (Exception e)
+            {
+                return new JsonResult<List<JobEntity>> { Reason = e.Message };
+            }
+        }
+
+        /// <summary>
+        /// 获取 拉勾网 招聘详情数据
+        /// </summary>
+        /// <param name="url">详情页URL</param>
+        /// <returns></returns>
+        [HttpGet, Route("lagou_detail")]
+        public async Task<JsonResult<JobDetailEntity>> GetJob_Lagou(string url)
+        {
+            try
+            {
+                using (var http = new HttpClient())
+                {
+                    http.DefaultRequestHeaders.Add("user-agent", "Mozilla/5.0");
+                    var htmlContent = await http.GetStreamAsync(url);
+                    var parse = new HtmlParser();
+                    var jobDetailInfo = parse.Parse(htmlContent)
+                        .QuerySelectorAll("body")
+                        .Select(x => new JobDetailEntity()
+                        {
+                            Experience = x.QuerySelectorAll(".job_request p").FirstOrDefault()?.TextContent.Split('/')[2].Trim(),
+                            Education = x.QuerySelectorAll(".job_request p").FirstOrDefault()?.TextContent.Split('/')[3].Trim(),
+                            CompanyNature = x.QuerySelectorAll(".job_company .c_feature li")?.Length <= 0 ? "" : x.QuerySelectorAll(".job_company .c_feature li")[0]?.TextContent.Trim(),
+                            CompanySize = x.QuerySelectorAll(".job_company .c_feature li")?.Length <= 2 ? "" : x.QuerySelectorAll(".job_company .c_feature li")[2]?.TextContent.Trim(),
+                            Requirement = x.QuerySelectorAll(".job_bt div").FirstOrDefault()?.TextContent.Trim(),
+                            CompanyIntroducation = ""
                         }).FirstOrDefault();
 
                     return new JsonResult<JobDetailEntity> { Result = jobDetailInfo };
