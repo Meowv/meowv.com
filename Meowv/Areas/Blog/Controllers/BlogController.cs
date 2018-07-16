@@ -17,7 +17,7 @@ namespace Meowv.Areas.Blog.Controllers
         /// 获取博客所有文章
         /// </summary>
         /// <returns></returns>
-        [HttpGet, Route("articles")]
+        [HttpGet]
         public async Task<JsonResult<List<BlogEntity>>> GetBlogArticle()
         {
             try
