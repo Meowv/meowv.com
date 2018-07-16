@@ -17,7 +17,7 @@ namespace Meowv.Areas.News
         /// 获取 V2EX 数据
         /// </summary>
         /// <returns></returns>
-        [HttpGet,Route("v2ex")]
+        [HttpGet, Route("v2ex")]
         public async Task<JsonResult<List<NewsEntity>>> GetV2ex()
         {
             try
