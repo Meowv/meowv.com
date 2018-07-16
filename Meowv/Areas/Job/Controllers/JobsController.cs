@@ -1,6 +1,7 @@
 ﻿using AngleSharp.Parser.Html;
 using Meowv.Models.Job;
 using Meowv.Models.JsonResult;
+using Meowv.Processor.Cache;
 using Meowv.Processor.Job;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
@@ -444,11 +445,11 @@ namespace Meowv.Areas.Job.Controllers
         /// <param name="minutes">分钟</param>
         /// <returns></returns>
         [NonAction]
-        public JobCacheObject<List<JobEntity>> GetJobCacheObject(int? minutes = null)
+        public CacheObject<List<JobEntity>> GetJobCacheObject(int? minutes = null)
         {
             var key = Request.Path.Value + Request.QueryString.Value;
             var time = DateTime.Now.AddMinutes(minutes ?? 10) - DateTime.Now;
-            return new JobCacheObject<List<JobEntity>>(key, time);
+            return new CacheObject<List<JobEntity>>(key, time);
         }
     }
 }

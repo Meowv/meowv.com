@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace Meowv.Processor.Job
+namespace Meowv.Processor.Cache
 {
-    public class JobCacheData<T>
+    public class CacheData<T>
     {
         public DateTime ExpirationTime { get; set; }
         public T Data { get; set; }

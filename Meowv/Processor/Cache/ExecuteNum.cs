@@ -1,29 +1,29 @@
 ﻿using System;
 
-namespace Meowv.Processor.Job
+namespace Meowv.Processor.Cache
 {
-    public class JobExecuteNum
+    public class ExecuteNum
     {
-        private readonly JobCacheObject<long> easy;
+        private readonly CacheObject<long> easy;
 
         public string _key;
 
         private TimeSpan _timeSpan;
 
-        public JobExecuteNum(string key, TimeSpan timeSpan)
+        public ExecuteNum(string key, TimeSpan timeSpan)
         {
             _key = key;
             _timeSpan = timeSpan;
-            easy = new JobCacheObject<long>(key, timeSpan);
+            easy = new CacheObject<long>(key, timeSpan);
             easy.AddData(0L);
         }
 
         public long GetNum()
         {
-            JobCacheData<long> cacheData = easy.GetData();
+            CacheData<long> cacheData = easy.GetData();
             if (cacheData == null)
             {
-                cacheData = new JobCacheData<long>
+                cacheData = new CacheData<long>
                 {
                     Data = 0
                 };

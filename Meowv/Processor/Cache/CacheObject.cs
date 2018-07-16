@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Meowv.Processor.Job
+namespace Meowv.Processor.Cache
 {
-    public class JobCacheObject<T>
+    public class CacheObject<T>
     {
-        private static readonly Dictionary<string, JobCacheData<T>> list = new Dictionary<string, JobCacheData<T>>();
+        private static readonly Dictionary<string, CacheData<T>> list = new Dictionary<string, CacheData<T>>();
 
         public static object lockObject = new object();
 
@@ -14,7 +14,7 @@ namespace Meowv.Processor.Job
 
         private TimeSpan _timeSpan;
 
-        public JobCacheObject(string key, TimeSpan timeSpan)
+        public CacheObject(string key, TimeSpan timeSpan)
         {
             _key = key;
             _timeSpan = timeSpan;
@@ -28,7 +28,7 @@ namespace Meowv.Processor.Job
                 {
                     return false;
                 }
-                list.Add(_key, new JobCacheData<T>
+                list.Add(_key, new CacheData<T>
                 {
                     Data = data,
                     ExpirationTime = DateTime.Now.Add(_timeSpan)
@@ -41,9 +41,9 @@ namespace Meowv.Processor.Job
         {
             var array = Enumerable.ToArray(
                 Enumerable.Select(
-                    Enumerable.Where(list, (KeyValuePair<string, JobCacheData<T>> t)
+                    Enumerable.Where(list, (KeyValuePair<string, CacheData<T>> t)
                     => t.Value.ExpirationTime
-                    <= DateTime.Now), (KeyValuePair<string, JobCacheData<T>> t)
+                    <= DateTime.Now), (KeyValuePair<string, CacheData<T>> t)
                     => t.Key));
             lock (lockObject)
             {
@@ -61,13 +61,13 @@ namespace Meowv.Processor.Job
             }
         }
 
-        public JobCacheData<T> GetData()
+        public CacheData<T> GetData()
         {
             var array = Enumerable.ToArray(
                 Enumerable.Select(
-                    Enumerable.Where(list, (KeyValuePair<string, JobCacheData<T>> t)
+                    Enumerable.Where(list, (KeyValuePair<string, CacheData<T>> t)
                     => t.Value.ExpirationTime
-                    <= DateTime.Now), (KeyValuePair<string, JobCacheData<T>> t)
+                    <= DateTime.Now), (KeyValuePair<string, CacheData<T>> t)
                     => t.Key));
             lock (lockObject)
             {
