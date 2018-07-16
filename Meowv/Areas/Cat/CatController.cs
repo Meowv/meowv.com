@@ -26,17 +26,24 @@ namespace Meowv.Areas.Cat
         [HttpGet]
         public async Task<IActionResult> GetCat()
         {
-            var cat_count = _settings.CatCount;
+            try
+            {
+                var cat_count = _settings.CatCount;
 
-            var random_num = new Random();
+                var random_num = new Random();
 
-            var num = random_num.Next(1, 10);
+                var num = random_num.Next(1, 10);
 
-            var path = _hostingEnvironment.ContentRootPath + "/cats/" + num + ".jpg";
+                var path = _hostingEnvironment.ContentRootPath + "/cats/" + num + ".jpg";
 
-            var bytes = await System.IO.File.ReadAllBytesAsync(path);
+                var bytes = await System.IO.File.ReadAllBytesAsync(path);
 
-            return File(bytes, "image/jpeg");
+                return File(bytes, "image/jpeg");
+            }
+            catch
+            {
+                return NotFound();
+            }
         }
     }
 }
