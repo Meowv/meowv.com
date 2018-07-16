@@ -13,7 +13,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Meowv.Areas.Job.Controllers
+namespace Meowv.Areas.Job
 {
     [ApiController, Route("[Controller]")]
     public class JobsController : ControllerBase
