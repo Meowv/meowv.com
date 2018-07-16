@@ -8,7 +8,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using System.Xml;
 
-namespace Meowv.Areas.Blog.Controllers
+namespace Meowv.Areas.Blog
 {
     [ApiController, Route("[Controller]")]
     public class BlogController : ControllerBase
