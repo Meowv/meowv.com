@@ -22,7 +22,7 @@ namespace Meowv.Areas.Blog.Controllers
         {
             try
             {
-                var cache = GetJobCacheObject();
+                var cache = GetBlogCacheObject();
                 var data = cache.GetData();
                 if (data != null)
                     return new JsonResult<List<BlogEntity>> { Result = data.Data };
@@ -89,7 +89,7 @@ namespace Meowv.Areas.Blog.Controllers
         /// <param name="minutes">分钟</param>
         /// <returns></returns>
         [NonAction]
-        public CacheObject<List<BlogEntity>> GetJobCacheObject(int? minutes = null)
+        public CacheObject<List<BlogEntity>> GetBlogCacheObject(int? minutes = null)
         {
             var key = Request.Path.Value + Request.QueryString.Value;
             var time = DateTime.Now.AddMinutes(minutes ?? 10) - DateTime.Now;
