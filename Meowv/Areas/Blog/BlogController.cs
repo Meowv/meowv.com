@@ -74,6 +74,8 @@ namespace Meowv.Areas.Blog
                         }
                     }
 
+                    cache.AddData(list);
+
                     return new JsonResult<List<BlogEntity>> { Result = list };
                 }
             }

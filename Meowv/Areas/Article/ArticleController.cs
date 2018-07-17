@@ -60,6 +60,8 @@ namespace Meowv.Areas.Article
                         Content = content
                     };
 
+                    cache.AddData(entity);
+
                     return new JsonResult<ArticleEntity> { Result = entity };
                 }
             }
