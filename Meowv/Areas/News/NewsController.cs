@@ -1,10 +1,12 @@
-﻿using Meowv.Models.JsonResult;
+﻿using AngleSharp.Parser.Html;
+using Meowv.Models.JsonResult;
 using Meowv.Models.News;
 using Meowv.Processor.Cache;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -72,6 +74,45 @@ namespace Meowv.Areas.News
                             list.Add(entity);
                         }
                     }
+
+                    return new JsonResult<List<NewsEntity>> { Result = list };
+                }
+            }
+            catch (Exception e)
+            {
+                return new JsonResult<List<NewsEntity>> { Reason = e.Message };
+            }
+        }
+
+        /// <summary>
+        /// 获取 博客园 数据
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet, Route("cnblogs")]
+        public async Task<JsonResult<List<NewsEntity>>> GetCnblogs()
+        {
+            try
+            {
+                var cache = GetV2exCacheObject();
+                var data = cache.GetData();
+                if (data != null)
+                    return new JsonResult<List<NewsEntity>> { Result = data.Data };
+
+                var url = "https://www.cnblogs.com/";
+                using (var http = new HttpClient())
+                {
+                    var htmlContent = await http.GetStringAsync(url);
+
+                    var parser = new HtmlParser();
+                    var list = parser.Parse(htmlContent)
+                        .QuerySelectorAll("#post_list .post_item")
+                        .Select(x => new NewsEntity()
+                        {
+                            Title = x.QuerySelectorAll(".post_item_body h3 a").FirstOrDefault().TextContent.Trim(),
+                            Url = x.QuerySelectorAll(".post_item_body h3 a").FirstOrDefault().Attributes.FirstOrDefault(d => d.Name == "href").Value.Trim()
+                        }).ToList();
+
+                    cache.AddData(list);
 
                     return new JsonResult<List<NewsEntity>> { Result = list };
                 }
