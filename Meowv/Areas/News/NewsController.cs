@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using System.Xml;
 
 namespace Meowv.Areas.News
 {
@@ -75,6 +76,8 @@ namespace Meowv.Areas.News
                         }
                     }
 
+                    cache.AddData(list);
+
                     return new JsonResult<List<NewsEntity>> { Result = list };
                 }
             }
@@ -89,7 +92,7 @@ namespace Meowv.Areas.News
         /// </summary>
         /// <returns></returns>
         [HttpGet, Route("cnblogs")]
-        public async Task<JsonResult<List<NewsEntity>>> GetCnblogs()
+        public async Task<JsonResult<List<NewsEntity>>> GetCnBlogs()
         {
             try
             {
@@ -111,6 +114,65 @@ namespace Meowv.Areas.News
                             Title = x.QuerySelectorAll(".post_item_body h3 a").FirstOrDefault().TextContent.Trim(),
                             Url = x.QuerySelectorAll(".post_item_body h3 a").FirstOrDefault().Attributes.FirstOrDefault(d => d.Name == "href").Value.Trim()
                         }).ToList();
+
+                    cache.AddData(list);
+
+                    return new JsonResult<List<NewsEntity>> { Result = list };
+                }
+            }
+            catch (Exception e)
+            {
+                return new JsonResult<List<NewsEntity>> { Reason = e.Message };
+            }
+        }
+
+        /// <summary>
+        /// 获取 IT之家 数据
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet, Route("ithome")]
+        public async Task<JsonResult<List<NewsEntity>>> GetItHome()
+        {
+            try
+            {
+                var cache = GetV2exCacheObject();
+                var data = cache.GetData();
+                if (data != null)
+                    return new JsonResult<List<NewsEntity>> { Result = data.Data };
+
+                var url = "http://api.ithome.com/xml/newslist/news.xml";
+                using (var http = new HttpClient())
+                {
+                    var xmlContent = await http.GetStringAsync(url);
+
+                    var xmlDoc = new XmlDocument();
+                    xmlDoc.LoadXml(xmlContent);
+
+                    var list = new List<NewsEntity>();
+
+                    var xmlNodeList = xmlDoc.SelectNodes("/rss/channel/item");
+                    if (xmlNodeList != null)
+                    {
+                        foreach (XmlNode xmlNode in xmlNodeList)
+                        {
+                            var entity = new NewsEntity();
+                            foreach (XmlElement xmlElement in xmlNode.ChildNodes)
+                            {
+                                switch (xmlElement.Name)
+                                {
+                                    case "title":
+                                        entity.Title = xmlElement.InnerText;
+                                        break;
+                                    case "url":
+                                        entity.Url = xmlElement.InnerText.Contains("http") ? xmlElement.InnerText : "https://www.ithome.com" + xmlElement.InnerText;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+                            list.Add(entity);
+                        }
+                    }
 
                     cache.AddData(list);
 
