@@ -10,24 +10,32 @@ namespace Meowv.Utilities
         /// </summary>
         /// <param name="url">地址</param>
         /// <param name="path">路径</param>
-        public static void DownLoadFile(string url, string path)
+        public static bool DownLoadFile(string url, string path)
         {
-            using (var http = new HttpClient())
+            try
             {
-                var buffer = http.GetByteArrayAsync(url);
-                using (var ms = new MemoryStream(buffer.Result))
+                using (var http = new HttpClient())
                 {
-                    using (var stream = new FileStream(path, FileMode.Create))
+                    var buffer = http.GetByteArrayAsync(url);
+                    using (var ms = new MemoryStream(buffer.Result))
                     {
-                        var bytes = new byte[1024];
-                        var size = ms.Read(bytes, 0, bytes.Length);
-                        while (size > 0)
+                        using (var stream = new FileStream(path, FileMode.Create))
                         {
-                            stream.Write(bytes, 0, size);
-                            size = ms.Read(bytes, 0, bytes.Length);
+                            var bytes = new byte[1024];
+                            var size = ms.Read(bytes, 0, bytes.Length);
+                            while (size > 0)
+                            {
+                                stream.Write(bytes, 0, size);
+                                size = ms.Read(bytes, 0, bytes.Length);
+                            }
                         }
                     }
+                    return true;
                 }
+            }
+            catch
+            {
+                return false;
             }
         }
     }
