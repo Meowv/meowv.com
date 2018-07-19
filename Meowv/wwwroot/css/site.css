@@ -1,0 +1,291 @@
+﻿html {
+    height: 100%;
+}
+
+::-moz-selection {
+    background: #fff;
+    color: #000;
+    text-shadow: none;
+}
+
+::selection {
+    background: #fff;
+    color: #000;
+    text-shadow: none;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #fff;
+    -webkit-box-shadow: inset 1px 1px 2px #E0E0E0;
+    border: 1px solid #D8D8D8;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #e8e8e8;
+    -webkit-box-shadow: inset 1px 1px 2px rgba(155, 155, 155, 0.4);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    -webkit-box-shadow: inset 1px 1px 10px rgba(0, 0, 0, 0.3);
+}
+
+::-webkit-scrollbar-thumb:active {
+    background: #888;
+    -webkit-box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+body {
+    padding-top: 50px;
+    padding-bottom: 20px;
+}
+
+body:after {
+    clear: both;
+    display: block;
+    content: ".";
+    visibility: hidden;
+}
+
+img {
+    border: none;
+    width: 100%;
+}
+
+.jumbotron {
+    background-color: #fff;
+    width: 100%;
+    max-width: 560px;
+    margin: 0 auto;
+    margin-bottom: 50px;
+}
+
+.body-content {
+    padding-left: 15px;
+    padding-right: 15px;
+    text-align: center;
+    margin-top: 40px;
+}
+.title {
+    color: #000;
+    font-weight: normal;
+    letter-spacing: 4px;
+    margin: 0 0 30px;
+    position: relative;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+.author {
+    color: #999;
+    margin: 40px 0 50px;
+    text-align: center;
+    font-size: 16px;
+    font-weight: normal;
+}
+
+.content p {
+    color: #000;
+    font-size: 16px;
+    font-weight: normal;
+    line-height: 30px;
+    margin-bottom: 30px;
+    text-align: justify;
+    padding: 0 20px;
+    text-indent: 2em;
+}
+
+.random {
+    text-align: center;
+    padding: 50px 0;
+}
+
+.random button::before {
+    content: "继续阅读";
+}
+
+.btnSign {
+    width: 100%;
+}
+
+@media screen and (max-width: 992px) {
+    .minscreen {
+        margin: 10px 0;
+    }
+}
+
+.outer {
+    margin: 5% 10% 2% 10%;
+}
+
+.blog-title a {
+    display: block;
+    font-family: STFangSong, Helvetica, Arial, Vernada, Tahoma, STXihei, "Microsoft YaHei", "Songti SC", SimSun, Heiti, sans-serif;
+    font-size: 18px;
+}
+
+.blog-title {
+    cursor: pointer;
+    padding: 15px 20px;
+}
+
+li.blog-title:hover {
+    background-color: #eee;
+    font-size: 100%;
+}
+
+.tabs {
+    position: relative;
+    overflow: hidden;
+    margin: 0 auto;
+    width: 100%;
+    font-weight: 300;
+    font-size: 1.25em;
+}
+
+.tabs nav {
+    text-align: center;
+}
+
+.tabs nav ul {
+    position: relative;
+    display: -ms-flexbox;
+    display: -webkit-flex;
+    display: -moz-flex;
+    display: -ms-flex;
+    display: flex;
+    margin: 0 auto;
+    padding: 0;
+    max-width: 1200px;
+    list-style: none;
+    -ms-box-orient: horizontal;
+    -ms-box-pack: center;
+    -webkit-flex-flow: row wrap;
+    -moz-flex-flow: row wrap;
+    -ms-flex-flow: row wrap;
+    flex-flow: row wrap;
+    -webkit-justify-content: center;
+    -moz-justify-content: center;
+    -ms-justify-content: center;
+    justify-content: center;
+}
+
+.tabs nav ul li {
+    position: relative;
+    z-index: 1;
+    display: block;
+    margin: 0;
+    text-align: center;
+    -webkit-flex: 1;
+    -moz-flex: 1;
+    -ms-flex: 1;
+    flex: 1;
+}
+
+.tabs nav a {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 2.5;
+    text-decoration: none;
+}
+
+.tabs nav a span {
+    vertical-align: middle;
+    font-size: 0.75em;
+}
+
+.tabs nav li.tab-current a {
+    color: #74777b;
+}
+
+.tabs nav a:focus {
+    outline: none;
+}
+
+.content-wrap {
+    position: relative;
+}
+
+.content-wrap section ul li a {
+    text-align: left;
+}
+
+.content-wrap section {
+    display: none;
+    margin: 0 auto;
+    padding: 1em;
+    max-width: 1200px;
+    text-align: center;
+}
+.nav.navbar-nav.navbar-right {
+    margin-right: 0;
+}
+.content-wrap section.content-current {
+    display: block;
+}
+
+.tabs-style-topline {
+    max-width: 1200px;
+    margin-top: 20px;
+}
+
+.tabs-style-topline nav li {
+    border: 1px solid rgba(40, 44, 42, 0.1);
+}
+
+.tabs-style-topline nav li:not(:last-child) {
+    border-right: none;
+}
+
+.tabs-style-topline nav li.tab-current {
+    border-top-color: #2CC185;
+    border-bottom: none;
+}
+
+.tabs-style-topline nav a {
+    padding: 0.65em 0 0.5em;
+    background: rgba(40, 44, 42, 0.05);
+    color: #74777b;
+    line-height: 1;
+    -webkit-transition: color 0.2s;
+    transition: color 0.2s;
+}
+
+.tabs-style-topline nav a:hover,
+.tabs-style-topline nav a:focus {
+    color: #2CC185;
+}
+
+.tabs-style-topline nav li.tab-current a {
+    background: none;
+    box-shadow: inset 0 3px 0 #2CC185;
+    color: #2CC185;
+}
+
+.tabs-style-topline nav a span {
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 700;
+    font-size: 0.5em;
+}
+
+.github-language {
+    height: 40px;
+    margin-bottom: 10px;
+    font-size: 12px;
+}
+
+.navbar-brand img {
+    width: 50px;
+    height: 50px;
+    position: absolute;
+    top: 0;
+    left: 15px;
+}
