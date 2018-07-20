@@ -38,9 +38,13 @@ namespace Meowv.Areas.Article
             try
             {
                 var cache = GetArticleCacheObject();
-                var data = cache.GetData();
-                if (data != null)
-                    return new JsonResult<ArticleEntity> { Result = data.Data };
+
+                if (action == "today")
+                {
+                    var data = cache.GetData();
+                    if (data != null)
+                        return new JsonResult<ArticleEntity> { Result = data.Data };
+                }
 
                 var url = $"https://interface.meiriyiwen.com/article/{action}";
                 using (var http = new HttpClient())
