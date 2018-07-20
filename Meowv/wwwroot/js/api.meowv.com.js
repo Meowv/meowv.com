@@ -28,7 +28,7 @@
                 });
             },
             loadGirl: function () {
-
+                $('#girl-content').append("<img src='/girl' />");
             },
             loadCat: function () {
 
@@ -61,6 +61,7 @@
                     this.method.loadArticle('random');
                     break;
                 case "/girl.html":
+                    this.method.loadGirl();
                     break;
                 case "/cat.html":
                     break;
