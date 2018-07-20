@@ -3,11 +3,10 @@
 
     };
 
-    var reason = "success";
-
     return {
         init: function () {
             this.pageInit();
+            this.bindEvent();
         },
         method: {
             loadSignature: function () {
@@ -23,8 +22,10 @@
             loadNews: function () {
 
             },
-            loadArticle: function () {
-
+            loadArticle: function (article) {
+                $.getJSON(`/article/${article}`, function (result) {
+                    $("#article-content").html(template("article-template", result));
+                });
             },
             loadGirl: function () {
 
@@ -54,10 +55,10 @@
                     this.method.loadNews();
                     break;
                 case "/article.html":
-                    this.method.loadArticle();
+                    this.method.loadArticle('today');
                     break;
                 case "/random-article.html":
-                    this.method.loadArticle();
+                    this.method.loadArticle('random');
                     break;
                 case "/girl.html":
                     break;
@@ -66,6 +67,12 @@
                 case "/bing.html":
                     break;
             }
+        },
+        bindEvent: function () {
+            // 继续阅读
+            $("html").on("click", ".random button", function () {
+                location.href = "/random-article.html";
+            });
         }
     };
 }();
