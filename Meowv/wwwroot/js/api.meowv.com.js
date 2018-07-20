@@ -31,7 +31,7 @@
                 $('#girl-content').append("<img src='/girl' />");
             },
             loadCat: function () {
-
+                $('#cat-content').append("<img src='/cat' />");
             },
             loadBing: function () {
 
@@ -64,6 +64,7 @@
                     this.method.loadGirl();
                     break;
                 case "/cat.html":
+                    this.method.loadCat();
                     break;
                 case "/bing.html":
                     break;
