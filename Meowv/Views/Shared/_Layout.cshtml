@@ -19,11 +19,21 @@
                 <span class="icon-bar"></span>
             </button>
             <a class="navbar-brand" href="/">
-                <img src="~/images/qix.png" alt="api.meowv.com" />
+                <img src="~/images/qix.png" alt="api.meowv.com" title="阿星Plus" />
             </a>
         </div>
         <div id="navbar" class="collapse navbar-collapse">
-            <ul class="nav navbar-nav navbar-right"></ul>
+            <ul class="nav navbar-nav navbar-right">
+                <li>@Html.ActionLink("找工作", "Job", "Home")</li>
+                <li>@Html.ActionLink("当然我在瞎扯", "Blog", "Home")</li>
+                <li>@Html.ActionLink("每日热点聚合", "News", "Home")</li>
+                <li>@Html.ActionLink("每日一文", "Article", "Home")</li>
+                <li>@Html.ActionLink("随机妹子图", "Girl", "Home")</li>
+                <li>@Html.ActionLink("随机一猫图", "Cat", "Home")</li>
+                <li>@Html.ActionLink("每日壁纸", "Bing", "Home")</li>
+                <li><a target="_blank" href="http://v.xj8c.cc">VIP电影在线播放</a></li>
+                <li><a target="_blank" href="https://github.com/Meowv/meowv.com/tree/master/Meowv">GitHub</a></li>
+            </ul>
         </div>
     </nav>
     @RenderBody()
