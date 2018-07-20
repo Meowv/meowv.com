@@ -23,20 +23,18 @@
             </a>
         </div>
         <div id="navbar" class="collapse navbar-collapse">
-            <ul class="nav navbar-nav navbar-right">
-                
-                
-            </ul>
+            <ul class="nav navbar-nav navbar-right"></ul>
         </div>
     </nav>
     @RenderBody()
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/lib/art-template/template-web.js"></script>
+    <script src="~/js/api.meowv.com.js" asp-append-version="true"></script>
+    @RenderSection("scripts", required: false)
     <script>
-        @RenderSection("scripts", required: false)
         var _mtac = {};
-        (function() {
+        (function () {
             var mta = document.createElement("script");
             mta.src = "//pingjs.qq.com/h5/stats.js";
             mta.setAttribute("name", "MTAH5");

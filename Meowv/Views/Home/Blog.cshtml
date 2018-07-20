@@ -1,0 +1,12 @@
+﻿<div class="outer"><ul class="list-group" id="blog-content"></ul></div>
+@section Scripts{ 
+<script id="blog-template" type="text/html">
+    {{if reason === "success"}}
+        {{each result}}
+            <li class="list-group-item blog-title">
+                <a target="_blank" href="{{$value.url}}">{{$value.title}}</a>
+            </li>
+        {{/each}}
+    {{/if}}
+</script>
+}
