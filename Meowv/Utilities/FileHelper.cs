@@ -3,14 +3,14 @@ using System.Net.Http;
 
 namespace Meowv.Utilities
 {
-    public class DownLoadFileHelper
+    public class FileHelper
     {
         /// <summary>
         /// 下载文件工具类
         /// </summary>
         /// <param name="url">地址</param>
         /// <param name="path">路径</param>
-        public static bool DownLoadFile(string url, string path)
+        public static bool DownLoad(string url, string path)
         {
             try
             {

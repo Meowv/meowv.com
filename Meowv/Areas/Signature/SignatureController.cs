@@ -75,7 +75,7 @@ namespace Meowv.Areas.Signature
 
                     var path = $"{_hostingEnvironment.WebRootPath}/signature/{name}{signature}.jpg";
 
-                    DownLoadFileHelper.DownLoadFile(signUrl, path);
+                    FileHelper.DownLoad(signUrl, path);
 
                     var entity = new SignatureEntity
                     {
@@ -86,7 +86,7 @@ namespace Meowv.Areas.Signature
                             .FirstOrDefault()
                             .GetCustomAttribute<DescriptionAttribute>()
                             .Description,
-                        Url = $"{_settings.Domain}/signature/{name}{signature}.gif"
+                        Url = $"{_settings.Domain}/signature/{name}{signature}.jpg"
                     };
 
                     return new JsonResult<SignatureEntity> { Result = entity };
