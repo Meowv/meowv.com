@@ -1,0 +1,30 @@
+﻿<div class="tabs tabs-style-topline">
+    <nav>
+        <ul>
+            <li><a href="#v2ex" class="tab"><span>V2EX</span></a></li>
+            <li><a href="#ithome" class="tab"><span>IT之家</span></a></li>
+            <li><a href="#cnblogs" class="tab"><span>博客园</span></a></li>
+        </ul>
+    </nav>
+    <div class="content-wrap">
+        <section id="v2ex">
+            <ul class="list-group"></ul>
+        </section>
+        <section id="ithome">
+            <ul class="list-group"></ul>
+        </section>
+        <section id="cnblogs">
+            <ul class="list-group"></ul>
+        </section>
+    </div>
+</div>
+@section Scripts{<script src="~/lib/meowvTabs.js"></script>
+    <script id="news-template" type="text/template">
+        {{if reason === "success"}}
+            {{each result}}
+                <li class="list-group-item blog-title">
+                    <a target="_blank" href="{{$value.url}}">{{$value.title}}</a>
+                </li>
+            {{/each}}
+        {{/if}}
+    </script>}

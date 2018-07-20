@@ -20,11 +20,24 @@
                     $("#blog-content").html(template("blog-template", result));
                 });            },
             loadNews: function () {
-
+                [].slice.call(document.querySelectorAll('.tabs')).forEach(function (el) {
+                    new meowvTabs(el);
+                });
+                $('.tab').click(function () {
+                    var idx = $('.tab').index(this);
+                    var api = $('.tab:eq(' + idx + ')').attr("href").replace("#", "");
+                    $.getJSON(`/news/${api}`, function (result) {
+                        $("#" + api + " ul").html(template("news-template", result));
+                    });
+                })
+                $('.tab:eq(0)').click();
             },
             loadArticle: function (article) {
                 $.getJSON(`/article/${article}`, function (result) {
                     $("#article-content").html(template("article-template", result));
+                });
+                $("html").on("click", ".random button", function () {
+                    location.href = "/random-article.html";
                 });
             },
             loadGirl: function () {
@@ -72,10 +85,7 @@
             }
         },
         bindEvent: function () {
-            // 继续阅读
-            $("html").on("click", ".random button", function () {
-                location.href = "/random-article.html";
-            });
+            
         }
     };
 }();
