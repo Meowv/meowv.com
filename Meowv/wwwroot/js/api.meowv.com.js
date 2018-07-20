@@ -34,7 +34,7 @@
                 $('#cat-content').append("<img src='/cat' />");
             },
             loadBing: function () {
-
+                $('#bing-content').append("<img src='/bing' />");
             }
         },
         pageInit: function () {
@@ -67,6 +67,7 @@
                     this.method.loadCat();
                     break;
                 case "/bing.html":
+                    this.method.loadBing();
                     break;
             }
         },
