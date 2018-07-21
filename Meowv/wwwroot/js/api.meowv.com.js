@@ -13,12 +13,17 @@
 
             },
             loadJobs: function () {
+                
 
+                $('.collapsed').on('show.bs.collapse', function () {
+                    console.log("1")
+                })
             },
             loadBlogs: function () {
                 $.getJSON('/blog', function (result) {
                     $("#blog-content").html(template("blog-template", result));
-                });            },
+                });
+            },
             loadNews: function () {
                 [].slice.call(document.querySelectorAll('.tabs')).forEach(function (el) {
                     new meowvTabs(el);
