@@ -2,6 +2,14 @@
     height: 100%;
 }
 
+@font-face {
+    font-family: 'FontAwesome';
+    src: url('../lib/bootstrap/dist/fonts/fontawesome-webfont.eot?v=4.7.0');
+    src: url('../lib/bootstrap/dist/fonts/fontawesome-webfont.eot?#iefix&v=4.7.0') format('embedded-opentype'), url('../lib/bootstrap/dist/fonts/fontawesome-webfont.woff2?v=4.7.0') format('woff2'), url('../lib/bootstrap/dist/fonts/fontawesome-webfont.woff?v=4.7.0') format('woff'), url('../lib/bootstrap/dist/fonts/fontawesome-webfont.ttf?v=4.7.0') format('truetype'), url('.../lib/bootstrap/dist/fonts/fontawesome-webfont.svg?v=4.7.0#fontawesomeregular') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+
 ::-moz-selection {
     background: #fff;
     color: #000;
@@ -70,6 +78,7 @@ img {
     text-align: center;
     margin-top: 40px;
 }
+
 .title {
     color: #000;
     font-weight: normal;
@@ -224,9 +233,11 @@ li.blog-title:hover {
     max-width: 1200px;
     text-align: center;
 }
+
 .nav.navbar-nav.navbar-right {
     margin-right: 0;
 }
+
 .content-wrap section.content-current {
     display: block;
 }
@@ -282,4 +293,156 @@ li.blog-title:hover {
     position: absolute;
     top: 0;
     left: 15px;
+}
+
+.job-outer {
+    width: 1024px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+ul.collapsed li a {
+    text-decoration: none;
+}
+
+ul.collapsed li a p:first-child {
+    color: #3d9ccc;
+    font-weight: bold;
+}
+
+ul.collapsed li a p:nth-child(2) {
+    color: #000;
+}
+
+ul.collapsed li a div span {
+    color: #000;
+    line-height: 50px;
+}
+
+ul.collapsed li a div:nth-child(2) span {
+    color: #ff5500;
+}
+
+ul.collapsed li a div:nth-child(3) span {
+    color: #2CC185;
+}
+
+ul.collapsed li a div:nth-child(4) span {
+    color: #1787fb;
+}
+
+.checkbox {
+    padding-left: 30px;
+}
+
+.checkbox label {
+    display: inline-block;
+    vertical-align: middle;
+    position: relative;
+    padding-left: 5px;
+}
+
+.checkbox label::before {
+    content: "";
+    display: inline-block;
+    position: absolute;
+    width: 17px;
+    height: 17px;
+    left: 0;
+    margin-left: -20px;
+    border: 1px solid #cccccc;
+    border-radius: 3px;
+    background-color: #fff;
+    -webkit-transition: border 0.15s ease-in-out, color 0.15s ease-in-out;
+    -o-transition: border 0.15s ease-in-out, color 0.15s ease-in-out;
+    transition: border 0.15s ease-in-out, color 0.15s ease-in-out;
+}
+
+.checkbox label::after {
+    display: inline-block;
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    left: 0;
+    top: 0;
+    margin-left: -20px;
+    padding-left: 3px;
+    padding-top: 1px;
+    font-size: 11px;
+    color: #555555;
+}
+
+.checkbox input[type="checkbox"] {
+    opacity: 0;
+    z-index: 1;
+}
+
+.checkbox input[type="checkbox"]:focus+label::before {
+    outline: thin dotted;
+    outline: 5px auto -webkit-focus-ring-color;
+    outline-offset: -2px;
+}
+
+.checkbox input[type="checkbox"]:checked+label::after {
+    font-family: "FontAwesome";
+    content: "\f00c";
+}
+
+.checkbox input[type="checkbox"]:indeterminate+label::after {
+    display: block;
+    content: "";
+    width: 10px;
+    height: 3px;
+    background-color: #555555;
+    border-radius: 2px;
+    margin-left: -16.5px;
+    margin-top: 7px;
+}
+
+.checkbox input[type="checkbox"]:disabled+label {
+    opacity: 0.65;
+}
+
+.checkbox input[type="checkbox"]:disabled+label::before {
+    background-color: #eeeeee;
+    cursor: not-allowed;
+}
+
+.checkbox.checkbox-circle label::before {
+    border-radius: 50%;
+}
+
+.checkbox.checkbox-inline {
+    margin-top: 5px;
+}
+
+.checkbox-primary input[type="checkbox"]:checked+label::before {
+    background-color: #337ab7;
+    border-color: #337ab7;
+}
+
+.checkbox-primary input[type="checkbox"]:checked+label::after {
+    color: #fff;
+}
+
+.checkbox-primary input[type="checkbox"]:indeterminate+label::before {
+    background-color: #337ab7;
+    border-color: #337ab7;
+}
+
+.checkbox-primary input[type="checkbox"]:indeterminate+label::after {
+    background-color: #fff;
+}
+
+input[type="checkbox"].styled:checked+label:after {
+    font-family: 'FontAwesome';
+    content: "\f00c";
+}
+
+input[type="checkbox"] .styled:checked+label::before {
+    color: #fff;
+}
+
+input[type="checkbox"] .styled:checked+label::after {
+    color: #fff;
 }
