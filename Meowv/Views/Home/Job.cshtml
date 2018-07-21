@@ -1,8 +1,15 @@
 ﻿<div class="outer job-outer">
     <div class="page-header">
         <div class="row">
-            <div class="col-lg-6">
+            <div class="col-lg-3">
                 <div class="input-group">
+                    <span class="input-group-addon">工作地点</span>
+                    <input type="text" class="form-control city" placeholder="工作地点...">
+                </div>
+            </div>
+            <div class="col-lg-3">
+                <div class="input-group">
+                    <span class="input-group-addon">职位</span>
                     <input type="text" class="form-control" placeholder="搜索职位...">
                     <span class="input-group-btn">
                         <button class="btn btn-default" type="button">搜索</button>
@@ -10,7 +17,26 @@
                 </div>
             </div>
             <div class="col-lg-6">
-                
+                <div class="checkbox checkbox-primary checkbox-inline">
+                    <input type="checkbox" class="styled" id="zhaopin" value="zhaopin" checked>
+                    <label for="zhaopin">智联招聘</label>
+                </div>
+                <div class="checkbox checkbox-primary checkbox-inline">
+                    <input type="checkbox" class="styled" id="51job" value="51job" checked>
+                    <label for="51job">前程无忧</label>
+                </div>
+                <div class="checkbox checkbox-primary checkbox-inline">
+                    <input type="checkbox" class="styled" id="liepin" value="liepin" checked>
+                    <label for="liepin">猎聘网</label>
+                </div>
+                <div class="checkbox checkbox-primary checkbox-inline">
+                    <input type="checkbox" class="styled" id="zhipin" value="zhipin" checked>
+                    <label for="zhipin">Boss直聘</label>
+                </div>
+                <div class="checkbox checkbox-primary checkbox-inline">
+                    <input type="checkbox" class="styled" id="lagou" value="lagou" checked>
+                    <label for="lagou">拉勾网</label>
+                </div>
             </div>
         </div>
     </div>
@@ -100,3 +126,6 @@
         </li>
     </ul>
 </div>
+@section scripts{ 
+    <script src="~/lib/meowvCity.js"></script>
+}

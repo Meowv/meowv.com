@@ -13,10 +13,10 @@
 
             },
             loadJobs: function () {
-                
+                $('.city').meowvCity();
 
                 $('.collapsed').on('show.bs.collapse', function () {
-                    console.log("1")
+                    console.log("fetch detail")
                 })
             },
             loadBlogs: function () {

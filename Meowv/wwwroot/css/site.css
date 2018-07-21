@@ -316,7 +316,7 @@ ul.collapsed li a p:nth-child(2) {
 
 ul.collapsed li a div span {
     color: #000;
-    line-height: 50px;
+    line-height: 70px;
 }
 
 ul.collapsed li a div:nth-child(2) span {
@@ -445,4 +445,150 @@ input[type="checkbox"] .styled:checked+label::before {
 
 input[type="checkbox"] .styled:checked+label::after {
     color: #fff;
+}
+
+.meowvcity {
+    font-size: 12px;
+    position: absolute;
+    top: 50px;
+    left: 50px;
+    width: 340px;
+    *border: 1px solid #dedede;
+    box-shadow: 0 0 5px 1px #dedede;
+    padding: 10px;
+    background: #fff;
+}
+
+.meowvcity h3 {
+    font-size: 12px;
+    font-weight: normal;
+    color: #666;
+}
+
+.meowvcity .meowvcity_nav {
+    font-size: 0;
+    list-style: none;
+}
+
+.meowvcity .meowvcity_nav li:first-child{
+    margin-left:-41px;
+}
+
+.meowvcity .meowvcity_nav li {
+    cursor: pointer;
+    font-size: 12px;
+    margin-left: -1px;
+    border: 1px solid #dedede;
+    display: inline-block;
+    color: #666;
+    padding: 3px 7px;
+    transition: all .2s;
+}
+
+.meowvcity .meowvcity_nav li.active {
+    background-color: #337ab7;
+    border-color: #337ab7;
+    color: #fff;
+}
+
+.meowvcity .meowvcity_body {
+    padding: 10px 5px;
+    max-height: 230px;
+    overflow-y: auto;
+}
+
+.meowvcity .meowvcity_body .meowvcity_item {
+    display: none;
+}
+
+.meowvcity .meowvcity_body .meowvcity_item.active {
+    display: block;
+}
+
+.meowvcity_item dt,
+.meowvcity_item dd {
+    display: inline-block;
+}
+
+.meowvcity_item dl {
+    padding: 3px 0;
+}
+
+.meowvcity_item dt {
+    color: #337ab7;
+    padding-top: 3px;
+    vertical-align: top;
+    width: 10%;
+}
+
+.meowvcity_item dd {
+    width: 90%;
+}
+
+.meowvcity_item dd span {
+    width: 24%;
+    display: inline-block;
+    cursor: pointer;
+    padding: 3px 0;
+    border: 1px solid #fff;
+    transition: all .3s;
+}
+
+.meowvcity_item dd span:hover {
+    color: #337ab7;
+    text-decoration: underline;
+}
+
+.meowvcity .result {
+    list-style: none;
+}
+
+.meowvcity .result li {
+    padding: 5px;
+    background-color: #fff;
+    margin: 2px 0;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.meowvcity .result li.active,
+.meowvcity .result li.active .letter {
+    background-color: rgb(4, 168, 253);
+    color: #fff;
+}
+
+.meowvcity .result li .letter {
+    float: right;
+    color: #999;
+}
+
+.meowvcity .result li .noresult {
+    padding: 0 8px;
+    color: rgb(253, 130, 27);
+}
+
+.meowvcity .result li:hover,
+.meowvcity .result li:hover>.letter {
+    background-color: rgb(4, 168, 253);
+    color: #fff!important;
+}
+
+.meowvcity_body::-webkit-scrollbar {
+    width: 5px;
+    height: 16px;
+    background-color: #F5F5F5;
+}
+
+.meowvcity_body::-webkit-scrollbar-track {
+    border-radius: 10px;
+    background-color: #F5F5F5;
+}
+
+.meowvcity_body::-webkit-scrollbar-thumb {
+    border-radius: 5px;
+    background-color: #dedede;
+}
+
+.meowvcity_body::-webkit-scrollbar-thumb:hover {
+    background-color: #999;
 }
