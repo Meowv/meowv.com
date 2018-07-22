@@ -553,7 +553,7 @@ input[type="checkbox"] .styled:checked+label::after {
 
 .meowvcity .result li.active,
 .meowvcity .result li.active .letter {
-    background-color: rgb(4, 168, 253);
+    background-color: #337ab7;
     color: #fff;
 }
 
@@ -569,7 +569,7 @@ input[type="checkbox"] .styled:checked+label::after {
 
 .meowvcity .result li:hover,
 .meowvcity .result li:hover>.letter {
-    background-color: rgb(4, 168, 253);
+    background-color: #337ab7;
     color: #fff!important;
 }
 
@@ -591,4 +591,36 @@ input[type="checkbox"] .styled:checked+label::after {
 
 .meowvcity_body::-webkit-scrollbar-thumb:hover {
     background-color: #999;
+}
+
+.job-detail p {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.job-detail p a {
+    color: #000;
+}
+
+.job-detail p a:hover {
+    color: #337ab7;
+}
+
+.job-detail p:first-child {
+    text-align: center;
+}
+
+.job-detail p:first-child span:not(:last-child) {
+    padding-right: 5px;
+}
+
+.job-detail p:first-child span:not(:last-child)::after {
+    content: " ｜";
+}
+
+.job-description {
+    font-size: 14px;
+    text-align: justify;
+    width: 96%;
+    margin: 0 auto 10px;
 }

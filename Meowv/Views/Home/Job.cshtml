@@ -10,7 +10,7 @@
             <div class="col-lg-3">
                 <div class="input-group">
                     <span class="input-group-addon">职位</span>
-                    <input type="text" class="form-control" placeholder="搜索职位...">
+                    <input type="text" class="form-control key" placeholder="搜索职位...">
                     <span class="input-group-btn">
                         <button class="btn btn-default" type="button">搜索</button>
                     </span>
@@ -40,92 +40,61 @@
             </div>
         </div>
     </div>
-    <ul class="list-group collapsed">
-        <li class="list-group-item blog-title">
-            <a data-toggle="collapse" href="#aaa">
-                <div class="row">
-                    <div class="col-md-4">
-                        <p>.Net开发工程师</p>
-                        <p>上海***技术有限公司</p>
-                    </div>
-                    <div class="col-md-2">
-                        <span>年薪10-18万</span>
-                    </div>
-                    <div class="col-md-2">
-                        <span>上海-嘉定区</span>
-                    </div>
-                    <div class="col-md-2">
-                        <span>22小时前</span>
-                    </div>
-                    <div class="col-md-2">
-                        <span>智联招聘</span>
-                    </div>
-                </div>
-            </a>
-            <div id="aaa" class="panel-collapse collapse">
-                <div class="panel-body">
-                    66666666666666666
-                </div>
-            </div>
-
-        </li>
-        <li class="list-group-item blog-title">
-            <a data-toggle="collapse" href="#bbb">
-                <div class="row">
-                    <div class="col-md-4">
-                        <p>.Net高级软件开发工程师</p>
-                        <p>上海***技术有限公司</p>
-                    </div>
-                    <div class="col-md-2">
-                        <span>年薪10-18万</span>
-                    </div>
-                    <div class="col-md-2">
-                        <span>上海-嘉定区</span>
-                    </div>
-                    <div class="col-md-2">
-                        <span>22小时前</span>
-                    </div>
-                    <div class="col-md-2">
-                        <span>智联招聘</span>
-                    </div>
-                </div>
-            </a>
-            <div id="bbb" class="panel-collapse collapse">
-                <div class="panel-body">
-                    66666666666666666
-                </div>
-            </div>
-
-        </li>
-        <li class="list-group-item blog-title">
-            <a class="" data-toggle="collapse" href="#ccc">
-                <div class="row">
-                    <div class="col-md-4">
-                        <p>.Net Core开发工程师</p>
-                        <p>上海***技术有限公司</p>
-                    </div>
-                    <div class="col-md-2">
-                        <span>年薪10-18万</span>
-                    </div>
-                    <div class="col-md-2">
-                        <span>上海-嘉定区</span>
-                    </div>
-                    <div class="col-md-2">
-                        <span>22小时前</span>
-                    </div>
-                    <div class="col-md-2">
-                        <span>智联招聘</span>
-                    </div>
-                </div>
-            </a>
-            <div id="ccc" class="panel-collapse collapse">
-                <div class="panel-body">
-                    66666666666666666
-                </div>
-            </div>
-        </li>
+    <ul class="list-group collapsed" id="jobs-content">
+        
     </ul>
 </div>
-@section scripts{ 
+@section scripts{
     <script src="~/lib/meowvCity.js"></script>
+    <script id="jobs-template" type="text/template">
+        {{if reason === "success"}}
+        {{each result}}
+        <li class="list-group-item blog-title">
+            <a data-toggle="collapse" href="#{{$index}}_{{$value.companyName}}">
+                <div class="row">
+                    <div class="col-md-4">
+                        <p>{{$value.positionName}}</p>
+                        <p>{{$value.companyName}}</p>
+                    </div>
+                    <div class="col-md-2">
+                        <span>{{$value.salary}}</span>
+                    </div>
+                    <div class="col-md-2">
+                        <span>{{$value.workingPlace}}</span>
+                    </div>
+                    <div class="col-md-2">
+                        <span>{{$value.releaseDate}}</span>
+                    </div>
+                    <div class="col-md-2">
+                        <span>智联招聘</span>
+                    </div>
+                </div>
+            </a>
+            <div id="{{$index}}_{{$value.companyName}}" class="panel-collapse collapse">
+                <div class="panel-body job-detail">
+                    <p>
+                        <a href="#////////////">
+                            <span>工作经验：3-5年</span>
+                            <span>最低学历：本科</span>
+                            <span>公司性质：民营</span>
+                            <span>公司规模：20-99人</span>
+                        </a>
+                    </p>
+                    <p>职位描述:</p>
+                    <div class="job-description">
+                        1
+                    </div>
+                    <p>公司简介:</p>
+                    <div class="job-description">
+                        2
+                    </div>
+                </div>
+            </div>
+        </li>
+        {{/each}}
+        {{/if}}
+    </script>
+    <script>
+
+    </script>
 }
