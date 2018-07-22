@@ -69,7 +69,7 @@
                         </div>
                     </a>
                     <div id="{{$value.source}}-{{$index}}-{{$imports.page}}" class="panel-collapse collapse">
-                        <div class="panel-body job-detail" id="jobs-detail-content">111</div>
+                        <div class="panel-body job-detail"></div>
                     </div>
                 </li>
             {{/each}}
@@ -78,7 +78,7 @@
     <script id="job-detail-template" type="text/template">
         {{if reason === "success"}}
             <p>
-                <a href="javascript:;">
+                <a target="_blank" href="{{$imports.url}}">
                     <span>{{@@ result.experience}}工作经验：3-5年</span>
                     <span>{{@@ result.education}}最低学历：本科</span>
                     <span>{{@@ result.companyNature}}公司性质：民营</span>

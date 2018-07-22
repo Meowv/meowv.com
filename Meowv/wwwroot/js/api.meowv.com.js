@@ -19,13 +19,29 @@
 
             },
             loadJobs: function () {
-                this.jobsInit();
+                var that = this;
+
+                that.jobsInit();
 
                 $('.city').meowvCity();
 
                 $('#jobs-content').on('show.bs.collapse', function (index) {
+                    var type = $(index.target).attr("id").split("-")[0];
                     var detail_url = $(index.target).parent(".list-group-item.blog-title").find("a").data("link");
-                    console.log(detail_url);
+                    var element = $(index.target).children();
+
+                    if (type === "智联招聘")
+                        type = "zhaopin_detail";
+                    if (type === "前程无忧")
+                        type = "51job_detail";
+                    if (type === "猎聘网")
+                        type = "liepin_detail";
+                    if (type === "Boss直聘")
+                        type = "zhipin_detail";
+                    if (type === "拉勾网")
+                        type = "lagou_detail";
+                    
+                    that.fetchJobDetail(type, detail_url, element);
                 });
             },
             loadBlogs: function () {
@@ -100,6 +116,12 @@
                 $.getJSON(`/jobs/${type}?city=${city}&key=${key}&index=${page}`, function (result) {
                     template.defaults.imports.page = page;
                     $("#jobs-content").append(template("jobs-template", result));
+                });
+            },
+            fetchJobDetail: function (type, detailUrl, element) {
+                template.defaults.imports.url = detailUrl;
+                $.getJSON(`/jobs/${type}?url=${detailUrl}`, function (result) {
+                    $(element).html(template("job-detail-template", result));
                 });
             },
             resetJobs: function () {
