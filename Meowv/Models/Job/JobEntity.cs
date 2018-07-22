@@ -34,5 +34,10 @@
         /// 详情地址
         /// </summary>
         public string DetailUrl { get; set; }
+
+        /// <summary>
+        /// 来源
+        /// </summary>
+        public string Source { get; set; }
     }
 }

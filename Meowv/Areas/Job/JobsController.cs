@@ -7,9 +7,11 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -52,6 +54,7 @@ namespace Meowv.Areas.Job
                             WorkingPlace = x.QuerySelectorAll(".gzdd").FirstOrDefault().TextContent.Trim(),
                             ReleaseDate = x.QuerySelectorAll(".gxsj span").FirstOrDefault().TextContent.Trim(),
                             DetailUrl = x.QuerySelectorAll(".zwmc a").FirstOrDefault().Attributes.FirstOrDefault(d => d.Name == "href").Value.Trim(),
+                            Source = JobRecruitment._zhaopin.GetType().GetMember(JobRecruitment._zhaopin.ToString()).FirstOrDefault().GetCustomAttribute<DescriptionAttribute>().Description
                         }).ToList();
 
                     cache.AddData(jobInfos);
@@ -135,7 +138,8 @@ namespace Meowv.Areas.Job
                             Salary = x.QuerySelectorAll(".t3").FirstOrDefault().TextContent.Trim(),
                             WorkingPlace = x.QuerySelectorAll(".t4").FirstOrDefault().TextContent.Trim(),
                             ReleaseDate = x.QuerySelectorAll(".t5").FirstOrDefault().TextContent.Trim(),
-                            DetailUrl = x.QuerySelectorAll(".t1 span a").FirstOrDefault().Attributes.FirstOrDefault(d => d.Name == "href").Value.Trim()
+                            DetailUrl = x.QuerySelectorAll(".t1 span a").FirstOrDefault().Attributes.FirstOrDefault(d => d.Name == "href").Value.Trim(),
+                            Source = JobRecruitment._51job.GetType().GetMember(JobRecruitment._51job.ToString()).FirstOrDefault().GetCustomAttribute<DescriptionAttribute>().Description
                         }).ToList();
 
                     cache.AddData(jobInfos);
@@ -219,7 +223,8 @@ namespace Meowv.Areas.Job
                             Salary = x.QuerySelectorAll(".text-warning").FirstOrDefault().TextContent.Trim(),
                             WorkingPlace = x.QuerySelectorAll(".area").FirstOrDefault().TextContent.Trim(),
                             ReleaseDate = x.QuerySelectorAll(".time-info time").FirstOrDefault().TextContent.Trim(),
-                            DetailUrl = x.QuerySelectorAll(".job-info h3 a").FirstOrDefault().Attributes.FirstOrDefault(d => d.Name == "href").Value.Trim()
+                            DetailUrl = x.QuerySelectorAll(".job-info h3 a").FirstOrDefault().Attributes.FirstOrDefault(d => d.Name == "href").Value.Trim(),
+                            Source = JobRecruitment._liepin.GetType().GetMember(JobRecruitment._liepin.ToString()).FirstOrDefault().GetCustomAttribute<DescriptionAttribute>().Description
                         }).ToList();
 
                     cache.AddData(jobInfos);
@@ -302,7 +307,8 @@ namespace Meowv.Areas.Job
                             Salary = x.QuerySelectorAll(".info-primary h3 .red").FirstOrDefault().TextContent.Trim(),
                             WorkingPlace = x.QuerySelectorAll(".info-primary p").FirstOrDefault().TextContent.Split("  ")[0].Trim(),
                             ReleaseDate = x.QuerySelectorAll(".info-publis p").FirstOrDefault().TextContent.Replace("发布于", "").Trim(),
-                            DetailUrl = $"http://www.zhipin.com{x.QuerySelectorAll("a").FirstOrDefault().Attributes.FirstOrDefault(d => d.Name == "href").Value.Trim()}"
+                            DetailUrl = $"http://www.zhipin.com{x.QuerySelectorAll("a").FirstOrDefault().Attributes.FirstOrDefault(d => d.Name == "href").Value.Trim()}",
+                            Source = JobRecruitment._zhipin.GetType().GetMember(JobRecruitment._zhipin.ToString()).FirstOrDefault().GetCustomAttribute<DescriptionAttribute>().Description
                         }).ToList();
 
                     cache.AddData(jobInfos);
@@ -389,7 +395,8 @@ namespace Meowv.Areas.Job
                         Salary = x.Salary.Trim(),
                         WorkingPlace = x.District.Trim() + (x.BusinessZones == null ? "" : x.BusinessZones.Length <= 0 ? "" : x.BusinessZones[0].Trim()),
                         ReleaseDate = DateTime.Parse(x.CreateTime).ToString("yyyy-MM-dd").Trim(),
-                        DetailUrl = $"https://www.lagou.com/jobs/{x.PositionId.Trim()}.html"
+                        DetailUrl = $"https://www.lagou.com/jobs/{x.PositionId.Trim()}.html",
+                        Source = JobRecruitment._lagou.GetType().GetMember(JobRecruitment._lagou.ToString()).FirstOrDefault().GetCustomAttribute<DescriptionAttribute>().Description
                     }).ToList();
 
                     cache.AddData(jobInfos);
