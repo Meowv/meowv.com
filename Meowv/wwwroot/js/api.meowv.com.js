@@ -1,6 +1,6 @@
 ﻿var meowv = function () {
     var _pageData = {
-        pageIndex: 0,
+        pageIndex: 1,
         city: "上海",
         key: ".net",
         isZhaopin: true,
@@ -23,8 +23,9 @@
 
                 $('.city').meowvCity();
 
-                $('.collapsed').on('show.bs.collapse', function () {
-                    console.log("fetch detail");
+                $('#jobs-content').on('show.bs.collapse', function (index) {
+                    var detail_url = $(index.target).parent(".list-group-item.blog-title").find("a").data("link");
+                    console.log(detail_url);
                 });
             },
             loadBlogs: function () {
@@ -84,7 +85,7 @@
                     if (e === "0")
                         that.fetchJobs("zhaopin", _pageData.city, _pageData.key, _pageData.pageIndex);
                     if (e === "1")
-                        that.fetchJobs("51job", _pageData.city, _pageData.key, _pageData.pageIndex + 1);
+                        that.fetchJobs("51job", _pageData.city, _pageData.key, _pageData.pageIndex);
                     if (e === "2")
                         that.fetchJobs("liepin", _pageData.city, _pageData.key, _pageData.pageIndex);
                     if (e === "3")
@@ -97,11 +98,12 @@
             },
             fetchJobs: function (type, city, key, page) {
                 $.getJSON(`/jobs/${type}?city=${city}&key=${key}&index=${page}`, function (result) {
+                    template.defaults.imports.page = page;
                     $("#jobs-content").append(template("jobs-template", result));
                 });
             },
             resetJobs: function () {
-                _pageData.pageIndex = this.queryString("page") || 0;
+                _pageData.pageIndex = this.queryString("page") || 1;
                 _pageData.city = $(".city").val();
                 _pageData.key = $(".key").val();
                 _pageData.isZhaopin = $("#zhaopin").prop("checked");
@@ -113,15 +115,15 @@
             },
             queryString: function (name) {
                 var url = encodeURI(location.search);
-                var theRequest = new Object();
+                var request = new Object();
                 if (url.indexOf("?") != -1) {
                     var str = url.substr(1);
                     strs = str.split("&");
                     for (var i = 0; i < strs.length; i++) {
-                        theRequest[strs[i].split("=")[0]] = unescape(strs[i].split("=")[1]);
+                        request[strs[i].split("=")[0]] = unescape(strs[i].split("=")[1]);
                     }
                 }
-                return theRequest[name];
+                return request[name];
             }
         },
         pageInit: function () {

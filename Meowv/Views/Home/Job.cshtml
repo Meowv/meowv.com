@@ -40,61 +40,59 @@
             </div>
         </div>
     </div>
-    <ul class="list-group collapsed" id="jobs-content">
-        
-    </ul>
+    <ul class="list-group collapsed" id="jobs-content"></ul>
 </div>
 @section scripts{
     <script src="~/lib/meowvCity.js"></script>
     <script id="jobs-template" type="text/template">
         {{if reason === "success"}}
-        {{each result}}
-        <li class="list-group-item blog-title">
-            <a data-toggle="collapse" href="#{{$index}}_{{$value.companyName}}">
-                <div class="row">
-                    <div class="col-md-4">
-                        <p>{{$value.positionName}}</p>
-                        <p>{{$value.companyName}}</p>
+            {{each result}}
+                <li class="list-group-item blog-title">
+                    <a data-toggle="collapse" data-link="{{$value.detailUrl}}" href="#{{$value.source}}-{{$index}}-{{$imports.page}}">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <p>{{$value.positionName}}</p>
+                                <p>{{$value.companyName}}</p>
+                            </div>
+                            <div class="col-md-2">
+                                <span>{{$value.salary}}</span>
+                            </div>
+                            <div class="col-md-2">
+                                <span>{{$value.workingPlace}}</span>
+                            </div>
+                            <div class="col-md-2">
+                                <span>{{$value.releaseDate}}</span>
+                            </div>
+                            <div class="col-md-2">
+                                <span>{{$value.source}}</span>
+                            </div>
+                        </div>
+                    </a>
+                    <div id="{{$value.source}}-{{$index}}-{{$imports.page}}" class="panel-collapse collapse">
+                        <div class="panel-body job-detail" id="jobs-detail-content">111</div>
                     </div>
-                    <div class="col-md-2">
-                        <span>{{$value.salary}}</span>
-                    </div>
-                    <div class="col-md-2">
-                        <span>{{$value.workingPlace}}</span>
-                    </div>
-                    <div class="col-md-2">
-                        <span>{{$value.releaseDate}}</span>
-                    </div>
-                    <div class="col-md-2">
-                        <span>智联招聘</span>
-                    </div>
-                </div>
-            </a>
-            <div id="{{$index}}_{{$value.companyName}}" class="panel-collapse collapse">
-                <div class="panel-body job-detail">
-                    <p>
-                        <a href="#////////////">
-                            <span>工作经验：3-5年</span>
-                            <span>最低学历：本科</span>
-                            <span>公司性质：民营</span>
-                            <span>公司规模：20-99人</span>
-                        </a>
-                    </p>
-                    <p>职位描述:</p>
-                    <div class="job-description">
-                        1
-                    </div>
-                    <p>公司简介:</p>
-                    <div class="job-description">
-                        2
-                    </div>
-                </div>
-            </div>
-        </li>
-        {{/each}}
+                </li>
+            {{/each}}
         {{/if}}
     </script>
-    <script>
-
+    <script id="job-detail-template" type="text/template">
+        {{if reason === "success"}}
+            <p>
+                <a href="javascript:;">
+                    <span>{{@@ result.experience}}工作经验：3-5年</span>
+                    <span>{{@@ result.education}}最低学历：本科</span>
+                    <span>{{@@ result.companyNature}}公司性质：民营</span>
+                    <span>{{@@ result.companySize}}公司规模：20-99人</span>
+                </a>
+            </p>
+            <p>职位描述:</p>
+            <div class="job-description">
+                {{@@ result.requirement}}
+            </div>
+            <p>公司简介:</p>
+            <div class="job-description">
+                {{@@ result.companyIntroducation}}
+            </div>
+        {{/if}}
     </script>
 }
