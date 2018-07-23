@@ -380,7 +380,7 @@ namespace Meowv.Areas.Job
                 var url = $"https://www.lagou.com/jobs/positionAjax.json?px=new&city={city}&needAddtionalResult=false&isSchoolJob=0";
                 using (var http = new HttpClient())
                 {
-                    http.DefaultRequestHeaders.Add("Referer", "https://www.lagou.com/jobs/list_.net");
+                    http.DefaultRequestHeaders.Add("Referer", $"https://www.lagou.com/jobs/list_{key}");
                     http.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0");
                     http.DefaultRequestHeaders.Add("X-Requested-With", "XMLHttpRequest");
 
