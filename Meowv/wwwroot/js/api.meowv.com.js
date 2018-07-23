@@ -43,6 +43,38 @@
                     
                     that.fetchJobDetail(type, detail_url, element);
                 });
+
+                var _reloadJobs = function () {
+                    that.resetJobs();
+                    that.reloadJobs();
+                };
+
+                $(".btn-search").click(function () {
+                    _reloadJobs();
+                });
+
+                $(":checkbox").click(function () {
+                    _reloadJobs();
+                });
+
+                $(".key").keydown(function (event) {
+                    if (event.keyCode == 13) {
+                        _reloadJobs();
+                    }
+                });
+
+                if (history.pushState) {
+                    window.addEventListener("popstate", function () { });
+                }
+
+                $(window).scroll(function () {
+                    var scrollTop = $(window).scrollTop();
+                    var top = $(document).height() - $(window).height() - scrollTop;
+                    if (top == 0) {
+                        _pageData.pageIndex++;
+                        that.reloadJobs();
+                    }
+                });
             },
             loadBlogs: function () {
                 $.getJSON('/blog', function (result) {
@@ -84,6 +116,7 @@
 
                 var jobsType = "0-1-2-3-4";
                 var types = that.queryString("t") && that.queryString("t").split('-') || jobsType.split('-');
+                jobsType = types.join('-');
 
                 $(".key").val(decodeURIComponent(that.queryString("key") || _pageData.key));
                 $(".city").val(decodeURIComponent(that.queryString("city") || _pageData.city));
@@ -125,7 +158,7 @@
                 });
             },
             resetJobs: function () {
-                _pageData.pageIndex = this.queryString("page") || 1;
+                _pageData.pageIndex = 1;
                 _pageData.city = $(".city").val();
                 _pageData.key = $(".key").val();
                 _pageData.isZhaopin = $("#zhaopin").prop("checked");
@@ -134,6 +167,34 @@
                 _pageData.isZhipin = $("#zhipin").prop("checked");
                 _pageData.isLagou = $("#lagou").prop("checked");
                 $("ul.collapsed").html("");
+            },
+            reloadJobs: function () {
+                var jobsType = "";
+
+                if (_pageData.isZhaopin) {
+                    jobsType += "0-";
+                    this.fetchJobs("zhaopin", _pageData.city, _pageData.key, _pageData.pageIndex);
+                }
+                if (_pageData.is51Job) {
+                    jobsType += "1-";
+                    this.fetchJobs("51job", _pageData.city, _pageData.key, _pageData.pageIndex);
+                }
+                if (_pageData.isLiepin) {
+                    jobsType += "2-";
+                    this.fetchJobs("liepin", _pageData.city, _pageData.key, _pageData.pageIndex);
+                }
+                if (_pageData.isZhipin) {
+                    jobsType += "3-";
+                    this.fetchJobs("zhipin", _pageData.city, _pageData.key, _pageData.pageIndex);
+                }
+                if (_pageData.isLagou) {
+                    jobsType += "4-";
+                    this.fetchJobs("lagou", _pageData.city, _pageData.key, _pageData.pageIndex);
+                }
+
+                jobsType = jobsType.substring(0, jobsType.length - 1);
+
+                history.pushState(null, null, location.href.split("?")[0] + "?t=" + jobsType + "&city=" + _pageData.city + "&key=" + _pageData.key + "&page=" + _pageData.pageIndex);
             },
             queryString: function (name) {
                 var url = encodeURI(location.search);
