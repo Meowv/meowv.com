@@ -2,7 +2,7 @@
     var _pageData = {
         pageIndex: 1,
         city: "上海",
-        key: ".net",
+        key: "ASP.NET Core",
         isZhaopin: true,
         is51Job: true,
         isLiepin: true,
@@ -30,6 +30,8 @@
                     var detail_url = $(index.target).parent(".list-group-item.blog-title").find("a").data("link");
                     var element = $(index.target).children();
 
+                    $(element).html(template("jobs-loading-template", null));
+
                     if (type === "智联招聘")
                         type = "zhaopin_detail";
                     if (type === "前程无忧")
@@ -51,15 +53,18 @@
 
                 $(".btn-search").click(function () {
                     _reloadJobs();
+                    $("ul.collapsed").html("");
                 });
 
                 $(":checkbox").click(function () {
                     _reloadJobs();
+                    $("ul.collapsed").html("");
                 });
 
                 $(".key").keydown(function (event) {
                     if (event.keyCode == 13) {
                         _reloadJobs();
+                        $("ul.collapsed").html("");
                     }
                 });
 
@@ -127,7 +132,7 @@
                 types.indexOf("2") >= 0 && $("#liepin").prop("checked", true);
                 types.indexOf("3") >= 0 && $("#zhipin").prop("checked", true);
                 types.indexOf("4") >= 0 && $("#lagou").prop("checked", true);
-
+                
                 that.resetJobs();
                 
                 $.each(types, function (i, e) {
@@ -146,9 +151,12 @@
                 history.pushState(null, null, location.href.split("?")[0] + "?t=" + jobsType + "&city=" + _pageData.city + "&key=" + _pageData.key + "&page=" + _pageData.pageIndex);
             },
             fetchJobs: function (type, city, key, page) {
+                $("ul.collapsed").append(template("jobs-loading-template", null));
+
                 $.getJSON(`/jobs/${type}?city=${city}&key=${key}&index=${page}`, function (result) {
                     template.defaults.imports.page = page;
                     $("#jobs-content").append(template("jobs-template", result));
+                    $("ul.collapsed>img").remove();
                 });
             },
             fetchJobDetail: function (type, detailUrl, element) {
@@ -166,11 +174,11 @@
                 _pageData.isLiepin = $("#liepin").prop("checked");
                 _pageData.isZhipin = $("#zhipin").prop("checked");
                 _pageData.isLagou = $("#lagou").prop("checked");
-                $("ul.collapsed").html("");
+
+                $("ul.collapsed").append(template("jobs-loading-template", null));
             },
             reloadJobs: function () {
                 var jobsType = "";
-
                 if (_pageData.isZhaopin) {
                     jobsType += "0-";
                     this.fetchJobs("zhaopin", _pageData.city, _pageData.key, _pageData.pageIndex);

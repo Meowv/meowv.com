@@ -301,6 +301,10 @@ li.blog-title:hover {
     margin-right: auto;
 }
 
+ul.collapsed>img {
+    width: 200px;
+}
+
 ul.collapsed li a {
     text-decoration: none;
 }
@@ -591,6 +595,10 @@ input[type="checkbox"] .styled:checked+label::after {
 
 .meowvcity_body::-webkit-scrollbar-thumb:hover {
     background-color: #999;
+}
+
+.job-detail > img {
+    width: 100px;
 }
 
 .job-detail p {

@@ -44,6 +44,9 @@
 </div>
 @section scripts{
     <script src="~/lib/meowvCity.js"></script>
+    <script id="jobs-loading-template" type="text/template">
+        <img class="img-responsive center-block" src="../images/loading.svg" />
+    </script>
     <script id="jobs-template" type="text/template">
         {{if reason === "success"}}
             {{each result}}
