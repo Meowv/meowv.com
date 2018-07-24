@@ -29,13 +29,12 @@ namespace Meowv.Areas.Cat
             try
             {
                 var cat_count = _settings.CatCount;
+                var cat_path = _settings.CatPath;
 
                 var random_num = new Random();
-
                 var num = random_num.Next(1, 10);
 
-                var path = _hostingEnvironment.ContentRootPath + "/cats/" + num + ".jpg";
-
+                var path = cat_path + num + ".jpg";
                 var bytes = await System.IO.File.ReadAllBytesAsync(path);
 
                 return File(bytes, "image/jpeg");
