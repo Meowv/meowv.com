@@ -6,12 +6,17 @@ using Meowv.Utilities;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats;
+using SixLabors.ImageSharp.Processing;
+using SixLabors.Primitives;
 using System;
 using System.ComponentModel;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Meowv.Areas.Signature
@@ -73,9 +78,33 @@ namespace Meowv.Areas.Signature
 
                     var signUrl = htmlContent.Replace("<img src=\"", url + "/").Replace("\">", "");
 
-                    var path = $"{_hostingEnvironment.WebRootPath}/signature/{name}{signature}.jpg";
+                    var originalImgPath = $"{_hostingEnvironment.WebRootPath}/signature/temp/{name}{signature}.jpg";
 
-                    FileHelper.DownLoad(signUrl, path);
+                    FileHelper.DownLoad(signUrl, originalImgPath);
+
+                    var random_num = new Random();
+                    var num = random_num.Next(1, 3);
+                    var watermarkImgPath = $"{_hostingEnvironment.WebRootPath}/images/qrcode{num}.jpg";
+
+                    var originalImgBytes = await System.IO.File.ReadAllBytesAsync(originalImgPath);
+                    var watermarkImgBytes = await System.IO.File.ReadAllBytesAsync(watermarkImgPath);
+
+                    var originalImg = Image.Load(originalImgBytes, out IImageFormat format);
+                    var watermarkImg = Image.Load(watermarkImgBytes);
+
+                    originalImg.Mutate(x =>
+                    {
+                        x.DrawImage(watermarkImg, 1, new Point(390, 90));
+                    });
+
+                    var imgBase64 = originalImg.ToBase64String(format);
+                    var reg = new Regex("data:image/(.*);base64,");
+                    imgBase64 = reg.Replace(imgBase64, "");
+                    var bytes = Convert.FromBase64String(imgBase64);
+
+                    var signaturePath = $"{_hostingEnvironment.WebRootPath}/signature/{name}{signature}.jpg";
+
+                    FileHelper.SaveFile(bytes, signaturePath);
 
                     var entity = new SignatureEntity
                     {
@@ -88,6 +117,8 @@ namespace Meowv.Areas.Signature
                             .Description,
                         Url = $"{_settings.Domain}/signature/{name}{signature}.jpg"
                     };
+
+                    System.IO.File.Delete(originalImgPath);
 
                     return new JsonResult<SignatureEntity> { Result = entity };
                 }
