@@ -78,7 +78,7 @@ namespace Meowv.Areas.Signature
 
                     var signUrl = htmlContent.Replace("<img src=\"", url + "/").Replace("\">", "");
 
-                    var originalImgPath = $"{_hostingEnvironment.WebRootPath}/signature/temp/{name}{signature}.jpg";
+                    var originalImgPath = $"{_hostingEnvironment.WebRootPath}/signature/{name}.jpg";
 
                     FileHelper.DownLoad(signUrl, originalImgPath);
 
