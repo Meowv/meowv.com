@@ -16,7 +16,24 @@
         },
         method: {
             loadSignature: function () {
+                var clickCount = 1;
+                $('#signature').on('click', function () {
+                    if (clickCount >= 8) {
+                        location.href = "/v1/index.html";
+                    }
+                    clickCount++;
+                });
 
+                $('#btnSignature').on('click', function () {
+                    var name = $('#name').val();
+                    var type = $('option:selected').val();                    var sign_api = "/signature/" + (type == 0 ? "art" : "biz") + "?name=" + name;
+                    if (name.length > 0) {
+                        $.getJSON(sign_api, function (result) {
+                            if (result.reason === "success") {
+                                $('#signature').attr('src', result.result.url);
+                            }
+                        });
+                    }                });
             },
             loadJobs: function () {
                 var that = this;
