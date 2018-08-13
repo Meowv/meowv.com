@@ -1,10 +1,10 @@
 ﻿using Meowv.Models.Blog;
 using Meowv.Models.JsonResult;
 using Meowv.Processor.Cache;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
-using System.Net.Http;
 using System.Threading.Tasks;
 using System.Xml;
 
@@ -13,6 +13,13 @@ namespace Meowv.Areas.Blog
     [ApiController, Route("[Controller]")]
     public class BlogController : ControllerBase
     {
+        private IHostingEnvironment _hostingEnvironment;
+
+        public BlogController(IHostingEnvironment hostingEnvironment)
+        {
+            _hostingEnvironment = hostingEnvironment;
+        }
+
         /// <summary>
         /// 获取博客所有文章
         /// </summary>
@@ -27,57 +34,55 @@ namespace Meowv.Areas.Blog
                 if (data != null)
                     return new JsonResult<List<BlogEntity>> { Result = data.Data };
 
-                var url = "http://xj8c.cc/atom.xml";
-                using (var http = new HttpClient())
+                var blogXmlPath = $"{_hostingEnvironment.ContentRootPath}/XmlData/blog.xml";
+                var xmlContent = await System.IO.File.ReadAllTextAsync(blogXmlPath);
+
+                xmlContent = xmlContent.Replace(" xmlns=\"http://www.w3.org/2005/Atom\"", "");
+
+                var xmlDoc = new XmlDocument();
+                xmlDoc.LoadXml(xmlContent);
+
+                var list = new List<BlogEntity>();
+
+                var xmlNodeList = xmlDoc.SelectNodes("/feed/entry");
+                if (xmlNodeList != null)
                 {
-                    var xmlContent = await http.GetStringAsync(url);
-                    xmlContent = xmlContent.Replace(" xmlns=\"http://www.w3.org/2005/Atom\"", "");
-
-                    var xmlDoc = new XmlDocument();
-                    xmlDoc.LoadXml(xmlContent);
-
-                    var list = new List<BlogEntity>();
-
-                    var xmlNodeList = xmlDoc.SelectNodes("/feed/entry");
-                    if (xmlNodeList != null)
+                    foreach (XmlNode xmlNode in xmlNodeList)
                     {
-                        foreach (XmlNode xmlNode in xmlNodeList)
+                        if (xmlNode.HasChildNodes)
                         {
-                            if (xmlNode.HasChildNodes)
+                            var entity = new BlogEntity();
+                            foreach (XmlElement xmlElement in xmlNode.ChildNodes)
                             {
-                                var entity = new BlogEntity();
-                                foreach (XmlElement xmlElement in xmlNode.ChildNodes)
+                                switch (xmlElement.Name)
                                 {
-                                    switch (xmlElement.Name)
-                                    {
-                                        case "title":
-                                            entity.Title = xmlElement.InnerText;
-                                            break;
-                                        case "link":
-                                            if (xmlElement.HasAttributes)
+                                    case "title":
+                                        entity.Title = xmlElement.InnerText;
+                                        break;
+                                    case "link":
+                                        if (xmlElement.HasAttributes)
+                                        {
+                                            foreach (XmlAttribute xmlAttr in xmlElement.Attributes)
                                             {
-                                                foreach (XmlAttribute xmlAttr in xmlElement.Attributes)
+                                                if (xmlAttr.Name == "href")
                                                 {
-                                                    if (xmlAttr.Name == "href")
-                                                    {
-                                                        entity.Url = xmlAttr.InnerText;
-                                                    }
+                                                    entity.Url = xmlAttr.InnerText;
                                                 }
                                             }
-                                            break;
-                                        default:
-                                            break;
-                                    }
+                                        }
+                                        break;
+                                    default:
+                                        break;
                                 }
-                                list.Add(entity);
                             }
+                            list.Add(entity);
                         }
                     }
-
-                    cache.AddData(list);
-
-                    return new JsonResult<List<BlogEntity>> { Result = list };
                 }
+
+                cache.AddData(list);
+
+                return new JsonResult<List<BlogEntity>> { Result = list };
             }
             catch (Exception e)
             {
