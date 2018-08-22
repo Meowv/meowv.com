@@ -16,5 +16,20 @@
         /// 域名
         /// </summary>
         public string Domain { get; set; }
+
+        /// <summary>
+        /// 安全密匙
+        /// </summary>
+        public string SecurityKey { get; set; }
+
+        /// <summary>
+        /// 用户名
+        /// </summary>
+        public string UserName { get; set; }
+
+        /// <summary>
+        /// 密码
+        /// </summary>
+        public string Password { get; set; }
     }
 }

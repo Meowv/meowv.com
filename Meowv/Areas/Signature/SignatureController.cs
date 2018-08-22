@@ -3,6 +3,7 @@ using Meowv.Models.JsonResult;
 using Meowv.Models.Signature;
 using Meowv.Processor.Signature;
 using Meowv.Utilities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -22,6 +23,7 @@ using System.Threading.Tasks;
 namespace Meowv.Areas.Signature
 {
     [ApiController, Route("[Controller]")]
+    [Authorize]
     public class SignatureController : ControllerBase
     {
         private AppSettings _settings;

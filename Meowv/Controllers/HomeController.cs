@@ -1,13 +1,45 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Meowv.Models.AppSetting;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
+using System;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace Meowv.Controllers
 {
     [ApiExplorerSettings(IgnoreApi = true)]
     public class HomeController : Controller
     {
-        [Route(""), Route("index.html")]
-        public IActionResult Index()
+        private AppSettings _settings;
+
+        public HomeController(IOptions<AppSettings> option)
         {
+            _settings = option.Value;
+        }
+
+        [Route(""), Route("index.html")]
+        public async Task<IActionResult> Index()
+        {
+            var url = _settings.Domain + "/api/token";
+
+            using (var http = new HttpClient())
+            {
+                using (var content = new StringContent("{\"userName\": \"" + _settings.UserName + "\", \"password\": \"" + _settings.Password + "\"}", Encoding.UTF8))
+                {
+                    content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+                    using (var responseMsg = await http.PostAsync(new Uri(url), content))
+                    {
+                        var result = await responseMsg.Content.ReadAsStringAsync();
+
+                        result = result.Replace("{\"token\":\"", "").Replace("\"}", "");
+
+                        ViewBag.Token = result;
+                    }
+                }
+            }
+
             ViewBag.Title = "api.meowv.com";
             return View();
         }

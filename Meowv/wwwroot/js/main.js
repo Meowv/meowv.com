@@ -26,11 +26,19 @@
 
                 $('#btnSignature').on('click', function () {
                     var name = $('#name').val();
-                    var type = $('option:selected').val();                    var sign_api = "/signature/" + (type == 0 ? "art" : "biz") + "?name=" + name;
+                    var type = $('option:selected').val();                    var sign_api = "/signature/" + (type === 0 ? "art" : "biz") + "?name=" + name;
+                    var token = $("#token").val();
                     if (name.length > 0) {
-                        $.getJSON(sign_api, function (result) {
-                            if (result.reason === "success") {
-                                $('#signature').attr('src', result.result.url);
+                        $.ajax({
+                            type: "get",
+                            url: sign_api,
+                            beforeSend: function (request) {
+                                request.setRequestHeader("Authorization", "Bearer " + token);
+                            },
+                            success: function (result) {
+                                if (result.reason === "success") {
+                                    $('#signature').attr('src', result.result.url);
+                                }
                             }
                         });
                     }                });
@@ -79,7 +87,7 @@
                 });
 
                 $(".key").keydown(function (event) {
-                    if (event.keyCode == 13) {
+                    if (event.keyCode === 13) {
                         _reloadJobs();
                         $("ul.collapsed").html("");
                     }
@@ -92,7 +100,7 @@
                 $(window).scroll(function () {
                     var scrollTop = $(window).scrollTop();
                     var top = $(document).height() - $(window).height() - scrollTop;
-                    if (top == 0) {
+                    if (top === 0) {
                         _pageData.pageIndex++;
                         that.reloadJobs();
                     }
@@ -224,7 +232,7 @@
             queryString: function (name) {
                 var url = encodeURI(location.search);
                 var request = new Object();
-                if (url.indexOf("?") != -1) {
+                if (url.indexOf("?") !== -1) {
                     var str = url.substr(1);
                     strs = str.split("&");
                     for (var i = 0; i < strs.length; i++) {
