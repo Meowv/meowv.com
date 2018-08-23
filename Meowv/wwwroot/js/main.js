@@ -26,7 +26,8 @@
 
                 $('#btnSignature').on('click', function () {
                     var name = $('#name').val();
-                    var type = $('option:selected').val();                    var sign_api = "/signature/" + (type === 0 ? "art" : "biz") + "?name=" + name;
+                    var type = $('option:selected').val();
+                    var sign_api = "/signature/" + (type > 0 ? "biz" : "art") + "?name=" + name;
                     var token = $("#token").val();
                     if (name.length > 0) {
                         $.ajax({
@@ -41,7 +42,8 @@
                                 }
                             }
                         });
-                    }                });
+                    }
+                });
             },
             loadJobs: function () {
                 var that = this;
