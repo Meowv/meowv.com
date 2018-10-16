@@ -16,6 +16,8 @@
         },
         method: {
             loadSignature: function () {
+                var that = this;
+
                 var clickCount = 1;
                 $('#signature').on('click', function () {
                     if (clickCount >= 8) {
@@ -28,7 +30,7 @@
                     var name = $('#name').val();
                     var type = $('option:selected').val();
                     var sign_api = "/signature/" + (type > 0 ? "biz" : "art") + "?name=" + name;
-                    var token = $("#token").val();
+                    var token = that.getCookie('token');
                     if (name.length > 0) {
                         $.ajax({
                             type: "get",
@@ -242,6 +244,13 @@
                     }
                 }
                 return request[name];
+            },
+            getCookie(key) {
+                var arr, reg = new RegExp("(^| )" + key + "=([^;]*)(;|$)");
+                if (arr = document.cookie.match(reg))
+                    return unescape(arr[2]);
+                else
+                    return null;
             }
         },
         pageInit: function () {

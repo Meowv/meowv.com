@@ -35,7 +35,7 @@ namespace Meowv.Controllers
 
                         result = result.Replace("{\"token\":\"", "").Replace("\"}", "");
 
-                        ViewBag.Token = result;
+                        Response.Cookies.Append("token", result);
                     }
                 }
             }
