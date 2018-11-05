@@ -47,6 +47,17 @@ namespace Meowv.Areas.Signature
         }
 
         /// <summary>
+        /// 艺术签无二维码
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        [HttpGet, Route("v2/art")]
+        public async Task<JsonResult<SignatureEntity>> GetArtSignatureNoQRCode(string name)
+        {
+            return await GetSingnatureNoQRCode(name, SignatureEnum._art);
+        }
+
+        /// <summary>
         /// 商务签
         /// </summary>
         /// <param name="name">姓名</param>
@@ -55,6 +66,17 @@ namespace Meowv.Areas.Signature
         public async Task<JsonResult<SignatureEntity>> GetBizSignature(string name)
         {
             return await GetSignature(name, SignatureEnum._biz);
+        }
+
+        /// <summary>
+        /// 商务签无二维码
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        [HttpGet, Route("v2/biz")]
+        public async Task<JsonResult<SignatureEntity>> GetBizSignatureNoQRCode(string name)
+        {
+            return await GetSingnatureNoQRCode(name, SignatureEnum._biz);
         }
 
         /// <summary>
@@ -121,6 +143,54 @@ namespace Meowv.Areas.Signature
                     };
 
                     System.IO.File.Delete(originalImgPath);
+
+                    return new JsonResult<SignatureEntity> { Result = entity };
+                }
+            }
+            catch (Exception e)
+            {
+                return new JsonResult<SignatureEntity> { Reason = e.Message };
+            }
+        }
+
+        /// <summary>
+        /// 获取签名不带二维码
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="signature"></param>
+        /// <returns></returns>
+        [NonAction]
+        public async Task<JsonResult<SignatureEntity>> GetSingnatureNoQRCode(string name, SignatureEnum signature)
+        {
+            try
+            {
+                var url = "http://www.jiqie.com";
+
+                var fromUrlContent = new StringContent($"id={name}&idi=jiqie&id1=800&id2={(int)signature}&id3=#000000&id4=#000000&id5=#000000&id6=#000000");
+                fromUrlContent.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
+
+                using (var http = new HttpClient())
+                {
+                    var responseMsg = await http.PostAsync(new Uri(url + "/a/re22.php"), fromUrlContent);
+                    var htmlContent = await responseMsg.Content.ReadAsStringAsync();
+
+                    var signUrl = htmlContent.Replace("<img src=\"", url + "/").Replace("\">", "");
+
+                    var originalImgPath = $"{_hostingEnvironment.WebRootPath}/signature/{name}{signature}_v.jpg";
+
+                    FileHelper.DownLoad(signUrl, originalImgPath);
+
+                    var entity = new SignatureEntity
+                    {
+                        Name = name,
+                        Type = signature
+                            .GetType()
+                            .GetMember(signature.ToString())
+                            .FirstOrDefault()
+                            .GetCustomAttribute<DescriptionAttribute>()
+                            .Description,
+                        Url = $"{_settings.Domain}/signature/{name}{signature}_v.jpg"
+                    };
 
                     return new JsonResult<SignatureEntity> { Result = entity };
                 }
