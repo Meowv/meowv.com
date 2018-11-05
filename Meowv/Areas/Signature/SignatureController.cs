@@ -100,7 +100,7 @@ namespace Meowv.Areas.Signature
                     var responseMsg = await http.PostAsync(new Uri(url + "/a/re22.php"), fromUrlContent);
                     var htmlContent = await responseMsg.Content.ReadAsStringAsync();
 
-                    var signUrl = htmlContent.Replace("<img src=\"", url + "/").Replace("\">", "");
+                    var signUrl = htmlContent.Replace("<img src=\"", "").Replace("\">", "");
 
                     var originalImgPath = $"{_hostingEnvironment.WebRootPath}/signature/{name}.jpg";
 
@@ -174,7 +174,7 @@ namespace Meowv.Areas.Signature
                     var responseMsg = await http.PostAsync(new Uri(url + "/a/re22.php"), fromUrlContent);
                     var htmlContent = await responseMsg.Content.ReadAsStringAsync();
 
-                    var signUrl = htmlContent.Replace("<img src=\"", url + "/").Replace("\">", "");
+                    var signUrl = htmlContent.Replace("<img src=\"", "").Replace("\">", "");
 
                     var originalImgPath = $"{_hostingEnvironment.WebRootPath}/signature/{name}{signature}_v.jpg";
 
