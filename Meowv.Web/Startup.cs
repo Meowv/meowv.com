@@ -1,4 +1,6 @@
-﻿using Meowv.Entity;
+﻿using Meowv.DataModel.Blog;
+using Meowv.Entity;
+using Meowv.Provider.Bolg;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -38,6 +40,9 @@ namespace Meowv.Web
                 routes.LowercaseUrls = true;
                 routes.AppendTrailingSlash = false;
             });
+
+            services.AddScoped<ArticleDataModel>();
+            services.AddScoped<ArticleProvider>();
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
         }

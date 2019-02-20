@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Meowv.DataModel\Meowv.DataModel.csproj" />
     <ProjectReference Include="..\Meowv.Interface\Meowv.Interface.csproj" />
   </ItemGroup>
 
