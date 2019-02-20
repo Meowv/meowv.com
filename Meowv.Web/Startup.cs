@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.IO;
 
 namespace Meowv.Web
 {
@@ -40,6 +42,11 @@ namespace Meowv.Web
                 routes.LowercaseUrls = true;
                 routes.AppendTrailingSlash = false;
             });
+            services.AddSwaggerGen(x =>
+            {
+                x.SwaggerDoc("Meowv", null);
+                x.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "Meowv.xml"));
+            });
 
             services.AddScoped<ArticleDataModel>();
             services.AddScoped<ArticleProvider>();
@@ -57,7 +64,11 @@ namespace Meowv.Web
             {
                 app.UseHsts();
             }
-
+            app.UseSwagger();
+            app.UseSwaggerUI(options =>
+            {
+                options.SwaggerEndpoint("/swagger/Meowv/swagger.json", "MEOWV API");
+            });
             app.UseSession();
             app.UseAuthentication();
             app.UseHttpsRedirection();

@@ -1,0 +1,32 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MEOWV API</title>
+    <link rel="stylesheet" type="text/css" href="~/lib/swagger-ui/swagger-ui.css">
+    <link rel="icon" type="image/png" href="~/favicon.png" />
+</head>
+<body>
+    <div id="swagger-ui"></div>
+    <script src="~/lib/swagger-ui/swagger-ui-bundle.js"></script>
+    <script src="~/lib/swagger-ui/swagger-ui-standalone-preset.js"></script>
+    <script>
+        window.onload = function () {
+            const ui = SwaggerUIBundle({
+                url: "/swagger/Meowv/swagger.json",
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "StandaloneLayout"
+            })
+            window.ui = ui
+        }
+    </script>
+</body>
+</html>
