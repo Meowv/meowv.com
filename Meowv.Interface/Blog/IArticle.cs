@@ -37,6 +37,6 @@ namespace Meowv.Interface.Blog
         /// 获取文章列表
         /// </summary>
         /// <returns></returns>
-        Task<IEnumerable<ArticleEntity>> GetArticle();
+        Task<IEnumerable<ArticleEntity>> GetArticles();
     }
 }

@@ -72,7 +72,7 @@ namespace Meowv.DataModel.Blog
         /// 获取文章列表
         /// </summary>
         /// <returns></returns>
-        public async Task<IEnumerable<ArticleEntity>> GetArticle()
+        public async Task<IEnumerable<ArticleEntity>> GetArticles()
         {
             return await _context.Articles.Where(x => x.IsDelete == 0).OrderByDescending(x => x.PostTime).ToListAsync();
         }

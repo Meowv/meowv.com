@@ -58,9 +58,9 @@ namespace Meowv.Provider.Bolg
         /// 获取文章列表
         /// </summary>
         /// <returns></returns>
-        public Task<IEnumerable<ArticleEntity>> GetArticle()
+        public Task<IEnumerable<ArticleEntity>> GetArticles()
         {
-            return _data.GetArticle();
+            return _data.GetArticles();
         }
     }
 }

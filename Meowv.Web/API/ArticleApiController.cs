@@ -88,7 +88,7 @@ namespace Meowv.Web.API
         {
             return new ResponseViewModel<IEnumerable<ArticleEntity>>
             {
-                Data = await _provider.GetArticle()
+                Data = await _provider.GetArticles()
             };
         }
     }
