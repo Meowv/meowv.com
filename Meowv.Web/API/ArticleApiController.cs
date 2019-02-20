@@ -69,7 +69,7 @@ namespace Meowv.Web.API
         /// <param name="articleId"></param>
         /// <returns></returns>
         [HttpGet]
-        [Route("get_article")] 
+        [Route("get_article/{articleId}")]
         public async Task<ResponseViewModel<ArticleEntity>> GetArticle(int articleId)
         {
             return new ResponseViewModel<ArticleEntity>
@@ -89,6 +89,36 @@ namespace Meowv.Web.API
             return new ResponseViewModel<IEnumerable<ArticleEntity>>
             {
                 Data = await _provider.GetArticles()
+            };
+        }
+
+        /// <summary>
+        /// 根据分类ID获取文章列表
+        /// </summary>
+        /// <param name="categoryId"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("get_articles_cid/{categoryId}")]
+        public async Task<ResponseViewModel<IEnumerable<ArticleEntity>>> GetArticlesByCategoryId(int categoryId)
+        {
+            return new ResponseViewModel<IEnumerable<ArticleEntity>>
+            {
+                Data = await _provider.GetArticlesByCategoryId(categoryId)
+            };
+        }
+
+        /// <summary>
+        /// 根据标签ID获取文章列表
+        /// </summary>
+        /// <param name="tagId"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("get_articles_tid/{tagId}")]
+        public async Task<ResponseViewModel<IEnumerable<ArticleEntity>>> GetArticlesByTagId(int tagId)
+        {
+            return new ResponseViewModel<IEnumerable<ArticleEntity>>
+            {
+                Data = await _provider.GetArticlesByTagId(tagId)
             };
         }
     }
