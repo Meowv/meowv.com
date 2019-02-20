@@ -1,5 +1,8 @@
 ﻿using Meowv.Entity;
 using Meowv.Entity.Blog;
+using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Meowv.DataModel.Blog
@@ -63,6 +66,15 @@ namespace Meowv.DataModel.Blog
         public async Task<ArticleEntity> GetArticle(int articleId)
         {
             return await _context.Articles.FindAsync(articleId);
+        }
+
+        /// <summary>
+        /// 获取文章列表
+        /// </summary>
+        /// <returns></returns>
+        public async Task<IEnumerable<ArticleEntity>> GetArticle()
+        {
+            return await _context.Articles.Where(x => x.IsDelete == 0).OrderByDescending(x => x.PostTime).ToListAsync();
         }
     }
 }

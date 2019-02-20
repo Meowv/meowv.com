@@ -26,6 +26,7 @@
     <ProjectReference Include="..\Meowv.DataModel\Meowv.DataModel.csproj" />
     <ProjectReference Include="..\Meowv.Entity\Meowv.Entity.csproj" />
     <ProjectReference Include="..\Meowv.Provider\Meowv.Provider.csproj" />
+    <ProjectReference Include="..\Meowv.ViewModel\Meowv.ViewModel.csproj" />
   </ItemGroup>
 
 </Project>

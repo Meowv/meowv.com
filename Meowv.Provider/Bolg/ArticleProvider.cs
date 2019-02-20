@@ -1,6 +1,7 @@
 ﻿using Meowv.DataModel.Blog;
 using Meowv.Entity.Blog;
 using Meowv.Interface.Blog;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Meowv.Provider.Bolg
@@ -18,7 +19,7 @@ namespace Meowv.Provider.Bolg
         /// </summary>
         /// <param name="entity"></param>
         /// <returns></returns>
-        Task<bool> IArticle.AddArticle(ArticleEntity entity)
+        public Task<bool> AddArticle(ArticleEntity entity)
         {
             return _data.AddArticle(entity);
         }
@@ -28,7 +29,7 @@ namespace Meowv.Provider.Bolg
         /// </summary>
         /// <param name="articleId"></param>
         /// <returns></returns>
-        Task<bool> IArticle.DeleteArticle(int articleId)
+        public Task<bool> DeleteArticle(int articleId)
         {
             return _data.DeleteArticle(articleId);
         }
@@ -38,7 +39,7 @@ namespace Meowv.Provider.Bolg
         /// </summary>
         /// <param name="entity"></param>
         /// <returns></returns>
-        Task<bool> IArticle.UpdateArticle(ArticleEntity entity)
+        public Task<bool> UpdateArticle(ArticleEntity entity)
         {
             return _data.UpdateArticle(entity);
         }
@@ -48,9 +49,18 @@ namespace Meowv.Provider.Bolg
         /// </summary>
         /// <param name="articleId"></param>
         /// <returns></returns>
-        Task<ArticleEntity> IArticle.GetArticle(int articleId)
+        public Task<ArticleEntity> GetArticle(int articleId)
         {
             return _data.GetArticle(articleId);
+        }
+
+        /// <summary>
+        /// 获取文章列表
+        /// </summary>
+        /// <returns></returns>
+        public Task<IEnumerable<ArticleEntity>> GetArticle()
+        {
+            return _data.GetArticle();
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Meowv.Entity.Blog;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Meowv.Interface.Blog
@@ -31,5 +32,11 @@ namespace Meowv.Interface.Blog
         /// <param name="articleId"></param>
         /// <returns></returns>
         Task<ArticleEntity> GetArticle(int articleId);
+
+        /// <summary>
+        /// 获取文章列表
+        /// </summary>
+        /// <returns></returns>
+        Task<IEnumerable<ArticleEntity>> GetArticle();
     }
 }
