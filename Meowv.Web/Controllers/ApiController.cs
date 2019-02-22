@@ -2,10 +2,10 @@
 
 namespace Meowv.Web.Controllers
 {
+    [Route("api")]
     [ApiExplorerSettings(IgnoreApi = true)]
-    public class MeowvApiController : Controller
+    public class ApiController : Controller
     {
-        [Route("api")]
         public IActionResult Index()
         {
             return View();

@@ -1,0 +1,24 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>喵呜网</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link href="~/lib/css/main.css" rel="stylesheet" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@@fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+</head>
+<body>
+    @RenderBody()
+    <footer id="footer" class="archive-footer footer">
+        <hr />
+        <div id="footerContent" class="footer-content">
+            <p>I’m <strong><a target="_blank" href="/about">阿星Plus</a></strong>, a professional .NET developer. You are reading my blog powered by <a target="_blank" href="https://dotnet.github.io/">.NET Core</a>. All articles are under <a target="_blank" href="https://creativecommons.org/licenses/by-nc-nd/4.0/">CC BY-NC-ND 4.0</a>. Follow me on <a target="_blank" href="https://github.com/Meowv/">GitHub</a> for code. © 2015 - @DateTime.Now.Year</p>
+        </div>
+    </footer>
+</body>
+</html>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@@fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+<script src="~/lib/js/main.js" asp-append-version="true"></script>
+@RenderSection("Scripts", required: false)
