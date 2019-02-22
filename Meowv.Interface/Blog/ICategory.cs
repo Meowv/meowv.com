@@ -34,9 +34,10 @@ namespace Meowv.Interface.Blog
         Task<IEnumerable<CategoryEntity>> GetCategories();
 
         /// <summary>
-        /// 根据文章ID获取分类列表
+        /// 根据文章ID获取分类
         /// </summary>
+        /// <param name="articleId"></param>
         /// <returns></returns>
-        Task<IEnumerable<CategoryEntity>> GetCategoriesByArticleId();
+        Task<CategoryEntity> GetCategoryByArticleId(int articleId);
     }
 }

@@ -10,6 +10,7 @@ namespace Meowv.DataModel.Blog
     public class ArticleDataModel
     {
         private readonly MeowvDbContext _context;
+
         public ArticleDataModel(MeowvDbContext context) => _context = context;
 
         /// <summary>
@@ -95,5 +96,129 @@ namespace Meowv.DataModel.Blog
             Content = a.Content,
             PostTime = a.PostTime
         }).OrderByDescending(a => a.PostTime).ToListAsync();
+
+        /// <summary>
+        /// 添加分类
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        public async Task<bool> AddCategory(CategoryEntity entity)
+        {
+            await _context.Categories.AddAsync(entity);
+            return await _context.SaveChangesAsync() > 0;
+        }
+
+        /// <summary>
+        /// 删除分类
+        /// </summary>
+        /// <param name="categoryId"></param>
+        /// <returns></returns>
+        public async Task<bool> DeleteCategory(int categoryId)
+        {
+            var entity = await _context.Categories.FindAsync(categoryId);
+            if (entity != null)
+            {
+                entity.IsDelete = 1;
+                return await _context.SaveChangesAsync() > 0;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 更新分类
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        public async Task<bool> UpdateCategory(CategoryEntity entity)
+        {
+            var category = await _context.Categories.FindAsync(entity.CategoryId);
+            if (entity != null)
+            {
+                category = entity;
+                return await _context.SaveChangesAsync() > 0;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 获取分类列表
+        /// </summary>
+        /// <returns></returns>
+        public async Task<IEnumerable<CategoryEntity>> GetCategories() => await _context.Categories.Where(x => x.IsDelete == 0).OrderByDescending(x => x.CreateTime).ToListAsync();
+
+        /// <summary>
+        /// 根据文章ID获取分类
+        /// </summary>
+        /// <param name="articleId"></param>
+        /// <returns></returns>
+        public async Task<CategoryEntity> GetCategoryByArticleId(int articleId) => await
+            (from c in _context.Categories.Where(x => x.IsDelete == 0)
+             join ac in _context.ArticleCategories.Where(x => x.IsDelete == 0 && x.ArticleId == articleId) on c.CategoryId equals ac.CategoryId
+             select new CategoryEntity
+             {
+                 CategoryName = c.CategoryName
+             }).FirstOrDefaultAsync();
+
+        /// <summary>
+        /// 添加标签
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        public async Task<bool> AddTag(TagEntity entity)
+        {
+            await _context.Tags.AddAsync(entity);
+            return await _context.SaveChangesAsync() > 0;
+        }
+
+        /// <summary>
+        /// 删除标签
+        /// </summary>
+        /// <param name="tagId"></param>
+        /// <returns></returns>
+        public async Task<bool> DeleteTag(int tagId)
+        {
+            var entity = await _context.Tags.FindAsync(tagId);
+            if (entity != null)
+            {
+                entity.IsDelete = 0;
+                return await _context.SaveChangesAsync() > 0;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 更新标签
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        public async Task<bool> UpdateTag(TagEntity entity)
+        {
+            var tag = await _context.Tags.FindAsync(entity.TagId);
+            if (entity != null)
+            {
+                tag = entity;
+                return await _context.SaveChangesAsync() > 0;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 获取标签列表
+        /// </summary>
+        /// <returns></returns>
+        public async Task<IEnumerable<TagEntity>> GetTags() => await _context.Tags.Where(x => x.IsDelete == 0).OrderByDescending(x => x.CreateTime).ToListAsync();
+
+        /// <summary>
+        /// 根据文章ID获取标签列表
+        /// </summary>
+        /// <param name="articleId"></param>
+        /// <returns></returns>
+        public async Task<IEnumerable<TagEntity>> GetTags(int articleId) => await
+            (from t in _context.Tags.Where(x => x.IsDelete == 0)
+             join at in _context.ArticleTags.Where(x => x.IsDelete == 0 && x.ArticleId == articleId) on t.TagId equals at.TagId
+             select new TagEntity
+             {
+                 TagName = t.TagName
+             }).ToListAsync();
     }
 }

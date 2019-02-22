@@ -38,6 +38,6 @@ namespace Meowv.Interface.Blog
         /// </summary>
         /// <param name="articleId"></param>
         /// <returns></returns>
-        Task<IEnumerable<ArticleTagEntity>> GetTags(int articleId);
+        Task<IEnumerable<TagEntity>> GetTags(int articleId);
     }
 }
