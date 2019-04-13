@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MeowvBlog.API</name>
+    </assembly>
+    <members>
+        <member name="M:MeowvBlog.API.Startup.ConfigureServices(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            运行时调用此方法，使用此方法向容器添加服务
+            </summary>
+            <param name="services"></param>
+        </member>
+        <member name="M:MeowvBlog.API.Startup.Configure(Microsoft.AspNetCore.Builder.IApplicationBuilder,Microsoft.AspNetCore.Hosting.IHostingEnvironment)">
+            <summary>
+            此方法由运行时调用，使用此方法配置HTTP请求管道
+            </summary>
+            <param name="app"></param>
+            <param name="env"></param>
+        </member>
+    </members>
+</doc>

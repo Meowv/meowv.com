@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MeowvBlog.Core</name>
+    </assembly>
+    <members>
+        <member name="T:MeowvBlog.Core.Configuration.AppSettings">
+            <summary>
+            配置文件数据
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Configuration.AppSettings.MySqlConnectionString">
+            <summary>
+            MySQL数据库连接字符串
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Configuration.AppSettings.SqlServerConnectionString">
+            <summary>
+            SqlServer数据库连接字符串
+            </summary>
+        </member>
+    </members>
+</doc>
