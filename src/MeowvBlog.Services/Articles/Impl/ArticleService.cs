@@ -1,4 +1,4 @@
-﻿using MeowvBlog.Core.Domain.Repositories;
+﻿using MeowvBlog.Core.Domain.Articles.Repositories;
 
 namespace MeowvBlog.Services.Articles.Impl
 {

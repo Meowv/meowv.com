@@ -19,14 +19,54 @@
             SqlServer数据库连接字符串
             </summary>
         </member>
-        <member name="T:MeowvBlog.Core.Domain.Article">
+        <member name="T:MeowvBlog.Core.Domain.Articles.Article">
             <summary>
             文章实体
             </summary>
         </member>
-        <member name="T:MeowvBlog.Core.Domain.Repositories.IArticleRepository">
+        <member name="T:MeowvBlog.Core.Domain.Articles.ArticleCategory">
+            <summary>
+            文章对应分类实体
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.Core.Domain.Articles.ArticleTag">
+            <summary>
+            文章对应标签实体
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.Core.Domain.Articles.Repositories.IArticleCategoryRepository">
+            <summary>
+            文章对应分类仓储接口
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.Core.Domain.Articles.Repositories.IArticleRepository">
             <summary>
             文章仓储接口
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.Core.Domain.Articles.Repositories.IArticleTagRepository">
+            <summary>
+            文章对应标签仓储接口
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.Core.Domain.Categories.Category">
+            <summary>
+            分类实体
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.Core.Domain.Categories.Repositories.ICategoryRepository">
+            <summary>
+            分类仓储接口
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.Core.Domain.Tags.Repositories.ITagRepository">
+            <summary>
+            标签仓储接口
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.Core.Domain.Tags.Tag">
+            <summary>
+            标签实体
             </summary>
         </member>
     </members>

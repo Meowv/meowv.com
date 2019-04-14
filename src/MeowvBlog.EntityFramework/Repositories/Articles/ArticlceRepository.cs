@@ -1,5 +1,5 @@
-﻿using MeowvBlog.Core.Domain;
-using MeowvBlog.Core.Domain.Repositories;
+﻿using MeowvBlog.Core.Domain.Articles;
+using MeowvBlog.Core.Domain.Articles.Repositories;
 
 namespace MeowvBlog.EntityFramework.Repositories.Articles
 {
