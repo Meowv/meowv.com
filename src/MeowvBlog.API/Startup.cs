@@ -1,4 +1,5 @@
 ﻿using Castle.Facilities.Logging;
+using MeowvBlog.API.Filters;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -34,6 +35,8 @@ namespace MeowvBlog.API
             services.AddMvc(options =>
             {
                 // filters
+                options.Filters.Add<ParameterValidateFilter>();
+                options.Filters.Add<GlobalExceptionFilter>();
             });
 
             // 路由设置

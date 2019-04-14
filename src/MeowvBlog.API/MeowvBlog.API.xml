@@ -4,6 +4,32 @@
         <name>MeowvBlog.API</name>
     </assembly>
     <members>
+        <member name="M:MeowvBlog.API.Filters.LogErrorHandler.LogError(System.String,Microsoft.AspNetCore.Http.HttpContext,Microsoft.AspNetCore.Mvc.IActionResult)">
+            <summary>
+            记录日志
+            </summary>
+            <param name="events"></param>
+            <param name="context"></param>
+            <param name="result"></param>
+        </member>
+        <member name="M:MeowvBlog.API.Filters.GlobalExceptionFilter.OnException(Microsoft.AspNetCore.Mvc.Filters.ExceptionContext)">
+            <summary>
+            异常处理
+            </summary>
+            <param name="context"></param>
+        </member>
+        <member name="M:MeowvBlog.API.Filters.ParameterValidateFilter.OnActionExecuted(Microsoft.AspNetCore.Mvc.Filters.ActionExecutedContext)">
+            <summary>
+            Action方法执行后异常处理，避免直接抛出异常
+            </summary>
+            <param name="context"></param>
+        </member>
+        <member name="M:MeowvBlog.API.Filters.ParameterValidateFilter.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)">
+            <summary>
+            Action方法执行前参数校验
+            </summary>
+            <param name="context"></param>
+        </member>
         <member name="M:MeowvBlog.API.Startup.ConfigureServices(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
             <summary>
             运行时调用此方法，使用此方法向容器添加服务
