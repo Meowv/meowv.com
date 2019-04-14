@@ -19,5 +19,15 @@
             SqlServer数据库连接字符串
             </summary>
         </member>
+        <member name="T:MeowvBlog.Core.Domain.Article">
+            <summary>
+            文章实体
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.Core.Domain.Repositories.IArticleRepository">
+            <summary>
+            文章仓储接口
+            </summary>
+        </member>
     </members>
 </doc>
