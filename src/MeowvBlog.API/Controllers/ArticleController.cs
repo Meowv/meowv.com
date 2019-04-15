@@ -17,11 +17,11 @@ namespace MeowvBlog.API.Controllers
 
         public ArticleController()
         {
-            _articleService = UPrimeEngine.Instance.Resolve<IArticleService>();
+            _articleService = UPrimeEngine.Instance.Resolve<IArticleService>(); ;
         }
 
         /// <summary>
-        /// 新增文章'MeowvBlog.Core.Domain.Articles.Repositories.IArticleRepository'
+        /// 新增文章
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
