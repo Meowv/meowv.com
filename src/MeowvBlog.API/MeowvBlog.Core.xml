@@ -24,14 +24,79 @@
             文章实体
             </summary>
         </member>
+        <member name="P:MeowvBlog.Core.Domain.Articles.Article.Title">
+            <summary>
+            标题
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.Articles.Article.Author">
+            <summary>
+            作者
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.Articles.Article.Source">
+            <summary>
+            来源
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.Articles.Article.Url">
+            <summary>
+            链接
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.Articles.Article.Summary">
+            <summary>
+            简介
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.Articles.Article.Content">
+            <summary>
+            内容
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.Articles.Article.Hits">
+            <summary>
+            点击量
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.Articles.Article.MetaKeywords">
+            <summary>
+            关键字
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.Articles.Article.MetaDescription">
+            <summary>
+            描述
+            </summary>
+        </member>
         <member name="T:MeowvBlog.Core.Domain.Articles.ArticleCategory">
             <summary>
             文章对应分类实体
             </summary>
         </member>
+        <member name="P:MeowvBlog.Core.Domain.Articles.ArticleCategory.ArticleId">
+            <summary>
+            文章Id
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.Articles.ArticleCategory.CategoryId">
+            <summary>
+            分类Id
+            </summary>
+        </member>
         <member name="T:MeowvBlog.Core.Domain.Articles.ArticleTag">
             <summary>
             文章对应标签实体
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.Articles.ArticleTag.ArticleId">
+            <summary>
+            文章Id
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.Articles.ArticleTag.TagId">
+            <summary>
+            标签Id
             </summary>
         </member>
         <member name="T:MeowvBlog.Core.Domain.Articles.Repositories.IArticleCategoryRepository">
@@ -54,6 +119,11 @@
             分类实体
             </summary>
         </member>
+        <member name="P:MeowvBlog.Core.Domain.Categories.Category.CategoryName">
+            <summary>
+            分类名称
+            </summary>
+        </member>
         <member name="T:MeowvBlog.Core.Domain.Categories.Repositories.ICategoryRepository">
             <summary>
             分类仓储接口
@@ -67,6 +137,11 @@
         <member name="T:MeowvBlog.Core.Domain.Tags.Tag">
             <summary>
             标签实体
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.Tags.Tag.TagName">
+            <summary>
+            标签名称
             </summary>
         </member>
     </members>
