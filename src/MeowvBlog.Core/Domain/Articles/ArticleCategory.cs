@@ -8,6 +8,14 @@ namespace MeowvBlog.Core.Domain.Articles
     /// </summary>
     public class ArticleCategory : FullAuditedEntity, IEntity<int>
     {
+        /// <summary>
+        /// 文章Id
+        /// </summary>
+        public int ArticleId { get; set; }
 
+        /// <summary>
+        /// 分类Id
+        /// </summary>
+        public int CategoryId { get; set; }
     }
 }

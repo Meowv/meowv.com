@@ -8,6 +8,9 @@ namespace MeowvBlog.Core.Domain.Categories
     /// </summary>
     public class Category : FullAuditedEntity, IEntity<int>
     {
-
+        /// <summary>
+        /// 分类名称
+        /// </summary>
+        public string CategoryName { get; set; }
     }
 }
