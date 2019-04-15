@@ -8,11 +8,11 @@ using UPrime.Modules;
 namespace MeowvBlog.API
 {
     [DependsOn(
-        typeof(MeowvBlogCoreMoudle),
-        typeof(MeowvBlogServicesMoudle),
-        typeof(MeowvBlogServicsDtoMoudle),
-        typeof(MeowvBlogEntityFrameworkMoudle))]
-    public class MeowvBlogAPIMoudle : UPrimeModule
+        typeof(MeowvBlogCoreModule),
+        typeof(MeowvBlogServicesModule),
+        typeof(MeowvBlogServicsDtoModule),
+        typeof(MeowvBlogEntityFrameworkModule))]
+    public class MeowvBlogAPIModule : UPrimeModule
     {
         public override void Initialize()
         {

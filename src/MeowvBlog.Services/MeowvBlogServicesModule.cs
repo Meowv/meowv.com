@@ -4,8 +4,8 @@ using UPrime.Modules;
 
 namespace MeowvBlog.Services
 {
-    [DependsOn(typeof(MeowvBlogServicsDtoMoudle))]
-    public class MeowvBlogServicesMoudle : UPrimeModule
+    [DependsOn(typeof(MeowvBlogServicsDtoModule))]
+    public class MeowvBlogServicesModule : UPrimeModule
     {
         public override void Initialize()
         {

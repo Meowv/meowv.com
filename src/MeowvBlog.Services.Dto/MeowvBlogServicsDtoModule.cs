@@ -1,11 +1,11 @@
 ﻿using System.Reflection;
-using UPrime;
+using UPrime.AutoMapper;
 using UPrime.Modules;
 
-namespace MeowvBlog.Core
+namespace MeowvBlog.Services.Dto
 {
-    [DependsOn(typeof(UPrimeLeadershipModule))]
-    public class MeowvBlogCoreMoudle : UPrimeModule
+    [DependsOn(typeof(UPrimeAutoMapperModule))]
+    public class MeowvBlogServicsDtoModule : UPrimeModule
     {
         public override void Initialize()
         {

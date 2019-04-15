@@ -8,13 +8,13 @@ using UPrime.Modules;
 namespace MeowvBlog.EntityFramework
 {
     [DependsOn(
-        typeof(MeowvBlogCoreMoudle),
+        typeof(MeowvBlogCoreModule),
         typeof(UPrimeEntityFrameworkModule))]
-    public class MeowvBlogEntityFrameworkMoudle : UPrimeModule
+    public class MeowvBlogEntityFrameworkModule : UPrimeModule
     {
         public override void Initialize()
         {
-            IocManager.RegisterAssembly(typeof(MeowvBlogEntityFrameworkMoudle).GetAssembly());
+            IocManager.RegisterAssembly(typeof(MeowvBlogEntityFrameworkModule).GetAssembly());
         }
 
         public override void PreInitialize()

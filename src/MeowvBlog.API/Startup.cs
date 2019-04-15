@@ -62,7 +62,7 @@ namespace MeowvBlog.API
             });
 
             // 启动模块
-            UPrimeStarter.Create<MeowvBlogAPIMoudle>(options =>
+            UPrimeStarter.Create<MeowvBlogAPIModule>(options =>
             {
                 options.IocManager.IocContainer.AddFacility<LoggingFacility>(f => f.UseUpLog4Net().WithConfig("log4net.config"));
             }).Initialize();

@@ -4,5 +4,45 @@
         <name>MeowvBlog.Services.Dto</name>
     </assembly>
     <members>
+        <member name="P:MeowvBlog.Services.Dto.Articles.Params.InsertArticleInput.Title">
+            <summary>
+            标题
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Articles.Params.InsertArticleInput.Author">
+            <summary>
+            作者
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Articles.Params.InsertArticleInput.Source">
+            <summary>
+            来源
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Articles.Params.InsertArticleInput.Url">
+            <summary>
+            链接
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Articles.Params.InsertArticleInput.Summary">
+            <summary>
+            简介
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Articles.Params.InsertArticleInput.Content">
+            <summary>
+            内容
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Articles.Params.InsertArticleInput.MetaKeywords">
+            <summary>
+            关键字
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Articles.Params.InsertArticleInput.MetaDescription">
+            <summary>
+            描述
+            </summary>
+        </member>
     </members>
 </doc>
