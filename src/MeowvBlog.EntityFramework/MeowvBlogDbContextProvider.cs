@@ -16,7 +16,7 @@ namespace MeowvBlog.EntityFramework
 
         public MeowvBlogDbContext GetDbContext()
         {
-            return ((EfCoreUnitOfWork)_currentUnitOfWorkProvider).GetDbContext<MeowvBlogDbContext>();
+            return ((EfCoreUnitOfWork)_currentUnitOfWorkProvider.Current).GetDbContext<MeowvBlogDbContext>();
         }
     }
 }
