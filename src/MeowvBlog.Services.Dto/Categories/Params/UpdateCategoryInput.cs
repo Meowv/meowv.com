@@ -1,5 +1,4 @@
-﻿using MeowvBlog.Services.Dto.Articles.Params;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace MeowvBlog.Services.Dto.Categories.Params
 {
@@ -9,7 +8,7 @@ namespace MeowvBlog.Services.Dto.Categories.Params
     public class UpdateCategoryInput : InsertCategoryInput
     {
         /// <summary>
-        /// 文章Id
+        /// 分类Id
         /// </summary>
         [Required]
         [Range(1, int.MaxValue)]

@@ -56,6 +56,32 @@
             <param name="input"></param>
             <returns></returns>
         </member>
+        <member name="T:MeowvBlog.API.Controllers.TagController">
+            <summary>
+            标签相关API
+            </summary>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.TagController.Insert(MeowvBlog.Services.Dto.Tags.Params.InsertTagInput)">
+            <summary>
+            新增标签
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.TagController.Update(MeowvBlog.Services.Dto.Tags.Params.UpdateTagInput)">
+            <summary>
+            更新标签
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.TagController.Delete(MeowvBlog.Services.Dto.Common.DeleteInput)">
+            <summary>
+            删除标签
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.API.Filters.LogErrorHandler.LogError(System.String,Microsoft.AspNetCore.Http.HttpContext,Microsoft.AspNetCore.Mvc.IActionResult)">
             <summary>
             记录日志

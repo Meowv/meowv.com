@@ -14,8 +14,4 @@
     <PackageReference Include="UPrime.AutoMapper" Version="1.0.1" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Tags\Params\" />
-  </ItemGroup>
-
 </Project>

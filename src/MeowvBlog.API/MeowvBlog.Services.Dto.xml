@@ -81,12 +81,22 @@
         </member>
         <member name="P:MeowvBlog.Services.Dto.Categories.Params.UpdateCategoryInput.CategoryId">
             <summary>
-            文章Id
+            分类Id
             </summary>
         </member>
         <member name="P:MeowvBlog.Services.Dto.Common.DeleteInput.Id">
             <summary>
             主键编号
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Tags.Params.InsertTagInput.TagName">
+            <summary>
+            标签名称
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Tags.Params.UpdateTagInput.TagId">
+            <summary>
+            标签Id
             </summary>
         </member>
     </members>
