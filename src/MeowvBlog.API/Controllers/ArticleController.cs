@@ -81,5 +81,47 @@ namespace MeowvBlog.API.Controllers
 
             return response;
         }
+
+        /// <summary>
+        /// 新增文章对应的标签
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("Tag/Insert")]
+        public async Task<UPrimeResponse> InsertArticleTagAsync([FromBody] InsertArticleTagInput input)
+        {
+            var response = new UPrimeResponse<string>();
+
+            var result = await _articleService.InsertArticleTagAsync(input);
+
+            if (!result.Success)
+                response.SetMessage(UPrimeResponseStatusCode.Error, result.GetErrorMessage());
+            else
+                response.Result = result.Result;
+
+            return response;
+        }
+
+        /// <summary>
+        /// 删除文章对应的标签
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("Tag/Delete")]
+        public async Task<UPrimeResponse> DeleteArticleTagAsync([FromBody] DeleteInput input)
+        {
+            var response = new UPrimeResponse<string>();
+
+            var result = await _articleService.DeleteArticleTagAsync(input);
+
+            if (!result.Success)
+                response.SetMessage(UPrimeResponseStatusCode.Error, result.GetErrorMessage());
+            else
+                response.Result = result.Result;
+
+            return response;
+        }
     }
 }

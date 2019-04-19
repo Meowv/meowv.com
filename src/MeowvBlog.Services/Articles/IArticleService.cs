@@ -8,7 +8,7 @@ namespace MeowvBlog.Services.Articles
     /// <summary>
     /// 文章服务接口
     /// </summary>
-    public interface IArticleService
+    public partial interface IArticleService
     {
         /// <summary>
         /// 新增文章

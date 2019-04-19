@@ -129,6 +129,20 @@
             文章对应标签仓储接口
             </summary>
         </member>
+        <member name="M:MeowvBlog.Core.Domain.Articles.Repositories.IArticleTagRepository.BulkInsertAsync(System.Collections.Generic.IList{MeowvBlog.Core.Domain.Articles.ArticleTag})">
+            <summary>
+            批量插入(不支持MySQL)
+            </summary>
+            <param name="entities"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Core.Domain.Articles.Repositories.IArticleTagRepository.BulkInsertByDapperAsync(System.Collections.Generic.IList{MeowvBlog.Core.Domain.Articles.ArticleTag})">
+            <summary>
+            批量插入
+            </summary>
+            <param name="entities"></param>
+            <returns></returns>
+        </member>
         <member name="T:MeowvBlog.Core.Domain.Categories.Category">
             <summary>
             分类实体
@@ -159,6 +173,11 @@
             新增成功
             </summary>
         </member>
+        <member name="F:MeowvBlog.Core.Domain.GlobalConsts.INSERT_FAILURE">
+            <summary>
+            新增失败
+            </summary>
+        </member>
         <member name="F:MeowvBlog.Core.Domain.GlobalConsts.UPDATE_SUCCESS">
             <summary>
             更新成功
@@ -167,6 +186,11 @@
         <member name="F:MeowvBlog.Core.Domain.GlobalConsts.DELETE_SUCCESS">
             <summary>
             删除成功
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.Core.Domain.GlobalConsts.PARAMETER_ERROR">
+            <summary>
+            参数有误
             </summary>
         </member>
         <member name="T:MeowvBlog.Core.Domain.Tags.Repositories.ITagRepository">

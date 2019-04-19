@@ -12,13 +12,17 @@ namespace MeowvBlog.Services.Articles.Impl
     /// <summary>
     /// 文章服务接口实现
     /// </summary>
-    public class ArticleService : ServiceBase, IArticleService
+    public partial class ArticleService : ServiceBase, IArticleService
     {
         private readonly IArticleRepository _articleRepository;
+        private readonly IArticleCategoryRepository _articleCategoryRepository;
+        private readonly IArticleTagRepository _articleTagRepository;
 
-        public ArticleService(IArticleRepository articleRepository)
+        public ArticleService(IArticleRepository articleRepository, IArticleCategoryRepository articleCategoryRepository, IArticleTagRepository articleTagRepository)
         {
             _articleRepository = articleRepository;
+            _articleCategoryRepository = articleCategoryRepository;
+            _articleTagRepository = articleTagRepository;
         }
 
         /// <summary>

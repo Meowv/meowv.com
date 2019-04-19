@@ -54,6 +54,21 @@
             发布时间
             </summary>
         </member>
+        <member name="T:MeowvBlog.Services.Dto.Articles.Params.InsertArticleTagInput">
+            <summary>
+            新增文章对应的标签输入参数
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Articles.Params.InsertArticleTagInput.ArticleId">
+            <summary>
+            文章Id
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Articles.Params.InsertArticleTagInput.TagIds">
+            <summary>
+            标签Id数组
+            </summary>
+        </member>
         <member name="T:MeowvBlog.Services.Dto.Articles.Params.UpdateArticleInput">
             <summary>
             更新文章输入参数
