@@ -82,6 +82,12 @@
             <param name="input"></param>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.API.Filters.GlobalExceptionFilter.OnException(Microsoft.AspNetCore.Mvc.Filters.ExceptionContext)">
+            <summary>
+            异常处理
+            </summary>
+            <param name="context"></param>
+        </member>
         <member name="M:MeowvBlog.API.Filters.LogErrorHandler.LogError(System.String,Microsoft.AspNetCore.Http.HttpContext,Microsoft.AspNetCore.Mvc.IActionResult)">
             <summary>
             记录日志
@@ -89,12 +95,6 @@
             <param name="events"></param>
             <param name="context"></param>
             <param name="result"></param>
-        </member>
-        <member name="M:MeowvBlog.API.Filters.GlobalExceptionFilter.OnException(Microsoft.AspNetCore.Mvc.Filters.ExceptionContext)">
-            <summary>
-            异常处理
-            </summary>
-            <param name="context"></param>
         </member>
         <member name="M:MeowvBlog.API.Filters.ParameterValidateFilter.OnActionExecuted(Microsoft.AspNetCore.Mvc.Filters.ActionExecutedContext)">
             <summary>
