@@ -3,7 +3,7 @@
 namespace MeowvBlog.Services.Dto.Articles.Params
 {
     /// <summary>
-    /// 新增和编辑输入参数
+    /// 更新文章输入参数
     /// </summary>
     public class UpdateArticleInput : InsertArticleInput
     {

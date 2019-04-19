@@ -149,6 +149,26 @@
             分类仓储接口
             </summary>
         </member>
+        <member name="T:MeowvBlog.Core.Domain.GlobalConsts">
+            <summary>
+            全局常量
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.Core.Domain.GlobalConsts.INSERT_SUCCESS">
+            <summary>
+            新增成功
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.Core.Domain.GlobalConsts.UPDATE_SUCCESS">
+            <summary>
+            更新成功
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.Core.Domain.GlobalConsts.DELETE_SUCCESS">
+            <summary>
+            删除成功
+            </summary>
+        </member>
         <member name="T:MeowvBlog.Core.Domain.Tags.Repositories.ITagRepository">
             <summary>
             标签仓储接口

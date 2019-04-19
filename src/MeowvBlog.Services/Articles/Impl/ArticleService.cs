@@ -1,4 +1,5 @@
-﻿using MeowvBlog.Core.Domain.Articles;
+﻿using MeowvBlog.Core.Domain;
+using MeowvBlog.Core.Domain.Articles;
 using MeowvBlog.Core.Domain.Articles.Repositories;
 using MeowvBlog.Services.Dto.Articles.Params;
 using MeowvBlog.Services.Dto.Common;
@@ -48,7 +49,7 @@ namespace MeowvBlog.Services.Articles.Impl
                 };
                 await _articleRepository.InsertAsync(entity);
 
-                output.Result = "新增成功";
+                output.Result = GlobalConsts.INSERT_SUCCESS;
 
                 await uow.CompleteAsync();
             }
@@ -78,7 +79,7 @@ namespace MeowvBlog.Services.Articles.Impl
                 entity.PostTime = input.PostTime;
                 await _articleRepository.UpdateAsync(entity);
 
-                output.Result = "更新成功";
+                output.Result = GlobalConsts.UPDATE_SUCCESS;
 
                 await uow.CompleteAsync();
             }
@@ -93,6 +94,7 @@ namespace MeowvBlog.Services.Articles.Impl
         public async Task<ActionOutput<string>> DeleteAsync(DeleteInput input)
         {
             var output = new ActionOutput<string>();
+
             using (var uow = UnitOfWorkManager.Begin())
             {
                 //await _articleRepository.DeleteAsync(input.Id);
@@ -101,11 +103,10 @@ namespace MeowvBlog.Services.Articles.Impl
                 entity.IsDeleted = true;
                 await _articleRepository.UpdateAsync(entity);
 
-                output.Result = "删除成功";
+                output.Result = GlobalConsts.DELETE_SUCCESS;
 
                 await uow.CompleteAsync();
             }
-
             return output;
         }
     }

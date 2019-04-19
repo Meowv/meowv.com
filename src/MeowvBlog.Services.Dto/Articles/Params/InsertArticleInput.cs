@@ -2,6 +2,9 @@
 
 namespace MeowvBlog.Services.Dto.Articles.Params
 {
+    /// <summary>
+    /// 新增文章输入参数
+    /// </summary>
     public class InsertArticleInput
     {
         /// <summary>

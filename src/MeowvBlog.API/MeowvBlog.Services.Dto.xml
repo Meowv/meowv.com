@@ -4,6 +4,11 @@
         <name>MeowvBlog.Services.Dto</name>
     </assembly>
     <members>
+        <member name="T:MeowvBlog.Services.Dto.Articles.Params.InsertArticleInput">
+            <summary>
+            新增文章输入参数
+            </summary>
+        </member>
         <member name="P:MeowvBlog.Services.Dto.Articles.Params.InsertArticleInput.Title">
             <summary>
             标题
@@ -51,10 +56,30 @@
         </member>
         <member name="T:MeowvBlog.Services.Dto.Articles.Params.UpdateArticleInput">
             <summary>
-            新增和编辑输入参数
+            更新文章输入参数
             </summary>
         </member>
         <member name="P:MeowvBlog.Services.Dto.Articles.Params.UpdateArticleInput.ArticleId">
+            <summary>
+            文章Id
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.Services.Dto.Categories.Params.InsertCategoryInput">
+            <summary>
+            新增分类输入参数
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Categories.Params.InsertCategoryInput.CategoryName">
+            <summary>
+            分类名称
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.Services.Dto.Categories.Params.UpdateCategoryInput">
+            <summary>
+            更新分类输入参数
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Categories.Params.UpdateCategoryInput.CategoryId">
             <summary>
             文章Id
             </summary>

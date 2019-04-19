@@ -18,7 +18,7 @@ namespace MeowvBlog.API.Controllers
 
         public ArticleController()
         {
-            _articleService = UPrimeEngine.Instance.Resolve<IArticleService>(); ;
+            _articleService = UPrimeEngine.Instance.Resolve<IArticleService>();
         }
 
         /// <summary>
