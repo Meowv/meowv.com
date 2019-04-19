@@ -1,4 +1,5 @@
-﻿using UPrime.Domain.Entities;
+﻿using System;
+using UPrime.Domain.Entities;
 using UPrime.Domain.Entities.Auditing;
 
 namespace MeowvBlog.Core.Domain.Articles
@@ -6,7 +7,7 @@ namespace MeowvBlog.Core.Domain.Articles
     /// <summary>
     /// 文章实体
     /// </summary>
-    public class Article : FullAuditedEntity, IEntity<int>
+    public class Article : Entity, IHasCreationTime
     {
         /// <summary>
         /// 标题
@@ -52,5 +53,15 @@ namespace MeowvBlog.Core.Domain.Articles
         /// 描述
         /// </summary>
         public string MetaDescription { get; set; }
+
+        /// <summary>
+        /// 创建时间
+        /// </summary>
+        public DateTime CreationTime { get; set; }
+
+        /// <summary>
+        /// 发布时间
+        /// </summary>
+        public DateTime PostTime { get; set; }
     }
 }
