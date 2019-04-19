@@ -1,4 +1,6 @@
-﻿namespace MeowvBlog.Services.Dto.Articles.Params
+﻿using System;
+
+namespace MeowvBlog.Services.Dto.Articles.Params
 {
     public class InsertArticleInput
     {
@@ -41,5 +43,10 @@
         /// 描述
         /// </summary>
         public string MetaDescription { get; set; }
+
+        /// <summary>
+        /// 发布时间
+        /// </summary>
+        public DateTime PostTime { get; set; }
     }
 }

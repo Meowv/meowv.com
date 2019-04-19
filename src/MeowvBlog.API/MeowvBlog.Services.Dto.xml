@@ -44,5 +44,25 @@
             描述
             </summary>
         </member>
+        <member name="P:MeowvBlog.Services.Dto.Articles.Params.InsertArticleInput.PostTime">
+            <summary>
+            发布时间
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.Services.Dto.Articles.Params.UpdateArticleInput">
+            <summary>
+            新增和编辑输入参数
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Articles.Params.UpdateArticleInput.ArticleId">
+            <summary>
+            文章Id
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Common.DeleteInput.Id">
+            <summary>
+            主键编号
+            </summary>
+        </member>
     </members>
 </doc>

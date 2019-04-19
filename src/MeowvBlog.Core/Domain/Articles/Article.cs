@@ -63,5 +63,10 @@ namespace MeowvBlog.Core.Domain.Articles
         /// 发布时间
         /// </summary>
         public DateTime PostTime { get; set; }
+
+        /// <summary>
+        /// 是否删除
+        /// </summary>
+        public bool IsDeleted { get; set; }
     }
 }

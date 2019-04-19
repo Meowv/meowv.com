@@ -69,6 +69,21 @@
             描述
             </summary>
         </member>
+        <member name="P:MeowvBlog.Core.Domain.Articles.Article.CreationTime">
+            <summary>
+            创建时间
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.Articles.Article.PostTime">
+            <summary>
+            发布时间
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.Articles.Article.IsDeleted">
+            <summary>
+            是否删除
+            </summary>
+        </member>
         <member name="T:MeowvBlog.Core.Domain.Articles.ArticleCategory">
             <summary>
             文章对应分类实体
@@ -124,6 +139,11 @@
             分类名称
             </summary>
         </member>
+        <member name="P:MeowvBlog.Core.Domain.Categories.Category.CreationTime">
+            <summary>
+            创建时间
+            </summary>
+        </member>
         <member name="T:MeowvBlog.Core.Domain.Categories.Repositories.ICategoryRepository">
             <summary>
             分类仓储接口
@@ -142,6 +162,11 @@
         <member name="P:MeowvBlog.Core.Domain.Tags.Tag.TagName">
             <summary>
             标签名称
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.Tags.Tag.CreationTime">
+            <summary>
+            创建时间
             </summary>
         </member>
     </members>
