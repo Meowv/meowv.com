@@ -33,7 +33,6 @@ namespace MeowvBlog.Services.Articles.Impl
         /// </summary>
         public static bool IsSqlServer => AppSettings.DbType == GlobalConsts.DBTYPE_SQLSERVER;
 
-
         /// <summary>
         /// 获取一篇文章详细信息
         /// </summary>
@@ -142,8 +141,6 @@ namespace MeowvBlog.Services.Articles.Impl
 
             using (var uow = UnitOfWorkManager.Begin())
             {
-                //await _articleRepository.DeleteAsync(input.Id);
-
                 var entity = await _articleRepository.GetAsync(input.Id);
                 entity.IsDeleted = true;
                 await _articleRepository.UpdateAsync(entity);

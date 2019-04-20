@@ -1,4 +1,6 @@
 ﻿using MeowvBlog.Core.Domain.Articles;
+using Newtonsoft.Json;
+using System;
 using UPrime.AutoMapper;
 
 namespace MeowvBlog.Services.Dto.Articles
@@ -54,6 +56,7 @@ namespace MeowvBlog.Services.Dto.Articles
         /// <summary>
         /// 发布时间
         /// </summary>
-        public string PostTime { get; set; }
+        [JsonConverter(typeof(DateTimeConverter))]
+        public DateTime PostTime { get; set; }
     }
 }
