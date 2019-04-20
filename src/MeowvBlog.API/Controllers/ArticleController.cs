@@ -5,6 +5,7 @@ using MeowvBlog.Services.Dto.Common;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using UPrime;
+using UPrime.Services.Dto;
 using UPrime.WebApi;
 
 namespace MeowvBlog.API.Controllers
@@ -43,6 +44,21 @@ namespace MeowvBlog.API.Controllers
                 response.Result = result.Result;
 
             return response;
+        }
+
+        /// <summary>
+        /// 分页获取文章列表
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("GetList")]
+        public async Task<UPrimeResponse<PagedResultDto<ArticleBriefDto>>> GetListAsync(PagingInput input)
+        {
+            return new UPrimeResponse<PagedResultDto<ArticleBriefDto>>
+            {
+                Result = await _articleService.GetListAsync(input)
+            };
         }
 
         /// <summary>

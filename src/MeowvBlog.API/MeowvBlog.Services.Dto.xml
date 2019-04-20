@@ -4,6 +4,36 @@
         <name>MeowvBlog.Services.Dto</name>
     </assembly>
     <members>
+        <member name="T:MeowvBlog.Services.Dto.Articles.ArticleBriefDto">
+            <summary>
+            文章简短传输对象，用于文章列表
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Articles.ArticleBriefDto.Title">
+            <summary>
+            标题
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Articles.ArticleBriefDto.Source">
+            <summary>
+            来源
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Articles.ArticleBriefDto.Summary">
+            <summary>
+            简介
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Articles.ArticleBriefDto.PostTime">
+            <summary>
+            发布时间
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.Services.Dto.Articles.ArticleDto">
+            <summary>
+            文章传输对象
+            </summary>
+        </member>
         <member name="P:MeowvBlog.Services.Dto.Articles.ArticleDto.Title">
             <summary>
             标题
@@ -164,9 +194,29 @@
             分类Id
             </summary>
         </member>
+        <member name="T:MeowvBlog.Services.Dto.Common.DeleteInput">
+            <summary>
+            删除数据输入参数
+            </summary>
+        </member>
         <member name="P:MeowvBlog.Services.Dto.Common.DeleteInput.Id">
             <summary>
             主键编号
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.Services.Dto.Common.PagingInput">
+            <summary>
+            分页输入参数
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Common.PagingInput.PageIndex">
+            <summary>
+            当前开始页
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Common.PagingInput.PageSize">
+            <summary>
+            页大小
             </summary>
         </member>
         <member name="P:MeowvBlog.Services.Dto.Tags.Params.InsertTagInput.TagName">

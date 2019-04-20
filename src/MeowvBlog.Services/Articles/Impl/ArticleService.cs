@@ -6,9 +6,13 @@ using MeowvBlog.Services.Dto.Articles;
 using MeowvBlog.Services.Dto.Articles.Params;
 using MeowvBlog.Services.Dto.Common;
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using UPrime;
 using UPrime.AutoMapper;
+using UPrime.Services.Dto;
 
 namespace MeowvBlog.Services.Articles.Impl
 {
@@ -63,6 +67,28 @@ namespace MeowvBlog.Services.Articles.Impl
             }
 
             return output;
+        }
+
+        /// <summary>
+        /// 分页获取文章列表
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public async Task<PagedResultDto<ArticleBriefDto>> GetListAsync(PagingInput input)
+        {
+            using (var uow = UnitOfWorkManager.Begin())
+            {
+                var query = await _articleRepository.GetAllListAsync(x => x.IsDeleted == false);
+
+                var result = query.OrderByDescending(x => x.PostTime).ThenByDescending(x => x.Id);
+
+                var count = result.Count();
+                var list = result.MapTo<List<ArticleBriefDto>>().AsQueryable().PageByIndex(input.PageIndex, input.PageSize).ToList();
+
+                await uow.CompleteAsync();
+
+                return new PagedResultDto<ArticleBriefDto>(count, list);
+            }
         }
 
         /// <summary>

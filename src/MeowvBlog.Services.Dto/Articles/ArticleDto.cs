@@ -5,6 +5,9 @@ using UPrime.AutoMapper;
 
 namespace MeowvBlog.Services.Dto.Articles
 {
+    /// <summary>
+    /// 文章传输对象
+    /// </summary>
     [AutoMapFrom(typeof(Article))]
     public class ArticleDto
     {

@@ -2,6 +2,9 @@
 
 namespace MeowvBlog.Services.Dto.Common
 {
+    /// <summary>
+    /// 删除数据输入参数
+    /// </summary>
     public class DeleteInput
     {
         /// <summary>

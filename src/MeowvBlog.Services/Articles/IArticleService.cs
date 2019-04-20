@@ -3,6 +3,7 @@ using MeowvBlog.Services.Dto.Articles.Params;
 using MeowvBlog.Services.Dto.Common;
 using System.Threading.Tasks;
 using UPrime;
+using UPrime.Services.Dto;
 
 namespace MeowvBlog.Services.Articles
 {
@@ -17,6 +18,13 @@ namespace MeowvBlog.Services.Articles
         /// <param name="id"></param>
         /// <returns></returns>
         Task<ActionOutput<ArticleDto>> GetAsync(int id);
+
+        /// <summary>
+        /// 分页获取文章列表
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        Task<PagedResultDto<ArticleBriefDto>> GetListAsync(PagingInput input);
 
         /// <summary>
         /// 新增文章
