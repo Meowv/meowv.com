@@ -2,11 +2,13 @@
 using MeowvBlog.Core.Domain;
 using MeowvBlog.Core.Domain.Articles;
 using MeowvBlog.Core.Domain.Articles.Repositories;
+using MeowvBlog.Services.Dto.Articles;
 using MeowvBlog.Services.Dto.Articles.Params;
 using MeowvBlog.Services.Dto.Common;
 using System;
 using System.Threading.Tasks;
 using UPrime;
+using UPrime.AutoMapper;
 
 namespace MeowvBlog.Services.Articles.Impl
 {
@@ -30,6 +32,39 @@ namespace MeowvBlog.Services.Articles.Impl
         /// 当前数据库是否为SqlServer
         /// </summary>
         public static bool IsSqlServer => AppSettings.DbType == GlobalConsts.DBTYPE_SQLSERVER;
+
+
+        /// <summary>
+        /// 获取一篇文章详细信息
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        public async Task<ActionOutput<ArticleDto>> GetAsync(int id)
+        {
+            var output = new ActionOutput<ArticleDto>();
+
+            if (id <= 0)
+            {
+                output.AddError(GlobalConsts.PARAMETER_ERROR);
+                return output;
+            }
+
+            using (var uow = UnitOfWorkManager.Begin())
+            {
+                var entity = await _articleRepository.FirstOrDefaultAsync(x => x.Id == id && x.IsDeleted == false);
+                if (entity.IsNull())
+                {
+                    output.AddError(GlobalConsts.NONE_DATA);
+                    return output;
+                }
+
+                output.Result = entity.MapTo<ArticleDto>();
+
+                await uow.CompleteAsync();
+            }
+
+            return output;
+        }
 
         /// <summary>
         /// 新增文章

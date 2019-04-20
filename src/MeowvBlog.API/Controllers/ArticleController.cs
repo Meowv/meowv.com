@@ -1,4 +1,5 @@
 ﻿using MeowvBlog.Services.Articles;
+using MeowvBlog.Services.Dto.Articles;
 using MeowvBlog.Services.Dto.Articles.Params;
 using MeowvBlog.Services.Dto.Common;
 using Microsoft.AspNetCore.Mvc;
@@ -22,6 +23,27 @@ namespace MeowvBlog.API.Controllers
         }
 
         #region Article
+
+        /// <summary>
+        /// 获取一篇文章详细信息
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("Get")]
+        public async Task<UPrimeResponse<ArticleDto>> GetAsync(int id)
+        {
+            var response = new UPrimeResponse<ArticleDto>();
+
+            var result = await _articleService.GetAsync(id);
+
+            if (!result.Success)
+                response.SetMessage(UPrimeResponseStatusCode.Error, result.GetErrorMessage());
+            else
+                response.Result = result.Result;
+
+            return response;
+        }
 
         /// <summary>
         /// 新增文章

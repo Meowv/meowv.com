@@ -223,6 +223,11 @@
             参数有误
             </summary>
         </member>
+        <member name="F:MeowvBlog.Core.Domain.GlobalConsts.NONE_DATA">
+            <summary>
+            查无数据
+            </summary>
+        </member>
         <member name="T:MeowvBlog.Core.Domain.Tags.Repositories.ITagRepository">
             <summary>
             标签仓储接口

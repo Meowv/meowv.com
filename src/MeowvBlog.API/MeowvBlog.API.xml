@@ -9,6 +9,13 @@
             文章相关API
             </summary>
         </member>
+        <member name="M:MeowvBlog.API.Controllers.ArticleController.GetAsync(System.Int32)">
+            <summary>
+            获取一篇文章详细信息
+            </summary>
+            <param name="id"></param>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.API.Controllers.ArticleController.Insert(MeowvBlog.Services.Dto.Articles.Params.InsertArticleInput)">
             <summary>
             新增文章

@@ -14,4 +14,8 @@
     <PackageReference Include="UPrime.AutoMapper" Version="1.1.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\MeowvBlog.Core\MeowvBlog.Core.csproj" />
+  </ItemGroup>
+
 </Project>

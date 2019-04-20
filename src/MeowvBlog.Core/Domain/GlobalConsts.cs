@@ -39,5 +39,10 @@
         /// 参数有误
         /// </summary>
         public const string PARAMETER_ERROR = "参数有误";
+
+        /// <summary>
+        /// 查无数据
+        /// </summary>
+        public const string NONE_DATA = "查无数据";
     }
 }

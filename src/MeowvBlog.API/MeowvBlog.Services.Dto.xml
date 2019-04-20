@@ -4,6 +4,56 @@
         <name>MeowvBlog.Services.Dto</name>
     </assembly>
     <members>
+        <member name="P:MeowvBlog.Services.Dto.Articles.ArticleDto.Title">
+            <summary>
+            标题
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Articles.ArticleDto.Author">
+            <summary>
+            作者
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Articles.ArticleDto.Source">
+            <summary>
+            来源
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Articles.ArticleDto.Url">
+            <summary>
+            链接
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Articles.ArticleDto.Summary">
+            <summary>
+            简介
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Articles.ArticleDto.Content">
+            <summary>
+            内容
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Articles.ArticleDto.Hits">
+            <summary>
+            点击量
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Articles.ArticleDto.MetaKeywords">
+            <summary>
+            关键字
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Articles.ArticleDto.MetaDescription">
+            <summary>
+            描述
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Articles.ArticleDto.PostTime">
+            <summary>
+            发布时间
+            </summary>
+        </member>
         <member name="T:MeowvBlog.Services.Dto.Articles.Params.InsertArticleCategoryInput">
             <summary>
             新增文章对应的分类输入参数
