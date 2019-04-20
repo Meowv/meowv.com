@@ -28,7 +28,7 @@ namespace MeowvBlog.API.Controllers
         /// <summary>
         /// 获取一篇文章详细信息
         /// </summary>
-        /// <param name="id"></param>
+        /// <param name="id">主键Id</param>
         /// <returns></returns>
         [HttpGet]
         [Route("Get")]

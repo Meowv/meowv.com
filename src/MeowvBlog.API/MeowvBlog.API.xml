@@ -13,7 +13,7 @@
             <summary>
             获取一篇文章详细信息
             </summary>
-            <param name="id"></param>
+            <param name="id">主键Id</param>
             <returns></returns>
         </member>
         <member name="M:MeowvBlog.API.Controllers.ArticleController.GetListAsync(MeowvBlog.Services.Dto.Common.PagingInput)">
