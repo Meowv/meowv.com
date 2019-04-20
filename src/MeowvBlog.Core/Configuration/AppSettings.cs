@@ -18,6 +18,12 @@ namespace MeowvBlog.Core.Configuration
         }
 
         /// <summary>
+        /// 数据库类型
+        /// MySQL/SqlServer
+        /// </summary>
+        public static string DbType => _configuration["DbType"];
+
+        /// <summary>
         /// MySQL数据库连接字符串
         /// </summary>
         public static string MySqlConnectionString => _configuration["MySqlConnectionString"];
