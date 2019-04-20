@@ -12,7 +12,7 @@ namespace MeowvBlog.Core.Configuration
 
         static AppSettings()
         {
-            var builder = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+            var builder = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile("uprimeSettings.json", optional: true, reloadOnChange: true);
 
             _configuration = builder.Build();
         }
