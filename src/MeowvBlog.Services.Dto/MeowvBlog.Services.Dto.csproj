@@ -11,7 +11,7 @@
 
   <ItemGroup>
     <PackageReference Include="UPrime" Version="1.2.19" />
-    <PackageReference Include="UPrime.AutoMapper" Version="1.0.1" />
+    <PackageReference Include="UPrime.AutoMapper" Version="1.1.1" />
   </ItemGroup>
 
 </Project>
