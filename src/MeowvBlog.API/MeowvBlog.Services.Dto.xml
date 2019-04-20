@@ -4,6 +4,21 @@
         <name>MeowvBlog.Services.Dto</name>
     </assembly>
     <members>
+        <member name="T:MeowvBlog.Services.Dto.Articles.Params.InsertArticleCategoryInput">
+            <summary>
+            新增文章对应的分类输入参数
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Articles.Params.InsertArticleCategoryInput.ArticleId">
+            <summary>
+            文章Id
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Articles.Params.InsertArticleCategoryInput.CategoryIds">
+            <summary>
+            分类Id数组
+            </summary>
+        </member>
         <member name="T:MeowvBlog.Services.Dto.Articles.Params.InsertArticleInput">
             <summary>
             新增文章输入参数

@@ -5,6 +5,9 @@ using UPrime;
 
 namespace MeowvBlog.Services.Articles
 {
+    /// <summary>
+    /// 文章对应的标签服务接口
+    /// </summary>
     public partial interface IArticleService
     {
         /// <summary>

@@ -21,6 +21,8 @@ namespace MeowvBlog.API.Controllers
             _articleService = UPrimeEngine.Instance.Resolve<IArticleService>();
         }
 
+        #region Article
+
         /// <summary>
         /// 新增文章
         /// </summary>
@@ -82,6 +84,56 @@ namespace MeowvBlog.API.Controllers
             return response;
         }
 
+        #endregion
+
+        #region Category
+
+        /// <summary>
+        /// 新增文章对应的分类
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("Category/Insert")]
+        public async Task<UPrimeResponse> InsertArticleCategory([FromBody] InsertArticleCategoryInput input)
+        {
+            var response = new UPrimeResponse<string>();
+
+            var result = await _articleService.InsertArticleCategoryAsync(input);
+
+            if (!result.Success)
+                response.SetMessage(UPrimeResponseStatusCode.Error, result.GetErrorMessage());
+            else
+                response.Result = result.Result;
+
+            return response;
+        }
+
+        /// <summary>
+        /// 删除文章对应的分类
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("Category/Delete")]
+        public async Task<UPrimeResponse> DeleteArticleCategory([FromBody] DeleteInput input)
+        {
+            var response = new UPrimeResponse<string>();
+
+            var result = await _articleService.DeleteArticleCategoryAsync(input);
+
+            if (!result.Success)
+                response.SetMessage(UPrimeResponseStatusCode.Error, result.GetErrorMessage());
+            else
+                response.Result = result.Result;
+
+            return response;
+        }
+
+        #endregion
+
+        #region Tag
+
         /// <summary>
         /// 新增文章对应的标签
         /// </summary>
@@ -123,5 +175,7 @@ namespace MeowvBlog.API.Controllers
 
             return response;
         }
+
+        #endregion
     }
 }

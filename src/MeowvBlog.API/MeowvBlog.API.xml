@@ -30,6 +30,20 @@
             <param name="input"></param>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.API.Controllers.ArticleController.InsertArticleCategory(MeowvBlog.Services.Dto.Articles.Params.InsertArticleCategoryInput)">
+            <summary>
+            新增文章对应的分类
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.ArticleController.DeleteArticleCategory(MeowvBlog.Services.Dto.Common.DeleteInput)">
+            <summary>
+            删除文章对应的分类
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.API.Controllers.ArticleController.InsertArticleTagAsync(MeowvBlog.Services.Dto.Articles.Params.InsertArticleTagInput)">
             <summary>
             新增文章对应的标签

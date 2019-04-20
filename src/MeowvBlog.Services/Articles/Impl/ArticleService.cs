@@ -1,4 +1,5 @@
-﻿using MeowvBlog.Core.Domain;
+﻿using MeowvBlog.Core.Configuration;
+using MeowvBlog.Core.Domain;
 using MeowvBlog.Core.Domain.Articles;
 using MeowvBlog.Core.Domain.Articles.Repositories;
 using MeowvBlog.Services.Dto.Articles.Params;
@@ -24,6 +25,11 @@ namespace MeowvBlog.Services.Articles.Impl
             _articleCategoryRepository = articleCategoryRepository;
             _articleTagRepository = articleTagRepository;
         }
+
+        /// <summary>
+        /// 当前数据库是否为SqlServer
+        /// </summary>
+        public static bool IsSqlServer => AppSettings.DbType == GlobalConsts.DBTYPE_SQLSERVER;
 
         /// <summary>
         /// 新增文章

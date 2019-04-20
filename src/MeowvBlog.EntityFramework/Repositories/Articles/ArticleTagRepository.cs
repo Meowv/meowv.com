@@ -20,11 +20,11 @@ namespace MeowvBlog.EntityFramework.Repositories.Articles
         }
 
         /// <summary>
-        /// 批量插入(不支持MySQL)
+        /// 批量插入(只支持SqlServer)
         /// </summary>
         /// <param name="entities"></param>
         /// <returns></returns>
-        public async Task<bool> BulkInsertAsync(IList<ArticleTag> entities)
+        public async Task<bool> BulkInsertForSqlServerAsync(IList<ArticleTag> entities)
         {
             try
             {
@@ -42,13 +42,13 @@ namespace MeowvBlog.EntityFramework.Repositories.Articles
         /// </summary>
         /// <param name="entities"></param>
         /// <returns></returns>
-        public async Task<bool> BulkInsertByDapperAsync(IList<ArticleTag> entities)
+        public async Task<bool> BulkInsertAsync(IList<ArticleTag> entities)
         {
             try
             {
                 using (IDbConnection conn = new MySqlConnection(AppSettings.MySqlConnectionString))
                 {
-                    var sql = $"INSERT INTO {MeowvBlogDbConsts.DbTableName.ArticleTags} (ArticleId,TagId) VALUES (@ArticleId, @TagId)";
+                    var sql = $"INSERT INTO {MeowvBlogDbConsts.DbTableName.ArticleTags} (ArticleId, TagId) VALUES (@ArticleId, @TagId)";
                     return await conn.ExecuteAsync(sql, entities) > 0;
                 }
             }

@@ -8,6 +8,9 @@ using UPrime;
 
 namespace MeowvBlog.Services.Articles.Impl
 {
+    /// <summary>
+    /// 文章对应的标签服务接口实现
+    /// </summary>
     public partial class ArticleService
     {
         /// <summary>
@@ -37,8 +40,13 @@ namespace MeowvBlog.Services.Articles.Impl
                     entities.Add(entity);
                 }
 
-                //var result = await _articleTagRepository.BulkInsertAsync(entities);
-                var result = await _articleTagRepository.BulkInsertByDapperAsync(entities);
+                bool result;
+
+                if (IsSqlServer)
+                    result = await _articleTagRepository.BulkInsertForSqlServerAsync(entities);
+                else
+                    result = await _articleTagRepository.BulkInsertAsync(entities);
+
                 output.Result = result ? GlobalConsts.INSERT_SUCCESS : GlobalConsts.INSERT_FAILURE;
 
                 await uow.CompleteAsync();

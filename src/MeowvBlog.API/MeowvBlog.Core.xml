@@ -9,6 +9,12 @@
             配置文件数据
             </summary>
         </member>
+        <member name="P:MeowvBlog.Core.Configuration.AppSettings.DbType">
+            <summary>
+            数据库类型
+            MySQL/SqlServer
+            </summary>
+        </member>
         <member name="P:MeowvBlog.Core.Configuration.AppSettings.MySqlConnectionString">
             <summary>
             MySQL数据库连接字符串
@@ -119,6 +125,20 @@
             文章对应分类仓储接口
             </summary>
         </member>
+        <member name="M:MeowvBlog.Core.Domain.Articles.Repositories.IArticleCategoryRepository.BulkInsertForSqlServerAsync(System.Collections.Generic.IList{MeowvBlog.Core.Domain.Articles.ArticleCategory})">
+            <summary>
+            批量插入(只支持SqlServer)
+            </summary>
+            <param name="entities"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Core.Domain.Articles.Repositories.IArticleCategoryRepository.BulkInsertAsync(System.Collections.Generic.IList{MeowvBlog.Core.Domain.Articles.ArticleCategory})">
+            <summary>
+            批量插入
+            </summary>
+            <param name="entities"></param>
+            <returns></returns>
+        </member>
         <member name="T:MeowvBlog.Core.Domain.Articles.Repositories.IArticleRepository">
             <summary>
             文章仓储接口
@@ -129,14 +149,14 @@
             文章对应标签仓储接口
             </summary>
         </member>
-        <member name="M:MeowvBlog.Core.Domain.Articles.Repositories.IArticleTagRepository.BulkInsertAsync(System.Collections.Generic.IList{MeowvBlog.Core.Domain.Articles.ArticleTag})">
+        <member name="M:MeowvBlog.Core.Domain.Articles.Repositories.IArticleTagRepository.BulkInsertForSqlServerAsync(System.Collections.Generic.IList{MeowvBlog.Core.Domain.Articles.ArticleTag})">
             <summary>
-            批量插入(不支持MySQL)
+            批量插入(只支持SqlServer)
             </summary>
             <param name="entities"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.Core.Domain.Articles.Repositories.IArticleTagRepository.BulkInsertByDapperAsync(System.Collections.Generic.IList{MeowvBlog.Core.Domain.Articles.ArticleTag})">
+        <member name="M:MeowvBlog.Core.Domain.Articles.Repositories.IArticleTagRepository.BulkInsertAsync(System.Collections.Generic.IList{MeowvBlog.Core.Domain.Articles.ArticleTag})">
             <summary>
             批量插入
             </summary>
@@ -166,6 +186,16 @@
         <member name="T:MeowvBlog.Core.Domain.GlobalConsts">
             <summary>
             全局常量
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.Core.Domain.GlobalConsts.DBTYPE_MYSQL">
+            <summary>
+            MySQL
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.Core.Domain.GlobalConsts.DBTYPE_SQLSERVER">
+            <summary>
+            SqlServer
             </summary>
         </member>
         <member name="F:MeowvBlog.Core.Domain.GlobalConsts.INSERT_SUCCESS">

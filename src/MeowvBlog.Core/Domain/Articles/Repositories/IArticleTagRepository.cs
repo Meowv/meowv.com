@@ -10,17 +10,17 @@ namespace MeowvBlog.Core.Domain.Articles.Repositories
     public interface IArticleTagRepository : IRepository<ArticleTag, int>
     {
         /// <summary>
-        /// 批量插入(不支持MySQL)
+        /// 批量插入(只支持SqlServer)
         /// </summary>
         /// <param name="entities"></param>
         /// <returns></returns>
-        Task<bool> BulkInsertAsync(IList<ArticleTag> entities);
+        Task<bool> BulkInsertForSqlServerAsync(IList<ArticleTag> entities);
 
         /// <summary>
         /// 批量插入
         /// </summary>
         /// <param name="entities"></param>
         /// <returns></returns>
-        Task<bool> BulkInsertByDapperAsync(IList<ArticleTag> entities);
+        Task<bool> BulkInsertAsync(IList<ArticleTag> entities);
     }
 }

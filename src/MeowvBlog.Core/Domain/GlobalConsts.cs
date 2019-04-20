@@ -6,6 +6,16 @@
     public static class GlobalConsts
     {
         /// <summary>
+        /// MySQL
+        /// </summary>
+        public const string DBTYPE_MYSQL = "MySql";
+
+        /// <summary>
+        /// SqlServer
+        /// </summary>
+        public const string DBTYPE_SQLSERVER = "SqlServer";
+
+        /// <summary>
         /// 新增成功
         /// </summary>
         public const string INSERT_SUCCESS = "新增成功";
