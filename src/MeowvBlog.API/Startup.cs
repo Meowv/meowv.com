@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Swashbuckle.AspNetCore.Swagger;
 using Swashbuckle.AspNetCore.SwaggerUI;
+using System.Collections.Generic;
 using System.IO;
 using UPrime;
 using UPrime.Castle.Log4Net;
@@ -92,6 +93,8 @@ namespace MeowvBlog.API
 
             app.UseHttpsRedirection();
             app.UseMvcWithDefaultRoute();
+            app.UseDefaultFiles(new DefaultFilesOptions { DefaultFileNames = new List<string> { "index.html" } });
+            app.UseStaticFiles();
 
             app.UseSwagger(s =>
             {
