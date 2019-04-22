@@ -24,6 +24,11 @@ namespace MeowvBlog.API.Filters
                 {
                     Name = "Tag",
                     Description = "标签相关API"
+                },
+                new Tag
+                {
+                    Name= "ExcelHandler",
+                    Description = "Excel处理API"
                 }
             };
         }

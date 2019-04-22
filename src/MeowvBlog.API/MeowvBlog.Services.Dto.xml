@@ -204,6 +204,16 @@
             主键编号
             </summary>
         </member>
+        <member name="T:MeowvBlog.Services.Dto.Common.ExcelFileInput">
+            <summary>
+            ExcelFile输入参数
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Common.ExcelFileInput.ExcelFile">
+            <summary>
+            Excel文件
+            </summary>
+        </member>
         <member name="T:MeowvBlog.Services.Dto.Common.PagingInput">
             <summary>
             分页输入参数
@@ -217,6 +227,31 @@
         <member name="P:MeowvBlog.Services.Dto.Common.PagingInput.PageSize">
             <summary>
             页大小
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.Services.Dto.ExcelHandler.ExcelHandlerDto">
+            <summary>
+            Excel处理传输对象
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.ExcelHandler.ExcelHandlerDto.Place">
+            <summary>
+            地方
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.ExcelHandler.ExcelHandlerDto.Area">
+            <summary>
+            区域
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.Services.Dto.ExcelHandler.Params.ExcelHandlerOutput">
+            <summary>
+            Excel处理输出参数
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.ExcelHandler.Params.ExcelHandlerOutput.Areas">
+            <summary>
+            区域列表
             </summary>
         </member>
         <member name="P:MeowvBlog.Services.Dto.Tags.Params.InsertTagInput.TagName">

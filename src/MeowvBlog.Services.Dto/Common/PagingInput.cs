@@ -1,4 +1,6 @@
-﻿namespace MeowvBlog.Services.Dto.Common
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace MeowvBlog.Services.Dto.Common
 {
     /// <summary>
     /// 分页输入参数
@@ -8,6 +10,8 @@
         /// <summary>
         /// 当前开始页
         /// </summary>
+        [Required]
+        [Range(1, int.MaxValue)]
         public int PageIndex { get; set; } = 1;
 
         /// <summary>

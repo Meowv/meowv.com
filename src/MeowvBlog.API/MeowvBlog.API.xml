@@ -98,6 +98,18 @@
             <param name="input"></param>
             <returns></returns>
         </member>
+        <member name="T:MeowvBlog.API.Controllers.ExcelHandlerController">
+            <summary>
+            Excel处理API
+            </summary>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.ExcelHandlerController.Batch(MeowvBlog.Services.Dto.Common.ExcelFileInput)">
+            <summary>
+            批处理Excel
+            </summary>
+            <param name="input"></param>
+            <returns><see cref="P:MeowvBlog.Services.Dto.ExcelHandler.Params.ExcelHandlerOutput.Areas"/></returns>
+        </member>
         <member name="T:MeowvBlog.API.Controllers.TagController">
             <summary>
             标签相关API

@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="EPPlus" Version="4.5.3.1" />
     <PackageReference Include="UPrime" Version="1.2.19" />
     <PackageReference Include="UPrime.Utils" Version="1.1.7" />
   </ItemGroup>
