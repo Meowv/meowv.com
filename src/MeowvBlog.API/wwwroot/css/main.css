@@ -1,5 +1,3 @@
-/* 重定义Bootstrap START */
-
 @media (min-width: 768px) {
     .navbar {
         border-radius: 0;
@@ -36,9 +34,7 @@
 .navbar-default .navbar-nav > .active > a,
 .navbar-default .navbar-nav > .active > a:hover,
 .navbar-default .navbar-nav > .active > a:focus {
-    /*background-color: #f2f2f2;
-    color: #555;*/
-    color: #212121;
+    color: #242424;
     background-color: transparent;
 }
 
@@ -155,11 +151,44 @@ input[type=number]:focus,
     border-radius: 3px;
 }
 
-
-/* 重定义Bootstrap END */
-
-
 /* vPaper THEME START */
+
+::-moz-selection {
+    background: #fff;
+    color: #000;
+    text-shadow: none;
+}
+
+::selection {
+    background: #fff;
+    color: #000;
+    text-shadow: none;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #fff;
+    -webkit-box-shadow: inset 1px 1px 2px #e0e0e0;
+    border: 1px solid #D8D8D8;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #e8e8e8;
+    -webkit-box-shadow: inset 1px 1px 2px rgba(155, 155, 155, 0.4);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    -webkit-box-shadow: inset 1px 1px 10px rgba(0, 0, 0, 0.3);
+}
+
+::-webkit-scrollbar-thumb:active {
+    background: #242424;
+    -webkit-box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
 
 body {
     position: relative;
@@ -319,8 +348,18 @@ only screen and (min-device-pixel-ratio: 1.5) {
     font-size: 12px;
 }
 
-.vc-tags a:before {
-    content: "#";
+.tags a {
+    font-size: 12px;
+    background: #ccc;
+    border-radius: 2px;
+    color: #fff;
+    display: inline-block;
+    margin-bottom: 5px;
+    margin-right: 5px;
+    padding: 2px 4px;
+    -webkit-transition: background .3s;
+    -moz-transition: background .3s;
+    transition: background .3s;
 }
 
 .vc-tags a {
@@ -334,7 +373,7 @@ only screen and (min-device-pixel-ratio: 1.5) {
     transition: background .3s;
 }
 
-.vc-tags a:hover {
+.vc-tags a:hover,.tags a:hover {
     background-color: #1abc9c;
 }
 
