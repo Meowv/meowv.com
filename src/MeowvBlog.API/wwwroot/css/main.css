@@ -65,7 +65,7 @@
 
 .pagination > li > a,
 .pagination > li > span {
-    color: #1abc9c;
+    color: #28a745;
     border: 1px solid #efefef;
 }
 
@@ -74,7 +74,7 @@
 .pagination > li > a:focus,
 .pagination > li > span:focus {
     color: #fff;
-    background-color: #1abc9c;
+    background-color: #28a745;
 }
 
 .pagination > .active > a,
@@ -83,7 +83,7 @@
 .pagination > .active > span:hover,
 .pagination > .active > a:focus,
 .pagination > .active > span:focus {
-    background-color: #1abc9c;
+    background-color: #28a745;
     border-color: #efefef;
 }
 
@@ -108,8 +108,8 @@ input[type=number]:focus,
 [type=email].form-control:focus,
 [type=tel].form-control:focus,
 [contenteditable].form-control:focus {
-    -webkit-box-shadow: inset 0 -2px 0 #1abc9c;
-    box-shadow: inset 0 -2px 0 #1abc9c;
+    -webkit-box-shadow: inset 0 -2px 0 #28a745;
+    box-shadow: inset 0 -2px 0 #28a745;
 }
 
 .btn {
@@ -130,7 +130,7 @@ input[type=number]:focus,
 .btn-blue.active,
 .open > .dropdown-toggle.btn-blue {
     color: #fff;
-    background-color: #1abc9c;
+    background-color: #28a745;
     border-color: #efefef;
 }
 
@@ -145,7 +145,7 @@ input[type=number]:focus,
 }
 
 .well {
-    background-color: #1abc9c;
+    background-color: #28a745;
     color: #fff;
     font-weight: 700;
     border-radius: 3px;
@@ -202,7 +202,7 @@ embed {
 }
 
 ::selection {
-    background-color: #1abc9c;
+    background-color: rgba(40,167,69,.7);
     color: #FFF;
 }
 
@@ -211,7 +211,7 @@ a {
 }
 
 a:hover {
-    color: #1abc9c;
+    color: #28a745;
     text-decoration: none;
 }
 
@@ -264,7 +264,7 @@ only screen and (min-device-pixel-ratio: 1.5) {
 }
 
 .vc-page-title a:hover {
-    color: #1abc9c;
+    color: #28a745;
 }
 
 .vc-author-info {
@@ -278,7 +278,7 @@ only screen and (min-device-pixel-ratio: 1.5) {
 }
 
 .vc-author-info a:hover {
-    color: #1abc9c;
+    color: #28a745;
 }
 
 .vc-author-info > time,
@@ -366,11 +366,11 @@ only screen and (min-device-pixel-ratio: 1.5) {
 }
 
 .vc-tags a:hover,.tags a:hover {
-    background-color: #1abc9c;
+    background-color: #28a745;
 }
 
 .vc-more-link {
-    color: #1abc9c;
+    color: #28a745;
     font-weight: bold;
 }
 
@@ -390,7 +390,7 @@ only screen and (min-device-pixel-ratio: 1.5) {
     margin-bottom: 20px;
     height: 20px;
     color: #555;
-    border-left: 4px solid #1abc9c;
+    border-left: 4px solid #28a745;
     padding-left: 6px;
 }
 
@@ -440,7 +440,7 @@ only screen and (min-device-pixel-ratio: 1.5) {
     -webkit-border-radius: 2px;
     -moz-border-radius: 2px;
     border-radius: 2px;
-    background: #1abc9c;
+    background: #28a745;
     color: #fff;
     text-align: center;
     font-size: 14px;
@@ -489,12 +489,12 @@ only screen and (min-device-pixel-ratio: 1.5) {
 
 .vc-comments-footer input {
     border-radius: 0;
-    background-color: #1abc9c;
+    background-color: #28a745;
 }
 
 .vc-comments-footer input:hover,
 .vc-comments-footer input:focus {
-    background-color: #1abc9c;
+    background-color: #28a745;
 }
 
 .vc-comments-footer input:active {
@@ -565,7 +565,7 @@ only screen and (min-device-pixel-ratio: 1.5) {
 }
 
 .commentlist .comment-author .url:hover {
-    color: #1abc9c
+    color: #28a745
 }
 
 .commentlist .comment-awaiting-moderation,
@@ -617,7 +617,7 @@ only screen and (min-device-pixel-ratio: 1.5) {
 }
 
 .commentlist .comment-footer a:hover {
-    color: #1abc9c
+    color: #28a745
 }
 
 .commentlist .children {
@@ -691,4 +691,71 @@ only screen and (min-device-pixel-ratio: 1.5) {
 
 .pager li > a{
     border-radius:0;
+}
+
+.tagCloud {
+    line-height: 28px;
+    text-align: justify;
+}
+.list-unstyled {
+    padding-left: 0;
+    margin-top: 5px;
+    list-style: none;
+}
+.tagCloud li {
+    display: inline-block;
+    vertical-align: top;
+}
+
+.tagCloud li a {
+    border: 1px solid #bbb;
+    color: #444;
+    display: block;
+    height: 33px;
+    line-height: 33px;
+    margin-bottom: 10px;
+    margin-right: 10px;
+    padding: 0 10px
+}
+
+.tagCloud li a:hover {
+    background-color: #28a745 !important;
+    border: 1px solid #28a745 !important;
+    color: #fff !important
+}
+
+.tagCloud li a.weight1 {
+    background-color: #c9302c;
+    border: 1px solid #d43f3a;
+    color: #fff !important;
+    font-size: 145%
+}
+
+.tagCloud li a.weight2 {
+    background-color: #f0ad4e;
+    border: 1px solid #eea236;
+    color: #fff !important;
+    font-size: 133%
+}
+
+.tagCloud li a.weight3 {
+    background-color: #449d44;
+    border: 1px solid #398439;
+    color: #fff !important;
+    font-size: 115%;
+}
+
+.tagCloud li a.weight4 {
+    background-color: #286090;
+    border: 1px solid #204d74;
+    color: #fff !important;
+    font-size: 100%
+}
+
+.tagCloud li a.weight5 {
+    font-size: 90%
+}
+
+.tagCloud li a.weight6 {
+    font-size: 80%
 }
