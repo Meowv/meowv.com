@@ -310,7 +310,7 @@ only screen and (min-device-pixel-ratio: 1.5) {
 .vc-blog {
     width: 100%;
     height: auto;
-    padding: 0 20px;
+    padding: 0 20px 20px;
 }
 
 .vc-blog-title {
@@ -334,14 +334,6 @@ only screen and (min-device-pixel-ratio: 1.5) {
     text-align: center;
     overflow: hidden;
     margin: 10px auto 10px;
-}
-
-.panel.panel-default .vc-copyright {
-    background: #f9f9f9;
-    padding: .5em .7em;
-    margin: 1em 0;
-    border: 1px solid #1abc9c;
-    border-left-width: 4px;
 }
 
 .vc-tags {
@@ -406,17 +398,13 @@ only screen and (min-device-pixel-ratio: 1.5) {
     clear: both;
 }
 
-.comment-notes {
-    padding: 2px 5px;
-    color: #fff;
-    background-color: #ccc;
-}
-
-.comment-form-author,
-.comment-form-email,
-.comment-form-url {
+.comment-form-author{
     width: 33.33%;
     float: left;
+}
+.comment-form-email {
+    width: 100%;
+    float: right;
 }
 
 #commentform p.comment-form-comment,
@@ -437,10 +425,6 @@ only screen and (min-device-pixel-ratio: 1.5) {
     font-size: 14px;
     background: #fcfcfc;
     outline: none;
-}
-
-#commentform input[name="url"] {
-    width: 100%;
 }
 
 #commentform textarea {
@@ -466,11 +450,6 @@ only screen and (min-device-pixel-ratio: 1.5) {
 #commentform #submit:hover,
 #commentform #reset:hover {
     background: #17a98c
-}
-
-.vc-comments-title {
-    font-size: 14px;
-    color: #999;
 }
 
 .vc-comments-form .vc-textarea {
@@ -709,3 +688,7 @@ only screen and (min-device-pixel-ratio: 1.5) {
 
 
 /* vPaper THEME END */
+
+.pager li > a{
+    border-radius:0;
+}
