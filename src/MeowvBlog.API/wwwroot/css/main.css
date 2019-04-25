@@ -245,7 +245,6 @@ only screen and (min-device-pixel-ratio: 1.5) {
         height: 40px;
         text-indent: -999px;
         background: url(../imgs/logo@2x.png) no-repeat;
-        -webkit-background-size: 100px 40px;
         background-size: 100px 40px;
     }
 }
@@ -573,7 +572,6 @@ only screen and (min-device-pixel-ratio: 1.5) {
     float: right;
     color: #999;
     font-size: 12px;
-    +margin-top: -.8em;
     white-space: nowrap;
 }
 
@@ -758,4 +756,19 @@ only screen and (min-device-pixel-ratio: 1.5) {
 
 .tagCloud li a.weight6 {
     font-size: 80%
+}
+
+.backtop {
+    position: fixed;
+    right: 20px;
+    bottom: 50px;
+    width: 26px;
+    height: 61px;
+    background: url(../imgs/backtop.png) no-repeat 50% 0;
+    display: none;
+    cursor: pointer;
+}
+
+.backtop:hover {
+    background-position: 50% -62px
 }
