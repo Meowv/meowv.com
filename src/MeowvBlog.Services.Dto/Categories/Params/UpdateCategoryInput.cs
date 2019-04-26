@@ -5,7 +5,7 @@ namespace MeowvBlog.Services.Dto.Categories.Params
     /// <summary>
     /// 更新分类输入参数
     /// </summary>
-    public class UpdateCategoryInput : InsertCategoryInput
+    public class UpdateCategoryInput : CategoryDto
     {
         /// <summary>
         /// 分类Id

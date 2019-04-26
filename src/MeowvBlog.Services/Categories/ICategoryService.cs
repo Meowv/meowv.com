@@ -1,5 +1,7 @@
-﻿using MeowvBlog.Services.Dto.Categories.Params;
+﻿using MeowvBlog.Services.Dto.Categories;
+using MeowvBlog.Services.Dto.Categories.Params;
 using MeowvBlog.Services.Dto.Common;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using UPrime;
 
@@ -11,11 +13,17 @@ namespace MeowvBlog.Services.Categories
     public interface ICategoryService
     {
         /// <summary>
+        /// 分类列表
+        /// </summary>
+        /// <returns></returns>
+        Task<ActionOutput<IList<CategoryDto>>> GetAsync();
+
+        /// <summary>
         /// 新增分类
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
-        Task<ActionOutput<string>> InsertAsync(InsertCategoryInput input);
+        Task<ActionOutput<string>> InsertAsync(CategoryDto input);
 
         /// <summary>
         /// 更新分类

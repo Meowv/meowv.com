@@ -77,7 +77,7 @@
             分类相关API
             </summary>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.CategoryController.Insert(MeowvBlog.Services.Dto.Categories.Params.InsertCategoryInput)">
+        <member name="M:MeowvBlog.API.Controllers.CategoryController.Insert(MeowvBlog.Services.Dto.Categories.CategoryDto)">
             <summary>
             新增分类
             </summary>

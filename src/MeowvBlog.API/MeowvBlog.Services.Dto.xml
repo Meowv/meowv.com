@@ -174,14 +174,19 @@
             文章Id
             </summary>
         </member>
-        <member name="T:MeowvBlog.Services.Dto.Categories.Params.InsertCategoryInput">
+        <member name="T:MeowvBlog.Services.Dto.Categories.CategoryDto">
             <summary>
-            新增分类输入参数
+            文章分类传输对象
             </summary>
         </member>
-        <member name="P:MeowvBlog.Services.Dto.Categories.Params.InsertCategoryInput.CategoryName">
+        <member name="P:MeowvBlog.Services.Dto.Categories.CategoryDto.CategoryName">
             <summary>
             分类名称
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Categories.CategoryDto.DisplayName">
+            <summary>
+            展示名称
             </summary>
         </member>
         <member name="T:MeowvBlog.Services.Dto.Categories.Params.UpdateCategoryInput">

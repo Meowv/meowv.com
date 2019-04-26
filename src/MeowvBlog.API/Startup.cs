@@ -42,11 +42,11 @@ namespace MeowvBlog.API
             {
                 options.RootDirectory = "/Pages";
                 options.Conventions.AddPageRoute("/Index", "index.html");
-                options.Conventions.AddPageRoute("/Detail", "p/{id}.html");
-                options.Conventions.AddPageRoute("/Category", "category/list/{url}");
-                options.Conventions.AddPageRoute("/Tags", "tags");
-                options.Conventions.AddPageRoute("/TagsList", "tags/list/{url}");
-                options.Conventions.AddPageRoute("/Search", "search/{key}");
+                options.Conventions.AddPageRoute("/Detail", "/p/{id}.html");
+                options.Conventions.AddPageRoute("/Category", "/category/list/{url}");
+                options.Conventions.AddPageRoute("/Tags", "/tags");
+                options.Conventions.AddPageRoute("/TagsList", "/tags/list/{url}");
+                options.Conventions.AddPageRoute("/Search", "/search/{key}");
             });
 
             // 路由设置

@@ -173,6 +173,11 @@
             分类名称
             </summary>
         </member>
+        <member name="P:MeowvBlog.Core.Domain.Categories.Category.DisplayName">
+            <summary>
+            展示名称
+            </summary>
+        </member>
         <member name="P:MeowvBlog.Core.Domain.Categories.Category.CreationTime">
             <summary>
             创建时间
