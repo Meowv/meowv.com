@@ -11,94 +11,19 @@
     <link href="~/css/main.css" rel="stylesheet" asp-append-version="true" />
 </head>
 <body>
-    <header class="vc-header navbar-fixed-top">
-        <nav class="navbar navbar-default">
-            <div class="container">
-                <div class="navbar-header">
-                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#vmenu">
-                        <span class="sr-only">Toggle Navigation</span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                    </button>
-                    <a class="navbar-brand" href="/">
-                        <h1 class="vc-logo">阿星Plus</h1>
-                    </a>
-                </div>
-                <div class="collapse navbar-collapse" id="vmenu">
-                    <ul class="nav navbar-nav navbar-right">
-                        <li class="active">
-                            <a href="/"><i class="fa fa-home"></i> Home</a>
-                        </li>
-                        <li>
-                            <a href="javascript:;" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><i class="fa fa-book"></i> Categories<span class="caret"></span></a>
-                            <ul class="dropdown-menu" role="menu" id="categories">
-                                
-                            </ul>
-                        </li>
-                        <li>
-                            <a href="/tags"><i class="fa fa-tags"></i> Tags</a>
-                        </li>
-
-                        <li class="dropdown">
-                            <a href="javascript:;" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><i class="fa fa-flask"></i><span class="caret"></span></a>
-                            <ul class="dropdown-menu" role="menu" id="beta">
-                                <li>
-                                    <a href="#">免费艺术签名</a>
-                                </li>
-                                <li>
-                                    <a href="#">Excel数据提取</a>
-                                </li>
-
-                            </ul>
-                        </li>
-                        <li>
-                            <a href="https://github.com/Meowv"><i class="fa fa-github"></i></a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </nav>
-    </header>
+    <partial name="_HeaderPartial">
     <div class="container vc-container">
         <div class="row">
             @RenderBody()
             <partial name="_SiteRightPartial">
         </div>
     </div>
-    <footer class="vc-footer">
-        <div class="vc-footer-info">
-            <ul class="vc-footer-menu">
-                <li>
-                    <a href="javascript:;"><i class="fa fa-weixin"></i></a>
-                </li>
-                <li>
-                    <a href="javascript:;"><i class="fa fa-rss"></i></a>
-                </li>
-                <li>
-                    <a target="_blank" href="https://github.com/Meowv"><i class="fa fa-github"></i></a>
-                </li>
-            </ul>
-        </div>
-        <div class="vc-footer-copyright">
-            <div class="backtop" title="TOP"></div>
-            <div>
-                © 2016 - @DateTime.Now.Year MEOWV.COM &nbsp;
-                <a target="_blank" href="/swagger"><i class="fa fa-code"></i></a> &nbsp;
-                <a target="_blank" href="/admin"><i class="fa fa-lock"></i></a>
-            </div>
-            This blog powered by <a target="_blank" href="http://dot.net">.NET Core</a> Designed and developed by 阿星Plus, thanks to UI provider: <a target="_blank" href="https://github.com/imvicchen/vTheme">vTheme</a>
-        </div>
-    </footer>
+    <partial name="_FooterPartial">
     <script src="~/js/jquery.min.js"></script>
     <script src="~/js/bootstrap.min.js"></script>
     <script src="https://unpkg.com/art-template@4.13.2/lib/template-web.js"></script>
     <script src="~/js/main.js" asp-append-version="true"></script>
-    <script id="nav_categories" type="text/template">
-        {{each result}}
-        <li><a href="/category/list/{{$value.displayName}}">{{$value.categoryName}}</a></li>
-        {{/each}}
-    </script>
     @RenderSection("Scripts", required: false)
 </body>
 </html>
+<partial name="_TemplatePartial">

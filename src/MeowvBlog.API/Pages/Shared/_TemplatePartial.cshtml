@@ -1,0 +1,10 @@
+﻿<script id="categories_tmpl" type="text/template">
+    {{each result}}
+    <li><a href="/category/list/{{$value.displayName}}">{{$value.categoryName}}</a></li>
+    {{/each}}
+</script>
+<script id="top_tags_tmpl" type="text/template">
+    {{each result}}
+    <a href="/tags/list/{{$value.displayName}}">{{$value.tagName}}</a>
+    {{/each}}
+</script>

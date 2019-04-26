@@ -17,8 +17,21 @@ function loadNavCategories() {
         url: "/category/get",
         callback: function (data) {
             if (data.isSuccess) {
-                var html = template("nav_categories", data);
+                var html = template("categories_tmpl", data);
                 document.getElementById('categories').innerHTML = html;
+            }
+        }
+    };
+    _ajax(parameter);
+}
+
+function loadTopTags() {
+    var parameter = {
+        url: "/tag/top?count=10",
+        callback: function (data) {
+            if (data.isSuccess) {
+                var html = template("top_tags_tmpl", data);
+                document.getElementById('top_tags').innerHTML = html;
             }
         }
     };
@@ -46,5 +59,6 @@ function _ajax(parameter) {
 
 $(function () {
     loadNavCategories();
+    loadTopTags();
     scroll();
 });

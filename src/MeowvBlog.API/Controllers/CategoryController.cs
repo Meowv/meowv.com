@@ -13,7 +13,7 @@ namespace MeowvBlog.API.Controllers
     /// <summary>
     /// 分类相关API
     /// </summary>
-    [Route("Categor")]
+    [Route("Category")]
     public class CategoryController : ApiControllerBase
     {
         private readonly ICategoryService _categoryService;
