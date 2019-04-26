@@ -25,6 +25,7 @@ function loadNavCategories() {
     _ajax(parameter);
 }
 
+// 加载右侧Top标签列表
 function loadTopTags() {
     var parameter = {
         url: "/tag/top?count=10",
