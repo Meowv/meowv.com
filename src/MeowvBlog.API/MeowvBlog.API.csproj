@@ -20,10 +20,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Logs\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\MeowvBlog.Core\MeowvBlog.Core.csproj" />
     <ProjectReference Include="..\MeowvBlog.EntityFramework\MeowvBlog.EntityFramework.csproj" />
     <ProjectReference Include="..\MeowvBlog.Services.Dto\MeowvBlog.Services.Dto.csproj" />
