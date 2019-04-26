@@ -115,7 +115,20 @@
             标签相关API
             </summary>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.TagController.Insert(MeowvBlog.Services.Dto.Tags.Params.InsertTagInput)">
+        <member name="M:MeowvBlog.API.Controllers.TagController.GetAsync">
+            <summary>
+            所有标签列表
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.TagController.GetTopAsync(System.Int32)">
+            <summary>
+            标签列表
+            </summary>
+            <param name="count"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.TagController.Insert(MeowvBlog.Services.Dto.Tags.TagDto)">
             <summary>
             新增标签
             </summary>

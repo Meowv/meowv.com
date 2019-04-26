@@ -15,6 +15,11 @@ namespace MeowvBlog.Core.Domain.Tags
         public string TagName { get; set; }
 
         /// <summary>
+        /// 展示名称
+        /// </summary>
+        public string DisplayName { get; set; }
+
+        /// <summary>
         /// 创建时间
         /// </summary>
         public DateTime CreationTime { get; set; }

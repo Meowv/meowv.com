@@ -1,5 +1,7 @@
 ﻿using MeowvBlog.Services.Dto.Common;
+using MeowvBlog.Services.Dto.Tags;
 using MeowvBlog.Services.Dto.Tags.Params;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using UPrime;
 
@@ -11,11 +13,24 @@ namespace MeowvBlog.Services.Tags
     public interface ITagService
     {
         /// <summary>
+        /// 所有标签列表
+        /// </summary>
+        /// <returns></returns>
+        Task<ActionOutput<IList<TagDto>>> GetAsync();
+
+        /// <summary>
+        /// 标签列表
+        /// </summary>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        Task<ActionOutput<IList<TagDto>>> GetAsync(int count);
+
+        /// <summary>
         /// 新增标签
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
-        Task<ActionOutput<string>> InsertAsync(InsertTagInput input);
+        Task<ActionOutput<string>> InsertAsync(TagDto input);
 
         /// <summary>
         /// 更新标签

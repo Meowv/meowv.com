@@ -259,14 +259,19 @@
             区域列表
             </summary>
         </member>
-        <member name="P:MeowvBlog.Services.Dto.Tags.Params.InsertTagInput.TagName">
+        <member name="P:MeowvBlog.Services.Dto.Tags.Params.UpdateTagInput.TagId">
+            <summary>
+            标签Id
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Tags.TagDto.TagName">
             <summary>
             标签名称
             </summary>
         </member>
-        <member name="P:MeowvBlog.Services.Dto.Tags.Params.UpdateTagInput.TagId">
+        <member name="P:MeowvBlog.Services.Dto.Tags.TagDto.DisplayName">
             <summary>
-            标签Id
+            展示名称
             </summary>
         </member>
     </members>

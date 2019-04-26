@@ -1,7 +1,9 @@
 ﻿using MeowvBlog.Services.Dto.Common;
+using MeowvBlog.Services.Dto.Tags;
 using MeowvBlog.Services.Dto.Tags.Params;
 using MeowvBlog.Services.Tags;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using UPrime;
 using UPrime.WebApi;
@@ -22,13 +24,52 @@ namespace MeowvBlog.API.Controllers
         }
 
         /// <summary>
+        /// 所有标签列表
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("Get")]
+        public async Task<UPrimeResponse<IList<TagDto>>> GetAsync()
+        {
+            var response = new UPrimeResponse<IList<TagDto>>();
+
+            var result = await _tagService.GetAsync();
+            if (!result.Success)
+                response.SetMessage(UPrimeResponseStatusCode.Error, result.GetErrorMessage());
+            else
+                response.Result = result.Result;
+
+            return response;
+        }
+
+        /// <summary>
+        /// 标签列表
+        /// </summary>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("Top")]
+        public async Task<UPrimeResponse<IList<TagDto>>> GetTopAsync(int count)
+        {
+            var response = new UPrimeResponse<IList<TagDto>>();
+
+            var result = await _tagService.GetAsync(count);
+            if (!result.Success)
+                response.SetMessage(UPrimeResponseStatusCode.Error, result.GetErrorMessage());
+            else
+                response.Result = result.Result;
+
+            return response;
+        }
+
+        /// <summary>
         /// 新增标签
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
         [HttpPost]
         [Route("Insert")]
-        public async Task<UPrimeResponse> Insert([FromBody] InsertTagInput input)
+        public async Task<UPrimeResponse> Insert([FromBody] TagDto input)
         {
             var response = new UPrimeResponse<string>();
 

@@ -2,7 +2,7 @@
 
 namespace MeowvBlog.Services.Dto.Tags.Params
 {
-    public class UpdateTagInput : InsertTagInput
+    public class UpdateTagInput : TagDto
     {
         /// <summary>
         /// 标签Id

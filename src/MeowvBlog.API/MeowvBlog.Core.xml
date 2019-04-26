@@ -248,6 +248,11 @@
             标签名称
             </summary>
         </member>
+        <member name="P:MeowvBlog.Core.Domain.Tags.Tag.DisplayName">
+            <summary>
+            展示名称
+            </summary>
+        </member>
         <member name="P:MeowvBlog.Core.Domain.Tags.Tag.CreationTime">
             <summary>
             创建时间

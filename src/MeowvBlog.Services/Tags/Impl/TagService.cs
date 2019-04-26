@@ -2,10 +2,14 @@
 using MeowvBlog.Core.Domain.Tags;
 using MeowvBlog.Core.Domain.Tags.Repositories;
 using MeowvBlog.Services.Dto.Common;
+using MeowvBlog.Services.Dto.Tags;
 using MeowvBlog.Services.Dto.Tags.Params;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using UPrime;
+using UPrime.AutoMapper;
 
 namespace MeowvBlog.Services.Tags.Impl
 {
@@ -22,11 +26,55 @@ namespace MeowvBlog.Services.Tags.Impl
         }
 
         /// <summary>
+        /// 所有标签列表
+        /// </summary>
+        /// <returns></returns>
+        public async Task<ActionOutput<IList<TagDto>>> GetAsync()
+        {
+            var output = new ActionOutput<IList<TagDto>>();
+
+            using (var uow = UnitOfWorkManager.Begin())
+            {
+                var list = await _tagRepository.GetAllListAsync();
+
+                await uow.CompleteAsync();
+
+                var result = list.MapTo<IList<TagDto>>();
+
+                output.Result = result;
+            }
+            return output;
+        }
+
+        /// <summary>
+        /// 标签列表
+        /// </summary>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        public async Task<ActionOutput<IList<TagDto>>> GetAsync(int count)
+        {
+            var output = new ActionOutput<IList<TagDto>>();
+
+            using (var uow = UnitOfWorkManager.Begin())
+            {
+                var list = await _tagRepository.GetAllListAsync();
+                list = list.Take(count).ToList();
+
+                await uow.CompleteAsync();
+
+                var result = list.MapTo<IList<TagDto>>();
+
+                output.Result = result;
+            }
+            return output;
+        }
+
+        /// <summary>
         /// 新增标签
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
-        public async Task<ActionOutput<string>> InsertAsync(InsertTagInput input)
+        public async Task<ActionOutput<string>> InsertAsync(TagDto input)
         {
             var output = new ActionOutput<string>();
 
@@ -35,6 +83,7 @@ namespace MeowvBlog.Services.Tags.Impl
                 var entity = new Tag
                 {
                     TagName = input.TagName,
+                    DisplayName = input.DisplayName,
                     CreationTime = DateTime.Now
                 };
                 await _tagRepository.InsertAsync(entity);
@@ -59,6 +108,7 @@ namespace MeowvBlog.Services.Tags.Impl
             {
                 var entity = await _tagRepository.GetAsync(input.TagId);
                 entity.TagName = input.TagName;
+                entity.DisplayName = input.DisplayName;
                 await _tagRepository.UpdateAsync(entity);
 
                 output.Result = GlobalConsts.UPDATE_SUCCESS;
