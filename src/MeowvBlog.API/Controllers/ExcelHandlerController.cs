@@ -1,6 +1,7 @@
 ﻿using MeowvBlog.Services.Dto.Common;
 using MeowvBlog.Services.Dto.ExcelHandler.Params;
 using MeowvBlog.Services.ExcelHandler;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UPrime;
 using UPrime.WebApi;
@@ -27,6 +28,7 @@ namespace MeowvBlog.API.Controllers
         /// <returns><see cref="ExcelHandlerOutput.Areas"/></returns>
         [HttpPost]
         [Route("Batch")]
+        [AllowAnonymous]
         public UPrimeResponse<ExcelHandlerOutput> Batch(ExcelFileInput input)
         {
             var response = new UPrimeResponse<ExcelHandlerOutput>();

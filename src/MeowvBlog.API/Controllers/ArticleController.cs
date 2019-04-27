@@ -2,6 +2,7 @@
 using MeowvBlog.Services.Dto.Articles;
 using MeowvBlog.Services.Dto.Articles.Params;
 using MeowvBlog.Services.Dto.Common;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using UPrime;
@@ -32,6 +33,7 @@ namespace MeowvBlog.API.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("Get")]
+        [AllowAnonymous]
         public async Task<UPrimeResponse<ArticleDto>> GetAsync(int id)
         {
             var response = new UPrimeResponse<ArticleDto>();
@@ -53,6 +55,7 @@ namespace MeowvBlog.API.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("GetList")]
+        [AllowAnonymous]
         public async Task<UPrimeResponse<PagedResultDto<ArticleBriefDto>>> GetListAsync(PagingInput input)
         {
             return new UPrimeResponse<PagedResultDto<ArticleBriefDto>>

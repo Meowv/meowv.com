@@ -175,6 +175,21 @@
             </summary>
             <param name="context"></param>
         </member>
+        <member name="T:MeowvBlog.API.PageBase">
+            <summary>
+            前台继承此类
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.API.AdminPageBase">
+            <summary>
+            后台管理界面 继承此类
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.API.ApiControllerBase">
+            <summary>
+            API 继承此类
+            </summary>
+        </member>
         <member name="M:MeowvBlog.API.Startup.ConfigureServices(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
             <summary>
             运行时调用此方法，使用此方法向容器添加服务

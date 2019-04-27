@@ -2,6 +2,7 @@
 using MeowvBlog.Services.Dto.Categories;
 using MeowvBlog.Services.Dto.Categories.Params;
 using MeowvBlog.Services.Dto.Common;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -25,6 +26,7 @@ namespace MeowvBlog.API.Controllers
 
         [HttpGet]
         [Route("Get")]
+        [AllowAnonymous]
         public async Task<UPrimeResponse<IList<CategoryDto>>> GetAsync()
         {
             var response = new UPrimeResponse<IList<CategoryDto>>();

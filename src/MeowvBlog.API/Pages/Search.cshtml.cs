@@ -1,8 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc.RazorPages;
-
-namespace MeowvBlog.API.Pages
+﻿namespace MeowvBlog.API.Pages
 {
-    public class SearchModel : PageModel
+    public class SearchModel : PageBase
     {
         public void OnGet()
         {
