@@ -1,0 +1,108 @@
+﻿/**
+ 
+ @Name: winui
+ @Author: Leo
+ @Site: www.leo96.com
+ 
+ */
+
+.lock-body {
+    background-color: #000000;
+    background: center no-repeat fixed;
+    background-size: cover;
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+    bottom: 0;
+}
+
+#date_time {
+    color: white;
+    position: fixed;
+    left: 5%;
+    bottom: 10%;
+    font-family: Arial;
+}
+
+#time {
+    font-size: 86px;
+}
+
+#date {
+    font-size: 30px;
+    padding-left: 10px;
+}
+
+#login_div {
+    margin-top: 20vh;
+    text-align: center;
+}
+
+    #login_div > img {
+        width: 150px;
+        height: 150px;
+        box-shadow: 0 0 4px 4px #fff;
+        background-color: rgba(255, 255, 255, 0.4);
+    }
+
+#user_name {
+    font-size: 46px;
+    font-weight: 100;
+    margin: 15px 0;
+    padding-top: 10px;
+    color: #fff;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.winui-from-group {
+    display: inline-block;
+    width: 288px;
+    border: 1px solid rgba(255, 255, 255, 0.70);
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+}
+
+    .winui-from-group input {
+        width: 250px;
+        height: 36px;
+        color: #fff;
+        border: none;
+        background: rgba(0, 0, 0, 0.30);
+        float: left;
+        padding-left: 5px;
+        -moz-box-sizing: border-box;
+        -webkit-box-sizing: border-box;
+        box-sizing: border-box;
+    }
+
+    .winui-from-group button {
+        height: 36px;
+        width: 36px;
+        background: rgba(255, 255, 255, 0.40);
+        border: none;
+        float: right;
+        cursor: pointer;
+        color: #fff;
+    }
+
+:-moz-placeholder { /* Mozilla Firefox 4 to 18 */
+    color: #fff;
+    opacity: .8;
+}
+
+::-moz-placeholder { /* Mozilla Firefox 19+ */
+    color: #fff;
+    opacity: .8;
+}
+
+input:-ms-input-placeholder {
+    color: #fff;
+    opacity: .8;
+}
+
+input::-webkit-input-placeholder {
+    color: #fff;
+    opacity: .8;
+}

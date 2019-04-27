@@ -1,0 +1,400 @@
+﻿{
+  "code": 1,
+  "message": "成功",
+  "data": [
+    {
+      "title": "主题",
+      "pageURL": "theme",
+      "name": "主题",
+      "icon": "fa-television",
+      "openType": 1,
+      "extend": false,
+      "childs": null,
+      "id": 1
+    },
+    {
+      "title": "打赏作者",
+      "pageURL": "/home/reward",
+      "name": "打赏作者",
+      "icon": "fa-qrcode",
+      "openType": 1,
+      "extend": false,
+      "childs": null,
+      "id": 3
+    },
+    {
+      "title": "基本说明",
+      "pageURL": "views/demo/introduce.html",
+      "name": "基本说明",
+      "icon": "fa-info-circle",
+      "openType": 2,
+      "extend": false,
+      "childs": null,
+      "id": 4
+    },
+    {
+      "title": "点赞",
+      "pageURL": "http://fly.layui.com/case/u/3547992",
+      "name": "点赞",
+      "icon": "fa-thumbs-up",
+      "openType": 2,
+      "extend": false,
+      "childs": null,
+      "id": 62
+    },
+    {
+      "title": "不落阁",
+      "pageURL": "http://www.lyblogs.cn",
+      "name": "作者博客",
+      "icon": "http://www.lyblogs.cn/Images/Global/Logo_40.png",
+      "openType": 2,
+      "extend": false,
+      "childs": null,
+      "id": 66
+    },
+    {
+      "title": "系统设置",
+      "pageURL": null,
+      "name": "系统设置",
+      "icon": "fa-cog",
+      "openType": 1,
+      "extend": false,
+      "childs": [
+        {
+          "title": "系统菜单",
+          "pageURL": "views/menu/list_iframe.html",
+          "name": "系统菜单",
+          "icon": "fa-navicon",
+          "openType": 2,
+          "extend": false,
+          "childs": null,
+          "id": 2
+        },
+        {
+          "title": "操作员管理",
+          "pageURL": "/operator/index",
+          "name": "操作员管理",
+          "icon": "fa-user",
+          "openType": 1,
+          "extend": false,
+          "childs": null,
+          "id": 19
+        },
+        {
+          "title": "角色管理",
+          "pageURL": "views/role/list.html",
+          "name": "角色管理",
+          "icon": "fa-th-large",
+          "openType": 2,
+          "extend": false,
+          "childs": null,
+          "id": 22
+        }
+      ],
+      "id": 23
+    },
+    {
+      "title": "Font Awesome图标展示",
+      "pageURL": null,
+      "name": "Font Awesome图标展示",
+      "icon": "fa-user",
+      "openType": 1,
+      "extend": false,
+      "childs": [
+        {
+          "title": "图片",
+          "pageURL": null,
+          "name": "图片",
+          "icon": "fa-photo",
+          "openType": 1,
+          "extend": false,
+          "childs": null,
+          "id": 28
+        },
+        {
+          "title": "书签",
+          "pageURL": null,
+          "name": "书签",
+          "icon": "fa-bookmark",
+          "openType": 1,
+          "extend": false,
+          "childs": null,
+          "id": 29
+        },
+        {
+          "title": "日历",
+          "pageURL": null,
+          "name": "日历",
+          "icon": "fa-calendar",
+          "openType": 1,
+          "extend": false,
+          "childs": null,
+          "id": 30
+        },
+        {
+          "title": "评论",
+          "pageURL": null,
+          "name": "评论",
+          "icon": "fa-comments",
+          "openType": 1,
+          "extend": false,
+          "childs": null,
+          "id": 31
+        },
+        {
+          "title": "邮件",
+          "pageURL": null,
+          "name": "邮件",
+          "icon": "fa-envelope",
+          "openType": 1,
+          "extend": false,
+          "childs": null,
+          "id": 32
+        },
+        {
+          "title": "桌面",
+          "pageURL": null,
+          "name": "桌面",
+          "icon": "fa-desktop",
+          "openType": 1,
+          "extend": false,
+          "childs": null,
+          "id": 33
+        },
+        {
+          "title": "下载",
+          "pageURL": null,
+          "name": "下载",
+          "icon": "fa-download",
+          "openType": 1,
+          "extend": false,
+          "childs": null,
+          "id": 34
+        },
+        {
+          "title": "设置",
+          "pageURL": null,
+          "name": "设置",
+          "icon": "fa-cog",
+          "openType": 1,
+          "extend": false,
+          "childs": null,
+          "id": 35
+        },
+        {
+          "title": "信息",
+          "pageURL": null,
+          "name": "信息",
+          "icon": "fa-info-circle",
+          "openType": 1,
+          "extend": false,
+          "childs": null,
+          "id": 36
+        },
+        {
+          "title": "图表1",
+          "pageURL": null,
+          "name": "图表1",
+          "icon": "fa-line-chart",
+          "openType": 1,
+          "extend": false,
+          "childs": null,
+          "id": 37
+        },
+        {
+          "title": "图表2",
+          "pageURL": null,
+          "name": "图表2",
+          "icon": "fa-bar-chart",
+          "openType": 1,
+          "extend": false,
+          "childs": null,
+          "id": 38
+        },
+        {
+          "title": "图表3",
+          "pageURL": null,
+          "name": "图表3",
+          "icon": "fa-pie-chart",
+          "openType": 1,
+          "extend": false,
+          "childs": null,
+          "id": 39
+        },
+        {
+          "title": "标签",
+          "pageURL": null,
+          "name": "标签",
+          "icon": "fa-tags",
+          "openType": 1,
+          "extend": false,
+          "childs": null,
+          "id": 40
+        },
+        {
+          "title": "垃圾",
+          "pageURL": null,
+          "name": "垃圾",
+          "icon": "fa-trash",
+          "openType": 1,
+          "extend": false,
+          "childs": null,
+          "id": 41
+        },
+        {
+          "title": "医疗",
+          "pageURL": null,
+          "name": "医疗",
+          "icon": "fa-medkit",
+          "openType": 1,
+          "extend": false,
+          "childs": null,
+          "id": 42
+        }
+      ],
+      "id": 27
+    },
+    {
+      "title": "Font Awesome第三方LOGO",
+      "pageURL": null,
+      "name": "Font Awesome第三方LOGO",
+      "icon": "fa-edge",
+      "openType": 1,
+      "extend": false,
+      "childs": [
+        {
+          "title": "苹果",
+          "pageURL": null,
+          "name": "苹果",
+          "icon": "fa-apple",
+          "openType": 1,
+          "extend": false,
+          "childs": null,
+          "id": 44
+        },
+        {
+          "title": "Google Chrome",
+          "pageURL": null,
+          "name": "Google Chrome",
+          "icon": "fa-chrome",
+          "openType": 1,
+          "extend": false,
+          "childs": null,
+          "id": 45
+        },
+        {
+          "title": "Microsoft Edge",
+          "pageURL": null,
+          "name": "Microsoft Edge",
+          "icon": "fa-edge",
+          "openType": 1,
+          "extend": false,
+          "childs": null,
+          "id": 46
+        },
+        {
+          "title": "腾讯QQ",
+          "pageURL": null,
+          "name": "腾讯QQ",
+          "icon": "fa-qq",
+          "openType": 1,
+          "extend": false,
+          "childs": null,
+          "id": 47
+        },
+        {
+          "title": "新浪微博",
+          "pageURL": null,
+          "name": "新浪微博",
+          "icon": "fa-weibo",
+          "openType": 1,
+          "extend": false,
+          "childs": null,
+          "id": 48
+        },
+        {
+          "title": "Microsoft Windows",
+          "pageURL": null,
+          "name": "Microsoft Windows",
+          "icon": "fa-windows",
+          "openType": 1,
+          "extend": false,
+          "childs": null,
+          "id": 49
+        },
+        {
+          "title": "微信",
+          "pageURL": null,
+          "name": "微信",
+          "icon": "fa-wechat",
+          "openType": 1,
+          "extend": false,
+          "childs": null,
+          "id": 50
+        },
+        {
+          "title": "Skype",
+          "pageURL": null,
+          "name": "Skype",
+          "icon": "fa-skype",
+          "openType": 1,
+          "extend": false,
+          "childs": null,
+          "id": 51
+        },
+        {
+          "title": "Github",
+          "pageURL": null,
+          "name": "Github",
+          "icon": "fa-github",
+          "openType": 1,
+          "extend": false,
+          "childs": null,
+          "id": 52
+        }
+      ],
+      "id": 43
+    },
+    {
+      "title": "自定义图片菜单",
+      "pageURL": null,
+      "name": "自定义图片菜单",
+      "icon": "images/logo_100.png",
+      "openType": 1,
+      "extend": false,
+      "childs": [
+        {
+          "title": "腾讯QQ",
+          "pageURL": null,
+          "name": "腾讯QQ",
+          "icon": "images/qq_32.png",
+          "openType": 1,
+          "extend": false,
+          "childs": null,
+          "id": 54
+        },
+        {
+          "title": "新浪微博",
+          "pageURL": null,
+          "name": "新浪微博",
+          "icon": "images/weibo_32.png",
+          "openType": 1,
+          "extend": false,
+          "childs": null,
+          "id": 55
+        },
+        {
+          "title": "QQ空间",
+          "pageURL": null,
+          "name": "QQ空间",
+          "icon": "images/qzone_32.png",
+          "openType": 1,
+          "extend": false,
+          "childs": null,
+          "id": 56
+        }
+      ],
+      "id": 53
+    }
+  ]
+}

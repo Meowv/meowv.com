@@ -1,0 +1,398 @@
+﻿/**
+ 
+ @Name: winui
+ @Author: Leo
+ @Site: www.leo96.com
+ 
+ */
+
+/*全局*/
+.winui-tab-item > h1 {
+    line-height: 50px;
+    font-size: 24px;
+    font-weight: 500
+}
+
+.winui-tab-item > h2 {
+    line-height: 40px;
+    font-size: 15px;
+    margin-top: 15px;
+}
+/*锁屏预览*/
+.lockscreen-preview {
+    width: 415px;
+    height: 235px;
+    background: url(../../../images/bg_01.jpg) no-repeat;
+    background-size: cover;
+    position: relative;
+}
+
+.lockscreen-preview-time {
+    position: absolute;
+    top: 124px;
+    left: 10px;
+}
+
+    .lockscreen-preview-time p {
+        color: #fff;
+        font-family: -webkit-body;
+    }
+
+    .lockscreen-preview-time #date {
+        font-size: 15px;
+        text-indent: 2px;
+    }
+
+    .lockscreen-preview-time #time {
+        font-size: 46px;
+    }
+/*界面背景预览*/
+.background-preview {
+    width: 415px;
+    height: 235px;
+    background: url(../../../images/bg_01.jpg) no-repeat;
+    background-size: cover;
+    position: relative;
+}
+
+.preview-taskbar {
+    position: absolute;
+    bottom: 0;
+    height: 15px;
+    width: 100%;
+    background-color: var(--taskbar-color,#002D4F) !important;
+}
+
+.preview-tilebox-lg {
+    display: none;
+}
+
+.preview-start {
+    position: absolute;
+    bottom: 15px;
+    height: 170px;
+    width: 174px;
+    background-color: var(--taskbar-color,#004275) !important;
+}
+
+    .preview-start.xs {
+        width: 74px;
+    }
+
+        .preview-start.xs .preview-tilebox {
+            display: none;
+        }
+
+    .preview-start.lg {
+        width: 203px;
+    }
+
+        .preview-start.lg .preview-tilebox {
+            display: none;
+        }
+
+        .preview-start.lg .preview-tilebox-lg {
+            display: block;
+            width: 121px;
+        }
+
+.preview-menu {
+    position: absolute;
+    left: 10px;
+    width: 34px;
+    top: 34px;
+}
+
+    .preview-menu li {
+        line-height: 11px;
+        height: 11px;
+    }
+
+        .preview-menu li .preview-menu-icon {
+            height: 9px;
+            width: 9px;
+            background-color: var(--tile-color,#0063B1);
+            float: left;
+            margin-top: 1px;
+        }
+
+        .preview-menu li .preview-menu-text {
+            height: 3px;
+            width: 22px;
+            margin-left: 12px;
+            background-color: #CCD9E3;
+            position: relative;
+            top: 4px;
+        }
+
+.preview-tilebox {
+    position: absolute;
+    right: 10px;
+    top: 34px;
+    width: 91px;
+}
+
+    .preview-tilebox div {
+        background-color: var(--tile-color,#0063B1);
+        float: left;
+        overflow-y: hidden;
+    }
+
+.preview-window {
+    position: absolute;
+    width: 150px;
+    height: 130px;
+    right: 30px;
+    top: 45px;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+    border: 1px solid var(--tile-color,#0063B1);
+    background-color: #fff;
+}
+
+    .preview-window span {
+        color: #000;
+        font-size: 12px;
+        position: relative;
+        top: 3px;
+        left: 5px;
+    }
+
+    .preview-window .preview-window-title {
+        width: 100%;
+        height: 15px;
+        background-color: var(--tile-color,#0063B1);
+    }
+
+        .preview-window .preview-window-title p {
+            background-color: #fff;
+            height: 2px;
+            width: 26px;
+            position: relative;
+            top: 6px;
+            left: 10px;
+        }
+
+.background-choose,
+.lockscreen-choose {
+    margin-bottom: 10px;
+}
+
+    .background-choose img,
+    .lockscreen-choose img {
+        width: 78px;
+        height: 78px;
+        margin-bottom: 4px;
+    }
+
+        .background-choose img:active,
+        .lockscreen-choose img:active {
+            -moz-box-sizing: border-box;
+            -webkit-box-sizing: border-box;
+            box-sizing: border-box;
+            border: 2px solid transparent;
+        }
+
+.background-upload,
+.lockscreen-upload {
+    width: 92px;
+    height: 35px;
+    background-color: #CCCCCC;
+    text-align: center;
+    font-size: 15px;
+    line-height: 35px;
+    cursor: default;
+}
+
+    .background-upload:hover,
+    .lockscreen-upload:hover {
+        -moz-box-sizing: border-box;
+        -webkit-box-sizing: border-box;
+        box-sizing: border-box;
+        line-height: 31px;
+        border: 2px solid #7A7A7A;
+    }
+
+
+/*颜色设置*/
+.color-choose {
+    margin-bottom: 10px;
+    width: 384px;
+    overflow: auto;
+}
+
+    .color-choose > div {
+        float: left;
+        margin-right: 2px;
+        margin-bottom: 3px;
+        width: 46px;
+        height: 46px;
+        -moz-box-sizing: border-box;
+        -webkit-box-sizing: border-box;
+        box-sizing: border-box;
+    }
+
+        .color-choose > div:hover {
+            border: 2px solid #000;
+        }
+
+    .color-choose .theme-color-11 {
+        background-color: #FFB900;
+    }
+
+    .color-choose .theme-color-12 {
+        background-color: #FF8C00;
+    }
+
+    .color-choose .theme-color-13 {
+        background-color: #F7630C;
+    }
+
+    .color-choose .theme-color-14 {
+        background-color: #CA5010;
+    }
+
+    .color-choose .theme-color-15 {
+        background-color: #DA3B01;
+    }
+
+    .color-choose .theme-color-16 {
+        background-color: #EF6950;
+    }
+
+    .color-choose .theme-color-17 {
+        background-color: #D13438;
+    }
+
+    .color-choose .theme-color-18 {
+        background-color: #D13438;
+    }
+    /*第二排*/
+    .color-choose .theme-color-21 {
+        background-color: #E74856;
+    }
+
+    .color-choose .theme-color-22 {
+        background-color: #E81123;
+    }
+
+    .color-choose .theme-color-23 {
+        background-color: #EA005E;
+    }
+
+    .color-choose .theme-color-24 {
+        background-color: #C30052;
+    }
+
+    .color-choose .theme-color-25 {
+        background-color: #E3008C;
+    }
+
+    .color-choose .theme-color-26 {
+        background-color: #BF0077;
+    }
+
+    .color-choose .theme-color-27 {
+        background-color: #C239B3;
+    }
+
+    .color-choose .theme-color-28 {
+        background-color: #9A0089;
+    }
+    /*第三排*/
+    .color-choose .theme-color-31 {
+        background-color: #0078D7;
+    }
+
+    .color-choose .theme-color-32 {
+        background-color: #0063B1;
+    }
+
+    .color-choose .theme-color-33 {
+        background-color: #8E8CD8;
+    }
+
+    .color-choose .theme-color-34 {
+        background-color: #6B69D6;
+    }
+
+    .color-choose .theme-color-35 {
+        background-color: #8764B8;
+    }
+
+    .color-choose .theme-color-36 {
+        background-color: #744DA9;
+    }
+
+    .color-choose .theme-color-37 {
+        background-color: #B146C2;
+    }
+
+    .color-choose .theme-color-38 {
+        background-color: #881798;
+    }
+    /*第四排*/
+    .color-choose .theme-color-41 {
+        background-color: #0099BC;
+    }
+
+    .color-choose .theme-color-42 {
+        background-color: #2D7D9A;
+    }
+
+    .color-choose .theme-color-43 {
+        background-color: #00B7C3;
+    }
+
+    .color-choose .theme-color-44 {
+        background-color: #038387;
+    }
+
+    .color-choose .theme-color-45 {
+        background-color: #00B294;
+    }
+
+    .color-choose .theme-color-46 {
+        background-color: #018574;
+    }
+
+    .color-choose .theme-color-47 {
+        background-color: #00CC6A;
+    }
+
+    .color-choose .theme-color-48 {
+        background-color: #00CC6A;
+    }
+    /*第五排*/
+    .color-choose .theme-color-51 {
+        background-color: #7A7574;
+    }
+
+    .color-choose .theme-color-52 {
+        background-color: #5D5A58;
+    }
+
+    .color-choose .theme-color-53 {
+        background-color: #68768A;
+    }
+
+    .color-choose .theme-color-54 {
+        background-color: #515C6B;
+    }
+
+    .color-choose .theme-color-55 {
+        background-color: #567C73;
+    }
+
+    .color-choose .theme-color-56 {
+        background-color: #486860;
+    }
+
+    .color-choose .theme-color-57 {
+        background-color: #498205;
+    }
+
+    .color-choose .theme-color-58 {
+        background-color: #107C10;
+    }

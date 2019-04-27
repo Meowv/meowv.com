@@ -1,0 +1,299 @@
+﻿/**
+ 
+ @Name: winui
+ @Author: Leo
+ @Site: www.leo96.com
+ 
+ */
+
+/*皮肤*/
+body .layer-ext-winhelper {
+    min-width: 258px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+    body .layer-ext-winhelper * {
+        font-size: 12px;
+    }
+
+    body .layer-ext-winhelper .layui-layer-title {
+        height: 37px;
+        line-height: 37px;
+        background-color: transparent;
+        color: #fff;
+        border-bottom: none;
+        padding: 0 80px 0 10px;
+    }
+
+body .layer-ext-hprsettings {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+    body .layer-ext-hprsettings * {
+        font-size: 12px;
+        cursor: default;
+    }
+
+    body .layer-ext-hprsettings .layui-layer-title {
+        height: 30px;
+        line-height: 30px;
+        background-color: transparent;
+        color: #7b7b7b;
+        border-bottom: none;
+        padding: 0 80px 0 10px;
+    }
+
+    body .layer-ext-hprsettings .layui-layer-setwin {
+        top: 8px;
+        right: 10px;
+    }
+
+        body .layer-ext-hprsettings .layui-layer-setwin .layui-layer-close1 {
+            cursor: default;
+        }
+/*皮肤End*/
+.winui-helper-content {
+    padding: 0 10px;
+}
+
+    .winui-helper-content hr {
+        margin: 0;
+        background-color: rgba(255, 255, 255, 0.4);
+    }
+
+    .winui-helper-content .winui-helper-tool {
+        padding: 8px 0;
+        width: 238px;
+    }
+
+        .winui-helper-content .winui-helper-tool > span {
+            color: rgba(255, 255, 255, 0.8);
+            margin: 5px;
+            cursor: default;
+            display: inline-block;
+        }
+
+            .winui-helper-content .winui-helper-tool > span:hover {
+                color: #ffffff;
+            }
+
+            .winui-helper-content .winui-helper-tool > span:nth-child(8n+1) {
+                margin-left: 2px;
+            }
+
+            .winui-helper-content .winui-helper-tool > span:nth-child(8n) {
+                margin-right: 1px;
+            }
+
+            .winui-helper-content .winui-helper-tool > span > i {
+                font-size: 16px;
+            }
+
+.winui-helper-setwin {
+    position: absolute;
+    right: 10px;
+    top: 8px;
+    font-size: 0;
+    line-height: initial;
+}
+
+    .winui-helper-setwin a {
+        position: relative;
+        width: 20px;
+        height: 20px;
+        margin-left: 5px;
+        font-size: 12px;
+        color: #ffffff;
+        display: inline-block;
+        line-height: 20px;
+        text-align: center;
+        -moz-box-sizing: border-box;
+        -webkit-box-sizing: border-box;
+        box-sizing: border-box;
+        border: 1px solid transparent;
+    }
+
+        .winui-helper-setwin a:hover {
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+    .winui-helper-setwin .winui-helper-switch i {
+        bottom: 1px;
+        position: relative;
+    }
+
+body .winui-helper-tips .layui-layer-content {
+    color: #000000;
+    padding: 3px 5px;
+}
+
+.tags-content {
+    margin: 10px 0;
+}
+
+    .tags-content textarea {
+        display: block;
+        width: 238px;
+        height: 72px;
+        min-width: 238px;
+        min-height: 72px;
+        line-height: 20px;
+        padding: 6px;
+        border: none;
+        box-sizing: border-box;
+        background-color: rgba(255,255,255,0.1);
+        color: rgba(255, 255, 255, 0.8);
+        word-wrap: break-word;
+        /*cursor: default;*/
+    }
+
+        .tags-content textarea::-webkit-input-placeholder {
+            color: #949494;
+        }
+
+        .tags-content textarea:-moz-placeholder {
+            color: #ddd;
+        }
+
+        .tags-content textarea::-moz-placeholder {
+            color: #ddd;
+        }
+
+        .tags-content textarea:-ms-input-placeholder {
+            color: #ddd;
+        }
+
+
+.helper-menu {
+    width: 160px;
+    padding: 2px;
+    border: 1px solid #dcf0ff;
+    z-index: 201704011157;
+    box-sizing: border-box;
+    background-color: #F0F0F0;
+    position: fixed;
+    -moz-box-shadow: 2px 2px 1px #353535;
+    -webkit-box-shadow: 2px 2px 1px #353535;
+    box-shadow: 2px 2px 1px #353535;
+}
+
+    .helper-menu li {
+        line-height: 22px;
+        font-size: 12px;
+        cursor: default;
+        padding-left: 34px;
+        padding-right: 10px;
+        position: relative;
+    }
+
+        .helper-menu li:hover {
+            background-color: #91C9F7;
+        }
+
+        .helper-menu li i {
+            position: absolute;
+            left: 4px;
+            top: 2px;
+            padding: 3px 2px;
+            background-color: #0063B1;
+            color: #fff;
+        }
+
+
+/*助手设置页面样式*/
+.winui-hprsetings-content {
+    padding: 0 10px;
+}
+
+    .winui-hprsetings-content .layui-tab {
+        margin: 0;
+    }
+
+    .winui-hprsetings-content .layui-tab-title {
+        height: 30px;
+    }
+
+        .winui-hprsetings-content .layui-tab-title li {
+            line-height: 30px;
+            padding: 0 5px;
+        }
+
+        .winui-hprsetings-content .layui-tab-title .layui-this:after {
+            height: 31px;
+        }
+
+    .winui-hprsetings-content .layui-tab-content {
+        padding: 20px;
+    }
+
+    .winui-hprsetings-content .layui-field-box {
+        padding: 10px;
+        padding-left: 12px;
+    }
+
+.bgcolor-item {
+    padding: 10px;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+    border: 1px solid transparent;
+    display: inline-block;
+    margin: 1px;
+    position: relative;
+}
+
+    .bgcolor-item:hover {
+        border: 1px solid #91C9F7;
+    }
+
+    .bgcolor-item.selected::after {
+        content: '√';
+        width: 16px;
+        height: 16px;
+        display: inline-block;
+        background-color: #5FB878;
+        position: absolute;
+        border-radius: 50%;
+        right: 4px;
+        bottom: 4px;
+        color: #fff;
+        text-indent: 4px;
+        line-height: 20px;
+    }
+
+    .bgcolor-item > div {
+        width: 40px;
+        height: 40px;
+    }
+
+.slidearea {
+    padding: 10px 0;
+}
+
+.slider {
+    display: inline-block;
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    top: -3px;
+    left: 2px;
+    border-radius: 50%;
+    box-shadow: 0px 0px 1px 1px #808080;
+    background-color: #fff;
+}
+
+#opacity .layui-progress-bar {
+    -moz-transition: all 0s;
+    -o-transition: all 0s;
+    -webkit-transition: all 0s;
+    transition: all 0s;
+}
+
+
+.basic .layui-form-checked[lay-skin="primary"] i {
+    background-color: #5FB878 !important;
+}
+.basic .layui-form-checkbox[lay-skin="primary"]:hover i,
+.basic .layui-form-checked[lay-skin="primary"] i {
+    border-color: #5FB878 !important;
+}
