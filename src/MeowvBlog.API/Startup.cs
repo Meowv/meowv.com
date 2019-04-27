@@ -1,7 +1,13 @@
 ﻿using Castle.Facilities.Logging;
 using MeowvBlog.API.Filters;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.AzureAD.UI;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Swashbuckle.AspNetCore.Swagger;
@@ -17,7 +23,12 @@ namespace MeowvBlog.API
     {
         public IConfiguration Configuration { get; }
 
-        public Startup(IConfiguration configuration) => Configuration = configuration;
+        public Startup()
+        {
+            var builder = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile("uprimeSettings.json", optional: true, reloadOnChange: true);
+
+            Configuration = builder.Build();
+        }
 
         /// <summary>
         /// 运行时调用此方法，使用此方法向容器添加服务
@@ -33,11 +44,29 @@ namespace MeowvBlog.API
 
             services.AddSingleton(Configuration);
 
+            services.Configure<CookiePolicyOptions>(options =>
+            {
+                options.CheckConsentNeeded = context => true;
+                options.MinimumSameSitePolicy = SameSiteMode.None;
+            });
+
+            services.AddAuthentication(AzureADDefaults.AuthenticationScheme)
+                    .AddAzureAD(options => Configuration.Bind("AzureAd", options));
+
+            services.Configure<OpenIdConnectOptions>(AzureADDefaults.OpenIdScheme, options =>
+            {
+                options.Authority += "/v2.0/";
+                options.TokenValidationParameters.ValidateIssuer = false;
+            });
+
             services.AddMvc(options =>
             {
+                var policy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
+
                 // filters
                 options.Filters.Add<ParameterValidateFilter>();
                 options.Filters.Add<GlobalExceptionFilter>();
+                options.Filters.Add(new AuthorizeFilter(policy));
             }).AddRazorPagesOptions(options =>
             {
                 options.RootDirectory = "/Pages";
@@ -74,7 +103,7 @@ namespace MeowvBlog.API
                 // 标签描述
                 options.DocumentFilter<ApplyTagDescriptions>();
             });
-
+           
             // 启动模块
             UPrimeStarter.Create<MeowvBlogAPIModule>(options =>
             {
@@ -100,10 +129,12 @@ namespace MeowvBlog.API
                 app.UseHsts();
             }
 
-            app.UseHttpsRedirection();
-            app.UseMvcWithDefaultRoute();
             app.UseDefaultFiles(new DefaultFilesOptions { DefaultFileNames = new List<string> { "index.html" } });
+
+            app.UseHttpsRedirection();
             app.UseStaticFiles();
+            app.UseCookiePolicy();
+            app.UseAuthentication();
 
             app.UseSwagger(s =>
             {
@@ -118,6 +149,8 @@ namespace MeowvBlog.API
                 s.DefaultModelsExpandDepth(-1);
                 s.DocExpansion(DocExpansion.None);
             });
+
+            app.UseMvcWithDefaultRoute();
         }
     }
 }
