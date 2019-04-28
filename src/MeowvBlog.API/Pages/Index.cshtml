@@ -183,14 +183,10 @@
         </p>
     </div>
 </div>
-<nav class="text-center">
-    <ul class="pagination">
-        <li><a href="#">&laquo;</a></li>
-        <li class="active"><a href="#">1</a></li>
-        <li class="disabled"><a href="#">2</a></li>
-        <li><a href="#">3</a></li>
-        <li><a href="#">4</a></li>
-        <li><a href="#">5</a></li>
-        <li><a href="#">&raquo;</a></li>
-    </ul>
+<nav class="text-right">
+    <ul id="page"></ul>
 </nav>
+@section Scripts{
+    <script src="~/js/bootstrap-paginator.min.js"></script>
+    <script src="~/js/index.js" asp-append-version="true"></script>
+}
