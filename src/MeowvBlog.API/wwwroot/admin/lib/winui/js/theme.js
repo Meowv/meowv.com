@@ -41,23 +41,6 @@ layui.use(['layer', 'form'], function (exports) {
         //改变父页面背景
         winui.resetBg(bgSrc);
     })
-    //背景图片上传
-    $('.background-upload').on('click', function () {
-        var input = $(this).prev('input[type=file]');
-        input.trigger('click');
-        input.on('change', function () {
-            var src = $(this).val();
-            if (src) {
-                layer.msg('选择了路径【' + src + '】下的图片，返回一张性感的Girl给你')
-                //改变预览背景
-                $('.background-preview').css('background-image', 'url(images/sexy_girl.jpg)');
-                //改变父页面背景
-                winui.resetBg('images/sexy_girl.jpg');
-
-                $(this).val('').off('change');
-            }
-        })
-    });
     //锁屏界面点击
     $('.lockscreen-choose>img').on('click', function () {
         //获取当前图片路径

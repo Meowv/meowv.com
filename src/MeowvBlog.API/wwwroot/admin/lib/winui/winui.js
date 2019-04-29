@@ -161,23 +161,6 @@
                 if (options.renderBg) {
                     othis.renderBg();
                 }
-                //播放声音
-                if (options.audioPlay && !layui.sessionData('winuiSession').audio) {
-                    var audio = document.createElement("audio"), format = undefined;
-                    audio.onended = function () {
-                        audio = null;
-                    }
-                    if (audio.canPlayType("audio/mp3"))
-                        format = '.mp3';
-                    else if (audio.canPlayType("audio/ogg"))
-                        format = ".wav";
-                    if (format) {
-                        audio.src = settings.audioSrc + format;
-                        audio.play();
-                        //播放过后 刷新页面不再播放
-                        layui.sessionData('winuiSession', { key: 'audio', value: true });
-                    }
-                }
                 //任务栏模式渲染
                 othis.renderTaskbar();
                 //开始菜单尺寸设置
