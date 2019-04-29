@@ -8,6 +8,7 @@
 
 html,
 body {
+    background-image: url('/admin/images/bg_01.jpg');
     height: 100%;
     background-size: cover;
     -webkit-user-select: none;

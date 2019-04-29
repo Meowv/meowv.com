@@ -1,7 +1,7 @@
 ﻿layui.config({
-    base: './lib/winui/' //指定 winui 路径
+    base: './lib/winui/'
     , version: '1.0.0-beta'
-}).extend({  //指定js别名
+}).extend({
     window: 'js/winui.window',
     desktop: 'js/winui.desktop',
     start: 'js/winui.start',
@@ -112,43 +112,8 @@
             return;
         }
 
-        var content;
-        if (type === 1) {
-            $.ajax({
-                type: 'get',
-                url: url,
-                async: false,
-                success: function (data) {
-                    content = data;
-                },
-                error: function (e) {
-                    var page = '';
-                    switch (e.status) {
-                        case 404:
-                            page = '404.html';
-                            break;
-                        case 500:
-                            page = '500.html';
-                            break;
-                        default:
-                            content = "打开窗口失败";
-                    }
-                    $.ajax({
-                        type: 'get',
-                        url: 'views/error/' + page,
-                        async: false,
-                        success: function (data) {
-                            content = data;
-                        },
-                        error: function () {
-                            layer.close(load);
-                        }
-                    });
-                }
-            });
-        } else {
-            content = url;
-        }
+        var content = url;
+
         //核心方法（参数请看文档，config是全局配置 open是本次窗口配置 open优先级大于config）
         winui.window.config({
             anim: 0,
@@ -159,12 +124,12 @@
             type: type,
             title: title,
             content: content
+            , maxOpen: maxOpen
+            , refresh: true
             //,area: ['70vw','80vh']
             //,offset: ['10vh', '15vw']
-            , maxOpen: maxOpen
             //, max: false
             //, min: false
-            //, refresh:true
         });
     }
 
