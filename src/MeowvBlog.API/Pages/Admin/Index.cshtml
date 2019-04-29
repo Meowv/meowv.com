@@ -14,7 +14,7 @@
     <link href="~/admin/lib/winui/css/winui.css" rel="stylesheet" />
     <style>
         body {
-            background-image: url(images/bg_01.jpg);
+            background-image: url('/admin/images/bg_01.jpg');
         }
     </style>
 </head>
@@ -28,9 +28,18 @@
     <div class="winui-start sp layui-hide">
         <!-- 左边设置 -->
         <div class="winui-start-left">
-            <div class="winui-start-item bottom" data-text="个人中心"><i class="fa fa-user"></i></div>
-            <div class="winui-start-item winui-start-individuation bottom" data-text="主题设置"><i class="fa fa-cog"></i></div>
-            <div class="winui-start-item bottom logout" data-text="注销登录"><i class="fa fa-power-off"></i></div>
+            <div class="winui-start-item bottom fullscreen" data-text="全屏">
+                <i class="fa fa-arrows-alt"></i>
+            </div>
+            <div class="winui-start-item bottom winui-start-individuation" data-text="设置">
+                <i class="fa fa-cog"></i>
+            </div>
+            <div class="winui-start-item bottom lockScreen" data-text="锁屏">
+                <i class="fa fa-lock"></i>
+            </div>
+            <div class="winui-start-item bottom logout" data-text="注销">
+                <i class="fa fa-power-off"></i>
+            </div>
         </div>
         <!-- 中间导航 -->
         <div class="winui-start-center">
@@ -43,7 +52,7 @@
             <div class="layui-side-scroll">
                 <div class="winui-nav-tile">
                     <div class="winui-tilebox">
-                        <div class="winui-tilebox-head">组件示例1</div>
+                        <div class="winui-tilebox-head">组件示例</div>
                         <div class="winui-tilebox-body">
                             <div class="winui-tile winui-tile-normal">
                                 <i class="fa fa-fw fa-adjust"></i>
@@ -80,61 +89,6 @@
                             <div class="winui-tile winui-tile-long">
                                 <i class="fa fa-fw fa-clock-o"></i>
                                 <span>时间线</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="winui-tilebox">
-                        <div class="winui-tilebox-head">占位菜单</div>
-                        <div class="winui-tilebox-body">
-                            <div class="winui-tile winui-tile-long">
-                                <i class="fa fa-file-text"></i>
-                                <span>文章管理</span>
-                            </div>
-                            <div class="winui-tile winui-tile-normal">
-                                <i class="fa fa-file-text"></i>
-                                <span>文章管理</span>
-                            </div>
-                            <div class="winui-tile winui-tile-normal">
-                                <img src="images/logo_100.png" />
-                                <span>自定义图片</span>
-                            </div>
-                            <div class="winui-tile winui-tile-normal">
-                                <i class="fa fa-file-text"></i>
-                                <span>文章管理</span>
-                            </div>
-                            <div class="winui-tile winui-tile-normal">
-                                <img src="images/qzone_32.png" />
-                                <span>QQ空间</span>
-                            </div>
-                            <div class="winui-tile winui-tile-normal">
-                                <i class="fa fa-photo fa-fw"></i>
-                                <span>图片</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="winui-tilebox">
-                        <div class="winui-tilebox-head">占位菜单</div>
-                        <div class="winui-tilebox-body">
-                            <div class="winui-tile winui-tile-normal">
-                                <i class="fa fa-file-text"></i>
-                                <span>文章管理</span>
-                            </div>
-                            <div class="winui-tile winui-tile-normal">
-                                <i class="fa fa-file-text"></i>
-                                <span>文章管理</span>
-                            </div>
-                            <div class="winui-tile winui-tile-normal">
-                                <i class="fa fa-file-text"></i>
-                                <span>文章管理</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="winui-tilebox">
-                        <div class="winui-tilebox-head">占位菜单</div>
-                        <div class="winui-tilebox-body">
-                            <div class="winui-tile winui-tile-long">
-                                <i class="fa fa-file-text"></i>
-                                <span>文章管理</span>
                             </div>
                         </div>
                     </div>

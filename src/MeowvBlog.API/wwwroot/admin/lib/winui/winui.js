@@ -548,7 +548,7 @@
                         success: function (layero, layerindex) {
                             $('.lock-body').css('background-image', 'url(' + self.settings.lockBgSrc + ')');
                             window.localStorage.setItem("lockscreen", true);
-                            var index = winui.sysTime('#date_time', '<p id="time">!HH:!mm</p><p id="date">!M月!d日,星期!w</p>');
+                            var index = winui.sysTime('#date_time', '<p id="time">!HH:!mm</p><p id="date">!M月!d日 星期!w</p>');
                             var showUnlockDiv = function () {
                                 winui.stopSysTime(index);
                                 $('#date_time').toggleClass('layui-hide');
@@ -565,7 +565,7 @@
                                     }
                                 });
                             }, showTimeDiv = function () {
-                                index = winui.sysTime('#date_time', '<p id="time">!HH:!mm</p><p id="date">!M月!d日,星期!w</p>')
+                                index = winui.sysTime('#date_time', '<p id="time">!HH:!mm</p><p id="date">!M月!d日 星期!w</p>')
                                 $('#date_time').toggleClass('layui-hide');
                                 $('#login_div').toggleClass('layui-hide');
                                 //解绑旧的鼠标键盘事件

@@ -13,7 +13,7 @@ layui.define(['jquery', 'layer', 'winui'], function (exports) {
     //桌面构造函数
     var Desktop = function (options) {
         this.options = options || {
-            url: winui.path + 'json/desktopmenu.json',
+            url: '/admin/json/desktopmenu.json',
             method: 'get'
         };
         this.data = null;

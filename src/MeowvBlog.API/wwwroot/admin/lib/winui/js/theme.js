@@ -30,7 +30,7 @@ layui.use(['layer', 'form'], function (exports) {
         //预览锁屏界面
         var Week = ['日', '一', '二', '三', '四', '五', '六'];
         var dateTime = new Date();
-        $('.lockscreen-preview-time').html('<p id="time">' + (dateTime.getHours() > 9 ? dateTime.getHours().toString() : '0' + dateTime.getHours()) + ':' + (dateTime.getMinutes() > 9 ? dateTime.getMinutes().toString() : '0' + dateTime.getMinutes()) + '</p><p id="date">' + (dateTime.getMonth() + 1) + '月' + dateTime.getDate() + '日,星期' + Week[dateTime.getDay()] + '</p>');
+        $('.lockscreen-preview-time').html('<p id="time">' + (dateTime.getHours() > 9 ? dateTime.getHours().toString() : '0' + dateTime.getHours()) + ':' + (dateTime.getMinutes() > 9 ? dateTime.getMinutes().toString() : '0' + dateTime.getMinutes()) + '</p><p id="date">' + (dateTime.getMonth() + 1) + '月' + dateTime.getDate() + '日 星期' + Week[dateTime.getDay()] + '</p>');
     });
     //背景图片点击
     $('.background-choose>img').on('click', function () {

@@ -6,28 +6,17 @@
     desktop: 'js/winui.desktop',
     start: 'js/winui.start',
     helper: 'js/winui.helper'
-}).define(['window', 'desktop', 'start', 'helper'], function (exports) {
+}).define(['window', 'desktop', 'start'], function (exports) {
     var $ = layui.jquery;
 
     $(function () {
-        //winui.window.msg('Welcome To WinAdmin', {
-        //    time: 4500,
-        //    offset: '40px',
-        //    btn: ['点击进入全屏'],
-        //    btnAlign: 'c',
-        //    yes: function (index) {
-        //        winui.fullScreen(document.documentElement);
-        //        layer.close(index);
-        //    }
-        //});
-
         winui.config({
             settings: layui.data('winui').settings || {
                 color: 32,
                 taskbarMode: 'bottom',
                 startSize: 'sm',
                 bgSrc: 'images/bg_01.jpg',
-                lockBgSrc: 'images/bg_04.jpg'
+                lockBgSrc: 'images/bg.jpg'
             },  //如果本地配置为空则给默认值
             desktop: {
                 options: {},    //可以为{}  默认 请求 json/desktopmenu.json
@@ -36,19 +25,19 @@
                         OpenWindow(elem);
                     });
                     desktopApp.contextmenu({
-                        item: ["打开", "删除", '右键菜单可自定义'],
-                        item1: function (id, elem) {
-                            OpenWindow(elem);
-                        },
-                        item2: function (id, elem, events) {
-                            winui.window.msg('删除回调');
-                            $(elem).remove();
-                            //从新排列桌面app
-                            events.reLocaApp();
-                        },
-                        item3: function (id, elem, events) {
-                            winui.window.msg('自定义回调');
-                        }
+                        //item: ["打开", "删除", '右键菜单可自定义'],
+                        //item1: function (id, elem) {
+                        //    OpenWindow(elem);
+                        //},
+                        //item2: function (id, elem, events) {
+                        //    winui.window.msg('删除回调');
+                        //    $(elem).remove();
+                        //    //从新排列桌面app
+                        //    events.reLocaApp();
+                        //},
+                        //item3: function (id, elem, events) {
+                        //    winui.window.msg('自定义回调');
+                        //}
                     });
                 }
             },
@@ -56,7 +45,7 @@
                 options: {
                     url: 'json/allmenu.json',
                     method: 'get',
-                    data: { nihaoa: '' }
+                    data: {}
                 },
                 done: function (menuItem) {
                     //监听开始菜单点击
@@ -64,27 +53,27 @@
                         OpenWindow(elem);
                     });
                     menuItem.contextmenu({
-                        item: [{
-                            icon: 'fa-cog'
-                            , text: '设置'
-                        }, {
-                            icon: 'fa-close'
-                            , text: '关闭'
-                        }, {
-                            icon: 'fa-qq'
-                            , text: '右键菜单可自定义'
-                        }],
-                        item1: function (id, elem) {
-                            //设置回调
-                            console.log(id);
-                            console.log(elem);
-                        },
-                        item2: function (id, elem) {
-                            //关闭回调
-                        },
-                        item3: function (id, elem) {
-                            winui.window.msg('自定义回调');
-                        }
+                        //item: [{
+                        //    icon: 'fa-cog'
+                        //    , text: '设置'
+                        //}, {
+                        //    icon: 'fa-close'
+                        //    , text: '关闭'
+                        //}, {
+                        //    icon: 'fa-qq'
+                        //    , text: '右键菜单可自定义'
+                        //}],
+                        //item1: function (id, elem) {
+                        //    //设置回调
+                        //    console.log(id);
+                        //    console.log(elem);
+                        //},
+                        //item2: function (id, elem) {
+                        //    //关闭回调
+                        //},
+                        //item3: function (id, elem) {
+                        //    winui.window.msg('自定义回调');
+                        //}
                     });
                 }
             }
@@ -189,12 +178,30 @@
         });
     });
 
+    //锁屏
+    $('.lockScreen').on('click', function () {
+        winui.hideStartMenu();
+        winui.lockScreen(function (password) {
+            if (password === 'qix') {
+                return true;
+            } else {
+                winui.window.msg('密码错误', { shift: 6 });
+                return false;
+            }
+        });
+    });
+
+    //全屏
+    $('.fullscreen').on('click', function () {
+        winui.hideStartMenu();
+        winui.fullScreen(document.documentElement);
+    });
 
     // 判断是否显示锁屏（这个要放在最后执行）
     if (window.localStorage.getItem("lockscreen") == "true") {
         winui.lockScreen(function (password) {
             //模拟解锁验证
-            if (password === 'winadmin') {
+            if (password === 'qix') {
                 return true;
             } else {
                 winui.window.msg('密码错误', { shift: 6 });
@@ -202,29 +209,6 @@
             }
         });
     }
-
-    //扩展桌面助手工具
-    winui.helper.addTool([{
-        tips: '锁屏',
-        icon: 'fa-power-off',
-        click: function (e) {
-            winui.lockScreen(function (password) {
-                //模拟解锁验证
-                if (password === 'winadmin') {
-                    return true;
-                } else {
-                    winui.window.msg('密码错误', { shift: 6 });
-                    return false;
-                }
-            });
-        }
-    }, {
-        tips: '切换壁纸',
-        icon: 'fa-television',
-        click: function (e) {
-            layer.msg('这个是自定义的工具栏', { zIndex: layer.zIndex });
-        }
-    }]);
 
     exports('index', {});
 });
