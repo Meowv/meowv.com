@@ -1,11 +1,10 @@
 ﻿layui.config({
-    base: './lib/winui/'
-    , version: '1.0.0-beta'
+    base: '/admin/lib/winui/'
+    , version: '1.0.0'
 }).extend({
     window: 'js/winui.window',
     desktop: 'js/winui.desktop',
-    start: 'js/winui.start',
-    helper: 'js/winui.helper'
+    start: 'js/winui.start'
 }).define(['window', 'desktop', 'start'], function (exports) {
     var $ = layui.jquery;
 
@@ -15,8 +14,8 @@
                 color: 32,
                 taskbarMode: 'bottom',
                 startSize: 'sm',
-                bgSrc: 'images/bg_01.jpg',
-                lockBgSrc: 'images/bg.jpg'
+                bgSrc: '/admin/images/bg_01.jpg',
+                lockBgSrc: '/admin/images/bg.jpg'
             },  //如果本地配置为空则给默认值
             desktop: {
                 options: {},    //可以为{}  默认 请求 json/desktopmenu.json
@@ -43,7 +42,7 @@
             },
             menu: {
                 options: {
-                    url: 'json/allmenu.json',
+                    url: '/admin/json/allmenu.json',
                     method: 'get',
                     data: {}
                 },

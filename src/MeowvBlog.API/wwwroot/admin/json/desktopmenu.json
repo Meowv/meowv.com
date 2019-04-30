@@ -15,7 +15,7 @@
     },
     {
       "title": "系统菜单",
-      "pageURL": "views/menu/list_iframe.html",
+      "pageURL": "/admin/views/menu/list_iframe.html",
       "name": "系统菜单",
       "icon": "fa-navicon",
       "openType": 2,
