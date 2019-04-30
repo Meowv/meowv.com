@@ -71,7 +71,9 @@ namespace MeowvBlog.API
             }).AddRazorPagesOptions(options =>
             {
                 options.RootDirectory = "/Pages";
+                options.Conventions.AddPageRoute("/Index", "/");
                 options.Conventions.AddPageRoute("/Index", "index.html");
+                options.Conventions.AddPageRoute("/Index", "/page/{p:int}");
                 options.Conventions.AddPageRoute("/Detail", "/p/{id}.html");
                 options.Conventions.AddPageRoute("/Category", "/category/list/{url}");
                 options.Conventions.AddPageRoute("/Tags", "/tags");
