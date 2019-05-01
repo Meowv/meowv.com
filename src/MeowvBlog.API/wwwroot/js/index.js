@@ -4,7 +4,7 @@ var page = {
     pageSize: 10
 }
 var parameter = {
-    url: "/article/getlist?PageIndex=" + page.pageIndex + "&PageSize=" + page.pageSize,
+    url: "/article/query?PageIndex=" + page.pageIndex + "&PageSize=" + page.pageSize,
     callback: function (data) {
         if (data.isSuccess) {
             if (data.result.items.length == 0)

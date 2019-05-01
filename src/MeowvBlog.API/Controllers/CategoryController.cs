@@ -46,18 +46,18 @@ namespace MeowvBlog.API.Controllers
         }
 
         /// <summary>
-        /// 通过分类名称获取所有文章列表
+        /// 通过分类名称查询所有文章列表
         /// </summary>
         /// <param name="name"></param>
         /// <returns></returns>
         [HttpGet]
-        [Route("Article/GetList")]
+        [Route("Article/Query")]
         [AllowAnonymous]
-        public async Task<UPrimeResponse<IList<GetArticleListOutput>>> GetArticleListByCategoryAsync(string name)
+        public async Task<UPrimeResponse<IList<GetArticleListOutput>>> QueryArticleListByAsync(string name)
         {
             var response = new UPrimeResponse<IList<GetArticleListOutput>>();
 
-            var result = await _categoryService.GetArticleListByCategoryAsync(name);
+            var result = await _categoryService.QueryArticleListByAsync(name);
             if (!result.Success)
                 response.SetMessage(UPrimeResponseStatusCode.Error, result.GetErrorMessage());
             else

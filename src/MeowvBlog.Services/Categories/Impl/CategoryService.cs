@@ -65,11 +65,11 @@ namespace MeowvBlog.Services.Categories.Impl
         }
 
         /// <summary>
-        /// 通过分类名称获取所有文章列表
+        /// 通过分类名称查询所有文章列表
         /// </summary>
         /// <param name="name"></param>
         /// <returns></returns>
-        public async Task<ActionOutput<IList<GetArticleListOutput>>> GetArticleListByCategoryAsync(string name)
+        public async Task<ActionOutput<IList<GetArticleListOutput>>> QueryArticleListByAsync(string name)
         {
             using (var uow = UnitOfWorkManager.Begin())
             {

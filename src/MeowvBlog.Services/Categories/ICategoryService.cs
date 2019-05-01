@@ -20,11 +20,11 @@ namespace MeowvBlog.Services.Categories
         Task<ActionOutput<IList<CategoryDto>>> GetAsync();
 
         /// <summary>
-        /// 通过分类名称获取所有文章列表
+        /// 通过分类名称查询所有文章列表
         /// </summary>
         /// <param name="name"></param>
         /// <returns></returns>
-        Task<ActionOutput<IList<GetArticleListOutput>>> GetArticleListByCategoryAsync(string name);
+        Task<ActionOutput<IList<GetArticleListOutput>>> QueryArticleListByAsync(string name);
 
         /// <summary>
         /// 新增分类

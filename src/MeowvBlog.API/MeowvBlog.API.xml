@@ -16,9 +16,9 @@
             <param name="id">主键Id</param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.ArticleController.GetList(MeowvBlog.Services.Dto.Common.PagingInput)">
+        <member name="M:MeowvBlog.API.Controllers.ArticleController.Query(MeowvBlog.Services.Dto.Common.PagingInput)">
             <summary>
-            分页获取文章列表
+            分页查询文章列表
             </summary>
             <param name="input"></param>
             <returns></returns>
@@ -83,9 +83,9 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.CategoryController.GetArticleListByCategoryAsync(System.String)">
+        <member name="M:MeowvBlog.API.Controllers.CategoryController.QueryArticleListByAsync(System.String)">
             <summary>
-            通过分类名称获取所有文章列表
+            通过分类名称查询所有文章列表
             </summary>
             <param name="name"></param>
             <returns></returns>

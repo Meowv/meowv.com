@@ -94,7 +94,7 @@ namespace MeowvBlog.API
                 {
                     Version = "1.0.0",
                     Title = "MeowvBlog API - 个人博客数据接口列表",
-                    Description = "基于<code>.NET Core</code>开发数据接口<code>WebApi</code>，支持<code>MySQL</code>和<code>SqlServer</code>一键切换，现学现写，自娱自乐。"
+                    Description = "基于<code>.NET Core</code>开发个人博客数据接口<code>WebApi</code>，支持<code>MySQL</code>和<code>SqlServer</code>一键切换，现学现写，自娱自乐。<code><a href='https://mewov.com'>https://mewov.com</a></code>"
                 });
 
                 var path = Directory.GetCurrentDirectory();

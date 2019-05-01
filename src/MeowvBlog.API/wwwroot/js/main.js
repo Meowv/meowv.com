@@ -28,7 +28,7 @@ function loadNavCategories() {
 // 加载右侧Top标签列表
 function loadTopTags() {
     var parameter = {
-        url: "/tag/top?count=10",
+        url: "/tag/gettop?count=10",
         callback: function (data) {
             if (data.isSuccess) {
                 var html = template("top_tags_tmpl", data);

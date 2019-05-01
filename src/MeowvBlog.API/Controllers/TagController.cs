@@ -50,7 +50,7 @@ namespace MeowvBlog.API.Controllers
         /// <param name="count"></param>
         /// <returns></returns>
         [HttpGet]
-        [Route("Top")]
+        [Route("GetTop")]
         [AllowAnonymous]
         public async Task<UPrimeResponse<IList<TagDto>>> GetTopAsync(int count)
         {

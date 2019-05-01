@@ -48,18 +48,18 @@ namespace MeowvBlog.API.Controllers
         }
 
         /// <summary>
-        /// 分页获取文章列表
+        /// 分页查询文章列表
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
         [HttpGet]
-        [Route("GetList")]
+        [Route("Query")]
         [AllowAnonymous]
-        public async Task<UPrimeResponse<PagedResultDto<GetArticleListOutput>>> GetList(PagingInput input)
+        public async Task<UPrimeResponse<PagedResultDto<GetArticleListOutput>>> Query(PagingInput input)
         {
             return new UPrimeResponse<PagedResultDto<GetArticleListOutput>>
             {
-                Result = await _articleService.GetListAsync(input)
+                Result = await _articleService.QueryAsync(input)
             };
         }
 

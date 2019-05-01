@@ -105,11 +105,11 @@ namespace MeowvBlog.Services.Articles.Impl
         }
 
         /// <summary>
-        /// 分页获取文章列表
+        /// 分页查询文章列表
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
-        public async Task<PagedResultDto<GetArticleListOutput>> GetListAsync(PagingInput input)
+        public async Task<PagedResultDto<GetArticleListOutput>> QueryAsync(PagingInput input)
         {
             using (var uow = UnitOfWorkManager.Begin())
             {

@@ -20,11 +20,11 @@ namespace MeowvBlog.Services.Articles
         Task<ActionOutput<GetArticleOutput>> GetAsync(int id);
 
         /// <summary>
-        /// 分页获取文章列表
+        /// 分页查询文章列表
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
-        Task<PagedResultDto<GetArticleListOutput>> GetListAsync(PagingInput input);
+        Task<PagedResultDto<GetArticleListOutput>> QueryAsync(PagingInput input);
 
         /// <summary>
         /// 新增文章
