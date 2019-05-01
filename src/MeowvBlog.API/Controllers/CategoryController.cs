@@ -6,6 +6,7 @@ using MeowvBlog.Services.Dto.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using UPrime;
 using UPrime.WebApi;
@@ -53,7 +54,7 @@ namespace MeowvBlog.API.Controllers
         [HttpGet]
         [Route("Article/Query")]
         [AllowAnonymous]
-        public async Task<UPrimeResponse<IList<GetArticleListOutput>>> QueryArticleListByAsync(string name)
+        public async Task<UPrimeResponse<IList<GetArticleListOutput>>> QueryArticleListByAsync([Required] string name)
         {
             var response = new UPrimeResponse<IList<GetArticleListOutput>>();
 

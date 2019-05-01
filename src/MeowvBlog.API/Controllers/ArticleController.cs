@@ -3,6 +3,7 @@ using MeowvBlog.Services.Dto.Articles.Params;
 using MeowvBlog.Services.Dto.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using UPrime;
 using UPrime.Services.Dto;
@@ -33,7 +34,7 @@ namespace MeowvBlog.API.Controllers
         [HttpGet]
         [Route("Get")]
         [AllowAnonymous]
-        public async Task<UPrimeResponse<GetArticleOutput>> Get(int id)
+        public async Task<UPrimeResponse<GetArticleOutput>> Get([Required] int id)
         {
             var response = new UPrimeResponse<GetArticleOutput>();
 
