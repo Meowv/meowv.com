@@ -56,9 +56,9 @@ namespace MeowvBlog.API.Controllers
         [HttpGet]
         [Route("GetList")]
         [AllowAnonymous]
-        public async Task<UPrimeResponse<PagedResultDto<ArticleBriefDto>>> GetListAsync(PagingInput input)
+        public async Task<UPrimeResponse<PagedResultDto<GetArticleListOutput>>> GetListAsync(PagingInput input)
         {
-            return new UPrimeResponse<PagedResultDto<ArticleBriefDto>>
+            return new UPrimeResponse<PagedResultDto<GetArticleListOutput>>
             {
                 Result = await _articleService.GetListAsync(input)
             };

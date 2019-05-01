@@ -2,9 +2,14 @@
 using MeowvBlog.Core.Domain;
 using MeowvBlog.Core.Domain.Articles;
 using MeowvBlog.Core.Domain.Articles.Repositories;
+using MeowvBlog.Core.Domain.Categories.Repositories;
+using MeowvBlog.Core.Domain.Tags.Repositories;
+using MeowvBlog.Services.Categories;
 using MeowvBlog.Services.Dto.Articles;
 using MeowvBlog.Services.Dto.Articles.Params;
+using MeowvBlog.Services.Dto.Categories;
 using MeowvBlog.Services.Dto.Common;
+using MeowvBlog.Services.Dto.Tags;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -25,11 +30,17 @@ namespace MeowvBlog.Services.Articles.Impl
         private readonly IArticleCategoryRepository _articleCategoryRepository;
         private readonly IArticleTagRepository _articleTagRepository;
 
-        public ArticleService(IArticleRepository articleRepository, IArticleCategoryRepository articleCategoryRepository, IArticleTagRepository articleTagRepository)
+        private readonly ICategoryRepository _categoryRepository;
+        private readonly ITagRepository _tagRepository;
+
+        public ArticleService(IArticleRepository articleRepository, IArticleCategoryRepository articleCategoryRepository, IArticleTagRepository articleTagRepository, ICategoryRepository categoryRepository, ITagRepository tagRepository)
         {
             _articleRepository = articleRepository;
             _articleCategoryRepository = articleCategoryRepository;
             _articleTagRepository = articleTagRepository;
+
+            _categoryRepository = categoryRepository;
+            _tagRepository = tagRepository;
         }
 
         /// <summary>
@@ -74,20 +85,50 @@ namespace MeowvBlog.Services.Articles.Impl
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
-        public async Task<PagedResultDto<ArticleBriefDto>> GetListAsync(PagingInput input)
+        public async Task<PagedResultDto<GetArticleListOutput>> GetListAsync(PagingInput input)
         {
             using (var uow = UnitOfWorkManager.Begin())
             {
                 var query = await _articleRepository.GetAllListAsync(x => x.IsDeleted == false);
 
-                var result = query.OrderByDescending(x => x.PostTime).ThenByDescending(x => x.Id);
+                var count = query.Count;
 
-                var count = result.Count();
-                var list = result.MapTo<List<ArticleBriefDto>>().AsQueryable().PageByIndex(input.PageIndex, input.PageSize).ToList();
+                var list = new List<GetArticleListOutput>();
+
+                var articles = query.OrderByDescending(x => x.PostTime)
+                                    .ThenByDescending(x => x.Id)
+                                    .AsQueryable()
+                                    .PageByIndex(input.PageIndex, input.PageSize)
+                                    .ToList();
+                foreach (var item in articles)
+                {
+                    var catgegoryId = _articleCategoryRepository.FirstOrDefaultAsync(x => x.ArticleId == item.Id).Result.CategoryId;
+                    var category = await _categoryRepository.FirstOrDefaultAsync(x => x.Id == catgegoryId);
+
+                    var tagIds = _articleTagRepository.GetAllListAsync(x => x.ArticleId == item.Id).Result.Select(x => x.TagId);
+                    var tags = await _tagRepository.GetAllListAsync(x => tagIds.Contains(x.Id));
+
+                    var output = new GetArticleListOutput
+                    {
+                        Article = new ArticleBriefDto()
+                        {
+                            Id = item.Id,
+                            Title = item.Title,
+                            Author = item.Author,
+                            Source = item.Source,
+                            Url = item.Url,
+                            Summary = item.Summary,
+                            PostTime = item.PostTime
+                        },
+                        Category = category.MapTo<CategoryDto>(),
+                        Tags = tags.Take(3).MapTo<IList<TagDto>>()
+                    };
+                    list.Add(output);
+                }
 
                 await uow.CompleteAsync();
 
-                return new PagedResultDto<ArticleBriefDto>(count, list);
+                return new PagedResultDto<GetArticleListOutput>(count, list);
             }
         }
 

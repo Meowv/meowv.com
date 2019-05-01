@@ -24,7 +24,7 @@ namespace MeowvBlog.Services.Articles
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
-        Task<PagedResultDto<ArticleBriefDto>> GetListAsync(PagingInput input);
+        Task<PagedResultDto<GetArticleListOutput>> GetListAsync(PagingInput input);
 
         /// <summary>
         /// 新增文章

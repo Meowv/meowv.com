@@ -17,6 +17,6 @@ namespace MeowvBlog.Services.Dto.Common
         /// <summary>
         /// 页大小
         /// </summary>
-        public int PageSize { get; set; } = 20;
+        public int PageSize { get; set; } = 10;
     }
 }

@@ -10,7 +10,7 @@ var parameter = {
             if (data.result.items.length == 0)
                 location.href = "/";
 
-            var html = template("articles_tmpl", data);
+            var html = template("articles_tmpl", data.result);
             document.getElementById('articles').innerHTML = html;
 
             var options = {

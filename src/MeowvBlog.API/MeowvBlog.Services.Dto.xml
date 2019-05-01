@@ -14,9 +14,19 @@
             标题
             </summary>
         </member>
+        <member name="P:MeowvBlog.Services.Dto.Articles.ArticleBriefDto.Author">
+            <summary>
+            作者
+            </summary>
+        </member>
         <member name="P:MeowvBlog.Services.Dto.Articles.ArticleBriefDto.Source">
             <summary>
             来源
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Articles.ArticleBriefDto.Url">
+            <summary>
+            链接
             </summary>
         </member>
         <member name="P:MeowvBlog.Services.Dto.Articles.ArticleBriefDto.Summary">
@@ -82,6 +92,26 @@
         <member name="P:MeowvBlog.Services.Dto.Articles.ArticleDto.PostTime">
             <summary>
             发布时间
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.Services.Dto.Articles.Params.GetArticleListOutput">
+            <summary>
+            分页获取文章列表输出参数
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Articles.Params.GetArticleListOutput.Article">
+            <summary>
+            文章
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Articles.Params.GetArticleListOutput.Category">
+            <summary>
+            分类
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Articles.Params.GetArticleListOutput.Tags">
+            <summary>
+            标签
             </summary>
         </member>
         <member name="T:MeowvBlog.Services.Dto.Articles.Params.InsertArticleCategoryInput">
