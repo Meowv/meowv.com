@@ -4,14 +4,12 @@ using MeowvBlog.Core.Domain.Articles;
 using MeowvBlog.Core.Domain.Articles.Repositories;
 using MeowvBlog.Core.Domain.Categories.Repositories;
 using MeowvBlog.Core.Domain.Tags.Repositories;
-using MeowvBlog.Services.Categories;
 using MeowvBlog.Services.Dto.Articles;
 using MeowvBlog.Services.Dto.Articles.Params;
 using MeowvBlog.Services.Dto.Categories;
 using MeowvBlog.Services.Dto.Common;
 using MeowvBlog.Services.Dto.Tags;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -29,7 +27,6 @@ namespace MeowvBlog.Services.Articles.Impl
         private readonly IArticleRepository _articleRepository;
         private readonly IArticleCategoryRepository _articleCategoryRepository;
         private readonly IArticleTagRepository _articleTagRepository;
-
         private readonly ICategoryRepository _categoryRepository;
         private readonly ITagRepository _tagRepository;
 

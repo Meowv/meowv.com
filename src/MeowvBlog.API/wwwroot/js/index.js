@@ -11,7 +11,7 @@ var parameter = {
                 location.href = "/";
 
             var html = template("articles_tmpl", data.result);
-            document.getElementById('articles').innerHTML = html;
+            document.getElementById('articles').outerHTML = html;
 
             var options = {
                 size: "small",                bootstrapMajorVersion: 3,
