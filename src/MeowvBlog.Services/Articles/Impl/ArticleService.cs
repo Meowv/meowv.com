@@ -129,7 +129,9 @@ namespace MeowvBlog.Services.Articles.Impl
                     var catgegoryId = _articleCategoryRepository.FirstOrDefaultAsync(x => x.ArticleId == item.Id).Result.CategoryId;
                     var category = await _categoryRepository.FirstOrDefaultAsync(x => x.Id == catgegoryId);
 
-                    var tagIds = _articleTagRepository.GetAllListAsync(x => x.ArticleId == item.Id).Result.Select(x => x.TagId);
+                    var tagIds = _articleTagRepository.GetAllListAsync(x => x.ArticleId == item.Id)
+                                                      .Result
+                                                      .Select(x => x.TagId);
                     var tags = await _tagRepository.GetAllListAsync(x => tagIds.Contains(x.Id));
 
                     var output = new GetArticleListOutput

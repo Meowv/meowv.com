@@ -1,5 +1,4 @@
 ﻿using MeowvBlog.Services.Articles;
-using MeowvBlog.Services.Dto.Articles;
 using MeowvBlog.Services.Dto.Articles.Params;
 using MeowvBlog.Services.Dto.Common;
 using Microsoft.AspNetCore.Authorization;
@@ -34,7 +33,7 @@ namespace MeowvBlog.API.Controllers
         [HttpGet]
         [Route("Get")]
         [AllowAnonymous]
-        public async Task<UPrimeResponse<GetArticleOutput>> GetAsync(int id)
+        public async Task<UPrimeResponse<GetArticleOutput>> Get(int id)
         {
             var response = new UPrimeResponse<GetArticleOutput>();
 
@@ -56,7 +55,7 @@ namespace MeowvBlog.API.Controllers
         [HttpGet]
         [Route("GetList")]
         [AllowAnonymous]
-        public async Task<UPrimeResponse<PagedResultDto<GetArticleListOutput>>> GetListAsync(PagingInput input)
+        public async Task<UPrimeResponse<PagedResultDto<GetArticleListOutput>>> GetList(PagingInput input)
         {
             return new UPrimeResponse<PagedResultDto<GetArticleListOutput>>
             {

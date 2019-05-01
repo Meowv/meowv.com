@@ -9,14 +9,14 @@
             文章相关API
             </summary>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.ArticleController.GetAsync(System.Int32)">
+        <member name="M:MeowvBlog.API.Controllers.ArticleController.Get(System.Int32)">
             <summary>
             获取一篇文章详细信息
             </summary>
             <param name="id">主键Id</param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.ArticleController.GetListAsync(MeowvBlog.Services.Dto.Common.PagingInput)">
+        <member name="M:MeowvBlog.API.Controllers.ArticleController.GetList(MeowvBlog.Services.Dto.Common.PagingInput)">
             <summary>
             分页获取文章列表
             </summary>
@@ -76,6 +76,19 @@
             <summary>
             分类相关API
             </summary>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.CategoryController.Get">
+            <summary>
+            所有分类列表
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.CategoryController.GetArticleListByCategoryAsync(System.String)">
+            <summary>
+            通过分类名称获取所有文章列表
+            </summary>
+            <param name="name"></param>
+            <returns></returns>
         </member>
         <member name="M:MeowvBlog.API.Controllers.CategoryController.Insert(MeowvBlog.Services.Dto.Categories.CategoryDto)">
             <summary>

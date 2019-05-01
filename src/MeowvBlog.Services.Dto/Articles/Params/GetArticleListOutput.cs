@@ -1,12 +1,11 @@
 ﻿using MeowvBlog.Services.Dto.Categories;
 using MeowvBlog.Services.Dto.Tags;
 using System.Collections.Generic;
-using UPrime.Services.Dto;
 
 namespace MeowvBlog.Services.Dto.Articles.Params
 {
     /// <summary>
-    /// 分页获取文章列表输出参数
+    /// 文章列表输出参数
     /// </summary>
     public class GetArticleListOutput
     {

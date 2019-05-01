@@ -1,4 +1,5 @@
 ﻿using MeowvBlog.Services.Categories;
+using MeowvBlog.Services.Dto.Articles.Params;
 using MeowvBlog.Services.Dto.Categories;
 using MeowvBlog.Services.Dto.Categories.Params;
 using MeowvBlog.Services.Dto.Common;
@@ -24,14 +25,39 @@ namespace MeowvBlog.API.Controllers
             _categoryService = UPrimeEngine.Instance.Resolve<ICategoryService>();
         }
 
+        /// <summary>
+        /// 所有分类列表
+        /// </summary>
+        /// <returns></returns>
         [HttpGet]
         [Route("Get")]
         [AllowAnonymous]
-        public async Task<UPrimeResponse<IList<CategoryDto>>> GetAsync()
+        public async Task<UPrimeResponse<IList<CategoryDto>>> Get()
         {
             var response = new UPrimeResponse<IList<CategoryDto>>();
 
             var result = await _categoryService.GetAsync();
+            if (!result.Success)
+                response.SetMessage(UPrimeResponseStatusCode.Error, result.GetErrorMessage());
+            else
+                response.Result = result.Result;
+
+            return response;
+        }
+
+        /// <summary>
+        /// 通过分类名称获取所有文章列表
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("Article/GetList")]
+        [AllowAnonymous]
+        public async Task<UPrimeResponse<IList<GetArticleListOutput>>> GetArticleListByCategoryAsync(string name)
+        {
+            var response = new UPrimeResponse<IList<GetArticleListOutput>>();
+
+            var result = await _categoryService.GetArticleListByCategoryAsync(name);
             if (!result.Success)
                 response.SetMessage(UPrimeResponseStatusCode.Error, result.GetErrorMessage());
             else

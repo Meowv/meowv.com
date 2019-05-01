@@ -91,7 +91,7 @@
         </member>
         <member name="T:MeowvBlog.Services.Dto.Articles.Params.GetArticleListOutput">
             <summary>
-            分页获取文章列表输出参数
+            文章列表输出参数
             </summary>
         </member>
         <member name="P:MeowvBlog.Services.Dto.Articles.Params.GetArticleListOutput.Article">

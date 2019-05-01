@@ -1,4 +1,5 @@
-﻿using MeowvBlog.Services.Dto.Categories;
+﻿using MeowvBlog.Services.Dto.Articles.Params;
+using MeowvBlog.Services.Dto.Categories;
 using MeowvBlog.Services.Dto.Categories.Params;
 using MeowvBlog.Services.Dto.Common;
 using System.Collections.Generic;
@@ -17,6 +18,13 @@ namespace MeowvBlog.Services.Categories
         /// </summary>
         /// <returns></returns>
         Task<ActionOutput<IList<CategoryDto>>> GetAsync();
+
+        /// <summary>
+        /// 通过分类名称获取所有文章列表
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        Task<ActionOutput<IList<GetArticleListOutput>>> GetArticleListByCategoryAsync(string name);
 
         /// <summary>
         /// 新增分类
