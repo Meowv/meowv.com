@@ -45,16 +45,6 @@ namespace MeowvBlog.Core.Domain.Articles
         public int Hits { get; set; }
 
         /// <summary>
-        /// 关键字
-        /// </summary>
-        public string MetaKeywords { get; set; }
-
-        /// <summary>
-        /// 描述
-        /// </summary>
-        public string MetaDescription { get; set; }
-
-        /// <summary>
         /// 创建时间
         /// </summary>
         public DateTime CreationTime { get; set; }

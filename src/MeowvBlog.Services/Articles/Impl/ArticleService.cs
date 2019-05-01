@@ -149,8 +149,6 @@ namespace MeowvBlog.Services.Articles.Impl
                     Summary = input.Summary,
                     Content = input.Content,
                     Hits = 0,
-                    MetaKeywords = input.MetaKeywords,
-                    MetaDescription = input.MetaDescription,
                     CreationTime = DateTime.Now,
                     PostTime = input.PostTime,
                     IsDeleted = false
@@ -182,8 +180,6 @@ namespace MeowvBlog.Services.Articles.Impl
                 entity.Url = input.Url;
                 entity.Summary = input.Summary;
                 entity.Content = input.Content;
-                entity.MetaKeywords = input.MetaKeywords;
-                entity.MetaDescription = input.MetaDescription;
                 entity.PostTime = input.PostTime;
                 await _articleRepository.UpdateAsync(entity);
 
