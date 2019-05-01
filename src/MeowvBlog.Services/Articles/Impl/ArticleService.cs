@@ -79,15 +79,15 @@ namespace MeowvBlog.Services.Articles.Impl
                 var tags = await _tagRepository.GetAllListAsync(x => tagIds.Contains(x.Id));
 
                 var previousArticle = _articleRepository.GetAll()
-                                                    .Where(x => x.Id > id)
-                                                    .Take(1)
-                                                    .FirstOrDefault();
-
-                var nextArticle = _articleRepository.GetAll()
-                                                        .Where(x => x.Id < id)
-                                                        .OrderByDescending(x => x.Id)
+                                                        .Where(x => x.Id > id)
                                                         .Take(1)
                                                         .FirstOrDefault();
+
+                var nextArticle = _articleRepository.GetAll()
+                                                    .Where(x => x.Id < id)
+                                                    .OrderByDescending(x => x.Id)
+                                                    .Take(1)
+                                                    .FirstOrDefault();
 
                 output.Result = new GetArticleOutput
                 {
@@ -136,16 +136,7 @@ namespace MeowvBlog.Services.Articles.Impl
 
                     var output = new GetArticleListOutput
                     {
-                        Article = new ArticleBriefDto()
-                        {
-                            Id = item.Id,
-                            Title = item.Title,
-                            Author = item.Author,
-                            Source = item.Source,
-                            Url = item.Url,
-                            Summary = item.Summary,
-                            PostTime = item.PostTime
-                        },
+                        Article = item.MapTo<ArticleBriefDto>(),
                         Category = category.MapTo<CategoryDto>(),
                         Tags = tags.Take(3).MapTo<IList<TagDto>>()
                     };
