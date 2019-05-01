@@ -154,6 +154,60 @@ namespace MeowvBlog.Services.Articles.Impl
         }
 
         /// <summary>
+        /// 通过关键词查询文章列表
+        /// </summary>
+        /// <param name="keywords"></param>
+        /// <returns></returns>
+        public async Task<ActionOutput<IList<GetArticleListOutput>>> QueryByAsync(string keywords)
+        {
+            using (var uow = UnitOfWorkManager.Begin())
+            {
+                var output = new ActionOutput<IList<GetArticleListOutput>>();
+
+                var query = await _articleRepository.GetAllListAsync(x => x.IsDeleted == false &&
+                                                                     x.Title.Contains(keywords) ||
+                                                                     x.Content.Contains(keywords) ||
+                                                                     x.Author.Contains(keywords));
+                if (query.IsNull())
+                {
+                    output.AddError(GlobalConsts.NONE_DATA);
+                    return output;
+                }
+
+                var list = new List<GetArticleListOutput>();
+
+                var articles = query.OrderByDescending(x => x.PostTime)
+                                    .ThenByDescending(x => x.Id)
+                                    .ToList();
+
+                foreach (var item in articles)
+                {
+                    var tagIds = _articleTagRepository.GetAllListAsync(x => x.ArticleId == item.Id)
+                                                      .Result
+                                                      .Select(x => x.TagId);
+                    var tags = await _tagRepository.GetAllListAsync(x => tagIds.Contains(x.Id));
+
+                    var categoryId = _articleCategoryRepository.FirstOrDefaultAsync(x => x.ArticleId == item.Id)
+                                                               .Result.CategoryId;
+                    var category = await _categoryRepository.FirstOrDefaultAsync(x => x.Id == categoryId);
+
+                    list.Add(new GetArticleListOutput
+                    {
+                        Article = item.MapTo<ArticleBriefDto>(),
+                        Category = category.MapTo<CategoryDto>(),
+                        Tags = tags.Take(3).MapTo<IList<TagDto>>()
+                    });
+                }
+
+                output.Result = list;
+
+                await uow.CompleteAsync();
+
+                return output;
+            }
+        }
+
+        /// <summary>
         /// 新增文章
         /// </summary>
         /// <param name="input"></param>

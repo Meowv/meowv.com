@@ -114,8 +114,8 @@ namespace MeowvBlog.Services.Tags.Impl
                 var query = await _articleRepository.GetAllListAsync(x => articleIds.Contains(x.Id));
 
                 var articles = query.OrderByDescending(x => x.PostTime)
-                                   .ThenByDescending(x => x.Id)
-                                   .ToList();
+                                    .ThenByDescending(x => x.Id)
+                                    .ToList();
 
                 foreach (var item in articles)
                 {

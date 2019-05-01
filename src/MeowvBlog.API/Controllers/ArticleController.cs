@@ -3,6 +3,7 @@ using MeowvBlog.Services.Dto.Articles.Params;
 using MeowvBlog.Services.Dto.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using UPrime;
@@ -62,6 +63,28 @@ namespace MeowvBlog.API.Controllers
             {
                 Result = await _articleService.QueryAsync(input)
             };
+        }
+
+        /// <summary>
+        /// 通过关键词查询文章列表
+        /// </summary>
+        /// <param name="keywords"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("Search/Query")]
+        [AllowAnonymous]
+        public async Task<UPrimeResponse<IList<GetArticleListOutput>>> QueryByAsync(string keywords)
+        {
+            var response = new UPrimeResponse<IList<GetArticleListOutput>>();
+
+            var result = await _articleService.QueryByAsync(keywords);
+
+            if (!result.Success)
+                response.SetMessage(UPrimeResponseStatusCode.Error, result.GetErrorMessage());
+            else
+                response.Result = result.Result;
+
+            return response;
         }
 
         /// <summary>

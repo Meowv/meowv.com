@@ -1,6 +1,7 @@
 ﻿using MeowvBlog.Services.Dto.Articles;
 using MeowvBlog.Services.Dto.Articles.Params;
 using MeowvBlog.Services.Dto.Common;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using UPrime;
 using UPrime.Services.Dto;
@@ -25,6 +26,13 @@ namespace MeowvBlog.Services.Articles
         /// <param name="input"></param>
         /// <returns></returns>
         Task<PagedResultDto<GetArticleListOutput>> QueryAsync(PagingInput input);
+
+        /// <summary>
+        /// 通过关键词查询文章列表
+        /// </summary>
+        /// <param name="keywords"></param>
+        /// <returns></returns>
+        Task<ActionOutput<IList<GetArticleListOutput>>> QueryByAsync(string keywords);
 
         /// <summary>
         /// 新增文章
