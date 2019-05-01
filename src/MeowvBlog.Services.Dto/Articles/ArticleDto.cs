@@ -32,11 +32,6 @@ namespace MeowvBlog.Services.Dto.Articles
         public string Url { get; set; }
 
         /// <summary>
-        /// 简介
-        /// </summary>
-        public string Summary { get; set; }
-
-        /// <summary>
         /// 内容
         /// </summary>
         public string Content { get; set; }

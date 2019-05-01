@@ -34,9 +34,9 @@ namespace MeowvBlog.API.Controllers
         [HttpGet]
         [Route("Get")]
         [AllowAnonymous]
-        public async Task<UPrimeResponse<ArticleDto>> GetAsync(int id)
+        public async Task<UPrimeResponse<GetArticleOutput>> GetAsync(int id)
         {
-            var response = new UPrimeResponse<ArticleDto>();
+            var response = new UPrimeResponse<GetArticleOutput>();
 
             var result = await _articleService.GetAsync(id);
 

@@ -65,16 +65,6 @@
             点击量
             </summary>
         </member>
-        <member name="P:MeowvBlog.Core.Domain.Articles.Article.MetaKeywords">
-            <summary>
-            关键字
-            </summary>
-        </member>
-        <member name="P:MeowvBlog.Core.Domain.Articles.Article.MetaDescription">
-            <summary>
-            描述
-            </summary>
-        </member>
         <member name="P:MeowvBlog.Core.Domain.Articles.Article.CreationTime">
             <summary>
             创建时间

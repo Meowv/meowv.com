@@ -17,7 +17,7 @@ namespace MeowvBlog.Services.Articles
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        Task<ActionOutput<ArticleDto>> GetAsync(int id);
+        Task<ActionOutput<GetArticleOutput>> GetAsync(int id);
 
         /// <summary>
         /// 分页获取文章列表

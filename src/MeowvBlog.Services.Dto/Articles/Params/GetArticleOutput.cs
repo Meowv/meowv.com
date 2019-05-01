@@ -23,5 +23,15 @@ namespace MeowvBlog.Services.Dto.Articles.Params
         /// 标签
         /// </summary>
         public IList<TagDto> Tags { get; set; }
+
+        /// <summary>
+        /// 上一篇
+        /// </summary>
+        public ArticleForPagedDto Previous { get; set; }
+
+        /// <summary>
+        /// 下一篇
+        /// </summary>
+        public ArticleForPagedDto Next { get; set; }
     }
 }

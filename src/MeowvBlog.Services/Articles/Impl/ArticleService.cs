@@ -50,9 +50,9 @@ namespace MeowvBlog.Services.Articles.Impl
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public async Task<ActionOutput<ArticleDto>> GetAsync(int id)
+        public async Task<ActionOutput<GetArticleOutput>> GetAsync(int id)
         {
-            var output = new ActionOutput<ArticleDto>();
+            var output = new ActionOutput<GetArticleOutput>();
 
             if (id <= 0)
             {
@@ -62,19 +62,46 @@ namespace MeowvBlog.Services.Articles.Impl
 
             using (var uow = UnitOfWorkManager.Begin())
             {
-                var entity = await _articleRepository.FirstOrDefaultAsync(x => x.Id == id && x.IsDeleted == false);
-                if (entity.IsNull())
+                var article = await _articleRepository.FirstOrDefaultAsync(x => x.Id == id && x.IsDeleted == false);
+                if (article.IsNull())
                 {
                     output.AddError(GlobalConsts.NONE_DATA);
                     return output;
                 }
 
-                output.Result = entity.MapTo<ArticleDto>();
+                var catgegoryId = _articleCategoryRepository.FirstOrDefaultAsync(x => x.ArticleId == article.Id)
+                                                            .Result.CategoryId;
+                var category = await _categoryRepository.FirstOrDefaultAsync(x => x.Id == catgegoryId);
+
+                var tagIds = _articleTagRepository.GetAllListAsync(x => x.ArticleId == article.Id)
+                                                  .Result
+                                                  .Select(x => x.TagId);
+                var tags = await _tagRepository.GetAllListAsync(x => tagIds.Contains(x.Id));
+
+                var previousArticle = _articleRepository.GetAll()
+                                                    .Where(x => x.Id > id)
+                                                    .Take(1)
+                                                    .FirstOrDefault();
+
+                var nextArticle = _articleRepository.GetAll()
+                                                        .Where(x => x.Id < id)
+                                                        .OrderByDescending(x => x.Id)
+                                                        .Take(1)
+                                                        .FirstOrDefault();
+
+                output.Result = new GetArticleOutput
+                {
+                    Article = article.MapTo<ArticleDto>(),
+                    Category = category.MapTo<CategoryDto>(),
+                    Tags = tags.MapTo<IList<TagDto>>(),
+                    Previous = previousArticle.MapTo<ArticleForPagedDto>(),
+                    Next = nextArticle.MapTo<ArticleForPagedDto>(),
+                };
 
                 await uow.CompleteAsync();
-            }
 
-            return output;
+                return output;
+            }
         }
 
         /// <summary>
