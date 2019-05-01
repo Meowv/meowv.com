@@ -1,4 +1,5 @@
-﻿using MeowvBlog.Services.Dto.Common;
+﻿using MeowvBlog.Services.Dto.Articles.Params;
+using MeowvBlog.Services.Dto.Common;
 using MeowvBlog.Services.Dto.Tags;
 using MeowvBlog.Services.Dto.Tags.Params;
 using System.Collections.Generic;
@@ -24,6 +25,13 @@ namespace MeowvBlog.Services.Tags
         /// <param name="count"></param>
         /// <returns></returns>
         Task<ActionOutput<IList<TagDto>>> GetAsync(int count);
+
+        /// <summary>
+        /// 通过标签名称查询文章列表
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        Task<ActionOutput<IList<GetArticleListOutput>>> QueryArticleListByAsync(string name);
 
         /// <summary>
         /// 新增标签

@@ -65,7 +65,7 @@ namespace MeowvBlog.Services.Categories.Impl
         }
 
         /// <summary>
-        /// 通过分类名称查询所有文章列表
+        /// 通过分类名称查询文章列表
         /// </summary>
         /// <param name="name"></param>
         /// <returns></returns>
@@ -92,7 +92,6 @@ namespace MeowvBlog.Services.Categories.Impl
 
                 var articles = query.OrderByDescending(x => x.PostTime)
                                     .ThenByDescending(x => x.Id)
-                                    .AsQueryable()
                                     .ToList();
                 foreach (var item in articles)
                 {

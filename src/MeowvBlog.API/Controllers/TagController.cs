@@ -1,4 +1,5 @@
-﻿using MeowvBlog.Services.Dto.Common;
+﻿using MeowvBlog.Services.Dto.Articles.Params;
+using MeowvBlog.Services.Dto.Common;
 using MeowvBlog.Services.Dto.Tags;
 using MeowvBlog.Services.Dto.Tags.Params;
 using MeowvBlog.Services.Tags;
@@ -57,6 +58,27 @@ namespace MeowvBlog.API.Controllers
             var response = new UPrimeResponse<IList<TagDto>>();
 
             var result = await _tagService.GetAsync(count);
+            if (!result.Success)
+                response.SetMessage(UPrimeResponseStatusCode.Error, result.GetErrorMessage());
+            else
+                response.Result = result.Result;
+
+            return response;
+        }
+
+        /// <summary>
+        /// 通过标签名称查询文章列表
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("Article/Query")]
+        [AllowAnonymous]
+        public async Task<UPrimeResponse<IList<GetArticleListOutput>>> QueryArticleListByAsync(string name)
+        {
+            var response = new UPrimeResponse<IList<GetArticleListOutput>>();
+
+            var result = await _tagService.QueryArticleListByAsync(name);
             if (!result.Success)
                 response.SetMessage(UPrimeResponseStatusCode.Error, result.GetErrorMessage());
             else

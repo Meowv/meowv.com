@@ -30,12 +30,16 @@ namespace MeowvBlog.Services.Articles.Impl
         private readonly ICategoryRepository _categoryRepository;
         private readonly ITagRepository _tagRepository;
 
-        public ArticleService(IArticleRepository articleRepository, IArticleCategoryRepository articleCategoryRepository, IArticleTagRepository articleTagRepository, ICategoryRepository categoryRepository, ITagRepository tagRepository)
+        public ArticleService(
+            IArticleRepository articleRepository,
+            IArticleCategoryRepository articleCategoryRepository,
+            IArticleTagRepository articleTagRepository,
+            ICategoryRepository categoryRepository,
+            ITagRepository tagRepository)
         {
             _articleRepository = articleRepository;
             _articleCategoryRepository = articleCategoryRepository;
             _articleTagRepository = articleTagRepository;
-
             _categoryRepository = categoryRepository;
             _tagRepository = tagRepository;
         }
