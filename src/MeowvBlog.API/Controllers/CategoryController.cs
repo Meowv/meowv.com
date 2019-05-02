@@ -55,7 +55,7 @@ namespace MeowvBlog.API.Controllers
         [HttpGet]
         [Route("Article/Query")]
         [AllowAnonymous]
-        [ResponseCache(CacheProfileName = "Hourly")]
+        [ResponseCache(CacheProfileName = "default", VaryByQueryKeys = new string[] { "name" })]
         public async Task<UPrimeResponse<IList<GetArticleListOutput>>> QueryArticleListBy([Required] string name)
         {
             var response = new UPrimeResponse<IList<GetArticleListOutput>>();

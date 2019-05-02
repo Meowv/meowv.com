@@ -55,7 +55,7 @@ namespace MeowvBlog.API.Controllers
         [HttpGet]
         [Route("GetTop")]
         [AllowAnonymous]
-        [ResponseCache(CacheProfileName = "Hourly")]
+        [ResponseCache(CacheProfileName = "Hourly", VaryByQueryKeys = new string[] { "count" })]
         public async Task<UPrimeResponse<IList<TagDto>>> GetTop([Required] int count)
         {
             var response = new UPrimeResponse<IList<TagDto>>();
@@ -77,6 +77,7 @@ namespace MeowvBlog.API.Controllers
         [HttpGet]
         [Route("Article/Query")]
         [AllowAnonymous]
+        [ResponseCache(CacheProfileName = "default", VaryByQueryKeys = new string[] { "name" })]
         public async Task<UPrimeResponse<IList<GetArticleListOutput>>> QueryArticleListBy([Required] string name)
         {
             var response = new UPrimeResponse<IList<GetArticleListOutput>>();

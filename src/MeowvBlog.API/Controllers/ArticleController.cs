@@ -36,7 +36,7 @@ namespace MeowvBlog.API.Controllers
         [HttpGet]
         [Route("Get")]
         [AllowAnonymous]
-        [ResponseCache(CacheProfileName = "Hourly")]
+        [ResponseCache(CacheProfileName = "default", VaryByQueryKeys = new string[] { "id" })]
         public async Task<UPrimeResponse<GetArticleOutput>> Get([Required] int id)
         {
             var response = new UPrimeResponse<GetArticleOutput>();
