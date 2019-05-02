@@ -54,7 +54,7 @@ namespace MeowvBlog.API.Controllers
         [HttpGet]
         [Route("Article/Query")]
         [AllowAnonymous]
-        public async Task<UPrimeResponse<IList<GetArticleListOutput>>> QueryArticleListByAsync([Required] string name)
+        public async Task<UPrimeResponse<IList<GetArticleListOutput>>> QueryArticleListBy([Required] string name)
         {
             var response = new UPrimeResponse<IList<GetArticleListOutput>>();
 

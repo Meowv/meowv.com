@@ -33,7 +33,7 @@ namespace MeowvBlog.API.Controllers
         [HttpGet]
         [Route("Get")]
         [AllowAnonymous]
-        public async Task<UPrimeResponse<IList<TagDto>>> GetAsync()
+        public async Task<UPrimeResponse<IList<TagDto>>> Get()
         {
             var response = new UPrimeResponse<IList<TagDto>>();
 
@@ -54,7 +54,7 @@ namespace MeowvBlog.API.Controllers
         [HttpGet]
         [Route("GetTop")]
         [AllowAnonymous]
-        public async Task<UPrimeResponse<IList<TagDto>>> GetTopAsync([Required] int count)
+        public async Task<UPrimeResponse<IList<TagDto>>> GetTop([Required] int count)
         {
             var response = new UPrimeResponse<IList<TagDto>>();
 
@@ -75,7 +75,7 @@ namespace MeowvBlog.API.Controllers
         [HttpGet]
         [Route("Article/Query")]
         [AllowAnonymous]
-        public async Task<UPrimeResponse<IList<GetArticleListOutput>>> QueryArticleListByAsync([Required] string name)
+        public async Task<UPrimeResponse<IList<GetArticleListOutput>>> QueryArticleListBy([Required] string name)
         {
             var response = new UPrimeResponse<IList<GetArticleListOutput>>();
 
