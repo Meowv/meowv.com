@@ -10,6 +10,8 @@
 
             public const string ArticleCategories = "Meowv_ArticleCategories";
             public const string ArticleTags = "Meowv_ArticleTags";
+
+            public const string FriendLinks = "Mewov_FriendLinks";
         }
     }
 }
