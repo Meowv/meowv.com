@@ -168,7 +168,7 @@ namespace MeowvBlog.Services.Articles.Impl
                                                                      x.Title.Contains(keywords) ||
                                                                      x.Content.Contains(keywords) ||
                                                                      x.Author.Contains(keywords));
-                if (query.IsNull())
+                if (query.IsNullOrEmpty())
                 {
                     output.AddError(GlobalConsts.NONE_DATA);
                     return output;
