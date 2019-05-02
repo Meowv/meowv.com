@@ -314,6 +314,26 @@
             区域列表
             </summary>
         </member>
+        <member name="T:MeowvBlog.Services.Dto.Tags.Params.GetTagsInput">
+            <summary>
+            标签输出参数
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Tags.Params.GetTagsInput.Tag">
+            <summary>
+            标签
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Tags.Params.GetTagsInput.Count">
+            <summary>
+            标签个数
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Tags.Params.GetTagsInput.Style">
+            <summary>
+            样式名称
+            </summary>
+        </member>
         <member name="P:MeowvBlog.Services.Dto.Tags.Params.UpdateTagInput.TagId">
             <summary>
             标签Id

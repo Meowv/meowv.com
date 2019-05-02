@@ -23,7 +23,7 @@
             <param name="input"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.ArticleController.QueryByAsync(System.String)">
+        <member name="M:MeowvBlog.API.Controllers.ArticleController.QueryBy(System.String)">
             <summary>
             通过关键词查询文章列表
             </summary>
@@ -90,7 +90,7 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.CategoryController.QueryArticleListByAsync(System.String)">
+        <member name="M:MeowvBlog.API.Controllers.CategoryController.QueryArticleListBy(System.String)">
             <summary>
             通过分类名称查询所有文章列表
             </summary>
@@ -135,20 +135,20 @@
             标签相关API
             </summary>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.TagController.GetAsync">
+        <member name="M:MeowvBlog.API.Controllers.TagController.Get">
             <summary>
             所有标签列表
             </summary>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.TagController.GetTopAsync(System.Int32)">
+        <member name="M:MeowvBlog.API.Controllers.TagController.GetTop(System.Int32)">
             <summary>
             标签列表
             </summary>
             <param name="count"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.TagController.QueryArticleListByAsync(System.String)">
+        <member name="M:MeowvBlog.API.Controllers.TagController.QueryArticleListBy(System.String)">
             <summary>
             通过标签名称查询文章列表
             </summary>

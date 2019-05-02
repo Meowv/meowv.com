@@ -17,7 +17,7 @@ namespace MeowvBlog.Services.Tags
         /// 所有标签列表
         /// </summary>
         /// <returns></returns>
-        Task<ActionOutput<IList<TagDto>>> GetAsync();
+        Task<ActionOutput<IList<GetTagsInput>>> GetAsync();
 
         /// <summary>
         /// 标签列表

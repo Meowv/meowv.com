@@ -33,9 +33,9 @@ namespace MeowvBlog.API.Controllers
         [HttpGet]
         [Route("Get")]
         [AllowAnonymous]
-        public async Task<UPrimeResponse<IList<TagDto>>> Get()
+        public async Task<UPrimeResponse<IList<GetTagsInput>>> Get()
         {
-            var response = new UPrimeResponse<IList<TagDto>>();
+            var response = new UPrimeResponse<IList<GetTagsInput>>();
 
             var result = await _tagService.GetAsync();
             if (!result.Success)

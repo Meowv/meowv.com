@@ -47,19 +47,29 @@ namespace MeowvBlog.Services.Tags.Impl
         /// 所有标签列表
         /// </summary>
         /// <returns></returns>
-        public async Task<ActionOutput<IList<TagDto>>> GetAsync()
+        public async Task<ActionOutput<IList<GetTagsInput>>> GetAsync()
         {
-            var output = new ActionOutput<IList<TagDto>>();
+            var output = new ActionOutput<IList<GetTagsInput>>();
 
             using (var uow = UnitOfWorkManager.Begin())
             {
-                var list = await _tagRepository.GetAllListAsync();
+                var list = new List<GetTagsInput>();
 
-                await uow.CompleteAsync();
+                var tags = await _tagRepository.GetAllListAsync();
 
-                var result = list.MapTo<IList<TagDto>>();
+                foreach (var item in tags.OrderBy(x => x.TagName))
+                {
+                    var count = await _articleTagRepository.CountAsync(x => x.TagId == item.Id);
 
-                output.Result = result;
+                    list.Add(new GetTagsInput()
+                    {
+                        Tag = item.MapTo<TagDto>(),
+                        Count = count,
+                        Style = count.GetStyleByCount(tags.Count)
+                    });
+                }
+
+                output.Result = list;
             }
             return output;
         }
