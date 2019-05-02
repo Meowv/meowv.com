@@ -5,7 +5,7 @@ var parameter = {
     url: "/article/search/query?keywords=" + keywords,
     callback: function (data) {
         if (data.isSuccess) {
-            $("#current-keywords").text($("#current-keywords").text().replace("-", keywords));
+            $("#current-keywords").text($("#current-keywords").text().replace("-", decodeURI(keywords)));
 
             var html = template("articles_tmpl", { items: data.result });
             document.getElementById('articles').outerHTML = html;
