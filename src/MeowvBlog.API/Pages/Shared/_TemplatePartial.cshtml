@@ -102,6 +102,13 @@
     {{/each}}
 </script>
 
+<!--热门文章-->
+<script id="hot_articles_tmpl" type="text/template">
+    {{each result}}
+    <li><a href="/p/{{$value.id}}.html">{{$value.title}}</a></li>
+    {{/each}}
+</script>
+
 <!--友情链接-->
 <script id="friendlinks_tmpl" type="text/template">
     {{each result}}

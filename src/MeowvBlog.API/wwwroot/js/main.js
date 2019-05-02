@@ -38,6 +38,20 @@ function doSearch() {
     });
 }
 
+// 加载热门文章
+function loadHotArticles() {
+    var parameter = {
+        url: "/article/gethot",
+        callback: function (data) {
+            if (data.isSuccess) {
+                var html = template("hot_articles_tmpl", data);
+                document.getElementById('hot_articles').innerHTML = html;
+            }
+        }
+    };
+    _ajax(parameter);
+}
+
 // 加载右侧Top标签列表
 function loadTopTags() {
     var parameter = {
@@ -88,6 +102,7 @@ function _ajax(parameter) {
 $(function () {
     loadNavCategories();
     doSearch();
+    loadHotArticles();
     loadTopTags();
     loadFriendLinks();
     scroll();
