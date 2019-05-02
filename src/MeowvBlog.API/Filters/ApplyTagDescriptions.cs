@@ -13,27 +13,32 @@ namespace MeowvBlog.API.Filters
                 new Tag
                 {
                     Name = "Article",
-                    Description = "文章相关API"
+                    Description = "---- 文章相关API"
                 },
                 new Tag
                 {
                     Name = "Category",
-                    Description = "分类相关API"
+                    Description = "---- 分类相关API"
                 },
                 new Tag
                 {
                     Name = "Tag",
-                    Description = "标签相关API"
+                    Description = "---- 标签相关API"
                 },
                 new Tag
                 {
                     Name= "ExcelHandler",
-                    Description = "Excel处理API"
+                    Description = "---- Excel处理API"
                 },
                 new Tag
                 {
                     Name = "Account",
-                    Description = "AzureAd API"
+                    Description = "---- AzureAd API"
+                },
+                new Tag
+                {
+                    Name = "FriendLink",
+                    Description = "---- 友情链接API"
                 }
             };
         }
