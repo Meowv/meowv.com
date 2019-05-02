@@ -247,9 +247,6 @@ only screen and (min-device-pixel-ratio: 1.5) {
         background: url(../imgs/logo@2x.png) no-repeat;
         background-size: 100px 40px;
     }
-    .m_hide {
-        display: none;
-    }
 }
 
 .vc-container {
