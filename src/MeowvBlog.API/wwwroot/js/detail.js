@@ -8,6 +8,8 @@ var parameter = {
     url: "/article/get?id=" + id,
     callback: function (data) {
         if (data.isSuccess) {
+            document.title = data.result.article.title + " - " + document.title;
+
             var html = template("detail_tmpl", data.result);
             document.getElementById('detail').outerHTML = html;
         } else {

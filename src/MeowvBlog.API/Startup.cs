@@ -14,6 +14,8 @@ using Swashbuckle.AspNetCore.Swagger;
 using Swashbuckle.AspNetCore.SwaggerUI;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.Encodings.Web;
+using System.Text.Unicode;
 using UPrime;
 using UPrime.Castle.Log4Net;
 
@@ -43,6 +45,7 @@ namespace MeowvBlog.API
             });
 
             services.AddSingleton(Configuration);
+            services.AddSingleton(HtmlEncoder.Create(UnicodeRanges.All));
 
             services.Configure<CookiePolicyOptions>(options =>
             {

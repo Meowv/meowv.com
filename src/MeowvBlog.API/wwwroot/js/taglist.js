@@ -6,7 +6,10 @@ var parameter = {
         if (data.isSuccess) {
             data.result[0].tags.forEach(function (i) {
                 if (name == i.displayName) {
+                    document.title = i.tagName + " - " + document.title;
+
                     $("#current-tag").text("TAG : " + i.tagName);
+                    return;
                 }
             });
            
