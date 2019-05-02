@@ -16,6 +16,12 @@
             <param name="id">主键Id</param>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.API.Controllers.ArticleController.GetHotArticle">
+            <summary>
+            热门文章列表
+            </summary>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.API.Controllers.ArticleController.Query(MeowvBlog.Services.Dto.Common.PagingInput)">
             <summary>
             分页查询文章列表

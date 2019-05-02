@@ -109,6 +109,40 @@ namespace MeowvBlog.Services.Articles.Impl
         }
 
         /// <summary>
+        /// 热门文章列表
+        /// </summary>
+        /// <returns></returns>
+        public async Task<ActionOutput<IList<ArticleForHotDto>>> GetHotArticleAsync()
+        {
+            using (var uow = UnitOfWorkManager.Begin())
+            {
+                var output = new ActionOutput<IList<ArticleForHotDto>>();
+
+                var query = await _articleRepository.GetAllListAsync(x => x.IsDeleted == false && x.PostTime > DateTime.Now.AddMonths(-1));
+
+                var articles = query.IsNullOrEmpty()
+                    ? _articleRepository.GetAllListAsync(x => x.IsDeleted == false)
+                                        .Result
+                                        .OrderByDescending(x => x.Hits)
+                                        .ThenByDescending(x => x.PostTime)
+                                        .ThenByDescending(x => x.Id)
+                                        .Take(10)
+                                        .ToList()
+                    : query.OrderByDescending(x => x.Hits)
+                           .ThenByDescending(x => x.PostTime)
+                           .ThenByDescending(x => x.Id)
+                           .Take(10)
+                           .ToList();
+
+                output.Result = articles.MapTo<IList<ArticleForHotDto>>();
+
+                await uow.CompleteAsync();
+
+                return output;
+            }
+        }
+
+        /// <summary>
         /// 分页查询文章列表
         /// </summary>
         /// <param name="input"></param>

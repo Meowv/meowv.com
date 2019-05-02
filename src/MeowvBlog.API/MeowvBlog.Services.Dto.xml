@@ -79,6 +79,11 @@
             发布时间
             </summary>
         </member>
+        <member name="T:MeowvBlog.Services.Dto.Articles.ArticleForHotDto">
+            <summary>
+            热门文章传输对象
+            </summary>
+        </member>
         <member name="T:MeowvBlog.Services.Dto.Articles.ArticleForPagedDto">
             <summary>
             一篇文章上一页下一页传输对象

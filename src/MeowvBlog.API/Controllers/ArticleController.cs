@@ -1,4 +1,5 @@
 ﻿using MeowvBlog.Services.Articles;
+using MeowvBlog.Services.Dto.Articles;
 using MeowvBlog.Services.Dto.Articles.Params;
 using MeowvBlog.Services.Dto.Common;
 using Microsoft.AspNetCore.Authorization;
@@ -40,6 +41,27 @@ namespace MeowvBlog.API.Controllers
             var response = new UPrimeResponse<GetArticleOutput>();
 
             var result = await _articleService.GetAsync(id);
+
+            if (!result.Success)
+                response.SetMessage(UPrimeResponseStatusCode.Error, result.GetErrorMessage());
+            else
+                response.Result = result.Result;
+
+            return response;
+        }
+
+        /// <summary>
+        /// 热门文章列表
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("GetHot")]
+        [AllowAnonymous]
+        public async Task<UPrimeResponse<IList<ArticleForHotDto>>> GetHotArticle()
+        {
+            var response = new UPrimeResponse<IList<ArticleForHotDto>>();
+
+            var result = await _articleService.GetHotArticleAsync();
 
             if (!result.Success)
                 response.SetMessage(UPrimeResponseStatusCode.Error, result.GetErrorMessage());

@@ -21,6 +21,12 @@ namespace MeowvBlog.Services.Articles
         Task<ActionOutput<GetArticleOutput>> GetAsync(int id);
 
         /// <summary>
+        /// 热门文章列表
+        /// </summary>
+        /// <returns></returns>
+        Task<ActionOutput<IList<ArticleForHotDto>>> GetHotArticleAsync();
+
+        /// <summary>
         /// 分页查询文章列表
         /// </summary>
         /// <param name="input"></param>
