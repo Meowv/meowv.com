@@ -39,6 +39,19 @@ function loadTopTags() {
     _ajax(parameter);
 }
 
+// search...
+function doSearch() {
+    $('#search').bind('keypress', function (event) {
+        if (event.keyCode == "13") {
+            event.preventDefault();
+            var keywords = $("#search").val().trim();
+            if (keywords.length > 0) {
+                location.href = "/search/" + keywords;
+            }
+        }
+    });
+}
+
 // AJAX Service
 function _ajax(parameter) {
     $.ajax({
@@ -59,9 +72,8 @@ function _ajax(parameter) {
 }
 
 $(function () {
-    console.log((_ => [..."`1234567890-=~~QWERTYUIOP[]\\~ASDFGHJKL;'~~ZXCVBNM,./~"].map(x => (o += `/${b = '_'.repeat(w = x < y ? 2 : ' 667699'[x = ["BS", "TAB", "CAPS", "ENTER"][p++] || 'SHIFT', p])}\\|`, m += y + (x + '    ').slice(0, w) + y + y, n += y + b + y + y, l += ' __' + b)[73] && (k.push(l, m, n, o), l = '', m = n = o = y), m = n = o = y = '|', p = l = k = []) && k.join`
-`)());
     loadNavCategories();
     loadTopTags();
     scroll();
+    doSearch();
 });
