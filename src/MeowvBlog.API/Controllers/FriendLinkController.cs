@@ -29,6 +29,7 @@ namespace MeowvBlog.API.Controllers
         [HttpGet]
         [Route("Get")]
         [AllowAnonymous]
+        [ResponseCache(CacheProfileName = "Hourly")]
         public async Task<UPrimeResponse<IList<FriendLinkDto>>> Get()
         {
             var response = new UPrimeResponse<IList<FriendLinkDto>>();

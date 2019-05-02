@@ -33,6 +33,7 @@ namespace MeowvBlog.API.Controllers
         [HttpGet]
         [Route("Get")]
         [AllowAnonymous]
+        [ResponseCache(CacheProfileName = "Hourly")]
         public async Task<UPrimeResponse<IList<GetTagsInput>>> Get()
         {
             var response = new UPrimeResponse<IList<GetTagsInput>>();
@@ -54,6 +55,7 @@ namespace MeowvBlog.API.Controllers
         [HttpGet]
         [Route("GetTop")]
         [AllowAnonymous]
+        [ResponseCache(CacheProfileName = "Hourly")]
         public async Task<UPrimeResponse<IList<TagDto>>> GetTop([Required] int count)
         {
             var response = new UPrimeResponse<IList<TagDto>>();

@@ -7,11 +7,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Swashbuckle.AspNetCore.Swagger;
 using Swashbuckle.AspNetCore.SwaggerUI;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Encodings.Web;
@@ -62,6 +64,8 @@ namespace MeowvBlog.API
                 options.TokenValidationParameters.ValidateIssuer = false;
             });
 
+            services.AddResponseCaching();
+
             services.AddMvc(options =>
             {
                 var policy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
@@ -70,6 +74,16 @@ namespace MeowvBlog.API
                 options.Filters.Add<ParameterValidateFilter>();
                 options.Filters.Add<GlobalExceptionFilter>();
                 options.Filters.Add(new AuthorizeFilter(policy));
+
+                // Cache
+                options.CacheProfiles.Add("default", new CacheProfile
+                {
+                    Duration = 60 * 1// 1分钟
+                });
+                options.CacheProfiles.Add("Hourly", new CacheProfile
+                {
+                    Duration = 60 * 60//1小时
+                });
             }).AddRazorPagesOptions(options =>
             {
                 options.RootDirectory = "/Pages";
@@ -139,10 +153,22 @@ namespace MeowvBlog.API
                 DefaultFileNames = new List<string> { "index.html" }
             });
 
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                OnPrepareResponse = context =>
+                {
+                    context.Context.Response.GetTypedHeaders().CacheControl = new Microsoft.Net.Http.Headers.CacheControlHeaderValue
+                    {
+                        Public = true,
+                        MaxAge = TimeSpan.FromDays(365)
+                    };
+                }
+            });
+
             app.UseHttpsRedirection();
-            app.UseStaticFiles();
             app.UseCookiePolicy();
             app.UseAuthentication();
+            app.UseResponseCaching();
 
             app.UseSwagger(s =>
             {

@@ -33,6 +33,7 @@ namespace MeowvBlog.API.Controllers
         [HttpGet]
         [Route("Get")]
         [AllowAnonymous]
+        [ResponseCache(CacheProfileName = "Hourly")]
         public async Task<UPrimeResponse<IList<CategoryDto>>> Get()
         {
             var response = new UPrimeResponse<IList<CategoryDto>>();
@@ -54,6 +55,7 @@ namespace MeowvBlog.API.Controllers
         [HttpGet]
         [Route("Article/Query")]
         [AllowAnonymous]
+        [ResponseCache(CacheProfileName = "Hourly")]
         public async Task<UPrimeResponse<IList<GetArticleListOutput>>> QueryArticleListBy([Required] string name)
         {
             var response = new UPrimeResponse<IList<GetArticleListOutput>>();
