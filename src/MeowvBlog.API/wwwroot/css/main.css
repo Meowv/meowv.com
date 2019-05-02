@@ -364,7 +364,7 @@ only screen and (min-device-pixel-ratio: 1.5) {
     transition: background .3s;
 }
 
-.vc-tags a:hover,.tags a:hover {
+.vc-tags a:hover,.top-tags a:hover {
     background-color: #28a745;
 }
 
