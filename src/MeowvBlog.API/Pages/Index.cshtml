@@ -5,35 +5,4 @@
 @section Scripts{
     <script src="~/js/bootstrap-paginator.min.js"></script>
     <script src="~/js/index.js" asp-append-version="true"></script>
-    <script id="articles_tmpl" type="text/template">
-        {{each items}}
-        <div class="thumbnail">
-            <div class="caption">
-                <h1 class="vc-page-title"><a href="/p/{{$value.article.id}}.html">{{$value.article.title}}</a></h1>
-                <p class="vc-author-info">
-                    <span class="hidden-xs"><i class="fa fa-book"></i> <a href="/category/list/{{$value.category.displayName}}">{{$value.category.categoryName}}</a></span>
-                    <time><i class="fa fa-calendar"></i> {{$value.article.postTime}}</time>
-                    <span><i class="fa fa-user"></i> {{$value.article.author}}</span>
-                    {{if $value.article.source.length > 0}}
-                    <span class="hidden-xs"><i class="fa fa-at"></i> {{$value.article.source}}</span>
-                    {{/if}}
-                    {{if $value.article.url.length > 0}}
-                    <span class="hidden-xs"><i class="fa fa-link"></i><a href="{{$value.article.url}}"> 原文地址</a></span>
-                    {{/if}}
-                </p>
-                <p class="hidden-xs">{{$value.article.summary}}</p>
-                <p class="clearfix">
-                    <a class="hidden-xs pull-right vc-more-link" href="/p/{{$value.article.id}}.html" role="button">继续阅读 &raquo;</a>
-                    {{if $value.tags.length > 0}}
-                    <span class="vc-tags">
-                        {{each $value.tags}}
-                        <a href="/tags/list/{{$value.displayName}}">{{$value.tagName}}</a>
-                        {{/each}}
-                    </span>
-                    {{/if}}
-                </p>
-            </div>
-        </div>
-        {{/each}}
-    </script>
 }

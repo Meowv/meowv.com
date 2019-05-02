@@ -1,5 +1,5 @@
 // ฯ๊ว้าณ
-var id = window.location.pathname.replace(/[/]|[[p]|[.html]/g, "");
+var id = window.location.pathname.replace(/[/p.html]/g, "");
 if (!/^\+?[1-9][0-9]*$/.test(id)) {
     location.href = "/";
 }

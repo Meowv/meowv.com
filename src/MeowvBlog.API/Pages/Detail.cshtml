@@ -3,48 +3,4 @@
 <div id="detail"></div>
 @section Scripts{
     <script src="~/js/detail.js" asp-append-version="true"></script>
-    <script id="detail_tmpl" type="text/template">
-        <div class="panel panel-default">
-            <article class="vc-blog">
-                <h1 class="vc-blog-title">
-                    {{@@ article.title}}
-                </h1>
-                <p class="vc-author-info">
-                    <span class="hidden-xs"><i class="fa fa-book"></i> <a href="/category/list/{{@@ category.categoryName}}">{{@@ category.categoryName}}</a></span>
-                    <time><i class="fa fa-calendar"></i> {{@@ article.postTime}}</time>
-                    <span><i class="fa fa-user"></i> {{@@ article.author}}</span>
-                    {{if article.source.length > 0}}
-                    <span class="hidden-xs"><i class="fa fa-at"></i> {{@@ article.source}}</span>
-                    {{/if}}
-                    {{if article.url.length > 0}}
-                    <span class="hidden-xs"><i class="fa fa-link"></i><a href="{{@@ article.url}}"> 原文地址</a></span>
-                    {{/if}}
-                </p>
-                <div class="vc-blog-content">
-                    {{@@ article.content}}
-                </div>
-                {{if tags.length > 0}}
-                <span class="vc-tags">
-                    {{each tags}}
-                    <a href="/tags/list/{{$value.displayName}}">{{$value.tagName}}</a>
-                    {{/each}}
-                </span>
-                {{/if}}
-            </article>
-        </div>
-        <nav>
-            <ul class="pager">
-                {{if previous != null}}
-                <li class="previous">
-                    <a href="{{@@ previous.id}}.html" title="{{@@ previous.title}}"><i class="fa fa-angle-left"></i> Previous</a>
-                </li>
-                {{/if}}
-                {{if next != null}}
-                <li class="next">
-                    <a href="{{@@ next.id}}.html" title="{{@@ next.title}}">Next <i class="fa fa-angle-right"></i></a>
-                </li>
-                {{/if}}
-            </ul>
-        </nav>
-    </script>
 }
