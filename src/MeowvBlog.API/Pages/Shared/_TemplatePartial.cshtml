@@ -26,7 +26,7 @@
                 <span class="hidden-xs"><i class="fa fa-at"></i> {{$value.article.source}}</span>
                 {{/if}}
                 {{if $value.article.url.length > 0}}
-                <span class="hidden-xs"><i class="fa fa-link"></i><a href="{{$value.article.url}}"> 原文地址</a></span>
+                <span class="hidden-xs"><i class="fa fa-link"></i><a target="_blank" href="{{$value.article.url}}"> 原文地址</a></span>
                 {{/if}}
             </p>
             <p class="hidden-xs">{{$value.article.summary}}</p>
@@ -60,7 +60,7 @@
                 <span class="hidden-xs"><i class="fa fa-at"></i> {{@@ article.source}}</span>
                 {{/if}}
                 {{if article.url.length > 0}}
-                <span class="hidden-xs"><i class="fa fa-link"></i><a href="{{@@ article.url}}"> 原文地址</a></span>
+                <span class="hidden-xs"><i class="fa fa-link"></i><a target="_blank" href="{{@@ article.url}}"> 原文地址</a></span>
                 {{/if}}
             </p>
             <div class="vc-blog-content">
@@ -99,5 +99,12 @@
             {{$value.tag.tagName}}
         </a>
     </li>
+    {{/each}}
+</script>
+
+<!--友情链接-->
+<script id="friendlinks_tmpl" type="text/template">
+    {{each result}}
+    <a target="_blank" href="{{$value.linkUrl}}" title="{{$value.title}}">{{$value.title}}</a>
     {{/each}}
 </script>

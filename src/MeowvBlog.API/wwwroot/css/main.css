@@ -772,3 +772,10 @@ only screen and (min-device-pixel-ratio: 1.5) {
 .backtop:hover {
     background-position: 50% -62px
 }
+
+.friendlinks a {
+    display: inline-block;
+    margin:0 5px 5px 0;
+    padding:0 4px 0 4px;
+    transition: background .3s;
+}

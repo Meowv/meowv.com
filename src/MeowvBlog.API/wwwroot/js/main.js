@@ -25,6 +25,19 @@ function loadNavCategories() {
     _ajax(parameter);
 }
 
+// search...
+function doSearch() {
+    $('#search').bind('keypress', function (event) {
+        if (event.keyCode == "13") {
+            event.preventDefault();
+            var keywords = $("#search").val().trim();
+            if (keywords.length > 0) {
+                location.href = "/search/" + keywords;
+            }
+        }
+    });
+}
+
 // 加载右侧Top标签列表
 function loadTopTags() {
     var parameter = {
@@ -39,17 +52,18 @@ function loadTopTags() {
     _ajax(parameter);
 }
 
-// search...
-function doSearch() {
-    $('#search').bind('keypress', function (event) {
-        if (event.keyCode == "13") {
-            event.preventDefault();
-            var keywords = $("#search").val().trim();
-            if (keywords.length > 0) {
-                location.href = "/search/" + keywords;
+// 友情链接
+function loadFriendLinks() {
+    var parameter = {
+        url: "/friendlink/get",
+        callback: function (data) {
+            if (data.isSuccess) {
+                var html = template("friendlinks_tmpl", data);
+                document.getElementById('friendlinks').innerHTML = html;
             }
         }
-    });
+    };
+    _ajax(parameter);
 }
 
 // AJAX Service
@@ -73,7 +87,8 @@ function _ajax(parameter) {
 
 $(function () {
     loadNavCategories();
-    loadTopTags();
-    scroll();
     doSearch();
+    loadTopTags();
+    loadFriendLinks();
+    scroll();
 });
