@@ -86,7 +86,7 @@ namespace MeowvBlog.Services.Tags.Impl
             using (var uow = UnitOfWorkManager.Begin())
             {
                 var list = await _tagRepository.GetAllListAsync();
-                list = list.Take(count).ToList();
+                list = list.Take(count).OrderBy(x => x.TagName).ToList();
 
                 await uow.CompleteAsync();
 

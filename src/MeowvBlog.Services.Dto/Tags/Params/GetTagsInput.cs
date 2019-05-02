@@ -1,7 +1,7 @@
 ﻿namespace MeowvBlog.Services.Dto.Tags.Params
 {
     /// <summary>
-    /// 标签输出参数
+    /// 标签页输出参数
     /// </summary>
     public class GetTagsInput
     {
