@@ -178,6 +178,26 @@
             分类仓储接口
             </summary>
         </member>
+        <member name="T:MeowvBlog.Core.Domain.FriendLinks.FriendLink">
+            <summary>
+            友情链接实体
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.FriendLinks.FriendLink.Title">
+            <summary>
+            名称
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.FriendLinks.FriendLink.LinkUrl">
+            <summary>
+            链接
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.Core.Domain.FriendLinks.Repositories.IFriendLinkRepository">
+            <summary>
+            友情链接仓储接口
+            </summary>
+        </member>
         <member name="T:MeowvBlog.Core.Domain.GlobalConsts">
             <summary>
             全局常量

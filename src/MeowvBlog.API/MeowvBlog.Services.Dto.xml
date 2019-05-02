@@ -314,6 +314,21 @@
             区域列表
             </summary>
         </member>
+        <member name="T:MeowvBlog.Services.Dto.FriendLinks.FriendLinkDto">
+            <summary>
+            友情链接传输对象
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.FriendLinks.FriendLinkDto.Title">
+            <summary>
+            名称
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.FriendLinks.FriendLinkDto.LinkUrl">
+            <summary>
+            链接
+            </summary>
+        </member>
         <member name="T:MeowvBlog.Services.Dto.Tags.Params.GetTagsInput">
             <summary>
             标签页输出参数
