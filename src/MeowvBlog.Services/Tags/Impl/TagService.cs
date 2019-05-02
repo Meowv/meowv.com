@@ -70,6 +70,8 @@ namespace MeowvBlog.Services.Tags.Impl
                 }
 
                 output.Result = list;
+
+                await uow.CompleteAsync();
             }
             return output;
         }
