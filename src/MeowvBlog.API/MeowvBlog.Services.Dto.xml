@@ -316,7 +316,7 @@
         </member>
         <member name="T:MeowvBlog.Services.Dto.Tags.Params.GetTagsInput">
             <summary>
-            标签输出参数
+            标签页输出参数
             </summary>
         </member>
         <member name="P:MeowvBlog.Services.Dto.Tags.Params.GetTagsInput.Tag">

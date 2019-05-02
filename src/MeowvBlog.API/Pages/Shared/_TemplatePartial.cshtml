@@ -93,9 +93,11 @@
 
 <!--标签页-->
 <script id="tags_tmpl" type="text/template">
+    {{each result}}
     <li>
-        <a class="weight{{@@ style}}" title="{{@@ count}}" href="/tags/list/{{@@ displayName}}">
-            {{@@ tagName}}
+        <a class="{{$value.style}}" title="{{$value.count}}" href="/tags/list/{{$value.tag.displayName}}">
+            {{$value.tag.tagName}}
         </a>
     </li>
+    {{/each}}
 </script>
