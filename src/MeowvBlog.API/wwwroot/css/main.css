@@ -788,3 +788,16 @@ only screen and (min-device-pixel-ratio: 1.5) {
     list-style: none;
     padding-bottom: 5px;
 }
+
+.appitem {
+    text-align: center;
+    height: 135px;
+}
+
+.appitem a {
+    font-weight: bold;
+}
+
+.appicon {
+    height: 100px;
+}

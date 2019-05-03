@@ -1,0 +1,32 @@
+﻿@page
+@model IndexModel
+<div id="apps"></div>
+@section Scripts{
+    <script>
+        document.title = "Apps - " + document.title;
+        var result = [
+            {
+                "title": "",
+                "icon": "",
+                "page": ""
+            },
+            {
+                "title": "",
+                "icon": "",
+                "page": ""
+            },
+            {
+                "title": "",
+                "icon": "",
+                "page": ""
+            },
+            {
+                "title": "Excel批处理",
+                "icon": "batchexcel.png",
+                "page": "batchexcel"
+            }
+        ];
+        var html = template("apps_tmpl", result);
+        document.getElementById('apps').outerHTML = html;
+    </script>  
+}

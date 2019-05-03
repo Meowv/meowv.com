@@ -91,6 +91,8 @@ function settingNavClicked() {
         $("#menu ul li:eq(1)").addClass("active");
     } else if (/\/tags?(s|\/list\/\w*|\/)/.test(url)) {
         $("#menu ul li:eq(2)").addClass("active");
+    } else if (/\/apps/.test(url)) {
+        $("#menu ul li:eq(3)").addClass("active");
     } else {
         $("#menu ul li:eq(0)").addClass("active");
     }
