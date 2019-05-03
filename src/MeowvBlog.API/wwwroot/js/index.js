@@ -1,6 +1,6 @@
 // ∑÷“≥≤ø∑÷
 var page = {
-    pageIndex: window.location.pathname.replace(/[/page]/g, "") || 1,
+    pageIndex: window.location.pathname.replace(/[/pageindex.html]/g, "") || 1,
     pageSize: 10
 }
 var parameter = {

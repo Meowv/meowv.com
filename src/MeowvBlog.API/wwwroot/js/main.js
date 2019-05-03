@@ -80,6 +80,22 @@ function loadFriendLinks() {
     _ajax(parameter);
 }
 
+// 设置导航菜单选中状态样式
+function settingNavClicked() {
+    $("#menu ul li").removeClass("active");
+
+    var url = location.pathname;
+
+    if (/\/p\/[1-9]\d*.html/.test(url) || /\/search\/\w*/.test(url)) {
+    } else if (/\/category\/list\/*/.test(url)) {
+        $("#menu ul li:eq(1)").addClass("active");
+    } else if (/\/tags?(s|\/list\/\w*|\/)/.test(url)) {
+        $("#menu ul li:eq(2)").addClass("active");
+    } else {
+        $("#menu ul li:eq(0)").addClass("active");
+    }
+}
+
 // AJAX Service
 function _ajax(parameter) {
     $.ajax({
@@ -105,5 +121,6 @@ $(function () {
     loadHotArticles();
     loadTopTags();
     loadFriendLinks();
+    settingNavClicked();
     scroll();
 });
