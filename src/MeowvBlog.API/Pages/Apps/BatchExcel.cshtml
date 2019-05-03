@@ -1,3 +1,84 @@
 ﻿@page
 @model BatchExcelModel
-BatchExcel
+<div class="panel">
+    <div class="panel-body">
+        <form id="upload-form">
+            <div class="form-inline">
+                <div class="form-group">
+                    <input type="file" name="file" id="file">
+                </div>
+                <button type="submit" class="btn btn-sm btn-success" id="batch">获取数据</button>
+            </div>
+        </form>
+        <div class="upload-drop-zone" id="drop-zone">或将Excel拖拽到这里，自动获取数据</div>
+    </div>
+</div>
+<div id="batchexcel"></div>
+@section Scripts{
+    <script id="batchexcel_tmpl" type="text/template">
+        <div class="panel">
+            <div class="panel-body">
+                <table class="table table-bordered table-striped table-hover">
+                    {{each}}
+                    <tr>
+                        <td>{{$value.place}}</td>
+                        <td>{{$value.area}}</td>
+                    </tr>
+                    {{/each}}
+                </table>
+            </div>
+        </div>
+    </script>
+    <script>
+        var dropZone = document.getElementById('drop-zone');
+        var uploadForm = document.getElementById('upload-form');
+
+        var startUpload = function (files) {
+            var data = new FormData();
+            data.append("ExcelFile", files[0]);
+            if (files[0] != undefined) {
+                $.ajax({
+                    url: '/excel/batch',
+                    type: 'post',
+                    data: data,
+                    contentType: false,
+                    processData: false,
+                    dataType: 'json',
+                    clearForm: true,
+                    success: function (data) {
+                        if (data.isSuccess) {
+                            var html = template("batchexcel_tmpl", data.result.areas);
+                            document.getElementById('batchexcel').outerHTML = html;
+                        } else {
+                            alert(data.message);
+                        }
+                    }
+                });
+            }
+        }
+
+        uploadForm.addEventListener('submit', function (e) {
+            var uploadFiles = document.getElementById('file').files;
+            e.preventDefault()
+
+            startUpload(uploadFiles)
+        })
+
+        dropZone.ondrop = function (e) {
+            e.preventDefault();
+            this.className = 'upload-drop-zone';
+
+            startUpload(e.dataTransfer.files)
+        }
+
+        dropZone.ondragover = function () {
+            this.className = 'upload-drop-zone drop';
+            return false;
+        }
+
+        dropZone.ondragleave = function () {
+            this.className = 'upload-drop-zone';
+            return false;
+        }
+    </script>
+}

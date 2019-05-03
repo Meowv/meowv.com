@@ -23,6 +23,12 @@ namespace MeowvBlog.Services.ExcelHandler.Impl
         {
             var output = new ActionOutput<ExcelHandlerOutput>();
 
+            if (!input.ExcelFile.FileName.Contains(".xls"))
+            {
+                output.AddError(GlobalConsts.PARAMETER_ERROR);
+                return output;
+            }
+
             using (var package = new ExcelPackage(input.ExcelFile.OpenReadStream()))
             {
                 var sheetCount = package.Workbook.Worksheets.Count;
