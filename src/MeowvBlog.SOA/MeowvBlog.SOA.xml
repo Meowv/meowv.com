@@ -1,0 +1,251 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MeowvBlog.SOA</name>
+    </assembly>
+    <members>
+        <member name="T:MeowvBlog.SOA.Api.ArticleController">
+            <summary>
+            文章相关API
+            </summary>
+        </member>
+        <member name="M:MeowvBlog.SOA.Api.ArticleController.Get(System.Int32)">
+            <summary>
+            获取一篇文章详细信息
+            </summary>
+            <param name="id">主键Id</param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.SOA.Api.ArticleController.GetHotArticle">
+            <summary>
+            热门文章列表
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.SOA.Api.ArticleController.Query(MeowvBlog.Services.Dto.Common.PagingInput)">
+            <summary>
+            分页查询文章列表
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.SOA.Api.ArticleController.QueryBy(System.String)">
+            <summary>
+            通过关键词查询文章列表
+            </summary>
+            <param name="keywords"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.SOA.Api.ArticleController.Insert(MeowvBlog.Services.Dto.Articles.Params.InsertArticleInput)">
+            <summary>
+            新增文章
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.SOA.Api.ArticleController.Update(MeowvBlog.Services.Dto.Articles.Params.UpdateArticleInput)">
+            <summary>
+            更新文章
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.SOA.Api.ArticleController.Delete(MeowvBlog.Services.Dto.Common.DeleteInput)">
+            <summary>
+            删除文章
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.SOA.Api.ArticleController.InsertArticleCategory(MeowvBlog.Services.Dto.Articles.Params.InsertArticleCategoryInput)">
+            <summary>
+            新增文章对应的分类
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.SOA.Api.ArticleController.DeleteArticleCategory(MeowvBlog.Services.Dto.Common.DeleteInput)">
+            <summary>
+            删除文章对应的分类
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.SOA.Api.ArticleController.InsertArticleTagAsync(MeowvBlog.Services.Dto.Articles.Params.InsertArticleTagInput)">
+            <summary>
+            新增文章对应的标签
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.SOA.Api.ArticleController.DeleteArticleTagAsync(MeowvBlog.Services.Dto.Common.DeleteInput)">
+            <summary>
+            删除文章对应的标签
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="T:MeowvBlog.SOA.Api.CategoryController">
+            <summary>
+            分类相关API
+            </summary>
+        </member>
+        <member name="M:MeowvBlog.SOA.Api.CategoryController.Get">
+            <summary>
+            所有分类列表
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.SOA.Api.CategoryController.QueryArticleListBy(System.String)">
+            <summary>
+            通过分类名称查询所有文章列表
+            </summary>
+            <param name="name"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.SOA.Api.CategoryController.Insert(MeowvBlog.Services.Dto.Categories.CategoryDto)">
+            <summary>
+            新增分类
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.SOA.Api.CategoryController.Update(MeowvBlog.Services.Dto.Categories.Params.UpdateCategoryInput)">
+            <summary>
+            更新分类
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.SOA.Api.CategoryController.Delete(MeowvBlog.Services.Dto.Common.DeleteInput)">
+            <summary>
+            删除分类
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="T:MeowvBlog.SOA.Api.ExcelHandlerController">
+            <summary>
+            Excel处理API
+            </summary>
+        </member>
+        <member name="M:MeowvBlog.SOA.Api.ExcelHandlerController.Batch(MeowvBlog.Services.Dto.Common.ExcelFileInput)">
+            <summary>
+            批处理Excel
+            </summary>
+            <param name="input"></param>
+            <returns><see cref="P:MeowvBlog.Services.Dto.ExcelHandler.Params.ExcelHandlerOutput.Areas"/></returns>
+        </member>
+        <member name="T:MeowvBlog.SOA.Api.FriendLinkController">
+            <summary>
+            友情链接API
+            </summary>
+        </member>
+        <member name="M:MeowvBlog.SOA.Api.FriendLinkController.Get">
+            <summary>
+            获取友情链接列表
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:MeowvBlog.SOA.Api.TagController">
+            <summary>
+            标签相关API
+            </summary>
+        </member>
+        <member name="M:MeowvBlog.SOA.Api.TagController.Get">
+            <summary>
+            所有标签列表
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.SOA.Api.TagController.GetTop(System.Int32)">
+            <summary>
+            标签列表
+            </summary>
+            <param name="count"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.SOA.Api.TagController.QueryArticleListBy(System.String)">
+            <summary>
+            通过标签名称查询文章列表
+            </summary>
+            <param name="name"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.SOA.Api.TagController.Insert(MeowvBlog.Services.Dto.Tags.TagDto)">
+            <summary>
+            新增标签
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.SOA.Api.TagController.Update(MeowvBlog.Services.Dto.Tags.Params.UpdateTagInput)">
+            <summary>
+            更新标签
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.SOA.Api.TagController.Delete(MeowvBlog.Services.Dto.Common.DeleteInput)">
+            <summary>
+            删除标签
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.SOA.Filters.GlobalExceptionFilter.OnException(Microsoft.AspNetCore.Mvc.Filters.ExceptionContext)">
+            <summary>
+            异常处理
+            </summary>
+            <param name="context"></param>
+        </member>
+        <member name="M:MeowvBlog.SOA.Filters.LogErrorHandler.LogError(System.String,Microsoft.AspNetCore.Http.HttpContext,Microsoft.AspNetCore.Mvc.IActionResult)">
+            <summary>
+            记录日志
+            </summary>
+            <param name="events"></param>
+            <param name="context"></param>
+            <param name="result"></param>
+        </member>
+        <member name="M:MeowvBlog.SOA.Filters.ParameterValidateFilter.OnActionExecuted(Microsoft.AspNetCore.Mvc.Filters.ActionExecutedContext)">
+            <summary>
+            Action方法执行后异常处理，避免直接抛出异常
+            </summary>
+            <param name="context"></param>
+        </member>
+        <member name="M:MeowvBlog.SOA.Filters.ParameterValidateFilter.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)">
+            <summary>
+            Action方法执行前参数校验
+            </summary>
+            <param name="context"></param>
+        </member>
+        <member name="T:MeowvBlog.SOA.PageBase">
+            <summary>
+            前台继承此类
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.SOA.AdminPageBase">
+            <summary>
+            后台继承此类
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.SOA.ApiControllerBase">
+            <summary>
+            API继承此类
+            </summary>
+        </member>
+        <member name="M:MeowvBlog.SOA.Startup.ConfigureServices(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            运行时调用此方法，使用此方法向容器添加服务
+            </summary>
+            <param name="services"></param>
+        </member>
+        <member name="M:MeowvBlog.SOA.Startup.Configure(Microsoft.AspNetCore.Builder.IApplicationBuilder,Microsoft.AspNetCore.Hosting.IHostingEnvironment)">
+            <summary>
+            此方法由运行时调用，使用此方法配置HTTP请求管道
+            </summary>
+            <param name="app"></param>
+            <param name="env"></param>
+        </member>
+    </members>
+</doc>

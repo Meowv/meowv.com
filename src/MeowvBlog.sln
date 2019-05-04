@@ -5,15 +5,15 @@ VisualStudioVersion = 16.0.28729.10
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.Core", "MeowvBlog.Core\MeowvBlog.Core.csproj", "{A0B8F47F-3D9C-4591-A7F0-EAA280FDE0AB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeowvBlog.Services", "MeowvBlog.Services\MeowvBlog.Services.csproj", "{EE6D82C1-D875-47CE-BEDB-C5E1DD361B35}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.Services", "MeowvBlog.Services\MeowvBlog.Services.csproj", "{EE6D82C1-D875-47CE-BEDB-C5E1DD361B35}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeowvBlog.Services.Dto", "MeowvBlog.Services.Dto\MeowvBlog.Services.Dto.csproj", "{94D9CA4D-0D77-4458-9336-9052B1FD9A42}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.Services.Dto", "MeowvBlog.Services.Dto\MeowvBlog.Services.Dto.csproj", "{94D9CA4D-0D77-4458-9336-9052B1FD9A42}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeowvBlog.EntityFramework", "MeowvBlog.EntityFramework\MeowvBlog.EntityFramework.csproj", "{C2E03C35-E427-4C00-B1AD-75962CCCC3F9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.EntityFramework", "MeowvBlog.EntityFramework\MeowvBlog.EntityFramework.csproj", "{C2E03C35-E427-4C00-B1AD-75962CCCC3F9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeowvBlog.API", "MeowvBlog.API\MeowvBlog.API.csproj", "{498EE80A-131F-4115-B7D9-3E4D6D3BB309}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.SOA", "MeowvBlog.SOA\MeowvBlog.SOA.csproj", "{498EE80A-131F-4115-B7D9-3E4D6D3BB309}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeowvBlog.Services.Tests", "MeowvBlog.Services.Tests\MeowvBlog.Services.Tests.csproj", "{8E5572CC-9CB9-4847-BCCC-13CEA48DA25C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.Services.Tests", "MeowvBlog.Services.Tests\MeowvBlog.Services.Tests.csproj", "{8E5572CC-9CB9-4847-BCCC-13CEA48DA25C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
