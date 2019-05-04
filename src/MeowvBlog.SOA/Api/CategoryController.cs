@@ -76,7 +76,6 @@ namespace MeowvBlog.SOA.Api
         /// <returns></returns>
         [HttpGet]
         [Route("Query")]
-        [AllowAnonymous]
         public async Task<UPrimeResponse<IList<Category>>> Query()
         {
             var response = new UPrimeResponse<IList<Category>>();
