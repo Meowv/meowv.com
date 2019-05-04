@@ -1,10 +1,12 @@
-﻿using MeowvBlog.Services.Dto.Articles.Params;
+﻿using MeowvBlog.Core.Domain.Categories;
+using MeowvBlog.Services.Dto.Articles.Params;
 using MeowvBlog.Services.Dto.Categories;
 using MeowvBlog.Services.Dto.Categories.Params;
 using MeowvBlog.Services.Dto.Common;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UPrime;
+using UPrime.Services.Dto;
 
 namespace MeowvBlog.Services.Categories
 {
@@ -25,6 +27,12 @@ namespace MeowvBlog.Services.Categories
         /// <param name="name"></param>
         /// <returns></returns>
         Task<ActionOutput<IList<GetArticleListOutput>>> QueryArticleListByAsync(string name);
+
+        /// <summary>
+        /// Admin-查询所有分类
+        /// </summary>
+        /// <returns></returns>
+        Task<ActionOutput<IList<Category>>> QueryAsync();
 
         /// <summary>
         /// 新增分类

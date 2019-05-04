@@ -117,6 +117,25 @@ namespace MeowvBlog.Services.Categories.Impl
         }
 
         /// <summary>
+        /// Admin-查询所有分类
+        /// </summary>
+        /// <returns></returns>
+        public async Task<ActionOutput<IList<Category>>> QueryAsync()
+        {
+            using (var uow = UnitOfWorkManager.Begin())
+            {
+                var output = new ActionOutput<IList<Category>>
+                {
+                    Result = await _categoryRepository.GetAllListAsync()
+                };
+
+                await uow.CompleteAsync();
+
+                return output;
+            }
+        }
+
+        /// <summary>
         /// 新增分类
         /// </summary>
         /// <param name="input"></param>

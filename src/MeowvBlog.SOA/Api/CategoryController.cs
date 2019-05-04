@@ -1,4 +1,5 @@
-﻿using MeowvBlog.Services.Categories;
+﻿using MeowvBlog.Core.Domain.Categories;
+using MeowvBlog.Services.Categories;
 using MeowvBlog.Services.Dto.Articles.Params;
 using MeowvBlog.Services.Dto.Categories;
 using MeowvBlog.Services.Dto.Categories.Params;
@@ -61,6 +62,26 @@ namespace MeowvBlog.SOA.Api
             var response = new UPrimeResponse<IList<GetArticleListOutput>>();
 
             var result = await _categoryService.QueryArticleListByAsync(name);
+            if (!result.Success)
+                response.SetMessage(UPrimeResponseStatusCode.Error, result.GetErrorMessage());
+            else
+                response.Result = result.Result;
+
+            return response;
+        }
+
+        /// <summary>
+        /// Admin-查询所有分类
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("Query")]
+        [AllowAnonymous]
+        public async Task<UPrimeResponse<IList<Category>>> Query()
+        {
+            var response = new UPrimeResponse<IList<Category>>();
+
+            var result = await _categoryService.QueryAsync();
             if (!result.Success)
                 response.SetMessage(UPrimeResponseStatusCode.Error, result.GetErrorMessage());
             else

@@ -103,6 +103,12 @@
             <param name="name"></param>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.SOA.Api.CategoryController.Query">
+            <summary>
+            Admin-查询所有分类
+            </summary>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.SOA.Api.CategoryController.Insert(MeowvBlog.Services.Dto.Categories.CategoryDto)">
             <summary>
             新增分类
