@@ -58,7 +58,7 @@ namespace MeowvBlog.Services.ExcelHandler.Impl
                     var dto = new ExcelHandlerDto
                     {
                         Place = place,
-                        Area = area.ToString()
+                        Area = area.ToString().UrlDecode()
                     };
                     list.Add(dto);
                 }

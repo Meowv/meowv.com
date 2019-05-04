@@ -121,12 +121,14 @@
     {{each}}
     <div class="col-sm-3 col-lg-1-8">
         <div class="appitem">
-            <div class="appicon">
-                {{if $value.icon.length > 0}}
-                <img src="/imgs/apps/{{$value.icon}}" />
-                {{/if}}
-            </div>
-            <a href="/apps/{{$value.page}}">{{$value.title}}</a>
+            <a href="/apps/{{$value.page}}">
+                <div class="appicon">
+                    {{if $value.icon.length > 0}}
+                    <img src="/imgs/apps/{{$value.icon}}" />
+                    {{/if}}
+                </div>
+                {{$value.title}}
+            </a>
         </div>
     </div>
     {{/each}}

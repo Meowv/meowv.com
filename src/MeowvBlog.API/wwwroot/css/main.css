@@ -219,6 +219,10 @@ a:hover {
     text-decoration: none;
 }
 
+.modal-body img {
+    max-width: 100%;
+}
+
 .vc-pt15 {
     padding-top: 15px;
 }

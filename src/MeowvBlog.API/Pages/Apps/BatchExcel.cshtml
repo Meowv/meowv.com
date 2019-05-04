@@ -13,21 +13,19 @@
         <div class="upload-drop-zone" id="drop-zone">或将Excel拖拽到这里，自动获取数据</div>
     </div>
 </div>
-<div id="batchexcel"></div>
+<div class="panel">
+    <div class="panel-body">
+        <table class="table table-bordered table-striped table-hover" id="batchexcel"></table>
+    </div>
+</div>
 @section Scripts{
     <script id="batchexcel_tmpl" type="text/template">
-        <div class="panel">
-            <div class="panel-body">
-                <table class="table table-bordered table-striped table-hover">
-                    {{each}}
-                    <tr>
-                        <td>{{$value.place}}</td>
-                        <td>{{$value.area}}</td>
-                    </tr>
-                    {{/each}}
-                </table>
-            </div>
-        </div>
+        {{each}}
+        <tr>
+            <td>{{$value.place}}</td>
+            <td>{{$value.area}}</td>
+        </tr>
+        {{/each}}
     </script>
     <script>
         document.title = "Excel批处理 - " + document.title;
@@ -50,7 +48,7 @@
                     success: function (data) {
                         if (data.isSuccess) {
                             var html = template("batchexcel_tmpl", data.result.areas);
-                            document.getElementById('batchexcel').outerHTML = html;
+                            document.getElementById('batchexcel').innerHTML = html;
                         } else {
                             alert(data.message);
                         }
