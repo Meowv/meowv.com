@@ -418,9 +418,9 @@ layui.define(['layer', 'winui'], function (exports) {
                     default:
                 }
                 var div = '<ul class="task-contextmenu" style="' + style + '">';
-                div += '<li class="closeAll">&#x5173;&#x95ED;&#x5168;&#x90E8;&#x7A97;&#x53E3;</li>';   //关闭所有标签
-                div += '<li class="closeOther">&#x5173;&#x95ED;&#x5176;&#x4ED6;&#x7A97;&#x53E3;</li>';   //关闭所有标签
-                div += '<li class="close"><i class="fa fa-power-off fa-fw"></i>&#x5173;&#x95ED;&#x5F53;&#x524D;&#x7A97;&#x53E3;</li>';    //关闭窗口
+                div += '<li class="closeAll"><i class="fa fa-times fa-fw"></i>&#x5173;&#x95ED;&#x5168;&#x90E8;&#x7A97;&#x53E3;</li>';   //关闭所有标签
+                div += '<li class="closeOther"><i class="fa fa-times fa-fw"></i>&#x5173;&#x95ED;&#x5176;&#x4ED6;&#x7A97;&#x53E3;</li>';   //关闭所有标签
+                div += '<li class="close"><i class="fa fa-times fa-fw"></i>&#x5173;&#x95ED;&#x5F53;&#x524D;&#x7A97;&#x53E3;</li>';    //关闭窗口
                 div += '</ul>';
                 //移除之前任务项右键菜单
                 $('.task-contextmenu').remove();

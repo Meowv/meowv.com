@@ -23,6 +23,17 @@
       "extend": false,
       "childs": null,
       "id": 2
+    },
+    {
+      "title": "文章管理",
+      "pageURL": "/admin/articles/list",
+      "name": "文章管理",
+      "icon": "fa-list-alt",
+      "openType": 2,
+      "maxOpen": -1,
+      "extend": false,
+      "childs": null,
+      "id": 3
     }
   ]
 }
