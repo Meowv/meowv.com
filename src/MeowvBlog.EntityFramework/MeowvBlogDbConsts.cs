@@ -4,14 +4,14 @@
     {
         public class DbTableName
         {
-            public const string Articles = "Meowv_Articles";
-            public const string Categories = "Meowv_Categories";
-            public const string Tags = "Meowv_Tags";
+            public const string Articles = "meowv_articles";
+            public const string Categories = "meowv_categories";
+            public const string Tags = "meowv_tags";
 
-            public const string ArticleCategories = "Meowv_ArticleCategories";
-            public const string ArticleTags = "Meowv_ArticleTags";
+            public const string ArticleCategories = "meowv_articlecategories";
+            public const string ArticleTags = "meowv_articletags";
 
-            public const string FriendLinks = "Mewov_FriendLinks";
+            public const string FriendLinks = "mewov_friendlinks";
         }
     }
 }
