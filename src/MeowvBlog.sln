@@ -3,33 +3,19 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.28803.352
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeowvBlog.Core", "MeowvBlog.Core\MeowvBlog.Core.csproj", "{71D24D45-7162-4AA4-ACC0-B435EC43FBDA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.Core", "MeowvBlog.Core\MeowvBlog.Core.csproj", "{71D24D45-7162-4AA4-ACC0-B435EC43FBDA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeowvBlog.Data", "MeowvBlog.Data\MeowvBlog.Data.csproj", "{E9F10D81-E1DC-43D9-934D-FB65BC9F78AD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.Data", "MeowvBlog.Data\MeowvBlog.Data.csproj", "{E9F10D81-E1DC-43D9-934D-FB65BC9F78AD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeowvBlog.Services", "MeowvBlog.Services\MeowvBlog.Services.csproj", "{D975AF81-8872-439D-9F1B-3137C29CAEFF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.Services", "MeowvBlog.Services\MeowvBlog.Services.csproj", "{D975AF81-8872-439D-9F1B-3137C29CAEFF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeowvBlog.Repositories", "MeowvBlog.Repositories\MeowvBlog.Repositories.csproj", "{8A41F3B2-0AA1-4939-AF2D-7E5D45FD4D00}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.Repositories", "MeowvBlog.Repositories\MeowvBlog.Repositories.csproj", "{8A41F3B2-0AA1-4939-AF2D-7E5D45FD4D00}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeowvBlog.Web", "MeowvBlog.Web\MeowvBlog.Web.csproj", "{F7756532-950B-43F3-BE70-0AFFB278A7D8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.Web", "MeowvBlog.Web\MeowvBlog.Web.csproj", "{F7756532-950B-43F3-BE70-0AFFB278A7D8}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Web", "Web", "{FB1E743B-52F8-4B3A-8F00-F5621F077806}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.Tests", "MeowvBlog.Tests\MeowvBlog.Tests.csproj", "{0FE9E0A4-6135-4EE3-9D48-6D5D21419CEB}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core", "Core", "{24209CBC-BC09-4D56-8642-5F06B9133F97}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Data", "Data", "{9E5B47E5-6A48-43A6-BB40-66139B20F8B7}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Repositories", "Repositories", "{132B9FBE-C041-4FF0-91E4-4647B53FCDE0}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Services", "Services", "{1D99E93B-2F75-48EB-A627-203C0A14350C}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{4609BCFD-F276-4511-8DF8-8125F7861963}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeowvBlog.Tests", "MeowvBlog.Tests\MeowvBlog.Tests.csproj", "{0FE9E0A4-6135-4EE3-9D48-6D5D21419CEB}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{8E5486E5-3B9E-4610-A587-B0C89ADD9D7A}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeowvBlog.Common", "MeowvBlog.Common\MeowvBlog.Common.csproj", "{BAB8AA65-C8CD-46AE-8E6A-8770F4B1BB47}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.Common", "MeowvBlog.Common\MeowvBlog.Common.csproj", "{BAB8AA65-C8CD-46AE-8E6A-8770F4B1BB47}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -68,15 +54,6 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{71D24D45-7162-4AA4-ACC0-B435EC43FBDA} = {24209CBC-BC09-4D56-8642-5F06B9133F97}
-		{E9F10D81-E1DC-43D9-934D-FB65BC9F78AD} = {9E5B47E5-6A48-43A6-BB40-66139B20F8B7}
-		{D975AF81-8872-439D-9F1B-3137C29CAEFF} = {1D99E93B-2F75-48EB-A627-203C0A14350C}
-		{8A41F3B2-0AA1-4939-AF2D-7E5D45FD4D00} = {132B9FBE-C041-4FF0-91E4-4647B53FCDE0}
-		{F7756532-950B-43F3-BE70-0AFFB278A7D8} = {FB1E743B-52F8-4B3A-8F00-F5621F077806}
-		{0FE9E0A4-6135-4EE3-9D48-6D5D21419CEB} = {4609BCFD-F276-4511-8DF8-8125F7861963}
-		{BAB8AA65-C8CD-46AE-8E6A-8770F4B1BB47} = {8E5486E5-3B9E-4610-A587-B0C89ADD9D7A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C385E97C-BF8E-47D1-8F0F-73B201ED3405}
