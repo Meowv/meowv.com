@@ -1,6 +1,0 @@
-﻿{
-  "DefaultNameOrConnectionString": "",
-  "MySqlConnectionString": "Server=localhost;User Id=root;Password=584200;Database=Meowv_Blog",
-  "SqlServerConnectionString": "Data Source=localhost;Initial Catalog=Meowv_Blog;Persist Security Info=True;User ID=sa;Password=123456",
-  "DbType": "MySql"
-}
