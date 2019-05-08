@@ -11,8 +11,4 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Proxies" Version="2.2.4" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\MeowvBlog.Data\MeowvBlog.Data.csproj" />
-  </ItemGroup>
-
 </Project>
