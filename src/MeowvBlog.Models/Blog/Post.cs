@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace MeowvBlog.Models.Blog
 {
@@ -48,5 +49,10 @@ namespace MeowvBlog.Models.Blog
         /// 创建时间
         /// </summary>
         public DateTime? CreationTime { get; set; }
+
+        /// <summary>
+        /// PostTag
+        /// </summary>
+        public virtual ICollection<PostTag> PostTags { get; set; }
     }
 }

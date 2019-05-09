@@ -1,4 +1,6 @@
-﻿namespace MeowvBlog.Models.Blog
+﻿using System.Collections.Generic;
+
+namespace MeowvBlog.Models.Blog
 {
     public class Tag
     {
@@ -16,5 +18,10 @@
         /// 展示名称
         /// </summary>
         public string DisplayName { get; set; }
+
+        /// <summary>
+        /// PostTags
+        /// </summary>
+        public virtual ICollection<PostTag> PostTags { get; set; }
     }
 }
