@@ -12,7 +12,6 @@ namespace MeowvBlog.IRepository
     /// </summary>
     public interface IRepository
     {
-
     }
 
     /// <summary>
@@ -260,6 +259,5 @@ namespace MeowvBlog.IRepository
     /// <typeparam name="TEntity"></typeparam>
     public interface IRepository<TEntity> : IRepository<TEntity, int>, IRepository where TEntity : class, IEntity<int>
     {
-
     }
 }
