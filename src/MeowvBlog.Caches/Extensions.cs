@@ -20,5 +20,11 @@ namespace MeowvBlog.Caches
             services.AddTransient<ICache, EasyCaching>();
             services.AddEasyCaching(configAction);
         }
+
+        public static TimeSpan GetSafeValue(this TimeSpan? expiration)
+        {
+            expiration = expiration ?? TimeSpan.FromHours(12);
+            return expiration ?? default;
+        }
     }
 }

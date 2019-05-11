@@ -1,5 +1,7 @@
 ﻿using EasyCaching.Core;
 using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace MeowvBlog.Caches
 {
@@ -18,65 +20,153 @@ namespace MeowvBlog.Caches
         /// <summary>
         /// 是否存在指定键的缓存
         /// </summary>
-        /// <param name="key">缓存键</param>
+        /// <param name="cacheKey">缓存键</param>
         /// <returns></returns>
-        public bool Exists(string key)
+        public bool Exists(string cacheKey)
         {
-            return _provider.Exists(key);
+            return _provider.Exists(cacheKey);
+        }
+
+        /// <summary>
+        /// 异步是否存在指定键的缓存
+        /// </summary>
+        /// <param name="cacheKey"></param>
+        /// <returns></returns>
+        public Task<bool> ExistsAsync(string cacheKey)
+        {
+            return _provider.ExistsAsync(cacheKey);
+        }
+
+        /// <summary>
+        /// 刷新所有缓存项
+        /// </summary>
+        public void Flush()
+        {
+            _provider.Flush();
+        }
+
+        /// <summary>
+        /// 异步刷新所有缓存项
+        /// </summary>
+        /// <returns></returns>
+        public Task FlushAsync()
+        {
+            return _provider.FlushAsync();
         }
 
         /// <summary>
         /// 从缓存中获取数据，如果不存在，则执行获取数据操作并添加到缓存中
         /// </summary>
         /// <typeparam name="T">缓存数据类型</typeparam>
-        /// <param name="key">缓存键</param>
-        /// <param name="func">缓存数据操作</param>
+        /// <param name="cacheKey">缓存键</param>
+        /// <param name="dataRetriever">获取数据操作</param>
         /// <param name="expiration">过期时间间隔</param>
         /// <returns></returns>
-        public T Get<T>(string key, Func<T> func, TimeSpan? expiration = null)
+        public CacheValue<T> Get<T>(string cacheKey, Func<T> dataRetriever, TimeSpan? expiration = null)
         {
-            return _provider.Get(key, func, GetExpiration(expiration)).Value;
+            return _provider.Get(cacheKey, dataRetriever, expiration.GetSafeValue());
         }
 
         /// <summary>
-        /// 获取过期时间
-        /// </summary>
-        /// <param name="expiration"></param>
-        /// <returns></returns>
-        private TimeSpan GetExpiration(TimeSpan? expiration)
-        {
-            expiration = expiration ?? TimeSpan.FromHours(12);
-            return expiration ?? default;
-        }
-
-        /// <summary>
-        /// 当缓存数据不存在时则添加缓存，已存在的缓存不会添加，添加成功返回true
+        /// 从缓存中获取数据
         /// </summary>
         /// <typeparam name="T">缓存数据类型</typeparam>
-        /// <param name="key">缓存键</param>
-        /// <param name="value">值</param>
+        /// <param name="cacheKey">缓存键</param>
+        /// <returns></returns>
+        public CacheValue<T> Get<T>(string cacheKey)
+        {
+            return _provider.Get<T>(cacheKey);
+        }
+
+        /// <summary>
+        /// 获取所有缓存
+        /// </summary>
+        /// <typeparam name="T">缓存数据类型</typeparam>
+        /// <param name="cacheKeys">缓存键列表</param>
+        /// <returns></returns>
+        public IDictionary<string, CacheValue<T>> GetAll<T>(IEnumerable<string> cacheKeys)
+        {
+            return _provider.GetAll<T>(cacheKeys);
+        }
+
+        /// <summary>
+        /// 异步获取所有缓存
+        /// </summary>
+        /// <typeparam name="T">缓存数据类型</typeparam>
+        /// <param name="cacheKeys">缓存键列表</param>
+        /// <returns></returns>
+        public Task<IDictionary<string, CacheValue<T>>> GetAllAsync<T>(IEnumerable<string> cacheKeys)
+        {
+            return _provider.GetAllAsync<T>(cacheKeys);
+        }
+
+        /// <summary>
+        /// 异步从缓存中获取数据，如果不存在，则执行获取数据操作并添加到缓存中
+        /// </summary>
+        /// <typeparam name="T">缓存数据类型</typeparam>
+        /// <param name="cacheKey">缓存键</param>
+        /// <param name="dataRetriever">获取数据操作</param>
         /// <param name="expiration">过期时间间隔</param>
         /// <returns></returns>
-        public bool TryAdd<T>(string key, T value, TimeSpan? expiration = null)
+        public Task<CacheValue<T>> GetAsync<T>(string cacheKey, Func<Task<T>> dataRetriever, TimeSpan? expiration = null)
         {
-            return _provider.TrySet(key, value, GetExpiration(expiration));
+            return _provider.GetAsync<T>(cacheKey, dataRetriever, expiration.GetSafeValue());
         }
 
         /// <summary>
-        /// 移除缓存
+        /// 异步从缓存中获取数据
         /// </summary>
-        /// <param name="key">缓存键</param>
-        public void Remove(string key)
+        /// <typeparam name="T">缓存数据类型</typeparam>
+        /// <param name="cacheKey">缓存键</param>
+        /// <returns></returns>
+        public Task<CacheValue<T>> GetAsync<T>(string cacheKey)
         {
-            _provider.Remove(key);
+            return _provider.GetAsync<T>(cacheKey);
         }
 
         /// <summary>
-        /// 清空缓存
+        /// 移除指定缓存
         /// </summary>
-        public void Clear()
+        /// <param name="cacheKey">缓存键</param>
+        public void Remove(string cacheKey)
         {
-            _provider.Flush();
+            _provider.Remove(cacheKey);
+        }
+
+        /// <summary>
+        /// 异步移除指定缓存
+        /// </summary>
+        /// <param name="cacheKey">缓存键</param>
+        /// <returns></returns>
+        public Task RemoveAsync(string cacheKey)
+        {
+            return _provider.RemoveAsync(cacheKey);
+        }
+
+        /// <summary>
+        /// 添加缓存，已存在不会添加
+        /// </summary>
+        /// <typeparam name="T">缓存数据类型</typeparam>
+        /// <param name="cacheKey">缓存键</param>
+        /// <param name="cacheValue">值</param>
+        /// <param name="expiration">过期时间间隔</param>
+        /// <returns></returns>
+        public bool TrySet<T>(string cacheKey, T cacheValue, TimeSpan? expiration = null)
+        {
+            return _provider.TrySet(cacheKey, cacheValue, expiration.GetSafeValue());
+        }
+
+        /// <summary>
+        /// 异步添加缓存，已存在不会添加
+        /// </summary>
+        /// <typeparam name="T">缓存数据类型</typeparam>
+        /// <param name="cacheKey">缓存键</param>
+        /// <param name="cacheValue">值</param>
+        /// <param name="expiration">过期时间间隔</param>
+        /// <returns></returns>
+        public Task<bool> TrySetAsync<T>(string cacheKey, T cacheValue, TimeSpan? expiration = null)
+        {
+            return _provider.TrySetAsync(cacheKey, cacheValue, expiration.GetSafeValue());
         }
     }
 }

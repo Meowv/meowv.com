@@ -77,7 +77,7 @@ namespace MeowvBlog.Caches
         /// <param name="dataRetriever">获取数据操作</param>
         /// <param name="expiration">过期时间间隔</param>
         /// <returns></returns>
-        Task<CacheValue<T>> GetAsync<T>(string cacheKey, Func<Task<T>> dataRetriever, TimeSpan expiration);
+        Task<CacheValue<T>> GetAsync<T>(string cacheKey, Func<Task<T>> dataRetriever, TimeSpan? expiration = null);
 
         /// <summary>
         /// 异步从缓存中获取数据
@@ -108,7 +108,7 @@ namespace MeowvBlog.Caches
         /// <param name="cacheValue">值</param>
         /// <param name="expiration">过期时间间隔</param>
         /// <returns></returns>
-        bool TrySet<T>(string cacheKey, T cacheValue, TimeSpan expiration);
+        bool TrySet<T>(string cacheKey, T cacheValue, TimeSpan? expiration = null);
 
         /// <summary>
         /// 异步添加缓存，已存在不会添加
@@ -118,6 +118,6 @@ namespace MeowvBlog.Caches
         /// <param name="cacheValue">值</param>
         /// <param name="expiration">过期时间间隔</param>
         /// <returns></returns>
-        Task<bool> TrySetAsync<T>(string cacheKey, T cacheValue, TimeSpan expiration);
+        Task<bool> TrySetAsync<T>(string cacheKey, T cacheValue, TimeSpan? expiration = null);
     }
 }
