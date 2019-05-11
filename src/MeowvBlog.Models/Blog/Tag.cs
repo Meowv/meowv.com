@@ -1,14 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using MeowvBlog.Entities;
+using System.Collections.Generic;
 
 namespace MeowvBlog.Models.Blog
 {
-    public class Tag
+    public class Tag : Entity
     {
-        /// <summary>
-        /// 主键
-        /// </summary>
-        public int Id { get; set; }
-
         /// <summary>
         /// 标签名称
         /// </summary>

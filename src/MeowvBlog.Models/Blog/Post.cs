@@ -1,15 +1,11 @@
-﻿using System;
+﻿using MeowvBlog.Entities;
+using System;
 using System.Collections.Generic;
 
 namespace MeowvBlog.Models.Blog
 {
-    public class Post
+    public class Post : Entity
     {
-        /// <summary>
-        /// 主键
-        /// </summary>
-        public int Id { get; set; }
-
         /// <summary>
         /// 标题
         /// </summary>

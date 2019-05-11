@@ -1,12 +1,9 @@
-﻿namespace MeowvBlog.Models.Blog
-{
-    public class FriendLink
-    {
-        /// <summary>
-        /// 主键
-        /// </summary>
-        public int Id { get; set; }
+﻿using MeowvBlog.Entities;
 
+namespace MeowvBlog.Models.Blog
+{
+    public class FriendLink : Entity
+    {
         /// <summary>
         /// 标题
         /// </summary>

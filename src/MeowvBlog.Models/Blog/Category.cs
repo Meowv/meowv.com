@@ -1,12 +1,9 @@
-﻿namespace MeowvBlog.Models.Blog
-{
-    public class Category
-    {
-        /// <summary>
-        /// 主键
-        /// </summary>
-        public int Id { get; set; }
+﻿using MeowvBlog.Entities;
 
+namespace MeowvBlog.Models.Blog
+{
+    public class Category : Entity
+    {
         /// <summary>
         /// 分类名称
         /// </summary>
