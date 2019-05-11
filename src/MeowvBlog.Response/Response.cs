@@ -1,7 +1,7 @@
 ﻿using MeowvBlog.CodeAnnotations;
 using System;
 
-namespace MeoevBlog.Response
+namespace MeowvBlog.Response
 {
     [Serializable]
     public class Response

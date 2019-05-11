@@ -1,6 +1,6 @@
 ﻿using MeowvBlog.CodeAnnotations;
 
-namespace MeoevBlog.Response
+namespace MeowvBlog.Response
 {
     public enum ResponseStatusCode
     {

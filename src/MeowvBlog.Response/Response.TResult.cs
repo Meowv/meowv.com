@@ -1,4 +1,4 @@
-﻿namespace MeoevBlog.Response
+﻿namespace MeowvBlog.Response
 {
     public class Response<TResult> : Response where TResult : class
     {

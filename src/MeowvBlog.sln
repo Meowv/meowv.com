@@ -41,7 +41,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.Extensions.Serial
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.AutoMapper.Tests", "MeowvBlog.AutoMapper.Tests\MeowvBlog.AutoMapper.Tests.csproj", "{F6D7DE55-6DC7-4076-AA9B-3DB39E18A363}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeoevBlog.Response", "MeoevBlog.Response\MeoevBlog.Response.csproj", "{114C340C-779A-45D5-B92D-CD76B97C6C06}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.Response", "MeowvBlog.Response\MeowvBlog.Response.csproj", "{114C340C-779A-45D5-B92D-CD76B97C6C06}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.ActionOutput", "MeowvBlog.ActionOutput\MeowvBlog.ActionOutput.csproj", "{1EEBC39F-842F-4EDC-9A28-44D80FB1CE67}"
 EndProject
