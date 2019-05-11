@@ -72,6 +72,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "08_SolutionItems", "08_Solu
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeowvBlog.Log4Net", "MeowvBlog.Log4Net\MeowvBlog.Log4Net.csproj", "{3E8C042C-C531-4A97-A47B-A79F72940610}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeowvBlog.Log4Net_Tests", "MeowvBlog.Log4Net_Tests\MeowvBlog.Log4Net_Tests.csproj", "{8E351E59-DD8A-44E5-81E0-FD2C02858022}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -170,6 +172,10 @@ Global
 		{3E8C042C-C531-4A97-A47B-A79F72940610}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3E8C042C-C531-4A97-A47B-A79F72940610}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3E8C042C-C531-4A97-A47B-A79F72940610}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8E351E59-DD8A-44E5-81E0-FD2C02858022}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8E351E59-DD8A-44E5-81E0-FD2C02858022}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8E351E59-DD8A-44E5-81E0-FD2C02858022}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8E351E59-DD8A-44E5-81E0-FD2C02858022}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -198,6 +204,7 @@ Global
 		{1EEBC39F-842F-4EDC-9A28-44D80FB1CE67} = {A3B9B286-DC38-4224-AC0D-F6FAE15E3115}
 		{3B7F832F-D229-47BF-A8DE-D8C3CED262C8} = {80FC6ACF-7AC5-4100-B850-65A2F0EE878A}
 		{3E8C042C-C531-4A97-A47B-A79F72940610} = {AEB6C64A-3447-4FB2-A74A-FBF668FB7230}
+		{8E351E59-DD8A-44E5-81E0-FD2C02858022} = {80FC6ACF-7AC5-4100-B850-65A2F0EE878A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C385E97C-BF8E-47D1-8F0F-73B201ED3405}
