@@ -8,7 +8,7 @@ using ILogger = Castle.Core.Logging.ILogger;
 namespace MeowvBlog.Log4Net
 {
     [Serializable]
-    class Log4NetLogger : MarshalByRefObject, ILogger
+    public class Log4NetLogger : MarshalByRefObject, ILogger
     {
         private static readonly Type DeclaringType = typeof(Log4NetLogger);
 
