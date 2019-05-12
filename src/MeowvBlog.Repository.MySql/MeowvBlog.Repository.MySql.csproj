@@ -9,6 +9,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\MeowvBlog.EntityFramework\MeowvBlog.EntityFramework.csproj" />
     <ProjectReference Include="..\MeowvBlog.Models\MeowvBlog.Models.csproj" />
   </ItemGroup>
 

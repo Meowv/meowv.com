@@ -70,9 +70,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "08_SolutionItems", "08_Solu
 		..\README.md = ..\README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeowvBlog.Log4Net", "MeowvBlog.Log4Net\MeowvBlog.Log4Net.csproj", "{3E8C042C-C531-4A97-A47B-A79F72940610}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.Log4Net", "MeowvBlog.Log4Net\MeowvBlog.Log4Net.csproj", "{3E8C042C-C531-4A97-A47B-A79F72940610}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeowvBlog.Log4Net_Tests", "MeowvBlog.Log4Net_Tests\MeowvBlog.Log4Net_Tests.csproj", "{8E351E59-DD8A-44E5-81E0-FD2C02858022}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.Log4Net_Tests", "MeowvBlog.Log4Net_Tests\MeowvBlog.Log4Net_Tests.csproj", "{8E351E59-DD8A-44E5-81E0-FD2C02858022}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeowvBlog.EntityFramework", "MeowvBlog.EntityFramework\MeowvBlog.EntityFramework.csproj", "{FF86EEC8-E28B-481B-AC71-2D62F059FAD4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -176,6 +178,10 @@ Global
 		{8E351E59-DD8A-44E5-81E0-FD2C02858022}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8E351E59-DD8A-44E5-81E0-FD2C02858022}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8E351E59-DD8A-44E5-81E0-FD2C02858022}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FF86EEC8-E28B-481B-AC71-2D62F059FAD4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FF86EEC8-E28B-481B-AC71-2D62F059FAD4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FF86EEC8-E28B-481B-AC71-2D62F059FAD4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FF86EEC8-E28B-481B-AC71-2D62F059FAD4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -205,6 +211,7 @@ Global
 		{3B7F832F-D229-47BF-A8DE-D8C3CED262C8} = {80FC6ACF-7AC5-4100-B850-65A2F0EE878A}
 		{3E8C042C-C531-4A97-A47B-A79F72940610} = {AEB6C64A-3447-4FB2-A74A-FBF668FB7230}
 		{8E351E59-DD8A-44E5-81E0-FD2C02858022} = {80FC6ACF-7AC5-4100-B850-65A2F0EE878A}
+		{FF86EEC8-E28B-481B-AC71-2D62F059FAD4} = {56511D26-E240-403D-8AB5-7440E0731C28}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C385E97C-BF8E-47D1-8F0F-73B201ED3405}

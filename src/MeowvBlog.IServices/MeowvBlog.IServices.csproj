@@ -4,4 +4,9 @@
     <TargetFramework>netcoreapp2.2</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\MeowvBlog.ActionOutput\MeowvBlog.ActionOutput.csproj" />
+    <ProjectReference Include="..\MeowvBlog.Dtos\MeowvBlog.Dtos.csproj" />
+  </ItemGroup>
+
 </Project>

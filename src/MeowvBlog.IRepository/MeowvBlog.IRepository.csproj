@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\MeowvBlog.Entities\MeowvBlog.Entities.csproj" />
+    <ProjectReference Include="..\MeowvBlog.Models\MeowvBlog.Models.csproj" />
   </ItemGroup>
 
 </Project>

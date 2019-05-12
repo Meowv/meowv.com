@@ -1,8 +1,11 @@
-﻿using MeowvBlog.Models.Configuration;
+﻿using MeowvBlog.IRepository;
+using MeowvBlog.IRepository.Blog;
+using MeowvBlog.IServices.Post;
+using MeowvBlog.Models.Configuration;
 using MeowvBlog.Repository.MySql;
+using MeowvBlog.Services.Post;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -22,6 +25,8 @@ namespace MeowvBlog.Web
                                     maxRetryDelay: TimeSpan.FromSeconds(30),
                                     errorNumbersToAdd: null);
                             }));
+
+            services.AddMvc();
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
@@ -31,10 +36,7 @@ namespace MeowvBlog.Web
                 app.UseDeveloperExceptionPage();
             }
 
-            app.Run(async (context) =>
-            {
-                await context.Response.WriteAsync("Hello World!");
-            });
+            app.UseMvcWithDefaultRoute();
         }
     }
 }
