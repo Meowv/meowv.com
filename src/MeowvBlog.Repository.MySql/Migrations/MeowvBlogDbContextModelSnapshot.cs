@@ -24,10 +24,12 @@ namespace MeowvBlog.Repository.MySql.Migrations
 
                     b.Property<string>("CategoryName")
                         .IsRequired()
+                        .IsFixedLength(true)
                         .HasMaxLength(50);
 
                     b.Property<string>("DisplayName")
                         .IsRequired()
+                        .IsFixedLength(true)
                         .HasMaxLength(50);
 
                     b.HasKey("Id");
@@ -121,10 +123,12 @@ namespace MeowvBlog.Repository.MySql.Migrations
 
                     b.Property<string>("DisplayName")
                         .IsRequired()
+                        .IsFixedLength(true)
                         .HasMaxLength(50);
 
                     b.Property<string>("TagName")
                         .IsRequired()
+                        .IsFixedLength(true)
                         .HasMaxLength(50);
 
                     b.HasKey("Id");
