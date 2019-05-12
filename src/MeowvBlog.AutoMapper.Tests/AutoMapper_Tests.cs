@@ -35,6 +35,9 @@ namespace MeowvBlog.AutoMapper.Tests
 
             var dto = _mapper.Map<PostDto>(post);
             Console.WriteLine(dto.SerializeToJson());
+
+            var dto2 = post.MapTo<PostDto>();
+            Console.WriteLine(dto2.SerializeToJson());
         }
 
         [TestMethod]
@@ -60,6 +63,9 @@ namespace MeowvBlog.AutoMapper.Tests
 
             var dtos = _mapper.Map<IList<PostDto>>(posts);
             Console.WriteLine(dtos.SerializeToJson());
+
+            var dtos2 = posts.MapTo<List<PostDto>>();
+            Console.WriteLine(dtos2.SerializeToJson());
         }
 
         #region Class
