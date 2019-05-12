@@ -1,9 +1,12 @@
-﻿using MeowvBlog.Entities;
-
-namespace MeowvBlog.Models.Blog
+﻿namespace MeowvBlog.Models.Blog
 {
-    public class PostTag : Entity
+    public class PostTag
     {
+        /// <summary>
+        /// PostId
+        /// </summary>
+        public int PostId { get; set; }
+
         /// <summary>
         /// 标签Id
         /// </summary>
