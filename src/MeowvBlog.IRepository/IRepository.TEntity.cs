@@ -1,4 +1,5 @@
-﻿using MeowvBlog.Entities;
+﻿using MeowvBlog.Core.Dependency;
+using MeowvBlog.Entities;
 
 namespace MeowvBlog.IRepository
 {
@@ -6,7 +7,7 @@ namespace MeowvBlog.IRepository
     /// IRepository
     /// </summary>
     /// <typeparam name="TEntity"></typeparam>
-    public interface IRepository<TEntity> : IRepository<TEntity, int>, IRepository where TEntity : class, IEntity<int>
+    public interface IRepository<TEntity> : IRepository<TEntity, int>, IRepository, ITransientDependency where TEntity : class, IEntity<int>
     {
     }
 }

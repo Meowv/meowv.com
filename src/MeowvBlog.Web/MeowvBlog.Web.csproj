@@ -14,9 +14,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\MeowvBlog.IServices\MeowvBlog.IServices.csproj" />
     <ProjectReference Include="..\MeowvBlog.Repository.MySql\MeowvBlog.Repository.MySql.csproj" />
     <ProjectReference Include="..\MeowvBlog.Response\MeowvBlog.Response.csproj" />
-    <ProjectReference Include="..\MeowvBlog.Services\MeowvBlog.Services.csproj" />
   </ItemGroup>
 
 </Project>

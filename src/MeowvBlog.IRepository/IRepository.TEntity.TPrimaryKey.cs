@@ -1,4 +1,5 @@
-﻿using MeowvBlog.Entities;
+﻿using MeowvBlog.Core.Dependency;
+using MeowvBlog.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,7 +13,7 @@ namespace MeowvBlog.IRepository
     /// </summary>
     /// <typeparam name="TEntity"></typeparam>
     /// <typeparam name="TPrimaryKey"></typeparam>
-    public interface IRepository<TEntity, TPrimaryKey> : IRepository where TEntity : class, IEntity<TPrimaryKey>
+    public interface IRepository<TEntity, TPrimaryKey> : IRepository, ITransientDependency where TEntity : class, IEntity<TPrimaryKey>
     {
         /// <summary>
         /// GetAll

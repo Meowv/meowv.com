@@ -1,6 +1,7 @@
-﻿using MeowvBlog.Dtos.Post;
+﻿using MeowvBlog.Core.Dependency;
+using MeowvBlog.Dtos.Post;
+using MeowvBlog.IServices.Post;
 using MeowvBlog.Response;
-using MeowvBlog.Services.Post;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
@@ -11,36 +12,30 @@ namespace MeowvBlog.Web.WebApi
     [ApiController]
     public class PostController : ControllerBase
     {
-        //private readonly PostService _postService;
+        private readonly IPostService _postService;
 
-        //public PostController(PostService postService)
-        //{
-        //    _postService = postService;
-        //}
-
-        [HttpGet]
-        public string Get(int id)
+        public PostController()
         {
-            return "value";
+            _postService = IocManager.Instance.Resolve<IPostService>();
         }
 
-        //[HttpGet]
-        //[Route("Get")]
-        //public async Task<Response<PostDto>> Get([Required] int id)
-        //{
-        //    var response = new Response<PostDto>();
+        [HttpGet]
+        [Route("Get")]
+        public async Task<Response<PostDto>> Get([Required] int id)
+        {
+            var response = new Response<PostDto>();
 
-        //    var result = await _postService.GetAsync(id);
-        //    if (!result.Success)
-        //    {
-        //        response.SetMessage(ResponseStatusCode.Error, result.GetErrorMessage());
-        //    }
-        //    else
-        //    {
-        //        response.Result = result.Result;
-        //    }
+            var result = await _postService.GetAsync(id);
+            if (!result.Success)
+            {
+                response.SetMessage(ResponseStatusCode.Error, result.GetErrorMessage());
+            }
+            else
+            {
+                response.Result = result.Result;
+            }
 
-        //    return response;
-        //}
+            return response;
+        }
     }
 }
