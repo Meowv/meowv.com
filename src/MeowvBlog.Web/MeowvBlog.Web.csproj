@@ -7,16 +7,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.App" />
-    <PackageReference Include="Microsoft.AspNetCore.Razor.Design" Version="2.2.0" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Proxies" Version="2.2.4" />
-    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="2.2.3" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="4.0.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\MeowvBlog.IServices\MeowvBlog.IServices.csproj" />
-    <ProjectReference Include="..\MeowvBlog.Repository.MySql\MeowvBlog.Repository.MySql.csproj" />
-    <ProjectReference Include="..\MeowvBlog.Response\MeowvBlog.Response.csproj" />
   </ItemGroup>
 
 </Project>
