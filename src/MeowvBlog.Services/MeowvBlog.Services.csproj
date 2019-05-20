@@ -1,13 +1,7 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.2</TargetFramework>
   </PropertyGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\MeowvBlog.AutoMapper\MeowvBlog.AutoMapper.csproj" />
-    <ProjectReference Include="..\MeowvBlog.IRepository\MeowvBlog.IRepository.csproj" />
-    <ProjectReference Include="..\MeowvBlog.IServices\MeowvBlog.IServices.csproj" />
-  </ItemGroup>
 
 </Project>

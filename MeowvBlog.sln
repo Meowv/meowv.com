@@ -1,0 +1,63 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28803.352
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.Web", "src\MeowvBlog.Web\MeowvBlog.Web.csproj", "{F7756532-950B-43F3-BE70-0AFFB278A7D8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.IServices", "src\MeowvBlog.IServices\MeowvBlog.IServices.csproj", "{BE73FDAE-D7ED-48B9-AF98-2D5FB13D0982}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.Services", "src\MeowvBlog.Services\MeowvBlog.Services.csproj", "{D975AF81-8872-439D-9F1B-3137C29CAEFF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.IRepository", "src\MeowvBlog.IRepository\MeowvBlog.IRepository.csproj", "{14818B72-7568-4C02-A862-6AFE62DCD76C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.Repository.MySql", "src\MeowvBlog.Repository.MySql\MeowvBlog.Repository.MySql.csproj", "{CC4FAC74-471E-4353-B242-B6C8915DBC76}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "solution-items", "solution-items", "{693BBEAA-10B4-4A04-B034-48714CC96779}"
+	ProjectSection(SolutionItems) = preProject
+		..\.gitattributes = ..\.gitattributes
+		..\.gitignore = ..\.gitignore
+		..\LICENSE = ..\LICENSE
+		..\README.md = ..\README.md
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeowvBlog.Core", "src\MeowvBlog.Core\MeowvBlog.Core.csproj", "{DC1940BC-86D6-4DC0-9D4D-6294A596DDDD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F7756532-950B-43F3-BE70-0AFFB278A7D8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F7756532-950B-43F3-BE70-0AFFB278A7D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F7756532-950B-43F3-BE70-0AFFB278A7D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F7756532-950B-43F3-BE70-0AFFB278A7D8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BE73FDAE-D7ED-48B9-AF98-2D5FB13D0982}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BE73FDAE-D7ED-48B9-AF98-2D5FB13D0982}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BE73FDAE-D7ED-48B9-AF98-2D5FB13D0982}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BE73FDAE-D7ED-48B9-AF98-2D5FB13D0982}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D975AF81-8872-439D-9F1B-3137C29CAEFF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D975AF81-8872-439D-9F1B-3137C29CAEFF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D975AF81-8872-439D-9F1B-3137C29CAEFF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D975AF81-8872-439D-9F1B-3137C29CAEFF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{14818B72-7568-4C02-A862-6AFE62DCD76C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{14818B72-7568-4C02-A862-6AFE62DCD76C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{14818B72-7568-4C02-A862-6AFE62DCD76C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{14818B72-7568-4C02-A862-6AFE62DCD76C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CC4FAC74-471E-4353-B242-B6C8915DBC76}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CC4FAC74-471E-4353-B242-B6C8915DBC76}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CC4FAC74-471E-4353-B242-B6C8915DBC76}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CC4FAC74-471E-4353-B242-B6C8915DBC76}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DC1940BC-86D6-4DC0-9D4D-6294A596DDDD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DC1940BC-86D6-4DC0-9D4D-6294A596DDDD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DC1940BC-86D6-4DC0-9D4D-6294A596DDDD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DC1940BC-86D6-4DC0-9D4D-6294A596DDDD}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C385E97C-BF8E-47D1-8F0F-73B201ED3405}
+	EndGlobalSection
+EndGlobal
