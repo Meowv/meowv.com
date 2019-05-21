@@ -18,4 +18,8 @@
     <ProjectReference Include="..\MeowvBlog.Services\MeowvBlog.Services.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Logs\" />
+  </ItemGroup>
+
 </Project>

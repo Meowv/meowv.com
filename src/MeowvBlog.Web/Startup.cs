@@ -1,4 +1,8 @@
 ﻿using Castle.Facilities.Logging;
+using MeowvBlog.Core;
+using MeowvBlog.EntityFrameworkCore;
+using MeowvBlog.Services;
+using MeowvBlog.Services.Dto;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -6,8 +10,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Plus;
 using Plus.Dependency;
 using Plus.Log4Net;
+using Plus.Modules;
 using Swashbuckle.AspNetCore.Swagger;
 using Swashbuckle.AspNetCore.SwaggerUI;
+using System.Reflection;
 using System.Text.Encodings.Web;
 using System.Text.Unicode;
 using System.Threading;
@@ -106,6 +112,21 @@ namespace MeowvBlog.Web
             });
 
             app.UseMvcWithDefaultRoute();
+        }
+    }
+
+
+    [DependsOn(
+        typeof(MeowvBlogCoreModule),
+        typeof(MeowvBlogServicesModule),
+        typeof(MeowvBlogServicesDtoModule),
+        typeof(MeowvBlogEntityFrameworkCoreModule)
+    )]
+    internal class MeowvBlogWebModule : PlusModule
+    {
+        public override void Initialize()
+        {
+            IocManager.RegisterAssembly(Assembly.GetExecutingAssembly());
         }
     }
 }
