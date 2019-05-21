@@ -10,4 +10,11 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="4.0.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\MeowvBlog.Core\MeowvBlog.Core.csproj" />
+    <ProjectReference Include="..\MeowvBlog.EntityFrameworkCore\MeowvBlog.EntityFrameworkCore.csproj" />
+    <ProjectReference Include="..\MeowvBlog.Services.Dto\MeowvBlog.Services.Dto.csproj" />
+    <ProjectReference Include="..\MeowvBlog.Services\MeowvBlog.Services.csproj" />
+  </ItemGroup>
+
 </Project>
