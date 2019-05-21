@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using MeowvBlog.Core.Domain;
+using Microsoft.EntityFrameworkCore;
 using Plus.EntityFramework;
 
 namespace MeowvBlog.EntityFrameworkCore
@@ -9,7 +10,15 @@ namespace MeowvBlog.EntityFrameworkCore
         {
         }
 
+        public virtual DbSet<Post> Posts { get; set; }
 
+        public virtual DbSet<Category> Categories { get; set; }
+
+        public virtual DbSet<Tag> Tags { get; set; }
+
+        public virtual DbSet<PostTag> PostTags { get; set; }
+
+        public virtual DbSet<FriendLink> FriendLinks { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

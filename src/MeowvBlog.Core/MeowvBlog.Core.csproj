@@ -8,8 +8,4 @@
     <PackageReference Include="Plus" Version="1.0.0.1" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Domain\" />
-  </ItemGroup>
-
 </Project>
