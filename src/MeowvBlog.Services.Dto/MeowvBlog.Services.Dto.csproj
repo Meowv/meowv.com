@@ -9,4 +9,8 @@
     <PackageReference Include="Plus.AutoMapper" Version="1.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\MeowvBlog.Core\MeowvBlog.Core.csproj" />
+  </ItemGroup>
+
 </Project>
