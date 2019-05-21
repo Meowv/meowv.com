@@ -1,9 +1,11 @@
-﻿using Plus.Modules;
+﻿using Plus;
+using Plus.Modules;
 using System.Reflection;
 
-namespace MeowvBlog.Web
+namespace MeowvBlog.Core
 {
-    public class MeowvBlogModule : PlusModule
+    [DependsOn(typeof(PlusLeadershipModule))]
+    public class MeowvBlogCoreModule : PlusModule
     {
         public override void Initialize()
         {
