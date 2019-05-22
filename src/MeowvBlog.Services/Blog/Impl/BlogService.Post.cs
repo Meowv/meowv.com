@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace MeowvBlog.Services.Blog.Impl
 {
-    public partial class BlogService : IBlogService
+    public partial class BlogService : ServiceBase, IBlogService
     {
         private readonly IPostRepository _postRepository;
 
