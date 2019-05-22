@@ -31,5 +31,12 @@ namespace MeowvBlog.Web.Controllers
             response.Result = await _blogService.Get(id);
             return response;
         }
+
+        [HttpGet]
+        [Route("str")]
+        public string GeteString(string a)
+        {
+            return a;
+        }
     }
 }

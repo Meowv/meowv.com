@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Plus" Version="1.0.0.1" />
+    <PackageReference Include="Plus" Version="1.0.1.2" />
   </ItemGroup>
 
 </Project>
