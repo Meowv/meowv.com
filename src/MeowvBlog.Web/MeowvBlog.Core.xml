@@ -1,0 +1,113 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MeowvBlog.Core</name>
+    </assembly>
+    <members>
+        <member name="P:MeowvBlog.Core.Configuration.AppSettings.MySqlConnectionString">
+            <summary>
+            MySql
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.Category.CategoryName">
+            <summary>
+            分类名称
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.Category.DisplayName">
+            <summary>
+            展示名称
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.FriendLink.Title">
+            <summary>
+            标题
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.FriendLink.LinkUrl">
+            <summary>
+            链接
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.Post.Title">
+            <summary>
+            标题
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.Post.Author">
+            <summary>
+            作者
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.Post.Source">
+            <summary>
+            来源
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.Post.Url">
+            <summary>
+            链接
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.Post.Abstract">
+            <summary>
+            摘要
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.Post.Content">
+            <summary>
+            内容
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.Post.Hits">
+            <summary>
+            点击量
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.Post.CreationTime">
+            <summary>
+            创建时间
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.Post.PostTags">
+            <summary>
+            PostTag
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.PostTag.PostId">
+            <summary>
+            PostId
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.PostTag.TagId">
+            <summary>
+            标签Id
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.PostTag.Post">
+            <summary>
+            Post
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.PostTag.Tag">
+            <summary>
+            Tag
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.Tag.TagName">
+            <summary>
+            标签名称
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.Tag.DisplayName">
+            <summary>
+            展示名称
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.Tag.PostTags">
+            <summary>
+            PostTags
+            </summary>
+        </member>
+    </members>
+</doc>
