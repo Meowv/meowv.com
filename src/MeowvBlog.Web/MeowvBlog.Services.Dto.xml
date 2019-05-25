@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MeowvBlog.Services.Dto</name>
+    </assembly>
+    <members>
+        <member name="P:MeowvBlog.Services.Dto.Blog.PostDto.Title">
+            <summary>
+            标题
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.PostDto.Author">
+            <summary>
+            作者
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.PostDto.Source">
+            <summary>
+            来源
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.PostDto.Url">
+            <summary>
+            链接
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.PostDto.Abstract">
+            <summary>
+            摘要
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.PostDto.Content">
+            <summary>
+            内容
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.PostDto.Hits">
+            <summary>
+            点击量
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.PostDto.CreationTime">
+            <summary>
+            创建时间
+            </summary>
+        </member>
+    </members>
+</doc>

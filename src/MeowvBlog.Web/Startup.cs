@@ -3,6 +3,7 @@ using MeowvBlog.Core;
 using MeowvBlog.EntityFrameworkCore;
 using MeowvBlog.Services;
 using MeowvBlog.Services.Dto;
+using MeowvBlog.Web.Filter;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -46,7 +47,8 @@ namespace MeowvBlog.Web
 
             services.AddMvc(options =>
             {
-
+                options.Filters.Add<ActionParameterValidateAttribute>();
+                options.Filters.Add<GlobalExceptionFilter>();
             });
 
             services.AddRouting(options =>
@@ -85,6 +87,7 @@ namespace MeowvBlog.Web
                 app.UseDeveloperExceptionPage();
             }
 
+            app.UseMvcWithDefaultRoute();
             app.UseStaticFiles();
             app.UseHttpsRedirection();
 
@@ -110,11 +113,8 @@ namespace MeowvBlog.Web
                 s.DefaultModelsExpandDepth(-1);
                 s.DocExpansion(DocExpansion.None);
             });
-
-            app.UseMvcWithDefaultRoute();
         }
     }
-
 
     [DependsOn(
         typeof(MeowvBlogCoreModule),

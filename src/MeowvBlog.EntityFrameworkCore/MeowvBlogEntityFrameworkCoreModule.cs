@@ -13,11 +13,6 @@ namespace MeowvBlog.EntityFrameworkCore
     )]
     public class MeowvBlogEntityFrameworkCoreModule : PlusModule
     {
-        public override void Initialize()
-        {
-            IocManager.RegisterAssembly(typeof(MeowvBlogEntityFrameworkCoreModule).GetAssembly());
-        }
-
         public override void PreInitialize()
         {
             var builder = new DbContextOptionsBuilder<MeowvBlogDbContext>();
@@ -29,6 +24,11 @@ namespace MeowvBlog.EntityFrameworkCore
                     .Instance(builder.Options)
                     .LifestyleSingleton()
             );
+        }
+
+        public override void Initialize()
+        {
+            IocManager.RegisterAssembly(typeof(MeowvBlogEntityFrameworkCoreModule).GetAssembly());
         }
     }
 }

@@ -16,7 +16,6 @@ namespace MeowvBlog.Services
         {
             UnitOfWorkManager = PlusEngine.Instance.Resolve<IUnitOfWorkManager>();
             TypeFinder = PlusEngine.Instance.Resolve<ITypeFinder>();
-            PlusEngine.Instance.Resolve<IConnectionStringResolver>();
         }
     }
 }
