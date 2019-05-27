@@ -10,8 +10,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Plus" Version="1.0.3.3" />
-    <PackageReference Include="Plus.AutoMapper" Version="1.0.0" />
+    <PackageReference Include="Plus" Version="1.0.5" />
+    <PackageReference Include="Plus.AutoMapper" Version="1.0.2" />
   </ItemGroup>
 
   <ItemGroup>
