@@ -1,7 +1,7 @@
 ﻿using Plus.Domain.Entities;
 using System.Collections.Generic;
 
-namespace MeowvBlog.Core.Domain
+namespace MeowvBlog.Core.Domain.Blog
 {
     public class Tag : Entity
     {

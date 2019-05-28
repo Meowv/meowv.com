@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace MeowvBlog.Core.Domain
+namespace MeowvBlog.Core.Domain.Blog
 {
     public class Post : Entity
     {

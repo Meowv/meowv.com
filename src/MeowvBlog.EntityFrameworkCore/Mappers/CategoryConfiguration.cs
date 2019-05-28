@@ -1,4 +1,4 @@
-﻿using MeowvBlog.Core.Domain;
+﻿using MeowvBlog.Core.Domain.Blog;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

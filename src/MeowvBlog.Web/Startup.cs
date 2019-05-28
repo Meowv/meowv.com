@@ -57,7 +57,7 @@ namespace MeowvBlog.Web
                 {
                     Version = "v3.0.2",
                     Title = "MeowvBlog - 个人博客数据接口",
-                    Description = "基于<code>.NET Core</code>开发个人博客数据接口列表 <a href='https://meowv.com'>https://meowv.com</a>"
+                    Description = "基于<code>.NET Core <a href='https://github.com/Meowv/.netcoreplus'>Plus</a></code>开发 ---- 个人博客数据接口列表 <a href='https://meowv.com'>https://meowv.com</a>"
                 };
                 options.SwaggerDoc("v1", info);
                 options.DocumentFilter<TagDescriptionsFilter>();

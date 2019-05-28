@@ -1,4 +1,4 @@
-﻿using MeowvBlog.Core.Domain.Repositories;
+﻿using MeowvBlog.Core.Domain.Blog.Repositories;
 using MeowvBlog.Services.Dto.Blog;
 using Plus.AutoMapper;
 using System.Threading.Tasks;
@@ -16,8 +16,14 @@ namespace MeowvBlog.Services.Blog.Impl
 
         public async Task<PostDto> Get(int id)
         {
-            var entity = await _postRepository.GetAsync(id);
-            return entity.MapTo<PostDto>();
+            using (var uow = UnitOfWorkManager.Begin())
+            {
+                var entity = await _postRepository.GetAsync(id);
+
+                await uow.CompleteAsync();
+
+                return entity.MapTo<PostDto>();
+            }
         }
     }
 }

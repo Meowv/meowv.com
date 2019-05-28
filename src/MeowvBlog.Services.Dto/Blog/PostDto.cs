@@ -1,7 +1,10 @@
-﻿using System;
+﻿using MeowvBlog.Core.Domain.Blog;
+using Plus.AutoMapper;
+using System;
 
 namespace MeowvBlog.Services.Dto.Blog
 {
+    [AutoMapFrom(typeof(Post))]
     public class PostDto
     {
         /// <summary>

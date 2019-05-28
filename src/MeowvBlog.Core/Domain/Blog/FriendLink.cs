@@ -1,6 +1,6 @@
 ﻿using Plus.Domain.Entities;
 
-namespace MeowvBlog.Core.Domain
+namespace MeowvBlog.Core.Domain.Blog
 {
     public class FriendLink : Entity
     {
