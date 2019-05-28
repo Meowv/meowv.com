@@ -6,10 +6,9 @@ using MeowvBlog.Services.Dto;
 using MeowvBlog.Web.Filter;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Plus;
-using Plus.Dependency;
 using Plus.Log4Net;
 using Plus.Modules;
 using Swashbuckle.AspNetCore.Swagger;
@@ -17,21 +16,11 @@ using Swashbuckle.AspNetCore.SwaggerUI;
 using System.Reflection;
 using System.Text.Encodings.Web;
 using System.Text.Unicode;
-using System.Threading;
 
 namespace MeowvBlog.Web
 {
     public class Startup
     {
-        public Startup(IConfiguration configuration)
-        {
-            Configuration = configuration;
-        }
-
-        public static readonly AsyncLocal<IocManager> IocManager = new AsyncLocal<IocManager>();
-
-        public IConfiguration Configuration { get; }
-
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddCors(options =>
@@ -42,8 +31,13 @@ namespace MeowvBlog.Web
                                                     .AllowCredentials());
             });
 
-            services.AddSingleton(Configuration);
             services.AddSingleton(HtmlEncoder.Create(UnicodeRanges.All));
+
+            services.Configure<CookiePolicyOptions>(options =>
+            {
+                options.CheckConsentNeeded = context => true;
+                options.MinimumSameSitePolicy = SameSiteMode.None;
+            });
 
             services.AddMvc(options =>
             {
@@ -63,16 +57,14 @@ namespace MeowvBlog.Web
                 {
                     Version = "v3.0.2",
                     Title = "MeowvBlog - 个人博客数据接口",
-                    Description = "基于<code>.NET Core</code>开发个人博客数据接口 <a href='https://mewov.com'>https://mewov.com</a>"
+                    Description = "基于<code>.NET Core</code>开发个人博客数据接口列表 <a href='https://meowv.com'>https://meowv.com</a>"
                 };
                 options.SwaggerDoc("v1", info);
-                //options.DocumentFilter<>();
+                options.DocumentFilter<TagDescriptionsFilter>();
             });
 
             PlusStarter.Create<MeowvBlogWebModule>(options =>
             {
-                options.IocManager = IocManager.Value ?? new IocManager();
-
                 options.IocManager
                        .IocContainer
                        .AddFacility<LoggingFacility>(x => x.UseLog4Net()
@@ -85,6 +77,10 @@ namespace MeowvBlog.Web
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
+            }
+            else
+            {
+                app.UseHsts();
             }
 
             app.UseMvcWithDefaultRoute();
@@ -101,7 +97,10 @@ namespace MeowvBlog.Web
 
             app.UseSwagger(s =>
             {
-                s.PreSerializeFilters.Add((swaggerDoc, httpReq) => swaggerDoc.Schemes = new[] { "https" });
+                s.PreSerializeFilters.Add((swaggerDoc, httpReq) =>
+                {
+                    swaggerDoc.Schemes = new[] { "https" };
+                });
             });
 
             app.UseSwaggerUI(s =>
