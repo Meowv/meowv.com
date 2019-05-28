@@ -1,8 +1,8 @@
-﻿using MeowvBlog.Core.Domain;
-using MeowvBlog.Core.Domain.Repositories;
+﻿using MeowvBlog.Core.Domain.Blog;
+using MeowvBlog.Core.Domain.Blog.Repositories;
 using Plus.EntityFramework;
 
-namespace MeowvBlog.EntityFrameworkCore.Repositories
+namespace MeowvBlog.EntityFrameworkCore.Repositories.Blog
 {
     public class PostRepository : MeowvBlogRepositoryBase<Post>, IPostRepository
     {

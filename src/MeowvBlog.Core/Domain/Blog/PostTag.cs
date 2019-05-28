@@ -1,6 +1,8 @@
-﻿namespace MeowvBlog.Core.Domain
+﻿using Plus.Domain.Entities;
+
+namespace MeowvBlog.Core.Domain.Blog
 {
-    public class PostTag
+    public class PostTag : Entity
     {
         /// <summary>
         /// PostId

@@ -9,102 +9,102 @@
             MySql
             </summary>
         </member>
-        <member name="P:MeowvBlog.Core.Domain.Category.CategoryName">
+        <member name="P:MeowvBlog.Core.Domain.Blog.Category.CategoryName">
             <summary>
             分类名称
             </summary>
         </member>
-        <member name="P:MeowvBlog.Core.Domain.Category.DisplayName">
+        <member name="P:MeowvBlog.Core.Domain.Blog.Category.DisplayName">
             <summary>
             展示名称
             </summary>
         </member>
-        <member name="P:MeowvBlog.Core.Domain.FriendLink.Title">
+        <member name="P:MeowvBlog.Core.Domain.Blog.FriendLink.Title">
             <summary>
             标题
             </summary>
         </member>
-        <member name="P:MeowvBlog.Core.Domain.FriendLink.LinkUrl">
+        <member name="P:MeowvBlog.Core.Domain.Blog.FriendLink.LinkUrl">
             <summary>
             链接
             </summary>
         </member>
-        <member name="P:MeowvBlog.Core.Domain.Post.Title">
+        <member name="P:MeowvBlog.Core.Domain.Blog.Post.Title">
             <summary>
             标题
             </summary>
         </member>
-        <member name="P:MeowvBlog.Core.Domain.Post.Author">
+        <member name="P:MeowvBlog.Core.Domain.Blog.Post.Author">
             <summary>
             作者
             </summary>
         </member>
-        <member name="P:MeowvBlog.Core.Domain.Post.Source">
+        <member name="P:MeowvBlog.Core.Domain.Blog.Post.Source">
             <summary>
             来源
             </summary>
         </member>
-        <member name="P:MeowvBlog.Core.Domain.Post.Url">
+        <member name="P:MeowvBlog.Core.Domain.Blog.Post.Url">
             <summary>
             链接
             </summary>
         </member>
-        <member name="P:MeowvBlog.Core.Domain.Post.Abstract">
+        <member name="P:MeowvBlog.Core.Domain.Blog.Post.Abstract">
             <summary>
             摘要
             </summary>
         </member>
-        <member name="P:MeowvBlog.Core.Domain.Post.Content">
+        <member name="P:MeowvBlog.Core.Domain.Blog.Post.Content">
             <summary>
             内容
             </summary>
         </member>
-        <member name="P:MeowvBlog.Core.Domain.Post.Hits">
+        <member name="P:MeowvBlog.Core.Domain.Blog.Post.Hits">
             <summary>
             点击量
             </summary>
         </member>
-        <member name="P:MeowvBlog.Core.Domain.Post.CreationTime">
+        <member name="P:MeowvBlog.Core.Domain.Blog.Post.CreationTime">
             <summary>
             创建时间
             </summary>
         </member>
-        <member name="P:MeowvBlog.Core.Domain.Post.PostTags">
+        <member name="P:MeowvBlog.Core.Domain.Blog.Post.PostTags">
             <summary>
             PostTag
             </summary>
         </member>
-        <member name="P:MeowvBlog.Core.Domain.PostTag.PostId">
+        <member name="P:MeowvBlog.Core.Domain.Blog.PostTag.PostId">
             <summary>
             PostId
             </summary>
         </member>
-        <member name="P:MeowvBlog.Core.Domain.PostTag.TagId">
+        <member name="P:MeowvBlog.Core.Domain.Blog.PostTag.TagId">
             <summary>
             标签Id
             </summary>
         </member>
-        <member name="P:MeowvBlog.Core.Domain.PostTag.Post">
+        <member name="P:MeowvBlog.Core.Domain.Blog.PostTag.Post">
             <summary>
             Post
             </summary>
         </member>
-        <member name="P:MeowvBlog.Core.Domain.PostTag.Tag">
+        <member name="P:MeowvBlog.Core.Domain.Blog.PostTag.Tag">
             <summary>
             Tag
             </summary>
         </member>
-        <member name="P:MeowvBlog.Core.Domain.Tag.TagName">
+        <member name="P:MeowvBlog.Core.Domain.Blog.Tag.TagName">
             <summary>
             标签名称
             </summary>
         </member>
-        <member name="P:MeowvBlog.Core.Domain.Tag.DisplayName">
+        <member name="P:MeowvBlog.Core.Domain.Blog.Tag.DisplayName">
             <summary>
             展示名称
             </summary>
         </member>
-        <member name="P:MeowvBlog.Core.Domain.Tag.PostTags">
+        <member name="P:MeowvBlog.Core.Domain.Blog.Tag.PostTags">
             <summary>
             PostTags
             </summary>
