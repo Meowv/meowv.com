@@ -19,7 +19,7 @@ namespace MeowvBlog.Web.Controllers
         }
 
         /// <summary>
-        /// ...
+        /// test
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
@@ -30,13 +30,6 @@ namespace MeowvBlog.Web.Controllers
             var response = new Response<PostDto>();
             response.Result = await _blogService.Get(id);
             return response;
-        }
-
-        [HttpGet]
-        [Route("str")]
-        public string GeteString(string a)
-        {
-            return a;
         }
     }
 }
