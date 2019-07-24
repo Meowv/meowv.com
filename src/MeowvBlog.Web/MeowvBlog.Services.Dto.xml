@@ -4,9 +4,19 @@
         <name>MeowvBlog.Services.Dto</name>
     </assembly>
     <members>
+        <member name="T:MeowvBlog.Services.Dto.Blog.GetPostDto">
+            <summary>
+            获取文章传输对象
+            </summary>
+        </member>
         <member name="P:MeowvBlog.Services.Dto.Blog.GetPostDto.CreationTime">
             <summary>
             创建时间
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.Services.Dto.Blog.PostDto">
+            <summary>
+            文章增删改传输对象
             </summary>
         </member>
         <member name="P:MeowvBlog.Services.Dto.Blog.PostDto.Title">

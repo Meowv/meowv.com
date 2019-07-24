@@ -113,8 +113,13 @@ namespace MeowvBlog.Services.Blog.Impl
             var output = new ActionOutput<GetPostDto>();
 
             var post = await _postRepository.FirstOrDefaultAsync(x => x.Url == url);
-            var result = post.MapTo<GetPostDto>();
+            if (post.IsNull())
+            {
+                output.AddError("找了找不到了~~~");
+                return output;
+            }
 
+            var result = post.MapTo<GetPostDto>();
             result.CreationTime = Convert.ToDateTime(result.CreationTime).ToString("MMMM dd, yyyy HH:mm:ss", new CultureInfo("en-us"));
 
             output.Result = result;
