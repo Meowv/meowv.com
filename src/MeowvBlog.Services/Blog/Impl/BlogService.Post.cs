@@ -3,6 +3,8 @@ using MeowvBlog.Core.Domain.Blog.Repositories;
 using MeowvBlog.Services.Dto.Blog;
 using Plus;
 using Plus.AutoMapper;
+using System;
+using System.Globalization;
 using System.Threading.Tasks;
 
 namespace MeowvBlog.Services.Blog.Impl
@@ -111,7 +113,11 @@ namespace MeowvBlog.Services.Blog.Impl
             var output = new ActionOutput<GetPostDto>();
 
             var post = await _postRepository.FirstOrDefaultAsync(x => x.Url == url);
-            output.Result = post.MapTo<GetPostDto>();
+            var result = post.MapTo<GetPostDto>();
+
+            result.CreationTime = Convert.ToDateTime(result.CreationTime).ToString("MMMM dd, yyyy HH:mm:ss", new CultureInfo("en-us"));
+
+            output.Result = result;
 
             return output;
         }
