@@ -4,6 +4,9 @@ using System;
 
 namespace MeowvBlog.Services.Dto.Blog
 {
+    /// <summary>
+    /// 文章增删改传输对象
+    /// </summary>
     [AutoMapFrom(typeof(Post))]
     public class PostDto
     {
