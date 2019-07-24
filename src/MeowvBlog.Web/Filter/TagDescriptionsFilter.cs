@@ -12,8 +12,8 @@ namespace MeowvBlog.Web.Filter
             {
                 new Tag
                 {
-                    Name = "",
-                    Description = ""
+                    Name = "Blog",
+                    Description = "个人博客接口"
                 }
             };
 

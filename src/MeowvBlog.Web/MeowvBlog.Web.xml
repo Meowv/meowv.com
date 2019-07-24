@@ -4,11 +4,26 @@
         <name>MeowvBlog.Web</name>
     </assembly>
     <members>
-        <member name="M:MeowvBlog.Web.Controllers.BlogController.Get(System.Int32)">
+        <member name="M:MeowvBlog.Web.Controllers.BlogController.Insert(MeowvBlog.Services.Dto.Blog.PostDto)">
             <summary>
-            test
+            新增文章
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.BlogController.Delete(System.Int32)">
+            <summary>
+            删除文章
             </summary>
             <param name="id"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.BlogController.Update(System.Int32,MeowvBlog.Services.Dto.Blog.PostDto)">
+            <summary>
+            更新文章
+            </summary>
+            <param name="id"></param>
+            <param name="dto"></param>
             <returns></returns>
         </member>
         <member name="M:MeowvBlog.Web.Filter.ActionParameterValidateAttribute.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)">

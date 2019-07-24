@@ -8,9 +8,13 @@ namespace MeowvBlog.Services
     {
         public IUnitOfWorkManager UnitOfWorkManager;
 
+        public IGuidGenerator GuidGenerator;
+
         protected ServiceBase()
         {
             UnitOfWorkManager = PlusEngine.Instance.Resolve<IUnitOfWorkManager>();
+
+            GuidGenerator = PlusEngine.Instance.Resolve<IGuidGenerator>();
         }
     }
 }
