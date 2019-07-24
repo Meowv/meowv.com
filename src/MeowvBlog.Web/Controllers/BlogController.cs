@@ -72,5 +72,23 @@ namespace MeowvBlog.Web.Controllers
                 response.Result = result.Result;
             return response;
         }
+
+        /// <summary>
+        /// 获取文章
+        /// </summary>
+        /// <param name="url"></param>
+        /// <returns></returns>
+        [HttpGet]
+        public async Task<Response<GetPostDto>> Get(string url)
+        {
+            var response = new Response<GetPostDto>();
+
+            var result = await _blogService.Get(url);
+            if (!result.Success)
+                response.SetMessage(ResponseStatusCode.Error, result.GetErrorMessage());
+            else
+                response.Result = result.Result;
+            return response;
+        }
     }
 }

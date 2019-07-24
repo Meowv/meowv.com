@@ -27,5 +27,12 @@ namespace MeowvBlog.Services.Blog
         /// <param name="dto"></param>
         /// <returns></returns>
         Task<ActionOutput<string>> Update(int id, PostDto dto);
+
+        /// <summary>
+        /// 获取文章
+        /// </summary>
+        /// <param name="url"></param>
+        /// <returns></returns>
+        Task<ActionOutput<GetPostDto>> Get(string url);
     }
 }
