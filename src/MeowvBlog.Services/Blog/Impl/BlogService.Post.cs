@@ -2,6 +2,7 @@
 using MeowvBlog.Core.Domain.Blog.Repositories;
 using MeowvBlog.Services.Dto.Blog;
 using Plus;
+using Plus.AutoMapper;
 using System.Threading.Tasks;
 
 namespace MeowvBlog.Services.Blog.Impl
@@ -98,6 +99,21 @@ namespace MeowvBlog.Services.Blog.Impl
 
                 return output;
             }
+        }
+
+        /// <summary>
+        /// 获取文章
+        /// </summary>
+        /// <param name="url"></param>
+        /// <returns></returns>
+        public async Task<ActionOutput<GetPostDto>> Get(string url)
+        {
+            var output = new ActionOutput<GetPostDto>();
+
+            var post = await _postRepository.FirstOrDefaultAsync(x => x.Url == url);
+            output.Result = post.MapTo<GetPostDto>();
+
+            return output;
         }
     }
 }

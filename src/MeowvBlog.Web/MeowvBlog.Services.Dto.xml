@@ -4,6 +4,11 @@
         <name>MeowvBlog.Services.Dto</name>
     </assembly>
     <members>
+        <member name="P:MeowvBlog.Services.Dto.Blog.GetPostDto.CreationTime">
+            <summary>
+            创建时间
+            </summary>
+        </member>
         <member name="P:MeowvBlog.Services.Dto.Blog.PostDto.Title">
             <summary>
             标题
