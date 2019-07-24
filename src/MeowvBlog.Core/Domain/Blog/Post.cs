@@ -1,6 +1,5 @@
 ﻿using Plus.Domain.Entities;
 using System;
-using System.Collections.Generic;
 
 namespace MeowvBlog.Core.Domain.Blog
 {
@@ -17,19 +16,9 @@ namespace MeowvBlog.Core.Domain.Blog
         public string Author { get; set; }
 
         /// <summary>
-        /// 来源
-        /// </summary>
-        public string Source { get; set; }
-
-        /// <summary>
         /// 链接
         /// </summary>
         public string Url { get; set; }
-
-        /// <summary>
-        /// 摘要
-        /// </summary>
-        public string Abstract { get; set; }
 
         /// <summary>
         /// 内容
@@ -37,18 +26,8 @@ namespace MeowvBlog.Core.Domain.Blog
         public string Content { get; set; }
 
         /// <summary>
-        /// 点击量
-        /// </summary>
-        public int Hits { get; set; }
-
-        /// <summary>
         /// 创建时间
         /// </summary>
         public DateTime? CreationTime { get; set; }
-
-        /// <summary>
-        /// PostTag
-        /// </summary>
-        public virtual ICollection<PostTag> PostTags { get; set; }
     }
 }

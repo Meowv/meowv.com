@@ -13,6 +13,7 @@ using Plus.Log4Net;
 using Plus.Modules;
 using Swashbuckle.AspNetCore.Swagger;
 using Swashbuckle.AspNetCore.SwaggerUI;
+using System.IO;
 using System.Reflection;
 using System.Text.Encodings.Web;
 using System.Text.Unicode;
@@ -53,14 +54,18 @@ namespace MeowvBlog.Web
 
             services.AddSwaggerGen(options =>
             {
+                var basePath = Directory.GetCurrentDirectory();
                 var info = new Info
                 {
                     Version = "v3.0.2",
-                    Title = "MeowvBlog - 个人博客数据接口",
+                    Title = "阿星Plus - 个人博客数据接口",
                     Description = "基于<code>.NET Core <a href='https://github.com/Meowv/.netcoreplus'>Plus</a></code>开发 ---- 个人博客数据接口列表 <a href='https://meowv.com'>https://meowv.com</a>"
                 };
                 options.SwaggerDoc("v1", info);
                 options.DocumentFilter<TagDescriptionsFilter>();
+                options.IncludeXmlComments(Path.Combine(basePath, "MeowvBlog.Core.xml"));
+                options.IncludeXmlComments(Path.Combine(basePath, "MeowvBlog.Services.Dto.xml"));
+                options.IncludeXmlComments(Path.Combine(basePath, "MeowvBlog.Web.xml"));
             });
 
             PlusStarter.Create<MeowvBlogWebModule>(options =>

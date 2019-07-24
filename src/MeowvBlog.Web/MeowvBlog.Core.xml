@@ -39,19 +39,9 @@
             作者
             </summary>
         </member>
-        <member name="P:MeowvBlog.Core.Domain.Blog.Post.Source">
-            <summary>
-            来源
-            </summary>
-        </member>
         <member name="P:MeowvBlog.Core.Domain.Blog.Post.Url">
             <summary>
             链接
-            </summary>
-        </member>
-        <member name="P:MeowvBlog.Core.Domain.Blog.Post.Abstract">
-            <summary>
-            摘要
             </summary>
         </member>
         <member name="P:MeowvBlog.Core.Domain.Blog.Post.Content">
@@ -59,19 +49,9 @@
             内容
             </summary>
         </member>
-        <member name="P:MeowvBlog.Core.Domain.Blog.Post.Hits">
-            <summary>
-            点击量
-            </summary>
-        </member>
         <member name="P:MeowvBlog.Core.Domain.Blog.Post.CreationTime">
             <summary>
             创建时间
-            </summary>
-        </member>
-        <member name="P:MeowvBlog.Core.Domain.Blog.Post.PostTags">
-            <summary>
-            PostTag
             </summary>
         </member>
         <member name="P:MeowvBlog.Core.Domain.Blog.PostTag.PostId">

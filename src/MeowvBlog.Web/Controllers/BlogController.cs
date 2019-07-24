@@ -19,16 +19,57 @@ namespace MeowvBlog.Web.Controllers
         }
 
         /// <summary>
-        /// test
+        /// 新增文章
+        /// </summary>
+        /// <param name="dto"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public async Task<Response<string>> Insert([FromBody] PostDto dto)
+        {
+            var response = new Response<string>();
+
+            var result = await _blogService.Insert(dto);
+            if (!result.Success)
+                response.SetMessage(ResponseStatusCode.Error, result.GetErrorMessage());
+            else
+                response.Result = result.Result;
+            return response;
+        }
+
+        /// <summary>
+        /// 删除文章
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        [HttpGet]
-        [Route("Get")]
-        public async Task<Response<PostDto>> Get(int id)
+        [HttpDelete]
+        public async Task<Response<string>> Delete(int id)
         {
-            var response = new Response<PostDto>();
-            response.Result = await _blogService.Get(id);
+            var response = new Response<string>();
+
+            var result = await _blogService.Delete(id);
+            if (!result.Success)
+                response.SetMessage(ResponseStatusCode.Error, result.GetErrorMessage());
+            else
+                response.Result = result.Result;
+            return response;
+        }
+
+        /// <summary>
+        /// 更新文章
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="dto"></param>
+        /// <returns></returns>
+        [HttpPut]
+        public async Task<Response<string>> Update(int id, [FromBody] PostDto dto)
+        {
+            var response = new Response<string>();
+
+            var result = await _blogService.Update(id, dto);
+            if (!result.Success)
+                response.SetMessage(ResponseStatusCode.Error, result.GetErrorMessage());
+            else
+                response.Result = result.Result;
             return response;
         }
     }
