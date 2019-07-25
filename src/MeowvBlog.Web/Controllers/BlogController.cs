@@ -26,11 +26,11 @@ namespace MeowvBlog.Web.Controllers
         /// <param name="dto"></param>
         /// <returns></returns>
         [HttpPost]
-        public async Task<Response<string>> Insert([FromBody] PostDto dto)
+        public async Task<Response<string>> InsertPost([FromBody] PostDto dto)
         {
             var response = new Response<string>();
 
-            var result = await _blogService.Insert(dto);
+            var result = await _blogService.InsertPost(dto);
             if (!result.Success)
                 response.SetMessage(ResponseStatusCode.Error, result.GetErrorMessage());
             else
@@ -44,11 +44,11 @@ namespace MeowvBlog.Web.Controllers
         /// <param name="id"></param>
         /// <returns></returns>
         [HttpDelete]
-        public async Task<Response<string>> Delete(int id)
+        public async Task<Response<string>> DeletePost(int id)
         {
             var response = new Response<string>();
 
-            var result = await _blogService.Delete(id);
+            var result = await _blogService.DeletePost(id);
             if (!result.Success)
                 response.SetMessage(ResponseStatusCode.Error, result.GetErrorMessage());
             else
@@ -63,11 +63,11 @@ namespace MeowvBlog.Web.Controllers
         /// <param name="dto"></param>
         /// <returns></returns>
         [HttpPut]
-        public async Task<Response<string>> Update(int id, [FromBody] PostDto dto)
+        public async Task<Response<string>> UpdatePost(int id, [FromBody] PostDto dto)
         {
             var response = new Response<string>();
 
-            var result = await _blogService.Update(id, dto);
+            var result = await _blogService.UpdatePost(id, dto);
             if (!result.Success)
                 response.SetMessage(ResponseStatusCode.Error, result.GetErrorMessage());
             else
@@ -81,11 +81,11 @@ namespace MeowvBlog.Web.Controllers
         /// <param name="url"></param>
         /// <returns></returns>
         [HttpGet]
-        public async Task<Response<GetPostDto>> Get(string url)
+        public async Task<Response<GetPostDto>> GetPost(string url)
         {
             var response = new Response<GetPostDto>();
 
-            var result = await _blogService.Get(url);
+            var result = await _blogService.GetPost(url);
             if (!result.Success)
                 response.SetMessage(ResponseStatusCode.Error, result.GetErrorMessage());
             else
@@ -100,11 +100,11 @@ namespace MeowvBlog.Web.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("query")]
-        public async Task<Response<PagedResultDto<QueryPostDto>>> Query([FromQuery] PagingInput input)
+        public async Task<Response<PagedResultDto<QueryPostDto>>> QueryPost([FromQuery] PagingInput input)
         {
             var response = new Response<PagedResultDto<QueryPostDto>>
             {
-                Result = await _blogService.Query(input)
+                Result = await _blogService.QueryPost(input)
             };
             return response;
         }
