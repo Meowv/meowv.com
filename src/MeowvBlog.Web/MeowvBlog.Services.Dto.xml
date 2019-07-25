@@ -64,6 +64,21 @@
             创建时间
             </summary>
         </member>
+        <member name="T:MeowvBlog.Services.Dto.Blog.TagDto">
+            <summary>
+            标签增删改传输对象
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.TagDto.TagName">
+            <summary>
+            标签名称
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.TagDto.DisplayName">
+            <summary>
+            展示名称
+            </summary>
+        </member>
         <member name="P:MeowvBlog.Services.Dto.PagingInput.Page">
             <summary>
             页码

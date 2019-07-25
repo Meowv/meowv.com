@@ -13,15 +13,5 @@ namespace MeowvBlog.Core.Domain.Blog
         /// 标签Id
         /// </summary>
         public int TagId { get; set; }
-
-        /// <summary>
-        /// Post
-        /// </summary>
-        public virtual Post Post { get; set; }
-
-        /// <summary>
-        /// Tag
-        /// </summary>
-        public virtual Tag Tag { get; set; }
     }
 }

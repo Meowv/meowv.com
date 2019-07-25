@@ -26,6 +26,7 @@ namespace MeowvBlog.Web.Controllers
         /// <param name="dto"></param>
         /// <returns></returns>
         [HttpPost]
+        [Route("post")]
         public async Task<Response<string>> InsertPost([FromBody] PostDto dto)
         {
             var response = new Response<string>();
@@ -44,6 +45,7 @@ namespace MeowvBlog.Web.Controllers
         /// <param name="id"></param>
         /// <returns></returns>
         [HttpDelete]
+        [Route("post")]
         public async Task<Response<string>> DeletePost(int id)
         {
             var response = new Response<string>();
@@ -63,6 +65,7 @@ namespace MeowvBlog.Web.Controllers
         /// <param name="dto"></param>
         /// <returns></returns>
         [HttpPut]
+        [Route("post")]
         public async Task<Response<string>> UpdatePost(int id, [FromBody] PostDto dto)
         {
             var response = new Response<string>();
@@ -81,6 +84,7 @@ namespace MeowvBlog.Web.Controllers
         /// <param name="url"></param>
         /// <returns></returns>
         [HttpGet]
+        [Route("post")]
         public async Task<Response<GetPostDto>> GetPost(string url)
         {
             var response = new Response<GetPostDto>();
@@ -99,13 +103,71 @@ namespace MeowvBlog.Web.Controllers
         /// <param name="input"></param>
         /// <returns></returns>
         [HttpGet]
-        [Route("query")]
+        [Route("post/query")]
         public async Task<Response<PagedResultDto<QueryPostDto>>> QueryPost([FromQuery] PagingInput input)
         {
             var response = new Response<PagedResultDto<QueryPostDto>>
             {
                 Result = await _blogService.QueryPost(input)
             };
+            return response;
+        }
+
+        /// <summary>
+        /// 新增标签
+        /// </summary>
+        /// <param name="dto"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("tag")]
+        public async Task<Response<string>> InsertTag([FromBody] TagDto dto)
+        {
+            var response = new Response<string>();
+
+            var result = await _blogService.InsertTag(dto);
+            if (!result.Success)
+                response.SetMessage(ResponseStatusCode.Error, result.GetErrorMessage());
+            else
+                response.Result = result.Result;
+            return response;
+        }
+
+        /// <summary>
+        /// 删除标签
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpDelete]
+        [Route("tag")]
+        public async Task<Response<string>> DeleteTag(int id)
+        {
+            var response = new Response<string>();
+
+            var result = await _blogService.DeleteTag(id);
+            if (!result.Success)
+                response.SetMessage(ResponseStatusCode.Error, result.GetErrorMessage());
+            else
+                response.Result = result.Result;
+            return response;
+        }
+
+        /// <summary>
+        /// 更新标签
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="dto"></param>
+        /// <returns></returns>
+        [HttpPut]
+        [Route("tag")]
+        public async Task<Response<string>> UpdateTag(int id, [FromBody] TagDto dto)
+        {
+            var response = new Response<string>();
+
+            var result = await _blogService.UpdateTag(id, dto);
+            if (!result.Success)
+                response.SetMessage(ResponseStatusCode.Error, result.GetErrorMessage());
+            else
+                response.Result = result.Result;
             return response;
         }
     }
