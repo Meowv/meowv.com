@@ -8,6 +8,8 @@ namespace MeowvBlog.EntityFrameworkCore.Mappers
     {
         public void Configure(EntityTypeBuilder<PostTag> builder)
         {
+            builder.HasKey(x => x.Id);
+            builder.Property(x => x.Id).ValueGeneratedOnAdd();
             builder.ToTable(DbConsts.DbTableName.Post_Tags);
         }
     }
