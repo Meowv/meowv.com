@@ -47,6 +47,13 @@
             <param name="name"></param>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.Web.Controllers.BlogController.QueryPostsByCategory(System.String)">
+            <summary>
+            通过分类查询文章列表
+            </summary>
+            <param name="name"></param>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.Web.Controllers.BlogController.InsertTag(MeowvBlog.Services.Dto.Blog.TagDto)">
             <summary>
             新增标签
@@ -94,6 +101,41 @@
             删除文章的标签
             </summary>
             <param name="id"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.BlogController.InsertCategory(MeowvBlog.Services.Dto.Blog.CategoryDto)">
+            <summary>
+            新增分类
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.BlogController.DeleteCategory(System.Int32)">
+            <summary>
+            删除分类
+            </summary>
+            <param name="id"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.BlogController.UpdateCategory(System.Int32,MeowvBlog.Services.Dto.Blog.CategoryDto)">
+            <summary>
+            更新分类
+            </summary>
+            <param name="id"></param>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.BlogController.GetCategory(System.String)">
+            <summary>
+            获取分类名称
+            </summary>
+            <param name="name"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.BlogController.QueryCategories">
+            <summary>
+            查询分类列表
+            </summary>
             <returns></returns>
         </member>
         <member name="M:MeowvBlog.Web.Filter.ActionParameterValidateAttribute.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)">

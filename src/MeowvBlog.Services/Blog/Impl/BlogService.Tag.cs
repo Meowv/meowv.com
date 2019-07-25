@@ -123,8 +123,7 @@ namespace MeowvBlog.Services.Blog.Impl
                     {
                         tags.TagName,
                         tags.DisplayName
-                    }
-                    into g
+                    } into g
                     select new QueryTagDto
                     {
                         TagName = g.Key.TagName,

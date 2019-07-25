@@ -4,6 +4,16 @@
         <name>MeowvBlog.Services.Dto</name>
     </assembly>
     <members>
+        <member name="P:MeowvBlog.Services.Dto.Blog.CategoryDto.CategoryName">
+            <summary>
+            分类名称
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.CategoryDto.DisplayName">
+            <summary>
+            展示名称
+            </summary>
+        </member>
         <member name="T:MeowvBlog.Services.Dto.Blog.GetPostDto">
             <summary>
             获取文章传输对象
@@ -72,21 +82,6 @@
         <member name="P:MeowvBlog.Services.Dto.Blog.QueryPostDto.CreationTime">
             <summary>
             创建时间
-            </summary>
-        </member>
-        <member name="P:MeowvBlog.Services.Dto.Blog.QueryTagDto.TagName">
-            <summary>
-            标签名称
-            </summary>
-        </member>
-        <member name="P:MeowvBlog.Services.Dto.Blog.QueryTagDto.DisplayName">
-            <summary>
-            展示名称
-            </summary>
-        </member>
-        <member name="P:MeowvBlog.Services.Dto.Blog.QueryTagDto.Count">
-            <summary>
-            标签个数
             </summary>
         </member>
         <member name="T:MeowvBlog.Services.Dto.Blog.TagDto">

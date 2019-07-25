@@ -132,6 +132,22 @@ namespace MeowvBlog.Web.Controllers
             return response;
         }
 
+        /// <summary>
+        /// 通过分类查询文章列表
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("post/querybycategory")]
+        public async Task<Response<IList<QueryPostDto>>> QueryPostsByCategory(string name)
+        {
+            var response = new Response<IList<QueryPostDto>>
+            {
+                Result = await _blogService.QueryPostsByCategory(name)
+            };
+            return response;
+        }
+
         #endregion
 
         #region tags
@@ -267,6 +283,102 @@ namespace MeowvBlog.Web.Controllers
                 response.SetMessage(ResponseStatusCode.Error, result.GetErrorMessage());
             else
                 response.Result = result.Result;
+            return response;
+        }
+
+        #endregion
+
+        #region categories
+
+        /// <summary>
+        /// 新增分类
+        /// </summary>
+        /// <param name="dto"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("category")]
+        public async Task<Response<string>> InsertCategory(CategoryDto dto)
+        {
+            var response = new Response<string>();
+
+            var result = await _blogService.InsertCategory(dto);
+            if (!result.Success)
+                response.SetMessage(ResponseStatusCode.Error, result.GetErrorMessage());
+            else
+                response.Result = result.Result;
+            return response;
+        }
+
+        /// <summary>
+        /// 删除分类
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpDelete]
+        [Route("category")]
+        public async Task<Response<string>> DeleteCategory(int id)
+        {
+            var response = new Response<string>();
+
+            var result = await _blogService.DeleteCategory(id);
+            if (!result.Success)
+                response.SetMessage(ResponseStatusCode.Error, result.GetErrorMessage());
+            else
+                response.Result = result.Result;
+            return response;
+        }
+
+        /// <summary>
+        /// 更新分类
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="dto"></param>
+        /// <returns></returns>
+        [HttpPut]
+        [Route("category")]
+        public async Task<Response<string>> UpdateCategory(int id, CategoryDto dto)
+        {
+            var response = new Response<string>();
+
+            var result = await _blogService.UpdateCategory(id, dto);
+            if (!result.Success)
+                response.SetMessage(ResponseStatusCode.Error, result.GetErrorMessage());
+            else
+                response.Result = result.Result;
+            return response;
+        }
+
+        /// <summary>
+        /// 获取分类名称
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("category")]
+        public async Task<Response<string>> GetCategory(string name)
+        {
+            var response = new Response<string>();
+
+            var result = await _blogService.GetCategory(name);
+            if (!result.Success)
+                response.SetMessage(ResponseStatusCode.Error, result.GetErrorMessage());
+            else
+                response.Result = result.Result;
+            return response;
+        }
+
+        /// <summary>
+        /// 查询分类列表
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("categories")]
+        public async Task<Response<IList<QueryCategoryDto>>> QueryCategories()
+        {
+            var response = new Response<IList<QueryCategoryDto>>
+            {
+                Result = await _blogService.QueryCategories()
+            };
             return response;
         }
 

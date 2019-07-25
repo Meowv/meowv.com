@@ -49,6 +49,11 @@
             内容
             </summary>
         </member>
+        <member name="P:MeowvBlog.Core.Domain.Blog.Post.CategoryId">
+            <summary>
+            分类Id
+            </summary>
+        </member>
         <member name="P:MeowvBlog.Core.Domain.Blog.Post.CreationTime">
             <summary>
             创建时间

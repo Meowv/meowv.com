@@ -18,12 +18,18 @@ namespace MeowvBlog.Services.Blog.Impl
         private readonly IPostRepository _postRepository;
         private readonly ITagRepository _tagRepository;
         private readonly IPostTagRepository _postTagRepository;
+        private readonly ICategoryRepository _categoryRepository;
 
-        public BlogService(IPostRepository postRepository, ITagRepository tagRepository, IPostTagRepository postTagRepository)
+        public BlogService(
+            IPostRepository postRepository,
+            ITagRepository tagRepository,
+            IPostTagRepository postTagRepository,
+            ICategoryRepository categoryRepository)
         {
             _postRepository = postRepository;
             _tagRepository = tagRepository;
             _postTagRepository = postTagRepository;
+            _categoryRepository = categoryRepository;
         }
 
         /// <summary>
@@ -172,6 +178,27 @@ namespace MeowvBlog.Services.Blog.Impl
                     join posts in await _postRepository.GetAllListAsync()
                     on post_tags.PostId equals posts.Id
                     where tags.DisplayName == name
+                    orderby posts.CreationTime descending
+                    select new QueryPostDto
+                    {
+                        Title = posts.Title,
+                        Url = posts.Url,
+                        CreationTime = posts.CreationTime?.ToString("MMMM dd, yyyy HH:mm:ss", new CultureInfo("en-us")),
+                        Year = posts.CreationTime.Value.Year
+                    }).ToList();
+        }
+
+        /// <summary>
+        /// 通过分类查询文章列表
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public async Task<IList<QueryPostDto>> QueryPostsByCategory(string name)
+        {
+            return (from posts in await _postRepository.GetAllListAsync()
+                    join categories in await _categoryRepository.GetAllListAsync()
+                    on posts.CategoryId equals categories.Id
+                    where categories.DisplayName == name
                     orderby posts.CreationTime descending
                     select new QueryPostDto
                     {
