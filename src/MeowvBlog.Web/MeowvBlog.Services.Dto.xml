@@ -14,9 +14,24 @@
             展示名称
             </summary>
         </member>
-        <member name="T:MeowvBlog.Services.Dto.Blog.GetPostDto">
+        <member name="P:MeowvBlog.Services.Dto.Blog.GetPostDto.Title">
             <summary>
-            获取文章传输对象
+            标题
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.GetPostDto.Author">
+            <summary>
+            作者
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.GetPostDto.Url">
+            <summary>
+            链接
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.GetPostDto.Content">
+            <summary>
+            内容
             </summary>
         </member>
         <member name="P:MeowvBlog.Services.Dto.Blog.GetPostDto.CreationTime">
@@ -24,9 +39,24 @@
             创建时间
             </summary>
         </member>
-        <member name="T:MeowvBlog.Services.Dto.Blog.PostDto">
+        <member name="P:MeowvBlog.Services.Dto.Blog.GetPostDto.Category">
             <summary>
-            文章增删改传输对象
+            分类
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.GetPostDto.Tags">
+            <summary>
+            标签列表
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.GetPostDto.Previous">
+            <summary>
+            上一篇
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.GetPostDto.Next">
+            <summary>
+            下一篇
             </summary>
         </member>
         <member name="P:MeowvBlog.Services.Dto.Blog.PostDto.Title">
@@ -49,9 +79,24 @@
             内容
             </summary>
         </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.PostDto.CategoryId">
+            <summary>
+            分类Id
+            </summary>
+        </member>
         <member name="P:MeowvBlog.Services.Dto.Blog.PostDto.CreationTime">
             <summary>
             创建时间
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.PostForPagedDto.Title">
+            <summary>
+            标题
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.PostForPagedDto.Url">
+            <summary>
+            链接
             </summary>
         </member>
         <member name="P:MeowvBlog.Services.Dto.Blog.PostTagDto.PostId">
@@ -82,11 +127,6 @@
         <member name="P:MeowvBlog.Services.Dto.Blog.QueryPostDto.CreationTime">
             <summary>
             创建时间
-            </summary>
-        </member>
-        <member name="T:MeowvBlog.Services.Dto.Blog.TagDto">
-            <summary>
-            标签增删改传输对象
             </summary>
         </member>
         <member name="P:MeowvBlog.Services.Dto.Blog.TagDto.TagName">
