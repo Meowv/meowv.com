@@ -138,13 +138,13 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.Web.Filter.ActionParameterValidateAttribute.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)">
+        <member name="M:MeowvBlog.Web.Filters.ActionParameterValidateAttribute.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)">
             <summary>
             Action方法执行前参数校验
             </summary>
             <param name="context"></param>
         </member>
-        <member name="M:MeowvBlog.Web.Filter.ActionParameterValidateAttribute.OnActionExecuted(Microsoft.AspNetCore.Mvc.Filters.ActionExecutedContext)">
+        <member name="M:MeowvBlog.Web.Filters.ActionParameterValidateAttribute.OnActionExecuted(Microsoft.AspNetCore.Mvc.Filters.ActionExecutedContext)">
             <summary>
             Action方法执行后异常处理,避免直接抛出异常
             </summary>

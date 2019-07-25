@@ -3,7 +3,7 @@ using MeowvBlog.Core;
 using MeowvBlog.EntityFrameworkCore;
 using MeowvBlog.Services;
 using MeowvBlog.Services.Dto;
-using MeowvBlog.Web.Filter;
+using MeowvBlog.Web.Filters;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;

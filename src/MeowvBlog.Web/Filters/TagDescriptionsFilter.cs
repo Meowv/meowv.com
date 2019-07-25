@@ -2,7 +2,7 @@
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Collections.Generic;
 
-namespace MeowvBlog.Web.Filter
+namespace MeowvBlog.Web.Filters
 {
     public class TagDescriptionsFilter : IDocumentFilter
     {
