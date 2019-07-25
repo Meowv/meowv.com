@@ -2,7 +2,7 @@
 
 namespace MeowvBlog.Web.Controllers
 {
-    public class PostController : Controller
+    public class PostsController : Controller
     {
         [Route("/posts")]
         [Route("/posts/page/{page:int}")]
