@@ -35,3 +35,22 @@
     </div>
 </div>
 @await Component.InvokeAsync("Footer", false)
+@section scripts{
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script>
+        axios.get('https://localhost:44345/api/blog/tags')
+            .then(function (response) {
+                console.log(response);
+            }).catch(function (error) {
+                console.log(error);
+            });
+
+        axios.get('https://localhost:44345/api/blog/post', {
+            params: { url: 'test' }
+        }).then(function (response) {
+            console.log(response);
+        }).catch(function (error) {
+            console.log(error);
+        });
+    </script>
+}
