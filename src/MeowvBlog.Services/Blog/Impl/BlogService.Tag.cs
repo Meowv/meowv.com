@@ -1,6 +1,8 @@
 ﻿using MeowvBlog.Core.Domain.Blog;
 using MeowvBlog.Services.Dto.Blog;
 using Plus;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace MeowvBlog.Services.Blog.Impl
@@ -85,6 +87,40 @@ namespace MeowvBlog.Services.Blog.Impl
 
                 return output;
             }
+        }
+
+        /// <summary>
+        /// 查询标签列表
+        /// </summary>
+        /// <returns></returns>
+        public async Task<IList<QueryTagDto>> QueryTags()
+        {
+            //var sql = @"SELECT
+            //             tags.TagName,
+            //             tags.DisplayName,
+            //             Count( 1 ) AS Count 
+            //            FROM
+            //             post_tags
+            //             INNER JOIN tags ON tags.Id = post_tags.TagId
+            //            GROUP BY
+            //             tags.TagName,
+            //             tags.DisplayName";
+
+            return (from tags in await _tagRepository.GetAllListAsync()
+                    join post_tags in await _postTagRepository.GetAllListAsync()
+                    on tags.Id equals post_tags.TagId
+                    group tags by new
+                    {
+                        tags.TagName,
+                        tags.DisplayName
+                    }
+                    into g
+                    select new QueryTagDto
+                    {
+                        TagName = g.Key.TagName,
+                        DisplayName = g.Key.DisplayName,
+                        Count = g.Count()
+                    }).ToList();
         }
     }
 }

@@ -17,11 +17,13 @@ namespace MeowvBlog.Services.Blog.Impl
     {
         private readonly IPostRepository _postRepository;
         private readonly ITagRepository _tagRepository;
+        private readonly IPostTagRepository _postTagRepository;
 
-        public BlogService(IPostRepository postRepository, ITagRepository tagRepository)
+        public BlogService(IPostRepository postRepository, ITagRepository tagRepository, IPostTagRepository postTagRepository)
         {
             _postRepository = postRepository;
             _tagRepository = tagRepository;
+            _postTagRepository = postTagRepository;
         }
 
         /// <summary>

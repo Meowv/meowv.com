@@ -1,5 +1,6 @@
 ﻿using MeowvBlog.Services.Dto.Blog;
 using Plus;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace MeowvBlog.Services.Blog
@@ -27,5 +28,11 @@ namespace MeowvBlog.Services.Blog
         /// <param name="dto"></param>
         /// <returns></returns>
         Task<ActionOutput<string>> UpdateTag(int id, TagDto dto);
+
+        /// <summary>
+        /// 查询标签列表
+        /// </summary>
+        /// <returns></returns>
+        Task<IList<QueryTagDto>> QueryTags();
     }
 }

@@ -56,7 +56,7 @@
         </member>
         <member name="P:MeowvBlog.Core.Domain.Blog.PostTag.PostId">
             <summary>
-            PostId
+            文章Id
             </summary>
         </member>
         <member name="P:MeowvBlog.Core.Domain.Blog.PostTag.TagId">

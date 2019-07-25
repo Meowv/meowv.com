@@ -62,6 +62,26 @@
             <param name="dto"></param>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.Web.Controllers.BlogController.QueryTags">
+            <summary>
+            查询标签列表
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.BlogController.InsertPostTag(MeowvBlog.Services.Dto.Blog.PostTagDto)">
+            <summary>
+            新增文章的标签 
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.BlogController.DeletePostTag(System.Int32)">
+            <summary>
+            删除文章的标签
+            </summary>
+            <param name="id"></param>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.Web.Filter.ActionParameterValidateAttribute.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)">
             <summary>
             Action方法执行前参数校验
