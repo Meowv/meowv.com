@@ -44,5 +44,35 @@
             创建时间
             </summary>
         </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.QueryPostDto.Title">
+            <summary>
+            标题
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.QueryPostDto.Url">
+            <summary>
+            链接
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.QueryPostDto.Year">
+            <summary>
+            年份
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.QueryPostDto.CreationTime">
+            <summary>
+            创建时间
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.PagingInput.Page">
+            <summary>
+            页码
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.PagingInput.Limit">
+            <summary>
+            限制条数
+            </summary>
+        </member>
     </members>
 </doc>

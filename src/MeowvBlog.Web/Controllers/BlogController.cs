@@ -1,7 +1,9 @@
 ﻿using MeowvBlog.Services.Blog;
+using MeowvBlog.Services.Dto;
 using MeowvBlog.Services.Dto.Blog;
 using Microsoft.AspNetCore.Mvc;
 using Plus;
+using Plus.Services.Dto;
 using Plus.WebApi;
 using System.Threading.Tasks;
 
@@ -88,6 +90,22 @@ namespace MeowvBlog.Web.Controllers
                 response.SetMessage(ResponseStatusCode.Error, result.GetErrorMessage());
             else
                 response.Result = result.Result;
+            return response;
+        }
+
+        /// <summary>
+        /// 分页查询文章列表
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("query")]
+        public async Task<Response<PagedResultDto<QueryPostDto>>> Query([FromQuery] PagingInput input)
+        {
+            var response = new Response<PagedResultDto<QueryPostDto>>
+            {
+                Result = await _blogService.Query(input)
+            };
             return response;
         }
     }
