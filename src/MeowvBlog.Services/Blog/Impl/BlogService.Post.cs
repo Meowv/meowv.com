@@ -1,10 +1,14 @@
 ﻿using MeowvBlog.Core.Domain.Blog;
 using MeowvBlog.Core.Domain.Blog.Repositories;
+using MeowvBlog.Services.Dto;
 using MeowvBlog.Services.Dto.Blog;
 using Plus;
 using Plus.AutoMapper;
+using Plus.Services.Dto;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace MeowvBlog.Services.Blog.Impl
@@ -125,6 +129,30 @@ namespace MeowvBlog.Services.Blog.Impl
             output.Result = result;
 
             return output;
+        }
+
+        /// <summary>
+        /// 分页查询文章列表
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public async Task<PagedResultDto<QueryPostDto>> Query(PagingInput input)
+        {
+            var posts = await _postRepository.GetAllListAsync();
+
+            var count = posts.Count;
+
+            var list = posts.OrderByDescending(x => x.CreationTime).AsQueryable().PageByIndex(input.Page, input.Limit).ToList();
+
+            var result = list.MapTo<IList<QueryPostDto>>().ToList();
+
+            result.ForEach(x =>
+            {
+                x.CreationTime = Convert.ToDateTime(x.CreationTime).ToString("MMMM dd, yyyy HH:mm:ss", new CultureInfo("en-us"));
+                x.Year = Convert.ToDateTime(x.CreationTime).Year;
+            });
+
+            return new PagedResultDto<QueryPostDto>(count, result);
         }
     }
 }
