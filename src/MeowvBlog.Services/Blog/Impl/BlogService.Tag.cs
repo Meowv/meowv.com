@@ -90,22 +90,32 @@ namespace MeowvBlog.Services.Blog.Impl
         }
 
         /// <summary>
+        /// 获取标签名称
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public async Task<ActionOutput<string>> GetTag(string name)
+        {
+            var output = new ActionOutput<string>();
+
+            var tag = await _tagRepository.FirstOrDefaultAsync(x => x.DisplayName == name);
+            if (tag.IsNull())
+            {
+                output.AddError("找了找不到了~~~");
+                return output;
+            }
+
+            output.Result = tag.TagName;
+
+            return output;
+        }
+
+        /// <summary>
         /// 查询标签列表
         /// </summary>
         /// <returns></returns>
         public async Task<IList<QueryTagDto>> QueryTags()
         {
-            //var sql = @"SELECT
-            //             tags.TagName,
-            //             tags.DisplayName,
-            //             Count( 1 ) AS Count 
-            //            FROM
-            //             post_tags
-            //             INNER JOIN tags ON tags.Id = post_tags.TagId
-            //            GROUP BY
-            //             tags.TagName,
-            //             tags.DisplayName";
-
             return (from tags in await _tagRepository.GetAllListAsync()
                     join post_tags in await _postTagRepository.GetAllListAsync()
                     on tags.Id equals post_tags.TagId

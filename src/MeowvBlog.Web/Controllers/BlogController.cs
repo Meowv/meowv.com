@@ -111,7 +111,23 @@ namespace MeowvBlog.Web.Controllers
         {
             var response = new Response<PagedResultDto<QueryPostDto>>
             {
-                Result = await _blogService.QueryPost(input)
+                Result = await _blogService.QueryPosts(input)
+            };
+            return response;
+        }
+
+        /// <summary>
+        /// 通过标签查询文章列表
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("post/querybytag")]
+        public async Task<Response<IList<QueryPostDto>>> QueryPostsByTag(string name)
+        {
+            var response = new Response<IList<QueryPostDto>>
+            {
+                Result = await _blogService.QueryPostsByTag(name)
             };
             return response;
         }
@@ -171,6 +187,25 @@ namespace MeowvBlog.Web.Controllers
             var response = new Response<string>();
 
             var result = await _blogService.UpdateTag(id, dto);
+            if (!result.Success)
+                response.SetMessage(ResponseStatusCode.Error, result.GetErrorMessage());
+            else
+                response.Result = result.Result;
+            return response;
+        }
+
+        /// <summary>
+        /// 获取标签名称
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("tag")]
+        public async Task<Response<string>> GetTag(string name)
+        {
+            var response = new Response<string>();
+
+            var result = await _blogService.GetTag(name);
             if (!result.Success)
                 response.SetMessage(ResponseStatusCode.Error, result.GetErrorMessage());
             else

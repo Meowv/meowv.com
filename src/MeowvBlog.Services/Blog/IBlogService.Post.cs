@@ -2,6 +2,7 @@
 using MeowvBlog.Services.Dto.Blog;
 using Plus;
 using Plus.Services.Dto;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace MeowvBlog.Services.Blog
@@ -42,6 +43,13 @@ namespace MeowvBlog.Services.Blog
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
-        Task<PagedResultDto<QueryPostDto>> QueryPost(PagingInput input);
+        Task<PagedResultDto<QueryPostDto>> QueryPosts(PagingInput input);
+
+        /// <summary>
+        /// 通过标签查询文章列表
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        Task<IList<QueryPostDto>> QueryPostsByTag(string name);
     }
 }
