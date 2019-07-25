@@ -26,6 +26,11 @@ namespace MeowvBlog.Core.Domain.Blog
         public string Content { get; set; }
 
         /// <summary>
+        /// 分类Id
+        /// </summary>
+        public int CategoryId { get; set; }
+
+        /// <summary>
         /// 创建时间
         /// </summary>
         public DateTime? CreationTime { get; set; }

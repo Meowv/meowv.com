@@ -40,6 +40,6 @@ namespace MeowvBlog.Services.Blog
         /// 查询标签列表
         /// </summary>
         /// <returns></returns>
-        Task<IList<QueryTagDto>> QueryTags();       
+        Task<IList<QueryTagDto>> QueryTags();
     }
 }
