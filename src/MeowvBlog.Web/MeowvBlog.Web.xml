@@ -4,21 +4,21 @@
         <name>MeowvBlog.Web</name>
     </assembly>
     <members>
-        <member name="M:MeowvBlog.Web.Controllers.BlogController.InsertPost(MeowvBlog.Services.Dto.Blog.PostDto)">
+        <member name="M:MeowvBlog.Web.ApiControllers.BlogController.InsertPost(MeowvBlog.Services.Dto.Blog.PostDto)">
             <summary>
             新增文章
             </summary>
             <param name="dto"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.Web.Controllers.BlogController.DeletePost(System.Int32)">
+        <member name="M:MeowvBlog.Web.ApiControllers.BlogController.DeletePost(System.Int32)">
             <summary>
             删除文章
             </summary>
             <param name="id"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.Web.Controllers.BlogController.UpdatePost(System.Int32,MeowvBlog.Services.Dto.Blog.PostDto)">
+        <member name="M:MeowvBlog.Web.ApiControllers.BlogController.UpdatePost(System.Int32,MeowvBlog.Services.Dto.Blog.PostDto)">
             <summary>
             更新文章
             </summary>
@@ -26,49 +26,49 @@
             <param name="dto"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.Web.Controllers.BlogController.GetPost(System.String)">
+        <member name="M:MeowvBlog.Web.ApiControllers.BlogController.GetPost(System.String)">
             <summary>
             获取文章
             </summary>
             <param name="url"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.Web.Controllers.BlogController.QueryPost(MeowvBlog.Services.Dto.PagingInput)">
+        <member name="M:MeowvBlog.Web.ApiControllers.BlogController.QueryPost(MeowvBlog.Services.Dto.PagingInput)">
             <summary>
             分页查询文章列表
             </summary>
             <param name="input"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.Web.Controllers.BlogController.QueryPostsByTag(System.String)">
+        <member name="M:MeowvBlog.Web.ApiControllers.BlogController.QueryPostsByTag(System.String)">
             <summary>
             通过标签查询文章列表
             </summary>
             <param name="name"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.Web.Controllers.BlogController.QueryPostsByCategory(System.String)">
+        <member name="M:MeowvBlog.Web.ApiControllers.BlogController.QueryPostsByCategory(System.String)">
             <summary>
             通过分类查询文章列表
             </summary>
             <param name="name"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.Web.Controllers.BlogController.InsertTag(MeowvBlog.Services.Dto.Blog.TagDto)">
+        <member name="M:MeowvBlog.Web.ApiControllers.BlogController.InsertTag(MeowvBlog.Services.Dto.Blog.TagDto)">
             <summary>
             新增标签
             </summary>
             <param name="dto"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.Web.Controllers.BlogController.DeleteTag(System.Int32)">
+        <member name="M:MeowvBlog.Web.ApiControllers.BlogController.DeleteTag(System.Int32)">
             <summary>
             删除标签
             </summary>
             <param name="id"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.Web.Controllers.BlogController.UpdateTag(System.Int32,MeowvBlog.Services.Dto.Blog.TagDto)">
+        <member name="M:MeowvBlog.Web.ApiControllers.BlogController.UpdateTag(System.Int32,MeowvBlog.Services.Dto.Blog.TagDto)">
             <summary>
             更新标签
             </summary>
@@ -76,48 +76,48 @@
             <param name="dto"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.Web.Controllers.BlogController.GetTag(System.String)">
+        <member name="M:MeowvBlog.Web.ApiControllers.BlogController.GetTag(System.String)">
             <summary>
             获取标签名称
             </summary>
             <param name="name"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.Web.Controllers.BlogController.QueryTags">
+        <member name="M:MeowvBlog.Web.ApiControllers.BlogController.QueryTags">
             <summary>
             查询标签列表
             </summary>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.Web.Controllers.BlogController.InsertPostTag(MeowvBlog.Services.Dto.Blog.PostTagDto)">
+        <member name="M:MeowvBlog.Web.ApiControllers.BlogController.InsertPostTag(MeowvBlog.Services.Dto.Blog.PostTagDto)">
             <summary>
             新增文章的标签 
             </summary>
             <param name="dto"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.Web.Controllers.BlogController.DeletePostTag(System.Int32)">
+        <member name="M:MeowvBlog.Web.ApiControllers.BlogController.DeletePostTag(System.Int32)">
             <summary>
             删除文章的标签
             </summary>
             <param name="id"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.Web.Controllers.BlogController.InsertCategory(MeowvBlog.Services.Dto.Blog.CategoryDto)">
+        <member name="M:MeowvBlog.Web.ApiControllers.BlogController.InsertCategory(MeowvBlog.Services.Dto.Blog.CategoryDto)">
             <summary>
             新增分类
             </summary>
             <param name="dto"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.Web.Controllers.BlogController.DeleteCategory(System.Int32)">
+        <member name="M:MeowvBlog.Web.ApiControllers.BlogController.DeleteCategory(System.Int32)">
             <summary>
             删除分类
             </summary>
             <param name="id"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.Web.Controllers.BlogController.UpdateCategory(System.Int32,MeowvBlog.Services.Dto.Blog.CategoryDto)">
+        <member name="M:MeowvBlog.Web.ApiControllers.BlogController.UpdateCategory(System.Int32,MeowvBlog.Services.Dto.Blog.CategoryDto)">
             <summary>
             更新分类
             </summary>
@@ -125,14 +125,14 @@
             <param name="dto"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.Web.Controllers.BlogController.GetCategory(System.String)">
+        <member name="M:MeowvBlog.Web.ApiControllers.BlogController.GetCategory(System.String)">
             <summary>
             获取分类名称
             </summary>
             <param name="name"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.Web.Controllers.BlogController.QueryCategories">
+        <member name="M:MeowvBlog.Web.ApiControllers.BlogController.QueryCategories">
             <summary>
             查询分类列表
             </summary>
