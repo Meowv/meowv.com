@@ -3,94 +3,39 @@
         <div class="post-wrap categories">
             <h2 class="post-title">-&nbsp;Categories&nbsp;-</h2>
             <div class="categories-card">
-                <div class="card-item">
-                    <div class="categories">
-                        <a href="/category/影视剧-文学作品评论/">
-                            <h3>
-                                <i class="iconfont icon-category" style="padding-right:3px"></i>
-                                影视剧/文学作品评论
-                            </h3>
-                            <small>(10)</small>
-                        </a>
+                <script id="categories_tmpl" type="text/template">
+                    {{each result}}
+                    <div class="card-item">
+                        <div class="categories">
+                            <a href="/category/{{$value.displayName}}/">
+                                <h3>
+                                    <i class="iconfont iconcode" style="padding-right:3px"></i>
+                                    {{$value.categoryName}}
+                                </h3>
+                                <small>({{$value.count}})</small>
+                            </a>
+                        </div>
                     </div>
-                </div>
-                <div class="card-item">
-                    <div class="categories">
-                        <a href="/category/Algorithm/">
-                            <h3>
-                                <i class="iconfont icon-category" style="padding-right:3px"></i>
-                                Algorithm
-                            </h3>
-                            <small>(10)</small>
-                        </a>
-                    </div>
-                </div>
-                <div class="card-item">
-                    <div class="categories">
-                        <a href="/category/黑龙江省导游继续教育培训课程/">
-                            <h3>
-                                <i class="iconfont icon-category" style="padding-right:3px"></i>
-                                黑龙江省导游继续教育培训课程
-                            </h3>
-                            <small>(10)</small>
-                        </a>
-                    </div>
-                </div>
-                <div class="card-item">
-                    <div class="categories">
-                        <a href="/category/Machine-Learning/">
-                            <h3>
-                                <i class="iconfont icon-category" style="padding-right:3px"></i>
-                                Machine Learning
-                            </h3>
-                            <small>(10)</small>
-                        </a>
-                    </div>
-                </div>
-                <div class="card-item">
-                    <div class="categories">
-                        <a href="/category/影视剧-文学作品评论/">
-                            <h3>
-                                <i class="iconfont icon-category" style="padding-right:3px"></i>
-                                影视剧/文学作品评论
-                            </h3>
-                            <small>(10)</small>
-                        </a>
-                    </div>
-                </div>
-                <div class="card-item">
-                    <div class="categories">
-                        <a href="/category/Algorithm/">
-                            <h3>
-                                <i class="iconfont icon-category" style="padding-right:3px"></i>
-                                Algorithm
-                            </h3>
-                        </a>
-                    </div>
-                </div>
-                <div class="card-item">
-                    <div class="categories">
-                        <a href="/category/黑龙江省导游继续教育培训课程/">
-                            <h3>
-                                <i class="iconfont icon-category" style="padding-right:3px"></i>
-                                黑龙江省导游继续教育培训课程
-                            </h3>
-                            <small>(10)</small>
-                        </a>
-                    </div>
-                </div>
-                <div class="card-item">
-                    <div class="categories">
-                        <a href="/category/Machine-Learning/">
-                            <h3>
-                                <i class="iconfont icon-category" style="padding-right:3px"></i>
-                                Machine Learning
-                            </h3>
-                            <small>(10)</small>
-                        </a>
-                    </div>
-                </div>
+                    {{/each}}
+                </script>
             </div>
         </div>
     </div>
 </div>
+<div class="loader"></div>
+@section scripts{
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://unpkg.com/art-template@4.13.2/lib/template-web.js"></script>
+    <script>
+        axios.get(`${api_domain}/api/blog/categories`)
+            .then(function (response) {
+                if (response.data.isSuccess) {
+                    var html = template("categories_tmpl", response.data);
+                    document.getElementsByClassName('categories-card')[0].innerHTML = html;
+                    document.getElementsByClassName('loader')[0].remove();
+                }
+            }).catch(function (error) {
+                console.log(error);
+            });
+    </script>
+}

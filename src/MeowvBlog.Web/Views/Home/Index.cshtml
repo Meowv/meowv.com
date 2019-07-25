@@ -21,9 +21,6 @@
                 <a target="_blank" class="link-item" title="API" href="https://api.meowv.com/">
                     <i class="iconfont iconapi"></i>
                 </a>
-                <!-- <a class="link-item" title="Code" href="#">
-                    <i class="iconfont iconcode"></i>
-                </a> -->
                 <a class="link-item" title="Manage" href="#">
                     <i class="iconfont iconmanage"></i>
                 </a>
@@ -34,22 +31,3 @@
         </div>
     </div>
 </div>
-@section scripts{
-    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
-    <script>
-        axios.get('https://localhost:44345/api/blog/tags')
-            .then(function (response) {
-                console.log(response);
-            }).catch(function (error) {
-                console.log(error);
-            });
-
-        axios.get('https://localhost:44345/api/blog/post', {
-            params: { url: 'test' }
-        }).then(function (response) {
-            console.log(response);
-        }).catch(function (error) {
-            console.log(error);
-        });
-    </script>
-}

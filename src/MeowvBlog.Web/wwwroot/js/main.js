@@ -1,3 +1,6 @@
+// api域名全局变量
+api_domain = "https://localhost:44345";
+
 // declaraction of document.ready() function.
 (function() {
     var ie = !!(window.attachEvent && !window.opera);
