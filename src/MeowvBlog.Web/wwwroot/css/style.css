@@ -1467,3 +1467,55 @@ a.toc-link {
 .highlight .code .strong {
     font-weight: bold;
 }
+
+.loader {
+        box-sizing: content-box;
+        display: block;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        margin: 0;
+        text-align: center;
+        z-index: 1000;
+        -webkit-transform: translateX(-50%) translateY(-50%);
+        transform: translateX(-50%) translateY(-50%);
+    }
+
+.loader:before {
+    position: absolute;
+    content: '';
+    top: 0;
+    left: 50%;
+    width: 50px;
+    height: 50px;
+    margin: 0 0 0 -25px;
+    border-radius: 50px;
+    border: 4px solid rgba(0, 0, 0, .1);
+}
+
+.loader:after {
+    position: absolute;
+    content: '';
+    top: 0;
+    left: 50%;
+    width: 50px;
+    height: 50px;
+    margin: 0 0 0 -25px;
+    animation: loader .6s linear;
+    animation-iteration-count: infinite;
+    border-radius: 50px;
+    border: 4px solid transparent;
+    border-top-color: #767676;
+    box-shadow: 0 0 0 1px transparent;
+}
+
+@keyframes loader {
+    from {
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+    to {
+        -webkit-transform: rotate(360deg);
+        transform: rotate(360deg);
+    }
+}
