@@ -1,5 +1,4 @@
 ﻿using Plus.Domain.Entities;
-using System.Collections.Generic;
 
 namespace MeowvBlog.Core.Domain.Blog
 {
@@ -14,10 +13,5 @@ namespace MeowvBlog.Core.Domain.Blog
         /// 展示名称
         /// </summary>
         public string DisplayName { get; set; }
-
-        /// <summary>
-        /// PostTags
-        /// </summary>
-        public virtual ICollection<PostTag> PostTags { get; set; }
     }
 }

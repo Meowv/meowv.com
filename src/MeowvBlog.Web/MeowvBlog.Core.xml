@@ -64,16 +64,6 @@
             标签Id
             </summary>
         </member>
-        <member name="P:MeowvBlog.Core.Domain.Blog.PostTag.Post">
-            <summary>
-            Post
-            </summary>
-        </member>
-        <member name="P:MeowvBlog.Core.Domain.Blog.PostTag.Tag">
-            <summary>
-            Tag
-            </summary>
-        </member>
         <member name="P:MeowvBlog.Core.Domain.Blog.Tag.TagName">
             <summary>
             标签名称
@@ -82,11 +72,6 @@
         <member name="P:MeowvBlog.Core.Domain.Blog.Tag.DisplayName">
             <summary>
             展示名称
-            </summary>
-        </member>
-        <member name="P:MeowvBlog.Core.Domain.Blog.Tag.PostTags">
-            <summary>
-            PostTags
             </summary>
         </member>
     </members>

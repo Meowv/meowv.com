@@ -16,10 +16,12 @@ namespace MeowvBlog.Services.Blog.Impl
     public partial class BlogService : ServiceBase, IBlogService
     {
         private readonly IPostRepository _postRepository;
+        private readonly ITagRepository _tagRepository;
 
-        public BlogService(IPostRepository postRepository)
+        public BlogService(IPostRepository postRepository, ITagRepository tagRepository)
         {
             _postRepository = postRepository;
+            _tagRepository = tagRepository;
         }
 
         /// <summary>
