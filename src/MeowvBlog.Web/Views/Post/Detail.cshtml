@@ -1,0 +1,409 @@
+﻿<div class="main">
+    <div class="container">
+        <div class="post-toc">
+            <div class="tocbot-list">
+            </div>
+            <div class="tocbot-list-menu">
+                <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+                <a onclick="go_top()">Back to top</a>
+                <a onclick="go_bottom()">Go to bottom</a>
+            </div>
+        </div>
+        <script>
+            document.ready(
+                function () {
+                    tocbot.init({
+                        tocSelector: '.tocbot-list',
+                        contentSelector: '.post-content',
+                        headingSelector: 'h1, h2, h3, h4, h5',
+                        collapseDepth: 1,
+                        orderedList: false,
+                        scrollSmooth: true,
+                    })
+                }
+            )
+
+            function expand_toc() {
+                var b = document.querySelector(".tocbot-toc-expand");
+                tocbot.init({
+                    tocSelector: '.tocbot-list',
+                    contentSelector: '.post-content',
+                    headingSelector: 'h1, h2, h3, h4, h5',
+                    collapseDepth: 6,
+                    orderedList: false,
+                    scrollSmooth: true,
+                });
+                b.setAttribute("onclick", "collapse_toc()");
+                b.innerHTML = "Collapse all"
+            }
+
+            function collapse_toc() {
+                var b = document.querySelector(".tocbot-toc-expand");
+                tocbot.init({
+                    tocSelector: '.tocbot-list',
+                    contentSelector: '.post-content',
+                    headingSelector: 'h1, h2, h3, h4, h5',
+                    collapseDepth: 1,
+                    orderedList: false,
+                    scrollSmooth: true,
+                });
+                b.setAttribute("onclick", "expand_toc()");
+                b.innerHTML = "Expand all"
+            }
+
+            function go_top() {
+                window.scrollTo(0, 0);
+            }
+
+            function go_bottom() {
+                window.scrollTo(0, document.body.scrollHeight);
+            }
+        </script>
+        <article class="post-wrap">
+            <header class="post-header">
+                <h1 class="post-title">前端架构设计的思考</h1>
+                <div class="post-meta">
+                    Author: <a itemprop="author" rel="author" href="/">Sirice</a>
+                    <span class="post-time">
+                        Date: <a href="#">July 9, 2019&nbsp;&nbsp;14:07:29</a>
+                    </span>
+                </div>
+            </header>
+            <div class="post-content">
+                <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1>
+                <p>我认为学习编程就是这样一个过程。刚开始是语法的应用，主要时间都用来做数据类型转换、处理报错问题；后来语法比较熟悉了报错也知道解决办法了，这时候就是框架的使用，怎么配置、怎么启动等；在这学会之后这时就不再是简单的工程问题了，而是到了解决问题的阶段，即怎么把一个问题抽象成对象，怎么将它用编程语言表达出来；这部分初步有了认识后就会考虑怎么设计问题框架能将相似的问题使用这个框架一并解决、怎么设计架构使问题更简单、更快的解决。</p>
+                <p>经过语言和框架学习之后，最近对于前端开发有了新的思考：<strong>为什么要这么写？</strong> 这几年做前端带给我的思考虽然没到怎么能设计出一个完整的架构，但我可以理解了现有一些设计的理由。这个文章就是总结前端架构中部分设计理念的来源。</p>
+                <p>《前端架构设计》这本书提到的4方面设计架构：代码、流程、测试、文档。我主要做的是代码和流程还有我的一些架构选型，这篇文章会主要讲我做过这几个方面。</p>
+                <h1 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h1>
+                <h2 id="开发规范文档"><a href="#开发规范文档" class="headerlink" title="开发规范文档"></a>开发规范文档</h2>
+                <p>关于开发规范文档，各个大厂团队都有自认为的最佳实践，没有孰对孰错，而是有了规范可以团队开发中一定程度上避免一些语法错误，也可以从中看出前辈总结的经验。</p>
+                <h2 id="HTML"><a href="#HTML" class="headerlink" title="HTML"></a>HTML</h2>
+                <ul>
+                    <li>
+                        <p>程序式标记：由页面模板创建，比如WordPress、CMS等，自动化程度高，但不利于修改和维护（已弃用）</p>
+                    </li>
+                    <li>
+                        <p>静态标记：由程序员自己创建。例如<code>&lt;div class=&quot;nav&quot;&gt;&lt;/div&gt;</code>改为<code>&lt;nav&gt;&lt;/nav&gt;</code>，更加语义化，但自动化程度低。</p>
+                        <p>缺点：</p>
+                        <figure class="highlight html">
+                            <table>
+                                <tr>
+                                    <td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td>
+                                    <td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">header</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">section</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">nav</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">div</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">ul</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">li</span>&gt;</span><span class="tag">&lt;<span class="name">a</span> <span class="attr">href</span>=<span class="string">"#"</span>&gt;</span><span class="tag">&lt;/<span class="name">li</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;/<span class="name">ul</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">nav</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">section</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">header</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">style</span>&gt;</span></span><br><span class="line">    header &gt; section &gt; nav &gt; div &gt; ul &gt; li &#123;</span><br><span class="line">        margin: 0;</span><br><span class="line">    &#125;</span><br><span class="line">    header &gt; section &gt; nav &gt; div &gt; ul &gt; li &gt; a &#123;</span><br><span class="line">        color: red;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="tag">&lt;/<span class="name">style</span>&gt;</span></span><br></pre></td>
+                                </tr>
+                            </table>
+                        </figure>
+                        <ol>
+                            <li>样式选择器十分复杂</li>
+                            <li>不利于改变HTML结构，CSS难以维护</li>
+                        </ol>
+                    </li>
+                    <li>
+                        <p>模块化标记（BEM原则）：由模板创建，但命名由程序员决定。例如</p>
+                        <figure class="highlight html">
+                            <table>
+                                <tr>
+                                    <td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td>
+                                    <td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">nav</span> <span class="attr">class</span>=<span class="string">"nav"</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">ul</span> <span class="attr">class</span>=<span class="string">"nav__continer"</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">li</span> <span class="attr">class</span>=<span class="string">"nav__item"</span>&gt;</span></span><br><span class="line">         <span class="tag">&lt;<span class="name">a</span> <span class="attr">href</span>=<span class="string">"/"</span> <span class="attr">class</span>=<span class="string">"nav__link"</span>&gt;</span></span><br></pre></td>
+                                </tr>
+                            </table>
+                        </figure>
+                    </li>
+                </ul>
+                <h2 id="CSS"><a href="#CSS" class="headerlink" title="CSS"></a>CSS</h2>
+                <h3 id="命名风格"><a href="#命名风格" class="headerlink" title="命名风格"></a>命名风格</h3>
+                <ul>
+                    <li>
+                        <p>OOCSS(Object-Oriented CSS):</p>
+                        <p>原则：</p>
+                        <ul>
+                            <li>分离结构与外观：将视觉特性定义为可复用的单元。例如<code>simple</code>样式就是div使用直角，而<code>complex</code>可能使用圆角等。</li>
+                            <li>分离容器与内容：css选择器只选择可复用的类名，而不管元素是什么。</li>
+                        </ul>
+                        <p>举例：</p>
+                        <figure class="highlight html">
+                            <table>
+                                <tr>
+                                    <td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td>
+                                    <td class="code"><pre><span class="line"><span class="comment">&lt;!-- OOCSS --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">class</span>=<span class="string">"toggle simple"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">div</span> <span class="attr">class</span>=<span class="string">"toggle-control open"</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">h1</span> <span class="attr">class</span>=<span class="string">"toggle-title"</span>&gt;</span>Title 1<span class="tag">&lt;/<span class="name">h1</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">div</span> <span class="attr">class</span>=<span class="string">"toggle-details open"</span>&gt;</span></span><br><span class="line">        ....</span><br><span class="line">    <span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br></pre></td>
+                                </tr>
+                            </table>
+                        </figure>
+                    </li>
+                    <li>
+                        <p>
+                            SMACSS(Scalable and Modular Architecture for CSS,模块化架构可拓展的CSS):
+                            <br>原则：
+                        </p>
+                        <ul>
+                            <li>基础：不添加类名，会有默认样式实现</li>
+                            <li>布局：页面分成区域</li>
+                            <li>模块：设计中的模块化，可复用单元</li>
+                            <li>状态：特定状态下的样式，例<code>is-active</code></li>
+                            <li>主题：可更换的视觉风格样式，例<code>simple</code></li>
+                        </ul>
+                        <p>举例：(BootStrap就是一个例子)</p>
+                        <figure class="highlight html">
+                            <table>
+                                <tr>
+                                    <td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td>
+                                    <td class="code"><pre><span class="line"><span class="comment">&lt;!-- SMACSS --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">class</span>=<span class="string">"toggle toggle-simple"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">div</span> <span class="attr">class</span>=<span class="string">"toggle-control is-active"</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">h2</span> <span class="attr">class</span>=<span class="string">"toggle-title"</span>&gt;</span>Title 2<span class="tag">&lt;/<span class="name">h2</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">div</span> <span class="attr">class</span>=<span class="string">"toggle-details is-active"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br></pre></td>
+                                </tr>
+                            </table>
+                        </figure>
+                    </li>
+                    <li>
+                        <p>BEM(Block Element Modifier,块元素修饰符)：</p>
+                        <p>BEM是SMACSS的一个方面，是一个css命名规则</p>
+                        <p>原则：</p>
+                        <ul>
+                            <li>块名：组件名称</li>
+                            <li>元素：元素在块里的名称</li>
+                            <li>修饰符：任何与块级元素相关联的修饰符</li>
+                            <li>即命名：块名__元素–修饰符</li>
+                        </ul>
+                        <p>举例：</p>
+                        <figure class="highlight html">
+                            <table>
+                                <tr>
+                                    <td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td>
+                                    <td class="code"><pre><span class="line"><span class="comment">&lt;!-- BEM --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">class</span>=<span class="string">"toggle toggle--simple"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">div</span> <span class="attr">class</span>=<span class="string">"toggle__control toggle__control--active"</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">h2</span> <span class="attr">class</span>=<span class="string">"toggle__title"</span>&gt;</span>Title 2<span class="tag">&lt;/<span class="name">h2</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">div</span> <span class="attr">class</span>=<span class="string">"toggle__details toggle__details--is-active"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br></pre></td>
+                                </tr>
+                            </table>
+                        </figure>
+                    </li>
+                </ul>
+                <p>注：这几种风格可以混合使用。</p>
+                <h3 id="设计原则"><a href="#设计原则" class="headerlink" title="设计原则"></a>设计原则</h3>
+                <ul>
+                    <li>
+                        <p><strong>单一职责原则</strong></p>
+                        <p>该原则规定，创建的样式必须单一，高度聚焦；目的单一。</p>
+                        <p>例：</p>
+                        <figure class="highlight css">
+                            <table>
+                                <tr>
+                                    <td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td>
+                                    <td class="code"><pre><span class="line"><span class="selector-class">.padding-10</span> &#123;</span><br><span class="line">    <span class="attribute">padding</span>: <span class="number">10px</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="selector-class">.padding-20</span> &#123;</span><br><span class="line">    <span class="attribute">padding</span>: <span class="number">20px</span>;</span><br><span class="line">&#125;</span><br></pre></td>
+                                </tr>
+                            </table>
+                        </figure>
+                    </li>
+                    <li>
+                        <p><strong>单一样式来源</strong></p>
+                        <p>该原则将单一职责原则应用到更深层次，每个css类名单一用途的同时，每个标签的样式也<strong>只有单一的来源</strong>。任何组件的设计必须由组件本身决定，不能被其父类元素类名限制。即<strong>一个类名可以完全控制这个类的样式，不会受其父类影响</strong></p>
+                        <p>例：</p>
+                        <figure class="highlight html">
+                            <table>
+                                <tr>
+                                    <td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td>
+                                    <td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">class</span>=<span class="string">"blog"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">h2</span> <span class="attr">class</span>=<span class="string">"blog-header"</span>&gt;</span>This is Blog header.<span class="tag">&lt;/<span class="name">h2</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">div</span> <span class="attr">class</span>=<span class="string">"calendar"</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">h2</span> <span class="attr">class</span>=<span class="string">"calendar-header"</span>&gt;</span>This is calendar header.<span class="tag">&lt;/<span class="name">h2</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">style</span>&gt;</span></span><br><span class="line"><span class="css"> <span class="comment">/* calendar css */</span></span></span><br><span class="line"><span class="css">    <span class="selector-class">.calendar-header</span>&#123;</span></span><br><span class="line">        color: red;</span><br><span class="line">        font-size: 2em;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="css">    <span class="comment">/* blog css */</span></span></span><br><span class="line"><span class="css">    <span class="selector-class">.blog-header</span>&#123;</span></span><br><span class="line">        color: black;</span><br><span class="line"><span class="css">        <span class="selector-tag">font-size</span>: 2<span class="selector-class">.4em</span>;</span></span><br><span class="line">    &#125;</span><br><span class="line"><span class="css">    <span class="comment">/* public css */</span></span></span><br><span class="line"><span class="css">    <span class="selector-class">.blog</span> <span class="selector-class">.calendar</span>&#123;</span></span><br><span class="line"><span class="css">        <span class="selector-tag">font-size</span>: 1<span class="selector-class">.5em</span>;</span></span><br><span class="line">    &#125;</span><br><span class="line"><span class="tag">&lt;/<span class="name">style</span>&gt;</span></span><br></pre></td>
+                                </tr>
+                            </table>
+                        </figure>
+                        <p>问题：共用的样式无处安放，所以有了如下改进：<strong>带上下文的样式</strong></p>
+                        <figure class="highlight html">
+                            <table>
+                                <tr>
+                                    <td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td>
+                                    <td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">style</span>&gt;</span></span><br><span class="line"><span class="css">   <span class="comment">/* calendar css */</span></span></span><br><span class="line"><span class="css">    <span class="selector-class">.calendar-header</span>&#123;</span></span><br><span class="line">        color: red;</span><br><span class="line">        font-size: 2em;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="css">    <span class="selector-class">.blog</span> <span class="selector-class">.calendar-header</span>&#123;</span></span><br><span class="line"><span class="css">        <span class="selector-tag">font-size</span>: 1<span class="selector-class">.5em</span>;</span></span><br><span class="line">    &#125;</span><br><span class="line"><span class="css">    <span class="comment">/* blog css */</span></span></span><br><span class="line"><span class="css">    <span class="selector-class">.blog-header</span>&#123;</span></span><br><span class="line">        color: black;</span><br><span class="line"><span class="css">        <span class="selector-tag">font-size</span>: 2<span class="selector-class">.4em</span>;</span></span><br><span class="line">    &#125;</span><br><span class="line"><span class="tag">&lt;/<span class="name">style</span>&gt;</span></span><br></pre></td>
+                                </tr>
+                            </table>
+                        </figure>
+                        <p>若采用BEM可以在上下文样式中加入带状态的组件样式。</p>
+                    </li>
+                </ul>
+                <h1 id="流程"><a href="#流程" class="headerlink" title="流程"></a>流程</h1>
+                <h2 id="早期工作流程"><a href="#早期工作流程" class="headerlink" title="早期工作流程"></a>早期工作流程</h2>
+                <p>早期是没有前端这个分支的，因为数据是来自后端，只要想个办法让服务器渲染出数据就可以了，所以前期的互联网的页面排版像报纸一样。随着样式表的出现和交互性的增强，后端要做的事情越来越多，就逐渐成为专注搞页面的前端了。</p>
+                <p>在前端成为前端之前，这个群体被称为网站美工，这个称呼就是源自于工作流程。</p>
+                <p>
+                    <center>需求 => 平面web设计(psd标注稿) => 前端代码还原 </center>
+                </p>
+                <p>甚至有了交互设计师</p>
+                <p>
+                    <center>需求 => 平面web设计(psd标注稿) => 交互设计稿(Axure) => 前端代码还原 </center>
+                </p>
+                <h2 id="现代开发工作流程"><a href="#现代开发工作流程" class="headerlink" title="现代开发工作流程"></a>现代开发工作流程</h2>
+                <p>但现代前端随浏览器的发展和需求的复杂化而进步，其发展非常迅速，这种工作流程就存在天生的不足，因为它导致页面的代码组织结构复杂，前期沟通需求频繁变化，网站一经设计对后续更新不友好。所以<strong>现代前端</strong>是这样的模式：</p>
+                <p>
+                    <center><strong> 需求 => 原型设计 => 前端开发 </strong></center>
+                </p>
+                <p>在这个工作流程中，需求需要产品经理来做需求分析，需要各方面设计来进行原型设计，最后交给前端进行开发，这样将各个环节（需求、设计、代码）完全分离开。</p>
+                <h3 id="需求"><a href="#需求" class="headerlink" title="需求"></a>需求</h3>
+                <p>需求分析阶段需要设计、视觉、前端、后端4个方面的人共同分析总结。</p>
+                <h3 id="原型设计"><a href="#原型设计" class="headerlink" title="原型设计"></a>原型设计</h3>
+                <p>现代前端的开发流程中，原型设计是最大的变化。参与原型设计阶段的人是交互设计、视觉设计等，在需求全部确定，原型确认采纳后，才交给前端进入开发环节。而以前的代码写好后如果需求变动，代码可能也要跟随着改动。</p>
+                <h3 id="前端开发"><a href="#前端开发" class="headerlink" title="前端开发"></a>前端开发</h3>
+                <p>图中的措辞也有变化，原来的代码还原变成了前端开发，也就是说前端不再是单纯的根据图片进行代码还原，而是根据原型设计自行设计结构开发出符合要求的页面。这里就体现了前端与美工的区别：美工不需要进行抽象的思考，只要像素级还原就可以；而前端需要考虑选型、性能、测试和迭代等方面同时要符合需求和原型的要求，同时要应用软件开发流程，开发后需要进行测试部署上线。</p>
+                <h3 id="版本控制"><a href="#版本控制" class="headerlink" title="版本控制"></a>版本控制</h3>
+                <p>开发中使用版本控制（以Git为例）的一种实践思路：</p>
+                <p>开发中不操作master分支，建立代码库功能分支（feature branch）后合并到master：</p>
+                <p>这样做的好处：</p>
+                <ol>
+                    <li>提交给master分支的总是完整的代码。</li>
+                    <li>pull request提交给master之前有一步审核</li>
+                    <li>可以单独测试</li>
+                </ol>
+                <h3 id="发布"><a href="#发布" class="headerlink" title="发布"></a>发布</h3>
+                <p>发布的原则是只提交尽可能少的代码，忽略临时文件、编译代码的资源文件、Node模块等。</p>
+                <p>这时有一类代码就是“功能所需”且“会引起冲突”，这就是编译后的资源文件，例如Stylus编译后的css等。如果不添加到源码中会造成功能缺失，添加到源码中却可能导致后续文件冲突。处理这类文件可以单独进行处理：<strong>持续集成</strong>（Travis CI）这个服务可以在代码前自动对代码进行一些处理。</p>
+                <p>另外，可以引入自动化任务处理该部分流程，如Grunt、Gulp等。</p>
+                <h3 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h3>
+                <h4 id="单元测试（针对功能、数据、兼容性）"><a href="#单元测试（针对功能、数据、兼容性）" class="headerlink" title="单元测试（针对功能、数据、兼容性）"></a>单元测试（针对功能、数据、兼容性）</h4>
+                <p>单元测试的编写原则：简单而完备。即一次只做一件事，将功能细分为几个函数分别测试。</p>
+                <h4 id="视觉还原测试（针对设计稿的还原情况）"><a href="#视觉还原测试（针对设计稿的还原情况）" class="headerlink" title="视觉还原测试（针对设计稿的还原情况）"></a>视觉还原测试（针对设计稿的还原情况）</h4>
+                <p>这部分较多为测试工具，比如PhantomJS等。</p>
+                <h1 id="页面架构"><a href="#页面架构" class="headerlink" title="页面架构"></a>页面架构</h1>
+                <p>17年我初学时暑期实习的作品现在来看属于MVP模式，前后端简单分离，部分页面与数据库交互获取数据并渲染；18年时我进行了前后端真正的分离，有了前端MVC的实现；19年毕业设计使用Vue完成了一个单页SPA应用。那么就产生了这个哲学问题，我为什么要这样？前端圈为什么会这样发展？</p>
+                <p>我知道一说这几个词又要开始讲历史了，现在的前端峰会演讲仿佛不讲历史都不知道怎么开场了一样…（没错，我说的就是<a href="https://zhuanlan.zhihu.com/p/70271751" target="_blank" rel="noopener">GMTC</a>还有TFC）…所以这里就不啰嗦了，想知道前端发展沿革的可以看这篇文章：<a href="https://juejin.im/entry/5b2c6e4a6fb9a00e8a3e5a5c" target="_blank" rel="noopener">跟著小明一起搞懂技術名詞：MVC、SPA 與 SSR - 前端 - 掘金</a>。</p>
+                <p>这节主要想考虑的是关于前端架构设计：MPA、SPA、SSR以及它们的取舍。</p>
+                <h2 id="MPA-多页面应用"><a href="#MPA-多页面应用" class="headerlink" title="MPA 多页面应用"></a>MPA 多页面应用</h2>
+                <p>每一次页面跳转的时候，后台服务器都会给返回一个新的<code>html</code>文档，这种类型的网站也就是多页网站，也叫做多页应用。</p>
+                <ul>
+                    <li>
+                        <p>首屏时间快</p>
+                        <p>首屏时间叫做页面首个屏幕的内容展现的时间，当我们访问页面的时候，服务器返回一个 html，页面就会展示出来，这个过程只经历了一个HTTP请求，所以页面展示的速度非常快。</p>
+                    </li>
+                    <li>
+                        <p>搜索引擎优化效果好（SEO）</p>
+                        <p>搜索引擎在做网页排名的时候，要根据网页内容才能给网页权重，来进行网页的排名。搜索引擎是可以识别html内容的，而我们每个页面所有的内容都放在<code>Html</code>中，所以这种多页应用，seo排名效果好。</p>
+                    </li>
+                    <li>
+                        <p>页面切换慢</p>
+                        <p>因为每次跳转都需要发出一个http请求，如果网络比较慢，在页面之间来回跳转时，就会发现明显的卡顿。</p>
+                    </li>
+                </ul>
+                <h2 id="SPA-单页面应用"><a href="#SPA-单页面应用" class="headerlink" title="SPA 单页面应用"></a>SPA 单页面应用</h2>
+                <p>第一次进入页面的时候会请求一个<code>html</code>文件，刷新清除一下。切换到其他组件，此时路径也相应变化，但是并没有新的<code>html</code>文件请求，页面内容也变化了。</p>
+                <p>原理是：<code>JS</code>会感知到<code>url</code>的变化，通过这一点，可以用js动态的将当前页面的内容清除掉，然后将下一个页面的内容挂载到当前页面上，这个时候的路由不是后端来做了，而是前端来做，判断页面到底是显示哪个组件，清除不需要的，显示需要的组件。这种过程就是单页应用，每次跳转的时候不需要再请求html文件了。</p>
+                <ul>
+                    <li>
+                        <p>页面切换快</p>
+                        <p>页面每次切换跳转时，并不需要做<code>html</code>文件的请求，这样就节约了很多<code>http</code>发送时延，我们在切换页面的时候速度很快。</p>
+                    </li>
+                    <li>
+                        <p>首屏时间慢，SEO差</p>
+                        <p>单页应用的首屏时间慢，首屏时需要请求一次<code>html</code>，同时还要发送一次<code>js</code>请求，两次请求回来了，首屏才会展示出来。相对于多页应用，首屏时间慢。</p>
+                        <p>SEO效果差，因为搜索引擎只认识<code>html</code>里的内容，不认识<code>js</code>的内容，而单页应用的内容都是靠<code>js</code>渲染生成出来的，搜索引擎不识别这部分内容，也就不会给一个好的排名，会导致单页应用做出来的网页在百度和谷歌上的排名差。</p>
+                    </li>
+                </ul>
+                <h2 id="MPA与SPA区别"><a href="#MPA与SPA区别" class="headerlink" title="MPA与SPA区别"></a>MPA与SPA区别</h2>
+                <p><img src="https://images2015.cnblogs.com/blog/1006796/201610/1006796-20161028103922875-886619453.png" alt></p>
+                <table style="width:100%">
+                    <thead>
+                        <tr>
+                            <th style="text-align:center">/</th>
+                            <th>多页面应用模式MPA</th>
+                            <th>单页面应用模式SPA</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="text-align:center"><strong>应用构成</strong></td>
+                            <td>由多个完整页面构成</td>
+                            <td>一个外壳页面和多个页面片段构成</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align:center"><strong>跳转方式</strong></td>
+                            <td>页面之间的跳转是从一个页面到另一个页面</td>
+                            <td>一个页面片段删除或隐藏，加载另一个页面片段并显示。片段间的模拟跳转，没有开壳页面</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align:center"><strong>跳转后公共资源是否重新加载</strong></td>
+                            <td>是</td>
+                            <td>否</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align:center"><strong>URL模式</strong></td>
+                            <td>
+                                <code>http://xxx/page1.html<br></code>和<code>http://xxx/page2.html</code>
+                            </td>
+                            <td>
+                                <code>http://xxx/shell.html#page1</code>和
+                                <br><code>http://xxx/shell.html#page2</code>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="text-align:center"><strong>用户体验</strong></td>
+                            <td>页面间切换加载慢，不流畅，用户体验差，尤其在移动端</td>
+                            <td>页面片段间切换快，用户体验好，包括移动设备</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align:center"><strong>能否实现转场动画</strong></td>
+                            <td>否</td>
+                            <td>容易实现（手机APP动效）</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align:center"><strong>页面间传递数据</strong></td>
+                            <td>依赖<code>URL</code>、<code>cookie</code>或者<code>localstorage</code>，实现麻烦</td>
+                            <td>页面传递数据容易（<code>Vuex</code>或<code>Vue</code>中的父子组件通讯<code>props</code>对象）</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align:center"><strong>搜索引擎优化（SEO）</strong></td>
+                            <td>可以直接做</td>
+                            <td>需要单独方案（SSR）</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align:center"><strong>特别适用的范围</strong></td>
+                            <td>需要对搜索引擎友好的网站</td>
+                            <td>对体验要求高，特别是移动应用</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align:center"><strong>开发难度</strong></td>
+                            <td>较低，框架选择容易</td>
+                            <td>较高，需要专门的框架来降低这种模式的开发难度</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <h2 id="SSR"><a href="#SSR" class="headerlink" title="SSR"></a>SSR</h2>
+                <p>SPA的应用性能和开发难度都表现不错，但缺点就是对于SEO非常不友好。SEO是搜索引擎抓取的静态文档，但SPA由于内容是动态渲染的，大部分内容并不能一次全部显示，尤其是采用懒加载模块运行的网站，因此SEO的问题影响网站的排名。为了解决这个问题采用了SSR方案，即服务器端渲染。</p>
+                <p>原理就是原本客户端渲染的网站，由于初次请求文档少对SEO不友好，改为服务器端渲染出所有内容后发送，这样SEO的爬虫就会抓取到所有内容从而正常排名。</p>
+                <h2 id="“No-Silver-Bullet”"><a href="#“No-Silver-Bullet”" class="headerlink" title="“No Silver Bullet”"></a>“No Silver Bullet”</h2>
+                <blockquote>
+                    <p>“No Silver Bullet”</p>
+                    <p>—— Turing Award winner Fred Brooks in 1986</p>
+                </blockquote>
+                <p>但SPA+SSR也不能用于一切。SPA对于信息流应用来说没有历史记录，也就是说上一个页面返回的时候会重新获取数据并加载，之前的数据就不存在了。举个例子，知乎网站就不适合全局SPA，我看到了两个问题，点开其中一个看看，然后再想回来看另一个问题就会发现这个问题已经被刷掉了，造成使用体验的损失。</p>
+                <p>所以在部分页面中还是要保留MPA，两者要根据需求搭配使用。</p>
+                <h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1>
+                <p>本文总体按《前端架构设计》一书的思路来编写，也融入了我的开发经验。这篇文章总结到这里，未来还会更加深入探索前端开发。</p>
+            </div>
+            <section class="post-copyright">
+                <p class="copyright-item">
+                    <span>Author:</span>
+                    <span>Sirice</span>
+                </p>
+                <p class="copyright-item">
+                    <span>Permalink:</span>
+                    <span><a href="https://siricee.github.io/2019/07/09/FrontEnd-architecture-desigin/">https://siricee.github.io/2019/07/09/FrontEnd-architecture-desigin/</a></span>
+                </p>
+                <p class="copyright-item">
+                    <span>License:</span>
+                    <span>本文采用<a href="http://creativecommons.org/licenses/by-nc-nd/4.0/">知识共享 署名-非商业性使用-禁止演绎(CC BY-NC-ND)国际许可协议</a>进行许可</span>
+                </p>
+            </section>
+            <section class="post-tags">
+                <div>
+                    <span>Tag(s):</span>
+                    <span class="tag">
+
+
+                        <a href="/tag/FrontEnd/"># FrontEnd</a>
+
+
+                    </span>
+                </div>
+                <div>
+                    <a href="javascript:window.history.back();">back</a>
+                    <span>· </span>
+                    <a href="/">home</a>
+                </div>
+            </section>
+            <section class="post-nav">
+                <a class="next" rel="next" href="/2019/06/06/guide-course-day3/">DAY3-宗教文化&导游市场-笔记</a>
+            </section>
+        </article>
+    </div>
+</div>
+@await Component.InvokeAsync("Footer")

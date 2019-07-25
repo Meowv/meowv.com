@@ -593,33 +593,7 @@ header label {
     padding-top: 2rem;
 }
 
-.post-wrap .archive-item {
-    margin-left: 2rem;
-}
 
-.archive-item-link {
-    display: inline-block;
-    text-decoration: none;
-    overflow: hidden;
-    white-space: nowrap;
-}
-
-.archive-item-link:hover {
-    color: #2d96bd;
-    background-color: transparent;
-}
-
-.dark-theme .archive-item-link {
-    color: #a9a9b3;
-    text-decoration: none;
-    transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease, opacity 0.2s ease;
-}
-
-.dark-theme .archive-item-link:hover {
-    color: #fff;
-    text-decoration: none;
-    transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease, opacity 0.2s ease;
-}
 
 .archive-item-date {
     float: right;
@@ -646,12 +620,9 @@ header label {
 .post-wrap .categories-card .card-item {
     font-size: 14px;
     text-align: left;
-    width: 45%;
+    width: 50%;
     display: flex;
     align-items: flex-start;
-    margin-top: 2em;
-    min-height: 16em;
-    padding: 0 2%;
     position: relative;
 }
 

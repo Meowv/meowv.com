@@ -10,7 +10,7 @@
 - [x] 使用 [Pomelo.EntityFrameworkCore.MySql](https://github.com/PomeloFoundation/Pomelo.EntityFrameworkCore.MySql) 处理数据
 - [ ] 核心功能API接口
 - [ ] 接入 Azure,使用微软账号登录网站
-- [ ] 前台界面展示
+- [x] 前台界面展示
 - [ ] 后台管理界面
 - [ ] 导入旧的Blog数据到MySQL
 - [ ] 免费生成个性艺术签名
