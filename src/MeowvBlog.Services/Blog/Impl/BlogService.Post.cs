@@ -27,7 +27,7 @@ namespace MeowvBlog.Services.Blog.Impl
         /// </summary>
         /// <param name="dto"></param>
         /// <returns></returns>
-        public async Task<ActionOutput<string>> Insert(PostDto dto)
+        public async Task<ActionOutput<string>> InsertPost(PostDto dto)
         {
             using (var uow = UnitOfWorkManager.Begin())
             {
@@ -58,7 +58,7 @@ namespace MeowvBlog.Services.Blog.Impl
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public async Task<ActionOutput<string>> Delete(int id)
+        public async Task<ActionOutput<string>> DeletePost(int id)
         {
             using (var uow = UnitOfWorkManager.Begin())
             {
@@ -79,7 +79,7 @@ namespace MeowvBlog.Services.Blog.Impl
         /// <param name="id"></param>
         /// <param name="dto"></param>
         /// <returns></returns>
-        public async Task<ActionOutput<string>> Update(int id, PostDto dto)
+        public async Task<ActionOutput<string>> UpdatePost(int id, PostDto dto)
         {
             using (var uow = UnitOfWorkManager.Begin())
             {
@@ -112,7 +112,7 @@ namespace MeowvBlog.Services.Blog.Impl
         /// </summary>
         /// <param name="url"></param>
         /// <returns></returns>
-        public async Task<ActionOutput<GetPostDto>> Get(string url)
+        public async Task<ActionOutput<GetPostDto>> GetPost(string url)
         {
             var output = new ActionOutput<GetPostDto>();
 
@@ -136,7 +136,7 @@ namespace MeowvBlog.Services.Blog.Impl
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
-        public async Task<PagedResultDto<QueryPostDto>> Query(PagingInput input)
+        public async Task<PagedResultDto<QueryPostDto>> QueryPost(PagingInput input)
         {
             var posts = await _postRepository.GetAllListAsync();
 
