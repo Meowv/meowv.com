@@ -3,23 +3,29 @@
         <div class="post-wrap tags">
             <h2 class="post-title">-&nbsp;Tags&nbsp;-</h2>
             <div class="tag-cloud-tags">
-                <a href="/tag/summary/">summary<small>(3)</small></a>
-                <a href="/tag/jvm/">jvm<small>(1)</small></a>
-                <a href="/tag/java/">java<small>(5)</small></a>
-                <a href="/tag/hexo/">hexo<small>(2)</small></a>
-                <a href="/tag/FrontEnd/">FrontEnd<small>(6)</small></a>
-                <a href="/tag/Vue/">Vue<small>(2)</small></a>
-                <a href="/tag/JavaScript/">JavaScript<small>(1)</small></a>
-                <a href="/tag/algorithm/">algorithm<small>(1)</small></a>
-                <a href="/tag/git/">git<small>(2)</small></a>
-                <a href="/tag/Cpp/">Cpp<small>(1)</small></a>
-                <a href="/tag/导游/">导游<small>(3)</small></a>
-                <a href="/tag/影评/">影评<small>(1)</small></a>
-                <a href="/tag/SpringBoot/">SpringBoot<small>(1)</small></a>
-                <a href="/tag/Graduation-Project/">Graduation Project<small>(2)</small></a>
-                <a href="/tag/Chic/">Chic<small>(1)</small></a>
-                <a href="/tag/ML/">ML<small>(1)</small></a>
+                <script id="tags_tmpl" type="text/template">
+                    {{each result}}
+                    <a href="/tag/{{$value.displayName}}/">{{$value.tagName}}<small>({{$value.count}})</small></a>
+                    {{/each}}
+                </script>
             </div>
         </div>
     </div>
 </div>
+<div class="loader"></div>
+@section scripts{
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://unpkg.com/art-template@4.13.2/lib/template-web.js"></script>
+    <script>
+        axios.get(`${api_domain}/api/blog/tags`)
+            .then(function (response) {
+                if (response.data.isSuccess) {
+                    var html = template("tags_tmpl", response.data);
+                    document.getElementsByClassName('tag-cloud-tags')[0].innerHTML = html;
+                    document.getElementsByClassName('loader')[0].remove();
+                }
+            }).catch(function (error) {
+                console.log(error);
+            });
+    </script>
+}
