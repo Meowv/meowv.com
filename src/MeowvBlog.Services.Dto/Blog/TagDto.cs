@@ -3,9 +3,6 @@ using Plus.AutoMapper;
 
 namespace MeowvBlog.Services.Dto.Blog
 {
-    /// <summary>
-    /// 标签增删改传输对象
-    /// </summary>
     [AutoMapFrom(typeof(Tag))]
     public class TagDto
     {

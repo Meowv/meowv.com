@@ -126,19 +126,51 @@ namespace MeowvBlog.Services.Blog.Impl
         {
             var output = new ActionOutput<GetPostDto>();
 
-            var post = await _postRepository.FirstOrDefaultAsync(x => x.Url == url);
-            if (post.IsNull())
+            using (var uow = UnitOfWorkManager.Begin())
             {
-                output.AddError("找了找不到了~~~");
+                var post = await _postRepository.FirstOrDefaultAsync(x => x.Url == url);
+                if (post.IsNull())
+                {
+                    output.AddError("找了找不到了~~~");
+                    return output;
+                }
+
+                var category = await _categoryRepository.FirstOrDefaultAsync(x => x.Id == post.CategoryId);
+
+                var tags = (from post_tags in await _postTagRepository.GetAllListAsync()
+                            join tag in await _tagRepository.GetAllListAsync()
+                            on post_tags.TagId equals tag.Id
+                            where post_tags.PostId == post.Id
+                            select new TagDto
+                            {
+                                TagName = tag.TagName,
+                                DisplayName = tag.DisplayName
+                            }).ToList();
+
+                var previous = _postRepository.GetAll()
+                                              .Where(x => x.CreationTime > post.CreationTime)
+                                              .Take(1)
+                                              .FirstOrDefault();
+
+                var next = _postRepository.GetAll()
+                                          .Where(x => x.CreationTime < post.CreationTime)
+                                          .OrderByDescending(x => x.CreationTime)
+                                          .Take(1)
+                                          .FirstOrDefault();
+
+                await uow.CompleteAsync();
+
+                var result = post.MapTo<GetPostDto>();
+                result.CreationTime = Convert.ToDateTime(result.CreationTime).ToString("MMMM dd, yyyy HH:mm:ss", new CultureInfo("en-us"));
+                result.Category = category.MapTo<CategoryDto>();
+                result.Tags = tags;
+                result.Previous = previous.MapTo<PostForPagedDto>();
+                result.Next = next.MapTo<PostForPagedDto>();
+
+                output.Result = result;
+
                 return output;
             }
-
-            var result = post.MapTo<GetPostDto>();
-            result.CreationTime = Convert.ToDateTime(result.CreationTime).ToString("MMMM dd, yyyy HH:mm:ss", new CultureInfo("en-us"));
-
-            output.Result = result;
-
-            return output;
         }
 
         /// <summary>
