@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Plus;
 using Plus.Services.Dto;
 using Plus.WebApi;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace MeowvBlog.Web.Controllers
@@ -19,6 +20,8 @@ namespace MeowvBlog.Web.Controllers
         {
             _blogService = PlusEngine.Instance.Resolve<IBlogService>();
         }
+
+        #region posts
 
         /// <summary>
         /// 新增文章
@@ -113,6 +116,10 @@ namespace MeowvBlog.Web.Controllers
             return response;
         }
 
+        #endregion
+
+        #region tags
+
         /// <summary>
         /// 新增标签
         /// </summary>
@@ -170,5 +177,64 @@ namespace MeowvBlog.Web.Controllers
                 response.Result = result.Result;
             return response;
         }
+
+        /// <summary>
+        /// 查询标签列表
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("tags")]
+        public async Task<Response<IList<QueryTagDto>>> QueryTags()
+        {
+            var response = new Response<IList<QueryTagDto>>
+            {
+                Result = await _blogService.QueryTags()
+            };
+            return response;
+        }
+
+        #endregion
+
+        #region post_tags
+
+        /// <summary>
+        /// 新增文章的标签 
+        /// </summary>
+        /// <param name="dto"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("post_tag")]
+        public async Task<Response<string>> InsertPostTag([FromBody] PostTagDto dto)
+        {
+            var response = new Response<string>();
+
+            var result = await _blogService.InsertPostTag(dto);
+            if (!result.Success)
+                response.SetMessage(ResponseStatusCode.Error, result.GetErrorMessage());
+            else
+                response.Result = result.Result;
+            return response;
+        }
+
+        /// <summary>
+        /// 删除文章的标签
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpDelete]
+        [Route("post_tag")]
+        public async Task<Response<string>> DeletePostTag(int id)
+        {
+            var response = new Response<string>();
+
+            var result = await _blogService.DeletePostTag(id);
+            if (!result.Success)
+                response.SetMessage(ResponseStatusCode.Error, result.GetErrorMessage());
+            else
+                response.Result = result.Result;
+            return response;
+        }
+
+        #endregion
     }
 }

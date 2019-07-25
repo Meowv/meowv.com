@@ -44,6 +44,16 @@
             创建时间
             </summary>
         </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.PostTagDto.PostId">
+            <summary>
+            文章Id
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.PostTagDto.TagId">
+            <summary>
+            标签Id
+            </summary>
+        </member>
         <member name="P:MeowvBlog.Services.Dto.Blog.QueryPostDto.Title">
             <summary>
             标题
@@ -62,6 +72,21 @@
         <member name="P:MeowvBlog.Services.Dto.Blog.QueryPostDto.CreationTime">
             <summary>
             创建时间
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.QueryTagDto.TagName">
+            <summary>
+            标签名称
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.QueryTagDto.DisplayName">
+            <summary>
+            展示名称
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.QueryTagDto.Count">
+            <summary>
+            标签个数
             </summary>
         </member>
         <member name="T:MeowvBlog.Services.Dto.Blog.TagDto">

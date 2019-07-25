@@ -5,7 +5,7 @@ namespace MeowvBlog.Core.Domain.Blog
     public class PostTag : Entity
     {
         /// <summary>
-        /// PostId
+        /// 文章Id
         /// </summary>
         public int PostId { get; set; }
 
