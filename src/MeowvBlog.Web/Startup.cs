@@ -58,8 +58,10 @@ namespace MeowvBlog.Web
                 var info = new Info
                 {
                     Version = "v3.0.2",
-                    Title = "阿星Plus - 个人博客数据接口",
-                    Description = "基于<code>.NET Core <a href='https://github.com/Meowv/.netcoreplus'>Plus</a></code>开发 ---- 个人博客数据接口列表 <a href='https://meowv.com'>https://meowv.com</a>"
+                    Title = "阿星Plus - 个人博客以及通用数据接口",
+                    Description = @"框架：<code>.NET Core 2.2</code>、<a href='https://github.com/Meowv/.netcoreplus'>Plus</a>
+                                    博客：https://meowv.com
+                                    开源：https://github.com/Meowv/Blog"
                 };
                 options.SwaggerDoc("v1", info);
                 options.DocumentFilter<TagDescriptionsFilter>();
@@ -100,17 +102,11 @@ namespace MeowvBlog.Web
                        .AllowCredentials();
             });
 
-            app.UseSwagger(s =>
-            {
-                s.PreSerializeFilters.Add((swaggerDoc, httpReq) =>
-                {
-                    swaggerDoc.Schemes = new[] { "https" };
-                });
-            });
+            app.UseSwagger();
 
             app.UseSwaggerUI(s =>
             {
-                s.SwaggerEndpoint("/swagger/v1/swagger.json", "个人博客数据接口列表");
+                s.SwaggerEndpoint("/swagger/v1/swagger.json", "个人博客以及通用数据接口");
 
                 s.DefaultModelExpandDepth(2);
                 s.DefaultModelRendering(ModelRendering.Model);
