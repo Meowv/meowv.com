@@ -2,6 +2,7 @@
 
 namespace MeowvBlog.Web.Controllers
 {
+    [ApiExplorerSettings(IgnoreApi = true)]
     public class PostsController : Controller
     {
         [Route("/posts")]

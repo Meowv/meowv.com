@@ -2,6 +2,7 @@
 
 namespace MeowvBlog.Web.Controllers
 {
+    [ApiExplorerSettings(IgnoreApi = true)]
     public class HomeController : Controller
     {
         [Route("/")]
