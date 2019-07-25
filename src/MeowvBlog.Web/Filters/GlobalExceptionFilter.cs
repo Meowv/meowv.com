@@ -5,7 +5,7 @@ using Newtonsoft.Json.Serialization;
 using Plus.WebApi;
 using System.Net;
 
-namespace MeowvBlog.Web.Filter
+namespace MeowvBlog.Web.Filters
 {
     public class GlobalExceptionFilter : IExceptionFilter
     {

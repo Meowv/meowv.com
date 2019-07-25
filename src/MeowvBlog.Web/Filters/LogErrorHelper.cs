@@ -7,7 +7,7 @@ using System;
 using System.IO;
 using System.Text;
 
-namespace MeowvBlog.Web.Filter
+namespace MeowvBlog.Web.Filters
 {
     public static class LogErrorHelper
     {

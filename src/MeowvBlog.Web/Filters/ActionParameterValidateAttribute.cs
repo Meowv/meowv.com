@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 
-namespace MeowvBlog.Web.Filter
+namespace MeowvBlog.Web.Filters
 {
     public class ActionParameterValidateAttribute : ActionFilterAttribute
     {
