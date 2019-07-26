@@ -59,6 +59,26 @@
             下一篇
             </summary>
         </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.PostBriefDto.Title">
+            <summary>
+            标题
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.PostBriefDto.Url">
+            <summary>
+            链接
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.PostBriefDto.Year">
+            <summary>
+            年份
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.PostBriefDto.CreationTime">
+            <summary>
+            创建时间
+            </summary>
+        </member>
         <member name="P:MeowvBlog.Services.Dto.Blog.PostDto.Title">
             <summary>
             标题
@@ -109,24 +129,14 @@
             标签Id
             </summary>
         </member>
-        <member name="P:MeowvBlog.Services.Dto.Blog.QueryPostDto.Title">
-            <summary>
-            标题
-            </summary>
-        </member>
-        <member name="P:MeowvBlog.Services.Dto.Blog.QueryPostDto.Url">
-            <summary>
-            链接
-            </summary>
-        </member>
         <member name="P:MeowvBlog.Services.Dto.Blog.QueryPostDto.Year">
             <summary>
             年份
             </summary>
         </member>
-        <member name="P:MeowvBlog.Services.Dto.Blog.QueryPostDto.CreationTime">
+        <member name="P:MeowvBlog.Services.Dto.Blog.QueryPostDto.Posts">
             <summary>
-            创建时间
+            Posts
             </summary>
         </member>
         <member name="P:MeowvBlog.Services.Dto.Blog.TagDto.TagName">

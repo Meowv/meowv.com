@@ -178,7 +178,7 @@ namespace MeowvBlog.Services.Blog.Impl
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
-        public async Task<PagedResultDto<QueryPostDto>> QueryPosts(PagingInput input)
+        public async Task<PagedResultDto<PostBriefDto>> QueryPosts(PagingInput input)
         {
             var posts = await _postRepository.GetAllListAsync();
 
@@ -186,15 +186,14 @@ namespace MeowvBlog.Services.Blog.Impl
 
             var list = posts.OrderByDescending(x => x.CreationTime).AsQueryable().PageByIndex(input.Page, input.Limit).ToList();
 
-            var result = list.MapTo<IList<QueryPostDto>>().ToList();
-
+            var result = list.MapTo<IList<PostBriefDto>>().ToList();
             result.ForEach(x =>
             {
                 x.CreationTime = Convert.ToDateTime(x.CreationTime).ToString("MMMM dd, yyyy HH:mm:ss", new CultureInfo("en-us"));
                 x.Year = Convert.ToDateTime(x.CreationTime).Year;
             });
 
-            return new PagedResultDto<QueryPostDto>(count, result);
+            return new PagedResultDto<PostBriefDto>(count, result);
         }
 
         /// <summary>
@@ -204,20 +203,33 @@ namespace MeowvBlog.Services.Blog.Impl
         /// <returns></returns>
         public async Task<IList<QueryPostDto>> QueryPostsByTag(string name)
         {
-            return (from post_tags in await _postTagRepository.GetAllListAsync()
-                    join tags in await _tagRepository.GetAllListAsync()
-                    on post_tags.TagId equals tags.Id
-                    join posts in await _postRepository.GetAllListAsync()
-                    on post_tags.PostId equals posts.Id
-                    where tags.DisplayName == name
-                    orderby posts.CreationTime descending
-                    select new QueryPostDto
-                    {
-                        Title = posts.Title,
-                        Url = posts.Url,
-                        CreationTime = posts.CreationTime?.ToString("MMMM dd, yyyy HH:mm:ss", new CultureInfo("en-us")),
-                        Year = posts.CreationTime.Value.Year
-                    }).ToList();
+            var query = (from post_tags in await _postTagRepository.GetAllListAsync()
+                         join tags in await _tagRepository.GetAllListAsync()
+                         on post_tags.TagId equals tags.Id
+                         join posts in await _postRepository.GetAllListAsync()
+                         on post_tags.PostId equals posts.Id
+                         where tags.DisplayName == name
+                         orderby posts.CreationTime descending
+                         select new PostBriefDto
+                         {
+                             Title = posts.Title,
+                             Url = posts.Url,
+                             CreationTime = posts.CreationTime?.ToString("MMMM dd, yyyy HH:mm:ss", new CultureInfo("en-us")),
+                             Year = posts.CreationTime.Value.Year
+                         }).GroupBy(x => x.Year).ToList();
+
+            var result = new List<QueryPostDto>();
+
+            query.ForEach(x =>
+            {
+                result.Add(new QueryPostDto
+                {
+                    Year = x.Key,
+                    Posts = x.ToList()
+                });
+            });
+
+            return result;
         }
 
         /// <summary>
@@ -227,18 +239,31 @@ namespace MeowvBlog.Services.Blog.Impl
         /// <returns></returns>
         public async Task<IList<QueryPostDto>> QueryPostsByCategory(string name)
         {
-            return (from posts in await _postRepository.GetAllListAsync()
-                    join categories in await _categoryRepository.GetAllListAsync()
-                    on posts.CategoryId equals categories.Id
-                    where categories.DisplayName == name
-                    orderby posts.CreationTime descending
-                    select new QueryPostDto
-                    {
-                        Title = posts.Title,
-                        Url = posts.Url,
-                        CreationTime = posts.CreationTime?.ToString("MMMM dd, yyyy HH:mm:ss", new CultureInfo("en-us")),
-                        Year = posts.CreationTime.Value.Year
-                    }).ToList();
+            var query = (from posts in await _postRepository.GetAllListAsync()
+                         join categories in await _categoryRepository.GetAllListAsync()
+                         on posts.CategoryId equals categories.Id
+                         where categories.DisplayName == name
+                         orderby posts.CreationTime descending
+                         select new PostBriefDto
+                         {
+                             Title = posts.Title,
+                             Url = posts.Url,
+                             CreationTime = posts.CreationTime?.ToString("MMMM dd, yyyy HH:mm:ss", new CultureInfo("en-us")),
+                             Year = posts.CreationTime.Value.Year
+                         }).GroupBy(x => x.Year).ToList();
+
+            var result = new List<QueryPostDto>();
+
+            query.ForEach(x =>
+            {
+                result.Add(new QueryPostDto
+                {
+                    Year = x.Key,
+                    Posts = x.ToList()
+                });
+            });
+
+            return result;
         }
     }
 }
