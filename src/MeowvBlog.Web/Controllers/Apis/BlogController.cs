@@ -8,7 +8,7 @@ using Plus.WebApi;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace MeowvBlog.Web.ApiControllers
+namespace MeowvBlog.Web.Controllers.Apis
 {
     [Route("api/[controller]")]
     [ApiController]
