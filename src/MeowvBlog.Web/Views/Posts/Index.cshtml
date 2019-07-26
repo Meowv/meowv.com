@@ -1,94 +1,47 @@
 ﻿<div class="main">
     <div class="post-wrap archive">
-        <h3>2019</h3>
-        <article class="archive-item">
-            <a class="archive-item-link" href="/2019/07/09/FrontEnd-architecture-desigin/">前端架构设计的思考</a>
-            <span class="archive-item-date">July 9, 2019</span>
-        </article>
-        <article class="archive-item">
-            <a class="archive-item-link" href="/2019/06/06/guide-course-day3/">DAY3-宗教文化&amp;导游市场-笔记</a>
-            <span class="archive-item-date">June 6, 2019</span>
-        </article>
-        <article class="archive-item">
-            <a class="archive-item-link" href="/2019/06/05/guide-course-day2/">DAY2-导游讲解技巧-笔记</a>
-            <span class="archive-item-date">June 5, 2019</span>
-        </article>
-        <article class="archive-item">
-            <a class="archive-item-link" href="/2019/06/04/guide-course-day1/">DAY1-导游执业规划和能力提升-笔记</a>
-            <span class="archive-item-date">June 4, 2019</span>
-        </article>
-        <article class="archive-item">
-            <a class="archive-item-link" href="/2019/06/02/Build-a-hexo-theme/">从零开始创建一个hexo主题</a>
-            <span class="archive-item-date">June 2, 2019</span>
-        </article>
-        <article class="archive-item">
-            <a class="archive-item-link" href="/2019/04/22/Review-The-world-between-us/">《我们与恶的距离》影评</a>
-            <span class="archive-item-date">April 22, 2019</span>
-        </article>
-        <article class="archive-item">
-            <a class="archive-item-link" href="/2019/04/17/git-checkout-branch-cmd/">Git上传远程分支命令组</a>
-            <span class="archive-item-date">April 17, 2019</span>
-        </article>
-        <article class="archive-item">
-            <a class="archive-item-link" href="/2019/04/16/callback-this-pointer/">回调函数的this指向</a>
-            <span class="archive-item-date">April 16, 2019</span>
-        </article>
-        <article class="archive-item">
-            <a class="archive-item-link" href="/2019/03/31/thinkings-19Mar31/">结束这个混乱吧</a>
-            <span class="archive-item-date">March 31, 2019</span>
-        </article>
-        <article class="archive-item">
-            <a class="archive-item-link" href="/2019/03/28/graduateDesignRecord-FrontEnd/">毕业设计记录日志(FrontEnd:Vue)</a>
-            <span class="archive-item-date">March 28, 2019</span>
-        </article>
-        <article class="archive-item">
-            <a class="archive-item-link" href="/2019/03/26/web-api-note/">Web API设计简要笔记</a>
-            <span class="archive-item-date">March 26, 2019</span>
-        </article>
-        <article class="archive-item">
-            <a class="archive-item-link" href="/2019/03/20/graduateDesignRecord-BackEnd/">毕业设计记录日志</a>
-            <span class="archive-item-date">March 20, 2019</span>
-        </article>
-        <article class="archive-item">
-            <a class="archive-item-link" href="/2019/03/13/thinkings-19Mar13/">混乱的三月</a>
-            <span class="archive-item-date">March 13, 2019</span>
-        </article>
-        <article class="archive-item">
-            <a class="archive-item-link" href="/2019/03/11/java-static-keyword/">Java static关键字</a>
-            <span class="archive-item-date">March 11, 2019</span>
-        </article>
-        <article class="archive-item">
-            <a class="archive-item-link" href="/2019/03/08/java-thread-synchronized/">Java中线程同步的方法</a>
-            <span class="archive-item-date">March 8, 2019</span>
-        </article>
-        <article class="archive-item">
-            <a class="archive-item-link" href="/2019/03/02/cmbnt-interview-2019Autumn/">招商银行2019秋招后端笔试算法题记录</a>
-            <span class="archive-item-date">March 2, 2019</span>
-        </article>
-        <article class="archive-item">
-            <a class="archive-item-link" href="/2019/02/28/java-HashMap/">【转载】HashMap 的实现原理</a>
-            <span class="archive-item-date">February 28, 2019</span>
-        </article>
-        <article class="archive-item">
-            <a class="archive-item-link" href="/2019/02/26/blog-fixedFunctions/">hexo博客如何添加二级分档和标签云</a>
-            <span class="archive-item-date">February 26, 2019</span>
-        </article>
-        <h3>2018</h3>
-        <article class="archive-item">
-            <a class="archive-item-link" href="/2019/02/21/thinkings-19Feb22/">写在初试失败之后</a>
-            <span class="archive-item-date">February 21, 2019</span>
-        </article>
-        <article class="archive-item">
-            <a class="archive-item-link" href="/2019/02/16/MachineLearning-Iris/">机器学习入门Demo</a>
-            <span class="archive-item-date">February 16, 2019</span>
-        </article>
-
-        <nav class="pagination">
-            <span class="page-number current">1</span>
-            <a class="page-number" href="/archives/page/2/">2</a>
-            <a class="page-number" href="/archives/page/3/">3</a>
-            <a class="page-number" href="/archives/page/3/">4</a>
-            <a class="page-number" href="/archives/page/3/">5</a>
-        </nav>
+        <script id="posts_tmpl" type="text/template">
+            {{each result}}
+            <h3>{{$value.year}}</h3>
+            {{each $value.posts}}
+            <article class="archive-item">
+                <a class="archive-item-link" href="{{$value.url}}">{{$value.title}}</a>
+                <span class="archive-item-date">{{$value.creationTime}}</span>
+            </article>
+            {{/each}}
+            {{/each}}
+        </script>
+        <nav class="pagination"></nav>
     </div>
+    <div class="loader"></div>
 </div>
+@section scripts{
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://unpkg.com/art-template@4.13.2/lib/template-web.js"></script>
+    <script>
+        var page = location.pathname.replace(/posts|page|\//gi, "") || 1;
+        var limit = 10;
+
+        axios.get(`${api_domain}/api/blog/post/query?page=${page}&limit=${limit}`)
+            .then(function (response) {
+                if (response.data.isSuccess) {
+                    var data = { "result": response.data.result.items };
+                    var html = template("posts_tmpl", data);
+                    document.getElementsByClassName('post-wrap archive')[0].insertAdjacentHTML('afterbegin', html);
+
+                    var totalPage = Math.ceil(response.data.result.totalCount / limit);
+
+                    var paginationHtml = "";
+                    for (var i = 1; i <= totalPage; i++) {
+                        paginationHtml += page == i ? `<span class="page-number current">${i}</span>` : `<a class="page-number" href="/posts/page/${i}/">${i}</a>`;
+                    }
+                    document.getElementsByClassName('pagination')[0].innerHTML = paginationHtml;
+
+                    document.getElementsByClassName('loader')[0].remove();
+                    document.getElementById('posts_tmpl').remove();
+                }
+            }).catch(function (error) {
+                console.log(error);
+            });
+    </script>
+}
