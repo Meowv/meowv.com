@@ -11,8 +11,10 @@
                             Date: <a href="javascript:;">{{@@result.creationTime}}</a>
                         </span>
                         <span class="post-category">
+                            {{if result.category }}
                             Category:
                             <a href="/category/{{@@result.category.displayName}}/">{{@@result.category.categoryName}}</a>
+                            {{/if}}
                         </span>
                     </div>
                 </header>

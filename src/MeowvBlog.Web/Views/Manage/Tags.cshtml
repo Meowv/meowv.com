@@ -1,0 +1,36 @@
+﻿@{
+    ViewData["Title"] = "标签管理 - ";
+}
+<div class="main">
+    <div class="container">
+        <div class="post-wrap tags">
+            <h2 class="post-title">-&nbsp;Tags&nbsp;-</h2>
+            <div class="tag-cloud-tags">
+                <script id="tags_tmpl" type="text/template">
+                    {{each result}}
+                    <a href="javascript:;" class="btn_delete">{{$value.tagName}}<small>({{$value.count}})</small>❌</a>
+                    <span style="cursor:pointer;" class="btn_update">💣</span>
+                    {{/each}}
+                    <a href="javascript:;" id="btn_insert"><h3>新增标签~~~📝</h3></a>
+                </script>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="loader"></div>
+@section scripts{
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://unpkg.com/art-template@4.13.2/lib/template-web.js"></script>
+    <script>
+        axios.get(`${api_domain}/api/blog/tags`)
+            .then(function (response) {
+                if (response.data.isSuccess) {
+                    var html = template("tags_tmpl", response.data);
+                    document.getElementsByClassName('tag-cloud-tags')[0].innerHTML = html;
+                    document.getElementsByClassName('loader')[0].remove();
+                }
+            }).catch(function (error) {
+                console.log(error);
+            });
+    </script>
+}
