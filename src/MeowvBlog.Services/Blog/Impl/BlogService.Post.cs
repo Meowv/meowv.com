@@ -178,7 +178,7 @@ namespace MeowvBlog.Services.Blog.Impl
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
-        public async Task<PagedResultDto<PostBriefDto>> QueryPosts(PagingInput input)
+        public async Task<PagedResultDto<QueryPostDto>> QueryPosts(PagingInput input)
         {
             var posts = await _postRepository.GetAllListAsync();
 
@@ -186,14 +186,26 @@ namespace MeowvBlog.Services.Blog.Impl
 
             var list = posts.OrderByDescending(x => x.CreationTime).AsQueryable().PageByIndex(input.Page, input.Limit).ToList();
 
-            var result = list.MapTo<IList<PostBriefDto>>().ToList();
-            result.ForEach(x =>
+            var dtos = list.MapTo<IList<PostBriefDto>>().ToList();
+            dtos.ForEach(x =>
             {
                 x.CreationTime = Convert.ToDateTime(x.CreationTime).ToString("MMMM dd, yyyy HH:mm:ss", new CultureInfo("en-us"));
                 x.Year = Convert.ToDateTime(x.CreationTime).Year;
             });
 
-            return new PagedResultDto<PostBriefDto>(count, result);
+            var result = new List<QueryPostDto>();
+
+            var group = dtos.GroupBy(x => x.Year).ToList();
+            group.ForEach(x =>
+            {
+                result.Add(new QueryPostDto
+                {
+                    Year = x.Key,
+                    Posts = x.ToList()
+                });
+            });
+
+            return new PagedResultDto<QueryPostDto>(count, result);
         }
 
         /// <summary>
