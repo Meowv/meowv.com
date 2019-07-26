@@ -72,8 +72,10 @@
                 if (response.data.isSuccess) {
                     var html = template("detail_tmpl", response.data);
                     document.getElementsByClassName('post-wrap')[0].innerHTML = html;
-                    document.getElementsByClassName('loader')[0].remove();
+                } else {
+                    document.getElementsByClassName('post-wrap')[0].innerHTML = `<h2 class="post-title">${response.data.message}</h2>`;
                 }
+                document.getElementsByClassName('loader')[0].remove();
             }).catch(function (error) {
                 console.log(error);
             });
