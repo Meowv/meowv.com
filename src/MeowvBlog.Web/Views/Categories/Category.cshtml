@@ -35,6 +35,8 @@
                     document.title = categoryNameResponse.data.result + " - " + document.title;
                     var html = template("categoryName_tmpl", categoryNameResponse.data);
                     document.getElementsByClassName('post-title')[0].innerHTML = html;
+                } else {
+                    document.getElementsByClassName('post-title')[0].innerText = categoryNameResponse.data.message;
                 }
                 if (postsResponse.data.isSuccess) {
                     var html = template("category_post_tmpl", postsResponse.data);
