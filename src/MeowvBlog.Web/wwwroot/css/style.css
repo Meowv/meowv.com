@@ -1077,67 +1077,6 @@ header label {
     content: " / ";
 }
 
-.post-toc {
-    position: fixed;
-    top: 95px;
-    right: 2em;
-    width: 15rem;
-    font-size: 0.75rem;
-}
-
-.post-toc .tocbot-list {
-    max-height: 450px;
-    max-width: 250px;
-    overflow: auto;
-    position: relative;
-    padding-right: 0.875rem;
-}
-
-.post-toc .tocbot-list::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-}
-
-.post-toc .tocbot-list::-webkit-scrollbar-thumb {
-    width: 6px;
-    background-color: #eee;
-    border-radius: 2px;
-}
-
-.post-toc .tocbot-list ul {
-    list-style: none;
-    position: inherit;
-    overflow: hidden;
-}
-
-.post-toc .tocbot-list ul li {
-    margin-left: 0.25rem;
-}
-
-.post-toc .toc-link::before {
-    background-color: #fff;
-}
-
-.post-toc .is-active-link::before {
-    background-color: #2d96bd;
-}
-
-.post-toc .tocbot-list-menu {
-    margin: 1rem 0.75rem;
-    font-size: 0.75rem;
-}
-
-.post-toc .tocbot-list-menu a {
-    display: block;
-    margin: 0.375rem 0;
-    color: #999;
-    cursor: pointer;
-}
-
-.post-toc .tocbot-list-menu a:hover {
-    color: #808080;
-}
-
 .toc {
     overflow-y: auto
 }
@@ -1338,12 +1277,6 @@ a.toc-link {
 
 @media only screen and (min-width: 1024px) {
     .navbar-mobile {
-        display: none;
-    }
-}
-
-@media (max-width: 1279px) {
-    .post-toc {
         display: none;
     }
 }
