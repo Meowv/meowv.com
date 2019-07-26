@@ -43,7 +43,7 @@ namespace MeowvBlog.Services.Blog
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
-        Task<PagedResultDto<QueryPostDto>> QueryPosts(PagingInput input);
+        Task<PagedResultDto<PostBriefDto>> QueryPosts(PagingInput input);
 
         /// <summary>
         /// 通过标签查询文章列表

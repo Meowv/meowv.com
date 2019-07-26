@@ -1,5 +1,6 @@
 ﻿using MeowvBlog.Core.Domain.Blog;
 using Plus.AutoMapper;
+using System.Collections.Generic;
 
 namespace MeowvBlog.Services.Dto.Blog
 {
@@ -7,23 +8,13 @@ namespace MeowvBlog.Services.Dto.Blog
     public class QueryPostDto
     {
         /// <summary>
-        /// 标题
-        /// </summary>
-        public string Title { get; set; }
-
-        /// <summary>
-        /// 链接
-        /// </summary>
-        public string Url { get; set; }
-
-        /// <summary>
         /// 年份
         /// </summary>
         public int Year { get; set; }
 
         /// <summary>
-        /// 创建时间
+        /// Posts
         /// </summary>
-        public string CreationTime { get; set; }
+        public IList<PostBriefDto> Posts { get; set; }
     }
 }

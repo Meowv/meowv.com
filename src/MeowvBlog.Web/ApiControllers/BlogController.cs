@@ -107,9 +107,9 @@ namespace MeowvBlog.Web.ApiControllers
         /// <returns></returns>
         [HttpGet]
         [Route("post/query")]
-        public async Task<Response<PagedResultDto<QueryPostDto>>> QueryPost([FromQuery] PagingInput input)
+        public async Task<Response<PagedResultDto<PostBriefDto>>> QueryPost([FromQuery] PagingInput input)
         {
-            var response = new Response<PagedResultDto<QueryPostDto>>
+            var response = new Response<PagedResultDto<PostBriefDto>>
             {
                 Result = await _blogService.QueryPosts(input)
             };
