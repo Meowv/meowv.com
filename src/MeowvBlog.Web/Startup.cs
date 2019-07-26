@@ -7,6 +7,8 @@ using MeowvBlog.Web.Filters;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Plus;
 using Plus.Log4Net;
@@ -22,6 +24,15 @@ namespace MeowvBlog.Web
 {
     public class Startup
     {
+        public IConfiguration Configuration { get; }
+
+        public Startup()
+        {
+            var builder = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+
+            Configuration = builder.Build();
+        }
+
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddCors(options =>
@@ -40,10 +51,14 @@ namespace MeowvBlog.Web
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
+            services.AddResponseCaching();
+
             services.AddMvc(options =>
             {
                 options.Filters.Add<ActionParameterValidateAttribute>();
                 options.Filters.Add<GlobalExceptionFilter>();
+
+                options.CacheProfiles.Add("default", new CacheProfile { Duration = 60 });
             });
 
             services.AddRouting(options =>
@@ -89,11 +104,10 @@ namespace MeowvBlog.Web
             {
                 app.UseHsts();
             }
-
-            app.UseMvcWithDefaultRoute();
+            
             app.UseStaticFiles();
             app.UseHttpsRedirection();
-
+            app.UseResponseCaching();
             app.UseCors(builder =>
             {
                 builder.AllowAnyOrigin()
@@ -101,9 +115,7 @@ namespace MeowvBlog.Web
                        .AllowAnyHeader()
                        .AllowCredentials();
             });
-
             app.UseSwagger();
-
             app.UseSwaggerUI(s =>
             {
                 s.SwaggerEndpoint("/swagger/v1/swagger.json", "个人博客以及通用数据接口");
@@ -113,6 +125,8 @@ namespace MeowvBlog.Web
                 s.DefaultModelsExpandDepth(-1);
                 s.DocExpansion(DocExpansion.None);
             });
+
+            app.UseMvcWithDefaultRoute();
         }
     }
 
