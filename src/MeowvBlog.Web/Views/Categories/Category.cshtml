@@ -13,7 +13,7 @@
                 <h3>{{$value.year}}</h3>
                 {{each $value.posts}}
                 <article class="archive-item">
-                    <a class="archive-item-link" href="{{$value.url}}">{{$value.title}}</a>
+                    <a class="archive-item-link" href="/post{{$value.url}}">{{$value.title}}</a>
                     <span class="archive-item-date">{{$value.creationTime}}</span>
                 </article>
                 {{/each}}
