@@ -28,6 +28,12 @@
         axios.get(`${api_domain}/api/blog/post/query?page=${page}&limit=${limit}`)
             .then(function (response) {
                 if (response.data.isSuccess) {
+                    if (response.data.result.items.length == 0) {
+                        document.getElementsByClassName('post-wrap archive')[0].innerHTML = `<h2 class="post-title">找了找不到了~~~</h2>`;
+                        document.getElementsByClassName('loader')[0].remove();
+                        return false;
+                    }
+
                     var data = { "result": response.data.result.items };
                     var html = template("posts_tmpl", data);
                     document.getElementsByClassName('post-wrap archive')[0].insertAdjacentHTML('afterbegin', html);

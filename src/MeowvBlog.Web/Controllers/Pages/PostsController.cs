@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-namespace MeowvBlog.Web.Controllers
+namespace MeowvBlog.Web.Controllers.Pages
 {
     [ApiExplorerSettings(IgnoreApi = true)]
     public class PostsController : Controller
