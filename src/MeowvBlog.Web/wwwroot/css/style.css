@@ -1213,7 +1213,7 @@ a.toc-link {
     .navbar-mobile .container .menu {
         text-align: center;
         background: #fff;
-        border-top: 1px solid #000;
+        /*border-top: 1px solid #000;*/
         padding-top: 1em;
         padding-bottom: 1em;
         display: none;
@@ -1232,7 +1232,7 @@ a.toc-link {
     }
     .dark-theme .navbar-mobile .container .menu {
         background: #292a2d;
-        border-top: 2px solid #87878d;
+        /*border-top: 1px solid #87878d;*/
     }
     .dark-theme .navbar-mobile .container {
         background: #292a2d !important;
@@ -1373,17 +1373,17 @@ a.toc-link {
 }
 
 .loader {
-        box-sizing: content-box;
-        display: block;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        margin: 0;
-        text-align: center;
-        z-index: 1000;
-        -webkit-transform: translateX(-50%) translateY(-50%);
-        transform: translateX(-50%) translateY(-50%);
-    }
+    box-sizing: content-box;
+    display: block;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin: 0;
+    text-align: center;
+    z-index: 1000;
+    -webkit-transform: translateX(-50%) translateY(-50%);
+    transform: translateX(-50%) translateY(-50%);
+}
 
 .loader:before {
     position: absolute;
