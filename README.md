@@ -8,8 +8,8 @@
 - [x] Filter 之异常监听，避免直接抛出异常
 - [x] Filter 之 Swagger 标签描述
 - [x] 使用 [Pomelo.EntityFrameworkCore.MySql](https://github.com/PomeloFoundation/Pomelo.EntityFrameworkCore.MySql) 处理数据
-- [ ] 核心功能API接口
-- [ ] 接入 Azure,使用微软账号登录网站
+- [x] 核心功能API接口
+- [x] 接入 Azure,使用微软账号登录网站
 - [x] 前台界面展示
 - [ ] 后台管理界面
 - [ ] 导入旧的Blog数据到MySQL

@@ -4,10 +4,15 @@ using MeowvBlog.EntityFrameworkCore;
 using MeowvBlog.Services;
 using MeowvBlog.Services.Dto;
 using MeowvBlog.Web.Filters;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.AzureAD.UI;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Plus;
@@ -43,7 +48,16 @@ namespace MeowvBlog.Web
                                                     .AllowCredentials());
             });
 
+            services.AddSingleton(Configuration);
             services.AddSingleton(HtmlEncoder.Create(UnicodeRanges.All));
+
+            services.AddResponseCaching();
+
+            services.AddRouting(options =>
+            {
+                options.LowercaseUrls = true;
+                options.AppendTrailingSlash = true;
+            });
 
             services.Configure<CookiePolicyOptions>(options =>
             {
@@ -51,21 +65,26 @@ namespace MeowvBlog.Web
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
-            services.AddResponseCaching();
+            services.AddAuthentication(AzureADDefaults.AuthenticationScheme)
+                    .AddAzureAD(options => Configuration.Bind("AzureAd", options));
+
+            services.Configure<OpenIdConnectOptions>(AzureADDefaults.OpenIdScheme, options =>
+            {
+                options.Authority += "/v2.0/";
+                options.TokenValidationParameters.ValidateIssuer = false;
+            });
 
             services.AddMvc(options =>
             {
+                var policy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
+                options.Filters.Add(new AuthorizeFilter(policy));
+
                 options.Filters.Add<ActionParameterValidateAttribute>();
                 options.Filters.Add<GlobalExceptionFilter>();
 
                 options.CacheProfiles.Add("default", new CacheProfile { Duration = 60 });
-            });
 
-            services.AddRouting(options =>
-            {
-                options.LowercaseUrls = true;
-                options.AppendTrailingSlash = true;
-            });
+            }).SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
             services.AddSwaggerGen(options =>
             {
@@ -104,10 +123,7 @@ namespace MeowvBlog.Web
             {
                 app.UseHsts();
             }
-            
-            app.UseStaticFiles();
-            app.UseHttpsRedirection();
-            app.UseResponseCaching();
+
             app.UseCors(builder =>
             {
                 builder.AllowAnyOrigin()
@@ -115,6 +131,14 @@ namespace MeowvBlog.Web
                        .AllowAnyHeader()
                        .AllowCredentials();
             });
+
+            app.UseStaticFiles();
+            app.UseHttpsRedirection();
+            app.UseCookiePolicy();
+            app.UseResponseCaching();
+            app.UseAuthentication();
+            app.UseMvcWithDefaultRoute();
+            
             app.UseSwagger();
             app.UseSwaggerUI(s =>
             {
@@ -125,8 +149,6 @@ namespace MeowvBlog.Web
                 s.DefaultModelsExpandDepth(-1);
                 s.DocExpansion(DocExpansion.None);
             });
-
-            app.UseMvcWithDefaultRoute();
         }
     }
 
