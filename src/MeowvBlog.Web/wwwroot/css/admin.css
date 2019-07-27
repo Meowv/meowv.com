@@ -1,0 +1,7 @@
+﻿.box {
+    text-align: center;
+    display: none;
+}
+.box input:not(:last-child){
+    width: 105px;
+}
