@@ -1,6 +1,7 @@
 ﻿using MeowvBlog.Services.Blog;
 using MeowvBlog.Services.Dto;
 using MeowvBlog.Services.Dto.Blog;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Plus;
 using Plus.Services.Dto;
@@ -10,8 +11,9 @@ using System.Threading.Tasks;
 
 namespace MeowvBlog.Web.Controllers.Apis
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [AllowAnonymous]
+    [Route("api/[controller]")]
     public class BlogController : ControllerBase
     {
         private readonly IBlogService _blogService;
@@ -29,6 +31,7 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <param name="dto"></param>
         /// <returns></returns>
         [HttpPost]
+        [Authorize]
         [Route("post")]
         public async Task<Response<string>> InsertPost([FromBody] PostDto dto)
         {
@@ -48,6 +51,7 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <param name="id"></param>
         /// <returns></returns>
         [HttpDelete]
+        [Authorize]
         [Route("post")]
         public async Task<Response<string>> DeletePost(int id)
         {
@@ -68,6 +72,7 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <param name="dto"></param>
         /// <returns></returns>
         [HttpPut]
+        [Authorize]
         [Route("post")]
         public async Task<Response<string>> UpdatePost(int id, [FromBody] PostDto dto)
         {
@@ -162,6 +167,7 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <param name="dto"></param>
         /// <returns></returns>
         [HttpPost]
+        [Authorize]
         [Route("tag")]
         public async Task<Response<string>> InsertTag([FromBody] TagDto dto)
         {
@@ -181,6 +187,7 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <param name="id"></param>
         /// <returns></returns>
         [HttpDelete]
+        [Authorize]
         [Route("tag")]
         public async Task<Response<string>> DeleteTag(int id)
         {
@@ -201,6 +208,7 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <param name="dto"></param>
         /// <returns></returns>
         [HttpPut]
+        [Authorize]
         [Route("tag")]
         public async Task<Response<string>> UpdateTag(int id, [FromBody] TagDto dto)
         {
@@ -260,6 +268,7 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <param name="dto"></param>
         /// <returns></returns>
         [HttpPost]
+        [Authorize]
         [Route("post_tag")]
         public async Task<Response<string>> InsertPostTag([FromBody] PostTagDto dto)
         {
@@ -279,6 +288,7 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <param name="id"></param>
         /// <returns></returns>
         [HttpDelete]
+        [Authorize]
         [Route("post_tag")]
         public async Task<Response<string>> DeletePostTag(int id)
         {
@@ -302,6 +312,7 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <param name="dto"></param>
         /// <returns></returns>
         [HttpPost]
+        [Authorize]
         [Route("category")]
         public async Task<Response<string>> InsertCategory(CategoryDto dto)
         {
@@ -321,6 +332,7 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <param name="id"></param>
         /// <returns></returns>
         [HttpDelete]
+        [Authorize]
         [Route("category")]
         public async Task<Response<string>> DeleteCategory(int id)
         {
@@ -341,6 +353,7 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <param name="dto"></param>
         /// <returns></returns>
         [HttpPut]
+        [Authorize]
         [Route("category")]
         public async Task<Response<string>> UpdateCategory(int id, CategoryDto dto)
         {
