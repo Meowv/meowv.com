@@ -1,10 +1,7 @@
-﻿using MeowvBlog.Core.Domain.Blog;
-using Plus.AutoMapper;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace MeowvBlog.Services.Dto.Blog
 {
-    [AutoMapFrom(typeof(Post))]
     public class QueryPostDto
     {
         /// <summary>

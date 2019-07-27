@@ -28,7 +28,7 @@
         var page = location.pathname.replace(/admin|posts|page|\//gi, "") || 1;
         var limit = 10;
 
-        axios.get(`${api_domain}/api/blog/post/query?page=${page}&limit=${limit}`)
+        axios.get(`${api_domain}/api/blog/post/admin/query?page=${page}&limit=${limit}`)
             .then(function (response) {
                 if (response.data.isSuccess) {
                     if (response.data.result.items.length == 0) {

@@ -138,6 +138,25 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.Web.Controllers.Apis.BlogController.QueryPostsForAdmin(MeowvBlog.Services.Dto.PagingInput)">
+            <summary>
+            分页查询文章列表 For Admin
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Apis.BlogController.QueryCategoriesForAdmin">
+            <summary>
+            查询分类列表  For Admin
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Apis.BlogController.QueryTagsForAdmin">
+            <summary>
+            查询标签列表 For Admin
+            </summary>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.Web.Filters.ActionParameterValidateAttribute.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)">
             <summary>
             Action方法执行前参数校验

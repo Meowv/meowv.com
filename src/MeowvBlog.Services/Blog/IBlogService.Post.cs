@@ -58,5 +58,12 @@ namespace MeowvBlog.Services.Blog
         /// <param name="name"></param>
         /// <returns></returns>
         Task<IList<QueryPostDto>> QueryPostsByCategory(string name);
+
+        /// <summary>
+        /// 分页查询文章列表 For Admin
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        Task<PagedResultDto<QueryPostForAdminDto>> QueryPostsForAdmin(PagingInput input);
     }
 }
