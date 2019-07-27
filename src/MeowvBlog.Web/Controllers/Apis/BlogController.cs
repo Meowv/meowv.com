@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 namespace MeowvBlog.Web.Controllers.Apis
 {
     [ApiController]
-    [AllowAnonymous]
+    [Authorize]
     [Route("api/[controller]")]
     public class BlogController : ControllerBase
     {
@@ -31,7 +31,6 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <param name="dto"></param>
         /// <returns></returns>
         [HttpPost]
-        [Authorize]
         [Route("post")]
         public async Task<Response<string>> InsertPost([FromBody] PostDto dto)
         {
@@ -51,7 +50,6 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <param name="id"></param>
         /// <returns></returns>
         [HttpDelete]
-        [Authorize]
         [Route("post")]
         public async Task<Response<string>> DeletePost(int id)
         {
@@ -72,7 +70,6 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <param name="dto"></param>
         /// <returns></returns>
         [HttpPut]
-        [Authorize]
         [Route("post")]
         public async Task<Response<string>> UpdatePost(int id, [FromBody] PostDto dto)
         {
@@ -113,6 +110,7 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <returns></returns>
         [HttpGet]
         [Route("post/query")]
+        [AllowAnonymous]
         [ResponseCache(CacheProfileName = "default", VaryByQueryKeys = new string[] { "page", "limit" })]
         public async Task<Response<PagedResultDto<QueryPostDto>>> QueryPost([FromQuery] PagingInput input)
         {
@@ -130,6 +128,7 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <returns></returns>
         [HttpGet]
         [Route("post/querybytag")]
+        [AllowAnonymous]
         [ResponseCache(CacheProfileName = "default", VaryByQueryKeys = new string[] { "name" })]
         public async Task<Response<IList<QueryPostDto>>> QueryPostsByTag(string name)
         {
@@ -147,6 +146,7 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <returns></returns>
         [HttpGet]
         [Route("post/querybycategory")]
+        [AllowAnonymous]
         [ResponseCache(CacheProfileName = "default", VaryByQueryKeys = new string[] { "name" })]
         public async Task<Response<IList<QueryPostDto>>> QueryPostsByCategory(string name)
         {
@@ -167,7 +167,6 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <param name="dto"></param>
         /// <returns></returns>
         [HttpPost]
-        [Authorize]
         [Route("tag")]
         public async Task<Response<string>> InsertTag([FromBody] TagDto dto)
         {
@@ -187,7 +186,6 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <param name="id"></param>
         /// <returns></returns>
         [HttpDelete]
-        [Authorize]
         [Route("tag")]
         public async Task<Response<string>> DeleteTag(int id)
         {
@@ -208,7 +206,6 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <param name="dto"></param>
         /// <returns></returns>
         [HttpPut]
-        [Authorize]
         [Route("tag")]
         public async Task<Response<string>> UpdateTag(int id, [FromBody] TagDto dto)
         {
@@ -229,6 +226,7 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <returns></returns>
         [HttpGet]
         [Route("tag")]
+        [AllowAnonymous]
         [ResponseCache(CacheProfileName = "default", VaryByQueryKeys = new string[] { "name" })]
         public async Task<Response<string>> GetTag(string name)
         {
@@ -248,6 +246,7 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <returns></returns>
         [HttpGet]
         [Route("tags")]
+        [AllowAnonymous]
         [ResponseCache(CacheProfileName = "default")]
         public async Task<Response<IList<QueryTagDto>>> QueryTags()
         {
@@ -268,7 +267,6 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <param name="dto"></param>
         /// <returns></returns>
         [HttpPost]
-        [Authorize]
         [Route("post_tag")]
         public async Task<Response<string>> InsertPostTag([FromBody] PostTagDto dto)
         {
@@ -288,7 +286,6 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <param name="id"></param>
         /// <returns></returns>
         [HttpDelete]
-        [Authorize]
         [Route("post_tag")]
         public async Task<Response<string>> DeletePostTag(int id)
         {
@@ -312,7 +309,6 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <param name="dto"></param>
         /// <returns></returns>
         [HttpPost]
-        [Authorize]
         [Route("category")]
         public async Task<Response<string>> InsertCategory(CategoryDto dto)
         {
@@ -332,7 +328,6 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <param name="id"></param>
         /// <returns></returns>
         [HttpDelete]
-        [Authorize]
         [Route("category")]
         public async Task<Response<string>> DeleteCategory(int id)
         {
@@ -353,7 +348,6 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <param name="dto"></param>
         /// <returns></returns>
         [HttpPut]
-        [Authorize]
         [Route("category")]
         public async Task<Response<string>> UpdateCategory(int id, CategoryDto dto)
         {
@@ -374,6 +368,7 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <returns></returns>
         [HttpGet]
         [Route("category")]
+        [AllowAnonymous]
         [ResponseCache(CacheProfileName = "default", VaryByQueryKeys = new string[] { "name" })]
         public async Task<Response<string>> GetCategory(string name)
         {
@@ -393,6 +388,7 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <returns></returns>
         [HttpGet]
         [Route("categories")]
+        [AllowAnonymous]
         [ResponseCache(CacheProfileName = "default")]
         public async Task<Response<IList<QueryCategoryDto>>> QueryCategories()
         {
@@ -413,7 +409,6 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <param name="input"></param>
         /// <returns></returns>
         [HttpGet]
-        [Authorize]
         [Route("post/admin/query")]
         public async Task<Response<PagedResultDto<QueryPostForAdminDto>>> QueryPostsForAdmin([FromQuery] PagingInput input)
         {
@@ -429,7 +424,6 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// </summary>
         /// <returns></returns>
         [HttpGet]
-        [Authorize]
         [Route("admin/categories")]
         public async Task<Response<IList<QueryCategoryForAdminDto>>> QueryCategoriesForAdmin()
         {
@@ -445,7 +439,6 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// </summary>
         /// <returns></returns>
         [HttpGet]
-        [Authorize]
         [Route("admin/tags")]
         public async Task<Response<IList<QueryTagForAdminDto>>> QueryTagsForAdmin()
         {
