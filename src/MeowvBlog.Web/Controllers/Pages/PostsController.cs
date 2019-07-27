@@ -12,7 +12,7 @@ namespace MeowvBlog.Web.Controllers.Pages
         /// </summary>
         /// <returns></returns>
         [Route("/posts")]
-        [Route("/posts/page/{p:int}")]
+        [Route("/posts/page/{page:int:min(1)}")]
         public IActionResult Index() => View();
 
         /// <summary>

@@ -19,7 +19,7 @@ namespace MeowvBlog.Web.Controllers.Admin
         /// </summary>
         /// <returns></returns>
         [Route("/admin/posts")]
-        [Route("/admin/posts/page/{p:int}")]
+        [Route("/admin/posts/page/{page:int:min(1)}")]
         public IActionResult Posts() => View();
 
         /// <summary>
@@ -27,14 +27,14 @@ namespace MeowvBlog.Web.Controllers.Admin
         /// </summary>
         /// <returns></returns>
         [Route("/admin/add_post")]
-        public IActionResult AddPosts() => View();
+        public IActionResult AddPost() => View();
 
         /// <summary>
         /// 编辑文章
         /// </summary>
         /// <returns></returns>
-        [Route("/admin/edit_post")]
-        public IActionResult EditPosts() => View();
+        [Route("/admin/edit_post/{id:int:min(1)}")]
+        public IActionResult EditPost() => View();
 
         /// <summary>
         /// 分类管理
