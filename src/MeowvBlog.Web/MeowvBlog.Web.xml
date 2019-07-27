@@ -4,6 +4,42 @@
         <name>MeowvBlog.Web</name>
     </assembly>
     <members>
+        <member name="M:MeowvBlog.Web.Controllers.Admin.ManageController.Index">
+            <summary>
+            后台管理首页
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Admin.ManageController.Posts">
+            <summary>
+            文章管理
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Admin.ManageController.AddPost">
+            <summary>
+            添加文章
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Admin.ManageController.EditPost">
+            <summary>
+            编辑文章
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Admin.ManageController.Categories">
+            <summary>
+            分类管理
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Admin.ManageController.Tags">
+            <summary>
+            标签管理
+            </summary>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.Web.Controllers.Apis.BlogController.InsertPost(MeowvBlog.Services.Dto.Blog.PostDto)">
             <summary>
             新增文章
@@ -154,6 +190,48 @@
         <member name="M:MeowvBlog.Web.Controllers.Apis.BlogController.QueryTagsForAdmin">
             <summary>
             查询标签列表 For Admin
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Pages.CategoriesController.Index">
+            <summary>
+            分类页
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Pages.CategoriesController.Category">
+            <summary>
+            分类查询文章列表页
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Pages.HomeController.Index">
+            <summary>
+            首页
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Pages.PostsController.Index">
+            <summary>
+            文章列表页
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Pages.PostsController.Detail">
+            <summary>
+            文章详情页
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Pages.TagsController.Index">
+            <summary>
+            标签页
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Pages.TagsController.Tag">
+            <summary>
+            标签查询文章列表页
             </summary>
             <returns></returns>
         </member>

@@ -4,13 +4,13 @@
 <div class="main">
     <div class="post-wrap archive">
         <script id="posts_tmpl" type="text/template">
-            <a style="float:right" href="javascript:;" id="btn_insert"><h3>新增文章~~~📝</h3></a>
+            <a style="float:right" href="/admin/add_post"><h3>新增文章~~~📝</h3></a>
             {{each result}}
             <h3>{{$value.year}}</h3>
             {{each $value.posts}}
             <article class="archive-item">
                 <a href="javascript:;" data-id="{{$value.id}}" class="btn_delete">❌</a>
-                <a href="javascript:;">💣</a>
+                <a href="/admin/edit_post/{{$value.id}}">💣</a>
                 <a target="_blank" class="archive-item-link" href="/post{{$value.url}}">{{$value.title}}</a>
                 <span class="archive-item-date">{{$value.creationTime}}</span>
             </article>
@@ -57,10 +57,6 @@
             });
 
         window.onload = function () {
-            document.querySelector("#btn_insert").addEventListener("click", function () {
-                alert("新增");
-            });
-
             var btn_delete_list = document.querySelectorAll('.btn_delete');
             for (var i = 0; i < btn_delete_list.length; i++) {
                 btn_delete_list[i].onclick = function () {
