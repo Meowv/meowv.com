@@ -413,6 +413,7 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <param name="input"></param>
         /// <returns></returns>
         [HttpGet]
+        [Authorize]
         [Route("post/admin/query")]
         public async Task<Response<PagedResultDto<QueryPostForAdminDto>>> QueryPostsForAdmin([FromQuery] PagingInput input)
         {
@@ -428,6 +429,7 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// </summary>
         /// <returns></returns>
         [HttpGet]
+        [Authorize]
         [Route("admin/categories")]
         public async Task<Response<IList<QueryCategoryForAdminDto>>> QueryCategoriesForAdmin()
         {
@@ -443,6 +445,7 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// </summary>
         /// <returns></returns>
         [HttpGet]
+        [Authorize]
         [Route("admin/tags")]
         public async Task<Response<IList<QueryTagForAdminDto>>> QueryTagsForAdmin()
         {
