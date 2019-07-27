@@ -10,6 +10,10 @@
     <title>😍@ViewData["Title"]阿星Plus⭐⭐⭐</title>
     <link rel="icon" href="~/favicon.ico">
     <link rel="stylesheet" href="~/css/style.css">
+    @if (Context.Request.Path.Value.Contains("/admin/"))
+    {
+        <link rel="stylesheet" href="~/css/admin.css" />
+    }
 </head>
 
 <body>

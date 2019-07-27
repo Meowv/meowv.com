@@ -61,9 +61,9 @@
                 alert("新增");
             });
 
-            var posts_list = document.querySelectorAll('.btn_delete');
-            for (var i = 0; i < posts_list.length; i++) {
-                posts_list[i].onclick = function () {
+            var btn_delete_list = document.querySelectorAll('.btn_delete');
+            for (var i = 0; i < btn_delete_list.length; i++) {
+                btn_delete_list[i].onclick = function () {
                     var id = this.attributes["data-id"].value;
                     if (confirm('真的要干掉这篇该死的文章❓❓❓')) {
                         axios.delete(`${api_domain}/api/blog/post?id=${id}`)

@@ -8,12 +8,17 @@
             <div class="tag-cloud-tags">
                 <script id="tags_tmpl" type="text/template">
                     {{each result}}
-                    <a href="javascript:;" class="btn_delete">{{$value.tagName}}<small>({{$value.count}})</small>❌</a>
-                    <span style="cursor:pointer;" class="btn_update">💣</span>
+                    <a href="javascript:;" data-id="{{$value.id}}" class="btn_delete">{{$value.tagName}}<small>({{$value.count}})</small>❌</a>
+                    <span style="cursor:pointer;" data-id="{{$value.id}}" data-tagName="{{$value.tagName}}" data-displayName="{{$value.displayName}}" class="btn_update">💣</span>
                     {{/each}}
-                    <a href="javascript:;" id="btn_insert"><h3>新增标签~~~📝</h3></a>
+                    <a href="javascript:;" class="btn_insert"><h3>新增标签~~~📝</h3></a>
                 </script>
             </div>
+        </div>
+        <div class="box">
+            <input type="text" placeholder="TagName" id="tagName" value="" />
+            <input type="text" placeholder="DisplayName" id="displayName" value="" />
+            <input type="button" id="btn_insert" value="biu〰" />
         </div>
     </div>
 </div>
@@ -32,5 +37,91 @@
             }).catch(function (error) {
                 console.log(error);
             });
+
+        window.onload = function () {
+            document.querySelector(".btn_insert").addEventListener("click", function () {
+                document.querySelector(".box").style.cssText = "display:block";
+
+                document.querySelector("#btn_insert").addEventListener("click", function () {
+                    var tagName = document.querySelector("#tagName").value.trim();
+                    var displayName = document.querySelector("#displayName").value.trim();
+                    if (tagName.length == 0 || displayName.length == 0) {
+                        return false;
+                    }
+
+                    var data = {
+                        "tagName": tagName,
+                        "displayName": displayName
+                    }
+
+                    axios.post(`${api_domain}/api/blog/tag`, data)
+                        .then(function (response) {
+                            if (response.data.isSuccess) {
+                                location.reload();
+                            } else {
+                                alert(response.data.message);
+                            }
+                        }).catch(function (error) {
+                            console.log(error);
+                        });
+                });
+            });
+
+            var btn_delete_list = document.querySelectorAll('.btn_delete');
+            for (var i = 0; i < btn_delete_list.length; i++) {
+                btn_delete_list[i].onclick = function () {
+                    var id = this.attributes["data-id"].value;
+                    if (confirm('真的要干掉这个标签❓❓❓')) {
+                        axios.delete(`${api_domain}/api/blog/tag?id=${id}`)
+                            .then(function (response) {
+                                if (response.data.isSuccess) {
+                                    location.reload();
+                                } else {
+                                    alert(response.data.message);
+                                }
+                            }).catch(function (error) {
+                                console.log(error);
+                            });
+                    }
+                }
+            }
+
+            var btn_update_list = document.querySelectorAll('.btn_update');
+            for (var i = 0; i < btn_update_list.length; i++) {
+                btn_update_list[i].onclick = function () {
+                    var id = this.attributes["data-id"].value;
+                    var _tagName = this.attributes["data-tagName"].value;
+                    var _displayName = this.attributes["data-displayName"].value;
+
+                    document.querySelector(".box").style.cssText = "display:block";
+                    document.querySelector(".box #tagName").value = _tagName;
+                    document.querySelector(".box #displayName").value = _displayName;
+
+                    document.querySelector("#btn_insert").addEventListener("click", function () {
+                        var tagName = document.querySelector("#tagName").value.trim();
+                        var displayName = document.querySelector("#displayName").value.trim();
+                        if (tagName.length == 0 || displayName.length == 0) {
+                            return false;
+                        }
+
+                        var data = {
+                            "tagName": tagName,
+                            "displayName": displayName
+                        }
+
+                        axios.put(`${api_domain}/api/blog/tag?id=${id}`, data)
+                            .then(function (response) {
+                                if (response.data.isSuccess) {
+                                    location.reload();
+                                } else {
+                                    alert(response.data.message);
+                                }
+                            }).catch(function (error) {
+                                console.log(error);
+                            });
+                    });
+                }
+            }
+        }
     </script>
 }
