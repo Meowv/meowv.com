@@ -41,5 +41,11 @@ namespace MeowvBlog.Services.Blog
         /// </summary>
         /// <returns></returns>
         Task<IList<QueryCategoryDto>> QueryCategories();
+
+        /// <summary>
+        /// 查询分类列表 For Admin
+        /// </summary>
+        /// <returns></returns>
+        Task<IList<QueryCategoryForAdminDto>> QueryCategoriesForAdmin();
     }
 }

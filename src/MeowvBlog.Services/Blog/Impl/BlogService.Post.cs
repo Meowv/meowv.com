@@ -277,5 +277,40 @@ namespace MeowvBlog.Services.Blog.Impl
 
             return result;
         }
+
+        /// <summary>
+        /// 分页查询文章列表 For Admin
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public async Task<PagedResultDto<QueryPostForAdminDto>> QueryPostsForAdmin(PagingInput input)
+        {
+            var posts = await _postRepository.GetAllListAsync();
+
+            var count = posts.Count;
+
+            var list = posts.OrderByDescending(x => x.CreationTime).AsQueryable().PageByIndex(input.Page, input.Limit).ToList();
+
+            var dtos = list.MapTo<IList<PostBriefForAdminDto>>().ToList();
+            dtos.ForEach(x =>
+            {
+                x.CreationTime = Convert.ToDateTime(x.CreationTime).ToString("MMMM dd, yyyy HH:mm:ss", new CultureInfo("en-us"));
+                x.Year = Convert.ToDateTime(x.CreationTime).Year;
+            });
+
+            var result = new List<QueryPostForAdminDto>();
+
+            var group = dtos.GroupBy(x => x.Year).ToList();
+            group.ForEach(x =>
+            {
+                result.Add(new QueryPostForAdminDto
+                {
+                    Year = x.Key,
+                    Posts = x.ToList()
+                });
+            });
+
+            return new PagedResultDto<QueryPostForAdminDto>(count, result);
+        }
     }
 }

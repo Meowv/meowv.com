@@ -404,5 +404,55 @@ namespace MeowvBlog.Web.Controllers.Apis
         }
 
         #endregion
+
+        #region Admin
+
+        /// <summary>
+        /// 分页查询文章列表 For Admin
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("post/admin/query")]
+        public async Task<Response<PagedResultDto<QueryPostForAdminDto>>> QueryPostsForAdmin([FromQuery] PagingInput input)
+        {
+            var response = new Response<PagedResultDto<QueryPostForAdminDto>>
+            {
+                Result = await _blogService.QueryPostsForAdmin(input)
+            };
+            return response;
+        }
+
+        /// <summary>
+        /// 查询分类列表  For Admin
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("admin/categories")]
+        public async Task<Response<IList<QueryCategoryForAdminDto>>> QueryCategoriesForAdmin()
+        {
+            var response = new Response<IList<QueryCategoryForAdminDto>>
+            {
+                Result = await _blogService.QueryCategoriesForAdmin()
+            };
+            return response;
+        }
+
+        /// <summary>
+        /// 查询标签列表 For Admin
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("admin/tags")]
+        public async Task<Response<IList<QueryTagForAdminDto>>> QueryTagsForAdmin()
+        {
+            var response = new Response<IList<QueryTagForAdminDto>>
+            {
+                Result = await _blogService.QueryTagsForAdmin()
+            };
+            return response;
+        }
+
+        #endregion
     }
 }

@@ -1,6 +1,7 @@
 ﻿using MeowvBlog.Core.Domain.Blog;
 using MeowvBlog.Services.Dto.Blog;
 using Plus;
+using Plus.AutoMapper;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -129,6 +130,31 @@ namespace MeowvBlog.Services.Blog.Impl
                         DisplayName = g.Key.DisplayName,
                         Count = g.Count()
                     }).ToList();
+        }
+
+        /// <summary>
+        /// 查询分类列表 For Admin
+        /// </summary>
+        /// <returns></returns>
+        public async Task<IList<QueryCategoryForAdminDto>> QueryCategoriesForAdmin()
+        {
+            var categories = await _categoryRepository.GetAllListAsync();
+            var posts = await _postRepository.GetAllListAsync();
+
+            var result = new List<QueryCategoryForAdminDto>();
+
+            categories.ForEach(x =>
+            {
+                result.Add(new QueryCategoryForAdminDto
+                {
+                    Id = x.Id,
+                    CategoryName = x.CategoryName,
+                    DisplayName = x.DisplayName,
+                    Count = posts.Count(p => p.CategoryId == x.Id)
+                });
+            });
+
+            return result;
         }
     }
 }

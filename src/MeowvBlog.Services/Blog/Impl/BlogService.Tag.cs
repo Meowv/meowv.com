@@ -131,5 +131,30 @@ namespace MeowvBlog.Services.Blog.Impl
                         Count = g.Count()
                     }).ToList();
         }
+
+        /// <summary>
+        /// 查询标签列表 For Admin
+        /// </summary>
+        /// <returns></returns>
+        public async Task<IList<QueryTagForAdminDto>> QueryTagsForAdmin()
+        {
+            var tags = await _tagRepository.GetAllListAsync();
+            var post_tags = await _postTagRepository.GetAllListAsync();
+
+            var result = new List<QueryTagForAdminDto>();
+
+            tags.ForEach(x =>
+            {
+                result.Add(new QueryTagForAdminDto
+                {
+                    Id = x.Id,
+                    TagName = x.TagName,
+                    DisplayName = x.DisplayName,
+                    Count = post_tags.Count(t => t.TagId == x.Id)
+                });
+            });
+
+            return result;
+        }
     }
 }
