@@ -14,6 +14,11 @@ namespace MeowvBlog.Web.Filters
                 {
                     Name = "Blog",
                     Description = "个人博客接口"
+                },
+                new Tag
+                {
+                    Name = "Account",
+                    Description = "Microsoft Azure Account API"
                 }
             };
 
