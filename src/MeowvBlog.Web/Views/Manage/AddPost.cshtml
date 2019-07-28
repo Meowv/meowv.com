@@ -1,5 +1,63 @@
 ﻿@{
     ViewData["Title"] = "添加文章 - ";
 }
+<link href="/editor.md/css/editormd.min.css" rel="stylesheet" />
+<div class="post-box">
+    <input type="text" id="title" placeholder="标题" autocomplete="off" value="" />
+    <input type="text" id="author" placeholder="作者" value="" />
+    <input type="text" id="url" placeholder="URL" value="" />
+    <input type="datetime" id="createtime" placeholder="时间" value="" />
+</div>
+<div id="editor"></div>
+<div class="post-category">
+    <label><input type="radio" name="category" value="" />分类1</label>
+    <label><input type="radio" name="category" value="" />分类2</label>
+    <label><input type="radio" name="category" value="" />分类3</label>
+    <label><input type="radio" name="category" value="" />分类4</label>
+    <label><input type="radio" name="category" value="" />分类5</label>
+    <label><input type="radio" name="category" value="" />分类6</label>
+    <label><input type="radio" name="category" value="" />分类7</label>
+    <label><input type="radio" name="category" value="" />分类8</label>
+</div>
+<div class="post-tag">
+    <input type="text" id="tags" placeholder="标签" autocomplete="off" value="" />
+    <a href="#">插入已有标签</a>
+    <button id="btn_save">biubiubiu〰</button>
+</div>
+<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script src="/editor.md/editormd.min.js"></script>
+<script>
+    $(function () {
+        const config = {
+            width: "98%",
+            height: "600",
+            //markdown: "",
+            path: "/editor.md/lib/",
+            codeFold: true,
+            theme: localStorage.toolBarTheme || '',
+            editorTheme: localStorage.editorTheme || 'default',
+            previewTheme: localStorage.previewTheme || '',
+            toolbarIcons: function () {
+                return ["bold", "del", "italic", "quote", "ucwords", "uppercase", "lowercase", "h1", "h2", "h3", "h4", "h5", "h6", "list-ul", "list-ol", "hr", "link", "image", "code", "preformatted-text", "code-block", "table", "datetime", "html-entities", "watch", "preview", "fullscreen", "clear"]
+            }
+        }
 
-<h1>添加文章</h1>
+        var editor = editormd("editor", config);
+
+        document.getElementsByClassName('toggleBtn')[0].addEventListener('click', () => {
+            const currentTheme = window.localStorage && window.localStorage.getItem('theme');
+            const isDark = currentTheme === 'dark';
+
+            window.localStorage &&
+                window.localStorage.setItem('toolBarTheme', isDark ? 'dark' : '');
+            window.localStorage &&
+                window.localStorage.setItem('editorTheme', isDark ? 'pastel-on-dark' : 'default');
+            window.localStorage &&
+                window.localStorage.setItem('previewTheme', isDark ? 'dark' : '');
+
+            editor.setTheme(localStorage.toolBarTheme || '');
+            editor.setEditorTheme(localStorage.editorTheme || 'default');
+            editor.setPreviewTheme(localStorage.previewTheme || '');
+        });
+    });
+</script>

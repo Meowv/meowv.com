@@ -56,7 +56,7 @@
                 console.log(error);
             });
 
-        window.onload = function () {
+        setTimeout(function () {
             var btn_delete_list = document.querySelectorAll('.btn_delete');
             for (var i = 0; i < btn_delete_list.length; i++) {
                 btn_delete_list[i].onclick = function () {
@@ -75,6 +75,6 @@
                     }
                 }
             }
-        }
+        }, 500);
     </script>
 }
