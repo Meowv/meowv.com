@@ -29,9 +29,14 @@
             链接
             </summary>
         </member>
-        <member name="P:MeowvBlog.Services.Dto.Blog.GetPostDto.Content">
+        <member name="P:MeowvBlog.Services.Dto.Blog.GetPostDto.Html">
             <summary>
-            内容
+            HTML
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.GetPostDto.Markdown">
+            <summary>
+            Markdown
             </summary>
         </member>
         <member name="P:MeowvBlog.Services.Dto.Blog.GetPostDto.CreationTime">
@@ -94,9 +99,14 @@
             链接
             </summary>
         </member>
-        <member name="P:MeowvBlog.Services.Dto.Blog.PostDto.Content">
+        <member name="P:MeowvBlog.Services.Dto.Blog.PostDto.Html">
             <summary>
-            内容
+            HTML
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.PostDto.Markdown">
+            <summary>
+            Markdown
             </summary>
         </member>
         <member name="P:MeowvBlog.Services.Dto.Blog.PostDto.CategoryId">

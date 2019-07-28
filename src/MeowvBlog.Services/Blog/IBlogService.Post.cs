@@ -12,9 +12,9 @@ namespace MeowvBlog.Services.Blog
         /// <summary>
         /// 新增文章
         /// </summary>
-        /// <param name="post"></param>
+        /// <param name="dto"></param>
         /// <returns></returns>
-        Task<ActionOutput<string>> InsertPost(PostDto dto);
+        Task<ActionOutput<string>> InsertPost(PostForAdminDto dto);
 
         /// <summary>
         /// 删除文章

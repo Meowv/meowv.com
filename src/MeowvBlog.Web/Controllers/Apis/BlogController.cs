@@ -32,7 +32,7 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <returns></returns>
         [HttpPost]
         [Route("post")]
-        public async Task<Response<string>> InsertPost([FromBody] PostDto dto)
+        public async Task<Response<string>> InsertPost(PostForAdminDto dto)
         {
             var response = new Response<string>();
 
