@@ -185,17 +185,17 @@ template {
 
 html {
     font-family: 'Fira Code Medium', Microsoft Yahei, monospace;
+    overflow-x: hidden;
 }
 
 html::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 5px;
+    height: 5px;
 }
 
 html::-webkit-scrollbar-thumb {
-    height: 40px;
+    height: 20px;
     background-color: #eee;
-    border-radius: 16px;
 }
 
 html::-webkit-scrollbar-thumb:hover {

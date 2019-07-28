@@ -57,7 +57,7 @@
                 console.log(error);
             });
 
-        window.onload = function () {
+        setTimeout(function () {
             document.querySelector(".btn_insert").addEventListener("click", function () {
                 document.querySelector(".box").style.cssText = "display:block";
 
@@ -141,6 +141,6 @@
                     });
                 }
             }
-        }
+        }, 500);
     </script>
 }
