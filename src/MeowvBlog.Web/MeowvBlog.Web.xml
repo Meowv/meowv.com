@@ -40,9 +40,9 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.Web.Controllers.Apis.BlogController.InsertPost(MeowvBlog.Services.Dto.Blog.PostDto)">
+        <member name="M:MeowvBlog.Web.Controllers.Apis.BlogController.InsertPost(MeowvBlog.Services.Dto.Blog.PostForAdminDto)">
             <summary>
-            新增文章
+            新增文章 For Admin
             </summary>
             <param name="dto"></param>
             <returns></returns>

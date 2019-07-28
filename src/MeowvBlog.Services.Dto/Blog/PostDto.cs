@@ -23,9 +23,14 @@ namespace MeowvBlog.Services.Dto.Blog
         public string Url { get; set; }
 
         /// <summary>
-        /// 内容
+        /// HTML
         /// </summary>
-        public string Content { get; set; }
+        public string Html { get; set; }
+
+        /// <summary>
+        /// Markdown
+        /// </summary>
+        public string Markdown { get; set; }
 
         /// <summary>
         /// 分类Id

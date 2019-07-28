@@ -44,9 +44,14 @@
             链接
             </summary>
         </member>
-        <member name="P:MeowvBlog.Core.Domain.Blog.Post.Content">
+        <member name="P:MeowvBlog.Core.Domain.Blog.Post.Html">
             <summary>
-            内容
+            HTML
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.Blog.Post.Markdown">
+            <summary>
+            Markdown
             </summary>
         </member>
         <member name="P:MeowvBlog.Core.Domain.Blog.Post.CategoryId">

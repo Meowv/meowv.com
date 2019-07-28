@@ -37,30 +37,54 @@ namespace MeowvBlog.Services.Blog.Impl
         /// </summary>
         /// <param name="dto"></param>
         /// <returns></returns>
-        public async Task<ActionOutput<string>> InsertPost(PostDto dto)
+        public async Task<ActionOutput<string>> InsertPost(PostForAdminDto dto)
         {
-            using (var uow = UnitOfWorkManager.Begin())
+            var output = new ActionOutput<string>();
+
+            var post = new Post
             {
-                var output = new ActionOutput<string>();
-                var post = new Post
+                Title = dto.Title,
+                Author = dto.Author,
+                Url = $"{dto.CreationTime?.ToString("/yyyy/MM/dd/")}{dto.Url}/",
+                Html = dto.Html,
+                Markdown = dto.Markdown,
+                CreationTime = dto.CreationTime,
+                CategoryId = dto.CategoryId
+            };
+            var id = _postRepository.InsertAsync(post).Result.Id;
+
+            var tags = await _tagRepository.GetAllListAsync();
+
+            var newTags = new List<Tag>();
+            foreach (var item in dto.Tags)
+            {
+                if (!tags.Any(x => x.TagName == item))
                 {
-                    Title = dto.Title,
-                    Author = dto.Author,
-                    Url = dto.Url,
-                    Content = dto.Content,
-                    CreationTime = dto.CreationTime
-                };
-
-                var result = await _postRepository.InsertAsync(post);
-                await uow.CompleteAsync();
-
-                if (result.IsNull())
-                    output.AddError("新增文章出错了~~~");
-                else
-                    output.Result = "success";
-
-                return output;
+                    newTags.Add(new Tag
+                    {
+                        TagName = item,
+                        DisplayName = item
+                    });
+                }
             }
+            await _tagRepository.BulkInsertTagsAsync(newTags);
+
+            var postTags = new List<PostTag>();
+            foreach (var item in dto.Tags)
+            {
+                var tagId = _tagRepository.FirstOrDefaultAsync(x => x.TagName == item).Result.Id;
+
+                postTags.Add(new PostTag
+                {
+                    PostId = id,
+                    TagId = tagId
+                });
+            }
+            await _postTagRepository.BulkInsertPostTagsAsync(postTags);
+
+            output.Result = "success";
+
+            return output;
         }
 
         /// <summary>
@@ -101,7 +125,8 @@ namespace MeowvBlog.Services.Blog.Impl
                     Title = dto.Title,
                     Author = dto.Author,
                     Url = dto.Url,
-                    Content = dto.Content,
+                    Html = dto.Html,
+                    Markdown = dto.Markdown,
                     CreationTime = dto.CreationTime
                 };
 
@@ -311,6 +336,6 @@ namespace MeowvBlog.Services.Blog.Impl
             });
 
             return new PagedResultDto<QueryPostForAdminDto>(count, result);
-        }
+        }        
     }
 }
