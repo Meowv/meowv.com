@@ -90,6 +90,7 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <returns></returns>
         [HttpGet]
         [Route("post")]
+        [AllowAnonymous]
         [ResponseCache(CacheProfileName = "default", VaryByQueryKeys = new string[] { "url" })]
         public async Task<Response<GetPostDto>> GetPost(string url)
         {
