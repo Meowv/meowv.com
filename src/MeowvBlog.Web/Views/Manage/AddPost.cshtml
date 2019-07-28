@@ -111,15 +111,26 @@
                 }
 
                 var data = {
+                    "tags": tags.split(','),
                     "title": title,
                     "author": author,
                     "url": url,
-                    "content": "",
+                    "html": html,
+                    "markdown": markdown,
                     "categoryId": categoryId,
                     "creationTime": time,
                 };
 
-                console.log(data)
+                axios.post(`${api_domain}/api/blog/post`, data)
+                    .then(function (response) {
+                        if (response.data.isSuccess) {
+                            location.href = "/admin/posts";
+                        } else {
+                            alert(response.data.message);
+                        }
+                    }).catch(function (error) {
+                        console.log(error);
+                    });
             });
         });
     </script>
