@@ -10,9 +10,16 @@
     <title>😍@ViewData["Title"]阿星Plus⭐⭐⭐</title>
     <link rel="icon" href="~/favicon.ico">
     <link rel="stylesheet" href="~/css/style.css">
-    @if (Context.Request.Path.Value.Contains("/admin/"))
-    {
-        <link rel="stylesheet" href="~/css/admin.css" />
+    @{
+        var path = Context.Request.Path.Value;
+        if (path.Contains("/admin/"))
+        {
+            <link rel="stylesheet" href="~/css/admin.css" />
+            if (path.Contains("add_post") || path.Contains("edit_post"))
+            {
+                <link href="/editor.md/css/editormd.min.css" rel="stylesheet" />
+            }
+        }
     }
 </head>
 

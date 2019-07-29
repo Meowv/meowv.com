@@ -122,7 +122,7 @@ namespace MeowvBlog.Services.Blog.Impl
                 Id = id,
                 Title = dto.Title,
                 Author = dto.Author,
-                Url = dto.Url,
+                Url = $"{dto.CreationTime?.ToString("/yyyy/MM/dd/")}{dto.Url}/",
                 Html = dto.Html,
                 Markdown = dto.Markdown,
                 CreationTime = dto.CreationTime,
@@ -409,6 +409,7 @@ namespace MeowvBlog.Services.Blog.Impl
 
                 var result = post.MapTo<GetPostForAdminDto>();
                 result.Tags = string.Join(",", tags);
+                result.Url = result.Url.Split("/").Where(x => x.IsNotNullOrEmpty()).Last();
 
                 output.Result = result;
 
