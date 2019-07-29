@@ -149,16 +149,16 @@
 
                 console.log(data);
 
-                //axios.put(`${api_domain}/api/blog/post`, data)
-                //    .then(function (response) {
-                //        if (response.data.isSuccess) {
-                //            location.href = "/admin/posts";
-                //        } else {
-                //            alert(response.data.message);
-                //        }
-                //    }).catch(function (error) {
-                //        console.log(error);
-                //    });
+                axios.put(`${api_domain}/api/blog/post?id=${id}`, data)
+                    .then(function (response) {
+                        if (response.data.isSuccess) {
+                            location.href = "/admin/posts";
+                        } else {
+                            alert(response.data.message);
+                        }
+                    }).catch(function (error) {
+                        console.log(error);
+                    });
             });
         });
     </script>

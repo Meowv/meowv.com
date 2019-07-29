@@ -29,7 +29,7 @@ namespace MeowvBlog.Services.Blog
         /// <param name="id"></param>
         /// <param name="dto"></param>
         /// <returns></returns>
-        Task<ActionOutput<string>> UpdatePost(int id, PostDto dto);
+        Task<ActionOutput<string>> UpdatePost(int id, PostForAdminDto dto);
 
         /// <summary>
         /// 获取文章

@@ -34,12 +34,7 @@ namespace MeowvBlog.Web.Controllers.Admin
         /// </summary>
         /// <returns></returns>
         [Route("/admin/edit_post/{id:int:min(1)}")]
-        public IActionResult EditPost(int id)
-        {
-
-
-            return View();
-        }
+        public IActionResult EditPost() => View();
 
         /// <summary>
         /// 分类管理
