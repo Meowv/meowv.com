@@ -22,7 +22,7 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.Web.Controllers.Admin.ManageController.EditPost">
+        <member name="M:MeowvBlog.Web.Controllers.Admin.ManageController.EditPost(System.Int32)">
             <summary>
             编辑文章
             </summary>
@@ -42,7 +42,7 @@
         </member>
         <member name="M:MeowvBlog.Web.Controllers.Apis.BlogController.InsertPost(MeowvBlog.Services.Dto.Blog.PostForAdminDto)">
             <summary>
-            新增文章 For Admin
+            新增文章
             </summary>
             <param name="dto"></param>
             <returns></returns>
@@ -192,6 +192,11 @@
             查询标签列表 For Admin
             </summary>
             <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Apis.BlogController.GetPostForAdmin(System.Int32)">
+            <summary>
+            获取文章 For Admin
+            </summary>
         </member>
         <member name="M:MeowvBlog.Web.Controllers.Pages.CategoriesController.Index">
             <summary>

@@ -450,6 +450,23 @@ namespace MeowvBlog.Web.Controllers.Apis
             return response;
         }
 
+        /// <summary>
+        /// 获取文章 For Admin
+        /// </summary>
+        [HttpGet]
+        [Route("admin/post")]
+        public async Task<Response<GetPostForAdminDto>> GetPostForAdmin(int id)
+        {
+            var response = new Response<GetPostForAdminDto>();
+
+            var result = await _blogService.GetPostForAdmin(id);
+            if (!result.Success)
+                response.SetMessage(ResponseStatusCode.Error, result.GetErrorMessage());
+            else
+                response.Result = result.Result;
+            return response;
+        }
+
         #endregion
     }
 }

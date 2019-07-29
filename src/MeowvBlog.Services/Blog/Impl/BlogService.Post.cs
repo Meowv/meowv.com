@@ -336,6 +336,41 @@ namespace MeowvBlog.Services.Blog.Impl
             });
 
             return new PagedResultDto<QueryPostForAdminDto>(count, result);
-        }        
+        }
+
+        /// <summary>
+        /// 根据Id获取文章详细数据
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        public async Task<ActionOutput<GetPostForAdminDto>> GetPostForAdmin(int id)
+        {
+            var output = new ActionOutput<GetPostForAdminDto>();
+
+            using (var uow = UnitOfWorkManager.Begin())
+            {
+                var post = await _postRepository.FirstOrDefaultAsync(x => x.Id == id);
+                if (post.IsNull())
+                {
+                    output.AddError("找了找不到了~~~");
+                    return output;
+                }
+
+                var tags = from post_tags in await _postTagRepository.GetAllListAsync()
+                           join tag in await _tagRepository.GetAllListAsync()
+                           on post_tags.TagId equals tag.Id
+                           where post_tags.PostId == post.Id
+                           select tag.TagName;
+
+                await uow.CompleteAsync();
+
+                var result = post.MapTo<GetPostForAdminDto>();
+                result.Tags = string.Join(",", tags);
+
+                output.Result = result;
+
+                return output;
+            }
+        }
     }
 }

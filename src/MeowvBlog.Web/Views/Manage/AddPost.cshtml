@@ -24,26 +24,27 @@
 @section scripts{
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <script src="https://unpkg.com/art-template@4.13.2/lib/template-web.js"></script>
+    <!-- editormd 依赖 jQuery-->
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
     <script src="~/editor.md/editormd.min.js"></script>
     <script>
         $(function () {
             axios.get(`${api_domain}/api/blog/admin/categories`)
-            .then(function (response) {
-                if (response.data.isSuccess) {
-                    var html = template("categories_tmpl", response.data);
-                    document.querySelector('.post-category').innerHTML = html;
-                }
-            }).catch(function (error) {
-                console.log(error);
-            });
+                .then(function (response) {
+                    if (response.data.isSuccess) {
+                        var html = template("categories_tmpl", response.data);
+                        document.querySelector('.post-category').innerHTML = html;
+                    }
+                }).catch(function (error) {
+                    console.log(error);
+                });
 
             var editor = editormd("editor", {
                 width: "98%",
                 height: "600",
                 path: "/editor.md/lib/",
                 codeFold: true,
-                saveHTMLToTextarea : true, 
+                saveHTMLToTextarea: true,
                 theme: localStorage.toolBarTheme || '',
                 editorTheme: localStorage.editorTheme || 'default',
                 previewTheme: localStorage.previewTheme || '',

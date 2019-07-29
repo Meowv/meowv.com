@@ -64,6 +64,16 @@
             下一篇
             </summary>
         </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.GetPostForAdminDto.CreationTime">
+            <summary>
+            创建时间
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.GetPostForAdminDto.Tags">
+            <summary>
+            标签
+            </summary>
+        </member>
         <member name="P:MeowvBlog.Services.Dto.Blog.PostBriefDto.Title">
             <summary>
             标题

@@ -1,5 +1,165 @@
 ﻿@{
     ViewData["Title"] = "编辑文章 - ";
 }
+<link href="/editor.md/css/editormd.min.css" rel="stylesheet" />
+<div class="post-box">
+    <input type="text" id="title" placeholder="标题" autocomplete="off" value="" />
+    <input type="text" id="author" placeholder="作者" value="" />
+    <input type="text" id="url" placeholder="URL" value="" />
+    <input type="datetime" id="time" placeholder="时间" value="" />
+</div>
+<div id="editor"></div>
+<div class="post-category">
+    <script id="categories_tmpl" type="text/template">
+        {{each result}}
+        <label><input type="radio" name="category" value="{{$value.id}}" />{{$value.categoryName}}</label>
+        {{/each}}
+    </script>
+</div>
+<div class="post-tag">
+    <input type="text" id="tags" placeholder="标签" autocomplete="off" value="" />
+    <a href="#">插入已有标签</a>
+    <button id="btn_save">biubiubiu〰</button>
+</div>
+@section scripts{
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://unpkg.com/art-template@4.13.2/lib/template-web.js"></script>
+    <!-- editormd 依赖 jQuery-->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="~/editor.md/editormd.min.js"></script>
+    <script>
+        $(function () {
+            var id = location.pathname.replace(/admin|edit_post|\//gi, "");
+            var editor;
 
-<h1>编辑文章</h1>
+            axios.all([getPost(id), getCategories()])
+                .then(axios.spread(function (postResponse, categoriesResponse) {
+                    if (postResponse.data.isSuccess) {
+                        document.querySelector('#title').value = postResponse.data.result.title;
+                        document.querySelector('#author').value = postResponse.data.result.author;
+                        document.querySelector('#url').value = postResponse.data.result.url;
+                        document.querySelector('#time').value = postResponse.data.result.creationTime;
+                        document.querySelector('#tags').value = postResponse.data.result.tags;
+
+                        editor = editormd("editor", {
+                            width: "98%",
+                            height: "600",
+                            path: "/editor.md/lib/",
+                            codeFold: true,
+                            markdown: postResponse.data.result.markdown,                            saveHTMLToTextarea: true,
+                            theme: localStorage.toolBarTheme || '',
+                            editorTheme: localStorage.editorTheme || 'default',
+                            previewTheme: localStorage.previewTheme || '',
+                            toolbarIcons: function () {
+                                return ["bold", "del", "italic", "quote", "ucwords", "uppercase", "lowercase", "h1", "h2", "h3", "h4", "h5", "h6", "list-ul", "list-ol", "hr", "link", "image", "code", "preformatted-text", "code-block", "table", "datetime", "html-entities", "watch", "preview", "fullscreen", "clear"]
+                            }
+                        });
+
+                        document.getElementsByClassName('toggleBtn')[0].addEventListener('click', () => {
+                            const currentTheme = window.localStorage && window.localStorage.getItem('theme');
+                            const isDark = currentTheme === 'dark';
+                            window.localStorage &&
+                                window.localStorage.setItem('toolBarTheme', isDark ? 'dark' : '');
+                            window.localStorage &&
+                                window.localStorage.setItem('editorTheme', isDark ? 'pastel-on-dark' : 'default');
+                            window.localStorage &&
+                                window.localStorage.setItem('previewTheme', isDark ? 'dark' : '');
+
+                            editor.setTheme(localStorage.toolBarTheme || '');
+                            editor.setEditorTheme(localStorage.editorTheme || 'default');
+                            editor.setPreviewTheme(localStorage.previewTheme || '');
+                        });
+                    }
+                    if (categoriesResponse.data.isSuccess) {
+                        var html = template("categories_tmpl", categoriesResponse.data);
+                        document.querySelector('.post-category').innerHTML = html;
+                    }
+
+                    var radios = document.querySelectorAll('.post-category input');
+                    for (var i = 0; i < radios.length; i++) {
+                        if (radios[i].value == postResponse.data.result.categoryId) {
+                            radios[i].checked = true;
+                            return;
+                        }
+                    }
+                })).catch(function (error) {
+                    console.log(error);
+                });
+
+            function getPost(id) {
+                return axios.get(`${api_domain}/api/blog/admin/post?id=${id}`);
+            }
+            function getCategories() {
+                return axios.get(`${api_domain}/api/blog/admin/categories`);
+            }
+
+            $("#btn_save").click(function () {
+                var title = $("#title").val().trim();
+                var author = $("#author").val();
+                var url = $("#url").val();
+                var time = $("#time").val();
+                var tags = $("#tags").val();
+
+                var categoryId = 0;
+                var radios = document.querySelectorAll('.post-category input');
+                for (var i = 0; i < radios.length; i++) {
+                    if (radios[i].checked) {
+                        categoryId = radios[i].value;
+                    }
+                }
+
+                var markdown = editor.getMarkdown();
+                var html = editor.getHTML();
+
+                if (title.length == 0) {
+                    alert("标题没填")
+                    return false;
+                }
+                if (author.length == 0) {
+                    alert("作者没填")
+                    return false;
+                }
+                if (url.length == 0) {
+                    alert("URL没填")
+                    return false;
+                }
+                if (time.length == 0) {
+                    alert("时间没填")
+                    return false;
+                }
+                if (categoryId == 0) {
+                    alert("分类没填");
+                    return false;
+                }
+                if (tags.length == 0) {
+                    alert("标签没填");
+                    return false;
+                }
+
+                var data = {
+                    "tags": tags.split(','),
+                    "title": title,
+                    "author": author,
+                    "url": url,
+                    "html": html,
+                    "markdown": markdown,
+                    "categoryId": categoryId,
+                    "creationTime": time,
+                };
+
+                console.log(data);
+
+                //axios.put(`${api_domain}/api/blog/post`, data)
+                //    .then(function (response) {
+                //        if (response.data.isSuccess) {
+                //            location.href = "/admin/posts";
+                //        } else {
+                //            alert(response.data.message);
+                //        }
+                //    }).catch(function (error) {
+                //        console.log(error);
+                //    });
+            });
+        });
+    </script>
+}

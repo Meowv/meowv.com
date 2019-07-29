@@ -65,5 +65,12 @@ namespace MeowvBlog.Services.Blog
         /// <param name="input"></param>
         /// <returns></returns>
         Task<PagedResultDto<QueryPostForAdminDto>> QueryPostsForAdmin(PagingInput input);
+
+        /// <summary>
+        /// 根据Id获取文章详细数据
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        Task<ActionOutput<GetPostForAdminDto>> GetPostForAdmin(int id);
     }
 }
