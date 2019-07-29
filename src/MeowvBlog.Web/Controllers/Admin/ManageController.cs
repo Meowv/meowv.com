@@ -37,6 +37,13 @@ namespace MeowvBlog.Web.Controllers.Admin
         public IActionResult EditPost() => View();
 
         /// <summary>
+        /// 标签列表页，用于添加和编辑文章中
+        /// </summary>
+        /// <returns></returns>
+        [Route("/admin/tags/list")]
+        public IActionResult TagsList() => View();
+
+        /// <summary>
         /// 分类管理
         /// </summary>
         /// <returns></returns>

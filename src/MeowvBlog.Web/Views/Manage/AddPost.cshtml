@@ -17,7 +17,7 @@
 </div>
 <div class="post-tag">
     <input type="text" id="tags" placeholder="标签" autocomplete="off" value="" />
-    <a href="javascript:;" id="add_tag">插入已有标签</a>
+    <a href="javascript:;" onclick="leftVal = screen.width / 2; topVal = (screen.height - 500) / 2; window.open('/admin/tags/list', '_blank', 'width=500,height=500,toolbars=yes,resizable=yes,scrollbars=yes,left=' + leftVal + ',top=' + topVal); return false;">插入已有标签</a>
     <button id="btn_save">biubiubiu〰</button>
 </div>
 @section scripts{

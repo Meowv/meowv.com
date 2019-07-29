@@ -45,7 +45,7 @@ namespace MeowvBlog.Services.Blog.Impl
             {
                 Title = dto.Title,
                 Author = dto.Author,
-                Url = $"{dto.CreationTime?.ToString("/yyyy/MM/dd/")}{dto.Url}/",
+                Url = $"{dto.CreationTime?.ToString(" yyyy MM dd ").Replace(" ", "/")}{dto.Url}/",
                 Html = dto.Html,
                 Markdown = dto.Markdown,
                 CreationTime = dto.CreationTime,
@@ -122,7 +122,7 @@ namespace MeowvBlog.Services.Blog.Impl
                 Id = id,
                 Title = dto.Title,
                 Author = dto.Author,
-                Url = $"{dto.CreationTime?.ToString("/yyyy/MM/dd/")}{dto.Url}/",
+                Url = $"{dto.CreationTime?.ToString(" yyyy MM dd ").Replace(" ", "/")}{dto.Url}/",
                 Html = dto.Html,
                 Markdown = dto.Markdown,
                 CreationTime = dto.CreationTime,
