@@ -56,3 +56,7 @@ input:focus {
     color: #a9a9b3;
     border-color: #1a1a17;
 }
+
+.taglist {
+    margin-left:5px;
+}
