@@ -31,7 +31,6 @@ api_domain = "https://localhost:44345";
     };
 })();
 
-
 document.ready(
     // toggleTheme function.
     function () {
