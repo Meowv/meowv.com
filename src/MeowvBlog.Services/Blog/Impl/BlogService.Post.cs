@@ -113,33 +113,76 @@ namespace MeowvBlog.Services.Blog.Impl
         /// <param name="id"></param>
         /// <param name="dto"></param>
         /// <returns></returns>
-        public async Task<ActionOutput<string>> UpdatePost(int id, PostDto dto)
+        public async Task<ActionOutput<string>> UpdatePost(int id, PostForAdminDto dto)
         {
-            using (var uow = UnitOfWorkManager.Begin())
+            var output = new ActionOutput<string>();
+
+            var post = new Post
             {
-                var output = new ActionOutput<string>();
+                Id = id,
+                Title = dto.Title,
+                Author = dto.Author,
+                Url = dto.Url,
+                Html = dto.Html,
+                Markdown = dto.Markdown,
+                CreationTime = dto.CreationTime,
+                CategoryId = dto.CategoryId
+            };
 
-                var post = new Post
+            await _postRepository.UpdateAsync(post);
+
+            var tags = await _tagRepository.GetAllListAsync();
+
+            var oldPostTags = (from post_tags in await _postTagRepository.GetAllListAsync()
+                            join tag in await _tagRepository.GetAllListAsync()
+                            on post_tags.TagId equals tag.Id
+                            where post_tags.PostId == post.Id
+                            select new
+                            {
+                                post_tags.Id,
+                                tag.TagName
+                            }).ToList();
+
+            foreach (var item in oldPostTags)
+            {
+                if (!dto.Tags.Any(x => x == item.TagName) && tags.Any(t => t.TagName == item.TagName))
                 {
-                    Id = id,
-                    Title = dto.Title,
-                    Author = dto.Author,
-                    Url = dto.Url,
-                    Html = dto.Html,
-                    Markdown = dto.Markdown,
-                    CreationTime = dto.CreationTime
-                };
-
-                var result = await _postRepository.UpdateAsync(post);
-                await uow.CompleteAsync();
-
-                if (result.IsNull())
-                    output.AddError("更新文章出错了~~~");
-                else
-                    output.Result = "success";
-
-                return output;
+                    await _postTagRepository.DeleteAsync(item.Id);
+                }
             }
+
+            var newTags = new List<Tag>();
+            foreach (var item in dto.Tags)
+            {
+                if (!tags.Any(x => x.TagName == item))
+                {
+                    newTags.Add(new Tag
+                    {
+                        TagName = item,
+                        DisplayName = item
+                    });
+                }
+            }
+            await _tagRepository.BulkInsertTagsAsync(newTags);
+
+            var postTags = new List<PostTag>();
+            foreach (var item in dto.Tags)
+            {
+                if (!oldPostTags.Any(x => x.TagName == item))
+                {
+                    var tagId = _tagRepository.FirstOrDefaultAsync(x => x.TagName == item).Result.Id;
+                    postTags.Add(new PostTag
+                    {
+                        PostId = id,
+                        TagId = tagId
+                    });
+                }
+            }
+            await _postTagRepository.BulkInsertPostTagsAsync(postTags);
+
+            output.Result = "success";
+
+            return output;
         }
 
         /// <summary>

@@ -22,7 +22,7 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.Web.Controllers.Admin.ManageController.EditPost(System.Int32)">
+        <member name="M:MeowvBlog.Web.Controllers.Admin.ManageController.EditPost">
             <summary>
             编辑文章
             </summary>
@@ -54,7 +54,7 @@
             <param name="id"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.Web.Controllers.Apis.BlogController.UpdatePost(System.Int32,MeowvBlog.Services.Dto.Blog.PostDto)">
+        <member name="M:MeowvBlog.Web.Controllers.Apis.BlogController.UpdatePost(System.Int32,MeowvBlog.Services.Dto.Blog.PostForAdminDto)">
             <summary>
             更新文章
             </summary>
@@ -64,14 +64,26 @@
         </member>
         <member name="M:MeowvBlog.Web.Controllers.Apis.BlogController.GetPost(System.String)">
             <summary>
-            获取文章
+            获取文章详细信息
             </summary>
             <param name="url"></param>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.Web.Controllers.Apis.BlogController.GetPostForAdmin(System.Int32)">
+            <summary>
+            获取文章详细信息 For Admin
+            </summary>
+        </member>
         <member name="M:MeowvBlog.Web.Controllers.Apis.BlogController.QueryPost(MeowvBlog.Services.Dto.PagingInput)">
             <summary>
             分页查询文章列表
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Apis.BlogController.QueryPostsForAdmin(MeowvBlog.Services.Dto.PagingInput)">
+            <summary>
+            分页查询文章列表 For Admin
             </summary>
             <param name="input"></param>
             <returns></returns>
@@ -125,18 +137,10 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.Web.Controllers.Apis.BlogController.InsertPostTag(MeowvBlog.Services.Dto.Blog.PostTagDto)">
+        <member name="M:MeowvBlog.Web.Controllers.Apis.BlogController.QueryTagsForAdmin">
             <summary>
-            新增文章的标签 
+            查询标签列表 For Admin
             </summary>
-            <param name="dto"></param>
-            <returns></returns>
-        </member>
-        <member name="M:MeowvBlog.Web.Controllers.Apis.BlogController.DeletePostTag(System.Int32)">
-            <summary>
-            删除文章的标签
-            </summary>
-            <param name="id"></param>
             <returns></returns>
         </member>
         <member name="M:MeowvBlog.Web.Controllers.Apis.BlogController.InsertCategory(MeowvBlog.Services.Dto.Blog.CategoryDto)">
@@ -174,29 +178,11 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.Web.Controllers.Apis.BlogController.QueryPostsForAdmin(MeowvBlog.Services.Dto.PagingInput)">
-            <summary>
-            分页查询文章列表 For Admin
-            </summary>
-            <param name="input"></param>
-            <returns></returns>
-        </member>
         <member name="M:MeowvBlog.Web.Controllers.Apis.BlogController.QueryCategoriesForAdmin">
             <summary>
             查询分类列表  For Admin
             </summary>
             <returns></returns>
-        </member>
-        <member name="M:MeowvBlog.Web.Controllers.Apis.BlogController.QueryTagsForAdmin">
-            <summary>
-            查询标签列表 For Admin
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:MeowvBlog.Web.Controllers.Apis.BlogController.GetPostForAdmin(System.Int32)">
-            <summary>
-            获取文章 For Admin
-            </summary>
         </member>
         <member name="M:MeowvBlog.Web.Controllers.Pages.CategoriesController.Index">
             <summary>

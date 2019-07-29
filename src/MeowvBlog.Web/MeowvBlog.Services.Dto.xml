@@ -139,16 +139,6 @@
             链接
             </summary>
         </member>
-        <member name="P:MeowvBlog.Services.Dto.Blog.PostTagDto.PostId">
-            <summary>
-            文章Id
-            </summary>
-        </member>
-        <member name="P:MeowvBlog.Services.Dto.Blog.PostTagDto.TagId">
-            <summary>
-            标签Id
-            </summary>
-        </member>
         <member name="P:MeowvBlog.Services.Dto.Blog.QueryPostDto.Year">
             <summary>
             年份
