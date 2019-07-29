@@ -1,7 +1,6 @@
 ﻿@{
     ViewData["Title"] = "添加文章 - ";
 }
-<link href="/editor.md/css/editormd.min.css" rel="stylesheet" />
 <div class="post-box">
     <input type="text" id="title" placeholder="标题" autocomplete="off" value="" />
     <input type="text" id="author" placeholder="作者" value="" />
@@ -18,7 +17,7 @@
 </div>
 <div class="post-tag">
     <input type="text" id="tags" placeholder="标签" autocomplete="off" value="" />
-    <a href="#">插入已有标签</a>
+    <a href="javascript:;" id="add_tag">插入已有标签</a>
     <button id="btn_save">biubiubiu〰</button>
 </div>
 @section scripts{

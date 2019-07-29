@@ -1,7 +1,6 @@
 ﻿@{
     ViewData["Title"] = "编辑文章 - ";
 }
-<link href="/editor.md/css/editormd.min.css" rel="stylesheet" />
 <div class="post-box">
     <input type="text" id="title" placeholder="标题" autocomplete="off" value="" />
     <input type="text" id="author" placeholder="作者" value="" />
@@ -46,7 +45,8 @@
                             height: "600",
                             path: "/editor.md/lib/",
                             codeFold: true,
-                            markdown: postResponse.data.result.markdown,                            saveHTMLToTextarea: true,
+                            markdown: postResponse.data.result.markdown,
+                            saveHTMLToTextarea: true,
                             theme: localStorage.toolBarTheme || '',
                             editorTheme: localStorage.editorTheme || 'default',
                             previewTheme: localStorage.previewTheme || '',
