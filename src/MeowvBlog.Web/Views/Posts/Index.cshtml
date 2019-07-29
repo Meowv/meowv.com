@@ -29,14 +29,14 @@
             .then(function (response) {
                 if (response.data.isSuccess) {
                     if (response.data.result.items.length == 0) {
-                        document.getElementsByClassName('post-wrap archive')[0].innerHTML = `<h2 class="post-title">找了找不到了~~~</h2>`;
-                        document.getElementsByClassName('loader')[0].remove();
+                        document.querySelector('.post-wrap.archive').innerHTML = `<h2 class="post-title">找了找不到了~~~</h2>`;
+                        document.querySelector('.loader').remove();
                         return false;
                     }
 
                     var data = { "result": response.data.result.items };
                     var html = template("posts_tmpl", data);
-                    document.getElementsByClassName('post-wrap archive')[0].insertAdjacentHTML('afterbegin', html);
+                    document.querySelector('.post-wrap.archive').insertAdjacentHTML('afterbegin', html);
 
                     var totalPage = Math.ceil(response.data.result.totalCount / limit);
 
@@ -44,9 +44,9 @@
                     for (var i = 1; i <= totalPage; i++) {
                         paginationHtml += page == i ? `<span class="page-number current">${i}</span>` : `<a class="page-number" href="/posts/page/${i}/">${i}</a>`;
                     }
-                    document.getElementsByClassName('pagination')[0].innerHTML = paginationHtml;
+                    document.querySelector('.pagination').innerHTML = paginationHtml;
 
-                    document.getElementsByClassName('loader')[0].remove();
+                    document.querySelector('.loader').remove();
                     document.getElementById('posts_tmpl').remove();
                 }
             }).catch(function (error) {

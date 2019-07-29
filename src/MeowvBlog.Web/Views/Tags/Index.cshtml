@@ -24,8 +24,8 @@
             .then(function (response) {
                 if (response.data.isSuccess) {
                     var html = template("tags_tmpl", response.data);
-                    document.getElementsByClassName('tag-cloud-tags')[0].innerHTML = html;
-                    document.getElementsByClassName('loader')[0].remove();
+                    document.querySelector('.tag-cloud-tags').innerHTML = html;
+                    document.querySelector('.loader').remove();
                 }
             }).catch(function (error) {
                 console.log(error);

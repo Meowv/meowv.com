@@ -34,14 +34,14 @@
                 if (tagNameResponse.data.isSuccess) {
                     document.title = tagNameResponse.data.result + " - " + document.title;
                     var html = template("tagName_tmpl", tagNameResponse.data);
-                    document.getElementsByClassName('post-title')[0].innerHTML = html;
+                    document.querySelector('.post-title').innerHTML = html;
                 } else {
-                    document.getElementsByClassName('post-title')[0].innerText = tagNameResponse.data.message;
+                    document.querySelector('.post-title').innerText = tagNameResponse.data.message;
                 }
                 if (postsResponse.data.isSuccess) {
                     var html = template("tag_post_tmpl", postsResponse.data);
-                    document.getElementsByClassName('post-wrap archive')[0].innerHTML = html;
-                    document.getElementsByClassName('loader')[0].remove();
+                    document.querySelector('.post-wrap.archive').innerHTML = html;
+                    document.querySelector('.loader').remove();
                 }
             })).catch(function (error) {
                 console.log(error);

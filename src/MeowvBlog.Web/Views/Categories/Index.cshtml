@@ -34,8 +34,8 @@
             .then(function (response) {
                 if (response.data.isSuccess) {
                     var html = template("categories_tmpl", response.data);
-                    document.getElementsByClassName('categories-card')[0].innerHTML = html;
-                    document.getElementsByClassName('loader')[0].remove();
+                    document.querySelector('.categories-card').innerHTML = html;
+                    document.querySelector('.loader').remove();
                 }
             }).catch(function (error) {
                 console.log(error);
