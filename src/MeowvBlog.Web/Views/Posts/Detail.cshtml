@@ -73,11 +73,11 @@
             .then(function (response) {
                 if (response.data.isSuccess) {
                     var html = template("detail_tmpl", response.data);
-                    document.getElementsByClassName('post-wrap')[0].innerHTML = html;
+                    document.querySelector('.post-wrap').innerHTML = html;
                 } else {
-                    document.getElementsByClassName('post-wrap')[0].innerHTML = `<h2 class="post-title">${response.data.message}</h2>`;
+                    document.querySelector('.post-wrap').innerHTML = `<h2 class="post-title">${response.data.message}</h2>`;
                 }
-                document.getElementsByClassName('loader')[0].remove();
+                document.querySelector('.loader').remove();
             }).catch(function (error) {
                 console.log(error);
             });

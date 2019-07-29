@@ -23,7 +23,7 @@
 @section scripts{
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <script src="https://unpkg.com/art-template@4.13.2/lib/template-web.js"></script>
-    <!-- editormd 依赖 jQuery-->
+    <!-- 仅 editormd 依赖 jQuery-->
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
     <script src="~/editor.md/editormd.min.js"></script>
     <script>
@@ -93,12 +93,12 @@
                 return axios.get(`${api_domain}/api/blog/admin/categories`);
             }
 
-            $("#btn_save").click(function () {
-                var title = $("#title").val().trim();
-                var author = $("#author").val();
-                var url = $("#url").val();
-                var time = $("#time").val();
-                var tags = $("#tags").val();
+            document.querySelector('#btn_save').addEventListener('click', () => {
+                var title = document.querySelector("#title").value.trim();
+                var author = document.querySelector("#author").value.trim();
+                var url = document.querySelector("#url").value.trim();
+                var time = document.querySelector("#time").value.trim();
+                var tags = document.querySelector("#tags").value.trim();
 
                 var categoryId = 0;
                 var radios = document.querySelectorAll('.post-category input');
@@ -150,7 +150,7 @@
                 axios.put(`${api_domain}/api/blog/post?id=${id}`, data)
                     .then(function (response) {
                         if (response.data.isSuccess) {
-                            location.href = "/admin/posts";
+                            location.reload();
                         } else {
                             alert(response.data.message);
                         }

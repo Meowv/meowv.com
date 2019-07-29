@@ -34,14 +34,14 @@
                 if (categoryNameResponse.data.isSuccess) {
                     document.title = categoryNameResponse.data.result + " - " + document.title;
                     var html = template("categoryName_tmpl", categoryNameResponse.data);
-                    document.getElementsByClassName('post-title')[0].innerHTML = html;
+                    document.querySelector('.post-title').innerHTML = html;
                 } else {
-                    document.getElementsByClassName('post-title')[0].innerText = categoryNameResponse.data.message;
+                    document.querySelector('.post-title').innerText = categoryNameResponse.data.message;
                 }
                 if (postsResponse.data.isSuccess) {
                     var html = template("category_post_tmpl", postsResponse.data);
-                    document.getElementsByClassName('post-wrap archive')[0].innerHTML = html;
-                    document.getElementsByClassName('loader')[0].remove();
+                    document.querySelector('.post-wrap.archive').innerHTML = html;
+                    document.querySelector('.loader').remove();
                 }
             })).catch(function (error) {
                 console.log(error);

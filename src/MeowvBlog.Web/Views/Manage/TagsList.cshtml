@@ -43,9 +43,13 @@
             tags[i].onclick = function () {
                 var value = this.textContent;
                 var tagNames = '';
-                tagNames = window.opener.document.getElementById("tags");                if (tagNames.value == '') {
+                tagNames = window.opener.document.getElementById("tags");
+                if (tagNames.value == '') {
                     tagNames.value += value;
-                } else {                    tagNames.value += "," + value;                }            }
+                } else {
+                    tagNames.value += "," + value;
+                }
+            }
         }
     }, 500);
 </script>
