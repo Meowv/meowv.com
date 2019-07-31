@@ -9,6 +9,11 @@
             MySql
             </summary>
         </member>
+        <member name="T:MeowvBlog.Core.Configuration.AppSettings.GitHub">
+            <summary>
+            GitHub 授权配置
+            </summary>
+        </member>
         <member name="P:MeowvBlog.Core.Domain.Blog.Category.CategoryName">
             <summary>
             分类名称

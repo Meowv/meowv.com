@@ -4,9 +4,7 @@ using MeowvBlog.EntityFrameworkCore;
 using MeowvBlog.Services;
 using MeowvBlog.Services.Dto;
 using MeowvBlog.Web.Filters;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.AzureAD.UI;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -65,14 +63,15 @@ namespace MeowvBlog.Web
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
-            services.AddAuthentication(AzureADDefaults.AuthenticationScheme)
-                    .AddAzureAD(options => Configuration.Bind("AzureAd", options));
-
-            services.Configure<OpenIdConnectOptions>(AzureADDefaults.OpenIdScheme, options =>
+            services.AddAuthentication(options =>
             {
-                options.Authority += "/v2.0/";
-                options.TokenValidationParameters.ValidateIssuer = false;
+                options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+            }).AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, x =>
+            {
+                x.LoginPath = "/account/auth";
             });
+
+            services.AddSession();
 
             services.AddMvc(options =>
             {

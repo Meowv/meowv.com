@@ -19,5 +19,19 @@ namespace MeowvBlog.Core.Configuration
         /// MySql
         /// </summary>
         public static string MySqlConnectionString => _config["ConnectionStrings:MySql"];
+
+        /// <summary>
+        /// GitHub 授权配置
+        /// </summary>
+        public static class GitHub
+        {
+            public static string Client_ID => _config["Github:ClientID"];
+
+            public static string Client_Secret => _config["Github:ClientSecret"];
+
+            public static string Redirect_Uri => _config["Github:RedirectUri"];
+
+            public static string ApplicationName => _config["Github:ApplicationName"];
+        }
     }
 }
