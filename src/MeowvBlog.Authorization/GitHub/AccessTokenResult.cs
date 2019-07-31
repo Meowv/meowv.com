@@ -1,0 +1,20 @@
+﻿namespace MeowvBlog.Authorization.GitHub
+{
+    public class AccessTokenResult
+    {
+        /// <summary>
+        /// access_token
+        /// </summary>
+        public string Access_token { get; set; }
+
+        /// <summary>
+        /// 类型
+        /// </summary>
+        public string Token_type { get; set; }
+
+        /// <summary>
+        /// 授权的信息
+        /// </summary>
+        public string Scope { get; set; }
+    }
+}

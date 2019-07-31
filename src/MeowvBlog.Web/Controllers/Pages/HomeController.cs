@@ -14,5 +14,12 @@ namespace MeowvBlog.Web.Controllers.Pages
         [Route("/")]
         [Route("/index.html")]
         public IActionResult Index() => View();
+
+        /// <summary>
+        /// 鉴权页
+        /// </summary>
+        /// <returns></returns>
+        [Route("/account/auth")]
+        public IActionResult Auth() => View();
     }
 }

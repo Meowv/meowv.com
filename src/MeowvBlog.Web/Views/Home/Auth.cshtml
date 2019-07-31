@@ -1,0 +1,33 @@
+﻿@{
+    ViewData["Title"] = "Authentication - ";
+}
+<div class="main"><div class="loader"></div></div>
+@section scripts{
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script>
+        var search = location.search;
+        var query = {};
+        search.replace(/([^?&=]+)=([^&]+)/g, (_, k, v) => query[k] = v);
+
+        if (query.ReturnUrl != undefined) {
+            axios.get(`${api_domain}/api/account/url`)
+                .then(function (response) {
+                    if (response.data.isSuccess) {
+                        location.href = response.data.result;
+                    }
+                }).catch(function (error) {
+                    console.log(error);
+                });
+        } else {
+            var code = query.code;
+            axios.get(`${api_domain}/api/account/token?code=${code}`)
+                .then(function (response) {
+                    if (response.data.isSuccess) {
+                        console.log(response);
+                    }
+                }).catch(function (error) {
+                    console.log(error);
+                });
+        }
+    </script>
+}

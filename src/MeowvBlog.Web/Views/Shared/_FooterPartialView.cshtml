@@ -3,13 +3,9 @@
         <span>
             meowv.com | powered by <a target="_blank" href="http://dot.net">.net core</a>
             @{
-                if (User.Identity.IsAuthenticated)
+                if (User.Identity.Name == "阿星Plus")
                 {
-                    @using System.Security.Claims
-                    var identity = User.Identity as ClaimsIdentity;
-                    var email = identity.Claims.FirstOrDefault(c => c.Type == "preferred_username")?.Value;
-                    var name = identity.Claims.FirstOrDefault(c => c.Type == "name")?.Value;
-                    <a data-users="@name|@email" asp-area="AzureAD" asp-controller="Account" asp-action="SignOut">logout</a>
+                    <a asp-controller="Account" asp-action="Logout">logout</a>
                 }
             }
         </span>

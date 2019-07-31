@@ -46,6 +46,31 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.Web.Controllers.Apis.AccountController.GetGitHubUrl">
+            <summary>
+            生成请求链接
+            </summary>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Apis.AccountController.GetAccessToken(System.String)">
+            <summary>
+            获取token信息
+            </summary>
+            <param name="code"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Apis.AccountController.Login(System.String)">
+            <summary>
+            验证是否我本人
+            </summary>
+            <param name="token"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Apis.AccountController.Logout">
+            <summary>
+            注销登录
+            </summary>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.Web.Controllers.Apis.BlogController.InsertPost(MeowvBlog.Services.Dto.Blog.PostForAdminDto)">
             <summary>
             新增文章
@@ -205,6 +230,12 @@
         <member name="M:MeowvBlog.Web.Controllers.Pages.HomeController.Index">
             <summary>
             首页
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Pages.HomeController.Auth">
+            <summary>
+            鉴权页
             </summary>
             <returns></returns>
         </member>
