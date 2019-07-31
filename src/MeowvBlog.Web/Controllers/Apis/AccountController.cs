@@ -66,7 +66,12 @@ namespace MeowvBlog.Web.Controllers.Apis
         [Route("login")]
         public async Task<Response<string>> Login(string token)
         {
-            var response = new Response<string>();
+            var response = new Response<string>
+            {
+                Result = "Unauthorized"
+            };
+
+            if (token.IsNullOrEmpty()) return response;
 
             var result = await _githubService.GetUserResult(token);
 
@@ -78,11 +83,7 @@ namespace MeowvBlog.Web.Controllers.Apis
                 var name = user.name;
                 var email = user.email;
 
-                if (id != 13010050)
-                {
-                    response.Result = "你是谁?";
-                    return response;
-                }
+                if (id != 13010050) return response;
 
                 var claimIdentity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);
                 claimIdentity.AddClaim(new Claim(ClaimTypes.NameIdentifier, id.ToString()));
@@ -96,7 +97,6 @@ namespace MeowvBlog.Web.Controllers.Apis
             }
             catch
             {
-                response.Result = "error";
                 return response;
             }
         }

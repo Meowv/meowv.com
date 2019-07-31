@@ -9,7 +9,7 @@
         var query = {};
         search.replace(/([^?&=]+)=([^&]+)/g, (_, k, v) => query[k] = v);
 
-        if (query.ReturnUrl != undefined) {
+        if (query.ReturnUrl != undefined || search == "") {
             axios.get(`${api_domain}/api/account/url`)
                 .then(function (response) {
                     if (response.data.isSuccess) {
@@ -23,7 +23,19 @@
             axios.get(`${api_domain}/api/account/token?code=${code}`)
                 .then(function (response) {
                     if (response.data.isSuccess) {
-                        console.log(response);
+                        var token = response.data.result.access_token;
+                        axios.get(`${api_domain}/api/account/login?token=${token}`)
+                            .then(function (response) {
+                                if (response.data.isSuccess) {
+                                    if (response.data.result == "阿星Plus") {
+                                        location.href = "/admin";
+                                    } else {
+                                        location.href = "/";
+                                    }
+                                }
+                            }).catch(function (error) {
+                                console.log(error);
+                            });
                     }
                 }).catch(function (error) {
                     console.log(error);

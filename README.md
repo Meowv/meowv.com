@@ -9,10 +9,10 @@
 - [x] Filter 之 Swagger 标签描述
 - [x] 使用 [Pomelo.EntityFrameworkCore.MySql](https://github.com/PomeloFoundation/Pomelo.EntityFrameworkCore.MySql) 处理数据
 - [x] 核心功能API接口
-- [x] 接入 Azure,使用微软账号登录网站
+- [x] 接入第三方登录,使用GitHub账号登录后台进行管理
 - [x] 前台界面展示
 - [x] 后台管理界面
-- [ ] 导入旧的Blog数据到MySQL
+- [x] 导入旧的Blog数据到MySQL
 - [ ] 免费生成个性艺术签名
 - [ ] 每日热点API，界面展示
 - [ ] 随机妹子图、猫咪图API，界面展示
@@ -34,6 +34,7 @@
 |Plus.Extensions.Serialization|[![NuGet version](https://badge.fury.io/nu/Plus.Extensions.Serialization.svg)](https://badge.fury.io/nu/Plus.Extensions.Serialization)|
 |Swashbuckle.AspNetCore|[![NuGet version](https://badge.fury.io/nu/Swashbuckle.AspNetCore.svg)](https://badge.fury.io/nu/Swashbuckle.AspNetCore)|
 |Pomelo.EntityFrameworkCore.MySql|[![NuGet version](https://badge.fury.io/nu/Pomelo.EntityFrameworkCore.MySql.svg)](https://badge.fury.io/nu/Pomelo.EntityFrameworkCore.MySql)|
+|Dapper|[![NuGet version](https://badge.fury.io/nu/Dapper.svg)](https://badge.fury.io/nu/Dapper)|
 |Microsoft.AspNetCore.App|[![NuGet version](https://badge.fury.io/nu/Microsoft.AspNetCore.App.svg)](https://badge.fury.io/nu/Microsoft.AspNetCore.App)|
 |Microsoft.Extensions.Logging.Debug|[![NuGet version](https://badge.fury.io/nu/Microsoft.Extensions.Logging.Debug.svg)](https://badge.fury.io/nu/Microsoft.Extensions.Logging.Debug)|
 |Microsoft.VisualStudio.Web.CodeGeneration.Design|[![NuGet version](https://badge.fury.io/nu/Microsoft.VisualStudio.Web.CodeGeneration.Design.svg)](https://badge.fury.io/nu/Microsoft.VisualStudio.Web.CodeGeneration.Design)|
