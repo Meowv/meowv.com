@@ -51,30 +51,30 @@
 
                     document.querySelector('.loader').remove();
                     document.getElementById('posts_tmpl').remove();
+
+                    setTimeout(function () {
+                        var btn_delete_list = document.querySelectorAll('.btn_delete');
+                        for (var i = 0; i < btn_delete_list.length; i++) {
+                            btn_delete_list[i].onclick = function () {
+                                var id = this.attributes["data-id"].value;
+                                if (confirm('真的要干掉这篇该死的文章❓❓❓')) {
+                                    axios.delete(`${api_domain}/api/blog/post?id=${id}`)
+                                        .then(function (response) {
+                                            if (response.data.isSuccess) {
+                                                location.reload();
+                                            } else {
+                                                alert(response.data.message);
+                                            }
+                                        }).catch(function (error) {
+                                            console.log(error);
+                                        });
+                                }
+                            }
+                        }
+                    }, 500);
                 }
             }).catch(function (error) {
                 console.log(error);
             });
-
-        setTimeout(function () {
-            var btn_delete_list = document.querySelectorAll('.btn_delete');
-            for (var i = 0; i < btn_delete_list.length; i++) {
-                btn_delete_list[i].onclick = function () {
-                    var id = this.attributes["data-id"].value;
-                    if (confirm('真的要干掉这篇该死的文章❓❓❓')) {
-                        axios.delete(`${api_domain}/api/blog/post?id=${id}`)
-                            .then(function (response) {
-                                if (response.data.isSuccess) {
-                                    location.reload();
-                                } else {
-                                    alert(response.data.message);
-                                }
-                            }).catch(function (error) {
-                                console.log(error);
-                            });
-                    }
-                }
-            }
-        }, 500);
     </script>
 }

@@ -32,7 +32,7 @@
         axios.all([getCategoryName(name), getPostsByCategoryName(name)])
             .then(axios.spread(function (categoryNameResponse, postsResponse) {
                 if (categoryNameResponse.data.isSuccess) {
-                    document.title = categoryNameResponse.data.result + " - " + document.title;
+                    document.title = document.title.substring(0, 2) + categoryNameResponse.data.result + " - " + document.title.substring(2);
                     var html = template("categoryName_tmpl", categoryNameResponse.data);
                     document.querySelector('.post-title').innerHTML = html;
                 } else {

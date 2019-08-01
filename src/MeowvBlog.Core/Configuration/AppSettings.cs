@@ -16,6 +16,11 @@ namespace MeowvBlog.Core.Configuration
         }
 
         /// <summary>
+        /// 是否开发环境
+        /// </summary>
+        public static bool IsDev => _config["IsDev"].ToBool();
+
+        /// <summary>
         /// MySql
         /// </summary>
         public static string MySqlConnectionString => _config["ConnectionStrings:MySql"];

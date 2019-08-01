@@ -78,6 +78,7 @@
         axios.get(`${api_domain}/api/blog/post?url=${url}`)
             .then(function (response) {
                 if (response.data.isSuccess) {
+                    document.title = document.title.substring(0, 2) + response.data.result.title + " - " + document.title.substring(2);
                     var html = template("detail_tmpl", response.data);
                     document.querySelector('.post-wrap').innerHTML = html;
                 } else {
