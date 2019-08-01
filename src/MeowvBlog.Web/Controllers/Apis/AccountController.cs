@@ -1,4 +1,5 @@
 ﻿using MeowvBlog.Authorization.GitHub;
+using MeowvBlog.Core.Configuration;
 using MeowvBlog.Services.GitHub;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -30,12 +31,10 @@ namespace MeowvBlog.Web.Controllers.Apis
         [Route("url")]
         public async Task<Response<string>> GetGitHubUrl()
         {
-            var response = new Response<string>
+            return new Response<string>
             {
                 Result = await _githubService.GetGitHubUrl()
             };
-
-            return response;
         }
 
         /// <summary>
@@ -71,12 +70,23 @@ namespace MeowvBlog.Web.Controllers.Apis
                 Result = "Unauthorized"
             };
 
-            if (token.IsNullOrEmpty()) return response;
+            if (AppSettings.IsDev)
+            {
+                var claimIdentity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);
+                claimIdentity.AddClaim(new Claim(ClaimTypes.NameIdentifier, "13010050"));
+                claimIdentity.AddClaim(new Claim(ClaimTypes.Name, "阿星Plus"));
+                claimIdentity.AddClaim(new Claim(ClaimTypes.Email, "123@meowv.com"));
+                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimIdentity));
 
-            var result = await _githubService.GetUserResult(token);
+                response.Result = "阿星Plus";
+                return response;
+            }
+
+            if (token.IsNullOrEmpty()) return response;
 
             try
             {
+                var result = await _githubService.GetUserResult(token);
                 var user = result.DeserializeFromJson<UserResult>();
 
                 var id = user.id;

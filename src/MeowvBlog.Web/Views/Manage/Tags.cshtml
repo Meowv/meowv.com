@@ -33,95 +33,95 @@
                     var html = template("tags_tmpl", response.data);
                     document.getElementsByClassName('tag-cloud-tags')[0].innerHTML = html;
                     document.getElementsByClassName('loader')[0].remove();
+
+                    setTimeout(function () {
+                        document.querySelector(".btn_insert").addEventListener("click", function () {
+                            document.querySelector(".box").style.cssText = "display:block";
+
+                            document.querySelector("#btn_insert").addEventListener("click", function () {
+                                var tagName = document.querySelector("#tagName").value.trim();
+                                var displayName = document.querySelector("#displayName").value.trim();
+                                if (tagName.length == 0 || displayName.length == 0) {
+                                    return false;
+                                }
+
+                                var data = {
+                                    "tagName": tagName,
+                                    "displayName": displayName
+                                }
+
+                                axios.post(`${api_domain}/api/blog/tag`, data)
+                                    .then(function (response) {
+                                        if (response.data.isSuccess) {
+                                            location.reload();
+                                        } else {
+                                            alert(response.data.message);
+                                        }
+                                    }).catch(function (error) {
+                                        console.log(error);
+                                    });
+                            });
+                        });
+
+                        var btn_delete_list = document.querySelectorAll('.btn_delete');
+                        for (var i = 0; i < btn_delete_list.length; i++) {
+                            btn_delete_list[i].onclick = function () {
+                                var id = this.attributes["data-id"].value;
+                                if (confirm('真的要干掉这个标签❓❓❓')) {
+                                    axios.delete(`${api_domain}/api/blog/tag?id=${id}`)
+                                        .then(function (response) {
+                                            if (response.data.isSuccess) {
+                                                location.reload();
+                                            } else {
+                                                alert(response.data.message);
+                                            }
+                                        }).catch(function (error) {
+                                            console.log(error);
+                                        });
+                                }
+                            }
+                        }
+
+                        var btn_update_list = document.querySelectorAll('.btn_update');
+                        for (var i = 0; i < btn_update_list.length; i++) {
+                            btn_update_list[i].onclick = function () {
+                                var id = this.attributes["data-id"].value;
+                                var _tagName = this.attributes["data-tagName"].value;
+                                var _displayName = this.attributes["data-displayName"].value;
+
+                                document.querySelector(".box").style.cssText = "display:block";
+                                document.querySelector(".box #tagName").value = _tagName;
+                                document.querySelector(".box #displayName").value = _displayName;
+
+                                document.querySelector("#btn_insert").addEventListener("click", function () {
+                                    var tagName = document.querySelector("#tagName").value.trim();
+                                    var displayName = document.querySelector("#displayName").value.trim();
+                                    if (tagName.length == 0 || displayName.length == 0) {
+                                        return false;
+                                    }
+
+                                    var data = {
+                                        "tagName": tagName,
+                                        "displayName": displayName
+                                    }
+
+                                    axios.put(`${api_domain}/api/blog/tag?id=${id}`, data)
+                                        .then(function (response) {
+                                            if (response.data.isSuccess) {
+                                                location.reload();
+                                            } else {
+                                                alert(response.data.message);
+                                            }
+                                        }).catch(function (error) {
+                                            console.log(error);
+                                        });
+                                });
+                            }
+                        }
+                    }, 500);
                 }
             }).catch(function (error) {
                 console.log(error);
             });
-
-        setTimeout(function () {
-            document.querySelector(".btn_insert").addEventListener("click", function () {
-                document.querySelector(".box").style.cssText = "display:block";
-
-                document.querySelector("#btn_insert").addEventListener("click", function () {
-                    var tagName = document.querySelector("#tagName").value.trim();
-                    var displayName = document.querySelector("#displayName").value.trim();
-                    if (tagName.length == 0 || displayName.length == 0) {
-                        return false;
-                    }
-
-                    var data = {
-                        "tagName": tagName,
-                        "displayName": displayName
-                    }
-
-                    axios.post(`${api_domain}/api/blog/tag`, data)
-                        .then(function (response) {
-                            if (response.data.isSuccess) {
-                                location.reload();
-                            } else {
-                                alert(response.data.message);
-                            }
-                        }).catch(function (error) {
-                            console.log(error);
-                        });
-                });
-            });
-
-            var btn_delete_list = document.querySelectorAll('.btn_delete');
-            for (var i = 0; i < btn_delete_list.length; i++) {
-                btn_delete_list[i].onclick = function () {
-                    var id = this.attributes["data-id"].value;
-                    if (confirm('真的要干掉这个标签❓❓❓')) {
-                        axios.delete(`${api_domain}/api/blog/tag?id=${id}`)
-                            .then(function (response) {
-                                if (response.data.isSuccess) {
-                                    location.reload();
-                                } else {
-                                    alert(response.data.message);
-                                }
-                            }).catch(function (error) {
-                                console.log(error);
-                            });
-                    }
-                }
-            }
-
-            var btn_update_list = document.querySelectorAll('.btn_update');
-            for (var i = 0; i < btn_update_list.length; i++) {
-                btn_update_list[i].onclick = function () {
-                    var id = this.attributes["data-id"].value;
-                    var _tagName = this.attributes["data-tagName"].value;
-                    var _displayName = this.attributes["data-displayName"].value;
-
-                    document.querySelector(".box").style.cssText = "display:block";
-                    document.querySelector(".box #tagName").value = _tagName;
-                    document.querySelector(".box #displayName").value = _displayName;
-
-                    document.querySelector("#btn_insert").addEventListener("click", function () {
-                        var tagName = document.querySelector("#tagName").value.trim();
-                        var displayName = document.querySelector("#displayName").value.trim();
-                        if (tagName.length == 0 || displayName.length == 0) {
-                            return false;
-                        }
-
-                        var data = {
-                            "tagName": tagName,
-                            "displayName": displayName
-                        }
-
-                        axios.put(`${api_domain}/api/blog/tag?id=${id}`, data)
-                            .then(function (response) {
-                                if (response.data.isSuccess) {
-                                    location.reload();
-                                } else {
-                                    alert(response.data.message);
-                                }
-                            }).catch(function (error) {
-                                console.log(error);
-                            });
-                    });
-                }
-            }
-        }, 500);
     </script>
 }

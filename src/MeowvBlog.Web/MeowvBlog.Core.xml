@@ -4,6 +4,11 @@
         <name>MeowvBlog.Core</name>
     </assembly>
     <members>
+        <member name="P:MeowvBlog.Core.Configuration.AppSettings.IsDev">
+            <summary>
+            是否开发环境
+            </summary>
+        </member>
         <member name="P:MeowvBlog.Core.Configuration.AppSettings.MySqlConnectionString">
             <summary>
             MySql
