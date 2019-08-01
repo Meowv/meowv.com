@@ -193,11 +193,11 @@ html::-webkit-scrollbar {
 
 html::-webkit-scrollbar-thumb {
 	height: 20px;
-	background-color: #eee;
+	background-color: #5A9600;
 }
 
 html::-webkit-scrollbar-thumb:hover {
-	background-color: #ddd;
+	background-color: #5A9600;
 }
 
 body {
