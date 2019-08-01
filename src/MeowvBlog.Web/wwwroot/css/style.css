@@ -1050,6 +1050,6 @@ header label {
     color: #eee !important;
 }
 
-.dark-theme .post-content p code {
+.dark-theme .post-content p code, .dark-theme .post-content ul li code {
     background: #292a2d !important;
 }
