@@ -27,7 +27,6 @@
                         axios.get(`${api_domain}/api/account/login?token=${token}`)
                             .then(function (response) {
                                 if (response.data.isSuccess) {
-                                    alert(response.data.result == "阿星Plus");
                                     if (response.data.result == "阿星Plus") {
                                         location.href = "/admin";
                                     } else {
