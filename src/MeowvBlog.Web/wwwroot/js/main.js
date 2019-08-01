@@ -1,8 +1,15 @@
-// api域名全局变量
 api_domain = "https://localhost:44345";
+var _mtac = { "senseQuery": 1 };
 
-// declaraction of document.ready() function.
 (function () {
+    var mta = document.createElement("script");
+    mta.src = "//pingjs.qq.com/h5/stats.js?v2.0.4";
+    mta.setAttribute("name", "MTAH5");
+    mta.setAttribute("sid", "500692160");
+    mta.setAttribute("cid", "500692161");
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(mta, s);
+
     var ie = !!(window.attachEvent && !window.opera);
     var wk = /webkit\/(\d+)/i.test(navigator.userAgent) && (RegExp.$1 < 525);
     var fn = [];
@@ -89,7 +96,6 @@ document.ready(
     }
 );
 
-// mobile menu click event
 function mobileBtn() {
     var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
     var mobileMenu = document.getElementById("mobile-menu");

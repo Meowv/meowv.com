@@ -10,9 +10,9 @@
     <meta name="keywords" content="阿星Plus，qix，Meowv">
     <meta name="description" content="生命不息，奋斗不止">
     <title>😍插入已有标签 - 阿星Plus⭐⭐⭐</title>
-    <link rel="icon" href="~/favicon.ico">
-    <link rel="stylesheet" href="~/css/style.css">
-    <link rel="stylesheet" href="~/css/admin.css" />
+    <link rel="icon" href="https://static.meowv.com/favicon.ico">
+    <link rel="stylesheet" href="https://static.meowv.com/css/style.css">
+    <link rel="stylesheet" href="https://static.meowv.com/css/admin.css">
 </head>
 <body>
     <div class="taglist">
@@ -32,24 +32,24 @@
             if (response.data.isSuccess) {
                 var html = template("tags_tmpl", response.data);
                 document.querySelector('.taglist').innerHTML = html;
+
+                setTimeout(function () {
+                    var tags = document.querySelectorAll('.taglist a');
+                    for (var i = 0; i < tags.length; i++) {
+                        tags[i].onclick = function () {
+                            var value = this.textContent;
+                            var tagNames = '';
+                            tagNames = window.opener.document.getElementById("tags");
+                            if (tagNames.value == '') {
+                                tagNames.value += value;
+                            } else {
+                                tagNames.value += "," + value;
+                            }
+                        }
+                    }
+                }, 500);
             }
         }).catch(function (error) {
             console.log(error);
         });
-
-    setTimeout(function () {
-        var tags = document.querySelectorAll('.taglist a');
-        for (var i = 0; i < tags.length; i++) {
-            tags[i].onclick = function () {
-                var value = this.textContent;
-                var tagNames = '';
-                tagNames = window.opener.document.getElementById("tags");
-                if (tagNames.value == '') {
-                    tagNames.value += value;
-                } else {
-                    tagNames.value += "," + value;
-                }
-            }
-        }
-    }, 500);
 </script>
