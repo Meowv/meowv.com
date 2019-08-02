@@ -92,7 +92,7 @@ namespace MeowvBlog.Web
                 {
                     Version = "v3.0.2",
                     Title = "阿星Plus - 个人博客以及通用数据接口",
-                    Description = @"框架：<code>.NET Core 2.2</code>、<a href='https://github.com/Meowv/.netcoreplus'>Plus</a>
+                    Description = @"框架：<code>.NET Core 2.2</code>、<a href='https://github.com/Meowv/.netcoreplus'>.netcoreplus</a>
                                     博客：https://meowv.com
                                     开源：https://github.com/Meowv/Blog"
                 };

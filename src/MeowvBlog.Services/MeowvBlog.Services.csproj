@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\MeowvBlog.Authorization\MeowvBlog.Authorization.csproj" />
+    <ProjectReference Include="..\MeowvBlog.MTA\MeowvBlog.MTA.csproj" />
     <ProjectReference Include="..\MeowvBlog.Services.Dto\MeowvBlog.Services.Dto.csproj" />
   </ItemGroup>
 

@@ -5,6 +5,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Plus.Extensions" Version="1.0.4" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\MeowvBlog.Core\MeowvBlog.Core.csproj" />
   </ItemGroup>
 

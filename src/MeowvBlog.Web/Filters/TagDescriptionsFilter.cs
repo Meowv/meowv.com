@@ -18,7 +18,12 @@ namespace MeowvBlog.Web.Filters
                 new Tag
                 {
                     Name = "Account",
-                    Description = "Account API"
+                    Description = "Account验证接口"
+                },
+                new Tag
+                {
+                    Name = "MTA",
+                    Description = "腾讯MTA网站数据分析接口"
                 }
             };
 
