@@ -1,5 +1,5 @@
 api_domain = "https://localhost:44345";
-var _mtac = { "senseQuery": 1 };
+var _mtac = { "performanceMonitor": 1, "senseQuery": 1 };
 
 (function () {
     var mta = document.createElement("script");
