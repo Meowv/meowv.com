@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\MeowvBlog.Core\MeowvBlog.Core.csproj" />
     <ProjectReference Include="..\MeowvBlog.EntityFrameworkCore\MeowvBlog.EntityFrameworkCore.csproj" />
+    <ProjectReference Include="..\MeowvBlog.MTA\MeowvBlog.MTA.csproj" />
     <ProjectReference Include="..\MeowvBlog.Services.Dto\MeowvBlog.Services.Dto.csproj" />
     <ProjectReference Include="..\MeowvBlog.Services\MeowvBlog.Services.csproj" />
   </ItemGroup>
@@ -34,5 +35,7 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+
+  <ProjectExtensions><VisualStudio><UserProperties appsettings_1json__JsonSchema="" /></VisualStudio></ProjectExtensions>
 
 </Project>

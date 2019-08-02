@@ -38,5 +38,15 @@ namespace MeowvBlog.Core.Configuration
 
             public static string ApplicationName => _config["Github:ApplicationName"];
         }
+
+        /// <summary>
+        /// MTA 配置
+        /// </summary>
+        public static class MTA
+        {
+            public static string App_Id => _config["MTA:App_Id"];
+
+            public static string SECRET_KEY => _config["MTA:SECRET_KEY"];
+        }
     }
 }
