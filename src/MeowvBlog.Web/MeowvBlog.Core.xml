@@ -9,6 +9,11 @@
             是否开发环境
             </summary>
         </member>
+        <member name="P:MeowvBlog.Core.Configuration.AppSettings.SignaturePath">
+            <summary>
+            个性签名存放路径
+            </summary>
+        </member>
         <member name="P:MeowvBlog.Core.Configuration.AppSettings.MySqlConnectionString">
             <summary>
             MySql

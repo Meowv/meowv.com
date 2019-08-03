@@ -427,10 +427,18 @@
             <param name="idx">查询指标(pv,uv,vv,iv)，使用“,”间隔</param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.Web.Controllers.Apis.SignController.GetSignType">
+        <member name="M:MeowvBlog.Web.Controllers.Apis.SignatureController.GetSignatureType">
             <summary>
             获取所有签名的类型
             </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Apis.SignatureController.GetSignature(System.String,System.Int32)">
+            <summary>
+            获取签名
+            </summary>
+            <param name="name"></param>
+            <param name="id"></param>
             <returns></returns>
         </member>
         <member name="M:MeowvBlog.Web.Controllers.Pages.CategoriesController.Index">

@@ -21,6 +21,11 @@ namespace MeowvBlog.Core.Configuration
         public static bool IsDev => _config["IsDev"].ToBool();
 
         /// <summary>
+        /// 个性签名存放路径
+        /// </summary>
+        public static string SignaturePath => _config["SignaturePath"];
+
+        /// <summary>
         /// MySql
         /// </summary>
         public static string MySqlConnectionString => _config["ConnectionStrings:MySql"];

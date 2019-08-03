@@ -6,15 +6,15 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace MeowvBlog.Services.Sign.Impl
+namespace MeowvBlog.Services.Signature.Impl
 {
-    public class SignService : ApplicationServiceBase, ISignService
+    public class SignatureService : ApplicationServiceBase, ISignatureService
     {
-        // <summary>
+        /// <summary>
         /// 获取所有签名的类型
         /// </summary>
         /// <returns></returns>
-        public async Task<IList<NameValue<int>>> GetSignType()
+        public async Task<IList<NameValue<int>>> GetSignatureType()
         {
             var list = new List<NameValue<int>>();
 
@@ -23,6 +23,17 @@ namespace MeowvBlog.Services.Sign.Impl
                 list.Add(new NameValue<int>() { Name = value.ToAlias(), Value = (int)value });
             }
             return await Task.FromResult(list);
+        }
+
+        /// <summary>
+        /// 获取签名
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        public async Task<string> GetSignature(string name, int id)
+        {
+            return await name.GenerateSignature(id);
         }
     }
 }

@@ -27,7 +27,7 @@ namespace MeowvBlog.Web.Filters
                 },
                 new Tag
                 {
-                    Name = "Sign",
+                    Name = "Signature",
                     Description = "个性签名接口"
                 }
             };

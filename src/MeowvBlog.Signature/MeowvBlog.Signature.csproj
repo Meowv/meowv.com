@@ -6,6 +6,13 @@
 
   <ItemGroup>
     <PackageReference Include="Plus" Version="1.0.6" />
+    <PackageReference Include="Plus.Extensions" Version="1.0.4" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="1.0.0-beta0006" />
+    <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="1.0.0-beta0006" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MeowvBlog.Core\MeowvBlog.Core.csproj" />
   </ItemGroup>
 
 </Project>
