@@ -427,6 +427,12 @@
             <param name="idx">查询指标(pv,uv,vv,iv)，使用“,”间隔</param>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.Web.Controllers.Apis.SignController.GetSignType">
+            <summary>
+            获取所有签名的类型
+            </summary>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.Web.Controllers.Pages.CategoriesController.Index">
             <summary>
             分类页

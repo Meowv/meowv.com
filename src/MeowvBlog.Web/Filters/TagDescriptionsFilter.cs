@@ -24,6 +24,11 @@ namespace MeowvBlog.Web.Filters
                 {
                     Name = "MTA",
                     Description = "腾讯MTA网站数据分析接口"
+                },
+                new Tag
+                {
+                    Name = "Sign",
+                    Description = "个性签名接口"
                 }
             };
 
