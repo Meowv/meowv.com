@@ -23,7 +23,11 @@
             .then(function (response) {
                 var html = "";
                 response.data.forEach(x => {
-                    html += `<option value="${x.value}">${x.name}</option>`
+                    if (x.value == 901) {
+                        html += `<option selected="selected" value="${x.value}">${x.name}</option>`;
+                    } else {
+                        html += `<option value="${x.value}">${x.name}</option>`;
+                    }
                 });
 
                 document.querySelector("#type").innerHTML = html;
