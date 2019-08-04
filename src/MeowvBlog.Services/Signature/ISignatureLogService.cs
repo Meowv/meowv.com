@@ -1,5 +1,6 @@
 ﻿using MeowvBlog.Services.Dto.Signature;
 using Plus;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace MeowvBlog.Services.Signature
@@ -11,12 +12,12 @@ namespace MeowvBlog.Services.Signature
         /// </summary>
         /// <param name="dto"></param>
         /// <returns></returns>
-        Task<ActionOutput<string>> InsertSignatureLog(SignatureDto dto);
+        Task<ActionOutput<string>> InsertSignatureLog(SignatureLogDto dto);
 
         /// <summary>
         /// 获取最近生成的签名数据
         /// </summary>
         /// <returns></returns>
-        Task<ActionOutput<SignatureDto>> GetRecentlySignatureLog();
+        Task<ActionOutput<IList<SignatureLogDto>>> GetRecentlySignatureLog();
     }
 }

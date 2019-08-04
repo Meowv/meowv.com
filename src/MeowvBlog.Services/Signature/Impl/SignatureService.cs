@@ -47,7 +47,7 @@ namespace MeowvBlog.Services.Signature.Impl
 
             if (url.IsNotNullOrEmpty())
             {
-                await _signatureLogService.InsertSignatureLog(new SignatureDto
+                await _signatureLogService.InsertSignatureLog(new SignatureLogDto
                 {
                     Name = name,
                     Type = GetSignatureType().Result.Where(x => x.Value == id).FirstOrDefault().Name,

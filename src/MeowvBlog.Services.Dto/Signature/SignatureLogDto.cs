@@ -1,8 +1,11 @@
-﻿using System;
+﻿using MeowvBlog.Core.Domain.Signature;
+using Plus.AutoMapper;
+using System;
 
 namespace MeowvBlog.Services.Dto.Signature
 {
-    public class SignatureDto
+    [AutoMapFrom(typeof(SignatureLog))]
+    public class SignatureLogDto
     {
         public string Name { get; set; }
 
@@ -12,6 +15,6 @@ namespace MeowvBlog.Services.Dto.Signature
 
         public string Ip { get; set; }
 
-        public DateTime Time { get; set; }
+        public string Time { get; set; }
     }
 }

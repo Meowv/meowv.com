@@ -4,6 +4,7 @@ using MeowvBlog.Services.Dto.Signature;
 using Plus;
 using Plus.AutoMapper;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -23,7 +24,7 @@ namespace MeowvBlog.Services.Signature.Impl
         /// </summary>
         /// <param name="dto"></param>
         /// <returns></returns>
-        public async Task<ActionOutput<string>> InsertSignatureLog(SignatureDto dto)
+        public async Task<ActionOutput<string>> InsertSignatureLog(SignatureLogDto dto)
         {
             using (var uow = UnitOfWorkManager.Begin())
             {
@@ -54,13 +55,20 @@ namespace MeowvBlog.Services.Signature.Impl
         /// 获取最近生成的签名数据
         /// </summary>
         /// <returns></returns>
-        public async Task<ActionOutput<SignatureDto>> GetRecentlySignatureLog()
+        public async Task<ActionOutput<IList<SignatureLogDto>>> GetRecentlySignatureLog()
         {
-            var output = new ActionOutput<SignatureDto>();
+            var output = new ActionOutput<IList<SignatureLogDto>>();
 
             var log = (await _signatureLogRepository.GetAllListAsync()).OrderByDescending(x => x.Time).Take(20).ToList();
 
-            output.Result = log.MapTo<SignatureDto>();
+            var result = log.MapTo<IList<SignatureLogDto>>();
+                
+            result.ForEach(x =>
+            {
+                x.Name = x.Name.Substring(0, 1) + "**";
+            });
+
+            output.Result = result;
 
             return output;
         }

@@ -441,6 +441,12 @@
             <param name="id">签名类型</param>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.Web.Controllers.Apis.SignatureController.GetRecentlySignatureLog">
+            <summary>
+            获取最近的个性签名记录
+            </summary>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.Web.Controllers.Pages.CategoriesController.Index">
             <summary>
             分类页

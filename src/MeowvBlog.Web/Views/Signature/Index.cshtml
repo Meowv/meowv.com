@@ -4,7 +4,7 @@
 <div class="main">
     <div class="container">
         <div class="loader"></div>
-        <div class="signature-box">
+        <div class="signature-box hidden">
             <div class="signature-img">
                 <img src="https://static.meowv.com/images/signature.png" />
             </div>
@@ -14,28 +14,55 @@
                 <button id="btn_do">免费设计</button>
             </div>
         </div>
+        <div class="post-wrap tags hidden">
+            <h3>-&nbsp;最近设计的签名&nbsp;-</h3>
+            <div class="tag-cloud-tags tag-cloud-tags-extend"></div>
+        </div>
     </div>
 </div>
 @section scripts{
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <script>
-        axios.get(`${api_domain}/api/signature/type`)
-            .then(function (response) {
-                var html = "";
-                response.data.forEach(x => {
+        var cdn_domain = "https://static.meowv.com/signature/";
+
+        axios.all([signature_type(), recently_signature_logs()])
+            .then(axios.spread(function (sign_type_response, recently_log_response) {
+                var signature_type_html = "";
+                sign_type_response.data.forEach(x => {
                     if (x.value == 901) {
-                        html += `<option selected="selected" value="${x.value}">${x.name}</option>`;
+                        signature_type_html += `<option selected="selected" value="${x.value}">${x.name}</option>`;
                     } else {
-                        html += `<option value="${x.value}">${x.name}</option>`;
+                        signature_type_html += `<option value="${x.value}">${x.name}</option>`;
                     }
                 });
-
-                document.querySelector("#type").innerHTML = html;
-                document.querySelector('.loader').remove();
+                var recently_signature_log_html = "";
+                recently_log_response.data.result.forEach(x => {
+                    recently_signature_log_html += `<a target="_blank" href="javascript:;" data-url="${x.url}">${x.name}</a>`;
+                });
+                document.querySelector("#type").innerHTML = signature_type_html;
+                document.querySelector(".tag-cloud-tags-extend").innerHTML = recently_signature_log_html;
                 document.querySelector(".signature-box").style.cssText = "display:block";
-            }).catch(function (error) {
+                document.querySelector(".post-wrap").style.cssText = "display:block";
+                document.querySelector('.loader').remove();
+
+                var a_list = document.querySelectorAll('.tag-cloud-tags-extend a');
+                for (var i = 0; i < a_list.length; i++) {
+                    a_list[i].onclick = function () {
+                        var url = this.attributes["data-url"].value;
+                        document.querySelector(".signature-img img").src = cdn_domain + url;
+                    }
+                }
+
+            })).catch(function (error) {
                 console.log(error);
             });
+
+        function signature_type() {
+            return axios.get(`${api_domain}/api/signature/type`);
+        }
+        function recently_signature_logs() {
+            return axios.get(`${api_domain}/api/signature/recently_logs`);
+        }
 
         document.querySelector("#btn_do").addEventListener("click", function () {
             var name = document.querySelector("#name").value.trim();
@@ -46,7 +73,7 @@
 
             axios.get(`${api_domain}/api/signature?name=${name}&id=${typeId}`)
                 .then(function (response) {
-                    document.querySelector(".signature-img img").src = "https://static.meowv.com/signature/" + response.data.result;
+                    document.querySelector(".signature-img img").src = cdn_domain + response.data.result;
 
                     setTimeout(function () {
                         alert("图片保留24小时，如有需要请尽快下载，谢谢！");
@@ -55,5 +82,7 @@
                     console.log(error);
                 });
         });
+
+        
     </script>
 }

@@ -1088,7 +1088,6 @@ header label {
 .signature-box {
     margin-top:100px;
     text-align: center;
-    display: none;
 }
 .signature-box img {
     border: none;
@@ -1111,4 +1110,11 @@ header label {
 .signature-action button {
     width:135px;
     height: 30px;
+}
+
+.tag-cloud-tags-extend {
+    padding-top: 0;
+}
+.hidden {
+    display: none;
 }

@@ -1,7 +1,9 @@
-﻿using MeowvBlog.Services.Signature;
+﻿using MeowvBlog.Services.Dto.Signature;
+using MeowvBlog.Services.Signature;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Plus;
+using Plus.WebApi;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -14,10 +16,12 @@ namespace MeowvBlog.Web.Controllers.Apis
     public class SignatureController : ControllerBase
     {
         private readonly ISignatureService _signService;
+        private readonly ISignatureLogService _signatureLogService;
 
         public SignatureController()
         {
             _signService = PlusEngine.Instance.Resolve<ISignatureService>();
+            _signatureLogService = PlusEngine.Instance.Resolve<ISignatureLogService>();
         }
 
         /// <summary>
@@ -56,6 +60,24 @@ namespace MeowvBlog.Web.Controllers.Apis
             var url = await _signService.GetSignature(name, id, ip);
 
             return Ok(new { result = url });
+        }
+
+        /// <summary>
+        /// 获取最近的个性签名记录
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("recently_logs")]
+        public async Task<Response<IList<SignatureLogDto>>> GetRecentlySignatureLog()
+        {
+            var response = new Response<IList<SignatureLogDto>>();
+
+            var result = await _signatureLogService.GetRecentlySignatureLog();
+            if (!result.Success)
+                response.SetMessage(ResponseStatusCode.Error, result.GetErrorMessage());
+            else
+                response.Result = result.Result;
+            return response;
         }
     }
 }
