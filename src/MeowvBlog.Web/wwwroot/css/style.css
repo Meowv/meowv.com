@@ -998,10 +998,12 @@ header label {
     .signature-action input {
         width: 200px;
         float: left;
+        margin-top:5px;
     }
 
-    .signature-actio button {
-       width: 200px;
+    .signature-action button {
+        width: 200px;
+        margin-top: 5px;
     }
 }
 

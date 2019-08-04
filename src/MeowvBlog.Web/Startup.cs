@@ -28,15 +28,6 @@ namespace MeowvBlog.Web
 {
     public class Startup
     {
-        public IConfiguration Configuration { get; }
-        
-        public Startup()
-        {
-            var builder = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
-
-            Configuration = builder.Build();
-        }
-
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddCors(options =>
@@ -47,7 +38,6 @@ namespace MeowvBlog.Web
                                                     .AllowCredentials());
             });
 
-            services.AddSingleton(Configuration);
             services.AddSingleton(HtmlEncoder.Create(UnicodeRanges.All));
 
             services.AddResponseCaching();
