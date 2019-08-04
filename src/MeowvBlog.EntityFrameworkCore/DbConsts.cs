@@ -13,6 +13,8 @@
             public const string Post_Tags = "post_tags";
 
             public const string FriendLinks = "friendlinks";
+
+            public const string Signature_Logs = "signature_logs";
         }
     }
 }

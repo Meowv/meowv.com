@@ -1,15 +1,24 @@
-﻿using MeowvBlog.Signature;
+﻿using MeowvBlog.Services.Dto.Signature;
+using MeowvBlog.Signature;
 using Plus;
 using Plus.CodeAnnotations;
 using Plus.Services;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace MeowvBlog.Services.Signature.Impl
 {
     public class SignatureService : ApplicationServiceBase, ISignatureService
     {
+        private readonly SignatureLogService _signatureLogService;
+
+        public SignatureService(SignatureLogService signatureLogService)
+        {
+            _signatureLogService = signatureLogService;
+        }
+
         /// <summary>
         /// 获取所有签名的类型
         /// </summary>
@@ -30,10 +39,24 @@ namespace MeowvBlog.Services.Signature.Impl
         /// </summary>
         /// <param name="name"></param>
         /// <param name="id"></param>
+        /// <param name="ip"></param>
         /// <returns></returns>
-        public async Task<string> GetSignature(string name, int id)
+        public async Task<string> GetSignature(string name, int id, string ip)
         {
-            return await name.GenerateSignature(id);
+            var url = await name.GenerateSignature(id);
+
+            if (url.IsNotNullOrEmpty())
+            {
+                await _signatureLogService.InsertSignatureLog(new SignatureDto
+                {
+                    Name = name,
+                    Type = GetSignatureType().Result.Where(x => x.Value == id).FirstOrDefault().Name,
+                    Url = url,
+                    Ip = ip
+                });
+            }
+
+            return url;
         }
     }
 }

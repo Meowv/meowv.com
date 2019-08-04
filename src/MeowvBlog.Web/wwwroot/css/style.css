@@ -978,6 +978,31 @@ header label {
 	.categories .categories-card .card-item .categories {
 		overflow: hidden;
 	}
+
+    .signature-img {
+        width: 100%;
+    }
+
+    .signature-img img {
+        height: 150px;
+    }
+
+    .signature-action {
+        width: 100%;
+    }
+
+    .signature-action select {
+        width: 100%;
+    }
+
+    .signature-action input {
+        width: 200px;
+        float: left;
+    }
+
+    .signature-actio button {
+       width: 200px;
+    }
 }
 
 @media only screen and (min-device-width: 768px) {
@@ -1052,4 +1077,36 @@ header label {
 
 .dark-theme .post-content p code, .dark-theme .post-content ul li code {
     background: #292a2d !important;
+}
+
+.signature {
+    color: red;
+    font-weight: bold;
+}
+.signature-box {
+    margin-top:100px;
+    text-align: center;
+    display: none;
+}
+.signature-box img {
+    border: none;
+    max-width: 100%;
+    margin-bottom:50px;
+}
+
+.signature-action select {
+    height: 30px;
+}
+
+.signature-action input {
+    height: 25px;
+    padding-left: 5px;
+}
+
+.signature-action input:focus {
+    outline: none;
+}
+.signature-action button {
+    width:135px;
+    height: 30px;
 }

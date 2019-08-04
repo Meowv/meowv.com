@@ -1,0 +1,55 @@
+﻿@{
+    ViewData["Title"] = "个性签名设计 - ";
+}
+<div class="main">
+    <div class="container">
+        <div class="loader"></div>
+        <div class="signature-box">
+            <div class="signature-img">
+                <img src="https://static.meowv.com/images/signature.png" />
+            </div>
+            <div class="signature-action">
+                <select id="type"></select>
+                <input type="text" id="name" placeholder="输入你的名字，1-4个字符" maxlength="4" autocomplete="off" value="" />
+                <button id="btn_do">⭐ 免费设计 ⭐</button>
+            </div>
+        </div>
+    </div>
+</div>
+@section scripts{
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script>
+        axios.get(`${api_domain}/api/signature/type`)
+            .then(function (response) {
+                var html = "";
+                response.data.forEach(x => {
+                    html += `<option value="${x.value}">${x.name}</option>`
+                });
+
+                document.querySelector("#type").innerHTML = html;
+                document.querySelector('.loader').remove();
+                document.querySelector(".signature-box").style.cssText = "display:block";
+            }).catch(function (error) {
+                console.log(error);
+            });
+
+        document.querySelector("#btn_do").addEventListener("click", function () {
+            var name = document.querySelector("#name").value.trim();
+            if (name.length > 4 || name.length == 0) {
+                return false;
+            }
+            var typeId = document.querySelector("#type").value;
+
+            axios.get(`${api_domain}/api/signature?name=${name}&id=${typeId}`)
+                .then(function (response) {
+                    document.querySelector(".signature-img img").src = "https://static.meowv.com/signature/" + response.data.result;
+
+                    setTimeout(function () {
+                        alert("图片保留24小时，如有需要请尽快下载，谢谢！");
+                    }, 1000);
+                }).catch(function (error) {
+                    console.log(error);
+                });
+        });
+    </script>
+}

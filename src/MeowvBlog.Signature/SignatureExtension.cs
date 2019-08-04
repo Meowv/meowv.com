@@ -2,11 +2,9 @@
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Processing;
-using SixLabors.Primitives;
 using System;
 using System.IO;
 using System.Net.Http;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -16,7 +14,7 @@ namespace MeowvBlog.Signature
     {
         private static string GetSignaturePath(string name, int id)
         {
-            return Path.Combine(AppSettings.SignaturePath, $"{Convert.ToBase64String(Encoding.UTF8.GetBytes(name + id)).Replace("/", "")}.png");
+            return Path.Combine(AppSettings.SignaturePath, $"{(name + id).Md5()}.png");
         }
 
         /// <summary>
@@ -117,7 +115,8 @@ namespace MeowvBlog.Signature
             signaturePath.DownloadImg(signatureUrl);
             await signaturePath.AddQrcodeAsync();
 
-            return $"{Convert.ToBase64String(Encoding.UTF8.GetBytes(name + id)).Replace("/", "")}.png";
+
+            return $"{(name + id).Md5()}.png";
         }
     }
 }

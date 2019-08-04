@@ -17,7 +17,8 @@ namespace MeowvBlog.Services.Signature
         /// </summary>
         /// <param name="name"></param>
         /// <param name="id"></param>
+        /// <param name="ip"></param>
         /// <returns></returns>
-        Task<string> GetSignature(string name, int id);
+        Task<string> GetSignature(string name, int id, string ip);
     }
 }
