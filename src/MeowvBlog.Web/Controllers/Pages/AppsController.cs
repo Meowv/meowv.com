@@ -1,0 +1,73 @@
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace MeowvBlog.Web.Controllers.Pages
+{
+    [AllowAnonymous]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    public class AppsController : Controller
+    {
+        /// <summary>
+        /// Apps
+        /// </summary>
+        /// <returns></returns>
+        [Route("/apps")]
+        public IActionResult Index() => View();
+
+        /// <summary>
+        /// 吐个槽
+        /// </summary>
+        /// <returns></returns>
+        [Route("/tucao")]
+        public IActionResult TuCao() => View();
+
+        /// <summary>
+        /// Signature
+        /// </summary>
+        /// <returns></returns>
+        [Route("/signature")]
+        public IActionResult Signature() => View();
+
+        /// <summary>
+        /// 每日热点
+        /// </summary>
+        /// <returns></returns>
+        [Route("/news")]
+        public IActionResult News() => View();
+
+        /// <summary>
+        /// 随机妹子图
+        /// </summary>
+        /// <returns></returns>
+        [Route("/girl")]
+        public IActionResult Girl() => View();
+
+        /// <summary>
+        /// 随机猫咪图
+        /// </summary>
+        /// <returns></returns>
+        [Route("/cat")]
+        public IActionResult Cat() => View();
+
+        /// <summary>
+        /// Bing每日壁纸
+        /// </summary>
+        /// <returns></returns>
+        [Route("/bing")]
+        public IActionResult Bing() => View();
+
+        /// <summary>
+        /// VIP视频解析
+        /// </summary>
+        /// <returns></returns>
+        [Route("/v")]
+        public IActionResult V() => View();
+
+        /// <summary>
+        /// Mta
+        /// </summary>
+        /// <returns></returns>
+        [Route("/mta")]
+        public IActionResult Mta() => View();
+    }
+}

@@ -461,6 +461,60 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.Web.Controllers.Pages.AppsController.Index">
+            <summary>
+            Apps
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Pages.AppsController.TuCao">
+            <summary>
+            吐个槽
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Pages.AppsController.Signature">
+            <summary>
+            Signature
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Pages.AppsController.News">
+            <summary>
+            每日热点
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Pages.AppsController.Girl">
+            <summary>
+            随机妹子图
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Pages.AppsController.Cat">
+            <summary>
+            随机猫咪图
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Pages.AppsController.Bing">
+            <summary>
+            Bing每日壁纸
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Pages.AppsController.V">
+            <summary>
+            VIP视频解析
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Pages.AppsController.Mta">
+            <summary>
+            Mta
+            </summary>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.Web.Controllers.Pages.CategoriesController.Index">
             <summary>
             分类页
