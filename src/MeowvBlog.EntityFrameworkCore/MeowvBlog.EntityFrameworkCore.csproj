@@ -15,8 +15,4 @@
     <ProjectReference Include="..\MeowvBlog.Core\MeowvBlog.Core.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Repositories\NiceArticle\" />
-  </ItemGroup>
-
 </Project>

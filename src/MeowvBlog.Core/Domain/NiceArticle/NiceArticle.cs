@@ -13,7 +13,7 @@ namespace MeowvBlog.Core.Domain.NiceArticle
 
         public string Url { get; set; }
 
-        public string Category { get; set; }
+        public int CategoryId { get; set; }
 
         public DateTime Time { get; set; }
     }

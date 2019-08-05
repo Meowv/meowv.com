@@ -427,6 +427,20 @@
             <param name="idx">查询指标(pv,uv,vv,iv)，使用“,”间隔</param>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.Web.Controllers.Apis.NiceArticleController.InsertNiceArticle(MeowvBlog.Services.Dto.NiceArticle.NiceArticleDto)">
+            <summary>
+            新增好文
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Apis.NiceArticleController.QueryNicceArticle(MeowvBlog.Services.Dto.PagingInput)">
+            <summary>
+            分页查询好文
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.Web.Controllers.Apis.SignatureController.GetSignatureType">
             <summary>
             获取所有签名的类型

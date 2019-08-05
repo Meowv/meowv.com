@@ -29,6 +29,11 @@ namespace MeowvBlog.Web.Filters
                 {
                     Name = "Signature",
                     Description = "个性签名接口"
+                },
+                new Tag
+                {
+                    Name = "NiceArticle",
+                    Description = "一些比较好的文章接口"
                 }
             };
 

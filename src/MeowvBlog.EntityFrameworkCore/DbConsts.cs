@@ -15,6 +15,9 @@
             public const string FriendLinks = "friendlinks";
 
             public const string Signature_Logs = "signature_logs";
+
+            public const string NiceArticles = "nice_articles";
+
         }
     }
 }

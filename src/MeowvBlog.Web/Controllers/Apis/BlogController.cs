@@ -32,7 +32,7 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <returns></returns>
         [HttpPost]
         [Route("post")]
-        public async Task<Response<string>> InsertPost(PostForAdminDto dto)
+        public async Task<Response<string>> InsertPost([FromBody] PostForAdminDto dto)
         {
             var response = new Response<string>();
 
@@ -317,7 +317,7 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <returns></returns>
         [HttpPost]
         [Route("category")]
-        public async Task<Response<string>> InsertCategory(CategoryDto dto)
+        public async Task<Response<string>> InsertCategory([FromBody] CategoryDto dto)
         {
             var response = new Response<string>();
 
