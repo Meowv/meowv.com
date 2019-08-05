@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using System.Collections.Generic;
 using System.IO;
 
 namespace MeowvBlog.Core.Configuration
@@ -19,11 +20,6 @@ namespace MeowvBlog.Core.Configuration
         /// 是否开发环境
         /// </summary>
         public static bool IsDev => _config["IsDev"].ToBool();
-
-        /// <summary>
-        /// 个性签名存放路径
-        /// </summary>
-        public static string SignaturePath => _config["SignaturePath"];
 
         /// <summary>
         /// MySql
@@ -52,6 +48,32 @@ namespace MeowvBlog.Core.Configuration
             public static string App_Id => _config["MTA:App_Id"];
 
             public static string SECRET_KEY => _config["MTA:SECRET_KEY"];
+        }
+
+        /// <summary>
+        /// 个性签名配置
+        /// </summary>
+        public static class Signature
+        {
+            public static string Path => _config["Signature:Path"];
+
+            public static IDictionary<string, string> Urls
+            {
+                get
+                {
+                    var dic = new Dictionary<string, string>();
+
+                    var urls = _config.GetSection("Signature:Urls");
+                    foreach (IConfigurationSection section in urls.GetChildren())
+                    {
+                        var url = section["Url"];
+                        var parameter = section["Parameter"];
+
+                        dic.Add(url, parameter);
+                    }
+                    return dic;
+                }
+            }
         }
     }
 }

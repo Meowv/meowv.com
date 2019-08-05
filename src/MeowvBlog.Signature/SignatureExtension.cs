@@ -14,7 +14,7 @@ namespace MeowvBlog.Signature
     {
         private static string GetSignaturePath(string name, int id)
         {
-            return Path.Combine(AppSettings.SignaturePath, $"{(name + id).Md5()}.png");
+            return Path.Combine(AppSettings.Signature.Path, $"{(name + id).Md5()}.png");
         }
 
         /// <summary>
@@ -98,9 +98,9 @@ namespace MeowvBlog.Signature
         /// <returns></returns>
         public static async Task<string> GenerateSignature(this string name, int id)
         {
-            var url = SignatureConfig.SignatureUrl(name, id);
+            var signature = SignatureConfig.SignatureUrl(name, id);
 
-            var hwr = url.Name.HWRequest(type: "POST", data: url.Value);
+            var hwr = signature.Url.HWRequest(type: "POST", data: signature.Parameter);
             hwr.ContentType = "application/x-www-form-urlencoded";
             hwr.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36";
 
