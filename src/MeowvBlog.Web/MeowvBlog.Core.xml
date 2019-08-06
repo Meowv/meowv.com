@@ -29,6 +29,11 @@
             个性签名配置
             </summary>
         </member>
+        <member name="P:MeowvBlog.Core.Configuration.AppSettings.VipUrls">
+            <summary>
+            VIP视频解析URL
+            </summary>
+        </member>
         <member name="P:MeowvBlog.Core.Domain.Blog.Category.CategoryName">
             <summary>
             分类名称

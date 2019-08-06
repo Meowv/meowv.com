@@ -75,5 +75,23 @@ namespace MeowvBlog.Core.Configuration
                 }
             }
         }
+
+        /// <summary>
+        /// VIP视频解析URL
+        /// </summary>
+        public static IList<string> VipUrls
+        {
+            get
+            {
+                var list = new List<string>();
+
+                var urls = _config.GetSection("VipUrls");
+                foreach (IConfigurationSection section in urls.GetChildren())
+                {
+                    list.Add(section.Value);
+                }
+                return list;
+            }
+        }
     }
 }

@@ -987,21 +987,21 @@ header label {
         height: 150px;
     }
 
-    .signature-action {
+    .signature-action,.vip-action {
         width: 100%;
     }
 
-    .signature-action select {
+    .signature-action select, .vip-action select {
         width: 100%;
     }
 
-    .signature-action input {
+    .signature-action input,.vip-action input {
         width: 200px;
         float: left;
         margin-top:5px;
     }
 
-    .signature-action button {
+    .signature-action button,.vip-action button {
         width: 200px;
         margin-top: 5px;
     }
@@ -1095,19 +1095,19 @@ header label {
     margin-bottom:50px;
 }
 
-.signature-action select {
+.signature-action select, .vip-action select {
     height: 30px;
 }
 
-.signature-action input {
+.signature-action input, .vip-action input {
     height: 25px;
     padding-left: 5px;
 }
 
-.signature-action input:focus {
+.signature-action input:focus ,.vip-action input:focus{
     outline: none;
 }
-.signature-action button {
+.signature-action button,.vip-action button {
     width:135px;
     height: 30px;
 }
@@ -1117,4 +1117,8 @@ header label {
 }
 .hidden {
     display: none;
+}
+
+.vip-action {
+    text-align:center;
 }

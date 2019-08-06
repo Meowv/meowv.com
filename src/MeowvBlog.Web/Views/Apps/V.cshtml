@@ -2,7 +2,49 @@
     ViewData["Title"] = "VIP视频解析 - ";
 }
 <div class="main">
-    <div class="container">
-        <div class="loader">开发中...</div>
+    <iframe id="vip" frameborder="0" width="100%" height="737" allowfullscreen src="about:blank"></iframe>
+    <div class="loader"></div>
+    <div class="vip-action hidden">
+        <select id="urls"></select>
+        <input type="text" id="url" placeholder="VIP视频播放地址" value="" />
+        <button id="btn_do">播放</button>
     </div>
 </div>
+@section scripts{
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script>
+        window.onresize = function () {
+            changeFrameHeight();
+        }
+        window.onload = function () {
+            changeFrameHeight();
+        }
+        function changeFrameHeight() {
+            var ifm = document.getElementById("vip");
+            ifm.height = document.documentElement.clientHeight - 200;
+        }
+
+        axios.get(`${api_domain}/api/apps/vip_urls`)
+            .then(function (response) {
+                var html = "";
+                response.data.forEach(x => {
+                    html += `<option value="${x.value}">${x.name}</option>`;
+                });
+                document.querySelector("#urls").innerHTML = html;
+                document.querySelector(".vip-action").style.cssText = "display:block";
+                document.querySelector('.loader').remove();
+            }).catch(function (error) {
+                console.log(error);
+            });
+
+        document.querySelector("#btn_do").addEventListener("click", function () {
+            var url = document.querySelector("#url").value.trim();
+            if (url.length == 0) {
+                return false;
+            }
+            var api = document.querySelector("#urls").value;
+
+            document.querySelector("#vip").src = api + url;
+        });
+    </script>
+}
