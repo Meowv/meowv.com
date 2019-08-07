@@ -3,9 +3,9 @@
 }
 <div class="post-box">
     <input type="text" id="title" placeholder="标题" autocomplete="off" value="" />
-    <input type="text" id="author" placeholder="作者" value="" />
-    <input type="text" id="url" placeholder="URL" value="" />
-    <input type="datetime" id="time" placeholder="时间" value="" />
+    <input type="text" id="author" placeholder="作者" autocomplete="off" value="" />
+    <input type="text" id="url" placeholder="URL" autocomplete="off" value="" />
+    <input type="datetime" id="time" placeholder="时间" value="@DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")" />
 </div>
 <div id="editor"></div>
 <div class="post-category">

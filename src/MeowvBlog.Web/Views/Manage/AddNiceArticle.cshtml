@@ -1,7 +1,98 @@
-﻿
-@{
-    ViewData["Title"] = "AddNiceArticle";
+﻿@{
+    ViewData["Title"] = "添加好文 - ";
 }
+<div class="main">
+    <div class="container">
+        <div class="post-box">
+            <input type="text" id="title" placeholder="标题" autocomplete="off" value="" />
+            <input type="text" id="author" placeholder="作者" autocomplete="off" value="" />
+            <input type="text" id="source" placeholder="来源" autocomplete="off" value="" />
+            <input type="text" id="url" placeholder="URL" autocomplete="off" value="" />
+            <input type="datetime" id="time" placeholder="时间" value="@DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")" />
+            <button id="btn_save">biubiubiu〰</button>
+        </div>
+    </div>
+    <div class="post-category">
+        <script id="categories_tmpl" type="text/template">
+            {{each result}}
+            <label><input type="radio" name="category" value="{{$value.id}}" />{{$value.categoryName}}</label>
+            {{/each}}
+        </script>
+    </div>
+</div>
+@section scripts{
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://unpkg.com/art-template@4.13.2/lib/template-web.js"></script>
+    <script>
+        axios.get(`${api_domain}/api/blog/admin/categories`)
+            .then(function (response) {
+                if (response.data.isSuccess) {
+                    var html = template("categories_tmpl", response.data);
+                    document.querySelector('.post-category').innerHTML = html;
+                }
+            }).catch(function (error) {
+                console.log(error);
+            });
 
-<h1>AddNiceArticle</h1>
+        document.querySelector('#btn_save').addEventListener('click', () => {
+            var title = document.querySelector("#title").value.trim();
+            var author = document.querySelector("#author").value.trim();
+            var source = document.querySelector("#source").value.trim();
+            var url = document.querySelector("#url").value.trim();
+            var time = document.querySelector("#time").value.trim();
 
+            var categoryId = 0;
+            var radios = document.querySelectorAll('.post-category input');
+            for (var i = 0; i < radios.length; i++) {
+                if (radios[i].checked) {
+                    categoryId = radios[i].value;
+                }
+            }
+
+            if (title.length == 0) {
+                alert("标题没填")
+                return false;
+            }
+            if (author.length == 0) {
+                alert("作者没填")
+                return false;
+            }
+            if (source.length == 0) {
+                alert("来源没填")
+                return false;
+            }
+            if (url.length == 0) {
+                alert("URL没填")
+                return false;
+            }
+            if (time.length == 0) {
+                alert("时间没填")
+                return false;
+            }
+            if (categoryId == 0) {
+                alert("分类没填");
+                return false;
+            }
+
+            var data = {
+                "title": title,
+                "author": author,
+                "source": source,
+                "url": url,
+                "categoryId": categoryId,
+                "time": time,
+            };
+            axios.post(`${api_domain}/api/nicearticle/insert`, data)
+                .then(function (response) {
+                    if (response.data.isSuccess) {
+                        alert("ok");
+                        location.reload();
+                    } else {
+                        alert(response.data.message);
+                    }
+                }).catch(function (error) {
+                    console.log(error);
+                });
+        });
+    </script>
+}

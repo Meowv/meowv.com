@@ -61,7 +61,7 @@ namespace MeowvBlog.Web.Controllers.Admin
         /// 添加 NiceArticle
         /// </summary>
         /// <returns></returns>
-        [Route("/admin/add_nice_article")]
+        [Route("/admin/add_article")]
         public IActionResult AddNiceArticle() => View();
     }
 }

@@ -498,6 +498,12 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.Web.Controllers.Pages.AppsController.NiceArticles">
+            <summary>
+            NiceArticles
+            </summary>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.Web.Controllers.Pages.AppsController.News">
             <summary>
             每日热点

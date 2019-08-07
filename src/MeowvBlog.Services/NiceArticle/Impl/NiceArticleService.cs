@@ -111,7 +111,7 @@ namespace MeowvBlog.Services.NiceArticle.Impl
                               Url = niceArticles.Url,
                               Category = categories.CategoryName,
                               Time = niceArticles.Time.ToString("MMMM dd, yyyy HH:mm:ss", new CultureInfo("en-us")),
-                          }).ToList();
+                          }).PageByIndex(input.Page, input.Limit).ToList();
 
             return new PagedResultDto<QueryNiceArticleDto>(count, result);
         }

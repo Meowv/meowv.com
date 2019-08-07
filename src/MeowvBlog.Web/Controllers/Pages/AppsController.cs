@@ -29,6 +29,14 @@ namespace MeowvBlog.Web.Controllers.Pages
         public IActionResult Signature() => View();
 
         /// <summary>
+        /// NiceArticles
+        /// </summary>
+        /// <returns></returns>
+        [Route("/articles")]
+        [Route("/articles/page/{page:int:min(1)}")]
+        public IActionResult NiceArticles() => View();
+
+        /// <summary>
         /// 每日热点
         /// </summary>
         /// <returns></returns>
