@@ -46,6 +46,12 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.Web.Controllers.Admin.ManageController.AddNiceArticle">
+            <summary>
+            添加 NiceArticle
+            </summary>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.Web.Controllers.Apis.AccountController.GetGitHubUrl">
             <summary>
             生成请求链接
@@ -431,6 +437,13 @@
             <param name="end_date">结束时间（Y-m-d）</param>
             <param name="adtags">渠道id，多个使用“,”间隔</param>
             <param name="idx">查询指标(pv,uv,vv,iv)，使用“,”间隔</param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Apis.NiceArticleController.BulkInsertNiceArticle(System.Collections.Generic.IList{MeowvBlog.Services.Dto.NiceArticle.NiceArticleDto})">
+            <summary>
+            批量新增好文
+            </summary>
+            <param name="dtos"></param>
             <returns></returns>
         </member>
         <member name="M:MeowvBlog.Web.Controllers.Apis.NiceArticleController.InsertNiceArticle(MeowvBlog.Services.Dto.NiceArticle.NiceArticleDto)">

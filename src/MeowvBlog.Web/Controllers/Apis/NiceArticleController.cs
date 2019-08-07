@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Plus;
 using Plus.Services.Dto;
 using Plus.WebApi;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace MeowvBlog.Web.Controllers.Apis
@@ -22,12 +23,31 @@ namespace MeowvBlog.Web.Controllers.Apis
         }
 
         /// <summary>
+        /// 批量新增好文
+        /// </summary>
+        /// <param name="dtos"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("bulkInsert")]
+        public async Task<Response<string>> BulkInsertNiceArticle([FromBody] IList<NiceArticleDto> dtos)
+        {
+            var response = new Response<string>();
+
+            var result = await _niceArticleService.BulkInsertNiceArticle(dtos);
+            if (!result.Success)
+                response.SetMessage(ResponseStatusCode.Error, result.GetErrorMessage());
+            else
+                response.Result = result.Result;
+            return response;
+        }
+
+        /// <summary>
         /// 新增好文
         /// </summary>
         /// <param name="dto"></param>
         /// <returns></returns>
         [HttpPost]
-        [Route("post")]
+        [Route("insert")]
         public async Task<Response<string>> InsertNiceArticle([FromBody] NiceArticleDto dto)
         {
             var response = new Response<string>();
@@ -46,7 +66,7 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <param name="input"></param>
         /// <returns></returns>
         [HttpGet]
-        [Route("post/query")]
+        [Route("query")]
         [AllowAnonymous]
         [ResponseCache(CacheProfileName = "default", VaryByQueryKeys = new string[] { "page", "limit" })]
         public async Task<Response<PagedResultDto<QueryNiceArticleDto>>> QueryNicceArticle([FromQuery] PagingInput input)

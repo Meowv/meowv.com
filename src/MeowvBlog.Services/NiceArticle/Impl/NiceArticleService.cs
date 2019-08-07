@@ -3,8 +3,8 @@ using MeowvBlog.Core.Domain.NiceArticle.Repositories;
 using MeowvBlog.Services.Dto;
 using MeowvBlog.Services.Dto.NiceArticle;
 using Plus;
-using Plus.AutoMapper;
 using Plus.Services.Dto;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -21,6 +21,40 @@ namespace MeowvBlog.Services.NiceArticle.Impl
         {
             _niceArticleRepository = niceArticleRepository;
             _categoryRepository = categoryRepository;
+        }
+
+        /// <summary>
+        /// 批量新增好文
+        /// </summary>
+        /// <param name="dtos"></param>
+        /// <returns></returns>
+        public async Task<ActionOutput<string>> BulkInsertNiceArticle(IList<NiceArticleDto> dtos)
+        {
+            using (var uow = UnitOfWorkManager.Begin())
+            {
+                var output = new ActionOutput<string>();
+
+                var niceArticle = dtos.Select(x => new Core.Domain.NiceArticle.NiceArticle
+                {
+                    Title = x.Title,
+                    Author = x.Author,
+                    Source = x.Source,
+                    Url = x.Url,
+                    CategoryId = x.CategoryId,
+                    Time = DateTime.Now
+                }).ToList();
+
+                var result = await _niceArticleRepository.BulkInsertNiceArticleAsync(niceArticle);
+
+                await uow.CompleteAsync();
+
+                if (result)
+                    output.Result = "success";
+                else
+                    output.AddError("新增标签出错了~~~");
+
+                return output;
+            }
         }
 
         /// <summary>

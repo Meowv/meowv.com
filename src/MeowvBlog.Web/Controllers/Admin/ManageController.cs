@@ -56,5 +56,12 @@ namespace MeowvBlog.Web.Controllers.Admin
         /// <returns></returns>
         [Route("/admin/tags")]
         public IActionResult Tags() => View();
+
+        /// <summary>
+        /// 添加 NiceArticle
+        /// </summary>
+        /// <returns></returns>
+        [Route("/admin/add_nice_article")]
+        public IActionResult AddNiceArticle() => View();
     }
 }
