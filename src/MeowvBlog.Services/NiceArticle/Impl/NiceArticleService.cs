@@ -41,7 +41,7 @@ namespace MeowvBlog.Services.NiceArticle.Impl
                     Source = x.Source,
                     Url = x.Url,
                     CategoryId = x.CategoryId,
-                    Time = DateTime.Now
+                    Time = x.Time
                 }).ToList();
 
                 var result = await _niceArticleRepository.BulkInsertNiceArticleAsync(niceArticle);
