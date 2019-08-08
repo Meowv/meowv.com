@@ -1,8 +1,14 @@
 ﻿using MeowvBlog.Core.Configuration;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json.Linq;
 using Plus;
+using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace MeowvBlog.Web.Controllers.Apis
 {
@@ -11,6 +17,13 @@ namespace MeowvBlog.Web.Controllers.Apis
     [ApiController]
     public class AppsController : ControllerBase
     {
+        private readonly IHttpClientFactory _httpClientFactory;
+
+        public AppsController(IHttpClientFactory httpClientFactory)
+        {
+            _httpClientFactory = httpClientFactory;
+        }
+
         /// <summary>
         /// VIP视频解析URL接口
         /// </summary>
@@ -35,6 +48,52 @@ namespace MeowvBlog.Web.Controllers.Apis
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// 获取bing每日壁纸
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("bing")]
+        public async Task<IActionResult> GetBingAsync()
+        {
+            var api = "https://cn.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&pid=hp&FORM=BEHPTB";
+
+            using (var client = _httpClientFactory.CreateClient())
+            {
+                var json = await client.GetStringAsync(api);
+
+                var obj = JObject.Parse(json);
+
+                var url = "https://cn.bing.com" + obj["images"][0]["url"].ToString();
+
+                var bytes = await client.GetByteArrayAsync(url);
+
+                return File(bytes, "image/jpeg");
+            }
+        }
+
+        /// <summary>
+        /// 获取随机一张猫咪图
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("cat")]
+        public async Task<IActionResult> GetCatAsync()
+        {
+            var path = Path.Combine(Directory.GetCurrentDirectory(), @"Resources/cats.json");
+
+            var cats = await path.GetObjectFromJsonFile<List<string>>("cats");
+
+            var url = cats.OrderBy(x => Guid.NewGuid()).Take(1).FirstOrDefault();
+
+            using (var client = _httpClientFactory.CreateClient())
+            {
+                var bytes = await client.GetByteArrayAsync(url);
+
+                return File(bytes, "image/jpeg");
+            }
         }
     }
 }

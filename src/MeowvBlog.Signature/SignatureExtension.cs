@@ -12,6 +12,8 @@ namespace MeowvBlog.Signature
 {
     public static class SignatureExtension
     {
+        private static readonly HttpClient _client = new HttpClient();
+
         private static string GetSignaturePath(string name, int id)
         {
             return Path.Combine(AppSettings.Signature.Path, $"{(name + id).Md5()}.png");
@@ -24,19 +26,16 @@ namespace MeowvBlog.Signature
         /// <param name="imgUrl"></param>
         private static void DownloadImg(this string signaturePath, string imgUrl)
         {
-            using (var http = new HttpClient())
+            var buffer = _client.GetByteArrayAsync(imgUrl);
+            using (var ms = new MemoryStream(buffer.Result))
+            using (var stream = new FileStream(signaturePath, FileMode.Create))
             {
-                var buffer = http.GetByteArrayAsync(imgUrl);
-                using (var ms = new MemoryStream(buffer.Result))
-                using (var stream = new FileStream(signaturePath, FileMode.Create))
+                var bytes = new byte[1024];
+                var size = ms.Read(bytes, 0, bytes.Length);
+                while (size > 0)
                 {
-                    var bytes = new byte[1024];
-                    var size = ms.Read(bytes, 0, bytes.Length);
-                    while (size > 0)
-                    {
-                        stream.Write(bytes, 0, size);
-                        size = ms.Read(bytes, 0, bytes.Length);
-                    }
+                    stream.Write(bytes, 0, size);
+                    size = ms.Read(bytes, 0, bytes.Length);
                 }
             }
         }

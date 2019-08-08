@@ -63,6 +63,7 @@ namespace MeowvBlog.Web
             });
 
             services.AddSession();
+            services.AddHttpClient();
 
             services.AddMvc(options =>
             {

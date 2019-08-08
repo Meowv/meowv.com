@@ -1,8 +1,14 @@
 ﻿@{
     ViewData["Title"] = "Bing每日壁纸 - ";
 }
-<div class="main">
-    <div class="container">
-        <div class="loader">开发中...</div>
-    </div>
+<div class="loader"></div>
+<div class="imgbox">
+    <img src="/api/apps/bing" />
 </div>
+@section scripts{
+    <script>
+        window.onload = function () {
+            document.querySelector('.loader').remove();
+        }
+    </script>
+}

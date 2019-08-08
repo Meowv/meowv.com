@@ -1122,3 +1122,18 @@ header label {
 .vip-action {
     text-align:center;
 }
+
+.imgbox {
+    width: 70%;
+    text-align: center;
+    margin: 25px auto 0;
+}
+
+.imgbox img {
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.cat-img {
+    margin-top: 100px;
+}

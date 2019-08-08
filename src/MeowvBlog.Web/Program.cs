@@ -9,6 +9,7 @@ namespace MeowvBlog.Web
         public static async Task Main(string[] args)
         {
             await WebHost.CreateDefaultBuilder(args)
+                         .UseKestrel(opt => opt.AddServerHeader = false)
                          .UseStartup<Startup>()
                          .Build()
                          .RunAsync();

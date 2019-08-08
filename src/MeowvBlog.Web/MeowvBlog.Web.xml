@@ -83,6 +83,18 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.Web.Controllers.Apis.AppsController.GetBingAsync">
+            <summary>
+            获取bing每日壁纸
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Apis.AppsController.GetCatAsync">
+            <summary>
+            获取随机一张猫咪图
+            </summary>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.Web.Controllers.Apis.BlogController.InsertPost(MeowvBlog.Services.Dto.Blog.PostForAdminDto)">
             <summary>
             新增文章
