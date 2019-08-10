@@ -18,6 +18,7 @@
 
             public const string NiceArticles = "nice_articles";
 
+            public const string HotNews = "hot_news";
         }
     }
 }
