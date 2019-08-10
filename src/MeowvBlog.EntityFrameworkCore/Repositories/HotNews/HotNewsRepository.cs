@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace MeowvBlog.EntityFrameworkCore.Repositories.HotNews
 {
-    public class HotNewsRepository : MeowvBlogRepositoryBase<Core.Domain.HotNews.HotNews>, IHotNewsRepository
+    public class HotNewsRepository : MeowvBlogRepositoryBase<Core.Domain.HotNews.HotNews, string>, IHotNewsRepository
     {
         public HotNewsRepository(IDbContextProvider<MeowvBlogDbContext> dbContextProvider) : base(dbContextProvider)
         {
@@ -19,7 +19,7 @@ namespace MeowvBlog.EntityFrameworkCore.Repositories.HotNews
         {
             using (IDbConnection connection = new MySqlConnection(AppSettings.MySqlConnectionString))
             {
-                var sql = "INSERT INTO `hot_news`(`Title`, `Url`, `SourceId`,`Time`) VALUES (@Title,@Url,@SourceId,@Time)";
+                var sql = "INSERT INTO `hot_news`(`Id`, `Title`, `Url`, `SourceId`,`Time`) VALUES (@Id,@Title,@Url,@SourceId,@Time)";
                 return await connection.ExecuteAsync(sql, hotNews) > 0;
             }
         }

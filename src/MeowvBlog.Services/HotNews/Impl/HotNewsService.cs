@@ -35,11 +35,18 @@ namespace MeowvBlog.Services.HotNews.Impl
 
                 var hotNews = dtos.Select(x => new Core.Domain.HotNews.HotNews
                 {
+                    Id = GenerateGuid(),
                     Title = x.Title,
                     Url = x.Url,
                     SourceId = x.SourceId,
                     Time = DateTime.Now
                 }).ToList();
+
+                string GenerateGuid()
+                {
+                    byte[] buffer = Guid.NewGuid().ToByteArray();
+                    return BitConverter.ToInt64(buffer, 0).ToString();
+                }
 
                 var result = await _hotNewsRepository.BulkInsertHotNewsAsync(hotNews);
 

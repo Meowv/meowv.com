@@ -3,7 +3,7 @@ using System;
 
 namespace MeowvBlog.Core.Domain.HotNews
 {
-    public class HotNews : Entity
+    public class HotNews : Entity<string>
     {
         public string Title { get; set; }
 

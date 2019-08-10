@@ -52,6 +52,7 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <returns></returns>
         [HttpGet]
         [Route("source")]
+        [ResponseCache(CacheProfileName = "default", Duration = 600)]
         public async Task<IList<NameValue<int>>> GetSourceId()
         {
             return await _hotNewsService.GetSourceId();
@@ -63,6 +64,7 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <param name="sourceId"></param>
         /// <returns></returns>
         [HttpGet]
+        [ResponseCache(CacheProfileName = "default", VaryByQueryKeys = new string[] { "sourceId" })]
         public async Task<Response<IList<HotNewsDto>>> GetHotNews(int sourceId)
         {
             var response = new Response<IList<HotNewsDto>>

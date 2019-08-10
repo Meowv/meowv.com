@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace MeowvBlog.Core.Domain.HotNews.Repositories
 {
-    public interface IHotNewsRepository : IRepository<HotNews, int>
+    public interface IHotNewsRepository : IRepository<HotNews, string>
     {
         Task<bool> BulkInsertHotNewsAsync(IList<HotNews> hotNews);
     }
