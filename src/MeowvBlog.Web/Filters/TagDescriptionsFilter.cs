@@ -39,6 +39,11 @@ namespace MeowvBlog.Web.Filters
                 {
                     Name = "Apps",
                     Description = "一些通用接口"
+                },
+                new Tag
+                {
+                    Name = "HotNews",
+                    Description = "热门新闻数据接口"
                 }
             };
 

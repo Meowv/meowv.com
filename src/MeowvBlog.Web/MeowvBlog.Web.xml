@@ -239,6 +239,26 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.Web.Controllers.Apis.HotNewsController.BulkInsertHotNews(System.Collections.Generic.IList{MeowvBlog.Services.Dto.HotNews.InsertHotNewsInput})">
+            <summary>
+            批量添加热榜
+            </summary>
+            <param name="dtos"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Apis.HotNewsController.GetSourceId">
+            <summary>
+            获取所有HotNews的类型
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Apis.HotNewsController.GetHotNews(System.Int32)">
+            <summary>
+            根据sourceId获取对于HotNews
+            </summary>
+            <param name="sourceId"></param>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.Web.Controllers.Apis.MTAController.Ctr_core_data(System.String,System.String,System.String)">
             <summary>
             应用历史趋势

@@ -1,5 +1,4 @@
 ﻿using MeowvBlog.Services.Dto.HotNews;
-using MeowvBlog.Services.Dto.TopNews;
 using Plus;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -13,7 +12,7 @@ namespace MeowvBlog.Services.HotNews
         /// </summary>
         /// <param name="dtos"></param>
         /// <returns></returns>
-        Task<ActionOutput<string>> InsertHotNews(IList<InsertTopNewsInput> dtos);
+        Task<ActionOutput<string>> BulkInsertHotNews(IList<InsertHotNewsInput> dtos);
 
         /// <summary>
         /// 获取所有HotNews的类型
