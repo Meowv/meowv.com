@@ -1126,7 +1126,7 @@ header label {
 .imgbox {
     width: 70%;
     text-align: center;
-    margin: 25px auto 0;
+    margin: 125px auto 0;
 }
 
 .imgbox img {
@@ -1134,6 +1134,30 @@ header label {
     max-height: 100%;
 }
 
-.cat-img {
-    margin-top: 100px;
+.tab-box {
+    margin: 0 auto;
+    margin-top:50px;
+    width:1150px;
+}
+.top-tab {
+    font-weight:bold;
+    float:left;
+    margin-top:5px;
+}
+.top-tab ul li {
+    list-style:none;
+}
+.top-tab ul li a.archive {
+    color:#5A9600;
+}
+.top-content {
+    float:left;
+    width:1000px;
+}
+.top-content ul li {
+    list-style: none;
+    height: 35px;
+    line-height: 35px;
+}
+.top-content ul li a {
 }

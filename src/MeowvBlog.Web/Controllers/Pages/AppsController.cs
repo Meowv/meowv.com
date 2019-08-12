@@ -40,15 +40,8 @@ namespace MeowvBlog.Web.Controllers.Pages
         /// 每日热点
         /// </summary>
         /// <returns></returns>
-        [Route("/news")]
-        public IActionResult News() => View();
-
-        /// <summary>
-        /// 随机妹子图
-        /// </summary>
-        /// <returns></returns>
-        [Route("/girl")]
-        public IActionResult Girl() => View();
+        [Route("/hot")]
+        public IActionResult Hot() => View();
 
         /// <summary>
         /// 随机猫咪图

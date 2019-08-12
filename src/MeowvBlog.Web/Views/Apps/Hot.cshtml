@@ -1,0 +1,64 @@
+﻿@{
+    ViewData["Title"] = "每日热点 - ";
+}
+<div class="main">
+    <div class="container tab-box">
+        <div class="top-tab">
+            <script id="top_tabs_tmpl" type="text/template">
+                {{each result}}
+                <li><a href="javascript:;" data-id="{{$value.value}}">{{$value.name}}</a></li>
+                {{/each}}
+            </script>
+            <ul></ul>
+        </div>
+        <div class="top-content">
+            <div class="loader"></div>
+            <script id="top_content_tmpl" type="text/template">
+                {{each result}}
+                <li><a target="_blank" href="{{$value.url}}">{{$value.title}}</a></li>
+                {{/each}}
+            </script>
+            <ul></ul>
+        </div>
+    </div>
+</div>
+@section scripts{
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://unpkg.com/art-template@4.13.2/lib/template-web.js"></script>
+    <script>
+        axios.get(`${api_domain}/api/hotnews/source`)
+            .then(function (response) {
+                var html = template("top_tabs_tmpl", { "result": response.data });
+                document.querySelector('.top-tab ul').innerHTML = html;
+
+                document.querySelector(".top-tab ul li a").classList.add("archive");
+                var defaultId = document.querySelector(".top-tab ul li a").attributes["data-id"].value;
+                loadContent(defaultId);
+
+                var btn_tabs = document.querySelectorAll('.top-tab ul li a');
+                for (var i = 0; i < btn_tabs.length; i++) {
+                    btn_tabs[i].onclick = function () {
+                        document.querySelector('.loader').style.cssText = "display:block";
+                        document.querySelector(".top-tab ul li a.archive").classList.remove("archive")
+                        this.classList.add("archive");
+                        var id = this.attributes["data-id"].value;
+                        loadContent(id);
+                    }
+                }
+            }).catch(function (error) {
+                console.log(error);
+            });
+
+        function loadContent(id) {
+            axios.get(`${api_domain}/api/hotnews?sourceId=${id}`)
+                .then(function (response) {
+                    var html = template("top_content_tmpl", response.data);
+                    document.querySelector('.top-content ul').innerHTML = html;
+
+                    document.querySelector('.loader').style.cssText = "display:none";
+                }).catch(function (error) {
+                    console.log(error);
+                });
+        }
+    </script>
+}

@@ -46,7 +46,7 @@ namespace MeowvBlog.Core.Domain.HotNews
         [EnumAlias("网易新闻")]
         news163 = 14,
 
-        [EnumAlias("GitHub Trending")]
+        [EnumAlias("GitHub")]
         github = 15
     }
 }

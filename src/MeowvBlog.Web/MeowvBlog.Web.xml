@@ -536,7 +536,7 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.Web.Controllers.Pages.AppsController.News">
+        <member name="M:MeowvBlog.Web.Controllers.Pages.AppsController.Hot">
             <summary>
             每日热点
             </summary>
