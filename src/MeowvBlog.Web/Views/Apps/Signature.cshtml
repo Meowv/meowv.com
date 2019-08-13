@@ -37,7 +37,7 @@
                 });
                 var recently_signature_log_html = "";
                 recently_log_response.data.result.forEach(x => {
-                    recently_signature_log_html += `<a target="_blank" href="javascript:;" data-url="${x.url}">${x.name}</a>`;
+                    recently_signature_log_html += `<a href="javascript:;" data-url="${x.url}">${x.name}</a>`;
                 });
                 document.querySelector("#type").innerHTML = signature_type_html;
                 document.querySelector(".tag-cloud-tags-extend").innerHTML = recently_signature_log_html;

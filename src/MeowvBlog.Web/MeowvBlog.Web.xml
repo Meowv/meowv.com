@@ -542,12 +542,6 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.Web.Controllers.Pages.AppsController.Girl">
-            <summary>
-            随机妹子图
-            </summary>
-            <returns></returns>
-        </member>
         <member name="M:MeowvBlog.Web.Controllers.Pages.AppsController.Cat">
             <summary>
             随机猫咪图
