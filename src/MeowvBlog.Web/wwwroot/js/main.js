@@ -127,7 +127,7 @@ function wx_share(arguments) {
     get_wx_sign(data.link);
 
     wx.config({
-        debug: false,
+        debug: true,
         appId: 'wx58583618fe8363c5',
         timestamp: result.timestamp,
         nonceStr: result.noncestr,

@@ -67,6 +67,7 @@
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <script>
         share["desc"] = "MTA数据分析~~~";
+        wx_share(share);
         axios.get(`${api_domain}/api/mta/ctr_core_data?start_date=@date&end_date=@date&idx=pv,uv,vv,iv`)
             .then(function (response) {
                 if (response.data.info = "success") {
