@@ -41,6 +41,7 @@
     <ProjectReference Include="..\MeowvBlog.EntityFrameworkCore\MeowvBlog.EntityFrameworkCore.csproj" />
     <ProjectReference Include="..\MeowvBlog.Services.Dto\MeowvBlog.Services.Dto.csproj" />
     <ProjectReference Include="..\MeowvBlog.Services\MeowvBlog.Services.csproj" />
+    <ProjectReference Include="..\MeowvBlog.Weixin\MeowvBlog.Weixin.csproj" />
   </ItemGroup>
 
   <ItemGroup>

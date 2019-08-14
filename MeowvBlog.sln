@@ -25,7 +25,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.Authorization", "
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.MTA", "src\MeowvBlog.MTA\MeowvBlog.MTA.csproj", "{7CE81ABD-EA68-403C-B24B-E65B4530C605}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeowvBlog.Signature", "src\MeowvBlog.Signature\MeowvBlog.Signature.csproj", "{F18677B8-B021-47B9-BFB9-F4A62F29E1D5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.Signature", "src\MeowvBlog.Signature\MeowvBlog.Signature.csproj", "{F18677B8-B021-47B9-BFB9-F4A62F29E1D5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeowvBlog.Weixin", "src\MeowvBlog.Weixin\MeowvBlog.Weixin.csproj", "{AE3E5155-867C-4FA5-B631-B9D93FEB8B01}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -65,6 +67,10 @@ Global
 		{F18677B8-B021-47B9-BFB9-F4A62F29E1D5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F18677B8-B021-47B9-BFB9-F4A62F29E1D5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F18677B8-B021-47B9-BFB9-F4A62F29E1D5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AE3E5155-867C-4FA5-B631-B9D93FEB8B01}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AE3E5155-867C-4FA5-B631-B9D93FEB8B01}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AE3E5155-867C-4FA5-B631-B9D93FEB8B01}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AE3E5155-867C-4FA5-B631-B9D93FEB8B01}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

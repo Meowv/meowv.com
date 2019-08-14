@@ -93,5 +93,15 @@ namespace MeowvBlog.Core.Configuration
                 return list;
             }
         }
+
+        /// <summary>
+        /// 微信配置
+        /// </summary>
+        public static class Weixin
+        {
+            public static string AppId => _config["Weixin:AppId"];
+
+            public static string AppSecret => _config["Weixin:AppSecret"];
+        }
     }
 }

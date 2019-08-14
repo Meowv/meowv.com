@@ -1,4 +1,5 @@
 ﻿using MeowvBlog.Core.Configuration;
+using MeowvBlog.Weixin;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
@@ -22,6 +23,27 @@ namespace MeowvBlog.Web.Controllers.Apis
         public AppsController(IHttpClientFactory httpClientFactory)
         {
             _httpClientFactory = httpClientFactory;
+        }
+
+        /// <summary>
+        /// 微信分享签名接口
+        /// </summary>
+        /// <param name="url"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("weixin_sign")]
+        public async Task<WeixinResponse> WeixinSign(string url)
+        {
+            var response = new WeixinResponse();
+
+            if (url.IsNullOrEmpty())
+            {
+                response.Message = "未提供URL";
+                return response;
+            }
+
+            response = await url.WeixinSignResponse();
+            return response;
         }
 
         /// <summary>

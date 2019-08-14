@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Senparc.Weixin" Version="6.4.12" />
+    <PackageReference Include="Senparc.Weixin.MP" Version="16.7.12" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MeowvBlog.Core\MeowvBlog.Core.csproj" />
+  </ItemGroup>
+
+</Project>

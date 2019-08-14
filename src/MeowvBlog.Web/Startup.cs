@@ -14,9 +14,15 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Plus;
 using Plus.Log4Net;
 using Plus.Modules;
+using Senparc.CO2NET;
+using Senparc.CO2NET.RegisterServices;
+using Senparc.Weixin;
+using Senparc.Weixin.Entities;
+using Senparc.Weixin.RegisterServices;
 using Swashbuckle.AspNetCore.Swagger;
 using Swashbuckle.AspNetCore.SwaggerUI;
 using System.IO;
@@ -28,6 +34,13 @@ namespace MeowvBlog.Web
 {
     public class Startup
     {
+        public Startup(IConfiguration configuration)
+        {
+            Configuration = configuration;
+        }
+
+        public IConfiguration Configuration { get; }
+
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddCors(options =>
@@ -64,6 +77,8 @@ namespace MeowvBlog.Web
 
             services.AddSession();
             services.AddHttpClient();
+
+            services.AddSenparcGlobalServices(Configuration).AddSenparcWeixinServices(Configuration);
 
             services.AddMvc(options =>
             {
@@ -104,7 +119,7 @@ namespace MeowvBlog.Web
             }).Initialize();
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, IOptions<SenparcSetting> senparcSetting, IOptions<SenparcWeixinSetting> senparcWeixinSetting)
         {
             if (env.IsDevelopment())
             {
@@ -114,6 +129,9 @@ namespace MeowvBlog.Web
             {
                 app.UseHsts();
             }
+
+            var register = RegisterService.Start(env, senparcSetting.Value).UseSenparcGlobal();
+            register.UseSenparcWeixin(senparcWeixinSetting.Value, senparcSetting.Value);
 
             app.UseCors(builder =>
             {
@@ -133,7 +151,7 @@ namespace MeowvBlog.Web
             app.UseResponseCaching();
             app.UseAuthentication();
             app.UseMvcWithDefaultRoute();
-            
+
             app.UseSwagger();
             app.UseSwaggerUI(s =>
             {

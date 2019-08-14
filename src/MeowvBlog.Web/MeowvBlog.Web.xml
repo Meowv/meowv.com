@@ -77,6 +77,13 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.Web.Controllers.Apis.AppsController.WeixinSign(System.String)">
+            <summary>
+            微信分享签名接口
+            </summary>
+            <param name="url"></param>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.Web.Controllers.Apis.AppsController.VipUrls">
             <summary>
             VIP视频解析URL接口
