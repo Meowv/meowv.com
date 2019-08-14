@@ -26,6 +26,7 @@
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <script src="https://unpkg.com/art-template@4.13.2/lib/template-web.js"></script>
     <script>
+        share["desc"] = "每日热点，获取各大热门网站热门头条~~~";
         axios.get(`${api_domain}/api/hotnews/source`)
             .then(function (response) {
                 var html = template("top_tabs_tmpl", { "result": response.data });

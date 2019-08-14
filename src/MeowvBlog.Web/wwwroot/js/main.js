@@ -1,6 +1,11 @@
 api_domain = "https://localhost:44345";
 var _mtac = { "performanceMonitor": 1, "senseQuery": 1 };
-
+var result;
+share = {
+    title: '😍阿星Plus⭐⭐⭐',
+    desc: '生命不息，奋斗不止',
+    imgUrl: 'https://static.meowv.com/images/logo.jpg'
+};
 (function () {
     var mta = document.createElement("script");
     mta.src = "//pingjs.qq.com/h5/stats.js?v2.0.4";
@@ -106,4 +111,100 @@ function mobileBtn() {
         toggleMenu.classList.add("active")
         mobileMenu.classList.add("active")
     }
+}
+
+function wx_share(arguments) {
+    var title = arguments.title || document.title || '';
+    var desc = arguments.desc || document.querySelector('meta[name="description"]').getAttribute('content') || '';
+
+    var data = {
+        title: title.replace(/[\r\n]/g, "").replace(/'/g, ''),
+        desc: desc.replace(/[\r\n]/g, "").replace(/'/g, ''),
+        link: arguments.link || window.location.href,
+        imgUrl: arguments.imgUrl || ""
+    };
+
+    get_wx_sign(data.link);
+
+    wx.config({
+        debug: false,
+        appId: 'wx58583618fe8363c5',
+        timestamp: result.timestamp,
+        nonceStr: result.noncestr,
+        signature: result.signature,
+        jsApiList: ['onMenuShareTimeline', 'onMenuShareAppMessage', 'onMenuShareQQ', 'onMenuShareWeibo']
+    });
+
+    wx.ready(function () {
+        wx.onMenuShareTimeline({
+            title: data.title,
+            desc: data.desc,
+            link: data.link,
+            imgUrl: data.imgUrl,
+            success: function () {
+                console.log("share success");
+            },
+            cancel: function () {
+                console.log("cancel share");
+            }
+        });
+        wx.onMenuShareAppMessage({
+            title: data.title,
+            desc: data.desc,
+            link: data.link,
+            imgUrl: data.imgUrl,
+            type: '',
+            dataUrl: '',
+            success: function () {
+                console.log("share success");
+            },
+            cancel: function () {
+                console.log("cancel share");
+            }
+        });
+        wx.onMenuShareQQ({
+            title: data.title,
+            desc: data.desc,
+            link: data.link,
+            imgUrl: data.imgUrl,
+            success: function () {
+                console.log("share success");
+            },
+            cancel: function () {
+                console.log("cancel share");
+            }
+        });
+        wx.onMenuShareWeibo({
+            title: data.title,
+            desc: data.desc,
+            link: data.link,
+            imgUrl: data.imgUrl,
+            success: function () {
+                console.log("share success");
+            },
+            cancel: function () {
+                console.log("cancel share");
+            }
+        });
+    });
+
+    wx.error(function (res) {
+        console.log(res);
+    });
+}
+
+function get_wx_sign(link) {
+    var api = `/api/apps/weixin_sign?url=${encodeURIComponent(link)}`;
+    http_get(api);
+}
+
+function http_get(url) {
+    let xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            result = JSON.parse(xhr.responseText);
+        }
+    };
+    xhr.open("get", url, false);
+    xhr.send();
 }

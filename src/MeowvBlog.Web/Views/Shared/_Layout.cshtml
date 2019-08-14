@@ -15,20 +15,19 @@
     <environment exclude="Development">
         <link rel="stylesheet" href="https://static.meowv.com/css/style.css">
     </environment>
-     @{
+    @{
         var path = Context.Request.Path.Value;
         if (path.Contains("/admin/"))
         {
-        <environment include="Development">
-            <link href="~/css/admin.css" rel="stylesheet" />
-        </environment>
+            <environment include="Development">
+                <link href="~/css/admin.css" rel="stylesheet" />
+            </environment>
             <environment exclude="Development">
                 <link rel="stylesheet" href="https://static.meowv.com/css/admin.css" />
             </environment>
             if (path.Contains("add_post") || path.Contains("edit_post"))
             {
                 <link href="https://static.meowv.com/editor.md/css/editormd.min.css" rel="stylesheet" />
-
             }
         }
     }
@@ -37,16 +36,18 @@
 <body>
     <div class="wrapper">
         <partial name="_HeaderPartialView">
-        @RenderBody()
-        <partial name="_FooterPartialView">
+            @RenderBody()
+            <partial name="_FooterPartialView">
     </div>
 </body>
 
 </html>
+<script src="https://res.wx.qq.com/open/js/jweixin-1.4.0.js"></script>
 <environment include="Development">
     <script src="~/js/main.js"></script>
 </environment>
 <environment exclude="Development">
     <script src="https://static.meowv.com/js/main.js"></script>
 </environment>
+<script>wx_share(share);</script>
 @RenderSection("Scripts", required: false)

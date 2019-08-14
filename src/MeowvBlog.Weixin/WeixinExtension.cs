@@ -13,15 +13,18 @@ namespace MeowvBlog.Weixin
 
         public static async Task<WeixinResponse> WeixinSignResponse(this string url)
         {
-            var timestamp = JSSDKHelper.GetTimestamp();
-            var noncestr = JSSDKHelper.GetNoncestr();
-            var ticket = await JsApiTicketContainer.TryGetJsApiTicketAsync(AppId, AppSecret);
-            var signature = JSSDKHelper.GetSignature(ticket, noncestr, timestamp, url);
-
             var response = new WeixinResponse();
 
+            var timestamp = JSSDKHelper.GetTimestamp();
+            var noncestr = JSSDKHelper.GetNoncestr();
+
+            var ticket = await JsApiTicketContainer.TryGetJsApiTicketAsync(AppId, AppSecret);
+            if (ticket.IsNullOrEmpty())
+                response.Message = "获取ticket出错了~~";
+
+            var signature = JSSDKHelper.GetSignature(ticket, noncestr, timestamp, url);
             if (signature.IsNullOrEmpty())
-                response.Message = "出错了~~";
+                response.Message = "获取signature出错了~~";
 
             response.Timestamp = timestamp;
             response.Noncestr = noncestr;
