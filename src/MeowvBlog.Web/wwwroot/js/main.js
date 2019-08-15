@@ -6,29 +6,6 @@ share = {
     desc: '生命不息，奋斗不止',
     imgUrl: 'https://static.meowv.com/images/logo.jpg'
 };
-var model_path = ["black", "white"];
-L2Dwidget.init({
-    model: {
-        jsonPath: `https://static.meowv.com/live2d/tororo/assets/tororo.model_${model_path[Math.floor(Math.random() * model_path.length)]}.json`,
-    },
-    display: {
-        superSample: 2,
-        width: 100,
-        height: 100,
-        position: 'right',
-        hOffset: 0,
-        vOffset: 0,
-    },
-    mobile: {
-        show: true,
-        scale: 1,
-        motion: true,
-    },
-    react: {
-        opacityDefault: 0.8,
-        opacityOnHover: 0.2,
-    }
-});
 (function () {
     var mta = document.createElement("script");
     mta.src = "//pingjs.qq.com/h5/stats.js?v2.0.4";
@@ -72,15 +49,46 @@ document.ready(
         var _Blog = window._Blog || {};
         const currentTheme = window.localStorage && window.localStorage.getItem('theme');
         const isDark = currentTheme === 'dark';
+
+        var model_path = "black";
+
         if (isDark) {
             document.getElementById("switch_default").checked = true;
             // mobile
             document.getElementById("mobile-toggle-theme").innerText = " · Dark"
+
+            model_path = "white";
         } else {
             document.getElementById("switch_default").checked = false;
             // mobile
             document.getElementById("mobile-toggle-theme").innerText = " · Dark"
+
+            model_path = "black";
         }
+
+        L2Dwidget.init({
+            model: {
+                jsonPath: `https://static.meowv.com/live2d/tororo/assets/tororo.model_${model_path}.json`,
+            },
+            display: {
+                superSample: 2,
+                width: 100,
+                height: 100,
+                position: 'right',
+                hOffset: 0,
+                vOffset: 0,
+            },
+            mobile: {
+                show: true,
+                scale: 1,
+                motion: true,
+            },
+            react: {
+                opacityDefault: 0.8,
+                opacityOnHover: 0.2,
+            }
+        });
+
         _Blog.toggleTheme = function () {
             if (isDark) {
                 document.getElementsByTagName('body')[0].classList.add('dark-theme');
