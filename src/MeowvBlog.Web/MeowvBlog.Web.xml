@@ -102,6 +102,13 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.Web.Controllers.Apis.AppsController.QueryCommitsAsync(System.Int32)">
+            <summary>
+            Commits
+            </summary>
+            <param name="page"></param>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.Web.Controllers.Apis.BlogController.InsertPost(MeowvBlog.Services.Dto.Blog.PostForAdminDto)">
             <summary>
             新增文章
