@@ -72,7 +72,6 @@
     <script src="https://static.meowv.com/editor.md/lib/marked.min.js"></script>
     <script src="https://static.meowv.com/editor.md/lib/prettify.min.js"></script>
     <script>
-        wx_share(share);
         var url = location.pathname.replace("/post", "");
         url = url.substring(url.length - 1) == "/" ? url : url + "/";
 
@@ -80,8 +79,13 @@
             .then(function (response) {
                 if (response.data.isSuccess) {
                     document.title = document.title.substring(0, 2) + response.data.result.title + " - " + document.title.substring(2);
+
                     var html = template("detail_tmpl", response.data);
                     document.querySelector('.post-wrap').innerHTML = html;
+
+                    share['title'] = response.data.result.title;
+                    share['desc'] = document.querySelector("#content").innerText.substr(0, 100);
+                    wx_share(share);
                 } else {
                     document.querySelector('.post-wrap').innerHTML = `<h2 class="post-title">${response.data.message}</h2>`;
                 }

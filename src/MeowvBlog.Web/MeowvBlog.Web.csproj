@@ -49,6 +49,21 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="wwwroot\live2d\L2Dwidget.0.min.js" />
+    <None Include="wwwroot\live2d\L2Dwidget.min.js" />
+    <None Include="wwwroot\live2d\tororo\assets\moc\tororo.moc" />
+    <None Include="wwwroot\live2d\tororo\assets\mtn\00_idle.mtn" />
+    <None Include="wwwroot\live2d\tororo\assets\mtn\01.mtn" />
+    <None Include="wwwroot\live2d\tororo\assets\mtn\02.mtn" />
+    <None Include="wwwroot\live2d\tororo\assets\mtn\03.mtn" />
+    <None Include="wwwroot\live2d\tororo\assets\mtn\04.mtn" />
+    <None Include="wwwroot\live2d\tororo\assets\mtn\05.mtn" />
+    <None Include="wwwroot\live2d\tororo\assets\mtn\06.mtn" />
+    <None Include="wwwroot\live2d\tororo\assets\mtn\07.mtn" />
+    <None Include="wwwroot\live2d\tororo\assets\mtn\08.mtn" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Update="appsettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
