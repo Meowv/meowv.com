@@ -70,5 +70,12 @@ namespace MeowvBlog.Web.Controllers.Pages
         /// <returns></returns>
         [Route("/mta")]
         public IActionResult Mta() => View();
+
+        /// <summary>
+        /// Commits
+        /// </summary>
+        /// <returns></returns>
+        [Route("/commits")]
+        public IActionResult Commits() => View();
     }
 }
