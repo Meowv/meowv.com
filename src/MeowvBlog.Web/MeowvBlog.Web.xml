@@ -248,14 +248,14 @@
         </member>
         <member name="M:MeowvBlog.Web.Controllers.Apis.CommitsController.SyncCommitData(System.Int32)">
             <summary>
-            同步Commit记录
+            同步GitHub Commit记录
             </summary>
             <param name="page"></param>
             <returns></returns>
         </member>
         <member name="M:MeowvBlog.Web.Controllers.Apis.CommitsController.QueryNicceArticle(MeowvBlog.Services.Dto.PagingInput)">
             <summary>
-            分页查询好文
+            分页查询Commit记录
             </summary>
             <param name="input"></param>
             <returns></returns>
