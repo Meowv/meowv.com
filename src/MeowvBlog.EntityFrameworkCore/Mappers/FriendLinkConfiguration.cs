@@ -8,8 +8,6 @@ namespace MeowvBlog.EntityFrameworkCore.Mappers
     {
         public void Configure(EntityTypeBuilder<FriendLink> builder)
         {
-            builder.HasKey(x => x.Id);
-            builder.Property(x => x.Id).ValueGeneratedOnAdd();
             builder.ToTable(DbConsts.DbTableName.FriendLinks);
         }
     }

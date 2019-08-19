@@ -14,6 +14,16 @@
             展示名称
             </summary>
         </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.FriendLinkDto.Title">
+            <summary>
+            标题
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Services.Dto.Blog.FriendLinkDto.LinkUrl">
+            <summary>
+            链接
+            </summary>
+        </member>
         <member name="P:MeowvBlog.Services.Dto.Blog.GetPostDto.Title">
             <summary>
             标题

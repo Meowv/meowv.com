@@ -19,17 +19,20 @@ namespace MeowvBlog.Services.Blog.Impl
         private readonly ITagRepository _tagRepository;
         private readonly IPostTagRepository _postTagRepository;
         private readonly ICategoryRepository _categoryRepository;
+        private readonly IFriendLinkRepository _friendLinkRepository;
 
         public BlogService(
             IPostRepository postRepository,
             ITagRepository tagRepository,
             IPostTagRepository postTagRepository,
-            ICategoryRepository categoryRepository)
+            ICategoryRepository categoryRepository,
+            IFriendLinkRepository friendLinkRepository)
         {
             _postRepository = postRepository;
             _tagRepository = tagRepository;
             _postTagRepository = postTagRepository;
             _categoryRepository = categoryRepository;
+            _friendLinkRepository = friendLinkRepository;
         }
 
         /// <summary>

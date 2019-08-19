@@ -2,7 +2,7 @@
 
 namespace MeowvBlog.Core.Domain.Blog
 {
-    public class FriendLink : Entity
+    public class FriendLink : Entity<string>
     {
         /// <summary>
         /// 标题
