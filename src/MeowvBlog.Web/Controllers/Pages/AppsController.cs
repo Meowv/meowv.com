@@ -77,5 +77,12 @@ namespace MeowvBlog.Web.Controllers.Pages
         /// <returns></returns>
         [Route("/commits")]
         public IActionResult Commits() => View();
+
+        /// <summary>
+        /// 友链
+        /// </summary>
+        /// <returns></returns>
+        [Route("/friendlinks")]
+        public IActionResult FriendLinks() => View();
     }
 }

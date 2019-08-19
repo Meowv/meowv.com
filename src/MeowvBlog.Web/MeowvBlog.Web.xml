@@ -612,6 +612,12 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.Web.Controllers.Pages.AppsController.FriendLinks">
+            <summary>
+            友链
+            </summary>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.Web.Controllers.Pages.CategoriesController.Index">
             <summary>
             分类页
