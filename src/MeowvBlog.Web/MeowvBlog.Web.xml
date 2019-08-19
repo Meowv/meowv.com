@@ -246,6 +246,19 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.Web.Controllers.Apis.BlogController.InsertFriendLink(MeowvBlog.Services.Dto.Blog.FriendLinkDto)">
+            <summary>
+            新增友链
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Apis.BlogController.QueryFriendLinks">
+            <summary>
+            友链列表
+            </summary>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.Web.Controllers.Apis.CommitsController.SyncCommitData(System.Int32)">
             <summary>
             同步GitHub Commit记录

@@ -14,7 +14,6 @@ using System.Threading.Tasks;
 namespace MeowvBlog.Web.Controllers.Apis
 {
     [Route("api/[controller]")]
-    [AllowAnonymous]
     [ApiController]
     public class CommitsController : ControllerBase
     {
@@ -76,6 +75,7 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// <returns></returns>
         [HttpGet]
         [Route("query")]
+        [AllowAnonymous]
         [ResponseCache(CacheProfileName = "default", Duration = 600, VaryByQueryKeys = new string[] { "page", "limit" })]
         public async Task<Response<PagedResultDto<CommitDto>>> QueryNicceArticle([FromQuery] PagingInput input)
         {

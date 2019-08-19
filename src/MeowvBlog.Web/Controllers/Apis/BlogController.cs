@@ -422,5 +422,48 @@ namespace MeowvBlog.Web.Controllers.Apis
         }
 
         #endregion
+
+        #region FriendLink
+
+        /// <summary>
+        /// 新增友链
+        /// </summary>
+        /// <param name="dto"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("friendlink")]
+        public async Task<Response<string>> InsertFriendLink(FriendLinkDto dto)
+        {
+            var response = new Response<string>();
+
+            var result = await _blogService.InsertFriendLink(dto);
+            if (!result.Success)
+                response.SetMessage(ResponseStatusCode.Error, result.GetErrorMessage());
+            else
+                response.Result = result.Result;
+            return response;
+        }
+
+        /// <summary>
+        /// 友链列表
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("friendlinks")]
+        [AllowAnonymous]
+        [ResponseCache(CacheProfileName = "default")]
+        public async Task<Response<IList<FriendLinkDto>>> QueryFriendLinks()
+        {
+            var response = new Response<IList<FriendLinkDto>>();
+
+            var result = await _blogService.QueryFriendLinks();
+            if (!result.Success)
+                response.SetMessage(ResponseStatusCode.Error, result.GetErrorMessage());
+            else
+                response.Result = result.Result;
+            return response;
+        }
+
+        #endregion
     }
 }
