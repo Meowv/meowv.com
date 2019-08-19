@@ -52,6 +52,12 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.Web.Controllers.Admin.ManageController.FriendLinks">
+            <summary>
+            友情链接
+            </summary>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.Web.Controllers.Apis.AccountController.GetGitHubUrl">
             <summary>
             生成请求链接

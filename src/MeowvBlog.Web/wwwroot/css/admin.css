@@ -7,6 +7,10 @@
     width: 105px;
 }
 
+.box input {
+    width: auto !important;
+}
+
 input:focus {
     outline: none;
 }
