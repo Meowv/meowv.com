@@ -4,48 +4,30 @@
 <div class="main">
     <div class="container">
         <section id="cd-timeline" class="cd-container">
-            <div class="cd-timeline-block">
-                <div class="cd-timeline-content">
-                    <h2><a href="">HTML5+CSS3实现的响应式垂直时间轴</a></h2>
-                    <span class="cd-date">2019-8-15 15:39:17</span>
+            <script id="commits_tmpl" type="text/template">
+                {{each result}}
+                <div class="cd-timeline-block">
+                    <div class="cd-timeline-content">
+                        <h2><a href="{{$value.sha}}">{{$value.message}}</a></h2>
+                        <span class="cd-date">{{$value.date}}</span>
+                    </div>
                 </div>
-            </div>
-            <div class="cd-timeline-block">
-                <div class="cd-timeline-content">
-                    <h2><a href="">HTML5+CSS3实现的响应式垂直时间轴</a></h2>
-                    <span class="cd-date">2019-8-15 15:39:17</span>
-                </div>
-            </div>
-            <div class="cd-timeline-block">
-                <div class="cd-timeline-content">
-                    <h2><a href="">HTML5+CSS3实现的响应式垂直时间轴</a></h2>
-                    <span class="cd-date">2019-8-15 15:39:17</span>
-                </div>
-            </div>
-            <div class="cd-timeline-block">
-                <div class="cd-timeline-content">
-                    <h2><a href="">HTML5+CSS3实现的响应式垂直时间轴</a></h2>
-                    <span class="cd-date">2019-8-15 15:39:17</span>
-                </div>
-            </div>
-            <div class="cd-timeline-block">
-                <div class="cd-timeline-content">
-                    <h2><a href="">HTML5+CSS3实现的响应式垂直时间轴</a></h2>
-                    <span class="cd-date">2019-8-15 15:39:17</span>
-                </div>
-            </div>
-            <div class="cd-timeline-block">
-                <div class="cd-timeline-content">
-                    <h2><a href="">HTML5+CSS3实现的响应式垂直时间轴</a></h2>
-                    <span class="cd-date">2019-8-15 15:39:17</span>
-                </div>
-            </div>
-            <div class="loader" style="position: relative;"></div>
+                {{/each}}
+            </script>
         </section>
+        <div class="loader" style="position: relative;"></div>
     </div>
 </div>
 @section scripts{
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://unpkg.com/art-template@4.13.2/lib/template-web.js"></script>
     <script>
+        var page = 1;
+        var limit = 20;
+        var totalPage;
+
+        load_data(page);
+
         //获取滚动条当前的位置
         function getScrollTop() {
             var scrollTop = 0;
@@ -76,8 +58,30 @@
         //滚动事件触发
         window.onscroll = function () {
             if (getScrollTop() + getClientHeight() == getScrollHeight()) {
-                console.log(this)
+                page++;
+
+                document.querySelector('.loader').style.cssText = "display:block";
+
+                if (page <= totalPage)
+                    load_data(page);
             }
+        }
+
+        function load_data(page) {
+            axios.get(`${api_domain}/api/commits/query?page=${page}&limit=${limit}`)
+                .then(function (response) {
+                    if (response.data.isSuccess) {
+                        var data = { "result": response.data.result.items };
+                        var html = template("commits_tmpl", data);
+                        document.querySelector('#cd-timeline').insertAdjacentHTML('beforeend', html);
+                        document.querySelector('.loader').style.cssText = "display:none";
+                    }
+                    if (page == 1) {
+                        totalPage = Math.ceil(response.data.result.totalCount / limit);
+                    }
+                }).catch(function (error) {
+                    console.log(error);
+                });
         }
     </script>
 }
