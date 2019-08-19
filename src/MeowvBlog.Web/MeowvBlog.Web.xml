@@ -102,13 +102,6 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.Web.Controllers.Apis.AppsController.QueryCommitsAsync(System.Int32)">
-            <summary>
-            Commits
-            </summary>
-            <param name="page"></param>
-            <returns></returns>
-        </member>
         <member name="M:MeowvBlog.Web.Controllers.Apis.BlogController.InsertPost(MeowvBlog.Services.Dto.Blog.PostForAdminDto)">
             <summary>
             新增文章
@@ -251,6 +244,20 @@
             <summary>
             查询分类列表  For Admin
             </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Apis.CommitsController.SyncCommitData(System.Int32)">
+            <summary>
+            同步Commit记录
+            </summary>
+            <param name="page"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.Web.Controllers.Apis.CommitsController.QueryNicceArticle(MeowvBlog.Services.Dto.PagingInput)">
+            <summary>
+            分页查询好文
+            </summary>
+            <param name="input"></param>
             <returns></returns>
         </member>
         <member name="M:MeowvBlog.Web.Controllers.Apis.HotNewsController.BulkInsertHotNews(System.Collections.Generic.IList{MeowvBlog.Services.Dto.HotNews.InsertHotNewsInput})">

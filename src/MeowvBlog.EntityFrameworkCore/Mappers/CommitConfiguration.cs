@@ -8,7 +8,7 @@ namespace MeowvBlog.EntityFrameworkCore.Mappers
     {
         public void Configure(EntityTypeBuilder<Commit> builder)
         {
-            builder.ToTable(DbConsts.DbTableName.Categories);
+            builder.ToTable(DbConsts.DbTableName.Commits);
         }
     }
 }

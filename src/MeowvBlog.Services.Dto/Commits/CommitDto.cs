@@ -1,6 +1,6 @@
-﻿namespace MeowvBlog.Services.Dto.Apps
+﻿namespace MeowvBlog.Services.Dto.Commits
 {
-    public class CommitsDto
+    public class CommitDto
     {
         public string Sha { get; set; }
 
