@@ -68,7 +68,7 @@ namespace MeowvBlog.Web.Controllers.Pages
         /// Mta
         /// </summary>
         /// <returns></returns>
-        [Route("/mta")]
+        [Route("/analysis")]
         public IActionResult Mta() => View();
 
         /// <summary>
