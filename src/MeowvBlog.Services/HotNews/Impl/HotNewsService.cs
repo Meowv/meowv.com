@@ -42,12 +42,6 @@ namespace MeowvBlog.Services.HotNews.Impl
                     Time = DateTime.Now
                 }).ToList();
 
-                string GenerateGuid()
-                {
-                    byte[] buffer = Guid.NewGuid().ToByteArray();
-                    return BitConverter.ToInt64(buffer, 0).ToString();
-                }
-
                 var result = await _hotNewsRepository.BulkInsertHotNewsAsync(hotNews);
 
                 await uow.CompleteAsync();
