@@ -25,7 +25,7 @@ namespace MeowvBlog.Web.Controllers.Pages
         /// Signature
         /// </summary>
         /// <returns></returns>
-        [Route("/signature")]
+        [Route("/sign")]
         public IActionResult Signature() => View();
 
         /// <summary>

@@ -24,7 +24,7 @@
     <script>
         wx_share(share);
         var page = location.pathname.replace(/posts|page|\//gi, "") || 1;
-        var limit = 10;
+        var limit = 15;
 
         axios.get(`${api_domain}/api/blog/post/query?page=${page}&limit=${limit}`)
             .then(function (response) {
