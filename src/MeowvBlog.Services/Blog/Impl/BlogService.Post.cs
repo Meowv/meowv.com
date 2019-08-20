@@ -419,5 +419,26 @@ namespace MeowvBlog.Services.Blog.Impl
                 return output;
             }
         }
+
+        /// <summary>
+        /// 查询所有文章供生成RSS使用
+        /// </summary>
+        /// <returns></returns>
+        public async Task<IList<PostRssDto>> QueryPostRss()
+        {
+            return (from posts in await _postRepository.GetAllListAsync()
+                    join categories in await _categoryRepository.GetAllListAsync()
+                    on posts.CategoryId equals categories.Id
+                    orderby posts.CreationTime descending
+                    select new PostRssDto
+                    {
+                        Title = posts.Title,
+                        Link = posts.Url,
+                        Description = ReplaceHtml(posts.Html, 200),
+                        Author = posts.Author,
+                        Category = categories.CategoryName,
+                        PubDate = posts.CreationTime
+                    }).ToList();
+        }
     }
 }

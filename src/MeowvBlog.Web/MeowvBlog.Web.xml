@@ -265,6 +265,12 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.Web.Controllers.Apis.BlogController.GenerateRss">
+            <summary>
+            生成RSS
+            </summary>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.Web.Controllers.Apis.CommitsController.SyncCommitData(System.Int32)">
             <summary>
             同步GitHub Commit记录

@@ -7,7 +7,9 @@ using Plus;
 using Plus.Services.Dto;
 using Plus.WebApi;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace MeowvBlog.Web.Controllers.Apis
 {
@@ -462,6 +464,52 @@ namespace MeowvBlog.Web.Controllers.Apis
             else
                 response.Result = result.Result;
             return response;
+        }
+
+        #endregion
+
+        #region RSS
+
+        /// <summary>
+        /// 生成RSS
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("/rss")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GenerateRss()
+        {
+            var list = await _blogService.QueryPostRss();
+
+            var document = new XDocument(
+                new XDeclaration(version: "2.0", encoding: "utf-8", standalone: "no"),
+                new XElement("rss", new XAttribute("version", "2.0"),
+                    new XElement("channel",
+                        new XElement("title", "阿星Plus"),
+                        new XElement("description", "生命不息，奋斗不止"),
+                        new XElement("link", "https://meowv.com"),
+
+                        from item in list
+                        select
+
+                        new XElement("item",
+                            new XElement("title", item.Title),
+                            new XElement("link", $"https://meowv.com/post{item.Link}"),
+                            new XElement("description", item.Description),
+                            new XElement("author", item.Author),
+                            new XElement("category", item.Category),
+                            new XElement("pubdate", item.PubDate)
+                        )
+                    )
+                )
+            );
+
+            return new ContentResult
+            {
+                Content = document.ToString(),
+                ContentType = "text/xml",
+                StatusCode = 200
+            };
         }
 
         #endregion

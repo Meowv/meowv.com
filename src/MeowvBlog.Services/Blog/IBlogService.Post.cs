@@ -72,5 +72,11 @@ namespace MeowvBlog.Services.Blog
         /// <param name="id"></param>
         /// <returns></returns>
         Task<ActionOutput<GetPostForAdminDto>> GetPostForAdmin(int id);
+
+        /// <summary>
+        /// 查询所有文章RSS
+        /// </summary>
+        /// <returns></returns>
+        Task<IList<PostRssDto>> QueryPostRss();
     }
 }
