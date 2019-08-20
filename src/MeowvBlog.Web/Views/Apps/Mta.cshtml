@@ -64,7 +64,7 @@
     </div>
 </div>
 @section scripts{
-    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://static.meowv.com/js/axios.min.js"></script>
     <script>
         axios.get(`${api_domain}/api/mta/ctr_core_data?start_date=@date&end_date=@date&idx=pv,uv,vv,iv`)
             .then(function (response) {
