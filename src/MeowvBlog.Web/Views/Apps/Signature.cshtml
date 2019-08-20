@@ -5,6 +5,7 @@
     <div class="container">
         <div class="loader"></div>
         <div class="signature-box hidden">
+            <p>图片仅保留24小时，如有需要请尽快下载，请勿频繁调用，谢谢！</p>
             <div class="signature-img">
                 <img src="https://static.meowv.com/images/signature.png" />
             </div>
@@ -74,15 +75,9 @@
             axios.get(`${api_domain}/api/signature?name=${name}&id=${typeId}`)
                 .then(function (response) {
                     document.querySelector(".signature-img img").src = cdn_domain + response.data.result;
-
-                    setTimeout(function () {
-                        alert("图片保留24小时，如有需要请尽快下载，谢谢！");
-                    }, 1000);
                 }).catch(function (error) {
                     console.log(error);
                 });
         });
-
-
     </script>
 }
