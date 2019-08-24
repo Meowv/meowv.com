@@ -1,4 +1,12 @@
-﻿.box {
+﻿input[type="checkbox"],
+input[type="radio"] {
+    display: initial;
+    width: auto;
+    height: auto;
+    visibility: visible;
+}
+
+.box {
     text-align: center;
     display: none;
 }

@@ -71,12 +71,12 @@ document.ready(
                 jsonPath: `https://static.meowv.com/live2d/tororo/assets/tororo.model_${model_path}.json`,
             },
             display: {
-                superSample: 2,
+                superSample: 1.5,
                 width: 100,
                 height: 100,
                 position: 'right',
-                hOffset: 0,
-                vOffset: 0,
+                hOffset: 5,
+                vOffset: 5,
             },
             mobile: {
                 show: true,
@@ -84,7 +84,7 @@ document.ready(
                 motion: true,
             },
             react: {
-                opacityDefault: 0.8,
+                opacityDefault: 0.5,
                 opacityOnHover: 0.2,
             }
         });

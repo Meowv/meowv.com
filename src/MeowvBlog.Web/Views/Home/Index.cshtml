@@ -27,10 +27,24 @@
                 <a target="_blank" class="link-item" title="Github" href="https://github.com/Meowv/">
                     <i class="iconfont icongithub"></i>
                 </a>
+                <a class="link-item weixin" title="点击关注阿星Plus，带你飙车不迷路" href="javascript:;">
+                    <i class="iconfont iconweixin">
+                    </i>
+                </a>
+                <div class="qrcode hidden">
+                    <img src="https://static.meowv.com/images/wx_qrcode.jpg" />
+                </div>
             </div>
         </div>
     </div>
 </div>
 @section scripts{
-    <script>wx_share(share);</script>
+    <script>
+        wx_share(share);
+        document.querySelector(".weixin").addEventListener("click", function () {
+            document.querySelector(".qrcode").classList.contains('hidden') ?
+                document.querySelector(".qrcode").classList.remove('hidden') :
+                document.querySelector(".qrcode").classList.add('hidden');
+        });
+    </script>
 }
