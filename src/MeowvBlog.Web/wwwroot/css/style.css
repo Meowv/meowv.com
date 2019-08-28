@@ -990,8 +990,12 @@ header label {
         width: 100%;
     }
 
+    .signature-box img {
+        height: 100px !important;
+    }
+
     .signature-img img {
-        height: 150px;
+        height: 100px;
     }
 
     .signature-action,.vip-action {
@@ -1105,7 +1109,7 @@ header label {
 }
 .signature-box img {
     border: none;
-    max-width: 100%;
+    height: 145px;
     margin-bottom:50px;
 }
 

@@ -79,7 +79,7 @@ namespace MeowvBlog.Signature
 
             qrcodeImg.Mutate(x =>
             {
-                x.DrawImage(signImg, 0.9f);
+                x.DrawImage(signImg, 0.8f);
             });
 
             var signImgBase64 = qrcodeImg.ToBase64String(format);

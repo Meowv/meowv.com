@@ -544,12 +544,13 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.Web.Controllers.Apis.SignatureController.GetSignature(System.String,System.Int32)">
+        <member name="M:MeowvBlog.Web.Controllers.Apis.SignatureController.GetSignature(System.String,System.Int32,System.String)">
             <summary>
             获取签名
             </summary>
             <param name="name">名字</param>
             <param name="id">签名类型</param>
+            <param name="from"></param>
             <returns></returns>
         </member>
         <member name="M:MeowvBlog.Web.Controllers.Apis.SignatureController.GetRecentlySignatureLog">
