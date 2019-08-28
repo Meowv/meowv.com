@@ -40,10 +40,11 @@ namespace MeowvBlog.Services.Signature.Impl
         /// <param name="name"></param>
         /// <param name="id"></param>
         /// <param name="ip"></param>
+        /// <param name="from"></param>
         /// <returns></returns>
-        public async Task<string> GetSignature(string name, int id, string ip)
+        public async Task<string> GetSignature(string name, int id, string ip, string from = "")
         {
-            var url = await name.GenerateSignature(id);
+            var url = await name.GenerateSignature(id, from);
 
             if (url.IsNotNullOrEmpty())
             {

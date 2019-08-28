@@ -41,10 +41,11 @@ namespace MeowvBlog.Web.Controllers.Apis
         /// </summary>
         /// <param name="name">名字</param>
         /// <param name="id">签名类型</param>
+        /// <param name="from"></param>
         /// <returns></returns>
         [HttpGet]
         [Route("")]
-        public async Task<IActionResult> GetSignature(string name, int id)
+        public async Task<IActionResult> GetSignature(string name, int id, string from = "")
         {
             if (name.Length > 4)
             {
@@ -57,7 +58,7 @@ namespace MeowvBlog.Web.Controllers.Apis
                 ip = Request.HttpContext.Connection.RemoteIpAddress.ToString();
             }
 
-            var url = await _signService.GetSignature(name, id, ip);
+            var url = await _signService.GetSignature(name, id, ip, from);
 
             return Ok(new { result = url });
         }

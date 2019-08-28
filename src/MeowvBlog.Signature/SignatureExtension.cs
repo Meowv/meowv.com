@@ -48,6 +48,28 @@ namespace MeowvBlog.Signature
         private static async Task AddQrcodeAsync(this string signaturePath)
         {
             var qrcodePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images/qrcode.png");
+            await CombineSignature(signaturePath, qrcodePath);
+        }
+
+        /// <summary>
+        /// 添加水印
+        /// </summary>
+        /// <param name="signaturePath"></param>
+        /// <returns></returns>
+        private static async Task AddWatermarkAsync(this string signaturePath)
+        {
+            var qrcodePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images/watermark.png");
+            await CombineSignature(signaturePath, qrcodePath);
+        }
+
+        /// <summary>
+        /// 合并签名图
+        /// </summary>
+        /// <param name="signaturePath"></param>
+        /// <param name="qrcodePath"></param>
+        /// <returns></returns>
+        private static async Task CombineSignature(string signaturePath, string qrcodePath)
+        {
             var qecodeBytes = await File.ReadAllBytesAsync(qrcodePath);
 
             var signImgBytes = await File.ReadAllBytesAsync(signaturePath);
@@ -94,8 +116,9 @@ namespace MeowvBlog.Signature
         /// </summary>
         /// <param name="name"></param>
         /// <param name="id"></param>
+        /// <param name="from"></param>
         /// <returns></returns>
-        public static async Task<string> GenerateSignature(this string name, int id)
+        public static async Task<string> GenerateSignature(this string name, int id, string from = "")
         {
             var signature = SignatureConfig.SignatureUrl(name, id);
 
@@ -112,8 +135,11 @@ namespace MeowvBlog.Signature
             var signaturePath = GetSignaturePath(name, id);
 
             signaturePath.DownloadImg(signatureUrl);
-            await signaturePath.AddQrcodeAsync();
 
+            if (from.IsNotNullOrEmpty())
+                await signaturePath.AddQrcodeAsync();
+            else
+                await signaturePath.AddWatermarkAsync();
 
             return $"{(name + id).Md5()}.png";
         }
