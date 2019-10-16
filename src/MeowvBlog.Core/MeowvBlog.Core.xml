@@ -4,6 +4,11 @@
         <name>MeowvBlog.Core</name>
     </assembly>
     <members>
+        <member name="P:MeowvBlog.Core.Configurations.AppSettings.SqliteConnectionString">
+            <summary>
+            Sqlite 连接字符串
+            </summary>
+        </member>
         <member name="P:MeowvBlog.Core.Domain.Blog.Category.Id">
             <summary>
             主键
