@@ -1,4 +1,5 @@
-﻿using MeowvBlog.Core.Domain.Blog;
+﻿using MeowvBlog.Core.Configurations;
+using MeowvBlog.Core.Domain.Blog;
 using Microsoft.EntityFrameworkCore;
 
 namespace MeowvBlog.Core
@@ -17,7 +18,7 @@ namespace MeowvBlog.Core
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseSqlite(@"Data Source=E:\Repositories\github\Blog\db\meowv.db");
+            optionsBuilder.UseSqlite(AppSettings.SqliteConnectionString);
         }
     }
 }

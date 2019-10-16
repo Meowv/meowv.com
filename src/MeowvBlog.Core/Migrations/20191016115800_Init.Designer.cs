@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace MeowvBlog.Core.Migrations
 {
     [DbContext(typeof(MeowvBlogDBContext))]
-    [Migration("20191016112716_Init")]
+    [Migration("20191016115800_Init")]
     partial class Init
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
