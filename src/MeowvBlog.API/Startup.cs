@@ -1,3 +1,4 @@
+using MeowvBlog.Core;
 using MeowvBlog.Swagger;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -19,6 +20,9 @@ namespace MeowvBlog.Web
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+
+            services.AddDbContext<MeowvBlogDBContext>();
+
             services.AddSwagger();
         }
 
