@@ -11,7 +11,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "solution-items", "solution-
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeowvBlog.Web", "src\MeowvBlog.Web\MeowvBlog.Web.csproj", "{C5238FC2-5A56-4A29-88D5-EE8B40A54E3E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeowvBlog.API", "src\MeowvBlog.API\MeowvBlog.API.csproj", "{C5238FC2-5A56-4A29-88D5-EE8B40A54E3E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeowvBlog.Swagger", "src\MeowvBlog.Swagger\MeowvBlog.Swagger.csproj", "{3D953C9F-2D8E-45ED-AA24-81671B5F323B}"
 EndProject
