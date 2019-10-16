@@ -13,6 +13,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "solution-items", "solution-
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeowvBlog.Web", "src\MeowvBlog.Web\MeowvBlog.Web.csproj", "{C5238FC2-5A56-4A29-88D5-EE8B40A54E3E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeowvBlog.Swagger", "src\MeowvBlog.Swagger\MeowvBlog.Swagger.csproj", "{3D953C9F-2D8E-45ED-AA24-81671B5F323B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,6 +25,10 @@ Global
 		{C5238FC2-5A56-4A29-88D5-EE8B40A54E3E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C5238FC2-5A56-4A29-88D5-EE8B40A54E3E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C5238FC2-5A56-4A29-88D5-EE8B40A54E3E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D953C9F-2D8E-45ED-AA24-81671B5F323B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D953C9F-2D8E-45ED-AA24-81671B5F323B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D953C9F-2D8E-45ED-AA24-81671B5F323B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D953C9F-2D8E-45ED-AA24-81671B5F323B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
