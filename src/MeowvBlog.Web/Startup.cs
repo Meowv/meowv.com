@@ -31,6 +31,7 @@ namespace MeowvBlog.Web
                     Title = "阿星Plus - 个人博客以及通用接口"
                 };
                 options.SwaggerDoc("v1", info);
+                options.DocumentFilter<DocumentFilter>();
 
                 var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
                 var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);

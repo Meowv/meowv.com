@@ -22,6 +22,10 @@ namespace MeowvBlog.Web.Controllers
             _logger = logger;
         }
 
+        /// <summary>
+        /// WeatherForecast WeatherForecast WeatherForecast
+        /// </summary>
+        /// <returns></returns>
         [HttpGet]
         public IEnumerable<WeatherForecast> Get()
         {
