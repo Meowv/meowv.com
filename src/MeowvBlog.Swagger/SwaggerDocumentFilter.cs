@@ -2,9 +2,9 @@
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Collections.Generic;
 
-namespace MeowvBlog.Web
+namespace MeowvBlog.Swagger
 {
-    public class DocumentFilter : IDocumentFilter
+    public class SwaggerDocumentFilter : IDocumentFilter
     {
         public void Apply(OpenApiDocument swaggerDoc, DocumentFilterContext context)
         {
