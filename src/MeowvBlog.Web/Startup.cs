@@ -32,6 +32,14 @@ namespace MeowvBlog.Web
                 };
                 options.SwaggerDoc("v1", info);
                 options.DocumentFilter<DocumentFilter>();
+               
+                options.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
+                {
+                    Description = "JWT模式授权，请输入 Bearer {Token} 进行身份验证",
+                    Name = "Authorization",
+                    In = ParameterLocation.Header,
+                    Type = SecuritySchemeType.ApiKey
+                });
 
                 var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
                 var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
