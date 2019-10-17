@@ -169,6 +169,26 @@
             下一篇
             </summary>
         </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.PostBriefDto.Title">
+            <summary>
+            标题
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.PostBriefDto.Url">
+            <summary>
+            链接
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.PostBriefDto.Year">
+            <summary>
+            年份
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.PostBriefDto.CreationTime">
+            <summary>
+            创建时间
+            </summary>
+        </member>
         <member name="P:MeowvBlog.Core.Dto.Blog.PostForPagedDto.Title">
             <summary>
             标题
@@ -179,6 +199,16 @@
             链接
             </summary>
         </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.QueryPostDto.Year">
+            <summary>
+            年份
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.QueryPostDto.Posts">
+            <summary>
+            Posts
+            </summary>
+        </member>
         <member name="P:MeowvBlog.Core.Dto.Blog.TagDto.TagName">
             <summary>
             标签名称
@@ -187,6 +217,21 @@
         <member name="P:MeowvBlog.Core.Dto.Blog.TagDto.DisplayName">
             <summary>
             展示名称
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.Core.GlobalConsts.GroupName_v1">
+            <summary>
+            博客前台接口组
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.Core.GlobalConsts.GroupName_v2">
+            <summary>
+            博客后台接口组
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.Core.GlobalConsts.GroupName_v3">
+            <summary>
+            其他通用接口组
             </summary>
         </member>
     </members>

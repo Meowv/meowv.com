@@ -12,7 +12,8 @@ namespace MeowvBlog.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [ApiExplorerSettings(GroupName = "v1")]
+    [Produces("application/json")]
+    [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v1)]
     public class BlogController : ControllerBase
     {
         private readonly MeowvBlogDBContext _context;
@@ -68,6 +69,38 @@ namespace MeowvBlog.API.Controllers
 
             response.Result = result;
             return response;
+        }
+
+        /// <summary>
+        /// 分页查询文章列表
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("post/query")]
+        public async Task<PagedResponse<QueryPostDto>> QueryPostsAsync([FromQuery] PagingInput input)
+        {
+            var posts = await _context.Posts.ToListAsync();
+            var count = posts.Count;
+
+            var result = posts.OrderByDescending(x => x.CreationTime)
+                              .Skip((input.Page - 1) * input.Limit)
+                              .Take(input.Limit)
+                              .Select(x => new PostBriefDto
+                              {
+                                  Title = x.Title,
+                                  Url = x.Url,
+                                  Year = Convert.ToDateTime(x.CreationTime).Year,
+                                  CreationTime = Convert.ToDateTime(x.CreationTime).ToString("MMMM dd, yyyy HH:mm:ss", new CultureInfo("en-us"))
+                              })
+                              .GroupBy(x => x.Year)
+                              .Select(x => new QueryPostDto
+                              {
+                                  Year = x.Key,
+                                  Posts = x.ToList()
+                              }).ToList();
+
+            return new PagedResponse<QueryPostDto>(count, result);
         }
     }
 }
