@@ -10,7 +10,10 @@ namespace MeowvBlog.API.Swagger
         {
             var tags = new List<OpenApiTag>
             {
-                //new OpenApiTag { Name = "WeatherForecast", Description = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",ExternalDocs=new OpenApiExternalDocs{ Description="AAAAAAAAAAAAAAAAAAAAAAAAA"} },
+                new OpenApiTag {
+                    Name = "Blog",
+                    Description = "    博客前台接口，包含文章、标签、分类"
+                },
             };
 
             swaggerDoc.Tags = tags;
