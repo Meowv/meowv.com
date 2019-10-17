@@ -177,6 +177,28 @@ namespace MeowvBlog.API.Controllers
         #region Tags
 
         /// <summary>
+        /// 获取标签名称
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("tag")]
+        public async Task<Response<string>> GetTagAsync(string name)
+        {
+            var response = new Response<string>();
+
+            var tag = await _context.Tags.FirstOrDefaultAsync(x => x.DisplayName.Equals(name));
+            if (null == tag)
+            {
+                response.Msg = $"标签：{name} 不存在";
+                return response;
+            }
+
+            response.Result = tag.TagName;
+            return response;
+        }
+
+        /// <summary>
         /// 查询标签列表
         /// </summary>
         /// <returns></returns>
@@ -214,7 +236,7 @@ namespace MeowvBlog.API.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("category")]
-        public async Task<Response<string>> GetCategory(string name)
+        public async Task<Response<string>> GetCategoryAsync(string name)
         {
             var response = new Response<string>();
 
