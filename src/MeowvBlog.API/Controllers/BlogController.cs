@@ -4,6 +4,7 @@ using MeowvBlog.Core.Dto.Blog;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
@@ -101,6 +102,37 @@ namespace MeowvBlog.API.Controllers
                               }).ToList();
 
             return new PagedResponse<QueryPostDto>(count, result);
+        }
+
+        /// <summary>
+        /// 通过标签查询文章列表
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("post/query_by_tag")]
+        public async Task<IList<QueryPostDto>> QueryPostsByTagAsync(string name)
+        {
+            return (from post_tags in await _context.PostTags.ToListAsync()
+                    join tags in await _context.Tags.ToListAsync()
+                    on post_tags.TagId equals tags.Id
+                    join posts in await _context.Posts.ToListAsync()
+                    on post_tags.PostId equals posts.Id
+                    where tags.DisplayName.Equals(name)
+                    orderby posts.CreationTime descending
+                    select new PostBriefDto
+                    {
+                        Title = posts.Title,
+                        Url = posts.Url,
+                        CreationTime = posts.CreationTime.ToString("MMMM dd, yyyy HH:mm:ss", new CultureInfo("en-us")),
+                        Year = posts.CreationTime.Year
+                    })
+                    .GroupBy(x => x.Year)
+                    .Select(x => new QueryPostDto
+                    {
+                        Year = x.Key,
+                        Posts = x.ToList()
+                    }).ToList();
         }
     }
 }
