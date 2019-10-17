@@ -4,7 +4,6 @@ using MeowvBlog.Core.Dto;
 using MeowvBlog.Core.Dto.Blog;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -48,34 +47,87 @@ namespace MeowvBlog.API.Controllers.Admin
             await _context.SaveChangesAsync();
 
             var tags = await _context.Tags.ToListAsync();
-            var newTags = new List<Tag>();
-            foreach (var item in dto.Tags)
+
+            var newTags = dto.Tags.Where(item => !tags.Any(x => x.TagName.Equals(item))).Select(item => new Tag
             {
-                if (!tags.Any(x => x.TagName.Equals(item)))
-                {
-                    newTags.Add(new Tag
-                    {
-                        TagName = item,
-                        DisplayName = item
-                    });
-                }
-            }
+                TagName = item,
+                DisplayName = item
+            }).ToList();
             await _context.Tags.AddRangeAsync(newTags);
             await _context.SaveChangesAsync();
 
-            var postTags = new List<PostTag>();
-            foreach (var item in dto.Tags)
+            var postTags = dto.Tags.Select(item => new PostTag
             {
-                postTags.Add(new PostTag
-                {
-                    PostId = post.Id,
-                    TagId = _context.Tags.FirstOrDefault(x => x.TagName == item).Id
-                });
-            }
+                PostId = post.Id,
+                TagId = _context.Tags.FirstOrDefault(x => x.TagName == item).Id
+            }).ToList();
             await _context.PostTags.AddRangeAsync(postTags);
             await _context.SaveChangesAsync();
 
             response.Result = "新增成功";
+            return response;
+        }
+
+        /// <summary>
+        /// 更新文章
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="dto"></param>
+        /// <returns></returns>
+        [HttpPut]
+        [Route("post")]
+        public async Task<Response<string>> UpdatePostAsync(int id, PostForAdminDto dto)
+        {
+            var response = new Response<string>();
+
+            var post = new Post
+            {
+                Id = id,
+                Title = dto.Title,
+                Author = dto.Author,
+                Url = $"{dto.CreationTime.ToString(" yyyy MM dd ").Replace(" ", "/")}{dto.Url}/",
+                Html = dto.Html,
+                Markdown = dto.Markdown,
+                CreationTime = dto.CreationTime,
+                CategoryId = dto.CategoryId
+            };
+            _context.Posts.Update(post);
+            await _context.SaveChangesAsync();
+
+            var tags = await _context.Tags.ToListAsync();
+
+            var oldPostTags = (from post_tags in await _context.PostTags.ToListAsync()
+                               join tag in await _context.Tags.ToListAsync()
+                               on post_tags.TagId equals tag.Id
+                               where post_tags.PostId.Equals(post.Id)
+                               select new
+                               {
+                                   post_tags.Id,
+                                   tag.TagName
+                               }).ToList();
+
+            var removedIds = oldPostTags.Where(item => !dto.Tags.Any(x => x == item.TagName) && tags.Any(t => t.TagName == item.TagName)).Select(item => item.Id).ToList();
+            var removedPostTags = await _context.PostTags.Where(x => removedIds.Contains(x.Id)).ToListAsync();
+            _context.PostTags.RemoveRange(removedPostTags);
+            await _context.SaveChangesAsync();
+
+            var newTags = dto.Tags.Where(item => !tags.Any(x => x.TagName == item)).Select(item => new Tag
+            {
+                TagName = item,
+                DisplayName = item
+            }).ToList();
+            await _context.Tags.AddRangeAsync(newTags);
+            await _context.SaveChangesAsync();
+
+            var postTags = dto.Tags.Where(item => !oldPostTags.Any(x => x.TagName == item)).Select(item => new PostTag
+            {
+                PostId = id,
+                TagId = _context.Tags.FirstOrDefault(x => x.TagName == item).Id
+            }).ToList();
+            await _context.PostTags.AddRangeAsync(postTags);
+            await _context.SaveChangesAsync();
+
+            response.Result = "更新成功";
             return response;
         }
     }
