@@ -4,5 +4,12 @@
         <name>MeowvBlog.API</name>
     </assembly>
     <members>
+        <member name="M:MeowvBlog.API.Controllers.BlogController.GetPostAsync(System.String)">
+            <summary>
+            根据URL获取文章详情
+            </summary>
+            <param name="url"></param>
+            <returns></returns>
+        </member>
     </members>
 </doc>
