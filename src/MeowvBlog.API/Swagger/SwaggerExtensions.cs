@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using MeowvBlog.Core;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
 using System;
@@ -13,7 +14,7 @@ namespace MeowvBlog.API.Swagger
         {
             new SwaggerApiInfo
             {
-                UrlPrefix = "v1",
+                UrlPrefix = GlobalConsts.GroupName_v1,
                 Name = "博客前台接口",
                 OpenApiInfo = new OpenApiInfo
                 {
@@ -23,7 +24,7 @@ namespace MeowvBlog.API.Swagger
             },
             new SwaggerApiInfo
             {
-                UrlPrefix = "v2",
+                UrlPrefix = GlobalConsts.GroupName_v2,
                 Name = "博客后台接口",
                 OpenApiInfo = new OpenApiInfo
                 {
@@ -33,7 +34,7 @@ namespace MeowvBlog.API.Swagger
             },
             new SwaggerApiInfo
             {
-                UrlPrefix = "v3",
+                UrlPrefix = GlobalConsts.GroupName_v3,
                 Name = "其他通用接口",
                 OpenApiInfo = new OpenApiInfo
                 {
