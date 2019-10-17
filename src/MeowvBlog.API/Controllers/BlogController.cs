@@ -15,7 +15,7 @@ namespace MeowvBlog.API.Controllers
     [Route("Blog")]
     [Produces("application/json")]
     [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v1)]
-    public class BlogController : ControllerBase
+    public partial class BlogController : ControllerBase
     {
         private readonly MeowvBlogDBContext _context;
 
