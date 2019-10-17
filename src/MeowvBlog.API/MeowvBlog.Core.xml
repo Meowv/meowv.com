@@ -109,5 +109,85 @@
             展示名称
             </summary>
         </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.CategoryDto.CategoryName">
+            <summary>
+            分类名称
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.CategoryDto.DisplayName">
+            <summary>
+            展示名称
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.GetPostDto.Title">
+            <summary>
+            标题
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.GetPostDto.Author">
+            <summary>
+            作者
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.GetPostDto.Url">
+            <summary>
+            链接
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.GetPostDto.Html">
+            <summary>
+            HTML
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.GetPostDto.Markdown">
+            <summary>
+            Markdown
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.GetPostDto.CreationTime">
+            <summary>
+            创建时间
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.GetPostDto.Category">
+            <summary>
+            分类
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.GetPostDto.Tags">
+            <summary>
+            标签列表
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.GetPostDto.Previous">
+            <summary>
+            上一篇
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.GetPostDto.Next">
+            <summary>
+            下一篇
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.PostForPagedDto.Title">
+            <summary>
+            标题
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.PostForPagedDto.Url">
+            <summary>
+            链接
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.TagDto.TagName">
+            <summary>
+            标签名称
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.TagDto.DisplayName">
+            <summary>
+            展示名称
+            </summary>
+        </member>
     </members>
 </doc>

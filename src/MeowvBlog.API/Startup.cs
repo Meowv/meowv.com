@@ -1,5 +1,5 @@
+using MeowvBlog.API.Swagger;
 using MeowvBlog.Core;
-using MeowvBlog.Swagger;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -22,6 +22,12 @@ namespace MeowvBlog.Web
             services.AddControllers();
 
             services.AddDbContext<MeowvBlogDBContext>();
+
+            services.AddRouting(options =>
+            {
+                options.LowercaseUrls = true;
+                options.AppendTrailingSlash = true;
+            });
 
             services.AddSwagger();
         }
