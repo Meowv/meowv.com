@@ -29,6 +29,7 @@ namespace MeowvBlog.Swagger
                 });
 
                 options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "MeowvBlog.Web.xml"));
+                options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "MeowvBlog.Core.xml"));
             });
         }
 
