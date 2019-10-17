@@ -249,6 +249,16 @@
             Posts
             </summary>
         </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.QueryPostForAdminDto.Year">
+            <summary>
+            年份
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.QueryPostForAdminDto.Posts">
+            <summary>
+            Posts
+            </summary>
+        </member>
         <member name="P:MeowvBlog.Core.Dto.Blog.TagDto.TagName">
             <summary>
             标签名称

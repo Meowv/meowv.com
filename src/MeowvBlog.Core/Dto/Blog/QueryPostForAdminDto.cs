@@ -2,8 +2,16 @@
 
 namespace MeowvBlog.Core.Dto.Blog
 {
-    public class QueryPostForAdminDto : QueryPostDto
+    public class QueryPostForAdminDto
     {
-        public new IList<PostBriefForAdminDto> Posts { get; set; }
+        /// <summary>
+        /// 年份
+        /// </summary>
+        public int Year { get; set; }
+
+        /// <summary>
+        /// Posts
+        /// </summary>
+        public IList<PostBriefForAdminDto> Posts { get; set; }
     }
 }
