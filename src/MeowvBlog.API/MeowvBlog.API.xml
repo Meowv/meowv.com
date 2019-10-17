@@ -11,6 +11,13 @@
             <param name="id"></param>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.API.Controllers.BlogController.QueryPostsForAdminAsync(MeowvBlog.Core.Dto.PagingInput)">
+            <summary>
+            分页查询文章列表
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.API.Controllers.BlogController.InsertPostAsync(MeowvBlog.Core.Dto.Blog.PostForAdminDto)">
             <summary>
             新增文章

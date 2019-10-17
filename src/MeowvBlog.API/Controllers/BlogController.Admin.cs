@@ -4,6 +4,8 @@ using MeowvBlog.Core.Dto;
 using MeowvBlog.Core.Dto.Blog;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -19,7 +21,7 @@ namespace MeowvBlog.API.Controllers
         /// <param name="id"></param>
         /// <returns></returns>
         [HttpGet]
-        [Route("admin/post")]
+        [Route("post/admin")]
         [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
         public async Task<Response<GetPostForAdminDto>> GetPostForAdminAsync(int id)
         {
@@ -47,6 +49,40 @@ namespace MeowvBlog.API.Controllers
 
             response.Result = result;
             return response;
+        }
+
+        /// <summary>
+        /// 分页查询文章列表
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("post/query/admin")]
+        [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
+        public async Task<PagedResponse<QueryPostForAdminDto>> QueryPostsForAdminAsync([FromQuery] PagingInput input)
+        {
+            var posts = await _context.Posts.ToListAsync();
+            var count = posts.Count;
+
+            var result = posts.OrderByDescending(x => x.CreationTime)
+                              .Skip((input.Page - 1) * input.Limit)
+                              .Take(input.Limit)
+                              .Select(x => new PostBriefForAdminDto
+                              {
+                                  Id = x.Id,
+                                  Title = x.Title,
+                                  Url = x.Url,
+                                  Year = Convert.ToDateTime(x.CreationTime).Year,
+                                  CreationTime = Convert.ToDateTime(x.CreationTime).ToString("MMMM dd, yyyy HH:mm:ss", new CultureInfo("en-us"))
+                              })
+                              .GroupBy(x => x.Year)
+                              .Select(x => new QueryPostForAdminDto
+                              {
+                                  Year = x.Key,
+                                  Posts = x.ToList()
+                              }).ToList();
+
+            return new PagedResponse<QueryPostForAdminDto>(count, result);
         }
 
         /// <summary>
