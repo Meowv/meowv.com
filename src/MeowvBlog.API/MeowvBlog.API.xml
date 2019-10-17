@@ -32,5 +32,24 @@
             <param name="name"></param>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.API.Controllers.BlogController.QueryTagsAsync">
+            <summary>
+            查询标签列表
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.BlogController.GetCategory(System.String)">
+            <summary>
+            获取分类名称
+            </summary>
+            <param name="name"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.BlogController.QueryCategoriesAsync">
+            <summary>
+            查询分类列表
+            </summary>
+            <returns></returns>
+        </member>
     </members>
 </doc>
