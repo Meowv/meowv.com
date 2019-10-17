@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 namespace MeowvBlog.API.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("Blog")]
     [Produces("application/json")]
     [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v1)]
     public class BlogController : ControllerBase

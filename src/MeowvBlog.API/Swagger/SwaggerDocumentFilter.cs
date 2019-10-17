@@ -14,6 +14,11 @@ namespace MeowvBlog.API.Swagger
                     Name = "Blog",
                     Description = "    博客前台接口，包含文章、标签、分类"
                 },
+                new OpenApiTag
+                {
+                    Name = "BlogAdmin",
+                    Description = "    博客后台接口，包含文章、标签、分类的创建、编辑、删除"
+                }
             };
 
             swaggerDoc.Tags = tags;
