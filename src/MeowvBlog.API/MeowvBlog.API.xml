@@ -18,5 +18,12 @@
             <param name="input"></param>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.API.Controllers.BlogController.QueryPostsByTagAsync(System.String)">
+            <summary>
+            通过标签查询文章列表
+            </summary>
+            <param name="name"></param>
+            <returns></returns>
+        </member>
     </members>
 </doc>
