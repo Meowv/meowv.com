@@ -11,6 +11,14 @@
             <param name="dto"></param>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.API.Controllers.Admin.BlogAdminController.UpdatePostAsync(System.Int32,MeowvBlog.Core.Dto.Blog.PostForAdminDto)">
+            <summary>
+            更新文章
+            </summary>
+            <param name="id"></param>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.API.Controllers.BlogController.GetPostAsync(System.String)">
             <summary>
             根据URL获取文章详情
