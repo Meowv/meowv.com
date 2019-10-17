@@ -12,12 +12,17 @@ namespace MeowvBlog.Swagger
         {
             return services.AddSwaggerGen(options =>
             {
-                var info = new OpenApiInfo
+                options.SwaggerDoc("v1", new OpenApiInfo
                 {
                     Version = "v3.1.0",
                     Title = "阿星Plus - 个人博客以及通用接口"
-                };
-                options.SwaggerDoc("v1", info);
+                });
+                options.SwaggerDoc("v2", new OpenApiInfo
+                {
+                    Version = "v3.1.0",
+                    Title = "阿星Plus - 通用接口"
+                });
+
                 options.DocumentFilter<SwaggerDocumentFilter>();
 
                 options.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
@@ -37,7 +42,8 @@ namespace MeowvBlog.Swagger
         {
             app.UseSwaggerUI(c =>
             {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "个人博客以及通用接口");
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "个人博客");
+                c.SwaggerEndpoint("/swagger/v2/swagger.json", "通用接口");
                 c.RoutePrefix = string.Empty;
             });
         }
