@@ -169,6 +169,11 @@
             下一篇
             </summary>
         </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.GetPostForAdminDto.Tags">
+            <summary>
+            标签
+            </summary>
+        </member>
         <member name="P:MeowvBlog.Core.Dto.Blog.PostBriefDto.Title">
             <summary>
             标题

@@ -7,19 +7,46 @@ using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace MeowvBlog.API.Controllers.Admin
+namespace MeowvBlog.API.Controllers
 {
-    [ApiController]
-    [Route("Blog")]
-    [Produces("application/json")]
-    [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
-    public class BlogAdminController : ControllerBase
+    public partial class BlogController : ControllerBase
     {
-        private readonly MeowvBlogDBContext _context;
+        #region Posts
 
-        public BlogAdminController(MeowvBlogDBContext context)
+        /// <summary>
+        /// 获取文章详细信息
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("admin/post")]
+        [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
+        public async Task<Response<GetPostForAdminDto>> GetPostForAdminAsync(int id)
         {
-            _context = context;
+            var response = new Response<GetPostForAdminDto>();
+
+            var post = await _context.Posts.FindAsync(id);
+
+            var tags = from post_tags in await _context.PostTags.ToListAsync()
+                       join tag in await _context.Tags.ToListAsync()
+                       on post_tags.TagId equals tag.Id
+                       where post_tags.PostId.Equals(post.Id)
+                       select tag.TagName;
+
+            var result = new GetPostForAdminDto
+            {
+                Title = post.Title,
+                Author = post.Author,
+                Html = post.Html,
+                Markdown = post.Markdown,
+                CategoryId = post.CategoryId,
+                CreationTime = post.CreationTime,
+                Tags = string.Join(",", tags),
+                Url = post.Url.Split("/").Where(x => !string.IsNullOrEmpty(x)).Last()
+            };
+
+            response.Result = result;
+            return response;
         }
 
         /// <summary>
@@ -29,6 +56,7 @@ namespace MeowvBlog.API.Controllers.Admin
         /// <returns></returns>
         [HttpPost]
         [Route("post")]
+        [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
         public async Task<Response<string>> InsertPostAsync([FromBody] PostForAdminDto dto)
         {
             var response = new Response<string>();
@@ -76,6 +104,7 @@ namespace MeowvBlog.API.Controllers.Admin
         /// <returns></returns>
         [HttpPut]
         [Route("post")]
+        [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
         public async Task<Response<string>> UpdatePostAsync(int id, PostForAdminDto dto)
         {
             var response = new Response<string>();
@@ -130,5 +159,33 @@ namespace MeowvBlog.API.Controllers.Admin
             response.Result = "更新成功";
             return response;
         }
+
+        /// <summary>
+        /// 删除文章
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpDelete]
+        [Route("post")]
+        [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
+        public async Task<Response<string>> DeletePostAsync(int id)
+        {
+            var response = new Response<string>();
+
+            var post = await _context.Posts.FindAsync(id);
+            if (null == post)
+            {
+                response.Msg = $"ID：{id} 不存在";
+                return response;
+            }
+
+            _context.Posts.Remove(post);
+            await _context.SaveChangesAsync();
+
+            response.Result = "删除成功";
+            return response;
+        }
+
+        #endregion Posts
     }
 }
