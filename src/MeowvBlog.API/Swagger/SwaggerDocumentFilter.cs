@@ -12,7 +12,7 @@ namespace MeowvBlog.API.Swagger
             {
                 new OpenApiTag {
                     Name = "Blog",
-                    Description = "    博客前台接口，包含文章、标签、分类"
+                    Description = "    博客前台接口，包含文章、标签、分类的查询"
                 },
                 new OpenApiTag
                 {
