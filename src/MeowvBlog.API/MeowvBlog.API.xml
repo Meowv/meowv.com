@@ -20,7 +20,14 @@
         </member>
         <member name="M:MeowvBlog.API.Controllers.BlogController.QueryPostsByTagAsync(System.String)">
             <summary>
-            通过标签查询文章列表
+            通过标签名称查询文章列表
+            </summary>
+            <param name="name"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.BlogController.QueryPostsByCategoryAsync(System.String)">
+            <summary>
+            通过分类名称查询文章列表
             </summary>
             <param name="name"></param>
             <returns></returns>

@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 namespace MeowvBlog.API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("[controller]")]
     [Produces("application/json")]
     [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v1)]
     public class BlogController : ControllerBase
@@ -23,6 +23,8 @@ namespace MeowvBlog.API.Controllers
         {
             _context = context;
         }
+
+        #region Posts
 
         /// <summary>
         /// 根据URL获取文章详情
@@ -105,7 +107,7 @@ namespace MeowvBlog.API.Controllers
         }
 
         /// <summary>
-        /// 通过标签查询文章列表
+        /// 通过标签名称查询文章列表
         /// </summary>
         /// <param name="name"></param>
         /// <returns></returns>
@@ -134,5 +136,36 @@ namespace MeowvBlog.API.Controllers
                         Posts = x.ToList()
                     }).ToList();
         }
+
+        /// <summary>
+        /// 通过分类名称查询文章列表
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("post/query_by_category")]
+        public async Task<IList<QueryPostDto>> QueryPostsByCategoryAsync(string name)
+        {
+            return (from posts in await _context.Posts.ToListAsync()
+                    join categories in await _context.Categories.ToListAsync()
+                    on posts.CategoryId equals categories.Id
+                    where categories.DisplayName.Equals(name)
+                    orderby posts.CreationTime descending
+                    select new PostBriefDto
+                    {
+                        Title = posts.Title,
+                        Url = posts.Url,
+                        CreationTime = posts.CreationTime.ToString("MMMM dd, yyyy HH:mm:ss", new CultureInfo("en-us")),
+                        Year = posts.CreationTime.Year
+                    })
+                    .GroupBy(x => x.Year)
+                    .Select(x => new QueryPostDto
+                    {
+                        Year = x.Key,
+                        Posts = x.ToList()
+                    }).ToList();
+        }
+
+        #endregion Posts
     }
 }
