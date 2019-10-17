@@ -4,6 +4,13 @@
         <name>MeowvBlog.API</name>
     </assembly>
     <members>
+        <member name="M:MeowvBlog.API.Controllers.Admin.BlogAdminController.InsertPostAsync(MeowvBlog.Core.Dto.Blog.PostForAdminDto)">
+            <summary>
+            新增文章
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.API.Controllers.BlogController.GetPostAsync(System.String)">
             <summary>
             根据URL获取文章详情

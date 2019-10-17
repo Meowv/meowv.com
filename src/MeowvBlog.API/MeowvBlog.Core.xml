@@ -189,6 +189,41 @@
             创建时间
             </summary>
         </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.PostDto.Title">
+            <summary>
+            标题
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.PostDto.Author">
+            <summary>
+            作者
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.PostDto.Url">
+            <summary>
+            链接
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.PostDto.Html">
+            <summary>
+            HTML
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.PostDto.Markdown">
+            <summary>
+            Markdown
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.PostDto.CategoryId">
+            <summary>
+            分类Id
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.PostDto.CreationTime">
+            <summary>
+            创建时间
+            </summary>
+        </member>
         <member name="P:MeowvBlog.Core.Dto.Blog.PostForPagedDto.Title">
             <summary>
             标题
