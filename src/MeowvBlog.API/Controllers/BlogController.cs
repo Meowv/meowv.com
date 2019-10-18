@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace MeowvBlog.API.Controllers
 {
@@ -279,5 +280,97 @@ namespace MeowvBlog.API.Controllers
         }
 
         #endregion Categories
+
+        #region FriendLink
+
+        /// <summary>
+        /// 查询友链列表
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("friendlinks")]
+        public async Task<Response<IList<FriendLinkDto>>> QueryFriendLinksAsync()
+        {
+            var response = new Response<IList<FriendLinkDto>>();
+
+            var links = await _context.FriendLinks.ToListAsync();
+            var result = links.Select(x => new FriendLinkDto
+            {
+                Title = x.Title,
+                LinkUrl = x.LinkUrl
+            }).ToList();
+
+            response.Result = result;
+            return response;
+        }
+
+        #endregion FriendLink
+
+        #region RSS
+
+        /// <summary>
+        /// 生成RSS
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("/rss")]
+        public async Task<IActionResult> GenerateRssAsync()
+        {
+            var list = (from posts in await _context.Posts.ToListAsync()
+                        join categories in await _context.Categories.ToListAsync()
+                        on posts.CategoryId equals categories.Id
+                        orderby posts.CreationTime descending
+                        select new PostRssDto
+                        {
+                            Title = posts.Title,
+                            Link = posts.Url,
+                            Description = ReplaceHtml(posts.Html, 200),
+                            Author = posts.Author,
+                            Category = categories.CategoryName,
+                            PubDate = posts.CreationTime
+                        }).ToList();
+
+            static string ReplaceHtml(string content, int length)
+            {
+                var result = System.Text.RegularExpressions.Regex.Replace(content, "<[^>]+>", "");
+                result = System.Text.RegularExpressions.Regex.Replace(result, "&[^;]+;", "");
+
+                if (result.Length > length) return result.Substring(0, length) + "...";
+
+                return result;
+            }
+
+            var document = new XDocument(
+                new XDeclaration(version: "2.0", encoding: "utf-8", standalone: "no"),
+                new XElement("rss", new XAttribute("version", "2.0"),
+                    new XElement("channel",
+                        new XElement("title", "阿星Plus"),
+                        new XElement("description", "生命不息，奋斗不止"),
+                        new XElement("link", "https://meowv.com"),
+
+                        from item in list
+                        select
+
+                        new XElement("item",
+                            new XElement("title", item.Title),
+                            new XElement("link", $"https://meowv.com/post{item.Link}"),
+                            new XElement("description", item.Description),
+                            new XElement("author", item.Author),
+                            new XElement("category", item.Category),
+                            new XElement("pubdate", item.PubDate)
+                        )
+                    )
+                )
+            );
+
+            return new ContentResult
+            {
+                Content = document.ToString(),
+                ContentType = "text/xml",
+                StatusCode = 200
+            };
+        }
+
+        #endregion RSS
     }
 }

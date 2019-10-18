@@ -443,5 +443,33 @@ namespace MeowvBlog.API.Controllers
         }
 
         #endregion Categories
+
+        #region FriendLink
+
+        /// <summary>
+        /// 新增友链
+        /// </summary>
+        /// <param name="dto"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("friendlink")]
+        [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
+        public async Task<Response<string>> InsertFriendLinkAsync(FriendLinkDto dto)
+        {
+            var response = new Response<string>();
+
+            var friendLink = new FriendLink
+            {
+                Title = dto.Title,
+                LinkUrl = dto.LinkUrl
+            };
+            await _context.FriendLinks.AddAsync(friendLink);
+            await _context.SaveChangesAsync();
+
+            response.Result = "新增成功";
+            return response;
+        }
+
+        #endregion FriendLink
     }
 }

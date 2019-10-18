@@ -96,6 +96,13 @@
             <param name="id"></param>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.API.Controllers.BlogController.InsertFriendLinkAsync(MeowvBlog.Core.Dto.Blog.FriendLinkDto)">
+            <summary>
+            新增友链
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.API.Controllers.BlogController.GetPostAsync(System.String)">
             <summary>
             根据URL获取文章详情
@@ -147,6 +154,18 @@
         <member name="M:MeowvBlog.API.Controllers.BlogController.QueryCategoriesAsync">
             <summary>
             查询分类列表
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.BlogController.QueryFriendLinksAsync">
+            <summary>
+            查询友链列表
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.BlogController.GenerateRssAsync">
+            <summary>
+            生成RSS
             </summary>
             <returns></returns>
         </member>
