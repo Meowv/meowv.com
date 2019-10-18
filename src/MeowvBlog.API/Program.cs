@@ -11,7 +11,9 @@ namespace MeowvBlog.Web
             await Host.CreateDefaultBuilder(args)
                       .ConfigureWebHostDefaults(builder =>
                       {
-                          builder.UseStartup<Startup>();
+                          builder.ConfigureKestrel(options => { options.AddServerHeader = false; })
+                                 .UseUrls("http://*:5002")
+                                 .UseStartup<Startup>();
                       }).Build().RunAsync();
         }
     }
