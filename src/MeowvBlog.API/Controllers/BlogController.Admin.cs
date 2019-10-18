@@ -236,25 +236,24 @@ namespace MeowvBlog.API.Controllers
         [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
         public async Task<Response<IList<QueryTagForAdminDto>>> QueryTagsForAdminAsync()
         {
-            return new Response<IList<QueryTagForAdminDto>>
+            var response = new Response<IList<QueryTagForAdminDto>>();
+            var result = new List<QueryTagForAdminDto>();
+
+            var post_tags = await _context.PostTags.ToListAsync();
+            var tags = await _context.Tags.ToListAsync();
+            tags.ForEach(x =>
             {
-                Result = (from tags in await _context.Tags.ToListAsync()
-                          join post_tags in await _context.PostTags.ToListAsync()
-                          on tags.Id equals post_tags.TagId
-                          group tags by new
-                          {
-                              tags.Id,
-                              tags.TagName,
-                              tags.DisplayName
-                          } into g
-                          select new QueryTagForAdminDto
-                          {
-                              Id = g.Key.Id,
-                              TagName = g.Key.TagName,
-                              DisplayName = g.Key.DisplayName,
-                              Count = g.Count()
-                          }).ToList()
-            };
+                result.Add(new QueryTagForAdminDto
+                {
+                    Id = x.Id,
+                    TagName = x.TagName,
+                    DisplayName = x.DisplayName,
+                    Count = post_tags.Count(t => t.TagId == x.Id)
+                });
+            });
+
+            response.Result = result;
+            return response;
         }
 
         /// <summary>
@@ -333,6 +332,116 @@ namespace MeowvBlog.API.Controllers
             return response;
         }
 
-        #endregion
+        #endregion Tags
+
+        #region Categories
+
+        /// <summary>
+        /// 查询分类列表
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("categories/admin")]
+        [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
+        public async Task<Response<IList<QueryCategoryForAdminDto>>> QueryCategoriesForAdminAsync()
+        {
+            var response = new Response<IList<QueryCategoryForAdminDto>>();
+            var result = new List<QueryCategoryForAdminDto>();
+
+            var posts = await _context.Posts.ToListAsync();
+            var categories = await _context.Categories.ToListAsync();
+            categories.ForEach(x =>
+            {
+                result.Add(new QueryCategoryForAdminDto
+                {
+                    Id = x.Id,
+                    CategoryName = x.CategoryName,
+                    DisplayName = x.DisplayName,
+                    Count = posts.Count(p => p.CategoryId == x.Id)
+                });
+            });
+
+            response.Result = result;
+            return response;
+        }
+
+        /// <summary>
+        /// 新增分类
+        /// </summary>
+        /// <param name="dto"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("category")]
+        [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
+        public async Task<Response<string>> InsertCategoryAsync([FromBody] CategoryDto dto)
+        {
+            var response = new Response<string>();
+
+            var category = new Category
+            {
+                CategoryName = dto.CategoryName,
+                DisplayName = dto.DisplayName
+            };
+            await _context.Categories.AddAsync(category);
+            await _context.SaveChangesAsync();
+
+            response.Result = "新增成功";
+            return response;
+        }
+
+        /// <summary>
+        /// 更新分类
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="dto"></param>
+        /// <returns></returns>
+        [HttpPut]
+        [Route("category")]
+        [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
+        public async Task<Response<string>> UpdateCategoryAsync(int id, [FromBody] CategoryDto dto)
+        {
+            var response = new Response<string>();
+
+            var category = new Category
+            {
+                Id = id,
+                CategoryName = dto.CategoryName,
+                DisplayName = dto.DisplayName
+            };
+
+            _context.Categories.Update(category);
+            await _context.SaveChangesAsync();
+
+            response.Result = "更新成功";
+            return response;
+        }
+
+        /// <summary>
+        /// 删除分类
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpDelete]
+        [Route("category")]
+        [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
+        public async Task<Response<string>> DeleteCategoryAsync(int id)
+        {
+            var response = new Response<string>();
+
+            var tag = await _context.Categories.FindAsync(id);
+            if (null == tag)
+            {
+                response.Msg = $"ID：{id} 不存在";
+                return response;
+            }
+
+            _context.Categories.Remove(tag);
+            await _context.SaveChangesAsync();
+
+            response.Result = "删除成功";
+            return response;
+        }
+
+        #endregion Categories
     }
 }
