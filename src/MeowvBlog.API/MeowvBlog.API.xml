@@ -40,6 +40,12 @@
             <param name="id"></param>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.API.Controllers.BlogController.QueryTagsForAdminAsync">
+            <summary>
+            查询标签列表
+            </summary>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.API.Controllers.BlogController.GetPostAsync(System.String)">
             <summary>
             根据URL获取文章详情

@@ -5,6 +5,7 @@ using MeowvBlog.Core.Dto.Blog;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
@@ -223,5 +224,39 @@ namespace MeowvBlog.API.Controllers
         }
 
         #endregion Posts
+
+        #region Tags
+
+        /// <summary>
+        /// 查询标签列表
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("tags/admin")]
+        [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
+        public async Task<Response<IList<QueryTagForAdminDto>>> QueryTagsForAdminAsync()
+        {
+            return new Response<IList<QueryTagForAdminDto>>
+            {
+                Result = (from tags in await _context.Tags.ToListAsync()
+                          join post_tags in await _context.PostTags.ToListAsync()
+                          on tags.Id equals post_tags.TagId
+                          group tags by new
+                          {
+                              tags.Id,
+                              tags.TagName,
+                              tags.DisplayName
+                          } into g
+                          select new QueryTagForAdminDto
+                          {
+                              Id = g.Key.Id,
+                              TagName = g.Key.TagName,
+                              DisplayName = g.Key.DisplayName,
+                              Count = g.Count()
+                          }).ToList()
+            };
+        }
+
+        #endregion
     }
 }
