@@ -4,6 +4,14 @@
         <name>MeowvBlog.API</name>
     </assembly>
     <members>
+        <member name="M:MeowvBlog.API.Controllers.AuthController.Token(System.String,System.String)">
+            <summary>
+            获取Token
+            </summary>
+            <param name="username"></param>
+            <param name="password"></param>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.API.Controllers.BlogController.GetPostForAdminAsync(System.Int32)">
             <summary>
             获取文章详细信息
