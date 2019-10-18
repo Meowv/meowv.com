@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
+using Swashbuckle.AspNetCore.Filters;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -53,18 +54,26 @@ namespace MeowvBlog.API.Swagger
                     options.SwaggerDoc(x.UrlPrefix, x.OpenApiInfo);
                 });
 
-                options.DocumentFilter<SwaggerDocumentFilter>();
+                options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "MeowvBlog.API.xml"));
+                options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "MeowvBlog.Core.xml"));
 
-                options.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
+                var security = new OpenApiSecurityScheme
                 {
                     Description = "JWT模式授权，请输入 Bearer {Token} 进行身份验证",
                     Name = "Authorization",
                     In = ParameterLocation.Header,
                     Type = SecuritySchemeType.ApiKey
+                };
+                options.AddSecurityDefinition("oauth2", security);
+                options.AddSecurityRequirement(new OpenApiSecurityRequirement {
+                    { security, new List<string>() }
                 });
 
-                options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "MeowvBlog.API.xml"));
-                options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "MeowvBlog.Core.xml"));
+                options.DocumentFilter<SwaggerDocumentFilter>();
+
+                options.OperationFilter<AddResponseHeadersFilter>();
+                options.OperationFilter<AppendAuthorizeToSummaryOperationFilter>();
+                options.OperationFilter<SecurityRequirementsOperationFilter>();
             });
         }
 

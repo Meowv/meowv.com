@@ -2,6 +2,7 @@
 using MeowvBlog.Core.Domain.Blog;
 using MeowvBlog.Core.Dto;
 using MeowvBlog.Core.Dto.Blog;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -22,6 +23,7 @@ namespace MeowvBlog.API.Controllers
         /// <param name="id"></param>
         /// <returns></returns>
         [HttpGet]
+        [Authorize]
         [Route("post/admin")]
         [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
         public async Task<Response<GetPostForAdminDto>> GetPostForAdminAsync(int id)
@@ -58,6 +60,7 @@ namespace MeowvBlog.API.Controllers
         /// <param name="input"></param>
         /// <returns></returns>
         [HttpGet]
+        [Authorize]
         [Route("post/query/admin")]
         [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
         public async Task<PagedResponse<QueryPostForAdminDto>> QueryPostsForAdminAsync([FromQuery] PagingInput input)
@@ -92,6 +95,7 @@ namespace MeowvBlog.API.Controllers
         /// <param name="dto"></param>
         /// <returns></returns>
         [HttpPost]
+        [Authorize]
         [Route("post")]
         [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
         public async Task<Response<string>> InsertPostAsync([FromBody] PostForAdminDto dto)
@@ -140,6 +144,7 @@ namespace MeowvBlog.API.Controllers
         /// <param name="dto"></param>
         /// <returns></returns>
         [HttpPut]
+        [Authorize]
         [Route("post")]
         [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
         public async Task<Response<string>> UpdatePostAsync(int id, PostForAdminDto dto)
@@ -203,6 +208,7 @@ namespace MeowvBlog.API.Controllers
         /// <param name="id"></param>
         /// <returns></returns>
         [HttpDelete]
+        [Authorize]
         [Route("post")]
         [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
         public async Task<Response<string>> DeletePostAsync(int id)
@@ -232,6 +238,7 @@ namespace MeowvBlog.API.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet]
+        [Authorize]
         [Route("tags/admin")]
         [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
         public async Task<Response<IList<QueryTagForAdminDto>>> QueryTagsForAdminAsync()
@@ -262,6 +269,7 @@ namespace MeowvBlog.API.Controllers
         /// <param name="dto"></param>
         /// <returns></returns>
         [HttpPost]
+        [Authorize]
         [Route("tag")]
         [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
         public async Task<Response<string>> InsertTagAsync([FromBody] TagDto dto)
@@ -287,6 +295,7 @@ namespace MeowvBlog.API.Controllers
         /// <param name="dto"></param>
         /// <returns></returns>
         [HttpPut]
+        [Authorize]
         [Route("tag")]
         [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
         public async Task<Response<string>> UpdateTagAsync(int id, [FromBody] TagDto dto)
@@ -312,6 +321,7 @@ namespace MeowvBlog.API.Controllers
         /// <param name="id"></param>
         /// <returns></returns>
         [HttpDelete]
+        [Authorize]
         [Route("tag")]
         [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
         public async Task<Response<string>> DeleteTagAsync(int id)
@@ -341,6 +351,7 @@ namespace MeowvBlog.API.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet]
+        [Authorize]
         [Route("categories/admin")]
         [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
         public async Task<Response<IList<QueryCategoryForAdminDto>>> QueryCategoriesForAdminAsync()
@@ -371,6 +382,7 @@ namespace MeowvBlog.API.Controllers
         /// <param name="dto"></param>
         /// <returns></returns>
         [HttpPost]
+        [Authorize]
         [Route("category")]
         [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
         public async Task<Response<string>> InsertCategoryAsync([FromBody] CategoryDto dto)
@@ -396,6 +408,7 @@ namespace MeowvBlog.API.Controllers
         /// <param name="dto"></param>
         /// <returns></returns>
         [HttpPut]
+        [Authorize]
         [Route("category")]
         [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
         public async Task<Response<string>> UpdateCategoryAsync(int id, [FromBody] CategoryDto dto)
@@ -422,6 +435,7 @@ namespace MeowvBlog.API.Controllers
         /// <param name="id"></param>
         /// <returns></returns>
         [HttpDelete]
+        [Authorize]
         [Route("category")]
         [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
         public async Task<Response<string>> DeleteCategoryAsync(int id)
@@ -452,6 +466,7 @@ namespace MeowvBlog.API.Controllers
         /// <param name="dto"></param>
         /// <returns></returns>
         [HttpPost]
+        [Authorize]
         [Route("friendlink")]
         [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
         public async Task<Response<string>> InsertFriendLinkAsync(FriendLinkDto dto)

@@ -9,6 +9,11 @@
             Sqlite 连接字符串
             </summary>
         </member>
+        <member name="T:MeowvBlog.Core.Configurations.AppSettings.JWT">
+            <summary>
+            JWT
+            </summary>
+        </member>
         <member name="P:MeowvBlog.Core.Domain.Blog.Category.Id">
             <summary>
             主键

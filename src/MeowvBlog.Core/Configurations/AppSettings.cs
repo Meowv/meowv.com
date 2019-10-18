@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using System;
 using System.IO;
 
 namespace MeowvBlog.Core.Configurations
@@ -18,5 +19,17 @@ namespace MeowvBlog.Core.Configurations
         /// Sqlite 连接字符串
         /// </summary>
         public static string SqliteConnectionString => _config["SqliteConnectionString"];
+
+        /// <summary>
+        /// JWT
+        /// </summary>
+        public static class JWT
+        {
+            public static string Domain => _config["JWT:Domain"];
+
+            public static string SecurityKey => _config["JWT:SecurityKey"];
+
+            public static int Expires => Convert.ToInt32(_config["JWT:Expires"]);
+        }
     }
 }
