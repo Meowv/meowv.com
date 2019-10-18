@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.Filters;
+using Swashbuckle.AspNetCore.SwaggerUI;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -70,7 +71,7 @@ namespace MeowvBlog.API.Swagger
                 });
 
                 options.DocumentFilter<SwaggerDocumentFilter>();
-
+                
                 options.OperationFilter<AddResponseHeadersFilter>();
                 options.OperationFilter<AppendAuthorizeToSummaryOperationFilter>();
                 options.OperationFilter<SecurityRequirementsOperationFilter>();
@@ -85,7 +86,10 @@ namespace MeowvBlog.API.Swagger
                 {
                     options.SwaggerEndpoint($"/swagger/{x.UrlPrefix}/swagger.json", x.Name);
                 });
+                options.DefaultModelsExpandDepth(-1);
+                options.DocExpansion(DocExpansion.List);
                 options.RoutePrefix = string.Empty;
+                options.DocumentTitle = "😍接口文档 - 阿星Plus⭐⭐⭐";
             });
         }
     }
