@@ -257,6 +257,82 @@ namespace MeowvBlog.API.Controllers
             };
         }
 
+        /// <summary>
+        /// 新增标签
+        /// </summary>
+        /// <param name="dto"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("tag")]
+        [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
+        public async Task<Response<string>> InsertTagAsync([FromBody] TagDto dto)
+        {
+            var response = new Response<string>();
+
+            var tag = new Tag
+            {
+                TagName = dto.TagName,
+                DisplayName = dto.DisplayName
+            };
+            await _context.Tags.AddAsync(tag);
+            await _context.SaveChangesAsync();
+
+            response.Result = "新增成功";
+            return response;
+        }
+
+        /// <summary>
+        /// 更新标签
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="dto"></param>
+        /// <returns></returns>
+        [HttpPut]
+        [Route("tag")]
+        [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
+        public async Task<Response<string>> UpdateTagAsync(int id, [FromBody] TagDto dto)
+        {
+            var response = new Response<string>();
+
+            var tag = new Tag
+            {
+                Id = id,
+                TagName = dto.TagName,
+                DisplayName = dto.DisplayName
+            };
+            _context.Tags.Update(tag);
+            await _context.SaveChangesAsync();
+
+            response.Result = "更新成功";
+            return response;
+        }
+
+        /// <summary>
+        /// 删除标签
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpDelete]
+        [Route("tag")]
+        [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
+        public async Task<Response<string>> DeleteTagAsync(int id)
+        {
+            var response = new Response<string>();
+
+            var tag = await _context.Tags.FindAsync(id);
+            if (null == tag)
+            {
+                response.Msg = $"ID：{id} 不存在";
+                return response;
+            }
+
+            _context.Tags.Remove(tag);
+            await _context.SaveChangesAsync();
+
+            response.Result = "删除成功";
+            return response;
+        }
+
         #endregion
     }
 }
