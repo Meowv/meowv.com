@@ -8,7 +8,7 @@ namespace MeowvBlog.Core.Dto
 
         public bool Success => string.IsNullOrEmpty(Msg);
 
-        public DateTime Timestapm { get; set; } = DateTime.Now;
+        public DateTime Timestamp { get; set; } = DateTime.Now;
 
         public void HandleException(Exception ex) => Msg = ex.InnerException?.StackTrace.ToString();
     }

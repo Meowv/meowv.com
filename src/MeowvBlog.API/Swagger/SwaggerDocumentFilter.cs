@@ -19,6 +19,11 @@ namespace MeowvBlog.API.Swagger
                     Name = "Auth",
                     Description = "    JWT模式认证授权",
                     ExternalDocs = new OpenApiExternalDocs { Description = "Token" }
+                },
+                new OpenApiTag {
+                    Name = "Common",
+                    Description = "    通用公共接口",
+                    ExternalDocs = new OpenApiExternalDocs { Description = "微信分享/~" }
                 }
             };
 

@@ -37,11 +37,11 @@ namespace MeowvBlog.API.Swagger
             new SwaggerApiInfo
             {
                 UrlPrefix = GlobalConsts.GroupName_v3,
-                Name = "其他通用接口",
+                Name = "通用公共接口",
                 OpenApiInfo = new OpenApiInfo
                 {
                     Version = "v3.1.0",
-                    Title = "阿星Plus - 其他通用接口"
+                    Title = "阿星Plus - 通用公共接口"
                 }
             }
         };
