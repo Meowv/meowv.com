@@ -25,6 +25,7 @@ namespace MeowvBlog.API.Controllers
         [HttpGet]
         [Authorize]
         [Route("post/admin")]
+        [ResponseCache(CacheProfileName = "default")]
         [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
         public async Task<Response<GetPostForAdminDto>> GetPostForAdminAsync(int id)
         {
@@ -62,6 +63,7 @@ namespace MeowvBlog.API.Controllers
         [HttpGet]
         [Authorize]
         [Route("post/query/admin")]
+        [ResponseCache(CacheProfileName = "default", VaryByQueryKeys = new string[] { "page", "limit" })]
         [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
         public async Task<PagedResponse<QueryPostForAdminDto>> QueryPostsForAdminAsync([FromQuery] PagingInput input)
         {
@@ -240,6 +242,7 @@ namespace MeowvBlog.API.Controllers
         [HttpGet]
         [Authorize]
         [Route("tags/admin")]
+        [ResponseCache(CacheProfileName = "default")]
         [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
         public async Task<Response<IList<QueryTagForAdminDto>>> QueryTagsForAdminAsync()
         {
@@ -353,6 +356,7 @@ namespace MeowvBlog.API.Controllers
         [HttpGet]
         [Authorize]
         [Route("categories/admin")]
+        [ResponseCache(CacheProfileName = "default")]
         [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v2)]
         public async Task<Response<IList<QueryCategoryForAdminDto>>> QueryCategoriesForAdminAsync()
         {

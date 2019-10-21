@@ -34,6 +34,7 @@ namespace MeowvBlog.API.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("post")]
+        [ResponseCache(CacheProfileName = "default", VaryByQueryKeys = new string[] { "url" })]
         public async Task<Response<GetPostDto>> GetPostAsync(string url)
         {
             var response = new Response<GetPostDto>();
@@ -82,6 +83,7 @@ namespace MeowvBlog.API.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("post/query")]
+        [ResponseCache(CacheProfileName = "default", VaryByQueryKeys = new string[] { "page", "limit" })]
         public async Task<PagedResponse<QueryPostDto>> QueryPostsAsync([FromQuery] PagingInput input)
         {
             var posts = await _context.Posts.ToListAsync();
@@ -114,6 +116,7 @@ namespace MeowvBlog.API.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("post/query_by_tag")]
+        [ResponseCache(CacheProfileName = "default", VaryByQueryKeys = new string[] { "name" })]
         public async Task<Response<IList<QueryPostDto>>> QueryPostsByTagAsync(string name)
         {
             return new Response<IList<QueryPostDto>>
@@ -148,6 +151,7 @@ namespace MeowvBlog.API.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("post/query_by_category")]
+        [ResponseCache(CacheProfileName = "default", VaryByQueryKeys = new string[] { "name" })]
         public async Task<Response<IList<QueryPostDto>>> QueryPostsByCategoryAsync(string name)
         {
             return new Response<IList<QueryPostDto>>
@@ -184,6 +188,7 @@ namespace MeowvBlog.API.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("tag")]
+        [ResponseCache(CacheProfileName = "default", VaryByQueryKeys = new string[] { "name" })]
         public async Task<Response<string>> GetTagAsync(string name)
         {
             var response = new Response<string>();
@@ -205,6 +210,7 @@ namespace MeowvBlog.API.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("tags")]
+        [ResponseCache(CacheProfileName = "default")]
         public async Task<Response<IList<QueryTagDto>>> QueryTagsAsync()
         {
             return new Response<IList<QueryTagDto>>
@@ -237,6 +243,7 @@ namespace MeowvBlog.API.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("category")]
+        [ResponseCache(CacheProfileName = "default", VaryByQueryKeys = new string[] { "name" })]
         public async Task<Response<string>> GetCategoryAsync(string name)
         {
             var response = new Response<string>();
@@ -258,6 +265,7 @@ namespace MeowvBlog.API.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("categories")]
+        [ResponseCache(CacheProfileName = "default")]
         public async Task<Response<IList<QueryCategoryDto>>> QueryCategoriesAsync()
         {
             return new Response<IList<QueryCategoryDto>>
@@ -289,6 +297,7 @@ namespace MeowvBlog.API.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("friendlinks")]
+        [ResponseCache(CacheProfileName = "default")]
         public async Task<Response<IList<FriendLinkDto>>> QueryFriendLinksAsync()
         {
             var response = new Response<IList<FriendLinkDto>>();
