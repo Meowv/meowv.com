@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
@@ -46,10 +47,32 @@ namespace MeowvBlog.Web
                         };
                     });
             services.AddAuthorization();
+            services.AddResponseCaching();
+            services.AddMvcCore(options =>
+            {
+                options.CacheProfiles.Add("default", new CacheProfile { Duration = 100 });
+            }).SetCompatibilityVersion(CompatibilityVersion.Latest);
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
+            app.UseHsts();
+            app.UseForwardedHeaders(new ForwardedHeadersOptions
+            {
+                ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+            });
+            app.UseRouting();
+            app.UseResponseCaching();
+            app.UseCors();
+            app.UseAuthentication();
+            app.UseAuthorization();
+            app.UseHttpsRedirection();
+            app.UseSwagger();
+            app.UseSwaggerUI();
             app.Use(async (context, next) =>
             {
                 await next();
@@ -63,22 +86,6 @@ namespace MeowvBlog.Web
                     await context.Response.WriteAsync(content);
                 }
             });
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
-            app.UseHsts();
-            app.UseForwardedHeaders(new ForwardedHeadersOptions
-            {
-                ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-            });
-            app.UseRouting();
-            app.UseCors();
-            app.UseAuthentication();
-            app.UseAuthorization();
-            app.UseHttpsRedirection();
-            app.UseSwagger();
-            app.UseSwaggerUI();
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
