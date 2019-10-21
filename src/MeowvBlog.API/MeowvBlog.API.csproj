@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\MeowvBlog.Core\MeowvBlog.Core.csproj" />
+    <ProjectReference Include="..\MeowvBlog.Weixin\MeowvBlog.Weixin.csproj" />
   </ItemGroup>
 
   <ItemGroup>
