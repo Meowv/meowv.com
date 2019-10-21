@@ -186,7 +186,13 @@
         </member>
         <member name="M:MeowvBlog.API.Controllers.CommonController.GetBingAsync">
             <summary>
-            获取Bing每日壁纸
+            必应每日壁纸
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.CommonController.GetCatAsync">
+            <summary>
+            随机一张猫图
             </summary>
             <returns></returns>
         </member>
