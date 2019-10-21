@@ -1,15 +1,19 @@
-using MeowvBlog.API.Middlewares;
 using MeowvBlog.API.Swagger;
 using MeowvBlog.Core;
 using MeowvBlog.Core.Configurations;
+using MeowvBlog.Core.Dto;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using System;
+using System.Net;
 using System.Text;
 
 namespace MeowvBlog.Web
@@ -46,12 +50,24 @@ namespace MeowvBlog.Web
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            app.Use(async (context, next) =>
+            {
+                await next();
+                if (context.Response.StatusCode == (int)HttpStatusCode.Unauthorized)
+                {
+                    var response = new Response { Msg = "Unauthorized" };
+                    var content = JsonConvert.SerializeObject(response, Formatting.None, new JsonSerializerSettings
+                    {
+                        ContractResolver = new CamelCasePropertyNamesContractResolver()
+                    });
+                    await context.Response.WriteAsync(content);
+                }
+            });
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
             }
             app.UseHsts();
-            app.UseUnAuthorizedHandler();
             app.UseForwardedHeaders(new ForwardedHeadersOptions
             {
                 ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto

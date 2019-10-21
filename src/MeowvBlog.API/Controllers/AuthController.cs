@@ -1,5 +1,4 @@
-﻿using MeowvBlog.Core;
-using MeowvBlog.Core.Configurations;
+﻿using MeowvBlog.Core.Configurations;
 using MeowvBlog.Core.Dto;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,7 +13,6 @@ namespace MeowvBlog.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v3)]
     [AllowAnonymous]
     public class AuthController : ControllerBase
     {
