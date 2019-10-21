@@ -1,4 +1,5 @@
-﻿using MeowvBlog.Core;
+﻿using MeowvBlog.API.Extensions;
+using MeowvBlog.Core;
 using MeowvBlog.Core.Configurations;
 using MeowvBlog.Core.Dto;
 using MeowvBlog.Core.Dto.Weixin;
@@ -6,6 +7,10 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using Senparc.Weixin.MP.Containers;
 using Senparc.Weixin.MP.Helpers;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -64,7 +69,7 @@ namespace MeowvBlog.API.Controllers
         }
 
         /// <summary>
-        /// Bing每日壁纸
+        /// 必应每日壁纸
         /// </summary>
         /// <returns></returns>
         [HttpGet]
@@ -77,6 +82,26 @@ namespace MeowvBlog.API.Controllers
             var json = await client.GetStringAsync(api);
             var obj = JObject.Parse(json);
             var url = "https://cn.bing.com" + obj["images"][0]["url"].ToString();
+            var bytes = await client.GetByteArrayAsync(url);
+
+            return File(bytes, "image/jpeg");
+        }
+
+        /// <summary>
+        /// 随机一张猫图
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("cat")]
+        public async Task<IActionResult> GetCatAsync()
+        {
+            var path = Path.Combine(Directory.GetCurrentDirectory(), @"Resources/cats.json");
+
+            var cats = await path.GetObjFromJsonFile<List<string>>("cats");
+
+            var url = cats.OrderBy(x => Guid.NewGuid()).Take(1).FirstOrDefault();
+
+            using var client = _httpClient.CreateClient();
             var bytes = await client.GetByteArrayAsync(url);
 
             return File(bytes, "image/jpeg");
