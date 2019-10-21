@@ -6,12 +6,27 @@
     <members>
         <member name="P:MeowvBlog.Core.Configurations.AppSettings.SqliteConnectionString">
             <summary>
-            Sqlite 连接字符串
+            Sqlite
             </summary>
         </member>
         <member name="T:MeowvBlog.Core.Configurations.AppSettings.JWT">
             <summary>
             JWT
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.Core.Configurations.AppSettings.GitHub">
+            <summary>
+            GitHub
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.Core.Configurations.AppSettings.MTA">
+            <summary>
+            MTA
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.Core.Configurations.AppSettings.Weixin">
+            <summary>
+            微信
             </summary>
         </member>
         <member name="P:MeowvBlog.Core.Domain.Blog.Category.Id">

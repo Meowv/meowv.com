@@ -16,7 +16,7 @@ namespace MeowvBlog.Core.Configurations
         }
 
         /// <summary>
-        /// Sqlite 连接字符串
+        /// Sqlite
         /// </summary>
         public static string SqliteConnectionString => _config["SqliteConnectionString"];
 
@@ -30,6 +30,40 @@ namespace MeowvBlog.Core.Configurations
             public static string SecurityKey => _config["JWT:SecurityKey"];
 
             public static int Expires => Convert.ToInt32(_config["JWT:Expires"]);
+        }
+
+        /// <summary>
+        /// GitHub
+        /// </summary>
+        public static class GitHub
+        {
+            public static string Client_ID => _config["Github:ClientID"];
+
+            public static string Client_Secret => _config["Github:ClientSecret"];
+
+            public static string Redirect_Uri => _config["Github:RedirectUri"];
+
+            public static string ApplicationName => _config["Github:ApplicationName"];
+        }
+
+        /// <summary>
+        /// MTA
+        /// </summary>
+        public static class MTA
+        {
+            public static string App_Id => _config["MTA:App_Id"];
+
+            public static string SECRET_KEY => _config["MTA:SECRET_KEY"];
+        }
+
+        /// <summary>
+        /// 微信
+        /// </summary>
+        public static class Weixin
+        {
+            public static string AppId => _config["Weixin:AppId"];
+
+            public static string AppSecret => _config["Weixin:AppSecret"];
         }
     }
 }
