@@ -20,7 +20,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\MeowvBlog.Core\MeowvBlog.Core.csproj" />
-    <ProjectReference Include="..\MeowvBlog.Weixin\MeowvBlog.Weixin.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -31,6 +30,8 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Senparc.Weixin" Version="6.6.102" />
+    <PackageReference Include="Senparc.Weixin.MP" Version="16.9.102" />
   </ItemGroup>
 
 </Project>

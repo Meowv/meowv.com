@@ -177,5 +177,12 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.API.Controllers.CommonController.GetWeixinSignatureAsync(System.String)">
+            <summary>
+            获取微信分享签名验证
+            </summary>
+            <param name="url"></param>
+            <returns></returns>
+        </member>
     </members>
 </doc>
