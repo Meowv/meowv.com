@@ -3,17 +3,27 @@ using MeowvBlog.Core.Configurations;
 using MeowvBlog.Core.Dto;
 using MeowvBlog.Core.Dto.Weixin;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json.Linq;
 using Senparc.Weixin.MP.Containers;
 using Senparc.Weixin.MP.Helpers;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace MeowvBlog.API.Controllers
 {
     [ApiController]
     [Route("[controller]")]
+    [Produces("application/json")]
     [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v3)]
     public class CommonController : ControllerBase
     {
+        private readonly IHttpClientFactory _httpClient;
+
+        public CommonController(IHttpClientFactory httpClient)
+        {
+            _httpClient = httpClient;
+        }
+
         /// <summary>
         /// 微信分享验证
         /// </summary>
@@ -51,6 +61,25 @@ namespace MeowvBlog.API.Controllers
 
             response.Result = result;
             return response;
+        }
+
+        /// <summary>
+        /// Bing每日壁纸
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("bing")]
+        public async Task<IActionResult> GetBingAsync()
+        {
+            var api = "https://cn.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&pid=hp&FORM=BEHPTB";
+
+            using var client = _httpClient.CreateClient();
+            var json = await client.GetStringAsync(api);
+            var obj = JObject.Parse(json);
+            var url = "https://cn.bing.com" + obj["images"][0]["url"].ToString();
+            var bytes = await client.GetByteArrayAsync(url);
+
+            return File(bytes, "image/jpeg");
         }
     }
 }

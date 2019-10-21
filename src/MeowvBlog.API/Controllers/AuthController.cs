@@ -12,8 +12,9 @@ using System.Threading.Tasks;
 namespace MeowvBlog.API.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
     [AllowAnonymous]
+    [Route("[controller]")]
+    [Produces("application/json")]
     public class AuthController : ControllerBase
     {
         /// <summary>

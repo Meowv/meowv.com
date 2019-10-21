@@ -67,6 +67,7 @@ namespace MeowvBlog.Web
             {
                 options.CacheProfiles.Add("default", new CacheProfile { Duration = 100 });
             }).SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
+            services.AddHttpClient();
             services.AddSenparcGlobalServices(Configuration).AddSenparcWeixinServices(Configuration);
         }
 

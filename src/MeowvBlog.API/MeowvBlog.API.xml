@@ -179,9 +179,15 @@
         </member>
         <member name="M:MeowvBlog.API.Controllers.CommonController.GetWeixinSignatureAsync(System.String)">
             <summary>
-            获取微信分享签名验证
+            微信分享验证
             </summary>
             <param name="url"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.CommonController.GetBingAsync">
+            <summary>
+            获取Bing每日壁纸
+            </summary>
             <returns></returns>
         </member>
     </members>
