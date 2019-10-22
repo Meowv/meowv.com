@@ -1,10 +1,13 @@
 ﻿using MeowvBlog.Core.Configurations;
 using MeowvBlog.Core.Dto;
+using MeowvBlog.Core.GitHub;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System;
+using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
+using System.Net.Http;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,6 +20,13 @@ namespace MeowvBlog.API.Controllers
     [Produces("application/json")]
     public class AuthController : ControllerBase
     {
+        private readonly IHttpClientFactory _httpClient;
+
+        public AuthController(IHttpClientFactory httpClient)
+        {
+            _httpClient = httpClient;
+        }
+
         /// <summary>
         /// 获取Token
         /// </summary>
@@ -51,6 +61,58 @@ namespace MeowvBlog.API.Controllers
             else response.Msg = "账号或密码错误";
 
             return await Task.FromResult(response);
+        }
+
+        /// <summary>
+        /// 获取 GitHub 登录地址
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("url")]
+        public async Task<Response<string>> GetGithubLoginUrlAsync()
+        {
+            var response = new Response<string>();
+
+            var request = new AuthorizeRequest();
+            response.Result = string.Concat(new string[]
+            {
+                GitHubConfig.API_Authorize,
+                "?client_id=",request.Client_ID,
+                "&scope=",request.Scope,
+                "&state=",request.State,
+                "&redirect_uri=", request.Redirect_Uri
+            });
+
+            return await Task.FromResult(response);
+        }
+
+        /// <summary>
+        /// 获取 access token
+        /// </summary>
+        /// <param name="code"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("access_token")]
+        public async Task<Response<string>> GetAccessTokenAsync(string code)
+        {
+            var response = new Response<string>();
+
+            var request = new AccessTokenRequest();
+
+            var content = new FormUrlEncodedContent(new Dictionary<string, string>()
+            {
+                {"code", code},
+                {"client_id", request.Client_ID},
+                {"redirect_uri", request.Redirect_Uri},
+                {"client_secret", request.Client_Secret},
+            });
+            
+            using var client = _httpClient.CreateClient();
+
+            var result = await client.PostAsJsonAsync(GitHubConfig.API_AccessToken, content);
+
+            response.Result = await result.Content.ReadAsStringAsync();
+            return response;
         }
     }
 }

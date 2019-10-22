@@ -299,6 +299,102 @@
             展示名称
             </summary>
         </member>
+        <member name="F:MeowvBlog.Core.GitHub.AccessTokenRequest.Client_ID">
+            <summary>
+            Client ID
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.Core.GitHub.AccessTokenRequest.Client_Secret">
+            <summary>
+            Client Secret
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.GitHub.AccessTokenRequest.Code">
+            <summary>
+            调用API_Authorize获取到的Code值
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.Core.GitHub.AccessTokenRequest.Redirect_Uri">
+            <summary>
+            Authorization callback URL
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.GitHub.AccessTokenRequest.State">
+            <summary>
+            State
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.GitHub.AccessTokenResponse.Access_token">
+            <summary>
+            access_token
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.GitHub.AccessTokenResponse.Token_type">
+            <summary>
+            类型
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.GitHub.AccessTokenResponse.Scope">
+            <summary>
+            授权的信息
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.Core.GitHub.AuthorizeRequest.Client_ID">
+            <summary>
+            Client ID
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.Core.GitHub.AuthorizeRequest.Redirect_Uri">
+            <summary>
+            Authorization callback URL
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.GitHub.AuthorizeRequest.State">
+            <summary>
+            State
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.GitHub.AuthorizeRequest.Scope">
+            <summary>
+            该参数可选，需要调用Github哪些信息，可以填写多个，以逗号分割，比如：scope=user,public_repo。
+            如果不填写，那么你的应用程序将只能读取Github公开的信息，比如公开的用户信息，公开的库(repository)信息以及gists信息
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.Core.GitHub.GitHubConfig.API_Authorize">
+            <summary>
+            GET请求，跳转GitHub登录界面，获取用户授权，得到code
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.Core.GitHub.GitHubConfig.API_AccessToken">
+            <summary>
+            POST请求，根据code得到access_token
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.Core.GitHub.GitHubConfig.API_User">
+            <summary>
+            GET请求，根据access_token得到用户信息
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.Core.GitHub.GitHubConfig.Client_ID">
+            <summary>
+            Client ID
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.Core.GitHub.GitHubConfig.Client_Secret">
+            <summary>
+            Client Secret
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.Core.GitHub.GitHubConfig.Redirect_Uri">
+            <summary>
+            Authorization callback URL
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.Core.GitHub.GitHubConfig.ApplicationName">
+            <summary>
+            Application name
+            </summary>
+        </member>
         <member name="F:MeowvBlog.Core.GlobalConsts.GroupName_v1">
             <summary>
             博客前台接口组
