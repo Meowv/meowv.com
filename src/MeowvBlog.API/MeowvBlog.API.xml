@@ -14,7 +14,7 @@
         </member>
         <member name="M:MeowvBlog.API.Controllers.AuthController.GetGithubLoginUrlAsync">
             <summary>
-            生成 Github Login URL
+            获取 GitHub 登录地址
             </summary>
             <returns></returns>
         </member>
