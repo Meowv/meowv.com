@@ -12,6 +12,19 @@
             <param name="password"></param>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.API.Controllers.AuthController.GetGithubLoginUrlAsync">
+            <summary>
+            生成 Github Login URL
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.AuthController.GetAccessTokenAsync(System.String)">
+            <summary>
+            获取 access token
+            </summary>
+            <param name="code"></param>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.API.Controllers.BlogController.GetPostForAdminAsync(System.Int32)">
             <summary>
             获取文章详细信息
