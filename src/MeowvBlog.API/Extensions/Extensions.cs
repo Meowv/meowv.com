@@ -18,5 +18,10 @@ namespace MeowvBlog.API.Extensions
 
             return !(JsonConvert.DeserializeObject<object>(json) is JObject obj) ? new T() : JsonConvert.DeserializeObject<T>(obj[key].ToString());
         }
+
+        public static T DeserializeFromJson<T>(this string input)
+        {
+            return JsonConvert.DeserializeObject<T>(input);
+        }
     }
 }

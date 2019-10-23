@@ -20,6 +20,11 @@ namespace MeowvBlog.Core.GitHub
         public static string API_User = "https://api.github.com/user";
 
         /// <summary>
+        /// Github ID
+        /// </summary>
+        public static int Id => AppSettings.GitHub.Id;
+
+        /// <summary>
         /// Client ID
         /// </summary>
         public static string Client_ID = AppSettings.GitHub.Client_ID;

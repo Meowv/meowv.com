@@ -375,6 +375,11 @@
             GET请求，根据access_token得到用户信息
             </summary>
         </member>
+        <member name="P:MeowvBlog.Core.GitHub.GitHubConfig.Id">
+            <summary>
+            Github ID
+            </summary>
+        </member>
         <member name="F:MeowvBlog.Core.GitHub.GitHubConfig.Client_ID">
             <summary>
             Client ID
