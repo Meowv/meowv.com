@@ -1,5 +1,6 @@
 ﻿using MeowvBlog.Core.Configurations;
 using MeowvBlog.Core.Domain.Blog;
+using MeowvBlog.Core.Domain.Signature;
 using Microsoft.EntityFrameworkCore;
 
 namespace MeowvBlog.Core
@@ -15,6 +16,8 @@ namespace MeowvBlog.Core
         public DbSet<PostTag> PostTags { get; set; }
 
         public DbSet<FriendLink> FriendLinks { get; set; }
+
+        public DbSet<SignatureLog> SignatureLogs { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
