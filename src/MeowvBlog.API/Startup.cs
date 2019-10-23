@@ -37,7 +37,7 @@ namespace MeowvBlog.Web
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers();
+            services.AddControllers().AddNewtonsoftJson();
             services.AddDbContext<MeowvBlogDBContext>();
             services.AddRouting(options =>
             {

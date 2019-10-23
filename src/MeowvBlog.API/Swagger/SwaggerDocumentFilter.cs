@@ -25,6 +25,11 @@ namespace MeowvBlog.API.Swagger
                     Name = "Common",
                     Description = "通用公共接口",
                     ExternalDocs = new OpenApiExternalDocs { Description = "微信分享/Bing壁纸/~" }
+                },
+                new OpenApiTag {
+                    Name = "MTA",
+                    Description = "腾讯移动分析",
+                    ExternalDocs = new OpenApiExternalDocs { Description = "MTA" }
                 }
             };
 
