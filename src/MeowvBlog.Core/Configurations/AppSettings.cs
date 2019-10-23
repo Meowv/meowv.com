@@ -37,6 +37,8 @@ namespace MeowvBlog.Core.Configurations
         /// </summary>
         public static class GitHub
         {
+            public static int Id => Convert.ToInt32(_config["Github:Id"]);
+
             public static string Client_ID => _config["Github:ClientID"];
 
             public static string Client_Secret => _config["Github:ClientSecret"];

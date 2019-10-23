@@ -4,25 +4,24 @@
         <name>MeowvBlog.API</name>
     </assembly>
     <members>
-        <member name="M:MeowvBlog.API.Controllers.AuthController.Token(System.String,System.String)">
-            <summary>
-            获取Token
-            </summary>
-            <param name="username"></param>
-            <param name="password"></param>
-            <returns></returns>
-        </member>
         <member name="M:MeowvBlog.API.Controllers.AuthController.GetGithubLoginUrlAsync">
             <summary>
-            获取 GitHub 登录地址
+            获取 Github 登录地址
             </summary>
             <returns></returns>
         </member>
         <member name="M:MeowvBlog.API.Controllers.AuthController.GetAccessTokenAsync(System.String)">
             <summary>
-            获取 access token
+            获取 access_token
             </summary>
             <param name="code"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.AuthController.GenerateTokenAsync(System.String)">
+            <summary>
+            生成 Token
+            </summary>
+            <param name="access_token"></param>
             <returns></returns>
         </member>
         <member name="M:MeowvBlog.API.Controllers.BlogController.GetPostForAdminAsync(System.Int32)">
