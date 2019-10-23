@@ -49,7 +49,10 @@ namespace MeowvBlog.API.Extensions
         public static string ToMd5(this string str)
         {
             byte[] bytes = Encoding.UTF8.GetBytes(str);
-            bytes = new MD5CryptoServiceProvider().ComputeHash(bytes);
+
+            using var md5 = new MD5CryptoServiceProvider();
+            bytes = md5.ComputeHash(bytes);
+
             string text = "";
             for (int i = 0; i < bytes.Length; i++)
             {
