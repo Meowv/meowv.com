@@ -1,5 +1,6 @@
 ﻿using MeowvBlog.Core.Configurations;
 using MeowvBlog.Core.Domain.Blog;
+using MeowvBlog.Core.Domain.HotNews;
 using MeowvBlog.Core.Domain.Signature;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,6 +19,8 @@ namespace MeowvBlog.Core
         public DbSet<FriendLink> FriendLinks { get; set; }
 
         public DbSet<SignatureLog> SignatureLogs { get; set; }
+
+        public DbSet<HotNews> HotNews { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
