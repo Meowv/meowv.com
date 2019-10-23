@@ -82,6 +82,20 @@ namespace MeowvBlog.Web
                 app.UseHsts();
             }
 
+            app.Use(async (context, next) =>
+            {
+                await next();
+                if (context.Response.StatusCode == (int)HttpStatusCode.Unauthorized)
+                {
+                    var response = new Response { Msg = "Unauthorized" };
+                    var content = JsonConvert.SerializeObject(response, Formatting.None, new JsonSerializerSettings
+                    {
+                        ContractResolver = new CamelCasePropertyNamesContractResolver()
+                    });
+                    await context.Response.WriteAsync(content);
+                }
+            });
+
             var register = RegisterService.Start(env, senparcSetting.Value).UseSenparcGlobal();
             register.UseSenparcWeixin(senparcWeixinSetting.Value, senparcSetting.Value);
 
@@ -97,19 +111,6 @@ namespace MeowvBlog.Web
             app.UseHttpsRedirection();
             app.UseSwagger();
             app.UseSwaggerUI();
-            app.Use(async (context, next) =>
-            {
-                await next();
-                if (context.Response.StatusCode == (int)HttpStatusCode.Unauthorized)
-                {
-                    var response = new Response { Msg = "Unauthorized" };
-                    var content = JsonConvert.SerializeObject(response, Formatting.None, new JsonSerializerSettings
-                    {
-                        ContractResolver = new CamelCasePropertyNamesContractResolver()
-                    });
-                    await context.Response.WriteAsync(content);
-                }
-            });
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
