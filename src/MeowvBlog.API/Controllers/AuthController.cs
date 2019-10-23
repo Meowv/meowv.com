@@ -4,9 +4,7 @@ using MeowvBlog.Core.GitHub;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
-using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -101,13 +99,18 @@ namespace MeowvBlog.API.Controllers
 
             var request = new AccessTokenRequest();
 
-            var content = new StringContent($"code={code}&client_id={request.Client_ID}&redirect_uri={request.Redirect_Uri}&client_secret=request.Client_Secret");
+            var content = new StringContent($"code={code}&client_id={request.Client_ID}&redirect_uri={request.Redirect_Uri}&client_secret={request.Client_Secret}");
             content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
 
             using var client = _httpClient.CreateClient();
-            var result = await client.PostAsync(GitHubConfig.API_AccessToken, content);
+            var httpResponse = await client.PostAsync(GitHubConfig.API_AccessToken, content);
+            var result = await httpResponse.Content.ReadAsStringAsync();
 
-            response.Result = await result.Content.ReadAsStringAsync();
+            if (result.StartsWith("access_token"))
+                response.Result = result.Split("=")[1].Split("&")[0];
+            else
+                response.Msg = "code有误";
+
             return response;
         }
     }
