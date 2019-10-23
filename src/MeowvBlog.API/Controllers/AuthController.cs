@@ -4,10 +4,12 @@ using MeowvBlog.Core.GitHub;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
@@ -99,17 +101,11 @@ namespace MeowvBlog.API.Controllers
 
             var request = new AccessTokenRequest();
 
-            var content = new FormUrlEncodedContent(new Dictionary<string, string>()
-            {
-                {"code", code},
-                {"client_id", request.Client_ID},
-                {"redirect_uri", request.Redirect_Uri},
-                {"client_secret", request.Client_Secret},
-            });
-            
-            using var client = _httpClient.CreateClient();
+            var content = new StringContent($"code={code}&client_id={request.Client_ID}&redirect_uri={request.Redirect_Uri}&client_secret=request.Client_Secret");
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
 
-            var result = await client.PostAsJsonAsync(GitHubConfig.API_AccessToken, content);
+            using var client = _httpClient.CreateClient();
+            var result = await client.PostAsync(GitHubConfig.API_AccessToken, content);
 
             response.Result = await result.Content.ReadAsStringAsync();
             return response;
