@@ -1,7 +1,9 @@
 ﻿using MeowvBlog.API.Extensions;
 using MeowvBlog.Core;
 using MeowvBlog.Core.Configurations;
+using MeowvBlog.Core.Domain.HotNews;
 using MeowvBlog.Core.Dto;
+using MeowvBlog.Core.Dto.HotNews;
 using MeowvBlog.Core.Dto.Weixin;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
@@ -9,6 +11,7 @@ using Senparc.Weixin.MP.Containers;
 using Senparc.Weixin.MP.Helpers;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -30,12 +33,42 @@ namespace MeowvBlog.API.Controllers
         }
 
         /// <summary>
+        /// 获取每日热点来源列表
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("hot_news_source")]
+        public async Task<Response<IList<HotNewsSourceDto>>> GetHotNewsSourceAsync()
+        {
+            var response = new Response<IList<HotNewsSourceDto>>();
+
+            var result = new List<HotNewsSourceDto>();
+            foreach (var item in Enum.GetValues(typeof(HotNewsSource)))
+            {
+                var dto = new HotNewsSourceDto
+                {
+                    Key = item.ToString(),
+                    Value = Convert.ToInt32(item)
+                };
+
+                var objArray = item.GetType().GetField(item.ToString()).GetCustomAttributes(typeof(DescriptionAttribute), true);
+                if (objArray.Any()) dto.Description = (objArray.First() as DescriptionAttribute).Description;
+
+                result.Add(dto);
+            }
+
+            response.Result = result;
+            return await Task.FromResult(response);
+        }
+
+        /// <summary>
         /// 微信分享验证
         /// </summary>
         /// <param name="url"></param>
         /// <returns></returns>
         [HttpGet]
         [Route("weixin_sign")]
+        [ResponseCache(CacheProfileName = "default")]
         public async Task<Response<WeixinSignatureDto>> GetWeixinSignatureAsync(string url)
         {
             var response = new Response<WeixinSignatureDto>();
@@ -74,6 +107,7 @@ namespace MeowvBlog.API.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("bing")]
+        [ResponseCache(CacheProfileName = "default")]
         public async Task<IActionResult> GetBingAsync()
         {
             var api = "https://cn.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&pid=hp&FORM=BEHPTB";
@@ -81,7 +115,7 @@ namespace MeowvBlog.API.Controllers
             using var client = _httpClient.CreateClient();
             var json = await client.GetStringAsync(api);
             var obj = JObject.Parse(json);
-            var url = "https://cn.bing.com" + obj["images"][0]["url"].ToString();
+            var url = "https://cn.bing.com" + obj["images"].First()["url"].ToString();
             var bytes = await client.GetByteArrayAsync(url);
 
             return File(bytes, "image/jpeg");
