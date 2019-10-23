@@ -6,6 +6,7 @@ using MeowvBlog.Core.Dto;
 using MeowvBlog.Core.Dto.HotNews;
 using MeowvBlog.Core.Dto.Weixin;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
 using Senparc.Weixin.MP.Containers;
 using Senparc.Weixin.MP.Helpers;
@@ -26,10 +27,12 @@ namespace MeowvBlog.API.Controllers
     public class CommonController : ControllerBase
     {
         private readonly IHttpClientFactory _httpClient;
+        private readonly MeowvBlogDBContext _context;
 
-        public CommonController(IHttpClientFactory httpClient)
+        public CommonController(IHttpClientFactory httpClient, MeowvBlogDBContext context)
         {
             _httpClient = httpClient;
+            _context = context;
         }
 
         /// <summary>
@@ -59,6 +62,28 @@ namespace MeowvBlog.API.Controllers
 
             response.Result = result;
             return await Task.FromResult(response);
+        }
+
+        /// <summary>
+        /// 获取对应的每日热点列表
+        /// </summary>
+        /// <param name="sourceId"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("hot_news")]
+        [ResponseCache(CacheProfileName = "default", VaryByQueryKeys = new string[] { "sourceId" })]
+        public async Task<Response<IList<HotNewsDto>>> GetHotNewsAsync(int sourceId)
+        {
+            var response = new Response<IList<HotNewsDto>>();
+
+            var result = await _context.HotNews.Where(x => x.SourceId.Equals(sourceId)).Select(x => new HotNewsDto
+            {
+                Title = x.Title,
+                Url = x.Url
+            }).ToListAsync();
+
+            response.Result = result;
+            return response;
         }
 
         /// <summary>

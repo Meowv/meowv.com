@@ -195,6 +195,13 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.API.Controllers.CommonController.GetHotNewsAsync(System.Int32)">
+            <summary>
+            获取对应的每日热点列表
+            </summary>
+            <param name="sourceId"></param>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.API.Controllers.CommonController.GetWeixinSignatureAsync(System.String)">
             <summary>
             微信分享验证
