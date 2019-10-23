@@ -14,6 +14,6 @@ namespace MeowvBlog.Core.Domain.Signature
 
         public string Ip { get; set; }
 
-        public DateTime Time { get; set; }
+        public DateTime Date { get; set; }
     }
 }
