@@ -12,7 +12,6 @@ using Senparc.Weixin.MP.Containers;
 using Senparc.Weixin.MP.Helpers;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -42,25 +41,11 @@ namespace MeowvBlog.API.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("hot_news_source")]
+        [ResponseCache(CacheProfileName = "default")]
         public async Task<Response<IList<EnumResponse>>> GetHotNewsSourceAsync()
         {
             var response = new Response<IList<EnumResponse>>();
-
-            var result = new List<EnumResponse>();
-            foreach (var item in Enum.GetValues(typeof(HotNewsSource)))
-            {
-                var dto = new EnumResponse
-                {
-                    Key = item.ToString(),
-                    Value = Convert.ToInt32(item)
-                };
-
-                var objArray = item.GetType().GetField(item.ToString()).GetCustomAttributes(typeof(DescriptionAttribute), true);
-                if (objArray.Any()) dto.Description = (objArray.First() as DescriptionAttribute).Description;
-
-                result.Add(dto);
-            }
-
+            var result = Extension.EnumToList<HotNewsSource>();
             response.Result = result;
             return await Task.FromResult(response);
         }
