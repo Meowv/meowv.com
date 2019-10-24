@@ -1,6 +1,7 @@
 ﻿using MeowvBlog.Core.MTA;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
@@ -107,6 +108,16 @@ namespace MeowvBlog.API.Extensions
             }
 
             return $"{query}sign={sign}";
+        }
+
+        /// <summary>
+        /// 纯数字 GUID
+        /// </summary>
+        /// <returns></returns>
+        public static string GenerateGuid()
+        {
+            var buffer = Guid.NewGuid().ToByteArray();
+            return BitConverter.ToInt64(buffer, 0).ToString();
         }
     }
 }
