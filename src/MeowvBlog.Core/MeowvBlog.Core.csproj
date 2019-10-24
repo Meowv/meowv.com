@@ -20,8 +20,4 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.0.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Dto\Signature\" />
-  </ItemGroup>
-
 </Project>

@@ -454,6 +454,12 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.API.Controllers.SignatureController.GetSignatureLogAsync">
+            <summary>
+            获取个性签名记录
+            </summary>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.API.Extensions.Extensions.GetObjFromJsonFile``1(System.String,System.String)">
             <summary>
             GetObjFromJsonFile

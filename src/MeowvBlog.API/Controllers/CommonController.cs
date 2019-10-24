@@ -79,7 +79,7 @@ namespace MeowvBlog.API.Controllers
         /// <returns></returns>
         [HttpPost]
         [Route("hot_news")]
-        public async Task<Response<string>> BulkInsertHotNewsAsync(IList<InsertHotNewsDto> dtos)
+        public async Task<Response<string>> BulkInsertHotNewsAsync([FromBody] IList<InsertHotNewsDto> dtos)
         {
             var response = new Response<string>();
 
