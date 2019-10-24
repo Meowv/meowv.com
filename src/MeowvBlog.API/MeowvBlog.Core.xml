@@ -29,6 +29,11 @@
             微信
             </summary>
         </member>
+        <member name="T:MeowvBlog.Core.Configurations.AppSettings.Signature">
+            <summary>
+            个性签名配置
+            </summary>
+        </member>
         <member name="P:MeowvBlog.Core.Domain.Blog.Category.Id">
             <summary>
             主键
