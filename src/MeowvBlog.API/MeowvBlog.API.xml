@@ -448,6 +448,12 @@
             <param name="api"></param>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.API.Controllers.SignatureController.GetSignatureTypeAsync">
+            <summary>
+            获取所有签名的类型
+            </summary>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.API.Extensions.Extensions.GetObjFromJsonFile``1(System.String,System.String)">
             <summary>
             GetObjFromJsonFile
@@ -490,6 +496,13 @@
             <summary>
             纯数字 GUID
             </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Extensions.Extensions.EnumToList``1">
+            <summary>
+            将 Enum 转换为 List
+            </summary>
+            <typeparam name="T"></typeparam>
             <returns></returns>
         </member>
     </members>

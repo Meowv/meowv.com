@@ -1,9 +1,12 @@
-﻿using MeowvBlog.Core.MTA;
+﻿using MeowvBlog.Core.Dto;
+using MeowvBlog.Core.MTA;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -118,6 +121,32 @@ namespace MeowvBlog.API.Extensions
         {
             var buffer = Guid.NewGuid().ToByteArray();
             return BitConverter.ToInt64(buffer, 0).ToString();
+        }
+
+        /// <summary>
+        /// 将 Enum 转换为 List
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public static IList<EnumResponse> EnumToList<T>() where T : Enum
+        {
+            var result = new List<EnumResponse>();
+
+            foreach (var item in Enum.GetValues(typeof(T)))
+            {
+                var dto = new EnumResponse
+                {
+                    Key = item.ToString(),
+                    Value = Convert.ToInt32(item)
+                };
+
+                var objArray = item.GetType().GetField(item.ToString()).GetCustomAttributes(typeof(DescriptionAttribute), true);
+                if (objArray.Any()) dto.Description = (objArray.First() as DescriptionAttribute).Description;
+
+                result.Add(dto);
+            }
+
+            return result;
         }
     }
 }
