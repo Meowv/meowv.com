@@ -202,6 +202,13 @@
             <param name="sourceId"></param>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.API.Controllers.CommonController.BulkInsertHotNewsAsync(System.Collections.Generic.IList{MeowvBlog.Core.Dto.HotNews.InsertHotNewsDto})">
+            <summary>
+            批量插入每日热点数据
+            </summary>
+            <param name="dtos"></param>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.API.Controllers.CommonController.GetWeixinSignatureAsync(System.String)">
             <summary>
             微信分享验证
