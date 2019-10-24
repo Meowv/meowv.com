@@ -1,6 +1,6 @@
-﻿namespace MeowvBlog.Core.Dto.HotNews
+﻿namespace MeowvBlog.Core.Dto
 {
-    public class HotNewsSourceDto
+    public class EnumResponse
     {
         public string Key { get; set; }
 

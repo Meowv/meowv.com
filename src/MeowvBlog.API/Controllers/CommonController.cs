@@ -42,14 +42,14 @@ namespace MeowvBlog.API.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("hot_news_source")]
-        public async Task<Response<IList<HotNewsSourceDto>>> GetHotNewsSourceAsync()
+        public async Task<Response<IList<EnumResponse>>> GetHotNewsSourceAsync()
         {
-            var response = new Response<IList<HotNewsSourceDto>>();
+            var response = new Response<IList<EnumResponse>>();
 
-            var result = new List<HotNewsSourceDto>();
+            var result = new List<EnumResponse>();
             foreach (var item in Enum.GetValues(typeof(HotNewsSource)))
             {
-                var dto = new HotNewsSourceDto
+                var dto = new EnumResponse
                 {
                     Key = item.ToString(),
                     Value = Convert.ToInt32(item)

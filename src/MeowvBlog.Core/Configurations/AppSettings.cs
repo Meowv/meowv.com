@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace MeowvBlog.Core.Configurations
@@ -66,6 +67,32 @@ namespace MeowvBlog.Core.Configurations
             public static string AppId => _config["Weixin:AppId"];
 
             public static string AppSecret => _config["Weixin:AppSecret"];
+        }
+
+        /// <summary>
+        /// 个性签名配置
+        /// </summary>
+        public static class Signature
+        {
+            public static string Path => _config["Signature:Path"];
+
+            public static IDictionary<string, string> Urls
+            {
+                get
+                {
+                    var dic = new Dictionary<string, string>();
+
+                    var urls = _config.GetSection("Signature:Urls");
+                    foreach (IConfigurationSection section in urls.GetChildren())
+                    {
+                        var url = section["Url"];
+                        var parameter = section["Parameter"];
+
+                        dic.Add(url, parameter);
+                    }
+                    return dic;
+                }
+            }
         }
     }
 }
