@@ -87,6 +87,39 @@ namespace MeowvBlog.API.Controllers
         }
 
         /// <summary>
+        /// 批量插入每日热点数据
+        /// </summary>
+        /// <param name="dtos"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("hot_news")]
+        public async Task<Response<string>> BulkInsertHotNewsAsync(IList<InsertHotNewsDto> dtos)
+        {
+            var response = new Response<string>();
+
+            string spider = HttpContext.Request.Headers["spider"];
+            if (spider != "python")
+            {
+                response.Msg = "缺少HEADERS值";
+                return response;
+            }
+
+            var hotNews = dtos.Select(x => new HotNews
+            {
+                Title = x.Title,
+                Url = x.Url,
+                SourceId = x.SourceId,
+                Date = DateTime.Now
+            });
+
+            await _context.HotNews.AddRangeAsync(hotNews);
+            await _context.SaveChangesAsync();
+
+            response.Result = "新增成功";
+            return response;
+        }
+
+        /// <summary>
         /// 微信分享验证
         /// </summary>
         /// <param name="url"></param>
