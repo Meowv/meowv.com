@@ -17,6 +17,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Extension = MeowvBlog.API.Extensions.Extensions;
 
 namespace MeowvBlog.API.Controllers
 {
@@ -106,11 +107,15 @@ namespace MeowvBlog.API.Controllers
 
             var hotNews = dtos.Select(x => new HotNews
             {
+                Id = Extension.GenerateGuid(),
                 Title = x.Title,
                 Url = x.Url,
                 SourceId = x.SourceId,
                 Date = DateTime.Now
             });
+
+            _context.HotNews.RemoveRange(_context.HotNews.Where(x => dtos.Select(z => z.SourceId).Contains(x.SourceId)));
+            await _context.SaveChangesAsync();
 
             await _context.HotNews.AddRangeAsync(hotNews);
             await _context.SaveChangesAsync();

@@ -486,5 +486,11 @@
             <param name="keyValues"></param>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.API.Extensions.Extensions.GenerateGuid">
+            <summary>
+            纯数字 GUID
+            </summary>
+            <returns></returns>
+        </member>
     </members>
 </doc>

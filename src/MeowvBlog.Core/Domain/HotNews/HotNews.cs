@@ -4,7 +4,7 @@ namespace MeowvBlog.Core.Domain.HotNews
 {
     public class HotNews
     {
-        public int Id { get; set; }
+        public string Id { get; set; }
 
         public string Title { get; set; }
 
