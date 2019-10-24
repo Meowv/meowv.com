@@ -177,7 +177,7 @@ namespace MeowvBlog.API.Controllers
         [Route("cat")]
         public async Task<IActionResult> GetCatAsync()
         {
-            var path = Path.Combine(Directory.GetCurrentDirectory(), @"Resources/cats.json");
+            var path = Path.Combine(Directory.GetCurrentDirectory(), "Resources/cats.json");
 
             var cats = await path.GetObjFromJsonFile<List<string>>("cats");
 
