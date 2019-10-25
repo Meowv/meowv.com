@@ -15,7 +15,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.API", "src\MeowvB
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.Core", "src\MeowvBlog.Core\MeowvBlog.Core.csproj", "{AEC24A45-93A1-481E-A3B2-8C4F0035F57A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeowvBlog.BlazorWeb", "src\MeowvBlog.BlazorWeb\MeowvBlog.BlazorWeb.csproj", "{51F9CD88-DF5C-487C-97A3-6971462DC5B5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.BlazorWeb", "src\MeowvBlog.BlazorWeb\MeowvBlog.BlazorWeb.csproj", "{51F9CD88-DF5C-487C-97A3-6971462DC5B5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
