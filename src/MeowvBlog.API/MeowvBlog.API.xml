@@ -448,6 +448,25 @@
             <param name="api"></param>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.API.Controllers.PopKartController.GetPopKartTypeAsync">
+            <summary>
+            获取卡丁车的赛车类型列表
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.PopKartController.GetPopKartRarityAsync">
+            <summary>
+            获取卡丁车的赛车稀有度列表
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.PopKartController.QueryPopKartsAsync(MeowvBlog.Core.Dto.PopKart.QueryPopKartInput)">
+            <summary>
+            查询卡丁车数据
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.API.Controllers.SignatureController.GenerateSignatureAsync(System.String,System.Int32)">
             <summary>
             生成个性艺术签名
