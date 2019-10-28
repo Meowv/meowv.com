@@ -134,6 +134,26 @@
             展示名称
             </summary>
         </member>
+        <member name="P:MeowvBlog.Core.Domain.PopKart.Kart.Name">
+            <summary>
+            赛车名字
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.PopKart.Kart.Type">
+            <summary>
+            赛车类型
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.PopKart.Kart.Rarity">
+            <summary>
+            赛车稀有度
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Domain.PopKart.Kart.Properties">
+            <summary>
+            性能参数 - 漂移,加速度,弯道,加速时间,集气速度
+            </summary>
+        </member>
         <member name="P:MeowvBlog.Core.Dto.Blog.CategoryDto.CategoryName">
             <summary>
             分类名称
@@ -302,6 +322,41 @@
         <member name="P:MeowvBlog.Core.Dto.Blog.TagDto.DisplayName">
             <summary>
             展示名称
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.PopKart.KartDto.Name">
+            <summary>
+            赛车名字
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.PopKart.KartDto.Type">
+            <summary>
+            赛车类型
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.PopKart.KartDto.Rarity">
+            <summary>
+            赛车稀有度
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.PopKart.KartDto.Properties">
+            <summary>
+            性能参数 - 漂移,加速度,弯道,加速时间,集气速度
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.PopKart.QueryPopKartInput.Name">
+            <summary>
+            赛车名字
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.PopKart.QueryPopKartInput.Type">
+            <summary>
+            赛车类型
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.PopKart.QueryPopKartInput.Rarity">
+            <summary>
+            赛车稀有度
             </summary>
         </member>
         <member name="F:MeowvBlog.Core.GitHub.AccessTokenRequest.Client_ID">
