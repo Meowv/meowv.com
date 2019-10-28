@@ -10,11 +10,11 @@
         /// <summary>
         /// 赛车类型
         /// </summary>
-        public int Type { get; set; }
+        public int Type { get; set; } = -1;
 
         /// <summary>
         /// 赛车稀有度
         /// </summary>
-        public int Rarity { get; set; }
+        public int Rarity { get; set; } = -1;
     }
 }
