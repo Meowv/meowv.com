@@ -25,7 +25,10 @@
 - [x] 基于 .Net Core 3.0 搭建纯原生开发项目，无第三方框架依赖
 - [x] 项目配置，集成 Swagger 管理 API
 - [x] 自定义 Swagger 扩展
-- [X] Code First 模式开发
+- [x] Code First 模式开发
+- [x] 图片合并处理，添加水印
+- [x] 读取操作JSON文件
+- [x] 将枚举类型转换为List通用扩展方法
 - [x] API 分组
 - [x] API 基于 JWT模式授权验证
 - [x] Filter 之 Swagger 标签描述
