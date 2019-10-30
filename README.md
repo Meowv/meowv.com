@@ -17,7 +17,7 @@
 ## 快速体验
 
 - 下载 [v3.1.0](https://github.com/Meowv/Blog/releases/download/v3.1.0/v3.1.0.zip) Releases
-- dotnet run MeowvBlog.Web.dll
+- `dotnet run MeowvBlog.Web.dll`
 - 浏览器打开 http://127.0.0.1:5001/ 即可查看效果
 
 ## TODO
@@ -25,6 +25,7 @@
 - [x] 基于 .Net Core 3.0 搭建纯原生开发项目，无第三方框架依赖
 - [x] 项目配置，集成 Swagger 管理 API
 - [x] 自定义 Swagger 扩展
+- [X] Code First 模式开发
 - [x] API 分组
 - [x] API 基于 JWT模式授权验证
 - [x] Filter 之 Swagger 标签描述
