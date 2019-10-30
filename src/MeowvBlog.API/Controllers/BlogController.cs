@@ -68,8 +68,8 @@ namespace MeowvBlog.API.Controllers
                 CreationTime = Convert.ToDateTime(post.CreationTime).ToString("MMMM dd, yyyy HH:mm:ss", new CultureInfo("en-us")),
                 Category = new CategoryDto { CategoryName = category.CategoryName, DisplayName = category.DisplayName },
                 Tags = tags,
-                Previous = new PostForPagedDto { Title = previous.Title, Url = previous.Url },
-                Next = new PostForPagedDto { Title = next.Title, Url = next.Url }
+                Previous = previous == null ? null : new PostForPagedDto { Title = previous.Title, Url = previous.Url },
+                Next = next == null ? null : new PostForPagedDto { Title = next.Title, Url = next.Url }
             };
 
             response.Result = result;
