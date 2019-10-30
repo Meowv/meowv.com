@@ -1,0 +1,87 @@
+﻿@{
+    ViewData["Title"] = "访问数据分析 - ";
+    var date = DateTime.Now.AddDays(-1).ToString("yyyy-MM-dd");
+}
+<div class="main">
+    <div class="mta-box">
+        <div class="mta-a">
+            <div class="loader"></div>
+            <ul>
+                <li>
+                    <div class="mta-a-item">
+                        <div class="mta-a-title">
+                            浏览量(PV)
+                        </div>
+                        <div class="mta-a-value" id="pv">
+                            <strong>888888</strong>
+                        </div>
+                        <div class="mta-date">
+                            @date
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <div class="mta-a-item">
+                        <div class="mta-a-title">
+                            独立用户(UV)
+                        </div>
+                        <div class="mta-a-value" id="uv">
+                            <strong>888888</strong>
+                        </div>
+                        <div class="mta-date">
+                            @date
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <div class="mta-a-item">
+                        <div class="mta-a-title">
+                            访问次数(VV)
+                        </div>
+                        <div class="mta-a-value" id="vv">
+                            <strong>888888</strong>
+                        </div>
+                        <div class="mta-date">
+                            @date
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <div class="mta-a-item">
+                        <div class="mta-a-title">
+                            独立IP
+                        </div>
+                        <div class="mta-a-value" id="iv">
+                            <strong>888888</strong>
+                        </div>
+                        <div class="mta-date">
+                            @date
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+@section scripts{
+    <script src="https://static.meowv.com/js/axios.min.js"></script>
+    <script>
+        axios.get(`${api_domain}/mta/ctr_core_data?start_date=@date&end_date=@date&idx=pv,uv,vv,iv`)
+            .then(function (response) {
+                if (response.data.info = "success") {
+                    var key = "@date.Replace("-", "")"
+                    var result = response.data.data[key];
+
+                    document.querySelector("#pv strong").innerText = result.pv;
+                    document.querySelector("#uv strong").innerText = result.uv;
+                    document.querySelector("#vv strong").innerText = result.vv;
+                    document.querySelector("#iv strong").innerText = result.iv;
+
+                    document.querySelector(".mta-a ul").style.cssText = "display:block";
+                    document.querySelector('.loader').remove();
+                }
+            }).catch(function (error) {
+                console.log(error);
+            });
+    </script>
+}

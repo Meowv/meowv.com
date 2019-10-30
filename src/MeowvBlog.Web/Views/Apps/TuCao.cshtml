@@ -1,0 +1,23 @@
+﻿@{
+    ViewData["Title"] = "吐个槽 - ";
+}
+<div class="main" style="margin-top: 10px;">
+    <iframe id="tucao" frameborder="0" width="100%" height="747" src="https://support.qq.com/products/75616"></iframe>
+</div>
+@section scripts{
+    <script>
+        share["desc"] = "进来吐个槽吧~~~";
+        wx_share(share);
+
+        window.onresize = function () {
+            changeFrameHeight();
+        }
+        window.onload = function () {
+            changeFrameHeight();
+        }
+        function changeFrameHeight() {
+            var ifm = document.getElementById("tucao");
+            ifm.height = document.documentElement.clientHeight - 200;
+        }
+    </script>
+}
