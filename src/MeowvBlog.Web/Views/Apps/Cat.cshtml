@@ -1,0 +1,20 @@
+﻿@{
+    ViewData["Title"] = "随机猫咪图 - ";
+}
+<div class="main">
+    <div class="loader"></div>
+    <div class="container">
+        <div class="imgbox cat-img">
+            <img src="https://api.meowv.com/common/cat/" />
+        </div>
+    </div>
+</div>
+@section scripts{
+    <script>
+        share["desc"] = "获取一张随机的猫咪图~~~";
+        wx_share(share);
+        window.onload = function () {
+            document.querySelector('.loader').remove();
+        }
+    </script>
+}

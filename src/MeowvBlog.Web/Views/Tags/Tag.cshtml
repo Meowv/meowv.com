@@ -1,0 +1,59 @@
+﻿<div class="main">
+    <div class="container">
+        <div class="post-wrap tags">
+            <h2 class="post-title">
+                <script id="tagName_tmpl" type="text/template">
+                    -&nbsp;Tag&nbsp;·&nbsp;{{@@result}}&nbsp;-
+                </script>
+            </h2>
+        </div>
+        <div class="post-wrap archive">
+            <script id="tag_post_tmpl" type="text/template">
+                {{each result}}
+                <h3>{{$value.year}}</h3>
+                {{each $value.posts}}
+                <article class="archive-item">
+                    <a class="archive-item-link" href="/post{{$value.url}}">{{$value.title}}</a>
+                    <span class="archive-item-date">{{$value.creationTime}}</span>
+                </article>
+                {{/each}}
+                {{/each}}
+            </script>
+        </div>
+    </div>
+    <div class="loader"></div>
+</div>
+@section scripts{
+    <script src="https://static.meowv.com/js/axios.min.js"></script>
+    <script src="https://static.meowv.com/js/template-web.js"></script>
+    <script>
+        wx_share(share);
+        var name = location.pathname.replace(/tag|\//gi, "");
+
+        axios.all([getTagName(name), getPostsByTagName(name)])
+            .then(axios.spread(function (tagNameResponse, postsResponse) {
+                if (tagNameResponse.data.success) {
+                    document.title = document.title.substring(0, 2) + tagNameResponse.data.result + " - " + document.title.substring(2);
+                    var html = template("tagName_tmpl", tagNameResponse.data);
+                    document.querySelector('.post-title').innerHTML = html;
+                } else {
+                    document.querySelector('.post-title').innerText = tagNameResponse.data.msg;
+                }
+                if (postsResponse.data.success) {
+                    var html = template("tag_post_tmpl", postsResponse.data);
+                    document.querySelector('.post-wrap.archive').innerHTML = html;
+                    document.querySelector('.loader').remove();
+                }
+            })).catch(function (error) {
+                console.log(error);
+            });
+
+        function getTagName(name) {
+            return axios.get(`${api_domain}/blog/tag?name=${name}`);
+        }
+
+        function getPostsByTagName(name) {
+            return axios.get(`${api_domain}/blog/post/query_by_tag?name=${name}`);
+        }
+    </script>
+}
