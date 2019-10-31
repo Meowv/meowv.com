@@ -8,18 +8,11 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using Senparc.CO2NET;
-using Senparc.CO2NET.RegisterServices;
-using Senparc.Weixin;
-using Senparc.Weixin.Entities;
-using Senparc.Weixin.RegisterServices;
 using System;
 using System.Net;
 using System.Text;
@@ -28,13 +21,6 @@ namespace MeowvBlog.Web
 {
     public class Startup
     {
-        private IConfiguration Configuration { get; }
-
-        public Startup(IConfiguration configuration)
-        {
-            Configuration = configuration;
-        }
-
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers().AddNewtonsoftJson();
@@ -68,10 +54,9 @@ namespace MeowvBlog.Web
                 options.CacheProfiles.Add("default", new CacheProfile { Duration = 100 });
             }).SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
             services.AddHttpClient();
-            services.AddSenparcGlobalServices(Configuration).AddSenparcWeixinServices(Configuration);
         }
 
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IOptions<SenparcSetting> senparcSetting, IOptions<SenparcWeixinSetting> senparcWeixinSetting)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())
             {
@@ -95,9 +80,6 @@ namespace MeowvBlog.Web
                     await context.Response.WriteAsync(content);
                 }
             });
-
-            var register = RegisterService.Start(env, senparcSetting.Value).UseSenparcGlobal();
-            register.UseSenparcWeixin(senparcWeixinSetting.Value, senparcSetting.Value);
 
             app.UseForwardedHeaders(new ForwardedHeadersOptions
             {

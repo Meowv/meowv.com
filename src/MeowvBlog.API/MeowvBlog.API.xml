@@ -209,13 +209,6 @@
             <param name="dtos"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.CommonController.GetWeixinSignatureAsync(System.String)">
-            <summary>
-            微信分享验证
-            </summary>
-            <param name="url"></param>
-            <returns></returns>
-        </member>
         <member name="M:MeowvBlog.API.Controllers.CommonController.GetBingAsync">
             <summary>
             必应每日壁纸
