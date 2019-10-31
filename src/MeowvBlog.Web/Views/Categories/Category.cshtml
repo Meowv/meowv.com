@@ -27,7 +27,6 @@
     <script src="https://static.meowv.com/js/axios.min.js"></script>
     <script src="https://static.meowv.com/js/template-web.js"></script>
     <script>
-        wx_share(share);
         var name = location.pathname.replace(/category|\//gi, "");
 
         axios.all([getCategoryName(name), getPostsByCategoryName(name)])

@@ -26,7 +26,6 @@
     <script src="https://static.meowv.com/js/axios.min.js"></script>
     <script src="https://static.meowv.com/js/template-web.js"></script>
     <script>
-        wx_share(share);
         axios.get(`${api_domain}/blog/friendlinks`)
             .then(function (response) {
                 if (response.data.success) {

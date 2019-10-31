@@ -26,8 +26,6 @@
     <script src="https://static.meowv.com/js/axios.min.js"></script>
     <script src="https://static.meowv.com/js/template-web.js"></script>
     <script>
-        share["desc"] = "每日热点，获取各大热门网站热门头条~~~";
-        wx_share(share);
         axios.get(`${api_domain}/common/hot_news_source`)
             .then(function (response) {
                 var html = template("top_tabs_tmpl", { "result": response.data.result });
