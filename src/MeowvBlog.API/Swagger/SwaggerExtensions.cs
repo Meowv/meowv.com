@@ -12,6 +12,8 @@ namespace MeowvBlog.API.Swagger
 {
     public static class SwaggerExtensions
     {
+        private static readonly string version = "v3.1.1";
+
         public static List<SwaggerApiInfo> ApiInfos = new List<SwaggerApiInfo>()
         {
             new SwaggerApiInfo
@@ -20,7 +22,7 @@ namespace MeowvBlog.API.Swagger
                 Name = "博客前台接口",
                 OpenApiInfo = new OpenApiInfo
                 {
-                    Version = "v3.1.0",
+                    Version = version,
                     Title = "阿星Plus - 博客前台接口"
                 }
             },
@@ -30,7 +32,7 @@ namespace MeowvBlog.API.Swagger
                 Name = "博客后台接口",
                 OpenApiInfo = new OpenApiInfo
                 {
-                    Version = "v3.1.0",
+                    Version = version,
                     Title = "阿星Plus - 博客后台接口"
                 }
             },
@@ -40,7 +42,7 @@ namespace MeowvBlog.API.Swagger
                 Name = "通用公共接口",
                 OpenApiInfo = new OpenApiInfo
                 {
-                    Version = "v3.1.0",
+                    Version = version,
                     Title = "阿星Plus - 通用公共接口"
                 }
             }
