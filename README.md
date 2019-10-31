@@ -16,7 +16,7 @@
 
 ## 快速体验
 
-- 下载 [v3.1.0](https://github.com/Meowv/Blog/releases/download/v3.1.0/v3.1.0.zip) Releases
+- 下载最新的 [Releases](https://github.com/Meowv/Blog/releases/latest) 包
 - `dotnet run MeowvBlog.Web.dll`
 - 浏览器打开 http://127.0.0.1:5001/ 即可查看效果
 
