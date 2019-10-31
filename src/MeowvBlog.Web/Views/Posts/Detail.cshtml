@@ -81,9 +81,6 @@
 
                     var html = template("detail_tmpl", response.data);
                     document.querySelector('.post-wrap').innerHTML = html;
-
-                    share['title'] = response.data.result.title;
-                    share['desc'] = document.querySelector("#content").innerText.substr(0, 100);
                 } else {
                     document.querySelector('.post-wrap').innerHTML = `<h2 class="post-title">${response.data.message}</h2>`;
                 }
