@@ -70,7 +70,5 @@
 |Microsoft.EntityFrameworkCore.Design|[![NuGet version](https://badge.fury.io/nu/Microsoft.EntityFrameworkCore.Design.svg)](https://badge.fury.io/nu/Microsoft.EntityFrameworkCore.Design)|
 |Swashbuckle.AspNetCore|[![NuGet version](https://badge.fury.io/nu/Swashbuckle.AspNetCore.svg)](https://badge.fury.io/nu/Swashbuckle.AspNetCore)|
 |Swashbuckle.AspNetCore.Filters|[![NuGet version](https://badge.fury.io/nu/Swashbuckle.AspNetCore.Filters.svg)](https://badge.fury.io/nu/Swashbuckle.AspNetCore.Filters)|
-|Senparc.Weixin|[![NuGet version](https://badge.fury.io/nu/Senparc.Weixin.svg)](https://badge.fury.io/nu/Senparc.Weixin)|
-|Senparc.Weixin.MP|[![NuGet version](https://badge.fury.io/nu/Senparc.Weixin.MP.svg)](https://badge.fury.io/nu/Senparc.Weixin.MP)|
 |SixLabors.ImageSharp|[![NuGet version](https://badge.fury.io/nu/SixLabors.ImageSharp.svg)](https://badge.fury.io/nu/SixLabors.ImageSharp)|
 |SixLabors.ImageSharp.Drawing|[![NuGet version](https://badge.fury.io/nu/SixLabors.ImageSharp.Drawing.svg)](https://badge.fury.io/nu/SixLabors.ImageSharp.Drawing)|
