@@ -6,9 +6,35 @@
     ]
   },
   {
+    "outputFileName": "wwwroot/css/gallery.min.css",
+    "inputFiles": [
+      "wwwroot/css/gallery.css",
+      "wwwroot/photoswipe/photoswipe.css",
+      "wwwroot/photoswipe/default-skin/default-skin.css"
+    ]
+  },
+  {
     "outputFileName": "wwwroot/js/main.min.js",
     "inputFiles": [
       "wwwroot/js/main.js"
+    ]
+  },
+  {
+    "outputFileName": "wwwroot/photoswipe/photoswipe-ui-default.min.js",
+    "inputFiles": [
+      "wwwroot/photoswipe/photoswipe-ui-default.js"
+    ]
+  },
+  {
+    "outputFileName": "wwwroot/photoswipe/photoswipe.min.js",
+    "inputFiles": [
+      "wwwroot/photoswipe/photoswipe.js"
+    ]
+  },
+  {
+    "outputFileName": "wwwroot/js/gallery.min.js",
+    "inputFiles": [
+      "wwwroot/js/gallery.js"
     ]
   }
 ]

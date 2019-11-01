@@ -13,7 +13,7 @@ using System.Xml.Linq;
 namespace MeowvBlog.API.Controllers
 {
     [ApiController]
-    [Route("Blog")]
+    [Route("[controller]")]
     [Produces("application/json")]
     [ApiExplorerSettings(GroupName = GlobalConsts.GroupName_v1)]
     public partial class BlogController : ControllerBase
