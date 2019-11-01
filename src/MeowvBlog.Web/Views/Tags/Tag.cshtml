@@ -24,35 +24,35 @@
     <div class="loader"></div>
 </div>
 @section scripts{
-    <script src="https://static.meowv.com/js/axios.min.js"></script>
-    <script src="https://static.meowv.com/js/template-web.js"></script>
-    <script>
-        var name = location.pathname.replace(/tag|\//gi, "");
+<script src="https://static.meowv.com/js/axios.min.js"></script>
+<script src="https://static.meowv.com/js/template-web.js"></script>
+<script>
+    var name = location.pathname.replace(/tag|\//gi, "");
 
-        axios.all([getTagName(name), getPostsByTagName(name)])
-            .then(axios.spread(function (tagNameResponse, postsResponse) {
-                if (tagNameResponse.data.success) {
-                    document.title = document.title.substring(0, 2) + tagNameResponse.data.result + " - " + document.title.substring(2);
-                    var html = template("tagName_tmpl", tagNameResponse.data);
-                    document.querySelector('.post-title').innerHTML = html;
-                } else {
-                    document.querySelector('.post-title').innerText = tagNameResponse.data.msg;
-                }
-                if (postsResponse.data.success) {
-                    var html = template("tag_post_tmpl", postsResponse.data);
-                    document.querySelector('.post-wrap.archive').innerHTML = html;
-                    document.querySelector('.loader').remove();
-                }
-            })).catch(function (error) {
-                console.log(error);
-            });
+    axios.all([getTagName(name), getPostsByTagName(name)])
+        .then(axios.spread(function (tagNameResponse, postsResponse) {
+            if (tagNameResponse.data.success) {
+                document.title = document.title.substring(0, 2) + tagNameResponse.data.result + " - " + document.title.substring(2);
+                var html = template("tagName_tmpl", tagNameResponse.data);
+                document.querySelector('.post-title').innerHTML = html;
+            } else {
+                document.querySelector('.post-title').innerText = tagNameResponse.data.msg;
+            }
+            if (postsResponse.data.success) {
+                var html = template("tag_post_tmpl", postsResponse.data);
+                document.querySelector('.post-wrap.archive').innerHTML = html;
+                document.querySelector('.loader').remove();
+            }
+        })).catch(function (error) {
+            console.log(error);
+        });
 
-        function getTagName(name) {
-            return axios.get(`${api_domain}/blog/tag?name=${name}`);
-        }
+    function getTagName(name) {
+        return axios.get(`${api_domain}/blog/tag?name=${name}`);
+    }
 
-        function getPostsByTagName(name) {
-            return axios.get(`${api_domain}/blog/post/query_by_tag?name=${name}`);
-        }
-    </script>
+    function getPostsByTagName(name) {
+        return axios.get(`${api_domain}/blog/post/query_by_tag?name=${name}`);
+    }
+</script>
 }

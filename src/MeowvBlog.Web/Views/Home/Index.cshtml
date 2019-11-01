@@ -39,11 +39,9 @@
     </div>
 </div>
 @section scripts{
-    <script>
-        document.querySelector(".weixin").addEventListener("click", function () {
-            document.querySelector(".qrcode").classList.contains('hidden') ?
-                document.querySelector(".qrcode").classList.remove('hidden') :
-                document.querySelector(".qrcode").classList.add('hidden');
-        });
-    </script>
+<script>
+    document.querySelector(".weixin").addEventListener("click", function () {
+        document.querySelector(".qrcode").classList.contains('hidden') ? document.querySelector(".qrcode").classList.remove('hidden') : document.querySelector(".qrcode").classList.add('hidden');
+    });
+</script>
 }

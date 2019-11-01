@@ -9,12 +9,8 @@
     <meta name="description" content="生命不息，奋斗不止">
     <title>😍@ViewData["Title"]阿星Plus⭐⭐⭐</title>
     <link rel="icon" href="https://static.meowv.com/favicon.ico">
-    <environment include="Development">
-        <link href="~/css/style.min.css" rel="stylesheet" />
-    </environment>
-    <environment exclude="Development">
-        <link rel="stylesheet" href="https://static.meowv.com/css/style.min.css">
-    </environment>
+    <environment include="Development"><link href="~/css/style.min.css" rel="stylesheet" /></environment>
+    <environment exclude="Development"><link rel="stylesheet" href="https://static.meowv.com/css/style.min.css"></environment>
 </head>
 
 <body>
@@ -27,10 +23,6 @@
 
 </html>
 <script src="https://static.meowv.com/live2d/L2Dwidget.min.js"></script>
-<environment include="Development">
-    <script src="~/js/main.min.js"></script>
-</environment>
-<environment exclude="Development">
-    <script src="https://static.meowv.com/js/main.min.js"></script>
-</environment>
+<environment include="Development"><script src="~/js/main.min.js"></script></environment>
+<environment exclude="Development"><script src="https://static.meowv.com/js/main.min.js"></script></environment>
 @RenderSection("Scripts", required: false)

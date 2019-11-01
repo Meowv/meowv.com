@@ -27,18 +27,18 @@
 </div>
 <div class="loader"></div>
 @section scripts{
-    <script src="https://static.meowv.com/js/axios.min.js"></script>
-    <script src="https://static.meowv.com/js/template-web.js"></script>
-    <script>
-        axios.get(`${api_domain}/blog/categories`)
-            .then(function (response) {
-                if (response.data.success) {
-                    var html = template("categories_tmpl", response.data);
-                    document.querySelector('.categories-card').innerHTML = html;
-                    document.querySelector('.loader').remove();
-                }
-            }).catch(function (error) {
-                console.log(error);
-            });
-    </script>
+<script src="https://static.meowv.com/js/axios.min.js"></script>
+<script src="https://static.meowv.com/js/template-web.js"></script>
+<script>
+    axios.get(`${api_domain}/blog/categories`)
+        .then(function (response) {
+            if (response.data.success) {
+                var html = template("categories_tmpl", response.data);
+                document.querySelector('.categories-card').innerHTML = html;
+                document.querySelector('.loader').remove();
+            }
+        }).catch(function (error) {
+            console.log(error);
+        });
+</script>
 }

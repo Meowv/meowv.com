@@ -64,24 +64,24 @@
     </div>
 </div>
 @section scripts{
-    <script src="https://static.meowv.com/js/axios.min.js"></script>
-    <script>
-        axios.get(`${api_domain}/mta/ctr_core_data?start_date=@date&end_date=@date&idx=pv,uv,vv,iv`)
-            .then(function (response) {
-                if (response.data.info = "success") {
-                    var key = "@date.Replace("-", "")"
-                    var result = response.data.data[key];
+<script src="https://static.meowv.com/js/axios.min.js"></script>
+<script>
+    axios.get(`${api_domain}/mta/ctr_core_data?start_date=@date&end_date=@date&idx=pv,uv,vv,iv`)
+        .then(function (response) {
+            if (response.data.info = "success") {
+                var key = "@date.Replace("-", "")"
+                var result = response.data.data[key];
 
-                    document.querySelector("#pv strong").innerText = result.pv;
-                    document.querySelector("#uv strong").innerText = result.uv;
-                    document.querySelector("#vv strong").innerText = result.vv;
-                    document.querySelector("#iv strong").innerText = result.iv;
+                document.querySelector("#pv strong").innerText = result.pv;
+                document.querySelector("#uv strong").innerText = result.uv;
+                document.querySelector("#vv strong").innerText = result.vv;
+                document.querySelector("#iv strong").innerText = result.iv;
 
-                    document.querySelector(".mta-a ul").style.cssText = "display:block";
-                    document.querySelector('.loader').remove();
-                }
-            }).catch(function (error) {
-                console.log(error);
-            });
-    </script>
+                document.querySelector(".mta-a ul").style.cssText = "display:block";
+                document.querySelector('.loader').remove();
+            }
+        }).catch(function (error) {
+            console.log(error);
+        });
+</script>
 }

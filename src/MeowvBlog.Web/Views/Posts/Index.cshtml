@@ -19,38 +19,38 @@
     <div class="loader"></div>
 </div>
 @section scripts{
-    <script src="https://static.meowv.com/js/axios.min.js"></script>
-    <script src="https://static.meowv.com/js/template-web.js"></script>
-    <script>
-        var page = location.pathname.replace(/posts|page|\//gi, "") || 1;
-        var limit = 15;
+<script src="https://static.meowv.com/js/axios.min.js"></script>
+<script src="https://static.meowv.com/js/template-web.js"></script>
+<script>
+    var page = location.pathname.replace(/posts|page|\//gi, "") || 1;
+    var limit = 15;
 
-        axios.get(`${api_domain}/blog/post/query?page=${page}&limit=${limit}`)
-            .then(function (response) {
-                if (response.data) {
-                    if (!response.data.result) {
-                        document.querySelector('.post-wrap.archive').innerHTML = `<h2 class="post-title">找了找不到了~~~</h2>`;
-                        document.querySelector('.loader').remove();
-                        return false;
-                    }
-
-                    var data = { "result": response.data.result };
-                    var html = template("posts_tmpl", data);
-                    document.querySelector('.post-wrap.archive').insertAdjacentHTML('afterbegin', html);
-
-                    var totalPage = Math.ceil(response.data.total / limit);
-
-                    var paginationHtml = "";
-                    for (var i = 1; i <= totalPage; i++) {
-                        paginationHtml += page == i ? `<span class="page-number current">${i}</span>` : `<a class="page-number" href="/posts/page/${i}/">${i}</a>`;
-                    }
-                    document.querySelector('.pagination').innerHTML = paginationHtml;
-
+    axios.get(`${api_domain}/blog/post/query?page=${page}&limit=${limit}`)
+        .then(function (response) {
+            if (response.data) {
+                if (!response.data.result) {
+                    document.querySelector('.post-wrap.archive').innerHTML = `<h2 class="post-title">找了找不到了~~~</h2>`;
                     document.querySelector('.loader').remove();
-                    document.getElementById('posts_tmpl').remove();
+                    return false;
                 }
-            }).catch(function (error) {
-                console.log(error);
-            });
+
+                var data = { "result": response.data.result };
+                var html = template("posts_tmpl", data);
+                document.querySelector('.post-wrap.archive').insertAdjacentHTML('afterbegin', html);
+
+                var totalPage = Math.ceil(response.data.total / limit);
+
+                var paginationHtml = "";
+                for (var i = 1; i <= totalPage; i++) {
+                    paginationHtml += page == i ? `<span class="page-number current">${i}</span>` : `<a class="page-number" href="/posts/page/${i}/">${i}</a>`;
+                }
+                document.querySelector('.pagination').innerHTML = paginationHtml;
+
+                document.querySelector('.loader').remove();
+                document.getElementById('posts_tmpl').remove();
+            }
+        }).catch(function (error) {
+            console.log(error);
+        });
     </script>
 }
