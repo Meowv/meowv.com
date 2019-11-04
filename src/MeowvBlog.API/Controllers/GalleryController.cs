@@ -108,12 +108,18 @@ namespace MeowvBlog.API.Controllers
         [HttpGet]
         [Route("images")]
         [ResponseCache(CacheProfileName = "default", VaryByQueryKeys = new string[] { "id" })]
-        public async Task<Response<IList<string>>> QueryImagesAsync(string id)
+        public async Task<Response<IList<ImageForQueryDto>>> QueryImagesAsync(string id)
         {
-            var response = new Response<IList<string>>();
+            var response = new Response<IList<ImageForQueryDto>>();
 
-            var result = await _context.Images.Where(x => x.AlbumId == id).OrderByDescending(x => x.Date).Select(x => x.ImgUrl).ToListAsync();
-
+            var result = await _context.Images.Where(x => x.AlbumId == id)
+                                              .OrderByDescending(x => x.Date)
+                                              .Select(x => new ImageForQueryDto
+                                              {
+                                                  ImgUrl = x.ImgUrl,
+                                                  Width = x.Width,
+                                                  Height = x.Height
+                                              }).ToListAsync();
             response.Result = result;
             return response;
         }
@@ -165,6 +171,8 @@ namespace MeowvBlog.API.Controllers
                 Id = Extension.GenerateGuid(),
                 AlbumId = dto.AlbumId,
                 ImgUrl = x,
+                Width = SixLabors.ImageSharp.Image.Load(Path.Combine(AppSettings.Gallery.ImagesPath, x)).Width,
+                Height = SixLabors.ImageSharp.Image.Load(Path.Combine(AppSettings.Gallery.ImagesPath, x)).Height,
                 Date = DateTime.Now
             }).ToList();
 

@@ -1,158 +1,72 @@
-﻿document.querySelectorAll('.albums').forEach(x => {
-    x.onclick = function () {
-        const images = [{
-            src: 'https://static.cxstore.top/images/lake.jpg',
-            w: 1920,
-            h: 1080
-        }, {
-            src: 'https://static.cxstore.top/images/japan.jpg',
-            w: 1920,
-            h: 1080
-        }, {
-            src: 'https://static.cxstore.top/images/girl.jpg',
-            w: 1920,
-            h: 1080
-        }, {
-            src: 'https://static.cxstore.top/images/flower.jpg',
-            w: 1920,
-            h: 1080
-        }, {
-            src: 'https://static.cxstore.top/images/lake.jpg',
-            w: 1920,
-            h: 1080
-        }, {
-            src: 'https://static.cxstore.top/images/japan.jpg',
-            w: 1920,
-            h: 1080
-        }, {
-            src: 'https://static.cxstore.top/images/grass.jpg',
-            w: 1920,
-            h: 1080
-        }, {
-            src: 'https://static.cxstore.top/images/girl.jpg',
-            w: 1920,
-            h: 1080
-        }, {
-            src: 'https://static.cxstore.top/images/flower.jpg',
-            w: 1920,
-            h: 1080
-        }, {
-            src: 'https://static.cxstore.top/images/girl.jpg',
-            w: 1920,
-            h: 1080
-        }, {
-            src: 'https://static.cxstore.top/images/flower.jpg',
-            w: 1920,
-            h: 1080
-        }, {
-            src: 'https://static.cxstore.top/images/girl.jpg',
-            w: 1920,
-            h: 1080
-        }, {
-            src: 'https://static.cxstore.top/images/flower.jpg',
-            w: 1920,
-            h: 1080
-        }, {
-            src: 'https://static.cxstore.top/images/lake.jpg',
-            w: 1920,
-            h: 1080
-        }, {
-            src: 'https://static.cxstore.top/images/japan.jpg',
-            w: 1920,
-            h: 1080
-        }, {
-            src: 'https://static.cxstore.top/images/grass.jpg',
-            w: 1920,
-            h: 1080
-        }, {
-            src: 'https://static.cxstore.top/images/girl.jpg',
-            w: 1920,
-            h: 1080
-        }, {
-            src: 'https://static.cxstore.top/images/flower.jpg',
-            w: 1920,
-            h: 1080
-        }, {
-            src: 'https://static.cxstore.top/images/lake.jpg',
-            w: 1920,
-            h: 1080
-        }, {
-            src: 'https://static.cxstore.top/images/grass.jpg',
-            w: 1920,
-            h: 1080
-        }, {
-            src: 'https://static.cxstore.top/images/japan.jpg',
-            w: 1920,
-            h: 1080
-        }, {
-            src: 'https://static.cxstore.top/images/grass.jpg',
-            w: 1920,
-            h: 1080
-        }, {
-            src: 'https://static.cxstore.top/images/girl.jpg',
-            w: 1920,
-            h: 1080
-        }, {
-            src: 'https://static.cxstore.top/images/lake.jpg',
-            w: 1920,
-            h: 1080
-        }, {
-            src: 'https://static.cxstore.top/images/japan.jpg',
-            w: 1920,
-            h: 1080
-        }, {
-            src: 'https://static.cxstore.top/images/grass.jpg',
-            w: 1920,
-            h: 1080
-        }, {
-            src: 'https://static.cxstore.top/images/flower.jpg',
-            w: 1920,
-            h: 1080
-        }, {
-            src: 'https://static.cxstore.top/images/lake.jpg',
-            w: 1920,
-            h: 1080
-        }, {
-            src: 'https://static.cxstore.top/images/japan.jpg',
-            w: 1920,
-            h: 1080
-        }, {
-            src: 'https://static.cxstore.top/images/grass.jpg',
-            w: 1920,
-            h: 1080
-        }];
-
-        var gallery = new PhotoSwipe(document.querySelector('.pswp'), PhotoSwipeUI_Default, images, {
-            history: false,
-            focus: false,
-            showAnimationDuration: 0,
-            hideAnimationDuration: 0
-        });
-        gallery.init();
-    };
-});
-
-document.getElementsByClassName = function (className, tag, elm) {
-    var testClass = new RegExp("(^|\s)" + className + "(\s|$)");
-    var tag = tag || "*";
-    var elm = elm || document;
-    var elements = (tag == "*" && elm.all) ? elm.all : elm.getElementsByTagName(tag);
-    var returnElements = [];
-    var current;
-    var length = elements.length;
-    for (var i = 0; i < length; i++) {
-        current = elements[i];
-        if (testClass.test(current.className)) {
-            returnElements.push(current);
-        }
-    }
-    return returnElements;
-}
-
-var margin = 10;
-var boxes = document.getElementsByClassName('albums');
+﻿const api_domain = "https://api.meowv.com";
 var con = document.getElementsByClassName('container');
-var boxWidth = boxes[0].offsetWidth + margin;
+var margin = 10;
+var boxes;
+var boxWidth;
+
+axios.get(`${api_domain}/gallery`)
+    .then(function (response) {
+        if (response.data.success) {
+            var html = template("gallery_tmpl", response.data);
+            document.querySelector('.container').innerHTML = html;
+            document.querySelector('.loader').remove();
+        }
+    }).then(function () {
+        boxes = document.getElementsByClassName('albums');
+        boxWidth = boxes[0].offsetWidth + margin;
+
+        document.getElementsByClassName = function (className, tag, elm) {
+            var testClass = new RegExp("(^|\s)" + className + "(\s|$)");
+            var tag = tag || "*";
+            var elm = elm || document;
+            var elements = (tag == "*" && elm.all) ? elm.all : elm.getElementsByTagName(tag);
+            var returnElements = [];
+            var current;
+            var length = elements.length;
+            for (var i = 0; i < length; i++) {
+                current = elements[i];
+                if (testClass.test(current.className)) {
+                    returnElements.push(current);
+                }
+            }
+            return returnElements;
+        }
+
+        window.onload = function () { show(); };
+        window.onresize = function () { show(); };
+
+        document.querySelectorAll('.albums').forEach(x => {
+            x.onclick = function () {
+                const images = [];
+                var id = this.attributes["data-id"].value;
+                axios.get(`${api_domain}/gallery/images?id=${id}`)
+                    .then(function (response) {
+                        if (response.data.success) {
+                            response.data.result.forEach(x => {
+                                images.push({
+                                    src: 'https://static.meowv.com/gallery/images/' + x.imgUrl,
+                                    w: x.width,
+                                    h: x.height
+                                });
+                            });
+                        }
+                    }).then(function () {
+                        console.log(images);
+                        var gallery = new PhotoSwipe(document.querySelector('.pswp'), PhotoSwipeUI_Default, images, {
+                            history: false,
+                            focus: false,
+                            showAnimationDuration: 0,
+                            hideAnimationDuration: 0
+                        });
+                        gallery.init();
+                    }).catch(function (error) {
+                        console.log(error);
+                    });
+            };
+        });
+    }).catch(function (error) {
+        console.log(error);
+    });
 
 function show() {
     var columnHeight = [];
@@ -176,6 +90,7 @@ function show() {
 
     };
 };
+
 function min(heightAarry) {
     var minColumn = 0;
     var minHeight = heightAarry[minColumn];
@@ -188,5 +103,3 @@ function min(heightAarry) {
     };
     return minColumn;
 }
-window.onload = function () { show(); };
-window.onresize = function () { show(); };

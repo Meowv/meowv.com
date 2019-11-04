@@ -11,37 +11,15 @@
     <link href="https://static.meowv.com/css/gallery.min.css" rel="stylesheet" />
 </head>
 <body>
+    <div class="loader"></div>
     <div class="container">
-        <div class="albums"><img src="https://static.cxstore.top/images/lake.jpg" /></div>
-        <div class="albums"><img src="https://static.cxstore.top/images/japan.jpg" /></div>
-        <div class="albums"><img src="https://static.cxstore.top/images/girl.jpg" /></div>
-        <div class="albums"><img src="https://static.cxstore.top/images/flower.jpg" /></div>
-        <div class="albums"><img src="https://static.cxstore.top/images/lake.jpg" /></div>
-        <div class="albums"><img src="https://static.cxstore.top/images/japan.jpg" /></div>
-        <div class="albums"><img src="https://static.cxstore.top/images/grass.jpg" /></div>
-        <div class="albums"><img src="https://static.cxstore.top/images/girl.jpg" /></div>
-        <div class="albums"><img src="https://static.cxstore.top/images/flower.jpg" /></div>
-        <div class="albums"><img src="https://static.cxstore.top/images/girl.jpg" /></div>
-        <div class="albums"><img src="https://static.cxstore.top/images/flower.jpg" /></div>
-        <div class="albums"><img src="https://static.cxstore.top/images/girl.jpg" /></div>
-        <div class="albums"><img src="https://static.cxstore.top/images/flower.jpg" /></div>
-        <div class="albums"><img src="https://static.cxstore.top/images/lake.jpg" /></div>
-        <div class="albums"><img src="https://static.cxstore.top/images/japan.jpg" /></div>
-        <div class="albums"><img src="https://static.cxstore.top/images/grass.jpg" /></div>
-        <div class="albums"><img src="https://static.cxstore.top/images/girl.jpg" /></div>
-        <div class="albums"><img src="https://static.cxstore.top/images/flower.jpg" /></div>
-        <div class="albums"><img src="https://static.cxstore.top/images/lake.jpg" /></div>
-        <div class="albums"><img src="https://static.cxstore.top/images/grass.jpg" /></div>
-        <div class="albums"><img src="https://static.cxstore.top/images/japan.jpg" /></div>
-        <div class="albums"><img src="https://static.cxstore.top/images/grass.jpg" /></div>
-        <div class="albums"><img src="https://static.cxstore.top/images/girl.jpg" /></div>
-        <div class="albums"><img src="https://static.cxstore.top/images/lake.jpg" /></div>
-        <div class="albums"><img src="https://static.cxstore.top/images/japan.jpg" /></div>
-        <div class="albums"><img src="https://static.cxstore.top/images/grass.jpg" /></div>
-        <div class="albums"><img src="https://static.cxstore.top/images/flower.jpg" /></div>
-        <div class="albums"><img src="https://static.cxstore.top/images/lake.jpg" /></div>
-        <div class="albums"><img src="https://static.cxstore.top/images/japan.jpg" /></div>
-        <div class="albums"><img src="https://static.cxstore.top/images/grass.jpg" /></div>
+        <script id="gallery_tmpl" type="text/template">
+            {{each result}}
+            <div class="albums" data-id="{{$value.id}}">
+                <img src="https://static.meowv.com/gallery/{{$value.imgUrl}}" alt="{{$value.name}}" />
+            </div>
+            {{/each}}
+        </script>
     </div>
     <div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="pswp__bg"></div>
@@ -81,6 +59,7 @@
 </body>
 </html>
 <script src="https://static.meowv.com/js/axios.min.js"></script>
+<script src="https://static.meowv.com/js/template-web.js"></script>
 <script src="https://static.meowv.com/photoswipe/photoswipe.min.js"></script>
 <script src="https://static.meowv.com/photoswipe/photoswipe-ui-default.min.js"></script>
-<script src="~/js/gallery.min.js"></script>
+<script src="~/js/gallery.js"></script>

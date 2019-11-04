@@ -10,6 +10,10 @@ namespace MeowvBlog.Core.Domain.Gallery
 
         public string ImgUrl { get; set; }
 
+        public int Width { get; set; }
+
+        public int Height { get; set; }
+
         public DateTime Date { get; set; }
     }
 }

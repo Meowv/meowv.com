@@ -146,8 +146,14 @@ namespace MeowvBlog.Core.Migrations
                     b.Property<DateTime>("Date")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("Height")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("ImgUrl")
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("Width")
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
