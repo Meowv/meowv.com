@@ -121,6 +121,7 @@ namespace MeowvBlog.API.Controllers
 
             var images = dto.ImgUrls.Select(x => new Image
             {
+                Id = Extension.GenerateGuid(),
                 AlbumId = dto.AlbumId,
                 ImgUrl = x,
                 Date = DateTime.Now

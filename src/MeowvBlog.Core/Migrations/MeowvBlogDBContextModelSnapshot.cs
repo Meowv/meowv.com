@@ -132,7 +132,7 @@ namespace MeowvBlog.Core.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("GalleryAlbums");
+                    b.ToTable("Albums");
                 });
 
             modelBuilder.Entity("MeowvBlog.Core.Domain.Gallery.Image", b =>
@@ -151,7 +151,7 @@ namespace MeowvBlog.Core.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("GalleryImages");
+                    b.ToTable("Images");
                 });
 
             modelBuilder.Entity("MeowvBlog.Core.Domain.HotNews.HotNews", b =>
