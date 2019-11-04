@@ -221,6 +221,12 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.API.Controllers.GalleryController.QueryAlbumsAsync">
+            <summary>
+            查询图集列表
+            </summary>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.API.Controllers.GalleryController.UploadAlbumAsync(Microsoft.AspNetCore.Http.IFormFile)">
             <summary>
             上传图集
@@ -233,6 +239,13 @@
             新增图集
             </summary>
             <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.GalleryController.QueryImagesAsync(System.String)">
+            <summary>
+            查询图片列表
+            </summary>
+            <param name="id"></param>
             <returns></returns>
         </member>
         <member name="M:MeowvBlog.API.Controllers.GalleryController.UpdateImagesAsync(System.Collections.Generic.List{Microsoft.AspNetCore.Http.IFormFile})">

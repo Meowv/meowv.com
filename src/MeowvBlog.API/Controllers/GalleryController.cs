@@ -5,6 +5,7 @@ using MeowvBlog.Core.Dto;
 using MeowvBlog.Core.Dto.Gallery;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -25,6 +26,26 @@ namespace MeowvBlog.API.Controllers
         public GalleryController(MeowvBlogDBContext context)
         {
             _context = context;
+        }
+
+        /// <summary>
+        /// 查询图集列表
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [ResponseCache(CacheProfileName = "default")]
+        public async Task<Response<IList<AlbumDto>>> QueryAlbumsAsync()
+        {
+            var response = new Response<IList<AlbumDto>>();
+
+            var result = await _context.Albums.Select(x => new AlbumDto()
+            {
+                Name = x.Name,
+                ImgUrl = x.ImgUrl
+            }).ToListAsync();
+
+            response.Result = result;
+            return response;
         }
 
         /// <summary>
@@ -74,6 +95,24 @@ namespace MeowvBlog.API.Controllers
             await _context.SaveChangesAsync();
 
             response.Result = "新增成功";
+            return response;
+        }
+
+        /// <summary>
+        /// 查询图片列表
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("images")]
+        [ResponseCache(CacheProfileName = "default", VaryByQueryKeys = new string[] { "id" })]
+        public async Task<Response<IList<string>>> QueryImagesAsync(string id)
+        {
+            var response = new Response<IList<string>>();
+
+            var result = await _context.Images.Where(x => x.AlbumId == id).OrderByDescending(x => x.Date).Select(x => x.ImgUrl).ToListAsync();
+
+            response.Result = result;
             return response;
         }
 
