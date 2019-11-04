@@ -55,6 +55,7 @@ namespace MeowvBlog.API.Controllers
         /// <returns></returns>
         [HttpPost]
         [Route("album/upload")]
+        [Consumes("multipart/form-data")]
         public async Task<Response<string>> UploadAlbumAsync(IFormFile file)
         {
             var response = new Response<string>();
