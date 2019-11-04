@@ -221,6 +221,34 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.API.Controllers.GalleryController.UploadAlbumAsync(Microsoft.AspNetCore.Http.IFormFile)">
+            <summary>
+            上传图集
+            </summary>
+            <param name="file"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.GalleryController.InsertAlbumAsync(MeowvBlog.Core.Dto.Gallery.AlbumDto)">
+            <summary>
+            新增图集
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.GalleryController.UpdateImagesAsync(System.Collections.Generic.List{Microsoft.AspNetCore.Http.IFormFile})">
+            <summary>
+            上传图片
+            </summary>
+            <param name="files"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.GalleryController.InsertImagesAsync(MeowvBlog.Core.Dto.Gallery.ImageDto)">
+            <summary>
+            新增图片
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.API.Controllers.MTAController.Ctr_core_data(System.String,System.String,System.String)">
             <summary>
             应用历史趋势

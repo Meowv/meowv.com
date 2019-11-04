@@ -1,5 +1,6 @@
 ﻿using MeowvBlog.Core.Configurations;
 using MeowvBlog.Core.Domain.Blog;
+using MeowvBlog.Core.Domain.Gallery;
 using MeowvBlog.Core.Domain.HotNews;
 using MeowvBlog.Core.Domain.Signature;
 using Microsoft.EntityFrameworkCore;
@@ -21,6 +22,10 @@ namespace MeowvBlog.Core
         public DbSet<SignatureLog> SignatureLogs { get; set; }
 
         public DbSet<HotNews> HotNews { get; set; }
+
+        public DbSet<Album> Albums { get; set; }
+
+        public DbSet<Image> Images { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {

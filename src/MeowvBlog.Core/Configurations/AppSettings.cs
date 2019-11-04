@@ -94,5 +94,15 @@ namespace MeowvBlog.Core.Configurations
                 }
             }
         }
+
+        /// <summary>
+        /// 图集路径配置
+        /// </summary>
+        public static class Gallery
+        {
+            public static string AlbumPath => _config["Gallery:Album"];
+
+            public static string ImagesPath => _config["Gallery:Images"];
+        }
     }
 }

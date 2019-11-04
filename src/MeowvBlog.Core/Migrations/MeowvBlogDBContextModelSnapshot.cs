@@ -116,6 +116,44 @@ namespace MeowvBlog.Core.Migrations
                     b.ToTable("Tags");
                 });
 
+            modelBuilder.Entity("MeowvBlog.Core.Domain.Gallery.Album", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ImgUrl")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("GalleryAlbums");
+                });
+
+            modelBuilder.Entity("MeowvBlog.Core.Domain.Gallery.Image", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AlbumId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ImgUrl")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("GalleryImages");
+                });
+
             modelBuilder.Entity("MeowvBlog.Core.Domain.HotNews.HotNews", b =>
                 {
                     b.Property<string>("Id")
