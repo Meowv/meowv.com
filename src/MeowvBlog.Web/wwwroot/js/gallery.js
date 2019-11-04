@@ -9,7 +9,6 @@ axios.get(`${api_domain}/gallery`)
         if (response.data.success) {
             var html = template("gallery_tmpl", response.data);
             document.querySelector('.container').innerHTML = html;
-            document.querySelector('.loader').remove();
         }
     }).then(function () {
         boxes = document.getElementsByClassName('albums');
@@ -51,7 +50,6 @@ axios.get(`${api_domain}/gallery`)
                             });
                         }
                     }).then(function () {
-                        console.log(images);
                         var gallery = new PhotoSwipe(document.querySelector('.pswp'), PhotoSwipeUI_Default, images, {
                             history: false,
                             focus: false,
