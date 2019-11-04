@@ -34,12 +34,13 @@ namespace MeowvBlog.API.Controllers
         /// <returns></returns>
         [HttpGet]
         [ResponseCache(CacheProfileName = "default")]
-        public async Task<Response<IList<AlbumDto>>> QueryAlbumsAsync()
+        public async Task<Response<IList<AlbumForQueryDto>>> QueryAlbumsAsync()
         {
-            var response = new Response<IList<AlbumDto>>();
+            var response = new Response<IList<AlbumForQueryDto>>();
 
-            var result = await _context.Albums.Select(x => new AlbumDto()
+            var result = await _context.Albums.Select(x => new AlbumForQueryDto()
             {
+                Id = x.Id,
                 Name = x.Name,
                 ImgUrl = x.ImgUrl
             }).ToListAsync();
