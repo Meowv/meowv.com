@@ -79,6 +79,7 @@
                                     w: x.width,
                                     h: x.height
                                 });
+                                loadImageAsync(x.imgUrl);
                             });
                         }
                     }).then(function () {
@@ -94,6 +95,26 @@
                     });
             };
         });
+
+        var loadImageAsync = function (url) {
+            return new Promise(function (resolve, reject) {
+                var image = new Image();
+                image.src = url;
+
+                image.onload = function () {
+                    var obj = {
+                        url: url,
+                        width: image.width,
+                        height: image.height
+                    }
+                    resolve(obj);
+                };
+                image.onerror = function () {
+                    reject(new Error('Could not load image at ' + url));
+                };
+            });
+        }
+
     }).catch(function (error) {
         console.log(error);
     });
