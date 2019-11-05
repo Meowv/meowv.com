@@ -75,7 +75,7 @@
                         if (response.data.success) {
                             response.data.result.forEach(x => {
                                 images.push({
-                                    src: 'https://static.meowv.com/gallery/images/' + x.imgUrl,
+                                    src: x.imgUrl,
                                     w: x.width,
                                     h: x.height
                                 });
