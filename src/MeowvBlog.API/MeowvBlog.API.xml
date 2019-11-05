@@ -262,6 +262,13 @@
             <param name="dto"></param>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.API.Controllers.GalleryController.InsertImageV2Async(MeowvBlog.Core.Dto.Gallery.ImageV2Dto)">
+            <summary>
+            新增图片
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.API.Controllers.MTAController.Ctr_core_data(System.String,System.String,System.String)">
             <summary>
             应用历史趋势

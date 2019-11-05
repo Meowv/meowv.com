@@ -182,5 +182,33 @@ namespace MeowvBlog.API.Controllers
             response.Result = "新增成功";
             return response;
         }
+
+        /// <summary>
+        /// 新增图片
+        /// </summary>
+        /// <param name="dto"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("v2/images/insert")]
+        public async Task<Response<string>> InsertImageV2Async([FromBody] ImageV2Dto dto)
+        {
+            var response = new Response<string>();
+
+            var images = dto.Imgs.Select(x => new Image
+            {
+                Id = Extension.GenerateGuid(),
+                AlbumId = dto.AlbumId,
+                ImgUrl = x.Url,
+                Width = x.Width,
+                Height = x.Height,
+                Date = DateTime.Now
+            });
+
+            await _context.Images.AddRangeAsync(images);
+            await _context.SaveChangesAsync();
+
+            response.Result = "新增成功";
+            return response;
+        }
     }
 }

@@ -1,0 +1,65 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+</head>
+
+<body>
+    <input id="do" type="button" value="do">
+    <script>
+        var urls = [
+            
+        ];
+
+        var imgs = [];
+        for (var i = 0; i < urls.length; i++) {
+            loadImageAsync(urls[i]).then(resp => {
+                imgs.push(resp);
+
+                console.log(imgs.length == urls.length);
+            })
+        }
+
+        function loadImageAsync(url) {
+            return new Promise(function (resolve, reject) {
+                var image = new Image();
+                image.src = url;
+
+                image.onload = function () {
+                    var obj = {
+                        url: url,
+                        width: image.width,
+                        height: image.height
+                    }
+                    resolve(obj);
+                };
+                image.onerror = function () {
+                    reject(new Error('Could not load image at ' + url));
+                };
+            });
+        }
+
+
+        document.querySelector('#do').addEventListener('click', () => {
+            var data = {
+                "albumId": "",
+                "imgs": imgs
+            };
+
+            var ajax = new XMLHttpRequest();
+            ajax.onreadystatechange = function () {
+                if (ajax.readyState == 4 && ajax.status == 200) {
+                    var response = ajax.responseText;
+                    console.log(response);
+                }
+            };
+            ajax.open('POST', 'https://localhost:44388/gallery/v2/images/insert', true);
+            ajax.setRequestHeader("Content-type", "application/json");
+            ajax.send(JSON.stringify(data));
+        });
+    </script>
+</body>
+
+</html>
