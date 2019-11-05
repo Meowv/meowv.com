@@ -38,13 +38,13 @@ namespace MeowvBlog.API.Controllers
         {
             var response = new Response<IList<AlbumForQueryDto>>();
 
-            var result = await _context.Albums.Select(x => new AlbumForQueryDto()
-            {
-                Id = x.Id,
-                Name = x.Name,
-                ImgUrl = x.ImgUrl
-            }).ToListAsync();
-
+            var result = await _context.Albums.OrderByDescending(x => x.Date)
+                                              .Select(x => new AlbumForQueryDto()
+                                              {
+                                                  Id = x.Id,
+                                                  Name = x.Name,
+                                                  ImgUrl = x.ImgUrl
+                                              }).ToListAsync();
             response.Result = result;
             return response;
         }
