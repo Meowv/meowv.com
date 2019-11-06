@@ -101,7 +101,7 @@ namespace MeowvBlog.API.Controllers
         }
 
         /// <summary>
-        /// 查询图片列表
+        /// 根据Id查询图片列表
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
