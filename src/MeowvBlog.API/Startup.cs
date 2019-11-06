@@ -85,6 +85,7 @@ namespace MeowvBlog.Web
             {
                 ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
             });
+            app.UseStaticFiles();
             app.UseRouting();
             app.UseResponseCaching();
             app.UseCors();

@@ -9,6 +9,7 @@
 <body>
     <input id="do" type="button" value="do">
     <script>
+        var albumId = "";
         var urls = [
             
         ];
@@ -44,7 +45,7 @@
 
         document.querySelector('#do').addEventListener('click', () => {
             var data = {
-                "albumId": "",
+                "albumId": albumId,
                 "imgs": imgs
             };
 
@@ -55,7 +56,7 @@
                     console.log(response);
                 }
             };
-            ajax.open('POST', 'https://localhost:44388/gallery/v2/images/insert', true);
+            ajax.open('POST', '/gallery/v2/images/insert', true);
             ajax.setRequestHeader("Content-type", "application/json");
             ajax.send(JSON.stringify(data));
         });
