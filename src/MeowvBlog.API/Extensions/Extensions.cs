@@ -148,5 +148,17 @@ namespace MeowvBlog.API.Extensions
 
             return result;
         }
+
+        /// <summary>
+        /// 随机化 IEnumerable
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="source"></param>
+        /// <returns></returns>
+        public static IEnumerable<T> Randomize<T>(this IEnumerable<T> source)
+        {
+            Random rnd = new Random();
+            return source.OrderBy((item) => rnd.Next());
+        }
     }
 }

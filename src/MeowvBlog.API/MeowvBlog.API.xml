@@ -602,5 +602,13 @@
             <typeparam name="T"></typeparam>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.API.Extensions.Extensions.Randomize``1(System.Collections.Generic.IEnumerable{``0})">
+            <summary>
+            随机化 IEnumerable
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="source"></param>
+            <returns></returns>
+        </member>
     </members>
 </doc>
