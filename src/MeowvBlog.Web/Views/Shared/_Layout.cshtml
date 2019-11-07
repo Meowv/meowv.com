@@ -11,6 +11,22 @@
     <link rel="icon" href="https://static.meowv.com/favicon.ico">
     <environment include="Development"><link href="~/css/style.min.css" rel="stylesheet" /></environment>
     <environment exclude="Development"><link rel="stylesheet" href="https://static.meowv.com/css/style.min.css"></environment>
+    @{
+        var path = Context.Request.Path.Value;
+        if (path.Contains("/admin/"))
+        {
+            <environment include="Development">
+                <link href="~/css/admin.css" rel="stylesheet" />
+            </environment>
+            <environment exclude="Development">
+                <link rel="stylesheet" href="https://static.meowv.com/css/admin.css" />
+            </environment>
+            if (path.Contains("add_post") || path.Contains("edit_post"))
+            {
+                <link href="https://static.meowv.com/editor.md/css/editormd.min.css" rel="stylesheet" />
+            }
+        }
+    }
 </head>
 
 <body>
