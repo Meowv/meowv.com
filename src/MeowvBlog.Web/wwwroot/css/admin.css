@@ -1,6 +1,5 @@
 ﻿input[type="checkbox"],
 input[type="radio"] {
-    display: initial;
     width: auto;
     height: auto;
     visibility: visible;
