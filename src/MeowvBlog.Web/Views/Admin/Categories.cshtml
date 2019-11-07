@@ -100,10 +100,8 @@
                                     if (response.data.success) {
                                         location.reload();
                                     } else {
-                                        alert(response.data.message);
+                                        alert(response.data.msg);
                                     }
-                                }).catch(function (error) {
-                                    console.log(error);
                                 });
                             }
                         }

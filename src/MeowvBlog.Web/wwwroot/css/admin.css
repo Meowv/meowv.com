@@ -45,6 +45,10 @@ input:focus {
     margin: 0 auto;
 }
 
+.post-category input[type="radio"] {
+    display: inline;
+}
+
 .post-category input,.post-tag input {
     width: auto;
     height: auto;
