@@ -1,4 +1,4 @@
 * text=auto
 *.js linguist-language=csharp
-*.html linguist-language=csharp
+*.HTML linguist-language=csharp
 *.css linguist-language=csharp
