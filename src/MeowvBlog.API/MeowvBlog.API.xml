@@ -229,7 +229,7 @@
         </member>
         <member name="M:MeowvBlog.API.Controllers.GalleryController.UploadAlbumAsync(Microsoft.AspNetCore.Http.IFormFile)">
             <summary>
-            上传图集
+            上传图集封面
             </summary>
             <param name="file"></param>
             <returns></returns>

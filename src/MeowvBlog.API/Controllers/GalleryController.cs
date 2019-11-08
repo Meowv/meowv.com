@@ -4,6 +4,7 @@ using MeowvBlog.Core.Configurations;
 using MeowvBlog.Core.Domain.Gallery;
 using MeowvBlog.Core.Dto;
 using MeowvBlog.Core.Dto.Gallery;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,6 +17,7 @@ using Extension = MeowvBlog.API.Extensions.Extensions;
 
 namespace MeowvBlog.API.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("[controller]")]
     [Produces("application/json")]
@@ -34,29 +36,34 @@ namespace MeowvBlog.API.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet]
+        [AllowAnonymous]
         public async Task<Response<IList<AlbumForQueryDto>>> QueryAlbumsAsync()
         {
             var response = new Response<IList<AlbumForQueryDto>>();
 
-            var result = await _context.Albums
-                .Select(x => new AlbumForQueryDto()
-                {
-                    Id = x.Id,
-                    Name = x.Name,
-                    ImgUrl = x.ImgUrl
-                }).ToListAsync();
+            var result = await _context.Albums.Select(x => new AlbumForQueryDto()
+            {
+                Id = x.Id,
+                Name = x.Name,
+                ImgUrl = x.ImgUrl,
+            }).ToListAsync();
+
+            var imgs = await _context.Images.ToListAsync();
+            result.ForEach(x => x.Count = imgs.Count(i => i.AlbumId == x.Id));
+
             response.Result = result.Randomize().ToList();
             return response;
         }
 
         /// <summary>
-        /// 上传图集
+        /// 上传图集封面
         /// </summary>
         /// <param name="file"></param>
         /// <returns></returns>
         [HttpPost]
         [Route("album/upload")]
         [Consumes("multipart/form-data")]
+        [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<Response<string>> UploadAlbumAsync(IFormFile file)
         {
             var response = new Response<string>();
@@ -106,6 +113,7 @@ namespace MeowvBlog.API.Controllers
         /// <param name="id"></param>
         /// <returns></returns>
         [HttpGet]
+        [AllowAnonymous]
         [Route("images")]
         [ResponseCache(CacheProfileName = "default", VaryByQueryKeys = new string[] { "id" })]
         public async Task<Response<IList<ImageForQueryDto>>> QueryImagesAsync(string id)
@@ -132,6 +140,7 @@ namespace MeowvBlog.API.Controllers
         [HttpPost]
         [Route("images/upload")]
         [Consumes("multipart/form-data")]
+        [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<Response<IList<string>>> UpdateImagesAsync([FromForm] List<IFormFile> files)
         {
             var response = new Response<IList<string>>();
@@ -161,7 +170,8 @@ namespace MeowvBlog.API.Controllers
         /// <param name="dto"></param>
         /// <returns></returns>
         [HttpPost]
-        [Route("images/insert")]
+        [Route("v2/images/insert")]
+        [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<Response<string>> InsertImagesAsync([FromBody] ImageDto dto)
         {
             var response = new Response<string>();
@@ -189,7 +199,7 @@ namespace MeowvBlog.API.Controllers
         /// <param name="dto"></param>
         /// <returns></returns>
         [HttpPost]
-        [Route("v2/images/insert")]
+        [Route("images/insert")]
         public async Task<Response<string>> InsertImageV2Async([FromBody] ImageV2Dto dto)
         {
             var response = new Response<string>();
