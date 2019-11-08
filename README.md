@@ -4,8 +4,8 @@
 
 预览：[https://meowv.com](https://meowv.com)
 
-![white](static/white.png)
-![black](static/black.png)
+![white](static/white.jpg)
+![black](static/black.jpg)
 
 此版本个人博客项目基于 .NET Core3.0 开发，可作为 .NET Core 入门项目进行学习，数据库采用 Sqlite，遵循RESTful API接口规范，所有页面采用 axios 和 template-web.js 请求和加载数据，原生JavaScript操作页面。If you liked `Blog` project or if it helped you, please give a star ⭐️ for this repository. 👍👍👍
 
