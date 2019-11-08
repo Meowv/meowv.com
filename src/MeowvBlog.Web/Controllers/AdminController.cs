@@ -67,5 +67,12 @@ namespace MeowvBlog.Web.Controllers
         /// <returns></returns>
         [Route("/admin/friendlinks")]
         public IActionResult FriendLinks() => View();
+
+        /// <summary>
+        /// 图集管理
+        /// </summary>
+        /// <returns></returns>
+        [Route("/admin/gallery")]
+        public IActionResult Gallery() => View();
     }
 }

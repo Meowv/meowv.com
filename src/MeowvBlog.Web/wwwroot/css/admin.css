@@ -75,3 +75,20 @@ input:focus {
 .taglist {
     margin-left:5px;
 }
+.gallery p textarea, .gallery p input[type=text] {
+    width: 500px;
+}
+
+.gallery-item {
+    border: solid 1px #ccc;
+    padding: 5px;
+    width: 200px;
+    text-align: center;
+    display: inline-block;
+    margin-bottom: 10px;
+}
+
+.gallery-item img {
+    width: 100%;
+}
+
