@@ -15,7 +15,7 @@
         <script id="gallery_tmpl" type="text/template">
             {{each result}}
             <div class="albums" data-id="{{$value.id}}">
-                <img src="{{$value.imgUrl}}" alt="{{$value.name}}" title="{{$value.name}}" />
+                <img src="{{$value.imgUrl}}" alt="{{$value.name}}" title="【{{$value.name}}】共 {{$value.count}} 张图片" />
             </div>
             {{/each}}
         </script>
