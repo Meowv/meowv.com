@@ -12,7 +12,7 @@ namespace MeowvBlog.API.Swagger
 {
     public static class SwaggerExtensions
     {
-        private static readonly string version = "v3.1.1";
+        private static readonly string version = "v3.1.4";
 
         public static List<SwaggerApiInfo> ApiInfos = new List<SwaggerApiInfo>()
         {
