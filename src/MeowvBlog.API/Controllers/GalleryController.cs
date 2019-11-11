@@ -124,8 +124,8 @@ namespace MeowvBlog.API.Controllers
         {
             var response = new Response<IList<ImageForQueryDto>>();
 
-            var albums = await _context.Albums.FirstOrDefaultAsync(x => x.Id == id && x.Password == password);
-            if (albums == null)
+            var albums = await _context.Albums.FirstOrDefaultAsync(x => x.Id == id);
+            if (albums.Password != password)
             {
                 response.Msg = "口令错误";
                 return response;

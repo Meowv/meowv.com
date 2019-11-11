@@ -21,6 +21,10 @@
             <h1>添加图集</h1>
             <p>图集名称：<input id="album_name" type="text" autocomplete="off" value="" /></p>
             <p>图集封面：<input id="album_url" type="text" autocomplete="off" value="" /></p>
+            <p>
+                是否加密：<input id="album_isPublic" type="checkbox" class="switch_default"><label class="isPublicBtn" for="album_isPublic"></label>
+            </p>
+            <p class="hidden album_password">访问口令：<input id="album_password" type="text" autocomplete="off" value="" /></p>
             <p><input id="album_save" type="button" value="添加图集" /></p>
 
             <hr />
@@ -127,9 +131,19 @@
             });
         }
 
+        document.querySelector(".isPublicBtn").addEventListener('click', () => {
+            if (document.querySelector("#album_isPublic").checked) {
+                document.querySelector(".album_password").classList.add("hidden");
+            } else {
+                document.querySelector(".album_password").classList.remove("hidden");
+            }
+        });
+
         document.querySelector('#album_save').addEventListener('click', () => {
             var name = document.querySelector("#album_name").value;
             var url = document.querySelector("#album_url").value;
+            var isPublic = document.querySelector("#album_isPublic").checked;
+            var password = document.querySelector("#album_password").value;
             if (name == "") {
                 alert("图集名称为空");
                 return false;
@@ -138,10 +152,17 @@
                 alert("图集URL为空");
                 return false;
             }
-
+            if (isPublic) {
+                if (password == "") {
+                    alert("访问口令为空");
+                    return false;
+                }
+            }
             var data = {
                 "name": name,
-                "imgUrl": url
+                "imgUrl": url,
+                "isPublic": !isPublic,
+                "password": password
             };
 
             axios.post(`${api_domain}/gallery/album/insert`, data, {
