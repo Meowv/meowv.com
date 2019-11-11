@@ -241,11 +241,12 @@
             <param name="dto"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.GalleryController.QueryImagesAsync(System.String)">
+        <member name="M:MeowvBlog.API.Controllers.GalleryController.QueryImagesAsync(System.String,System.String)">
             <summary>
             根据Id查询图片列表
             </summary>
             <param name="id"></param>
+            <param name="password"></param>
             <returns></returns>
         </member>
         <member name="M:MeowvBlog.API.Controllers.GalleryController.UpdateImagesAsync(System.Collections.Generic.List{Microsoft.AspNetCore.Http.IFormFile})">
@@ -255,14 +256,14 @@
             <param name="files"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.GalleryController.InsertImagesAsync(MeowvBlog.Core.Dto.Gallery.ImageDto)">
+        <member name="M:MeowvBlog.API.Controllers.GalleryController.InsertImageV2Async(MeowvBlog.Core.Dto.Gallery.ImageDto)">
             <summary>
             新增图片
             </summary>
             <param name="dto"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.GalleryController.InsertImageV2Async(MeowvBlog.Core.Dto.Gallery.ImageV2Dto)">
+        <member name="M:MeowvBlog.API.Controllers.GalleryController.InsertImagesAsync(MeowvBlog.Core.Dto.Gallery.ImageV2Dto)">
             <summary>
             新增图片
             </summary>

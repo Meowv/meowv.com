@@ -127,7 +127,13 @@ namespace MeowvBlog.Core.Migrations
                     b.Property<string>("ImgUrl")
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("IsPublic")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Name")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Password")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");

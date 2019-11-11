@@ -46,6 +46,7 @@ namespace MeowvBlog.API.Controllers
                 Id = x.Id,
                 Name = x.Name,
                 ImgUrl = x.ImgUrl,
+                IsPublic = x.IsPublic
             }).ToListAsync();
 
             var imgs = await _context.Images.ToListAsync();
@@ -98,7 +99,9 @@ namespace MeowvBlog.API.Controllers
                 Id = Extension.GenerateGuid(),
                 Name = dto.Name,
                 ImgUrl = dto.ImgUrl,
-                Date = DateTime.Now
+                Date = DateTime.Now,
+                IsPublic = dto.IsPublic,
+                Password = dto.Password
             };
             await _context.Albums.AddAsync(album);
             await _context.SaveChangesAsync();
@@ -111,16 +114,24 @@ namespace MeowvBlog.API.Controllers
         /// 根据Id查询图片列表
         /// </summary>
         /// <param name="id"></param>
+        /// <param name="password"></param>
         /// <returns></returns>
         [HttpGet]
         [AllowAnonymous]
         [Route("images")]
-        [ResponseCache(CacheProfileName = "default", VaryByQueryKeys = new string[] { "id" })]
-        public async Task<Response<IList<ImageForQueryDto>>> QueryImagesAsync(string id)
+        [ResponseCache(CacheProfileName = "default", VaryByQueryKeys = new string[] { "id", "password" })]
+        public async Task<Response<IList<ImageForQueryDto>>> QueryImagesAsync(string id, string password)
         {
             var response = new Response<IList<ImageForQueryDto>>();
 
-            var result = await _context.Images.Where(x => x.AlbumId == id)
+            var albums = await _context.Albums.FirstOrDefaultAsync(x => x.Id == id && x.Password == password);
+            if (albums == null)
+            {
+                response.Msg = "口令错误";
+                return response;
+            }
+
+            var result = await _context.Images.Where(x => x.AlbumId == albums.Id)
                                               .OrderByDescending(x => x.Date)
                                               .Select(x => new ImageForQueryDto
                                               {
@@ -170,21 +181,20 @@ namespace MeowvBlog.API.Controllers
         /// <param name="dto"></param>
         /// <returns></returns>
         [HttpPost]
-        [Route("v2/images/insert")]
-        [ApiExplorerSettings(IgnoreApi = true)]
-        public async Task<Response<string>> InsertImagesAsync([FromBody] ImageDto dto)
+        [Route("images/insert")]
+        public async Task<Response<string>> InsertImageV2Async([FromBody] ImageDto dto)
         {
             var response = new Response<string>();
 
-            var images = dto.ImgUrls.Select(x => new Image
+            var images = dto.Imgs.Select(x => new Image
             {
                 Id = Extension.GenerateGuid(),
                 AlbumId = dto.AlbumId,
-                ImgUrl = x,
-                Width = SixLabors.ImageSharp.Image.Load(Path.Combine(AppSettings.Gallery.ImagesPath, x)).Width,
-                Height = SixLabors.ImageSharp.Image.Load(Path.Combine(AppSettings.Gallery.ImagesPath, x)).Height,
+                ImgUrl = x.Url,
+                Width = x.Width,
+                Height = x.Height,
                 Date = DateTime.Now
-            }).ToList();
+            });
 
             await _context.Images.AddRangeAsync(images);
             await _context.SaveChangesAsync();
@@ -199,20 +209,21 @@ namespace MeowvBlog.API.Controllers
         /// <param name="dto"></param>
         /// <returns></returns>
         [HttpPost]
-        [Route("images/insert")]
-        public async Task<Response<string>> InsertImageV2Async([FromBody] ImageV2Dto dto)
+        [Route("v2/images/insert")]
+        [ApiExplorerSettings(IgnoreApi = true)]
+        public async Task<Response<string>> InsertImagesAsync([FromBody] ImageV2Dto dto)
         {
             var response = new Response<string>();
 
-            var images = dto.Imgs.Select(x => new Image
+            var images = dto.ImgUrls.Select(x => new Image
             {
                 Id = Extension.GenerateGuid(),
                 AlbumId = dto.AlbumId,
-                ImgUrl = x.Url,
-                Width = x.Width,
-                Height = x.Height,
+                ImgUrl = x,
+                Width = SixLabors.ImageSharp.Image.Load(Path.Combine(AppSettings.Gallery.ImagesPath, x)).Width,
+                Height = SixLabors.ImageSharp.Image.Load(Path.Combine(AppSettings.Gallery.ImagesPath, x)).Height,
                 Date = DateTime.Now
-            });
+            }).ToList();
 
             await _context.Images.AddRangeAsync(images);
             await _context.SaveChangesAsync();
