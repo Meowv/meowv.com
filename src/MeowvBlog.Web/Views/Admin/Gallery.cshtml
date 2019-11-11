@@ -106,7 +106,7 @@
                 }
             }).then(function (response) {
                 if (response.data.success) {
-                    alert(response.data.msg);
+                    alert(response.data.result);
                     document.querySelector("#galleryUrls").value = "";
                 }
             }).catch(x => location.href = "/");
@@ -172,7 +172,7 @@
                 }
             }).then(function (response) {
                 if (response.data.success) {
-                    alert(response.data.msg);
+                     alert(response.data.result);
                     location.reload();
                 }
             }).catch(x => location.href = "/");
