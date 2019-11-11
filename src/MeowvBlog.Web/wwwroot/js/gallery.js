@@ -72,7 +72,9 @@ axios.get('https://api.meowv.com/gallery').then(function (response) {
             x.onclick = function () {
                 const images = [];
                 var id = this.attributes["data-id"].value;
-                axios.get(`https://api.meowv.com/gallery/images?id=${id}`).then(function (response) {
+                var password = "";
+                if (this.attributes["data-isPublic"].value == 'false') password = prompt("请输入相册访问口令", "");
+                axios.get(`https://api.meowv.com/gallery/images?id=${id}&password=${password}`).then(function (response) {
                     if (response.data.success) {
                         response.data.result.forEach(x => {
                             images.push({
@@ -82,7 +84,6 @@ axios.get('https://api.meowv.com/gallery').then(function (response) {
                             });
                             loadImageAsync(x.imgUrl);
                         });
-
                         var gallery = new PhotoSwipe(document.querySelector('.pswp'), PhotoSwipeUI_Default, images, {
                             history: false,
                             focus: false,
@@ -90,6 +91,8 @@ axios.get('https://api.meowv.com/gallery').then(function (response) {
                             hideAnimationDuration: 0
                         });
                         gallery.init();
+                    } else {
+                        alert(response.data.msg);
                     }
                 });
             };
