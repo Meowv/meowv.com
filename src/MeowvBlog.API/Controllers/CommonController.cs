@@ -153,7 +153,6 @@ namespace MeowvBlog.API.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("tts")]
-        [ResponseCache(CacheProfileName = "default")]
         public async Task<IActionResult> SpeechTtsAsync()
         {
             var ip = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
