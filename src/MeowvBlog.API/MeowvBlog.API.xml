@@ -558,6 +558,20 @@
             <param name="signaturePath"></param>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.API.Controllers.SoulController.GetRandomChickenSoupAsync(MeowvBlog.Core.ChickenSoupType)">
+            <summary>
+            获取鸡汤文本
+            </summary>
+            <param name="type"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.SoulController.InsertChickenSoupAsync(MeowvBlog.Core.Dto.Soul.InsertChickenSoupInput)">
+            <summary>
+            加鸡汤
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.API.Extensions.Extensions.GetObjFromJsonFile``1(System.String,System.String)">
             <summary>
             GetObjFromJsonFile

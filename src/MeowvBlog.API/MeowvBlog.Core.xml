@@ -384,6 +384,16 @@
             赛车稀有度
             </summary>
         </member>
+        <member name="P:MeowvBlog.Core.Dto.Soul.InsertChickenSoupInput.Type">
+            <summary>
+            鸡汤类型
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.Soul.InsertChickenSoupInput.List">
+            <summary>
+            鸡汤数据
+            </summary>
+        </member>
         <member name="F:MeowvBlog.Core.GitHub.AccessTokenRequest.Client_ID">
             <summary>
             Client ID

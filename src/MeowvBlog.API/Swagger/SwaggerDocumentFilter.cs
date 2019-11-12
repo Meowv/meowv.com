@@ -45,6 +45,11 @@ namespace MeowvBlog.API.Swagger
                     Name = "Gallery",
                     Description = "图集相册",
                     ExternalDocs = new OpenApiExternalDocs { Description = "Gallery" }
+                },
+                new OpenApiTag {
+                    Name = "Soul",
+                    Description = "心灵/毒鸡汤",
+                    ExternalDocs = new OpenApiExternalDocs { Description = "Soul" }
                 }
             };
 
