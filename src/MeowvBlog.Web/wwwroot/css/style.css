@@ -1232,3 +1232,32 @@ header label {
 .qrcode img {
     width: 100%;
 }
+
+.soul {
+    text-align: center;
+}
+
+.soul h1 {
+    height: 500px;
+    line-height: 500px;
+    white-space: nowrap;
+}
+
+.soul-btn {
+    background-color: #5a9600;
+    border: 5px;
+    color: white;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+    -webkit-transition-duration: 0.4s;
+    transition-duration: 0.4s;
+}
+
+.soul-btn:hover {
+    box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24),0 17px 50px 0 rgba(0,0,0,0.19);
+}

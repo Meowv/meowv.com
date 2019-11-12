@@ -1,0 +1,21 @@
+﻿@{
+    ViewData["Title"] = "心灵鸡汤 - ";
+}
+<div class="main">
+    <div class="container">
+        <div class="soul"><h1>心灵鸡汤~</h1></div>
+        <div class="soul"><button class="soul-btn">再来一碗</button></div>
+    </div>
+</div>
+@section scripts{
+    <script src="https://static.meowv.com/js/axios.min.js"></script>
+    <script>
+        getSoul();
+        function getSoul() {
+            axios.get(`${api_domain}/soul?type=1`).then(function (response) {
+                if (response.data.success) document.querySelector(".soul h1").innerText = response.data.result;
+            });
+        }
+        document.querySelector(".soul-btn").addEventListener("click", X => getSoul());
+    </script>
+}
