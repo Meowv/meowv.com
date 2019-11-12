@@ -48,7 +48,7 @@ namespace MeowvBlog.API.Swagger
                 },
                 new OpenApiTag {
                     Name = "Soul",
-                    Description = "心灵/毒鸡汤",
+                    Description = "心灵/毒 鸡汤",
                     ExternalDocs = new OpenApiExternalDocs { Description = "Soul" }
                 }
             };
