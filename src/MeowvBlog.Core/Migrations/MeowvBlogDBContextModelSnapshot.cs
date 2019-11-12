@@ -213,6 +213,23 @@ namespace MeowvBlog.Core.Migrations
 
                     b.ToTable("SignatureLogs");
                 });
+
+            modelBuilder.Entity("MeowvBlog.Core.Domain.Soul.ChickenSoup", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Content")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ChickenSoups");
+                });
 #pragma warning restore 612, 618
         }
     }

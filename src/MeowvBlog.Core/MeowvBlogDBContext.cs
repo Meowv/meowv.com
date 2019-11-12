@@ -3,6 +3,7 @@ using MeowvBlog.Core.Domain.Blog;
 using MeowvBlog.Core.Domain.Gallery;
 using MeowvBlog.Core.Domain.HotNews;
 using MeowvBlog.Core.Domain.Signature;
+using MeowvBlog.Core.Domain.Soul;
 using Microsoft.EntityFrameworkCore;
 
 namespace MeowvBlog.Core
@@ -26,6 +27,8 @@ namespace MeowvBlog.Core
         public DbSet<Album> Albums { get; set; }
 
         public DbSet<Image> Images { get; set; }
+
+        public DbSet<ChickenSoup> ChickenSoups { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
