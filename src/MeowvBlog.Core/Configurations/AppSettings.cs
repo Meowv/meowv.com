@@ -104,5 +104,17 @@ namespace MeowvBlog.Core.Configurations
 
             public static string ImagesPath => _config["Gallery:Images"];
         }
+
+        /// <summary>
+        /// 百度AI 语音合成
+        /// </summary>
+        public static class BaiduAI
+        {
+            public static string AppID => _config["BaiduAI:AppID"];
+
+            public static string APIKey => _config["BaiduAI:APIKey"];
+
+            public static string SecretKey => _config["BaiduAI:SecretKey"];
+        }
     }
 }

@@ -16,5 +16,10 @@
         /// 其他通用接口组
         /// </summary>
         public const string GroupName_v3 = "v3";
+
+        /// <summary>
+        /// 语音合成欢迎词
+        /// </summary>
+        public const string GreetWord = "欢迎来自{0}的朋友，我是阿星Plus。今日语录：{1}";
     }
 }

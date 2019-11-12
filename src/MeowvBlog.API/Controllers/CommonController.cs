@@ -1,5 +1,7 @@
-﻿using MeowvBlog.API.Extensions;
+﻿using Baidu.Aip.Speech;
+using MeowvBlog.API.Extensions;
 using MeowvBlog.Core;
+using MeowvBlog.Core.Configurations;
 using MeowvBlog.Core.Domain.HotNews;
 using MeowvBlog.Core.Dto;
 using MeowvBlog.Core.Dto.HotNews;
@@ -143,6 +145,51 @@ namespace MeowvBlog.API.Controllers
             var bytes = await client.GetByteArrayAsync(url);
 
             return File(bytes, "image/jpeg");
+        }
+
+        /// <summary>
+        /// 语音合成
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("tts")]
+        [ResponseCache(CacheProfileName = "default")]
+        public async Task<IActionResult> SpeechTtsAsync()
+        {
+            var ip = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+            if (string.IsNullOrEmpty(ip)) ip = Request.HttpContext.Connection.RemoteIpAddress.ToString();
+            if (ip.Contains(":")) ip = "127.0.0.1";
+
+            using var client = _httpClient.CreateClient();
+            var cityjson = await client.GetStringAsync($"http://ip.taobao.com/service/getIpInfo.php?ip={ip}");
+            var cityObj = JObject.Parse(cityjson);
+            var city = cityObj["data"]["city"].ToString();
+
+            var noteJson = await client.GetStringAsync("http://open.iciba.com/dsapi/");
+            var noteObj = JObject.Parse(noteJson);
+            var note = noteObj["note"].ToString();
+
+            var _ttsClient = new Tts(AppSettings.BaiduAI.APIKey, AppSettings.BaiduAI.SecretKey) { Timeout = 60000 };
+
+            // https://ai.baidu.com/docs#/TTS-Online-Csharp-SDK/d27a4e02
+            var option = new Dictionary<string, object>()
+            {
+                {"spd", 5}, // 语速，取值0-9，默认为5中语速
+                {"vol", 7}, // 音量，取值0-15，默认为5中音量
+                {"per", 4}  // 发音人, 0为女声，1为男声，3为情感合成-度逍遥，4为情感合成-度丫丫
+            };
+
+            var result = _ttsClient.Synthesis(string.Format(GlobalConsts.GreetWord, city, note), option);
+
+            if (result.Success)
+            {
+                return File(result.Data, "audio/mpeg");
+            }
+            else
+            {
+                var ttsBytes = await client.GetByteArrayAsync(noteObj["tts"].ToString());
+                return File(ttsBytes, "audio/mpeg");
+            }
         }
     }
 }

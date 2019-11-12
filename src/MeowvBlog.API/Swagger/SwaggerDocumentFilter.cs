@@ -24,7 +24,7 @@ namespace MeowvBlog.API.Swagger
                 new OpenApiTag {
                     Name = "Common",
                     Description = "通用公共接口",
-                    ExternalDocs = new OpenApiExternalDocs { Description = "每日热点/Bing壁纸/随机一张猫图" }
+                    ExternalDocs = new OpenApiExternalDocs { Description = "每日热点/Bing壁纸/随机一张猫图/语音合成" }
                 },
                 new OpenApiTag {
                     Name = "MTA",
@@ -40,6 +40,11 @@ namespace MeowvBlog.API.Swagger
                     Name = "Signature",
                     Description = "个性艺术签名设计",
                     ExternalDocs = new OpenApiExternalDocs { Description = "Signature" }
+                },
+                new OpenApiTag {
+                    Name = "Gallery",
+                    Description = "图集相册",
+                    ExternalDocs = new OpenApiExternalDocs { Description = "Gallery" }
                 }
             };
 

@@ -221,6 +221,12 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.API.Controllers.CommonController.SpeechTtsAsync">
+            <summary>
+            语音合成
+            </summary>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.API.Controllers.GalleryController.QueryAlbumsAsync">
             <summary>
             查询图集列表
