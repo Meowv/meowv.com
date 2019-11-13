@@ -1,4 +1,0 @@
-*.js linguist-language=csharp
-*.css linguist-language=csharp
-*.html linguist-language=csharp
-* text=csharp
