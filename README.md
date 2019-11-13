@@ -76,3 +76,7 @@
 |Swashbuckle.AspNetCore.Filters|[![NuGet version](https://badge.fury.io/nu/Swashbuckle.AspNetCore.Filters.svg)](https://badge.fury.io/nu/Swashbuckle.AspNetCore.Filters)|
 |SixLabors.ImageSharp|[![NuGet version](https://badge.fury.io/nu/SixLabors.ImageSharp.svg)](https://badge.fury.io/nu/SixLabors.ImageSharp)|
 |SixLabors.ImageSharp.Drawing|[![NuGet version](https://badge.fury.io/nu/SixLabors.ImageSharp.Drawing.svg)](https://badge.fury.io/nu/SixLabors.ImageSharp.Drawing)|
+
+## LICENSE
+
+This Project is licensed under [MIT](LICENSE).
