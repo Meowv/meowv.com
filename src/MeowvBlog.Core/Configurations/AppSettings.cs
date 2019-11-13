@@ -22,6 +22,11 @@ namespace MeowvBlog.Core.Configurations
         public static string SqliteConnectionString => _config["SqliteConnectionString"];
 
         /// <summary>
+        /// ApiVersion
+        /// </summary>
+        public static string ApiVersion => _config["ApiVersion"];
+
+        /// <summary>
         /// JWT
         /// </summary>
         public static class JWT

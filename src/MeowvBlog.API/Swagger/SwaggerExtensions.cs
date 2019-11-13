@@ -1,4 +1,5 @@
 ﻿using MeowvBlog.Core;
+using MeowvBlog.Core.Configurations;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
@@ -12,7 +13,7 @@ namespace MeowvBlog.API.Swagger
 {
     public static class SwaggerExtensions
     {
-        private static readonly string version = "v3.1.6";
+        private static readonly string version = $"v{AppSettings.ApiVersion}";
 
         public static List<SwaggerApiInfo> ApiInfos = new List<SwaggerApiInfo>()
         {

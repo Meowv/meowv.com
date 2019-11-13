@@ -9,6 +9,11 @@
             Sqlite
             </summary>
         </member>
+        <member name="P:MeowvBlog.Core.Configurations.AppSettings.ApiVersion">
+            <summary>
+            ApiVersion
+            </summary>
+        </member>
         <member name="T:MeowvBlog.Core.Configurations.AppSettings.JWT">
             <summary>
             JWT
@@ -172,11 +177,6 @@
         <member name="P:MeowvBlog.Core.Domain.Soul.ChickenSoup.Content">
             <summary>
             内容
-            </summary>
-        </member>
-        <member name="P:MeowvBlog.Core.Domain.Soul.ChickenSoup.Type">
-            <summary>
-            鸡汤类型 <see cref="T:MeowvBlog.Core.ChickenSoupType"/>
             </summary>
         </member>
         <member name="P:MeowvBlog.Core.Dto.Blog.CategoryDto.CategoryName">
@@ -382,16 +382,6 @@
         <member name="P:MeowvBlog.Core.Dto.PopKart.QueryPopKartInput.Rarity">
             <summary>
             赛车稀有度
-            </summary>
-        </member>
-        <member name="P:MeowvBlog.Core.Dto.Soul.InsertChickenSoupInput.Type">
-            <summary>
-            鸡汤类型
-            </summary>
-        </member>
-        <member name="P:MeowvBlog.Core.Dto.Soul.InsertChickenSoupInput.List">
-            <summary>
-            鸡汤数据
             </summary>
         </member>
         <member name="F:MeowvBlog.Core.GitHub.AccessTokenRequest.Client_ID">

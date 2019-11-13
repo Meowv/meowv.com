@@ -445,13 +445,4 @@ namespace MeowvBlog.Core
         [Description("普通")]
         普通 = 3
     }
-
-    public enum ChickenSoupType
-    {
-        [Description("毒鸡汤")]
-        毒鸡汤 = 0,
-
-        [Description("心灵鸡汤")]
-        心灵鸡汤 = 1
-    }
 }

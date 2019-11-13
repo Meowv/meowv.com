@@ -1,10 +1,10 @@
 ﻿using MeowvBlog.Core;
 using MeowvBlog.Core.Domain.Soul;
 using MeowvBlog.Core.Dto;
-using MeowvBlog.Core.Dto.Soul;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -26,15 +26,14 @@ namespace MeowvBlog.API.Controllers
         /// <summary>
         /// 获取鸡汤文本
         /// </summary>
-        /// <param name="type"></param>
         /// <returns></returns>
         [HttpGet]
-        public async Task<Response<string>> GetRandomChickenSoupAsync(ChickenSoupType type = ChickenSoupType.毒鸡汤)
+        public async Task<Response<string>> GetRandomChickenSoupAsync()
         {
             var response = new Response<string>();
 
             var chickenSoups = await _context.ChickenSoups
-                                             .FromSqlRaw($"SELECT * FROM ChickenSoups WHERE Type = {(int)type} ORDER BY RANDOM() LIMIT 1")
+                                             .FromSqlRaw($"SELECT * FROM ChickenSoups ORDER BY RANDOM() LIMIT 1")
                                              .FirstOrDefaultAsync();
 
             response.Result = chickenSoups?.Content;
@@ -44,25 +43,21 @@ namespace MeowvBlog.API.Controllers
         /// <summary>
         /// 加鸡汤
         /// </summary>
-        /// <param name="input"></param>
+        /// <param name="list"></param>
         /// <returns></returns>
         [HttpPost]
         [Authorize]
-        public async Task<Response<string>> InsertChickenSoupAsync([FromBody] InsertChickenSoupInput input)
+        public async Task<Response<string>> InsertChickenSoupAsync([FromBody] IList<string> list)
         {
             var response = new Response<string>();
 
-            if (!input.List.Any())
+            if (!list.Any())
             {
                 response.Msg = "鸡汤呢？";
                 return response;
             }
 
-            var entities = input.List.Select(x => new ChickenSoup
-            {
-                Content = x,
-                Type = input.Type
-            });
+            var entities = list.Select(x => new ChickenSoup { Content = x });
 
             await _context.ChickenSoups.AddRangeAsync(entities);
             await _context.SaveChangesAsync();

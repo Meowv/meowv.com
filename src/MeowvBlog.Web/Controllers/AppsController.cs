@@ -68,17 +68,10 @@ namespace MeowvBlog.Web.Controllers
         public IActionResult Gallery() => View();
 
         /// <summary>
-        /// 心灵鸡汤
-        /// </summary>
-        /// <returns></returns>
-        [Route("/soul/good")]
-        public IActionResult SoulGood() => View();
-
-        /// <summary>
         /// 毒鸡汤
         /// </summary>
         /// <returns></returns>
-        [Route("/soul/bad")]
-        public IActionResult SoulBad() => View();
+        [Route("/soul")]
+        public IActionResult Soul() => View();
     }
 }
