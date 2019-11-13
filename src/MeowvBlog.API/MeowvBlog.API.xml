@@ -215,6 +215,12 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.API.Controllers.CommonController.GetGirlAsync">
+            <summary>
+            随机一张妹子图
+            </summary>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.API.Controllers.CommonController.GetCatAsync">
             <summary>
             随机一张猫图

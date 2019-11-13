@@ -33,6 +33,13 @@ namespace MeowvBlog.Web.Controllers
         public IActionResult Hot() => View();
 
         /// <summary>
+        /// 随机妹子图
+        /// </summary>
+        /// <returns></returns>
+        [Route("/girl")]
+        public IActionResult Girl() => View();
+
+        /// <summary>
         /// 随机猫咪图
         /// </summary>
         /// <returns></returns>

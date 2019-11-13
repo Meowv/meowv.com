@@ -128,6 +128,26 @@ namespace MeowvBlog.API.Controllers
         }
 
         /// <summary>
+        /// 随机一张妹子图
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("girl")]
+        public async Task<IActionResult> GetGirlAsync()
+        {
+            var path = Path.Combine(Directory.GetCurrentDirectory(), "Resources/girls.json");
+
+            var girls = await path.GetObjFromJsonFile<List<string>>("girls");
+
+            var url = girls.OrderBy(x => Guid.NewGuid()).Take(1).FirstOrDefault();
+
+            using var client = _httpClient.CreateClient();
+            var bytes = await client.GetByteArrayAsync(url);
+
+            return File(bytes, "image/jpeg");
+        }
+
+        /// <summary>
         /// 随机一张猫图
         /// </summary>
         /// <returns></returns>
