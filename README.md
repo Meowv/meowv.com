@@ -79,4 +79,4 @@
 
 ## LICENSE
 
-This Project is licensed under [MIT](LICENSE).
+This project is licensed under [MIT](LICENSE).

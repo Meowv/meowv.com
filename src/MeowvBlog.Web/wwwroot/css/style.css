@@ -1152,10 +1152,19 @@ header label {
     max-height: 100%;
 }
 
+.girl-img {
+    width: 20%;
+}
+
+.btnbox {
+    text-align: center;
+    margin-top: 20px;
+}
+
 .tab-box {
     margin: 0 auto;
-    margin-top:50px;
-    width:1150px;
+    margin-top: 50px;
+    width: 1150px;
 }
 .top-tab {
     font-weight:bold;

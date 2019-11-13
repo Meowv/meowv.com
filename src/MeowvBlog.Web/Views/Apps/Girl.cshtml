@@ -4,9 +4,10 @@
 <div class="main">
     <div class="loader"></div>
     <div class="container">
-        <div class="imgbox">
+        <div class="imgbox girl-img">
             <img src="https://api.meowv.com/common/girl/" />
         </div>
+        <div class="btnbox"><button class="soul-btn">再来一个妹子</button></div>
     </div>
 </div>
 @section scripts{
@@ -14,5 +15,6 @@
     window.onload = function () {
         document.querySelector('.loader').remove();
     }
+    document.querySelector(".soul-btn").addEventListener("click", x => location.reload());
 </script>
 }
