@@ -1,4 +1,7 @@
-* text=csharp
-*.js linguist-language=csharp
-*.css linguist-language=csharp
-*.html linguist-language=csharp
+*           text=csharp
+*.cs        diff=csharp
+*.sln       merge=binary
+*.csproj    merge=binary
+*.html	    linguist-language=csharp
+*.css	    linguist-language=csharp
+*.js	    linguist-language=csharp
