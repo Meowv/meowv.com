@@ -80,5 +80,12 @@ namespace MeowvBlog.Web.Controllers
         /// <returns></returns>
         [Route("/soul")]
         public IActionResult Soul() => View();
+
+        /// <summary>
+        /// 2048
+        /// </summary>
+        /// <returns></returns>
+        [Route("/2048")]
+        public IActionResult Game2048() => View();
     }
 }

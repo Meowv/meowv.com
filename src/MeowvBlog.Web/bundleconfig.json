@@ -36,5 +36,17 @@
     "inputFiles": [
       "wwwroot/js/gallery.js"
     ]
+  },
+  {
+    "outputFileName": "wwwroot/js/2048.min.js",
+    "inputFiles": [
+      "wwwroot/js/2048.js"
+    ]
+  },
+  {
+    "outputFileName": "wwwroot/css/2048.min.css",
+    "inputFiles": [
+      "wwwroot/css/2048.css"
+    ]
   }
 ]
