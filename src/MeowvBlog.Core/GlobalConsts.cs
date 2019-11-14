@@ -20,6 +20,6 @@
         /// <summary>
         /// 语音合成欢迎词
         /// </summary>
-        public const string GreetWord = "欢迎来自{0}的朋友，我是阿星Plus。今日语录：{1}";
+        public const string GreetWord = "欢迎来到我的个人博客，我是阿星Plus。今日语录：{0}，{1}";
     }
 }

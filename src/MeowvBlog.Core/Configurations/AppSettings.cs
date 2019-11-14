@@ -115,8 +115,6 @@ namespace MeowvBlog.Core.Configurations
         /// </summary>
         public static class BaiduAI
         {
-            public static string AppID => _config["BaiduAI:AppID"];
-
             public static string APIKey => _config["BaiduAI:APIKey"];
 
             public static string SecretKey => _config["BaiduAI:SecretKey"];

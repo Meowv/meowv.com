@@ -173,20 +173,15 @@ namespace MeowvBlog.API.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("tts")]
+        [ResponseCache(CacheProfileName = "default")]
         public async Task<IActionResult> SpeechTtsAsync()
         {
-            var ip = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
-            if (string.IsNullOrEmpty(ip)) ip = Request.HttpContext.Connection.RemoteIpAddress.ToString();
-            if (ip.Contains(":")) ip = "127.0.0.1";
-
             using var client = _httpClient.CreateClient();
-            var cityjson = await client.GetStringAsync($"http://ip.taobao.com/service/getIpInfo.php?ip={ip}");
-            var cityObj = JObject.Parse(cityjson);
-            var city = cityObj["data"]["city"].ToString();
 
-            var noteJson = await client.GetStringAsync("http://open.iciba.com/dsapi/");
-            var noteObj = JObject.Parse(noteJson);
-            var note = noteObj["note"].ToString();
+            var json = await client.GetStringAsync("http://open.iciba.com/dsapi/");
+            var obj = JObject.Parse(json);
+            var note = obj["note"].ToString();
+            var content = obj["content"].ToString();
 
             var _ttsClient = new Tts(AppSettings.BaiduAI.APIKey, AppSettings.BaiduAI.SecretKey) { Timeout = 60000 };
 
@@ -198,7 +193,7 @@ namespace MeowvBlog.API.Controllers
                 {"per", 4}  // 发音人, 0为女声，1为男声，3为情感合成-度逍遥，4为情感合成-度丫丫
             };
 
-            var result = _ttsClient.Synthesis(string.Format(GlobalConsts.GreetWord, city, note), option);
+            var result = _ttsClient.Synthesis(string.Format(GlobalConsts.GreetWord, note, content), option);
 
             if (result.Success)
             {
@@ -206,7 +201,7 @@ namespace MeowvBlog.API.Controllers
             }
             else
             {
-                var ttsBytes = await client.GetByteArrayAsync(noteObj["tts"].ToString());
+                var ttsBytes = await client.GetByteArrayAsync(obj["tts"].ToString());
                 return File(ttsBytes, "audio/mpeg");
             }
         }
