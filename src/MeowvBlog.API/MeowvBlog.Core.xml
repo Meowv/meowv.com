@@ -49,6 +49,11 @@
             百度AI 语音合成
             </summary>
         </member>
+        <member name="T:MeowvBlog.Core.Configurations.AppSettings.FMApi">
+            <summary>
+            FM Api
+            </summary>
+        </member>
         <member name="P:MeowvBlog.Core.Domain.Blog.Category.Id">
             <summary>
             主键

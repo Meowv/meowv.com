@@ -119,5 +119,19 @@ namespace MeowvBlog.Core.Configurations
 
             public static string SecretKey => _config["BaiduAI:SecretKey"];
         }
+
+        /// <summary>
+        /// FM Api
+        /// </summary>
+        public static class FMApi
+        {
+            public static string Key => _config["FMApi:Key"];
+
+            public static string Channels => _config["FMApi:Channels"];
+
+            public static string Song => _config["FMApi:Song"];
+
+            public static string Lyric => _config["FMApi:Lyric"];
+        }
     }
 }
