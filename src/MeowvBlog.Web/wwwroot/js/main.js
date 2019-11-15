@@ -137,3 +137,43 @@ function mobileBtn() {
         mobileMenu.classList.add("active")
     }
 }
+
+
+function request(url) {
+    var ajax = new XMLHttpRequest();
+    ajax.onreadystatechange = function () {
+        if (ajax.readyState == 4 && ajax.status == 200) {
+            return ajax.responseText;
+        }
+    }
+    ajax.open("get", url, false);
+    ajax.setRequestHeader("Content-type", "application/json");
+    ajax.send();
+}
+
+player = null;
+
+var response = request("https://api.meowv.com/fm/channels");
+console.log(response);
+var response_json = JSON.parse(response);
+console.log(response_json);
+if (response_json.success) {
+    console.table(response_json.result);
+}
+//if (response.success) {
+//    var result = response.result[0];
+//    player = new APlayer({
+//        container: document.getElementById('aplayer'),
+//        fixed: true,
+//        autoplay: true,
+//        lrcType: 3,
+//        audio: [{
+//            name: result.title,
+//            artist: result.artist,
+//            url: result.url,
+//            cover: result.picture,
+//            lrc: result.lrc
+//        }]
+//    });
+//    player.lrc.hide();
+//}

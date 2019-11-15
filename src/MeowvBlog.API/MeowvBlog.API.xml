@@ -241,9 +241,15 @@
         </member>
         <member name="M:MeowvBlog.API.Controllers.FMController.GetSong(System.String)">
             <summary>
-            获取随机歌曲
+            获取随机一首歌曲
             </summary>
             <param name="channel"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.FMController.GetSongs">
+            <summary>
+            获取歌曲列表
+            </summary>
             <returns></returns>
         </member>
         <member name="M:MeowvBlog.API.Controllers.FMController.GeyLyric(System.String)">

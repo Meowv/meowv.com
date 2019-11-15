@@ -2,7 +2,11 @@
 using MeowvBlog.Core;
 using MeowvBlog.Core.Configurations;
 using MeowvBlog.Core.Dto;
+using MeowvBlog.Core.Dto.FM;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -34,13 +38,14 @@ namespace MeowvBlog.API.Controllers
 
             using var client = _httpClient.CreateClient();
             var result = await client.GetStringAsync(AppSettings.FMApi.Channels);
+            result = result.Replace("http:", "https:");
 
             response.Result = result.DeserializeFromJson<dynamic>()["channels"];
             return response;
         }
 
         /// <summary>
-        /// 获取随机歌曲
+        /// 获取随机一首歌曲
         /// </summary>
         /// <param name="channel"></param>
         /// <returns></returns>
@@ -53,9 +58,60 @@ namespace MeowvBlog.API.Controllers
             var url = $"{AppSettings.FMApi.Song}{channel}";
             using var client = _httpClient.CreateClient();
             var result = await client.GetStringAsync(url);
+            result = result.Replace("http:", "https:");
 
             response.Result = result.DeserializeFromJson<dynamic>()["song"];
 
+            return response;
+        }
+
+        /// <summary>
+        /// 获取歌曲列表
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("songs")]
+        public async Task<Response<IList<FmDto>>> GetSongs()
+        {
+            var response = new Response<IList<FmDto>>();
+
+            using var client = _httpClient.CreateClient();
+            var json = await client.GetStringAsync(AppSettings.FMApi.Channels);
+
+            var list_task = new List<Task<dynamic>>();
+            var channels = json.DeserializeFromJson<dynamic>()["channels"];
+            foreach (var item in channels)
+            {
+                var channel = item["channel_id"];
+                var url = $"{AppSettings.FMApi.Song}{channel}";
+
+                var task = Task.Run(async () =>
+                {
+                    var result = await client.GetStringAsync(url);
+                    result = result.Replace("http:", "https:");
+                    return result.DeserializeFromJson<dynamic>()["song"];
+                });
+                list_task.Add(task);
+            }
+            Task.WaitAll(list_task.ToArray());
+
+            var result = new List<FmDto>();
+
+            foreach (var item in list_task)
+            {
+                var fm = item.Result[0];
+                result.Add(new FmDto
+                {
+                    Title = fm.title,
+                    Artist = fm.artist,
+                    Cover = fm.picture,
+                    Url = fm.url,
+                    Lrc = fm.lrc
+                });
+            }
+
+            result = result.OrderBy(x => Guid.NewGuid()).ToList();
+            response.Result = result;
             return response;
         }
 
@@ -81,8 +137,8 @@ namespace MeowvBlog.API.Controllers
                 return response;
             }
 
-            string lyric = result.DeserializeFromJson<dynamic>()["lyric"];
-            response.Result = lyric.Replace(AppSettings.FMApi.Key, "meowv.com");
+            result = result.Replace(AppSettings.FMApi.Key, "meowv.com");
+            response.Result = result.DeserializeFromJson<dynamic>()["lyric"];
             return response;
         }
     }
