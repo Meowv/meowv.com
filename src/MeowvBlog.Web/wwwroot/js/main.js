@@ -138,42 +138,62 @@ function mobileBtn() {
     }
 }
 
+player = null;
+const currentAudio = window.localStorage.getItem('audio');
+if (currentAudio) {
+    load_player(JSON.parse(currentAudio));
+    player.list.switch(window.localStorage.getItem('currentPlayIndex') || 0);
+    player.play();
+} else {
+    load_audio();
+}
 
-function request(url) {
+function load_audio() {
     var ajax = new XMLHttpRequest();
     ajax.onreadystatechange = function () {
         if (ajax.readyState == 4 && ajax.status == 200) {
-            return ajax.responseText;
+            var response = JSON.parse(ajax.responseText);
+            if (response.success) {
+                var result = response.result;
+
+                window.localStorage.setItem('audio', JSON.stringify(result));
+
+                var audio = [];
+                result.forEach(x => {
+                    audio.push({
+                        name: x.title,
+                        artist: x.artist,
+                        cover: x.cover,
+                        url: x.url,
+                        lrc: x.lrc
+                    });
+                });
+                load_player(audio);
+            }
         }
-    }
-    ajax.open("get", url, false);
+    };
+    ajax.open("get", api_domain + "/fm/songs", true);
     ajax.setRequestHeader("Content-type", "application/json");
     ajax.send();
 }
 
-player = null;
-
-var response = request("https://api.meowv.com/fm/channels");
-console.log(response);
-var response_json = JSON.parse(response);
-console.log(response_json);
-if (response_json.success) {
-    console.table(response_json.result);
+function load_player(audio) {
+    player = new APlayer({
+        container: document.getElementById('aplayer'),
+        fixed: true,
+        autoplay: true,
+        lrcType: 3,
+        audio: audio
+    });
+    player.lrc.hide();
 }
-//if (response.success) {
-//    var result = response.result[0];
-//    player = new APlayer({
-//        container: document.getElementById('aplayer'),
-//        fixed: true,
-//        autoplay: true,
-//        lrcType: 3,
-//        audio: [{
-//            name: result.title,
-//            artist: result.artist,
-//            url: result.url,
-//            cover: result.picture,
-//            lrc: result.lrc
-//        }]
-//    });
-//    player.lrc.hide();
-//}
+
+function reload() {
+    load_audio();
+}
+
+setInterval(function () {
+    window.localStorage.setItem('currentPlayIndex', player.list.index);
+}, 1000);
+
+console.log("\n %c 执行 reload() 刷新歌单 %c http://meowv.com \n", "color: #fadfa3; background: #030307; padding:5px 0;", "background: #fadfa3; padding:5px 0;");
