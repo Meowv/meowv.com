@@ -138,12 +138,27 @@ function mobileBtn() {
     }
 }
 
+if (location.pathname == "/") {
+    document.querySelector(".weixin").addEventListener("click", function () {
+        document.querySelector(".qrcode").classList.contains('hidden') ? document.querySelector(".qrcode").classList.remove('hidden') : document.querySelector(".qrcode").classList.add('hidden');
+    });
+}
+
+if (location.pathname == "/apps") {
+    document.querySelector("#change_song_list").addEventListener("click", function () {
+        load_audio();
+    });
+}
+
 player = null;
 const currentAudio = window.localStorage.getItem('audio');
 if (currentAudio) {
     load_player(JSON.parse(currentAudio));
-    player.list.switch(window.localStorage.getItem('currentPlayIndex') || 0);
-    player.play();
+    player.list.switch(window.localStorage.getItem('currentPlayIndex'));
+    setTimeout(function () {
+        player.seek(window.localStorage.getItem('currentPlayTime'));
+        player.play();
+    }, 500);
 } else {
     load_audio();
 }
@@ -181,19 +196,17 @@ function load_player(audio) {
     player = new APlayer({
         container: document.getElementById('aplayer'),
         fixed: true,
-        autoplay: true,
         lrcType: 3,
         audio: audio
     });
     player.lrc.hide();
 }
 
-function reload() {
-    load_audio();
-}
-
 setInterval(function () {
-    window.localStorage.setItem('currentPlayIndex', player.list.index);
+    if (!player.audio.paused) {
+        window.localStorage.setItem('currentPlayIndex', player.list.index);
+        window.localStorage.setItem('currentPlayTime', player.audio.currentTime);
+    }
 }, 1000);
 
-console.log("\n %c 执行 reload() 刷新歌单 %c http://meowv.com \n", "color: #fadfa3; background: #030307; padding:5px 0;", "background: #fadfa3; padding:5px 0;");
+console.log("\n %c 执行 load_audio() 换一批歌单 %c http://meowv.com \n", "color: #fadfa3; background: #030307; padding:5px 0;", "background: #fadfa3; padding:5px 0;");

@@ -2,7 +2,7 @@
     <div class="container">
         <div class="intro">
             <div class="avatar">
-                <a href="/"><img src="https://static.meowv.com/images/avatar.jpg"></a>
+                <a href="javascript:;"><img src="https://static.meowv.com/images/avatar.jpg"></a>
             </div>
             <div class="nickname">阿星Plus</div>
             <div class="description">
@@ -37,12 +37,5 @@
             </div>
         </div>
     </div>
+    <iframe src="https://api.meowv.com/common/tts" allow="autoplay" style="display:none;"></iframe>
 </div>
-<iframe src="https://api.meowv.com/common/tts" allow="autoplay" style="display:none;"></iframe>
-@section scripts{
-    <script>
-        document.querySelector(".weixin").addEventListener("click", function () {
-            document.querySelector(".qrcode").classList.contains('hidden') ? document.querySelector(".qrcode").classList.remove('hidden') : document.querySelector(".qrcode").classList.add('hidden');
-        });
-    </script>
-}
