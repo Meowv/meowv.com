@@ -164,6 +164,10 @@ if (currentAudio) {
 }
 
 function load_audio() {
+    window.localStorage.removeItem('audio');
+    window.localStorage.removeItem('currentPlayIndex');
+    window.localStorage.removeItem('currentPlayTime');
+
     var ajax = new XMLHttpRequest();
     ajax.onreadystatechange = function () {
         if (ajax.readyState == 4 && ajax.status == 200) {
