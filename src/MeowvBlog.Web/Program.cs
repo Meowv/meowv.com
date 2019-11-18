@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System.Text.Encodings.Web;
+using System.Text.Unicode;
 using System.Threading.Tasks;
 
 namespace MeowvBlog.Web
@@ -19,7 +21,9 @@ namespace MeowvBlog.Web
                         }).Build().RunAsync();
         }
 
-        public void ConfigureServices(IServiceCollection services) => services.AddControllersWithViews();
+        public void ConfigureServices(IServiceCollection services) => services
+            .AddSingleton(HtmlEncoder.Create(new[] { UnicodeRanges.BasicLatin, UnicodeRanges.CjkUnifiedIdeographs }))
+            .AddControllersWithViews();
 
         public void Configure(IApplicationBuilder app)
         {
