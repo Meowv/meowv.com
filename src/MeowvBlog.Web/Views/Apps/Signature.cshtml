@@ -26,38 +26,34 @@
 <script>
     var cdn_domain = "https://static.meowv.com/signature/";
 
-    axios.all([signature_type(), recently_signature_logs()])
-        .then(axios.spread(function (sign_type_response, recently_log_response) {
-            var signature_type_html = "";
-            sign_type_response.data.result.forEach(x => {
-                console.log(x);
-                if (x.value == 901) {
-                    signature_type_html += `<option selected="selected" value="${x.value}">${x.description}</option>`;
-                } else {
-                    signature_type_html += `<option value="${x.value}">${x.description}</option>`;
-                }
-            });
-            var recently_signature_log_html = "";
-            recently_log_response.data.result.forEach(x => {
-                recently_signature_log_html += `<a href="javascript:;" data-url="${x.url}">${x.name}</a>`;
-            });
-            document.querySelector("#type").innerHTML = signature_type_html;
-            document.querySelector(".tag-cloud-tags-extend").innerHTML = recently_signature_log_html;
-            document.querySelector(".signature-box").style.cssText = "display:block";
-            document.querySelector(".post-wrap").style.cssText = "display:block";
-            document.querySelector('.loader').remove();
-
-            var a_list = document.querySelectorAll('.tag-cloud-tags-extend a');
-            for (var i = 0; i < a_list.length; i++) {
-                a_list[i].onclick = function () {
-                    var url = this.attributes["data-url"].value;
-                    document.querySelector(".signature-img img").src = cdn_domain + url;
-                }
+    axios.all([signature_type(), recently_signature_logs()]).then(axios.spread(function (sign_type_response, recently_log_response) {
+        var signature_type_html = "";
+        sign_type_response.data.result.forEach(x => {
+            console.log(x);
+            if (x.value == 901) {
+                signature_type_html += `<option selected="selected" value="${x.value}">${x.description}</option>`;
+            } else {
+                signature_type_html += `<option value="${x.value}">${x.description}</option>`;
             }
-
-        })).catch(function (error) {
-            console.log(error);
         });
+        var recently_signature_log_html = "";
+        recently_log_response.data.result.forEach(x => {
+            recently_signature_log_html += `<a href="javascript:;" data-url="${x.url}">${x.name}</a>`;
+        });
+        document.querySelector("#type").innerHTML = signature_type_html;
+        document.querySelector(".tag-cloud-tags-extend").innerHTML = recently_signature_log_html;
+        document.querySelector(".signature-box").style.cssText = "display:block";
+        document.querySelector(".post-wrap").style.cssText = "display:block";
+        document.querySelector('.loader').remove();
+
+        var a_list = document.querySelectorAll('.tag-cloud-tags-extend a');
+        for (var i = 0; i < a_list.length; i++) {
+            a_list[i].onclick = function () {
+                var url = this.attributes["data-url"].value;
+                document.querySelector(".signature-img img").src = cdn_domain + url;
+            }
+        }
+    }));
 
     function signature_type() {
         return axios.get(`${api_domain}/signature/type`);
@@ -73,12 +69,9 @@
         }
         var typeId = document.querySelector("#type").value;
 
-        axios.get(`${api_domain}/signature?name=${name}&id=${typeId}`)
-            .then(function (response) {
-                document.querySelector(".signature-img img").src = cdn_domain + response.data.result;
-            }).catch(function (error) {
-                console.log(error);
-            });
+        axios.get(`${api_domain}/signature?name=${name}&id=${typeId}`).then(function (response) {
+            document.querySelector(".signature-img img").src = cdn_domain + response.data.result;
+        });
     });
 </script>
 }

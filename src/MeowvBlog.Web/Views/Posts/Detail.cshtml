@@ -74,20 +74,17 @@
     var url = location.pathname.replace("/post", "");
     url = url.substring(url.length - 1) == "/" ? url : url + "/";
 
-    axios.get(`${api_domain}/blog/post?url=${url}`)
-        .then(function (response) {
-            if (response.data.success) {
-                document.title = document.title.substring(0, 2) + response.data.result.title + " - " + document.title.substring(2);
+    axios.get(`${api_domain}/blog/post?url=${url}`).then(function (response) {
+        if (response.data.success) {
+            document.title = document.title.substring(0, 2) + response.data.result.title + " - " + document.title.substring(2);
 
-                var html = template("detail_tmpl", response.data);
-                document.querySelector('.post-wrap').innerHTML = html;
-            } else {
-                document.querySelector('.post-wrap').innerHTML = `<h2 class="post-title">${response.data.message}</h2>`;
-            }
-            document.querySelector('.loader').remove();
-            editormd.markdownToHTML("content");
-        }).catch(function (error) {
-            console.log(error);
-        });
+            var html = template("detail_tmpl", response.data);
+            document.querySelector('.post-wrap').innerHTML = html;
+        } else {
+            document.querySelector('.post-wrap').innerHTML = `<h2 class="post-title">${response.data.message}</h2>`;
+        }
+        document.querySelector('.loader').remove();
+        editormd.markdownToHTML("content");
+    });
 </script>
 }

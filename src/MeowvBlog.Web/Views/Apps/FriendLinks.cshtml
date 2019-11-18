@@ -26,15 +26,12 @@
 <script src="https://static.meowv.com/js/axios.min.js"></script>
 <script src="https://static.meowv.com/js/template-web.js"></script>
 <script>
-    axios.get(`${api_domain}/blog/friendlinks`)
-        .then(function (response) {
-            if (response.data.success) {
-                var html = template("friendlinks_tmpl", response.data);
-                document.querySelector('.categories-card').innerHTML = html;
-                document.querySelector('.loader').remove();
-            }
-        }).catch(function (error) {
-            console.log(error);
-        });
+    axios.get(`${api_domain}/blog/friendlinks`).then(function (response) {
+        if (response.data.success) {
+            var html = template("friendlinks_tmpl", response.data);
+            document.querySelector('.categories-card').innerHTML = html;
+            document.querySelector('.loader').remove();
+        }
+    });
 </script>
 }

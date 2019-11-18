@@ -41,7 +41,7 @@ document.ready(
     // toggleTheme function.
     function () {
         var _Blog = window._Blog || {};
-        const currentTheme = window.localStorage && window.localStorage.getItem('theme');
+        const currentTheme = window.localStorage.getItem('theme');
         const isDark = currentTheme === 'dark';
 
         var model_path = "black";
@@ -101,8 +101,7 @@ document.ready(
                     document.getElementsByTagName('body')[0].classList.add('dark-theme');
                 }
 
-                window.localStorage &&
-                    window.localStorage.setItem('theme', document.body.classList.contains('dark-theme') ? 'dark' : 'light');
+                window.localStorage.setItem('theme', document.body.classList.contains('dark-theme') ? 'dark' : 'light');
             });
 
             // moblie
@@ -118,8 +117,7 @@ document.ready(
                     document.getElementById("mobile-toggle-theme").innerText = " · Dark";
                 }
 
-                window.localStorage &&
-                    window.localStorage.setItem('theme', document.body.classList.contains('dark-theme') ? 'dark' : 'light');
+                window.localStorage.setItem('theme', document.body.classList.contains('dark-theme') ? 'dark' : 'light');
             });
         };
         _Blog.toggleTheme();
@@ -138,16 +136,33 @@ function mobileBtn() {
     }
 }
 
-if (location.pathname == "/") {
+const pathname = location.pathname;
+
+if (pathname == "/") {
     document.querySelector(".weixin").addEventListener("click", function () {
         document.querySelector(".qrcode").classList.contains('hidden') ? document.querySelector(".qrcode").classList.remove('hidden') : document.querySelector(".qrcode").classList.add('hidden');
     });
 }
 
-if (location.pathname == "/apps") {
+if (pathname == "/apps") {
     document.querySelector("#change_song_list").addEventListener("click", function () {
         load_audio();
     });
+}
+
+if (pathname == "/tucao") {
+    window.onresize = () => changeFrameHeight();
+    window.onload = () => changeFrameHeight();
+    function changeFrameHeight() {
+        document.getElementById("tucao").height = document.documentElement.clientHeight - 200;
+    }
+}
+
+if (pathname == "/bing" || pathname == "/cat" || pathname == "/girl") {
+    window.onload = () => document.querySelector('.loader').remove();
+    if (pathname == "/girl") {
+        document.querySelector(".soul-btn").addEventListener("click", () => document.querySelector(".girl-img img").src = document.querySelector(".girl-img img").src.split("?")[0] + "?t=" + new Date().getTime());
+    }
 }
 
 player = null;

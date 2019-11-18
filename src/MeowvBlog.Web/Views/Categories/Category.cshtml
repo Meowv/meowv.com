@@ -29,23 +29,20 @@
 <script>
     var name = location.pathname.replace(/category|\//gi, "");
 
-    axios.all([getCategoryName(name), getPostsByCategoryName(name)])
-        .then(axios.spread(function (categoryNameResponse, postsResponse) {
-            if (categoryNameResponse.data.success) {
-                document.title = document.title.substring(0, 2) + categoryNameResponse.data.result + " - " + document.title.substring(2);
-                var html = template("categoryName_tmpl", categoryNameResponse.data);
-                document.querySelector('.post-title').innerHTML = html;
-            } else {
-                document.querySelector('.post-title').innerText = categoryNameResponse.data.msg;
-            }
-            if (postsResponse.data.success) {
-                var html = template("category_post_tmpl", postsResponse.data);
-                document.querySelector('.post-wrap.archive').innerHTML = html;
-                document.querySelector('.loader').remove();
-            }
-        })).catch(function (error) {
-            console.log(error);
-        });
+    axios.all([getCategoryName(name), getPostsByCategoryName(name)]).then(axios.spread(function (categoryNameResponse, postsResponse) {
+        if (categoryNameResponse.data.success) {
+            document.title = document.title.substring(0, 2) + categoryNameResponse.data.result + " - " + document.title.substring(2);
+            var html = template("categoryName_tmpl", categoryNameResponse.data);
+            document.querySelector('.post-title').innerHTML = html;
+        } else {
+            document.querySelector('.post-title').innerText = categoryNameResponse.data.msg;
+        }
+        if (postsResponse.data.success) {
+            var html = template("category_post_tmpl", postsResponse.data);
+            document.querySelector('.post-wrap.archive').innerHTML = html;
+            document.querySelector('.loader').remove();
+        }
+    }));
 
     function getCategoryName(name) {
         return axios.get(`${api_domain}/blog/category?name=${name}`);
