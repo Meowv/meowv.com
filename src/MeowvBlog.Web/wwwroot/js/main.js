@@ -387,13 +387,18 @@ function process_page(pathname) {
 
 player = null;
 const currentAudio = window.localStorage.getItem('audio');
+const audioExpireDate = window.localStorage.getItem('audioExpireDate');
 if (currentAudio) {
-    load_player(JSON.parse(currentAudio));
-    player.list.switch(window.localStorage.getItem('currentPlayIndex'));
-    setTimeout(function () {
-        player.seek(window.localStorage.getItem('currentPlayTime'));
-        player.play();
-    }, 500);
+    if (new Date().getTime() > audioExpireDate) {
+        load_audio();
+    } else {
+        load_player(JSON.parse(currentAudio));
+        player.list.switch(window.localStorage.getItem('currentPlayIndex'));
+        setTimeout(function () {
+            player.seek(window.localStorage.getItem('currentPlayTime'));
+            player.play();
+        }, 500);
+    }
 } else {
     load_audio();
 }
@@ -411,6 +416,7 @@ function load_audio() {
                 var result = response.result;
 
                 window.localStorage.setItem('audio', JSON.stringify(result));
+                window.localStorage.setItem("audioExpireDate", new Date().getTime() + 3600000);
 
                 var audio = [];
                 result.forEach(x => {
