@@ -32,6 +32,11 @@
                 <link href="https://static.meowv.com/editor.md/css/editormd.min.css" rel="stylesheet" />
             }
         }
+
+        if (path.Contains("/post/"))
+        {
+            <link href="https://static.meowv.com/editor.md/css/editormd.preview.min.css" rel="stylesheet" />
+        }
     }
 </head>
 
@@ -46,12 +51,7 @@
 
 </html>
 <script src="https://static.meowv.com/live2d/L2Dwidget.min.js"></script>
-<environment include="Development">
-    <script src="~/js/APlayer.min.js"></script>
-    <script src="~/js/main.min.js"></script>
-</environment>
-<environment exclude="Development">
-    <script src="https://static.meowv.com/js/APlayer.min.js"></script>
-    <script src="https://static.meowv.com/js/main.min.js"></script>
-</environment>
+<script src="https://static.meowv.com/js/APlayer.min.js"></script>
 @RenderSection("Scripts", required: false)
+<environment include="Development"><script src="~/js/main.min.js"></script></environment>
+<environment exclude="Development"><script src="https://static.meowv.com/js/main.min.js"></script></environment>

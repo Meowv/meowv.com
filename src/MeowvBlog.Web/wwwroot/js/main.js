@@ -137,31 +137,251 @@ function mobileBtn() {
 }
 
 const pathname = location.pathname;
+process_page(pathname);
 
-if (pathname == "/") {
-    document.querySelector(".weixin").addEventListener("click", function () {
-        document.querySelector(".qrcode").classList.contains('hidden') ? document.querySelector(".qrcode").classList.remove('hidden') : document.querySelector(".qrcode").classList.add('hidden');
-    });
-}
+function process_page(pathname) {
+    if (pathname == "/") {
+        document.querySelector(".weixin").addEventListener("click", function () {
+            document.querySelector(".qrcode").classList.contains('hidden') ? document.querySelector(".qrcode").classList.remove('hidden') : document.querySelector(".qrcode").classList.add('hidden');
+        });
+    } else if (pathname == "/apps") {
+        document.querySelector("#change_song_list").addEventListener("click", function () {
+            load_audio();
+        });
+    } else if (pathname == "/bing" || pathname == "/cat" || pathname == "/girl") {
+        window.onload = () => document.querySelector('.loader').remove();
+        if (pathname == "/girl") {
+            document.querySelector(".soul-btn").addEventListener("click", () => document.querySelector(".girl-img img").src = document.querySelector(".girl-img img").src.split("?")[0] + "?t=" + new Date().getTime());
+        }
+    } else if (pathname == "/hot") {
+        axios.get(`${api_domain}/common/hot_news_source`).then(function (response) {
+            var html = template("top_tabs_tmpl", { "result": response.data.result });
+            document.querySelector('.top-tab ul').innerHTML = html;
 
-if (pathname == "/apps") {
-    document.querySelector("#change_song_list").addEventListener("click", function () {
-        load_audio();
-    });
-}
+            document.querySelector(".top-tab ul li a").classList.add("archive");
+            var defaultId = document.querySelector(".top-tab ul li a").attributes["data-id"].value;
+            loadContent(defaultId);
 
-if (pathname == "/tucao") {
-    window.onresize = () => changeFrameHeight();
-    window.onload = () => changeFrameHeight();
-    function changeFrameHeight() {
-        document.getElementById("tucao").height = document.documentElement.clientHeight - 200;
-    }
-}
+            var btn_tabs = document.querySelectorAll('.top-tab ul li a');
+            for (var i = 0; i < btn_tabs.length; i++) {
+                btn_tabs[i].onclick = function () {
+                    document.querySelector('.loader').style.cssText = "display:block";
+                    document.querySelector(".top-tab ul li a.archive").classList.remove("archive")
+                    this.classList.add("archive");
+                    var id = this.attributes["data-id"].value;
+                    loadContent(id);
+                }
+            }
+        });
 
-if (pathname == "/bing" || pathname == "/cat" || pathname == "/girl") {
-    window.onload = () => document.querySelector('.loader').remove();
-    if (pathname == "/girl") {
-        document.querySelector(".soul-btn").addEventListener("click", () => document.querySelector(".girl-img img").src = document.querySelector(".girl-img img").src.split("?")[0] + "?t=" + new Date().getTime());
+        function loadContent(id) {
+            axios.get(`${api_domain}/common/hot_news?sourceId=${id}`).then(function (response) {
+                var html = template("top_content_tmpl", response.data);
+                document.querySelector('.top-content ul').innerHTML = html;
+
+                document.querySelector('.loader').style.cssText = "display:none";
+            });
+        }
+    } else if (pathname == "/sign") {
+        var cdn_domain = "https://static.meowv.com/signature/";
+
+        axios.all([signature_type(), recently_signature_logs()]).then(axios.spread(function (sign_type_response, recently_log_response) {
+            var signature_type_html = "";
+            sign_type_response.data.result.forEach(x => {
+                if (x.value == 901) {
+                    signature_type_html += `<option selected="selected" value="${x.value}">${x.description}</option>`;
+                } else {
+                    signature_type_html += `<option value="${x.value}">${x.description}</option>`;
+                }
+            });
+            var recently_signature_log_html = "";
+            recently_log_response.data.result.forEach(x => {
+                recently_signature_log_html += `<a href="javascript:;" data-url="${x.url}">${x.name}</a>`;
+            });
+            document.querySelector("#type").innerHTML = signature_type_html;
+            document.querySelector(".tag-cloud-tags-extend").innerHTML = recently_signature_log_html;
+            document.querySelector(".signature-box").style.cssText = "display:block";
+            document.querySelector(".post-wrap").style.cssText = "display:block";
+            document.querySelector('.loader').remove();
+
+            var a_list = document.querySelectorAll('.tag-cloud-tags-extend a');
+            for (var i = 0; i < a_list.length; i++) {
+                a_list[i].onclick = function () {
+                    var url = this.attributes["data-url"].value;
+                    document.querySelector(".signature-img img").src = cdn_domain + url;
+                }
+            }
+        }));
+
+        function signature_type() {
+            return axios.get(`${api_domain}/signature/type`);
+        }
+        function recently_signature_logs() {
+            return axios.get(`${api_domain}/signature/logs`);
+        }
+
+        document.querySelector("#btn_do").addEventListener("click", function () {
+            var name = document.querySelector("#name").value.trim();
+            if (name.length > 4 || name.length == 0) {
+                return false;
+            }
+            var typeId = document.querySelector("#type").value;
+
+            axios.get(`${api_domain}/signature?name=${name}&id=${typeId}`).then(function (response) {
+                document.querySelector(".signature-img img").src = cdn_domain + response.data.result;
+            });
+        });
+    } else if (pathname == "/soul") {
+        getSoul();
+        function getSoul() {
+            axios.get(`${api_domain}/soul`).then(function (response) {
+                if (response.data.success) document.querySelector(".soul h1").innerText = response.data.result;
+            });
+        }
+        document.querySelector(".soul-btn").addEventListener("click", () => getSoul());
+    } else if (pathname == "/tucao") {
+        window.onresize = () => changeFrameHeight();
+        window.onload = () => changeFrameHeight();
+        function changeFrameHeight() {
+            document.getElementById("tucao").height = document.documentElement.clientHeight - 200;
+        }
+    } else if (pathname == "/analysis") {
+        var date = new Date();
+        var ymd = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + (date.getDate() - 1);
+        document.querySelectorAll(".mta-date").forEach(x => x.innerText = ymd);
+
+        axios.get(`${api_domain}/mta/ctr_core_data?start_date=${ymd}&end_date=${ymd}&idx=pv,uv,vv,iv`).then(function (response) {
+            if (response.data.info = "success") {
+                var key = ymd.replace(/-/g, "");
+                var result = response.data.data[key];
+
+                document.querySelector("#pv strong").innerText = result.pv;
+                document.querySelector("#uv strong").innerText = result.uv;
+                document.querySelector("#vv strong").innerText = result.vv;
+                document.querySelector("#iv strong").innerText = result.iv;
+
+                document.querySelector(".mta-a ul").style.cssText = "display:block";
+                document.querySelector('.loader').remove();
+            }
+        });
+    } else if (pathname == "/friendlinks") {
+        axios.get(`${api_domain}/blog/friendlinks`).then(function (response) {
+            if (response.data.success) {
+                var html = template("friendlinks_tmpl", response.data);
+                document.querySelector('.categories-card').innerHTML = html;
+                document.querySelector('.loader').remove();
+            }
+        });
+    } else if (pathname == "/posts") {
+        var page = location.pathname.replace(/posts|page|\//gi, "") || 1;
+        var limit = 15;
+
+        axios.get(`${api_domain}/blog/post/query?page=${page}&limit=${limit}`).then(function (response) {
+            if (response.data) {
+                if (!response.data.result) {
+                    document.querySelector('.post-wrap.archive').innerHTML = `<h2 class="post-title">找了找不到了~~~</h2>`;
+                    document.querySelector('.loader').remove();
+                    return false;
+                }
+
+                var data = { "result": response.data.result };
+                var html = template("posts_tmpl", data);
+                document.querySelector('.post-wrap.archive').insertAdjacentHTML('afterbegin', html);
+
+                var totalPage = Math.ceil(response.data.total / limit);
+
+                var paginationHtml = "";
+                for (var i = 1; i <= totalPage; i++) {
+                    paginationHtml += page == i ? `<span class="page-number current">${i}</span>` : `<a class="page-number" href="/posts/page/${i}/">${i}</a>`;
+                }
+                document.querySelector('.pagination').innerHTML = paginationHtml;
+
+                document.querySelector('.loader').remove();
+                document.getElementById('posts_tmpl').remove();
+            }
+        });
+    } else if (pathname.indexOf("/post/") == 0) {
+        var url = location.pathname.replace("/post", "");
+        url = url.substring(url.length - 1) == "/" ? url : url + "/";
+
+        axios.get(`${api_domain}/blog/post?url=${url}`).then(function (response) {
+            if (response.data.success) {
+                document.title = document.title.substring(0, 2) + response.data.result.title + " - " + document.title.substring(2);
+
+                var html = template("detail_tmpl", response.data);
+                document.querySelector('.post-wrap').innerHTML = html;
+            } else {
+                document.querySelector('.post-wrap').innerHTML = `<h2 class="post-title">${response.data.message}</h2>`;
+            }
+            document.querySelector('.loader').remove();
+            editormd.markdownToHTML("content");
+        });
+    } else if (pathname == "/tags") {
+        axios.get(`${api_domain}/blog/tags`).then(function (response) {
+            if (response.data.success) {
+                var html = template("tags_tmpl", response.data);
+                document.querySelector('.tag-cloud-tags').innerHTML = html;
+                document.querySelector('.loader').remove();
+            }
+        });
+    } else if (pathname.indexOf("/tag/") == 0) {
+        var name = location.pathname.replace(/tag|\//gi, "");
+
+        axios.all([getTagName(name), getPostsByTagName(name)]).then(axios.spread(function (tagNameResponse, postsResponse) {
+            if (tagNameResponse.data.success) {
+                document.title = document.title.substring(0, 2) + tagNameResponse.data.result + " - " + document.title.substring(2);
+                var html = template("tagName_tmpl", tagNameResponse.data);
+                document.querySelector('.post-title').innerHTML = html;
+            } else {
+                document.querySelector('.post-title').innerText = tagNameResponse.data.msg;
+            }
+            if (postsResponse.data.success) {
+                var html = template("tag_post_tmpl", postsResponse.data);
+                document.querySelector('.post-wrap.archive').innerHTML = html;
+                document.querySelector('.loader').remove();
+            }
+        }));
+
+        function getTagName(name) {
+            return axios.get(`${api_domain}/blog/tag?name=${name}`);
+        }
+
+        function getPostsByTagName(name) {
+            return axios.get(`${api_domain}/blog/post/query_by_tag?name=${name}`);
+        }
+    } else if (pathname == "/categories") {
+        axios.get(`${api_domain}/blog/categories`).then(function (response) {
+            if (response.data.success) {
+                var html = template("categories_tmpl", response.data);
+                document.querySelector('.categories-card').innerHTML = html;
+                document.querySelector('.loader').remove();
+            }
+        });
+    } else if (pathname.indexOf("/category/") == 0) {
+        var name = location.pathname.replace(/category|\//gi, "");
+
+        axios.all([getCategoryName(name), getPostsByCategoryName(name)]).then(axios.spread(function (categoryNameResponse, postsResponse) {
+            if (categoryNameResponse.data.success) {
+                document.title = document.title.substring(0, 2) + categoryNameResponse.data.result + " - " + document.title.substring(2);
+                var html = template("categoryName_tmpl", categoryNameResponse.data);
+                document.querySelector('.post-title').innerHTML = html;
+            } else {
+                document.querySelector('.post-title').innerText = categoryNameResponse.data.msg;
+            }
+            if (postsResponse.data.success) {
+                var html = template("category_post_tmpl", postsResponse.data);
+                document.querySelector('.post-wrap.archive').innerHTML = html;
+                document.querySelector('.loader').remove();
+            }
+        }));
+
+        function getCategoryName(name) {
+            return axios.get(`${api_domain}/blog/category?name=${name}`);
+        }
+
+        function getPostsByCategoryName(name) {
+            return axios.get(`${api_domain}/blog/post/query_by_category?name=${name}`);
+        }
     }
 }
 
