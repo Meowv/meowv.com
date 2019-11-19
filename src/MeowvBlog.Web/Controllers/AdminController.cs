@@ -74,5 +74,12 @@ namespace MeowvBlog.Web.Controllers
         /// <returns></returns>
         [Route("/admin/gallery")]
         public IActionResult Gallery() => View();
+
+        /// <summary>
+        /// Notification
+        /// </summary>
+        /// <returns></returns>
+        [Route("/admin/notification")]
+        public IActionResult Notification() => View();
     }
 }

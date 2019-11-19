@@ -1,3 +1,4 @@
+using MeowvBlog.Web.Hubs;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,9 +22,12 @@ namespace MeowvBlog.Web
                         }).Build().RunAsync();
         }
 
-        public void ConfigureServices(IServiceCollection services) => services
-            .AddSingleton(HtmlEncoder.Create(new[] { UnicodeRanges.BasicLatin, UnicodeRanges.CjkUnifiedIdeographs }))
-            .AddControllersWithViews();
+        public void ConfigureServices(IServiceCollection services)
+        {
+            services.AddControllersWithViews();
+            services.AddSignalR();
+            services.AddSingleton(HtmlEncoder.Create(new[] { UnicodeRanges.BasicLatin, UnicodeRanges.CjkUnifiedIdeographs }));
+        }
 
         public void Configure(IApplicationBuilder app)
         {
@@ -34,6 +38,7 @@ namespace MeowvBlog.Web
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+                endpoints.MapHub<ConnectionHub>("/connection");
             });
         }
     }

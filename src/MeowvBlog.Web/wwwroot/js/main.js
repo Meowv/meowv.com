@@ -454,4 +454,32 @@ setInterval(function () {
     }
 }, 1000);
 
+function showNotification(title, body, data) {
+    if (window.Notification) {
+        if (window.Notification.permission == "granted") {
+            var notification = new Notification(title, {
+                body: body,
+                icon: "https://static.meowv.com/favicon.ico",
+                data: data,
+            });
+            notification.onclick = function () {
+                window.open(notification.data);
+            }
+            setTimeout(function () { notification.close(); }, 5000);
+        }
+    } else {
+        console.log("nonsupport Notification")
+    }
+}
+
+var connection = new signalR.HubConnectionBuilder().withUrl("/connection").build();
+
+connection.on("ReceiveNotification", function (title, message, data) {
+    showNotification(title, message, data);
+});
+
+connection.start().catch(function (err) {
+    return console.error(err.toString());
+});
+
 console.log("\n %c 执行 load_audio() 换一批歌单 %c http://meowv.com \n", "color: #fadfa3; background: #030307; padding:5px 0;", "background: #fadfa3; padding:5px 0;");
