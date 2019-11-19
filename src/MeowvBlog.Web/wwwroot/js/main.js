@@ -454,21 +454,34 @@ setInterval(function () {
     }
 }, 1000);
 
+var notify = function (title, body, data) {
+    var notification = new Notification(title, {
+        body: body,
+        icon: "https://static.meowv.com/favicon.ico",
+        data: data,
+    });
+
+    notification.onclick = function () {
+        window.open(notification.data);
+    }
+
+    setTimeout(function () { notification.close(); }, 5000);
+};
+
 function showNotification(title, body, data) {
-    if (window.Notification) {
-        if (window.Notification.permission == "granted") {
-            var notification = new Notification(title, {
-                body: body,
-                icon: "https://static.meowv.com/favicon.ico",
-                data: data,
-            });
-            notification.onclick = function () {
-                window.open(notification.data);
+    if (!('Notification' in window)) {
+        console.log('This browser does not support desktop notification');
+    } else if (Notification.permission === 'granted') {
+        notify(title, body, data);
+    } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission(function (permission) {
+            if (!('permission' in Notification)) {
+                Notification.permission = permission;
             }
-            setTimeout(function () { notification.close(); }, 5000);
-        }
-    } else {
-        console.log("nonsupport Notification")
+            if (permission === 'granted') {
+                notify(title, body, data);
+            }
+        });
     }
 }
 
