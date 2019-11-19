@@ -1,23 +1,35 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace MeowvBlog.Web.Hubs
 {
     public class ConnectionHub : Hub
     {
-        public int OnlineCount = 0;
+        public HashSet<string> ConnectedIds = new HashSet<string>();
 
+        /// <summary>
+        /// 当建立连接时调用
+        /// </summary>
+        /// <returns></returns>
         public override async Task OnConnectedAsync()
         {
-            OnlineCount++;
-            await Clients.All.SendAsync("OnlineCount", OnlineCount);
+            ConnectedIds.Add(Context.ConnectionId);
+
+            await Clients.All.SendAsync("OnlineCount", ConnectedIds.Count);
         }
 
+        /// <summary>
+        /// 当连接终止时调用
+        /// </summary>
+        /// <param name="exception"></param>
+        /// <returns></returns>
         public override async Task OnDisconnectedAsync(Exception exception)
         {
-            OnlineCount--;
-            await Clients.All.SendAsync("OnlineCount", OnlineCount);
+            ConnectedIds.Remove(Context.ConnectionId);
+
+            await Clients.All.SendAsync("OnlineCount", ConnectedIds.Count);
         }
 
         /// <summary>
