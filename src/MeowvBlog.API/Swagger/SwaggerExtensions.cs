@@ -1,5 +1,4 @@
-﻿using MeowvBlog.Core;
-using MeowvBlog.Core.Configurations;
+﻿using MeowvBlog.API.Configurations;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
@@ -59,7 +58,6 @@ namespace MeowvBlog.API.Swagger
                 });
 
                 options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "MeowvBlog.API.xml"));
-                options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "MeowvBlog.Core.xml"));
 
                 var security = new OpenApiSecurityScheme
                 {

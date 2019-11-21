@@ -1,5 +1,5 @@
-﻿using MeowvBlog.Core.Dto;
-using MeowvBlog.Core.MTA;
+﻿using MeowvBlog.API.Configurations;
+using MeowvBlog.API.Models.Dto.Response;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;

@@ -1,11 +1,12 @@
 ﻿using Baidu.Aip.Speech;
 using IP2Region;
+using MeowvBlog.API.Configurations;
 using MeowvBlog.API.Extensions;
-using MeowvBlog.Core;
-using MeowvBlog.Core.Configurations;
-using MeowvBlog.Core.Domain.HotNews;
-using MeowvBlog.Core.Dto;
-using MeowvBlog.Core.Dto.HotNews;
+using MeowvBlog.API.Infrastructure;
+using MeowvBlog.API.Models.Dto.HotNews;
+using MeowvBlog.API.Models.Dto.Response;
+using MeowvBlog.API.Models.Entity.HotNews;
+using MeowvBlog.API.Models.Enum;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;

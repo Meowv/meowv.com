@@ -1,6 +1,5 @@
-﻿using MeowvBlog.API.Extensions;
-using MeowvBlog.Core;
-using MeowvBlog.Core.MTA;
+﻿using MeowvBlog.API.Configurations;
+using MeowvBlog.API.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Net.Http;

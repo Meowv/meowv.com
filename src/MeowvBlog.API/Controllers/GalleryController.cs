@@ -1,9 +1,9 @@
-﻿using MeowvBlog.API.Extensions;
-using MeowvBlog.Core;
-using MeowvBlog.Core.Configurations;
-using MeowvBlog.Core.Domain.Gallery;
-using MeowvBlog.Core.Dto;
-using MeowvBlog.Core.Dto.Gallery;
+﻿using MeowvBlog.API.Configurations;
+using MeowvBlog.API.Extensions;
+using MeowvBlog.API.Infrastructure;
+using MeowvBlog.API.Models.Dto.Gallery;
+using MeowvBlog.API.Models.Dto.Response;
+using MeowvBlog.API.Models.Entity.Gallery;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

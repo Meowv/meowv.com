@@ -4,6 +4,252 @@
         <name>MeowvBlog.API</name>
     </assembly>
     <members>
+        <member name="P:MeowvBlog.API.Configurations.AppSettings.SqliteConnectionString">
+            <summary>
+            Sqlite
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Configurations.AppSettings.ApiVersion">
+            <summary>
+            ApiVersion
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.API.Configurations.AppSettings.JWT">
+            <summary>
+            JWT
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.API.Configurations.AppSettings.GitHub">
+            <summary>
+            GitHub
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.API.Configurations.AppSettings.MTA">
+            <summary>
+            MTA
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.API.Configurations.AppSettings.Weixin">
+            <summary>
+            微信
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.API.Configurations.AppSettings.Signature">
+            <summary>
+            个性签名配置
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.API.Configurations.AppSettings.Gallery">
+            <summary>
+            图集路径配置
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.API.Configurations.AppSettings.BaiduAI">
+            <summary>
+            百度AI 语音合成
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.API.Configurations.AppSettings.FMApi">
+            <summary>
+            FM Api
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.GitHubConfig.API_Authorize">
+            <summary>
+            GET请求，跳转GitHub登录界面，获取用户授权，得到code
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.GitHubConfig.API_AccessToken">
+            <summary>
+            POST请求，根据code得到access_token
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.GitHubConfig.API_User">
+            <summary>
+            GET请求，根据access_token得到用户信息
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Configurations.GitHubConfig.Id">
+            <summary>
+            Github ID
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.GitHubConfig.Client_ID">
+            <summary>
+            Client ID
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.GitHubConfig.Client_Secret">
+            <summary>
+            Client Secret
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.GitHubConfig.Redirect_Uri">
+            <summary>
+            Authorization callback URL
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.GitHubConfig.ApplicationName">
+            <summary>
+            Application name
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.GlobalConsts.GroupName_v1">
+            <summary>
+            博客前台接口组
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.GlobalConsts.GroupName_v2">
+            <summary>
+            博客后台接口组
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.GlobalConsts.GroupName_v3">
+            <summary>
+            其他通用接口组
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.GlobalConsts.GreetWord">
+            <summary>
+            语音合成欢迎词
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.MtaConfig.Ctr_core_data">
+            <summary>
+            应用历史趋势
+            每天的pv\uv\vv\iv数据
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.MtaConfig.Ctr_realtime">
+            <summary>
+            应用实时小时数据
+            当天每小时的pv\uv\vv\iv数据
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.MtaConfig.Ctr_realtime_heartbeat">
+            <summary>
+            应用心跳数据
+            当前pv\uv\vv\iv心跳数据数据
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.MtaConfig.Ctr_user_realtime">
+            <summary>
+            实时访客
+            在24小时内的实时访客信息
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.MtaConfig.Ctr_user_compare">
+            <summary>
+            新老访客比
+            按天查询当天新访客与旧访客的数量
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.MtaConfig.Ctr_user_portrait">
+            <summary>
+            用户画像
+            查询用户画像数据，包含性别比例、年龄分布、学历分布、职业分布，数据为pv量
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.MtaConfig.Ctr_area">
+            <summary>
+            地区数据
+            按天查询地区的pv\uv\vv\iv量
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.MtaConfig.Ctr_area_province">
+            <summary>
+            省市数据
+            按天查询省市下有流量的城市的pv\uv\vv\iv量
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.MtaConfig.Ctr_operator">
+            <summary>
+            运营商
+            按天查询运营商的pv\uv\vv\iv量
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.MtaConfig.Ctr_client_para">
+            <summary>
+            终端属性列表
+            按天查询对应属性的终端信息数据
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.MtaConfig.Ctr_client_content">
+            <summary>
+            终端信息
+            按天查询终端信息数据
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.MtaConfig.Ctr_page_realtime">
+            <summary>
+            页面排行-当天实时列表
+            查询当天所有url的pv\uv\vv\iv数据
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.MtaConfig.Ctr_page_offline">
+            <summary>
+            页面排行-离线列表
+            按天查询所有url的pv\uv\vv\iv数据
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.MtaConfig.Ctr_page_url">
+            <summary>
+            页面排行-指定查询部分url
+            按天查询url的pv\uv\vv\iv数据。
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.MtaConfig.Ctr_page_speed">
+            <summary>
+            性能监控
+            按天查询对应省市的访问延时与解析时长
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.MtaConfig.Ctr_page_depth">
+            <summary>
+            访问深度
+            按天查询用户访问深度
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.MtaConfig.Ctr_source_out">
+            <summary>
+            外部链接
+            按天查询外部同站链接带来的流量情情况
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.MtaConfig.Ctr_page_land">
+            <summary>
+            入口页面
+            按天查询用户最后访问的进入次数与跳出率
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.MtaConfig.Ctr_page_exit">
+            <summary>
+            离开页面
+            按天查询最后访问页面的离次数
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.MtaConfig.Ctr_custom">
+            <summary>
+            自定义事件
+            按天查询自定义事件的pv\uv\vv\iv
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.MtaConfig.Ctr_adtag">
+            <summary>
+            渠道效果统计
+            按天查询渠道的分析数据
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.MtaConfig.App_Id">
+            <summary>
+            App_Id
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.MtaConfig.SECRET_KEY">
+            <summary>
+            SECRET_KEY
+            </summary>
+        </member>
         <member name="M:MeowvBlog.API.Controllers.AuthController.GetGithubLoginUrlAsync">
             <summary>
             获取 Github 登录地址
@@ -31,21 +277,21 @@
             <param name="id"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.BlogController.QueryPostsForAdminAsync(MeowvBlog.Core.Dto.PagingInput)">
+        <member name="M:MeowvBlog.API.Controllers.BlogController.QueryPostsForAdminAsync(MeowvBlog.API.Models.Dto.PagingInput)">
             <summary>
             分页查询文章列表
             </summary>
             <param name="input"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.BlogController.InsertPostAsync(MeowvBlog.Core.Dto.Blog.PostForAdminDto)">
+        <member name="M:MeowvBlog.API.Controllers.BlogController.InsertPostAsync(MeowvBlog.API.Models.Dto.Blog.PostForAdminDto)">
             <summary>
             新增文章
             </summary>
             <param name="dto"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.BlogController.UpdatePostAsync(System.Int32,MeowvBlog.Core.Dto.Blog.PostForAdminDto)">
+        <member name="M:MeowvBlog.API.Controllers.BlogController.UpdatePostAsync(System.Int32,MeowvBlog.API.Models.Dto.Blog.PostForAdminDto)">
             <summary>
             更新文章
             </summary>
@@ -66,14 +312,14 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.BlogController.InsertTagAsync(MeowvBlog.Core.Dto.Blog.TagDto)">
+        <member name="M:MeowvBlog.API.Controllers.BlogController.InsertTagAsync(MeowvBlog.API.Models.Dto.Blog.TagDto)">
             <summary>
             新增标签
             </summary>
             <param name="dto"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.BlogController.UpdateTagAsync(System.Int32,MeowvBlog.Core.Dto.Blog.TagDto)">
+        <member name="M:MeowvBlog.API.Controllers.BlogController.UpdateTagAsync(System.Int32,MeowvBlog.API.Models.Dto.Blog.TagDto)">
             <summary>
             更新标签
             </summary>
@@ -94,14 +340,14 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.BlogController.InsertCategoryAsync(MeowvBlog.Core.Dto.Blog.CategoryDto)">
+        <member name="M:MeowvBlog.API.Controllers.BlogController.InsertCategoryAsync(MeowvBlog.API.Models.Dto.Blog.CategoryDto)">
             <summary>
             新增分类
             </summary>
             <param name="dto"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.BlogController.UpdateCategoryAsync(System.Int32,MeowvBlog.Core.Dto.Blog.CategoryDto)">
+        <member name="M:MeowvBlog.API.Controllers.BlogController.UpdateCategoryAsync(System.Int32,MeowvBlog.API.Models.Dto.Blog.CategoryDto)">
             <summary>
             更新分类
             </summary>
@@ -116,7 +362,7 @@
             <param name="id"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.BlogController.InsertFriendLinkAsync(MeowvBlog.Core.Dto.Blog.FriendLinkDto)">
+        <member name="M:MeowvBlog.API.Controllers.BlogController.InsertFriendLinkAsync(MeowvBlog.API.Models.Dto.Blog.FriendLinkDto)">
             <summary>
             新增友链
             </summary>
@@ -130,7 +376,7 @@
             <param name="url"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.BlogController.QueryPostsAsync(MeowvBlog.Core.Dto.PagingInput)">
+        <member name="M:MeowvBlog.API.Controllers.BlogController.QueryPostsAsync(MeowvBlog.API.Models.Dto.PagingInput)">
             <summary>
             分页查询文章列表
             </summary>
@@ -202,7 +448,7 @@
             <param name="sourceId"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.CommonController.BulkInsertHotNewsAsync(System.Collections.Generic.IList{MeowvBlog.Core.Dto.HotNews.InsertHotNewsDto})">
+        <member name="M:MeowvBlog.API.Controllers.CommonController.BulkInsertHotNewsAsync(System.Collections.Generic.IList{MeowvBlog.API.Models.Dto.HotNews.InsertHotNewsDto})">
             <summary>
             批量插入每日热点数据
             </summary>
@@ -231,6 +477,13 @@
             <summary>
             语音合成
             </summary>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.CommonController.Ip2Region(System.String)">
+            <summary>
+            根据IP获取所在区域
+            </summary>
+            <param name="ip"></param>
             <returns></returns>
         </member>
         <member name="M:MeowvBlog.API.Controllers.FMController.GetChannels">
@@ -272,7 +525,7 @@
             <param name="file"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.GalleryController.InsertAlbumAsync(MeowvBlog.Core.Dto.Gallery.AlbumDto)">
+        <member name="M:MeowvBlog.API.Controllers.GalleryController.InsertAlbumAsync(MeowvBlog.API.Models.Dto.Gallery.AlbumDto)">
             <summary>
             新增图集
             </summary>
@@ -294,14 +547,14 @@
             <param name="files"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.GalleryController.InsertImageV2Async(MeowvBlog.Core.Dto.Gallery.ImageDto)">
+        <member name="M:MeowvBlog.API.Controllers.GalleryController.InsertImageV2Async(MeowvBlog.API.Models.Dto.Gallery.ImageDto)">
             <summary>
             新增图片
             </summary>
             <param name="dto"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.GalleryController.InsertImagesAsync(MeowvBlog.Core.Dto.Gallery.ImageV2Dto)">
+        <member name="M:MeowvBlog.API.Controllers.GalleryController.InsertImagesAsync(MeowvBlog.API.Models.Dto.Gallery.ImageV2Dto)">
             <summary>
             新增图片
             </summary>
@@ -540,7 +793,7 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.PopKartController.QueryPopKartsAsync(MeowvBlog.Core.Dto.PopKart.QueryPopKartInput)">
+        <member name="M:MeowvBlog.API.Controllers.PopKartController.QueryPopKartsAsync(MeowvBlog.API.Models.Dto.PopKart.QueryPopKartInput)">
             <summary>
             按条件查询卡丁车数据
             </summary>
@@ -661,6 +914,402 @@
             <typeparam name="T"></typeparam>
             <param name="source"></param>
             <returns></returns>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.CategoryDto.CategoryName">
+            <summary>
+            分类名称
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.CategoryDto.DisplayName">
+            <summary>
+            展示名称
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.FriendLinkDto.Title">
+            <summary>
+            标题
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.FriendLinkDto.LinkUrl">
+            <summary>
+            链接
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.GetPostDto.Title">
+            <summary>
+            标题
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.GetPostDto.Author">
+            <summary>
+            作者
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.GetPostDto.Url">
+            <summary>
+            链接
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.GetPostDto.Html">
+            <summary>
+            HTML
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.GetPostDto.Markdown">
+            <summary>
+            Markdown
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.GetPostDto.CreationTime">
+            <summary>
+            创建时间
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.GetPostDto.Category">
+            <summary>
+            分类
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.GetPostDto.Tags">
+            <summary>
+            标签列表
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.GetPostDto.Previous">
+            <summary>
+            上一篇
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.GetPostDto.Next">
+            <summary>
+            下一篇
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.GetPostForAdminDto.Tags">
+            <summary>
+            标签
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.PostBriefDto.Title">
+            <summary>
+            标题
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.PostBriefDto.Url">
+            <summary>
+            链接
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.PostBriefDto.Year">
+            <summary>
+            年份
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.PostBriefDto.CreationTime">
+            <summary>
+            创建时间
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.PostDto.Title">
+            <summary>
+            标题
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.PostDto.Author">
+            <summary>
+            作者
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.PostDto.Url">
+            <summary>
+            链接
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.PostDto.Html">
+            <summary>
+            HTML
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.PostDto.Markdown">
+            <summary>
+            Markdown
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.PostDto.CategoryId">
+            <summary>
+            分类Id
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.PostDto.CreationTime">
+            <summary>
+            创建时间
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.PostForPagedDto.Title">
+            <summary>
+            标题
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.PostForPagedDto.Url">
+            <summary>
+            链接
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.QueryPostDto.Year">
+            <summary>
+            年份
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.QueryPostDto.Posts">
+            <summary>
+            Posts
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.QueryPostForAdminDto.Year">
+            <summary>
+            年份
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.QueryPostForAdminDto.Posts">
+            <summary>
+            Posts
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.TagDto.TagName">
+            <summary>
+            标签名称
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.TagDto.DisplayName">
+            <summary>
+            展示名称
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.PopKart.KartDto.Name">
+            <summary>
+            赛车名字
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.PopKart.KartDto.Type">
+            <summary>
+            赛车类型
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.PopKart.KartDto.Rarity">
+            <summary>
+            赛车稀有度
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.PopKart.KartDto.Properties">
+            <summary>
+            性能参数 - 漂移,加速度,弯道,加速时间,集气速度
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.PopKart.QueryPopKartInput.Name">
+            <summary>
+            赛车名字
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.PopKart.QueryPopKartInput.Type">
+            <summary>
+            赛车类型
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.PopKart.QueryPopKartInput.Rarity">
+            <summary>
+            赛车稀有度
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Blog.Category.Id">
+            <summary>
+            主键
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Blog.Category.CategoryName">
+            <summary>
+            分类名称
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Blog.Category.DisplayName">
+            <summary>
+            展示名称
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Blog.FriendLink.Id">
+            <summary>
+            主键
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Blog.FriendLink.Title">
+            <summary>
+            标题
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Blog.FriendLink.LinkUrl">
+            <summary>
+            链接
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Blog.Post.Id">
+            <summary>
+            主键
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Blog.Post.Title">
+            <summary>
+            标题
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Blog.Post.Author">
+            <summary>
+            作者
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Blog.Post.Url">
+            <summary>
+            链接
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Blog.Post.Html">
+            <summary>
+            HTML
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Blog.Post.Markdown">
+            <summary>
+            Markdown
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Blog.Post.CategoryId">
+            <summary>
+            分类Id
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Blog.Post.CreationTime">
+            <summary>
+            创建时间
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Blog.PostTag.Id">
+            <summary>
+            主键
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Blog.PostTag.PostId">
+            <summary>
+            文章Id
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Blog.PostTag.TagId">
+            <summary>
+            标签Id
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Blog.Tag.Id">
+            <summary>
+            主键
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Blog.Tag.TagName">
+            <summary>
+            标签名称
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Blog.Tag.DisplayName">
+            <summary>
+            展示名称
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Models.Entity.GitHub.AccessTokenRequest.Client_ID">
+            <summary>
+            Client ID
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Models.Entity.GitHub.AccessTokenRequest.Client_Secret">
+            <summary>
+            Client Secret
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.GitHub.AccessTokenRequest.Code">
+            <summary>
+            调用API_Authorize获取到的Code值
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Models.Entity.GitHub.AccessTokenRequest.Redirect_Uri">
+            <summary>
+            Authorization callback URL
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.GitHub.AccessTokenRequest.State">
+            <summary>
+            State
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.GitHub.AccessTokenResponse.Access_token">
+            <summary>
+            access_token
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.GitHub.AccessTokenResponse.Token_type">
+            <summary>
+            类型
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.GitHub.AccessTokenResponse.Scope">
+            <summary>
+            授权的信息
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Models.Entity.GitHub.AuthorizeRequest.Client_ID">
+            <summary>
+            Client ID
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Models.Entity.GitHub.AuthorizeRequest.Redirect_Uri">
+            <summary>
+            Authorization callback URL
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.GitHub.AuthorizeRequest.State">
+            <summary>
+            State
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.GitHub.AuthorizeRequest.Scope">
+            <summary>
+            该参数可选，需要调用Github哪些信息，可以填写多个，以逗号分割，比如：scope=user,public_repo。
+            如果不填写，那么你的应用程序将只能读取Github公开的信息，比如公开的用户信息，公开的库(repository)信息以及gists信息
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.PopKart.Kart.Name">
+            <summary>
+            赛车名字
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.PopKart.Kart.Type">
+            <summary>
+            赛车类型
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.PopKart.Kart.Rarity">
+            <summary>
+            赛车稀有度
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.PopKart.Kart.Properties">
+            <summary>
+            性能参数 - 漂移,加速度,弯道,加速时间,集气速度
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.ChickenSoup.ChickenSoup.Id">
+            <summary>
+            主键
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.ChickenSoup.ChickenSoup.Content">
+            <summary>
+            内容
+            </summary>
         </member>
     </members>
 </doc>

@@ -1,7 +1,7 @@
-﻿using MeowvBlog.API.Extensions;
-using MeowvBlog.Core.Configurations;
-using MeowvBlog.Core.Dto;
-using MeowvBlog.Core.GitHub;
+﻿using MeowvBlog.API.Configurations;
+using MeowvBlog.API.Extensions;
+using MeowvBlog.API.Models.Dto.Response;
+using MeowvBlog.API.Models.Entity.GitHub;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
