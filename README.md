@@ -72,16 +72,19 @@
 
 |Package|Status|
 |:------|:-----:|
-|Microsoft.EntityFrameworkCore.Sqlite|[![NuGet version](https://badge.fury.io/nu/Microsoft.EntityFrameworkCore.Sqlite.svg)](https://badge.fury.io/nu/Microsoft.EntityFrameworkCore.Sqlite)|
-|Microsoft.EntityFrameworkCore.Tools |[![NuGet version](https://badge.fury.io/nu/Microsoft.EntityFrameworkCore.Tools.svg)](https://badge.fury.io/nu/Microsoft.EntityFrameworkCore.Tools )|
+|Baidu.AI|[![NuGet version](https://badge.fury.io/nu/SixLabors.Baidu.AI.svg)](https://badge.fury.io/nu/Baidu.AI)|
+|IP2Region|[![NuGet version](https://badge.fury.io/nu/SixLabors.IP2Region.svg)](https://badge.fury.io/nu/IP2Region)|
+|SixLabors.ImageSharp|[![NuGet version](https://badge.fury.io/nu/SixLabors.ImageSharp.svg)](https://badge.fury.io/nu/SixLabors.ImageSharp)|
+|SixLabors.ImageSharp.Drawing|[![NuGet version](https://badge.fury.io/nu/SixLabors.ImageSharp.Drawing.svg)](https://badge.fury.io/nu/SixLabors.ImageSharp.Drawing)|
+|Swashbuckle.AspNetCore|[![NuGet version](https://badge.fury.io/nu/Swashbuckle.AspNetCore.svg)](https://badge.fury.io/nu/Swashbuckle.AspNetCore)|
+|Swashbuckle.AspNetCore.Filters|[![NuGet version](https://badge.fury.io/nu/Swashbuckle.AspNetCore.Filters.svg)](https://badge.fury.io/nu/Swashbuckle.AspNetCore.Filters)|
+|Microsoft.AspNetCore.Authentication.JwtBearer|[![NuGet version](https://badge.fury.io/nu/Microsoft.AspNetCore.Authentication.JwtBearer.svg)](https://badge.fury.io/nu/Microsoft.AspNetCore.Authentication.JwtBearer)|
 |Microsoft.Extensions.Configuration|[![NuGet version](https://badge.fury.io/nu/Microsoft.Extensions.Configuration.svg)](https://badge.fury.io/nu/Microsoft.Extensions.Configuration)|
 |Microsoft.Extensions.Configuration.FileExtensions|[![NuGet version](https://badge.fury.io/nu/Microsoft.Extensions.Configuration.FileExtensions.svg)](https://badge.fury.io/nu/Microsoft.Extensions.Configuration.FileExtensions)|
 |Microsoft.Extensions.Configuration.Json|[![NuGet version](https://badge.fury.io/nu/Microsoft.Extensions.Configuration.Json.svg)](https://badge.fury.io/nu/Microsoft.Extensions.Configuration.Json)|
+|Microsoft.EntityFrameworkCore.Sqlite|[![NuGet version](https://badge.fury.io/nu/Microsoft.EntityFrameworkCore.Sqlite.svg)](https://badge.fury.io/nu/Microsoft.EntityFrameworkCore.Sqlite)|
+|Microsoft.EntityFrameworkCore.Tools |[![NuGet version](https://badge.fury.io/nu/Microsoft.EntityFrameworkCore.Tools.svg)](https://badge.fury.io/nu/Microsoft.EntityFrameworkCore.Tools )|
 |Microsoft.EntityFrameworkCore.Design|[![NuGet version](https://badge.fury.io/nu/Microsoft.EntityFrameworkCore.Design.svg)](https://badge.fury.io/nu/Microsoft.EntityFrameworkCore.Design)|
-|Swashbuckle.AspNetCore|[![NuGet version](https://badge.fury.io/nu/Swashbuckle.AspNetCore.svg)](https://badge.fury.io/nu/Swashbuckle.AspNetCore)|
-|Swashbuckle.AspNetCore.Filters|[![NuGet version](https://badge.fury.io/nu/Swashbuckle.AspNetCore.Filters.svg)](https://badge.fury.io/nu/Swashbuckle.AspNetCore.Filters)|
-|SixLabors.ImageSharp|[![NuGet version](https://badge.fury.io/nu/SixLabors.ImageSharp.svg)](https://badge.fury.io/nu/SixLabors.ImageSharp)|
-|SixLabors.ImageSharp.Drawing|[![NuGet version](https://badge.fury.io/nu/SixLabors.ImageSharp.Drawing.svg)](https://badge.fury.io/nu/SixLabors.ImageSharp.Drawing)|
 
 ## LICENSE
 
