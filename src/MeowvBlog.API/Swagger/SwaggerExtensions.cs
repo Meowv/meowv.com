@@ -57,7 +57,7 @@ namespace MeowvBlog.API.Swagger
                     options.SwaggerDoc(x.UrlPrefix, x.OpenApiInfo);
                 });
 
-                options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "MeowvBlog.API.xml"));
+                options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "Resources/MeowvBlog.API.xml"));
 
                 var security = new OpenApiSecurityScheme
                 {

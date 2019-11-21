@@ -5,12 +5,12 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DocumentationFile>MeowvBlog.API.xml</DocumentationFile>
     <NoWarn>1701;1702;1591</NoWarn>
+    <DocumentationFile>Resources\MeowvBlog.API.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="MeowvBlog.API.xml">
+    <Content Include="Resources\MeowvBlog.API.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
