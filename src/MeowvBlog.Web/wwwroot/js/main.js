@@ -491,10 +491,6 @@ connection.on("ReceiveNotification", function (title, message, data) {
     showNotification(title, message, data);
 });
 
-connection.on("OnlineCount", function (count) {
-    console.log(new Date() + " 当前在线人数 : " + count);
-});
-
 connection.start().catch(function (err) {
     return console.error(err.toString());
 });
