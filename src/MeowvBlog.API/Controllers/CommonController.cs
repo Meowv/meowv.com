@@ -1,4 +1,5 @@
 ﻿using Baidu.Aip.Speech;
+using IP2Region;
 using MeowvBlog.API.Extensions;
 using MeowvBlog.Core;
 using MeowvBlog.Core.Configurations;
@@ -10,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -204,6 +206,33 @@ namespace MeowvBlog.API.Controllers
                 var ttsBytes = await client.GetByteArrayAsync(obj["tts"].ToString());
                 return File(ttsBytes, "audio/mpeg");
             }
+        }
+
+        /// <summary>
+        /// 根据IP获取所在区域
+        /// </summary>
+        /// <param name="ip"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("ip2region")]
+        [ResponseCache(CacheProfileName = "default", VaryByQueryKeys = new string[] { "ip" })]
+        public async Task<Response<string>> Ip2Region([RegularExpression(@"\d{0,3}\.\d{0,3}\.\d{0,3}\.\d{0,3}", ErrorMessage = "ip格式有误")] string ip)
+        {
+            var response = new Response<string>();
+
+            if (string.IsNullOrEmpty(ip))
+            {
+                ip = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+                if (string.IsNullOrEmpty(ip)) ip = Request.HttpContext.Connection.RemoteIpAddress.MapToIPv4().ToString();
+            }
+
+            var path = Path.Combine(Directory.GetCurrentDirectory(), "Resources/ip2region.db");
+
+            using var _search = new DbSearcher(path);
+            var result = (await _search.BinarySearchAsync(ip)).Region;
+
+            response.Result = result;
+            return response;
         }
     }
 }
