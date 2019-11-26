@@ -781,25 +781,6 @@
             <param name="api"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.PopKartController.GetPopKartTypeAsync">
-            <summary>
-            获取卡丁车的赛车类型列表
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:MeowvBlog.API.Controllers.PopKartController.GetPopKartRarityAsync">
-            <summary>
-            获取卡丁车的赛车稀有度列表
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="M:MeowvBlog.API.Controllers.PopKartController.QueryPopKartsAsync(MeowvBlog.API.Models.Dto.PopKart.QueryPopKartInput)">
-            <summary>
-            按条件查询卡丁车数据
-            </summary>
-            <param name="input"></param>
-            <returns></returns>
-        </member>
         <member name="M:MeowvBlog.API.Controllers.SignatureController.GenerateSignatureAsync(System.String,System.Int32)">
             <summary>
             生成个性艺术签名
@@ -1085,41 +1066,6 @@
             展示名称
             </summary>
         </member>
-        <member name="P:MeowvBlog.API.Models.Dto.PopKart.KartDto.Name">
-            <summary>
-            赛车名字
-            </summary>
-        </member>
-        <member name="P:MeowvBlog.API.Models.Dto.PopKart.KartDto.Type">
-            <summary>
-            赛车类型
-            </summary>
-        </member>
-        <member name="P:MeowvBlog.API.Models.Dto.PopKart.KartDto.Rarity">
-            <summary>
-            赛车稀有度
-            </summary>
-        </member>
-        <member name="P:MeowvBlog.API.Models.Dto.PopKart.KartDto.Properties">
-            <summary>
-            性能参数 - 漂移,加速度,弯道,加速时间,集气速度
-            </summary>
-        </member>
-        <member name="P:MeowvBlog.API.Models.Dto.PopKart.QueryPopKartInput.Name">
-            <summary>
-            赛车名字
-            </summary>
-        </member>
-        <member name="P:MeowvBlog.API.Models.Dto.PopKart.QueryPopKartInput.Type">
-            <summary>
-            赛车类型
-            </summary>
-        </member>
-        <member name="P:MeowvBlog.API.Models.Dto.PopKart.QueryPopKartInput.Rarity">
-            <summary>
-            赛车稀有度
-            </summary>
-        </member>
         <member name="P:MeowvBlog.API.Models.Entity.Blog.Category.Id">
             <summary>
             主键
@@ -1279,26 +1225,6 @@
             <summary>
             该参数可选，需要调用Github哪些信息，可以填写多个，以逗号分割，比如：scope=user,public_repo。
             如果不填写，那么你的应用程序将只能读取Github公开的信息，比如公开的用户信息，公开的库(repository)信息以及gists信息
-            </summary>
-        </member>
-        <member name="P:MeowvBlog.API.Models.Entity.PopKart.Kart.Name">
-            <summary>
-            赛车名字
-            </summary>
-        </member>
-        <member name="P:MeowvBlog.API.Models.Entity.PopKart.Kart.Type">
-            <summary>
-            赛车类型
-            </summary>
-        </member>
-        <member name="P:MeowvBlog.API.Models.Entity.PopKart.Kart.Rarity">
-            <summary>
-            赛车稀有度
-            </summary>
-        </member>
-        <member name="P:MeowvBlog.API.Models.Entity.PopKart.Kart.Properties">
-            <summary>
-            性能参数 - 漂移,加速度,弯道,加速时间,集气速度
             </summary>
         </member>
         <member name="P:MeowvBlog.API.Models.Entity.ChickenSoup.ChickenSoup.Id">

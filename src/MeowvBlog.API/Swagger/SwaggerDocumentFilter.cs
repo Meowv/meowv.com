@@ -32,11 +32,6 @@ namespace MeowvBlog.API.Swagger
                     ExternalDocs = new OpenApiExternalDocs { Description = "MTA" }
                 },
                 new OpenApiTag {
-                    Name = "PopKart",
-                    Description = "跑跑卡丁车手游赛车数据",
-                    ExternalDocs = new OpenApiExternalDocs { Description = "PopKart" }
-                },
-                new OpenApiTag {
                     Name = "Signature",
                     Description = "个性艺术签名设计",
                     ExternalDocs = new OpenApiExternalDocs { Description = "Signature" }
