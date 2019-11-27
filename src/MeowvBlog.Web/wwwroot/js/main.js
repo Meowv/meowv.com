@@ -140,21 +140,39 @@ const pathname = location.pathname;
 process_page(pathname);
 
 function process_page(pathname) {
-    if (pathname == "/") {
-        document.querySelector(".weixin").addEventListener("click", function() {
+    const router = {
+        home: "/",
+        posts: "/posts",
+        post: "/post/",
+        categories: "/categories",
+        category: "/category/",
+        tags: "/tags",
+        tag: "/tag/",
+        apps: "/apps",
+        tucao: "/tucao",
+        sign: "/sign",
+        hot: "/hot",
+        soul: "/soul",
+        imgs: ["/girl", "/cat", "/cat/", "/bing"],
+        analysis: "/analysis",
+        friendlinks: "/friendlinks"
+    }
+
+    if (pathname == router.home) {
+        document.querySelector(".weixin").addEventListener("click", function () {
             document.querySelector(".qrcode").classList.contains('hidden') ? document.querySelector(".qrcode").classList.remove('hidden') : document.querySelector(".qrcode").classList.add('hidden');
         });
-    } else if (pathname.indexOf("/apps") == 0) {
-        document.querySelector("#change_song_list").addEventListener("click", function() {
+    } else if (pathname.indexOf(router.apps) == 0) {
+        document.querySelector("#change_song_list").addEventListener("click", function () {
             load_audio();
         });
-    } else if (pathname.indexOf("/bing") == 0 || (pathname.indexOf("/cat") == 0 && (pathname == "/cat" || pathname == "/cat/")) || pathname.indexOf("/girl") == 0) {
+    } else if (router.imgs.indexOf(pathname) >= 0) {
         window.onload = () => document.querySelector('.loader').remove();
-        if (pathname == "/girl") {
+        if (pathname == router.imgs[0]) {
             document.querySelector(".soul-btn").addEventListener("click", () => document.querySelector(".girl-img img").src = document.querySelector(".girl-img img").src.split("?")[0] + "?t=" + new Date().getTime());
         }
-    } else if (pathname.indexOf("/hot") == 0) {
-        axios.get(`${api_domain}/common/hot_news_source`).then(function(response) {
+    } else if (pathname.indexOf(router.hot) == 0) {
+        axios.get(`${api_domain}/common/hot_news_source`).then(function (response) {
             var html = template("top_tabs_tmpl", { "result": response.data.result });
             document.querySelector('.top-tab ul').innerHTML = html;
 
@@ -164,7 +182,7 @@ function process_page(pathname) {
 
             var btn_tabs = document.querySelectorAll('.top-tab ul li a');
             for (var i = 0; i < btn_tabs.length; i++) {
-                btn_tabs[i].onclick = function() {
+                btn_tabs[i].onclick = function () {
                     document.querySelector('.loader').style.cssText = "display:block";
                     document.querySelector(".top-tab ul li a.archive").classList.remove("archive")
                     this.classList.add("archive");
@@ -175,17 +193,17 @@ function process_page(pathname) {
         });
 
         function loadContent(id) {
-            axios.get(`${api_domain}/common/hot_news?sourceId=${id}`).then(function(response) {
+            axios.get(`${api_domain}/common/hot_news?sourceId=${id}`).then(function (response) {
                 var html = template("top_content_tmpl", response.data);
                 document.querySelector('.top-content ul').innerHTML = html;
 
                 document.querySelector('.loader').style.cssText = "display:none";
             });
         }
-    } else if (pathname.indexOf("/sign") == 0) {
+    } else if (pathname.indexOf(router.sign) == 0) {
         var cdn_domain = "https://static.meowv.com/signature/";
 
-        axios.all([signature_type(), recently_signature_logs()]).then(axios.spread(function(sign_type_response, recently_log_response) {
+        axios.all([signature_type(), recently_signature_logs()]).then(axios.spread(function (sign_type_response, recently_log_response) {
             var signature_type_html = "";
             sign_type_response.data.result.forEach(x => {
                 if (x.value == 901) {
@@ -206,7 +224,7 @@ function process_page(pathname) {
 
             var a_list = document.querySelectorAll('.tag-cloud-tags-extend a');
             for (var i = 0; i < a_list.length; i++) {
-                a_list[i].onclick = function() {
+                a_list[i].onclick = function () {
                     var url = this.attributes["data-url"].value;
                     document.querySelector(".signature-img img").src = cdn_domain + url;
                 }
@@ -220,37 +238,37 @@ function process_page(pathname) {
             return axios.get(`${api_domain}/signature/logs`);
         }
 
-        document.querySelector("#btn_do").addEventListener("click", function() {
+        document.querySelector("#btn_do").addEventListener("click", function () {
             var name = document.querySelector("#name").value.trim();
             if (name.length > 4 || name.length == 0) {
                 return false;
             }
             var typeId = document.querySelector("#type").value;
 
-            axios.get(`${api_domain}/signature?name=${name}&id=${typeId}`).then(function(response) {
+            axios.get(`${api_domain}/signature?name=${name}&id=${typeId}`).then(function (response) {
                 document.querySelector(".signature-img img").src = cdn_domain + response.data.result;
             });
         });
-    } else if (pathname.indexOf("/soul") == 0) {
+    } else if (pathname.indexOf(router.soul) == 0) {
         getSoul();
         function getSoul() {
-            axios.get(`${api_domain}/soul`).then(function(response) {
+            axios.get(`${api_domain}/soul`).then(function (response) {
                 if (response.data.success) document.querySelector(".soul h1").innerText = response.data.result;
             });
         }
         document.querySelector(".soul-btn").addEventListener("click", () => getSoul());
-    } else if (pathname.indexOf("/tucao") == 0) {
+    } else if (pathname.indexOf(router.tucao) == 0) {
         window.onresize = () => changeFrameHeight();
         window.onload = () => changeFrameHeight();
         function changeFrameHeight() {
             document.getElementById("tucao").height = document.documentElement.clientHeight - 200;
         }
-    } else if (pathname.indexOf("/analysis") == 0) {
+    } else if (pathname.indexOf(router.analysis) == 0) {
         var date = new Date();
         var ymd = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + (date.getDate() - 1);
         document.querySelectorAll(".mta-date").forEach(x => x.innerText = ymd);
 
-        axios.get(`${api_domain}/mta/ctr_core_data?start_date=${ymd}&end_date=${ymd}&idx=pv,uv,vv,iv`).then(function(response) {
+        axios.get(`${api_domain}/mta/ctr_core_data?start_date=${ymd}&end_date=${ymd}&idx=pv,uv,vv,iv`).then(function (response) {
             if (response.data.info = "success") {
                 var key = ymd.replace(/-/g, "");
                 var result = response.data.data[key];
@@ -264,19 +282,19 @@ function process_page(pathname) {
                 document.querySelector('.loader').remove();
             }
         });
-    } else if (pathname.indexOf("/friendlinks") == 0) {
-        axios.get(`${api_domain}/blog/friendlinks`).then(function(response) {
+    } else if (pathname.indexOf(router.friendlinks) == 0) {
+        axios.get(`${api_domain}/blog/friendlinks`).then(function (response) {
             if (response.data.success) {
                 var html = template("friendlinks_tmpl", response.data);
                 document.querySelector('.categories-card').innerHTML = html;
                 document.querySelector('.loader').remove();
             }
         });
-    } else if (pathname.indexOf("/posts") == 0) {
+    } else if (pathname.indexOf(router.posts) == 0) {
         var page = location.pathname.replace(/posts|page|\//gi, "") || 1;
         var limit = 15;
 
-        axios.get(`${api_domain}/blog/post/query?page=${page}&limit=${limit}`).then(function(response) {
+        axios.get(`${api_domain}/blog/post/query?page=${page}&limit=${limit}`).then(function (response) {
             if (response.data) {
                 if (!response.data.result) {
                     document.querySelector('.post-wrap.archive').innerHTML = `<h2 class="post-title">找了找不到了~~~</h2>`;
@@ -300,11 +318,11 @@ function process_page(pathname) {
                 document.getElementById('posts_tmpl').remove();
             }
         });
-    } else if (pathname.indexOf("/post/") == 0) {
+    } else if (pathname.indexOf(router.post) == 0) {
         var url = location.pathname.replace("/post", "");
         url = url.substring(url.length - 1) == "/" ? url : url + "/";
 
-        axios.get(`${api_domain}/blog/post?url=${url}`).then(function(response) {
+        axios.get(`${api_domain}/blog/post?url=${url}`).then(function (response) {
             if (response.data.success) {
                 document.title = document.title.substring(0, 2) + response.data.result.title + " - " + document.title.substring(2);
 
@@ -316,20 +334,19 @@ function process_page(pathname) {
             document.querySelector('.loader').remove();
             editormd.markdownToHTML("content");
         });
-    } else if (pathname.indexOf("/tags") == 0) {
+    } else if (pathname.indexOf(router.tags) == 0) {
         console.log(location.href)
-        axios.get(`${api_domain}/blog/tags`).then(function(response) {
+        axios.get(`${api_domain}/blog/tags`).then(function (response) {
             if (response.data.success) {
                 var html = template("tags_tmpl", response.data);
                 document.querySelector('.tag-cloud-tags').innerHTML = html;
                 document.querySelector('.loader').remove();
             }
         });
-    } else if (pathname.indexOf("/tag/") == 0) {
-        console.log(location.href)
+    } else if (pathname.indexOf(router.tag) == 0) {
         var name = location.pathname.replace(/tag|\//gi, "");
 
-        axios.all([getTagName(name), getPostsByTagName(name)]).then(axios.spread(function(tagNameResponse, postsResponse) {
+        axios.all([getTagName(name), getPostsByTagName(name)]).then(axios.spread(function (tagNameResponse, postsResponse) {
             if (tagNameResponse.data.success) {
                 document.title = document.title.substring(0, 2) + tagNameResponse.data.result + " - " + document.title.substring(2);
                 var html = template("tagName_tmpl", tagNameResponse.data);
@@ -351,18 +368,18 @@ function process_page(pathname) {
         function getPostsByTagName(name) {
             return axios.get(`${api_domain}/blog/post/query_by_tag?name=${name}`);
         }
-    } else if (pathname.indexOf("/categories") == 0) {
-        axios.get(`${api_domain}/blog/categories`).then(function(response) {
+    } else if (pathname.indexOf(router.categories) == 0) {
+        axios.get(`${api_domain}/blog/categories`).then(function (response) {
             if (response.data.success) {
                 var html = template("categories_tmpl", response.data);
                 document.querySelector('.categories-card').innerHTML = html;
                 document.querySelector('.loader').remove();
             }
         });
-    } else if (pathname.indexOf("/category/") == 0) {
+    } else if (pathname.indexOf(router.category) == 0) {
         var name = location.pathname.replace(/category|\//gi, "");
 
-        axios.all([getCategoryName(name), getPostsByCategoryName(name)]).then(axios.spread(function(categoryNameResponse, postsResponse) {
+        axios.all([getCategoryName(name), getPostsByCategoryName(name)]).then(axios.spread(function (categoryNameResponse, postsResponse) {
             if (categoryNameResponse.data.success) {
                 document.title = document.title.substring(0, 2) + categoryNameResponse.data.result + " - " + document.title.substring(2);
                 var html = template("categoryName_tmpl", categoryNameResponse.data);

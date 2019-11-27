@@ -74,27 +74,29 @@ axios.get('https://api.meowv.com/gallery').then(function (response) {
                 var id = this.attributes["data-id"].value;
                 var password = "";
                 if (this.attributes["data-isPublic"].value == 'false') password = prompt("请输入相册访问口令", "");
-                axios.get(`https://api.meowv.com/gallery/images?id=${id}&password=${password}`).then(function (response) {
-                    if (response.data.success) {
-                        response.data.result.forEach(x => {
-                            images.push({
-                                src: x.imgUrl,
-                                w: x.width,
-                                h: x.height
+                if (password != null && password != "") {
+                    axios.get(`https://api.meowv.com/gallery/images?id=${id}&password=${password}`).then(function (response) {
+                        if (response.data.success) {
+                            response.data.result.forEach(x => {
+                                images.push({
+                                    src: x.imgUrl,
+                                    w: x.width,
+                                    h: x.height
+                                });
+                                loadImageAsync(x.imgUrl);
                             });
-                            loadImageAsync(x.imgUrl);
-                        });
-                        var gallery = new PhotoSwipe(document.querySelector('.pswp'), PhotoSwipeUI_Default, images, {
-                            history: false,
-                            focus: false,
-                            showAnimationDuration: 0,
-                            hideAnimationDuration: 0
-                        });
-                        gallery.init();
-                    } else {
-                        alert(response.data.msg);
-                    }
-                });
+                            var gallery = new PhotoSwipe(document.querySelector('.pswp'), PhotoSwipeUI_Default, images, {
+                                history: false,
+                                focus: false,
+                                showAnimationDuration: 0,
+                                hideAnimationDuration: 0
+                            });
+                            gallery.init();
+                        } else {
+                            alert(response.data.msg);
+                        }
+                    });
+                }
             };
         });
     }
