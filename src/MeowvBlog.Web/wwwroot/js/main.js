@@ -148,7 +148,7 @@ function process_page(pathname) {
         document.querySelector("#change_song_list").addEventListener("click", function() {
             load_audio();
         });
-    } else if (pathname.indexOf("/bing") == 0 || pathname.indexOf("/cat") == 0 || pathname.indexOf("/girl") == 0) {
+    } else if (pathname.indexOf("/bing") == 0 || (pathname.indexOf("/cat") == 0 && (pathname == "/cat" || pathname == "/cat/")) || pathname.indexOf("/girl") == 0) {
         window.onload = () => document.querySelector('.loader').remove();
         if (pathname == "/girl") {
             document.querySelector(".soul-btn").addEventListener("click", () => document.querySelector(".girl-img img").src = document.querySelector(".girl-img img").src.split("?")[0] + "?t=" + new Date().getTime());
@@ -317,6 +317,7 @@ function process_page(pathname) {
             editormd.markdownToHTML("content");
         });
     } else if (pathname.indexOf("/tags") == 0) {
+        console.log(location.href)
         axios.get(`${api_domain}/blog/tags`).then(function(response) {
             if (response.data.success) {
                 var html = template("tags_tmpl", response.data);
@@ -325,6 +326,7 @@ function process_page(pathname) {
             }
         });
     } else if (pathname.indexOf("/tag/") == 0) {
+        console.log(location.href)
         var name = location.pathname.replace(/tag|\//gi, "");
 
         axios.all([getTagName(name), getPostsByTagName(name)]).then(axios.spread(function(tagNameResponse, postsResponse) {
