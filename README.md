@@ -7,11 +7,11 @@
 ![white](static/white.jpg)
 ![black](static/black.jpg)
 
-此版本个人博客项目基于 .NET Core3.0 开发，可作为 .NET Core 入门项目进行学习，数据库采用 Sqlite，遵循RESTful API接口规范，所有页面采用 axios 和 template-web.js 请求和加载数据，原生JavaScript操作页面。If you liked `Blog` project or if it helped you, please give a star ⭐️ for this repository. 👍👍👍
+此版本个人博客项目基于 .NET Core3.1 开发，可作为 .NET Core 入门项目进行学习，数据库采用 Sqlite，遵循RESTful API接口规范，所有页面采用 axios 和 template-web.js 请求和加载数据，原生JavaScript操作页面。If you liked `Blog` project or if it helped you, please give a star ⭐️ for this repository. 👍👍👍
 
 ## 技术栈
 
-- 后端：.NET Core 3.0 + Sqlite + WebApi + EF Core + Swagger
+- 后端：.NET Core 3.1 + Sqlite + WebApi + EF Core + Swagger
 - 前端：axios + JavaScript + Json
 
 ## 快速体验
@@ -22,7 +22,7 @@
 
 ## TODO
 
-- [x] 基于 .Net Core 3.0 搭建纯原生开发项目，无第三方框架依赖
+- [x] 基于 .Net Core 3.1 搭建纯原生开发项目，无第三方框架依赖
 - [x] 项目配置，集成 Swagger 管理 API
 - [x] 自定义 Swagger 扩展
 - [x] Code First 模式开发
