@@ -121,6 +121,16 @@ namespace MeowvBlog.API.Configurations
         }
 
         /// <summary>
+        /// 腾讯云API
+        /// </summary>
+        public static class TencentCloud
+        {
+            public static string SecretId => _config["TencentCloud:SecretId"];
+
+            public static string SecretKey => _config["TencentCloud:SecretKey"];
+        }
+
+        /// <summary>
         /// FM Api
         /// </summary>
         public static class FMApi

@@ -49,6 +49,11 @@
             百度AI 语音合成
             </summary>
         </member>
+        <member name="T:MeowvBlog.API.Configurations.AppSettings.TencentCloud">
+            <summary>
+            腾讯云API
+            </summary>
+        </member>
         <member name="T:MeowvBlog.API.Configurations.AppSettings.FMApi">
             <summary>
             FM Api
@@ -486,6 +491,29 @@
             <param name="ip"></param>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.API.Controllers.CommonController.QueryCdnRefresh(System.Nullable{System.DateTime},System.Nullable{System.DateTime})">
+            <summary>
+            查询CDN刷新历史
+            </summary>
+            <param name="startTime"></param>
+            <param name="endTime"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.CommonController.CdnRefresh(System.Collections.Generic.List{System.String})">
+            <summary>
+            CDN刷新
+            </summary>
+            <param name="urls"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.CommonController.DoCdnAction``1(TencentCloud.Cdn.V20180606.CdnClient@,``0@,System.String)">
+            <summary>
+            DoCdnAction
+            </summary>
+            <param name="client"></param>
+            <param name="req"></param>
+            <param name="json"></param>
+        </member>
         <member name="M:MeowvBlog.API.Controllers.FMController.GetChannels">
             <summary>
             获取专辑分类
@@ -851,6 +879,13 @@
             DeserializeFromJson
             </summary>
             <typeparam name="T"></typeparam>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Extensions.Extensions.SerializeToJson(System.Object)">
+            <summary>
+            SerializeToJson
+            </summary>
             <param name="input"></param>
             <returns></returns>
         </member>

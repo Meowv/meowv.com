@@ -55,7 +55,7 @@
 - [x] 在线听歌，支持播放列表记忆功能
 - [x] 在线听歌，刷新页面不中断歌曲播放
 - [x] 使用 SignalR 技术和支持 Notification 的浏览器实现消息推送功能
-- [x] signalR 统计网站实时在线人数
+- [x] 腾讯云CDN服务接口化，通过API刷新CDN缓存和刷线历史查询
 - [ ] ...
 
 ## Versions
@@ -85,6 +85,7 @@
 |Microsoft.EntityFrameworkCore.Sqlite|[![NuGet version](https://badge.fury.io/nu/Microsoft.EntityFrameworkCore.Sqlite.svg)](https://badge.fury.io/nu/Microsoft.EntityFrameworkCore.Sqlite)|
 |Microsoft.EntityFrameworkCore.Tools |[![NuGet version](https://badge.fury.io/nu/Microsoft.EntityFrameworkCore.Tools.svg)](https://badge.fury.io/nu/Microsoft.EntityFrameworkCore.Tools )|
 |Microsoft.EntityFrameworkCore.Design|[![NuGet version](https://badge.fury.io/nu/Microsoft.EntityFrameworkCore.Design.svg)](https://badge.fury.io/nu/Microsoft.EntityFrameworkCore.Design)|
+|TencentCloudSDK|[![NuGet version](https://badge.fury.io/nu/TencentCloudSDK.svg)](https://badge.fury.io/nu/TencentCloudSDK)|
 
 ## LICENSE
 

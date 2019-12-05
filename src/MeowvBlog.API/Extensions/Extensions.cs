@@ -10,6 +10,9 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using TencentCloud.Cdn.V20180606;
+using TencentCloud.Common;
+using TencentCloud.Common.Profile;
 
 namespace MeowvBlog.API.Extensions
 {
