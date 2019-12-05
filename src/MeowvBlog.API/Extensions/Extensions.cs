@@ -46,6 +46,16 @@ namespace MeowvBlog.API.Extensions
         }
 
         /// <summary>
+        /// SerializeToJson
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public static string SerializeToJson(this object input)
+        {
+            return JsonConvert.SerializeObject(input);
+        }
+
+        /// <summary>
         /// ToMd5
         /// </summary>
         /// <param name="str"></param>
