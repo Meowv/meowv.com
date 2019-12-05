@@ -265,7 +265,10 @@ function process_page(pathname) {
         }
     } else if (pathname.indexOf(router.analysis) == 0) {
         var date = new Date();
-        var ymd = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + (date.getDate() - 1);
+        var ymd = date.getFullYear() + "-" + fullData(date.getMonth() + 1) + "-" + fullData(date.getDate() - 1);
+        function fullData(number) {
+            return number < 10 ? '0' + number : number;
+        }
         document.querySelectorAll(".mta-date").forEach(x => x.innerText = ymd);
 
         axios.get(`${api_domain}/mta/ctr_core_data?start_date=${ymd}&end_date=${ymd}&idx=pv,uv,vv,iv`).then(function (response) {
