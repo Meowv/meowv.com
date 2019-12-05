@@ -13,6 +13,7 @@ namespace MeowvBlog.API.Swagger
     public static class SwaggerExtensions
     {
         private static readonly string version = $"v{AppSettings.ApiVersion}";
+        private static readonly string description = @"<b>Blog</b>：<a target=""_blank"" href=""https://meowv.com"">https://meowv.com</a> <b>GitHub</b>：<a target=""_blank"" href=""https://github.com/Meowv/Blog"">https://github.com/Meowv/Blog</a> <code>Powered by .NET Core 3.1 on Linux</code>";
 
         public static List<SwaggerApiInfo> ApiInfos = new List<SwaggerApiInfo>()
         {
@@ -23,7 +24,8 @@ namespace MeowvBlog.API.Swagger
                 OpenApiInfo = new OpenApiInfo
                 {
                     Version = version,
-                    Title = "阿星Plus - 博客前台接口"
+                    Title = "阿星Plus - 博客前台接口",
+                    Description = description
                 }
             },
             new SwaggerApiInfo
@@ -33,7 +35,8 @@ namespace MeowvBlog.API.Swagger
                 OpenApiInfo = new OpenApiInfo
                 {
                     Version = version,
-                    Title = "阿星Plus - 博客后台接口"
+                    Title = "阿星Plus - 博客后台接口",
+                    Description = description
                 }
             },
             new SwaggerApiInfo
@@ -43,7 +46,8 @@ namespace MeowvBlog.API.Swagger
                 OpenApiInfo = new OpenApiInfo
                 {
                     Version = version,
-                    Title = "阿星Plus - 通用公共接口"
+                    Title = "阿星Plus - 通用公共接口",
+                    Description = description
                 }
             }
         };
@@ -58,7 +62,7 @@ namespace MeowvBlog.API.Swagger
                 });
 
                 options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "Resources/MeowvBlog.API.xml"));
-
+               
                 var security = new OpenApiSecurityScheme
                 {
                     Description = "JWT模式授权，请输入 Bearer {Token} 进行身份验证",
