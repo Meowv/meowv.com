@@ -131,6 +131,16 @@ namespace MeowvBlog.API.Configurations
         }
 
         /// <summary>
+        /// RemoveBg
+        /// </summary>
+        public static class RemoveBg
+        {
+            public static string Secret => _config["RemoveBg:Secret"];
+
+            public static string URL => _config["RemoveBg:URL"];
+        }
+
+        /// <summary>
         /// FM Api
         /// </summary>
         public static class FMApi

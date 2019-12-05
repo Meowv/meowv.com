@@ -7,6 +7,7 @@ using MeowvBlog.API.Models.Dto.HotNews;
 using MeowvBlog.API.Models.Dto.Response;
 using MeowvBlog.API.Models.Entity.HotNews;
 using MeowvBlog.API.Models.Enum;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
@@ -238,6 +239,74 @@ namespace MeowvBlog.API.Controllers
 
             response.Result = result;
             return response;
+        }
+
+        /// <summary>
+        /// 智能抠图，移除图片背景 - 通过 Image File
+        /// </summary>
+        /// <param name="file"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("removebg")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> RemoveBg(IFormFile file)
+        {
+            var suffix = new List<string>() { ".jpg", ".png" };
+
+            var fileSuffix = Path.GetExtension(file.FileName).ToLower();
+
+            if (file.Length <= 0 || !suffix.Contains(fileSuffix))
+                throw new Exception("上传的图片有问题");
+
+            var fileName = Path.GetRandomFileName() + fileSuffix;
+            var filePath = Path.GetTempPath() + fileName;
+            using var stream = System.IO.File.Create(filePath);
+            await file.CopyToAsync(stream);
+            stream.Close();
+
+            using var client = _httpClient.CreateClient();
+            using var formData = new MultipartFormDataContent();
+            formData.Headers.Add("X-Api-Key", AppSettings.RemoveBg.Secret);
+            formData.Add(new ByteArrayContent(System.IO.File.ReadAllBytes(filePath)), "image_file", fileName);
+            formData.Add(new StringContent("auto"), "size");
+
+            var response = await client.PostAsync(AppSettings.RemoveBg.URL, formData);
+            if (response.IsSuccessStatusCode)
+            {
+                var bytes = await response.Content.ReadAsByteArrayAsync();
+                return File(bytes, "image/png");
+            }
+            else
+            {
+                throw new Exception(await response.Content.ReadAsStringAsync());
+            }
+        }
+
+        /// <summary>
+        /// 智能抠图，移除图片背景 - 通过 Image URL
+        /// </summary>
+        /// <param name="url"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("removebg")]
+        public async Task<IActionResult> RemoveBg(string url)
+        {
+            using var client = new HttpClient();
+            using var formData = new MultipartFormDataContent();
+            formData.Headers.Add("X-Api-Key", AppSettings.RemoveBg.Secret);
+            formData.Add(new StringContent(url), "image_url");
+            formData.Add(new StringContent("auto"), "size");
+
+            var response = client.PostAsync(AppSettings.RemoveBg.URL, formData).Result;
+            if (response.IsSuccessStatusCode)
+            {
+                var bytes = await response.Content.ReadAsByteArrayAsync();
+                return File(bytes, "image/png");
+            }
+            else
+            {
+                throw new Exception(await response.Content.ReadAsStringAsync());
+            }
         }
 
         /// <summary>

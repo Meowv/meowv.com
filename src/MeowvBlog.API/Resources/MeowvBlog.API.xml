@@ -54,6 +54,11 @@
             腾讯云API
             </summary>
         </member>
+        <member name="T:MeowvBlog.API.Configurations.AppSettings.RemoveBg">
+            <summary>
+            RemoveBg
+            </summary>
+        </member>
         <member name="T:MeowvBlog.API.Configurations.AppSettings.FMApi">
             <summary>
             FM Api
@@ -491,6 +496,20 @@
             <param name="ip"></param>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.API.Controllers.CommonController.RemoveBg(Microsoft.AspNetCore.Http.IFormFile)">
+            <summary>
+            智能抠图，移除图片背景 - 通过 Image File
+            </summary>
+            <param name="file"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.CommonController.RemoveBg(System.String)">
+            <summary>
+            智能抠图，移除图片背景 - 通过 Image URL
+            </summary>
+            <param name="url"></param>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.API.Controllers.CommonController.QueryCdnRefresh(System.Nullable{System.DateTime},System.Nullable{System.DateTime})">
             <summary>
             查询CDN刷新历史
@@ -510,6 +529,7 @@
             <summary>
             DoCdnAction
             </summary>
+            <typeparam name="T"></typeparam>
             <param name="client"></param>
             <param name="req"></param>
             <param name="json"></param>
