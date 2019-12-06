@@ -239,15 +239,25 @@ function process_page(pathname) {
         }
 
         document.querySelector("#btn_do").addEventListener("click", function () {
+            var typeId = document.querySelector("#type").value;
             var name = document.querySelector("#name").value.trim();
             if (name.length > 4 || name.length == 0) {
                 return false;
             }
-            var typeId = document.querySelector("#type").value;
-
-            axios.get(`${api_domain}/signature?name=${name}&id=${typeId}`).then(function (response) {
-                document.querySelector(".signature-img img").src = cdn_domain + response.data.result;
-            });
+            new TencentCaptcha(
+                document.getElementById('btn_do'),
+                '2049355346',
+                function (res) {
+                    //console.log(res.ticket);
+                    //console.log(res.randstr);
+                    // TODO:服务器验证
+                    if (res.ret === 0) {
+                        axios.get(`${api_domain}/signature?name=${name}&id=${typeId}`).then(function (response) {
+                            document.querySelector(".signature-img img").src = cdn_domain + response.data.result;
+                        });
+                    }
+                }
+            ).show();
         });
     } else if (pathname.indexOf(router.soul) == 0) {
         getSoul();
