@@ -429,7 +429,6 @@ if (currentAudio) {
         player.list.switch(window.localStorage.getItem('currentPlayIndex'));
         setTimeout(function () {
             player.seek(window.localStorage.getItem('currentPlayTime'));
-            player.play();
         }, 500);
     }
 } else {
@@ -474,6 +473,7 @@ function load_player(audio) {
     player = new APlayer({
         container: document.getElementById('aplayer'),
         fixed: true,
+        autoplay: false,
         lrcType: 3,
         audio: audio
     });
