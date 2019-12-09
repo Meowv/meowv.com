@@ -18,10 +18,6 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
-using TencentCloud.Cdn.V20180606;
-using TencentCloud.Cdn.V20180606.Models;
-using TencentCloud.Common;
-using TencentCloud.Common.Profile;
 using Extension = MeowvBlog.API.Extensions.Extensions;
 
 namespace MeowvBlog.API.Controllers
@@ -307,80 +303,6 @@ namespace MeowvBlog.API.Controllers
             {
                 throw new Exception(await response.Content.ReadAsStringAsync());
             }
-        }
-
-        /// <summary>
-        /// 查询CDN刷新历史
-        /// </summary>
-        /// <param name="startTime"></param>
-        /// <param name="endTime"></param>
-        /// <returns></returns>
-        [HttpGet]
-        [Route("cdn")]
-        public async Task<Response<DescribePurgeTasksResponse>> QueryCdnRefresh(DateTime? startTime = null, DateTime? endTime = null)
-        {
-            var response = new Response<DescribePurgeTasksResponse>();
-
-            if (!startTime.HasValue || !endTime.HasValue)
-            {
-                endTime = DateTime.Now;
-                startTime = endTime.Value.AddDays(-30);
-            }
-
-            var format = "yyyy-MM-dd HH:mm:ss";
-            var dic = new Dictionary<string, string>()
-            {
-                { "StartTime", startTime?.ToString(format)},
-                { "EndTime", endTime?.ToString(format) }
-            };
-
-            DoCdnAction(out CdnClient client, out DescribePurgeTasksRequest req, dic.SerializeToJson());
-
-            var resp = await client.DescribePurgeTasks(req);
-            response.Result = resp;
-
-            return response;
-        }
-
-        /// <summary>
-        /// CDN刷新
-        /// </summary>
-        /// <param name="urls"></param>
-        /// <returns></returns>
-        [HttpPost]
-        [Route("cdn/refresh")]
-        public async Task<Response<string>> CdnRefresh(List<string> urls)
-        {
-            var response = new Response<string>();
-
-            var dic = new Dictionary<string, List<string>> { { "Urls", urls } };
-            DoCdnAction(out CdnClient client, out PurgeUrlsCacheRequest req, dic.SerializeToJson());
-            var resp = await client.PurgeUrlsCache(req);
-            response.Result = AbstractModel.ToJsonString(resp);
-
-            return response;
-        }
-
-        /// <summary>
-        /// DoCdnAction
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="client"></param>
-        /// <param name="req"></param>
-        /// <param name="json"></param>
-        private static void DoCdnAction<T>(out CdnClient client, out T req, string json)
-        {
-            var cred = new Credential
-            {
-                SecretId = AppSettings.TencentCloud.SecretId,
-                SecretKey = AppSettings.TencentCloud.SecretKey
-            };
-
-            var httpProfile = new HttpProfile { Endpoint = "cdn.tencentcloudapi.com" };
-            var clientProfile = new ClientProfile { HttpProfile = httpProfile };
-
-            client = new CdnClient(cred, "", clientProfile);
-            req = AbstractModel.FromJsonString<T>(json);
         }
     }
 }

@@ -510,30 +510,6 @@
             <param name="url"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.CommonController.QueryCdnRefresh(System.Nullable{System.DateTime},System.Nullable{System.DateTime})">
-            <summary>
-            查询CDN刷新历史
-            </summary>
-            <param name="startTime"></param>
-            <param name="endTime"></param>
-            <returns></returns>
-        </member>
-        <member name="M:MeowvBlog.API.Controllers.CommonController.CdnRefresh(System.Collections.Generic.List{System.String})">
-            <summary>
-            CDN刷新
-            </summary>
-            <param name="urls"></param>
-            <returns></returns>
-        </member>
-        <member name="M:MeowvBlog.API.Controllers.CommonController.DoCdnAction``1(TencentCloud.Cdn.V20180606.CdnClient@,``0@,System.String)">
-            <summary>
-            DoCdnAction
-            </summary>
-            <typeparam name="T"></typeparam>
-            <param name="client"></param>
-            <param name="req"></param>
-            <param name="json"></param>
-        </member>
         <member name="M:MeowvBlog.API.Controllers.FMController.GetChannels">
             <summary>
             获取专辑分类
@@ -884,6 +860,46 @@
             </summary>
             <param name="list"></param>
             <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.TCAController.QueryCdnRefresh(System.Nullable{System.DateTime},System.Nullable{System.DateTime})">
+            <summary>
+            查询CDN刷新历史
+            </summary>
+            <param name="startTime"></param>
+            <param name="endTime"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.TCAController.CdnRefresh(System.Collections.Generic.List{System.String})">
+            <summary>
+            CDN刷新
+            </summary>
+            <param name="urls"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.TCAController.Captcha(System.String,System.String)">
+            <summary>
+            验证码校验
+            </summary>
+            <param name="ticket"></param>
+            <param name="randstr"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.TCAController.DoTencentCloudAction(System.String,TencentCloud.Common.Credential@,TencentCloud.Common.Profile.ClientProfile@)">
+            <summary>
+            DoTencentCloudAction
+            </summary>
+            <param name="endpoint"></param>
+            <param name="cred"></param>
+            <param name="clientProfile"></param>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.TCAController.DoCdnAction``1(TencentCloud.Cdn.V20180606.CdnClient@,``0@,System.String)">
+            <summary>
+            DoCdnAction
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="client"></param>
+            <param name="req"></param>
+            <param name="json"></param>
         </member>
         <member name="M:MeowvBlog.API.Extensions.Extensions.GetObjFromJsonFile``1(System.String,System.String)">
             <summary>

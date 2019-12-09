@@ -128,6 +128,13 @@ namespace MeowvBlog.API.Configurations
             public static string SecretId => _config["TencentCloud:SecretId"];
 
             public static string SecretKey => _config["TencentCloud:SecretKey"];
+
+            public static class Captcha
+            {
+                public static string APIKey => _config["TencentCloud:Captcha:AppId"];
+
+                public static string SecretKey => _config["TencentCloud:Captcha:AppSecret"];
+            }
         }
 
         /// <summary>

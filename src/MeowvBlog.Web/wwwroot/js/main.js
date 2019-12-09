@@ -248,12 +248,13 @@ function process_page(pathname) {
                 document.getElementById('btn_do'),
                 '2049355346',
                 function (res) {
-                    //console.log(res.ticket);
-                    //console.log(res.randstr);
-                    // TODO:服务器验证
                     if (res.ret === 0) {
-                        axios.get(`${api_domain}/signature?name=${name}&id=${typeId}`).then(function (response) {
-                            document.querySelector(".signature-img img").src = cdn_domain + response.data.result;
+                        axios.get(`${api_domain}/tca/captcha?ticket=${res.ticket}&randstr=${res.randstr}`).then(function (response) {
+                            if (response.data.success) {
+                                axios.get(`${api_domain}/signature?name=${name}&id=${typeId}`).then(function (response) {
+                                    document.querySelector(".signature-img img").src = cdn_domain + response.data.result;
+                                });
+                            }
                         });
                     }
                 }
