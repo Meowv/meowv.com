@@ -24,13 +24,12 @@ namespace MeowvBlog.Web
     {
         public static async Task Main(string[] args)
         {
-            await Host.CreateDefaultBuilder(args)
-                      .ConfigureWebHostDefaults(builder =>
-                      {
-                          builder.ConfigureKestrel(options => { options.AddServerHeader = false; })
-                                 .UseUrls("http://*:5002")
-                                 .UseStartup<Program>();
-                      }).Build().RunAsync();
+            await Host.CreateDefaultBuilder(args).ConfigureWebHostDefaults(builder =>
+            {
+                builder.ConfigureKestrel(options => { options.AddServerHeader = false; })
+                       .UseUrls("http://*:5002")
+                       .UseStartup<Program>();
+            }).Build().RunAsync();
         }
 
         public void ConfigureServices(IServiceCollection services)
