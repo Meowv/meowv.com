@@ -2,6 +2,9 @@
 {
     public class InsertHotNewsDto : HotNewsDto
     {
+        /// <summary>
+        /// SourceId
+        /// </summary>
         public int SourceId { get; set; }
     }
 }

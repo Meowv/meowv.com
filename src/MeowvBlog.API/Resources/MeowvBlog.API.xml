@@ -4,6 +4,21 @@
         <name>MeowvBlog.API</name>
     </assembly>
     <members>
+        <member name="T:MeowvBlog.API.Configurations.AppSettings">
+            <summary>
+            appsettings.json配置文件数据读取类
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Configurations.AppSettings._config">
+            <summary>
+            配置文件的根节点
+            </summary>
+        </member>
+        <member name="M:MeowvBlog.API.Configurations.AppSettings.#cctor">
+            <summary>
+            Constructor
+            </summary>
+        </member>
         <member name="P:MeowvBlog.API.Configurations.AppSettings.SqliteConnectionString">
             <summary>
             Sqlite
@@ -901,9 +916,14 @@
             <param name="req"></param>
             <param name="json"></param>
         </member>
+        <member name="T:MeowvBlog.API.Extensions.Extensions">
+            <summary>
+            一些常用的扩展方法类
+            </summary>
+        </member>
         <member name="M:MeowvBlog.API.Extensions.Extensions.GetObjFromJsonFile``1(System.String,System.String)">
             <summary>
-            GetObjFromJsonFile
+            根据key将json文件内容转换为指定对象
             </summary>
             <typeparam name="T"></typeparam>
             <param name="filePath"></param>
@@ -1002,6 +1022,17 @@
             <param name="selector"></param>
             <returns></returns>
         </member>
+        <member name="T:MeowvBlog.API.Infrastructure.MeowvBlogDBContext">
+            <summary>
+            数据库上下文类
+            </summary>
+        </member>
+        <member name="M:MeowvBlog.API.Infrastructure.MeowvBlogDBContext.OnConfiguring(Microsoft.EntityFrameworkCore.DbContextOptionsBuilder)">
+            <summary>
+            重写以配置要使用的数据库
+            </summary>
+            <param name="optionsBuilder"></param>
+        </member>
         <member name="P:MeowvBlog.API.Models.Dto.Blog.CategoryDto.CategoryName">
             <summary>
             分类名称
@@ -1097,6 +1128,11 @@
             创建时间
             </summary>
         </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.PostBriefForAdminDto.Id">
+            <summary>
+            主键
+            </summary>
+        </member>
         <member name="P:MeowvBlog.API.Models.Dto.Blog.PostDto.Title">
             <summary>
             标题
@@ -1132,6 +1168,11 @@
             创建时间
             </summary>
         </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.PostForAdminDto.Tags">
+            <summary>
+            标签列表
+            </summary>
+        </member>
         <member name="P:MeowvBlog.API.Models.Dto.Blog.PostForPagedDto.Title">
             <summary>
             标题
@@ -1140,6 +1181,41 @@
         <member name="P:MeowvBlog.API.Models.Dto.Blog.PostForPagedDto.Url">
             <summary>
             链接
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.PostRssDto.Title">
+            <summary>
+            标题
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.PostRssDto.Link">
+            <summary>
+            链接
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.PostRssDto.Description">
+            <summary>
+            描述
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.PostRssDto.Author">
+            <summary>
+            作者
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.PostRssDto.Category">
+            <summary>
+            分类
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.PostRssDto.PubDate">
+            <summary>
+            日期
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.QueryCategoryDto.Count">
+            <summary>
+            总数
             </summary>
         </member>
         <member name="P:MeowvBlog.API.Models.Dto.Blog.QueryPostDto.Year">
@@ -1162,6 +1238,11 @@
             Posts
             </summary>
         </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Blog.QueryTagDto.Count">
+            <summary>
+            总数
+            </summary>
+        </member>
         <member name="P:MeowvBlog.API.Models.Dto.Blog.TagDto.TagName">
             <summary>
             标签名称
@@ -1170,6 +1251,265 @@
         <member name="P:MeowvBlog.API.Models.Dto.Blog.TagDto.DisplayName">
             <summary>
             展示名称
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.FM.FmDto.Title">
+            <summary>
+            标题
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.FM.FmDto.Artist">
+            <summary>
+            艺术家
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.FM.FmDto.Cover">
+            <summary>
+            封面
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.FM.FmDto.Url">
+            <summary>
+            URL
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.FM.FmDto.Lrc">
+            <summary>
+            歌词
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Gallery.AlbumDto.Name">
+            <summary>
+            名称
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Gallery.AlbumDto.ImgUrl">
+            <summary>
+            图片URL
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Gallery.AlbumDto.IsPublic">
+            <summary>
+            是否公开
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Gallery.AlbumDto.Password">
+            <summary>
+            口令
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Gallery.AlbumForQueryDto.Id">
+            <summary>
+            主键
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Gallery.AlbumForQueryDto.Count">
+            <summary>
+            数量
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Gallery.AlbumForQueryDto.Name">
+            <summary>
+            名称
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Gallery.AlbumForQueryDto.ImgUrl">
+            <summary>
+            图片URL
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Gallery.AlbumForQueryDto.IsPublic">
+            <summary>
+            是否公开
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Gallery.ImageDto.AlbumId">
+            <summary>
+            AlbumId
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Gallery.ImageDto.Imgs">
+            <summary>
+            图片列表
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Gallery.Entity.Url">
+            <summary>
+            URL
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Gallery.Entity.Width">
+            <summary>
+            宽
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Gallery.Entity.Height">
+            <summary>
+            高
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Gallery.ImageForQueryDto.ImgUrl">
+            <summary>
+            图片URL
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Gallery.ImageForQueryDto.Width">
+            <summary>
+            宽
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Gallery.ImageForQueryDto.Height">
+            <summary>
+            高
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Gallery.ImageV2Dto.AlbumId">
+            <summary>
+            AlbumId
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Gallery.ImageV2Dto.ImgUrls">
+            <summary>
+            图片URL列表
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.HotNews.HotNewsDto.Title">
+            <summary>
+            标题
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.HotNews.HotNewsDto.Url">
+            <summary>
+            链接
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.HotNews.InsertHotNewsDto.SourceId">
+            <summary>
+            SourceId
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.API.Models.Dto.PagingInput">
+            <summary>
+            分页输入参数
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.PagingInput.Page">
+            <summary>
+            页码
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.PagingInput.Limit">
+            <summary>
+            限制条数
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Response.EnumResponse.Key">
+            <summary>
+            Key
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Response.EnumResponse.Value">
+            <summary>
+            Value
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Response.EnumResponse.Description">
+            <summary>
+            描述
+            </summary>
+        </member>
+        <member name="M:MeowvBlog.API.Models.Dto.Response.PagedResponse`1.#ctor">
+            <summary>
+            Constructor
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Response.PagedResponse`1.Total">
+            <summary>
+            总数
+            </summary>
+        </member>
+        <member name="M:MeowvBlog.API.Models.Dto.Response.PagedResponse`1.#ctor(System.Int32,System.Collections.Generic.IReadOnlyList{`0})">
+            <summary>
+            Constructor
+            </summary>
+            <param name="total"></param>
+            <param name="result"></param>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Response.IHasTotalCount.Total">
+            <summary>
+            总数
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Response.IListResult`1.Result">
+            <summary>
+            结果
+            </summary>
+        </member>
+        <member name="M:MeowvBlog.API.Models.Dto.Response.ListResultDto`1.#ctor">
+            <summary>
+            Constructor
+            </summary>
+        </member>
+        <member name="M:MeowvBlog.API.Models.Dto.Response.ListResultDto`1.#ctor(System.Collections.Generic.IReadOnlyList{`0})">
+            <summary>
+            Constructor
+            </summary>
+            <param name="result"></param>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Response.Response.Msg">
+            <summary>
+            Msg
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Response.Response.Success">
+            <summary>
+            是否成功
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Response.Response.Timestamp">
+            <summary>
+            时间戳
+            </summary>
+        </member>
+        <member name="M:MeowvBlog.API.Models.Dto.Response.Response.HandleException(System.Exception)">
+            <summary>
+            HandleException
+            </summary>
+            <param name="ex"></param>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Response.Response`1.Result">
+            <summary>
+            返回结果
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Signature.SignatureLogDto.Name">
+            <summary>
+            名字
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Signature.SignatureLogDto.Type">
+            <summary>
+            类型
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Signature.SignatureLogDto.Url">
+            <summary>
+            URL
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Signature.SignatureLogDto.Ip">
+            <summary>
+            IP
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Signature.SignatureLogDto.Date">
+            <summary>
+            日期
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.API.Models.Entity.Blog.Category">
+            <summary>
+            Category
             </summary>
         </member>
         <member name="P:MeowvBlog.API.Models.Entity.Blog.Category.Id">
@@ -1187,6 +1527,11 @@
             展示名称
             </summary>
         </member>
+        <member name="T:MeowvBlog.API.Models.Entity.Blog.FriendLink">
+            <summary>
+            FriendLink
+            </summary>
+        </member>
         <member name="P:MeowvBlog.API.Models.Entity.Blog.FriendLink.Id">
             <summary>
             主键
@@ -1200,6 +1545,11 @@
         <member name="P:MeowvBlog.API.Models.Entity.Blog.FriendLink.LinkUrl">
             <summary>
             链接
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.API.Models.Entity.Blog.Post">
+            <summary>
+            Post
             </summary>
         </member>
         <member name="P:MeowvBlog.API.Models.Entity.Blog.Post.Id">
@@ -1242,6 +1592,11 @@
             创建时间
             </summary>
         </member>
+        <member name="T:MeowvBlog.API.Models.Entity.Blog.PostTag">
+            <summary>
+            PostTag
+            </summary>
+        </member>
         <member name="P:MeowvBlog.API.Models.Entity.Blog.PostTag.Id">
             <summary>
             主键
@@ -1257,6 +1612,11 @@
             标签Id
             </summary>
         </member>
+        <member name="T:MeowvBlog.API.Models.Entity.Blog.Tag">
+            <summary>
+            Tag
+            </summary>
+        </member>
         <member name="P:MeowvBlog.API.Models.Entity.Blog.Tag.Id">
             <summary>
             主键
@@ -1270,6 +1630,81 @@
         <member name="P:MeowvBlog.API.Models.Entity.Blog.Tag.DisplayName">
             <summary>
             展示名称
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.API.Models.Entity.Gallery.Album">
+            <summary>
+            Album
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Gallery.Album.Id">
+            <summary>
+            主键
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Gallery.Album.Name">
+            <summary>
+            名称
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Gallery.Album.ImgUrl">
+            <summary>
+            图片URL
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Gallery.Album.IsPublic">
+            <summary>
+            是否公开
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Gallery.Album.Password">
+            <summary>
+            口令
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Gallery.Album.Date">
+            <summary>
+            日期
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.API.Models.Entity.Gallery.Image">
+            <summary>
+            Image
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Gallery.Image.Id">
+            <summary>
+            主键
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Gallery.Image.AlbumId">
+            <summary>
+            AlbumId
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Gallery.Image.ImgUrl">
+            <summary>
+            图片URL
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Gallery.Image.Width">
+            <summary>
+            宽
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Gallery.Image.Height">
+            <summary>
+            高
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Gallery.Image.Date">
+            <summary>
+            日期
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.API.Models.Entity.GitHub.AccessTokenRequest">
+            <summary>
+            AccessTokenRequest
             </summary>
         </member>
         <member name="F:MeowvBlog.API.Models.Entity.GitHub.AccessTokenRequest.Client_ID">
@@ -1297,6 +1732,11 @@
             State
             </summary>
         </member>
+        <member name="T:MeowvBlog.API.Models.Entity.GitHub.AccessTokenResponse">
+            <summary>
+            AccessTokenResponse
+            </summary>
+        </member>
         <member name="P:MeowvBlog.API.Models.Entity.GitHub.AccessTokenResponse.Access_token">
             <summary>
             access_token
@@ -1310,6 +1750,11 @@
         <member name="P:MeowvBlog.API.Models.Entity.GitHub.AccessTokenResponse.Scope">
             <summary>
             授权的信息
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.API.Models.Entity.GitHub.AuthorizeRequest">
+            <summary>
+            AuthorizeRequest
             </summary>
         </member>
         <member name="F:MeowvBlog.API.Models.Entity.GitHub.AuthorizeRequest.Client_ID">
@@ -1333,6 +1778,81 @@
             如果不填写，那么你的应用程序将只能读取Github公开的信息，比如公开的用户信息，公开的库(repository)信息以及gists信息
             </summary>
         </member>
+        <member name="T:MeowvBlog.API.Models.Entity.GitHub.UserResponse">
+            <summary>
+            UserResponse
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.API.Models.Entity.HotNews.HotNews">
+            <summary>
+            HotNews
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.HotNews.HotNews.Id">
+            <summary>
+            主键
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.HotNews.HotNews.Title">
+            <summary>
+            标题
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.HotNews.HotNews.Url">
+            <summary>
+            链接
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.HotNews.HotNews.SourceId">
+            <summary>
+            SourceId
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.HotNews.HotNews.Date">
+            <summary>
+            日期
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.API.Models.Entity.Signature.SignatureLog">
+            <summary>
+            SignatureLog
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Signature.SignatureLog.Id">
+            <summary>
+            主键
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Signature.SignatureLog.Name">
+            <summary>
+            名字
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Signature.SignatureLog.Type">
+            <summary>
+            类型
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Signature.SignatureLog.Url">
+            <summary>
+            URL
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Signature.SignatureLog.Ip">
+            <summary>
+            IP
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Signature.SignatureLog.Date">
+            <summary>
+            日期
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.API.Models.Entity.ChickenSoup.ChickenSoup">
+            <summary>
+            ChickenSoup
+            </summary>
+        </member>
         <member name="P:MeowvBlog.API.Models.Entity.ChickenSoup.ChickenSoup.Id">
             <summary>
             主键
@@ -1341,6 +1861,16 @@
         <member name="P:MeowvBlog.API.Models.Entity.ChickenSoup.ChickenSoup.Content">
             <summary>
             内容
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.API.Models.Enum.HotNewsSource">
+            <summary>
+            HotNewsSource
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.API.Models.Enum.SignatureEnum">
+            <summary>
+            SignatureEnum
             </summary>
         </member>
         <member name="P:MeowvBlog.API.Swagger.SwaggerApiInfo.UrlPrefix">
@@ -1390,6 +1920,16 @@
             自定义SwaggerUI扩展
             </summary>
             <param name="app"></param>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.QueryCategoryForAdminDto.Count">
+            <summary>
+            总数
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.Core.Dto.Blog.QueryTagForAdminDto.Count">
+            <summary>
+            总数
+            </summary>
         </member>
         <member name="M:MeowvBlog.Web.Program.Main(System.String[])">
             <summary>
