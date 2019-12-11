@@ -16,10 +16,13 @@ using System.Threading.Tasks;
 
 namespace MeowvBlog.API.Extensions
 {
+    /// <summary>
+    /// 一些常用的扩展方法类
+    /// </summary>
     public static class Extensions
     {
         /// <summary>
-        /// GetObjFromJsonFile
+        /// 根据key将json文件内容转换为指定对象
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="filePath"></param>
