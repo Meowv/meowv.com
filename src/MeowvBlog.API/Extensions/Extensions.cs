@@ -185,6 +185,22 @@ namespace MeowvBlog.API.Extensions
         }
 
         /// <summary>
+        /// 移除HTML标签
+        /// </summary>
+        /// <param name="content"></param>
+        /// <param name="length"></param>
+        /// <returns></returns>
+        public static string ReplaceHtml(this string content, int length = 200)
+        {
+            var result = System.Text.RegularExpressions.Regex.Replace(content, "<[^>]+>", "");
+            result = System.Text.RegularExpressions.Regex.Replace(result, "&[^;]+;", "");
+
+            if (result.Length > length) return result.Substring(0, length) + "...";
+
+            return result;
+        }
+
+        /// <summary>
         /// Select查询后自动执行ToList()
         /// </summary>
         /// <typeparam name="TSource"></typeparam>
