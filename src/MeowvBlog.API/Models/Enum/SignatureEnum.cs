@@ -2,6 +2,9 @@
 
 namespace MeowvBlog.API.Models.Enum
 {
+    /// <summary>
+    /// SignatureEnum
+    /// </summary>
     public enum SignatureEnum
     {
         [Description("黑体")]

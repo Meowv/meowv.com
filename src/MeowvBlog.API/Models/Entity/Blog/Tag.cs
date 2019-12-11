@@ -1,5 +1,8 @@
 ﻿namespace MeowvBlog.API.Models.Entity.Blog
 {
+    /// <summary>
+    /// Tag
+    /// </summary>
     public class Tag
     {
         /// <summary>

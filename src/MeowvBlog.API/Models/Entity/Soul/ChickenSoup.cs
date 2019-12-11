@@ -1,5 +1,8 @@
 ﻿namespace MeowvBlog.API.Models.Entity.ChickenSoup
 {
+    /// <summary>
+    /// ChickenSoup
+    /// </summary>
     public class ChickenSoup
     {
         /// <summary>

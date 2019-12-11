@@ -2,6 +2,9 @@
 
 namespace MeowvBlog.API.Models.Entity.GitHub
 {
+    /// <summary>
+    /// AccessTokenRequest
+    /// </summary>
     public class AccessTokenRequest
     {
         /// <summary>

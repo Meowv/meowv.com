@@ -1,5 +1,8 @@
 ﻿namespace MeowvBlog.API.Models.Entity.GitHub
 {
+    /// <summary>
+    /// AccessTokenResponse
+    /// </summary>
     public class AccessTokenResponse
     {
         /// <summary>

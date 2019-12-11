@@ -1,5 +1,8 @@
 ﻿namespace MeowvBlog.API.Models.Entity.GitHub
 {
+    /// <summary>
+    /// UserResponse
+    /// </summary>
     public class UserResponse
     {
         public string login { get; set; }

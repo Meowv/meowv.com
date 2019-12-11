@@ -2,6 +2,9 @@
 
 namespace MeowvBlog.API.Models.Entity.Blog
 {
+    /// <summary>
+    /// Post
+    /// </summary>
     public class Post
     {
         /// <summary>

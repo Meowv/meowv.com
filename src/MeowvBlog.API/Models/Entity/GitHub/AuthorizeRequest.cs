@@ -3,6 +3,9 @@ using System;
 
 namespace MeowvBlog.API.Models.Entity.GitHub
 {
+    /// <summary>
+    /// AuthorizeRequest
+    /// </summary>
     public class AuthorizeRequest
     {
         /// <summary>

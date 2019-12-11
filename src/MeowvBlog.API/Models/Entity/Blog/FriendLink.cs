@@ -1,5 +1,8 @@
 ﻿namespace MeowvBlog.API.Models.Entity.Blog
 {
+    /// <summary>
+    /// FriendLink
+    /// </summary>
     public class FriendLink
     {
         /// <summary>

@@ -2,6 +2,9 @@
 
 namespace MeowvBlog.API.Models.Enum
 {
+    /// <summary>
+    /// HotNewsSource
+    /// </summary>
     public enum HotNewsSource
     {
         [Description("博客园")]
