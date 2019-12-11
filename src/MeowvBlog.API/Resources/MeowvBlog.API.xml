@@ -1343,6 +1343,54 @@
             内容
             </summary>
         </member>
+        <member name="P:MeowvBlog.API.Swagger.SwaggerApiInfo.UrlPrefix">
+            <summary>
+            URL前缀
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Swagger.SwaggerApiInfo.Name">
+            <summary>
+            名称
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Swagger.SwaggerApiInfo.OpenApiInfo">
+            <summary>
+            <see cref="T:Microsoft.OpenApi.Models.OpenApiInfo"/>
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.API.Swagger.SwaggerDocumentFilter">
+            <summary>
+            对应Controller的API文档描述信息
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Swagger.SwaggerExtensions.version">
+            <summary>
+            当前API版本，从appsettings.json获取
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Swagger.SwaggerExtensions.description">
+            <summary>
+            Swagger描述信息
+            </summary>
+        </member>
+        <member name="F:MeowvBlog.API.Swagger.SwaggerExtensions.ApiInfos">
+            <summary>
+            Swagger分组信息，将进行遍历使用
+            </summary>
+        </member>
+        <member name="M:MeowvBlog.API.Swagger.SwaggerExtensions.AddSwagger(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            自定义AddSwagger扩展
+            </summary>
+            <param name="services"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Swagger.SwaggerExtensions.UseSwaggerUI(Microsoft.AspNetCore.Builder.IApplicationBuilder)">
+            <summary>
+            自定义SwaggerUI扩展
+            </summary>
+            <param name="app"></param>
+        </member>
         <member name="M:MeowvBlog.Web.Program.Main(System.String[])">
             <summary>
             Main方法，程序入口

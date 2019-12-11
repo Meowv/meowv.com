@@ -5,6 +5,9 @@ using System.Linq;
 
 namespace MeowvBlog.API.Swagger
 {
+    /// <summary>
+    /// 对应Controller的API文档描述信息
+    /// </summary>
     public class SwaggerDocumentFilter : IDocumentFilter
     {
         public void Apply(OpenApiDocument swaggerDoc, DocumentFilterContext context)
@@ -58,6 +61,7 @@ namespace MeowvBlog.API.Swagger
                 }
             };
 
+            // 按照Name升序排序
             swaggerDoc.Tags = tags.OrderBy(x => x.Name).ToList();
         }
     }
