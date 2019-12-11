@@ -1,4 +1,5 @@
 ﻿using MeowvBlog.API.Configurations;
+using MeowvBlog.API.Extensions;
 using MeowvBlog.API.Infrastructure;
 using MeowvBlog.API.Models.Dto;
 using MeowvBlog.API.Models.Dto.Blog;
@@ -7,7 +8,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -67,7 +67,7 @@ namespace MeowvBlog.API.Controllers
                 Url = post.Url,
                 Html = post.Html,
                 Markdown = post.Markdown,
-                CreationTime = Convert.ToDateTime(post.CreationTime).ToString("MMMM dd, yyyy HH:mm:ss", new CultureInfo("en-us")),
+                CreationTime = post.CreationTime.ToDateTimeForEn(),
                 Category = new CategoryDto { CategoryName = category.CategoryName, DisplayName = category.DisplayName },
                 Tags = tags,
                 Previous = previous == null ? null : new PostForPagedDto { Title = previous.Title, Url = previous.Url },
@@ -99,7 +99,7 @@ namespace MeowvBlog.API.Controllers
                                   Title = x.Title,
                                   Url = x.Url,
                                   Year = Convert.ToDateTime(x.CreationTime).Year,
-                                  CreationTime = Convert.ToDateTime(x.CreationTime).ToString("MMMM dd, yyyy HH:mm:ss", new CultureInfo("en-us"))
+                                  CreationTime = x.CreationTime.ToDateTimeForEn()
                               })
                               .GroupBy(x => x.Year)
                               .Select(x => new QueryPostDto
@@ -134,7 +134,7 @@ namespace MeowvBlog.API.Controllers
                           {
                               Title = posts.Title,
                               Url = posts.Url,
-                              CreationTime = posts.CreationTime.ToString("MMMM dd, yyyy HH:mm:ss", new CultureInfo("en-us")),
+                              CreationTime = posts.CreationTime.ToDateTimeForEn(),
                               Year = posts.CreationTime.Year
                           })
                           .GroupBy(x => x.Year)
@@ -167,7 +167,7 @@ namespace MeowvBlog.API.Controllers
                           {
                               Title = posts.Title,
                               Url = posts.Url,
-                              CreationTime = posts.CreationTime.ToString("MMMM dd, yyyy HH:mm:ss", new CultureInfo("en-us")),
+                              CreationTime = posts.CreationTime.ToDateTimeForEn(),
                               Year = posts.CreationTime.Year
                           })
                           .GroupBy(x => x.Year)

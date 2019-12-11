@@ -5,14 +5,12 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-using TencentCloud.Cdn.V20180606;
-using TencentCloud.Common;
-using TencentCloud.Common.Profile;
 
 namespace MeowvBlog.API.Extensions
 {
@@ -172,6 +170,16 @@ namespace MeowvBlog.API.Extensions
         {
             Random rnd = new Random();
             return source.OrderBy((item) => rnd.Next());
+        }
+
+        /// <summary>
+        /// 时间格式转换
+        /// </summary>
+        /// <param name="date"></param>
+        /// <returns></returns>
+        public static string ToDateTimeForEn(this DateTime date)
+        {
+            return date.ToString("MMMM dd, yyyy HH:mm:ss", new CultureInfo("en-us"));
         }
     }
 }
