@@ -238,27 +238,28 @@ function process_page(pathname) {
             return axios.get(`${api_domain}/signature/logs`);
         }
 
+        var typeId;
+        var name;
+
+        var captcha = new TencentCaptcha('2049355346', function (res) {
+            if (res.ret === 0) {
+                axios.get(`${api_domain}/tca/captcha?ticket=${res.ticket}&randstr=${res.randstr}`).then(function (response) {
+                    if (response.data.success) {
+                        axios.get(`${api_domain}/signature?name=${name}&id=${typeId}`).then(function (response) {
+                            document.querySelector(".signature-img img").src = cdn_domain + response.data.result;
+                        });
+                    }
+                });
+            }
+        });
+
         document.querySelector("#btn_do").addEventListener("click", function () {
-            var typeId = document.querySelector("#type").value;
-            var name = document.querySelector("#name").value.trim();
+            typeId = document.querySelector("#type").value;
+            name = document.querySelector("#name").value.trim();
             if (name.length > 4 || name.length == 0) {
                 return false;
             }
-            new TencentCaptcha(
-                document.getElementById('btn_do'),
-                '2049355346',
-                function (res) {
-                    if (res.ret === 0) {
-                        axios.get(`${api_domain}/tca/captcha?ticket=${res.ticket}&randstr=${res.randstr}`).then(function (response) {
-                            if (response.data.success) {
-                                axios.get(`${api_domain}/signature?name=${name}&id=${typeId}`).then(function (response) {
-                                    document.querySelector(".signature-img img").src = cdn_domain + response.data.result;
-                                });
-                            }
-                        });
-                    }
-                }
-            ).show();
+            captcha.show();
         });
     } else if (pathname.indexOf(router.soul) == 0) {
         getSoul();
