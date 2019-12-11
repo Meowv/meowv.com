@@ -102,11 +102,11 @@ namespace MeowvBlog.API.Controllers
                                   CreationTime = x.CreationTime.ToDateTimeForEn()
                               })
                               .GroupBy(x => x.Year)
-                              .Select(x => new QueryPostDto
+                              .SelectToList(x => new QueryPostDto
                               {
                                   Year = x.Key,
                                   Posts = x.ToList()
-                              }).ToList();
+                              });
 
             return new PagedResponse<QueryPostDto>(count, result);
         }
@@ -138,11 +138,11 @@ namespace MeowvBlog.API.Controllers
                               Year = posts.CreationTime.Year
                           })
                           .GroupBy(x => x.Year)
-                          .Select(x => new QueryPostDto
+                          .SelectToList(x => new QueryPostDto
                           {
                               Year = x.Key,
                               Posts = x.ToList()
-                          }).ToList()
+                          })
             };
         }
 
@@ -171,11 +171,11 @@ namespace MeowvBlog.API.Controllers
                               Year = posts.CreationTime.Year
                           })
                           .GroupBy(x => x.Year)
-                          .Select(x => new QueryPostDto
+                          .SelectToList(x => new QueryPostDto
                           {
                               Year = x.Key,
                               Posts = x.ToList()
-                          }).ToList()
+                          })
             };
         }
 
@@ -305,11 +305,11 @@ namespace MeowvBlog.API.Controllers
             var response = new Response<IList<FriendLinkDto>>();
 
             var links = await _context.FriendLinks.ToListAsync();
-            var result = links.Select(x => new FriendLinkDto
+            var result = links.SelectToList(x => new FriendLinkDto
             {
                 Title = x.Title,
                 LinkUrl = x.LinkUrl
-            }).ToList();
+            });
 
             response.Result = result;
             return response;

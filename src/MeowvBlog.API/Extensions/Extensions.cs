@@ -181,5 +181,18 @@ namespace MeowvBlog.API.Extensions
         {
             return date.ToString("MMMM dd, yyyy HH:mm:ss", new CultureInfo("en-us"));
         }
+
+        /// <summary>
+        /// Select查询后自动执行ToList()
+        /// </summary>
+        /// <typeparam name="TSource"></typeparam>
+        /// <typeparam name="TResult"></typeparam>
+        /// <param name="source"></param>
+        /// <param name="selector"></param>
+        /// <returns></returns>
+        public static List<TResult> SelectToList<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, TResult> selector)
+        {
+            return source.Select(selector).ToList();
+        }
     }
 }

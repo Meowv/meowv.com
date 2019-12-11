@@ -974,6 +974,16 @@
             <param name="date"></param>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.API.Extensions.Extensions.SelectToList``2(System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1})">
+            <summary>
+            Select查询后自动执行ToList()
+            </summary>
+            <typeparam name="TSource"></typeparam>
+            <typeparam name="TResult"></typeparam>
+            <param name="source"></param>
+            <param name="selector"></param>
+            <returns></returns>
+        </member>
         <member name="P:MeowvBlog.API.Models.Dto.Blog.CategoryDto.CategoryName">
             <summary>
             分类名称
