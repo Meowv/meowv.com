@@ -41,13 +41,13 @@ namespace MeowvBlog.API.Controllers
         {
             var response = new Response<IList<AlbumForQueryDto>>();
 
-            var result = await _context.Albums.Select(x => new AlbumForQueryDto()
+            var result = await _context.Albums.SelectToListAsync(x => new AlbumForQueryDto()
             {
                 Id = x.Id,
                 Name = x.Name,
                 ImgUrl = x.ImgUrl,
                 IsPublic = x.IsPublic
-            }).ToListAsync();
+            });
 
             var imgs = await _context.Images.ToListAsync();
             result.ForEach(x => x.Count = imgs.Count(i => i.AlbumId == x.Id));
@@ -133,12 +133,12 @@ namespace MeowvBlog.API.Controllers
 
             var result = await _context.Images.Where(x => x.AlbumId == albums.Id)
                                               .OrderByDescending(x => x.Date)
-                                              .Select(x => new ImageForQueryDto
+                                              .SelectToListAsync(x => new ImageForQueryDto
                                               {
                                                   ImgUrl = x.ImgUrl,
                                                   Width = x.Width,
                                                   Height = x.Height
-                                              }).ToListAsync();
+                                              });
             response.Result = result;
             return response;
         }
@@ -215,7 +215,7 @@ namespace MeowvBlog.API.Controllers
         {
             var response = new Response<string>();
 
-            var images = dto.ImgUrls.Select(x => new Image
+            var images = dto.ImgUrls.SelectToList(x => new Image
             {
                 Id = Extension.GenerateGuid(),
                 AlbumId = dto.AlbumId,
@@ -223,7 +223,7 @@ namespace MeowvBlog.API.Controllers
                 Width = SixLabors.ImageSharp.Image.Load(Path.Combine(AppSettings.Gallery.ImagesPath, x)).Width,
                 Height = SixLabors.ImageSharp.Image.Load(Path.Combine(AppSettings.Gallery.ImagesPath, x)).Height,
                 Date = DateTime.Now
-            }).ToList();
+            });
 
             await _context.Images.AddRangeAsync(images);
             await _context.SaveChangesAsync();

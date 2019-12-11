@@ -9,7 +9,6 @@ using MeowvBlog.API.Models.Entity.HotNews;
 using MeowvBlog.API.Models.Enum;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -64,12 +63,13 @@ namespace MeowvBlog.API.Controllers
         {
             var response = new Response<IList<HotNewsDto>>();
 
-            var result = await _context.HotNews.Where(x => x.SourceId.Equals(sourceId)).Select(x => new HotNewsDto
-            {
-                Title = x.Title,
-                Url = x.Url
-            }).ToListAsync();
-
+            var result = await _context.HotNews
+                                       .Where(x => x.SourceId.Equals(sourceId))
+                                       .SelectToListAsync(x => new HotNewsDto
+                                       {
+                                           Title = x.Title,
+                                           Url = x.Url
+                                       });
             response.Result = result;
             return response;
         }

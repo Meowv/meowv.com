@@ -145,15 +145,16 @@ namespace MeowvBlog.API.Controllers
         {
             var response = new Response<IList<SignatureLogDto>>();
 
-            var signatureLogs = await _context.SignatureLogs.OrderByDescending(x => x.Date).Take(20).Select(x => new SignatureLogDto
-            {
-                Name = x.Name.Substring(0, 1) + "**",
-                Type = x.Type,
-                Url = x.Url,
-                Ip = x.Ip,
-                Date = x.Date.ToString("yyyy-MM-dd HH:mm:ss")
-            }).ToListAsync();
-
+            var signatureLogs = await _context.SignatureLogs
+                                              .OrderByDescending(x => x.Date).Take(20)
+                                              .SelectToListAsync(x => new SignatureLogDto
+                                              {
+                                                  Name = x.Name.Substring(0, 1) + "**",
+                                                  Type = x.Type,
+                                                  Url = x.Url,
+                                                  Ip = x.Ip,
+                                                  Date = x.Date.ToString("yyyy-MM-dd HH:mm:ss")
+                                              });
             response.Result = signatureLogs;
             return response;
         }
