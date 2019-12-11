@@ -8,6 +8,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MeowvBlog.API.Infrastructure
 {
+    /// <summary>
+    /// 数据库上下文类
+    /// </summary>
     public class MeowvBlogDBContext : DbContext
     {
         public DbSet<Post> Posts { get; set; }
@@ -30,8 +33,13 @@ namespace MeowvBlog.API.Infrastructure
 
         public DbSet<ChickenSoup> ChickenSoups { get; set; }
 
+        /// <summary>
+        /// 重写以配置要使用的数据库
+        /// </summary>
+        /// <param name="optionsBuilder"></param>
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
+            // 使用Sqlite
             optionsBuilder.UseSqlite(AppSettings.SqliteConnectionString);
         }
     }
