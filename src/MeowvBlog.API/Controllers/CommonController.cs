@@ -46,8 +46,10 @@ namespace MeowvBlog.API.Controllers
         public async Task<Response<IList<EnumResponse>>> GetHotNewsSourceAsync()
         {
             var response = new Response<IList<EnumResponse>>();
+
             var result = Extension.EnumToList<HotNewsSource>();
             response.Result = result;
+
             return await Task.FromResult(response);
         }
 
@@ -101,7 +103,9 @@ namespace MeowvBlog.API.Controllers
                 Date = DateTime.Now
             });
 
-            _context.HotNews.RemoveRange(_context.HotNews.Where(x => dtos.Select(z => z.SourceId).Contains(x.SourceId)));
+            _context.HotNews.RemoveRange(_context.HotNews
+                                                 .Where(x => dtos.Select(z => z.SourceId)
+                                                 .Contains(x.SourceId)));
             await _context.SaveChangesAsync();
 
             await _context.HotNews.AddRangeAsync(hotNews);

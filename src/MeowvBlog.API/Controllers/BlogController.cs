@@ -47,6 +47,7 @@ namespace MeowvBlog.API.Controllers
                 response.Msg = $"URL：{url} 不存在";
                 return response;
             }
+
             var category = await _context.Categories.FirstOrDefaultAsync(x => x.Id == post.CategoryId);
             var tags = (from post_tags in await _context.PostTags.ToListAsync()
                         join tag in await _context.Tags.ToListAsync()
@@ -57,9 +58,15 @@ namespace MeowvBlog.API.Controllers
                             TagName = tag.TagName,
                             DisplayName = tag.DisplayName
                         }).ToList();
-            var previous = await _context.Posts.Where(x => x.CreationTime > post.CreationTime).Take(1).FirstOrDefaultAsync();
-            var next = await _context.Posts.Where(x => x.CreationTime < post.CreationTime).OrderByDescending(x => x.CreationTime).Take(1).FirstOrDefaultAsync();
-
+            var previous = await _context.Posts
+                                         .Where(x => x.CreationTime > post.CreationTime)
+                                         .Take(1)
+                                         .FirstOrDefaultAsync();
+            var next = await _context.Posts
+                                     .Where(x => x.CreationTime < post.CreationTime)
+                                     .OrderByDescending(x => x.CreationTime)
+                                     .Take(1)
+                                     .FirstOrDefaultAsync();
             var result = new GetPostDto
             {
                 Title = post.Title,
@@ -68,10 +75,22 @@ namespace MeowvBlog.API.Controllers
                 Html = post.Html,
                 Markdown = post.Markdown,
                 CreationTime = post.CreationTime.ToDateTimeForEn(),
-                Category = new CategoryDto { CategoryName = category.CategoryName, DisplayName = category.DisplayName },
+                Category = new CategoryDto
+                {
+                    CategoryName = category.CategoryName,
+                    DisplayName = category.DisplayName
+                },
                 Tags = tags,
-                Previous = previous == null ? null : new PostForPagedDto { Title = previous.Title, Url = previous.Url },
-                Next = next == null ? null : new PostForPagedDto { Title = next.Title, Url = next.Url }
+                Previous = previous == null ? null : new PostForPagedDto
+                {
+                    Title = previous.Title,
+                    Url = previous.Url
+                },
+                Next = next == null ? null : new PostForPagedDto
+                {
+                    Title = next.Title,
+                    Url = next.Url
+                }
             };
 
             response.Result = result;
@@ -107,7 +126,6 @@ namespace MeowvBlog.API.Controllers
                                   Year = x.Key,
                                   Posts = x.ToList()
                               });
-
             return new PagedResponse<QueryPostDto>(count, result);
         }
 
@@ -335,21 +353,11 @@ namespace MeowvBlog.API.Controllers
                         {
                             Title = posts.Title,
                             Link = posts.Url,
-                            Description = ReplaceHtml(posts.Html, 200),
+                            Description = posts.Html.ReplaceHtml(),
                             Author = posts.Author,
                             Category = categories.CategoryName,
                             PubDate = posts.CreationTime
                         }).ToList();
-
-            static string ReplaceHtml(string content, int length)
-            {
-                var result = System.Text.RegularExpressions.Regex.Replace(content, "<[^>]+>", "");
-                result = System.Text.RegularExpressions.Regex.Replace(result, "&[^;]+;", "");
-
-                if (result.Length > length) return result.Substring(0, length) + "...";
-
-                return result;
-            }
 
             var document = new XDocument(
                 new XDeclaration(version: "2.0", encoding: "utf-8", standalone: "no"),

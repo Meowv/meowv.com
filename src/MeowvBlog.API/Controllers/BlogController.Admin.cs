@@ -87,7 +87,6 @@ namespace MeowvBlog.API.Controllers
                                   Year = x.Key,
                                   Posts = x.ToList()
                               });
-
             return new PagedResponse<QueryPostForAdminDto>(count, result);
         }
 
@@ -180,23 +179,29 @@ namespace MeowvBlog.API.Controllers
                                }).ToList();
 
             var removedIds = oldPostTags.Where(item => !dto.Tags.Any(x => x == item.TagName) && tags.Any(t => t.TagName == item.TagName)).SelectToList(item => item.Id);
-            var removedPostTags = await _context.PostTags.Where(x => removedIds.Contains(x.Id)).ToListAsync();
+            var removedPostTags = await _context.PostTags
+                                                .Where(x => removedIds.Contains(x.Id))
+                                                .ToListAsync();
             _context.PostTags.RemoveRange(removedPostTags);
             await _context.SaveChangesAsync();
 
-            var newTags = dto.Tags.Where(item => !tags.Any(x => x.TagName == item)).SelectToList(item => new Tag
-            {
-                TagName = item,
-                DisplayName = item
-            });
+            var newTags = dto.Tags
+                             .Where(item => !tags.Any(x => x.TagName == item))
+                             .SelectToList(item => new Tag
+                             {
+                                 TagName = item,
+                                 DisplayName = item
+                             });
             await _context.Tags.AddRangeAsync(newTags);
             await _context.SaveChangesAsync();
 
-            var postTags = dto.Tags.Where(item => !oldPostTags.Any(x => x.TagName == item)).SelectToList(item => new PostTag
-            {
-                PostId = id,
-                TagId = _context.Tags.FirstOrDefault(x => x.TagName == item).Id
-            });
+            var postTags = dto.Tags
+                              .Where(item => !oldPostTags.Any(x => x.TagName == item))
+                              .SelectToList(item => new PostTag
+                              {
+                                  PostId = id,
+                                  TagId = _context.Tags.FirstOrDefault(x => x.TagName == item).Id
+                              });
             await _context.PostTags.AddRangeAsync(postTags);
             await _context.SaveChangesAsync();
 
