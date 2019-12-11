@@ -984,6 +984,16 @@
             <param name="selector"></param>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.API.Extensions.Extensions.SelectToListAsync``2(System.Linq.IQueryable{``0},System.Linq.Expressions.Expression{System.Func{``0,``1}})">
+            <summary>
+            Select查询后自动执行ToListAsync()
+            </summary>
+            <typeparam name="TSource"></typeparam>
+            <typeparam name="TResult"></typeparam>
+            <param name="source"></param>
+            <param name="selector"></param>
+            <returns></returns>
+        </member>
         <member name="P:MeowvBlog.API.Models.Dto.Blog.CategoryDto.CategoryName">
             <summary>
             分类名称
