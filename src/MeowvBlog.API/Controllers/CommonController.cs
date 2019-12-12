@@ -17,7 +17,6 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Extension = MeowvBlog.API.Extensions.Extensions;
 
 namespace MeowvBlog.API.Controllers
 {
@@ -96,7 +95,7 @@ namespace MeowvBlog.API.Controllers
 
             var hotNews = dtos.Select(x => new HotNews
             {
-                Id = Extension.GenerateGuid(),
+                Id = Guid.NewGuid().GenerateNumber(),
                 Title = x.Title,
                 Url = x.Url,
                 SourceId = x.SourceId,

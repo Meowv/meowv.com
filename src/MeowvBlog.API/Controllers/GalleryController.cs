@@ -13,7 +13,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Extension = MeowvBlog.API.Extensions.Extensions;
 
 namespace MeowvBlog.API.Controllers
 {
@@ -96,7 +95,7 @@ namespace MeowvBlog.API.Controllers
 
             var album = new Album
             {
-                Id = Extension.GenerateGuid(),
+                Id = Guid.NewGuid().GenerateNumber(),
                 Name = dto.Name,
                 ImgUrl = dto.ImgUrl,
                 Date = DateTime.Now,
@@ -188,7 +187,7 @@ namespace MeowvBlog.API.Controllers
 
             var images = dto.Imgs.Select(x => new Image
             {
-                Id = Extension.GenerateGuid(),
+                Id = Guid.NewGuid().GenerateNumber(),
                 AlbumId = dto.AlbumId,
                 ImgUrl = x.Url,
                 Width = x.Width,
@@ -217,7 +216,7 @@ namespace MeowvBlog.API.Controllers
 
             var images = dto.ImgUrls.SelectToList(x => new Image
             {
-                Id = Extension.GenerateGuid(),
+                Id = Guid.NewGuid().GenerateNumber(),
                 AlbumId = dto.AlbumId,
                 ImgUrl = x,
                 Width = SixLabors.ImageSharp.Image.Load(Path.Combine(AppSettings.Gallery.ImagesPath, x)).Width,

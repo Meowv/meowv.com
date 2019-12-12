@@ -130,12 +130,12 @@ namespace MeowvBlog.API.Extensions
         }
 
         /// <summary>
-        /// 纯数字 GUID
+        /// Guid转换为纯数字
         /// </summary>
         /// <returns></returns>
-        public static string GenerateGuid()
+        public static string GenerateNumber(this Guid guid)
         {
-            var buffer = Guid.NewGuid().ToByteArray();
+            var buffer = guid.ToByteArray();
             return BitConverter.ToInt64(buffer, 0).ToString();
         }
 

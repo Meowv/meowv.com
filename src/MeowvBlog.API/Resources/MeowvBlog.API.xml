@@ -950,9 +950,9 @@
             <param name="keyValues"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.API.Extensions.Extensions.GenerateGuid">
+        <member name="M:MeowvBlog.API.Extensions.Extensions.GenerateNumber(System.Guid)">
             <summary>
-            纯数字 GUID
+            Guid转换为纯数字
             </summary>
             <returns></returns>
         </member>
