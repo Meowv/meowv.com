@@ -142,13 +142,13 @@ namespace MeowvBlog.API.Extensions
         /// <summary>
         /// 将 Enum 转换为 List
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <param name="type"></param>
         /// <returns></returns>
-        public static IList<EnumResponse> EnumToList<T>() where T : Enum
+        public static IList<EnumResponse> EnumToList(this Type type)
         {
             var result = new List<EnumResponse>();
 
-            foreach (var item in Enum.GetValues(typeof(T)))
+            foreach (var item in Enum.GetValues(type))
             {
                 var dto = new EnumResponse
                 {

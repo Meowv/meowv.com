@@ -956,11 +956,11 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.API.Extensions.Extensions.EnumToList``1">
+        <member name="M:MeowvBlog.API.Extensions.Extensions.EnumToList(System.Type)">
             <summary>
             将 Enum 转换为 List
             </summary>
-            <typeparam name="T"></typeparam>
+            <param name="type"></param>
             <returns></returns>
         </member>
         <member name="M:MeowvBlog.API.Extensions.Extensions.Randomize``1(System.Collections.Generic.IEnumerable{``0})">

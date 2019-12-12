@@ -18,7 +18,6 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Extension = MeowvBlog.API.Extensions.Extensions;
 
 namespace MeowvBlog.API.Controllers
 {
@@ -55,7 +54,7 @@ namespace MeowvBlog.API.Controllers
                 return response;
             }
 
-            var type = Extension.EnumToList<SignatureEnum>().FirstOrDefault(x => x.Value.Equals(id))?.Description;
+            var type = typeof(SignatureEnum).EnumToList().FirstOrDefault(x => x.Value.Equals(id))?.Description;
             if (string.IsNullOrEmpty(type))
             {
                 response.Msg = "不存在的签名类型";
@@ -129,7 +128,7 @@ namespace MeowvBlog.API.Controllers
         public async Task<Response<IList<EnumResponse>>> GetSignatureTypeAsync()
         {
             var response = new Response<IList<EnumResponse>>();
-            var result = Extension.EnumToList<SignatureEnum>();
+            var result = typeof(SignatureEnum).EnumToList();
             response.Result = result;
             return await Task.FromResult(response);
         }

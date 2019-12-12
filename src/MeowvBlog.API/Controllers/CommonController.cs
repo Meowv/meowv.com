@@ -47,7 +47,7 @@ namespace MeowvBlog.API.Controllers
         {
             var response = new Response<IList<EnumResponse>>();
 
-            var result = Extension.EnumToList<HotNewsSource>();
+            var result = typeof(HotNewsSource).EnumToList();
             response.Result = result;
 
             return await Task.FromResult(response);
