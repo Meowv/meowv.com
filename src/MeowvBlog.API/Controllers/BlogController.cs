@@ -117,7 +117,7 @@ namespace MeowvBlog.API.Controllers
                               {
                                   Title = x.Title,
                                   Url = x.Url,
-                                  Year = Convert.ToDateTime(x.CreationTime).Year,
+                                  Year = x.CreationTime.Year,
                                   CreationTime = x.CreationTime.ToDateTimeForEn()
                               })
                               .GroupBy(x => x.Year)
