@@ -840,22 +840,6 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.SignatureController.DownloadImg(System.Net.Http.HttpClient,System.String,System.String)">
-            <summary>
-            下载远程图片至本地
-            </summary>
-            <param name="httpClient"></param>
-            <param name="path"></param>
-            <param name="imgUrl"></param>
-            <returns></returns>
-        </member>
-        <member name="M:MeowvBlog.API.Controllers.SignatureController.SaveImg(System.Byte[],System.String)">
-            <summary>
-            将byte类型图片保存至本地
-            </summary>
-            <param name="buffer"></param>
-            <param name="path"></param>
-        </member>
         <member name="M:MeowvBlog.API.Controllers.SignatureController.AddWatermarkSaveItAsync(System.String)">
             <summary>
             添加水印，并保存处理好的图片
@@ -1020,6 +1004,14 @@
             <typeparam name="TResult"></typeparam>
             <param name="source"></param>
             <param name="selector"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Extensions.Extensions.SaveImg(System.Byte[],System.String)">
+            <summary>
+            将转换为byte[]类型的图片保存至指定路径
+            </summary>
+            <param name="buffer"></param>
+            <param name="path"></param>
             <returns></returns>
         </member>
         <member name="T:MeowvBlog.API.Infrastructure.MeowvBlogDBContext">
