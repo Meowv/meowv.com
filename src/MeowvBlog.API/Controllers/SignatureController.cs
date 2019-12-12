@@ -152,7 +152,7 @@ namespace MeowvBlog.API.Controllers
                                                   Type = x.Type,
                                                   Url = x.Url,
                                                   Ip = x.Ip,
-                                                  Date = x.Date.ToString("yyyy-MM-dd HH:mm:ss")
+                                                  Date = x.Date.ToDateTime(default)
                                               });
             response.Result = signatureLogs;
             return response;

@@ -978,6 +978,14 @@
             <param name="date"></param>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.API.Extensions.Extensions.ToDateTime(System.DateTime,System.String)">
+            <summary>
+            时间格式转换
+            </summary>
+            <param name="date"></param>
+            <param name="format"></param>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.API.Extensions.Extensions.ReplaceHtml(System.String,System.Int32)">
             <summary>
             移除HTML标签

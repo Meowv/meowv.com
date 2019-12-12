@@ -39,11 +39,10 @@ namespace MeowvBlog.API.Controllers
                 startTime = endTime.Value.AddDays(-30);
             }
 
-            var format = "yyyy-MM-dd HH:mm:ss";
             var dic = new Dictionary<string, string>()
             {
-                { "StartTime", startTime?.ToString(format)},
-                { "EndTime", endTime?.ToString(format) }
+                { "StartTime", startTime?.ToDateTime() },
+                { "EndTime", endTime?.ToDateTime() }
             };
 
             DoCdnAction(out CdnClient client, out DescribePurgeTasksRequest req, dic.SerializeToJson());

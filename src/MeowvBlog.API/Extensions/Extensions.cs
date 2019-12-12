@@ -188,6 +188,17 @@ namespace MeowvBlog.API.Extensions
         }
 
         /// <summary>
+        /// 时间格式转换
+        /// </summary>
+        /// <param name="date"></param>
+        /// <param name="format"></param>
+        /// <returns></returns>
+        public static string ToDateTime(this DateTime date, string format = "yyyy-MM-dd HH:mm:ss")
+        {
+            return date.ToString(format);
+        }
+
+        /// <summary>
         /// 移除HTML标签
         /// </summary>
         /// <param name="content"></param>
