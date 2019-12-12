@@ -39,13 +39,12 @@ namespace MeowvBlog.API.Controllers
                 startTime = endTime.Value.AddDays(-30);
             }
 
-            var dic = new Dictionary<string, string>()
+            var parameters = new
             {
-                { "StartTime", startTime?.ToDateTime() },
-                { "EndTime", endTime?.ToDateTime() }
+                StartTime = startTime?.ToDateTime(),
+                EndTime = endTime?.ToDateTime()
             };
-
-            DoCdnAction(out CdnClient client, out DescribePurgeTasksRequest req, dic.SerializeToJson());
+            DoCdnAction(out CdnClient client, out DescribePurgeTasksRequest req, parameters.SerializeToJson());
 
             var resp = await client.DescribePurgeTasks(req);
             response.Result = resp;
@@ -64,8 +63,9 @@ namespace MeowvBlog.API.Controllers
         {
             var response = new Response<string>();
 
-            var dic = new Dictionary<string, List<string>> { { "Urls", urls } };
-            DoCdnAction(out CdnClient client, out PurgeUrlsCacheRequest req, dic.SerializeToJson());
+            var parameters = new { Urls = urls };
+            DoCdnAction(out CdnClient client, out PurgeUrlsCacheRequest req, parameters.SerializeToJson());
+
             var resp = await client.PurgeUrlsCache(req);
             response.Result = AbstractModel.ToJsonString(resp);
 
@@ -86,20 +86,20 @@ namespace MeowvBlog.API.Controllers
 
             var ip = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
             if (string.IsNullOrEmpty(ip)) ip = Request.HttpContext.Connection.RemoteIpAddress.MapToIPv4().ToString();
-            var dic = new Dictionary<string, string>
-            {
-                { "CaptchaType", "9" },
-                { "UserIp", ip },
-                { "Ticket", ticket },
-                { "Randstr", randstr },
-                { "CaptchaAppId", AppSettings.TencentCloud.Captcha.APIKey },
-                { "AppSecretKey", AppSettings.TencentCloud.Captcha.SecretKey }
-            };
 
+            var parameters = new
+            {
+                CaptchaType = "9",
+                UserIp = ip,
+                Ticket = ticket,
+                Randstr = randstr,
+                CaptchaAppId = AppSettings.TencentCloud.Captcha.APIKey,
+                AppSecretKey = AppSettings.TencentCloud.Captcha.SecretKey,
+            };
             DoTencentCloudAction("captcha", out Credential cred, out ClientProfile clientProfile);
 
             var client = new CaptchaClient(cred, "", clientProfile);
-            var req = AbstractModel.FromJsonString<DescribeCaptchaResultRequest>(dic.SerializeToJson());
+            var req = AbstractModel.FromJsonString<DescribeCaptchaResultRequest>(parameters.SerializeToJson());
             var resp = await client.DescribeCaptchaResult(req);
 
             if (resp.CaptchaCode != 1)
