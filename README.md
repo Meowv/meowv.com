@@ -41,7 +41,7 @@
 - [x] 博客小应用页面：吐个槽、个性艺术签名设计、每日热点、随机猫咪图、每日壁纸、访问数据分析
 - [x] 据导入 MySQL 至 Sqlite
 - [x] 免费生成个性艺术签名API
-- [x] [Python抓取各大热门网站热门头条](https://github.com/Meowv/hotnews)，每日热点API，界面展示
+- [x] Python抓取各大热门网站热门头条，每日热点API，界面展示
 - [x] 随机一张猫咪图API
 - [x] 微软Bing壁纸抓取，提供API接口
 - [x] MTA网站数据分析
