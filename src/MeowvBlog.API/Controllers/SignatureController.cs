@@ -97,7 +97,7 @@ namespace MeowvBlog.API.Controllers
             var signaturePath = Path.Combine(AppSettings.Signature.Path, url);
 
             // 下载签名图片至本地
-            await DownloadImg(client, signaturePath, imgUrl);
+            await (await client.GetByteArrayAsync(imgUrl)).SaveImg(signaturePath);
 
             // 添加水印并且保存图片
             await AddWatermarkSaveItAsync(signaturePath);
@@ -160,47 +160,6 @@ namespace MeowvBlog.API.Controllers
         }
 
         /// <summary>
-        /// 下载远程图片至本地
-        /// </summary>
-        /// <param name="httpClient"></param>
-        /// <param name="path"></param>
-        /// <param name="imgUrl"></param>
-        /// <returns></returns>
-        private async Task DownloadImg(HttpClient httpClient, string path, string imgUrl)
-        {
-            var buffer = await httpClient.GetByteArrayAsync(imgUrl);
-            using var ms = new MemoryStream(buffer);
-            using var stream = new FileStream(path, FileMode.Create);
-
-            var bytes = new byte[1024];
-            var size = await ms.ReadAsync(bytes, 0, bytes.Length);
-            while (size > 0)
-            {
-                await stream.WriteAsync(bytes, 0, size);
-                size = await ms.ReadAsync(bytes, 0, bytes.Length);
-            }
-        }
-
-        /// <summary>
-        /// 将byte类型图片保存至本地
-        /// </summary>
-        /// <param name="buffer"></param>
-        /// <param name="path"></param>
-        private async Task SaveImg(byte[] buffer, string path)
-        {
-            using var ms = new MemoryStream(buffer);
-            using var stream = new FileStream(path, FileMode.Create);
-
-            var bytes = new byte[1024];
-            var size = await ms.ReadAsync(bytes, 0, bytes.Length);
-            while (size > 0)
-            {
-                await stream.WriteAsync(bytes, 0, size);
-                size = await ms.ReadAsync(bytes, 0, bytes.Length);
-            }
-        }
-
-        /// <summary>
         /// 添加水印，并保存处理好的图片
         /// </summary>
         /// <param name="signaturePath"></param>
@@ -226,7 +185,7 @@ namespace MeowvBlog.API.Controllers
             signatureImgBase64 = regex.Replace(signatureImgBase64, "");
             var bytes = Convert.FromBase64String(signatureImgBase64);
 
-            await SaveImg(bytes, signaturePath);
+            await bytes.SaveImg(signaturePath);
         }
     }
 }
