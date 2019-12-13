@@ -4,6 +4,7 @@ import json
 import threading
 import urllib.parse
 from queue import Queue
+
 import requests
 from lxml import etree
 
@@ -22,7 +23,10 @@ SOURCE = {
     "zhihu": 12,
     "zhihudaily": 13,
     "163news": 14,
-    "github": 15
+    "github": 15,
+    "douyin_hot": 16,
+    "douyin_video": 17,
+    "douyin_positive": 18
 }
 
 lock = threading.Lock()
@@ -31,14 +35,11 @@ HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36'
 }
 
+# 博客园
 class cnblogs_spider(threading.Thread):
     def run(self):
         lock.acquire()
-
-        # print("开始抓取博客园数据")
         self.spider()
-        # print("博客园数据抓取完成")
-
         lock.release()
 
     def spider(self):
@@ -52,14 +53,11 @@ class cnblogs_spider(threading.Thread):
 
         save_data(titles, urls, SOURCE['cnblogs'])
 
+# V2EX
 class v2ex_spider(threading.Thread):
     def run(self):
         lock.acquire()
-
-        # print("开始抓取V2EX数据")
         self.spider()
-        # print("V2EX数据抓取完成")
-
         lock.release()
 
     def spider(self):
@@ -74,14 +72,11 @@ class v2ex_spider(threading.Thread):
 
         save_data(titles, urls, SOURCE['v2ex'])
 
+# SegmentFault
 class segmentfault_spider(threading.Thread):
     def run(self):
         lock.acquire()
-
-        # print("开始抓取SegmentFault数据")
         self.spider()
-        # print("SegmentFault数据抓取完成")
-
         lock.release()
 
     def spider(self):
@@ -97,14 +92,11 @@ class segmentfault_spider(threading.Thread):
 
         save_data(titles, urls, SOURCE['segmentfault'])
 
+# 掘金
 class juejin_spider(threading.Thread):
     def run(self):
         lock.acquire()
-
-        # print("开始抓取掘金数据")
         self.spider()
-        # print("掘金数据抓取完成")
-
         lock.release()
 
     def spider(self):
@@ -139,14 +131,11 @@ class juejin_spider(threading.Thread):
 
         save_data(titles, urls, SOURCE['juejin'])
 
+# 微信热门
 class weixin_spider(threading.Thread):
     def run(self):
         lock.acquire()
-
-        # print("开始抓取微信热门数据")
         self.spider()
-        # print("微信热门数据抓取完成")
-
         lock.release()
 
     def spider(self):
@@ -162,14 +151,11 @@ class weixin_spider(threading.Thread):
 
         save_data(titles, urls, SOURCE['weixin'])
 
+# 豆瓣精选
 class douban_spider(threading.Thread):
     def run(self):
         lock.acquire()
-
-        # print("开始抓取豆瓣精选数据")
         self.spider()
-        # print("豆瓣精选数据抓取完成")
-
         lock.release()
 
     def spider(self):
@@ -185,14 +171,11 @@ class douban_spider(threading.Thread):
 
         save_data(titles, urls, SOURCE['douban'])
 
+# IT之家
 class ithome_spider(threading.Thread):
     def run(self):
         lock.acquire()
-
-        # print("开始抓取IT之家数据")
         self.spider()
-        # print("IT之家数据抓取完成")
-
         lock.release()
 
     def spider(self):
@@ -208,14 +191,11 @@ class ithome_spider(threading.Thread):
 
         save_data(titles, urls, SOURCE['ithome'])
 
+# 36氪
 class kr36_spider(threading.Thread):
     def run(self):
         lock.acquire()
-
-        # print("开始抓取36氪热榜数据")
         self.spider()
-        # print("36氪热榜数据抓取完成")
-
         lock.release()
 
     def spider(self):
@@ -232,14 +212,11 @@ class kr36_spider(threading.Thread):
 
         save_data(titles, urls, SOURCE['36kr'])
 
+# 百度贴吧
 class tieba_spider(threading.Thread):
     def run(self):
         lock.acquire()
-
-        # print("开始抓取百度贴吧热议数据")
         self.spider()
-        # print("百度贴吧热议数据抓取完成")
-
         lock.release()
 
     def spider(self):
@@ -259,14 +236,11 @@ class tieba_spider(threading.Thread):
 
         save_data(titles, urls, SOURCE['tieba'])
 
+# 百度热搜
 class baidu_spider(threading.Thread):
     def run(self):
         lock.acquire()
-
-        # print("开始抓取百度热搜数据")
         self.spider()
-        # print("百度热搜数据抓取完成")
-
         lock.release()
 
     def spider(self):
@@ -277,19 +251,15 @@ class baidu_spider(threading.Thread):
 
         titles = html.xpath(
             "//table[@class='list-table']//tr/td[@class='keyword']/a[@class='list-title']/text()")
-        # urls = html.xpath("//table[@class='list-table']//tr/td[@class='keyword']/a[@class='list-title']/@href")
         urls = list(map(lambda x: "https://www.baidu.com/s?wd=" + x, titles))
 
         save_data(titles, urls, SOURCE['baidu'])
 
+# 微博热搜
 class weibo_spider(threading.Thread):
     def run(self):
         lock.acquire()
-
-        # print("开始抓取微博热搜数据")
         self.spider()
-        # print("微博热搜数据抓取完成")
-
         lock.release()
 
     def spider(self):
@@ -305,14 +275,11 @@ class weibo_spider(threading.Thread):
 
         save_data(titles, urls, SOURCE['weibo'])
 
+# 知乎热榜
 class zhihu_spider(threading.Thread):
     def run(self):
         lock.acquire()
-
-        # print("开始抓取知乎热榜数据")
         self.spider()
-        # print("知乎热榜数据抓取完成")
-
         lock.release()
 
     def spider(self):
@@ -334,14 +301,11 @@ class zhihu_spider(threading.Thread):
 
         save_data(titles, urls, SOURCE['zhihu'])
 
+# 知乎日报
 class zhihudaily_spider(threading.Thread):
     def run(self):
         lock.acquire()
-
-        # print("开始抓取知乎日报数据")
         self.spider()
-        # print("知乎日报数据抓取完成")
-
         lock.release()
 
     def spider(self):
@@ -356,14 +320,11 @@ class zhihudaily_spider(threading.Thread):
 
         save_data(titles, urls, SOURCE['zhihudaily'])
 
+# 网易新闻
 class news163_spider(threading.Thread):
     def run(self):
         lock.acquire()
-
-        # print("开始抓取网易新闻数据")
         self.spider()
-        # print("网易新闻数据抓取完成")
-
         lock.release()
 
     def spider(self):
@@ -379,14 +340,11 @@ class news163_spider(threading.Thread):
 
         save_data(titles, urls, SOURCE['163news'])
 
+# GitHub
 class github_spider(threading.Thread):
     def run(self):
         lock.acquire()
-
-        # print("开始抓取GitHub数据")
         self.spider()
-        # print("GitHub数据抓取完成")
-
         lock.release()
 
     def spider(self):
@@ -402,6 +360,75 @@ class github_spider(threading.Thread):
 
         save_data(titles, urls, SOURCE['github'])
 
+# 抖音热点
+class douyin_hot_spider(threading.Thread):
+    def run(self):
+        lock.acquire()
+        self.spider()
+        lock.release()
+
+    def spider(self):
+        url = 'https://www.iesdouyin.com/web/api/v2/hotsearch/billboard/word/'
+        response = requests.get(url, headers=HEADERS)
+
+        json_result = response.json()
+        json_data = json_result['word_list']
+
+        titles = []
+        urls = []
+
+        for x in json_data:
+            titles.append(x['word'])
+            urls.append(x['hot_value'])
+
+        save_data(titles, urls, SOURCE['douyin_hot'])
+
+# 抖音视频
+class douyin_video_spider(threading.Thread):
+    def run(self):
+        lock.acquire()
+        self.spider()
+        lock.release()
+
+    def spider(self):
+        url = 'https://www.iesdouyin.com/web/api/v2/hotsearch/billboard/aweme/'
+        response = requests.get(url, headers=HEADERS)
+
+        json_result = response.json()
+        json_data = json_result['aweme_list']
+
+        titles = []
+        urls = []
+
+        for x in json_data:
+            titles.append(x['aweme_info']['desc'])
+            urls.append(x['aweme_info']['share_url'])
+
+        save_data(titles, urls, SOURCE['douyin_video'])
+
+# 抖音正能量
+class douyin_positive_spider(threading.Thread):
+    def run(self):
+        lock.acquire()
+        self.spider()
+        lock.release()
+
+    def spider(self):
+        url = 'https://www.iesdouyin.com/web/api/v2/hotsearch/billboard/aweme/?type=positive'
+        response = requests.get(url, headers=HEADERS)
+
+        json_result = response.json()
+        json_data = json_result['aweme_list']
+
+        titles = []
+        urls = []
+
+        for x in json_data:
+            titles.append(x['aweme_info']['desc'])
+            urls.append(x['aweme_info']['share_url'])
+
+        save_data(titles, urls, SOURCE['douyin_positive'])
+
 def save_data(titles, urls, sourceId):
     hot_news_data = []
     for index, title in enumerate(titles):
@@ -415,8 +442,8 @@ def save_data(titles, urls, sourceId):
     HEADERS['spider'] = 'python'
     url = 'https://api.meowv.com/common/hot_news'
     response = requests.post(url, headers=HEADERS, json=hot_news_data)
-    # if (response.json()['result'] == 'success'):
-    #     print("保存数据完成")
+    if (response.json()['result'] == 'success'):
+        print("保存数据完成")
 
 def init():
     cnblogs = cnblogs_spider()
@@ -464,6 +491,14 @@ def init():
     github = github_spider()
     github.start()
 
+    douyin_hot = douyin_hot_spider()
+    douyin_hot.start()
+
+    douyin_video = douyin_video_spider()
+    douyin_video.start()
+
+    douyin_positive = douyin_positive_spider()
+    douyin_positive.start()
 
 if __name__ == "__main__":
     init()

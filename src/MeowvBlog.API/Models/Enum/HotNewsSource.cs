@@ -50,6 +50,15 @@ namespace MeowvBlog.API.Models.Enum
         news163 = 14,
 
         [Description("GitHub")]
-        github = 15
+        github = 15,
+
+        [Description("抖音热点")]
+        douyin_hot = 16,
+
+        [Description("抖音视频")]
+        douyin_video = 17,
+
+        [Description("抖音正能量")]
+        douyin_positive = 18
     }
 }
