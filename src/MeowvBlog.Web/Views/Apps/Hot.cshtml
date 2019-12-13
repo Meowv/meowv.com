@@ -15,7 +15,7 @@
             <div class="loader"></div>
             <script id="top_content_tmpl" type="text/template">
                 {{each result}}
-                <li><a target="_blank" href="{{$value.url}}">{{$value.title}}</a></li>
+                <li><a target="_blank" href="{{$value.url}}">{{$value.title==''?$value.url:$value.title}}</a></li>
                 {{/each}}
             </script>
             <ul></ul>
