@@ -379,7 +379,7 @@ class douyin_hot_spider(threading.Thread):
 
         for x in json_data:
             titles.append(x['word'])
-            urls.append(x['hot_value'])
+            urls.append('#' + str(x['hot_value']))
 
         save_data(titles, urls, SOURCE['douyin_hot'])
 
