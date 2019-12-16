@@ -233,7 +233,7 @@ namespace MeowvBlog.API.Infrastructure.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("Timestamp")
+                    b.Property<string>("Timestamp")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Title")

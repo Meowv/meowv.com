@@ -900,6 +900,13 @@
             <param name="req"></param>
             <param name="json"></param>
         </member>
+        <member name="M:MeowvBlog.API.Controllers.WallpaperController.BulkInsertWallpaperAsync(System.Collections.Generic.IList{MeowvBlog.API.Models.Dto.Wallpaper.WallpaperDto})">
+            <summary>
+            批量插入Wallpaper
+            </summary>
+            <param name="list"></param>
+            <returns></returns>
+        </member>
         <member name="T:MeowvBlog.API.Extensions.Extensions">
             <summary>
             一些常用的扩展方法类
@@ -1505,6 +1512,21 @@
         <member name="P:MeowvBlog.API.Models.Dto.Signature.SignatureLogDto.Date">
             <summary>
             日期
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Wallpaper.WallpaperDto.Url">
+            <summary>
+            URL
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Wallpaper.WallpaperDto.Title">
+            <summary>
+            标题
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Wallpaper.WallpaperDto.Type">
+            <summary>
+            类型
             </summary>
         </member>
         <member name="T:MeowvBlog.API.Models.Entity.Blog.Category">

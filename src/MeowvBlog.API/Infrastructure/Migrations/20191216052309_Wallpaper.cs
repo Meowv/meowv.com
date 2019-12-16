@@ -15,7 +15,7 @@ namespace MeowvBlog.API.Infrastructure.Migrations
                     Url = table.Column<string>(nullable: true),
                     Title = table.Column<string>(nullable: true),
                     Type = table.Column<int>(nullable: false),
-                    Timestamp = table.Column<DateTime>(nullable: false)
+                    Timestamp = table.Column<string>(nullable: false)
                 },
                 constraints: table =>
                 {

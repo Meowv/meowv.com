@@ -27,6 +27,6 @@ namespace MeowvBlog.API.Models.Entity.Wallpaper
         /// <summary>
         /// 时间戳
         /// </summary>
-        public DateTime Timestamp { get; set; }
+        public string Timestamp { get; set; }
     }
 }
