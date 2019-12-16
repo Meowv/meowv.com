@@ -906,11 +906,18 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.WallpaperController.BulkInsertWallpaperAsync(System.Collections.Generic.IList{MeowvBlog.API.Models.Dto.Wallpaper.WallpaperDto})">
+        <member name="M:MeowvBlog.API.Controllers.WallpaperController.QueryWallpaperAsync(MeowvBlog.API.Models.Dto.Wallpaper.QueryWallpaperInput)">
+            <summary>
+            分页查询壁纸
+            </summary>
+            <param name="input"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Controllers.WallpaperController.BulkInsertWallpaperAsync(MeowvBlog.API.Models.Dto.Wallpaper.InsertWallpaperInput)">
             <summary>
             批量插入壁纸
             </summary>
-            <param name="list"></param>
+            <param name="input"></param>
             <returns></returns>
         </member>
         <member name="T:MeowvBlog.API.Extensions.Extensions">
@@ -1520,6 +1527,26 @@
             日期
             </summary>
         </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Wallpaper.InsertWallpaperInput.Type">
+            <summary>
+            类型
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Wallpaper.InsertWallpaperInput.Wallpapers">
+            <summary>
+            壁纸列表
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Wallpaper.QueryWallpaperInput.Type">
+            <summary>
+            类型
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Wallpaper.QueryWallpaperInput.Limit">
+            <summary>
+            限制条数
+            </summary>
+        </member>
         <member name="P:MeowvBlog.API.Models.Dto.Wallpaper.WallpaperDto.Url">
             <summary>
             URL
@@ -1528,11 +1555,6 @@
         <member name="P:MeowvBlog.API.Models.Dto.Wallpaper.WallpaperDto.Title">
             <summary>
             标题
-            </summary>
-        </member>
-        <member name="P:MeowvBlog.API.Models.Dto.Wallpaper.WallpaperDto.Type">
-            <summary>
-            类型
             </summary>
         </member>
         <member name="T:MeowvBlog.API.Models.Entity.Blog.Category">

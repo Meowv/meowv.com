@@ -11,10 +11,5 @@
         /// 标题
         /// </summary>
         public string Title { get; set; }
-
-        /// <summary>
-        /// 类型
-        /// </summary>
-        public int Type { get; set; }
     }
 }
