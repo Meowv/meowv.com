@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace MeowvBlog.API.Models.Entity.Wallpaper
+﻿namespace MeowvBlog.API.Models.Entity.Wallpaper
 {
     public class Wallpaper
     {
