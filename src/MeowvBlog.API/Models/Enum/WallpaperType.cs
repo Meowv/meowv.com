@@ -49,7 +49,7 @@ namespace MeowvBlog.API.Models.Enum
         [Description("动漫")]
         Anime = 15,
 
-        [Description("推荐")]
+        [Description("手绘")]
         HandPainted = 16,
 
         [Description("文字")]
@@ -62,7 +62,7 @@ namespace MeowvBlog.API.Models.Enum
         Car = 19,
 
         [Description("体育")]
-        PhysicalEducation = 21,
+        PhysicalEducation = 20,
 
         [Description("军事")]
         Military = 21,

@@ -51,10 +51,8 @@ namespace MeowvBlog.API.Controllers
         /// <returns></returns>
         [HttpGet]
         [ResponseCache(CacheProfileName = "default", VaryByQueryKeys = new string[] { "type", "page", "limit" })]
-        public async Task<Response<IList<WallpaperDto>>> QueryWallpaperAsync([FromQuery] QueryWallpaperInput input)
+        public async Task<PagedResponse<WallpaperDto>> QueryWallpaperAsync([FromQuery] QueryWallpaperInput input)
         {
-            var response = new Response<IList<WallpaperDto>>();
-
             var wallpapers = _context.Wallpapers.Where(x => x.Type == (int)input.Type);
             var count = await wallpapers.CountAsync();
 
@@ -66,8 +64,7 @@ namespace MeowvBlog.API.Controllers
                                              Title = x.Title,
                                              Url = x.Url
                                          });
-            response.Result = result;
-            return response;
+            return new PagedResponse<WallpaperDto>(count, result);
         }
 
         /// <summary>
