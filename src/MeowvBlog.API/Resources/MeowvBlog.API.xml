@@ -900,9 +900,15 @@
             <param name="req"></param>
             <param name="json"></param>
         </member>
+        <member name="M:MeowvBlog.API.Controllers.WallpaperController.GetWallpaperTypeAsync">
+            <summary>
+            获取壁纸分类
+            </summary>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.API.Controllers.WallpaperController.BulkInsertWallpaperAsync(System.Collections.Generic.IList{MeowvBlog.API.Models.Dto.Wallpaper.WallpaperDto})">
             <summary>
-            批量插入Wallpaper
+            批量插入壁纸
             </summary>
             <param name="list"></param>
             <returns></returns>

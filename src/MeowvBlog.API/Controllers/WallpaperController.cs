@@ -4,6 +4,7 @@ using MeowvBlog.API.Infrastructure;
 using MeowvBlog.API.Models.Dto.Response;
 using MeowvBlog.API.Models.Dto.Wallpaper;
 using MeowvBlog.API.Models.Entity.Wallpaper;
+using MeowvBlog.API.Models.Enum;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
@@ -23,6 +24,23 @@ namespace MeowvBlog.API.Controllers
         public WallpaperController(MeowvBlogDBContext context)
         {
             _context = context;
+        }
+
+        /// <summary>
+        /// 获取壁纸分类
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("types")]
+        [ResponseCache(CacheProfileName = "default")]
+        public async Task<Response<IList<EnumResponse>>> GetWallpaperTypeAsync()
+        {
+            var response = new Response<IList<EnumResponse>>();
+
+            var result = typeof(WallpaperType).EnumToList();
+            response.Result = result;
+
+            return await Task.FromResult(response);
         }
 
         /// <summary>
