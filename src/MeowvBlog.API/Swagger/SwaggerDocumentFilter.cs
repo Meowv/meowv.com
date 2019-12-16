@@ -58,6 +58,11 @@ namespace MeowvBlog.API.Swagger
                     Name = "FM",
                     Description = "FM电台",
                     ExternalDocs = new OpenApiExternalDocs { Description = "FM" }
+                },
+                new OpenApiTag {
+                    Name = "Wallpaper",
+                    Description = "壁纸",
+                    ExternalDocs = new OpenApiExternalDocs { Description = "Wallpaper" }
                 }
             };
 
