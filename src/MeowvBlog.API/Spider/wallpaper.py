@@ -5,89 +5,34 @@ import threading
 from lxml import etree
 from queue import Queue
 
-Type = {
-    "Recommend": 1,
-    "Latest": 2,
-    "WeeklyRanking": 3,
-    "MonthlyRanking": 4,
-    "TotalRanking": 5,
-    "Beauty": 6,
-    "Sportsman": 7,
-    "CuteBaby": 8,
-    "Emotion": 9,
-    "Landscape ": 10,
-    "Animal": 11,
-    "Plant": 12,
-    "Food": 13,
-    "Movie": 14,
-    "Anime": 15,
-    "HandPainted": 16,
-    "Text": 17,
-    "Creative": 18,
-    "Car": 19,
-    "PhysicalEducation": 21,
-    "Military": 21,
-    "Festival": 22,
-    "Game": 23,
-    "Apple": 24,
-    "Other": 25
-}
+_list = [
+    {'url': 'https://www.i4.cn/wper_4_19_1_%d.html', 'type': 1},
+    {'url': 'https://www.i4.cn/wper_4_19_58_%d.html', 'type': 2},
+    {'url': 'https://www.i4.cn/wper_4_19_66_%d.html', 'type': 3},
+    {'url': 'https://www.i4.cn/wper_4_19_4_%d.html', 'type': 4},
+    {'url': 'https://www.i4.cn/wper_4_19_3_%d.html', 'type': 5},
+    {'url': 'https://www.i4.cn/wper_4_19_9_%d.html', 'type': 6},
+    {'url': 'https://www.i4.cn/wper_4_19_13_%d.html', 'type': 7},
+    {'url': 'https://www.i4.cn/wper_4_19_64_%d.html', 'type': 8},
+    {'url': 'https://www.i4.cn/wper_4_19_11_%d.html', 'type': 9},
+    {'url': 'https://www.i4.cn/wper_4_19_5_%d.html', 'type': 10},
+    {'url': 'https://www.i4.cn/wper_4_19_34_%d.html', 'type': 11},
+    {'url': 'https://www.i4.cn/wper_4_19_65_%d.html', 'type': 12},
+    {'url': 'https://www.i4.cn/wper_4_19_2_%d.html', 'type': 13},
+    {'url': 'https://www.i4.cn/wper_4_19_10_%d.html', 'type': 14},
+    {'url': 'https://www.i4.cn/wper_4_19_14_%d.html', 'type': 15},
+    {'url': 'https://www.i4.cn/wper_4_19_17_%d.html', 'type': 16},
+    {'url': 'https://www.i4.cn/wper_4_19_15_%d.html', 'type': 17},
+    {'url': 'https://www.i4.cn/wper_4_19_12_%d.html', 'type': 18},
+    {'url': 'https://www.i4.cn/wper_4_19_7_%d.html', 'type': 19},
+    {'url': 'https://www.i4.cn/wper_4_19_63_%d.html', 'type': 20},
+]
 
 lock = threading.Lock()
 
 HEADERS = {
     'User-Agent': 'Mozilla/5.0'
 }
-
-# 推荐
-class recommend_spider(threading.Thread):
-    def run(self):
-        lock.acquire()
-        self.spider()
-        lock.release()
-
-    def spider(self):
-        parse_page('https://www.i4.cn/wper_1_0_0_1.html', Type['Recommend'])
-
-# 最新
-class latest_spider(threading.Thread):
-    def run(self):
-        lock.acquire()
-        self.spider()
-        lock.release()
-
-    def spider(self):
-        parse_page('https://www.i4.cn/wper_3_0_0_1.html', Type['Latest'])
-
-# 周排行
-class weeklyranking_spider(threading.Thread):
-    def run(self):
-        lock.acquire()
-        self.spider()
-        lock.release()
-
-    def spider(self):
-        parse_page('https://www.i4.cn/wper_21_0_0_1.html', Type['WeeklyRanking'])
-
-# 月排行
-class monthlyranking_spider(threading.Thread):
-    def run(self):
-        lock.acquire()
-        self.spider()
-        lock.release()
-
-    def spider(self):
-        parse_page('https://www.i4.cn/wper_22_0_0_1.html', Type['MonthlyRanking'])
-
-# 总排行
-class totalranking_spider(threading.Thread):
-    def run(self):
-        lock.acquire()
-        self.spider()
-        lock.release()
-
-    def spider(self):
-        parse_page('https://www.i4.cn/wper_23_0_0_1.html', Type['TotalRanking'])
 
 # 美女
 class beauty_spider(threading.Thread):
@@ -97,7 +42,7 @@ class beauty_spider(threading.Thread):
         lock.release()
 
     def spider(self):
-        parse_page('https://www.i4.cn/wper_4_0_1_1.html', Type['Beauty'])
+        parse_page(_list[0]['url'], _list[0]['type'])
 
 # 型男
 class sportsman_spider(threading.Thread):
@@ -107,7 +52,7 @@ class sportsman_spider(threading.Thread):
         lock.release()
 
     def spider(self):
-        parse_page('https://www.i4.cn/wper_4_0_58_1.html', Type['Sportsman'])
+        parse_page(_list[1]['url'], _list[1]['type'])
 
 # 萌娃
 class cutebaby_spider(threading.Thread):
@@ -117,7 +62,7 @@ class cutebaby_spider(threading.Thread):
         lock.release()
 
     def spider(self):
-        parse_page('https://www.i4.cn/wper_4_0_66_1.html', Type['CuteBaby'])
+        parse_page(_list[2]['url'], _list[2]['type'])
 
 # 情感
 class emotion_spider(threading.Thread):
@@ -127,7 +72,7 @@ class emotion_spider(threading.Thread):
         lock.release()
 
     def spider(self):
-        parse_page('https://www.i4.cn/wper_4_0_4_1.html', Type['Emotion'])
+        parse_page(_list[3]['url'], _list[3]['type'])
 
 # 风景
 class landscape_spider(threading.Thread):
@@ -137,7 +82,7 @@ class landscape_spider(threading.Thread):
         lock.release()
 
     def spider(self):
-        parse_page('https://www.i4.cn/wper_4_0_3_1.html', Type['Landscape'])
+        parse_page(_list[4]['url'], _list[4]['type'])
 
 # 动物
 class animal_spider(threading.Thread):
@@ -147,7 +92,7 @@ class animal_spider(threading.Thread):
         lock.release()
 
     def spider(self):
-        parse_page('https://www.i4.cn/wper_4_0_9_1.html', Type['Animal'])
+        parse_page(_list[5]['url'], _list[5]['type'])
 
 # 植物
 class plant_spider(threading.Thread):
@@ -157,7 +102,7 @@ class plant_spider(threading.Thread):
         lock.release()
 
     def spider(self):
-        parse_page('https://www.i4.cn/wper_4_0_13_1.html', Type['Plant'])
+        parse_page(_list[6]['url'], _list[6]['type'])
 
 # 美食
 class food_spider(threading.Thread):
@@ -167,7 +112,7 @@ class food_spider(threading.Thread):
         lock.release()
 
     def spider(self):
-        parse_page('https://www.i4.cn/wper_4_0_64_1.html', Type['Food'])
+        parse_page(_list[7]['url'], _list[7]['type'])
 
 # 影视
 class movie_spider(threading.Thread):
@@ -177,7 +122,7 @@ class movie_spider(threading.Thread):
         lock.release()
 
     def spider(self):
-        parse_page('https://www.i4.cn/wper_4_0_11_1.html', Type['Movie'])
+        parse_page(_list[8]['url'], _list[8]['type'])
 
 # 动漫
 class anime_spider(threading.Thread):
@@ -187,7 +132,7 @@ class anime_spider(threading.Thread):
         lock.release()
 
     def spider(self):
-        parse_page('https://www.i4.cn/wper_4_0_5_1.html', Type['Anime'])
+        parse_page(_list[9]['url'], _list[9]['type'])
 
 # 手绘
 class handpainted_spider(threading.Thread):
@@ -197,7 +142,7 @@ class handpainted_spider(threading.Thread):
         lock.release()
 
     def spider(self):
-        parse_page('https://www.i4.cn/wper_4_0_34_1.html', Type['HandPainted'])
+        parse_page(_list[10]['url'], _list[10]['type'])
 
 # 文字
 class text_spider(threading.Thread):
@@ -207,7 +152,7 @@ class text_spider(threading.Thread):
         lock.release()
 
     def spider(self):
-        parse_page('https://www.i4.cn/wper_4_0_65_1.html', Type['Text'])
+        parse_page(_list[11]['url'], _list[11]['type'])
 
 # 创意
 class creative_spider(threading.Thread):
@@ -217,7 +162,7 @@ class creative_spider(threading.Thread):
         lock.release()
 
     def spider(self):
-        parse_page('https://www.i4.cn/wper_4_0_2_1.html', Type['Creative'])
+        parse_page(_list[12]['url'], _list[12]['type'])
 
 # 名车
 class car_spider(threading.Thread):
@@ -227,7 +172,7 @@ class car_spider(threading.Thread):
         lock.release()
 
     def spider(self):
-        parse_page('https://www.i4.cn/wper_4_0_10_1.html', Type['Car'])
+        parse_page(_list[13]['url'], _list[13]['type'])
 
 # 体育
 class physicaleducation_spider(threading.Thread):
@@ -237,7 +182,7 @@ class physicaleducation_spider(threading.Thread):
         lock.release()
 
     def spider(self):
-        parse_page('https://www.i4.cn/wper_4_0_14_1.html', Type['PhysicalEducation'])
+        parse_page(_list[14]['url'], _list[14]['type'])
 
 # 军事
 class military_spider(threading.Thread):
@@ -247,7 +192,7 @@ class military_spider(threading.Thread):
         lock.release()
 
     def spider(self):
-        parse_page('https://www.i4.cn/wper_4_0_17_1.html', Type['Military'])
+        parse_page(_list[15]['url'], _list[15]['type'])
 
 # 节日
 class festival_spider(threading.Thread):
@@ -257,7 +202,7 @@ class festival_spider(threading.Thread):
         lock.release()
 
     def spider(self):
-        parse_page('https://www.i4.cn/wper_4_0_15_1.html', Type['Festival'])
+        parse_page(_list[16]['url'], _list[16]['type'])
 
 # 游戏
 class game_spider(threading.Thread):
@@ -267,7 +212,7 @@ class game_spider(threading.Thread):
         lock.release()
 
     def spider(self):
-        parse_page('https://www.i4.cn/wper_4_0_12_1.html', Type['Game'])
+        parse_page(_list[17]['url'], _list[17]['type'])
 
 # 苹果
 class apple_spider(threading.Thread):
@@ -277,7 +222,7 @@ class apple_spider(threading.Thread):
         lock.release()
 
     def spider(self):
-        parse_page('https://www.i4.cn/wper_4_0_7_1.html', Type['Apple'])
+        parse_page(_list[18]['url'], _list[18]['type'])
 
 # 其它
 class other_spider(threading.Thread):
@@ -287,8 +232,7 @@ class other_spider(threading.Thread):
         lock.release()
 
     def spider(self):
-        parse_page('https://www.i4.cn/wper_4_0_63_1.html', Type['Other'])
-
+        parse_page(_list[19]['url'], _list[19]['type'])
 
 def parse_page(url, _type):
     response = requests.get(url, headers=HEADERS)
@@ -299,8 +243,8 @@ def parse_page(url, _type):
     urls = list(map(lambda x: x.replace('middle', 'max'), urls))
     titles = html.xpath(
         "//article[@id='wper']/div[@class='jbox']/div[@class='kbox']/div/a/img[1]/@alt")
-    save_data(urls, titles, _type)
 
+    save_data(urls, titles, _type)
 
 def save_data(urls, titles, _type):
     data = {
@@ -318,9 +262,66 @@ def save_data(urls, titles, _type):
     url = 'https://api.meowv.com/wallpaper'
     response = requests.post(url, headers=HEADERS, json=data)
 
-
 def main():
-    pass
+    beauty = beauty_spider()
+    beauty.start()
+
+    sportsman = sportsman_spider()
+    sportsman.start()
+
+    cutebaby = cutebaby_spider()
+    cutebaby.start()
+
+    emotion = emotion_spider()
+    emotion.start()
+
+    landscape = landscape_spider()
+    landscape.start()
+
+    animal = animal_spider()
+    animal.start()
+
+    plant = plant_spider()
+    plant.start()
+
+    food = food_spider()
+    food.start()
+
+    movie = movie_spider()
+    movie.start()
+
+    anime = anime_spider()
+    anime.start()
+
+    handpainted = handpainted_spider()
+    handpainted.start()
+
+    text = text_spider()
+    text.start()
+
+    creative = creative_spider()
+    creative.start()
+
+    car = car_spider()
+    car.start()
+
+    physicaleducation = physicaleducation_spider()
+    physicaleducation.start()
+
+    military = military_spider()
+    military.start()
+
+    festival = festival_spider()
+    festival.start()
+
+    game = game_spider()
+    game.start()
+
+    apple = apple_spider()
+    apple.start()
+
+    other = other_spider()
+    other.start()
 
 
 if __name__ == "__main__":
