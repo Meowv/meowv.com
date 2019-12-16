@@ -4,6 +4,7 @@ using MeowvBlog.API.Models.Entity.ChickenSoup;
 using MeowvBlog.API.Models.Entity.Gallery;
 using MeowvBlog.API.Models.Entity.HotNews;
 using MeowvBlog.API.Models.Entity.Signature;
+using MeowvBlog.API.Models.Entity.Wallpaper;
 using Microsoft.EntityFrameworkCore;
 
 namespace MeowvBlog.API.Infrastructure
@@ -32,6 +33,8 @@ namespace MeowvBlog.API.Infrastructure
         public DbSet<Image> Images { get; set; }
 
         public DbSet<ChickenSoup> ChickenSoups { get; set; }
+
+        public DbSet<Wallpaper> Wallpapers { get; set; }
 
         /// <summary>
         /// 重写以配置要使用的数据库

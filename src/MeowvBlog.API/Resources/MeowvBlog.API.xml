@@ -1863,6 +1863,31 @@
             内容
             </summary>
         </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Wallpaper.Wallpaper.Id">
+            <summary>
+            主键
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Wallpaper.Wallpaper.Url">
+            <summary>
+            URL
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Wallpaper.Wallpaper.Title">
+            <summary>
+            标题
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Wallpaper.Wallpaper.Type">
+            <summary>
+            类型
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Entity.Wallpaper.Wallpaper.Timestamp">
+            <summary>
+            时间戳
+            </summary>
+        </member>
         <member name="T:MeowvBlog.API.Models.Enum.HotNewsSource">
             <summary>
             HotNewsSource
