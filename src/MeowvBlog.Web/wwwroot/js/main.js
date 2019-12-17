@@ -155,7 +155,8 @@ function process_page(pathname) {
         soul: "/soul",
         imgs: ["/girl", "/cat", "/cat/", "/bing"],
         analysis: "/analysis",
-        friendlinks: "/friendlinks"
+        friendlinks: "/friendlinks",
+        wallpaper: "/wallpaper"
     }
 
     if (pathname == router.home) {
@@ -333,6 +334,77 @@ function process_page(pathname) {
                 document.getElementById('posts_tmpl').remove();
             }
         });
+    } else if (pathname.indexOf(router.wallpaper) == 0) {
+        var _parameter = {
+            type: 1,
+            page: 1
+        }
+        var _urldata = {};
+        location.search.replace(/([^?&=]+)=([^&]+)/g, (_, k, v) => _urldata[k] = v);
+
+        _parameter.type = _urldata.t || 1;
+        _parameter.page = _urldata.p || 1;
+
+        loadingWallpaperType();
+        loadingWallpaper(_parameter.type, _parameter.page);
+        pushState();
+
+        // 加载壁纸分类菜单，并遍历监听点击事件
+        function loadingWallpaperType() {
+            axios.get(`${api_domain}/wallpaper/types`).then(function (response) {
+                var html = template("wallpaper_nav_tmpl", { "result": response.data.result });
+                document.querySelector('.wallpaper-nav').innerHTML = html;
+                document.querySelector(".wallpaper-nav a").classList.add("wallpaper-active");
+            }).then(function () {
+                var nav_list = document.querySelectorAll(".wallpaper-nav a");
+                for (var i = 0; i < nav_list.length; i++) {
+                    if (nav_list[i].attributes["data-type"].value == _parameter.type) {
+                        settingNavClass(nav_list[i]);
+                    }
+                    nav_list[i].onclick = function () {
+                        document.querySelector('.loader').style.cssText = "display:block";
+
+                        _parameter.type = this.attributes["data-type"].value;
+                        _parameter.page = 1;
+                        settingNavClass(this);
+                        loadingWallpaper(_parameter.type, _parameter.page);
+                        pushState()
+                    }
+                }
+            });
+        }
+        // 加载壁纸
+        function loadingWallpaper(type, page) {
+            axios.get(`${api_domain}/wallpaper?type=${type}&page=${page}`).then(function (response) {
+                var html = template("wallpaper_tmpl", response.data);
+                document.querySelector('.wallpapers').innerHTML = html;
+
+                var totalPage = Math.ceil(response.data.total / 30);
+                var paginationHtml = "";
+                page = Number(page);
+                if (page == 1) {
+                    paginationHtml += `<span class="page-number">Previous</span><a class="page-number" href="/wallpaper?t=${type}&p=${page + 1}">Next</a>`;
+                } else if (page >= totalPage) {
+                    paginationHtml += `<a class="page-number" href="/wallpaper?t=${type}&p=${page - 1}">Previous</a><span class="page-number">Next</span>`;
+                } else {
+                    paginationHtml += `<a class="page-number" href="/wallpaper?t=${type}&p=${page - 1}">Previous</a><a class="page-number" href="/wallpaper?t=${type}&p=${page + 1} ">Next</a>`;
+                }
+                document.querySelector('.pagination').innerHTML = paginationHtml;
+
+                document.querySelector('.loader').style.cssText = "display:none";
+            });
+        }
+        // 设置a标签选中样式
+        function settingNavClass(item) {
+            document.querySelectorAll(".wallpaper-nav a").forEach(x => {
+                x.classList.remove("wallpaper-active");
+            });
+            item.classList.add("wallpaper-active");
+        }
+        // 不刷新页面动态设置查询参数
+        function pushState() {
+            history.pushState(null, null, location.href.split("?")[0] + "?t=" + _parameter.type + "&p=" + _parameter.page);
+        }
     } else if (pathname.indexOf(router.post) == 0) {
         var url = location.pathname.replace("/post", "");
         url = url.substring(url.length - 1) == "/" ? url : url + "/";
@@ -350,7 +422,6 @@ function process_page(pathname) {
             editormd.markdownToHTML("content");
         });
     } else if (pathname.indexOf(router.tags) == 0) {
-        console.log(location.href)
         axios.get(`${api_domain}/blog/tags`).then(function (response) {
             if (response.data.success) {
                 var html = template("tags_tmpl", response.data);

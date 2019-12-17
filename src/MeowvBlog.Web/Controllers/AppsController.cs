@@ -87,5 +87,12 @@ namespace MeowvBlog.Web.Controllers
         /// <returns></returns>
         [Route("/2048")]
         public IActionResult Game2048() => View();
+
+        /// <summary>
+        /// 壁纸
+        /// </summary>
+        /// <returns></returns>
+        [Route("/wallpaper")]
+        public IActionResult Wallpaper() => View();
     }
 }
