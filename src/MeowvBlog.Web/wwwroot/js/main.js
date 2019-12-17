@@ -392,6 +392,8 @@ function process_page(pathname) {
                 document.querySelector('.pagination').innerHTML = paginationHtml;
 
                 document.querySelector('.loader').style.cssText = "display:none";
+            }).then(function () {
+                wallpaperClick();
             });
         }
         // 设置a标签选中样式
@@ -404,6 +406,36 @@ function process_page(pathname) {
         // 不刷新页面动态设置查询参数
         function pushState() {
             history.pushState(null, null, location.href.split("?")[0] + "?t=" + _parameter.type + "&p=" + _parameter.page);
+        }
+        // 壁纸图片点击事件监听
+        function wallpaperClick() {
+            var imgs = document.querySelectorAll(".wallpaper img");
+            for (var i = 0; i < imgs.length; i++) {
+                imgs[i].onclick = function () {
+                    fetch(this.src.replace("middle", "max")).then(res => res.blob().then(blob => {
+                        window.open(window.URL.createObjectURL(blob), "_blank");
+                    }));
+                }
+            }
+        }
+        // 禁止右键
+        document.body.oncontextmenu = function () {
+            self.event.returnValue = false;
+        };
+        document.onkeydown = function () {
+            // 禁止 ctrl + U
+            if (event.ctrlKey && window.event.keyCode == 85) {
+                return false;
+            }
+            // 禁止 ctrl + shift + I
+            if (event.ctrlKey && event.shiftKey && window.event.keyCode == 73) {
+                return false;
+            }
+            //禁止 F12
+            if (window.event && window.event.keyCode == 123) {
+                event.keyCode = 0;
+                event.returnValue = false;
+            }
         }
     } else if (pathname.indexOf(router.post) == 0) {
         var url = location.pathname.replace("/post", "");

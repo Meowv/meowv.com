@@ -15,9 +15,9 @@
             <div class="wallpapers plus-row plus-col-space20">
                 <script id="wallpaper_tmpl" type="text/template">
                     {{each result}}
-                    <div class="plus-col-xs6 plus-col-md2" title="{{$value.title}}">
+                    <div class="plus-col-xs6 plus-col-md2">
                         <div class="wallpaper">
-                            <img src="{{$value.url.replace("max","middle")}}" alt="{{$value.title}}" />
+                            <img src="{{$value.url.replace("max","middle")}}" title="{{$value.title}}" alt="{{$value.title}}" />
                         </div>
                     </div>
                     {{/each}}
