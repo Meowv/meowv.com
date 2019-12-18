@@ -617,7 +617,8 @@
     font-weight: bold;
 }
 
-.wallpaper-active {
+.wallpaper-active, .dark-theme a.wallpaper-active {
+    font-weight: bold;
     color: #5a9600;
 }
 
