@@ -336,23 +336,33 @@ function process_page(pathname) {
         });
     } else if (pathname.indexOf(router.wallpaper) == 0) {
         var _parameter = {
-            type: 1,
-            page: 1
+            type: 0,
+            page: 1,
+            keywords: ''
         }
         var _urldata = {};
         location.search.replace(/([^?&=]+)=([^&]+)/g, (_, k, v) => _urldata[k] = v);
 
-        _parameter.type = _urldata.t || 1;
+        _parameter.type = _urldata.t || 0;
         _parameter.page = _urldata.p || 1;
+        _parameter.keywords = _urldata.k || '';
 
         loadingWallpaperType();
-        loadingWallpaper(_parameter.type, _parameter.page);
+        loadingWallpaper(_parameter.type, _parameter.page, _parameter.keywords);
         pushState();
 
         // 加载壁纸分类菜单，并遍历监听点击事件
         function loadingWallpaperType() {
             axios.get(`${api_domain}/wallpaper/types`).then(function (response) {
-                var html = template("wallpaper_nav_tmpl", { "result": response.data.result });
+                var result = response.data.result;
+                if (_parameter.type == 0) {
+                    result.splice(0, 0, {
+                        key: "All",
+                        value: 0,
+                        description: "全部"
+                    });
+                }
+                var html = template("wallpaper_nav_tmpl", { "result": result });
                 document.querySelector('.wallpaper-nav').innerHTML = html;
                 document.querySelector(".wallpaper-nav a").classList.add("wallpaper-active");
             }).then(function () {
@@ -366,16 +376,17 @@ function process_page(pathname) {
 
                         _parameter.type = this.attributes["data-type"].value;
                         _parameter.page = 1;
+                        _parameter.keywords = '';
                         settingNavClass(this);
-                        loadingWallpaper(_parameter.type, _parameter.page);
+                        loadingWallpaper(_parameter.type, _parameter.page, _parameter.keywords);
                         pushState()
                     }
                 }
             });
         }
         // 加载壁纸
-        function loadingWallpaper(type, page) {
-            axios.get(`${api_domain}/wallpaper?type=${type}&page=${page}`).then(function (response) {
+        function loadingWallpaper(type, page, keywords) {
+            axios.get(`${api_domain}/wallpaper?type=${type}&page=${page}&keywords=${keywords}`).then(function (response) {
                 var html = template("wallpaper_tmpl", response.data);
                 document.querySelector('.wallpapers').innerHTML = html;
 
@@ -383,11 +394,11 @@ function process_page(pathname) {
                 var paginationHtml = "";
                 page = Number(page);
                 if (page == 1) {
-                    paginationHtml += `<span class="page-number">Previous</span><a class="page-number" href="/wallpaper?t=${type}&p=${page + 1}">Next</a>`;
+                    paginationHtml += `<span class="page-number">Previous</span><a class="page-number" href="/wallpaper?t=${type}&k=${keywords}&p=${page + 1}">Next</a>`;
                 } else if (page >= totalPage) {
-                    paginationHtml += `<a class="page-number" href="/wallpaper?t=${type}&p=${page - 1}">Previous</a><span class="page-number">Next</span>`;
+                    paginationHtml += `<a class="page-number" href="/wallpaper?t=${type}&k=${keywords}&p=${page - 1}">Previous</a><span class="page-number">Next</span>`;
                 } else {
-                    paginationHtml += `<a class="page-number" href="/wallpaper?t=${type}&p=${page - 1}">Previous</a><a class="page-number" href="/wallpaper?t=${type}&p=${page + 1} ">Next</a>`;
+                    paginationHtml += `<a class="page-number" href="/wallpaper?t=${type}&k=${keywords}&p=${page - 1}">Previous</a><a class="page-number" href="/wallpaper?t=${type}&k=${keywords}&p=${page + 1} ">Next</a>`;
                 }
                 document.querySelector('.pagination').innerHTML = paginationHtml;
 
@@ -405,7 +416,7 @@ function process_page(pathname) {
         }
         // 不刷新页面动态设置查询参数
         function pushState() {
-            history.pushState(null, null, location.href.split("?")[0] + "?t=" + _parameter.type + "&p=" + _parameter.page);
+            history.pushState(null, null, location.href.split("?")[0] + "?t=" + _parameter.type + "&k=" + _parameter.keywords + "&p=" + _parameter.page);
         }
         // 壁纸图片点击事件监听
         function wallpaperClick() {
