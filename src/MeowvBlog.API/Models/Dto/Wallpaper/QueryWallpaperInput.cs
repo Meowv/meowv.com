@@ -15,6 +15,6 @@
         /// <summary>
         /// 搜索关键字
         /// </summary>
-        public string Keyworkds { get; set; }
+        public string Keywords { get; set; }
     }
 }

@@ -50,12 +50,12 @@ namespace MeowvBlog.API.Controllers
         /// <param name="input"></param>
         /// <returns></returns>
         [HttpGet]
-        [ResponseCache(CacheProfileName = "default", VaryByQueryKeys = new string[] { "type", "page", "limit", "keyworkds" })]
+        [ResponseCache(CacheProfileName = "default", VaryByQueryKeys = new string[] { "type", "page", "limit", "keywords" })]
         public async Task<PagedResponse<WallpaperDto>> QueryWallpaperAsync([FromQuery] QueryWallpaperInput input)
         {
             var wallpapers = _context.Wallpapers
                                      .WhereIf(input.Type > 0, x => x.Type == input.Type)
-                                     .WhereIf(!string.IsNullOrEmpty(input.Keyworkds), x => x.Title.Contains(input.Keyworkds))
+                                     .WhereIf(!string.IsNullOrEmpty(input.Keywords), x => x.Title.Contains(input.Keywords))
                                      .OrderByDescending(x => x.Timestamp);
 
             var count = await wallpapers.CountAsync();
