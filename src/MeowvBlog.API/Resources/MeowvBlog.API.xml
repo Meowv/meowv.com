@@ -913,6 +913,13 @@
             <param name="input"></param>
             <returns></returns>
         </member>
+        <member name="M:MeowvBlog.API.Controllers.WallpaperController.IsExistWallpaperAsync(System.String)">
+            <summary>
+            是否存在壁纸
+            </summary>
+            <param name="url"></param>
+            <returns></returns>
+        </member>
         <member name="M:MeowvBlog.API.Controllers.WallpaperController.BulkInsertWallpaperAsync(MeowvBlog.API.Models.Dto.Wallpaper.InsertWallpaperInput)">
             <summary>
             批量插入壁纸
@@ -1032,6 +1039,26 @@
             <typeparam name="TResult"></typeparam>
             <param name="source"></param>
             <param name="selector"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Extensions.Extensions.WhereIf``1(System.Linq.IQueryable{``0},System.Boolean,System.Linq.Expressions.Expression{System.Func{``0,System.Int32,System.Boolean}})">
+            <summary>
+            WhereIf，满足条件进行查询
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="query"></param>
+            <param name="condition"></param>
+            <param name="predicate"></param>
+            <returns></returns>
+        </member>
+        <member name="M:MeowvBlog.API.Extensions.Extensions.WhereIf``1(System.Linq.IQueryable{``0},System.Boolean,System.Linq.Expressions.Expression{System.Func{``0,System.Boolean}})">
+            <summary>
+            WhereIf，满足条件进行查询
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="query"></param>
+            <param name="condition"></param>
+            <param name="predicate"></param>
             <returns></returns>
         </member>
         <member name="M:MeowvBlog.API.Extensions.Extensions.SaveImg(System.Byte[],System.String)">
@@ -1545,6 +1572,11 @@
         <member name="P:MeowvBlog.API.Models.Dto.Wallpaper.QueryWallpaperInput.Limit">
             <summary>
             限制条数
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Models.Dto.Wallpaper.QueryWallpaperInput.Keyworkds">
+            <summary>
+            搜索关键字
             </summary>
         </member>
         <member name="P:MeowvBlog.API.Models.Dto.Wallpaper.WallpaperDto.Url">

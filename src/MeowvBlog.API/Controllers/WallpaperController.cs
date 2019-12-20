@@ -50,14 +50,17 @@ namespace MeowvBlog.API.Controllers
         /// <param name="input"></param>
         /// <returns></returns>
         [HttpGet]
-        [ResponseCache(CacheProfileName = "default", VaryByQueryKeys = new string[] { "type", "page", "limit" })]
+        [ResponseCache(CacheProfileName = "default", VaryByQueryKeys = new string[] { "type", "page", "limit", "keyworkds" })]
         public async Task<PagedResponse<WallpaperDto>> QueryWallpaperAsync([FromQuery] QueryWallpaperInput input)
         {
-            var wallpapers = _context.Wallpapers.Where(x => x.Type == (int)input.Type);
+            var wallpapers = _context.Wallpapers
+                                     .WhereIf(input.Type > 0, x => x.Type == input.Type)
+                                     .WhereIf(!string.IsNullOrEmpty(input.Keyworkds), x => x.Title.Contains(input.Keyworkds))
+                                     .OrderByDescending(x => x.Timestamp);
+
             var count = await wallpapers.CountAsync();
 
-            var result = await wallpapers.OrderByDescending(x => x.Timestamp)
-                                         .Skip((input.Page - 1) * input.Limit)
+            var result = await wallpapers.Skip((input.Page - 1) * input.Limit)
                                          .Take(input.Limit)
                                          .SelectToListAsync(x => new WallpaperDto
                                          {
@@ -65,6 +68,21 @@ namespace MeowvBlog.API.Controllers
                                              Url = x.Url
                                          });
             return new PagedResponse<WallpaperDto>(count, result);
+        }
+
+        /// <summary>
+        /// 是否存在壁纸
+        /// </summary>
+        /// <param name="url"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("isexist")]
+        public async Task<Response<string>> IsExistWallpaperAsync(string url)
+        {
+            return new Response<string>
+            {
+                Result = (await _context.Wallpapers.AnyAsync(x => x.Url == url)).ToString().ToLower()
+            };
         }
 
         /// <summary>
