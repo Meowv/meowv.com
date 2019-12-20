@@ -285,5 +285,16 @@ namespace MeowvBlog.API.Extensions
                 size = await ms.ReadAsync(bytes, 0, bytes.Length);
             }
         }
+
+        /// <summary>
+        /// 将时间戳转换为DateTime
+        /// </summary>
+        /// <param name="timestamp"></param>
+        /// <returns></returns>
+        public static DateTime ToDateTime(this string timestamp)
+        {
+            var ticks = 621355968000000000 + long.Parse(timestamp) * 10000;
+            return new DateTime(ticks);
+        }
     }
 }
