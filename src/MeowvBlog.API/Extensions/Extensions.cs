@@ -241,6 +241,32 @@ namespace MeowvBlog.API.Extensions
         }
 
         /// <summary>
+        /// WhereIf，满足条件进行查询
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="query"></param>
+        /// <param name="condition"></param>
+        /// <param name="predicate"></param>
+        /// <returns></returns>
+        public static IQueryable<T> WhereIf<T>(this IQueryable<T> query, bool condition, Expression<Func<T, int, bool>> predicate)
+        {
+            return condition ? query.Where(predicate) : query;
+        }
+
+        /// <summary>
+        /// WhereIf，满足条件进行查询
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="query"></param>
+        /// <param name="condition"></param>
+        /// <param name="predicate"></param>
+        /// <returns></returns>
+        public static IQueryable<T> WhereIf<T>(this IQueryable<T> query, bool condition, Expression<Func<T, bool>> predicate)
+        {
+            return condition ? query.Where(predicate) : query;
+        }
+
+        /// <summary>
         /// 将转换为byte[]类型的图片保存至指定路径
         /// </summary>
         /// <param name="buffer"></param>
