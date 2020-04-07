@@ -525,12 +525,6 @@
             <param name="url"></param>
             <returns></returns>
         </member>
-        <member name="M:MeowvBlog.API.Controllers.CommonController.Date">
-            <summary>
-            Date
-            </summary>
-            <returns></returns>
-        </member>
         <member name="M:MeowvBlog.API.Controllers.FMController.GetChannels">
             <summary>
             获取专辑分类
