@@ -170,5 +170,21 @@ namespace MeowvBlog.API.Configurations
 
             public static string Lyric => _config["FMApi:Lyric"];
         }
+
+        /// <summary>
+        /// 脚本参数
+        /// </summary>
+        public static class Job
+        {
+            /// <summary>
+            /// 每天的开始执行时间(几时)
+            /// </summary>
+            public static int ExecutionTime => Convert.ToInt32(_config["Job:ExecutionTime"]);
+
+            /// <summary>
+            /// 每次执行的延迟时间(毫秒)
+            /// </summary>
+            public static int MillisecondsDelay => Convert.ToInt32(_config["Job:MillisecondsDelay"]);
+        }
     }
 }

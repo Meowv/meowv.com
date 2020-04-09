@@ -79,6 +79,21 @@
             FM Api
             </summary>
         </member>
+        <member name="T:MeowvBlog.API.Configurations.AppSettings.Job">
+            <summary>
+            脚本参数
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Configurations.AppSettings.Job.ExecutionTime">
+            <summary>
+            每天的开始执行时间(几时)
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Configurations.AppSettings.Job.MillisecondsDelay">
+            <summary>
+            每次执行的延迟时间(毫秒)
+            </summary>
+        </member>
         <member name="F:MeowvBlog.API.Configurations.GitHubConfig.API_Authorize">
             <summary>
             GET请求，跳转GitHub登录界面，获取用户授权，得到code
