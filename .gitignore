@@ -181,3 +181,4 @@ ASALocalRun/
 .mfractor/
 .localhistory/
 healthchecksdb
+.local-chromium
