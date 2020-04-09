@@ -18,6 +18,7 @@
   <ItemGroup>
     <PackageReference Include="Baidu.AI" Version="3.6.14" />
     <PackageReference Include="IP2Region" Version="1.2.0" />
+    <PackageReference Include="PuppeteerSharp" Version="2.0.2" />
     <PackageReference Include="SixLabors.ImageSharp" Version="1.0.0-beta0007" />
     <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="1.0.0-beta0007" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="5.3.1" />
