@@ -59,8 +59,9 @@
 - [x] 智能抠图，移除图片背景
 - [x] 腾讯云验证码防水墙接入，防止频繁调用签名页面
 - [x] 手机壁纸，按分类查询，上下页翻页查看，支持点击查看大图
-- [ ] 基于BackgroundService的简易后台定时任务
-- [ ] PuppeteerSharp访问指定网页并生成图片，定时推送至E-Mail
+- [x] 基于BackgroundService的简易后台定时任务
+- [x] PuppeteerSharp访问指定网页并生成图片
+- [x] 基于MailKit和MimeKit发送邮件
 - [ ] ...
 
 ## Versions
@@ -70,7 +71,6 @@
 - [v_3.0.0](https://github.com/Meowv/Blog/tree/v_3.0.0)
 - [v_3.0.1](https://github.com/Meowv/Blog/tree/v_3.0.1)
 - [v_3.0.x](https://github.com/Meowv/Blog/tree/v_3.0.x)
-- [v_3.1.0](https://github.com/Meowv/Blog/tree/dev)
 - [master](https://github.com/Meowv/Blog)
 
 ## Nuget Packages
@@ -79,6 +79,9 @@
 |:------|:-----:|
 |Baidu.AI|[![NuGet version](https://badge.fury.io/nu/SixLabors.Baidu.AI.svg)](https://badge.fury.io/nu/Baidu.AI)|
 |IP2Region|[![NuGet version](https://badge.fury.io/nu/SixLabors.IP2Region.svg)](https://badge.fury.io/nu/IP2Region)|
+|MailKit|[![NuGet version](https://badge.fury.io/nu/SixLabors.MailKit.svg)](https://badge.fury.io/nu/MailKit)|
+|MimeKit|[![NuGet version](https://badge.fury.io/nu/SixLabors.MimeKit.svg)](https://badge.fury.io/nu/MimeKit)|
+|PuppeteerSharp|[![NuGet version](https://badge.fury.io/nu/SixLabors.PuppeteerSharp.svg)](https://badge.fury.io/nu/PuppeteerSharp)|
 |SixLabors.ImageSharp|[![NuGet version](https://badge.fury.io/nu/SixLabors.ImageSharp.svg)](https://badge.fury.io/nu/SixLabors.ImageSharp)|
 |SixLabors.ImageSharp.Drawing|[![NuGet version](https://badge.fury.io/nu/SixLabors.ImageSharp.Drawing.svg)](https://badge.fury.io/nu/SixLabors.ImageSharp.Drawing)|
 |Swashbuckle.AspNetCore|[![NuGet version](https://badge.fury.io/nu/Swashbuckle.AspNetCore.svg)](https://badge.fury.io/nu/Swashbuckle.AspNetCore)|
