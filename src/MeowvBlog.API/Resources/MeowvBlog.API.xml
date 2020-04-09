@@ -94,6 +94,56 @@
             每次执行的延迟时间(毫秒)
             </summary>
         </member>
+        <member name="T:MeowvBlog.API.Configurations.AppSettings.Email">
+            <summary>
+            Email配置
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Configurations.AppSettings.Email.Host">
+            <summary>
+            Host
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Configurations.AppSettings.Email.Port">
+            <summary>
+            Port
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Configurations.AppSettings.Email.UseSsl">
+            <summary>
+            UseSsl
+            </summary>
+        </member>
+        <member name="T:MeowvBlog.API.Configurations.AppSettings.Email.From">
+            <summary>
+            From
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Configurations.AppSettings.Email.From.Username">
+            <summary>
+            Username
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Configurations.AppSettings.Email.From.Password">
+            <summary>
+            Password
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Configurations.AppSettings.Email.From.Name">
+            <summary>
+            Name
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Configurations.AppSettings.Email.From.Address">
+            <summary>
+            Address
+            </summary>
+        </member>
+        <member name="P:MeowvBlog.API.Configurations.AppSettings.Email.To">
+            <summary>
+            To
+            </summary>
+        </member>
         <member name="F:MeowvBlog.API.Configurations.GitHubConfig.API_Authorize">
             <summary>
             GET请求，跳转GitHub登录界面，获取用户授权，得到code
