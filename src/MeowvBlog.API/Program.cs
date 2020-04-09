@@ -1,5 +1,6 @@
 using MeowvBlog.API.Configurations;
 using MeowvBlog.API.Infrastructure;
+using MeowvBlog.API.Jobs;
 using MeowvBlog.API.Models.Dto.Response;
 using MeowvBlog.API.Swagger;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -49,6 +50,8 @@ namespace MeowvBlog.Web
             services.AddControllers().AddNewtonsoftJson();
             // 注入Sqlite数据库上下文
             services.AddDbContext<MeowvBlogDBContext>();
+            // 注入基于BackgroundService的简单定时任务
+            services.AddTransient<IHostedService, RemindJob>();
             // 路由配置
             services.AddRouting(options =>
             {
