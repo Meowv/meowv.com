@@ -37,7 +37,7 @@ namespace MeowvBlog.API.Jobs
                         Width = 1920,
                         Height = 1080
                     });
-                    await page.GoToAsync("https://github.com/Meowv");
+                    await page.GoToAsync("https://meowv.com/wallpaper");
                     await page.ScreenshotAsync(path, new ScreenshotOptions
                     {
                         FullPage = true,
@@ -53,7 +53,7 @@ namespace MeowvBlog.API.Jobs
                     message.From.Add(new MailboxAddress(AppSettings.Email.From.Name, AppSettings.Email.From.Address));
                     var address = AppSettings.Email.To.Select(x => new MailboxAddress(x.Key, x.Value));
                     message.To.AddRange(address);
-                    message.Subject = "【定时任务】Github个人主页截图推送";
+                    message.Subject = "【定时任务】手机壁纸页面截图推送服务";
 
                     var builder = new BodyBuilder();
 
