@@ -23,11 +23,15 @@ namespace MeowvBlog.API.Jobs
                     #region 访问指定URL,保存为图片
 
                     var path = Path.Combine(Path.GetTempPath(), "meowv.png");
-
+           
                     await new BrowserFetcher().DownloadAsync(BrowserFetcher.DefaultRevision);
-                    using var browser = await Puppeteer.LaunchAsync(new LaunchOptions { Headless = true });
+                    using var browser = await Puppeteer.LaunchAsync(new LaunchOptions
+                    {
+                        Headless = true,
+                        Args = new string[] { "--no-sandbox" }
+                    });
                     using var page = await browser.NewPageAsync();
-
+                    
                     await page.SetViewportAsync(new ViewPortOptions
                     {
                         Width = 1920,
@@ -39,7 +43,7 @@ namespace MeowvBlog.API.Jobs
                         FullPage = true,
                         Type = ScreenshotType.Png
                     });
-
+                   
                     #endregion
 
                     #region 发送Email
