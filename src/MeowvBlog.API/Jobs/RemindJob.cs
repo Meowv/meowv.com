@@ -37,7 +37,7 @@ namespace MeowvBlog.API.Jobs
                         Width = 1920,
                         Height = 1080
                     });
-                    await page.GoToAsync("https://meowv.com/wallpaper");
+                    await page.GoToAsync("https://meowv.com/wallpaper", timeout: 0);
                     await page.ScreenshotAsync(path, new ScreenshotOptions
                     {
                         FullPage = true,
