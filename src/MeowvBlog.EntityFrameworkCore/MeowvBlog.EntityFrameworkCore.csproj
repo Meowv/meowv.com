@@ -4,4 +4,9 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\MeowvBlog.Domain\MeowvBlog.Domain.csproj" />
+    <PackageReference Include="Volo.Abp.EntityFrameworkCore.MySQL" Version="2.5.0" />
+  </ItemGroup>
+
 </Project>
