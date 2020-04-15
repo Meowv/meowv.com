@@ -37,7 +37,7 @@ namespace MeowvBlog.API.Jobs
                         Width = 1920,
                         Height = 1080
                     });
-                    await page.GoToAsync("https://meowv.com/wallpaper", timeout: 0);
+                    await page.GoToAsync(AppSettings.Job.Url, WaitUntilNavigation.Networkidle0);
                     await page.ScreenshotAsync(path, new ScreenshotOptions
                     {
                         FullPage = true,
@@ -53,7 +53,7 @@ namespace MeowvBlog.API.Jobs
                     message.From.Add(new MailboxAddress(AppSettings.Email.From.Name, AppSettings.Email.From.Address));
                     var address = AppSettings.Email.To.Select(x => new MailboxAddress(x.Key, x.Value));
                     message.To.AddRange(address);
-                    message.Subject = "【定时任务】手机壁纸页面截图推送服务";
+                    message.Subject = AppSettings.Email.Subject;
 
                     var builder = new BodyBuilder();
 

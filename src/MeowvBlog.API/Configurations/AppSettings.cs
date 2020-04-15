@@ -177,6 +177,11 @@ namespace MeowvBlog.API.Configurations
         public static class Job
         {
             /// <summary>
+            /// 要访问的URL
+            /// </summary>
+            public static string Url => _config["Job:Url"];
+
+            /// <summary>
             /// 每天的开始执行时间(几时)
             /// </summary>
             public static int ExecutionTime => Convert.ToInt32(_config["Job:ExecutionTime"]);
@@ -253,6 +258,11 @@ namespace MeowvBlog.API.Configurations
                     return dic;
                 }
             }
+
+            /// <summary>
+            /// Subject
+            /// </summary>
+            public static string Subject => _config["Email:Subject"];
         }
     }
 }
