@@ -1,44 +1,50 @@
-using MeowvBlog.Web.Hubs;
-using Microsoft.AspNetCore.Builder;
+﻿using System;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System.Text.Encodings.Web;
-using System.Text.Unicode;
-using System.Threading.Tasks;
+using Serilog;
+using Serilog.Events;
 
 namespace MeowvBlog.Web
 {
     public class Program
     {
-        public static async Task Main(string[] args)
+        public static int Main(string[] args)
         {
-            await Host.CreateDefaultBuilder(args).ConfigureWebHostDefaults(builder =>
+            Log.Logger = new LoggerConfiguration()
+#if DEBUG
+                .MinimumLevel.Debug()
+#else
+                .MinimumLevel.Information()
+#endif
+                .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+                .Enrich.FromLogContext()
+                .WriteTo.Async(c => c.File("Logs/logs.txt"))
+                .CreateLogger();
+
+            try
             {
-                builder.ConfigureKestrel(options => { options.AddServerHeader = false; })
-                       .UseUrls("http://*:5001")
-                       .UseStartup<Program>();
-            }).Build().RunAsync();
+                Log.Information("Starting web host.");
+                CreateHostBuilder(args).Build().Run();
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                Log.Fatal(ex, "Host terminated unexpectedly!");
+                return 1;
+            }
+            finally
+            {
+                Log.CloseAndFlush();
+            }
         }
 
-        public void ConfigureServices(IServiceCollection services)
-        {
-            services.AddControllersWithViews();
-            services.AddSignalR();
-            services.AddSingleton(HtmlEncoder.Create(new[] { UnicodeRanges.BasicLatin, UnicodeRanges.CjkUnifiedIdeographs }));
-        }
-
-        public void Configure(IApplicationBuilder app)
-        {
-            app.UseStatusCodePages();
-            app.UseHttpsRedirection();
-            app.UseStaticFiles();
-            app.UseRouting();
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllers();
-                endpoints.MapHub<ConnectionHub>("/connection");
-            });
-        }
+        internal static IHostBuilder CreateHostBuilder(string[] args) =>
+            Host.CreateDefaultBuilder(args)
+                .ConfigureWebHostDefaults(webBuilder =>
+                {
+                    webBuilder.UseStartup<Startup>();
+                })
+                .UseAutofac()
+                .UseSerilog();
     }
 }
