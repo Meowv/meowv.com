@@ -1,4 +1,6 @@
-﻿namespace Meowv.Blog.Application.Blog
+﻿using System.Threading.Tasks;
+
+namespace Meowv.Blog.Application.Blog
 {
     public interface IBlogService
     {
@@ -7,5 +9,11 @@
         /// </summary>
         /// <returns></returns>
         string Get();
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        Task<long> PostCountAsync();
     }
 }

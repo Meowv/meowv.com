@@ -10,6 +10,6 @@ namespace Meowv.Blog.HttpApi
         )]
     public class MeowvBlogHttpApiModule : AbpModule
     {
-        
+
     }
 }

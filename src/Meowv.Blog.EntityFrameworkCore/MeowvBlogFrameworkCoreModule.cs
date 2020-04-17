@@ -1,8 +1,7 @@
 using Meowv.Blog.Domain;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.EntityFrameworkCore;
-using Volo.Abp.EntityFrameworkCore.SqlServer;
+using Volo.Abp.EntityFrameworkCore.MySQL;
 using Volo.Abp.Modularity;
 
 namespace Meowv.Blog.EntityFrameworkCore
@@ -10,7 +9,7 @@ namespace Meowv.Blog.EntityFrameworkCore
     [DependsOn(
         typeof(MeowvBlogDomainModule),
         typeof(AbpEntityFrameworkCoreModule),
-        typeof(AbpEntityFrameworkCoreSqlServerModule)
+        typeof(AbpEntityFrameworkCoreMySQLModule)
         )]
     public class MeowvBlogFrameworkCoreModule : AbpModule
     {
@@ -23,7 +22,7 @@ namespace Meowv.Blog.EntityFrameworkCore
 
             Configure<AbpDbContextOptions>(options =>
             {
-                options.UseSqlServer();
+                options.UseMySQL();
             });
         }
     }

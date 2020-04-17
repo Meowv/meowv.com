@@ -6,7 +6,6 @@
 
   <ItemGroup>
     <PackageReference Include="Volo.Abp.EntityFrameworkCore.MySQL" Version="2.5.0" />
-    <PackageReference Include="Volo.Abp.EntityFrameworkCore.SQLServer" Version="2.5.0" />
     <ProjectReference Include="..\Meowv.Blog.Domain\Meowv.Blog.Domain.csproj" />
   </ItemGroup>
 
