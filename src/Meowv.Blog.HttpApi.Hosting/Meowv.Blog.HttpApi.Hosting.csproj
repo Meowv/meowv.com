@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+ <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="5.3.1" />
+    <PackageReference Include="Volo.Abp.Autofac" Version="2.5.0" />
+    <ProjectReference Include="..\Meowv.Blog.HttpApi\Meowv.Blog.HttpApi.csproj" />
+    <ProjectReference Include="..\Meowv.Blog.EntityFrameworkCore\Meowv.Blog.EntityFrameworkCore.csproj" />
+  </ItemGroup>
+
+</Project>
