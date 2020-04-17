@@ -1,41 +1,13 @@
-﻿using System;
-using Microsoft.AspNetCore.Hosting;
+﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
-using Serilog;
-using Serilog.Events;
 
 namespace MeowvBlog.Web
 {
     public class Program
     {
-        public static int Main(string[] args)
+        public static void Main(string[] args)
         {
-            Log.Logger = new LoggerConfiguration()
-#if DEBUG
-                .MinimumLevel.Debug()
-#else
-                .MinimumLevel.Information()
-#endif
-                .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
-                .Enrich.FromLogContext()
-                .WriteTo.Async(c => c.File("Logs/logs.txt"))
-                .CreateLogger();
-
-            try
-            {
-                Log.Information("Starting web host.");
-                CreateHostBuilder(args).Build().Run();
-                return 0;
-            }
-            catch (Exception ex)
-            {
-                Log.Fatal(ex, "Host terminated unexpectedly!");
-                return 1;
-            }
-            finally
-            {
-                Log.CloseAndFlush();
-            }
+            CreateHostBuilder(args).Build().Run();
         }
 
         internal static IHostBuilder CreateHostBuilder(string[] args) =>
@@ -44,7 +16,6 @@ namespace MeowvBlog.Web
                 {
                     webBuilder.UseStartup<Startup>();
                 })
-                .UseAutofac()
-                .UseSerilog();
+                .UseAutofac();
     }
 }

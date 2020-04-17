@@ -5,8 +5,6 @@ using Microsoft.Extensions.Configuration;
 
 namespace MeowvBlog.EntityFrameworkCore
 {
-    /* This class is needed for EF Core console commands
-     * (like Add-Migration and Update-Database commands) */
     public class MeowvBlogMigrationsDbContextFactory : IDesignTimeDbContextFactory<MeowvBlogMigrationsDbContext>
     {
         public MeowvBlogMigrationsDbContext CreateDbContext(string[] args)

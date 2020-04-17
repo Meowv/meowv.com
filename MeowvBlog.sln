@@ -16,8 +16,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.Application", "sr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.Application.Contracts", "src\MeowvBlog.Application.Contracts\MeowvBlog.Application.Contracts.csproj", "{87892E32-A2AB-4407-B33F-C63230D77A34}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.DbMigrator", "src\MeowvBlog.DbMigrator\MeowvBlog.DbMigrator.csproj", "{8866B3CC-5B59-47CB-8659-9C0A76DBEAC4}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.Domain", "src\MeowvBlog.Domain\MeowvBlog.Domain.csproj", "{F645CA5C-0BD4-4950-8867-60581423900A}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.Domain.Shared", "src\MeowvBlog.Domain.Shared\MeowvBlog.Domain.Shared.csproj", "{EE66B7EE-31EC-43C7-96F8-9C76D735ED95}"
@@ -27,8 +25,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.EntityFrameworkCore.DbMigrations", "src\MeowvBlog.EntityFrameworkCore.DbMigrations\MeowvBlog.EntityFrameworkCore.DbMigrations.csproj", "{F6BC7762-DE6A-44CD-A715-6ABEFB1896C3}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.HttpApi", "src\MeowvBlog.HttpApi\MeowvBlog.HttpApi.csproj", "{C5638FD1-855D-47B7-8D42-C8139DEA7D14}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.HttpApi.Client", "src\MeowvBlog.HttpApi.Client\MeowvBlog.HttpApi.Client.csproj", "{CB3A5A66-654C-41E5-A6F9-BC3F5D346851}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MeowvBlog.Web", "src\MeowvBlog.Web\MeowvBlog.Web.csproj", "{2CC1A00A-3EFE-4AA2-9C6B-2C991ABD17BF}"
 EndProject
@@ -46,10 +42,6 @@ Global
 		{87892E32-A2AB-4407-B33F-C63230D77A34}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{87892E32-A2AB-4407-B33F-C63230D77A34}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{87892E32-A2AB-4407-B33F-C63230D77A34}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8866B3CC-5B59-47CB-8659-9C0A76DBEAC4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8866B3CC-5B59-47CB-8659-9C0A76DBEAC4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8866B3CC-5B59-47CB-8659-9C0A76DBEAC4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8866B3CC-5B59-47CB-8659-9C0A76DBEAC4}.Release|Any CPU.Build.0 = Release|Any CPU
 		{F645CA5C-0BD4-4950-8867-60581423900A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{F645CA5C-0BD4-4950-8867-60581423900A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F645CA5C-0BD4-4950-8867-60581423900A}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -70,10 +62,6 @@ Global
 		{C5638FD1-855D-47B7-8D42-C8139DEA7D14}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C5638FD1-855D-47B7-8D42-C8139DEA7D14}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C5638FD1-855D-47B7-8D42-C8139DEA7D14}.Release|Any CPU.Build.0 = Release|Any CPU
-		{CB3A5A66-654C-41E5-A6F9-BC3F5D346851}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{CB3A5A66-654C-41E5-A6F9-BC3F5D346851}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{CB3A5A66-654C-41E5-A6F9-BC3F5D346851}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{CB3A5A66-654C-41E5-A6F9-BC3F5D346851}.Release|Any CPU.Build.0 = Release|Any CPU
 		{2CC1A00A-3EFE-4AA2-9C6B-2C991ABD17BF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{2CC1A00A-3EFE-4AA2-9C6B-2C991ABD17BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2CC1A00A-3EFE-4AA2-9C6B-2C991ABD17BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
