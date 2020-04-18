@@ -15,25 +15,14 @@ namespace Meowv.Blog.HttpApi.Controllers
         }
 
         /// <summary>
-        /// 。。。
-        /// </summary>
-        /// <returns></returns>
-        [HttpGet]
-        [Route("get")]
-        public string Get()
-        {
-            return _blogService.Get();
-        }
-
-        /// <summary>
         /// 悳方
         /// </summary>
         /// <returns></returns>
         [HttpGet]
         [Route("count")]
-        public async Task<long> PostCount()
+        public async Task<long> GetPostCountAsync()
         {
-            return await _blogService.PostCountAsync();
+            return await _blogService.GetPostCountAsync();
         }
     }
 }

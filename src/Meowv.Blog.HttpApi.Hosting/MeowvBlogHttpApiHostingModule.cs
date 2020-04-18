@@ -1,11 +1,9 @@
 using Meowv.Blog.Domain;
 using Meowv.Blog.EntityFrameworkCore;
+using Meowv.Blog.HttpApi.Hosting.Swagger;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.OpenApi.Models;
-using System;
-using System.IO;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
 using Volo.Abp.Autofac;
@@ -28,11 +26,7 @@ namespace Meowv.Blog.HttpApi.Hosting
 
         private void ConfigureSwaggerServices(IServiceCollection services)
         {
-            services.AddSwaggerGen(options =>
-            {
-                options.SwaggerDoc("v1", new OpenApiInfo { Title = "API", Version = "v1" });
-                //options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "Meowv.Blog.Application.xml"));
-            });
+            services.AddSwagger();
         }
 
         public override void OnApplicationInitialization(ApplicationInitializationContext context)
@@ -44,18 +38,9 @@ namespace Meowv.Blog.HttpApi.Hosting
             {
                 app.UseDeveloperExceptionPage();
             }
-            else
-            {
-                app.UseExceptionHandler("/Error");
-            }
 
             app.UseSwagger();
-            app.UseSwaggerUI(options =>
-            {
-                options.SwaggerEndpoint("/swagger/v1/swagger.json", "MeowvBlog API");
-            });
-
-            app.UseStaticFiles();
+            app.UseSwaggerUI();
             app.UseRouting();
             app.UseMvcWithDefaultRouteAndArea();
         }
