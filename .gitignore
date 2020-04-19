@@ -118,7 +118,6 @@ ecf/
 rcf/
 AppPackages/
 BundleArtifacts/
-Package.StoreAssociation.xml
 _pkginfo.txt
 *.appx
 *.[Cc]ache
@@ -182,3 +181,4 @@ ASALocalRun/
 .localhistory/
 healthchecksdb
 .local-chromium
+*.xml

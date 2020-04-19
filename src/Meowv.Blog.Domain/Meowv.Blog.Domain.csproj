@@ -1,7 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="..\..\common.props" />
+
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DocumentationFile>..\Meowv.Blog.HttpApi.Hosting\Meowv.Blog.Domain.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,11 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="..\..\common.props" />
+
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DocumentationFile>..\Meowv.Blog.HttpApi.Hosting\Meowv.Blog.HttpApi.xml</DocumentationFile>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Volo.Abp.Identity.HttpApi" Version="2.5.0" />
+    
     <ProjectReference Include="..\Meowv.Blog.Application\Meowv.Blog.Application.csproj" />
   </ItemGroup>
 

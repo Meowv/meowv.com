@@ -4,7 +4,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.Filters;
 using Swashbuckle.AspNetCore.SwaggerUI;
+using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace Meowv.Blog.HttpApi.Hosting.Swagger
 {
@@ -71,7 +73,9 @@ namespace Meowv.Blog.HttpApi.Hosting.Swagger
                 });
 
                 // API注释所需XML文件
-                // options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "MeowvBlog.API.xml"));
+                options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "Meowv.Blog.HttpApi.xml")); 
+                options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "Meowv.Blog.Domain.xml"));
+                options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "Meowv.Blog.Application.Contracts.xml"));
 
                 #region 小绿锁，JWT身份认证配置
 
