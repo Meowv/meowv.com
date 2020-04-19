@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using Meowv.Blog.Domain.Configurations;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.Filters;
@@ -12,7 +13,7 @@ namespace Meowv.Blog.HttpApi.Hosting.Swagger
         /// <summary>
         /// 当前API版本，从appsettings.json获取
         /// </summary>
-        private static readonly string version = $"v.1.0.0";
+        private static readonly string version = $"v{AppSettings.ApiVersion}";
 
         /// <summary>
         /// Swagger描述信息
