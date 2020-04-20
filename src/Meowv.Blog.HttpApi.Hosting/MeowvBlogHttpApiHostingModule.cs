@@ -39,6 +39,13 @@ namespace Meowv.Blog.HttpApi.Hosting
             // Swagger扩展
             context.Services.AddSwagger();
 
+            // Redis
+            context.Services.AddDistributedRedisCache(options =>
+            {
+                options.InstanceName = "RedisDistributedCache";
+                options.Configuration = "127.0.0.1:6379";
+            });
+
             // 身份验证之JWT
             context.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                     .AddJwtBearer(options =>
