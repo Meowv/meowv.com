@@ -30,6 +30,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meowv.Blog.Application.Cach
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meowv.Blog.EntityFrameworkCore.DbMigrations", "src\Meowv.Blog.EntityFrameworkCore.DbMigrations\Meowv.Blog.EntityFrameworkCore.DbMigrations.csproj", "{A9638215-09FA-46ED-AB6A-D860CE1F98C0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meowv.Blog.ToolKits", "src\Meowv.Blog.ToolKits\Meowv.Blog.ToolKits.csproj", "{3C816E57-16C2-437B-90B4-A939BF07545B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -72,6 +74,10 @@ Global
 		{A9638215-09FA-46ED-AB6A-D860CE1F98C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A9638215-09FA-46ED-AB6A-D860CE1F98C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A9638215-09FA-46ED-AB6A-D860CE1F98C0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3C816E57-16C2-437B-90B4-A939BF07545B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C816E57-16C2-437B-90B4-A939BF07545B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C816E57-16C2-437B-90B4-A939BF07545B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C816E57-16C2-437B-90B4-A939BF07545B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

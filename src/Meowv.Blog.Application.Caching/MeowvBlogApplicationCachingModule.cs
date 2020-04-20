@@ -1,4 +1,5 @@
 ﻿using Meowv.Blog.Domain;
+using Meowv.Blog.Domain.Configurations;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.Caching;
 using Volo.Abp.Modularity;
@@ -13,10 +14,7 @@ namespace Meowv.Blog.Application.Caching
     {
         public override void ConfigureServices(ServiceConfigurationContext context)
         {
-            context.Services.AddDistributedRedisCache(options =>
-            {
-                options.Configuration = "127.0.0.1:6379,password=123456,ConnectTimeout=15000,SyncTimeout=5000";
-            });
+            context.Services.AddSingleton(new RedisRepository(AppSettings.Caching.RedisConnectionString));
         }
     }
 }

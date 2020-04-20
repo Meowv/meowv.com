@@ -42,6 +42,17 @@ namespace Meowv.Blog.Domain.Configurations
         public static string ApiVersion => _config["ApiVersion"];
 
         /// <summary>
+        /// Caching
+        /// </summary>
+        public static class Caching
+        {
+            /// <summary>
+            /// RedisConnectionString
+            /// </summary>
+            public static string RedisConnectionString => _config["Caching:RedisConnectionString"];
+        }
+
+        /// <summary>
         /// JWT
         /// </summary>
         public static class JWT
