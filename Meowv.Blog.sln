@@ -22,9 +22,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meowv.Blog.HttpApi", "src\M
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meowv.Blog.HttpApi.Hosting", "src\Meowv.Blog.HttpApi.Hosting\Meowv.Blog.HttpApi.Hosting.csproj", "{FF9B6FE3-DDD8-489C-A774-753ECE4D1144}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meowv.Blog.Domain.Shared", "src\Meowv.Blog.Domain.Shared\Meowv.Blog.Domain.Shared.csproj", "{5834DC53-A72A-4679-9004-8404AB4221C0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meowv.Blog.Domain.Shared", "src\Meowv.Blog.Domain.Shared\Meowv.Blog.Domain.Shared.csproj", "{5834DC53-A72A-4679-9004-8404AB4221C0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meowv.Blog.Application.Contracts", "src\Meowv.Blog.Application.Contracts\Meowv.Blog.Application.Contracts.csproj", "{CE6109A2-F020-4FCF-AB79-EC6A6A7555F9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meowv.Blog.Application.Contracts", "src\Meowv.Blog.Application.Contracts\Meowv.Blog.Application.Contracts.csproj", "{CE6109A2-F020-4FCF-AB79-EC6A6A7555F9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meowv.Blog.Application.Caching", "src\Meowv.Blog.Application.Caching\Meowv.Blog.Application.Caching.csproj", "{70C14F34-BB1E-4FE8-A175-708248D629B6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -60,6 +62,10 @@ Global
 		{CE6109A2-F020-4FCF-AB79-EC6A6A7555F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CE6109A2-F020-4FCF-AB79-EC6A6A7555F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CE6109A2-F020-4FCF-AB79-EC6A6A7555F9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{70C14F34-BB1E-4FE8-A175-708248D629B6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{70C14F34-BB1E-4FE8-A175-708248D629B6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{70C14F34-BB1E-4FE8-A175-708248D629B6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{70C14F34-BB1E-4FE8-A175-708248D629B6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

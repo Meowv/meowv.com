@@ -1,4 +1,5 @@
-﻿using Meowv.Blog.Application.Contracts.Blog;
+﻿using Meowv.Blog.Application.Caching.Blog;
+using Meowv.Blog.Application.Contracts.Blog;
 using Meowv.Blog.Domain.Blog;
 using Meowv.Blog.Domain.Blog.Repositories;
 using System.Collections.Generic;
@@ -9,10 +10,12 @@ namespace Meowv.Blog.Application.Blog.Impl
 {
     public class BlogService : ApplicationService, IBlogService
     {
+        private readonly IBlogCacheService _blogCacheService;
         private readonly IPostRepository _postRepository;
 
-        public BlogService(IPostRepository postRepository)
+        public BlogService(IBlogCacheService blogCacheService, IPostRepository postRepository)
         {
+            _blogCacheService = blogCacheService;
             _postRepository = postRepository;
         }
 
@@ -31,10 +34,13 @@ namespace Meowv.Blog.Application.Blog.Impl
         /// <returns></returns>
         public async Task<List<PostDto>> GetAllAsync()
         {
-            var list = await _postRepository.GetListAsync();
+            return await _blogCacheService.GetAllAsync(async () =>
+            {
+                var list = await _postRepository.GetListAsync();
 
-            var result = ObjectMapper.Map<List<Post>, List<PostDto>>(list);
-            return result;
+                var result = ObjectMapper.Map<List<Post>, List<PostDto>>(list);
+                return result;
+            });
         }
     }
 }
