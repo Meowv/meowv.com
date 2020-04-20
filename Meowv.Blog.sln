@@ -26,9 +26,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meowv.Blog.Domain.Shared", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meowv.Blog.Application.Contracts", "src\Meowv.Blog.Application.Contracts\Meowv.Blog.Application.Contracts.csproj", "{CE6109A2-F020-4FCF-AB79-EC6A6A7555F9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meowv.Blog.Application.Caching", "src\Meowv.Blog.Application.Caching\Meowv.Blog.Application.Caching.csproj", "{70C14F34-BB1E-4FE8-A175-708248D629B6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meowv.Blog.Application.Caching", "src\Meowv.Blog.Application.Caching\Meowv.Blog.Application.Caching.csproj", "{70C14F34-BB1E-4FE8-A175-708248D629B6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meowv.Blog.EntityFrameworkCore.DbMigrations", "src\Meowv.Blog.EntityFrameworkCore.DbMigrations\Meowv.Blog.EntityFrameworkCore.DbMigrations.csproj", "{A9638215-09FA-46ED-AB6A-D860CE1F98C0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meowv.Blog.EntityFrameworkCore.DbMigrations", "src\Meowv.Blog.EntityFrameworkCore.DbMigrations\Meowv.Blog.EntityFrameworkCore.DbMigrations.csproj", "{A9638215-09FA-46ED-AB6A-D860CE1F98C0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

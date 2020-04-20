@@ -12,13 +12,18 @@ namespace Meowv.Blog.Application.Caching.Blog.Impl
     {
         private readonly IDistributedCache<List<PostDto>> _cache;
 
-        public BlogCacheService(IDistributedCache<List<PostDto>> cache)
+        private readonly IDistributedCache _distributed;
+
+        public BlogCacheService(IDistributedCache<List<PostDto>> cache, IDistributedCache distributed)
         {
             _cache = cache;
+            _distributed = distributed;
         }
 
         public async Task<List<PostDto>> GetAllAsync(Func<Task<List<PostDto>>> func)
         {
+            await _distributed.SetStringAsync("posts", "123");
+
             return await _cache.GetOrAddAsync("posts", func, () => new DistributedCacheEntryOptions
             {
                 AbsoluteExpiration = DateTimeOffset.Now.AddHours(1)
