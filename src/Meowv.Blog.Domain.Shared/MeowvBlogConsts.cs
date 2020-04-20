@@ -3,7 +3,7 @@
     /// <summary>
     /// 全局常量
     /// </summary>
-    public class MeowvBlogGlobalConsts
+    public class MeowvBlogConsts
     {
         /// <summary>
         /// 分组

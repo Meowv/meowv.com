@@ -1,7 +1,12 @@
 using Meowv.Blog.Domain;
+using Meowv.Blog.Domain.Configurations;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.EntityFrameworkCore;
 using Volo.Abp.EntityFrameworkCore.MySQL;
+using Volo.Abp.EntityFrameworkCore.PostgreSql;
+using Volo.Abp.EntityFrameworkCore.Sqlite;
+using Volo.Abp.EntityFrameworkCore.SqlServer;
 using Volo.Abp.Modularity;
 
 namespace Meowv.Blog.EntityFrameworkCore
@@ -9,7 +14,10 @@ namespace Meowv.Blog.EntityFrameworkCore
     [DependsOn(
         typeof(MeowvBlogDomainModule),
         typeof(AbpEntityFrameworkCoreModule),
-        typeof(AbpEntityFrameworkCoreMySQLModule)
+        typeof(AbpEntityFrameworkCoreMySQLModule),
+        typeof(AbpEntityFrameworkCoreSqlServerModule),
+        typeof(AbpEntityFrameworkCorePostgreSqlModule),
+        typeof(AbpEntityFrameworkCoreSqliteModule)
         )]
     public class MeowvBlogFrameworkCoreModule : AbpModule
     {
@@ -22,7 +30,24 @@ namespace Meowv.Blog.EntityFrameworkCore
 
             Configure<AbpDbContextOptions>(options =>
             {
-                options.UseMySQL();
+                switch (AppSettings.EnableDb)
+                {
+                    case "MySQL":
+                        options.UseMySQL();
+                        break;
+                    case "SqlServer":
+                        options.UseSqlServer();
+                        break;
+                    case "PostgreSql":
+                        options.UsePostgreSql();
+                        break;
+                    case "Sqlite":
+                        options.UseSqlite();
+                        break;
+                    default:
+                        options.UseMySQL();
+                        break;
+                }
             });
         }
     }

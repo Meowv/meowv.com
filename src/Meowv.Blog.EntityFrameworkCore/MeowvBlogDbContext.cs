@@ -5,7 +5,7 @@ using Volo.Abp.EntityFrameworkCore;
 
 namespace Meowv.Blog.EntityFrameworkCore
 {
-    [ConnectionStringName("Default")]
+    [ConnectionStringName("MySql")]
     public class MeowvBlogDbContext : AbpDbContext<MeowvBlogDbContext>
     {
         public DbSet<Post> Posts { get; set; }
@@ -18,6 +18,8 @@ namespace Meowv.Blog.EntityFrameworkCore
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
+
+            builder.Configure();
         }
     }
 }
