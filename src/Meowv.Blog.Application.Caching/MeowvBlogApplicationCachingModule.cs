@@ -14,7 +14,10 @@ namespace Meowv.Blog.Application.Caching
     {
         public override void ConfigureServices(ServiceConfigurationContext context)
         {
-            context.Services.AddSingleton(new RedisRepository(AppSettings.Caching.RedisConnectionString));
+            context.Services.AddDistributedRedisCache(options =>
+            {
+                options.Configuration = AppSettings.Caching.RedisConnectionString;
+            });
         }
     }
 }
