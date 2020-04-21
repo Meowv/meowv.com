@@ -9,16 +9,16 @@ namespace Meowv.Blog.Application.Caching.Blog.Impl
 {
     public class BlogCacheService : ITransientDependency, IBlogCacheService
     {
-        private readonly IDistributedCache _distributed;
+        public readonly IDistributedCache _cache;
 
-        public BlogCacheService(IDistributedCache distributed)
+        public BlogCacheService(IDistributedCache cache)
         {
-            _distributed = distributed;
+            _cache = cache;
         }
 
         public async Task<List<PostDto>> GetAllAsync(Func<Task<List<PostDto>>> factory)
         {
-            return await _distributed.GetOrAddAsync("test", factory, 1);
+            return await _cache.GetOrAddAsync("test1", factory, 0);
         }
     }
 }

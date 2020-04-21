@@ -20,15 +20,6 @@ namespace Meowv.Blog.Application.Blog.Impl
         }
 
         /// <summary>
-        /// 
-        /// </summary>
-        /// <returns></returns>
-        public async Task<long> GetPostCountAsync()
-        {
-            return await _postRepository.GetCountAsync();
-        }
-
-        /// <summary>
         /// 获取全部文章
         /// </summary>
         /// <returns></returns>

@@ -7,6 +7,6 @@ namespace Meowv.Blog.Application.Caching.Blog
 {
     public interface IBlogCacheService
     {
-        Task<List<PostDto>> GetAllAsync(Func<Task<List<PostDto>>> func);
+        Task<List<PostDto>> GetAllAsync(Func<Task<List<PostDto>>> factory);
     }
 }

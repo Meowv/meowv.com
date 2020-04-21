@@ -8,6 +8,15 @@ namespace Meowv.Blog.Application.Caching
 {
     public static class Extensions
     {
+        /// <summary>
+        /// 获取或添加缓存
+        /// </summary>
+        /// <typeparam name="TCacheItem"></typeparam>
+        /// <param name="cache"></param>
+        /// <param name="key"></param>
+        /// <param name="factory"></param>
+        /// <param name="minutes"></param>
+        /// <returns></returns>
         public static async Task<TCacheItem> GetOrAddAsync<TCacheItem>(this IDistributedCache cache, string key, Func<Task<TCacheItem>> factory, int minutes)
         {
             TCacheItem cacheItem;

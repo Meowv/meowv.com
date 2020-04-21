@@ -7,12 +7,6 @@ namespace Meowv.Blog.Application.Blog
     public interface IBlogService
     {
         /// <summary>
-        /// 
-        /// </summary>
-        /// <returns></returns>
-        Task<long> GetPostCountAsync();
-
-        /// <summary>
         /// 获取全部文章
         /// </summary>
         /// <returns></returns>
