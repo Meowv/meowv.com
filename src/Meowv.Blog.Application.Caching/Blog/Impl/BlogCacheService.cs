@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Volo.Abp.DependencyInjection;
+using static Meowv.Blog.Domain.Shared.MeowvBlogConsts;
 
 namespace Meowv.Blog.Application.Caching.Blog.Impl
 {
@@ -18,7 +19,7 @@ namespace Meowv.Blog.Application.Caching.Blog.Impl
 
         public async Task<List<PostDto>> GetAllAsync(Func<Task<List<PostDto>>> factory)
         {
-            return await _cache.GetOrAddAsync("test1", factory, 0);
+            return await _cache.GetOrAddAsync("test1", factory, CacheStrategy.ONE_DAY);
         }
     }
 }

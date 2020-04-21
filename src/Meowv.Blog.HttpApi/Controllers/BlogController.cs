@@ -17,17 +17,6 @@ namespace Meowv.Blog.HttpApi.Controllers
         }
 
         /// <summary>
-        /// 总数
-        /// </summary>
-        /// <returns></returns>
-        [HttpGet]
-        [Route("count")]
-        public async Task<long> GetPostCountAsync()
-        {
-            return await _blogService.GetPostCountAsync();
-        }
-
-        /// <summary>
         /// 获取全部文章
         /// </summary>
         /// <returns></returns>
