@@ -3,9 +3,9 @@
 namespace Meowv.Blog.Domain.Blog
 {
     /// <summary>
-    /// Tags
+    /// Tag
     /// </summary>
-    public class Tags : Entity<int>
+    public class Tag : Entity<int>
     {
         /// <summary>
         /// 标签名称
