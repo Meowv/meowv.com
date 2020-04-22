@@ -68,6 +68,16 @@ namespace Meowv.Blog.HttpApi.Hosting.Swagger
 
             // 按照Name升序排序
             swaggerDoc.Tags = tags.OrderBy(x => x.Name).ToList();
+
+            // 骚操作之隐藏abp动态生成的api
+            var apis = context.ApiDescriptions.Where(x => x.RelativePath.Contains("abp"));
+            if (apis.Any())
+            {
+                foreach (var item in apis)
+                {
+                    swaggerDoc.Paths.Remove("/" + item.RelativePath);
+                }
+            }
         }
     }
 }
