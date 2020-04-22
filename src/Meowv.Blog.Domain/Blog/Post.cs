@@ -3,6 +3,9 @@ using Volo.Abp.Domain.Entities;
 
 namespace Meowv.Blog.Domain.Blog
 {
+    /// <summary>
+    /// Post
+    /// </summary>
     public class Post : Entity<int>
     {
         /// <summary>
