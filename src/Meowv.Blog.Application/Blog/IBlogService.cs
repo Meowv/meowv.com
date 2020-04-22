@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Meowv.Blog.Application.Blog
 {
-    public interface IBlogService
+    public partial interface IBlogService
     {
         /// <summary>
         /// 获取全部文章
