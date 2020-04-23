@@ -25,10 +25,11 @@ namespace Meowv.Blog.Application.Caching
             {
                 cacheItem = await factory.Invoke();
 
-                var options = new DistributedCacheEntryOptions()
+                var options = new DistributedCacheEntryOptions();
+                if (minutes != -1)
                 {
-                    AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(minutes)
-                };
+                    options.AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(minutes);
+                }
 
                 await cache.SetStringAsync(key, cacheItem.ToJson(), options);
             }
