@@ -6,11 +6,6 @@
     public enum ServiceResultCode
     {
         /// <summary>
-        /// 错误
-        /// </summary>
-        Error = -1,
-
-        /// <summary>
         /// 成功
         /// </summary>
         Succeed = 0,
