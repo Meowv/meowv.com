@@ -1,12 +1,11 @@
-﻿using Meowv.Blog.ToolKits;
+﻿using Meowv.Blog.ToolKits.Extensions;
 using Microsoft.Extensions.Caching.Distributed;
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Meowv.Blog.Application.Caching
 {
-    public static class Extensions
+    public static class MeowvBlogApplicationCachingExtensions
     {
         /// <summary>
         /// 获取或添加缓存
@@ -22,7 +21,7 @@ namespace Meowv.Blog.Application.Caching
             TCacheItem cacheItem;
 
             var result = await cache.GetStringAsync(key);
-            if (result.IsNullOrEmpty())
+            if (string.IsNullOrEmpty(result))
             {
                 cacheItem = await factory.Invoke();
 
@@ -31,11 +30,11 @@ namespace Meowv.Blog.Application.Caching
                     AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(minutes)
                 };
 
-                await cache.SetStringAsync(key, cacheItem.SerializeToJson(), options);
+                await cache.SetStringAsync(key, cacheItem.ToJson(), options);
             }
             else
             {
-                cacheItem = result.DeserializeFromJson<TCacheItem>();
+                cacheItem = result.FromJson<TCacheItem>();
             }
 
             return cacheItem;

@@ -20,7 +20,7 @@ namespace Meowv.Blog.Application.Blog.Impl
 
             if (null == post)
             {
-                result.Message = $"URL：{url} 不存在";
+                result.IsFailed($"URL：{url} 不存在");
                 return result;
             }
 
@@ -65,7 +65,7 @@ namespace Meowv.Blog.Application.Blog.Impl
                 }
             };
 
-            result.Data = postDetail;
+            result.IsSuccess(postDetail);
             return result;
         }
     }
