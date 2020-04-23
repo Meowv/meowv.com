@@ -32,6 +32,11 @@
         public const string GreetWord = "欢迎来到我的个人博客，我是阿星Plus。今日语录：{0}，{1}";
 
         /// <summary>
+        /// 数据库表前缀
+        /// </summary>
+        public const string DbTablePrefix = "meowv_";
+
+        /// <summary>
         /// 缓存过期时间策略
         /// </summary>
         public static class CacheStrategy
