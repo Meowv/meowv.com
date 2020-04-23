@@ -9,8 +9,6 @@ namespace Meowv.Blog.EntityFrameworkCore.DbMigrations.EntityFrameworkCore
     {
         public MeowvBlogMigrationsDbContext CreateDbContext(string[] args)
         {
-            MeowvBlogEfCoreEntityExtensionMappings.Configure();
-
             var configuration = BuildConfiguration();
 
             var builder = new DbContextOptionsBuilder<MeowvBlogMigrationsDbContext>()

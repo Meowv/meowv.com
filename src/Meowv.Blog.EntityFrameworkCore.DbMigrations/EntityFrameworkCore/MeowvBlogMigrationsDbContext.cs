@@ -13,6 +13,8 @@ namespace Meowv.Blog.EntityFrameworkCore.DbMigrations.EntityFrameworkCore
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
+
+            builder.Configure();
         }
     }
 }
