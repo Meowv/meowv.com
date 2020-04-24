@@ -59,5 +59,17 @@ namespace Meowv.Blog.HttpApi.Controllers
         {
             return await _blogService.QueryPostsByTagAsync(name);
         }
+
+        /// <summary>
+        /// 通过分类名称查询文章列表
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("post/query_by_category")]
+        public async Task<ServiceResult<IEnumerable<QueryPostDto>>> QueryPostsByCategoryAsync(string name)
+        {
+            return await _blogService.QueryPostsByCategoryAsync(name);
+        }
     }
 }
