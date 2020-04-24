@@ -4,21 +4,21 @@ namespace Meowv.Blog.ToolKits.Base.Paged
 {
     public class ListResult<T> : IListResult<T>
     {
-        IReadOnlyList<T> result;
+        IReadOnlyList<T> item;
 
-        public IReadOnlyList<T> Result
+        public IReadOnlyList<T> Item
         {
-            get => result ?? (result = new List<T>());
-            set => result = value;
+            get => item ?? (item = new List<T>());
+            set => item = value;
         }
 
         public ListResult()
         {
         }
 
-        public ListResult(IReadOnlyList<T> result)
+        public ListResult(IReadOnlyList<T> item)
         {
-            Result = result;
+            Item = item;
         }
     }
 }

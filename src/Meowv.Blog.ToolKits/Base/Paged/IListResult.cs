@@ -7,6 +7,6 @@ namespace Meowv.Blog.ToolKits.Base.Paged
         /// <summary>
         /// 返回结果
         /// </summary>
-        IReadOnlyList<T> Result { get; set; }
+        IReadOnlyList<T> Item { get; set; }
     }
 }
