@@ -1,6 +1,7 @@
 ﻿using Meowv.Blog.Application.Contracts;
 using Meowv.Blog.Application.Contracts.Blog;
 using Meowv.Blog.ToolKits.Base;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Meowv.Blog.Application.Blog
@@ -20,5 +21,12 @@ namespace Meowv.Blog.Application.Blog
         /// <param name="input"></param>
         /// <returns></returns>
         Task<ServiceResult<PagedList<QueryPostDto>>> QueryPostsAsync(PagingInput input);
+
+        /// <summary>
+        /// 通过标签名称查询文章列表
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        Task<ServiceResult<IEnumerable<QueryPostDto>>> QueryPostsByTagAsync(string name);
     }
 }

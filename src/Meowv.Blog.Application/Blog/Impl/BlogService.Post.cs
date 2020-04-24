@@ -2,6 +2,7 @@
 using Meowv.Blog.Application.Contracts.Blog;
 using Meowv.Blog.ToolKits.Base;
 using Meowv.Blog.ToolKits.Extensions;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -103,6 +104,43 @@ namespace Meowv.Blog.Application.Blog.Impl
                                           }).ToList();
 
                 result.IsSuccess(new PagedList<QueryPostDto>(count.TryToInt(), list));
+                return result;
+            });
+        }
+
+        /// <summary>
+        /// 通过标签名称查询文章列表
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public async Task<ServiceResult<IEnumerable<QueryPostDto>>> QueryPostsByTagAsync(string name)
+        {
+            return await _blogCacheService.QueryPostsByTagAsync(name, async () =>
+            {
+                var result = new ServiceResult<IEnumerable<QueryPostDto>>();
+
+                var list = (from post_tags in await _postTagRepository.GetListAsync()
+                            join tags in await _tagRepository.GetListAsync()
+                            on post_tags.TagId equals tags.Id
+                            join posts in await _postRepository.GetListAsync()
+                            on post_tags.PostId equals posts.Id
+                            where tags.DisplayName.Equals(name)
+                            orderby posts.CreationTime descending
+                            select new PostBriefDto
+                            {
+                                Title = posts.Title,
+                                Url = posts.Url,
+                                Year = posts.CreationTime.Year,
+                                CreationTime = posts.CreationTime.TryToDateTime()
+                            })
+                            .GroupBy(x => x.Year)
+                            .Select(x => new QueryPostDto
+                            {
+                                Year = x.Key,
+                                Posts = x.ToList()
+                            });
+
+                result.IsSuccess(list);
                 return result;
             });
         }
