@@ -1,4 +1,5 @@
-﻿using Meowv.Blog.Application.Contracts.Blog;
+﻿using Meowv.Blog.Application.Contracts;
+using Meowv.Blog.Application.Contracts.Blog;
 using Meowv.Blog.ToolKits.Base;
 using System;
 using System.Threading.Tasks;
@@ -13,5 +14,13 @@ namespace Meowv.Blog.Application.Caching.Blog
         /// <param name="url"></param>
         /// <returns></returns>
         Task<ServiceResult<PostDetailDto>> GetPostDetailAsync(string url, Func<Task<ServiceResult<PostDetailDto>>> factory);
+
+        /// <summary>
+        /// 分页查询文章列表
+        /// </summary>
+        /// <param name="input"></param>
+        /// <param name="factory"></param>
+        /// <returns></returns>
+        Task<ServiceResult<PagedList<QueryPostDto>>> QueryPostsAsync(PagingInput input, Func<Task<ServiceResult<PagedList<QueryPostDto>>>> factory);
     }
 }

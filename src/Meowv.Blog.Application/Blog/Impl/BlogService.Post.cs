@@ -81,27 +81,30 @@ namespace Meowv.Blog.Application.Blog.Impl
         /// <returns></returns>
         public async Task<ServiceResult<PagedList<QueryPostDto>>> QueryPostsAsync(PagingInput input)
         {
-            var result = new ServiceResult<PagedList<QueryPostDto>>();
+            return await _blogCacheService.QueryPostsAsync(input, async () =>
+            {
+                var result = new ServiceResult<PagedList<QueryPostDto>>();
 
-            var count = await _postRepository.GetCountAsync();
+                var count = await _postRepository.GetCountAsync();
 
-            var list = _postRepository.OrderByDescending(x => x.CreationTime)
-                                      .PageByIndex(input.Page, input.Limit)
-                                      .Select(x => new PostBriefDto
-                                      {
-                                          Title = x.Title,
-                                          Url = x.Url,
-                                          Year = x.CreationTime.Year,
-                                          CreationTime = x.CreationTime.TryToDateTime()
-                                      }).GroupBy(x => x.Year)
-                                      .Select(x => new QueryPostDto
-                                      {
-                                          Year = x.Key,
-                                          Posts = x.ToList()
-                                      }).ToList();
+                var list = _postRepository.OrderByDescending(x => x.CreationTime)
+                                          .PageByIndex(input.Page, input.Limit)
+                                          .Select(x => new PostBriefDto
+                                          {
+                                              Title = x.Title,
+                                              Url = x.Url,
+                                              Year = x.CreationTime.Year,
+                                              CreationTime = x.CreationTime.TryToDateTime()
+                                          }).GroupBy(x => x.Year)
+                                          .Select(x => new QueryPostDto
+                                          {
+                                              Year = x.Key,
+                                              Posts = x.ToList()
+                                          }).ToList();
 
-            result.IsSuccess(new PagedList<QueryPostDto>(count.TryToInt(), list));
-            return result;
+                result.IsSuccess(new PagedList<QueryPostDto>(count.TryToInt(), list));
+                return result;
+            });
         }
     }
 }
