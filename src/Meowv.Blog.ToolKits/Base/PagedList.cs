@@ -7,18 +7,18 @@ namespace Meowv.Blog.ToolKits.Base
     /// 分页响应实体
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class PagedServiceResult<T> : ListResult<T>, IPagedServiceResult<T>
+    public class PagedList<T> : ListResult<T>, IPagedList<T>
     {
         /// <summary>
         /// 总数
         /// </summary>
         public int Total { get; set; }
 
-        public PagedServiceResult()
+        public PagedList()
         {
         }
 
-        public PagedServiceResult(int total, IReadOnlyList<T> result) : base(result)
+        public PagedList(int total, IReadOnlyList<T> result) : base(result)
         {
             Total = total;
         }
