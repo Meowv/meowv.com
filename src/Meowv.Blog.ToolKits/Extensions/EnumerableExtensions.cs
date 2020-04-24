@@ -45,6 +45,29 @@ namespace Meowv.Blog.ToolKits.Extensions
         }
 
         /// <summary>
+        /// 分页查询
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="query"></param>
+        /// <param name="pageIndex"></param>
+        /// <param name="pageSize"></param>
+        /// <returns></returns>
+        public static IEnumerable<T> PageByIndex<T>(this IQueryable<T> query, int pageIndex, int pageSize)
+        {
+            query.ThrowIfNull();
+
+            if (pageIndex <= 0)
+            {
+                pageIndex = 1;
+            }
+            if (pageSize <= 0)
+            {
+                pageSize = 10;
+            }
+            return query.Skip((pageIndex - 1) * pageSize).Take(pageSize);
+        }
+
+        /// <summary>
         /// WhereIf，满足条件进行查询
         /// </summary>
         /// <typeparam name="T"></typeparam>
