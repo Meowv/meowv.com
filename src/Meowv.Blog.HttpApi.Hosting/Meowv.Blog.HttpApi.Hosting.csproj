@@ -14,7 +14,7 @@
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.10.8" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="5.3.3" />
     <PackageReference Include="Swashbuckle.AspNetCore.Filters" Version="5.1.1" />
-    <PackageReference Include="Volo.Abp.Autofac" Version="2.6.0" />
+    <PackageReference Include="Volo.Abp.Autofac" Version="2.6.1" />
     
     <ProjectReference Include="..\Meowv.Blog.Domain.Shared\Meowv.Blog.Domain.Shared.csproj" />
     <ProjectReference Include="..\Meowv.Blog.HttpApi\Meowv.Blog.HttpApi.csproj" />
