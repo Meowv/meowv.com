@@ -11,8 +11,7 @@ namespace Meowv.Blog.HttpApi.Hosting
             await Host.CreateDefaultBuilder(args)
                       .ConfigureWebHostDefaults(builder =>
                       {
-                          builder.UseUrls("http://*:5002")
-                                 .UseIISIntegration()
+                          builder.UseIISIntegration()
                                  .UseStartup<Startup>();
                       }).UseAutofac().Build().RunAsync();
         }
