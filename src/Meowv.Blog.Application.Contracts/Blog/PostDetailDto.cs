@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace Meowv.Blog.Application.Contracts.Blog
 {
@@ -43,7 +42,7 @@ namespace Meowv.Blog.Application.Contracts.Blog
         /// <summary>
         /// 标签列表
         /// </summary>
-        public IList<TagDto> Tags { get; set; }
+        public IEnumerable<TagDto> Tags { get; set; }
 
         /// <summary>
         /// 上一篇

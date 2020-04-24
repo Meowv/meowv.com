@@ -12,6 +12,6 @@ namespace Meowv.Blog.Application.Contracts.Blog
         /// <summary>
         /// Posts
         /// </summary>
-        public IList<PostBriefDto> Posts { get; set; }
+        public IEnumerable<PostBriefDto> Posts { get; set; }
     }
 }

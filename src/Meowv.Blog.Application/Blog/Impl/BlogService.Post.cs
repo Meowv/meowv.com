@@ -31,15 +31,15 @@ namespace Meowv.Blog.Application.Blog.Impl
 
                 var category = await _categoryRepository.GetAsync(post.CategoryId);
 
-                var tags = (from post_tags in await _postTagRepository.GetListAsync()
-                            join tag in await _tagRepository.GetListAsync()
-                            on post_tags.TagId equals tag.Id
-                            where post_tags.PostId.Equals(post.Id)
-                            select new TagDto
-                            {
-                                TagName = tag.TagName,
-                                DisplayName = tag.DisplayName
-                            }).ToList();
+                var tags = from post_tags in await _postTagRepository.GetListAsync()
+                           join tag in await _tagRepository.GetListAsync()
+                           on post_tags.TagId equals tag.Id
+                           where post_tags.PostId.Equals(post.Id)
+                           select new TagDto
+                           {
+                               TagName = tag.TagName,
+                               DisplayName = tag.DisplayName
+                           };
 
                 var previous = _postRepository.Where(x => x.CreationTime > post.CreationTime).Take(1).FirstOrDefault();
                 var next = _postRepository.Where(x => x.CreationTime < post.CreationTime).OrderByDescending(x => x.CreationTime).Take(1).FirstOrDefault();
