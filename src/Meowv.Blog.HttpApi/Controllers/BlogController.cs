@@ -1,4 +1,5 @@
 using Meowv.Blog.Application.Blog;
+using Meowv.Blog.Application.Contracts;
 using Meowv.Blog.Application.Contracts.Blog;
 using Meowv.Blog.ToolKits.Base;
 using Microsoft.AspNetCore.Authorization;
@@ -32,6 +33,18 @@ namespace Meowv.Blog.HttpApi.Controllers
         public async Task<ServiceResult<PostDetailDto>> GetPostDetailAsync(string url)
         {
             return await _blogService.GetPostDetailAsync(url);
+        }
+
+        /// <summary>
+        /// 分页查询文章列表
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("post/query")]
+        public async Task<ServiceResult<PagedList<QueryPostDto>>> QueryPostsAsync([FromQuery] PagingInput input)
+        {
+            return await _blogService.QueryPostsAsync(input);
         }
     }
 }

@@ -2,6 +2,8 @@
 using Meowv.Blog.ToolKits.Base;
 using System.Linq;
 using System.Threading.Tasks;
+using Meowv.Blog.ToolKits.Extensions;
+using Meowv.Blog.Application.Contracts;
 
 namespace Meowv.Blog.Application.Blog.Impl
 {
@@ -48,7 +50,7 @@ namespace Meowv.Blog.Application.Blog.Impl
                     Url = post.Url,
                     Html = post.Html,
                     Markdown = post.Markdown,
-                    CreationTime = post.CreationTime.ToString("yyyy-MM-dd:HH:mm:ss"),
+                    CreationTime = post.CreationTime.TryToDateTime(),
                     Category = new CategoryDto
                     {
                         CategoryName = category.CategoryName,
@@ -70,6 +72,36 @@ namespace Meowv.Blog.Application.Blog.Impl
                 result.IsSuccess(postDetail);
                 return result;
             });
+        }
+
+        /// <summary>
+        /// 分页查询文章列表
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public async Task<ServiceResult<PagedList<QueryPostDto>>> QueryPostsAsync(PagingInput input)
+        {
+            var result = new ServiceResult<PagedList<QueryPostDto>>();
+
+            var count = await _postRepository.GetCountAsync();
+
+            var list = _postRepository.OrderByDescending(x => x.CreationTime)
+                                      .PageByIndex(input.Page, input.Limit)
+                                      .Select(x => new PostBriefDto
+                                      {
+                                          Title = x.Title,
+                                          Url = x.Url,
+                                          Year = x.CreationTime.Year,
+                                          CreationTime = x.CreationTime.TryToDateTime()
+                                      }).GroupBy(x => x.Year)
+                                      .Select(x => new QueryPostDto
+                                      {
+                                          Year = x.Key,
+                                          Posts = x.ToList()
+                                      }).ToList();
+
+            result.IsSuccess(new PagedList<QueryPostDto>(count.TryToInt(), list));
+            return result;
         }
     }
 }
