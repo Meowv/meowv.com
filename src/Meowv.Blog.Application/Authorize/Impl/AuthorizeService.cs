@@ -104,50 +104,50 @@ namespace Meowv.Blog.Application.Authorize.Impl
                 return result;
             }
 
-            var url = $"{GitHubConfig.API_User}?access_token={access_token}";
-            using var client = _httpClient.CreateClient();
-            client.DefaultRequestHeaders.Add("user-agent", "Mozilla/5.0");
-            var httpResponse = await client.GetAsync(url);
-            if (httpResponse.StatusCode != HttpStatusCode.OK)
-            {
-                result.IsFailed("access_token不正确");
-                return result;
-            }
-
-            var content = await httpResponse.Content.ReadAsStringAsync();
-
-            var user = content.FromJson<UserResponse>();
-            if (user.IsNull())
-            {
-                result.IsFailed("未获取到用户数据");
-                return result;
-            }
-
-            if (user.Id != GitHubConfig.Id)
-            {
-                result.IsFailed("当前账号未授权");
-                return result;
-            }
-
             return await _authorizeCacheService.GenerateTokenAsync(access_token, async () =>
             {
+                var url = $"{GitHubConfig.API_User}?access_token={access_token}";
+                using var client = _httpClient.CreateClient();
+                client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.14 Safari/537.36 Edg/83.0.478.13");
+                var httpResponse = await client.GetAsync(url);
+                if (httpResponse.StatusCode != HttpStatusCode.OK)
+                {
+                    result.IsFailed("access_token不正确");
+                    return result;
+                }
+
+                var content = await httpResponse.Content.ReadAsStringAsync();
+
+                var user = content.FromJson<UserResponse>();
+                if (user.IsNull())
+                {
+                    result.IsFailed("未获取到用户数据");
+                    return result;
+                }
+
+                if (user.Id != GitHubConfig.Id)
+                {
+                    result.IsFailed("当前账号未授权");
+                    return result;
+                }
+
                 var claims = new[] {
                     new Claim(ClaimTypes.Name, user.Name),
                     new Claim(ClaimTypes.Email, user.Email),
                     new Claim(JwtRegisteredClaimNames.Exp, $"{new DateTimeOffset(DateTime.Now.AddMinutes(AppSettings.JWT.Expires)).ToUnixTimeSeconds()}"),
                     new Claim(JwtRegisteredClaimNames.Nbf, $"{new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds()}")
                 };
-                
+
                 var key = new SymmetricSecurityKey(AppSettings.JWT.SecurityKey.SerializeUtf8());
                 var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-                
+
                 var securityToken = new JwtSecurityToken(
                     issuer: AppSettings.JWT.Domain,
                     audience: AppSettings.JWT.Domain,
                     claims: claims,
                     expires: DateTime.Now.AddMinutes(AppSettings.JWT.Expires),
                     signingCredentials: creds);
-                
+
                 var token = new JwtSecurityTokenHandler().WriteToken(securityToken);
 
                 result.IsSuccess(token);
