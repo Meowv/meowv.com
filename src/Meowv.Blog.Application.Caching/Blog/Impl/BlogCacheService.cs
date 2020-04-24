@@ -1,25 +1,15 @@
-﻿using Meowv.Blog.Application.Contracts.Blog;
-using Microsoft.Extensions.Caching.Distributed;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using Microsoft.Extensions.Caching.Distributed;
 using Volo.Abp.DependencyInjection;
-using static Meowv.Blog.Domain.Shared.MeowvBlogConsts;
 
 namespace Meowv.Blog.Application.Caching.Blog.Impl
 {
-    public class BlogCacheService : ITransientDependency, IBlogCacheService
+    public partial class BlogCacheService : ITransientDependency, IBlogCacheService
     {
         public readonly IDistributedCache _cache;
 
         public BlogCacheService(IDistributedCache cache)
         {
             _cache = cache;
-        }
-
-        public async Task<List<PostDto>> GetAllAsync(Func<Task<List<PostDto>>> factory)
-        {
-            return await _cache.GetOrAddAsync("test1", factory, CacheStrategy.ONE_DAY);
         }
     }
 }

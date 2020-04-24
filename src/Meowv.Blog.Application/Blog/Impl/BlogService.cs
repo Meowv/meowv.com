@@ -1,9 +1,5 @@
 ﻿using Meowv.Blog.Application.Caching.Blog;
-using Meowv.Blog.Application.Contracts.Blog;
-using Meowv.Blog.Domain.Blog;
 using Meowv.Blog.Domain.Blog.Repositories;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Meowv.Blog.Application.Blog.Impl
 {
@@ -32,21 +28,6 @@ namespace Meowv.Blog.Application.Blog.Impl
             _tagRepository = tagRepository;
             _postTagRepository = postTagRepository;
             _friendLinksRepository = friendLinksRepository;
-        }
-
-        /// <summary>
-        /// 获取全部文章
-        /// </summary>
-        /// <returns></returns>
-        public async Task<List<PostDto>> GetAllAsync()
-        {
-            return await _blogCacheService.GetAllAsync(async () =>
-            {
-                var list = await _postRepository.GetListAsync();
-
-                var result = ObjectMapper.Map<List<Post>, List<PostDto>>(list);
-                return result;
-            });
         }
     }
 }
