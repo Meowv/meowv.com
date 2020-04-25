@@ -12,6 +12,8 @@ namespace Meowv.Blog.Application
             CreateMap<Category, CategoryDto>();
             CreateMap<Tag, TagDto>();
             CreateMap<FriendLink, FriendLinkDto>();
+
+            CreateMap<Post, GetPostForAdminDto>().ForMember(x => x.Tags, opt => opt.Ignore());
         }
     }
 }

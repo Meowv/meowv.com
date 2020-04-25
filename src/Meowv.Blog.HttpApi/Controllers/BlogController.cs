@@ -2,7 +2,6 @@ using Meowv.Blog.Application.Blog;
 using Meowv.Blog.Application.Contracts;
 using Meowv.Blog.Application.Contracts.Blog;
 using Meowv.Blog.ToolKits.Base;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -12,10 +11,9 @@ using static Meowv.Blog.Domain.Shared.MeowvBlogConsts;
 namespace Meowv.Blog.HttpApi.Controllers
 {
     [ApiController]
-    [AllowAnonymous]
     [Route("[controller]")]
     [ApiExplorerSettings(GroupName = Grouping.GroupName_v1)]
-    public class BlogController : AbpController
+    public partial class BlogController : AbpController
     {
         private readonly IBlogService _blogService;
 
