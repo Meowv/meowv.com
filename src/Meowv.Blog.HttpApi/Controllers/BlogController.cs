@@ -117,5 +117,16 @@ namespace Meowv.Blog.HttpApi.Controllers
         {
             return await _blogService.QueryCategoriesAsync();
         }
+
+        /// <summary>
+        /// ≤È—Ø”—¡¥¡–±Ì
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("friendlinks")]
+        public async Task<ServiceResult<IEnumerable<FriendLinkDto>>> QueryFriendLinksAsync()
+        {
+            return await _blogService.QueryFriendLinksAsync();
+        }
     }
 }

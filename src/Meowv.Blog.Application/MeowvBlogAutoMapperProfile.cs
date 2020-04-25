@@ -9,6 +9,9 @@ namespace Meowv.Blog.Application
         public MeowvBlogAutoMapperProfile()
         {
             CreateMap<Post, PostDto>();
+            CreateMap<Category, CategoryDto>();
+            CreateMap<Tag, TagDto>();
+            CreateMap<FriendLink, FriendLinkDto>();
         }
     }
 }
