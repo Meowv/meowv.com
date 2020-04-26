@@ -2,7 +2,7 @@
 
 namespace Meowv.Blog.Application.Contracts.Blog
 {
-    public class GetPostForAdminDto : PostDto
+    public class PostForAdminDto : PostDto
     {
         /// <summary>
         /// 标签列表
