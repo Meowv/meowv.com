@@ -4,6 +4,7 @@ using Meowv.Blog.Application.Contracts.Blog.Params;
 using Meowv.Blog.ToolKits.Base;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using static Meowv.Blog.Domain.Shared.MeowvBlogConsts;
 
@@ -80,6 +81,19 @@ namespace Meowv.Blog.HttpApi.Controllers
         public async Task<ServiceResult> DeletePostAsync(int id)
         {
             return await _blogService.DeletePostAsync(id);
+        }
+
+        /// <summary>
+        /// 查询标签列表
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Authorize]
+        [Route("admin/tags")]
+        [ApiExplorerSettings(GroupName = Grouping.GroupName_v2)]
+        public async Task<ServiceResult<IEnumerable<QueryTagForAdminDto>>> QueryTagsForAdminAsync()
+        {
+            return await _blogService.QueryTagsForAdminAsync();
         }
     }
 }

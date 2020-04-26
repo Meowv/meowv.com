@@ -4,6 +4,7 @@ using Meowv.Blog.Application.Contracts.Blog.Params;
 using Meowv.Blog.Domain.Blog;
 using Meowv.Blog.ToolKits.Base;
 using Meowv.Blog.ToolKits.Extensions;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -183,6 +184,28 @@ namespace Meowv.Blog.Application.Blog.Impl
             await _postTagRepository.DeleteAsync(x => x.PostId == id);
 
             result.IsSuccess("删除成功");
+            return result;
+        }
+
+        /// <summary>
+        /// 查询标签列表
+        /// </summary>
+        /// <returns></returns>
+        public async Task<ServiceResult<IEnumerable<QueryTagForAdminDto>>> QueryTagsForAdminAsync()
+        {
+            var result = new ServiceResult<IEnumerable<QueryTagForAdminDto>>();
+
+            var post_tags = await _postTagRepository.GetListAsync();
+
+            var tags = _tagRepository.GetListAsync().Result.Select(x => new QueryTagForAdminDto
+            {
+                Id = x.Id,
+                TagName = x.TagName,
+                DisplayName = x.DisplayName,
+                Count = post_tags.Count(p => p.TagId == x.Id)
+            });
+
+            result.IsSuccess(tags);
             return result;
         }
     }
