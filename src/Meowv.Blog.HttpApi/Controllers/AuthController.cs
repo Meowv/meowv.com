@@ -4,12 +4,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using Volo.Abp.AspNetCore.Mvc;
+using static Meowv.Blog.Domain.Shared.MeowvBlogConsts;
 
 namespace Meowv.Blog.HttpApi.Controllers
 {
     [ApiController]
     [AllowAnonymous]
     [Route("[controller]")]
+    [ApiExplorerSettings(GroupName = Grouping.GroupName_v4)]
     public class AuthController : AbpController
     {
         private readonly IAuthorizeService _authorizeService;

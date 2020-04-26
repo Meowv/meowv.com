@@ -24,6 +24,11 @@
             /// 其他通用接口组
             /// </summary>
             public const string GroupName_v3 = "v3";
+
+            /// <summary>
+            /// JWT授权接口组
+            /// </summary>
+            public const string GroupName_v4 = "v4";
         }
 
         /// <summary>

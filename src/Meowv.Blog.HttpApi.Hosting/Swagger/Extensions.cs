@@ -59,6 +59,17 @@ namespace Meowv.Blog.HttpApi.Hosting.Swagger
                     Title = "阿星Plus - 通用公共接口",
                     Description = description
                 }
+            },
+            new SwaggerApiInfo
+            {
+                UrlPrefix = "v4",
+                Name = "JWT授权接口",
+                OpenApiInfo = new OpenApiInfo
+                {
+                    Version = version,
+                    Title = "阿星Plus - JWT授权接口",
+                    Description = description
+                }
             }
         };
 
