@@ -7,6 +7,7 @@ using Meowv.Blog.ToolKits.Extensions;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using static Meowv.Blog.Domain.Shared.MeowvBlogConsts;
 
 namespace Meowv.Blog.Application.Blog.Impl
 {
@@ -100,7 +101,7 @@ namespace Meowv.Blog.Application.Blog.Impl
             });
             await _postTagRepository.BulkInsertAsync(postTags);
 
-            result.IsSuccess("新增成功");
+            result.IsSuccess(ResponseText.INSERT_SUCCESS);
             return result;
         }
 
@@ -160,7 +161,7 @@ namespace Meowv.Blog.Application.Blog.Impl
                                 });
             await _postTagRepository.BulkInsertAsync(postTags);
 
-            result.IsSuccess("更新成功");
+            result.IsSuccess(ResponseText.UPDATE_SUCCESS);
             return result;
         }
 
@@ -176,14 +177,14 @@ namespace Meowv.Blog.Application.Blog.Impl
             var post = await _postRepository.GetAsync(id);
             if (null == post)
             {
-                result.IsFailed($"ID：{id} 不存在");
+                result.IsFailed(ResponseText.WHAT_NOT_EXIST.FormatWith("Id", id));
                 return result;
             }
 
             await _postRepository.DeleteAsync(id);
             await _postTagRepository.DeleteAsync(x => x.PostId == id);
 
-            result.IsSuccess("删除成功");
+            result.IsSuccess(ResponseText.DELETE_SUCCESS);
             return result;
         }
 
@@ -221,7 +222,7 @@ namespace Meowv.Blog.Application.Blog.Impl
             var tag = ObjectMapper.Map<EditTagInput, Tag>(input);
             await _tagRepository.InsertAsync(tag);
 
-            result.IsSuccess("新增成功");
+            result.IsSuccess(ResponseText.INSERT_SUCCESS);
             return result;
         }
 
@@ -241,7 +242,7 @@ namespace Meowv.Blog.Application.Blog.Impl
 
             await _tagRepository.UpdateAsync(tag);
 
-            result.IsSuccess("更新成功");
+            result.IsSuccess(ResponseText.UPDATE_SUCCESS);
             return result;
         }
 
@@ -257,14 +258,14 @@ namespace Meowv.Blog.Application.Blog.Impl
             var tag = await _tagRepository.GetAsync(id);
             if (null == tag)
             {
-                result.IsFailed($"ID：{id} 不存在");
+                result.IsFailed(ResponseText.WHAT_NOT_EXIST.FormatWith("Id", id));
                 return result;
             }
 
             await _tagRepository.DeleteAsync(id);
             await _postTagRepository.DeleteAsync(x => x.TagId == id);
 
-            result.IsSuccess("删除成功");
+            result.IsSuccess(ResponseText.DELETE_SUCCESS);
             return result;
         }
 
@@ -302,7 +303,7 @@ namespace Meowv.Blog.Application.Blog.Impl
             var category = ObjectMapper.Map<EditCategoryInput, Category>(input);
             await _categoryRepository.InsertAsync(category);
 
-            result.IsSuccess("新增成功");
+            result.IsSuccess(ResponseText.INSERT_SUCCESS);
             return result;
         }
 
@@ -322,7 +323,7 @@ namespace Meowv.Blog.Application.Blog.Impl
 
             await _categoryRepository.UpdateAsync(category);
 
-            result.IsSuccess("更新成功");
+            result.IsSuccess(ResponseText.UPDATE_SUCCESS);
             return result;
         }
 
@@ -338,13 +339,13 @@ namespace Meowv.Blog.Application.Blog.Impl
             var category = await _categoryRepository.GetAsync(id);
             if (null == category)
             {
-                result.IsFailed($"ID：{id} 不存在");
+                result.IsFailed(ResponseText.WHAT_NOT_EXIST.FormatWith("Id", id));
                 return result;
             }
 
             await _categoryRepository.DeleteAsync(id);
 
-            result.IsSuccess("删除成功");
+            result.IsSuccess(ResponseText.DELETE_SUCCESS);
             return result;
         }
 
@@ -360,7 +361,7 @@ namespace Meowv.Blog.Application.Blog.Impl
             var friendLink = ObjectMapper.Map<EditFriendLinkInput, FriendLink>(input);
             await _friendLinksRepository.InsertAsync(friendLink);
 
-            result.IsSuccess("新增成功");
+            result.IsSuccess(ResponseText.INSERT_SUCCESS);
             return result;
         }
     }

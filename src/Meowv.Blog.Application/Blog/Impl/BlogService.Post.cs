@@ -5,6 +5,7 @@ using Meowv.Blog.ToolKits.Extensions;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using static Meowv.Blog.Domain.Shared.MeowvBlogConsts;
 
 namespace Meowv.Blog.Application.Blog.Impl
 {
@@ -25,7 +26,7 @@ namespace Meowv.Blog.Application.Blog.Impl
 
                 if (null == post)
                 {
-                    result.IsFailed($"URL：{url} 不存在");
+                    result.IsFailed(ResponseText.WHAT_NOT_EXIST.FormatWith("URL", url));
                     return result;
                 }
 

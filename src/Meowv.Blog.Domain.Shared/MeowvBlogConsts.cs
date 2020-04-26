@@ -127,7 +127,7 @@
             public const string DELETE_SUCCESS = "删除成功";
 
             /// <summary>
-            /// 不存在
+            /// 什么不存在
             /// </summary>
             public const string WHAT_NOT_EXIST = "{0}:{1} 不存在";
         }

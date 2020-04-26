@@ -1,8 +1,10 @@
 ﻿using Meowv.Blog.Application.Contracts.Blog;
 using Meowv.Blog.ToolKits.Base;
+using Meowv.Blog.ToolKits.Extensions;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using static Meowv.Blog.Domain.Shared.MeowvBlogConsts;
 
 namespace Meowv.Blog.Application.Blog.Impl
 {
@@ -22,7 +24,7 @@ namespace Meowv.Blog.Application.Blog.Impl
                 var tag = await _tagRepository.FindAsync(x => x.DisplayName.Equals(name));
                 if (null == tag)
                 {
-                    result.IsFailed($"标签：{name} 不存在");
+                    result.IsFailed(ResponseText.WHAT_NOT_EXIST.FormatWith("标签", name));
                     return result;
                 }
 
