@@ -21,6 +21,8 @@ namespace Meowv.Blog.Application
             CreateMap<EditTagInput, Tag>().ForMember(x => x.Id, opt => opt.Ignore());
 
             CreateMap<EditCategoryInput, Category>().ForMember(x => x.Id, opt => opt.Ignore());
+
+            CreateMap<EditFriendLinkInput, FriendLink>().ForMember(x => x.Id, opt => opt.Ignore());
         }
     }
 }

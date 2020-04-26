@@ -100,5 +100,12 @@ namespace Meowv.Blog.Application.Blog
         /// <param name="id"></param>
         /// <returns></returns>
         Task<ServiceResult> DeleteCategoryAsync(int id);
+
+        /// <summary>
+        /// 新增友链
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        Task<ServiceResult> InsertFriendLinkAsync(EditFriendLinkInput input);
     }
 }

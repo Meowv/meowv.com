@@ -195,5 +195,19 @@ namespace Meowv.Blog.HttpApi.Controllers
         {
             return await _blogService.DeleteCategoryAsync(id);
         }
+
+        /// <summary>
+        /// 新增友链
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Authorize]
+        [Route("friendlink")]
+        [ApiExplorerSettings(GroupName = Grouping.GroupName_v2)]
+        public async Task<ServiceResult> InsertFriendLinkAsync([FromBody] EditFriendLinkInput input)
+        {
+            return await _blogService.InsertFriendLinkAsync(input);
+        }
     }
 }

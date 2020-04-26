@@ -347,5 +347,21 @@ namespace Meowv.Blog.Application.Blog.Impl
             result.IsSuccess("删除成功");
             return result;
         }
+
+        /// <summary>
+        /// 新增友链
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public async Task<ServiceResult> InsertFriendLinkAsync(EditFriendLinkInput input)
+        {
+            var result = new ServiceResult();
+
+            var friendLink = ObjectMapper.Map<EditFriendLinkInput, FriendLink>(input);
+            await _friendLinksRepository.InsertAsync(friendLink);
+
+            result.IsSuccess("新增成功");
+            return result;
+        }
     }
 }
