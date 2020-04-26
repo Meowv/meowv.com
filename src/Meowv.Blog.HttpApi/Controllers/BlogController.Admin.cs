@@ -1,4 +1,5 @@
-﻿using Meowv.Blog.Application.Contracts.Blog;
+﻿using Meowv.Blog.Application.Contracts;
+using Meowv.Blog.Application.Contracts.Blog;
 using Meowv.Blog.ToolKits.Base;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,11 +17,25 @@ namespace Meowv.Blog.HttpApi.Controllers
         /// <returns></returns>
         [HttpGet]
         [Authorize]
-        [Route("post/admin")]
+        [Route("admin/post")]
         [ApiExplorerSettings(GroupName = Grouping.GroupName_v2)]
         public async Task<ServiceResult<GetPostForAdminDto>> GetPostForAdminAsync(int id)
         {
             return await _blogService.GetPostForAdminAsync(id);
+        }
+
+        /// <summary>
+        /// 分页查询文章列表
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Authorize]
+        [Route("admin/posts")]
+        [ApiExplorerSettings(GroupName = Grouping.GroupName_v2)]
+        public async Task<ServiceResult<PagedList<QueryPostForAdminDto>>> QueryPostsForAdminAsync([FromQuery] PagingInput input)
+        {
+            return await _blogService.QueryPostsForAdminAsync(input);
         }
     }
 }
