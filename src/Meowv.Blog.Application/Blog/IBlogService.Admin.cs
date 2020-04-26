@@ -78,5 +78,27 @@ namespace Meowv.Blog.Application.Blog
         /// </summary>
         /// <returns></returns>
         Task<ServiceResult<IEnumerable<QueryCategoryForAdminDto>>> QueryCategoriesForAdminAsync();
+
+        /// <summary>
+        /// 新增分类
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        Task<ServiceResult> InsertCategoryAsync(EditCategoryInput input);
+
+        /// <summary>
+        /// 更新分类
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        Task<ServiceResult> UpdateCategoryAsync(int id, EditCategoryInput input);
+
+        /// <summary>
+        /// 删除分类
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        Task<ServiceResult> DeleteCategoryAsync(int id);
     }
 }

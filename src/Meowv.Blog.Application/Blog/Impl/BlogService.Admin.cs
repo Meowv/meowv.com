@@ -289,5 +289,63 @@ namespace Meowv.Blog.Application.Blog.Impl
             result.IsSuccess(categories);
             return result;
         }
+
+        /// <summary>
+        /// 新增分类
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public async Task<ServiceResult> InsertCategoryAsync(EditCategoryInput input)
+        {
+            var result = new ServiceResult();
+
+            var category = ObjectMapper.Map<EditCategoryInput, Category>(input);
+            await _categoryRepository.InsertAsync(category);
+
+            result.IsSuccess("新增成功");
+            return result;
+        }
+
+        /// <summary>
+        /// 更新分类
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public async Task<ServiceResult> UpdateCategoryAsync(int id, EditCategoryInput input)
+        {
+            var result = new ServiceResult();
+
+            var category = await _categoryRepository.GetAsync(id);
+            category.CategoryName = input.CategoryName;
+            category.DisplayName = input.DisplayName;
+
+            await _categoryRepository.UpdateAsync(category);
+
+            result.IsSuccess("更新成功");
+            return result;
+        }
+
+        /// <summary>
+        /// 删除分类
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        public async Task<ServiceResult> DeleteCategoryAsync(int id)
+        {
+            var result = new ServiceResult();
+
+            var category = await _categoryRepository.GetAsync(id);
+            if (null == category)
+            {
+                result.IsFailed($"ID：{id} 不存在");
+                return result;
+            }
+
+            await _categoryRepository.DeleteAsync(id);
+
+            result.IsSuccess("删除成功");
+            return result;
+        }
     }
 }

@@ -5,6 +5,9 @@ using Meowv.Blog.Domain.Blog;
 
 namespace Meowv.Blog.Application
 {
+    /// <summary>
+    /// AutoMapper实体映射配置文件
+    /// </summary>
     public class MeowvBlogAutoMapperProfile : Profile
     {
         public MeowvBlogAutoMapperProfile()
@@ -16,6 +19,8 @@ namespace Meowv.Blog.Application
             CreateMap<EditPostInput, Post>().ForMember(x => x.Id, opt => opt.Ignore());
 
             CreateMap<EditTagInput, Tag>().ForMember(x => x.Id, opt => opt.Ignore());
+
+            CreateMap<EditCategoryInput, Category>().ForMember(x => x.Id, opt => opt.Ignore());
         }
     }
 }
