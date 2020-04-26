@@ -5,6 +5,7 @@ using Meowv.Blog.ToolKits.Base;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using static Meowv.Blog.Domain.Shared.MeowvBlogConsts;
 
@@ -21,7 +22,7 @@ namespace Meowv.Blog.HttpApi.Controllers
         [Authorize]
         [Route("admin/post")]
         [ApiExplorerSettings(GroupName = Grouping.GroupName_v2)]
-        public async Task<ServiceResult<PostForAdminDto>> GetPostForAdminAsync(int id)
+        public async Task<ServiceResult<PostForAdminDto>> GetPostForAdminAsync([Required] int id)
         {
             return await _blogService.GetPostForAdminAsync(id);
         }
@@ -49,7 +50,7 @@ namespace Meowv.Blog.HttpApi.Controllers
         [Authorize]
         [Route("admin/post")]
         [ApiExplorerSettings(GroupName = Grouping.GroupName_v2)]
-        public async Task<ServiceResult> InsertPostAsync(EditPostInput input)
+        public async Task<ServiceResult> InsertPostAsync([FromBody] EditPostInput input)
         {
             return await _blogService.InsertPostAsync(input);
         }
@@ -64,7 +65,7 @@ namespace Meowv.Blog.HttpApi.Controllers
         [Authorize]
         [Route("admin/post")]
         [ApiExplorerSettings(GroupName = Grouping.GroupName_v2)]
-        public async Task<ServiceResult> UpdatePostAsync(int id, EditPostInput input)
+        public async Task<ServiceResult> UpdatePostAsync([Required] int id, [FromBody] EditPostInput input)
         {
             return await _blogService.UpdatePostAsync(id, input);
         }
@@ -78,7 +79,7 @@ namespace Meowv.Blog.HttpApi.Controllers
         [Authorize]
         [Route("admin/post")]
         [ApiExplorerSettings(GroupName = Grouping.GroupName_v2)]
-        public async Task<ServiceResult> DeletePostAsync(int id)
+        public async Task<ServiceResult> DeletePostAsync([Required] int id)
         {
             return await _blogService.DeletePostAsync(id);
         }
@@ -94,6 +95,49 @@ namespace Meowv.Blog.HttpApi.Controllers
         public async Task<ServiceResult<IEnumerable<QueryTagForAdminDto>>> QueryTagsForAdminAsync()
         {
             return await _blogService.QueryTagsForAdminAsync();
+        }
+
+        /// <summary>
+        /// 新增标签
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Authorize]
+        [Route("admin/tag")]
+        [ApiExplorerSettings(GroupName = Grouping.GroupName_v2)]
+        public async Task<ServiceResult> InsertTagAsync([FromBody] EditTagInput input)
+        {
+            return await _blogService.InsertTagAsync(input);
+        }
+
+        /// <summary>
+        /// 更新标签
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        [HttpPut]
+        [Authorize]
+        [Route("admin/tag")]
+        [ApiExplorerSettings(GroupName = Grouping.GroupName_v2)]
+        public async Task<ServiceResult> UpdateTagAsync([Required] int id, [FromBody] EditTagInput input)
+        {
+            return await _blogService.UpdateTagAsync(id, input);
+        }
+
+        /// <summary>
+        /// 删除标签
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpDelete]
+        [Authorize]
+        [Route("admin/tag")]
+        [ApiExplorerSettings(GroupName = Grouping.GroupName_v2)]
+        public async Task<ServiceResult> DeleteTagAsync([Required] int id)
+        {
+            return await _blogService.DeleteTagAsync(id);
         }
     }
 }

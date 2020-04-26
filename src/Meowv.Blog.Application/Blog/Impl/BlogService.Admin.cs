@@ -208,5 +208,64 @@ namespace Meowv.Blog.Application.Blog.Impl
             result.IsSuccess(tags);
             return result;
         }
+
+        /// <summary>
+        /// 新增标签
+        /// </summary>
+        /// <param name="dto"></param>
+        /// <returns></returns>
+        public async Task<ServiceResult> InsertTagAsync(EditTagInput input)
+        {
+            var result = new ServiceResult();
+
+            var tag = ObjectMapper.Map<EditTagInput, Tag>(input);
+            await _tagRepository.InsertAsync(tag);
+
+            result.IsSuccess("新增成功");
+            return result;
+        }
+
+        /// <summary>
+        /// 更新标签
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="dto"></param>
+        /// <returns></returns>
+        public async Task<ServiceResult> UpdateTagAsync(int id, EditTagInput input)
+        {
+            var result = new ServiceResult();
+
+            var tag = await _tagRepository.GetAsync(id);
+            tag.TagName = input.TagName;
+            tag.DisplayName = input.DisplayName;
+
+            await _tagRepository.UpdateAsync(tag);
+
+            result.IsSuccess("更新成功");
+            return result;
+        }
+
+        /// <summary>
+        /// 删除标签
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        public async Task<ServiceResult> DeleteTagAsync(int id)
+        {
+            var result = new ServiceResult();
+
+            var tag = await _tagRepository.GetAsync(id);
+            if (null == tag)
+            {
+                result.IsFailed($"ID：{id} 不存在");
+                return result;
+            }
+
+            await _tagRepository.DeleteAsync(id);
+            await _postTagRepository.DeleteAsync(x => x.TagId == id);
+
+            result.IsSuccess("删除成功");
+            return result;
+        }
     }
 }

@@ -50,5 +50,27 @@ namespace Meowv.Blog.Application.Blog
         /// </summary>
         /// <returns></returns>
         Task<ServiceResult<IEnumerable<QueryTagForAdminDto>>> QueryTagsForAdminAsync();
+
+        /// <summary>
+        /// 新增标签
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        Task<ServiceResult> InsertTagAsync(EditTagInput input);
+
+        /// <summary>
+        /// 更新标签
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        Task<ServiceResult> UpdateTagAsync(int id, EditTagInput input);
+
+        /// <summary>
+        /// 删除标签
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        Task<ServiceResult> DeleteTagAsync(int id);
     }
 }
