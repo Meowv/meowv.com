@@ -1,6 +1,7 @@
 using Meowv.Blog.Domain;
 using Meowv.Blog.Domain.Configurations;
 using Meowv.Blog.EntityFrameworkCore;
+using Meowv.Blog.HttpApi.Hosting.Middleware;
 using Meowv.Blog.HttpApi.Hosting.Swagger;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -95,6 +96,9 @@ namespace Meowv.Blog.HttpApi.Hosting
 
             // 跨域
             app.UseCors();
+
+            // 异常处理中间件
+            app.UseMiddleware<ExceptionHandlerMiddleware>();
 
             // 身份验证
             app.UseAuthentication();
