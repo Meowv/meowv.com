@@ -267,5 +267,27 @@ namespace Meowv.Blog.Application.Blog.Impl
             result.IsSuccess("删除成功");
             return result;
         }
+
+        /// <summary>
+        /// 查询分类列表
+        /// </summary>
+        /// <returns></returns>
+        public async Task<ServiceResult<IEnumerable<QueryCategoryForAdminDto>>> QueryCategoriesForAdminAsync()
+        {
+            var result = new ServiceResult<IEnumerable<QueryCategoryForAdminDto>>();
+
+            var posts = await _postRepository.GetListAsync();
+
+            var categories = _categoryRepository.GetListAsync().Result.Select(x => new QueryCategoryForAdminDto
+            {
+                Id = x.Id,
+                CategoryName = x.CategoryName,
+                DisplayName = x.DisplayName,
+                Count = posts.Count(p => p.CategoryId == x.Id)
+            });
+
+            result.IsSuccess(categories);
+            return result;
+        }
     }
 }

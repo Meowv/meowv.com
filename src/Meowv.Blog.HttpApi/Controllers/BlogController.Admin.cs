@@ -139,5 +139,18 @@ namespace Meowv.Blog.HttpApi.Controllers
         {
             return await _blogService.DeleteTagAsync(id);
         }
+
+        /// <summary>
+        /// 查询分类列表
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Authorize]
+        [Route("admin/categories")]
+        [ApiExplorerSettings(GroupName = Grouping.GroupName_v2)]
+        public async Task<ServiceResult<IEnumerable<QueryCategoryForAdminDto>>> QueryCategoriesForAdminAsync()
+        {
+            return await _blogService.QueryCategoriesForAdminAsync();
+        }
     }
 }

@@ -72,5 +72,11 @@ namespace Meowv.Blog.Application.Blog
         /// <param name="id"></param>
         /// <returns></returns>
         Task<ServiceResult> DeleteTagAsync(int id);
+
+        /// <summary>
+        /// 查询分类列表
+        /// </summary>
+        /// <returns></returns>
+        Task<ServiceResult<IEnumerable<QueryCategoryForAdminDto>>> QueryCategoriesForAdminAsync();
     }
 }
