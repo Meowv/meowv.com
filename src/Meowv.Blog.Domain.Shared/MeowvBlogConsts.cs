@@ -105,5 +105,31 @@
 
             public const int NEVER = -1;
         }
+
+        /// <summary>
+        /// 响应文本
+        /// </summary>
+        public static class ResponseText
+        {
+            /// <summary>
+            /// 新增成功
+            /// </summary>
+            public const string INSERT_SUCCESS = "新增成功";
+
+            /// <summary>
+            /// 更新成功
+            /// </summary>
+            public const string UPDATE_SUCCESS = "更新成功";
+
+            /// <summary>
+            /// 删除成功
+            /// </summary>
+            public const string DELETE_SUCCESS = "删除成功";
+
+            /// <summary>
+            /// 不存在
+            /// </summary>
+            public const string WHAT_NOT_EXIST = "{0}:{1} 不存在";
+        }
     }
 }
