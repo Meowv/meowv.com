@@ -19,6 +19,11 @@ namespace Meowv.Blog.HttpApi.Hosting.Middleware
             this.next = next;
         }
 
+        /// <summary>
+        /// Invoke
+        /// </summary>
+        /// <param name="context"></param>
+        /// <returns></returns>
         public async Task Invoke(HttpContext context)
         {
             try
@@ -40,7 +45,13 @@ namespace Meowv.Blog.HttpApi.Hosting.Middleware
             }
         }
 
-        private Task ExceptionHandlerAsync(HttpContext context, string message)
+        /// <summary>
+        /// 异常处理，返回JSON
+        /// </summary>
+        /// <param name="context"></param>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        private async Task ExceptionHandlerAsync(HttpContext context, string message)
         {
             context.Response.ContentType = "application/json;charset=utf-8";
             context.Response.StatusCode = (int)HttpStatusCode.OK;
@@ -48,7 +59,7 @@ namespace Meowv.Blog.HttpApi.Hosting.Middleware
             var result = new ServiceResult();
             result.IsFailed(message);
 
-            return context.Response.WriteAsync(result.ToJson());
+            await context.Response.WriteAsync(result.ToJson());
         }
     }
 }
