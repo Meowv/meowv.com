@@ -1,4 +1,4 @@
-﻿using Meowv.Blog.Domain.Signature;
+﻿using Meowv.Blog.Domain.Signature.Repositories;
 using System;
 using Volo.Abp.Domain.Repositories.EntityFrameworkCore;
 using Volo.Abp.EntityFrameworkCore;

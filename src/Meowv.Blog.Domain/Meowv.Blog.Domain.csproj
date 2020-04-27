@@ -14,8 +14,4 @@
     <PackageReference Include="Volo.Abp.Identity.Domain" Version="2.6.2" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Signature\Repositories\" />
-  </ItemGroup>
-
 </Project>
