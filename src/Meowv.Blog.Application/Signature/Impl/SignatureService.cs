@@ -5,6 +5,7 @@ using Meowv.Blog.Domain.Signature.Repositories;
 using Meowv.Blog.ToolKits.Base;
 using Meowv.Blog.ToolKits.Extensions;
 using Microsoft.AspNetCore.Http;
+using System;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -39,12 +40,11 @@ namespace Meowv.Blog.Application.Signature.Impl
             var result = new ServiceResult<string>();
 
             var ip = _httpContextAccessor.HttpContext.Request.GetClientIp();
-
             // TODO:当前ip是否在小黑屋，禁止使用
 
             // 验签，请求是否合法
-            var sign = (input.Name + input.Id + input.Timestamp).EncodeMd5String();
-            if (input.Sign != sign.ToLower())
+            var sign = $"{input.Name}_{input.Id}_{input.Timestamp}".EncodeMd5String().ToLower();
+            if (input.Sign != sign)
             {
                 result.IsFailed("验签不正确");
                 return result;
@@ -98,7 +98,18 @@ namespace Meowv.Blog.Application.Signature.Impl
             // 添加水印
             await signaturePath.AddWatermarkAndSaveItAsync();
 
-            result.IsSuccess(ip);
+            // 保存记录
+            var entity = new Domain.Signature.Signature
+            {
+                Name = input.Name,
+                Type = type,
+                Url = signaturePicName,
+                Ip = ip,
+                CreateTIme = DateTime.Now
+            };
+            await _signatureRepository.InsertAsync(entity);
+
+            result.IsSuccess(entity.Url);
             return result;
         }
     }
