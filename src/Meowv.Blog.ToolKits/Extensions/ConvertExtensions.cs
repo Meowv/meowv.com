@@ -1,5 +1,9 @@
-﻿using System;
+﻿using Meowv.Blog.ToolKits.Base;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
+using System.Linq;
 
 namespace Meowv.Blog.ToolKits.Extensions
 {
@@ -176,6 +180,32 @@ namespace Meowv.Blog.ToolKits.Extensions
         public static T TryToEnum<T>(this string str, T t = default) where T : struct
         {
             return Enum.TryParse<T>(str, out var result) ? result : t;
+        }
+
+        /// <summary>
+        /// 将枚举类型转换为List
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        public static IEnumerable<EnumResponse> TryToList(this Type type)
+        {
+            var result = new List<EnumResponse>();
+
+            foreach (var item in Enum.GetValues(type))
+            {
+                var response = new EnumResponse
+                {
+                    Key = item.ToString(),
+                    Value = item.TryToInt(),
+                };
+
+                var objArray = item.GetType().GetField(item.ToString()).GetCustomAttributes(typeof(DescriptionAttribute), true);
+                if (objArray.Any()) response.Description = (objArray.First() as DescriptionAttribute).Description;
+
+                result.Add(response);
+            }
+
+            return result;
         }
     }
 }
