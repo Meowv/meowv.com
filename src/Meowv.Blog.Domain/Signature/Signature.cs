@@ -28,6 +28,6 @@ namespace Meowv.Blog.Domain.Signature
         /// <summary>
         /// 日期
         /// </summary>
-        public DateTime Date { get; set; }
+        public DateTime CreateTIme { get; set; }
     }
 }

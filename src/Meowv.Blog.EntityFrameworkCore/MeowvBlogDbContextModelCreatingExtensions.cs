@@ -1,5 +1,6 @@
 ﻿using Meowv.Blog.Domain.Blog;
 using Meowv.Blog.Domain.Shared;
+using Meowv.Blog.Domain.Signature;
 using Microsoft.EntityFrameworkCore;
 using Volo.Abp;
 using static Meowv.Blog.Domain.Shared.MeowvBlogDbConsts;
@@ -55,6 +56,17 @@ namespace Meowv.Blog.EntityFrameworkCore
                 b.HasKey(x => x.Id);
                 b.Property(x => x.Title).HasMaxLength(20).IsRequired();
                 b.Property(x => x.LinkUrl).HasMaxLength(100).IsRequired();
+            });
+
+            builder.Entity<Signature>(b =>
+            {
+                b.ToTable(MeowvBlogConsts.DbTablePrefix + DbTableName.Signatures);
+                b.HasKey(x => x.Id);
+                b.Property(x => x.Name).HasMaxLength(20).IsRequired();
+                b.Property(x => x.Type).HasMaxLength(20).IsRequired();
+                b.Property(x => x.Url).HasMaxLength(100).IsRequired();
+                b.Property(x => x.Ip).HasMaxLength(50).IsRequired();
+                b.Property(x => x.CreateTIme).HasColumnType("datetime");
             });
         }
     }
