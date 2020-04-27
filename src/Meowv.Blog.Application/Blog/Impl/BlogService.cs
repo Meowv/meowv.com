@@ -6,7 +6,6 @@ namespace Meowv.Blog.Application.Blog.Impl
     public partial class BlogService : MeowvBlogApplicationServiceBase, IBlogService
     {
         private readonly IBlogCacheService _blogCacheService;
-
         private readonly IPostRepository _postRepository;
         private readonly ICategoryRepository _categoryRepository;
         private readonly ITagRepository _tagRepository;
@@ -14,7 +13,6 @@ namespace Meowv.Blog.Application.Blog.Impl
         private readonly IFriendLinkRepository _friendLinksRepository;
 
         public BlogService(IBlogCacheService blogCacheService,
-
                            IPostRepository postRepository,
                            ICategoryRepository categoryRepository,
                            ITagRepository tagRepository,
@@ -22,7 +20,6 @@ namespace Meowv.Blog.Application.Blog.Impl
                            IFriendLinkRepository friendLinksRepository)
         {
             _blogCacheService = blogCacheService;
-
             _postRepository = postRepository;
             _categoryRepository = categoryRepository;
             _tagRepository = tagRepository;

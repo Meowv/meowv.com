@@ -20,9 +20,8 @@ namespace Meowv.Blog.Application.Authorize.Impl
         private readonly IAuthorizeCacheService _authorizeCacheService;
         private readonly IHttpClientFactory _httpClient;
 
-        public AuthorizeService(
-            IAuthorizeCacheService authorizeCacheService,
-            IHttpClientFactory httpClient)
+        public AuthorizeService(IAuthorizeCacheService authorizeCacheService,
+                                IHttpClientFactory httpClient)
         {
             _authorizeCacheService = authorizeCacheService;
             _httpClient = httpClient;

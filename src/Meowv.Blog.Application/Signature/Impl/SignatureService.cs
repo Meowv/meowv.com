@@ -5,6 +5,7 @@ using Meowv.Blog.ToolKits.Base;
 using Meowv.Blog.ToolKits.Extensions;
 using Microsoft.AspNetCore.Http;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace Meowv.Blog.Application.Signature.Impl
@@ -13,11 +14,15 @@ namespace Meowv.Blog.Application.Signature.Impl
     {
         private readonly ISignatureRepository _signatureRepository;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IHttpClientFactory _httpClient;
 
-        public SignatureService(ISignatureRepository signatureRepository, IHttpContextAccessor httpContextAccessor)
+        public SignatureService(ISignatureRepository signatureRepository,
+                                IHttpContextAccessor httpContextAccessor,
+                                IHttpClientFactory httpClient)
         {
             _signatureRepository = signatureRepository;
             _httpContextAccessor = httpContextAccessor;
+            _httpClient = httpClient;
         }
 
         /// <summary>
