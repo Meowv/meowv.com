@@ -196,7 +196,7 @@ namespace Meowv.Blog.ToolKits.Extensions
                 var response = new EnumResponse
                 {
                     Key = item.ToString(),
-                    Value = item.TryToInt(),
+                    Value = Convert.ToInt32(item)
                 };
 
                 var objArray = item.GetType().GetField(item.ToString()).GetCustomAttributes(typeof(DescriptionAttribute), true);
