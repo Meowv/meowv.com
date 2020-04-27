@@ -1,11 +1,15 @@
 ﻿using Meowv.Blog.Application.Contracts.Signature.Params;
+using Meowv.Blog.Domain.Configurations;
 using Meowv.Blog.Domain.Shared.Enum;
 using Meowv.Blog.Domain.Signature.Repositories;
 using Meowv.Blog.ToolKits.Base;
 using Meowv.Blog.ToolKits.Extensions;
 using Microsoft.AspNetCore.Http;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Meowv.Blog.Application.Signature.Impl
@@ -62,9 +66,37 @@ namespace Meowv.Blog.Application.Signature.Impl
                 return result;
             }
 
-            var signatureUrl = $"{sign}.png";
+            // 签名图片名称
+            var signaturePicName = $"{sign}.png";
 
-            // TODO:生成签名图片
+            // 在配置文件中随机取一条签名api
+            var signatureUrl = AppSettings.Signature.Urls.OrderBy(x => GuidGenerator.Create()).Select(x => new
+            {
+                Url = x.Key,
+                Parameter = x.Value.FormatWith(input.Name, input.Id)
+            }).FirstOrDefault();
+
+            // 发送请求，获取结果
+            var content = new StringContent(signatureUrl.Parameter);
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
+            using var client = _httpClient.CreateClient();
+            client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.14 Safari/537.36 Edg/83.0.478.13");
+            var httpResponse = await client.PostAsync(signatureUrl.Url, content);
+            var httpResult = await httpResponse.Content.ReadAsStringAsync();
+
+            // 正则获取api返回的签名图片
+            var regex = new Regex(@"<img\b[^<>]*?\bsrc[\s\t\r\n]*=[\s\t\r\n]*[""']?[\s\t\r\n]*(?<imgUrl>[^\s\t\r\n""'<>]*)[^<>]*?/?[\s\t\r\n]*>", RegexOptions.IgnoreCase);
+            var imgUrl = regex.Match(httpResult).Groups["imgUrl"].Value;
+
+            // 签名保存的路径
+            var signaturePath = Path.Combine(AppSettings.Signature.Path, signaturePicName);
+
+            // 保存图片至本地
+            var imgBuffer = await client.GetByteArrayAsync(imgUrl);
+            await imgBuffer.DownloadAsync(signaturePath);
+
+            // 添加水印
+            await signaturePath.AddWatermarkAndSaveItAsync();
 
             result.IsSuccess(ip);
             return result;
