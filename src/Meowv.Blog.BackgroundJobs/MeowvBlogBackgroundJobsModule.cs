@@ -2,6 +2,7 @@
 using Hangfire.Dashboard.BasicAuthorization;
 using Hangfire.MySql.Core;
 using Meowv.Blog.Domain.Configurations;
+using Meowv.Blog.Domain.Shared;
 using Volo.Abp;
 using Volo.Abp.BackgroundJobs.Hangfire;
 using Volo.Abp.Modularity;
@@ -15,7 +16,12 @@ namespace Meowv.Blog.BackgroundJobs
         {
             context.Services.AddHangfire(config =>
             {
-                config.UseStorage(new MySqlStorage(AppSettings.ConnectionStrings));
+                config.UseStorage(
+                    new MySqlStorage(AppSettings.ConnectionStrings,
+                    new MySqlStorageOptions
+                    {
+                        TablePrefix = MeowvBlogConsts.DbTablePrefix + "hangfire"
+                    }));
             });
         }
 
@@ -42,7 +48,8 @@ namespace Meowv.Blog.BackgroundJobs
                             }
                         }
                     })
-                }
+                },
+                DashboardTitle = "任务调度中心"
             });
         }
     }
