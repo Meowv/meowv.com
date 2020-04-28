@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Meowv.Blog.Application.Contracts.Blog;
 using Meowv.Blog.Application.Contracts.Blog.Params;
+using Meowv.Blog.Application.Contracts.Signature;
 using Meowv.Blog.Domain.Blog;
 
 namespace Meowv.Blog.Application
@@ -23,6 +24,8 @@ namespace Meowv.Blog.Application
             CreateMap<EditCategoryInput, Category>().ForMember(x => x.Id, opt => opt.Ignore());
 
             CreateMap<EditFriendLinkInput, FriendLink>().ForMember(x => x.Id, opt => opt.Ignore());
+
+            CreateMap<Domain.Signature.Signature, SignatureDto>();
         }
     }
 }

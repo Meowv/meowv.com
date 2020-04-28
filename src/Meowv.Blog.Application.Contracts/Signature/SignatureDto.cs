@@ -1,4 +1,6 @@
-﻿namespace Meowv.Blog.Application.Contracts.Signature
+﻿using System;
+
+namespace Meowv.Blog.Application.Contracts.Signature
 {
     public class SignatureDto
     {
@@ -25,6 +27,6 @@
         /// <summary>
         /// 日期
         /// </summary>
-        public string CreateTime { get; set; }
+        public DateTime CreateTime { get; set; }
     }
 }

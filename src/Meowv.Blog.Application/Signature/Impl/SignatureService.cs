@@ -116,22 +116,35 @@ namespace Meowv.Blog.Application.Signature.Impl
         }
 
         /// <summary>
-        /// 获取所有签名类型
-        /// </summary>
-        /// <returns></returns>
-        public Task<ServiceResult<IEnumerable<EnumResponse>>> GetSignatureTypesAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
         /// 获取个性签名调用记录
         /// </summary>
         /// <param name="count"></param>
         /// <returns></returns>
-        public Task<ServiceResult<IEnumerable<SignatureDto>>> GetSignaturesAsync(int count)
+        public async Task<ServiceResult<IEnumerable<SignatureDto>>> GetSignaturesAsync(int count)
         {
-            throw new NotImplementedException();
+            var result = new ServiceResult<IEnumerable<SignatureDto>>();
+
+            var list = _signatureRepository.OrderByDescending(x => x.CreateTIme).Take(count).ToList();
+
+            var signatures = ObjectMapper.Map<IEnumerable<Domain.Signature.Signature>, List<SignatureDto>>(list);
+            signatures.ForEach(x => x.Name = x.Name.Sub(1) + "**");
+
+            result.IsSuccess(signatures);
+            return await Task.FromResult(result);
+        }
+
+        /// <summary>
+        /// 获取所有签名类型
+        /// </summary>
+        /// <returns></returns>
+        public async Task<ServiceResult<IEnumerable<EnumResponse>>> GetSignatureTypesAsync()
+        {
+            var result = new ServiceResult<IEnumerable<EnumResponse>>();
+
+            var types = typeof(SignatureEnum).TryToList();
+            result.IsSuccess(types);
+
+            return await Task.FromResult(result);
         }
     }
 }
