@@ -95,9 +95,14 @@
             public const int HALF_HOURS = 30;
 
             /// <summary>
-            ///5分钟过期
+            /// 5分钟过期
             /// </summary>
             public const int FIVE_MINUTES = 5;
+
+            /// <summary>
+            /// 1分钟过期
+            /// </summary>
+            public const int ONE_MINUTE = 1;
 
             /// <summary>
             /// 永不过期
