@@ -1,4 +1,5 @@
-﻿using Meowv.Blog.Application.Contracts.Signature.Params;
+﻿using Meowv.Blog.Application.Contracts.Signature;
+using Meowv.Blog.Application.Contracts.Signature.Params;
 using Meowv.Blog.Domain.Configurations;
 using Meowv.Blog.Domain.Shared.Enum;
 using Meowv.Blog.Domain.Signature.Repositories;
@@ -6,6 +7,7 @@ using Meowv.Blog.ToolKits.Base;
 using Meowv.Blog.ToolKits.Extensions;
 using Microsoft.AspNetCore.Http;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -98,7 +100,7 @@ namespace Meowv.Blog.Application.Signature.Impl
             // 添加水印
             await signaturePath.AddWatermarkAndSaveItAsync();
 
-            // 保存记录
+            // 保存调用记录
             var entity = new Domain.Signature.Signature
             {
                 Name = input.Name,
@@ -111,6 +113,25 @@ namespace Meowv.Blog.Application.Signature.Impl
 
             result.IsSuccess(entity.Url);
             return result;
+        }
+
+        /// <summary>
+        /// 获取所有签名类型
+        /// </summary>
+        /// <returns></returns>
+        public Task<ServiceResult<IEnumerable<EnumResponse>>> GetSignatureTypesAsync()
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// 获取个性签名调用记录
+        /// </summary>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        public Task<ServiceResult<IEnumerable<SignatureDto>>> GetSignaturesAsync(int count)
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -98,7 +98,7 @@ namespace Meowv.Blog.HttpApi.Hosting
             app.UseCors();
 
             // 异常处理中间件
-            //app.UseMiddleware<ExceptionHandlerMiddleware>();
+            app.UseMiddleware<ExceptionHandlerMiddleware>();
 
             // 身份验证
             app.UseAuthentication();
