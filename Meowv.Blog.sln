@@ -5,9 +5,9 @@ VisualStudioVersion = 16.0.30011.22
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "solution-items", "solution-items", "{693BBEAA-10B4-4A04-B034-48714CC96779}"
 	ProjectSection(SolutionItems) = preProject
+		.dockerignore = .dockerignore
 		.gitattributes = .gitattributes
 		.gitignore = .gitignore
-		.dockerignore = .dockerignore
 		common.props = common.props
 		LICENSE = LICENSE
 		README.md = README.md
@@ -31,7 +31,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meowv.Blog.Application.Cach
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meowv.Blog.EntityFrameworkCore.DbMigrations", "src\Meowv.Blog.EntityFrameworkCore.DbMigrations\Meowv.Blog.EntityFrameworkCore.DbMigrations.csproj", "{A9638215-09FA-46ED-AB6A-D860CE1F98C0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meowv.Blog.ToolKits", "src\Meowv.Blog.ToolKits\Meowv.Blog.ToolKits.csproj", "{3C816E57-16C2-437B-90B4-A939BF07545B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meowv.Blog.ToolKits", "src\Meowv.Blog.ToolKits\Meowv.Blog.ToolKits.csproj", "{3C816E57-16C2-437B-90B4-A939BF07545B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meowv.Blog.BackgroundJobs", "src\Meowv.Blog.BackgroundJobs\Meowv.Blog.BackgroundJobs.csproj", "{5A8A99D2-4810-4881-9E92-6F8A2D6A1342}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -79,6 +81,10 @@ Global
 		{3C816E57-16C2-437B-90B4-A939BF07545B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3C816E57-16C2-437B-90B4-A939BF07545B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3C816E57-16C2-437B-90B4-A939BF07545B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5A8A99D2-4810-4881-9E92-6F8A2D6A1342}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5A8A99D2-4810-4881-9E92-6F8A2D6A1342}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5A8A99D2-4810-4881-9E92-6F8A2D6A1342}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5A8A99D2-4810-4881-9E92-6F8A2D6A1342}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

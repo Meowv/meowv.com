@@ -1,3 +1,6 @@
+using Hangfire;
+using Hangfire.Dashboard.BasicAuthorization;
+using Meowv.Blog.BackgroundJobs;
 using Meowv.Blog.Domain;
 using Meowv.Blog.Domain.Configurations;
 using Meowv.Blog.EntityFrameworkCore;
@@ -22,6 +25,7 @@ namespace Meowv.Blog.HttpApi.Hosting
         typeof(MeowvBlogDomainModule),
         typeof(MeowvBlogFrameworkCoreModule),
         typeof(AbpAspNetCoreMvcModule),
+        typeof(MeowvBlogBackgroundJobsModule),
         typeof(AbpAutofacModule)
         )]
     public class MeowvBlogHttpApiHostingModule : AbpModule
