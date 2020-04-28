@@ -22,7 +22,7 @@ namespace Meowv.Blog.Application.Caching.Blog.Impl
         /// <returns></returns>
         public async Task<ServiceResult<string>> GetCategoryAsync(string name, Func<Task<ServiceResult<string>>> factory)
         {
-            return await _cache.GetOrAddAsync(KEY_GetCategory.FormatWith(name), factory, CacheStrategy.ONE_DAY);
+            return await Cache.GetOrAddAsync(KEY_GetCategory.FormatWith(name), factory, CacheStrategy.ONE_DAY);
         }
 
         /// <summary>
@@ -32,7 +32,7 @@ namespace Meowv.Blog.Application.Caching.Blog.Impl
         /// <returns></returns>
         public async Task<ServiceResult<IEnumerable<QueryCategoryDto>>> QueryCategoriesAsync(Func<Task<ServiceResult<IEnumerable<QueryCategoryDto>>>> factory)
         {
-            return await _cache.GetOrAddAsync(KEY_QueryCategories, factory, CacheStrategy.ONE_DAY);
+            return await Cache.GetOrAddAsync(KEY_QueryCategories, factory, CacheStrategy.ONE_DAY);
         }
     }
 }

@@ -1,22 +1,13 @@
 ﻿using Meowv.Blog.ToolKits.Base;
 using Meowv.Blog.ToolKits.Extensions;
-using Microsoft.Extensions.Caching.Distributed;
 using System;
 using System.Threading.Tasks;
-using Volo.Abp.DependencyInjection;
 using static Meowv.Blog.Domain.Shared.MeowvBlogConsts;
 
 namespace Meowv.Blog.Application.Caching.Authorize.Impl
 {
-    public class AuthorizeCacheService : ITransientDependency, IAuthorizeCacheService
+    public class AuthorizeCacheService : CachingServiceBase, IAuthorizeCacheService
     {
-        public readonly IDistributedCache _cache;
-
-        public AuthorizeCacheService(IDistributedCache cache)
-        {
-            _cache = cache;
-        }
-
         private const string KEY_GetLoginAddress = "Authorize:GetLoginAddress";
 
         private const string KEY_GetAccessToken = "Authorize:GetAccessToken-{0}";
@@ -30,7 +21,7 @@ namespace Meowv.Blog.Application.Caching.Authorize.Impl
         /// <returns></returns>
         public async Task<ServiceResult<string>> GetLoginAddressAsync(Func<Task<ServiceResult<string>>> factory)
         {
-            return await _cache.GetOrAddAsync(KEY_GetLoginAddress, factory, CacheStrategy.NEVER);
+            return await Cache.GetOrAddAsync(KEY_GetLoginAddress, factory, CacheStrategy.NEVER);
         }
 
         /// <summary>
@@ -41,7 +32,7 @@ namespace Meowv.Blog.Application.Caching.Authorize.Impl
         /// <returns></returns>
         public async Task<ServiceResult<string>> GetAccessTokenAsync(string code, Func<Task<ServiceResult<string>>> factory)
         {
-            return await _cache.GetOrAddAsync(KEY_GetAccessToken.FormatWith(code), factory, CacheStrategy.FIVE_MINUTES);
+            return await Cache.GetOrAddAsync(KEY_GetAccessToken.FormatWith(code), factory, CacheStrategy.FIVE_MINUTES);
         }
 
         /// <summary>
@@ -52,7 +43,7 @@ namespace Meowv.Blog.Application.Caching.Authorize.Impl
         /// <returns></returns>
         public async Task<ServiceResult<string>> GenerateTokenAsync(string access_token, Func<Task<ServiceResult<string>>> factory)
         {
-            return await _cache.GetOrAddAsync(KEY_GenerateToken.FormatWith(access_token), factory, CacheStrategy.ONE_HOURS);
+            return await Cache.GetOrAddAsync(KEY_GenerateToken.FormatWith(access_token), factory, CacheStrategy.ONE_HOURS);
         }
     }
 }
