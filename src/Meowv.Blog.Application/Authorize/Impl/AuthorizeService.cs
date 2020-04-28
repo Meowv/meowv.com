@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace Meowv.Blog.Application.Authorize.Impl
 {
-    public class AuthorizeService : MeowvBlogApplicationServiceBase, IAuthorizeService
+    public class AuthorizeService : ServiceBase, IAuthorizeService
     {
         private readonly IAuthorizeCacheService _authorizeCacheService;
         private readonly IHttpClientFactory _httpClient;

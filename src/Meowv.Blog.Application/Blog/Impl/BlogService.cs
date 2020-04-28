@@ -3,7 +3,7 @@ using Meowv.Blog.Domain.Blog.Repositories;
 
 namespace Meowv.Blog.Application.Blog.Impl
 {
-    public partial class BlogService : MeowvBlogApplicationServiceBase, IBlogService
+    public partial class BlogService : ServiceBase, IBlogService
     {
         private readonly IBlogCacheService _blogCacheService;
         private readonly IPostRepository _postRepository;

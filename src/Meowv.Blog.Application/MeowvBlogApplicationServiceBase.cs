@@ -2,7 +2,7 @@
 
 namespace Meowv.Blog.Application
 {
-    public class MeowvBlogApplicationServiceBase : ApplicationService
+    public class ServiceBase : ApplicationService
     {
 
     }

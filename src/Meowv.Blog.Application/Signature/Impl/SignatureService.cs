@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 
 namespace Meowv.Blog.Application.Signature.Impl
 {
-    public class SignatureService : MeowvBlogApplicationServiceBase, ISignatureService
+    public class SignatureService : ServiceBase, ISignatureService
     {
         private readonly ISignatureRepository _signatureRepository;
         private readonly IHttpContextAccessor _httpContextAccessor;
