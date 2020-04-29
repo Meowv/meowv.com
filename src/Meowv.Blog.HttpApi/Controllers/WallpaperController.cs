@@ -1,0 +1,36 @@
+﻿using Meowv.Blog.Application.Wallpaper;
+using Meowv.Blog.ToolKits.Base;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Volo.Abp.AspNetCore.Mvc;
+using static Meowv.Blog.Domain.Shared.MeowvBlogConsts;
+
+namespace Meowv.Blog.HttpApi.Controllers
+{
+    [ApiController]
+    [AllowAnonymous]
+    [Route("[controller]")]
+    [ApiExplorerSettings(GroupName = Grouping.GroupName_v3)]
+    public class WallpaperController : AbpController
+    {
+        private readonly IWallpaperService _wallpaperService;
+
+        public WallpaperController(IWallpaperService wallpaperService)
+        {
+            _wallpaperService = wallpaperService;
+        }
+
+        /// <summary>
+        /// 获取所有壁纸类型
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("types")]
+        public async Task<ServiceResult<IEnumerable<EnumResponse>>> GetWallpaperTypesAsync()
+        {
+            return await _wallpaperService.GetWallpaperTypesAsync();
+        }
+    }
+}
