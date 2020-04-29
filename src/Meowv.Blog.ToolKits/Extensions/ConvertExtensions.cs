@@ -148,6 +148,17 @@ namespace Meowv.Blog.ToolKits.Extensions
         }
 
         /// <summary>
+        /// 时间戳转时间
+        /// </summary>
+        /// <param name="timestamp"></param>
+        /// <returns></returns>
+        public static DateTime TryToDateTime(this string timestamp)
+        {
+            var ticks = 621355968000000000 + long.Parse(timestamp) * 10000;
+            return new DateTime(ticks);
+        }
+
+        /// <summary>
         /// 时间格式转换为字符串
         /// </summary>
         /// <param name="date"></param>
