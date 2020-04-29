@@ -142,7 +142,7 @@ namespace Meowv.Blog.EntityFrameworkCore.DbMigrations.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
-                    b.Property<DateTime>("CreateTIme")
+                    b.Property<DateTime>("CreateTime")
                         .HasColumnType("datetime");
 
                     b.Property<string>("Ip")
@@ -168,6 +168,33 @@ namespace Meowv.Blog.EntityFrameworkCore.DbMigrations.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("meowv_Signatures");
+                });
+
+            modelBuilder.Entity("Meowv.Blog.Domain.Wallpaper.Wallpaper", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("CreateTime")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("varchar(100) CHARACTER SET utf8mb4")
+                        .HasMaxLength(100);
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("varchar(200) CHARACTER SET utf8mb4")
+                        .HasMaxLength(200);
+
+                    b.HasKey("Id");
+
+                    b.ToTable("meowv_Wallpapers");
                 });
 #pragma warning restore 612, 618
         }

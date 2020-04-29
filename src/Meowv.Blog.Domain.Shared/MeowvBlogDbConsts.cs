@@ -15,6 +15,8 @@
             public const string Friendlinks = "Friendlinks";
 
             public const string Signatures = "Signatures";
+
+            public const string Wallpapers = "Wallpapers";
         }
     }
 }
