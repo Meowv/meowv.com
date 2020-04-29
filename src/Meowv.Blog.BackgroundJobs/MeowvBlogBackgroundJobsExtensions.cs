@@ -11,9 +11,7 @@ namespace Meowv.Blog.BackgroundJobs
         {
             var service = context.ServiceProvider.GetService<WallpaperJob>();
 
-            var job =  service.DoSomethingAsync();
-
-            RecurringJob.AddOrUpdate("接口测试", () => job, CronType.Minute(1));
+            RecurringJob.AddOrUpdate("接口测试", () => service.DoSomethingAsync(), CronType.Minute(1));
         }
     }
 }
