@@ -5,7 +5,6 @@ using Meowv.Blog.Domain.Shared.Enum;
 using Meowv.Blog.Domain.Wallpaper.Repositories;
 using Meowv.Blog.ToolKits.Base;
 using Meowv.Blog.ToolKits.Extensions;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -64,7 +63,7 @@ namespace Meowv.Blog.Application.Wallpaper.Impl
             foreach (var item in wallpapers)
             {
                 item.Type = (int)input.Type;
-                item.CreateTime = DateTime.Now; // TODO:从URL解析时间
+                item.CreateTime = item.Url.Split("/").Last().Split("_").First().TryToDateTime();
             }
 
             await _wallpaperRepository.BulkInsertAsync(wallpapers);
