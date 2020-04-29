@@ -26,8 +26,8 @@ namespace Meowv.Blog.Domain.Signature
         public string Ip { get; set; }
 
         /// <summary>
-        /// 日期
+        /// 创建时间
         /// </summary>
-        public DateTime CreateTIme { get; set; }
+        public DateTime CreateTime { get; set; }
     }
 }
