@@ -9,9 +9,9 @@ namespace Meowv.Blog.BackgroundJobs
     {
         public static void UseWallpaperJob(this ApplicationInitializationContext context)
         {
-            var service = context.ServiceProvider.GetService<WallpaperJob>();
+            var job = context.ServiceProvider.GetService<WallpaperJob>();
 
-            RecurringJob.AddOrUpdate("接口测试", () => service.DoSomethingAsync(), CronType.Minute(1));
+            RecurringJob.AddOrUpdate("壁纸数据抓取", () => job.RunAsync(), CronType.Hour(1, 2));
         }
     }
 }
