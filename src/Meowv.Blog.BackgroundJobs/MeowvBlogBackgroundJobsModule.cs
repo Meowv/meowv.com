@@ -43,8 +43,8 @@ namespace Meowv.Blog.BackgroundJobs
                         {
                             new BasicAuthAuthorizationUser
                             {
-                                Login = "admin",
-                                PasswordClear =  "123456"
+                                Login = AppSettings.Hangfire.Login,
+                                PasswordClear =  AppSettings.Hangfire.Password
                             }
                         }
                     })

@@ -53,6 +53,16 @@ namespace Meowv.Blog.Domain.Configurations
         }
 
         /// <summary>
+        /// Hangfire
+        /// </summary>
+        public static class Hangfire
+        {
+            public static string Login => _config["Hangfire:Login"];
+
+            public static string Password => _config["Hangfire:Password"];
+        }
+
+        /// <summary>
         /// JWT
         /// </summary>
         public static class JWT
