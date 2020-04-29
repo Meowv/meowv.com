@@ -2,6 +2,7 @@
 using Meowv.Blog.Application.Contracts.Blog;
 using Meowv.Blog.Application.Contracts.Blog.Params;
 using Meowv.Blog.Application.Contracts.Signature;
+using Meowv.Blog.Application.Contracts.Wallpaper;
 using Meowv.Blog.Domain.Blog;
 
 namespace Meowv.Blog.Application
@@ -26,6 +27,10 @@ namespace Meowv.Blog.Application
             CreateMap<EditFriendLinkInput, FriendLink>().ForMember(x => x.Id, opt => opt.Ignore());
 
             CreateMap<Domain.Signature.Signature, SignatureDto>();
+
+            CreateMap<WallpaperDto, Domain.Wallpaper.Wallpaper>().ForMember(x => x.Id, opt => opt.Ignore())
+                                                                 .ForMember(x => x.Type, opt => opt.Ignore())
+                                                                 .ForMember(x => x.CreateTime, opt => opt.Ignore());
         }
     }
 }

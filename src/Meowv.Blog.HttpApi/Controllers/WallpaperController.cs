@@ -1,4 +1,5 @@
-﻿using Meowv.Blog.Application.Wallpaper;
+﻿using Meowv.Blog.Application.Contracts.Wallpaper.Params;
+using Meowv.Blog.Application.Wallpaper;
 using Meowv.Blog.ToolKits.Base;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +11,6 @@ using static Meowv.Blog.Domain.Shared.MeowvBlogConsts;
 namespace Meowv.Blog.HttpApi.Controllers
 {
     [ApiController]
-    [AllowAnonymous]
     [Route("[controller]")]
     [ApiExplorerSettings(GroupName = Grouping.GroupName_v3)]
     public class WallpaperController : AbpController
@@ -31,6 +31,18 @@ namespace Meowv.Blog.HttpApi.Controllers
         public async Task<ServiceResult<IEnumerable<EnumResponse>>> GetWallpaperTypesAsync()
         {
             return await _wallpaperService.GetWallpaperTypesAsync();
+        }
+
+        /// <summary>
+        /// 批量插入壁纸
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Authorize]
+        public async Task<ServiceResult<string>> BulkInsertWallpaperAsync([FromBody] BulkInsertWallpaperInput input)
+        {
+            return await _wallpaperService.BulkInsertWallpaperAsync(input);
         }
     }
 }

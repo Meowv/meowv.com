@@ -135,6 +135,11 @@
             /// 什么不存在
             /// </summary>
             public const string WHAT_NOT_EXIST = "{0}:{1} 不存在";
+
+            /// <summary>
+            /// 数据为空
+            /// </summary>
+            public const string DATA_IS_NONE = "数据为空";
         }
     }
 }
