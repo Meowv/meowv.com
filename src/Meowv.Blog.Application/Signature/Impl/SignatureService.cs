@@ -113,7 +113,7 @@ namespace Meowv.Blog.Application.Signature.Impl
                     Type = type,
                     Url = signaturePicName,
                     Ip = ip,
-                    CreateTIme = DateTime.Now
+                    CreateTime = DateTime.Now
                 };
                 await _signatureRepository.InsertAsync(entity);
 
@@ -133,7 +133,7 @@ namespace Meowv.Blog.Application.Signature.Impl
             {
                 var result = new ServiceResult<IEnumerable<SignatureDto>>();
 
-                var list = _signatureRepository.OrderByDescending(x => x.CreateTIme).Take(count).ToList();
+                var list = _signatureRepository.OrderByDescending(x => x.CreateTime).Take(count).ToList();
 
                 var signatures = ObjectMapper.Map<IEnumerable<Domain.Signature.Signature>, List<SignatureDto>>(list);
                 signatures.ForEach(x => x.Name = x.Name.Sub(1) + "**");
