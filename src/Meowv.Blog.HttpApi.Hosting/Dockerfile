@@ -13,6 +13,8 @@ COPY ["src/Meowv.Blog.Application/Meowv.Blog.Application.csproj", "src/Meowv.Blo
 COPY ["src/Meowv.Blog.Application.Contracts/Meowv.Blog.Application.Contracts.csproj", "src/Meowv.Blog.Application.Contracts/"]
 COPY ["src/Meowv.Blog.Application.Caching/Meowv.Blog.Application.Caching.csproj", "src/Meowv.Blog.Application.Caching/"]
 COPY ["src/Meowv.Blog.ToolKits/Meowv.Blog.ToolKits.csproj", "src/Meowv.Blog.ToolKits/"]
+COPY ["src/Meowv.Blog.BackgroundJobs/Meowv.Blog.BackgroundJobs.csproj", "src/Meowv.Blog.BackgroundJobs/"]
+COPY ["src/Meowv.Blog.Swagger/Meowv.Blog.Swagger.csproj", "src/Meowv.Blog.Swagger/"] 
 COPY ["src/Meowv.Blog.EntityFrameworkCore/Meowv.Blog.EntityFrameworkCore.csproj", "src/Meowv.Blog.EntityFrameworkCore/"]
 RUN dotnet restore "src/Meowv.Blog.HttpApi.Hosting/Meowv.Blog.HttpApi.Hosting.csproj"
 COPY . .
