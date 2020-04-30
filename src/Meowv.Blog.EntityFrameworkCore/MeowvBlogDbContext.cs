@@ -1,4 +1,5 @@
 using Meowv.Blog.Domain.Blog;
+using Meowv.Blog.Domain.HotNews;
 using Meowv.Blog.Domain.Signature;
 using Meowv.Blog.Domain.Wallpaper;
 using Microsoft.EntityFrameworkCore;
@@ -23,6 +24,8 @@ namespace Meowv.Blog.EntityFrameworkCore
         public DbSet<Signature> Signatures { get; set; }
         
         public DbSet<Wallpaper> Wallpapers { get; set; }
+
+        public DbSet<HotNews> HotNews { get; set; }
 
         public MeowvBlogDbContext(DbContextOptions<MeowvBlogDbContext> options)
             : base(options)

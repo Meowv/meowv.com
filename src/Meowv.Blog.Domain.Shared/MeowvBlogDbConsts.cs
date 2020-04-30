@@ -17,6 +17,8 @@
             public const string Signatures = "Signatures";
 
             public const string Wallpapers = "Wallpapers";
+
+            public const string HotNews = "HotNews";
         }
     }
 }
