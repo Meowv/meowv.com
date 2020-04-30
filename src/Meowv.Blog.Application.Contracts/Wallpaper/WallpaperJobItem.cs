@@ -1,13 +1,13 @@
 ﻿using Meowv.Blog.Domain.Shared.Enum;
 
-namespace Meowv.Blog.Application.Contracts.Wallpaper.Jobs
+namespace Meowv.Blog.Application.Contracts.Wallpaper
 {
-    public class WallpaperHtmlItem<T>
+    public class WallpaperJobItem<T>
     {
         /// <summary>
-        /// HtmlDocument
+        /// <see cref="Result"/>
         /// </summary>
-        public T HtmlDocument { get; set; }
+        public T Result { get; set; }
 
         /// <summary>
         /// 类型
