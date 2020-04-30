@@ -63,6 +63,7 @@ namespace Meowv.Blog.EntityFrameworkCore
             {
                 b.ToTable(MeowvBlogConsts.DbTablePrefix + DbTableName.Signatures);
                 b.HasKey(x => x.Id);
+                b.Property(x => x.Id).ValueGeneratedOnAdd();
                 b.Property(x => x.Name).HasMaxLength(20).IsRequired();
                 b.Property(x => x.Type).HasMaxLength(20).IsRequired();
                 b.Property(x => x.Url).HasMaxLength(100).IsRequired();
@@ -74,6 +75,7 @@ namespace Meowv.Blog.EntityFrameworkCore
             {
                 b.ToTable(MeowvBlogConsts.DbTablePrefix + DbTableName.Wallpapers);
                 b.HasKey(x => x.Id);
+                b.Property(x => x.Id).ValueGeneratedOnAdd();
                 b.Property(x => x.Url).HasMaxLength(200).IsRequired();
                 b.Property(x => x.Title).HasMaxLength(100).IsRequired();
                 b.Property(x => x.Type).HasColumnType("int").IsRequired();
