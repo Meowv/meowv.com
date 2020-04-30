@@ -54,6 +54,9 @@ namespace Meowv.Blog.BackgroundJobs
 
             // 壁纸数据抓取
             context.UseWallpaperJob();
+
+            // 每日热点数据抓取
+            context.UseHotNewsJob();
         }
     }
 }
