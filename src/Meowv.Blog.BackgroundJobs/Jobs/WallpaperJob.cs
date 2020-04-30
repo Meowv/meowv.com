@@ -4,8 +4,6 @@ using Meowv.Blog.Domain.Shared.Enum;
 using Meowv.Blog.Domain.Wallpaper;
 using Meowv.Blog.Domain.Wallpaper.Repositories;
 using Meowv.Blog.ToolKits.Extensions;
-using Microsoft.Extensions.DependencyInjection;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,11 +13,11 @@ namespace Meowv.Blog.BackgroundJobs.Jobs
 {
     public class WallpaperJob : ITransientDependency
     {
-        private readonly IServiceProvider _serviceProvider;
+        private readonly IWallpaperRepository _wallpaperRepository;
 
-        public WallpaperJob(IServiceProvider serviceProvider)
+        public WallpaperJob(IWallpaperRepository wallpaperRepository)
         {
-            _serviceProvider = serviceProvider;
+            _wallpaperRepository = wallpaperRepository;
         }
 
         /// <summary>
@@ -89,9 +87,12 @@ namespace Meowv.Blog.BackgroundJobs.Jobs
                 });
             }
 
-            using var scope = _serviceProvider.CreateScope();
-            var repository = scope.ServiceProvider.GetService<IWallpaperRepository>();
-            await repository.BulkInsertAsync(wallpapers);
+            var urls = _wallpaperRepository.GetListAsync().Result.Select(x => x.Url);
+            wallpapers = wallpapers.Where(x => !urls.Contains(x.Url)).ToList();
+            if (wallpapers.Any())
+            {
+                await _wallpaperRepository.BulkInsertAsync(wallpapers);
+            }
         }
     }
 }
