@@ -79,8 +79,8 @@ namespace Meowv.Blog.BackgroundJobs.Jobs
                 {
                     wallpapers.Add(new Wallpaper
                     {
-                        Url = x.Attributes["data-big"].Value,
-                        Title = x.Attributes["title"].Value,
+                        Url = x.GetAttributeValue("data-big", ""),
+                        Title = x.GetAttributeValue("title", ""),
                         Type = (int)item.Type,
                         CreateTime = x.Attributes["data-big"].Value.Split("/").Last().Split("_").First().TryToDateTime()
                     });
