@@ -1,11 +1,13 @@
 ﻿using HtmlAgilityPack;
 using Meowv.Blog.Application.Contracts.Wallpaper.Jobs;
-using Meowv.Blog.Application.Wallpaper;
 using Meowv.Blog.Domain.Shared.Enum;
-using Meowv.Blog.ToolKits.Base;
+using Meowv.Blog.Domain.Wallpaper;
+using Meowv.Blog.Domain.Wallpaper.Repositories;
+using Meowv.Blog.ToolKits.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Volo.Abp.DependencyInjection;
 
@@ -20,16 +22,8 @@ namespace Meowv.Blog.BackgroundJobs.Jobs
             _serviceProvider = serviceProvider;
         }
 
-        public async Task<ServiceResult<IEnumerable<EnumResponse>>> DoSomethingAsync()
-        {
-            using var scope = _serviceProvider.CreateScope();
-            var services = scope.ServiceProvider.GetService<IWallpaperService>();
-
-            return await services.GetWallpaperTypesAsync();
-        }
-
         /// <summary>
-        /// 执行爬虫逻辑
+        /// 壁纸数据抓取
         /// </summary>
         /// <returns></returns>
         public async Task RunAsync()
@@ -76,10 +70,28 @@ namespace Meowv.Blog.BackgroundJobs.Jobs
             });
             Task.WaitAll(list_task.ToArray());
 
+            var wallpapers = new List<Wallpaper>();
+
             foreach (var list in list_task)
             {
                 var item = await list;
+
+                var imgs = item.HtmlDocument.DocumentNode.SelectNodes("//article[@id='wper']/div[@class='jbox']/div[@class='kbox']/div/a/img[1]").ToList();
+                imgs.ForEach(x =>
+                {
+                    wallpapers.Add(new Wallpaper
+                    {
+                        Url = x.Attributes["data-big"].Value,
+                        Title = x.Attributes["title"].Value,
+                        Type = (int)item.Type,
+                        CreateTime = x.Attributes["data-big"].Value.Split("/").Last().Split("_").First().TryToDateTime()
+                    });
+                });
             }
+
+            using var scope = _serviceProvider.CreateScope();
+            var repository = scope.ServiceProvider.GetService<IWallpaperRepository>();
+            await repository.BulkInsertAsync(wallpapers);
         }
     }
 }

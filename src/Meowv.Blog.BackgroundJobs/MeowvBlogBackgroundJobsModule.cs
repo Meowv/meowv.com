@@ -52,7 +52,7 @@ namespace Meowv.Blog.BackgroundJobs
                 DashboardTitle = "任务调度中心"
             });
 
-            // 抓取壁纸任务
+            // 壁纸数据抓取
             context.UseWallpaperJob();
         }
     }
