@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 
 namespace Meowv.Blog.ToolKits.Extensions
 {
@@ -65,32 +64,6 @@ namespace Meowv.Blog.ToolKits.Extensions
                 pageSize = 10;
             }
             return query.Skip((pageIndex - 1) * pageSize).Take(pageSize);
-        }
-
-        /// <summary>
-        /// WhereIf，满足条件进行查询
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="query"></param>
-        /// <param name="condition"></param>
-        /// <param name="predicate"></param>
-        /// <returns></returns>
-        public static IQueryable<T> WhereIf<T>(this IQueryable<T> query, bool condition, Expression<Func<T, int, bool>> predicate)
-        {
-            return condition ? query.Where(predicate) : query;
-        }
-
-        /// <summary>
-        /// WhereIf，满足条件进行查询
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="query"></param>
-        /// <param name="condition"></param>
-        /// <param name="predicate"></param>
-        /// <returns></returns>
-        public static IQueryable<T> WhereIf<T>(this IQueryable<T> query, bool condition, Expression<Func<T, bool>> predicate)
-        {
-            return condition ? query.Where(predicate) : query;
         }
     }
 }

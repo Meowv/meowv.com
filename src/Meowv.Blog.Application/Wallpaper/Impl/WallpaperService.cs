@@ -42,6 +42,30 @@ namespace Meowv.Blog.Application.Wallpaper.Impl
         }
 
         /// <summary>
+        /// 分页查询壁纸
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public async Task<ServiceResult<PagedList<WallpaperDto>>> QueryWallpapersAsync(QueryWallpapersInput input)
+        {
+            return await _wallpaperCacheService.QueryWallpapersAsync(input, async () =>
+            {
+                var result = new ServiceResult<PagedList<WallpaperDto>>();
+
+                var query = _wallpaperRepository.WhereIf(input.Type > 0, x => x.Type == input.Type)
+                                                .WhereIf(input.Keywords.IsNotNullOrEmpty(), x => x.Title.Contains(input.Keywords))
+                                                .OrderByDescending(x => x.CreateTime);
+                var count = query.Count();
+                var wallpapers = query.PageByIndex(input.Page, input.Limit);
+
+                var list = ObjectMapper.Map<IEnumerable<Domain.Wallpaper.Wallpaper>, List<WallpaperDto>>(wallpapers);
+
+                result.IsSuccess(new PagedList<WallpaperDto>(count, list));
+                return await Task.FromResult(result);
+            });
+        }
+
+        /// <summary>
         /// 批量插入壁纸
         /// </summary>
         /// <param name="input"></param>

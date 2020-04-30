@@ -28,6 +28,8 @@ namespace Meowv.Blog.Application
 
             CreateMap<Domain.Signature.Signature, SignatureDto>();
 
+            CreateMap<Domain.Wallpaper.Wallpaper, WallpaperDto>();
+
             CreateMap<WallpaperDto, Domain.Wallpaper.Wallpaper>().ForMember(x => x.Id, opt => opt.Ignore())
                                                                  .ForMember(x => x.Type, opt => opt.Ignore())
                                                                  .ForMember(x => x.CreateTime, opt => opt.Ignore());

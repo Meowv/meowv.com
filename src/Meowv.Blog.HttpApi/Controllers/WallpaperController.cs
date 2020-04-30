@@ -1,4 +1,5 @@
-﻿using Meowv.Blog.Application.Contracts.Wallpaper.Params;
+﻿using Meowv.Blog.Application.Contracts.Wallpaper;
+using Meowv.Blog.Application.Contracts.Wallpaper.Params;
 using Meowv.Blog.Application.Wallpaper;
 using Meowv.Blog.ToolKits.Base;
 using Microsoft.AspNetCore.Authorization;
@@ -31,6 +32,17 @@ namespace Meowv.Blog.HttpApi.Controllers
         public async Task<ServiceResult<IEnumerable<EnumResponse>>> GetWallpaperTypesAsync()
         {
             return await _wallpaperService.GetWallpaperTypesAsync();
+        }
+
+        /// <summary>
+        /// 分页查询壁纸
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        [HttpGet]
+        public async Task<ServiceResult<PagedList<WallpaperDto>>> QueryWallpapersAsync([FromQuery] QueryWallpapersInput input)
+        {
+            return await _wallpaperService.QueryWallpapersAsync(input);
         }
 
         /// <summary>
