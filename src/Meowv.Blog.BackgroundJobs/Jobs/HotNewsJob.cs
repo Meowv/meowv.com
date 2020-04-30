@@ -36,10 +36,10 @@ namespace Meowv.Blog.BackgroundJobs.Jobs
                 //new HotNewsJobItem<string> { Result = "https://www.v2ex.com/?tab=hot", Source = HotNewsEnum.v2ex },
                 //new HotNewsJobItem<string> { Result = "https://segmentfault.com/hottest", Source = HotNewsEnum.segmentfault },
                 //new HotNewsJobItem<string> { Result = "https://web-api.juejin.im/query", Source = HotNewsEnum.juejin },
-                new HotNewsJobItem<string> { Result = "https://weixin.sogou.com", Source = HotNewsEnum.weixin },
+                //new HotNewsJobItem<string> { Result = "https://weixin.sogou.com", Source = HotNewsEnum.weixin },
                 //new HotNewsJobItem<string> { Result = "https://www.douban.com/group/explore", Source = HotNewsEnum.douban },
                 //new HotNewsJobItem<string> { Result = "https://www.ithome.com", Source = HotNewsEnum.ithome },
-                //new HotNewsJobItem<string> { Result = "https://36kr.com/newsflashes", Source = HotNewsEnum.kr36 },
+                new HotNewsJobItem<string> { Result = "https://36kr.com/newsflashes", Source = HotNewsEnum.kr36 },
                 //new HotNewsJobItem<string> { Result = "http://tieba.baidu.com/hottopic/browse/topicList", Source = HotNewsEnum.tieba },
                 //new HotNewsJobItem<string> { Result = "http://top.baidu.com/buzz?b=341", Source = HotNewsEnum.baidu },
                 //new HotNewsJobItem<string> { Result = "https://s.weibo.com/top/summary/summary", Source = HotNewsEnum.weibo },
@@ -110,7 +110,6 @@ namespace Meowv.Blog.BackgroundJobs.Jobs
                             CreateTime = DateTime.Now
                         });
                     });
-                    return;
                 }
 
                 // V2EX
@@ -127,7 +126,6 @@ namespace Meowv.Blog.BackgroundJobs.Jobs
                             CreateTime = DateTime.Now
                         });
                     });
-                    return;
                 }
 
                 // SegmentFault
@@ -144,7 +142,6 @@ namespace Meowv.Blog.BackgroundJobs.Jobs
                             CreateTime = DateTime.Now
                         });
                     });
-                    return;
                 }
 
                 // 掘金
@@ -162,13 +159,70 @@ namespace Meowv.Blog.BackgroundJobs.Jobs
                             CreateTime = DateTime.Now
                         });
                     }
-                    return;
                 }
 
                 // 微信热门
                 if (item.Source == HotNewsEnum.weixin)
                 {
+                    var nodes = ((HtmlDocument)item.Result).DocumentNode.SelectNodes("//ul[@class='news-list']/li/div[@class='txt-box']/h3/a").ToList();
+                    nodes.ForEach(x =>
+                    {
+                        hotNews.Add(new HotNews
+                        {
+                            Title = x.InnerText,
+                            Url = x.GetAttributeValue("href", ""),
+                            SourceId = sourceId,
+                            CreateTime = DateTime.Now
+                        });
+                    });
+                }
 
+                // 豆瓣精选
+                if (item.Source == HotNewsEnum.douban)
+                {
+                    var nodes = ((HtmlDocument)item.Result).DocumentNode.SelectNodes("//div[@class='channel-item']/div[@class='bd']/h3/a").ToList();
+                    nodes.ForEach(x =>
+                    {
+                        hotNews.Add(new HotNews
+                        {
+                            Title = x.InnerText,
+                            Url = x.GetAttributeValue("href", ""),
+                            SourceId = sourceId,
+                            CreateTime = DateTime.Now
+                        });
+                    });
+                }
+
+                // IT之家
+                if (item.Source == HotNewsEnum.ithome)
+                {
+                    var nodes = ((HtmlDocument)item.Result).DocumentNode.SelectNodes("//div[@class='lst lst-2 hot-list']/div[1]/ul/li/a").ToList();
+                    nodes.ForEach(x =>
+                    {
+                        hotNews.Add(new HotNews
+                        {
+                            Title = x.InnerText,
+                            Url = x.GetAttributeValue("href", ""),
+                            SourceId = sourceId,
+                            CreateTime = DateTime.Now
+                        });
+                    });
+                }
+
+                // 36氪
+                if (item.Source == HotNewsEnum.kr36)
+                {
+                    var nodes = ((HtmlDocument)item.Result).DocumentNode.SelectNodes("//div[@class='hotlist-main']/div[@class='hotlist-item-toptwo']/a[2]|//div[@class='hotlist-main']/div[@class='hotlist-item-other clearfloat']/div[@class='hotlist-item-other-info']/a").ToList();
+                    nodes.ForEach(x =>
+                    {
+                        hotNews.Add(new HotNews
+                        {
+                            Title = x.InnerText,
+                            Url = $"https://36kr.com{x.GetAttributeValue("href", "")}",
+                            SourceId = sourceId,
+                            CreateTime = DateTime.Now
+                        });
+                    });
                 }
             }
         }
