@@ -76,7 +76,9 @@ namespace Meowv.Blog.BackgroundJobs.Jobs
                     }
                     else
                     {
-                        obj = await web.LoadFromWebAsync(item.Result, Encoding.UTF8);
+                        // 针对GBK、GB2312编码网页，注册提供程序，否则获取到的数据乱码
+                        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+                        obj = await web.LoadFromWebAsync(item.Result, item.Source == HotNewsEnum.baidu ? Encoding.GetEncoding("GB2312") : Encoding.UTF8);
                     }
 
                     return new HotNewsJobItem<object>
@@ -219,6 +221,39 @@ namespace Meowv.Blog.BackgroundJobs.Jobs
                         {
                             Title = x.InnerText,
                             Url = $"https://36kr.com{x.GetAttributeValue("href", "")}",
+                            SourceId = sourceId,
+                            CreateTime = DateTime.Now
+                        });
+                    });
+                }
+
+                // 百度贴吧
+                if (item.Source == HotNewsEnum.tieba)
+                {
+                    var obj = JObject.Parse(((HtmlDocument)item.Result).ParsedText);
+                    var nodes = obj["data"]["bang_topic"]["topic_list"];
+                    foreach (var node in nodes)
+                    {
+                        hotNews.Add(new HotNews
+                        {
+                            Title = node["topic_name"].ToString(),
+                            Url = node["topic_url"].ToString().Replace("amp;", ""),
+                            SourceId = sourceId,
+                            CreateTime = DateTime.Now
+                        });
+                    }
+                }
+
+                // 百度热搜
+                if (item.Source == HotNewsEnum.baidu)
+                {
+                    var nodes = ((HtmlDocument)item.Result).DocumentNode.SelectNodes("//table[@class='list-table']//tr/td[@class='keyword']/a[@class='list-title']").ToList();
+                    nodes.ForEach(x =>
+                    {
+                        hotNews.Add(new HotNews
+                        {
+                            Title = x.InnerText.SerializeUtf8().DeserializeUtf8(),
+                            Url = x.GetAttributeValue("href", ""),
                             SourceId = sourceId,
                             CreateTime = DateTime.Now
                         });
