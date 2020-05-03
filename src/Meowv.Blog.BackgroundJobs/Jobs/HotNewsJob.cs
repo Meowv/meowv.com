@@ -43,8 +43,8 @@ namespace Meowv.Blog.BackgroundJobs.Jobs
                 //new HotNewsJobItem<string> { Result = "http://tieba.baidu.com/hottopic/browse/topicList", Source = HotNewsEnum.tieba },
                 //new HotNewsJobItem<string> { Result = "http://top.baidu.com/buzz?b=341", Source = HotNewsEnum.baidu },
                 //new HotNewsJobItem<string> { Result = "https://s.weibo.com/top/summary/summary", Source = HotNewsEnum.weibo },
-                //new HotNewsJobItem<string> { Result = "https://www.zhihu.com/api/v3/feed/topstory/hot-lists/total?limit=50&desktop=true", Source = HotNewsEnum.zhihu },
-                //new HotNewsJobItem<string> { Result = "https://daily.zhihu.com", Source = HotNewsEnum.zhihudaily },
+                new HotNewsJobItem<string> { Result = "https://www.zhihu.com/api/v3/feed/topstory/hot-lists/total?limit=50&desktop=true", Source = HotNewsEnum.zhihu },
+                new HotNewsJobItem<string> { Result = "https://daily.zhihu.com", Source = HotNewsEnum.zhihudaily },
                 //new HotNewsJobItem<string> { Result = "http://news.163.com/special/0001386F/rank_whole.html", Source = HotNewsEnum.news163 },
                 //new HotNewsJobItem<string> { Result = "https://github.com/trending", Source = HotNewsEnum.github },
                 //new HotNewsJobItem<string> { Result = "https://www.iesdouyin.com/web/api/v2/hotsearch/billboard/word", Source = HotNewsEnum.douyin_hot },
@@ -252,8 +252,57 @@ namespace Meowv.Blog.BackgroundJobs.Jobs
                     {
                         hotNews.Add(new HotNews
                         {
-                            Title = x.InnerText.SerializeUtf8().DeserializeUtf8(),
+                            Title = x.InnerText,
                             Url = x.GetAttributeValue("href", ""),
+                            SourceId = sourceId,
+                            CreateTime = DateTime.Now
+                        });
+                    });
+                }
+
+                // 微博热搜
+                if (item.Source == HotNewsEnum.weibo)
+                {
+                    var nodes = ((HtmlDocument)item.Result).DocumentNode.SelectNodes("//table/tbody/tr/td[2]/a").ToList();
+                    nodes.ForEach(x =>
+                    {
+                        hotNews.Add(new HotNews
+                        {
+                            Title = x.InnerText,
+                            Url = $"https://s.weibo.com{x.GetAttributeValue("href", "").Replace("#", "%23")}",
+                            SourceId = sourceId,
+                            CreateTime = DateTime.Now
+                        });
+                    });
+                }
+
+                // 知乎热榜
+                if (item.Source == HotNewsEnum.zhihu)
+                {
+                    var obj = JObject.Parse(((HtmlDocument)item.Result).ParsedText);
+                    var nodes = obj["data"];
+                    foreach (var node in nodes)
+                    {
+                        hotNews.Add(new HotNews
+                        {
+                            Title = node["target"]["title"].ToString(),
+                            Url = $"https://www.zhihu.com/question/{node["target"]["id"]}",
+                            SourceId = sourceId,
+                            CreateTime = DateTime.Now
+                        });
+                    }
+                }
+
+                // 知乎日报
+                if (item.Source == HotNewsEnum.zhihudaily)
+                {
+                    var nodes = ((HtmlDocument)item.Result).DocumentNode.SelectNodes("//div[@class='box']/a").ToList();
+                    nodes.ForEach(x =>
+                    {
+                        hotNews.Add(new HotNews
+                        {
+                            Title = x.InnerText,
+                            Url = $"https://daily.zhihu.com{x.GetAttributeValue("href", "")}",
                             SourceId = sourceId,
                             CreateTime = DateTime.Now
                         });
