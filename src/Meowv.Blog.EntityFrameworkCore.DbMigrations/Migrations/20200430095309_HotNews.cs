@@ -13,7 +13,7 @@ namespace Meowv.Blog.EntityFrameworkCore.DbMigrations.Migrations
                 {
                     Id = table.Column<Guid>(nullable: false),
                     Title = table.Column<string>(maxLength: 200, nullable: false),
-                    Url = table.Column<string>(maxLength: 100, nullable: false),
+                    Url = table.Column<string>(maxLength: 250, nullable: false),
                     SourceId = table.Column<int>(type: "int", nullable: false),
                     CreateTime = table.Column<DateTime>(type: "datetime", nullable: false)
                 },

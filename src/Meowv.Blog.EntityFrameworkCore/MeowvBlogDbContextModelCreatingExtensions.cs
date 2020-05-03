@@ -89,7 +89,7 @@ namespace Meowv.Blog.EntityFrameworkCore
                 b.HasKey(x => x.Id);
                 b.Property(x => x.Id).ValueGeneratedOnAdd();
                 b.Property(x => x.Title).HasMaxLength(200).IsRequired();
-                b.Property(x => x.Url).HasMaxLength(100).IsRequired();
+                b.Property(x => x.Url).HasMaxLength(250).IsRequired();
                 b.Property(x => x.SourceId).HasColumnType("int").IsRequired();
                 b.Property(x => x.CreateTime).HasColumnType("datetime").IsRequired();
             });
