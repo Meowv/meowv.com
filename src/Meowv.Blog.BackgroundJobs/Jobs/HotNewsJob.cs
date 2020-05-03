@@ -43,8 +43,8 @@ namespace Meowv.Blog.BackgroundJobs.Jobs
                 //new HotNewsJobItem<string> { Result = "http://tieba.baidu.com/hottopic/browse/topicList", Source = HotNewsEnum.tieba },
                 //new HotNewsJobItem<string> { Result = "http://top.baidu.com/buzz?b=341", Source = HotNewsEnum.baidu },
                 //new HotNewsJobItem<string> { Result = "https://s.weibo.com/top/summary/summary", Source = HotNewsEnum.weibo },
-                new HotNewsJobItem<string> { Result = "https://www.zhihu.com/api/v3/feed/topstory/hot-lists/total?limit=50&desktop=true", Source = HotNewsEnum.zhihu },
-                new HotNewsJobItem<string> { Result = "https://daily.zhihu.com", Source = HotNewsEnum.zhihudaily },
+                //new HotNewsJobItem<string> { Result = "https://www.zhihu.com/api/v3/feed/topstory/hot-lists/total?limit=50&desktop=true", Source = HotNewsEnum.zhihu },
+                //new HotNewsJobItem<string> { Result = "https://daily.zhihu.com", Source = HotNewsEnum.zhihudaily },
                 //new HotNewsJobItem<string> { Result = "http://news.163.com/special/0001386F/rank_whole.html", Source = HotNewsEnum.news163 },
                 //new HotNewsJobItem<string> { Result = "https://github.com/trending", Source = HotNewsEnum.github },
                 //new HotNewsJobItem<string> { Result = "https://www.iesdouyin.com/web/api/v2/hotsearch/billboard/word", Source = HotNewsEnum.douyin_hot },
@@ -78,7 +78,7 @@ namespace Meowv.Blog.BackgroundJobs.Jobs
                     {
                         // 针对GBK、GB2312编码网页，注册提供程序，否则获取到的数据乱码
                         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-                        obj = await web.LoadFromWebAsync(item.Result, item.Source == HotNewsEnum.baidu ? Encoding.GetEncoding("GB2312") : Encoding.UTF8);
+                        obj = await web.LoadFromWebAsync(item.Result, (item.Source == HotNewsEnum.baidu || item.Source == HotNewsEnum.news163) ? Encoding.GetEncoding("GB2312") : Encoding.UTF8);
                     }
 
                     return new HotNewsJobItem<object>
@@ -303,6 +303,38 @@ namespace Meowv.Blog.BackgroundJobs.Jobs
                         {
                             Title = x.InnerText,
                             Url = $"https://daily.zhihu.com{x.GetAttributeValue("href", "")}",
+                            SourceId = sourceId,
+                            CreateTime = DateTime.Now
+                        });
+                    });
+                }
+
+                // 网易新闻
+                if (item.Source == HotNewsEnum.news163)
+                {
+                    var nodes = ((HtmlDocument)item.Result).DocumentNode.SelectNodes("//div[@class='area-half left']/div[@class='tabBox']/div[@class='tabContents active']/table//tr/td[1]/a").ToList();
+                    nodes.ForEach(x =>
+                    {
+                        hotNews.Add(new HotNews
+                        {
+                            Title = x.InnerText,
+                            Url = x.GetAttributeValue("href", ""),
+                            SourceId = sourceId,
+                            CreateTime = DateTime.Now
+                        });
+                    });
+                }
+
+                // GitHub
+                if (item.Source == HotNewsEnum.github)
+                {
+                    var nodes = ((HtmlDocument)item.Result).DocumentNode.SelectNodes("//article[@class='Box-row']/h1/a").ToList();
+                    nodes.ForEach(x =>
+                    {
+                        hotNews.Add(new HotNews
+                        {
+                            Title = x.InnerText.Trim().Replace("\n", "").Replace(" ", ""),
+                            Url = $"https://github.com{x.GetAttributeValue("href", "")}",
                             SourceId = sourceId,
                             CreateTime = DateTime.Now
                         });
