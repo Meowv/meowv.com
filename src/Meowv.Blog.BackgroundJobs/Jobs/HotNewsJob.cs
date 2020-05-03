@@ -1,6 +1,7 @@
 ﻿using HtmlAgilityPack;
 using Meowv.Blog.Application.Contracts.HotNews;
 using Meowv.Blog.Domain.HotNews;
+using Meowv.Blog.Domain.HotNews.Repositories;
 using Meowv.Blog.Domain.Shared.Enum;
 using Meowv.Blog.ToolKits.Extensions;
 using Newtonsoft.Json.Linq;
@@ -18,10 +19,13 @@ namespace Meowv.Blog.BackgroundJobs.Jobs
     public class HotNewsJob : ITransientDependency
     {
         private readonly IHttpClientFactory _httpClient;
+        private readonly IHotNewsRepository _hotNewsRepository;
 
-        public HotNewsJob(IHttpClientFactory httpClient)
+        public HotNewsJob(IHttpClientFactory httpClient,
+                          IHotNewsRepository hotNewsRepository)
         {
             _httpClient = httpClient;
+            _hotNewsRepository = hotNewsRepository;
         }
 
         /// <summary>
@@ -32,24 +36,24 @@ namespace Meowv.Blog.BackgroundJobs.Jobs
         {
             var hotnewsUrls = new List<HotNewsJobItem<string>>
             {
-                //new HotNewsJobItem<string> { Result = "https://www.cnblogs.com", Source = HotNewsEnum.cnblogs },
-                //new HotNewsJobItem<string> { Result = "https://www.v2ex.com/?tab=hot", Source = HotNewsEnum.v2ex },
-                //new HotNewsJobItem<string> { Result = "https://segmentfault.com/hottest", Source = HotNewsEnum.segmentfault },
-                //new HotNewsJobItem<string> { Result = "https://web-api.juejin.im/query", Source = HotNewsEnum.juejin },
-                //new HotNewsJobItem<string> { Result = "https://weixin.sogou.com", Source = HotNewsEnum.weixin },
-                //new HotNewsJobItem<string> { Result = "https://www.douban.com/group/explore", Source = HotNewsEnum.douban },
-                //new HotNewsJobItem<string> { Result = "https://www.ithome.com", Source = HotNewsEnum.ithome },
-                //new HotNewsJobItem<string> { Result = "https://36kr.com/newsflashes", Source = HotNewsEnum.kr36 },
-                //new HotNewsJobItem<string> { Result = "http://tieba.baidu.com/hottopic/browse/topicList", Source = HotNewsEnum.tieba },
-                //new HotNewsJobItem<string> { Result = "http://top.baidu.com/buzz?b=341", Source = HotNewsEnum.baidu },
-                //new HotNewsJobItem<string> { Result = "https://s.weibo.com/top/summary/summary", Source = HotNewsEnum.weibo },
-                //new HotNewsJobItem<string> { Result = "https://www.zhihu.com/api/v3/feed/topstory/hot-lists/total?limit=50&desktop=true", Source = HotNewsEnum.zhihu },
-                //new HotNewsJobItem<string> { Result = "https://daily.zhihu.com", Source = HotNewsEnum.zhihudaily },
-                //new HotNewsJobItem<string> { Result = "http://news.163.com/special/0001386F/rank_whole.html", Source = HotNewsEnum.news163 },
-                //new HotNewsJobItem<string> { Result = "https://github.com/trending", Source = HotNewsEnum.github },
-                //new HotNewsJobItem<string> { Result = "https://www.iesdouyin.com/web/api/v2/hotsearch/billboard/word", Source = HotNewsEnum.douyin_hot },
-                //new HotNewsJobItem<string> { Result = "https://www.iesdouyin.com/web/api/v2/hotsearch/billboard/aweme", Source = HotNewsEnum.douyin_video },
-                //new HotNewsJobItem<string> { Result = "https://www.iesdouyin.com/web/api/v2/hotsearch/billboard/aweme/?type=positive", Source = HotNewsEnum.douyin_positive },
+                new HotNewsJobItem<string> { Result = "https://www.cnblogs.com", Source = HotNewsEnum.cnblogs },
+                new HotNewsJobItem<string> { Result = "https://www.v2ex.com/?tab=hot", Source = HotNewsEnum.v2ex },
+                new HotNewsJobItem<string> { Result = "https://segmentfault.com/hottest", Source = HotNewsEnum.segmentfault },
+                new HotNewsJobItem<string> { Result = "https://web-api.juejin.im/query", Source = HotNewsEnum.juejin },
+                new HotNewsJobItem<string> { Result = "https://weixin.sogou.com", Source = HotNewsEnum.weixin },
+                new HotNewsJobItem<string> { Result = "https://www.douban.com/group/explore", Source = HotNewsEnum.douban },
+                new HotNewsJobItem<string> { Result = "https://www.ithome.com", Source = HotNewsEnum.ithome },
+                new HotNewsJobItem<string> { Result = "https://36kr.com/newsflashes", Source = HotNewsEnum.kr36 },
+                new HotNewsJobItem<string> { Result = "http://tieba.baidu.com/hottopic/browse/topicList", Source = HotNewsEnum.tieba },
+                new HotNewsJobItem<string> { Result = "http://top.baidu.com/buzz?b=341", Source = HotNewsEnum.baidu },
+                new HotNewsJobItem<string> { Result = "https://s.weibo.com/top/summary/summary", Source = HotNewsEnum.weibo },
+                new HotNewsJobItem<string> { Result = "https://www.zhihu.com/api/v3/feed/topstory/hot-lists/total?limit=50&desktop=true", Source = HotNewsEnum.zhihu },
+                new HotNewsJobItem<string> { Result = "https://daily.zhihu.com", Source = HotNewsEnum.zhihudaily },
+                new HotNewsJobItem<string> { Result = "http://news.163.com/special/0001386F/rank_whole.html", Source = HotNewsEnum.news163 },
+                new HotNewsJobItem<string> { Result = "https://github.com/trending", Source = HotNewsEnum.github },
+                new HotNewsJobItem<string> { Result = "https://www.iesdouyin.com/web/api/v2/hotsearch/billboard/word", Source = HotNewsEnum.douyin_hot },
+                new HotNewsJobItem<string> { Result = "https://www.iesdouyin.com/web/api/v2/hotsearch/billboard/aweme", Source = HotNewsEnum.douyin_video },
+                new HotNewsJobItem<string> { Result = "https://www.iesdouyin.com/web/api/v2/hotsearch/billboard/aweme/?type=positive", Source = HotNewsEnum.douyin_positive },
             };
 
             var web = new HtmlWeb();
@@ -340,6 +344,46 @@ namespace Meowv.Blog.BackgroundJobs.Jobs
                         });
                     });
                 }
+
+                // 抖音热点
+                if (item.Source == HotNewsEnum.douyin_hot)
+                {
+                    var obj = JObject.Parse(((HtmlDocument)item.Result).ParsedText);
+                    var nodes = obj["word_list"];
+                    foreach (var node in nodes)
+                    {
+                        hotNews.Add(new HotNews
+                        {
+                            Title = node["word"].ToString(),
+                            Url = $"#{node["hot_value"]}",
+                            SourceId = sourceId,
+                            CreateTime = DateTime.Now
+                        });
+                    }
+                }
+
+                // 抖音视频 & 抖音正能量
+                if (item.Source == HotNewsEnum.douyin_video || item.Source == HotNewsEnum.douyin_positive)
+                {
+                    var obj = JObject.Parse(((HtmlDocument)item.Result).ParsedText);
+                    var nodes = obj["aweme_list"];
+                    foreach (var node in nodes)
+                    {
+                        hotNews.Add(new HotNews
+                        {
+                            Title = node["aweme_info"]["desc"].ToString(),
+                            Url = node["aweme_info"]["share_url"].ToString(),
+                            SourceId = sourceId,
+                            CreateTime = DateTime.Now
+                        });
+                    }
+                }
+            }
+
+            if (hotNews.Any())
+            {
+                await _hotNewsRepository.DeleteAsync(x => true);
+                await _hotNewsRepository.BulkInsertAsync(hotNews);
             }
         }
     }
