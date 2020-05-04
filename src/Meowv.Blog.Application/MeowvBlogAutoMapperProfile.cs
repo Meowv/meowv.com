@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Meowv.Blog.Application.Contracts.Blog;
 using Meowv.Blog.Application.Contracts.Blog.Params;
+using Meowv.Blog.Application.Contracts.HotNews;
 using Meowv.Blog.Application.Contracts.Signature;
 using Meowv.Blog.Application.Contracts.Wallpaper;
 using Meowv.Blog.Domain.Blog;
@@ -33,6 +34,8 @@ namespace Meowv.Blog.Application
             CreateMap<WallpaperDto, Domain.Wallpaper.Wallpaper>().ForMember(x => x.Id, opt => opt.Ignore())
                                                                  .ForMember(x => x.Type, opt => opt.Ignore())
                                                                  .ForMember(x => x.CreateTime, opt => opt.Ignore());
+
+            CreateMap<Domain.HotNews.HotNews, HotNewsDto>();
         }
     }
 }
