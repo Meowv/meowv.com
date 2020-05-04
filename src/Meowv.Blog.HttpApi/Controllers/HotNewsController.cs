@@ -1,4 +1,5 @@
 ﻿using Meowv.Blog.Application.Contracts.HotNews;
+using Meowv.Blog.Application.Contracts.HotNews.Params;
 using Meowv.Blog.Application.HotNews;
 using Meowv.Blog.ToolKits.Base;
 using Microsoft.AspNetCore.Mvc;
@@ -42,6 +43,17 @@ namespace Meowv.Blog.HttpApi.Controllers
         public async Task<ServiceResult<IEnumerable<HotNewsDto>>> QueryHotNewsAsync([Required] int sourceId)
         {
             return await _hotNewsService.QueryHotNewsAsync(sourceId);
+        }
+
+        /// <summary>
+        /// 批量插入每日热点数据
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public async Task<ServiceResult<string>> BulkInsertHotNewsAsync([FromBody] BulkInsertHotNewsInput input)
+        {
+            return await _hotNewsService.BulkInsertHotNewsAsync(input);
         }
     }
 }

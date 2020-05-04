@@ -1,4 +1,5 @@
 ﻿using Meowv.Blog.Application.Contracts.HotNews;
+using Meowv.Blog.Application.Contracts.HotNews.Params;
 using Meowv.Blog.ToolKits.Base;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -19,5 +20,12 @@ namespace Meowv.Blog.Application.HotNews
         /// <param name="sourceId"></param>
         /// <returns></returns>
         Task<ServiceResult<IEnumerable<HotNewsDto>>> QueryHotNewsAsync(int sourceId);
+
+        /// <summary>
+        /// 批量插入每日热点数据
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        Task<ServiceResult<string>> BulkInsertHotNewsAsync(BulkInsertHotNewsInput input);
     }
 }

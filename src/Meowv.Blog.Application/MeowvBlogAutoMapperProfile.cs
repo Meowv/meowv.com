@@ -36,6 +36,9 @@ namespace Meowv.Blog.Application
                                                                  .ForMember(x => x.CreateTime, opt => opt.Ignore());
 
             CreateMap<Domain.HotNews.HotNews, HotNewsDto>();
+            CreateMap<HotNewsDto, Domain.HotNews.HotNews>().ForMember(x => x.Id, opt => opt.Ignore())
+                                                           .ForMember(x => x.SourceId, opt => opt.Ignore())
+                                                           .ForMember(x => x.CreateTime, opt => opt.Ignore());
         }
     }
 }
