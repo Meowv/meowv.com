@@ -2,6 +2,7 @@
 using Meowv.Blog.Application.Contracts.HotNews.Params;
 using Meowv.Blog.Application.HotNews;
 using Meowv.Blog.ToolKits.Base;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -51,6 +52,7 @@ namespace Meowv.Blog.HttpApi.Controllers
         /// <param name="input"></param>
         /// <returns></returns>
         [HttpPost]
+        [Authorize]
         public async Task<ServiceResult<string>> BulkInsertHotNewsAsync([FromBody] BulkInsertHotNewsInput input)
         {
             return await _hotNewsService.BulkInsertHotNewsAsync(input);
