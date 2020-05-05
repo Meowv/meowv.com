@@ -8,7 +8,6 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
-using static Meowv.Blog.Domain.Shared.MeowvBlogConsts;
 
 namespace Meowv.Blog.Application.Common.Impl
 {
