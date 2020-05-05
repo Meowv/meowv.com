@@ -31,7 +31,7 @@ namespace Meowv.Blog.Swagger.Filters
                 },
                 new OpenApiTag {
                     Name = "Wallpaper",
-                    Description = "壁纸",
+                    Description = "手机壁纸接口",
                     ExternalDocs = new OpenApiExternalDocs { Description = "Wallpaper" }
                 },
                 new OpenApiTag
@@ -40,11 +40,11 @@ namespace Meowv.Blog.Swagger.Filters
                     Description = "每日热点接口",
                     ExternalDocs = new OpenApiExternalDocs { Description = "每日热点来源和列表" }
                 },
-                //new OpenApiTag {
-                //    Name = "Common",
-                //    Description = "通用公共接口",
-                //    ExternalDocs = new OpenApiExternalDocs { Description = "每日热点/Bing壁纸/妹子图/随机一张猫图/语音合成/智能抠图" }
-                //},
+                new OpenApiTag {
+                    Name = "Common",
+                    Description = "通用公共接口",
+                    ExternalDocs = new OpenApiExternalDocs { Description = "Bing壁纸/妹子图/随机一张猫图/语音合成/智能抠图" }
+                },
                 //new OpenApiTag {
                 //    Name = "MTA",
                 //    Description = "腾讯移动分析",
