@@ -1,9 +1,14 @@
 ﻿using Meowv.Blog.Application.Caching.Common;
 using Meowv.Blog.ToolKits.Base;
+using Meowv.Blog.ToolKits.Extensions;
 using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using static Meowv.Blog.Domain.Shared.MeowvBlogConsts;
 
 namespace Meowv.Blog.Application.Common.Impl
 {
@@ -60,6 +65,56 @@ namespace Meowv.Blog.Application.Common.Impl
                 result.IsSuccess(bytes);
                 return result;
             });
+        }
+
+        /// <summary>
+        /// 获取妹子图，返回URL列表
+        /// </summary>
+        /// <returns></returns>
+        public async Task<ServiceResult<IEnumerable<string>>> GetGirlsAsync()
+        {
+            return await _commonCacheService.GetGirlsAsync(async () =>
+            {
+                var result = new ServiceResult<IEnumerable<string>>();
+
+                var path = Path.Combine(Directory.GetCurrentDirectory(), "Resources/girls.json");
+                var girls = await path.FromJsonFile<List<string>>("girls");
+
+                result.IsSuccess(girls);
+                return result;
+            });
+        }
+
+        /// <summary>
+        /// 获取一张妹子图，返回图片URL
+        /// </summary>
+        /// <returns></returns>
+        public async Task<ServiceResult<string>> GetGirlImgUrlAsync()
+        {
+            var result = new ServiceResult<string>();
+
+            var girls = (await GetGirlsAsync()).Result;
+            var url = girls.OrderBy(x => Guid.NewGuid()).Take(1).FirstOrDefault();
+
+            result.IsSuccess(url);
+            return result;
+        }
+
+        /// <summary>
+        /// 获取一张妹子图，直接返回图片
+        /// </summary>
+        /// <returns></returns>
+        public async Task<ServiceResult<byte[]>> GetGirlImgFileAsync()
+        {
+            var result = new ServiceResult<byte[]>();
+
+            var url = (await GetGirlImgUrlAsync()).Result;
+
+            using var client = _httpClient.CreateClient();
+            var bytes = await client.GetByteArrayAsync(url);
+
+            result.IsSuccess(bytes);
+            return result;
         }
     }
 }

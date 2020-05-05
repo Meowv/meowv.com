@@ -1,5 +1,6 @@
 ﻿using Meowv.Blog.ToolKits.Base;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Meowv.Blog.Application.Caching.Common
@@ -19,5 +20,12 @@ namespace Meowv.Blog.Application.Caching.Common
         /// <param name="factory"></param>
         /// <returns></returns>
         Task<ServiceResult<byte[]>> GetBingImgFileAsync(Func<Task<ServiceResult<byte[]>>> factory);
+
+        /// <summary>
+        /// 获取妹子图，返回URL列表
+        /// </summary>
+        /// <param name="factory"></param>
+        /// <returns></returns>
+        Task<ServiceResult<IEnumerable<string>>> GetGirlsAsync(Func<Task<ServiceResult<IEnumerable<string>>>> factory);
     }
 }

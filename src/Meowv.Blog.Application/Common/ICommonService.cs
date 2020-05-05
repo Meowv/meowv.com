@@ -1,4 +1,5 @@
 ﻿using Meowv.Blog.ToolKits.Base;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Meowv.Blog.Application.Common
@@ -16,5 +17,23 @@ namespace Meowv.Blog.Application.Common
         /// </summary>
         /// <returns></returns>
         Task<ServiceResult<byte[]>> GetBingImgFileAsync();
+
+        /// <summary>
+        /// 获取妹子图，返回URL列表
+        /// </summary>
+        /// <returns></returns>
+        Task<ServiceResult<IEnumerable<string>>> GetGirlsAsync();
+
+        /// <summary>
+        /// 获取一张妹子图，返回图片URL
+        /// </summary>
+        /// <returns></returns>
+        Task<ServiceResult<string>> GetGirlImgUrlAsync();
+
+        /// <summary>
+        /// 获取一张妹子图，直接返回图片
+        /// </summary>
+        /// <returns></returns>
+        Task<ServiceResult<byte[]>> GetGirlImgFileAsync();
     }
 }
