@@ -27,5 +27,13 @@ namespace Meowv.Blog.Application.Caching.Common
         /// <param name="factory"></param>
         /// <returns></returns>
         Task<ServiceResult<IEnumerable<string>>> GetGirlsAsync(Func<Task<ServiceResult<IEnumerable<string>>>> factory);
+
+        /// <summary>
+        /// 获取妹子图，直接返回图片
+        /// </summary>
+        /// <param name="url"></param>
+        /// <param name="factory"></param>
+        /// <returns></returns>
+        Task<ServiceResult<byte[]>> GetGirlImgFileAsync(string url, Func<Task<ServiceResult<byte[]>>> factory);
     }
 }

@@ -110,11 +110,14 @@ namespace Meowv.Blog.Application.Common.Impl
 
             var url = (await GetGirlImgUrlAsync()).Result;
 
-            using var client = _httpClient.CreateClient();
-            var bytes = await client.GetByteArrayAsync(url);
+            return await _commonCacheService.GetGirlImgFileAsync(url, async () =>
+            {
+                using var client = _httpClient.CreateClient();
+                var bytes = await client.GetByteArrayAsync(url);
 
-            result.IsSuccess(bytes);
-            return result;
+                result.IsSuccess(bytes);
+                return result;
+            });
         }
     }
 }
