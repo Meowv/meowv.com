@@ -156,5 +156,18 @@ namespace Meowv.Blog.HttpApi.Controllers
 
             return File(bytes.Result, "image/png");
         }
+
+        /// <summary>
+        /// 语音合成
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("tts")]
+        public async Task<FileContentResult> SpeechTtsAsync()
+        {
+            var bytes = await _commonService.SpeechTtsAsync();
+
+            return File(bytes.Result, "audio/mpeg");
+        }
     }
 }

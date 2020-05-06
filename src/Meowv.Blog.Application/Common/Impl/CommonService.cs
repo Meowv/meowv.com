@@ -1,6 +1,8 @@
-﻿using IP2Region;
+﻿using Baidu.Aip.Speech;
+using IP2Region;
 using Meowv.Blog.Application.Caching.Common;
 using Meowv.Blog.Domain.Configurations;
+using Meowv.Blog.Domain.Shared;
 using Meowv.Blog.ToolKits.Base;
 using Meowv.Blog.ToolKits.Extensions;
 using Microsoft.AspNetCore.Http;
@@ -270,6 +272,45 @@ namespace Meowv.Blog.Application.Common.Impl
             else
                 result.IsFailed(await response.Content.ReadAsStringAsync());
 
+            return result;
+        }
+
+        /// <summary>
+        /// 语音合成
+        /// </summary>
+        /// <returns></returns>
+        public async Task<ServiceResult<byte[]>> SpeechTtsAsync()
+        {
+            var result = new ServiceResult<byte[]>();
+
+            using var client = _httpClient.CreateClient();
+            var json = await client.GetStringAsync("http://open.iciba.com/dsapi/");
+            var obj = JObject.Parse(json);
+            var note = obj["note"].ToString();
+            var content = obj["content"].ToString();
+
+            var _ttsClient = new Tts(AppSettings.BaiduAI.APIKey, AppSettings.BaiduAI.SecretKey)
+            {
+                Timeout = 60000
+            };
+
+            // https://ai.baidu.com/ai-doc/SPEECH/
+            var option = new Dictionary<string, object>()
+            {
+                {"spd", 5}, // 语速，取值0-9，默认为5中语速
+                {"vol", 7}, // 音量，取值0-15，默认为5中音量
+                {"per", 4}  // 发音人, 0为女声，1为男声，3为情感合成-度逍遥，4为情感合成-度丫丫
+            };
+
+            var response = _ttsClient.Synthesis(GreetWord.FormatWith(note, content), option);
+
+            if (response.Success)
+                result.IsSuccess(response.Data);
+            else
+            {
+                var bytes = await client.GetByteArrayAsync(obj["tts"].ToString());
+                result.IsSuccess(bytes);
+            }
             return result;
         }
     }

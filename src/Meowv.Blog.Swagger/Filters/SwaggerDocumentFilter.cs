@@ -43,7 +43,7 @@ namespace Meowv.Blog.Swagger.Filters
                 new OpenApiTag {
                     Name = "Common",
                     Description = "通用公共接口",
-                    ExternalDocs = new OpenApiExternalDocs { Description = "Bing壁纸/妹子图/随机一张猫图/语音合成/智能抠图" }
+                    ExternalDocs = new OpenApiExternalDocs { Description = "Bing壁纸/妹子图/猫咪图/智能抠图/语音合成" }
                 },
                 //new OpenApiTag {
                 //    Name = "MTA",

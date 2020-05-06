@@ -75,5 +75,11 @@ namespace Meowv.Blog.Application.Common
         /// <param name="url"></param>
         /// <returns></returns>
         Task<ServiceResult<byte[]>> RemoveBgAsync(string url);
+
+        /// <summary>
+        /// 语音合成
+        /// </summary>
+        /// <returns></returns>
+        Task<ServiceResult<byte[]>> SpeechTtsAsync();
     }
 }
