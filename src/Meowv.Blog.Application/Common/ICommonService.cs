@@ -35,5 +35,23 @@ namespace Meowv.Blog.Application.Common
         /// </summary>
         /// <returns></returns>
         Task<ServiceResult<byte[]>> GetGirlImgFileAsync();
+
+        /// <summary>
+        /// 获取猫图，返回URL列表
+        /// </summary>
+        /// <returns></returns>
+        Task<ServiceResult<IEnumerable<string>>> GetCatsAsync();
+
+        /// <summary>
+        /// 获取一张猫图，返回图片URL
+        /// </summary>
+        /// <returns></returns>
+        Task<ServiceResult<string>> GetCatImgUrlAsync();
+
+        /// <summary>
+        /// 获取一张猫图，直接返回图片
+        /// </summary>
+        /// <returns></returns>
+        Task<ServiceResult<byte[]>> GetCatImgFileAsync();
     }
 }

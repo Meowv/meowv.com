@@ -78,5 +78,40 @@ namespace Meowv.Blog.HttpApi.Controllers
 
             return File(url.Result, "image/jpeg");
         }
+
+        /// <summary>
+        /// 获取猫图，返回URL列表
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("cats")]
+        public async Task<ServiceResult<IEnumerable<string>>> GetCatsAsync()
+        {
+            return await _commonService.GetCatsAsync();
+        }
+
+        /// <summary>
+        /// 获取一张猫图，返回图片URL
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("cat/imgUrl")]
+        public async Task<ServiceResult<string>> GetCatImgUrlAsync()
+        {
+            return await _commonService.GetCatImgUrlAsync();
+        }
+
+        /// <summary>
+        /// 获取一张猫图，直接返回图片
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("cat/imgFile")]
+        public async Task<FileContentResult> GetCatImgFileAsync()
+        {
+            var url = await _commonService.GetCatImgFileAsync();
+
+            return File(url.Result, "image/jpeg");
+        }
     }
 }

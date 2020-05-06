@@ -118,5 +118,58 @@ namespace Meowv.Blog.Application.Common.Impl
                 return result;
             });
         }
+
+        /// <summary>
+        /// 获取猫图，返回URL列表
+        /// </summary>
+        /// <returns></returns>
+        public async Task<ServiceResult<IEnumerable<string>>> GetCatsAsync()
+        {
+            return await _commonCacheService.GetCatsAsync(async () =>
+            {
+                var result = new ServiceResult<IEnumerable<string>>();
+
+                var path = Path.Combine(Directory.GetCurrentDirectory(), "Resources/cats.json");
+                var girls = await path.FromJsonFile<List<string>>("cats");
+
+                result.IsSuccess(girls);
+                return result;
+            });
+        }
+
+        /// <summary>
+        /// 获取猫图，返回图片URL
+        /// </summary>
+        /// <returns></returns>
+        public async Task<ServiceResult<string>> GetCatImgUrlAsync()
+        {
+            var result = new ServiceResult<string>();
+
+            var girls = (await GetCatsAsync()).Result;
+            var url = girls.OrderBy(x => Guid.NewGuid()).Take(1).FirstOrDefault();
+
+            result.IsSuccess(url);
+            return result;
+        }
+
+        /// <summary>
+        /// 获取猫图，直接返回图片
+        /// </summary>
+        /// <returns></returns>
+        public async Task<ServiceResult<byte[]>> GetCatImgFileAsync()
+        {
+            var result = new ServiceResult<byte[]>();
+
+            var url = (await GetCatImgUrlAsync()).Result;
+
+            return await _commonCacheService.GetCatImgFileAsync(url, async () =>
+            {
+                using var client = _httpClient.CreateClient();
+                var bytes = await client.GetByteArrayAsync(url);
+
+                result.IsSuccess(bytes);
+                return result;
+            });
+        }
     }
 }
