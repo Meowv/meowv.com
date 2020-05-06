@@ -15,6 +15,7 @@ namespace Meowv.Blog.Application.Caching.Common.Impl
         private const string KEY_GetGirlImgFile = "Common:Girls:ImgFile-{0}";
         private const string KEY_GetCats = "Common:Cats:Get";
         private const string KEY_GetCatImgFile = "Common:Cat:ImgFile-{0}";
+        private const string KEY_Ip2Regin = "Common:Ip:Ip2Regin-{0}";
 
         /// <summary>
         /// 获取必应每日壁纸，返回图片URL
@@ -76,6 +77,17 @@ namespace Meowv.Blog.Application.Caching.Common.Impl
         public async Task<ServiceResult<byte[]>> GetCatImgFileAsync(string url, Func<Task<ServiceResult<byte[]>>> factory)
         {
             return await Cache.GetOrAddAsync(KEY_GetCatImgFile.FormatWith(url.EncodeMd5String()), factory, CacheStrategy.NEVER);
+        }
+
+        /// <summary>
+        /// 根据IP地址获取所在区域
+        /// </summary>
+        /// <param name="ip"></param>
+        /// <param name="factory"></param>
+        /// <returns></returns>
+        public async Task<ServiceResult<string>> Ip2ReginAsync(string ip, Func<Task<ServiceResult<string>>> factory)
+        {
+            return await Cache.GetOrAddAsync(KEY_Ip2Regin.FormatWith(ip), factory, CacheStrategy.ONE_DAY);
         }
     }
 }

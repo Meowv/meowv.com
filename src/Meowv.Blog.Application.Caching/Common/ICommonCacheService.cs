@@ -50,5 +50,13 @@ namespace Meowv.Blog.Application.Caching.Common
         /// <param name="factory"></param>
         /// <returns></returns>
         Task<ServiceResult<byte[]>> GetCatImgFileAsync(string url, Func<Task<ServiceResult<byte[]>>> factory);
+
+        /// <summary>
+        /// 根据IP地址获取所在区域
+        /// </summary>
+        /// <param name="ip"></param>
+        /// <param name="factory"></param>
+        /// <returns></returns>
+        Task<ServiceResult<string>> Ip2ReginAsync(string ip, Func<Task<ServiceResult<string>>> factory);
     }
 }

@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using static Meowv.Blog.Domain.Shared.MeowvBlogConsts;
 
 namespace Meowv.Blog.Application.Common.Impl
 {
@@ -193,17 +194,20 @@ namespace Meowv.Blog.Application.Common.Impl
 
             if (!ip.IsIp())
             {
-                result.IsFailed("IP地址格式不正确");
+                result.IsFailed(ResponseText.IP_IS_ERROE);
                 return result;
             }
 
-            var path = Path.Combine(Directory.GetCurrentDirectory(), "Resources/ip2region.db");
+            return await _commonCacheService.Ip2ReginAsync(ip, async () =>
+            {
+                var path = Path.Combine(Directory.GetCurrentDirectory(), "Resources/ip2region.db");
 
-            using var _search = new DbSearcher(path);
-            var block = await _search.BinarySearchAsync(ip);
+                using var _search = new DbSearcher(path);
+                var block = await _search.BinarySearchAsync(ip);
 
-            result.IsSuccess(block.Region);
-            return result;
+                result.IsSuccess(block.Region);
+                return result;
+            });
         }
     }
 }

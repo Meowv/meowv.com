@@ -140,6 +140,11 @@
             /// 数据为空
             /// </summary>
             public const string DATA_IS_NONE = "数据为空";
+
+            /// <summary>
+            /// IP地址格式不正确
+            /// </summary>
+            public const string IP_IS_ERROE = "IP地址格式不正确";
         }
     }
 }
