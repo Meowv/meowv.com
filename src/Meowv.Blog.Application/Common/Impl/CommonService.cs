@@ -281,37 +281,40 @@ namespace Meowv.Blog.Application.Common.Impl
         /// <returns></returns>
         public async Task<ServiceResult<byte[]>> SpeechTtsAsync()
         {
-            var result = new ServiceResult<byte[]>();
-
-            using var client = _httpClient.CreateClient();
-            var json = await client.GetStringAsync("http://open.iciba.com/dsapi/");
-            var obj = JObject.Parse(json);
-            var note = obj["note"].ToString();
-            var content = obj["content"].ToString();
-
-            var _ttsClient = new Tts(AppSettings.BaiduAI.APIKey, AppSettings.BaiduAI.SecretKey)
+            return await _commonCacheService.SpeechTtsAsync(async () =>
             {
-                Timeout = 60000
-            };
+                var result = new ServiceResult<byte[]>();
 
-            // https://ai.baidu.com/ai-doc/SPEECH/
-            var option = new Dictionary<string, object>()
-            {
-                {"spd", 5}, // 语速，取值0-9，默认为5中语速
-                {"vol", 7}, // 音量，取值0-15，默认为5中音量
-                {"per", 4}  // 发音人, 0为女声，1为男声，3为情感合成-度逍遥，4为情感合成-度丫丫
-            };
+                using var client = _httpClient.CreateClient();
+                var json = await client.GetStringAsync("http://open.iciba.com/dsapi/");
+                var obj = JObject.Parse(json);
+                var note = obj["note"].ToString();
+                var content = obj["content"].ToString();
 
-            var response = _ttsClient.Synthesis(GreetWord.FormatWith(note, content), option);
+                var _ttsClient = new Tts(AppSettings.BaiduAI.APIKey, AppSettings.BaiduAI.SecretKey)
+                {
+                    Timeout = 60000
+                };
 
-            if (response.Success)
-                result.IsSuccess(response.Data);
-            else
-            {
-                var bytes = await client.GetByteArrayAsync(obj["tts"].ToString());
-                result.IsSuccess(bytes);
-            }
-            return result;
+                // https://ai.baidu.com/ai-doc/SPEECH/
+                var option = new Dictionary<string, object>()
+                {
+                    {"spd", 5}, // 语速，取值0-9，默认为5中语速
+                    {"vol", 7}, // 音量，取值0-15，默认为5中音量
+                    {"per", 4}  // 发音人, 0为女声，1为男声，3为情感合成-度逍遥，4为情感合成-度丫丫
+                };
+
+                var response = _ttsClient.Synthesis(GreetWord.FormatWith(note, content), option);
+
+                if (response.Success)
+                    result.IsSuccess(response.Data);
+                else
+                {
+                    var bytes = await client.GetByteArrayAsync(obj["tts"].ToString());
+                    result.IsSuccess(bytes);
+                }
+                return result;
+            });
         }
     }
 }

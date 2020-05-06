@@ -58,5 +58,12 @@ namespace Meowv.Blog.Application.Caching.Common
         /// <param name="factory"></param>
         /// <returns></returns>
         Task<ServiceResult<string>> Ip2ReginAsync(string ip, Func<Task<ServiceResult<string>>> factory);
+
+        /// <summary>
+        /// 语音合成
+        /// </summary>
+        /// <param name="factory"></param>
+        /// <returns></returns>
+        Task<ServiceResult<byte[]>> SpeechTtsAsync(Func<Task<ServiceResult<byte[]>>> factory);
     }
 }
