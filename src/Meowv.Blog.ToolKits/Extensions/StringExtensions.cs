@@ -163,20 +163,6 @@ namespace Meowv.Blog.ToolKits.Extensions
             return suffix.Contains(fileSuffix);
         }
 
-        /// <summary>
-        /// 是否是图片文件名
-        /// </summary>
-        /// <returns> </returns>
-        //public static bool IsImgFileName(this string fileName)
-        //{
-        //    if (fileName.IndexOf(".", StringComparison.Ordinal) == -1)
-        //        return false;
-
-        //    string tempFileName = fileName.Trim().ToLower();
-        //    string extension = tempFileName.Substring(tempFileName.LastIndexOf(".", StringComparison.Ordinal));
-        //    return extension == ".png" || extension == ".bmp" || extension == ".jpg" || extension == ".jpeg" || extension == ".gif";
-        //}
-
         #endregion
 
         #region 字符串截取
