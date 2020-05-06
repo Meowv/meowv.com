@@ -137,12 +137,12 @@ namespace Meowv.Blog.BackgroundJobs.Jobs
                 // SegmentFault
                 if (item.Source == HotNewsEnum.segmentfault)
                 {
-                    var nodes = ((HtmlDocument)item.Result).DocumentNode.SelectNodes("//div[@class='news__item-info clearfix']/a").ToList();
+                    var nodes = ((HtmlDocument)item.Result).DocumentNode.SelectNodes("//div[@class='news__item-info clearfix']/a").Where(x => x.InnerText.IsNotNullOrEmpty()).ToList();
                     nodes.ForEach(x =>
                     {
                         hotNews.Add(new HotNews
                         {
-                            Title = x.SelectSingleNode("//h4").InnerText,
+                            Title = x.SelectSingleNode(".//h4").InnerText,
                             Url = $"https://segmentfault.com{x.GetAttributeValue("href", "")}",
                             SourceId = sourceId,
                             CreateTime = DateTime.Now
