@@ -278,10 +278,49 @@ namespace Meowv.Blog.Application.Common.Impl
         /// <summary>
         /// 语音合成
         /// </summary>
+        /// <param name="content">合成的文本，长度在1024字节以内</param>
+        /// <param name="spd">语速，取值0-9，默认为5中语速</param>
+        /// <param name="pit">音调，取值0-9，默认为5中语调</param>
+        /// <param name="vol">音量，取值0-15，默认为5中音量</param>
+        /// <param name="per">发音人, 0为女声，1为男声，3为情感合成-度逍遥，4为情感合成-度丫丫</param>
         /// <returns></returns>
-        public async Task<ServiceResult<byte[]>> SpeechTtsAsync()
+        public async Task<ServiceResult<byte[]>> SpeechTtsAsync(string content, int spd, int pit, int vol, int per)
         {
-            return await _commonCacheService.SpeechTtsAsync(async () =>
+            return await _commonCacheService.SpeechTtsAsync(content, spd, pit, vol, per, async () =>
+            {
+                var result = new ServiceResult<byte[]>();
+
+                var option = new Dictionary<string, object>()
+                {
+                    { "spd", spd },
+                    { "pit", pit },
+                    { "vol", vol },
+                    { "per", per }
+                };
+
+                var _ttsClient = new Tts(AppSettings.BaiduAI.APIKey, AppSettings.BaiduAI.SecretKey)
+                {
+                    Timeout = 60000
+                };
+
+                var response = _ttsClient.Synthesis(content, option);
+
+                if (response.Success)
+                    result.IsSuccess(response.Data);
+                else
+                    result.IsFailed(response.ErrorMsg);
+
+                return await Task.FromResult(result);
+            });
+        }
+
+        /// <summary>
+        /// 语音合成欢迎词
+        /// </summary>
+        /// <returns></returns>
+        public async Task<ServiceResult<byte[]>> SpeechTtsGreetWordAsync()
+        {
+            return await _commonCacheService.SpeechTtsGreetWordAsync(async () =>
             {
                 var result = new ServiceResult<byte[]>();
 
@@ -316,42 +355,6 @@ namespace Meowv.Blog.Application.Common.Impl
                 }
                 return result;
             });
-        }
-
-        /// <summary>
-        /// 语音合成
-        /// </summary>
-        /// <param name="content">合成的文本，长度在1024字节以内</param>
-        /// <param name="spd">语速，取值0-9，默认为5中语速</param>
-        /// <param name="pit">音调，取值0-9，默认为5中语调</param>
-        /// <param name="vol">音量，取值0-15，默认为5中音量</param>
-        /// <param name="per">发音人, 0为女声，1为男声，3为情感合成-度逍遥，4为情感合成-度丫丫</param>
-        /// <returns></returns>
-        public async Task<ServiceResult<byte[]>> SpeechTtsAsync(string content, int spd, int pit, int vol, int per)
-        {
-            var result = new ServiceResult<byte[]>();
-
-            var option = new Dictionary<string, object>()
-            {
-                { "spd", spd },
-                { "pit", pit },
-                { "vol", vol },
-                { "per", per }
-            };
-
-            var _ttsClient = new Tts(AppSettings.BaiduAI.APIKey, AppSettings.BaiduAI.SecretKey)
-            {
-                Timeout = 60000
-            };
-
-            var response = _ttsClient.Synthesis(content, option);
-
-            if (response.Success)
-                result.IsSuccess(response.Data);
-            else
-                result.IsFailed(response.ErrorMsg);
-
-            return await Task.FromResult(result);
         }
     }
 }

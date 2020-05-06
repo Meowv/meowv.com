@@ -16,7 +16,8 @@ namespace Meowv.Blog.Application.Caching.Common.Impl
         private const string KEY_GetCats = "Common:Cats:Get";
         private const string KEY_GetCatImgFile = "Common:Cat:ImgFile-{0}";
         private const string KEY_Ip2Regin = "Common:Ip:Ip2Regin-{0}";
-        private const string KEY_SpeechTts = "Common:SpeechTts:GreetWord";
+        private const string KEY_SpeechTts = "Common:SpeechTts:{0}-{1}-{2}-{3}-{4}";
+        private const string KEY_SpeechTtsGreetWord = "Common:SpeechTts:GreetWord";
 
         /// <summary>
         /// 获取必应每日壁纸，返回图片URL
@@ -94,11 +95,26 @@ namespace Meowv.Blog.Application.Caching.Common.Impl
         /// <summary>
         /// 语音合成
         /// </summary>
+        /// <param name="content"></param>
+        /// <param name="spd"></param>
+        /// <param name="pit"></param>
+        /// <param name="vol"></param>
+        /// <param name="per"></param>
         /// <param name="factory"></param>
         /// <returns></returns>
-        public async Task<ServiceResult<byte[]>> SpeechTtsAsync(Func<Task<ServiceResult<byte[]>>> factory)
+        public async Task<ServiceResult<byte[]>> SpeechTtsAsync(string content, int spd, int pit, int vol, int per, Func<Task<ServiceResult<byte[]>>> factory)
         {
-            return await Cache.GetOrAddAsync(KEY_SpeechTts, factory, CacheStrategy.ONE_HOURS);
+            return await Cache.GetOrAddAsync(KEY_SpeechTts.FormatWith(content.EncodeMd5String(), spd, pit, vol, per), factory, CacheStrategy.ONE_DAY);
+        }
+
+        /// <summary>
+        /// 语音合成欢迎词
+        /// </summary>
+        /// <param name="factory"></param>
+        /// <returns></returns>
+        public async Task<ServiceResult<byte[]>> SpeechTtsGreetWordAsync(Func<Task<ServiceResult<byte[]>>> factory)
+        {
+            return await Cache.GetOrAddAsync(KEY_SpeechTtsGreetWord, factory, CacheStrategy.ONE_HOURS);
         }
     }
 }

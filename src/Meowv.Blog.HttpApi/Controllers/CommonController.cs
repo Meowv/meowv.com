@@ -160,19 +160,6 @@ namespace Meowv.Blog.HttpApi.Controllers
         /// <summary>
         /// 语音合成
         /// </summary>
-        /// <returns></returns>
-        [HttpGet]
-        [Route("tts/GreetWord")]
-        public async Task<FileContentResult> SpeechTtsAsync()
-        {
-            var bytes = await _commonService.SpeechTtsAsync();
-
-            return File(bytes.Result, "audio/mpeg");
-        }
-
-        /// <summary>
-        /// 语音合成
-        /// </summary>
         /// <param name="content">合成的文本，长度在1024字节以内</param>
         /// <param name="spd">语速，取值0-9，默认为5中语速</param>
         /// <param name="pit">音调，取值0-9，默认为5中语调</param>
@@ -184,6 +171,19 @@ namespace Meowv.Blog.HttpApi.Controllers
         public async Task<FileContentResult> SpeechTtsAsync([Required]string content, [Range(0, 9)]int spd = 5, [Range(0, 9)]int pit = 5, [Range(0, 15)]int vol = 7, [Range(0, 4)]int per = 4)
         {
             var bytes = await _commonService.SpeechTtsAsync(content, spd, pit, vol, per);
+
+            return File(bytes.Result, "audio/mpeg");
+        }
+
+        /// <summary>
+        /// 语音合成欢迎词
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("tts/GreetWord")]
+        public async Task<FileContentResult> SpeechTtsGreetWordAsync()
+        {
+            var bytes = await _commonService.SpeechTtsGreetWordAsync();
 
             return File(bytes.Result, "audio/mpeg");
         }

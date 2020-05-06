@@ -62,8 +62,20 @@ namespace Meowv.Blog.Application.Caching.Common
         /// <summary>
         /// 语音合成
         /// </summary>
+        /// <param name="content"></param>
+        /// <param name="spd"></param>
+        /// <param name="pit"></param>
+        /// <param name="vol"></param>
+        /// <param name="per"></param>
         /// <param name="factory"></param>
         /// <returns></returns>
-        Task<ServiceResult<byte[]>> SpeechTtsAsync(Func<Task<ServiceResult<byte[]>>> factory);
+        Task<ServiceResult<byte[]>> SpeechTtsAsync(string content, int spd, int pit, int vol, int per, Func<Task<ServiceResult<byte[]>>> factory);
+
+        /// <summary>
+        /// 语音合成欢迎词
+        /// </summary>
+        /// <param name="factory"></param>
+        /// <returns></returns>
+        Task<ServiceResult<byte[]>> SpeechTtsGreetWordAsync(Func<Task<ServiceResult<byte[]>>> factory);
     }
 }
