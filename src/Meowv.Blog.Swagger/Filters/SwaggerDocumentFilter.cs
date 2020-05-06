@@ -50,11 +50,11 @@ namespace Meowv.Blog.Swagger.Filters
                     Description = "腾讯移动分析",
                     ExternalDocs = new OpenApiExternalDocs { Description = "MTA" }
                 },
-                //new OpenApiTag {
-                //    Name = "TCA",
-                //    Description = "腾讯云API",
-                //    ExternalDocs = new OpenApiExternalDocs { Description = "CDN刷新/验证码校验" }
-                //},
+                new OpenApiTag {
+                    Name = "TCA",
+                    Description = "腾讯云API",
+                    ExternalDocs = new OpenApiExternalDocs { Description = "CDN/Captcha" }
+                },
                 //new OpenApiTag {
                 //    Name = "Gallery",
                 //    Description = "图集相册",
