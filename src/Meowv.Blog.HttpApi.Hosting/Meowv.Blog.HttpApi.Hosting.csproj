@@ -20,4 +20,6 @@
     <ProjectReference Include="..\Meowv.Blog.Swagger\Meowv.Blog.Swagger.csproj" />
   </ItemGroup>
 
+  <ProjectExtensions><VisualStudio><UserProperties appsettings_1json__JsonSchema="" /></VisualStudio></ProjectExtensions>
+
 </Project>

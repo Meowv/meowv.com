@@ -45,11 +45,11 @@ namespace Meowv.Blog.Swagger.Filters
                     Description = "通用公共接口",
                     ExternalDocs = new OpenApiExternalDocs { Description = "Bing壁纸/妹子图/猫咪图/智能抠图/语音合成" }
                 },
-                //new OpenApiTag {
-                //    Name = "MTA",
-                //    Description = "腾讯移动分析",
-                //    ExternalDocs = new OpenApiExternalDocs { Description = "MTA" }
-                //},
+                new OpenApiTag {
+                    Name = "MTA",
+                    Description = "腾讯移动分析",
+                    ExternalDocs = new OpenApiExternalDocs { Description = "MTA" }
+                },
                 //new OpenApiTag {
                 //    Name = "TCA",
                 //    Description = "腾讯云API",
