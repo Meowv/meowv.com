@@ -81,5 +81,16 @@ namespace Meowv.Blog.Application.Common
         /// </summary>
         /// <returns></returns>
         Task<ServiceResult<byte[]>> SpeechTtsAsync();
+
+        /// <summary>
+        /// 语音合成
+        /// </summary>
+        /// <param name="content">合成的文本，长度在1024字节以内</param>
+        /// <param name="spd">语速，取值0-9，默认为5中语速</param>
+        /// <param name="pit">音调，取值0-9，默认为5中语调</param>
+        /// <param name="vol">音量，取值0-15，默认为5中音量</param>
+        /// <param name="per">发音人, 0为女声，1为男声，3为情感合成-度逍遥，4为情感合成-度丫丫</param>
+        /// <returns></returns>
+        Task<ServiceResult<byte[]>> SpeechTtsAsync(string content, int spd, int pit, int vol, int per);
     }
 }

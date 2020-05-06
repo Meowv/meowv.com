@@ -299,9 +299,10 @@ namespace Meowv.Blog.Application.Common.Impl
                 // https://ai.baidu.com/ai-doc/SPEECH/
                 var option = new Dictionary<string, object>()
                 {
-                    {"spd", 5}, // 语速，取值0-9，默认为5中语速
-                    {"vol", 7}, // 音量，取值0-15，默认为5中音量
-                    {"per", 4}  // 发音人, 0为女声，1为男声，3为情感合成-度逍遥，4为情感合成-度丫丫
+                    { "spd", 5 }, // 语速，取值0-9，默认为5中语速
+                    { "pit", 5 }, // 音调，取值0-9，默认为5中语调
+                    { "vol", 7 }, // 音量，取值0-15，默认为5中音量
+                    { "per", 4 }  // 发音人, 0为女声，1为男声，3为情感合成-度逍遥，4为情感合成-度丫丫
                 };
 
                 var response = _ttsClient.Synthesis(GreetWord.FormatWith(note, content), option);
@@ -315,6 +316,42 @@ namespace Meowv.Blog.Application.Common.Impl
                 }
                 return result;
             });
+        }
+
+        /// <summary>
+        /// 语音合成
+        /// </summary>
+        /// <param name="content">合成的文本，长度在1024字节以内</param>
+        /// <param name="spd">语速，取值0-9，默认为5中语速</param>
+        /// <param name="pit">音调，取值0-9，默认为5中语调</param>
+        /// <param name="vol">音量，取值0-15，默认为5中音量</param>
+        /// <param name="per">发音人, 0为女声，1为男声，3为情感合成-度逍遥，4为情感合成-度丫丫</param>
+        /// <returns></returns>
+        public async Task<ServiceResult<byte[]>> SpeechTtsAsync(string content, int spd, int pit, int vol, int per)
+        {
+            var result = new ServiceResult<byte[]>();
+
+            var option = new Dictionary<string, object>()
+            {
+                { "spd", spd },
+                { "pit", pit },
+                { "vol", vol },
+                { "per", per }
+            };
+
+            var _ttsClient = new Tts(AppSettings.BaiduAI.APIKey, AppSettings.BaiduAI.SecretKey)
+            {
+                Timeout = 60000
+            };
+
+            var response = _ttsClient.Synthesis(content, option);
+
+            if (response.Success)
+                result.IsSuccess(response.Data);
+            else
+                result.IsFailed(response.ErrorMsg);
+
+            return await Task.FromResult(result);
         }
     }
 }
