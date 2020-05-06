@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Text.RegularExpressions;
 
 namespace Meowv.Blog.ToolKits.Extensions
@@ -150,16 +152,30 @@ namespace Meowv.Blog.ToolKits.Extensions
         /// <summary>
         /// 是否是图片文件名
         /// </summary>
-        /// <returns> </returns>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
         public static bool IsImgFileName(this string fileName)
         {
-            if (fileName.IndexOf(".", StringComparison.Ordinal) == -1)
-                return false;
+            var suffix = new List<string>() { ".jpg", ".jpeg", ".png" };
 
-            string tempFileName = fileName.Trim().ToLower();
-            string extension = tempFileName.Substring(tempFileName.LastIndexOf(".", StringComparison.Ordinal));
-            return extension == ".png" || extension == ".bmp" || extension == ".jpg" || extension == ".jpeg" || extension == ".gif";
+            var fileSuffix = Path.GetExtension(fileName).ToLower();
+
+            return suffix.Contains(fileSuffix);
         }
+
+        /// <summary>
+        /// 是否是图片文件名
+        /// </summary>
+        /// <returns> </returns>
+        //public static bool IsImgFileName(this string fileName)
+        //{
+        //    if (fileName.IndexOf(".", StringComparison.Ordinal) == -1)
+        //        return false;
+
+        //    string tempFileName = fileName.Trim().ToLower();
+        //    string extension = tempFileName.Substring(tempFileName.LastIndexOf(".", StringComparison.Ordinal));
+        //    return extension == ".png" || extension == ".bmp" || extension == ".jpg" || extension == ".jpeg" || extension == ".gif";
+        //}
 
         #endregion
 

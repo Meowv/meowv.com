@@ -1,5 +1,6 @@
 ﻿using IP2Region;
 using Meowv.Blog.Application.Caching.Common;
+using Meowv.Blog.Domain.Configurations;
 using Meowv.Blog.ToolKits.Base;
 using Meowv.Blog.ToolKits.Extensions;
 using Microsoft.AspNetCore.Http;
@@ -194,7 +195,7 @@ namespace Meowv.Blog.Application.Common.Impl
 
             if (!ip.IsIp())
             {
-                result.IsFailed(ResponseText.IP_IS_ERROE);
+                result.IsFailed(ResponseText.IP_IS_WRONG);
                 return result;
             }
 
@@ -208,6 +209,68 @@ namespace Meowv.Blog.Application.Common.Impl
                 result.IsSuccess(block.Region);
                 return result;
             });
+        }
+
+        /// <summary>
+        /// 智能抠图，移除图片背景
+        /// </summary>
+        /// <param name="file"></param>
+        /// <returns></returns>
+        public async Task<ServiceResult<byte[]>> RemoveBgAsync(IFormFile file)
+        {
+            var result = new ServiceResult<byte[]>();
+
+            if (file.Length <= 0 || !file.FileName.IsImgFileName())
+            {
+                result.IsFailed(ResponseText.IMG_IS_WRONG);
+                return result;
+            }
+
+            var fileName = Path.GetRandomFileName() + Path.GetExtension(file.FileName);
+            var filePath = Path.GetTempPath() + fileName;
+
+            using (var stream = File.Create(filePath))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            using var client = _httpClient.CreateClient();
+            using var formData = new MultipartFormDataContent();
+            formData.Headers.Add("X-Api-Key", AppSettings.RemoveBg.Secret);
+            formData.Add(new ByteArrayContent(File.ReadAllBytes(filePath)), "image_file", fileName);
+            formData.Add(new StringContent("auto"), "size");
+
+            var response = await client.PostAsync(AppSettings.RemoveBg.URL, formData);
+            if (response.IsSuccessStatusCode)
+                result.IsSuccess(await response.Content.ReadAsByteArrayAsync());
+            else
+                result.IsFailed(await response.Content.ReadAsStringAsync());
+
+            return result;
+        }
+
+        /// <summary>
+        /// 智能抠图，移除图片背景
+        /// </summary>
+        /// <param name="url"></param>
+        /// <returns></returns>
+        public async Task<ServiceResult<byte[]>> RemoveBgAsync(string url)
+        {
+            var result = new ServiceResult<byte[]>();
+
+            using var client = new HttpClient();
+            using var formData = new MultipartFormDataContent();
+            formData.Headers.Add("X-Api-Key", AppSettings.RemoveBg.Secret);
+            formData.Add(new StringContent(url), "image_url");
+            formData.Add(new StringContent("auto"), "size");
+
+            var response = await client.PostAsync(AppSettings.RemoveBg.URL, formData);
+            if (response.IsSuccessStatusCode)
+                result.IsSuccess(await response.Content.ReadAsByteArrayAsync());
+            else
+                result.IsFailed(await response.Content.ReadAsStringAsync());
+
+            return result;
         }
     }
 }
