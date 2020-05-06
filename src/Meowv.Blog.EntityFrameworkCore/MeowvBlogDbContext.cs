@@ -1,6 +1,7 @@
 using Meowv.Blog.Domain.Blog;
 using Meowv.Blog.Domain.HotNews;
 using Meowv.Blog.Domain.Signature;
+using Meowv.Blog.Domain.Soul;
 using Meowv.Blog.Domain.Wallpaper;
 using Microsoft.EntityFrameworkCore;
 using Volo.Abp.Data;
@@ -22,10 +23,12 @@ namespace Meowv.Blog.EntityFrameworkCore
         public DbSet<FriendLink> FriendLinks { get; set; }
 
         public DbSet<Signature> Signatures { get; set; }
-        
+
         public DbSet<Wallpaper> Wallpapers { get; set; }
 
         public DbSet<HotNews> HotNews { get; set; }
+
+        public DbSet<ChickenSoup> ChickenSoups { get; set; }
 
         public MeowvBlogDbContext(DbContextOptions<MeowvBlogDbContext> options)
             : base(options)

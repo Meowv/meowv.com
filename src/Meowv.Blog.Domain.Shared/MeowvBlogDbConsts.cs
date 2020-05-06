@@ -19,6 +19,8 @@
             public const string Wallpapers = "Wallpapers";
 
             public const string HotNews = "HotNews";
+
+            public const string ChickenSoups = "ChickenSoups";
         }
     }
 }

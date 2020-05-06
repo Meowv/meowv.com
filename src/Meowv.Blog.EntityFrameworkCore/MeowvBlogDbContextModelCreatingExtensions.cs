@@ -2,6 +2,7 @@
 using Meowv.Blog.Domain.HotNews;
 using Meowv.Blog.Domain.Shared;
 using Meowv.Blog.Domain.Signature;
+using Meowv.Blog.Domain.Soul;
 using Meowv.Blog.Domain.Wallpaper;
 using Microsoft.EntityFrameworkCore;
 using Volo.Abp;
@@ -92,6 +93,14 @@ namespace Meowv.Blog.EntityFrameworkCore
                 b.Property(x => x.Url).HasMaxLength(250).IsRequired();
                 b.Property(x => x.SourceId).HasColumnType("int").IsRequired();
                 b.Property(x => x.CreateTime).HasColumnType("datetime").IsRequired();
+            });
+
+            builder.Entity<ChickenSoup>(b =>
+            {
+                b.ToTable(MeowvBlogConsts.DbTablePrefix + DbTableName.ChickenSoups);
+                b.HasKey(x => x.Id);
+                b.Property(x => x.Id).ValueGeneratedOnAdd();
+                b.Property(x => x.Content).HasMaxLength(200).IsRequired();
             });
         }
     }
