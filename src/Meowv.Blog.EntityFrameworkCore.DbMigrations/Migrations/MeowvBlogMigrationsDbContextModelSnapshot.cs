@@ -156,7 +156,7 @@ namespace Meowv.Blog.EntityFrameworkCore.DbMigrations.Migrations
                     b.Property<string>("Url")
                         .IsRequired()
                         .HasColumnType("varchar(250) CHARACTER SET utf8mb4")
-                        .HasMaxLength(100);
+                        .HasMaxLength(250);
 
                     b.HasKey("Id");
 
@@ -195,6 +195,22 @@ namespace Meowv.Blog.EntityFrameworkCore.DbMigrations.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("meowv_Signatures");
+                });
+
+            modelBuilder.Entity("Meowv.Blog.Domain.Soul.ChickenSoup", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("varchar(200) CHARACTER SET utf8mb4")
+                        .HasMaxLength(200);
+
+                    b.HasKey("Id");
+
+                    b.ToTable("meowv_ChickenSoups");
                 });
 
             modelBuilder.Entity("Meowv.Blog.Domain.Wallpaper.Wallpaper", b =>
