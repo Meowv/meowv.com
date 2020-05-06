@@ -5,7 +5,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Meowv.Blog.Application.MTA.Impl
+namespace Meowv.Blog.Application.Tencent.Impl
 {
     public class MTAService : ServiceBase, IMTAService
     {

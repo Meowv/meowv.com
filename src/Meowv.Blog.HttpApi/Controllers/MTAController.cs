@@ -1,4 +1,4 @@
-﻿using Meowv.Blog.Application.MTA;
+﻿using Meowv.Blog.Application.Tencent;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using Volo.Abp.AspNetCore.Mvc;

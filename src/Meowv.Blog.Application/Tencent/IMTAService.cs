@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 
-namespace Meowv.Blog.Application.MTA
+namespace Meowv.Blog.Application.Tencent
 {
     public interface IMTAService
     {
