@@ -1,7 +1,9 @@
 ﻿using Meowv.Blog.Application.Common;
 using Meowv.Blog.ToolKits.Base;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using Volo.Abp.AspNetCore.Mvc;
 using static Meowv.Blog.Domain.Shared.MeowvBlogConsts;
@@ -124,6 +126,35 @@ namespace Meowv.Blog.HttpApi.Controllers
         public async Task<ServiceResult<string>> Ip2ReginAsync(string ip)
         {
             return await _commonService.Ip2ReginAsync(ip);
+        }
+
+        /// <summary>
+        /// 智能抠图，移除图片背景
+        /// </summary>
+        /// <param name="url"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("removebg")]
+        public async Task<FileContentResult> RemoveBgAsync([Required] string url)
+        {
+            var bytes = await _commonService.RemoveBgAsync(url);
+
+            return File(bytes.Result, "image/png");
+        }
+
+        /// <summary>
+        /// 智能抠图，移除图片背景
+        /// </summary>
+        /// <param name="file"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("removebg")]
+        [Consumes("multipart/form-data")]
+        public async Task<FileContentResult> RemoveBgAsync(IFormFile file)
+        {
+            var bytes = await _commonService.RemoveBgAsync(file);
+
+            return File(bytes.Result, "image/png");
         }
     }
 }
