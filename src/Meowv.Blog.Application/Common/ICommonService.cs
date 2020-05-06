@@ -53,5 +53,12 @@ namespace Meowv.Blog.Application.Common
         /// </summary>
         /// <returns></returns>
         Task<ServiceResult<byte[]>> GetCatImgFileAsync();
+
+        /// <summary>
+        /// 根据IP地址获取所在区域
+        /// </summary>
+        /// <param name="ip"></param>
+        /// <returns></returns>
+        Task<ServiceResult<string>> Ip2ReginAsync(string ip);
     }
 }

@@ -113,5 +113,17 @@ namespace Meowv.Blog.HttpApi.Controllers
 
             return File(url.Result, "image/jpeg");
         }
+
+        /// <summary>
+        /// 根据IP地址获取所在区域
+        /// </summary>
+        /// <param name="ip"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("ip2region")]
+        public async Task<ServiceResult<string>> Ip2ReginAsync(string ip)
+        {
+            return await _commonService.Ip2ReginAsync(ip);
+        }
     }
 }

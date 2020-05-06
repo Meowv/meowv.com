@@ -1,6 +1,8 @@
-﻿using Meowv.Blog.Application.Caching.Common;
+﻿using IP2Region;
+using Meowv.Blog.Application.Caching.Common;
 using Meowv.Blog.ToolKits.Base;
 using Meowv.Blog.ToolKits.Extensions;
+using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -15,12 +17,15 @@ namespace Meowv.Blog.Application.Common.Impl
     {
         private readonly IHttpClientFactory _httpClient;
         private readonly ICommonCacheService _commonCacheService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         public CommonService(IHttpClientFactory httpClient,
-                             ICommonCacheService commonCacheService)
+                             ICommonCacheService commonCacheService,
+                             IHttpContextAccessor httpContextAccessor)
         {
             _httpClient = httpClient;
             _commonCacheService = commonCacheService;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         /// <summary>
@@ -170,6 +175,35 @@ namespace Meowv.Blog.Application.Common.Impl
                 result.IsSuccess(bytes);
                 return result;
             });
+        }
+
+        /// <summary>
+        /// 根据IP地址获取所在区域
+        /// </summary>
+        /// <param name="ip"></param>
+        /// <returns></returns>
+        public async Task<ServiceResult<string>> Ip2ReginAsync(string ip)
+        {
+            var result = new ServiceResult<string>();
+
+            if (string.IsNullOrEmpty(ip))
+            {
+                ip = _httpContextAccessor.HttpContext.Request.GetClientIp();
+            }
+
+            if (!ip.IsIp())
+            {
+                result.IsFailed("IP地址格式不正确");
+                return result;
+            }
+
+            var path = Path.Combine(Directory.GetCurrentDirectory(), "Resources/ip2region.db");
+
+            using var _search = new DbSearcher(path);
+            var block = await _search.BinarySearchAsync(ip);
+
+            result.IsSuccess(block.Region);
+            return result;
         }
     }
 }
