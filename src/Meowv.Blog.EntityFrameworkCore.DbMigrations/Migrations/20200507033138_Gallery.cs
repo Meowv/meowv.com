@@ -28,7 +28,7 @@ namespace Meowv.Blog.EntityFrameworkCore.DbMigrations.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(nullable: false),
-                    AlbumId = table.Column<int>(type: "int", nullable: false),
+                    AlbumId = table.Column<Guid>(type: "Guid", nullable: false),
                     ImgUrl = table.Column<string>(maxLength: 200, nullable: false),
                     Width = table.Column<int>(type: "int", nullable: false),
                     Height = table.Column<int>(type: "int", nullable: false),

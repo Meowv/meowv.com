@@ -119,7 +119,7 @@ namespace Meowv.Blog.EntityFrameworkCore
             {
                 b.ToTable(MeowvBlogConsts.DbTablePrefix + DbTableName.Images);
                 b.HasKey(x => x.Id);
-                b.Property(x => x.AlbumId).HasColumnType("int").IsRequired();
+                b.Property(x => x.AlbumId).HasColumnType("Guid").IsRequired();
                 b.Property(x => x.ImgUrl).HasMaxLength(200).IsRequired();
                 b.Property(x => x.Width).HasColumnType("int").IsRequired();
                 b.Property(x => x.Height).HasColumnType("int").IsRequired();

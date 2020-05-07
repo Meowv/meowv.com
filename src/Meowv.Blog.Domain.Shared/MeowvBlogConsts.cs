@@ -150,6 +150,11 @@
             /// 图片错误
             /// </summary>
             public const string IMG_IS_WRONG = "图片错误";
+
+            /// <summary>
+            /// 密码错误
+            /// </summary>
+            public const string PASSWORD_WRONG = "密码错误";
         }
     }
 }

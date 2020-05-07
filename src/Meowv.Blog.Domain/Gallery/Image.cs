@@ -8,7 +8,7 @@ namespace Meowv.Blog.Domain.Gallery
         /// <summary>
         /// AlbumId
         /// </summary>
-        public int AlbumId { get; set; }
+        public Guid AlbumId { get; set; }
 
         /// <summary>
         /// 图片URL

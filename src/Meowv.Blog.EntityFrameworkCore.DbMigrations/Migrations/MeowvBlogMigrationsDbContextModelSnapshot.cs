@@ -174,8 +174,8 @@ namespace Meowv.Blog.EntityFrameworkCore.DbMigrations.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
-                    b.Property<int>("AlbumId")
-                        .HasColumnType("int");
+                    b.Property<Guid>("AlbumId")
+                        .HasColumnType("char(36)");
 
                     b.Property<DateTime>("CreateTime")
                         .HasColumnType("datetime");
