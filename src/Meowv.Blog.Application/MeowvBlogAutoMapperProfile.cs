@@ -1,10 +1,12 @@
 ﻿using AutoMapper;
 using Meowv.Blog.Application.Contracts.Blog;
 using Meowv.Blog.Application.Contracts.Blog.Params;
+using Meowv.Blog.Application.Contracts.Gallery;
 using Meowv.Blog.Application.Contracts.HotNews;
 using Meowv.Blog.Application.Contracts.Signature;
 using Meowv.Blog.Application.Contracts.Wallpaper;
 using Meowv.Blog.Domain.Blog;
+using Meowv.Blog.Domain.Gallery;
 
 namespace Meowv.Blog.Application
 {
@@ -39,6 +41,11 @@ namespace Meowv.Blog.Application
             CreateMap<HotNewsDto, Domain.HotNews.HotNews>().ForMember(x => x.Id, opt => opt.Ignore())
                                                            .ForMember(x => x.SourceId, opt => opt.Ignore())
                                                            .ForMember(x => x.CreateTime, opt => opt.Ignore());
+
+            CreateMap<Album, AlbumDto>().ForMember(x => x.Count, opt => opt.Ignore());
+
+            CreateMap<Image, ImageDto>();
+
         }
     }
 }
