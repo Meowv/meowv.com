@@ -70,7 +70,7 @@ namespace Meowv.Blog.Application.Gallery.Impl
                     return result;
                 }
 
-                if (albums.Password != input.Password)
+                if (albums.Password != (input.Password ?? ""))
                 {
                     result.IsFailed(ResponseText.PASSWORD_WRONG);
                     return result;
