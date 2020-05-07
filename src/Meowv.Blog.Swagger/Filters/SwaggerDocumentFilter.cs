@@ -60,11 +60,11 @@ namespace Meowv.Blog.Swagger.Filters
                     Description = "心灵/毒 鸡汤",
                     ExternalDocs = new OpenApiExternalDocs { Description = "Soul" }
                 },
-                //new OpenApiTag {
-                //    Name = "Gallery",
-                //    Description = "图集相册",
-                //    ExternalDocs = new OpenApiExternalDocs { Description = "Gallery" }
-                //},
+                new OpenApiTag {
+                    Name = "Gallery",
+                    Description = "图集相册",
+                    ExternalDocs = new OpenApiExternalDocs { Description = "Gallery" }
+                },
                 //new OpenApiTag {
                 //    Name = "FM",
                 //    Description = "FM电台",
