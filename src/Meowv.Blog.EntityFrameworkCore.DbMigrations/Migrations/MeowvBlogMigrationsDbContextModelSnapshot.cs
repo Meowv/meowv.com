@@ -136,6 +136,66 @@ namespace Meowv.Blog.EntityFrameworkCore.DbMigrations.Migrations
                     b.ToTable("meowv_Tags");
                 });
 
+            modelBuilder.Entity("Meowv.Blog.Domain.Gallery.Album", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("CreateTime")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("ImgUrl")
+                        .IsRequired()
+                        .HasColumnType("varchar(200) CHARACTER SET utf8mb4")
+                        .HasMaxLength(200);
+
+                    b.Property<bool>("IsPublic")
+                        .HasColumnType("bool");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("varchar(100) CHARACTER SET utf8mb4")
+                        .HasMaxLength(100);
+
+                    b.Property<string>("Password")
+                        .IsRequired()
+                        .HasColumnType("varchar(20) CHARACTER SET utf8mb4")
+                        .HasMaxLength(20);
+
+                    b.HasKey("Id");
+
+                    b.ToTable("meowv_Albums");
+                });
+
+            modelBuilder.Entity("Meowv.Blog.Domain.Gallery.Image", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<int>("AlbumId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreateTime")
+                        .HasColumnType("datetime");
+
+                    b.Property<int>("Height")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ImgUrl")
+                        .IsRequired()
+                        .HasColumnType("varchar(200) CHARACTER SET utf8mb4")
+                        .HasMaxLength(200);
+
+                    b.Property<int>("Width")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("meowv_Images");
+                });
+
             modelBuilder.Entity("Meowv.Blog.Domain.HotNews.HotNews", b =>
                 {
                     b.Property<Guid>("Id")

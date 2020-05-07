@@ -1,4 +1,5 @@
 ﻿using Meowv.Blog.Domain.Blog;
+using Meowv.Blog.Domain.Gallery;
 using Meowv.Blog.Domain.HotNews;
 using Meowv.Blog.Domain.Shared;
 using Meowv.Blog.Domain.Signature;
@@ -101,6 +102,28 @@ namespace Meowv.Blog.EntityFrameworkCore
                 b.HasKey(x => x.Id);
                 b.Property(x => x.Id).ValueGeneratedOnAdd();
                 b.Property(x => x.Content).HasMaxLength(200).IsRequired();
+            });
+
+            builder.Entity<Album>(b =>
+            {
+                b.ToTable(MeowvBlogConsts.DbTablePrefix + DbTableName.Albums);
+                b.HasKey(x => x.Id);
+                b.Property(x => x.Name).HasMaxLength(100).IsRequired();
+                b.Property(x => x.ImgUrl).HasMaxLength(200).IsRequired();
+                b.Property(x => x.IsPublic).HasColumnType("bool").IsRequired();
+                b.Property(x => x.Password).HasMaxLength(20).IsRequired();
+                b.Property(x => x.CreateTime).HasColumnType("datetime").IsRequired();
+            });
+
+            builder.Entity<Image>(b =>
+            {
+                b.ToTable(MeowvBlogConsts.DbTablePrefix + DbTableName.Images);
+                b.HasKey(x => x.Id);
+                b.Property(x => x.AlbumId).HasColumnType("int").IsRequired();
+                b.Property(x => x.ImgUrl).HasMaxLength(200).IsRequired();
+                b.Property(x => x.Width).HasColumnType("int").IsRequired();
+                b.Property(x => x.Height).HasColumnType("int").IsRequired();
+                b.Property(x => x.CreateTime).HasColumnType("datetime").IsRequired();
             });
         }
     }

@@ -18,7 +18,7 @@ namespace Meowv.Blog.Domain.Gallery
         /// <summary>
         /// 是否公开
         /// </summary>
-        public string IsPublic { get; set; }
+        public bool IsPublic { get; set; }
 
         /// <summary>
         /// 密码

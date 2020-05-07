@@ -21,6 +21,10 @@
             public const string HotNews = "HotNews";
 
             public const string ChickenSoups = "ChickenSoups";
+
+            public const string Albums = "Albums";
+
+            public const string Images = "Images";
         }
     }
 }
