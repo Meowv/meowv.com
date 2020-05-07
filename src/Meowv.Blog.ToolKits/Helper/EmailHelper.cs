@@ -5,9 +5,6 @@ using System.Threading.Tasks;
 
 namespace Meowv.Blog.ToolKits.Helper
 {
-    /// <summary>
-    /// Email帮助类
-    /// </summary>
     public static class EmailHelper
     {
         /// <summary>
