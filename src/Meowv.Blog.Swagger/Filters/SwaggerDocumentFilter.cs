@@ -22,7 +22,7 @@ namespace Meowv.Blog.Swagger.Filters
                 new OpenApiTag {
                     Name = "Blog",
                     Description = "个人博客相关接口",
-                    ExternalDocs = new OpenApiExternalDocs { Description = "文章/标签/分类/友链/RSS" }
+                    ExternalDocs = new OpenApiExternalDocs { Description = "文章/标签/分类/友链" }
                 },
                 new OpenApiTag {
                     Name = "Signature",
@@ -65,11 +65,11 @@ namespace Meowv.Blog.Swagger.Filters
                     Description = "图集相册",
                     ExternalDocs = new OpenApiExternalDocs { Description = "Gallery" }
                 },
-                //new OpenApiTag {
-                //    Name = "FM",
-                //    Description = "FM电台",
-                //    ExternalDocs = new OpenApiExternalDocs { Description = "FM" }
-                //}
+                new OpenApiTag {
+                    Name = "FM",
+                    Description = "FM电台",
+                    ExternalDocs = new OpenApiExternalDocs { Description = "FM" }
+                }
             };
 
             // 按照Name升序排序

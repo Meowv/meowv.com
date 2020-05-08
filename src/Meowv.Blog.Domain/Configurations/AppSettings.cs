@@ -101,16 +101,6 @@ namespace Meowv.Blog.Domain.Configurations
         }
 
         /// <summary>
-        /// 微信
-        /// </summary>
-        public static class Weixin
-        {
-            public static string AppId => _config["Weixin:AppId"];
-
-            public static string AppSecret => _config["Weixin:AppSecret"];
-        }
-
-        /// <summary>
         /// 个性签名配置
         /// </summary>
         public static class Signature
@@ -134,16 +124,6 @@ namespace Meowv.Blog.Domain.Configurations
                     return dic;
                 }
             }
-        }
-
-        /// <summary>
-        /// 图集路径配置
-        /// </summary>
-        public static class Gallery
-        {
-            public static string AlbumPath => _config["Gallery:Album"];
-
-            public static string ImagesPath => _config["Gallery:Images"];
         }
 
         /// <summary>
@@ -188,34 +168,11 @@ namespace Meowv.Blog.Domain.Configurations
         /// </summary>
         public static class FMApi
         {
-            public static string Key => _config["FMApi:Key"];
-
             public static string Channels => _config["FMApi:Channels"];
 
             public static string Song => _config["FMApi:Song"];
 
             public static string Lyric => _config["FMApi:Lyric"];
-        }
-
-        /// <summary>
-        /// 脚本参数
-        /// </summary>
-        public static class Job
-        {
-            /// <summary>
-            /// 要访问的URL
-            /// </summary>
-            public static string Url => _config["Job:Url"];
-
-            /// <summary>
-            /// 每天的开始执行时间(几时)
-            /// </summary>
-            public static int ExecutionTime => Convert.ToInt32(_config["Job:ExecutionTime"]);
-
-            /// <summary>
-            /// 每次执行的延迟时间(毫秒)
-            /// </summary>
-            public static int MillisecondsDelay => Convert.ToInt32(_config["Job:MillisecondsDelay"]);
         }
 
         /// <summary>
@@ -284,11 +241,6 @@ namespace Meowv.Blog.Domain.Configurations
                     return dic;
                 }
             }
-
-            /// <summary>
-            /// Subject
-            /// </summary>
-            public static string Subject => _config["Email:Subject"];
         }
     }
 }
