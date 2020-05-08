@@ -155,6 +155,11 @@
             /// 密码错误
             /// </summary>
             public const string PASSWORD_WRONG = "密码错误";
+
+            /// <summary>
+            /// 参数错误
+            /// </summary>
+            public const string PARAMETER_ERROR = "参数错误";
         }
     }
 }
