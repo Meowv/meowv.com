@@ -3,11 +3,9 @@ using Meowv.Blog.Application.Contracts.FM;
 using Meowv.Blog.Domain.Configurations;
 using Meowv.Blog.ToolKits.Base;
 using Meowv.Blog.ToolKits.Extensions;
-using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
-using static Meowv.Blog.Domain.Shared.MeowvBlogConsts;
 
 namespace Meowv.Blog.Application.FM.Impl
 {
@@ -26,52 +24,32 @@ namespace Meowv.Blog.Application.FM.Impl
         /// <summary>
         /// 获取专辑分类
         /// </summary>
-        /// <param name="specific"></param>
         /// <returns></returns>
-        public async Task<ServiceResult<IEnumerable<ChannelDto>>> GetChannelsAsync(string specific)
+        public async Task<ServiceResult<IEnumerable<ChannelDto>>> GetChannelsAsync()
         {
-            var result = new ServiceResult<IEnumerable<ChannelDto>>();
-
-            if (specific.IsNotNullOrEmpty() && specific != "all")
+            return await _fmCacheService.GetChannelsAsync(async () =>
             {
-                result.IsFailed(ResponseText.PARAMETER_ERROR);
-                return result;
-            }
-
-            return await _fmCacheService.GetChannelsAsync(specific, async () =>
-            {
-                var list = new List<ChannelDto>();
+                var result = new ServiceResult<IEnumerable<ChannelDto>>();
 
                 using var client = _httpClient.CreateClient();
-
-                var response = await client.GetStringAsync(AppSettings.FMApi.Channels.FormatWith(specific));
+                var response = await client.GetStringAsync(AppSettings.FMApi.Channels);
                 var channels = response.FromJson<dynamic>()["data"]["channels"];
 
-                if (specific == "all")
+                var list = new List<ChannelDto>();
+
+                var _channels = new List<dynamic>
                 {
-                    var _channels = new List<dynamic>
-                    {
-                        channels["scenario"], channels["language"], channels["artist"],
-                        channels["track"], channels["brand"], channels["genre"]
-                    };
-                    for (int i = 0; i < _channels.Count; i++)
-                    {
-                        foreach (var item in _channels[i])
-                        {
-                            list.Add(new ChannelDto
-                            {
-                                Id = item["id"],
-                                Name = item["name"],
-                                Intro = item["intro"],
-                                Banner = item["banner"],
-                                Cover = item["cover"]
-                            });
-                        }
-                    }
-                }
-                else
+                    channels["scenario"],
+                    channels["language"],
+                    channels["artist"],
+                    channels["track"],
+                    channels["brand"],
+                    channels["genre"]
+                };
+
+                for (int i = 0; i < _channels.Count; i++)
                 {
-                    foreach (var item in channels)
+                    foreach (var item in _channels[i])
                     {
                         list.Add(new ChannelDto
                         {

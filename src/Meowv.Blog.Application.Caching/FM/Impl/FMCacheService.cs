@@ -1,6 +1,5 @@
 ﻿using Meowv.Blog.Application.Contracts.FM;
 using Meowv.Blog.ToolKits.Base;
-using Meowv.Blog.ToolKits.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -10,17 +9,16 @@ namespace Meowv.Blog.Application.Caching.FM.Impl
 {
     public class FMCacheService : CachingServiceBase, IFMCacheService
     {
-        private const string KEY_GetChannels = "FM:GetChannels-{0}";
+        private const string KEY_GetChannels = "FM:GetChannels";
 
         /// <summary>
         /// 获取专辑分类
         /// </summary>
-        /// <param name="specific"></param>
         /// <param name="factory"></param>
         /// <returns></returns>
-        public async Task<ServiceResult<IEnumerable<ChannelDto>>> GetChannelsAsync(string specific, Func<Task<ServiceResult<IEnumerable<ChannelDto>>>> factory)
+        public async Task<ServiceResult<IEnumerable<ChannelDto>>> GetChannelsAsync(Func<Task<ServiceResult<IEnumerable<ChannelDto>>>> factory)
         {
-            return await Cache.GetOrAddAsync(KEY_GetChannels.FormatWith(specific), factory, CacheStrategy.ONE_MINUTE);
+            return await Cache.GetOrAddAsync(KEY_GetChannels, factory, CacheStrategy.ONE_MINUTE);
         }
     }
 }
