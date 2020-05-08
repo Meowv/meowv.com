@@ -20,7 +20,7 @@ namespace Meowv.Blog.Application.Caching.FM.Impl
         /// <returns></returns>
         public async Task<ServiceResult<IEnumerable<ChannelDto>>> GetChannelsAsync(string specific, Func<Task<ServiceResult<IEnumerable<ChannelDto>>>> factory)
         {
-            return await Cache.GetOrAddAsync(KEY_GetChannels.FormatWith(specific), factory, specific == "all" ? CacheStrategy.ONE_HOURS : CacheStrategy.ONE_MINUTE);
+            return await Cache.GetOrAddAsync(KEY_GetChannels.FormatWith(specific), factory, CacheStrategy.ONE_MINUTE);
         }
     }
 }
