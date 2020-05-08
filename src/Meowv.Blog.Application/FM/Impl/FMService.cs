@@ -1,7 +1,9 @@
-﻿using Meowv.Blog.Application.Contracts.FM;
+﻿using Meowv.Blog.Application.Caching.FM;
+using Meowv.Blog.Application.Contracts.FM;
 using Meowv.Blog.Domain.Configurations;
 using Meowv.Blog.ToolKits.Base;
 using Meowv.Blog.ToolKits.Extensions;
+using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -12,10 +14,13 @@ namespace Meowv.Blog.Application.FM.Impl
     public class FMService : ServiceBase, IFMService
     {
         private readonly IHttpClientFactory _httpClient;
+        private readonly IFMCacheService _fmCacheService;
 
-        public FMService(IHttpClientFactory httpClient)
+        public FMService(IHttpClientFactory httpClient,
+                         IFMCacheService fmCacheService)
         {
             _httpClient = httpClient;
+            _fmCacheService = fmCacheService;
         }
 
         /// <summary>
@@ -33,22 +38,40 @@ namespace Meowv.Blog.Application.FM.Impl
                 return result;
             }
 
-            var list = new List<ChannelDto>();
-
-            using var client = _httpClient.CreateClient();
-            var response = await client.GetStringAsync(AppSettings.FMApi.Channels.FormatWith(specific));
-            var channels = response.FromJson<dynamic>()["data"]["channels"];
-
-            if (specific == "all")
+            return await _fmCacheService.GetChannelsAsync(specific, async () =>
             {
-                var _channels = new List<dynamic>
+                var list = new List<ChannelDto>();
+
+                using var client = _httpClient.CreateClient();
+
+                var response = await client.GetStringAsync(AppSettings.FMApi.Channels.FormatWith(specific));
+                var channels = response.FromJson<dynamic>()["data"]["channels"];
+
+                if (specific == "all")
                 {
-                    channels["scenario"], channels["language"], channels["artist"],
-                    channels["track"], channels["brand"], channels["genre"]
-                };
-                for (int i = 0; i < _channels.Count; i++)
+                    var _channels = new List<dynamic>
+                    {
+                        channels["scenario"], channels["language"], channels["artist"],
+                        channels["track"], channels["brand"], channels["genre"]
+                    };
+                    for (int i = 0; i < _channels.Count; i++)
+                    {
+                        foreach (var item in _channels[i])
+                        {
+                            list.Add(new ChannelDto
+                            {
+                                Id = item["id"],
+                                Name = item["name"],
+                                Intro = item["intro"],
+                                Banner = item["banner"],
+                                Cover = item["cover"]
+                            });
+                        }
+                    }
+                }
+                else
                 {
-                    foreach (var item in _channels[i])
+                    foreach (var item in channels)
                     {
                         list.Add(new ChannelDto
                         {
@@ -60,24 +83,10 @@ namespace Meowv.Blog.Application.FM.Impl
                         });
                     }
                 }
-            }
-            else
-            {
-                foreach (var item in channels)
-                {
-                    list.Add(new ChannelDto
-                    {
-                        Id = item["id"],
-                        Name = item["name"],
-                        Intro = item["intro"],
-                        Banner = item["banner"],
-                        Cover = item["cover"]
-                    });
-                }
-            }
 
-            result.IsSuccess(list);
-            return result;
+                result.IsSuccess(list);
+                return result;
+            });
         }
     }
 }
