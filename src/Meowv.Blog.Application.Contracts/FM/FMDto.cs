@@ -23,6 +23,16 @@
         public string Url { get; set; }
 
         /// <summary>
+        /// Sid
+        /// </summary>
+        public string Sid { get; set; }
+
+        /// <summary>
+        /// Ssid
+        /// </summary>
+        public string Ssid { get; set; }
+
+        /// <summary>
         /// 歌词
         /// </summary>
         public string Lyric { get; set; }

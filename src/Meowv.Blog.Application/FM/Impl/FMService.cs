@@ -90,16 +90,42 @@ namespace Meowv.Blog.Application.FM.Impl
 
             foreach (var item in playlist)
             {
+                string sid = item["sid"];
+                string ssid = item["ssid"];
+
+                var lyric = (await GetGeyLyricAsync(sid, ssid)).Result;
+
                 list.Add(new FMDto
                 {
                     AlbumTitle = item["albumtitle"],
                     Artist = item["artist"],
                     Picture = item["picture"],
                     Url = item["url"],
+                    Sid = sid,
+                    Ssid = ssid,
+                    Lyric = lyric
                 });
             }
 
             result.IsSuccess(list);
+            return result;
+        }
+
+        /// <summary>
+        /// 获取歌词
+        /// </summary>
+        /// <param name="sid"></param>
+        /// <param name="ssid"></param>
+        /// <returns></returns>
+        public async Task<ServiceResult<string>> GetGeyLyricAsync(string sid, string ssid)
+        {
+            var result = new ServiceResult<string>();
+
+            using var client = _httpClient.CreateClient();
+            var response = await client.GetStringAsync(AppSettings.FMApi.Lyric.FormatWith(sid, ssid));
+            string lyric = response.FromJson<dynamic>()["lyric"];
+
+            result.IsSuccess(lyric);
             return result;
         }
     }

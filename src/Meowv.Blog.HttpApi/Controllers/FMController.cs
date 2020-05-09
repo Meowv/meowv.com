@@ -42,5 +42,18 @@ namespace Meowv.Blog.HttpApi.Controllers
         {
             return await _fmService.GetFmAsync(channelId);
         }
+
+        /// <summary>
+        /// 获取歌词
+        /// </summary>
+        /// <param name="sid"></param>
+        /// <param name="ssid"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("lyric")]
+        public async Task<ServiceResult<string>> GetGeyLyricAsync(string sid, string ssid)
+        {
+            return await _fmService.GetGeyLyricAsync(sid, ssid);
+        }
     }
 }

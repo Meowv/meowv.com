@@ -19,5 +19,13 @@ namespace Meowv.Blog.Application.FM
         /// <param name="channelId"></param>
         /// <returns></returns>
         Task<ServiceResult<IEnumerable<FMDto>>> GetFmAsync(int channelId);
+
+        /// <summary>
+        /// 获取歌词
+        /// </summary>
+        /// <param name="sid"></param>
+        /// <param name="ssid"></param>
+        /// <returns></returns>
+        Task<ServiceResult<string>> GetGeyLyricAsync(string sid, string ssid);
     }
 }
