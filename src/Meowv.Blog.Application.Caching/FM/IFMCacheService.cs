@@ -11,9 +11,17 @@ namespace Meowv.Blog.Application.Caching.FM
         /// <summary>
         /// 获取专辑分类
         /// </summary>
-        /// <param name="specific"></param>
         /// <param name="factory"></param>
         /// <returns></returns>
-        Task<ServiceResult<IEnumerable<ChannelDto>>> GetChannelsAsync(string specific, Func<Task<ServiceResult<IEnumerable<ChannelDto>>>> factory);
+        Task<ServiceResult<IEnumerable<ChannelDto>>> GetChannelsAsync(Func<Task<ServiceResult<IEnumerable<ChannelDto>>>> factory);
+
+        /// <summary>
+        /// 获取歌词
+        /// </summary>
+        /// <param name="sid"></param>
+        /// <param name="ssid"></param>
+        /// <param name="factory"></param>
+        /// <returns></returns>
+        Task<ServiceResult<string>> GetLyricAsync(string sid, string ssid, Func<Task<ServiceResult<string>>> factory);
     }
 }

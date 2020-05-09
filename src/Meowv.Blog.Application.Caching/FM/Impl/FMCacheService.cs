@@ -10,17 +10,29 @@ namespace Meowv.Blog.Application.Caching.FM.Impl
 {
     public class FMCacheService : CachingServiceBase, IFMCacheService
     {
-        private const string KEY_GetChannels = "FM:GetChannels-{0}";
+        private const string KEY_GetChannels = "FM:GetChannels";
+        private const string KEY_GetGeyLyric = "FM:GetGeyLyric-{0}-{1}";
 
         /// <summary>
         /// 获取专辑分类
         /// </summary>
-        /// <param name="specific"></param>
         /// <param name="factory"></param>
         /// <returns></returns>
-        public async Task<ServiceResult<IEnumerable<ChannelDto>>> GetChannelsAsync(string specific, Func<Task<ServiceResult<IEnumerable<ChannelDto>>>> factory)
+        public async Task<ServiceResult<IEnumerable<ChannelDto>>> GetChannelsAsync(Func<Task<ServiceResult<IEnumerable<ChannelDto>>>> factory)
         {
-            return await Cache.GetOrAddAsync(KEY_GetChannels.FormatWith(specific), factory, CacheStrategy.ONE_MINUTE);
+            return await Cache.GetOrAddAsync(KEY_GetChannels, factory, CacheStrategy.ONE_MINUTE);
+        }
+
+        /// <summary>
+        /// 获取歌词
+        /// </summary>
+        /// <param name="sid"></param>
+        /// <param name="ssid"></param>
+        /// <param name="factory"></param>
+        /// <returns></returns>
+        public async Task<ServiceResult<string>> GetLyricAsync(string sid, string ssid, Func<Task<ServiceResult<string>>> factory)
+        {
+            return await Cache.GetOrAddAsync(KEY_GetGeyLyric.FormatWith(sid, ssid), factory, CacheStrategy.ONE_HOURS);
         }
     }
 }

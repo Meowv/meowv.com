@@ -10,8 +10,22 @@ namespace Meowv.Blog.Application.FM
         /// <summary>
         /// 获取专辑分类
         /// </summary>
-        /// <param name="specific"></param>
         /// <returns></returns>
-        Task<ServiceResult<IEnumerable<ChannelDto>>> GetChannelsAsync(string specific);
+        Task<ServiceResult<IEnumerable<ChannelDto>>> GetChannelsAsync();
+
+        /// <summary>
+        /// 根据专辑分类获取随机歌曲
+        /// </summary>
+        /// <param name="channelId"></param>
+        /// <returns></returns>
+        Task<ServiceResult<IEnumerable<FMDto>>> GetFmAsync(int channelId);
+
+        /// <summary>
+        /// 获取歌词
+        /// </summary>
+        /// <param name="sid"></param>
+        /// <param name="ssid"></param>
+        /// <returns></returns>
+        Task<ServiceResult<string>> GetLyricAsync(string sid, string ssid);
     }
 }
