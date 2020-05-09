@@ -113,6 +113,68 @@ namespace Meowv.Blog.Application.FM.Impl
         }
 
         /// <summary>
+        /// 获取随机歌曲
+        /// </summary>
+        /// <returns></returns>
+        public async Task<ServiceResult<IEnumerable<FMDto>>> GetRandomFmAsync()
+        {
+            return await _fmCacheService.GetRandomFmAsync(async () =>
+            {
+                var result = new ServiceResult<IEnumerable<FMDto>>();
+
+                var channels = (await GetChannelsAsync()).Result.Randomize(10);
+
+                using var client = _httpClient.CreateClient();
+
+                var list = new List<FMDto>();
+                var list_task = new List<Task<dynamic>>();
+
+                foreach (var item in channels)
+                {
+                    var task = Task.Run(async () =>
+                    {
+                        var request = new HttpRequestMessage(HttpMethod.Get, AppSettings.FMApi.Song.FormatWith(item.Id));
+                        request.Headers.Add("Cookie", "flag=\"ok\"; bid=I8DWNdOlti8; ac=\"1588990113\";");
+
+                        var response = await client.SendAsync(request);
+                        var json = await response.Content.ReadAsStringAsync();
+
+                        return json.FromJson<dynamic>()["song"];
+                    });
+                    list_task.Add(task);
+                }
+                Task.WaitAll(list_task.ToArray());
+
+                foreach (var task in list_task)
+                {
+                    var _list = await task;
+
+                    foreach (var item in _list)
+                    {
+                        string sid = item["sid"];
+                        string ssid = item["ssid"];
+
+                        var lyric = (await GetLyricAsync(sid, ssid)).Result;
+
+                        list.Add(new FMDto
+                        {
+                            AlbumTitle = item["albumtitle"],
+                            Artist = item["artist"],
+                            Picture = item["picture"],
+                            Url = item["url"],
+                            Sid = sid,
+                            Ssid = ssid,
+                            Lyric = lyric
+                        });
+                    }
+                }
+
+                result.IsSuccess(list);
+                return result;
+            });
+        }
+
+        /// <summary>
         /// 获取歌词
         /// </summary>
         /// <param name="sid"></param>

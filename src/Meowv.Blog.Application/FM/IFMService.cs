@@ -21,6 +21,12 @@ namespace Meowv.Blog.Application.FM
         Task<ServiceResult<IEnumerable<FMDto>>> GetFmAsync(int channelId);
 
         /// <summary>
+        /// 获取随机歌曲
+        /// </summary>
+        /// <returns></returns>
+        Task<ServiceResult<IEnumerable<FMDto>>> GetRandomFmAsync();
+
+        /// <summary>
         /// 获取歌词
         /// </summary>
         /// <param name="sid"></param>

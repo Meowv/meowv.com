@@ -45,6 +45,17 @@ namespace Meowv.Blog.HttpApi.Controllers
         }
 
         /// <summary>
+        /// 获取随机歌曲
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("random")]
+        public async Task<ServiceResult<IEnumerable<FMDto>>> GetRandomFmAsync()
+        {
+            return await _fmService.GetRandomFmAsync();
+        }
+
+        /// <summary>
         /// 获取歌词
         /// </summary>
         /// <param name="sid"></param>

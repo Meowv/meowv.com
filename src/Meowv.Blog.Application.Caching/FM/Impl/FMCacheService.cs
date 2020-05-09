@@ -11,6 +11,7 @@ namespace Meowv.Blog.Application.Caching.FM.Impl
     public class FMCacheService : CachingServiceBase, IFMCacheService
     {
         private const string KEY_GetChannels = "FM:GetChannels";
+        private const string KEY_GetRandomFm = "FM:KEY_GetRandomFm";
         private const string KEY_GetGeyLyric = "FM:GetGeyLyric-{0}-{1}";
 
         /// <summary>
@@ -21,6 +22,16 @@ namespace Meowv.Blog.Application.Caching.FM.Impl
         public async Task<ServiceResult<IEnumerable<ChannelDto>>> GetChannelsAsync(Func<Task<ServiceResult<IEnumerable<ChannelDto>>>> factory)
         {
             return await Cache.GetOrAddAsync(KEY_GetChannels, factory, CacheStrategy.ONE_MINUTE);
+        }
+
+        /// <summary>
+        /// 获取随机歌曲
+        /// </summary>
+        /// <param name="factory"></param>
+        /// <returns></returns>
+        public async Task<ServiceResult<IEnumerable<FMDto>>> GetRandomFmAsync(Func<Task<ServiceResult<IEnumerable<FMDto>>>> factory)
+        {
+            return await Cache.GetOrAddAsync(KEY_GetRandomFm, factory, CacheStrategy.ONE_MINUTE);
         }
 
         /// <summary>

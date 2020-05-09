@@ -65,5 +65,25 @@ namespace Meowv.Blog.ToolKits.Extensions
             }
             return query.Skip((pageIndex - 1) * pageSize).Take(pageSize);
         }
+
+        /// <summary>
+        /// 随机化 IEnumerable
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="source"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        public static IEnumerable<T> Randomize<T>(this IEnumerable<T> source, int count = -1)
+        {
+            source.ThrowIfNull();
+
+            var rnd = new Random();
+            source = source.OrderBy(item => rnd.Next());
+            if (count > 0)
+            {
+                source = source.Take(count);
+            }
+            return source;
+        }
     }
 }
