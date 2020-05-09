@@ -6,6 +6,7 @@ using Meowv.Blog.ToolKits.Extensions;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
+using static Meowv.Blog.Domain.Shared.MeowvBlogConsts;
 
 namespace Meowv.Blog.Application.FM.Impl
 {
@@ -124,10 +125,16 @@ namespace Meowv.Blog.Application.FM.Impl
                 var result = new ServiceResult<string>();
 
                 using var client = _httpClient.CreateClient();
-                var response = await client.GetStringAsync(AppSettings.FMApi.Lyric.FormatWith(sid, ssid));
-                string lyric = response.FromJson<dynamic>()["lyric"];
-
-                result.IsSuccess(lyric);
+                try
+                {
+                    var response = await client.GetStringAsync(AppSettings.FMApi.Lyric.FormatWith(sid, ssid));
+                    string lyric = response.FromJson<dynamic>()["lyric"];
+                    result.IsSuccess(lyric);
+                }
+                catch
+                {
+                    result.IsFailed(ResponseText.PARAMETER_ERROR);
+                }
                 return result;
             });
         }

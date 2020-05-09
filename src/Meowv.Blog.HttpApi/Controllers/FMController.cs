@@ -3,6 +3,7 @@ using Meowv.Blog.Application.FM;
 using Meowv.Blog.ToolKits.Base;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using Volo.Abp.AspNetCore.Mvc;
 using static Meowv.Blog.Domain.Shared.MeowvBlogConsts;
@@ -38,7 +39,7 @@ namespace Meowv.Blog.HttpApi.Controllers
         /// <param name="channelId"></param>
         /// <returns></returns>
         [HttpGet]
-        public async Task<ServiceResult<IEnumerable<FMDto>>> GetFmAsync(int channelId)
+        public async Task<ServiceResult<IEnumerable<FMDto>>> GetFmAsync([Required] int channelId)
         {
             return await _fmService.GetFmAsync(channelId);
         }
