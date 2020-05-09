@@ -34,7 +34,7 @@ Blog ---------- root
 
 ## 技术栈
 
-ABP Framework + .NET Core 3.1 + Docker + Nginx + Hangfire + MySQL + WebApi + EF Core + Swagger + Hangfire + HtmlAgilityPack + axios + JavaScript + Json + ...
+ABP Framework + .NET Core 3.1 + Docker + Nginx + Hangfire + MySQL + WebApi + EF Core + Swagger + Hangfire + HtmlAgilityPack + PuppeteerSharp + log4net + MailKit + axios + JavaScript + Json + ...
 
 ## 预览
 
