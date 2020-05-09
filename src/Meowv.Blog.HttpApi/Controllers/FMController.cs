@@ -24,13 +24,12 @@ namespace Meowv.Blog.HttpApi.Controllers
         /// <summary>
         /// 获取专辑分类
         /// </summary>
-        /// <param name="specific"></param>
         /// <returns></returns>
         [HttpGet]
         [Route("channels")]
-        public async Task<ServiceResult<IEnumerable<ChannelDto>>> GetChannelsAsync(string specific)
+        public async Task<ServiceResult<IEnumerable<ChannelDto>>> GetChannelsAsync()
         {
-            return await _fmService.GetChannelsAsync(specific);
+            return await _fmService.GetChannelsAsync();
         }
 
         /// <summary>
