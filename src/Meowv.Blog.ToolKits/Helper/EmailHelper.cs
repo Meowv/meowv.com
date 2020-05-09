@@ -1,6 +1,7 @@
 ﻿using MailKit.Net.Smtp;
 using Meowv.Blog.Domain.Configurations;
 using MimeKit;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Meowv.Blog.ToolKits.Helper
@@ -14,6 +15,16 @@ namespace Meowv.Blog.ToolKits.Helper
         /// <returns></returns>
         public static async Task SendAsync(MimeMessage message)
         {
+            if (!message.From.Any())
+            {
+                message.From.Add(new MailboxAddress(AppSettings.Email.From.Name, AppSettings.Email.From.Address));
+            }
+            if (!message.To.Any())
+            {
+                var address = AppSettings.Email.To.Select(x => new MailboxAddress(x.Key, x.Value));
+                message.To.AddRange(address);
+            }
+
             using var client = new SmtpClient
             {
                 ServerCertificateValidationCallback = (s, c, h, e) => true
