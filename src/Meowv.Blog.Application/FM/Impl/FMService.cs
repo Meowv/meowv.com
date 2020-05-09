@@ -6,6 +6,7 @@ using Meowv.Blog.ToolKits.Extensions;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Volo.Abp;
 using static Meowv.Blog.Domain.Shared.MeowvBlogConsts;
 
 namespace Meowv.Blog.Application.FM.Impl
@@ -122,7 +123,7 @@ namespace Meowv.Blog.Application.FM.Impl
             {
                 var result = new ServiceResult<IEnumerable<FMDto>>();
 
-                var channels = (await GetChannelsAsync()).Result.Randomize(10);
+                var channels = (await GetChannelsAsync()).Result.Randomize(RandomHelper.GetRandom(5, 10));
 
                 using var client = _httpClient.CreateClient();
 
