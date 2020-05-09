@@ -1,9 +1,13 @@
 ﻿using HtmlAgilityPack;
 using Meowv.Blog.Application.Contracts.Wallpaper;
+using Meowv.Blog.Domain.Configurations;
 using Meowv.Blog.Domain.Shared.Enum;
 using Meowv.Blog.Domain.Wallpaper;
 using Meowv.Blog.Domain.Wallpaper.Repositories;
 using Meowv.Blog.ToolKits.Extensions;
+using Meowv.Blog.ToolKits.Helper;
+using MimeKit;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -93,6 +97,18 @@ namespace Meowv.Blog.BackgroundJobs.Jobs
             {
                 await _wallpaperRepository.BulkInsertAsync(wallpapers);
             }
+
+            // 发送Email
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress(AppSettings.Email.From.Name, AppSettings.Email.From.Address));
+            var address = AppSettings.Email.To.Select(x => new MailboxAddress(x.Key, x.Value));
+            message.To.AddRange(address);
+            message.Subject = "【定时任务】壁纸数据抓取任务推送";
+            message.Body = new BodyBuilder
+            {
+                HtmlBody = $"本次抓取到{wallpapers.Count()}条数据，时间:{DateTime.Now:yyyy-MM-dd HH:mm:ss}"
+            }.ToMessageBody();
+            await EmailHelper.SendAsync(message);
         }
     }
 }
