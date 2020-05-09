@@ -3,7 +3,6 @@ using Meowv.Blog.Application.Contracts.FM;
 using Meowv.Blog.Domain.Configurations;
 using Meowv.Blog.ToolKits.Base;
 using Meowv.Blog.ToolKits.Extensions;
-using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -87,6 +86,42 @@ namespace Meowv.Blog.Application.FM.Impl
                 result.IsSuccess(list);
                 return result;
             });
+        }
+
+        /// <summary>
+        /// 根据专辑分类获取随机歌曲
+        /// </summary>
+        /// <param name="channelId"></param>
+        /// <returns></returns>
+        public async Task<ServiceResult<IEnumerable<FMDto>>> GetFmAsync(int channelId)
+        {
+            var result = new ServiceResult<IEnumerable<FMDto>>();
+
+            using var client = _httpClient.CreateClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Get, AppSettings.FMApi.Song.FormatWith(channelId));
+            request.Headers.Add("Cookie", "flag=\"ok\"; bid=I8DWNdOlti8; ac=\"1588990113\";");
+
+            var response = await client.SendAsync(request);
+
+            var json = await response.Content.ReadAsStringAsync();
+            var playlist = json.FromJson<dynamic>()["song"];
+
+            var list = new List<FMDto>();
+
+            foreach (var item in playlist)
+            {
+                list.Add(new FMDto
+                {
+                    AlbumTitle = item["albumtitle"],
+                    Artist = item["artist"],
+                    Picture = item["picture"],
+                    Url = item["url"],
+                });
+            }
+
+            result.IsSuccess(list);
+            return result;
         }
     }
 }

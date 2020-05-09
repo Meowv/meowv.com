@@ -32,5 +32,16 @@ namespace Meowv.Blog.HttpApi.Controllers
         {
             return await _fmService.GetChannelsAsync(specific);
         }
+
+        /// <summary>
+        /// 根据专辑分类获取随机歌曲
+        /// </summary>
+        /// <param name="channelId"></param>
+        /// <returns></returns>
+        [HttpGet]
+        public async Task<ServiceResult<IEnumerable<FMDto>>> GetFmAsync(int channelId)
+        {
+            return await _fmService.GetFmAsync(channelId);
+        }
     }
 }
