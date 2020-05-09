@@ -119,14 +119,17 @@ namespace Meowv.Blog.Application.FM.Impl
         /// <returns></returns>
         public async Task<ServiceResult<string>> GetGeyLyricAsync(string sid, string ssid)
         {
-            var result = new ServiceResult<string>();
+            return await _fmCacheService.GetGeyLyricAsync(sid, ssid, async () =>
+            {
+                var result = new ServiceResult<string>();
 
-            using var client = _httpClient.CreateClient();
-            var response = await client.GetStringAsync(AppSettings.FMApi.Lyric.FormatWith(sid, ssid));
-            string lyric = response.FromJson<dynamic>()["lyric"];
+                using var client = _httpClient.CreateClient();
+                var response = await client.GetStringAsync(AppSettings.FMApi.Lyric.FormatWith(sid, ssid));
+                string lyric = response.FromJson<dynamic>()["lyric"];
 
-            result.IsSuccess(lyric);
-            return result;
+                result.IsSuccess(lyric);
+                return result;
+            });
         }
     }
 }
