@@ -30,7 +30,7 @@ namespace Meowv.Blog.Application.Caching.FM.Impl
         /// <param name="ssid"></param>
         /// <param name="factory"></param>
         /// <returns></returns>
-        public async Task<ServiceResult<string>> GetGeyLyricAsync(string sid, string ssid, Func<Task<ServiceResult<string>>> factory)
+        public async Task<ServiceResult<string>> GetLyricAsync(string sid, string ssid, Func<Task<ServiceResult<string>>> factory)
         {
             return await Cache.GetOrAddAsync(KEY_GetGeyLyric.FormatWith(sid, ssid), factory, CacheStrategy.ONE_HOURS);
         }

@@ -51,9 +51,9 @@ namespace Meowv.Blog.HttpApi.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("lyric")]
-        public async Task<ServiceResult<string>> GetGeyLyricAsync(string sid, string ssid)
+        public async Task<ServiceResult<string>> GetLyricAsync(string sid, string ssid)
         {
-            return await _fmService.GetGeyLyricAsync(sid, ssid);
+            return await _fmService.GetLyricAsync(sid, ssid);
         }
     }
 }

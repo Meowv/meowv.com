@@ -93,7 +93,7 @@ namespace Meowv.Blog.Application.FM.Impl
                 string sid = item["sid"];
                 string ssid = item["ssid"];
 
-                var lyric = (await GetGeyLyricAsync(sid, ssid)).Result;
+                var lyric = (await GetLyricAsync(sid, ssid)).Result;
 
                 list.Add(new FMDto
                 {
@@ -117,9 +117,9 @@ namespace Meowv.Blog.Application.FM.Impl
         /// <param name="sid"></param>
         /// <param name="ssid"></param>
         /// <returns></returns>
-        public async Task<ServiceResult<string>> GetGeyLyricAsync(string sid, string ssid)
+        public async Task<ServiceResult<string>> GetLyricAsync(string sid, string ssid)
         {
-            return await _fmCacheService.GetGeyLyricAsync(sid, ssid, async () =>
+            return await _fmCacheService.GetLyricAsync(sid, ssid, async () =>
             {
                 var result = new ServiceResult<string>();
 

@@ -22,6 +22,6 @@ namespace Meowv.Blog.Application.Caching.FM
         /// <param name="ssid"></param>
         /// <param name="factory"></param>
         /// <returns></returns>
-        Task<ServiceResult<string>> GetGeyLyricAsync(string sid, string ssid, Func<Task<ServiceResult<string>>> factory);
+        Task<ServiceResult<string>> GetLyricAsync(string sid, string ssid, Func<Task<ServiceResult<string>>> factory);
     }
 }

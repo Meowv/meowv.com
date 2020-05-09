@@ -26,6 +26,6 @@ namespace Meowv.Blog.Application.FM
         /// <param name="sid"></param>
         /// <param name="ssid"></param>
         /// <returns></returns>
-        Task<ServiceResult<string>> GetGeyLyricAsync(string sid, string ssid);
+        Task<ServiceResult<string>> GetLyricAsync(string sid, string ssid);
     }
 }
