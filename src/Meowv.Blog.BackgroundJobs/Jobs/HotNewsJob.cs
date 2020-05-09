@@ -4,9 +4,14 @@ using Meowv.Blog.Domain.HotNews;
 using Meowv.Blog.Domain.HotNews.Repositories;
 using Meowv.Blog.Domain.Shared.Enum;
 using Meowv.Blog.ToolKits.Extensions;
+using Meowv.Blog.ToolKits.Helper;
+using MimeKit;
+using MimeKit.Utils;
 using Newtonsoft.Json.Linq;
+using PuppeteerSharp;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -385,6 +390,50 @@ namespace Meowv.Blog.BackgroundJobs.Jobs
                 await _hotNewsRepository.DeleteAsync(x => true);
                 await _hotNewsRepository.BulkInsertAsync(hotNews);
             }
+
+            #region Puppeteer访问指定URL,保存为图片
+
+            var path = Path.Combine(Path.GetTempPath(), "meowv.png");
+            await new BrowserFetcher().DownloadAsync(BrowserFetcher.DefaultRevision);
+
+            using var browser = await Puppeteer.LaunchAsync(new LaunchOptions
+            {
+                Headless = true,
+                Args = new string[] { "--no-sandbox" }
+            });
+
+            using var page = await browser.NewPageAsync();
+            await page.SetViewportAsync(new ViewPortOptions
+            {
+                Width = 1920,
+                Height = 1080
+            });
+
+            var url = "https://meowv.com/wallpaper";
+            await page.GoToAsync(url, WaitUntilNavigation.Networkidle0);
+            await page.ScreenshotAsync(path, new ScreenshotOptions
+            {
+                FullPage = true,
+                Type = ScreenshotType.Png
+            });
+
+            #endregion
+
+            // 发送Email
+            var builder = new BodyBuilder();
+
+            var image = builder.LinkedResources.Add(path);
+
+            image.ContentId = MimeUtils.GenerateMessageId();
+
+            builder.HtmlBody = "本次抓取到{0}条数据，时间:{1}.<img src=\"cid:{2}\"/>".FormatWith(hotNews.Count(), DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), image.ContentId);
+
+            var message = new MimeMessage
+            {
+                Subject = "【定时任务】每日热点数据抓取任务推送",
+                Body = builder.ToMessageBody()
+            };
+            await EmailHelper.SendAsync(message);
         }
     }
 }
