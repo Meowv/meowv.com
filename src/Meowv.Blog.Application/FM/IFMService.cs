@@ -11,7 +11,7 @@ namespace Meowv.Blog.Application.FM
         /// 获取专辑分类
         /// </summary>
         /// <returns></returns>
-        Task<ServiceResult<IEnumerable<ChannelDto>>> GetChannelsAsync(string specific);
+        Task<ServiceResult<IEnumerable<ChannelDto>>> GetChannelsAsync();
 
         /// <summary>
         /// 根据专辑分类获取随机歌曲
