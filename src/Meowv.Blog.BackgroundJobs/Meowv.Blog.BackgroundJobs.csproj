@@ -1,21 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-  
-  <Import Project="..\..\common.props" />
-  
+<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
-  
-  <ItemGroup>
-    <PackageReference Include="Hangfire.MySql.Core" Version="2.2.5" />
-    <PackageReference Include="Hangfire.Dashboard.BasicAuthorization" Version="1.0.2" />
-    <PackageReference Include="HtmlAgilityPack" Version="1.11.23" />
-    <PackageReference Include="PuppeteerSharp" Version="2.0.3" />
-    <PackageReference Include="Volo.Abp.AspNetCore" Version="2.7.0" />
-    <PackageReference Include="Volo.Abp.BackgroundJobs.HangFire" Version="2.7.0" />
-    
-    <ProjectReference Include="..\Meowv.Blog.Application\Meowv.Blog.Application.csproj" />
-    <ProjectReference Include="..\Meowv.Blog.Domain.Shared\Meowv.Blog.Domain.Shared.csproj" />
-  </ItemGroup>
 
 </Project>
