@@ -1,13 +1,13 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Meowv.Blog.Web
+namespace Meowv.Blog.HttpApi.Hosting
 {
     public class Startup
     {
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddApplication<BlogWebModule>();
+            services.AddApplication<MeowvBlogHttpApiHostingModule>();
         }
 
         public void Configure(IApplicationBuilder app)
