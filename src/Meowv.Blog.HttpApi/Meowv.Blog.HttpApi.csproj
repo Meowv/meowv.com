@@ -6,11 +6,13 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Volo.Abp.Identity.HttpApi" Version="2.7.0" />
-  </ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DocumentationFile>..\Meowv.Blog.HttpApi.Hosting\Meowv.Blog.HttpApi.xml</DocumentationFile>
+  </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Volo.Abp.Identity.HttpApi" Version="2.7.0" />
+
     <ProjectReference Include="..\Meowv.Blog.Application\Meowv.Blog.Application.csproj" />
   </ItemGroup>
 

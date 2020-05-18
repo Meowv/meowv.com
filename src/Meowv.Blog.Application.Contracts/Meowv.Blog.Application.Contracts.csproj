@@ -3,21 +3,15 @@
   <Import Project="..\..\common.props" />
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <RootNamespace>Meowv.Blog</RootNamespace>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DocumentationFile>..\Meowv.Blog.HttpApi.Hosting\Meowv.Blog.Application.Contracts.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Meowv.Blog.Domain.Shared\Meowv.Blog.Domain.Shared.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Volo.Abp.ObjectExtending" Version="2.7.0" />
-    <PackageReference Include="Volo.Abp.Account.Application.Contracts" Version="2.7.0" />
-    <PackageReference Include="Volo.Abp.Identity.Application.Contracts" Version="2.7.0" />
-    <PackageReference Include="Volo.Abp.PermissionManagement.Application.Contracts" Version="2.7.0" />
-    <PackageReference Include="Volo.Abp.TenantManagement.Application.Contracts" Version="2.7.0" />
-    <PackageReference Include="Volo.Abp.FeatureManagement.Application.Contracts" Version="2.7.0" />
   </ItemGroup>
 
 </Project>
