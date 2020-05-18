@@ -1,4 +1,6 @@
 ﻿using Meowv.Blog.Domain;
+using Meowv.Blog.Domain.Configurations;
+using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.EntityFrameworkCore;
 using Volo.Abp.EntityFrameworkCore.MySQL;
 using Volo.Abp.EntityFrameworkCore.PostgreSql;
@@ -20,7 +22,32 @@ namespace Meowv.Blog.EntityFrameworkCore
     {
         public override void ConfigureServices(ServiceConfigurationContext context)
         {
+            context.Services.AddAbpDbContext<MeowvBlogDbContext>(options =>
+            {
+                options.AddDefaultRepositories(includeAllEntities: true);
+            });
 
+            Configure<AbpDbContextOptions>(options =>
+            {
+                switch (AppSettings.EnableDb)
+                {
+                    case "MySQL":
+                        options.UseMySQL();
+                        break;
+                    case "SqlServer":
+                        options.UseSqlServer();
+                        break;
+                    case "PostgreSql":
+                        options.UsePostgreSql();
+                        break;
+                    case "Sqlite":
+                        options.UseSqlite();
+                        break;
+                    default:
+                        options.UseMySQL();
+                        break;
+                }
+            });
         }
     }
 }
