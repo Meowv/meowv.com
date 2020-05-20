@@ -6,6 +6,17 @@
 
 If you liked `Blog` project or if it helped you, please give a star ⭐️ for this repository. 👍👍👍
 
+## 系列文章
+
+> **[基于 abp vNext 和 .NET Core 开发博客项目 - 微信项目实战专辑](https://mp.weixin.qq.com/mp/appmsgalbum?action=getalbum&__biz=MzUzNzk0MDQ5MA==&scene=1&album_id=1345555337696477185)**
+
+1. [基于 abp vNext 和 .NET Core 开发博客项目 - 使用 abp cli 搭建项目](https://www.cnblogs.com/meowv/p/12896177.html)
+2. [基于 abp vNext 和 .NET Core 开发博客项目 - 给项目瘦身，让它跑起来](https://www.cnblogs.com/meowv/p/12896898.html)
+3. [基于 abp vNext 和 .NET Core 开发博客项目 - 完善与美化，Swagger登场](https://www.cnblogs.com/meowv/p/12909558.html)
+4. [基于 abp vNext 和 .NET Core 开发博客项目 - 数据访问和代码优先](https://www.cnblogs.com/meowv/p/12913676.html)
+5. [基于 abp vNext 和 .NET Core 开发博客项目 - 自定义仓储之增删改查](https://www.cnblogs.com/meowv/p/12916613.html)
+6. [基于 abp vNext 和 .NET Core 开发博客项目 - 统一规范API，包装返回模型](https://www.cnblogs.com/meowv/p/12924409.html)
+
 ```tree
 Blog ---------- root
  ├── .dockerignore ---------- docker ignore
