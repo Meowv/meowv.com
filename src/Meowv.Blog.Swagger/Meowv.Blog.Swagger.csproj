@@ -9,7 +9,7 @@
   <ItemGroup>
     <PackageReference Include="Volo.Abp.AspNetCore" Version="2.7.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="5.4.1" />
-    <ProjectReference Include="..\Meowv.Blog.Domain.Shared\Meowv.Blog.Domain.Shared.csproj" />
+    <PackageReference Include="Swashbuckle.AspNetCore.Filters" Version="5.1.1" />
 
     <ProjectReference Include="..\Meowv.Blog.Domain\Meowv.Blog.Domain.csproj" />
   </ItemGroup>
