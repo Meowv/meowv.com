@@ -15,6 +15,11 @@ namespace Meowv.Blog.Swagger.Filters
             var tags = new List<OpenApiTag>
             {
                 new OpenApiTag {
+                    Name = "Auth",
+                    Description = "JWT模式认证授权",
+                    ExternalDocs = new OpenApiExternalDocs { Description = "JSON Web Token" }
+                },
+                new OpenApiTag {
                     Name = "Blog",
                     Description = "个人博客相关接口",
                     ExternalDocs = new OpenApiExternalDocs { Description = "包含：文章/标签/分类/友链" }
@@ -28,16 +33,6 @@ namespace Meowv.Blog.Swagger.Filters
 
             // 按照Name升序排序
             swaggerDoc.Tags = tags.OrderBy(x => x.Name).ToList();
-
-            // 骚操作之隐藏abp动态生成的api
-            var apis = context.ApiDescriptions.Where(x => x.RelativePath.Contains("abp"));
-            if (apis.Any())
-            {
-                foreach (var item in apis)
-                {
-                    swaggerDoc.Paths.Remove("/" + item.RelativePath);
-                }
-            }
         }
     }
 }
