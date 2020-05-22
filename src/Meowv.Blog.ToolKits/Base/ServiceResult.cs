@@ -26,7 +26,7 @@ namespace Meowv.Blog.ToolKits.Base
         /// <summary>
         /// 时间戳(毫秒)
         /// </summary>
-        public long Timestamp { get; } = (DateTime.Now.ToUniversalTime().Ticks - 621355968000000000) / 10000;
+        public long Timestamp { get; } = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
         /// <summary>
         /// 响应成功
