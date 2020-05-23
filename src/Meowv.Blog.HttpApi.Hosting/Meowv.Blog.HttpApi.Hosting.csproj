@@ -8,7 +8,6 @@
 
   <ItemGroup>
     <PackageReference Include="Volo.Abp.Autofac" Version="2.7.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="3.1.4" />
     
     <ProjectReference Include="..\Meowv.Blog.HttpApi\Meowv.Blog.HttpApi.csproj" />
     <ProjectReference Include="..\Meowv.Blog.Swagger\Meowv.Blog.Swagger.csproj" />

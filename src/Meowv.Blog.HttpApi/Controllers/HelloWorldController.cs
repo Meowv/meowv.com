@@ -22,5 +22,12 @@ namespace Meowv.Blog.HttpApi.Controllers
         {
             return _helloWorldService.HelloWorld();
         }
+
+        [HttpGet]
+        [Route("Exception")]
+        public string Exception()
+        {
+            throw new System.Exception("这是一个异常");
+        }
     }
 }
