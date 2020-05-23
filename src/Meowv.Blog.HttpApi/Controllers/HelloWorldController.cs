@@ -1,5 +1,6 @@
 ﻿using Meowv.Blog.Application.HelloWorld;
 using Microsoft.AspNetCore.Mvc;
+using System;
 using Volo.Abp.AspNetCore.Mvc;
 using static Meowv.Blog.Domain.Shared.MeowvBlogConsts;
 
@@ -27,7 +28,7 @@ namespace Meowv.Blog.HttpApi.Controllers
         [Route("Exception")]
         public string Exception()
         {
-            throw new System.Exception("这是一个异常");
+            throw new NotImplementedException("这是一个未实现的异常接口");
         }
     }
 }

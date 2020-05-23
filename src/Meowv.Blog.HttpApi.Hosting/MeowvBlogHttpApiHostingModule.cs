@@ -33,13 +33,14 @@ namespace Meowv.Blog.HttpApi.Hosting
     {
         public override void ConfigureServices(ServiceConfigurationContext context)
         {
-            // 移除 AbpExceptionFilter
             Configure<MvcOptions>(options =>
             {
                 var filterMetadata = options.Filters.FirstOrDefault(x => x is ServiceFilterAttribute attribute && attribute.ServiceType.Equals(typeof(AbpExceptionFilter)));
 
+                // 移除 AbpExceptionFilter
                 options.Filters.Remove(filterMetadata);
 
+                // 添加自己实现的 MeowvBlogExceptionFilter
                 options.Filters.Add(typeof(MeowvBlogExceptionFilter));
             });
 

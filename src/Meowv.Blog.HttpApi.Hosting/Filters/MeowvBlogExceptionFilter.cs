@@ -1,19 +1,19 @@
-﻿using Microsoft.AspNetCore.Mvc.Filters;
-using System.Threading.Tasks;
+﻿using Meowv.Blog.ToolKits.Helper;
+using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace Meowv.Blog.HttpApi.Hosting.Filters
 {
-    public class MeowvBlogExceptionFilter : IAsyncExceptionFilter
+    public class MeowvBlogExceptionFilter : IExceptionFilter
     {
         /// <summary>
         /// 异常处理
         /// </summary>
         /// <param name="context"></param>
         /// <returns></returns>
-        public Task OnExceptionAsync(ExceptionContext context)
+        public void OnException(ExceptionContext context)
         {
-            // 在这里做异常日志记录
-            throw new System.NotImplementedException();
+            // 日志记录
+            LoggerHelper.WriteToFile($"{context.HttpContext.Request.Path}|{context.Exception.Message}", context.Exception);
         }
     }
 }

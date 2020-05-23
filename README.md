@@ -18,6 +18,7 @@ If you liked `Blog` project or if it helped you, please give a star ⭐️ for t
 6. [基于 abp vNext 和 .NET Core 开发博客项目 - 统一规范API，包装返回模型](https://www.cnblogs.com/meowv/p/12924409.html)
 7. [基于 abp vNext 和 .NET Core 开发博客项目 - 再说Swagger，分组、描述、小绿锁](https://www.cnblogs.com/meowv/p/12924859.html)
 8. [基于 abp vNext 和 .NET Core 开发博客项目 - 接入GitHub，用JWT保护你的API](https://www.cnblogs.com/meowv/p/12935693.html)
+9. [基于 abp vNext 和 .NET Core 开发博客项目 - 异常处理和日志记录](https://www.cnblogs.com/meowv/p/12943699.html)
 
 ```tree
 Blog ---------- root

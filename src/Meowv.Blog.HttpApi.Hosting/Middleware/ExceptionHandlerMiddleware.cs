@@ -37,7 +37,7 @@ namespace Meowv.Blog.HttpApi.Hosting.Middleware
             finally
             {
                 var statusCode = context.Response.StatusCode;
-                if (statusCode != (int)HttpStatusCode.OK)
+                if (statusCode != StatusCodes.Status200OK)
                 {
                     Enum.TryParse(typeof(HttpStatusCode), statusCode.ToString(), out object message);
                     await ExceptionHandlerAsync(context, message.ToString());
@@ -54,7 +54,6 @@ namespace Meowv.Blog.HttpApi.Hosting.Middleware
         private async Task ExceptionHandlerAsync(HttpContext context, string message)
         {
             context.Response.ContentType = "application/json;charset=utf-8";
-            context.Response.StatusCode = (int)HttpStatusCode.OK;
 
             var result = new ServiceResult();
             result.IsFailed(message);
