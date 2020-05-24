@@ -11,10 +11,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Volo.Abp.Identity.Domain" Version="2.7.0" />
-  </ItemGroup>
+    <PackageReference Include="Volo.Abp.Identity.Domain" Version="2.8.0" />
 
-  <ItemGroup>
     <ProjectReference Include="..\Meowv.Blog.Domain.Shared\Meowv.Blog.Domain.Shared.csproj" />
   </ItemGroup>
 
