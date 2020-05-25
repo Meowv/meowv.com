@@ -19,6 +19,7 @@ If you liked `Blog` project or if it helped you, please give a star ⭐️ for t
 7. [基于 abp vNext 和 .NET Core 开发博客项目 - 再说Swagger，分组、描述、小绿锁](https://www.cnblogs.com/meowv/p/12924859.html)
 8. [基于 abp vNext 和 .NET Core 开发博客项目 - 接入GitHub，用JWT保护你的API](https://www.cnblogs.com/meowv/p/12935693.html)
 9. [基于 abp vNext 和 .NET Core 开发博客项目 - 异常处理和日志记录](https://www.cnblogs.com/meowv/p/12943699.html)
+10. [基于 abp vNext 和 .NET Core 开发博客项目 - 使用 Redis 缓存数据](https://www.cnblogs.com/meowv/p/12956696.html)
 
 ```tree
 Blog ---------- root
