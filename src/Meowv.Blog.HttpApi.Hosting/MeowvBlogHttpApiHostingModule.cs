@@ -1,4 +1,5 @@
-﻿using Meowv.Blog.Domain.Configurations;
+﻿using Meowv.Blog.BackgroundJobs;
+using Meowv.Blog.Domain.Configurations;
 using Meowv.Blog.EntityFrameworkCore;
 using Meowv.Blog.HttpApi.Hosting.Filters;
 using Meowv.Blog.HttpApi.Hosting.Middleware;
@@ -27,7 +28,8 @@ namespace Meowv.Blog.HttpApi.Hosting
        typeof(AbpAutofacModule),
        typeof(MeowvBlogHttpApiModule),
        typeof(MeowvBlogSwaggerModule),
-       typeof(MeowvBlogFrameworkCoreModule)
+       typeof(MeowvBlogFrameworkCoreModule),
+       typeof(MeowvBlogBackgroundJobsModule)
     )]
     public class MeowvBlogHttpApiHostingModule : AbpModule
     {
