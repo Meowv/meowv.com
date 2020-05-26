@@ -21,6 +21,7 @@ If you liked `Blog` project or if it helped you, please give a star ⭐️ for t
 9. [基于 abp vNext 和 .NET Core 开发博客项目 - 异常处理和日志记录](https://www.cnblogs.com/meowv/p/12943699.html)
 10. [基于 abp vNext 和 .NET Core 开发博客项目 - 使用Redis缓存数据](https://www.cnblogs.com/meowv/p/12956696.html)
 11. [基于 abp vNext 和 .NET Core 开发博客项目 - 集成Hangfire实现定时任务处理](https://www.cnblogs.com/meowv/p/12961014.html)
+12. [基于 abp vNext 和 .NET Core 开发博客项目 - 用AutoMapper，搞定对象到对象间的映射](https://www.cnblogs.com/meowv/p/12966092.html)
 
 ```tree
 Blog ---------- root
