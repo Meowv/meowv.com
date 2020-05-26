@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Volo.Abp.DependencyInjection;
 
-namespace Meowv.Blog.BackgroundJobs.Interface
+namespace Meowv.Blog.BackgroundJobs.Jobs
 {
     public interface IBackgroundJob : ITransientDependency
     {

@@ -1,5 +1,5 @@
 ﻿using Hangfire;
-using Meowv.Blog.BackgroundJobs.Wallpaper;
+using Meowv.Blog.BackgroundJobs.Jobs.Hangfire;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 
@@ -7,11 +7,11 @@ namespace Meowv.Blog.BackgroundJobs
 {
     public static class MeowvBlogBackgroundJobsExtensions
     {
-        public static void UseWallpaperJob(this IServiceProvider service)
+        public static void UseHangfireTest(this IServiceProvider service)
         {
-            var job = service.GetService<WallpaperJobService>();
+            var job = service.GetService<HangfireTestJob>();
 
-            RecurringJob.AddOrUpdate("壁纸数据抓取", () => job.ExecuteAsync(), CronType.Hour(1, 3));
+            RecurringJob.AddOrUpdate("定时任务测试", () => job.ExecuteAsync(), CronType.Minute());
         }
     }
 }

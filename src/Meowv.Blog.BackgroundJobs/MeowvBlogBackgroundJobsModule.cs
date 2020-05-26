@@ -1,4 +1,5 @@
 ﻿using Hangfire;
+using Hangfire.Dashboard.BasicAuthorization;
 using Hangfire.MySql.Core;
 using Meowv.Blog.Domain.Configurations;
 using Meowv.Blog.Domain.Shared;
@@ -28,15 +29,31 @@ namespace Meowv.Blog.BackgroundJobs
         {
             var app = context.GetApplicationBuilder();
             var service = context.ServiceProvider;
-            
+
             app.UseHangfireServer();
             app.UseHangfireDashboard(options: new DashboardOptions
             {
+                Authorization = new[]
+                {
+                    new BasicAuthAuthorizationFilter(new BasicAuthAuthorizationFilterOptions
+                    {
+                        RequireSsl = false,
+                        SslRedirect = false,
+                        LoginCaseSensitive = true,
+                        Users = new []
+                        {
+                            new BasicAuthAuthorizationUser
+                            {
+                                Login = AppSettings.Hangfire.Login,
+                                PasswordClear =  AppSettings.Hangfire.Password
+                            }
+                        }
+                    })
+                },
                 DashboardTitle = "任务调度中心"
             });
 
-            // ...
-            service.UseWallpaperJob();
+            service.UseHangfireTest();
         }
     }
 }

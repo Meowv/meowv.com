@@ -78,5 +78,15 @@ namespace Meowv.Blog.Domain.Configurations
 
             public static int Expires => Convert.ToInt32(_config["JWT:Expires"]);
         }
+
+        /// <summary>
+        /// Hangfire
+        /// </summary>
+        public static class Hangfire
+        {
+            public static string Login => _config["Hangfire:Login"];
+
+            public static string Password => _config["Hangfire:Password"];
+        }
     }
 }
