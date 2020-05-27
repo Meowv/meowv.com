@@ -1,4 +1,5 @@
 ﻿using Meowv.Blog.Domain.Blog;
+using Meowv.Blog.Domain.Wallpaper;
 using Microsoft.EntityFrameworkCore;
 using Volo.Abp.Data;
 using Volo.Abp.EntityFrameworkCore;
@@ -21,6 +22,8 @@ namespace Meowv.Blog.EntityFrameworkCore
         public DbSet<PostTag> PostTags { get; set; }
 
         public DbSet<FriendLink> FriendLinks { get; set; }
+
+        public DbSet<Wallpaper> Wallpapers { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

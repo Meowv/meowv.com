@@ -38,7 +38,7 @@ namespace Meowv.Blog.EntityFrameworkCore
                         options.UseSqlServer();
                         break;
                     case "PostgreSql":
-                        options.UsePostgreSql();
+                        options.UseNpgsql();
                         break;
                     case "Sqlite":
                         options.UseSqlite();

@@ -1,5 +1,4 @@
 ﻿using Hangfire;
-using Meowv.Blog.BackgroundJobs.Jobs.Hangfire;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 
@@ -7,11 +6,11 @@ namespace Meowv.Blog.BackgroundJobs
 {
     public static class MeowvBlogBackgroundJobsExtensions
     {
-        public static void UseHangfireTest(this IServiceProvider service)
+        public static void UseSpider(this IServiceProvider service)
         {
-            var job = service.GetService<HangfireTestJob>();
+            //var job = service.GetService<Spider>();
 
-            RecurringJob.AddOrUpdate("定时任务测试", () => job.ExecuteAsync(), CronType.Minute());
+            //RecurringJob.AddOrUpdate("Spider", () => job.ExecuteAsync(), CronType.Hour());
         }
     }
 }
