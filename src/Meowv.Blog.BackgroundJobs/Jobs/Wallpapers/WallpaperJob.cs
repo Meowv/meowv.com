@@ -1,13 +1,24 @@
 ﻿using HtmlAgilityPack;
 using Meowv.Blog.Application.Contracts.Wallpaper;
 using Meowv.Blog.Domain.Shared.Enum;
+using Meowv.Blog.Domain.Wallpaper;
+using Meowv.Blog.Domain.Wallpaper.Repositories;
+using Meowv.Blog.ToolKits.Extensions;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
-namespace Meowv.Blog.BackgroundJobs.Jobs.Wallpaper
+namespace Meowv.Blog.BackgroundJobs.Jobs.Wallpapers
 {
     public class WallpaperJob : IBackgroundJob
     {
+        private readonly IWallpaperRepository _wallpaperRepository;
+
+        public WallpaperJob(IWallpaperRepository wallpaperRepository)
+        {
+            _wallpaperRepository = wallpaperRepository;
+        }
+
         public async Task ExecuteAsync()
         {
             var wallpaperUrls = new List<WallpaperJobItem<string>>
@@ -51,6 +62,34 @@ namespace Meowv.Blog.BackgroundJobs.Jobs.Wallpaper
                 list_task.Add(task);
             });
             Task.WaitAll(list_task.ToArray());
+
+            var wallpapers = new List<Wallpaper>();
+
+            foreach (var list in list_task)
+            {
+                var item = await list;
+
+                var imgs = item.Result.DocumentNode.SelectNodes("//article[@id='wper']/div[@class='jbox']/div[@class='kbox']/div/a/img[1]").ToList();
+                imgs.ForEach(x =>
+                {
+                    wallpapers.Add(new Wallpaper
+                    {
+                        Url = x.GetAttributeValue("data-big", ""),
+                        Title = x.GetAttributeValue("title", ""),
+                        Type = (int)item.Type,
+                        CreateTime = x.Attributes["data-big"].Value.Split("/").Last().Split("_").First().TryToDateTime()
+                    });
+                });
+            }
+
+            var urls = (await _wallpaperRepository.GetListAsync()).Select(x => x.Url);
+            wallpapers = wallpapers.Where(x => !urls.Contains(x.Url)).ToList();
+            if (wallpapers.Any())
+            {
+                await _wallpaperRepository.BulkInsertAsync(wallpapers);
+            }
+
+            // TODO：发邮件通知
         }
     }
 }
