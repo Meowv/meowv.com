@@ -136,6 +136,33 @@ namespace Meowv.Blog.EntityFrameworkCore.DbMigrations.Migrations
                     b.ToTable("meowv_Tags");
                 });
 
+            modelBuilder.Entity("Meowv.Blog.Domain.HotNews.HotNews", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("CreateTime")
+                        .HasColumnType("datetime");
+
+                    b.Property<int>("SourceId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("varchar(200) CHARACTER SET utf8mb4")
+                        .HasMaxLength(200);
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("varchar(250) CHARACTER SET utf8mb4")
+                        .HasMaxLength(250);
+
+                    b.HasKey("Id");
+
+                    b.ToTable("meowv_HotNews");
+                });
+
             modelBuilder.Entity("Meowv.Blog.Domain.Wallpaper.Wallpaper", b =>
                 {
                     b.Property<Guid>("Id")
