@@ -54,6 +54,8 @@ namespace Meowv.Blog.BackgroundJobs
             });
 
             service.UseWallpaperJob();
+
+            service.UseHotNewsJob();
         }
     }
 }
