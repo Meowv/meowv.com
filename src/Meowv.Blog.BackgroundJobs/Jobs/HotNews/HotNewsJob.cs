@@ -3,6 +3,8 @@ using Meowv.Blog.Application.Contracts.HotNews;
 using Meowv.Blog.Domain.HotNews.Repositories;
 using Meowv.Blog.Domain.Shared.Enum;
 using Meowv.Blog.ToolKits.Extensions;
+using Meowv.Blog.ToolKits.Helper;
+using MimeKit;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -382,7 +384,16 @@ namespace Meowv.Blog.BackgroundJobs.Jobs.HotNews
                 await _hotNewsRepository.BulkInsertAsync(hotNews);
             }
 
-            // TODO：发邮件通知
+            // 发送Email
+            var message = new MimeMessage
+            {
+                Subject = "【定时任务】每日热点数据抓取任务推送",
+                Body = new BodyBuilder
+                {
+                    HtmlBody = $"本次抓取到{hotNews.Count()}条数据，时间:{DateTime.Now:yyyy-MM-dd HH:mm:ss}"
+                }.ToMessageBody()
+            };
+            await EmailHelper.SendAsync(message);
         }
     }
 }
