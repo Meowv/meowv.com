@@ -34,6 +34,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "solution-items", "solution-
 		common.props = common.props
 		LICENSE = LICENSE
 		README.md = README.md
+		.template.config\template.json = .template.config\template.json
 	EndProjectSection
 EndProject
 Global

@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "°¢ÐÇPlus",
+  "classifications": [ "WebAPI" ],
+  "name": "ASP.NET Core Web API(abp)",
+  "identity": "Meowv.Blog",
+  "shortName": "abp",
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  },
+  "sourceName": "Meowv.Blog",
+  "preferNameDirectory": true
+}
