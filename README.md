@@ -24,6 +24,7 @@ If you liked `Blog` project or if it helped you, please give a star ⭐️ for t
 12. [基于 abp vNext 和 .NET Core 开发博客项目 - 用AutoMapper搞定对象映射](https://www.cnblogs.com/meowv/p/12966092.html)
 13. [基于 abp vNext 和 .NET Core 开发博客项目 - 定时任务最佳实战（一）](https://www.cnblogs.com/meowv/p/12971041.html)
 14. [基于 abp vNext 和 .NET Core 开发博客项目 - 定时任务最佳实战（二）](https://www.cnblogs.com/meowv/p/12974439.html)
+15. [基于 abp vNext 和 .NET Core 开发博客项目 - 定时任务最佳实战（三）](https://www.cnblogs.com/meowv/p/12980301.html)
 
 ```tree
 Blog ---------- root
