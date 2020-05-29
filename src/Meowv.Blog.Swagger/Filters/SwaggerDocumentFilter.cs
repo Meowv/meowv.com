@@ -28,9 +28,50 @@ namespace Meowv.Blog.Swagger.Filters
                     ExternalDocs = new OpenApiExternalDocs { Description = "包含：文章/标签/分类/友链" }
                 },
                 new OpenApiTag {
-                    Name = "HelloWorld",
+                    Name = "Signature",
+                    Description = "个性艺术签名设计",
+                    ExternalDocs = new OpenApiExternalDocs { Description = "Signature" }
+                },
+                new OpenApiTag {
+                    Name = "Wallpaper",
+                    Description = "手机壁纸接口",
+                    ExternalDocs = new OpenApiExternalDocs { Description = "Wallpaper" }
+                },
+                new OpenApiTag
+                {
+                    Name = "HotNews",
+                    Description = "每日热点接口",
+                    ExternalDocs = new OpenApiExternalDocs { Description = "每日热点来源和列表" }
+                },
+                new OpenApiTag {
+                    Name = "Common",
                     Description = "通用公共接口",
-                    ExternalDocs = new OpenApiExternalDocs { Description = "这里是一些通用的公共接口" }
+                    ExternalDocs = new OpenApiExternalDocs { Description = "Bing壁纸/妹子图/猫咪图/智能抠图/语音合成" }
+                },
+                new OpenApiTag {
+                    Name = "MTA",
+                    Description = "腾讯移动分析",
+                    ExternalDocs = new OpenApiExternalDocs { Description = "MTA" }
+                },
+                new OpenApiTag {
+                    Name = "TCA",
+                    Description = "腾讯云API",
+                    ExternalDocs = new OpenApiExternalDocs { Description = "CDN/Captcha" }
+                },
+                new OpenApiTag {
+                    Name = "Soul",
+                    Description = "心灵/毒 鸡汤",
+                    ExternalDocs = new OpenApiExternalDocs { Description = "Soul" }
+                },
+                new OpenApiTag {
+                    Name = "Gallery",
+                    Description = "图集相册",
+                    ExternalDocs = new OpenApiExternalDocs { Description = "Gallery" }
+                },
+                new OpenApiTag {
+                    Name = "FM",
+                    Description = "FM电台",
+                    ExternalDocs = new OpenApiExternalDocs { Description = "FM" }
                 }
             };
 
