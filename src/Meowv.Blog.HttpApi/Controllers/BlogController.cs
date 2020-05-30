@@ -3,6 +3,7 @@ using Meowv.Blog.Application.Contracts;
 using Meowv.Blog.Application.Contracts.Blog;
 using Meowv.Blog.ToolKits.Base;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Volo.Abp.AspNetCore.Mvc;
 using static Meowv.Blog.Domain.Shared.MeowvBlogConsts;
@@ -43,6 +44,17 @@ namespace Meowv.Blog.HttpApi.Controllers
         public async Task<ServiceResult<PagedList<QueryPostDto>>> QueryPostsAsync([FromQuery] PagingInput input)
         {
             return await _blogService.QueryPostsAsync(input);
+        }
+
+        /// <summary>
+        /// 查询分类列表
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("categories")]
+        public async Task<ServiceResult<IEnumerable<QueryCategoryDto>>> QueryCategoriesAsync()
+        {
+            return await _blogService.QueryCategoriesAsync();
         }
     }
 }
