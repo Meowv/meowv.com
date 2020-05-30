@@ -10,7 +10,19 @@ namespace Meowv.Blog.Application.Caching.Blog.Impl
 {
     public partial class BlogCacheService
     {
+        private const string KEY_GetPostDetail = "Blog:Post:GetPostDetail-{0}";
         private const string KEY_QueryPosts = "Blog:Post:QueryPosts-{0}-{1}";
+
+        /// <summary>
+        /// 根据URL获取文章详情
+        /// </summary>
+        /// <param name="url"></param>
+        /// <param name="factory"></param>
+        /// <returns></returns>
+        public async Task<ServiceResult<PostDetailDto>> GetPostDetailAsync(string url, Func<Task<ServiceResult<PostDetailDto>>> factory)
+        {
+            return await Cache.GetOrAddAsync(KEY_GetPostDetail.FormatWith(url), factory, CacheStrategy.ONE_DAY);
+        }
 
         /// <summary>
         /// 分页查询文章列表
