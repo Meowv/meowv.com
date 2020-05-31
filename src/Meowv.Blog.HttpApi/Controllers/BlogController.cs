@@ -32,7 +32,7 @@ namespace Meowv.Blog.HttpApi.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("post")]
-        public async Task<ServiceResult<PostDetailDto>> GetPostDetailAsync(string url)
+        public async Task<ServiceResult<PostDetailDto>> GetPostDetailAsync([Required] string url)
         {
             return await _blogService.GetPostDetailAsync(url);
         }
@@ -56,7 +56,7 @@ namespace Meowv.Blog.HttpApi.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("posts/category")]
-        public async Task<ServiceResult<IEnumerable<QueryPostDto>>> QueryPostsByCategoryAsync(string name)
+        public async Task<ServiceResult<IEnumerable<QueryPostDto>>> QueryPostsByCategoryAsync([Required] string name)
         {
             return await _blogService.QueryPostsByCategoryAsync(name);
         }
