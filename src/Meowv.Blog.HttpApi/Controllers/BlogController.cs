@@ -4,6 +4,7 @@ using Meowv.Blog.Application.Contracts.Blog;
 using Meowv.Blog.ToolKits.Base;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using Volo.Abp.AspNetCore.Mvc;
 using static Meowv.Blog.Domain.Shared.MeowvBlogConsts;
@@ -21,6 +22,8 @@ namespace Meowv.Blog.HttpApi.Controllers
         {
             _blogService = blogService;
         }
+
+        #region Posts
 
         /// <summary>
         /// 根据URL获取文章详情
@@ -47,6 +50,34 @@ namespace Meowv.Blog.HttpApi.Controllers
         }
 
         /// <summary>
+        /// 通过分类名称查询文章列表
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("posts/category")]
+        public async Task<ServiceResult<IEnumerable<QueryPostDto>>> QueryPostsByCategoryAsync(string name)
+        {
+            return await _blogService.QueryPostsByCategoryAsync(name);
+        }
+
+        #endregion Posts
+
+        #region Categories
+
+        /// <summary>
+        /// 获取分类名称
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("category")]
+        public async Task<ServiceResult<string>> GetCategoryAsync([Required] string name)
+        {
+            return await _blogService.GetCategoryAsync(name);
+        }
+
+        /// <summary>
         /// 查询分类列表
         /// </summary>
         /// <returns></returns>
@@ -56,6 +87,10 @@ namespace Meowv.Blog.HttpApi.Controllers
         {
             return await _blogService.QueryCategoriesAsync();
         }
+
+        #endregion Categories
+
+        #region Tags
 
         /// <summary>
         /// 查询标签列表
@@ -67,5 +102,7 @@ namespace Meowv.Blog.HttpApi.Controllers
         {
             return await _blogService.QueryTagsAsync();
         }
+
+        #endregion Tags
     }
 }
