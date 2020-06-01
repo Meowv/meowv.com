@@ -93,6 +93,18 @@ namespace Meowv.Blog.HttpApi.Controllers
         #region Tags
 
         /// <summary>
+        /// 获取标签名称
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("tag")]
+        public async Task<ServiceResult<string>> GetTagAsync([Required] string name)
+        {
+            return await _blogService.GetTagAsync(name);
+        }
+
+        /// <summary>
         /// 查询标签列表
         /// </summary>
         /// <returns></returns>
