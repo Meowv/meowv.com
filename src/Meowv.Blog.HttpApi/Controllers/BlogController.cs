@@ -128,5 +128,20 @@ namespace Meowv.Blog.HttpApi.Controllers
         }
 
         #endregion Tags
+
+        #region FriendLink
+
+        /// <summary>
+        /// 查询友链列表
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("friendlinks")]
+        public async Task<ServiceResult<IEnumerable<FriendLinkDto>>> QueryFriendLinksAsync()
+        {
+            return await _blogService.QueryFriendLinksAsync();
+        }
+
+        #endregion FriendLink
     }
 }

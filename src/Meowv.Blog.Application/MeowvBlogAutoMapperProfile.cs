@@ -8,9 +8,7 @@ namespace Meowv.Blog.Application
     {
         public MeowvBlogAutoMapperProfile()
         {
-            CreateMap<Post, PostDto>();
-
-            CreateMap<PostDto, Post>().ForMember(x => x.Id, opt => opt.Ignore());
+            CreateMap<FriendLink, FriendLinkDto>();
         }
     }
 }
