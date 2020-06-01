@@ -31,5 +31,13 @@ namespace Meowv.Blog.Application.Caching.Blog
         /// <param name="factory"></param>
         /// <returns></returns>
         Task<ServiceResult<IEnumerable<QueryPostDto>>> QueryPostsByCategoryAsync(string name, Func<Task<ServiceResult<IEnumerable<QueryPostDto>>>> factory);
+
+        /// <summary>
+        /// 通过标签名称查询文章列表
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="factory"></param>
+        /// <returns></returns>
+        Task<ServiceResult<IEnumerable<QueryPostDto>>> QueryPostsByTagAsync(string name, Func<Task<ServiceResult<IEnumerable<QueryPostDto>>>> factory);
     }
 }
