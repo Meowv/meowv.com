@@ -21,5 +21,20 @@ namespace Meowv.Blog.Application.Blog
         /// <param name="input"></param>
         /// <returns></returns>
         Task<ServiceResult> InsertPostAsync(EditPostInput input);
+
+        /// <summary>
+        /// 更新文章
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        Task<ServiceResult> UpdatePostAsync(int id, EditPostInput input);
+
+        /// <summary>
+        /// 删除文章
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        Task<ServiceResult> DeletePostAsync(int id);
     }
 }
