@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Meowv.Blog.Application.Contracts.Blog;
+using Meowv.Blog.Application.Contracts.Blog.Params;
 using Meowv.Blog.Domain.Blog;
 
 namespace Meowv.Blog.Application
@@ -9,6 +10,8 @@ namespace Meowv.Blog.Application
         public MeowvBlogAutoMapperProfile()
         {
             CreateMap<FriendLink, FriendLinkDto>();
+
+            CreateMap<EditPostInput, Post>().ForMember(x => x.Id, opt => opt.Ignore());
         }
     }
 }

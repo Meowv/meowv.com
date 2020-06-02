@@ -1,5 +1,6 @@
 ﻿using Meowv.Blog.Application.Contracts;
 using Meowv.Blog.Application.Contracts.Blog;
+using Meowv.Blog.Application.Contracts.Blog.Params;
 using Meowv.Blog.ToolKits.Base;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -22,6 +23,20 @@ namespace Meowv.Blog.HttpApi.Controllers
         public async Task<ServiceResult<PagedList<QueryPostForAdminDto>>> QueryPostsForAdminAsync([FromQuery] PagingInput input)
         {
             return await _blogService.QueryPostsForAdminAsync(input);
+        }
+
+        /// <summary>
+        /// 新增文章
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Authorize]
+        [Route("post")]
+        [ApiExplorerSettings(GroupName = Grouping.GroupName_v2)]
+        public async Task<ServiceResult> InsertPostAsync([FromBody] EditPostInput input)
+        {
+            return await _blogService.InsertPostAsync(input);
         }
     }
 }
