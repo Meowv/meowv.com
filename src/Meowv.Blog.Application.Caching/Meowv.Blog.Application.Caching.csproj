@@ -7,6 +7,7 @@
   </PropertyGroup>
   
   <ItemGroup>
+    <PackageReference Include="Caching.CSRedis" Version="3.6.3" />
     <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="3.1.4" />
     <PackageReference Include="Volo.Abp.Caching" Version="2.8.0" />
 
