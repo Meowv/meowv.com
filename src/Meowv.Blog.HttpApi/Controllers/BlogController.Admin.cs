@@ -12,6 +12,8 @@ namespace Meowv.Blog.HttpApi.Controllers
 {
     public partial class BlogController
     {
+        #region Posts
+
         /// <summary>
         /// 获取文章详情
         /// </summary>
@@ -82,5 +84,7 @@ namespace Meowv.Blog.HttpApi.Controllers
         {
             return await _blogService.DeletePostAsync(id);
         }
+
+        #endregion Posts
     }
 }

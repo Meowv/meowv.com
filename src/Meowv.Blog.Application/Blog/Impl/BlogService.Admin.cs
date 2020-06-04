@@ -12,6 +12,8 @@ namespace Meowv.Blog.Application.Blog.Impl
 {
     public partial class BlogService
     {
+        #region Posts
+
         /// <summary>
         /// 获取文章详情
         /// </summary>
@@ -198,5 +200,7 @@ namespace Meowv.Blog.Application.Blog.Impl
             result.IsSuccess(ResponseText.DELETE_SUCCESS);
             return result;
         }
+
+        #endregion Posts
     }
 }

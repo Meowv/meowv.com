@@ -8,6 +8,8 @@ namespace Meowv.Blog.Application.Blog
 {
     public partial interface IBlogService
     {
+        #region Posts
+
         /// <summary>
         /// 获取文章详情
         /// </summary>
@@ -43,5 +45,7 @@ namespace Meowv.Blog.Application.Blog
         /// <param name="id"></param>
         /// <returns></returns>
         Task<ServiceResult> DeletePostAsync(int id);
+
+        #endregion Posts
     }
 }
