@@ -2,6 +2,6 @@
 {
     public partial class BlogCacheService : CachingServiceBase, IBlogCacheService
     {
-        
+
     }
 }

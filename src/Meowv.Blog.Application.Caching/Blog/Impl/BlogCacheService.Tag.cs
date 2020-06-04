@@ -10,9 +10,10 @@ namespace Meowv.Blog.Application.Caching.Blog.Impl
 {
     public partial class BlogCacheService
     {
-        private const string KEY_GetTag = "Blog:Tag:GetTag-{0}";
+        private const string Tag_Prefix = CachePrefix.Blog_Tag;
 
-        private const string KEY_QueryTags = "Blog:Tag:QueryTags";
+        private const string KEY_GetTag = Tag_Prefix + ":GetTag-{0}";
+        private const string KEY_QueryTags = Tag_Prefix + ":QueryTags";
 
         /// <summary>
         /// 获取标签名称

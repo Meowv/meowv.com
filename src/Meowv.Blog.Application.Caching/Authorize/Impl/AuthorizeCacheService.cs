@@ -8,11 +8,11 @@ namespace Meowv.Blog.Application.Caching.Authorize.Impl
 {
     public class AuthorizeCacheService : CachingServiceBase, IAuthorizeCacheService
     {
-        private const string KEY_GetLoginAddress = "Authorize:GetLoginAddress";
+        private const string Authorize_Prefix = CachePrefix.Authorize;
 
-        private const string KEY_GetAccessToken = "Authorize:GetAccessToken-{0}";
-
-        private const string KEY_GenerateToken = "Authorize:GenerateToken-{0}";
+        private const string KEY_GetLoginAddress = Authorize_Prefix + ":GetLoginAddress";
+        private const string KEY_GetAccessToken = Authorize_Prefix + ":GetAccessToken-{0}";
+        private const string KEY_GenerateToken = Authorize_Prefix + ":GenerateToken-{0}";
 
         /// <summary>
         /// 获取登录地址(GitHub)

@@ -10,9 +10,10 @@ namespace Meowv.Blog.Application.Caching.Blog.Impl
 {
     public partial class BlogCacheService
     {
-        private const string KEY_GetCategory = "Blog:Category:GetCategory-{0}";
+        private const string Category_Prefix = CachePrefix.Blog_Category;
 
-        private const string KEY_QueryCategories = "Blog:Category:QueryCategories";
+        private const string KEY_GetCategory = Category_Prefix + ":GetCategory-{0}";
+        private const string KEY_QueryCategories = Category_Prefix + ":QueryCategories";
 
         /// <summary>
         /// 获取分类名称

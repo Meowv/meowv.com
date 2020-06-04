@@ -78,6 +78,9 @@ namespace Meowv.Blog.Application.Blog.Impl
             });
             await _postTagRepository.BulkInsertAsync(postTags);
 
+            // 执行清除缓存操作
+            await _blogCacheService.RemoveAsync(CachePrefix.Blog);
+
             result.IsSuccess(ResponseText.INSERT_SUCCESS);
             return result;
         }
@@ -138,6 +141,9 @@ namespace Meowv.Blog.Application.Blog.Impl
                                 });
             await _postTagRepository.BulkInsertAsync(postTags);
 
+            // 执行清除缓存操作
+            await _blogCacheService.RemoveAsync(CachePrefix.Blog);
+
             result.IsSuccess(ResponseText.UPDATE_SUCCESS);
             return result;
         }
@@ -160,6 +166,9 @@ namespace Meowv.Blog.Application.Blog.Impl
 
             await _postRepository.DeleteAsync(id);
             await _postTagRepository.DeleteAsync(x => x.PostId == id);
+
+            // 执行清除缓存操作
+            await _blogCacheService.RemoveAsync(CachePrefix.Blog);
 
             result.IsSuccess(ResponseText.DELETE_SUCCESS);
             return result;

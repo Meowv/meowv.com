@@ -9,7 +9,9 @@ namespace Meowv.Blog.Application.Caching.Blog.Impl
 {
     public partial class BlogCacheService
     {
-        private const string KEY_QueryFriendLinks = "Blog:FriendLink:QueryFriendLinks";
+        private const string FriendLink_Prefix = CachePrefix.Blog_FriendLink;
+
+        private const string KEY_QueryFriendLinks = FriendLink_Prefix + ":FriendLink:QueryFriendLinks";
 
         /// <summary>
         /// 查询友链列表

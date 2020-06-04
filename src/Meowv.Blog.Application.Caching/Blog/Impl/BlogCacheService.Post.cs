@@ -11,10 +11,12 @@ namespace Meowv.Blog.Application.Caching.Blog.Impl
 {
     public partial class BlogCacheService
     {
-        private const string KEY_GetPostDetail = "Blog:Post:GetPostDetail-{0}";
-        private const string KEY_QueryPosts = "Blog:Post:QueryPosts-{0}-{1}";
-        private const string KEY_QueryPostsByCategory = "Blog:Post:QueryPostsByCategory-{0}";
-        private const string KEY_QueryPostsByTag = "Blog:Post:QueryPostsByTag-{0}";
+        private const string Post_Prefix = CachePrefix.Blog_Post;
+
+        private const string KEY_GetPostDetail = Post_Prefix + ":GetPostDetail-{0}";
+        private const string KEY_QueryPosts = Post_Prefix + ":QueryPosts-{0}-{1}";
+        private const string KEY_QueryPostsByCategory = Post_Prefix + ":QueryPostsByCategory-{0}";
+        private const string KEY_QueryPostsByTag = Post_Prefix + ":QueryPostsByTag-{0}";
 
         /// <summary>
         /// 根据URL获取文章详情
