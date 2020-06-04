@@ -9,6 +9,13 @@ namespace Meowv.Blog.Application.Blog
     public partial interface IBlogService
     {
         /// <summary>
+        /// 获取文章详情
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        Task<ServiceResult<PostForAdminDto>> GetPostForAdminAsync(int id);
+
+        /// <summary>
         /// 分页查询文章列表
         /// </summary>
         /// <param name="input"></param>
