@@ -207,5 +207,65 @@ namespace Meowv.Blog.HttpApi.Controllers
         }
 
         #endregion Tags
+
+        #region FriendLinks
+
+        /// <summary>
+        /// 查询友链列表
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Authorize]
+        [Route("admin/friendlinks")]
+        [ApiExplorerSettings(GroupName = Grouping.GroupName_v2)]
+        public async Task<ServiceResult<IEnumerable<QueryFriendLinkForAdminDto>>> QueryFriendLinksForAdminAsync()
+        {
+            return await _blogService.QueryFriendLinksForAdminAsync();
+        }
+
+        /// <summary>
+        /// 新增友链
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Authorize]
+        [Route("friendlink")]
+        [ApiExplorerSettings(GroupName = Grouping.GroupName_v2)]
+        public async Task<ServiceResult> InsertFriendLinkAsync([FromBody] EditFriendLinkInput input)
+        {
+            return await _blogService.InsertFriendLinkAsync(input);
+        }
+
+        /// <summary>
+        /// 更新友链
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        [HttpPut]
+        [Authorize]
+        [Route("friendlink")]
+        [ApiExplorerSettings(GroupName = Grouping.GroupName_v2)]
+        public async Task<ServiceResult> UpdateFriendLinkAsync([Required] int id, [FromBody] EditFriendLinkInput input)
+        {
+            return await _blogService.UpdateFriendLinkAsync(id, input);
+        }
+
+        /// <summary>
+        /// 删除友链
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpDelete]
+        [Authorize]
+        [Route("friendlink")]
+        [ApiExplorerSettings(GroupName = Grouping.GroupName_v2)]
+        public async Task<ServiceResult> DeleteFriendLinkAsync([Required] int id)
+        {
+            return await _blogService.DeleteFriendLinkAsync(id);
+        }
+
+        #endregion
     }
 }

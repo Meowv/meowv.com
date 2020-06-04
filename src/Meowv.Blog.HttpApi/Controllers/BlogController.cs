@@ -129,7 +129,7 @@ namespace Meowv.Blog.HttpApi.Controllers
 
         #endregion Tags
 
-        #region FriendLink
+        #region FriendLinks
 
         /// <summary>
         /// 查询友链列表
@@ -142,6 +142,6 @@ namespace Meowv.Blog.HttpApi.Controllers
             return await _blogService.QueryFriendLinksAsync();
         }
 
-        #endregion FriendLink
+        #endregion FriendLinks
     }
 }

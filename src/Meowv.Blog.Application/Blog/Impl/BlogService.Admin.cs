@@ -4,6 +4,7 @@ using Meowv.Blog.Application.Contracts.Blog.Params;
 using Meowv.Blog.Domain.Blog;
 using Meowv.Blog.ToolKits.Base;
 using Meowv.Blog.ToolKits.Extensions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -391,9 +392,48 @@ namespace Meowv.Blog.Application.Blog.Impl
 
         #endregion Tags
 
-        #region FriendLink
+        #region FriendLinks
 
+        /// <summary>
+        /// 查询友链列表
+        /// </summary>
+        /// <returns></returns>
+        public async Task<ServiceResult<IEnumerable<QueryFriendLinkForAdminDto>>> QueryFriendLinksForAdminAsync()
+        {
+            throw new NotImplementedException();
+        }
 
-        #endregion FriendLink
+        /// <summary>
+        /// 新增友链
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public async Task<ServiceResult> InsertFriendLinkAsync(EditFriendLinkInput input)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// 更新友链
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public async Task<ServiceResult> UpdateFriendLinkAsync(int id, EditFriendLinkInput input)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// 删除友链
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        public async Task<ServiceResult> DeleteFriendLinkAsync(int id)
+        {
+            throw new NotImplementedException();
+        }
+
+        #endregion FriendLinks
     }
 }
