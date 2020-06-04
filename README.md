@@ -27,7 +27,8 @@ If you liked `Blog` project or if it helped you, please give a star ⭐️ for t
 15. [基于 abp vNext 和 .NET Core 开发博客项目 - 定时任务最佳实战（三）](https://www.cnblogs.com/meowv/p/12980301.html)
 16. [基于 abp vNext 和 .NET Core 开发博客项目 - 博客接口实战篇（一）](https://www.cnblogs.com/meowv/p/12987623.html)
 17. [基于 abp vNext 和 .NET Core 开发博客项目 - 博客接口实战篇（二）](https://www.cnblogs.com/meowv/p/12994914.html)
-18. [基于 abp vNext 和 .NET Core 开发博客项目 - 博客接口实战篇（三）](https://www.cnblogs.com/meowv/p/13026118.html)
+18. [基于 abp vNext 和 .NET Core 开发博客项目 - 博客接口实战篇（三）](https://www.cnblogs.com/meowv/p/13039883.html)
+19. [基于 abp vNext 和 .NET Core 开发博客项目 - 博客接口实战篇（四）](https://www.cnblogs.com/meowv/p/13043084.html)
 
 ```tree
 Blog ---------- root
