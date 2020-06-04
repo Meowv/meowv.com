@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <Import Project="..\..\common.props" />
 
@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Volo.Abp.Identity.Domain" Version="2.8.0" />
+    <PackageReference Include="Volo.Abp.Identity.Domain" Version="2.9.0" />
 
     <ProjectReference Include="..\Meowv.Blog.Domain.Shared\Meowv.Blog.Domain.Shared.csproj" />
   </ItemGroup>

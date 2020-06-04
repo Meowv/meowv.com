@@ -12,11 +12,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Volo.Abp.Account.HttpApi.Client" Version="2.7.0" />
-    <PackageReference Include="Volo.Abp.Identity.HttpApi.Client" Version="2.7.0" />
-    <PackageReference Include="Volo.Abp.PermissionManagement.HttpApi.Client" Version="2.7.0" />
-    <PackageReference Include="Volo.Abp.TenantManagement.HttpApi.Client" Version="2.7.0" />
-    <PackageReference Include="Volo.Abp.FeatureManagement.HttpApi.Client" Version="2.7.0" />
+    <PackageReference Include="Volo.Abp.Account.HttpApi.Client" Version="2.9.0" />
+    <PackageReference Include="Volo.Abp.Identity.HttpApi.Client" Version="2.9.0" />
+    <PackageReference Include="Volo.Abp.PermissionManagement.HttpApi.Client" Version="2.9.0" />
+    <PackageReference Include="Volo.Abp.TenantManagement.HttpApi.Client" Version="2.9.0" />
+    <PackageReference Include="Volo.Abp.FeatureManagement.HttpApi.Client" Version="2.9.0" />
   </ItemGroup>
 
 </Project>
