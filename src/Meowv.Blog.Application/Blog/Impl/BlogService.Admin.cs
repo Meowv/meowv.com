@@ -4,6 +4,7 @@ using Meowv.Blog.Application.Contracts.Blog.Params;
 using Meowv.Blog.Domain.Blog;
 using Meowv.Blog.ToolKits.Base;
 using Meowv.Blog.ToolKits.Extensions;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using static Meowv.Blog.Domain.Shared.MeowvBlogConsts;
@@ -106,7 +107,7 @@ namespace Meowv.Blog.Application.Blog.Impl
             await _postTagRepository.BulkInsertAsync(postTags);
 
             // 执行清除缓存操作
-            await _blogCacheService.RemoveAsync(CachePrefix.Blog);
+            await _blogCacheService.RemoveAsync(CachePrefix.Blog_Post);
 
             result.IsSuccess(ResponseText.INSERT_SUCCESS);
             return result;
@@ -169,7 +170,7 @@ namespace Meowv.Blog.Application.Blog.Impl
             await _postTagRepository.BulkInsertAsync(postTags);
 
             // 执行清除缓存操作
-            await _blogCacheService.RemoveAsync(CachePrefix.Blog);
+            await _blogCacheService.RemoveAsync(CachePrefix.Blog_Post);
 
             result.IsSuccess(ResponseText.UPDATE_SUCCESS);
             return result;
@@ -195,12 +196,204 @@ namespace Meowv.Blog.Application.Blog.Impl
             await _postTagRepository.DeleteAsync(x => x.PostId == id);
 
             // 执行清除缓存操作
-            await _blogCacheService.RemoveAsync(CachePrefix.Blog);
+            await _blogCacheService.RemoveAsync(CachePrefix.Blog_Post);
 
             result.IsSuccess(ResponseText.DELETE_SUCCESS);
             return result;
         }
 
         #endregion Posts
+
+        #region Categories
+
+        /// <summary>
+        /// 查询分类列表
+        /// </summary>
+        /// <returns></returns>
+        public async Task<ServiceResult<IEnumerable<QueryCategoryForAdminDto>>> QueryCategoriesForAdminAsync()
+        {
+            var result = new ServiceResult<IEnumerable<QueryCategoryForAdminDto>>();
+
+            var posts = await _postRepository.GetListAsync();
+
+            var categories = _categoryRepository.GetListAsync().Result.Select(x => new QueryCategoryForAdminDto
+            {
+                Id = x.Id,
+                CategoryName = x.CategoryName,
+                DisplayName = x.DisplayName,
+                Count = posts.Count(p => p.CategoryId == x.Id)
+            });
+
+            result.IsSuccess(categories);
+            return result;
+        }
+
+        /// <summary>
+        /// 新增分类
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public async Task<ServiceResult> InsertCategoryAsync(EditCategoryInput input)
+        {
+            var result = new ServiceResult();
+
+            var category = ObjectMapper.Map<EditCategoryInput, Category>(input);
+            await _categoryRepository.InsertAsync(category);
+
+            // 执行清除缓存操作
+            await _blogCacheService.RemoveAsync(CachePrefix.Blog_Category);
+
+            result.IsSuccess(ResponseText.INSERT_SUCCESS);
+            return result;
+        }
+
+        /// <summary>
+        /// 更新分类
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public async Task<ServiceResult> UpdateCategoryAsync(int id, EditCategoryInput input)
+        {
+            var result = new ServiceResult();
+
+            var category = await _categoryRepository.GetAsync(id);
+            category.CategoryName = input.CategoryName;
+            category.DisplayName = input.DisplayName;
+
+            await _categoryRepository.UpdateAsync(category);
+
+            // 执行清除缓存操作
+            await _blogCacheService.RemoveAsync(CachePrefix.Blog_Category);
+
+            result.IsSuccess(ResponseText.UPDATE_SUCCESS);
+            return result;
+        }
+
+        /// <summary>
+        /// 删除分类
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        public async Task<ServiceResult> DeleteCategoryAsync(int id)
+        {
+            var result = new ServiceResult();
+
+            var category = await _categoryRepository.FindAsync(id);
+            if (null == category)
+            {
+                result.IsFailed(ResponseText.WHAT_NOT_EXIST.FormatWith("Id", id));
+                return result;
+            }
+
+            await _categoryRepository.DeleteAsync(id);
+
+            // 执行清除缓存操作
+            await _blogCacheService.RemoveAsync(CachePrefix.Blog_Category);
+
+            result.IsSuccess(ResponseText.DELETE_SUCCESS);
+            return result;
+        }
+
+        #endregion Categories
+
+        #region Tags
+
+        /// <summary>
+        /// 查询标签列表
+        /// </summary>
+        /// <returns></returns>
+        public async Task<ServiceResult<IEnumerable<QueryTagForAdminDto>>> QueryTagsForAdminAsync()
+        {
+            var result = new ServiceResult<IEnumerable<QueryTagForAdminDto>>();
+
+            var post_tags = await _postTagRepository.GetListAsync();
+
+            var tags = _tagRepository.GetListAsync().Result.Select(x => new QueryTagForAdminDto
+            {
+                Id = x.Id,
+                TagName = x.TagName,
+                DisplayName = x.DisplayName,
+                Count = post_tags.Count(p => p.TagId == x.Id)
+            });
+
+            result.IsSuccess(tags);
+            return result;
+        }
+
+        /// <summary>
+        /// 新增标签
+        /// </summary>
+        /// <param name="dto"></param>
+        /// <returns></returns>
+        public async Task<ServiceResult> InsertTagAsync(EditTagInput input)
+        {
+            var result = new ServiceResult();
+
+            var tag = ObjectMapper.Map<EditTagInput, Tag>(input);
+            await _tagRepository.InsertAsync(tag);
+
+            // 执行清除缓存操作
+            await _blogCacheService.RemoveAsync(CachePrefix.Blog_Tag);
+
+            result.IsSuccess(ResponseText.INSERT_SUCCESS);
+            return result;
+        }
+
+        /// <summary>
+        /// 更新标签
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="dto"></param>
+        /// <returns></returns>
+        public async Task<ServiceResult> UpdateTagAsync(int id, EditTagInput input)
+        {
+            var result = new ServiceResult();
+
+            var tag = await _tagRepository.GetAsync(id);
+            tag.TagName = input.TagName;
+            tag.DisplayName = input.DisplayName;
+
+            await _tagRepository.UpdateAsync(tag);
+
+            // 执行清除缓存操作
+            await _blogCacheService.RemoveAsync(CachePrefix.Blog_Tag);
+
+            result.IsSuccess(ResponseText.UPDATE_SUCCESS);
+            return result;
+        }
+
+        /// <summary>
+        /// 删除标签
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        public async Task<ServiceResult> DeleteTagAsync(int id)
+        {
+            var result = new ServiceResult();
+
+            var tag = await _tagRepository.FindAsync(id);
+            if (null == tag)
+            {
+                result.IsFailed(ResponseText.WHAT_NOT_EXIST.FormatWith("Id", id));
+                return result;
+            }
+
+            await _tagRepository.DeleteAsync(id);
+            await _postTagRepository.DeleteAsync(x => x.TagId == id);
+
+            // 执行清除缓存操作
+            await _blogCacheService.RemoveAsync(CachePrefix.Blog_Tag);
+
+            result.IsSuccess(ResponseText.DELETE_SUCCESS);
+            return result;
+        }
+
+        #endregion Tags
+
+        #region FriendLink
+
+
+        #endregion FriendLink
     }
 }
