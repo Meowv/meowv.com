@@ -400,7 +400,14 @@ namespace Meowv.Blog.Application.Blog.Impl
         /// <returns></returns>
         public async Task<ServiceResult<IEnumerable<QueryFriendLinkForAdminDto>>> QueryFriendLinksForAdminAsync()
         {
-            throw new NotImplementedException();
+            var result = new ServiceResult<IEnumerable<QueryFriendLinkForAdminDto>>();
+
+            var friendLinks = await _friendLinksRepository.GetListAsync();
+
+            var dto = ObjectMapper.Map<List<FriendLink>, IEnumerable<QueryFriendLinkForAdminDto>>(friendLinks);
+
+            result.IsSuccess(dto);
+            return result;
         }
 
         /// <summary>
@@ -410,7 +417,16 @@ namespace Meowv.Blog.Application.Blog.Impl
         /// <returns></returns>
         public async Task<ServiceResult> InsertFriendLinkAsync(EditFriendLinkInput input)
         {
-            throw new NotImplementedException();
+            var result = new ServiceResult();
+
+            var friendLink = ObjectMapper.Map<EditFriendLinkInput, FriendLink>(input);
+            await _friendLinksRepository.InsertAsync(friendLink);
+
+            // 执行清除缓存操作
+            await _blogCacheService.RemoveAsync(CachePrefix.Blog_FriendLink);
+
+            result.IsSuccess(ResponseText.INSERT_SUCCESS);
+            return result;
         }
 
         /// <summary>
@@ -421,7 +437,19 @@ namespace Meowv.Blog.Application.Blog.Impl
         /// <returns></returns>
         public async Task<ServiceResult> UpdateFriendLinkAsync(int id, EditFriendLinkInput input)
         {
-            throw new NotImplementedException();
+            var result = new ServiceResult();
+
+            var friendLink = await _friendLinksRepository.GetAsync(id);
+            friendLink.Title = input.Title;
+            friendLink.LinkUrl = input.LinkUrl;
+
+            await _friendLinksRepository.UpdateAsync(friendLink);
+
+            // 执行清除缓存操作
+            await _blogCacheService.RemoveAsync(CachePrefix.Blog_FriendLink);
+
+            result.IsSuccess(ResponseText.UPDATE_SUCCESS);
+            return result;
         }
 
         /// <summary>
@@ -431,7 +459,22 @@ namespace Meowv.Blog.Application.Blog.Impl
         /// <returns></returns>
         public async Task<ServiceResult> DeleteFriendLinkAsync(int id)
         {
-            throw new NotImplementedException();
+            var result = new ServiceResult();
+
+            var friendLink = await _friendLinksRepository.FindAsync(id);
+            if (null == friendLink)
+            {
+                result.IsFailed(ResponseText.WHAT_NOT_EXIST.FormatWith("Id", id));
+                return result;
+            }
+
+            await _friendLinksRepository.DeleteAsync(id);
+
+            // 执行清除缓存操作
+            await _blogCacheService.RemoveAsync(CachePrefix.Blog_FriendLink);
+
+            result.IsSuccess(ResponseText.DELETE_SUCCESS);
+            return result;
         }
 
         #endregion FriendLinks
