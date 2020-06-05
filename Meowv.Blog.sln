@@ -41,7 +41,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "api", "api", "{A659EDAE-830
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "web", "web", "{D9F2B322-C5CC-454A-895B-61ABE3DCE625}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meowv.Blog.BlazorApp", "src\Meowv.Blog.BlazorApp\Meowv.Blog.BlazorApp.csproj", "{8FE35056-EEC9-494A-8028-16A1F339A09A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meowv.Blog.BlazorApp", "src\Meowv.Blog.BlazorApp\Meowv.Blog.BlazorApp.csproj", "{8FE35056-EEC9-494A-8028-16A1F339A09A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

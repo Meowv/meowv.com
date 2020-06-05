@@ -1,11 +1,56 @@
 ﻿@page "/"
+<div class="main">
+    <div class="container">
+        <div class="intro">
+            <div class="avatar">
+                <a href="javascript:;"><img src="https://static.meowv.com/images/avatar.jpg"></a>
+            </div>
+            <div class="nickname">阿星Plus</div>
+            <div class="description">
+                <p>
+                    生命不息，奋斗不止
+                    <br>Cease to struggle and you cease to live
+                </p>
+            </div>
+            <div class="links">
+                <NavLink class="link-item" title="Posts" href="posts">
+                    <i class="iconfont iconread"></i>
+                </NavLink>
+                <NavLink target="_blank" class="link-item" title="Notes" href="https://notes.meowv.com/">
+                    <i class="iconfont iconnotes"></i>
+                </NavLink>
+                <NavLink target="_blank" class="link-item" title="API" href="https://api.meowv.com/">
+                    <i class="iconfont iconapi"></i>
+                </NavLink>
+                <NavLink class="link-item" title="Manage" href="/account/auth">
+                    <i class="iconfont iconcode"></i>
+                </NavLink>
+                <NavLink target="_blank" class="link-item" title="Github" href="https://github.com/Meowv/">
+                    <i class="iconfont icongithub"></i>
+                </NavLink>
+                <NavLink class="link-item weixin" title="扫码关注微信公众号：『阿星Plus』查看更多。" @onmouseover="In" @onmouseout="Out">
+                    <i class="iconfont iconweixin"></i>
+                </NavLink>
+                <div class="qrcode @QrCodeCssClass">
+                    <img src="https://static.meowv.com/images/wx_qrcode.jpg" />
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-<h1>Hello, world!</h1>
+@code {
+    private bool IsHidden = true;
 
-Welcome to your new app.
+    private string QrCodeCssClass => IsHidden ? "hidden" : null;
 
-<SurveyPrompt Title="How is Blazor working for you?" />
+    /// <summary>
+    /// 鼠标移入
+    /// </summary>
+    private void In() => IsHidden = !IsHidden;
 
-
-
-<SurveyPrompt Title="How is Blazor working for you?" />
+    /// <summary>
+    /// 鼠标移出
+    /// </summary>
+    private void Out() => IsHidden = !IsHidden;
+}
