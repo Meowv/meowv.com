@@ -41,6 +41,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "api", "api", "{A659EDAE-830
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "web", "web", "{D9F2B322-C5CC-454A-895B-61ABE3DCE625}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meowv.Blog.BlazorApp", "src\Meowv.Blog.BlazorApp\Meowv.Blog.BlazorApp.csproj", "{8FE35056-EEC9-494A-8028-16A1F339A09A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -95,12 +97,17 @@ Global
 		{A2B80990-037A-49CC-B4C2-3CE60533322D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A2B80990-037A-49CC-B4C2-3CE60533322D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A2B80990-037A-49CC-B4C2-3CE60533322D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8FE35056-EEC9-494A-8028-16A1F339A09A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8FE35056-EEC9-494A-8028-16A1F339A09A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8FE35056-EEC9-494A-8028-16A1F339A09A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8FE35056-EEC9-494A-8028-16A1F339A09A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{068855E8-9240-4F1A-910B-CF825794513B} = {A659EDAE-8300-428D-9182-828CB7C1D060}
+		{8FE35056-EEC9-494A-8028-16A1F339A09A} = {D9F2B322-C5CC-454A-895B-61ABE3DCE625}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {28315BFD-90E7-4E14-A2EA-F3D23AF4126F}
