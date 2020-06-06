@@ -6,8 +6,8 @@
         return localStorage.getItem(name);
     },
     switchTheme: function () {
-        var currentTheme = this.getStorage('theme') || 'white';
-        var isDark = currentTheme === 'dark';
+        var currentTheme = this.getStorage('theme') || 'Light';
+        var isDark = currentTheme === 'Dark';
 
         if (isDark) {
             document.querySelector('body').classList.add('dark-theme');
