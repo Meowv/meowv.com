@@ -1,4 +1,5 @@
 ﻿@page "/"
+
 <div class="main">
     <div class="container">
         <div class="intro">
@@ -40,8 +41,14 @@
 </div>
 
 @code {
+    /// <summary>
+    /// 是否隐藏
+    /// </summary>
     private bool IsHidden = true;
 
+    /// <summary>
+    /// 二维码CSS
+    /// </summary>
     private string QrCodeCssClass => IsHidden ? "hidden" : null;
 
     /// <summary>

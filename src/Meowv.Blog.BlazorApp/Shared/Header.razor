@@ -1,11 +1,8 @@
-﻿@inject IJSRuntime JSRuntime
-
-<header>
+﻿<header>
     <nav class="navbar">
         <div class="container">
             <div class="navbar-header header-logo">
-                <a href="/"></a>
-                <NavLink class="menu-item" href="" Match="NavLinkMatch.All">
+                <NavLink class="menu-item" href="/" Match="NavLinkMatch.All">
                     😍阿星Plus
                 </NavLink>
             </div>
@@ -14,7 +11,14 @@
                 <NavLink class="menu-item" href="categories">Categories</NavLink>
                 <NavLink class="menu-item" href="tags">Tags</NavLink>
                 <NavLink class="menu-item apps" href="apps">Apps</NavLink>
-                <input id="switch_default" type="checkbox" class="switch_default" @onchange="SwitchTheme" />
+                @if (currentTheme == "Dark")
+                {
+                    <input id="switch_default" type="checkbox" class="switch_default" @onchange="SwitchTheme" checked="checked" />
+                }
+                else
+                {
+                    <input id="switch_default" type="checkbox" class="switch_default" @onchange="SwitchTheme" />
+                }
                 <label for="switch_default" class="toggleBtn"></label>
             </div>
         </div>
@@ -24,7 +28,7 @@
             <div class="navbar-header">
                 <div>
                     <NavLink class="menu-item" href="" Match="NavLinkMatch.All">😍阿星Plus</NavLink>
-                    <a id="mobile-toggle-theme">&nbsp;·&nbsp;Light</a>
+                    <NavLink @onclick="SwitchTheme">&nbsp;·&nbsp;@currentTheme</NavLink>
                 </div>
                 <div class="menu-toggle" @onclick="ToggleNavMenu">&#9776; Menu</div>
             </div>
@@ -39,9 +43,20 @@
 </header>
 
 @code {
+    /// <summary>
+    /// 下拉菜单是否打开
+    /// </summary>
     private bool collapseNavMenu = false;
 
+    /// <summary>
+    /// 导航菜单CSS
+    /// </summary>
     private string NavMenuCssClass => collapseNavMenu ? "active" : null;
+
+    /// <summary>
+    /// 当前主题
+    /// </summary>
+    private string currentTheme;
 
     /// <summary>
     /// 显示/隐藏 菜单
@@ -51,8 +66,14 @@
         collapseNavMenu = !collapseNavMenu;
     }
 
+    /// <summary>
+    /// 初始化
+    /// </summary>
+    /// <returns></returns>
     protected override async Task OnInitializedAsync()
     {
+        currentTheme = await GetStorageAsync("theme") ?? "Light";
+
         await JSRuntime.InvokeVoidAsync("window.func.switchTheme");
     }
 
@@ -61,22 +82,17 @@
     /// </summary>
     private async Task SwitchTheme()
     {
-       var current_theme = await GetStorageAsync("theme") ?? "white";
+        currentTheme = await GetStorageAsync("theme") ?? "Light";
 
-        if (current_theme == "white")
-        {
-            await SetStorageAsync("theme", "dark");
-        }
-        else
-        {
-            await SetStorageAsync("theme", "white");
-        }
+        currentTheme = currentTheme == "Light" ? "Dark" : "Light";
+
+        await SetStorageAsync("theme", currentTheme);
 
         await JSRuntime.InvokeVoidAsync("window.func.switchTheme");
     }
 
     /// <summary>
-    /// 
+    /// 设置localStorage
     /// </summary>
     /// <param name="name"></param>
     /// <param name="value"></param>
@@ -87,7 +103,7 @@
     }
 
     /// <summary>
-    /// 
+    /// 获取localStorage
     /// </summary>
     /// <param name="name"></param>
     /// <returns></returns>

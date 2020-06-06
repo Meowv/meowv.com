@@ -18,6 +18,8 @@ namespace Meowv.Blog.BlazorApp
                 BaseAddress = new Uri(builder.HostEnvironment.BaseAddress)
             });
 
+            Console.WriteLine(builder.HostEnvironment.BaseAddress);
+
             await builder.Build().RunAsync();
         }
     }
