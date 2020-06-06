@@ -10,15 +10,15 @@ namespace Meowv.Blog.BlazorApp
     {
         public static async Task Main(string[] args)
         {
+            var baseAddress = "https://localhost:5001";
+
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
             builder.RootComponents.Add<App>("app");
 
             builder.Services.AddTransient(sp => new HttpClient
             {
-                BaseAddress = new Uri(builder.HostEnvironment.BaseAddress)
+                BaseAddress = new Uri(baseAddress)
             });
-
-            Console.WriteLine(builder.HostEnvironment.BaseAddress);
 
             await builder.Build().RunAsync();
         }

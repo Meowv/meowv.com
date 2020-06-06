@@ -1,19 +1,85 @@
-﻿@page "/posts"
-@page "/posts/{PageIndex}"
+﻿@page "/posts/"
+@page "/posts/{Page:int}"
 
-<h3>Posts</h3>
-
-当前页：@PageIndex
+@if (posts == null)
+{
+    <Loading />
+}
+else
+{
+    <div class="main">
+        <div class="post-wrap archive">
+            @foreach (var item in posts.result.item)
+            {
+                <h3>@item.year</h3>
+                @foreach (var post in item.posts)
+                {
+                    <article class="archive-item">
+                        <a class="archive-item-link" href="@post.url">@post.title</a>
+                        <span class="archive-item-date">@post.creationTime</span>
+                    </article>
+                }
+            }
+            <nav class="pagination"></nav>
+        </div>
+    </div>
+}
 
 @code {
+    /// <summary>
+    /// 页码
+    /// </summary>
     [Parameter]
-    public string PageIndex { get; set; }
+    public int? Page { get; set; }
 
-    protected override void OnInitialized()
+    /// <summary>
+    /// 限制条数
+    /// </summary>
+    private int Limit = 30;
+
+    private PostsItem posts;
+
+    /// <summary>
+    /// 初始化
+    /// </summary>
+    protected override async Task OnInitializedAsync()
     {
-        if (PageIndex == "")
+        if (Page == null)
         {
-            PageIndex = "1";
+            Page = 1;
         }
+
+        Console.WriteLine(Page);
+
+        posts = await Http.GetFromJsonAsync<PostsItem>($"/blog/posts?page={Page}&limit={Limit}");
+    }
+
+    public class PostsItem
+    {
+        public Result result { get; set; }
+        public int code { get; set; }
+        public string message { get; set; }
+        public bool success { get; set; }
+        public long timestamp { get; set; }
+    }
+
+    public class Result
+    {
+        public int total { get; set; }
+        public Item[] item { get; set; }
+    }
+
+    public class Item
+    {
+        public int year { get; set; }
+        public Post[] posts { get; set; }
+    }
+
+    public class Post
+    {
+        public string title { get; set; }
+        public string url { get; set; }
+        public int year { get; set; }
+        public string creationTime { get; set; }
     }
 }

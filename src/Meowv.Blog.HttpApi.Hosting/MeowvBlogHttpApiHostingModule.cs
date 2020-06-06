@@ -47,6 +47,12 @@ namespace Meowv.Blog.HttpApi.Hosting
                 options.Filters.Add(typeof(MeowvBlogExceptionFilter));
             });
 
+            // 跨域配置
+            context.Services.AddCors(options =>
+            {
+                options.AddDefaultPolicy(p => p.AllowAnyOrigin());
+            });
+
             // 路由配置
             context.Services.AddRouting(options =>
             {
