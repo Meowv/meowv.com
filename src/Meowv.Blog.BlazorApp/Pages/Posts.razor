@@ -9,25 +9,44 @@ else
 {
     <div class="main">
         <div class="post-wrap archive">
-            @foreach (var item in posts.result.item)
+            @if (posts.Success && posts.Result.Item.Any())
             {
-                <h3>@item.year</h3>
-                @foreach (var post in item.posts)
+                @foreach (var item in posts.Result.Item)
                 {
-                    <article class="archive-item">
-                        <a class="archive-item-link" href="@post.url">@post.title</a>
-                        <span class="archive-item-date">@post.creationTime</span>
-                    </article>
+                    <h3>@item.Year</h3>
+                    @foreach (var post in item.Posts)
+                    {
+                        <article class="archive-item">
+                            <a class="archive-item-link" href="@post.Url">@post.Title</a>
+                            <span class="archive-item-date">@post.CreationTime</span>
+                        </article>
+                    }
                 }
+                <nav class="pagination">
+                    @for (int i = 1; i <= TotalPage; i++)
+                    {
+                        if (i == Page)
+                        {
+                            <span class="page-number current">@i</span>
+                        }
+                        else
+                        {
+                            <a class="page-number" @onclick="@RenderPage" href="/posts/@i">@i</a>
+                        }
+                    }
+                </nav>
             }
-            <nav class="pagination"></nav>
+            else
+            {
+                <h2 class="post-title">无数据</h2>
+            }
         </div>
     </div>
 }
 
 @code {
     /// <summary>
-    /// 页码
+    /// 当前页码
     /// </summary>
     [Parameter]
     public int? Page { get; set; }
@@ -35,51 +54,48 @@ else
     /// <summary>
     /// 限制条数
     /// </summary>
-    private int Limit = 30;
+    private int Limit = 15;
 
-    private PostsItem posts;
+    /// <summary>
+    /// 总页码
+    /// </summary>
+    private int TotalPage;
+
+    /// <summary>
+    /// posts
+    /// </summary>
+    private ServiceResult<PagedList<PostsResponse>> posts;
 
     /// <summary>
     /// 初始化
     /// </summary>
     protected override async Task OnInitializedAsync()
     {
-        if (Page == null)
+        Console.WriteLine(Page.HasValue);
+        if (!Page.HasValue)
         {
             Page = 1;
         }
 
         Console.WriteLine(Page);
 
-        posts = await Http.GetFromJsonAsync<PostsItem>($"/blog/posts?page={Page}&limit={Limit}");
+        // 获取数据
+        posts = await Http.GetFromJsonAsync<ServiceResult<PagedList<PostsResponse>>>($"/blog/posts?page={Page}&limit={Limit}");
+
+        // 计算总页码
+        TotalPage = (int)Math.Ceiling((posts.Result.Total / (double)Limit));
     }
 
-    public class PostsItem
+    /// <summary>
+    /// 点击页码重新渲染数据
+    /// </summary>
+    /// <returns></returns>
+    private async Task RenderPage()
     {
-        public Result result { get; set; }
-        public int code { get; set; }
-        public string message { get; set; }
-        public bool success { get; set; }
-        public long timestamp { get; set; }
-    }
+        posts = null;
 
-    public class Result
-    {
-        public int total { get; set; }
-        public Item[] item { get; set; }
-    }
 
-    public class Item
-    {
-        public int year { get; set; }
-        public Post[] posts { get; set; }
-    }
 
-    public class Post
-    {
-        public string title { get; set; }
-        public string url { get; set; }
-        public int year { get; set; }
-        public string creationTime { get; set; }
+        await OnInitializedAsync();
     }
 }
