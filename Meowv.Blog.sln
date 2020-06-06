@@ -43,6 +43,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "web", "web", "{D9F2B322-C5C
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meowv.Blog.BlazorApp", "src\Meowv.Blog.BlazorApp\Meowv.Blog.BlazorApp.csproj", "{8FE35056-EEC9-494A-8028-16A1F339A09A}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "db-migrations", "db-migrations", "{0566BD88-37BA-4AB0-9F73-AF50B6F3126E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{D7CB0953-1482-47FC-BF7C-53F36A24C490}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -107,6 +111,7 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{068855E8-9240-4F1A-910B-CF825794513B} = {A659EDAE-8300-428D-9182-828CB7C1D060}
+		{0372FA84-C517-4EB3-9A9F-B9ACAC0CA5E0} = {0566BD88-37BA-4AB0-9F73-AF50B6F3126E}
 		{8FE35056-EEC9-494A-8028-16A1F339A09A} = {D9F2B322-C5CC-454A-895B-61ABE3DCE625}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
