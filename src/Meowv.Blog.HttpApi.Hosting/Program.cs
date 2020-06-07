@@ -14,6 +14,10 @@ namespace Meowv.Blog.HttpApi.Hosting
                       .ConfigureWebHostDefaults(builder =>
                       {
                           builder.UseIISIntegration()
+                                 .ConfigureKestrel(options => {
+                                     options.AddServerHeader = false;
+                                 })
+                                 .UseUrls("http://*:5001")
                                  .UseStartup<Startup>();
                       }).UseAutofac().Build().RunAsync();
         }
