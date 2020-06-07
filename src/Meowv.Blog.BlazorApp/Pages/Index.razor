@@ -29,7 +29,7 @@
                 <NavLink target="_blank" class="link-item" title="Github" href="https://github.com/Meowv/">
                     <i class="iconfont icongithub"></i>
                 </NavLink>
-                <NavLink class="link-item weixin" title="扫码关注微信公众号：『阿星Plus』查看更多。" @onmouseover="In" @onmouseout="Out">
+                <NavLink class="link-item weixin" title="扫码关注微信公众号：『阿星Plus』查看更多。" @onmouseover="Hover" @onmouseout="Hover">
                     <i class="iconfont iconweixin"></i>
                 </NavLink>
                 <div class="qrcode @QrCodeCssClass">
@@ -52,12 +52,7 @@
     private string QrCodeCssClass => IsHidden ? "hidden" : null;
 
     /// <summary>
-    /// 鼠标移入
+    /// 鼠标移入移出操作
     /// </summary>
-    private void In() => IsHidden = !IsHidden;
-
-    /// <summary>
-    /// 鼠标移出
-    /// </summary>
-    private void Out() => IsHidden = !IsHidden;
+    private void Hover() => IsHidden = !IsHidden;
 }

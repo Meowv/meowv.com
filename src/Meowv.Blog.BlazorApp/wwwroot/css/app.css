@@ -706,6 +706,12 @@ header label {
 	line-height: 1.5em;
 }
 
+.post-wrap .eror-tip {
+	text-align: center;
+	line-height: 1.5em;
+	margin-top: 250px;
+}
+
 .post-wrap .post-meta {
 	color: rgba(85, 85, 85, 0.529) !important;
 }

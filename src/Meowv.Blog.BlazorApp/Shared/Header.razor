@@ -7,10 +7,10 @@
                 </NavLink>
             </div>
             <div class="menu navbar-right">
-                <NavLink class="menu-item" href="posts" @onclick="@(() => RenderPage("posts"))">Posts</NavLink>
-                <NavLink class="menu-item" href="categories">Categories</NavLink>
-                <NavLink class="menu-item" href="tags">Tags</NavLink>
-                <NavLink class="menu-item apps" href="apps">Apps</NavLink>
+                <NavLink class="menu-item" href="posts" @onclick="@(() => RenderPage("posts", true))">Posts</NavLink>
+                <NavLink class="menu-item" href="categories" @onclick="@(() => RenderPage("categories"))">Categories</NavLink>
+                <NavLink class="menu-item" href="tags" @onclick="@(() => RenderPage("tags"))">Tags</NavLink>
+                <NavLink class="menu-item apps" href="apps" @onclick="@(() => RenderPage("apps"))">Apps</NavLink>
                 @if (currentTheme == "Dark")
                 {
                     <input id="switch_default" type="checkbox" class="switch_default" @onchange="SwitchTheme" checked="checked" />
@@ -112,8 +112,13 @@
         return await JSRuntime.InvokeAsync<string>("window.func.getStorage", name);
     }
 
-    private void RenderPage(string url)
+    /// <summary>
+    /// 跳转页面
+    /// </summary>
+    /// <param name="url"></param>
+    /// <param name="forceLoad"></param>
+    private void RenderPage(string url, bool forceLoad = false)
     {
-        NavigationManager.NavigateTo(url, true);
+        NavigationManager.NavigateTo(url, forceLoad);
     }
 }
