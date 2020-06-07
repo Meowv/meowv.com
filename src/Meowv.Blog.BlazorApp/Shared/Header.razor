@@ -7,10 +7,10 @@
                 </NavLink>
             </div>
             <div class="menu navbar-right">
-                <NavLink class="menu-item" href="posts" @onclick="@(() => RenderPage("posts", true))">Posts</NavLink>
-                <NavLink class="menu-item" href="categories" @onclick="@(() => RenderPage("categories"))">Categories</NavLink>
-                <NavLink class="menu-item" href="tags" @onclick="@(() => RenderPage("tags"))">Tags</NavLink>
-                <NavLink class="menu-item apps" href="apps" @onclick="@(() => RenderPage("apps"))">Apps</NavLink>
+                <NavLink class="menu-item" href="posts" @onclick="@(() => NavigationManager.NavigateTo("posts", true))">Posts</NavLink>
+                <NavLink class="menu-item" href="categories">Categories</NavLink>
+                <NavLink class="menu-item" href="tags">Tags</NavLink>
+                <NavLink class="menu-item apps" href="apps">Apps</NavLink>
                 @if (currentTheme == "Dark")
                 {
                     <input id="switch_default" type="checkbox" class="switch_default" @onchange="SwitchTheme" checked="checked" />
@@ -72,9 +72,9 @@
     /// <returns></returns>
     protected override async Task OnInitializedAsync()
     {
-        currentTheme = await GetStorageAsync("theme") ?? "Light";
+        currentTheme = await Common.GetStorageAsync("theme") ?? "Light";
 
-        await JSRuntime.InvokeVoidAsync("window.func.switchTheme");
+        await Common.InvokeAsync("window.func.switchTheme");
     }
 
     /// <summary>
@@ -82,43 +82,10 @@
     /// </summary>
     private async Task SwitchTheme()
     {
-        currentTheme = await GetStorageAsync("theme") ?? "Light";
+        currentTheme = (await Common.GetStorageAsync("theme") ?? "Light") == "Light" ? "Dark" : "Light";
 
-        currentTheme = currentTheme == "Light" ? "Dark" : "Light";
+        await Common.SetStorageAsync("theme", currentTheme);
 
-        await SetStorageAsync("theme", currentTheme);
-
-        await JSRuntime.InvokeVoidAsync("window.func.switchTheme");
-    }
-
-    /// <summary>
-    /// 设置localStorage
-    /// </summary>
-    /// <param name="name"></param>
-    /// <param name="value"></param>
-    /// <returns></returns>
-    private async Task SetStorageAsync(string name, string value)
-    {
-        await JSRuntime.InvokeVoidAsync("window.func.setStorage", name, value);
-    }
-
-    /// <summary>
-    /// 获取localStorage
-    /// </summary>
-    /// <param name="name"></param>
-    /// <returns></returns>
-    private async Task<string> GetStorageAsync(string name)
-    {
-        return await JSRuntime.InvokeAsync<string>("window.func.getStorage", name);
-    }
-
-    /// <summary>
-    /// 跳转页面
-    /// </summary>
-    /// <param name="url"></param>
-    /// <param name="forceLoad"></param>
-    private void RenderPage(string url, bool forceLoad = false)
-    {
-        NavigationManager.NavigateTo(url, forceLoad);
+        await Common.InvokeAsync("window.func.switchTheme");
     }
 }

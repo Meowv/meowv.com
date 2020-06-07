@@ -1,4 +1,6 @@
-﻿window.func = {
+﻿var func = window.func || {};
+
+func = {
     setStorage: function (name, value) {
         localStorage.setItem(name, value);
     },
@@ -15,4 +17,4 @@
             document.querySelector('body').classList.remove('dark-theme');
         }
     }
-}
+};

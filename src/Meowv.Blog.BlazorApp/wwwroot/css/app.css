@@ -593,7 +593,7 @@ header label {
 .post-wrap {
 	position: relative;
 	width: 100%;
-	max-width: 780px;
+	max-width: 1024px;
 	margin: 0 auto;
 	padding-top: 2rem;
 }

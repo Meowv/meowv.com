@@ -1,3 +1,4 @@
+using Meowv.Blog.BlazorApp.Commons;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -19,6 +20,8 @@ namespace Meowv.Blog.BlazorApp
             {
                 BaseAddress = new Uri(baseAddress)
             });
+
+            builder.Services.AddSingleton(typeof(Common));
 
             await builder.Build().RunAsync();
         }

@@ -2,7 +2,7 @@
 
 namespace Meowv.Blog.BlazorApp.Entity.Blog
 {
-    public class PostsResponse
+    public class QueryPostDto
     {
         /// <summary>
         /// 年份
