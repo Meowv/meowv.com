@@ -116,7 +116,20 @@ else
     /// </summary>
     protected override async Task OnInitializedAsync()
     {
+        await Common.InvokeAsync("window.func.doa");
+
         // 获取数据
         post = await Http.GetFromJsonAsync<ServiceResult<PostDetailDto>>($"/blog/post?url={url}");
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            return;
+        }
+        await Common.InvokeAsync("window.func.dob");
+        await Common.InvokeAsync("window.func.dob");
+        await Common.InvokeAsync("window.func.dob");
     }
 }
