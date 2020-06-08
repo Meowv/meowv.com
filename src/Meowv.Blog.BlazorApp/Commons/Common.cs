@@ -1,4 +1,5 @@
-﻿using Microsoft.JSInterop;
+﻿using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 using System.Threading.Tasks;
 
 namespace Meowv.Blog.BlazorApp.Commons
@@ -7,9 +8,13 @@ namespace Meowv.Blog.BlazorApp.Commons
     {
         private readonly IJSRuntime _jsRuntime;
 
-        public Common(IJSRuntime jsRuntime)
+        private readonly NavigationManager _navigationManager;
+
+        public Common(IJSRuntime jsRuntime, NavigationManager navigationManager)
         {
             _jsRuntime = jsRuntime;
+
+            _navigationManager = navigationManager;
         }
 
         /// <summary>
@@ -54,6 +59,28 @@ namespace Meowv.Blog.BlazorApp.Commons
         public async Task<string> GetStorageAsync(string name)
         {
             return await InvokeAsync<string>("window.func.getStorage", name);
+        }
+
+        /// <summary>
+        /// 后退
+        /// </summary>
+        /// <returns></returns>
+        public async Task BaskAsync()
+        {
+            await InvokeAsync("window.history.back");
+        }
+
+        /// <summary>
+        /// 跳转指定URL
+        /// </summary>
+        /// <param name="uri"></param>
+        /// <param name="forceLoad">true，绕过路由刷新页面</param>
+        /// <returns></returns>
+        public async Task RenderPage(string url, bool forceLoad = true)
+        {
+            _navigationManager.NavigateTo(url, forceLoad);
+
+            await Task.CompletedTask;
         }
     }
 }

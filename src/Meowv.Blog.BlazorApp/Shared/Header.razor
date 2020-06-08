@@ -2,12 +2,12 @@
     <nav class="navbar">
         <div class="container">
             <div class="navbar-header header-logo">
-                <NavLink class="menu-item" href="/" Match="NavLinkMatch.All">
+                <NavLink class="menu-item" href="/">
                     😍阿星Plus
                 </NavLink>
             </div>
             <div class="menu navbar-right">
-                <NavLink class="menu-item" href="posts" @onclick="@(() => NavigationManager.NavigateTo("posts", true))">Posts</NavLink>
+                <NavLink class="menu-item" href="posts" @onclick="@(async () => await Common.RenderPage("posts"))">Posts</NavLink>
                 <NavLink class="menu-item" href="categories">Categories</NavLink>
                 <NavLink class="menu-item" href="tags">Tags</NavLink>
                 <NavLink class="menu-item apps" href="apps">Apps</NavLink>
@@ -24,7 +24,7 @@
         <div class="container">
             <div class="navbar-header">
                 <div>
-                    <NavLink class="menu-item" href="" Match="NavLinkMatch.All">😍阿星Plus</NavLink>
+                    <NavLink class="menu-item" href="/">😍阿星Plus</NavLink>
                     <NavLink @onclick="SwitchTheme">&nbsp;·&nbsp;@currentTheme</NavLink>
                 </div>
                 <div class="menu-toggle" @onclick="ToggleNavMenu">&#9776; Menu</div>

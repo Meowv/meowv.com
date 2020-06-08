@@ -56,7 +56,7 @@ else
                             </span>
                         </div>
                         <div>
-                            <a href="javascript:window.history.back();">back</a>
+                            <a @onclick="async () => await Common.BaskAsync()">back</a>
                             <span>· </span>
                             <a href="/">home</a>
                         </div>
@@ -64,11 +64,18 @@ else
                     <section class="post-nav">
                         @if (_post.Previous != null)
                         {
-                            <a class="prev" rel="prev" href="/post@_post.Previous.Url">@_post.Previous.Title</a>
+                            <a class="prev"
+                               rel="prev"
+                               @onclick="@(async ()=> await Common.RenderPage($"/post/{_post.Previous.Url}"))"
+                               href="/post@_post.Previous.Url">@_post.Previous.Title</a>
                         }
                         @if (_post.Next != null)
                         {
-                            <a class="next" rel="next" href="/post@_post.Next.Url">@_post.Next.Title</a>
+                            <a class="next"
+                               rel="next"
+                               @onclick="@(async ()=> await Common.RenderPage($"/post/{_post.Next.Url}"))"
+                               href="/post@_post.Next.Url">@_post.Next.Title
+                            </a>
                         }
                     </section>
                 </article>
