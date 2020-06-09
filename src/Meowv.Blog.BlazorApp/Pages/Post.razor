@@ -66,17 +66,18 @@ else
                         {
                             <a class="prev"
                                rel="prev"
-                               @onclick="@(async ()=> await Common.RenderPage($"/post/{_post.Previous.Url}"))"
+                               @onclick="@(async () => await Common.RenderPage($"/post{_post.Previous.Url}"))"
                                href="/post@_post.Previous.Url">@_post.Previous.Title</a>
                         }
                         @if (_post.Next != null)
                         {
                             <a class="next"
                                rel="next"
-                               @onclick="@(async ()=> await Common.RenderPage($"/post/{_post.Next.Url}"))"
-                               href="/post@_post.Next.Url">@_post.Next.Title
-                            </a>
-                        }
+                               @onclick="@(async () => await Common.RenderPage($"/post{_post.Next.Url}"))"
+                               href="/post@_post.Next.Url">
+                                @_post.Next.Title
+                        </a>
+                    }
                     </section>
                 </article>
             }
@@ -116,20 +117,9 @@ else
     /// </summary>
     protected override async Task OnInitializedAsync()
     {
-        await Common.InvokeAsync("window.func.doa");
-
         // 获取数据
         post = await Http.GetFromJsonAsync<ServiceResult<PostDetailDto>>($"/blog/post?url={url}");
-    }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            return;
-        }
-        await Common.InvokeAsync("window.func.dob");
-        await Common.InvokeAsync("window.func.dob");
-        await Common.InvokeAsync("window.func.dob");
+        // TODO:详情页样式问题
     }
 }
