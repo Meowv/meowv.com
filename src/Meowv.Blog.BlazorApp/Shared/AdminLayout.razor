@@ -1,0 +1,32 @@
+﻿@if (!isLogin)
+{
+    <Loading />
+}
+else
+{
+    @ChildContent
+}
+
+@code {
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+
+    private bool isLogin { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await Common.GetStorageAsync("token");
+
+        if (string.IsNullOrEmpty(token))
+        {
+            isLogin = false;
+
+            await Common.RenderPage("/", false);
+        }
+        else
+        {
+            // TODO:判断token是否合法，先默认都是正确的
+            isLogin = true;
+        }
+    }
+}
