@@ -1,11 +1,11 @@
-﻿namespace Meowv.Blog.BlazorApp.Entity.Blog
+﻿namespace Meowv.Blog.BlazorApp.Response.Blog
 {
-    public class TagDto
+    public class CategoryDto
     {
         /// <summary>
-        /// 标签名称
+        /// 分类名称
         /// </summary>
-        public string TagName { get; set; }
+        public string CategoryName { get; set; }
 
         /// <summary>
         /// 展示名称

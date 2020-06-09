@@ -1,7 +1,7 @@
-﻿using Meowv.Blog.BlazorApp.Entity.Base.Paged;
+﻿using Meowv.Blog.BlazorApp.Response.Base.Paged;
 using System.Collections.Generic;
 
-namespace Meowv.Blog.BlazorApp.Entity.Base
+namespace Meowv.Blog.BlazorApp.Response.Base
 {
     /// <summary>
     /// 分页响应实体

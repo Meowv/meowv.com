@@ -1,4 +1,4 @@
-﻿namespace Meowv.Blog.BlazorApp.Entity.Blog
+﻿namespace Meowv.Blog.BlazorApp.Response.Blog
 {
     public class QueryCategoryDto : CategoryDto
     {

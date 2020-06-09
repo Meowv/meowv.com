@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Meowv.Blog.BlazorApp.Entity.Base.Paged
+namespace Meowv.Blog.BlazorApp.Response.Base.Paged
 {
     public class ListResult<T> : IListResult<T>
     {

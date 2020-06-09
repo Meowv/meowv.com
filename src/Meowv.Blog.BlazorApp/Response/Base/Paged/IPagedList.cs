@@ -1,4 +1,4 @@
-﻿namespace Meowv.Blog.BlazorApp.Entity.Base.Paged
+﻿namespace Meowv.Blog.BlazorApp.Response.Base.Paged
 {
     public interface IPagedList<T> : IListResult<T>, IHasTotalCount
     {

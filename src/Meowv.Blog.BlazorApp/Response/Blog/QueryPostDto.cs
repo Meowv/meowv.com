@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Meowv.Blog.BlazorApp.Entity.Blog
+namespace Meowv.Blog.BlazorApp.Response.Blog
 {
     public class QueryPostDto
     {

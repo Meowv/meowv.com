@@ -1,7 +1,7 @@
-﻿using Meowv.Blog.BlazorApp.Entity.Base.Enum;
+﻿using Meowv.Blog.BlazorApp.Response.Base.Enum;
 using System;
 
-namespace Meowv.Blog.BlazorApp.Entity.Base
+namespace Meowv.Blog.BlazorApp.Response.Base
 {
     /// <summary>
     /// 服务层响应实体

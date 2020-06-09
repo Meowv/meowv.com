@@ -1,4 +1,4 @@
-﻿namespace Meowv.Blog.BlazorApp.Entity.Base.Enum
+﻿namespace Meowv.Blog.BlazorApp.Response.Base.Enum
 {
     /// <summary>
     /// 服务层响应码枚举
