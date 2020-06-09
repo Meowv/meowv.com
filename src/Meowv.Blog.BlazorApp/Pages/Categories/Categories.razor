@@ -1,0 +1,53 @@
+﻿@page "/categories"
+
+@if (categories == null)
+{
+    <Loading />
+}
+else
+{
+    <div class="container">
+        <div class="post-wrap categories">
+            <h2 class="post-title">-&nbsp;Categories&nbsp;-</h2>
+            <div class="categories-card">
+                @if (categories.Success && categories.Result.Any())
+                {
+                    @foreach (var item in categories.Result)
+                    {
+                        <div class="card-item">
+                            <div class="categories">
+                                <a href="/category/@item.DisplayName/">
+                                    <h3>
+                                        <i class="iconfont iconcode" style="padding-right:3px"></i>
+                                        @item.CategoryName
+                                    </h3>
+                                    <small>(@item.Count)</small>
+                                </a>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <ErrorTip />
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code{
+    /// <summary>
+    /// categories
+    /// </summary>
+    private ServiceResult<IEnumerable<QueryCategoryDto>> categories;
+
+    /// <summary>
+    /// 初始化
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        // 获取数据
+        categories = await Http.GetFromJsonAsync<ServiceResult<IEnumerable<QueryCategoryDto>>>($"/blog/categories");
+    }
+}

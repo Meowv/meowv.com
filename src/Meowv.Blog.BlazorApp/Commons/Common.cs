@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
+using System;
 using System.Threading.Tasks;
 
 namespace Meowv.Blog.BlazorApp.Commons
@@ -81,6 +82,17 @@ namespace Meowv.Blog.BlazorApp.Commons
             _navigationManager.NavigateTo(url, forceLoad);
 
             await Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// 获取当前URI对象
+        /// </summary>
+        /// <returns></returns>
+        public async Task<Uri> CurrentUri()
+        {
+            var uri = _navigationManager.ToAbsoluteUri(_navigationManager.Uri);
+
+            return await Task.FromResult(uri);
         }
     }
 }

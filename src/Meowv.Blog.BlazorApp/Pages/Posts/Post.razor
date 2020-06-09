@@ -1,0 +1,123 @@
+﻿@page "/post/{year:int}/{month:int}/{day:int}/{name}"
+
+@if (post == null)
+{
+    <Loading />
+}
+else
+{
+    <div class="container">
+        @if (post.Success)
+        {
+            var _post = post.Result;
+
+            <article class="post-wrap">
+                <header class="post-header">
+                    <h1 class="post-title">@_post.Title</h1>
+                    <div class="post-meta">
+                        Author: <a itemprop="author" rel="author" href="javascript:;">@_post.Author</a>
+                        <span class="post-time">
+                            Date: <a href="javascript:;">@_post.CreationTime</a>
+                        </span>
+                        <span class="post-category">
+                            Category:<a href="/category/@_post.Category.DisplayName/">@_post.Category.CategoryName</a>
+                        </span>
+                    </div>
+                </header>
+                <div class="post-content" id="content">
+                    @((MarkupString)_post.Html)
+                </div>
+                <section class="post-copyright">
+                    <p class="copyright-item">
+                        <span>Author:</span>
+                        <span>@_post.Author</span>
+                    </p>
+                    <p class="copyright-item">
+                        <span>Permalink:</span>
+                        <span><a href="/post@_post.Url">https://meowv.com/post@_post.Url</a></span>
+                    </p>
+                    <p class="copyright-item">
+                        <span>License:</span>
+                        <span>本文采用<a target="_blank" href="http://creativecommons.org/licenses/by-nc-nd/4.0/"> 知识共享 署名-非商业性使用-禁止演绎(CC BY-NC-ND)国际许可协议 </a>进行许可</span>
+                    </p>
+                </section>
+                <section class="post-tags">
+                    <div>
+                        <span>Tag(s):</span>
+                        <span class="tag">
+                            @if (_post.Tags.Any())
+                            {
+                                @foreach (var tag in _post.Tags)
+                                {
+                                    <a href="/tag/@tag.DisplayName/"># @tag.TagName</a>
+                                }
+                            }
+                        </span>
+                    </div>
+                    <div>
+                        <a @onclick="async () => await Common.BaskAsync()">back</a>
+                        <span>· </span>
+                        <a href="/">home</a>
+                    </div>
+                </section>
+                <section class="post-nav">
+                    @if (_post.Previous != null)
+                    {
+                        <a class="prev"
+                           rel="prev"
+                           @onclick="@(async () => await Common.RenderPage($"/post{_post.Previous.Url}"))"
+                           href="/post@_post.Previous.Url">@_post.Previous.Title</a>
+                    }
+                    @if (_post.Next != null)
+                    {
+                        <a class="next"
+                           rel="next"
+                           @onclick="@(async () => await Common.RenderPage($"/post{_post.Next.Url}"))"
+                           href="/post@_post.Next.Url">
+                            @_post.Next.Title
+                        </a>
+                    }
+                </section>
+            </article>
+        }
+        else
+        {
+            <ErrorTip />
+        }
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int year { get; set; }
+
+    [Parameter]
+    public int month { get; set; }
+
+    [Parameter]
+    public int day { get; set; }
+
+    [Parameter]
+    public string name { get; set; }
+
+    /// <summary>
+    /// URL
+    /// </summary>
+    private string url => $"/{year}/{(month >= 10 ? month.ToString() : $"0{month}")}/{(day >= 10 ? day.ToString() : $"0{day}")}/{name}/";
+
+    /// <summary>
+    /// 文章详情数据
+    /// </summary>
+    private ServiceResult<PostDetailDto> post;
+
+    /// <summary>
+    /// 初始化
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        // 获取数据
+        post = await Http.GetFromJsonAsync<ServiceResult<PostDetailDto>>($"/blog/post?url={url}");
+
+        // TODO:详情页样式问题
+    }
+}
