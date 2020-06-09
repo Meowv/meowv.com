@@ -8,11 +8,21 @@ else
 }
 
 @code {
+    /// <summary>
+    /// 展示内容
+    /// </summary>
     [Parameter]
     public RenderFragment ChildContent { get; set; }
 
+    /// <summary>
+    /// 是否登录
+    /// </summary>
     private bool isLogin { get; set; }
 
+    /// <summary>
+    /// 初始化
+    /// </summary>
+    /// <returns></returns>
     protected override async Task OnInitializedAsync()
     {
         var token = await Common.GetStorageAsync("token");
