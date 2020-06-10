@@ -1,9 +1,11 @@
 ﻿@page "/admin/post"
+@page "/admin/post/{id:int}"
 
 <AdminLayout>
     写/修改 文章
 </AdminLayout>
 
 @code {
-
+    [Parameter]
+    public int Id { get; set; }
 }
