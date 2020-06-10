@@ -110,7 +110,7 @@
     private async Task DeleteAsync(int id)
     {
         // 弹窗确认
-        bool confirmed = await Common.InvokeAsync<bool>("confirm", "真的要干掉这篇该死的文章吗💢💢");
+        bool confirmed = await Common.InvokeAsync<bool>("confirm", "\n💥💢真的要干掉这篇该死的文章吗💢💥");
 
         if (confirmed)
         {
