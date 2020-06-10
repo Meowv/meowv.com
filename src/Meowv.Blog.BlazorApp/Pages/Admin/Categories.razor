@@ -1,9 +1,57 @@
 ﻿@page "/admin/categories"
 
 <AdminLayout>
-    分类管理
+    @if (categories == null)
+    {
+        <Loading />
+    }
+    else
+    {
+        <div class="container">
+            <div class="post-wrap categories">
+                <h2 class="post-title">-&nbsp;Categories&nbsp;-</h2>
+                @if (categories.Success && categories.Result.Any())
+                {
+                    <div class="categories-card">
+                        @foreach (var item in categories.Result)
+                        {
+                            <div class="card-item">
+                                <div class="categories">
+                                    <NavLink title="❌删除">❌</NavLink>
+                                    <NavLink title="📝编辑">📝</NavLink>
+                                    <NavLink target="_blank" href="@($"/category/{item.DisplayName}")">
+                                        <h3>@item.CategoryName</h3>
+                                        <small>(@item.Count)</small>
+                                    </NavLink>
+                                </div>
+                            </div>
+                        }
+                        <div class="card-item">
+                            <div class="categories">
+                                <NavLink>
+                                    <h3>📕~~~ 新增分类 ~~~📕</h3>
+                                </NavLink>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <ErrorTip />
+                }
+            </div>
+        </div>
+    }
 </AdminLayout>
 
 @code {
+    private ServiceResult<IEnumerable<QueryCategoryForAdminDto>> categories;
 
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await Common.GetStorageAsync("token");
+        Http.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+
+        categories = await Http.GetFromJsonAsync<ServiceResult<IEnumerable<QueryCategoryForAdminDto>>>("/blog/admin/categories");
+    }
 }

@@ -1,9 +1,41 @@
 ﻿@page "/admin/tags"
 
 <AdminLayout>
-    标签管理
+    @if (tags == null)
+    {
+        <Loading />
+    }
+    else
+    {
+        <div class="post-wrap tags">
+            <h2 class="post-title">-&nbsp;Tags&nbsp;-</h2>
+            @if (tags.Success && tags.Result.Any())
+            {
+                <div class="tag-cloud-tags">
+                    @foreach (var item in tags.Result)
+                    {
+                        <NavLink title="📝编辑">📝@item.DisplayName<small>(@item.Count)</small><sup title="❌删除">❌</sup></NavLink>
+                    }
+                    <NavLink><h3>📘~~~ 新增标签 ~~~📘</h3></NavLink>
+                </div>
+            }
+            else
+            {
+                <ErrorTip />
+            }
+
+        </div>
+    }
 </AdminLayout>
 
 @code {
+    private ServiceResult<IEnumerable<QueryTagForAdminDto>> tags;
 
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await Common.GetStorageAsync("token");
+        Http.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+
+        tags = await Http.GetFromJsonAsync<ServiceResult<IEnumerable<QueryTagForAdminDto>>>("/blog/admin/tags");
+    }
 }
