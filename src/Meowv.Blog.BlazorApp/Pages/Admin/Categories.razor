@@ -16,7 +16,7 @@
                     {
                         <div class="card-item">
                             <div class="categories">
-                                <NavLink title="❌删除">❌</NavLink>
+                                <NavLink title="❌删除" @onclick="@(async () => await DeleteAsync(item.Id))">❌</NavLink>
                                 <NavLink title="📝编辑">📝</NavLink>
                                 <NavLink target="_blank" href="@($"/category/{item.DisplayName}")">
                                     <h3>@item.CategoryName</h3>
@@ -50,6 +50,38 @@
         var token = await Common.GetStorageAsync("token");
         Http.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
 
-        categories = await Http.GetFromJsonAsync<ServiceResult<IEnumerable<QueryCategoryForAdminDto>>>("/blog/admin/categories");
+        categories = await FetchData();
+    }
+
+    /// <summary>
+    /// 获取数据
+    /// </summary>
+    /// <returns></returns>
+    private async Task<ServiceResult<IEnumerable<QueryCategoryForAdminDto>>> FetchData()
+    {
+        return await Http.GetFromJsonAsync<ServiceResult<IEnumerable<QueryCategoryForAdminDto>>>("/blog/admin/categories");
+    }
+
+    /// <summary>
+    /// 删除分类
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    private async Task DeleteAsync(int id)
+    {
+        // 弹窗确认
+        bool confirmed = await Common.InvokeAsync<bool>("confirm", "\n💥💢真的要干掉这个该死的分类吗💢💥");
+
+        if (confirmed)
+        {
+            var response = await Http.DeleteAsync($"/blog/category?id={id}");
+
+            var result = await response.Content.ReadFromJsonAsync<ServiceResult>();
+
+            if (result.Success)
+            {
+                await FetchData();
+            }
+        }
     }
 }
