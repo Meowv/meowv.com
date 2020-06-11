@@ -6,28 +6,26 @@
 }
 else
 {
-    <div class="container">
-        <div class="post-wrap categories">
-            <h2 class="post-title">-&nbsp;FriendLinks&nbsp;-</h2>
-            <div class="categories-card">
-                @if (friendlinks.Success && friendlinks.Result.Any())
+    <div class="post-wrap categories">
+        <h2 class="post-title">-&nbsp;FriendLinks&nbsp;-</h2>
+        <div class="categories-card">
+            @if (friendlinks.Success && friendlinks.Result.Any())
+            {
+                @foreach (var item in friendlinks.Result)
                 {
-                    @foreach (var item in friendlinks.Result)
-                    {
-                        <div class="card-item">
-                            <div class="categories">
-                                <a target="_blank" href="@item.LinkUrl">
-                                    <h3>@item.Title</h3>
-                                </a>
-                            </div>
+                    <div class="card-item">
+                        <div class="categories">
+                            <a target="_blank" href="@item.LinkUrl">
+                                <h3>@item.Title</h3>
+                            </a>
                         </div>
-                    }
+                    </div>
                 }
-                else
-                {
-                    <ErrorTip />
-                }
-            </div>
+            }
+            else
+            {
+                <ErrorTip />
+            }
         </div>
     </div>
 }

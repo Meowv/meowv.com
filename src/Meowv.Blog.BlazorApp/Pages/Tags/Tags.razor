@@ -6,22 +6,20 @@
 }
 else
 {
-    <div class="container">
-        <div class="post-wrap tags">
-            <h2 class="post-title">-&nbsp;Tags&nbsp;-</h2>
-            <div class="tag-cloud-tags">
-                @if (tags.Success && tags.Result.Any())
+    <div class="post-wrap tags">
+        <h2 class="post-title">-&nbsp;Tags&nbsp;-</h2>
+        <div class="tag-cloud-tags">
+            @if (tags.Success && tags.Result.Any())
+            {
+                @foreach (var item in tags.Result)
                 {
-                    @foreach (var item in tags.Result)
-                    {
-                        <a href="/tag/@item.DisplayName/">@item.TagName<small>(@item.Count)</small></a>
-                    }
+                    <a href="/tag/@item.DisplayName/">@item.TagName<small>(@item.Count)</small></a>
                 }
-                else
-                {
-                    <ErrorTip />
-                }
-            </div>
+            }
+            else
+            {
+                <ErrorTip />
+            }
         </div>
     </div>
 }
