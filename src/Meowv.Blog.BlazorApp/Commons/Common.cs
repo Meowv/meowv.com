@@ -77,7 +77,7 @@ namespace Meowv.Blog.BlazorApp.Commons
         /// <param name="uri"></param>
         /// <param name="forceLoad">true，绕过路由刷新页面</param>
         /// <returns></returns>
-        public async Task RenderPage(string url, bool forceLoad = true)
+        public async Task NavigateTo(string url, bool forceLoad = false)
         {
             _navigationManager.NavigateTo(url, forceLoad);
 

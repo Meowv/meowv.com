@@ -64,14 +64,14 @@ else
                 {
                     <a class="prev"
                        rel="prev"
-                       @onclick="@(async () => await Common.RenderPage($"/post{_post.Previous.Url}"))"
+                       @onclick="@(async () => await Common.NavigateTo($"/post{_post.Previous.Url}"))"
                        href="/post@_post.Previous.Url">@_post.Previous.Title</a>
                 }
                 @if (_post.Next != null)
                 {
                     <a class="next"
                        rel="next"
-                       @onclick="@(async () => await Common.RenderPage($"/post{_post.Next.Url}"))"
+                       @onclick="@(async () => await Common.NavigateTo($"/post{_post.Next.Url}"))"
                        href="/post@_post.Next.Url">
                         @_post.Next.Title
                     </a>

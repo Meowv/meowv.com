@@ -23,7 +23,7 @@
                 await Common.SetStorageAsync("token", _token.Result);
 
                 // 跳转至后台首页
-                await Common.RenderPage("/admin", false);
+                await Common.NavigateTo("/admin");
             }
             else
             {
@@ -64,12 +64,12 @@
                     await Common.SetStorageAsync("token", token.Result);
 
                     // 成功认证授权，跳转至后台管理首页
-                    await Common.RenderPage("/admin", false);
+                    await Common.NavigateTo("/admin");
                 }
                 else
                 {
                     // 没有权限的人，回到首页去吧
-                    await Common.RenderPage("/", false);
+                    await Common.NavigateTo("/");
 
                     // 输出提示信息
                     Console.WriteLine(token.Message);
@@ -78,7 +78,7 @@
             else
             {
                 // 出错了，回到首页去吧
-                await Common.RenderPage("/", false);
+                await Common.NavigateTo("/");
 
                 // 输出提示信息
                 Console.WriteLine(access_token.Message);
@@ -90,7 +90,7 @@
             var loginAddress = await Http.GetFromJsonAsync<ServiceResult<string>>("/auth/url");
 
             // 跳转到登录页面
-            await Common.RenderPage(loginAddress.Result, false);
+            await Common.NavigateTo(loginAddress.Result);
         }
     }
 }
