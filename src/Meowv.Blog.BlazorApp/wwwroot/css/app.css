@@ -1343,10 +1343,6 @@ header label {
     width: 300px;
     height: 30px;
 }
-.box-item-inner {
-    height: 30px;
-    display:inline;
-}
 .box-item button {
     height: 30px;
     width: 100px;
@@ -1355,4 +1351,39 @@ header label {
     position: absolute;
     right: 20px;
     bottom: 20px;
+}
+.box-btn {
+	display: inline-block;
+	height: 30px;
+	line-height: 30px;
+	padding: 0 18px;
+	background-color: #5A9600;
+	color: #fff;
+	white-space: nowrap;
+	text-align: center;
+	font-size: 14px;
+	border: none;
+	border-radius: 2px;
+	cursor: pointer;
+}
+
+button:focus {
+	outline: 0;
+}
+
+.box-btn:hover {
+	opacity: .8;
+	filter: alpha(opacity=80);
+	color: #fff;
+}
+
+.btn-primary {
+	border: 1px solid #C9C9C9;
+	background-color: #fff;
+	color: #555;
+}
+
+.btn-primary:hover {
+	border-color: #5A9600;
+	color: #333;
 }

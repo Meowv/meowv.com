@@ -149,9 +149,14 @@
     {
         var input = new EditCategoryInput()
         {
-            DisplayName = displayName,
-            CategoryName = categoryName
+            DisplayName = displayName.Trim(),
+            CategoryName = categoryName.Trim()
         };
+
+        if (string.IsNullOrEmpty(input.DisplayName) || string.IsNullOrEmpty(input.CategoryName))
+        {
+            return;
+        }
 
         var responseMessage = new HttpResponseMessage();
 
