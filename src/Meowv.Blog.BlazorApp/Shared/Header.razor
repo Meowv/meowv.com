@@ -7,7 +7,8 @@
                 </NavLink>
             </div>
             <div class="menu navbar-right">
-                <NavLink class="menu-item" href="posts" @onclick="@(async () => await Common.RenderPage("posts"))">Posts</NavLink>
+                @*<NavLink class="menu-item" href="posts" @onclick="@(async () => await Common.RenderPage("posts"))">Posts</NavLink>*@
+                <NavLink class="menu-item" href="posts">Posts</NavLink>
                 <NavLink class="menu-item" href="categories">Categories</NavLink>
                 <NavLink class="menu-item" href="tags">Tags</NavLink>
                 <NavLink class="menu-item apps" href="apps">Apps</NavLink>
