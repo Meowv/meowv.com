@@ -17,7 +17,7 @@
                         <div class="card-item">
                             <div class="categories">
                                 <NavLink title="❌删除" @onclick="@(async () => await DeleteAsync(item.Id))">❌</NavLink>
-                                <NavLink title="📝编辑">📝</NavLink>
+                                <NavLink title="📝编辑" @onclick="@(() => ShowBox(item))">📝</NavLink>
                                 <NavLink target="_blank" href="@($"/category/{item.DisplayName}")">
                                     <h3>@item.CategoryName</h3>
                                     <small>(@item.Count)</small>
@@ -28,7 +28,7 @@
                     <div class="card-item">
                         <div class="categories">
                             <NavLink>
-                                <h3>📕~~~ 新增分类 ~~~📕</h3>
+                                <h3 @onclick="@(() => ShowBox())">📕~~~ 新增分类 ~~~📕</h3>
                             </NavLink>
                         </div>
                     </div>
@@ -39,12 +39,43 @@
                 <ErrorTip />
             }
         </div>
+
+        <Box OnClickCallback="@SubmitAsync" IsHidden="@IsHidden">
+            <div class="box-item">
+                <b>DisplayName：</b><input type="text" @bind="@displayName" @bind:event="oninput" />
+            </div>
+            <div class="box-item">
+                <b>CategoryName：</b><input type="text" @bind="@categoryName" @bind:event="oninput" />
+            </div>
+        </Box>
     }
 </AdminLayout>
 
 @code {
+    /// <summary>
+    /// 默认隐藏Box
+    /// </summary>
+    private bool IsHidden = true;
+
+    /// <summary>
+    /// 新增或者更新时候的分类字段值
+    /// </summary>
+    private string categoryName, displayName;
+
+    /// <summary>
+    /// 更新分类的Id值
+    /// </summary>
+    private int id;
+
+    /// <summary>
+    /// API返回的分类列表数据类型
+    /// </summary>
     private ServiceResult<IEnumerable<QueryCategoryForAdminDto>> categories;
 
+    /// <summary>
+    /// 初始化
+    /// </summary>
+    /// <returns></returns>
     protected override async Task OnInitializedAsync()
     {
         var token = await Common.GetStorageAsync("token");
@@ -69,6 +100,8 @@
     /// <returns></returns>
     private async Task DeleteAsync(int id)
     {
+        IsHidden = true;
+
         // 弹窗确认
         bool confirmed = await Common.InvokeAsync<bool>("confirm", "\n💥💢真的要干掉这个该死的分类吗💢💥");
 
@@ -80,8 +113,59 @@
 
             if (result.Success)
             {
-                await FetchData();
+                categories = await FetchData();
             }
         }
+    }
+
+    /// <summary>
+    /// 显示box，绑定字段
+    /// </summary>
+    /// <param name="dto"></param>
+    private void ShowBox(QueryCategoryForAdminDto dto = null)
+    {
+        IsHidden = false;
+        id = 0;
+
+        // 新增
+        if (dto == null)
+        {
+            displayName = null;
+            categoryName = null;
+        }
+        else // 更新
+        {
+            id = dto.Id;
+            displayName = dto.DisplayName;
+            categoryName = dto.CategoryName;
+        }
+    }
+
+    /// <summary>
+    /// 确认按钮点击事件
+    /// </summary>
+    /// <returns></returns>
+    private async Task SubmitAsync()
+    {
+        var input = new EditCategoryInput()
+        {
+            DisplayName = displayName,
+            CategoryName = categoryName
+        };
+
+        var responseMessage = new HttpResponseMessage();
+
+        if (id > 0)
+            responseMessage = await Http.PutAsJsonAsync($"/blog/category?id={id}", input);
+        else
+            responseMessage = await Http.PostAsJsonAsync("/blog/category", input);
+
+        var result = await responseMessage.Content.ReadFromJsonAsync<ServiceResult>();
+        if (result.Success)
+        {
+            categories = await FetchData();
+        }
+
+        IsHidden = true;
     }
 }

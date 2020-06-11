@@ -1,0 +1,39 @@
+﻿@if (!IsHidden)
+{
+    <div class="shadow"></div>
+    <div class="box">
+        <div class="close" @onclick="Close">❌</div>
+        <div class="box-content">
+            @ChildContent
+            <div class="box-item box-item-btn">
+                <button @onclick="OnClickCallback">确定</button>
+                <button @onclick="Close">取消</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    /// <summary>
+    /// 组件内容
+    /// </summary>
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+
+    /// <summary>
+    /// 是否隐藏
+    /// </summary>
+    [Parameter]
+    public bool IsHidden { get; set; }
+
+    /// <summary>
+    /// 确认按钮点击事件回调
+    /// </summary>
+    [Parameter]
+    public EventCallback<MouseEventArgs> OnClickCallback { get; set; }
+
+    /// <summary>
+    /// 关闭Box
+    /// </summary>
+    private void Close() => IsHidden = true;
+}

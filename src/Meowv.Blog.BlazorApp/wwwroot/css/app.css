@@ -1298,3 +1298,61 @@ header label {
 .soul-btn:hover {
 	box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24),0 17px 50px 0 rgba(0,0,0,0.19);
 }
+
+.box {
+    width: 600px;
+    height: 300px;
+    border-radius: 5px;
+    background-color: #fff;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-top: -150px;
+    margin-left: -300px;
+    z-index: 997;
+}
+.close {
+    position: absolute;
+    right: 3px;
+    top: 2px;
+    cursor: pointer;
+}
+.shadow {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 996;
+    background-color: #000;
+    opacity: 0.3;
+}
+.box-content {
+    width: 90%;
+    margin: 20px auto;
+}
+.box-item {
+    margin-top: 10px;
+    height: 30px;
+}
+.box-item b {
+    width: 130px;
+    display: inline-block;
+}
+.box-item input {
+    width: 300px;
+    height: 30px;
+}
+.box-item-inner {
+    height: 30px;
+    display:inline;
+}
+.box-item button {
+    height: 30px;
+    width: 100px;
+}
+.box-item-btn {
+    position: absolute;
+    right: 20px;
+    bottom: 20px;
+}
