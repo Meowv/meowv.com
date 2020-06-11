@@ -14,9 +14,13 @@
                 <div class="tag-cloud-tags">
                     @foreach (var item in tags.Result)
                     {
-                        <NavLink title="📝编辑">📝@item.DisplayName<small>(@item.Count)</small><sup title="❌删除">❌</sup></NavLink>
+                        <NavLink title="📝编辑" @onclick="@(() => ShowBox(item))">
+                            📝@item.TagName
+                            <small>(@item.Count)</small>
+                            <sup title="❌删除" @onclick="@(async () => await DeleteAsync(item.Id))">❌</sup>
+                        </NavLink>
                     }
-                    <NavLink><h3>📘~~~ 新增标签 ~~~📘</h3></NavLink>
+                    <NavLink><h3 @onclick="@(() => ShowBox())">📘~~~ 新增标签 ~~~📘</h3></NavLink>
                 </div>
             }
             else
@@ -24,17 +28,138 @@
                 <ErrorTip />
             }
         </div>
+
+        <Box OnClickCallback="@SubmitAsync" IsHidden="@IsHidden">
+            <div class="box-item">
+                <b>DisplayName：</b><input type="text" @bind="@displayName" @bind:event="oninput" />
+            </div>
+            <div class="box-item">
+                <b>TagName：</b><input type="text" @bind="@tagName" @bind:event="oninput" />
+            </div>
+        </Box>
     }
 </AdminLayout>
 
 @code {
+    /// <summary>
+    /// 默认隐藏Box
+    /// </summary>
+    private bool IsHidden = true;
+
+    /// <summary>
+    /// 新增或者更新时候的标签字段值
+    /// </summary>
+    private string tagName, displayName;
+
+    /// <summary>
+    /// 更新标签的Id值
+    /// </summary>
+    private int id;
+
+    /// <summary>
+    /// API返回的标签列表数据类型
+    /// </summary>
     private ServiceResult<IEnumerable<QueryTagForAdminDto>> tags;
 
+    /// <summary>
+    /// 初始化
+    /// </summary>
+    /// <returns></returns>
     protected override async Task OnInitializedAsync()
     {
         var token = await Common.GetStorageAsync("token");
         Http.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
 
-        tags = await Http.GetFromJsonAsync<ServiceResult<IEnumerable<QueryTagForAdminDto>>>("/blog/admin/tags");
+        tags = await FetchData();
+    }
+
+    /// <summary>
+    /// 获取数据
+    /// </summary>
+    /// <returns></returns>
+    private async Task<ServiceResult<IEnumerable<QueryTagForAdminDto>>> FetchData()
+    {
+        return await Http.GetFromJsonAsync<ServiceResult<IEnumerable<QueryTagForAdminDto>>>("/blog/admin/tags");
+    }
+
+    /// <summary>
+    /// 删除标签
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    private async Task DeleteAsync(int id)
+    {
+        IsHidden = true;
+
+        // 弹窗确认
+        bool confirmed = await Common.InvokeAsync<bool>("confirm", "\n💥💢真的要干掉这个该死的标签吗💢💥");
+
+        if (confirmed)
+        {
+            var response = await Http.DeleteAsync($"/blog/tag?id={id}");
+
+            var result = await response.Content.ReadFromJsonAsync<ServiceResult>();
+
+            if (result.Success)
+            {
+                tags = await FetchData();
+            }
+        }
+    }
+
+    /// <summary>
+    /// 显示box，绑定字段
+    /// </summary>
+    /// <param name="dto"></param>
+    private void ShowBox(QueryTagForAdminDto dto = null)
+    {
+        IsHidden = false;
+        id = 0;
+
+        // 新增
+        if (dto == null)
+        {
+            displayName = null;
+            tagName = null;
+        }
+        else // 更新
+        {
+            id = dto.Id;
+            displayName = dto.DisplayName;
+            tagName = dto.TagName;
+        }
+    }
+
+    /// <summary>
+    /// 确认按钮点击事件
+    /// </summary>
+    /// <returns></returns>
+    private async Task SubmitAsync()
+    {
+        var input = new EditTagInput()
+        {
+            DisplayName = displayName.Trim(),
+            TagName = tagName.Trim()
+        };
+
+        if (string.IsNullOrEmpty(input.DisplayName) || string.IsNullOrEmpty(input.TagName))
+        {
+            return;
+        }
+
+        var responseMessage = new HttpResponseMessage();
+
+        if (id > 0)
+            responseMessage = await Http.PutAsJsonAsync($"/blog/tag?id={id}", input);
+        else
+            responseMessage = await Http.PostAsJsonAsync("/blog/tag", input);
+
+        var result = await responseMessage.Content.ReadFromJsonAsync<ServiceResult>();
+        if (result.Success)
+        {
+            tags = await FetchData();
+        }
+
+        IsHidden = true;
     }
 }
