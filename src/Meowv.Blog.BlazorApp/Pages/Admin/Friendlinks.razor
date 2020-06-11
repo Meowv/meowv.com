@@ -1,9 +1,54 @@
 ﻿@page "/admin/friendlinks"
 
 <AdminLayout>
-    友链管理
+    @if (friendlinks == null)
+    {
+        <Loading />
+    }
+    else
+    {
+        <div class="post-wrap categories">
+            <h2 class="post-title">-&nbsp;FriendLinks&nbsp;-</h2>
+            @if (friendlinks.Success && friendlinks.Result.Any())
+            {
+                <div class="categories-card">
+                    @foreach (var item in friendlinks.Result)
+                    {
+                        <div class="card-item">
+                            <div class="categories">
+                                <NavLink title="❌删除">❌</NavLink>
+                                <NavLink title="📝编辑">📝</NavLink>
+                                <NavLink target="_blank" href="@item.LinkUrl">
+                                    <h3>@item.Title</h3>
+                                </NavLink>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="card-item">
+                    <div class="categories">
+                        <NavLink>
+                            <h3>📒~~~ 新增分类 ~~~📒</h3>
+                        </NavLink>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <ErrorTip />
+            }
+        </div>
+    }
 </AdminLayout>
 
 @code {
+    private ServiceResult<IEnumerable<QueryFriendLinkForAdminDto>> friendlinks;
 
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await Common.GetStorageAsync("token");
+        Http.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+
+        friendlinks = await Http.GetFromJsonAsync<ServiceResult<IEnumerable<QueryFriendLinkForAdminDto>>>("/blog/admin/friendlinks");
+    }
 }
