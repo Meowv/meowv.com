@@ -1,4 +1,4 @@
-﻿@if (!IsHidden)
+﻿@if (Open)
 {
     <div class="shadow"></div>
     <div class="box">
@@ -24,7 +24,7 @@
     /// 是否隐藏
     /// </summary>
     [Parameter]
-    public bool IsHidden { get; set; }
+    public bool Open { get; set; } = true;
 
     /// <summary>
     /// 确认按钮点击事件回调
@@ -35,5 +35,5 @@
     /// <summary>
     /// 关闭Box
     /// </summary>
-    private void Close() => IsHidden = true;
+    private void Close() => Open = false;
 }

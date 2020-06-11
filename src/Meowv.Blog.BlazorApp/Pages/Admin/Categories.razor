@@ -38,7 +38,7 @@
             }
         </div>
 
-        <Box OnClickCallback="@SubmitAsync" IsHidden="@IsHidden">
+        <Box OnClickCallback="@SubmitAsync" Open="@Open">
             <div class="box-item">
                 <b>DisplayName：</b><input type="text" @bind="@displayName" @bind:event="oninput" />
             </div>
@@ -53,7 +53,7 @@
     /// <summary>
     /// 默认隐藏Box
     /// </summary>
-    private bool IsHidden = true;
+    private bool Open { get; set; } = false;
 
     /// <summary>
     /// 新增或者更新时候的分类字段值
@@ -98,8 +98,6 @@
     /// <returns></returns>
     private async Task DeleteAsync(int id)
     {
-        IsHidden = true;
-
         // 弹窗确认
         bool confirmed = await Common.InvokeAsync<bool>("confirm", "\n💥💢真的要干掉这个该死的分类吗💢💥");
 
@@ -122,7 +120,7 @@
     /// <param name="dto"></param>
     private void ShowBox(QueryCategoryForAdminDto dto = null)
     {
-        IsHidden = false;
+        Open = true;
         id = 0;
 
         // 新增
@@ -167,8 +165,7 @@
         if (result.Success)
         {
             categories = await FetchData();
+            Open = false;
         }
-
-        IsHidden = true;
     }
 }

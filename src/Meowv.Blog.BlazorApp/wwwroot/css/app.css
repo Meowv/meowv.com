@@ -1144,10 +1144,6 @@ header label {
 	height: 30px;
 }
 
-.tag-cloud-tags-extend {
-	padding-top: 0;
-}
-
 .hidden {
 	display: none;
 }
@@ -1304,7 +1300,7 @@ header label {
     height: 300px;
     border-radius: 5px;
     background-color: #fff;
-    position: absolute;
+    position: fixed;
     top: 50%;
     left: 50%;
     margin-top: -150px;
@@ -1320,7 +1316,7 @@ header label {
 .shadow {
     width: 100%;
     height: 100%;
-    position: absolute;
+    position: fixed;
     left: 0;
     top: 0;
     z-index: 996;

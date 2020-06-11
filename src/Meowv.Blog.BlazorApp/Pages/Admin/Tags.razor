@@ -11,16 +11,25 @@
             <h2 class="post-title">-&nbsp;Tags&nbsp;-</h2>
             @if (tags.Success && tags.Result.Any())
             {
-                <div class="tag-cloud-tags">
+                <div class="categories-card">
                     @foreach (var item in tags.Result)
                     {
-                        <NavLink title="📝编辑" @onclick="@(() => ShowBox(item))">
-                            📝@item.TagName
-                            <small>(@item.Count)</small>
-                            <sup title="❌删除" @onclick="@(async () => await DeleteAsync(item.Id))">❌</sup>
-                        </NavLink>
+                        <div class="card-item">
+                            <div class="categories">
+                                <NavLink title="❌删除" @onclick="@(async () => await DeleteAsync(item.Id))">❌</NavLink>
+                                <NavLink title="📝编辑" @onclick="@(() => ShowBox(item))">📝</NavLink>
+                                <NavLink target="_blank" href="@($"/tag/{item.DisplayName}")">
+                                    <h3>@item.TagName</h3>
+                                    <small>(@item.Count)</small>
+                                </NavLink>
+                            </div>
+                        </div>
                     }
-                    <NavLink><h3 @onclick="@(() => ShowBox())">📘~~~ 新增标签 ~~~📘</h3></NavLink>
+                    <div class="card-item">
+                        <div class="categories">
+                            <NavLink><h3 @onclick="@(() => ShowBox())">📘~~~ 新增标签 ~~~📘</h3></NavLink>
+                        </div>
+                    </div>
                 </div>
             }
             else
@@ -29,7 +38,7 @@
             }
         </div>
 
-        <Box OnClickCallback="@SubmitAsync" IsHidden="@IsHidden">
+        <Box OnClickCallback="@SubmitAsync" Open="@Open">
             <div class="box-item">
                 <b>DisplayName：</b><input type="text" @bind="@displayName" @bind:event="oninput" />
             </div>
@@ -44,7 +53,7 @@
     /// <summary>
     /// 默认隐藏Box
     /// </summary>
-    private bool IsHidden = true;
+    private bool Open { get; set; } = false;
 
     /// <summary>
     /// 新增或者更新时候的标签字段值
@@ -89,8 +98,6 @@
     /// <returns></returns>
     private async Task DeleteAsync(int id)
     {
-        IsHidden = true;
-
         // 弹窗确认
         bool confirmed = await Common.InvokeAsync<bool>("confirm", "\n💥💢真的要干掉这个该死的标签吗💢💥");
 
@@ -113,7 +120,7 @@
     /// <param name="dto"></param>
     private void ShowBox(QueryTagForAdminDto dto = null)
     {
-        IsHidden = false;
+        Open = true;
         id = 0;
 
         // 新增
@@ -158,8 +165,7 @@
         if (result.Success)
         {
             tags = await FetchData();
+            Open = false;
         }
-
-        IsHidden = true;
     }
 }
