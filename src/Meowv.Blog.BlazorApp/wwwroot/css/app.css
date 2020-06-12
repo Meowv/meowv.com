@@ -1340,6 +1340,7 @@ header label {
     display: inline-block;
 }
 .box-item input {
+	padding-left: 5px;
     width: 300px;
     height: 30px;
 }
@@ -1400,6 +1401,7 @@ button:focus {
 .post-box-item input {
     width: 49.5%;
     height: 30px;
+	padding-left: 5px;
     border: 1px solid #ddd;
 }
 .post-box-item input:nth-child(1) {
@@ -1409,4 +1411,20 @@ button:focus {
 .post-box-item input:nth-child(2) {
     float: right;
     margin-left: 1px;
+}
+
+.dark-theme .post-box-item input {
+	background: #2C2827;
+	color: #777;
+	border: 1px solid #1a1a17;
+}
+
+.dark-theme .box {
+	background: #292a2d;
+}
+
+.dark-theme .box-item input {
+	background: #292a2d;
+	color: #777;
+	border: 1px solid #1a1a17;
 }

@@ -1,6 +1,8 @@
 ﻿@page "/admin/post"
 @page "/admin/post/{id:int}"
 
+<link href="./editor.md/css/editormd.css" rel="stylesheet" />
+
 @*<AdminLayout>*@
 @if (isLoading)
 {
@@ -18,13 +20,27 @@ else
             <input type="text" placeholder="时间" autocomplete="off" @bind="@input.CreationTime" @bind:format="yyyy-MM-dd HH:mm:sss" @bind:event="oninput" />
         </div>
         <div id="editor">
-            ...
+            <textarea style="display:none;">@input.Markdown</textarea>
         </div>
+
+        <Box OnClickCallback="@SubmitAsync" Open="@Open">
+            <div class="box-item">
+                <b>DisplayName：</b>
+            </div>
+            <div class="box-item">
+                <b>CategoryName：</b>
+            </div>
+        </Box>
     </div>
 }
 @*</AdminLayout>*@
 
 @code {
+    /// <summary>
+    /// 默认隐藏Box
+    /// </summary>
+    private bool Open { get; set; } = false;
+
     /// <summary>
     /// 修改时的文章Id
     /// </summary>
@@ -75,7 +91,18 @@ else
             };
         }
 
+        await Common.InvokeAsync("window.func.renderEditor");
+
         // 关闭加载
         isLoading = !isLoading;
+    }
+
+    /// <summary>
+    /// 确认按钮点击事件
+    /// </summary>
+    /// <returns></returns>
+    private async Task SubmitAsync()
+    {
+        
     }
 }

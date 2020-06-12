@@ -84,5 +84,8 @@
         await Common.SetStorageAsync("theme", currentTheme);
 
         await Common.InvokeAsync("window.func.switchTheme");
+
+        // TODO:...
+        await Common.SwitchEditorTheme(currentTheme);
     }
 }

@@ -63,6 +63,20 @@ namespace Meowv.Blog.BlazorApp.Commons
         }
 
         /// <summary>
+        /// 切换编辑器主题
+        /// </summary>
+        /// <param name="currentTheme"></param>
+        /// <returns></returns>
+        public async Task SwitchEditorTheme(string currentTheme)
+        {
+            var editorTheme = currentTheme == "Light" ? "default" : "dark";
+
+            await SetStorageAsync("editorTheme", editorTheme);
+
+            await InvokeAsync("window.func.switchEditorTheme");
+        }
+
+        /// <summary>
         /// 后退
         /// </summary>
         /// <returns></returns>
