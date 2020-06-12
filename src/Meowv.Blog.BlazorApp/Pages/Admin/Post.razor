@@ -1,11 +1,81 @@
 ﻿@page "/admin/post"
 @page "/admin/post/{id:int}"
 
-<AdminLayout>
-    写/修改 文章
-</AdminLayout>
+@*<AdminLayout>*@
+@if (isLoading)
+{
+    <Loading />
+}
+else
+{
+    <div class="post-box">
+        <div class="post-box-item">
+            <input type="text" placeholder="标题" autocomplete="off" @bind="@input.Title" @bind:event="oninput" />
+            <input type="text" placeholder="作者" autocomplete="off" @bind="@input.Author" @bind:event="oninput" />
+        </div>
+        <div class="post-box-item">
+            <input type="text" placeholder="URL" autocomplete="off" @bind="@input.Url" @bind:event="oninput" />
+            <input type="text" placeholder="时间" autocomplete="off" @bind="@input.CreationTime" @bind:format="yyyy-MM-dd HH:mm:sss" @bind:event="oninput" />
+        </div>
+        <div id="editor">
+            ...
+        </div>
+    </div>
+}
+@*</AdminLayout>*@
 
 @code {
+    /// <summary>
+    /// 修改时的文章Id
+    /// </summary>
     [Parameter]
-    public int Id { get; set; }
+    public int? Id { get; set; }
+
+    /// <summary>
+    /// 默认显示加载中
+    /// </summary>
+    private bool isLoading = true;
+
+    /// <summary>
+    /// 文章新增或者修改输入参数
+    /// </summary>
+    private PostForAdminDto input;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await Common.GetStorageAsync("token");
+        Http.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+
+        if (Id.HasValue)
+        {
+            var post = await Http.GetFromJsonAsync<ServiceResult<PostForAdminDto>>($"/blog/admin/post?id={Id}");
+
+            if (post.Success)
+            {
+                var _post = post.Result;
+                input = new PostForAdminDto
+                {
+                    Title = _post.Title,
+                    Author = _post.Author,
+                    Url = _post.Url,
+                    Html = _post.Html,
+                    Markdown = _post.Markdown,
+                    CategoryId = _post.CategoryId,
+                    Tags = _post.Tags,
+                    CreationTime = _post.CreationTime
+                };
+            }
+        }
+        else
+        {
+            input = new PostForAdminDto()
+            {
+                Author = "阿星Plus",
+                CreationTime = DateTime.Now
+            };
+        }
+
+        // 关闭加载
+        isLoading = !isLoading;
+    }
 }

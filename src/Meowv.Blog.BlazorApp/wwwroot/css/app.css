@@ -93,6 +93,10 @@ input {
 	overflow: visible;
 }
 
+input:focus {
+    outline: none;
+}
+
 button,
 select {
 	text-transform: none;
@@ -1382,4 +1386,27 @@ button:focus {
 .btn-primary:hover {
 	border-color: #5A9600;
 	color: #333;
+}
+
+.post-box {
+    width: 98%;
+    margin: 27px auto 0;
+}
+.post-box-item {
+    width: 100%;
+    height: 30px;
+    margin-bottom: 5px;
+}
+.post-box-item input {
+    width: 49.5%;
+    height: 30px;
+    border: 1px solid #ddd;
+}
+.post-box-item input:nth-child(1) {
+    float: left;
+    margin-right: 1px;
+}
+.post-box-item input:nth-child(2) {
+    float: right;
+    margin-left: 1px;
 }
