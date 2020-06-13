@@ -98,6 +98,8 @@
     /// <returns></returns>
     private async Task DeleteAsync(int id)
     {
+        Open = false;
+
         // 弹窗确认
         bool confirmed = await Common.InvokeAsync<bool>("confirm", "\n💥💢真的要干掉这个该死的分类吗💢💥");
 
