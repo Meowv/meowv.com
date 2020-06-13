@@ -76,6 +76,17 @@ func = {
             });
         });
     },
+    renderMarkdown: async function () {
+        await this._loadScript('./editor.md/lib/zepto.min.js').then(function () {
+            func._loadScript('./editor.md/lib/marked.min.js').then(function () {
+                func._loadScript('./editor.md/lib/prettify.min.js').then(function () {
+                    func._loadScript('./editor.md/editormd.js').then(function () {
+                        editormd.markdownToHTML("content");
+                    });
+                });
+            });
+        });
+    },
     _shoowBox: function () {
         DotNet.invokeMethodAsync('Meowv.Blog.BlazorApp', 'showbox');
     },

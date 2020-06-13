@@ -77,15 +77,6 @@ namespace Meowv.Blog.BlazorApp.Commons
         }
 
         /// <summary>
-        /// 后退
-        /// </summary>
-        /// <returns></returns>
-        public async Task BaskAsync()
-        {
-            await InvokeAsync("window.history.back");
-        }
-
-        /// <summary>
         /// 跳转指定URL
         /// </summary>
         /// <param name="uri"></param>

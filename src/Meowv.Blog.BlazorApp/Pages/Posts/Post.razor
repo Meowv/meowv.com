@@ -1,5 +1,7 @@
 ﻿@page "/post/{year:int}/{month:int}/{day:int}/{name}"
 
+<link href="./editor.md/css/editormd.preview.css" rel="stylesheet" />
+
 @if (post == null)
 {
     <Loading />
@@ -54,7 +56,7 @@ else
                     </span>
                 </div>
                 <div>
-                    <a @onclick="async () => await Common.BaskAsync()">back</a>
+                    <a @onclick="@(async () => await Common.NavigateTo("/posts"))">back</a>
                     <span>· </span>
                     <a href="/">home</a>
                 </div>
@@ -64,14 +66,14 @@ else
                 {
                     <a class="prev"
                        rel="prev"
-                       @onclick="@(async () => await Common.NavigateTo($"/post{_post.Previous.Url}"))"
+                       @onclick="@(async () => await FetchData(_post.Previous.Url))"
                        href="/post@_post.Previous.Url">@_post.Previous.Title</a>
                 }
                 @if (_post.Next != null)
                 {
                     <a class="next"
                        rel="next"
-                       @onclick="@(async () => await Common.NavigateTo($"/post{_post.Next.Url}"))"
+                       @onclick="@(async () => await FetchData(_post.Next.Url))"
                        href="/post@_post.Next.Url">
                         @_post.Next.Title
                     </a>
@@ -113,9 +115,17 @@ else
     /// </summary>
     protected override async Task OnInitializedAsync()
     {
-        // 获取数据
-        post = await Http.GetFromJsonAsync<ServiceResult<PostDetailDto>>($"/blog/post?url={url}");
+        await FetchData(url);
+    }
 
-        // TODO:详情页样式问题
+    /// <summary>
+    /// 请求数据，渲染页面
+    /// </summary>
+    /// <param name="url"></param>
+    /// <returns></returns>
+    private async Task FetchData(string url, bool isPostNav = false)
+    {
+        post = await Http.GetFromJsonAsync<ServiceResult<PostDetailDto>>($"/blog/post?url={url}");
+        await Common.InvokeAsync("window.func.renderMarkdown");
     }
 }

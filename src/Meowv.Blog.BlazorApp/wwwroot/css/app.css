@@ -458,7 +458,7 @@ header label {
 .post-wrap {
     position: relative;
     width: 100%;
-    max-width: 1024px;
+    max-width: 1200px;
     margin: 0 auto;
     padding-top: 2rem;
 }
@@ -554,6 +554,7 @@ header label {
 }
 .post-wrap .post-meta {
     color: rgba(85, 85, 85, 0.529) !important;
+    border-bottom: 1px solid #e8e8e8;
 }
 .dark-theme .post-wrap .post-meta {
     color: #87878d !important;
@@ -571,11 +572,13 @@ header label {
     color: #fff;
 }
 .post-content {
-    padding-top: 2rem;
-    text-align: justify;
+    text-align: justify !important;
+    padding: 0 !important;
+    font-size: 16px;
+    padding-top: 2rem !important;
 }
 .post-copyright {
-    margin-top: 5rem;
+    margin-top: 2rem;
     border-top: 1px solid #e8e8e8;
     border-bottom: 1px solid #e8e8e8;
 }
@@ -873,6 +876,7 @@ header label {
 }
 .dark-theme .post-content p code, .dark-theme .post-content ul li code {
     background: #292a2d !important;
+    border: 1px solid #777;
 }
 .apps {
     color: red;
@@ -1162,4 +1166,47 @@ button:focus {
     background: #292a2d;
     color: #777;
     border: 1px solid #1a1a17;
+}
+.dark-theme .wrapper .main .container article .post-content pre {
+    background: #1A1817;
+    border: none;
+}
+.dark-theme .wrapper .main .container article .post-content pre .linenums li {
+    background-color: transparent;
+}
+.dark-theme .wrapper .main .container article .post-content pre .linenums li code span.pln {
+    color: #999;
+}
+.dark-theme .wrapper .main .container article .post-content pre .linenums li code span.str {
+    color: #080;
+}
+.dark-theme .wrapper .main .container article .post-content pre .linenums li code span.kwd {
+    color: #ff9900;
+}
+.dark-theme .wrapper .main .container article .post-content pre .linenums li code span.com {
+    color: #080;
+}
+.dark-theme .wrapper .main .container article .post-content pre .linenums li code span.typ {
+    color: #5A9600;
+}
+.dark-theme .wrapper .main .container article .post-content pre .linenums li code span.lit {
+    color: #066;
+}
+.dark-theme .wrapper .main .container article .post-content pre .linenums li code span.pun, .dark-theme .wrapper .main .container article .post-content pre .linenums li code span.opn, .dark-theme .wrapper .main .container article .post-content pre .linenums li code span.clo {
+    color: #660;
+}
+.dark-theme .wrapper .main .container article .post-content pre .linenums li code span.tag {
+    color: #ff9900;
+}
+.dark-theme .wrapper .main .container article .post-content pre .linenums li code span.atn {
+    color: #6C95F5;
+}
+.dark-theme .wrapper .main .container article .post-content pre .linenums li code span.atv {
+    color: #080;
+}
+.dark-theme .wrapper .main .container article .post-content pre .linenums li code span.dec, .dark-theme .wrapper .main .container article .post-content pre .linenums li code span.var {
+    color: #008BA7;
+}
+.dark-theme .wrapper .main .container article .post-content pre .linenums li code span.fun {
+    color: red;
 }
