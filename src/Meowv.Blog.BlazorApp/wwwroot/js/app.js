@@ -1,5 +1,24 @@
 ﻿var func = window.func || {}, editor;
 
+navigator.serviceWorker.register('service-worker.js');
+
+(function (l) {
+    if (l.search) {
+        var q = {};
+        l.search.slice(1).split('&').forEach(function (v) {
+            var a = v.split('=');
+            q[a[0]] = a.slice(1).join('=').replace(/~and~/g, '&');
+        });
+        if (q.p !== undefined) {
+            window.history.replaceState(null, null,
+                l.pathname.slice(0, -1) + (q.p || '') +
+                (q.q ? ('?' + q.q) : '') +
+                l.hash
+            );
+        }
+    }
+}(window.location));
+
 func = {
     setStorage: function (name, value) {
         localStorage.setItem(name, value);
@@ -27,7 +46,7 @@ func = {
             func._loadScript('./editor.md/editormd.js').then(function () {
                 editor = editormd("editor", {
                     width: "100%",
-                    height: 640,
+                    height: 700,
                     path: './editor.md/lib/',
                     codeFold: true,
                     saveHTMLToTextarea: true,
@@ -44,13 +63,23 @@ func = {
                         save: "fa-check"
                     },
                     toolbarHandlers: {
-                        save: function (cm, icon, cursor, selection) {
-                            // TODO:如何通知后端我点了这个按钮。
+                        save: function () {
+                            func._shoowBox();
                         }
+                    },
+                    onload: function () {
+                        this.addKeyMap({
+                            "Ctrl-S": function () {
+                                func._shoowBox();
+                            }
+                        });
                     }
                 });
             });
         });
+    },
+    _shoowBox: function () {
+        DotNet.invokeMethodAsync('Meowv.Blog.BlazorApp', 'showbox');
     },
     _loadScript: async function (url) {
         let response = await fetch(url);

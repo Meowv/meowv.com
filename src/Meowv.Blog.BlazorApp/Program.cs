@@ -16,8 +16,8 @@ namespace Meowv.Blog.BlazorApp
 
             var baseAddress = "https://localhost";
 
-            if (builder.HostEnvironment.IsProduction())
-                baseAddress = "https://api.meowv.com";
+            //if (builder.HostEnvironment.IsProduction())
+            //    baseAddress = "https://api.meowv.com";
 
             builder.Services.AddTransient(sp => new HttpClient
             {
