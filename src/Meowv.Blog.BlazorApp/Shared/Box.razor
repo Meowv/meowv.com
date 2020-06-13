@@ -6,7 +6,7 @@
         <div class="box-content">
             @ChildContent
             <div class="box-item box-item-btn">
-                <button class="box-btn" @onclick="OnClickCallback">确定</button>
+                <button class="box-btn" @onclick="OnClickCallback">@ButtonText</button>
                 <button class="box-btn btn-primary" @onclick="Close">取消</button>
             </div>
         </div>
@@ -25,6 +25,12 @@
     /// </summary>
     [Parameter]
     public bool Open { get; set; } = true;
+
+    /// <summary>
+    /// 按钮文字
+    /// </summary>
+    [Parameter]
+    public string ButtonText { get; set; } = "确定";
 
     /// <summary>
     /// 确认按钮点击事件回调
