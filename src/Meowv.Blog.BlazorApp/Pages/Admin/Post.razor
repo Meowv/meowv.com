@@ -137,6 +137,8 @@
     /// </summary>
     private async Task ChangeOpenStatus()
     {
+        Open = true;
+
         var markdown = await Common.InvokeAsync<string>("editor.getMarkdown");
         var html = await Common.InvokeAsync<string>("editor.getHTML");
 
@@ -149,8 +151,6 @@
 
         input.Html = html;
         input.Markdown = markdown;
-
-        Open = true;
 
         StateHasChanged();
     }
@@ -197,6 +197,8 @@
     /// <returns></returns>
     private async Task Alert()
     {
+        Open = false;
+
         await Common.InvokeAsync("alert", "\n💥💢好像漏了点什么吧💢💥");
         return;
     }
