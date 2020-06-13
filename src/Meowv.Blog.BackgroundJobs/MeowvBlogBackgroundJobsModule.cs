@@ -16,12 +16,20 @@ namespace Meowv.Blog.BackgroundJobs
         {
             context.Services.AddHangfire(config =>
             {
-                config.UseStorage(
-                    new MySqlStorage(AppSettings.ConnectionStrings,
-                    new MySqlStorageOptions
-                    {
-                        TablePrefix = MeowvBlogConsts.DbTablePrefix + "hangfire"
-                    }));
+                if (AppSettings.EnableDb == "MySQL")
+                {
+                    config.UseStorage(
+                        new MySqlStorage(AppSettings.ConnectionStrings,
+                        new MySqlStorageOptions
+                        {
+                            TablePrefix = MeowvBlogConsts.DbTablePrefix + "hangfire"
+                        }));
+
+                }
+                else if (AppSettings.EnableDb == "Sqlite")
+                {
+                    // TODO:...
+                }
             });
         }
 

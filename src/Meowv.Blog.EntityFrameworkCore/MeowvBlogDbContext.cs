@@ -6,7 +6,8 @@ using Volo.Abp.EntityFrameworkCore;
 
 namespace Meowv.Blog.EntityFrameworkCore
 {
-    [ConnectionStringName("MySql")]
+    //[ConnectionStringName("MySql")]
+    [ConnectionStringName("Sqlite")]
     public class MeowvBlogDbContext : AbpDbContext<MeowvBlogDbContext>
     {
         public MeowvBlogDbContext(DbContextOptions<MeowvBlogDbContext> options) : base(options)

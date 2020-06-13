@@ -12,7 +12,8 @@ namespace Meowv.Blog.EntityFrameworkCore.DbMigrations.EntityFrameworkCore
             var configuration = BuildConfiguration();
 
             var builder = new DbContextOptionsBuilder<MeowvBlogMigrationsDbContext>()
-                .UseMySql(configuration.GetConnectionString("Default"));
+                //.UseMySql(configuration.GetConnectionString("Default"))
+                .UseSqlite(configuration.GetConnectionString("Sqlite"));
 
             return new MeowvBlogMigrationsDbContext(builder.Options);
         }
