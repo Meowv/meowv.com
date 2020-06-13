@@ -6,21 +6,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="keywords" content="Meowv,qix,阿星Plus,个人博客">
     <meta name="description" content="阿星Plus的个人博客,用于发表原创文章,关注微信公众号：『阿星Plus』了解更多。">
-    <title>😍阿星Plus⭐⭐⭐</title>
+    <title>🤣阿星Plus⭐⭐⭐</title>
     <base href="/" />
-    <link href="css/app.min.css" rel="stylesheet" />
+    <link href="css/app.css" rel="stylesheet" />
     <link href="manifest.json" rel="manifest" />
     <link rel="apple-touch-icon" sizes="512x512" href="/images/icon.png" />
 </head>
 
 <body>
-    <div class="wrapper">
-        <div class="main">
-            <div class="post-wrap">
-                <h2 class="eror-tip">Sorry, there's nothing at this address.😖😖😖</h2>
-            </div>
-        </div>
-    </div>
+    <app>
+        <div class="loader"></div>
+    </app>
+    <script>
+        var segmentCount = 0;
+        var l = window.location;
+        l.replace(
+            l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+            l.pathname.split('/').slice(0, 1 + segmentCount).join('/') + '/?p=/' +
+            l.pathname.slice(1).split('/').slice(segmentCount).join('/').replace(/&/g, '~and~') +
+            (l.search ? '&q=' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+            l.hash
+        );
+    </script>
 </body>
 
 </html>
