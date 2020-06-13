@@ -1,7 +1,5 @@
 ﻿var func = window.func || {}, editor;
 
-navigator.serviceWorker.register('service-worker.js');
-
 (function (l) {
     if (l.search) {
         var q = {};
