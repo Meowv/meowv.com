@@ -84,7 +84,7 @@ namespace Meowv.Blog.Application.Blog.Impl
 
             var post = ObjectMapper.Map<EditPostInput, Post>(input);
             post.Url = $"{post.CreationTime.ToString(" yyyy MM dd ").Replace(" ", "/")}{post.Url}/";
-            await _postRepository.InsertAsync(post);
+            await _postRepository.InsertAsync(post, true);
 
             var tags = await _tagRepository.GetListAsync();
 
@@ -100,12 +100,10 @@ namespace Meowv.Blog.Application.Blog.Impl
                 await _tagRepository.BulkInsertAsync(newTags);
             }
 
-            tags.AddRange(newTags);
-
             var postTags = input.Tags.Select(item => new PostTag
             {
                 PostId = post.Id,
-                TagId = tags.FirstOrDefault(x => x.TagName == item).Id
+                TagId = _tagRepository.FirstOrDefault(x => x.TagName == item).Id
             });
             await _postTagRepository.BulkInsertAsync(postTags);
 
