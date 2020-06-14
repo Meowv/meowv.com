@@ -2,6 +2,7 @@
 using Hangfire.Dashboard.BasicAuthorization;
 using Hangfire.MySql.Core;
 using Hangfire.SQLite;
+using Hangfire.SqlServer;
 using Meowv.Blog.Domain.Configurations;
 using Meowv.Blog.Domain.Shared;
 using Volo.Abp;
@@ -30,6 +31,13 @@ namespace Meowv.Blog.BackgroundJobs
                 else if (AppSettings.EnableDb == "Sqlite")
                 {
                     config.UseSQLiteStorage(AppSettings.ConnectionStrings, new SQLiteStorageOptions
+                    {
+                        SchemaName = MeowvBlogConsts.DbTablePrefix + "hangfire"
+                    });
+                }
+                else if (AppSettings.EnableDb == "SqlServer")
+                {
+                    config.UseSqlServerStorage(AppSettings.ConnectionStrings, new SqlServerStorageOptions
                     {
                         SchemaName = MeowvBlogConsts.DbTablePrefix + "hangfire"
                     });
