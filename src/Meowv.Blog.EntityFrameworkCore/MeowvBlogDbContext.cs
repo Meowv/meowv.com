@@ -7,6 +7,8 @@ using Volo.Abp.EntityFrameworkCore;
 namespace Meowv.Blog.EntityFrameworkCore
 {
     //[ConnectionStringName("MySql")]
+    //[ConnectionStringName("SqlServer")]
+    //[ConnectionStringName("PostgreSql")]
     [ConnectionStringName("Sqlite")]
     public class MeowvBlogDbContext : AbpDbContext<MeowvBlogDbContext>
     {
@@ -31,6 +33,7 @@ namespace Meowv.Blog.EntityFrameworkCore
             base.OnModelCreating(modelBuilder);
 
             modelBuilder.Configure();
+
         }
     }
 }
