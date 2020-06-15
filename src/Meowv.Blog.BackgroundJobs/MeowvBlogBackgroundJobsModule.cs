@@ -23,7 +23,7 @@ namespace Meowv.Blog.BackgroundJobs
 
                 switch (AppSettings.EnableDb)
                 {
-                    case "MySQL":
+                    case "MySql":
                         config.UseStorage(
                             new MySqlStorage(AppSettings.ConnectionStrings,
                             new MySqlStorageOptions

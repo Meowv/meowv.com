@@ -31,7 +31,7 @@ namespace Meowv.Blog.EntityFrameworkCore
             {
                 switch (AppSettings.EnableDb)
                 {
-                    case "MySQL":
+                    case "MySql":
                         options.UseMySQL();
                         break;
 

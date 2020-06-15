@@ -1,15 +1,11 @@
 ﻿using Meowv.Blog.Domain.Blog;
 using Meowv.Blog.Domain.Wallpaper;
 using Microsoft.EntityFrameworkCore;
-using Volo.Abp.Data;
 using Volo.Abp.EntityFrameworkCore;
 
 namespace Meowv.Blog.EntityFrameworkCore
 {
-    //[ConnectionStringName("MySql")]
-    //[ConnectionStringName("SqlServer")]
-    //[ConnectionStringName("PostgreSql")]
-    [ConnectionStringName("Sqlite")]
+    [ConnectionString]
     public class MeowvBlogDbContext : AbpDbContext<MeowvBlogDbContext>
     {
         public MeowvBlogDbContext(DbContextOptions<MeowvBlogDbContext> options) : base(options)
