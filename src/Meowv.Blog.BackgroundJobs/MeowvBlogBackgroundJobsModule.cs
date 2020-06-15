@@ -17,55 +17,60 @@ namespace Meowv.Blog.BackgroundJobs
     {
         public override void ConfigureServices(ServiceConfigurationContext context)
         {
-            context.Services.AddHangfire(config =>
+            if (AppSettings.Hangfire.IsOpen)
             {
-                var tablePrefix = MeowvBlogConsts.DbTablePrefix + "hangfire";
-
-                switch (AppSettings.EnableDb)
+                context.Services.AddHangfire(config =>
                 {
-                    case "MySql":
-                        config.UseStorage(
-                            new MySqlStorage(AppSettings.ConnectionStrings,
-                            new MySqlStorageOptions
+                    var tablePrefix = MeowvBlogConsts.DbTablePrefix + "hangfire";
+
+                    switch (AppSettings.EnableDb)
+                    {
+                        case "MySql":
+                            config.UseStorage(
+                                new MySqlStorage(AppSettings.ConnectionStrings,
+                                new MySqlStorageOptions
+                                {
+                                    TablePrefix = tablePrefix
+                                }));
+                            break;
+
+                        case "Sqlite":
+                            config.UseSQLiteStorage(AppSettings.ConnectionStrings, new SQLiteStorageOptions
                             {
-                                TablePrefix = tablePrefix
-                            }));
-                        break;
+                                SchemaName = tablePrefix
+                            });
+                            break;
 
-                    case "Sqlite":
-                        config.UseSQLiteStorage(AppSettings.ConnectionStrings, new SQLiteStorageOptions
-                        {
-                            SchemaName = tablePrefix
-                        });
-                        break;
+                        case "SqlServer":
+                            config.UseSqlServerStorage(AppSettings.ConnectionStrings, new SqlServerStorageOptions
+                            {
+                                SchemaName = tablePrefix
+                            });
+                            break;
 
-                    case "SqlServer":
-                        config.UseSqlServerStorage(AppSettings.ConnectionStrings, new SqlServerStorageOptions
-                        {
-                            SchemaName = tablePrefix
-                        });
-                        break;
-
-                    case "PostgreSql":
-                        config.UsePostgreSqlStorage(AppSettings.ConnectionStrings, new PostgreSqlStorageOptions
-                        {
-                            SchemaName = tablePrefix
-                        });
-                        break;
-                }
-            });
+                        case "PostgreSql":
+                            config.UsePostgreSqlStorage(AppSettings.ConnectionStrings, new PostgreSqlStorageOptions
+                            {
+                                SchemaName = tablePrefix
+                            });
+                            break;
+                    }
+                });
+            }
         }
 
         public override void OnApplicationInitialization(ApplicationInitializationContext context)
         {
-            var app = context.GetApplicationBuilder();
-            var service = context.ServiceProvider;
-
-            app.UseHangfireServer();
-            app.UseHangfireDashboard(options: new DashboardOptions
+            if (AppSettings.Hangfire.IsOpen)
             {
-                Authorization = new[]
+                var app = context.GetApplicationBuilder();
+                var service = context.ServiceProvider;
+
+                app.UseHangfireServer();
+                app.UseHangfireDashboard(options: new DashboardOptions
                 {
+                    Authorization = new[]
+                    {
                     new BasicAuthAuthorizationFilter(new BasicAuthAuthorizationFilterOptions
                     {
                         RequireSsl = false,
@@ -81,14 +86,15 @@ namespace Meowv.Blog.BackgroundJobs
                         }
                     })
                 },
-                DashboardTitle = "任务调度中心"
-            });
+                    DashboardTitle = "任务调度中心"
+                });
 
-            //service.UseWallpaperJob();
+                //service.UseWallpaperJob();
 
-            //service.UseHotNewsJob();
+                //service.UseHotNewsJob();
 
-            //service.UsePuppeteerTestJob();
+                //service.UsePuppeteerTestJob();
+            }
         }
     }
 }

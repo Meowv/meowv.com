@@ -50,6 +50,11 @@ namespace Meowv.Blog.Domain.Configurations
             /// RedisConnectionString
             /// </summary>
             public static string RedisConnectionString => _config["Caching:RedisConnectionString"];
+
+            /// <summary>
+            /// 是否开启
+            /// </summary>
+            public static bool IsOpen => Convert.ToBoolean(_config["Caching:IsOpen"]);
         }
 
         /// <summary>
@@ -88,6 +93,8 @@ namespace Meowv.Blog.Domain.Configurations
             public static string Login => _config["Hangfire:Login"];
 
             public static string Password => _config["Hangfire:Password"];
+
+            public static bool IsOpen => Convert.ToBoolean(_config["Hangfire:IsOpen"]);
         }
 
         /// <summary>
