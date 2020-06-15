@@ -11,9 +11,28 @@ namespace Meowv.Blog.EntityFrameworkCore.DbMigrations.EntityFrameworkCore
         {
             var configuration = BuildConfiguration();
 
-            var builder = new DbContextOptionsBuilder<MeowvBlogMigrationsDbContext>()
-                //.UseMySql(configuration.GetConnectionString("Default"))
-                .UseSqlite(configuration.GetConnectionString("Sqlite"));
+            var EnableDb = configuration["ConnectionStrings:Enable"];
+
+            var builder = new DbContextOptionsBuilder<MeowvBlogMigrationsDbContext>();
+
+            switch (EnableDb)
+            {
+                case "MySql":
+                    builder.UseMySql(configuration.GetConnectionString(EnableDb));
+                    break;
+
+                case "SqlServer":
+                    builder.UseSqlServer(configuration.GetConnectionString(EnableDb));
+                    break;
+
+                case "PostgreSql":
+                    builder.UseNpgsql(configuration.GetConnectionString(EnableDb));
+                    break;
+
+                case "Sqlite":
+                    builder.UseSqlite(configuration.GetConnectionString(EnableDb));
+                    break;
+            }
 
             return new MeowvBlogMigrationsDbContext(builder.Options);
         }
