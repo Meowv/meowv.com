@@ -33,7 +33,6 @@ namespace Meowv.Blog.EntityFrameworkCore
             base.OnModelCreating(modelBuilder);
 
             modelBuilder.Configure();
-
         }
     }
 }
