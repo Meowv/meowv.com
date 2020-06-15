@@ -1,6 +1,7 @@
 ﻿using Hangfire;
 using Hangfire.Dashboard.BasicAuthorization;
 using Hangfire.MySql.Core;
+using Hangfire.PostgreSql;
 using Hangfire.SQLite;
 using Hangfire.SqlServer;
 using Meowv.Blog.Domain.Configurations;
@@ -18,29 +19,39 @@ namespace Meowv.Blog.BackgroundJobs
         {
             context.Services.AddHangfire(config =>
             {
-                if (AppSettings.EnableDb == "MySQL")
-                {
-                    config.UseStorage(
-                        new MySqlStorage(AppSettings.ConnectionStrings,
-                        new MySqlStorageOptions
-                        {
-                            TablePrefix = MeowvBlogConsts.DbTablePrefix + "hangfire"
-                        }));
+                var tablePrefix = MeowvBlogConsts.DbTablePrefix + "hangfire";
 
-                }
-                else if (AppSettings.EnableDb == "Sqlite")
+                switch (AppSettings.EnableDb)
                 {
-                    config.UseSQLiteStorage(AppSettings.ConnectionStrings, new SQLiteStorageOptions
-                    {
-                        SchemaName = MeowvBlogConsts.DbTablePrefix + "hangfire"
-                    });
-                }
-                else if (AppSettings.EnableDb == "SqlServer")
-                {
-                    config.UseSqlServerStorage(AppSettings.ConnectionStrings, new SqlServerStorageOptions
-                    {
-                        SchemaName = MeowvBlogConsts.DbTablePrefix + "hangfire"
-                    });
+                    case "MySQL":
+                        config.UseStorage(
+                            new MySqlStorage(AppSettings.ConnectionStrings,
+                            new MySqlStorageOptions
+                            {
+                                TablePrefix = tablePrefix
+                            }));
+                        break;
+
+                    case "Sqlite":
+                        config.UseSQLiteStorage(AppSettings.ConnectionStrings, new SQLiteStorageOptions
+                        {
+                            SchemaName = tablePrefix
+                        });
+                        break;
+
+                    case "SqlServer":
+                        config.UseSqlServerStorage(AppSettings.ConnectionStrings, new SqlServerStorageOptions
+                        {
+                            SchemaName = tablePrefix
+                        });
+                        break;
+
+                    case "PostgreSql":
+                        config.UsePostgreSqlStorage(AppSettings.ConnectionStrings, new PostgreSqlStorageOptions
+                        {
+                            SchemaName = tablePrefix
+                        });
+                        break;
                 }
             });
         }
