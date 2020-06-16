@@ -1,34 +1,49 @@
-# 😍阿星Plus⭐⭐⭐
+# 🤣阿星Plus⭐⭐⭐
 
 ## 项目介绍
 
-此版本个人博客项目底层基于 [ABP Framework](http://abp.io/) (不完全依赖)搭建项目 和免费开源跨平台的 .NET Core 3.1 开发，可作为 .NET Core 入门项目进行学习，支持各种主流数据库(SqlServer、MySQL、PostgreSql、Sqlite)，接口遵循 RESTful API 接口规范，前端所有页面采用 axios 和 template-web.js 请求和加载数据，原生JavaScript操作页面。
+此版本个人博客项目底层基于 [abp vNext](http://abp.io/) (不完全依赖)搭建，和免费开源跨平台的 .NET Core 3.1 开发，支持各种主流数据库(SqlServer、MySQL、PostgreSql、Sqlite)一键切换，遵循 RESTful 接口规范，前端使用 Blazor 开发，可作为 .NET Core 入门项目进行学习。
 
 If you liked `Blog` project or if it helped you, please give a star ⭐️ for this repository. 👍👍👍
 
+## 微信公众号
+
+欢迎关注微信公众号：阿星Plus
+
+![微信公众号：阿星Plus](static/qrcode.jpg)
+
 ## 系列文章
 
-> **[基于 abp vNext 和 .NET Core 开发博客项目 - 微信项目实战专辑](https://mp.weixin.qq.com/mp/appmsgalbum?action=getalbum&__biz=MzUzNzk0MDQ5MA==&scene=1&album_id=1345555337696477185)**
-
-1. [基于 abp vNext 和 .NET Core 开发博客项目 - 使用 abp cli 搭建项目](https://www.cnblogs.com/meowv/p/12896177.html)
-2. [基于 abp vNext 和 .NET Core 开发博客项目 - 给项目瘦身，让它跑起来](https://www.cnblogs.com/meowv/p/12896898.html)
-3. [基于 abp vNext 和 .NET Core 开发博客项目 - 完善与美化，Swagger登场](https://www.cnblogs.com/meowv/p/12909558.html)
-4. [基于 abp vNext 和 .NET Core 开发博客项目 - 数据访问和代码优先](https://www.cnblogs.com/meowv/p/12913676.html)
-5. [基于 abp vNext 和 .NET Core 开发博客项目 - 自定义仓储之增删改查](https://www.cnblogs.com/meowv/p/12916613.html)
-6. [基于 abp vNext 和 .NET Core 开发博客项目 - 统一规范API，包装返回模型](https://www.cnblogs.com/meowv/p/12924409.html)
-7. [基于 abp vNext 和 .NET Core 开发博客项目 - 再说Swagger，分组、描述、小绿锁](https://www.cnblogs.com/meowv/p/12924859.html)
-8. [基于 abp vNext 和 .NET Core 开发博客项目 - 接入GitHub，用JWT保护你的API](https://www.cnblogs.com/meowv/p/12935693.html)
-9. [基于 abp vNext 和 .NET Core 开发博客项目 - 异常处理和日志记录](https://www.cnblogs.com/meowv/p/12943699.html)
-10. [基于 abp vNext 和 .NET Core 开发博客项目 - 使用Redis缓存数据](https://www.cnblogs.com/meowv/p/12956696.html)
-11. [基于 abp vNext 和 .NET Core 开发博客项目 - 集成Hangfire实现定时任务处理](https://www.cnblogs.com/meowv/p/12961014.html)
-12. [基于 abp vNext 和 .NET Core 开发博客项目 - 用AutoMapper搞定对象映射](https://www.cnblogs.com/meowv/p/12966092.html)
-13. [基于 abp vNext 和 .NET Core 开发博客项目 - 定时任务最佳实战（一）](https://www.cnblogs.com/meowv/p/12971041.html)
-14. [基于 abp vNext 和 .NET Core 开发博客项目 - 定时任务最佳实战（二）](https://www.cnblogs.com/meowv/p/12974439.html)
-15. [基于 abp vNext 和 .NET Core 开发博客项目 - 定时任务最佳实战（三）](https://www.cnblogs.com/meowv/p/12980301.html)
-16. [基于 abp vNext 和 .NET Core 开发博客项目 - 博客接口实战篇（一）](https://www.cnblogs.com/meowv/p/12987623.html)
-17. [基于 abp vNext 和 .NET Core 开发博客项目 - 博客接口实战篇（二）](https://www.cnblogs.com/meowv/p/12994914.html)
-18. [基于 abp vNext 和 .NET Core 开发博客项目 - 博客接口实战篇（三）](https://www.cnblogs.com/meowv/p/13039883.html)
-19. [基于 abp vNext 和 .NET Core 开发博客项目 - 博客接口实战篇（四）](https://www.cnblogs.com/meowv/p/13043084.html)
+1. **[使用 abp cli 搭建项目](https://mp.weixin.qq.com/s/3Sc4Z2xkLdQNErvXf92B9A)**
+2. **[给项目瘦身，让它跑起来](https://mp.weixin.qq.com/s/oc96GG2sxz0J_vT6sReojQ)**
+3. **[完善与美化，Swagger登场](https://mp.weixin.qq.com/s/usz1BRYzBO2tT_z9MaonPg)**
+4. **[数据访问和代码优先](https://mp.weixin.qq.com/s/OHBW24PSNIeOARnHlbWBNQ)**
+5. **[自定义仓储之增删改查](https://mp.weixin.qq.com/s/ObgAtdWe3-nZw6hWC5dhyg)**
+6. **[统一规范API，包装返回模型](https://mp.weixin.qq.com/s/uVsFiKjbiHX5lKAhuZ2E9g)**
+7. **[再说Swagger，分组、描述、小绿锁](https://mp.weixin.qq.com/s/cNB469s18plbCLbHxL1QUA)**
+8. **[接入GitHub，用JWT保护你的API](https://mp.weixin.qq.com/s/ZOX9D4ncqqeXxipYapTeBA)**
+9. **[异常处理和日志记录](https://mp.weixin.qq.com/s/segjYoh1rMI372PKi-ap6w)**
+10. **[使用Redis缓存数据](https://mp.weixin.qq.com/s/fTqDnwVUgqKnwz21AsETGA)**
+11. **[集成Hangfire实现定时任务处理](https://mp.weixin.qq.com/s/wRITvM72JveP7ozx2tDL4A)**
+12. **[用AutoMapper搞定对象映射](https://mp.weixin.qq.com/s/VO0qKlOg90kb27XGcpGjqw)**
+13. **[定时任务最佳实战（一）](https://mp.weixin.qq.com/s/DkGuy4jJ629ARh5gMq5I_Q)**
+14. **[定时任务最佳实战（二）](https://mp.weixin.qq.com/s/vGg14QchfUjNcNuOBfw7Tg)**
+15. **[定时任务最佳实战（三）](https://mp.weixin.qq.com/s/rFvsLuqZtdUnkqxRhN29rw)**
+16. **[博客接口实战篇（一）](https://mp.weixin.qq.com/s/5tTMKfZvXvi1Z7NJ3yZdvg)**
+17. **[博客接口实战篇（二）](https://mp.weixin.qq.com/s/2nmw2td01cEhqBCc32FUYw)**
+18. **[博客接口实战篇（三）](https://mp.weixin.qq.com/s/B0AwLunJ6xSqJzXwE_qJSg)**
+19. **[博客接口实战篇（四）](https://mp.weixin.qq.com/s/3V7Q-RvaxEiopXR73YpG5Q)**
+20. **[博客接口实战篇（五）](https://mp.weixin.qq.com/s/B3jvHCtKotmmlcAKYxL9Lw)**
+21. **[Blazor 实战系列（一）](https://mp.weixin.qq.com/s/gtnZ74ItGmocpxDcOVswng)**
+22. **[Blazor 实战系列（二）](https://mp.weixin.qq.com/s/RVX94RPnEteHouz_0BDayw)**
+23. **[Blazor 实战系列（三）](https://mp.weixin.qq.com/s/9pC456tnmjJNMS55aEe9Qg)**
+24. **[Blazor 实战系列（四）](https://mp.weixin.qq.com/s/Y0zGpc4L2eAvUd0ba6Hbkg)**
+25. **[Blazor 实战系列（五）](https://mp.weixin.qq.com/s/dj4ubCqqjCWRc6mXPsgqBw)**
+26. **[Blazor 实战系列（六）](https://mp.weixin.qq.com/s/-W3JQHOxYLYxAb13ZSVhnQ)**
+27. **[Blazor 实战系列（七）](https://mp.weixin.qq.com/s/q1BHEk8TNRRczBGRGecBPw)**
+28. **[Blazor 实战系列（八）]()**
+29. **[Blazor 实战系列（九）]()**
+30. **[XXX]()**
 
 ```tree
 Blog ---------- root
@@ -36,35 +51,30 @@ Blog ---------- root
  ├── .gitattributes ---------- git attributes
  ├── .gitignore ---------- git ignore
  ├── common.props ---------- common.props
+ ├── Dockerfile ---------- Dockerfile
  ├── LICENSE ---------- LICENSE
  ├── Meowv.Blog.sln ---------- Solution
  ├── README.md ---------- README.md
- ├── .github ---------- github config
  ├── src
- │   ├── Meowv.Blog.Application ---------- 应用服务层
- │   ├── Meowv.Blog.Application.Caching ---------- 应用服务缓存
- │   ├── Meowv.Blog.Application.Contracts ---------- 应用服务数据传输对象(DTO)
- │   ├── Meowv.Blog.BackgroundJobs ---------- 后台定时任务
- │   ├── Meowv.Blog.Domain ---------- 领域层，实体，仓储接口
- │   ├── Meowv.Blog.Domain.Shared ---------- 领域层，一些常量，枚举等
- │   ├── Meowv.Blog.EntityFrameworkCore ---------- 集成EF Core，仓储接口实现
- │   ├── Meowv.Blog.EntityFrameworkCore.DbMigrations ---------- EF Core数据库迁移
- │   ├── Meowv.Blog.HttpApi ---------- API控制器
- │   ├── Meowv.Blog.HttpApi.Hosting ---------- WebApi项目，依赖于HttpApi，
- │   ├── Meowv.Blog.Swagger ---------- Swagger扩展、Filter
- │   └── Meowv.Blog.ToolKits ---------- 公共的工具类、扩展方法
- └── static ---------- 用于README.md展示图片的图片文件夹
+ │   ├── Meowv.Blog.Application ---------- Application
+ │   ├── Meowv.Blog.Application.Caching ---------- Application.Caching
+ │   ├── Meowv.Blog.Application.Contracts ---------- Application.Contracts
+ │   ├── Meowv.Blog.BackgroundJobs ---------- BackgroundJobs
+ │   ├── Meowv.Blog.BlazorApp ---------- Blazor App
+ │   ├── Meowv.Blog.Domain ---------- Domain
+ │   ├── Meowv.Blog.Domain.Shared ---------- Domain.Shared
+ │   ├── Meowv.Blog.EntityFrameworkCore ---------- EntityFrameworkCore
+ │   ├── Meowv.Blog.EntityFrameworkCore.DbMigrations ---------- EntityFrameworkCore.DbMigrations
+ │   ├── Meowv.Blog.HttpApi ---------- HttpApi
+ │   ├── Meowv.Blog.HttpApi.Hosting ---------- HttpApi.Hosting
+ │   ├── Meowv.Blog.Swagger ---------- Swagger
+ │   └── Meowv.Blog.ToolKits ---------- ToolKits
+ └── static ---------- static
 ```
 
 ## 技术栈
 
-ABP Framework + .NET Core 3.1 + Docker + Nginx + Redis + Hangfire + MySQL + WebApi + EF Core + Swagger + Hangfire + HtmlAgilityPack + PuppeteerSharp + log4net + MailKit + axios + JavaScript + Json + ...
-
-## 微信公众号
-
-欢迎关注微信公众号：阿星Plus
-
-![微信公众号：阿星Plus](static/qrcode.jpg)
+abp vNext + .NET Core 3.1 + Blazor + JWT + Redis + Hangfire + Mysql + SqlServer + Sqlite + PostgreSql + WebApi + EF Core + Swagger + HtmlAgilityPack + PuppeteerSharp + log4net + MailKit + Docker + Nginx + ...
 
 ## 预览
 
