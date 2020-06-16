@@ -29,8 +29,8 @@ namespace Meowv.Blog.HttpApi.Hosting
        typeof(AbpAutofacModule),
        typeof(MeowvBlogHttpApiModule),
        typeof(MeowvBlogSwaggerModule),
-       typeof(MeowvBlogFrameworkCoreModule),
-       typeof(MeowvBlogBackgroundJobsModule)
+       typeof(MeowvBlogFrameworkCoreModule)
+    // typeof(MeowvBlogBackgroundJobsModule)
     )]
     public class MeowvBlogHttpApiHostingModule : AbpModule
     {

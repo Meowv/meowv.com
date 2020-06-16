@@ -98,8 +98,6 @@ namespace Meowv.Blog.Domain.Configurations
             public static string Login => _config["Hangfire:Login"];
 
             public static string Password => _config["Hangfire:Password"];
-
-            public static bool IsOpen => Convert.ToBoolean(_config["Hangfire:IsOpen"]);
         }
 
         /// <summary>
