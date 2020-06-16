@@ -42,6 +42,11 @@ namespace Meowv.Blog.Domain.Configurations
         public static string ApiVersion => _config["ApiVersion"];
 
         /// <summary>
+        /// 监听端口
+        /// </summary>
+        public static string ListenPort => _config["listenPort"];
+
+        /// <summary>
         /// Caching
         /// </summary>
         public static class Caching

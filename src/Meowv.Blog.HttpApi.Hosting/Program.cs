@@ -1,4 +1,5 @@
-﻿using Meowv.Blog.ToolKits.Extensions;
+﻿using Meowv.Blog.Domain.Configurations;
+using Meowv.Blog.ToolKits.Extensions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using System.Threading.Tasks;
@@ -14,10 +15,11 @@ namespace Meowv.Blog.HttpApi.Hosting
                       .ConfigureWebHostDefaults(builder =>
                       {
                           builder.UseIISIntegration()
-                                 .ConfigureKestrel(options => {
+                                 .ConfigureKestrel(options =>
+                                 {
                                      options.AddServerHeader = false;
                                  })
-                                 .UseUrls("http://*:5009")
+                                 .UseUrls($"http://*:{AppSettings.ListenPort}")
                                  .UseStartup<Startup>();
                       }).UseAutofac().Build().RunAsync();
         }
