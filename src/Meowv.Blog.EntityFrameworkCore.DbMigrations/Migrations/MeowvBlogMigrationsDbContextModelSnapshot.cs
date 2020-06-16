@@ -137,6 +137,66 @@ namespace Meowv.Blog.EntityFrameworkCore.DbMigrations.Migrations
                     b.ToTable("meowv_Tags");
                 });
 
+            modelBuilder.Entity("Meowv.Blog.Domain.Gallery.Album", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreateTime")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("ImgUrl")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasMaxLength(200);
+
+                    b.Property<bool>("IsPublic")
+                        .HasColumnType("bool");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasMaxLength(100);
+
+                    b.Property<string>("Password")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasMaxLength(20);
+
+                    b.HasKey("Id");
+
+                    b.ToTable("meowv_Albums");
+                });
+
+            modelBuilder.Entity("Meowv.Blog.Domain.Gallery.Image", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("AlbumId")
+                        .HasColumnType("Guid");
+
+                    b.Property<DateTime>("CreateTime")
+                        .HasColumnType("datetime");
+
+                    b.Property<int>("Height")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ImgUrl")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasMaxLength(200);
+
+                    b.Property<int>("Width")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("meowv_Images");
+                });
+
             modelBuilder.Entity("Meowv.Blog.Domain.HotNews.HotNews", b =>
                 {
                     b.Property<Guid>("Id")
@@ -162,6 +222,56 @@ namespace Meowv.Blog.EntityFrameworkCore.DbMigrations.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("meowv_HotNews");
+                });
+
+            modelBuilder.Entity("Meowv.Blog.Domain.Signature.Signature", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreateTime")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("Ip")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasMaxLength(50);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasMaxLength(20);
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasMaxLength(20);
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasMaxLength(100);
+
+                    b.HasKey("Id");
+
+                    b.ToTable("meowv_Signatures");
+                });
+
+            modelBuilder.Entity("Meowv.Blog.Domain.Soul.ChickenSoup", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasMaxLength(200);
+
+                    b.HasKey("Id");
+
+                    b.ToTable("meowv_ChickenSoups");
                 });
 
             modelBuilder.Entity("Meowv.Blog.Domain.Wallpaper.Wallpaper", b =>
