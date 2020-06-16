@@ -44,6 +44,7 @@ namespace Meowv.Blog.HttpApi.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("posts")]
+        [Route("post/query")]
         public async Task<ServiceResult<PagedList<QueryPostDto>>> QueryPostsAsync([FromQuery] PagingInput input)
         {
             return await _blogService.QueryPostsAsync(input);
@@ -56,6 +57,7 @@ namespace Meowv.Blog.HttpApi.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("posts/category")]
+        [Route("post/query_by_category")]
         public async Task<ServiceResult<IEnumerable<QueryPostDto>>> QueryPostsByCategoryAsync([Required] string name)
         {
             return await _blogService.QueryPostsByCategoryAsync(name);
@@ -68,6 +70,7 @@ namespace Meowv.Blog.HttpApi.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("posts/tag")]
+        [Route("post/query_by_tag")]
         public async Task<ServiceResult<IEnumerable<QueryPostDto>>> QueryPostsByTagAsync(string name)
         {
             return await _blogService.QueryPostsByTagAsync(name);

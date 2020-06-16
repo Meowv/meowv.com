@@ -23,6 +23,7 @@ namespace Meowv.Blog.HttpApi.Controllers
         [HttpGet]
         [Authorize]
         [Route("admin/post")]
+        [Route("post/admin")]
         [ApiExplorerSettings(GroupName = Grouping.GroupName_v2)]
         public async Task<ServiceResult<PostForAdminDto>> GetPostForAdminAsync([Required] int id)
         {
@@ -37,6 +38,7 @@ namespace Meowv.Blog.HttpApi.Controllers
         [HttpGet]
         [Authorize]
         [Route("admin/posts")]
+        [Route("post/query/admin")]
         [ApiExplorerSettings(GroupName = Grouping.GroupName_v2)]
         public async Task<ServiceResult<PagedList<QueryPostForAdminDto>>> QueryPostsForAdminAsync([FromQuery] PagingInput input)
         {
@@ -97,6 +99,7 @@ namespace Meowv.Blog.HttpApi.Controllers
         [HttpGet]
         [Authorize]
         [Route("admin/categories")]
+        [Route("categories/admin")]
         [ApiExplorerSettings(GroupName = Grouping.GroupName_v2)]
         public async Task<ServiceResult<IEnumerable<QueryCategoryForAdminDto>>> QueryCategoriesForAdminAsync()
         {
@@ -157,6 +160,7 @@ namespace Meowv.Blog.HttpApi.Controllers
         [HttpGet]
         [Authorize]
         [Route("admin/tags")]
+        [Route("tags/admin")]
         [ApiExplorerSettings(GroupName = Grouping.GroupName_v2)]
         public async Task<ServiceResult<IEnumerable<QueryTagForAdminDto>>> QueryTagsForAdminAsync()
         {
