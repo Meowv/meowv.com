@@ -90,9 +90,9 @@ namespace Meowv.Blog.Swagger
                     options.SwaggerDoc(x.UrlPrefix, x.OpenApiInfo);
                 });
 
-                options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "Meowv.Blog.HttpApi.xml"));
-                options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "Meowv.Blog.Domain.xml"));
-                options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "Meowv.Blog.Application.Contracts.xml"));
+                options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "Resources/Meowv.Blog.HttpApi.xml"));
+                options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "Resources/Meowv.Blog.Domain.xml"));
+                options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "Resources/Meowv.Blog.Application.Contracts.xml"));
 
                 #region 小绿锁，JWT身份认证配置
 

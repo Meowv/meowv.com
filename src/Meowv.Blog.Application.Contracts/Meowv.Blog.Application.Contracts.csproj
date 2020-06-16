@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DocumentationFile>..\Meowv.Blog.HttpApi.Hosting\Meowv.Blog.Application.Contracts.xml</DocumentationFile>
+    <DocumentationFile>..\Meowv.Blog.HttpApi.Hosting\Resources\Meowv.Blog.Application.Contracts.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
