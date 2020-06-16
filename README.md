@@ -60,6 +60,12 @@ Blog ---------- root
 
 ABP Framework + .NET Core 3.1 + Docker + Nginx + Redis + Hangfire + MySQL + WebApi + EF Core + Swagger + Hangfire + HtmlAgilityPack + PuppeteerSharp + log4net + MailKit + axios + JavaScript + Json + ...
 
+## 微信公众号
+
+欢迎关注微信公众号：阿星Plus
+
+![微信公众号：阿星Plus](static/qrcode.jpg)
+
 ## 预览
 
 ### Blog：[https://meowv.com](https://meowv.com)
@@ -74,6 +80,10 @@ ABP Framework + .NET Core 3.1 + Docker + Nginx + Redis + Hangfire + MySQL + WebA
 ### Hangfire：[https://api.meowv.com/hangfire](https://api.meowv.com/hangfire)
 
 ![hangfire](static/hangfire.jpg)
+
+## Donate
+
+![Donate](static/donate.jpg)
 
 ## LICENSE
 
