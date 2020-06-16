@@ -17,7 +17,7 @@ namespace Meowv.Blog.HttpApi.Hosting
                                  .ConfigureKestrel(options => {
                                      options.AddServerHeader = false;
                                  })
-                                 .UseUrls("http://*:5001")
+                                 .UseUrls("http://*:5009")
                                  .UseStartup<Startup>();
                       }).UseAutofac().Build().RunAsync();
         }
