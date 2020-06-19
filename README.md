@@ -41,9 +41,9 @@ If you liked `Blog` project or if it helped you, please give a star ⭐️ for t
 25. **[Blazor 实战系列（五）](https://mp.weixin.qq.com/s/dj4ubCqqjCWRc6mXPsgqBw)**
 26. **[Blazor 实战系列（六）](https://mp.weixin.qq.com/s/-W3JQHOxYLYxAb13ZSVhnQ)**
 27. **[Blazor 实战系列（七）](https://mp.weixin.qq.com/s/q1BHEk8TNRRczBGRGecBPw)**
-28. **[Blazor 实战系列（八）]()**
-29. **[Blazor 实战系列（九）]()**
-30. **[XXX]()**
+28. **[Blazor 实战系列（八）](https://mp.weixin.qq.com/s/ZCYJa3f3HYPclM6bpmynNA)**
+29. **[Blazor 实战系列（九）](https://mp.weixin.qq.com/s/0-mMmkr3HelmoJUWN7R7JA)**
+30. **[终结篇之发布项目](https://mp.weixin.qq.com/s/Lf543XOxSIGYdOGM8Zt4Lw)**
 
 ```tree
 Blog ---------- root
