@@ -2,24 +2,45 @@
 
 <style>
     .gobang-box {
-        width: 760px;
+        width: 1200px;
         margin: 0 auto;
     }
 
     .chess {
         width: 760px;
         height: 760px;
+        float: left;
     }
 
-   .chess .cell {
-       float: left;
-       width: 40px;
-       height: 40px;
-       position: relative;
-       cursor: pointer;
-       font-size: 10px;
-       color: #ffd800;
-   }
+        .chess .cell {
+            float: left;
+            width: 40px;
+            height: 40px;
+            position: relative;
+            cursor: pointer;
+            font-size: 10px;
+            color: #ffd800;
+        }
+
+            .chess .cell .chess-y {
+                color: #161209;
+                position: absolute;
+                left: -16px;
+                bottom: 5px;
+                font-weight: bold;
+            }
+
+            .chess .cell .chess-x {
+                color: #161209;
+                position: absolute;
+                bottom: -25px;
+                left: 14px;
+                font-weight: bold;
+            }
+
+    .dark-theme .chess .cell .chess-x, .dark-theme .chess .cell .chess-y {
+        color: #a9a9b3;
+    }
 
     .chess .cell::after {
         content: ' ';
@@ -77,32 +98,138 @@
         background-image: radial-gradient(#ffffff 5%, #f1f1f1 15%, #f1f1f1 60%);
         box-shadow: 0px 0px 3px #333;
     }
+
+    .chess-info {
+        float: left;
+        width: 400px;
+        height: 760px;
+        padding-left: 20px;
+        margin-left: 40px;
+    }
+
+        .chess-info input {
+            display: initial;
+            width: initial;
+            height: initial;
+            visibility: initial;
+        }
+
+    .chess-msg {
+        margin-top: 20px;
+        color: #aaa;
+    }
+
+        .chess-msg span {
+            display: block;
+            font-size: 12px;
+        }
 </style>
 
 <div class="post-wrap">
     <div class="gobang-box">
         <div class="chess">
-            @for (var i = 1; i <= NumberOfCheckerboard; i++)
+            @for (var y = 0; y < 19; y++)
             {
-                @for (var j = 1; j <= NumberOfCheckerboard; j++)
+                @for (var x = 0; x < 19; x++)
                 {
-                    <div class="cell">
-                        <span class="chess@(Chess[i - 1, j - 1])"></span>
+                    var _y = y;
+                    var _x = x;
+                    <div class="cell" @onclick="@(() => Playing(_x,_y))">
+                        <span class="chess@(Chess[_y, _x])">
+                            @if (_y == 18)
+                            {
+                                <i class="chess-x">@Letters[_x]</i>
+                            }
+                            @if (_x == 0)
+                            {
+                                <i class="chess-y">@(_y + 1)</i>
+                            }
+                        </span>
                     </div>
                 }
             }
+        </div>
+        <div class="chess-info">
+            <h1>五子棋⚫⚪</h1>
+            <p><b>请选择电脑先手还是你先手，黑棋始终先手。</b></p>
+            <p><label><input type="radio" name="chess" checked="checked" @onclick="@(() => first = "ai")"> 电脑先手</label></p>
+            <p><label><input type="radio" name="chess" @onclick="@(() => first = "me")"> 我先手</label></p>
+            <p><button class="box-btn" @onclick="StartGame">@(IsInGame ? "再来一局" : "开始游戏")</button></p>
+
+            <div class="chess-msg">
+                @if (msgs != null)
+                {
+                    @foreach (var item in msgs)
+                    {
+                        <span>@item</span>
+                    }
+                }
+            </div>
         </div>
     </div>
 </div>
 
 @code {
     /// <summary>
-    /// 棋盘纵横格子数量
-    /// </summary>
-    private const int NumberOfCheckerboard = 19;
-
-    /// <summary>
     /// 棋盘二维数组 19✖19
     /// </summary>
-    private int[,] Chess = new int[NumberOfCheckerboard, NumberOfCheckerboard];
+    private int[,] Chess = new int[19, 19];
+
+    /// <summary>
+    /// 先手
+    /// </summary>
+    private string first = "ai";
+
+    /// <summary>
+    /// 是否在游戏中
+    /// </summary>
+    private bool IsInGame = false;
+
+    /// <summary>
+    /// 显示消息
+    /// </summary>
+    private List<string> msgs;
+
+    private int AIChesspiece = 1;
+    private int MineChesspiece = 2;
+
+    private string[] Letters = { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "L", "S" };
+
+    private void StartGame()
+    {
+        Chess = new int[19, 19];
+
+        msgs = new List<string>();
+
+        if (!IsInGame)
+        {
+            if (first == "ai")
+            {
+                AIChesspiece = 1;
+                MineChesspiece = 2;
+
+                Chess[9, 9] = AIChesspiece;
+
+                msgs.Add("电脑：执黑子 ⚫");
+                msgs.Add("我：执白子 ⚪");
+                msgs.Add("电脑：落子[J, 10]");
+            }
+            else
+            {
+                AIChesspiece = 2;
+                MineChesspiece = 1;
+
+                msgs.Add("我：执黑子 ⚫");
+                msgs.Add("电脑：执白子 ⚪");
+            }
+        }
+
+        IsInGame = !IsInGame;
+    }
+
+    private void Playing(int row, int cell)
+    {
+        Console.WriteLine(Letters[row]);
+        Console.WriteLine(cell + 1);
+    }
 }
