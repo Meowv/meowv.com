@@ -17,22 +17,22 @@
         </div>
         <div class="chess-info">
             <h1>五子棋⚫⚪</h1>
-            <p><b>请选择电脑先手还是你先手，黑棋始终先手。</b></p>
             <p><label><input type="radio" name="chess" checked="checked" @onclick="@(() => first = "ai")"> 电脑先手</label></p>
             <p><label><input type="radio" name="chess" @onclick="@(() => first = "me")"> 我先手</label></p>
             <p><button class="box-btn" @onclick="StartGame">@(IsInGame ? "结束游戏" : "开始游戏")</button></p>
             <div class="chess-msg">
-                <p>@msgs</p>
+                <p><b>@msgs</b></p>
                 <p>游戏规则：</p>
-                <span>（1）点击开始游戏按钮开始对局</span>
-                <span>（2）点击结束游戏按钮结束对局</span>
-                <span>（3）对局双方各执一色棋子。</span>
-                <span>（4）空棋盘开局。</span>
-                <span>（5）黑先、白后，交替下子，每次只能下一子。</span>
-                <span>（6）棋子下在棋盘的空白点上，棋子下定后，不得向其它点移动，不得从棋盘上拿掉或拿起另落别处。</span>
-                <span>（7）黑方的第一枚棋子可下在棋盘任意交叉点上。</span>
-                <span>（8）轮流下子是双方的权利，<del>但允许任何一方放弃下子权（即：PASS权）</del>。</span>
-                <span>（9）<del>五子棋对局，执行黑方指定开局、三手可交换、五手两打的规定。整个对局过程中黑方有禁手，白方无禁手。黑方禁手有三三禁手、四四禁手和长连禁手三种。</del></span>
+                <span>（1）请选择电脑先手还是你先手，黑棋始终先手。</span>
+                <span>（2）点击开始游戏按钮开始对局。</span>
+                <span>（3）点击结束游戏按钮结束对局。</span>
+                <span>（4）对局双方各执一色棋子。</span>
+                <span>（5）空棋盘开局。</span>
+                <span>（6）黑先、白后，交替下子，每次只能下一子。</span>
+                <span>（7）棋子下在棋盘的空白点上，棋子下定后，不得向其它点移动，不得从棋盘上拿掉或拿起另落别处。</span>
+                <span>（8）黑方的第一枚棋子可下在棋盘任意交叉点上。</span>
+                <span>（9）轮流下子是双方的权利，<del>但允许任何一方放弃下子权（即：PASS权）</del>。</span>
+                <span>（10）<del>五子棋对局，执行黑方指定开局、三手可交换、五手两打的规定。整个对局过程中黑方有禁手，白方无禁手。黑方禁手有三三禁手、四四禁手和长连禁手三种。</del></span>
             </div>
         </div>
     </div>
@@ -221,6 +221,7 @@
     private bool IsWin(int chess, int row, int cell)
     {
         return false;
+        // TODO:判断是否赢了
     }
 
     /// <summary>
