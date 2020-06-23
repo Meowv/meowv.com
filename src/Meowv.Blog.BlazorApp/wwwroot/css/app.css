@@ -1210,3 +1210,114 @@ button:focus {
 .dark-theme .wrapper .main .container article .post-content pre .linenums li code span.fun {
     color: red;
 }
+.gobang-box {
+    width: 1200px;
+    margin: 0 auto;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+.chess {
+    width: 760px;
+    height: 760px;
+    float: left;
+}
+.chess .cell {
+    float: left;
+    width: 40px;
+    height: 40px;
+    position: relative;
+    cursor: pointer;
+    font-size: 10px;
+    color: #ffd800;
+}
+.chess .cell .chess-y {
+    color: #161209;
+    position: absolute;
+    left: -16px;
+    bottom: 5px;
+}
+.chess .cell .chess-x {
+    color: #161209;
+    position: absolute;
+    bottom: -25px;
+    left: 14px;
+}
+.dark-theme .chess .cell .chess-x, .dark-theme .chess .cell .chess-y {
+    color: #a9a9b3;
+}
+.chess .cell::after {
+    content:' ';
+    position: absolute;
+    height: 2px;
+    display: block;
+    width: 100%;
+    border-bottom: #f5d099 1px solid;
+    background: #c8a06f;
+    top: 50%;
+    left: 0;
+    z-index: 2;
+}
+.chess .cell::before {
+    content:' ';
+    position: absolute;
+    height: 100%;
+    display: block;
+    width: 2px;
+    border-right: #f5d099 1px solid;
+    background: #c8a06f;
+    top: 0;
+    left: 50%;
+    z-index: 1;
+}
+.chess .cell .chess1 {
+    display: block;
+    width: 30px;
+    height: 30px;
+    border-radius: 15px;
+    text-align: center;
+    line-height: 54px;
+    background: #000000;
+    left: 2px;
+    top: 2px;
+    position: absolute;
+    z-index: 10;
+    background-image: radial-gradient(#444 5%, #111 15%, #000 60%);
+    box-shadow: 0px 0px 3px #333;
+}
+.chess .cell .chess2 {
+    display: block;
+    width: 30px;
+    height: 30px;
+    border-radius: 15px;
+    text-align: center;
+    left: 2px;
+    top: 2px;
+    position: absolute;
+    z-index: 10;
+    line-height: 54px;
+    background-image: radial-gradient(#ffffff 5%, #f1f1f1 15%, #f1f1f1 60%);
+    box-shadow: 0px 0px 3px #333;
+}
+.chess-info {
+    float: left;
+    width: 400px;
+    height: 760px;
+    padding-left: 20px;
+    margin-left: 40px;
+}
+.chess-info input {
+    display: initial;
+    width: initial;
+    height: initial;
+    visibility: initial;
+}
+.chess-msg {
+    margin-top: 20px;
+    color: #aaa;
+}
+.chess-msg span {
+    display: block;
+    font-size: 12px;
+}
