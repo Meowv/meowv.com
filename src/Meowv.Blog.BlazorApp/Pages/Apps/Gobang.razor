@@ -1,148 +1,23 @@
 ﻿@page "/gobang"
 
-<style>
-    .gobang-box {
-        width: 1200px;
-        margin: 0 auto;
-    }
-
-    .chess {
-        width: 760px;
-        height: 760px;
-        float: left;
-    }
-
-        .chess .cell {
-            float: left;
-            width: 40px;
-            height: 40px;
-            position: relative;
-            cursor: pointer;
-            font-size: 10px;
-            color: #ffd800;
-        }
-
-            .chess .cell .chess-y {
-                color: #161209;
-                position: absolute;
-                left: -16px;
-                bottom: 5px;
-                font-weight: bold;
-            }
-
-            .chess .cell .chess-x {
-                color: #161209;
-                position: absolute;
-                bottom: -25px;
-                left: 14px;
-                font-weight: bold;
-            }
-
-    .dark-theme .chess .cell .chess-x, .dark-theme .chess .cell .chess-y {
-        color: #a9a9b3;
-    }
-
-    .chess .cell::after {
-        content: ' ';
-        position: absolute;
-        height: 2px;
-        display: block;
-        width: 100%;
-        border-bottom: #f5d099 1px solid;
-        background: #c8a06f;
-        top: 50%;
-        left: 0;
-        z-index: 2;
-    }
-
-    .chess .cell::before {
-        content: ' ';
-        position: absolute;
-        height: 100%;
-        display: block;
-        width: 2px;
-        border-right: #f5d099 1px solid;
-        background: #c8a06f;
-        top: 0;
-        left: 50%;
-        z-index: 1;
-    }
-
-    .chess .cell .chess1 {
-        display: block;
-        width: 30px;
-        height: 30px;
-        border-radius: 15px;
-        text-align: center;
-        line-height: 54px;
-        background: #000000;
-        left: 2px;
-        top: 2px;
-        position: absolute;
-        z-index: 10;
-        background-image: radial-gradient(#444 5%, #111 15%, #000 60%);
-        box-shadow: 0px 0px 3px #333;
-    }
-
-    .chess .cell .chess2 {
-        display: block;
-        width: 30px;
-        height: 30px;
-        border-radius: 15px;
-        text-align: center;
-        left: 2px;
-        top: 2px;
-        position: absolute;
-        z-index: 10;
-        line-height: 54px;
-        background-image: radial-gradient(#ffffff 5%, #f1f1f1 15%, #f1f1f1 60%);
-        box-shadow: 0px 0px 3px #333;
-    }
-
-    .chess-info {
-        float: left;
-        width: 400px;
-        height: 760px;
-        padding-left: 20px;
-        margin-left: 40px;
-    }
-
-        .chess-info input {
-            display: initial;
-            width: initial;
-            height: initial;
-            visibility: initial;
-        }
-
-    .chess-msg {
-        margin-top: 20px;
-        color: #aaa;
-    }
-
-        .chess-msg span {
-            display: block;
-            font-size: 12px;
-        }
-</style>
-
 <div class="post-wrap">
     <div class="gobang-box">
         <div class="chess">
-            @for (var y = 0; y < 19; y++)
+            @for (var i = 0; i < 19; i++)
             {
-                @for (var x = 0; x < 19; x++)
+                @for (var j = 0; j < 19; j++)
                 {
-                    var _y = y;
-                    var _x = x;
-                    <div class="cell" @onclick="@(() => Playing(_x,_y))">
-                        <span class="chess@(Chess[_y, _x])">
-                            @if (_y == 18)
+                    var _i = i;
+                    var _j = j;
+                    <div class="cell" @onclick="@(async () => await Playing(_i,_j))">
+                        <span class="chess@(Chess[i, j])">
+                            @if (i == 18)
                             {
-                                <i class="chess-x">@Letters[_x]</i>
+                                <i class="chess-x">@Letters[j]</i>
                             }
-                            @if (_x == 0)
+                            @if (j == 0)
                             {
-                                <i class="chess-y">@(_y + 1)</i>
+                                <i class="chess-y">@(i + 1)</i>
                             }
                         </span>
                     </div>
@@ -154,12 +29,12 @@
             <p><b>请选择电脑先手还是你先手，黑棋始终先手。</b></p>
             <p><label><input type="radio" name="chess" checked="checked" @onclick="@(() => first = "ai")"> 电脑先手</label></p>
             <p><label><input type="radio" name="chess" @onclick="@(() => first = "me")"> 我先手</label></p>
-            <p><button class="box-btn" @onclick="StartGame">@(IsInGame ? "再来一局" : "开始游戏")</button></p>
+            <p><button class="box-btn" @onclick="StartGame">@(IsInGame ? "结束游戏" : "开始游戏")</button></p>
 
             <div class="chess-msg">
                 @if (msgs != null)
                 {
-                    @foreach (var item in msgs)
+                    @foreach (var item in msgs.Take(2).Concat(msgs.Skip(2).TakeLast(2)).ToList())
                     {
                         <span>@item</span>
                     }
@@ -190,46 +65,116 @@
     /// </summary>
     private List<string> msgs;
 
-    private int AIChesspiece = 1;
-    private int MineChesspiece = 2;
+    /// <summary>
+    /// 默认电脑为黑子
+    /// </summary>
+    private int AIChess = 1;
 
+    /// <summary>
+    /// 默认我为白子
+    /// </summary>
+    private int MineChess = 2;
+
+    /// <summary>
+    /// 横坐标字母
+    /// </summary>
     private string[] Letters = { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "L", "S" };
 
+    /// <summary>
+    /// 开始游戏
+    /// </summary>
     private void StartGame()
     {
+        // 初始化棋盘
         Chess = new int[19, 19];
 
+        // 初始化显示消息
         msgs = new List<string>();
 
+        // 是否开始游戏，当前仅判断不在游戏中即可
         if (!IsInGame)
         {
+            // 电脑先手
             if (first == "ai")
             {
-                AIChesspiece = 1;
-                MineChesspiece = 2;
+                AIChess = 1;
+                MineChess = 2;
 
-                Chess[9, 9] = AIChesspiece;
+                // 电脑落子正中心天元位置
+                Chess[9, 9] = AIChess;
 
                 msgs.Add("电脑：执黑子 ⚫");
                 msgs.Add("我：执白子 ⚪");
-                msgs.Add("电脑：落子[J, 10]");
+                msgs.Add("电脑：落子 [J, 10]");
             }
             else
             {
-                AIChesspiece = 2;
-                MineChesspiece = 1;
+                // 我先手的话则我执黑子，电脑执白子
+                MineChess = 1;
+                AIChess = 2;
 
                 msgs.Add("我：执黑子 ⚫");
                 msgs.Add("电脑：执白子 ⚪");
             }
         }
 
+        // 改变游戏状态，用于显示不同文字的按钮
         IsInGame = !IsInGame;
     }
 
-    private void Playing(int row, int cell)
+    /// <summary>
+    /// 我方下棋
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="cell"></param>
+    /// <returns></returns>
+    private async Task Playing(int row, int cell)
     {
-        Console.WriteLine(Letters[row]);
-        Console.WriteLine(cell + 1);
+        // 是否开始游戏，当前判断没开始给出提示
+        if (!IsInGame)
+        {
+            await Common.InvokeAsync("alert", "\n💪点击开始游戏按钮开启对战💪");
+            return;
+        }
+
+        // 已落子直接返回，不做任何操作
+        if (Chess[row, cell] != 0)
+            return;
+
+        // 根据传进来的坐标进行我方落子
+        Chess[row, cell] = MineChess;
+        msgs.Add($"我：落子 [{Letters[cell]}, {row + 1}]");
+
+        if (IsWin(MineChess, row, cell))
+        {
+            await Common.InvokeAsync("alert", "\n🐂👃恭喜，你赢了🐂👃");
+            IsInGame = !IsInGame;
+            return;
+        }
+
+        // 我方落子之后电脑落子
+        await AIPlaying(AIChess);
+    }
+
+    /// <summary>
+    /// 电脑下棋
+    /// </summary>
+    /// <param name="chess"></param>
+    /// <returns></returns>
+    private async Task AIPlaying(int chess)
+    {
+
+    }
+
+    /// <summary>
+    /// 判断是否赢了
+    /// </summary>
+    /// <param name="chess"></param>
+    /// <param name="row"></param>
+    /// <param name="cell"></param>
+    /// <returns></returns>
+    private bool IsWin(int chess, int row, int cell)
+    {
+        return false;
     }
 }
