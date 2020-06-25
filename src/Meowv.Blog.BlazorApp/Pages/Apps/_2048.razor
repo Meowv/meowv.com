@@ -1,0 +1,48 @@
+﻿@page "/2048"
+
+<link href="/css/2048.css" rel="stylesheet" />
+
+<div class="post-warp">
+    <div class=container2048>
+        <div class=heading>
+            <h1 class="title">2048</h1>
+            <div class=scores-container>
+                <div class=score-container>
+                    <div class=score-addition></div>
+                </div>
+                <div class=best-container></div>
+            </div>
+        </div>
+        <div class=above-game>
+            <a class=restart-button>新游戏</a>
+        </div>
+        <div class=game-container>
+            <div class=game-message>
+                <p></p>
+                <div class=lower>
+                    <a class=keep-playing-button>继续前进</a><a class=retry-button>再试一次</a>
+                    <div class=score-sharing></div>
+                </div>
+            </div>
+            <div class=grid-container>
+                @for (int i = 0; i < 4; i++)
+                {
+                    <div class=grid-row>
+                        @for (int j = 0; j < 4; j++)
+                        {
+                            <div class=grid-cell></div>
+                        }
+                    </div>
+                }
+            </div>
+            <div class=tile-container></div>
+        </div>
+    </div>
+</div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await Common.InvokeAsync("window.func.render2048Game");
+    }
+}
