@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using System;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Meowv.Blog.BlazorApp.Commons
@@ -98,6 +100,18 @@ namespace Meowv.Blog.BlazorApp.Commons
             var uri = _navigationManager.ToAbsoluteUri(_navigationManager.Uri);
 
             return await Task.FromResult(uri);
+        }
+
+        /// <summary>
+        /// 将字符串转换为MD5
+        /// </summary>
+        /// <param name="inputStr"></param>
+        /// <returns></returns>
+        public string ToMd5(string inputStr)
+        {
+            using var md5 = MD5.Create();
+            var result = md5.ComputeHash(Encoding.Default.GetBytes(inputStr));
+            return BitConverter.ToString(result).Replace("-", "").ToLower();
         }
     }
 }

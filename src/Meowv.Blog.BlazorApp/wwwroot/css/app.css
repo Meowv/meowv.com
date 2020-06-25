@@ -895,7 +895,7 @@ header label {
     height: 30px;
 }
 .signature-action input, .vip-action input {
-    height: 25px;
+    height: 30px;
     padding-left: 5px;
 }
 .signature-action input:focus, .vip-action input:focus {
@@ -904,6 +904,7 @@ header label {
 .signature-action button, .vip-action button {
     width: 135px;
     height: 30px;
+    padding-top: 1.5px;
 }
 .hidden {
     display: none;
