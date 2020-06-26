@@ -891,8 +891,12 @@ header label {
     height: 145px;
     margin-bottom: 50px;
 }
+.dark-theme .signature-box img {
+    opacity: .7;
+}
 .signature-action select, .vip-action select {
     height: 30px;
+    outline: none;
 }
 .signature-action input, .vip-action input {
     height: 30px;
@@ -900,6 +904,11 @@ header label {
 }
 .signature-action input:focus, .vip-action input:focus {
     outline: none;
+}
+.dark-theme .signature-action select, .dark-theme .signature-action input {
+    background: #292a2d;
+    color: #777;
+    border: 1px solid #1a1a17;
 }
 .signature-action button, .vip-action button {
     width: 135px;
