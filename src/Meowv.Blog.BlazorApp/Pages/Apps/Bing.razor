@@ -1,0 +1,28 @@
+﻿@page "/bing"
+
+@if (bing == null)
+{
+    <Loading />
+}
+else
+{
+    <div class="imgbox">
+        <img src="@bing.Result" />
+    </div>
+}
+
+@code {
+    /// <summary>
+    /// 壁纸数据
+    /// </summary>
+    private ServiceResult<string> bing;
+
+    /// <summary>
+    /// 初始化
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task OnInitializedAsync()
+    {
+        bing = await Http.GetFromJsonAsync<ServiceResult<string>>("/common/bing/imgurl");
+    }
+}
