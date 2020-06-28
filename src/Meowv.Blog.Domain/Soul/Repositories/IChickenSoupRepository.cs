@@ -5,7 +5,7 @@ using Volo.Abp.Domain.Repositories;
 
 namespace Meowv.Blog.Domain.Soul.Repositories
 {
-    public interface IChickenSoupRepository : IRepository<ChickenSoup, Guid>
+    public interface IChickenSoupRepository : IRepository<ChickenSoup, int>
     {
         /// <summary>
         /// 获取一条随机数据

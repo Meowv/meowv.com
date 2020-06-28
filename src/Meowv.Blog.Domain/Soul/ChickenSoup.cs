@@ -1,9 +1,8 @@
-﻿using System;
-using Volo.Abp.Domain.Entities;
+﻿using Volo.Abp.Domain.Entities;
 
 namespace Meowv.Blog.Domain.Soul
 {
-    public class ChickenSoup : Entity<Guid>
+    public class ChickenSoup : Entity<int>
     {
         /// <summary>
         /// 内容

@@ -3,9 +3,7 @@ using Meowv.Blog.Domain.Shared;
 using Meowv.Blog.Domain.Soul;
 using Meowv.Blog.Domain.Soul.Repositories;
 using Microsoft.EntityFrameworkCore;
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading.Tasks;
 using Volo.Abp.Domain.Repositories.EntityFrameworkCore;
 using Volo.Abp.EntityFrameworkCore;
@@ -13,7 +11,7 @@ using static Meowv.Blog.Domain.Shared.MeowvBlogDbConsts;
 
 namespace Meowv.Blog.EntityFrameworkCore.Repositories.Soul
 {
-    public class ChickenSoupRepository : EfCoreRepository<MeowvBlogDbContext, ChickenSoup, Guid>, IChickenSoupRepository
+    public class ChickenSoupRepository : EfCoreRepository<MeowvBlogDbContext, ChickenSoup, int>, IChickenSoupRepository
     {
         public ChickenSoupRepository(IDbContextProvider<MeowvBlogDbContext> dbContextProvider) : base(dbContextProvider)
         {
