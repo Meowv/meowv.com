@@ -811,6 +811,10 @@ header label {
     .navbar-mobile {
         display: none;
     }
+    .girl-img {
+        width: 100% !important;
+        height: auto !important;
+    }
 }
 @media only screen and (min-device-width: 768px) {
     .navbar-mobile {
@@ -934,7 +938,8 @@ header label {
     text-align: center;
 }
 .girl-img {
-    width: 20%;
+    width: 50%;
+    height: 600px;
 }
 .btnbox {
     text-align: center;
