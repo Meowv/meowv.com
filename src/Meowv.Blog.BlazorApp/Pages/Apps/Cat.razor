@@ -1,0 +1,8 @@
+﻿@page "/cat"
+
+<div class="imgbox girl-img">
+    <img src="https://api2.meowv.com/common/cat/imgfile" />
+</div>
+<div class="btnbox">
+    <button class="soul-btn" @onclick="@(async () => await Common.NavigateTo("cat", true))">再来一张</button>
+</div>
