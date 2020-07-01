@@ -83,13 +83,11 @@ namespace Meowv.Blog.BackgroundJobs
                 DashboardTitle = "任务调度中心"
             });
 
-#if DEBUG
             var service = context.ServiceProvider;
 
             service.UseWallpaperJob();
             service.UseHotNewsJob();
             service.UsePuppeteerTestJob();
-#endif
         }
     }
 }

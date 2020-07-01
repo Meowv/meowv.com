@@ -2,7 +2,6 @@
 using Meowv.Blog.Application.Contracts.Wallpaper.Params;
 using Meowv.Blog.Application.Wallpaper;
 using Meowv.Blog.ToolKits.Base;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -51,7 +50,7 @@ namespace Meowv.Blog.HttpApi.Controllers
         /// <param name="input"></param>
         /// <returns></returns>
         [HttpPost]
-        [Authorize]
+        [ApiExplorerSettings(IgnoreApi = true)]
         public async Task<ServiceResult<string>> BulkInsertWallpaperAsync([FromBody] BulkInsertWallpaperInput input)
         {
             return await _wallpaperService.BulkInsertWallpaperAsync(input);

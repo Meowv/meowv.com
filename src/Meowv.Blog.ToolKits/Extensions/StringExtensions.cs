@@ -47,7 +47,7 @@ namespace Meowv.Blog.ToolKits.Extensions
         #endregion
 
         #region 常用正则表达式
-        
+
         private static readonly Regex EmailRegex = new Regex(@"\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*", RegexOptions.IgnoreCase);
 
         private static readonly Regex MobileRegex = new Regex("^1[0-9]{10}$");

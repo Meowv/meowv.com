@@ -33,7 +33,7 @@ namespace Meowv.Blog.BackgroundJobs.Jobs.PuppeteerTest
 
             var url = "https://github.com/Meowv";
             await page.GoToAsync(url, WaitUntilNavigation.Networkidle0);
-            
+
             var content = await page.GetContentAsync();
 
             await page.PdfAsync("meowv.pdf");

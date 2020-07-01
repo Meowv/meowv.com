@@ -168,7 +168,7 @@ namespace Meowv.Blog.HttpApi.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("tts")]
-        public async Task<FileContentResult> SpeechTtsAsync([Required]string content, [Range(0, 9)]int spd = 5, [Range(0, 9)]int pit = 5, [Range(0, 15)]int vol = 7, [Range(0, 4)]int per = 4)
+        public async Task<FileContentResult> SpeechTtsAsync([Required] string content, [Range(0, 9)] int spd = 5, [Range(0, 9)] int pit = 5, [Range(0, 15)] int vol = 7, [Range(0, 4)] int per = 4)
         {
             var bytes = await _commonService.SpeechTtsAsync(content, spd, pit, vol, per);
 

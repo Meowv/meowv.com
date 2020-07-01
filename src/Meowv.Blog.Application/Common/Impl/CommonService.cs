@@ -2,7 +2,6 @@
 using IP2Region;
 using Meowv.Blog.Application.Caching.Common;
 using Meowv.Blog.Domain.Configurations;
-using Meowv.Blog.Domain.Shared;
 using Meowv.Blog.ToolKits.Base;
 using Meowv.Blog.ToolKits.Extensions;
 using Microsoft.AspNetCore.Http;
