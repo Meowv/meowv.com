@@ -1,0 +1,44 @@
+﻿@page "/wallpaper"
+
+@code {
+    /// <summary>
+    /// 类型
+    /// </summary>
+    public int type { get; set; }
+
+    /// <summary>
+    /// 关键字
+    /// </summary>
+    public string keyword { get; set; }
+
+    /// <summary>
+    /// 当前页
+    /// </summary>
+    public int page { get; set; }
+
+    /// <summary>
+    /// 初始化
+    /// </summary>
+    /// <returns></returns>
+    protected override async Task OnInitializedAsync()
+    {
+        var uri = await Common.CurrentUri();
+        var query = QueryHelpers.ParseQuery(uri.Query);
+
+        var hasType = query.TryGetValue("t", out Microsoft.Extensions.Primitives.StringValues t);
+        var hasKeyword = query.TryGetValue("k", out Microsoft.Extensions.Primitives.StringValues k);
+        var hasPage = query.TryGetValue("p", out Microsoft.Extensions.Primitives.StringValues p);
+
+        Console.WriteLine(hasType);
+        Console.WriteLine(hasKeyword);
+        Console.WriteLine(hasPage);
+
+        type = hasType ? Convert.ToInt32(t) : 0;
+        keyword = hasKeyword ? k.ToString() : "";
+        page = hasPage ? Convert.ToInt32(p) : 1;
+
+        Console.WriteLine(type);
+        Console.WriteLine(keyword);
+        Console.WriteLine(page);
+    }
+}
