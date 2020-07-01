@@ -8,8 +8,8 @@
 
   <ItemGroup>
     <PackageReference Include="Volo.Abp.AspNetCore" Version="2.9.0" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="5.4.1" />
-    <PackageReference Include="Swashbuckle.AspNetCore.Filters" Version="5.1.1" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="5.5.1" />
+    <PackageReference Include="Swashbuckle.AspNetCore.Filters" Version="5.1.2" />
 
     <ProjectReference Include="..\Meowv.Blog.Domain\Meowv.Blog.Domain.csproj" />
   </ItemGroup>

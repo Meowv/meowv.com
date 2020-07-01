@@ -9,8 +9,8 @@
   <ItemGroup>
     <PackageReference Include="Baidu.AI" Version="3.6.14" />
     <PackageReference Include="IP2Region" Version="1.2.0" />
-    <PackageReference Include="TencentCloudSDK" Version="3.0.49" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="3.1.4" />
+    <PackageReference Include="TencentCloudSDK" Version="3.0.69" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="3.1.5" />
     <PackageReference Include="Volo.Abp.Identity.Application" Version="2.9.0" />
     
     <ProjectReference Include="..\Meowv.Blog.Application.Caching\Meowv.Blog.Application.Caching.csproj" />
