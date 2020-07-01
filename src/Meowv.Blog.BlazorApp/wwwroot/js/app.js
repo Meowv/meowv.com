@@ -7,9 +7,9 @@
             var a = v.split('=');
             q[a[0]] = a.slice(1).join('=').replace(/~and~/g, '&');
         });
-        if (q.p !== undefined) {
+        if (q.page !== undefined) {
             window.history.replaceState(null, null,
-                l.pathname.slice(0, -1) + (q.p || '') +
+                l.pathname.slice(0, -1) + (q.page || '') +
                 (q.q ? ('?' + q.q) : '') +
                 l.hash
             );
@@ -89,6 +89,28 @@ func = {
     },
     render2048Game: async function () {
         await this._loadScript('./js/2048.js');
+    },
+    disableKey() {
+        document.body.oncontextmenu = function () {
+            self.event.returnValue = false;
+        };
+        document.onkeydown = function () {
+            if (event.ctrlKey && window.event.keyCode == 85) {
+                return false;
+            }
+            if (event.ctrlKey && event.shiftKey && window.event.keyCode == 73) {
+                return false;
+            }
+            if (window.event && window.event.keyCode == 123) {
+                event.keyCode = 0;
+                event.returnValue = false;
+            }
+        }
+    },
+    openBlobWallpaper(src) {
+        fetch(src.replace("middle", "max")).then(res => res.blob().then(blob => {
+            window.open(window.URL.createObjectURL(blob), "_blank");
+        }));
     },
     _shoowBox: function () {
         DotNet.invokeMethodAsync('Meowv.Blog.BlazorApp', 'showbox');
