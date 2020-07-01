@@ -9,7 +9,6 @@ using static Meowv.Blog.Domain.Shared.MeowvBlogConsts;
 namespace Meowv.Blog.HttpApi.Controllers
 {
     [ApiController]
-    [AllowAnonymous]
     [Route("[controller]")]
     [ApiExplorerSettings(GroupName = Grouping.GroupName_v4)]
     public class AuthController : AbpController
@@ -54,6 +53,18 @@ namespace Meowv.Blog.HttpApi.Controllers
         public async Task<ServiceResult<string>> GenerateTokenAsync(string access_token)
         {
             return await _authorizeService.GenerateTokenAsync(access_token);
+        }
+
+        /// <summary>
+        /// 验证Token是否合法
+        /// </summary>
+        /// <param name="token"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Authorize]
+        public async Task<ServiceResult> VerifyToken(string token)
+        {
+            return await _authorizeService.VerifyToken(token);
         }
     }
 }

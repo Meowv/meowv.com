@@ -153,5 +153,25 @@ namespace Meowv.Blog.Application.Authorize.Impl
                 return await Task.FromResult(result);
             });
         }
+
+        /// <summary>
+        /// 验证Token是否合法
+        /// </summary>
+        /// <param name="token"></param>
+        /// <returns></returns>
+        public async Task<ServiceResult> VerifyToken(string token)
+        {
+            var result = new ServiceResult();
+
+            var jwt = new JwtSecurityToken(token).Claims;
+
+            var name = jwt.FirstOrDefault(x => x.Type == ClaimTypes.Name).Value;
+            var email = jwt.FirstOrDefault(x => x.Type == ClaimTypes.Name).Value;
+
+            if (name != "阿星Plus" && email != "123@meowv.com")
+                result.IsFailed("token不正确");
+
+            return await Task.FromResult(result);
+        }
     }
 }

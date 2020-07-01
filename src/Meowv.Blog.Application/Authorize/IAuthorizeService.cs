@@ -24,5 +24,12 @@ namespace Meowv.Blog.Application.Authorize
         /// <param name="access_token"></param>
         /// <returns></returns>
         Task<ServiceResult<string>> GenerateTokenAsync(string access_token);
+
+        /// <summary>
+        /// 验证Token是否合法
+        /// </summary>
+        /// <param name="token"></param>
+        /// <returns></returns>
+        Task<ServiceResult> VerifyToken(string token);
     }
 }
