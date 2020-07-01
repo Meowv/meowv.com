@@ -26,17 +26,25 @@ else
     protected override async Task OnInitializedAsync()
     {
         var token = await Common.GetStorageAsync("token");
+        Http.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
 
         if (string.IsNullOrEmpty(token))
         {
             isLogin = false;
-
             await Common.NavigateTo("/");
         }
         else
         {
-            // TODO:判断token是否合法，先默认都是正确的
-            isLogin = true;
+            var result = await Http.GetFromJsonAsync<ServiceResult>($"/auth?token={token}");
+            if (result.Success)
+            {
+                isLogin = true;
+            }
+            else
+            {
+                isLogin = false;
+                await Common.NavigateTo("/");
+            }
         }
     }
 }
