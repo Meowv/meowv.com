@@ -59,7 +59,6 @@ namespace Meowv.Blog.BackgroundJobs
         public override void OnApplicationInitialization(ApplicationInitializationContext context)
         {
             var app = context.GetApplicationBuilder();
-            var service = context.ServiceProvider;
 
             app.UseHangfireServer();
             app.UseHangfireDashboard(options: new DashboardOptions
@@ -84,11 +83,13 @@ namespace Meowv.Blog.BackgroundJobs
                 DashboardTitle = "任务调度中心"
             });
 
-            // service.UseWallpaperJob();
+#if DEBUG
+            var service = context.ServiceProvider;
 
-            // service.UseHotNewsJob();
-
-            //service.UsePuppeteerTestJob();
+            service.UseWallpaperJob();
+            service.UseHotNewsJob();
+            service.UsePuppeteerTestJob();
+#endif
         }
     }
 }
