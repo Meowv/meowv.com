@@ -31,7 +31,7 @@ namespace Meowv.Blog.BackgroundJobs.Jobs.PuppeteerTest
                 Height = 1080
             });
 
-            var url = "https://meowv.com/wallpaper";
+            var url = "https://github.com/Meowv";
             await page.GoToAsync(url, WaitUntilNavigation.Networkidle0);
             
             var content = await page.GetContentAsync();

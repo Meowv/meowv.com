@@ -32,7 +32,7 @@ namespace Meowv.Blog.BackgroundJobs
         }
 
         /// <summary>
-        /// 每日热点数据抓取
+        /// PuppeteerTest
         /// </summary>
         /// <param name="context"></param>
         public static void UsePuppeteerTestJob(this IServiceProvider service)
