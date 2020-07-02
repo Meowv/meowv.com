@@ -1798,3 +1798,7 @@ button:focus {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
+.post-wrap ul li {
+    list-style: none;
+}
