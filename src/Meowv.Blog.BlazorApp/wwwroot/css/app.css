@@ -945,34 +945,6 @@ header label {
     text-align: center;
     margin-top: 20px;
 }
-.tab-box {
-    margin: 0 auto;
-    margin-top: 50px;
-    width: 1150px;
-}
-.top-tab {
-    font-weight: bold;
-    float: left;
-    margin-top: 5px;
-}
-.top-tab ul li {
-    list-style: none;
-}
-.top-tab ul li a.archive {
-    color: #5A9600;
-}
-.top-content {
-    float: left;
-}
-.top-content ul li {
-    list-style: none;
-    height: 35px;
-    line-height: 35px;
-    width: 888px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
 .mta-box {
     width: 75%;
     margin: 100px auto 0;
@@ -1795,4 +1767,34 @@ button:focus {
 }
 .wallpaper img {
     width:100%
+}
+
+.hot-container {
+    margin: 50px auto;
+}
+
+.hot-nav {
+    word-break: keep-all;
+}
+
+.hot-nav a {
+    font-size: 14px
+}
+
+.hot-nav a:hover {
+    font-weight: bold
+}
+
+.hot-active, .dark-theme a.hot-active {
+    font-weight: bold;
+    color: #5a9600
+}
+
+.hot-content ul li {
+    list-style: none;
+    height: 35px;
+    line-height: 35px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
