@@ -92,7 +92,6 @@
     protected override async Task OnInitializedAsync()
     {
         var uri = await Common.CurrentUri();
-        Console.WriteLine(uri.Query);
         var query = QueryHelpers.ParseQuery(uri.Query);
 
         var hasType = query.TryGetValue("t", out Microsoft.Extensions.Primitives.StringValues t);
