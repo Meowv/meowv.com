@@ -185,9 +185,9 @@ namespace Meowv.Blog.Application.Common.Impl
         /// </summary>
         /// <param name="ip"></param>
         /// <returns></returns>
-        public async Task<ServiceResult<string>> Ip2ReginAsync(string ip)
+        public async Task<ServiceResult<List<string>>> Ip2ReginAsync(string ip)
         {
-            var result = new ServiceResult<string>();
+            var result = new ServiceResult<List<string>>();
 
             if (string.IsNullOrEmpty(ip))
             {
@@ -207,7 +207,9 @@ namespace Meowv.Blog.Application.Common.Impl
                 using var _search = new DbSearcher(path);
                 var block = await _search.BinarySearchAsync(ip);
 
-                result.IsSuccess(block.Region);
+                var region = block.Region.Split("|").Distinct().Where(x => x != "0").ToList();
+
+                result.IsSuccess(region);
                 return result;
             });
         }

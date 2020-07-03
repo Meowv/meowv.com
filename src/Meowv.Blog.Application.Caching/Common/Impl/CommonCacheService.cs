@@ -87,7 +87,7 @@ namespace Meowv.Blog.Application.Caching.Common.Impl
         /// <param name="ip"></param>
         /// <param name="factory"></param>
         /// <returns></returns>
-        public async Task<ServiceResult<string>> Ip2ReginAsync(string ip, Func<Task<ServiceResult<string>>> factory)
+        public async Task<ServiceResult<List<string>>> Ip2ReginAsync(string ip, Func<Task<ServiceResult<List<string>>>> factory)
         {
             return await Cache.GetOrAddAsync(KEY_Ip2Regin.FormatWith(ip), factory, CacheStrategy.ONE_DAY);
         }

@@ -123,7 +123,7 @@ namespace Meowv.Blog.HttpApi.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("ip2region")]
-        public async Task<ServiceResult<string>> Ip2ReginAsync(string ip)
+        public async Task<ServiceResult<List<string>>> Ip2ReginAsync(string ip)
         {
             return await _commonService.Ip2ReginAsync(ip);
         }

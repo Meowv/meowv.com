@@ -60,7 +60,7 @@ namespace Meowv.Blog.Application.Common
         /// </summary>
         /// <param name="ip"></param>
         /// <returns></returns>
-        Task<ServiceResult<string>> Ip2ReginAsync(string ip);
+        Task<ServiceResult<List<string>>> Ip2ReginAsync(string ip);
 
         /// <summary>
         /// 智能抠图，移除图片背景

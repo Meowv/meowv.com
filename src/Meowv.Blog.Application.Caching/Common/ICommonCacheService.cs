@@ -57,7 +57,7 @@ namespace Meowv.Blog.Application.Caching.Common
         /// <param name="ip"></param>
         /// <param name="factory"></param>
         /// <returns></returns>
-        Task<ServiceResult<string>> Ip2ReginAsync(string ip, Func<Task<ServiceResult<string>>> factory);
+        Task<ServiceResult<List<string>>> Ip2ReginAsync(string ip, Func<Task<ServiceResult<List<string>>>> factory);
 
         /// <summary>
         /// 语音合成
