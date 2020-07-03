@@ -2,48 +2,100 @@
 
 <div class="post-wrap">
     <h2 class="post-title">-&nbsp;Apps&nbsp;-</h2>
-    <ul>
-        <li>
-            <a target="_blank" href="https://support.qq.com/products/75616"><h3>💬~~~吐个槽_留言板~~~💬</h3></a>
-        </li>
-        <li>
-            <NavLink href="/signature"><h3>✍~~~个性艺术签名设计~~~✍</h3></NavLink>
-        </li>
-        <li>
-            <NavLink href="/wallpaper"><h3>🎈~~~手机壁纸~~~🎈</h3></NavLink>
-        </li>
-        <li>
-            <NavLink href="/hot"><h3>🌭~~~每日热点~~~🌭</h3></NavLink>
-        </li>
-        <li>
-            <NavLink href="/2048"><h3>🎮~~~程序员版2048~~~🎮</h3></NavLink>
-        </li>
-        <li>
-            <NavLink href="/gobang"><h3>⚫~~~五子棋~~~⚪</h3></NavLink>
-        </li>
-        <li>
-            <NavLink href="/soul"><h3>🤢~~~毒鸡汤~~~🤮</h3></NavLink>
-        </li>
-        <li>
-            <del><NavLink href="/tts"><h3>🎵~~~语音合成~~~🎵</h3></NavLink></del>
-        </li>
-        <li>
-            <NavLink href="/bing"><h3>🔥~~~每日壁纸~~~🔥</h3></NavLink>
-        </li>
-        <li>
-            <NavLink href="/girl"><h3>😍~~~随机妹子图~~~😍</h3></NavLink>
-        </li>
-        <li>
-            <NavLink href="/cat"><h3>🐱~~~随机猫咪图~~~🐱</h3></NavLink>
-        </li>
-        <li>
-            <del><NavLink href="/analysis"><h3>👁~~~访问数据分析~~~👁</h3></NavLink></del>
-        </li>
-        <li>
-            <del><NavLink href="/analysis"><h3>🔞~~~图集相册~~~🔞</h3></NavLink></del>
-        </li>
-        <li>
-            <NavLink href="/friendlinks"><h3>🔗~~~友情链接~~~🔗</h3></NavLink>
-        </li>
-    </ul>
+    <div class="plus-row">
+        <ul>
+            @if (links == null)
+            {
+                <Loading />
+            }
+            else
+            {
+                <li class="plus-col-xs12 plus-col-md6">
+                    <a target="_blank" href="https://support.qq.com/products/75616"><h3>💬~~~吐个槽_留言板~~~💬</h3></a>
+                </li>
+                @foreach (var item in links)
+                {
+                    <li class="plus-col-xs12 plus-col-md6">
+                        <NavLink href="@item.Url"><h3>@item.Title</h3></NavLink>
+                    </li>
+                }
+            }
+        </ul>
+    </div>
 </div>
+
+@code {
+    private List<Link> links;
+
+    protected override void OnInitialized()
+    {
+        links = new List<Link>
+    {
+            new Link
+            {
+                Title = "✍~~~个性艺术签名设计~~~✍",
+                Url = "/signature"
+            },
+            new Link
+            {
+                Title = "🎈~~~手机壁纸~~~🎈",
+                Url = "/wallpaper"
+            },
+            new Link
+            {
+                Title = "🌭~~~每日热点~~~🌭",
+                Url = "/hot"
+            },
+            new Link
+            {
+                Title = "🎮~~~程序员版2048~~~🎮",
+                Url = "/2048"
+            },
+            new Link
+            {
+                Title = "⚫~~~五子棋~~~⚪",
+                Url = "/gobang"
+            },
+            new Link
+            {
+                Title = "🤢~~~毒鸡汤~~~🤮",
+                Url = "/soul"
+            },
+            new Link
+            {
+                Title = "🎵~~~语音合成~~~🎵",
+                Url = "/tts"
+            },
+            new Link
+            {
+                Title = "🔥~~~每日壁纸~~~🔥",
+                Url = "/bing"
+            },
+            new Link
+            {
+                Title = "😍~~~随机妹子图~~~😍",
+                Url = "/girl"
+            },
+            new Link
+            {
+                Title = "🐱~~~随机猫咪图~~~🐱",
+                Url = "/cat"
+            },
+            new Link
+            {
+                Title = "👁~~~访问数据分析~~~👁",
+                Url = "/analysis"
+            },
+            new Link
+            {
+                Title = "🔞~~~图集相册~~~🔞",
+                Url = "/gallery"
+            },
+            new Link
+            {
+                Title = "🔗~~~友情链接~~~🔗",
+                Url = "/friendlinks"
+            }
+        };
+    }
+}
