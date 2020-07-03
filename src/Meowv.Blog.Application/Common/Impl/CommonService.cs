@@ -209,6 +209,8 @@ namespace Meowv.Blog.Application.Common.Impl
 
                 var region = block.Region.Split("|").Distinct().Where(x => x != "0").ToList();
 
+                region.AddFirst(ip);
+
                 result.IsSuccess(region);
                 return result;
             });
