@@ -2345,18 +2345,27 @@ button:focus {
 	color: #5A9600;
 }
 
-.tts-demo {
-	position: absolute;
-	right: 40px;
-	bottom: 5px;
+.tts-btn {
 	cursor: pointer;
+	font-size: 16px;
+	position: absolute;
+	bottom: 5px;
+}
+
+.tts-download {
+	right: 100px;
+}
+
+.tts-play {
+	right: 70px;
+}
+
+.tts-demo {
+	right: 40px;
 }
 
 .tts-clear {
-	position: absolute;
 	right: 10px;
-	bottom: 5px;
-	cursor: pointer;
 }
 
 .tts-setting {
@@ -2371,7 +2380,7 @@ button:focus {
 
 .tts-setting-title {
 	font-weight: bold;
-	width: 100px;
+	width: 50px;
 }
 
 .tts-setting-value {
@@ -2380,12 +2389,27 @@ button:focus {
 }
 
 .tts-setting-value label {
-	padding-right: 10px;
+	padding-right: 5px;
 }
 
 .tts-setting-value input[type=radio] {
+	margin-right: 3px;
 	display: initial;
 	visibility: initial;
 	width: initial;
 	height: initial;
+}
+
+.tts-setting-value input[type=range] {
+    height: 10px;
+	width: 250px;
+}
+
+.tts-setting-value input[type=range]:focus {
+	outline: none;
+}
+
+.tts-setting-value i {
+	font-size: 12px;
+	color: #5A9600;
 }

@@ -112,6 +112,12 @@ func = {
             window.open(window.URL.createObjectURL(blob), "_blank");
         }));
     },
+    playAudio() {
+        var audio = document.querySelector('audio');
+        if (audio === null) return;
+        audio.load();
+        audio.play();
+    },
     _shoowBox: function () {
         DotNet.invokeMethodAsync('Meowv.Blog.BlazorApp', 'showbox');
     },
