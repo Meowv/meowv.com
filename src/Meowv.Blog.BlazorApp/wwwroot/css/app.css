@@ -1706,6 +1706,19 @@ button:focus {
 	.plus-show-xs-inline-block {
 		display: inline-block!important;
 	}
+
+	.ip-search input {
+		padding: 8px 10px !important;
+		width: 220px !important;
+		width: calc(100vw - 140px) !important;
+	}
+
+	.ip-search button {
+		width: 60px !important;
+		height: 36px;
+		line-height: 36px !important;
+		font-size: 14px !important;
+	}
 }
 
 @media screen and (min-width:768px) {
@@ -2223,4 +2236,59 @@ button:focus {
 
 .post-wrap ul li {
 	list-style: none;
+}
+
+.ip-box {
+	text-align: center;
+}
+
+.ip-search {
+	display: inline-block;
+	border: 2px solid #5a9600;
+	border-radius: 3px;
+	margin: 60px auto 30px;
+}
+
+.dark-theme .ip-search input {
+	background: #292a2d;
+	color: #fff;
+}
+
+.ip-search input {
+	width: 800px;
+	height: 20px;
+	padding: 10px;
+	border: medium none;
+	line-height: 20px;
+	vertical-align: middle;
+	outline: none;
+	font-size: 16px;
+}
+
+.ip-search button {
+	width: 100px;
+    height: 40px;
+    line-height: 40px;
+    vertical-align: middle;
+    font-size: 16px;
+    color: #fff;
+    cursor: pointer;
+    border-width: medium;
+    border-style: none;
+    border-color: initial;
+    border-image: initial;
+    background: #5a9600;
+    outline: none;
+    border-radius: 0px;
+}
+
+.ip-region {
+	display: inline-block;
+	text-align: left;
+	padding: 10px;
+}
+
+.ip-region p {
+	font-size: 18px;
+	font-weight: bold;
 }
