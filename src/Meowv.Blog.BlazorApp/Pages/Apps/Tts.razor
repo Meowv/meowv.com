@@ -26,23 +26,23 @@ else
             <div class="tts-setting">
                 <div class="tts-setting-title">发音</div>
                 <div class="tts-setting-value">
-                    <label><input type="radio" name="per" @onclick="(() => per = 0)" checked="checked" />标准女</label>
+                    <label><input type="radio" name="per" @onclick="(() => per = 0)" />标准女</label>
                     <label><input type="radio" name="per" @onclick="(() => per = 1)" />标准男</label>
                     <label><input type="radio" name="per" @onclick="(() => per = 3)" />情感男</label>
-                    <label><input type="radio" name="per" @onclick="(() => per = 4)" />情感女</label>
+                    <label><input type="radio" name="per" @onclick="(() => per = 4)" checked="checked" />情感女</label>
                 </div>
             </div>
             <div class="tts-setting">
                 <div class="tts-setting-title">语速</div>
                 <div class="tts-setting-value">
-                    <input type="range" min="0" max="15" @bind="@spd" @bind:event="onchange" step="1" title="@spd" />
+                    <input type="range" min="0" max="9" @bind="@spd" @bind:event="onchange" step="1" title="@spd" />
                     <i>@spd</i>
                 </div>
             </div>
             <div class="tts-setting">
                 <div class="tts-setting-title">音调</div>
                 <div class="tts-setting-value">
-                    <input type="range" min="0" max="15" @bind="@pit" @bind:event="onchange" step="1" title="@pit" />
+                    <input type="range" min="0" max="9" @bind="@pit" @bind:event="onchange" step="1" title="@pit" />
                     <i>@pit</i>
                 </div>
             </div>
@@ -85,7 +85,7 @@ else
     /// <summary>
     /// 4个参数
     /// </summary>
-    private int spd = 5, pit = 5, vol = 5, per = 0;
+    private int spd = 5, pit = 5, vol = 7, per = 4;
 
     /// <summary>
     /// 初始化
