@@ -31,7 +31,7 @@ namespace Meowv.Blog.Application.Caching.HotNews.Impl
         /// <returns></returns>
         public async Task<ServiceResult<IEnumerable<HotNewsDto>>> QueryHotNewsAsync(int sourceId, Func<Task<ServiceResult<IEnumerable<HotNewsDto>>>> factory)
         {
-            return await Cache.GetOrAddAsync(KEY_QueryHotNews.FormatWith(sourceId), factory, CacheStrategy.ONE_HOURS);
+            return await Cache.GetOrAddAsync(KEY_QueryHotNews.FormatWith(sourceId), factory, CacheStrategy.FIVE_MINUTES);
         }
     }
 }
