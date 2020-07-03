@@ -2293,3 +2293,99 @@ button:focus {
 	font-size: 18px;
 	font-weight: bold;
 }
+
+.tts-box {
+	margin: 50px auto;
+}
+
+.tts-textarea-wrap {
+	height: 220px;
+	position: relative;
+	padding: 13px 20px;
+	border: 1px solid #eee;
+	background-color: #fff;
+}
+
+.dark-theme .tts-textarea-wrap {
+	background-color: #292a2d;
+	border: 1px solid #666;
+}
+
+.dark-theme .tts-textarea-wrap textarea {
+	color: #fff;
+}
+
+.tts-textarea-wrap textarea {
+	height: 150px;
+	box-sizing: border-box;
+	display: block;
+	width: 100%;
+	padding: 0;
+	line-height: 30px;
+	resize: none;
+	background-color: transparent;
+	font-size: 14px;
+	outline: none;
+	border: 0;
+	color: #000;
+	letter-spacing: 1px;
+}
+
+.tts-tip {
+	font-size: 14px;
+	position: absolute;
+	left: 20px;
+	bottom: 20px;
+	height: 16px;
+	color: #666;
+}
+
+.tts-tip-num {
+	margin: 0 2px;
+	color: #5A9600;
+}
+
+.tts-demo {
+	position: absolute;
+	right: 40px;
+	bottom: 5px;
+	cursor: pointer;
+}
+
+.tts-clear {
+	position: absolute;
+	right: 10px;
+	bottom: 5px;
+	cursor: pointer;
+}
+
+.tts-setting {
+	margin-top: 40px;
+}
+
+.tts-setting-title, .tts-setting-value {
+	display: inline-block;
+	vertical-align: middle;
+	
+}
+
+.tts-setting-title {
+	font-weight: bold;
+	width: 100px;
+}
+
+.tts-setting-value {
+	display: inline-block;
+	vertical-align: middle;
+}
+
+.tts-setting-value label {
+	padding-right: 10px;
+}
+
+.tts-setting-value input[type=radio] {
+	display: initial;
+	visibility: initial;
+	width: initial;
+	height: initial;
+}
