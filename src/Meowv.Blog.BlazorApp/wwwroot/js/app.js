@@ -148,8 +148,8 @@ func = {
                 },
                 "mobile": {
                     "scale": 1,
-                    "show": false,
-                    "motion": false
+                    "show": true,
+                    "motion": true,
                 },
                 "react": {
                     "opacityDefault": .5,

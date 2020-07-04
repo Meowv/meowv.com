@@ -9,3 +9,10 @@
     </div>
     <Footer />
 </div>
+
+@code {
+    protected async override Task OnInitializedAsync()
+    {
+        await Common.InvokeAsync("window.func.live2dInit");
+    }
+}

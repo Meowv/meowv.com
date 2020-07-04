@@ -11,7 +11,7 @@
             else
             {
                 <li class="plus-col-xs12 plus-col-md6">
-                    <a target="_blank" href="https://support.qq.com/products/75616"><h3>💬~~~吐个槽_留言板~~~💬</h3></a>
+                    <NavLink target="_blank" href="https://support.qq.com/products/75616"><h3>💬~~~吐个槽_留言板~~~💬</h3></NavLink>
                 </li>
                 @foreach (var item in links)
                 {
@@ -19,6 +19,9 @@
                         <NavLink href="@item.Url"><h3>@item.Title</h3></NavLink>
                     </li>
                 }
+                <li class="plus-col-xs12 plus-col-md6">
+                    <NavLink @onclick="Live2dInit"><h3>💫~~~切换 Live2d 模型~~~💫</h3></NavLink>
+                </li>
             }
         </ul>
     </div>
@@ -30,7 +33,7 @@
     protected override void OnInitialized()
     {
         links = new List<Link>
-    {
+{
             new Link
             {
                 Title = "✍~~~个性艺术签名设计~~~✍",
@@ -102,5 +105,10 @@
                 Url = "/friendlinks"
             }
         };
+    }
+
+    private async Task Live2dInit()
+    {
+        await Common.InvokeAsync("window.func.live2dInit");
     }
 }
