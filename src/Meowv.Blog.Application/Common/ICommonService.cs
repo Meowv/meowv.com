@@ -101,6 +101,6 @@ namespace Meowv.Blog.Application.Common
         /// <param name="category"></param>
         /// <param name="keyword"></param>
         /// <returns></returns>
-        Task<ServiceResult<IEnumerable<NameValue<EmojiDto>>>> QueryEmojisAsync(string category, string keyword);
+        Task<ServiceResult<IEnumerable<EmojiDto>>> QueryEmojisAsync(string category, string keyword);
     }
 }

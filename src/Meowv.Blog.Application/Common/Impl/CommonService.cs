@@ -368,31 +368,36 @@ namespace Meowv.Blog.Application.Common.Impl
         /// <param name="category"></param>
         /// <param name="keyword"></param>
         /// <returns></returns>
-        public async Task<ServiceResult<IEnumerable<NameValue<EmojiDto>>>> QueryEmojisAsync(string category, string keyword)
+        public async Task<ServiceResult<IEnumerable<EmojiDto>>> QueryEmojisAsync(string category, string keyword)
         {
-            var result = new ServiceResult<IEnumerable<NameValue<EmojiDto>>>();
+            var result = new ServiceResult<IEnumerable<EmojiDto>>();
 
             var path = Path.Combine(Directory.GetCurrentDirectory(), "Resources/emojis.json");
-            var emojis = await path.FromJsonFile<dynamic>();
+            var emoji_json = await path.FromJsonFile<dynamic>();
 
-            var list = new List<NameValue<EmojiDto>>();
+            var emojis = new List<NameValue<EmojiJsonDto>>();
 
-            JObject jObject = new JObject(emojis);
+            JObject jObject = new JObject(emoji_json);
             foreach (var item in jObject)
             {
                 var name = item.Key;
-                var value = item.Value.ToObject<EmojiDto>();
+                var value = item.Value.ToObject<EmojiJsonDto>();
 
-                list.Add(new NameValue<EmojiDto>
+                emojis.Add(new NameValue<EmojiJsonDto>
                 {
                     Name = name,
                     Value = value
                 });
             }
 
-            list = list.WhereIf(category.IsNotNullOrEmpty(), x => x.Value.Category == category)
-                       .WhereIf(keyword.IsNotNullOrEmpty(), x => x.Value.Keywords.Contains(keyword))
-                       .ToList();
+            var list = emojis.WhereIf(category.IsNotNullOrEmpty(), x => x.Value.Category == category)
+                             .WhereIf(keyword.IsNotNullOrEmpty(), x => x.Value.Keywords.Contains(keyword))
+                             .Select(x => new EmojiDto
+                             {
+                                 Name = x.Name,
+                                 Char = x.Value.Char,
+                                 Category = x.Value.Category
+                             }).ToList();
 
             result.IsSuccess(list);
             return result;

@@ -198,7 +198,7 @@ namespace Meowv.Blog.HttpApi.Controllers
         /// <returns></returns>
         [HttpGet]
         [Route("emojis")]
-        public async Task<ServiceResult<IEnumerable<NameValue<EmojiDto>>>> QueryEmojisAsync(string category, string keyword)
+        public async Task<ServiceResult<IEnumerable<EmojiDto>>> QueryEmojisAsync(string category, string keyword)
         {
             return await _commonService.QueryEmojisAsync(category, keyword);
         }
