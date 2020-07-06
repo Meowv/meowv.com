@@ -43,6 +43,8 @@
 @code {
     protected override async Task OnInitializedAsync()
     {
+        await Common.SetTitleAsync("程序员版2048");
+
         await Common.InvokeAsync("window.func.render2048Game");
     }
 }

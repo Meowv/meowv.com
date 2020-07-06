@@ -22,6 +22,8 @@ else
     /// <returns></returns>
     protected override async Task OnInitializedAsync()
     {
+        await Common.SetTitleAsync("毒鸡汤");
+
         soul = null;
         soul = await Http.GetFromJsonAsync<ServiceResult<string>>("/soul");
     }

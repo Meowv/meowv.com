@@ -23,6 +23,8 @@ else
     /// <returns></returns>
     protected override async Task OnInitializedAsync()
     {
+        await Common.SetTitleAsync("每日壁纸");
+
         bing = await Http.GetFromJsonAsync<ServiceResult<string>>("/common/bing/imgurl");
     }
 }

@@ -63,6 +63,8 @@ else
         if (tag.Success)
         {
             tagName = tag.Result;
+
+            await Common.SetTitleAsync(tagName);
         }
     }
 }

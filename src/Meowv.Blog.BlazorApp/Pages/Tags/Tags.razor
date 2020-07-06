@@ -35,6 +35,8 @@ else
     /// </summary>
     protected override async Task OnInitializedAsync()
     {
+        await Common.SetTitleAsync("Tags");
+
         // 获取数据
         tags = await Http.GetFromJsonAsync<ServiceResult<IEnumerable<QueryTagDto>>>($"/blog/tags");
     }

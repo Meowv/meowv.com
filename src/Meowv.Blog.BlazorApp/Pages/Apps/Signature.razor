@@ -74,6 +74,8 @@ else
     /// <returns></returns>
     protected override async Task OnInitializedAsync()
     {
+        await Common.SetTitleAsync("个性艺术签名设计");
+
         types = await Http.GetFromJsonAsync<ServiceResult<IEnumerable<EnumResponse>>>($"/signature/types");
         signatures = await Http.GetFromJsonAsync<ServiceResult<IEnumerable<SignatureDto>>>($"/signatures?count=20");
 

@@ -65,6 +65,8 @@ else
 
     protected async override Task OnInitializedAsync()
     {
+        await Common.SetTitleAsync("访问数据分析");
+
         var stream = await Http.GetStreamAsync($"/mta/ctr_core_data?start_date={today}&end_date={today}&idx=pv,uv,vv,iv");
 
         using (var json = await JsonDocument.ParseAsync(stream))

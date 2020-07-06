@@ -63,6 +63,8 @@ else
         if (category.Success)
         {
             categoryName = category.Result;
+
+            await Common.SetTitleAsync(categoryName);
         }
     }
 }
