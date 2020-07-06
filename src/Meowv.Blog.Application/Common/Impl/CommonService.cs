@@ -1,6 +1,7 @@
 ﻿using Baidu.Aip.Speech;
 using IP2Region;
 using Meowv.Blog.Application.Caching.Common;
+using Meowv.Blog.Application.Contracts.Common;
 using Meowv.Blog.Domain.Configurations;
 using Meowv.Blog.ToolKits.Base;
 using Meowv.Blog.ToolKits.Extensions;
@@ -12,6 +13,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Volo.Abp;
 using static Meowv.Blog.Domain.Shared.MeowvBlogConsts;
 
 namespace Meowv.Blog.Application.Common.Impl
@@ -358,6 +360,42 @@ namespace Meowv.Blog.Application.Common.Impl
                 }
                 return result;
             });
+        }
+
+        /// <summary>
+        /// 根据条件查询 Emoji 表情列表
+        /// </summary>
+        /// <param name="category"></param>
+        /// <param name="keyword"></param>
+        /// <returns></returns>
+        public async Task<ServiceResult<IEnumerable<NameValue<EmojiDto>>>> QueryEmojisAsync(string category, string keyword)
+        {
+            var result = new ServiceResult<IEnumerable<NameValue<EmojiDto>>>();
+
+            var path = Path.Combine(Directory.GetCurrentDirectory(), "Resources/emojis.json");
+            var emojis = await path.FromJsonFile<dynamic>();
+
+            var list = new List<NameValue<EmojiDto>>();
+
+            JObject jObject = new JObject(emojis);
+            foreach (var item in jObject)
+            {
+                var name = item.Key;
+                var value = item.Value.ToObject<EmojiDto>();
+
+                list.Add(new NameValue<EmojiDto>
+                {
+                    Name = name,
+                    Value = value
+                });
+            }
+
+            list = list.WhereIf(category.IsNotNullOrEmpty(), x => x.Value.Category == category)
+                       .WhereIf(keyword.IsNotNullOrEmpty(), x => x.Value.Keywords.Contains(keyword))
+                       .ToList();
+
+            result.IsSuccess(list);
+            return result;
         }
     }
 }

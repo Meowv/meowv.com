@@ -1,10 +1,12 @@
 ﻿using Meowv.Blog.Application.Common;
+using Meowv.Blog.Application.Contracts.Common;
 using Meowv.Blog.ToolKits.Base;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
+using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
 using static Meowv.Blog.Domain.Shared.MeowvBlogConsts;
 
@@ -186,6 +188,19 @@ namespace Meowv.Blog.HttpApi.Controllers
             var bytes = await _commonService.SpeechTtsGreetWordAsync();
 
             return File(bytes.Result, "audio/mpeg");
+        }
+
+        /// <summary>
+        /// 根据条件查询 Emoji 表情列表
+        /// </summary>
+        /// <param name="category"></param>
+        /// <param name="keyword"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("emojis")]
+        public async Task<ServiceResult<IEnumerable<NameValue<EmojiDto>>>> QueryEmojisAsync(string category, string keyword)
+        {
+            return await _commonService.QueryEmojisAsync(category, keyword);
         }
     }
 }

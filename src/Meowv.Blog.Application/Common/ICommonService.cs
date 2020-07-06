@@ -1,7 +1,9 @@
-﻿using Meowv.Blog.ToolKits.Base;
+﻿using Meowv.Blog.Application.Contracts.Common;
+using Meowv.Blog.ToolKits.Base;
 using Microsoft.AspNetCore.Http;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Volo.Abp;
 
 namespace Meowv.Blog.Application.Common
 {
@@ -92,5 +94,13 @@ namespace Meowv.Blog.Application.Common
         /// </summary>
         /// <returns></returns>
         Task<ServiceResult<byte[]>> SpeechTtsGreetWordAsync();
+
+        /// <summary>
+        /// 根据条件查询 Emoji 表情列表
+        /// </summary>
+        /// <param name="category"></param>
+        /// <param name="keyword"></param>
+        /// <returns></returns>
+        Task<ServiceResult<IEnumerable<NameValue<EmojiDto>>>> QueryEmojisAsync(string category, string keyword);
     }
 }
