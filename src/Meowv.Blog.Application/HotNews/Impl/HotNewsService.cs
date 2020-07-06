@@ -85,7 +85,7 @@ namespace Meowv.Blog.Application.HotNews.Impl
             }
 
             await _hotNewsRepository.DeleteAsync(x => x.SourceId == (int)input.Source);
-            await _hotNewsRepository.BulkInsertAsync(hotNews);
+            await _hotNewsRepository.BulkInsertAsync(hotNews.Reverse());
 
             result.IsSuccess(ResponseText.INSERT_SUCCESS);
             return result;
