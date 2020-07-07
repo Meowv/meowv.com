@@ -169,7 +169,7 @@ func = {
                     name: fm[i].albumTitle,
                     artist: fm[i].artist,
                     url: fm[i].url,
-                    cover: fm[i].picture,
+                    cover: `https://api2.meowv.com/common/img?url=${fm[i].picture}`,
                     lrc: fm[i].lyric,
                 });
             }
