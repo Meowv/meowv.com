@@ -1682,13 +1682,13 @@ button:focus {
 		display: inline-block!important;
 	}
 
-	.ip-search input {
+	.ip-search input, .emoji-search input {
 		padding: 8px 10px !important;
 		width: 220px !important;
 		width: calc(100vw - 140px) !important;
 	}
 
-	.ip-search button {
+	.ip-search button, .emoji-search button {
 		width: 60px !important;
 		height: 36px;
 		line-height: 36px !important;
@@ -2213,6 +2213,63 @@ button:focus {
 	list-style: none;
 }
 
+.emoji-box {
+	text-align: center;
+}
+
+.emoji-search {
+	display: inline-block;
+	border: 2px solid #5a9600;
+	border-radius: 3px;
+	margin: 60px auto 30px;
+}
+
+.emoji-search input {
+	width: 800px;
+	height: 20px;
+	padding: 10px;
+	border: medium none;
+	line-height: 20px;
+	vertical-align: middle;
+	outline: none;
+	font-size: 16px;
+}
+
+.emoji-search button {
+	width: 100px;
+	height: 40px;
+	line-height: 40px;
+	vertical-align: middle;
+	font-size: 16px;
+	color: #fff;
+	cursor: pointer;
+	border-width: medium;
+	border-style: none;
+	border-color: initial;
+	border-image: initial;
+	background: #5a9600;
+	outline: none;
+	border-radius: 0px;
+}
+
+.emoji-content {
+	text-align: initial;
+}
+
+.emoji-item {
+	padding-left: 10px;
+}
+
+.emoji-item:not(:first-child) {
+	height: 100%;
+	margin-bottom: 20px;
+}
+
+.emoji-item a span {
+	font-size: 12px;
+	padding-left: 5px;
+}
+
 .ip-box {
 	text-align: center;
 }
@@ -2224,7 +2281,7 @@ button:focus {
 	margin: 60px auto 30px;
 }
 
-.dark-theme .ip-search input {
+.dark-theme .ip-search input, .dark-theme .emoji-search input {
 	background: #292a2d;
 	color: #fff;
 }
