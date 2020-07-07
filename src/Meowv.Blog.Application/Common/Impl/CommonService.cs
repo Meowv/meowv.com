@@ -403,5 +403,21 @@ namespace Meowv.Blog.Application.Common.Impl
             result.IsSuccess(list);
             return result;
         }
+
+        /// <summary>
+        /// 返回图片
+        /// </summary>
+        /// <param name="url"></param>
+        /// <returns></returns>
+        public async Task<ServiceResult<byte[]>> ReturnImgAsync(string url)
+        {
+            var result = new ServiceResult<byte[]>();
+
+            using var client = _httpClient.CreateClient();
+            var bytes = await client.GetByteArrayAsync(url);
+
+            result.IsSuccess(bytes);
+            return result;
+        }
     }
 }

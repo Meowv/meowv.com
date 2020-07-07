@@ -202,5 +202,19 @@ namespace Meowv.Blog.HttpApi.Controllers
         {
             return await _commonService.QueryEmojisAsync(category, keyword);
         }
+
+        /// <summary>
+        /// 返回图片
+        /// </summary>
+        /// <param name="url"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("img")]
+        public async Task<FileContentResult> ReturnImgAsync(string url)
+        {
+            var bytes = await _commonService.ReturnImgAsync(url);
+
+            return File(bytes.Result, "image/png");
+        }
     }
 }

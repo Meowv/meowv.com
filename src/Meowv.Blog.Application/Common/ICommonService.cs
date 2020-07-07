@@ -102,5 +102,12 @@ namespace Meowv.Blog.Application.Common
         /// <param name="keyword"></param>
         /// <returns></returns>
         Task<ServiceResult<IEnumerable<EmojiDto>>> QueryEmojisAsync(string category, string keyword);
+
+        /// <summary>
+        /// 返回图片
+        /// </summary>
+        /// <param name="url"></param>
+        /// <returns></returns>
+        Task<ServiceResult<byte[]>> ReturnImgAsync(string url);
     }
 }
