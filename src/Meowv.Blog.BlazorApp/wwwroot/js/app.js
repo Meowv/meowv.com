@@ -161,6 +161,34 @@ func = {
             });
         });
     },
+    fmInit: async function (fm) {
+        await this._loadScript('./aplayer/APlayer.min.js').then(function () {
+            var audio = [];
+            for (var i in fm) {
+                audio.push({
+                    name: fm[i].albumTitle,
+                    artist: fm[i].artist,
+                    url: fm[i].url,
+                    cover: fm[i].picture,
+                    lrc: fm[i].lyric,
+                });
+            }
+            new APlayer({
+                container: document.querySelector('.fm'),
+                autoplay: false,
+                theme: '#5A9600',
+                loop: 'all',
+                order: 'list',
+                preload: 'auto',
+                volume: 0.7,
+                mutex: true,
+                listFolded: false,
+                listMaxHeight: '600px',
+                lrcType: 1,
+                audio: audio
+            });
+        });
+    },
     _shoowBox: function () {
         DotNet.invokeMethodAsync('Meowv.Blog.BlazorApp', 'showbox');
     },
