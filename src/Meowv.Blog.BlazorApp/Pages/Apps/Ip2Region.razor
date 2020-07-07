@@ -50,6 +50,8 @@ else
     /// <returns></returns>
     protected async override Task OnInitializedAsync()
     {
+        await Common.SetTitleAsync("IP地址查询");
+
         await Ip2RegionAsync();
     }
 

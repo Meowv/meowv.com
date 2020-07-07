@@ -6,5 +6,8 @@
 </div>
 
 @code {
-
+    protected override async Task OnInitializedAsync()
+    {
+        await Common.SetTitleAsync("图集相册");
+    }
 }

@@ -127,5 +127,7 @@ else
     {
         post = await Http.GetFromJsonAsync<ServiceResult<PostDetailDto>>($"/blog/post?url={url}");
         await Common.InvokeAsync("window.func.renderMarkdown");
+
+        await Common.SetTitleAsync(post.Result.Title);
     }
 }

@@ -6,3 +6,10 @@
 <div class="btnbox">
     <button class="soul-btn" @onclick="@(async () => await Common.NavigateTo("cat", true))">再来一张</button>
 </div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await Common.SetTitleAsync("随机猫咪图");
+    }
+}

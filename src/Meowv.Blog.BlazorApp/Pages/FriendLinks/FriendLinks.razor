@@ -41,6 +41,8 @@ else
     /// </summary>
     protected override async Task OnInitializedAsync()
     {
+        await Common.SetTitleAsync("友情链接");
+
         // 获取数据
         friendlinks = await Http.GetFromJsonAsync<ServiceResult<IEnumerable<FriendLinkDto>>>($"/blog/friendlinks");
     }

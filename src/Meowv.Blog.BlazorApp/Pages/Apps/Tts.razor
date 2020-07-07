@@ -93,6 +93,8 @@ else
     /// <returns></returns>
     protected override async Task OnInitializedAsync()
     {
+        await Common.SetTitleAsync("语音合成");
+
         await SettingRandomContentAsync();
         isLoading = false;
     }

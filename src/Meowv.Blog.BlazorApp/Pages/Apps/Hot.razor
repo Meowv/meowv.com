@@ -53,6 +53,8 @@
     /// <returns></returns>
     protected override async Task OnInitializedAsync()
     {
+        await Common.SetTitleAsync("每日热点");
+
         var uri = await Common.CurrentUri();
         var query = QueryHelpers.ParseQuery(uri.Query);
 

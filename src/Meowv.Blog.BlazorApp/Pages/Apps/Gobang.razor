@@ -73,8 +73,10 @@
     /// <summary>
     /// OnInitialized
     /// </summary>
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
+        await Common.SetTitleAsync("五子棋");
+
         var tips = "先手要攻，后手要守，以攻为守，以守待攻。\n攻守转换，慎思变化，先行争夺，地破天惊。\n守取外势，攻聚内力，八卦易守，成角易攻。\n阻断分隔，稳如泰山，不思争先，胜如登天。\n初盘争二，终局抢三，留三不冲，变化万千。\n多个先手，细算次先，五子要点，次序在前。\n斜线为阴，直线为阳，阴阳结合，防不胜防。\n连三连四，易见为明，跳三跳四，暗剑深藏。\n己落一子，敌增一兵，攻其要点，守其必争。\n势已形成，败即降临，五子精华，一子输赢。";
         Console.WriteLine(tips);
 

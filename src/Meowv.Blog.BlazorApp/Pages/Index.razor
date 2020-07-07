@@ -52,4 +52,9 @@
     /// 鼠标移入移出操作
     /// </summary>
     private void Hover() => IsHidden = !IsHidden;
+
+    protected async override Task OnInitializedAsync()
+    {
+        await Common.SetTitleAsync();
+    }
 }
