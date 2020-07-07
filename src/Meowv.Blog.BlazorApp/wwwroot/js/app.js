@@ -1,4 +1,4 @@
-﻿var func = window.func || {}, editor;
+﻿var func = window.func || {}, editor, fm;
 
 (function (l) {
     if (l.search) {
@@ -161,20 +161,31 @@ func = {
             });
         });
     },
-    fmInit: async function (fm) {
+    fmInit: async function (fm_audio) {
+        if (fm !== undefined) return;
         await this._loadScript('./aplayer/APlayer.min.js').then(function () {
             var audio = [];
-            for (var i in fm) {
-                audio.push({
-                    name: fm[i].albumTitle,
-                    artist: fm[i].artist,
-                    url: fm[i].url,
-                    cover: `https://api2.meowv.com/common/img?url=${fm[i].picture}`,
-                    lrc: fm[i].lyric,
-                });
+
+            var storage_json = func.getStorage("fm")
+            var fm_json = JSON.parse(storage_json);
+
+            if (fm_json == null || new Date().getTime() > fm_json.expireDate) {
+                for (var i in fm_audio) {
+                    audio.push({
+                        name: fm_audio[i].albumTitle,
+                        artist: fm_audio[i].artist,
+                        url: fm_audio[i].url,
+                        cover: `https://api2.meowv.com/common/img?url=${fm_audio[i].picture}`,
+                        lrc: fm_audio[i].lyric,
+                    });
+                }
+            } else {
+                audio = fm_json.audio;
             }
-            new APlayer({
+
+            fm = new APlayer({
                 container: document.querySelector('.fm'),
+                fixed: true,
                 autoplay: false,
                 theme: '#5A9600',
                 loop: 'all',
@@ -182,11 +193,30 @@ func = {
                 preload: 'auto',
                 volume: 0.7,
                 mutex: true,
-                listFolded: false,
+                listFolded: true,
                 listMaxHeight: '600px',
                 lrcType: 1,
                 audio: audio
             });
+            fm.lrc.hide();
+
+            if (fm_json != null) {
+                fm.list.switch(fm_json.fmPlayIndex);
+                setTimeout(function () {
+                    fm.seek(fm_json.fmPlayTime);
+                }, 500);
+            }
+
+            var fm_storage = {};
+            fm_storage.expireDate = new Date().getTime() + 1800000;
+            setInterval(function () {
+                if (!fm.audio.paused) {
+                    fm_storage.fmPlayIndex = fm.list.index;
+                    fm_storage.fmPlayTime = fm.audio.currentTime;
+                    fm_storage.audio = audio;
+                    func.setStorage("fm", JSON.stringify(fm_storage));
+                }
+            }, 1000);
         });
     },
     _shoowBox: function () {

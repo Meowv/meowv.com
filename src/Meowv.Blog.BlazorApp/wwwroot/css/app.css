@@ -1,4 +1,5 @@
-﻿*, *:after, *:before {
+﻿@import url('../aplayer/APlayer.min.css');
+*, *:after, *:before {
 	-webkit-box-sizing: border-box;
 	-moz-box-sizing: border-box;
 	box-sizing: border-box;
@@ -2444,8 +2445,4 @@ button:focus {
 .tts-setting-value i {
 	font-size: 12px;
 	color: #5A9600;
-}
-
-.fm {
-	margin-top: 20px !important;
 }
