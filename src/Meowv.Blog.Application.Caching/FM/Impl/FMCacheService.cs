@@ -21,7 +21,7 @@ namespace Meowv.Blog.Application.Caching.FM.Impl
         /// <returns></returns>
         public async Task<ServiceResult<IEnumerable<ChannelDto>>> GetChannelsAsync(Func<Task<ServiceResult<IEnumerable<ChannelDto>>>> factory)
         {
-            return await Cache.GetOrAddAsync(KEY_GetChannels, factory, CacheStrategy.ONE_MINUTE);
+            return await Cache.GetOrAddAsync(KEY_GetChannels, factory, CacheStrategy.HALF_HOURS);
         }
 
         /// <summary>
@@ -31,7 +31,7 @@ namespace Meowv.Blog.Application.Caching.FM.Impl
         /// <returns></returns>
         public async Task<ServiceResult<IEnumerable<FMDto>>> GetRandomFmAsync(Func<Task<ServiceResult<IEnumerable<FMDto>>>> factory)
         {
-            return await Cache.GetOrAddAsync(KEY_GetRandomFm, factory, CacheStrategy.ONE_MINUTE);
+            return await Cache.GetOrAddAsync(KEY_GetRandomFm, factory, CacheStrategy.HALF_HOURS);
         }
 
         /// <summary>
@@ -43,7 +43,7 @@ namespace Meowv.Blog.Application.Caching.FM.Impl
         /// <returns></returns>
         public async Task<ServiceResult<string>> GetLyricAsync(string sid, string ssid, Func<Task<ServiceResult<string>>> factory)
         {
-            return await Cache.GetOrAddAsync(KEY_GetGeyLyric.FormatWith(sid, ssid), factory, CacheStrategy.ONE_HOURS);
+            return await Cache.GetOrAddAsync(KEY_GetGeyLyric.FormatWith(sid, ssid), factory, CacheStrategy.HALF_HOURS);
         }
     }
 }
