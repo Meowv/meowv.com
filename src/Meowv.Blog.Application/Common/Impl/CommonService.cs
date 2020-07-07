@@ -396,7 +396,8 @@ namespace Meowv.Blog.Application.Common.Impl
                              {
                                  Name = x.Name,
                                  Char = x.Value.Char,
-                                 Category = x.Value.Category
+                                 Category = x.Value.Category,
+                                 Keywords = x.Value.Keywords
                              }).ToList();
 
             result.IsSuccess(list);
