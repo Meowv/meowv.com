@@ -19,8 +19,7 @@ else
                     @foreach (var emoji in item)
                     {
                         <NavLink class="plus-col-xs12 plus-col-md3"
-                                 title="@(string.Join(" ", emoji.Keywords))"
-                                 @onclick="@(async () => await Copy(emoji.Char))">
+                                 title="@(string.Join(" ", emoji.Keywords))">
                             @emoji.Char<span>:@emoji.Name:</span>
                         </NavLink>
                     }
@@ -66,10 +65,5 @@ else
         emojis = null;
         keyword = null;
         emojis = result.Result;
-    }
-
-    private async Task Copy(string emoji)
-    {
-        await Common.InvokeAsync("window.func.copyText", emoji);
     }
 }

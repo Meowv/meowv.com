@@ -161,9 +161,6 @@ func = {
             });
         });
     },
-    copyText: function (text) {
-        navigator.clipboard.writeText(text);
-    },
     _shoowBox: function () {
         DotNet.invokeMethodAsync('Meowv.Blog.BlazorApp', 'showbox');
     },
