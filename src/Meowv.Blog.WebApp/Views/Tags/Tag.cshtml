@@ -1,0 +1,29 @@
+﻿<div class="main">
+    <div class="container">
+        <div class="post-wrap tags">
+            <h2 class="post-title">
+                <script id="tagName_tmpl" type="text/template">
+                    -&nbsp;Tag&nbsp;·&nbsp;{{@@result}}&nbsp;-
+                </script>
+            </h2>
+        </div>
+        <div class="post-wrap archive">
+            <script id="tag_post_tmpl" type="text/template">
+                {{each result}}
+                <h3>{{$value.year}}</h3>
+                {{each $value.posts}}
+                <article class="archive-item">
+                    <a class="archive-item-link" href="/post{{$value.url}}">{{$value.title}}</a>
+                    <span class="archive-item-date">{{$value.creationTime}}</span>
+                </article>
+                {{/each}}
+                {{/each}}
+            </script>
+        </div>
+    </div>
+    <div class="loader"></div>
+</div>
+@section scripts{
+<script src="https://static.meowv.com/js/axios.min.js"></script>
+<script src="https://static.meowv.com/js/template-web.js"></script>
+}

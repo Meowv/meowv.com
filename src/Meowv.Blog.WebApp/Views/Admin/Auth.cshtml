@@ -1,0 +1,41 @@
+﻿@{
+    ViewData["Title"] = "Authentication - ";
+}
+<div class="main"><div class="loader"></div></div>
+@section ScriptsForAdmin{
+    <script src="https://static.meowv.com/js/axios.min.js"></script>
+    <script>
+        var access_token = window.localStorage.getItem("access_token");
+        if (access_token) getToken(access_token);
+
+        var search = location.search;
+        var query = {};
+        search.replace(/([^?&=]+)=([^&]+)/g, (_, k, v) => query[k] = v);
+
+        if (query.ReturnUrl != undefined || search == "") {
+            axios.get(`${api_domain}/auth/url`).then(function (response) {
+                if (response.data.success) location.href = response.data.result;
+            });
+        } else {
+            axios.get(`${api_domain}/auth/access_token?code=${query.code}`).then(function (response) {
+                if (response.data.success) {
+                    window.localStorage.setItem('access_token', response.data.result);
+                    getToken(response.data.result);
+                } else {
+                    location.href = "/";
+                }
+            });
+        }
+
+        function getToken(access_token) {
+            axios.get(`${api_domain}/auth/token?access_token=${access_token}`).then(function (response) {
+                if (response.data.success) {
+                    window.localStorage.setItem('token', response.data.result);
+                    location.href = "/admin";
+                } else {
+                    location.href = "/";
+                }
+            });
+        }
+    </script>
+}

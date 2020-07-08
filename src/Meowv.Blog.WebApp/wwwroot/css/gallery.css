@@ -1,0 +1,26 @@
+* {
+    margin:0;
+    padding:0;
+}
+.container {
+    position: absolute;
+    top: 0;
+}
+
+.albums {
+    position: absolute;
+    border: solid 1px #ccc;
+    padding: 5px;
+    width: 300px;
+    top: 0px;
+    left: 0px;
+    text-align: center;
+    -webkit-transition: all .7s ease-out .1s;
+    -moz-transition: all .7s ease-out .1s;
+    -o-transition: all .7s ease-out .1s;
+    transition: all .7s ease-out .1s
+}
+
+.albums img {
+    width: 300px;
+}

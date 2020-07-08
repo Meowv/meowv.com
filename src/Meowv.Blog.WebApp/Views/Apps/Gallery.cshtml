@@ -1,0 +1,65 @@
+﻿@{Layout = null;}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="keywords" content="Gallery，阿星Plus">
+    <meta name="description" content="Gallery - 生命不息，奋斗不止">
+    <title>😍Gallery - 阿星Plus⭐⭐⭐</title>
+    <link rel="icon" href="https://static.meowv.com/favicon.ico">
+    <link href="https://static.meowv.com/css/gallery.min.css" rel="stylesheet" />
+</head>
+<body>
+    <div class="container">
+        <script id="gallery_tmpl" type="text/template">
+            {{each result}}
+            <div class="albums" data-id="{{$value.id}}" data-isPublic="{{$value.isPublic}}">
+                <img src="{{$value.imgUrl}}" alt="{{$value.name}}" title="【{{$value.name}}】共 {{$value.count}} 张图片" />
+            </div>
+            {{/each}}
+        </script>
+    </div>
+    <div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="pswp__bg"></div>
+        <div class="pswp__scroll-wrap">
+            <div class="pswp__container">
+                <div class="pswp__item"></div>
+                <div class="pswp__item"></div>
+                <div class="pswp__item"></div>
+            </div>
+            <div class="pswp__ui pswp__ui--hidden">
+                <div class="pswp__top-bar">
+                    <div class="pswp__counter"></div>
+                    <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+                    <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+                    <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+                    <div class="pswp__preloader">
+                        <div class="pswp__preloader__icn">
+                            <div class="pswp__preloader__cut">
+                                <div class="pswp__preloader__donut"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                    <div class="pswp__share-tooltip"></div>
+                </div>
+                <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+                </button>
+                <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+                </button>
+                <div class="pswp__caption">
+                    <div class="pswp__caption__center"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+<script src="https://static.meowv.com/js/axios.min.js"></script>
+<script src="https://static.meowv.com/js/template-web.js"></script>
+<script src="https://static.meowv.com/photoswipe/photoswipe.min.js"></script>
+<script src="https://static.meowv.com/photoswipe/photoswipe-ui-default.min.js"></script>
+<environment include="Development"><script src="~/js/gallery.js"></script></environment>
+<environment exclude="Development"><script src="https://static.meowv.com/js/gallery.min.js"></script></environment>

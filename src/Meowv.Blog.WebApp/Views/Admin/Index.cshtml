@@ -1,0 +1,33 @@
+﻿@{
+    ViewData["Title"] = "Admin - ";
+}
+<div class="main">
+    <div class="container">
+        <div class="post-wrap">
+            <h2 class="post-title">-&nbsp;博客内容管理&nbsp;-</h2>
+            <ul>
+                <li>
+                    <a asp-controller="Admin" asp-action="AddPost"><h3>新增文章</h3></a>
+                </li>
+                <li>
+                    <a asp-controller="Admin" asp-action="Posts"><h3>文章管理</h3></a>
+                </li>
+                <li>
+                    <a asp-controller="Admin" asp-action="Categories"><h3>分类管理</h3></a>
+                </li>
+                <li>
+                    <a asp-controller="Admin" asp-action="Tags"><h3>标签管理</h3></a>
+                </li>
+                <li>
+                    <a asp-controller="Admin" asp-action="FriendLinks"><h3>友链管理</h3></a>
+                </li>
+                <li>
+                    <a asp-controller="Admin" asp-action="Gallery"><h3>图集管理</h3></a>
+                </li>
+                <li>
+                    <a asp-controller="Admin" asp-action="Notification"><h3>Notification</h3></a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>

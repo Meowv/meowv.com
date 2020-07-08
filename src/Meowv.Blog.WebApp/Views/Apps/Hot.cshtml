@@ -1,0 +1,28 @@
+﻿@{
+    ViewData["Title"] = "每日热点 - ";
+}
+<div class="main">
+    <div class="container tab-box">
+        <div class="top-tab">
+            <script id="top_tabs_tmpl" type="text/template">
+                {{each result}}
+                <li><a href="javascript:;" data-id="{{$value.value}}">{{$value.description}}</a></li>
+                {{/each}}
+            </script>
+            <ul></ul>
+        </div>
+        <div class="top-content">
+            <div class="loader"></div>
+            <script id="top_content_tmpl" type="text/template">
+                {{each result}}
+                <li><a target="_blank" href="{{$value.url}}">{{$value.title==''?$value.url:$value.title}}</a></li>
+                {{/each}}
+            </script>
+            <ul></ul>
+        </div>
+    </div>
+</div>
+@section scripts{
+<script src="https://static.meowv.com/js/axios.min.js"></script>
+<script src="https://static.meowv.com/js/template-web.js"></script>
+}

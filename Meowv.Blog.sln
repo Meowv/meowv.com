@@ -49,6 +49,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "db-migrations", "db-migrati
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{D7CB0953-1482-47FC-BF7C-53F36A24C490}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meowv.Blog.WebApp", "src\Meowv.Blog.WebApp\Meowv.Blog.WebApp.csproj", "{0AF4D737-FC3A-484A-A712-A9A0E4A0DDA1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -107,6 +109,10 @@ Global
 		{8FE35056-EEC9-494A-8028-16A1F339A09A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8FE35056-EEC9-494A-8028-16A1F339A09A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8FE35056-EEC9-494A-8028-16A1F339A09A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0AF4D737-FC3A-484A-A712-A9A0E4A0DDA1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0AF4D737-FC3A-484A-A712-A9A0E4A0DDA1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0AF4D737-FC3A-484A-A712-A9A0E4A0DDA1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0AF4D737-FC3A-484A-A712-A9A0E4A0DDA1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -115,6 +121,7 @@ Global
 		{068855E8-9240-4F1A-910B-CF825794513B} = {A659EDAE-8300-428D-9182-828CB7C1D060}
 		{0372FA84-C517-4EB3-9A9F-B9ACAC0CA5E0} = {0566BD88-37BA-4AB0-9F73-AF50B6F3126E}
 		{8FE35056-EEC9-494A-8028-16A1F339A09A} = {D9F2B322-C5CC-454A-895B-61ABE3DCE625}
+		{0AF4D737-FC3A-484A-A712-A9A0E4A0DDA1} = {D9F2B322-C5CC-454A-895B-61ABE3DCE625}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {28315BFD-90E7-4E14-A2EA-F3D23AF4126F}

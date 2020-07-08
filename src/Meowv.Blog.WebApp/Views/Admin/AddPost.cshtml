@@ -1,0 +1,141 @@
+﻿@{
+    ViewData["Title"] = "添加文章 - ";
+}
+<div class="post-box">
+    <input type="text" id="title" placeholder="标题" autocomplete="off" value="" />
+    <input type="text" id="author" placeholder="作者" autocomplete="off" value="" />
+    <input type="text" id="url" placeholder="URL" autocomplete="off" value="" />
+    <input type="datetime" id="time" placeholder="时间" value="@DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")" />
+</div>
+<div id="editor"></div>
+<div class="post-category">
+    <script id="categories_tmpl" type="text/template">
+        {{each result}}
+        <label><input type="radio" name="category" value="{{$value.id}}" />{{$value.categoryName}}</label>
+        {{/each}}
+    </script>
+</div>
+<div class="post-tag">
+    <input type="text" id="tags" placeholder="标签" autocomplete="off" value="" />
+    <a href="javascript:;" onclick="leftVal = screen.width / 2; topVal = (screen.height - 500) / 2; window.open('/admin/tags/list', '_blank', 'width=500,height=500,toolbars=yes,resizable=yes,scrollbars=yes,left=' + leftVal + ',top=' + topVal); return false;">插入已有标签</a>
+    <button id="btn_save">biubiubiu〰</button>
+</div>
+@section ScriptsForAdmin{
+    <script src="https://static.meowv.com/js/axios.min.js"></script>
+    <script src="https://static.meowv.com/js/template-web.js"></script>
+    <script src="https://static.meowv.com/js/jquery-3.4.1.min.js"></script>
+    <script src="https://static.meowv.com/editor.md/editormd.min.js"></script>
+    <script>
+        $(function () {
+            axios.get(`${api_domain}/blog/categories/admin`, {
+                headers: {
+                    'Authorization': 'Bearer ' + window.localStorage.getItem('token')
+                }
+            }).then(function (response) {
+                if (response.data.success) {
+                    var html = template("categories_tmpl", response.data);
+                    document.querySelector('.post-category').innerHTML = html;
+                }
+            }).catch(x => location.href = "/");
+
+            var editor = editormd("editor", {
+                width: "98%",
+                height: "600",
+                path: "https://static.meowv.com/editor.md/lib/",
+                codeFold: true,
+                saveHTMLToTextarea: true,
+                atLink: false,
+                emailLink: false,
+                theme: localStorage.toolBarTheme || '',
+                editorTheme: localStorage.editorTheme || 'default',
+                previewTheme: localStorage.previewTheme || '',
+                toolbarIcons: function () {
+                    return ["bold", "del", "italic", "quote", "ucwords", "uppercase", "lowercase", "h1", "h2", "h3", "h4", "h5", "h6", "list-ul", "list-ol", "hr", "link", "image", "code", "preformatted-text", "code-block", "table", "datetime", "html-entities", "watch", "preview", "fullscreen", "clear"]
+                }
+            });
+
+            document.querySelector('.toggleBtn').addEventListener('click', () => {
+                const currentTheme = window.localStorage && window.localStorage.getItem('theme');
+                const isDark = currentTheme === 'dark';
+                window.localStorage &&
+                    window.localStorage.setItem('toolBarTheme', isDark ? 'dark' : '');
+                window.localStorage &&
+                    window.localStorage.setItem('editorTheme', isDark ? 'pastel-on-dark' : 'default');
+                window.localStorage &&
+                    window.localStorage.setItem('previewTheme', isDark ? 'dark' : '');
+
+                editor.setTheme(localStorage.toolBarTheme || '');
+                editor.setEditorTheme(localStorage.editorTheme || 'default');
+                editor.setPreviewTheme(localStorage.previewTheme || '');
+            });
+
+            document.querySelector('#btn_save').addEventListener('click', () => {
+                var title = document.querySelector("#title").value.trim();
+                var author = document.querySelector("#author").value.trim();
+                var url = document.querySelector("#url").value.trim();
+                var time = document.querySelector("#time").value.trim();
+                var tags = document.querySelector("#tags").value.trim();
+
+                var categoryId = 0;
+                var radios = document.querySelectorAll('.post-category input');
+                for (var i = 0; i < radios.length; i++) {
+                    if (radios[i].checked) {
+                        categoryId = radios[i].value;
+                    }
+                }
+
+                var markdown = editor.getMarkdown();
+                var html = editor.getHTML();
+
+                if (title.length == 0) {
+                    alert("标题没填")
+                    return false;
+                }
+                if (author.length == 0) {
+                    alert("作者没填")
+                    return false;
+                }
+                if (url.length == 0) {
+                    alert("URL没填")
+                    return false;
+                }
+                if (time.length == 0) {
+                    alert("时间没填")
+                    return false;
+                }
+                if (categoryId == 0) {
+                    alert("分类没填");
+                    return false;
+                }
+                if (tags.length == 0) {
+                    alert("标签没填");
+                    return false;
+                }
+
+                var data = {
+                    "tags": tags.split(','),
+                    "title": title,
+                    "author": author,
+                    "url": url,
+                    "html": html,
+                    "markdown": markdown,
+                    "categoryId": categoryId,
+                    "creationTime": time,
+                };
+
+                axios.post(`${api_domain}/blog/post`, data, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + window.localStorage.getItem('token')
+                    }
+                }).then(function (response) {
+                    if (response.data.success) {
+                        location.href = "/admin/posts";
+                    } else {
+                        alert(response.data.msg);
+                    }
+                });
+            });
+        });
+    </script>
+}

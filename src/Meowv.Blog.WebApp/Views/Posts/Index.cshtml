@@ -1,0 +1,24 @@
+﻿@{
+    ViewData["Title"] = "Posts - ";
+}
+<div class="main">
+    <div class="post-wrap archive">
+        <script id="posts_tmpl" type="text/template">
+            {{each result}}
+            <h3>{{$value.year}}</h3>
+            {{each $value.posts}}
+            <article class="archive-item">
+                <a class="archive-item-link" href="/post{{$value.url}}">{{$value.title}}</a>
+                <span class="archive-item-date">{{$value.creationTime}}</span>
+            </article>
+            {{/each}}
+            {{/each}}
+        </script>
+        <nav class="pagination"></nav>
+    </div>
+    <div class="loader"></div>
+</div>
+@section scripts{
+<script src="https://static.meowv.com/js/axios.min.js"></script>
+<script src="https://static.meowv.com/js/template-web.js"></script>
+}

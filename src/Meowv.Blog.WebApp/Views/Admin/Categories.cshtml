@@ -1,0 +1,152 @@
+﻿@{
+    ViewData["Title"] = "分类管理 - ";
+}
+<div class="main">
+    <div class="container">
+        <div class="post-wrap categories">
+            <h2 class="post-title">-&nbsp;Categories&nbsp;-</h2>
+            <div class="categories-card">
+                <script id="categories_tmpl" type="text/template">
+                    {{each result}}
+                    <div class="card-item">
+                        <div class="categories">
+                            <a href="javascript:;" class="btn_delete" data-id="{{$value.id}}">
+                                <h3>
+                                    <i class="iconfont iconcode" style="padding-right:3px"></i>
+                                    {{$value.categoryName}}
+                                </h3>
+                                <small>({{$value.count}})</small>❌
+                            </a>
+                            <a href="javascript:;" data-id="{{$value.id}}" data-categoryName="{{$value.categoryName}}" data-displayName="{{$value.displayName}}" class="btn_update">📝</a>
+                        </div>
+                    </div>
+                    {{/each}}
+                    <div class="card-item">
+                        <div class="categories">
+                            <a href="javascript:;" class="btn_insert">
+                                <h3>
+                                    <i class="iconfont iconcode" style="padding-right:3px"></i>
+                                    新增分类~~~📝
+                                </h3>
+                            </a>
+                        </div>
+                    </div>
+                </script>
+            </div>
+        </div>
+        <div class="box">
+            <input type="text" placeholder="CategoryName" id="categoryName" value="" />
+            <input type="text" placeholder="DisplayName" id="displayName" value="" />
+            <input type="button" id="btn_insert" value="biu〰" />
+        </div>
+    </div>
+</div>
+<div class="loader"></div>
+@section ScriptsForAdmin{
+    <script src="https://static.meowv.com/js/axios.min.js"></script>
+    <script src="https://static.meowv.com/js/template-web.js"></script>
+    <script>
+        axios.get(`${api_domain}/blog/categories/admin`, {
+            headers: {
+                'Authorization': 'Bearer ' + window.localStorage.getItem('token')
+            }
+        }).then(function (response) {
+            if (response.data.success) {
+                var html = template("categories_tmpl", response.data);
+                document.querySelector('.categories-card').innerHTML = html;
+                document.querySelector('.loader').remove();
+
+                setTimeout(function () {
+                    document.querySelector(".btn_insert").addEventListener("click", function () {
+                        document.querySelector(".box").style.cssText = "display:block";
+
+                        document.querySelector("#btn_insert").addEventListener("click", function () {
+                            var categoryName = document.querySelector("#categoryName").value.trim();
+                            var displayName = document.querySelector("#displayName").value.trim();
+                            if (categoryName.length == 0 || displayName.length == 0) {
+                                return false;
+                            }
+
+                            var data = {
+                                "categoryName": categoryName,
+                                "displayName": displayName
+                            }
+
+                            axios.post(`${api_domain}/blog/category`, data, {
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': 'Bearer ' + window.localStorage.getItem('token')
+                                }
+                            }).then(function (response) {
+                                if (response.data.success) {
+                                    location.reload();
+                                } else {
+                                    alert(response.data.msg);
+                                }
+                            });
+                        });
+                    });
+
+                    var btn_delete_list = document.querySelectorAll('.btn_delete');
+                    for (var i = 0; i < btn_delete_list.length; i++) {
+                        btn_delete_list[i].onclick = function () {
+                            var id = this.attributes["data-id"].value;
+                            if (confirm('真的要干掉这个分类❓❓❓')) {
+                                axios.delete(`${api_domain}/blog/category?id=${id}`, {
+                                    headers: {
+                                        'Authorization': 'Bearer ' + window.localStorage.getItem('token')
+                                    }
+                                }).then(function (response) {
+                                    if (response.data.success) {
+                                        location.reload();
+                                    } else {
+                                        alert(response.data.msg);
+                                    }
+                                });
+                            }
+                        }
+                    }
+
+                    var btn_update_list = document.querySelectorAll('.btn_update');
+                    for (var i = 0; i < btn_update_list.length; i++) {
+                        btn_update_list[i].onclick = function () {
+                            var id = this.attributes["data-id"].value;
+                            var _categoryName = this.attributes["data-categoryName"].value;
+                            var _displayName = this.attributes["data-displayName"].value;
+
+                            document.querySelector(".box").style.cssText = "display:block";
+                            document.querySelector(".box #categoryName").value = _categoryName;
+                            document.querySelector(".box #displayName").value = _displayName;
+
+                            document.querySelector("#btn_insert").addEventListener("click", function () {
+                                var categoryName = document.querySelector("#categoryName").value.trim();
+                                var displayName = document.querySelector("#displayName").value.trim();
+                                if (categoryName.length == 0 || displayName.length == 0) {
+                                    return false;
+                                }
+
+                                var data = {
+                                    "categoryName": categoryName,
+                                    "displayName": displayName
+                                }
+
+                                axios.put(`${api_domain}/blog/category?id=${id}`, data, {
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'Authorization': 'Bearer ' + window.localStorage.getItem('token')
+                                    }
+                                }).then(function (response) {
+                                    if (response.data.success) {
+                                        location.reload();
+                                    } else {
+                                        alert(response.data.msg);
+                                    }
+                                });
+                            });
+                        }
+                    }
+                }, 500);
+            }
+        }).catch(x => location.href = "/");
+    </script>
+}

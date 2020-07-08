@@ -1,0 +1,94 @@
+﻿input[type="checkbox"],
+input[type="radio"] {
+    width: auto;
+    height: auto;
+    visibility: visible;
+}
+
+.box {
+    text-align: center;
+    display: none;
+}
+
+.box input:not(:last-child) {
+    width: 105px;
+}
+
+.box input {
+    width: auto !important;
+}
+
+input:focus {
+    outline: none;
+}
+
+.post-box {
+    width: 98%;
+    margin: 0 auto;
+}
+.post-box input:nth-child(1), .post-box input:nth-child(3) {
+    float: left;
+}
+.post-box input:nth-child(2), .post-box input:nth-child(4) {
+    float: right;
+}
+.post-box input {
+    padding-left: 5px;
+    width: 49%;
+    height: 25px;
+    margin-bottom: 5px;
+    border: 1px solid #ddd;
+}
+
+.post-category, .post-tags {
+    width: 98%;
+    margin: 0 auto;
+}
+
+.post-category input[type="radio"] {
+    display: inline;
+}
+
+.post-category input,.post-tag input {
+    width: auto;
+    height: auto;
+    margin-left: 10px;
+}
+
+.post-tag input[type='button'] {
+     width: 60px !important;
+}
+
+.post-tag input {
+    padding-left: 5px;
+    width: 49%;
+    height: 25px;
+    border: 1px solid #ddd;
+}
+
+.dark-theme .post-box input, .dark-theme .post-tag input {
+    background-color: #292a2d;
+    color: #a9a9b3;
+    border-color: #1a1a17;
+}
+
+.taglist {
+    margin-left:5px;
+}
+.gallery p textarea, .gallery p input[type=text] {
+    width: 500px;
+}
+
+.gallery-item {
+    border: solid 1px #ccc;
+    padding: 5px;
+    width: 200px;
+    text-align: center;
+    display: inline-block;
+    margin-bottom: 10px;
+}
+
+.gallery-item img {
+    width: 100%;
+}
+

@@ -1,0 +1,27 @@
+﻿@{
+    ViewData["Title"] = "个性艺术签名设计 - ";
+}
+<div class="main">
+    <div class="container">
+        <div class="loader"></div>
+        <div class="signature-box hidden">
+            <p>图片仅保留24小时，如有需要请尽快下载，请勿频繁调用，谢谢！</p>
+            <div class="signature-img">
+                <img src="https://static.meowv.com/images/wxcode.jpg" />
+            </div>
+            <div class="signature-action">
+                <select id="type"></select>
+                <input type="text" id="name" placeholder="输入你的名字，1-4个字符" maxlength="4" autocomplete="off" value="" />
+                <button id="btn_do">免费设计</button>
+            </div>
+        </div>
+        <div class="post-wrap tags hidden">
+            <h3>-&nbsp;最近设计的签名&nbsp;-</h3>
+            <div class="tag-cloud-tags tag-cloud-tags-extend"></div>
+        </div>
+    </div>
+</div>
+@section scripts{
+<script src="https://static.meowv.com/js/axios.min.js"></script>
+<script src="https://ssl.captcha.qq.com/TCaptcha.js"></script>
+}

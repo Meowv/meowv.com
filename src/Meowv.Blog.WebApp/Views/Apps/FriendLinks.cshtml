@@ -1,0 +1,28 @@
+﻿@{
+    ViewData["Title"] = "友情链接 - ";
+}
+<div class="main">
+    <div class="container">
+        <div class="post-wrap categories">
+            <h2 class="post-title">-&nbsp;FriendLinks&nbsp;-</h2>
+            <div class="categories-card">
+                <script id="friendlinks_tmpl" type="text/template">
+                    {{each result}}
+                    <div class="card-item">
+                        <div class="categories">
+                            <a target="_blank" href="{{$value.linkUrl}}">
+                                <h3> {{$value.title}}</h3>
+                            </a>
+                        </div>
+                    </div>
+                    {{/each}}
+                </script>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="loader"></div>
+@section scripts{
+<script src="https://static.meowv.com/js/axios.min.js"></script>
+<script src="https://static.meowv.com/js/template-web.js"></script>
+}

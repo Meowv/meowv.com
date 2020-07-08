@@ -1,0 +1,181 @@
+﻿@{
+    ViewData["Title"] = "图集管理 - ";
+}
+<div class="main">
+    <div class="container">
+        <div class="gallery">
+            <h1>图集管理</h1>
+            <div class="gallery_con">
+                <script id="gallery_tmpl" type="text/template">
+                    {{each result}}
+                    <div class="gallery-item" data-id="{{$value.id}}">
+                        <img src="{{$value.imgUrl}}" title="{{$value.name}}" />
+                        <span>【{{$value.name}}】共 {{$value.count}} 张图片</span>
+                    </div>
+                    {{/each}}
+                </script>
+            </div>
+
+            <hr />
+
+            <h1>添加图集</h1>
+            <p>图集名称：<input id="album_name" type="text" autocomplete="off" value="" /></p>
+            <p>图集封面：<input id="album_url" type="text" autocomplete="off" value="" /></p>
+            <p>
+                是否加密：<input id="album_isPublic" type="checkbox" class="switch_default"><label class="isPublicBtn" for="album_isPublic"></label>
+            </p>
+            <p class="hidden album_password">访问口令：<input id="album_password" type="text" autocomplete="off" value="" /></p>
+            <p><input id="album_save" type="button" value="添加图集" /></p>
+
+            <hr />
+
+            <h1>添加图片</h1>
+            <p>图集ID: <input id="galleryId" type="text" autocomplete="off" disabled="disabled" /></p>
+            <p>图片Urls: <textarea id="galleryUrls" rows="5" placeholder="一行一个图片地址"></textarea></p>
+            <p><input id="loadImg" type="button" value="预加载图片，获取图片宽高" /> <input id="save" type="button" value="图片入库" /></p>
+        </div>
+    </div>
+</div>
+<div class="loader"></div>
+@section ScriptsForAdmin{
+    <script src="https://static.meowv.com/js/axios.min.js"></script>
+    <script src="https://static.meowv.com/js/template-web.js"></script>
+    <script>
+        axios.get(`${api_domain}/gallery`).then(function (response) {
+            if (response.data.success) {
+                var html = template("gallery_tmpl", response.data);
+                document.querySelector('.gallery_con').innerHTML = html;
+                document.querySelector('.loader').remove();
+
+                setTimeout(function () {
+                    var btn_gallery_item = document.querySelectorAll('.gallery-item');
+                    for (var i = 0; i < btn_gallery_item.length; i++) {
+                        btn_gallery_item[i].onclick = function () {
+                            var id = this.attributes["data-id"].value;
+                            document.getElementById('galleryId').value = id;
+                        }
+                    }
+                }, 500);
+            }
+        });
+
+        var loading = false;
+        var imgs = [];
+
+        document.querySelector('#loadImg').addEventListener('click', () => {
+            imgs = [];
+            var text = document.getElementById('galleryUrls').value;
+            if (text) {
+                var urls = text.split(/[(\r\n)\r\n]+/);
+
+                for (var i = 0; i < urls.length; i++) {
+                    loadImageAsync(urls[i]).then(resp => {
+                        imgs.push(resp);
+
+                        loading = imgs.length == urls.length;
+                        if (loading) {
+                            alert("数据准备完毕");
+                        }
+                    });
+                }
+            } else {
+                alert("图片Urls为空");
+            }
+        });
+
+        document.querySelector('#save').addEventListener('click', () => {
+            if (!loading) {
+                alert("数据未准备完毕，稍等片刻");
+                return false;
+            }
+
+            var albumId = document.querySelector("#galleryId").value;
+            if (albumId == "") {
+                alert("未选择图片，填充图集ID");
+                return false;
+            }
+            var data = {
+                "albumId": albumId,
+                "imgs": imgs
+            };
+
+            axios.post(`${api_domain}/gallery/images/insert`, data, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + window.localStorage.getItem('token')
+                }
+            }).then(function (response) {
+                if (response.data.success) {
+                    alert(response.data.result);
+                    document.querySelector("#galleryUrls").value = "";
+                }
+            }).catch(x => location.href = "/");
+        });
+
+        function loadImageAsync(url) {
+            return new Promise(function (resolve, reject) {
+                var image = new Image();
+                image.src = url;
+
+                image.onload = function () {
+                    var obj = {
+                        url: url,
+                        width: image.width,
+                        height: image.height
+                    }
+                    resolve(obj);
+                };
+                image.onerror = function () {
+                    reject(new Error('Could not load image at ' + url));
+                };
+            });
+        }
+
+        document.querySelector(".isPublicBtn").addEventListener('click', () => {
+            if (document.querySelector("#album_isPublic").checked) {
+                document.querySelector(".album_password").classList.add("hidden");
+            } else {
+                document.querySelector(".album_password").classList.remove("hidden");
+            }
+        });
+
+        document.querySelector('#album_save').addEventListener('click', () => {
+            var name = document.querySelector("#album_name").value;
+            var url = document.querySelector("#album_url").value;
+            var isPublic = document.querySelector("#album_isPublic").checked;
+            var password = document.querySelector("#album_password").value;
+            if (name == "") {
+                alert("图集名称为空");
+                return false;
+            }
+            if (url == "") {
+                alert("图集URL为空");
+                return false;
+            }
+            if (isPublic) {
+                if (password == "") {
+                    alert("访问口令为空");
+                    return false;
+                }
+            }
+            var data = {
+                "name": name,
+                "imgUrl": url,
+                "isPublic": !isPublic,
+                "password": password
+            };
+
+            axios.post(`${api_domain}/gallery/album/insert`, data, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + window.localStorage.getItem('token')
+                }
+            }).then(function (response) {
+                if (response.data.success) {
+                     alert(response.data.result);
+                    location.reload();
+                }
+            }).catch(x => location.href = "/");
+        });
+    </script>
+}

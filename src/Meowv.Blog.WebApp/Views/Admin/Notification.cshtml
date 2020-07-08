@@ -1,0 +1,42 @@
+﻿@{
+    ViewData["Title"] = "Notification - ";
+}
+<div class="main">
+    <div class="container">
+        <div class="post-wrap">
+            <h1>浏览器 Notification</h1>
+            <input type="text" id="title" placeholder="title" autocomplete="off" value="您有一条新消息" /><br />
+            <input type="text" id="message" placeholder="message" autocomplete="off" value="" /><br />
+            <input type="text" id="data" placeholder="data" autocomplete="off" value="https://meowv.com" /><br />
+            <button id="send">biubiubiu〰</button>
+        </div>
+    </div>
+</div>
+@section ScriptsForAdmin{
+<script>
+    var connection = new signalR.HubConnectionBuilder().withUrl("/connection").build();
+    document.getElementById("send").addEventListener("click", function (event) {
+        var title = document.getElementById("title").value;
+        var message = document.getElementById("message").value;
+        var data = document.getElementById("data").value;
+        
+        if (title.length == 0) {
+            alert("title is null or empty")
+            return false;
+        }
+        if (message.length == 0) {
+            alert("message is null or empty")
+            return false;
+        }
+        if (data.length == 0) {
+            alert("data is null or empty")
+            return false;
+        }
+
+        connection.invoke("Notification", title, message, data).catch(function (err) {
+            return console.error(err.toString());
+        });
+        event.preventDefault();
+    });
+</script>
+}

@@ -1,0 +1,32 @@
+﻿@{
+    ViewData["Title"] = "Categories - ";
+}
+<div class="main">
+    <div class="container">
+        <div class="post-wrap categories">
+            <h2 class="post-title">-&nbsp;Categories&nbsp;-</h2>
+            <div class="categories-card">
+                <script id="categories_tmpl" type="text/template">
+                    {{each result}}
+                    <div class="card-item">
+                        <div class="categories">
+                            <a href="/category/{{$value.displayName}}/">
+                                <h3>
+                                    <i class="iconfont iconcode" style="padding-right:3px"></i>
+                                    {{$value.categoryName}}
+                                </h3>
+                                <small>({{$value.count}})</small>
+                            </a>
+                        </div>
+                    </div>
+                    {{/each}}
+                </script>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="loader"></div>
+@section scripts{
+<script src="https://static.meowv.com/js/axios.min.js"></script>
+<script src="https://static.meowv.com/js/template-web.js"></script>
+}

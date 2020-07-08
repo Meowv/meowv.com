@@ -1,0 +1,56 @@
+﻿@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="keywords" content="阿星Plus，qix，Meowv">
+    <meta name="description" content="生命不息，奋斗不止">
+    <title>😍插入已有标签 - 阿星Plus⭐⭐⭐</title>
+    <link rel="icon" href="https://static.meowv.com/favicon.ico">
+    <link rel="stylesheet" href="https://static.meowv.com/css/style.css">
+    <link rel="stylesheet" href="https://static.meowv.com/css/admin.css">
+</head>
+<body>
+    <div class="taglist">
+        <script id="tags_tmpl" type="text/template">
+            {{each result}}
+            <a href="javascript:;">{{$value.tagName}}</a>
+            {{/each}}
+        </script>
+    </div>
+</body>
+</html>
+<script src="https://static.meowv.com/js/axios.min.js"></script>
+<script src="https://static.meowv.com/js/template-web.js"></script>
+<script>
+    axios.get('https://api.meowv.com/blog/tags/admin', {
+        headers: {
+            'Authorization': 'Bearer ' + window.localStorage.getItem('token')
+        }
+    }).then(function (response) {
+        if (response.data.success) {
+            var html = template("tags_tmpl", response.data);
+            document.querySelector('.taglist').innerHTML = html;
+
+            setTimeout(function () {
+                var tags = document.querySelectorAll('.taglist a');
+                for (var i = 0; i < tags.length; i++) {
+                    tags[i].onclick = function () {
+                        var value = this.textContent;
+                        var tagNames = '';
+                        tagNames = window.opener.document.getElementById("tags");
+                        if (tagNames.value == '') {
+                            tagNames.value += value;
+                        } else {
+                            tagNames.value += "," + value;
+                        }
+                    }
+                }
+            }, 500);
+        }
+    }).catch(x => location.href = "/");
+</script>

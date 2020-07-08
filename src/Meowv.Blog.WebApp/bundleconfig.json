@@ -1,0 +1,53 @@
+[
+  {
+    "outputFileName": "wwwroot/css/style.min.css",
+    "inputFiles": [
+      "wwwroot/css/style.css",
+      "wwwroot/css/wallpaper.css"
+    ]
+  },
+  {
+    "outputFileName": "wwwroot/css/gallery.min.css",
+    "inputFiles": [
+      "wwwroot/css/gallery.css",
+      "wwwroot/photoswipe/photoswipe.css",
+      "wwwroot/photoswipe/default-skin/default-skin.css"
+    ]
+  },
+  {
+    "outputFileName": "wwwroot/js/main.min.js",
+    "inputFiles": [
+      "wwwroot/js/main.js"
+    ]
+  },
+  {
+    "outputFileName": "wwwroot/photoswipe/photoswipe-ui-default.min.js",
+    "inputFiles": [
+      "wwwroot/photoswipe/photoswipe-ui-default.js"
+    ]
+  },
+  {
+    "outputFileName": "wwwroot/photoswipe/photoswipe.min.js",
+    "inputFiles": [
+      "wwwroot/photoswipe/photoswipe.js"
+    ]
+  },
+  {
+    "outputFileName": "wwwroot/js/gallery.min.js",
+    "inputFiles": [
+      "wwwroot/js/gallery.js"
+    ]
+  },
+  {
+    "outputFileName": "wwwroot/js/2048.min.js",
+    "inputFiles": [
+      "wwwroot/js/2048.js"
+    ]
+  },
+  {
+    "outputFileName": "wwwroot/css/2048.min.css",
+    "inputFiles": [
+      "wwwroot/css/2048.css"
+    ]
+  }
+]

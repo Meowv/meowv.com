@@ -1,0 +1,74 @@
+﻿@{
+    ViewData["Title"] = "文章管理 - ";
+}
+<div class="main">
+    <div class="post-wrap archive">
+        <script id="posts_tmpl" type="text/template">
+            <a style="float:right" href="/admin/add_post"><h3>新增文章~~~📝</h3></a>
+            {{each result}}
+            <h3>{{$value.year}}</h3>
+            {{each $value.posts}}
+            <article class="archive-item">
+                <a href="javascript:;" data-id="{{$value.id}}" class="btn_delete">❌</a>
+                <a href="/admin/edit_post/{{$value.id}}">📝</a>
+                <a target="_blank" class="archive-item-link" href="/post{{$value.url}}">{{$value.title}}</a>
+                <span class="archive-item-date">{{$value.creationTime}}</span>
+            </article>
+            {{/each}}
+            {{/each}}
+        </script>
+        <nav class="pagination"></nav>
+    </div>
+    <div class="loader"></div>
+</div>
+@section ScriptsForAdmin{
+    <script src="https://static.meowv.com/js/axios.min.js"></script>
+    <script src="https://static.meowv.com/js/template-web.js"></script>
+    <script>
+        var page = location.pathname.replace(/admin|posts|page|\//gi, "") || 1;
+        var limit = 10;
+        axios.get(`${api_domain}/blog/post/query/admin?page=${page}&limit=${limit}`, {
+            headers: {
+                'Authorization': 'Bearer ' + window.localStorage.getItem('token')
+            }
+        }).then(function (response) {
+            if (response.data.result) {
+                var html = template("posts_tmpl", { "result": response.data.result });
+                document.querySelector('.post-wrap.archive').insertAdjacentHTML('afterbegin', html);
+
+                var totalPage = Math.ceil(response.data.total / limit);
+
+                var paginationHtml = "";
+                for (var i = 1; i <= totalPage; i++) {
+                    paginationHtml += page == i ? `<span class="page-number current">${i}</span>` : `<a class="page-number" href="/admin/posts/page/${i}/">${i}</a>`;
+                }
+                document.querySelector('.pagination').innerHTML = paginationHtml;
+
+                document.querySelector('.loader').remove();
+                document.getElementById('posts_tmpl').remove();
+
+                setTimeout(function () {
+                    var btn_delete_list = document.querySelectorAll('.btn_delete');
+                    for (var i = 0; i < btn_delete_list.length; i++) {
+                        btn_delete_list[i].onclick = function () {
+                            var id = this.attributes["data-id"].value;
+                            if (confirm('真的要干掉这篇该死的文章❓❓❓')) {
+                                axios.delete(`${api_domain}/blog/post?id=${id}`, {
+                                    headers: {
+                                        'Authorization': 'Bearer ' + window.localStorage.getItem('token')
+                                    }
+                                }).then(function (response) {
+                                    if (response.data.success) {
+                                        location.reload();
+                                    } else {
+                                        alert(response.data.message);
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }, 500);
+            }
+        }).catch(x => location.href = "/");
+    </script>
+}

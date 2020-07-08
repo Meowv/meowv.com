@@ -1,0 +1,83 @@
+﻿@{
+    ViewData["Title"] = "友情链接管理 - ";
+}
+<div class="main">
+    <div class="container">
+        <div class="post-wrap categories">
+            <h2 class="post-title">-&nbsp;FriendLinks&nbsp;-</h2>
+            <div class="categories-card">
+                <script id="friendlinks_tmpl" type="text/template">
+                    {{each result}}
+                    <div class="card-item">
+                        <div class="categories">
+                            <a target="_blank" href="{{$value.linkUrl}}">
+                                <h3> {{$value.title}}</h3>
+                            </a>
+                        </div>
+                    </div>
+                    {{/each}}
+                    <div class="card-item">
+                        <div class="categories">
+                            <a href="javascript:;" class="btn_insert">
+                                <h3>
+                                    <i class="iconfont iconcode" style="padding-right:3px"></i>
+                                    新增友链~~~📝
+                                </h3>
+                            </a>
+                        </div>
+                    </div>
+                </script>
+            </div>
+        </div>
+        <div class="box">
+            <input type="text" placeholder="Title" id="title" value="" />
+            <input type="text" placeholder="LinkUrl" id="linkUrl" value="" />
+            <input type="button" id="btn_insert" value="biu〰" />
+        </div>
+    </div>
+</div>
+<div class="loader"></div>
+@section ScriptsForAdmin{
+    <script src="https://static.meowv.com/js/axios.min.js"></script>
+    <script src="https://static.meowv.com/js/template-web.js"></script>
+    <script>
+        axios.get(`${api_domain}/blog/friendlinks`)
+            .then(function (response) {
+                if (response.data.success) {
+                    var html = template("friendlinks_tmpl", response.data);
+                    document.querySelector('.categories-card').innerHTML = html;
+                    document.querySelector('.loader').remove();
+
+                    setTimeout(function () {
+                        document.querySelector(".btn_insert").addEventListener("click", function () {
+                            document.querySelector(".box").style.cssText = "display:block";
+
+                            document.querySelector("#btn_insert").addEventListener("click", function () {
+                                var title = document.querySelector("#title").value.trim();
+                                var linkUrl = document.querySelector("#linkUrl").value.trim();
+                                if (title.length == 0 || linkUrl.length == 0) {
+                                    return false;
+                                }
+
+                                var data = {
+                                    "title": title,
+                                    "linkUrl": linkUrl
+                                }
+
+                                axios.post(`${api_domain}/blog/friendlink`, data, {
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'Authorization': 'Bearer ' + window.localStorage.getItem('token')
+                                    }
+                                }).then(function (response) {
+                                    if (response.data.success) {
+                                        location.reload();
+                                    }
+                                });
+                            });
+                        });
+                    }, 500);
+                }
+            }).catch(x => location.href = "/");
+    </script>
+}

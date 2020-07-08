@@ -1,0 +1,33 @@
+﻿@{
+    ViewData["Title"] = "手机壁纸 - ";
+}
+<div class="main">
+    <div class="loader"></div>
+    <div class="wallpaper-container">
+        <div class="plus-container">
+            <p class="wallpaper-nav">
+                <script id="wallpaper_nav_tmpl" type="text/template">
+                    {{each result}}
+                    <a href="javascript:;" data-type="{{$value.value}}">{{$value.description}}</a>
+                    {{/each}}
+                </script>
+            </p>
+            <div class="wallpapers plus-row plus-col-space20">
+                <script id="wallpaper_tmpl" type="text/template">
+                    {{each result}}
+                    <div class="plus-col-xs6 plus-col-md2">
+                        <div class="wallpaper">
+                            <img src="{{$value.url.replace("max","middle")}}" title="{{$value.title}}" alt="{{$value.title}}" />
+                        </div>
+                    </div>
+                    {{/each}}
+                </script>
+            </div>
+        </div>
+        <nav class="pagination"></nav>
+    </div>
+</div>
+@section scripts{
+<script src="https://static.meowv.com/js/axios.min.js"></script>
+<script src="https://static.meowv.com/js/template-web.js"></script>
+}

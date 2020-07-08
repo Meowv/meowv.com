@@ -1,0 +1,22 @@
+﻿@{
+    ViewData["Title"] = "Tags - ";
+}
+<div class="main">
+    <div class="container">
+        <div class="post-wrap tags">
+            <h2 class="post-title">-&nbsp;Tags&nbsp;-</h2>
+            <div class="tag-cloud-tags">
+                <script id="tags_tmpl" type="text/template">
+                    {{each result}}
+                    <a href="/tag/{{$value.displayName}}/">{{$value.tagName}}<small>({{$value.count}})</small></a>
+                    {{/each}}
+                </script>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="loader"></div>
+@section scripts{
+<script src="https://static.meowv.com/js/axios.min.js"></script>
+<script src="https://static.meowv.com/js/template-web.js"></script>
+}
