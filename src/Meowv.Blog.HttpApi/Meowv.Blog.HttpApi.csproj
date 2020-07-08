@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Volo.Abp.Identity.HttpApi" Version="3.0.2" />
+    <PackageReference Include="Volo.Abp.Identity.HttpApi" Version="3.0.3" />
 
     <ProjectReference Include="..\Meowv.Blog.Application\Meowv.Blog.Application.csproj" />
   </ItemGroup>
