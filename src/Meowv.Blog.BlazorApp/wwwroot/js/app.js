@@ -1,6 +1,15 @@
 ﻿var func = window.func || {}, editor, fm;
+var _mtac = { "performanceMonitor": 1, "senseQuery": 1 };
 
 (function (l) {
+    var mta = document.createElement("script");
+    mta.src = "//pingjs.qq.com/h5/stats.js?v2.0.4";
+    mta.setAttribute("name", "MTAH5");
+    mta.setAttribute("sid", "500692160");
+    mta.setAttribute("cid", "500692161");
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(mta, s);
+
     if (l.search) {
         var q = {};
         l.search.slice(1).split('&').forEach(function (v) {
@@ -43,12 +52,12 @@ func = {
         editor.setPreviewTheme(localStorage.editorTheme || 'default');
     },
     renderEditor: async function () {
-        await this._loadScript('./editor.md/lib/zepto.min.js').then(function () {
-            func._loadScript('./editor.md/editormd.js').then(function () {
+        await this._loadScript('editor.md/lib/zepto.min.js').then(function () {
+            func._loadScript('editor.md/editormd.js').then(function () {
                 editor = editormd("editor", {
                     width: "100%",
                     height: 700,
-                    path: './editor.md/lib/',
+                    path: 'editor.md/lib/',
                     codeFold: true,
                     saveHTMLToTextarea: true,
                     emoji: true,
@@ -80,10 +89,10 @@ func = {
         });
     },
     renderMarkdown: async function () {
-        await this._loadScript('./editor.md/lib/zepto.min.js').then(function () {
-            func._loadScript('./editor.md/lib/marked.min.js').then(function () {
-                func._loadScript('./editor.md/lib/prettify.min.js').then(function () {
-                    func._loadScript('./editor.md/editormd.js').then(function () {
+        await this._loadScript('editor.md/lib/zepto.min.js').then(function () {
+            func._loadScript('editor.md/lib/marked.min.js').then(function () {
+                func._loadScript('editor.md/lib/prettify.min.js').then(function () {
+                    func._loadScript('editor.md/editormd.js').then(function () {
                         editormd.markdownToHTML("content");
                     });
                 });
@@ -91,7 +100,7 @@ func = {
         });
     },
     render2048Game: async function () {
-        await this._loadScript('./js/2048.js');
+        await this._loadScript('js/2048.js');
     },
     disableKey() {
         document.body.oncontextmenu = function () {
@@ -122,20 +131,20 @@ func = {
         audio.play();
     },
     live2dInit: async function () {
-        await this._loadScript('./live2d/L2Dwidget.min.js').then(function () {
+        await this._loadScript('live2d/L2Dwidget.min.js').then(function () {
             var models = [
-                './live2d/live2d-widget-model-epsilon2_1/assets/Epsilon2.1.model.json',
-                './live2d/live2d-widget-model-haru/01/assets/haru01.model.json',
-                './live2d/live2d-widget-model-haru/02/assets/haru02.model.json',
-                './live2d/live2d-widget-model-haruto/assets/haruto.model.json',
-                './live2d/live2d-widget-model-koharu/assets/koharu.model.json',
-                './live2d/live2d-widget-model-hijiki/assets/hijiki.model.json',
-                './live2d/live2d-widget-model-tororo/assets/tororo.model.json',
-                './live2d/live2d-widget-model-izumi/assets/izumi.model.json',
-                './live2d/live2d-widget-model-miku/assets/miku.model.json',
-                './live2d/live2d-widget-model-shizuku/assets/shizuku.model.json',
-                './live2d/live2d-widget-model-wanko/assets/wanko.model.json',
-                './live2d/live2d-widget-model-z16/assets/z16.model.json'
+                'live2d/live2d-widget-model-epsilon2_1/assets/Epsilon2.1.model.json',
+                'live2d/live2d-widget-model-haru/01/assets/haru01.model.json',
+                'live2d/live2d-widget-model-haru/02/assets/haru02.model.json',
+                'live2d/live2d-widget-model-haruto/assets/haruto.model.json',
+                'live2d/live2d-widget-model-koharu/assets/koharu.model.json',
+                'live2d/live2d-widget-model-hijiki/assets/hijiki.model.json',
+                'live2d/live2d-widget-model-tororo/assets/tororo.model.json',
+                'live2d/live2d-widget-model-izumi/assets/izumi.model.json',
+                'live2d/live2d-widget-model-miku/assets/miku.model.json',
+                'live2d/live2d-widget-model-shizuku/assets/shizuku.model.json',
+                'live2d/live2d-widget-model-wanko/assets/wanko.model.json',
+                'live2d/live2d-widget-model-z16/assets/z16.model.json'
             ];
             L2Dwidget.init({
                 "model": {
@@ -163,7 +172,7 @@ func = {
     },
     fmInit: async function (fm_audio) {
         if (fm !== undefined) return;
-        await this._loadScript('./aplayer/APlayer.min.js').then(function () {
+        await this._loadScript('aplayer/APlayer.min.js').then(function () {
             var audio = [];
 
             var storage_json = func.getStorage("fm")
