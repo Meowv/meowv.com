@@ -14,7 +14,6 @@
     <PackageReference Include="Volo.Abp.Identity.Application" Version="3.0.3" />
     
     <ProjectReference Include="..\Meowv.Blog.Application.Caching\Meowv.Blog.Application.Caching.csproj" />
-    <ProjectReference Include="..\Meowv.Blog.Application.EventBus\Meowv.Blog.Application.EventBus.csproj" />
   </ItemGroup>
 
 </Project>
