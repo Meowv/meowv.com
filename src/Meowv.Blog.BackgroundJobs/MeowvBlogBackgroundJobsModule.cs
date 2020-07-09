@@ -4,6 +4,7 @@ using Hangfire.MySql.Core;
 using Hangfire.PostgreSql;
 using Hangfire.SQLite;
 using Hangfire.SqlServer;
+using Meowv.Blog.Application.Contracts;
 using Meowv.Blog.Domain.Configurations;
 using Meowv.Blog.Domain.Shared;
 using Volo.Abp;
@@ -12,7 +13,10 @@ using Volo.Abp.Modularity;
 
 namespace Meowv.Blog.BackgroundJobs
 {
-    [DependsOn(typeof(AbpBackgroundJobsHangfireModule))]
+    [DependsOn(
+        typeof(AbpBackgroundJobsHangfireModule),
+        typeof(MeowvBlogApplicationContractsModule)
+    )]
     public class MeowvBlogBackgroundJobsModule : AbpModule
     {
         public override void ConfigureServices(ServiceConfigurationContext context)
