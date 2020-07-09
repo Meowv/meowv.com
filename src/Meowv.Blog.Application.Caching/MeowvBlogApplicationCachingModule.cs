@@ -1,4 +1,5 @@
-﻿using Meowv.Blog.Domain;
+﻿using Meowv.Blog.Application.Contracts;
+using Meowv.Blog.Domain;
 using Meowv.Blog.Domain.Configurations;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Redis;
@@ -10,7 +11,8 @@ namespace Meowv.Blog.Application.Caching
 {
     [DependsOn(
         typeof(AbpCachingModule),
-        typeof(MeowvBlogDomainModule)
+        typeof(MeowvBlogDomainModule),
+        typeof(MeowvBlogApplicationContractsModule)
     )]
     public class MeowvBlogApplicationCachingModule : AbpModule
     {

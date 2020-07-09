@@ -49,7 +49,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "db-migrations", "db-migrati
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{D7CB0953-1482-47FC-BF7C-53F36A24C490}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meowv.Blog.WebApp", "src\Meowv.Blog.WebApp\Meowv.Blog.WebApp.csproj", "{0AF4D737-FC3A-484A-A712-A9A0E4A0DDA1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meowv.Blog.WebApp", "src\Meowv.Blog.WebApp\Meowv.Blog.WebApp.csproj", "{0AF4D737-FC3A-484A-A712-A9A0E4A0DDA1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meowv.Blog.Application.EventBus", "src\Meowv.Blog.Application.EventBus\Meowv.Blog.Application.EventBus.csproj", "{9638AAB4-62D5-46D9-8CCF-321AF4411E24}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -113,6 +115,10 @@ Global
 		{0AF4D737-FC3A-484A-A712-A9A0E4A0DDA1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0AF4D737-FC3A-484A-A712-A9A0E4A0DDA1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0AF4D737-FC3A-484A-A712-A9A0E4A0DDA1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9638AAB4-62D5-46D9-8CCF-321AF4411E24}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9638AAB4-62D5-46D9-8CCF-321AF4411E24}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9638AAB4-62D5-46D9-8CCF-321AF4411E24}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9638AAB4-62D5-46D9-8CCF-321AF4411E24}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
