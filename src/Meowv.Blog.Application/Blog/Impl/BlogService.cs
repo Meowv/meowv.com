@@ -1,5 +1,6 @@
 ﻿using Meowv.Blog.Application.Caching.Blog;
 using Meowv.Blog.Domain.Blog.Repositories;
+using Volo.Abp.EventBus.Distributed;
 
 namespace Meowv.Blog.Application.Blog.Impl
 {
@@ -11,13 +12,15 @@ namespace Meowv.Blog.Application.Blog.Impl
         private readonly ITagRepository _tagRepository;
         private readonly IPostTagRepository _postTagRepository;
         private readonly IFriendLinkRepository _friendLinksRepository;
+        private readonly IDistributedEventBus _distributedEventBus;
 
         public BlogService(IBlogCacheService blogCacheService,
                            IPostRepository postRepository,
                            ICategoryRepository categoryRepository,
                            ITagRepository tagRepository,
                            IPostTagRepository postTagRepository,
-                           IFriendLinkRepository friendLinksRepository)
+                           IFriendLinkRepository friendLinksRepository,
+                           IDistributedEventBus distributedEventBus)
         {
             _blogCacheService = blogCacheService;
             _postRepository = postRepository;
@@ -25,6 +28,7 @@ namespace Meowv.Blog.Application.Blog.Impl
             _tagRepository = tagRepository;
             _postTagRepository = postTagRepository;
             _friendLinksRepository = friendLinksRepository;
+            _distributedEventBus = distributedEventBus;
         }
     }
 }

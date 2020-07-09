@@ -1,6 +1,7 @@
 ﻿using Meowv.Blog.Application.Contracts;
 using Meowv.Blog.Application.Contracts.Blog;
 using Meowv.Blog.Application.Contracts.Blog.Params;
+using Meowv.Blog.Application.EventBus.Blog;
 using Meowv.Blog.Domain.Blog;
 using Meowv.Blog.ToolKits.Base;
 using Meowv.Blog.ToolKits.Extensions;
@@ -107,8 +108,10 @@ namespace Meowv.Blog.Application.Blog.Impl
             });
             await _postTagRepository.BulkInsertAsync(postTags);
 
-            // 执行清除缓存操作
-            await _blogCacheService.RemoveAsync(CachePrefix.Blog_Post);
+            await _distributedEventBus.PublishAsync(new CachingRemoveEventData
+            {
+                Key = CachePrefix.Blog_Post
+            });
 
             result.IsSuccess(ResponseText.INSERT_SUCCESS);
             return result;
@@ -170,8 +173,10 @@ namespace Meowv.Blog.Application.Blog.Impl
                                 });
             await _postTagRepository.BulkInsertAsync(postTags);
 
-            // 执行清除缓存操作
-            await _blogCacheService.RemoveAsync(CachePrefix.Blog_Post);
+            await _distributedEventBus.PublishAsync(new CachingRemoveEventData
+            {
+                Key = CachePrefix.Blog_Post
+            });
 
             result.IsSuccess(ResponseText.UPDATE_SUCCESS);
             return result;
@@ -196,8 +201,10 @@ namespace Meowv.Blog.Application.Blog.Impl
             await _postRepository.DeleteAsync(id);
             await _postTagRepository.DeleteAsync(x => x.PostId == id);
 
-            // 执行清除缓存操作
-            await _blogCacheService.RemoveAsync(CachePrefix.Blog_Post);
+            await _distributedEventBus.PublishAsync(new CachingRemoveEventData
+            {
+                Key = CachePrefix.Blog_Post
+            });
 
             result.IsSuccess(ResponseText.DELETE_SUCCESS);
             return result;
@@ -241,8 +248,10 @@ namespace Meowv.Blog.Application.Blog.Impl
             var category = ObjectMapper.Map<EditCategoryInput, Category>(input);
             await _categoryRepository.InsertAsync(category);
 
-            // 执行清除缓存操作
-            await _blogCacheService.RemoveAsync(CachePrefix.Blog_Category);
+            await _distributedEventBus.PublishAsync(new CachingRemoveEventData
+            {
+                Key = CachePrefix.Blog_Category
+            });
 
             result.IsSuccess(ResponseText.INSERT_SUCCESS);
             return result;
@@ -264,8 +273,10 @@ namespace Meowv.Blog.Application.Blog.Impl
 
             await _categoryRepository.UpdateAsync(category);
 
-            // 执行清除缓存操作
-            await _blogCacheService.RemoveAsync(CachePrefix.Blog_Category);
+            await _distributedEventBus.PublishAsync(new CachingRemoveEventData
+            {
+                Key = CachePrefix.Blog_Category
+            });
 
             result.IsSuccess(ResponseText.UPDATE_SUCCESS);
             return result;
@@ -289,8 +300,10 @@ namespace Meowv.Blog.Application.Blog.Impl
 
             await _categoryRepository.DeleteAsync(id);
 
-            // 执行清除缓存操作
-            await _blogCacheService.RemoveAsync(CachePrefix.Blog_Category);
+            await _distributedEventBus.PublishAsync(new CachingRemoveEventData
+            {
+                Key = CachePrefix.Blog_Category
+            });
 
             result.IsSuccess(ResponseText.DELETE_SUCCESS);
             return result;
@@ -334,8 +347,10 @@ namespace Meowv.Blog.Application.Blog.Impl
             var tag = ObjectMapper.Map<EditTagInput, Tag>(input);
             await _tagRepository.InsertAsync(tag);
 
-            // 执行清除缓存操作
-            await _blogCacheService.RemoveAsync(CachePrefix.Blog_Tag);
+            await _distributedEventBus.PublishAsync(new CachingRemoveEventData
+            {
+                Key = CachePrefix.Blog_Tag
+            });
 
             result.IsSuccess(ResponseText.INSERT_SUCCESS);
             return result;
@@ -357,8 +372,10 @@ namespace Meowv.Blog.Application.Blog.Impl
 
             await _tagRepository.UpdateAsync(tag);
 
-            // 执行清除缓存操作
-            await _blogCacheService.RemoveAsync(CachePrefix.Blog_Tag);
+            await _distributedEventBus.PublishAsync(new CachingRemoveEventData
+            {
+                Key = CachePrefix.Blog_Tag
+            });
 
             result.IsSuccess(ResponseText.UPDATE_SUCCESS);
             return result;
@@ -383,8 +400,10 @@ namespace Meowv.Blog.Application.Blog.Impl
             await _tagRepository.DeleteAsync(id);
             await _postTagRepository.DeleteAsync(x => x.TagId == id);
 
-            // 执行清除缓存操作
-            await _blogCacheService.RemoveAsync(CachePrefix.Blog_Tag);
+            await _distributedEventBus.PublishAsync(new CachingRemoveEventData
+            {
+                Key = CachePrefix.Blog_Tag
+            });
 
             result.IsSuccess(ResponseText.DELETE_SUCCESS);
             return result;
@@ -422,8 +441,10 @@ namespace Meowv.Blog.Application.Blog.Impl
             var friendLink = ObjectMapper.Map<EditFriendLinkInput, FriendLink>(input);
             await _friendLinksRepository.InsertAsync(friendLink);
 
-            // 执行清除缓存操作
-            await _blogCacheService.RemoveAsync(CachePrefix.Blog_FriendLink);
+            await _distributedEventBus.PublishAsync(new CachingRemoveEventData
+            {
+                Key = CachePrefix.Blog_FriendLink
+            });
 
             result.IsSuccess(ResponseText.INSERT_SUCCESS);
             return result;
@@ -445,8 +466,10 @@ namespace Meowv.Blog.Application.Blog.Impl
 
             await _friendLinksRepository.UpdateAsync(friendLink);
 
-            // 执行清除缓存操作
-            await _blogCacheService.RemoveAsync(CachePrefix.Blog_FriendLink);
+            await _distributedEventBus.PublishAsync(new CachingRemoveEventData
+            {
+                Key = CachePrefix.Blog_FriendLink
+            });
 
             result.IsSuccess(ResponseText.UPDATE_SUCCESS);
             return result;
@@ -470,8 +493,10 @@ namespace Meowv.Blog.Application.Blog.Impl
 
             await _friendLinksRepository.DeleteAsync(id);
 
-            // 执行清除缓存操作
-            await _blogCacheService.RemoveAsync(CachePrefix.Blog_FriendLink);
+            await _distributedEventBus.PublishAsync(new CachingRemoveEventData
+            {
+                Key = CachePrefix.Blog_FriendLink
+            });
 
             result.IsSuccess(ResponseText.DELETE_SUCCESS);
             return result;
