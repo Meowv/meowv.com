@@ -63,6 +63,33 @@ namespace Meowv.Blog.Domain.Configurations
         }
 
         /// <summary>
+        /// RabbitMQ
+        /// </summary>
+        public static class RabbitMQ
+        {
+            public static class Connections
+            {
+                public static class Default
+                {
+                    public static string Username => _config["RabbitMQ:Connections:Default:Username"];
+
+                    public static string Password => _config["RabbitMQ:Connections:Default:Password"];
+
+                    public static string HostName => _config["RabbitMQ:Connections:Default:HostName"];
+
+                    public static int Port => Convert.ToInt32(_config["RabbitMQ:Connections:Default:Port"]);
+                }
+            }
+
+            public static class EventBus
+            {
+                public static string ClientName => _config["RabbitMQ:EventBus:ClientName"];
+
+                public static string ExchangeName => _config["RabbitMQ:EventBus:ExchangeName"];
+            }
+        }
+
+        /// <summary>
         /// GitHub
         /// </summary>
         public static class GitHub
