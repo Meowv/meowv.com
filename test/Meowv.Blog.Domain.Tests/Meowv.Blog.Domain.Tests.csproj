@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <Import Project="..\..\common.props" />
 
@@ -8,10 +8,8 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.6.1" />
-  </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Meowv.Blog.TestBase\Meowv.Blog.TestBase.csproj" />
+    <ProjectReference Include="..\Meowv.Blog.EntityFrameworkCore.Tests\Meowv.Blog.EntityFrameworkCore.Tests.csproj" />
   </ItemGroup>
 
 </Project>
