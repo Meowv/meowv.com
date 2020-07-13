@@ -31,7 +31,6 @@ namespace Meowv.Blog.EntityFrameworkCore.Tests.EntityFrameworkCore
             _sqliteConnection.Dispose();
         }
 
-
         private void ConfigureInMemorySqlite(IServiceCollection services)
         {
             _sqliteConnection = CreateDatabaseAndGetConnection();
