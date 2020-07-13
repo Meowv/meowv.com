@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\..\common.props" />
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.6.1" />
+    <PackageReference Include="Volo.Abp.EntityFrameworkCore.Sqlite" Version="3.0.3" />
+
+    <ProjectReference Include="..\..\src\Meowv.Blog.EntityFrameworkCore.DbMigrations\Meowv.Blog.EntityFrameworkCore.DbMigrations.csproj" />
+    <ProjectReference Include="..\Meowv.Blog.TestBase\Meowv.Blog.TestBase.csproj" />
+  </ItemGroup>
+
+</Project>
