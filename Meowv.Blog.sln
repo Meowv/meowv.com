@@ -57,9 +57,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meowv.Blog.TestBase", "test
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meowv.Blog.Domain.Tests", "test\Meowv.Blog.Domain.Tests\Meowv.Blog.Domain.Tests.csproj", "{38896869-56F3-49BA-9763-28496B2E99B1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meowv.Blog.EntityFrameworkCore.Tests", "test\Meowv.Blog.EntityFrameworkCore.Tests\Meowv.Blog.EntityFrameworkCore.Tests.csproj", "{AAF20559-F81E-480F-B726-C71CC2F08F20}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meowv.Blog.EntityFrameworkCore.Tests", "test\Meowv.Blog.EntityFrameworkCore.Tests\Meowv.Blog.EntityFrameworkCore.Tests.csproj", "{AAF20559-F81E-480F-B726-C71CC2F08F20}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meowv.Blog.Application.Tests", "test\Meowv.Blog.Application.Tests\Meowv.Blog.Application.Tests.csproj", "{3818F8B9-B5EA-4F62-A835-EAF48D3D9565}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meowv.Blog.Application.Tests", "test\Meowv.Blog.Application.Tests\Meowv.Blog.Application.Tests.csproj", "{3818F8B9-B5EA-4F62-A835-EAF48D3D9565}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
