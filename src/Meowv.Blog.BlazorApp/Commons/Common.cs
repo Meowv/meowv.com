@@ -120,6 +120,15 @@ namespace Meowv.Blog.BlazorApp.Commons
         }
 
         /// <summary>
+        /// 获取当前URI路径
+        /// </summary>
+        /// <returns></returns>
+        public string Uri()
+        {
+            return _navigationManager.Uri;
+        }
+
+        /// <summary>
         /// 将字符串转换为MD5
         /// </summary>
         /// <param name="inputStr"></param>
