@@ -11,7 +11,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.10.9" />
-    <PackageReference Include="Volo.Abp.Autofac" Version="3.0.3" />
+    <PackageReference Include="Volo.Abp.Autofac" Version="3.0.4" />
     
     <ProjectReference Include="..\Meowv.Blog.HttpApi\Meowv.Blog.HttpApi.csproj" />
     <ProjectReference Include="..\Meowv.Blog.Swagger\Meowv.Blog.Swagger.csproj" />
