@@ -183,3 +183,4 @@ ASALocalRun/
 healthchecksdb
 .local-chromium
 *.xml
+Logs/
