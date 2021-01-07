@@ -4,9 +4,6 @@ using Volo.Abp.Modularity;
 
 namespace Meowv.Blog
 {
-    /// <summary>
-    /// Application Module
-    /// </summary>
     [DependsOn(
         typeof(AbpDddApplicationModule),
         typeof(AbpAutoMapperModule),

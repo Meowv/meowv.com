@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MongoDB.Bson" Version="2.11.5" />
     <PackageReference Include="Volo.Abp.Ddd.Domain" Version="4.0.2" />
   </ItemGroup>
 

@@ -6,9 +6,6 @@ using Volo.Abp.Uow;
 
 namespace Meowv.Blog
 {
-    /// <summary>
-    /// MongoDb Module
-    /// </summary>
     [DependsOn(
         typeof(AbpMongoDbModule),
         typeof(MeowvBlogCoreModule)

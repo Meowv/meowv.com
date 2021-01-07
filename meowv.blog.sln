@@ -3,15 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30804.86
 MinimumVisualStudioVersion = 15.0.26124.0
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meowv.Blog.Core", "src\Meowv.Blog.Core\Meowv.Blog.Core.csproj", "{FDF1CB2A-BB7B-4EDB-ADAF-8E09C37AF9BA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meowv.Blog.Core", "src\Meowv.Blog.Core\Meowv.Blog.Core.csproj", "{FDF1CB2A-BB7B-4EDB-ADAF-8E09C37AF9BA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meowv.Blog.Application", "src\Meowv.Blog.Application\Meowv.Blog.Application.csproj", "{B5DE876B-DC3A-4EA8-9DA5-55ABDD0253C5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meowv.Blog.Application", "src\Meowv.Blog.Application\Meowv.Blog.Application.csproj", "{B5DE876B-DC3A-4EA8-9DA5-55ABDD0253C5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meowv.Blog.MongoDb", "src\Meowv.Blog.MongoDb\Meowv.Blog.MongoDb.csproj", "{285F60C5-7D10-409B-9C3E-304BBF9F0C91}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meowv.Blog.MongoDb", "src\Meowv.Blog.MongoDb\Meowv.Blog.MongoDb.csproj", "{285F60C5-7D10-409B-9C3E-304BBF9F0C91}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meowv.Blog.EntityFrameworkCore", "src\Meowv.Blog.EntityFrameworkCore\Meowv.Blog.EntityFrameworkCore.csproj", "{9851496F-F8A8-460E-9FEB-C0558D5C021F}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meowv.Blog.Api", "src\Meowv.Blog.Api\Meowv.Blog.Api.csproj", "{1DAA07EF-2A1F-4B14-B233-AA5D61D8525A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meowv.Blog.Api", "src\Meowv.Blog.Api\Meowv.Blog.Api.csproj", "{1DAA07EF-2A1F-4B14-B233-AA5D61D8525A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -59,18 +57,6 @@ Global
 		{285F60C5-7D10-409B-9C3E-304BBF9F0C91}.Release|x64.Build.0 = Release|Any CPU
 		{285F60C5-7D10-409B-9C3E-304BBF9F0C91}.Release|x86.ActiveCfg = Release|Any CPU
 		{285F60C5-7D10-409B-9C3E-304BBF9F0C91}.Release|x86.Build.0 = Release|Any CPU
-		{9851496F-F8A8-460E-9FEB-C0558D5C021F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9851496F-F8A8-460E-9FEB-C0558D5C021F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9851496F-F8A8-460E-9FEB-C0558D5C021F}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{9851496F-F8A8-460E-9FEB-C0558D5C021F}.Debug|x64.Build.0 = Debug|Any CPU
-		{9851496F-F8A8-460E-9FEB-C0558D5C021F}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{9851496F-F8A8-460E-9FEB-C0558D5C021F}.Debug|x86.Build.0 = Debug|Any CPU
-		{9851496F-F8A8-460E-9FEB-C0558D5C021F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9851496F-F8A8-460E-9FEB-C0558D5C021F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9851496F-F8A8-460E-9FEB-C0558D5C021F}.Release|x64.ActiveCfg = Release|Any CPU
-		{9851496F-F8A8-460E-9FEB-C0558D5C021F}.Release|x64.Build.0 = Release|Any CPU
-		{9851496F-F8A8-460E-9FEB-C0558D5C021F}.Release|x86.ActiveCfg = Release|Any CPU
-		{9851496F-F8A8-460E-9FEB-C0558D5C021F}.Release|x86.Build.0 = Release|Any CPU
 		{1DAA07EF-2A1F-4B14-B233-AA5D61D8525A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1DAA07EF-2A1F-4B14-B233-AA5D61D8525A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1DAA07EF-2A1F-4B14-B233-AA5D61D8525A}.Debug|x64.ActiveCfg = Debug|Any CPU
