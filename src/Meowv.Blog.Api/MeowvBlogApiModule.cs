@@ -53,7 +53,7 @@ namespace Meowv.Blog.Api
             });
         }
 
-        private void ConfigureSwaggerServices(IServiceCollection services)
+        private static void ConfigureSwaggerServices(IServiceCollection services)
         {
             services.AddSwaggerGen(options =>
             {
