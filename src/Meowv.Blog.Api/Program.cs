@@ -1,8 +1,12 @@
+using Meowv.Blog.Extensions;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Events;
 using System;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace Meowv.Blog.Api
@@ -41,11 +45,28 @@ namespace Meowv.Blog.Api
             }
         }
 
-        internal static IHostBuilder CreateHostBuilder(string[] args) =>
-            Host.CreateDefaultBuilder(args)
-                .ConfigureWebHostDefaults(webBuilder =>
-                {
-                    webBuilder.UseStartup<Startup>();
-                }).UseAutofac().UseSerilog();
+        internal static IHostBuilder CreateHostBuilder(string[] args)
+        {
+            var config = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory())
+                                                   .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
+                                                   .AddCommandLine(args)
+                                                   .Build();
+
+            var builder = Host.CreateDefaultBuilder(args)
+                              .ConfigureWebHostDefaults(webBuilder =>
+                              {
+                                  webBuilder.UseConfiguration(config)
+                                            .UseContentRoot(Directory.GetCurrentDirectory())
+                                            .ConfigureKestrel(c =>
+                                            {
+                                                c.AddServerHeader = false;
+                                            }).UseStartup<Startup>();
+                              }).ConfigureServices((ctx, services) =>
+                              {
+                                  services.AddSingleton(config);
+                                  services.AddHttpContextAccessor();
+                              }).UseAutofac().UseSerilog();
+            return builder;
+        }
     }
 }

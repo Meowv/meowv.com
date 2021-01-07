@@ -1,12 +1,10 @@
 ﻿using Meowv.Blog.Domain.Blog;
 using MongoDB.Driver;
-using Volo.Abp.Data;
 using Volo.Abp.MongoDB;
 using Tag = Meowv.Blog.Domain.Blog.Tag;
 
 namespace Meowv.Blog
 {
-    [ConnectionStringName("mongodb")]
     public class MeowvBlogMongoDbContext : AbpMongoDbContext
     {
         public IMongoCollection<Post> Posts => Collection<Post>();

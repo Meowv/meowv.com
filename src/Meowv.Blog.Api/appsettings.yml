@@ -1,0 +1,10 @@
+﻿---
+swagger:
+  version: 4.0.0
+  title: 'meowv_blog api'
+  description: '这里是描述信息'
+  routePrefix: ''
+  documentTitle: '接口文档'
+
+storage:
+  mongodb: 'mongodb://localhost/meowv_blog'

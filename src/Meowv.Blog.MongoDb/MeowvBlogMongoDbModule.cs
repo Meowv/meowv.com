@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Bson.Serialization.Conventions;
+using Volo.Abp.Data;
 using Volo.Abp.Modularity;
 using Volo.Abp.MongoDB;
 using Volo.Abp.Uow;
@@ -14,6 +15,11 @@ namespace Meowv.Blog
     {
         public override void ConfigureServices(ServiceConfigurationContext context)
         {
+            Configure<AbpDbConnectionOptions>(options =>
+            {
+                options.ConnectionStrings.Default = "";
+            });
+
             context.Services.AddMongoDbContext<MeowvBlogMongoDbContext>(options =>
             {
                 options.AddDefaultRepositories();

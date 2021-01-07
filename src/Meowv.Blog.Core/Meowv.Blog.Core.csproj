@@ -7,7 +7,8 @@
 
   <ItemGroup>
     <PackageReference Include="MongoDB.Bson" Version="2.11.5" />
-    <PackageReference Include="Volo.Abp.Ddd.Domain" Version="4.0.2" />
+    <PackageReference Include="Volo.Abp.Ddd.Domain" Version="4.1.0" />
+    <PackageReference Include="YamlDotNet" Version="9.1.1" />
   </ItemGroup>
 
 </Project>
