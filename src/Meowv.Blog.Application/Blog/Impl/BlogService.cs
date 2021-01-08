@@ -19,6 +19,5 @@ namespace Meowv.Blog.Blog.Impl
             _tags = tags;
             _friendLinks = friendLinks;
         }
-
     }
 }
