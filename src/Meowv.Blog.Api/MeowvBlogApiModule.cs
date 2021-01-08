@@ -33,6 +33,7 @@ namespace Meowv.Blog.Api
 
             ConfigureExceptionFilter();
             ConfigureAutoApiControllers();
+            ConfigureRouting(context.Services);
             ConfigureSwaggerServices(context.Services);
         }
 
@@ -50,11 +51,16 @@ namespace Meowv.Blog.Api
         {
             Configure<AbpAspNetCoreMvcOptions>(options =>
             {
-                options.ConventionalControllers
-                       .Create(typeof(MeowvBlogApplicationModule).Assembly, opts =>
-                       {
-                           opts.RootPath = "meowv";
-                       });
+                options.ConventionalControllers.Create(typeof(MeowvBlogApplicationModule).Assembly, opts => { opts.RootPath = "meowv"; });
+            });
+        }
+
+        private static void ConfigureRouting(IServiceCollection services)
+        {
+            services.AddRouting(options =>
+            {
+                options.LowercaseUrls = true;
+                options.AppendTrailingSlash = true;
             });
         }
 
