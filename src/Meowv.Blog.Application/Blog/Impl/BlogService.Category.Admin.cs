@@ -34,6 +34,27 @@ namespace Meowv.Blog.Blog.Impl
         }
 
         /// <summary>
+        /// Delete category by id.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        public async Task<BlogResponse> DeleteCategoryAsync(string id)
+        {
+            var response = new BlogResponse();
+
+            var category = await _categories.FindAsync(id.ToObjectId());
+            if (category is null)
+            {
+                response.IsFailed($"The category id not exists.");
+                return response;
+            }
+
+            await _categories.DeleteAsync(id.ToObjectId());
+
+            return response;
+        }
+
+        /// <summary>
         /// Update category by id.
         /// </summary>
         /// <param name="id"></param>
@@ -54,27 +75,6 @@ namespace Meowv.Blog.Blog.Impl
             category.Alias = input.Alias;
 
             await _categories.UpdateAsync(category);
-
-            return response;
-        }
-
-        /// <summary>
-        /// Delete category by id.
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        public async Task<BlogResponse> DeleteCategoryAsync(string id)
-        {
-            var response = new BlogResponse();
-
-            var category = await _categories.FindAsync(id.ToObjectId());
-            if (category is null)
-            {
-                response.IsFailed($"The category id not exists.");
-                return response;
-            }
-
-            await _categories.DeleteAsync(id.ToObjectId());
 
             return response;
         }

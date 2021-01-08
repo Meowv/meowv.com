@@ -8,8 +8,8 @@ namespace Meowv.Blog.Blog
     {
         Task<BlogResponse> CreateCategoryAsync(CreateCategoryInput input);
 
-        Task<BlogResponse> DeleteCategoryAsync(string id);
-
         Task<BlogResponse> UpdateCategoryAsync(string id, UpdateCategoryInput input);
+
+        Task<BlogResponse> DeleteCategoryAsync(string id);
     }
 }
