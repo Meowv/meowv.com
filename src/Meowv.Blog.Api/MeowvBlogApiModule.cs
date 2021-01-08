@@ -1,4 +1,5 @@
 ﻿using Meowv.Blog.Api.Filters;
+using Meowv.Blog.Options;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,8 +25,12 @@ namespace Meowv.Blog.Api
     )]
     public class MeowvBlogApiModule : AbpModule
     {
+        public SwaggerOptions SwaggerOptions { get; set; }
+
         public override void ConfigureServices(ServiceConfigurationContext context)
         {
+            SwaggerOptions = context.Services.ExecutePreConfiguredActions<SwaggerOptions>();
+
             ConfigureExceptionFilter();
             ConfigureAutoApiControllers();
             ConfigureSwaggerServices(context.Services);
@@ -48,19 +53,20 @@ namespace Meowv.Blog.Api
                 options.ConventionalControllers
                        .Create(typeof(MeowvBlogApplicationModule).Assembly, opts =>
                        {
-                           opts.RootPath = "Blog";
+                           opts.RootPath = "meowv";
                        });
             });
         }
 
-        private static void ConfigureSwaggerServices(IServiceCollection services)
+        private void ConfigureSwaggerServices(IServiceCollection services)
         {
             services.AddSwaggerGen(options =>
             {
-                options.SwaggerDoc("v1", new OpenApiInfo
+                options.SwaggerDoc(SwaggerOptions.Name, new OpenApiInfo
                 {
-                    Title = "Meowv.Blog API",
-                    Version = "v4.0.0"
+                    Title = SwaggerOptions.Title,
+                    Version = SwaggerOptions.Version,
+                    Description = SwaggerOptions.Description
                 });
                 options.DocInclusionPredicate((docName, description) => true);
                 options.CustomSchemaIds(type => type.FullName);
@@ -82,11 +88,11 @@ namespace Meowv.Blog.Api
             app.UseSwagger();
             app.UseSwaggerUI(options =>
             {
-                options.SwaggerEndpoint("/swagger/v1/swagger.json", "Meowv.Blog API");
+                options.SwaggerEndpoint($"/swagger/{SwaggerOptions.Name}/swagger.json", SwaggerOptions.Title);
                 options.DefaultModelsExpandDepth(-1);
                 options.DocExpansion(DocExpansion.List);
-                options.RoutePrefix = string.Empty;
-                options.DocumentTitle = "😍接口文档 - 阿星Plus⭐⭐⭐";
+                options.RoutePrefix = SwaggerOptions.RoutePrefix;
+                options.DocumentTitle = SwaggerOptions.DocumentTitle;
             });
             app.UseAbpSerilogEnrichers();
             app.UseConfiguredEndpoints();

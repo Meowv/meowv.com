@@ -3,7 +3,7 @@
     public class StorageOptions
     {
         /// <summary>
-        /// Mongodb 连接字符串
+        /// Gets or sets mongodb connection string
         /// </summary>
         public string Mongodb { get; set; }
     }

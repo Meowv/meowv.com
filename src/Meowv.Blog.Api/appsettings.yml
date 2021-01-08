@@ -1,6 +1,7 @@
 ﻿---
 swagger:
-  version: 4.0.0
+  version: 'v4.0.0'
+  name: 'meowv_blog'
   title: 'meowv_blog api'
   description: '这里是描述信息'
   routePrefix: ''

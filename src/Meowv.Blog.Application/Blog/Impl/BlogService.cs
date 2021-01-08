@@ -1,4 +1,6 @@
 ﻿using Meowv.Blog.Domain.Blog.Repositories;
+using System;
+using System.Threading.Tasks;
 
 namespace Meowv.Blog.Blog.Impl
 {
@@ -9,6 +11,12 @@ namespace Meowv.Blog.Blog.Impl
         public BlogService(IPostRepository posts)
         {
             _posts = posts;
+        }
+
+        public async Task<int> Get()
+        {
+            var count = await _posts.GetCountAsync();
+            return Convert.ToInt32(count);
         }
     }
 }

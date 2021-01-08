@@ -3,27 +3,32 @@
     public class SwaggerOptions
     {
         /// <summary>
-        /// 版本
+        /// The version of the OpenAPI document.
         /// </summary>
         public string Version { get; set; }
 
         /// <summary>
-        /// 标题
+        /// A URI-friendly name that uniquely identifies the document.
+        /// </summary>
+        public string Name { get; set; }
+
+        /// <summary>
+        /// The title of the application.
         /// </summary>
         public string Title { get; set; }
 
         /// <summary>
-        /// 描述
+        /// A short description of the application.
         /// </summary>
         public string Description { get; set; }
 
         /// <summary>
-        /// 路由前缀
+        /// Gets or sets a route prefix for accessing the swagger-ui
         /// </summary>
         public string RoutePrefix { get; set; }
 
         /// <summary>
-        /// 文档标题
+        /// Gets or sets a title for the swagger-ui page
         /// </summary>
         public string DocumentTitle { get; set; }
     }

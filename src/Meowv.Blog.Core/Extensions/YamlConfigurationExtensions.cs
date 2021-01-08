@@ -44,9 +44,7 @@ namespace Meowv.Blog.Extensions
             });
         }
 
-        public static IConfigurationBuilder AddYamlFile(
-            this IConfigurationBuilder builder,
-            Action<YamlConfigurationSource> configureSource)
+        public static IConfigurationBuilder AddYamlFile(this IConfigurationBuilder builder, Action<YamlConfigurationSource> configureSource)
         {
             return builder.Add(configureSource);
         }
@@ -63,8 +61,7 @@ namespace Meowv.Blog.Extensions
 
     public class YamlConfigurationProvider : FileConfigurationProvider
     {
-        public YamlConfigurationProvider(YamlConfigurationSource source)
-            : base(source)
+        public YamlConfigurationProvider(YamlConfigurationSource source) : base(source)
         {
         }
 
@@ -114,8 +111,7 @@ namespace Meowv.Blog.Extensions
     {
         private readonly Stack<string> _context = new Stack<string>();
 
-        private readonly IDictionary<string, string> _data =
-            new SortedDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private readonly IDictionary<string, string> _data = new SortedDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         private string _currentPath;
 
