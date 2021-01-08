@@ -6,9 +6,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerUI;
+using System;
+using System.IO;
 using System.Linq;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
+using Volo.Abp.AspNetCore.Mvc.AntiForgery;
 using Volo.Abp.AspNetCore.Mvc.ExceptionHandling;
 using Volo.Abp.AspNetCore.Serilog;
 using Volo.Abp.Autofac;
@@ -33,6 +36,7 @@ namespace Meowv.Blog.Api
 
             ConfigureExceptionFilter();
             ConfigureAutoApiControllers();
+            ConfigureAutoValidate();
             ConfigureRouting(context.Services);
             ConfigureSwaggerServices(context.Services);
         }
@@ -52,6 +56,14 @@ namespace Meowv.Blog.Api
             Configure<AbpAspNetCoreMvcOptions>(options =>
             {
                 options.ConventionalControllers.Create(typeof(MeowvBlogApplicationModule).Assembly, opts => { opts.RootPath = "meowv"; });
+            });
+        }
+
+        private void ConfigureAutoValidate()
+        {
+            Configure<AbpAntiForgeryOptions>(options =>
+            {
+                options.AutoValidate = false;
             });
         }
 
@@ -75,6 +87,8 @@ namespace Meowv.Blog.Api
                     Description = SwaggerOptions.Description
                 });
                 options.DocInclusionPredicate((docName, description) => true);
+                options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "Meowv.Blog.Core.xml"));
+                options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "Meowv.Blog.Application.xml"));
                 options.CustomSchemaIds(type => type.FullName);
                 options.DocumentFilter<SwaggerDocumentFilter>();
             });

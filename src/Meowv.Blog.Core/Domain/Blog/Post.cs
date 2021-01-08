@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Meowv.Blog.Domain.Blog.Views;
+using System;
 using System.Collections.Generic;
 
 namespace Meowv.Blog.Domain.Blog
@@ -33,12 +34,12 @@ namespace Meowv.Blog.Domain.Blog
         /// <summary>
         /// 分类
         /// </summary>
-        public Category Category { get; set; }
+        public CategoryView Category { get; set; }
 
         /// <summary>
         /// 标签列表
         /// </summary>
-        public List<Tag> Tags { get; set; }
+        public List<TagView> Tags { get; set; }
 
         /// <summary>
         /// 创建时间

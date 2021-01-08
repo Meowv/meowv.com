@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using MongoDB.Bson;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
 namespace Meowv.Blog.Extensions
@@ -6,7 +7,7 @@ namespace Meowv.Blog.Extensions
     public static class Extensions
     {
         /// <summary>
-        /// 将对象转换为json字符串
+        /// Convert object to json string
         /// </summary>
         /// <param name="obj"></param>
         /// <returns></returns>
@@ -16,6 +17,16 @@ namespace Meowv.Blog.Extensions
             {
                 ContractResolver = new CamelCasePropertyNamesContractResolver()
             });
+        }
+
+        /// <summary>
+        /// String to MongoDb.Bson.ObjectId
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        public static ObjectId ToObjectId(this string id)
+        {
+            return new ObjectId(id);
         }
     }
 }
