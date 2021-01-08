@@ -1,6 +1,7 @@
 ﻿using MongoDB.Bson;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using System;
 
 namespace Meowv.Blog.Extensions
 {
@@ -27,6 +28,17 @@ namespace Meowv.Blog.Extensions
         public static ObjectId ToObjectId(this string id)
         {
             return new ObjectId(id);
+        }
+
+        /// <summary>
+        /// Generate post link
+        /// </summary>
+        /// <param name="url"></param>
+        /// <param name="time"></param>
+        /// <returns></returns>
+        public static string GeneratePostUrl(this string url, DateTime time)
+        {
+            return $"{time:/yyyy/MM/dd/}{url}";
         }
     }
 }
