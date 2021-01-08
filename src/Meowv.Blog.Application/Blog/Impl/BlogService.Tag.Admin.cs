@@ -67,7 +67,7 @@ namespace Meowv.Blog.Blog.Impl
             var tag = await _tags.FindAsync(id.ToObjectId());
             if (tag is null)
             {
-                response.IsFailed($"The category id not exists.");
+                response.IsFailed($"The tag id not exists.");
                 return response;
             }
 
