@@ -1,4 +1,6 @@
 ﻿using MongoDB.Bson;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Volo.Abp.Domain.Entities;
 using Volo.Abp.Domain.Repositories.MongoDB;
 using Volo.Abp.MongoDB;
@@ -9,6 +11,11 @@ namespace Meowv.Blog
     {
         public MongoDbRepositoryBase(IMongoDbContextProvider<TMongoDbContext> dbContextProvider) : base(dbContextProvider)
         {
+        }
+
+        public async Task BulkInsertAsync(IEnumerable<TEntity> list)
+        {
+            await Collection.InsertManyAsync(list);
         }
     }
 

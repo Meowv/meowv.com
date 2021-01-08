@@ -1,6 +1,6 @@
 ﻿namespace Meowv.Blog.Response
 {
-    public class BlogResponseOfTResult<TResult> : BlogResponse where TResult : class
+    public class BlogResponse<TResult> : BlogResponse where TResult : class
     {
         public TResult Result { get; set; }
 
