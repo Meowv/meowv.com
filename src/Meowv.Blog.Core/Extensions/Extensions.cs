@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System;
+using System.Globalization;
 
 namespace Meowv.Blog.Extensions
 {
@@ -39,6 +40,16 @@ namespace Meowv.Blog.Extensions
         public static string GeneratePostUrl(this string url, DateTime time)
         {
             return $"{time:/yyyy/MM/dd/}{url}";
+        }
+
+        /// <summary>
+        /// Format time
+        /// </summary>
+        /// <param name="time"></param>
+        /// <returns></returns>
+        public static string FormatTime(this DateTime time)
+        {
+            return time.ToString("MMMM dd, yyyy HH:mm", new CultureInfo("en-us"));
         }
     }
 }
