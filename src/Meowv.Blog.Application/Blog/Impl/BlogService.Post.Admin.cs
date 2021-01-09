@@ -109,7 +109,7 @@ namespace Meowv.Blog.Blog.Impl
         }
 
         /// <summary>
-        /// Get post by id
+        /// Get post by id.
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>

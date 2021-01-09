@@ -9,7 +9,7 @@ namespace Meowv.Blog.Blog.Impl
     public partial class BlogService
     {
         /// <summary>
-        /// Get tag list
+        /// Get tag list.
         /// </summary>
         /// <returns></returns>
         public async Task<BlogResponse<List<GetTagDto>>> GetTagsAsync()

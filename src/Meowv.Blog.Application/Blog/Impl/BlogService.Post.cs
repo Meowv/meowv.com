@@ -13,7 +13,7 @@ namespace Meowv.Blog.Blog.Impl
     public partial class BlogService
     {
         /// <summary>
-        /// Get post by url
+        /// Get post by url.
         /// </summary>
         /// <param name="url"></param>
         /// <returns></returns>
