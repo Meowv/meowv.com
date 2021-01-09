@@ -85,7 +85,12 @@ namespace Meowv.Blog.Repositories.Blog
 
         public async Task<int> GetCountByTagAsync(ObjectId id)
         {
-            throw new NotImplementedException();
+            var filter = new BsonDocument
+            {
+                { "tags._id",  id }
+            };
+
+            return (int)await Collection.CountDocumentsAsync(filter);
         }
     }
 }

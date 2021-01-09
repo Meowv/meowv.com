@@ -23,7 +23,7 @@ namespace Meowv.Blog.Blog.Impl
                 Name = x.Name,
                 Alias = x.Alias,
                 Total = _posts.GetCountByCategoryAsync(x.Id).Result
-            }).ToList();
+            }).Where(x => x.Total > 0).ToList();
 
             response.Result = result;
             return response;
