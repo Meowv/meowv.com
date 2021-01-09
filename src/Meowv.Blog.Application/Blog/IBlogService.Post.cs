@@ -1,6 +1,6 @@
-﻿using Meowv.Blog.Dto;
-using Meowv.Blog.Dto.Blog;
+﻿using Meowv.Blog.Dto.Blog;
 using Meowv.Blog.Response;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Meowv.Blog.Blog
@@ -9,6 +9,10 @@ namespace Meowv.Blog.Blog
     {
         Task<BlogResponse<PostDetailDto>> GetPost(string url);
 
-        Task<BlogResponse<PagedList<GetPostDto>>> GetPostsAsync(PagingInput input);
+        Task<BlogResponse<PagedList<GetPostDto>>> GetPostsAsync(int page, int limit);
+
+        Task<BlogResponse<List<GetPostDto>>> GetPostsByCategoryAsync(string category);
+
+        Task<BlogResponse<List<GetPostDto>>> GetPostsByTagAsync(string tag);
     }
 }
