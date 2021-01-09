@@ -29,5 +29,19 @@ namespace Meowv.Blog.Domain.Blog.Repositories
         /// <param name="tag"></param>
         /// <returns></returns>
         Task<List<Post>> GetListByTagAsync(string tag);
+
+        /// <summary>
+        /// Get post count by category id
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        Task<int> GetCountByCategoryAsync(ObjectId id);
+
+        /// <summary>
+        /// Get post count by tag id
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        Task<int> GetCountByTagAsync(ObjectId id);
     }
 }

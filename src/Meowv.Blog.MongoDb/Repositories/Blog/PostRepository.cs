@@ -72,5 +72,20 @@ namespace Meowv.Blog.Repositories.Blog
 
             return await Collection.Find(filter).Sort(sort).Project<Post>(projection).ToListAsync();
         }
+
+        public async Task<int> GetCountByCategoryAsync(ObjectId id)
+        {
+            var filter = new BsonDocument
+            {
+                { "category._id",  id }
+            };
+
+            return (int)await Collection.CountDocumentsAsync(filter);
+        }
+
+        public async Task<int> GetCountByTagAsync(ObjectId id)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
