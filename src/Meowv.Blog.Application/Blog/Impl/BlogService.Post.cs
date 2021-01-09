@@ -18,7 +18,7 @@ namespace Meowv.Blog.Blog.Impl
         /// <param name="url"></param>
         /// <returns></returns>
         [Route("api/meowv/blog/post/{url}")]
-        public async Task<BlogResponse<PostDetailDto>> GetPost(string url)
+        public async Task<BlogResponse<PostDetailDto>> GetPostByUrlAsync(string url)
         {
             var response = new BlogResponse<PostDetailDto>();
 

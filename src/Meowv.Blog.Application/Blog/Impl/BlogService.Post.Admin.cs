@@ -1,4 +1,5 @@
 ﻿using Meowv.Blog.Domain.Blog;
+using Meowv.Blog.Dto.Blog;
 using Meowv.Blog.Dto.Blog.Params;
 using Meowv.Blog.Extensions;
 using Meowv.Blog.Response;
@@ -104,6 +105,28 @@ namespace Meowv.Blog.Blog.Impl
             post.CreatedAt = input.CreatedAt;
             await _posts.UpdateAsync(post);
 
+            return response;
+        }
+
+        /// <summary>
+        /// Get post by id
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        public async Task<BlogResponse<PostDto>> GetPostAsync(string id)
+        {
+            var response = new BlogResponse<PostDto>();
+
+            var post = await _posts.FindAsync(id.ToObjectId());
+            if (post is null)
+            {
+                response.IsFailed($"The post id not exists.");
+                return response;
+            }
+
+            var result = ObjectMapper.Map<Post, PostDto>(post);
+
+            response.Result = result;
             return response;
         }
     }

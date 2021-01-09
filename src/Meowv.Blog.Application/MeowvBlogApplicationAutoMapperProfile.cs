@@ -9,6 +9,8 @@ namespace Meowv.Blog
     {
         public MeowvBlogApplicationAutoMapperProfile()
         {
+            CreateMap<Post, PostDto>();
+
             CreateMap<Post, PostDetailDto>().ForMember(x => x.CreatedAt, dto => dto.MapFrom(opt => opt.CreatedAt.FormatTime()));
 
             CreateMap<Category, CategoryDto>();

@@ -34,12 +34,12 @@ namespace Meowv.Blog.Dto.Blog
         /// <summary>
         /// 分类
         /// </summary>
-        public Category Category { get; set; }
+        public CategoryDto Category { get; set; }
 
         /// <summary>
         /// 标签列表
         /// </summary>
-        public List<Tag> Tags { get; set; }
+        public List<TagDto> Tags { get; set; }
 
         /// <summary>
         /// 创建时间

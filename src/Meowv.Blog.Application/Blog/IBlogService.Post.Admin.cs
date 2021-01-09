@@ -1,4 +1,5 @@
-﻿using Meowv.Blog.Dto.Blog.Params;
+﻿using Meowv.Blog.Dto.Blog;
+using Meowv.Blog.Dto.Blog.Params;
 using Meowv.Blog.Response;
 using System.Threading.Tasks;
 
@@ -11,5 +12,7 @@ namespace Meowv.Blog.Blog
         Task<BlogResponse> DeletePostAsync(string id);
 
         Task<BlogResponse> UpdatePostAsync(string id, UpdatePostInput input);
+
+        Task<BlogResponse<PostDto>> GetPostAsync(string id);
     }
 }
