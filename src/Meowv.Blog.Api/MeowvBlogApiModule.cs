@@ -80,6 +80,34 @@ namespace Meowv.Blog.Api
         {
             services.AddSwaggerGen(options =>
             {
+                //options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
+                //{
+                //    Type = SecuritySchemeType.OAuth2,
+                //    Flows = new OpenApiOAuthFlows
+                //    {
+                //        AuthorizationCode = new OpenApiOAuthFlow
+                //        {
+                //            AuthorizationUrl = new Uri("https://localhost:5001/connect/authorize"),
+                //            Scopes = new Dictionary<string, string> { { "meowv_blog", "meowv_blog api" } },
+                //            TokenUrl = new Uri("https://localhost:5001/connect/token")
+                //        }
+                //    }
+                //});
+                //options.AddSecurityRequirement(new OpenApiSecurityRequirement
+                //{
+                //    {
+                //        new OpenApiSecurityScheme
+                //        {
+                //            Reference = new OpenApiReference
+                //            {
+                //                Type = ReferenceType.SecurityScheme,
+                //                Id = "oauth2"
+                //            }
+                //        },
+                //        Array.Empty<string>()
+                //    }
+                //});
+
                 options.SwaggerDoc(SwaggerOptions.Name, new OpenApiInfo
                 {
                     Title = SwaggerOptions.Title,
@@ -108,12 +136,14 @@ namespace Meowv.Blog.Api
             app.UseSwagger();
             app.UseSwaggerUI(options =>
             {
+                options.HeadContent = @"<style>.opblock-summary-description{font-weight: bold;text-align: right;}</style>";
                 options.SwaggerEndpoint($"/swagger/{SwaggerOptions.Name}/swagger.json", SwaggerOptions.Title);
                 options.DefaultModelsExpandDepth(-1);
                 options.DocExpansion(DocExpansion.List);
                 options.RoutePrefix = SwaggerOptions.RoutePrefix;
                 options.DocumentTitle = SwaggerOptions.DocumentTitle;
             });
+            app.UseAuditing();
             app.UseAbpSerilogEnrichers();
             app.UseConfiguredEndpoints();
         }

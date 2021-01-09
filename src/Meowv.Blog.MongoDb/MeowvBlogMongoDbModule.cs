@@ -1,6 +1,7 @@
 ﻿using Meowv.Blog.Options;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Bson.Serialization.Conventions;
+using Volo.Abp.AuditLogging.MongoDB;
 using Volo.Abp.Data;
 using Volo.Abp.Modularity;
 using Volo.Abp.MongoDB;
@@ -10,6 +11,7 @@ namespace Meowv.Blog
 {
     [DependsOn(
         typeof(AbpMongoDbModule),
+        typeof(AbpAuditLoggingMongoDbModule),
         typeof(MeowvBlogCoreModule)
     )]
     public class MeowvBlogMongoDbModule : AbpModule
