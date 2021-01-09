@@ -9,7 +9,7 @@ namespace Meowv.Blog.Domain.Blog.Repositories
     public interface IPostRepository : IRepository<Post, ObjectId>
     {
         /// <summary>
-        /// Gets post list by paging.
+        /// Get post list by paging.
         /// </summary>
         /// <param name="skipCount"></param>
         /// <param name="maxResultCount"></param>

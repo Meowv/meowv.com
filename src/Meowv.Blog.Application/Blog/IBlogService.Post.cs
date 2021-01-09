@@ -7,6 +7,8 @@ namespace Meowv.Blog.Blog
 {
     public partial interface IBlogService
     {
+        Task<BlogResponse<PostDetailDto>> GetPost(string url);
+
         Task<BlogResponse<PagedList<GetPostDto>>> GetPostsAsync(PagingInput input);
     }
 }
