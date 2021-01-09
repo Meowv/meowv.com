@@ -60,9 +60,48 @@ namespace Meowv.Blog.Blog.Impl
             var response = new BlogResponse<PagedList<GetPostDto>>();
 
             var result = await _posts.GetPagedListAsync(page, limit);
-
             var total = result.Item1;
-            var posts = result.Item2.Select(x => new PostBriefDto
+            var posts = GetPostList(result.Item2);
+
+            response.Result = new PagedList<GetPostDto>(total, posts);
+            return response;
+        }
+
+        /// <summary>
+        /// Get post list by category.
+        /// </summary>
+        /// <param name="category"></param>
+        /// <returns></returns>
+        [Route("api/meowv/blog/posts/category/{category}")]
+        public async Task<BlogResponse<List<GetPostDto>>> GetPostsByCategoryAsync(string category)
+        {
+            var response = new BlogResponse<List<GetPostDto>>();
+
+            var posts = await _posts.GetListByCategoryAsync(category);
+
+            response.Result = GetPostList(posts);
+            return response;
+        }
+
+        /// <summary>
+        /// Get post list by tag.
+        /// </summary>
+        /// <param name="tag"></param>
+        /// <returns></returns>
+        [Route("api/meowv/blog/posts/tag/{tag}")]
+        public async Task<BlogResponse<List<GetPostDto>>> GetPostsByTagAsync(string tag)
+        {
+            var response = new BlogResponse<List<GetPostDto>>();
+
+            var posts = await _posts.GetListByTagAsync(tag);
+
+            response.Result = GetPostList(posts);
+            return response;
+        }
+
+        private static List<GetPostDto> GetPostList(List<Post> posts)
+        {
+            return posts.Select(x => new PostBriefDto
             {
                 Title = x.Title,
                 Url = x.Url,
@@ -74,35 +113,6 @@ namespace Meowv.Blog.Blog.Impl
                 Year = x.Key,
                 Posts = x
             }).ToList();
-
-            response.Result = new PagedList<GetPostDto>(total, posts);
-            return response;
-        }
-
-        /// <summary>
-        /// Get post list by category.
-        /// </summary>
-        /// <param name="category"></param>
-        /// <returns></returns>
-        [Route("api/meowv/blog/posts/{category}")]
-        public async Task<BlogResponse<List<GetPostDto>>> GetPostsByCategoryAsync(string category)
-        {
-            var response = new BlogResponse<List<GetPostDto>>();
-
-            return response;
-        }
-
-        /// <summary>
-        /// Get post list by tag.
-        /// </summary>
-        /// <param name="tag"></param>
-        /// <returns></returns>
-        [Route("api/meowv/blog/posts/{tag}")]
-        public async Task<BlogResponse<List<GetPostDto>>> GetPostsByTagAsync(string tag)
-        {
-            var response = new BlogResponse<List<GetPostDto>>();
-
-            return response;
         }
     }
 }

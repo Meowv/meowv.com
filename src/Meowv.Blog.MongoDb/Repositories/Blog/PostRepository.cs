@@ -36,5 +36,41 @@ namespace Meowv.Blog.Repositories.Blog
                                        .ToListAsync();
             return new Tuple<int, List<Post>>((int)total, list);
         }
+
+        public async Task<List<Post>> GetListByCategoryAsync(string category)
+        {
+            var filter = new BsonDocument
+            {
+                { "category.alias",  category }
+            };
+            var sort = new BsonDocument { { "createdAt", -1 } };
+            var projection = new BsonDocument
+            {
+                { "_id", 0 },
+                { "title", 1 },
+                { "url", 1 },
+                { "createdAt", 1 }
+            };
+
+            return await Collection.Find(filter).Sort(sort).Project<Post>(projection).ToListAsync();
+        }
+
+        public async Task<List<Post>> GetListByTagAsync(string tag)
+        {
+            var filter = new BsonDocument
+            {
+                { "tags.alias",  tag }
+            };
+            var sort = new BsonDocument { { "createdAt", -1 } };
+            var projection = new BsonDocument
+            {
+                { "_id", 0 },
+                { "title", 1 },
+                { "url", 1 },
+                { "createdAt", 1 }
+            };
+
+            return await Collection.Find(filter).Sort(sort).Project<Post>(projection).ToListAsync();
+        }
     }
 }

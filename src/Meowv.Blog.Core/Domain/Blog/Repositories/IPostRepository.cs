@@ -15,5 +15,19 @@ namespace Meowv.Blog.Domain.Blog.Repositories
         /// <param name="maxResultCount"></param>
         /// <returns></returns>
         Task<Tuple<int, List<Post>>> GetPagedListAsync(int skipCount, int maxResultCount);
+
+        /// <summary>
+        /// Get post list by category.
+        /// </summary>
+        /// <param name="category"></param>
+        /// <returns></returns>
+        Task<List<Post>> GetListByCategoryAsync(string category);
+
+        /// <summary>
+        /// Get post list by tag.
+        /// </summary>
+        /// <param name="tag"></param>
+        /// <returns></returns>
+        Task<List<Post>> GetListByTagAsync(string tag);
     }
 }
