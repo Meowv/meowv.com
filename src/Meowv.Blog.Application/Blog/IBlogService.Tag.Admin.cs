@@ -1,5 +1,7 @@
-﻿using Meowv.Blog.Dto.Blog.Params;
+﻿using Meowv.Blog.Dto.Blog;
+using Meowv.Blog.Dto.Blog.Params;
 using Meowv.Blog.Response;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Meowv.Blog.Blog
@@ -11,5 +13,7 @@ namespace Meowv.Blog.Blog
         Task<BlogResponse> DeleteTagAsync(string id);
 
         Task<BlogResponse> UpdateTagAsync(string id, UpdateTagInput input);
+
+        Task<BlogResponse<List<GetAdminTagDto>>> GetAdminTagsAsync();
     }
 }

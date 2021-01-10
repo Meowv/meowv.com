@@ -1,7 +1,10 @@
 ﻿using Meowv.Blog.Domain.Blog;
+using Meowv.Blog.Dto.Blog;
 using Meowv.Blog.Dto.Blog.Params;
 using Meowv.Blog.Extensions;
 using Meowv.Blog.Response;
+using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Meowv.Blog.Blog.Impl
@@ -76,6 +79,27 @@ namespace Meowv.Blog.Blog.Impl
 
             await _tags.UpdateAsync(tag);
 
+            return response;
+        }
+
+        /// <summary>
+        /// Get admin tag list.
+        /// </summary>
+        /// <returns></returns>
+        [Route("api/meowv/blog/admin/tags")]
+        public async Task<BlogResponse<List<GetAdminTagDto>>> GetAdminTagsAsync()
+        {
+            var response = new BlogResponse<List<GetAdminTagDto>>();
+
+            var tags = await _tags.GetListAsync();
+
+            var result = ObjectMapper.Map<List<Tag>, List<GetAdminTagDto>>(tags);
+            result.ForEach(x =>
+            {
+                x.Total = _posts.GetCountByTagAsync(x.Id.ToObjectId()).Result;
+            });
+
+            response.Result = result;
             return response;
         }
     }
