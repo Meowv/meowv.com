@@ -3,7 +3,6 @@ using Meowv.Blog.Dto.Blog;
 using Meowv.Blog.Dto.Blog.Params;
 using Meowv.Blog.Extensions;
 using Meowv.Blog.Response;
-using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -86,7 +85,6 @@ namespace Meowv.Blog.Blog.Impl
         /// Get admin category list.
         /// </summary>
         /// <returns></returns>
-        [Route("api/meowv/blog/admin/categories")]
         public async Task<BlogResponse<List<GetAdminCategoryDto>>> GetAdminCategoriesAsync()
         {
             var response = new BlogResponse<List<GetAdminCategoryDto>>();
