@@ -1,6 +1,5 @@
 using Meowv.Blog.Extensions;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Events;
@@ -49,7 +48,9 @@ namespace Meowv.Blog.Api
                 {
                     config.Sources.Clear();
                     config.AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true);
-                    config.AddEnvironmentVariables();
+
+                    var configDictionary = config.Build().ToDictionary();
+                    Log.Information("appsettings {@appsettings}", configDictionary);
                 })
                 .ConfigureWebHostDefaults(webBuilder =>
                 {

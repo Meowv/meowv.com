@@ -48,6 +48,28 @@ namespace Meowv.Blog.Extensions
         {
             return builder.Add(configureSource);
         }
+
+        public static Dictionary<string, object> ToDictionary(this IConfiguration section, params string[] sectionsToSkip)
+        {
+            if (sectionsToSkip == null)
+                sectionsToSkip = Array.Empty<string>();
+
+            var dic = new Dictionary<string, object>();
+            foreach (var value in section.GetChildren())
+            {
+                if (string.IsNullOrEmpty(value.Key) || sectionsToSkip.Contains(value.Key, StringComparer.OrdinalIgnoreCase))
+                    continue;
+
+                if (value.Value != null)
+                    dic[value.Key] = value.Value;
+
+                var subDic = ToDictionary(value);
+                if (subDic.Count > 0)
+                    dic[value.Key] = subDic;
+            }
+
+            return dic;
+        }
     }
 
     public class YamlConfigurationSource : FileConfigurationSource
