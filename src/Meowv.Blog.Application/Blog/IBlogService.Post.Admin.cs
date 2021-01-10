@@ -14,5 +14,7 @@ namespace Meowv.Blog.Blog
         Task<BlogResponse> UpdatePostAsync(string id, UpdatePostInput input);
 
         Task<BlogResponse<PostDto>> GetPostAsync(string id);
+
+        Task<BlogResponse<PagedList<GetAdminPostDto>>> GetAdminPostsAsync(int page, int limit);
     }
 }

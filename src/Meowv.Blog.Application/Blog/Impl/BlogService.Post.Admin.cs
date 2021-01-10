@@ -3,6 +3,8 @@ using Meowv.Blog.Dto.Blog;
 using Meowv.Blog.Dto.Blog.Params;
 using Meowv.Blog.Extensions;
 using Meowv.Blog.Response;
+using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -127,6 +129,37 @@ namespace Meowv.Blog.Blog.Impl
             var result = ObjectMapper.Map<Post, PostDto>(post);
 
             response.Result = result;
+            return response;
+        }
+
+        /// <summary>
+        /// Get admin post list by paging.
+        /// </summary>
+        /// <param name="page"></param>
+        /// <param name="limit"></param>
+        /// <returns></returns>
+        [Route("api/meowv/blog/admin-posts/{page}/{limit}")]
+        public async Task<BlogResponse<PagedList<GetAdminPostDto>>> GetAdminPostsAsync([Range(1, 100)] int page = 1, [Range(10, 100)] int limit = 10)
+        {
+            var response = new BlogResponse<PagedList<GetAdminPostDto>>();
+
+            var result = await _posts.GetPagedListAsync(page, limit);
+            var total = result.Item1;
+            var posts = result.Item2.Select(x => new PostBriefAdminDto
+            {
+                Id = x.Id.ToString(),
+                Title = x.Title,
+                Url = x.Url,
+                Year = x.CreatedAt.Year,
+                CreatedAt = x.CreatedAt.FormatTime()
+            }).GroupBy(x => x.Year)
+            .Select(x => new GetAdminPostDto
+            {
+                Year = x.Key,
+                Posts = x
+            }).ToList();
+
+            response.Result = new PagedList<GetAdminPostDto>(total, posts);
             return response;
         }
     }

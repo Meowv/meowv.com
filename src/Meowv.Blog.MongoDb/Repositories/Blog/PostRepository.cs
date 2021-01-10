@@ -21,7 +21,6 @@ namespace Meowv.Blog.Repositories.Blog
             var sort = new BsonDocument { { "createdAt", -1 } };
             var projection = new BsonDocument
             {
-                { "_id", 0 },
                 { "title", 1 },
                 { "url", 1 },
                 { "createdAt", 1 }
