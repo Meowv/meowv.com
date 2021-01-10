@@ -9,21 +9,14 @@ namespace Meowv.Blog.Api.Filters
     {
         public void Apply(OpenApiDocument swaggerDoc, DocumentFilterContext context)
         {
+            context.ApiDescriptions.Where(x => x.RelativePath.Contains("abp")).ToList()?.ForEach(x => swaggerDoc.Paths.Remove("/" + x.RelativePath));
+
             var tags = new List<OpenApiTag>
             {
                 new OpenApiTag { Name = "Blog", Description = "<code>The blog module.</code>" },
             };
 
             swaggerDoc.Tags = tags;
-
-            var apis = context.ApiDescriptions.Where(x => x.RelativePath.Contains("abp"));
-            if (apis.Any())
-            {
-                foreach (var item in apis)
-                {
-                    swaggerDoc.Paths.Remove("/" + item.RelativePath);
-                }
-            }
         }
     }
 }
