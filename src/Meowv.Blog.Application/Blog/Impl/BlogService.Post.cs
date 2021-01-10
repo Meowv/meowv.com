@@ -1,6 +1,5 @@
 ﻿using Meowv.Blog.Domain.Blog;
 using Meowv.Blog.Dto.Blog;
-using Meowv.Blog.Extensions;
 using Meowv.Blog.Response;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
@@ -113,20 +112,13 @@ namespace Meowv.Blog.Blog.Impl
             return response;
         }
 
-        private static List<GetPostDto> GetPostList(List<Post> posts)
-        {
-            return posts.Select(x => new PostBriefDto
-            {
-                Title = x.Title,
-                Url = x.Url,
-                Year = x.CreatedAt.Year,
-                CreatedAt = x.CreatedAt.FormatTime()
-            }).GroupBy(x => x.Year)
-            .Select(x => new GetPostDto
-            {
-                Year = x.Key,
-                Posts = x
-            }).ToList();
-        }
+        private List<GetPostDto> GetPostList(List<Post> posts) =>
+            ObjectMapper.Map<List<Post>, List<PostBriefDto>>(posts)
+                        .GroupBy(x => x.Year)
+                        .Select(x => new GetPostDto
+                        {
+                            Year = x.Key,
+                            Posts = x
+                        }).ToList();
     }
 }

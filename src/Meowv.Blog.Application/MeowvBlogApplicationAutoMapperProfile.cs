@@ -13,6 +13,10 @@ namespace Meowv.Blog
 
             CreateMap<Post, PostDetailDto>().ForMember(x => x.CreatedAt, dto => dto.MapFrom(opt => opt.CreatedAt.FormatTime()));
 
+            CreateMap<Post, PostBriefDto>().ForMember(x => x.CreatedAt, dto => dto.MapFrom(opt => opt.CreatedAt.FormatTime()));
+
+            CreateMap<Post, PostBriefAdminDto>().ForMember(x => x.CreatedAt, dto => dto.MapFrom(opt => opt.CreatedAt.FormatTime()));
+
             CreateMap<Category, CategoryDto>();
 
             CreateMap<Category, GetAdminCategoryDto>();

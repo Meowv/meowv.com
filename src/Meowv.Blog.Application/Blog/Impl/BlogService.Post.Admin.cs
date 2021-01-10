@@ -4,6 +4,7 @@ using Meowv.Blog.Dto.Blog.Params;
 using Meowv.Blog.Extensions;
 using Meowv.Blog.Response;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
@@ -145,19 +146,13 @@ namespace Meowv.Blog.Blog.Impl
 
             var result = await _posts.GetPagedListAsync(page, limit);
             var total = result.Item1;
-            var posts = result.Item2.Select(x => new PostBriefAdminDto
-            {
-                Id = x.Id.ToString(),
-                Title = x.Title,
-                Url = x.Url,
-                Year = x.CreatedAt.Year,
-                CreatedAt = x.CreatedAt.FormatTime()
-            }).GroupBy(x => x.Year)
-            .Select(x => new GetAdminPostDto
-            {
-                Year = x.Key,
-                Posts = x
-            }).ToList();
+            var posts = ObjectMapper.Map<List<Post>, List<PostBriefAdminDto>>(result.Item2)
+                                    .GroupBy(x => x.Year)
+                                    .Select(x => new GetAdminPostDto
+                                    {
+                                        Year = x.Key,
+                                        Posts = x
+                                    }).ToList();
 
             response.Result = new PagedList<GetAdminPostDto>(total, posts);
             return response;
