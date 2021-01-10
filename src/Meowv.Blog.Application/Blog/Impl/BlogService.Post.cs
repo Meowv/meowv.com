@@ -77,9 +77,16 @@ namespace Meowv.Blog.Blog.Impl
         {
             var response = new BlogResponse<List<GetPostDto>>();
 
+            var entity = await _categories.FindAsync(x => x.Alias == category);
+            if (entity is null)
+            {
+                response.IsFailed($"The category:{category} not exists.");
+                return response;
+            }
+
             var posts = await _posts.GetListByCategoryAsync(category);
 
-            response.Result = GetPostList(posts);
+            response.IsSuccess(GetPostList(posts), entity.Name);
             return response;
         }
 
@@ -93,9 +100,16 @@ namespace Meowv.Blog.Blog.Impl
         {
             var response = new BlogResponse<List<GetPostDto>>();
 
+            var entity = await _tags.FindAsync(x => x.Alias == tag);
+            if (entity is null)
+            {
+                response.IsFailed($"The tag:{tag} not exists.");
+                return response;
+            }
+
             var posts = await _posts.GetListByTagAsync(tag);
 
-            response.Result = GetPostList(posts);
+            response.IsSuccess(GetPostList(posts), entity.Name);
             return response;
         }
 
