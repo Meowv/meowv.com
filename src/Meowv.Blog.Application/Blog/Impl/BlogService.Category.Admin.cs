@@ -1,7 +1,10 @@
 ﻿using Meowv.Blog.Domain.Blog;
+using Meowv.Blog.Dto.Blog;
 using Meowv.Blog.Dto.Blog.Params;
 using Meowv.Blog.Extensions;
 using Meowv.Blog.Response;
+using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Meowv.Blog.Blog.Impl
@@ -76,6 +79,27 @@ namespace Meowv.Blog.Blog.Impl
 
             await _categories.UpdateAsync(category);
 
+            return response;
+        }
+
+        /// <summary>
+        /// Get admin category list.
+        /// </summary>
+        /// <returns></returns>
+        [Route("api/meowv/blog/admin/categories")]
+        public async Task<BlogResponse<List<GetAdminCategoryDto>>> GetAdminCategoriesAsync()
+        {
+            var response = new BlogResponse<List<GetAdminCategoryDto>>();
+
+            var categories = await _categories.GetListAsync();
+
+            var result = ObjectMapper.Map<List<Category>, List<GetAdminCategoryDto>>(categories);
+            result.ForEach(x =>
+            {
+                x.Total = _posts.GetCountByCategoryAsync(x.Id.ToObjectId()).Result;
+            });
+
+            response.Result = result;
             return response;
         }
     }
