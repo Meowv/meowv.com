@@ -22,6 +22,8 @@ namespace Meowv.Blog
             CreateMap<Tag, GetAdminTagDto>();
 
             CreateMap<FriendLink, FriendLinkDto>();
+
+            CreateMap<FriendLink, GetAdminFriendLinkDto>();
         }
     }
 }

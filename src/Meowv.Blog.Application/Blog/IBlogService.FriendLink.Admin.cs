@@ -1,5 +1,7 @@
-﻿using Meowv.Blog.Dto.Blog.Params;
+﻿using Meowv.Blog.Dto.Blog;
+using Meowv.Blog.Dto.Blog.Params;
 using Meowv.Blog.Response;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Meowv.Blog.Blog
@@ -11,5 +13,7 @@ namespace Meowv.Blog.Blog
         Task<BlogResponse> DeleteFriendlinkAsync(string id);
 
         Task<BlogResponse> UpdateFriendlinkAsync(string id, UpdateFriendLinkInput input);
+
+        Task<BlogResponse<List<GetAdminFriendLinkDto>>> GetAdminFriendlinksAsync();
     }
 }

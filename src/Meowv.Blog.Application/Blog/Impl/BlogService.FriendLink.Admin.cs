@@ -1,7 +1,9 @@
 ﻿using Meowv.Blog.Domain.Blog;
+using Meowv.Blog.Dto.Blog;
 using Meowv.Blog.Dto.Blog.Params;
 using Meowv.Blog.Extensions;
 using Meowv.Blog.Response;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Meowv.Blog.Blog.Impl
@@ -76,6 +78,22 @@ namespace Meowv.Blog.Blog.Impl
 
             await _friendLinks.UpdateAsync(friendLink);
 
+            return response;
+        }
+
+        /// <summary>
+        /// Get admin friendLink list.
+        /// </summary>
+        /// <returns></returns>
+        public async Task<BlogResponse<List<GetAdminFriendLinkDto>>> GetAdminFriendlinksAsync()
+        {
+            var response = new BlogResponse<List<GetAdminFriendLinkDto>>();
+
+            var friendLinks = await _friendLinks.GetListAsync();
+
+            var result = ObjectMapper.Map<List<FriendLink>, List<GetAdminFriendLinkDto>>(friendLinks);
+
+            response.Result = result;
             return response;
         }
     }
