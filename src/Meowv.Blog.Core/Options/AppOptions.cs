@@ -11,5 +11,10 @@
         /// Storage
         /// </summary>
         public StorageOptions Storage { get; set; }
+
+        /// <summary>
+        /// Cors
+        /// </summary>
+        public CorsOptions Cors { get; set; }
     }
 }

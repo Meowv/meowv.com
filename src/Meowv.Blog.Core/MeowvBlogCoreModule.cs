@@ -15,6 +15,7 @@ namespace Meowv.Blog
 
             var swagger = new SwaggerOptions();
             var storage = new StorageOptions();
+            var cors = new CorsOptions();
 
             PreConfigure<SwaggerOptions>(options =>
             {
@@ -37,11 +38,29 @@ namespace Meowv.Blog
 
                 storage = options;
             });
+            PreConfigure<CorsOptions>(options =>
+            {
+                var storageOption = configuration.GetSection("cors");
+
+                options.PolicyName = storageOption.GetValue<string>(nameof(options.PolicyName));
+                options.Origins = storageOption.GetValue<string>(nameof(options.Origins));
+
+                cors = options;
+            });
             PreConfigure<AppOptions>(options =>
             {
                 options.Swagger = swagger;
                 options.Storage = storage;
+                options.Cors = cors;
             });
+        }
+
+        public override void ConfigureServices(ServiceConfigurationContext context)
+        {
+            context.Services.ExecutePreConfiguredActions<SwaggerOptions>();
+            context.Services.ExecutePreConfiguredActions<StorageOptions>();
+            context.Services.ExecutePreConfiguredActions<CorsOptions>();
+            context.Services.ExecutePreConfiguredActions<AppOptions>();
         }
     }
 }

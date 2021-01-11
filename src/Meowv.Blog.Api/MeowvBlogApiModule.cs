@@ -1,6 +1,7 @@
 ﻿using Meowv.Blog.Api.Filters;
 using Meowv.Blog.Options;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -15,6 +16,7 @@ using Volo.Abp.AspNetCore.Mvc.AntiForgery;
 using Volo.Abp.AspNetCore.Mvc.ExceptionHandling;
 using Volo.Abp.AspNetCore.Serilog;
 using Volo.Abp.Autofac;
+using Volo.Abp.Data;
 using Volo.Abp.Modularity;
 
 namespace Meowv.Blog.Api
@@ -28,16 +30,19 @@ namespace Meowv.Blog.Api
     )]
     public class MeowvBlogApiModule : AbpModule
     {
-        public SwaggerOptions SwaggerOptions { get; set; }
+        public AppOptions AppOptions { get; set; }
 
         public override void ConfigureServices(ServiceConfigurationContext context)
         {
-            SwaggerOptions = context.Services.ExecutePreConfiguredActions<SwaggerOptions>();
+            AppOptions = context.Services.ExecutePreConfiguredActions<AppOptions>();
 
             ConfigureExceptionFilter();
             ConfigureAutoApiControllers();
+            ConfigureDbConnection();
             ConfigureAutoValidate();
             ConfigureRouting(context.Services);
+            ConfigureCors(context.Services);
+            ConfigureAuthentication(context.Services);
             ConfigureSwaggerServices(context.Services);
         }
 
@@ -59,6 +64,14 @@ namespace Meowv.Blog.Api
             });
         }
 
+        private void ConfigureDbConnection()
+        {
+            Configure<AbpDbConnectionOptions>(options =>
+            {
+                options.ConnectionStrings.Default = AppOptions.Storage.Mongodb;
+            });
+        }
+
         private void ConfigureAutoValidate()
         {
             Configure<AbpAntiForgeryOptions>(options =>
@@ -74,6 +87,34 @@ namespace Meowv.Blog.Api
                 options.LowercaseUrls = true;
                 options.AppendTrailingSlash = true;
             });
+        }
+
+        private void ConfigureCors(IServiceCollection services)
+        {
+            services.AddCors(options =>
+            {
+                options.AddPolicy(AppOptions.Cors.PolicyName, builder =>
+                {
+                    builder
+                        .WithOrigins(
+                            AppOptions.Cors
+                                      .Origins
+                                      .Split(",", StringSplitOptions.RemoveEmptyEntries)
+                                      .Select(x => x.RemovePostFix("/"))
+                                      .ToArray()
+                        )
+                        .WithAbpExposedHeaders()
+                        .SetIsOriginAllowedToAllowWildcardSubdomains()
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials();
+                });
+            });
+        }
+
+        private void ConfigureAuthentication(IServiceCollection services)
+        {
+
         }
 
         private void ConfigureSwaggerServices(IServiceCollection services)
@@ -108,11 +149,11 @@ namespace Meowv.Blog.Api
                 //    }
                 //});
 
-                options.SwaggerDoc(SwaggerOptions.Name, new OpenApiInfo
+                options.SwaggerDoc(AppOptions.Swagger.Name, new OpenApiInfo
                 {
-                    Title = SwaggerOptions.Title,
-                    Version = SwaggerOptions.Version,
-                    Description = SwaggerOptions.Description
+                    Title = AppOptions.Swagger.Title,
+                    Version = AppOptions.Swagger.Version,
+                    Description = AppOptions.Swagger.Description
                 });
                 options.DocInclusionPredicate((docName, description) => true);
                 options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "Meowv.Blog.Core.xml"));
@@ -133,15 +174,18 @@ namespace Meowv.Blog.Api
             }
 
             app.UseRouting();
+            app.UseCors(AppOptions.Cors.PolicyName);
+            app.UseAuthentication();
+            app.UseAuthorization();
             app.UseSwagger();
             app.UseSwaggerUI(options =>
             {
                 options.HeadContent = @"<style>.opblock-summary-description{font-weight: bold;text-align: right;}</style>";
-                options.SwaggerEndpoint($"/swagger/{SwaggerOptions.Name}/swagger.json", SwaggerOptions.Title);
+                options.SwaggerEndpoint($"/swagger/{AppOptions.Swagger.Name}/swagger.json", AppOptions.Swagger.Title);
                 options.DefaultModelsExpandDepth(-1);
                 options.DocExpansion(DocExpansion.List);
-                options.RoutePrefix = SwaggerOptions.RoutePrefix;
-                options.DocumentTitle = SwaggerOptions.DocumentTitle;
+                options.RoutePrefix = AppOptions.Swagger.RoutePrefix;
+                options.DocumentTitle = AppOptions.Swagger.DocumentTitle;
             });
             app.UseAuditing();
             app.UseAbpSerilogEnrichers();
