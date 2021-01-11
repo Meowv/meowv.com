@@ -22,6 +22,7 @@ using Volo.Abp.AspNetCore.Mvc.AntiForgery;
 using Volo.Abp.AspNetCore.Mvc.ExceptionHandling;
 using Volo.Abp.AspNetCore.Serilog;
 using Volo.Abp.Autofac;
+using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.Data;
 using Volo.Abp.Modularity;
 
@@ -31,6 +32,7 @@ namespace Meowv.Blog.Api
         typeof(AbpAutofacModule),
         typeof(AbpAspNetCoreSerilogModule),
         typeof(AbpAspNetCoreMvcModule),
+        typeof(AbpCachingStackExchangeRedisModule),
         typeof(MeowvBlogApplicationModule),
         typeof(MeowvBlogMongoDbModule)
     )]
@@ -47,6 +49,7 @@ namespace Meowv.Blog.Api
             ConfigureDbConnection();
             ConfigureAutoValidate();
             ConfigureRouting(context.Services);
+            ConfigureRedis(context.Services);
             ConfigureCors(context.Services);
             ConfigureAuthentication(context.Services);
             ConfigureSwaggerServices(context.Services);
@@ -93,6 +96,17 @@ namespace Meowv.Blog.Api
                 options.LowercaseUrls = true;
                 options.AppendTrailingSlash = true;
             });
+        }
+
+        private void ConfigureRedis(IServiceCollection services)
+        {
+            if (AppOptions.Storage.RedisIsEnabled)
+            {
+                services.AddStackExchangeRedisCache(options =>
+                {
+                    options.Configuration = AppOptions.Storage.Redis;
+                });
+            }
         }
 
         private void ConfigureCors(IServiceCollection services)

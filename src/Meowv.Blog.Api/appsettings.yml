@@ -9,6 +9,8 @@ swagger:
 
 storage:
   mongodb: 'mongodb://localhost/meowv_blog'
+  redisIsEnabled: true
+  redis: '127.0.0.1'
 
 cors:
   policyName: 'meowv-policy'

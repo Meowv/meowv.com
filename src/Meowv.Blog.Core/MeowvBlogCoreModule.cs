@@ -41,6 +41,8 @@ namespace Meowv.Blog
                 Configure<StorageOptions>(storageOption);
 
                 options.Mongodb = storageOption.GetValue<string>(nameof(options.Mongodb));
+                options.RedisIsEnabled = storageOption.GetValue<bool>(nameof(options.RedisIsEnabled));
+                options.Redis = storageOption.GetValue<string>(nameof(options.Redis));
 
                 storage = options;
             });
