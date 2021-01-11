@@ -37,12 +37,12 @@ namespace Meowv.Blog.Blog.Impl
             {
                 Title = input.Title,
                 Author = input.Author,
-                Url = input.Url.GeneratePostUrl(input.CreatedAt),
+                Url = input.Url.GeneratePostUrl(input.CreatedAt.ToDateTime()),
                 Html = input.Html,
                 Markdown = input.Markdown,
                 Category = await _categories.GetAsync(input.CategoryId.ToObjectId()),
                 Tags = await _tags.GetListAsync(input.Tags),
-                CreatedAt = input.CreatedAt
+                CreatedAt = input.CreatedAt.ToDateTime()
             };
             await _posts.InsertAsync(post);
 
@@ -100,12 +100,12 @@ namespace Meowv.Blog.Blog.Impl
 
             post.Title = input.Title;
             post.Author = input.Author;
-            post.Url = input.Url.GeneratePostUrl(input.CreatedAt);
+            post.Url = input.Url.GeneratePostUrl(input.CreatedAt.ToDateTime());
             post.Html = input.Html;
             post.Markdown = input.Markdown;
             post.Category = await _categories.GetAsync(input.CategoryId.ToObjectId());
             post.Tags = await _tags.GetListAsync(input.Tags);
-            post.CreatedAt = input.CreatedAt;
+            post.CreatedAt = input.CreatedAt.ToDateTime();
             await _posts.UpdateAsync(post);
 
             return response;

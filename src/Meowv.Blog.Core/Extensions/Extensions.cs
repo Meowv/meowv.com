@@ -32,6 +32,20 @@ namespace Meowv.Blog.Extensions
         }
 
         /// <summary>
+        /// The string time format is converted to DateTime
+        /// </summary>
+        /// <param name="time"></param>
+        /// <param name="defaultValue"></param>
+        /// <returns></returns>
+        public static DateTime ToDateTime(this string time, DateTime defaultValue = default)
+        {
+            if (time.IsNullOrEmpty())
+                return defaultValue;
+
+            return DateTime.TryParse(time, out var dateTime) ? dateTime : defaultValue;
+        }
+
+        /// <summary>
         /// Generate post link
         /// </summary>
         /// <param name="url"></param>
@@ -39,7 +53,7 @@ namespace Meowv.Blog.Extensions
         /// <returns></returns>
         public static string GeneratePostUrl(this string url, DateTime time)
         {
-            return $"{time:/yyyy/MM/dd/}{url}";
+            return $"{time:yyyy-MM-dd}-{url}";
         }
 
         /// <summary>
