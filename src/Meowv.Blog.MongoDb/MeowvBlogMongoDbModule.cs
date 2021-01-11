@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Bson.Serialization.Conventions;
+using Volo.Abp.AuditLogging;
 using Volo.Abp.AuditLogging.MongoDB;
 using Volo.Abp.Modularity;
 using Volo.Abp.Uow;
@@ -23,6 +24,8 @@ namespace Meowv.Blog
             {
                 options.TransactionBehavior = UnitOfWorkTransactionBehavior.Disabled;
             });
+
+            AbpAuditLoggingDbProperties.DbTablePrefix = "meowv_blog_";
 
             ConventionRegistry.Register("CamelCase", new ConventionPack { new CamelCaseElementNameConvention() }, type => true);
         }
