@@ -11,7 +11,7 @@ namespace Meowv.Blog
     {
         public override void PreConfigureServices(ServiceConfigurationContext context)
         {
-            var configuration = context.Services.BuildServiceProvider().GetService<IConfiguration>();
+            var configuration = context.Services.GetConfiguration();
 
             var swagger = new SwaggerOptions();
             var storage = new StorageOptions();
@@ -19,9 +19,12 @@ namespace Meowv.Blog
             var jwt = new JwtOptions();
             var authorize = new AuthorizeOptions();
 
+            context.Services.AddOptions();
+
             PreConfigure<SwaggerOptions>(options =>
             {
                 var swaggerOption = configuration.GetSection("swagger");
+                Configure<SwaggerOptions>(swaggerOption);
 
                 options.Version = swaggerOption.GetValue<string>(nameof(options.Version));
                 options.Name = swaggerOption.GetValue<string>(nameof(options.Name));
@@ -35,6 +38,7 @@ namespace Meowv.Blog
             PreConfigure<StorageOptions>(options =>
             {
                 var storageOption = configuration.GetSection("storage");
+                Configure<StorageOptions>(storageOption);
 
                 options.Mongodb = storageOption.GetValue<string>(nameof(options.Mongodb));
 
@@ -42,16 +46,18 @@ namespace Meowv.Blog
             });
             PreConfigure<CorsOptions>(options =>
             {
-                var storageOption = configuration.GetSection("cors");
+                var corsOption = configuration.GetSection("cors");
+                Configure<CorsOptions>(corsOption);
 
-                options.PolicyName = storageOption.GetValue<string>(nameof(options.PolicyName));
-                options.Origins = storageOption.GetValue<string>(nameof(options.Origins));
+                options.PolicyName = corsOption.GetValue<string>(nameof(options.PolicyName));
+                options.Origins = corsOption.GetValue<string>(nameof(options.Origins));
 
                 cors = options;
             });
             PreConfigure<JwtOptions>(options =>
             {
                 var jwtOption = configuration.GetSection("jwt");
+                Configure<JwtOptions>(jwtOption);
 
                 options.Issuer = jwtOption.GetValue<string>(nameof(options.Issuer));
                 options.Audience = jwtOption.GetValue<string>(nameof(options.Audience));
@@ -62,6 +68,7 @@ namespace Meowv.Blog
             PreConfigure<AuthorizeOptions>(options =>
             {
                 var authorizeOption = configuration.GetSection("authorize");
+                Configure<AuthorizeOptions>(authorizeOption);
 
                 options.Account = new AccountOptions
                 {
@@ -112,7 +119,6 @@ namespace Meowv.Blog
             context.Services.ExecutePreConfiguredActions<CorsOptions>();
             context.Services.ExecutePreConfiguredActions<JwtOptions>();
             context.Services.ExecutePreConfiguredActions<AuthorizeOptions>();
-            context.Services.ExecutePreConfiguredActions<AppOptions>();
         }
     }
 }
