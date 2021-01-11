@@ -11,6 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="5.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.5" />
     <PackageReference Include="Volo.Abp.AutoMapper" Version="4.1.0" />
     <PackageReference Include="Volo.Abp.Ddd.Application" Version="4.1.0" />
