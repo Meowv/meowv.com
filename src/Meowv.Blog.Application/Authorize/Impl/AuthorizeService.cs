@@ -1,6 +1,7 @@
 ﻿using Meowv.Blog.Dto.Authorize.Params;
 using Meowv.Blog.Options;
 using Meowv.Blog.Response;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -8,7 +9,6 @@ using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
 
 namespace Meowv.Blog.Authorize.Impl
 {
