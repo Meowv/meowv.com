@@ -1,10 +1,14 @@
 ﻿using Meowv.Blog.Api.Filters;
 using Meowv.Blog.Options;
+using Meowv.Blog.Response;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerUI;
 using System;
@@ -114,7 +118,36 @@ namespace Meowv.Blog.Api
 
         private void ConfigureAuthentication(IServiceCollection services)
         {
+            services.AddAuthentication()
+                    .AddJwtBearer(options =>
+                    {
+                        options.TokenValidationParameters = new TokenValidationParameters
+                        {
+                            ValidateIssuer = true,
+                            ValidateAudience = true,
+                            ValidateIssuerSigningKey = true,
+                            ValidateLifetime = true,
+                            RequireExpirationTime = true,
+                            ValidIssuer = AppOptions.Jwt.Issuer,
+                            ValidAudience = AppOptions.Jwt.Audience,
+                            IssuerSigningKey = new SymmetricSecurityKey(AppOptions.Jwt.SigningKey.GetBytes())
+                        };
+                        options.Events = new JwtBearerEvents
+                        {
+                            OnChallenge = async context =>
+                            {
+                                context.HandleResponse();
+                                context.Response.ContentType = "application/json;charset=utf-8";
+                                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
 
+                                var response = new BlogResponse();
+                                response.IsFailed("Unauthorized");
+
+                                await context.Response.WriteAsJsonAsync(response);
+                            }
+                        };
+                    });
+            services.AddAuthorization();
         }
 
         private void ConfigureSwaggerServices(IServiceCollection services)

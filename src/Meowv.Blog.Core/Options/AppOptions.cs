@@ -16,5 +16,10 @@
         /// Cors
         /// </summary>
         public CorsOptions Cors { get; set; }
+
+        /// <summary>
+        /// Jwt
+        /// </summary>
+        public JwtOptions Jwt { get; set; }
     }
 }

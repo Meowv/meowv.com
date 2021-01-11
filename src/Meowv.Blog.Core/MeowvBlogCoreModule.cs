@@ -16,6 +16,7 @@ namespace Meowv.Blog
             var swagger = new SwaggerOptions();
             var storage = new StorageOptions();
             var cors = new CorsOptions();
+            var jwt = new JwtOptions();
 
             PreConfigure<SwaggerOptions>(options =>
             {
@@ -47,11 +48,22 @@ namespace Meowv.Blog
 
                 cors = options;
             });
+            PreConfigure<JwtOptions>(options =>
+            {
+                var jwtOption = configuration.GetSection("jwt");
+
+                options.Issuer = jwtOption.GetValue<string>(nameof(options.Issuer));
+                options.Audience = jwtOption.GetValue<string>(nameof(options.Audience));
+                options.SigningKey = jwtOption.GetValue<string>(nameof(options.SigningKey));
+
+                jwt = options;
+            });
             PreConfigure<AppOptions>(options =>
             {
                 options.Swagger = swagger;
                 options.Storage = storage;
                 options.Cors = cors;
+                options.Jwt = jwt;
             });
         }
 
@@ -60,6 +72,7 @@ namespace Meowv.Blog
             context.Services.ExecutePreConfiguredActions<SwaggerOptions>();
             context.Services.ExecutePreConfiguredActions<StorageOptions>();
             context.Services.ExecutePreConfiguredActions<CorsOptions>();
+            context.Services.ExecutePreConfiguredActions<JwtOptions>();
             context.Services.ExecutePreConfiguredActions<AppOptions>();
         }
     }
