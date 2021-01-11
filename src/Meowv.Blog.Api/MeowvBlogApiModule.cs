@@ -15,6 +15,7 @@ using Swashbuckle.AspNetCore.SwaggerUI;
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
 using Volo.Abp.AspNetCore.Mvc.AntiForgery;
@@ -145,6 +146,12 @@ namespace Meowv.Blog.Api
                                 response.IsFailed("Unauthorized");
 
                                 await context.Response.WriteAsJsonAsync(response);
+                            },
+                            OnMessageReceived = async context =>
+                            {
+                                context.Token = context.Request.Query["token"];
+
+                                await Task.CompletedTask;
                             }
                         };
                     });
