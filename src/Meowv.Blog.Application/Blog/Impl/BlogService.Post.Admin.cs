@@ -3,6 +3,7 @@ using Meowv.Blog.Dto.Blog;
 using Meowv.Blog.Dto.Blog.Params;
 using Meowv.Blog.Extensions;
 using Meowv.Blog.Response;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -18,6 +19,7 @@ namespace Meowv.Blog.Blog.Impl
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
+        [Authorize]
         public async Task<BlogResponse> CreatePostAsync(CreatePostInput input)
         {
             var response = new BlogResponse();
@@ -54,6 +56,7 @@ namespace Meowv.Blog.Blog.Impl
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
+        [Authorize]
         public async Task<BlogResponse> DeletePostAsync(string id)
         {
             var response = new BlogResponse();
@@ -76,6 +79,7 @@ namespace Meowv.Blog.Blog.Impl
         /// <param name="id"></param>
         /// <param name="input"></param>
         /// <returns></returns>
+        [Authorize]
         public async Task<BlogResponse> UpdatePostAsync(string id, UpdatePostInput input)
         {
             var response = new BlogResponse();
@@ -116,6 +120,7 @@ namespace Meowv.Blog.Blog.Impl
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
+        [Authorize]
         public async Task<BlogResponse<PostDto>> GetPostAsync(string id)
         {
             var response = new BlogResponse<PostDto>();
@@ -139,6 +144,7 @@ namespace Meowv.Blog.Blog.Impl
         /// <param name="page"></param>
         /// <param name="limit"></param>
         /// <returns></returns>
+        [Authorize]
         [Route("api/meowv/blog/admin-posts/{page}/{limit}")]
         public async Task<BlogResponse<PagedList<GetAdminPostDto>>> GetAdminPostsAsync([Range(1, 100)] int page = 1, [Range(10, 100)] int limit = 10)
         {
