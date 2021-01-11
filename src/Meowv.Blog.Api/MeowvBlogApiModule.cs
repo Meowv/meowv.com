@@ -121,34 +121,6 @@ namespace Meowv.Blog.Api
         {
             services.AddSwaggerGen(options =>
             {
-                //options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
-                //{
-                //    Type = SecuritySchemeType.OAuth2,
-                //    Flows = new OpenApiOAuthFlows
-                //    {
-                //        AuthorizationCode = new OpenApiOAuthFlow
-                //        {
-                //            AuthorizationUrl = new Uri("https://localhost:5001/connect/authorize"),
-                //            Scopes = new Dictionary<string, string> { { "meowv_blog", "meowv_blog api" } },
-                //            TokenUrl = new Uri("https://localhost:5001/connect/token")
-                //        }
-                //    }
-                //});
-                //options.AddSecurityRequirement(new OpenApiSecurityRequirement
-                //{
-                //    {
-                //        new OpenApiSecurityScheme
-                //        {
-                //            Reference = new OpenApiReference
-                //            {
-                //                Type = ReferenceType.SecurityScheme,
-                //                Id = "oauth2"
-                //            }
-                //        },
-                //        Array.Empty<string>()
-                //    }
-                //});
-
                 options.SwaggerDoc(AppOptions.Swagger.Name, new OpenApiInfo
                 {
                     Title = AppOptions.Swagger.Title,
@@ -159,6 +131,28 @@ namespace Meowv.Blog.Api
                 options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "Meowv.Blog.Core.xml"));
                 options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "Meowv.Blog.Application.xml"));
                 options.CustomSchemaIds(type => type.FullName);
+                options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
+                {
+                    Name = "Authorization",
+                    Scheme = "bearer",
+                    Description = "Enter <code>token</code> for authorization.",
+                    In = ParameterLocation.Header,
+                    Type = SecuritySchemeType.Http,
+                });
+                options.AddSecurityRequirement(new OpenApiSecurityRequirement()
+                {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        Array.Empty<string>()
+                    }
+                });
                 options.DocumentFilter<SwaggerDocumentFilter>();
             });
         }
