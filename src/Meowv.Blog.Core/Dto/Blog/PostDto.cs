@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace Meowv.Blog.Dto.Blog
 {
@@ -43,6 +42,6 @@ namespace Meowv.Blog.Dto.Blog
         /// <summary>
         /// 创建时间
         /// </summary>
-        public DateTime CreatedAt { get; set; }
+        public string CreatedAt { get; set; }
     }
 }
