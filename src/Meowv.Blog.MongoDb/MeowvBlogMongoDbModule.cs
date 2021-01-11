@@ -4,13 +4,11 @@ using MongoDB.Bson.Serialization.Conventions;
 using Volo.Abp.AuditLogging.MongoDB;
 using Volo.Abp.Data;
 using Volo.Abp.Modularity;
-using Volo.Abp.MongoDB;
 using Volo.Abp.Uow;
 
 namespace Meowv.Blog
 {
     [DependsOn(
-        typeof(AbpMongoDbModule),
         typeof(AbpAuditLoggingMongoDbModule),
         typeof(MeowvBlogCoreModule)
     )]
