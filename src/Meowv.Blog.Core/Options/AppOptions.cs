@@ -21,5 +21,10 @@
         /// Jwt
         /// </summary>
         public JwtOptions Jwt { get; set; }
+
+        /// <summary>
+        /// Authorize
+        /// </summary>
+        public AuthorizeOptions Authorize { get; set; }
     }
 }

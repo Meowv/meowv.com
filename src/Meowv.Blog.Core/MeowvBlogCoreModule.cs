@@ -17,6 +17,7 @@ namespace Meowv.Blog
             var storage = new StorageOptions();
             var cors = new CorsOptions();
             var jwt = new JwtOptions();
+            var authorize = new AuthorizeOptions();
 
             PreConfigure<SwaggerOptions>(options =>
             {
@@ -58,12 +59,49 @@ namespace Meowv.Blog
 
                 jwt = options;
             });
+            PreConfigure<AuthorizeOptions>(options =>
+            {
+                var authorizeOption = configuration.GetSection("authorize");
+
+                options.Account = new AccountOptions
+                {
+                    Username = authorizeOption.GetSection(nameof(options.Account)).GetValue<string>(nameof(options.Account.Username)),
+                    Password = authorizeOption.GetSection(nameof(options.Account)).GetValue<string>(nameof(options.Account.Password)),
+                };
+                options.Github = new GithubOptions
+                {
+                };
+                options.Gitee = new GiteeOptions
+                {
+                };
+                options.Microsoft = new MicrosoftOptions
+                {
+                };
+                options.QQ = new QQOptions
+                {
+                };
+                options.Weibo = new WeiboOptions
+                {
+                };
+                options.Baidu = new BaiduOptions
+                {
+                };
+                options.Dingtalk = new DingtalkOptions
+                {
+                };
+                options.Alipay = new AlipayOptions
+                {
+                };
+
+                authorize = options;
+            });
             PreConfigure<AppOptions>(options =>
             {
                 options.Swagger = swagger;
                 options.Storage = storage;
                 options.Cors = cors;
                 options.Jwt = jwt;
+                options.Authorize = authorize;
             });
         }
 
@@ -73,6 +111,7 @@ namespace Meowv.Blog
             context.Services.ExecutePreConfiguredActions<StorageOptions>();
             context.Services.ExecutePreConfiguredActions<CorsOptions>();
             context.Services.ExecutePreConfiguredActions<JwtOptions>();
+            context.Services.ExecutePreConfiguredActions<AuthorizeOptions>();
             context.Services.ExecutePreConfiguredActions<AppOptions>();
         }
     }

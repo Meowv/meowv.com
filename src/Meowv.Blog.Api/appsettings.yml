@@ -3,9 +3,9 @@ swagger:
   version: 'v4.0.0'
   name: 'meowv_blog'
   title: 'meowv_blog api'
-  description: '这里是描述信息'
+  description: 'Powered by .NET 5.0 on Linux'
   routePrefix: ''
-  documentTitle: '接口文档'
+  documentTitle: 'meowv_blog api'
 
 storage:
   mongodb: 'mongodb://localhost/meowv_blog'
@@ -18,3 +18,16 @@ jwt:
   issuer: 'meowv_blog'
   audience: 'meowv_blog api'
   signingKey: 'H4sIAAAAAAAAA3N0cnZxdXP38PTy9vH18w8I9AkOCQ0Lj4iMAgDB4fXPGgAAAA=='
+
+authorize:
+  account:
+    username: 'admin'
+    password: 'admin'
+  github:
+  gitee:
+  microsoft:
+  qq:
+  weibo:
+  baidu:
+  dingtalk:
+  alipay:
