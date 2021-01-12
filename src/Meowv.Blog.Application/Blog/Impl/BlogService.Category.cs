@@ -14,19 +14,22 @@ namespace Meowv.Blog.Blog.Impl
         /// <returns></returns>
         public async Task<BlogResponse<List<GetCategoryDto>>> GetCategoriesAsync()
         {
-            var response = new BlogResponse<List<GetCategoryDto>>();
-
-            var categories = await _categories.GetListAsync();
-
-            var result = categories.Select(x => new GetCategoryDto
+            return await _cache.GetCategoriesAsync(async () =>
             {
-                Name = x.Name,
-                Alias = x.Alias,
-                Total = _posts.GetCountByCategoryAsync(x.Id).Result
-            }).Where(x => x.Total > 0).ToList();
+                var response = new BlogResponse<List<GetCategoryDto>>();
 
-            response.Result = result;
-            return response;
+                var categories = await _categories.GetListAsync();
+
+                var result = categories.Select(x => new GetCategoryDto
+                {
+                    Name = x.Name,
+                    Alias = x.Alias,
+                    Total = _posts.GetCountByCategoryAsync(x.Id).Result
+                }).Where(x => x.Total > 0).ToList();
+
+                response.Result = result;
+                return response;
+            });
         }
     }
 }

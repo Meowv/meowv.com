@@ -22,6 +22,17 @@ namespace Meowv.Blog.Extensions
         }
 
         /// <summary>
+        /// Convert json string to <typeparamref name="T"/>
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="json"></param>
+        /// <returns></returns>
+        public static T DeserializeToObject<T>(this string json)
+        {
+            return json.IsNullOrEmpty() ? default : JsonConvert.DeserializeObject<T>(json);
+        }
+
+        /// <summary>
         /// String to MongoDb.Bson.ObjectId
         /// </summary>
         /// <param name="id"></param>
