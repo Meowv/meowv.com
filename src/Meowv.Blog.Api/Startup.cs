@@ -5,14 +5,8 @@ namespace Meowv.Blog.Api
 {
     public class Startup
     {
-        public void ConfigureServices(IServiceCollection services)
-        {
-            services.AddApplication<MeowvBlogApiModule>();
-        }
+        public void ConfigureServices(IServiceCollection services) => services.AddApplication<MeowvBlogApiModule>();
 
-        public void Configure(IApplicationBuilder app)
-        {
-            app.InitializeApplication();
-        }
+        public void Configure(IApplicationBuilder app) => app.InitializeApplication();
     }
 }
