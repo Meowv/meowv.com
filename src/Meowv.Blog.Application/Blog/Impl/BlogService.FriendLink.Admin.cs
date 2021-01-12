@@ -86,7 +86,7 @@ namespace Meowv.Blog.Blog.Impl
         }
 
         /// <summary>
-        /// Get admin friendLink list.
+        /// Get the list of friendlinks.
         /// </summary>
         /// <returns></returns>
         [Authorize]

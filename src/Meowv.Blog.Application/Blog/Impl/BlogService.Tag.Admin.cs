@@ -86,7 +86,7 @@ namespace Meowv.Blog.Blog.Impl
         }
 
         /// <summary>
-        /// Get admin tag list.
+        /// Get the list of tags.
         /// </summary>
         /// <returns></returns>
         [Authorize]

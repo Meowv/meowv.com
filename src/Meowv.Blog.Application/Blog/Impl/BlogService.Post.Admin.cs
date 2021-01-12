@@ -139,7 +139,7 @@ namespace Meowv.Blog.Blog.Impl
         }
 
         /// <summary>
-        /// Get admin post list by paging.
+        /// Get the list of posts by paging.
         /// </summary>
         /// <param name="page"></param>
         /// <param name="limit"></param>

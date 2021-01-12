@@ -9,24 +9,27 @@ namespace Meowv.Blog.Blog.Impl
     public partial class BlogService
     {
         /// <summary>
-        /// Get tag list.
+        /// Get the list of tags.
         /// </summary>
         /// <returns></returns>
         public async Task<BlogResponse<List<GetTagDto>>> GetTagsAsync()
         {
-            var response = new BlogResponse<List<GetTagDto>>();
-
-            var tags = await _tags.GetListAsync();
-
-            var result = tags.Select(x => new GetTagDto
+            return await _cache.GetTagsAsync(async () =>
             {
-                Name = x.Name,
-                Alias = x.Alias,
-                Total = _posts.GetCountByTagAsync(x.Id).Result
-            }).Where(x => x.Total > 0).ToList();
+                var response = new BlogResponse<List<GetTagDto>>();
 
-            response.Result = result;
-            return response;
+                var tags = await _tags.GetListAsync();
+
+                var result = tags.Select(x => new GetTagDto
+                {
+                    Name = x.Name,
+                    Alias = x.Alias,
+                    Total = _posts.GetCountByTagAsync(x.Id).Result
+                }).Where(x => x.Total > 0).ToList();
+
+                response.Result = result;
+                return response;
+            });
         }
     }
 }

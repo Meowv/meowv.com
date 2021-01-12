@@ -86,7 +86,7 @@ namespace Meowv.Blog.Blog.Impl
         }
 
         /// <summary>
-        /// Get admin category list.
+        /// Get the list of categories.
         /// </summary>
         /// <returns></returns>
         [Authorize]
