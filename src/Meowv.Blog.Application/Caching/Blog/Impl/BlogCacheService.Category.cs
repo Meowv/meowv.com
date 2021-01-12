@@ -10,7 +10,7 @@ namespace Meowv.Blog.Caching.Blog.Impl
     {
         public async Task<BlogResponse<List<GetCategoryDto>>> GetCategoriesAsync(Func<Task<BlogResponse<List<GetCategoryDto>>>> func)
         {
-            return await Cache.GetOrAddAsync("test1", func, -1);
+            return await Cache.GetOrAddAsync("test123", func);
         }
     }
 }

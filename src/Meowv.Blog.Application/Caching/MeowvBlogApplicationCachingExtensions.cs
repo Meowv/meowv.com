@@ -16,7 +16,7 @@ namespace Meowv.Blog.Caching
         /// <param name="factory"></param>
         /// <param name="minutes"></param>
         /// <returns></returns>
-        public static async Task<TCacheItem> GetOrAddAsync<TCacheItem>(this IDistributedCache cache, string key, Func<Task<TCacheItem>> factory, int minutes)
+        public static async Task<TCacheItem> GetOrAddAsync<TCacheItem>(this IDistributedCache cache, string key, Func<Task<TCacheItem>> factory, int minutes = -1)
         {
             TCacheItem cacheItem;
 
@@ -26,7 +26,7 @@ namespace Meowv.Blog.Caching
                 cacheItem = await factory.Invoke();
 
                 var options = new DistributedCacheEntryOptions();
-                if (minutes != MeowvBlogConsts.CacheStrategy.NEVER)
+                if (minutes != -1)
                 {
                     options.AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(minutes);
                 }
