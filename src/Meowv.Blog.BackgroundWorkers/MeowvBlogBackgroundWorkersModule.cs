@@ -13,7 +13,7 @@ namespace Meowv.Blog
     {
         public override void ConfigureServices(ServiceConfigurationContext context)
         {
-            var option = context.Services.ExecutePreConfiguredActions<BackgroundWorkerOptions>();
+            var option = context.Services.ExecutePreConfiguredActions<WorkerOptions>();
 
             Configure<AbpBackgroundWorkerQuartzOptions>(options =>
             {

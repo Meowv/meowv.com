@@ -1,4 +1,5 @@
 ﻿using Meowv.Blog.Domain.Blog;
+using Meowv.Blog.Domain.News;
 using Volo.Abp;
 using Volo.Abp.MongoDB;
 
@@ -34,6 +35,13 @@ namespace Meowv.Blog
             builder.Entity<FriendLink>(b =>
             {
                 b.CollectionName = MeowvBlogDbConsts.CollectionNames.FriendLink;
+                b.BsonMap.AutoMap();
+                b.BsonMap.SetIgnoreExtraElements(true);
+            });
+
+            builder.Entity<Hot>(b =>
+            {
+                b.CollectionName = MeowvBlogDbConsts.CollectionNames.Hot;
                 b.BsonMap.AutoMap();
                 b.BsonMap.SetIgnoreExtraElements(true);
             });

@@ -1,6 +1,6 @@
 ﻿namespace Meowv.Blog.Options
 {
-    public class BackgroundWorkerOptions
+    public class WorkerOptions
     {
         /// <summary>
         /// Gets or sets whether background worker is enabled
@@ -10,11 +10,6 @@
         /// <summary>
         /// The cron expression to base the schedule on
         /// </summary>
-        public string HotNewsCron { get; set; }
-
-        /// <summary>
-        /// The cron expression to base the schedule on
-        /// </summary>
-        public string WallpaperCron { get; set; }
+        public string Cron { get; set; }
     }
 }

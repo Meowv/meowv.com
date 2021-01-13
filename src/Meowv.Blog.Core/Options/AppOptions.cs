@@ -23,9 +23,9 @@
         public JwtOptions Jwt { get; set; }
 
         /// <summary>
-        /// BackgroundWorker
+        /// Worker
         /// </summary>
-        public BackgroundWorkerOptions BackgroundWorker { get; set; }
+        public WorkerOptions Worker { get; set; }
 
         /// <summary>
         /// Authorize

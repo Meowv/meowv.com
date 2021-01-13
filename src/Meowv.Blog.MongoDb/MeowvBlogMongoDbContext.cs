@@ -1,4 +1,5 @@
 ﻿using Meowv.Blog.Domain.Blog;
+using Meowv.Blog.Domain.News;
 using MongoDB.Driver;
 using Volo.Abp.MongoDB;
 using Tag = Meowv.Blog.Domain.Blog.Tag;
@@ -14,6 +15,8 @@ namespace Meowv.Blog
         public IMongoCollection<Tag> Tags => Collection<Tag>();
 
         public IMongoCollection<FriendLink> FriendLinks => Collection<FriendLink>();
+
+        public IMongoCollection<Hot> Hots => Collection<Hot>();
 
         protected override void CreateModel(IMongoModelBuilder modelBuilder)
         {

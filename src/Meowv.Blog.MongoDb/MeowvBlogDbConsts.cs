@@ -23,6 +23,11 @@
             /// FriendLink
             /// </summary>
             public const string FriendLink = "meowv_blog_friendLinks";
+
+            /// <summary>
+            /// Hot
+            /// </summary>
+            public const string Hot = "meowv_blog_hots";
         }
     }
 }

@@ -17,7 +17,7 @@ namespace Meowv.Blog
             var storage = new StorageOptions();
             var cors = new CorsOptions();
             var jwt = new JwtOptions();
-            var backgroundWorker = new BackgroundWorkerOptions();
+            var worker = new WorkerOptions();
             var authorize = new AuthorizeOptions();
 
             PreConfigure<SwaggerOptions>(options =>
@@ -66,16 +66,15 @@ namespace Meowv.Blog
 
                 jwt = options;
             });
-            PreConfigure<BackgroundWorkerOptions>(options =>
+            PreConfigure<WorkerOptions>(options =>
             {
-                var backgroundWorkerOption = configuration.GetSection("backgroundWorker");
-                Configure<BackgroundWorkerOptions>(backgroundWorkerOption);
+                var workerOption = configuration.GetSection("backgroundWorker");
+                Configure<WorkerOptions>(workerOption);
 
-                options.IsEnabled = backgroundWorkerOption.GetValue<bool>(nameof(options.IsEnabled));
-                options.HotNewsCron = backgroundWorkerOption.GetValue<string>(nameof(options.HotNewsCron));
-                options.WallpaperCron = backgroundWorkerOption.GetValue<string>(nameof(options.WallpaperCron));
+                options.IsEnabled = workerOption.GetValue<bool>(nameof(options.IsEnabled));
+                options.Cron = workerOption.GetValue<string>(nameof(options.Cron));
 
-                backgroundWorker = options;
+                worker = options;
             });
             PreConfigure<AuthorizeOptions>(options =>
             {
@@ -120,7 +119,7 @@ namespace Meowv.Blog
                 options.Storage = storage;
                 options.Cors = cors;
                 options.Jwt = jwt;
-                options.BackgroundWorker = backgroundWorker;
+                options.Worker = worker;
                 options.Authorize = authorize;
             });
         }
@@ -131,7 +130,7 @@ namespace Meowv.Blog
             context.Services.ExecutePreConfiguredActions<StorageOptions>();
             context.Services.ExecutePreConfiguredActions<CorsOptions>();
             context.Services.ExecutePreConfiguredActions<JwtOptions>();
-            context.Services.ExecutePreConfiguredActions<BackgroundWorkerOptions>();
+            context.Services.ExecutePreConfiguredActions<WorkerOptions>();
             context.Services.ExecutePreConfiguredActions<AuthorizeOptions>();
         }
     }

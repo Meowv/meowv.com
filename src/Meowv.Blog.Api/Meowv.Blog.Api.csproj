@@ -21,4 +21,8 @@
     <ProjectReference Include="..\Meowv.Blog.MongoDb\Meowv.Blog.MongoDb.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Logs\" />
+  </ItemGroup>
+
 </Project>
