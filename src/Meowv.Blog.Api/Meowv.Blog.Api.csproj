@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Meowv.Blog.Application\Meowv.Blog.Application.csproj" />
+    <ProjectReference Include="..\Meowv.Blog.BackgroundWorkers\Meowv.Blog.BackgroundWorkers.csproj" />
     <ProjectReference Include="..\Meowv.Blog.MongoDb\Meowv.Blog.MongoDb.csproj" />
   </ItemGroup>
 

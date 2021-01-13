@@ -21,6 +21,11 @@ jwt:
   audience: 'meowv_blog api'
   signingKey: 'H4sIAAAAAAAAA3N0cnZxdXP38PTy9vH18w8I9AkOCQ0Lj4iMAgDB4fXPGgAAAA=='
 
+backgroundWorker:
+  isEnabled: true
+  hotNewsCron: '0 0 * * * ? *'
+  wallpaperCron: '0 0 0/2 * * ? *'
+
 authorize:
   account:
     username: 'admin'

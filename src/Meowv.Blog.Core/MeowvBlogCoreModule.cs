@@ -17,9 +17,8 @@ namespace Meowv.Blog
             var storage = new StorageOptions();
             var cors = new CorsOptions();
             var jwt = new JwtOptions();
+            var backgroundWorker = new BackgroundWorkerOptions();
             var authorize = new AuthorizeOptions();
-
-            context.Services.AddOptions();
 
             PreConfigure<SwaggerOptions>(options =>
             {
@@ -67,6 +66,17 @@ namespace Meowv.Blog
 
                 jwt = options;
             });
+            PreConfigure<BackgroundWorkerOptions>(options =>
+            {
+                var backgroundWorkerOption = configuration.GetSection("backgroundWorker");
+                Configure<BackgroundWorkerOptions>(backgroundWorkerOption);
+
+                options.IsEnabled = backgroundWorkerOption.GetValue<bool>(nameof(options.IsEnabled));
+                options.HotNewsCron = backgroundWorkerOption.GetValue<string>(nameof(options.HotNewsCron));
+                options.WallpaperCron = backgroundWorkerOption.GetValue<string>(nameof(options.WallpaperCron));
+
+                backgroundWorker = options;
+            });
             PreConfigure<AuthorizeOptions>(options =>
             {
                 var authorizeOption = configuration.GetSection("authorize");
@@ -110,6 +120,7 @@ namespace Meowv.Blog
                 options.Storage = storage;
                 options.Cors = cors;
                 options.Jwt = jwt;
+                options.BackgroundWorker = backgroundWorker;
                 options.Authorize = authorize;
             });
         }
@@ -120,6 +131,7 @@ namespace Meowv.Blog
             context.Services.ExecutePreConfiguredActions<StorageOptions>();
             context.Services.ExecutePreConfiguredActions<CorsOptions>();
             context.Services.ExecutePreConfiguredActions<JwtOptions>();
+            context.Services.ExecutePreConfiguredActions<BackgroundWorkerOptions>();
             context.Services.ExecutePreConfiguredActions<AuthorizeOptions>();
         }
     }

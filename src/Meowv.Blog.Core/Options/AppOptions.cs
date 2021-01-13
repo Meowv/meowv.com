@@ -23,6 +23,11 @@
         public JwtOptions Jwt { get; set; }
 
         /// <summary>
+        /// BackgroundWorker
+        /// </summary>
+        public BackgroundWorkerOptions BackgroundWorker { get; set; }
+
+        /// <summary>
         /// Authorize
         /// </summary>
         public AuthorizeOptions Authorize { get; set; }

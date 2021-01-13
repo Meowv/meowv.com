@@ -34,7 +34,8 @@ namespace Meowv.Blog.Api
         typeof(AbpAspNetCoreMvcModule),
         typeof(AbpCachingStackExchangeRedisModule),
         typeof(MeowvBlogApplicationModule),
-        typeof(MeowvBlogMongoDbModule)
+        typeof(MeowvBlogMongoDbModule),
+        typeof(MeowvBlogBackgroundWorkersModule)
     )]
     public class MeowvBlogApiModule : AbpModule
     {
