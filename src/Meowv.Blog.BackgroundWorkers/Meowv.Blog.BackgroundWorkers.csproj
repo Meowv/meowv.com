@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <PackageReference Include="HtmlAgilityPack" Version="1.11.29" />
-    <PackageReference Include="Volo.Abp.BackgroundWorkers.Quartz" Version="4.1.0" />
+    <PackageReference Include="Volo.Abp.BackgroundWorkers.Quartz" Version="4.1.1" />
   </ItemGroup>
 
   <ItemGroup>
