@@ -28,6 +28,8 @@ namespace Meowv.Blog.Domain.News
 
             public const string ithome = "IT之家";
 
+            public const string kr36 = "36氪";
+
             public static Dictionary<string, string> Dictionary { get; set; } = new Dictionary<string, string>
             {
                 { cnblogs, "https://www.cnblogs.com" },
@@ -35,7 +37,8 @@ namespace Meowv.Blog.Domain.News
                 { segmentfault, "https://segmentfault.com/hottest" },
                 { weixin, "https://weixin.sogou.com" },
                 { douban, "https://www.douban.com/group/explore" },
-                { ithome, "https://www.ithome.com" }
+                { ithome, "https://www.ithome.com" },
+                { kr36, "https://36kr.com/hot-list/catalog" }
             };
         }
     }

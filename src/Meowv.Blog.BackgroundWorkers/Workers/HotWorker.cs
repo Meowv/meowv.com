@@ -101,7 +101,7 @@ namespace Meowv.Blog.Workers
                                 hot.Datas.Add(new Data
                                 {
                                     Title = x.InnerText,
-                                    Url = $"https://www.v2ex.com{x.GetAttributeValue("href", "")}",
+                                    Url = $"https://www.v2ex.com{x.GetAttributeValue("href", "")}"
                                 });
                             });
                             hots.Add(hot);
@@ -120,7 +120,7 @@ namespace Meowv.Blog.Workers
                                 hot.Datas.Add(new Data
                                 {
                                     Title = x.SelectSingleNode(".//div/h4").InnerText,
-                                    Url = $"https://segmentfault.com{x.GetAttributeValue("href", "")}",
+                                    Url = $"https://segmentfault.com{x.GetAttributeValue("href", "")}"
                                 });
                             });
                             hots.Add(hot);
@@ -139,7 +139,7 @@ namespace Meowv.Blog.Workers
                                 hot.Datas.Add(new Data
                                 {
                                     Title = x.InnerText,
-                                    Url = x.GetAttributeValue("href", ""),
+                                    Url = x.GetAttributeValue("href", "")
                                 });
                             });
                             hots.Add(hot);
@@ -158,7 +158,7 @@ namespace Meowv.Blog.Workers
                                 hot.Datas.Add(new Data
                                 {
                                     Title = x.InnerText,
-                                    Url = x.GetAttributeValue("href", ""),
+                                    Url = x.GetAttributeValue("href", "")
                                 });
                             });
                             hots.Add(hot);
@@ -177,8 +177,31 @@ namespace Meowv.Blog.Workers
                                 hot.Datas.Add(new Data
                                 {
                                     Title = x.InnerText,
-                                    Url = x.GetAttributeValue("href", ""),
+                                    Url = x.GetAttributeValue("href", "")
                                 });
+                            });
+                            hots.Add(hot);
+
+                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            break;
+                        }
+
+                    case Hot.KnownSources.kr36:
+                        {
+                            var html = result as HtmlDocument;
+                            var nodes = html.DocumentNode.SelectNodes("//div[@class='list-wrapper']/div[@class='list-section-wrapper']/div[@class='article-list']/div/div/div/div/div/p/a").ToList();
+
+                            nodes.ForEach(x =>
+                            {
+                                var url = $"https://36kr.com{x.GetAttributeValue("href", "")}";
+                                if (!hot.Datas.Any(d => d.Url == url))
+                                {
+                                    hot.Datas.Add(new Data
+                                    {
+                                        Title = x.InnerText,
+                                        Url = url
+                                    });
+                                }
                             });
                             hots.Add(hot);
 
