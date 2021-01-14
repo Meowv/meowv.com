@@ -9,7 +9,7 @@ namespace Meowv.Blog.Domain.News
         /// </summary>
         public string Source { get; set; }
 
-        public List<Data> Datas { get; set; }
+        public List<Data> Datas { get; set; } = new List<Data>();
 
         public static class KnownSources
         {

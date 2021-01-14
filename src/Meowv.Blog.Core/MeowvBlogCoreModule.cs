@@ -68,7 +68,7 @@ namespace Meowv.Blog
             });
             PreConfigure<WorkerOptions>(options =>
             {
-                var workerOption = configuration.GetSection("backgroundWorker");
+                var workerOption = configuration.GetSection("worker");
                 Configure<WorkerOptions>(workerOption);
 
                 options.IsEnabled = workerOption.GetValue<bool>(nameof(options.IsEnabled));

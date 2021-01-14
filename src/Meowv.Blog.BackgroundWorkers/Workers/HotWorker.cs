@@ -1,8 +1,13 @@
-﻿using Meowv.Blog.Domain.News.Repositories;
+﻿using HtmlAgilityPack;
+using Meowv.Blog.Domain.News;
+using Meowv.Blog.Domain.News.Repositories;
+using Meowv.Blog.Dto.News;
 using Meowv.Blog.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Quartz;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Volo.Abp.BackgroundWorkers.Quartz;
 
@@ -14,6 +19,8 @@ namespace Meowv.Blog.Workers
 
         public HotWorker(IOptions<WorkerOptions> backgroundWorkerOptions, IHotRepository hots)
         {
+            _hots = hots;
+
             JobDetail = JobBuilder.Create<HotWorker>().WithIdentity(nameof(HotWorker)).Build();
 
             Trigger = TriggerBuilder.Create()
@@ -34,59 +41,59 @@ namespace Meowv.Blog.Workers
         {
             Logger.LogInformation("开始抓取热点数据...");
 
-            //var tasks = new List<Task<HotItem<object>>>();
-            //var web = new HtmlWeb();
+            var tasks = new List<Task<HotItem<object>>>();
+            var web = new HtmlWeb();
 
-            //foreach (var item in Hot.KnownSources.Dictionary)
-            //{
-            //    var task = await Task.Factory.StartNew(async () =>
-            //    {
-            //        var result = await web.LoadFromWebAsync(item.Value);
+            foreach (var item in Hot.KnownSources.Dictionary)
+            {
+                var task = await Task.Factory.StartNew(async () =>
+                {
+                    var result = await web.LoadFromWebAsync(item.Value);
 
-            //        return new HotItem<object>
-            //        {
-            //            Source = item.Key,
-            //            Result = result
-            //        };
-            //    });
-            //    tasks.Add(task);
-            //}
-            //Task.WaitAll(tasks.ToArray());
+                    return new HotItem<object>
+                    {
+                        Source = item.Key,
+                        Result = result
+                    };
+                });
+                tasks.Add(task);
+            }
+            Task.WaitAll(tasks.ToArray());
 
-            //var hots = new List<Hot>();
+            var hots = new List<Hot>();
 
-            //foreach (var task in tasks)
-            //{
-            //    var item = await task;
-            //    var source = item.Source;
-            //    var result = item.Result;
+            foreach (var task in tasks)
+            {
+                var item = await task;
+                var source = item.Source;
+                var result = item.Result;
 
-            //    if (source == Hot.KnownSources.cnblogs)
-            //    {
-            //        var html = result as HtmlDocument;
-            //        var nodes = html.DocumentNode.SelectNodes("//div[@class='post_item_body']/h3/a").ToList();
+                if (source == Hot.KnownSources.cnblogs)
+                {
+                    var html = result as HtmlDocument;
+                    var nodes = html.DocumentNode.SelectNodes("//div[@id='post_list']/article/section/div/a").ToList();
 
-            //        var hot = new Hot() { Source = source };
+                    var hot = new Hot() { Source = source };
 
-            //        nodes.ForEach(x =>
-            //        {
-            //            hot.Datas.Add(new Data
-            //            {
-            //                Title = x.InnerText,
-            //                Url = x.GetAttributeValue("href", string.Empty)
-            //            });
-            //        });
+                    nodes.ForEach(x =>
+                    {
+                        hot.Datas.Add(new Data
+                        {
+                            Title = x.InnerText,
+                            Url = x.GetAttributeValue("href", string.Empty)
+                        });
+                    });
 
-            //        hots.Add(hot);
+                    hots.Add(hot);
 
-            //        Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
-            //    }
-            //}
+                    Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                }
+            }
 
-            //if (hots.Any())
-            //{
-            //    await _hots.BulkInsertAsync(hots);
-            //}
+            if (hots.Any())
+            {
+                await _hots.BulkInsertAsync(hots);
+            }
 
             Logger.LogInformation("热点数据抓取结束...");
             await Task.CompletedTask;
