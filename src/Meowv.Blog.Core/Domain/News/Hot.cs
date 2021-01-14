@@ -26,13 +26,16 @@ namespace Meowv.Blog.Domain.News
 
             public const string douban = "豆瓣精选";
 
+            public const string ithome = "IT之家";
+
             public static Dictionary<string, string> Dictionary { get; set; } = new Dictionary<string, string>
             {
                 { cnblogs, "https://www.cnblogs.com" },
                 { v2ex, "https://www.v2ex.com/?tab=hot" },
                 { segmentfault, "https://segmentfault.com/hottest" },
                 { weixin, "https://weixin.sogou.com" },
-                { douban, "https://www.douban.com/group/explore" }
+                { douban, "https://www.douban.com/group/explore" },
+                { ithome, "https://www.ithome.com" }
             };
         }
     }

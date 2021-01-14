@@ -166,6 +166,25 @@ namespace Meowv.Blog.Workers
                             Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
                             break;
                         }
+
+                    case Hot.KnownSources.ithome:
+                        {
+                            var html = result as HtmlDocument;
+                            var nodes = html.DocumentNode.SelectNodes("//div[@id='rank']/ul[@id='d-1']/li//a").ToList();
+
+                            nodes.ForEach(x =>
+                            {
+                                hot.Datas.Add(new Data
+                                {
+                                    Title = x.InnerText,
+                                    Url = x.GetAttributeValue("href", ""),
+                                });
+                            });
+                            hots.Add(hot);
+
+                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            break;
+                        }
                 }
             }
 
