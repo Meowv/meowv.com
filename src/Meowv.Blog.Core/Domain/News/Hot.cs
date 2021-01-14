@@ -22,11 +22,14 @@ namespace Meowv.Blog.Domain.News
 
             public const string segmentfault = "思否";
 
+            public const string weixin = "微信热门";
+
             public static Dictionary<string, string> Dictionary { get; set; } = new Dictionary<string, string>
             {
                 { cnblogs, "https://www.cnblogs.com" },
                 { v2ex, "https://www.v2ex.com/?tab=hot" },
-                { segmentfault, "https://segmentfault.com/hottest" }
+                { segmentfault, "https://segmentfault.com/hottest" },
+                { weixin, "https://weixin.sogou.com" }
             };
         }
     }
