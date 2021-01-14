@@ -68,30 +68,72 @@ namespace Meowv.Blog.Workers
                 var source = item.Source;
                 var result = item.Result;
 
-                if (source == Hot.KnownSources.cnblogs)
+                var hot = new Hot() { Source = source };
+
+                switch (source)
                 {
-                    var html = result as HtmlDocument;
-                    var nodes = html.DocumentNode.SelectNodes("//div[@id='post_list']/article/section/div/a").ToList();
-
-                    var hot = new Hot() { Source = source };
-
-                    nodes.ForEach(x =>
-                    {
-                        hot.Datas.Add(new Data
+                    case Hot.KnownSources.cnblogs:
                         {
-                            Title = x.InnerText,
-                            Url = x.GetAttributeValue("href", string.Empty)
-                        });
-                    });
+                            var html = result as HtmlDocument;
+                            var nodes = html.DocumentNode.SelectNodes("//div[@id='post_list']/article/section/div/a").ToList();
 
-                    hots.Add(hot);
+                            nodes.ForEach(x =>
+                            {
+                                hot.Datas.Add(new Data
+                                {
+                                    Title = x.InnerText,
+                                    Url = x.GetAttributeValue("href", string.Empty)
+                                });
+                            });
+                            hots.Add(hot);
 
-                    Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            break;
+                        }
+
+                    case Hot.KnownSources.v2ex:
+                        {
+                            var html = result as HtmlDocument;
+                            var nodes = html.DocumentNode.SelectNodes("//span[@class='item_title']/a").ToList();
+
+                            nodes.ForEach(x =>
+                            {
+                                hot.Datas.Add(new Data
+                                {
+                                    Title = x.InnerText,
+                                    Url = $"https://www.v2ex.com{x.GetAttributeValue("href", "")}",
+                                });
+                            });
+                            hots.Add(hot);
+
+                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            break;
+                        }
+
+                    case Hot.KnownSources.segmentfault:
+                        {
+                            var html = result as HtmlDocument;
+                            var nodes = html.DocumentNode.SelectNodes("//div[@class='news-list']/div/div/a[2]").ToList();
+
+                            nodes.ForEach(x =>
+                            {
+                                hot.Datas.Add(new Data
+                                {
+                                    Title = x.SelectSingleNode(".//div/h4").InnerText,
+                                    Url = $"https://segmentfault.com{x.GetAttributeValue("href", "")}",
+                                });
+                            });
+                            hots.Add(hot);
+
+                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            break;
+                        }
                 }
             }
 
             if (hots.Any())
             {
+                await _hots.DeleteAsync(x => true);
                 await _hots.BulkInsertAsync(hots);
             }
 
