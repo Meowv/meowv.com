@@ -60,8 +60,6 @@ namespace Meowv.Blog.Workers
                     var source = item.Key;
                     var url = item.Value;
 
-                    var encoding = source is Hot.KnownSources.baidu or Hot.KnownSources.news163 ? Encoding.GetEncoding("GB2312") : Encoding.UTF8;
-
                     if (source is Hot.KnownSources.juejin)
                     {
                         using var client = _httpClient.CreateClient();
@@ -78,6 +76,10 @@ namespace Meowv.Blog.Workers
                     }
                     else
                     {
+                        var encoding = source is Hot.KnownSources.baidu
+                                              or Hot.KnownSources.news163
+                                              or Hot.KnownSources.pojie52
+                                              ? Encoding.GetEncoding("GB2312") : Encoding.UTF8;
                         result = await web.LoadFromWebAsync(url, encoding);
                     }
 
@@ -291,7 +293,7 @@ namespace Meowv.Blog.Workers
                                 hot.Datas.Add(new Data
                                 {
                                     Title = x.InnerText,
-                                    Url = $"https://s.weibo.com{url}",
+                                    Url = $"https://s.weibo.com{url}"
                                 });
                             });
                             hots.Add(hot);
@@ -331,7 +333,7 @@ namespace Meowv.Blog.Workers
                                 hot.Datas.Add(new Data
                                 {
                                     Title = node["target"]["title"].ToString(),
-                                    Url = $"https://www.zhihu.com/question/{node["target"]["id"]}",
+                                    Url = $"https://www.zhihu.com/question/{node["target"]["id"]}"
                                 });
                             }
                             hots.Add(hot);
@@ -350,7 +352,7 @@ namespace Meowv.Blog.Workers
                                 hot.Datas.Add(new Data
                                 {
                                     Title = x.InnerText,
-                                    Url = $"https://daily.zhihu.com{x.GetAttributeValue("href", "")}",
+                                    Url = $"https://daily.zhihu.com{x.GetAttributeValue("href", "")}"
                                 });
                             });
                             hots.Add(hot);
@@ -369,7 +371,7 @@ namespace Meowv.Blog.Workers
                                 hot.Datas.Add(new Data
                                 {
                                     Title = x.InnerText,
-                                    Url = x.GetAttributeValue("href", ""),
+                                    Url = x.GetAttributeValue("href", "")
                                 });
                             });
                             hots.Add(hot);
@@ -434,6 +436,25 @@ namespace Meowv.Blog.Workers
                                 {
                                     Title = x.InnerText,
                                     Url = x.GetAttributeValue("href", ""),
+                                });
+                            });
+                            hots.Add(hot);
+
+                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            break;
+                        }
+
+                    case Hot.KnownSources.pojie52:
+                        {
+                            var html = result as HtmlDocument;
+                            var nodes = html.DocumentNode.SelectNodes("//div[@class='tl']/table/tr/th/a").ToList();
+
+                            nodes.ForEach(x =>
+                            {
+                                hot.Datas.Add(new Data
+                                {
+                                    Title = x.InnerText,
+                                    Url = $"https://www.52pojie.cn/{x.GetAttributeValue("href", "")}"
                                 });
                             });
                             hots.Add(hot);
