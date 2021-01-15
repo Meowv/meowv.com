@@ -60,33 +60,37 @@ namespace Meowv.Blog.Workers
                     var source = item.Key;
                     var url = item.Value;
 
-                    if (source is Hot.KnownSources.juejin)
+                    switch (source)
                     {
-                        using var client = _httpClient.CreateClient();
-                        var content = new ByteArrayContent("{\"id_type\":2,\"client_type\":2608,\"sort_type\":3,\"cursor\":\"0\",\"limit\":20}".GetBytes());
-                        content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+                        case Hot.KnownSources.juejin or Hot.KnownSources.csdn or Hot.KnownSources.zhihu or Hot.KnownSources.huxiu or Hot.KnownSources.douyin or Hot.KnownSources.woshipm or Hot.KnownSources.kaiyan:
+                            {
+                                using var client = _httpClient.CreateClient();
 
-                        var response = await client.PostAsync(url, content);
-                        result = await response.Content.ReadAsStringAsync();
-                    }
-                    else if (source is Hot.KnownSources.csdn
-                                    or Hot.KnownSources.zhihu
-                                    or Hot.KnownSources.huxiu
-                                    or Hot.KnownSources.douyin
-                                    or Hot.KnownSources.woshipm
-                                    or Hot.KnownSources.kaiyan)
-                    {
-                        using var client = _httpClient.CreateClient();
-                        result = await client.GetStringAsync(url);
-                    }
-                    else
-                    {
-                        var encoding = source is Hot.KnownSources.baidu
-                                              or Hot.KnownSources.news163
-                                              or Hot.KnownSources.pojie52
-                                              or Hot.KnownSources.gaoloumi
-                                              ? Encoding.GetEncoding("GB2312") : Encoding.UTF8;
-                        result = await web.LoadFromWebAsync(url, encoding);
+                                switch (source)
+                                {
+                                    case not Hot.KnownSources.juejin:
+                                        result = await client.GetStringAsync(url);
+                                        break;
+
+                                    default:
+                                        {
+                                            var content = new ByteArrayContent("{\"id_type\":2,\"client_type\":2608,\"sort_type\":3,\"cursor\":\"0\",\"limit\":20}".GetBytes());
+                                            content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+                                            var response = await client.PostAsync(url, content);
+                                            result = await response.Content.ReadAsStringAsync();
+                                            break;
+                                        }
+                                }
+                                break;
+                            }
+
+                        default:
+                            {
+                                var encoding = source is Hot.KnownSources.baidu or Hot.KnownSources.news163 or Hot.KnownSources.pojie52 or Hot.KnownSources.gaoloumi ? Encoding.GetEncoding("GB2312") : Encoding.UTF8;
+                                result = await web.LoadFromWebAsync(url, encoding);
+                                break;
+                            }
                     }
 
                     return new HotItem<object>
