@@ -492,7 +492,7 @@ namespace Meowv.Blog.Workers
                                 hot.Datas.Add(new Data
                                 {
                                     Title = x.InnerText,
-                                    Url = $"http://m.lssdjt.com/{x.GetAttributeValue("href", "")}"
+                                    Url = $"http://m.lssdjt.com{x.GetAttributeValue("href", "")}"
                                 });
                             });
                             hots.Add(hot);
