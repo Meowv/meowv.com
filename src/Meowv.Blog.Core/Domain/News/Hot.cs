@@ -52,6 +52,8 @@ namespace Meowv.Blog.Domain.News
 
             public const string pojie52 = "吾爱破解";
 
+            public const string tianya = "天涯";
+
             public static Dictionary<string, string> Dictionary { get; set; } = new Dictionary<string, string>
             {
                 { cnblogs, "https://www.cnblogs.com" },
@@ -71,7 +73,8 @@ namespace Meowv.Blog.Domain.News
                 { sspai, "https://sspai.com/tag/%E7%83%AD%E9%97%A8%E6%96%87%E7%AB%A0" },
                 { huxiu, "https://article-api.huxiu.com/web/index/articleList?platform=www" },
                 { jandan, "http://jandan.net/top" },
-                { pojie52, "https://www.52pojie.cn/misc.php?mod=ranklist&type=thread&view=heats&orderby=today" }
+                { pojie52, "https://www.52pojie.cn/misc.php?mod=ranklist&type=thread&view=heats&orderby=today" },
+                { tianya, "http://bbs.tianya.cn/list.jsp?item=free&grade=3&order=1" }
             };
         }
     }

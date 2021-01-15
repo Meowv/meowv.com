@@ -462,6 +462,25 @@ namespace Meowv.Blog.Workers
                             Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
                             break;
                         }
+
+                    case Hot.KnownSources.tianya:
+                        {
+                            var html = result as HtmlDocument;
+                            var nodes = html.DocumentNode.SelectNodes("//div[@id='main']/div[@class='mt5']/table/tbody/tr/td[1]/a").ToList();
+
+                            nodes.ForEach(x =>
+                            {
+                                hot.Datas.Add(new Data
+                                {
+                                    Title = x.InnerText,
+                                    Url = $"http://bbs.tianya.cn/{x.GetAttributeValue("href", "")}"
+                                });
+                            });
+                            hots.Add(hot);
+
+                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            break;
+                        }
                 }
             }
 
