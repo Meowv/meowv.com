@@ -500,6 +500,25 @@ namespace Meowv.Blog.Workers
                             Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
                             break;
                         }
+
+                    case Hot.KnownSources.bilibili:
+                        {
+                            var html = result as HtmlDocument;
+                            var nodes = html.DocumentNode.SelectNodes("//ul[@class='rank-list']/li/div/div[@class='info']/a").ToList();
+
+                            nodes.ForEach(x =>
+                            {
+                                hot.Datas.Add(new Data
+                                {
+                                    Title = x.InnerText,
+                                    Url = $"https{x.GetAttributeValue("href", "")}"
+                                });
+                            });
+                            hots.Add(hot);
+
+                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            break;
+                        }
                 }
             }
 

@@ -56,6 +56,8 @@ namespace Meowv.Blog.Domain.News
 
             public const string lssdjt = "历史上的今天";
 
+            public const string bilibili = "哔哩哔哩";
+
             public static Dictionary<string, string> Dictionary { get; set; } = new Dictionary<string, string>
             {
                 { cnblogs, "https://www.cnblogs.com" },
@@ -77,7 +79,8 @@ namespace Meowv.Blog.Domain.News
                 { jandan, "http://jandan.net/top" },
                 { pojie52, "https://www.52pojie.cn/misc.php?mod=ranklist&type=thread&view=heats&orderby=today" },
                 { tianya, "http://bbs.tianya.cn/list.jsp?item=free&grade=3&order=1" },
-                { lssdjt, "http://m.lssdjt.com" }
+                { lssdjt, "http://m.lssdjt.com" },
+                { bilibili, "https://www.bilibili.com/v/popular/rank/all" }
             };
         }
     }
