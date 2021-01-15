@@ -58,7 +58,7 @@ namespace Meowv.Blog.Workers
                     var result = new object();
                     var source = item.Key;
                     var url = item.Value;
-                    
+
                     var encoding = source is Hot.KnownSources.baidu or Hot.KnownSources.news163 ? Encoding.GetEncoding("GB2312") : Encoding.UTF8;
 
                     if (source is Hot.KnownSources.zhihu)
@@ -376,11 +376,32 @@ namespace Meowv.Blog.Workers
                             Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
                             break;
                         }
+
+                    case Hot.KnownSources.sspai:
+                        {
+                            var html = result as HtmlDocument;
+                            var nodes = html.DocumentNode.SelectNodes("//div[@class='article']/div[@class='articleCard']/div/div/div/div[@class='card_content']/a").ToList();
+
+                            nodes.ForEach(x =>
+                            {
+                                hot.Datas.Add(new Data
+                                {
+                                    Title = x.InnerText,
+                                    Url = $"https://sspai.com{x.GetAttributeValue("href", "")}",
+                                });
+                            });
+                            hots.Add(hot);
+
+                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            break;
+                        }
                 }
             }
 
             if (hots.Any())
             {
+                hots.ForEach(x => x.Datas.ForEach(x => x.Title = x.Title.Trim()));
+
                 await _hots.DeleteAsync(x => true);
                 await _hots.BulkInsertAsync(hots);
             }
