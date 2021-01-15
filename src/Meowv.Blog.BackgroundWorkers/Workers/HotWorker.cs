@@ -69,7 +69,8 @@ namespace Meowv.Blog.Workers
                         var response = await client.PostAsync(url, content);
                         result = await response.Content.ReadAsStringAsync();
                     }
-                    else if (source is Hot.KnownSources.zhihu
+                    else if (source is Hot.KnownSources.csdn
+                                    or Hot.KnownSources.zhihu
                                     or Hot.KnownSources.huxiu
                                     or Hot.KnownSources.douyin
                                     or Hot.KnownSources.kaiyan)
@@ -223,6 +224,25 @@ namespace Meowv.Blog.Workers
                             break;
                         }
 
+                    case Hot.KnownSources.oschina:
+                        {
+                            var html = result as HtmlDocument;
+                            var nodes = html.DocumentNode.SelectNodes("//div[@class='ui items']/div/div/a").ToList();
+
+                            nodes.ForEach(x =>
+                            {
+                                hot.Datas.Add(new Data
+                                {
+                                    Title = x.InnerText,
+                                    Url = x.GetAttributeValue("href", "")
+                                });
+                            });
+                            hots.Add(hot);
+
+                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            break;
+                        }
+
                     case Hot.KnownSources.kr36:
                         {
                             var html = result as HtmlDocument;
@@ -321,6 +341,44 @@ namespace Meowv.Blog.Workers
                                     Url = $"https://juejin.cn/post/{node["item_info"]["article_id"]}"
                                 });
                             }
+                            hots.Add(hot);
+
+                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            break;
+                        }
+
+                    case Hot.KnownSources.csdn:
+                        {
+                            var json = result as string;
+                            var nodes = JObject.Parse(json)["data"];
+
+                            foreach (var node in nodes)
+                            {
+                                hot.Datas.Add(new Data
+                                {
+                                    Title = node["articleTitle"].ToString(),
+                                    Url = node["articleDetailUrl"].ToString()
+                                });
+                            }
+                            hots.Add(hot);
+
+                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            break;
+                        }
+
+                    case Hot.KnownSources.toutiao:
+                        {
+                            var html = result as HtmlDocument;
+                            var nodes = html.DocumentNode.SelectNodes("//div[@class='posts']/div[@class='post']/div[@class='content']/h3/a").ToList();
+
+                            nodes.ForEach(x =>
+                            {
+                                hot.Datas.Add(new Data
+                                {
+                                    Title = x.InnerText,
+                                    Url = $"https://toutiao.io{x.GetAttributeValue("href", "")}"
+                                });
+                            });
                             hots.Add(hot);
 
                             Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
