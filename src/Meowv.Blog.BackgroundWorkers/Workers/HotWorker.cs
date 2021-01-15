@@ -14,6 +14,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 using Volo.Abp.BackgroundWorkers.Quartz;
 
 namespace Meowv.Blog.Workers
@@ -409,6 +410,32 @@ namespace Meowv.Blog.Workers
                                     Url = $"https://www.huxiu.com/article/{node["aid"]}.html",
                                 });
                             }
+                            hots.Add(hot);
+
+                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            break;
+                        }
+
+                    case Hot.KnownSources.jandan:
+                        {
+                            var html = result as HtmlDocument;
+                            var content = HttpUtility.UrlDecode(html.DocumentNode.SelectSingleNode("//div[@id='list-hotposts']").InnerHtml);
+                            content = content.Replace("<script>", "")
+                                             .Replace("</script>", "")
+                                             .Replace("document.write(decodeURIComponent('", "")
+                                             .Replace("'));", "");
+                            html.LoadHtml(content);
+
+                            var nodes = html.DocumentNode.SelectNodes("//li/a").ToList();
+
+                            nodes.ForEach(x =>
+                            {
+                                hot.Datas.Add(new Data
+                                {
+                                    Title = x.InnerText,
+                                    Url = x.GetAttributeValue("href", ""),
+                                });
+                            });
                             hots.Add(hot);
 
                             Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
