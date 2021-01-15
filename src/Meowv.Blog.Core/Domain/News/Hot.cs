@@ -74,6 +74,8 @@ namespace Meowv.Blog.Domain.News
 
             public const string gaoloumi = "高楼迷";
 
+            public const string github = "GitHub";
+
             public static Dictionary<string, string> Dictionary { get; set; } = new Dictionary<string, string>
             {
                 { cnblogs, "https://www.cnblogs.com" },
@@ -104,7 +106,8 @@ namespace Meowv.Blog.Domain.News
                 { bilibili, "https://www.bilibili.com/v/popular/rank/all" },
                 { douyin, "https://www.iesdouyin.com/web/api/v2/hotsearch/billboard/aweme" },
                 { kaiyan, "https://baobab.kaiyanapp.com/api/v1/feed?udid=3e7ee30c6fc0004a773dc33b0597b5732b145c04" },
-                { gaoloumi, "http://gaoloumi.cc/misc.php?mod=ranklist&type=thread&view=heats&orderby=today" }
+                { gaoloumi, "http://gaoloumi.cc/misc.php?mod=ranklist&type=thread&view=heats&orderby=today" },
+                { github, "https://github.com/trending/c%23?since=daily" }
             };
         }
     }
