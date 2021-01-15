@@ -481,6 +481,25 @@ namespace Meowv.Blog.Workers
                             Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
                             break;
                         }
+
+                    case Hot.KnownSources.lssdjt:
+                        {
+                            var html = result as HtmlDocument;
+                            var nodes = html.DocumentNode.SelectNodes("//div[@class='list']/li/a").ToList();
+
+                            nodes.ForEach(x =>
+                            {
+                                hot.Datas.Add(new Data
+                                {
+                                    Title = x.InnerText,
+                                    Url = $"http://m.lssdjt.com/{x.GetAttributeValue("href", "")}"
+                                });
+                            });
+                            hots.Add(hot);
+
+                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            break;
+                        }
                 }
             }
 
