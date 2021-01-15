@@ -8,6 +8,7 @@ using Microsoft.Extensions.Options;
 using Quartz;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Volo.Abp.BackgroundWorkers.Quartz;
 
@@ -48,7 +49,17 @@ namespace Meowv.Blog.Workers
             {
                 var task = await Task.Factory.StartNew(async () =>
                 {
-                    var result = await web.LoadFromWebAsync(item.Value);
+                    var source = item.Key;
+
+                    var encoding = Encoding.UTF8;
+
+                    if (source == Hot.KnownSources.baidu)
+                    {
+                        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+                        encoding = Encoding.GetEncoding("GB2312");
+                    }
+
+                    var result = await web.LoadFromWebAsync(item.Value, encoding);
 
                     return new HotItem<object>
                     {
@@ -202,6 +213,66 @@ namespace Meowv.Blog.Workers
                                         Url = url
                                     });
                                 }
+                            });
+                            hots.Add(hot);
+
+                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            break;
+                        }
+
+                    case Hot.KnownSources.baidu:
+                        {
+                            var html = result as HtmlDocument;
+                            var nodes = html.DocumentNode.SelectNodes("//table[@class='list-table']//tr/td[@class='keyword']/a[@class='list-title']").ToList();
+
+                            nodes.ForEach(x =>
+                            {
+                                hot.Datas.Add(new Data
+                                {
+                                    Title = x.InnerText,
+                                    Url = x.GetAttributeValue("href", "")
+                                });
+                            });
+                            hots.Add(hot);
+
+                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            break;
+                        }
+
+                    case Hot.KnownSources.tieba:
+                        {
+                            var html = result as HtmlDocument;
+                            var nodes = html.DocumentNode.SelectNodes("//ul[@class='topic-top-list']/li//a").ToList();
+
+                            nodes.ForEach(x =>
+                            {
+                                hot.Datas.Add(new Data
+                                {
+                                    Title = x.InnerText,
+                                    Url = x.GetAttributeValue("href", "").Replace("amp;", "")
+                                });
+                            });
+                            hots.Add(hot);
+
+                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            break;
+                        }
+
+                    case Hot.KnownSources.weibo:
+                        {
+                            var html = result as HtmlDocument;
+                            var nodes = html.DocumentNode.SelectNodes("//table/tbody/tr/td[2]/a").ToList();
+
+                            nodes.ForEach(x =>
+                            {
+                                var url = x.GetAttributeValue("href", "");
+                                if (url == "javascript:void(0);") url = x.GetAttributeValue("href_to", "");
+
+                                hot.Datas.Add(new Data
+                                {
+                                    Title = x.InnerText,
+                                    Url = $"https://s.weibo.com{url}",
+                                });
                             });
                             hots.Add(hot);
 

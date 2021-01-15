@@ -30,6 +30,12 @@ namespace Meowv.Blog.Domain.News
 
             public const string kr36 = "36氪";
 
+            public const string baidu = "百度热搜";
+
+            public const string tieba = "百度贴吧";
+
+            public const string weibo = "微博热搜";
+
             public static Dictionary<string, string> Dictionary { get; set; } = new Dictionary<string, string>
             {
                 { cnblogs, "https://www.cnblogs.com" },
@@ -38,7 +44,10 @@ namespace Meowv.Blog.Domain.News
                 { weixin, "https://weixin.sogou.com" },
                 { douban, "https://www.douban.com/group/explore" },
                 { ithome, "https://www.ithome.com" },
-                { kr36, "https://36kr.com/hot-list/catalog" }
+                { kr36, "https://36kr.com/hot-list/catalog" },
+                { baidu, "http://top.baidu.com/buzz?b=341" },
+                { tieba, "http://tieba.baidu.com/hottopic/browse/topicList?res_type=1" },
+                { weibo, "https://s.weibo.com/top/summary/summary" }
             };
         }
     }
