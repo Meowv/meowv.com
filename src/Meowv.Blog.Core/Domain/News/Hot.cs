@@ -44,6 +44,8 @@ namespace Meowv.Blog.Domain.News
 
             public const string toutiao = "开发者头条";
 
+            public const string imooc = "慕星手记";
+
             public const string zhihu = "知乎热榜";
 
             public const string zhihudaily = "知乎日报";
@@ -88,6 +90,7 @@ namespace Meowv.Blog.Domain.News
                 { juejin, "https://api.juejin.cn/recommend_api/v1/article/recommend_all_feed" },
                 { csdn, "https://blog.csdn.net/phoenix/web/blog/hotRank?pageSize=100" },
                 { toutiao, "https://toutiao.io" },
+                { imooc, "https://www.imooc.com/article/excellent?type=3" },
                 { zhihu, "https://www.zhihu.com/api/v3/feed/topstory/hot-lists/total?limit=50" },
                 { zhihudaily, "https://daily.zhihu.com" },
                 { news163, "http://news.163.com/special/0001386F/rank_whole.html" },

@@ -386,6 +386,25 @@ namespace Meowv.Blog.Workers
                             break;
                         }
 
+                    case Hot.KnownSources.imooc:
+                        {
+                            var html = result as HtmlDocument;
+                            var nodes = html.DocumentNode.SelectNodes("//div[@class='articleCon js-usercard-box']/div/div/a[@class='title']").ToList();
+
+                            nodes.ForEach(x =>
+                            {
+                                hot.Datas.Add(new Data
+                                {
+                                    Title = x.InnerText,
+                                    Url = $"https://www.imooc.com{x.GetAttributeValue("href", "")}"
+                                });
+                            });
+                            hots.Add(hot);
+
+                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            break;
+                        }
+
                     case Hot.KnownSources.zhihu:
                         {
                             var json = result as string;
