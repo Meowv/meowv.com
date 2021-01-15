@@ -82,6 +82,7 @@ namespace Meowv.Blog.Workers
                         var encoding = source is Hot.KnownSources.baidu
                                               or Hot.KnownSources.news163
                                               or Hot.KnownSources.pojie52
+                                              or Hot.KnownSources.gaoloumi
                                               ? Encoding.GetEncoding("GB2312") : Encoding.UTF8;
                         result = await web.LoadFromWebAsync(url, encoding);
                     }
@@ -555,6 +556,25 @@ namespace Meowv.Blog.Workers
                                     Url = $"https://www.kaiyanapp.com/detail.html?vid={node["id"]}"
                                 });
                             }
+                            hots.Add(hot);
+
+                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            break;
+                        }
+
+                    case Hot.KnownSources.gaoloumi:
+                        {
+                            var html = result as HtmlDocument;
+                            var nodes = html.DocumentNode.SelectNodes("//div[@class='tl']/table/tr/th/a").ToList();
+
+                            nodes.ForEach(x =>
+                            {
+                                hot.Datas.Add(new Data
+                                {
+                                    Title = x.InnerText,
+                                    Url = $"http://gaoloumi.cc/{x.GetAttributeValue("href", "").Replace("amp;", "")}"
+                                });
+                            });
                             hots.Add(hot);
 
                             Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
