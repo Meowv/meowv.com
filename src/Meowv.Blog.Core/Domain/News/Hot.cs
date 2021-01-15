@@ -36,6 +36,8 @@ namespace Meowv.Blog.Domain.News
 
             public const string weibo = "微博热搜";
 
+            public const string juejin = "掘金";
+
             public const string zhihu = "知乎热榜";
 
             public const string zhihudaily = "知乎日报";
@@ -54,9 +56,10 @@ namespace Meowv.Blog.Domain.News
                 { baidu, "http://top.baidu.com/buzz?b=341" },
                 { tieba, "http://tieba.baidu.com/hottopic/browse/topicList?res_type=1" },
                 { weibo, "https://s.weibo.com/top/summary/summary" },
+                { juejin, "https://api.juejin.cn/recommend_api/v1/article/recommend_all_feed" },
                 { zhihu, "https://www.zhihu.com/api/v3/feed/topstory/hot-lists/total?limit=50" },
                 { zhihudaily, "https://daily.zhihu.com" },
-                { news163, "http://news.163.com/special/0001386F/rank_whole.html" }
+                { news163, "http://news.163.com/special/0001386F/rank_whole.html" },
             };
         }
     }

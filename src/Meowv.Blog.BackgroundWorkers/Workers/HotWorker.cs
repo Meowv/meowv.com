@@ -7,9 +7,11 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 using Quartz;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using Volo.Abp.BackgroundWorkers.Quartz;
@@ -63,6 +65,15 @@ namespace Meowv.Blog.Workers
                     {
                         using var client = _httpClient.CreateClient();
                         result = await client.GetStringAsync(url);
+                    }
+                    else if (source is Hot.KnownSources.juejin)
+                    {
+                        using var client = _httpClient.CreateClient();
+                        var content = new ByteArrayContent("{\"id_type\":2,\"client_type\":2608,\"sort_type\":3,\"cursor\":\"0\",\"limit\":20}".GetBytes());
+                        content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+                        var response = await client.PostAsync(url, content);
+                        result = await response.Content.ReadAsStringAsync();
                     }
                     else
                     {
@@ -282,6 +293,27 @@ namespace Meowv.Blog.Workers
                                     Url = $"https://s.weibo.com{url}",
                                 });
                             });
+                            hots.Add(hot);
+
+                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            break;
+                        }
+
+                    case Hot.KnownSources.juejin:
+                        {
+                            var json = result as string;
+                            var nodes = JObject.Parse(json)["data"];
+
+                            foreach (var node in nodes)
+                            {
+                                if ((int)node["item_type"] == 14) continue;
+
+                                hot.Datas.Add(new Data
+                                {
+                                    Title = node["item_info"]["article_info"]["title"].ToString(),
+                                    Url = $"https://juejin.cn/post/{node["item_info"]["article_id"]}"
+                                });
+                            }
                             hots.Add(hot);
 
                             Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
