@@ -61,12 +61,7 @@ namespace Meowv.Blog.Workers
 
                     var encoding = source is Hot.KnownSources.baidu or Hot.KnownSources.news163 ? Encoding.GetEncoding("GB2312") : Encoding.UTF8;
 
-                    if (source is Hot.KnownSources.zhihu)
-                    {
-                        using var client = _httpClient.CreateClient();
-                        result = await client.GetStringAsync(url);
-                    }
-                    else if (source is Hot.KnownSources.juejin)
+                    if (source is Hot.KnownSources.juejin)
                     {
                         using var client = _httpClient.CreateClient();
                         var content = new ByteArrayContent("{\"id_type\":2,\"client_type\":2608,\"sort_type\":3,\"cursor\":\"0\",\"limit\":20}".GetBytes());
@@ -74,6 +69,11 @@ namespace Meowv.Blog.Workers
 
                         var response = await client.PostAsync(url, content);
                         result = await response.Content.ReadAsStringAsync();
+                    }
+                    else if (source is Hot.KnownSources.zhihu or Hot.KnownSources.huxiu)
+                    {
+                        using var client = _httpClient.CreateClient();
+                        result = await client.GetStringAsync(url);
                     }
                     else
                     {
@@ -390,6 +390,25 @@ namespace Meowv.Blog.Workers
                                     Url = $"https://sspai.com{x.GetAttributeValue("href", "")}",
                                 });
                             });
+                            hots.Add(hot);
+
+                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            break;
+                        }
+
+                    case Hot.KnownSources.huxiu:
+                        {
+                            var json = result as string;
+                            var nodes = JObject.Parse(json)["data"];
+
+                            foreach (var node in nodes)
+                            {
+                                hot.Datas.Add(new Data
+                                {
+                                    Title = node["title"].ToString(),
+                                    Url = $"https://www.huxiu.com/article/{node["aid"]}.html",
+                                });
+                            }
                             hots.Add(hot);
 
                             Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
