@@ -30,7 +30,7 @@
 
             public static string GetFriendlinks() => $"{CachePrefix.Blog_FriendLink}:Get";
 
-            public static string GetSources() => $"{CachePrefix.Hot}:Source";
+            public static string GetSources() => $"{CachePrefix.Hot}:Sources";
 
             public static string GetHots(string source) => $"{CachePrefix.Hot}:{source}";
         }

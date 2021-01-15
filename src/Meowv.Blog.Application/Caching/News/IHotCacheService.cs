@@ -1,4 +1,4 @@
-﻿using Meowv.Blog.Dto.News.Params;
+﻿using Meowv.Blog.Dto.News;
 using Meowv.Blog.Response;
 using System;
 using System.Collections.Generic;
@@ -6,21 +6,21 @@ using System.Threading.Tasks;
 
 namespace Meowv.Blog.Caching.News
 {
-    public interface IHotCacheService
+    public interface IHotCacheService : ICacheRemoveService
     {
         /// <summary>
         /// Get the list of sources from the cache.
         /// </summary>
         /// <param name="func"></param>
         /// <returns></returns>
-        Task<BlogResponse<Dictionary<string, string>>> GetSourcesAsync(Func<Task<BlogResponse<Dictionary<string, string>>>> func);
+        Task<BlogResponse<List<HotSourceDto>>> GetSourcesAsync(Func<Task<BlogResponse<List<HotSourceDto>>>> func);
 
         /// <summary>
-        /// Get the list of hot news by source from the cache.
+        /// Get the list of hot news by id from the cache.
         /// </summary>
-        /// <param name="source"></param>
+        /// <param name="id"></param>
         /// <param name="func"></param>
         /// <returns></returns>
-        Task<BlogResponse<HotDto>> GetHotsAsync(string source, Func<Task<BlogResponse<HotDto>>> func);
+        Task<BlogResponse<HotDto>> GetHotsAsync(string id, Func<Task<BlogResponse<HotDto>>> func);
     }
 }

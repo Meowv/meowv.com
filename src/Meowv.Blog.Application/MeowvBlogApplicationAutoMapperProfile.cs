@@ -2,7 +2,7 @@
 using Meowv.Blog.Domain.Blog;
 using Meowv.Blog.Domain.News;
 using Meowv.Blog.Dto.Blog;
-using Meowv.Blog.Dto.News.Params;
+using Meowv.Blog.Dto.News;
 using Meowv.Blog.Extensions;
 
 namespace Meowv.Blog
@@ -36,6 +36,8 @@ namespace Meowv.Blog
             CreateMap<FriendLink, FriendLinkDto>();
 
             CreateMap<FriendLink, GetAdminFriendLinkDto>();
+
+            CreateMap<Hot, HotSourceDto>();
 
             CreateMap<Hot, HotDto>()
                 .ForMember(x => x.CreatedAt, dto => dto.MapFrom(opt => opt.CreatedAt.ToLocalTime()));

@@ -1,6 +1,6 @@
 ﻿namespace Meowv.Blog.Dto.News
 {
-    public class HotItem<TResult>
+    public class HotItemDto<TResult>
     {
         public string Source { get; set; }
 

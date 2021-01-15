@@ -1,4 +1,4 @@
-﻿using Meowv.Blog.Dto.News.Params;
+﻿using Meowv.Blog.Dto.News;
 using Meowv.Blog.Response;
 using System;
 using System.Collections.Generic;
@@ -8,8 +8,8 @@ namespace Meowv.Blog.Caching.News.Impl
 {
     public class HotCacheService : CachingServiceBase, IHotCacheService
     {
-        public async Task<BlogResponse<Dictionary<string, string>>> GetSourcesAsync(Func<Task<BlogResponse<Dictionary<string, string>>>> func) => await Cache.GetOrAddAsync(CachingConsts.CacheKeys.GetSources(), func, CachingConsts.CacheStrategy.NEVER);
+        public async Task<BlogResponse<List<HotSourceDto>>> GetSourcesAsync(Func<Task<BlogResponse<List<HotSourceDto>>>> func) => await Cache.GetOrAddAsync(CachingConsts.CacheKeys.GetSources(), func, CachingConsts.CacheStrategy.ONE_HOURS);
 
-        public async Task<BlogResponse<HotDto>> GetHotsAsync(string source, Func<Task<BlogResponse<HotDto>>> func) => await Cache.GetOrAddAsync(CachingConsts.CacheKeys.GetHots(source), func, CachingConsts.CacheStrategy.ONE_HOURS);
+        public async Task<BlogResponse<HotDto>> GetHotsAsync(string id, Func<Task<BlogResponse<HotDto>>> func) => await Cache.GetOrAddAsync(CachingConsts.CacheKeys.GetHots(id), func, CachingConsts.CacheStrategy.ONE_HOURS);
     }
 }

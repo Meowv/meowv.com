@@ -1,7 +1,8 @@
 ﻿using Meowv.Blog.Caching.News;
 using Meowv.Blog.Domain.News;
 using Meowv.Blog.Domain.News.Repositories;
-using Meowv.Blog.Dto.News.Params;
+using Meowv.Blog.Dto.News;
+using Meowv.Blog.Extensions;
 using Meowv.Blog.Response;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
@@ -25,36 +26,39 @@ namespace Meowv.Blog.News.Impl
         /// </summary>
         /// <returns></returns>
         [Route("api/meowv/hots/source")]
-        public async Task<BlogResponse<Dictionary<string, string>>> GetSourcesAsync()
+        public async Task<BlogResponse<List<HotSourceDto>>> GetSourcesAsync()
         {
             return await _cache.GetSourcesAsync(async () =>
             {
-                return await Task.FromResult(new BlogResponse<Dictionary<string, string>>
-                {
-                    Result = Hot.KnownSources.Dictionary
-                });
+                var response = new BlogResponse<List<HotSourceDto>>();
+
+                var hots = await _hots.GetSourcesAsync();
+                var result = ObjectMapper.Map<List<Hot>, List<HotSourceDto>>(hots);
+
+                response.Result = result;
+                return response;
             });
         }
 
         /// <summary>
-        /// Get the list of hot news by source.
+        /// Get the list of hot news by id.
         /// </summary>
-        /// <param name="source"></param>
+        /// <param name="id"></param>
         /// <returns></returns>
-        [Route("api/meowv/hots/{source}")]
-        public async Task<BlogResponse<HotDto>> GetHotsAsync(string source)
+        [Route("api/meowv/hots/{id}")]
+        public async Task<BlogResponse<HotDto>> GetHotsAsync(string id)
         {
-            return await _cache.GetHotsAsync(source, async () =>
+            return await _cache.GetHotsAsync(id, async () =>
             {
                 var response = new BlogResponse<HotDto>();
 
-                if (!Hot.KnownSources.Dictionary.ContainsKey(source))
+                var hot = await _hots.GetAsync(id.ToObjectId());
+                if (hot is null)
                 {
-                    response.IsFailed($"The hot source not exists.");
+                    response.IsFailed($"The hot id not exists.");
                     return response;
                 }
 
-                var hot = await _hots.GetAsync(x => x.Source == source);
                 var result = ObjectMapper.Map<Hot, HotDto>(hot);
 
                 response.Result = result;

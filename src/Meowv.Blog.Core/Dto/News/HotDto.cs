@@ -1,7 +1,7 @@
 ﻿using Meowv.Blog.Domain.News;
 using System.Collections.Generic;
 
-namespace Meowv.Blog.Dto.News.Params
+namespace Meowv.Blog.Dto.News
 {
     public class HotDto
     {

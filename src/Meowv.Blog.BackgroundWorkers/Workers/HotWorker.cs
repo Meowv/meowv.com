@@ -49,7 +49,7 @@ namespace Meowv.Blog.Workers
         {
             Logger.LogInformation("开始抓取热点数据...");
 
-            var tasks = new List<Task<HotItem<object>>>();
+            var tasks = new List<Task<HotItemDto<object>>>();
             var web = new HtmlWeb();
 
             foreach (var item in Hot.KnownSources.Dictionary)
@@ -93,7 +93,7 @@ namespace Meowv.Blog.Workers
                             }
                     }
 
-                    return new HotItem<object>
+                    return new HotItemDto<object>
                     {
                         Source = item.Key,
                         Result = result
