@@ -19,6 +19,9 @@ namespace Meowv.Blog
             {
                 options.IsAutoRegisterEnabled = option.IsEnabled;
             });
+
+
+            context.Services.AddHttpClient();
         }
     }
 }

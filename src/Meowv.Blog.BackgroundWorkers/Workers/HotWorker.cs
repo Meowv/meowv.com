@@ -5,9 +5,11 @@ using Meowv.Blog.Dto.News;
 using Meowv.Blog.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json.Linq;
 using Quartz;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Volo.Abp.BackgroundWorkers.Quartz;
@@ -17,10 +19,12 @@ namespace Meowv.Blog.Workers
     public class HotWorker : QuartzBackgroundWorkerBase
     {
         private readonly IHotRepository _hots;
+        private readonly IHttpClientFactory _httpClient;
 
-        public HotWorker(IOptions<WorkerOptions> backgroundWorkerOptions, IHotRepository hots)
+        public HotWorker(IOptions<WorkerOptions> backgroundWorkerOptions, IHotRepository hots, IHttpClientFactory httpClient)
         {
             _hots = hots;
+            _httpClient = httpClient;
 
             JobDetail = JobBuilder.Create<HotWorker>().WithIdentity(nameof(HotWorker)).Build();
 
@@ -49,8 +53,9 @@ namespace Meowv.Blog.Workers
             {
                 var task = await Task.Factory.StartNew(async () =>
                 {
+                    var result = new object();
                     var source = item.Key;
-
+                    var url = item.Value;
                     var encoding = Encoding.UTF8;
 
                     if (source == Hot.KnownSources.baidu)
@@ -59,7 +64,15 @@ namespace Meowv.Blog.Workers
                         encoding = Encoding.GetEncoding("GB2312");
                     }
 
-                    var result = await web.LoadFromWebAsync(item.Value, encoding);
+                    if (source == Hot.KnownSources.zhihu)
+                    {
+                        using var client = _httpClient.CreateClient();
+                        result = await client.GetStringAsync(url);
+                    }
+                    else
+                    {
+                        result = await web.LoadFromWebAsync(url, encoding);
+                    }
 
                     return new HotItem<object>
                     {
@@ -274,6 +287,25 @@ namespace Meowv.Blog.Workers
                                     Url = $"https://s.weibo.com{url}",
                                 });
                             });
+                            hots.Add(hot);
+
+                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            break;
+                        }
+
+                    case Hot.KnownSources.zhihu:
+                        {
+                            var json = result as string;
+                            var nodes = JObject.Parse(json)["data"];
+
+                            foreach (var node in nodes)
+                            {
+                                hot.Datas.Add(new Data
+                                {
+                                    Title = node["target"]["title"].ToString(),
+                                    Url = $"https://www.zhihu.com/question/{node["target"]["id"]}",
+                                });
+                            }
                             hots.Add(hot);
 
                             Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
