@@ -52,6 +52,8 @@ namespace Meowv.Blog.Domain.News
 
             public const string sspai = "少数派";
 
+            public const string woshipm = "人人都是产品经理";
+
             public const string huxiu = "虎嗅网";
 
             public const string jandan = "煎蛋";
@@ -90,6 +92,7 @@ namespace Meowv.Blog.Domain.News
                 { zhihudaily, "https://daily.zhihu.com" },
                 { news163, "http://news.163.com/special/0001386F/rank_whole.html" },
                 { sspai, "https://sspai.com/tag/%E7%83%AD%E9%97%A8%E6%96%87%E7%AB%A0" },
+                { woshipm, "http://www.woshipm.com/__api/v1/browser/popular" },
                 { huxiu, "https://article-api.huxiu.com/web/index/articleList?platform=www" },
                 { jandan, "http://jandan.net/top" },
                 { pojie52, "https://www.52pojie.cn/misc.php?mod=ranklist&type=thread&view=heats&orderby=today" },

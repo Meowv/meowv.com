@@ -73,6 +73,7 @@ namespace Meowv.Blog.Workers
                                     or Hot.KnownSources.zhihu
                                     or Hot.KnownSources.huxiu
                                     or Hot.KnownSources.douyin
+                                    or Hot.KnownSources.woshipm
                                     or Hot.KnownSources.kaiyan)
                     {
                         using var client = _httpClient.CreateClient();
@@ -455,6 +456,25 @@ namespace Meowv.Blog.Workers
                                     Url = $"https://sspai.com{x.GetAttributeValue("href", "")}",
                                 });
                             });
+                            hots.Add(hot);
+
+                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            break;
+                        }
+
+                    case Hot.KnownSources.woshipm:
+                        {
+                            var json = result as string;
+                            var nodes = JObject.Parse(json)["payload"];
+
+                            foreach (var node in nodes)
+                            {
+                                hot.Datas.Add(new Data
+                                {
+                                    Title = node["title"].ToString(),
+                                    Url = node["permalink"].ToString()
+                                });
+                            }
                             hots.Add(hot);
 
                             Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
