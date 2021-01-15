@@ -1,5 +1,6 @@
 ﻿using Meowv.Blog.Options;
 using Microsoft.Extensions.DependencyInjection;
+using System.Text;
 using Volo.Abp.BackgroundWorkers.Quartz;
 using Volo.Abp.Modularity;
 
@@ -20,8 +21,9 @@ namespace Meowv.Blog
                 options.IsAutoRegisterEnabled = option.IsEnabled;
             });
 
-
             context.Services.AddHttpClient();
+
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         }
     }
 }

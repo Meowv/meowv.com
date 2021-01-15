@@ -40,6 +40,8 @@ namespace Meowv.Blog.Domain.News
 
             public const string zhihudaily = "知乎日报";
 
+            public const string news163 = "网易新闻";
+
             public static Dictionary<string, string> Dictionary { get; set; } = new Dictionary<string, string>
             {
                 { cnblogs, "https://www.cnblogs.com" },
@@ -53,7 +55,8 @@ namespace Meowv.Blog.Domain.News
                 { tieba, "http://tieba.baidu.com/hottopic/browse/topicList?res_type=1" },
                 { weibo, "https://s.weibo.com/top/summary/summary" },
                 { zhihu, "https://www.zhihu.com/api/v3/feed/topstory/hot-lists/total?limit=50" },
-                { zhihudaily, "https://daily.zhihu.com" }
+                { zhihudaily, "https://daily.zhihu.com" },
+                { news163, "http://news.163.com/special/0001386F/rank_whole.html" }
             };
         }
     }

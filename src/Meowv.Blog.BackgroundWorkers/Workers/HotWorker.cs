@@ -56,15 +56,10 @@ namespace Meowv.Blog.Workers
                     var result = new object();
                     var source = item.Key;
                     var url = item.Value;
-                    var encoding = Encoding.UTF8;
+                    
+                    var encoding = source is Hot.KnownSources.baidu or Hot.KnownSources.news163 ? Encoding.GetEncoding("GB2312") : Encoding.UTF8;
 
-                    if (source == Hot.KnownSources.baidu)
-                    {
-                        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-                        encoding = Encoding.GetEncoding("GB2312");
-                    }
-
-                    if (source == Hot.KnownSources.zhihu)
+                    if (source is Hot.KnownSources.zhihu)
                     {
                         using var client = _httpClient.CreateClient();
                         result = await client.GetStringAsync(url);
@@ -323,6 +318,25 @@ namespace Meowv.Blog.Workers
                                 {
                                     Title = x.InnerText,
                                     Url = $"https://daily.zhihu.com{x.GetAttributeValue("href", "")}",
+                                });
+                            });
+                            hots.Add(hot);
+
+                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            break;
+                        }
+
+                    case Hot.KnownSources.news163:
+                        {
+                            var html = result as HtmlDocument;
+                            var nodes = html.DocumentNode.SelectNodes("//div[@class='area-half left']/div[@class='tabBox']/div[@class='tabContents active']/table//tr/td[1]/a").ToList();
+
+                            nodes.ForEach(x =>
+                            {
+                                hot.Datas.Add(new Data
+                                {
+                                    Title = x.InnerText,
+                                    Url = x.GetAttributeValue("href", ""),
                                 });
                             });
                             hots.Add(hot);
