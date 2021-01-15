@@ -69,7 +69,10 @@ namespace Meowv.Blog.Workers
                         var response = await client.PostAsync(url, content);
                         result = await response.Content.ReadAsStringAsync();
                     }
-                    else if (source is Hot.KnownSources.zhihu or Hot.KnownSources.huxiu or Hot.KnownSources.douyin)
+                    else if (source is Hot.KnownSources.zhihu
+                                    or Hot.KnownSources.huxiu
+                                    or Hot.KnownSources.douyin
+                                    or Hot.KnownSources.kaiyan)
                     {
                         using var client = _httpClient.CreateClient();
                         result = await client.GetStringAsync(url);
@@ -530,7 +533,26 @@ namespace Meowv.Blog.Workers
                                 hot.Datas.Add(new Data
                                 {
                                     Title = node["aweme_info"]["desc"].ToString(),
-                                    Url = node["aweme_info"]["share_url"].ToString(),
+                                    Url = node["aweme_info"]["share_url"].ToString()
+                                });
+                            }
+                            hots.Add(hot);
+
+                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            break;
+                        }
+
+                    case Hot.KnownSources.kaiyan:
+                        {
+                            var json = result as string;
+                            var nodes = JObject.Parse(json)["dailyList"].FirstOrDefault()["videoList"];
+
+                            foreach (var node in nodes)
+                            {
+                                hot.Datas.Add(new Data
+                                {
+                                    Title = node["title"].ToString(),
+                                    Url = $"https://www.kaiyanapp.com/detail.html?vid={node["id"]}"
                                 });
                             }
                             hots.Add(hot);
