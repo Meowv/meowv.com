@@ -58,6 +58,8 @@ namespace Meowv.Blog.Domain.News
 
             public const string bilibili = "哔哩哔哩";
 
+            public const string douyin = "抖音";
+
             public static Dictionary<string, string> Dictionary { get; set; } = new Dictionary<string, string>
             {
                 { cnblogs, "https://www.cnblogs.com" },
@@ -80,7 +82,8 @@ namespace Meowv.Blog.Domain.News
                 { pojie52, "https://www.52pojie.cn/misc.php?mod=ranklist&type=thread&view=heats&orderby=today" },
                 { tianya, "http://bbs.tianya.cn/list.jsp?item=free&grade=3&order=1" },
                 { lssdjt, "http://m.lssdjt.com" },
-                { bilibili, "https://www.bilibili.com/v/popular/rank/all" }
+                { bilibili, "https://www.bilibili.com/v/popular/rank/all" },
+                { douyin, "https://www.iesdouyin.com/web/api/v2/hotsearch/billboard/aweme/" }
             };
         }
     }

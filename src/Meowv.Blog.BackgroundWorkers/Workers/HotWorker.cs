@@ -69,7 +69,7 @@ namespace Meowv.Blog.Workers
                         var response = await client.PostAsync(url, content);
                         result = await response.Content.ReadAsStringAsync();
                     }
-                    else if (source is Hot.KnownSources.zhihu or Hot.KnownSources.huxiu)
+                    else if (source is Hot.KnownSources.zhihu or Hot.KnownSources.huxiu or Hot.KnownSources.douyin)
                     {
                         using var client = _httpClient.CreateClient();
                         result = await client.GetStringAsync(url);
@@ -514,6 +514,25 @@ namespace Meowv.Blog.Workers
                                     Url = $"https{x.GetAttributeValue("href", "")}"
                                 });
                             });
+                            hots.Add(hot);
+
+                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            break;
+                        }
+
+                    case Hot.KnownSources.douyin:
+                        {
+                            var json = result as string;
+                            var nodes = JObject.Parse(json)["aweme_list"];
+
+                            foreach (var node in nodes)
+                            {
+                                hot.Datas.Add(new Data
+                                {
+                                    Title = node["aweme_info"]["desc"].ToString(),
+                                    Url = node["aweme_info"]["share_url"].ToString(),
+                                });
+                            }
                             hots.Add(hot);
 
                             Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
