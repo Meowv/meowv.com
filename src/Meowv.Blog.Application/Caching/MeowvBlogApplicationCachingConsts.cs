@@ -10,6 +10,8 @@
             public const string Blog_Category = Blog + ":Category";
             public const string Blog_Tag = Blog + ":Tag";
             public const string Blog_FriendLink = Blog + ":FriendLink";
+
+            public const string Hot = "Hot";
         }
 
         public class CacheKeys
@@ -27,8 +29,12 @@
             public static string GetTags() => $"{CachePrefix.Blog_Tag}:Get";
 
             public static string GetFriendlinks() => $"{CachePrefix.Blog_FriendLink}:Get";
+
+            public static string GetSources() => $"{CachePrefix.Hot}:Source";
+
+            public static string GetHots(string source) => $"{CachePrefix.Hot}:{source}";
         }
-       
+
         public class CacheStrategy
         {
             /// <summary>

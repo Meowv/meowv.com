@@ -7,8 +7,8 @@ namespace Meowv.Blog.News
 {
     public interface IHotService
     {
-        Task<BlogResponse<Dictionary<string, string>>> GetSources();
+        Task<BlogResponse<Dictionary<string, string>>> GetSourcesAsync();
 
-        Task<BlogResponse<HotDto>> GetHots(string source);
+        Task<BlogResponse<HotDto>> GetHotsAsync(string source);
     }
 }

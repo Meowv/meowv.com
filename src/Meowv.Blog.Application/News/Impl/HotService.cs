@@ -1,4 +1,5 @@
-﻿using Meowv.Blog.Domain.News;
+﻿using Meowv.Blog.Caching.News;
+using Meowv.Blog.Domain.News;
 using Meowv.Blog.Domain.News.Repositories;
 using Meowv.Blog.Dto.News.Params;
 using Meowv.Blog.Response;
@@ -11,10 +12,12 @@ namespace Meowv.Blog.News.Impl
     public class HotService : ServiceBase, IHotService
     {
         private readonly IHotRepository _hots;
+        private readonly IHotCacheService _cache;
 
-        public HotService(IHotRepository hots)
+        public HotService(IHotRepository hots, IHotCacheService cache)
         {
             _hots = hots;
+            _cache = cache;
         }
 
         /// <summary>
@@ -22,11 +25,14 @@ namespace Meowv.Blog.News.Impl
         /// </summary>
         /// <returns></returns>
         [Route("api/meowv/hots/source")]
-        public async Task<BlogResponse<Dictionary<string, string>>> GetSources()
+        public async Task<BlogResponse<Dictionary<string, string>>> GetSourcesAsync()
         {
-            return await Task.FromResult(new BlogResponse<Dictionary<string, string>>
+            return await _cache.GetSourcesAsync(async () =>
             {
-                Result = Hot.KnownSources.Dictionary
+                return await Task.FromResult(new BlogResponse<Dictionary<string, string>>
+                {
+                    Result = Hot.KnownSources.Dictionary
+                });
             });
         }
 
@@ -36,21 +42,24 @@ namespace Meowv.Blog.News.Impl
         /// <param name="source"></param>
         /// <returns></returns>
         [Route("api/meowv/hots/{source}")]
-        public async Task<BlogResponse<HotDto>> GetHots(string source)
+        public async Task<BlogResponse<HotDto>> GetHotsAsync(string source)
         {
-            var response = new BlogResponse<HotDto>();
-
-            if (!Hot.KnownSources.Dictionary.ContainsKey(source))
+            return await _cache.GetHotsAsync(source, async () =>
             {
-                response.IsFailed($"The hot source not exists.");
+                var response = new BlogResponse<HotDto>();
+
+                if (!Hot.KnownSources.Dictionary.ContainsKey(source))
+                {
+                    response.IsFailed($"The hot source not exists.");
+                    return response;
+                }
+
+                var hot = await _hots.GetAsync(x => x.Source == source);
+                var result = ObjectMapper.Map<Hot, HotDto>(hot);
+
+                response.Result = result;
                 return response;
-            }
-
-            var hot = await _hots.GetAsync(x => x.Source == source);
-            var result = ObjectMapper.Map<Hot, HotDto>(hot);
-
-            response.Result = result;
-            return response;
+            });
         }
     }
 }
