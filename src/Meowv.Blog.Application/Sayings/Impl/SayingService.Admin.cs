@@ -3,6 +3,7 @@ using Meowv.Blog.Dto.Sayings;
 using Meowv.Blog.Dto.Sayings.Params;
 using Meowv.Blog.Extensions;
 using Meowv.Blog.Response;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,6 +18,7 @@ namespace Meowv.Blog.Sayings.Impl
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
+        [Authorize]
         [Route("api/meowv/saying")]
         public async Task<BlogResponse> CreateAsync(CreateInput input)
         {
@@ -36,6 +38,7 @@ namespace Meowv.Blog.Sayings.Impl
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
+        [Authorize]
         [Route("api/meowv/saying/{id}")]
         public async Task<BlogResponse> DeleteAsync(string id)
         {
@@ -59,6 +62,7 @@ namespace Meowv.Blog.Sayings.Impl
         /// <param name="page"></param>
         /// <param name="limit"></param>
         /// <returns></returns>
+        [Authorize]
         [Route("api/meowv/sayings/{page}/{limit}")]
         public async Task<BlogResponse<PagedList<SayingDto>>> GetSayingsAsync(int page, int limit)
         {
