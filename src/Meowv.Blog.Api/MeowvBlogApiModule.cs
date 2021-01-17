@@ -70,7 +70,7 @@ namespace Meowv.Blog.Api
         {
             Configure<AbpAspNetCoreMvcOptions>(options =>
             {
-                options.ConventionalControllers.Create(typeof(MeowvBlogApplicationModule).Assembly, opts => { opts.RootPath = "meowv"; });
+                options.ConventionalControllers.Create(typeof(MeowvBlogApplicationModule).Assembly);
             });
         }
 

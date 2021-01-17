@@ -4,6 +4,7 @@ using Meowv.Blog.Dto.Blog.Params;
 using Meowv.Blog.Extensions;
 using Meowv.Blog.Response;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -17,6 +18,7 @@ namespace Meowv.Blog.Blog.Impl
         /// <param name="input"></param>
         /// <returns></returns>
         [Authorize]
+        [Route("api/meowv/blog/category")]
         public async Task<BlogResponse> CreateCategoryAsync(CreateCategoryInput input)
         {
             var response = new BlogResponse();
@@ -43,6 +45,7 @@ namespace Meowv.Blog.Blog.Impl
         /// <param name="id"></param>
         /// <returns></returns>
         [Authorize]
+        [Route("api/meowv/blog/category/{id}")]
         public async Task<BlogResponse> DeleteCategoryAsync(string id)
         {
             var response = new BlogResponse();
@@ -66,6 +69,7 @@ namespace Meowv.Blog.Blog.Impl
         /// <param name="input"></param>
         /// <returns></returns>
         [Authorize]
+        [Route("api/meowv/blog/category/{id}")]
         public async Task<BlogResponse> UpdateCategoryAsync(string id, UpdateCategoryInput input)
         {
             var response = new BlogResponse();
@@ -90,6 +94,7 @@ namespace Meowv.Blog.Blog.Impl
         /// </summary>
         /// <returns></returns>
         [Authorize]
+        [Route("api/meowv/blog/admin/categories")]
         public async Task<BlogResponse<List<GetAdminCategoryDto>>> GetAdminCategoriesAsync()
         {
             var response = new BlogResponse<List<GetAdminCategoryDto>>();

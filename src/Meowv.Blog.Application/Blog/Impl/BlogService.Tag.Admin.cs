@@ -4,6 +4,7 @@ using Meowv.Blog.Dto.Blog.Params;
 using Meowv.Blog.Extensions;
 using Meowv.Blog.Response;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -17,6 +18,7 @@ namespace Meowv.Blog.Blog.Impl
         /// <param name="input"></param>
         /// <returns></returns>
         [Authorize]
+        [Route("api/meowv/blog/tag")]
         public async Task<BlogResponse> CreateTagAsync(CreateTagInput input)
         {
             var response = new BlogResponse();
@@ -43,6 +45,7 @@ namespace Meowv.Blog.Blog.Impl
         /// <param name="id"></param>
         /// <returns></returns>
         [Authorize]
+        [Route("api/meowv/blog/tag/{id}")]
         public async Task<BlogResponse> DeleteTagAsync(string id)
         {
             var response = new BlogResponse();
@@ -66,6 +69,7 @@ namespace Meowv.Blog.Blog.Impl
         /// <param name="input"></param>
         /// <returns></returns>
         [Authorize]
+        [Route("api/meowv/blog/tag/{id}")]
         public async Task<BlogResponse> UpdateTagAsync(string id, UpdateTagInput input)
         {
             var response = new BlogResponse();
@@ -90,6 +94,7 @@ namespace Meowv.Blog.Blog.Impl
         /// </summary>
         /// <returns></returns>
         [Authorize]
+        [Route("api/meowv/blog/admin/tags")]
         public async Task<BlogResponse<List<GetAdminTagDto>>> GetAdminTagsAsync()
         {
             var response = new BlogResponse<List<GetAdminTagDto>>();

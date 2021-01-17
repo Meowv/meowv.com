@@ -1,5 +1,6 @@
 ﻿using Meowv.Blog.Dto.Blog;
 using Meowv.Blog.Response;
+using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -12,6 +13,7 @@ namespace Meowv.Blog.Blog.Impl
         /// Get the list of tags.
         /// </summary>
         /// <returns></returns>
+        [Route("api/meowv/blog/tags")]
         public async Task<BlogResponse<List<GetTagDto>>> GetTagsAsync()
         {
             return await _cache.GetTagsAsync(async () =>

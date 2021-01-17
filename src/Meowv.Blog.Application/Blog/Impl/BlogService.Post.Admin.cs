@@ -20,6 +20,7 @@ namespace Meowv.Blog.Blog.Impl
         /// <param name="input"></param>
         /// <returns></returns>
         [Authorize]
+        [Route("api/meowv/blog/post")]
         public async Task<BlogResponse> CreatePostAsync(CreatePostInput input)
         {
             var response = new BlogResponse();
@@ -57,6 +58,7 @@ namespace Meowv.Blog.Blog.Impl
         /// <param name="id"></param>
         /// <returns></returns>
         [Authorize]
+        [Route("api/meowv/blog/post/{id}")]
         public async Task<BlogResponse> DeletePostAsync(string id)
         {
             var response = new BlogResponse();
@@ -80,6 +82,7 @@ namespace Meowv.Blog.Blog.Impl
         /// <param name="input"></param>
         /// <returns></returns>
         [Authorize]
+        [Route("api/meowv/blog/post/{id}")]
         public async Task<BlogResponse> UpdatePostAsync(string id, UpdatePostInput input)
         {
             var response = new BlogResponse();
@@ -121,6 +124,7 @@ namespace Meowv.Blog.Blog.Impl
         /// <param name="id"></param>
         /// <returns></returns>
         [Authorize]
+        [Route("api/meowv/blog/post/{id}")]
         public async Task<BlogResponse<PostDto>> GetPostAsync(string id)
         {
             var response = new BlogResponse<PostDto>();
@@ -145,7 +149,7 @@ namespace Meowv.Blog.Blog.Impl
         /// <param name="limit"></param>
         /// <returns></returns>
         [Authorize]
-        [Route("api/meowv/blog/admin-posts/{page}/{limit}")]
+        [Route("api/meowv/blog/admin/posts/{page}/{limit}")]
         public async Task<BlogResponse<PagedList<GetAdminPostDto>>> GetAdminPostsAsync([Range(1, 100)] int page = 1, [Range(10, 100)] int limit = 10)
         {
             var response = new BlogResponse<PagedList<GetAdminPostDto>>();
