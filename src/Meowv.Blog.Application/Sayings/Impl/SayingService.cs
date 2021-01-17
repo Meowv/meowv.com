@@ -1,4 +1,6 @@
 ﻿using Meowv.Blog.Domain.Sayings.Repositories;
+using Meowv.Blog.Response;
+using System.Threading.Tasks;
 
 namespace Meowv.Blog.Sayings.Impl
 {
@@ -9,6 +11,20 @@ namespace Meowv.Blog.Sayings.Impl
         public SayingService(ISayingRepository sayings)
         {
             _sayings = sayings;
+        }
+
+        /// <summary>
+        /// Get a saying.
+        /// </summary>
+        /// <returns></returns>
+        public async Task<BlogResponse<string>> GetRandomAsync()
+        {
+            var response = new BlogResponse<string>();
+
+            var saying = await _sayings.GetRandomAsync();
+
+            response.Result = saying.Content;
+            return response;
         }
     }
 }
