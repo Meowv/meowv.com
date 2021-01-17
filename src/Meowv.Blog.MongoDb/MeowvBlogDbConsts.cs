@@ -28,6 +28,11 @@
             /// Hot
             /// </summary>
             public const string Hot = "meowv_blog_hots";
+
+            /// <summary>
+            /// Saying
+            /// </summary>
+            public const string Saying = "meowv_blog_sayings";
         }
     }
 }
