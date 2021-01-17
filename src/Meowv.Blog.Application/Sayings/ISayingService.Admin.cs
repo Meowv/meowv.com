@@ -7,5 +7,7 @@ namespace Meowv.Blog.Sayings
     public partial interface ISayingService
     {
         Task<BlogResponse> CreateAsync(CreateInput input);
+
+        Task<BlogResponse> DeleteAsync(string id);
     }
 }
