@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System;
 using System.Globalization;
+using System.Text;
 
 namespace Meowv.Blog.Extensions
 {
@@ -75,6 +76,17 @@ namespace Meowv.Blog.Extensions
         public static string FormatTime(this DateTime time)
         {
             return time.ToString("MMMM dd, yyyy HH:mm", new CultureInfo("en-us"));
+        }
+
+        /// <summary>
+        /// Base64 decode
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public static string Base64Decode(this string data)
+        {
+            byte[] bytes = Convert.FromBase64String(data);
+            return Encoding.UTF8.GetString(bytes);
         }
     }
 }
