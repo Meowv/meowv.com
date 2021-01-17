@@ -1,6 +1,8 @@
 ﻿using Meowv.Blog.Options;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System.Linq;
+using Volo.Abp;
 using Volo.Abp.Domain;
 using Volo.Abp.Modularity;
 
@@ -18,6 +20,7 @@ namespace Meowv.Blog
             var cors = new CorsOptions();
             var jwt = new JwtOptions();
             var worker = new WorkerOptions();
+            var signature = new SignatureOptions();
             var authorize = new AuthorizeOptions();
 
             PreConfigure<SwaggerOptions>(options =>
@@ -76,6 +79,20 @@ namespace Meowv.Blog
 
                 worker = options;
             });
+
+            PreConfigure<SignatureOptions>(options =>
+            {
+                var signatureOption = configuration.GetSection("signature");
+                Configure<SignatureOptions>(configuration);
+
+                 options.Path = signatureOption.GetValue<string>(nameof(options.Path));
+
+                var urls = signatureOption.GetValue<string>(nameof(options.Urls));
+
+
+                signature = options;
+            });
+
             PreConfigure<AuthorizeOptions>(options =>
             {
                 var authorizeOption = configuration.GetSection("authorize");
@@ -120,6 +137,7 @@ namespace Meowv.Blog
                 options.Cors = cors;
                 options.Jwt = jwt;
                 options.Worker = worker;
+                options.Signature = signature;
                 options.Authorize = authorize;
             });
         }
@@ -131,6 +149,7 @@ namespace Meowv.Blog
             context.Services.ExecutePreConfiguredActions<CorsOptions>();
             context.Services.ExecutePreConfiguredActions<JwtOptions>();
             context.Services.ExecutePreConfiguredActions<WorkerOptions>();
+            context.Services.ExecutePreConfiguredActions<SignatureOptions>();
             context.Services.ExecutePreConfiguredActions<AuthorizeOptions>();
         }
     }

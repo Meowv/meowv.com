@@ -28,6 +28,11 @@
         public WorkerOptions Worker { get; set; }
 
         /// <summary>
+        /// Signature
+        /// </summary>
+        public SignatureOptions Signature { get; set; }
+
+        /// <summary>
         /// Authorize
         /// </summary>
         public AuthorizeOptions Authorize { get; set; }
