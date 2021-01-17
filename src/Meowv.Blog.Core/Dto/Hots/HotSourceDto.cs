@@ -1,6 +1,6 @@
 ﻿using Volo.Abp.Domain.Entities;
 
-namespace Meowv.Blog.Dto.News
+namespace Meowv.Blog.Dto.Hots
 {
     public class HotSourceDto : Entity<string>
     {

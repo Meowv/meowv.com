@@ -234,7 +234,7 @@ namespace Meowv.Blog.Api
                 options.HeadContent = @"<style>.opblock-summary-description{font-weight: bold;text-align: right;}</style>";
                 options.SwaggerEndpoint($"/swagger/{AppOptions.Swagger.Name}/swagger.json", AppOptions.Swagger.Title);
                 options.DefaultModelsExpandDepth(-1);
-                options.DocExpansion(DocExpansion.List);
+                options.DocExpansion(DocExpansion.None);
                 options.RoutePrefix = AppOptions.Swagger.RoutePrefix;
                 options.DocumentTitle = AppOptions.Swagger.DocumentTitle;
             });

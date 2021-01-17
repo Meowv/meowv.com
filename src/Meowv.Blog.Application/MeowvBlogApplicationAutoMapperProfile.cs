@@ -1,8 +1,8 @@
 ﻿using AutoMapper;
 using Meowv.Blog.Domain.Blog;
-using Meowv.Blog.Domain.News;
+using Meowv.Blog.Domain.Hots;
 using Meowv.Blog.Dto.Blog;
-using Meowv.Blog.Dto.News;
+using Meowv.Blog.Dto.Hots;
 using Meowv.Blog.Extensions;
 
 namespace Meowv.Blog

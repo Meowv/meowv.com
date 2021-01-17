@@ -1,4 +1,4 @@
-﻿namespace Meowv.Blog.Dto.News
+﻿namespace Meowv.Blog.Dto.Hots
 {
     public class HotItemDto<TResult>
     {

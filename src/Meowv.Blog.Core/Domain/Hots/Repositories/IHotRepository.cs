@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Volo.Abp.Domain.Repositories;
 
-namespace Meowv.Blog.Domain.News.Repositories
+namespace Meowv.Blog.Domain.Hots.Repositories
 {
     public interface IHotRepository : IRepository<Hot, ObjectId>, IBulkRepository<Hot>
     {

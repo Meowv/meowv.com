@@ -1,5 +1,5 @@
 ﻿using Meowv.Blog.Domain.Blog;
-using Meowv.Blog.Domain.News;
+using Meowv.Blog.Domain.Hots;
 using Meowv.Blog.Domain.Sayings;
 using MongoDB.Driver;
 using Volo.Abp.MongoDB;

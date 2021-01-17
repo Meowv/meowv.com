@@ -1,7 +1,7 @@
-﻿using Meowv.Blog.Domain.News;
+﻿using Meowv.Blog.Domain.Hots;
 using System.Collections.Generic;
 
-namespace Meowv.Blog.Dto.News
+namespace Meowv.Blog.Dto.Hots
 {
     public class HotDto
     {

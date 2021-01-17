@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Meowv.Blog.Domain.News
+namespace Meowv.Blog.Domain.Hots
 {
     public class Hot : EntityBase
     {

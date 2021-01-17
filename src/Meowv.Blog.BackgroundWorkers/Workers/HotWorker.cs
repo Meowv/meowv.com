@@ -1,7 +1,7 @@
 ﻿using HtmlAgilityPack;
-using Meowv.Blog.Domain.News;
-using Meowv.Blog.Domain.News.Repositories;
-using Meowv.Blog.Dto.News;
+using Meowv.Blog.Domain.Hots;
+using Meowv.Blog.Domain.Hots.Repositories;
+using Meowv.Blog.Dto.Hots;
 using Meowv.Blog.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

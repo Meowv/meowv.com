@@ -1,9 +1,9 @@
-﻿using Meowv.Blog.Dto.News;
+﻿using Meowv.Blog.Dto.Hots;
 using Meowv.Blog.Response;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Meowv.Blog.News
+namespace Meowv.Blog.Hots
 {
     public interface IHotService
     {

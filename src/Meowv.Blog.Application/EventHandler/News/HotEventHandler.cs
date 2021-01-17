@@ -1,6 +1,6 @@
 ﻿using Meowv.Blog.Caching;
 using Meowv.Blog.Caching.News;
-using Meowv.Blog.Domain.News;
+using Meowv.Blog.Domain.Hots;
 using System.Threading.Tasks;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.Domain.Entities.Events;

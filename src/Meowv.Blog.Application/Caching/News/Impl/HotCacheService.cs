@@ -1,4 +1,4 @@
-﻿using Meowv.Blog.Dto.News;
+﻿using Meowv.Blog.Dto.Hots;
 using Meowv.Blog.Response;
 using System;
 using System.Collections.Generic;
