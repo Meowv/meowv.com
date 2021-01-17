@@ -33,6 +33,11 @@
             /// Saying
             /// </summary>
             public const string Saying = "meowv_blog_sayings";
+
+            /// <summary>
+            /// Signature
+            /// </summary>
+            public const string Signature = "meowv_blog_signatures";
         }
     }
 }
