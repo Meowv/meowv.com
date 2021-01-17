@@ -1,7 +1,10 @@
 ﻿using Meowv.Blog.Domain.Sayings;
+using Meowv.Blog.Dto.Sayings;
 using Meowv.Blog.Dto.Sayings.Params;
 using Meowv.Blog.Extensions;
 using Meowv.Blog.Response;
+using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -14,6 +17,7 @@ namespace Meowv.Blog.Sayings.Impl
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
+        [Route("api/meowv/saying")]
         public async Task<BlogResponse> CreateAsync(CreateInput input)
         {
             var response = new BlogResponse();
@@ -32,6 +36,7 @@ namespace Meowv.Blog.Sayings.Impl
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
+        [Route("api/meowv/saying/{id}")]
         public async Task<BlogResponse> DeleteAsync(string id)
         {
             var response = new BlogResponse();
@@ -45,6 +50,25 @@ namespace Meowv.Blog.Sayings.Impl
 
             await _sayings.DeleteAsync(id.ToObjectId());
 
+            return response;
+        }
+
+        /// <summary>
+        /// Get the list of sayings by paging.
+        /// </summary>
+        /// <param name="page"></param>
+        /// <param name="limit"></param>
+        /// <returns></returns>
+        [Route("api/meowv/sayings/{page}/{limit}")]
+        public async Task<BlogResponse<PagedList<SayingDto>>> GetSayingsAsync(int page, int limit)
+        {
+            var response = new BlogResponse<PagedList<SayingDto>>();
+
+            var result = await _sayings.GetPagedListAsync(page, limit);
+            var total = result.Item1;
+            var sayings = ObjectMapper.Map<List<Saying>, List<SayingDto>>(result.Item2);
+
+            response.Result = new PagedList<SayingDto>(total, sayings);
             return response;
         }
     }

@@ -1,8 +1,10 @@
 ﻿using AutoMapper;
 using Meowv.Blog.Domain.Blog;
 using Meowv.Blog.Domain.Hots;
+using Meowv.Blog.Domain.Sayings;
 using Meowv.Blog.Dto.Blog;
 using Meowv.Blog.Dto.Hots;
+using Meowv.Blog.Dto.Sayings;
 using Meowv.Blog.Extensions;
 
 namespace Meowv.Blog
@@ -41,6 +43,8 @@ namespace Meowv.Blog
 
             CreateMap<Hot, HotDto>()
                 .ForMember(x => x.CreatedAt, dto => dto.MapFrom(opt => opt.CreatedAt.ToLocalTime()));
+
+            CreateMap<Saying, SayingDto>();
         }
     }
 }

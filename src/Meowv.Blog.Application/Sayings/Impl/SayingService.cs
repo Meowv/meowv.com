@@ -1,5 +1,6 @@
 ﻿using Meowv.Blog.Domain.Sayings.Repositories;
 using Meowv.Blog.Response;
+using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 
 namespace Meowv.Blog.Sayings.Impl
@@ -17,6 +18,7 @@ namespace Meowv.Blog.Sayings.Impl
         /// Get a saying.
         /// </summary>
         /// <returns></returns>
+        [Route("api/meowv/saying/random")]
         public async Task<BlogResponse<string>> GetRandomAsync()
         {
             var response = new BlogResponse<string>();
