@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Meowv.Blog.Caching.News
+namespace Meowv.Blog.Caching.Hots
 {
     public interface IHotCacheService : ICacheRemoveService
     {

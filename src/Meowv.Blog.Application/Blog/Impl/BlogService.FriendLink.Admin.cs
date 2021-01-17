@@ -19,7 +19,7 @@ namespace Meowv.Blog.Blog.Impl
         /// <returns></returns>
         [Authorize]
         [Route("api/meowv/blog/friendlink")]
-        public async Task<BlogResponse> CreateFriendlinkAsync(CreateFriendLinkInput input)
+        public async Task<BlogResponse> CreateFriendLinkAsync(CreateFriendLinkInput input)
         {
             var response = new BlogResponse();
 
@@ -46,7 +46,7 @@ namespace Meowv.Blog.Blog.Impl
         /// <returns></returns>
         [Authorize]
         [Route("api/meowv/blog/friendlink/{id}")]
-        public async Task<BlogResponse> DeleteFriendlinkAsync(string id)
+        public async Task<BlogResponse> DeleteFriendLinkAsync(string id)
         {
             var response = new BlogResponse();
 
@@ -70,7 +70,7 @@ namespace Meowv.Blog.Blog.Impl
         /// <returns></returns>
         [Authorize]
         [Route("api/meowv/blog/friendlink/{id}")]
-        public async Task<BlogResponse> UpdateFriendlinkAsync(string id, UpdateFriendLinkInput input)
+        public async Task<BlogResponse> UpdateFriendLinkAsync(string id, UpdateFriendLinkInput input)
         {
             var response = new BlogResponse();
 
@@ -94,8 +94,8 @@ namespace Meowv.Blog.Blog.Impl
         /// </summary>
         /// <returns></returns>
         [Authorize]
-        [Route("api/meowv/blog/admin/friendlink")]
-        public async Task<BlogResponse<List<GetAdminFriendLinkDto>>> GetAdminFriendlinksAsync()
+        [Route("api/meowv/blog/admin/friendlinks")]
+        public async Task<BlogResponse<List<GetAdminFriendLinkDto>>> GetAdminFriendLinksAsync()
         {
             var response = new BlogResponse<List<GetAdminFriendLinkDto>>();
 

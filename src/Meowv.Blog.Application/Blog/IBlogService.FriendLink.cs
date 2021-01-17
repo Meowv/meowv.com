@@ -7,6 +7,6 @@ namespace Meowv.Blog.Blog
 {
     public partial interface IBlogService
     {
-        Task<BlogResponse<List<FriendLinkDto>>> GetFriendlinksAsync();
+        Task<BlogResponse<List<FriendLinkDto>>> GetFriendLinksAsync();
     }
 }

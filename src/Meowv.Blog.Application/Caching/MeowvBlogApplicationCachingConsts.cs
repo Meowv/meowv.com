@@ -28,7 +28,7 @@
 
             public static string GetTags() => $"{CachePrefix.Blog_Tag}:Get";
 
-            public static string GetFriendlinks() => $"{CachePrefix.Blog_FriendLink}:Get";
+            public static string GetFriendLinks() => $"{CachePrefix.Blog_FriendLink}:Get";
 
             public static string GetSources() => $"{CachePrefix.Hot}:Sources";
 

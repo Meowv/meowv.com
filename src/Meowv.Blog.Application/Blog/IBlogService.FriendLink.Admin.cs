@@ -8,12 +8,12 @@ namespace Meowv.Blog.Blog
 {
     public partial interface IBlogService
     {
-        Task<BlogResponse> CreateFriendlinkAsync(CreateFriendLinkInput input);
+        Task<BlogResponse> CreateFriendLinkAsync(CreateFriendLinkInput input);
 
-        Task<BlogResponse> DeleteFriendlinkAsync(string id);
+        Task<BlogResponse> DeleteFriendLinkAsync(string id);
 
-        Task<BlogResponse> UpdateFriendlinkAsync(string id, UpdateFriendLinkInput input);
+        Task<BlogResponse> UpdateFriendLinkAsync(string id, UpdateFriendLinkInput input);
 
-        Task<BlogResponse<List<GetAdminFriendLinkDto>>> GetAdminFriendlinksAsync();
+        Task<BlogResponse<List<GetAdminFriendLinkDto>>> GetAdminFriendLinksAsync();
     }
 }

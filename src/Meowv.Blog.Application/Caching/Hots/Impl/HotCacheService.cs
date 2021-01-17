@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Meowv.Blog.Caching.News.Impl
+namespace Meowv.Blog.Caching.Hots.Impl
 {
     public class HotCacheService : CachingServiceBase, IHotCacheService
     {

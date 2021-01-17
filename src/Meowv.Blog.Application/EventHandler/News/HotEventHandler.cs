@@ -1,5 +1,5 @@
 ﻿using Meowv.Blog.Caching;
-using Meowv.Blog.Caching.News;
+using Meowv.Blog.Caching.Hots;
 using Meowv.Blog.Domain.Hots;
 using System.Threading.Tasks;
 using Volo.Abp.DependencyInjection;

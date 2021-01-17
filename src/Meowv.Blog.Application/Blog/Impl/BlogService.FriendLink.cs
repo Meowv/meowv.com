@@ -13,10 +13,10 @@ namespace Meowv.Blog.Blog.Impl
         /// Get the list of friendlinks.
         /// </summary>
         /// <returns></returns>
-        [Route("api/meowv/blog/friendlink")]
-        public async Task<BlogResponse<List<FriendLinkDto>>> GetFriendlinksAsync()
+        [Route("api/meowv/blog/friendlinks")]
+        public async Task<BlogResponse<List<FriendLinkDto>>> GetFriendLinksAsync()
         {
-            return await _cache.GetFriendlinksAsync(async () =>
+            return await _cache.GetFriendLinksAsync(async () =>
             {
                 var response = new BlogResponse<List<FriendLinkDto>>();
 

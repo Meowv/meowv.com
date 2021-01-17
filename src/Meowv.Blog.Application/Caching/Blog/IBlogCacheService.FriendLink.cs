@@ -13,6 +13,6 @@ namespace Meowv.Blog.Caching.Blog
         /// </summary>
         /// <param name="func"></param>
         /// <returns></returns>
-        Task<BlogResponse<List<FriendLinkDto>>> GetFriendlinksAsync(Func<Task<BlogResponse<List<FriendLinkDto>>>> func);
+        Task<BlogResponse<List<FriendLinkDto>>> GetFriendLinksAsync(Func<Task<BlogResponse<List<FriendLinkDto>>>> func);
     }
 }

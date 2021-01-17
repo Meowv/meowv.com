@@ -1,4 +1,4 @@
-﻿using Meowv.Blog.Caching.News;
+﻿using Meowv.Blog.Caching.Hots;
 using Meowv.Blog.Domain.Hots;
 using Meowv.Blog.Domain.Hots.Repositories;
 using Meowv.Blog.Dto.Hots;
