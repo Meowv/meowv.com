@@ -49,7 +49,7 @@ namespace Meowv.Blog.Api
                 {
                     config.Sources.Clear();
                     config.AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true);
-                    config.AddEnvironmentVariables();
+                    config.AddEnvironmentVariables("signature");
 
                     var configDictionary = config.Build().ToDictionary();
                     Log.Information("appsettings {@appsettings}", configDictionary);
