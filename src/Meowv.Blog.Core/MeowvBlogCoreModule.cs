@@ -1,8 +1,6 @@
-﻿using Meowv.Blog.Extensions;
-using Meowv.Blog.Options;
+﻿using Meowv.Blog.Options;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System.Linq;
 using Volo.Abp.Domain;
 using Volo.Abp.Modularity;
 
@@ -87,10 +85,9 @@ namespace Meowv.Blog
 
                 options.Path = signatureOption.GetValue<string>(nameof(options.Path));
 
-                foreach (var item in signatureOption.GetValue<string>(nameof(options.Urls)).Split(";"))
+                foreach (var item in signatureOption.GetSection(nameof(options.Urls)).GetChildren())
                 {
-                    var url = item.Base64Decode().Split("|");
-                    options.Urls.Add(url.First(), url.Last());
+                    options.Urls.Add(item.GetValue<string>("url"), item.GetValue<string>("param"));
                 }
 
                 signature = options;

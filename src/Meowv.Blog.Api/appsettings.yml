@@ -25,6 +25,16 @@ worker:
   isEnabled: true
   cron: '0 0 0/1 * * ? *'
 
+signature:
+  path: ''
+  urls:
+  - url: ''
+    param: ''
+  - url: ''
+    param: ''
+  - url: ''
+    param: ''
+
 authorize:
   account:
     username: 'admin'
