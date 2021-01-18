@@ -12,6 +12,8 @@
             public const string Blog_FriendLink = Blog + ":FriendLink";
 
             public const string Hot = "Hot";
+
+            public const string Signature = "Signature";
         }
 
         public class CacheKeys
@@ -33,6 +35,10 @@
             public static string GetSources() => $"{CachePrefix.Hot}:Sources";
 
             public static string GetHots(string source) => $"{CachePrefix.Hot}:{source}";
+
+            public static string GetSignatureTypesAsync() => $"{CachePrefix.Signature}:Types";
+
+            public static string GenerateSignatureAsync(string name, int typeId) => $"{CachePrefix.Signature}:{name}-{typeId}";
         }
 
         public class CacheStrategy
