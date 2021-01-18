@@ -1,4 +1,5 @@
 ﻿using Meowv.Blog.Domain.Signatures;
+using Meowv.Blog.Extensions;
 using Meowv.Blog.Options;
 using Microsoft.Extensions.Options;
 using System.IO;
@@ -23,7 +24,13 @@ namespace Meowv.Blog.EventHandler.Signatures
 
         public async Task HandleEventAsync(EntityCreatedEventData<Signature> eventData)
         {
-            // TODO: 给图片添加水印
+            var path = Path.Combine(_signatureOptions.Path, eventData.Entity.Url);
+
+            if (File.Exists(path))
+            {
+                await path.AddWatermarkAndSaveItAsync();
+            }
+
             await Task.CompletedTask;
         }
 
