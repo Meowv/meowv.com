@@ -16,6 +16,7 @@ namespace Meowv.Blog.Signatures.Impl
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
+        [Authorize]
         [Route("api/meowv/signature/{id}")]
         public async Task<BlogResponse> DeleteAsync(string id)
         {

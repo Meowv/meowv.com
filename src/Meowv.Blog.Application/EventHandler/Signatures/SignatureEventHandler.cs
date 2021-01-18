@@ -9,13 +9,22 @@ using Volo.Abp.EventBus;
 
 namespace Meowv.Blog.EventHandler.Signatures
 {
-    public class SignatureEventHandler : ILocalEventHandler<EntityDeletedEventData<Signature>>, ITransientDependency
+    public class SignatureEventHandler : ILocalEventHandler<EntityCreatedEventData<Signature>>,
+                                         ILocalEventHandler<EntityDeletedEventData<Signature>>,
+                                         ITransientDependency
     {
         private readonly SignatureOptions _signatureOptions;
 
         public SignatureEventHandler(IOptions<SignatureOptions> signatureOptions)
         {
             _signatureOptions = signatureOptions.Value;
+        }
+
+
+        public async Task HandleEventAsync(EntityCreatedEventData<Signature> eventData)
+        {
+            // TODO: 给图片添加水印
+            await Task.CompletedTask;
         }
 
         public async Task HandleEventAsync(EntityDeletedEventData<Signature> eventData)

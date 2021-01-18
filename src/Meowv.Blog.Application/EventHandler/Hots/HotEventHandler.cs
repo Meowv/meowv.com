@@ -6,7 +6,7 @@ using Volo.Abp.DependencyInjection;
 using Volo.Abp.Domain.Entities.Events;
 using Volo.Abp.EventBus;
 
-namespace Meowv.Blog.EventHandler.News
+namespace Meowv.Blog.EventHandler.Hots
 {
     public class HotEventHandler : ILocalEventHandler<EntityDeletedEventData<Hot>>, ITransientDependency
     {
