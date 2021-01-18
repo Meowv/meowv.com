@@ -1,4 +1,5 @@
-﻿using MongoDB.Bson;
+﻿using Microsoft.AspNetCore.Http;
+using MongoDB.Bson;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using SixLabors.ImageSharp;
@@ -7,6 +8,7 @@ using SixLabors.ImageSharp.Processing;
 using System;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -132,6 +134,19 @@ namespace Meowv.Blog.Extensions
             var bytes = Convert.FromBase64String(newImgBase64);
 
             await bytes.DownloadAsync(imgPath);
+        }
+
+        /// <summary>
+        /// Get ip address
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public static string GetIpAddress(this HttpRequest request)
+        {
+            var ip = request.Headers["X-Real-IP"].FirstOrDefault() ??
+                     request.Headers["X-Forwarded-For"].FirstOrDefault() ??
+                     request.HttpContext.Connection.RemoteIpAddress.MapToIPv4().ToString();
+            return ip;
         }
     }
 }
