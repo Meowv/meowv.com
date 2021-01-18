@@ -26,7 +26,7 @@ worker:
   cron: '0 0 0/1 * * ? *'
 
 signature:
-  path: 'qix'
+  path: 'D:\static\signature'
   urls:
   - url: 'https://api1.meowv.com'
     param: '1'

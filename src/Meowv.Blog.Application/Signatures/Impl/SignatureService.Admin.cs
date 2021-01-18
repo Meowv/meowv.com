@@ -1,5 +1,6 @@
 ﻿using Meowv.Blog.Domain.Signatures;
 using Meowv.Blog.Dto.Signatures;
+using Meowv.Blog.Extensions;
 using Meowv.Blog.Response;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,6 +11,28 @@ namespace Meowv.Blog.Signatures.Impl
 {
     public partial class SignatureService
     {
+        /// <summary>
+        /// Delete signature by id.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [Route("api/meowv/signature/{id}")]
+        public async Task<BlogResponse> DeleteAsync(string id)
+        {
+            var response = new BlogResponse();
+
+            var saying = await _signatures.FindAsync(id.ToObjectId());
+            if (saying is null)
+            {
+                response.IsFailed($"The signature id not exists.");
+                return response;
+            }
+
+            await _signatures.DeleteAsync(id.ToObjectId());
+
+            return response;
+        }
+
         /// <summary>
         /// Get the list of signatures by paging.
         /// </summary>
