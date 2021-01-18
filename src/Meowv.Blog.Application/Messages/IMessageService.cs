@@ -1,10 +1,6 @@
-﻿using Meowv.Blog.Response;
-using System.Threading.Tasks;
-
-namespace Meowv.Blog.Messages
+﻿namespace Meowv.Blog.Messages
 {
-    public interface IMessageService
+    public partial interface IMessageService
     {
-        Task<BlogResponse> CreateAsync();
     }
 }
