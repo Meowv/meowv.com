@@ -119,11 +119,6 @@ namespace Meowv.Blog.Messages.Impl
             }
 
             message.Reply = message.Reply?.Where(x => x.Id != replyId.ToObjectId()).ToList();
-            if (!message.Reply.Any())
-            {
-                response.IsFailed($"The reply message is empty.");
-                return response;
-            }
 
             await _messages.UpdateAsync(message);
 
