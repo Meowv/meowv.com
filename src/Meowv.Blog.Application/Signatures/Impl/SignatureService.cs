@@ -70,8 +70,6 @@ namespace Meowv.Blog.Signatures.Impl
                      _httpContextAccessor.HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault() ??
                      _httpContextAccessor.HttpContext.Request.HttpContext.Connection.RemoteIpAddress.MapToIPv4().ToString();
 
-
-
             var type = Signature.KnownTypes.Dictionary.FirstOrDefault(x => x.Value == input.TypeId).Key;
             if (type.IsNullOrEmpty())
             {

@@ -26,14 +26,14 @@ worker:
   cron: '0 0 0/1 * * ? *'
 
 signature:
-  path: ''
+  path: 'qix'
   urls:
-  - url: ''
-    param: ''
-  - url: ''
-    param: ''
-  - url: ''
-    param: ''
+  - url: 'https://api1.meowv.com'
+    param: '1'
+  - url: 'https://api2.meowv.com'
+    param: '2'
+  - url: 'https://api3.meowv.com'
+    param: '3'
 
 authorize:
   account:
