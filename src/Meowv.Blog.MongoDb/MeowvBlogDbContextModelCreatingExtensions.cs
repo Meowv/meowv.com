@@ -1,5 +1,6 @@
 ﻿using Meowv.Blog.Domain.Blog;
 using Meowv.Blog.Domain.Hots;
+using Meowv.Blog.Domain.Messages;
 using Meowv.Blog.Domain.Sayings;
 using Meowv.Blog.Domain.Signatures;
 using Volo.Abp;
@@ -58,6 +59,13 @@ namespace Meowv.Blog
             builder.Entity<Signature>(b =>
             {
                 b.CollectionName = MeowvBlogDbConsts.CollectionNames.Signature;
+                b.BsonMap.AutoMap();
+                b.BsonMap.SetIgnoreExtraElements(true);
+            });
+
+            builder.Entity<Message>(b =>
+            {
+                b.CollectionName = MeowvBlogDbConsts.CollectionNames.Message;
                 b.BsonMap.AutoMap();
                 b.BsonMap.SetIgnoreExtraElements(true);
             });

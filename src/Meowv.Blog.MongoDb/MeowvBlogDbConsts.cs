@@ -38,6 +38,11 @@
             /// Signature
             /// </summary>
             public const string Signature = "meowv_blog_signatures";
+
+            /// <summary>
+            /// Message
+            /// </summary>
+            public const string Message = "meowv_blog_messages";
         }
     }
 }
