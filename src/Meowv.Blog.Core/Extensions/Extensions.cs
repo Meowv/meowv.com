@@ -148,5 +148,17 @@ namespace Meowv.Blog.Extensions
                      request.HttpContext.Connection.RemoteIpAddress.MapToIPv4().ToString();
             return ip;
         }
+
+        /// <summary>
+        /// Check the ip address
+        /// </summary>
+        /// <param name="ip"></param>
+        /// <returns></returns>
+        public static bool IsIp(this string ip)
+        {
+            var regex = new Regex(@"^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$");
+
+            return regex.IsMatch(ip);
+        }
     }
 }
