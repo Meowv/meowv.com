@@ -81,7 +81,6 @@ namespace Meowv.Blog
             PreConfigure<SignatureOptions>(options =>
             {
                 var signatureOption = configuration.GetSection("signature");
-                Configure<SignatureOptions>(signatureOption);
 
                 options.Path = signatureOption.GetValue<string>(nameof(options.Path));
 
@@ -91,6 +90,11 @@ namespace Meowv.Blog
                 }
 
                 signature = options;
+                Configure<SignatureOptions>(item =>
+                {
+                    item.Path = signature.Path;
+                    item.Urls = signature.Urls;
+                });
             });
 
             PreConfigure<AuthorizeOptions>(options =>
@@ -139,6 +143,17 @@ namespace Meowv.Blog
                 options.Worker = worker;
                 options.Signature = signature;
                 options.Authorize = authorize;
+
+                Configure<AppOptions>(item =>
+                {
+                    item.Swagger = swagger;
+                    item.Storage = storage;
+                    item.Cors = cors;
+                    item.Jwt = jwt;
+                    item.Worker = worker;
+                    item.Signature = signature;
+                    item.Authorize = authorize;
+                });
             });
         }
 

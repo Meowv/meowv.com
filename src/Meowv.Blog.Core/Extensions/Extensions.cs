@@ -3,7 +3,8 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System;
 using System.Globalization;
-using System.Text;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace Meowv.Blog.Extensions
 {
@@ -34,7 +35,7 @@ namespace Meowv.Blog.Extensions
         }
 
         /// <summary>
-        /// String to MongoDb.Bson.ObjectId
+        /// String to <see cref="ObjectId"/>
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
@@ -79,14 +80,23 @@ namespace Meowv.Blog.Extensions
         }
 
         /// <summary>
-        /// Base64 decode
+        /// Save the array type file to the specified path
         /// </summary>
-        /// <param name="data"></param>
+        /// <param name="buffer"></param>
+        /// <param name="path"></param>
         /// <returns></returns>
-        public static string Base64Decode(this string data)
+        public static async Task DownloadAsync(this byte[] buffer, string path)
         {
-            byte[] bytes = Convert.FromBase64String(data);
-            return Encoding.UTF8.GetString(bytes);
+            using var ms = new MemoryStream(buffer);
+            using var stream = new FileStream(path, FileMode.Create);
+
+            var bytes = new byte[1024];
+            var size = await ms.ReadAsync(bytes.AsMemory(0, bytes.Length));
+            while (size > 0)
+            {
+                await stream.WriteAsync(bytes.AsMemory(0, size));
+                size = await ms.ReadAsync(bytes.AsMemory(0, bytes.Length));
+            }
         }
     }
 }
