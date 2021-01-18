@@ -48,9 +48,9 @@ namespace Meowv.Blog.Signatures.Impl
 
             var result = await _signatures.GetPagedListAsync(page, limit);
             var total = result.Item1;
-            var sayings = ObjectMapper.Map<List<Signature>, List<SignatureDto>>(result.Item2);
+            var signatures = ObjectMapper.Map<List<Signature>, List<SignatureDto>>(result.Item2);
 
-            response.Result = new PagedList<SignatureDto>(total, sayings);
+            response.Result = new PagedList<SignatureDto>(total, signatures);
             return response;
         }
     }
