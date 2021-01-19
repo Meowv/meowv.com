@@ -36,13 +36,13 @@ namespace Meowv.Blog.Authorize.Impl
         [Route("api/meowv/oauth/{type}")]
         public async Task<BlogResponse<string>> GetAuthorizeUrlAsync(string type)
         {
-            var stete = StateManager.Instance.Get();
+            var state = StateManager.Instance.Get();
 
             var response = new BlogResponse<string>
             {
                 Result = type switch
                 {
-                    "github" => await _githubService.GetAuthorizeUrl(stete),
+                    "github" => await _githubService.GetAuthorizeUrl(state),
                     _ => throw new NotImplementedException($"Not implemented:{type}")
                 }
             };
@@ -71,12 +71,10 @@ namespace Meowv.Blog.Authorize.Impl
 
             StateManager.Remove(state);
 
-            Console.WriteLine(type);
-            Console.WriteLine(code);
-            Console.WriteLine(state);
-
             var accessToken = await _githubService.GetAccessTokenAsync(code, state);
+            var user = await _githubService.GetUserInfoAsync(accessToken);
 
+            response.IsSuccess(GenerateToken(user.Id, user.Name, user.Email));
             return response;
         }
 
@@ -96,8 +94,16 @@ namespace Meowv.Blog.Authorize.Impl
                 return response;
             }
 
+            response.IsSuccess(GenerateToken(input.Username));
+            return await Task.FromResult(response);
+        }
+
+        private string GenerateToken(string id = "", string name = "", string email = "")
+        {
             var claims = new[] {
-                new Claim(ClaimTypes.Name, input.Username),
+                new Claim(ClaimTypes.NameIdentifier, id ?? "meowv"),
+                new Claim(ClaimTypes.Name, name ?? "阿星Plus"),
+                new Claim(ClaimTypes.Email, email ?? "123@meowv.com"),
                 new Claim(JwtRegisteredClaimNames.Exp, $"{new DateTimeOffset(DateTime.Now.AddMinutes(_jwtOption.Expires)).ToUnixTimeSeconds()}"),
                 new Claim(JwtRegisteredClaimNames.Nbf, $"{new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds()}")
             };
@@ -113,9 +119,7 @@ namespace Meowv.Blog.Authorize.Impl
                 signingCredentials: creds);
 
             var token = new JwtSecurityTokenHandler().WriteToken(securityToken);
-
-            response.IsSuccess(token);
-            return await Task.FromResult(response);
+            return token;
         }
     }
 }

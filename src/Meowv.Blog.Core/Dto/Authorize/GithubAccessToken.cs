@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Meowv.Blog.Dto.Authorize.OAuth
+namespace Meowv.Blog.Dto.Authorize
 {
     public class GithubAccessToken
     {

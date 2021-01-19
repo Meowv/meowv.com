@@ -14,10 +14,7 @@ namespace Meowv.Blog.Authorize.OAuth
 
         public IGuidGenerator GuidGenerator { get; set; }
 
-        protected StateManager()
-        {
-            GuidGenerator = SimpleGuidGenerator.Instance;
-        }
+        protected StateManager() => GuidGenerator = SimpleGuidGenerator.Instance;
 
         public static StateManager Instance
         {
@@ -54,9 +51,6 @@ namespace Meowv.Blog.Authorize.OAuth
             return true;
         }
 
-        public static void Remove(string state)
-        {
-            states.TryRemove(state, out _);
-        }
+        public static void Remove(string state) => states.TryRemove(state, out _);
     }
 }
