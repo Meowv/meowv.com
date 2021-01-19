@@ -6,6 +6,7 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Processing;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -159,6 +160,30 @@ namespace Meowv.Blog.Extensions
             var regex = new Regex(@"^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$");
 
             return regex.IsMatch(ip);
+        }
+
+        /// <summary>
+        /// Remove dictionary empty items
+        /// </summary>
+        /// <param name="dic"></param>
+        public static Dictionary<string, string> RemoveDictionaryEmptyItems(this Dictionary<string, string> dic)
+        {
+            dic.Where(x => x.Value.IsNullOrEmpty()).Select(x => x.Key).ToList().ForEach(x =>
+            {
+                dic.Remove(x);
+            });
+
+            return dic;
+        }
+
+        /// <summary>
+        /// Convert <paramref name="dic"/> to query string
+        /// </summary>
+        /// <param name="dic"></param>
+        /// <returns></returns>
+        public static string ToQueryString(this Dictionary<string, string> dic)
+        {
+            return dic.Select(x => $"{x.Key}={x.Value}").JoinAsString("&");
         }
     }
 }

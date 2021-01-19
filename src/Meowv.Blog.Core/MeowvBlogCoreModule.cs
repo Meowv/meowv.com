@@ -1,4 +1,5 @@
 ﻿using Meowv.Blog.Options;
+using Meowv.Blog.Options.Authorize;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.Domain;
@@ -100,36 +101,21 @@ namespace Meowv.Blog
             PreConfigure<AuthorizeOptions>(options =>
             {
                 var authorizeOption = configuration.GetSection("authorize");
+                var githubOption = authorizeOption.GetSection("github");
                 Configure<AuthorizeOptions>(authorizeOption);
+                Configure<GithubOptions>(githubOption);
 
                 options.Account = new AccountOptions
                 {
                     Username = authorizeOption.GetSection(nameof(options.Account)).GetValue<string>(nameof(options.Account.Username)),
-                    Password = authorizeOption.GetSection(nameof(options.Account)).GetValue<string>(nameof(options.Account.Password)),
+                    Password = authorizeOption.GetSection(nameof(options.Account)).GetValue<string>(nameof(options.Account.Password))
                 };
                 options.Github = new GithubOptions
                 {
-                };
-                options.Gitee = new GiteeOptions
-                {
-                };
-                options.Microsoft = new MicrosoftOptions
-                {
-                };
-                options.QQ = new QQOptions
-                {
-                };
-                options.Weibo = new WeiboOptions
-                {
-                };
-                options.Baidu = new BaiduOptions
-                {
-                };
-                options.Dingtalk = new DingtalkOptions
-                {
-                };
-                options.Alipay = new AlipayOptions
-                {
+                    ClientId = githubOption.GetValue<string>(nameof(options.Github.ClientId)),
+                    ClientSecret = githubOption.GetValue<string>(nameof(options.Github.ClientSecret)),
+                    RedirectUrl = githubOption.GetValue<string>(nameof(options.Github.RedirectUrl)),
+                    Scope = githubOption.GetValue<string>(nameof(options.Github.Scope))
                 };
 
                 authorize = options;

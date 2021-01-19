@@ -1,4 +1,5 @@
-﻿using Meowv.Blog.Dto.Authorize.Params;
+﻿using Meowv.Blog.Authorize.OAuth;
+using Meowv.Blog.Dto.Authorize.Params;
 using Meowv.Blog.Options;
 using Meowv.Blog.Response;
 using Microsoft.AspNetCore.Mvc;
@@ -16,11 +17,51 @@ namespace Meowv.Blog.Authorize.Impl
     {
         private readonly AuthorizeOptions _authorizeOption;
         private readonly JwtOptions _jwtOption;
+        private readonly OAuthGithubService _githubService;
 
-        public AuthorizeService(IOptions<AuthorizeOptions> authorizeOption, IOptions<JwtOptions> jwtOption)
+        public AuthorizeService(IOptions<AuthorizeOptions> authorizeOption,
+                                IOptions<JwtOptions> jwtOption,
+                                OAuthGithubService githubService)
         {
             _authorizeOption = authorizeOption.Value;
             _jwtOption = jwtOption.Value;
+            _githubService = githubService;
+        }
+
+        /// <summary>
+        /// Get authorize url.
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        [Route("api/meowv/oauth/{type}")]
+        public async Task<BlogResponse<string>> GetAuthorizeUrlAsync(string type)
+        {
+            var stete = StateManager.Instance.Get();
+
+            var response = new BlogResponse<string>
+            {
+                Result = type switch
+                {
+                    "github" => await _githubService.GetAuthorizeUrl(stete),
+                    _ => throw new NotImplementedException($"Not implemented:{type}")
+                }
+            };
+
+            return response;
+        }
+
+        /// <summary>
+        /// Generate token by <paramref name="type"/>.
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="code"></param>
+        /// <param name="state"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("api/meowv/oauth/{type}/token")]
+        public Task<BlogResponse<string>> GenerateTokenAsync(string type, string code, string state)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -28,8 +69,8 @@ namespace Meowv.Blog.Authorize.Impl
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
-        [Route("api/meowv/authorize/account/token")]
-        public async Task<BlogResponse<string>> GenerateTokenByAccountAsync(AccountInput input)
+        [Route("api/meowv/oauth/account/token")]
+        public async Task<BlogResponse<string>> GenerateTokenAsync(AccountInput input)
         {
             var response = new BlogResponse<string>();
 

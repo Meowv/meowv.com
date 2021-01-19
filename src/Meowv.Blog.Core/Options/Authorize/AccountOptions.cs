@@ -1,4 +1,4 @@
-﻿namespace Meowv.Blog.Options
+﻿namespace Meowv.Blog.Options.Authorize
 {
     public class AccountOptions
     {

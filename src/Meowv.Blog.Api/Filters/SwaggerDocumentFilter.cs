@@ -13,7 +13,7 @@ namespace Meowv.Blog.Api.Filters
 
             var tags = new List<OpenApiTag>
             {
-                new OpenApiTag { Name = "Authorize", Description = "<code>The Authorize module.</code>" },
+                new OpenApiTag { Name = "Authorize", Description = "<code>The authorize module.</code>" },
                 new OpenApiTag { Name = "Blog", Description = "<code>The blog module.</code>" },
                 new OpenApiTag { Name = "Tool", Description = "<code>The tool module.</code>" },
                 new OpenApiTag { Name = "Hot", Description = "<code>The hots module.</code>" },
