@@ -2,7 +2,6 @@
 using Meowv.Blog.Extensions;
 using Meowv.Blog.Options.Authorize;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
