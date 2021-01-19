@@ -102,8 +102,11 @@ namespace Meowv.Blog
             {
                 var authorizeOption = configuration.GetSection("authorize");
                 var githubOption = authorizeOption.GetSection("github");
+                var giteeOption = authorizeOption.GetSection("gitee");
+
                 Configure<AuthorizeOptions>(authorizeOption);
                 Configure<GithubOptions>(githubOption);
+                Configure<GiteeOptions>(giteeOption);
 
                 options.Account = new AccountOptions
                 {
@@ -116,6 +119,13 @@ namespace Meowv.Blog
                     ClientSecret = githubOption.GetValue<string>(nameof(options.Github.ClientSecret)),
                     RedirectUrl = githubOption.GetValue<string>(nameof(options.Github.RedirectUrl)),
                     Scope = githubOption.GetValue<string>(nameof(options.Github.Scope))
+                };
+                options.Gitee = new GiteeOptions
+                {
+                    ClientId = giteeOption.GetValue<string>(nameof(options.Gitee.ClientId)),
+                    ClientSecret = giteeOption.GetValue<string>(nameof(options.Gitee.ClientSecret)),
+                    RedirectUrl = giteeOption.GetValue<string>(nameof(options.Gitee.RedirectUrl)),
+                    Scope = giteeOption.GetValue<string>(nameof(options.Gitee.Scope))
                 };
 
                 authorize = options;

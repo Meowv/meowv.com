@@ -8,6 +8,6 @@ namespace Meowv.Blog.Authorize.OAuth
 
         Task<TAccessToke> GetAccessTokenAsync(string code, string state = "");
 
-        Task<TUserInfo> GetUserInfoAsync(TAccessToke accessToke);
+        Task<TUserInfo> GetUserInfoAsync(TAccessToke accessToken);
     }
 }

@@ -18,14 +18,17 @@ namespace Meowv.Blog.Authorize.Impl
         private readonly AuthorizeOptions _authorizeOption;
         private readonly JwtOptions _jwtOption;
         private readonly OAuthGithubService _githubService;
+        private readonly OAuthGiteeService _giteeService;
 
         public AuthorizeService(IOptions<AuthorizeOptions> authorizeOption,
                                 IOptions<JwtOptions> jwtOption,
-                                OAuthGithubService githubService)
+                                OAuthGithubService githubService,
+                                OAuthGiteeService giteeService)
         {
             _authorizeOption = authorizeOption.Value;
             _jwtOption = jwtOption.Value;
             _githubService = githubService;
+            _giteeService = giteeService;
         }
 
         /// <summary>
@@ -43,6 +46,7 @@ namespace Meowv.Blog.Authorize.Impl
                 Result = type switch
                 {
                     "github" => await _githubService.GetAuthorizeUrl(state),
+                    "gitee" => await _giteeService.GetAuthorizeUrl(state),
                     _ => throw new NotImplementedException($"Not implemented:{type}")
                 }
             };
@@ -71,10 +75,30 @@ namespace Meowv.Blog.Authorize.Impl
 
             StateManager.Remove(state);
 
-            var accessToken = await _githubService.GetAccessTokenAsync(code, state);
-            var user = await _githubService.GetUserInfoAsync(accessToken);
+            var token = "";
 
-            response.IsSuccess(GenerateToken(user.Id, user.Name, user.Email));
+            switch (type)
+            {
+                case "github":
+                    {
+                        var accessToken = await _githubService.GetAccessTokenAsync(code, state);
+                        var user = await _githubService.GetUserInfoAsync(accessToken);
+
+                        token = GenerateToken(user.Id, user.Name, user.Email);
+                        break;
+                    }
+
+                case "gitee":
+                    {
+                        var accessToken = await _giteeService.GetAccessTokenAsync(code, state);
+                        var user = await _giteeService.GetUserInfoAsync(accessToken);
+
+                        token = GenerateToken(user.Id, user.Name, user.Email);
+                        break;
+                    }
+            }
+
+            response.IsSuccess(token);
             return response;
         }
 

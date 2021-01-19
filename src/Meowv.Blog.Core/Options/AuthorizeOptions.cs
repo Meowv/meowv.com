@@ -13,5 +13,10 @@ namespace Meowv.Blog.Options
         /// Github
         /// </summary>
         public GithubOptions Github { get; set; }
+
+        /// <summary>
+        /// Gitee
+        /// </summary>
+        public GiteeOptions Gitee { get; set; }
     }
 }

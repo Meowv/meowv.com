@@ -38,7 +38,7 @@ namespace Meowv.Blog.Extensions
         /// <returns></returns>
         public static T DeserializeToObject<T>(this string json)
         {
-            return json.IsNullOrEmpty() ? default : JsonConvert.DeserializeObject<T>(json);
+            return JsonConvert.DeserializeObject<T>(json);
         }
 
         /// <summary>

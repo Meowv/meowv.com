@@ -2,15 +2,15 @@
 
 namespace Meowv.Blog.Dto.Authorize
 {
-    public class GithubAccessToken
+    public class AccessTokenBase
     {
         [JsonPropertyName("access_token")]
-        public virtual string AccessToken { get; set; }
+        public string AccessToken { get; set; }
 
         [JsonPropertyName("scope")]
-        public virtual string Scope { get; set; }
+        public string Scope { get; set; }
 
         [JsonPropertyName("token_type")]
-        public virtual string TokenType { get; set; }
+        public string TokenType { get; set; }
     }
 }
