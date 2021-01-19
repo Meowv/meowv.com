@@ -72,7 +72,7 @@ namespace Meowv.Blog.Authorize.OAuth
                 ["redirect_uri"] = _githubOptions.RedirectUrl,
                 ["scope"] = _githubOptions.Scope,
                 ["state"] = state
-            }.RemoveDictionaryEmptyItems();
+            };
         }
 
         protected Dictionary<string, string> BuildAccessTokenParams(string code, string state)

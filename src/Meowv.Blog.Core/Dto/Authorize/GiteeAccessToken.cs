@@ -1,16 +1,16 @@
-﻿using System.Text.Json.Serialization;
+﻿using Newtonsoft.Json;
 
 namespace Meowv.Blog.Dto.Authorize
 {
     public class GiteeAccessToken : AccessTokenBase
     {
-        [JsonPropertyName("refresh_token")]
+        [JsonProperty("refresh_token")]
         public string RefreshToken { get; set; }
 
-        [JsonPropertyName("expires_in")]
+        [JsonProperty("expires_in")]
         public int ExpiresIn { get; set; }
 
-        [JsonPropertyName("created_at")]
+        [JsonProperty("created_at")]
         public int CreatedAt { get; set; }
     }
 }

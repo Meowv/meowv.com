@@ -1,16 +1,16 @@
-﻿using System.Text.Json.Serialization;
+﻿using Newtonsoft.Json;
 
 namespace Meowv.Blog.Dto.Authorize
 {
     public class AccessTokenBase
     {
-        [JsonPropertyName("access_token")]
+        [JsonProperty("access_token")]
         public string AccessToken { get; set; }
 
-        [JsonPropertyName("scope")]
+        [JsonProperty("scope")]
         public string Scope { get; set; }
 
-        [JsonPropertyName("token_type")]
+        [JsonProperty("token_type")]
         public string TokenType { get; set; }
     }
 }

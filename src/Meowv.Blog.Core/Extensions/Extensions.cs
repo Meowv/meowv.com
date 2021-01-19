@@ -163,20 +163,6 @@ namespace Meowv.Blog.Extensions
         }
 
         /// <summary>
-        /// Remove dictionary empty items
-        /// </summary>
-        /// <param name="dic"></param>
-        public static Dictionary<string, string> RemoveDictionaryEmptyItems(this Dictionary<string, string> dic)
-        {
-            dic.Where(x => x.Value.IsNullOrEmpty()).Select(x => x.Key).ToList().ForEach(x =>
-            {
-                dic.Remove(x);
-            });
-
-            return dic;
-        }
-
-        /// <summary>
         /// Convert <paramref name="dic"/> to query string
         /// </summary>
         /// <param name="dic"></param>

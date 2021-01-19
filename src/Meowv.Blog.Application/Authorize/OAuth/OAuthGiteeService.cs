@@ -64,7 +64,7 @@ namespace Meowv.Blog.Authorize.OAuth
                 ["scope"] = _giteeOptions.Scope,
                 ["state"] = state,
                 ["response_type"] = "code",
-            }.RemoveDictionaryEmptyItems();
+            };
         }
 
         protected Dictionary<string, string> BuildAccessTokenParams(string code, string state)
