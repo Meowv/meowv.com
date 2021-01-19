@@ -59,9 +59,25 @@ namespace Meowv.Blog.Authorize.Impl
         /// <returns></returns>
         [HttpGet]
         [Route("api/meowv/oauth/{type}/token")]
-        public Task<BlogResponse<string>> GenerateTokenAsync(string type, string code, string state)
+        public async Task<BlogResponse<string>> GenerateTokenAsync(string type, string code, string state)
         {
-            throw new NotImplementedException();
+            var response = new BlogResponse<string>();
+
+            if (!StateManager.IsExist(state))
+            {
+                response.IsFailed("Request failed.");
+                return response;
+            }
+
+            StateManager.Remove(state);
+
+            Console.WriteLine(type);
+            Console.WriteLine(code);
+            Console.WriteLine(state);
+
+            var accessToken = await _githubService.GetAccessTokenAsync(code, state);
+
+            return response;
         }
 
         /// <summary>

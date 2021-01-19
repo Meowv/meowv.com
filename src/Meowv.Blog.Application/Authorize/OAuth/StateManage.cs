@@ -54,7 +54,7 @@ namespace Meowv.Blog.Authorize.OAuth
             return true;
         }
 
-        public static void Remoce(string state)
+        public static void Remove(string state)
         {
             states.TryRemove(state, out _);
         }

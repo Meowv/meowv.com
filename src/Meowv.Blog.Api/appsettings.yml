@@ -42,5 +42,5 @@ authorize:
   github:
     clientId: 'e31df3ad90fb05adc29c'
     clientSecret: 'bd022aff3e8d58c18cfe0889e00013775b9b737d'
-    redirectUrl: 'https://localhost:5001/oauth/github'
+    redirectUrl: 'https://localhost:5001/api/meowv/oauth/github/token'
     scope: 'user'
