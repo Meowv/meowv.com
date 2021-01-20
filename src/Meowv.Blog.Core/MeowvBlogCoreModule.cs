@@ -20,6 +20,7 @@ namespace Meowv.Blog
             var jwt = new JwtOptions();
             var worker = new WorkerOptions();
             var signature = new SignatureOptions();
+            var tencentCloud = new TencentCloudOptions();
             var authorize = new AuthorizeOptions();
 
             PreConfigure<SwaggerOptions>(options =>
@@ -78,7 +79,16 @@ namespace Meowv.Blog
 
                 worker = options;
             });
+            PreConfigure<TencentCloudOptions>(options =>
+            {
+                var tencentCloudOption = configuration.GetSection("tencentCloud");
+                Configure<TencentCloudOptions>(tencentCloudOption);
 
+                options.SecretId = tencentCloudOption.GetValue<string>(nameof(options.SecretId));
+                options.SecretKey = tencentCloudOption.GetValue<string>(nameof(options.SecretKey));
+
+                tencentCloud = options;
+            });
             PreConfigure<SignatureOptions>(options =>
             {
                 var signatureOption = configuration.GetSection("signature");
@@ -97,7 +107,6 @@ namespace Meowv.Blog
                     item.Urls = signature.Urls;
                 });
             });
-
             PreConfigure<AuthorizeOptions>(options =>
             {
                 var authorizeOption = configuration.GetSection("authorize");
@@ -133,6 +142,7 @@ namespace Meowv.Blog
                 options.Jwt = jwt;
                 options.Worker = worker;
                 options.Signature = signature;
+                options.TencentCloud = tencentCloud;
                 options.Authorize = authorize;
 
                 Configure<AppOptions>(item =>
@@ -143,6 +153,7 @@ namespace Meowv.Blog
                     item.Jwt = jwt;
                     item.Worker = worker;
                     item.Signature = signature;
+                    item.TencentCloud = tencentCloud;
                     item.Authorize = authorize;
                 });
             });
@@ -156,6 +167,7 @@ namespace Meowv.Blog
             context.Services.ExecutePreConfiguredActions<JwtOptions>();
             context.Services.ExecutePreConfiguredActions<WorkerOptions>();
             context.Services.ExecutePreConfiguredActions<SignatureOptions>();
+            context.Services.ExecutePreConfiguredActions<TencentCloudOptions>();
             context.Services.ExecutePreConfiguredActions<AuthorizeOptions>();
         }
     }

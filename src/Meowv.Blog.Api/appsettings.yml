@@ -35,14 +35,18 @@ signature:
   - url: 'https://api3.meowv.com'
     param: '3'
 
+tencentCloud:
+  secretId: ''
+  secretKey: ''
+
 authorize:
   github:
-    clientId: 'e31df3ad90fb05adc29c'
-    clientSecret: 'bd022aff3e8d58c18cfe0889e00013775b9b737d'
+    clientId: ''
+    clientSecret: ''
     redirectUrl: 'https://localhost:5001/api/meowv/oauth/github/token'
     scope: 'user'
   gitee:
-    clientId: '2aa9116886160b7a7d5d87f043df4f3331d15ac1b1f3b57844d87e0b7b62e9c2'
-    clientSecret: 'ae2380c4b66e0c3420875d65a03102eb71e8802ef4356eb23224486e701219a1'
+    clientId: ''
+    clientSecret: ''
     redirectUrl: 'https://localhost:5001/api/meowv/oauth/gitee/token'
     scope: 'user_info emails'

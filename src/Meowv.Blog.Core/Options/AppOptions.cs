@@ -33,6 +33,11 @@
         public SignatureOptions Signature { get; set; }
 
         /// <summary>
+        /// TencentCloud
+        /// </summary>
+        public TencentCloudOptions TencentCloud { get; set; }
+
+        /// <summary>
         /// Authorize
         /// </summary>
         public AuthorizeOptions Authorize { get; set; }

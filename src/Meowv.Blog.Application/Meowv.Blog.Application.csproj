@@ -14,6 +14,7 @@
     <PackageReference Include="IP2Region" Version="1.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="5.0.2" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.5" />
+    <PackageReference Include="TencentCloudSDK.Cdn" Version="3.0.212" />
     <PackageReference Include="Volo.Abp.AutoMapper" Version="4.1.2" />
     <PackageReference Include="Volo.Abp.Caching.StackExchangeRedis" Version="4.1.2" />
     <PackageReference Include="Volo.Abp.Ddd.Application" Version="4.1.2" />

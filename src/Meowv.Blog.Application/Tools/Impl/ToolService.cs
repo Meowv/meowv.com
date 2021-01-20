@@ -1,9 +1,11 @@
 ﻿using IP2Region;
 using Meowv.Blog.Dto.Tools.Params;
 using Meowv.Blog.Extensions;
+using Meowv.Blog.Options;
 using Meowv.Blog.Response;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -12,6 +14,10 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
+using TencentCloud.Cdn.V20180606;
+using TencentCloud.Cdn.V20180606.Models;
+using TencentCloud.Common;
+using TencentCloud.Common.Profile;
 
 namespace Meowv.Blog.Tools.Impl
 {
@@ -19,11 +25,15 @@ namespace Meowv.Blog.Tools.Impl
     {
         private readonly IHttpClientFactory _httpClient;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly TencentCloudOptions _tencentCloudOptions;
 
-        public ToolService(IHttpClientFactory httpClient, IHttpContextAccessor httpContextAccessor)
+        public ToolService(IHttpClientFactory httpClient,
+                           IHttpContextAccessor httpContextAccessor,
+                           IOptions<TencentCloudOptions> tencentCloudOptions)
         {
             _httpClient = httpClient;
             _httpContextAccessor = httpContextAccessor;
+            _tencentCloudOptions = tencentCloudOptions.Value;
         }
 
         /// <summary>
@@ -116,6 +126,78 @@ namespace Meowv.Blog.Tools.Impl
             await client.PostAsync("https://sc.ftqq.com/SCU60393T5a94df1d5a9274125293f34a6acf928f5d78f551cf6d6.send", content);
 
             return response;
+        }
+
+        /// <summary>
+        /// Purge the cdn url cache.
+        /// </summary>
+        /// <param name="urls"></param>
+        /// <returns></returns>
+        [Route("api/meowv/tool/cdn/purge/url")]
+        public async Task<BlogResponse<PurgeUrlsCacheResponse>> PurgeCdnUrlsAsync(List<string> urls)
+        {
+            var result = new BlogResponse<PurgeUrlsCacheResponse>();
+
+            var parameters = new { Urls = urls }.SerializeToJson();
+            DoCdnAction(out CdnClient client, out PurgeUrlsCacheRequest req, parameters);
+
+            var resp = await client.PurgeUrlsCache(req);
+
+            result.IsSuccess(resp);
+            return result;
+        }
+
+        /// <summary>
+        /// Purge the cdn path cache.
+        /// </summary>
+        /// <param name="paths"></param>
+        /// <returns></returns>
+        [Route("api/meowv/tool/cdn/purge/path")]
+        public async Task<BlogResponse<PurgePathCacheResponse>> PurgeCdnPathsAsync(List<string> paths)
+        {
+            var result = new BlogResponse<PurgePathCacheResponse>();
+
+            var parameters = new { Paths = paths, FlushType = "flush" }.SerializeToJson();
+            DoCdnAction(out CdnClient client, out PurgePathCacheRequest req, parameters);
+
+            var resp = await client.PurgePathCache(req);
+
+            result.IsSuccess(resp);
+            return result;
+        }
+
+        /// <summary>
+        /// Push the cdn url cache.
+        /// </summary>
+        /// <param name="urls"></param>
+        /// <returns></returns>
+        [Route("api/meowv/tool/cdn/push/url")]
+        public async Task<BlogResponse<PushUrlsCacheResponse>> PushCdnUrlsAsync(List<string> urls)
+        {
+            var result = new BlogResponse<PushUrlsCacheResponse>();
+
+            var parameters = new { Urls = urls }.SerializeToJson();
+            DoCdnAction(out CdnClient client, out PushUrlsCacheRequest req, parameters);
+
+            var resp = await client.PushUrlsCache(req);
+
+            result.IsSuccess(resp);
+            return result;
+        }
+
+        private void DoCdnAction<T>(out CdnClient client, out T req, string json)
+        {
+            var cred = new Credential
+            {
+                SecretId = _tencentCloudOptions.SecretId,
+                SecretKey = _tencentCloudOptions.SecretKey
+            };
+            var httpProfile = new HttpProfile { Endpoint = $"cdn.tencentcloudapi.com" };
+
+            var clientProfile = new ClientProfile { HttpProfile = httpProfile };
+
+            client = new CdnClient(cred, "", clientProfile);
+            req = json.DeserializeToObject<T>();
         }
     }
 }
