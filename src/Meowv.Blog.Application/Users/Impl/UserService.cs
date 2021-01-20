@@ -122,6 +122,29 @@ namespace Meowv.Blog.Users.Impl
             return response;
         }
 
+        /// <summary>
+        /// Get user by id.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [Route("api/meowv/user/{id}")]
+        public async Task<BlogResponse<UserDto>> GetUserAsync(string id)
+        {
+            var response = new BlogResponse<UserDto>();
+
+            var user = await _users.FindAsync(id.ToObjectId());
+            if (user is null)
+            {
+                response.IsFailed("The user id is not exists.");
+                return response;
+            }
+
+            var result = ObjectMapper.Map<User, UserDto>(user);
+
+            response.IsSuccess(result);
+            return response;
+        }
+
         [RemoteService(false)]
         public async Task<User> VerifyByAccountAsync(string username, string password)
         {
