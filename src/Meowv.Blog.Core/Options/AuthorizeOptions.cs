@@ -13,5 +13,10 @@ namespace Meowv.Blog.Options
         /// Gitee
         /// </summary>
         public GiteeOptions Gitee { get; set; }
+
+        /// <summary>
+        /// Alipay
+        /// </summary>
+        public AlipayOptions Alipay { get; set; }
     }
 }

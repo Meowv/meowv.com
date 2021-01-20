@@ -112,10 +112,12 @@ namespace Meowv.Blog
                 var authorizeOption = configuration.GetSection("authorize");
                 var githubOption = authorizeOption.GetSection("github");
                 var giteeOption = authorizeOption.GetSection("gitee");
+                var alipayOption = authorizeOption.GetSection("alipay");
 
                 Configure<AuthorizeOptions>(authorizeOption);
                 Configure<GithubOptions>(githubOption);
                 Configure<GiteeOptions>(giteeOption);
+                Configure<AlipayOptions>(alipayOption);
 
                 options.Github = new GithubOptions
                 {
@@ -130,6 +132,15 @@ namespace Meowv.Blog
                     ClientSecret = giteeOption.GetValue<string>(nameof(options.Gitee.ClientSecret)),
                     RedirectUrl = giteeOption.GetValue<string>(nameof(options.Gitee.RedirectUrl)),
                     Scope = giteeOption.GetValue<string>(nameof(options.Gitee.Scope))
+                };
+                options.Alipay = new AlipayOptions
+                {
+                    AppId = alipayOption.GetValue<string>(nameof(options.Alipay.AppId)),
+                    AppKey = alipayOption.GetValue<string>(nameof(options.Alipay.AppKey)),
+                    RedirectUrl = alipayOption.GetValue<string>(nameof(options.Alipay.RedirectUrl)),
+                    Scope = alipayOption.GetValue<string>(nameof(options.Alipay.Scope)),
+                    PrivateKey = alipayOption.GetValue<string>(nameof(options.Alipay.PrivateKey)),
+                    PublicKey = alipayOption.GetValue<string>(nameof(options.Alipay.PublicKey))
                 };
 
                 authorize = options;

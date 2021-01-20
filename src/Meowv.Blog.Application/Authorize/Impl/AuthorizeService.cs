@@ -21,16 +21,19 @@ namespace Meowv.Blog.Authorize.Impl
         private readonly IUserService _userService;
         private readonly OAuthGithubService _githubService;
         private readonly OAuthGiteeService _giteeService;
+        private readonly OAuthAlipayService _alipayService;
 
         public AuthorizeService(IOptions<JwtOptions> jwtOption,
                                 IUserService userService,
                                 OAuthGithubService githubService,
-                                OAuthGiteeService giteeService)
+                                OAuthGiteeService giteeService,
+                                OAuthAlipayService alipayService)
         {
             _jwtOption = jwtOption.Value;
             _userService = userService;
             _githubService = githubService;
             _giteeService = giteeService;
+            _alipayService = alipayService;
         }
 
         /// <summary>
@@ -49,6 +52,7 @@ namespace Meowv.Blog.Authorize.Impl
                 {
                     "github" => await _githubService.GetAuthorizeUrl(state),
                     "gitee" => await _giteeService.GetAuthorizeUrl(state),
+                    "alipay" => await _alipayService.GetAuthorizeUrl(state),
                     _ => throw new NotImplementedException($"Not implemented:{type}")
                 }
             };
@@ -98,6 +102,13 @@ namespace Meowv.Blog.Authorize.Impl
 
                         var user = await _userService.CreateUserAsync(userInfo.Login, type, userInfo.Id, userInfo.Name, userInfo.Avatar, userInfo.Email);
                         token = GenerateToken(user);
+                        break;
+                    }
+
+                case "alipay":
+                    {
+                        var accessToken = await _alipayService.GetAccessTokenAsync(code, state);
+
                         break;
                     }
             }
