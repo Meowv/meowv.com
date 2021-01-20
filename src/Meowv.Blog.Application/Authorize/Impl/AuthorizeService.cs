@@ -1,7 +1,6 @@
 ﻿using Meowv.Blog.Authorize.OAuth;
 using Meowv.Blog.Domain.Users;
 using Meowv.Blog.Dto.Authorize.Params;
-using Meowv.Blog.Dto.Users.Params;
 using Meowv.Blog.Options;
 using Meowv.Blog.Response;
 using Meowv.Blog.Users;
@@ -87,18 +86,7 @@ namespace Meowv.Blog.Authorize.Impl
                         var accessToken = await _githubService.GetAccessTokenAsync(code, state);
                         var userInfo = await _githubService.GetUserInfoAsync(accessToken);
 
-                        await _userService.CreateUserAsync(new CreateUserInput
-                        {
-                            Username = userInfo.Login,
-                            Type = type,
-                            Identity = userInfo.Id,
-                            Name = userInfo.Name,
-                            Avatar = userInfo.Avatar,
-                            Email = userInfo.Email
-                        });
-
-                        var user = await _userService.VerifyByOAuthAsync(type, userInfo.Id);
-
+                        var user = await _userService.CreateUserAsync(userInfo.Login, type, userInfo.Id, userInfo.Name, userInfo.Avatar, userInfo.Email);
                         token = GenerateToken(user);
                         break;
                     }
@@ -108,18 +96,7 @@ namespace Meowv.Blog.Authorize.Impl
                         var accessToken = await _giteeService.GetAccessTokenAsync(code, state);
                         var userInfo = await _giteeService.GetUserInfoAsync(accessToken);
 
-                        await _userService.CreateUserAsync(new CreateUserInput
-                        {
-                            Username = userInfo.Login,
-                            Type = type,
-                            Identity = userInfo.Id,
-                            Name = userInfo.Name,
-                            Avatar = userInfo.Avatar,
-                            Email = userInfo.Email
-                        });
-
-                        var user = await _userService.VerifyByOAuthAsync(type, userInfo.Id);
-
+                        var user = await _userService.CreateUserAsync(userInfo.Login, type, userInfo.Id, userInfo.Name, userInfo.Avatar, userInfo.Email);
                         token = GenerateToken(user);
                         break;
                     }

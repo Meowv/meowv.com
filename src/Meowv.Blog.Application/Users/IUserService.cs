@@ -19,8 +19,8 @@ namespace Meowv.Blog.Users
 
         Task<BlogResponse<UserDto>> GetUserAsync(string id);
 
-        Task<User> VerifyByAccountAsync(string username, string password);
+        Task<User> CreateUserAsync(string username, string type, string identity, string name, string avatar, string email);
 
-        Task<User> VerifyByOAuthAsync(string type, string identity);
+        Task<User> VerifyByAccountAsync(string username, string password);
     }
 }
