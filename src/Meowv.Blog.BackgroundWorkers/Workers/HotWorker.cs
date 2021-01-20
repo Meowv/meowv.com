@@ -60,37 +60,44 @@ namespace Meowv.Blog.Workers
                     var source = item.Key;
                     var url = item.Value;
 
-                    switch (source)
+                    try
                     {
-                        case Hot.KnownSources.juejin or Hot.KnownSources.csdn or Hot.KnownSources.zhihu or Hot.KnownSources.huxiu or Hot.KnownSources.douyin or Hot.KnownSources.woshipm or Hot.KnownSources.kaiyan:
-                            {
-                                using var client = _httpClient.CreateClient();
-
-                                switch (source)
+                        switch (source)
+                        {
+                            case Hot.KnownSources.juejin or Hot.KnownSources.csdn or Hot.KnownSources.zhihu or Hot.KnownSources.huxiu or Hot.KnownSources.douyin or Hot.KnownSources.woshipm or Hot.KnownSources.kaiyan:
                                 {
-                                    case not Hot.KnownSources.juejin:
-                                        result = await client.GetStringAsync(url);
-                                        break;
+                                    using var client = _httpClient.CreateClient();
 
-                                    default:
-                                        {
-                                            var content = new ByteArrayContent("{\"id_type\":2,\"client_type\":2608,\"sort_type\":3,\"cursor\":\"0\",\"limit\":20}".GetBytes());
-                                            content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-
-                                            var response = await client.PostAsync(url, content);
-                                            result = await response.Content.ReadAsStringAsync();
+                                    switch (source)
+                                    {
+                                        case not Hot.KnownSources.juejin:
+                                            result = await client.GetStringAsync(url);
                                             break;
-                                        }
-                                }
-                                break;
-                            }
 
-                        default:
-                            {
-                                var encoding = source is Hot.KnownSources.baidu or Hot.KnownSources.news163 or Hot.KnownSources.pojie52 or Hot.KnownSources.gaoloumi ? Encoding.GetEncoding("GB2312") : Encoding.UTF8;
-                                result = await web.LoadFromWebAsync(url, encoding);
-                                break;
-                            }
+                                        default:
+                                            {
+                                                var content = new ByteArrayContent("{\"id_type\":2,\"client_type\":2608,\"sort_type\":3,\"cursor\":\"0\",\"limit\":20}".GetBytes());
+                                                content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+                                                var response = await client.PostAsync(url, content);
+                                                result = await response.Content.ReadAsStringAsync();
+                                                break;
+                                            }
+                                    }
+                                    break;
+                                }
+
+                            default:
+                                {
+                                    var encoding = source is Hot.KnownSources.baidu or Hot.KnownSources.news163 or Hot.KnownSources.pojie52 or Hot.KnownSources.gaoloumi ? Encoding.GetEncoding("GB2312") : Encoding.UTF8;
+                                    result = await web.LoadFromWebAsync(url, encoding);
+                                    break;
+                                }
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        result = string.Empty;
                     }
 
                     return new HotItemDto<object>
@@ -110,6 +117,8 @@ namespace Meowv.Blog.Workers
                 var item = await task;
                 var source = item.Source;
                 var result = item.Result;
+
+                if (result.ToString().IsNullOrEmpty()) continue;
 
                 var hot = new Hot() { Source = source };
 
