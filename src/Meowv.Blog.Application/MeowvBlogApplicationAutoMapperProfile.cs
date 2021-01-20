@@ -4,11 +4,13 @@ using Meowv.Blog.Domain.Hots;
 using Meowv.Blog.Domain.Messages;
 using Meowv.Blog.Domain.Sayings;
 using Meowv.Blog.Domain.Signatures;
+using Meowv.Blog.Domain.Users;
 using Meowv.Blog.Dto.Blog;
 using Meowv.Blog.Dto.Hots;
 using Meowv.Blog.Dto.Messages;
 using Meowv.Blog.Dto.Sayings;
 using Meowv.Blog.Dto.Signatures;
+using Meowv.Blog.Dto.Users;
 using Meowv.Blog.Extensions;
 
 namespace Meowv.Blog
@@ -52,6 +54,8 @@ namespace Meowv.Blog
             CreateMap<Message, MessageDto>().ForMember(x => x.CreatedAt, dto => dto.MapFrom(opt => opt.CreatedAt.ToLocalTime()));
 
             CreateMap<MessageReply, MessageReplyDto>().ForMember(x => x.CreatedAt, dto => dto.MapFrom(opt => opt.CreatedAt.ToLocalTime()));
+
+            CreateMap<User, UserDto>().ForMember(x => x.CreatedAt, dto => dto.MapFrom(opt => opt.CreatedAt.ToLocalTime()));
         }
     }
 }

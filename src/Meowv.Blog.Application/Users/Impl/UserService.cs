@@ -1,10 +1,12 @@
 ﻿using Meowv.Blog.Domain.Users;
 using Meowv.Blog.Domain.Users.Repositories;
+using Meowv.Blog.Dto.Users;
 using Meowv.Blog.Dto.Users.Params;
 using Meowv.Blog.Extensions;
 using Meowv.Blog.Response;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Meowv.Blog.Users.Impl
@@ -100,6 +102,22 @@ namespace Meowv.Blog.Users.Impl
             user.IsAdmin = isAdmin;
             await _users.UpdateAsync(user);
 
+            return response;
+        }
+
+        /// <summary>
+        /// Get the list of users.
+        /// </summary>
+        /// <returns></returns>
+        [Route("api/meowv/users")]
+        public async Task<BlogResponse<List<UserDto>>> GetUsersAsync()
+        {
+            var response = new BlogResponse<List<UserDto>>();
+
+            var users = await _users.GetListAsync();
+            var result = ObjectMapper.Map<List<User>, List<UserDto>>(users);
+
+            response.IsSuccess(result);
             return response;
         }
     }

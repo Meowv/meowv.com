@@ -1,5 +1,7 @@
-﻿using Meowv.Blog.Dto.Users.Params;
+﻿using Meowv.Blog.Dto.Users;
+using Meowv.Blog.Dto.Users.Params;
 using Meowv.Blog.Response;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Meowv.Blog.Users
@@ -11,5 +13,7 @@ namespace Meowv.Blog.Users
         Task<BlogResponse> UpdateUserAsync(string id, UpdateUserinput input);
 
         Task<BlogResponse> SettingAdminAsync(string id, bool isAdmin);
+
+        Task<BlogResponse<List<UserDto>>> GetUsersAsync();
     }
 }
