@@ -3,6 +3,7 @@ using Meowv.Blog.Domain.Hots;
 using Meowv.Blog.Domain.Messages;
 using Meowv.Blog.Domain.Sayings;
 using Meowv.Blog.Domain.Signatures;
+using Meowv.Blog.Domain.Users;
 using MongoDB.Driver;
 using Volo.Abp.MongoDB;
 using Tag = Meowv.Blog.Domain.Blog.Tag;
@@ -26,6 +27,8 @@ namespace Meowv.Blog
         public IMongoCollection<Signature> Signatures => Collection<Signature>();
 
         public IMongoCollection<Message> Messages => Collection<Message>();
+
+        public IMongoCollection<User> Users => Collection<User>();
 
         protected override void CreateModel(IMongoModelBuilder modelBuilder)
         {

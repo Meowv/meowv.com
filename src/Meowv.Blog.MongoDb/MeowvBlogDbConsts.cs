@@ -43,6 +43,11 @@
             /// Message
             /// </summary>
             public const string Message = "meowv_blog_messages";
+
+            /// <summary>
+            /// User
+            /// </summary>
+            public const string User = "meowv_blog_users";
         }
     }
 }

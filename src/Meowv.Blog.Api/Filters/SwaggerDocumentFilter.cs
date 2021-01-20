@@ -19,7 +19,8 @@ namespace Meowv.Blog.Api.Filters
                 new OpenApiTag { Name = "Hot", Description = "<code>The hots module.</code>" },
                 new OpenApiTag { Name = "Message", Description = "<code>The message module.</code>" },
                 new OpenApiTag { Name = "Saying", Description = "<code>The sayings module.</code>" },
-                new OpenApiTag { Name = "Signature", Description = "<code>The signature module.</code>" }
+                new OpenApiTag { Name = "Signature", Description = "<code>The signature module.</code>" },
+                new OpenApiTag { Name = "User", Description = "<code>The user module.</code>" }
             };
 
             swaggerDoc.Tags = tags;

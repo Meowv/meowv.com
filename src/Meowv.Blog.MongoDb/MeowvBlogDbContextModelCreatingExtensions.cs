@@ -3,6 +3,7 @@ using Meowv.Blog.Domain.Hots;
 using Meowv.Blog.Domain.Messages;
 using Meowv.Blog.Domain.Sayings;
 using Meowv.Blog.Domain.Signatures;
+using Meowv.Blog.Domain.Users;
 using Volo.Abp;
 using Volo.Abp.MongoDB;
 
@@ -66,6 +67,13 @@ namespace Meowv.Blog
             builder.Entity<Message>(b =>
             {
                 b.CollectionName = MeowvBlogDbConsts.CollectionNames.Message;
+                b.BsonMap.AutoMap();
+                b.BsonMap.SetIgnoreExtraElements(true);
+            });
+
+            builder.Entity<User>(b =>
+            {
+                b.CollectionName = MeowvBlogDbConsts.CollectionNames.User;
                 b.BsonMap.AutoMap();
                 b.BsonMap.SetIgnoreExtraElements(true);
             });
