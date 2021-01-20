@@ -7,7 +7,6 @@ using Meowv.Blog.Response;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Volo.Abp;
 
@@ -32,7 +31,7 @@ namespace Meowv.Blog.Users.Impl
         {
             var response = new BlogResponse();
 
-            var user = await _users.FindAsync(x => x.Username == input.Username);
+            var user = await _users.FindAsync(x => x.Username == input.Username && x.Type == input.Type && x.Identity == input.Identity);
             if (user is not null)
             {
                 response.IsFailed("The username already exists.");
@@ -123,13 +122,26 @@ namespace Meowv.Blog.Users.Impl
             return response;
         }
 
-        /// <summary>
-        /// Verify account.
-        /// </summary>
-        /// <param name="username"></param>
-        /// <param name="password"></param>
-        /// <returns></returns>
         [RemoteService(false)]
-        public bool VerifyAccount(string username, string password) => _users.Any(x => x.Username == username && x.Password == password.ToMd5());
+        public async Task<User> VerifyByAccountAsync(string username, string password)
+        {
+            var user = await _users.FindAsync(x => x.Username == username && x.Password == password.ToMd5());
+            if (user is null)
+            {
+                throw new ArgumentException("The username or password entered is incorrect.");
+            }
+            return user;
+        }
+
+        [RemoteService(false)]
+        public async Task<User> VerifyByOAuthAsync(string type, string identity)
+        {
+            var user = await _users.FindAsync(x => x.Type == type && x.Identity == identity && x.IsAdmin);
+            if (user is null)
+            {
+                throw new ArgumentException("Unauthorized.");
+            }
+            return user;
+        }
     }
 }

@@ -1,5 +1,7 @@
 ﻿using Meowv.Blog.Authorize.OAuth;
+using Meowv.Blog.Domain.Users;
 using Meowv.Blog.Dto.Authorize.Params;
+using Meowv.Blog.Dto.Users.Params;
 using Meowv.Blog.Options;
 using Meowv.Blog.Response;
 using Meowv.Blog.Users;
@@ -16,19 +18,16 @@ namespace Meowv.Blog.Authorize.Impl
 {
     public class AuthorizeService : ServiceBase, IAuthorizeService
     {
-        private readonly AuthorizeOptions _authorizeOption;
         private readonly JwtOptions _jwtOption;
         private readonly IUserService _userService;
         private readonly OAuthGithubService _githubService;
         private readonly OAuthGiteeService _giteeService;
 
-        public AuthorizeService(IOptions<AuthorizeOptions> authorizeOption,
-                                IOptions<JwtOptions> jwtOption,
+        public AuthorizeService(IOptions<JwtOptions> jwtOption,
                                 IUserService userService,
                                 OAuthGithubService githubService,
                                 OAuthGiteeService giteeService)
         {
-            _authorizeOption = authorizeOption.Value;
             _jwtOption = jwtOption.Value;
             _userService = userService;
             _githubService = githubService;
@@ -86,18 +85,42 @@ namespace Meowv.Blog.Authorize.Impl
                 case "github":
                     {
                         var accessToken = await _githubService.GetAccessTokenAsync(code, state);
-                        var user = await _githubService.GetUserInfoAsync(accessToken);
+                        var userInfo = await _githubService.GetUserInfoAsync(accessToken);
 
-                        token = GenerateToken(user.Id, user.Name, user.Email);
+                        await _userService.CreateUserAsync(new CreateUserInput
+                        {
+                            Username = userInfo.Login,
+                            Type = type,
+                            Identity = userInfo.Id,
+                            Name = userInfo.Name,
+                            Avatar = userInfo.Avatar,
+                            Email = userInfo.Email
+                        });
+
+                        var user = await _userService.VerifyByOAuthAsync(type, userInfo.Id);
+
+                        token = GenerateToken(user);
                         break;
                     }
 
                 case "gitee":
                     {
                         var accessToken = await _giteeService.GetAccessTokenAsync(code, state);
-                        var user = await _giteeService.GetUserInfoAsync(accessToken);
+                        var userInfo = await _giteeService.GetUserInfoAsync(accessToken);
 
-                        token = GenerateToken(user.Id, user.Name, user.Email);
+                        await _userService.CreateUserAsync(new CreateUserInput
+                        {
+                            Username = userInfo.Login,
+                            Type = type,
+                            Identity = userInfo.Id,
+                            Name = userInfo.Name,
+                            Avatar = userInfo.Avatar,
+                            Email = userInfo.Email
+                        });
+
+                        var user = await _userService.VerifyByOAuthAsync(type, userInfo.Id);
+
+                        token = GenerateToken(user);
                         break;
                     }
             }
@@ -116,22 +139,20 @@ namespace Meowv.Blog.Authorize.Impl
         {
             var response = new BlogResponse<string>();
 
-            if (input.Username != _authorizeOption.Account.Username || input.Password != _authorizeOption.Account.Password)
-            {
-                response.IsFailed("The username or password entered is incorrect.");
-                return response;
-            }
+            var user = await _userService.VerifyByAccountAsync(input.Username, input.Password);
+            var token = GenerateToken(user);
 
-            response.IsSuccess(GenerateToken(input.Username));
+            response.IsSuccess(token);
             return await Task.FromResult(response);
         }
 
-        private string GenerateToken(string id = "", string name = "", string email = "")
+        private string GenerateToken(User user)
         {
             var claims = new[] {
-                new Claim(ClaimTypes.NameIdentifier, id ?? "meowv"),
-                new Claim(ClaimTypes.Name, name ?? "阿星Plus"),
-                new Claim(ClaimTypes.Email, email ?? "123@meowv.com"),
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Name, user.Name),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim("avatar", user.Avatar),
                 new Claim(JwtRegisteredClaimNames.Exp, $"{new DateTimeOffset(DateTime.Now.AddMinutes(_jwtOption.Expires)).ToUnixTimeSeconds()}"),
                 new Claim(JwtRegisteredClaimNames.Nbf, $"{new DateTimeOffset(DateTime.Now).ToUnixTimeSeconds()}")
             };

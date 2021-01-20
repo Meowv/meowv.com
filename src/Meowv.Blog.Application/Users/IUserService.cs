@@ -1,4 +1,5 @@
-﻿using Meowv.Blog.Dto.Users;
+﻿using Meowv.Blog.Domain.Users;
+using Meowv.Blog.Dto.Users;
 using Meowv.Blog.Dto.Users.Params;
 using Meowv.Blog.Response;
 using System.Collections.Generic;
@@ -15,5 +16,9 @@ namespace Meowv.Blog.Users
         Task<BlogResponse> SettingAdminAsync(string id, bool isAdmin);
 
         Task<BlogResponse<List<UserDto>>> GetUsersAsync();
+
+        Task<User> VerifyByAccountAsync(string username, string password);
+
+        Task<User> VerifyByOAuthAsync(string type, string identity);
     }
 }

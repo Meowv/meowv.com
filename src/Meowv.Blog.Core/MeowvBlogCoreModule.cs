@@ -108,11 +108,6 @@ namespace Meowv.Blog
                 Configure<GithubOptions>(githubOption);
                 Configure<GiteeOptions>(giteeOption);
 
-                options.Account = new AccountOptions
-                {
-                    Username = authorizeOption.GetSection(nameof(options.Account)).GetValue<string>(nameof(options.Account.Username)),
-                    Password = authorizeOption.GetSection(nameof(options.Account)).GetValue<string>(nameof(options.Account.Password))
-                };
                 options.Github = new GithubOptions
                 {
                     ClientId = githubOption.GetValue<string>(nameof(options.Github.ClientId)),
