@@ -7,7 +7,9 @@ using Meowv.Blog.Response;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using Volo.Abp;
 
 namespace Meowv.Blog.Users.Impl
 {
@@ -120,5 +122,14 @@ namespace Meowv.Blog.Users.Impl
             response.IsSuccess(result);
             return response;
         }
+
+        /// <summary>
+        /// Verify account.
+        /// </summary>
+        /// <param name="username"></param>
+        /// <param name="password"></param>
+        /// <returns></returns>
+        [RemoteService(false)]
+        public bool VerifyAccount(string username, string password) => _users.Any(x => x.Username == username && x.Password == password.ToMd5());
     }
 }

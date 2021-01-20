@@ -2,6 +2,7 @@
 using Meowv.Blog.Dto.Authorize.Params;
 using Meowv.Blog.Options;
 using Meowv.Blog.Response;
+using Meowv.Blog.Users;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Options;
@@ -17,16 +18,19 @@ namespace Meowv.Blog.Authorize.Impl
     {
         private readonly AuthorizeOptions _authorizeOption;
         private readonly JwtOptions _jwtOption;
+        private readonly IUserService _userService;
         private readonly OAuthGithubService _githubService;
         private readonly OAuthGiteeService _giteeService;
 
         public AuthorizeService(IOptions<AuthorizeOptions> authorizeOption,
                                 IOptions<JwtOptions> jwtOption,
+                                IUserService userService,
                                 OAuthGithubService githubService,
                                 OAuthGiteeService giteeService)
         {
             _authorizeOption = authorizeOption.Value;
             _jwtOption = jwtOption.Value;
+            _userService = userService;
             _githubService = githubService;
             _giteeService = giteeService;
         }
