@@ -4,6 +4,7 @@ using Meowv.Blog.Response;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
@@ -14,6 +15,7 @@ using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.Filters;
 using Swashbuckle.AspNetCore.SwaggerUI;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -53,6 +55,7 @@ namespace Meowv.Blog.Api
             ConfigureRouting(context.Services);
             ConfigureRedis(context.Services);
             ConfigureCors(context.Services);
+            CofiggureHealthChecks(context.Services);
             ConfigureAuthentication(context.Services);
             ConfigureSwaggerServices(context.Services);
         }
@@ -132,6 +135,13 @@ namespace Meowv.Blog.Api
                         .AllowCredentials();
                 });
             });
+        }
+
+        private void CofiggureHealthChecks(IServiceCollection services)
+        {
+            services.AddHealthChecks()
+                    .AddMongoDb(AppOptions.Storage.Mongodb)
+                    .AddRedis(AppOptions.Storage.Redis);
         }
 
         private void ConfigureAuthentication(IServiceCollection services)
@@ -228,6 +238,24 @@ namespace Meowv.Blog.Api
             app.UseForwardedHeaders(new ForwardedHeadersOptions
             {
                 ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+            });
+            app.UseHealthChecks("/api/meowv/health", new HealthCheckOptions
+            {
+                ResponseWriter = (context, healthReport) =>
+                {
+                    context.Response.ContentType = "application/json;charset=utf-8";
+
+                    var result = healthReport.Entries.Select(x => new NameValue
+                    {
+                        Name = x.Key,
+                        Value = x.Value.Status.ToString()
+                    });
+
+                    var response = new BlogResponse<IEnumerable<NameValue>>();
+                    response.IsSuccess(result);
+
+                    return context.Response.WriteAsJsonAsync(response);
+                }
             });
             app.UseHsts();
             app.UseRouting();
