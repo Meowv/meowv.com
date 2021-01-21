@@ -114,7 +114,7 @@ namespace Meowv.Blog.Authorize.Impl
                         var accessToken = await _alipayService.GetAccessTokenAsync(code, state);
                         var userInfo = await _alipayService.GetUserInfoAsync(accessToken);
 
-                        var user = await _userService.CreateUserAsync(userInfo.UserInfoResponse.Name, type, userInfo.UserInfoResponse.Id, userInfo.UserInfoResponse.Name, userInfo.UserInfoResponse.Avatar, string.Empty);
+                        var user = await _userService.CreateUserAsync(userInfo.UserInfoResponse.Name, type, userInfo.UserInfoResponse.Id, userInfo.UserInfoResponse.Name, userInfo.UserInfoResponse.Avatar, userInfo.UserInfoResponse.Email);
 
                         token = GenerateToken(user);
                         break;

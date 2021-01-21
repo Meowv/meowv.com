@@ -6,7 +6,7 @@ using System.Security.Cryptography;
 
 namespace Meowv.Blog.Extensions
 {
-    public static class AlipaySignExtensions
+    public static class AlipayExtensions
     {
         public static string Sign(this Dictionary<string, string> dic, string privateKey)
         {
