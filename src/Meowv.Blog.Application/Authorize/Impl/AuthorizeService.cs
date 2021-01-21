@@ -85,52 +85,14 @@ namespace Meowv.Blog.Authorize.Impl
 
             StateManager.Remove(state);
 
-            var token = "";
-
-            switch (type)
+            var token = type switch
             {
-                case "github":
-                    {
-                        var accessToken = await _githubService.GetAccessTokenAsync(code, state);
-                        var userInfo = await _githubService.GetUserInfoAsync(accessToken);
-
-                        var user = await _userService.CreateUserAsync(userInfo.Login, type, userInfo.Id, userInfo.Name, userInfo.Avatar, userInfo.Email);
-                        token = GenerateToken(user);
-                        break;
-                    }
-
-                case "gitee":
-                    {
-                        var accessToken = await _giteeService.GetAccessTokenAsync(code, state);
-                        var userInfo = await _giteeService.GetUserInfoAsync(accessToken);
-
-                        var user = await _userService.CreateUserAsync(userInfo.Login, type, userInfo.Id, userInfo.Name, userInfo.Avatar, userInfo.Email);
-                        token = GenerateToken(user);
-                        break;
-                    }
-
-                case "alipay":
-                    {
-                        var accessToken = await _alipayService.GetAccessTokenAsync(code, state);
-                        var userInfo = await _alipayService.GetUserInfoAsync(accessToken);
-
-                        var user = await _userService.CreateUserAsync(userInfo.UserInfoResponse.Name, type, userInfo.UserInfoResponse.Id, userInfo.UserInfoResponse.Name, userInfo.UserInfoResponse.Avatar, userInfo.UserInfoResponse.Email);
-
-                        token = GenerateToken(user);
-                        break;
-                    }
-
-                case "dingtalk":
-                    {
-                        var accessToken = await _dingtalkService.GetAccessTokenAsync(code, state);
-                        var userInfo = await _dingtalkService.GetUserInfoAsync(accessToken);
-
-                        var user = await _userService.CreateUserAsync(userInfo.UserInfoResponse.Name, type, userInfo.UserInfoResponse.Id, userInfo.UserInfoResponse.Name, userInfo.UserInfoResponse.Avatar, userInfo.UserInfoResponse.Email);
-
-                        token = GenerateToken(user);
-                        break;
-                    }
-            }
+                "github" => GenerateToken(await _githubService.GetUserByOAuthAsync(type, code, state)),
+                "gitee" => GenerateToken(await _giteeService.GetUserByOAuthAsync(type, code, state)),
+                "alipay" => GenerateToken(await _alipayService.GetUserByOAuthAsync(type, code, state)),
+                "dingtalk" => GenerateToken(await _dingtalkService.GetUserByOAuthAsync(type, code, state)),
+                _ => throw new NotImplementedException($"Not implemented:{type}")
+            };
 
             response.IsSuccess(token);
             return response;

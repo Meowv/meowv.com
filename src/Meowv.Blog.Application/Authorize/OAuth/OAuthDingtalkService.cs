@@ -1,6 +1,8 @@
-﻿using Meowv.Blog.Dto.Authorize;
+﻿using Meowv.Blog.Domain.Users;
+using Meowv.Blog.Dto.Authorize;
 using Meowv.Blog.Extensions;
 using Meowv.Blog.Options.Authorize;
+using Meowv.Blog.Users;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
@@ -15,11 +17,13 @@ namespace Meowv.Blog.Authorize.OAuth
     {
         private readonly DingtalkOptions _dingtalkOptions;
         private readonly IHttpClientFactory _httpClient;
+        private readonly IUserService _userService;
 
-        public OAuthDingtalkService(IOptions<DingtalkOptions> dingtalkOptions, IHttpClientFactory httpClient)
+        public OAuthDingtalkService(IOptions<DingtalkOptions> dingtalkOptions, IHttpClientFactory httpClient, IUserService userService)
         {
             _dingtalkOptions = dingtalkOptions.Value;
             _httpClient = httpClient;
+            _userService = userService;
         }
 
         public async Task<string> GetAuthorizeUrl(string state = "")
@@ -28,6 +32,14 @@ namespace Meowv.Blog.Authorize.OAuth
             var url = $"{_dingtalkOptions.AuthorizeUrl}?{param.ToQueryString()}";
 
             return await Task.FromResult(url);
+        }
+
+        public async Task<User> GetUserByOAuthAsync(string type, string code, string state)
+        {
+            var accessToken = await GetAccessTokenAsync(code, state);
+            var userInfo = await GetUserInfoAsync(accessToken);
+
+            return await _userService.CreateUserAsync(userInfo.UserInfoResponse.Name, type, userInfo.UserInfoResponse.Id, userInfo.UserInfoResponse.Name, userInfo.UserInfoResponse.Avatar, userInfo.UserInfoResponse.Email);
         }
 
         public async Task<string> GetAccessTokenAsync(string code, string state = "")

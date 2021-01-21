@@ -1,6 +1,8 @@
-﻿using Meowv.Blog.Dto.Authorize;
+﻿using Meowv.Blog.Domain.Users;
+using Meowv.Blog.Dto.Authorize;
 using Meowv.Blog.Extensions;
 using Meowv.Blog.Options.Authorize;
+using Meowv.Blog.Users;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
@@ -14,14 +16,16 @@ namespace Meowv.Blog.Authorize.OAuth
     {
         private readonly AlipayOptions _alipayOptions;
         private readonly IHttpClientFactory _httpClient;
+        private readonly IUserService _userService;
 
-        public OAuthAlipayService(IOptions<AlipayOptions> alipayOptions, IHttpClientFactory httpClient)
+        public OAuthAlipayService(IOptions<AlipayOptions> alipayOptions, IHttpClientFactory httpClient, IUserService userService)
         {
             _alipayOptions = alipayOptions.Value;
             _httpClient = httpClient;
+            _userService = userService;
         }
 
-        public async Task<string> GetAuthorizeUrl(string state = "")
+        public async Task<string> GetAuthorizeUrl(string state)
         {
             var param = BuildAuthorizeUrlParams(state);
             var url = $"{_alipayOptions.AuthorizeUrl}?{param.ToQueryString()}";
@@ -29,7 +33,15 @@ namespace Meowv.Blog.Authorize.OAuth
             return await Task.FromResult(url);
         }
 
-        public async Task<AlipayAccessToken> GetAccessTokenAsync(string code, string state = "")
+        public async Task<User> GetUserByOAuthAsync(string type, string code, string state)
+        {
+            var accessToken = await GetAccessTokenAsync(code, state);
+            var userInfo = await GetUserInfoAsync(accessToken);
+
+            return await _userService.CreateUserAsync(userInfo.UserInfoResponse.Name, type, userInfo.UserInfoResponse.Id, userInfo.UserInfoResponse.Name, userInfo.UserInfoResponse.Avatar, userInfo.UserInfoResponse.Email);
+        }
+
+        public async Task<AlipayAccessToken> GetAccessTokenAsync(string code, string state )
         {
             var param = BuildAccessTokenParams(code, state);
 

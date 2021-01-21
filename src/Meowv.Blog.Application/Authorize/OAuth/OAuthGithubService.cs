@@ -1,6 +1,8 @@
-﻿using Meowv.Blog.Dto.Authorize;
+﻿using Meowv.Blog.Domain.Users;
+using Meowv.Blog.Dto.Authorize;
 using Meowv.Blog.Extensions;
 using Meowv.Blog.Options.Authorize;
+using Meowv.Blog.Users;
 using Microsoft.Extensions.Options;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -15,11 +17,13 @@ namespace Meowv.Blog.Authorize.OAuth
     {
         private readonly GithubOptions _githubOptions;
         private readonly IHttpClientFactory _httpClient;
+        private readonly IUserService _userService;
 
-        public OAuthGithubService(IOptions<GithubOptions> githubOptions, IHttpClientFactory httpClient)
+        public OAuthGithubService(IOptions<GithubOptions> githubOptions, IHttpClientFactory httpClient, IUserService userService)
         {
             _githubOptions = githubOptions.Value;
             _httpClient = httpClient;
+            _userService = userService;
         }
 
         public async Task<string> GetAuthorizeUrl(string state = "")
@@ -28,6 +32,14 @@ namespace Meowv.Blog.Authorize.OAuth
             var url = $"{_githubOptions.AuthorizeUrl}?{param.ToQueryString()}";
 
             return await Task.FromResult(url);
+        }
+
+        public async Task<User> GetUserByOAuthAsync(string type, string code, string state)
+        {
+            var accessToken = await GetAccessTokenAsync(code, state);
+            var userInfo = await GetUserInfoAsync(accessToken);
+
+            return await _userService.CreateUserAsync(userInfo.Login, type, userInfo.Id, userInfo.Name, userInfo.Avatar, userInfo.Email);
         }
 
         public async Task<AccessTokenBase> GetAccessTokenAsync(string code, string state = "")
