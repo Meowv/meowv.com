@@ -1,4 +1,5 @@
 ﻿using Meowv.Blog.Authorize.OAuth;
+using Meowv.Blog.Authorize.OAuth.Impl;
 using Meowv.Blog.Domain.Users;
 using Meowv.Blog.Dto.Authorize.Params;
 using Meowv.Blog.Options;
@@ -18,21 +19,18 @@ namespace Meowv.Blog.Authorize.Impl
     public class AuthorizeService : ServiceBase, IAuthorizeService
     {
         private readonly JwtOptions _jwtOption;
-        private readonly IUserService _userService;
         private readonly OAuthGithubService _githubService;
         private readonly OAuthGiteeService _giteeService;
         private readonly OAuthAlipayService _alipayService;
         private readonly OAuthDingtalkService _dingtalkService;
 
         public AuthorizeService(IOptions<JwtOptions> jwtOption,
-                                IUserService userService,
                                 OAuthGithubService githubService,
                                 OAuthGiteeService giteeService,
                                 OAuthAlipayService alipayService,
                                 OAuthDingtalkService dingtalkService)
         {
             _jwtOption = jwtOption.Value;
-            _userService = userService;
             _githubService = githubService;
             _giteeService = giteeService;
             _alipayService = alipayService;
@@ -101,14 +99,15 @@ namespace Meowv.Blog.Authorize.Impl
         /// <summary>
         /// Generate token by account.
         /// </summary>
+        /// <param name="userService"></param>
         /// <param name="input"></param>
         /// <returns></returns>
         [Route("api/meowv/oauth/account/token")]
-        public async Task<BlogResponse<string>> GenerateTokenAsync(AccountInput input)
+        public async Task<BlogResponse<string>> GenerateTokenAsync([FromServices] IUserService userService, AccountInput input)
         {
             var response = new BlogResponse<string>();
 
-            var user = await _userService.VerifyByAccountAsync(input.Username, input.Password);
+            var user = await userService.VerifyByAccountAsync(input.Username, input.Password);
             var token = GenerateToken(user);
 
             response.IsSuccess(token);

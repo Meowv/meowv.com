@@ -2,70 +2,56 @@
 using Meowv.Blog.Dto.Authorize;
 using Meowv.Blog.Extensions;
 using Meowv.Blog.Options.Authorize;
-using Meowv.Blog.Users;
-using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Volo.Abp.DependencyInjection;
 
-namespace Meowv.Blog.Authorize.OAuth
+namespace Meowv.Blog.Authorize.OAuth.Impl
 {
-    public class OAuthAlipayService : IOAuthService<AlipayAccessToken, AlipayUserInfo>, ITransientDependency
+    public class OAuthAlipayService : OAuthServiceBase<AlipayOptions, AlipayAccessToken, AlipayUserInfo>
     {
-        private readonly AlipayOptions _alipayOptions;
-        private readonly IHttpClientFactory _httpClient;
-        private readonly IUserService _userService;
-
-        public OAuthAlipayService(IOptions<AlipayOptions> alipayOptions, IHttpClientFactory httpClient, IUserService userService)
-        {
-            _alipayOptions = alipayOptions.Value;
-            _httpClient = httpClient;
-            _userService = userService;
-        }
-
-        public async Task<string> GetAuthorizeUrl(string state)
+        public override async Task<string> GetAuthorizeUrl(string state)
         {
             var param = BuildAuthorizeUrlParams(state);
-            var url = $"{_alipayOptions.AuthorizeUrl}?{param.ToQueryString()}";
+            var url = $"{Options.Value.AuthorizeUrl}?{param.ToQueryString()}";
 
             return await Task.FromResult(url);
         }
 
-        public async Task<User> GetUserByOAuthAsync(string type, string code, string state)
+        public override async Task<User> GetUserByOAuthAsync(string type, string code, string state)
         {
             var accessToken = await GetAccessTokenAsync(code, state);
             var userInfo = await GetUserInfoAsync(accessToken);
 
-            return await _userService.CreateUserAsync(userInfo.UserInfoResponse.Name, type, userInfo.UserInfoResponse.Id, userInfo.UserInfoResponse.Name, userInfo.UserInfoResponse.Avatar, userInfo.UserInfoResponse.Email);
+            return await UserService.CreateUserAsync(userInfo.UserInfoResponse.Name, type, userInfo.UserInfoResponse.Id, userInfo.UserInfoResponse.Name, userInfo.UserInfoResponse.Avatar, userInfo.UserInfoResponse.Email);
         }
 
-        public async Task<AlipayAccessToken> GetAccessTokenAsync(string code, string state )
+        public override async Task<AlipayAccessToken> GetAccessTokenAsync(string code, string state)
         {
             var param = BuildAccessTokenParams(code, state);
 
-            using var client = _httpClient.CreateClient();
+            using var client = HttpClient.CreateClient();
             client.DefaultRequestHeaders.Add("Referer", "https://alipay.com");
             client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36 Edg/87.0.664.66");
             client.DefaultRequestHeaders.Add("accept", "application/json");
 
-            var httpResponse = await client.PostAsync(_alipayOptions.AccessTokenUrl, new FormUrlEncodedContent(param));
+            var httpResponse = await client.PostAsync(Options.Value.AccessTokenUrl, new FormUrlEncodedContent(param));
             var response = await httpResponse.Content.ReadAsStringAsync();
 
             return response.DeserializeToObject<AlipayAccessToken>();
         }
 
-        public async Task<AlipayUserInfo> GetUserInfoAsync(AlipayAccessToken accessToken)
+        public override async Task<AlipayUserInfo> GetUserInfoAsync(AlipayAccessToken accessToken)
         {
             var param = BuildUserInfoParams(accessToken.AccessTokenResponse.AccessToken);
 
-            using var client = _httpClient.CreateClient();
+            using var client = HttpClient.CreateClient();
             client.DefaultRequestHeaders.Add("Referer", "https://alipay.com");
             client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36 Edg/87.0.664.66");
             client.DefaultRequestHeaders.Add("accept", "application/json");
 
-            var httpResponse = await client.PostAsync(_alipayOptions.AccessTokenUrl, new FormUrlEncodedContent(param));
+            var httpResponse = await client.PostAsync(Options.Value.AccessTokenUrl, new FormUrlEncodedContent(param));
             var response = await httpResponse.Content.ReadAsStringAsync();
 
             return response.DeserializeToObject<AlipayUserInfo>();
@@ -75,9 +61,9 @@ namespace Meowv.Blog.Authorize.OAuth
         {
             return new Dictionary<string, string>
             {
-                ["app_id"] = _alipayOptions.AppId,
-                ["redirect_uri"] = _alipayOptions.RedirectUrl,
-                ["scope"] = _alipayOptions.Scope,
+                ["app_id"] = Options.Value.AppId,
+                ["redirect_uri"] = Options.Value.RedirectUrl,
+                ["scope"] = Options.Value.Scope,
                 ["state"] = state,
             };
         }
@@ -89,14 +75,14 @@ namespace Meowv.Blog.Authorize.OAuth
                 ["grant_type"] = "authorization_code",
                 ["code"] = code,
                 ["state"] = state,
-                ["app_id"] = _alipayOptions.AppId,
+                ["app_id"] = Options.Value.AppId,
                 ["method"] = "alipay.system.oauth.token",
                 ["charset"] = "utf-8",
                 ["sign_type"] = "RSA2",
                 ["timestamp"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                 ["version"] = "1.0"
             };
-            param.Add("sign", param.Sign(_alipayOptions.PrivateKey));
+            param.Add("sign", param.Sign(Options.Value.PrivateKey));
 
             return param;
         }
@@ -106,14 +92,14 @@ namespace Meowv.Blog.Authorize.OAuth
             var param = new Dictionary<string, string>()
             {
                 ["auth_token"] = accessToken,
-                ["app_id"] = _alipayOptions.AppId,
+                ["app_id"] = Options.Value.AppId,
                 ["method"] = "alipay.user.info.share",
                 ["charset"] = "utf-8",
                 ["sign_type"] = "RSA2",
                 ["timestamp"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                 ["version"] = "1.0"
             };
-            param.Add("sign", param.Sign(_alipayOptions.PrivateKey));
+            param.Add("sign", param.Sign(Options.Value.PrivateKey));
 
             return param;
         }
