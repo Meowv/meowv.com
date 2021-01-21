@@ -18,5 +18,10 @@ namespace Meowv.Blog.Options
         /// Alipay
         /// </summary>
         public AlipayOptions Alipay { get; set; }
+
+        /// <summary>
+        /// Dingtalk
+        /// </summary>
+        public DingtalkOptions Dingtalk { get; set; }
     }
 }

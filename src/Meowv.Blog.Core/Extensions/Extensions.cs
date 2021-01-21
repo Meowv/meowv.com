@@ -10,8 +10,10 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace Meowv.Blog.Extensions
 {
@@ -170,6 +172,16 @@ namespace Meowv.Blog.Extensions
         public static string ToQueryString(this Dictionary<string, string> dic)
         {
             return dic.Select(x => $"{x.Key}={x.Value}").JoinAsString("&");
+        }
+
+        /// <summary>
+        /// Convert <paramref name="dic"/> to query string with encode
+        /// </summary>
+        /// <param name="dic"></param>
+        /// <returns></returns>
+        public static string ToQueryStringWithEncode(this Dictionary<string, string> dic)
+        {
+            return dic.Select(x => $"{HttpUtility.UrlEncode(x.Key, Encoding.UTF8)}={HttpUtility.UrlEncode(x.Value, Encoding.UTF8)}").JoinAsString("&");
         }
     }
 }

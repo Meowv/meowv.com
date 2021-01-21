@@ -56,3 +56,8 @@ authorize:
     scope: 'auth_user'
     privateKey: ''
     publicKey: ''
+  dingtalk:
+    appId: ''
+    appSecret: ''
+    redirectUrl: 'https://localhost:5001/api/meowv/oauth/dingtalk/token'
+    scope: 'snsapi_login'

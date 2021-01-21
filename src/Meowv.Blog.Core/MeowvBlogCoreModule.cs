@@ -113,11 +113,13 @@ namespace Meowv.Blog
                 var githubOption = authorizeOption.GetSection("github");
                 var giteeOption = authorizeOption.GetSection("gitee");
                 var alipayOption = authorizeOption.GetSection("alipay");
+                var dingtalkOption = authorizeOption.GetSection("dingtalk");
 
                 Configure<AuthorizeOptions>(authorizeOption);
                 Configure<GithubOptions>(githubOption);
                 Configure<GiteeOptions>(giteeOption);
                 Configure<AlipayOptions>(alipayOption);
+                Configure<DingtalkOptions>(dingtalkOption);
 
                 options.Github = new GithubOptions
                 {
@@ -140,6 +142,13 @@ namespace Meowv.Blog
                     Scope = alipayOption.GetValue<string>(nameof(options.Alipay.Scope)),
                     PrivateKey = alipayOption.GetValue<string>(nameof(options.Alipay.PrivateKey)),
                     PublicKey = alipayOption.GetValue<string>(nameof(options.Alipay.PublicKey))
+                };
+                options.Dingtalk = new DingtalkOptions
+                {
+                    AppId = dingtalkOption.GetValue<string>(nameof(options.Dingtalk.AppId)),
+                    AppSecret = dingtalkOption.GetValue<string>(nameof(options.Dingtalk.AppSecret)),
+                    RedirectUrl = dingtalkOption.GetValue<string>(nameof(options.Dingtalk.RedirectUrl)),
+                    Scope = dingtalkOption.GetValue<string>(nameof(options.Dingtalk.Scope))
                 };
 
                 authorize = options;

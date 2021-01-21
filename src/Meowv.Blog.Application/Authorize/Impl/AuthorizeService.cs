@@ -22,18 +22,21 @@ namespace Meowv.Blog.Authorize.Impl
         private readonly OAuthGithubService _githubService;
         private readonly OAuthGiteeService _giteeService;
         private readonly OAuthAlipayService _alipayService;
+        private readonly OAuthDingtalkService _dingtalkService;
 
         public AuthorizeService(IOptions<JwtOptions> jwtOption,
                                 IUserService userService,
                                 OAuthGithubService githubService,
                                 OAuthGiteeService giteeService,
-                                OAuthAlipayService alipayService)
+                                OAuthAlipayService alipayService,
+                                OAuthDingtalkService dingtalkService)
         {
             _jwtOption = jwtOption.Value;
             _userService = userService;
             _githubService = githubService;
             _giteeService = giteeService;
             _alipayService = alipayService;
+            _dingtalkService = dingtalkService;
         }
 
         /// <summary>
@@ -53,6 +56,7 @@ namespace Meowv.Blog.Authorize.Impl
                     "github" => await _githubService.GetAuthorizeUrl(state),
                     "gitee" => await _giteeService.GetAuthorizeUrl(state),
                     "alipay" => await _alipayService.GetAuthorizeUrl(state),
+                    "dingtalk" => await _dingtalkService.GetAuthorizeUrl(state),
                     _ => throw new NotImplementedException($"Not implemented:{type}")
                 }
             };
@@ -111,6 +115,17 @@ namespace Meowv.Blog.Authorize.Impl
                         var userInfo = await _alipayService.GetUserInfoAsync(accessToken);
 
                         var user = await _userService.CreateUserAsync(userInfo.UserInfoResponse.Name, type, userInfo.UserInfoResponse.Id, userInfo.UserInfoResponse.Name, userInfo.UserInfoResponse.Avatar, string.Empty);
+
+                        token = GenerateToken(user);
+                        break;
+                    }
+
+                case "dingtalk":
+                    {
+                        var accessToken = await _dingtalkService.GetAccessTokenAsync(code, state);
+                        var userInfo = await _dingtalkService.GetUserInfoAsync(accessToken);
+
+                        var user = await _userService.CreateUserAsync(userInfo.UserInfoResponse.Name, type, userInfo.UserInfoResponse.Id, userInfo.UserInfoResponse.Name, userInfo.UserInfoResponse.Avatar, userInfo.UserInfoResponse.Email);
 
                         token = GenerateToken(user);
                         break;
