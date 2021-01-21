@@ -51,8 +51,7 @@ authorize:
     redirectUrl: 'https://localhost:5001/api/meowv/oauth/gitee/token'
     scope: 'user_info emails'
   alipay:
-    appId: ''
-    appKey: ''
+    appId: '2021002125624107'
     redirectUrl: 'https://api.meowv.com/api/meowv/oauth/alipay/token'
     scope: 'auth_user'
     privateKey: ''

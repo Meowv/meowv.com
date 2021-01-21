@@ -44,9 +44,19 @@ namespace Meowv.Blog.Authorize.OAuth
             return response.DeserializeToObject<AlipayAccessToken>();
         }
 
-        public Task<AlipayUserInfo> GetUserInfoAsync(AlipayAccessToken accessToken)
+        public async Task<AlipayUserInfo> GetUserInfoAsync(AlipayAccessToken accessToken)
         {
-            throw new NotImplementedException();
+            var param = BuildUserInfoParams(accessToken.AccessTokenResponse.AccessToken);
+
+            using var client = _httpClient.CreateClient();
+            client.DefaultRequestHeaders.Add("Referer", "https://alipay.com");
+            client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36 Edg/87.0.664.66");
+            client.DefaultRequestHeaders.Add("accept", "application/json");
+
+            var httpResponse = await client.PostAsync(_alipayOptions.AccessTokenUrl, new FormUrlEncodedContent(param));
+            var response = await httpResponse.Content.ReadAsStringAsync();
+
+            return response.DeserializeToObject<AlipayUserInfo>();
         }
 
         protected Dictionary<string, string> BuildAuthorizeUrlParams(string state)
@@ -74,7 +84,24 @@ namespace Meowv.Blog.Authorize.OAuth
                 ["timestamp"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                 ["version"] = "1.0"
             };
-            param.Add("sign", "");
+            param.Add("sign", param.Sign(_alipayOptions.PrivateKey));
+
+            return param;
+        }
+
+        protected Dictionary<string, string> BuildUserInfoParams(string accessToken)
+        {
+            var param = new Dictionary<string, string>()
+            {
+                ["auth_token"] = accessToken,
+                ["app_id"] = _alipayOptions.AppId,
+                ["method"] = "alipay.user.info.share",
+                ["charset"] = "utf-8",
+                ["sign_type"] = "RSA2",
+                ["timestamp"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                ["version"] = "1.0"
+            };
+            param.Add("sign", param.Sign(_alipayOptions.PrivateKey));
 
             return param;
         }

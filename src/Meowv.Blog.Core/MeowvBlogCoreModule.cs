@@ -136,7 +136,6 @@ namespace Meowv.Blog
                 options.Alipay = new AlipayOptions
                 {
                     AppId = alipayOption.GetValue<string>(nameof(options.Alipay.AppId)),
-                    AppKey = alipayOption.GetValue<string>(nameof(options.Alipay.AppKey)),
                     RedirectUrl = alipayOption.GetValue<string>(nameof(options.Alipay.RedirectUrl)),
                     Scope = alipayOption.GetValue<string>(nameof(options.Alipay.Scope)),
                     PrivateKey = alipayOption.GetValue<string>(nameof(options.Alipay.PrivateKey)),

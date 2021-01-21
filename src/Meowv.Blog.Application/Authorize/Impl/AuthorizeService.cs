@@ -108,7 +108,11 @@ namespace Meowv.Blog.Authorize.Impl
                 case "alipay":
                     {
                         var accessToken = await _alipayService.GetAccessTokenAsync(code, state);
+                        var userInfo = await _alipayService.GetUserInfoAsync(accessToken);
 
+                        var user = await _userService.CreateUserAsync(userInfo.UserInfoResponse.Name, type, userInfo.UserInfoResponse.Id, userInfo.UserInfoResponse.Name, userInfo.UserInfoResponse.Avatar, string.Empty);
+
+                        token = GenerateToken(user);
                         break;
                     }
             }

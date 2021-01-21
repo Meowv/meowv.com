@@ -157,6 +157,7 @@ namespace Meowv.Blog.Users.Impl
                 await _users.InsertAsync(new User
                 {
                     Username = username,
+                    Password = "123456".ToMd5(),
                     Type = type,
                     Identity = identity,
                     Name = name,

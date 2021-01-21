@@ -4,8 +4,6 @@
     {
         public string AppId { get; set; }
 
-        public string AppKey { get; set; }
-
         public string RedirectUrl { get; set; }
 
         public string Scope { get; set; }
