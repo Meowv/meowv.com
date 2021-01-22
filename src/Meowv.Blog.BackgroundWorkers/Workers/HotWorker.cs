@@ -2,6 +2,7 @@
 using Meowv.Blog.Domain.Hots;
 using Meowv.Blog.Domain.Hots.Repositories;
 using Meowv.Blog.Dto.Hots;
+using Meowv.Blog.EventData.Hots;
 using Meowv.Blog.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -16,6 +17,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Web;
 using Volo.Abp.BackgroundWorkers.Quartz;
+using Volo.Abp.EventBus.Local;
 
 namespace Meowv.Blog.Workers
 {
@@ -23,11 +25,16 @@ namespace Meowv.Blog.Workers
     {
         private readonly IHotRepository _hots;
         private readonly IHttpClientFactory _httpClient;
+        private readonly ILocalEventBus _localEventBus;
 
-        public HotWorker(IOptions<WorkerOptions> backgroundWorkerOptions, IHotRepository hots, IHttpClientFactory httpClient)
+        public HotWorker(IOptions<WorkerOptions> backgroundWorkerOptions,
+                         IHotRepository hots,
+                         IHttpClientFactory httpClient,
+                         ILocalEventBus localEventBus)
         {
             _hots = hots;
             _httpClient = httpClient;
+            _localEventBus = localEventBus;
 
             JobDetail = JobBuilder.Create<HotWorker>().WithIdentity(nameof(HotWorker)).Build();
 
@@ -67,6 +74,7 @@ namespace Meowv.Blog.Workers
                             case Hot.KnownSources.juejin or Hot.KnownSources.csdn or Hot.KnownSources.zhihu or Hot.KnownSources.huxiu or Hot.KnownSources.douyin or Hot.KnownSources.woshipm or Hot.KnownSources.kaiyan:
                                 {
                                     using var client = _httpClient.CreateClient();
+                                    client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36 Edg/87.0.664.66");
 
                                     switch (source)
                                     {
@@ -112,15 +120,26 @@ namespace Meowv.Blog.Workers
 
             var hots = new List<Hot>();
 
-            foreach (var task in tasks)
+            Parallel.ForEach(tasks, new ParallelOptions { MaxDegreeOfParallelism = 10 }, async task =>
             {
                 var item = await task;
                 var source = item.Source;
                 var result = item.Result;
 
-                if (result.ToString().IsNullOrEmpty()) continue;
+                if (result.ToString().IsNullOrEmpty())
+                {
+                    Logger.LogError($"抓取失败：{source}...");
+                    return;
+                }
 
                 var hot = new Hot() { Source = source };
+
+                async Task SaveAsync()
+                {
+                    await _hots.DeleteAsync(x => x.Source == source, autoSave: true);
+                    await _hots.InsertAsync(hot);
+                    Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                }
 
                 switch (source)
                 {
@@ -137,9 +156,8 @@ namespace Meowv.Blog.Workers
                                     Url = x.GetAttributeValue("href", string.Empty)
                                 });
                             });
-                            hots.Add(hot);
 
-                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            await SaveAsync();
                             break;
                         }
 
@@ -156,9 +174,8 @@ namespace Meowv.Blog.Workers
                                     Url = $"https://www.v2ex.com{x.GetAttributeValue("href", "")}"
                                 });
                             });
-                            hots.Add(hot);
 
-                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            await SaveAsync();
                             break;
                         }
 
@@ -175,9 +192,8 @@ namespace Meowv.Blog.Workers
                                     Url = $"https://segmentfault.com{x.GetAttributeValue("href", "")}"
                                 });
                             });
-                            hots.Add(hot);
 
-                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            await SaveAsync();
                             break;
                         }
 
@@ -194,9 +210,8 @@ namespace Meowv.Blog.Workers
                                     Url = x.GetAttributeValue("href", "")
                                 });
                             });
-                            hots.Add(hot);
 
-                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            await SaveAsync();
                             break;
                         }
 
@@ -213,9 +228,8 @@ namespace Meowv.Blog.Workers
                                     Url = x.GetAttributeValue("href", "")
                                 });
                             });
-                            hots.Add(hot);
 
-                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            await SaveAsync();
                             break;
                         }
 
@@ -232,9 +246,8 @@ namespace Meowv.Blog.Workers
                                     Url = x.GetAttributeValue("href", "")
                                 });
                             });
-                            hots.Add(hot);
 
-                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            await SaveAsync();
                             break;
                         }
 
@@ -251,9 +264,8 @@ namespace Meowv.Blog.Workers
                                     Url = x.GetAttributeValue("href", "")
                                 });
                             });
-                            hots.Add(hot);
 
-                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            await SaveAsync();
                             break;
                         }
 
@@ -274,9 +286,8 @@ namespace Meowv.Blog.Workers
                                     });
                                 }
                             });
-                            hots.Add(hot);
 
-                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            await SaveAsync();
                             break;
                         }
 
@@ -293,9 +304,8 @@ namespace Meowv.Blog.Workers
                                     Url = x.GetAttributeValue("href", "")
                                 });
                             });
-                            hots.Add(hot);
 
-                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            await SaveAsync();
                             break;
                         }
 
@@ -312,9 +322,8 @@ namespace Meowv.Blog.Workers
                                     Url = x.GetAttributeValue("href", "").Replace("amp;", "")
                                 });
                             });
-                            hots.Add(hot);
 
-                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            await SaveAsync();
                             break;
                         }
 
@@ -334,9 +343,8 @@ namespace Meowv.Blog.Workers
                                     Url = $"https://s.weibo.com{url}"
                                 });
                             });
-                            hots.Add(hot);
 
-                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            await SaveAsync();
                             break;
                         }
 
@@ -355,9 +363,8 @@ namespace Meowv.Blog.Workers
                                     Url = $"https://juejin.cn/post/{node["item_info"]["article_id"]}"
                                 });
                             }
-                            hots.Add(hot);
 
-                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            await SaveAsync();
                             break;
                         }
 
@@ -374,9 +381,8 @@ namespace Meowv.Blog.Workers
                                     Url = node["articleDetailUrl"].ToString()
                                 });
                             }
-                            hots.Add(hot);
 
-                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            await SaveAsync();
                             break;
                         }
 
@@ -393,9 +399,8 @@ namespace Meowv.Blog.Workers
                                     Url = $"https://toutiao.io{x.GetAttributeValue("href", "")}"
                                 });
                             });
-                            hots.Add(hot);
 
-                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            await SaveAsync();
                             break;
                         }
 
@@ -412,9 +417,8 @@ namespace Meowv.Blog.Workers
                                     Url = $"https://www.imooc.com{x.GetAttributeValue("href", "")}"
                                 });
                             });
-                            hots.Add(hot);
 
-                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            await SaveAsync();
                             break;
                         }
 
@@ -431,9 +435,8 @@ namespace Meowv.Blog.Workers
                                     Url = $"https://www.zhihu.com/question/{node["target"]["id"]}"
                                 });
                             }
-                            hots.Add(hot);
 
-                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            await SaveAsync();
                             break;
                         }
 
@@ -450,9 +453,8 @@ namespace Meowv.Blog.Workers
                                     Url = $"https://daily.zhihu.com{x.GetAttributeValue("href", "")}"
                                 });
                             });
-                            hots.Add(hot);
 
-                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            await SaveAsync();
                             break;
                         }
 
@@ -469,9 +471,8 @@ namespace Meowv.Blog.Workers
                                     Url = x.GetAttributeValue("href", "")
                                 });
                             });
-                            hots.Add(hot);
 
-                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            await SaveAsync();
                             break;
                         }
 
@@ -488,9 +489,8 @@ namespace Meowv.Blog.Workers
                                     Url = $"https://sspai.com{x.GetAttributeValue("href", "")}",
                                 });
                             });
-                            hots.Add(hot);
 
-                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            await SaveAsync();
                             break;
                         }
 
@@ -507,9 +507,8 @@ namespace Meowv.Blog.Workers
                                     Url = node["permalink"].ToString()
                                 });
                             }
-                            hots.Add(hot);
 
-                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            await SaveAsync();
                             break;
                         }
 
@@ -526,9 +525,8 @@ namespace Meowv.Blog.Workers
                                     Url = $"https://www.huxiu.com/article/{node["aid"]}.html",
                                 });
                             }
-                            hots.Add(hot);
 
-                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            await SaveAsync();
                             break;
                         }
 
@@ -552,9 +550,8 @@ namespace Meowv.Blog.Workers
                                     Url = x.GetAttributeValue("href", ""),
                                 });
                             });
-                            hots.Add(hot);
 
-                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            await SaveAsync();
                             break;
                         }
 
@@ -571,9 +568,8 @@ namespace Meowv.Blog.Workers
                                     Url = $"https://www.52pojie.cn/{x.GetAttributeValue("href", "")}"
                                 });
                             });
-                            hots.Add(hot);
 
-                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            await SaveAsync();
                             break;
                         }
 
@@ -590,9 +586,8 @@ namespace Meowv.Blog.Workers
                                     Url = $"http://bbs.tianya.cn/{x.GetAttributeValue("href", "")}"
                                 });
                             });
-                            hots.Add(hot);
 
-                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            await SaveAsync();
                             break;
                         }
 
@@ -609,9 +604,8 @@ namespace Meowv.Blog.Workers
                                     Url = $"http://m.lssdjt.com{x.GetAttributeValue("href", "")}"
                                 });
                             });
-                            hots.Add(hot);
 
-                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            await SaveAsync();
                             break;
                         }
 
@@ -628,9 +622,8 @@ namespace Meowv.Blog.Workers
                                     Url = $"https{x.GetAttributeValue("href", "")}"
                                 });
                             });
-                            hots.Add(hot);
 
-                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            await SaveAsync();
                             break;
                         }
 
@@ -647,9 +640,8 @@ namespace Meowv.Blog.Workers
                                     Url = node["aweme_info"]["share_url"].ToString()
                                 });
                             }
-                            hots.Add(hot);
 
-                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            await SaveAsync();
                             break;
                         }
 
@@ -666,9 +658,8 @@ namespace Meowv.Blog.Workers
                                     Url = $"https://www.kaiyanapp.com/detail.html?vid={node["id"]}"
                                 });
                             }
-                            hots.Add(hot);
 
-                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            await SaveAsync();
                             break;
                         }
 
@@ -685,9 +676,8 @@ namespace Meowv.Blog.Workers
                                     Url = $"http://gaoloumi.cc/{x.GetAttributeValue("href", "").Replace("amp;", "")}"
                                 });
                             });
-                            hots.Add(hot);
 
-                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            await SaveAsync();
                             break;
                         }
 
@@ -704,23 +694,15 @@ namespace Meowv.Blog.Workers
                                     Url = $"https://github.com{x.GetAttributeValue("href", "")}",
                                 });
                             });
-                            hots.Add(hot);
 
-                            Logger.LogInformation($"成功抓取：{source}，{hot.Datas.Count} 条数据.");
+                            await SaveAsync();
                             break;
                         }
                 }
-            }
+            });
 
-            if (hots.Any())
-            {
-                hots.ForEach(x => x.Datas.ForEach(x => x.Title = x.Title.Trim()));
+            await _localEventBus.PublishAsync(new HotWorkerEventData());
 
-                await _hots.DeleteAsync(x => true);
-                await _hots.BulkInsertAsync(hots);
-            }
-
-            Logger.LogInformation("热点数据抓取结束...");
             await Task.CompletedTask;
         }
     }
