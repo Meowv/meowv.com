@@ -3,19 +3,20 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Meowv.Blog.Web</title>
+    <meta name="keywords" content="阿星Plus,个人博客">
+    <meta name="description" content="阿星Plus的个人博客,用于发表原创文章,关注微信公众号：『阿星Plus』了解更多。">
+    <title>🤣@ViewData["Title"]阿星Plus⭐⭐⭐</title>
     <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
 </head>
 <body>
-    <header>
-        
-    </header>
-    <div class="container">
-        <main role="main">
+    <div class="wrapper">
+        <partial name="_Header" />
+        <main role="main" class="main">
             @RenderBody()
         </main>
+        <partial name="_Footer" />
     </div>
-    <script src="~/js/app.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
+    <script src="~/js/app.js" asp-append-version="true"></script>
 </body>
 </html>
