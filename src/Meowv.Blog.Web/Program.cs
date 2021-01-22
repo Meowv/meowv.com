@@ -16,6 +16,7 @@ namespace Meowv.Blog.Web
                            }).ConfigureServices(services =>
                            {
                                services.AddControllersWithViews();
+                               services.AddRazorPages();
                            });
             await host.Build().RunAsync();
         }
