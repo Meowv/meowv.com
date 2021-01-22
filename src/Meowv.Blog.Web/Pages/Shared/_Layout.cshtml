@@ -10,13 +10,15 @@
 </head>
 <body>
     <div class="wrapper">
-        <partial name="_Header" />
-        <main role="main" class="main">
-            @RenderBody()
-        </main>
-        <partial name="_Footer" />
+        @{ await Html.RenderPartialAsync("_Header"); }
+        <div class="main">
+            <div class="container">
+                @RenderBody()
+            </div>
+        </div>
+        @{ await Html.RenderPartialAsync("_Footer"); }
     </div>
-    @await RenderSectionAsync("Scripts", required: false)
+    @await RenderSectionAsync("scripts", required: false)
     <script src="~/js/app.js" asp-append-version="true"></script>
 </body>
 </html>

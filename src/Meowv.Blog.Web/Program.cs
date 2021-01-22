@@ -15,8 +15,11 @@ namespace Meowv.Blog.Web
                                webBuilder.UseStartup<Startup>();
                            }).ConfigureServices(services =>
                            {
-                               services.AddControllersWithViews();
                                services.AddRazorPages();
+                               services.AddHttpClient("api", x =>
+                               {
+                                   x.BaseAddress = new System.Uri("https://localhost:5001");
+                               });
                            });
             await host.Build().RunAsync();
         }

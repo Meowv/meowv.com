@@ -45,8 +45,4 @@
             mobileMenu.classList.add("active");
         }
     });
-
-    document.querySelector('.weixin').addEventListener('click', () => {
-        document.querySelector(".qrcode").classList.contains('hidden') ? document.querySelector(".qrcode").classList.remove('hidden') : document.querySelector(".qrcode").classList.add('hidden');
-    });
 };

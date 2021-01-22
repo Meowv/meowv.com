@@ -1,0 +1,42 @@
+﻿@page "/posts/{pageindex?}"
+@model Meowv.Blog.Web.Pages.Posts.IndexModel
+@{
+    var response = Model.Posts;
+
+    var posts = response.Result.Item;
+    var total = (int)Math.Ceiling((response.Result.Total / (double)Model.PageSize));
+}
+
+<div class="post-wrap archive">
+    @if (response.Success && posts.Any())
+    {
+        @foreach (var item in posts)
+        {
+            <h3>@item.Year</h3>
+            @foreach (var post in item.Posts)
+            {
+                <article class="archive-item">
+                    <NavLink href="@("/post"+post.Url)">@post.Title</NavLink>
+                    <span class="archive-item-date">@post.CreatedAt</span>
+                </article>
+            }
+        }
+        <nav class="pagination">
+            @for (int i = 1; i <= total; i++)
+            {
+                if (Model.PageIndex == i)
+                {
+                    <span class="page-number current">@i</span>
+                }
+                else
+                {
+                    <a class="page-number" href="/posts/@i">@i</a>
+                }
+            }
+        </nav>
+    }
+    else
+    {
+        Redirect("/error");
+    }
+</div>
