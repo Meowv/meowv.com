@@ -16,7 +16,7 @@ namespace Meowv.Blog.Blog.Impl
         /// </summary>
         /// <param name="url"></param>
         /// <returns></returns>
-        [Route("api/meowv/blog/post/{url}")]
+        [Route("api/meowv/blog/post")]
         public async Task<BlogResponse<PostDetailDto>> GetPostByUrlAsync(string url)
         {
             return await _cache.GetPostByUrlAsync(url, async () =>

@@ -1,5 +1,4 @@
 ﻿@page "/"
-
 <div class="intro">
     <div class="avatar">
         <a href="javascript:;"><img src="/images/avatar.jpg" /></a>
@@ -35,11 +34,3 @@
         </div>
     </div>
 </div>
-
-@section scripts{
-    <script>
-        document.querySelector('.weixin').addEventListener('click', () => {
-            document.querySelector(".qrcode").classList.contains('hidden') ? document.querySelector(".qrcode").classList.remove('hidden') : document.querySelector(".qrcode").classList.add('hidden');
-        });
-    </script>
-}

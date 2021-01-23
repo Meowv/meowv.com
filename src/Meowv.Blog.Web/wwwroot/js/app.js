@@ -12,6 +12,18 @@
         document.getElementById('mobile-toggle-theme').innerText = ' · Light';
     }
 
+    var paths = ['/posts', '/categories', '/tags', '/apps'];
+    var pathname = location.pathname;
+    if (pathname == "/") {
+        document.querySelector('.weixin').addEventListener('click', () => {
+            document.querySelector(".qrcode").classList.contains('hidden') ? document.querySelector(".qrcode").classList.remove('hidden') : document.querySelector(".qrcode").classList.add('hidden');
+        });
+    } else {
+        if (paths.includes(pathname)) {
+            document.querySelector(`.menu .menu-item[href='${location.pathname}']`).classList.add('active');
+        }
+    }
+    
     document.querySelector('.toggleBtn').addEventListener('click', () => {
         if (document.querySelector('body').classList.contains('dark-theme')) {
             document.querySelector('body').classList.remove('dark-theme');

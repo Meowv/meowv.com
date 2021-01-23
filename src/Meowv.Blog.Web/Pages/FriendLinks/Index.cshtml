@@ -1,0 +1,21 @@
+﻿@page "/friendlinks"
+@model Meowv.Blog.Web.Pages.FriendLinks.IndexModel
+@{
+    var response = Model.FriendLinks;
+    var friendlinks = response.Result;
+}
+<div class="post-wrap categories">
+    <h2 class="post-title">-&nbsp;FriendLinks&nbsp;-</h2>
+    <div class="categories-card">
+        @foreach (var item in friendlinks)
+        {
+            <div class="card-item">
+                <div class="categories">
+                    <a target="_blank" href="@item.Url">
+                        <h3>@item.Name</h3>
+                    </a>
+                </div>
+            </div>
+        }
+    </div>
+</div>
