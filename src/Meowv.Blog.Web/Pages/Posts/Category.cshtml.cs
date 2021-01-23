@@ -16,9 +16,9 @@ namespace Meowv.Blog.Web.Pages.Posts
         [BindProperty]
         public BlogResponse<List<GetPostDto>> Posts { get; set; }
 
-        public async Task OnGetAsync(string name)
+        public async Task OnGetAsync(string category)
         {
-            Posts = await GetResultAsync<BlogResponse<List<GetPostDto>>>($"api/meowv/blog/posts/category/{name}");
+            Posts = await GetResultAsync<BlogResponse<List<GetPostDto>>>($"api/meowv/blog/posts/category/{category}");
         }
     }
 }

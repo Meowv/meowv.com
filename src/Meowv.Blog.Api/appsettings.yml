@@ -22,7 +22,7 @@ jwt:
   signingKey: 'H4sIAAAAAAAAA3N0cnZxdXP38PTy9vH18w8I9AkOCQ0Lj4iMAgDB4fXPGgAAAA=='
 
 worker:
-  isEnabled: true
+  isEnabled: false
   cron: '0 0 0/1 * * ? *'
 
 signature:
