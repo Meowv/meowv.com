@@ -1,6 +1,8 @@
 ﻿@page "/friendlinks"
 @model Meowv.Blog.Web.Pages.FriendLinks.IndexModel
 @{
+    ViewData["Title"] = "FriendLinks - ";
+
     var response = Model.FriendLinks;
     var friendlinks = response.Result;
 }

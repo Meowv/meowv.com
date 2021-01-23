@@ -1,6 +1,8 @@
 ﻿@page "/categories"
 @model Meowv.Blog.Web.Pages.Categories.IndexModel
 @{
+    ViewData["Title"] = "Categories - ";
+
     var categories = Model.Categories.Result;
 }
 <div class="post-wrap categories">

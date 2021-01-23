@@ -1,6 +1,8 @@
 ﻿@page "/tags"
 @model Meowv.Blog.Web.Pages.Tags.IndexModel
 @{
+    ViewData["Title"] = "Tags - ";
+
     var tags = Model.Tags.Result;
 }
 <div class="post-wrap tags">

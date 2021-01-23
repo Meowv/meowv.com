@@ -5,6 +5,8 @@
 
     var category = response.Message;
     var posts = response.Result;
+
+    ViewData["Title"] = $"{category} - ";
 }
 <div class="post-wrap tags">
     <h2 class="post-title">-&nbsp;Category&nbsp;·&nbsp;@category&nbsp;-</h2>

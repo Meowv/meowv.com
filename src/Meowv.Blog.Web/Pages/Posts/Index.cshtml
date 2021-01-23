@@ -1,6 +1,8 @@
 ﻿@page "/posts/{pageindex?}"
 @model Meowv.Blog.Web.Pages.Posts.IndexModel
 @{
+    ViewData["Title"] = "Posts - ";
+
     var response = Model.Posts;
 
     var posts = response.Result.Item;
