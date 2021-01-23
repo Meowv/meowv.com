@@ -15,6 +15,7 @@ namespace Meowv.Blog.Web
             app.UseStatusCodePagesWithRedirects("/error");
             app.UseHsts();
             app.UseHttpsRedirection();
+            app.UseStaticFiles();
             app.UseStaticFiles(new StaticFileOptions
             {
                 ContentTypeProvider = provider
@@ -23,6 +24,7 @@ namespace Meowv.Blog.Web
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapRazorPages();
+                endpoints.MapBlazorHub();
             });
         }
     }

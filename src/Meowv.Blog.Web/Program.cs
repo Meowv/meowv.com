@@ -20,6 +20,7 @@ namespace Meowv.Blog.Web
                            }).ConfigureServices(services =>
                            {
                                services.AddRazorPages();
+                               services.AddServerSideBlazor();
                                services.Configure<WebEncoderOptions>(options =>
                                {
                                    options.TextEncoderSettings = new TextEncoderSettings(UnicodeRanges.All);
