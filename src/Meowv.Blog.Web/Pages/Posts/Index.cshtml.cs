@@ -21,10 +21,9 @@ namespace Meowv.Blog.Web.Pages.Posts
         [BindProperty]
         public BlogResponse<PagedList<GetPostDto>> Posts { get; set; }
 
-        public async Task OnGetAsync(int PageIndex = 1)
+        public async Task OnGetAsync(int pageIndex = 1)
         {
-            var json = await http.GetStringAsync($"api/meowv/blog/posts/{PageIndex}/{PageSize}");
-            Posts = To<BlogResponse<PagedList<GetPostDto>>>(json);
+            Posts = await GetResultAsync<BlogResponse<PagedList<GetPostDto>>>($"api/meowv/blog/posts/{pageIndex}/{PageSize}");
         }
     }
 }

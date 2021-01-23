@@ -1,0 +1,14 @@
+﻿@page "/tags"
+@model Meowv.Blog.Web.Pages.Tags.IndexModel
+@{
+    var tags = Model.Tags.Result;
+}
+<div class="post-wrap tags">
+    <h2 class="post-title">-&nbsp;Tags&nbsp;-</h2>
+    <div class="tag-cloud-tags">
+        @foreach (var item in tags)
+        {
+            <a href="/tag/@item.Alias">@item.Name<small>(@item.Total)</small></a>
+        }
+    </div>
+</div>

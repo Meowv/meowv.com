@@ -1,20 +1,25 @@
 ﻿using Microsoft.AspNetCore.Mvc.RazorPages;
 using Newtonsoft.Json;
 using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace Meowv.Blog.Web.Pages
 {
     public abstract class PageBase : PageModel
     {
-        protected readonly HttpClient http;
-
-        public virtual int PageSize { get; set; } = 15;
+        private readonly HttpClient http;
 
         public PageBase(IHttpClientFactory httpClientFactory)
         {
             http = httpClientFactory.CreateClient("api");
         }
 
-        public T To<T>(string json) => JsonConvert.DeserializeObject<T>(json);
+        public virtual int PageSize { get; set; } = 15;
+
+        public virtual async Task<T> GetResultAsync<T>(string url)
+        {
+            var json = await http.GetStringAsync(url);
+            return JsonConvert.DeserializeObject<T>(json);
+        }
     }
 }

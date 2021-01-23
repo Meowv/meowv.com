@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System;
 using System.Threading.Tasks;
 
 namespace Meowv.Blog.Web
@@ -18,7 +19,7 @@ namespace Meowv.Blog.Web
                                services.AddRazorPages();
                                services.AddHttpClient("api", x =>
                                {
-                                   x.BaseAddress = new System.Uri("https://localhost:5001");
+                                   x.BaseAddress = new Uri("https://localhost:5001");
                                });
                            });
             await host.Build().RunAsync();
