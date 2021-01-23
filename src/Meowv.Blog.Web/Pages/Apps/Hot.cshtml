@@ -1,0 +1,20 @@
+﻿@page "/hot/{id?}"
+@model Meowv.Blog.Web.Pages.Apps.HotModel
+<div class="hot-container">
+    <div class="plus-container">
+        <div class="hot-nav">
+            @foreach (var item in Model.HotSources.Result)
+            {
+                <a class="@(item.Id == Model.Id ? "hot-active" : null)" href="/hot/@item.Id">@item.Source</a>
+            }
+        </div>
+        <div class="hot-content plus-row plus-col-space20">
+            <ul>
+                @foreach (var item in Model.Hot.Result.Datas)
+                {
+                    <li><a target="_blank" href="@item.Url">@item.Title</a></li>
+                }
+            </ul>
+        </div>
+    </div>
+</div>

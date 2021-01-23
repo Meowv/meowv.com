@@ -2189,6 +2189,11 @@ button:focus {
 
 .hot-nav {
 	word-break: keep-all;
+	border-bottom: 1px solid #e8e8e8;
+}
+
+.dark-theme .hot-nav {
+	color: #87878d !important;
 }
 
 .hot-nav a {

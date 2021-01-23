@@ -18,8 +18,8 @@
         </div>
         @{ await Html.RenderPartialAsync("_Footer"); }
     </div>
-    @await RenderSectionAsync("scripts", required: false)
     <script src="~/live2d/L2Dwidget.min.js"></script>
     <script src="~/js/app.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("scripts", required: false)
 </body>
 </html>

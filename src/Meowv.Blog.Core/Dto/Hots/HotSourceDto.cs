@@ -1,9 +1,9 @@
-﻿using Volo.Abp.Domain.Entities;
-
-namespace Meowv.Blog.Dto.Hots
+﻿namespace Meowv.Blog.Dto.Hots
 {
-    public class HotSourceDto : Entity<string>
+    public class HotSourceDto
     {
+        public string Id { get; set; }
+
         public string Source { get; set; }
     }
 }

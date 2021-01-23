@@ -1,6 +1,5 @@
 using Meowv.Blog.Dto.Blog;
 using Meowv.Blog.Response;
-using Microsoft.AspNetCore.Mvc;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -12,7 +11,6 @@ namespace Meowv.Blog.Web.Pages.Posts
         {
         }
 
-        [BindProperty]
         public BlogResponse<PostDetailDto> Post { get; set; }
 
         public async Task OnGetAsync(string url)
