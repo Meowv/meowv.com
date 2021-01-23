@@ -1,4 +1,7 @@
 ﻿window.onload = function () {
+    const api = "https://localhost:5001";
+    const cdn = "https://172.24.96.1:8001";
+
     const currentTheme = window.localStorage.getItem('theme');
     const isDark = currentTheme === 'dark';
 
@@ -16,14 +19,33 @@
     var pathname = location.pathname;
     if (pathname == "/") {
         document.querySelector('.weixin').addEventListener('click', () => {
-            document.querySelector(".qrcode").classList.contains('hidden') ? document.querySelector(".qrcode").classList.remove('hidden') : document.querySelector(".qrcode").classList.add('hidden');
+            document.querySelector(".qrcode").classList.contains('hidden') ? document.querySelector('.qrcode').classList.remove('hidden') : document.querySelector('.qrcode').classList.add('hidden');
+        });
+    } else if (pathname == "/signature") {
+        document.getElementById('btn_signture').addEventListener('click', () => {
+            var name = document.getElementById('name').value.trim();
+            var data = {
+                typeId: document.getElementById('type').value,
+                name: name
+            }
+            if (name.length > 4 || name.length == 0) return false;
+            fetch(`${api}/api/meowv/signature/generate`, {
+                "method": "POST",
+                "headers": {
+                    "content-type": "application/json; charset=utf-8"
+                },
+                "body": JSON.stringify(data)
+            }).then(async response => {
+                var json = await response.json();
+                document.querySelector('.signature-img img').src = `${cdn}/${json.result}`;
+            });
         });
     } else {
         if (paths.includes(pathname)) {
             document.querySelector(`.menu .menu-item[href='${location.pathname}']`).classList.add('active');
         }
     }
-    
+
     document.querySelector('.toggleBtn').addEventListener('click', () => {
         if (document.querySelector('body').classList.contains('dark-theme')) {
             document.querySelector('body').classList.remove('dark-theme');

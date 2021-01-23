@@ -14,7 +14,7 @@ storage:
 
 cors:
   policyName: 'meowv-policy'
-  origins: 'https://*.meowv.com'
+  origins: 'https://*.meowv.com,https://localhost:44390'
 
 jwt:
   issuer: 'meowv_blog'

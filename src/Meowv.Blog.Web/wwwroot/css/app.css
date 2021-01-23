@@ -535,6 +535,10 @@ header label {
 	-ms-transform: translateY(-0.75em);
 }
 
+.dark-theme .intro .avatar img {
+	opacity: .5;
+}
+
 .nickname {
 	font-weight: normal;
 	font-size: 2em;

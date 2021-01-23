@@ -1,0 +1,12 @@
+﻿@page "/signature"
+@model Meowv.Blog.Web.Pages.Apps.SignatureModel
+<div class="signature-box">
+    <div class="signature-img">
+        <img id="signture-img" src="/images/mp_qrcode.jpg" />
+    </div>
+    <div class="signature-action">
+        <select id="type" asp-items="Model.Options"></select>
+        <input id="name" type="text" placeholder="输入你的名字，2-4个字符" maxlength="4" />
+        <button id="btn_signture" class="box-btn">免费设计</button>
+    </div>
+</div>
