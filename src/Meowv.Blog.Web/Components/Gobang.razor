@@ -1,0 +1,781 @@
+﻿@using Microsoft.JSInterop
+@using Microsoft.AspNetCore.Components.Web
+@using Meowv.Blog.Web.Models.Gobang
+@inject IJSRuntime _jsRuntime
+
+<div class="post-wrap">
+    <div class="gobang-box">
+        <div class="chess">
+            @for (var i = 0; i < 19; i++)
+            {
+                @for (var j = 0; j < 19; j++)
+                {
+                    var _i = i;
+                    var _j = j;
+                    <div class="cell" @onclick="@(async () => await Playing(_i, _j))">
+                        <span class="chess@(Chess[i, j])"></span>
+                    </div>
+                }
+            }
+        </div>
+        <div class="chess-info">
+            <h1>五子棋⚫⚪</h1>
+            <p><b>⚡是时候表演真正的技术了，快来一场人机大战吧⚡</b></p>
+            <p><label><input type="radio" name="chess" checked="checked" @onclick="@(() => first = "ai")"> 电脑先手</label></p>
+            <p><label><input type="radio" name="chess" @onclick="@(() => first = "me")"> 我先手</label></p>
+            <p><button class="box-btn" @onclick="StartGame">@(IsInGame ? "结束游戏" : "开始游戏")</button></p>
+            <div class="chess-msg">
+                <p><b>@msgs</b></p>
+                <p>游戏规则：</p>
+                <span>（1）请选择电脑先手还是你先手，黑棋始终先手。</span>
+                <span>（2）点击开始游戏按钮开始对局。</span>
+                <span>（3）点击结束游戏按钮结束对局。</span>
+                <span>（4）对局双方各执一色棋子。</span>
+                <span>（5）空棋盘开局。</span>
+                <span>（6）黑先、白后，交替下子，每次只能下一子。</span>
+                <span>（7）棋子下在棋盘的空白点上，棋子下定后，不得向其它点移动，不得从棋盘上拿掉或拿起另落别处。</span>
+                <span>（8）黑方的第一枚棋子可下在棋盘任意交叉点上。</span>
+                <span>（9）轮流下子是双方的权利，<del>但允许任何一方放弃下子权（即：PASS权）</del>。</span>
+                <span>（10）<del>五子棋对局，执行黑方指定开局、三手可交换、五手两打的规定。整个对局过程中黑方有禁手，白方无禁手。黑方禁手有三三禁手、四四禁手和长连禁手三种。</del></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+        /// <summary>
+        /// 棋盘二维数组 19✖19
+        /// </summary>
+    private int[,] Chess = new int[19, 19];
+
+    /// <summary>
+    /// 先手
+    /// </summary>
+    private string first = "ai";
+
+    /// <summary>
+    /// 是否在游戏中
+    /// </summary>
+    private bool IsInGame = false;
+
+    /// <summary>
+    /// 显示消息
+    /// </summary>
+    private string msgs;
+
+    /// <summary>
+    /// 默认电脑为黑子
+    /// </summary>
+    private int AIChess = 1;
+
+    /// <summary>
+    /// 默认我为白子
+    /// </summary>
+    private int MineChess = 2;
+
+    /// <summary>
+    /// 开始游戏
+    /// </summary>
+    private void StartGame()
+    {
+        // 初始化棋盘
+        Chess = new int[19, 19];
+
+        // 是否开始游戏，点击按钮重置显示消息
+        if (IsInGame)
+        {
+            msgs = string.Empty;
+        }
+        else
+        {
+            // 电脑先手
+            if (first == "ai")
+            {
+                AIChess = 1;
+                MineChess = 2;
+
+                // 电脑落子正中心天元位置
+                Chess[9, 9] = AIChess;
+
+                msgs = "电脑：执黑子 ⚫ 我：执白子 ⚪";
+            }
+            else
+            {
+                // 我先手的话则我执黑子，电脑执白子
+                MineChess = 1;
+                AIChess = 2;
+
+                msgs = "我：执黑子 ⚫ 电脑：执白子 ⚪";
+            }
+        }
+
+        // 改变游戏状态，用于显示不同文字的按钮
+        IsInGame = !IsInGame;
+    }
+
+    /// <summary>
+    /// 我方落子
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="cell"></param>
+    /// <returns></returns>
+    private async Task Playing(int row, int cell)
+    {
+        // 是否开始游戏，当前判断没开始给出提示
+        if (!IsInGame)
+        {
+            await _jsRuntime.InvokeVoidAsync("alert", "\n💪点击开始游戏按钮开启对局，请阅读游戏规则💪");
+            return;
+        }
+
+        // 已落子直接返回，不做任何操作
+        if (Chess[row, cell] != 0)
+            return;
+
+        // 根据传进来的坐标进行我方落子
+        Chess[row, cell] = MineChess;
+
+        if (IsWin(MineChess, row, cell))
+        {
+            await _jsRuntime.InvokeVoidAsync("alert", "\n恭喜，你赢了👍");
+            IsInGame = !IsInGame;
+            return;
+        }
+
+        // 我方落子之后电脑落子
+        await AIPlaying(AIChess);
+    }
+
+    /// <summary>
+    /// 电脑落子
+    /// </summary>
+    /// <param name="chess"></param>
+    /// <returns></returns>
+    private async Task AIPlaying(int chess)
+    {
+        // 我方
+        var minePoints = new List<ValuedPoint>();
+        // 电脑
+        var aiPonints = new List<ValuedPoint>();
+
+        for (int i = 0; i < 19; i++)
+        {
+            for (int j = 0; j < 19; j++)
+            {
+                // 还未落子的位置列表
+                if (Chess[i, j] == 0)
+                {
+                    minePoints.Add(GetValuedPoint(chess, i, j));
+
+                    aiPonints.Add(GetValuedPoint((chess == 1 ? 2 : 1), i, j));
+                }
+            }
+        }
+
+        // 获取最佳位置
+        var minePoint = minePoints.OrderByDescending(x => x.Score).FirstOrDefault();
+        var aiPonint = aiPonints.OrderByDescending(x => x.Score).FirstOrDefault();
+
+        if (minePoint != null && aiPonint != null)
+        {
+            // 如果某个位置对手分数高于我方，则抢占位置
+            if (minePoint.Score > aiPonint.Score)
+            {
+                Chess[minePoint.Point.Row, minePoint.Point.Cell] = chess;
+
+                if (IsWin(AIChess, minePoint.Point.Row, minePoint.Point.Cell))
+                {
+                    await _jsRuntime.InvokeVoidAsync("alert", "\n电脑赢了，你个渣渣👎");
+
+                    IsInGame = !IsInGame;
+                    return;
+                }
+            }
+            else
+            {
+                Chess[aiPonint.Point.Row, aiPonint.Point.Cell] = chess;
+
+                if (IsWin(AIChess, aiPonint.Point.Row, aiPonint.Point.Cell))
+                {
+                    await _jsRuntime.InvokeVoidAsync("alert", "\n电脑赢了，你个渣渣👎");
+                    IsInGame = !IsInGame;
+                    return;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// 判断是否赢了
+    /// </summary>
+    /// <param name="chess"></param>
+    /// <param name="row"></param>
+    /// <param name="cell"></param>
+    /// <returns></returns>
+    private bool IsWin(int chess, int row, int cell)
+    {
+        #region 横方向 ➡⬅
+
+        {
+            var i = 1;
+            var score = 1;
+            var rightValid = true;
+            var leftValid = true;
+
+            while (i <= 5)
+            {
+                var right = cell + i;
+                if (rightValid && right < 19)
+                {
+                    if (Chess[row, right] == chess)
+                    {
+                        score++;
+                        if (score >= 5)
+                            return true;
+                    }
+                    else
+                        rightValid = false;
+                }
+
+                var left = cell - i;
+                if (leftValid && left >= 0)
+                {
+                    if (Chess[row, left] == chess)
+                    {
+                        score++;
+                        if (score >= 5)
+                            return true;
+                    }
+                    else
+                        leftValid = false;
+                }
+
+                i++;
+            }
+        }
+
+        #endregion
+
+        #region 竖方向 ⬇⬆
+
+        {
+            var i = 1;
+            var score = 1;
+            var topValid = true;
+            var bottomValid = true;
+
+            while (i < 5)
+            {
+                var top = row - i;
+                if (topValid && top >= 0)
+                {
+                    if (Chess[top, cell] == chess)
+                    {
+                        score++;
+                        if (score >= 5)
+                            return true;
+                    }
+                    else
+                        topValid = false;
+                }
+
+                var bottom = row + i;
+                if (bottomValid && bottom < 19)
+                {
+                    if (Chess[bottom, cell] == chess)
+                    {
+                        score++;
+                        if (score >= 5)
+                            return true;
+                    }
+                    else
+                    {
+                        bottomValid = false;
+                    }
+                }
+
+                i++;
+            }
+        }
+
+        #endregion
+
+        #region 撇方向 ↙↗
+
+        {
+            var i = 1;
+            var score = 1;
+            var topValid = true;
+            var bottomValid = true;
+
+            while (i < 5)
+            {
+                var rightTopRow = row - i;
+                var rightTopCell = cell + i;
+                if (topValid && rightTopRow >= 0 && rightTopCell < 19)
+                {
+                    if (Chess[rightTopRow, rightTopCell] == chess)
+                    {
+                        score++;
+                        if (score >= 5)
+                            return true;
+                    }
+                    else
+                        topValid = false;
+                }
+
+                var leftBottomRow = row + i;
+                var leftBottomCell = cell - i;
+                if (bottomValid && leftBottomRow < 19 && leftBottomCell >= 0)
+                {
+                    if (Chess[leftBottomRow, leftBottomCell] == chess)
+                    {
+                        score++;
+                        if (score >= 5)
+                            return true;
+                    }
+                    else
+                        bottomValid = false;
+                }
+
+                i++;
+            }
+        }
+
+        #endregion
+
+        #region 捺方向 ↘↖
+
+        {
+            var i = 1;
+            var score = 1;
+            var topValid = true;
+            var bottomValid = true;
+
+            while (i < 5)
+            {
+                var leftTopRow = row - i;
+                var leftTopCell = cell - i;
+                if (topValid && leftTopRow >= 0 && leftTopCell >= 0)
+                {
+                    if (Chess[leftTopRow, leftTopCell] == chess)
+                    {
+                        score++;
+                        if (score >= 5)
+                            return true;
+                    }
+                    else
+                        topValid = false;
+                }
+
+                var rightBottomRow = row + i;
+                var rightBottomCell = cell + i;
+                if (bottomValid && rightBottomRow < 19 && rightBottomCell < 19)
+                {
+                    if (Chess[rightBottomRow, rightBottomCell] == chess)
+                    {
+                        score++;
+                        if (score >= 5)
+                            return true;
+                    }
+                    else
+                        bottomValid = false;
+                }
+
+                i++;
+            }
+        }
+
+        #endregion
+
+        return false;
+    }
+
+    /// <summary>
+    /// 获取当前位置点的价值分
+    /// </summary>
+    /// <param name="chess"></param>
+    /// <param name="row"></param>
+    /// <param name="cell"></param>
+    /// <returns></returns>
+    private ValuedPoint GetValuedPoint(int chess, int row, int cell)
+    {
+        var aiChess = chess == 1 ? 2 : 1;
+
+        int HScore = 0, VScore = 0, PScore = 0, LScore = 0;
+
+        #region 横方向 ➡⬅
+
+        {
+            var i = 1;
+            var score = 1;
+            var validPlace = 0;
+            var rightValid = true;
+            var leftValid = true;
+            var rightSpace = 0;
+            var leftSpace = 0;
+            var isDead = false;
+
+            while (i < 5)
+            {
+                var right = cell + i;
+                if (rightValid && right < 19)
+                {
+                    if (Chess[row, right] == chess)
+                    {
+                        if (rightSpace == 0)
+                            score++;
+                        validPlace++;
+                    }
+                    else if (Chess[row, right] == 0)
+                    {
+                        rightSpace++;
+                        validPlace++;
+                    }
+                    else if (Chess[row, right] == aiChess)
+                    {
+                        rightValid = false;
+                        if (rightSpace == 0)
+                            isDead = true;
+                    }
+                }
+
+                var left = cell - i;
+                if (leftValid && left >= 0)
+                {
+                    if (Chess[row, left] == chess)
+                    {
+                        if (leftSpace == 0)
+                            score++;
+                        validPlace++;
+                    }
+                    else if (Chess[row, left] == 0)
+                    {
+                        leftSpace++;
+                        validPlace++;
+                    }
+                    else if (Chess[row, left] == aiChess)
+                    {
+                        leftValid = false;
+                        if (leftSpace == 0)
+                            isDead = true;
+                    }
+                }
+
+                i++;
+            }
+
+            if (score >= 5)
+                HScore = 100000;
+
+            if (score == 4)
+            {
+                if (!isDead)
+                    HScore = 80000;
+                else
+                    HScore = validPlace <= 4 ? 0 : 8000;
+            }
+
+            if (score == 3)
+            {
+                if (!isDead)
+                    HScore = validPlace <= 4 ? 0 : 4000;
+                else
+                    HScore = validPlace <= 4 ? 0 : 2000;
+            }
+
+            if (score == 2)
+            {
+                if (!isDead)
+                    HScore = validPlace <= 4 ? 0 : 600;
+                else
+                    HScore = validPlace <= 4 ? 0 : 300;
+            }
+        }
+
+        #endregion
+
+        #region 竖方向 ⬇⬆
+
+        {
+            var i = 1;
+            var score = 1;
+            var validPlace = 0;
+            var topValid = true;
+            var bottomValid = true;
+            var topSpace = 0;
+            var bottomSpace = 0;
+            var isDead = false;
+
+            while (i < 5)
+            {
+                var top = row - i;
+                if (topValid && top >= 0)
+                {
+                    if (Chess[top, cell] == chess)
+                    {
+                        if (topSpace == 0)
+                            score++;
+                        validPlace++;
+                    }
+                    else if (Chess[top, cell] == 0)
+                    {
+                        topSpace++;
+                        validPlace++;
+                    }
+                    else if (Chess[top, cell] == aiChess)
+                    {
+                        topValid = false;
+                        if (topSpace == 0)
+                            isDead = true;
+                    }
+                }
+
+                var bottom = row + i;
+                if (bottomValid && bottom < 19)
+                {
+                    if (Chess[bottom, cell] == chess)
+                    {
+                        if (bottomSpace == 0)
+                            score++;
+                        validPlace++;
+                    }
+                    else if (Chess[bottom, cell] == 0)
+                    {
+                        bottomSpace++;
+                        validPlace++;
+                    }
+                    else if (Chess[bottom, cell] == aiChess)
+                    {
+                        bottomValid = false;
+                        if (bottomSpace == 0)
+                            isDead = true;
+                    }
+                }
+
+                i++;
+            }
+
+            if (score >= 5)
+                VScore = 100000;
+
+            if (score == 4)
+            {
+                if (!isDead)
+                    VScore = 80000;
+                else
+                    VScore = validPlace <= 4 ? 0 : 8000;
+            }
+            if (score == 3)
+            {
+                if (!isDead)
+                    VScore = validPlace <= 4 ? 0 : 4000;
+                else
+                    VScore = validPlace <= 4 ? 0 : 2000;
+            }
+            if (score == 2)
+            {
+                if (!isDead)
+                    VScore = validPlace <= 4 ? 0 : 600;
+                else
+                    VScore = validPlace <= 4 ? 0 : 300;
+            }
+        }
+
+        #endregion
+
+        #region 撇方向 ↙↗
+
+        {
+            var i = 1;
+            var score = 1;
+            var validPlace = 0;
+            var topValid = true;
+            var bottomValid = true;
+            var topSpace = 0;
+            var bottomSpace = 0;
+            var isDead = false;
+
+            while (i < 5)
+            {
+                var rightTopRow = row - i;
+                var rightTopCell = cell + i;
+                if (topValid && rightTopRow >= 0 && rightTopCell < 19)
+                {
+                    if (Chess[rightTopRow, rightTopCell] == chess)
+                    {
+                        if (topSpace == 0)
+                            score++;
+                        validPlace++;
+                    }
+                    else if (Chess[rightTopRow, rightTopCell] == 0)
+                    {
+                        topSpace++;
+                        validPlace++;
+                    }
+                    else if (Chess[rightTopRow, rightTopCell] == aiChess)
+                    {
+                        topValid = false;
+                        if (topSpace == 0)
+                            isDead = true;
+                    }
+                }
+
+                var leftBottomRow = row + i;
+                var leftBottomCell = cell - i;
+                if (bottomValid && leftBottomRow < 19 && leftBottomCell >= 0)
+                {
+                    if (Chess[leftBottomRow, leftBottomCell] == chess)
+                    {
+                        if (bottomSpace == 0)
+                            score++;
+                        validPlace++;
+                    }
+                    else if (Chess[leftBottomRow, leftBottomCell] == 0)
+                    {
+                        bottomSpace++;
+                        validPlace++;
+                    }
+                    else if (Chess[leftBottomRow, leftBottomCell] == aiChess)
+                    {
+                        bottomValid = false;
+                        if (bottomSpace == 0)
+                            isDead = true;
+                    }
+                }
+
+                i++;
+            }
+
+            if (score >= 5)
+                PScore = 100000;
+
+            if (score == 4)
+            {
+                if (!isDead)
+                    PScore = 80000;
+                else
+                    PScore = validPlace <= 4 ? 0 : 9000;
+            }
+            if (score == 3)
+            {
+                if (!isDead)
+                    PScore = validPlace <= 4 ? 0 : 4500;
+                else
+                    PScore = validPlace <= 4 ? 0 : 3000;
+            }
+            if (score == 2)
+            {
+                if (!isDead)
+                    PScore = validPlace <= 4 ? 0 : 800;
+                else
+                    PScore = validPlace <= 4 ? 0 : 500;
+            }
+        }
+
+        #endregion
+
+        #region 捺方向 ↘↖
+
+        {
+            var i = 1;
+            var score = 1;
+            var validPlace = 0;
+            var topSpace = 0;
+            var bottomSpace = 0;
+            var topValid = true;
+            var bottomValid = true;
+            var isDead = false;
+
+            while (i < 5)
+            {
+                var leftTopRow = row - i;
+                var leftTopCell = cell - i;
+                if (topValid && leftTopRow >= 0 && leftTopCell >= 0)
+                {
+                    if (Chess[leftTopRow, leftTopCell] == chess)
+                    {
+                        if (topSpace == 0)
+                            score++;
+                        validPlace++;
+                    }
+                    else if (Chess[leftTopRow, leftTopCell] == 0)
+                    {
+                        topSpace++;
+                        validPlace++;
+                    }
+                    else if (Chess[leftTopRow, leftTopCell] == aiChess)
+                    {
+                        topValid = false;
+                        if (topSpace == 0)
+                            isDead = true;
+                    }
+                }
+
+                var rightBottomRow = row + i;
+                var rightBottomCell = cell + i;
+                if (bottomValid && rightBottomRow < 19 && rightBottomCell < 19)
+                {
+                    if (Chess[rightBottomRow, rightBottomCell] == chess)
+                    {
+                        if (bottomSpace == 0)
+                            score++;
+                        validPlace++;
+                    }
+                    else if (Chess[rightBottomRow, rightBottomCell] == 0)
+                    {
+                        bottomSpace++;
+                        validPlace++;
+                    }
+                    else if (Chess[rightBottomRow, rightBottomCell] == aiChess)
+                    {
+                        bottomValid = false;
+                        if (bottomSpace == 0)
+                            isDead = true;
+                    }
+                }
+
+                i++;
+            }
+
+            if (score >= 5)
+                LScore = 100000;
+
+            if (score == 4)
+            {
+                if (!isDead)
+                    LScore = 80000;
+                else
+                    LScore = validPlace <= 4 ? 0 : 9000;
+            }
+
+            if (score == 3)
+            {
+                if (!isDead)
+                    LScore = validPlace <= 4 ? 0 : 4500;
+                else
+                    LScore = validPlace <= 4 ? 0 : 3000;
+            }
+
+            if (score == 2)
+            {
+                if (!isDead)
+                    LScore = validPlace <= 4 ? 0 : 800;
+                else
+                    LScore = validPlace <= 4 ? 0 : 500;
+            }
+        }
+
+        #endregion
+
+        return new ValuedPoint
+        {
+            Score = HScore + VScore + PScore + LScore,
+            Point = new Point
+            {
+                Row = row,
+                Cell = cell
+            }
+        };
+    }
+}
