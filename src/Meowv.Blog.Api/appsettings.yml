@@ -1,11 +1,11 @@
 ﻿---
 swagger:
   version: 'v4.0.0'
-  name: 'meowv_blog'
-  title: 'meowv_blog api'
-  description: 'Powered by .NET 5.0 on Linux'
+  name: 'meowv.blog'
+  title: 'meowv.blog api'
+  description: 'Powered by .NET 5 on Docker'
   routePrefix: ''
-  documentTitle: 'meowv_blog api'
+  documentTitle: '🤣Api - 阿星Plus⭐⭐⭐'
 
 storage:
   mongodb: 'mongodb://localhost/meowv_blog'
