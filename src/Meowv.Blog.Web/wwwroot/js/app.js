@@ -1,6 +1,6 @@
 ﻿window.onload = function () {
-    const api = "https://localhost:5001";
-    const cdn = "https://172.24.96.1:8001";
+    const api = "https://api.meowv.com";
+    const cdn = "https://static.meowv.com";
 
     const currentTheme = window.localStorage.getItem('theme');
     const isDark = currentTheme === 'dark';
@@ -36,7 +36,7 @@
                 "body": JSON.stringify(data)
             }).then(async response => {
                 var json = await response.json();
-                document.querySelector('.signature-img img').src = `${cdn}/${json.result}`;
+                document.querySelector('.signature-img img').src = `${cdn}/signature/${json.result}`;
             });
         });
     } else {

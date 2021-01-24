@@ -17,7 +17,12 @@ namespace Meowv.Blog.Web
                            .ConfigureWebHostDefaults(webBuilder =>
                            {
                                webBuilder.UseStartup<Startup>();
-                           }).ConfigureServices(services =>
+                           })
+                           .ConfigureAppConfiguration(config =>
+                           {
+                               config.Sources.Clear();
+                           })
+                           .ConfigureServices(services =>
                            {
                                services.AddRazorPages();
                                services.AddServerSideBlazor();
@@ -27,7 +32,7 @@ namespace Meowv.Blog.Web
                                });
                                services.AddHttpClient("api", x =>
                                {
-                                   x.BaseAddress = new Uri("https://localhost:5001");
+                                   x.BaseAddress = new Uri("https://localhost:44380");
                                });
                            });
             await host.Build().RunAsync();
