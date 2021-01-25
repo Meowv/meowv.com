@@ -4,4 +4,8 @@
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="AntDesign" Version="0.6.0-nightly-2101250045" />
+  </ItemGroup>
+
 </Project>

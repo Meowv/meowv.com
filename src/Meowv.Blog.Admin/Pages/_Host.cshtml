@@ -4,32 +4,18 @@
 @{
     Layout = null;
 }
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Meowv.Blog.Admin</title>
-    <base href="~/" />
-    <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
-    <link href="css/site.css" rel="stylesheet" />
-    <link href="Meowv.Blog.Admin.styles.css" rel="stylesheet" />
+    <title>🤣Admin - 阿星Plus⭐⭐⭐</title>
+    <link href="_content/AntDesign/css/ant-design-blazor.css" rel="stylesheet" />
+    <link href="~/css/app.css" rel="stylesheet" />
 </head>
 <body>
-    <component type="typeof(App)" render-mode="Static" />
-
-    <div id="blazor-error-ui">
-        <environment include="Staging,Production">
-            An error has occurred. This application may no longer respond until reloaded.
-        </environment>
-        <environment include="Development">
-            An unhandled exception has occurred. See browser dev tools for details.
-        </environment>
-        <a href="" class="reload">Reload</a>
-        <a class="dismiss">🗙</a>
-    </div>
-
+    <component type="typeof(App)" render-mode="Server" />
+    <script src="_content/AntDesign/js/ant-design-blazor.js"></script>
     <script src="_framework/blazor.server.js"></script>
 </body>
 </html>
