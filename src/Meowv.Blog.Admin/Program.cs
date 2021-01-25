@@ -26,6 +26,10 @@ namespace Meowv.Blog.Admin
                                services.Configure<ProSettings>(x =>
                                {
                                    x.Title = "阿星Plus";
+                                   x.NavTheme = "light";
+                                   x.Layout = "mix";
+                                   x.PrimaryColor = "daybreak";
+                                   x.ContentWidth = "Fluid";
                                    x.HeaderHeight = 50;
                                });
                            });

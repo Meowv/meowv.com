@@ -5,7 +5,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AntDesign" Version="0.6.0-nightly-2101250045" />
     <PackageReference Include="AntDesign.Pro.Layout" Version="0.1.0-nightly-210113091622" />
   </ItemGroup>
 

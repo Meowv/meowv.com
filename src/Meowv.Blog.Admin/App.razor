@@ -4,8 +4,14 @@
     </Found>
     <NotFound>
         <LayoutView Layout="@typeof(MainLayout)">
-            <p>Sorry, there's nothing at this address.</p>
+            <Result Status="500"
+                    Title="Sorry, there's nothing at this address."
+                    Extra="extra" />
         </LayoutView>
     </NotFound>
 </Router>
 <AntContainer />
+@code
+{
+    RenderFragment extra =@<Button Type="primary"></Button>;
+}
