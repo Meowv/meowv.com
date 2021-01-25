@@ -1,0 +1,15 @@
+﻿<FooterView Copyright="@($"{DateTime.Now.Year} 阿星Plus⭐⭐⭐")" Links="Links" />
+
+@code
+{
+    LinkItem[] Links { get; set; } =
+    {
+        new LinkItem
+        {
+            Key = "github",
+            Title = (RenderFragment)(@<Icon Type="github" />),
+            Href = "https://github.com/meowv/blog",
+            BlankTarget = true,
+        }
+    };
+}

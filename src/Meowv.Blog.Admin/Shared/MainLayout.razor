@@ -1,3 +1,35 @@
 ﻿@inherits LayoutComponentBase
 
-@Body
+<BasicLayout Logo="@("images/logo.png")" MenuData="MenuData" Theme="MenuTheme.Light">
+    <RightContentRender>
+        <Meowv.Blog.Admin.Components.Header />
+    </RightContentRender>
+    <FooterRender>
+        <Meowv.Blog.Admin.Components.Footer />
+    </FooterRender>
+    <ChildContent>
+        @Body
+    </ChildContent>
+</BasicLayout>
+<SettingDrawer />
+
+@code
+{
+    private MenuDataItem[] MenuData { get; set; } = { };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        MenuData = new MenuDataItem[]
+        {
+                new MenuDataItem
+                {
+                    Name = "Dashboard",
+                    Key = "dashboard",
+                    Path = "/",
+                    Icon = "dashboard"
+                },
+        };
+    }
+}

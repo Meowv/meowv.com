@@ -1,0 +1,39 @@
+﻿@inherits AntDomComponentBase
+
+<Space Class="@ClassMapper.Class">
+    <SpaceItem>
+        <Dropdown Style="display: inherit; width: inherit;"
+                  OverlayClassName="container">
+            <Overlay>
+                <Menu Class="menu" OnMenuItemClicked="OnClickCallback">
+                    <MenuItem Key="user">
+                        <Icon Type="user" Theme="outline" />
+                        用户中心
+                    </MenuItem>
+                    <li Class="ant-dropdown-menu-item-divider"></li>
+                    <MenuItem Key="logout">
+                        <Icon Type="logout" Theme="outline" />
+                        退出登录
+                    </MenuItem>
+                </Menu>
+            </Overlay>
+            <ChildContent>
+                <span class="action account">
+                    <Avatar Size="small" Class="avatar" Src="@Avatar" Alt="avatar" />
+                    <span class="name anticon">@Name</span>
+                </span>
+            </ChildContent>
+        </Dropdown>
+    </SpaceItem>
+</Space>
+
+@code {
+    public string Avatar { get; set; } = "https://static.meowv.com/images/avatar.jpg";
+
+    public string Name { get; set; } = "阿星Plus";
+
+    public void OnClickCallback(MenuItem item)
+    {
+        Console.WriteLine(item.Key);
+    }
+}
