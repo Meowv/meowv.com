@@ -8,8 +8,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Volo.Abp;
+using Volo.Abp.Security.Claims;
 
 namespace Meowv.Blog.Users.Impl
 {
@@ -17,10 +20,12 @@ namespace Meowv.Blog.Users.Impl
     public class UserService : ServiceBase, IUserService
     {
         private readonly IUserRepository _users;
+        private readonly ICurrentPrincipalAccessor _principalAccessor;
 
-        public UserService(IUserRepository users)
+        public UserService(IUserRepository users, ICurrentPrincipalAccessor currentPrincipalAccessor)
         {
             _users = users;
+            _principalAccessor = currentPrincipalAccessor;
         }
 
         /// <summary>
@@ -145,6 +150,25 @@ namespace Meowv.Blog.Users.Impl
 
             response.IsSuccess(result);
             return response;
+        }
+
+        /// <summary>
+        /// Get current user.
+        /// </summary>
+        /// <returns></returns>
+        [Route("api/meowv/user")]
+        public async Task<BlogResponse<UserDto>> GetCurrentUserAsync()
+        {
+            var response = new BlogResponse<UserDto>();
+
+            var claim = _principalAccessor.Principal.Claims?.FirstOrDefault((Claim c) => c.Type == ClaimTypes.NameIdentifier);
+            if (claim == null || claim.Value.IsNullOrWhiteSpace())
+            {
+                response.IsFailed("Unauthorized.");
+                return response;
+            }
+
+            return await GetUserAsync(claim.Value);
         }
 
         [AllowAnonymous]
