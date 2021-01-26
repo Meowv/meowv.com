@@ -2,10 +2,34 @@
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
+    <RootPath>.\</RootPath>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="AntDesign.Pro.Layout" Version="0.1.0-nightly-210113091622" />
+  </ItemGroup>
+
+  <Target Name="DebugEnsureNodeEnv" BeforeTargets="Build" Condition=" '$(Configuration)' == 'Debug' And !Exists('$(RootPath)node_modules') ">
+    <Exec Command="node --version" ContinueOnError="true">
+      <Output TaskParameter="ExitCode" PropertyName="ErrorCode" />
+    </Exec>
+    <Error Condition="'$(ErrorCode)' != '0'" Text="Node.js is required to build and run this project. To continue, please install Node.js from https://nodejs.org/, and then restart your command prompt or IDE." />
+    <Message Importance="high" Text="Restoring dependencies using 'npm'. This may take several minutes..." />
+    <Exec WorkingDirectory="$(RootPath)" Command="npm install" />
+  </Target>
+
+  <Target Name="DebugRunGulp" BeforeTargets="DebugEnsureNodeEnv" Condition=" '$(Configuration)' == 'Debug' And Exists('$(RootPath)node_modules') ">
+    <Exec WorkingDirectory="$(RootPath)" Command="npm run gulp:pro" />
+  </Target>
+
+  <Target Name="PublishRunGulp" AfterTargets="ComputeFilesToPublish">
+    <Exec WorkingDirectory="$(RootPath)" Command="npm install" />
+    <Exec WorkingDirectory="$(RootPath)" Command="npm run gulp:pro" />
+  </Target>
+
+  <ItemGroup>
+    <Watch Include="**\*.razor" />
+    <Watch Include="**\*.less" />
   </ItemGroup>
 
 </Project>
