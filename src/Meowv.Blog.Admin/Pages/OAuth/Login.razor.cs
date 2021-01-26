@@ -9,7 +9,7 @@ namespace Meowv.Blog.Admin.Pages.OAuth
 {
     public partial class Login
     {
-        private readonly LoginModel model = new LoginModel() { Type = "account" };
+        private readonly LoginModel model = new LoginModel();
 
         [Inject] public NavigationManager NavigationManager { get; set; }
 
@@ -21,22 +21,56 @@ namespace Meowv.Blog.Admin.Pages.OAuth
 
         public async Task HandleSubmit()
         {
+            var desc = "The username or password entered is incorrect.";
+
+            if (model.Type == "code")
+            {
+                desc = "The code entered is incorrect.";
+
+                if (string.IsNullOrWhiteSpace(model.Code))
+                {
+                    return;
+                }
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(model.Username) || string.IsNullOrWhiteSpace(model.Password))
+                {
+                    return;
+                }
+            }
+
             var service = AuthenticationStateProvider as OAuthService;
 
             var token = await service.GetTokenAsync(model);
 
             if (string.IsNullOrEmpty(token))
             {
-                await Notification.Warn(new NotificationConfig
+                await Notification.Warning(new NotificationConfig
                 {
                     Message = "UnAuthorized",
-                    Description = "The username or password entered is incorrect."
+                    Description = desc
                 });
             }
             else
             {
                 NavigationManager.NavigateTo("/", true);
             }
+        }
+
+        public async Task HandleClick(string type)
+        {
+            if (type == "qq")
+            {
+                await Notification.Info(new NotificationConfig
+                {
+                    Message = "NotImplemented",
+                    Description = "The oauth for qq is not implemented."
+                });
+                return;
+            }
+
+            NavigationManager.NavigateTo($"/oauth/{type}");
             return;
         }
 

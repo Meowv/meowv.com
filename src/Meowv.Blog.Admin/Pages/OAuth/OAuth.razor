@@ -1,8 +1,6 @@
 ﻿@page "/oauth/{type}"
+@layout LoginLayout
 
-<h3>OAuth:@Type</h3>
-
-@code {
-    [Parameter]
-    public string Type { get; set; }
-}
+<div style="text-align:center;margin-top:100px;">
+    <Spin size="large" />
+</div>

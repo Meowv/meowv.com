@@ -201,7 +201,7 @@ namespace Meowv.Blog.Users.Impl
         [RemoteService(false)]
         public async Task<User> VerifyByAccountAsync(string username, string password)
         {
-            var user = await _users.FindAsync(x => x.Username == username && x.Password == password.ToMd5());
+            var user = await _users.FindAsync(x => x.Username == username && x.Password == password.ToMd5() && x.IsAdmin);
             if (user is null)
             {
                 throw new ArgumentException("The username or password entered is incorrect.");

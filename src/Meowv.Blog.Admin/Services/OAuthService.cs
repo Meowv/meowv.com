@@ -60,6 +60,14 @@ namespace Meowv.Blog.Admin.Services
             }
         }
 
+        public async Task GetOAuthUrl(string type)
+        {
+            var json = await http.GetStringAsync($"/api/meowv/oauth/{type}");
+            var response = JsonConvert.DeserializeObject<BlogResponse<string>>(json);
+
+            _navigationManager.NavigateTo(response.Success ? response.Result : "/login");
+        }
+
         public async Task<string> GetTokenAsync(LoginModel login)
         {
             var token = string.Empty;
@@ -81,13 +89,9 @@ namespace Meowv.Blog.Admin.Services
 
                 await _jsRuntime.InvokeVoidAsync("window.func.setStorage", "token", token);
             }
-            else if (login.Type == "code")
-            {
-
-            }
             else
             {
-
+                //TODO...
             }
 
             return token;
