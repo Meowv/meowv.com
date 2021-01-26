@@ -1,8 +1,50 @@
 ﻿@page "/login"
 @layout LoginLayout
 
-asdasd
-
-@code {
-
-}
+<div class="main__b__0">
+    <div class="login">
+        <Form Model="@input" OnFinish="HandleSubmit">
+            <Tabs ActiveKey="@context.LoginType">
+                <TabPane Key="1">
+                    <Tab>账户密码登录</Tab>
+                    <ChildContent>
+                        <FormItem>
+                            <AntDesign.Input Placeholder="账户:" Size="large" @bind-Value="@context.Username">
+                                <Prefix><Icon Type="user" /></Prefix>
+                            </AntDesign.Input>
+                        </FormItem>
+                        <FormItem>
+                            <AntDesign.Input Placeholder="密码:" Size="large" @bind-Value="@context.Password" Type="password">
+                                <Prefix><Icon Type="lock" /></Prefix>
+                            </AntDesign.Input>
+                        </FormItem>
+                    </ChildContent>
+                </TabPane>
+                <TabPane Key="2">
+                    <Tab>动态密码登录</Tab>
+                    <ChildContent>
+                        <FormItem>
+                            <Row Gutter="8">
+                                <AntDesign.Col Span="14">
+                                    <AntDesign.Input Placeholder="动态密码:" Size="large" @bind-Value="@context.Code">
+                                        <Prefix><Icon Type="lock" /></Prefix>
+                                    </AntDesign.Input>
+                                </AntDesign.Col>
+                                <AntDesign.Col Span="10">
+                                    <Button Size="large" Block OnClick="GetCode">获取动态密码</Button>
+                                </AntDesign.Col>
+                            </Row>
+                        </FormItem>
+                    </ChildContent>
+                </TabPane>
+            </Tabs>
+            <Button Type="primary" HtmlType="submit" Class="submit" Size="large" Block>登&nbsp;录</Button>
+            <div class="other">
+                其他登录方式
+                <Icon Type="alipay-circle" />
+                <Icon Type="taobao-circle" />
+                <Icon Type="weibo-circle" />
+            </div>
+        </Form>
+    </div>
+</div>
