@@ -1,33 +1,50 @@
 ﻿using AntDesign;
 using Meowv.Blog.Admin.Models;
+using Meowv.Blog.Admin.Services;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
 using System.Threading.Tasks;
 
 namespace Meowv.Blog.Admin.Pages.OAuth
 {
     public partial class Login
     {
-        private readonly LoginModel input = new LoginModel();
+        private readonly LoginModel model = new LoginModel() { Type = "account" };
 
         [Inject] public NavigationManager NavigationManager { get; set; }
 
-        [Inject] public MessageService Message { get; set; }
+        [Inject] public NotificationService Notification { get; set; }
 
-        public void HandleSubmit()
+        [Inject] public AuthenticationStateProvider AuthenticationStateProvider { get; set; }
+
+        public async Task HandleSubmit()
         {
-            //if (_model.UserName == "admin" && _model.Password == "ant.design")
-            //{
-            //    NavigationManager.NavigateTo("/");
-            //    return;
-            //}
+            var service = AuthenticationStateProvider as OAuthService;
 
-            //if (_model.UserName == "user" && _model.Password == "ant.design") NavigationManager.NavigateTo("/");
+            var token = await service.GetTokenAsync(model);
+
+            if (string.IsNullOrEmpty(token))
+            {
+                await Notification.Error(new NotificationConfig
+                {
+                    Message = "UnAuthorized",
+                    Description = "The username or password entered is incorrect."
+                });
+            }
+            else
+            {
+                NavigationManager.NavigateTo("/", true);
+            }
+            return;
+        }
+
+        public void OnChange(string activeKey)
+        {
+            model.Type = activeKey;
         }
 
         public async Task GetCode()
         {
-            //var captcha = await AccountService.GetCaptchaAsync(_model.Mobile);
-            //await Message.Success($"获取验证码成功！验证码为：{captcha}");
         }
     }
 }

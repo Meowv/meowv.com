@@ -1,9 +1,10 @@
 ﻿using AntDesign.Pro.Layout;
+using Meowv.Blog.Admin.Services;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
-using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace Meowv.Blog.Admin
@@ -22,7 +23,7 @@ namespace Meowv.Blog.Admin
                                services.AddRazorPages();
                                services.AddServerSideBlazor();
                                services.AddAntDesign();
-                               services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:44380") });
+                               services.AddScoped<AuthenticationStateProvider, OAuthService>();
                                services.Configure<ProSettings>(x =>
                                {
                                    x.Title = "阿星Plus";
@@ -31,6 +32,10 @@ namespace Meowv.Blog.Admin
                                    x.PrimaryColor = "daybreak";
                                    x.ContentWidth = "Fluid";
                                    x.HeaderHeight = 50;
+                               });
+                               services.AddHttpClient("api", x =>
+                               {
+                                   x.BaseAddress = new Uri("https://localhost:44380");
                                });
                            });
             await host.Build().RunAsync();
