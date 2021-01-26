@@ -17,6 +17,8 @@ namespace Meowv.Blog.Admin.Pages.OAuth
 
         [Inject] public AuthenticationStateProvider AuthenticationStateProvider { get; set; }
 
+        bool loading = false;
+
         public async Task HandleSubmit()
         {
             var service = AuthenticationStateProvider as OAuthService;
@@ -25,7 +27,7 @@ namespace Meowv.Blog.Admin.Pages.OAuth
 
             if (string.IsNullOrEmpty(token))
             {
-                await Notification.Error(new NotificationConfig
+                await Notification.Warn(new NotificationConfig
                 {
                     Message = "UnAuthorized",
                     Description = "The username or password entered is incorrect."
@@ -45,6 +47,20 @@ namespace Meowv.Blog.Admin.Pages.OAuth
 
         public async Task GetCode()
         {
+            loading = true;
+
+            await Notification.Success(new NotificationConfig
+            {
+                Message = "Successful",
+                Description = "The dynamic code has been sent to WeChat."
+            });
+
+            await Task.Run(async () =>
+            {
+                await Task.Delay(8000);
+                loading = false;
+                await InvokeAsync(StateHasChanged);
+            });
         }
     }
 }

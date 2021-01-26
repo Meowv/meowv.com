@@ -58,14 +58,6 @@ namespace Meowv.Blog.Admin.Services
 
                 return new AuthenticationState(principal);
             }
-
-            AuthenticationState GetNullState()
-            {
-                _navigationManager.NavigateTo("/login");
-
-                var principal = new ClaimsPrincipal(new ClaimsIdentity());
-                return new AuthenticationState(principal);
-            }
         }
 
         public async Task<string> GetTokenAsync(LoginModel login)
@@ -99,6 +91,21 @@ namespace Meowv.Blog.Admin.Services
             }
 
             return token;
+        }
+
+        public async Task LogoutAsync()
+        {
+            await _jsRuntime.InvokeVoidAsync("window.func.setStorage", "token", "");
+
+            NotifyAuthenticationStateChanged(Task.FromResult(GetNullState()));
+        }
+
+        private AuthenticationState GetNullState()
+        {
+            _navigationManager.NavigateTo("/login");
+
+            var principal = new ClaimsPrincipal(new ClaimsIdentity());
+            return new AuthenticationState(principal);
         }
     }
 }

@@ -1,5 +1,10 @@
 ﻿using AntDesign;
+using Meowv.Blog.Admin.Services;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace Meowv.Blog.Admin.Shared
 {
@@ -8,11 +13,28 @@ namespace Meowv.Blog.Admin.Shared
         [Inject]
         NavigationManager NavigationManager { get; set; }
 
-        public string Avatar { get; set; } = "https://static.meowv.com/images/avatar.jpg";
+        [Inject] public AuthenticationStateProvider AuthenticationStateProvider { get; set; }
 
-        public string Name { get; set; } = "阿星Plus";
+        [CascadingParameter]
+        private Task<AuthenticationState> AuthenticationState { get; set; }
 
-        public void OnClickCallback(MenuItem item)
+        public string Avatar { get; set; }
+
+        public string Name { get; set; }
+
+        protected override async Task OnInitializedAsync()
+        {
+            var state = await AuthenticationState;
+            var user = state.User;
+
+            if (user.Identity.IsAuthenticated)
+            {
+                Name = user.Claims?.FirstOrDefault(x => x.Type == ClaimTypes.Name).Value;
+                Avatar = user.Claims?.FirstOrDefault(x => x.Type == "avatar").Value;
+            }
+        }
+
+        public async Task OnClickCallbackAsync(MenuItem item)
         {
             switch (item.Key)
             {
@@ -20,7 +42,11 @@ namespace Meowv.Blog.Admin.Shared
                     NavigationManager.NavigateTo("/users");
                     break;
                 case "logout":
-                    break;
+                    {
+                        var service = AuthenticationStateProvider as OAuthService;
+                        await service.LogoutAsync();
+                        break;
+                    }
             }
         }
     }
