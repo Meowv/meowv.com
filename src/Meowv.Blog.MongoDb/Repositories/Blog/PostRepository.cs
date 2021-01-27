@@ -23,6 +23,9 @@ namespace Meowv.Blog.Repositories.Blog
             {
                 { "title", 1 },
                 { "url", 1 },
+                { "author", 1 },
+                { "category", 1 },
+                { "tags", 1 },
                 { "createdAt", 1 }
             };
 

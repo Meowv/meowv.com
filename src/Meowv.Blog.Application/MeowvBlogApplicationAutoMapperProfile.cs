@@ -27,9 +27,7 @@ namespace Meowv.Blog
                 .ForMember(x => x.CreatedAt, dto => dto.MapFrom(opt => opt.CreatedAt.ToLocalTime().FormatTime()))
                 .ForMember(x => x.Year, dto => dto.MapFrom(opt => opt.CreatedAt.Year));
 
-            CreateMap<Post, PostBriefAdminDto>()
-                .ForMember(x => x.CreatedAt, dto => dto.MapFrom(opt => opt.CreatedAt.ToLocalTime().FormatTime()))
-                .ForMember(x => x.Year, dto => dto.MapFrom(opt => opt.CreatedAt.Year));
+            CreateMap<Post, GetAdminPostDto>().ForMember(x => x.CreatedAt, dto => dto.MapFrom(opt => opt.CreatedAt.ToLocalTime()));
 
             CreateMap<Category, CategoryDto>();
 
