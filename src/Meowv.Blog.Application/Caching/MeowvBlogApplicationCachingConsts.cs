@@ -38,9 +38,9 @@
 
             public static string GetHots(string source) => $"{CachePrefix.Hot}:{source}";
 
-            public static string GetSignatureTypesAsync() => $"{CachePrefix.Signature}:Types";
+            public static string GetSignatureTypes() => $"{CachePrefix.Signature}:Types";
 
-            public static string GenerateSignatureAsync(string name, int typeId) => $"{CachePrefix.Signature}:{name}-{typeId}";           
+            public static string GenerateSignature(string name, int typeId) => $"{CachePrefix.Signature}:{name}-{typeId}";           
         }
 
         public class CacheStrategy
