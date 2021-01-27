@@ -1,31 +1,57 @@
 ﻿using AntDesign;
+using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using Newtonsoft.Json;
 using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Meowv.Blog.Admin.Services
 {
-    public abstract class PageBase : AntDomComponentBase
+    public class PageBase : AntDomComponentBase
     {
-        private readonly HttpClient http;
+        private HttpClient http;
 
-        public PageBase(IHttpClientFactory httpClientFactory)
+        [Inject] IHttpClientFactory HttpClientFactory  { get; set; }
+
+        public virtual async Task<T> GetResultAsync<T>(string url, string json = "", HttpMethod method = null)
         {
-            http = httpClientFactory.CreateClient("api");
-        }
+            http = HttpClientFactory.CreateClient("api");
 
-        public virtual int PageSize { get; set; } = 15;
+            var token = await Js.InvokeAsync<string>("window.func.getStorage", "token");
+            http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        public virtual async Task<string> GetTokenAsync()
-        {
-            return await Js.InvokeAsync<string>("window.func.getStorage", "token");
-        }
+            string response;
 
-        public virtual async Task<T> GetResultAsync<T>(string url)
-        {
-            var json = await http.GetStringAsync(url);
-            return JsonConvert.DeserializeObject<T>(json);
+            if (method is null || method == HttpMethod.Get)
+            {
+                response = await http.GetStringAsync(url);
+            }
+            else
+            {
+                var content = new ByteArrayContent(Encoding.UTF8.GetBytes(json));
+                content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+                var httpResponse = new HttpResponseMessage();
+
+                if (method == HttpMethod.Post)
+                {
+                    httpResponse = await http.PostAsync(url, content);
+                }
+                else if (method == HttpMethod.Put)
+                {
+                    httpResponse = await http.PutAsync(url, content);
+                }
+                else if (method == HttpMethod.Delete)
+                {
+                    httpResponse = await http.DeleteAsync(url);
+                }
+
+                response = await httpResponse.Content.ReadAsStringAsync();
+            }
+
+            return JsonConvert.DeserializeObject<T>(response);
         }
     }
 }
