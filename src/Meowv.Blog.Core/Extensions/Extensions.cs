@@ -183,5 +183,35 @@ namespace Meowv.Blog.Extensions
         {
             return dic.Select(x => $"{HttpUtility.UrlEncode(x.Key, Encoding.UTF8)}={HttpUtility.UrlEncode(x.Value, Encoding.UTF8)}").JoinAsString("&");
         }
+
+        /// <summary>
+        /// Generate random code
+        /// </summary>
+        /// <param name="length"></param>
+        /// <returns></returns>
+        public static string GenerateRandomCode(this int length)
+        {
+            int rand;
+            char code;
+            var randomcode = string.Empty;
+            var random = new Random();
+
+            for (int i = 0; i < length; i++)
+            {
+                rand = random.Next();
+
+                if (rand % 3 == 0)
+                {
+                    code = (char)('A' + (char)(rand % 26));
+                }
+                else
+                {
+                    code = (char)('0' + (char)(rand % 10));
+                }
+
+                randomcode += code.ToString();
+            }
+            return randomcode;
+        }
     }
 }

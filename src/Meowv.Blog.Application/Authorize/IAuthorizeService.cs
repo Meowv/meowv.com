@@ -11,6 +11,10 @@ namespace Meowv.Blog.Authorize
 
         Task<BlogResponse<string>> GenerateTokenAsync(string type, string code, string state);
 
+        Task<BlogResponse<string>> GenerateTokenAsync(string code);
+
         Task<BlogResponse<string>> GenerateTokenAsync(IUserService userService, AccountInput input);
+
+        Task<BlogResponse> SendAuthorizeCodeAsync();
     }
 }

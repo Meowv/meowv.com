@@ -208,5 +208,12 @@ namespace Meowv.Blog.Users.Impl
             }
             return user;
         }
+
+        [AllowAnonymous]
+        [RemoteService(false)]
+        public async Task<User> GetDefaultUserAsync()
+        {
+            return await Task.FromResult(_users.FirstOrDefault(x => x.IsAdmin));
+        }
     }
 }

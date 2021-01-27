@@ -14,6 +14,8 @@
             public const string Hot = "Hot";
 
             public const string Signature = "Signature";
+
+            public static string Authorize = "Authorize:Code";
         }
 
         public class CacheKeys
@@ -38,7 +40,7 @@
 
             public static string GetSignatureTypesAsync() => $"{CachePrefix.Signature}:Types";
 
-            public static string GenerateSignatureAsync(string name, int typeId) => $"{CachePrefix.Signature}:{name}-{typeId}";
+            public static string GenerateSignatureAsync(string name, int typeId) => $"{CachePrefix.Signature}:{name}-{typeId}";           
         }
 
         public class CacheStrategy

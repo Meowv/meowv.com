@@ -1,15 +1,20 @@
 ﻿using Meowv.Blog.Authorize.OAuth;
 using Meowv.Blog.Authorize.OAuth.Impl;
+using Meowv.Blog.Caching.Authorize;
 using Meowv.Blog.Domain.Users;
 using Meowv.Blog.Dto.Authorize.Params;
+using Meowv.Blog.Dto.Tools.Params;
+using Meowv.Blog.Extensions;
 using Meowv.Blog.Options;
 using Meowv.Blog.Response;
+using Meowv.Blog.Tools;
 using Meowv.Blog.Users;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System;
+using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -19,18 +24,27 @@ namespace Meowv.Blog.Authorize.Impl
     public class AuthorizeService : ServiceBase, IAuthorizeService
     {
         private readonly JwtOptions _jwtOption;
+        private readonly IToolService _toolService;
+        private readonly IAuthorizeCacheService _authorizeCacheService;
+        private readonly IUserService _userService;
         private readonly OAuthGithubService _githubService;
         private readonly OAuthGiteeService _giteeService;
         private readonly OAuthAlipayService _alipayService;
         private readonly OAuthDingtalkService _dingtalkService;
 
         public AuthorizeService(IOptions<JwtOptions> jwtOption,
+                                IToolService toolService,
+                                IAuthorizeCacheService authorizeCacheService,
+                                IUserService userService,
                                 OAuthGithubService githubService,
                                 OAuthGiteeService giteeService,
                                 OAuthAlipayService alipayService,
                                 OAuthDingtalkService dingtalkService)
         {
             _jwtOption = jwtOption.Value;
+            _toolService = toolService;
+            _authorizeCacheService = authorizeCacheService;
+            _userService = userService;
             _githubService = githubService;
             _giteeService = giteeService;
             _alipayService = alipayService;
@@ -97,6 +111,30 @@ namespace Meowv.Blog.Authorize.Impl
         }
 
         /// <summary>
+        /// Generate token by authorization code.
+        /// </summary>
+        /// <param name="code"></param>
+        /// <returns></returns>
+        [Route("api/meowv/oauth/token")]
+        public async Task<BlogResponse<string>> GenerateTokenAsync([Required] string code)
+        {
+            var response = new BlogResponse<string>();
+
+            var cacheCode = await _authorizeCacheService.GetAuthorizeCodeAsync();
+            if (code != cacheCode)
+            {
+                response.IsFailed("The authorization code is wrong.");
+                return response;
+            }
+
+            var user = await _userService.GetDefaultUserAsync();
+            var token = GenerateToken(user);
+
+            response.IsSuccess(token);
+            return response;
+        }
+
+        /// <summary>
         /// Generate token by account.
         /// </summary>
         /// <param name="userService"></param>
@@ -112,6 +150,28 @@ namespace Meowv.Blog.Authorize.Impl
 
             response.IsSuccess(token);
             return await Task.FromResult(response);
+        }
+
+        /// <summary>
+        /// Send authorization code.
+        /// </summary>
+        /// <returns></returns>
+        [Route("api/meowv/oauth/code/send")]
+        public async Task<BlogResponse> SendAuthorizeCodeAsync()
+        {
+            var response = new BlogResponse();
+
+            var length = 6;
+            var code = length.GenerateRandomCode();
+
+            await _authorizeCacheService.AddAuthorizeCodeAsync(code);
+
+            await _toolService.SendMessageAsync(new SendMessageInput
+            {
+                Text = code
+            });
+
+            return response;
         }
 
         private string GenerateToken(User user)
