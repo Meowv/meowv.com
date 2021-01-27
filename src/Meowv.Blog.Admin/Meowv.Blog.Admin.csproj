@@ -33,4 +33,8 @@
     <Watch Include="**\*.less" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Meowv.Blog.Response\Meowv.Blog.Response.csproj" />
+  </ItemGroup>
+
 </Project>
