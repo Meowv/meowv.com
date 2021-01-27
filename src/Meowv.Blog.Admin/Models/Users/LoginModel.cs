@@ -1,4 +1,4 @@
-﻿namespace Meowv.Blog.Admin.Models
+﻿namespace Meowv.Blog.Admin.Models.Users
 {
     public class LoginModel
     {

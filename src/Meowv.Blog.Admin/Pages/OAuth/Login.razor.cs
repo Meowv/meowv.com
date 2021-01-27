@@ -1,5 +1,5 @@
 ﻿using AntDesign;
-using Meowv.Blog.Admin.Models;
+using Meowv.Blog.Admin.Models.Users;
 using Meowv.Blog.Admin.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
