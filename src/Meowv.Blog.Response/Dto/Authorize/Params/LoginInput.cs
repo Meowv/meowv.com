@@ -1,6 +1,6 @@
-﻿namespace Meowv.Blog.Admin.Models.Users
+﻿namespace Meowv.Blog.Dto.Authorize.Params
 {
-    public class LoginModel
+    public class LoginInput
     {
         public string Type { get; set; } = "account";
 

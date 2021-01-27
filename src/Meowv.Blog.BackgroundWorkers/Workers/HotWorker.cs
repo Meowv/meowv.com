@@ -18,6 +18,7 @@ using System.Threading.Tasks;
 using System.Web;
 using Volo.Abp.BackgroundWorkers.Quartz;
 using Volo.Abp.EventBus.Local;
+using Data = Meowv.Blog.Domain.Hots.Data;
 
 namespace Meowv.Blog.Workers
 {

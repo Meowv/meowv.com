@@ -1,9 +1,9 @@
-﻿using Volo.Abp.Domain.Entities;
-
-namespace Meowv.Blog.Dto.Signatures
+﻿namespace Meowv.Blog.Dto.Signatures
 {
-    public class SignatureDto : Entity<string>
+    public class SignatureDto
     {
+        public string Id { get; set; }
+
         public string Name { get; set; }
 
         public string Type { get; set; }

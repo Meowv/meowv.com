@@ -1,9 +1,9 @@
-﻿using Volo.Abp.Domain.Entities;
-
-namespace Meowv.Blog.Dto.Users
+﻿namespace Meowv.Blog.Dto.Users
 {
-    public class UserDto : Entity<string>
+    public class UserDto
     {
+        public string Id { get; set; }
+
         public string Username { get; set; }
 
         public string Type { get; set; }

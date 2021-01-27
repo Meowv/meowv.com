@@ -7,7 +7,6 @@
 
   <ItemGroup>
     <PackageReference Include="AntDesign.Pro.Layout" Version="0.1.0-nightly-210113091622" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
   </ItemGroup>
 
   <Target Name="DebugEnsureNodeEnv" BeforeTargets="Build" Condition=" '$(Configuration)' == 'Debug' And !Exists('$(RootPath)node_modules') ">

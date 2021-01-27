@@ -1,4 +1,5 @@
-﻿using Meowv.Blog.Admin.Models.Users;
+﻿using Meowv.Blog.Dto.Authorize.Params;
+using Meowv.Blog.Dto.Users;
 using Meowv.Blog.Response;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -44,7 +45,7 @@ namespace Meowv.Blog.Admin.Services
 
                 var response = await httpResponseMessage.Content.ReadAsStringAsync();
 
-                var user = JsonConvert.DeserializeObject<BlogResponse<UserModel>>(response).Result;
+                var user = JsonConvert.DeserializeObject<BlogResponse<UserDto>>(response).Result;
 
                 var identity = new ClaimsIdentity(new[]
                 {
@@ -68,7 +69,7 @@ namespace Meowv.Blog.Admin.Services
             _navigationManager.NavigateTo(response.Success ? response.Result : "/login");
         }
 
-        public async Task<string> GetTokenAsync(LoginModel login)
+        public async Task<string> GetTokenAsync(LoginInput login)
         {
             HttpResponseMessage httpResponse;
 

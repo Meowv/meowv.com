@@ -1,6 +1,6 @@
 ﻿using AntDesign;
-using Meowv.Blog.Admin.Models.Users;
 using Meowv.Blog.Admin.Services;
+using Meowv.Blog.Dto.Authorize.Params;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using System.Net.Http;
@@ -10,7 +10,7 @@ namespace Meowv.Blog.Admin.Pages.OAuth
 {
     public partial class Login
     {
-        private readonly LoginModel model = new LoginModel();
+        private readonly LoginInput model = new LoginInput();
 
         [Inject] public NavigationManager NavigationManager { get; set; }
 
