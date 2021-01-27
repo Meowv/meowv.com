@@ -70,7 +70,7 @@ namespace Meowv.Blog.Admin.Services
 
         public async Task<string> GetTokenAsync(LoginModel login)
         {
-            var token = string.Empty;
+            HttpResponseMessage httpResponse;
 
             if (login.Type == "account")
             {
@@ -82,17 +82,16 @@ namespace Meowv.Blog.Admin.Services
                 var content = new ByteArrayContent(Encoding.UTF8.GetBytes(json));
                 content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 
-                var httpResponse = await http.PostAsync("api/meowv/oauth/account/token", content);
-                var response = await httpResponse.Content.ReadAsStringAsync();
-
-                token = JsonConvert.DeserializeObject<BlogResponse<string>>(response).Result;
-
-                await _jsRuntime.InvokeVoidAsync("window.func.setStorage", "token", token);
+                httpResponse = await http.PostAsync("api/meowv/oauth/account/token", content);
             }
             else
             {
-                //TODO...
+                httpResponse = await http.PostAsync($"api/meowv/oauth/token?code={login.Code}", null);
             }
+
+            var response = await httpResponse.Content.ReadAsStringAsync();
+            var token = JsonConvert.DeserializeObject<BlogResponse<string>>(response).Result;
+            await _jsRuntime.InvokeVoidAsync("window.func.setStorage", "token", token);
 
             return token;
         }

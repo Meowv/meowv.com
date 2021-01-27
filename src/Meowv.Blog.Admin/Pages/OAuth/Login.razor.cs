@@ -3,6 +3,7 @@ using Meowv.Blog.Admin.Models;
 using Meowv.Blog.Admin.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace Meowv.Blog.Admin.Pages.OAuth
@@ -16,6 +17,8 @@ namespace Meowv.Blog.Admin.Pages.OAuth
         [Inject] public NotificationService Notification { get; set; }
 
         [Inject] public AuthenticationStateProvider AuthenticationStateProvider { get; set; }
+
+        [Inject] public IHttpClientFactory HttpClient { get; set; }
 
         bool loading = false;
 
@@ -54,6 +57,12 @@ namespace Meowv.Blog.Admin.Pages.OAuth
             }
             else
             {
+                await Notification.Success(new NotificationConfig
+                {
+                    Message = "Successful",
+                    Description = $"Login is successful, welcome back.",
+                    Duration = 0.5
+                });
                 NavigationManager.NavigateTo("/", true);
             }
         }
@@ -79,15 +88,21 @@ namespace Meowv.Blog.Admin.Pages.OAuth
             model.Type = activeKey;
         }
 
-        public async Task GetCode()
+        public async Task GetAuthCode()
         {
             loading = true;
 
-            await Notification.Success(new NotificationConfig
+            var http = HttpClient.CreateClient("api");
+
+            var httpResponse = await http.PostAsync("api/meowv/oauth/code/send", null);
+            if (httpResponse.IsSuccessStatusCode)
             {
-                Message = "Successful",
-                Description = "The dynamic code has been sent to WeChat."
-            });
+                await Notification.Success(new NotificationConfig
+                {
+                    Message = "Successful",
+                    Description = "The dynamic code has been sent to WeChat."
+                });
+            }
 
             await Task.Run(async () =>
             {
