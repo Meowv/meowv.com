@@ -33,6 +33,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Watch Remove="Pages\Categories\CategoryAdd.razor" />
+    <Watch Remove="Pages\Categories\CategoryList.razor" />
+    <Watch Remove="Pages\Posts\PostAdd.razor" />
     <Watch Remove="Pages\Posts\PostList.razor" />
   </ItemGroup>
 

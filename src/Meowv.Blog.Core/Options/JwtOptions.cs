@@ -5,7 +5,7 @@
         /// <summary>
         /// Get or set the expiration time(minutes) of the verification token.
         /// </summary>
-        public int Expires { get; set; } = 30;
+        public int Expires { get; set; } = 720;
 
         /// <summary>
         /// Gets or sets a System.String that represents a valid issuer that will be used to check against the token's issuer.

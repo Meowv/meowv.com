@@ -38,7 +38,6 @@ namespace Meowv.Blog.Admin
                                {
                                    x.BaseAddress = new Uri("https://localhost:44380");
                                });
-
                            });
             await host.Build().RunAsync();
         }

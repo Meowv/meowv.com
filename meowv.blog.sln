@@ -17,7 +17,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meowv.Blog.Web", "src\Meowv
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meowv.Blog.Admin", "src\Meowv.Blog.Admin\Meowv.Blog.Admin.csproj", "{89F5CE1D-0D82-43BC-91F8-E42A54EF982C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meowv.Blog.Response", "src\Meowv.Blog.Response\Meowv.Blog.Response.csproj", "{0775DDDC-3823-4DAE-8044-8AB6E3E6F637}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meowv.Blog.Response", "src\Meowv.Blog.Response\Meowv.Blog.Response.csproj", "{0775DDDC-3823-4DAE-8044-8AB6E3E6F637}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
