@@ -36,7 +36,8 @@ namespace Meowv.Blog.Messages.Impl
             {
                 Name = input.Name,
                 Content = input.Content,
-                Avatar = input.Avatar
+                Avatar = input.Avatar,
+                UserId = input.UserId
             });
 
             return response;
@@ -65,7 +66,8 @@ namespace Meowv.Blog.Messages.Impl
             {
                 Name = input.Name,
                 Content = input.Content,
-                Avatar = input.Avatar
+                Avatar = input.Avatar,
+                UserId = input.UserId
             });
             message.Reply = reply;
 
@@ -91,10 +93,13 @@ namespace Meowv.Blog.Messages.Impl
                 return response;
             }
 
-            if (message.Reply.Any())
+            if (message.Reply is not null)
             {
-                response.IsFailed($"The reply message is not empty.");
-                return response;
+                if (message.Reply.Any())
+                {
+                    response.IsFailed($"The reply message is not empty.");
+                    return response;
+                }
             }
 
             await _messages.DeleteAsync(id.ToObjectId());

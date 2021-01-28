@@ -11,6 +11,8 @@ namespace Meowv.Blog.Domain.Messages
             CreatedAt = DateTime.Now;
         }
 
+        public string UserId { get; set; }
+
         public string Name { get; set; }
 
         public string Avatar { get; set; }
