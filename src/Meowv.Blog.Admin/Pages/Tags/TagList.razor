@@ -1,0 +1,38 @@
+﻿@page "/tags/list"
+@inherits PageBase
+
+<PageContainer>
+    <Breadcrumb>
+        <Breadcrumb>
+            <BreadcrumbItem><Icon Type="home"></Icon></BreadcrumbItem>
+            <BreadcrumbItem><Icon Type="tags"></Icon><span>标签管理</span></BreadcrumbItem>
+            <BreadcrumbItem><Icon Type="bars"></Icon><span>标签列表</span></BreadcrumbItem>
+        </Breadcrumb>
+    </Breadcrumb>
+    <ChildContent>
+        <Card>
+            <Table TItem="GetAdminTagDto"
+                   DataSource="@tags"
+                   HidePagination="true">
+                <Column @bind-Field="@context.Id" Title="Id"></Column>
+                <Column @bind-Field="@context.Total" Title="文章总数"></Column>
+                <Column @bind-Field="@context.Name" Title="标签名称"></Column>
+                <Column @bind-Field="@context.Alias" Title="标签别名"></Column>
+                <ActionColumn Title="操作">
+                    <Space Size="middle">
+                        <SpaceItem>
+                            <Button Type="primary">编辑</Button>
+                        </SpaceItem>
+                        <SpaceItem>
+                            <Popconfirm Title="确定删除吗?"
+                                        Icon="close-circle"
+                                        OnConfirm="(async () => await DeleteAsync(context.Id))">
+                                <Button Danger>删除</Button>
+                            </Popconfirm>
+                        </SpaceItem>
+                    </Space>
+                </ActionColumn>
+            </Table>
+        </Card>
+    </ChildContent>
+</PageContainer>
