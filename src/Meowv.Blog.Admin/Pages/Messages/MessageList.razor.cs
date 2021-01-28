@@ -79,7 +79,9 @@ namespace Meowv.Blog.Admin.Pages.Messages
 
                 messages = await GetMessageListAsync(page, limit);
 
-                MessageModel = new CreateMessageInput();
+                MessageModel.Content = "";
+
+                await InvokeAsync(StateHasChanged);
             }
             else
             {
@@ -102,7 +104,7 @@ namespace Meowv.Blog.Admin.Pages.Messages
 
                 messages = await GetMessageListAsync(page, limit);
 
-                ReplyMessageModel = new ReplyMessageInput();
+                ReplyMessageModel.Content = "";
 
                 visible = false;
             }

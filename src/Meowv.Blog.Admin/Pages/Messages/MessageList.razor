@@ -17,6 +17,8 @@
                     <Button type="primary" OnClick="SubmitMessageAsync">我要留言</Button>
                 </ContentTemplate>
             </Comment>
+        </Card>
+        <Card>
             @foreach (var item in messages)
             {
                 <Comment Author="@item.Name"
