@@ -33,9 +33,4 @@
     <Watch Include="**\*.less" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Watch Remove="Pages\FriendLinks\FriendLinkAdd.razor" />
-    <Watch Remove="Pages\FriendLinks\FriendLinkList.razor" />
-  </ItemGroup>
-
 </Project>

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Meowv.Blog.Admin.Pages.Posts
 {
-    public partial class PostList : PageBase
+    public partial class PostList
     {
         int page = 1;
         int limit = 10;
