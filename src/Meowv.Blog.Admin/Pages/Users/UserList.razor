@@ -1,0 +1,40 @@
+﻿@page "/users"
+@inherits PageBase
+
+<PageContainer>
+    <Breadcrumb>
+        <Breadcrumb>
+            <BreadcrumbItem><Icon Type="home"></Icon></BreadcrumbItem>
+            <BreadcrumbItem><Icon Type="user"></Icon><span>用户中心</span></BreadcrumbItem>
+        </Breadcrumb>
+    </Breadcrumb>
+    <ChildContent>
+        <Card>
+            <Table TItem="UserDto"
+                   DataSource="@users"
+                   HidePagination="true">
+                <Column @bind-Field="@context.Id" Title="Id"></Column>
+                <Column @bind-Field="@context.Username" Title="用户名"></Column>
+                <Column @bind-Field="@context.Type" Title="来源"></Column>
+                <Column @bind-Field="@context.Identity" Title="唯一标识"></Column>
+                <Column @bind-Field="@context.Name" Title="昵称"></Column>
+                <Column @bind-Field="@context.Avatar" Title="头像">
+                    <Avatar Size="large" Icon="user" Src="@context.Avatar" />
+                </Column>
+                <Column @bind-Field="@context.Email" Title="邮箱"></Column>
+                <Column @bind-Field="@context.IsAdmin" Title="登录权限">
+                    <Switch @bind-Value="@context.IsAdmin" Disabled="@(users.FirstOrDefault().Id == context.Id)"
+                            OnChange="@(async () => await ChangeIsAdminAsync(context.Id, context.IsAdmin))"></Switch>
+                </Column>
+                <Column @bind-Field="@context.CreatedAt" Title="创建时间"></Column>
+                <ActionColumn Title="操作">
+                    <Space Size="middle">
+                        <SpaceItem>
+                            <Button Type="primary">编辑</Button>
+                        </SpaceItem>
+                    </Space>
+                </ActionColumn>
+            </Table>
+        </Card>
+    </ChildContent>
+</PageContainer>
