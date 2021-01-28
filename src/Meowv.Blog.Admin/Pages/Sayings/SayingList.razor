@@ -1,0 +1,35 @@
+﻿@page "/sayings"
+@inherits PageBase
+
+<PageContainer>
+    <Breadcrumb>
+        <Breadcrumb>
+            <BreadcrumbItem><Icon Type="home"></Icon></BreadcrumbItem>
+            <BreadcrumbItem><Icon Type="smile"></Icon><span>毒鸡汤</span></BreadcrumbItem>
+        </Breadcrumb>
+    </Breadcrumb>
+    <ChildContent>
+        <Card>
+            <Table TItem="SayingDto"
+                   DataSource="@sayings"
+                   Total="total"
+                   @bind-PageIndex="page"
+                   @bind-PageSize="limit"
+                   OnPageIndexChange="HandlePageIndexChange">
+                <Column @bind-Field="@context.Id" Title="Id"></Column>
+                <Column @bind-Field="@context.Content" Title="内容"></Column>
+                <ActionColumn Title="操作">
+                    <Space Size="middle">
+                        <SpaceItem>
+                            <Popconfirm Title="确定删除吗?"
+                                        Icon="close-circle"
+                                        OnConfirm="(async () => await DeleteAsync(context.Id))">
+                                <Button Danger>删除</Button>
+                            </Popconfirm>
+                        </SpaceItem>
+                    </Space>
+                </ActionColumn>
+            </Table>
+        </Card>
+    </ChildContent>
+</PageContainer>
