@@ -35,7 +35,8 @@ namespace Meowv.Blog.Messages.Impl
             await _messages.InsertAsync(new Message
             {
                 Name = input.Name,
-                Content = input.Content
+                Content = input.Content,
+                Avatar = input.Avatar
             });
 
             return response;
@@ -63,7 +64,8 @@ namespace Meowv.Blog.Messages.Impl
             reply.Add(new MessageReply
             {
                 Name = input.Name,
-                Content = input.Content
+                Content = input.Content,
+                Avatar = input.Avatar
             });
             message.Reply = reply;
 

@@ -1,0 +1,53 @@
+﻿@page "/messages"
+@inherits PageBase
+
+<PageContainer>
+    <Breadcrumb>
+        <Breadcrumb>
+            <BreadcrumbItem><Icon Type="home"></Icon></BreadcrumbItem>
+            <BreadcrumbItem><Icon Type="message"></Icon><span>留言板</span></BreadcrumbItem>
+        </Breadcrumb>
+    </Breadcrumb>
+    <ChildContent>
+        <Card>
+            <Comment Avatar="@Avatar">
+                <ContentTemplate>
+                    <TextArea Placeholder="在这里输入你的留言内容..." MinRows="5" @bind-Value="@Content" AllowClear="true" />
+                    <br /><br />
+                    <Button type="primary" OnClick="SubmitMessageAsync">我要留言</Button>
+                </ContentTemplate>
+            </Comment>
+            @foreach (var item in messages)
+            {
+                <Comment Author="@item.Name"
+                         Avatar="@item.Avatar"
+                         Datetime="@item.CreatedAt"
+                         ContentTemplate="@RenderContent(item.Content)"
+                         Actions="@(new[] { replyAction })">
+                    @if (item.Reply.Any())
+                    {
+                        <AntList DataSource="item.Reply" TItem="MessageReplyDto" Size="small">
+                            <ListItem>
+                                <Comment Author="@context.Name"
+                                         Avatar="@context.Avatar"
+                                         Datetime="@context.CreatedAt"
+                                         ContentTemplate="@RenderContent(context.Content)">
+                                </Comment>
+                            </ListItem>
+                        </AntList>
+                    }
+                </Comment>
+                <Divider Dashed="true" />
+            }
+            <div style="text-align:center">
+                <Pagination Total="@total" PageSize="@limit" OnPageIndexChange="HandlePageIndexChange" />
+            </div>
+        </Card>
+    </ChildContent>
+</PageContainer>
+
+@code{
+    RenderFragment replyAction =@<span>回复</span>;
+
+    RenderFragment RenderContent(string content) => @<div>@((MarkupString)@content)</div>;
+}
