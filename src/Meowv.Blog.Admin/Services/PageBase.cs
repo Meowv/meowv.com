@@ -15,6 +15,8 @@ namespace Meowv.Blog.Admin.Services
 
         [Inject] IHttpClientFactory HttpClientFactory  { get; set; }
 
+        [Inject] public MessageService Message { get; set; }
+
         public virtual async Task<T> GetResultAsync<T>(string url, string json = "", HttpMethod method = null)
         {
             http = HttpClientFactory.CreateClient("api");

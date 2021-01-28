@@ -16,6 +16,7 @@ namespace Meowv.Blog.Admin
             var host = Host.CreateDefaultBuilder(args)
                            .ConfigureWebHostDefaults(webBuilder =>
                            {
+                               webBuilder.UseSetting(WebHostDefaults.DetailedErrorsKey, "true");
                                webBuilder.UseStartup<Startup>();
                            })
                            .ConfigureServices(services =>
@@ -37,6 +38,7 @@ namespace Meowv.Blog.Admin
                                {
                                    x.BaseAddress = new Uri("https://localhost:44380");
                                });
+
                            });
             await host.Build().RunAsync();
         }

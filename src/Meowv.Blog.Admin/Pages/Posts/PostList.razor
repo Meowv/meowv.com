@@ -2,32 +2,37 @@
 @inherits PageBase
 
 <PageContainer Breadcrumb="bread">
-    <Table
-           TItem="GetAdminPostDto"
+    <Table TItem="GetAdminPostDto"
            DataSource="@posts"
            Total="total"
            @bind-PageIndex="page"
            @bind-PageSize="limit"
            OnPageIndexChange="HandlePageIndexChange">
-        <Column @bind-Field="@context.Id"></Column>
-        <Column @bind-Field="@context.Title"></Column>
-        <Column @bind-Field="@context.Url">
-            <a>https://localhost:44381/post/@context.Url</a>
+        <Column @bind-Field="@context.Id" Title="Id"></Column>
+        <Column @bind-Field="@context.Title" Title="标题">
+            <a target="_blank" href="https://meowv.com/post/@context.Url">@context.Title</a>
         </Column>
-        <Column @bind-Field="@context.Tags">
+        <Column @bind-Field="@context.Category" Title="分类">
+            <a target="_blank" href="https://meowv.com/category/@context.Category.Alias">@context.Category.Name</a>
+        </Column>
+        <Column @bind-Field="@context.Tags" Title="标签">
             @foreach (var tag in context.Tags)
             {
-                <Tag Color="blue">@tag.Name</Tag>
+                <a target="_blank" href="https://meowv.com/tag/@tag.Alias"><Tag Color="blue">@tag.Name</Tag></a>
             }
         </Column>
-        <Column @bind-Field="@context.CreatedAt"></Column>
-        <ActionColumn Title="Acton">
+        <Column @bind-Field="@context.CreatedAt" Title="创建时间"></Column>
+        <ActionColumn Title="操作">
             <Space Size="middle">
                 <SpaceItem>
-                    <a>编辑</a>
+                    <Button Type="primary">编辑</Button>
                 </SpaceItem>
                 <SpaceItem>
-                    <a>删除</a>
+                    <Popconfirm Title="确定删除吗?"
+                                Icon="close-circle"
+                                OnConfirm="(async () => await DeleteAsync(context.Id))">
+                        <Button Danger>删除</Button>
+                    </Popconfirm>
                 </SpaceItem>
             </Space>
         </ActionColumn>
