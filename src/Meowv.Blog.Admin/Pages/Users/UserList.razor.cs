@@ -3,6 +3,7 @@ using Meowv.Blog.Dto.Users.Params;
 using Meowv.Blog.Response;
 using Newtonsoft.Json;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -13,10 +14,21 @@ namespace Meowv.Blog.Admin.Pages.Users
         List<UserDto> users;
 
         bool visible = false;
+        bool visible2 = false;
 
         string userId;
 
-        UpdateUserinput input = new UpdateUserinput();
+        int drawerWidth = 500;
+
+        public class Model
+        {
+            [Required]
+            public string Password { get; set; }
+        }
+
+        private UpdateUserinput input = new UpdateUserinput();
+
+        private Model model = new Model();
 
         protected override async Task OnInitializedAsync()
         {
@@ -72,6 +84,20 @@ namespace Meowv.Blog.Admin.Pages.Users
             }
         }
 
+        public async Task HandleUpdatePasswordSubmit()
+        {
+            var response = await GetResultAsync<BlogResponse>($"/api/meowv/user/password/{userId}/{model.Password}", method: HttpMethod.Put);
+            if (response.Success)
+            {
+                ClosePasswordBox();
+                await Message.Success("修改成功", 0.5);
+            }
+            else
+            {
+                await Message.Error(response.Message);
+            }
+        }
+
         private async Task Open(string id)
         {
             userId = id;
@@ -85,6 +111,7 @@ namespace Meowv.Blog.Admin.Pages.Users
                 input.Avatar = response.Result.Avatar;
             }
             else
+
             {
                 await Message.Error(response.Message);
             }
@@ -93,5 +120,17 @@ namespace Meowv.Blog.Admin.Pages.Users
         }
 
         private void Close() => visible = false;
+
+        private void OpenPasswordBox()
+        {
+            visible2 = true;
+            drawerWidth += 250;
+        }
+
+        private void ClosePasswordBox()
+        {
+            drawerWidth -= 250;
+            visible2 = false;
+        }
     }
 }

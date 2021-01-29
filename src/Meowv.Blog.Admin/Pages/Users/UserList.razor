@@ -46,7 +46,7 @@
                 Visible="@visible"
                 Placement="right"
                 Title='("编辑个人信息")'
-                Width="500"
+                Width="@drawerWidth"
                 OnClose="_ => Close()">
             <Form Model="@input"
                   LabelColSpan="4"
@@ -73,7 +73,25 @@
                 </FormItem>
                 <FormItem WrapperColOffset="4" WrapperColSpan="16">
                     <Button Type="@ButtonType.Primary" HtmlType="submit">保存</Button>
-                    <Button>我要修改密码</Button>
+                    <Button OnClick="_ => OpenPasswordBox()">我要修改密码</Button>
+                </FormItem>
+            </Form>
+        </Drawer>
+        <Drawer Closable="true"
+                Visible="@visible2"
+                Placement="right"
+                Title='("修改密码")'
+                Width="500"
+                OnClose="_ => ClosePasswordBox()">
+            <Form Model="model"
+                  LabelColSpan="4"
+                  WrapperColSpan="16"
+                  OnFinish="HandleUpdatePasswordSubmit">
+                <FormItem Label="密码">
+                    <InputPassword @bind-Value="@model.Password" />
+                </FormItem>
+                <FormItem WrapperColOffset="4" WrapperColSpan="16">
+                    <Button Type="@ButtonType.Primary" HtmlType="submit">保存</Button>
                 </FormItem>
             </Form>
         </Drawer>
