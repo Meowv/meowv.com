@@ -26,7 +26,7 @@ namespace Meowv.Blog.Admin.Pages.Posts
 
         private bool inputVisible { get; set; } = false;
 
-        string _inputValue;
+        string _inputValue, _selectedValue;
 
         Input<string> _inputRef;
 
@@ -34,7 +34,7 @@ namespace Meowv.Blog.Admin.Pages.Posts
 
         List<GetAdminCategoryDto> categories = new List<GetAdminCategoryDto>();
 
-        List<GetAdminTagDto> tags = new List<GetAdminTagDto>();
+        List<string> tags = new List<string>();
 
         DateTime? pubTime = DateTime.Now;
 
@@ -86,7 +86,7 @@ namespace Meowv.Blog.Admin.Pages.Posts
             var tagResponse = await GetResultAsync<BlogResponse<List<GetAdminTagDto>>>("api/meowv/blog/admin/tags");
 
             categories = categoryResponse.Result;
-            tags = tagResponse.Result;
+            tags = tagResponse.Result.Select(x => x.Name).ToList();
 
             visible = true;
         }
@@ -161,6 +161,20 @@ namespace Meowv.Blog.Admin.Pages.Posts
 
             this._inputValue = "";
             this.inputVisible = false;
+        }
+
+        private void OnSelectedItemChangedHandler(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return;
+
+            string res = lstTags.Find(s => s == value);
+
+            if (string.IsNullOrEmpty(res))
+            {
+                lstTags.Add(value);
+            }
+
+            input.Tags = lstTags;
         }
     }
 }
