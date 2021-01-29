@@ -30,11 +30,52 @@
                 <ActionColumn Title="操作">
                     <Space Size="middle">
                         <SpaceItem>
-                            <Button Type="primary">编辑</Button>
+                            <Button Type="primary" OnClick="_ => Open(context.Id)">编辑</Button>
+                            <Popconfirm Title="确定删除吗?"
+                                        Icon="close-circle"
+                                        Disabled="@(users.FirstOrDefault().Id == context.Id)"
+                                        OnConfirm="(async () => await DeleteAsync(context.Id))">
+                                <Button Danger Disabled="@(users.FirstOrDefault().Id == context.Id)">删除</Button>
+                            </Popconfirm>
                         </SpaceItem>
                     </Space>
                 </ActionColumn>
             </Table>
         </Card>
+        <Drawer Closable="true"
+                Visible="@visible"
+                Placement="right"
+                Title='("编辑个人信息")'
+                Width="500"
+                OnClose="_ => Close()">
+            <Form Model="@input"
+                  LabelColSpan="4"
+                  WrapperColSpan="16"
+                  OnFinish="HandleSubmit">
+                <FormItem>
+                    <Row>
+                        <Col Span="12" Offset="12">
+                            <Avatar Size="64" Icon="user" Src="@context.Avatar" />
+                        </Col>
+                    </Row>
+                </FormItem>
+                <FormItem Label="用户名">
+                    <Input @bind-Value="@context.Username" />
+                </FormItem>
+                <FormItem Label="昵称">
+                    <Input @bind-Value="@context.Name" />
+                </FormItem>
+                <FormItem Label="邮箱">
+                    <Input @bind-Value="@context.Email" />
+                </FormItem>
+                <FormItem Label="头像">
+                    <Input @bind-Value="@context.Avatar" />
+                </FormItem>
+                <FormItem WrapperColOffset="4" WrapperColSpan="16">
+                    <Button Type="@ButtonType.Primary" HtmlType="submit">保存</Button>
+                    <Button>我要修改密码</Button>
+                </FormItem>
+            </Form>
+        </Drawer>
     </ChildContent>
 </PageContainer>

@@ -11,7 +11,11 @@ namespace Meowv.Blog.Users
     {
         Task<BlogResponse> CreateUserAsync(CreateUserInput input);
 
+        Task<BlogResponse> DeleteUserAsync(string id);
+
         Task<BlogResponse> UpdateUserAsync(string id, UpdateUserinput input);
+
+        Task<BlogResponse> UpdatePasswordAsync(string id, string password);
 
         Task<BlogResponse> SettingAdminAsync(string id, bool isAdmin);
 

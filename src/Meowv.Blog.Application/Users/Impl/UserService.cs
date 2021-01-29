@@ -61,6 +61,28 @@ namespace Meowv.Blog.Users.Impl
         }
 
         /// <summary>
+        /// Delete user by id.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [Route("api/meowv/user/{id}")]
+        public async Task<BlogResponse> DeleteUserAsync(string id)
+        {
+            var response = new BlogResponse();
+
+            var message = await _users.FindAsync(id.ToObjectId());
+            if (message is null)
+            {
+                response.IsFailed($"The user id not exists.");
+                return response;
+            }
+
+            await _users.DeleteAsync(id.ToObjectId());
+
+            return response;
+        }
+
+        /// <summary>
         /// Update user by id.
         /// </summary>
         /// <param name="id"></param>
@@ -79,10 +101,33 @@ namespace Meowv.Blog.Users.Impl
             }
 
             user.Username = input.Username;
-            user.Password = input.Password.ToMd5();
             user.Name = input.Name;
             user.Avatar = input.Avatar;
             user.Email = input.Email;
+            await _users.UpdateAsync(user);
+
+            return response;
+        }
+
+        /// <summary>
+        /// Update user password by id.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="password"></param>
+        /// <returns></returns>
+        [Route("api/meowv/user/password/{id}/{password}")]
+        public async Task<BlogResponse> UpdatePasswordAsync(string id, string password)
+        {
+            var response = new BlogResponse();
+
+            var user = await _users.FindAsync(id.ToObjectId());
+            if (user is null)
+            {
+                response.IsFailed("The user id is not exists.");
+                return response;
+            }
+
+            user.Password = password.ToMd5();
             await _users.UpdateAsync(user);
 
             return response;
