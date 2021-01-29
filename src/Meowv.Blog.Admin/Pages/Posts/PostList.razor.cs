@@ -1,6 +1,7 @@
 ﻿using AntDesign;
 using Meowv.Blog.Dto.Blog;
 using Meowv.Blog.Response;
+using Microsoft.AspNetCore.Components;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -13,6 +14,8 @@ namespace Meowv.Blog.Admin.Pages.Posts
         int limit = 10;
         int total = 0;
         IReadOnlyList<GetAdminPostDto> posts;
+
+        [Inject] public NavigationManager NavigationManager { get; set; }
 
         protected override async Task OnInitializedAsync()
         {
@@ -31,6 +34,11 @@ namespace Meowv.Blog.Admin.Pages.Posts
             total = response.Result.Total;
 
             return response.Result.Item;
+        }
+
+        public void Goto(string id)
+        {
+            NavigationManager.NavigateTo($"/posts/edit/{id}");
         }
 
         public async Task DeleteAsync(string id)

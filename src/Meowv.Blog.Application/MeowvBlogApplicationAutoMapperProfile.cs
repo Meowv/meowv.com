@@ -33,9 +33,13 @@ namespace Meowv.Blog
 
             CreateMap<Category, GetAdminCategoryDto>();
 
+            CreateMap<Category, CategoryAdminDto>();
+
             CreateMap<Tag, TagDto>();
 
             CreateMap<Tag, GetAdminTagDto>();
+
+            CreateMap<Tag, TagAdminDto>();
 
             CreateMap<FriendLink, FriendLinkDto>();
 

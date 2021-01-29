@@ -34,7 +34,7 @@
                 <ActionColumn Title="操作">
                     <Space Size="middle">
                         <SpaceItem>
-                            <Button Type="primary">编辑</Button>
+                            <Button Type="primary" OnClick="(() => Goto(context.Id))">编辑</Button>
                         </SpaceItem>
                         <SpaceItem>
                             <Popconfirm Title="确定删除吗?"

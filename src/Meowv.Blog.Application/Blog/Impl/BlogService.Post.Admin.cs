@@ -137,6 +137,7 @@ namespace Meowv.Blog.Blog.Impl
             }
 
             var result = ObjectMapper.Map<Post, PostDto>(post);
+            result.Url = result.Url.Split("-").Last();
 
             response.Result = result;
             return response;

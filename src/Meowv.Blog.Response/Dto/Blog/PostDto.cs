@@ -14,9 +14,9 @@ namespace Meowv.Blog.Dto.Blog
 
         public string Markdown { get; set; }
 
-        public CategoryDto Category { get; set; }
+        public CategoryAdminDto Category { get; set; }
 
-        public List<TagDto> Tags { get; set; }
+        public List<TagAdminDto> Tags { get; set; }
 
         public string CreatedAt { get; set; }
     }

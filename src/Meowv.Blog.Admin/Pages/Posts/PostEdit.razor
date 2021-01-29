@@ -1,0 +1,81 @@
+﻿@page "/posts/edit/{postId}"
+@inherits PageBase
+
+<PageContainer>
+    <Breadcrumb>
+        <Breadcrumb>
+            <BreadcrumbItem><Icon Type="home"></Icon></BreadcrumbItem>
+            <BreadcrumbItem><Icon Type="read"></Icon><span>文章管理</span></BreadcrumbItem>
+            <BreadcrumbItem><Icon Type="edit"></Icon><span>编辑文章</span></BreadcrumbItem>
+        </Breadcrumb>
+    </Breadcrumb>
+    <ChildContent>
+        <Card>
+            <Form Model="@input">
+                <FormItem>
+                    <Input Size="@InputSize.Large" @bind-Value="@context.Title" Placeholder="在这里输入文章标题" />
+                </FormItem>
+                <FormItem>
+                    <Vditor.Editor Placeholder="请开始尽情创作吧..."
+                                   Mode="ir"
+                                   @bind-Value="@context.Markdown"
+                                   OnToolbarButtonClick="OnToolbarButtonClick"
+                                   Toolbar="toolbar"
+                                   Width="100%"
+                                   MinHeight="500" />
+                </FormItem>
+            </Form>
+        </Card>
+        <Drawer Closable="true"
+                Visible="visible"
+                Placement="right"
+                Title='("更新文章")'
+                Width="500"
+                OnClose="_ => Close()">
+            <Form Model="@input" OnFinish="HandleSubmit">
+                <FormItem>
+                    <RadioGroup @bind-Value="@context.CategoryId" ButtonStyle="solid">
+                        @foreach (var item in categories)
+                        {
+                            <Radio Checked="item.Id == context.CategoryId" RadioButton Value="@item.Id">@item.Name</Radio>
+                        }
+                    </RadioGroup>
+                </FormItem>
+                <Row Gutter="24">
+                    <AntDesign.Col Span="24">
+                        @foreach (var item in lstTags)
+                        {
+                            <Tag Mode="closeable" Color="blue" OnClose="()=>OnClose(item)">@item</Tag>
+                        }
+                        @if (inputVisible)
+                        {
+                            <Input @ref="_inputRef" @bind-Value="_inputValue" Style="margin-top:5px;" OnBlur="HandleInputConfirm" OnPressEnter="HandleInputConfirm" />
+                        }
+                        else
+                        {
+                            <Tag Mode="checkable" OnClick="OnChecked">
+                                <Icon Type="plus" />New Tag
+                            </Tag>
+                        }
+                    </AntDesign.Col>
+                </Row>
+                <br />
+                <Row Gutter="24">
+                    <AntDesign.Col Span="24">
+                        <DatePicker @bind-Value="@pubTime" Style="width: 100%" Placeholder="@("发布日期")" TValue="DateTime?" ShowTime="@true" OnChange="@OnChange" Format="yyyy-MM-dd HH:mm:ss" />
+                    </AntDesign.Col>
+                </Row>
+                <br />
+                <FormItem>
+                    <Input @bind-Value="@context.Author" Placeholder="作者" />
+                </FormItem>
+                <FormItem>
+                    <Input @bind-Value="@context.Url" Placeholder="链接" />
+                </FormItem>
+                <FormItem>
+                    <Button Type="@ButtonType.Primary" HtmlType="submit">发布</Button>
+                </FormItem>
+            </Form>
+        </Drawer>
+    </ChildContent>
+</PageContainer>
