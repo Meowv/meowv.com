@@ -12,8 +12,13 @@
         <Card>
             <Comment Avatar="@MessageModel.Avatar">
                 <ContentTemplate>
-                    <TextArea Placeholder="在这里输入你的留言内容..." MinRows="5" @bind-Value="@MessageModel.Content" />
-                    <br /><br />
+                    <Vditor.Editor Placeholder="在这里输入你的留言内容..."
+                                   Mode="ir"
+                                   @bind-Value="@MessageModel.Content"
+                                   Toolbar="Toolbar"
+                                   Width="100%"
+                                   MinHeight="300" />
+                    <br />
                     <Button type="primary" OnClick="SubmitMessageAsync">我要留言</Button>
                 </ContentTemplate>
             </Comment>
@@ -53,12 +58,17 @@
                 Visible="visible"
                 Placement="right"
                 Title='("回复留言")'
-                Width="800"
+                Width="1000"
                 OnClose="_ => Close()">
             <Comment Avatar="@ReplyMessageModel.Avatar">
                 <ContentTemplate>
-                    <TextArea Placeholder="在这里输入你的留言内容..." MinRows="5" @bind-Value="@ReplyMessageModel.Content" />
-                    <br /><br />
+                    <Vditor.Editor Placeholder="在这里输入你的留言内容..."
+                                   Mode="ir"
+                                   @bind-Value="@ReplyMessageModel.Content"
+                                   Toolbar="Toolbar"
+                                   Width="100%"
+                                   MinHeight="300" />
+                    <br />
                     <Button type="primary" OnClick="SubmitReplyMessageAsync">回复</Button>
                 </ContentTemplate>
             </Comment>
@@ -73,5 +83,7 @@
 
     RenderFragment deleteReplyAction(string id, string replyId) => @<Popconfirm Title="确定删除吗?" Icon="close-circle" OnConfirm="(async () => await DeleteReplyMessageAsync(id, replyId))"><Button Type="link" Danger Size="small">删除</Button></Popconfirm>;
 
-    RenderFragment RenderContent(string content) => @<div style="margin-top:15px;">@((MarkupString)@content)</div>;
+    RenderFragment RenderContent2(string content) => @<div style="margin-top:15px;">@((MarkupString)@content)</div>;
+
+    RenderFragment RenderContent(string content) => @<Vditor.Preview Markdown="@content"></Vditor.Preview>;
 }

@@ -10,6 +10,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Vditor.Models;
 
 namespace Meowv.Blog.Admin.Pages.Messages
 {
@@ -33,9 +34,14 @@ namespace Meowv.Blog.Admin.Pages.Messages
         int total = 0;
         IReadOnlyList<MessageDto> messages = new List<MessageDto>();
 
+        Toolbar Toolbar = new Toolbar();
+
         protected override async Task OnInitializedAsync()
         {
             messages = await GetMessageListAsync(page, limit);
+
+            string[] keys = { "emoji", "headings", "bold", "italic", "strike", "link", "|", "list", "ordered-list", "check", "outdent", "indent", "|", "quote", "line", "code", "inline-code", "insert-before", "insert-after", "|", "table", "undo", "redo", "edit-mode", "both", "preview", "outline", "code-theme", "content-theme", "export" };
+            Toolbar.Buttons.AddRange(keys.ToList());
 
             var state = await AuthenticationState;
             var user = state.User;
@@ -85,7 +91,7 @@ namespace Meowv.Blog.Admin.Pages.Messages
             }
             else
             {
-                await Message.Error("UnSuccessful");
+                await Message.Error(response.Message);
             }
         }
 
@@ -110,7 +116,7 @@ namespace Meowv.Blog.Admin.Pages.Messages
             }
             else
             {
-                await Message.Error("UnSuccessful");
+                await Message.Error(response.Message);
             }
         }
 
@@ -125,7 +131,7 @@ namespace Meowv.Blog.Admin.Pages.Messages
             }
             else
             {
-                await Message.Error("UnSuccessful");
+                await Message.Error(response.Message);
             }
         }
 
@@ -140,7 +146,7 @@ namespace Meowv.Blog.Admin.Pages.Messages
             }
             else
             {
-                await Message.Error("UnSuccessful");
+                await Message.Error(response.Message);
             }
         }
 
