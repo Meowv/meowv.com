@@ -7,14 +7,15 @@
   <ItemGroup>
     <PackageReference Include="AspNetCore.HealthChecks.MongoDb" Version="5.0.1" />
     <PackageReference Include="AspNetCore.HealthChecks.Redis" Version="5.0.1" />
+    <PackageReference Include="CLRStats" Version="1.0.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="3.4.0" />
     <PackageReference Include="Serilog.Sinks.Async" Version="1.4.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="4.1.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="5.6.3" />
     <PackageReference Include="Swashbuckle.AspNetCore.Filters" Version="6.0.1" />
-    <PackageReference Include="Volo.Abp.AspNetCore.Mvc" Version="4.1.2" />
-    <PackageReference Include="Volo.Abp.AspNetCore.Serilog" Version="4.1.2" />
-    <PackageReference Include="Volo.Abp.Autofac" Version="4.1.2" />
+    <PackageReference Include="Volo.Abp.AspNetCore.Mvc" Version="4.2.0" />
+    <PackageReference Include="Volo.Abp.AspNetCore.Serilog" Version="4.2.0" />
+    <PackageReference Include="Volo.Abp.Autofac" Version="4.2.0" />
   </ItemGroup>
 
   <ItemGroup>
