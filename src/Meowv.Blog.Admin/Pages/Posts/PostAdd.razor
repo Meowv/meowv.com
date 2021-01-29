@@ -11,9 +11,42 @@
     </Breadcrumb>
     <ChildContent>
         <Card>
-            <Text Strong>
-                TODO: 新增文章
-            </Text>
+            <Form Model="@input">
+                <FormItem>
+                    <Input Size="@InputSize.Large" @bind-Value="@context.Title" Placeholder="在这里输入文章标题" />
+                </FormItem>
+                <FormItem>
+                    <Vditor.Editor Placeholder="请开始尽情创作吧..."
+                                   Mode="ir"
+                                   @bind-Value="@context.Markdown"
+                                   OnToolbarButtonClick="OnToolbarButtonClick"
+                                   Toolbar="toolbar"
+                                   Width="100%"
+                                   MinHeight="500" />
+                </FormItem>
+            </Form>
         </Card>
+        <Drawer Closable="true"
+                Visible="visible"
+                Placement="right"
+                Title='("新增文章")'
+                Width="500"
+                OnClose="_ => Close()">
+            <Form Model="@input"
+                  OnFinish="HandleSubmit">
+                <FormItem>
+                    <Input @bind-Value="@context.Author" Placeholder="作者" />
+                </FormItem>
+                <FormItem>
+                    <Input @bind-Value="@context.Url" Placeholder="链接" />
+                </FormItem>
+                <FormItem>
+                    @*<TimePicker @bind-Value="@context.CreatedAt" TValue="string" />*@
+                </FormItem>
+                <FormItem WrapperColOffset="4" WrapperColSpan="16">
+                    <Button Type="@ButtonType.Primary" HtmlType="submit">保存</Button>
+                </FormItem>
+            </Form>
+        </Drawer>
     </ChildContent>
 </PageContainer>
