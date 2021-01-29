@@ -1,9 +1,13 @@
-﻿using Meowv.Blog.Dto.Blog;
+﻿using AntDesign;
+using Meowv.Blog.Dto.Blog;
 using Meowv.Blog.Dto.Blog.Params;
 using Meowv.Blog.Response;
+using Microsoft.AspNetCore.Components;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Vditor.Models;
 
@@ -17,9 +21,21 @@ namespace Meowv.Blog.Admin.Pages.Posts
 
         bool visible = false;
 
-        List<GetAdminCategoryDto> categories;
+        private bool inputVisible { get; set; } = false;
 
-        List<GetAdminTagDto> tags;
+        string _inputValue;
+
+        Input<string> _inputRef;
+
+        List<string> lstTags { get; set; } = new List<string>();
+
+        List<GetAdminCategoryDto> categories = new List<GetAdminCategoryDto>();
+
+        List<GetAdminTagDto> tags = new List<GetAdminTagDto>();
+
+        DateTime? pubTime = DateTime.Now;
+
+        [Inject] public NavigationManager NavigationManager { get; set; }
 
         protected override async Task OnInitializedAsync()
         {
@@ -37,11 +53,24 @@ namespace Meowv.Blog.Admin.Pages.Posts
             };
             toolbar.Buttons.Add(customToolButton);
 
+            input.CreatedAt = pubTime.Value.ToString("yyyy-MM-dd HH:mm:ss");
+
             await base.OnInitializedAsync();
         }
 
         public async Task OnToolbarButtonClick(string name)
         {
+            if (string.IsNullOrWhiteSpace(input.Title))
+            {
+                await Message.Info("标题标题标题");
+                return;
+            }
+            if (string.IsNullOrWhiteSpace(input.Markdown))
+            {
+                await Message.Info("还没开始创作啊，保存啥？");
+                return;
+            }
+
             var categoryResponse = await GetResultAsync<BlogResponse<List<GetAdminCategoryDto>>>("api/meowv/blog/admin/categories");
             var tagResponse = await GetResultAsync<BlogResponse<List<GetAdminTagDto>>>("api/meowv/blog/admin/tags");
 
@@ -53,9 +82,74 @@ namespace Meowv.Blog.Admin.Pages.Posts
 
         public async Task HandleSubmit()
         {
+            if (string.IsNullOrWhiteSpace(input.CategoryId))
+            {
+                await Message.Info("分类分类分类");
+                return;
+            }
+            if (!input.Tags.Any())
+            {
+                await Message.Info("标签标签标签");
+                return;
+            }
+            if (string.IsNullOrWhiteSpace(input.Author))
+            {
+                await Message.Info("作者作者作者");
+                return;
+            }
+            if (string.IsNullOrWhiteSpace(input.Url))
+            {
+                await Message.Info("链接链接链接");
+                return;
+            }
 
+            var json = JsonConvert.SerializeObject(input);
+            var response = await GetResultAsync<BlogResponse>("api/meowv/blog/post", json, HttpMethod.Post);
+            if (response.Success)
+            {
+                await Message.Success("发布成功", 0.5);
+                NavigationManager.NavigateTo("/posts/list");
+            }
+            else
+            {
+                await Message.Error(response.Message);
+            }
+        }
+
+        private void OnChange(DateTimeChangedEventArgs args)
+        {
+            input.CreatedAt = args.DateString;
         }
 
         private void Close() => visible = false;
+
+        async Task OnChecked()
+        {
+            inputVisible = !inputVisible;
+            if (_inputRef != null)
+                await _inputRef.Focus();
+        }
+
+        void OnClose(string item)
+        {
+            lstTags.Remove(item);
+        }
+
+        void HandleInputConfirm()
+        {
+            if (string.IsNullOrEmpty(_inputValue)) return;
+
+            string res = lstTags.Find(s => s == _inputValue);
+
+            if (string.IsNullOrEmpty(res))
+            {
+                lstTags.Add(_inputValue);
+            }
+
+            input.Tags = lstTags;
+
+            this._inputValue = "";
+            this.inputVisible = false;
+        }
     }
 }

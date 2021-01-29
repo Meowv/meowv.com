@@ -32,8 +32,40 @@
                 Title='("新增文章")'
                 Width="500"
                 OnClose="_ => Close()">
-            <Form Model="@input"
-                  OnFinish="HandleSubmit">
+            <Form Model="@input" OnFinish="HandleSubmit">
+                <FormItem>
+                    <RadioGroup @bind-Value="@context.CategoryId" ButtonStyle="solid">
+                        @foreach (var item in categories)
+                        {
+                            <Radio RadioButton Value="@item.Id">@item.Name</Radio>
+                        }
+                    </RadioGroup>
+                </FormItem>
+                <Row Gutter="24">
+                    <AntDesign.Col Span="24">
+                        @foreach (var item in lstTags)
+                        {
+                            <Tag Mode="closeable" Color="blue" OnClose="()=>OnClose(item)">@item</Tag>
+                        }
+                        @if (inputVisible)
+                        {
+                            <Input @ref="_inputRef" @bind-Value="_inputValue" Style="margin-top:5px;" OnBlur="HandleInputConfirm" OnPressEnter="HandleInputConfirm" />
+                        }
+                        else
+                        {
+                            <Tag Mode="checkable" OnClick="OnChecked">
+                                <Icon Type="plus" />New Tag
+                            </Tag>
+                        }
+                    </AntDesign.Col>
+                </Row>
+                <br />
+                <Row Gutter="24">
+                    <AntDesign.Col Span="24">
+                        <DatePicker @bind-Value="@pubTime" Style="width: 100%" Placeholder="@("发布日期")" TValue="DateTime?" ShowTime="@true" OnChange="@OnChange" Format="yyyy-MM-dd HH:mm:ss" />
+                    </AntDesign.Col>
+                </Row>
+                <br />
                 <FormItem>
                     <Input @bind-Value="@context.Author" Placeholder="作者" />
                 </FormItem>
@@ -41,10 +73,7 @@
                     <Input @bind-Value="@context.Url" Placeholder="链接" />
                 </FormItem>
                 <FormItem>
-                    @*<TimePicker @bind-Value="@context.CreatedAt" TValue="string" />*@
-                </FormItem>
-                <FormItem WrapperColOffset="4" WrapperColSpan="16">
-                    <Button Type="@ButtonType.Primary" HtmlType="submit">保存</Button>
+                    <Button Type="@ButtonType.Primary" HtmlType="submit">发布</Button>
                 </FormItem>
             </Form>
         </Drawer>

@@ -16,7 +16,7 @@ namespace Meowv.Blog.Dto.Blog.Params
 
         public string CategoryId { get; set; }
 
-        public List<string> Tags { get; set; }
+        public List<string> Tags { get; set; } = new List<string>();
 
         public string CreatedAt { get; set; }
     }
