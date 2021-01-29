@@ -1,0 +1,29 @@
+﻿@page "/tools/ip2region"
+@inherits PageBase
+
+<PageContainer>
+    <Breadcrumb>
+        <Breadcrumb>
+            <BreadcrumbItem><Icon Type="home"></Icon></BreadcrumbItem>
+            <BreadcrumbItem><Icon Type="node-index"></Icon><span>IP查询</span></BreadcrumbItem>
+        </Breadcrumb>
+    </Breadcrumb>
+    <ChildContent>
+        <Card>
+            <Row>
+                <Col Span="12" Offset="6">
+                    <Search Placeholder="输入IP地址" Size="@InputSize.Large" EnterButton="@("查询")" @bind-Value="@ip" OnSearch="OnSearch" />
+                </Col>
+            </Row>
+            <Divider />
+            <Row>
+                <Col Span="12" Offset="6">
+                    <Descriptions Bordered Layout="@DescriptionsLayout.Vertical">
+                        <DescriptionsItem Title="IP地址">@returnIp</DescriptionsItem>
+                        <DescriptionsItem Title="归属地">@region</DescriptionsItem>
+                    </Descriptions>
+                </Col>
+            </Row>
+        </Card>
+    </ChildContent>
+</PageContainer>
