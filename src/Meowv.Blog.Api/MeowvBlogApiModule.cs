@@ -140,8 +140,8 @@ namespace Meowv.Blog.Api
         private void CofiggureHealthChecks(IServiceCollection services)
         {
             services.AddHealthChecks()
-                    .AddMongoDb(AppOptions.Storage.Mongodb)
-                    .AddRedis(AppOptions.Storage.Redis);
+                    .AddMongoDb(AppOptions.Storage.Mongodb, name: "MongoDB", timeout: TimeSpan.FromSeconds(3))
+                    .AddRedis(AppOptions.Storage.Redis, name: "Redis", timeout: TimeSpan.FromSeconds(3));
         }
 
         private void ConfigureAuthentication(IServiceCollection services)
@@ -244,6 +244,7 @@ namespace Meowv.Blog.Api
                 ResponseWriter = (context, healthReport) =>
                 {
                     context.Response.ContentType = "application/json;charset=utf-8";
+                    context.Response.StatusCode = StatusCodes.Status200OK;
 
                     var result = healthReport.Entries.Select(x => new NameValue
                     {

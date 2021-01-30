@@ -138,6 +138,13 @@ namespace Meowv.Blog.Admin.Shared
                     Icon = "tool",
                     Children = new MenuDataItem[]
                     {
+                         new MenuDataItem
+                        {
+                            Name = "健康检查",
+                            Key = "tools-health",
+                            Path = "/tools/health",
+                            Icon = "check"
+                        },
                         new MenuDataItem
                         {
                             Name = "CDN刷新",
