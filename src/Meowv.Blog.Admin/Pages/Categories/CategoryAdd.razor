@@ -11,9 +11,20 @@
     </Breadcrumb>
     <ChildContent>
         <Card>
-            <Text Strong>
-                TODO: 新增分类
-            </Text>
+            <Form Model="@input"
+                  LabelColSpan="8"
+                  WrapperColSpan="8"
+                  OnFinish="HandleSubmit">
+                <FormItem Label="分类名称">
+                    <Input @bind-Value="@context.Name" />
+                </FormItem>
+                <FormItem Label="分类别名">
+                    <Input @bind-Value="@context.Alias" />
+                </FormItem>
+                <FormItem WrapperColOffset="8" WrapperColSpan="8">
+                    <Button Type="@ButtonType.Primary" HtmlType="submit">保存</Button>
+                </FormItem>
+            </Form>
         </Card>
     </ChildContent>
 </PageContainer>
