@@ -64,20 +64,9 @@ namespace Meowv.Blog.Admin.Pages.OAuth
             }
         }
 
-        public async Task HandleClick(string type)
+        public void HandleClick(string type)
         {
-            if (type == "qq")
-            {
-                await Notification.Info(new NotificationConfig
-                {
-                    Message = "NotImplemented",
-                    Description = "The oauth for qq is not implemented."
-                });
-                return;
-            }
-
             NavigationManager.NavigateTo($"/oauth/{type}");
-            return;
         }
 
         public void OnChange(string activeKey)
