@@ -18,8 +18,8 @@
                    @bind-PageIndex="page"
                    @bind-PageSize="limit"
                    OnPageIndexChange="HandlePageIndexChange">
-                <Column @bind-Field="@context.Id" Title="Id"></Column>
-                <Column @bind-Field="@context.Content" Title="内容"></Column>
+                <Column @bind-Field="@context.Id" Title="Id" Sortable="false"></Column>
+                <Column @bind-Field="@context.Content" Title="内容" Sortable="false"></Column>
                 <ActionColumn Title="操作">
                     <Space Size="middle">
                         <SpaceItem>

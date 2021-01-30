@@ -19,20 +19,20 @@
                    @bind-PageIndex="page"
                    @bind-PageSize="limit"
                    OnPageIndexChange="HandlePageIndexChange">
-                <Column @bind-Field="@context.Id" Title="Id"></Column>
-                <Column @bind-Field="@context.Title" Title="标题">
+                <Column @bind-Field="@context.Id" Title="Id" Sortable="false"></Column>
+                <Column @bind-Field="@context.Title" Title="标题" Sortable="false">
                     <a target="_blank" href="https://meowv.com/post/@context.Url">@context.Title</a>
                 </Column>
-                <Column @bind-Field="@context.Category" Title="分类">
+                <Column @bind-Field="@context.Category" Title="分类" Sortable="false">
                     <a target="_blank" href="https://meowv.com/category/@context.Category.Alias">@context.Category.Name</a>
                 </Column>
-                <Column @bind-Field="@context.Tags" Title="标签">
+                <Column @bind-Field="@context.Tags" Title="标签" Sortable="false">
                     @foreach (var tag in context.Tags)
                     {
                         <a target="_blank" href="https://meowv.com/tag/@tag.Alias"><Tag Color="blue">@tag.Name</Tag></a>
                     }
                 </Column>
-                <Column @bind-Field="@context.CreatedAt" Title="创建时间"></Column>
+                <Column @bind-Field="@context.CreatedAt" Title="创建时间" Sortable="false"></Column>
                 <ActionColumn Title="操作">
                     <Space Size="middle">
                         <SpaceItem>
