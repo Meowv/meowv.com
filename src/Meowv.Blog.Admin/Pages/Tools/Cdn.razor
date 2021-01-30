@@ -17,7 +17,7 @@
                         <ChildContent>
                             <TextArea Placeholder="输入需要刷新的URL (需要http://或https://)，一行一个" MinRows="10" MaxRows="20" @bind-Value="@urls1" />
                             <br /><br />
-                            <Button type="primary" OnClick="SubmitAsync">提交并刷新</Button>
+                            <Button type="@ButtonType.Primary" OnClick="SubmitAsync">提交并刷新</Button>
                         </ChildContent>
                     </TabPane>
                     <TabPane Key="2">
@@ -25,7 +25,7 @@
                         <ChildContent>
                             <TextArea Placeholder="输入需要刷新目录的URL (需要http://或https://)，一行一个" MinRows="10" MaxRows="20" @bind-Value="@urls2" />
                             <br /><br />
-                            <Button type="primary" OnClick="SubmitAsync">提交并刷新</Button>
+                            <Button type="@ButtonType.Primary" OnClick="SubmitAsync">提交并刷新</Button>
                         </ChildContent>
                     </TabPane>
                     <TabPane Key="3">
@@ -33,7 +33,7 @@
                         <ChildContent>
                             <TextArea Placeholder="输入需要预热的URL (需要http://或https://)，一行一个" MinRows="10" MaxRows="20" @bind-Value="@urls3" />
                             <br /><br />
-                            <Button type="primary" OnClick="SubmitAsync">提交并预热</Button>
+                            <Button type="@ButtonType.Primary" OnClick="SubmitAsync">提交并预热</Button>
                         </ChildContent>
                     </TabPane>
                 </Tabs>

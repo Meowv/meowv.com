@@ -19,7 +19,7 @@
                                    Width="100%"
                                    MinHeight="300" />
                     <br />
-                    <Button type="primary" OnClick="SubmitMessageAsync">我要留言</Button>
+                    <Button type="@ButtonType.Primary" OnClick="SubmitMessageAsync">我要留言</Button>
                 </ContentTemplate>
             </Comment>
         </Card>
@@ -69,7 +69,7 @@
                                    Width="100%"
                                    MinHeight="300" />
                     <br />
-                    <Button type="primary" OnClick="SubmitReplyMessageAsync">回复</Button>
+                    <Button type="@ButtonType.Primary" OnClick="SubmitReplyMessageAsync">回复</Button>
                 </ContentTemplate>
             </Comment>
         </Drawer>
@@ -77,11 +77,11 @@
 </PageContainer>
 
 @code{
-    RenderFragment replyAction(string id) =>@<Button Type="link" Size="small" @onclick="_ => Open(id)">回复</Button>;
+    RenderFragment replyAction(string id) =>@<Button Type="@ButtonType.Link" Size="small" @onclick="_ => Open(id)">回复</Button>;
 
-    RenderFragment deleteAction(string id) => @<Popconfirm Title="确定删除吗?" Icon="close-circle" OnConfirm="(async () => await DeleteMessageAsync(id))"><Button Type="link" Danger Size="small">删除</Button></Popconfirm>;
+    RenderFragment deleteAction(string id) => @<Popconfirm Title="确定删除吗?" Icon="close-circle" OnConfirm="(async () => await DeleteMessageAsync(id))"><Button Type="@ButtonType.Link" Danger Size="small">删除</Button></Popconfirm>;
 
-    RenderFragment deleteReplyAction(string id, string replyId) => @<Popconfirm Title="确定删除吗?" Icon="close-circle" OnConfirm="(async () => await DeleteReplyMessageAsync(id, replyId))"><Button Type="link" Danger Size="small">删除</Button></Popconfirm>;
+    RenderFragment deleteReplyAction(string id, string replyId) => @<Popconfirm Title="确定删除吗?" Icon="close-circle" OnConfirm="(async () => await DeleteReplyMessageAsync(id, replyId))"><Button Type="@ButtonType.Link" Danger Size="small">删除</Button></Popconfirm>;
 
     RenderFragment RenderContent2(string content) => @<div style="margin-top:15px;">@((MarkupString)@content)</div>;
 

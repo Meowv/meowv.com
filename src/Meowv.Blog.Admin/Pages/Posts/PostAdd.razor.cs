@@ -107,7 +107,7 @@ namespace Meowv.Blog.Admin.Pages.Posts
             var response = await GetResultAsync<BlogResponse>("api/meowv/blog/post", json, HttpMethod.Post);
             if (response.Success)
             {
-                await Message.Success("发布成功", 0.5);
+                await Message.Success("Successful", 0.5);
                 NavigationManager.NavigateTo("/posts/list");
             }
             else

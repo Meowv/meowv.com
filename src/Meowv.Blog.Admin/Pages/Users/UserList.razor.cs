@@ -46,11 +46,11 @@ namespace Meowv.Blog.Admin.Pages.Users
             var response = await GetResultAsync<BlogResponse>($"api/meowv/user/{id}/{isAdmin}", method: HttpMethod.Put);
             if (response.Success)
             {
-                await Message.Success("设置成功", 0.5);
+                await Message.Success("Successful", 0.5);
             }
             else
             {
-                await Message.Error("设置失败");
+                await Message.Error(response.Message);
             }
         }
 
@@ -59,7 +59,7 @@ namespace Meowv.Blog.Admin.Pages.Users
             var response = await GetResultAsync<BlogResponse>($"api/meowv/user/{id}", method: HttpMethod.Delete);
             if (response.Success)
             {
-                await Message.Success("删除成功", 0.5);
+                await Message.Success("Successful", 0.5);
                 users = await GetUserListAsync();
             }
             else
@@ -76,7 +76,7 @@ namespace Meowv.Blog.Admin.Pages.Users
             {
                 users = await GetUserListAsync();
                 Close();
-                await Message.Success("修改成功", 0.5);
+                await Message.Success("Successful", 0.5);
             }
             else
             {
@@ -90,7 +90,7 @@ namespace Meowv.Blog.Admin.Pages.Users
             if (response.Success)
             {
                 ClosePasswordBox();
-                await Message.Success("修改成功", 0.5);
+                await Message.Success("Successful", 0.5);
             }
             else
             {

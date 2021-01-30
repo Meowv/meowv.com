@@ -37,12 +37,12 @@ namespace Meowv.Blog.Admin.Pages.Categories
             var response = await GetResultAsync<BlogResponse>($"api/meowv/blog/category/{id}", method: HttpMethod.Delete);
             if (response.Success)
             {
-                await Message.Success("删除成功", 0.5);
+                await Message.Success("Successful", 0.5);
                 categories = await GetCategoryListAsync();
             }
             else
             {
-                await Message.Error("删除失败");
+                await Message.Error(response.Message);
             }
         }
 

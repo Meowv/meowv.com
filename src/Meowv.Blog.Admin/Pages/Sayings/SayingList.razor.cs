@@ -38,12 +38,12 @@ namespace Meowv.Blog.Admin.Pages.Sayings
             var response = await GetResultAsync<BlogResponse>($"api/meowv/saying/{id}", method: HttpMethod.Delete);
             if (response.Success)
             {
-                await Message.Success("删除成功", 0.5);
+                await Message.Success("Successful", 0.5);
                 sayings = await GetSayingListAsync(page, limit);
             }
             else
             {
-                await Message.Error("删除失败");
+                await Message.Error(response.Message);
             }
         }
     }

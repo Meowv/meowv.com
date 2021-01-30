@@ -30,7 +30,7 @@
                 <ActionColumn Title="操作">
                     <Space Size="middle">
                         <SpaceItem>
-                            <Button Type="primary" OnClick="_ => Open(context.Id)">编辑</Button>
+                            <Button Type="@ButtonType.Primary" OnClick="_ => Open(context.Id)">编辑</Button>
                             <Popconfirm Title="确定删除吗?"
                                         Icon="close-circle"
                                         Disabled="@(users.FirstOrDefault().Id == context.Id)"
@@ -54,9 +54,9 @@
                   OnFinish="HandleSubmit">
                 <FormItem>
                     <Row>
-                        <Col Span="12" Offset="12">
+                        <AntDesign.Col Span="12" Offset="12">
                             <Avatar Size="64" Icon="user" Src="@context.Avatar" />
-                        </Col>
+                        </AntDesign.Col>
                     </Row>
                 </FormItem>
                 <FormItem Label="用户名">

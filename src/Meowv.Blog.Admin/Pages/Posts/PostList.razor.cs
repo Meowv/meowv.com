@@ -46,12 +46,12 @@ namespace Meowv.Blog.Admin.Pages.Posts
             var response = await GetResultAsync<BlogResponse>($"api/meowv/blog/post/{id}", method: HttpMethod.Delete);
             if (response.Success)
             {
-                await Message.Success("删除成功", 0.5);
+                await Message.Success("Successful", 0.5);
                 posts = await GetPostListAsync(page, limit);
             }
             else
             {
-                await Message.Error("删除失败");
+                await Message.Error(response.Message);
             }
         }
     }

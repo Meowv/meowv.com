@@ -38,12 +38,12 @@ namespace Meowv.Blog.Admin.Pages.Signatures
             var response = await GetResultAsync<BlogResponse>($"api/meowv/signature/{id}", method: HttpMethod.Delete);
             if (response.Success)
             {
-                await Message.Success("删除成功", 0.5);
+                await Message.Success("Successful", 0.5);
                 signatures = await GetSignatureListAsync(page, limit);
             }
             else
             {
-                await Message.Error("删除失败");
+                await Message.Error(response.Message);
             }
         }
     }
