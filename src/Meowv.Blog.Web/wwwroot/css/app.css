@@ -549,7 +549,6 @@ header label {
     line-height: 1.5em;
 }
 .post-wrap .post-meta {
-    border-bottom: 1px solid #e8e8e8;
     color: rgba(85, 85, 85, 0.529) !important;
 }
 .dark-theme .post-wrap .post-meta {
