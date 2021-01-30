@@ -1,7 +1,6 @@
 ﻿using Meowv.Blog.Dto.Blog;
 using Meowv.Blog.Dto.Blog.Params;
 using Meowv.Blog.Response;
-using Microsoft.AspNetCore.Components;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -18,8 +17,6 @@ namespace Meowv.Blog.Admin.Pages.Tags
         string tagId;
 
         UpdateTagInput input = new UpdateTagInput();
-
-        [Inject] public NavigationManager NavigationManager { get; set; }
 
         protected override async Task OnInitializedAsync()
         {

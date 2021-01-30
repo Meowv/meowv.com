@@ -5,8 +5,6 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.JSInterop;
-using Newtonsoft.Json;
-using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace Meowv.Blog.Admin.Pages.OAuth
@@ -19,16 +17,7 @@ namespace Meowv.Blog.Admin.Pages.OAuth
         [Inject]
         public AuthenticationStateProvider AuthenticationStateProvider { get; set; }
 
-        [Inject]
-        public NavigationManager NavigationManager { get; set; }
-
         [Inject] public NotificationService Notification { get; set; }
-
-        [Inject]
-        public IHttpClientFactory ClientFactory { get; set; }
-
-        [Inject]
-        public IJSRuntime JSRuntime { get; set; }
 
         protected override async Task OnInitializedAsync()
         {
@@ -39,14 +28,12 @@ namespace Meowv.Blog.Admin.Pages.OAuth
 
             if (hasCode && hasState)
             {
-                var http = ClientFactory.CreateClient("api");
+                var response = await GetResultAsync<BlogResponse<string>>($"api/meowv/oauth/{Type}/token?code={code}&state={state}");
 
-                var json = await http.GetStringAsync($"api/meowv/oauth/{Type}/token?code={code}&state={state}");
-                var response = JsonConvert.DeserializeObject<BlogResponse<string>>(json);
                 if (response.Success)
                 {
                     var token = response.Result;
-                    await JSRuntime.InvokeVoidAsync("window.func.setStorage", "token", token);
+                    await Js.InvokeVoidAsync("window.func.setStorage", "token", token);
 
                     NavigationManager.NavigateTo("/", true);
                 }
@@ -54,7 +41,7 @@ namespace Meowv.Blog.Admin.Pages.OAuth
                 {
                     await Notification.Warning(new NotificationConfig
                     {
-                        Message = "UnAuthorized",
+                        Message = response.Message,
                         Description = "Sorry, this account is not authorized, please contact 阿星Plus"
                     });
                     NavigationManager.NavigateTo("/login", true);

@@ -38,8 +38,6 @@ namespace Meowv.Blog.Admin.Pages.Posts
 
         DateTime? pubTime = DateTime.Now;
 
-        [Inject] public NavigationManager NavigationManager { get; set; }
-
         protected override async Task OnInitializedAsync()
         {
             string[] keys = { "emoji", "headings", "bold", "italic", "strike", "link", "|", "list", "ordered-list", "check", "outdent", "indent", "|", "quote", "line", "code", "inline-code", "insert-before", "insert-after", "|", "table", "undo", "redo", "edit-mode", "both", "preview", "outline", "code-theme", "content-theme", "export", "|" };

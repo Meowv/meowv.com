@@ -11,8 +11,6 @@ namespace Meowv.Blog.Admin.Pages.FriendLinks
     {
         CreateFriendLinkInput input = new CreateFriendLinkInput();
 
-        [Inject] public NavigationManager NavigationManager { get; set; }
-
         public async Task HandleSubmit()
         {
             if (string.IsNullOrWhiteSpace(input.Name) || string.IsNullOrWhiteSpace(input.Url))

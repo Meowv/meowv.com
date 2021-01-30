@@ -15,8 +15,6 @@ namespace Meowv.Blog.Admin.Pages.Posts
         int total = 0;
         IReadOnlyList<GetAdminPostDto> posts;
 
-        [Inject] public NavigationManager NavigationManager { get; set; }
-
         protected override async Task OnInitializedAsync()
         {
             posts = await GetPostListAsync(page, limit);

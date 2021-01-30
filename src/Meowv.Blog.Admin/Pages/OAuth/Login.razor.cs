@@ -1,6 +1,7 @@
 ﻿using AntDesign;
 using Meowv.Blog.Admin.Services;
 using Meowv.Blog.Dto.Authorize.Params;
+using Meowv.Blog.Response;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using System.Net.Http;
@@ -12,13 +13,9 @@ namespace Meowv.Blog.Admin.Pages.OAuth
     {
         private readonly LoginInput model = new LoginInput();
 
-        [Inject] public NavigationManager NavigationManager { get; set; }
-
         [Inject] public NotificationService Notification { get; set; }
 
         [Inject] public AuthenticationStateProvider AuthenticationStateProvider { get; set; }
-
-        [Inject] public IHttpClientFactory HttpClient { get; set; }
 
         bool loading = false;
 
@@ -92,16 +89,18 @@ namespace Meowv.Blog.Admin.Pages.OAuth
         {
             loading = true;
 
-            var http = HttpClient.CreateClient("api");
-
-            var httpResponse = await http.PostAsync("api/meowv/oauth/code/send", null);
-            if (httpResponse.IsSuccessStatusCode)
+            var response = await GetResultAsync<BlogResponse>("api/meowv/oauth/code/send", method: HttpMethod.Post);
+            if (response.Success)
             {
                 await Notification.Success(new NotificationConfig
                 {
                     Message = "Successful",
                     Description = "The dynamic code has been sent to WeChat."
                 });
+            }
+            else
+            {
+                await Message.Error(response.Message);
             }
 
             await Task.Run(async () =>

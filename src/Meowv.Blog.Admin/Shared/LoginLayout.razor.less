@@ -27,13 +27,19 @@
   }
   
   .header {
-    height: 44px;
-    line-height: 44px;
+    height: 50px;
+    line-height: 50px;
     a {
       text-decoration: none;
     }
+    .logo img {
+      transition: all 3.0s;
+      &:hover{
+        transform: rotate(3600deg);
+      }
+    }
   }
-  
+
   .logo {
     height: 44px;
     margin-right: 16px;

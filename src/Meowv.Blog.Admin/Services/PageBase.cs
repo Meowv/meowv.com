@@ -13,9 +13,11 @@ namespace Meowv.Blog.Admin.Services
     {
         private HttpClient http;
 
-        [Inject] IHttpClientFactory HttpClientFactory  { get; set; }
+        [Inject] IHttpClientFactory HttpClientFactory { get; set; }
 
         [Inject] public MessageService Message { get; set; }
+
+        [Inject] public NavigationManager NavigationManager { get; set; }
 
         public virtual async Task<T> GetResultAsync<T>(string url, string json = "", HttpMethod method = null)
         {
