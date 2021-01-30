@@ -23,7 +23,7 @@ namespace Meowv.Blog.Admin.Services
         {
             http = HttpClientFactory.CreateClient("api");
 
-            var token = await Js.InvokeAsync<string>("window.func.getStorage", "token");
+            var token = await Js.InvokeAsync<string>("localStorage.getItem", "token");
             http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
             string response;

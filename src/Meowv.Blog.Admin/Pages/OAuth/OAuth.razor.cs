@@ -33,7 +33,7 @@ namespace Meowv.Blog.Admin.Pages.OAuth
                 if (response.Success)
                 {
                     var token = response.Result;
-                    await Js.InvokeVoidAsync("window.func.setStorage", "token", token);
+                    await Js.InvokeVoidAsync("localStorage.setItem", "token", token);
 
                     NavigationManager.NavigateTo("/", true);
                 }

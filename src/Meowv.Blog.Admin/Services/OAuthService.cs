@@ -28,7 +28,7 @@ namespace Meowv.Blog.Admin.Services
 
         public override async Task<AuthenticationState> GetAuthenticationStateAsync()
         {
-            var token = await _jsRuntime.InvokeAsync<string>("window.func.getStorage", "token");
+            var token = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", "token");
 
             if (string.IsNullOrEmpty(token))
             {
@@ -92,14 +92,14 @@ namespace Meowv.Blog.Admin.Services
 
             var response = await httpResponse.Content.ReadAsStringAsync();
             var token = JsonConvert.DeserializeObject<BlogResponse<string>>(response).Result;
-            await _jsRuntime.InvokeVoidAsync("window.func.setStorage", "token", token);
+            await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "token", token);
 
             return token;
         }
 
         public async Task LogoutAsync()
         {
-            await _jsRuntime.InvokeVoidAsync("window.func.setStorage", "token", "");
+            await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "token", "");
 
             NotifyAuthenticationStateChanged(Task.FromResult(GetNullState()));
         }
