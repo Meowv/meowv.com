@@ -21,7 +21,7 @@
                 <ActionColumn Title="操作">
                     <Space Size="middle">
                         <SpaceItem>
-                            <Button Type="primary">编辑</Button>
+                            <Button Type="primary" OnClick="_ => Open(context)">编辑</Button>
                         </SpaceItem>
                         <SpaceItem>
                             <Popconfirm Title="确定删除吗?"
@@ -34,5 +34,26 @@
                 </ActionColumn>
             </Table>
         </Card>
+        <Drawer Closable="true"
+                Visible="@visible"
+                Placement="right"
+                Title='("编辑分类")'
+                Width="500"
+                OnClose="_ => Close()">
+            <Form Model="@input"
+                  LabelColSpan="7"
+                  WrapperColSpan="10"
+                  OnFinish="HandleSubmit">
+                <FormItem Label="分类名称">
+                    <Input @bind-Value="@context.Name" />
+                </FormItem>
+                <FormItem Label="分类别名">
+                    <Input @bind-Value="@context.Alias" />
+                </FormItem>
+                <FormItem WrapperColOffset="7" WrapperColSpan="10">
+                    <Button Type="@ButtonType.Primary" HtmlType="submit">保存</Button>
+                </FormItem>
+            </Form>
+        </Drawer>
     </ChildContent>
 </PageContainer>
