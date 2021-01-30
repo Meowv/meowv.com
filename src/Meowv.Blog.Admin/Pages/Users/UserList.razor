@@ -12,7 +12,8 @@
         <Card>
             <Table TItem="UserDto"
                    DataSource="@users"
-                   HidePagination="true">
+                   Bordered=@true
+                   Size=@TableSize.Small>
                 <Column @bind-Field="@context.Id" Title="Id"></Column>
                 <Column @bind-Field="@context.Username" Title="用户名"></Column>
                 <Column @bind-Field="@context.Type" Title="来源"></Column>

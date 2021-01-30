@@ -13,6 +13,8 @@
         <Card>
             <Table TItem="GetAdminPostDto"
                    DataSource="@posts"
+                   Bordered=@true
+                   Size=@TableSize.Small
                    Total="total"
                    @bind-PageIndex="page"
                    @bind-PageSize="limit"

@@ -11,7 +11,7 @@
     </Breadcrumb>
     <ChildContent>
         <Card>
-            <Table TItem="GetAdminCategoryDto" DataSource="@categories">
+            <Table TItem="GetAdminCategoryDto" DataSource="@categories" Bordered=@true Size=@TableSize.Small>
                 <Column @bind-Field="@context.Id" Title="Id"></Column>
                 <Column @bind-Field="@context.Total" Title="文章总数"></Column>
                 <Column @bind-Field="@context.Name" Title="分类名称"></Column>

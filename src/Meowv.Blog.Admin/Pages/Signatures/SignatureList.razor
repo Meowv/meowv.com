@@ -12,6 +12,8 @@
         <Card>
             <Table TItem="SignatureDto"
                    DataSource="@signatures"
+                   Bordered=@true
+                   Size=@TableSize.Small
                    Total="total"
                    @bind-PageIndex="page"
                    @bind-PageSize="limit"

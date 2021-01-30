@@ -12,6 +12,8 @@
         <Card>
             <Table TItem="SayingDto"
                    DataSource="@sayings"
+                   Bordered=@true
+                   Size=@TableSize.Small
                    Total="total"
                    @bind-PageIndex="page"
                    @bind-PageSize="limit"
