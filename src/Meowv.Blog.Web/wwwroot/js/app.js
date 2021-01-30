@@ -5,6 +5,13 @@
     const currentTheme = window.localStorage.getItem('theme');
     const isDark = currentTheme === 'dark';
 
+    var loadStyle = function (name) {
+        var link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = `https://cdn.jsdelivr.net/npm/vditor@3.4.7/dist/js/highlight.js/styles/${name}.css`;
+        document.querySelector("body").append(link);
+    }
+
     if (isDark) {
         document.querySelector('body').classList.add('dark-theme');
         document.getElementById('switch_default').checked = true;
@@ -20,7 +27,11 @@
         document.querySelector('.weixin').addEventListener('click', () => {
             document.querySelector(".qrcode").classList.contains('hidden') ? document.querySelector('.qrcode').classList.remove('hidden') : document.querySelector('.qrcode').classList.add('hidden');
         });
-    } else if (pathname == "/signature") {
+    } else if (pathname.includes('/post/')) {
+        var name = isDark ? "solarized-dark256" : "github";
+        loadStyle(name);
+    }
+    else if (pathname == "/signature") {
         document.getElementById('btn_signture').addEventListener('click', () => {
             var name = document.getElementById('name').value.trim();
             var data = {
@@ -53,7 +64,13 @@
             document.querySelector('body').classList.add('dark-theme');
         }
 
-        window.localStorage.setItem('theme', document.body.classList.contains('dark-theme') ? 'dark' : 'light');
+        var theme = document.body.classList.contains('dark-theme') ? 'dark' : 'light';
+        window.localStorage.setItem('theme', theme);
+
+        if (pathname.includes('/post/')) {
+            var name = theme === 'dark' ? "solarized-dark256" : "github";
+            loadStyle(name);
+        }
     });
 
     document.getElementById('mobile-toggle-theme').addEventListener('click', () => {
@@ -65,7 +82,13 @@
             document.getElementById('mobile-toggle-theme').innerText = ' · Dark';
         }
 
-        window.localStorage.setItem('theme', document.body.classList.contains('dark-theme') ? 'dark' : 'light');
+        var theme = document.body.classList.contains('dark-theme') ? 'dark' : 'light';
+        window.localStorage.setItem('theme', theme);
+
+        if (pathname.includes('/post/')) {
+            var name = theme === 'dark' ? "solarized-dark256" : "github";
+            loadStyle(name);
+        }
     });
 
     document.querySelector('.menu-toggle').addEventListener('click', () => {

@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Vditor" Version="0.1.0-nightly-201209082656" />
     <ProjectReference Include="..\Meowv.Blog.Response\Meowv.Blog.Response.csproj" />
   </ItemGroup>
 

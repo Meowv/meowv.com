@@ -19,7 +19,9 @@
         </div>
     </header>
     <div class="post-content">
-        @post.Html
+        <component type="typeof(Meowv.Blog.Web.Components.VditorPreview)"
+                   render-mode="ServerPrerendered"
+                   param-Markdown="@post.Markdown" />
     </div>
     <section class="post-copyright">
         <p class="copyright-item">
@@ -60,3 +62,11 @@
         }
     </section>
 </article>
+@section styles{
+    <link href="https://cdn.jsdelivr.net/npm/vditor@3.4.7/dist/index.css" rel="stylesheet" />
+}
+@section scripts{
+    <script src="https://cdn.jsdelivr.net/npm/vditor@3.4.7/dist/index.min.js"></script>
+    <script src="_framework/blazor.server.js"></script>
+    <script src="_content/Vditor/vditor-blazor.js"></script>
+}
