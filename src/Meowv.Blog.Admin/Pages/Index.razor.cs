@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Meowv.Blog.Admin.Pages.Tools
+namespace Meowv.Blog.Admin.Pages
 {
-    public partial class Health
+    public partial class Index
     {
         List<NameValue> data = new List<NameValue>();
 
