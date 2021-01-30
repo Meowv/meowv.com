@@ -9,7 +9,7 @@
         </Breadcrumb>
     </Breadcrumb>
     <ChildContent>
-        <Card>
+        <Card Bordered="false">
             <Comment Avatar="@MessageModel.Avatar">
                 <ContentTemplate>
                     <Vditor.Editor Placeholder="在这里输入你的留言内容..."
@@ -23,7 +23,7 @@
                 </ContentTemplate>
             </Comment>
         </Card>
-        <Card>
+        <Card Bordered="false">
             @foreach (var item in messages)
             {
                 <Comment Author="@item.Name"
