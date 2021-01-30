@@ -1,5 +1,8 @@
 ﻿using Meowv.Blog.Dto.Blog;
+using Meowv.Blog.Dto.Blog.Params;
 using Meowv.Blog.Response;
+using Microsoft.AspNetCore.Components;
+using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -9,6 +12,14 @@ namespace Meowv.Blog.Admin.Pages.Tags
     public partial class TagList
     {
         List<GetAdminTagDto> tags;
+
+        bool visible = false;
+
+        string tagId;
+
+        UpdateTagInput input = new UpdateTagInput();
+
+        [Inject] public NavigationManager NavigationManager { get; set; }
 
         protected override async Task OnInitializedAsync()
         {
@@ -26,12 +37,45 @@ namespace Meowv.Blog.Admin.Pages.Tags
             var response = await GetResultAsync<BlogResponse>($"api/meowv/blog/tag/{id}", method: HttpMethod.Delete);
             if (response.Success)
             {
-                await Message.Success("删除成功", 0.5);
+                await Message.Success("Successful", 0.5);
                 tags = await GetTagListAsync();
             }
             else
             {
-                await Message.Error("删除失败");
+                await Message.Error(response.Message);
+            }
+        }
+
+        private void Close() => visible = false;
+
+        private void Open(GetAdminTagDto dto)
+        {
+            tagId = dto.Id;
+            input.Name = dto.Name;
+            input.Alias = dto.Alias;
+
+            visible = true;
+        }
+
+        public async Task HandleSubmit()
+        {
+            if (string.IsNullOrWhiteSpace(input.Name) || string.IsNullOrWhiteSpace(input.Alias))
+            {
+                return;
+            }
+
+            var json = JsonConvert.SerializeObject(input);
+
+            var response = await GetResultAsync<BlogResponse>($"api/meowv/blog/tag/{tagId}", json, HttpMethod.Put);
+            if (response.Success)
+            {
+                Close();
+                await Message.Success("Successful", 0.5);
+                tags = await GetTagListAsync();
+            }
+            else
+            {
+                await Message.Error(response.Message);
             }
         }
     }
