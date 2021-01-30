@@ -22,7 +22,7 @@
                 <ActionColumn Title="操作">
                     <Space Size="middle">
                         <SpaceItem>
-                            <Button Type="primary">编辑</Button>
+                            <Button Type="@ButtonType.Primary" OnClick="_ => Open(context)">编辑</Button>
                         </SpaceItem>
                         <SpaceItem>
                             <Popconfirm Title="确定删除吗?"
@@ -34,6 +34,27 @@
                     </Space>
                 </ActionColumn>
             </Table>
+            <Drawer Closable="true"
+                    Visible="@visible"
+                    Placement="right"
+                    Title='("编辑友链")'
+                    Width="500"
+                    OnClose="_ => Close()">
+                <Form Model="@input"
+                      LabelColSpan="4"
+                      WrapperColSpan="16"
+                      OnFinish="HandleSubmit">
+                    <FormItem Label="名称">
+                        <Input @bind-Value="@context.Name" />
+                    </FormItem>
+                    <FormItem Label="链接">
+                        <Input @bind-Value="@context.Url" />
+                    </FormItem>
+                    <FormItem WrapperColOffset="4" WrapperColSpan="16">
+                        <Button Type="@ButtonType.Primary" HtmlType="submit">保存</Button>
+                    </FormItem>
+                </Form>
+            </Drawer>
         </Card>
     </ChildContent>
 </PageContainer>
