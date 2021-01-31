@@ -1,5 +1,4 @@
-﻿using Meowv.Blog.Domain.Repositories;
-using MongoDB.Bson;
+﻿using MongoDB.Bson;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -7,7 +6,7 @@ using Volo.Abp.Domain.Repositories;
 
 namespace Meowv.Blog.Domain.Sayings.Repositories
 {
-    public interface ISayingRepository : IRepository<Saying, ObjectId>, IBulkRepository<Saying>
+    public interface ISayingRepository : IRepository<Saying, ObjectId>
     {
         /// <summary>
         /// Get sayings list by paging.

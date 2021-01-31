@@ -1,12 +1,11 @@
-﻿using Meowv.Blog.Domain.Repositories;
-using MongoDB.Bson;
+﻿using MongoDB.Bson;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Volo.Abp.Domain.Repositories;
 
 namespace Meowv.Blog.Domain.Hots.Repositories
 {
-    public interface IHotRepository : IRepository<Hot, ObjectId>, IBulkRepository<Hot>
+    public interface IHotRepository : IRepository<Hot, ObjectId>
     {
         /// <summary>
         /// Get the list of sources.

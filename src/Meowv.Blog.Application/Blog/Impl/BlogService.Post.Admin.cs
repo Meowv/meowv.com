@@ -33,7 +33,7 @@ namespace Meowv.Blog.Blog.Impl
             });
             if (newTags.Any())
             {
-                await _tags.BulkInsertAsync(newTags);
+                await _tags.InsertManyAsync(newTags);
             }
 
             var post = new Post
@@ -102,7 +102,7 @@ namespace Meowv.Blog.Blog.Impl
             });
             if (newTags.Any())
             {
-                await _tags.BulkInsertAsync(newTags);
+                await _tags.InsertManyAsync(newTags);
             }
 
             post.Title = input.Title;

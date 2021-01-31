@@ -28,7 +28,7 @@ namespace Meowv.Blog.Sayings.Impl
                 response.IsFailed("The content list is null.");
                 return response;
             }
-            await _sayings.BulkInsertAsync(input.Content.Select(x => new Saying { Content = x.Trim() }));
+            await _sayings.InsertManyAsync(input.Content.Select(x => new Saying { Content = x.Trim() }));
 
             return response;
         }
