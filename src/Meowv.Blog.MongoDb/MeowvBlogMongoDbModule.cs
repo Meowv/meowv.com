@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Bson.Serialization.Conventions;
+using Volo.Abp.Auditing;
 using Volo.Abp.AuditLogging;
 using Volo.Abp.AuditLogging.MongoDB;
 using Volo.Abp.Modularity;
@@ -23,6 +24,11 @@ namespace Meowv.Blog
             Configure<AbpUnitOfWorkDefaultOptions>(options =>
             {
                 options.TransactionBehavior = UnitOfWorkTransactionBehavior.Disabled;
+            });
+
+            Configure<AbpAuditingOptions>(options =>
+            {
+                options.IsEnabledForGetRequests = true;
             });
 
             AbpAuditLoggingDbProperties.DbTablePrefix = "meowv_blog_";
