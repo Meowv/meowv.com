@@ -19,6 +19,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meowv.Blog.Admin", "src\Meo
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meowv.Blog.Response", "src\Meowv.Blog.Response\Meowv.Blog.Response.csproj", "{0775DDDC-3823-4DAE-8044-8AB6E3E6F637}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meowv.Blog.DbMigrator", "src\Meowv.Blog.DbMigrator\Meowv.Blog.DbMigrator.csproj", "{64D9E8BC-DEA8-47ED-8932-7AD0C8B3D282}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -125,6 +127,18 @@ Global
 		{0775DDDC-3823-4DAE-8044-8AB6E3E6F637}.Release|x64.Build.0 = Release|Any CPU
 		{0775DDDC-3823-4DAE-8044-8AB6E3E6F637}.Release|x86.ActiveCfg = Release|Any CPU
 		{0775DDDC-3823-4DAE-8044-8AB6E3E6F637}.Release|x86.Build.0 = Release|Any CPU
+		{64D9E8BC-DEA8-47ED-8932-7AD0C8B3D282}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{64D9E8BC-DEA8-47ED-8932-7AD0C8B3D282}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{64D9E8BC-DEA8-47ED-8932-7AD0C8B3D282}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{64D9E8BC-DEA8-47ED-8932-7AD0C8B3D282}.Debug|x64.Build.0 = Debug|Any CPU
+		{64D9E8BC-DEA8-47ED-8932-7AD0C8B3D282}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{64D9E8BC-DEA8-47ED-8932-7AD0C8B3D282}.Debug|x86.Build.0 = Debug|Any CPU
+		{64D9E8BC-DEA8-47ED-8932-7AD0C8B3D282}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{64D9E8BC-DEA8-47ED-8932-7AD0C8B3D282}.Release|Any CPU.Build.0 = Release|Any CPU
+		{64D9E8BC-DEA8-47ED-8932-7AD0C8B3D282}.Release|x64.ActiveCfg = Release|Any CPU
+		{64D9E8BC-DEA8-47ED-8932-7AD0C8B3D282}.Release|x64.Build.0 = Release|Any CPU
+		{64D9E8BC-DEA8-47ED-8932-7AD0C8B3D282}.Release|x86.ActiveCfg = Release|Any CPU
+		{64D9E8BC-DEA8-47ED-8932-7AD0C8B3D282}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

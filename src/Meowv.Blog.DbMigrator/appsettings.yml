@@ -1,0 +1,3 @@
+﻿---
+storage:
+  mongodb: 'mongodb://localhost/meowv_blog'
