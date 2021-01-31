@@ -33,7 +33,10 @@ namespace Meowv.Blog.DbMigrator
             Console.WriteLine("Initialize messages data");
             await application.ServiceProvider.GetRequiredService<MessageDataSeedService>().SeedAsync();
 
+            Console.WriteLine("Initialize sayings data");
+
             Console.WriteLine("Successfully completed database seed.");
+            await application.ServiceProvider.GetRequiredService<SayingDataSeedService>().SeedAsync();
 
             application.Shutdown();
             _hostApplicationLifetime.StopApplication();
