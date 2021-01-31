@@ -1,6 +1,4 @@
-﻿using Meowv.Blog.Domain.Users;
-using Meowv.Blog.Domain.Users.Repositories;
-using System;
+﻿using Meowv.Blog.Domain.Users.Repositories;
 using System.Threading.Tasks;
 using Volo.Abp.DependencyInjection;
 
@@ -19,14 +17,9 @@ namespace Meowv.Blog.DataSeed
         {
             if (await _users.GetCountAsync() > 0) return;
 
-            var user = new User
-            {
-                Username = "meowv",
-                Password = "123456".ToMd5(),
-                IsAdmin = true
-            };
+            var users = DataSeedConsts.AdminUsers();
 
-            await _users.InsertAsync(user);
+            await _users.InsertManyAsync(users);
         }
     }
 }

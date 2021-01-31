@@ -11,6 +11,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Include="DataSeed\messages.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Html2Markdown" Version="4.0.0.427" />
     <PackageReference Include="IP2Region" Version="1.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="5.0.2" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.5" />

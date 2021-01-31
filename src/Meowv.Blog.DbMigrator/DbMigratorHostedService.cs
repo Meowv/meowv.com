@@ -27,8 +27,11 @@ namespace Meowv.Blog.DbMigrator
 
             Console.WriteLine("Executing database seed...");
 
-            Console.WriteLine("Initialize user data...");
+            Console.WriteLine("Initialize users data...");
             await application.ServiceProvider.GetRequiredService<UserDataSeedService>().SeedAsync();
+
+            Console.WriteLine("Initialize messages data");
+            await application.ServiceProvider.GetRequiredService<MessageDataSeedService>().SeedAsync();
 
             Console.WriteLine("Successfully completed database seed.");
 

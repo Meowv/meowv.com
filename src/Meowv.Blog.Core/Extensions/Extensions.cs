@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using MongoDB.Bson;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
@@ -212,6 +213,24 @@ namespace Meowv.Blog.Extensions
                 randomcode += code.ToString();
             }
             return randomcode;
+        }
+
+        public static DateTime TryToDateTime(this string timestamp)
+        {
+            var ticks = 621355968000000000 + long.Parse(timestamp) * 10000;
+            return new DateTime(ticks);
+        }
+
+        public static async Task<T> FromJsonFile<T>(this string filePath, string key = "") where T : new()
+        {
+            if (!File.Exists(filePath)) return new T();
+
+            using StreamReader reader = new StreamReader(filePath);
+            var json = await reader.ReadToEndAsync();
+
+            if (string.IsNullOrEmpty(key)) return JsonConvert.DeserializeObject<T>(json);
+
+            return JsonConvert.DeserializeObject<object>(json) is not JObject obj ? new T() : JsonConvert.DeserializeObject<T>(obj[key].ToString());
         }
     }
 }
