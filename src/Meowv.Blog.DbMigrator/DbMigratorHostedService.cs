@@ -1,4 +1,7 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿using Meowv.Blog.DataSeed;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Volo.Abp;
@@ -22,7 +25,12 @@ namespace Meowv.Blog.DbMigrator
             });
             application.Initialize();
 
-            //await application.ServiceProvider.GetRequiredService<MeowvBlogDbMigrationService>().MigrateAsync();
+            Console.WriteLine("Executing database seed...");
+
+            Console.WriteLine("Initialize user data...");
+            await application.ServiceProvider.GetRequiredService<UserDataSeedService>().SeedAsync();
+
+            Console.WriteLine("Successfully completed database seed.");
 
             application.Shutdown();
             _hostApplicationLifetime.StopApplication();

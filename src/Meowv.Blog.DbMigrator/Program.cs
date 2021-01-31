@@ -1,8 +1,6 @@
-﻿using Meowv.Blog.Extensions;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using System;
 using System.Threading.Tasks;
 
 namespace Meowv.Blog.DbMigrator
@@ -17,14 +15,6 @@ namespace Meowv.Blog.DbMigrator
         internal static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
                 .ConfigureLogging((context, logging) => logging.ClearProviders())
-                .ConfigureAppConfiguration((hostingContext, config) =>
-                {
-                    config.Sources.Clear();
-                    config.AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true);
-
-                    var configDictionary = config.Build().ToDictionary();
-                    Console.WriteLine($"appsettings:{configDictionary.SerializeToJson()}");
-                })
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.AddHostedService<DbMigratorHostedService>();
