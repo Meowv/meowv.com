@@ -21,11 +21,6 @@ namespace Meowv.Blog.Domain.Blog
         public string Url { get; set; }
 
         /// <summary>
-        /// HTML
-        /// </summary>
-        public string Html { get; set; }
-
-        /// <summary>
         /// Markdown
         /// </summary>
         public string Markdown { get; set; }

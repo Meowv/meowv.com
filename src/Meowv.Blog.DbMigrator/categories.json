@@ -1,36 +1,34 @@
-{
-  "RECORDS": [
-    {
-      "Name": ".NET",
-      "Alias": "dotnet"
-    },
-    {
-      "Name": "Blazor",
-      "Alias": "blazor"
-    },
-    {
-      "Name": "Python",
-      "Alias": "python"
-    },
-    {
-      "Name": "Database",
-      "Alias": "database"
-    },
-    {
-      "Name": "Web",
-      "Alias": "web"
-    },
-    {
-      "Name": "Summary",
-      "Alias": "summary"
-    },
-    {
-      "Name": "Other",
-      "Alias": "other"
-    },
-    {
-      "Name": "Life",
-      "Alias": "life"
-    }
-  ]
-}
+[
+  {
+    "alias": "dotnet",
+    "name": ".NET"
+  },
+  {
+    "alias": "blazor",
+    "name": "Blazor"
+  },
+  {
+    "alias": "python",
+    "name": "Python"
+  },
+  {
+    "alias": "database",
+    "name": "Database"
+  },
+  {
+    "alias": "web",
+    "name": "Web"
+  },
+  {
+    "alias": "summary",
+    "name": "Summary"
+  },
+  {
+    "alias": "other",
+    "name": "Other"
+  },
+  {
+    "alias": "life",
+    "name": "Life"
+  }
+]

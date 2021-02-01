@@ -1,5 +1,6 @@
 ﻿using Meowv.Blog.Domain.Blog;
 using Meowv.Blog.Domain.Blog.Repositories;
+using Meowv.Blog.Dto.Blog;
 using Meowv.Blog.Extensions;
 using System;
 using System.Collections.Generic;
@@ -30,7 +31,7 @@ namespace Meowv.Blog.DataSeed
                 {
                     var path = Path.Combine(Directory.GetCurrentDirectory(), "categories.json");
 
-                    var categories = await path.FromJsonFile<List<Category>>("RECORDS");
+                    var categories = await path.FromJsonFile<List<Category>>();
                     if (!categories.Any()) return;
 
                     await _categories.InsertManyAsync(categories);
@@ -44,7 +45,7 @@ namespace Meowv.Blog.DataSeed
                 {
                     var path = Path.Combine(Directory.GetCurrentDirectory(), "tags.json");
 
-                    var tags = await path.FromJsonFile<List<Tag>>("RECORDS");
+                    var tags = await path.FromJsonFile<List<Tag>>();
                     if (!tags.Any()) return;
 
                     await _tags.InsertManyAsync(tags);
@@ -54,7 +55,31 @@ namespace Meowv.Blog.DataSeed
             }
 
             {
+                if (await _posts.GetCountAsync() == 0)
+                {
+                    var path = Path.Combine(Directory.GetCurrentDirectory(), "posts.json");
 
+                    var data = await path.FromJsonFile<List<PostModel>>();
+                    if (!data.Any()) return;
+
+                    var categories = await _categories.GetListAsync();
+                    var tags = await _tags.GetListAsync();
+
+                    var posts = data.Select(x => new Post
+                    {
+                        Title = x.Title,
+                        Author = x.Author,
+                        Url = x.Url,
+                        Markdown = x.Markdown,
+                        Category = categories.FirstOrDefault(c => c.Name == x.Category),
+                        Tags = tags.Where(t => x.Tag.Contains(t.Name)).ToList(),
+                        CreatedAt = x.CreatedAt
+                    });
+
+                    await _posts.InsertManyAsync(posts);
+
+                    Console.WriteLine($"Successfully processed {posts.Count()} post data.");
+                }
             }
         }
     }

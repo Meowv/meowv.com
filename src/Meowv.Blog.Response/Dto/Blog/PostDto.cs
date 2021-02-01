@@ -10,8 +10,6 @@ namespace Meowv.Blog.Dto.Blog
 
         public string Url { get; set; }
 
-        public string Html { get; set; }
-
         public string Markdown { get; set; }
 
         public CategoryAdminDto Category { get; set; }
