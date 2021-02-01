@@ -62,7 +62,7 @@ namespace Meowv.Blog.DataSeed
                         }
 
                         messageReply.Content = new Converter().Convert(reply.Content);
-                        messageReply.CreatedAt = $"{reply.Time}".ToDateTime();
+                        messageReply.CreatedAt = $"{reply.Time}".TimestampToDateTime();
 
                         replyData.Add(messageReply);
                     }
@@ -73,7 +73,7 @@ namespace Meowv.Blog.DataSeed
                     Name = wife.Name,
                     Avatar = wife.Avatar,
                     Content = new Converter().Convert(item.HtmlContent),
-                    CreatedAt = $"{item.PubTime}".ToDateTime(),
+                    CreatedAt = $"{item.PubTime}".TimestampToDateTime(),
                     Reply = replyData
                 });
             }

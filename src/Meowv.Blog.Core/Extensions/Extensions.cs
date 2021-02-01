@@ -220,7 +220,7 @@ namespace Meowv.Blog.Extensions
         /// </summary>
         /// <param name="timestamp">秒</param>
         /// <returns></returns>
-        public static DateTime ToDateTime(this string timestamp)
+        public static DateTime TimestampToDateTime(this string timestamp)
         {
             var date = DateTimeOffset.FromUnixTimeSeconds(long.Parse(timestamp));
             return date.DateTime.ToLocalTime();
