@@ -46,6 +46,10 @@ namespace Meowv.Blog.Admin.Services
                 var response = await httpResponseMessage.Content.ReadAsStringAsync();
 
                 var user = JsonConvert.DeserializeObject<BlogResponse<UserDto>>(response).Result;
+                if (user is null)
+                {
+                    return GetNullState();
+                }
 
                 var identity = new ClaimsIdentity(new[]
                 {
