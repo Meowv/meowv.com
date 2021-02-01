@@ -368,8 +368,8 @@
     "name": "Blazor"
   },
   {
-    "alias": "emiji",
-    "name": "Emiji"
+    "alias": "emojis",
+    "name": "Emojis"
   },
   {
     "alias": "2016",
@@ -390,5 +390,57 @@
   {
     "alias": "2020",
     "name": "2020"
+  },
+  {
+    "alias": "qrcode",
+    "name": "二维码"
+  },
+  {
+    "alias": "reptile",
+    "name": "爬虫"
+  },
+  {
+    "alias": "apollo",
+    "name": "Apollo"
+  },
+  {
+    "alias": "grpc",
+    "name": "GRPC"
+  },
+  {
+    "alias": "es",
+    "name": "ElasticSearch"
+  },
+  {
+    "alias": "rabbitMQ",
+    "name": "RabbitMQ"
+  },
+  {
+    "alias": "kafka",
+    "name": "Kafka"
+  },
+  {
+    "alias": "exceptionless",
+    "name": "Exceptionless"
+  },
+  {
+    "alias": "serilog",
+    "name": "Serilog"
+  },
+  {
+    "alias": "log4Net",
+    "name": "Log4Net"
+  },
+  {
+    "alias": "consul",
+    "name": "Consul"
+  },
+  {
+    "alias": "apigateway",
+    "name": "ApiGateway"
+  },
+  {
+    "alias": "university",
+    "name": "大学"
   }
 ]
