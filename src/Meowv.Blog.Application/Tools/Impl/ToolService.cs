@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -126,6 +127,20 @@ namespace Meowv.Blog.Tools.Impl
             await client.PostAsync("https://sc.ftqq.com/SCU60393T5a94df1d5a9274125293f34a6acf928f5d78f551cf6d6.send", content);
 
             return response;
+        }
+
+        /// <summary>
+        /// Get img by url
+        /// </summary>
+        /// <param name="url"></param>
+        /// <returns></returns>
+        [Route("api/meowv/tool/img")]
+        public async Task<FileContentResult> GetImgAsync([Required] string url)
+        {
+            using var client = _httpClient.CreateClient();
+            var bytes = await client.GetByteArrayAsync(url);
+
+            return new FileContentResult(bytes, "image/jpeg");
         }
 
         /// <summary>

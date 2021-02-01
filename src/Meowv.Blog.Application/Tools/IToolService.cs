@@ -17,6 +17,8 @@ namespace Meowv.Blog.Tools
 
         Task<BlogResponse> SendMessageAsync(SendMessageInput input);
 
+        Task<FileContentResult> GetImgAsync(string url);
+
         Task<BlogResponse<PurgeUrlsCacheResponse>> PurgeCdnUrlsAsync(List<string> urls);
 
         Task<BlogResponse<PurgePathCacheResponse>> PurgeCdnPathsAsync(List<string> paths);
