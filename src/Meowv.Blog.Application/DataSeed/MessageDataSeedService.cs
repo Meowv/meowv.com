@@ -28,7 +28,7 @@ namespace Meowv.Blog.DataSeed
         {
             if (await _messages.GetCountAsync() > 0) return;
 
-            var path = Path.Combine(Directory.GetCurrentDirectory(), "DataSeed/messages.json");
+            var path = Path.Combine(Directory.GetCurrentDirectory(), "messages.json");
 
             var messages = await path.FromJsonFile<List<MessageModel>>("RECORDS");
             if (!messages.Any()) return;
@@ -62,7 +62,7 @@ namespace Meowv.Blog.DataSeed
                         }
 
                         messageReply.Content = new Converter().Convert(reply.Content);
-                        messageReply.CreatedAt = $"{reply.Time}000".TryToDateTime();
+                        messageReply.CreatedAt = $"{reply.Time}".ToDateTime();
 
                         replyData.Add(messageReply);
                     }
@@ -73,7 +73,7 @@ namespace Meowv.Blog.DataSeed
                     Name = wife.Name,
                     Avatar = wife.Avatar,
                     Content = new Converter().Convert(item.HtmlContent),
-                    CreatedAt = $"{item.PubTime}000".TryToDateTime(),
+                    CreatedAt = $"{item.PubTime}".ToDateTime(),
                     Reply = replyData
                 });
             }

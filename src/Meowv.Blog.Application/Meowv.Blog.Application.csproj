@@ -11,15 +11,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="DataSeed\messages.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="DataSeed\sayings.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Html2Markdown" Version="4.0.0.427" />
     <PackageReference Include="IP2Region" Version="1.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="5.0.2" />
@@ -28,9 +19,7 @@
     <PackageReference Include="Volo.Abp.AutoMapper" Version="4.2.0" />
     <PackageReference Include="Volo.Abp.Caching.StackExchangeRedis" Version="4.2.0" />
     <PackageReference Include="Volo.Abp.Ddd.Application" Version="4.2.0" />
-  </ItemGroup>
 
-  <ItemGroup>
     <ProjectReference Include="..\Meowv.Blog.Core\Meowv.Blog.Core.csproj" />
   </ItemGroup>
 

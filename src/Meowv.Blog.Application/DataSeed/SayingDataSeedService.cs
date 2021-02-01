@@ -22,7 +22,7 @@ namespace Meowv.Blog.DataSeed
         {
             if (await _sayings.GetCountAsync() > 0) return;
 
-            var path = Path.Combine(Directory.GetCurrentDirectory(), "DataSeed/sayings.json");
+            var path = Path.Combine(Directory.GetCurrentDirectory(), "sayings.json");
 
             var sayings = await path.FromJsonFile<List<string>>("RECORDS");
             if (!sayings.Any()) return;

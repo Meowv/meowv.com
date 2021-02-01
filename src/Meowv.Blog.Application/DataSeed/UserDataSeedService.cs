@@ -1,4 +1,9 @@
-﻿using Meowv.Blog.Domain.Users.Repositories;
+﻿using Meowv.Blog.Domain.Users;
+using Meowv.Blog.Domain.Users.Repositories;
+using Meowv.Blog.Extensions;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Volo.Abp.DependencyInjection;
 
@@ -17,7 +22,10 @@ namespace Meowv.Blog.DataSeed
         {
             if (await _users.GetCountAsync() > 0) return;
 
-            var users = DataSeedConsts.AdminUsers();
+            var path = Path.Combine(Directory.GetCurrentDirectory(), "users.json");
+
+            var users = await path.FromJsonFile<List<User>>("RECORDS");
+            if (!users.Any()) return;
 
             await _users.InsertManyAsync(users);
         }

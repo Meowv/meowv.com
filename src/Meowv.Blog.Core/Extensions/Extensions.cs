@@ -215,12 +215,24 @@ namespace Meowv.Blog.Extensions
             return randomcode;
         }
 
-        public static DateTime TryToDateTime(this string timestamp)
+        /// <summary>
+        /// Convert <paramref name="timestamp"/> to <see cref="DateTime"/>
+        /// </summary>
+        /// <param name="timestamp">秒</param>
+        /// <returns></returns>
+        public static DateTime ToDateTime(this string timestamp)
         {
-            var ticks = 621355968000000000 + long.Parse(timestamp) * 10000;
-            return new DateTime(ticks);
+            var date = DateTimeOffset.FromUnixTimeSeconds(long.Parse(timestamp));
+            return date.DateTime.ToLocalTime();
         }
 
+        /// <summary>
+        /// Get data from json file
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="filePath"></param>
+        /// <param name="key"></param>
+        /// <returns></returns>
         public static async Task<T> FromJsonFile<T>(this string filePath, string key = "") where T : new()
         {
             if (!File.Exists(filePath)) return new T();

@@ -16,9 +16,7 @@
     <PackageReference Include="SixLabors.ImageSharp" Version="1.0.2" />
     <PackageReference Include="Volo.Abp.Ddd.Domain" Version="4.2.0" />
     <PackageReference Include="YamlDotNet" Version="9.1.4" />
-  </ItemGroup>
 
-  <ItemGroup>
     <ProjectReference Include="..\Meowv.Blog.Response\Meowv.Blog.Response.csproj" />
   </ItemGroup>
 
