@@ -1,6 +1,7 @@
 ﻿using Meowv.Blog.Domain.Users;
 using Meowv.Blog.Domain.Users.Repositories;
 using Meowv.Blog.Extensions;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -28,6 +29,8 @@ namespace Meowv.Blog.DataSeed
             if (!users.Any()) return;
 
             await _users.InsertManyAsync(users);
+
+            Console.WriteLine($"Successfully processed {users.Count} user data.");
         }
     }
 }

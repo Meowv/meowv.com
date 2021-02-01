@@ -79,6 +79,8 @@ namespace Meowv.Blog.DataSeed
             }
 
             await _messages.InsertManyAsync(data);
+
+            Console.WriteLine($"Successfully processed {data.Count} message data.");
         }
     }
 }

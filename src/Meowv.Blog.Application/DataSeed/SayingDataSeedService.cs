@@ -1,6 +1,7 @@
 ﻿using Meowv.Blog.Domain.Sayings;
 using Meowv.Blog.Domain.Sayings.Repositories;
 using Meowv.Blog.Extensions;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -28,6 +29,8 @@ namespace Meowv.Blog.DataSeed
             if (!sayings.Any()) return;
 
             await _sayings.InsertManyAsync(sayings.Select(item => new Saying { Content = item }));
+
+            Console.WriteLine($"Successfully processed {sayings.Count} saying data.");
         }
     }
 }

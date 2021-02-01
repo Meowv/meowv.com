@@ -1,0 +1,36 @@
+{
+  "RECORDS": [
+    {
+      "Name": ".NET",
+      "Alias": "dotnet"
+    },
+    {
+      "Name": "Blazor",
+      "Alias": "blazor"
+    },
+    {
+      "Name": "Python",
+      "Alias": "python"
+    },
+    {
+      "Name": "Database",
+      "Alias": "database"
+    },
+    {
+      "Name": "Web",
+      "Alias": "web"
+    },
+    {
+      "Name": "Summary",
+      "Alias": "summary"
+    },
+    {
+      "Name": "Other",
+      "Alias": "other"
+    },
+    {
+      "Name": "Life",
+      "Alias": "life"
+    }
+  ]
+}

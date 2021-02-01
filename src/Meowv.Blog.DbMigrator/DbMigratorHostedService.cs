@@ -25,18 +25,31 @@ namespace Meowv.Blog.DbMigrator
             });
             application.Initialize();
 
-            Console.WriteLine("Executing database seed...");
+            Console.WriteLine("Executing database seed.");
 
-            Console.WriteLine("Initialize users data...");
-            await application.ServiceProvider.GetRequiredService<UserDataSeedService>().SeedAsync();
+            {
+                Console.WriteLine("Initialize user data...");
+                await application.ServiceProvider
+                                 .GetRequiredService<UserDataSeedService>()
+                                 .SeedAsync();
 
-            Console.WriteLine("Initialize messages data");
-            await application.ServiceProvider.GetRequiredService<MessageDataSeedService>().SeedAsync();
+                Console.WriteLine("Initialize message data..");
+                await application.ServiceProvider
+                                 .GetRequiredService<MessageDataSeedService>()
+                                 .SeedAsync();
 
-            Console.WriteLine("Initialize sayings data");
+                Console.WriteLine("Initialize saying data...");
+                await application.ServiceProvider
+                                 .GetRequiredService<SayingDataSeedService>()
+                                 .SeedAsync();
+
+                Console.WriteLine("Initialize blog data...");
+                await application.ServiceProvider
+                                 .GetRequiredService<BlogDataSeedService>()
+                                 .SeedAsync();
+            }
 
             Console.WriteLine("Successfully completed database seed.");
-            await application.ServiceProvider.GetRequiredService<SayingDataSeedService>().SeedAsync();
 
             application.Shutdown();
             _hostApplicationLifetime.StopApplication();
