@@ -22,7 +22,12 @@ namespace Meowv.Blog.Admin
                            .ConfigureServices(services =>
                            {
                                services.AddRazorPages();
-                               services.AddServerSideBlazor();
+                               services.AddServerSideBlazor()
+                                       .AddHubOptions(options =>
+                                       {
+                                           options.EnableDetailedErrors = true;
+                                           options.MaximumReceiveMessageSize = 10 * 1024 * 1024;
+                                       });
                                services.AddAntDesign();
                                services.AddScoped<AuthenticationStateProvider, OAuthService>();
                                services.Configure<ProSettings>(x =>
