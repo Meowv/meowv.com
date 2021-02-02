@@ -23,5 +23,10 @@ namespace Meowv.Blog.Options
         /// Dingtalk
         /// </summary>
         public DingtalkOptions Dingtalk { get; set; }
+
+        /// <summary>
+        /// Microsoft
+        /// </summary>
+        public MicrosoftOptions Microsoft { get; set; }
     }
 }

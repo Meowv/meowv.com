@@ -61,3 +61,8 @@ authorize:
     appSecret: ''
     redirectUrl: 'https://localhost:5001/api/meowv/oauth/dingtalk/token'
     scope: 'snsapi_login'
+  microsoft:
+    clientId: 'b4c12337-8504-4da9-b85a-4961b7771426'
+    clientSecret: ''
+    redirectUrl: 'https://localhost:44380/api/meowv/oauth/microsoft/token'
+    scope: 'user.read'

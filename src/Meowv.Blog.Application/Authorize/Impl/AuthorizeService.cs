@@ -31,6 +31,7 @@ namespace Meowv.Blog.Authorize.Impl
         private readonly OAuthGiteeService _giteeService;
         private readonly OAuthAlipayService _alipayService;
         private readonly OAuthDingtalkService _dingtalkService;
+        private readonly OAuthMicrosoftService _microsoftService;
 
         public AuthorizeService(IOptions<JwtOptions> jwtOption,
                                 IToolService toolService,
@@ -39,7 +40,8 @@ namespace Meowv.Blog.Authorize.Impl
                                 OAuthGithubService githubService,
                                 OAuthGiteeService giteeService,
                                 OAuthAlipayService alipayService,
-                                OAuthDingtalkService dingtalkService)
+                                OAuthDingtalkService dingtalkService,
+                                OAuthMicrosoftService microsoftService)
         {
             _jwtOption = jwtOption.Value;
             _toolService = toolService;
@@ -49,6 +51,7 @@ namespace Meowv.Blog.Authorize.Impl
             _giteeService = giteeService;
             _alipayService = alipayService;
             _dingtalkService = dingtalkService;
+            _microsoftService = microsoftService;
         }
 
         /// <summary>
@@ -69,6 +72,7 @@ namespace Meowv.Blog.Authorize.Impl
                     "gitee" => await _giteeService.GetAuthorizeUrl(state),
                     "alipay" => await _alipayService.GetAuthorizeUrl(state),
                     "dingtalk" => await _dingtalkService.GetAuthorizeUrl(state),
+                    "microsoft" => await _microsoftService.GetAuthorizeUrl(state),
                     _ => throw new NotImplementedException($"Not implemented:{type}")
                 }
             };
@@ -103,6 +107,7 @@ namespace Meowv.Blog.Authorize.Impl
                 "gitee" => GenerateToken(await _giteeService.GetUserByOAuthAsync(type, code, state)),
                 "alipay" => GenerateToken(await _alipayService.GetUserByOAuthAsync(type, code, state)),
                 "dingtalk" => GenerateToken(await _dingtalkService.GetUserByOAuthAsync(type, code, state)),
+                "microsoft" => GenerateToken(await _microsoftService.GetUserByOAuthAsync(type, code, state)),
                 _ => throw new NotImplementedException($"Not implemented:{type}")
             };
 
