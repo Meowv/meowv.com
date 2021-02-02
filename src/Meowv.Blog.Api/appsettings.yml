@@ -3,7 +3,7 @@ swagger:
   version: 'v4.0.0'
   name: 'meowv.blog'
   title: 'meowv.blog api'
-  description: 'Powered by .NET 5 on Docker'
+  description: 'Powered by .NET 5 on Linux'
   routePrefix: ''
   documentTitle: '🤣Api - 阿星Plus⭐⭐⭐'
 
