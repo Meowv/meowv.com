@@ -46,7 +46,6 @@ namespace Meowv.Blog.Api
             Host.CreateDefaultBuilder(args)
                 .ConfigureAppConfiguration((hostingContext, config) =>
                 {
-                    config.Sources.Clear();
                     config.AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true);
 
                     var configDictionary = config.Build().ToDictionary();

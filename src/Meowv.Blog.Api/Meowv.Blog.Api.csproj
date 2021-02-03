@@ -24,4 +24,13 @@
     <ProjectReference Include="..\Meowv.Blog.MongoDb\Meowv.Blog.MongoDb.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="appsettings.yml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include=".\*.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>

@@ -14,7 +14,7 @@ storage:
 
 cors:
   policyName: 'meowv-policy'
-  origins: 'https://*.meowv.com,https://localhost:44390'
+  origins: 'https://*.meowv.com,https://localhost:44381,https://localhost:44382'
 
 jwt:
   issuer: 'meowv_blog'
@@ -26,14 +26,14 @@ worker:
   cron: '0 0 0/1 * * ? *'
 
 signature:
-  path: 'D:/static/signature'
+  path: 'D:\static\signature'
   urls:
-  - url: ''
-    param: ''
-  - url: ''
-    param: ''
-  - url: ''
-    param: ''
+  - url: 'https://api1.meowv.com'
+    param: '1'
+  - url: 'https://api2.meowv.com'
+    param: '2'
+  - url: 'https://api3.meowv.com'
+    param: '3'
 
 tencentCloud:
   secretId: 'AKIDlSrzZj0DXZKo0zslPnvmMfWdjYC6CG3d'
@@ -58,7 +58,7 @@ authorize:
     publicKey: ''
   dingtalk:
     appId: 'dingoakqr9viaxcysinlzh'
-    appSecret: '-H_SyRt8cI6-H'
+    appSecret: ''
     redirectUrl: 'https://admin.meowv.com/oauth/dingtalk'
     scope: 'snsapi_login'
   microsoft:

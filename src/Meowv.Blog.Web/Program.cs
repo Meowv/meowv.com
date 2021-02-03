@@ -18,10 +18,6 @@ namespace Meowv.Blog.Web
                            {
                                webBuilder.UseStartup<Startup>();
                            })
-                           .ConfigureAppConfiguration(config =>
-                           {
-                               config.Sources.Clear();
-                           })
                            .ConfigureServices(services =>
                            {
                                services.AddRazorPages();
@@ -37,7 +33,7 @@ namespace Meowv.Blog.Web
                                });
                                services.AddHttpClient("api", x =>
                                {
-                                   x.BaseAddress = new Uri("https://localhost:44380");
+                                   x.BaseAddress = new Uri("https://api.meowv.com");
                                });
                            });
             await host.Build().RunAsync();

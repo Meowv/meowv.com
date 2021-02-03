@@ -15,7 +15,7 @@
                 <Column @bind-Field="@context.Id" Title="Id" Sortable="false"></Column>
                 <Column @bind-Field="@context.Name" Title="名称" Sortable="false"></Column>
                 <Column @bind-Field="@context.Url" Title="链接" Sortable="false">
-                    <a target="_blank" href="@context.Url">@context.Url</a>
+                    @context.Url
                 </Column>
                 <ActionColumn Title="操作">
                     <Space Size="middle">
