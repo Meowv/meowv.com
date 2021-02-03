@@ -19,7 +19,7 @@ namespace Meowv.Blog
     {
         public MeowvBlogApplicationAutoMapperProfile()
         {
-            CreateMap<Post, PostDto>().ForMember(x => x.CreatedAt, dto => dto.MapFrom(opt => opt.CreatedAt.ToLocalTime()));
+            CreateMap<Post, PostDto>().ForMember(x => x.CreatedAt, dto => dto.MapFrom(opt => opt.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")));
 
             CreateMap<Post, PostDetailDto>().ForMember(x => x.CreatedAt, dto => dto.MapFrom(opt => opt.CreatedAt.ToLocalTime().FormatTime()));
 
@@ -27,7 +27,7 @@ namespace Meowv.Blog
                 .ForMember(x => x.CreatedAt, dto => dto.MapFrom(opt => opt.CreatedAt.ToLocalTime().FormatTime()))
                 .ForMember(x => x.Year, dto => dto.MapFrom(opt => opt.CreatedAt.Year));
 
-            CreateMap<Post, GetAdminPostDto>().ForMember(x => x.CreatedAt, dto => dto.MapFrom(opt => opt.CreatedAt.ToLocalTime()));
+            CreateMap<Post, GetAdminPostDto>().ForMember(x => x.CreatedAt, dto => dto.MapFrom(opt => opt.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")));
 
             CreateMap<Category, CategoryDto>();
 
@@ -47,17 +47,17 @@ namespace Meowv.Blog
 
             CreateMap<Hot, HotSourceDto>();
 
-            CreateMap<Hot, HotDto>().ForMember(x => x.CreatedAt, dto => dto.MapFrom(opt => opt.CreatedAt.ToLocalTime()));
+            CreateMap<Hot, HotDto>().ForMember(x => x.CreatedAt, dto => dto.MapFrom(opt => opt.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")));
 
             CreateMap<Saying, SayingDto>();
 
-            CreateMap<Signature, SignatureDto>().ForMember(x => x.CreatedAt, dto => dto.MapFrom(opt => opt.CreatedAt.ToLocalTime()));
+            CreateMap<Signature, SignatureDto>().ForMember(x => x.CreatedAt, dto => dto.MapFrom(opt => opt.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")));
 
-            CreateMap<Message, MessageDto>().ForMember(x => x.CreatedAt, dto => dto.MapFrom(opt => opt.CreatedAt.ToLocalTime()));
+            CreateMap<Message, MessageDto>().ForMember(x => x.CreatedAt, dto => dto.MapFrom(opt => opt.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")));
 
-            CreateMap<MessageReply, MessageReplyDto>().ForMember(x => x.CreatedAt, dto => dto.MapFrom(opt => opt.CreatedAt.ToLocalTime()));
+            CreateMap<MessageReply, MessageReplyDto>().ForMember(x => x.CreatedAt, dto => dto.MapFrom(opt => opt.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")));
 
-            CreateMap<User, UserDto>().ForMember(x => x.CreatedAt, dto => dto.MapFrom(opt => opt.CreatedAt.ToLocalTime()));
+            CreateMap<User, UserDto>().ForMember(x => x.CreatedAt, dto => dto.MapFrom(opt => opt.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")));
         }
     }
 }

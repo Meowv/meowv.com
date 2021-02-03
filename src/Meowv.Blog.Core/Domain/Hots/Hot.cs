@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Meowv.Blog.Dto.Hots;
+using System;
 using System.Collections.Generic;
 
 namespace Meowv.Blog.Domain.Hots
@@ -110,12 +111,5 @@ namespace Meowv.Blog.Domain.Hots
                 { github, "https://github.com/trending/c%23?since=daily" }
             };
         }
-    }
-
-    public class Data
-    {
-        public string Title { get; set; }
-
-        public string Url { get; set; }
     }
 }

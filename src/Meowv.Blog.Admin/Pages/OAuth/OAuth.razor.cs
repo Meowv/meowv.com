@@ -24,6 +24,10 @@ namespace Meowv.Blog.Admin.Pages.OAuth
             var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
 
             var hasCode = QueryHelpers.ParseQuery(uri.Query).TryGetValue("code", out Microsoft.Extensions.Primitives.StringValues code);
+            if (Type == "alipay")
+            {
+                hasCode = QueryHelpers.ParseQuery(uri.Query).TryGetValue("auth_code", out code);
+            }
             var hasState = QueryHelpers.ParseQuery(uri.Query).TryGetValue("state", out Microsoft.Extensions.Primitives.StringValues state);
 
             if (hasCode && hasState)
