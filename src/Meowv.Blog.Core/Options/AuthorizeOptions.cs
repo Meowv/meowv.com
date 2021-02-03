@@ -28,5 +28,10 @@ namespace Meowv.Blog.Options
         /// Microsoft
         /// </summary>
         public MicrosoftOptions Microsoft { get; set; }
+
+        /// <summary>
+        /// Weibo
+        /// </summary>
+        public WeiboOptions Weibo { get; set; }
     }
 }

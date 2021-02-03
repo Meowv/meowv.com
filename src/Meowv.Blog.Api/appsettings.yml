@@ -3,7 +3,7 @@ swagger:
   version: 'v4.0.0'
   name: 'meowv.blog'
   title: 'meowv.blog api'
-  description: 'Powered by .NET 5 on Docker'
+  description: 'Powered by .NET 5 on Linux'
   routePrefix: ''
   documentTitle: '🤣Api - 阿星Plus⭐⭐⭐'
 
@@ -22,47 +22,52 @@ jwt:
   signingKey: 'H4sIAAAAAAAAA3N0cnZxdXP38PTy9vH18w8I9AkOCQ0Lj4iMAgDB4fXPGgAAAA=='
 
 worker:
-  isEnabled: false
+  isEnabled: true
   cron: '0 0 0/1 * * ? *'
 
 signature:
-  path: 'D:\static\signature'
+  path: 'D:/static/signature'
   urls:
-  - url: 'https://api1.meowv.com'
-    param: '1'
-  - url: 'https://api2.meowv.com'
-    param: '2'
-  - url: 'https://api3.meowv.com'
-    param: '3'
+  - url: ''
+    param: ''
+  - url: ''
+    param: ''
+  - url: ''
+    param: ''
 
 tencentCloud:
-  secretId: ''
+  secretId: 'AKIDlSrzZj0DXZKo0zslPnvmMfWdjYC6CG3d'
   secretKey: ''
 
 authorize:
   github:
-    clientId: ''
+    clientId: 'e31df3ad90fb05adc29c'
     clientSecret: ''
-    redirectUrl: 'https://localhost:5001/api/meowv/oauth/github/token'
+    redirectUrl: 'https://admin.meowv.com/oauth/github'
     scope: 'user'
   gitee:
-    clientId: ''
+    clientId: '2aa9116886160b7a7d5d87f043df4f3331d15ac1b1f3b57844d87e0b7b62e9c2'
     clientSecret: ''
-    redirectUrl: 'https://localhost:5001/api/meowv/oauth/gitee/token'
+    redirectUrl: 'https://admin.meowv.com/oauth/gitee'
     scope: 'user_info emails'
   alipay:
     appId: '2021002125624107'
-    redirectUrl: 'https://api.meowv.com/api/meowv/oauth/alipay/token'
+    redirectUrl: 'https://admin.meowv.com/oauth/alipay'
     scope: 'auth_user'
     privateKey: ''
     publicKey: ''
   dingtalk:
-    appId: ''
-    appSecret: ''
-    redirectUrl: 'https://localhost:5001/api/meowv/oauth/dingtalk/token'
+    appId: 'dingoakqr9viaxcysinlzh'
+    appSecret: '-H_SyRt8cI6-H'
+    redirectUrl: 'https://admin.meowv.com/oauth/dingtalk'
     scope: 'snsapi_login'
   microsoft:
     clientId: 'b4c12337-8504-4da9-b85a-4961b7771426'
     clientSecret: ''
-    redirectUrl: 'https://localhost:44380/api/meowv/oauth/microsoft/token'
+    redirectUrl: 'https://admin.meowv.com/oauth/microsoft'
     scope: 'user.read'
+  weibo:
+    clientId: '3725213942'
+    clientSecret: ''
+    redirectUrl: 'https://admin.meowv.com/oauth/weibo'
+    scope: 'all'
