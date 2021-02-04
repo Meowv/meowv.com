@@ -19,7 +19,17 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meowv.Blog.Admin", "src\Meo
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meowv.Blog.Response", "src\Meowv.Blog.Response\Meowv.Blog.Response.csproj", "{0775DDDC-3823-4DAE-8044-8AB6E3E6F637}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meowv.Blog.DbMigrator", "src\Meowv.Blog.DbMigrator\Meowv.Blog.DbMigrator.csproj", "{64D9E8BC-DEA8-47ED-8932-7AD0C8B3D282}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meowv.Blog.DbMigrator", "src\Meowv.Blog.DbMigrator\Meowv.Blog.DbMigrator.csproj", "{64D9E8BC-DEA8-47ED-8932-7AD0C8B3D282}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{73AB396B-140D-4293-8560-CFCA0D726BC1}"
+	ProjectSection(SolutionItems) = preProject
+		.dockerignore = .dockerignore
+		.gitattributes = .gitattributes
+		.gitignore = .gitignore
+		.github\FUNDING.yml = .github\FUNDING.yml
+		LICENSE = LICENSE
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
