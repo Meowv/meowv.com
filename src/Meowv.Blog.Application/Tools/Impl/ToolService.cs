@@ -86,7 +86,9 @@ namespace Meowv.Blog.Tools.Impl
 
             if (ip.IsNullOrEmpty())
             {
-                ip = _httpContextAccessor.HttpContext.Request.GetIpAddress();
+                ip = _httpContextAccessor.HttpContext.Request.Headers["X-Real-IP"].FirstOrDefault() ??
+                     _httpContextAccessor.HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault() ??
+                     _httpContextAccessor.HttpContext.Connection.RemoteIpAddress.MapToIPv4().ToString();
             }
             else
             {

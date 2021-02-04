@@ -237,7 +237,8 @@ namespace Meowv.Blog.Api
 
             app.UseForwardedHeaders(new ForwardedHeadersOptions
             {
-                ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+                ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+                ForwardLimit = null
             });
             app.UseHealthChecks("/api/meowv/health", new HealthCheckOptions
             {
