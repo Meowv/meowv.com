@@ -116,6 +116,7 @@ namespace Meowv.Blog
                 var dingtalkOption = authorizeOption.GetSection("dingtalk");
                 var microsoftOption = authorizeOption.GetSection("microsoft");
                 var weiboOptions = authorizeOption.GetSection("weibo");
+                var qqOptions = authorizeOption.GetSection("qq");
 
                 Configure<AuthorizeOptions>(authorizeOption);
                 Configure<GithubOptions>(githubOption);
@@ -124,6 +125,7 @@ namespace Meowv.Blog
                 Configure<DingtalkOptions>(dingtalkOption);
                 Configure<MicrosoftOptions>(microsoftOption);
                 Configure<WeiboOptions>(weiboOptions);
+                Configure<QQOptions>(qqOptions);
 
                 options.Github = new GithubOptions
                 {
@@ -167,6 +169,13 @@ namespace Meowv.Blog
                     ClientSecret = weiboOptions.GetValue<string>(nameof(options.Weibo.ClientSecret)),
                     RedirectUrl = weiboOptions.GetValue<string>(nameof(options.Weibo.RedirectUrl)),
                     Scope = weiboOptions.GetValue<string>(nameof(options.Weibo.Scope))
+                };
+                options.QQ = new QQOptions
+                {
+                    ClientId = qqOptions.GetValue<string>(nameof(options.QQ.ClientId)),
+                    ClientSecret = qqOptions.GetValue<string>(nameof(options.QQ.ClientSecret)),
+                    RedirectUrl = qqOptions.GetValue<string>(nameof(options.QQ.RedirectUrl)),
+                    Scope = qqOptions.GetValue<string>(nameof(options.QQ.Scope))
                 };
 
                 authorize = options;
