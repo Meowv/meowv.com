@@ -220,7 +220,7 @@ namespace Meowv.Blog.Users.Impl
         [RemoteService(false)]
         public async Task<User> CreateUserAsync(string username, string type, string identity, string name, string avatar, string email)
         {
-            var user = await _users.FindAsync(x => x.Username == username && x.Type == type && x.Identity == identity);
+            var user = await _users.FindAsync(x => x.Type == type && x.Identity == identity);
             if (user is null)
             {
                 await _users.InsertAsync(new User
