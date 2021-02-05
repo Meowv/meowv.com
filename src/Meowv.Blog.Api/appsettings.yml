@@ -71,3 +71,8 @@ authorize:
     clientSecret: ''
     redirectUrl: 'https://admin.meowv.com/oauth/weibo'
     scope: 'all'
+  qq:
+    clientId: '101935194'
+    clientSecret: ''
+    redirectUrl: 'https://admin.meowv.com/oauth/qq'
+    scope: 'get_user_info'

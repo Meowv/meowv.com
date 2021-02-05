@@ -33,5 +33,10 @@ namespace Meowv.Blog.Options
         /// Weibo
         /// </summary>
         public WeiboOptions Weibo { get; set; }
+
+        /// <summary>
+        /// QQ
+        /// </summary>
+        public QQOptions QQ { get; set; }
     }
 }
