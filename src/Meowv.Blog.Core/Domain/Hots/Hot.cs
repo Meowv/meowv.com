@@ -80,7 +80,7 @@ namespace Meowv.Blog.Domain.Hots
             public static Dictionary<string, string> Dictionary { get; set; } = new Dictionary<string, string>
             {
                 { cnblogs, "https://www.cnblogs.com" },
-                { v2ex, "https://www.v2ex.com/?tab=hot" },
+                { v2ex, "https://www.v2ex.com/api/topics/hot.json" },
                 { segmentfault, "https://segmentfault.com/hottest" },
                 { weixin, "https://weixin.sogou.com" },
                 { douban, "https://www.douban.com/group/explore" },

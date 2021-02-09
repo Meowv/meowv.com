@@ -71,7 +71,7 @@ namespace Meowv.Blog.Workers
                     {
                         switch (source)
                         {
-                            case Hot.KnownSources.juejin or Hot.KnownSources.csdn or Hot.KnownSources.zhihu or Hot.KnownSources.huxiu or Hot.KnownSources.douyin or Hot.KnownSources.woshipm or Hot.KnownSources.kaiyan:
+                            case Hot.KnownSources.v2ex or Hot.KnownSources.juejin or Hot.KnownSources.csdn or Hot.KnownSources.zhihu or Hot.KnownSources.huxiu or Hot.KnownSources.douyin or Hot.KnownSources.woshipm or Hot.KnownSources.kaiyan:
                                 {
                                     using var client = _httpClient.CreateClient();
                                     client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36 Edg/87.0.664.66");
@@ -163,17 +163,17 @@ namespace Meowv.Blog.Workers
 
                     case Hot.KnownSources.v2ex:
                         {
-                            var html = result as HtmlDocument;
-                            var nodes = html.DocumentNode.SelectNodes("//span[@class='item_title']/a").ToList();
+                            var json = result as string;
+                            var nodes = JArray.Parse(json);
 
-                            nodes.ForEach(x =>
+                            foreach (var node in nodes)
                             {
                                 hot.Datas.Add(new Data
                                 {
-                                    Title = x.InnerText,
-                                    Url = $"https://www.v2ex.com{x.GetAttributeValue("href", "")}"
+                                    Title = node["title"].ToString(),
+                                    Url = node["url"].ToString()
                                 });
-                            });
+                            }
 
                             await SaveAsync();
                             break;
