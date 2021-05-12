@@ -19,8 +19,6 @@ namespace Meowv.Blog.Domain.Hots
         {
             public const string cnblogs = "博客园";
 
-            public const string v2ex = "V2EX";
-
             public const string segmentfault = "思否";
 
             public const string weixin = "微信热门";
@@ -80,7 +78,6 @@ namespace Meowv.Blog.Domain.Hots
             public static Dictionary<string, string> Dictionary { get; set; } = new Dictionary<string, string>
             {
                 { cnblogs, "https://www.cnblogs.com" },
-                { v2ex, "https://www.v2ex.com/?tab=hot" },
                 { segmentfault, "https://segmentfault.com/hottest" },
                 { weixin, "https://weixin.sogou.com" },
                 { douban, "https://www.douban.com/group/explore" },
