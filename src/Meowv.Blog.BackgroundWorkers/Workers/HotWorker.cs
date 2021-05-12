@@ -161,24 +161,6 @@ namespace Meowv.Blog.Workers
                             break;
                         }
 
-                    case Hot.KnownSources.v2ex:
-                        {
-                            var html = result as HtmlDocument;
-                            var nodes = html.DocumentNode.SelectNodes("//span[@class='item_title']/a").ToList();
-
-                            nodes.ForEach(x =>
-                            {
-                                hot.Datas.Add(new Data
-                                {
-                                    Title = x.InnerText,
-                                    Url = $"https://www.v2ex.com{x.GetAttributeValue("href", "")}"
-                                });
-                            });
-
-                            await SaveAsync();
-                            break;
-                        }
-
                     case Hot.KnownSources.segmentfault:
                         {
                             var html = result as HtmlDocument;
