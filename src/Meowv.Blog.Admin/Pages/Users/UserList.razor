@@ -29,7 +29,7 @@
                 </Column>
                 <Column @bind-Field="@context.CreatedAt" Title="创建时间" Sortable="false"></Column>
                 <ActionColumn Title="操作">
-                    <Space Size="middle">
+                    <Space Size="@("small")">
                         <SpaceItem>
                             <Button Type="@ButtonType.Primary" OnClick="_ => Open(context.Id)">编辑</Button>
                             <Popconfirm Title="确定删除吗?"

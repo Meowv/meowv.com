@@ -25,8 +25,6 @@ namespace Meowv.Blog.Admin.Pages.Posts
 
         string _inputValue, _selectedValue;
 
-        Input<string> _inputRef;
-
         List<string> lstTags { get; set; } = new List<string>();
 
         List<GetAdminCategoryDto> categories = new List<GetAdminCategoryDto>();
@@ -121,11 +119,9 @@ namespace Meowv.Blog.Admin.Pages.Posts
 
         private void Close() => visible = false;
 
-        async Task OnChecked()
+        void OnChecked()
         {
             inputVisible = !inputVisible;
-            if (_inputRef != null)
-                await _inputRef.Focus();
         }
 
         void OnClose(string item)

@@ -12,10 +12,10 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
-    <PackageReference Include="MongoDB.Bson" Version="2.11.6" />
-    <PackageReference Include="SixLabors.ImageSharp" Version="1.0.2" />
-    <PackageReference Include="Volo.Abp.Ddd.Domain" Version="4.2.0" />
-    <PackageReference Include="YamlDotNet" Version="9.1.4" />
+    <PackageReference Include="MongoDB.Bson" Version="2.12.3" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="1.0.3" />
+    <PackageReference Include="Volo.Abp.Ddd.Domain" Version="4.3.0" />
+    <PackageReference Include="YamlDotNet" Version="11.1.1" />
 
     <ProjectReference Include="..\Meowv.Blog.Response\Meowv.Blog.Response.csproj" />
   </ItemGroup>

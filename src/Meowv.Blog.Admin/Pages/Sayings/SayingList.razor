@@ -22,7 +22,7 @@
                 <Column @bind-Field="@context.Id" Title="Id" Sortable="false"></Column>
                 <Column @bind-Field="@context.Content" Title="内容" Sortable="false"></Column>
                 <ActionColumn Title="操作">
-                    <Space Size="middle">
+                    <Space Size="@("small")">
                         <SpaceItem>
                             <Popconfirm Title="确定删除吗?"
                                         Icon="close-circle"

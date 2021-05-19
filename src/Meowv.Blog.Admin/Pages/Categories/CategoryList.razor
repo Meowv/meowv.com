@@ -17,7 +17,7 @@
                 <Column @bind-Field="@context.Name" Title="分类名称" Sortable="false"></Column>
                 <Column @bind-Field="@context.Alias" Title="分类别名" Sortable="false"></Column>
                 <ActionColumn Title="操作">
-                    <Space Size="middle">
+                    <Space Size="@("small")">
                         <SpaceItem>
                             <Button Type="@ButtonType.Primary" OnClick="_ => Open(context)">编辑</Button>
                         </SpaceItem>

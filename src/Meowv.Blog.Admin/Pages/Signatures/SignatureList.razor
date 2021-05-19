@@ -27,7 +27,7 @@
                 <Column @bind-Field="@context.Ip" Title="IP地址" Sortable="false"></Column>
                 <Column @bind-Field="@context.CreatedAt" Title="创建时间" Sortable="false"></Column>
                 <ActionColumn Title="操作">
-                    <Space Size="middle">
+                    <Space Size="@("small")">
                         <SpaceItem>
                             <Popconfirm Title="确定删除吗?"
                                         Icon="close-circle"

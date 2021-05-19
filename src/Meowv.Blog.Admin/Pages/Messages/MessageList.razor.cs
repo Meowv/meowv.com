@@ -65,7 +65,7 @@ namespace Meowv.Blog.Admin.Pages.Messages
 
         public async Task HandlePageIndexChange(PaginationEventArgs args)
         {
-            messages = await GetMessageListAsync(args.PageIndex, limit);
+            messages = await GetMessageListAsync(args.Page, limit);
             StateHasChanged();
         }
 
