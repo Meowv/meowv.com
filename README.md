@@ -1,4 +1,4 @@
-﻿# 🤣阿星Plus⭐⭐⭐ 个人博客
+# 🤣阿星Plus⭐⭐⭐ 个人博客
 
 ## 项目介绍
 
@@ -7,6 +7,24 @@
 **注：历史版本，请切换不同分支查看。**
 
 If you liked `Blog` project or if it helped you, please give a star ⭐️ for this repository. 👍👍👍
+
+```tree
+blog
+ ├── assets ---------- assets
+ ├── LICENSE ---------- LICENSE
+ ├── meowv.blog.sln ---------- Solution
+ ├── README.md ---------- README.md
+ └── src
+     ├── Meowv.Blog.Admin ---------- Admin项目 admin.meowv.com
+     ├── Meowv.Blog.Api ---------- Api项目 api.meowv.com
+     ├── Meowv.Blog.Application ---------- Application
+     ├── Meowv.Blog.BackgroundWorkers ---------- BackgroundWorkers
+     ├── Meowv.Blog.Core ---------- Core
+     ├── Meowv.Blog.DbMigrator ---------- DbMigrator
+     ├── Meowv.Blog.MongoDb ---------- MongoDb
+     ├── Meowv.Blog.Response ---------- Response
+     └── Meowv.Blog.Web ---------- Web项目 meowv.com
+```
 
 ## 预览体验
 
@@ -29,6 +47,8 @@ If you liked `Blog` project or if it helped you, please give a star ⭐️ for t
 ![api](assets/api.png)
 
 ## [文章介绍](https://docs.meowv.com/aspnetcore/abp-blog/)
+
+### v3.4.0
 
 1. **[使用 abp cli 搭建项目](https://mp.weixin.qq.com/s/3Sc4Z2xkLdQNErvXf92B9A)**
 2. **[给项目瘦身，让它跑起来](https://mp.weixin.qq.com/s/oc96GG2sxz0J_vT6sReojQ)**
@@ -61,23 +81,9 @@ If you liked `Blog` project or if it helped you, please give a star ⭐️ for t
 29. **[Blazor 实战系列（九）](https://mp.weixin.qq.com/s/0-mMmkr3HelmoJUWN7R7JA)**
 30. **[终结篇之发布项目](https://mp.weixin.qq.com/s/Lf543XOxSIGYdOGM8Zt4Lw)**
 
-```tree
-blog
- ├── assets ---------- assets
- ├── LICENSE ---------- LICENSE
- ├── meowv.blog.sln ---------- Solution
- ├── README.md ---------- README.md
- └── src
-     ├── Meowv.Blog.Admin ---------- Admin项目 admin.meowv.com
-     ├── Meowv.Blog.Api ---------- Api项目 api.meowv.com
-     ├── Meowv.Blog.Application ---------- Application
-     ├── Meowv.Blog.BackgroundWorkers ---------- BackgroundWorkers
-     ├── Meowv.Blog.Core ---------- Core
-     ├── Meowv.Blog.DbMigrator ---------- DbMigrator
-     ├── Meowv.Blog.MongoDb ---------- MongoDb
-     ├── Meowv.Blog.Response ---------- Response
-     └── Meowv.Blog.Web ---------- Web项目 meowv.com
-```
+### v4.0.0
+
+TODO...
 
 ## LICENSE
 

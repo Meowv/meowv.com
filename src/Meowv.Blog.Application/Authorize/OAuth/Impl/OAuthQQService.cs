@@ -24,13 +24,13 @@ namespace Meowv.Blog.Authorize.OAuth.Impl
             var accessToken = await GetAccessTokenAsync(code, state);
             var userInfo = await GetUserInfoAsync(accessToken);
 
-            return await UserService.CreateUserAsync(userInfo.Email, type, userInfo.Id, userInfo.Name, userInfo.Avatar, userInfo.Email);
+            return await UserService.CreateUserAsync(userInfo.Name, type, userInfo.Id, userInfo.Name, userInfo.Avatar, userInfo.Email);
         }
 
         public override async Task<AccessTokenBase> GetAccessTokenAsync(string code, string state)
         {
             var param = BuildAccessTokenParams(code, state);
-            Options.Value.AccessTokenUrl = $"{Options.Value.AccessTokenUrl}?{param.ToQueryStringWithEncode()}";
+            Options.Value.AccessTokenUrl = $"{Options.Value.AccessTokenUrl}?{param.ToQueryString()}";
 
             using var client = HttpClient.CreateClient();
             var response = await client.GetStringAsync(Options.Value.AccessTokenUrl);
@@ -47,12 +47,17 @@ namespace Meowv.Blog.Authorize.OAuth.Impl
         {
             using var client = HttpClient.CreateClient();
 
-            var openIdResponse = await client.GetStringAsync($"{Options.Value.OpenIdUrl}?access_token={accessToken.AccessToken}");
-          
+            var openIdResponse = await client.GetStringAsync($"{Options.Value.OpenIdUrl}?access_token={accessToken.AccessToken}&fmt=json");
+            var openId = openIdResponse.DeserializeToObject<QQOpenId>().OpenId;
+
+            var param = BuildUserInfoParams(accessToken.AccessToken, openId);
+            Options.Value.UserInfoUrl = $"{Options.Value.UserInfoUrl}?{param.ToQueryString()}";
 
             var response = await client.GetStringAsync(Options.Value.UserInfoUrl);
 
             var userInfo = response.DeserializeToObject<QQUserInfo>();
+            userInfo.Id = openId;
+            
             return userInfo;
         }
 
@@ -78,6 +83,16 @@ namespace Meowv.Blog.Authorize.OAuth.Impl
                 ["redirect_uri"] = Options.Value.RedirectUrl,
                 ["code"] = code,
                 ["state"] = state
+            };
+        }
+
+        protected Dictionary<string, string> BuildUserInfoParams(string accessToken, string openId)
+        {
+            return new Dictionary<string, string>()
+            {
+                ["access_token"] = accessToken,
+                ["oauth_consumer_key"] = Options.Value.ClientId,
+                ["openid"] = openId,
             };
         }
     }
