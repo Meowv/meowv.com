@@ -8,6 +8,11 @@
         public SwaggerOptions Swagger { get; set; }
 
         /// <summary>
+        /// SCKEY
+        /// </summary>
+        public string ScKey { get; set; }
+
+        /// <summary>
         /// Storage
         /// </summary>
         public StorageOptions Storage { get; set; }

@@ -14,6 +14,8 @@ namespace Meowv.Blog
         {
             var configuration = context.Services.GetConfiguration();
 
+            var sckey = configuration.GetValue<string>("sckey");
+
             var swagger = new SwaggerOptions();
             var storage = new StorageOptions();
             var cors = new CorsOptions();
@@ -183,6 +185,7 @@ namespace Meowv.Blog
             PreConfigure<AppOptions>(options =>
             {
                 options.Swagger = swagger;
+                options.ScKey = sckey;
                 options.Storage = storage;
                 options.Cors = cors;
                 options.Jwt = jwt;
@@ -194,6 +197,7 @@ namespace Meowv.Blog
                 Configure<AppOptions>(item =>
                 {
                     item.Swagger = swagger;
+                    item.ScKey = sckey;
                     item.Storage = storage;
                     item.Cors = cors;
                     item.Jwt = jwt;

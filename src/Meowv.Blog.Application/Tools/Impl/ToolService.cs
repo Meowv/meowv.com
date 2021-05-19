@@ -27,14 +27,17 @@ namespace Meowv.Blog.Tools.Impl
         private readonly IHttpClientFactory _httpClient;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly TencentCloudOptions _tencentCloudOptions;
+        private readonly AppOptions _appOptions;
 
         public ToolService(IHttpClientFactory httpClient,
                            IHttpContextAccessor httpContextAccessor,
-                           IOptions<TencentCloudOptions> tencentCloudOptions)
+                           IOptions<TencentCloudOptions> tencentCloudOptions,
+                           IOptions<AppOptions> appOptions)
         {
             _httpClient = httpClient;
             _httpContextAccessor = httpContextAccessor;
             _tencentCloudOptions = tencentCloudOptions.Value;
+            _appOptions = appOptions.Value;
         }
 
         /// <summary>
@@ -126,7 +129,7 @@ namespace Meowv.Blog.Tools.Impl
             content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
 
             using var client = _httpClient.CreateClient();
-            await client.PostAsync("https://sc.ftqq.com/SCU60393T5a94df1d5a9274125293f34a6acf928f5d78f551cf6d6.send", content);
+            await client.PostAsync($"https://sc.ftqq.com/{_appOptions.ScKey}.send", content);
 
             return response;
         }

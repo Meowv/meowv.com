@@ -7,6 +7,8 @@ swagger:
   routePrefix: ''
   documentTitle: '🤣Api - 阿星Plus⭐⭐⭐'
 
+sckey: 'SCU60393T5a94df1d5a9274125293f34a6acf928f5d78f551cf6d6'
+
 storage:
   mongodb: 'mongodb://localhost/meowv_blog'
   redisIsEnabled: true
@@ -19,7 +21,7 @@ cors:
 jwt:
   issuer: 'meowv_blog'
   audience: 'meowv_blog api'
-  signingKey: 'H4sIAAAAAAAAA3N0cnZxdXP38PTy9vH18w8I9AkOCQ0Lj4iMAgDB4fXPGgAAAA=='
+  signingKey: ''
 
 worker:
   isEnabled: true
