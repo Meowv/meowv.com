@@ -336,6 +336,11 @@ header label {
 .copyright {
     font-size: 14px;
 }
+.copyright p {
+    font-size: 12px;
+    line-height: 0;
+}
+
 .pagination {
     display: flex;
     padding-top: 2em;
