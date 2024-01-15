@@ -1,0 +1,31 @@
+{
+  "name": "meowv.com",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "build": "hexo generate",
+    "clean": "hexo clean",
+    "deploy": "hexo deploy",
+    "server": "hexo server"
+  },
+  "hexo": {
+    "version": "7.0.0"
+  },
+  "dependencies": {
+    "hexo": "^7.0.0",
+    "hexo-filter-github-emojis": "^3.0.5",
+    "hexo-generator-archive": "^2.0.0",
+    "hexo-generator-category": "^2.0.0",
+    "hexo-generator-feed": "^3.0.0",
+    "hexo-generator-index": "^3.0.0",
+    "hexo-generator-search": "^2.4.3",
+    "hexo-generator-tag": "^2.0.0",
+    "hexo-permalink-pinyin": "^1.1.0",
+    "hexo-renderer-ejs": "^2.0.0",
+    "hexo-renderer-marked": "^6.0.0",
+    "hexo-renderer-pug": "^3.0.0",
+    "hexo-renderer-stylus": "^3.0.0",
+    "hexo-server": "^3.0.0",
+    "hexo-wordcount": "^6.0.1"
+  }
+}

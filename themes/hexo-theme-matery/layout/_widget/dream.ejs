@@ -1,0 +1,26 @@
+<div class="dream">
+  <% if (theme.dream.showTitle) { %>
+  <div class="title center-align">
+    <i class="far fa-lightbulb"></i>&nbsp;&nbsp;<%= theme.dream.title %>
+  </div>
+  <% } %>
+  <div class="row">
+    <div
+      id="hitokoto_text"
+      class="col l8 offset-l2 m10 offset-m1 s10 offset-s1 center-align text"
+    >
+      <!-- <%= theme.dream.text %> -->
+      加载中...
+    </div>
+  </div>
+</div>
+
+<script>
+  fetch("https://v1.hitokoto.cn")
+    .then((response) => response.json())
+    .then((data) => {
+      const hitokoto = document.querySelector("#hitokoto_text");
+      hitokoto.innerText = data.hitokoto;
+    })
+    .catch(console.error);
+</script>

@@ -1,0 +1,49 @@
+<div class="row">
+    <div class="col s10 offset-s1 m8 offset-m2 l8 offset-l2">
+        <div class="brand">
+            <div class="title center-align">
+                <% if (config.subtitle && config.subtitle.length > 0) { %>
+                <%= config.subtitle %>
+                <% } else { %>
+                    subtitle
+                <% } %>
+            </div>
+
+            <div class="description center-align">
+                <% if (theme.subtitle.enable) { %>
+                <span id="subtitle"></span>
+                <script src="<%- theme.cdn.url %><%- url_for(theme.libs.js.typed) %>"></script>
+                <script>
+                    var typed = new Typed("#subtitle", {
+                        strings: ['<%= theme.subtitle.sub1 %>','<%= theme.subtitle.sub2 %>'],
+                        startDelay: <%= theme.subtitle.startDelay %>,
+                        typeSpeed: <%= theme.subtitle.typeSpeed %>,
+                        loop: <%= theme.subtitle.loop %>,
+                        backSpeed: <%= theme.subtitle.backSpeed %>,
+                        showCursor: <%= theme.subtitle.showCursor %>
+                    });
+                </script>
+                <% } else { %>
+                    <%= config.description %>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</div>
+
+<% if (theme.banner.enable || theme.background.enable) { %>
+<script>
+    var bannerUrl = "<%- theme.cdn.url %><%- url_for('/medias/banner/') %>" + (Math.floor(Math.random() * 9) + 1) + '.jpg';
+    $('.bg-cover').css('background-image', 'url(' + bannerUrl + ')');
+
+    var bgUrl = "<%- theme.cdn.url %><%- url_for('/medias/background/') %>" + (Math.floor(Math.random() * 89) + 1) + '.jpg';
+    $('body').css('background-image', 'url(' + bgUrl + ')')
+             .css('background-repeat', 'no-repeat')
+             .css('background-size', 'cover')
+             .css('background-attachment', 'fixed');
+</script>
+<% } else { %>
+<script>
+    $('.bg-cover').css('background-image', 'url(<%- theme.cdn.url %><%- url_for('/medias/banner/0.jpg') %>)');
+</script>
+<% } %>

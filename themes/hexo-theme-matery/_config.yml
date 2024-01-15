@@ -1,0 +1,611 @@
+# main menu navigation url and icon
+# 配置菜单导航的名称、路径和图标icon.
+menu:
+  首页:
+    url: /
+    icon: fas fa-home
+  标签:
+    url: /tags
+    icon: fas fa-tags
+  分类:
+    url: /categories
+    icon: fas fa-bookmark
+  归档:
+    url: /archives
+    icon: fas fa-archive
+  关于:
+    url: /about
+    icon: fas fa-user-circle
+  留言板:
+    url: /contact
+    icon: fas fa-comments
+  友情链接:
+    url: /friends
+    icon: fas fa-address-book
+  # 二级菜单写法如下
+  #Medias:
+  #  icon: fas fa-list
+  #  children:
+  #    - name: Musics
+  #      url: /musics
+  #      icon: fas fa-music
+  #    - name: Movies
+  #      url: /movies
+  #      icon: fas fa-film
+  #    - name: Books
+  #      url: /books
+  #      icon: fas fa-book
+  #    - name: Galleries
+  #      url: /galleries
+  #      icon: fas fa-image
+
+# Website start time.
+# 站点运行开始时间.
+time:
+  enable: true
+  year: 2015 # 年份
+  month: 01 # 月份
+  date: 26 # 日期
+  hour: 8 # 小时
+  minute: 00 # 分钟
+  second: 00 # 秒
+
+# Index cover carousel configuration.
+# 首页封面轮播图的相关配置.
+cover:
+  showPrevNext: true # 是否显示左右切换按钮. Whether to display the left and right toggle buttons.
+  showIndicators: true # 是否显示指示器. # Whether to display the indicators
+  autoLoop: true # 是否自动轮播. Whether it is automatically rotated.
+  duration: 120 # 切换延迟时间. Switching delay time.
+  intervalTime: 5000 # 自动切换下一张的间隔时间. Automatically switch the interval of the next one.
+  useConfig: false # 是否使用配置文件, 在 _data/covers.json 下配置推荐文章, false则使用主题在文章中的配置 cover coverImg
+  # useConfig 使用方式: 将主题 hexo-theme-matery/source/_data/covers.json 移动到 my-blog/source/_data/下修改配置即可
+
+# index page dream text,
+# 配置首页显示"梦想"的语句.
+dream:
+  enable: true
+  showTitle: false
+  title:
+  text:
+
+# Whether to display the musics.
+# 是否在首页显示音乐.
+music:
+  enable: false
+  title: #非吸底模式有效
+    enable: true
+    show: 听听音乐
+  autoHide: true # hide automaticaly
+  server: netease #require	music platform: netease, tencent, kugou, xiami, baidu
+  type: playlist #require song, playlist, album, search, artist
+  id: 503838841 #require	song id / playlist id / album id / search keyword
+  fixed: true # 开启吸底模式
+  autoplay: false # 是否自动播放
+  theme: "#42b983"
+  loop: "all" # 音频循环播放, 可选值: 'all', 'one', 'none'
+  order: "random" # 音频循环顺序, 可选值: 'list', 'random'
+  preload: "auto" # 预加载，可选值: 'none', 'metadata', 'auto'
+  volume: 0.7 # 默认音量，请注意播放器会记忆用户设置，用户手动设置音量后默认音量即失效
+  listFolded: true # 列表默认折叠
+  hideLrc: true # 隐藏歌词
+
+# Whether to display the videos.
+# 是否在首页显示视频.
+video:
+  enable: false
+  showTitle: true
+  title: 精彩视频
+  url: # 必填
+  pic:
+  thumbnails:
+  height: # 如：400
+  autoplay: false # 是否自动播放
+  theme: "#42b983"
+  loop: false # 是否循环播放
+  preload: "auto" # 预加载，可选值: 'none', 'metadata', 'auto'
+  volume: 0.7
+
+# Whether to display the title of the recommended posts
+# 是否显示推荐文章的标题
+recommend:
+  enable: false
+  showTitle: true
+  useConfig: false # 是否使用配置文件, 在 _data/recommends.json 下配置推荐文章, false则会走主题配置的 top 属性
+  # useConfig 使用方式: 将主题 hexo-theme-matery/source/_data/recommends.json 移动到 my-blog/source/_data/下修改配置即可
+
+# Configure website favicon and LOGO
+# 配置网站favicon和网站LOGO
+favicon: /favicon.png
+logo: /medias/logo.png
+
+# The configuration of the second button in the home banner,
+# including the display name of the button, the font awesome icon, and the hyperlink to the button.
+# 首页 banner 中的第二个按钮的配置，包括按钮的显示名称、font awesome图标和按钮的超链接.
+indexbtn:
+  enable: false
+  name: Github
+  icon: fab fa-github-alt
+  url: https://github.com/blinkfox/hexo-theme-matery
+
+# The configurations of the second line of home banner
+# icon/button will not show up if you leave the corresponding socialLink empty
+# 首页 banner 中的第二行个人信息配置，留空即不启用
+socialLink:
+  github: https://github.com/meowv
+  email: 123@meowv.com
+  facebook: # https://www.facebook.com/xxx
+  twitter: # https://twitter.com/xxx
+  qq: 494910887
+  weibo: https://weibo.com/Tencentgou
+  zhihu: # https://www.zhihu.com/people/meowv
+  rss: true # true、false
+
+# Whether to activate the Post TOC, and Configure which title types are supported by TOC support.
+# You can add `toc: false` to the Front-matter of a post to turn off the TOC.
+# 是否激活文章 TOC 功能，并配置TOC支持选中哪些标题类型，这是全局配置。
+# 可以在某篇文章的 Front-matter 中再加上`toc: false`，使该篇文章关闭TOC目录功能
+toc:
+  enable: true
+  heading: h2, h3, h4
+  collapseDepth: 0 # 目录默认展开层级
+  showToggleBtn: true # 是否显示切换TOC目录展开收缩的按钮
+
+# 代码块相关
+code:
+  lang: true # 代码块是否显示名称
+  copy: true # 代码块是否可复制
+  shrink: true # 代码块是否可以收缩
+  break: false # 代码是否折行
+
+# 是否激活文章末尾的打赏功能，默认激活（你替换为的你自己的微信、支付宝二维码图片、或者使用网络图片也可以）.
+reward:
+  enable: true
+  title: ☕️搞杯咖啡喝喝吧~
+  wechat: /medias/reward/wechat.jpg
+  alipay: /medias/reward/alipay.jpg
+
+# Whether to activate the copyright information of the blog and author when copying the post content.
+# minCharNumber: Approve copyright information by copying at least how many characters.
+# 是否激活复制文章时追加博客和作者的版权信息.
+copyright:
+  enable: true
+  minCharNumber: 100 # 至少复制多少个字符就追加版权信息.
+  description: 本文章著作权归作者所有，任何形式的转载都请注明出处。
+
+# Whether to activate the mathjax, this is a global configuration, but the post still does not open the mathjax rendering.
+# Considering that the mathjax loading is time consuming,
+# you also need to add `mathjax: true` to the Front-matter of the post that needs to be rendered.
+# 是否激活mathjax数学公式，这是全局配置，但文章仍然不会都开启mathjax渲染，
+# 考虑到mathjax加载比较耗时，你还需要在需要渲染的文章的Front-matter中再加上`mathjax: true`才行.
+mathjax:
+  enable: false
+  cdn: https://cdn.bootcss.com/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML
+
+# Post word count, reading duration, site total word count.
+# Before you activate, please confirm that you have installed the hexo-wordcount plugin,
+# install the plugin command: `npm i --save hexo-wordcount`.
+# 文章字数统计、阅读时长、总字数统计等
+# 文章信息--若要开启文章字数统计，需要安装 hexo-wordcount 插件，安装命令: `npm i --save hexo-wordcount`
+postInfo:
+  date: true # 发布日期
+  update: false # 更新日期
+  wordCount: true # 文章字数统计
+  totalCount: true # 站点总文章字数
+  min2read: true # 文章阅读时长
+  readCount: true # 文章阅读次数
+
+# Whether to activate the 'love' effect of clicking on the page.
+# 是否激活点击页面的'爱心'效果，默认激活.
+clicklove:
+  enable: true
+
+# profile in about page, including avatars, career, and personal introductions.
+# 在”关于”页面中配置个人信息，包括头像、职业和个人介绍.
+profile:
+  avatar: /medias/avatar.png
+  career: "𝘾𝙩𝙧𝙡+𝘾、𝘾𝙩𝙧𝙡+𝙑 程序员"
+  introduction: "本人擅长𝘼𝙞、𝙁𝙬、𝙁𝙡、𝘽𝙧、𝘼𝙚、𝙋𝙧、𝙄𝙙、𝙋𝙨等软件的安装与卸载，精通𝘾𝙎𝙎、𝙅𝙖𝙫𝙖𝙎𝙘𝙧𝙞𝙥𝙩、𝙋𝙃𝙋、𝘼𝙎𝙋、𝘾、𝘾++、𝘾#、𝙅𝙖𝙫𝙖、𝙍𝙪𝙗𝙮、𝙋𝙚𝙧𝙡、𝙇𝙞𝙨𝙥、𝙥𝙮𝙩𝙝𝙤𝙣、𝙊𝙗𝙟𝙚𝙘𝙩𝙞𝙫𝙚-𝘾、𝘼𝙘𝙩𝙞𝙤𝙣𝙎𝙘𝙧𝙞𝙥𝙩、𝙋𝙖𝙨𝙘𝙖𝙡、𝙨𝙥𝙨𝙨、𝙨𝙖𝙨等单词的拼写，熟悉𝙒𝙞𝙣𝙙𝙤𝙬𝙨、𝙇𝙞𝙣𝙪𝙭、𝙈𝙖𝙘、𝘼𝙣𝙙𝙧𝙤𝙞𝙙、𝙄𝙊𝙎、𝙒𝙋等系统的开关机。"
+
+# config my projects informations in about page.
+# If you don't want to display this `My Projects` content, you can deactivate or delete this configuration.
+# 在“关于”页面配置"我的项目"信息，如果你不需要这些信息则可以将其设置为不激活或者将其删除.
+myProjects:
+  enable: false
+  data:
+    hexo-theme-matery:
+      icon: fas fa-file-alt
+      iconBackground: "linear-gradient(to bottom right, #66BB6A 0%, #81C784 100%)"
+      url: http://github.com/meowv/
+      desc: This is a Hexo blog theme with 'Material Design' and responsive design.
+
+# config my skills informations in about page.
+# If you don't want to display this `My Skills` content, you can deactivate or delete this configuration.
+# 在“关于”页面配置"我的技能"信息，如果你不需要这些信息则可以将其设置为不激活或者将其删除.
+mySkills:
+  enable: false
+  data:
+    C#:
+      background: "linear-gradient(to right, #FF0066 0%, #FF00CC 100%)"
+      percent: 99%
+
+# config gallery of my photos in about page.
+# If you don't want to display this `Gallery` content, you can deactivate or delete this configuration.
+# 在“关于”页面配置"我的相册"图片，如果你不需要这些信息则可以将其设置为不激活或者将其删除.
+myGallery:
+  enable: false
+  data:
+    - /medias/featureimages/0.jpg
+    - /medias/featureimages/1.jpg
+    - /medias/featureimages/2.jpg
+
+# Whether to display post-calender in the `archive` page
+# 设置在归档页面中是否显示'文章日历'控件
+postCalendar: true
+
+# 不建议使用gittalk,gitment这样权限过高的oauth app,因为它们能够 读写 授权者 所有的公共仓库 ，也就是说拿到你的授权 Token 的人，可以将你的 GitHub 公共仓库删空（这是github权限分的不够细的锅），如果恶意攻击者想获取使用者的 AccessToken，只需要在代码中加上一个 ajax 请求即可。原贴地址:https://www.v2ex.com/t/535608。建议大家看完。（我没有在用gittalk/gitment的网站上评论过，但根据v2ex网友的提示，如果网站自行修改了 gitalk.js 脚本 或者反代了 github api，就很容易拿到你的 Token ）
+
+# https://github.com/utterance/utterances 是个 GitHub App，它的权限仅限于某个仓库。像 hugo hexo 这种静态页面类型的博客，clientID/clientSecret 泄露是不可避免的。我认为较好的解决方式是像 utteras 这种 GitHubApp，只有一个仓库的读写权限，将破坏降到最小。
+
+# valine和minivaline都是使用的免费的leancloud开发版资源，即使数据丢了leancloud也不用负任何的责任。此外valine的src目录已在1.4.0后停止更新。。。薛定谔的开源。
+
+# 当初多说国内最大都倒了，livere不一定靠谱。
+
+# disqus被墙了。
+
+# 畅言需要备案。
+
+# the Gitalk config，default disabled
+# Gitalk 评论模块的配置，默认为不激活
+gitalk:
+  enable: false
+  owner:
+  repo:
+  oauth:
+    clientId:
+    clientSecret:
+  admin:
+
+# the Gitment config，default disabled
+# Gitment 评论模块的配置，默认为不激活
+gitment:
+  enable: false
+  owner:
+  repo:
+  oauth:
+    clientId:
+    clientSecret:
+
+# disqus config, default disabled
+# Disqus评论模块的配置，默认为不激活
+disqus:
+  enable: false
+  shortname:
+
+# Livere comment configuration, the default is not activated
+# Livere 来必力评论模块的配置，默认为不激活
+livere:
+  enable: false
+  uid:
+
+# The configuration of the Valine comment module is not activated by default.
+# To use it, activate the configuration item and set appId and appKey.
+# Valine 评论模块的配置，默认为不激活，如要使用，就请激活该配置项，并设置 appId 和 appKey.
+valine:
+  enable: true
+  appId: nI6Sc10iJnluXj6HG38RRDmV-gzGzoHsz
+  appKey: E2i3DHMCVG0aaTHKmkYmUbV4
+  notify: false
+  verify: false
+  visitor: true
+  avatar: "mm" # Gravatar style : mm/identicon/monsterid/wavatar/retro/hide
+  pageSize: 10
+  placeholder: "评论一下，又不会怀孕..." # Comment Box placeholder
+  background: /medias/comment_bg.png
+
+# The configuration of the MiniValine comment module is not activated by default.
+# To use it, activate the configuration item and set appId and appKey.
+# MiniValine 评论模块的配置，默认为不激活，如要使用，就请激活该配置项，并设置 appId 和 appKey.
+# See: https://github.com/MiniValine/MiniValine
+minivaline:
+  enable: false
+  appId: zhM0AOiqle17oPoE84CoYw1e-gzGzoHsz # Your leancloud application appid
+  appKey: itmzT1JbXfAjVwMqDhGPzU45 # Your leancloud application appkey
+  mode: DesertsP # DesertsP or xCss
+  placeholder: Write a Comment # Comment box placeholder
+  math: true # Support MathJax.
+  md: true # Support Markdown.
+  enableQQ: false # Enable QQ avatar API.
+  NoRecordIP: false # Do not record commenter IP.
+  visitor: true # Article reading statistics.
+  maxNest: 6 # Sub-comment maximum nesting depth.
+  pageSize: 6 # Pagination size.
+  adminEmailMd5: de8a7aa53d07e6b6bceb45c64027763d # The MD5 of Admin Email to show Admin Flag.[Just Only DesertsP Style mode]
+  tagMeta: # The String Array of Words to show Flag.[Just Only xCss Style mode]
+    - 管理员
+    - 小伙伴
+    - 访客
+  master: # The MD5 String Array of master Email to show master Flag.[Just Only xCss Style mode]
+    - de8a7aa53d07e6b6bceb45c64027763d
+  friends: # The MD5 String Array of friends Email to show friends Flag.[Just Only xCss Style mode]
+    - b5bd5d836c7a0091aa8473e79ed4c25e
+    - adb7d1cd192658a55c0ad22a3309cecf
+    - 3ce1e6c77b4910f1871106cb30dc62b0
+    - cfce8dc43725cc14ffcd9fb4892d5bfc
+  # MiniValine's display language depends on user's browser or system environment
+  # If you want everyone visiting your site to see a uniform language, you can set a force language value
+  # Available values: en  | zh-CN | (and many more)
+  # More i18n info: https://github.com/MiniValine/minivaline-i18n
+  lang:
+  # Expression Url.
+  # https://github.com/MiniValine/MiniValine/blob/master/.github/FAQ.md#how-to-customize-emoticons
+  emoticonUrl:
+    - https://cdn.jsdelivr.net/npm/alus@latest
+    - https://cdn.jsdelivr.net/gh/MiniValine/qq@latest
+    - https://cdn.jsdelivr.net/gh/MiniValine/Bilibilis@latest
+    - https://cdn.jsdelivr.net/gh/MiniValine/tieba@latest
+    - https://cdn.jsdelivr.net/gh/MiniValine/twemoji@latest
+    - https://cdn.jsdelivr.net/gh/MiniValine/weibo@latest
+
+changyan:
+  enable: false
+  appId:
+  conf:
+
+# Whether to display fork me on github icon and link, default true, You can change it to your repo address
+# 配置是否在 header 中显示 fork me on github 的图标，默认为true，你可以修改为你的仓库地址.
+githubLink:
+  enable: false
+  url: https://github.com/meowv
+  title: Fork Me
+
+# The password verification feature of read post. To use this feature,
+# activate the configuration item and write the 'password' key and Cipher in the post's Front-matter.
+# Note: In order to ensure that the original password will not be leaked to the web page,
+# the password of the article must be encrypted by 'SHA256' so that it will not be cracked.
+# 阅读文章的密码验证功能，如要使用此功能请激活该配置项，并在对应文章的Front-matter中写上'password'的键和加密后的密文即可.
+# 请注意：为了保证密码原文不会被泄露到网页中，文章的密码必须是通过'SHA256'加密的，这样就不会被破解.
+verifyPassword:
+  enable: false
+  promptMessage: 请输入访问本文章的密码
+  errorMessage: 密码错误，将返回主页！
+
+# busuanzi(http://busuanzi.ibruce.info/) website statistics
+# 不蒜子(http://busuanzi.ibruce.info/) 网站统计
+busuanziStatistics:
+  enable: true
+  totalTraffic: true # 总访问量
+  totalNumberOfvisitors: true # 总人次
+
+# Add google analytics configuration
+# 添加 Google Analytics 配置
+googleAnalytics:
+  enable: false
+  id:
+
+# Add baidu analytics configuration
+# 添加 baidu Analytics 配置
+baiduAnalytics:
+  enable: false
+  id:
+
+# 百度搜索资源平台提交链接
+baiduPush: false
+
+# The used front-end library can be replaced with the corresponding CDN address as needed,
+# If the specific version is not specified below, you can use the latest version.
+# 使用到的前端库，可按需替换成对应的CDN地址，如果下面未指定具体的版本号，使用最新的版本即可.
+# 注：jsdelivr可以自动帮你生成.min版的js和css，所以你在设置js及css路径中可以直接写.min.xxx
+libs:
+  css:
+    matery: /css/matery.css
+    mycss: /css/my.css
+    fontAwesome: /libs/awesome/css/all.css # V5.11.1
+    materialize: /libs/materialize/materialize.min.css # 1.0.0
+    aos: /libs/aos/aos.css
+    animate: /libs/animate/animate.min.css # V3.5.1
+    lightgallery: /libs/lightGallery/css/lightgallery.min.css # V1.6.11
+    aplayer: /libs/aplayer/APlayer.min.css
+    dplayer: /libs/dplayer/DPlayer.min.css
+    gitalk: /libs/gitalk/gitalk.css
+    jqcloud: /libs/jqcloud/jqcloud.css
+    tocbot: /libs/tocbot/tocbot.css
+    prism: /libs/prism/prism.css
+  js:
+    matery: /js/matery.js
+    jquery: /libs/jquery/jquery.min.js
+    materialize: /libs/materialize/materialize.min.js # 1.0.0
+    masonry: /libs/masonry/masonry.pkgd.min.js # v4.0.0
+    aos: /libs/aos/aos.js
+    scrollProgress: /libs/scrollprogress/scrollProgress.min.js
+    lightgallery: /libs/lightGallery/js/lightgallery-all.min.js # V1.6.11
+    clicklove: /libs/others/clicklove.js
+    busuanzi: /libs/others/busuanzi.pure.mini.js
+    aplayer: /libs/aplayer/APlayer.min.js
+    dplayer: /libs/dplayer/DPlayer.min.js
+    crypto: /libs/cryptojs/crypto-js.min.js
+    echarts: /libs/echarts/echarts.min.js
+    gitalk: /libs/gitalk/gitalk.min.js
+    valine: /libs/valine/Valine.min.js # 若想保持最新版，请替换为 https://unpkg.com/valine/dist/Valine.min.js  默认为 /libs/valine/Valine.min.js
+    minivaline: /libs/minivaline/MiniValine.js
+    jqcloud: /libs/jqcloud/jqcloud-1.0.4.min.js
+    tocbot: /libs/tocbot/tocbot.min.js
+    canvas_nest: /libs/background/canvas-nest.js
+    ribbon: /libs/background/ribbon.min.js
+    ribbonRefresh: /libs/background/ribbon-refresh.min.js
+    ribbon_dynamic: /libs/background/ribbon-dynamic.js
+    instantpage: /libs/instantpage/instantpage.js
+    typed: /libs/typed/typed.js # V2.0.11
+
+# The post featured images that needs to be displayed when there is no image.
+# 无文章特色图片时需要显示的文章特色图片.
+featureImages:
+  - /medias/featureimages/0.jpg
+  - /medias/featureimages/1.jpg
+  - /medias/featureimages/2.jpg
+  - /medias/featureimages/3.jpg
+  - /medias/featureimages/4.jpg
+  - /medias/featureimages/5.jpg
+  - /medias/featureimages/6.jpg
+  - /medias/featureimages/7.jpg
+  - /medias/featureimages/8.jpg
+  - /medias/featureimages/9.jpg
+  - /medias/featureimages/10.jpg
+  - /medias/featureimages/11.jpg
+  - /medias/featureimages/12.jpg
+  - /medias/featureimages/13.jpg
+  - /medias/featureimages/14.jpg
+  - /medias/featureimages/15.jpg
+  - /medias/featureimages/16.jpg
+  - /medias/featureimages/17.jpg
+  - /medias/featureimages/18.jpg
+  - /medias/featureimages/19.jpg
+  - /medias/featureimages/20.jpg
+  - /medias/featureimages/21.jpg
+  - /medias/featureimages/22.jpg
+  - /medias/featureimages/23.jpg
+
+# default configs that the default policy for every articles/posts
+# default 配置文章的默认转载规则
+
+# you can define reprint policy for a single article in the front-matter of the specific md file using this key: reprintPolicy
+# 您可以使用在文章md文件的 front-matter 中指定 reprintPolicy 来给单个文章配置转载规则
+
+# 可用的转载规则有（available reprint policies are）：
+# 这些转载规则的意义请参考(you can refer to this link FMI)：https://creativecommons.org/choose/?lang=zh
+# cc_by（知识共享署名 4.0 国际许可协议 Creative Commons Attribution-NoDerivatives 4.0 International License）
+# cc_by_nd（知识共享署名-禁止演绎 4.0 国际许可协议 Creative Commons Attribution-NoDerivatives 4.0 International License）
+# cc_by_sa（知识共享署名-相同方式共享 4.0 国际许可协议 Creative Commons Attribution-ShareAlike 4.0 International License）
+# cc_by_nc（知识共享署名-非商业性使用 4.0 国际许可协议 Creative Commons Attribution-NoDerivatives 4.0 International License）
+# cc_by_nc_nd（知识共享署名-非商业性使用-禁止演绎 4.0 国际许可协议 Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License）
+# cc_by_nc_sa（知识共享署名-非商业性使用-相同方式共享 4.0 国际许可协议 Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License）
+
+# cc0（CC0 1.0 通用 (CC0 1.0) 公共领域贡献 CC0 1.0 Universal (CC0 1.0) Public Domain Dedication） https://creativecommons.org/publicdomain/zero/1.0/deed.zh
+
+# noreprint（不允许转载 not allowed to reprint）
+# pay（付费转载 pay for reprinting）
+reprint:
+  enable: true # whether enable reprint section 是否启用“转载规则限定模块”
+  default: cc_by
+
+# DaoVoice online contact
+daovoice:
+  enable: false
+  app_id:
+
+# Tidio online contact
+tidio:
+  enable: false
+  public_key:
+
+# 腾讯兔小巢，见https://txc.qq.com/
+tuxiaochao:
+  enable: true
+  productId: 75616
+
+#背景canvas-nest
+canvas_nest:
+  enable: false
+  color: 0,0,255 # 线条颜色, 默认: '0,0,0' ；三个数字分别为(R,G,B)，注意用,分割
+  pointColor: 0,0,255 # 交点颜色, 默认: '0,0,0' ；三个数字分别为(R,G,B)，注意用,分割
+  opacity: 0.7 # 线条透明度（0~1）, 默认: 0.5
+  zIndex: -1 # 背景的 z-index 属性，css 属性用于控制所在层的位置, 默认: -1.
+  count: 99 # 线条的总数量, 默认: 99
+
+# 背景静止彩带.
+ribbon:
+  enable: true
+  size: 150 # 彩带大小, 默认: 90.
+  alpha: 0.6 # 彩带透明度 (0 ~ 1), 默认: 0.6.
+  zIndex: -1 # 背景的z-index属性，css属性用于控制所在层的位置, 默认: -1.
+  clickChange: true # 设置是否每次点击都更换彩带.
+
+# 背景动态彩带.
+ribbon_dynamic:
+  enable: true
+
+# sharejs文章分享模块.
+# 支持顺序，可选项目为twitter, facebook, google, qq, qzone, wechat, weibo, douban, linkedin.
+sharejs:
+  enable: false
+  sites: twitter,facebook,google,qq,qzone,wechat,weibo,douban,linkedin
+
+# addthis文章分享模块.
+addthis:
+  enable: false
+  pubid: # 前往https://www.addthis.com/获取
+
+# 打字效果副标题.
+# 如果有符号 ‘ ，请在 ’ 前面加上 \
+subtitle:
+  enable: true
+  loop: true # 是否循环
+  showCursor: true # 是否显示光标
+  startDelay: 300 # 开始延迟
+  typeSpeed: 100 # 打字速度
+  backSpeed: 50 # 删除速度
+  sub1: 人生就像愤怒的小鸟，每次失败的时候，总有几只猪在笑。
+  sub2: Life is like an angry bird. Every time you fail, there are a few pigs laughing.
+
+# 手机二级菜单.
+navMenu:
+  mleft: false # 二级侧栏子菜单是否对齐左边
+  bgColor: " " # 二级侧栏子菜单背景颜色,留空即为全局背景色
+
+# 网页预加载.
+instantpage:
+  enable: true
+
+# banner 是否每日切换.
+# 若为 false, 则 banner 默认为 /medias/banner/0.jpg
+banner:
+  enable: true
+
+#ICP备案信息尾部显示
+icp:
+  enable: true
+  url: https://beian.miit.gov.cn # 备案链接
+  text: 鄂ICP备19012232号-1 # 备案信息
+
+# CDN访问加速
+# 第一次使用本功能，一定要先配置url，再`hexo cl && hexo g && hexo d`部署到GitHub的仓库，注意！必须是GitHub的仓库！
+# 如果必须要使用国内的coding或者gitee，可以采用双部署，同时将网站部署到两个仓库（其中一个必须是GitHub的仓库）
+# URL配置规则（例子如下）： https://cdn.jsdelivr.net/gh/你的GitHub用户名/你的仓库名
+# 如果想关闭此功能，将 url地址 注释或删除即可！
+#
+# 注：配置了此项，就代表着本地调试的时候，网站依然会去GitHub请求资源（原来的资源），本地调试的时候记得将 此项配置 注释或者删除掉
+# 更多关于访问速度优化，请查看：https://blog.sky03.cn/posts/42790.html
+# 注：jsdelivr可以自动帮你生成.min版的js和css，所以你在上面设置js及css路径中可以直接写.min.xxx
+cdn:
+  url:
+
+# 网站背景图
+background:
+  enable: true
+  url: ""
+
+# 说说 https://artitalk.js.org/
+artitalk:
+  enable: false
+  appId: # xxxxx
+  appKey: # xxxxxx
+
+# 哔哔功能配置
+# 登陆leancloud创建应用。进入应用后，点击创建 Class，将「 Class 名称」命名为 content
+# 点击刚刚创建的content Class，点击添加列并创建名称为content的列，类型为String，注意列注释也要填写（随意填）
+# 记录appid，masterkey，api域名
+# 输入:hexo new page bb
+# hexo就在source文件夹下创建了bb/index.md。
+# 修改index.md的frontmater下的layout为bb：
+# ---
+# title: 黑石说
+# layout: bb
+# ---
+# 里面的文字可以自己随意加，会显示在哔哔的上方。
+# 关注公众号 "黑石哔哔"，发送: //bindCurrentUser:你的APPID,你的MASTERKEY,你的RESTAPI
+# 可用leancloud国际版，国际版api为 https://appid前八位.api.lncldglobal.com
+bbtime:
+  enable: false
+  appId: # 你的appId
+  appKey: # 你的appKey
+  serverURLs: # https://你的api

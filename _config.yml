@@ -1,0 +1,130 @@
+# Site
+title: 阿星𝑷𝒍𝒖𝒔 # 网站标题
+subtitle: 生命不息，奋斗不止 # 网站副标题
+description: 阿星𝑷𝒍𝒖𝒔的个人博客 # 网站描述
+keywords: 阿星𝑷𝒍𝒖𝒔, 𝙈𝙚𝙤𝙬𝙫, 个人博客 # 网站的关键词
+author: 阿星𝑷𝒍𝒖𝒔 # 作者
+language: zh-CN # 语言
+timezone: "Asia/Shanghai" # 时区
+
+# URL
+url: https://meowv.com # 网址
+root: # 根目录
+permalink: /:title/ # 永久链接
+permalink_defaults: # 永久链接中各部分的默认值
+pretty_urls:
+  trailing_index: true # Set to false to remove trailing 'index.html' from permalinks
+  trailing_html: true # Set to false to remove trailing '.html' from permalinks
+
+# Directory
+source_dir: source # 资源文件夹，这个文件夹用来存放内容。
+public_dir: public # 公共文件夹，这个文件夹用于存放生成的站点文件。
+tag_dir: tags # 标签文件夹
+archive_dir: archives # 归档文件夹
+category_dir: categories # 分类文件夹
+code_dir: downloads/code # Include code 文件夹，source_dir 下的子目录
+i18n_dir: :lang # 国际化（i18n）文件夹
+skip_render: # 跳过指定文件的渲染。匹配到的文件将会被不做改动地复制到 public 目录中。
+
+# Writing
+new_post_name: :title.md # File name of new posts
+default_layout: post # 预设布局
+auto_spacing: true # 在中文和英文之间加入空格
+titlecase: false # 把标题转换为 title case
+external_link: # 在新标签中打开链接
+  enable: true # Open external links in new tab
+  field: site # Apply to the whole site
+  exclude: # 需要排除的域名。
+filename_case: 0 # 把文件名称转换为 (1) 小写或 (2) 大写
+render_drafts: false # 显示草稿
+post_asset_folder: true # 启用 资源文件夹
+relative_link: false # 把链接改为与根目录的相对位址
+future: true # 显示未来的文章
+syntax_highlighter: prismjs # 代码块的设置, 请参考 Highlight.js 进行设置
+highlight:
+  enable: false
+  line_number: true
+  auto_detect: false
+  tab_replace: ""
+  wrap: true
+  hljs: false
+prismjs:
+  enable: true
+  preprocess: true
+  line_number: true
+  tab_replace: ""
+
+# Home page setting
+# path: Root path for your blogs index page. (default = '')
+# per_page: Posts displayed per page. (0 = disable pagination)
+# order_by: Posts order. (Order by date descending by default)
+index_generator:
+  path:
+  per_page: 12
+  order_by: -date
+
+# Category & Tag
+default_category: uncategorized # 默认分类
+category_map: # 分类别名
+tag_map: # 标签别名
+
+# Metadata elements
+## https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meta
+meta_generator: true
+
+# Date / Time format
+## Hexo uses Moment.js to parse and display date
+## You can customize the date format as defined in
+## http://momentjs.com/docs/#/displaying/format/
+date_format: YYYY-MM-DD # 日期格式
+time_format: HH:mm:ss # 时间格式
+## updated_option supports 'mtime', 'date', 'empty'
+updated_option: "mtime"
+
+# Pagination
+## Set per_page to 0 to disable pagination
+per_page: 12 # 每页显示的文章量 (0 = 关闭分页功能)
+pagination_dir: page # 分页目录
+
+# Include / Exclude file(s)
+## include:/exclude: options only apply to the 'source/' folder
+include: []
+exclude: []
+ignore: []
+
+# Extensions
+theme: hexo-theme-matery # 主题名称
+
+# Deployment
+## Docs: https://hexo.io/docs/one-command-deployment
+deploy:
+  type: git
+
+# 搜索
+search:
+  path: search.xml
+  field: post
+
+# 中文链接转拼音
+permalink_pinyin:
+  enable: true
+  separator: "-" # default: '-'
+
+# emoji表情支持
+githubEmojis:
+  enable: true
+  className: github-emoji
+  inject: true
+  styles:
+  customEmojis:
+
+#  RSS 订阅
+feed:
+  type: atom
+  path: atom.xml
+  limit: 20
+  hub:
+  content:
+  content_limit: 140
+  content_limit_delim: " "
+  order_by: -date
