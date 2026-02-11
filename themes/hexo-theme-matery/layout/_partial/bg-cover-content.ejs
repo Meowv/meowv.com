@@ -33,7 +33,7 @@
 
 <% if (theme.banner.enable || theme.background.enable) { %>
 <script>
-    var bannerUrl = "<%- theme.cdn.url %><%- url_for('/medias/banner/') %>" + (Math.floor(Math.random() * 9) + 1) + '.jpg';
+    var bannerUrl = "<%- theme.cdn.url %><%- url_for('/medias/banner/') %>" + (Math.floor(Math.random() * 11) + 1) + '.jpg';
     $('.bg-cover').css('background-image', 'url(' + bannerUrl + ')');
 
     var bgUrl = "<%- theme.cdn.url %><%- url_for('/medias/background/') %>" + (Math.floor(Math.random() * 89) + 1) + '.jpg';
