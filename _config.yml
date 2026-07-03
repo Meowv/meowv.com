@@ -24,7 +24,8 @@ archive_dir: archives # 归档文件夹
 category_dir: categories # 分类文件夹
 code_dir: downloads/code # Include code 文件夹，source_dir 下的子目录
 i18n_dir: :lang # 国际化（i18n）文件夹
-skip_render: # 跳过指定文件的渲染。匹配到的文件将会被不做改动地复制到 public 目录中。
+skip_render:
+  - "games/**/*"
 
 # Writing
 new_post_name: :title.md # File name of new posts

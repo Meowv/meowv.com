@@ -1,0 +1,82 @@
+<%- partial('_partial/bg-cover') %>
+
+<style>
+    .game-play-container {
+        margin-top: -50px;
+        margin-bottom: 30px;
+    }
+    .game-play-container .tag-title {
+        margin-bottom: 10px;
+        color: #3C4858;
+        font-size: 1.75rem;
+        font-weight: 400;
+    }
+    .game-iframe-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: #1a1a2e;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .game-iframe-wrapper iframe {
+        border: none;
+        width: 100%;
+        height: 800px;
+        max-width: 100%;
+    }
+    .game-back-arrow {
+        display: inline-block;
+        color: #3C4858;
+        font-size: 1.2rem;
+        text-decoration: none;
+        transition: color 0.3s;
+        margin-bottom: 10px;
+    }
+    .game-back-arrow:hover {
+        color: #4facfe;
+        text-decoration: none;
+    }
+
+    @media only screen and (max-width: 601px) {
+        .game-iframe-wrapper iframe {
+            height: 550px;
+        }
+    }
+</style>
+
+<main class="content">
+    <div class="container game-play-container">
+        <div class="card">
+            <div class="card-content">
+                <a href="/game/" class="game-back-arrow">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <div class="tag-title center-align">
+                    <i class="fas fa-gamepad"></i>&nbsp;&nbsp;<%= page.gameName || page.title %>
+                </div>
+
+                <div class="game-iframe-wrapper">
+                    <iframe src="/games/<%= page.gameSlug %>/<%= page.gameEntry || 'index.html' %>"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
+                            sandbox="allow-scripts allow-same-origin">
+                    </iframe>
+                </div>
+            </div>
+        </div>
+
+        <% if (page.content && page.content.length > 0) { %>
+        <div class="card">
+            <div class="card-content">
+                <%- page.content %>
+            </div>
+        </div>
+        <% } %>
+
+        <div class="card">
+            <% if (theme.valine && theme.valine.enable) { %>
+            <%- partial('_partial/valine') %>
+            <% } %>
+        </div>
+    </div>
+</main>

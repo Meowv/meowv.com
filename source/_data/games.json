@@ -1,0 +1,38 @@
+[
+  {
+    "slug": "plonky",
+    "name": "Plonky",
+    "description": "基于物理引擎的趣味解谜闯关游戏",
+    "type": "fullscreen",
+    "emoji": "🧩",
+    "entryFile": "index.html",
+    "colorIndex": 1
+  },
+  {
+    "slug": "xiaoxiaole",
+    "name": "数字消消乐",
+    "description": "合并相同数字，挑战更高分数！",
+    "type": "embedded",
+    "emoji": "🎯",
+    "entryFile": "index.html",
+    "colorIndex": 2
+  },
+  {
+    "slug": "2048",
+    "name": "2048",
+    "description": "经典数字合并游戏，滑动合并相同数字",
+    "type": "embedded",
+    "emoji": "🔢",
+    "entryFile": "index.html",
+    "colorIndex": 3
+  },
+  {
+    "slug": "ztype",
+    "name": "打字练习",
+    "description": "打字消灭敌机，在游戏中提升打字速度！",
+    "type": "fullscreen",
+    "emoji": "⌨️",
+    "entryFile": "index.html",
+    "colorIndex": 4
+  }
+]

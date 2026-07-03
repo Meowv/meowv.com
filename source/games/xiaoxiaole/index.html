@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>数字消消乐 | 阿星𝑷𝒍𝒖𝒔</title>
+    <link rel="icon" type="image/png" href="https://meowv.com/favicon.png" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="game-info">
+        <div class="counter-container">
+          <div class="counter-label">
+            剩余行动点: <span id="clicks-left">5</span>
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-bar" id="clicks-progress-bar"></div>
+          </div>
+        </div>
+        <div class="theme-switch">
+          <label class="switch">
+            <input type="checkbox" id="theme-toggle" />
+            <span class="slider round"></span>
+          </label>
+          <span class="theme-label">暗黑模式</span>
+        </div>
+      </div>
+      <div class="game-board" id="game-board">
+        <!-- 棋盘将由JavaScript动态生成 -->
+      </div>
+      <button id="restart-btn">重新开始</button>
+      <div class="game-rules">
+        <h2>🌟 游戏规则</h2>
+        <p>1.点击方块数字+1，三个或更多相同数字连线即可得分</p>
+        <p>2.开局拥有5个行动点，每次消除可获得1个行动点</p>
+      </div>
+    </div>
+    <script src="script.js"></script>
+  </body>
+</html>

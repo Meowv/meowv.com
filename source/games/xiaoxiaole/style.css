@@ -1,0 +1,765 @@
+/* 定义亮色模式和暗色模式的颜色变量 */
+:root {
+  /* 亮色模式 */
+  --bg-color: #f4f4f4;
+  --container-bg: white;
+  --text-color: #333;
+  --heading-color: #4a4a4a;
+  --counter-color: #555;
+  --button-bg: #4caf50;
+  --button-hover-bg: #388e3c;
+  --button-text: white;
+  --cell-bg: #e0e0e0;
+  --cell-shadow: rgba(0, 0, 0, 0.1);
+  --highlight-color: #ffeb3b;
+}
+
+/* 暗色模式 */
+[data-theme="dark"] {
+  --bg-color: #121212;
+  --container-bg: #1e1e1e;
+  --text-color: #e0e0e0;
+  --heading-color: #f0f0f0;
+  --counter-color: #b0b0b0;
+  --button-bg: #2e7d32;
+  --button-hover-bg: #1b5e20;
+  --button-text: #e0e0e0;
+  --cell-bg: #2a2a2a;
+  --cell-shadow: rgba(0, 0, 0, 0.3);
+  --highlight-color: #ffd600;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Arial", sans-serif;
+  background-color: var(--bg-color);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  color: var(--text-color);
+  overflow: hidden; /* 防止页面滚动 */
+  transition: background-color 0.3s ease;
+}
+
+.container {
+  background-color: var(--container-bg);
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  text-align: center;
+  transition: background-color 0.3s ease;
+  height: 90vh;
+  overflow-y: auto;
+}
+
+h1 {
+  color: var(--heading-color);
+  margin-bottom: 20px;
+  transition: color 0.3s ease;
+}
+
+.game-info {
+  margin-bottom: 20px;
+  font-size: 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.counter {
+  font-weight: bold;
+  color: var(--counter-color);
+  transition: color 0.3s ease;
+}
+
+#clicks-left {
+  display: inline-block;
+}
+
+/* 顶部容器 */
+.top-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 15px;
+  width: 100%;
+}
+
+/* 积分和记录显示 */
+.score-display {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-top: 10px;
+  color: var(--text-color);
+  text-align: right;
+}
+
+.records-display {
+  font-size: 0.9rem;
+  opacity: 0.7;
+  text-align: left;
+  color: var(--counter-color);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 0;
+}
+
+/* 主题切换开关样式 */
+.theme-switch {
+  display: flex;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.theme-label {
+  margin-left: 10px;
+  font-size: 0.9rem;
+  color: var(--counter-color);
+  opacity: 0.7;
+  transition: color 0.3s ease;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: 0.4s;
+}
+
+input:checked + .slider {
+  background-color: var(--button-bg);
+}
+
+input:checked + .slider:before {
+  transform: translateX(26px);
+}
+
+.slider.round {
+  border-radius: 24px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+.game-board {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(5, 1fr);
+  gap: 10px;
+  width: 350px;
+  height: 350px;
+  margin: 0 auto 20px;
+  position: relative; /* 为绝对定位动画元素添加相对定位 */
+}
+
+.cell {
+  background-color: var(--cell-bg);
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.05s ease-out, background-color 0.15s ease-out;
+  box-shadow: 0 2px 5px var(--cell-shadow);
+  will-change: transform;
+}
+
+.cell:hover {
+  transform: scale(1.05);
+}
+
+.cell.empty {
+  background-color: transparent;
+  box-shadow: none;
+}
+
+.falling {
+  animation: fall 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform;
+}
+
+.new-cell {
+  /* 移除动画效果，改为平滑过渡 */
+  transition: opacity 0.25s ease-in;
+  opacity: 1;
+}
+
+.highlight {
+  animation: pulse 0.15s ease-in-out;
+  background-color: var(--highlight-color);
+  will-change: transform;
+}
+
+.pulse {
+  animation: pulseOut 0.15s ease-in-out;
+  will-change: transform, opacity;
+}
+
+@keyframes fall {
+  0% {
+    transform: translateY(-60px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* 修改appear动画为空，但保留以避免引用错误 */
+@keyframes appear {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+@keyframes pulseOut {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+
+button#restart-btn {
+  padding: 10px 20px;
+  background-color: var(--button-bg);
+  color: var(--button-text);
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+button#restart-btn:hover {
+  background-color: var(--button-hover-bg);
+}
+
+/* 亮色模式下1-20的数字颜色 */
+[data-theme="light"] .cell[data-value="1"] {
+  background-color: #a2d2ff;
+}
+[data-theme="light"] .cell[data-value="2"] {
+  background-color: #bde0fe;
+}
+[data-theme="light"] .cell[data-value="3"] {
+  background-color: #ffafcc;
+}
+[data-theme="light"] .cell[data-value="4"] {
+  background-color: #ffc8dd;
+}
+[data-theme="light"] .cell[data-value="5"] {
+  background-color: #cdb4db;
+}
+[data-theme="light"] .cell[data-value="6"] {
+  background-color: #98f5e1;
+}
+[data-theme="light"] .cell[data-value="7"] {
+  background-color: #8eecf5;
+}
+[data-theme="light"] .cell[data-value="8"] {
+  background-color: #90dbf4;
+}
+[data-theme="light"] .cell[data-value="9"] {
+  background-color: #f08080;
+}
+[data-theme="light"] .cell[data-value="10"] {
+  background-color: #f4a261;
+}
+[data-theme="light"] .cell[data-value="11"] {
+  background-color: #e9c46a;
+}
+[data-theme="light"] .cell[data-value="12"] {
+  background-color: #2a9d8f;
+}
+[data-theme="light"] .cell[data-value="13"] {
+  background-color: #e76f51;
+}
+[data-theme="light"] .cell[data-value="14"] {
+  background-color: #606c38;
+}
+[data-theme="light"] .cell[data-value="15"] {
+  background-color: #dda15e;
+}
+[data-theme="light"] .cell[data-value="16"] {
+  background-color: #bc6c25;
+}
+[data-theme="light"] .cell[data-value="17"] {
+  background-color: #8338ec;
+}
+[data-theme="light"] .cell[data-value="18"] {
+  background-color: #3a86ff;
+}
+[data-theme="light"] .cell[data-value="19"] {
+  background-color: #fb8500;
+}
+[data-theme="light"] .cell[data-value="20"] {
+  background-color: #ef233c;
+}
+
+/* 暗色模式下1-20的数字颜色 */
+[data-theme="dark"] .cell[data-value="1"] {
+  background-color: #01295f;
+  color: #fff;
+}
+[data-theme="dark"] .cell[data-value="2"] {
+  background-color: #013a8b;
+  color: #fff;
+}
+[data-theme="dark"] .cell[data-value="3"] {
+  background-color: #5f0140;
+  color: #fff;
+}
+[data-theme="dark"] .cell[data-value="4"] {
+  background-color: #7a0158;
+  color: #fff;
+}
+[data-theme="dark"] .cell[data-value="5"] {
+  background-color: #4a0155;
+  color: #fff;
+}
+[data-theme="dark"] .cell[data-value="6"] {
+  background-color: #014d40;
+  color: #fff;
+}
+[data-theme="dark"] .cell[data-value="7"] {
+  background-color: #016064;
+  color: #fff;
+}
+[data-theme="dark"] .cell[data-value="8"] {
+  background-color: #014f86;
+  color: #fff;
+}
+[data-theme="dark"] .cell[data-value="9"] {
+  background-color: #6a040f;
+  color: #fff;
+}
+[data-theme="dark"] .cell[data-value="10"] {
+  background-color: #9c2c13;
+  color: #fff;
+}
+[data-theme="dark"] .cell[data-value="11"] {
+  background-color: #9a6a15;
+  color: #fff;
+}
+[data-theme="dark"] .cell[data-value="12"] {
+  background-color: #005f56;
+  color: #fff;
+}
+[data-theme="dark"] .cell[data-value="13"] {
+  background-color: #9c3311;
+  color: #fff;
+}
+[data-theme="dark"] .cell[data-value="14"] {
+  background-color: #283809;
+  color: #fff;
+}
+[data-theme="dark"] .cell[data-value="15"] {
+  background-color: #935a15;
+  color: #fff;
+}
+[data-theme="dark"] .cell[data-value="16"] {
+  background-color: #773e15;
+  color: #fff;
+}
+[data-theme="dark"] .cell[data-value="17"] {
+  background-color: #4715a7;
+  color: #fff;
+}
+[data-theme="dark"] .cell[data-value="18"] {
+  background-color: #0750c7;
+  color: #fff;
+}
+[data-theme="dark"] .cell[data-value="19"] {
+  background-color: #a94900;
+  color: #fff;
+}
+[data-theme="dark"] .cell[data-value="20"] {
+  background-color: #a31630;
+  color: #fff;
+}
+
+/* 格子消失的动画 */
+@keyframes vanish {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+
+.vanish {
+  animation: vanish 0.15s ease-in-out;
+}
+
+/* 移动到目标位置的动画 */
+.cell-clone {
+  position: absolute;
+  z-index: 100;
+  transition-property: top, left;
+  transition-timing-function: ease-in-out;
+  transition-duration: 0.1s;
+  pointer-events: none;
+}
+
+/* 下落后出现的新连通组高亮效果 - 更微妙的版本 */
+.new-connected {
+  animation: newConnected 0.4s ease-in-out;
+  box-shadow: 0 0 4px rgba(255, 235, 59, 0.4);
+  z-index: 5;
+}
+
+@keyframes newConnected {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 2px rgba(255, 235, 59, 0.3);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 6px rgba(255, 235, 59, 0.5);
+  }
+}
+
+/* 计数器和进度条样式 */
+.counter-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+}
+
+.counter-label {
+  font-weight: bold;
+  color: var(--counter-color);
+  transition: color 0.3s ease;
+}
+
+.progress-bar-container {
+  width: 120px;
+  height: 10px;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  width: 100%; /* 初始宽度，将由JavaScript控制 */
+  background-color: var(--button-bg);
+  border-radius: 5px;
+  transition: width 0.3s ease;
+}
+
+/* 积分弹出动画 */
+.score-popup {
+  position: absolute;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #4caf50;
+  z-index: 200;
+  pointer-events: none;
+  opacity: 1;
+  transition: all 1s ease-out;
+}
+
+.score-popup.fade-up {
+  transform: translateY(-50px);
+  opacity: 0;
+}
+
+/* 新记录提示 */
+.record-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.5);
+  background-color: rgba(76, 175, 80, 0.9);
+  color: white;
+  padding: 15px 25px;
+  border-radius: 8px;
+  font-size: 1.4rem;
+  font-weight: bold;
+  z-index: 300;
+  opacity: 0;
+  transition: all 0.3s ease-out;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.record-popup.show {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+}
+
+/* 在暗黑模式下调整显示 */
+[data-theme="dark"] .score-popup {
+  color: #81c784;
+}
+
+[data-theme="dark"] .record-popup {
+  background-color: rgba(46, 125, 50, 0.9);
+}
+
+/* 游戏结束弹框 */
+.game-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.game-modal.show {
+  opacity: 1;
+}
+
+.game-modal::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 300px;
+  height: 300px;
+  background-color: var(--container-bg);
+  border-radius: 10px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+  z-index: -1;
+  padding: 20px;
+}
+
+.game-modal h2 {
+  color: var(--heading-color);
+  margin-bottom: 20px;
+  text-align: center;
+  font-size: 1.8rem;
+}
+
+.game-rules {
+  padding: 0 20px;
+  background-color: var(--container-bg);
+  width: 20rem;
+}
+
+.game-rules h2 {
+  font-size: 1rem;
+  color: var(--button-bg);
+  margin: 15px 0;
+  border-bottom: 2px solid var(--button-bg);
+}
+
+.game-rules p {
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.game-results {
+  margin: 20px 0;
+  text-align: center;
+}
+
+.game-results p {
+  margin: 10px 0;
+  font-size: 1.2rem;
+  color: var(--text-color);
+}
+
+.highlight-text {
+  font-weight: bold;
+  color: var(--button-bg);
+}
+
+.congrats {
+  text-align: center;
+  color: #ff9800;
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 20px 0;
+  animation: pulse 1s infinite alternate;
+}
+
+.record-text {
+  font-weight: bold;
+  color: #ff9800;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: center;
+  margin-top: 25px;
+}
+
+.modal-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin: 0 10px;
+}
+
+.primary-btn {
+  background-color: var(--button-bg);
+  color: white;
+}
+
+.primary-btn:hover {
+  background-color: var(--button-hover-bg);
+  transform: scale(1.05);
+}
+
+[data-theme="dark"] .congrats {
+  color: #ffb74d;
+}
+
+[data-theme="dark"] .record-text {
+  color: #ffb74d;
+}
+
+/* 为游戏结束弹框添加的媒体查询，优化在小屏幕上的显示 */
+@media (max-width: 480px) {
+  .container {
+    height: 100vh;
+    overflow-y: hidden;
+  }
+}
+.game-modal::before {
+  /* width: 90%; */
+  height: auto;
+  aspect-ratio: 1/1.2;
+}
+
+.game-modal h2 {
+  font-size: 1.5rem;
+}
+
+.game-results p {
+  font-size: 1rem;
+}
+
+.congrats {
+  font-size: 1.2rem;
+}
+
+/* 确认弹框的特殊样式 */
+.modal-message {
+  text-align: center;
+  margin: 20px 0;
+  color: var(--text-color);
+  font-size: 1.1rem;
+}
+
+#confirm-modal::before {
+  width: 520px;
+  height: 180px;
+}
+#language-select {
+  appearance: none; /* 去掉原生箭头 */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  background-color: #ffffff;
+  border: 1px solid #ccc;
+  padding: 10px 40px 10px 15px;
+  font-size: 16px;
+  border-radius: 8px;
+  color: #333;
+  background-image: url("data:image/svg+xml;utf8,<svg fill='gray' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+#language-select:focus {
+  border-color: #7aa0ff;
+  box-shadow: 0 0 0 3px rgba(122, 160, 255, 0.3);
+  outline: none;
+}
+
+/* 其他按钮的样式 */
+.modal-btn:not(.primary-btn) {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.modal-btn:not(.primary-btn):hover {
+  background-color: #d0d0d0;
+  transform: scale(1.05);
+}
+
+[data-theme="dark"] .modal-btn:not(.primary-btn) {
+  background-color: #424242;
+  color: #e0e0e0;
+}
+
+[data-theme="dark"] .modal-btn:not(.primary-btn):hover {
+  background-color: #535353;
+}

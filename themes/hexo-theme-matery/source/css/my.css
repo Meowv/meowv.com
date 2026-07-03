@@ -1,1 +1,22 @@
-/* Here is your custom css styles. */
+/* Game section responsive styles */
+@media only screen and (max-width: 601px) {
+    .game-card {
+        min-height: 110px;
+        padding: 12px 15px;
+    }
+    .game-card .game-emoji {
+        font-size: 2rem;
+    }
+    .game-card .game-name {
+        font-size: 1rem;
+    }
+    .game-card .game-desc {
+        font-size: 0.8rem;
+    }
+    .game-iframe-wrapper {
+        min-height: 400px;
+    }
+    .game-iframe-wrapper iframe {
+        min-height: 450px;
+    }
+}

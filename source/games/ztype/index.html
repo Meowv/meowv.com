@@ -1,0 +1,103 @@
+<!doctype html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>打字练习 | 阿星𝑷𝒍𝒖𝒔</title>
+    <link rel="icon" type="image/png" href="https://meowv.com/favicon.png" />
+
+    <style type="text/css">
+      html,
+      body {
+        background-color: #25272b;
+        background-image: url(phobos.png);
+        background-position: 54px 105px;
+        background-attachment: fixed;
+        background-repeat: no-repeat;
+        color: #fff;
+        font-family: helvetica, arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        font-size: 12pt;
+      }
+      a {
+        color: #06c;
+      }
+      img {
+        border: 0;
+      }
+
+      #canvas {
+        border: 1pxsolid #555;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 360px;
+        height: 640px;
+        background-color: #000;
+      }
+      #game {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        margin: auto;
+        width: 360px;
+        height: 640px;
+      }
+      #nocanvas {
+        width: 360px;
+        margin: 150px auto;
+      }
+
+      #ad {
+        width: 160px;
+        height: 600px;
+        position: absolute;
+        left: 32px;
+        top: 0;
+        bottom: 0;
+        margin: auto;
+      }
+      #overlay {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        background-color: #222;
+        background-color: rgba(0, 0, 0, 0.8);
+        text-align: center;
+      }
+    </style>
+
+    <script type="text/javascript" src="ztype.js"></script>
+    <script type="text/javascript">
+      window.initGame = function () {
+        document.getElementById("ad").style.display = "block";
+        var overlay = document.getElementById("overlay");
+        if (overlay) {
+          overlay.style.display = "none";
+        }
+        ig.module("start")
+          .requires("game.main")
+          .defines(function () {
+            ZType.startGame();
+          });
+        return false;
+      };
+    </script>
+  </head>
+  <body>
+    <div id="ad" style="display: block"></div>
+
+    <div id="game">
+      <canvas style="cursor: auto" height="640" width="360" id="canvas">
+        <div id="nocanvas">想玩这款游戏？你需要有个不错的浏览器</div>
+      </canvas>
+    </div>
+    <script type="text/javascript">
+      window.initGame();
+    </script>
+  </body>
+</html>

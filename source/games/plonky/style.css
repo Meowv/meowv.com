@@ -1,0 +1,115 @@
+html, body {
+	padding: 0;
+	margin: 0;
+	overflow: hidden;
+	height: 100%;
+}
+
+body {
+	background: #1dd7d7;
+	color: white;
+}
+
+input[type="file"] {
+	color: black;
+}
+
+html, body, canvas {
+	touch-action-delay: none;
+	touch-action: none;
+}
+
+canvas, .c3htmlwrap {
+	position: absolute;
+}
+
+.c3htmlwrap {
+	contain: strict;
+}
+
+.c3overlay {
+	pointer-events: none;
+}
+
+.c3htmlwrap[interactive] > * {
+	pointer-events: auto;
+}
+
+/* HACK - work around elements being selectable only in iOS WKWebView for some reason */
+html[ioswebview] .c3htmlwrap,
+html[ioswebview] canvas {
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+html[ioswebview] .c3htmlwrap > * {
+	-webkit-user-select: auto;
+	user-select: auto;
+}
+
+#notSupportedWrap {
+	margin: 2em auto 1em auto;
+	width: 75%;
+	max-width: 45em;
+	border: 2px solid #aaa;
+	border-radius: 1em;
+	padding: 2em;
+	background-color: #f0f0f0;
+	font-family: "Segoe UI", Frutiger, "Frutiger Linotype", "Dejavu Sans", "Helvetica Neue", Arial, sans-serif;
+	color: black;
+}
+
+#notSupportedTitle {
+	font-size: 1.8em;
+}
+
+.notSupportedMessage {
+	font-size: 1.2em;
+}
+
+.notSupportedMessage em {
+	color: #888;
+}
+
+/* bbcode styles */
+.bbCodeH1 {
+	font-size: 2em;
+	font-weight: bold;
+}
+
+.bbCodeH2 {
+	font-size: 1.5em;
+	font-weight: bold;
+}
+
+.bbCodeH3 {
+	font-size: 1.25em;
+	font-weight: bold;
+}
+
+.bbCodeH4 {
+	font-size: 1.1em;
+	font-weight: bold;
+}
+
+.bbCodeItem::before {
+	content: " • ";
+}
+
+/* For text icons converted to HTML: size the height to the line height
+   preserving the aspect ratio. Also add position: relative as that allows
+   just adding a 'top' style for the iconoffsety style. */
+.c3-text-icon {
+	height: 1em;
+	width: auto;
+	position: relative;
+}
+
+/* screen reader text */
+.c3-screen-reader-text {
+	position: absolute;
+	width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(1px, 1px, 1px, 1px);
+}

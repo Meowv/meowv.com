@@ -22,6 +22,9 @@ menu:
   友情链接:
     url: /friends
     icon: fas fa-address-book
+  游戏:
+    url: /game
+    icon: fas fa-gamepad
   # 二级菜单写法如下
   #Medias:
   #  icon: fas fa-list

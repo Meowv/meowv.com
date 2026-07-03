@@ -1,0 +1,159 @@
+<%- partial('_partial/bg-cover') %>
+
+<style>
+    .game-container {
+        margin-top: -50px;
+        margin-bottom: 30px;
+    }
+    .game-container .tag-title {
+        margin-bottom: 10px;
+        color: #3C4858;
+        font-size: 1.75rem;
+        font-weight: 400;
+    }
+    .game-row {
+        margin-bottom: 0;
+    }
+    .game-col {
+        padding: 0.5rem;
+        margin-bottom: 0.75rem;
+    }
+    .game-col .game-link {
+        display: block;
+        width: 100%;
+        text-decoration: none;
+        color: inherit;
+    }
+    .game-col .game-link:hover {
+        text-decoration: none;
+    }
+    .game-card {
+        padding: 16px;
+        border-radius: 10px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        overflow: hidden;
+        position: relative;
+        height: 110px;
+        color: #fff !important;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        box-sizing: border-box;
+    }
+    .game-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.25) !important;
+    }
+    .game-card .game-emoji {
+        font-size: 1.6rem;
+        margin-bottom: 4px;
+        display: block;
+        line-height: 1.2;
+    }
+    .game-card .game-name {
+        font-size: 0.95rem;
+        font-weight: bold;
+        margin-bottom: 2px;
+    }
+    .game-card .game-desc {
+        color: rgba(255,255,255,0.85);
+        font-size: 0.7rem;
+        line-height: 1.3;
+    }
+    .game-card .game-badge {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        font-size: 0.6rem;
+        padding: 2px 6px;
+        border-radius: 8px;
+        background: rgba(255,255,255,0.3);
+        color: #fff;
+        backdrop-filter: blur(4px);
+    }
+    .game-card a {
+        text-decoration: none;
+        color: inherit;
+    }
+    .game-card a:hover {
+        text-decoration: none;
+    }
+
+    .game-card1 { background-image: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .game-card2 { background-image: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); }
+    .game-card3 { background-image: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+    .game-card4 { background-image: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+
+    @media only screen and (max-width: 601px) {
+        .game-card {
+            height: 100px;
+            padding: 10px 12px;
+        }
+        .game-card .game-emoji {
+            font-size: 1.4rem;
+        }
+        .game-card .game-name {
+            font-size: 0.85rem;
+        }
+        .game-card .game-desc {
+            font-size: 0.65rem;
+        }
+    }
+</style>
+
+<main class="content">
+    <div class="container game-container">
+        <div class="card">
+            <div class="card-content">
+                <div class="tag-title center-align">
+                    <i class="fas fa-gamepad"></i>&nbsp;&nbsp;<%= __('games') %>
+                </div>
+                <article>
+                    <% if (site.data && site.data.games) { %>
+                    <% var games = site.data.games; %>
+                    <div class="row game-row">
+                        <% for (var i = 0, len = games.length; i < len; i++) { %>
+                        <% var game = games[i]; %>
+                        <div class="col s6 m6 l3 game-col" data-aos="zoom-in-up">
+                            <% if (game.type === 'fullscreen') { %>
+                            <a href="/games/<%= game.slug %>/<%= game.entryFile %>" target="_blank" class="game-link">
+                                <div class="card game-card game-card<%= game.colorIndex %>">
+                                    <span class="game-emoji"><%= game.emoji %></span>
+                                    <div class="game-name"><%= game.name %></div>
+                                    <div class="game-desc"><%= game.description %></div>
+                                    <span class="game-badge">全屏</span>
+                                </div>
+                            </a>
+                            <% } else { %>
+                            <a href="/game/<%= game.slug %>/" class="game-link">
+                                <div class="card game-card game-card<%= game.colorIndex %>">
+                                    <span class="game-emoji"><%= game.emoji %></span>
+                                    <div class="game-name"><%= game.name %></div>
+                                    <div class="game-desc"><%= game.description %></div>
+                                </div>
+                            </a>
+                            <% } %>
+                        </div>
+                        <% } %>
+                    </div>
+                    <% } %>
+                </article>
+            </div>
+        </div>
+
+        <% if (page.content && page.content.length > 0) { %>
+        <div class="card">
+            <div class="card-content">
+                <%- page.content %>
+            </div>
+        </div>
+        <% } %>
+
+        <div class="card">
+            <% if (theme.valine && theme.valine.enable) { %>
+            <%- partial('_partial/valine') %>
+            <% } %>
+        </div>
+    </div>
+</main>
