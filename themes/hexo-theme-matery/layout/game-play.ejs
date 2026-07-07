@@ -1,14 +1,16 @@
-<%- partial('_partial/bg-cover') %>
-
 <style>
     .game-play-container {
-        margin-top: -50px;
+        margin-top: 20px;
         margin-bottom: 30px;
     }
-    .game-play-container .tag-title {
+    .game-play-header {
+        display: flex;
+        align-items: center;
         margin-bottom: 10px;
+    }
+    .game-play-container .game-play-title {
         color: #3C4858;
-        font-size: 1.75rem;
+        font-size: 1.4rem;
         font-weight: 400;
     }
     .game-iframe-wrapper {
@@ -24,14 +26,15 @@
         width: 100%;
         height: 800px;
         max-width: 100%;
+        overflow: hidden;
     }
     .game-back-arrow {
-        display: inline-block;
         color: #3C4858;
         font-size: 1.2rem;
         text-decoration: none;
         transition: color 0.3s;
-        margin-bottom: 10px;
+        margin-right: 8px;
+        line-height: 1;
     }
     .game-back-arrow:hover {
         color: #4facfe;
@@ -43,23 +46,28 @@
             height: 550px;
         }
     }
+
+    header .nav-transparent {
+        background-image: linear-gradient(to right, #5a9600 0%, #4cbf30 50%, #0A3E1E 100%) !important;
+    }
 </style>
 
 <main class="content">
     <div class="container game-play-container">
         <div class="card">
             <div class="card-content">
-                <a href="/game/" class="game-back-arrow">
-                    <i class="fas fa-arrow-left"></i>
-                </a>
-                <div class="tag-title center-align">
-                    <i class="fas fa-gamepad"></i>&nbsp;&nbsp;<%= page.gameName || page.title %>
+                <div class="game-play-header">
+                    <a href="/game/" class="game-back-arrow">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <span class="game-play-title"><%= page.gameName || page.title %></span>
                 </div>
 
                 <div class="game-iframe-wrapper">
                     <iframe src="/games/<%= page.gameSlug %>/<%= page.gameEntry || 'index.html' %>"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
-                            sandbox="allow-scripts allow-same-origin">
+                            sandbox="allow-scripts allow-same-origin"
+                            scrolling="no">
                     </iframe>
                 </div>
             </div>
