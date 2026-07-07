@@ -6,7 +6,8 @@
     "type": "fullscreen",
     "emoji": "🧩",
     "entryFile": "index.html",
-    "colorIndex": 1
+    "colorIndex": 1,
+    "mobile": true
   },
   {
     "slug": "xiaoxiaole",
@@ -15,7 +16,8 @@
     "type": "embedded",
     "emoji": "🎯",
     "entryFile": "index.html",
-    "colorIndex": 2
+    "colorIndex": 2,
+    "mobile": true
   },
   {
     "slug": "2048",
@@ -24,7 +26,8 @@
     "type": "embedded",
     "emoji": "🔢",
     "entryFile": "index.html",
-    "colorIndex": 3
+    "colorIndex": 3,
+    "mobile": true
   },
   {
     "slug": "ztype",
@@ -33,6 +36,7 @@
     "type": "fullscreen",
     "emoji": "⌨️",
     "entryFile": "index.html",
-    "colorIndex": 4
+    "colorIndex": 4,
+    "mobile": false
   }
 ]

@@ -61,16 +61,21 @@
         font-size: 0.7rem;
         line-height: 1.3;
     }
-    .game-card .game-badge {
+    .game-card .game-badges {
         position: absolute;
-        top: 8px;
-        right: 8px;
+        top: 6px;
+        right: 6px;
+        display: flex;
+        gap: 4px;
+    }
+    .game-card .game-badge {
         font-size: 0.6rem;
         padding: 2px 6px;
         border-radius: 8px;
         background: rgba(255,255,255,0.3);
         color: #fff;
         backdrop-filter: blur(4px);
+        line-height: 1.4;
     }
     .game-card a {
         text-decoration: none;
@@ -122,7 +127,10 @@
                                     <span class="game-emoji"><%= game.emoji %></span>
                                     <div class="game-name"><%= game.name %></div>
                                     <div class="game-desc"><%= game.description %></div>
-                                    <span class="game-badge">全屏</span>
+                                    <div class="game-badges">
+                                        <% if (game.mobile) { %><span class="game-badge">📱</span><% } %>
+                                        <span class="game-badge">↗</span>
+                                    </div>
                                 </div>
                             </a>
                             <% } else { %>
@@ -131,6 +139,9 @@
                                     <span class="game-emoji"><%= game.emoji %></span>
                                     <div class="game-name"><%= game.name %></div>
                                     <div class="game-desc"><%= game.description %></div>
+                                    <div class="game-badges">
+                                        <% if (game.mobile) { %><span class="game-badge">📱</span><% } %>
+                                    </div>
                                 </div>
                             </a>
                             <% } %>
