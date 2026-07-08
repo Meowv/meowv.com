@@ -129,3 +129,20 @@ feed:
   content_limit: 140
   content_limit_delim: " "
   order_by: -date
+
+# HTML/CSS/JS 压缩
+neat_enable: true
+neat_html:
+  enable: true
+  exclude:
+neat_css:
+  enable: true
+  exclude:
+    - "*.min.css"
+neat_js:
+  enable: true
+  mangle: true
+  output:
+  compress:
+  exclude:
+    - "*.min.js"
