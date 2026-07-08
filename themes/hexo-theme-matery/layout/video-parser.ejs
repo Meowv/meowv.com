@@ -212,12 +212,13 @@
   }
   .backup-table .btn-small,
   .video-parser-container .btn-small {
-    margin: 0 2px;
-    font-size: 0.8rem;
-    padding: 0 10px;
-    height: 28px;
-    line-height: 28px;
-    border-radius: 14px;
+    margin: 0 1px;
+    font-size: 0.72rem;
+    padding: 0 6px;
+    height: 24px;
+    line-height: 24px;
+    border-radius: 12px;
+    white-space: nowrap;
   }
   .video-parser-container .bg-color {
     background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%) !important;
@@ -260,8 +261,12 @@
     }
     .backup-table .btn-small,
     .video-parser-container .btn-small {
-      font-size: 0.72rem;
-      padding: 0 8px;
+      font-size: 0.68rem;
+      padding: 0 5px;
+      height: 22px;
+      line-height: 22px;
+      margin: 0 1px;
+      white-space: nowrap;
     }
   }
 </style>
@@ -322,8 +327,8 @@
         </div>
         <div id="videoPlayerArea" style="display: none"></div>
         <div id="videoDownloadBar" class="center-align" style="display:none;margin-bottom:16px;">
-          <a href="javascript:;" class="btn waves-effect waves-light bg-color" id="videoDownloadBtn" style="border-radius:20px;margin:4px;font-size:0.9rem;">
-            <i class="fas fa-download" style="margin-right:6px;"></i>下载视频
+          <a href="javascript:;" class="btn waves-effect waves-light bg-color" id="videoDownloadBtn" style="border-radius:20px;margin:4px;font-size:1rem;display:inline-flex;align-items:center;gap:6px;">
+            <i class="fas fa-download"></i>下载视频
           </a>
         </div>
         <h5 id="videoTitle"></h5>
