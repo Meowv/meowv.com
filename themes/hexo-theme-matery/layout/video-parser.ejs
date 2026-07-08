@@ -1,0 +1,633 @@
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .video-parser-container {
+    margin-top: -50px;
+    margin-bottom: 30px;
+  }
+  .video-parser-container .card {
+    border-radius: 8px;
+  }
+  .input-card .card-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+  }
+  .input-card .card-title i {
+    margin-right: 8px;
+  }
+  .input-wrapper {
+    position: relative;
+    margin-top: 0;
+  }
+  .input-wrapper textarea {
+    min-height: 48px;
+    font-size: 0.95rem;
+    border: 2px solid #e8e8e8;
+    border-radius: 10px;
+    padding: 10px 14px;
+    background: #fafafa;
+    resize: vertical;
+    transition:
+      border-color 0.3s,
+      background 0.3s,
+      box-shadow 0.3s;
+    line-height: 1.6;
+    width: 100%;
+    box-sizing: border-box;
+    outline: none;
+    font-family: inherit;
+  }
+  .input-wrapper textarea:focus {
+    border-color: #4caf50;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.12);
+  }
+  .input-wrapper textarea::placeholder {
+    color: #bbb;
+    font-size: 0.9rem;
+  }
+  #parseBtn {
+    border-radius: 24px;
+    padding: 0 40px;
+    font-size: 1rem;
+    letter-spacing: 4px;
+    background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%);
+    transition:
+      transform 0.2s,
+      box-shadow 0.2s;
+  }
+  #parseBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(46, 125, 50, 0.35);
+  }
+  #parseBtn:disabled {
+    background: #bdbdbd;
+    transform: none;
+    box-shadow: none;
+  }
+  .loading-area {
+    padding: 20px 0;
+  }
+  .loading-area p {
+    color: #888;
+    margin-top: 12px;
+  }
+  #errorCard {
+    border-left: 4px solid #e53935;
+  }
+  #errorCard .card-content {
+    color: #c62828;
+  }
+  #resultCard .card-content {
+    padding: 24px;
+  }
+  .cover-wrapper {
+    position: relative;
+    display: inline-block;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    margin-bottom: 16px;
+    max-width: 100%;
+  }
+  .cover-wrapper img {
+    display: block;
+    max-height: 420px;
+    border-radius: 8px;
+    transition: opacity 0.3s;
+  }
+  .cover-wrapper:hover img {
+    opacity: 0.85;
+  }
+  .cover-wrapper .play-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 64px;
+    height: 64px;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.3s;
+    pointer-events: none;
+  }
+  .cover-wrapper .play-overlay i {
+    color: #fff;
+    font-size: 28px;
+    margin-left: 4px;
+  }
+  .cover-wrapper:hover .play-overlay {
+    background: rgba(0, 0, 0, 0.75);
+  }
+  .video-player-wrapper {
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .video-player-wrapper video,
+  .video-player-wrapper iframe {
+    width: 100%;
+    height: 70vh;
+    max-height: 600px;
+    min-height: 360px;
+    border-radius: 8px;
+    background: #000;
+    border: none;
+  }
+  #videoTitle {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 12px 0 8px;
+    line-height: 1.5;
+  }
+  #videoDesc {
+    color: #888;
+    font-size: 0.9rem;
+    margin-bottom: 12px;
+    line-height: 1.5;
+  }
+  .author-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding: 10px 0;
+    border-top: 1px solid #f0f0f0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .author-row img {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+  .author-row span {
+    font-size: 0.95rem;
+    color: #555;
+  }
+  .section-label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #333;
+    margin: 18px 0 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #eee;
+  }
+  .backup-table {
+    width: 100%;
+    font-size: 0.9rem;
+    table-layout: fixed;
+  }
+  .backup-table th {
+    color: #444;
+    font-weight: 600;
+    text-align: center;
+    background: #f5f5f5;
+    padding: 10px 8px;
+  }
+  .backup-table td {
+    padding: 10px 8px;
+    text-align: center;
+    vertical-align: middle;
+    word-break: break-all;
+  }
+  .backup-table th:first-child,
+  .backup-table td:first-child {
+    width: 16%;
+  }
+  .backup-table th:nth-child(2),
+  .backup-table td:nth-child(2) {
+    width: 20%;
+  }
+  .backup-table th:nth-child(3),
+  .backup-table td:nth-child(3) {
+    width: 20%;
+  }
+  .backup-table th:last-child,
+  .backup-table td:last-child {
+    width: 22%;
+  }
+  .backup-table .btn-small,
+  .video-parser-container .btn-small {
+    margin: 0 2px;
+    font-size: 0.8rem;
+    padding: 0 10px;
+    height: 28px;
+    line-height: 28px;
+    border-radius: 14px;
+  }
+  .video-parser-container .bg-color {
+    background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%) !important;
+  }
+  .btn-outline {
+    background: transparent;
+    color: #2e7d32;
+    border: 1px solid #2e7d32;
+    box-shadow: none;
+  }
+  .btn-outline:hover {
+    background: rgba(46, 125, 50, 0.08);
+  }
+  .empty-hint {
+    color: #bbb;
+    font-size: 0.85rem;
+    text-align: center;
+    padding: 10px 0;
+  }
+  @media only screen and (max-width: 601px) {
+    .video-parser-container {
+      margin-top: -30px;
+    }
+    #parseBtn {
+      width: 100%;
+      padding: 0 20px;
+    }
+    .cover-wrapper img {
+      max-height: 260px;
+    }
+    .video-player-wrapper video,
+    .video-player-wrapper iframe {
+      max-height: 300px;
+    }
+    #resultCard .card-content {
+      padding: 16px;
+    }
+    .backup-table {
+      font-size: 0.8rem;
+    }
+    .backup-table .btn-small,
+    .video-parser-container .btn-small {
+      font-size: 0.72rem;
+      padding: 0 8px;
+    }
+  }
+</style>
+
+<main class="content">
+  <div class="container video-parser-container">
+    <!-- 输入卡片 -->
+    <div class="card input-card">
+      <div class="card-content">
+        <span class="card-title"><i class="fas fa-link"></i>短视频解析</span>
+        <p style="color: #999; font-size: 0.9rem; margin-bottom: 16px">
+          全平台短视频链接解析
+        </p>
+        <div class="input-wrapper">
+          <textarea
+            id="urlInput"
+            placeholder="粘贴分享链接或含链接的文本…"
+          ></textarea>
+        </div>
+        <div class="center-align" style="margin-top: 16px">
+          <button id="parseBtn" class="btn waves-effect waves-light">
+            解 析
+          </button>
+        </div>
+        <div
+          id="loadingArea"
+          class="loading-area center-align"
+          style="display: none"
+        >
+          <div class="preloader-wrapper active">
+            <div class="spinner-layer spinner-green-only">
+              <div class="circle-clipper left"><div class="circle"></div></div>
+              <div class="gap-patch"><div class="circle"></div></div>
+              <div class="circle-clipper right"><div class="circle"></div></div>
+            </div>
+          </div>
+          <p>解析中，请稍候...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 错误卡片 -->
+    <div id="errorCard" class="card" style="display: none">
+      <div class="card-content">
+        <i class="fas fa-exclamation-circle" style="margin-right: 6px"></i>
+        <span id="errorMsg"></span>
+      </div>
+    </div>
+
+    <!-- 结果卡片 -->
+    <div id="resultCard" class="card" style="display: none">
+      <div class="card-content">
+        <div class="center-align" id="coverArea">
+          <div class="cover-wrapper" id="coverWrapper" onclick="playVideo()">
+            <img id="videoCover" class="responsive-img" alt="视频封面" />
+            <div class="play-overlay"><i class="fas fa-play"></i></div>
+          </div>
+        </div>
+        <div id="videoPlayerArea" style="display: none"></div>
+        <div id="videoDownloadBar" class="center-align" style="display:none;margin-bottom:16px;">
+          <a href="javascript:;" class="btn waves-effect waves-light bg-color" id="videoDownloadBtn" style="border-radius:20px;margin:4px;font-size:0.9rem;">
+            <i class="fas fa-download" style="margin-right:6px;"></i>下载视频
+          </a>
+        </div>
+        <h5 id="videoTitle"></h5>
+        <p id="videoDesc"></p>
+        <div class="author-row" id="authorRow" style="display: none">
+          <img id="authorAvatar" alt="头像" />
+          <span id="authorName"></span>
+        </div>
+        <div id="backupSection" style="display: none">
+          <div class="section-label">备用画质</div>
+          <table class="backup-table">
+            <thead>
+              <tr>
+                <th>画质</th>
+                <th>格式</th>
+                <th>码率</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="backupTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  // 从文本中提取 URL
+  function extractUrl(text) {
+    var cleaned = text.trim();
+    var match = cleaned.match(/(https?:\/\/[^\s一-鿿　-〿＀-￯]+)/);
+    if (!match) return null;
+    return match[0].replace(/[，。！？、；：""''（）【】《》…—\s]+$/, "");
+  }
+
+  // 格式化时长
+  function formatDuration(ms) {
+    if (!ms) return "";
+    var s = Math.floor(ms / 1000);
+    var m = Math.floor(s / 60);
+    s = s % 60;
+    return m + ":" + (s < 10 ? "0" : "") + s;
+  }
+
+  // 格式化码率
+  function formatBitrate(bps) {
+    if (!bps) return "";
+    if (bps >= 1000000) return (bps / 1000000).toFixed(1) + " Mbps";
+    if (bps >= 1000) return (bps / 1000).toFixed(0) + " Kbps";
+    return bps + " bps";
+  }
+
+  // 显示错误
+  function showError(msg) {
+    $("#errorMsg").text(msg);
+    $("#errorCard").slideDown(200);
+    $("#resultCard").hide();
+    $("#loadingArea").hide();
+    $("#parseBtn").prop("disabled", false);
+  }
+
+  // 隐藏错误
+  function hideError() {
+    $("#errorCard").hide();
+  }
+
+  var currentVideo = null;
+  var currentPlayingUrl = null;
+
+  // 播放视频
+  function playVideo(url) {
+    var videoUrl = url || (currentVideo && currentVideo.url);
+    if (!videoUrl) return;
+
+    currentPlayingUrl = videoUrl;
+    $("#coverArea").hide();
+
+    var playerHtml =
+      '<div class="video-player-wrapper">' +
+      '<iframe src="' + videoUrl + '" allow="autoplay; fullscreen" scrolling="no" ' +
+      'referrerpolicy="no-referrer" ' +
+      'style="width:100%;border-radius:8px;background:#000;"></iframe>' +
+      '</div>';
+    $("#videoPlayerArea").html(playerHtml).show();
+    $("#videoDownloadBar").show();
+    $("html, body").animate(
+      { scrollTop: $("#videoPlayerArea").offset().top - 80 },
+      300,
+    );
+  }
+
+  // 下载视频
+  function downloadVideo(url) {
+    var videoUrl = url || currentPlayingUrl || (currentVideo && currentVideo.url);
+    if (!videoUrl) return;
+
+    var $btn = $(document.activeElement).closest("a");
+    var isTableBtn = $btn.length && $btn.hasClass("btn-small");
+    var $downloadBarBtn = $("#videoDownloadBtn");
+
+    // 保存原始内容
+    var btnOrig = isTableBtn ? $btn.html() : null;
+    var barOrig = $downloadBarBtn.html();
+
+    if (isTableBtn) {
+      $btn.html('<i class="fas fa-spinner fa-pulse"></i>');
+    }
+    $downloadBarBtn.html('<i class="fas fa-spinner fa-pulse" style="margin-right:6px;"></i>下载中...');
+
+    fetch(videoUrl, { referrerPolicy: "no-referrer" })
+      .then(function (res) {
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return res.blob();
+      })
+      .then(function (blob) {
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = "video_" + Date.now() + ".mp4";
+        a.style.display = "none";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+        if (isTableBtn) $btn.html(btnOrig);
+        $downloadBarBtn.html(barOrig);
+      })
+      .catch(function () {
+        if (isTableBtn) $btn.html(btnOrig);
+        $downloadBarBtn.html(barOrig);
+        alert("下载失败，请重试");
+      });
+  }
+
+  // 渲染结果
+  function renderResult(data) {
+    if (data.cover) {
+      $("#videoCover").attr("src", data.cover);
+      $("#coverWrapper").show();
+      $("#coverArea").show();
+    } else {
+      $("#coverWrapper").hide();
+    }
+    $("#videoPlayerArea").hide().empty();
+    $("#videoDownloadBar").show();
+
+    $("#videoTitle").text(data.title || "暂无标题");
+    var metaParts = [];
+    if (data.duration) metaParts.push(formatDuration(data.duration));
+    $("#videoDesc").text(
+      (metaParts.length ? metaParts.join(" · ") + "  " : "") +
+        (data.desc || "暂无描述"),
+    );
+
+    if (data.author && (data.author.name || data.author.avatar)) {
+      if (data.author.avatar) {
+        $("#authorAvatar").attr("src", data.author.avatar).show();
+      } else {
+        $("#authorAvatar").hide();
+      }
+      $("#authorName").text(data.author.name || "未知作者");
+      $("#authorRow").show();
+    } else {
+      $("#authorRow").hide();
+    }
+
+    var backups = data.video_backup || [];
+    var $tbody = $("#backupTableBody").empty();
+    if (backups.length > 0) {
+      backups.forEach(function (v) {
+        var row =
+          "<tr>" +
+          "<td>" +
+          (v.quality || "未知") +
+          "</td>" +
+          "<td>" +
+          (v.format || "") +
+          " " +
+          (v.codec || "") +
+          "</td>" +
+          "<td>" +
+          formatBitrate(v.bit_rate) +
+          "</td>" +
+          "<td>" +
+          '<a href="javascript:;" class="btn-small waves-effect waves-light bg-color" onclick="playVideo(\'' +
+          v.url +
+          "')\"><i class=\"fas fa-play\"></i></a> " +
+          '<a href="javascript:;" class="btn-small waves-effect waves-light bg-color" onclick="downloadVideo(\'' +
+          v.url +
+          "')\" style=\"margin-left:4px;\"><i class=\"fas fa-download\"></i></a>" +
+          "</td>" +
+          "</tr>";
+        $tbody.append(row);
+      });
+      $("#backupSection").show();
+    } else {
+      $tbody.append(
+        '<tr><td colspan="4" class="empty-hint">暂无备用画质</td></tr>',
+      );
+      $("#backupSection").show();
+    }
+
+    $("#resultCard").slideDown(300);
+    $("html, body").animate(
+      { scrollTop: $("#resultCard").offset().top - 80 },
+      300,
+    );
+  }
+
+  // 解析按钮点击
+  $("#parseBtn").on("click", function () {
+    var rawInput = $("#urlInput").val();
+    hideError();
+    $("#resultCard").hide();
+
+    if (!rawInput || !rawInput.trim()) {
+      showError("请输入分享链接");
+      return;
+    }
+
+    var url = extractUrl(rawInput);
+    if (!url) {
+      showError("未检测到有效链接，请检查输入内容");
+      return;
+    }
+
+    if (url.indexOf("http://") !== 0 && url.indexOf("https://") !== 0) {
+      showError("链接格式不正确，需以 http:// 或 https:// 开头");
+      return;
+    }
+
+    $("#parseBtn").prop("disabled", true);
+    $("#loadingArea").show();
+
+    var controller = new AbortController();
+    var timeoutId = setTimeout(function () {
+      controller.abort();
+    }, 15000);
+
+    fetch(
+      "https://api.bugpk.com/api/short_videos?url=" + encodeURIComponent(url),
+      {
+        signal: controller.signal,
+      },
+    )
+      .then(function (response) {
+        clearTimeout(timeoutId);
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        return response.json();
+      })
+      .then(function (res) {
+        $("#loadingArea").hide();
+        $("#parseBtn").prop("disabled", false);
+
+        if (res.code !== 200) {
+          showError(res.msg || "解析失败，请稍后重试");
+          return;
+        }
+
+        var data = res.data;
+        if (!data || !data.url) {
+          showError("未获取到视频信息，请检查链接是否正确");
+          return;
+        }
+
+        currentVideo = data;
+        currentPlayingUrl = null;
+        renderResult(data);
+      })
+      .catch(function (err) {
+        clearTimeout(timeoutId);
+        $("#loadingArea").hide();
+        $("#parseBtn").prop("disabled", false);
+        if (err.name === "AbortError") {
+          showError("请求超时，请检查网络后重试");
+        } else {
+          showError("网络请求失败，请检查网络连接");
+        }
+      });
+  });
+
+  // 回车键提交
+  $("#urlInput").on("keydown", function (e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      $("#parseBtn").click();
+    }
+  });
+
+  // 粘贴时自动提取 URL
+  $("#urlInput").on("paste", function () {
+    var that = this;
+    setTimeout(function () {
+      var text = $(that).val();
+      var url = extractUrl(text);
+      if (url && url !== text) {
+        $(that).val(url);
+      }
+    }, 50);
+  });
+
+  // 视频下载
+  $("#videoDownloadBtn").on("click", function () {
+    downloadVideo();
+  });
+</script>
