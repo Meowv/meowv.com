@@ -25,6 +25,13 @@ menu:
   游戏:
     url: /game
     icon: fas fa-gamepad
+  工具:
+    icon: fas fa-toolbox
+    children:
+      - name: 短视频解析
+        url: /tools/video-parser
+        icon: fas fa-link
+  # Secondary menu example
   # 二级菜单写法如下
   #Medias:
   #  icon: fas fa-list
