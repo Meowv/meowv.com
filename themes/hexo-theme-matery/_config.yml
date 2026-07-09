@@ -31,6 +31,9 @@ menu:
       - name: 短视频解析
         url: /tools/video-parser
         icon: fas fa-link
+      - name: API Explorer
+        url: /tools/api-explorer
+        icon: fas fa-code
   # Secondary menu example
   # 二级菜单写法如下
   #Medias:

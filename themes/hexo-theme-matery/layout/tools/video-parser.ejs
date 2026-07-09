@@ -72,12 +72,6 @@
     color: #888;
     margin-top: 12px;
   }
-  #errorCard {
-    border-left: 4px solid #e53935;
-  }
-  #errorCard .card-content {
-    color: #c62828;
-  }
   #resultCard .card-content {
     padding: 24px;
   }
@@ -308,14 +302,6 @@
       </div>
     </div>
 
-    <!-- 错误卡片 -->
-    <div id="errorCard" class="card" style="display: none">
-      <div class="card-content">
-        <i class="fas fa-exclamation-circle" style="margin-right: 6px"></i>
-        <span id="errorMsg"></span>
-      </div>
-    </div>
-
     <!-- 结果卡片 -->
     <div id="resultCard" class="card" style="display: none">
       <div class="card-content">
@@ -326,8 +312,24 @@
           </div>
         </div>
         <div id="videoPlayerArea" style="display: none"></div>
-        <div id="videoDownloadBar" class="center-align" style="display:none;margin-bottom:16px;">
-          <a href="javascript:;" class="btn waves-effect waves-light bg-color" id="videoDownloadBtn" style="border-radius:20px;margin:4px;font-size:1rem;display:inline-flex;align-items:center;gap:6px;">
+        <div
+          id="videoDownloadBar"
+          class="center-align"
+          style="display: none; margin-bottom: 16px"
+        >
+          <a
+            href="javascript:;"
+            class="btn waves-effect waves-light bg-color"
+            id="videoDownloadBtn"
+            style="
+              border-radius: 20px;
+              margin: 4px;
+              font-size: 1rem;
+              display: inline-flex;
+              align-items: center;
+              gap: 6px;
+            "
+          >
             <i class="fas fa-download"></i>下载视频
           </a>
         </div>
@@ -384,16 +386,9 @@
 
   // 显示错误
   function showError(msg) {
-    $("#errorMsg").text(msg);
-    $("#errorCard").slideDown(200);
-    $("#resultCard").hide();
+    M.toast({ html: msg, classes: "red", displayLength: 1000 });
     $("#loadingArea").hide();
     $("#parseBtn").prop("disabled", false);
-  }
-
-  // 隐藏错误
-  function hideError() {
-    $("#errorCard").hide();
   }
 
   var currentVideo = null;
@@ -409,10 +404,12 @@
 
     var playerHtml =
       '<div class="video-player-wrapper">' +
-      '<iframe src="' + videoUrl + '" allow="autoplay; fullscreen" scrolling="no" ' +
+      '<iframe src="' +
+      videoUrl +
+      '" allow="autoplay; fullscreen" scrolling="no" ' +
       'referrerpolicy="no-referrer" ' +
       'style="width:100%;border-radius:8px;background:#000;"></iframe>' +
-      '</div>';
+      "</div>";
     $("#videoPlayerArea").html(playerHtml).show();
     $("#videoDownloadBar").show();
     $("html, body").animate(
@@ -423,7 +420,8 @@
 
   // 下载视频
   function downloadVideo(url) {
-    var videoUrl = url || currentPlayingUrl || (currentVideo && currentVideo.url);
+    var videoUrl =
+      url || currentPlayingUrl || (currentVideo && currentVideo.url);
     if (!videoUrl) return;
 
     var $btn = $(document.activeElement).closest("a");
@@ -437,7 +435,9 @@
     if (isTableBtn) {
       $btn.html('<i class="fas fa-spinner fa-pulse"></i>');
     }
-    $downloadBarBtn.html('<i class="fas fa-spinner fa-pulse" style="margin-right:6px;"></i>下载中...');
+    $downloadBarBtn.html(
+      '<i class="fas fa-spinner fa-pulse" style="margin-right:6px;"></i>下载中...',
+    );
 
     fetch(videoUrl, { referrerPolicy: "no-referrer" })
       .then(function (res) {
@@ -453,14 +453,16 @@
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+        setTimeout(function () {
+          URL.revokeObjectURL(url);
+        }, 1000);
         if (isTableBtn) $btn.html(btnOrig);
         $downloadBarBtn.html(barOrig);
       })
       .catch(function () {
         if (isTableBtn) $btn.html(btnOrig);
         $downloadBarBtn.html(barOrig);
-        alert("下载失败，请重试");
+        M.toast({ html: "下载失败，请重试" });
       });
   }
 
@@ -516,10 +518,10 @@
           "<td>" +
           '<a href="javascript:;" class="btn-small waves-effect waves-light bg-color" onclick="playVideo(\'' +
           v.url +
-          "')\"><i class=\"fas fa-play\"></i></a> " +
+          '\')"><i class="fas fa-play"></i></a> ' +
           '<a href="javascript:;" class="btn-small waves-effect waves-light bg-color" onclick="downloadVideo(\'' +
           v.url +
-          "')\" style=\"margin-left:4px;\"><i class=\"fas fa-download\"></i></a>" +
+          '\')" style="margin-left:4px;"><i class="fas fa-download"></i></a>' +
           "</td>" +
           "</tr>";
         $tbody.append(row);
@@ -542,7 +544,6 @@
   // 解析按钮点击
   $("#parseBtn").on("click", function () {
     var rawInput = $("#urlInput").val();
-    hideError();
     $("#resultCard").hide();
 
     if (!rawInput || !rawInput.trim()) {

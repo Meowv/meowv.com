@@ -1,0 +1,1707 @@
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .api-explorer-container {
+    margin-top: -50px;
+    margin-bottom: 30px;
+  }
+  .api-explorer-container .card {
+    border-radius: 8px;
+  }
+
+  /* 请求卡片 */
+  .request-card .card-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+  }
+  .request-card .card-title i {
+    margin-right: 8px;
+  }
+
+  /* URL 行 */
+  .url-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+  .url-row .method-select {
+    width: 110px;
+    flex-shrink: 0;
+  }
+  .url-row .method-select input {
+    border: 2px solid #e8e8e8 !important;
+    border-radius: 8px !important;
+    padding: 0 12px !important;
+    height: 44px !important;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-align: center;
+    box-sizing: border-box;
+    margin: 0 !important;
+    cursor: pointer;
+  }
+  .url-row .method-select input:focus {
+    border-color: #4caf50 !important;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.12) !important;
+  }
+  .url-row .method-select .dropdown-content li > a,
+  .url-row .method-select .dropdown-content li > span {
+    font-weight: 600;
+    text-align: center;
+    font-size: 0.95rem;
+  }
+  .url-row .url-input-wrap {
+    flex: 1;
+    min-width: 280px;
+  }
+  .url-row .url-input-wrap input {
+    border: 2px solid #e8e8e8 !important;
+    border-radius: 8px !important;
+    padding: 0 14px !important;
+    height: 44px !important;
+    font-size: 0.95rem;
+    font-family: "SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", monospace;
+    box-sizing: border-box;
+    margin: 0 !important;
+    background: #fafafa;
+  }
+  .url-row .url-input-wrap input:focus {
+    border-color: #4caf50 !important;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.12) !important;
+    background: #fff;
+  }
+  #sendBtn {
+    border-radius: 20px;
+    padding: 0 20px;
+    height: 36px;
+    font-size: 0.88rem;
+    letter-spacing: 2px;
+    background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%);
+    transition:
+      transform 0.2s,
+      box-shadow 0.2s;
+    flex-shrink: 0;
+  }
+  #sendBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(46, 125, 50, 0.35);
+  }
+  #sendBtn:disabled {
+    background: #bdbdbd;
+    transform: none;
+    box-shadow: none;
+  }
+  #elapsedTime {
+    display: none;
+    font-size: 0.85rem;
+    color: #888;
+    margin-left: 8px;
+    white-space: nowrap;
+  }
+
+  /* 面板区域 */
+  .panels-area {
+    margin-top: 20px;
+  }
+  .panel {
+    border: 1px solid #eee;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .panel-header {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    background: #fafafa;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s;
+    min-height: 44px;
+  }
+  .panel-header:hover {
+    background: #f0f0f0;
+  }
+  .panel-header .panel-icon {
+    margin-right: 10px;
+    transition: transform 0.3s;
+    color: #888;
+    font-size: 0.8rem;
+  }
+  .panel-header.open .panel-icon {
+    transform: rotate(180deg);
+  }
+  .panel-header .panel-title {
+    flex: 1;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #444;
+  }
+  .panel-header .panel-badge {
+    background: #e0e0e0;
+    color: #666;
+    font-size: 0.72rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-right: 10px;
+  }
+  .panel-header .add-row-btn {
+    background: transparent;
+    border: 1px solid #4caf50;
+    color: #4caf50;
+    border-radius: 16px;
+    padding: 2px 12px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .panel-header .add-row-btn:hover {
+    background: #4caf50;
+    color: #fff;
+  }
+  .panel-body {
+    display: none;
+    padding: 0 16px 12px;
+    background: #fff;
+  }
+  .panel-body .kv-rows {
+    padding-top: 8px;
+  }
+  .kv-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .kv-row input {
+    border: 1px solid #e0e0e0 !important;
+    border-radius: 6px !important;
+    padding: 0 10px !important;
+    height: 36px !important;
+    font-size: 0.88rem;
+    font-family: "SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", monospace;
+    box-sizing: border-box;
+    margin: 0 !important;
+    background: #fafafa;
+  }
+  .kv-row input:focus {
+    border-color: #4caf50 !important;
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1) !important;
+    background: #fff;
+  }
+  .kv-row .key-input {
+    flex: 1;
+    min-width: 100px;
+  }
+  .kv-row .value-input {
+    flex: 2;
+    min-width: 140px;
+  }
+  .kv-row .delete-row-btn {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: #bbb;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .kv-row .delete-row-btn:hover {
+    color: #e53935;
+    background: rgba(229, 57, 53, 0.08);
+  }
+  .kv-empty {
+    color: #bbb;
+    font-size: 0.85rem;
+    text-align: center;
+    padding: 12px 0;
+  }
+
+  /* Body 面板特殊样式 */
+  .body-mode-selector {
+    margin-bottom: 10px;
+    padding-top: 8px;
+  }
+  .body-mode-selector select {
+    display: inline-block;
+    width: auto;
+    min-width: 220px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 0 10px;
+    height: 36px;
+    font-size: 0.88rem;
+    background: #fafafa;
+  }
+  .body-json-textarea {
+    width: 100%;
+    min-height: 160px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 0.88rem;
+    font-family: "SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", monospace;
+    resize: vertical;
+    background: #fafafa;
+    box-sizing: border-box;
+    line-height: 1.6;
+    outline: none;
+    transition:
+      border-color 0.3s,
+      box-shadow 0.3s;
+  }
+  .body-json-textarea:focus {
+    border-color: #4caf50;
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+    background: #fff;
+  }
+  .body-json-error {
+    color: #e53935;
+    font-size: 0.8rem;
+    margin-top: 4px;
+    display: none;
+  }
+
+  /* JSON 格式化按钮 */
+  .body-json-wrap {
+    position: relative;
+  }
+  .body-json-tool-btn {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    z-index: 1;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #e0e0e0;
+    color: #666;
+    border-radius: 4px;
+    padding: 3px 10px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .body-json-tool-btn:hover {
+    background: #4caf50;
+    color: #fff;
+    border-color: #4caf50;
+  }
+
+  /* multipart 行 */
+  .mpart-row {
+    flex-wrap: wrap;
+  }
+  .mpart-row .key-input {
+    flex: 1;
+    min-width: 100px;
+  }
+  .mpart-row .mpart-type-select {
+    width: 80px;
+    flex-shrink: 0;
+    height: 36px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 0 8px;
+    font-size: 0.82rem;
+    background: #fafafa;
+    box-sizing: border-box;
+  }
+  .mpart-row .mpart-value-wrap {
+    flex: 2;
+    min-width: 140px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .mpart-row .mpart-value-wrap .value-input {
+    flex: 1;
+    min-width: 0;
+  }
+  .mpart-file-label {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    height: 36px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 0 10px;
+    background: #fafafa;
+    transition:
+      border-color 0.3s,
+      box-shadow 0.3s;
+  }
+  .mpart-file-label:hover {
+    border-color: #4caf50;
+  }
+  .mpart-file-label .file-input {
+    display: none;
+  }
+  .mpart-file-name {
+    font-size: 0.85rem;
+    color: #666;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+  }
+  .mpart-file-label i {
+    color: #888;
+    font-size: 0.9rem;
+  }
+
+  /* 响应卡片 */
+  #responseCard {
+    display: none;
+  }
+  #responseCard .card-content {
+    padding: 24px;
+  }
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    font-family: "SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", monospace;
+  }
+  .status-badge.status-2xx {
+    background: #e8f5e9;
+    color: #2e7d32;
+  }
+  .status-badge.status-3xx {
+    background: #e3f2fd;
+    color: #1565c0;
+  }
+  .status-badge.status-4xx {
+    background: #fff3e0;
+    color: #e65100;
+  }
+  .status-badge.status-5xx {
+    background: #ffebee;
+    color: #c62828;
+  }
+  .status-badge.status-err {
+    background: #f5f5f5;
+    color: #888;
+  }
+  .response-meta {
+    font-size: 0.85rem;
+    color: #888;
+    font-family: "SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", monospace;
+  }
+  .response-meta span {
+    margin: 0 2px;
+  }
+
+  /* 响应 Headers */
+  .resp-section {
+    margin-bottom: 16px;
+  }
+  .resp-section-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 0;
+    cursor: pointer;
+    user-select: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #555;
+    border-bottom: 1px solid #eee;
+  }
+  .resp-section-header i {
+    font-size: 0.7rem;
+    transition: transform 0.3s;
+    color: #888;
+  }
+  .resp-section-header.open i {
+    transform: rotate(180deg);
+  }
+  .resp-section-content {
+    margin-top: 8px;
+  }
+  #responseHeadersContent {
+    background: #fafafa;
+    border: 1px solid #eee;
+    border-radius: 6px;
+    padding: 12px 16px;
+    font-size: 0.82rem;
+    font-family: "SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", monospace;
+    line-height: 1.7;
+    max-height: 300px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    color: #555;
+    margin: 0;
+  }
+
+  /* 响应体 */
+  .response-body-section {
+    margin-top: 8px;
+  }
+  .response-body-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #eee;
+  }
+  .text-response-wrap {
+    position: relative;
+  }
+  .copy-btn {
+    position: absolute;
+    top: 5px;
+    right: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.1);
+    color: #b0bec5;
+    border-radius: 4px;
+    padding: 3px 10px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    z-index: 1;
+  }
+  .copy-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.5);
+  }
+  .copy-btn.copied {
+    background: #4caf50;
+    border-color: #4caf50;
+    color: #fff;
+  }
+  #responseBodyContainer {
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  #textResponse {
+    background: #263238;
+    color: #e0e0e0;
+    padding: 16px 20px !important;
+    font-size: 0.84rem;
+    font-family: "SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", monospace;
+    line-height: 1.6;
+    max-height: 500px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    border-radius: 6px;
+    margin: 0;
+  }
+  #imageResponse {
+    display: block;
+    max-width: 100%;
+    max-height: 500px;
+    border-radius: 6px;
+    border: 1px solid #eee;
+  }
+  #binaryHint {
+    display: none;
+    padding: 40px;
+    text-align: center;
+    background: #fafafa;
+    border: 1px solid #eee;
+    border-radius: 6px;
+    color: #888;
+  }
+  #binaryHint .binary-icon {
+    font-size: 2.5rem;
+    margin-bottom: 12px;
+    color: #bbb;
+  }
+  #binaryHint .binary-size {
+    font-size: 0.9rem;
+    font-family: "SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", monospace;
+  }
+  .truncate-hint {
+    text-align: center;
+    padding: 10px;
+    background: #37474f;
+    color: #ffab40;
+    font-size: 0.8rem;
+    cursor: pointer;
+    border-radius: 0 0 6px 6px;
+    margin-top: -1px;
+  }
+  .truncate-hint:hover {
+    background: #455a64;
+  }
+
+  /* Loading */
+  .loading-area {
+    display: none;
+    padding: 16px 0;
+    text-align: center;
+  }
+  .loading-area p {
+    color: #888;
+    margin-top: 10px;
+    font-size: 0.9rem;
+  }
+
+  /* 响应式 */
+  @media only screen and (max-width: 601px) {
+    .api-explorer-container {
+      margin-top: -30px;
+    }
+    .url-row {
+      flex-direction: column;
+      gap: 8px;
+    }
+    .url-row .method-select {
+      width: 100%;
+    }
+    .url-row .url-input-wrap {
+      min-width: 0;
+      width: 100%;
+    }
+    #sendBtn {
+      width: 100%;
+    }
+    .kv-row {
+      flex-wrap: wrap;
+    }
+    .kv-row .key-input {
+      flex: 1 1 100%;
+      min-width: 0;
+    }
+    .kv-row .value-input {
+      flex: 1 1 100%;
+      min-width: 0;
+    }
+    #responseCard .card-content {
+      padding: 16px;
+    }
+    #textResponse {
+      padding: 12px 14px;
+      font-size: 0.78rem;
+    }
+  }
+</style>
+
+<main class="content">
+  <div class="container api-explorer-container">
+    <!-- 请求配置卡片 -->
+    <div class="card request-card">
+      <div class="card-content">
+        <span class="card-title"><i class="fas fa-code"></i>API Explorer</span>
+        <p style="color: #999; font-size: 0.9rem; margin-bottom: 0">
+          调试 HTTP API 的在线工具
+        </p>
+
+        <div class="url-row">
+          <div class="input-field method-select">
+            <select id="methodSelect" class="browser-default">
+              <option value="GET" selected>GET</option>
+              <option value="POST">POST</option>
+            </select>
+          </div>
+          <div class="url-input-wrap">
+            <input
+              type="url"
+              id="urlInput"
+              placeholder="输入请求 URL，如 https://api.example.com/data"
+              autocomplete="off"
+            />
+          </div>
+          <button id="sendBtn" class="btn waves-effect waves-light">
+            发 送
+          </button>
+          <span id="elapsedTime"></span>
+        </div>
+
+        <div class="loading-area" id="loadingArea">
+          <div class="preloader-wrapper active">
+            <div class="spinner-layer spinner-green-only">
+              <div class="circle-clipper left"><div class="circle"></div></div>
+              <div class="gap-patch"><div class="circle"></div></div>
+              <div class="circle-clipper right"><div class="circle"></div></div>
+            </div>
+          </div>
+          <p>请求中...</p>
+        </div>
+
+        <div class="panels-area">
+          <!-- Headers 面板 -->
+          <div class="panel" id="headersPanel">
+            <div class="panel-header open" data-panel="headers">
+              <i class="fas fa-chevron-down panel-icon"></i>
+              <span class="panel-title">Headers</span>
+              <span class="panel-badge" id="headersCount">0</span>
+              <button class="add-row-btn" data-panel="headers">+ 添加</button>
+            </div>
+            <div class="panel-body" id="headersBody">
+              <div class="kv-rows" id="headersRows"></div>
+            </div>
+          </div>
+
+          <!-- Cookies 面板 -->
+          <div class="panel" id="cookiesPanel">
+            <div class="panel-header" data-panel="cookies">
+              <i class="fas fa-chevron-down panel-icon"></i>
+              <span class="panel-title">Cookies</span>
+              <span class="panel-badge" id="cookiesCount">0</span>
+              <button class="add-row-btn" data-panel="cookies">+ 添加</button>
+            </div>
+            <div class="panel-body" id="cookiesBody" style="display: none">
+              <div class="kv-rows" id="cookiesRows"></div>
+            </div>
+          </div>
+
+          <!-- Query 面板 -->
+          <div class="panel" id="queryPanel">
+            <div class="panel-header" data-panel="query">
+              <i class="fas fa-chevron-down panel-icon"></i>
+              <span class="panel-title">Query Parameters</span>
+              <span class="panel-badge" id="queryCount">0</span>
+              <button class="add-row-btn" data-panel="query">+ 添加</button>
+            </div>
+            <div class="panel-body" id="queryBody" style="display: none">
+              <div class="kv-rows" id="queryRows"></div>
+            </div>
+          </div>
+
+          <!-- Body 面板 -->
+          <div class="panel" id="bodyPanel">
+            <div class="panel-header" data-panel="body">
+              <i class="fas fa-chevron-down panel-icon"></i>
+              <span class="panel-title">Body</span>
+              <span class="panel-badge" id="bodyBadge" style="display: none"
+                >JSON</span
+              >
+              <button
+                class="add-row-btn"
+                data-panel="body"
+                style="display: none"
+                id="bodyAddBtn"
+              >
+                + 添加
+              </button>
+            </div>
+            <div class="panel-body" id="bodyBody" style="display: none">
+              <div class="body-mode-selector">
+                <select id="bodyContentType" class="browser-default">
+                  <option value="application/json" selected>
+                    application/json
+                  </option>
+                  <option value="application/x-www-form-urlencoded">
+                    application/x-www-form-urlencoded
+                  </option>
+                  <option value="multipart/form-data">
+                    multipart/form-data
+                  </option>
+                  <option value="text/plain">text/plain</option>
+                </select>
+              </div>
+              <div id="bodyJsonArea">
+                <div class="body-json-wrap">
+                  <textarea
+                    class="body-json-textarea"
+                    id="bodyJsonTextarea"
+                    placeholder='{"key": "value"}'
+                  ></textarea>
+                  <button
+                    type="button"
+                    id="formatJsonBtn"
+                    class="body-json-tool-btn"
+                  >
+                    <i class="fas fa-indent"></i> 格式化
+                  </button>
+                </div>
+                <div class="body-json-error" id="bodyJsonError">
+                  JSON 格式无效
+                </div>
+              </div>
+              <div id="bodyKvArea" style="display: none">
+                <div class="kv-rows" id="bodyKvRows"></div>
+              </div>
+              <div id="bodyMultipartArea" style="display: none">
+                <div class="kv-rows" id="bodyMultipartRows"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 响应卡片 -->
+    <div id="responseCard" class="card">
+      <div class="card-content">
+        <div class="status-row">
+          <span class="status-badge" id="statusBadge"></span>
+          <span class="response-meta">
+            <i class="far fa-clock" style="margin-right: 2px"></i>
+            <span id="responseTime"></span>
+          </span>
+          <span class="response-meta">
+            <i class="fas fa-weight-hanging" style="margin-right: 2px"></i>
+            <span id="responseSize"></span>
+          </span>
+        </div>
+
+        <div class="resp-section" id="responseHeadersSection">
+          <div class="resp-section-header" id="responseHeadersToggle">
+            <i class="fas fa-chevron-down"></i>
+            Response Headers
+          </div>
+          <div class="resp-section-content" id="responseHeadersBody">
+            <pre id="responseHeadersContent"></pre>
+          </div>
+        </div>
+
+        <div class="response-body-section">
+          <div class="response-body-label">Response Body</div>
+          <div id="responseBodyContainer">
+            <div
+              class="text-response-wrap"
+              id="textResponseWrap"
+              style="display: none"
+            >
+              <pre id="textResponse"></pre>
+              <button id="copyBodyBtn" class="copy-btn" title="复制">
+                <i class="fas fa-copy"></i> 复制
+              </button>
+            </div>
+            <img id="imageResponse" style="display: none" alt="响应图片" />
+            <div id="binaryHint">
+              <div class="binary-icon"><i class="fas fa-file"></i></div>
+              <div class="binary-size" id="binarySize"></div>
+              <button
+                id="downloadBinaryBtn"
+                class="btn waves-effect waves-light bg-color"
+                style="border-radius: 20px; margin-top: 16px; font-size: 0.9rem"
+              >
+                <i class="fas fa-download" style="margin-right: 6px"></i
+                >下载文件
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  var rowIdCounter = 0;
+  function newRowId() {
+    return ++rowIdCounter;
+  }
+
+  // 面板数据
+  var panels = {
+    headers: {
+      rows: [],
+      container: "#headersRows",
+      count: "#headersCount",
+      body: "#headersBody",
+    },
+    cookies: {
+      rows: [],
+      container: "#cookiesRows",
+      count: "#cookiesCount",
+      body: "#cookiesBody",
+    },
+    query: {
+      rows: [],
+      container: "#queryRows",
+      count: "#queryCount",
+      body: "#queryBody",
+    },
+    bodyKv: { rows: [], container: "#bodyKvRows", count: null, body: null },
+    bodyMultipart: {
+      rows: [],
+      container: "#bodyMultipartRows",
+      count: null,
+      body: null,
+    },
+  };
+
+  var currentImageUrl = null;
+
+  // 创建 kv 行
+  function createKvRow(key, value, panelKey) {
+    var id = newRowId();
+    var row = $(
+      '<div class="kv-row" data-id="' +
+        id +
+        '">' +
+        '<input class="key-input" type="text" placeholder="Key" value="' +
+        escapeHtml(key) +
+        '" autocomplete="off">' +
+        '<input class="value-input" type="text" placeholder="Value" value="' +
+        escapeHtml(value) +
+        '" autocomplete="off">' +
+        '<button class="delete-row-btn" title="删除"><i class="fas fa-trash-alt"></i></button>' +
+        "</div>",
+    );
+    return row;
+  }
+
+  function escapeHtml(str) {
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/"/g, "&quot;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  // 主机名验证
+  function isValidHostname(hostname) {
+    if (!hostname) return false;
+    if (hostname === "localhost") return true;
+
+    // IPv4 地址
+    var ipv4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(hostname);
+    if (ipv4) {
+      for (var i = 1; i <= 4; i++) {
+        if (parseInt(ipv4[i], 10) > 255) return false;
+      }
+      return true;
+    }
+
+    // 域名：必须含点，不能以点或连字符开头/结尾，不能有连续点
+    if (hostname.length > 253) return false;
+    if (hostname.indexOf(".") === -1) return false;
+    if (/[^a-zA-Z0-9.\-]/.test(hostname)) return false;
+    if (/\.\./.test(hostname)) return false;
+    if (/^-/.test(hostname) || /-$/.test(hostname)) return false;
+    if (/^\./.test(hostname) || /\.$/.test(hostname)) return false;
+
+    var labels = hostname.split(".");
+    for (var j = 0; j < labels.length; j++) {
+      var label = labels[j];
+      if (label.length === 0 || label.length > 63) return false;
+      if (/^-/.test(label) || /-$/.test(label)) return false;
+    }
+
+    return true;
+  }
+
+  // 渲染面板行
+  function renderPanelRows(panelKey) {
+    var panel = panels[panelKey];
+    var $container = $(panel.container);
+    $container.empty();
+
+    var filledRows = panel.rows.filter(function (r) {
+      return r.key || r.value;
+    });
+    if (panel.count) {
+      $(panel.count).text(filledRows.length);
+    }
+
+    if (panel.rows.length === 0) {
+      $container.append('<div class="kv-empty">点击 "+ 添加" 新增</div>');
+    } else {
+      panel.rows.forEach(function (r) {
+        var $row = createKvRow(r.key, r.value, panelKey);
+        $container.append($row);
+      });
+    }
+
+    if (panelKey === "bodyKv") {
+      var hasRows = panel.rows.length > 0;
+      $("#bodyAddBtn").toggle(
+        hasRows || $("#bodyContentType").val() !== "application/json",
+      );
+      $("#bodyBadge").toggle(!!$("#bodyContentType").val());
+    }
+  }
+
+  // 收集面板数据
+  function collectPanelData(panelKey) {
+    var rows = [];
+    $(panels[panelKey].container)
+      .find(".kv-row")
+      .each(function () {
+        var key = $(this).find(".key-input").val().trim();
+        var value = $(this).find(".value-input").val().trim();
+        if (key || value) {
+          rows.push({ key: key, value: value });
+        }
+      });
+    return rows;
+  }
+
+  // 更新面板行数
+  function updatePanelCount(panelKey) {
+    var panel = panels[panelKey];
+    if (panel.count) {
+      var filled = collectPanelData(panelKey);
+      $(panel.count).text(filled.length);
+    }
+  }
+
+  // 初始化面板
+  function initPanels() {
+    ["headers", "cookies", "query"].forEach(function (key) {
+      panels[key].rows = [{ key: "", value: "" }];
+      renderPanelRows(key);
+    });
+    panels.bodyKv.rows = [];
+    renderPanelRows("bodyKv");
+  }
+
+  // 同步 DOM 输入到数据模型
+  function syncPanelRows(panelKey) {
+    var rows = [];
+    $(panels[panelKey].container)
+      .find(".kv-row")
+      .each(function () {
+        rows.push({
+          key: $(this).find(".key-input").val(),
+          value: $(this).find(".value-input").val(),
+        });
+      });
+    panels[panelKey].rows = rows;
+  }
+
+  // 添加行
+  function addRow(panelKey) {
+    syncPanelRows(panelKey);
+    panels[panelKey].rows.push({ key: "", value: "" });
+    renderPanelRows(panelKey);
+    var $container = $(panels[panelKey].container);
+    var $lastRow = $container.find(".kv-row").last();
+    $lastRow.find(".key-input").focus();
+  }
+
+  // 删除行
+  function deleteRow(panelKey, rowId) {
+    syncPanelRows(panelKey);
+    var $container = $(panels[panelKey].container);
+    var $rows = $container.find(".kv-row");
+    var $target = $container.find('.kv-row[data-id="' + rowId + '"]');
+    var idx = $rows.index($target);
+    if (idx >= 0 && idx < panels[panelKey].rows.length) {
+      panels[panelKey].rows.splice(idx, 1);
+    }
+    renderPanelRows(panelKey);
+  }
+
+  // 创建 multipart 行（支持文本/文件切换）
+  function createMultipartRow(data) {
+    data = data || { key: "", type: "text", value: "" };
+    var id = newRowId();
+    var type = data.type || "text";
+    var row = $(
+      '<div class="kv-row mpart-row" data-id="' +
+        id +
+        '">' +
+        '<input class="key-input" type="text" placeholder="Key" value="' +
+        escapeHtml(data.key || "") +
+        '" autocomplete="off">' +
+        '<select class="mpart-type-select browser-default">' +
+        '<option value="text"' +
+        (type === "text" ? " selected" : "") +
+        ">文本</option>" +
+        '<option value="file"' +
+        (type === "file" ? " selected" : "") +
+        ">文件</option>" +
+        "</select>" +
+        '<div class="mpart-value-wrap">' +
+        '<input class="value-input" type="text" placeholder="Value" value="' +
+        escapeHtml(data.value || "") +
+        '" autocomplete="off"' +
+        (type === "file" ? ' style="display:none"' : "") +
+        ">" +
+        '<label class="mpart-file-label"' +
+        (type === "file" ? "" : ' style="display:none"') +
+        ">" +
+        '<i class="fas fa-upload"></i>' +
+        '<span class="mpart-file-name">选择文件</span>' +
+        '<input type="file" class="file-input">' +
+        "</label>" +
+        "</div>" +
+        '<button class="delete-row-btn" title="删除"><i class="fas fa-trash-alt"></i></button>' +
+        "</div>",
+    );
+    return row;
+  }
+
+  // 添加 multipart 行（直接操作 DOM，保留已选文件）
+  function addMultipartRow() {
+    var $container = $("#bodyMultipartRows");
+    $container.find(".kv-empty").remove();
+    var $row = createMultipartRow({ key: "", type: "text", value: "" });
+    $container.append($row);
+    $row.find(".key-input").focus();
+  }
+
+  // 删除 multipart 行
+  function deleteMultipartRow(rowId) {
+    var $container = $("#bodyMultipartRows");
+    $container.find('.kv-row[data-id="' + rowId + '"]').remove();
+    if ($container.find(".kv-row").length === 0) {
+      $container.append('<div class="kv-empty">点击 "+ 添加" 新增</div>');
+    }
+  }
+
+  // 面板折叠/展开
+  function togglePanel(panelKey) {
+    var $header = $('div[data-panel="' + panelKey + '"]');
+    var $body;
+    if (panelKey === "body") {
+      $body = $("#bodyBody");
+    } else if (panels[panelKey]) {
+      $body = $(panels[panelKey].body);
+    } else {
+      return;
+    }
+    var isOpen = $header.hasClass("open");
+
+    if (isOpen) {
+      $header.removeClass("open");
+      $body.slideUp(200);
+    } else {
+      $header.addClass("open");
+      $body.slideDown(200);
+    }
+  }
+
+  // 显示错误
+  function showError(msg, hint) {
+    var toastHtml = msg;
+    if (hint) {
+      toastHtml +=
+        '<br><span style="font-size:0.82rem;opacity:0.7">' + hint + "</span>";
+    }
+    M.toast({ html: toastHtml, classes: "red", displayLength: 1000 });
+    $("#responseCard").hide();
+    $("#loadingArea").hide();
+    $("#sendBtn").prop("disabled", false);
+    $("#elapsedTime").hide();
+  }
+
+  // 状态码样式
+  function getStatusClass(status) {
+    if (!status) return "status-err";
+    if (status >= 200 && status < 300) return "status-2xx";
+    if (status >= 300 && status < 400) return "status-3xx";
+    if (status >= 400 && status < 500) return "status-4xx";
+    if (status >= 500 && status < 600) return "status-5xx";
+    return "status-err";
+  }
+
+  function getStatusText(status) {
+    if (!status) return "Error";
+    var texts = {
+      200: "200 OK",
+      201: "201 Created",
+      204: "204 No Content",
+      301: "301 Moved",
+      302: "302 Found",
+      304: "304 Not Modified",
+      400: "400 Bad Request",
+      401: "401 Unauthorized",
+      403: "403 Forbidden",
+      404: "404 Not Found",
+      405: "405 Method Not Allowed",
+      408: "408 Timeout",
+      429: "429 Too Many Requests",
+      500: "500 Server Error",
+      502: "502 Bad Gateway",
+      503: "503 Unavailable",
+    };
+    return texts[status] || status + "";
+  }
+
+  function formatBytes(bytes) {
+    if (bytes === undefined || bytes === null) return "--";
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+  }
+
+  function formatTime(ms) {
+    if (ms < 1000) return Math.round(ms) + " ms";
+    if (ms < 10000) return (ms / 1000).toFixed(2) + " s";
+    return (ms / 1000).toFixed(1) + " s";
+  }
+
+  // 显示响应
+  function showResponse(status, headers, body, elapsedMs, contentType) {
+    var $badge = $("#statusBadge");
+    $badge.text(getStatusText(status));
+    $badge.attr("class", "status-badge " + getStatusClass(status));
+
+    $("#responseTime").text(formatTime(elapsedMs));
+
+    // 显示响应头
+    var headersText = "";
+    headers.forEach(function (value, key) {
+      headersText += key + ": " + value + "\n";
+    });
+    $("#responseHeadersContent").text(headersText || "(empty)");
+
+    // 隐藏所有响应体
+    $("#textResponseWrap").hide();
+    $("#textResponse").text("");
+    $("#imageResponse").hide().attr("src", "");
+    $("#binaryHint").hide();
+
+    // 释放之前的图片 URL
+    if (currentImageUrl) {
+      URL.revokeObjectURL(currentImageUrl);
+      currentImageUrl = null;
+    }
+
+    if (body === null || body === undefined) {
+      $("#textResponse").text("(无响应体)");
+      $("#textResponseWrap").show();
+      $("#responseSize").text("0 B");
+    } else if (contentType && contentType.indexOf("image/") === 0) {
+      // 图片响应
+      currentImageUrl = URL.createObjectURL(body);
+      $("#imageResponse").attr("src", currentImageUrl).show();
+      $("#responseSize").text(formatBytes(body.size));
+    } else if (typeof body === "string") {
+      // 文本响应
+      var displayText = body;
+      var bodySize = new Blob([body]).size;
+      var truncated = false;
+
+      if (bodySize > 500 * 1024) {
+        displayText = body.substring(0, 500 * 1024);
+        truncated = true;
+      }
+
+      $("#textResponse").text(displayText);
+      $("#textResponseWrap").show();
+
+      if (truncated) {
+        var $hint = $(
+          '<div class="truncate-hint">响应已截断（' +
+            formatBytes(bodySize) +
+            "），点击显示全部</div>",
+        );
+        $hint.on("click", function () {
+          $("#textResponse").text(body);
+          $hint.remove();
+        });
+        $("#textResponse").after($hint);
+      }
+
+      $("#responseSize").text(formatBytes(bodySize));
+    } else {
+      // 二进制响应
+      $("#binarySize").text(
+        "文件大小: " +
+          formatBytes(body.size) +
+          " | 类型: " +
+          (contentType || "unknown"),
+      );
+      $("#binaryHint").show();
+      $("#responseSize").text(formatBytes(body.size));
+
+      $("#downloadBinaryBtn")
+        .off("click")
+        .on("click", function () {
+          var url = URL.createObjectURL(body);
+          var a = document.createElement("a");
+          a.href = url;
+          a.download = "response_" + Date.now();
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(function () {
+            URL.revokeObjectURL(url);
+          }, 1000);
+        });
+    }
+
+    $("#responseCard").slideDown(300);
+    $("html, body").animate(
+      { scrollTop: $("#responseCard").offset().top - 80 },
+      300,
+    );
+  }
+
+  // 发送请求
+  function sendRequest() {
+    var url = $("#urlInput").val().trim();
+    var method = $("#methodSelect").val();
+    var timeout = 30000;
+
+    $("#responseCard").hide();
+
+    if (!url) {
+      showError("请输入请求 URL");
+      return;
+    }
+
+    // 验证 URL 格式
+    try {
+      var parsedUrl = new URL(url);
+      if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+        showError("仅支持 HTTP 和 HTTPS 协议");
+        return;
+      }
+      if (!isValidHostname(parsedUrl.hostname)) {
+        showError("请输入有效的请求 URL，如 https://api.example.com/data");
+        return;
+      }
+    } catch (e) {
+      showError("请输入有效的请求 URL，如 https://api.example.com/data");
+      return;
+    }
+
+    // 收集数据
+    var headers = collectPanelData("headers");
+    var cookies = collectPanelData("cookies");
+    var queryParams = collectPanelData("query");
+    var bodyContentType = $("#bodyContentType").val();
+
+    // 构建 URL（添加 query 参数）
+    var finalUrl = url;
+    if (queryParams.length > 0) {
+      var params = new URLSearchParams();
+      queryParams.forEach(function (p) {
+        params.append(p.key, p.value);
+      });
+      var qs = params.toString();
+      if (qs) {
+        finalUrl += (url.indexOf("?") >= 0 ? "&" : "?") + qs;
+      }
+    }
+
+    // 构建 Headers
+    var headersObj = new Headers();
+    headers.forEach(function (h) {
+      headersObj.append(h.key, h.value);
+    });
+
+    // Cookies
+    if (cookies.length > 0) {
+      var cookieStr = cookies
+        .map(function (c) {
+          return c.key + "=" + c.value;
+        })
+        .join("; ");
+      try {
+        headersObj.append("Cookie", cookieStr);
+      } catch (e) {}
+    }
+
+    // 自动设置 Content-Type（如果 Body 有内容且未手动设置）
+    if (method === "POST") {
+      var hasContentType = headers.some(function (h) {
+        return h.key.toLowerCase() === "content-type";
+      });
+      if (!hasContentType) {
+        if (bodyContentType === "application/json") {
+          var jsonBody = $("#bodyJsonTextarea").val().trim();
+          if (jsonBody) {
+            headersObj.append("Content-Type", "application/json");
+          }
+        } else if (bodyContentType === "application/x-www-form-urlencoded") {
+          var kvRows = collectPanelData("bodyKv");
+          if (kvRows.length > 0) {
+            headersObj.append(
+              "Content-Type",
+              "application/x-www-form-urlencoded",
+            );
+          }
+        } else if (bodyContentType === "multipart/form-data") {
+          // 不设置 Content-Type，浏览器会自动设置带 boundary 的 multipart Content-Type
+        } else {
+          headersObj.append("Content-Type", bodyContentType);
+        }
+      }
+    }
+
+    // 构建 Body
+    var bodyValue = null;
+    if (method === "POST") {
+      if (bodyContentType === "application/json") {
+        var jsonText = $("#bodyJsonTextarea").val().trim();
+        if (jsonText) {
+          try {
+            JSON.parse(jsonText);
+            bodyValue = jsonText;
+            $("#bodyJsonError").hide();
+          } catch (e) {
+            $("#bodyJsonError").show();
+            showError("Body JSON 格式无效，请检查");
+            return;
+          }
+        }
+      } else if (bodyContentType === "application/x-www-form-urlencoded") {
+        var kvRows = collectPanelData("bodyKv");
+        if (kvRows.length > 0) {
+          var formParams = new URLSearchParams();
+          kvRows.forEach(function (p) {
+            formParams.append(p.key, p.value);
+          });
+          bodyValue = formParams.toString();
+        }
+      } else if (bodyContentType === "multipart/form-data") {
+        var formData = new FormData();
+        var partCount = 0;
+        $("#bodyMultipartRows .kv-row").each(function () {
+          var $r = $(this);
+          var key = $r.find(".key-input").val().trim();
+          if (!key) return;
+          if ($r.find(".mpart-type-select").val() === "file") {
+            var fileInput = $r.find(".file-input")[0];
+            if (fileInput.files && fileInput.files[0]) {
+              formData.append(key, fileInput.files[0]);
+              partCount++;
+            }
+          } else {
+            var textVal = $r.find(".value-input").val();
+            formData.append(key, textVal);
+            partCount++;
+          }
+        });
+        if (partCount > 0) {
+          bodyValue = formData;
+        }
+      } else {
+        bodyValue = $("#bodyJsonTextarea").val().trim() || undefined;
+      }
+    }
+
+    // 发送请求
+    $("#sendBtn").prop("disabled", true);
+    $("#loadingArea").show();
+    $("#elapsedTime").show();
+
+    var startTime = performance.now();
+    var timerInterval = setInterval(function () {
+      var elapsed = performance.now() - startTime;
+      $("#elapsedTime").text(formatTime(elapsed));
+    }, 100);
+
+    var controller = new AbortController();
+    var timeoutId = setTimeout(function () {
+      controller.abort();
+    }, timeout);
+
+    var fetchOptions = {
+      method: method,
+      headers: headersObj,
+      signal: controller.signal,
+    };
+
+    if (method === "POST" && bodyValue) {
+      fetchOptions.body = bodyValue;
+    }
+
+    var proxyUsed = false;
+    var useProxy = bodyContentType !== "multipart/form-data";
+    var proxyUrl = "https://corsproxy.io/?";
+
+    function doFetch(fetchUrl) {
+      return fetch(fetchUrl, fetchOptions).catch(function (err) {
+        if (
+          useProxy &&
+          !proxyUsed &&
+          (err.message === "Failed to fetch" || err.name === "TypeError")
+        ) {
+          proxyUsed = true;
+          return fetch(proxyUrl + encodeURIComponent(fetchUrl), fetchOptions);
+        }
+        throw err;
+      });
+    }
+
+    doFetch(finalUrl)
+      .then(function (response) {
+        clearTimeout(timeoutId);
+        clearInterval(timerInterval);
+        var elapsed = performance.now() - startTime;
+
+        var respHeaders = response.headers;
+        var respContentType = respHeaders.get("content-type") || "";
+        var respStatus = response.status;
+
+        // 解析 Content-Type
+        var isImage = respContentType.indexOf("image/") === 0;
+        var isJson = respContentType.indexOf("application/json") === 0;
+
+        var processPromise;
+        if (isImage) {
+          processPromise = response.blob().then(function (blob) {
+            return { body: blob, type: respContentType };
+          });
+        } else if (isJson) {
+          processPromise = response.text().then(function (text) {
+            try {
+              return {
+                body: JSON.stringify(JSON.parse(text), null, 2),
+                type: respContentType,
+              };
+            } catch (e) {
+              return { body: text, type: "text/plain" };
+            }
+          });
+        } else {
+          processPromise = response
+            .text()
+            .then(function (text) {
+              return { body: text, type: respContentType || "text/plain" };
+            })
+            .catch(function () {
+              return response.blob().then(function (blob) {
+                return { body: blob, type: respContentType };
+              });
+            });
+        }
+
+        return processPromise.then(function (result) {
+          return {
+            status: respStatus,
+            headers: respHeaders,
+            body: result.body,
+            contentType: result.type,
+            elapsed: elapsed,
+          };
+        });
+      })
+      .then(function (result) {
+        $("#loadingArea").hide();
+        $("#sendBtn").prop("disabled", false);
+        $("#elapsedTime").hide();
+        showResponse(
+          result.status,
+          result.headers,
+          result.body,
+          result.elapsed,
+          result.contentType,
+        );
+      })
+      .catch(function (err) {
+        clearTimeout(timeoutId);
+        clearInterval(timerInterval);
+        $("#loadingArea").hide();
+        $("#sendBtn").prop("disabled", false);
+        $("#elapsedTime").hide();
+
+        if (err.name === "AbortError") {
+          showError(
+            "请求超时（" + formatTime(timeout) + "）",
+            "可以调整超时时间后重试",
+          );
+        } else if (
+          err.message === "Failed to fetch" ||
+          err.name === "TypeError"
+        ) {
+          if (!useProxy) {
+            showError(
+              "网络请求失败",
+              "文件上传需目标接口支持 CORS 跨域，不支持自动代理。请确认接口已允许跨域访问。",
+            );
+          } else {
+            showError(
+              "网络请求失败",
+              proxyUsed
+                ? "直接请求和 CORS 代理均失败，请检查 URL 是否正确或稍后重试。"
+                : "请求失败，请检查网络连接或 URL 是否正确。",
+            );
+          }
+        } else {
+          showError("请求失败: " + err.message);
+        }
+      });
+  }
+
+  // 事件绑定
+  $(document).ready(function () {
+    initPanels();
+
+    // 发送按钮
+    $("#sendBtn").on("click", sendRequest);
+
+    // 回车提交
+    $("#urlInput").on("keydown", function (e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        sendRequest();
+      }
+    });
+
+    // 面板折叠/展开
+    $(".panels-area").on("click", ".panel-header", function (e) {
+      if (
+        $(e.target).closest(".add-row-btn").length ||
+        $(e.target).closest("input").length
+      )
+        return;
+      var panelKey = $(this).data("panel");
+      if (panelKey) togglePanel(panelKey);
+    });
+
+    // 添加行
+    $(".panels-area").on("click", ".add-row-btn", function (e) {
+      e.stopPropagation();
+      var panelKey = $(this).data("panel");
+      if (panelKey === "body") {
+        if ($("#bodyContentType").val() === "multipart/form-data") {
+          addMultipartRow();
+        } else {
+          addRow("bodyKv");
+        }
+      } else {
+        addRow(panelKey);
+      }
+    });
+
+    // 删除行
+    $(".panels-area").on("click", ".delete-row-btn", function () {
+      var $row = $(this).closest(".kv-row");
+      var rowId = parseInt($row.data("id"));
+
+      if ($row.closest("#bodyMultipartRows").length) {
+        deleteMultipartRow(rowId);
+        return;
+      }
+
+      // 确定 panel
+      var panelKey = null;
+      if ($row.closest("#headersRows").length) panelKey = "headers";
+      else if ($row.closest("#cookiesRows").length) panelKey = "cookies";
+      else if ($row.closest("#queryRows").length) panelKey = "query";
+      else if ($row.closest("#bodyKvRows").length) panelKey = "bodyKv";
+
+      if (panelKey) deleteRow(panelKey, rowId);
+    });
+
+    // kv 输入变化时更新计数
+    $(".panels-area").on("input", ".kv-row input", function () {
+      var panelKey = null;
+      if ($(this).closest("#headersRows").length) panelKey = "headers";
+      else if ($(this).closest("#cookiesRows").length) panelKey = "cookies";
+      else if ($(this).closest("#queryRows").length) panelKey = "query";
+
+      if (panelKey) updatePanelCount(panelKey);
+    });
+
+    // Body Content-Type 切换
+    $("#bodyContentType").on("change", function () {
+      var val = $(this).val();
+      if (val === "application/x-www-form-urlencoded") {
+        $("#bodyJsonArea").hide();
+        $("#bodyKvArea").show();
+        $("#bodyMultipartArea").hide();
+        $("#bodyAddBtn").show();
+        $("#bodyBadge").text("Form").show();
+        if (panels.bodyKv.rows.length === 0) {
+          panels.bodyKv.rows = [{ key: "", value: "" }];
+          renderPanelRows("bodyKv");
+        }
+      } else if (val === "multipart/form-data") {
+        $("#bodyJsonArea").hide();
+        $("#bodyKvArea").hide();
+        $("#bodyMultipartArea").show();
+        $("#bodyAddBtn").show();
+        $("#bodyBadge").text("Multipart").show();
+        if ($("#bodyMultipartRows .kv-row").length === 0) {
+          addMultipartRow();
+        }
+      } else {
+        $("#bodyJsonArea").show();
+        $("#bodyKvArea").hide();
+        $("#bodyMultipartArea").hide();
+        $("#bodyAddBtn").hide();
+        if (val === "application/json") {
+          $("#bodyBadge").text("JSON").show();
+        } else {
+          $("#bodyBadge").text("Text").show();
+        }
+      }
+    });
+
+    // JSON 格式化
+    $("#formatJsonBtn").on("click", function () {
+      var text = $("#bodyJsonTextarea").val().trim();
+      if (!text) return;
+      try {
+        var parsed = JSON.parse(text);
+        $("#bodyJsonTextarea").val(JSON.stringify(parsed, null, 2));
+        $("#bodyJsonError").hide();
+      } catch (e) {
+        $("#bodyJsonError").show();
+      }
+    });
+
+    // multipart 行类型切换（文本/文件）
+    $(".panels-area").on("change", ".mpart-type-select", function () {
+      var $row = $(this).closest(".kv-row");
+      if ($(this).val() === "file") {
+        $row.find(".value-input").hide();
+        $row.find(".mpart-file-label").show();
+      } else {
+        $row.find(".value-input").show();
+        $row.find(".mpart-file-label").hide();
+      }
+    });
+
+    // multipart 文件选择后显示文件名
+    $(".panels-area").on(
+      "change",
+      ".mpart-file-label .file-input",
+      function () {
+        var $row = $(this).closest(".kv-row");
+        var file = this.files[0];
+        $row.find(".mpart-file-name").text(file ? file.name : "选择文件");
+      },
+    );
+
+    // Response Headers 折叠
+    $("#responseHeadersToggle").on("click", function () {
+      var $this = $(this);
+      var isOpen = $this.hasClass("open");
+      if (isOpen) {
+        $this.removeClass("open");
+        $("#responseHeadersBody").slideUp(200);
+      } else {
+        $this.addClass("open");
+        $("#responseHeadersBody").slideDown(200);
+      }
+    });
+
+    // 复制响应体
+    $("#copyBodyBtn").on("click", function () {
+      var text = $("#textResponse").text();
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(function () {
+        var $btn = $("#copyBodyBtn");
+        $btn.addClass("copied");
+        $btn.html('<i class="fas fa-check"></i> 已复制');
+        setTimeout(function () {
+          $btn.removeClass("copied");
+          $btn.html('<i class="fas fa-copy"></i> 复制');
+        }, 1500);
+      });
+    });
+
+    // 初始状态：Headers 默认展开
+    $("#headersBody").show();
+  });
+</script>
