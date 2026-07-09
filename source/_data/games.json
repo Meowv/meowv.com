@@ -6,7 +6,6 @@
     "type": "fullscreen",
     "emoji": "🧩",
     "entryFile": "index.html",
-    "colorIndex": 1,
     "mobile": true
   },
   {
@@ -16,7 +15,6 @@
     "type": "embedded",
     "emoji": "🎯",
     "entryFile": "index.html",
-    "colorIndex": 2,
     "mobile": true
   },
   {
@@ -26,7 +24,6 @@
     "type": "embedded",
     "emoji": "🔢",
     "entryFile": "index.html",
-    "colorIndex": 3,
     "mobile": true
   },
   {
@@ -36,7 +33,6 @@
     "type": "fullscreen",
     "emoji": "⌨️",
     "entryFile": "index.html",
-    "colorIndex": 4,
     "mobile": false
   }
 ]

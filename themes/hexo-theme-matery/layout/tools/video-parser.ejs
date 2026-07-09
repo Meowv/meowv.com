@@ -1,3 +1,14 @@
+<%
+    var toolTitle = '短视频解析';
+    var toolDesc = '';
+    if (site.data && site.data.tools) {
+        var tool = site.data.tools.find(function(t) { return t.slug === page.toolSlug; });
+        if (tool) {
+            toolTitle = tool.emoji + ' ' + tool.name;
+            toolDesc = tool.description;
+        }
+    }
+%>
 <%- partial('_partial/bg-cover') %>
 
 <style>
@@ -15,46 +26,57 @@
   .input-card .card-title i {
     margin-right: 8px;
   }
-  .input-wrapper {
-    position: relative;
-    margin-top: 0;
+  .parse-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 16px;
+    flex-wrap: wrap;
   }
-  .input-wrapper textarea {
-    min-height: 48px;
+  .parse-row .url-input-wrap {
+    flex: 1;
+    min-width: 0;
+  }
+  .parse-row .url-input-wrap textarea {
+    display: block;
+    height: 44px;
     font-size: 0.95rem;
     border: 2px solid #e8e8e8;
     border-radius: 10px;
-    padding: 10px 14px;
+    padding: 0 14px;
     background: #fafafa;
-    resize: vertical;
+    resize: none;
     transition:
       border-color 0.3s,
       background 0.3s,
       box-shadow 0.3s;
-    line-height: 1.6;
+    line-height: 44px;
     width: 100%;
     box-sizing: border-box;
     outline: none;
     font-family: inherit;
+    overflow: hidden;
   }
-  .input-wrapper textarea:focus {
+  .parse-row .url-input-wrap textarea:focus {
     border-color: #4caf50;
     background: #fff;
     box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.12);
   }
-  .input-wrapper textarea::placeholder {
+  .parse-row .url-input-wrap textarea::placeholder {
     color: #bbb;
     font-size: 0.9rem;
   }
   #parseBtn {
-    border-radius: 24px;
-    padding: 0 40px;
-    font-size: 1rem;
-    letter-spacing: 4px;
+    border-radius: 20px;
+    padding: 0 20px;
+    height: 44px;
+    font-size: 0.88rem;
+    letter-spacing: 2px;
     background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%);
     transition:
       transform 0.2s,
       box-shadow 0.2s;
+    flex-shrink: 0;
   }
   #parseBtn:hover {
     transform: translateY(-1px);
@@ -237,8 +259,7 @@
       margin-top: -30px;
     }
     #parseBtn {
-      width: 100%;
-      padding: 0 20px;
+      padding: 0 24px;
     }
     .cover-wrapper img {
       max-height: 260px;
@@ -263,6 +284,7 @@
       white-space: nowrap;
     }
   }
+
 </style>
 
 <main class="content">
@@ -270,17 +292,18 @@
     <!-- 输入卡片 -->
     <div class="card input-card">
       <div class="card-content">
-        <span class="card-title"><i class="fas fa-link"></i>短视频解析</span>
-        <p style="color: #999; font-size: 0.9rem; margin-bottom: 16px">
-          全平台短视频链接解析
-        </p>
-        <div class="input-wrapper">
-          <textarea
-            id="urlInput"
-            placeholder="粘贴分享链接或含链接的文本…"
-          ></textarea>
-        </div>
-        <div class="center-align" style="margin-top: 16px">
+        <span class="card-title" style="display: inline"><%= toolTitle %></span>
+        <% if (toolDesc) { %>
+        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
+        <% } %>
+        <div class="parse-row">
+          <div class="url-input-wrap">
+            <textarea
+              id="urlInput"
+              rows="1"
+              placeholder="粘贴分享链接或含链接的文本…"
+            ></textarea>
+          </div>
           <button id="parseBtn" class="btn waves-effect waves-light">
             解 析
           </button>

@@ -1,0 +1,16 @@
+[
+  {
+    "slug": "video-parser",
+    "name": "短视频解析",
+    "description": "全平台短视频链接解析去水印工具",
+    "emoji": "🎬",
+    "url": "/tools/video-parser/"
+  },
+  {
+    "slug": "api-explorer",
+    "name": "API Explorer",
+    "description": "HTTP API 在线调试工具",
+    "emoji": "🔧",
+    "url": "/tools/api-explorer/"
+  }
+]

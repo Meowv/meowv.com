@@ -22,18 +22,9 @@ menu:
   友情链接:
     url: /friends
     icon: fas fa-address-book
-  游戏:
-    url: /game
-    icon: fas fa-gamepad
-  工具:
-    icon: fas fa-toolbox
-    children:
-      - name: 短视频解析
-        url: /tools/video-parser
-        icon: fas fa-link
-      - name: API Explorer
-        url: /tools/api-explorer
-        icon: fas fa-code
+  Labs:
+    url: /labs
+    icon: fas fa-flask
   # Secondary menu example
   # 二级菜单写法如下
   #Medias:

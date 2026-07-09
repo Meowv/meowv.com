@@ -1,3 +1,14 @@
+<%
+    var toolTitle = 'API Explorer';
+    var toolDesc = '';
+    if (site.data && site.data.tools) {
+        var tool = site.data.tools.find(function(t) { return t.slug === page.toolSlug; });
+        if (tool) {
+            toolTitle = tool.emoji + ' ' + tool.name;
+            toolDesc = tool.description;
+        }
+    }
+%>
 <%- partial('_partial/bg-cover') %>
 
 <style>
@@ -608,10 +619,10 @@
     <!-- 请求配置卡片 -->
     <div class="card request-card">
       <div class="card-content">
-        <span class="card-title"><i class="fas fa-code"></i>API Explorer</span>
-        <p style="color: #999; font-size: 0.9rem; margin-bottom: 0">
-          调试 HTTP API 的在线工具
-        </p>
+        <span class="card-title" style="display: inline"><%= toolTitle %></span>
+        <% if (toolDesc) { %>
+        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
+        <% } %>
 
         <div class="url-row">
           <div class="input-field method-select">

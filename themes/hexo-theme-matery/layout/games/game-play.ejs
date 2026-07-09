@@ -1,3 +1,14 @@
+<%
+    var gameTitle = page.gameName || page.title;
+    var gameDesc = '';
+    if (site.data && site.data.games) {
+        var game = site.data.games.find(function(g) { return g.slug === page.gameSlug; });
+        if (game) {
+            gameTitle = game.emoji + ' ' + game.name;
+            gameDesc = game.description;
+        }
+    }
+%>
 <style>
     .game-play-container {
         margin-top: 20px;
@@ -28,18 +39,6 @@
         max-width: 100%;
         overflow: hidden;
     }
-    .game-back-arrow {
-        color: #3C4858;
-        font-size: 1.2rem;
-        text-decoration: none;
-        transition: color 0.3s;
-        margin-right: 8px;
-        line-height: 1;
-    }
-    .game-back-arrow:hover {
-        color: #4facfe;
-        text-decoration: none;
-    }
 
     @media only screen and (max-width: 601px) {
         .game-iframe-wrapper iframe {
@@ -57,10 +56,10 @@
         <div class="card">
             <div class="card-content">
                 <div class="game-play-header">
-                    <a href="/game/" class="game-back-arrow">
-                        <i class="fas fa-arrow-left"></i>
-                    </a>
-                    <span class="game-play-title"><%= page.gameName || page.title %></span>
+                    <span class="game-play-title"><%= gameTitle %></span>
+                    <% if (gameDesc) { %>
+                    <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= gameDesc %></span>
+                    <% } %>
                 </div>
 
                 <div class="game-iframe-wrapper">

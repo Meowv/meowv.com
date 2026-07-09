@@ -1,0 +1,205 @@
+<%
+var gradients = [
+  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
+  'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+  'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+  'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+  'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+  'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+  'linear-gradient(135deg, #d299c2 0%, #fef9d7 100%)',
+  'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+  'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+];
+%>
+<%- partial('_partial/bg-cover') %>
+
+<style>
+    .labs-container {
+        margin-top: -50px;
+        margin-bottom: 30px;
+    }
+    .labs-container .tag-title {
+        margin-bottom: 10px;
+        color: #3C4858;
+        font-size: 1.75rem;
+        font-weight: 400;
+    }
+    .labs-section {
+        margin-bottom: 20px;
+    }
+    .lab-row {
+        margin-bottom: 0;
+    }
+    .lab-col {
+        padding: 0.5rem;
+        margin-bottom: 0.75rem;
+    }
+    .lab-col .lab-link {
+        display: block;
+        width: 100%;
+        text-decoration: none;
+        color: inherit;
+    }
+    .lab-col .lab-link:hover {
+        text-decoration: none;
+    }
+    .lab-card {
+        padding: 16px;
+        border-radius: 10px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        overflow: hidden;
+        position: relative;
+        height: 110px;
+        color: #fff !important;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        box-sizing: border-box;
+    }
+    .lab-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.25) !important;
+    }
+    .lab-card .lab-emoji {
+        font-size: 1.6rem;
+        margin-bottom: 4px;
+        display: block;
+        line-height: 1.2;
+    }
+    .lab-card .lab-name {
+        font-size: 0.95rem;
+        font-weight: bold;
+        margin-bottom: 2px;
+    }
+    .lab-card .lab-desc {
+        color: rgba(255,255,255,0.85);
+        font-size: 0.7rem;
+        line-height: 1.3;
+    }
+    .lab-card .lab-badges {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        display: flex;
+        gap: 4px;
+    }
+    .lab-card .lab-badge {
+        font-size: 0.6rem;
+        padding: 2px 6px;
+        border-radius: 8px;
+        background: rgba(255,255,255,0.3);
+        color: #fff;
+        backdrop-filter: blur(4px);
+        line-height: 1.4;
+    }
+
+    @media only screen and (max-width: 601px) {
+        .lab-card {
+            height: 100px;
+            padding: 10px 12px;
+        }
+        .lab-card .lab-emoji {
+            font-size: 1.4rem;
+        }
+        .lab-card .lab-name {
+            font-size: 0.85rem;
+        }
+        .lab-card .lab-desc {
+            font-size: 0.65rem;
+        }
+    }
+</style>
+
+<main class="content">
+    <div class="container labs-container">
+        <!-- 工具模块 -->
+        <div class="card labs-section">
+            <div class="card-content">
+                <div class="tag-title">
+                    <i class="fas fa-toolbox"></i>&nbsp;&nbsp;<%= __('tools') %>
+                </div>
+                <article>
+                    <% if (site.data && site.data.tools) { %>
+                    <% var tools = site.data.tools; %>
+                    <div class="row lab-row">
+                        <% for (var i = 0, len = tools.length; i < len; i++) { %>
+                        <% var tool = tools[i]; %>
+                        <div class="col s6 m6 l3 lab-col" data-aos="zoom-in-up">
+                            <a href="<%= tool.url %>" class="lab-link">
+                                <div class="card lab-card" style="background-image: <%= tool.gradient || gradients[i % gradients.length] %>">
+                                    <span class="lab-emoji"><%= tool.emoji %></span>
+                                    <div class="lab-name"><%= tool.name %></div>
+                                    <div class="lab-desc"><%= tool.description %></div>
+                                </div>
+                            </a>
+                        </div>
+                        <% } %>
+                    </div>
+                    <% } %>
+                </article>
+            </div>
+        </div>
+
+        <!-- 游戏模块 -->
+        <div class="card labs-section">
+            <div class="card-content">
+                <div class="tag-title">
+                    <i class="fas fa-gamepad"></i>&nbsp;&nbsp;<%= __('games') %>
+                </div>
+                <article>
+                    <% if (site.data && site.data.games) { %>
+                    <% var games = site.data.games; %>
+                    <% var gameOffset = (typeof tools !== 'undefined') ? tools.length : 0; %>
+                    <div class="row lab-row">
+                        <% for (var i = 0, len = games.length; i < len; i++) { %>
+                        <% var game = games[i]; %>
+                        <div class="col s6 m6 l3 lab-col" data-aos="zoom-in-up">
+                            <% if (game.type === 'fullscreen') { %>
+                            <a href="/games/<%= game.slug %>/<%= game.entryFile %>" target="_blank" class="lab-link">
+                                <div class="card lab-card" style="background-image: <%= game.gradient || gradients[(gameOffset + i) % gradients.length] %>">
+                                    <span class="lab-emoji"><%= game.emoji %></span>
+                                    <div class="lab-name"><%= game.name %></div>
+                                    <div class="lab-desc"><%= game.description %></div>
+                                    <div class="lab-badges">
+                                        <% if (game.mobile) { %><span class="lab-badge">📱</span><% } %>
+                                        <span class="lab-badge">↗</span>
+                                    </div>
+                                </div>
+                            </a>
+                            <% } else { %>
+                            <a href="/game/<%= game.slug %>/" class="lab-link">
+                                <div class="card lab-card" style="background-image: <%= game.gradient || gradients[(gameOffset + i) % gradients.length] %>">
+                                    <span class="lab-emoji"><%= game.emoji %></span>
+                                    <div class="lab-name"><%= game.name %></div>
+                                    <div class="lab-desc"><%= game.description %></div>
+                                    <div class="lab-badges">
+                                        <% if (game.mobile) { %><span class="lab-badge">📱</span><% } %>
+                                    </div>
+                                </div>
+                            </a>
+                            <% } %>
+                        </div>
+                        <% } %>
+                    </div>
+                    <% } %>
+                </article>
+            </div>
+        </div>
+
+        <% if (page.content && page.content.length > 0) { %>
+        <div class="card">
+            <div class="card-content">
+                <%- page.content %>
+            </div>
+        </div>
+        <% } %>
+
+        <div class="card">
+            <% if (theme.valine && theme.valine.enable) { %>
+            <%- partial('_partial/valine') %>
+            <% } %>
+        </div>
+    </div>
+</main>
