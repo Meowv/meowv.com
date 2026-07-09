@@ -166,8 +166,8 @@ var gradients = [
                         <% for (var i = 0, len = games.length; i < len; i++) { %>
                         <% var game = games[i]; %>
                         <div class="col s6 m6 l3 lab-col" data-aos="zoom-in-up">
-                            <% if (game.type === 'fullscreen') { %>
-                            <a href="/games/<%= game.slug %>/<%= game.entryFile %>" target="_blank" class="lab-link">
+                            <% if (game.fullscreen) { %>
+                            <a href="/games/<%= game.slug %>/<%= game.entryFile || 'index.html' %>" target="_blank" class="lab-link">
                                 <div class="card lab-card" style="background-image: <%= game.gradient || gradients[(gameOffset + i) % gradients.length] %>">
                                     <span class="lab-emoji"><%= game.emoji %></span>
                                     <div class="lab-name"><%= game.name %></div>
