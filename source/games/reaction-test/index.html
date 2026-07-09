@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>反应速度测试</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 100%; height: 100%; overflow: hidden; }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      #app {
+        width: 100%; height: 100%;
+        display: flex; align-items: center; justify-content: center;
+        flex-direction: column;
+        transition: background-color 0.15s ease;
+        background-color: #1a1a2e;
+        cursor: pointer;
+        position: relative;
+      }
+
+      .header {
+        position: absolute; top: 24px; left: 0; right: 0;
+        text-align: center; color: rgba(255,255,255,0.45);
+        font-size: 13px; letter-spacing: 1px;
+      }
+
+      .title {
+        font-size: 28px; font-weight: 700; color: #fff;
+        margin-bottom: 12px; letter-spacing: 2px;
+      }
+      .subtitle {
+        font-size: 14px; color: rgba(255,255,255,0.55);
+        margin-bottom: 40px;
+      }
+
+      .main-text {
+        font-size: 52px; font-weight: 900; color: #fff;
+        letter-spacing: 6px; text-align: center;
+      }
+      .main-text.waiting {
+        font-size: 22px; font-weight: 500; letter-spacing: 3px;
+        color: rgba(255,255,255,0.7);
+        animation: pulse 1.5s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%,100% { opacity: 0.5; }
+        50% { opacity: 1; }
+      }
+
+      .time-display {
+        font-size: 80px; font-weight: 900; color: #fff;
+        margin: 8px 0; letter-spacing: 2px;
+        font-variant-numeric: tabular-nums;
+      }
+      .time-display span { font-size: 24px; font-weight: 400; opacity: 0.6; }
+
+      .btn {
+        display: inline-block; padding: 14px 48px;
+        border: 2px solid rgba(255,255,255,0.8); border-radius: 50px;
+        color: #fff; font-size: 18px; font-weight: 600;
+        cursor: pointer; letter-spacing: 2px;
+        transition: all 0.2s; background: transparent;
+      }
+      .btn:hover { background: rgba(255,255,255,0.12); }
+      .btn:active { transform: scale(0.96); }
+
+      /* 成绩面板 — 独立于 #content，不受 fade-in 动画影响 */
+      #scoreboard {
+        position: absolute; bottom: 56px; left: 50%;
+        transform: translateX(-50%);
+        display: none; gap: 10px; flex-wrap: wrap; justify-content: center;
+      }
+      #scoreboard.visible { display: flex; }
+      .score-item {
+        width: 48px; height: 48px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 13px; font-weight: 700; color: #fff;
+        font-variant-numeric: tabular-nums;
+        transition: transform 0.3s ease, opacity 0.3s ease;
+      }
+      .score-item.done { animation: popIn 0.35s ease forwards; }
+      @keyframes popIn {
+        from { opacity: 0; transform: scale(0); }
+        to { opacity: 1; transform: scale(1); }
+      }
+      .score-item.pending {
+        background: rgba(255,255,255,0.05);
+        border: 1px dashed rgba(255,255,255,0.1);
+        color: transparent;
+      }
+
+      .results { width: 90%; max-width: 360px; }
+      .result-row {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 10px 16px; margin: 6px 0;
+        background: rgba(255,255,255,0.08); border-radius: 8px;
+        color: #fff; font-size: 15px;
+      }
+      .result-row .dot {
+        width: 10px; height: 10px; border-radius: 50%;
+        flex-shrink: 0; margin-right: 10px;
+      }
+      .result-row .time { font-weight: 700; font-variant-numeric: tabular-nums; }
+      .result-row .label { flex: 1; opacity: 0.7; }
+
+      .avg-box {
+        margin-top: 20px; padding: 18px 24px;
+        background: rgba(255,255,255,0.12); border-radius: 12px;
+        text-align: center;
+      }
+      .avg-box .avg-label { font-size: 14px; color: rgba(255,255,255,0.6); margin-bottom: 6px; }
+      .avg-box .avg-value { font-size: 56px; font-weight: 900; color: #fff; }
+      .avg-box .avg-value span { font-size: 22px; font-weight: 400; opacity: 0.6; }
+
+      .grade { font-size: 16px; margin-top: 4px; color: rgba(255,255,255,0.7); }
+
+      .fade-in { animation: fadeIn 0.25s ease; }
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      .warning { color: #ff6b6b; font-size: 15px; margin-top: 12px; animation: shake 0.4s ease; }
+      @keyframes shake {
+        0%,100% { transform: translateX(0); }
+        25% { transform: translateX(-8px); }
+        50% { transform: translateX(8px); }
+        75% { transform: translateX(-4px); }
+      }
+
+      .disclaimer {
+        position: fixed; bottom: 12px; left: 0; right: 0;
+        text-align: center; font-size: 11px;
+        color: rgba(255,255,255,0.2); padding: 0 16px;
+        line-height: 1.5; pointer-events: none;
+      }
+
+      .skip-hint {
+        position: absolute; bottom: 18px; left: 0; right: 0;
+        text-align: center; font-size: 11px;
+        color: rgba(255,255,255,0.18);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div id="content"></div>
+      <div id="scoreboard"></div>
+      <div class="disclaimer">免责声明：本工具提供的数据和结果仅供参考，不保证其准确性、完整性和实时性。使用本工具产生的任何后果由用户自行承担，与本站无关。</div>
+    </div>
+
+    <script>
+      const TOTAL = 7;
+      const COLORS = [
+        "#e74c3c","#e67e22","#2ecc71","#1abc9c",
+        "#3498db","#9b59b6","#f39c12","#e91e63",
+        "#00bcd4","#8bc34a","#ff5722","#673ab7",
+        "#009688","#cddc39","#03a9f4","#ff9800"
+      ];
+
+      const app = document.getElementById("app");
+      const content = document.getElementById("content");
+      const scoreboardEl = document.getElementById("scoreboard");
+
+      let state = "idle"; // idle | waiting | ready | result | finished
+      let results = [];
+      let currentRound = 0;
+      let colorStartTime = 0;
+      let waitTimeout = null;
+      let usedColors = [];
+
+      function pickColor() {
+        if (usedColors.length >= COLORS.length) usedColors = [];
+        const pool = COLORS.filter(c => !usedColors.includes(c));
+        const color = pool[Math.floor(Math.random() * pool.length)];
+        usedColors.push(color);
+        return color;
+      }
+
+      function resetApp() {
+        app.style.backgroundColor = "#1a1a2e";
+      }
+
+      function render(html) {
+        content.innerHTML = '<div class="fade-in">' + html + "</div>";
+      }
+
+      function updateScoreboard() {
+        let html = "";
+        for (let i = 0; i < TOTAL; i++) {
+          if (i < results.length) {
+            const color = COLORS[i % COLORS.length];
+            html += `<div class="score-item done" style="background:${color}">${results[i]}</div>`;
+          } else {
+            html += '<div class="score-item pending"></div>';
+          }
+        }
+        scoreboardEl.innerHTML = html;
+        scoreboardEl.classList.add("visible");
+      }
+
+      function hideScoreboard() {
+        scoreboardEl.classList.remove("visible");
+      }
+
+      function showIdle() {
+        state = "idle";
+        hideScoreboard();
+        resetApp();
+        render(`
+          <div class="title">⚡ 反应速度测试</div>
+          <div class="subtitle">屏幕变色后尽快点击，共 ${TOTAL} 次测试</div>
+          <div class="btn" id="startBtn">开始测试</div>
+        `);
+        document.getElementById("startBtn").addEventListener("click", (e) => {
+          e.stopPropagation();
+          startRound();
+        });
+      }
+
+      function startRound() {
+        results = [];
+        currentRound = 0;
+        usedColors = [];
+        nextRound();
+      }
+
+      function nextRound() {
+        if (currentRound >= TOTAL) {
+          hideScoreboard();
+          showFinished();
+          return;
+        }
+        state = "waiting";
+        resetApp();
+        const round = currentRound + 1;
+        updateScoreboard();
+        render(`
+          <div class="header">第 ${round} / ${TOTAL} 次</div>
+          <div class="main-text waiting">等待变色...</div>
+        `);
+
+        const delay = 1500 + Math.random() * 3500;
+        waitTimeout = setTimeout(() => {
+          state = "ready";
+          const color = pickColor();
+          app.style.backgroundColor = color;
+          colorStartTime = performance.now();
+          render(`
+            <div class="header">第 ${round} / ${TOTAL} 次</div>
+            <div class="main-text">点击！</div>
+          `);
+        }, delay);
+      }
+
+      function handleClick() {
+        if (state === "idle" || state === "result") return;
+
+        if (state === "waiting") {
+          clearTimeout(waitTimeout);
+          resetApp();
+          render(`
+            <div class="title">⚠️ 太早了！</div>
+            <div class="warning">请等屏幕变色后再点击</div>
+            <div class="btn" id="retryBtn" style="margin-top:28px">继续测试</div>
+          `);
+          document.getElementById("retryBtn").addEventListener("click", (e) => {
+            e.stopPropagation();
+            nextRound();
+          });
+          state = "penalty";
+          return;
+        }
+
+        if (state === "penalty") return;
+
+        if (state === "ready") {
+          const reactionTime = Math.round(performance.now() - colorStartTime);
+          results.push(reactionTime);
+          currentRound++;
+          state = "result";
+          resetApp();
+          updateScoreboard();
+          render(`
+            <div class="header">第 ${currentRound} / ${TOTAL} 次</div>
+            <div class="time-display">${reactionTime}<span> ms</span></div>
+          `);
+          setTimeout(() => nextRound(), 1000);
+          return;
+        }
+
+        if (state === "finished") {
+          showIdle();
+          return;
+        }
+      }
+
+      function showFinished() {
+        state = "finished";
+        hideScoreboard();
+        resetApp();
+        const avg = Math.round(results.reduce((a, b) => a + b, 0) / results.length);
+        const min = Math.min(...results);
+        const max = Math.max(...results);
+
+        let grade = "";
+        if (avg < 200) grade = "🏆 顶级反应！你是闪电侠吗？";
+        else if (avg < 250) grade = "🔥 非常快！职业电竞水平";
+        else if (avg < 300) grade = "👍 不错的反应速度";
+        else if (avg < 400) grade = "📊 平均水平，还有提升空间";
+        else grade = "🐢 有点慢哦，多练练吧";
+
+        const rows = results.map((t, i) => {
+          const color = COLORS[i % COLORS.length];
+          return `<div class="result-row">
+            <span class="dot" style="background:${color}"></span>
+            <span class="label">第 ${i + 1} 次</span>
+            <span class="time">${t} ms</span>
+          </div>`;
+        }).join("");
+
+        render(`
+          <div class="title" style="font-size:22px">📊 测试结果</div>
+          <div class="results">${rows}</div>
+          <div class="avg-box">
+            <div class="avg-label">平均反应时间</div>
+            <div class="avg-value">${avg}<span> ms</span></div>
+            <div class="grade">${grade}</div>
+          </div>
+          <div style="margin-top:6px;font-size:12px;color:rgba(255,255,255,0.35)">
+            最快 ${min} ms &nbsp;/&nbsp; 最慢 ${max} ms
+          </div>
+          <div style="margin-top:18px">
+            <span class="btn" id="retryBtn">再来一次</span>
+          </div>
+        `);
+        document.getElementById("retryBtn").addEventListener("click", (e) => {
+          e.stopPropagation();
+          startRound();
+        });
+      }
+
+      app.addEventListener("click", handleClick);
+      showIdle();
+    </script>
+  </body>
+</html>

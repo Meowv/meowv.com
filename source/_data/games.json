@@ -43,5 +43,14 @@
     "emoji": "⌨️",
     "entryFile": "index.html",
     "mobile": false
+  },
+  {
+    "slug": "reaction-test",
+    "name": "反应速度测试",
+    "description": "测试你的反应速度，点击变色后尽快响应，7次测试取平均",
+    "type": "embedded",
+    "emoji": "⚡",
+    "entryFile": "index.html",
+    "mobile": true
   }
 ]
