@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>表情符号消除小游戏 | 阿星𝑷𝒍𝒖𝒔</title>
+    <link rel="icon" type="image/png" href="https://meowv.com/favicon.png" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="container">
+        <div id="game">
+            <!-- 提示按钮 -->
+            <div id="hintBtn">提示?</div>
+            <!-- 已找到数量 -->
+            <div class="foundTxt">找到配对...</div>
+            <!-- 倒计时显示 -->
+            <div class="timeTxt">60:00</div>
+            <!-- +5秒动画 -->
+            <div class="timePlus">+5</div>
+            <!-- 按钮区域 4x4 -->
+            <div id="btnArea"></div>
+            <!-- 结束遮罩 -->
+            <div class="end">
+                <div class="endTxt"></div>
+                <div id="replayBtn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
+                        <rect width="240" height="240" fill="none" />
+                        <path fill="#888da8" d="M120,50V10L70,60l50,50V70c33.11,0,60,26.9,60,60c0,33.11-26.89,60-60,60c-33.1,0-60-26.89-60-60H40 c0,44.2,35.8,80,80,80s80-35.8,80-80S164.2,50,120,50z" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

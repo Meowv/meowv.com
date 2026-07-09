@@ -1,0 +1,293 @@
+/* 表情符号消除小游戏样式 */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: 500;
+    letter-spacing: -0.75px;
+}
+
+/* 游戏容器 */
+#container {
+    max-width: 380px;
+    width: 100%;
+    position: relative;
+    opacity: 0;
+    transition: opacity 0.2s ease-in;
+}
+
+#container.active {
+    opacity: 1;
+}
+
+/* 游戏主区域 */
+#game {
+    position: relative;
+    user-select: none;
+    padding: 20px;
+}
+
+/* 按钮区域 4x4 网格 */
+#btnArea {
+    display: flex;
+    flex-wrap: wrap;
+    max-width: 260px;
+    margin: 50px auto 0;
+}
+
+/* 表情按钮样式 */
+.btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 65px;
+    height: 65px;
+    max-width: 25%;
+    flex-basis: 25%;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    font-size: 38px;
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", NotoColorEmoji, "Segoe UI Symbol", "Android Emoji", EmojiSymbols;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.1s ease, border-color 0.15s ease, background 0.15s ease;
+    transform: scale(1);
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.btn:active {
+    transform: scale(0.95);
+}
+
+.btn.selected {
+    border-color: #4da6ff;
+    background: rgba(77, 166, 255, 0.15);
+}
+
+.btn.matched {
+    border-color: #08c04d;
+    background: rgba(8, 192, 77, 0.15);
+    animation: matchBounce 0.3s ease;
+}
+
+.btn.hint-pulse {
+    animation: hintPulse 0.5s ease infinite alternate;
+}
+
+/* 按钮出现动画 */
+.btn.appear {
+    animation: btnAppear 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* 已找到数量文本 */
+.foundTxt {
+    position: absolute;
+    left: 0;
+    top: 20px;
+    width: 100%;
+    font-size: 16px;
+    text-align: center;
+    font-weight: 300;
+    letter-spacing: 0.5px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* 倒计时文本 */
+.timeTxt {
+    position: absolute;
+    left: 20px;
+    top: 14px;
+    font-size: 32px;
+    font-weight: 700;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+}
+
+/* +5秒提示 */
+.timePlus {
+    position: absolute;
+    left: 64px;
+    top: 48px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #08c04d;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.timePlus.show {
+    animation: timePlusAnim 0.6s ease forwards;
+}
+
+/* 提示按钮 */
+#hintBtn {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    font-size: 14px;
+    text-align: center;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 6px 14px;
+    opacity: 0;
+    transition: opacity 0.5s ease, background 0.2s ease;
+    backdrop-filter: blur(10px);
+}
+
+#hintBtn.visible {
+    opacity: 1;
+}
+
+#hintBtn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+#hintBtn.hint-active {
+    font-size: 28px;
+    padding: 8px 18px;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+/* 结束遮罩 */
+.end {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    border-radius: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.6s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.end.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* 结束文本 */
+.endTxt {
+    text-align: center;
+    font-size: 20px;
+    font-weight: 300;
+    color: #fff;
+    margin-bottom: 20px;
+}
+
+/* 重玩按钮 */
+#replayBtn {
+    margin: 0 auto;
+    cursor: pointer;
+    transform: scale(0);
+    transition: transform 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transform-origin: center;
+}
+
+#replayBtn.active {
+    transform: scale(0.5);
+}
+
+#replayBtn:hover {
+    transform: scale(0.55) !important;
+}
+
+#replayBtn svg {
+    margin: auto;
+    display: block;
+}
+
+/* 动画 */
+@keyframes btnAppear {
+    0% { transform: scale(0.2); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes matchBounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(0.8) rotate(10deg); }
+}
+
+@keyframes hintPulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.15); }
+    100% { box-shadow: 0 0 12px 3px rgba(255, 255, 255, 0.08); }
+}
+
+@keyframes timePlusAnim {
+    0% { opacity: 0; transform: scale(0); }
+    30% { opacity: 1; transform: scale(1); }
+    70% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1.2); }
+}
+
+@keyframes spinIn {
+    from { transform: rotate(360deg) scale(0); opacity: 0; }
+    to { transform: rotate(0) scale(0.5); opacity: 1; }
+}
+
+/* 响应式 */
+@media (max-width: 420px) {
+    #container {
+        max-width: 320px;
+    }
+
+    #game {
+        padding: 16px;
+    }
+
+    #btnArea {
+        max-width: 220px;
+        margin-top: 40px;
+    }
+
+    .btn {
+        width: 55px;
+        height: 55px;
+        font-size: 32px;
+    }
+
+    .timeTxt {
+        font-size: 26px;
+        left: 16px;
+        top: 12px;
+    }
+
+    .foundTxt {
+        font-size: 14px;
+        top: 16px;
+    }
+
+    .timePlus {
+        left: 52px;
+        top: 40px;
+        font-size: 15px;
+    }
+
+    #hintBtn {
+        font-size: 12px;
+        padding: 5px 12px;
+    }
+
+    #hintBtn.hint-active {
+        font-size: 24px;
+    }
+}

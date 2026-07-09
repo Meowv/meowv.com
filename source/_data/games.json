@@ -9,6 +9,15 @@
     "mobile": true
   },
   {
+    "slug": "emoji-match",
+    "name": "表情符号消除",
+    "description": "在有限时间内选择2个相同的表情符号进行消除，成功消除可增加5秒时间。挑战你能消除多少对！",
+    "type": "embedded",
+    "emoji": "🎮",
+    "entryFile": "index.html",
+    "mobile": true
+  },
+  {
     "slug": "xiaoxiaole",
     "name": "数字消消乐",
     "description": "合并相同数字，挑战更高分数！",
