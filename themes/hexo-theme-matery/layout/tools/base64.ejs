@@ -1,0 +1,221 @@
+<%
+    var toolTitle = 'Base64 编解码';
+    var toolDesc = '';
+    if (site.data && site.data.tools) {
+        var tool = site.data.tools.find(function(t) { return t.slug === page.toolSlug; });
+        if (tool) {
+            toolTitle = tool.emoji + ' ' + tool.name;
+            toolDesc = tool.description;
+        }
+    }
+%>
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .tool-container { margin-top: -50px; margin-bottom: 30px; }
+  .tool-container .card { border-radius: 8px; }
+  .tool-container .card-title { font-size: 1.4rem; font-weight: 600; }
+
+  .tabs-row { display: flex; gap: 0; margin-bottom: 16px; border-bottom: 2px solid #eee; }
+  .tabs-row .tab-btn {
+    padding: 10px 24px; border: none; background: none; cursor: pointer;
+    font-size: 0.9rem; color: #999; transition: all 0.2s; border-bottom: 2px solid transparent;
+    margin-bottom: -2px; outline: none;
+  }
+  .tabs-row .tab-btn.active { color: #e65100; border-bottom-color: #e65100; font-weight: 600; }
+  .tabs-row .tab-btn:hover { color: #e65100; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .base64-columns { display: flex; gap: 16px; }
+  .base64-col { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .base64-col .col-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
+  }
+  .base64-col .col-label { font-size: 0.9rem; font-weight: 600; color: #666; }
+  .base64-col textarea {
+    width: 100%; min-height: 200px; border: 2px solid #e8e8e8; border-radius: 10px;
+    padding: 14px 16px; font-size: 0.9rem; font-family: 'SF Mono','Fira Code','Consolas',monospace;
+    line-height: 1.6; resize: vertical; background: #fafafa; box-sizing: border-box;
+    outline: none; transition: border-color 0.3s;
+  }
+  .base64-col textarea:focus { border-color: #e65100; background: #fff; }
+  .base64-col textarea.output-area { background: #f5f5f5; color: #333; }
+  .col-actions {
+    display: flex; gap: 8px; margin-top: 8px; justify-content: flex-end;
+  }
+  .col-actions .btn-small {
+    border-radius: 16px; font-size: 0.78rem; padding: 0 14px; height: 30px;
+    line-height: 30px; background: transparent; color: #888; border: 1px solid #ddd;
+    box-shadow: none; transition: all 0.2s; display: inline-flex; align-items: center; gap: 4px;
+  }
+  .col-actions .btn-small:hover { border-color: #e65100; color: #e65100; }
+  .col-actions .btn-small.copied { border-color: #e65100; background: #e65100; color: #fff; }
+
+  .action-btn {
+    border-radius: 20px; padding: 0 24px; height: 36px; line-height: 36px;
+    font-size: 0.85rem; background: linear-gradient(135deg, #e65100 0%, #ff9800 100%);
+    margin: 16px auto 0; display: block;
+  }
+  .action-btn:hover { box-shadow: 0 4px 12px rgba(230,81,0,0.4); }
+
+  .image-upload { margin: 12px 0; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .image-upload .file-label {
+    display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px;
+    border: 1px dashed #ccc; border-radius: 8px; cursor: pointer; color: #888;
+    font-size: 0.85rem; transition: all 0.2s;
+  }
+  .image-upload .file-label:hover { border-color: #e65100; color: #e65100; }
+  .image-upload input[type=file] { display: none; }
+  .image-preview { max-width: 200px; max-height: 150px; border-radius: 8px; display: none; }
+
+  @media only screen and (max-width: 601px) {
+    .tool-container { margin-top: -30px; }
+    .base64-columns { flex-direction: column; }
+    .base64-col textarea { min-height: 140px; }
+  }
+</style>
+
+<main class="content">
+  <div class="container tool-container">
+    <div class="card">
+      <div class="card-content">
+        <span class="card-title" style="display: inline"><%= toolTitle %></span>
+        <% if (toolDesc) { %>
+        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
+        <% } %>
+
+        <div class="tabs-row">
+          <button class="tab-btn active" data-tab="text">文本编解码</button>
+          <button class="tab-btn" data-tab="image">图片编解码</button>
+        </div>
+
+        <!-- 文本编解码 -->
+        <div class="tab-content active" id="tab-text">
+          <div class="base64-columns">
+            <div class="base64-col">
+              <div class="col-header"><span class="col-label">原文</span></div>
+              <textarea id="textInput" placeholder="输入要编码的文本..."></textarea>
+              <div class="col-actions">
+                <button class="btn-small" id="clearTextInput"><i class="fas fa-times"></i> 清空</button>
+              </div>
+            </div>
+            <div class="base64-col">
+              <div class="col-header"><span class="col-label">Base64</span></div>
+              <textarea id="textOutput" class="output-area" placeholder="编码结果..." readonly></textarea>
+              <div class="col-actions">
+                <button class="btn-small" id="copyTextOutput"><i class="fas fa-copy"></i> 复制</button>
+              </div>
+            </div>
+          </div>
+          <div style="text-align:center; margin-top: 16px; display: flex; gap: 12px; justify-content: center;">
+            <button class="btn waves-effect action-btn" id="encodeBtn">编码</button>
+            <button class="btn waves-effect action-btn" id="decodeBtn">解码</button>
+          </div>
+        </div>
+
+        <!-- 图片编解码 -->
+        <div class="tab-content" id="tab-image">
+          <div class="base64-columns">
+            <div class="base64-col">
+              <div class="col-header"><span class="col-label">上传图片生成 Base64</span></div>
+              <div class="image-upload">
+                <label class="file-label" for="imageFile"><i class="fas fa-upload"></i> 选择图片</label>
+                <input type="file" id="imageFile" accept="image/*">
+                <img id="imagePreview" class="image-preview" alt="预览">
+              </div>
+              <textarea id="imageBase64Output" class="output-area" placeholder="图片 Base64 编码结果..." readonly style="min-height:120px;"></textarea>
+              <div class="col-actions">
+                <button class="btn-small" id="copyImageOutput"><i class="fas fa-copy"></i> 复制</button>
+              </div>
+            </div>
+            <div class="base64-col">
+              <div class="col-header"><span class="col-label">输入 Base64 预览图片</span></div>
+              <textarea id="imageBase64Input" placeholder="粘贴 Base64 编码字符串..."></textarea>
+              <div class="image-upload" style="margin-top: 8px;">
+                <button class="btn-small" id="previewBase64Btn" style="border-color:#e65100;color:#e65100;">预览图片</button>
+              </div>
+              <img id="base64Preview" class="image-preview" style="margin-top:8px;" alt="Base64 解码预览">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script>
+  // 标签切换
+  $('.tab-btn').on('click', function() {
+    var tab = $(this).data('tab');
+    $('.tab-btn').removeClass('active');
+    $(this).addClass('active');
+    $('.tab-content').removeClass('active');
+    $('#tab-' + tab).addClass('active');
+  });
+
+  // 文本编码
+  $('#encodeBtn').on('click', function() {
+    var text = $('#textInput').val();
+    if (!text) return;
+    try { $('#textOutput').val(btoa(unescape(encodeURIComponent(text)))); }
+    catch(e) { $('#textOutput').val('编码失败: ' + e.message); }
+  });
+
+  // 文本解码
+  $('#decodeBtn').on('click', function() {
+    var text = $('#textInput').val().trim();
+    if (!text) return;
+    try { $('#textOutput').val(decodeURIComponent(escape(atob(text)))); }
+    catch(e) { $('#textOutput').val('解码失败: 请检查输入是否为有效的 Base64'); }
+  });
+
+  // 复制
+  $('#copyTextOutput').on('click', function() {
+    var t = $('#textOutput').val(); if (!t) return;
+    navigator.clipboard.writeText(t).then(function() {
+      var $b = $('#copyTextOutput');
+      $b.addClass('copied').html('<i class="fas fa-check"></i> 已复制');
+      setTimeout(function() { $b.removeClass('copied').html('<i class="fas fa-copy"></i> 复制'); }, 1500);
+    });
+  });
+
+  $('#copyImageOutput').on('click', function() {
+    var t = $('#imageBase64Output').val(); if (!t) return;
+    navigator.clipboard.writeText(t).then(function() {
+      var $b = $('#copyImageOutput');
+      $b.addClass('copied').html('<i class="fas fa-check"></i> 已复制');
+      setTimeout(function() { $b.removeClass('copied').html('<i class="fas fa-copy"></i> 复制'); }, 1500);
+    });
+  });
+
+  $('#clearTextInput').on('click', function() { $('#textInput').val(''); $('#textOutput').val(''); });
+
+  // 图片上传转 Base64
+  $('#imageFile').on('change', function() {
+    var file = this.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      $('#imageBase64Output').val(e.target.result);
+      $('#imagePreview').attr('src', e.target.result).show();
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // Base64 预览图片
+  $('#previewBase64Btn').on('click', function() {
+    var base64 = $('#imageBase64Input').val().trim();
+    if (!base64) { M.toast({html: '请输入 Base64 字符串', classes: 'rounded'}); return; }
+    var src = base64;
+    if (!base64.startsWith('data:')) src = 'data:image/png;base64,' + base64;
+    $('#base64Preview').attr('src', src).show();
+  });
+</script>
