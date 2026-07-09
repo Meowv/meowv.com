@@ -7,4 +7,6 @@ public/
 .deploy*/
 _multiconfig.yml
 .claude
+docs
 CLAUDE.md
+AGENTS.md
