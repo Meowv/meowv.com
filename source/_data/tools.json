@@ -26,5 +26,33 @@
     "description": "中文简繁体实时在线转换",
     "emoji": "🔄",
     "url": "/tools/chinese-converter/"
+  },
+  {
+    "slug": "json-formatter",
+    "name": "JSON 格式化",
+    "description": "JSON 格式化、压缩、校验工具",
+    "emoji": "📝",
+    "url": "/tools/json-formatter/"
+  },
+  {
+    "slug": "qr-generator",
+    "name": "二维码生成",
+    "description": "在线文本/链接二维码生成器",
+    "emoji": "🔳",
+    "url": "/tools/qr-generator/"
+  },
+  {
+    "slug": "base64",
+    "name": "Base64 编解码",
+    "description": "Base64 文本与图片在线编解码",
+    "emoji": "🔒",
+    "url": "/tools/base64/"
+  },
+  {
+    "slug": "color-tools",
+    "name": "颜色工具",
+    "description": "HEX/RGB/HSL 颜色格式互转",
+    "emoji": "🎨",
+    "url": "/tools/color-tools/"
   }
 ]
