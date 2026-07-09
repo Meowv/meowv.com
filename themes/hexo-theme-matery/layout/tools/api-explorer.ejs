@@ -814,6 +814,12 @@
         </div>
       </div>
     </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
   </div>
 </main>
 

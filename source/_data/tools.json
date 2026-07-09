@@ -12,5 +12,19 @@
     "description": "HTTP API 在线调试工具",
     "emoji": "🔧",
     "url": "/tools/api-explorer/"
+  },
+  {
+    "slug": "translate",
+    "name": "翻译工具",
+    "description": "中英互译在线翻译工具",
+    "emoji": "🌐",
+    "url": "/tools/translate/"
+  },
+  {
+    "slug": "chinese-converter",
+    "name": "繁简互转",
+    "description": "中文简繁体实时在线转换",
+    "emoji": "🔄",
+    "url": "/tools/chinese-converter/"
   }
 ]

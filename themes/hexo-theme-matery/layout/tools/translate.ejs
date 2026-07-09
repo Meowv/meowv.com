@@ -1,0 +1,428 @@
+<%
+    var toolTitle = '翻译工具';
+    var toolDesc = '';
+    if (site.data && site.data.tools) {
+        var tool = site.data.tools.find(function(t) { return t.slug === page.toolSlug; });
+        if (tool) {
+            toolTitle = tool.emoji + ' ' + tool.name;
+            toolDesc = tool.description;
+        }
+    }
+%>
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .tool-container {
+    margin-top: -50px;
+    margin-bottom: 30px;
+  }
+  .tool-container .card {
+    border-radius: 8px;
+  }
+  .tool-container .card-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+  }
+  .tool-container .card-title i {
+    margin-right: 8px;
+  }
+
+  /* 语言选择栏 */
+  .lang-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .lang-label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #444;
+    min-width: 80px;
+    text-align: center;
+  }
+  .lang-label.source { color: #2e7d32; }
+  .lang-label.target { color: #1565c0; }
+  #swapBtn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid #e0e0e0;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  #swapBtn:hover {
+    border-color: #4caf50;
+    color: #4caf50;
+    transform: rotate(180deg);
+  }
+
+  /* 双栏布局 */
+  .translate-columns {
+    display: flex;
+    gap: 16px;
+    margin-top: 16px;
+  }
+  .translate-col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .translate-col .col-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .translate-col .col-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #666;
+  }
+  .translate-col .col-count {
+    font-size: 0.78rem;
+    color: #aaa;
+  }
+  .translate-col textarea {
+    width: 100%;
+    min-height: 200px;
+    border: 2px solid #e8e8e8;
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    resize: vertical;
+    background: #fafafa;
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color 0.3s, background 0.3s, box-shadow 0.3s;
+    font-family: inherit;
+  }
+  .translate-col textarea:focus {
+    border-color: #4caf50;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.12);
+  }
+  .translate-col textarea.output-area {
+    background: #f5f5f5;
+    color: #333;
+  }
+  .col-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    justify-content: flex-end;
+  }
+  .col-actions .btn-small {
+    border-radius: 16px;
+    font-size: 0.78rem;
+    padding: 0 14px;
+    height: 30px;
+    line-height: 30px;
+    background: transparent;
+    color: #888;
+    border: 1px solid #ddd;
+    box-shadow: none;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .col-actions .btn-small:hover {
+    border-color: #4caf50;
+    color: #4caf50;
+    background: rgba(76, 175, 80, 0.05);
+  }
+  .col-actions .btn-small.copied {
+    border-color: #4caf50;
+    background: #4caf50;
+    color: #fff;
+  }
+
+  /* 翻译按钮 */
+  #translateBtn {
+    border-radius: 20px;
+    padding: 0 28px;
+    height: 40px;
+    font-size: 0.9rem;
+    letter-spacing: 2px;
+    background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%);
+    transition: transform 0.2s, box-shadow 0.2s;
+    margin-top: 16px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  #translateBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(46, 125, 50, 0.35);
+  }
+  #translateBtn:disabled {
+    background: #bdbdbd;
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* Loading */
+  .loading-area {
+    display: none;
+    padding: 12px 0;
+    text-align: center;
+  }
+  .loading-area p {
+    color: #888;
+    margin-top: 8px;
+    font-size: 0.9rem;
+  }
+
+  /* 响应式 */
+  @media only screen and (max-width: 601px) {
+    .tool-container {
+      margin-top: -30px;
+    }
+    .translate-columns {
+      flex-direction: column;
+    }
+    .translate-col textarea {
+      min-height: 140px;
+    }
+    #translateBtn {
+      width: 100%;
+    }
+  }
+</style>
+
+<main class="content">
+  <div class="container tool-container">
+    <div class="card">
+      <div class="card-content">
+        <span class="card-title" style="display: inline"><%= toolTitle %></span>
+        <% if (toolDesc) { %>
+        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
+        <% } %>
+
+        <!-- 语言选择栏 -->
+        <div class="lang-bar">
+          <span class="lang-label source" id="sourceLangLabel">中文</span>
+          <button id="swapBtn" title="交换语言"><i class="fas fa-exchange-alt"></i></button>
+          <span class="lang-label target" id="targetLangLabel">English</span>
+        </div>
+
+        <!-- 双栏 -->
+        <div class="translate-columns">
+          <div class="translate-col">
+            <div class="col-header">
+              <span class="col-label">原文</span>
+              <span class="col-count" id="sourceCount">0 字</span>
+            </div>
+            <textarea id="sourceText" placeholder="请输入要翻译的文字..."></textarea>
+          </div>
+          <div class="translate-col">
+            <div class="col-header">
+              <span class="col-label">译文</span>
+            </div>
+            <textarea id="targetText" class="output-area" placeholder="翻译结果将显示在这里..." readonly></textarea>
+            <div class="col-actions">
+              <button class="btn-small" id="copyResultBtn"><i class="fas fa-copy"></i> 复制</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="loading-area" id="loadingArea">
+          <div class="preloader-wrapper active">
+            <div class="spinner-layer spinner-green-only">
+              <div class="circle-clipper left"><div class="circle"></div></div>
+              <div class="gap-patch"><div class="circle"></div></div>
+              <div class="circle-clipper right"><div class="circle"></div></div>
+            </div>
+          </div>
+          <p>翻译中...</p>
+        </div>
+
+        <button id="translateBtn" class="btn waves-effect waves-light" disabled>
+          翻 译
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script>
+  var currentDirection = 'zh2en'; // 'zh2en' | 'en2zh'
+
+  // 翻译接口
+  function translate(text, from, to) {
+    var apiUrl = 'https://translate.googleapis.com/translate_a/single';
+    var params = new URLSearchParams({
+      client: 'gtx',
+      sl: from,
+      tl: to,
+      dt: 't',
+      q: text
+    });
+    return fetch(apiUrl + '?' + params.toString())
+      .then(function(res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .then(function(data) {
+        var result = '';
+        if (data && data[0]) {
+          for (var i = 0; i < data[0].length; i++) {
+            if (data[0][i] && data[0][i][0]) {
+              result += data[0][i][0];
+            }
+          }
+        }
+        return result || text;
+      });
+  }
+
+  // 备用翻译接口
+  function translateFallback(text, from, to) {
+    var sourceLang = from === 'zh-CN' ? 'zh' : from;
+    var targetLang = to === 'zh-CN' ? 'zh' : to;
+    var apiUrl = 'https://openapi.dwo.cc/api/translate';
+    var params = new URLSearchParams({
+      text: text,
+      source_lang: sourceLang,
+      target_lang: targetLang
+    });
+    return fetch(apiUrl + '?' + params.toString() + '&ckey=O7E9KK24O2YA414FGRL7')
+      .then(function(res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .then(function(data) {
+        if (data && data.data) {
+          return data.data;
+        }
+        throw new Error('无效的响应数据');
+      });
+  }
+
+  // 更新字数统计
+  function updateSourceCount() {
+    var len = $('#sourceText').val().length;
+    $('#sourceCount').text(len + ' 字');
+    $('#translateBtn').prop('disabled', len === 0);
+  }
+
+  // 交换语言方向
+  function swapDirection() {
+    currentDirection = currentDirection === 'zh2en' ? 'en2zh' : 'zh2en';
+    if (currentDirection === 'zh2en') {
+      $('#sourceLangLabel').text('中文');
+      $('#targetLangLabel').text('English');
+    } else {
+      $('#sourceLangLabel').text('English');
+      $('#targetLangLabel').text('中文');
+    }
+    // 交换已有内容
+    var sourceVal = $('#sourceText').val();
+    var targetVal = $('#targetText').val();
+    if (targetVal) {
+      $('#sourceText').val(targetVal);
+      $('#targetText').val('');
+      updateSourceCount();
+    }
+  }
+
+  // 显示错误
+  function showError(msg) {
+    M.toast({ html: msg, classes: 'red', displayLength: 1000 });
+    $('#loadingArea').hide();
+    $('#translateBtn').prop('disabled', $('#sourceText').val().length === 0);
+  }
+
+  // 执行翻译
+  function doTranslate() {
+    var text = $('#sourceText').val().trim();
+    if (!text) return;
+
+    var from = currentDirection === 'zh2en' ? 'zh-CN' : 'en';
+    var to = currentDirection === 'zh2en' ? 'en' : 'zh-CN';
+
+    $('#translateBtn').prop('disabled', true);
+    $('#loadingArea').show();
+
+    var controller = new AbortController();
+    var timeoutId = setTimeout(function() { controller.abort(); }, 15000);
+
+    translate(text, from, to)
+      .then(function(result) {
+        clearTimeout(timeoutId);
+        $('#loadingArea').hide();
+        $('#targetText').val(result);
+        $('#translateBtn').prop('disabled', false);
+      })
+      .catch(function(err) {
+        // 主接口失败，尝试备用接口
+        console.warn('主翻译接口失败，尝试备用接口:', err.message);
+        return translateFallback(text, from, to);
+      })
+      .then(function(result) {
+        // 如果 result 是 string（备用接口成功），显示结果
+        if (typeof result === 'string') {
+          clearTimeout(timeoutId);
+          $('#loadingArea').hide();
+          $('#targetText').val(result);
+          $('#translateBtn').prop('disabled', false);
+        }
+      })
+      .catch(function(err) {
+        clearTimeout(timeoutId);
+        $('#loadingArea').hide();
+        if (err.name === 'AbortError') {
+          showError('翻译超时，请稍后重试');
+        } else {
+          showError('翻译失败: ' + err.message);
+        }
+      });
+  }
+
+  $(document).ready(function() {
+    updateSourceCount();
+
+    $('#sourceText').on('input', updateSourceCount);
+
+    $('#translateBtn').on('click', doTranslate);
+
+    $('#sourceText').on('keydown', function(e) {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        doTranslate();
+      }
+    });
+
+    $('#swapBtn').on('click', swapDirection);
+
+    $('#copyResultBtn').on('click', function() {
+      var text = $('#targetText').val();
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(function() {
+        var $btn = $('#copyResultBtn');
+        $btn.addClass('copied');
+        $btn.html('<i class="fas fa-check"></i> 已复制');
+        setTimeout(function() {
+          $btn.removeClass('copied');
+          $btn.html('<i class="fas fa-copy"></i> 复制');
+        }, 1500);
+      });
+    });
+  });
+</script>

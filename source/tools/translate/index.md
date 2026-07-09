@@ -1,0 +1,6 @@
+---
+title: 翻译工具
+date: 2026-07-09 00:00:00
+layout: "tools/translate"
+toolSlug: translate
+---

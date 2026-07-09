@@ -1,0 +1,349 @@
+<%
+    var toolTitle = '繁简互转';
+    var toolDesc = '';
+    if (site.data && site.data.tools) {
+        var tool = site.data.tools.find(function(t) { return t.slug === page.toolSlug; });
+        if (tool) {
+            toolTitle = tool.emoji + ' ' + tool.name;
+            toolDesc = tool.description;
+        }
+    }
+%>
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .tool-container {
+    margin-top: -50px;
+    margin-bottom: 30px;
+  }
+  .tool-container .card {
+    border-radius: 8px;
+  }
+  .tool-container .card-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+  }
+  .tool-container .card-title i {
+    margin-right: 8px;
+  }
+
+  /* 模式选择栏 */
+  .mode-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .mode-label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #444;
+    min-width: 80px;
+    text-align: center;
+  }
+  .mode-label.source { color: #2e7d32; }
+  .mode-label.target { color: #1565c0; }
+  #swapModeBtn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid #e0e0e0;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  #swapModeBtn:hover {
+    border-color: #4caf50;
+    color: #4caf50;
+    transform: rotate(180deg);
+  }
+
+  /* 双栏布局 */
+  .converter-columns {
+    display: flex;
+    gap: 16px;
+    margin-top: 16px;
+  }
+  .converter-col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .converter-col .col-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .converter-col .col-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #666;
+  }
+  .converter-col .col-count {
+    font-size: 0.78rem;
+    color: #aaa;
+  }
+  .converter-col textarea {
+    width: 100%;
+    min-height: 220px;
+    border: 2px solid #e8e8e8;
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    resize: vertical;
+    background: #fafafa;
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color 0.3s, background 0.3s, box-shadow 0.3s;
+    font-family: inherit;
+  }
+  .converter-col textarea:focus {
+    border-color: #4caf50;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.12);
+  }
+  .converter-col textarea.output-area {
+    background: #f5f5f5;
+    color: #333;
+  }
+  .col-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    justify-content: flex-end;
+  }
+  .col-actions .btn-small {
+    border-radius: 16px;
+    font-size: 0.78rem;
+    padding: 0 14px;
+    height: 30px;
+    line-height: 30px;
+    background: transparent;
+    color: #888;
+    border: 1px solid #ddd;
+    box-shadow: none;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .col-actions .btn-small:hover {
+    border-color: #4caf50;
+    color: #4caf50;
+    background: rgba(76, 175, 80, 0.05);
+  }
+  .col-actions .btn-small.copied {
+    border-color: #4caf50;
+    background: #4caf50;
+    color: #fff;
+  }
+
+  /* 响应式 */
+  @media only screen and (max-width: 601px) {
+    .tool-container {
+      margin-top: -30px;
+    }
+    .converter-columns {
+      flex-direction: column;
+    }
+    .converter-col textarea {
+      min-height: 140px;
+    }
+  }
+</style>
+
+<main class="content">
+  <div class="container tool-container">
+    <div class="card">
+      <div class="card-content">
+        <span class="card-title" style="display: inline"><%= toolTitle %></span>
+        <% if (toolDesc) { %>
+        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
+        <% } %>
+
+        <!-- 模式选择栏 -->
+        <div class="mode-bar">
+          <span class="mode-label source" id="sourceModeLabel">简体</span>
+          <button id="swapModeBtn" title="交换模式"><i class="fas fa-exchange-alt"></i></button>
+          <span class="mode-label target" id="targetModeLabel">繁体</span>
+        </div>
+
+        <!-- 双栏 -->
+        <div class="converter-columns">
+          <div class="converter-col">
+            <div class="col-header">
+              <span class="col-label">输入</span>
+              <span class="col-count" id="sourceCount">0 字</span>
+            </div>
+            <textarea id="sourceText" placeholder="请输入要转换的文字..."></textarea>
+            <div class="col-actions">
+              <button class="btn-small" id="clearBtn"><i class="fas fa-times"></i> 清空</button>
+            </div>
+          </div>
+          <div class="converter-col">
+            <div class="col-header">
+              <span class="col-label">结果</span>
+            </div>
+            <textarea id="targetText" class="output-area" placeholder="转换结果将实时显示在这里..." readonly></textarea>
+            <div class="col-actions">
+              <button class="btn-small" id="copyResultBtn"><i class="fas fa-copy"></i> 复制</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script>
+  // ========== 繁简映射表（核心数据） ==========
+  var S2T_MAP = {
+    '国': '國', '学': '學', '习': '習', '电': '電', '脑': '腦',
+    '为': '為', '会': '會', '机': '機', '关': '關', '门': '門',
+    '开': '開', '时': '時', '间': '間', '个': '個', '对': '對',
+    '动': '動', '东': '東', '风': '風', '网': '網', '书': '書',
+    '长': '長', '马': '馬', '鱼': '魚', '鸟': '鳥', '龙': '龍',
+    '万': '萬', '与': '與', '义': '義', '乐': '樂', '买': '買',
+    '乱': '亂', '云': '雲', '亚': '亞', '产': '產', '亲': '親',
+    '亿': '億', '仅': '僅', '从': '從', '仓': '倉', '仪': '儀',
+    '众': '眾', '优': '優', '价': '價', '伦': '倫', '传': '傳',
+    '伤': '傷', '体': '體', '余': '餘', '佣': '傭', '侠': '俠',
+    '侣': '侶', '侥': '僥', '侦': '偵', '侧': '側', '侨': '僑',
+    '侩': '儈', '侪': '儕', '侬': '儂', '俣': '俁', '俦': '儔',
+    '俨': '儼', '俩': '倆', '俪': '儷', '俭': '儉', '债': '債',
+    '倾': '傾', '偻': '僂', '偾': '僨', '偿': '償', '傧': '儐',
+    '储': '儲', '儿': '兒', '兑': '兌', '党': '黨', '兰': '蘭',
+    '兴': '興', '写': '寫', '军': '軍', '农': '農', '冯': '馮',
+    '冻': '凍', '净': '淨', '凄': '淒', '准': '準', '凤': '鳳',
+    '击': '擊', '凿': '鑿', '划': '劃', '刘': '劉', '则': '則',
+    '刚': '剛', '创': '創', '别': '別', '钊': '釗', '钦': '欽',
+    '铁': '鐵', '铃': '鈴', '铭': '銘', '银': '銀', '铜': '銅',
+    '铺': '鋪', '链': '鏈', '锁': '鎖', '锅': '鍋', '锋': '鋒',
+    '错': '錯', '锡': '錫', '键': '鍵', '钟': '鐘', '镇': '鎮',
+    '镜': '鏡', '鉴': '鑒', '闹': '鬧', '闻': '聞', '问': '問',
+    '闲': '閒', '队': '隊', '阳': '陽', '阴': '陰', '阵': '陣',
+    '阶': '階', '页': '頁', '顶': '頂', '项': '項', '顺': '順',
+    '须': '須', '顾': '顧', '顿': '頓', '领': '領', '颈': '頸',
+    '频': '頻', '题': '題', '颜': '顏', '额': '額', '飞': '飛',
+    '饮': '飲', '饭': '飯', '饱': '飽', '饲': '飼', '饰': '飾',
+    '驱': '驅', '驶': '駛', '驾': '駕', '骄': '驕', '骆': '駱',
+    '骇': '駭', '验': '驗', '骏': '駿', '骑': '騎', '鲁': '魯',
+    '鲜': '鮮', '鸡': '雞', '鸣': '鳴', '鸭': '鴨', '鹅': '鵝',
+    '鹤': '鶴', '鹰': '鷹', '发': '發', '现': '現', '说': '說',
+    '读': '讀', '课': '課', '谁': '誰', '调': '調', '谈': '談',
+    '请': '請', '论': '論', '谢': '謝', '证': '證', '识': '識',
+    '议': '議', '记': '記', '讲': '講', '许': '許', '设': '設',
+    '访': '訪', '诉': '訴', '译': '譯', '试': '試', '诗': '詩',
+    '诚': '誠', '话': '話', '详': '詳', '语': '語', '误': '誤',
+    '诵': '誦', '变': '變', '坚': '堅', '声': '聲', '处': '處',
+    '备': '備', '复': '復', '头': '頭', '实': '實', '宝': '寶',
+    '导': '導', '将': '將', '专': '專', '寻': '尋', '尔': '爾',
+    '尘': '塵', '尝': '嘗', '惊': '驚', '态': '態', '惨': '慘',
+    '惭': '慚', '惯': '慣', '惩': '懲', '恋': '戀', '恶': '惡',
+    '恼': '惱', '悬': '懸', '悯': '憫', '惧': '懼', '惫': '憊',
+    '惮': '憚', '愤': '憤', '慑': '懾', '护': '護', '报': '報',
+    '拟': '擬', '扩': '擴', '拥': '擁', '择': '擇', '担': '擔',
+    '据': '據', '扫': '掃', '扬': '揚', '抚': '撫', '抛': '拋',
+    '拦': '攔', '拨': '撥', '扰': '擾', '搀': '攙', '数': '數',
+    '显': '顯', '术': '術', '无': '無', '旧': '舊', '厂': '廠',
+    '广': '廣', '厅': '廳', '历': '歷', '压': '壓', '厌': '厭',
+    '厉': '厲', '县': '縣', '参': '參', '双': '雙', '圣': '聖',
+    '戏': '戲', '观': '觀', '欢': '歡', '难': '難', '艰': '艱',
+    '驴': '驢', '骡': '騾'
+  };
+
+  // 构建反向映射表（繁体→简体）
+  var T2S_MAP = {};
+  Object.keys(S2T_MAP).forEach(function(key) {
+    T2S_MAP[S2T_MAP[key]] = key;
+  });
+
+  var currentMode = 's2t'; // 's2t' | 't2s'
+
+  // 执行转换
+  function convert(text) {
+    var map = currentMode === 's2t' ? S2T_MAP : T2S_MAP;
+    var result = '';
+    for (var i = 0; i < text.length; i++) {
+      var ch = text.charAt(i);
+      result += map[ch] || ch;
+    }
+    return result;
+  }
+
+  // 更新字数统计
+  function updateCounts() {
+    $('#sourceCount').text($('#sourceText').val().length + ' 字');
+  }
+
+  // 实时转换
+  function doConvert() {
+    var text = $('#sourceText').val();
+    $('#targetText').val(convert(text));
+    updateCounts();
+  }
+
+  // 交换模式
+  function swapMode() {
+    currentMode = currentMode === 's2t' ? 't2s' : 's2t';
+    if (currentMode === 's2t') {
+      $('#sourceModeLabel').text('简体');
+      $('#targetModeLabel').text('繁体');
+    } else {
+      $('#sourceModeLabel').text('繁体');
+      $('#targetModeLabel').text('简体');
+    }
+    // 交换已有内容
+    var sourceVal = $('#sourceText').val();
+    var targetVal = $('#targetText').val();
+    if (targetVal) {
+      $('#sourceText').val(targetVal);
+      $('#targetText').val('');
+      doConvert();
+    }
+  }
+
+  $(document).ready(function() {
+    updateCounts();
+
+    // 实时转换：输入即转
+    $('#sourceText').on('input', doConvert);
+
+    $('#swapModeBtn').on('click', swapMode);
+
+    $('#clearBtn').on('click', function() {
+      $('#sourceText').val('');
+      $('#targetText').val('');
+      updateCounts();
+    });
+
+    $('#copyResultBtn').on('click', function() {
+      var text = $('#targetText').val();
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(function() {
+        var $btn = $('#copyResultBtn');
+        $btn.addClass('copied');
+        $btn.html('<i class="fas fa-check"></i> 已复制');
+        setTimeout(function() {
+          $btn.removeClass('copied');
+          $btn.html('<i class="fas fa-copy"></i> 复制');
+        }, 1500);
+      });
+    });
+  });
+</script>
