@@ -1,0 +1,165 @@
+<%
+    var toolTitle = 'JSON 格式化';
+    var toolDesc = '';
+    if (site.data && site.data.tools) {
+        var tool = site.data.tools.find(function(t) { return t.slug === page.toolSlug; });
+        if (tool) {
+            toolTitle = tool.emoji + ' ' + tool.name;
+            toolDesc = tool.description;
+        }
+    }
+%>
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .tool-container { margin-top: -50px; margin-bottom: 30px; }
+  .tool-container .card { border-radius: 8px; }
+  .tool-container .card-title { font-size: 1.4rem; font-weight: 600; }
+
+  .toolbar {
+    display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;
+  }
+  .toolbar .btn {
+    border-radius: 20px; padding: 0 20px; height: 36px; line-height: 36px;
+    font-size: 0.85rem; letter-spacing: 1px;
+  }
+  .toolbar .btn.primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+  .toolbar .btn.primary:hover { box-shadow: 0 4px 12px rgba(102,126,234,0.4); }
+  .toolbar .btn.outline {
+    background: transparent; color: #666; border: 1px solid #ddd; box-shadow: none;
+  }
+  .toolbar .btn.outline:hover { border-color: #667eea; color: #667eea; }
+
+  .json-columns { display: flex; gap: 16px; }
+  .json-col { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .json-col .col-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
+  }
+  .json-col .col-label { font-size: 0.9rem; font-weight: 600; color: #666; }
+  .json-col textarea {
+    width: 100%; min-height: 300px; border: 2px solid #e8e8e8; border-radius: 10px;
+    padding: 14px 16px; font-size: 0.9rem; font-family: 'SF Mono','Fira Code','Consolas',monospace;
+    line-height: 1.6; resize: vertical; background: #fafafa; box-sizing: border-box;
+    outline: none; transition: border-color 0.3s, background 0.3s;
+  }
+  .json-col textarea:focus { border-color: #667eea; background: #fff; }
+  .json-col textarea.output-area { background: #f5f5f5; color: #333; }
+  .json-col textarea.error { border-color: #e53935; background: #fff5f5; }
+  .col-actions {
+    display: flex; gap: 8px; margin-top: 8px; justify-content: flex-end;
+  }
+  .col-actions .btn-small {
+    border-radius: 16px; font-size: 0.78rem; padding: 0 14px; height: 30px;
+    line-height: 30px; background: transparent; color: #888; border: 1px solid #ddd;
+    box-shadow: none; transition: all 0.2s; display: inline-flex; align-items: center; gap: 4px;
+  }
+  .col-actions .btn-small:hover { border-color: #667eea; color: #667eea; }
+  .col-actions .btn-small.copied { border-color: #667eea; background: #667eea; color: #fff; }
+
+  @media only screen and (max-width: 601px) {
+    .tool-container { margin-top: -30px; }
+    .json-columns { flex-direction: column; }
+    .json-col textarea { min-height: 180px; }
+  }
+</style>
+
+<main class="content">
+  <div class="container tool-container">
+    <div class="card">
+      <div class="card-content">
+        <span class="card-title" style="display: inline"><%= toolTitle %></span>
+        <% if (toolDesc) { %>
+        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
+        <% } %>
+
+        <div class="toolbar">
+          <button class="btn waves-effect primary" id="formatBtn"><i class="fas fa-align-left"></i> 格式化</button>
+          <button class="btn waves-effect primary" id="compressBtn"><i class="fas fa-compress"></i> 压缩</button>
+          <button class="btn waves-effect outline" id="validateBtn"><i class="fas fa-check-circle"></i> 校验</button>
+        </div>
+
+        <div class="json-columns">
+          <div class="json-col">
+            <div class="col-header">
+              <span class="col-label">输入</span>
+            </div>
+            <textarea id="inputText" placeholder='{"key":"value"}'></textarea>
+            <div class="col-actions">
+              <button class="btn-small" id="clearBtn"><i class="fas fa-times"></i> 清空</button>
+            </div>
+          </div>
+          <div class="json-col">
+            <div class="col-header">
+              <span class="col-label">输出</span>
+            </div>
+            <textarea id="outputText" class="output-area" placeholder="结果将显示在这里..." readonly></textarea>
+            <div class="col-actions">
+              <button class="btn-small" id="copyBtn"><i class="fas fa-copy"></i> 复制</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script>
+  function formatJSON() {
+    var input = $('#inputText').val().trim();
+    if (!input) return;
+    try {
+      var obj = JSON.parse(input);
+      $('#outputText').val(JSON.stringify(obj, null, 2)).removeClass('error');
+    } catch (e) {
+      $('#outputText').val('JSON 解析错误:\n' + e.message).addClass('error');
+    }
+  }
+
+  function compressJSON() {
+    var input = $('#inputText').val().trim();
+    if (!input) return;
+    try {
+      var obj = JSON.parse(input);
+      $('#outputText').val(JSON.stringify(obj)).removeClass('error');
+    } catch (e) {
+      $('#outputText').val('JSON 解析错误:\n' + e.message).addClass('error');
+    }
+  }
+
+  function validateJSON() {
+    var input = $('#inputText').val().trim();
+    if (!input) { M.toast({html: '请输入 JSON 内容', classes: 'rounded'}); return; }
+    try {
+      JSON.parse(input);
+      $('#outputText').removeClass('error');
+      M.toast({html: 'JSON 格式正确', classes: 'rounded green'});
+    } catch (e) {
+      $('#outputText').val('JSON 校验失败:\n' + e.message).addClass('error');
+      M.toast({html: 'JSON 格式错误: ' + e.message, classes: 'rounded red'});
+    }
+  }
+
+  function copyOutput() {
+    var text = $('#outputText').val();
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(function() {
+      var $btn = $('#copyBtn');
+      $btn.addClass('copied').html('<i class="fas fa-check"></i> 已复制');
+      setTimeout(function() { $btn.removeClass('copied').html('<i class="fas fa-copy"></i> 复制'); }, 1500);
+    });
+  }
+
+  $(document).ready(function() {
+    $('#formatBtn').on('click', formatJSON);
+    $('#compressBtn').on('click', compressJSON);
+    $('#validateBtn').on('click', validateJSON);
+    $('#copyBtn').on('click', copyOutput);
+    $('#clearBtn').on('click', function() { $('#inputText').val(''); $('#outputText').val('').removeClass('error'); });
+  });
+</script>
