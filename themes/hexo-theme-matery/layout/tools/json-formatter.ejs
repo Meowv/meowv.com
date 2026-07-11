@@ -14,21 +14,24 @@
 <style>
   .tool-container { margin-top: -50px; margin-bottom: 30px; }
   .tool-container .card { border-radius: 8px; }
-  .tool-container .card-title { font-size: 1.4rem; font-weight: 600; }
+  .tool-container .card .card-content .card-title { font-size: 1.4rem; font-weight: 600; margin-bottom: 20px; }
 
   .toolbar {
-    display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;
+    display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; justify-content: flex-end;
   }
   .toolbar .btn {
     border-radius: 20px; padding: 0 20px; height: 36px; line-height: 36px;
-    font-size: 0.85rem; letter-spacing: 1px;
+    font-size: 0.9rem; letter-spacing: 1px; display: inline-flex; align-items: center; gap: 6px;
   }
-  .toolbar .btn.primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-  .toolbar .btn.primary:hover { box-shadow: 0 4px 12px rgba(102,126,234,0.4); }
+  .toolbar .btn i {
+    font-size: 0.9rem;
+  }
+  .toolbar .btn.primary { background: linear-gradient(135deg, #5a9600 0%, #7ccd00 100%); }
+  .toolbar .btn.primary:hover { box-shadow: 0 4px 12px rgba(90,150,0,0.4); }
   .toolbar .btn.outline {
     background: transparent; color: #666; border: 1px solid #ddd; box-shadow: none;
   }
-  .toolbar .btn.outline:hover { border-color: #667eea; color: #667eea; }
+  .toolbar .btn.outline:hover { border-color: #5a9600; color: #5a9600; }
 
   .json-columns { display: flex; gap: 16px; }
   .json-col { flex: 1; min-width: 0; display: flex; flex-direction: column; }
@@ -42,19 +45,21 @@
     line-height: 1.6; resize: vertical; background: #fafafa; box-sizing: border-box;
     outline: none; transition: border-color 0.3s, background 0.3s;
   }
-  .json-col textarea:focus { border-color: #667eea; background: #fff; }
+  .json-col textarea:focus { border-color: #5a9600; background: #fff; }
   .json-col textarea.output-area { background: #f5f5f5; color: #333; }
   .json-col textarea.error { border-color: #e53935; background: #fff5f5; }
-  .col-actions {
-    display: flex; gap: 8px; margin-top: 8px; justify-content: flex-end;
+
+  .box-wrap { position: relative; flex: 1; display: flex; }
+
+  .copy-btn {
+    position: absolute; top: 8px; right: 8px; z-index: 2;
+    width: 28px; height: 28px; border-radius: 50%; border: 1px solid #ddd;
+    background: rgba(255,255,255,0.9); cursor: pointer; font-size: 0.8rem; color: #aaa;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: all 0.2s; line-height: 1;
   }
-  .col-actions .btn-small {
-    border-radius: 16px; font-size: 0.78rem; padding: 0 14px; height: 30px;
-    line-height: 30px; background: transparent; color: #888; border: 1px solid #ddd;
-    box-shadow: none; transition: all 0.2s; display: inline-flex; align-items: center; gap: 4px;
-  }
-  .col-actions .btn-small:hover { border-color: #667eea; color: #667eea; }
-  .col-actions .btn-small.copied { border-color: #667eea; background: #667eea; color: #fff; }
+  .copy-btn:hover { border-color: #5a9600; color: #5a9600; background: #f6fbf0; }
+  .copy-btn.copied { border-color: #5a9600; background: #5a9600; color: #fff; }
 
   @media only screen and (max-width: 601px) {
     .tool-container { margin-top: -30px; }
@@ -67,7 +72,7 @@
   <div class="container tool-container">
     <div class="card">
       <div class="card-content">
-        <span class="card-title" style="display: inline"><%= toolTitle %></span>
+        <span class="card-title" style="display: inline-block"><%= toolTitle %></span>
         <% if (toolDesc) { %>
         <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
         <% } %>
@@ -78,26 +83,26 @@
           <button class="btn waves-effect outline" id="validateBtn"><i class="fas fa-check-circle"></i> 校验</button>
         </div>
 
-        <div class="json-columns">
-          <div class="json-col">
-            <div class="col-header">
-              <span class="col-label">输入</span>
+          <div class="json-columns">
+            <div class="json-col">
+              <div class="col-header">
+                <span class="col-label">输入</span>
+              </div>
+              <div class="box-wrap">
+                <textarea id="inputText" placeholder='{"key":"value"}'></textarea>
+                <button class="copy-btn" id="clearBtn" title="清空"><i class="fas fa-times"></i></button>
+              </div>
             </div>
-            <textarea id="inputText" placeholder='{"key":"value"}'></textarea>
-            <div class="col-actions">
-              <button class="btn-small" id="clearBtn"><i class="fas fa-times"></i> 清空</button>
+            <div class="json-col">
+              <div class="col-header">
+                <span class="col-label">输出</span>
+              </div>
+              <div class="box-wrap">
+                <textarea id="outputText" class="output-area" placeholder="结果将显示在这里..." readonly></textarea>
+                <button class="copy-btn" id="copyBtn" title="复制"><i class="fas fa-copy"></i></button>
+              </div>
             </div>
           </div>
-          <div class="json-col">
-            <div class="col-header">
-              <span class="col-label">输出</span>
-            </div>
-            <textarea id="outputText" class="output-area" placeholder="结果将显示在这里..." readonly></textarea>
-            <div class="col-actions">
-              <button class="btn-small" id="copyBtn"><i class="fas fa-copy"></i> 复制</button>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -145,21 +150,24 @@
     }
   }
 
-  function copyOutput() {
-    var text = $('#outputText').val();
-    if (!text) return;
-    navigator.clipboard.writeText(text).then(function() {
-      var $btn = $('#copyBtn');
-      $btn.addClass('copied').html('<i class="fas fa-check"></i> 已复制');
-      setTimeout(function() { $btn.removeClass('copied').html('<i class="fas fa-copy"></i> 复制'); }, 1500);
-    });
-  }
-
   $(document).ready(function() {
     $('#formatBtn').on('click', formatJSON);
     $('#compressBtn').on('click', compressJSON);
     $('#validateBtn').on('click', validateJSON);
-    $('#copyBtn').on('click', copyOutput);
-    $('#clearBtn').on('click', function() { $('#inputText').val(''); $('#outputText').val('').removeClass('error'); });
+
+    $('#copyBtn').on('click', function() {
+      var text = $('#outputText').val();
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(function() {
+        var $btn = $('#copyBtn');
+        $btn.addClass('copied').html('<i class="fas fa-check"></i>');
+        setTimeout(function() { $btn.removeClass('copied').html('<i class="fas fa-copy"></i>'); }, 1500);
+      });
+    });
+
+    $('#clearBtn').on('click', function() {
+      $('#inputText').val('');
+      $('#outputText').val('').removeClass('error');
+    });
   });
 </script>

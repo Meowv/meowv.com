@@ -14,7 +14,7 @@
 <style>
   .tool-container { margin-top: -50px; margin-bottom: 30px; }
   .tool-container .card { border-radius: 8px; }
-  .tool-container .card-title { font-size: 1.4rem; font-weight: 600; }
+  .tool-container .card .card-content .card-title { font-size: 1.4rem; font-weight: 600; margin-bottom: 20px; }
 
   .qr-layout { display: flex; gap: 30px; align-items: flex-start; }
   .qr-left { flex: 1; min-width: 0; }
@@ -40,9 +40,9 @@
   #downloadBtn {
     border-radius: 20px; padding: 0 24px; height: 36px; line-height: 36px;
     font-size: 0.85rem; margin-top: 16px;
-    background: linear-gradient(135deg, #00897b 0%, #26a69a 100%);
+    background: linear-gradient(135deg, #5a9600 0%, #7ccd00 100%);
   }
-  #downloadBtn:hover { box-shadow: 0 4px 12px rgba(0,137,123,0.4); }
+  #downloadBtn:hover { box-shadow: 0 4px 12px rgba(90,150,0,0.4); }
   #downloadBtn:disabled { background: #bdbdbd; box-shadow: none; }
   .qr-placeholder {
     width: 200px; height: 200px; border: 2px dashed #ddd; border-radius: 10px;
@@ -60,7 +60,7 @@
   <div class="container tool-container">
     <div class="card">
       <div class="card-content">
-        <span class="card-title" style="display: inline"><%= toolTitle %></span>
+        <span class="card-title" style="display: inline-block"><%= toolTitle %></span>
         <% if (toolDesc) { %>
         <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
         <% } %>
@@ -104,14 +104,14 @@
   </div>
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script>
-  var qrTimeout;
+  var levelMap = { L: 1, M: 0, Q: 3, H: 2 };
 
   function generateQR() {
     var text = $('#qrInput').val().trim();
     var size = parseInt($('#sizeSelect').val());
-    var level = $('#levelSelect').val();
+    var level = levelMap[$('#levelSelect').val()];
 
     if (!text) {
       $('#qrcode').html('<div class="qr-placeholder">输入内容生成二维码</div>');
@@ -119,21 +119,16 @@
       return;
     }
 
-    var el = document.getElementById('qrcode');
-    el.innerHTML = '';
+    $('#qrcode').empty();
 
-    QRCode.toCanvas(text, {
+    new QRCode(document.getElementById('qrcode'), {
+      text: text,
       width: size,
-      errorCorrectionLevel: level,
-      margin: 2
-    }, function(err, canvas) {
-      if (err) {
-        $('#qrcode').html('<div class="qr-placeholder" style="color:#e53935;">生成失败</div>');
-        return;
-      }
-      el.appendChild(canvas);
-      $('#downloadBtn').prop('disabled', false);
+      height: size,
+      correctLevel: level
     });
+
+    $('#downloadBtn').prop('disabled', false);
   }
 
   function downloadQR() {
@@ -146,6 +141,7 @@
   }
 
   $(document).ready(function() {
+    var qrTimeout;
     $('#qrInput').on('input', function() {
       clearTimeout(qrTimeout);
       qrTimeout = setTimeout(generateQR, 300);
