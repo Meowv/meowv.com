@@ -98,6 +98,13 @@
     "url": "/tools/json-yaml/"
   },
   {
+    "slug": "periodic-table",
+    "name": "元素周期表",
+    "description": "118个化学元素交互式周期表，支持搜索与分类筛选",
+    "emoji": "🧪",
+    "url": "/tools/periodic-table/"
+  },
+  {
     "slug": "ai-coding-method-map",
     "name": "AI Coding Method Map",
     "description": "AI 编程方法论地图，看懂普通 Agent、工作流 Agent、IDE Agent 的差异与开发链路",

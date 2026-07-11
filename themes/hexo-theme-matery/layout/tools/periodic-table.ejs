@@ -1,0 +1,442 @@
+<%
+    var toolTitle = '元素周期表';
+    var toolDesc = '';
+    if (site.data && site.data.tools) {
+        var tool = site.data.tools.find(function(t) { return t.slug === page.toolSlug; });
+        if (tool) {
+            toolTitle = tool.emoji + ' ' + tool.name;
+            toolDesc = tool.description;
+        }
+    }
+%>
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .tool-container { margin-top: -50px; margin-bottom: 30px; }
+  .tool-container .card { border-radius: 8px; }
+  .tool-container .card .card-content .card-title { font-size: 1.4rem; font-weight: 600; margin-bottom: 20px; }
+
+  .pt-controls {
+    display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+    margin-bottom: 20px;
+  }
+  .pt-search {
+    flex: 1; min-width: 160px; padding: 8px 14px; border: 2px solid #e0e0e0;
+    border-radius: 8px; font-size: 0.9rem; outline: none; transition: border-color 0.3s;
+    background: #fafafa;
+  }
+  .pt-search:focus { border-color: #7c4dff; background: #fff; }
+  .pt-search::-webkit-input-placeholder { color: #bbb; }
+
+  .pt-legend {
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .pt-legend-item {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 14px; font-size: 0.72rem;
+    cursor: pointer; transition: all 0.2s; border: 2px solid transparent;
+    user-select: none; white-space: nowrap;
+  }
+  .pt-legend-item:hover { opacity: 0.8; }
+  .pt-legend-item.active { border-color: #333; box-shadow: 0 0 0 1px #fff; }
+  .pt-legend-item .pt-legend-dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  }
+
+  .pt-grid-wrap {
+    overflow-x: auto; margin-bottom: 16px;
+  }
+  .pt-grid {
+    display: grid;
+    grid-template-columns: repeat(18, 1fr);
+    gap: 3px;
+    min-width: 680px;
+  }
+
+  .pt-cell {
+    position: relative; border-radius: 4px; padding: 4px 2px;
+    text-align: center; cursor: pointer; transition: all 0.15s;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 58px; color: #fff; overflow: hidden;
+  }
+  .pt-cell:hover { transform: scale(1.15); z-index: 2; box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+  .pt-cell .pt-number { font-size: 0.55rem; opacity: 0.85; line-height: 1; position: absolute; top: 2px; left: 4px; }
+  .pt-cell .pt-symbol { font-size: 1.05rem; font-weight: 700; line-height: 1.2; }
+  .pt-cell .pt-name { font-size: 0.5rem; opacity: 0.9; line-height: 1; }
+  .pt-cell .pt-mass { font-size: 0.45rem; opacity: 0.7; line-height: 1; }
+
+  .pt-cell.dimmed { opacity: 0.2; }
+  .pt-cell.highlight { transform: scale(1.08); z-index: 1; box-shadow: 0 0 0 2px #fff, 0 0 16px rgba(124,77,255,0.5); }
+
+  .pt-empty { pointer-events: none; }
+  .pt-fblock-label {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 0.6rem; color: #999; font-weight: 600;
+  }
+
+  .pt-detail {
+    display: none; margin-top: 16px; padding: 20px; border-radius: 10px;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef); transition: all 0.3s;
+    border-left: 5px solid #7c4dff;
+  }
+  .pt-detail.visible { display: block; }
+  .pt-detail .pt-detail-header {
+    display: flex; align-items: center; gap: 16px; margin-bottom: 12px;
+  }
+  .pt-detail .pt-detail-symbol {
+    font-size: 2.8rem; font-weight: 800; line-height: 1; color: #333;
+  }
+  .pt-detail .pt-detail-info { flex: 1; }
+  .pt-detail .pt-detail-name {
+    font-size: 1.4rem; font-weight: 600; color: #222;
+  }
+  .pt-detail .pt-detail-sub {
+    font-size: 0.85rem; color: #666; margin-top: 2px;
+  }
+  .pt-detail .pt-detail-meta {
+    display: flex; flex-wrap: wrap; gap: 16px; margin-top: 8px;
+  }
+  .pt-detail .pt-detail-meta-item {
+    display: flex; flex-direction: column;
+  }
+  .pt-detail .pt-detail-meta-label {
+    font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; color: #999;
+  }
+  .pt-detail .pt-detail-meta-value {
+    font-size: 1rem; font-weight: 600; color: #333;
+  }
+  .pt-detail .pt-detail-badge {
+    display: inline-block; padding: 2px 12px; border-radius: 12px;
+    font-size: 0.75rem; font-weight: 600; color: #fff; margin-top: 4px;
+  }
+
+  @media only screen and (max-width: 768px) {
+    .tool-container { margin-top: -30px; }
+    .pt-cell { min-height: 42px; padding: 2px 1px; }
+    .pt-cell .pt-number { font-size: 0.45rem; }
+    .pt-cell .pt-symbol { font-size: 0.8rem; }
+    .pt-cell .pt-name { display: none; }
+    .pt-cell .pt-mass { display: none; }
+    .pt-grid { gap: 2px; min-width: 540px; }
+    .pt-detail { padding: 14px; }
+    .pt-detail .pt-detail-symbol { font-size: 2rem; }
+  }
+  @media only screen and (max-width: 601px) {
+    .pt-cell { min-height: 34px; }
+    .pt-cell .pt-number { font-size: 0.35rem; top: 1px; left: 2px; }
+    .pt-cell .pt-symbol { font-size: 0.65rem; }
+    .pt-grid { gap: 1.5px; min-width: 400px; }
+    .pt-legend-item { font-size: 0.6rem; padding: 2px 6px; }
+  }
+</style>
+
+<main class="content">
+  <div class="container tool-container">
+    <div class="card">
+      <div class="card-content">
+        <span class="card-title" style="display: inline-block"><%= toolTitle %></span>
+        <% if (toolDesc) { %>
+        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
+        <% } %>
+
+        <div class="pt-controls">
+          <input class="pt-search" type="text" id="ptSearch" placeholder="搜索元素名称或符号...">
+          <div class="pt-legend" id="ptLegend"></div>
+        </div>
+
+        <div class="pt-grid-wrap">
+          <div class="pt-grid" id="ptGrid"></div>
+        </div>
+
+        <div class="pt-detail" id="ptDetail"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script>
+(function() {
+  var catNames = {
+    alkali: '碱金属', alkaline: '碱土金属', transition: '过渡金属',
+    'post-transition': '后过渡金属', metalloid: '类金属',
+    nonmetal: '非金属', halogen: '卤素', noble: '稀有气体',
+    lanthanide: '镧系', actinide: '锕系'
+  };
+  var catColors = {
+    alkali: '#E74C3C', alkaline: '#E67E22', transition: '#2980B9',
+    'post-transition': '#27AE60', metalloid: '#16A085',
+    nonmetal: '#8E44AD', halogen: '#00BCD4', noble: '#6C3483',
+    lanthanide: '#E91E63', actinide: '#D35400'
+  };
+  var catOrder = ['nonmetal','noble','alkali','alkaline','metalloid','halogen','transition','post-transition','lanthanide','actinide'];
+
+  var elements = [
+    {n:1,s:'H',na:'氢',m:'1.008',c:'nonmetal',x:1,y:1},
+    {n:2,s:'He',na:'氦',m:'4.0026',c:'noble',x:18,y:1},
+    {n:3,s:'Li',na:'锂',m:'6.94',c:'alkali',x:1,y:2},
+    {n:4,s:'Be',na:'铍',m:'9.0122',c:'alkaline',x:2,y:2},
+    {n:5,s:'B',na:'硼',m:'10.81',c:'metalloid',x:13,y:2},
+    {n:6,s:'C',na:'碳',m:'12.011',c:'nonmetal',x:14,y:2},
+    {n:7,s:'N',na:'氮',m:'14.007',c:'nonmetal',x:15,y:2},
+    {n:8,s:'O',na:'氧',m:'15.999',c:'nonmetal',x:16,y:2},
+    {n:9,s:'F',na:'氟',m:'18.998',c:'halogen',x:17,y:2},
+    {n:10,s:'Ne',na:'氖',m:'20.180',c:'noble',x:18,y:2},
+    {n:11,s:'Na',na:'钠',m:'22.990',c:'alkali',x:1,y:3},
+    {n:12,s:'Mg',na:'镁',m:'24.305',c:'alkaline',x:2,y:3},
+    {n:13,s:'Al',na:'铝',m:'26.982',c:'post-transition',x:13,y:3},
+    {n:14,s:'Si',na:'硅',m:'28.085',c:'metalloid',x:14,y:3},
+    {n:15,s:'P',na:'磷',m:'30.974',c:'nonmetal',x:15,y:3},
+    {n:16,s:'S',na:'硫',m:'32.06',c:'nonmetal',x:16,y:3},
+    {n:17,s:'Cl',na:'氯',m:'35.45',c:'halogen',x:17,y:3},
+    {n:18,s:'Ar',na:'氩',m:'39.948',c:'noble',x:18,y:3},
+    {n:19,s:'K',na:'钾',m:'39.098',c:'alkali',x:1,y:4},
+    {n:20,s:'Ca',na:'钙',m:'40.078',c:'alkaline',x:2,y:4},
+    {n:21,s:'Sc',na:'钪',m:'44.956',c:'transition',x:3,y:4},
+    {n:22,s:'Ti',na:'钛',m:'47.867',c:'transition',x:4,y:4},
+    {n:23,s:'V',na:'钒',m:'50.942',c:'transition',x:5,y:4},
+    {n:24,s:'Cr',na:'铬',m:'51.996',c:'transition',x:6,y:4},
+    {n:25,s:'Mn',na:'锰',m:'54.938',c:'transition',x:7,y:4},
+    {n:26,s:'Fe',na:'铁',m:'55.845',c:'transition',x:8,y:4},
+    {n:27,s:'Co',na:'钴',m:'58.933',c:'transition',x:9,y:4},
+    {n:28,s:'Ni',na:'镍',m:'58.693',c:'transition',x:10,y:4},
+    {n:29,s:'Cu',na:'铜',m:'63.546',c:'transition',x:11,y:4},
+    {n:30,s:'Zn',na:'锌',m:'65.38',c:'transition',x:12,y:4},
+    {n:31,s:'Ga',na:'镓',m:'69.723',c:'post-transition',x:13,y:4},
+    {n:32,s:'Ge',na:'锗',m:'72.630',c:'metalloid',x:14,y:4},
+    {n:33,s:'As',na:'砷',m:'74.922',c:'metalloid',x:15,y:4},
+    {n:34,s:'Se',na:'硒',m:'78.971',c:'nonmetal',x:16,y:4},
+    {n:35,s:'Br',na:'溴',m:'79.904',c:'halogen',x:17,y:4},
+    {n:36,s:'Kr',na:'氪',m:'83.798',c:'noble',x:18,y:4},
+    {n:37,s:'Rb',na:'铷',m:'85.468',c:'alkali',x:1,y:5},
+    {n:38,s:'Sr',na:'锶',m:'87.62',c:'alkaline',x:2,y:5},
+    {n:39,s:'Y',na:'钇',m:'88.906',c:'transition',x:3,y:5},
+    {n:40,s:'Zr',na:'锆',m:'91.224',c:'transition',x:4,y:5},
+    {n:41,s:'Nb',na:'铌',m:'92.906',c:'transition',x:5,y:5},
+    {n:42,s:'Mo',na:'钼',m:'95.95',c:'transition',x:6,y:5},
+    {n:43,s:'Tc',na:'锝',m:'[97]',c:'transition',x:7,y:5},
+    {n:44,s:'Ru',na:'钌',m:'101.07',c:'transition',x:8,y:5},
+    {n:45,s:'Rh',na:'铑',m:'102.91',c:'transition',x:9,y:5},
+    {n:46,s:'Pd',na:'钯',m:'106.42',c:'transition',x:10,y:5},
+    {n:47,s:'Ag',na:'银',m:'107.87',c:'transition',x:11,y:5},
+    {n:48,s:'Cd',na:'镉',m:'112.41',c:'transition',x:12,y:5},
+    {n:49,s:'In',na:'铟',m:'114.82',c:'post-transition',x:13,y:5},
+    {n:50,s:'Sn',na:'锡',m:'118.71',c:'post-transition',x:14,y:5},
+    {n:51,s:'Sb',na:'锑',m:'121.76',c:'metalloid',x:15,y:5},
+    {n:52,s:'Te',na:'碲',m:'127.60',c:'metalloid',x:16,y:5},
+    {n:53,s:'I',na:'碘',m:'126.90',c:'halogen',x:17,y:5},
+    {n:54,s:'Xe',na:'氙',m:'131.29',c:'noble',x:18,y:5},
+    {n:55,s:'Cs',na:'铯',m:'132.91',c:'alkali',x:1,y:6},
+    {n:56,s:'Ba',na:'钡',m:'137.33',c:'alkaline',x:2,y:6},
+    {n:57,s:'La',na:'镧',m:'138.91',c:'lanthanide',x:3,y:6},
+    {n:58,s:'Ce',na:'铈',m:'140.12',c:'lanthanide',x:4,y:8},
+    {n:59,s:'Pr',na:'镨',m:'140.91',c:'lanthanide',x:5,y:8},
+    {n:60,s:'Nd',na:'钕',m:'144.24',c:'lanthanide',x:6,y:8},
+    {n:61,s:'Pm',na:'钷',m:'[145]',c:'lanthanide',x:7,y:8},
+    {n:62,s:'Sm',na:'钐',m:'150.36',c:'lanthanide',x:8,y:8},
+    {n:63,s:'Eu',na:'铕',m:'151.96',c:'lanthanide',x:9,y:8},
+    {n:64,s:'Gd',na:'钆',m:'157.25',c:'lanthanide',x:10,y:8},
+    {n:65,s:'Tb',na:'铽',m:'158.93',c:'lanthanide',x:11,y:8},
+    {n:66,s:'Dy',na:'镝',m:'162.50',c:'lanthanide',x:12,y:8},
+    {n:67,s:'Ho',na:'钬',m:'164.93',c:'lanthanide',x:13,y:8},
+    {n:68,s:'Er',na:'铒',m:'167.26',c:'lanthanide',x:14,y:8},
+    {n:69,s:'Tm',na:'铥',m:'168.93',c:'lanthanide',x:15,y:8},
+    {n:70,s:'Yb',na:'镱',m:'173.05',c:'lanthanide',x:16,y:8},
+    {n:71,s:'Lu',na:'镥',m:'174.97',c:'lanthanide',x:17,y:8},
+    {n:72,s:'Hf',na:'铪',m:'178.49',c:'transition',x:4,y:6},
+    {n:73,s:'Ta',na:'钽',m:'180.95',c:'transition',x:5,y:6},
+    {n:74,s:'W',na:'钨',m:'183.84',c:'transition',x:6,y:6},
+    {n:75,s:'Re',na:'铼',m:'186.21',c:'transition',x:7,y:6},
+    {n:76,s:'Os',na:'锇',m:'190.23',c:'transition',x:8,y:6},
+    {n:77,s:'Ir',na:'铱',m:'192.22',c:'transition',x:9,y:6},
+    {n:78,s:'Pt',na:'铂',m:'195.08',c:'transition',x:10,y:6},
+    {n:79,s:'Au',na:'金',m:'196.97',c:'transition',x:11,y:6},
+    {n:80,s:'Hg',na:'汞',m:'200.59',c:'transition',x:12,y:6},
+    {n:81,s:'Tl',na:'铊',m:'204.38',c:'post-transition',x:13,y:6},
+    {n:82,s:'Pb',na:'铅',m:'207.2',c:'post-transition',x:14,y:6},
+    {n:83,s:'Bi',na:'铋',m:'208.98',c:'post-transition',x:15,y:6},
+    {n:84,s:'Po',na:'钋',m:'[209]',c:'post-transition',x:16,y:6},
+    {n:85,s:'At',na:'砹',m:'[210]',c:'halogen',x:17,y:6},
+    {n:86,s:'Rn',na:'氡',m:'[222]',c:'noble',x:18,y:6},
+    {n:87,s:'Fr',na:'钫',m:'[223]',c:'alkali',x:1,y:7},
+    {n:88,s:'Ra',na:'镭',m:'[226]',c:'alkaline',x:2,y:7},
+    {n:89,s:'Ac',na:'锕',m:'[227]',c:'actinide',x:3,y:7},
+    {n:90,s:'Th',na:'钍',m:'232.04',c:'actinide',x:4,y:9},
+    {n:91,s:'Pa',na:'镤',m:'231.04',c:'actinide',x:5,y:9},
+    {n:92,s:'U',na:'铀',m:'238.03',c:'actinide',x:6,y:9},
+    {n:93,s:'Np',na:'镎',m:'[237]',c:'actinide',x:7,y:9},
+    {n:94,s:'Pu',na:'钚',m:'[244]',c:'actinide',x:8,y:9},
+    {n:95,s:'Am',na:'镅',m:'[243]',c:'actinide',x:9,y:9},
+    {n:96,s:'Cm',na:'锔',m:'[247]',c:'actinide',x:10,y:9},
+    {n:97,s:'Bk',na:'锫',m:'[247]',c:'actinide',x:11,y:9},
+    {n:98,s:'Cf',na:'锎',m:'[251]',c:'actinide',x:12,y:9},
+    {n:99,s:'Es',na:'锿',m:'[252]',c:'actinide',x:13,y:9},
+    {n:100,s:'Fm',na:'镄',m:'[257]',c:'actinide',x:14,y:9},
+    {n:101,s:'Md',na:'钔',m:'[258]',c:'actinide',x:15,y:9},
+    {n:102,s:'No',na:'锘',m:'[259]',c:'actinide',x:16,y:9},
+    {n:103,s:'Lr',na:'铹',m:'[266]',c:'actinide',x:17,y:9},
+    {n:104,s:'Rf',na:'𬬻',m:'[267]',c:'transition',x:4,y:7},
+    {n:105,s:'Db',na:'𬭊',m:'[268]',c:'transition',x:5,y:7},
+    {n:106,s:'Sg',na:'𬭳',m:'[269]',c:'transition',x:6,y:7},
+    {n:107,s:'Bh',na:'𬭛',m:'[270]',c:'transition',x:7,y:7},
+    {n:108,s:'Hs',na:'𬭶',m:'[277]',c:'transition',x:8,y:7},
+    {n:109,s:'Mt',na:'鿏',m:'[278]',c:'transition',x:9,y:7},
+    {n:110,s:'Ds',na:'𫟼',m:'[281]',c:'transition',x:10,y:7},
+    {n:111,s:'Rg',na:'𬬭',m:'[282]',c:'transition',x:11,y:7},
+    {n:112,s:'Cn',na:'鿔',m:'[285]',c:'transition',x:12,y:7},
+    {n:113,s:'Nh',na:'鉨',m:'[286]',c:'post-transition',x:13,y:7},
+    {n:114,s:'Fl',na:'𫓧',m:'[289]',c:'post-transition',x:14,y:7},
+    {n:115,s:'Mc',na:'镆',m:'[290]',c:'post-transition',x:15,y:7},
+    {n:116,s:'Lv',na:'𫟷',m:'[293]',c:'post-transition',x:16,y:7},
+    {n:117,s:'Ts',na:'鿬',m:'[294]',c:'halogen',x:17,y:7},
+    {n:118,s:'Og',na:'鿫',m:'[294]',c:'noble',x:18,y:7}
+  ];
+
+  var grid = document.getElementById('ptGrid');
+  var searchInput = document.getElementById('ptSearch');
+  var legendEl = document.getElementById('ptLegend');
+  var detailEl = document.getElementById('ptDetail');
+
+  var activeCat = null;
+  var selectedEl = null;
+
+  function renderGrid() {
+    grid.innerHTML = '';
+    for (var r = 1; r <= 9; r++) {
+      for (var c = 1; c <= 18; c++) {
+        var cell = document.createElement('div');
+        cell.className = 'pt-cell';
+        cell.style.gridColumn = c;
+        cell.style.gridRow = r;
+
+        var el = elements.filter(function(e) { return e.x === c && e.y === r; })[0];
+        if (el) {
+          cell.dataset.n = el.n;
+          cell.dataset.c = el.c;
+          cell.style.background = catColors[el.c];
+          cell.innerHTML = '<span class="pt-number">' + el.n + '</span>' +
+            '<span class="pt-symbol">' + el.s + '</span>' +
+            '<span class="pt-name">' + el.na + '</span>';
+          cell.addEventListener('click', (function(elem) {
+            return function() { selectElement(elem); };
+          })(el));
+        } else {
+          cell.className += ' pt-empty';
+          var isEmptyBlock = (r === 6 || r === 7) && c >= 4 && c <= 17;
+          if (isEmptyBlock) {
+            cell.style.background = 'transparent';
+          }
+        }
+        grid.appendChild(cell);
+      }
+    }
+
+    renderLegend();
+  }
+
+  function renderLegend() {
+    legendEl.innerHTML = '';
+    catOrder.forEach(function(cat) {
+      var item = document.createElement('span');
+      item.className = 'pt-legend-item';
+      item.dataset.cat = cat;
+      item.innerHTML = '<span class="pt-legend-dot" style="background:' + catColors[cat] + '"></span>' + catNames[cat];
+      item.addEventListener('click', function() {
+        if (activeCat === cat) {
+          activeCat = null;
+          item.classList.remove('active');
+        } else {
+          activeCat = cat;
+          document.querySelectorAll('.pt-legend-item').forEach(function(el) { el.classList.remove('active'); });
+          item.classList.add('active');
+        }
+        applyFilter();
+      });
+      legendEl.appendChild(item);
+    });
+  }
+
+  function applyFilter() {
+    var query = searchInput.value.trim().toLowerCase();
+    var cells = grid.querySelectorAll('.pt-cell:not(.pt-empty)');
+    cells.forEach(function(cell) {
+      var n = parseInt(cell.dataset.n);
+      var el = elements.filter(function(e) { return e.n === n; })[0];
+      if (!el) return;
+      var matchCat = !activeCat || el.c === activeCat;
+      var matchSearch = !query ||
+        el.na.includes(query) ||
+        el.s.toLowerCase().includes(query) ||
+        el.n.toString() === query;
+      if (matchCat && matchSearch) {
+        cell.classList.remove('dimmed');
+        cell.classList.add('highlight');
+      } else {
+        cell.classList.add('dimmed');
+        cell.classList.remove('highlight');
+      }
+    });
+  }
+
+  function clearFilter() {
+    searchInput.value = '';
+    activeCat = null;
+    document.querySelectorAll('.pt-legend-item').forEach(function(el) { el.classList.remove('active'); });
+    var cells = grid.querySelectorAll('.pt-cell:not(.pt-empty)');
+    cells.forEach(function(cell) {
+      cell.classList.remove('dimmed', 'highlight');
+    });
+  }
+
+  function selectElement(el) {
+    selectedEl = el;
+    detailEl.className = 'pt-detail visible';
+    detailEl.style.borderColor = catColors[el.c];
+    detailEl.innerHTML =
+      '<div class="pt-detail-header">' +
+        '<div class="pt-detail-symbol" style="color:' + catColors[el.c] + '">' + el.s + '</div>' +
+        '<div class="pt-detail-info">' +
+          '<div class="pt-detail-name">' + el.na + '</div>' +
+          '<div class="pt-detail-sub">原子序数 ' + el.n + ' &middot; ' + catNames[el.c] + '</div>' +
+          '<span class="pt-detail-badge" style="background:' + catColors[el.c] + '">' + catNames[el.c] + '</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="pt-detail-meta">' +
+        '<div class="pt-detail-meta-item">' +
+          '<span class="pt-detail-meta-label">原子序数</span>' +
+          '<span class="pt-detail-meta-value">' + el.n + '</span>' +
+        '</div>' +
+        '<div class="pt-detail-meta-item">' +
+          '<span class="pt-detail-meta-label">相对原子质量</span>' +
+          '<span class="pt-detail-meta-value">' + el.m + '</span>' +
+        '</div>' +
+        '<div class="pt-detail-meta-item">' +
+          '<span class="pt-detail-meta-label">元素符号</span>' +
+          '<span class="pt-detail-meta-value">' + el.s + '</span>' +
+        '</div>' +
+        '<div class="pt-detail-meta-item">' +
+          '<span class="pt-detail-meta-label">周期</span>' +
+          '<span class="pt-detail-meta-value">' + (el.y <= 7 ? el.y : (el.y === 8 ? '6' : '7')) + '</span>' +
+        '</div>' +
+        '<div class="pt-detail-meta-item">' +
+          '<span class="pt-detail-meta-label">族</span>' +
+          '<span class="pt-detail-meta-value">' + el.x + '</span>' +
+        '</div>' +
+      '</div>';
+    window.scrollTo({ top: detailEl.offsetTop + detailEl.parentElement.offsetTop - 120, behavior: 'smooth' });
+  }
+
+  searchInput.addEventListener('input', function() {
+    activeCat = null;
+    document.querySelectorAll('.pt-legend-item').forEach(function(el) { el.classList.remove('active'); });
+    applyFilter();
+  });
+
+  renderGrid();
+})();
+</script>
