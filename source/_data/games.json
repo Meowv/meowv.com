@@ -42,5 +42,19 @@
     "description": "测试你的反应速度，点击变色后尽快响应，7次测试取平均",
     "emoji": "⚡",
     "mobile": true
+  },
+  {
+    "slug": "snake",
+    "name": "贪吃蛇",
+    "description": "经典贪吃蛇游戏，吃食物变长，小心别撞墙或咬到自己！",
+    "emoji": "🐍",
+    "mobile": true
+  },
+  {
+    "slug": "tetris",
+    "name": "俄罗斯方块",
+    "description": "经典俄罗斯方块，使用方向键移动和旋转，堆叠消除行数获取高分！",
+    "emoji": "🟦",
+    "mobile": true
   }
 ]
