@@ -1,0 +1,515 @@
+<%
+    var toolTitle = 'AI Coding Method Map';
+    var toolDesc = '';
+    if (site.data && site.data.tools) {
+        var tool = site.data.tools.find(function(t) { return t.slug === page.toolSlug; });
+        if (tool) {
+            toolTitle = tool.emoji + ' ' + tool.name;
+            toolDesc = tool.description;
+        }
+    }
+%>
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .tool-container { margin-top: -50px; margin-bottom: 30px; }
+  .tool-container .card { border-radius: 8px; }
+  .tool-container .card .card-content .card-title { font-size: 1.4rem; font-weight: 600; margin-bottom: 20px; }
+
+  .mm-intro { font-size: 0.95rem; color: #555; line-height: 1.8; padding: 4px 0 6px; }
+  .mm-points { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin: 22px 0 28px; }
+  .mm-points .point { background: #fafafa; border: 1px solid #eee; border-radius: 10px; padding: 16px 18px; transition: border-color 0.2s; }
+  .mm-points .point:hover { border-color: #a8d08d; }
+  .mm-points .point strong { display: block; font-size: 0.88rem; color: #333; margin-bottom: 4px; }
+  .mm-points .point span { font-size: 0.82rem; color: #666; line-height: 1.5; }
+
+  .mm-hero-card { background: linear-gradient(135deg, #f1f8e9 0%, #e8f5e1 100%); border-radius: 12px; padding: 22px 26px; }
+  .mm-hero-card .label { font-size: 0.65rem; font-weight: 700; letter-spacing: 2px; color: #5a9600; margin-bottom: 6px; }
+  .mm-hero-card h3 { font-size: 1.05rem; font-weight: 700; color: #333; margin: 0 0 8px; }
+  .mm-hero-card > p { font-size: 0.85rem; color: #555; line-height: 1.6; margin-bottom: 16px; }
+  .mm-chain-mini { display: flex; flex-wrap: wrap; margin-top: 10px; }
+  .mm-chain-mini .chain-item { display: flex; align-items: center; }
+  .mm-chain-mini .chain-item .dot { width: 10px; height: 10px; border-radius: 50%; background: #5a9600; flex-shrink: 0; }
+  .mm-chain-mini .chain-item .label { font-size: 0.82rem; font-weight: 600; color: #333; margin: 0 6px; white-space: nowrap; }
+  .mm-chain-mini .chain-item .arrow { color: #bbb; font-size: 0.75rem; margin: 0 4px; }
+
+  .mm-section-title { margin-bottom: 24px; }
+  .mm-section-title h2 { font-size: 1.3rem; font-weight: 700; color: #333; margin: 0 0 8px; line-height: 1.3; }
+  .mm-section-title > p { font-size: 0.88rem; color: #666; line-height: 1.7; margin: 0; }
+
+  .mm-glossary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .mm-glossary-card { border: 1px solid #e8e8e8; border-radius: 10px; padding: 16px 18px; transition: border-color 0.2s; }
+  .mm-glossary-card:hover { border-color: #a8d08d; }
+  .mm-glossary-card h4 { font-size: 0.9rem; font-weight: 700; color: #333; margin: 0 0 6px; }
+  .mm-glossary-card p { font-size: 0.82rem; color: #555; line-height: 1.65; margin: 0; }
+  .mm-glossary-card p strong { color: #333; }
+
+  .mm-summary-band { background: #f8fafc; border-left: 4px solid #5a9600; border-radius: 0 8px 8px 0; padding: 14px 18px; font-size: 0.85rem; color: #444; line-height: 1.6; margin-top: 20px; }
+  .mm-summary-band strong { color: #333; }
+
+  .mm-workflow { display: flex; flex-direction: column; gap: 12px; }
+  .mm-step { display: flex; gap: 14px; align-items: flex-start; padding: 14px 18px; border-radius: 10px; background: #fafafa; border: 1px solid #eee; }
+  .mm-step .step-num { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: #fff; flex-shrink: 0; }
+  .mm-step.s1 .step-num { background: #5a9600; } .mm-step.s2 .step-num { background: #6aab18; } .mm-step.s3 .step-num { background: #7abd30; }
+  .mm-step.s4 .step-num { background: #8bcf48; } .mm-step.s5 .step-num { background: #5a9600; } .mm-step.s6 .step-num { background: #4a8600; } .mm-step.s7 .step-num { background: #3a7600; }
+  .mm-step h4 { font-size: 0.9rem; font-weight: 700; color: #333; margin: 0 0 4px; }
+  .mm-step > p { font-size: 0.82rem; color: #555; line-height: 1.5; margin: 0; }
+  .mm-step .step-note { font-size: 0.75rem; color: #888; font-style: italic; margin-top: 4px; }
+
+  .mm-comparison { display: grid; gap: 0; border: 1px solid #e8e8e8; border-radius: 10px; overflow: hidden; font-size: 0.82rem; }
+  .mm-comparison.mm-3col { grid-template-columns: 140px 1fr 1fr 1fr; }
+  .mm-comparison.mm-2col { grid-template-columns: 140px 1fr 1fr; }
+  .mm-compare-head { padding: 14px 16px; display: flex; flex-direction: column; justify-content: center; }
+  .mm-compare-head.h1 { background: #fafafa; }
+  .mm-compare-head.h2 { background: #f1f8e9; }
+  .mm-compare-head.h3 { background: #f0fdf4; }
+  .mm-compare-head h4 { font-size: 0.85rem; font-weight: 700; margin: 0 0 2px; color: #333; }
+  .mm-compare-head p { font-size: 0.72rem; color: #888; margin: 0; }
+  .mm-compare-side { padding: 10px 14px; background: #fafafa; font-weight: 600; color: #555; font-size: 0.78rem; display: flex; align-items: center; border-top: 1px solid #eee; }
+  .mm-compare-box { padding: 10px 14px; border-top: 1px solid #eee; display: flex; flex-direction: column; justify-content: center; }
+  .mm-compare-box strong { font-size: 0.8rem; color: #333; display: block; margin-bottom: 2px; }
+  .mm-compare-box span { font-size: 0.75rem; color: #666; line-height: 1.4; }
+
+  .mm-pill-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+  .mm-pill { background: #f1f8e9; color: #5a9600; padding: 6px 16px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; }
+
+  .mm-example-grid { display: grid; gap: 18px; }
+  .mm-example-grid.mm-2col { grid-template-columns: 1fr 1fr; }
+  .mm-example-grid.mm-3col { grid-template-columns: 1fr 1fr 1fr; }
+  .mm-example-card { border: 1px solid #e8e8e8; border-radius: 10px; padding: 18px; }
+  .mm-example-card .eyebrow { font-size: 0.65rem; font-weight: 700; letter-spacing: 2px; color: #5a9600; margin-bottom: 2px; }
+  .mm-example-card h3 { font-size: 1rem; font-weight: 700; color: #333; margin: 0 0 8px; }
+  .mm-example-card > p { font-size: 0.82rem; color: #555; line-height: 1.55; margin: 0 0 14px; }
+  .mm-flow-list { display: flex; flex-direction: column; gap: 10px; }
+  .mm-flow-item { display: flex; gap: 10px; }
+  .mm-flow-item .flow-index { width: 22px; height: 22px; border-radius: 50%; background: #e8f5e1; color: #5a9600; font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .mm-flow-item .flow-copy strong { font-size: 0.82rem; color: #333; display: block; margin-bottom: 1px; }
+  .mm-flow-item .flow-copy span { font-size: 0.78rem; color: #666; line-height: 1.5; }
+
+  .mm-layers { display: flex; flex-direction: column; gap: 10px; }
+  .mm-layer { border: 1px solid #e8e8e8; border-radius: 10px; padding: 16px 18px; }
+  .mm-layer.l1 { background: #fafafa; } .mm-layer.l2 { background: #f5f5f5; } .mm-layer.l3 { background: #fefce8; } .mm-layer.l4 { background: #f0fdf4; } .mm-layer.l5 { background: #fef2f2; }
+  .mm-layer .layer-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .mm-layer .layer-top h4 { font-size: 0.9rem; font-weight: 700; color: #333; margin: 0 0 4px; }
+  .mm-layer .layer-top p { font-size: 0.82rem; color: #555; line-height: 1.5; margin: 0; }
+  .mm-layer .layer-badge { flex-shrink: 0; font-size: 0.65rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; background: rgba(0,0,0,0.06); color: #555; white-space: nowrap; }
+  .mm-workflow-callout { margin-top: 10px; padding: 10px 14px; background: rgba(0,0,0,0.03); border-radius: 8px; font-size: 0.82rem; color: #555; line-height: 1.55; }
+  .mm-footer-note { margin-top: 14px; font-size: 0.78rem; color: #999; line-height: 1.5; }
+
+  @media only screen and (max-width: 768px) {
+    .mm-glossary-grid { grid-template-columns: 1fr; }
+    .mm-comparison.mm-3col { grid-template-columns: 100px 1fr 1fr 1fr; }
+    .mm-comparison.mm-2col { grid-template-columns: 100px 1fr 1fr; }
+    .mm-comparison { font-size: 0.75rem; }
+    .mm-compare-side { font-size: 0.7rem; padding: 8px 10px; }
+    .mm-compare-box { padding: 8px 10px; }
+    .mm-compare-box strong { font-size: 0.72rem; }
+    .mm-compare-box span { font-size: 0.68rem; }
+    .mm-compare-head { padding: 10px 12px; }
+    .mm-compare-head h4 { font-size: 0.75rem; }
+    .mm-example-grid.mm-2col { grid-template-columns: 1fr; }
+    .mm-example-grid.mm-3col { grid-template-columns: 1fr; }
+  }
+
+  @media only screen and (max-width: 601px) {
+    .tool-container { margin-top: -30px; }
+    .mm-points { grid-template-columns: 1fr; }
+    .mm-comparison.mm-3col { grid-template-columns: 90px 1fr 1fr 1fr; }
+    .mm-section-title h2 { font-size: 1.15rem; }
+  }
+</style>
+
+<main class="content">
+  <div class="container tool-container">
+    <div class="card">
+      <div class="card-content">
+        <span class="card-title" style="display: inline-block"><%= toolTitle %></span>
+        <% if (toolDesc) { %>
+        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
+        <% } %>
+
+        <div class="mm-intro">
+          <p>这不是一张"AI 会不会写代码"的图，而是一张"AI 如何把开发任务从一句需求推进到可交付结果"的流程图。顺着它往下看，你也会更容易看懂普通 Agent、工作流 Agent、IDE Agent 到底差在哪。</p>
+        </div>
+        <div class="mm-points">
+          <div class="point"><strong>看懂总流程</strong><span>从接收对话，到改代码、跑验证，再到交付结果。</span></div>
+          <div class="point"><strong>看清三种形态</strong><span>普通 Agent、工作流 Agent、IDE Agent 的边界和价值。</span></div>
+          <div class="point"><strong>看透差异来源</strong><span>产品体验差距，往往来自系统能力是否补齐整条链路。</span></div>
+        </div>
+
+        <div class="mm-hero-card">
+          <div class="label">核心判断</div>
+          <h3>Agent 的价值不只是"写出来"，而是"跑通闭环"</h3>
+          <p>真正有用的 AI Coding，不只是回答一个代码问题，而是能持续完成理解、拆解、读取上下文、执行修改、验证结果、继续修正这一整条链路。</p>
+          <div class="mm-chain-mini">
+            <div class="chain-item"><span class="dot"></span><span class="label">理解需求</span><span class="arrow">→</span></div>
+            <div class="chain-item"><span class="dot"></span><span class="label">获取上下文</span><span class="arrow">→</span></div>
+            <div class="chain-item"><span class="dot"></span><span class="label">执行修改</span><span class="arrow">→</span></div>
+            <div class="chain-item"><span class="dot"></span><span class="label">运行验证</span><span class="arrow">→</span></div>
+            <div class="chain-item"><span class="dot"></span><span class="label">继续迭代</span><span class="arrow">→</span></div>
+            <div class="chain-item"><span class="dot"></span><span class="label">形成交付</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-content">
+        <div class="mm-section-title">
+          <h2>几个高频术语，先别被黑话劝退</h2>
+          <p>很多人第一次看 Agent 讨论，会被 Token、Prompt、MCP、CDP、命中率这类词绕住。其实它们都可以放回"Agent 怎么推进任务"这条主线里理解。</p>
+        </div>
+        <div class="mm-glossary-grid">
+          <div class="mm-glossary-card"><h4>Prompt</h4><p><strong>Prompt 不只是你输入的一句话。</strong> 在真实 Agent 里，它往往包含用户需求、系统规则、当前目标、工具说明、上下文摘要，甚至执行阶段的中间状态。工作流 Agent 比普通聊天工具更强，很多时候就是因为它背后拼接的是一整套结构化 Prompt。</p></div>
+          <div class="mm-glossary-card"><h4>Token</h4><p><strong>Token 可以粗略理解成模型处理文本时的最小计量单位。</strong> 你的输入、系统提示、代码、日志、工具返回结果，都会占用 Token。上下文越长、任务越复杂，消耗就越大；这会直接影响成本、速度，以及 Agent 一次性能带多少信息进场。</p></div>
+          <div class="mm-glossary-card"><h4>上下文</h4><p><strong>上下文不只是你贴给它的代码片段。</strong> 它还包括项目结构、依赖关系、历史实现、当前文件、报错位置、运行结果。普通 Agent 往往依赖你手喂上下文，IDE Agent 和工作流 Agent 则更擅长自己去拿上下文。</p></div>
+          <div class="mm-glossary-card"><h4>缓存命中</h4><p><strong>可以把它理解成"之前看过、处理过的上下文，这次还能不能直接复用"。</strong> 命中高，通常意味着更快、更省成本，也更少重复读取同样的信息。对 Agent 来说，这会影响它反复读代码、重复整理上下文的次数，间接影响响应速度和连续协作体验。</p></div>
+          <div class="mm-glossary-card"><h4>MCP</h4><p><strong>MCP 可以理解成让模型接上外部工具和外部世界的一种标准接口。</strong> 通过它，Agent 才能去读文件、查文档、调浏览器、连数据库、调用设计或工程工具。没有工具接入，很多 Agent 只能"猜"；有了 MCP，它才更像"会动手"。</p></div>
+          <div class="mm-glossary-card"><h4>Chrome DevTools Protocol（CDP）</h4><p><strong>CDP 可以理解成让 Agent 和浏览器开发者工具打交道的一套协议。</strong> 有了它，AI 才能更系统地查看页面结构、网络请求、控制台报错、性能信息，甚至驱动浏览器做自动化操作。对前端场景来说，这会极大增强"看页面、查问题、再修代码"的能力。</p></div>
+          <div class="mm-glossary-card"><h4>Tool Use / 工具调用</h4><p><strong>这是 Agent 从"会说"变成"会做"的关键。</strong> 比如搜代码、改文件、跑测试、读网页、看报错，这些都属于工具调用。很多产品表面都在聊天，但真正拉开差距的是：它能不能在合适的时机选对工具。</p></div>
+          <div class="mm-glossary-card"><h4>规划与验证</h4><p><strong>这是很多"像 Agent"和"真 Agent"的分水岭。</strong> 前者可能直接给答案，后者会先想步骤、再执行、再验证、再修正。像 Superpower 一类增强，本质就是把这些容易被跳过的环节强制加回来。</p></div>
+          <div class="mm-glossary-card"><h4>命中率</h4><p><strong>更准确地说，常常是在讲首轮命中率或任务完成率。</strong> 比如一个 bug，AI 第一次给出的方案是不是就改对了，或者它能不能在几轮内把任务真正做完。Agent 强不强，不只看"第一下写得像不像"，更看它后面会不会自己验证、自己修正。</p></div>
+        </div>
+        <div class="mm-summary-band">扫盲版总结：如果把 AI Coding 看成一条任务链路，那 <strong>Prompt / Token</strong> 更像输入和容量基础，<strong>上下文 / 缓存命中</strong> 决定信息复用效率，<strong>MCP / CDP / Tool Use</strong> 更像行动能力，<strong>规划与验证 / 命中率</strong> 则决定任务最后到底有没有真的做成。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-content">
+        <div class="mm-section-title">
+          <h2>Agent 帮你 Coding 的完整链路</h2>
+          <p>这一张图先回答最重要的问题：Agent 到底做了什么。重点不是"生成代码"本身，而是从自然语言任务一路推进到验证和交付。</p>
+        </div>
+        <div class="mm-workflow">
+          <div class="mm-step s1">
+            <div class="step-num">1</div>
+            <div>
+              <h4>接收对话</h4>
+              <p>需求、报错、截图，甚至一句模糊描述，都会成为任务入口。</p>
+              <div class="step-note">先把自然语言转成可执行任务，而不是立刻开写。</div>
+            </div>
+          </div>
+          <div class="mm-step s2">
+            <div class="step-num">2</div>
+            <div>
+              <h4>理解需求</h4>
+              <p>识别目标、约束、缺失信息和成功标准，判断问题到底要解决什么。</p>
+              <div class="step-note">好的 Agent 会意识到"信息还不够"。</div>
+            </div>
+          </div>
+          <div class="mm-step s3">
+            <div class="step-num">3</div>
+            <div>
+              <h4>拆解任务</h4>
+              <p>决定先看哪里、先改什么、先验证什么，避免盲改和乱试。</p>
+              <div class="step-note">这里体现的是计划能力，而不只是生成能力。</div>
+            </div>
+          </div>
+          <div class="mm-step s4">
+            <div class="step-num">4</div>
+            <div>
+              <h4>获取上下文</h4>
+              <p>读代码、搜文件、看调用链、查文档，补齐工程里的真实信息。</p>
+              <div class="step-note">从"会写代码"到"能在代码库里工作"的分水岭。</div>
+            </div>
+          </div>
+          <div class="mm-step s5">
+            <div class="step-num">5</div>
+            <div>
+              <h4>执行修改</h4>
+              <p>改文件、补实现、加测试、调配置，真正进入动手阶段。</p>
+              <div class="step-note">这一层已经不是建议层，而是行动层。</div>
+            </div>
+          </div>
+          <div class="mm-step s6">
+            <div class="step-num">6</div>
+            <div>
+              <h4>运行验证</h4>
+              <p>跑测试、lint、build、检查命令输出，确认结果是否真的成立。</p>
+              <div class="step-note">AI Coding 真正的门槛，往往就在验证闭环。</div>
+            </div>
+          </div>
+          <div class="mm-step s7">
+            <div class="step-num">7</div>
+            <div>
+              <h4>迭代交付</h4>
+              <p>根据结果继续修正，最后输出代码、说明、风险和后续建议。</p>
+              <div class="step-note">交付不是贴一段代码，而是给出一个能落地的结果。</div>
+            </div>
+          </div>
+        </div>
+        <div class="mm-summary-band">结论：<strong>Agent != 吐一段代码</strong>；更接近真实的 Agent，是沿着"理解需求 -> 修改实现 -> 验证结果"的整条链路持续推进任务。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-content">
+        <div class="mm-section-title">
+          <h2>普通 Agent、工作流 Agent、IDE Agent，差别到底在哪？</h2>
+          <p>同样都是 AI Coding，体验差异不只在模型。更关键的问题是：它能补齐多少开发链路，以及它是以什么方式补齐的。</p>
+        </div>
+        <div class="mm-comparison mm-3col">
+          <div></div>
+          <div class="mm-compare-head h1"><h4>普通 Agent</h4><p>更像会写代码的问答助手</p></div>
+          <div class="mm-compare-head h2"><h4>工作流 Agent</h4><p>更像能推进任务的执行者</p></div>
+          <div class="mm-compare-head h3"><h4>IDE Agent</h4><p>更像长在开发现场里的搭档</p></div>
+
+          <div class="mm-compare-side">接到任务后</div>
+          <div class="mm-compare-box"><strong>先回答问题</strong><span>通常先给建议、思路或代码片段。</span></div>
+          <div class="mm-compare-box"><strong>先分析，再拆解，再执行</strong><span>更强调步骤、计划和推进顺序。</span></div>
+          <div class="mm-compare-box"><strong>结合当前工程，直接进入任务</strong><span>能更快贴近当前文件、报错位置和编辑器上下文。</span></div>
+
+          <div class="mm-compare-side">上下文从哪里来</div>
+          <div class="mm-compare-box"><strong>主要靠你手动提供</strong><span>上下文常常有限，也容易遗漏关键信息。</span></div>
+          <div class="mm-compare-box"><strong>会主动搜索和读取</strong><span>主动搜文件、读代码、看调用链、补真实上下文。</span></div>
+          <div class="mm-compare-box"><strong>天然连接项目、文件、光标和报错</strong><span>离开发现场更近，拿上下文的链路更短。</span></div>
+
+          <div class="mm-compare-side">执行方式</div>
+          <div class="mm-compare-box"><strong>给建议，你自己改</strong><span>更像编程顾问，而不是实际操作者。</span></div>
+          <div class="mm-compare-box"><strong>自己动手改，再继续推进</strong><span>会在终端、代码和验证结果之间形成闭环。</span></div>
+          <div class="mm-compare-box"><strong>边看边改，结合 IDE 能力操作</strong><span>常常叠加重构、跳转、诊断等 IDE 原生能力。</span></div>
+
+          <div class="mm-compare-side">验证能力</div>
+          <div class="mm-compare-box"><strong>通常停在建议层</strong><span>很多时候不会真正去跑测试或检查工程结果。</span></div>
+          <div class="mm-compare-box"><strong>会跑测试、构建、命令</strong><span>把验证纳入任务链路，不只是"生成完成"。</span></div>
+          <div class="mm-compare-box"><strong>更容易在本地工程里快速验证</strong><span>上下文和执行环境更近，验证反馈更快。</span></div>
+
+          <div class="mm-compare-side">最适合的任务</div>
+          <div class="mm-compare-box"><strong>问语法、要示例、写局部函数</strong><span>轻量、快速、低门槛的问题最合适。</span></div>
+          <div class="mm-compare-box"><strong>修 bug、加功能、改真实项目</strong><span>尤其适合多步骤、需要推进的开发任务。</span></div>
+          <div class="mm-compare-box"><strong>高频工程开发、边导航边修改</strong><span>适合日常工程内连续工作的场景。</span></div>
+
+          <div class="mm-compare-side">核心短板</div>
+          <div class="mm-compare-box"><strong>上下文弱，容易纸上谈兵</strong><span>回答可能对，但不一定真能落地。</span></div>
+          <div class="mm-compare-box"><strong>学习成本更高，依赖流程设计</strong><span>好不好用，和背后的工作流强相关。</span></div>
+          <div class="mm-compare-box"><strong>不一定更聪明，强在环境接入</strong><span>更顺手不一定等于底层认知一定更强。</span></div>
+        </div>
+        <div class="mm-pill-row">
+          <div class="mm-pill">普通 Agent：解决"给我答案"</div>
+          <div class="mm-pill">工作流 Agent：解决"帮我推进任务"</div>
+          <div class="mm-pill">IDE Agent：解决"在现场里更顺地推进任务"</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-content">
+        <div class="mm-section-title">
+          <h2>同样是"让 AI 帮忙"，它到底是怎么一步步做事的？</h2>
+          <p>抽象流程如果不落到任务里，读者还是会觉得悬。下面用两个例子，把 Agent 的动作拆开看：一个是修 bug，一个是把设计稿真正实现成页面。</p>
+        </div>
+        <div class="mm-example-grid mm-2col">
+          <div class="mm-example-card">
+            <div class="eyebrow">CASE 01</div>
+            <h3>修复一个按钮点击后无响应的 bug</h3>
+            <p>这类任务最能看出 Agent 是不是只会"猜代码"。真正靠谱的流程，通常不会从写代码开始，而会先从定位问题开始。</p>
+            <div class="mm-flow-list">
+              <div class="mm-flow-item"><div class="flow-index">1</div><div class="flow-copy"><strong>先理解问题</strong><span>AI 会先把任务转成更具体的问题：是按钮没绑定事件、事件没触发、状态没更新，还是接口调用没成功？</span></div></div>
+              <div class="mm-flow-item"><div class="flow-index">2</div><div class="flow-copy"><strong>去找相关代码</strong><span>它会搜索按钮组件、事件处理函数、相关状态管理和接口逻辑，而不是直接猜一段 onClick。</span></div></div>
+              <div class="mm-flow-item"><div class="flow-index">3</div><div class="flow-copy"><strong>形成假设</strong><span>比如判断是事件冒泡被拦截、disabled 状态异常、或者某个条件分支让逻辑提前 return。</span></div></div>
+              <div class="mm-flow-item"><div class="flow-index">4</div><div class="flow-copy"><strong>修改实现</strong><span>找到问题后再改代码，必要时连同测试、日志或状态判断一起补上。</span></div></div>
+              <div class="mm-flow-item"><div class="flow-index">5</div><div class="flow-copy"><strong>运行验证</strong><span>跑测试、重现交互、看控制台或构建结果，确认按钮现在真的能点了。</span></div></div>
+              <div class="mm-flow-item"><div class="flow-index">6</div><div class="flow-copy"><strong>给出交付说明</strong><span>最后不只是贴修改代码，还会说明问题根因、改动点，以及有没有潜在影响面。</span></div></div>
+            </div>
+          </div>
+          <div class="mm-example-card">
+            <div class="eyebrow">CASE 02</div>
+            <h3>上传一张产品图或 Figma 截图，让 AI 用 React / Vue 还原页面</h3>
+            <p>这是现在非常典型的一类 AI Coding 任务。它不是"凭空写个页面"，而是让 AI 先看图、理解布局和组件关系，再按指定框架把界面真正实现出来。</p>
+            <div class="mm-flow-list">
+              <div class="mm-flow-item"><div class="flow-index">1</div><div class="flow-copy"><strong>先识别视觉目标</strong><span>AI 先看截图里有哪些区块：导航、Banner、卡片、按钮、表单、列表、弹窗，以及它们之间的层级关系。</span></div></div>
+              <div class="mm-flow-item"><div class="flow-index">2</div><div class="flow-copy"><strong>收实现约束</strong><span>确认你要的是 React 还是 Vue，用什么 UI 库，是否要响应式，是否要拆组件，甚至要不要尽量贴近设计稿像素级还原。</span></div></div>
+              <div class="mm-flow-item"><div class="flow-index">3</div><div class="flow-copy"><strong>把图片理解成结构</strong><span>它会把截图从"视觉结果"翻译成代码结构：哪些该做成父容器，哪些适合做复用组件，哪些地方需要数据驱动或占位内容。</span></div></div>
+              <div class="mm-flow-item"><div class="flow-index">4</div><div class="flow-copy"><strong>按框架生成代码</strong><span>如果你指定 React，它会输出 JSX、组件拆分、样式文件和可能的 props 结构；如果你指定 Vue，它就会按 template、script、style 或组合式 API 的方式来组织代码。</span></div></div>
+              <div class="mm-flow-item"><div class="flow-index">5</div><div class="flow-copy"><strong>运行预览，再对照截图修细节</strong><span>真正靠谱的 Agent 不会停在"代码已经给你了"，而是会把页面跑起来，对照截图继续调间距、字体、颜色、圆角、阴影和响应式表现。</span></div></div>
+              <div class="mm-flow-item"><div class="flow-index">6</div><div class="flow-copy"><strong>继续处理"像不像"和"能不能用"两类问题</strong><span>前者是视觉还原度，后者是组件结构、可维护性、交互和适配性。厉害的 Agent 不只是把图抄出来，而是把页面实现成一个真的前端工程片段。</span></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="mm-summary-band">实例版总结：无论是修 bug，还是实现页面，真正有用的 Agent 都不是"一次命中"，而是 <strong>理解 -> 查找 -> 修改 -> 验证 -> 继续迭代</strong> 这套动作能不能持续跑下去。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-content">
+        <div class="mm-section-title">
+          <h2>为什么不同 AI Coding 产品体验差这么多？</h2>
+          <p>看起来像模型差距，往下拆更像系统分层差距。产品体验的高低，往往取决于模型、Agent、工作流、工具接入和验证闭环是否被真正串起来。</p>
+        </div>
+        <div class="mm-layers">
+          <div class="mm-layer l1">
+            <div class="layer-top">
+              <div><h4>1. 模型层</h4><p>决定基础推理、理解和代码生成能力，是系统上限的起点，但不是全部。</p></div>
+              <div class="layer-badge">基础能力上限</div>
+            </div>
+          </div>
+          <div class="mm-layer l2">
+            <div class="layer-top">
+              <div><h4>2. Agent 层</h4><p>决定它能不能把聊天变成行动，包括任务分解、状态管理、工具选择和多步推进。</p></div>
+              <div class="layer-badge">从回答到行动</div>
+            </div>
+          </div>
+          <div class="mm-layer l3">
+            <div class="layer-top">
+              <div><h4>3. 工作流层</h4><p>决定它会不会规划、调试、验证，而不是一路跳步。很多稳定性差距，真正拉开就在这里。</p></div>
+              <div class="layer-badge">方法论放大器</div>
+            </div>
+            <div class="mm-workflow-callout">Superpower 类增强的价值，往往就在这一层：它不是把提示词写得更长，而是把 <strong>brainstorming、planning、debugging、verification</strong> 强制加入流程。</div>
+          </div>
+          <div class="mm-layer l4">
+            <div class="layer-top">
+              <div><h4>4. IDE / 工具层</h4><p>决定它能不能真正接入工程上下文和开发环境，比如项目结构、文件位置、终端能力和编辑器状态。</p></div>
+              <div class="layer-badge">贴近开发现场</div>
+            </div>
+          </div>
+          <div class="mm-layer l5">
+            <div class="layer-top">
+              <div><h4>5. 执行与验证层</h4><p>决定它能不能形成"修改 -> 运行 -> 检查 -> 再修"的闭环，这往往是从"看起来会"走向"真的能用"的关键。</p></div>
+              <div class="layer-badge">闭环决定落地</div>
+            </div>
+          </div>
+        </div>
+        <div class="mm-summary-band">结论：AI Coding 的竞争，拼的不只是更强模型，而是谁能把 <strong>模型、流程、工具和验证</strong> 串成一个系统。</div>
+        <div class="mm-footer-note">可映射产品示意：普通 Agent 常见于 ChatGPT 网页对话或基础问答式编程助手；工作流 Agent 更接近 Claude Code、Codex、Cline 及带有 Superpower 风格流程增强的执行流；IDE Agent 更接近 Cursor、JetBrains AI Assistant、Junie、IDEA 内的类似 Agent 体验。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-content">
+        <div class="mm-section-title">
+          <h2>为什么像 Superpower 这样的工作流工具会让 Agent 更强？</h2>
+          <p>很多人第一次用 Agent，会觉得它"有时候很聪明，有时候又很跳"。工作流工具的价值，往往就在于把这些不稳定的地方收住，让 Agent 从会回答，变得更会稳定地做事。</p>
+        </div>
+        <div class="mm-comparison mm-2col">
+          <div></div>
+          <div class="mm-compare-head h1"><h4>没有工作流增强</h4><p>更容易停在"想到什么就做什么"</p></div>
+          <div class="mm-compare-head h2"><h4>有 Superpower 类工作流增强</h4><p>更像一套可重复执行的开发方法</p></div>
+
+          <div class="mm-compare-side">它主要解决什么问题</div>
+          <div class="mm-compare-box"><strong>容易跳步</strong><span>直接开改、缺少计划、没验证就宣布完成，或者上下文还没补齐就开始猜。</span></div>
+          <div class="mm-compare-box"><strong>把关键步骤强制补回来</strong><span>先 brainstorm、再 planning、遇到 bug 先 debugging、结束前要 verification，减少"拍脑袋完成"。</span></div>
+
+          <div class="mm-compare-side">它改变了什么</div>
+          <div class="mm-compare-box"><strong>执行更像即时反应</strong><span>适合快问快答，但面对多步骤任务时容易不稳。</span></div>
+          <div class="mm-compare-box"><strong>执行更像标准化流程</strong><span>把任务拆成可重复的方法，尤其适合真实项目、复杂修改和多人协作场景。</span></div>
+
+          <div class="mm-compare-side">带来的提升</div>
+          <div class="mm-compare-box"><strong>速度可能快，但波动大</strong><span>顺利时很快，失误时会反复返工，质量高度依赖当次 Prompt 和上下文运气。</span></div>
+          <div class="mm-compare-box"><strong>稳定性、可解释性和完成率更高</strong><span>你更容易看到它为什么这么做、下一步做什么，以及它是否真的验证过结果。</span></div>
+
+          <div class="mm-compare-side">最适合什么任务</div>
+          <div class="mm-compare-box"><strong>轻量问答、局部修改</strong><span>例如解释一段代码、写一个小函数、快速给思路。</span></div>
+          <div class="mm-compare-box"><strong>真实开发任务</strong><span>例如修复杂 bug、做功能迭代、跨文件改动、需要测试和回归验证的任务。</span></div>
+        </div>
+        <div class="mm-summary-band">一句话理解：<strong>Superpower 这类工具提升的，不只是"模型输出质量"，而是把 Agent 的工作方式从"随机发挥"拉成"有流程、有检查、有闭环"的稳定执行流。</strong></div>
+        <div class="mm-footer-note">如果把普通 Agent 看成"会写代码的人"，那工作流工具更像是在给这个人补上开发方法论、检查清单和执行纪律。它解决的核心问题，不是让模型突然更聪明，而是让它更少跳步、更少漏项、更少没验证就交付，也更适合处理真实世界里的复杂开发任务。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-content">
+        <div class="mm-section-title">
+          <h2>如果想让 Agent 更像资深开发搭档，可以关注这三类增强工具</h2>
+          <p>模型本身很重要，但很多时候真正拉开体验差距的，是你有没有给 Agent 配上更强的"代码理解器"和"方法论外挂"。下面这三类增强就很典型。</p>
+        </div>
+        <div class="mm-example-grid mm-3col">
+          <div class="mm-example-card">
+            <div class="eyebrow">TOOL 01</div>
+            <h3>CodeGraph：把"读代码"这件事大幅增强</h3>
+            <p>很多 Agent 最大的问题不是不会写，而是看代码库时像在黑夜里摸索。CodeGraph 这类工具的价值，就是把项目结构、符号关系、调用链、入口点这些信息提前组织好，让 Agent 不用每次都从零开始扫文件。</p>
+            <div class="mm-flow-list">
+              <div class="mm-flow-item"><div class="flow-index">1</div><div class="flow-copy"><strong>它解决什么问题</strong><span>解决"代码库太大，Agent 很难快速看懂哪里和哪里有关"的问题，尤其适合大型项目、多层调用链、复杂模块依赖。</span></div></div>
+              <div class="mm-flow-item"><div class="flow-index">2</div><div class="flow-copy"><strong>它为什么强</strong><span>因为它不是简单全文检索，而是更接近"给代码建图谱"：函数、类、文件、调用关系、入口路径都能被结构化理解。</span></div></div>
+              <div class="mm-flow-item"><div class="flow-index">3</div><div class="flow-copy"><strong>它给 Agent 带来的提升</strong><span>Agent 更容易快速找到关键文件、理解调用路径、定位影响范围，也更不容易出现"改到了表面，没改到真正逻辑入口"的情况。</span></div></div>
+              <div class="mm-flow-item"><div class="flow-index">4</div><div class="flow-copy"><strong>最适合什么场景</strong><span>修复杂 bug、理解遗留项目、跨模块改功能、做架构级排查，或者任何"不是找字符串，而是要看关系"的任务。</span></div></div>
+            </div>
+          </div>
+          <div class="mm-example-card">
+            <div class="eyebrow">TOOL 02</div>
+            <h3>andrej-karpathy-skills：把"做事方式"这件事拉到更高水位</h3>
+            <p>如果说 CodeGraph 强在"让 Agent 更会看代码"，那 skills 类工具强在"让 Agent 更会做任务"。andrej-karpathy-skills 这类工具的核心价值，不是教模型更多知识，而是把优秀工程师常用的思考和执行方式沉淀成可复用套路。</p>
+            <div class="mm-flow-list">
+              <div class="mm-flow-item"><div class="flow-index">1</div><div class="flow-copy"><strong>它解决什么问题</strong><span>解决 Agent 容易直接开干、跳步骤、没计划、没复盘的问题，让它少一点"灵机一动"，多一点"按套路办事"。</span></div></div>
+              <div class="mm-flow-item"><div class="flow-index">2</div><div class="flow-copy"><strong>它为什么强</strong><span>因为它把一些高质量工作流固化了下来。比如先怎么理解问题、怎么拆任务、怎么做调试、什么时候验证、什么时候回头检查。</span></div></div>
+              <div class="mm-flow-item"><div class="flow-index">3</div><div class="flow-copy"><strong>它给 Agent 带来的提升</strong><span>提升稳定性、可解释性和复现性。你更容易知道它为什么这么做，也更容易把一次成功经验复用到下一次任务里。</span></div></div>
+              <div class="mm-flow-item"><div class="flow-index">4</div><div class="flow-copy"><strong>最适合什么场景</strong><span>真实项目开发、复杂任务协作、长链路问题处理，或者任何你不希望 Agent "看起来会、实际翻车"的场景。</span></div></div>
+            </div>
+          </div>
+          <div class="mm-example-card">
+            <div class="eyebrow">TOOL 03</div>
+            <h3>ECC：给 Claude Code 补上一整个可复用技能库</h3>
+            <p>ECC 是一个 Claude Code 的插件 / 技能库，里面包含 63 个代理、249 个技能和 79 个命令。它的价值不在于单点能力，而在于把很多高频任务都预先封装成现成套路，让 Agent 不用每次都从零摸索"该怎么做"。</p>
+            <div class="mm-flow-list">
+              <div class="mm-flow-item"><div class="flow-index">1</div><div class="flow-copy"><strong>它解决什么问题</strong><span>解决"Agent 虽然有能力，但不知道该用什么方法做、顺序怎么排、哪些任务有成熟套路可复用"的问题，尤其适合复杂开发流程和高频重复性任务。</span></div></div>
+              <div class="mm-flow-item"><div class="flow-index">2</div><div class="flow-copy"><strong>它为什么强</strong><span>因为它不是只给一个 Prompt，而是直接给 Agent 一整套可选技能。两百多个技能的意义在于，很多 brainstorming、planning、debugging、frontend、文档、验证类任务，都有现成方法可以直接套用。</span></div></div>
+              <div class="mm-flow-item"><div class="flow-index">3</div><div class="flow-copy"><strong>它给 Agent 带来的提升</strong><span>Agent 会更像一个"带工具箱和操作手册上岗的人"。它能更快进入正确流程，少一点随机发挥，提升任务完成率、稳定性和可复用性。</span></div></div>
+              <div class="mm-flow-item"><div class="flow-index">4</div><div class="flow-copy"><strong>最适合什么场景</strong><span>想让 Claude Code 更像成熟工程搭档的时候最适合，比如复杂任务拆解、真实项目开发、代码审查处理、前端页面实现、文档编写和需要固定流程的长链路任务。</span></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="mm-summary-band">一句话对比：<strong>CodeGraph 更像给 Agent 补"代码地图"，andrej-karpathy-skills 更像给 Agent 补"做事方法"，ECC 更像给 Claude Code 补"一整个现成技能库"。</strong></div>
+        <div class="mm-footer-note">如果把 Agent 的能力拆开看，你会发现很多"强悍"并不是来自模型突然更聪明，而是来自三种增强：第一种是让它更懂工程结构，第二种是让它更懂怎么做事，第三种是让它直接拥有大量可复用技能。CodeGraph、skills 类工具和 ECC，分别就对应这三条增强路线。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-content">
+        <div class="mm-section-title">
+          <h2>把抽象概念映射到具体产品，一眼看懂它们分别更像哪一类</h2>
+          <p>这不是严格分类，更不是产品排名，而是一张帮助读者快速建立认知的地图。重点不是产品名本身，而是它补齐了哪几段能力链路。</p>
+        </div>
+        <div class="mm-comparison mm-3col">
+          <div></div>
+          <div class="mm-compare-head h1"><h4>更接近普通 Agent</h4><p>更像问答助手</p></div>
+          <div class="mm-compare-head h2"><h4>更接近工作流 Agent</h4><p>更像任务执行者</p></div>
+          <div class="mm-compare-head h3"><h4>更接近 IDE Agent</h4><p>更像开发现场搭档</p></div>
+
+          <div class="mm-compare-side">代表产品</div>
+          <div class="mm-compare-box"><strong>ChatGPT、基础聊天式 Copilot</strong><span>更常见于网页对话或轻量问答场景。</span></div>
+          <div class="mm-compare-box"><strong>Claude Code、Codex、Cline</strong><span>更强调读代码、改文件、跑命令、做验证。</span></div>
+          <div class="mm-compare-box"><strong>Cursor、JetBrains AI Assistant、Junie</strong><span>更强调 IDE 内上下文、导航和工程内操作体验。</span></div>
+
+          <div class="mm-compare-side">最显著特征</div>
+          <div class="mm-compare-box"><strong>回答快、门槛低</strong><span>适合随手问、随手改、快速拿思路。</span></div>
+          <div class="mm-compare-box"><strong>流程强、闭环强</strong><span>适合多步骤任务和真实项目开发。</span></div>
+          <div class="mm-compare-box"><strong>上下文深、环境近</strong><span>适合长期泡在工程里的高频协作开发。</span></div>
+
+          <div class="mm-compare-side">更适合谁</div>
+          <div class="mm-compare-box"><strong>临时问问题的人</strong><span>比如快速查语法、问思路、生成片段代码。</span></div>
+          <div class="mm-compare-box"><strong>需要 AI 一起推进任务的人</strong><span>比如修 bug、改功能、跨文件修改和验证。</span></div>
+          <div class="mm-compare-box"><strong>每天都在 IDE 里编码的人</strong><span>比如前后端工程师、长期维护项目的团队成员。</span></div>
+
+          <div class="mm-compare-side">容易被误解的点</div>
+          <div class="mm-compare-box"><strong>不是它不聪明，而是它更轻</strong><span>它的短板主要在上下文和执行链路，不一定是模型绝对弱。</span></div>
+          <div class="mm-compare-box"><strong>不是模型突然更强，而是流程更完整</strong><span>它强在方法论和执行闭环，不只是"回答质量更高"。</span></div>
+          <div class="mm-compare-box"><strong>不是天然最强，而是更贴近现场</strong><span>它的优势更多来自工程上下文和工具接入深度。</span></div>
+        </div>
+        <div class="mm-summary-band">产品映射总结：<strong>ChatGPT 更像"问答型入口"，Claude Code / Codex / Cline 更像"执行型中枢"，Cursor / JetBrains 更像"现场型工作台"。</strong></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-content">
+        <div class="mm-section-title">
+          <h2>什么时候该用哪类 Agent？</h2>
+          <p>很多读者看到这里，真正想问的其实只有一句话：那我到底该怎么选？最简单的判断方法，不是看谁最火，而是看你当前任务在哪条链路上。</p>
+        </div>
+        <div class="mm-glossary-grid">
+          <div class="mm-glossary-card"><h4>用普通 Agent 的时候</h4><p><strong>当你只是需要一个快、轻、即时的编程助手。</strong> 比如问语法、要示例、解释报错、快速生成局部函数、确认某个 API 用法。这类场景不一定需要深上下文和完整闭环，重点是快。</p></div>
+          <div class="mm-glossary-card"><h4>用工作流 Agent 的时候</h4><p><strong>当你面对的是一个真实任务，而不是一个单点问题。</strong> 比如修 bug、加功能、做跨文件改动、跑测试、验证结果、反复迭代。这时候你真正需要的不是"答案"，而是一个能把任务持续往前推的执行者。</p></div>
+          <div class="mm-glossary-card"><h4>用 IDE Agent 的时候</h4><p><strong>当你已经在工程现场里高频工作。</strong> 比如你一整天都在 IDE 里看代码、跳文件、追报错、改实现、反复运行。此时 IDE Agent 的价值，不一定是更聪明，而是让上下文、操作和验证都离你更近。</p></div>
+          <div class="mm-glossary-card"><h4>如果你是新手开发者</h4><p><strong>先从普通 Agent 建立基础认知，再逐步过渡到工作流 Agent。</strong> 先学会怎么问、怎么描述问题、怎么验证答案，再慢慢理解为什么流程和验证这么重要。</p></div>
+          <div class="mm-glossary-card"><h4>如果你是资深工程师</h4><p><strong>工作流 Agent 和 IDE Agent 往往更有价值。</strong> 因为你最缺的通常不是"会不会写代码"，而是如何更快理解代码库、推进复杂任务、减少重复劳动和验证成本。</p></div>
+          <div class="mm-glossary-card"><h4>最实用的选择标准</h4><p><strong>别先问"哪个产品最强"，先问"我现在缺的是答案、推进，还是现场协作"。</strong> 这个问题一旦想清楚，产品选择通常会比看排行榜更靠谱。</p></div>
+        </div>
+        <div class="mm-summary-band">选择建议总结：<strong>临时问问题，用普通 Agent；处理真实任务，用工作流 Agent；长期在工程里协作开发，用 IDE Agent。</strong></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>

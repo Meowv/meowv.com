@@ -82,5 +82,12 @@
     "description": "特殊符号大全，一键复制使用",
     "emoji": "✨",
     "url": "/tools/special-symbols/"
+  },
+  {
+    "slug": "ai-coding-method-map",
+    "name": "AI Coding Method Map",
+    "description": "AI 编程方法论地图，看懂普通 Agent、工作流 Agent、IDE Agent 的差异与开发链路",
+    "emoji": "⚙",
+    "url": "/tools/ai-coding-method-map/"
   }
 ]
