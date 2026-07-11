@@ -1,0 +1,220 @@
+<%
+    var toolTitle = 'UUID 生成器';
+    var toolDesc = '';
+    if (site.data && site.data.tools) {
+        var tool = site.data.tools.find(function(t) { return t.slug === page.toolSlug; });
+        if (tool) {
+            toolTitle = tool.emoji + ' ' + tool.name;
+            toolDesc = tool.description;
+        }
+    }
+%>
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .tool-container { margin-top: -50px; margin-bottom: 30px; }
+  .tool-container .card { border-radius: 8px; }
+  .tool-container .card .card-content .card-title { font-size: 1.4rem; font-weight: 600; margin-bottom: 20px; }
+
+  .config-row {
+    display: flex; gap: 16px; flex-wrap: wrap; align-items: center; margin-bottom: 20px;
+  }
+  .config-item {
+    display: flex; align-items: center; gap: 10px; height: 36px;
+  }
+  .config-item label {
+    font-size: 0.9rem; color: #666; font-weight: 500; white-space: nowrap;
+  }
+  .config-item input[type="number"] {
+    width: 64px; border: 2px solid #e8e8e8; border-radius: 8px;
+    padding: 0 6px; font-size: 0.85rem; outline: none; text-align: center;
+    transition: border-color 0.3s; box-sizing: border-box; height: 36px; line-height: 32px; margin-top: 10px;
+  }
+  .config-item input[type="number"]:focus { border-color: #5a9600; }
+
+  .case-toggle { display: flex; border: 2px solid #e8e8e8; border-radius: 8px; overflow: hidden; height: 100%; box-sizing: border-box; }
+  .case-toggle .toggle-btn {
+    padding: 0 14px; font-size: 0.85rem; border: none; background: #fff; cursor: pointer;
+    color: #666; transition: all 0.2s; font-weight: 500; line-height: 32px;
+  }
+  .case-toggle .toggle-btn:not(:last-child) { border-right: 1px solid #e8e8e8; }
+  .case-toggle .toggle-btn.active { background: #5a9600; color: #fff; }
+
+  .config-item .btn {
+    border-radius: 20px; padding: 0 20px; height: 100%; line-height: 36px;
+    font-size: 0.85rem; letter-spacing: 1px; display: inline-flex; align-items: center; gap: 5px; margin: 0;
+    box-shadow: none; text-transform: none;
+  }
+  .config-item .btn i { font-size: 0.85rem; }
+  .config-item .btn.primary { background: linear-gradient(135deg, #5a9600 0%, #7ccd00 100%); }
+  .config-item .btn.primary:hover { box-shadow: 0 4px 12px rgba(90,150,0,0.4); }
+  .config-item .btn.outline {
+    background: transparent; color: #666; border: 1px solid #ddd;
+  }
+  .config-item .btn.outline:hover { border-color: #5a9600; color: #5a9600; }
+
+  .switch { height: 100%; display: flex; align-items: center; }
+  .switch label { display: flex; align-items: center; height: 100%; }
+  .switch label .lever { margin: 0 0 0 8px; }
+  .switch label input[type=checkbox]:checked+.lever { background-color: rgba(90,150,0,0.4); }
+  .switch label input[type=checkbox]:checked+.lever:after { background-color: #5a9600; }
+  .switch label input[type=checkbox]:checked:not(:disabled)~.lever:active::before,
+  .switch label input[type=checkbox]:checked:not(:disabled).tabbed:focus~.lever::before { background-color: rgba(90,150,0,0.2); }
+
+  .result-area {
+    width: 100%; min-height: 180px; border: 2px solid #e8e8e8; border-radius: 10px;
+    padding: 14px 16px; font-size: 0.85rem; font-family: 'SF Mono','Fira Code','Consolas',monospace;
+    line-height: 1.8; resize: vertical; background: #fafafa; box-sizing: border-box;
+    outline: none; transition: border-color 0.3s, background 0.3s; color: #333;
+  }
+  .result-area:focus { border-color: #5a9600; background: #fff; }
+
+  .uuid-list { list-style: none; padding: 0; margin: 0; }
+  .uuid-list li {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 12px; border-bottom: 1px solid #f0f0f0; font-family: 'SF Mono','Fira Code','Consolas',monospace;
+    font-size: 0.9rem; transition: background 0.2s;
+  }
+  .uuid-list li:last-child { border-bottom: none; }
+  .uuid-list li:hover { background: #f6fbf0; }
+  .uuid-list li .uuid-text { word-break: break-all; flex: 1; }
+  .uuid-list li .copy-icon {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid #ddd;
+    background: rgba(255,255,255,0.9); cursor: pointer; font-size: 0.75rem; color: #aaa;
+    display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+    transition: all 0.2s; margin-left: 12px;
+  }
+  .uuid-list li .copy-icon:hover { border-color: #5a9600; color: #5a9600; background: #f6fbf0; }
+  .uuid-list li .copy-icon.copied { border-color: #5a9600; background: #5a9600; color: #fff; }
+
+  @media only screen and (max-width: 601px) {
+    .tool-container { margin-top: -30px; }
+    .config-row { gap: 12px; }
+  }
+</style>
+
+<main class="content">
+  <div class="container tool-container">
+    <div class="card">
+      <div class="card-content">
+        <span class="card-title" style="display: inline-block"><%= toolTitle %></span>
+        <% if (toolDesc) { %>
+        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
+        <% } %>
+
+        <div class="config-row">
+          <div class="config-item">
+            <label for="countInput">生成个数</label>
+            <input type="number" id="countInput" value="1" min="1" max="100">
+          </div>
+          <div class="config-item">
+            <label>大小写</label>
+            <div class="case-toggle" id="caseToggle">
+              <button class="toggle-btn active" data-value="upper">大写</button>
+              <button class="toggle-btn" data-value="lower">小写</button>
+            </div>
+          </div>
+          <div class="config-item">
+            <label for="hyphenToggle">连字符</label>
+            <div class="switch">
+              <label>
+                <input type="checkbox" id="hyphenToggle" checked>
+                <span class="lever"></span>
+              </label>
+            </div>
+          </div>
+          <div class="config-item" style="margin-left: auto;">
+            <button class="btn waves-effect primary" id="generateBtn"><i class="fas fa-sync"></i> 生成</button>
+            <button class="btn waves-effect outline" id="copyAllBtn"><i class="fas fa-copy"></i> 复制全部</button>
+          </div>
+        </div>
+
+        <div id="resultContainer">
+          <ul class="uuid-list" id="uuidList"></ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script>
+  function generateUUID(uppercase, hyphen) {
+    var hexDigits = '0123456789abcdef';
+    var uuid = '';
+    for (var i = 0; i < 36; i++) {
+      if (i === 8 || i === 13 || i === 18 || i === 23) {
+        uuid += hyphen ? '-' : '';
+      } else if (i === 14) {
+        uuid += '4';
+      } else if (i === 19) {
+        uuid += hexDigits.charAt((Math.random() * 4 | 0) + 8);
+      } else {
+        uuid += hexDigits.charAt(Math.random() * 16 | 0);
+      }
+    }
+    return uppercase ? uuid.toUpperCase() : uuid;
+  }
+
+  function generateAll() {
+    var count = parseInt($('#countInput').val(), 10);
+    if (isNaN(count) || count < 1) count = 1;
+    if (count > 100) count = 100;
+    $('#countInput').val(count);
+
+    var uppercase = $('#caseToggle .toggle-btn.active').data('value') === 'upper';
+    var hyphen = $('#hyphenToggle').prop('checked');
+
+    var $list = $('#uuidList');
+    $list.empty();
+
+    for (var i = 0; i < count; i++) {
+      var uuid = generateUUID(uppercase, hyphen);
+      var $li = $('<li>');
+      $li.append('<span class="uuid-text">' + uuid + '</span>');
+      var $btn = $('<button class="copy-icon" title="复制"><i class="fas fa-copy"></i></button>');
+      $btn.on('click', function() {
+        var text = $(this).siblings('.uuid-text').text();
+        navigator.clipboard.writeText(text).then(function() {
+          var $btn = $('.copy-icon.copied');
+          $btn.removeClass('copied').html('<i class="fas fa-copy"></i>');
+        });
+        var $this = $(this);
+        $this.addClass('copied').html('<i class="fas fa-check"></i>');
+        setTimeout(function() { $this.removeClass('copied').html('<i class="fas fa-copy"></i>'); }, 1500);
+      });
+      $li.append($btn);
+      $list.append($li);
+    }
+
+  }
+
+  $(document).ready(function() {
+    generateAll();
+
+    $('#caseToggle .toggle-btn').on('click', function() {
+      $('#caseToggle .toggle-btn').removeClass('active');
+      $(this).addClass('active');
+    });
+
+    $('#generateBtn').on('click', generateAll);
+
+    $('#copyAllBtn').on('click', function() {
+      var texts = [];
+      $('#uuidList .uuid-text').each(function() {
+        texts.push($(this).text());
+      });
+      if (texts.length === 0) return;
+      var text = texts.join('\n');
+      navigator.clipboard.writeText(text).then(function() {
+        M.toast({html: '已复制 ' + texts.length + ' 个 UUID', classes: 'rounded green'});
+      });
+    });
+
+  });
+</script>

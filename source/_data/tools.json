@@ -84,6 +84,20 @@
     "url": "/tools/special-symbols/"
   },
   {
+    "slug": "uuid-generator",
+    "name": "GUID/UUID 生成器",
+    "description": "GUID/UUID 在线生成工具，支持批量生成、大小写、连字符配置",
+    "emoji": "🔑",
+    "url": "/tools/uuid-generator/"
+  },
+  {
+    "slug": "json-yaml",
+    "name": "JSON/YAML 互转",
+    "description": "JSON 与 YAML 格式在线互转工具",
+    "emoji": "📋",
+    "url": "/tools/json-yaml/"
+  },
+  {
     "slug": "ai-coding-method-map",
     "name": "AI Coding Method Map",
     "description": "AI 编程方法论地图，看懂普通 Agent、工作流 Agent、IDE Agent 的差异与开发链路",

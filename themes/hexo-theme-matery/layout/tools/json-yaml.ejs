@@ -1,0 +1,180 @@
+<%
+    var toolTitle = 'JSON/YAML 互转';
+    var toolDesc = '';
+    if (site.data && site.data.tools) {
+        var tool = site.data.tools.find(function(t) { return t.slug === page.toolSlug; });
+        if (tool) {
+            toolTitle = tool.emoji + ' ' + tool.name;
+            toolDesc = tool.description;
+        }
+    }
+%>
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .tool-container { margin-top: -50px; margin-bottom: 30px; }
+  .tool-container .card { border-radius: 8px; }
+  .tool-container .card .card-content .card-title { font-size: 1.4rem; font-weight: 600; margin-bottom: 20px; }
+
+  .mode-bar {
+    display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 20px; flex-wrap: wrap;
+  }
+  .mode-label {
+    font-size: 1rem; font-weight: 600; color: #444; min-width: 80px; text-align: center;
+  }
+  .mode-label.source { color: #2e7d32; }
+  .mode-label.target { color: #1565c0; }
+  #swapModeBtn {
+    width: 40px; height: 40px; border-radius: 50%; border: 2px solid #e0e0e0;
+    background: #fff; cursor: pointer; transition: all 0.3s;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  #swapModeBtn:hover { border-color: #5a9600; color: #5a9600; transform: rotate(180deg); }
+
+  .converter-columns { display: flex; gap: 16px; margin-top: 16px; }
+  .converter-col { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .converter-col .col-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
+  }
+  .converter-col .col-label { font-size: 0.9rem; font-weight: 600; color: #666; }
+  .converter-col textarea {
+    width: 100%; min-height: 300px; border: 2px solid #e8e8e8; border-radius: 10px;
+    padding: 14px 16px; font-size: 0.9rem; font-family: 'SF Mono','Fira Code','Consolas',monospace;
+    line-height: 1.6; resize: vertical; background: #fafafa; box-sizing: border-box;
+    outline: none; transition: border-color 0.3s, background 0.3s;
+  }
+  .converter-col textarea:focus { border-color: #5a9600; background: #fff; }
+  .converter-col textarea.output-area { background: #f5f5f5; color: #333; }
+  .converter-col textarea.error { border-color: #e53935; background: #fff5f5; }
+
+  .box-wrap { position: relative; flex: 1; display: flex; }
+
+  .copy-btn {
+    position: absolute; top: 8px; right: 8px; z-index: 2;
+    width: 28px; height: 28px; border-radius: 50%; border: 1px solid #ddd;
+    background: rgba(255,255,255,0.9); cursor: pointer; font-size: 0.8rem; color: #aaa;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: all 0.2s; line-height: 1;
+  }
+  .copy-btn:hover { border-color: #5a9600; color: #5a9600; background: #f6fbf0; }
+  .copy-btn.copied { border-color: #5a9600; background: #5a9600; color: #fff; }
+
+  @media only screen and (max-width: 601px) {
+    .tool-container { margin-top: -30px; }
+    .converter-columns { flex-direction: column; }
+    .converter-col textarea { min-height: 180px; }
+  }
+</style>
+
+<main class="content">
+  <div class="container tool-container">
+    <div class="card">
+      <div class="card-content">
+        <span class="card-title" style="display: inline-block"><%= toolTitle %></span>
+        <% if (toolDesc) { %>
+        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
+        <% } %>
+
+        <div class="mode-bar">
+          <span class="mode-label source" id="sourceModeLabel">JSON</span>
+          <button id="swapModeBtn" title="交换模式"><i class="fas fa-exchange-alt"></i></button>
+          <span class="mode-label target" id="targetModeLabel">YAML</span>
+        </div>
+
+        <div class="converter-columns">
+          <div class="converter-col">
+            <div class="col-header">
+              <span class="col-label">输入</span>
+            </div>
+            <div class="box-wrap">
+              <textarea id="sourceText" placeholder="在此输入 JSON..."></textarea>
+              <button class="copy-btn" id="clearBtn" title="清空"><i class="fas fa-times"></i></button>
+            </div>
+          </div>
+          <div class="converter-col">
+            <div class="col-header">
+              <span class="col-label">结果</span>
+            </div>
+            <div class="box-wrap">
+              <textarea id="targetText" class="output-area" placeholder="转换结果将显示在这里..." readonly></textarea>
+              <button class="copy-btn" id="copyResultBtn" title="复制"><i class="fas fa-copy"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+<script>
+  var currentMode = 'json2yaml';
+
+  function doConvert() {
+    var text = $('#sourceText').val();
+    if (!text) {
+      $('#targetText').val('').removeClass('error');
+      return;
+    }
+    try {
+      var result;
+      if (currentMode === 'json2yaml') {
+        var obj = JSON.parse(text);
+        result = jsyaml.dump(obj, { indent: 2, lineWidth: -1, noRefs: true, sortKeys: true });
+      } else {
+        var obj = jsyaml.load(text);
+        result = JSON.stringify(obj, null, 2);
+      }
+      $('#targetText').val(result).removeClass('error');
+    } catch (e) {
+      $('#targetText').val('转换错误:\n' + e.message).addClass('error');
+    }
+  }
+
+  function swapMode() {
+    currentMode = currentMode === 'json2yaml' ? 'yaml2json' : 'json2yaml';
+    if (currentMode === 'json2yaml') {
+      $('#sourceModeLabel').text('JSON');
+      $('#targetModeLabel').text('YAML');
+      $('#sourceText').attr('placeholder', '在此输入 JSON...');
+    } else {
+      $('#sourceModeLabel').text('YAML');
+      $('#targetModeLabel').text('JSON');
+      $('#sourceText').attr('placeholder', '在此输入 YAML...');
+    }
+    var sourceVal = $('#sourceText').val();
+    var targetVal = $('#targetText').val();
+    if (targetVal) {
+      $('#sourceText').val(targetVal);
+      $('#targetText').val('');
+      doConvert();
+    }
+  }
+
+  $(document).ready(function() {
+    $('#sourceText').on('input', doConvert);
+
+    $('#swapModeBtn').on('click', swapMode);
+
+    $('#clearBtn').on('click', function() {
+      $('#sourceText').val('');
+      $('#targetText').val('').removeClass('error');
+    });
+
+    $('#copyResultBtn').on('click', function() {
+      var text = $('#targetText').val();
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(function() {
+        var $btn = $('#copyResultBtn');
+        $btn.addClass('copied').html('<i class="fas fa-check"></i>');
+        setTimeout(function() { $btn.removeClass('copied').html('<i class="fas fa-copy"></i>'); }, 1500);
+      });
+    });
+  });
+</script>
