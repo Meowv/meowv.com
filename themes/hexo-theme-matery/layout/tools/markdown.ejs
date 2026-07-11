@@ -1,0 +1,189 @@
+<%
+    var toolTitle = 'Markdown';
+    var toolDesc = '';
+    if (site.data && site.data.tools) {
+        var tool = site.data.tools.find(function(t) { return t.slug === page.toolSlug; });
+        if (tool) {
+            toolTitle = tool.emoji + ' ' + tool.name;
+            toolDesc = tool.description;
+        }
+    }
+%>
+<%- partial('_partial/bg-cover') %>
+
+<link href="https://unpkg.com/md-editor-v3@5.8.5/lib/style.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.10.0/styles/github.min.css" />
+
+<style>
+  .tool-container { margin-top: -50px; margin-bottom: 30px; }
+  .tool-container .card { border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.08) !important; }
+  .tool-container .card .card-content { padding: 20px; }
+  .tool-container .card .card-content .card-title { font-size: 1.4rem; font-weight: 600; margin-bottom: 20px; }
+
+  #md-editor-app {
+    width: 100%;
+    overflow: hidden;
+  }
+  #md-editor-app .md-editor-preview {
+    --md-theme-code-block-bg-color: #f6f8fa;
+  }
+
+  #md-editor-app .md-editor pre {
+    padding: 0 !important;
+    border-radius: 0 !important;
+  }
+  #md-editor-app .md-editor code {
+    top: auto !important;
+  }
+  #md-editor-app .md-editor ::selection {
+    background: #5a9600;
+    color: #ffffff;
+  }
+  #md-editor-app .cm-selectionBackground {
+    background: #5a9600 !important;
+    color: #ffffff !important;
+  }
+  .md-editor-preview ul.contains-task-list {
+    padding-left: 2em !important;
+  }
+  .md-editor-preview .task-list-item {
+    list-style: none !important;
+  }
+  .md-editor-preview .task-list-item input.task-list-item-checkbox[type=checkbox] {
+    position: relative !important;
+    opacity: 1 !important;
+    width: auto !important;
+    height: auto !important;
+    margin-left: -1.5em;
+    margin-right: 0.5em;
+    vertical-align: middle;
+  }
+
+  @media only screen and (max-width: 601px) {
+    .tool-container { margin-top: 10px; }
+    #md-editor-app { min-height: 400px; }
+  }
+</style>
+
+<main class="content">
+  <div class="container tool-container">
+    <div class="card">
+      <div class="card-content">
+        <span class="card-title" style="display: inline-block"><%= toolTitle %></span>
+        <% if (toolDesc) { %>
+        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
+        <% } %>
+
+        <div id="md-editor-app">
+          <md-editor-v3 v-model="text" :toolbars="toolbars" theme="theme" :code-theme="codeTheme" language="zh-CN" @on-save="handleSave" @on-upload-img="handleUploadImg" />
+        </div>
+
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script src="https://unpkg.com/vue@3.5.13/dist/vue.global.prod.js"></script>
+<script src="https://unpkg.com/md-editor-v3@5.8.5/lib/umd/index.js"></script>
+
+<script>
+  var STORAGE_KEY = 'md-editor-content';
+  var defaultText = localStorage.getItem(STORAGE_KEY) || '# 欢迎使用 Markdown 编辑器 🎉';
+
+  var vm;
+
+  MdEditorV3.config({
+    editorExtensions: {
+      highlight: {
+        css: {
+          github: {
+            light: 'https://unpkg.com/@highlightjs/cdn-assets@11.10.0/styles/github.min.css'
+          }
+        }
+      }
+    },
+  });
+
+  function initApp() {
+    var App = {
+      data: function() {
+        return {
+          text: defaultText,
+          theme: 'light',
+          codeTheme: 'github',
+          toolbars: [
+            'bold', 'underline', 'italic', 'strikeThrough',
+            '-',
+            'title', 'sub', 'sup',
+            'quote', 'unorderedList', 'orderedList', 'task',
+            '-',
+            'codeRow', 'code', 'link', 'image', 'table',
+            '-',
+            'revoke', 'next', 'prettier',
+            0,
+            'pageFullscreen', 'fullscreen', 'preview', 'previewOnly',
+            'htmlPreview', 'catalog',
+            '-',
+            'save'
+          ]
+        };
+      },
+      watch: {
+        text: function(newVal) {
+          localStorage.setItem(STORAGE_KEY, newVal);
+        }
+      },
+      methods: {
+        handleSave: function(text) {
+          if (!text) return;
+          var blob = new Blob([text], { type: 'text/markdown;charset=utf-8' });
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = url;
+          a.download = 'markdown-' + new Date().toISOString().slice(0, 10) + '.md';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        },
+        handleUploadImg: function(files, callback) {
+          var results = [];
+          var pending = files.length;
+          if (pending === 0) return;
+          files.forEach(function(file) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+              results.push(e.target.result);
+              pending--;
+              if (pending === 0) callback(results);
+            };
+            reader.onerror = function() {
+              results.push('');
+              pending--;
+              if (pending === 0) callback(results);
+            };
+            reader.readAsDataURL(file);
+          });
+        }
+      }
+    };
+
+    try {
+      vm = Vue.createApp(App);
+      vm.use(MdEditorV3.MdEditor);
+      vm = vm.mount('#md-editor-app');
+    } catch (e) {
+      console.error('Vue mount error:', e);
+      document.getElementById('md-editor-app').innerHTML =
+        '<div style="padding:40px;text-align:center;color:#e53935;">编辑器加载失败: ' + e.message + '</div>';
+    }
+  }
+
+  initApp();
+</script>

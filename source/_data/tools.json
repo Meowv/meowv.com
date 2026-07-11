@@ -54,5 +54,12 @@
     "description": "HEX/RGB/HSL 颜色格式互转",
     "emoji": "🎨",
     "url": "/tools/color-tools/"
+  },
+  {
+    "slug": "markdown",
+    "name": "Markdown",
+    "description": "在线 Markdown 编辑与实时预览",
+    "emoji": "📄",
+    "url": "/tools/markdown/"
   }
 ]
