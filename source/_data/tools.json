@@ -105,6 +105,13 @@
     "url": "/tools/periodic-table/"
   },
   {
+    "slug": "pronunciation",
+    "name": "汉字标准发音",
+    "description": "汉字标准发音查询，支持拼音标注与语音朗读",
+    "emoji": "🔊",
+    "url": "/tools/pronunciation/"
+  },
+  {
     "slug": "ai-coding-method-map",
     "name": "AI Coding Method Map",
     "description": "AI 编程方法论地图，看懂普通 Agent、工作流 Agent、IDE Agent 的差异与开发链路",

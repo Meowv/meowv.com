@@ -1,0 +1,514 @@
+<%
+    var toolTitle = '汉字标准发音';
+    var toolDesc = '';
+    if (site.data && site.data.tools) {
+        var tool = site.data.tools.find(function(t) { return t.slug === page.toolSlug; });
+        if (tool) {
+            toolTitle = tool.emoji + ' ' + tool.name;
+            toolDesc = tool.description;
+        }
+    }
+%>
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .tool-container {
+    margin-top: -50px;
+    margin-bottom: 30px;
+  }
+  .tool-container .card {
+    border-radius: 8px;
+  }
+  .tool-container .card .card-content .card-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+  }
+  .tool-container .card-title i {
+    margin-right: 8px;
+  }
+
+  .input-area {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .input-area input {
+    flex: 1;
+    height: 44px;
+    padding: 0 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1.05rem;
+    outline: none;
+    transition: border-color 0.3s;
+    box-sizing: border-box;
+    font-family: inherit;
+  }
+  .input-area input:focus {
+    border-color: #5a9600;
+  }
+  #speakBtn {
+    border-radius: 20px;
+    padding: 0 24px;
+    height: 36px;
+    font-size: 0.88rem;
+    letter-spacing: 2px;
+    background: linear-gradient(135deg, #5a9600 0%, #7ccd00 100%);
+    transition: transform 0.2s, box-shadow 0.2s;
+    flex-shrink: 0;
+  }
+  #speakBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(90, 150, 0, 0.35);
+  }
+  #speakBtn:disabled {
+    background: #bdbdbd;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .quick-chars {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding-top: 12px;
+  }
+  .quick-label {
+    font-size: 0.85rem;
+    color: #888;
+    font-weight: 500;
+  }
+  .quick-char-btn {
+    padding: 4px 14px;
+    font-size: 0.85rem;
+    background: #f5f5f5;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #555;
+  }
+  .quick-char-btn:hover,
+  .quick-char-btn:focus,
+  .quick-char-btn:active {
+    background: #5a9600;
+    border-color: #5a9600;
+    color: #fff;
+    outline: none;
+  }
+
+  .result-area {
+    padding: 16px 0;
+  }
+  .pinyin-display {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 20px;
+    padding: 20px;
+    background: #e8f5e9;
+    border-radius: 8px;
+    border: 1px solid #c8e6c9;
+    min-height: 60px;
+    align-items: center;
+  }
+  .pinyin-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: background 0.2s;
+  }
+  .pinyin-item:hover {
+    background: rgba(76, 175, 80, 0.1);
+  }
+  .pinyin-item .char {
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: #333;
+    line-height: 1.2;
+  }
+  .pinyin-item .pinyin {
+    font-size: 0.9rem;
+    color: #5a9600;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+  .pinyin-item .play-hint {
+    font-size: 0.7rem;
+    color: #aaa;
+  }
+
+  .status-bar {
+    padding: 12px 0 0;
+    font-size: 0.85rem;
+    color: #888;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .status-bar .voice-info {
+    color: #999;
+    font-size: 0.8rem;
+  }
+  .status-bar .speaking-indicator {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    color: #5a9600;
+    font-weight: 500;
+  }
+  .status-bar .speaking-indicator.active {
+    display: inline-flex;
+  }
+  .status-bar .speaking-indicator .dot {
+    width: 6px;
+    height: 6px;
+    background: #5a9600;
+    border-radius: 50%;
+    animation: pulse 0.8s ease-in-out infinite;
+  }
+  .status-bar .speaking-indicator .dot:nth-child(2) { animation-delay: 0.2s; }
+  .status-bar .speaking-indicator .dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.3; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.2); }
+  }
+
+  .empty-state {
+    padding: 20px;
+    text-align: center;
+    color: #999;
+    font-size: 0.9rem;
+  }
+  .empty-state .icon {
+    font-size: 2.5rem;
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  @media only screen and (max-width: 601px) {
+    .tool-container {
+      margin-top: -30px;
+    }
+    .input-area {
+      flex-direction: column;
+    }
+    #speakBtn {
+      width: 100%;
+    }
+    .pinyin-display {
+      padding: 12px;
+      gap: 8px 16px;
+    }
+    .pinyin-item {
+      padding: 6px 10px;
+    }
+    .pinyin-item .char {
+      font-size: 1.3rem;
+    }
+  }
+</style>
+
+<main class="content">
+  <div class="container tool-container">
+    <div class="card">
+      <div class="card-content">
+        <span class="card-title" style="display: inline-block"><%= toolTitle %></span>
+        <% if (toolDesc) { %>
+        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
+        <% } %>
+
+        <div class="input-area">
+          <input type="text" id="inputText" placeholder="请输入中文、英文或数字" maxlength="200">
+          <button id="speakBtn" class="btn waves-effect waves-light">发 音</button>
+        </div>
+
+        <div class="quick-chars">
+          <span class="quick-label">试试：</span>
+          <button class="quick-char-btn" data-text="你好世界">你好世界</button>
+          <button class="quick-char-btn" data-text="中文发音">中文发音</button>
+          <button class="quick-char-btn" data-text="恭喜发财">恭喜发财</button>
+          <button class="quick-char-btn" data-text="大展宏图">大展宏图</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="resultCard" style="display: none;">
+      <div class="card">
+        <div class="card-content">
+          <span class="card-title"><i class="fas fa-language"></i> 拼音与发音</span>
+          <div id="pinyinContainer" class="result-area"></div>
+          <div class="status-bar">
+            <div class="speaking-indicator" id="speakingIndicator">
+              <span class="dot"></span>
+              <span class="dot"></span>
+              <span class="dot"></span>
+              <span>朗读中...</span>
+            </div>
+            <span class="voice-info" id="voiceInfo"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdmirror.com/npm/pinyin-pro@3.28.1/dist/index.js"></script>
+<script>
+(function() {
+  var inputText = document.getElementById('inputText');
+  var speakBtn = document.getElementById('speakBtn');
+  var resultCard = document.getElementById('resultCard');
+  var pinyinContainer = document.getElementById('pinyinContainer');
+  var speakingIndicator = document.getElementById('speakingIndicator');
+  var voiceInfo = document.getElementById('voiceInfo');
+
+  var pinyinReady = false;
+  var synth = window.speechSynthesis;
+  var currentUtterance = null;
+  var preferredVoice = null;
+
+  function findChineseVoice() {
+    var voices = synth.getVoices();
+    for (var i = 0; i < voices.length; i++) {
+      var v = voices[i];
+      if (v.lang && (v.lang.startsWith('zh') || v.lang.startsWith('cmn'))) {
+        if (v.localService) return v;
+      }
+    }
+    for (var i = 0; i < voices.length; i++) {
+      if (voices[i].lang && (voices[i].lang.startsWith('zh') || voices[i].lang.startsWith('cmn'))) {
+        return voices[i];
+      }
+    }
+    return null;
+  }
+
+  function initVoices() {
+    preferredVoice = findChineseVoice();
+    if (preferredVoice) {
+      voiceInfo.textContent = '语音：' + (preferredVoice.name || '中文');
+    } else {
+      voiceInfo.textContent = '未找到中文语音';
+    }
+  }
+
+  if (synth) {
+    if (synth.getVoices().length > 0) {
+      initVoices();
+    } else {
+      synth.onvoiceschanged = initVoices;
+    }
+  } else {
+    voiceInfo.textContent = '当前浏览器不支持语音合成';
+  }
+
+  function extractTextForSpeech(text) {
+    if (!text) return '';
+    return text.replace(/[^a-zA-Z0-9\u4e00-\u9fa5\s.,!?;:，。！？；：·～~@#%&*()（）+\-=\/]/g, '');
+  }
+
+  function hasChinese(text) {
+    if (!text) return false;
+    return /[\u4e00-\u9fa5]/.test(text);
+  }
+
+  function speak(text) {
+    if (!synth) {
+      M.toast({ html: '当前浏览器不支持语音合成', classes: 'red', displayLength: 2000 });
+      return;
+    }
+
+    if (currentUtterance) {
+      synth.cancel();
+      currentUtterance = null;
+    }
+
+    var speechText = extractTextForSpeech(text);
+    if (!speechText) {
+      M.toast({ html: '请输入有效内容', classes: 'red', displayLength: 2000 });
+      return;
+    }
+
+    speakBtn.disabled = true;
+    speakBtn.textContent = '⏹ 停止';
+
+    var utterance = new SpeechSynthesisUtterance(speechText);
+    utterance.lang = 'zh-CN';
+    utterance.rate = 1.0;
+    if (preferredVoice) utterance.voice = preferredVoice;
+
+    utterance.onstart = function() {
+      speakingIndicator.classList.add('active');
+    };
+
+    utterance.onend = function() {
+      speakingIndicator.classList.remove('active');
+      speakBtn.disabled = false;
+      speakBtn.textContent = '发 音';
+      currentUtterance = null;
+    };
+
+    utterance.onerror = function() {
+      speakingIndicator.classList.remove('active');
+      speakBtn.disabled = false;
+      speakBtn.textContent = '发 音';
+      currentUtterance = null;
+    };
+
+    currentUtterance = utterance;
+    synth.speak(utterance);
+  }
+
+  function stopSpeaking() {
+    if (synth) synth.cancel();
+    speakingIndicator.classList.remove('active');
+    speakBtn.disabled = false;
+    speakBtn.textContent = '发 音';
+    currentUtterance = null;
+  }
+
+  function showPinyin(text) {
+    if (!text) return;
+
+    resultCard.style.display = 'block';
+    pinyinContainer.innerHTML = '';
+
+    var display = document.createElement('div');
+    display.className = 'pinyin-display';
+
+    var chars = text.split('');
+
+    function appendItem(ch, py) {
+      var item = document.createElement('div');
+      item.className = 'pinyin-item';
+
+      if (/[\u4e00-\u9fa5]/.test(ch)) {
+        item.title = '点击朗读「' + ch + '」';
+        var charEl = document.createElement('span');
+        charEl.className = 'char';
+        charEl.textContent = ch;
+        item.appendChild(charEl);
+
+        if (py) {
+          var pyEl = document.createElement('span');
+          pyEl.className = 'pinyin';
+          pyEl.textContent = py;
+          item.appendChild(pyEl);
+        }
+      } else {
+        item.style.cursor = 'default';
+        var charEl = document.createElement('span');
+        charEl.className = 'char';
+        charEl.style.cssText = 'font-size:1.2rem;color:#999;';
+        charEl.textContent = ch || ' ';
+        item.appendChild(charEl);
+      }
+
+      item.addEventListener('click', function() {
+        speak(ch);
+      });
+
+      display.appendChild(item);
+    }
+
+    if (typeof pinyinPro !== 'undefined' && pinyinReady && hasChinese(text)) {
+      try {
+        var pinyins = pinyinPro.pinyin(text, { type: 'array', toneType: 'symbol', nonZh: 'consecutive' });
+        var pyIndex = 0;
+        for (var i = 0; i < chars.length; i++) {
+          if (/[\u4e00-\u9fa5]/.test(chars[i])) {
+            appendItem(chars[i], pinyins[pyIndex]);
+            pyIndex++;
+          } else {
+            appendItem(chars[i], null);
+          }
+        }
+      } catch(e) {
+        console.warn('pinyin error:', e);
+        for (var i = 0; i < chars.length; i++) {
+          appendItem(chars[i], null);
+        }
+      }
+    } else {
+      for (var i = 0; i < chars.length; i++) {
+        appendItem(chars[i], null);
+      }
+    }
+
+    pinyinContainer.appendChild(display);
+  }
+
+  function handleSpeak() {
+    var text = (inputText && inputText.value || '').trim();
+
+    if (currentUtterance) {
+      stopSpeaking();
+      return;
+    }
+
+    if (!text) {
+      M.toast({ html: '请输入内容', classes: 'red', displayLength: 2000 });
+      return;
+    }
+
+    var speechText = extractTextForSpeech(text);
+    if (!speechText) {
+      M.toast({ html: '请输入有效内容', classes: 'red', displayLength: 2000 });
+      return;
+    }
+
+    speak(speechText);
+    showPinyin(text);
+
+    setTimeout(function() {
+      resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }
+
+  function setupQuickChars() {
+    var btns = document.querySelectorAll('.quick-char-btn');
+    btns.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var text = this.getAttribute('data-text');
+        if (inputText && text) {
+          inputText.value = text;
+          handleSpeak();
+        }
+      });
+    });
+  }
+
+  $(document).ready(function() {
+    function checkPinyinLib() {
+      if (typeof pinyinPro !== 'undefined') {
+        pinyinReady = true;
+        return;
+      }
+      setTimeout(checkPinyinLib, 200);
+    }
+    checkPinyinLib();
+
+    $('#speakBtn').on('click', handleSpeak);
+
+    $('#inputText').on('keypress', function(e) {
+      if (e.key === 'Enter') handleSpeak();
+    });
+
+    setupQuickChars();
+  });
+})();
+</script>
