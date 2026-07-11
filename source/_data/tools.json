@@ -49,11 +49,11 @@
     "url": "/tools/base64/"
   },
   {
-    "slug": "color-tools",
-    "name": "颜色工具",
-    "description": "HEX/RGB/HSL 颜色格式互转",
+    "slug": "color-picker",
+    "name": "颜色选择器",
+    "description": "HEX/RGB/RGBA/HSL/HSLA/HSV/CMYK 颜色格式互转",
     "emoji": "🎨",
-    "url": "/tools/color-tools/"
+    "url": "/tools/color-picker/"
   },
   {
     "slug": "markdown",
@@ -61,5 +61,12 @@
     "description": "在线 Markdown 编辑与实时预览",
     "emoji": "📄",
     "url": "/tools/markdown/"
+  },
+  {
+    "slug": "text-diff",
+    "name": "文本对比",
+    "description": "在线文本差异对比工具，支持行级对比",
+    "emoji": "📊",
+    "url": "/tools/text-diff/"
   }
 ]

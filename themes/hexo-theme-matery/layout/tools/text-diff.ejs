@@ -1,0 +1,234 @@
+<%
+    var toolTitle = '文本对比';
+    var toolDesc = '';
+    if (site.data && site.data.tools) {
+        var tool = site.data.tools.find(function(t) { return t.slug === page.toolSlug; });
+        if (tool) {
+            toolTitle = tool.emoji + ' ' + tool.name;
+            toolDesc = tool.description;
+        }
+    }
+%>
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .tool-container { margin-top: -50px; margin-bottom: 30px; }
+  .tool-container .card { border-radius: 8px; }
+  .tool-container .card .card-content .card-title { font-size: 1.4rem; font-weight: 600; margin-bottom: 20px; }
+
+  .diff-columns { display: flex; gap: 16px; }
+  .diff-col { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .diff-col .col-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
+  }
+  .diff-col .col-label { font-size: 0.9rem; font-weight: 600; color: #666; }
+
+  .editor-wrap {
+    display: flex; border: 2px solid #e8e8e8; border-radius: 10px; overflow: hidden;
+    background: #fafafa; transition: border-color 0.3s;
+  }
+  .editor-wrap:focus-within { border-color: #5a9600; background: #fff; }
+
+  .gutter {
+    display: flex; flex-direction: column; min-width: 44px; text-align: right; user-select: none;
+    font-family: 'SF Mono','Fira Code','Consolas',monospace; font-size: 0.9rem; line-height: 1.6;
+    background: #f5f5f5; border-right: 1px solid #e8e8e8; padding: 14px 0; overflow: hidden;
+  }
+  .gutter .gl {
+    padding: 0 10px 0 6px; height: 1.6em; display: flex; align-items: center; justify-content: flex-end;
+    color: #999; font-size: 0.8rem; transition: background 0.15s;
+  }
+  .gutter .gl.same { background: transparent; }
+  .gutter .gl.add { background: #d4edda; color: #155724; }
+  .gutter .gl.remove { background: #f8d7da; color: #721c24; }
+
+  .diff-col textarea {
+    flex: 1; min-height: 300px; padding: 14px 12px; border: none; resize: vertical;
+    font-size: 0.9rem; font-family: 'SF Mono','Fira Code','Consolas',monospace;
+    line-height: 1.6; background: transparent; box-sizing: border-box;
+    outline: none; overflow-wrap: anywhere; white-space: pre; overflow: auto;
+  }
+
+  .diff-stats { display: flex; gap: 20px; margin: 16px 0; flex-wrap: wrap; }
+  .diff-stats .stat {
+    font-size: 0.85rem; padding: 4px 14px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .diff-stats .stat.add { background: #e8f5e9; color: #2e7d32; }
+  .diff-stats .stat.remove { background: #ffebee; color: #c62828; }
+  .diff-stats .stat.same { background: #f5f5f5; color: #666; }
+
+  @media only screen and (max-width: 601px) {
+    .tool-container { margin-top: -30px; }
+    .diff-columns { flex-direction: column; }
+    .diff-col textarea { min-height: 160px; }
+  }
+</style>
+
+<main class="content">
+  <div class="container tool-container">
+    <div class="card">
+      <div class="card-content">
+        <span class="card-title" style="display: inline-block"><%= toolTitle %></span>
+        <% if (toolDesc) { %>
+        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
+        <% } %>
+
+        <div class="diff-columns">
+          <div class="diff-col">
+            <div class="col-header">
+              <span class="col-label">原始文本</span>
+            </div>
+            <div class="editor-wrap">
+              <div class="gutter" id="oldGutter"></div>
+              <textarea id="oldText" placeholder="在此输入原始文本..." spellcheck="false"></textarea>
+            </div>
+          </div>
+          <div class="diff-col">
+            <div class="col-header">
+              <span class="col-label">对比文本</span>
+            </div>
+            <div class="editor-wrap">
+              <div class="gutter" id="newGutter"></div>
+              <textarea id="newText" placeholder="在此输入对比文本..." spellcheck="false"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div id="statsArea" class="diff-stats" style="display:none;"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script>
+  function computeLCS(a, b) {
+    var m = a.length, n = b.length;
+    var dp = [];
+    for (var i = 0; i <= m; i++) {
+      dp[i] = [];
+      for (var j = 0; j <= n; j++) dp[i][j] = 0;
+    }
+    for (var i = 1; i <= m; i++) {
+      for (var j = 1; j <= n; j++) {
+        if (a[i-1] === b[j-1]) dp[i][j] = dp[i-1][j-1] + 1;
+        else dp[i][j] = Math.max(dp[i-1][j], dp[i][j-1]);
+      }
+    }
+    return dp;
+  }
+
+  function backtrack(dp, a, b, i, j) {
+    var result = [];
+    while (i > 0 || j > 0) {
+      if (i > 0 && j > 0 && a[i-1] === b[j-1]) {
+        result.unshift({ type: 'same', text: a[i-1] });
+        i--; j--;
+      } else if (j > 0 && (i === 0 || dp[i][j-1] >= dp[i-1][j])) {
+        result.unshift({ type: 'add', text: b[j-1] });
+        j--;
+      } else {
+        result.unshift({ type: 'remove', text: a[i-1] });
+        i--;
+      }
+    }
+    return result;
+  }
+
+  function buildDiffMap(diffResult, side) {
+    var map = {};
+    var oldIdx = 1, newIdx = 1;
+    diffResult.forEach(function(item) {
+      if (item.type === 'same') {
+        if (side === 'old') map[oldIdx] = 'same';
+        else map[newIdx] = 'same';
+        oldIdx++; newIdx++;
+      } else if (item.type === 'remove') {
+        if (side === 'old') map[oldIdx] = 'remove';
+        oldIdx++;
+      } else if (item.type === 'add') {
+        if (side === 'new') map[newIdx] = 'add';
+        newIdx++;
+      }
+    });
+    return map;
+  }
+
+  function buildGutter($gutter, lineCount, diffMap) {
+    var html = '';
+    for (var i = 1; i <= lineCount; i++) {
+      var cls = 'gl';
+      if (diffMap) {
+        var d = diffMap[i];
+        if (d === 'add') cls += ' add';
+        else if (d === 'remove') cls += ' remove';
+        else cls += ' same';
+      }
+      html += '<div class="' + cls + '">' + i + '</div>';
+    }
+    $gutter.html(html);
+  }
+
+  function runDiff() {
+    var oldText = $('#oldText').val();
+    var newText = $('#newText').val();
+    var oldLines = oldText ? oldText.split('\n') : [''];
+    var newLines = newText ? newText.split('\n') : [''];
+
+    var dp = computeLCS(oldLines, newLines);
+    var diffResult = backtrack(dp, oldLines, newLines, oldLines.length, newLines.length);
+
+    var oldMap = buildDiffMap(diffResult, 'old');
+    var newMap = buildDiffMap(diffResult, 'new');
+
+    buildGutter($('#oldGutter'), oldLines.length, oldMap);
+    buildGutter($('#newGutter'), newLines.length, newMap);
+
+    var addCount = 0, removeCount = 0, sameCount = 0;
+    diffResult.forEach(function(item) {
+      if (item.type === 'add') addCount++;
+      else if (item.type === 'remove') removeCount++;
+      else sameCount++;
+    });
+
+    var statsHtml = '';
+    if (addCount > 0) statsHtml += '<span class="stat add"><i class="fas fa-plus-circle"></i> 新增 ' + addCount + ' 行</span>';
+    if (removeCount > 0) statsHtml += '<span class="stat remove"><i class="fas fa-minus-circle"></i> 删除 ' + removeCount + ' 行</span>';
+    if (sameCount > 0) statsHtml += '<span class="stat same"><i class="fas fa-equals"></i> 相同 ' + sameCount + ' 行</span>';
+    if (!oldText && !newText) {
+      $('#statsArea').hide();
+      return;
+    }
+    if (addCount === 0 && removeCount === 0) statsHtml = '<span class="stat same" style="background:#e8f5e9;color:#2e7d32;"><i class="fas fa-check-circle"></i> 两段文本完全相同</span>';
+
+    $('#statsArea').html(statsHtml).show();
+  }
+
+  function syncGutterScroll() {
+    var oldTop = $('#oldText').scrollTop();
+    var newTop = $('#newText').scrollTop();
+    $('#oldGutter').css('transform', 'translateY(-' + oldTop + 'px)');
+    $('#newGutter').css('transform', 'translateY(-' + newTop + 'px)');
+  }
+
+  $(document).ready(function() {
+    var debounceTimer;
+
+    function doDiff() {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(function() {
+        runDiff();
+      }, 200);
+    }
+
+    $('#oldText, #newText').on('input', doDiff);
+    $('#oldText, #newText').on('scroll', syncGutterScroll);
+
+    runDiff();
+  });
+</script>
