@@ -68,5 +68,19 @@
     "description": "在线文本差异对比工具，支持行级对比",
     "emoji": "📊",
     "url": "/tools/text-diff/"
+  },
+  {
+    "slug": "bishun",
+    "name": "汉字笔顺",
+    "description": "汉字笔顺查询，支持笔顺绘制与动画演示",
+    "emoji": "✍️",
+    "url": "/tools/bishun/"
+  },
+  {
+    "slug": "special-symbols",
+    "name": "特殊符号",
+    "description": "特殊符号大全，一键复制使用",
+    "emoji": "✨",
+    "url": "/tools/special-symbols/"
   }
 ]

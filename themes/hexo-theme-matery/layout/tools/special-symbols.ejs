@@ -1,0 +1,223 @@
+<%
+    var toolTitle = '特殊符号';
+    var toolDesc = '';
+    if (site.data && site.data.tools) {
+        var tool = site.data.tools.find(function(t) { return t.slug === page.toolSlug; });
+        if (tool) {
+            toolTitle = tool.emoji + ' ' + tool.name;
+            toolDesc = tool.description;
+        }
+    }
+
+    var categories = [
+        {
+            id: 'popular',
+            name: '热门符号',
+            symbols: ['♥','★','☺','♫','☀','☂','☮','☯','✓','✗','ღ','•','⁂','€','™','↑','→','↓','⇝','√','∞','░','▲','▶','◀','●','☠','☢','☣','☪']
+        },
+        {
+            id: 'emoji',
+            name: '表情符号',
+            symbols: ['☹','☺','☻','😀','😁','😂','😃','😄','😅','😆','😇','😈','😉','😊','😋','😌','😍','😎','😏','😐']
+        },
+        {
+            id: 'heart',
+            name: '心形符号',
+            symbols: ['♡','♥','❤','❥','❣','❦','❧','ღ','💕','💖','💗','💘','💙','💚','💛','💜','💝','💞','💟']
+        },
+        {
+            id: 'arrow',
+            name: '箭头符号',
+            symbols: ['←','→','↑','↓','↔','↕','↖','↗','↘','↙','↚','↛','↜','↝','↞','↟','⇒','⇐','⇑','⇓','⇔','⇕','⇖','⇗','⇘','⇙','➜','➤','➢']
+        },
+        {
+            id: 'math',
+            name: '数学符号',
+            symbols: ['∀','∂','∃','∅','∇','∈','∉','∋','∏','∑','−','∓','∗','∘','√','∝','∞','∠','∧','∨','∩','∪','∫','∴','∼','≅','≈','≠','≡','≤','≥','⊂','⊃','⊆','⊇','⊕','⊗','⊥','⋅','⌈','⌉','⌊','⌋','∑','∏','∫']
+        },
+        {
+            id: 'currency',
+            name: '货币符号',
+            symbols: ['$','¢','£','¤','¥','฿','₡','₢','₣','₤','₥','₦','₧','₨','₩','₪','₫','€','₭','₮','₯','₰','₱','₲','₳','₴','₵','₸','₹','₺','₽','₾','₿']
+        },
+        {
+            id: 'music',
+            name: '音乐符号',
+            symbols: ['♩','♪','♫','♬','♭','♮','♯','𝄞','𝄢','𝄪','𝄫']
+        },
+        {
+            id: 'chess',
+            name: '国际象棋符号',
+            symbols: ['♔','♕','♖','♗','♘','♙','♚','♛','♜','♝','♞','♟']
+        },
+        {
+            id: 'weather',
+            name: '天气符号',
+            symbols: ['☀','☁','☂','☃','☄','☼','☽','☾','❄','⚡','☔','🌈']
+        },
+        {
+            id: 'card',
+            name: '扑克牌符号',
+            symbols: ['♠','♥','♦','♣','🂡','🂢','🂣','🂤','🂥','🂦','🂧','🂨','🂩','🂪','🂫','🂬','🂭','🂮']
+        },
+        {
+            id: 'dice',
+            name: '骰子符号',
+            symbols: ['⚀','⚁','⚂','⚃','⚄','⚅','🎲']
+        },
+        {
+            id: 'unit',
+            name: '单位符号',
+            symbols: ['°','℃','℉','µ','Ω','℧','℥','℮','℞','℗','℠','™','№','℀','℁','ℂ','℄','℆','ℇ']
+        },
+        {
+            id: 'number',
+            name: '数字符号',
+            symbols: ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱','⑲','⑳','Ⅰ','Ⅱ','Ⅲ','Ⅳ','Ⅴ','Ⅵ','Ⅶ','Ⅷ','Ⅸ','Ⅹ','Ⅺ','Ⅻ']
+        },
+        {
+            id: 'tech',
+            name: '技术符号',
+            symbols: ['⌘','⌥','⇧','⌃','⎋','⌫','⌦','⏎','⌤','␣','⎇','⇪','⌨','⌚','⌛','✉','✎','✏','✂','✄','⚙','🔒','🔓']
+        },
+        {
+            id: 'zodiac',
+            name: '星座符号',
+            symbols: ['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓','⛎']
+        },
+        {
+            id: 'check',
+            name: '打勾符号',
+            symbols: ['✓','✔','✗','✘','✓','✕','✖','✚','✱','❌','❎','❓','❔','❕','❗','✔️','✖️','❣️']
+        }
+    ];
+%>
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .tool-container { margin-top: -50px; margin-bottom: 30px; }
+  .tool-container .card { border-radius: 8px; }
+  .tool-container .card .card-content .card-title { font-size: 1.4rem; font-weight: 600; margin-bottom: 8px; }
+  .tool-container .card .card-content .tool-desc { color: #999; font-size: 0.9rem; margin-bottom: 24px; }
+
+  /* 快速导航 */
+  .quick-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #f0f0f0; }
+  .quick-nav a {
+    display: inline-block; padding: 4px 14px; border-radius: 20px; background: #f5f5f5;
+    color: #666; font-size: 0.85rem; text-decoration: none; transition: all 0.2s;
+  }
+  .quick-nav a:hover { background: #5a9600; color: #fff; }
+
+  /* 分类区块 */
+  .symbol-section { margin-bottom: 28px; }
+  .symbol-section:last-child { margin-bottom: 0; }
+  .symbol-section .section-title {
+    font-size: 1.05rem; font-weight: 600; color: #444; margin-bottom: 12px;
+    padding-left: 10px; border-left: 3px solid #5a9600;
+  }
+  .symbol-grid {
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .symbol-grid .symbol-item {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 44px; height: 44px; border-radius: 8px; cursor: pointer;
+    font-size: 1.3rem; background: #fafafa; border: 1px solid #eee;
+    transition: all 0.15s; user-select: none; position: relative;
+  }
+  .symbol-grid .symbol-item:hover {
+    background: #e8f5e9; border-color: #5a9600; transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(90,150,0,0.2);
+  }
+  .symbol-grid .symbol-item:active { transform: scale(0.95); }
+  .symbol-grid .symbol-item.copied {
+    background: #5a9600; border-color: #5a9600; color: #fff; font-size: 0.75rem;
+  }
+
+  /* Toast */
+  .symbol-toast {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: rgba(0,0,0,0.78); color: #fff; padding: 10px 24px; border-radius: 24px;
+    font-size: 0.9rem; opacity: 0; transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
+    pointer-events: none; z-index: 9999; white-space: nowrap;
+    backdrop-filter: blur(4px);
+  }
+  .symbol-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media only screen and (max-width: 601px) {
+    .tool-container { margin-top: -30px; }
+    .symbol-grid .symbol-item { width: 40px; height: 40px; font-size: 1.15rem; }
+  }
+</style>
+
+<main class="content">
+  <div class="container tool-container">
+    <div class="card">
+      <div class="card-content">
+        <span class="card-title" style="display: inline-block"><%= toolTitle %></span>
+        <% if (toolDesc) { %>
+        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
+        <% } %>
+        <p style="color: #aaa; font-size: 0.85rem; margin-top: 4px;">点击符号即可复制到剪贴板</p>
+
+        <!-- 快速导航 -->
+        <div class="quick-nav">
+          <% categories.forEach(function(cat) { %>
+          <a href="#<%= cat.id %>"><%= cat.name %></a>
+          <% }); %>
+        </div>
+
+        <!-- 符号分类 -->
+        <% categories.forEach(function(cat) { %>
+        <div class="symbol-section" id="<%= cat.id %>">
+          <div class="section-title"><%= cat.name %></div>
+          <div class="symbol-grid">
+            <% cat.symbols.forEach(function(sym) { %>
+            <span class="symbol-item" data-symbol="<%= sym %>"><%= sym %></span>
+            <% }); %>
+          </div>
+        </div>
+        <% }); %>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<!-- Toast -->
+<div class="symbol-toast" id="symbolToast"></div>
+
+<script>
+  $(document).ready(function() {
+    var toast = $('#symbolToast');
+    var timer = null;
+
+    function showToast(text) {
+      toast.text(text).addClass('show');
+      clearTimeout(timer);
+      timer = setTimeout(function() {
+        toast.removeClass('show');
+      }, 1500);
+    }
+
+    $('.symbol-item').on('click', function() {
+      var sym = $(this).data('symbol');
+      var $el = $(this);
+
+      navigator.clipboard.writeText(sym).then(function() {
+        var orig = $el.html();
+        $el.addClass('copied').html('<i class="fas fa-check"></i>');
+        setTimeout(function() {
+          $el.removeClass('copied').html(orig);
+        }, 800);
+        showToast('已复制 ' + sym);
+      }).catch(function() {
+        showToast('复制失败，请手动复制');
+      });
+    });
+  });
+</script>

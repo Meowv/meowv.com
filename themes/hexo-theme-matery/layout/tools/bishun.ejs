@@ -1,0 +1,400 @@
+<%
+    var toolTitle = '汉字笔顺查询';
+    var toolDesc = '';
+    if (site.data && site.data.tools) {
+        var tool = site.data.tools.find(function(t) { return t.slug === page.toolSlug; });
+        if (tool) {
+            toolTitle = tool.emoji + ' ' + tool.name;
+            toolDesc = tool.description;
+        }
+    }
+%>
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .tool-container {
+    margin-top: -50px;
+    margin-bottom: 30px;
+  }
+  .tool-container .card {
+    border-radius: 8px;
+  }
+  .tool-container .card .card-content .card-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+  }
+  .tool-container .card-title i {
+    margin-right: 8px;
+  }
+
+  .input-area {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .input-area input {
+    flex: 1;
+    height: 44px;
+    padding: 0 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1.05rem;
+    outline: none;
+    transition: border-color 0.3s;
+    box-sizing: border-box;
+    font-family: inherit;
+  }
+  .input-area input:focus {
+    border-color: #4caf50;
+  }
+  #queryBtn {
+    border-radius: 20px;
+    padding: 0 20px;
+    height: 36px;
+    font-size: 0.88rem;
+    letter-spacing: 2px;
+    background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%);
+    transition: transform 0.2s, box-shadow 0.2s;
+    flex-shrink: 0;
+  }
+  #queryBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(46, 125, 50, 0.35);
+  }
+  #queryBtn:disabled {
+    background: #bdbdbd;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .quick-chars {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding-top: 12px;
+
+  }
+  .quick-label {
+    font-size: 0.85rem;
+    color: #888;
+    font-weight: 500;
+  }
+  .quick-char-btn {
+    padding: 4px 14px;
+    font-size: 0.85rem;
+    background: #f5f5f5;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #555;
+  }
+  .quick-char-btn:hover,
+  .quick-char-btn:focus,
+  .quick-char-btn:active {
+    background: #5a9600;
+    border-color: #5a9600;
+    color: #fff;
+    outline: none;
+  }
+
+  .draw-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+    background: #fafafa;
+    border-radius: 8px;
+    border: 2px dashed #e0e0e0;
+    min-height: 120px;
+  }
+  .char-stroke-section {
+    background: #fff;
+    border-radius: 8px;
+    padding: 12px 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    display: flex;
+    align-items: flex-start;
+  }
+  .char-section-label {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #4caf50;
+    padding: 0 16px 0 8px;
+    margin-right: 12px;
+    min-width: 36px;
+    text-align: center;
+    line-height: 60px;
+  }
+  .stroke-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  .stroke-wrapper canvas {
+    border-radius: 4px;
+  }
+
+  .char-stroke-section canvas {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+
+  .loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    color: #888;
+    font-size: 0.9rem;
+  }
+  .loading:before {
+    content: '';
+    width: 18px;
+    height: 18px;
+    border: 2px solid #e0e0e0;
+    border-top-color: #4caf50;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    margin-right: 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-message {
+    padding: 12px 16px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    color: #991b1b;
+    font-size: 0.9rem;
+  }
+
+  @media only screen and (max-width: 601px) {
+    .tool-container {
+      margin-top: -30px;
+    }
+    .input-area {
+      flex-direction: column;
+    }
+    #queryBtn {
+      width: 100%;
+    }
+    .draw-container {
+      padding: 12px;
+    }
+    .char-stroke-section {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .char-section-label {
+      border-right: none;
+      border-bottom: 2px solid #5a9600;
+      padding: 0 0 8px 0;
+      margin: 0 0 8px 0;
+      text-align: left;
+    }
+  }
+</style>
+
+<main class="content">
+  <div class="container tool-container">
+    <div class="card">
+      <div class="card-content">
+        <span class="card-title" style="display: inline-block"><%= toolTitle %></span>
+        <% if (toolDesc) { %>
+        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
+        <% } %>
+
+        <div class="input-area">
+          <input type="text" id="inputText" placeholder="请输入要查询的汉字（支持多个汉字）" maxlength="20">
+          <button id="queryBtn" class="btn waves-effect waves-light">查询笔顺</button>
+        </div>
+
+        <div class="quick-chars">
+          <span class="quick-label">快速选择：</span>
+          <button class="quick-char-btn" data-char="你">你</button>
+          <button class="quick-char-btn" data-char="好">好</button>
+          <button class="quick-char-btn" data-char="世">世</button>
+          <button class="quick-char-btn" data-char="界">界</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="resultContainer" style="display: none;">
+      <div class="card">
+        <div class="card-content">
+          <span class="card-title"><i class="fas fa-pencil-alt"></i> 笔顺绘制与动画演示</span>
+          <div id="strokeContainer" class="draw-container"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdmirror.com/npm/cnchar/cnchar.min.js"></script>
+<script src="https://cdn.jsdmirror.com/npm/cnchar-order/cnchar.order.min.js"></script>
+<script src="https://cdn.jsdmirror.com/npm/cnchar-draw/cnchar.draw.min.js"></script>
+<script>
+(function() {
+  var cncharReady = false;
+
+  function initCnchar() {
+    if (typeof cnchar !== 'undefined') {
+      try {
+        if (typeof cncharOrder !== 'undefined') {
+          try { cnchar.use(cncharOrder); } catch(e) { console.warn('cncharOrder:', e); }
+        }
+        if (typeof cncharDraw !== 'undefined') {
+          try { cnchar.use(cncharDraw); } catch(e) { console.warn('cncharDraw:', e); }
+        }
+        cncharReady = true;
+      } catch(e) { console.error('cnchar init error:', e); }
+    }
+  }
+
+  function extractChineseChars(text) {
+    if (!text) return [];
+    return text.match(/[\u4e00-\u9fa5]/g) || [];
+  }
+
+  function queryStroke() {
+    if (!cncharReady) {
+      M.toast({ html: '笔顺库正在加载中，请稍候再试', classes: 'red', displayLength: 2000 });
+      return;
+    }
+    var inputText = document.getElementById('inputText');
+    var resultContainer = document.getElementById('resultContainer');
+    var strokeContainer = document.getElementById('strokeContainer');
+
+    var text = (inputText && inputText.value || '').trim();
+    if (!text) {
+      M.toast({ html: '请输入要查询的汉字', classes: 'red', displayLength: 2000 });
+      return;
+    }
+
+    var chars = extractChineseChars(text);
+    if (chars.length === 0) {
+      M.toast({ html: '请输入有效的汉字', classes: 'red', displayLength: 2000 });
+      return;
+    }
+
+    try {
+      strokeContainer.innerHTML = '<div class="loading">正在加载笔顺信息...</div>';
+      resultContainer.style.display = 'block';
+
+      createStrokeDrawings(chars, strokeContainer);
+
+      setTimeout(function() {
+        resultContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    } catch(error) {
+      strokeContainer.innerHTML = '<div class="error-message">查询失败：' + (error.message || '未知错误') + '</div>';
+    }
+  }
+
+  function createStrokeDrawings(chars, container) {
+    if (typeof cnchar === 'undefined' || typeof cnchar.draw === 'undefined') {
+      container.innerHTML = '<div class="error-message">cnchar-draw 库未加载，请检查网络连接</div>';
+      return;
+    }
+    container.innerHTML = '';
+    chars.forEach(function(char, charIndex) {
+      try {
+        var charSection = document.createElement('div');
+        charSection.className = 'char-stroke-section';
+
+        var charLabel = document.createElement('div');
+        charLabel.className = 'char-section-label';
+        charLabel.textContent = char;
+        charSection.appendChild(charLabel);
+
+        var contentWrap = document.createElement('div');
+        contentWrap.style.cssText = 'flex:1;display:flex;align-items:flex-start;';
+
+        var strokeWrapper = document.createElement('div');
+        strokeWrapper.className = 'stroke-wrapper';
+        contentWrap.appendChild(strokeWrapper);
+
+        charSection.appendChild(contentWrap);
+        container.appendChild(charSection);
+
+        setTimeout(function() {
+          try {
+            cnchar.draw(char, {
+              el: strokeWrapper,
+              type: 'stroke',
+              width: 100,
+              height: 100,
+              padding: 8
+            });
+          } catch(e) {
+            console.error('stroke draw error:', e);
+          }
+          try {
+            var animDiv = document.createElement('div');
+            animDiv.style.cssText = 'width:120px;height:100px;flex-shrink:0;';
+            strokeWrapper.appendChild(animDiv);
+            cnchar.draw(char, {
+              el: animDiv,
+              type: 'animation',
+              width: 120,
+              height: 100,
+              padding: 5,
+              animation: {
+                loopAnimate: true
+              }
+            });
+          } catch(e) {
+            console.error('animation draw error:', e);
+          }
+        }, 100 * (charIndex + 1));
+      } catch(error) { console.error('create stroke error:', error); }
+    });
+  }
+
+  function setupQuickChars() {
+    var btns = document.querySelectorAll('.quick-char-btn');
+    var inputText = document.getElementById('inputText');
+    btns.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var text = this.getAttribute('data-char');
+        if (inputText && text) {
+          inputText.value = text;
+          queryStroke();
+        }
+      });
+    });
+  }
+
+  $(document).ready(function() {
+    initCnchar();
+
+    $('#queryBtn').on('click', queryStroke);
+
+    $('#inputText').on('keypress', function(e) {
+      if (e.key === 'Enter') queryStroke();
+    });
+
+    setupQuickChars();
+
+    function checkLibrary() {
+      if (typeof cnchar !== 'undefined') {
+        initCnchar();
+      } else {
+        setTimeout(checkLibrary, 500);
+      }
+    }
+    setTimeout(checkLibrary, 100);
+  });
+})();
+</script>
