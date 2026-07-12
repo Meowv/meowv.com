@@ -72,6 +72,14 @@
     "category": "文本处理"
   },
   {
+    "slug": "emojis",
+    "name": "Emoji 表情",
+    "description": "Emoji 表情大全，一键复制使用",
+    "emoji": "😊",
+    "url": "/tools/emojis/",
+    "category": "文本处理"
+  },
+  {
     "slug": "chinese-converter",
     "name": "繁简互转",
     "description": "中文简繁体实时在线转换",
