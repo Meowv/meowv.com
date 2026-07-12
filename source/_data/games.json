@@ -5,28 +5,56 @@
     "description": "基于物理引擎的趣味解谜闯关游戏",
     "fullscreen": true,
     "emoji": "🕹️",
-    "mobile": true
+    "mobile": true,
+    "category": "益智解谜"
   },
   {
-    "slug": "emoji-match",
-    "name": "表情符号消除",
-    "description": "在有限时间内选择2个相同的表情符号进行消除，成功消除可增加5秒时间。挑战你能消除多少对！",
-    "emoji": "🎮",
-    "mobile": true
+    "slug": "puzzle",
+    "name": "拼图游戏",
+    "description": "数字华容道拼图，打乱后拖动还原",
+    "emoji": "🧩",
+    "mobile": true,
+    "category": "益智解谜"
   },
   {
-    "slug": "xiaoxiaole",
-    "name": "数字消消乐",
-    "description": "合并相同数字，挑战更高分数！",
-    "emoji": "🎯",
-    "mobile": true
+    "slug": "sudoku",
+    "name": "数独",
+    "description": "经典数独游戏，随机生成题目，逻辑填充数字",
+    "emoji": "#️⃣",
+    "mobile": true,
+    "category": "益智解谜"
   },
   {
     "slug": "2048",
     "name": "2048",
     "description": "经典数字合并游戏，滑动合并相同数字",
     "emoji": "🔢",
-    "mobile": true
+    "mobile": true,
+    "category": "消除合并"
+  },
+  {
+    "slug": "xiaoxiaole",
+    "name": "数字消消乐",
+    "description": "合并相同数字，挑战更高分数！",
+    "emoji": "🎯",
+    "mobile": true,
+    "category": "消除合并"
+  },
+  {
+    "slug": "emoji-match",
+    "name": "表情符号消除",
+    "description": "在有限时间内选择2个相同的表情符号进行消除，成功消除可增加5秒时间。挑战你能消除多少对！",
+    "emoji": "🎮",
+    "mobile": true,
+    "category": "消除合并"
+  },
+  {
+    "slug": "reaction-test",
+    "name": "反应速度测试",
+    "description": "测试你的反应速度，点击变色后尽快响应，7次测试取平均",
+    "emoji": "⚡",
+    "mobile": true,
+    "category": "反应打字"
   },
   {
     "slug": "ztype",
@@ -34,55 +62,39 @@
     "description": "打字消灭敌机，在游戏中提升打字速度！",
     "fullscreen": true,
     "emoji": "⌨️",
-    "mobile": false
-  },
-  {
-    "slug": "reaction-test",
-    "name": "反应速度测试",
-    "description": "测试你的反应速度，点击变色后尽快响应，7次测试取平均",
-    "emoji": "⚡",
-    "mobile": true
-  },
-  {
-    "slug": "snake",
-    "name": "贪吃蛇",
-    "description": "经典贪吃蛇游戏，吃食物变长，小心别撞墙或咬到自己！",
-    "emoji": "🐍",
-    "mobile": true
-  },
-  {
-    "slug": "tetris",
-    "name": "俄罗斯方块",
-    "description": "经典俄罗斯方块，使用方向键移动和旋转，堆叠消除行数获取高分！",
-    "emoji": "🟦",
-    "mobile": true
+    "mobile": false,
+    "category": "反应打字"
   },
   {
     "slug": "gomoku",
     "name": "五子棋",
     "description": "经典五子棋人机对战，率先连成五子获胜",
     "emoji": "⚫",
-    "mobile": true
+    "mobile": true,
+    "category": "经典游戏"
   },
   {
-    "slug": "puzzle",
-    "name": "拼图游戏",
-    "description": "数字华容道拼图，打乱后拖动还原",
-    "emoji": "🧩",
-    "mobile": true
+    "slug": "tetris",
+    "name": "俄罗斯方块",
+    "description": "经典俄罗斯方块，使用方向键移动和旋转，堆叠消除行数获取高分！",
+    "emoji": "🟦",
+    "mobile": true,
+    "category": "经典游戏"
   },
   {
     "slug": "breakout",
     "name": "打砖块",
     "description": "经典打砖块游戏，挡板反弹小球击碎所有砖块",
     "emoji": "🏓",
-    "mobile": true
+    "mobile": true,
+    "category": "经典游戏"
   },
   {
-    "slug": "sudoku",
-    "name": "数独",
-    "description": "经典数独游戏，随机生成题目，逻辑填充数字",
-    "emoji": "#️⃣",
-    "mobile": true
+    "slug": "snake",
+    "name": "贪吃蛇",
+    "description": "经典贪吃蛇游戏，吃食物变长，小心别撞墙或咬到自己！",
+    "emoji": "🐍",
+    "mobile": true,
+    "category": "经典游戏"
   }
 ]

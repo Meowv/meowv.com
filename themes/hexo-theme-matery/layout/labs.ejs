@@ -114,6 +114,13 @@ var gradients = [
         backdrop-filter: blur(4px);
         line-height: 1.4;
     }
+    .lab-badge-cat {
+        opacity: 0;
+        transition: opacity 0.25s ease;
+    }
+    .lab-card:hover .lab-badge-cat {
+        opacity: 1;
+    }
 
     @media only screen and (max-width: 601px) {
         .lab-card {
@@ -152,6 +159,9 @@ var gradients = [
                                     <span class="lab-emoji"><%= tool.emoji %></span>
                                     <div class="lab-name"><%= tool.name %></div>
                                     <div class="lab-desc"><%= tool.description %></div>
+                                    <div class="lab-badges">
+                                        <span class="lab-badge lab-badge-cat"><%= tool.category %></span>
+                                    </div>
                                 </div>
                             </a>
                         </div>
@@ -183,6 +193,7 @@ var gradients = [
                                     <div class="lab-name"><%= game.name %></div>
                                     <div class="lab-desc"><%= game.description %></div>
                                     <div class="lab-badges">
+                                        <span class="lab-badge lab-badge-cat"><%= game.category %></span>
                                         <% if (game.mobile) { %><span class="lab-badge">📱</span><% } %>
                                         <span class="lab-badge">↗</span>
                                     </div>
@@ -195,6 +206,7 @@ var gradients = [
                                     <div class="lab-name"><%= game.name %></div>
                                     <div class="lab-desc"><%= game.description %></div>
                                     <div class="lab-badges">
+                                        <span class="lab-badge lab-badge-cat"><%= game.category %></span>
                                         <% if (game.mobile) { %><span class="lab-badge">📱</span><% } %>
                                     </div>
                                 </div>
