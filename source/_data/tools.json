@@ -112,6 +112,13 @@
     "url": "/tools/pronunciation/"
   },
   {
+    "slug": "whiteboard",
+    "name": "白板工具",
+    "description": "在线白板绘图工具，支持画笔、橡皮擦、撤销重做、自定义颜色，导出PNG",
+    "emoji": "✏️",
+    "url": "/tools/whiteboard/"
+  },
+  {
     "slug": "ai-coding-method-map",
     "name": "AI Coding Method Map",
     "description": "AI 编程方法论地图，看懂普通 Agent、工作流 Agent、IDE Agent 的差异与开发链路",

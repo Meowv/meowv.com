@@ -1,0 +1,900 @@
+<%
+    var toolTitle = '白板工具';
+    var toolDesc = '';
+    if (site.data && site.data.tools) {
+        var tool = site.data.tools.find(function(t) { return t.slug === page.toolSlug; });
+        if (tool) {
+            toolTitle = tool.emoji + ' ' + tool.name;
+            toolDesc = tool.description;
+        }
+    }
+%>
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .whiteboard-wrap {
+    margin-top: -50px; margin-bottom: 30px;
+    position: relative;
+  }
+  .whiteboard-wrap .card { border-radius: 8px; overflow: hidden; }
+  .whiteboard-wrap .card .card-content { padding: 0; }
+  .whiteboard-wrap .card .card-content .card-title {
+    font-size: 1.4rem; font-weight: 600; margin-bottom: 0;
+    padding: 16px 20px 0;
+  }
+
+  .wb-toolbar {
+    display: flex; align-items: center; gap: 4px;
+    padding: 10px 16px; border-bottom: 1px solid #eee;
+    background: #fafafa; flex-wrap: wrap;
+  }
+  .wb-toolbar .group { display: flex; align-items: center; gap: 5px; }
+  .wb-toolbar .divider {
+    width: 1px; height: 28px; background: #e0e0e0; margin: 0 6px;
+  }
+
+  .wb-btn {
+    width: 36px; height: 36px; border-radius: 8px; border: none;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: transparent; color: #555; cursor: pointer;
+    transition: all 0.2s; font-size: 16px;
+  }
+  .wb-btn:hover { background: #e8e8e8; }
+  .wb-btn:active { background: #5a9600; color: #fff; }
+  .wb-btn.active { background: #5a9600; color: #fff; }
+  .wb-btn:focus { outline: none; background: transparent; color: #555; }
+  .wb-btn:focus:hover { background: #e8e8e8; }
+  .wb-btn.active:focus { background: #5a9600; color: #fff; }
+  .wb-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .wb-btn:disabled:hover { background: transparent; }
+
+  .wb-canvas-wrap {
+    position: relative; width: 100%; cursor: crosshair;
+    background: #fff;
+  }
+  .wb-canvas-wrap canvas {
+    display: block; width: 100%; height: 600px;
+  }
+  #drawCanvas { background: #fff; }
+
+  .color-presets {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .color-dot {
+    width: 22px; height: 22px; border-radius: 50%; border: 2px solid transparent;
+    cursor: pointer; transition: all 0.15s; flex-shrink: 0;
+  }
+  .color-dot:hover { transform: scale(1.15); }
+  .color-dot.active { border-color: #333; box-shadow: 0 0 0 2px #fff, 0 0 0 4px #333; }
+  .color-custom-wrap {
+    position: relative; width: 22px; height: 22px; border-radius: 50%;
+    overflow: hidden; border: 2px solid #ddd; cursor: pointer; flex-shrink: 0;
+    background: linear-gradient(45deg, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+  }
+  .color-custom-wrap input[type=color] {
+    position: absolute; top: -6px; left: -6px;
+    width: 34px; height: 34px; border: none; cursor: pointer; padding: 0;
+  }
+
+  .size-slider {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .custom-slider {
+    position: relative; width: 80px; height: 14px;
+    display: flex; align-items: center; cursor: pointer; flex-shrink: 0;
+  }
+  .custom-slider-track {
+    width: 100%; height: 4px; background: #ddd; border-radius: 2px;
+    position: relative; pointer-events: none;
+  }
+  .custom-slider-fill {
+    height: 100%; background: #42b983; border-radius: 2px;
+    position: absolute; top: 0; left: 0;
+  }
+  .custom-slider-thumb {
+    position: absolute; top: 50%; width: 10px; height: 10px;
+    background: #5a9600; border-radius: 50%; transform: translate(-50%, -50%);
+    pointer-events: none; box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  }
+
+
+  .wb-fullscreen-container {
+    display: flex; flex-direction: column;
+  }
+  .wb-fullscreen-container:-webkit-full-screen {
+    width: 100vw; height: 100vh; background: #42b983;
+  }
+  .wb-fullscreen-container:-moz-full-screen {
+    width: 100vw; height: 100vh; background: #42b983;
+  }
+  .wb-fullscreen-container:fullscreen {
+    width: 100vw; height: 100vh; background: #42b983;
+  }
+  .wb-fullscreen-container:-webkit-full-screen .wb-canvas-wrap {
+    flex: 1;
+  }
+  .wb-fullscreen-container:-moz-full-screen .wb-canvas-wrap {
+    flex: 1;
+  }
+  .wb-fullscreen-container:fullscreen .wb-canvas-wrap {
+    flex: 1;
+  }
+  .wb-fullscreen-container:-webkit-full-screen .wb-canvas-wrap canvas {
+    height: 100% !important;
+  }
+  .wb-fullscreen-container:-moz-full-screen .wb-canvas-wrap canvas {
+    height: 100% !important;
+  }
+  .wb-fullscreen-container:fullscreen .wb-canvas-wrap canvas {
+    height: 100% !important;
+  }
+  .wb-fullscreen-container:-webkit-full-screen .wb-toolbar,
+  .wb-fullscreen-container:-moz-full-screen .wb-toolbar,
+  .wb-fullscreen-container:fullscreen .wb-toolbar {
+    border-radius: 0;
+  }
+  .wb-fullscreen-container.is-fullscreen #clearBtn,
+  .wb-fullscreen-container.is-fullscreen #downloadBtn,
+  .wb-fullscreen-container.is-fullscreen #imageBtn {
+    display: none;
+  }
+
+  .wb-text-overlay {
+    position: absolute; z-index: 20;
+    display: none; flex-direction: column; gap: 4px;
+    pointer-events: auto; transform: translateY(4px);
+  }
+  .wb-text-overlay textarea {
+    border: 2px solid #5a9600; border-radius: 6px; outline: none;
+    padding: 6px 10px; font-size: 16px; resize: none;
+    font-family: "Microsoft YaHei","PingFang SC",sans-serif;
+    min-width: 140px; min-height: 40px;
+    background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .wb-text-overlay .wb-text-actions {
+    display: flex; gap: 4px; justify-content: flex-end;
+  }
+  .wb-text-overlay .wb-text-actions button {
+    padding: 3px 12px; border-radius: 4px; border: none;
+    cursor: pointer; font-size: 13px;
+  }
+  .wb-text-overlay .wb-text-actions .text-confirm {
+    background: #5a9600; color: #fff;
+  }
+  .wb-text-overlay .wb-text-actions .text-cancel {
+    background: #e8e8e8; color: #555;
+  }
+
+  @media only screen and (max-width: 601px) {
+    .whiteboard-wrap { margin-top: -30px; }
+    .wb-toolbar { gap: 2px; padding: 8px 10px; }
+    .wb-btn { width: 32px; height: 32px; font-size: 14px; }
+    .color-dot, .color-custom-wrap { width: 18px; height: 18px; }
+    .color-custom-wrap input[type=color] { width: 30px; height: 30px; top: -6px; left: -6px; }
+    .size-slider input[type=range] { width: 60px; }
+  }
+</style>
+
+<main class="content">
+  <div class="container whiteboard-wrap">
+    <div class="card">
+      <div class="card-content">
+        <span class="card-title" style="display: inline-block"><%= toolTitle %></span>
+        <% if (toolDesc) { %>
+        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
+        <% } %>
+
+        <div id="wbFullscreen" class="wb-fullscreen-container">
+          <div class="wb-toolbar">
+            <div class="group">
+              <button class="wb-btn active" data-tool="pen" title="画笔">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+              </button>
+            <button class="wb-btn" data-tool="eraser" title="橡皮擦">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 20H7L3 16c-.8-.8-.8-2 0-2.8L14.6 1.6c.8-.8 2-.8 2.8 0L21 5.2c.8.8.8 2 0 2.8L11 18"/><path d="M6 11l7 7"/></svg>
+            </button>
+            <button class="wb-btn" data-tool="hand" title="拖动画布">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 11V6a2 2 0 0 0-4 0v1M14 10V4a2 2 0 0 0-4 0v6M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 0 1 4 0v6a8 8 0 0 1-8 8h-2c-2.2 0-4.2-.9-5.7-2.3L3 16.4a1.5 1.5 0 0 1 2-2.2L6 15v-2"/></svg>
+            </button>
+            <button class="wb-btn" data-tool="rect" title="框选">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="1"/></svg>
+            </button>
+            <button class="wb-btn" data-tool="text" title="文字">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+            </button>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="group color-presets" id="colorPresets">
+              <div class="color-dot active" style="background:#5a9600" data-color="#5a9600"></div>
+              <div class="color-dot" style="background:#f44336" data-color="#f44336"></div>
+              <div class="color-dot" style="background:#ff9800" data-color="#ff9800"></div>
+              <div class="color-dot" style="background:#ffeb3b" data-color="#ffeb3b"></div>
+              <div class="color-dot" style="background:#4caf50" data-color="#4caf50"></div>
+              <div class="color-dot" style="background:#2196f3" data-color="#2196f3"></div>
+              <div class="color-dot" style="background:#9c27b0" data-color="#9c27b0"></div>
+              <div class="color-dot" style="background:#795548" data-color="#795548"></div>
+              <div class="color-dot" style="background:#607d8b" data-color="#607d8b"></div>
+              <div class="color-dot" style="background:#fff" data-color="#ffffff" style="border-color:#ccc;"></div>
+              <div class="color-custom-wrap" title="自定义颜色">
+                <input type="color" id="customColor" value="#5a9600">
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="group size-slider">
+              <span style="font-size:12px;color:#999;white-space:nowrap">大小</span>
+              <div class="custom-slider" id="customSlider">
+                <div class="custom-slider-track">
+                  <div class="custom-slider-fill" id="sliderFill" style="width:6%"></div>
+                </div>
+                <div class="custom-slider-thumb" id="sliderThumb" style="left:6%"></div>
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="group">
+              <button class="wb-btn" id="undoBtn" disabled title="撤销 (Ctrl+Z)">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10h10a5 5 0 0 1 0 10H9"/><path d="M7 6l-4 4 4 4"/></svg>
+              </button>
+              <button class="wb-btn" id="redoBtn" disabled title="重做 (Ctrl+Shift+Z)">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10H11a5 5 0 0 0 0 10h4"/><path d="M17 6l4 4-4 4"/></svg>
+              </button>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="group">
+              <button class="wb-btn" id="clearBtn" title="清空画布">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+              </button>
+              <button class="wb-btn" id="imageBtn" title="上传图片">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              </button>
+              <button class="wb-btn" id="downloadBtn" title="下载 PNG">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+              </button>
+              <button class="wb-btn" id="fullscreenBtn" title="全屏">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <input type="file" id="imageInput" accept="image/*" style="display:none">
+
+          <div class="wb-canvas-wrap">
+            <canvas id="drawCanvas"></canvas>
+            <div class="wb-text-overlay" id="textOverlay">
+              <textarea id="textInput" rows="1" placeholder="输入文字..."></textarea>
+              <div class="wb-text-actions">
+                <button class="text-cancel" id="textCancelBtn">取消</button>
+                <button class="text-confirm" id="textConfirmBtn">确定</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script>
+(function() {
+  var canvas = document.getElementById('drawCanvas');
+  var ctx = canvas.getContext('2d');
+  var cacheCanvas = document.createElement('canvas');
+  var cacheCtx = cacheCanvas.getContext('2d');
+
+  var isDrawing = false;
+  var isPanning = false;
+  var panStartX = 0, panStartY = 0;
+  var panOriginX = 0, panOriginY = 0;
+  var panX = 0, panY = 0;
+  var isMoving = false;
+  var movingStrokeIndex = -1;
+  var moveOffsetX = 0, moveOffsetY = 0;
+  var currentTool = 'pen';
+  var currentColor = '#5a9600';
+  var currentSize = 4;
+  var canvasW = 0, canvasH = 600;
+
+  var strokes = [];
+  var currentStroke = null;
+
+  var undoStack = [];
+  var redoStack = [];
+  var maxHistory = 50;
+
+  var panRAF = null;
+  var loadedImages = {};
+
+  function getCanvasSize() {
+    var rect = canvas.parentElement.getBoundingClientRect();
+    return { w: rect.width, h: rect.height };
+  }
+
+  function renderStrokeOn(c, s) {
+    if (!s) return;
+    if (s.type === 'image') {
+      var img = loadedImages[s.src];
+      if (img) {
+        c.drawImage(img, s.x, s.y, s.w, s.h);
+      }
+      return;
+    }
+    if (s.type === 'rect') {
+      c.save();
+      c.strokeStyle = s.color;
+      c.lineWidth = s.size;
+      c.strokeRect(s.x, s.y, s.w, s.h);
+      c.restore();
+      return;
+    }
+    if (s.type === 'text') {
+      c.save();
+      c.font = s.size + 'px "Microsoft YaHei","PingFang SC",sans-serif';
+      c.fillStyle = s.color;
+      c.textBaseline = 'top';
+      c.fillText(s.text, s.x, s.y);
+      c.restore();
+      return;
+    }
+    if (s.points.length === 0) return;
+    c.beginPath();
+    c.moveTo(s.points[0].x, s.points[0].y);
+    for (var j = 1; j < s.points.length; j++) {
+      c.lineTo(s.points[j].x, s.points[j].y);
+    }
+    c.strokeStyle = s.tool === 'eraser' ? '#fff' : s.color;
+    c.lineWidth = s.size;
+    c.lineCap = 'round';
+    c.lineJoin = 'round';
+    c.stroke();
+    if (s.points.length === 1) {
+      c.beginPath();
+      c.arc(s.points[0].x, s.points[0].y, s.size / 2, 0, Math.PI * 2);
+      c.fillStyle = s.tool === 'eraser' ? '#fff' : s.color;
+      c.fill();
+    }
+  }
+
+  function renderStroke(s) {
+    renderStrokeOn(ctx, s);
+  }
+
+  function rebuildCache(excludeIndex) {
+    var dpr = window.devicePixelRatio || 1;
+    cacheCanvas.width = canvasW * dpr;
+    cacheCanvas.height = canvasH * dpr;
+    cacheCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    cacheCtx.clearRect(0, 0, canvasW, canvasH);
+    var needsLoad = false;
+    for (var i = 0; i < strokes.length; i++) {
+      if (i === excludeIndex) continue;
+      if (strokes[i].type === 'image') {
+        if (!loadedImages[strokes[i].src]) needsLoad = true;
+        else renderStrokeOn(cacheCtx, strokes[i]);
+      } else {
+        renderStrokeOn(cacheCtx, strokes[i]);
+      }
+    }
+    renderAll();
+    if (needsLoad) {
+      var pending = 0;
+      for (var i = 0; i < strokes.length; i++) {
+        if (i === excludeIndex) continue;
+        if (strokes[i].type === 'image' && !loadedImages[strokes[i].src]) {
+          pending++;
+          (function(src) {
+            var img = new Image();
+            img.onload = function() { loadedImages[src] = img; pending--; if (pending === 0) rebuildCache(); };
+            img.src = src;
+          })(strokes[i].src);
+        }
+      }
+    }
+  }
+
+  function clearCanvas() {
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+  }
+
+  function renderAll() {
+    var dpr = window.devicePixelRatio || 1;
+    clearCanvas();
+    ctx.setTransform(dpr, 0, 0, dpr, panX * dpr, panY * dpr);
+    ctx.drawImage(cacheCanvas, 0, 0, canvasW, canvasH);
+    if (currentStroke) {
+      renderStroke(currentStroke);
+    }
+  }
+
+  function resizeCanvas() {
+    var size = getCanvasSize();
+    canvasW = size.w;
+    canvasH = size.h;
+    var dpr = window.devicePixelRatio || 1;
+    canvas.style.width = canvasW + 'px';
+    canvas.style.height = canvasH + 'px';
+    canvas.width = canvasW * dpr;
+    canvas.height = canvasH * dpr;
+    if (strokes.length > 0) rebuildCache();
+    renderAll();
+  }
+
+  function saveState() {
+    undoStack.push(JSON.parse(JSON.stringify(strokes)));
+    if (undoStack.length > maxHistory) undoStack.shift();
+    redoStack = [];
+    updateButtons();
+  }
+
+  function restoreFromUndo() {
+    if (undoStack.length > 0) {
+      strokes = JSON.parse(JSON.stringify(undoStack[undoStack.length - 1]));
+    } else {
+      strokes = [];
+    }
+    rebuildCache();
+    renderAll();
+    updateButtons();
+  }
+
+  function undo() {
+    if (undoStack.length <= 1) return;
+    redoStack.push(undoStack.pop());
+    restoreFromUndo();
+  }
+
+  function redo() {
+    if (redoStack.length === 0) return;
+    undoStack.push(redoStack.pop());
+    restoreFromUndo();
+  }
+
+  function updateButtons() {
+    document.getElementById('undoBtn').disabled = undoStack.length <= 1;
+    document.getElementById('redoBtn').disabled = redoStack.length === 0;
+  }
+
+  function getScreenPos(e) {
+    var rect = canvas.getBoundingClientRect();
+    if (e.touches) {
+      return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+    }
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
+
+  function getPos(e) {
+    var sp = getScreenPos(e);
+    return { x: sp.x - panX, y: sp.y - panY };
+  }
+
+  function hitTestStroke(wx, wy, s) {
+    if (s.type === 'text') {
+      ctx.save();
+      ctx.font = s.size + 'px "Microsoft YaHei","PingFang SC",sans-serif';
+      var tw = ctx.measureText(s.text).width;
+      ctx.restore();
+      return wx >= s.x && wx <= s.x + tw && wy >= s.y && wy <= s.y + s.size;
+    }
+    if (s.type === 'rect') {
+      return wx >= s.x && wx <= s.x + s.w && wy >= s.y && wy <= s.y + s.h;
+    }
+    if (s.type === 'image') {
+      return wx >= s.x && wx <= s.x + s.w && wy >= s.y && wy <= s.y + s.h;
+    }
+    return false;
+  }
+
+  function beforeDrag(e) {
+    isDrawing = false;
+    isPanning = false;
+    isMoving = false;
+    movingStrokeIndex = -1;
+    if (panRAF) { cancelAnimationFrame(panRAF); panRAF = null; }
+  }
+
+  function startDrawing(e) {
+    beforeDrag(e);
+    if (currentTool === 'hand') {
+      isPanning = true;
+      var pos = getScreenPos(e);
+      panOriginX = panX;
+      panOriginY = panY;
+      panStartX = pos.x;
+      panStartY = pos.y;
+      e.preventDefault();
+      return;
+    }
+    if (currentTool === 'text') {
+      var sp = getScreenPos(e);
+      showTextInput(sp.x, sp.y);
+      e.preventDefault();
+      return;
+    }
+    isDrawing = true;
+    var pos = getPos(e);
+    if (currentTool === 'pen' || currentTool === 'eraser') {
+      var hitIdx = -1;
+      for (var i = strokes.length - 1; i >= 0; i--) {
+        if (hitTestStroke(pos.x, pos.y, strokes[i])) { hitIdx = i; break; }
+      }
+      if (hitIdx >= 0 && strokes[hitIdx].type === 'text') {
+        isDrawing = false;
+        isMoving = true;
+        movingStrokeIndex = hitIdx;
+        var s = strokes[hitIdx];
+        moveOffsetX = pos.x - s.x;
+        moveOffsetY = pos.y - s.y;
+        currentStroke = JSON.parse(JSON.stringify(s));
+        rebuildCache(hitIdx);
+        return;
+      }
+    }
+    if (currentTool === 'rect') {
+      currentStroke = {
+        type: 'rect', color: currentColor, size: currentSize,
+        startX: pos.x, startY: pos.y, x: pos.x, y: pos.y, w: 0, h: 0
+      };
+    } else {
+      currentStroke = {
+        tool: currentTool, color: currentColor, size: currentSize,
+        points: [{ x: pos.x, y: pos.y }]
+      };
+    }
+    renderAll();
+    e.preventDefault();
+  }
+
+  function draw(e) {
+    if (currentTool === 'hand') {
+      if (!isPanning) return;
+      e.preventDefault();
+      var pos = getScreenPos(e);
+      panX = panOriginX + pos.x - panStartX;
+      panY = panOriginY + pos.y - panStartY;
+      if (!panRAF) {
+        panRAF = requestAnimationFrame(function() {
+          panRAF = null;
+          var dpr = window.devicePixelRatio || 1;
+          clearCanvas();
+          ctx.setTransform(dpr, 0, 0, dpr, panX * dpr, panY * dpr);
+          ctx.drawImage(cacheCanvas, 0, 0, canvasW, canvasH);
+        });
+      }
+      return;
+    }
+    if (isMoving) {
+      if (!currentStroke) return;
+      e.preventDefault();
+      var pos = getPos(e);
+      currentStroke.x = pos.x - moveOffsetX;
+      currentStroke.y = pos.y - moveOffsetY;
+      renderAll();
+      return;
+    }
+    if (!isDrawing || !currentStroke) return;
+    e.preventDefault();
+    var pos = getPos(e);
+    if (currentStroke.type === 'rect') {
+      currentStroke.x = Math.min(currentStroke.startX, pos.x);
+      currentStroke.y = Math.min(currentStroke.startY, pos.y);
+      currentStroke.w = Math.abs(pos.x - currentStroke.startX);
+      currentStroke.h = Math.abs(pos.y - currentStroke.startY);
+    } else {
+      currentStroke.points.push({ x: pos.x, y: pos.y });
+    }
+    renderAll();
+  }
+
+  function stopDrawing(e) {
+    if (isPanning) {
+      isPanning = false;
+      if (panRAF) { cancelAnimationFrame(panRAF); panRAF = null; }
+      renderAll();
+      saveState();
+      return;
+    }
+    if (isMoving && currentStroke) {
+      isMoving = false;
+      var idx = movingStrokeIndex;
+      movingStrokeIndex = -1;
+      strokes[idx].x = currentStroke.x;
+      strokes[idx].y = currentStroke.y;
+      currentStroke = null;
+      rebuildCache();
+      saveState();
+      return;
+    }
+    if (isDrawing && currentStroke) {
+      isDrawing = false;
+      strokes.push(currentStroke);
+      currentStroke = null;
+      rebuildCache();
+      saveState();
+    }
+  }
+
+  canvas.addEventListener('mousedown', startDrawing);
+  canvas.addEventListener('mousemove', draw);
+  canvas.addEventListener('mouseup', stopDrawing);
+  canvas.addEventListener('mouseleave', stopDrawing);
+
+  canvas.addEventListener('touchstart', startDrawing, { passive: false });
+  canvas.addEventListener('touchmove', draw, { passive: false });
+  canvas.addEventListener('touchend', stopDrawing);
+
+  canvas.addEventListener('mousemove', function(e) {
+    if (isDrawing || isPanning || isMoving || currentTool !== 'pen') return;
+    var pos = getPos(e);
+    var hit = false;
+    for (var i = strokes.length - 1; i >= 0; i--) {
+      if (strokes[i].type === 'text' && hitTestStroke(pos.x, pos.y, strokes[i])) { hit = true; break; }
+    }
+    canvas.style.cursor = hit ? 'move' : 'crosshair';
+  });
+
+  document.querySelectorAll('[data-tool]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('[data-tool]').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      currentTool = btn.dataset.tool;
+      var cursors = { pen: 'crosshair', eraser: 'cell', hand: 'grab', rect: 'crosshair', text: 'text' };
+      canvas.style.cursor = cursors[currentTool] || 'crosshair';
+    });
+  });
+
+  function updateSliderColor(color) {
+    document.getElementById('sliderFill').style.background = color;
+    document.getElementById('sliderThumb').style.background = color;
+  }
+
+  document.querySelectorAll('.color-dot').forEach(function(dot) {
+    dot.addEventListener('click', function() {
+      document.querySelectorAll('.color-dot').forEach(function(d) { d.classList.remove('active'); });
+      dot.classList.add('active');
+      currentColor = dot.dataset.color;
+      document.getElementById('customColor').value = currentColor;
+      updateSliderColor(currentColor);
+    });
+  });
+
+  document.getElementById('customColor').addEventListener('input', function() {
+    currentColor = this.value;
+    document.querySelectorAll('.color-dot').forEach(function(d) { d.classList.remove('active'); });
+    updateSliderColor(currentColor);
+  });
+
+  function updateSliderUI(value) {
+    var pct = ((value - 1) / 49) * 100;
+    document.getElementById('sliderFill').style.width = pct + '%';
+    document.getElementById('sliderThumb').style.left = pct + '%';
+  }
+
+  function setSize(value) {
+    currentSize = value;
+    updateSliderUI(value);
+  }
+
+  (function() {
+    var slider = document.getElementById('customSlider');
+    var dragging = false;
+    function getSliderValue(clientX) {
+      var rect = slider.getBoundingClientRect();
+      var pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      return Math.round(1 + pct * 49);
+    }
+    function onStart(e) {
+      dragging = true;
+      var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      setSize(getSliderValue(clientX));
+    }
+    function onMove(e) {
+      if (!dragging) return;
+      var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      setSize(getSliderValue(clientX));
+      e.preventDefault();
+    }
+    function onEnd() { dragging = false; }
+    slider.addEventListener('mousedown', onStart);
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onEnd);
+    slider.addEventListener('touchstart', onStart, { passive: false });
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onEnd);
+  })();
+
+  document.getElementById('undoBtn').addEventListener('click', undo);
+  document.getElementById('redoBtn').addEventListener('click', redo);
+  document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.key === 'z') {
+      e.preventDefault();
+      if (e.shiftKey) redo(); else undo();
+    }
+  });
+
+  document.getElementById('imageBtn').addEventListener('click', function() {
+    document.getElementById('imageInput').click();
+  });
+
+  function addImageFromFile(file) {
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      var src = ev.target.result;
+      var img = new Image();
+      img.onload = function() {
+        loadedImages[src] = img;
+        var w = img.naturalWidth;
+        var h = img.naturalHeight;
+        var maxW = canvasW * 0.8;
+        var maxH = canvasH * 0.8;
+        if (w > maxW || h > maxH) {
+          var ratio = Math.min(maxW / w, maxH / h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+        var cx = canvasW / 2 - panX;
+        var cy = canvasH / 2 - panY;
+        strokes.push({ type: 'image', src: src, x: cx - w / 2, y: cy - h / 2, w: w, h: h });
+        rebuildCache();
+        saveState();
+      };
+      img.src = src;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  document.getElementById('imageInput').addEventListener('change', function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    addImageFromFile(file);
+    this.value = '';
+  });
+
+  document.addEventListener('paste', function(e) {
+    var items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') === 0) {
+        e.preventDefault();
+        addImageFromFile(items[i].getAsFile());
+        return;
+      }
+    }
+  });
+
+  document.getElementById('clearBtn').addEventListener('click', function() {
+    if (confirm('\u786E\u5B9A\u8981\u6E05\u7A7A\u753B\u5E03\u5417\uFF1F')) {
+      strokes = [];
+      loadedImages = {};
+      panX = 0; panY = 0;
+      rebuildCache();
+      renderAll();
+      saveState();
+    }
+  });
+
+  document.getElementById('downloadBtn').addEventListener('click', function() {
+    var dpr = window.devicePixelRatio || 1;
+    var exportCanvas = document.createElement('canvas');
+    exportCanvas.width = canvasW * dpr;
+    exportCanvas.height = canvasH * dpr;
+    var exportCtx = exportCanvas.getContext('2d');
+    exportCtx.fillStyle = '#fff';
+    exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+    exportCtx.setTransform(dpr, 0, 0, dpr, panX * dpr, panY * dpr);
+    for (var i = 0; i < strokes.length; i++) {
+      renderStrokeOn(exportCtx, strokes[i]);
+    }
+    var link = document.createElement('a');
+    link.download = '\u767D\u677F_' + new Date().toISOString().slice(0, 19).replace(/[:-]/g, '') + '.png';
+    link.href = exportCanvas.toDataURL();
+    link.click();
+  });
+
+  function onFullscreenChange() {
+    var el = document.getElementById('wbFullscreen');
+    var isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement);
+    el.classList.toggle('is-fullscreen', isFs);
+    document.getElementById('fullscreenBtn').classList.toggle('active', isFs);
+    resizeCanvas();
+  }
+
+  document.getElementById('fullscreenBtn').addEventListener('click', function() {
+    var el = document.getElementById('wbFullscreen');
+    var isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement);
+    if (!isFs) {
+      if (el.requestFullscreen) el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      else if (el.mozRequestFullScreen) el.mozRequestFullScreen();
+    } else {
+      if (document.exitFullscreen) document.exitFullscreen();
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+      else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
+    }
+  });
+
+  document.addEventListener('fullscreenchange', onFullscreenChange);
+  document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+  document.addEventListener('mozfullscreenchange', onFullscreenChange);
+
+  window.addEventListener('resize', resizeCanvas);
+
+  var textOverlay = document.getElementById('textOverlay');
+  var textInput = document.getElementById('textInput');
+  var textWorldX = 0, textWorldY = 0;
+
+  function showTextInput(screenX, screenY) {
+    textWorldX = screenX - panX;
+    textWorldY = screenY - panY;
+    textOverlay.style.left = screenX + 'px';
+    textOverlay.style.top = screenY + 'px';
+    textOverlay.style.display = 'flex';
+    textInput.value = '';
+    textInput.focus();
+  }
+
+  function hideTextInput() {
+    textOverlay.style.display = 'none';
+  }
+
+  function confirmText() {
+    var t = textInput.value.trim();
+    if (t) {
+      strokes.push({
+        type: 'text', text: t,
+        x: textWorldX, y: textWorldY,
+        color: currentColor, size: Math.max(12, currentSize * 2 + 8)
+      });
+      rebuildCache();
+      saveState();
+    }
+    hideTextInput();
+  }
+
+  document.getElementById('textConfirmBtn').addEventListener('click', confirmText);
+  document.getElementById('textCancelBtn').addEventListener('click', hideTextInput);
+  textInput.addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.key === 'Enter') {
+      e.preventDefault();
+      confirmText();
+    }
+    if (e.key === 'Escape') {
+      hideTextInput();
+    }
+  });
+  textInput.addEventListener('blur', function() {
+    setTimeout(function() {
+      if (textOverlay.style.display === 'none') return;
+      if (textInput.value.trim()) {
+        confirmText();
+      } else {
+        hideTextInput();
+      }
+    }, 200);
+  });
+
+  function init() {
+    updateSliderColor(currentColor);
+    updateSliderUI(currentSize);
+    resizeCanvas();
+    saveState();
+  }
+  if (document.readyState === 'complete') init();
+  else window.addEventListener('load', init);
+})();
+</script>
