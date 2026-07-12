@@ -1,0 +1,243 @@
+<%
+    var toolTitle = '时间戳转换';
+    var toolDesc = '';
+    if (site.data && site.data.tools) {
+        var tool = site.data.tools.find(function(t) { return t.slug === page.toolSlug; });
+        if (tool) {
+            toolTitle = tool.emoji + ' ' + tool.name;
+            toolDesc = tool.description;
+        }
+    }
+%>
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .tool-container { margin-top: -50px; margin-bottom: 30px; }
+  .tool-container .card { border-radius: 8px; }
+  .tool-container .card .card-content .card-title { font-size: 1.4rem; font-weight: 600; margin-bottom: 20px; }
+
+  .ts-row { margin-bottom: 16px; }
+  .ts-row label { display: block; font-size: 0.9rem; font-weight: 600; color: #666; margin-bottom: 6px; }
+  .ts-row input, .ts-row select {
+    width: 100%; border: 2px solid #e8e8e8; border-radius: 10px;
+    padding: 12px 16px; font-size: 0.95rem; outline: none;
+    transition: border-color 0.3s, background 0.3s; box-sizing: border-box;
+    font-family: 'SF Mono','Fira Code','Consolas',monospace;
+  }
+  .ts-row input:focus, .ts-row select:focus { border-color: #5a9600; background: #fff; }
+  .ts-row input { background: #fafafa; }
+  .ts-row .input-with-btn { display: flex; gap: 10px; }
+  .ts-row .input-with-btn input { flex: 1; }
+  .ts-row .input-with-btn button {
+    padding: 12px 14px; border: none; border-radius: 10px; background: linear-gradient(135deg, #5a9600, #7ccd00);
+    color: #fff; font-size: 0.85rem; cursor: pointer; white-space: nowrap;
+    transition: all 0.2s; font-weight: 500; line-height: 1;
+  }
+  .ts-row .input-with-btn button:hover {
+    box-shadow: 0 4px 16px rgba(90,150,0,0.45); transform: translateY(-1px);
+  }
+  .ts-row .input-with-btn button:active { transform: translateY(0); box-shadow: 0 2px 8px rgba(90,150,0,0.3); }
+
+  .ts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .ts-result {
+    background: #f5f5f5; border-radius: 10px; padding: 14px 16px;
+    font-family: 'SF Mono','Fira Code','Consolas',monospace; font-size: 0.9rem;
+    position: relative; word-break: break-all;
+  }
+  .ts-result .label { color: #999; font-size: 0.8rem; margin-bottom: 4px; }
+  .ts-result .value { color: #333; }
+  .ts-result .copy-btn {
+    position: absolute; top: 8px; right: 8px;
+    width: 28px; height: 28px; border-radius: 50%; border: 1px solid #ddd;
+    background: rgba(255,255,255,0.9); cursor: pointer; font-size: 0.8rem; color: #aaa;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .ts-result .copy-btn:hover { border-color: #5a9600; color: #5a9600; }
+  .ts-result .copy-btn.copied { border-color: #5a9600; background: #5a9600; color: #fff; }
+
+  .ts-tabs { display: flex; gap: 0; margin-bottom: 20px; border-radius: 10px; overflow: hidden; border: 1px solid #e0e0e0; }
+  .ts-tabs .tab {
+    flex: 1; text-align: center; padding: 10px; cursor: pointer;
+    font-size: 0.9rem; font-weight: 500; transition: all 0.2s;
+    background: #f9f9f9; color: #999;
+  }
+  .ts-tabs .tab.active { background: #5a9600; color: #fff; }
+  .ts-tabs .tab:not(.active):hover { background: #f0f0f0; }
+  .ts-panel { display: none; }
+  .ts-panel.active { display: block; }
+
+  .presets { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .presets button {
+    padding: 4px 12px; border: 1px solid #ddd; border-radius: 16px;
+    background: #fff; color: #666; font-size: 0.8rem; cursor: pointer; transition: all 0.2s;
+  }
+  .presets button:hover { border-color: #5a9600; color: #5a9600; }
+
+  @media only screen and (max-width: 601px) {
+    .tool-container { margin-top: -30px; }
+    .ts-grid { grid-template-columns: 1fr; }
+    .ts-row .input-with-btn { flex-direction: column; }
+  }
+</style>
+
+<main class="content">
+  <div class="container tool-container">
+    <div class="card">
+      <div class="card-content">
+        <span class="card-title" style="display: inline-block"><%= toolTitle %></span>
+        <% if (toolDesc) { %>
+        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
+        <% } %>
+
+        <div class="ts-tabs">
+          <div class="tab active" data-tab="ts">时间戳 → 日期</div>
+          <div class="tab" data-tab="dt">日期 → 时间戳</div>
+        </div>
+
+        <div class="ts-panel active" id="panel-ts">
+          <div class="ts-row">
+            <label>Unix 时间戳</label>
+            <div class="input-with-btn">
+              <input type="text" id="timestampInput" placeholder="请输入时间戳，如 1718000000">
+              <button id="convertTsBtn">转换</button>
+            </div>
+          </div>
+          <div class="presets">
+            <button data-ts="<%= Math.floor(Date.now() / 1000) %>">现在</button>
+            <button data-ts="<%= Math.floor(new Date(new Date().getFullYear(), 0, 1).getTime() / 1000) %>">今年初</button>
+            <button data-ts="0">Unix 纪元</button>
+            <button data-ts="4102444800">2030-01-01</button>
+          </div>
+          <div class="ts-grid">
+            <div class="ts-result"><div class="label">秒级时间戳</div><div class="value" id="tsSec">-</div><button class="copy-btn" data-copy="tsSec" title="复制"><i class="fas fa-copy"></i></button></div>
+            <div class="ts-result"><div class="label">毫秒级时间戳</div><div class="value" id="tsMs">-</div><button class="copy-btn" data-copy="tsMs" title="复制"><i class="fas fa-copy"></i></button></div>
+            <div class="ts-result"><div class="label">UTC 日期时间</div><div class="value" id="tsUtc">-</div><button class="copy-btn" data-copy="tsUtc" title="复制"><i class="fas fa-copy"></i></button></div>
+            <div class="ts-result"><div class="label">本地日期时间</div><div class="value" id="tsLocal">-</div><button class="copy-btn" data-copy="tsLocal" title="复制"><i class="fas fa-copy"></i></button></div>
+            <div class="ts-result"><div class="label">ISO 8601</div><div class="value" id="tsIso">-</div><button class="copy-btn" data-copy="tsIso" title="复制"><i class="fas fa-copy"></i></button></div>
+            <div class="ts-result"><div class="label">年月日</div><div class="value" id="tsDate">-</div><button class="copy-btn" data-copy="tsDate" title="复制"><i class="fas fa-copy"></i></button></div>
+          </div>
+        </div>
+
+        <div class="ts-panel" id="panel-dt">
+          <div class="ts-row">
+            <label>日期时间</label>
+            <div class="input-with-btn">
+              <input type="datetime-local" id="datetimeInput">
+              <button id="convertDtBtn">转换</button>
+            </div>
+          </div>
+          <div class="presets">
+            <button data-dt="now">现在</button>
+            <button data-dt="today">今天 00:00</button>
+            <button data-dt="tomorrow">明天 00:00</button>
+            <button data-dt="year">明年今天</button>
+          </div>
+          <div class="ts-grid">
+            <div class="ts-result"><div class="label">秒级时间戳</div><div class="value" id="dtSec">-</div><button class="copy-btn" data-copy="dtSec" title="复制"><i class="fas fa-copy"></i></button></div>
+            <div class="ts-result"><div class="label">毫秒级时间戳</div><div class="value" id="dtMs">-</div><button class="copy-btn" data-copy="dtMs" title="复制"><i class="fas fa-copy"></i></button></div>
+            <div class="ts-result"><div class="label">星期</div><div class="value" id="dtWeekday">-</div></div>
+            <div class="ts-result"><div class="label">ISO 8601</div><div class="value" id="dtIso">-</div><button class="copy-btn" data-copy="dtIso" title="复制"><i class="fas fa-copy"></i></button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script>
+  var weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+
+  function convertTimestamp(ts) {
+    ts = ts.toString().trim();
+    var num = parseInt(ts);
+    if (isNaN(num)) { M.toast({html: '请输入有效的时间戳', classes: 'rounded red'}); return; }
+    var d;
+    if (ts.length === 10 || ts.length < 13) d = new Date(num * 1000);
+    else if (ts.length === 13) d = new Date(num);
+    else if (ts.length === 16) d = new Date(num / 1000);
+    else d = new Date(num);
+    if (d.toString() === 'Invalid Date') { M.toast({html: '无效的时间戳', classes: 'rounded red'}); return; }
+
+    var pad = function(n) { return n < 10 ? '0' + n : n; };
+    var fmt = function(d) {
+      return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + ' ' +
+             pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+    };
+    var fmtDate = function(d) {
+      return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+    };
+
+    document.getElementById('tsSec').textContent = Math.floor(d.getTime() / 1000);
+    document.getElementById('tsMs').textContent = d.getTime();
+    document.getElementById('tsUtc').textContent = d.toUTCString();
+    document.getElementById('tsLocal').textContent = fmt(d);
+    document.getElementById('tsIso').textContent = d.toISOString();
+    document.getElementById('tsDate').textContent = fmtDate(d) + ' ' + weekdays[d.getDay()];
+  }
+
+  function convertDatetime(val) {
+    var d = val ? new Date(val) : new Date();
+    if (isNaN(d.getTime())) { M.toast({html: '请选择有效的日期时间', classes: 'rounded red'}); return; }
+    document.getElementById('dtSec').textContent = Math.floor(d.getTime() / 1000);
+    document.getElementById('dtMs').textContent = d.getTime();
+    document.getElementById('dtWeekday').textContent = weekdays[d.getDay()];
+    document.getElementById('dtIso').textContent = d.toISOString();
+  }
+
+  $(document).ready(function() {
+    $('.ts-tabs .tab').on('click', function() {
+      $('.ts-tabs .tab').removeClass('active');
+      $('.ts-panel').removeClass('active');
+      $(this).addClass('active');
+      $('#panel-' + $(this).data('tab')).addClass('active');
+    });
+
+    $('#convertTsBtn').on('click', function() { convertTimestamp($('#timestampInput').val()); });
+    $('#timestampInput').on('input', function() { if ($(this).val().trim()) convertTimestamp($(this).val()); });
+    $('#timestampInput').on('keydown', function(e) { if (e.key === 'Enter') convertTimestamp($(this).val()); });
+
+    $('#convertDtBtn').on('click', function() { convertDatetime($('#datetimeInput').val()); });
+    $('#datetimeInput').on('change', function() { convertDatetime($(this).val()); });
+
+    $('[data-ts]').on('click', function() {
+      $('#timestampInput').val($(this).data('ts'));
+      convertTimestamp($(this).data('ts'));
+    });
+
+    $('[data-dt]').on('click', function() {
+      var v = $(this).data('dt');
+      var d;
+      if (v === 'now') d = new Date();
+      else if (v === 'today') { d = new Date(); d.setHours(0,0,0,0); }
+      else if (v === 'tomorrow') { d = new Date(); d.setDate(d.getDate()+1); d.setHours(0,0,0,0); }
+      else if (v === 'year') { d = new Date(); d.setFullYear(d.getFullYear()+1); }
+      var iso = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') + 'T' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+      $('#datetimeInput').val(iso);
+      convertDatetime(iso);
+    });
+
+    $('.copy-btn[data-copy]').on('click', function() {
+      var text = document.getElementById($(this).data('copy')).textContent;
+      if (!text || text === '-') return;
+      navigator.clipboard.writeText(text).then(function() {
+        var $btn = $(this);
+        $btn.addClass('copied').html('<i class="fas fa-check"></i>');
+        setTimeout(function() { $btn.removeClass('copied').html('<i class="fas fa-copy"></i>'); }, 1500);
+      }.bind(this));
+    });
+
+    var now = new Date();
+    var ts = Math.floor(now.getTime() / 1000);
+    $('#timestampInput').val(ts);
+    convertTimestamp(ts);
+    var iso = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0') + 'T' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+    $('#datetimeInput').val(iso);
+  });
+</script>

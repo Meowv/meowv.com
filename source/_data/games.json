@@ -4,7 +4,7 @@
     "name": "Plonky",
     "description": "基于物理引擎的趣味解谜闯关游戏",
     "fullscreen": true,
-    "emoji": "🧩",
+    "emoji": "🕹️",
     "mobile": true
   },
   {
@@ -55,6 +55,34 @@
     "name": "俄罗斯方块",
     "description": "经典俄罗斯方块，使用方向键移动和旋转，堆叠消除行数获取高分！",
     "emoji": "🟦",
+    "mobile": true
+  },
+  {
+    "slug": "gomoku",
+    "name": "五子棋",
+    "description": "经典五子棋人机对战，率先连成五子获胜",
+    "emoji": "⚫",
+    "mobile": true
+  },
+  {
+    "slug": "puzzle",
+    "name": "拼图游戏",
+    "description": "数字华容道拼图，打乱后拖动还原",
+    "emoji": "🧩",
+    "mobile": true
+  },
+  {
+    "slug": "breakout",
+    "name": "打砖块",
+    "description": "经典打砖块游戏，挡板反弹小球击碎所有砖块",
+    "emoji": "🏓",
+    "mobile": true
+  },
+  {
+    "slug": "sudoku",
+    "name": "数独",
+    "description": "经典数独游戏，随机生成题目，逻辑填充数字",
+    "emoji": "#️⃣",
     "mobile": true
   }
 ]

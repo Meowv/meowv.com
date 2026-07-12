@@ -119,6 +119,27 @@
     "url": "/tools/whiteboard/"
   },
   {
+    "slug": "timestamp",
+    "name": "时间戳转换",
+    "description": "Unix 时间戳与日期时间在线互转，支持毫秒/秒",
+    "emoji": "⏱️",
+    "url": "/tools/timestamp/"
+  },
+  {
+    "slug": "url-encode",
+    "name": "URL 编解码",
+    "description": "URL 在线编码与解码工具",
+    "emoji": "🔗",
+    "url": "/tools/url-encode/"
+  },
+  {
+    "slug": "timer",
+    "name": "计时器",
+    "description": "在线倒计时/秒表工具，支持全屏显示与个性化设置",
+    "emoji": "⏰",
+    "url": "/tools/timer/"
+  },
+  {
     "slug": "ai-coding-method-map",
     "name": "AI Coding Method Map",
     "description": "AI 编程方法论地图，看懂普通 Agent、工作流 Agent、IDE Agent 的差异与开发链路",

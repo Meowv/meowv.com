@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>打砖块</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #eaeaea;
+    display: flex; justify-content: center; align-items: center;
+    min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden;
+  }
+  .game-wrapper {
+    background: #fff; padding: 24px; border-radius: 10px;
+    box-shadow: 0 15px 35px rgba(50,50,93,.1), 0 5px 15px rgba(0,0,0,.07);
+  }
+  .header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 4px 12px; color: #34495e;
+  }
+  .header h1 { font-size: 20px; color: #5a9600; }
+  .header .score { font-size: 16px; }
+  .header .score span { color: #5a9600; font-weight: bold; }
+  canvas {
+    display: block; background: #f0f0f0; border-radius: 8px;
+    width: 480px; height: 360px;
+  }
+  .controls {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-top: 12px; color: #525f7f; font-size: 13px; flex-wrap: wrap; gap: 8px;
+  }
+  .controls button {
+    background: #5a9600; color: #fff; border: none;
+    padding: 8px 20px; border-radius: 30px; cursor: pointer;
+    font-size: 14px; transition: background 0.2s;
+  }
+  .controls button:hover { background: #4a7d00; }
+  .controls .lives { color: #e74c3c; font-size: 18px; letter-spacing: 2px; }
+  .controls .status { color: #5a9600; font-weight: bold; }
+  @media (max-width: 520px) {
+    .game-wrapper { padding: 14px; }
+    canvas { width: 320px; height: 240px; }
+    .header h1 { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="game-wrapper">
+  <div class="header">
+    <h1>🏓 打砖块</h1>
+    <div class="score">得分 <span id="score">0</span></div>
+  </div>
+  <canvas id="gameCanvas" width="480" height="360"></canvas>
+  <div class="controls">
+    <div><span class="lives" id="lives">❤️❤️❤️</span></div>
+    <div><span class="status" id="status">按空格键开始</span></div>
+    <button id="restartBtn">重新开始</button>
+  </div>
+</div>
+<script>
+(function() {
+  var canvas = document.getElementById('gameCanvas');
+  var ctx = canvas.getContext('2d');
+  var scoreEl = document.getElementById('score');
+  var livesEl = document.getElementById('lives');
+  var statusEl = document.getElementById('status');
+
+  var W = 480, H = 360;
+
+  var paddle = { w: 80, h: 12, x: 0, speed: 6 };
+  var ball = { x: 0, y: 0, r: 6, dx: 3, dy: -3, speed: 3.5 };
+  var bricks = [];
+  var score = 0;
+  var lives = 3;
+  var gameState = 'idle';
+  var level = 1;
+
+  var BRICK_ROWS = 6;
+  var BRICK_COLS = 8;
+  var BRICK_W = 52;
+  var BRICK_H = 18;
+  var BRICK_GAP = 6;
+  var BRICK_TOP = 40;
+
+  var BRICK_COLORS = ['#e94560','#e91e63','#9c27b0','#3f51b5','#00bcd4','#4caf50','#ff9800','#ffd700'];
+
+  function init() {
+    paddle.x = (W - paddle.w) / 2;
+    paddle.y = H - 30;
+    resetBall();
+    createLevel();
+    score = 0;
+    lives = 3;
+    gameState = 'idle';
+    scoreEl.textContent = '0';
+    livesEl.textContent = '❤️'.repeat(lives);
+    statusEl.textContent = '按空格键开始';
+    draw();
+  }
+
+  function resetBall() {
+    ball.x = W / 2;
+    ball.y = H / 2;
+    var angle = -Math.PI / 4 + (Math.random() - 0.5) * Math.PI / 2;
+    ball.dx = Math.cos(angle) * ball.speed;
+    ball.dy = Math.sin(angle) * ball.speed;
+  }
+
+  function createLevel() {
+    bricks = [];
+    var colors = ['#e94560','#e91e63','#9c27b0','#3f51b5','#00bcd4','#4caf50'];
+    for (var r = 0; r < BRICK_ROWS; r++) {
+      for (var c = 0; c < BRICK_COLS; c++) {
+        var bx = c * (BRICK_W + BRICK_GAP) + (W - BRICK_COLS * (BRICK_W + BRICK_GAP)) / 2;
+        var by = BRICK_TOP + r * (BRICK_H + BRICK_GAP);
+        var hp = (r < 2) ? 2 : 1;
+        bricks.push({
+          x: bx, y: by, w: BRICK_W, h: BRICK_H,
+          hp: hp, maxHp: hp,
+          color: colors[r % colors.length],
+          alive: true
+        });
+      }
+    }
+  }
+
+  function draw() {
+    ctx.fillStyle = '#f0f0f0';
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.fillStyle = '#e94560';
+    ctx.shadowColor = '#e94560';
+    ctx.shadowBlur = 6;
+    var rx = paddle.x, ry = paddle.y, rw = paddle.w, rh = paddle.h;
+    ctx.beginPath();
+    ctx.roundRect(rx, ry, rw, rh, rh / 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+    ctx.fillStyle = '#2c3e50';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    for (var i = 0; i < bricks.length; i++) {
+      var b = bricks[i];
+      if (!b.alive) continue;
+      ctx.fillStyle = b.color;
+      ctx.shadowColor = b.color;
+      ctx.shadowBlur = b.hp === 2 ? 6 : 2;
+      ctx.beginPath();
+      ctx.roundRect(b.x, b.y, b.w, b.h, 4);
+      ctx.fill();
+      if (b.hp === 2) {
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.fillRect(b.x + 4, b.y + 4, b.w - 8, b.h / 2 - 4);
+      }
+      ctx.shadowBlur = 0;
+    }
+
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    ctx.font = '10px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('LEVEL ' + level, W / 2, 18);
+  }
+
+  function update() {
+    if (gameState !== 'playing') return;
+
+    if (paddle.left) paddle.x -= paddle.speed;
+    if (paddle.right) paddle.x += paddle.speed;
+    if (paddle.x < 0) paddle.x = 0;
+    if (paddle.x + paddle.w > W) paddle.x = W - paddle.w;
+
+    ball.x += ball.dx;
+    ball.y += ball.dy;
+
+    if (ball.x - ball.r < 0) { ball.x = ball.r; ball.dx = -ball.dx; }
+    if (ball.x + ball.r > W) { ball.x = W - ball.r; ball.dx = -ball.dx; }
+    if (ball.y - ball.r < 0) { ball.y = ball.r; ball.dy = -ball.dy; }
+
+    if (ball.y + ball.r >= paddle.y &&
+        ball.y + ball.r <= paddle.y + paddle.h + 4 &&
+        ball.x >= paddle.x - ball.r &&
+        ball.x <= paddle.x + paddle.w + ball.r) {
+      var hit = (ball.x - paddle.x) / paddle.w;
+      var angle = -Math.PI / 2 + (hit - 0.5) * Math.PI / 1.5;
+      var spd = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
+      ball.dx = Math.cos(angle) * spd;
+      ball.dy = Math.sin(angle) * spd;
+      ball.y = paddle.y - ball.r;
+    }
+
+    if (ball.y - ball.r > H) {
+      loseLife();
+      return;
+    }
+
+    for (var i = 0; i < bricks.length; i++) {
+      var b = bricks[i];
+      if (!b.alive) continue;
+      if (ball.x + ball.r > b.x && ball.x - ball.r < b.x + b.w &&
+          ball.y + ball.r > b.y && ball.y - ball.r < b.y + b.h) {
+        var overlapX = Math.min(ball.x + ball.r - b.x, b.x + b.w - ball.x + ball.r);
+        var overlapY = Math.min(ball.y + ball.r - b.y, b.y + b.h - ball.y + ball.r);
+        if (overlapX < overlapY) ball.dx = -ball.dx;
+        else ball.dy = -ball.dy;
+
+        b.hp--;
+        if (b.hp <= 0) {
+          b.alive = false;
+          score += 10;
+          scoreEl.textContent = score;
+        }
+        break;
+      }
+    }
+
+    var allDead = true;
+    for (var j = 0; j < bricks.length; j++) {
+      if (bricks[j].alive) { allDead = false; break; }
+    }
+    if (allDead) {
+      level++;
+      gameState = 'idle';
+      statusEl.textContent = '🎉 过关！按空格继续';
+      createLevel();
+      resetBall();
+    }
+  }
+
+  function loseLife() {
+    lives--;
+    livesEl.textContent = '❤️'.repeat(Math.max(0, lives));
+    if (lives <= 0) {
+      gameState = 'gameover';
+      statusEl.textContent = '💀 游戏结束！得分: ' + score;
+    } else {
+      gameState = 'idle';
+      statusEl.textContent = '按空格键继续';
+      resetBall();
+    }
+  }
+
+  function startGame() {
+    if (gameState === 'gameover') { init(); return; }
+    if (gameState === 'idle') {
+      gameState = 'playing';
+      statusEl.textContent = '游戏中';
+    }
+  }
+
+  paddle.left = false;
+  paddle.right = false;
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowLeft') { e.preventDefault(); paddle.left = true; }
+    if (e.key === 'ArrowRight') { e.preventDefault(); paddle.right = true; }
+    if (e.key === ' ') { e.preventDefault(); startGame(); }
+  });
+
+  document.addEventListener('keyup', function(e) {
+    if (e.key === 'ArrowLeft') paddle.left = false;
+    if (e.key === 'ArrowRight') paddle.right = false;
+  });
+
+  document.getElementById('restartBtn').addEventListener('click', init);
+
+  var touchX = null;
+  canvas.addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    var touch = e.touches[0];
+    touchX = touch.clientX;
+    startGame();
+  }, {passive: false});
+
+  canvas.addEventListener('touchmove', function(e) {
+    e.preventDefault();
+    if (gameState !== 'playing') return;
+    var touch = e.touches[0];
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = W / rect.width;
+    var target = (touch.clientX - rect.left) * scaleX - paddle.w / 2;
+    if (target < 0) target = 0;
+    if (target > W - paddle.w) target = W - paddle.w;
+    paddle.x = target;
+    touchX = touch.clientX;
+  }, {passive: false});
+
+  if (!CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+      if (r > w / 2) r = w / 2;
+      if (r > h / 2) r = h / 2;
+      this.moveTo(x + r, y);
+      this.arcTo(x + w, y, x + w, y + h, r);
+      this.arcTo(x + w, y + h, x, y + h, r);
+      this.arcTo(x, y + h, x, y, r);
+      this.arcTo(x, y, x + w, y, r);
+      this.closePath();
+      return this;
+    };
+  }
+
+  var gameLoop = setInterval(function() {
+    update();
+    draw();
+  }, 1000 / 60);
+
+  init();
+})();
+</script>
+</body>
+</html>

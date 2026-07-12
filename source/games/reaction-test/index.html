@@ -19,33 +19,33 @@
         display: flex; align-items: center; justify-content: center;
         flex-direction: column;
         transition: background-color 0.15s ease;
-        background-color: #1a1a2e;
+        background-color: #eaeaea;
         cursor: pointer;
         position: relative;
       }
 
       .header {
         position: absolute; top: 24px; left: 0; right: 0;
-        text-align: center; color: rgba(255,255,255,0.45);
+        text-align: center; color: rgba(52,73,94,0.45);
         font-size: 13px; letter-spacing: 1px;
       }
 
       .title {
-        font-size: 28px; font-weight: 700; color: #fff;
+        font-size: 28px; font-weight: 700; color: #34495e;
         margin-bottom: 12px; letter-spacing: 2px;
       }
       .subtitle {
-        font-size: 14px; color: rgba(255,255,255,0.55);
+        font-size: 14px; color: rgba(52,73,94,0.55);
         margin-bottom: 40px;
       }
 
       .main-text {
-        font-size: 52px; font-weight: 900; color: #fff;
+        font-size: 52px; font-weight: 900; color: #34495e;
         letter-spacing: 6px; text-align: center;
       }
       .main-text.waiting {
         font-size: 22px; font-weight: 500; letter-spacing: 3px;
-        color: rgba(255,255,255,0.7);
+        color: rgba(52,73,94,0.7);
         animation: pulse 1.5s ease-in-out infinite;
       }
       @keyframes pulse {
@@ -54,7 +54,7 @@
       }
 
       .time-display {
-        font-size: 80px; font-weight: 900; color: #fff;
+        font-size: 80px; font-weight: 900; color: #34495e;
         margin: 8px 0; letter-spacing: 2px;
         font-variant-numeric: tabular-nums;
       }
@@ -62,12 +62,12 @@
 
       .btn {
         display: inline-block; padding: 14px 48px;
-        border: 2px solid rgba(255,255,255,0.8); border-radius: 50px;
-        color: #fff; font-size: 18px; font-weight: 600;
+        border: 2px solid #5a9600; border-radius: 50px;
+        color: #5a9600; font-size: 18px; font-weight: 600;
         cursor: pointer; letter-spacing: 2px;
         transition: all 0.2s; background: transparent;
       }
-      .btn:hover { background: rgba(255,255,255,0.12); }
+      .btn:hover { background: rgba(90,150,0,0.08); }
       .btn:active { transform: scale(0.96); }
 
       /* 成绩面板 — 独立于 #content，不受 fade-in 动画影响 */
@@ -90,8 +90,8 @@
         to { opacity: 1; transform: scale(1); }
       }
       .score-item.pending {
-        background: rgba(255,255,255,0.05);
-        border: 1px dashed rgba(255,255,255,0.1);
+        background: rgba(52,73,94,0.05);
+        border: 1px dashed rgba(52,73,94,0.1);
         color: transparent;
       }
 
@@ -99,8 +99,8 @@
       .result-row {
         display: flex; justify-content: space-between; align-items: center;
         padding: 10px 16px; margin: 6px 0;
-        background: rgba(255,255,255,0.08); border-radius: 8px;
-        color: #fff; font-size: 15px;
+        background: rgba(90,150,0,0.06); border-radius: 8px;
+        color: #34495e; font-size: 15px;
       }
       .result-row .dot {
         width: 10px; height: 10px; border-radius: 50%;
@@ -111,14 +111,14 @@
 
       .avg-box {
         margin-top: 20px; padding: 18px 24px;
-        background: rgba(255,255,255,0.12); border-radius: 12px;
+        background: rgba(90,150,0,0.06); border-radius: 12px;
         text-align: center;
       }
-      .avg-box .avg-label { font-size: 14px; color: rgba(255,255,255,0.6); margin-bottom: 6px; }
-      .avg-box .avg-value { font-size: 56px; font-weight: 900; color: #fff; }
+      .avg-box .avg-label { font-size: 14px; color: rgba(52,73,94,0.6); margin-bottom: 6px; }
+      .avg-box .avg-value { font-size: 56px; font-weight: 900; color: #34495e; }
       .avg-box .avg-value span { font-size: 22px; font-weight: 400; opacity: 0.6; }
 
-      .grade { font-size: 16px; margin-top: 4px; color: rgba(255,255,255,0.7); }
+      .grade { font-size: 16px; margin-top: 4px; color: rgba(52,73,94,0.7); }
 
       .fade-in { animation: fadeIn 0.25s ease; }
       @keyframes fadeIn {
@@ -126,7 +126,7 @@
         to { opacity: 1; transform: translateY(0); }
       }
 
-      .warning { color: #ff6b6b; font-size: 15px; margin-top: 12px; animation: shake 0.4s ease; }
+      .warning { color: #e74c3c; font-size: 15px; margin-top: 12px; animation: shake 0.4s ease; }
       @keyframes shake {
         0%,100% { transform: translateX(0); }
         25% { transform: translateX(-8px); }
@@ -137,14 +137,14 @@
       .disclaimer {
         position: fixed; bottom: 12px; left: 0; right: 0;
         text-align: center; font-size: 11px;
-        color: rgba(255,255,255,0.2); padding: 0 16px;
+        color: rgba(52,73,94,0.25); padding: 0 16px;
         line-height: 1.5; pointer-events: none;
       }
 
       .skip-hint {
         position: absolute; bottom: 18px; left: 0; right: 0;
         text-align: center; font-size: 11px;
-        color: rgba(255,255,255,0.18);
+        color: rgba(52,73,94,0.2);
       }
     </style>
   </head>
@@ -184,7 +184,7 @@
       }
 
       function resetApp() {
-        app.style.backgroundColor = "#1a1a2e";
+        app.style.backgroundColor = "#eaeaea";
       }
 
       function render(html) {

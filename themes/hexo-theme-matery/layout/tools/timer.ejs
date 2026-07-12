@@ -1,0 +1,523 @@
+<%
+    var toolTitle = '计时器';
+    var toolDesc = '';
+    if (site.data && site.data.tools) {
+        var tool = site.data.tools.find(function(t) { return t.slug === page.toolSlug; });
+        if (tool) {
+            toolTitle = tool.emoji + ' ' + tool.name;
+            toolDesc = tool.description;
+        }
+    }
+%>
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .tool-container { margin-top: -50px; margin-bottom: 30px; }
+  .tool-container .card { border-radius: 8px; }
+  .tool-container .card .card-content .card-title { font-size: 1.4rem; font-weight: 600; margin-bottom: 20px; }
+
+  .timer-tabs {
+    display: flex; gap: 0; margin-bottom: 16px; border-radius: 10px; overflow: hidden;
+    border: 1px solid #e0e0e0; max-width: 260px; margin-left: auto; margin-right: auto;
+  }
+  .timer-tabs .tab {
+    flex: 1; text-align: center; padding: 8px 16px; cursor: pointer;
+    font-size: 0.9rem; font-weight: 500; transition: all 0.2s;
+    background: #f9f9f9; color: #999;
+  }
+  .timer-tabs .tab.active { background: #5a9600; color: #fff; }
+  .timer-tabs .tab:not(.active):hover { background: #f0f0f0; }
+
+  .timer-display {
+    text-align: center; padding: 20px 0 10px; user-select: none;
+  }
+  .timer-time {
+    font-size: 5rem; font-weight: 700; font-family: 'SF Mono','Fira Code','Consolas',monospace;
+    color: #3C4858; line-height: 1.2; letter-spacing: 4px;
+    transition: color 0.3s;
+  }
+  .timer-time.ms { letter-spacing: 1px; }
+  .timer-time.running { color: #5a9600; }
+  .timer-time.paused { color: #f57c00; }
+  .timer-time.finished { color: #e53935; animation: pulse 0.5s ease-in-out infinite alternate; }
+  @keyframes pulse { from { opacity: 1; } to { opacity: 0.4; } }
+
+  .timer-controls {
+    display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 16px;
+  }
+  .timer-controls .btn {
+    border-radius: 24px; padding: 0 22px; height: 38px; line-height: 38px;
+    font-size: 0.9rem; letter-spacing: 1px; min-width: 80px;
+  }
+  .timer-controls .btn i { font-size: 0.9rem; margin-right: 4px; }
+  .timer-controls .btn.green { background: linear-gradient(135deg, #5a9600, #7ccd00); }
+  .timer-controls .btn.green:hover { box-shadow: 0 4px 12px rgba(90,150,0,0.4); }
+  .timer-controls .btn.orange { background: linear-gradient(135deg, #e65100, #ff8f00); }
+  .timer-controls .btn.orange:hover { box-shadow: 0 4px 12px rgba(230,81,0,0.4); }
+  .timer-controls .btn.grey { background: #78909c; }
+  .timer-controls .btn.grey:hover { box-shadow: 0 4px 12px rgba(120,144,156,0.4); }
+  .timer-controls .btn.outline {
+    background: transparent; color: #666; border: 1px solid #ddd; box-shadow: none;
+  }
+  .timer-controls .btn.outline:hover { border-color: #5a9600; color: #5a9600; }
+
+  .cd-config {
+    display: flex; gap: 10px; justify-content: center; align-items: center;
+    margin: 0 0 8px; flex-wrap: wrap;
+  }
+  .cd-config .cd-field {
+    display: flex; align-items: center; gap: 4px;
+  }
+  .cd-config .cd-field label {
+    font-size: 0.85rem; color: #999;
+  }
+  .cd-config .cd-field input {
+    width: 56px; border: 2px solid #e8e8e8; border-radius: 8px; padding: 6px 8px;
+    font-size: 0.9rem; outline: none; text-align: center; box-sizing: border-box;
+    transition: border-color 0.3s; background: #fafafa;
+  }
+  .cd-config .cd-field input:focus { border-color: #5a9600; background: #fff; }
+  .cd-config .cd-field select {
+    border: 2px solid #e8e8e8; border-radius: 8px; padding: 6px 8px;
+    font-size: 0.85rem; outline: none; background: #fafafa;
+  }
+  .cd-config .cd-sep { color: #ccc; font-size: 1.2rem; font-weight: 700; }
+
+  .sw-config {
+    display: flex; gap: 16px; justify-content: center; align-items: center; margin-bottom: 8px; flex-wrap: wrap;
+  }
+  .sw-config .sw-field {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .sw-config .sw-field label { font-size: 0.8rem; color: #999; }
+  .sw-config .sw-field input[type="color"] {
+    width: 28px; height: 28px; padding: 1px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;
+  }
+  .clr-presets { display: inline-flex; gap: 4px; }
+  .clr-presets .cp {
+    width: 18px; height: 18px; border-radius: 50%; border: 2px solid transparent;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .clr-presets .cp:hover { transform: scale(1.2); }
+  .clr-presets .cp.active { border-color: #999; }
+
+  .switch label input[type=checkbox]:checked + .lever { background-color: #b8d98a; }
+  .switch label input[type=checkbox]:checked + .lever:after { background-color: #5a9600; }
+
+  .progress-bar {
+    width: 100%; height: 5px; background: #e8e8e8; border-radius: 3px;
+    margin: 12px 0; overflow: hidden;
+  }
+  .progress-bar .fill {
+    height: 100%; background: linear-gradient(90deg, #5a9600, #7ccd00);
+    border-radius: 3px; transition: width 0.3s; width: 0%;
+  }
+  .progress-bar .fill.warning { background: linear-gradient(90deg, #e65100, #ff8f00); }
+  .progress-bar .fill.danger { background: linear-gradient(90deg, #c62828, #e53935); }
+
+  .lap-records {
+    max-height: 200px; overflow-y: auto; margin-top: 12px; border-top: 1px solid #eee; padding-top: 10px;
+  }
+  .lap-records table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .lap-records th { color: #999; font-weight: 500; text-align: left; padding: 4px 8px; }
+  .lap-records td { padding: 4px 8px; border-top: 1px solid #f0f0f0; font-family: 'SF Mono','Fira Code','Consolas',monospace; }
+  .lap-records .lap-best { color: #5a9600; font-weight: 700; }
+  .lap-records .lap-worst { color: #e53935; }
+  .lap-records::-webkit-scrollbar { width: 4px; }
+  .lap-records::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
+
+  .timer-view { display: none; }
+  .timer-view.active { display: block; }
+
+  .fullscreen-overlay {
+    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: #000; z-index: 9999; justify-content: center; align-items: center;
+    flex-direction: column; cursor: pointer;
+  }
+  .fullscreen-overlay.show { display: flex; }
+  .fullscreen-overlay .fs-time {
+    font-size: 15vw; font-weight: 700; font-family: 'SF Mono','Fira Code','Consolas',monospace;
+    color: #fff; line-height: 1.2; letter-spacing: 8px;
+  }
+  .fullscreen-overlay .fs-time.ms { font-size: 11vw; letter-spacing: 4px; }
+  .fullscreen-overlay .fs-exit-hint {
+    position: absolute; top: 20px; right: 20px;
+    color: rgba(255,255,255,0.3); font-size: 0.9rem; cursor: pointer;
+  }
+  .fullscreen-overlay .fs-exit-hint:hover { color: rgba(255,255,255,0.7); }
+
+  @media only screen and (max-width: 601px) {
+    .tool-container { margin-top: -30px; }
+    .timer-time { font-size: 3rem; }
+    .timer-time.ms { letter-spacing: 0px; }
+    .fullscreen-overlay .fs-time { font-size: 20vw; }
+    .fullscreen-overlay .fs-time.ms { font-size: 14vw; letter-spacing: 2px; }
+    .cd-config { gap: 6px; }
+    .cd-config .cd-field input { width: 48px; }
+  }
+</style>
+
+<main class="content">
+  <div class="container tool-container">
+    <div class="card">
+      <div class="card-content">
+        <span class="card-title" style="display: inline-block"><%= toolTitle %></span>
+        <% if (toolDesc) { %>
+        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
+        <% } %>
+
+        <div class="timer-tabs">
+          <div class="tab active" data-tab="countdown">倒计时</div>
+          <div class="tab" data-tab="stopwatch">秒表</div>
+        </div>
+
+        <div class="sw-config" id="sharedConfig">
+          <div class="sw-field">
+            <label>背景</label>
+            <input type="color" id="fsBgColor" value="#1a1a2e">
+            <div class="clr-presets">
+              <span class="cp" data-color="#000000" style="background:#000"></span>
+              <span class="cp active" data-color="#1a1a2e" style="background:#1a1a2e"></span>
+              <span class="cp" data-color="#0f3460" style="background:#0f3460"></span>
+              <span class="cp" data-color="#3c1053" style="background:#3c1053"></span>
+              <span class="cp" data-color="#1b4332" style="background:#1b4332"></span>
+              <span class="cp" data-color="#5a9600" style="background:#5a9600"></span>
+            </div>
+          </div>
+          <div class="sw-field">
+            <label>文字</label>
+            <input type="color" id="fsTextColor" value="#7ccd00">
+            <div class="clr-presets">
+              <span class="cp active" data-color="#7ccd00" style="background:#7ccd00"></span>
+              <span class="cp" data-color="#ffffff" style="background:#fff;border-color:#ccc"></span>
+              <span class="cp" data-color="#ffd700" style="background:#ffd700"></span>
+              <span class="cp" data-color="#00ff88" style="background:#00ff88"></span>
+              <span class="cp" data-color="#ff6b6b" style="background:#ff6b6b"></span>
+            </div>
+          </div>
+          <div class="sw-field">
+            <div class="switch" style="margin:0;">
+              <label>
+                毫秒
+                <input type="checkbox" id="showMs">
+                <span class="lever"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="timer-view active" id="view-countdown">
+          <div class="cd-config">
+            <div class="cd-field"><label>时</label><input type="number" id="cdHours" value="0" min="0" max="99"></div>
+            <span class="cd-sep">:</span>
+            <div class="cd-field"><label>分</label><input type="number" id="cdMinutes" value="5" min="0" max="59"></div>
+            <span class="cd-sep">:</span>
+            <div class="cd-field"><label>秒</label><input type="number" id="cdSeconds" value="0" min="0" max="59"></div>
+            <div class="cd-field"><label>结束时</label><select id="cdEndAction"><option value="stop">停止</option><option value="loop">循环</option></select></div>
+          </div>
+          <div class="progress-bar" id="cdProgress"><div class="fill" id="cdProgressFill"></div></div>
+          <div class="timer-display">
+            <div class="timer-time" id="cdDisplay">00:00:00</div>
+            <div class="timer-controls">
+              <button class="btn green waves-effect cd-start"><i class="fas fa-play"></i> 开始</button>
+              <button class="btn orange waves-effect cd-pause" style="display:none;"><i class="fas fa-pause"></i> 暂停</button>
+              <button class="btn grey waves-effect cd-reset"><i class="fas fa-redo"></i> 重置</button>
+              <button class="btn outline waves-effect cd-fullscreen"><i class="fas fa-expand"></i> 全屏</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="timer-view" id="view-stopwatch">
+          <div class="timer-display">
+            <div class="timer-time" id="swDisplay">00:00:00</div>
+            <div class="timer-controls">
+              <button class="btn green waves-effect sw-start"><i class="fas fa-play"></i> 开始</button>
+              <button class="btn orange waves-effect sw-pause" style="display:none;"><i class="fas fa-pause"></i> 暂停</button>
+              <button class="btn outline waves-effect sw-lap" style="display:none;"><i class="fas fa-flag"></i> 计次</button>
+              <button class="btn grey waves-effect sw-reset"><i class="fas fa-redo"></i> 重置</button>
+              <button class="btn outline waves-effect sw-fullscreen"><i class="fas fa-expand"></i> 全屏</button>
+            </div>
+          </div>
+          <div class="lap-records" id="lapRecords"><table><thead><tr><th>#</th><th>计次时间</th><th>总时间</th></tr></thead><tbody id="lapBody"></tbody></table></div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<div class="fullscreen-overlay" id="fsOverlay">
+  <span class="fs-exit-hint" id="fsExitHint">✕ 退出全屏 (Esc)</span>
+  <div class="fs-time" id="fsTime">00:00:00</div>
+</div>
+
+<script>
+  $(document).ready(function() {
+    function pad2(n) { return n < 10 ? '0' + n : n; }
+    function isMs() { return $('#showMs').prop('checked'); }
+    function fmtHms(ms) {
+      if (ms < 0) ms = 0;
+      var h = Math.floor(ms / 3600000);
+      var m = Math.floor((ms % 3600000) / 60000);
+      var s = Math.floor((ms % 60000) / 1000);
+      if (isMs()) {
+        var cs = Math.floor((ms % 1000) / 10);
+        return pad2(h) + ':' + pad2(m) + ':' + pad2(s) + '.' + pad2(cs);
+      }
+      return pad2(h) + ':' + pad2(m) + ':' + pad2(s);
+    }
+
+    var activeTab = 'countdown';
+
+    var cd = { remaining: 0, total: 0, running: false, paused: false, interval: null, ended: false };
+    var sw = { elapsed: 0, running: false, paused: false, interval: null, laps: [], startTime: 0 };
+
+    // --- 倒计时 ---
+    function cdInit() {
+      var h = parseInt($('#cdHours').val()) || 0;
+      var m = parseInt($('#cdMinutes').val()) || 0;
+      var s = parseInt($('#cdSeconds').val()) || 0;
+      cd.total = (h * 3600 + m * 60 + s) * 1000;
+      cd.remaining = cd.total;
+      cd.ended = false;
+      $('#cdProgressFill').css('width', '0%').removeClass('warning danger');
+      cdUpdateDisplay();
+    }
+
+    function cdUpdateDisplay() {
+      $('#cdDisplay').text(fmtHms(cd.remaining));
+      if (cd.total > 0) {
+        var pct = ((cd.total - cd.remaining) / cd.total) * 100;
+        var $fill = $('#cdProgressFill');
+        $fill.css('width', pct + '%').removeClass('warning danger');
+        if (cd.remaining < 10000 && cd.remaining > 0) $fill.addClass('danger');
+        else if (cd.remaining < 30000) $fill.addClass('warning');
+      }
+    }
+
+    function cdStop() {
+      if (cd.interval) { clearInterval(cd.interval); cd.interval = null; }
+      cd.running = false; cd.paused = false;
+      $('.cd-start').show(); $('.cd-pause').hide();
+    }
+
+    function cdStart() {
+      var interval = isMs() ? 10 : 50;
+      if (cd.paused) {
+        cd.paused = false; cd.running = true;
+        $('.cd-pause').html('<i class="fas fa-pause"></i> 暂停');
+        cd.interval = setInterval(cdTick, interval);
+        return;
+      }
+      if (cd.remaining <= 0) {
+        cdInit();
+        if (cd.remaining <= 0) { M.toast({html: '请设置倒计时时间', classes: 'rounded red'}); return; }
+      }
+      cd.ended = false;
+      cd.running = true; cd.paused = false;
+      $('.cd-start').hide(); $('.cd-pause').show().html('<i class="fas fa-pause"></i> 暂停');
+      cd.interval = setInterval(cdTick, interval);
+    }
+
+    function cdTick() {
+      cd.remaining -= isMs() ? 10 : 50;
+      if (cd.remaining <= 0) {
+        cd.remaining = 0;
+        cdUpdateDisplay();
+        cdStop();
+        var action = $('#cdEndAction').val();
+        if (action === 'loop') {
+          setTimeout(function() { cdInit(); cdStart(); }, 500);
+        } else {
+          cd.ended = true;
+          $('#cdDisplay').addClass('finished');
+          try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch(e) {}
+        }
+        return;
+      }
+      cdUpdateDisplay();
+    }
+
+    // --- 秒表 ---
+    function swUpdateDisplay() {
+      $('#swDisplay').text(fmtHms(sw.elapsed));
+    }
+
+    function swStop() {
+      if (sw.interval) { clearInterval(sw.interval); sw.interval = null; }
+      sw.running = false; sw.paused = false;
+      $('.sw-start').show(); $('.sw-pause').hide(); $('.sw-lap').hide();
+    }
+
+    function swStart() {
+      var interval = isMs() ? 10 : 50;
+      if (sw.paused) {
+        sw.paused = false; sw.running = true;
+        $('.sw-pause').html('<i class="fas fa-pause"></i> 暂停');
+        $('.sw-lap').show();
+        sw.interval = setInterval(swTick, interval);
+        return;
+      }
+      if (sw.elapsed > 0) { sw.elapsed = 0; sw.laps = []; renderLaps(); }
+      sw.running = true; sw.paused = false;
+      sw.startTime = Date.now();
+      $('.sw-start').hide(); $('.sw-pause').show().html('<i class="fas fa-pause"></i> 暂停'); $('.sw-lap').show();
+      sw.interval = setInterval(swTick, interval);
+    }
+
+    function swTick() {
+      sw.elapsed += isMs() ? 10 : 50;
+      swUpdateDisplay();
+    }
+
+    function swLap() {
+      if (!sw.running || sw.paused) return;
+      var lapTime = sw.laps.length === 0 ? sw.elapsed : sw.elapsed - sw.laps[sw.laps.length - 1].total;
+      sw.laps.push({ lap: lapTime, total: sw.elapsed });
+      renderLaps();
+    }
+
+    function renderLaps() {
+      var $body = $('#lapBody');
+      if (sw.laps.length === 0) { $body.empty(); return; }
+      var best = Math.min.apply(null, sw.laps.map(function(l) { return l.lap; }));
+      var worst = Math.max.apply(null, sw.laps.map(function(l) { return l.lap; }));
+      var html = '';
+      for (var i = sw.laps.length - 1; i >= 0; i--) {
+        var l = sw.laps[i];
+        var cls = l.lap <= best ? 'lap-best' : (l.lap >= worst ? 'lap-worst' : '');
+        html += '<tr class="' + cls + '"><td>' + (i + 1) + '</td><td>' + fmtHms(l.lap) + '</td><td>' + fmtHms(l.total) + '</td></tr>';
+      }
+      $body.html(html);
+    }
+
+    // --- 全屏 ---
+    function showFullscreen(displayText) {
+      var bg = $('#fsBgColor').val() || '#000000';
+      var fg = $('#fsTextColor').val() || '#ffffff';
+      $('#fsOverlay').css({ background: bg });
+      $('#fsTime').css({ color: fg }).text(displayText).toggleClass('ms', isMs());
+      $('#fsOverlay').addClass('show');
+    }
+
+    // --- Tab 切换 ---
+    $('.timer-tabs .tab').on('click', function() {
+      $('.timer-tabs .tab').removeClass('active');
+      $('.timer-view').removeClass('active');
+      $(this).addClass('active');
+      activeTab = $(this).data('tab');
+      $('#view-' + activeTab).addClass('active');
+      $('#cdDisplay').removeClass('running paused finished');
+      $('#swDisplay').removeClass('running paused finished');
+    });
+
+    // --- 倒计时按钮 ---
+    $(document).on('click', '.cd-start', function() {
+      if (cd.ended) { cdInit(); }
+      cdStart();
+    });
+    $(document).on('click', '.cd-pause', function() {
+      if (cd.paused) {
+        cd.paused = false;
+        $('.cd-pause').html('<i class="fas fa-pause"></i> 暂停');
+        cd.interval = setInterval(cdTick, isMs() ? 10 : 50);
+      } else {
+        cd.paused = true;
+        if (cd.interval) { clearInterval(cd.interval); cd.interval = null; }
+        $('.cd-pause').html('<i class="fas fa-play"></i> 继续');
+      }
+    });
+    $(document).on('click', '.cd-reset', function() {
+      cdStop(); cdInit(); $('#cdDisplay').removeClass('running paused finished');
+    });
+    $(document).on('click', '.cd-fullscreen', function() {
+      if (cd.remaining <= 0 && cd.total <= 0) { M.toast({html: '请先设置倒计时', classes: 'rounded red'}); return; }
+      showFullscreen(fmtHms(cd.remaining));
+    });
+
+    // --- 秒表按钮 ---
+    $(document).on('click', '.sw-start', swStart);
+    $(document).on('click', '.sw-pause', function() {
+      if (sw.paused) {
+        sw.paused = false;
+        $('.sw-pause').html('<i class="fas fa-pause"></i> 暂停');
+        sw.interval = setInterval(swTick, isMs() ? 10 : 50);
+      } else {
+        sw.paused = true;
+        if (sw.interval) { clearInterval(sw.interval); sw.interval = null; }
+        $('.sw-pause').html('<i class="fas fa-play"></i> 继续');
+      }
+    });
+    $(document).on('click', '.sw-lap', swLap);
+    $(document).on('click', '.sw-reset', function() {
+      swStop(); sw.elapsed = 0; sw.laps = []; renderLaps(); swUpdateDisplay();
+      $('#swDisplay').removeClass('running paused finished');
+    });
+    $(document).on('click', '.sw-fullscreen', function() {
+      if (!sw.running && sw.elapsed <= 0) { M.toast({html: '请先开始计时', classes: 'rounded red'}); return; }
+      showFullscreen(fmtHms(sw.elapsed));
+    });
+
+    // --- 键盘支持 ---
+    $(document).on('keydown', function(e) {
+      if (e.key === ' ') {
+        e.preventDefault();
+        if ($('#fsOverlay').hasClass('show')) return;
+        if (activeTab === 'countdown') {
+          if (cd.running && !cd.paused) $('.cd-pause').click();
+          else if (cd.running && cd.paused) $('.cd-pause').click();
+          else $('.cd-start').click();
+        } else {
+          if (sw.running && !sw.paused) $('.sw-pause').click();
+          else if (sw.running && sw.paused) $('.sw-pause').click();
+          else $('.sw-start').click();
+        }
+      }
+    });
+
+    // --- 全屏控制 ---
+    $('#fsOverlay').on('click', function(e) {
+      if (e.target.id === 'fsExitHint' || e.target === this) $('#fsOverlay').removeClass('show');
+    });
+    $(document).on('keydown', function(e) {
+      if (e.key === 'Escape') $('#fsOverlay').removeClass('show');
+    });
+
+    // --- 全屏实时更新 ---
+    setInterval(function() {
+      if ($('#fsOverlay').hasClass('show')) {
+        if (activeTab === 'countdown') $('#fsTime').text(fmtHms(cd.remaining));
+        else $('#fsTime').text(fmtHms(sw.elapsed));
+      }
+    }, isMs() ? 20 : 100);
+
+    $('#showMs').on('change', function() {
+      var checked = $(this).prop('checked');
+      $('#cdDisplay, #swDisplay, #fsTime').toggleClass('ms', checked);
+      if (!$('#fsOverlay').hasClass('show')) return;
+      if (activeTab === 'countdown') $('#fsTime').text(fmtHms(cd.remaining));
+      else $('#fsTime').text(fmtHms(sw.elapsed));
+    });
+
+    // --- 颜色预设 ---
+    $('.clr-presets .cp').on('click', function() {
+      var $parent = $(this).closest('.sw-field');
+      $parent.find('.cp').removeClass('active');
+      $(this).addClass('active');
+      $parent.find('input[type="color"]').val($(this).data('color'));
+    });
+
+    $('#cdHours, #cdMinutes, #cdSeconds').on('change', function() {
+      if (!cd.running) cdInit();
+    });
+
+    if (isMs()) $('#cdDisplay, #swDisplay, #fsTime').addClass('ms');
+    cdInit();
+  });
+</script>

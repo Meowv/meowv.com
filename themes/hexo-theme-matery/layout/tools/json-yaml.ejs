@@ -37,17 +37,36 @@
     display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
   }
   .converter-col .col-label { font-size: 0.9rem; font-weight: 600; color: #666; }
-  .converter-col textarea {
-    width: 100%; min-height: 300px; border: 2px solid #e8e8e8; border-radius: 10px;
-    padding: 14px 16px; font-size: 0.9rem; font-family: 'SF Mono','Fira Code','Consolas',monospace;
-    line-height: 1.6; resize: vertical; background: #fafafa; box-sizing: border-box;
-    outline: none; transition: border-color 0.3s, background 0.3s;
-  }
-  .converter-col textarea:focus { border-color: #5a9600; background: #fff; }
-  .converter-col textarea.output-area { background: #f5f5f5; color: #333; }
-  .converter-col textarea.error { border-color: #e53935; background: #fff5f5; }
 
-  .box-wrap { position: relative; flex: 1; display: flex; }
+  .editor-wrap {
+    position: relative; flex: 1;
+    border: 2px solid #e8e8e8; border-radius: 10px; overflow: hidden;
+    background: #fafafa; min-height: 300px;
+    transition: border-color 0.3s, background 0.3s;
+  }
+  .editor-wrap:focus-within { border-color: #5a9600; background: #fff; }
+
+  .line-numbers {
+    position: absolute; left: 0; top: 0; bottom: 0; width: 40px;
+    padding: 14px 4px; text-align: right; color: #999;
+    font-size: 0.9rem; font-family: 'SF Mono','Fira Code','Consolas',monospace;
+    line-height: 1.6; background: #f0f0f0; user-select: none;
+    overflow: hidden; white-space: pre; box-sizing: border-box; z-index: 1;
+  }
+
+  .editor-wrap textarea {
+    width: 100%; border: none; border-radius: 0; resize: vertical;
+    min-height: 300px;
+    padding: 14px 16px 14px 56px;
+    font-size: 0.9rem; font-family: 'SF Mono','Fira Code','Consolas',monospace;
+    line-height: 1.6; background: transparent; box-sizing: border-box;
+    outline: none;
+  }
+  .editor-wrap textarea.output-area { background: #f5f5f5; color: #333; }
+  .editor-wrap textarea.output-area:focus { background: #f5f5f5; }
+
+  .editor-wrap.error { border-color: #e53935; background: #fff5f5; }
+  .editor-wrap.error .line-numbers { background: #fce4e4; }
 
   .copy-btn {
     position: absolute; top: 8px; right: 8px; z-index: 2;
@@ -62,7 +81,8 @@
   @media only screen and (max-width: 601px) {
     .tool-container { margin-top: -30px; }
     .converter-columns { flex-direction: column; }
-    .converter-col textarea { min-height: 180px; }
+    .editor-wrap { min-height: 180px; }
+    .editor-wrap textarea { min-height: 180px; }
   }
 </style>
 
@@ -86,7 +106,8 @@
             <div class="col-header">
               <span class="col-label">输入</span>
             </div>
-            <div class="box-wrap">
+            <div class="editor-wrap">
+              <div class="line-numbers" id="sourceLineNumbers">1</div>
               <textarea id="sourceText" placeholder="在此输入 JSON..."></textarea>
               <button class="copy-btn" id="clearBtn" title="清空"><i class="fas fa-times"></i></button>
             </div>
@@ -95,7 +116,8 @@
             <div class="col-header">
               <span class="col-label">结果</span>
             </div>
-            <div class="box-wrap">
+            <div class="editor-wrap">
+              <div class="line-numbers" id="targetLineNumbers">1</div>
               <textarea id="targetText" class="output-area" placeholder="转换结果将显示在这里..." readonly></textarea>
               <button class="copy-btn" id="copyResultBtn" title="复制"><i class="fas fa-copy"></i></button>
             </div>
@@ -116,10 +138,23 @@
 <script>
   var currentMode = 'json2yaml';
 
+  function updateLineNumbers($textarea, $numbers) {
+    var lines = $textarea.val().split('\n').length;
+    var nums = [];
+    for (var i = 1; i <= lines; i++) nums.push(i);
+    $numbers.text(nums.join('\n'));
+  }
+
+  function getTargetWrap() {
+    return $('#targetText').closest('.editor-wrap');
+  }
+
   function doConvert() {
     var text = $('#sourceText').val();
     if (!text) {
-      $('#targetText').val('').removeClass('error');
+      $('#targetText').val('');
+      getTargetWrap().removeClass('error');
+      updateLineNumbers($('#targetText'), $('#targetLineNumbers'));
       return;
     }
     try {
@@ -131,10 +166,13 @@
         var obj = jsyaml.load(text);
         result = JSON.stringify(obj, null, 2);
       }
-      $('#targetText').val(result).removeClass('error');
+      $('#targetText').val(result);
+      getTargetWrap().removeClass('error');
     } catch (e) {
-      $('#targetText').val('转换错误:\n' + e.message).addClass('error');
+      $('#targetText').val('转换错误:\n' + e.message);
+      getTargetWrap().addClass('error');
     }
+    updateLineNumbers($('#targetText'), $('#targetLineNumbers'));
   }
 
   function swapMode() {
@@ -155,16 +193,33 @@
       $('#targetText').val('');
       doConvert();
     }
+    updateLineNumbers($('#sourceText'), $('#sourceLineNumbers'));
   }
 
   $(document).ready(function() {
-    $('#sourceText').on('input', doConvert);
+    updateLineNumbers($('#sourceText'), $('#sourceLineNumbers'));
+
+    $('#sourceText').on('input', function() {
+      doConvert();
+      updateLineNumbers($(this), $('#sourceLineNumbers'));
+    });
+
+    $('#sourceText').on('scroll', function() {
+      $('#sourceLineNumbers').scrollTop(this.scrollTop);
+    });
+
+    $('#targetText').on('scroll', function() {
+      $('#targetLineNumbers').scrollTop(this.scrollTop);
+    });
 
     $('#swapModeBtn').on('click', swapMode);
 
     $('#clearBtn').on('click', function() {
       $('#sourceText').val('');
-      $('#targetText').val('').removeClass('error');
+      $('#targetText').val('');
+      getTargetWrap().removeClass('error');
+      updateLineNumbers($('#sourceText'), $('#sourceLineNumbers'));
+      updateLineNumbers($('#targetText'), $('#targetLineNumbers'));
     });
 
     $('#copyResultBtn').on('click', function() {

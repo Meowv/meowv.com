@@ -39,17 +39,36 @@
     display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
   }
   .json-col .col-label { font-size: 0.9rem; font-weight: 600; color: #666; }
-  .json-col textarea {
-    width: 100%; min-height: 300px; border: 2px solid #e8e8e8; border-radius: 10px;
-    padding: 14px 16px; font-size: 0.9rem; font-family: 'SF Mono','Fira Code','Consolas',monospace;
-    line-height: 1.6; resize: vertical; background: #fafafa; box-sizing: border-box;
-    outline: none; transition: border-color 0.3s, background 0.3s;
-  }
-  .json-col textarea:focus { border-color: #5a9600; background: #fff; }
-  .json-col textarea.output-area { background: #f5f5f5; color: #333; }
-  .json-col textarea.error { border-color: #e53935; background: #fff5f5; }
 
-  .box-wrap { position: relative; flex: 1; display: flex; }
+  .editor-wrap {
+    position: relative; flex: 1;
+    border: 2px solid #e8e8e8; border-radius: 10px; overflow: hidden;
+    background: #fafafa; min-height: 300px;
+    transition: border-color 0.3s, background 0.3s;
+  }
+  .editor-wrap:focus-within { border-color: #5a9600; background: #fff; }
+
+  .line-numbers {
+    position: absolute; left: 0; top: 0; bottom: 0; width: 40px;
+    padding: 14px 4px; text-align: right; color: #999;
+    font-size: 0.9rem; font-family: 'SF Mono','Fira Code','Consolas',monospace;
+    line-height: 1.6; background: #f0f0f0; user-select: none;
+    overflow: hidden; white-space: pre; box-sizing: border-box; z-index: 1;
+  }
+
+  .editor-wrap textarea {
+    width: 100%; border: none; border-radius: 0; resize: vertical;
+    min-height: 300px;
+    padding: 14px 16px 14px 56px;
+    font-size: 0.9rem; font-family: 'SF Mono','Fira Code','Consolas',monospace;
+    line-height: 1.6; background: transparent; box-sizing: border-box;
+    outline: none;
+  }
+  .editor-wrap textarea.output-area { background: #f5f5f5; color: #333; }
+  .editor-wrap textarea.output-area:focus { background: #f5f5f5; }
+
+  .editor-wrap.error { border-color: #e53935; background: #fff5f5; }
+  .editor-wrap.error .line-numbers { background: #fce4e4; }
 
   .copy-btn {
     position: absolute; top: 8px; right: 8px; z-index: 2;
@@ -64,7 +83,8 @@
   @media only screen and (max-width: 601px) {
     .tool-container { margin-top: -30px; }
     .json-columns { flex-direction: column; }
-    .json-col textarea { min-height: 180px; }
+    .editor-wrap { min-height: 180px; }
+    .editor-wrap textarea { min-height: 180px; }
   }
 </style>
 
@@ -88,7 +108,8 @@
               <div class="col-header">
                 <span class="col-label">输入</span>
               </div>
-              <div class="box-wrap">
+              <div class="editor-wrap">
+                <div class="line-numbers" id="inputLineNumbers">1</div>
                 <textarea id="inputText" placeholder='{"key":"value"}'></textarea>
                 <button class="copy-btn" id="clearBtn" title="清空"><i class="fas fa-times"></i></button>
               </div>
@@ -97,7 +118,8 @@
               <div class="col-header">
                 <span class="col-label">输出</span>
               </div>
-              <div class="box-wrap">
+              <div class="editor-wrap">
+                <div class="line-numbers" id="outputLineNumbers">1</div>
                 <textarea id="outputText" class="output-area" placeholder="结果将显示在这里..." readonly></textarea>
                 <button class="copy-btn" id="copyBtn" title="复制"><i class="fas fa-copy"></i></button>
               </div>
@@ -115,15 +137,29 @@
 </main>
 
 <script>
+  function updateLineNumbers($textarea, $numbers) {
+    var lines = $textarea.val().split('\n').length;
+    var nums = [];
+    for (var i = 1; i <= lines; i++) nums.push(i);
+    $numbers.text(nums.join('\n'));
+  }
+
+  function getOutputWrap() {
+    return $('#outputText').closest('.editor-wrap');
+  }
+
   function formatJSON() {
     var input = $('#inputText').val().trim();
     if (!input) return;
     try {
       var obj = JSON.parse(input);
-      $('#outputText').val(JSON.stringify(obj, null, 2)).removeClass('error');
+      $('#outputText').val(JSON.stringify(obj, null, 2));
+      getOutputWrap().removeClass('error');
     } catch (e) {
-      $('#outputText').val('JSON 解析错误:\n' + e.message).addClass('error');
+      $('#outputText').val('JSON 解析错误:\n' + e.message);
+      getOutputWrap().addClass('error');
     }
+    updateLineNumbers($('#outputText'), $('#outputLineNumbers'));
   }
 
   function compressJSON() {
@@ -131,10 +167,13 @@
     if (!input) return;
     try {
       var obj = JSON.parse(input);
-      $('#outputText').val(JSON.stringify(obj)).removeClass('error');
+      $('#outputText').val(JSON.stringify(obj));
+      getOutputWrap().removeClass('error');
     } catch (e) {
-      $('#outputText').val('JSON 解析错误:\n' + e.message).addClass('error');
+      $('#outputText').val('JSON 解析错误:\n' + e.message);
+      getOutputWrap().addClass('error');
     }
+    updateLineNumbers($('#outputText'), $('#outputLineNumbers'));
   }
 
   function validateJSON() {
@@ -142,18 +181,34 @@
     if (!input) { M.toast({html: '请输入 JSON 内容', classes: 'rounded'}); return; }
     try {
       JSON.parse(input);
-      $('#outputText').removeClass('error');
+      getOutputWrap().removeClass('error');
       M.toast({html: 'JSON 格式正确', classes: 'rounded green'});
     } catch (e) {
-      $('#outputText').val('JSON 校验失败:\n' + e.message).addClass('error');
+      $('#outputText').val('JSON 校验失败:\n' + e.message);
+      getOutputWrap().addClass('error');
       M.toast({html: 'JSON 格式错误: ' + e.message, classes: 'rounded red'});
     }
+    updateLineNumbers($('#outputText'), $('#outputLineNumbers'));
   }
 
   $(document).ready(function() {
+    updateLineNumbers($('#inputText'), $('#inputLineNumbers'));
+
     $('#formatBtn').on('click', formatJSON);
     $('#compressBtn').on('click', compressJSON);
     $('#validateBtn').on('click', validateJSON);
+
+    $('#inputText').on('input', function() {
+      updateLineNumbers($(this), $('#inputLineNumbers'));
+    });
+
+    $('#inputText').on('scroll', function() {
+      $('#inputLineNumbers').scrollTop(this.scrollTop);
+    });
+
+    $('#outputText').on('scroll', function() {
+      $('#outputLineNumbers').scrollTop(this.scrollTop);
+    });
 
     $('#copyBtn').on('click', function() {
       var text = $('#outputText').val();
@@ -167,7 +222,10 @@
 
     $('#clearBtn').on('click', function() {
       $('#inputText').val('');
-      $('#outputText').val('').removeClass('error');
+      $('#outputText').val('');
+      getOutputWrap().removeClass('error');
+      updateLineNumbers($('#inputText'), $('#inputLineNumbers'));
+      updateLineNumbers($('#outputText'), $('#outputLineNumbers'));
     });
   });
 </script>

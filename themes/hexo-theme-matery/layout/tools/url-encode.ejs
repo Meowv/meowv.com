@@ -1,0 +1,161 @@
+<%
+    var toolTitle = 'URL 编解码';
+    var toolDesc = '';
+    if (site.data && site.data.tools) {
+        var tool = site.data.tools.find(function(t) { return t.slug === page.toolSlug; });
+        if (tool) {
+            toolTitle = tool.emoji + ' ' + tool.name;
+            toolDesc = tool.description;
+        }
+    }
+%>
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .tool-container { margin-top: -50px; margin-bottom: 30px; }
+  .tool-container .card { border-radius: 8px; }
+  .tool-container .card .card-content .card-title { font-size: 1.4rem; font-weight: 600; margin-bottom: 20px; }
+
+  .toolbar {
+    display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap;
+  }
+  .toolbar .btn {
+    border-radius: 20px; padding: 0 20px; height: 36px; line-height: 36px;
+    font-size: 0.9rem; letter-spacing: 1px; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .toolbar .btn i { font-size: 0.9rem; }
+  .toolbar .btn.primary { background: linear-gradient(135deg, #5a9600 0%, #7ccd00 100%); }
+  .toolbar .btn.primary:hover { box-shadow: 0 4px 12px rgba(90,150,0,0.4); }
+  .toolbar .btn.outline {
+    background: transparent; color: #666; border: 1px solid #ddd; box-shadow: none;
+  }
+  .toolbar .btn.outline:hover { border-color: #5a9600; color: #5a9600; }
+
+  .url-columns { display: flex; gap: 16px; }
+  .url-col { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .url-col .col-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
+  }
+  .url-col .col-label { font-size: 0.9rem; font-weight: 600; color: #666; }
+  .url-col textarea {
+    width: 100%; min-height: 260px; border: 2px solid #e8e8e8; border-radius: 10px;
+    padding: 14px 16px; font-size: 0.9rem; font-family: 'SF Mono','Fira Code','Consolas',monospace;
+    line-height: 1.6; resize: vertical; background: #fafafa; box-sizing: border-box;
+    outline: none; transition: border-color 0.3s, background 0.3s;
+  }
+  .url-col textarea:focus { border-color: #5a9600; background: #fff; }
+  .url-col textarea.output-area { background: #f5f5f5; color: #333; }
+
+  .box-wrap { position: relative; flex: 1; display: flex; }
+  .copy-btn {
+    position: absolute; top: 8px; right: 8px; z-index: 2;
+    width: 28px; height: 28px; border-radius: 50%; border: 1px solid #ddd;
+    background: rgba(255,255,255,0.9); cursor: pointer; font-size: 0.8rem; color: #aaa;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .copy-btn:hover { border-color: #5a9600; color: #5a9600; }
+  .copy-btn.copied { border-color: #5a9600; background: #5a9600; color: #fff; }
+  @media only screen and (max-width: 601px) {
+    .tool-container { margin-top: -30px; }
+    .url-columns { flex-direction: column; }
+    .url-col textarea { min-height: 150px; }
+  }
+</style>
+
+<main class="content">
+  <div class="container tool-container">
+    <div class="card">
+      <div class="card-content">
+        <span class="card-title" style="display: inline-block"><%= toolTitle %></span>
+        <% if (toolDesc) { %>
+        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
+        <% } %>
+
+        <div class="toolbar">
+          <button class="btn waves-effect primary" id="encodeBtn"><i class="fas fa-lock"></i> 编码</button>
+          <button class="btn waves-effect primary" id="decodeBtn"><i class="fas fa-unlock"></i> 解码</button>
+          <button class="btn waves-effect outline" id="swapBtn"><i class="fas fa-exchange-alt"></i> 互换</button>
+          <button class="btn waves-effect outline" id="clearBtn"><i class="fas fa-times"></i> 清空</button>
+        </div>
+
+        <div class="url-columns">
+          <div class="url-col">
+            <div class="col-header"><span class="col-label">输入</span></div>
+            <div class="box-wrap">
+              <textarea id="inputText" placeholder="输入 URL 或文本..."></textarea>
+              <button class="copy-btn" id="inputCopyBtn" title="复制"><i class="fas fa-copy"></i></button>
+            </div>
+          </div>
+          <div class="url-col">
+            <div class="col-header"><span class="col-label">输出</span></div>
+            <div class="box-wrap">
+              <textarea id="outputText" class="output-area" placeholder="结果将显示在这里..." readonly></textarea>
+              <button class="copy-btn" id="outputCopyBtn" title="复制"><i class="fas fa-copy"></i></button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script>
+  $(document).ready(function() {
+    function getInput() { return $('#inputText').val(); }
+    function setOutput(v) { $('#outputText').val(v); }
+
+    $('#encodeBtn').on('click', function() {
+      var input = getInput();
+      if (!input) return;
+      try { setOutput(encodeURI(input)); }
+      catch(e) { setOutput('编码错误: ' + e.message); }
+    });
+
+    $('#decodeBtn').on('click', function() {
+      var input = getInput();
+      if (!input) return;
+      try { setOutput(decodeURI(input)); }
+      catch(e) { setOutput('解码错误: ' + e.message); }
+    });
+
+    $('#swapBtn').on('click', function() {
+      var out = $('#outputText').val();
+      var inp = getInput();
+      $('#inputText').val(out);
+      setOutput(inp);
+    });
+
+    $('#clearBtn').on('click', function() {
+      $('#inputText').val('');
+      $('#outputText').val('');
+    });
+
+    $('#inputCopyBtn').on('click', function() {
+      var text = getInput();
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(function() {
+        var $btn = $('#inputCopyBtn');
+        $btn.addClass('copied').html('<i class="fas fa-check"></i>');
+        setTimeout(function() { $btn.removeClass('copied').html('<i class="fas fa-copy"></i>'); }, 1500);
+      });
+    });
+
+    $('#outputCopyBtn').on('click', function() {
+      var text = $('#outputText').val();
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(function() {
+        var $btn = $('#outputCopyBtn');
+        $btn.addClass('copied').html('<i class="fas fa-check"></i>');
+        setTimeout(function() { $btn.removeClass('copied').html('<i class="fas fa-copy"></i>'); }, 1500);
+      });
+    });
+  });
+</script>
