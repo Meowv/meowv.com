@@ -17,14 +17,6 @@
     "category": "益智解谜"
   },
   {
-    "slug": "sudoku",
-    "name": "数独",
-    "description": "经典数独游戏，随机生成题目，逻辑填充数字",
-    "emoji": "#️⃣",
-    "mobile": true,
-    "category": "益智解谜"
-  },
-  {
     "slug": "2048",
     "name": "2048",
     "description": "经典数字合并游戏，滑动合并相同数字",
