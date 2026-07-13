@@ -64,37 +64,5 @@
     "emoji": "⌨️",
     "mobile": false,
     "category": "反应打字"
-  },
-  {
-    "slug": "gomoku",
-    "name": "五子棋",
-    "description": "经典五子棋人机对战，率先连成五子获胜",
-    "emoji": "⚫",
-    "mobile": true,
-    "category": "经典游戏"
-  },
-  {
-    "slug": "tetris",
-    "name": "俄罗斯方块",
-    "description": "经典俄罗斯方块，使用方向键移动和旋转，堆叠消除行数获取高分！",
-    "emoji": "🟦",
-    "mobile": true,
-    "category": "经典游戏"
-  },
-  {
-    "slug": "breakout",
-    "name": "打砖块",
-    "description": "经典打砖块游戏，挡板反弹小球击碎所有砖块",
-    "emoji": "🏓",
-    "mobile": true,
-    "category": "经典游戏"
-  },
-  {
-    "slug": "snake",
-    "name": "贪吃蛇",
-    "description": "经典贪吃蛇游戏，吃食物变长，小心别撞墙或咬到自己！",
-    "emoji": "🐍",
-    "mobile": true,
-    "category": "经典游戏"
   }
 ]
