@@ -146,7 +146,7 @@
   {
     "slug": "whiteboard",
     "name": "白板工具",
-    "description": "在线白板绘图工具，支持画笔、橡皮擦、撤销重做、自定义颜色，导出PNG",
+    "description": "在线白板绘图工具，支持画笔、马赛克、橡皮擦、文字、框选、图片上传，撤销重做，导出",
     "emoji": "✏️",
     "url": "/tools/whiteboard/",
     "category": "实用工具"

@@ -190,6 +190,9 @@
               <button class="wb-btn active" data-tool="pen" title="画笔">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
               </button>
+              <button class="wb-btn" data-tool="mosaic" title="马赛克">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>
+              </button>
             <button class="wb-btn" data-tool="eraser" title="橡皮擦">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 20H7L3 16c-.8-.8-.8-2 0-2.8L14.6 1.6c.8-.8 2-.8 2.8 0L21 5.2c.8.8.8 2 0 2.8L11 18"/><path d="M6 11l7 7"/></svg>
             </button>
@@ -307,6 +310,7 @@
   var currentColor = '#5a9600';
   var currentSize = 4;
   var canvasW = 0, canvasH = 600;
+  var cacheW = 0, cacheH = 0;
 
   var strokes = [];
   var currentStroke = null;
@@ -316,6 +320,7 @@
   var maxHistory = 50;
 
   var panRAF = null;
+  var drawRAF = null;
   var loadedImages = {};
 
   function getCanvasSize() {
@@ -327,9 +332,7 @@
     if (!s) return;
     if (s.type === 'image') {
       var img = loadedImages[s.src];
-      if (img) {
-        c.drawImage(img, s.x, s.y, s.w, s.h);
-      }
+      if (img) c.drawImage(img, s.x, s.y, s.w, s.h);
       return;
     }
     if (s.type === 'rect') {
@@ -372,20 +375,123 @@
     renderStrokeOn(ctx, s);
   }
 
+  function applyMosaicToCache(c, s) {
+    var blockSize = Math.max(4, Math.round(s.size / 2));
+    var dpr = window.devicePixelRatio || 1;
+    var pw = Math.round(canvasW * dpr);
+    var ph = Math.round(canvasH * dpr);
+    var imageData = c.getImageData(0, 0, pw, ph);
+    var data = imageData.data;
+    var radius = s.size / 2;
+    var points = s.points;
+    var blocks = {};
+
+    function addBlock(bx, by) {
+      var key = bx + ',' + by;
+      if (blocks[key]) return;
+      var spx = Math.min(pw - 1, Math.max(0, Math.floor(bx * dpr)));
+      var spy = Math.min(ph - 1, Math.max(0, Math.floor(by * dpr)));
+      var idx = (spy * pw + spx) * 4;
+      blocks[key] = { x: bx, y: by, r: data[idx], g: data[idx + 1], b: data[idx + 2] };
+    }
+
+    function coverBlocks(cx, cy) {
+      var startX = Math.max(0, Math.floor((cx - radius) / blockSize) * blockSize);
+      var startY = Math.max(0, Math.floor((cy - radius) / blockSize) * blockSize);
+      var endX = Math.min(canvasW, Math.ceil((cx + radius) / blockSize) * blockSize);
+      var endY = Math.min(canvasH, Math.ceil((cy + radius) / blockSize) * blockSize);
+      for (var by = startY; by < endY; by += blockSize) {
+        for (var bx = startX; bx < endX; bx += blockSize) {
+          addBlock(bx, by);
+        }
+      }
+    }
+
+    for (var p = 0; p < points.length; p++) {
+      coverBlocks(points[p].x, points[p].y);
+      if (p < points.length - 1) {
+        var dx = points[p + 1].x - points[p].x;
+        var dy = points[p + 1].y - points[p].y;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        var steps = Math.max(1, Math.ceil(dist / blockSize));
+        for (var t = 1; t < steps; t++) {
+          coverBlocks(points[p].x + dx * t / steps, points[p].y + dy * t / steps);
+        }
+      }
+    }
+
+    for (var key in blocks) {
+      var b = blocks[key];
+      var spx = Math.floor(b.x * dpr);
+      var spy = Math.floor(b.y * dpr);
+      var bdw = Math.min(pw - spx, Math.ceil(blockSize * dpr));
+      var bdh = Math.min(ph - spy, Math.ceil(blockSize * dpr));
+      for (var dy = 0; dy < bdh; dy++) {
+        var row = (spy + dy) * pw;
+        for (var dx = 0; dx < bdw; dx++) {
+          var idx = (row + spx + dx) * 4;
+          data[idx] = b.r;
+          data[idx + 1] = b.g;
+          data[idx + 2] = b.b;
+        }
+      }
+    }
+
+    c.putImageData(imageData, 0, 0);
+  }
+
+  function eraseMosaicStrokes(eraserStroke) {
+    var eraserPoints = eraserStroke.points;
+    if (!eraserPoints || eraserPoints.length === 0) return;
+    var eraserRadius = eraserStroke.size / 2;
+    for (var i = strokes.length - 1; i >= 0; i--) {
+      if (strokes[i].type !== 'mosaic') continue;
+      var ms = strokes[i];
+      var threshold = eraserRadius + ms.size / 2 + 4;
+      var newPoints = [];
+      for (var p = 0; p < ms.points.length; p++) {
+        var mp = ms.points[p];
+        var erased = false;
+        for (var e = 0; e < eraserPoints.length; e++) {
+          var dx = mp.x - eraserPoints[e].x;
+          var dy = mp.y - eraserPoints[e].y;
+          if (dx * dx + dy * dy < threshold * threshold) {
+            erased = true;
+            break;
+          }
+        }
+        if (!erased) newPoints.push(mp);
+      }
+      if (newPoints.length === 0) {
+        strokes.splice(i, 1);
+      } else {
+        ms.points = newPoints;
+      }
+    }
+  }
+
   function rebuildCache(excludeIndex) {
     var dpr = window.devicePixelRatio || 1;
-    cacheCanvas.width = canvasW * dpr;
-    cacheCanvas.height = canvasH * dpr;
-    cacheCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var needResize = cacheW !== canvasW || cacheH !== canvasH;
+    if (needResize) {
+      cacheW = canvasW;
+      cacheH = canvasH;
+      cacheCanvas.width = canvasW * dpr;
+      cacheCanvas.height = canvasH * dpr;
+      cacheCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
     cacheCtx.clearRect(0, 0, canvasW, canvasH);
     var needsLoad = false;
     for (var i = 0; i < strokes.length; i++) {
       if (i === excludeIndex) continue;
-      if (strokes[i].type === 'image') {
-        if (!loadedImages[strokes[i].src]) needsLoad = true;
-        else renderStrokeOn(cacheCtx, strokes[i]);
+      var s = strokes[i];
+      if (s.type === 'mosaic') {
+        applyMosaicToCache(cacheCtx, s);
+      } else if (s.type === 'image') {
+        if (!loadedImages[s.src]) needsLoad = true;
+        else renderStrokeOn(cacheCtx, s);
       } else {
-        renderStrokeOn(cacheCtx, strokes[i]);
+        renderStrokeOn(cacheCtx, s);
       }
     }
     renderAll();
@@ -418,7 +524,11 @@
     ctx.setTransform(dpr, 0, 0, dpr, panX * dpr, panY * dpr);
     ctx.drawImage(cacheCanvas, 0, 0, canvasW, canvasH);
     if (currentStroke) {
-      renderStroke(currentStroke);
+      if (currentStroke.type === 'mosaic') {
+        applyMosaicToCache(ctx, currentStroke);
+      } else {
+        renderStroke(currentStroke);
+      }
     }
   }
 
@@ -431,12 +541,30 @@
     canvas.style.height = canvasH + 'px';
     canvas.width = canvasW * dpr;
     canvas.height = canvasH * dpr;
+    cacheW = 0;
+    cacheH = 0;
     if (strokes.length > 0) rebuildCache();
     renderAll();
   }
 
+  function cloneStrokes(s) {
+    if (typeof structuredClone === 'function') return structuredClone(s);
+    return JSON.parse(JSON.stringify(s));
+  }
+
+  var updateBtnPending = false;
+  function updateButtons() {
+    if (updateBtnPending) return;
+    updateBtnPending = true;
+    requestAnimationFrame(function() {
+      updateBtnPending = false;
+      document.getElementById('undoBtn').disabled = undoStack.length <= 1;
+      document.getElementById('redoBtn').disabled = redoStack.length === 0;
+    });
+  }
+
   function saveState() {
-    undoStack.push(JSON.parse(JSON.stringify(strokes)));
+    undoStack.push(cloneStrokes(strokes));
     if (undoStack.length > maxHistory) undoStack.shift();
     redoStack = [];
     updateButtons();
@@ -444,7 +572,7 @@
 
   function restoreFromUndo() {
     if (undoStack.length > 0) {
-      strokes = JSON.parse(JSON.stringify(undoStack[undoStack.length - 1]));
+      strokes = cloneStrokes(undoStack[undoStack.length - 1]);
     } else {
       strokes = [];
     }
@@ -463,11 +591,6 @@
     if (redoStack.length === 0) return;
     undoStack.push(redoStack.pop());
     restoreFromUndo();
-  }
-
-  function updateButtons() {
-    document.getElementById('undoBtn').disabled = undoStack.length <= 1;
-    document.getElementById('redoBtn').disabled = redoStack.length === 0;
   }
 
   function getScreenPos(e) {
@@ -506,6 +629,7 @@
     isMoving = false;
     movingStrokeIndex = -1;
     if (panRAF) { cancelAnimationFrame(panRAF); panRAF = null; }
+    if (drawRAF) { cancelAnimationFrame(drawRAF); drawRAF = null; }
   }
 
   function startDrawing(e) {
@@ -540,7 +664,7 @@
         var s = strokes[hitIdx];
         moveOffsetX = pos.x - s.x;
         moveOffsetY = pos.y - s.y;
-        currentStroke = JSON.parse(JSON.stringify(s));
+        currentStroke = cloneStrokes(s);
         rebuildCache(hitIdx);
         return;
       }
@@ -549,6 +673,11 @@
       currentStroke = {
         type: 'rect', color: currentColor, size: currentSize,
         startX: pos.x, startY: pos.y, x: pos.x, y: pos.y, w: 0, h: 0
+      };
+    } else if (currentTool === 'mosaic') {
+      currentStroke = {
+        type: 'mosaic', color: currentColor, size: currentSize,
+        points: [{ x: pos.x, y: pos.y }]
       };
     } else {
       currentStroke = {
@@ -598,13 +727,19 @@
     } else {
       currentStroke.points.push({ x: pos.x, y: pos.y });
     }
-    renderAll();
+    if (!drawRAF) {
+      drawRAF = requestAnimationFrame(function() {
+        drawRAF = null;
+        renderAll();
+      });
+    }
   }
 
   function stopDrawing(e) {
     if (isPanning) {
       isPanning = false;
       if (panRAF) { cancelAnimationFrame(panRAF); panRAF = null; }
+      if (drawRAF) { cancelAnimationFrame(drawRAF); drawRAF = null; }
       renderAll();
       saveState();
       return;
@@ -623,7 +758,11 @@
     if (isDrawing && currentStroke) {
       isDrawing = false;
       strokes.push(currentStroke);
+      var lastTool = currentStroke.tool;
       currentStroke = null;
+      if (lastTool === 'eraser') {
+        eraseMosaicStrokes(strokes[strokes.length - 1]);
+      }
       rebuildCache();
       saveState();
     }
@@ -653,7 +792,7 @@
       document.querySelectorAll('[data-tool]').forEach(function(b) { b.classList.remove('active'); });
       btn.classList.add('active');
       currentTool = btn.dataset.tool;
-      var cursors = { pen: 'crosshair', eraser: 'cell', hand: 'grab', rect: 'crosshair', text: 'text' };
+      var cursors = { pen: 'crosshair', mosaic: 'crosshair', eraser: 'cell', hand: 'grab', rect: 'crosshair', text: 'text' };
       canvas.style.cursor = cursors[currentTool] || 'crosshair';
     });
   });
@@ -788,6 +927,16 @@
     }
   });
 
+  function renderToExport(c) {
+    for (var i = 0; i < strokes.length; i++) {
+      if (strokes[i].type === 'mosaic') {
+        applyMosaicToCache(c, strokes[i]);
+      } else {
+        renderStrokeOn(c, strokes[i]);
+      }
+    }
+  }
+
   document.getElementById('downloadBtn').addEventListener('click', function() {
     var dpr = window.devicePixelRatio || 1;
     var exportCanvas = document.createElement('canvas');
@@ -797,9 +946,7 @@
     exportCtx.fillStyle = '#fff';
     exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
     exportCtx.setTransform(dpr, 0, 0, dpr, panX * dpr, panY * dpr);
-    for (var i = 0; i < strokes.length; i++) {
-      renderStrokeOn(exportCtx, strokes[i]);
-    }
+    renderToExport(exportCtx);
     var link = document.createElement('a');
     link.download = '\u767D\u677F_' + new Date().toISOString().slice(0, 19).replace(/[:-]/g, '') + '.png';
     link.href = exportCanvas.toDataURL();
