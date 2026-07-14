@@ -151,6 +151,13 @@
     "url": "/tools/whiteboard"
   },
   {
+    "slug": "calculation-paper",
+    "name": "计算稿纸",
+    "description": "从混合文本中提取数字，自动逐行计算与汇总",
+    "emoji": "🧮",
+    "url": "/tools/calculation-paper"
+  },
+  {
     "slug": "video-parser",
     "name": "短视频解析",
     "description": "全平台短视频链接解析去水印工具",

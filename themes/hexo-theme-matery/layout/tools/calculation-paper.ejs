@@ -1,0 +1,392 @@
+<%
+    var toolTitle = '计算稿纸';
+    var toolDesc = '';
+    if (site.data && site.data.tools) {
+        var tool = site.data.tools.find(function(t) { return t.slug === page.toolSlug; });
+        if (tool) {
+            toolTitle = tool.emoji + ' ' + tool.name;
+            toolDesc = tool.description;
+        }
+    }
+%>
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .tool-container { margin-top: -50px; margin-bottom: 30px; }
+  .tool-container .card { border-radius: 8px; }
+  .tool-container .card .card-content .card-title { font-size: 1.4rem; font-weight: 600; margin-bottom: 20px; }
+
+  .calc-toolbar {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    margin: 18px 0 20px;
+  }
+  .save-status { color: #999; font-size: 0.82rem; }
+  .save-status.error { color: #e53935; }
+  .calc-toolbar .btn {
+    border-radius: 20px; height: 36px; line-height: 36px; padding: 0 18px;
+    font-size: 0.85rem; letter-spacing: 0; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .calc-toolbar .btn.outline {
+    background: transparent; border: 1px solid #ddd; color: #777; box-shadow: none;
+  }
+  .calc-toolbar .btn.outline:hover { border-color: #e53935; color: #e53935; }
+
+  .calc-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+  .calc-column { min-width: 0; }
+  .calc-column-head {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
+  }
+  .calc-column-title { font-size: 0.9rem; font-weight: 600; color: #666; }
+  .calc-hint { color: #aaa; font-size: 0.75rem; }
+  .calc-input {
+    display: block; width: 100%; min-height: 360px; padding: 14px 16px;
+    box-sizing: border-box; border: 2px solid #e8e8e8; border-radius: 10px;
+    background: #fafafa; color: #333; font: 0.9rem/1.7 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    outline: none; resize: vertical; transition: border-color 0.2s, background 0.2s;
+  }
+  .calc-input:focus { border-color: #5a9600; background: #fff; }
+
+  .calc-result-panel {
+    min-height: 360px; box-sizing: border-box; border: 2px solid #e8e8e8;
+    border-radius: 10px; background: #fafafa; overflow: hidden;
+  }
+  .calc-summary {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+    padding: 13px 16px; background: #f2f8e8; border-bottom: 1px solid #e2efd2;
+  }
+  .calc-summary-label { color: #5a9600; font-size: 0.82rem; font-weight: 600; }
+  .calc-summary-value {
+    color: #3f6d00; font: 600 1.1rem 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    word-break: break-all;
+  }
+  .result-list { list-style: none; padding: 0; margin: 0; }
+  .result-item { padding: 12px 16px; border-bottom: 1px solid #eee; }
+  .result-item:last-child { border-bottom: none; }
+  .result-meta { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; }
+  .result-line { color: #999; font-size: 0.75rem; }
+  .result-mode {
+    display: inline-flex; align-items: center; border-radius: 9px; padding: 2px 7px;
+    background: #edf6e2; color: #5a9600; font-size: 0.72rem; line-height: 1.2;
+  }
+  .result-mode.sum { background: #edf4ff; color: #4b7bb7; }
+  .result-mode.error { background: #fff0f0; color: #e53935; }
+  .result-source {
+    overflow: hidden; color: #777; font: 0.8rem/1.45 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    text-overflow: ellipsis; white-space: nowrap;
+  }
+  .result-value { margin-top: 4px; color: #333; font: 600 0.98rem 'SF Mono', 'Fira Code', 'Consolas', monospace; word-break: break-all; }
+  .result-value.error { color: #e53935; font-size: 0.84rem; font-weight: 400; }
+  .result-empty { padding: 42px 20px; color: #bbb; text-align: center; font-size: 0.86rem; }
+  .result-empty i { display: block; margin-bottom: 10px; font-size: 2rem; }
+
+  @media only screen and (max-width: 601px) {
+    .tool-container { margin-top: -30px; }
+    .calc-toolbar { align-items: flex-start; flex-direction: column-reverse; }
+    .calc-columns { grid-template-columns: 1fr; }
+    .calc-input, .calc-result-panel { min-height: 240px; }
+  }
+</style>
+
+<main class="content">
+  <div class="container tool-container">
+    <div class="card">
+      <div class="card-content">
+        <span class="card-title" style="display: inline-block"><%= toolTitle %></span>
+        <% if (toolDesc) { %>
+        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
+        <% } %>
+
+        <div class="calc-toolbar">
+          <span class="save-status" id="saveStatus">草稿仅保存在当前浏览器</span>
+          <button class="btn waves-effect outline" id="clearBtn" type="button"><i class="fas fa-trash-alt"></i> 清空</button>
+        </div>
+
+        <div class="calc-columns">
+          <section class="calc-column">
+            <div class="calc-column-head">
+              <span class="calc-column-title">输入</span>
+              <span class="calc-hint">每行独立计算</span>
+            </div>
+            <textarea class="calc-input" id="calcInput" spellcheck="false" placeholder="例如：&#10;苹果 12 + 香蕉 8&#10;买菜 12 元，饮料 8.5 元&#10;2 × (3 + 4)"></textarea>
+          </section>
+
+          <section class="calc-column">
+            <div class="calc-column-head">
+              <span class="calc-column-title">计算结果</span>
+              <span class="calc-hint">自动更新</span>
+            </div>
+            <div class="calc-result-panel">
+              <div class="calc-summary">
+                <span class="calc-summary-label">有效行合计</span>
+                <strong class="calc-summary-value" id="totalValue">—</strong>
+              </div>
+              <ul class="result-list" id="resultList"></ul>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script>
+  var STORAGE_KEY = 'meowv:calculation-paper:draft';
+  var saveTimer = null;
+
+  function normalizeText(text) {
+    return text.replace(/[０-９]/g, function(char) {
+      return String.fromCharCode(char.charCodeAt(0) - 65248);
+    })
+      .replace(/[＋]/g, '+')
+      .replace(/[－−]/g, '-')
+      .replace(/[×＊]/g, '*')
+      .replace(/[÷／]/g, '/')
+      .replace(/[（]/g, '(')
+      .replace(/[）]/g, ')')
+      .replace(/[，]/g, ',')
+      .replace(/[．]/g, '.');
+  }
+
+  function readNumber(text, start) {
+    var matched = text.slice(start).match(/^(?:\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?|\.\d+)/);
+    if (!matched) return null;
+    return { raw: matched[0], end: start + matched[0].length };
+  }
+
+  function tokenize(text) {
+    var source = normalizeText(text);
+    var tokens = [];
+    var hasNumber = false;
+    var hasExpressionSymbol = false;
+    var i = 0;
+
+    while (i < source.length) {
+      var char = source.charAt(i);
+      var number = readNumber(source, i);
+      if (number) {
+        tokens.push({ type: 'number', value: Number(number.raw.replace(/,/g, '')) });
+        hasNumber = true;
+        i = number.end;
+      } else if ('+-*/()'.indexOf(char) !== -1) {
+        tokens.push({ type: char, value: char });
+        hasExpressionSymbol = true;
+        i++;
+      } else {
+        i++;
+      }
+    }
+
+    return {
+      tokens: tokens,
+      hasNumber: hasNumber,
+      hasExpressionSymbol: hasExpressionSymbol
+    };
+  }
+
+  function ExpressionParser(tokens) {
+    this.tokens = tokens;
+    this.position = 0;
+  }
+
+  ExpressionParser.prototype.current = function() {
+    return this.tokens[this.position];
+  };
+
+  ExpressionParser.prototype.consume = function(type) {
+    var token = this.current();
+    if (!token || token.type !== type) return null;
+    this.position++;
+    return token;
+  };
+
+  ExpressionParser.prototype.parse = function() {
+    var value = this.parseExpression();
+    if (this.current()) throw new Error('缺少运算符或括号不匹配');
+    if (!isFinite(value)) throw new Error('计算结果无效');
+    return value;
+  };
+
+  ExpressionParser.prototype.parseExpression = function() {
+    var value = this.parseTerm();
+    var token = this.current();
+    while (token && (token.type === '+' || token.type === '-')) {
+      this.position++;
+      var right = this.parseTerm();
+      value = token.type === '+' ? value + right : value - right;
+      token = this.current();
+    }
+    return value;
+  };
+
+  ExpressionParser.prototype.parseTerm = function() {
+    var value = this.parseFactor();
+    var token = this.current();
+    while (token && (token.type === '*' || token.type === '/')) {
+      this.position++;
+      var right = this.parseFactor();
+      if (token.type === '/' && right === 0) throw new Error('除数不能为 0');
+      value = token.type === '*' ? value * right : value / right;
+      token = this.current();
+    }
+    return value;
+  };
+
+  ExpressionParser.prototype.parseFactor = function() {
+    var token = this.current();
+    if (!token) throw new Error('缺少操作数');
+
+    if (token.type === '+' || token.type === '-') {
+      this.position++;
+      var value = this.parseFactor();
+      return token.type === '-' ? -value : value;
+    }
+
+    if (token.type === 'number') {
+      this.position++;
+      return token.value;
+    }
+
+    if (token.type === '(') {
+      this.position++;
+      var grouped = this.parseExpression();
+      if (!this.consume(')')) throw new Error('缺少右括号');
+      return grouped;
+    }
+
+    throw new Error('缺少操作数');
+  };
+
+  function calculateLine(text) {
+    var parsed = tokenize(text);
+    if (!parsed.hasNumber) return { valid: false, error: '未识别到数字' };
+
+    if (parsed.hasExpressionSymbol) {
+      try {
+        return {
+          valid: true,
+          mode: 'formula',
+          value: new ExpressionParser(parsed.tokens).parse()
+        };
+      } catch (error) {
+        return { valid: false, error: error.message || '公式不完整' };
+      }
+    }
+
+    var total = 0;
+    for (var i = 0; i < parsed.tokens.length; i++) {
+      if (parsed.tokens[i].type === 'number') total += parsed.tokens[i].value;
+    }
+    return { valid: true, mode: 'sum', value: total };
+  }
+
+  function formatNumber(value) {
+    var rounded = Math.round((value + Number.EPSILON) * 1000000000000) / 1000000000000;
+    if (Math.abs(rounded) < 0.000000000001) rounded = 0;
+    return rounded.toLocaleString('zh-CN', { useGrouping: false, maximumFractionDigits: 12 });
+  }
+
+  function renderEmptyResult(message) {
+    $('#resultList').empty().append(
+      $('<li class="result-empty"></li>').append('<i class="fas fa-calculator"></i>').append($('<span></span>').text(message))
+    );
+  }
+
+  function renderResults() {
+    var text = $('#calcInput').val();
+    var lines = text.split(/\r?\n/);
+    var $list = $('#resultList');
+    var total = 0;
+    var validCount = 0;
+    var displayedCount = 0;
+
+    $list.empty();
+    for (var i = 0; i < lines.length; i++) {
+      if (!lines[i].trim()) continue;
+
+      displayedCount++;
+      var result = calculateLine(lines[i]);
+      var $item = $('<li class="result-item"></li>');
+      var $meta = $('<div class="result-meta"></div>');
+      $meta.append($('<span class="result-line"></span>').text('第 ' + (i + 1) + ' 行'));
+
+      if (result.valid) {
+        var modeText = result.mode === 'formula' ? '公式计算' : '提取求和';
+        var modeClass = result.mode === 'formula' ? '' : ' sum';
+        $meta.append($('<span class="result-mode' + modeClass + '"></span>').text(modeText));
+        $item.append($meta);
+        $item.append($('<div class="result-source" title=""></div>').attr('title', lines[i]).text(lines[i]));
+        $item.append($('<div class="result-value"></div>').text('= ' + formatNumber(result.value)));
+        total += result.value;
+        validCount++;
+      } else {
+        $meta.append($('<span class="result-mode error"></span>').text('无法计算'));
+        $item.append($meta);
+        $item.append($('<div class="result-source" title=""></div>').attr('title', lines[i]).text(lines[i]));
+        $item.append($('<div class="result-value error"></div>').text(result.error));
+      }
+      $list.append($item);
+    }
+
+    if (!displayedCount) renderEmptyResult('输入文本后，将在这里显示每行结果');
+    $('#totalValue').text(validCount ? formatNumber(total) : '—');
+  }
+
+  function setSaveStatus(text, isError) {
+    $('#saveStatus').text(text).toggleClass('error', !!isError);
+  }
+
+  function saveDraft() {
+    var value = $('#calcInput').val();
+    try {
+      if (value) localStorage.setItem(STORAGE_KEY, value);
+      else localStorage.removeItem(STORAGE_KEY);
+      setSaveStatus(value ? '已自动保存至本地' : '草稿已清空');
+    } catch (error) {
+      setSaveStatus('浏览器无法保存草稿', true);
+    }
+  }
+
+  function queueSave() {
+    window.clearTimeout(saveTimer);
+    setSaveStatus('正在保存…');
+    saveTimer = window.setTimeout(saveDraft, 250);
+  }
+
+  $(document).ready(function() {
+    try {
+      var savedDraft = localStorage.getItem(STORAGE_KEY);
+      if (savedDraft) {
+        $('#calcInput').val(savedDraft);
+        setSaveStatus('已恢复本地草稿');
+      }
+    } catch (error) {
+      setSaveStatus('浏览器无法读取草稿', true);
+    }
+
+    renderResults();
+
+    $('#calcInput').on('input', function() {
+      renderResults();
+      queueSave();
+    });
+
+    $('#clearBtn').on('click', function() {
+      window.clearTimeout(saveTimer);
+      $('#calcInput').val('');
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+        setSaveStatus('草稿已清空');
+      } catch (error) {
+        setSaveStatus('浏览器无法清空草稿', true);
+      }
+      renderResults();
+      M.toast({ html: '已清空输入和本地草稿', classes: 'rounded' });
+    });
+  });
+</script>
