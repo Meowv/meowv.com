@@ -50,7 +50,7 @@
 
   .wb-canvas-wrap {
     position: relative; width: 100%; cursor: crosshair;
-    background: #fff;
+    background: #fff; touch-action: none;
   }
   .wb-canvas-wrap canvas {
     display: block; width: 100%; height: 600px;
@@ -260,6 +260,9 @@
               <button class="wb-btn" id="downloadBtn" title="下载 PNG">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
               </button>
+              <button class="wb-btn" id="resetViewBtn" title="重置视图 (Ctrl+0)" aria-label="重置视图">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/></svg>
+              </button>
               <button class="wb-btn" id="fullscreenBtn" title="全屏">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
               </button>
@@ -296,7 +299,9 @@
   var canvas = document.getElementById('drawCanvas');
   var ctx = canvas.getContext('2d');
   var cacheCanvas = document.createElement('canvas');
-  var cacheCtx = cacheCanvas.getContext('2d');
+  var cacheCtx = cacheCanvas.getContext('2d', { willReadFrequently: true });
+  var previewCanvas = document.createElement('canvas');
+  var previewCtx = previewCanvas.getContext('2d', { willReadFrequently: true });
 
   var isDrawing = false;
   var isPanning = false;
@@ -310,7 +315,7 @@
   var currentColor = '#5a9600';
   var currentSize = 4;
   var canvasW = 0, canvasH = 600;
-  var cacheW = 0, cacheH = 0;
+  var cacheW = 0, cacheH = 0, cacheDpr = 0;
 
   var strokes = [];
   var currentStroke = null;
@@ -318,14 +323,21 @@
   var undoStack = [];
   var redoStack = [];
   var maxHistory = 50;
+  var maxDpr = 2;
 
   var panRAF = null;
   var drawRAF = null;
   var loadedImages = {};
+  var loadingImages = {};
+  var resizeRAF = null;
+
+  function getDpr() {
+    return Math.min(window.devicePixelRatio || 1, maxDpr);
+  }
 
   function getCanvasSize() {
     var rect = canvas.parentElement.getBoundingClientRect();
-    return { w: rect.width, h: rect.height };
+    return { w: Math.round(rect.width), h: Math.round(rect.height) };
   }
 
   function renderStrokeOn(c, s) {
@@ -348,16 +360,21 @@
       c.font = s.size + 'px "Microsoft YaHei","PingFang SC",sans-serif';
       c.fillStyle = s.color;
       c.textBaseline = 'top';
-      c.fillText(s.text, s.x, s.y);
+      var lines = s.text.split('\n');
+      var lineHeight = Math.round(s.size * 1.4);
+      for (var k = 0; k < lines.length; k++) c.fillText(lines[k], s.x, s.y + k * lineHeight);
       c.restore();
       return;
     }
     if (s.points.length === 0) return;
     c.beginPath();
     c.moveTo(s.points[0].x, s.points[0].y);
-    for (var j = 1; j < s.points.length; j++) {
-      c.lineTo(s.points[j].x, s.points[j].y);
+    for (var j = 1; j < s.points.length - 1; j++) {
+      var midX = (s.points[j].x + s.points[j + 1].x) / 2;
+      var midY = (s.points[j].y + s.points[j + 1].y) / 2;
+      c.quadraticCurveTo(s.points[j].x, s.points[j].y, midX, midY);
     }
+    if (s.points.length > 1) c.lineTo(s.points[s.points.length - 1].x, s.points[s.points.length - 1].y);
     c.strokeStyle = s.tool === 'eraser' ? '#fff' : s.color;
     c.lineWidth = s.size;
     c.lineCap = 'round';
@@ -377,7 +394,7 @@
 
   function applyMosaicToCache(c, s) {
     var blockSize = Math.max(4, Math.round(s.size / 2));
-    var dpr = window.devicePixelRatio || 1;
+    var dpr = getDpr();
     var pw = Math.round(canvasW * dpr);
     var ph = Math.round(canvasH * dpr);
     var imageData = c.getImageData(0, 0, pw, ph);
@@ -471,14 +488,17 @@
   }
 
   function rebuildCache(excludeIndex) {
-    var dpr = window.devicePixelRatio || 1;
-    var needResize = cacheW !== canvasW || cacheH !== canvasH;
+    var dpr = getDpr();
+    var needResize = cacheW !== canvasW || cacheH !== canvasH || cacheDpr !== dpr;
     if (needResize) {
       cacheW = canvasW;
       cacheH = canvasH;
+      cacheDpr = dpr;
       cacheCanvas.width = canvasW * dpr;
       cacheCanvas.height = canvasH * dpr;
       cacheCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      previewCanvas.width = cacheCanvas.width;
+      previewCanvas.height = cacheCanvas.height;
     }
     cacheCtx.clearRect(0, 0, canvasW, canvasH);
     var needsLoad = false;
@@ -496,19 +516,23 @@
     }
     renderAll();
     if (needsLoad) {
-      var pending = 0;
-      for (var i = 0; i < strokes.length; i++) {
-        if (i === excludeIndex) continue;
-        if (strokes[i].type === 'image' && !loadedImages[strokes[i].src]) {
-          pending++;
-          (function(src) {
-            var img = new Image();
-            img.onload = function() { loadedImages[src] = img; pending--; if (pending === 0) rebuildCache(); };
-            img.src = src;
-          })(strokes[i].src);
-        }
+      for (var j = 0; j < strokes.length; j++) {
+        if (j !== excludeIndex && strokes[j].type === 'image') ensureImageLoaded(strokes[j].src);
       }
     }
+  }
+
+  function ensureImageLoaded(src) {
+    if (loadedImages[src] || loadingImages[src]) return;
+    loadingImages[src] = true;
+    var img = new Image();
+    img.onload = function() {
+      loadedImages[src] = img;
+      delete loadingImages[src];
+      rebuildCache();
+    };
+    img.onerror = function() { delete loadingImages[src]; };
+    img.src = src;
   }
 
   function clearCanvas() {
@@ -519,14 +543,20 @@
   }
 
   function renderAll() {
-    var dpr = window.devicePixelRatio || 1;
+    var dpr = getDpr();
     clearCanvas();
     ctx.setTransform(dpr, 0, 0, dpr, panX * dpr, panY * dpr);
-    ctx.drawImage(cacheCanvas, 0, 0, canvasW, canvasH);
+    if (currentStroke && currentStroke.type === 'mosaic') {
+      previewCtx.setTransform(1, 0, 0, 1, 0, 0);
+      previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+      previewCtx.drawImage(cacheCanvas, 0, 0);
+      applyMosaicToCache(previewCtx, currentStroke);
+      ctx.drawImage(previewCanvas, 0, 0, canvasW, canvasH);
+    } else {
+      ctx.drawImage(cacheCanvas, 0, 0, canvasW, canvasH);
+    }
     if (currentStroke) {
-      if (currentStroke.type === 'mosaic') {
-        applyMosaicToCache(ctx, currentStroke);
-      } else {
+      if (currentStroke.type !== 'mosaic') {
         renderStroke(currentStroke);
       }
     }
@@ -536,15 +566,23 @@
     var size = getCanvasSize();
     canvasW = size.w;
     canvasH = size.h;
-    var dpr = window.devicePixelRatio || 1;
+    var dpr = getDpr();
     canvas.style.width = canvasW + 'px';
     canvas.style.height = canvasH + 'px';
     canvas.width = canvasW * dpr;
     canvas.height = canvasH * dpr;
     cacheW = 0;
     cacheH = 0;
-    if (strokes.length > 0) rebuildCache();
-    renderAll();
+    cacheDpr = 0;
+    rebuildCache();
+  }
+
+  function scheduleResize() {
+    if (resizeRAF) return;
+    resizeRAF = requestAnimationFrame(function() {
+      resizeRAF = null;
+      resizeCanvas();
+    });
   }
 
   function cloneStrokes(s) {
@@ -595,9 +633,6 @@
 
   function getScreenPos(e) {
     var rect = canvas.getBoundingClientRect();
-    if (e.touches) {
-      return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
-    }
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   }
 
@@ -610,9 +645,11 @@
     if (s.type === 'text') {
       ctx.save();
       ctx.font = s.size + 'px "Microsoft YaHei","PingFang SC",sans-serif';
-      var tw = ctx.measureText(s.text).width;
+      var lines = s.text.split('\n');
+      var tw = 0;
+      for (var i = 0; i < lines.length; i++) tw = Math.max(tw, ctx.measureText(lines[i]).width);
       ctx.restore();
-      return wx >= s.x && wx <= s.x + tw && wy >= s.y && wy <= s.y + s.size;
+      return wx >= s.x && wx <= s.x + tw && wy >= s.y && wy <= s.y + s.size * 1.4 * lines.length;
     }
     if (s.type === 'rect') {
       return wx >= s.x && wx <= s.x + s.w && wy >= s.y && wy <= s.y + s.h;
@@ -652,7 +689,7 @@
     }
     isDrawing = true;
     var pos = getPos(e);
-    if (currentTool === 'pen' || currentTool === 'eraser') {
+    if (currentTool === 'pen') {
       var hitIdx = -1;
       for (var i = strokes.length - 1; i >= 0; i--) {
         if (hitTestStroke(pos.x, pos.y, strokes[i])) { hitIdx = i; break; }
@@ -699,7 +736,7 @@
       if (!panRAF) {
         panRAF = requestAnimationFrame(function() {
           panRAF = null;
-          var dpr = window.devicePixelRatio || 1;
+          var dpr = getDpr();
           clearCanvas();
           ctx.setTransform(dpr, 0, 0, dpr, panX * dpr, panY * dpr);
           ctx.drawImage(cacheCanvas, 0, 0, canvasW, canvasH);
@@ -741,7 +778,6 @@
       if (panRAF) { cancelAnimationFrame(panRAF); panRAF = null; }
       if (drawRAF) { cancelAnimationFrame(drawRAF); drawRAF = null; }
       renderAll();
-      saveState();
       return;
     }
     if (isMoving && currentStroke) {
@@ -768,14 +804,14 @@
     }
   }
 
-  canvas.addEventListener('mousedown', startDrawing);
-  canvas.addEventListener('mousemove', draw);
-  canvas.addEventListener('mouseup', stopDrawing);
-  canvas.addEventListener('mouseleave', stopDrawing);
-
-  canvas.addEventListener('touchstart', startDrawing, { passive: false });
-  canvas.addEventListener('touchmove', draw, { passive: false });
-  canvas.addEventListener('touchend', stopDrawing);
+  canvas.addEventListener('pointerdown', function(e) {
+    if (e.button !== undefined && e.button !== 0) return;
+    canvas.setPointerCapture(e.pointerId);
+    startDrawing(e);
+  });
+  canvas.addEventListener('pointermove', draw);
+  canvas.addEventListener('pointerup', stopDrawing);
+  canvas.addEventListener('pointercancel', stopDrawing);
 
   canvas.addEventListener('mousemove', function(e) {
     if (isDrawing || isPanning || isMoving || currentTool !== 'pen') return;
@@ -860,9 +896,18 @@
   document.getElementById('undoBtn').addEventListener('click', undo);
   document.getElementById('redoBtn').addEventListener('click', redo);
   document.addEventListener('keydown', function(e) {
+    if (e.target === textInput) return;
     if (e.ctrlKey && e.key === 'z') {
       e.preventDefault();
       if (e.shiftKey) redo(); else undo();
+    }
+    if (e.ctrlKey && e.key.toLowerCase() === 'y') {
+      e.preventDefault();
+      redo();
+    }
+    if (e.ctrlKey && e.key === '0') {
+      e.preventDefault();
+      resetView();
     }
   });
 
@@ -871,6 +916,11 @@
   });
 
   function addImageFromFile(file) {
+    if (!file || !file.type || file.type.indexOf('image/') !== 0) return;
+    if (file.size > 15 * 1024 * 1024) {
+      alert('图片不能超过 15 MB');
+      return;
+    }
     var reader = new FileReader();
     reader.onload = function(ev) {
       var src = ev.target.result;
@@ -927,26 +977,23 @@
     }
   });
 
-  function renderToExport(c) {
-    for (var i = 0; i < strokes.length; i++) {
-      if (strokes[i].type === 'mosaic') {
-        applyMosaicToCache(c, strokes[i]);
-      } else {
-        renderStrokeOn(c, strokes[i]);
-      }
-    }
+  function resetView() {
+    panX = 0;
+    panY = 0;
+    renderAll();
   }
 
+  document.getElementById('resetViewBtn').addEventListener('click', resetView);
+
   document.getElementById('downloadBtn').addEventListener('click', function() {
-    var dpr = window.devicePixelRatio || 1;
+    var dpr = getDpr();
     var exportCanvas = document.createElement('canvas');
     exportCanvas.width = canvasW * dpr;
     exportCanvas.height = canvasH * dpr;
     var exportCtx = exportCanvas.getContext('2d');
     exportCtx.fillStyle = '#fff';
     exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
-    exportCtx.setTransform(dpr, 0, 0, dpr, panX * dpr, panY * dpr);
-    renderToExport(exportCtx);
+    exportCtx.drawImage(canvas, 0, 0, exportCanvas.width, exportCanvas.height);
     var link = document.createElement('a');
     link.download = '\u767D\u677F_' + new Date().toISOString().slice(0, 19).replace(/[:-]/g, '') + '.png';
     link.href = exportCanvas.toDataURL();
@@ -979,7 +1026,8 @@
   document.addEventListener('webkitfullscreenchange', onFullscreenChange);
   document.addEventListener('mozfullscreenchange', onFullscreenChange);
 
-  window.addEventListener('resize', resizeCanvas);
+  window.addEventListener('resize', scheduleResize);
+  if (window.ResizeObserver) new ResizeObserver(scheduleResize).observe(canvas.parentElement);
 
   var textOverlay = document.getElementById('textOverlay');
   var textInput = document.getElementById('textInput');

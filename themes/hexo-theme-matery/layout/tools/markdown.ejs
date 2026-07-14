@@ -11,8 +11,8 @@
 %>
 <%- partial('_partial/bg-cover') %>
 
-<link href="https://unpkg.com/md-editor-v3@5.8.5/lib/style.css" rel="stylesheet" />
-<link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.10.0/styles/github.min.css" />
+<link href="<%- url_for('/libs/markdown/md-editor-v3.css') %>" rel="stylesheet" />
+<link rel="stylesheet" href="<%- url_for('/libs/markdown/github.min.css') %>" />
 
 <style>
   .tool-container { margin-top: -50px; margin-bottom: 30px; }
@@ -23,6 +23,36 @@
   #md-editor-app {
     width: 100%;
     overflow: hidden;
+  }
+  .md-import-input {
+    display: none;
+  }
+  .md-editor-loading {
+    display: flex;
+    min-height: 400px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    border: 1px solid #e6e6e6;
+    color: #777;
+  }
+  .md-editor-loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #e8e8e8;
+    border-top-color: #49b1f5;
+    border-radius: 50%;
+    animation: md-editor-loading-spin 0.8s linear infinite;
+  }
+  .md-editor-load-error {
+    min-height: 200px;
+    padding: 40px;
+    color: #e53935;
+    text-align: center;
+  }
+  @keyframes md-editor-loading-spin {
+    to { transform: rotate(360deg); }
   }
   #md-editor-app .md-editor-preview {
     --md-theme-code-block-bg-color: #f6f8fa;
@@ -75,7 +105,12 @@
         <% } %>
 
         <div id="md-editor-app">
-          <md-editor-v3 v-model="text" :toolbars="toolbars" theme="theme" :code-theme="codeTheme" language="zh-CN" @on-save="handleSave" @on-upload-img="handleUploadImg" />
+          <div v-if="loading" class="md-editor-loading" role="status" aria-live="polite">
+            <span class="md-editor-loading-spinner" aria-hidden="true"></span>
+            <span>编辑器加载中...</span>
+          </div>
+          <md-editor-v3 v-show="!loading" v-model="text" :toolbars="toolbars" :def-toolbars="defToolbars" theme="theme" :code-theme="codeTheme" language="zh-CN" @on-save="handleSave" @on-upload-img="handleUploadImg"></md-editor-v3>
+          <input id="md-import-input" class="md-import-input" type="file" accept=".md,.markdown,.txt,text/markdown,text/plain" @change="handleImport">
         </div>
 
       </div>
@@ -89,8 +124,8 @@
   </div>
 </main>
 
-<script src="https://unpkg.com/vue@3.5.13/dist/vue.global.prod.js"></script>
-<script src="https://unpkg.com/md-editor-v3@5.8.5/lib/umd/index.js"></script>
+<script defer src="<%- url_for('/libs/markdown/vue.global.prod.js') %>"></script>
+<script defer src="<%- url_for('/libs/markdown/md-editor-v3.umd.js') %>"></script>
 
 <script>
   var STORAGE_KEY = 'md-editor-content';
@@ -98,25 +133,27 @@
 
   var vm;
 
-  MdEditorV3.config({
-    editorExtensions: {
-      highlight: {
-        css: {
-          github: {
-            light: 'https://unpkg.com/@highlightjs/cdn-assets@11.10.0/styles/github.min.css'
-          }
-        }
-      }
-    },
-  });
-
   function initApp() {
     var App = {
       data: function() {
         return {
+          loading: true,
           text: defaultText,
           theme: 'light',
           codeTheme: 'github',
+          defToolbars: [
+            Vue.h(MdEditorV3.NormalToolbar, {
+              title: '导入本地文件',
+              onClick: function() {
+                var input = document.getElementById('md-import-input');
+                if (input) input.click();
+              }
+            }, {
+              default: function() {
+                return Vue.h('i', { class: 'fas fa-file-import' });
+              }
+            })
+          ],
           toolbars: [
             'bold', 'underline', 'italic', 'strikeThrough',
             '-',
@@ -134,12 +171,49 @@
           ]
         };
       },
+      mounted: function() {
+        var self = this;
+        this.$nextTick(function() {
+          self.loading = false;
+        });
+      },
       watch: {
         text: function(newVal) {
           localStorage.setItem(STORAGE_KEY, newVal);
         }
       },
       methods: {
+        handleImport: function(event) {
+          var input = event.target;
+          var file = input.files && input.files[0];
+          if (!file) return;
+
+          var extension = file.name.split('.').pop().toLowerCase();
+          if (['md', 'markdown', 'txt'].indexOf(extension) === -1) {
+            this.showImportMessage('仅支持 .md、.markdown 和 .txt 文件', true);
+            input.value = '';
+            return;
+          }
+
+          var reader = new FileReader();
+          reader.onload = function(e) {
+            this.text = String(e.target.result || '').replace(/^\uFEFF/, '');
+            this.showImportMessage('文件已导入');
+            input.value = '';
+          }.bind(this);
+          reader.onerror = function() {
+            this.showImportMessage('文件读取失败，请重试', true);
+            input.value = '';
+          }.bind(this);
+          reader.readAsText(file, 'UTF-8');
+        },
+        showImportMessage: function(message, isError) {
+          if (window.M && typeof window.M.toast === 'function') {
+            window.M.toast({ html: message, classes: isError ? 'red' : '' });
+          } else if (isError) {
+            window.alert(message);
+          }
+        },
         handleSave: function(text) {
           if (!text) return;
           var blob = new Blob([text], { type: 'text/markdown;charset=utf-8' });
@@ -180,10 +254,49 @@
       vm = vm.mount('#md-editor-app');
     } catch (e) {
       console.error('Vue mount error:', e);
-      document.getElementById('md-editor-app').innerHTML =
-        '<div style="padding:40px;text-align:center;color:#e53935;">编辑器加载失败: ' + e.message + '</div>';
+      showEditorLoadError('编辑器加载失败：' + e.message);
     }
   }
 
-  initApp();
+  function showEditorLoadError(message) {
+    var app = document.getElementById('md-editor-app');
+    if (!app) return;
+
+    var error = document.createElement('div');
+    error.className = 'md-editor-load-error';
+    error.textContent = message;
+    app.innerHTML = '';
+    app.appendChild(error);
+  }
+
+  function startEditor() {
+    if (typeof Vue === 'undefined' || typeof MdEditorV3 === 'undefined') {
+      showEditorLoadError('编辑器资源加载失败，请刷新页面重试');
+      return;
+    }
+
+    try {
+      MdEditorV3.config({
+        editorExtensions: {
+          highlight: {
+            css: {
+              github: {
+                light: '<%- url_for('/libs/markdown/github.min.css') %>'
+              }
+            }
+          }
+        },
+      });
+      initApp();
+    } catch (e) {
+      console.error('Editor init error:', e);
+      showEditorLoadError('编辑器初始化失败：' + e.message);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startEditor);
+  } else {
+    startEditor();
+  }
 </script>
