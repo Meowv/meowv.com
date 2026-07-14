@@ -1,66 +1,75 @@
 [
   {
+    "slug": "plonky",
+    "name": "Plonky",
+    "description": "基于物理引擎的趣味解谜闯关游戏",
+    "emoji": "🕹️",
+    "url": "/games/plonky",
+    "fullscreen": true
+  },
+  {
+    "slug": "ztype",
+    "name": "打字练习",
+    "description": "打字消灭敌机，在游戏中提升打字速度！",
+    "emoji": "⌨️",
+    "url": "/games/ztype",
+    "fullscreen": true
+  },
+  {
     "slug": "api-explorer",
     "name": "API Explorer",
     "description": "HTTP API 在线调试工具",
     "emoji": "🔧",
-    "url": "/tools/api-explorer/",
-    "category": "开发工具"
+    "url": "/tools/api-explorer"
   },
   {
     "slug": "base64",
     "name": "Base64 编解码",
     "description": "Base64 文本与图片在线编解码",
     "emoji": "🔒",
-    "url": "/tools/base64/",
-    "category": "开发工具"
+    "url": "/tools/base64"
   },
   {
     "slug": "uuid-generator",
     "name": "GUID/UUID 生成器",
     "description": "GUID/UUID 在线生成工具，支持批量生成、大小写、连字符配置",
     "emoji": "🔑",
-    "url": "/tools/uuid-generator/",
-    "category": "开发工具"
+    "url": "/tools/uuid-generator"
   },
   {
     "slug": "json-formatter",
     "name": "JSON 格式化",
     "description": "JSON 格式化、压缩、校验工具",
     "emoji": "📝",
-    "url": "/tools/json-formatter/",
-    "category": "开发工具"
+    "url": "/tools/json-formatter"
   },
   {
     "slug": "json-yaml",
     "name": "JSON/YAML 互转",
     "description": "JSON 与 YAML 格式在线互转工具",
     "emoji": "📋",
-    "url": "/tools/json-yaml/",
-    "category": "开发工具"
+    "url": "/tools/json-yaml"
   },
   {
     "slug": "url-encode",
     "name": "URL 编解码",
     "description": "URL 在线编码与解码工具",
     "emoji": "🔗",
-    "url": "/tools/url-encode/",
-    "category": "开发工具"
+    "url": "/tools/url-encode"
   },
   {
     "slug": "markdown",
     "name": "Markdown",
     "description": "在线 Markdown 编辑与实时预览",
     "emoji": "📄",
-    "url": "/tools/markdown/",
-    "category": "文本处理"
+    "url": "/tools/markdown"
   },
   {
     "slug": "text-diff",
     "name": "文本对比",
     "description": "在线文本差异对比工具，支持行级对比",
     "emoji": "📊",
-    "url": "/tools/text-diff/",
+    "url": "/tools/text-diff",
     "category": "文本处理"
   },
   {
@@ -68,7 +77,7 @@
     "name": "特殊符号",
     "description": "特殊符号大全，一键复制使用",
     "emoji": "✨",
-    "url": "/tools/special-symbols/",
+    "url": "/tools/special-symbols",
     "category": "文本处理"
   },
   {
@@ -76,103 +85,83 @@
     "name": "Emoji 表情",
     "description": "Emoji 表情大全，一键复制使用",
     "emoji": "😊",
-    "url": "/tools/emojis/",
-    "category": "文本处理"
+    "url": "/tools/emojis"
   },
   {
     "slug": "chinese-converter",
     "name": "繁简互转",
     "description": "中文简繁体实时在线转换",
     "emoji": "🔄",
-    "url": "/tools/chinese-converter/",
-    "category": "文本处理"
+    "url": "/tools/chinese-converter"
   },
   {
     "slug": "translate",
     "name": "翻译工具",
     "description": "中英互译在线翻译工具",
     "emoji": "🌐",
-    "url": "/tools/translate/",
-    "category": "文本处理"
+    "url": "/tools/translate"
   },
   {
     "slug": "qr-generator",
     "name": "二维码生成",
     "description": "在线文本/链接二维码生成器",
     "emoji": "🔳",
-    "url": "/tools/qr-generator/",
-    "category": "设计视觉"
+    "url": "/tools/qr-generator"
   },
   {
     "slug": "color-picker",
     "name": "颜色选择器",
     "description": "HEX/RGB/RGBA/HSL/HSLA/HSV/CMYK 颜色格式互转",
     "emoji": "🎨",
-    "url": "/tools/color-picker/",
-    "category": "设计视觉"
+    "url": "/tools/color-picker"
   },
   {
     "slug": "periodic-table",
     "name": "元素周期表",
     "description": "118个化学元素交互式周期表，支持搜索与分类筛选",
     "emoji": "🧪",
-    "url": "/tools/periodic-table/",
-    "category": "教育文化"
+    "url": "/tools/periodic-table"
   },
   {
     "slug": "pronunciation",
     "name": "汉字标准发音",
     "description": "汉字标准发音查询，支持拼音标注与语音朗读",
     "emoji": "🔊",
-    "url": "/tools/pronunciation/",
-    "category": "教育文化"
+    "url": "/tools/pronunciation"
   },
   {
     "slug": "bishun",
     "name": "汉字笔顺",
     "description": "汉字笔顺查询，支持笔顺绘制与动画演示",
     "emoji": "✍️",
-    "url": "/tools/bishun/",
-    "category": "教育文化"
+    "url": "/tools/bishun"
   },
   {
     "slug": "timestamp",
     "name": "时间戳转换",
     "description": "Unix 时间戳与日期时间在线互转，支持毫秒/秒",
     "emoji": "⏱️",
-    "url": "/tools/timestamp/",
-    "category": "实用工具"
+    "url": "/tools/timestamp"
   },
   {
     "slug": "whiteboard",
     "name": "白板工具",
     "description": "在线白板绘图工具，支持画笔、马赛克、橡皮擦、文字、框选、图片上传，撤销重做，导出",
     "emoji": "✏️",
-    "url": "/tools/whiteboard/",
-    "category": "实用工具"
+    "url": "/tools/whiteboard"
   },
   {
     "slug": "video-parser",
     "name": "短视频解析",
     "description": "全平台短视频链接解析去水印工具",
     "emoji": "🎬",
-    "url": "/tools/video-parser/",
-    "category": "实用工具"
+    "url": "/tools/video-parser"
   },
   {
     "slug": "timer",
     "name": "计时器",
     "description": "在线倒计时/秒表工具，支持全屏显示与个性化设置",
     "emoji": "⏰",
-    "url": "/tools/timer/",
-    "category": "实用工具"
-  },
-  {
-    "slug": "ai-coding-method-map",
-    "name": "AI Coding Method Map",
-    "description": "AI 编程方法论地图，看懂普通 Agent、工作流 Agent、IDE Agent 的差异与开发链路",
-    "emoji": "⚙",
-    "url": "/tools/ai-coding-method-map/",
-    "category": "实用工具"
+    "url": "/tools/timer"
   }
 ]

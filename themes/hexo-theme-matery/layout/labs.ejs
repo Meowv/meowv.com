@@ -39,12 +39,6 @@ var gradients = [
         margin-top: -50px;
         margin-bottom: 30px;
     }
-    .labs-container .tag-title {
-        margin-bottom: 10px;
-        color: #3C4858;
-        font-size: 1.75rem;
-        font-weight: 400;
-    }
     .labs-section {
         margin-bottom: 20px;
     }
@@ -98,29 +92,6 @@ var gradients = [
         font-size: 0.7rem;
         line-height: 1.3;
     }
-    .lab-card .lab-badges {
-        position: absolute;
-        top: 6px;
-        right: 6px;
-        display: flex;
-        gap: 4px;
-    }
-    .lab-card .lab-badge {
-        font-size: 0.6rem;
-        padding: 2px 6px;
-        border-radius: 8px;
-        background: rgba(255,255,255,0.3);
-        color: #fff;
-        backdrop-filter: blur(4px);
-        line-height: 1.4;
-    }
-    .lab-badge-cat {
-        opacity: 0;
-        transition: opacity 0.25s ease;
-    }
-    .lab-card:hover .lab-badge-cat {
-        opacity: 1;
-    }
 
     @media only screen and (max-width: 601px) {
         .lab-card {
@@ -141,12 +112,8 @@ var gradients = [
 
 <main class="content">
     <div class="container labs-container">
-        <!-- 工具模块 -->
         <div class="card labs-section">
             <div class="card-content">
-                <div class="tag-title">
-                    <i class="fas fa-toolbox"></i>&nbsp;&nbsp;<%= __('tools') %>
-                </div>
                 <article>
                     <% if (site.data && site.data.tools) { %>
                     <% var tools = site.data.tools; %>
@@ -154,64 +121,13 @@ var gradients = [
                         <% for (var i = 0, len = tools.length; i < len; i++) { %>
                         <% var tool = tools[i]; %>
                         <div class="col s6 m6 l3 lab-col" data-aos="zoom-in-up">
-                            <a href="<%= tool.url %>" class="lab-link">
+                            <a href="<%= tool.url %>" class="lab-link"<%= tool.fullscreen ? ' target="_blank" rel="noopener noreferrer"' : '' %>>
                                 <div class="card lab-card" style="background-image: <%= tool.gradient || gradients[i % gradients.length] %>">
                                     <span class="lab-emoji"><%= tool.emoji %></span>
                                     <div class="lab-name"><%= tool.name %></div>
                                     <div class="lab-desc"><%= tool.description %></div>
-                                    <div class="lab-badges">
-                                        <span class="lab-badge lab-badge-cat"><%= tool.category %></span>
-                                    </div>
                                 </div>
                             </a>
-                        </div>
-                        <% } %>
-                    </div>
-                    <% } %>
-                </article>
-            </div>
-        </div>
-
-        <!-- 游戏模块 -->
-        <div class="card labs-section">
-            <div class="card-content">
-                <div class="tag-title">
-                    <i class="fas fa-gamepad"></i>&nbsp;&nbsp;<%= __('games') %>
-                </div>
-                <article>
-                    <% if (site.data && site.data.games) { %>
-                    <% var games = site.data.games; %>
-                    <% var gameOffset = (typeof tools !== 'undefined') ? tools.length : 0; %>
-                    <div class="row lab-row">
-                        <% for (var i = 0, len = games.length; i < len; i++) { %>
-                        <% var game = games[i]; %>
-                        <div class="col s6 m6 l3 lab-col" data-aos="zoom-in-up">
-                            <% if (game.fullscreen) { %>
-                            <a href="/games/<%= game.slug %>/<%= game.entryFile || 'index.html' %>" target="_blank" class="lab-link">
-                                <div class="card lab-card" style="background-image: <%= game.gradient || gradients[(gameOffset + i) % gradients.length] %>">
-                                    <span class="lab-emoji"><%= game.emoji %></span>
-                                    <div class="lab-name"><%= game.name %></div>
-                                    <div class="lab-desc"><%= game.description %></div>
-                                    <div class="lab-badges">
-                                        <span class="lab-badge lab-badge-cat"><%= game.category %></span>
-                                        <% if (game.mobile) { %><span class="lab-badge">📱</span><% } %>
-                                        <span class="lab-badge">↗</span>
-                                    </div>
-                                </div>
-                            </a>
-                            <% } else { %>
-                            <a href="/game/<%= game.slug %>/" class="lab-link">
-                                <div class="card lab-card" style="background-image: <%= game.gradient || gradients[(gameOffset + i) % gradients.length] %>">
-                                    <span class="lab-emoji"><%= game.emoji %></span>
-                                    <div class="lab-name"><%= game.name %></div>
-                                    <div class="lab-desc"><%= game.description %></div>
-                                    <div class="lab-badges">
-                                        <span class="lab-badge lab-badge-cat"><%= game.category %></span>
-                                        <% if (game.mobile) { %><span class="lab-badge">📱</span><% } %>
-                                    </div>
-                                </div>
-                            </a>
-                            <% } %>
                         </div>
                         <% } %>
                     </div>
