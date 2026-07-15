@@ -40,17 +40,6 @@ toolSlug: example-tool
 ## EJS 骨架
 
 ```ejs
-<%
-    var toolTitle = '示例工具';
-    var toolDesc = '';
-    if (site.data && site.data.tools) {
-        var tool = site.data.tools.find(function(t) { return t.slug === page.toolSlug; });
-        if (tool) {
-            toolTitle = tool.emoji + ' ' + tool.name;
-            toolDesc = tool.description;
-        }
-    }
-%>
 <%- partial('_partial/bg-cover') %>
 
 <style>
@@ -64,7 +53,7 @@ toolSlug: example-tool
 <main class="content">
   <div class="container tool-container">
     <div class="card">
-      <%- partial('_partial/tool-header', { toolTitle: toolTitle, toolDesc: toolDesc }) %>
+      <%- partial('_partial/tool-header') %>
       <div class="card-content">
         <!-- 工具界面 -->
       </div>

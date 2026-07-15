@@ -1,14 +1,3 @@
-<%
-    var toolTitle = '视频转GIF';
-    var toolDesc = '';
-    if (site.data && site.data.tools) {
-        var tool = site.data.tools.find(function(t) { return t.slug === page.toolSlug; });
-        if (tool) {
-            toolTitle = tool.emoji + ' ' + tool.name;
-            toolDesc = tool.description;
-        }
-    }
-%>
 <%- partial('_partial/bg-cover') %>
 
 <style>
@@ -353,7 +342,7 @@
 <main class="content">
   <div class="container video-gif-container">
     <div class="card">
-      <%- partial('_partial/tool-header', { toolTitle: toolTitle, toolDesc: toolDesc }) %>
+      <%- partial('_partial/tool-header') %>
       <div class="card-content">
         <div class="video-gif-privacy">
           <i class="fas fa-lock"></i>

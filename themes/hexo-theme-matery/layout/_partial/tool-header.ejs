@@ -1,3 +1,14 @@
+<%
+    var toolTitle = page.title || '小工具';
+    var toolDesc = page.description || '';
+    if (site.data && site.data.tools) {
+        var tool = site.data.tools.find(function(t) { return t.slug === page.toolSlug; });
+        if (tool) {
+            toolTitle = (tool.emoji ? tool.emoji + ' ' : '') + tool.name;
+            toolDesc = tool.description || '';
+        }
+    }
+%>
 <div class="tool-header">
     <span class="tool-title"><%= toolTitle %></span>
     <% if (toolDesc) { %>

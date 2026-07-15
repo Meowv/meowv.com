@@ -18,7 +18,8 @@ if (!slug || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
 const files = {
   registry: path.join(root, 'source/_data/tools.json'),
   page: path.join(root, 'source/tools', slug, 'index.md'),
-  layout: path.join(root, 'themes/hexo-theme-matery/layout/tools', slug + '.ejs')
+  layout: path.join(root, 'themes/hexo-theme-matery/layout/tools', slug + '.ejs'),
+  header: path.join(root, 'themes/hexo-theme-matery/layout/_partial/tool-header.ejs')
 };
 
 function read(label, file) {
@@ -42,6 +43,7 @@ function checkTrailingWhitespace(label, source) {
 const registrySource = read('工具注册文件', files.registry);
 const pageSource = read('页面入口', files.page);
 const layoutSource = read('EJS 布局', files.layout);
+const headerSource = read('公共标题组件', files.header);
 
 if (registrySource) {
   try {
@@ -78,11 +80,12 @@ if (layoutSource) {
     errors.push(`EJS 模板语法错误：${error.message}`);
   }
 
-  for (const marker of ['site.data.tools', 'page.toolSlug', "partial('_partial/bg-cover')", "partial('_partial/valine')"]) {
+  for (const marker of ["partial('_partial/bg-cover')", "partial('_partial/tool-header')", "partial('_partial/valine')"]) {
     if (!layoutSource.includes(marker)) errors.push(`EJS 布局缺少约定内容：${marker}`);
   }
 
-  const scripts = [...layoutSource.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)];
+  const inlineScriptSource = layoutSource.replace(/<script\b(?=[^>]*\bsrc\s*=)[\s\S]*?<\/script>/g, '');
+  const scripts = [...inlineScriptSource.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)];
   scripts.forEach((matched, index) => {
     if (matched[1].includes('<%')) {
       warnings.push(`第 ${index + 1} 个页面脚本包含 EJS 标签，已跳过 JavaScript 语法检查`);
@@ -94,6 +97,18 @@ if (layoutSource) {
       errors.push(`第 ${index + 1} 个页面脚本语法错误：${error.message}`);
     }
   });
+}
+
+if (headerSource) {
+  try {
+    require('ejs').compile(headerSource);
+  } catch (error) {
+    errors.push(`公共标题组件语法错误：${error.message}`);
+  }
+
+  for (const marker of ['site.data.tools', 'page.toolSlug']) {
+    if (!headerSource.includes(marker)) errors.push(`公共标题组件缺少约定内容：${marker}`);
+  }
 }
 
 for (const [label, file] of Object.entries(files)) {

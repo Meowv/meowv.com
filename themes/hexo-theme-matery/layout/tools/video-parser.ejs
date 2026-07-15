@@ -1,14 +1,3 @@
-<%
-    var toolTitle = '短视频解析';
-    var toolDesc = '';
-    if (site.data && site.data.tools) {
-        var tool = site.data.tools.find(function(t) { return t.slug === page.toolSlug; });
-        if (tool) {
-            toolTitle = tool.emoji + ' ' + tool.name;
-            toolDesc = tool.description;
-        }
-    }
-%>
 <%- partial('_partial/bg-cover') %>
 
 <style>
@@ -284,7 +273,7 @@
   <div class="container video-parser-container">
     <!-- 输入卡片 -->
     <div class="card input-card">
-      <%- partial('_partial/tool-header', { toolTitle: toolTitle, toolDesc: toolDesc }) %>
+      <%- partial('_partial/tool-header') %>
       <div class="card-content">
         <div class="parse-row">
           <div class="url-input-wrap">

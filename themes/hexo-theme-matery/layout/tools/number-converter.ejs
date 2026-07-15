@@ -1,14 +1,3 @@
-<%
-    var toolTitle = '数字大小写转换';
-    var toolDesc = '';
-    if (site.data && site.data.tools) {
-        var tool = site.data.tools.find(function(t) { return t.slug === page.toolSlug; });
-        if (tool) {
-            toolTitle = tool.emoji + ' ' + tool.name;
-            toolDesc = tool.description;
-        }
-    }
-%>
 <%- partial('_partial/bg-cover') %>
 
 <style>
@@ -79,7 +68,7 @@
 <main class="content">
   <div class="container tool-container">
     <div class="card">
-      <%- partial('_partial/tool-header', { toolTitle: toolTitle, toolDesc: toolDesc }) %>
+      <%- partial('_partial/tool-header') %>
       <div class="card-content">
         <label class="number-field-label" for="numberInput">阿拉伯数字</label>
         <div class="number-input-row">
