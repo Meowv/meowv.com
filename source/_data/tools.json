@@ -158,6 +158,13 @@
     "url": "/tools/calculation-paper"
   },
   {
+    "slug": "number-converter",
+    "name": "数字大小写转换",
+    "description": "阿拉伯数字转中文小写与人民币大写",
+    "emoji": "🔢",
+    "url": "/tools/number-converter"
+  },
+  {
     "slug": "video-parser",
     "name": "短视频解析",
     "description": "全平台短视频链接解析去水印工具",

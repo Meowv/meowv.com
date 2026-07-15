@@ -1,0 +1,368 @@
+<%
+    var toolTitle = '数字大小写转换';
+    var toolDesc = '';
+    if (site.data && site.data.tools) {
+        var tool = site.data.tools.find(function(t) { return t.slug === page.toolSlug; });
+        if (tool) {
+            toolTitle = tool.emoji + ' ' + tool.name;
+            toolDesc = tool.description;
+        }
+    }
+%>
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .tool-container { margin-top: -50px; margin-bottom: 30px; }
+  .tool-container .card { border-radius: 8px; }
+  .tool-container .card .card-content .card-title { font-size: 1.4rem; font-weight: 600; margin-bottom: 20px; }
+
+  .number-field-label {
+    display: block; margin-bottom: 8px; color: #666; font-size: 0.9rem; font-weight: 600;
+  }
+  .number-input-row { display: flex; gap: 10px; }
+  .number-input {
+    width: 100% !important; height: auto !important; margin: 0 !important; padding: 12px 16px !important;
+    box-sizing: border-box !important; border: 2px solid #e8e8e8 !important; border-radius: 10px !important;
+    background: #fafafa !important; box-shadow: none !important; color: #333; outline: none;
+    font: 1rem/1.5 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .number-input:focus {
+    border-color: #5a9600 !important; background: #fff !important; box-shadow: none !important;
+  }
+  .number-clear-btn {
+    flex: none; padding: 0 18px; border: 1px solid #ddd; border-radius: 10px;
+    background: #fff; color: #777; cursor: pointer; font-size: 0.85rem; transition: all 0.2s;
+  }
+  .number-clear-btn:hover { border-color: #e53935; color: #e53935; }
+  .number-message { min-height: 21px; margin-top: 6px; color: #aaa; font-size: 0.78rem; }
+  .number-message.error { color: #e53935; }
+
+  .number-examples { display: flex; align-items: center; gap: 8px; margin: 8px 0 22px; flex-wrap: wrap; }
+  .number-examples-label { color: #999; font-size: 0.78rem; }
+  .number-example {
+    padding: 4px 11px; border: 1px solid #ddd; border-radius: 16px; background: #fff;
+    color: #666; cursor: pointer; font: 0.78rem 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    transition: all 0.2s;
+  }
+  .number-example:hover { border-color: #5a9600; color: #5a9600; }
+
+  .number-results { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .number-result {
+    min-width: 0; padding: 16px; border: 1px solid #e7ecdf; border-radius: 10px; background: #f8fbf4;
+  }
+  .number-result-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .number-result-label { color: #5a9600; font-size: 0.85rem; font-weight: 600; }
+  .number-copy-btn {
+    display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px;
+    border: 1px solid #d8e4ca; border-radius: 50%; background: #fff; color: #8aa668;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .number-copy-btn:hover:not(:disabled) { border-color: #5a9600; color: #5a9600; }
+  .number-copy-btn:disabled { cursor: default; opacity: 0.45; }
+  .number-copy-btn.copied { border-color: #5a9600; background: #5a9600; color: #fff; }
+  .number-result-value {
+    min-height: 72px; margin-top: 14px; color: #333; font-size: 1.05rem; line-height: 1.8;
+    word-break: break-all;
+  }
+  .number-result-value.empty { color: #bbb; }
+  .number-rule { margin: 18px 0 0; color: #999; font-size: 0.76rem; line-height: 1.6; }
+
+  @media only screen and (max-width: 601px) {
+    .tool-container { margin-top: -30px; }
+    .number-input-row { flex-direction: column; }
+    .number-clear-btn { min-height: 40px; }
+    .number-results { grid-template-columns: 1fr; }
+    .number-result-value { min-height: 52px; }
+  }
+</style>
+
+<main class="content">
+  <div class="container tool-container">
+    <div class="card">
+      <div class="card-content">
+        <span class="card-title" style="display: inline-block"><%= toolTitle %></span>
+        <% if (toolDesc) { %>
+        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
+        <% } %>
+
+        <label class="number-field-label" for="numberInput">阿拉伯数字</label>
+        <div class="number-input-row">
+          <input class="number-input" id="numberInput" type="text" inputmode="decimal" autocomplete="off"
+                 spellcheck="false" placeholder="例如：123456.78" aria-describedby="numberMessage">
+          <button class="number-clear-btn" id="clearBtn" type="button"><i class="fas fa-times"></i> 清空</button>
+        </div>
+        <div class="number-message" id="numberMessage" role="alert">支持正负数、规范千分位及全角数字</div>
+
+        <div class="number-examples">
+          <span class="number-examples-label">示例</span>
+          <button class="number-example" type="button" data-value="123456.78">123456.78</button>
+          <button class="number-example" type="button" data-value="10001">10001</button>
+          <button class="number-example" type="button" data-value="0.05">0.05</button>
+          <button class="number-example" type="button" data-value="-1200.3">-1200.3</button>
+        </div>
+
+        <div class="number-results">
+          <section class="number-result">
+            <div class="number-result-head">
+              <span class="number-result-label">中文小写</span>
+              <button class="number-copy-btn" type="button" data-target="lowerResult" title="复制中文小写" disabled>
+                <i class="fas fa-copy"></i>
+              </button>
+            </div>
+            <div class="number-result-value empty" id="lowerResult" aria-live="polite">—</div>
+          </section>
+          <section class="number-result">
+            <div class="number-result-head">
+              <span class="number-result-label">人民币大写</span>
+              <button class="number-copy-btn" type="button" data-target="currencyResult" title="复制人民币大写" disabled>
+                <i class="fas fa-copy"></i>
+              </button>
+            </div>
+            <div class="number-result-value empty" id="currencyResult" aria-live="polite">—</div>
+          </section>
+        </div>
+
+        <p class="number-rule">整数部分最多 16 位；中文小写保留输入的小数位，人民币大写四舍五入到分。</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script>
+  (function() {
+    var LOWER_DIGITS = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
+    var UPPER_DIGITS = ['零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖'];
+    var LOWER_UNITS = ['', '十', '百', '千'];
+    var UPPER_UNITS = ['', '拾', '佰', '仟'];
+    var GROUP_UNITS = ['', '万', '亿', '兆'];
+    var DEFAULT_MESSAGE = '支持正负数、规范千分位及全角数字';
+
+    function normalizeInput(value) {
+      var source = value.trim()
+        .replace(/[０-９]/g, function(char) { return String.fromCharCode(char.charCodeAt(0) - 65248); })
+        .replace(/，/g, ',')
+        .replace(/．/g, '.')
+        .replace(/＋/g, '+')
+        .replace(/[－−]/g, '-');
+
+      if (!source) return { empty: true };
+
+      var matched = source.match(/^([+-]?)(?:(\d+|\d{1,3}(?:,\d{3})+)(?:\.(\d*))?|\.(\d+))$/);
+      if (!matched) return { error: '请输入有效数字，千分位需按 1,234 格式书写' };
+
+      var integer = (matched[2] || '0').replace(/,/g, '').replace(/^0+(?=\d)/, '');
+      var fraction = matched[3] !== undefined ? matched[3] : (matched[4] || '');
+      if (integer.length > 16) return { error: '整数部分最多支持 16 位' };
+
+      var isZero = /^0+$/.test(integer) && (!fraction || /^0+$/.test(fraction));
+      return {
+        integer: integer,
+        fraction: fraction,
+        negative: matched[1] === '-' && !isZero
+      };
+    }
+
+    function convertSection(section, digits, units) {
+      var result = '';
+      var pendingZero = false;
+
+      for (var i = 0; i < section.length; i++) {
+        var digit = Number(section.charAt(i));
+        var position = section.length - i - 1;
+
+        if (digit === 0) {
+          if (result) pendingZero = true;
+          continue;
+        }
+
+        if (pendingZero) result += digits[0];
+        result += digits[digit] + units[position];
+        pendingZero = false;
+      }
+
+      return result;
+    }
+
+    function convertInteger(integer, digits, units, omitLeadingOne) {
+      if (/^0+$/.test(integer)) return digits[0];
+
+      var groups = [];
+      for (var end = integer.length; end > 0; end -= 4) {
+        groups.unshift(integer.slice(Math.max(0, end - 4), end));
+      }
+
+      var result = '';
+      var pendingZero = false;
+
+      for (var i = 0; i < groups.length; i++) {
+        var group = groups[i];
+        var value = Number(group);
+        if (value === 0) {
+          if (result) pendingZero = true;
+          continue;
+        }
+
+        if (result && (pendingZero || value < 1000)) result += digits[0];
+        result += convertSection(group, digits, units) + GROUP_UNITS[groups.length - i - 1];
+        pendingZero = /0$/.test(group);
+      }
+
+      if (omitLeadingOne && result.indexOf(digits[1] + units[1]) === 0) {
+        result = result.slice(digits[1].length);
+      }
+      return result;
+    }
+
+    function toLowerChinese(number) {
+      var result = convertInteger(number.integer, LOWER_DIGITS, LOWER_UNITS, true);
+      if (number.fraction) {
+        result += '点' + number.fraction.split('').map(function(digit) {
+          return LOWER_DIGITS[Number(digit)];
+        }).join('');
+      }
+      return number.negative ? '负' + result : result;
+    }
+
+    function addOne(integer) {
+      var digits = integer.split('');
+      var carry = 1;
+      for (var i = digits.length - 1; i >= 0 && carry; i--) {
+        var value = Number(digits[i]) + carry;
+        digits[i] = String(value % 10);
+        carry = value > 9 ? 1 : 0;
+      }
+      if (carry) digits.unshift('1');
+      return digits.join('');
+    }
+
+    function roundCurrency(number) {
+      var decimal = (number.fraction + '000').slice(0, 3);
+      var cents = Number(decimal.slice(0, 2));
+      var integer = number.integer;
+
+      if (Number(decimal.charAt(2)) >= 5) cents++;
+      if (cents === 100) {
+        integer = addOne(integer);
+        cents = 0;
+      }
+
+      return {
+        integer: integer,
+        cents: String(cents).padStart(2, '0'),
+        negative: number.negative && !(integer === '0' && cents === 0)
+      };
+    }
+
+    function toCurrencyChinese(number) {
+      var rounded = roundCurrency(number);
+      if (rounded.integer.length > 16) return { error: '四舍五入后超出支持范围' };
+
+      var result = convertInteger(rounded.integer, UPPER_DIGITS, UPPER_UNITS, false) + '元';
+      var jiao = Number(rounded.cents.charAt(0));
+      var fen = Number(rounded.cents.charAt(1));
+
+      if (jiao === 0 && fen === 0) {
+        result += '整';
+      } else {
+        if (jiao) result += UPPER_DIGITS[jiao] + '角';
+        if (!jiao && fen) result += UPPER_DIGITS[0];
+        if (fen) result += UPPER_DIGITS[fen] + '分';
+      }
+
+      return { value: (rounded.negative ? '负' : '') + result };
+    }
+
+    function setResults(lower, currency) {
+      $('#lowerResult').text(lower || '—').toggleClass('empty', !lower);
+      $('#currencyResult').text(currency || '—').toggleClass('empty', !currency);
+      $('.number-copy-btn').prop('disabled', !lower || !currency);
+    }
+
+    function setMessage(message, isError) {
+      $('#numberMessage').text(message || DEFAULT_MESSAGE).toggleClass('error', !!isError);
+    }
+
+    function render() {
+      var parsed = normalizeInput($('#numberInput').val());
+      if (parsed.empty) {
+        setResults('', '');
+        setMessage();
+        return;
+      }
+      if (parsed.error) {
+        setResults('', '');
+        setMessage(parsed.error, true);
+        return;
+      }
+
+      var currency = toCurrencyChinese(parsed);
+      if (currency.error) {
+        setResults('', '');
+        setMessage(currency.error, true);
+        return;
+      }
+
+      setResults(toLowerChinese(parsed), currency.value);
+      setMessage('已转换，人民币大写结果按分四舍五入');
+    }
+
+    function copyText(text) {
+      if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
+
+      return new Promise(function(resolve, reject) {
+        var textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+          document.execCommand('copy') ? resolve() : reject(new Error('复制失败'));
+        } catch (error) {
+          reject(error);
+        }
+        document.body.removeChild(textarea);
+      });
+    }
+
+    function showCopied($button) {
+      $button.addClass('copied').html('<i class="fas fa-check"></i>');
+      window.setTimeout(function() {
+        $button.removeClass('copied').html('<i class="fas fa-copy"></i>');
+      }, 1500);
+    }
+
+    $(document).ready(function() {
+      $('#numberInput').on('input', render);
+
+      $('.number-example').on('click', function() {
+        $('#numberInput').val($(this).data('value')).focus();
+        render();
+      });
+
+      $('#clearBtn').on('click', function() {
+        $('#numberInput').val('').focus();
+        render();
+      });
+
+      $('.number-copy-btn').on('click', function() {
+        var $button = $(this);
+        var text = $('#' + $button.data('target')).text();
+        if (!text || text === '—') return;
+
+        copyText(text).then(function() {
+          showCopied($button);
+        }).catch(function() {
+          M.toast({ html: '复制失败，请手动复制', classes: 'rounded red' });
+        });
+      });
+    });
+  })();
+</script>
