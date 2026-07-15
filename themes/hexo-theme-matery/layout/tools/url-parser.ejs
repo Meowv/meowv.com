@@ -1,0 +1,254 @@
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .up-container { margin-top: -50px; margin-bottom: 30px; }
+  .up-container .card { border-radius: 8px; }
+  .up-input-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+  .up-input {
+    display: block; width: 100%; height: 46px !important; margin: 0 !important; padding: 0 13px !important;
+    box-sizing: border-box !important;
+    border: 2px solid #e8e8e8 !important; border-radius: 10px !important; background: #fafafa !important;
+    color: #333; font: 0.88rem 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    outline: none; box-shadow: none !important;
+  }
+  .up-input:focus { border-color: #5a9600 !important; background: #fff !important; }
+  .up-toolbar { display: flex; flex-wrap: wrap; gap: 8px; }
+  .up-toolbar .btn {
+    display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 16px;
+    border-radius: 22px; font-size: 13px; line-height: 44px; letter-spacing: 0;
+  }
+  .up-toolbar .up-primary { background: linear-gradient(135deg, #5a9600, #7ccd00); }
+  .up-toolbar .up-outline { border: 1px solid #ddd; background: transparent; color: #666; box-shadow: none; }
+  .up-toolbar .up-outline:hover { border-color: #5a9600; color: #5a9600; }
+  .up-message { min-height: 22px; margin: 10px 0 14px; color: #777; font-size: 0.8rem; }
+  .up-message.up-error { color: #e53935; }
+  .up-normalized {
+    display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px;
+    padding: 12px 14px; margin-bottom: 16px; border: 1px solid #dcebc8; border-radius: 10px; background: #f3f9ea;
+  }
+  .up-normalized-label { color: #5a9600; font-size: 0.78rem; font-weight: 600; }
+  .up-normalized-value { min-width: 0; overflow: hidden; color: #3f6508; font: 0.82rem 'SF Mono', monospace; text-overflow: ellipsis; white-space: nowrap; }
+  .up-copy-small {
+    width: 40px; height: 40px; padding: 0; border: 1px solid #c9dda9; border-radius: 50%;
+    background: #fff; color: #5a9600; cursor: pointer;
+  }
+  .up-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .up-field { min-width: 0; padding: 12px 14px; border: 1px solid #e8e8e8; border-radius: 9px; background: #fafafa; }
+  .up-field.up-wide { grid-column: span 2; }
+  .up-field-label { display: block; margin-bottom: 6px; color: #999; font-size: 0.72rem; }
+  .up-field-value { min-height: 20px; color: #444; font: 0.82rem/1.5 'SF Mono', 'Fira Code', 'Consolas', monospace; overflow-wrap: anywhere; }
+  .up-query { margin-top: 16px; border: 1px solid #e8e8e8; border-radius: 10px; overflow: hidden; }
+  .up-query-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 11px 14px; border-bottom: 1px solid #e8e8e8; background: #f7f9f4;
+  }
+  .up-query-title { color: #5a9600; font-size: 0.82rem; font-weight: 600; }
+  .up-query-count { color: #999; font-size: 0.72rem; }
+  .up-query-list { max-height: 300px; overflow: auto; }
+  .up-param { display: grid; grid-template-columns: 42px minmax(0, 0.8fr) minmax(0, 1.2fr); border-bottom: 1px solid #eee; }
+  .up-param:last-child { border-bottom: 0; }
+  .up-param > span { min-width: 0; padding: 9px 11px; color: #555; font: 0.78rem/1.45 'SF Mono', monospace; overflow-wrap: anywhere; }
+  .up-param > span + span { border-left: 1px solid #eee; }
+  .up-param-index { color: #aaa !important; text-align: center; }
+  .up-empty { padding: 25px 12px; color: #aaa; font-size: 0.8rem; text-align: center; }
+  .up-privacy { margin-top: 12px; color: #999; font-size: 0.75rem; }
+
+  @media only screen and (max-width: 780px) {
+    .up-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media only screen and (max-width: 601px) {
+    .up-container { margin-top: -30px; }
+    .up-input-row { grid-template-columns: 1fr; }
+    .up-toolbar .btn { flex: 1 1 calc(33.333% - 8px); justify-content: center; padding: 0 8px; }
+    .up-copy-small { width: 44px; height: 44px; }
+    .up-normalized { grid-template-columns: 1fr auto; }
+    .up-normalized-label { grid-column: 1 / -1; }
+    .up-fields { grid-template-columns: 1fr; }
+    .up-field.up-wide { grid-column: auto; }
+    .up-param { grid-template-columns: 34px minmax(0, 0.8fr) minmax(0, 1.2fr); }
+    .up-param > span { padding: 8px 7px; font-size: 0.72rem; }
+  }
+</style>
+
+<main class="content">
+  <div class="container up-container">
+    <div class="card">
+      <%- partial('_partial/tool-header') %>
+      <div class="card-content">
+        <div class="up-input-row">
+          <input class="up-input" id="upInput" type="text" spellcheck="false" autocomplete="off" placeholder="例如：example.com/path?a=1&amp;a=2#section">
+          <div class="up-toolbar">
+            <button class="btn waves-effect up-primary" id="upParse" type="button"><i class="fas fa-search"></i> 解析</button>
+            <button class="btn waves-effect up-outline" id="upExample" type="button"><i class="fas fa-flask"></i> 示例</button>
+            <button class="btn waves-effect up-outline" id="upClear" type="button"><i class="fas fa-trash-alt"></i> 清空</button>
+          </div>
+        </div>
+        <div class="up-message" id="upMessage">可直接输入无协议域名或 localhost，工具会明确标注补全方式</div>
+
+        <div class="up-normalized">
+          <span class="up-normalized-label">浏览器规范化结果</span>
+          <span class="up-normalized-value" id="upNormalized">—</span>
+          <button class="up-copy-small" id="upCopy" type="button" title="复制规范化 URL"><i class="fas fa-copy"></i></button>
+        </div>
+
+        <div class="up-fields">
+          <div class="up-field"><span class="up-field-label">协议</span><div class="up-field-value" id="upProtocol">—</div></div>
+          <div class="up-field up-wide"><span class="up-field-label">认证信息（用户名 : 密码）</span><div class="up-field-value" id="upAuth">—</div></div>
+          <div class="up-field"><span class="up-field-label">主机名</span><div class="up-field-value" id="upHostname">—</div></div>
+          <div class="up-field"><span class="up-field-label">端口</span><div class="up-field-value" id="upPort">—</div></div>
+          <div class="up-field"><span class="up-field-label">Hash</span><div class="up-field-value" id="upHash">—</div></div>
+          <div class="up-field up-wide"><span class="up-field-label">路径</span><div class="up-field-value" id="upPathname">—</div></div>
+          <div class="up-field"><span class="up-field-label">查询字符串</span><div class="up-field-value" id="upSearch">—</div></div>
+        </div>
+
+        <section class="up-query">
+          <div class="up-query-head">
+            <span class="up-query-title">查询参数</span>
+            <span class="up-query-count" id="upParamCount">0 项</span>
+          </div>
+          <div class="up-query-list" id="upParams"><div class="up-empty">暂无查询参数</div></div>
+        </section>
+        <div class="up-privacy"><i class="fas fa-shield-alt"></i> URL 仅在当前页面解析，不会访问目标地址或发送内容。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script>
+  (function() {
+    var parseTimer = null;
+
+    function safelyDecode(value) {
+      if (!value) return '';
+      try { return decodeURIComponent(value); }
+      catch (error) { return value; }
+    }
+
+    function prepareURL(raw) {
+      var value = raw.trim();
+      if (!value) throw new Error('请输入需要解析的 URL');
+      if (/\s/.test(value) && !/^data:/i.test(value)) value = value.replace(/ /g, '%20');
+
+      if (/^\/\//.test(value)) {
+        return { value: 'https:' + value, note: '检测到协议相对地址，已补全 https:' };
+      }
+      if (/^(?:localhost|127(?:\.\d{1,3}){3}|\[::1\])(?::\d+)?(?:[/?#]|$)/i.test(value)) {
+        return { value: 'http://' + value, note: '检测到本地主机，已补全 http://' };
+      }
+      if (/^[^/?#:\s]+:\d+(?:[/?#]|$)/.test(value)) {
+        return { value: 'https://' + value, note: '检测到主机与端口，已补全 https://' };
+      }
+      if (/^[a-z][a-z\d+.-]*:/i.test(value)) {
+        return { value: value, note: '已使用输入中的协议，未额外补全' };
+      }
+      if (/^[/?#]/.test(value)) throw new Error('相对路径缺少主机名，请输入完整域名或 localhost');
+      return { value: 'https://' + value, note: '未检测到协议，已补全 https://' };
+    }
+
+    function emptyResults() {
+      $('#upNormalized, #upProtocol, #upAuth, #upHostname, #upPort, #upHash, #upPathname, #upSearch').text('—');
+      $('#upParamCount').text('0 项');
+      $('#upParams').html('<div class="up-empty">暂无查询参数</div>');
+    }
+
+    function renderParams(url) {
+      var $target = $('#upParams').empty();
+      var count = 0;
+      url.searchParams.forEach(function(value, name) {
+        count++;
+        var $row = $('<div class="up-param"></div>');
+        $row.append($('<span class="up-param-index"></span>').text(count));
+        $row.append($('<span></span>').text(name || '（空名称）'));
+        $row.append($('<span></span>').text(value || '（空值）'));
+        $target.append($row);
+      });
+      if (!count) $target.append('<div class="up-empty">暂无查询参数</div>');
+      $('#upParamCount').text(count + ' 项');
+    }
+
+    function render() {
+      var prepared;
+      var url;
+      try {
+        prepared = prepareURL($('#upInput').val());
+        url = new URL(prepared.value);
+      } catch (error) {
+        emptyResults();
+        $('#upMessage').addClass('up-error').text(error.message === 'Invalid URL' ? 'URL 格式无效，请检查主机、端口或转义字符' : error.message);
+        return;
+      }
+
+      var auth = '';
+      if (url.username || url.password) auth = safelyDecode(url.username) + (url.password ? ' : ' + safelyDecode(url.password) : '');
+      $('#upNormalized').text(url.href);
+      $('#upProtocol').text(url.protocol ? url.protocol.replace(/:$/, '') : '—');
+      $('#upAuth').text(auth || '—');
+      $('#upHostname').text(url.hostname || '—');
+      $('#upPort').text(url.port || '默认端口 / 无');
+      $('#upPathname').text(safelyDecode(url.pathname) || '—');
+      $('#upSearch').text(url.search || '—');
+      $('#upHash').text(url.hash ? safelyDecode(url.hash.slice(1)) : '—');
+      renderParams(url);
+      $('#upMessage').removeClass('up-error').text(prepared.note + '；规范化可能补上尾部斜杠或编码特殊字符');
+    }
+
+    function flashCopied() {
+      var $button = $('#upCopy');
+      $button.html('<i class="fas fa-check"></i>');
+      window.setTimeout(function() { $button.html('<i class="fas fa-copy"></i>'); }, 1400);
+    }
+
+    function copyNormalized() {
+      var value = $('#upNormalized').text();
+      if (value === '—') {
+        $('#upMessage').addClass('up-error').text('没有可复制的规范化 URL');
+        return;
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(value).then(flashCopied).catch(function() {
+          $('#upMessage').addClass('up-error').text('复制失败，请手动选择规范化结果');
+        });
+      } else {
+        var range = document.createRange();
+        range.selectNodeContents(document.getElementById('upNormalized'));
+        window.getSelection().removeAllRanges();
+        window.getSelection().addRange(range);
+        try { document.execCommand('copy'); flashCopied(); }
+        catch (error) { $('#upMessage').addClass('up-error').text('复制失败，请手动选择规范化结果'); }
+      }
+    }
+
+    $(document).ready(function() {
+      $('#upInput').on('input', function() {
+        window.clearTimeout(parseTimer);
+        if (!$(this).val().trim()) {
+          emptyResults();
+          $('#upMessage').removeClass('up-error').text('可直接输入无协议域名或 localhost，工具会明确标注补全方式');
+          return;
+        }
+        parseTimer = window.setTimeout(render, 180);
+      }).on('keydown', function(event) {
+        if (event.key === 'Enter') { event.preventDefault(); window.clearTimeout(parseTimer); render(); }
+      });
+      $('#upParse').on('click', render);
+      $('#upCopy').on('click', copyNormalized);
+      $('#upExample').on('click', function() {
+        $('#upInput').val('https://demo:secret@example.com:8443/docs/指南?q=URL&q=解析&empty=#part-1');
+        render();
+      });
+      $('#upClear').on('click', function() {
+        window.clearTimeout(parseTimer);
+        $('#upInput').val('').trigger('focus');
+        emptyResults();
+        $('#upMessage').removeClass('up-error').text('可直接输入无协议域名或 localhost，工具会明确标注补全方式');
+      });
+      emptyResults();
+    });
+  })();
+</script>

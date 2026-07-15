@@ -1,0 +1,329 @@
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .jwt-container { margin-top: -50px; margin-bottom: 30px; }
+  .jwt-container .card { border-radius: 8px; }
+  .jwt-warning {
+    display: flex; align-items: flex-start; gap: 10px; padding: 13px 15px; margin-bottom: 14px;
+    border: 1px solid #ffc46b; border-radius: 10px; background: #fff7e7; color: #8a5700;
+    font-size: 0.82rem; line-height: 1.55;
+  }
+  .jwt-warning i { margin-top: 3px; color: #e58a00; }
+  .jwt-warning strong { font-weight: 700; }
+  .jwt-input {
+    display: block; width: 100%; min-height: 135px; padding: 13px 15px; box-sizing: border-box;
+    border: 2px solid #e8e8e8; border-radius: 10px; background: #fafafa; color: #333;
+    font: 0.82rem/1.6 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    outline: none; resize: vertical; overflow-wrap: anywhere;
+  }
+  .jwt-input:focus { border-color: #5a9600; background: #fff; }
+  .jwt-toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 11px; }
+  .jwt-toolbar .btn {
+    display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 16px;
+    border-radius: 22px; font-size: 13px; line-height: 44px; letter-spacing: 0;
+  }
+  .jwt-toolbar .jwt-primary { background: linear-gradient(135deg, #5a9600, #7ccd00); }
+  .jwt-toolbar .jwt-outline { border: 1px solid #ddd; background: transparent; color: #666; box-shadow: none; }
+  .jwt-toolbar .jwt-outline:hover { border-color: #5a9600; color: #5a9600; }
+  .jwt-message { min-height: 22px; margin: 10px 0 14px; color: #777; font-size: 0.8rem; }
+  .jwt-message.jwt-error { color: #e53935; }
+  .jwt-overview { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 11px; margin-bottom: 15px; }
+  .jwt-overview-item { min-width: 0; padding: 12px 14px; border: 1px solid #e8e8e8; border-radius: 9px; background: #fafafa; }
+  .jwt-overview-label { display: block; margin-bottom: 5px; color: #999; font-size: 0.7rem; }
+  .jwt-overview-value { color: #444; font: 600 0.8rem/1.45 'SF Mono', monospace; overflow-wrap: anywhere; }
+  .jwt-overview-value.jwt-ok { color: #5a9600; }
+  .jwt-overview-value.jwt-bad { color: #e53935; }
+  .jwt-columns { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 15px; }
+  .jwt-panel { min-width: 0; border: 1px solid #e8e8e8; border-radius: 10px; overflow: hidden; }
+  .jwt-panel-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 10px 13px; border-bottom: 1px solid #e8e8e8; background: #f7f9f4;
+  }
+  .jwt-panel-title { color: #5a9600; font-size: 0.82rem; font-weight: 600; }
+  .jwt-mini-copy {
+    flex: none; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px;
+    padding: 0; border: 1px solid #d8e4ca; border-radius: 50%; background: #fff; color: #8aa668; cursor: pointer;
+  }
+  .jwt-mini-copy:hover { color: #5a9600; }
+  .jwt-json {
+    min-height: 220px; max-height: 430px; overflow: auto; margin: 0; padding: 13px 15px;
+    background: #fafafa; color: #333; font: 0.8rem/1.58 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    white-space: pre-wrap; overflow-wrap: anywhere;
+  }
+  .jwt-times { margin-top: 15px; border: 1px solid #e8e8e8; border-radius: 10px; overflow: hidden; }
+  .jwt-times-head { padding: 10px 13px; border-bottom: 1px solid #e8e8e8; background: #f7f9f4; color: #5a9600; font-size: 0.82rem; font-weight: 600; }
+  .jwt-time-row { display: grid; grid-template-columns: 70px minmax(0, 1fr) minmax(120px, auto); border-bottom: 1px solid #eee; }
+  .jwt-time-row:last-child { border-bottom: 0; }
+  .jwt-time-row > span { min-width: 0; padding: 10px 12px; color: #555; font: 0.76rem/1.45 'SF Mono', monospace; overflow-wrap: anywhere; }
+  .jwt-time-row > span + span { border-left: 1px solid #eee; }
+  .jwt-time-name { color: #777 !important; font-weight: 600 !important; }
+  .jwt-time-state { color: #888 !important; }
+  .jwt-time-state.jwt-ok { color: #5a9600 !important; }
+  .jwt-time-state.jwt-bad { color: #e53935 !important; }
+  .jwt-signature { margin-top: 15px; border: 1px solid #e8e8e8; border-radius: 10px; overflow: hidden; }
+  .jwt-signature-head { padding: 10px 13px; border-bottom: 1px solid #e8e8e8; background: #f7f9f4; color: #5a9600; font-size: 0.82rem; font-weight: 600; }
+  .jwt-signature-value { padding: 12px 14px; background: #fafafa; color: #555; font: 0.76rem/1.55 'SF Mono', monospace; overflow-wrap: anywhere; }
+  .jwt-empty { color: #aaa; }
+
+  @media only screen and (max-width: 601px) {
+    .jwt-container { margin-top: -30px; }
+    .jwt-overview, .jwt-columns { grid-template-columns: 1fr; }
+    .jwt-toolbar .btn { flex: 1 1 calc(50% - 8px); justify-content: center; padding: 0 9px; }
+    .jwt-mini-copy { width: 44px; height: 44px; }
+    .jwt-json { min-height: 180px; }
+    .jwt-time-row { grid-template-columns: 58px minmax(0, 1fr); }
+    .jwt-time-state { grid-column: 1 / -1; border-top: 1px solid #eee; border-left: 0 !important; }
+  }
+</style>
+
+<main class="content">
+  <div class="container jwt-container">
+    <div class="card">
+      <%- partial('_partial/tool-header') %>
+      <div class="card-content">
+        <div class="jwt-warning">
+          <i class="fas fa-exclamation-triangle"></i>
+          <div><strong>仅解析，不验证签名。</strong>解析结果不能证明令牌真实、可信或未被篡改。本工具只在当前浏览器解码文本，不执行 Payload，也不会保存或向外发送令牌。</div>
+        </div>
+        <textarea class="jwt-input" id="jwtInput" spellcheck="false" placeholder="粘贴三段式 JWT：header.payload.signature"></textarea>
+        <div class="jwt-toolbar">
+          <button class="btn waves-effect jwt-primary" id="jwtDecode" type="button"><i class="fas fa-unlock-alt"></i> 解析</button>
+          <button class="btn waves-effect jwt-outline" id="jwtExample" type="button"><i class="fas fa-flask"></i> 示例</button>
+          <button class="btn waves-effect jwt-outline" id="jwtCopyPayload" type="button"><i class="fas fa-copy"></i> 复制 Payload</button>
+          <button class="btn waves-effect jwt-outline" id="jwtClear" type="button"><i class="fas fa-trash-alt"></i> 清空</button>
+        </div>
+        <div class="jwt-message" id="jwtMessage">请输入 JWT；空签名也可解析，但仍不会验证令牌可信性</div>
+
+        <div class="jwt-overview">
+          <div class="jwt-overview-item"><span class="jwt-overview-label">算法 alg</span><div class="jwt-overview-value" id="jwtAlgorithm">—</div></div>
+          <div class="jwt-overview-item"><span class="jwt-overview-label">令牌类型 typ</span><div class="jwt-overview-value" id="jwtType">—</div></div>
+          <div class="jwt-overview-item"><span class="jwt-overview-label">时间状态</span><div class="jwt-overview-value" id="jwtStatus">—</div></div>
+        </div>
+
+        <div class="jwt-columns">
+          <section class="jwt-panel">
+            <div class="jwt-panel-head">
+              <span class="jwt-panel-title">Header</span>
+              <button class="jwt-mini-copy" id="jwtCopyHeader" type="button" title="复制 Header"><i class="fas fa-copy"></i></button>
+            </div>
+            <pre class="jwt-json" id="jwtHeader">—</pre>
+          </section>
+          <section class="jwt-panel">
+            <div class="jwt-panel-head">
+              <span class="jwt-panel-title">Payload</span>
+              <button class="jwt-mini-copy" id="jwtCopyPayloadMini" type="button" title="复制 Payload"><i class="fas fa-copy"></i></button>
+            </div>
+            <pre class="jwt-json" id="jwtPayload">—</pre>
+          </section>
+        </div>
+
+        <section class="jwt-times">
+          <div class="jwt-times-head">时间声明</div>
+          <div id="jwtTimes"><div class="jwt-time-row"><span class="jwt-time-name">—</span><span class="jwt-empty">暂无可识别的 exp / nbf / iat</span><span class="jwt-time-state">—</span></div></div>
+        </section>
+
+        <section class="jwt-signature">
+          <div class="jwt-signature-head">签名原文（Base64URL，不做验证）</div>
+          <div class="jwt-signature-value" id="jwtSignature">—</div>
+        </section>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script>
+  (function() {
+    var decodeTimer = null;
+    var decodedHeaderText = '';
+    var decodedPayloadText = '';
+
+    function decodeBase64URL(segment, label) {
+      if (!segment) throw new Error(label + ' 片段为空');
+      if (!/^[A-Za-z0-9_-]+$/.test(segment)) throw new Error(label + ' 包含无效的 Base64URL 字符');
+      var base64 = segment.replace(/-/g, '+').replace(/_/g, '/');
+      var remainder = base64.length % 4;
+      if (remainder === 1) throw new Error(label + ' 的 Base64URL 长度无效');
+      if (remainder) base64 += new Array(5 - remainder).join('=');
+      var binary;
+      try { binary = atob(base64); }
+      catch (error) { throw new Error(label + ' 无法进行 Base64URL 解码'); }
+      var bytes = new Uint8Array(binary.length);
+      for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      try {
+        if (window.TextDecoder) return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+        var encoded = '';
+        for (var j = 0; j < bytes.length; j++) encoded += '%' + ('0' + bytes[j].toString(16)).slice(-2);
+        return decodeURIComponent(encoded);
+      } catch (error) {
+        throw new Error(label + ' 不是有效的 UTF-8 文本');
+      }
+    }
+
+    function parseJSONSegment(segment, label) {
+      var text = decodeBase64URL(segment, label);
+      var value;
+      try { value = JSON.parse(text); }
+      catch (error) { throw new Error(label + ' 不是有效 JSON：' + error.message); }
+      if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(label + ' 应为 JSON 对象');
+      return value;
+    }
+
+    function formatTime(seconds) {
+      if (typeof seconds !== 'number' || !isFinite(seconds)) return null;
+      var date = new Date(seconds * 1000);
+      if (isNaN(date.getTime())) return null;
+      return date.toLocaleString('zh-CN', { hour12: false }) + ' / ' + date.toISOString();
+    }
+
+    function relativeTime(seconds, now) {
+      var difference = Math.round(seconds - now);
+      var absolute = Math.abs(difference);
+      var amount;
+      var unit;
+      if (absolute >= 86400) { amount = Math.round(absolute / 86400); unit = '天'; }
+      else if (absolute >= 3600) { amount = Math.round(absolute / 3600); unit = '小时'; }
+      else if (absolute >= 60) { amount = Math.round(absolute / 60); unit = '分钟'; }
+      else { amount = absolute; unit = '秒'; }
+      return difference >= 0 ? amount + unit + '后' : amount + unit + '前';
+    }
+
+    function timeState(name, value, now) {
+      if (typeof value !== 'number' || !isFinite(value) || !formatTime(value)) return { text: '数值格式无效', className: 'jwt-bad' };
+      if (name === 'exp') return now >= value ? { text: '已过期 · ' + relativeTime(value, now), className: 'jwt-bad' } : { text: '未过期 · ' + relativeTime(value, now), className: 'jwt-ok' };
+      if (name === 'nbf') return now < value ? { text: '尚未生效 · ' + relativeTime(value, now), className: 'jwt-bad' } : { text: '已生效 · ' + relativeTime(value, now), className: 'jwt-ok' };
+      return { text: relativeTime(value, now), className: '' };
+    }
+
+    function renderTimes(payload, now) {
+      var $target = $('#jwtTimes').empty();
+      var count = 0;
+      ['exp', 'nbf', 'iat'].forEach(function(name) {
+        if (!Object.prototype.hasOwnProperty.call(payload, name)) return;
+        count++;
+        var formatted = formatTime(payload[name]);
+        var state = timeState(name, payload[name], now);
+        var $row = $('<div class="jwt-time-row"></div>');
+        $row.append($('<span class="jwt-time-name"></span>').text(name));
+        $row.append($('<span></span>').text(formatted || String(payload[name])));
+        $row.append($('<span class="jwt-time-state"></span>').addClass(state.className).text(state.text));
+        $target.append($row);
+      });
+      if (!count) {
+        $target.append('<div class="jwt-time-row"><span class="jwt-time-name">—</span><span class="jwt-empty">暂无可识别的 exp / nbf / iat</span><span class="jwt-time-state">—</span></div>');
+      }
+    }
+
+    function clearOutput() {
+      decodedHeaderText = '';
+      decodedPayloadText = '';
+      $('#jwtAlgorithm, #jwtType, #jwtStatus, #jwtHeader, #jwtPayload, #jwtSignature').text('—').removeClass('jwt-ok jwt-bad');
+      $('#jwtTimes').html('<div class="jwt-time-row"><span class="jwt-time-name">—</span><span class="jwt-empty">暂无可识别的 exp / nbf / iat</span><span class="jwt-time-state">—</span></div>');
+    }
+
+    function decodeToken() {
+      var token = $('#jwtInput').val().trim();
+      if (!token) {
+        clearOutput();
+        $('#jwtMessage').removeClass('jwt-error').text('请输入 JWT；空签名也可解析，但仍不会验证令牌可信性');
+        return;
+      }
+      if (token.length > 1048576) {
+        clearOutput();
+        $('#jwtMessage').addClass('jwt-error').text('令牌超过 1 MiB，已停止解析以保护页面性能');
+        return;
+      }
+      if (/\s/.test(token)) {
+        clearOutput();
+        $('#jwtMessage').addClass('jwt-error').text('JWT 中不能包含空格或换行');
+        return;
+      }
+
+      try {
+        var parts = token.split('.');
+        if (parts.length !== 3) throw new Error('JWT 应由 Header、Payload、Signature 三段组成');
+        var header = parseJSONSegment(parts[0], 'Header');
+        var payload = parseJSONSegment(parts[1], 'Payload');
+        var now = Date.now() / 1000;
+        decodedHeaderText = JSON.stringify(header, null, 2);
+        decodedPayloadText = JSON.stringify(payload, null, 2);
+        $('#jwtHeader').text(decodedHeaderText);
+        $('#jwtPayload').text(decodedPayloadText);
+        $('#jwtAlgorithm').text(header.alg === undefined ? '未声明' : String(header.alg));
+        $('#jwtType').text(header.typ === undefined ? '未声明' : String(header.typ));
+        $('#jwtSignature').text(parts[2] || '（空签名）');
+        renderTimes(payload, now);
+
+        var statusText = '无 exp / nbf 限制';
+        var statusClass = '';
+        var invalidExp = Object.prototype.hasOwnProperty.call(payload, 'exp') && !formatTime(payload.exp);
+        var invalidNbf = Object.prototype.hasOwnProperty.call(payload, 'nbf') && !formatTime(payload.nbf);
+        if (invalidExp || invalidNbf) { statusText = '时间声明无效'; statusClass = 'jwt-bad'; }
+        else if (typeof payload.exp === 'number' && now >= payload.exp) { statusText = '已过期'; statusClass = 'jwt-bad'; }
+        else if (typeof payload.nbf === 'number' && now < payload.nbf) { statusText = '尚未生效'; statusClass = 'jwt-bad'; }
+        else if (Object.prototype.hasOwnProperty.call(payload, 'exp') || Object.prototype.hasOwnProperty.call(payload, 'nbf')) { statusText = '当前时间可用'; statusClass = 'jwt-ok'; }
+        $('#jwtStatus').text(statusText).removeClass('jwt-ok jwt-bad').addClass(statusClass);
+
+        var warnings = [];
+        if (String(header.alg).toLowerCase() === 'none') warnings.push('alg=none');
+        if (!parts[2]) warnings.push('签名为空');
+        $('#jwtAlgorithm').toggleClass('jwt-bad', String(header.alg).toLowerCase() === 'none');
+        $('#jwtMessage').toggleClass('jwt-error', warnings.length > 0).text(
+          warnings.length ? '解析完成，但检测到 ' + warnings.join('、') + '；本页面不会验证其安全性' : '解析完成；结果仅供查看，签名尚未验证'
+        );
+      } catch (error) {
+        clearOutput();
+        $('#jwtMessage').addClass('jwt-error').text(error.message || 'JWT 解析失败');
+      }
+    }
+
+    function flashCopy($button) {
+      var original = $button.html();
+      $button.html('<i class="fas fa-check"></i>');
+      window.setTimeout(function() { $button.html(original); }, 1400);
+    }
+
+    function copyText(text, $button) {
+      if (!text) {
+        $('#jwtMessage').addClass('jwt-error').text('没有可复制的解析结果');
+        return;
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function() { flashCopy($button); }).catch(function() {
+          $('#jwtMessage').addClass('jwt-error').text('复制失败，请手动选择解析结果');
+        });
+      } else {
+        var temporary = $('<textarea></textarea>').val(text).appendTo('body').trigger('select');
+        try { document.execCommand('copy'); flashCopy($button); }
+        catch (error) { $('#jwtMessage').addClass('jwt-error').text('复制失败，请手动选择解析结果'); }
+        temporary.remove();
+      }
+    }
+
+    $(document).ready(function() {
+      $('#jwtInput').on('input', function() {
+        window.clearTimeout(decodeTimer);
+        decodeTimer = window.setTimeout(decodeToken, 200);
+      });
+      $('#jwtDecode').on('click', decodeToken);
+      $('#jwtExample').on('click', function() {
+        $('#jwtInput').val('eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiLmtYvor5XnlKjmiLciLCJpYXQiOjE3MDAwMDAwMDAsImV4cCI6NDEwMjQ0NDgwMH0.');
+        decodeToken();
+      });
+      $('#jwtCopyHeader').on('click', function() { copyText(decodedHeaderText, $(this)); });
+      $('#jwtCopyPayload, #jwtCopyPayloadMini').on('click', function() { copyText(decodedPayloadText, $(this)); });
+      $('#jwtClear').on('click', function() {
+        window.clearTimeout(decodeTimer);
+        $('#jwtInput').val('').trigger('focus');
+        clearOutput();
+        $('#jwtMessage').removeClass('jwt-error').text('请输入 JWT；空签名也可解析，但仍不会验证令牌可信性');
+      });
+      clearOutput();
+    });
+  })();
+</script>

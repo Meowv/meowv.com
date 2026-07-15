@@ -1,0 +1,433 @@
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .cj-container { margin-top: -50px; margin-bottom: 30px; }
+  .cj-container .card { border-radius: 8px; }
+  .cj-settings {
+    display: flex; align-items: end; flex-wrap: wrap; gap: 12px; padding: 14px 16px;
+    margin-bottom: 14px; border: 1px solid #e8e8e8; border-radius: 10px; background: #fafafa;
+  }
+  .cj-setting { min-width: 150px; }
+  .cj-setting label.cj-label { display: block; margin-bottom: 5px; color: #666; font-size: 0.76rem; font-weight: 600; }
+  .cj-setting select {
+    width: 100%; height: 46px; padding: 0 13px; border: 2px solid #e8e8e8; border-radius: 10px;
+    background: #fff; color: #444; font-size: 14px; outline: none;
+  }
+  .cj-setting select:focus { border-color: #5a9600; }
+  .cj-check { min-width: 210px; }
+  .cj-check label {
+    display: inline-flex; align-items: center; min-height: 44px; color: #555; font-size: 0.8rem; white-space: nowrap;
+  }
+  .cj-check [type="checkbox"] + span:not(.lever) { height: 22px; padding-left: 25px; line-height: 22px; }
+  .cj-toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .cj-toolbar .btn {
+    display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 16px;
+    border-radius: 22px; font-size: 13px; line-height: 44px; letter-spacing: 0;
+  }
+  .cj-toolbar .cj-primary { background: linear-gradient(135deg, #5a9600, #7ccd00); }
+  .cj-toolbar .cj-outline { border: 1px solid #ddd; background: transparent; color: #666; box-shadow: none; }
+  .cj-toolbar .cj-outline:hover { border-color: #5a9600; color: #5a9600; }
+  .cj-message { min-height: 22px; margin-bottom: 9px; color: #777; font-size: 0.8rem; }
+  .cj-message.cj-error { color: #e53935; }
+  .cj-direction { color: #5a9600; font-weight: 600; }
+  .cj-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+  .cj-column { min-width: 0; }
+  .cj-column-head { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 7px; }
+  .cj-column-title { color: #666; font-size: 0.88rem; font-weight: 600; }
+  .cj-column-meta { color: #aaa; font-size: 0.72rem; text-align: right; }
+  .cj-textarea {
+    display: block; width: 100%; min-height: 390px; padding: 14px 16px; box-sizing: border-box;
+    border: 2px solid #e8e8e8; border-radius: 10px; background: #fafafa; color: #333;
+    font: 0.86rem/1.62 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    outline: none; resize: vertical; transition: border-color 0.2s, background 0.2s;
+  }
+  .cj-textarea:focus { border-color: #5a9600; background: #fff; }
+  .cj-textarea[readonly] { background: #f6f6f6; }
+
+  @media only screen and (max-width: 601px) {
+    .cj-container { margin-top: -30px; }
+    .cj-settings { align-items: stretch; }
+    .cj-setting, .cj-check { flex: 1 1 100%; min-width: 0; }
+    .cj-columns { grid-template-columns: 1fr; }
+    .cj-textarea { min-height: 230px; }
+    .cj-toolbar .btn { flex: 1 1 calc(50% - 8px); justify-content: center; padding: 0 9px; }
+  }
+</style>
+
+<main class="content">
+  <div class="container cj-container">
+    <div class="card">
+      <%- partial('_partial/tool-header') %>
+      <div class="card-content">
+        <div class="cj-settings">
+          <div class="cj-setting">
+            <label class="cj-label" for="cjDelimiter">CSV 分隔符</label>
+            <select class="browser-default" id="cjDelimiter">
+              <option value=",">逗号 ,</option>
+              <option value=";">分号 ;</option>
+              <option value="\t">制表符 Tab</option>
+              <option value="|">竖线 |</option>
+            </select>
+          </div>
+          <div class="cj-setting">
+            <label class="cj-label" for="cjIndent">JSON 缩进</label>
+            <select class="browser-default" id="cjIndent">
+              <option value="2">2 个空格</option>
+              <option value="4">4 个空格</option>
+              <option value="tab">Tab</option>
+              <option value="0">紧凑</option>
+            </select>
+          </div>
+          <div class="cj-check">
+            <label><input id="cjHeader" type="checkbox" checked><span id="cjHeaderLabel">首行为字段名</span></label>
+          </div>
+          <div class="cj-check">
+            <label><input id="cjSkipEmpty" type="checkbox" checked><span>跳过完全空白的 CSV 行</span></label>
+          </div>
+        </div>
+
+        <div class="cj-toolbar">
+          <button class="btn waves-effect cj-primary" id="cjConvert" type="button"><i class="fas fa-random"></i> 开始转换</button>
+          <button class="btn waves-effect cj-outline" id="cjSwap" type="button"><i class="fas fa-exchange-alt"></i> 互换方向</button>
+          <button class="btn waves-effect cj-outline" id="cjCopy" type="button"><i class="fas fa-copy"></i> 复制结果</button>
+          <button class="btn waves-effect cj-outline" id="cjExample" type="button"><i class="fas fa-flask"></i> 示例</button>
+          <button class="btn waves-effect cj-outline" id="cjClear" type="button"><i class="fas fa-trash-alt"></i> 清空</button>
+        </div>
+        <div class="cj-message" id="cjMessage">当前方向：<span class="cj-direction">CSV → JSON</span>；支持引号字段内的分隔符与换行</div>
+
+        <div class="cj-columns">
+          <section class="cj-column">
+            <div class="cj-column-head">
+              <span class="cj-column-title" id="cjInputTitle">CSV 输入</span>
+              <span class="cj-column-meta" id="cjInputMeta">0 字符</span>
+            </div>
+            <textarea class="cj-textarea" id="cjInput" spellcheck="false" placeholder="粘贴 CSV 数据…"></textarea>
+          </section>
+          <section class="cj-column">
+            <div class="cj-column-head">
+              <span class="cj-column-title" id="cjOutputTitle">JSON 结果</span>
+              <span class="cj-column-meta" id="cjOutputMeta">0 字符</span>
+            </div>
+            <textarea class="cj-textarea" id="cjOutput" spellcheck="false" readonly placeholder="转换结果将显示在这里"></textarea>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script>
+  (function() {
+    var direction = 'csv-json';
+
+    function actualDelimiter() {
+      return $('#cjDelimiter').val() === '\\t' ? '\t' : $('#cjDelimiter').val();
+    }
+
+    function csvError(message, line, column) {
+      var error = new Error('CSV 第 ' + line + ' 行、第 ' + column + ' 列：' + message);
+      error.isCsvError = true;
+      return error;
+    }
+
+    function parseCSV(source, delimiter) {
+      var text = source.replace(/^\uFEFF/, '');
+      if (text === '') return [];
+      var rows = [];
+      var row = [];
+      var field = '';
+      var inQuotes = false;
+      var afterQuote = false;
+      var quoteLine = 0;
+      var quoteColumn = 0;
+      var line = 1;
+      var column = 1;
+      var endedWithBreak = false;
+
+      for (var i = 0; i < text.length; i++) {
+        var char = text.charAt(i);
+        if (inQuotes) {
+          if (char === '"') {
+            if (text.charAt(i + 1) === '"') {
+              field += '"';
+              i++;
+              column += 2;
+            } else {
+              inQuotes = false;
+              afterQuote = true;
+              column++;
+            }
+          } else {
+            field += char;
+            if (char === '\r' && text.charAt(i + 1) === '\n') {
+              field = field.slice(0, -1) + '\n';
+              i++;
+              line++;
+              column = 1;
+            } else if (char === '\r' || char === '\n') {
+              if (char === '\r') field = field.slice(0, -1) + '\n';
+              line++;
+              column = 1;
+            } else {
+              column++;
+            }
+          }
+          endedWithBreak = false;
+          continue;
+        }
+
+        if (afterQuote) {
+          if (char === delimiter) {
+            row.push(field);
+            field = '';
+            afterQuote = false;
+            column++;
+            endedWithBreak = false;
+            continue;
+          }
+          if (char === '\r' || char === '\n') {
+            row.push(field);
+            rows.push(row);
+            row = [];
+            field = '';
+            afterQuote = false;
+            if (char === '\r' && text.charAt(i + 1) === '\n') i++;
+            line++;
+            column = 1;
+            endedWithBreak = true;
+            continue;
+          }
+          if (char === ' ' || char === '\t') {
+            column++;
+            continue;
+          }
+          throw csvError('闭合引号后只能出现分隔符或换行', line, column);
+        }
+
+        if (char === delimiter) {
+          row.push(field);
+          field = '';
+          column++;
+          endedWithBreak = false;
+        } else if (char === '"') {
+          if (field !== '') throw csvError('引号只能出现在字段开头', line, column);
+          inQuotes = true;
+          quoteLine = line;
+          quoteColumn = column;
+          column++;
+          endedWithBreak = false;
+        } else if (char === '\r' || char === '\n') {
+          row.push(field);
+          rows.push(row);
+          row = [];
+          field = '';
+          if (char === '\r' && text.charAt(i + 1) === '\n') i++;
+          line++;
+          column = 1;
+          endedWithBreak = true;
+        } else {
+          field += char;
+          column++;
+          endedWithBreak = false;
+        }
+      }
+
+      if (inQuotes) throw csvError('引号字段未闭合（起始于第 ' + quoteLine + ' 行、第 ' + quoteColumn + ' 列）', line, column);
+      if (!endedWithBreak || row.length || field !== '') {
+        row.push(field);
+        rows.push(row);
+      }
+      return rows;
+    }
+
+    function isBlankRow(row) {
+      return row.every(function(cell) { return cell.trim() === ''; });
+    }
+
+    function rowsToJSON(rows, useHeader, skipEmpty) {
+      var values = skipEmpty ? rows.filter(function(row) { return !isBlankRow(row); }) : rows;
+      if (!useHeader) return values;
+      if (!values.length) return [];
+      var headers = values[0].map(function(value) { return value.trim(); });
+      var seen = Object.create(null);
+      headers.forEach(function(header, index) {
+        if (!header) throw new Error('CSV 表头第 ' + (index + 1) + ' 列为空');
+        if (seen['$' + header]) throw new Error('CSV 表头字段重复：' + header);
+        seen['$' + header] = true;
+      });
+      return values.slice(1).map(function(row, rowIndex) {
+        if (row.length > headers.length) throw new Error('CSV 第 ' + (rowIndex + 2) + ' 条数据比表头多出字段');
+        var item = {};
+        headers.forEach(function(header, index) { item[header] = row[index] === undefined ? '' : row[index]; });
+        return item;
+      });
+    }
+
+    function plainObject(value) {
+      return value !== null && typeof value === 'object' && !Array.isArray(value);
+    }
+
+    function cellValue(value) {
+      if (value === null || value === undefined) return '';
+      return typeof value === 'object' ? JSON.stringify(value) : String(value);
+    }
+
+    function jsonToRows(value, includeHeader) {
+      if (plainObject(value)) value = [value];
+      if (!Array.isArray(value)) value = [value];
+      if (!value.length) return [];
+
+      var objectRows = value.every(plainObject);
+      var arrayRows = value.every(Array.isArray);
+      if (objectRows) {
+        var keys = [];
+        var known = Object.create(null);
+        value.forEach(function(item) {
+          Object.keys(item).forEach(function(key) {
+            if (!known['$' + key]) {
+              known['$' + key] = true;
+              keys.push(key);
+            }
+          });
+        });
+        if (!keys.length) throw new Error('JSON 对象没有可导出的字段');
+        var rows = value.map(function(item) {
+          return keys.map(function(key) { return cellValue(item[key]); });
+        });
+        if (includeHeader) rows.unshift(keys);
+        return rows;
+      }
+      if (arrayRows) return value.map(function(row) { return row.map(cellValue); });
+      if (value.some(function(item) { return item !== null && typeof item === 'object'; })) {
+        throw new Error('JSON 数组不能混合对象、数组与基础值');
+      }
+      var primitiveRows = value.map(function(item) { return [cellValue(item)]; });
+      if (includeHeader) primitiveRows.unshift(['value']);
+      return primitiveRows;
+    }
+
+    function escapeCell(value, delimiter) {
+      var text = cellValue(value);
+      if (text.indexOf('"') !== -1) text = text.replace(/"/g, '""');
+      if (text.indexOf(delimiter) !== -1 || /["\r\n]/.test(text) || /^\s|\s$/.test(text)) return '"' + text + '"';
+      return text;
+    }
+
+    function formatCSV(rows, delimiter) {
+      return rows.map(function(row) {
+        return row.map(function(cell) { return escapeCell(cell, delimiter); }).join(delimiter);
+      }).join('\n');
+    }
+
+    function indentValue() {
+      var value = $('#cjIndent').val();
+      if (value === 'tab') return '\t';
+      return value === '0' ? undefined : Number(value);
+    }
+
+    function setMessage(message, error) {
+      $('#cjMessage').toggleClass('cj-error', !!error).text(message);
+    }
+
+    function updateMeta() {
+      $('#cjInputMeta').text($('#cjInput').val().length + ' 字符');
+      $('#cjOutputMeta').text($('#cjOutput').val().length + ' 字符');
+    }
+
+    function convert() {
+      var source = $('#cjInput').val();
+      if (!source.trim()) {
+        $('#cjOutput').val('');
+        setMessage('请输入待转换的' + (direction === 'csv-json' ? ' CSV' : ' JSON') + ' 内容', false);
+        updateMeta();
+        return;
+      }
+      try {
+        var output;
+        if (direction === 'csv-json') {
+          var rows = parseCSV(source, actualDelimiter());
+          var json = rowsToJSON(rows, $('#cjHeader').prop('checked'), $('#cjSkipEmpty').prop('checked'));
+          output = JSON.stringify(json, null, indentValue());
+          setMessage('转换成功：读取 ' + rows.length + ' 条 CSV 记录', false);
+        } else {
+          var parsed = JSON.parse(source);
+          var csvRows = jsonToRows(parsed, $('#cjHeader').prop('checked'));
+          output = formatCSV(csvRows, actualDelimiter());
+          setMessage('转换成功：生成 ' + csvRows.length + ' 条 CSV 记录', false);
+        }
+        $('#cjOutput').val(output);
+      } catch (error) {
+        $('#cjOutput').val('');
+        var message = error instanceof SyntaxError && direction === 'json-csv' ? 'JSON 格式错误：' + error.message : error.message;
+        setMessage(message || '转换失败，请检查输入', true);
+      }
+      updateMeta();
+    }
+
+    function updateDirection(moveOutput) {
+      if (moveOutput && $('#cjOutput').val()) $('#cjInput').val($('#cjOutput').val());
+      $('#cjOutput').val('');
+      var csvToJson = direction === 'csv-json';
+      $('#cjInputTitle').text(csvToJson ? 'CSV 输入' : 'JSON 输入');
+      $('#cjOutputTitle').text(csvToJson ? 'JSON 结果' : 'CSV 结果');
+      $('#cjInput').attr('placeholder', csvToJson ? '粘贴 CSV 数据…' : '粘贴 JSON 数组或对象…');
+      $('#cjHeaderLabel').text(csvToJson ? '首行为字段名' : '对象键作为表头');
+      $('#cjIndent').prop('disabled', !csvToJson);
+      $('#cjSkipEmpty').prop('disabled', !csvToJson);
+      setMessage('当前方向：' + (csvToJson ? 'CSV → JSON；支持引号字段内的分隔符与换行' : 'JSON → CSV；支持对象数组、二维数组和基础值数组'), false);
+      updateMeta();
+    }
+
+    function flashCopied() {
+      var $button = $('#cjCopy');
+      var original = $button.html();
+      $button.html('<i class="fas fa-check"></i> 已复制');
+      window.setTimeout(function() { $button.html(original); }, 1400);
+    }
+
+    function copyOutput() {
+      var value = $('#cjOutput').val();
+      if (!value) { setMessage('没有可复制的转换结果', true); return; }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(value).then(flashCopied).catch(function() { setMessage('复制失败，请手动复制结果', true); });
+      } else {
+        $('#cjOutput').trigger('select');
+        try { document.execCommand('copy'); flashCopied(); }
+        catch (error) { setMessage('复制失败，请手动复制结果', true); }
+      }
+    }
+
+    $(document).ready(function() {
+      $('#cjInput').on('input', updateMeta);
+      $('#cjConvert').on('click', convert);
+      $('#cjDelimiter, #cjIndent, #cjHeader, #cjSkipEmpty').on('change', function() {
+        if ($('#cjInput').val().trim()) convert();
+      });
+      $('#cjSwap').on('click', function() {
+        direction = direction === 'csv-json' ? 'json-csv' : 'csv-json';
+        updateDirection(true);
+      });
+      $('#cjCopy').on('click', copyOutput);
+      $('#cjExample').on('click', function() {
+        if (direction === 'csv-json') {
+          $('#cjInput').val('name,note,score\n小明,"包含,逗号",98\n小红,"跨行\n内容",95');
+        } else {
+          $('#cjInput').val('[\n  {"name":"小明","note":"包含,逗号","score":98},\n  {"name":"小红","note":"跨行\\n内容","score":95}\n]');
+        }
+        convert();
+      });
+      $('#cjClear').on('click', function() {
+        $('#cjInput, #cjOutput').val('');
+        updateDirection(false);
+        $('#cjInput').trigger('focus');
+      });
+      updateDirection(false);
+    });
+  })();
+</script>

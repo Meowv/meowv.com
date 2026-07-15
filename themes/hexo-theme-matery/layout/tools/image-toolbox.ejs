@@ -1,0 +1,772 @@
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .image-toolbox-container {
+    margin-top: -50px;
+    margin-bottom: 30px;
+  }
+  .image-toolbox-container .card {
+    border-radius: 8px;
+  }
+  .image-toolbox-privacy {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 18px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    color: #4f7f0b;
+    background: #f4f9ed;
+    font-size: 0.86rem;
+  }
+  .image-toolbox-dropzone {
+    min-height: 210px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 26px;
+    border: 2px dashed #d9d9d9;
+    border-radius: 12px;
+    color: #999;
+    background: #fafafa;
+    cursor: pointer;
+    text-align: center;
+    transition: border-color 0.2s, color 0.2s, background 0.2s;
+  }
+  .image-toolbox-dropzone:hover,
+  .image-toolbox-dropzone:focus,
+  .image-toolbox-dropzone.is-dragover {
+    border-color: #5a9600;
+    color: #5a9600;
+    background: #f6fbf0;
+    outline: none;
+  }
+  .image-toolbox-dropzone i {
+    font-size: 3rem;
+  }
+  .image-toolbox-dropzone strong {
+    color: #555;
+  }
+  .image-toolbox-dropzone small {
+    color: #aaa;
+    line-height: 1.6;
+  }
+  .image-toolbox-workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+    gap: 22px;
+    margin-top: 18px;
+  }
+  .image-toolbox-preview {
+    min-width: 0;
+  }
+  .image-toolbox-preview-box,
+  .image-toolbox-result-preview {
+    min-height: 260px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 12px;
+    border-radius: 10px;
+    background-color: #f3f3f3;
+    background-image:
+      linear-gradient(45deg, #e7e7e7 25%, transparent 25%),
+      linear-gradient(-45deg, #e7e7e7 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #e7e7e7 75%),
+      linear-gradient(-45deg, transparent 75%, #e7e7e7 75%);
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+    background-size: 16px 16px;
+  }
+  .image-toolbox-preview-box img,
+  .image-toolbox-result-preview img {
+    display: block;
+    max-width: 100%;
+    max-height: 480px;
+    border-radius: 5px;
+  }
+  .image-toolbox-file-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 9px;
+    color: #888;
+    font-size: 0.8rem;
+  }
+  .image-toolbox-file-name {
+    min-width: 0;
+    overflow: hidden;
+    color: #555;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .image-toolbox-settings {
+    padding: 18px;
+    border: 1px solid #ececec;
+    border-radius: 10px;
+    background: #fafafa;
+  }
+  .image-toolbox-settings h5 {
+    margin: 0 0 14px;
+    color: #444;
+    font-size: 0.98rem;
+    font-weight: 600;
+  }
+  .image-toolbox-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 12px;
+  }
+  .image-toolbox-field label {
+    display: block;
+    margin-bottom: 6px;
+    color: #777;
+    font-size: 0.78rem;
+  }
+  .image-toolbox-field input[type='number'],
+  .image-toolbox-field select.browser-default {
+    display: block;
+    width: 100% !important;
+    height: 46px !important;
+    margin: 0 !important;
+    padding: 0 13px !important;
+    border: 2px solid #e5e5e5 !important;
+    border-radius: 10px !important;
+    outline: none;
+    color: #444;
+    background: #fff;
+    box-sizing: border-box;
+    font-family: inherit;
+    font-size: 14px;
+  }
+  .image-toolbox-field input:focus,
+  .image-toolbox-field select.browser-default:focus {
+    border-color: #5a9600;
+    box-shadow: 0 0 0 3px rgba(90, 150, 0, 0.1);
+  }
+  .image-toolbox-field-wide {
+    grid-column: 1 / -1;
+  }
+  .image-toolbox-quality-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 46px;
+  }
+  .image-toolbox-quality-row input[type='range'] {
+    flex: 1;
+    margin: 0;
+  }
+  .image-toolbox-quality-value {
+    min-width: 38px;
+    color: #5a9600;
+    font-weight: 600;
+    text-align: right;
+  }
+  .image-toolbox-color-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .image-toolbox-color-row input[type='color'] {
+    width: 52px;
+    height: 44px;
+    padding: 2px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #fff;
+  }
+  .image-toolbox-checkbox {
+    grid-column: 1 / -1;
+    min-height: 44px;
+  }
+  .image-toolbox-checkbox label {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  .image-toolbox-checkbox label span {
+    color: #666;
+    font-size: 0.84rem;
+  }
+  .image-toolbox-estimate,
+  .image-toolbox-warning,
+  .image-toolbox-error {
+    margin-top: 13px;
+    padding: 9px 12px;
+    border-radius: 7px;
+    font-size: 0.82rem;
+    line-height: 1.55;
+  }
+  .image-toolbox-estimate {
+    color: #62882b;
+    background: #f2f8e8;
+  }
+  .image-toolbox-estimate.is-invalid {
+    color: #c62828;
+    background: #ffefef;
+  }
+  .image-toolbox-warning {
+    color: #946200;
+    background: #fff8e1;
+  }
+  .image-toolbox-error {
+    color: #c62828;
+    background: #ffefef;
+  }
+  .image-toolbox-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .image-toolbox-btn {
+    min-height: 44px;
+    padding: 0 20px;
+    border: none;
+    border-radius: 22px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+  }
+  .image-toolbox-btn-primary {
+    color: #fff;
+    background: linear-gradient(135deg, #5a9600, #7ccd00);
+    box-shadow: 0 3px 9px rgba(90, 150, 0, 0.22);
+  }
+  .image-toolbox-btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 14px rgba(90, 150, 0, 0.3);
+  }
+  .image-toolbox-btn-secondary {
+    color: #666;
+    background: #ededed;
+  }
+  .image-toolbox-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+  .image-toolbox-result-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 230px;
+    gap: 22px;
+    align-items: center;
+  }
+  .image-toolbox-result-info h5 {
+    margin: 0 0 10px;
+    color: #444;
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+  .image-toolbox-result-info p {
+    margin: 0 0 16px;
+    color: #777;
+    font-size: 0.84rem;
+    line-height: 1.75;
+  }
+  .image-toolbox-download {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    color: #fff !important;
+    text-decoration: none;
+    box-sizing: border-box;
+  }
+  .image-toolbox-notes {
+    margin: 0;
+    padding-left: 20px;
+    color: #888;
+    font-size: 0.84rem;
+    line-height: 1.9;
+  }
+  @media only screen and (max-width: 760px) {
+    .image-toolbox-workspace,
+    .image-toolbox-result-layout {
+      grid-template-columns: 1fr;
+    }
+    .image-toolbox-result-info {
+      text-align: center;
+    }
+    .image-toolbox-download {
+      width: auto;
+      min-width: 190px;
+    }
+  }
+  @media only screen and (max-width: 601px) {
+    .image-toolbox-container {
+      margin-top: -30px;
+    }
+    .image-toolbox-dropzone {
+      min-height: 170px;
+      padding: 20px 14px;
+    }
+    .image-toolbox-fields {
+      grid-template-columns: 1fr;
+    }
+    .image-toolbox-field-wide,
+    .image-toolbox-checkbox {
+      grid-column: auto;
+    }
+    .image-toolbox-actions {
+      flex-direction: column;
+    }
+    .image-toolbox-btn {
+      width: 100%;
+    }
+    .image-toolbox-file-meta {
+      flex-direction: column;
+      gap: 3px;
+    }
+  }
+</style>
+
+<main class="content">
+  <div class="container image-toolbox-container">
+    <div class="card">
+      <%- partial('_partial/tool-header') %>
+      <div class="card-content">
+        <div class="image-toolbox-privacy">
+          <i class="fas fa-lock"></i>
+          <span>图片仅在当前浏览器中处理，不会上传到服务器。</span>
+        </div>
+
+        <input id="imageToolboxFile" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+        <div id="imageToolboxDropzone" class="image-toolbox-dropzone" tabindex="0" role="button" aria-label="选择图片文件">
+          <i class="fas fa-image"></i>
+          <strong>点击选择或拖入图片</strong>
+          <small>支持 PNG、JPEG、WebP，建议单张不超过 50 MB</small>
+        </div>
+
+        <div id="imageToolboxEditor" hidden>
+          <div class="image-toolbox-workspace">
+            <div class="image-toolbox-preview">
+              <div class="image-toolbox-preview-box">
+                <img id="imageToolboxSourcePreview" alt="原图预览">
+              </div>
+              <div class="image-toolbox-file-meta">
+                <span id="imageToolboxFileName" class="image-toolbox-file-name"></span>
+                <span id="imageToolboxSourceMeta"></span>
+              </div>
+            </div>
+
+            <div class="image-toolbox-settings">
+              <h5>输出设置</h5>
+              <div class="image-toolbox-fields">
+                <div class="image-toolbox-field">
+                  <label for="imageToolboxMaxWidth">最大宽度（px）</label>
+                  <input id="imageToolboxMaxWidth" type="number" min="1" max="16384" step="1">
+                </div>
+                <div class="image-toolbox-field">
+                  <label for="imageToolboxMaxHeight">最大高度（px）</label>
+                  <input id="imageToolboxMaxHeight" type="number" min="1" max="16384" step="1">
+                </div>
+                <div class="image-toolbox-checkbox">
+                  <label>
+                    <input id="imageToolboxNoUpscale" type="checkbox" class="filled-in" checked>
+                    <span>不放大小图片，并保持原始宽高比</span>
+                  </label>
+                </div>
+                <div class="image-toolbox-field">
+                  <label for="imageToolboxFormat">输出格式</label>
+                  <select id="imageToolboxFormat" class="browser-default">
+                    <option value="image/webp">WebP</option>
+                    <option value="image/jpeg">JPEG</option>
+                    <option value="image/png">PNG</option>
+                  </select>
+                </div>
+                <div class="image-toolbox-field">
+                  <label for="imageToolboxBackground">JPEG 背景色</label>
+                  <div class="image-toolbox-color-row">
+                    <input id="imageToolboxBackground" type="color" value="#ffffff">
+                    <span id="imageToolboxBackgroundText">#ffffff</span>
+                  </div>
+                </div>
+                <div class="image-toolbox-field image-toolbox-field-wide">
+                  <label for="imageToolboxQuality">输出质量（JPEG / WebP）</label>
+                  <div class="image-toolbox-quality-row">
+                    <input id="imageToolboxQuality" type="range" min="10" max="100" value="82">
+                    <span id="imageToolboxQualityValue" class="image-toolbox-quality-value">82%</span>
+                  </div>
+                </div>
+              </div>
+
+              <div id="imageToolboxEstimate" class="image-toolbox-estimate" aria-live="polite"></div>
+              <div id="imageToolboxWarning" class="image-toolbox-warning" hidden>JPEG 不支持透明通道，透明区域会填充为上方选择的背景色。</div>
+              <div class="image-toolbox-actions">
+                <button id="imageToolboxConvert" class="image-toolbox-btn image-toolbox-btn-primary" type="button">
+                  <i class="fas fa-magic"></i>&nbsp; 压缩并转换
+                </button>
+                <button id="imageToolboxClear" class="image-toolbox-btn image-toolbox-btn-secondary" type="button">更换图片</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="imageToolboxError" class="image-toolbox-error" role="alert" hidden></div>
+      </div>
+    </div>
+
+    <div id="imageToolboxResultCard" class="card" hidden>
+      <div class="card-content">
+        <div class="image-toolbox-result-layout">
+          <div class="image-toolbox-result-preview">
+            <img id="imageToolboxResultPreview" alt="转换结果预览">
+          </div>
+          <div class="image-toolbox-result-info">
+            <h5>处理完成</h5>
+            <p id="imageToolboxResultMeta"></p>
+            <a id="imageToolboxDownload" class="image-toolbox-btn image-toolbox-btn-primary image-toolbox-download" href="#" download>
+              <i class="fas fa-download"></i> 下载图片
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-content">
+        <ul class="image-toolbox-notes">
+          <li>输出尺寸会在“最大宽度 × 最大高度”范围内等比例缩放，默认不会放大原图。</li>
+          <li>PNG 为无损格式，质量滑块仅影响 JPEG 与 WebP。</li>
+          <li>实际压缩率取决于图片内容；PNG 转 JPEG 或 WebP 时通常能明显减小体积。</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script>
+(function() {
+  'use strict';
+
+  var MAX_FILE_SIZE = 50 * 1024 * 1024;
+  var MAX_OUTPUT_PIXELS = 50000000;
+  var selectedFile = null;
+  var sourceDrawable = null;
+  var sourceWidth = 0;
+  var sourceHeight = 0;
+  var sourceUrl = '';
+  var resultUrl = '';
+  var isLoading = false;
+
+  function byId(id) {
+    return document.getElementById(id);
+  }
+
+  var fileInput = byId('imageToolboxFile');
+  var dropzone = byId('imageToolboxDropzone');
+  var editor = byId('imageToolboxEditor');
+  var sourcePreview = byId('imageToolboxSourcePreview');
+  var maxWidthInput = byId('imageToolboxMaxWidth');
+  var maxHeightInput = byId('imageToolboxMaxHeight');
+  var noUpscaleInput = byId('imageToolboxNoUpscale');
+  var formatInput = byId('imageToolboxFormat');
+  var qualityInput = byId('imageToolboxQuality');
+  var backgroundInput = byId('imageToolboxBackground');
+  var estimate = byId('imageToolboxEstimate');
+  var warning = byId('imageToolboxWarning');
+  var errorBox = byId('imageToolboxError');
+  var convertButton = byId('imageToolboxConvert');
+  var clearButton = byId('imageToolboxClear');
+  var resultCard = byId('imageToolboxResultCard');
+  var resultPreview = byId('imageToolboxResultPreview');
+  var downloadLink = byId('imageToolboxDownload');
+  var settingInputs = [maxWidthInput, maxHeightInput, noUpscaleInput, formatInput, qualityInput, backgroundInput];
+
+  function formatBytes(bytes) {
+    if (!Number.isFinite(bytes) || bytes < 0) return '—';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+  }
+
+  function extensionFor(mime) {
+    return mime === 'image/jpeg' ? 'jpg' : mime.split('/')[1];
+  }
+
+  function formatName(mime) {
+    return mime === 'image/jpeg' ? 'JPEG' : mime.split('/')[1].toUpperCase();
+  }
+
+  function safeFileName(name, extension) {
+    var base = (name || '').replace(/\.[^.]+$/, '').replace(/[^\w\u4e00-\u9fa5-]+/g, '-');
+    base = base.replace(/^-+|-+$/g, '').slice(0, 60);
+    return (base || 'image') + '-converted.' + extension;
+  }
+
+  function showError(message) {
+    errorBox.textContent = message;
+    errorBox.hidden = false;
+  }
+
+  function clearError() {
+    errorBox.textContent = '';
+    errorBox.hidden = true;
+  }
+
+  function clearResult() {
+    if (resultUrl) URL.revokeObjectURL(resultUrl);
+    resultUrl = '';
+    resultPreview.removeAttribute('src');
+    downloadLink.removeAttribute('href');
+    resultCard.hidden = true;
+  }
+
+  function releaseSource() {
+    if (sourceDrawable && typeof sourceDrawable.close === 'function') sourceDrawable.close();
+    sourceDrawable = null;
+    if (sourceUrl) URL.revokeObjectURL(sourceUrl);
+    sourceUrl = '';
+  }
+
+  function resetTool() {
+    releaseSource();
+    clearResult();
+    clearError();
+    selectedFile = null;
+    sourceWidth = 0;
+    sourceHeight = 0;
+    fileInput.value = '';
+    sourcePreview.removeAttribute('src');
+    editor.hidden = true;
+    dropzone.hidden = false;
+    dropzone.querySelector('strong').textContent = '点击选择或拖入图片';
+  }
+
+  function isSupportedImage(file) {
+    return file && ['image/png', 'image/jpeg', 'image/webp'].indexOf(file.type) !== -1;
+  }
+
+  function loadHtmlImage(url) {
+    return new Promise(function(resolve, reject) {
+      var image = new Image();
+      image.onload = function() { resolve(image); };
+      image.onerror = function() { reject(new Error('当前浏览器无法读取这张图片')); };
+      image.src = url;
+    });
+  }
+
+  async function decodeImage(file, url) {
+    if ('createImageBitmap' in window) {
+      try {
+        return await createImageBitmap(file, { imageOrientation: 'from-image' });
+      } catch (error) {
+        // 继续使用 HTMLImageElement 兼容旧浏览器。
+      }
+    }
+    return loadHtmlImage(url);
+  }
+
+  async function loadFile(file) {
+    clearError();
+    clearResult();
+    if (!isSupportedImage(file)) {
+      showError('请选择 PNG、JPEG 或 WebP 图片');
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      showError('图片超过 50 MB，请先选择更小的文件');
+      return;
+    }
+    if (isLoading) return;
+
+    isLoading = true;
+    releaseSource();
+    selectedFile = file;
+    sourceUrl = URL.createObjectURL(file);
+    sourcePreview.src = sourceUrl;
+    dropzone.querySelector('strong').textContent = '正在读取图片...';
+
+    try {
+      sourceDrawable = await decodeImage(file, sourceUrl);
+      sourceWidth = sourceDrawable.width || sourceDrawable.naturalWidth;
+      sourceHeight = sourceDrawable.height || sourceDrawable.naturalHeight;
+      if (!sourceWidth || !sourceHeight) throw new Error('无法读取图片尺寸');
+
+      var initialScale = Math.min(1, 1920 / sourceWidth, 1920 / sourceHeight);
+      maxWidthInput.value = String(Math.max(1, Math.round(sourceWidth * initialScale)));
+      maxHeightInput.value = String(Math.max(1, Math.round(sourceHeight * initialScale)));
+      byId('imageToolboxFileName').textContent = file.name;
+      byId('imageToolboxSourceMeta').textContent = sourceWidth + ' × ' + sourceHeight + ' · ' + formatBytes(file.size);
+      dropzone.querySelector('strong').textContent = '点击选择或拖入图片';
+      dropzone.hidden = true;
+      editor.hidden = false;
+      updateSettings();
+    } catch (error) {
+      resetTool();
+      showError(error.message || '图片读取失败，请尝试其他文件');
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  function getOutputSettings() {
+    var maxWidth = Math.round(Number(maxWidthInput.value));
+    var maxHeight = Math.round(Number(maxHeightInput.value));
+    if (!sourceDrawable || !selectedFile) throw new Error('请先选择图片');
+    if (!Number.isFinite(maxWidth) || maxWidth < 1 || maxWidth > 16384) throw new Error('最大宽度需在 1 至 16384px 之间');
+    if (!Number.isFinite(maxHeight) || maxHeight < 1 || maxHeight > 16384) throw new Error('最大高度需在 1 至 16384px 之间');
+
+    var scale = Math.min(maxWidth / sourceWidth, maxHeight / sourceHeight);
+    if (noUpscaleInput.checked) scale = Math.min(1, scale);
+    var width = Math.max(1, Math.round(sourceWidth * scale));
+    var height = Math.max(1, Math.round(sourceHeight * scale));
+    if (width * height > MAX_OUTPUT_PIXELS) throw new Error('输出图片超过 5000 万像素，请降低宽度或高度');
+
+    return {
+      width: width,
+      height: height,
+      mime: formatInput.value,
+      quality: Number(qualityInput.value) / 100,
+      background: backgroundInput.value
+    };
+  }
+
+  function updateSettings() {
+    clearResult();
+    byId('imageToolboxQualityValue').textContent = qualityInput.value + '%';
+    byId('imageToolboxBackgroundText').textContent = backgroundInput.value.toLowerCase();
+    var isPng = formatInput.value === 'image/png';
+    qualityInput.disabled = isPng;
+    warning.hidden = formatInput.value !== 'image/jpeg';
+    backgroundInput.disabled = formatInput.value !== 'image/jpeg';
+    try {
+      var settings = getOutputSettings();
+      estimate.textContent = '预计输出：' + settings.width + ' × ' + settings.height + ' · ' + formatName(settings.mime);
+      estimate.classList.remove('is-invalid');
+      convertButton.disabled = false;
+    } catch (error) {
+      estimate.textContent = error.message;
+      estimate.classList.add('is-invalid');
+      convertButton.disabled = true;
+    }
+  }
+
+  function canvasToBlob(canvas, mime, quality) {
+    return new Promise(function(resolve, reject) {
+      if (!canvas.toBlob) {
+        reject(new Error('当前浏览器不支持图片导出'));
+        return;
+      }
+      canvas.toBlob(function(blob) {
+        if (!blob) {
+          reject(new Error('图片编码失败，请降低输出尺寸后重试'));
+          return;
+        }
+        resolve(blob);
+      }, mime, quality);
+    });
+  }
+
+  async function convertImage() {
+    clearError();
+    clearResult();
+    var settings;
+    try {
+      settings = getOutputSettings();
+    } catch (error) {
+      showError(error.message);
+      return;
+    }
+
+    var inputFile = selectedFile;
+    convertButton.disabled = true;
+    clearButton.disabled = true;
+    settingInputs.forEach(function(input) { input.disabled = true; });
+    convertButton.innerHTML = '<i class="fas fa-spinner fa-pulse"></i>&nbsp; 处理中';
+    try {
+      var canvas = document.createElement('canvas');
+      canvas.width = settings.width;
+      canvas.height = settings.height;
+      var context = canvas.getContext('2d');
+      if (!context) throw new Error('当前浏览器不支持 Canvas 图片处理');
+      if (settings.mime === 'image/jpeg') {
+        context.fillStyle = settings.background;
+        context.fillRect(0, 0, settings.width, settings.height);
+      }
+      context.drawImage(sourceDrawable, 0, 0, settings.width, settings.height);
+
+      var blob = await canvasToBlob(canvas, settings.mime, settings.quality);
+      if (settings.mime === 'image/webp' && blob.type !== 'image/webp') {
+        throw new Error('当前浏览器不支持 WebP 编码，请改用 JPEG 或 PNG');
+      }
+
+      resultUrl = URL.createObjectURL(blob);
+      resultPreview.src = resultUrl;
+      downloadLink.href = resultUrl;
+      downloadLink.download = safeFileName(inputFile.name, extensionFor(settings.mime));
+      var delta = inputFile.size ? (1 - blob.size / inputFile.size) * 100 : 0;
+      var comparison = delta >= 0 ? '体积减少 ' + delta.toFixed(1) + '%' : '体积增加 ' + Math.abs(delta).toFixed(1) + '%';
+      byId('imageToolboxResultMeta').textContent = settings.width + ' × ' + settings.height + ' · ' + formatName(settings.mime) + ' · ' + formatBytes(blob.size) + '（' + comparison + '）';
+      resultCard.hidden = false;
+      resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (error) {
+      showError(error.message || '图片处理失败，请调整设置后重试');
+    } finally {
+      convertButton.disabled = false;
+      clearButton.disabled = false;
+      maxWidthInput.disabled = false;
+      maxHeightInput.disabled = false;
+      noUpscaleInput.disabled = false;
+      formatInput.disabled = false;
+      qualityInput.disabled = formatInput.value === 'image/png';
+      backgroundInput.disabled = formatInput.value !== 'image/jpeg';
+      convertButton.innerHTML = '<i class="fas fa-magic"></i>&nbsp; 压缩并转换';
+    }
+  }
+
+  dropzone.addEventListener('click', function() {
+    fileInput.value = '';
+    fileInput.click();
+  });
+  dropzone.addEventListener('keydown', function(event) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      fileInput.value = '';
+      fileInput.click();
+    }
+  });
+  ['dragenter', 'dragover'].forEach(function(type) {
+    dropzone.addEventListener(type, function(event) {
+      event.preventDefault();
+      dropzone.classList.add('is-dragover');
+    });
+  });
+  ['dragleave', 'drop'].forEach(function(type) {
+    dropzone.addEventListener(type, function(event) {
+      event.preventDefault();
+      dropzone.classList.remove('is-dragover');
+    });
+  });
+  dropzone.addEventListener('drop', function(event) {
+    var files = event.dataTransfer && event.dataTransfer.files;
+    if (files && files.length) loadFile(files[0]);
+  });
+  fileInput.addEventListener('change', function() {
+    if (fileInput.files && fileInput.files.length) loadFile(fileInput.files[0]);
+  });
+  settingInputs.forEach(function(input) {
+    input.addEventListener('input', updateSettings);
+    input.addEventListener('change', updateSettings);
+  });
+  convertButton.addEventListener('click', convertImage);
+  clearButton.addEventListener('click', resetTool);
+  window.addEventListener('beforeunload', function() {
+    releaseSource();
+    clearResult();
+  });
+})();
+</script>

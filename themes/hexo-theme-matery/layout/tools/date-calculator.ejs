@@ -1,0 +1,440 @@
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .datecalc-container { margin-top: -50px; margin-bottom: 30px; }
+  .datecalc-container .card { border-radius: 8px; }
+  .datecalc-tabs {
+    display: flex; margin-bottom: 22px; overflow: hidden; border: 1px solid #e2e2e2; border-radius: 10px;
+  }
+  .datecalc-tab {
+    flex: 1; min-height: 44px; padding: 0 12px; border: 0; background: #f8f8f8; color: #888;
+    cursor: pointer; font-size: 0.9rem; transition: all 0.2s;
+  }
+  .datecalc-tab.active { background: #5a9600; color: #fff; }
+  .datecalc-panel { display: none; }
+  .datecalc-panel.active { display: block; }
+  .datecalc-form-grid {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; align-items: end;
+  }
+  .datecalc-form-grid.diff { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .datecalc-field { min-width: 0; }
+  .datecalc-field label {
+    display: block; margin-bottom: 7px; color: #666; font-size: 0.86rem; font-weight: 600;
+  }
+  .datecalc-field input, .datecalc-field select {
+    width: 100% !important; height: 46px !important; margin: 0 !important; padding: 0 13px !important;
+    box-sizing: border-box !important; border: 2px solid #e8e8e8 !important; border-radius: 10px !important;
+    background: #fafafa !important; box-shadow: none !important; color: #333; outline: none;
+    font: 0.92rem 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  }
+  .datecalc-field input:focus, .datecalc-field select:focus {
+    border-color: #5a9600 !important; background: #fff !important; box-shadow: none !important;
+  }
+  .datecalc-message { min-height: 21px; margin: 7px 0 14px; color: #999; font-size: 0.78rem; }
+  .datecalc-message.error { color: #e53935; }
+  .datecalc-presets { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 18px; }
+  .datecalc-preset {
+    display: inline-flex; align-items: center; justify-content: center; min-height: 36px; padding: 0 12px;
+    border: 1px solid #ddd; border-radius: 18px; background: #fff;
+    color: #666; cursor: pointer; font-size: 0.78rem; transition: all 0.2s;
+  }
+  .datecalc-preset:hover { border-color: #5a9600; color: #5a9600; }
+  .datecalc-results { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+  .datecalc-result {
+    position: relative; min-width: 0; padding: 15px 58px 15px 16px;
+    border: 1px solid #e5ecd9; border-radius: 10px; background: #f8fbf4;
+  }
+  .datecalc-result-label { margin-bottom: 7px; color: #799552; font-size: 0.78rem; }
+  .datecalc-result-value {
+    min-height: 25px; color: #333; font: 1rem/1.55 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    overflow-wrap: anywhere;
+  }
+  .datecalc-result-value.empty { color: #bbb; }
+  .datecalc-copy {
+    position: absolute; top: 12px; right: 12px; display: inline-flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; border: 1px solid #d8e4ca; border-radius: 50%; background: #fff;
+    color: #8aa668; cursor: pointer; transition: all 0.2s;
+  }
+  .datecalc-copy:hover:not(:disabled) { border-color: #5a9600; color: #5a9600; }
+  .datecalc-copy:disabled { cursor: default; opacity: 0.4; }
+  .datecalc-copy.copied { border-color: #5a9600; background: #5a9600; color: #fff; }
+  .datecalc-note { margin: 16px 0 0; color: #999; font-size: 0.76rem; line-height: 1.7; }
+
+  @media only screen and (max-width: 800px) {
+    .datecalc-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media only screen and (max-width: 601px) {
+    .datecalc-container { margin-top: -30px; }
+    .datecalc-form-grid, .datecalc-form-grid.diff, .datecalc-results { grid-template-columns: 1fr; }
+    .datecalc-tab { font-size: 0.82rem; }
+    .datecalc-preset { min-height: 44px; font-size: 13px; }
+    .datecalc-copy { width: 44px; height: 44px; }
+  }
+</style>
+
+<main class="content">
+  <div class="container datecalc-container">
+    <div class="card">
+      <%- partial('_partial/tool-header') %>
+      <div class="card-content">
+        <div class="datecalc-tabs" role="tablist" aria-label="日期计算类型">
+          <button class="datecalc-tab active" type="button" data-panel="adjust" role="tab" aria-selected="true">日期加减</button>
+          <button class="datecalc-tab" type="button" data-panel="difference" role="tab" aria-selected="false">日期间隔</button>
+        </div>
+
+        <section class="datecalc-panel active" id="datecalc-panel-adjust" role="tabpanel">
+          <div class="datecalc-form-grid">
+            <div class="datecalc-field">
+              <label for="datecalc-base-date">起始日期</label>
+              <input id="datecalc-base-date" type="date">
+            </div>
+            <div class="datecalc-field">
+              <label for="datecalc-operation">运算</label>
+              <select class="browser-default" id="datecalc-operation">
+                <option value="add">加上</option>
+                <option value="subtract">减去</option>
+              </select>
+            </div>
+            <div class="datecalc-field">
+              <label for="datecalc-amount">数量</label>
+              <input id="datecalc-amount" type="text" inputmode="numeric" autocomplete="off" value="1" aria-describedby="datecalc-adjust-message">
+            </div>
+            <div class="datecalc-field">
+              <label for="datecalc-unit">单位</label>
+              <select class="browser-default" id="datecalc-unit">
+                <option value="day">天</option>
+                <option value="week">周</option>
+                <option value="month" selected>月</option>
+                <option value="year">年</option>
+              </select>
+            </div>
+          </div>
+          <div class="datecalc-message" id="datecalc-adjust-message" role="alert">月末或闰日加减时，会自动取目标月份的最后一天</div>
+          <div class="datecalc-presets">
+            <button class="datecalc-preset" type="button" data-adjust="7|day">加 7 天</button>
+            <button class="datecalc-preset" type="button" data-adjust="1|month">加 1 个月</button>
+            <button class="datecalc-preset" type="button" data-adjust="1|year">加 1 年</button>
+            <button class="datecalc-preset" type="button" data-adjust="-1|month">减 1 个月</button>
+          </div>
+          <div class="datecalc-results">
+            <div class="datecalc-result">
+              <div class="datecalc-result-label">结果日期</div>
+              <div class="datecalc-result-value empty" id="datecalc-adjust-date" aria-live="polite">—</div>
+              <button class="datecalc-copy" type="button" data-copy="datecalc-adjust-date" title="复制结果日期" disabled><i class="fas fa-copy"></i></button>
+            </div>
+            <div class="datecalc-result">
+              <div class="datecalc-result-label">星期</div>
+              <div class="datecalc-result-value empty" id="datecalc-adjust-weekday">—</div>
+            </div>
+            <div class="datecalc-result">
+              <div class="datecalc-result-label">运算说明</div>
+              <div class="datecalc-result-value empty" id="datecalc-adjust-summary">—</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="datecalc-panel" id="datecalc-panel-difference" role="tabpanel">
+          <div class="datecalc-form-grid diff">
+            <div class="datecalc-field">
+              <label for="datecalc-start-date">起始日期</label>
+              <input id="datecalc-start-date" type="date">
+            </div>
+            <div class="datecalc-field">
+              <label for="datecalc-end-date">结束日期</label>
+              <input id="datecalc-end-date" type="date">
+            </div>
+          </div>
+          <div class="datecalc-message" id="datecalc-diff-message" role="alert">差值以起始日期为基准；工作日仅统计周一至周五</div>
+          <div class="datecalc-presets">
+            <button class="datecalc-preset" type="button" data-range="week">未来一周</button>
+            <button class="datecalc-preset" type="button" data-range="month">未来一月</button>
+            <button class="datecalc-preset" type="button" data-range="year">未来一年</button>
+            <button class="datecalc-preset" type="button" id="datecalc-swap-dates"><i class="fas fa-exchange-alt"></i> 交换日期</button>
+          </div>
+          <div class="datecalc-results">
+            <div class="datecalc-result">
+              <div class="datecalc-result-label">自然日差</div>
+              <div class="datecalc-result-value empty" id="datecalc-calendar-days" aria-live="polite">—</div>
+              <button class="datecalc-copy" type="button" data-copy="datecalc-calendar-days" title="复制自然日差" disabled><i class="fas fa-copy"></i></button>
+            </div>
+            <div class="datecalc-result">
+              <div class="datecalc-result-label">工作日差</div>
+              <div class="datecalc-result-value empty" id="datecalc-business-days" aria-live="polite">—</div>
+              <button class="datecalc-copy" type="button" data-copy="datecalc-business-days" title="复制工作日差" disabled><i class="fas fa-copy"></i></button>
+            </div>
+            <div class="datecalc-result">
+              <div class="datecalc-result-label">日期关系</div>
+              <div class="datecalc-result-value empty" id="datecalc-relation">—</div>
+            </div>
+          </div>
+          <p class="datecalc-note">自然日差不受夏令时影响；工作日按先后顺序不含较早日期、含较晚日期，再按输入方向添加正负号，暂不扣除法定节假日。</p>
+        </section>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script>
+  (function() {
+    var DAY_MS = 86400000;
+    var WEEKDAYS = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+    var ADJUST_DEFAULT = '月末或闰日加减时，会自动取目标月份的最后一天';
+    var DIFF_DEFAULT = '差值以起始日期为基准；工作日仅统计周一至周五';
+
+    function pad(value) {
+      return String(value).padStart(2, '0');
+    }
+
+    function makeLocalDate(year, month, day) {
+      var date = new Date(0);
+      date.setHours(12, 0, 0, 0);
+      date.setFullYear(year, month, day);
+      return date;
+    }
+
+    function parseDate(value) {
+      var match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || '');
+      if (!match) return null;
+      var year = Number(match[1]);
+      var month = Number(match[2]) - 1;
+      var day = Number(match[3]);
+      var date = makeLocalDate(year, month, day);
+      if (date.getFullYear() !== year || date.getMonth() !== month || date.getDate() !== day) return null;
+      return date;
+    }
+
+    function formatDate(date) {
+      return String(date.getFullYear()).padStart(4, '0') + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate());
+    }
+
+    function todayValue() {
+      return formatDate(new Date());
+    }
+
+    function normalizeInteger(value) {
+      var source = String(value || '').trim()
+        .replace(/[０-９]/g, function(char) { return String.fromCharCode(char.charCodeAt(0) - 65248); })
+        .replace(/＋/g, '+');
+      if (!/^\+?\d+$/.test(source)) return null;
+      var amount = Number(source);
+      if (!Number.isSafeInteger(amount) || amount > 100000) return null;
+      return amount;
+    }
+
+    function daysInMonth(year, month) {
+      return makeLocalDate(year, month + 1, 0).getDate();
+    }
+
+    function addMonthsClamped(date, amount) {
+      var totalMonths = date.getFullYear() * 12 + date.getMonth() + amount;
+      var year = Math.floor(totalMonths / 12);
+      var month = totalMonths - year * 12;
+      if (year < 1 || year > 9999) return null;
+      return makeLocalDate(year, month, Math.min(date.getDate(), daysInMonth(year, month)));
+    }
+
+    function addYearsClamped(date, amount) {
+      var year = date.getFullYear() + amount;
+      if (year < 1 || year > 9999) return null;
+      var month = date.getMonth();
+      return makeLocalDate(year, month, Math.min(date.getDate(), daysInMonth(year, month)));
+    }
+
+    function adjustDate(date, amount, unit) {
+      if (unit === 'month') return addMonthsClamped(date, amount);
+      if (unit === 'year') return addYearsClamped(date, amount);
+      var result = makeLocalDate(date.getFullYear(), date.getMonth(), date.getDate());
+      result.setDate(result.getDate() + amount * (unit === 'week' ? 7 : 1));
+      if (result.getFullYear() < 1 || result.getFullYear() > 9999 || isNaN(result.getTime())) return null;
+      return result;
+    }
+
+    function setMessage(selector, message, isError) {
+      $(selector).text(message).toggleClass('error', !!isError);
+    }
+
+    function setValue(selector, value) {
+      $(selector).text(value || '—').toggleClass('empty', !value);
+    }
+
+    function renderAdjust() {
+      var date = parseDate($('#datecalc-base-date').val());
+      var amount = normalizeInteger($('#datecalc-amount').val());
+      if (!date) {
+        setValue('#datecalc-adjust-date', '');
+        setValue('#datecalc-adjust-weekday', '');
+        setValue('#datecalc-adjust-summary', '');
+        $('.datecalc-copy[data-copy="datecalc-adjust-date"]').prop('disabled', true);
+        setMessage('#datecalc-adjust-message', '请选择有效的起始日期', true);
+        return;
+      }
+      if (amount === null) {
+        setValue('#datecalc-adjust-date', '');
+        setValue('#datecalc-adjust-weekday', '');
+        setValue('#datecalc-adjust-summary', '');
+        $('.datecalc-copy[data-copy="datecalc-adjust-date"]').prop('disabled', true);
+        setMessage('#datecalc-adjust-message', '数量需为 0 到 100000 的整数', true);
+        return;
+      }
+
+      var operation = $('#datecalc-operation').val();
+      var unit = $('#datecalc-unit').val();
+      var signedAmount = operation === 'subtract' ? -amount : amount;
+      var result = adjustDate(date, signedAmount, unit);
+      if (!result) {
+        setValue('#datecalc-adjust-date', '');
+        setValue('#datecalc-adjust-weekday', '');
+        setValue('#datecalc-adjust-summary', '');
+        $('.datecalc-copy[data-copy="datecalc-adjust-date"]').prop('disabled', true);
+        setMessage('#datecalc-adjust-message', '计算结果超出 0001 至 9999 年的支持范围', true);
+        return;
+      }
+
+      var unitNames = { day: '天', week: '周', month: '个月', year: '年' };
+      setValue('#datecalc-adjust-date', formatDate(result));
+      setValue('#datecalc-adjust-weekday', WEEKDAYS[result.getDay()]);
+      setValue('#datecalc-adjust-summary', (signedAmount >= 0 ? '增加 ' : '减少 ') + Math.abs(signedAmount) + ' ' + unitNames[unit]);
+      $('.datecalc-copy[data-copy="datecalc-adjust-date"]').prop('disabled', false);
+      setMessage('#datecalc-adjust-message', ADJUST_DEFAULT, false);
+    }
+
+    function utcDayNumber(date) {
+      var utc = new Date(0);
+      utc.setUTCHours(0, 0, 0, 0);
+      utc.setUTCFullYear(date.getFullYear(), date.getMonth(), date.getDate());
+      return Math.round(utc.getTime() / DAY_MS);
+    }
+
+    function businessDaysForward(earlier, later) {
+      var totalDays = utcDayNumber(later) - utcDayNumber(earlier);
+      var fullWeeks = Math.floor(totalDays / 7);
+      var count = fullWeeks * 5;
+      var remainder = totalDays % 7;
+      for (var offset = 1; offset <= remainder; offset++) {
+        var weekday = (earlier.getDay() + offset) % 7;
+        if (weekday >= 1 && weekday <= 5) count++;
+      }
+      return count;
+    }
+
+    function businessDaysBetween(start, end) {
+      var difference = utcDayNumber(end) - utcDayNumber(start);
+      if (!difference) return 0;
+      return difference > 0 ? businessDaysForward(start, end) : -businessDaysForward(end, start);
+    }
+
+    function renderDifference() {
+      var start = parseDate($('#datecalc-start-date').val());
+      var end = parseDate($('#datecalc-end-date').val());
+      if (!start || !end) {
+        setValue('#datecalc-calendar-days', '');
+        setValue('#datecalc-business-days', '');
+        setValue('#datecalc-relation', '');
+        $('.datecalc-copy[data-copy="datecalc-calendar-days"], .datecalc-copy[data-copy="datecalc-business-days"]').prop('disabled', true);
+        setMessage('#datecalc-diff-message', '请选择两个有效日期', true);
+        return;
+      }
+
+      var calendarDays = utcDayNumber(end) - utcDayNumber(start);
+      var businessDays = businessDaysBetween(start, end);
+      var relation = calendarDays === 0 ? '两个日期相同' : '结束日期比起始日期' + (calendarDays > 0 ? '晚 ' : '早 ') + Math.abs(calendarDays) + ' 天';
+      setValue('#datecalc-calendar-days', String(calendarDays) + ' 天');
+      setValue('#datecalc-business-days', String(businessDays) + ' 个工作日');
+      setValue('#datecalc-relation', relation);
+      $('.datecalc-copy[data-copy="datecalc-calendar-days"], .datecalc-copy[data-copy="datecalc-business-days"]').prop('disabled', false);
+      setMessage('#datecalc-diff-message', DIFF_DEFAULT, false);
+    }
+
+    function copyText(text) {
+      if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
+      return new Promise(function(resolve, reject) {
+        var textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+          document.execCommand('copy') ? resolve() : reject(new Error('复制失败'));
+        } catch (error) {
+          reject(error);
+        }
+        document.body.removeChild(textarea);
+      });
+    }
+
+    function showCopied($button) {
+      $button.addClass('copied').html('<i class="fas fa-check"></i>');
+      window.setTimeout(function() {
+        $button.removeClass('copied').html('<i class="fas fa-copy"></i>');
+      }, 1500);
+    }
+
+    $(document).ready(function() {
+      var today = todayValue();
+      $('#datecalc-base-date, #datecalc-start-date').val(today);
+      var nextMonth = addMonthsClamped(parseDate(today), 1);
+      $('#datecalc-end-date').val(formatDate(nextMonth));
+
+      $('.datecalc-tab').on('click', function() {
+        var panel = $(this).data('panel');
+        $('.datecalc-tab').removeClass('active').attr('aria-selected', 'false');
+        $(this).addClass('active').attr('aria-selected', 'true');
+        $('.datecalc-panel').removeClass('active');
+        $('#datecalc-panel-' + panel).addClass('active');
+      });
+
+      $('#datecalc-base-date, #datecalc-operation, #datecalc-amount, #datecalc-unit').on('input change', renderAdjust);
+      $('#datecalc-start-date, #datecalc-end-date').on('input change', renderDifference);
+
+      $('.datecalc-preset[data-adjust]').on('click', function() {
+        var parts = String($(this).data('adjust')).split('|');
+        var amount = Number(parts[0]);
+        $('#datecalc-operation').val(amount < 0 ? 'subtract' : 'add');
+        $('#datecalc-amount').val(Math.abs(amount));
+        $('#datecalc-unit').val(parts[1]);
+        renderAdjust();
+      });
+
+      $('.datecalc-preset[data-range]').on('click', function() {
+        var start = parseDate($('#datecalc-start-date').val()) || parseDate(todayValue());
+        var type = $(this).data('range');
+        var end = type === 'week' ? adjustDate(start, 1, 'week') : adjustDate(start, 1, type);
+        if (!end) {
+          setMessage('#datecalc-diff-message', '预设结果超出 0001 至 9999 年的支持范围', true);
+          return;
+        }
+        $('#datecalc-start-date').val(formatDate(start));
+        $('#datecalc-end-date').val(formatDate(end));
+        renderDifference();
+      });
+
+      $('#datecalc-swap-dates').on('click', function() {
+        var start = $('#datecalc-start-date').val();
+        $('#datecalc-start-date').val($('#datecalc-end-date').val());
+        $('#datecalc-end-date').val(start);
+        renderDifference();
+      });
+
+      $('.datecalc-copy').on('click', function() {
+        var $button = $(this);
+        var text = $('#' + $button.data('copy')).text();
+        if (!text || text === '—') return;
+        copyText(text).then(function() {
+          showCopied($button);
+        }).catch(function() {
+          M.toast({ html: '复制失败，请手动复制', classes: 'rounded red' });
+        });
+      });
+
+      renderAdjust();
+      renderDifference();
+    });
+  })();
+</script>

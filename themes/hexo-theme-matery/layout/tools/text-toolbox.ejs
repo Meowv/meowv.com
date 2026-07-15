@@ -1,0 +1,265 @@
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .tt-container { margin-top: -50px; margin-bottom: 30px; }
+  .tt-container .card { border-radius: 8px; }
+  .tt-controls {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px;
+    padding: 16px; margin-bottom: 18px; border: 1px solid #e8e8e8; border-radius: 10px;
+    background: #fafafa;
+  }
+  .tt-option-group { min-width: 0; }
+  .tt-option-title { display: block; margin-bottom: 8px; color: #666; font-size: 0.82rem; font-weight: 600; }
+  .tt-checks { display: flex; flex-wrap: wrap; gap: 8px 14px; }
+  .tt-checks label {
+    display: inline-flex; align-items: center; min-height: 36px; color: #555; font-size: 0.82rem;
+  }
+  .tt-checks [type="checkbox"] + span:not(.lever) { height: 22px; padding-left: 25px; line-height: 22px; }
+  .tt-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tt-field { min-width: 0; }
+  .tt-field label { display: block; margin-bottom: 5px; color: #777; font-size: 0.75rem; }
+  .tt-field input, .tt-field select {
+    width: 100% !important; height: 46px !important; margin: 0 !important; padding: 0 13px !important;
+    box-sizing: border-box !important; border: 2px solid #e8e8e8 !important; border-radius: 10px !important;
+    background: #fff !important; box-shadow: none !important; color: #444; font-size: 14px;
+  }
+  .tt-field input:focus, .tt-field select:focus {
+    border-color: #5a9600 !important; outline: none; box-shadow: none !important;
+  }
+  .tt-toolbar { display: flex; flex-wrap: wrap; gap: 9px; margin-bottom: 16px; }
+  .tt-toolbar .btn {
+    display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 18px;
+    border-radius: 22px; font-size: 13px; line-height: 44px; letter-spacing: 0;
+  }
+  .tt-toolbar .tt-primary { background: linear-gradient(135deg, #5a9600, #7ccd00); }
+  .tt-toolbar .tt-outline { border: 1px solid #ddd; background: transparent; color: #666; box-shadow: none; }
+  .tt-toolbar .tt-outline:hover { border-color: #5a9600; color: #5a9600; }
+  .tt-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+  .tt-column { min-width: 0; }
+  .tt-column-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+  .tt-column-title { color: #666; font-size: 0.9rem; font-weight: 600; }
+  .tt-stats { color: #999; font-size: 0.72rem; text-align: right; }
+  .tt-textarea {
+    display: block; width: 100%; min-height: 330px; padding: 14px 16px; box-sizing: border-box;
+    border: 2px solid #e8e8e8; border-radius: 10px; background: #fafafa; color: #333;
+    font: 0.88rem/1.65 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    outline: none; resize: vertical; transition: border-color 0.2s, background 0.2s;
+  }
+  .tt-textarea:focus { border-color: #5a9600; background: #fff; }
+  .tt-textarea[readonly] { background: #f6f6f6; }
+  .tt-status { min-height: 20px; margin-top: 10px; color: #888; font-size: 0.78rem; }
+  .tt-status.tt-error { color: #e53935; }
+
+  @media only screen and (max-width: 900px) {
+    .tt-controls { grid-template-columns: 1fr 1fr; }
+    .tt-controls .tt-option-group:last-child { grid-column: 1 / -1; }
+  }
+  @media only screen and (max-width: 601px) {
+    .tt-container { margin-top: -30px; }
+    .tt-controls, .tt-columns { grid-template-columns: 1fr; }
+    .tt-controls .tt-option-group:last-child { grid-column: auto; }
+    .tt-textarea { min-height: 210px; }
+    .tt-checks label { min-height: 44px; }
+    .tt-toolbar .btn { flex: 1 1 calc(50% - 9px); justify-content: center; padding: 0 10px; }
+  }
+</style>
+
+<main class="content">
+  <div class="container tt-container">
+    <div class="card">
+      <%- partial('_partial/tool-header') %>
+      <div class="card-content">
+        <div class="tt-controls">
+          <section class="tt-option-group">
+            <span class="tt-option-title">行处理</span>
+            <div class="tt-checks">
+              <label><input id="ttTrim" type="checkbox" checked><span>清除首尾空白</span></label>
+              <label><input id="ttRemoveEmpty" type="checkbox"><span>移除空行</span></label>
+              <label><input id="ttDedupe" type="checkbox"><span>去除重复行</span></label>
+              <label><input id="ttReverse" type="checkbox"><span>反转行序</span></label>
+              <label><input id="ttNumber" type="checkbox"><span>添加行号</span></label>
+            </div>
+          </section>
+          <section class="tt-option-group">
+            <span class="tt-option-title">排序</span>
+            <div class="tt-field">
+              <label for="ttSort">排序方式</label>
+              <select class="browser-default" id="ttSort">
+                <option value="none">保持原顺序</option>
+                <option value="asc">升序（数字感知）</option>
+                <option value="desc">降序（数字感知）</option>
+                <option value="length">按长度升序</option>
+              </select>
+            </div>
+          </section>
+          <section class="tt-option-group">
+            <span class="tt-option-title">每行修饰</span>
+            <div class="tt-fields">
+              <div class="tt-field">
+                <label for="ttPrefix">前缀</label>
+                <input id="ttPrefix" type="text" placeholder="例如：- ">
+              </div>
+              <div class="tt-field">
+                <label for="ttSuffix">后缀</label>
+                <input id="ttSuffix" type="text" placeholder="例如：;">
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="tt-toolbar">
+          <button class="btn waves-effect tt-primary" id="ttProcess" type="button"><i class="fas fa-magic"></i> 生成结果</button>
+          <button class="btn waves-effect tt-outline" id="ttCopy" type="button"><i class="fas fa-copy"></i> 复制结果</button>
+          <button class="btn waves-effect tt-outline" id="ttSwap" type="button"><i class="fas fa-exchange-alt"></i> 结果转为输入</button>
+          <button class="btn waves-effect tt-outline" id="ttClear" type="button"><i class="fas fa-trash-alt"></i> 清空</button>
+        </div>
+
+        <div class="tt-columns">
+          <section class="tt-column">
+            <div class="tt-column-head">
+              <span class="tt-column-title">原始文本</span>
+              <span class="tt-stats" id="ttInputStats">0 行 · 0 字符</span>
+            </div>
+            <textarea class="tt-textarea" id="ttInput" spellcheck="false" placeholder="输入或粘贴多行文本，选项变化后会自动处理…"></textarea>
+          </section>
+          <section class="tt-column">
+            <div class="tt-column-head">
+              <span class="tt-column-title">处理结果</span>
+              <span class="tt-stats" id="ttOutputStats">0 行 · 0 字符</span>
+            </div>
+            <textarea class="tt-textarea" id="ttOutput" spellcheck="false" readonly placeholder="处理结果将显示在这里"></textarea>
+          </section>
+        </div>
+        <div class="tt-status" id="ttStatus">所有处理均在当前浏览器完成</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script>
+  (function() {
+    function splitLines(text) {
+      return text === '' ? [] : text.replace(/\r\n?/g, '\n').split('\n');
+    }
+
+    function transformText(text, options) {
+      var lines = splitLines(text);
+      if (options.trim) lines = lines.map(function(line) { return line.trim(); });
+      if (options.removeEmpty) lines = lines.filter(function(line) { return line.trim() !== ''; });
+      if (options.dedupe) {
+        var seen = Object.create(null);
+        lines = lines.filter(function(line) {
+          var key = '$' + line;
+          if (seen[key]) return false;
+          seen[key] = true;
+          return true;
+        });
+      }
+      if (options.sort !== 'none') {
+        lines = lines.map(function(line, index) { return { line: line, index: index }; });
+        lines.sort(function(a, b) {
+          var result;
+          if (options.sort === 'length') result = a.line.length - b.line.length;
+          else result = a.line.localeCompare(b.line, 'zh-CN', { numeric: true, sensitivity: 'base' });
+          if (options.sort === 'desc') result = -result;
+          return result || a.index - b.index;
+        });
+        lines = lines.map(function(item) { return item.line; });
+      }
+      if (options.reverse) lines.reverse();
+      lines = lines.map(function(line, index) {
+        var value = options.prefix + line + options.suffix;
+        return options.number ? (index + 1) + '. ' + value : value;
+      });
+      return lines.join('\n');
+    }
+
+    function getOptions() {
+      return {
+        trim: $('#ttTrim').prop('checked'),
+        removeEmpty: $('#ttRemoveEmpty').prop('checked'),
+        dedupe: $('#ttDedupe').prop('checked'),
+        reverse: $('#ttReverse').prop('checked'),
+        number: $('#ttNumber').prop('checked'),
+        sort: $('#ttSort').val(),
+        prefix: $('#ttPrefix').val(),
+        suffix: $('#ttSuffix').val()
+      };
+    }
+
+    function stats(text) {
+      var lines = splitLines(text);
+      var nonEmpty = lines.filter(function(line) { return line.trim() !== ''; }).length;
+      return lines.length + ' 行 · ' + nonEmpty + ' 非空 · ' + text.length + ' 字符';
+    }
+
+    function render() {
+      var input = $('#ttInput').val();
+      var output = transformText(input, getOptions());
+      $('#ttOutput').val(output);
+      $('#ttInputStats').text(stats(input));
+      $('#ttOutputStats').text(stats(output));
+      $('#ttStatus').removeClass('tt-error').text(input ? '已自动处理，可继续调整选项' : '所有处理均在当前浏览器完成');
+    }
+
+    function flashCopied($button) {
+      var original = $button.html();
+      $button.html('<i class="fas fa-check"></i> 已复制');
+      window.setTimeout(function() { $button.html(original); }, 1400);
+    }
+
+    function copyResult() {
+      var value = $('#ttOutput').val();
+      if (!value) {
+        $('#ttStatus').addClass('tt-error').text('没有可复制的结果');
+        return;
+      }
+      var $button = $('#ttCopy');
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(value).then(function() {
+          flashCopied($button);
+        }).catch(function() {
+          $('#ttOutput').trigger('select');
+          $('#ttStatus').addClass('tt-error').text('复制失败，请手动复制结果');
+        });
+      } else {
+        $('#ttOutput').trigger('select');
+        try {
+          document.execCommand('copy');
+          flashCopied($button);
+        } catch (error) {
+          $('#ttStatus').addClass('tt-error').text('复制失败，请手动复制结果');
+        }
+      }
+    }
+
+    $(document).ready(function() {
+      $('#ttInput').on('input', render);
+      $('#ttSort').on('change', render);
+      $('#ttTrim, #ttRemoveEmpty, #ttDedupe, #ttReverse, #ttNumber').on('change', render);
+      $('#ttPrefix, #ttSuffix').on('input', render);
+      $('#ttProcess').on('click', render);
+      $('#ttCopy').on('click', copyResult);
+      $('#ttSwap').on('click', function() {
+        var output = $('#ttOutput').val();
+        $('#ttInput').val(output);
+        render();
+      });
+      $('#ttClear').on('click', function() {
+        $('#ttInput, #ttOutput, #ttPrefix, #ttSuffix').val('');
+        $('#ttTrim').prop('checked', true);
+        $('#ttRemoveEmpty, #ttDedupe, #ttReverse, #ttNumber').prop('checked', false);
+        $('#ttSort').val('none');
+        render();
+        $('#ttInput').trigger('focus');
+      });
+      render();
+    });
+  })();
+</script>

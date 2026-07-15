@@ -1,0 +1,561 @@
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .qr-reader-container {
+    margin-top: -50px;
+    margin-bottom: 30px;
+  }
+  .qr-reader-container .card {
+    border-radius: 8px;
+  }
+  .qr-reader-container [hidden] {
+    display: none !important;
+  }
+  .qr-reader-privacy {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 18px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    color: #4f7f0b;
+    background: #f4f9ed;
+    font-size: 0.86rem;
+  }
+  .qr-reader-workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 0.9fr);
+    gap: 22px;
+  }
+  .qr-reader-preview-box {
+    min-height: 280px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 12px;
+    border: 2px dashed transparent;
+    border-radius: 10px;
+    background: #f2f2f2;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .qr-reader-preview-box:hover,
+  .qr-reader-preview-box:focus,
+  .qr-reader-preview-box.is-dragover {
+    border-color: #5a9600;
+    background: #f6fbf0;
+    outline: none;
+  }
+  .qr-reader-preview-box img {
+    display: block;
+    max-width: 100%;
+    max-height: 480px;
+    border-radius: 6px;
+  }
+  .qr-reader-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    padding: 28px 16px;
+    color: #999;
+    text-align: center;
+  }
+  .qr-reader-placeholder i {
+    color: #5a9600;
+    font-size: 2.8rem;
+  }
+  .qr-reader-placeholder strong {
+    color: #555;
+  }
+  .qr-reader-placeholder small {
+    color: #aaa;
+    line-height: 1.65;
+  }
+  .qr-reader-file-meta {
+    margin-top: 9px;
+    overflow: hidden;
+    color: #777;
+    font-size: 0.8rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .qr-reader-result-panel {
+    min-width: 0;
+    padding: 18px;
+    border: 1px solid #ececec;
+    border-radius: 10px;
+    background: #fafafa;
+  }
+  .qr-reader-result-panel h5 {
+    margin: 0 0 12px;
+    color: #444;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+  .qr-reader-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 7px;
+    color: #62882b;
+    background: #f2f8e8;
+    font-size: 0.84rem;
+    line-height: 1.55;
+  }
+  .qr-reader-idle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 7px;
+    color: #777;
+    background: #f1f1f1;
+    font-size: 0.84rem;
+    line-height: 1.55;
+  }
+  .qr-reader-error {
+    padding: 10px 12px;
+    border-radius: 7px;
+    color: #c62828;
+    background: #ffefef;
+    font-size: 0.84rem;
+    line-height: 1.55;
+  }
+  .qr-reader-output {
+    display: block;
+    width: 100%;
+    min-height: 150px;
+    margin: 12px 0 0;
+    padding: 12px 14px;
+    border: 2px solid #e5e5e5;
+    border-radius: 9px;
+    outline: none;
+    color: #333;
+    background: #fff;
+    box-sizing: border-box;
+    font-family: SFMono-Regular, Consolas, monospace;
+    font-size: 0.84rem;
+    line-height: 1.6;
+    resize: vertical;
+  }
+  .qr-reader-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+    margin-top: 14px;
+  }
+  .qr-reader-btn {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 18px;
+    border: none;
+    border-radius: 22px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    text-decoration: none;
+    transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+  }
+  .qr-reader-btn-primary {
+    color: #fff !important;
+    background: linear-gradient(135deg, #5a9600, #7ccd00);
+    box-shadow: 0 3px 9px rgba(90, 150, 0, 0.22);
+  }
+  .qr-reader-btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 14px rgba(90, 150, 0, 0.3);
+  }
+  .qr-reader-btn-secondary {
+    color: #666 !important;
+    background: #ededed;
+  }
+  .qr-reader-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+  .qr-reader-notes {
+    margin: 0;
+    padding-left: 20px;
+    color: #888;
+    font-size: 0.84rem;
+    line-height: 1.9;
+  }
+  @media only screen and (max-width: 760px) {
+    .qr-reader-workspace {
+      grid-template-columns: 1fr;
+    }
+  }
+  @media only screen and (max-width: 601px) {
+    .qr-reader-container {
+      margin-top: -30px;
+    }
+    .qr-reader-preview-box {
+      min-height: 220px;
+    }
+    .qr-reader-actions {
+      flex-direction: column;
+    }
+    .qr-reader-btn {
+      width: 100%;
+      box-sizing: border-box;
+    }
+  }
+</style>
+
+<main class="content">
+  <div class="container qr-reader-container">
+    <div class="card">
+      <%- partial('_partial/tool-header') %>
+      <div class="card-content">
+        <div class="qr-reader-privacy">
+          <i class="fas fa-lock"></i>
+          <span>图片仅在当前浏览器中识别，不会上传到服务器。</span>
+        </div>
+
+        <input id="qrReaderFile" type="file" accept="image/*" hidden>
+        <div id="qrReaderWorkspace" class="qr-reader-workspace">
+          <div>
+            <div id="qrReaderDropzone" class="qr-reader-preview-box" tabindex="0" role="button" aria-label="选择二维码图片">
+              <div id="qrReaderPlaceholder" class="qr-reader-placeholder">
+                <i class="fas fa-qrcode"></i>
+                <strong>点击选择、拖入或直接粘贴二维码图片</strong>
+                <small>支持常见图片格式，可使用 Ctrl/Command + V 粘贴截图</small>
+              </div>
+              <img id="qrReaderPreview" alt="待识别二维码图片" hidden>
+            </div>
+            <div id="qrReaderFileMeta" class="qr-reader-file-meta"></div>
+          </div>
+          <div class="qr-reader-result-panel">
+            <h5>识别结果</h5>
+            <div id="qrReaderIdle" class="qr-reader-idle">
+              <i class="far fa-image"></i>
+              <span>选择图片后将自动开始识别</span>
+            </div>
+            <div id="qrReaderStatus" class="qr-reader-status" aria-live="polite" hidden>
+              <i class="fas fa-spinner fa-pulse"></i>
+              <span>正在识别二维码...</span>
+            </div>
+            <div id="qrReaderError" class="qr-reader-error" role="alert" hidden></div>
+            <div id="qrReaderResult" hidden>
+              <textarea id="qrReaderOutput" class="qr-reader-output" readonly aria-label="二维码内容"></textarea>
+              <div class="qr-reader-actions">
+                <button id="qrReaderCopy" class="qr-reader-btn qr-reader-btn-primary" type="button"><i class="far fa-copy"></i> 复制内容</button>
+                <a id="qrReaderOpen" class="qr-reader-btn qr-reader-btn-secondary" href="#" target="_blank" rel="noopener noreferrer" hidden><i class="fas fa-external-link-alt"></i> 打开链接</a>
+              </div>
+            </div>
+            <div id="qrReaderChangeActions" class="qr-reader-actions" hidden>
+              <button id="qrReaderChange" class="qr-reader-btn qr-reader-btn-secondary" type="button"><i class="far fa-image"></i> 选择图片</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-content">
+        <ul class="qr-reader-notes">
+          <li>会优先使用浏览器原生 BarcodeDetector，无法使用时自动回退到固定版本的 jsQR。</li>
+          <li>原生接口和 jsQR 的兼容性、识别率有所不同；模糊、倾斜或过小的二维码可能无法识别。</li>
+          <li>只有 HTTP/HTTPS 内容会显示“打开链接”，其他内容仅提供复制，避免误触不安全协议。</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script>
+(function() {
+  'use strict';
+
+  var MAX_FILE_SIZE = 30 * 1024 * 1024;
+  var MAX_SCAN_EDGE = 2400;
+  var selectedUrl = '';
+  var scanToken = 0;
+
+  function byId(id) {
+    return document.getElementById(id);
+  }
+
+  var fileInput = byId('qrReaderFile');
+  var dropzone = byId('qrReaderDropzone');
+  var placeholder = byId('qrReaderPlaceholder');
+  var preview = byId('qrReaderPreview');
+  var idleBox = byId('qrReaderIdle');
+  var statusBox = byId('qrReaderStatus');
+  var errorBox = byId('qrReaderError');
+  var resultBox = byId('qrReaderResult');
+  var output = byId('qrReaderOutput');
+  var openLink = byId('qrReaderOpen');
+  var changeActions = byId('qrReaderChangeActions');
+  var changeButton = byId('qrReaderChange');
+
+  function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+  }
+
+  function revokeSelectedUrl() {
+    if (selectedUrl) URL.revokeObjectURL(selectedUrl);
+    selectedUrl = '';
+  }
+
+  function setStatus(message) {
+    statusBox.innerHTML = '<i class="fas fa-spinner fa-pulse"></i><span>' + message + '</span>';
+    idleBox.hidden = true;
+    statusBox.hidden = false;
+    errorBox.hidden = true;
+    resultBox.hidden = true;
+  }
+
+  function showError(message) {
+    idleBox.hidden = true;
+    statusBox.hidden = true;
+    errorBox.textContent = message;
+    errorBox.hidden = false;
+    resultBox.hidden = true;
+  }
+
+  function isSafeWebUrl(value) {
+    try {
+      var url = new URL(value);
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function showResult(value, method) {
+    statusBox.innerHTML = '<i class="fas fa-check-circle"></i><span>识别成功 · ' + method + '</span>';
+    idleBox.hidden = true;
+    statusBox.hidden = false;
+    errorBox.hidden = true;
+    output.value = value;
+    resultBox.hidden = false;
+    if (isSafeWebUrl(value)) {
+      openLink.href = value;
+      openLink.hidden = false;
+    } else {
+      openLink.removeAttribute('href');
+      openLink.hidden = true;
+    }
+  }
+
+  function loadHtmlImage(url) {
+    return new Promise(function(resolve, reject) {
+      var image = new Image();
+      image.onload = function() { resolve(image); };
+      image.onerror = function() { reject(new Error('当前浏览器无法读取这张图片')); };
+      image.src = url;
+    });
+  }
+
+  async function decodeImage(file, url) {
+    if ('createImageBitmap' in window) {
+      try {
+        return await createImageBitmap(file, { imageOrientation: 'from-image' });
+      } catch (error) {
+        // 继续使用 HTMLImageElement 兼容旧浏览器。
+      }
+    }
+    return loadHtmlImage(url);
+  }
+
+  async function scanWithBarcodeDetector(drawable) {
+    if (!('BarcodeDetector' in window)) return '';
+    try {
+      if (typeof BarcodeDetector.getSupportedFormats === 'function') {
+        var formats = await BarcodeDetector.getSupportedFormats();
+        if (formats.indexOf('qr_code') === -1) return '';
+      }
+      var detector = new BarcodeDetector({ formats: ['qr_code'] });
+      var codes = await detector.detect(drawable);
+      return codes.length ? codes[0].rawValue || '' : '';
+    } catch (error) {
+      return '';
+    }
+  }
+
+  function scanWithJsQr(drawable) {
+    if (typeof window.jsQR !== 'function') return '';
+    var width = drawable.width || drawable.naturalWidth;
+    var height = drawable.height || drawable.naturalHeight;
+    var scale = Math.min(1, MAX_SCAN_EDGE / Math.max(width, height));
+    var canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(width * scale));
+    canvas.height = Math.max(1, Math.round(height * scale));
+    var context = canvas.getContext('2d', { willReadFrequently: true });
+    if (!context) return '';
+    context.drawImage(drawable, 0, 0, canvas.width, canvas.height);
+    var imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    var result = window.jsQR(imageData.data, canvas.width, canvas.height, { inversionAttempts: 'attemptBoth' });
+    return result ? result.data : '';
+  }
+
+  async function loadFile(file) {
+    var token = ++scanToken;
+    if (!file || !file.type || file.type.indexOf('image/') !== 0) {
+      showError('请选择有效的图片文件');
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      showError('图片超过 30 MB，请选择更小的文件');
+      return;
+    }
+
+    revokeSelectedUrl();
+    selectedUrl = URL.createObjectURL(file);
+    preview.src = selectedUrl;
+    preview.hidden = false;
+    placeholder.hidden = true;
+    byId('qrReaderFileMeta').textContent = file.name + ' · ' + formatBytes(file.size);
+    changeButton.innerHTML = '<i class="far fa-image"></i> 更换图片';
+    changeActions.hidden = false;
+    setStatus('正在识别二维码...');
+
+    var drawable;
+    try {
+      drawable = await decodeImage(file, selectedUrl);
+      if (token !== scanToken) return;
+      var value = await scanWithBarcodeDetector(drawable);
+      var method = '浏览器原生识别';
+      if (!value) {
+        setStatus('原生识别未找到结果，正在尝试 jsQR...');
+        await new Promise(function(resolve) { setTimeout(resolve, 0); });
+        value = scanWithJsQr(drawable);
+        method = 'jsQR';
+      }
+      if (token !== scanToken) return;
+      if (value) {
+        showResult(value, method);
+      } else if (typeof window.jsQR !== 'function' && !('BarcodeDetector' in window)) {
+        showError('当前浏览器没有原生识别能力，且 jsQR 资源加载失败，请检查网络后重试');
+      } else {
+        showError('未识别到二维码，请尝试更清晰、边缘留白更完整的图片');
+      }
+    } catch (error) {
+      if (token === scanToken) showError(error.message || '二维码识别失败，请尝试其他图片');
+    } finally {
+      if (drawable && typeof drawable.close === 'function') drawable.close();
+    }
+  }
+
+  function resetTool() {
+    scanToken++;
+    revokeSelectedUrl();
+    fileInput.value = '';
+    preview.removeAttribute('src');
+    preview.hidden = true;
+    placeholder.hidden = false;
+    byId('qrReaderFileMeta').textContent = '';
+    output.value = '';
+    idleBox.hidden = false;
+    statusBox.hidden = true;
+    openLink.hidden = true;
+    openLink.removeAttribute('href');
+    errorBox.hidden = true;
+    resultBox.hidden = true;
+    changeActions.hidden = true;
+    changeButton.innerHTML = '<i class="far fa-image"></i> 选择图片';
+  }
+
+  function chooseFile() {
+    fileInput.value = '';
+    fileInput.click();
+  }
+
+  function fallbackCopy(text) {
+    var textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    var copied = document.execCommand('copy');
+    document.body.removeChild(textarea);
+    return copied;
+  }
+
+  async function copyOutput() {
+    if (!output.value) return;
+    var button = byId('qrReaderCopy');
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(output.value);
+      } else if (!fallbackCopy(output.value)) {
+        throw new Error('copy failed');
+      }
+      button.innerHTML = '<i class="fas fa-check"></i> 已复制';
+      setTimeout(function() { button.innerHTML = '<i class="far fa-copy"></i> 复制内容'; }, 1200);
+    } catch (error) {
+      if (window.M && window.M.toast) window.M.toast({ html: '复制失败，请手动选择内容' });
+    }
+  }
+
+  dropzone.addEventListener('click', function() {
+    chooseFile();
+  });
+  dropzone.addEventListener('keydown', function(event) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      chooseFile();
+    }
+  });
+  ['dragenter', 'dragover'].forEach(function(type) {
+    dropzone.addEventListener(type, function(event) {
+      event.preventDefault();
+      dropzone.classList.add('is-dragover');
+    });
+  });
+  ['dragleave', 'drop'].forEach(function(type) {
+    dropzone.addEventListener(type, function(event) {
+      event.preventDefault();
+      dropzone.classList.remove('is-dragover');
+    });
+  });
+  dropzone.addEventListener('drop', function(event) {
+    var files = event.dataTransfer && event.dataTransfer.files;
+    if (files && files.length) loadFile(files[0]);
+  });
+  fileInput.addEventListener('change', function() {
+    if (fileInput.files && fileInput.files.length) loadFile(fileInput.files[0]);
+  });
+  document.addEventListener('paste', function(event) {
+    var target = event.target;
+    if (target && target !== output && (target.matches('input, textarea') || target.isContentEditable)) return;
+    var items = event.clipboardData && event.clipboardData.items;
+    if (!items) return;
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].kind === 'file' && items[i].type.indexOf('image/') === 0) {
+        var file = items[i].getAsFile();
+        if (file) {
+          event.preventDefault();
+          loadFile(file);
+          return;
+        }
+      }
+    }
+  });
+  byId('qrReaderCopy').addEventListener('click', copyOutput);
+  changeButton.addEventListener('click', chooseFile);
+  window.addEventListener('beforeunload', revokeSelectedUrl);
+  resetTool();
+})();
+</script>

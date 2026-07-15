@@ -23,11 +23,32 @@
     "url": "/tools/api-explorer"
   },
   {
+    "slug": "regex-tester",
+    "name": "正则表达式测试",
+    "description": "正则实时匹配、捕获分组与替换预览",
+    "emoji": "🔍",
+    "url": "/tools/regex-tester"
+  },
+  {
     "slug": "base64",
     "name": "Base64 编解码",
     "description": "Base64 文本与图片在线编解码",
     "emoji": "🔒",
     "url": "/tools/base64"
+  },
+  {
+    "slug": "hash-checksum",
+    "name": "Hash / 文件校验",
+    "description": "本地计算文本与文件的多种 SHA 哈希值",
+    "emoji": "#️⃣",
+    "url": "/tools/hash-checksum"
+  },
+  {
+    "slug": "jwt-decoder",
+    "name": "JWT 解析",
+    "description": "本地解析 JWT 结构、声明与有效时间",
+    "emoji": "🪪",
+    "url": "/tools/jwt-decoder"
   },
   {
     "slug": "uuid-generator",
@@ -45,10 +66,17 @@
   },
   {
     "slug": "json-yaml",
-    "name": "JSON/YAML 互转",
+    "name": "JSON / YAML 互转",
     "description": "JSON 与 YAML 格式在线互转工具",
     "emoji": "📋",
     "url": "/tools/json-yaml"
+  },
+  {
+    "slug": "csv-json",
+    "name": "CSV / JSON 互转",
+    "description": "CSV 表格与 JSON 数据本地互相转换",
+    "emoji": "🗂️",
+    "url": "/tools/csv-json"
   },
   {
     "slug": "url-encode",
@@ -56,6 +84,13 @@
     "description": "URL 在线编码与解码工具",
     "emoji": "🔗",
     "url": "/tools/url-encode"
+  },
+  {
+    "slug": "url-parser",
+    "name": "URL 解析",
+    "description": "拆解 URL 组成并查看重复查询参数",
+    "emoji": "🧭",
+    "url": "/tools/url-parser"
   },
   {
     "slug": "markdown",
@@ -70,6 +105,14 @@
     "description": "在线文本差异对比工具，支持行级对比",
     "emoji": "📊",
     "url": "/tools/text-diff",
+    "category": "文本处理"
+  },
+  {
+    "slug": "text-toolbox",
+    "name": "文本批处理",
+    "description": "多行文本清理、去重、排序与批量加工",
+    "emoji": "🧹",
+    "url": "/tools/text-toolbox",
     "category": "文本处理"
   },
   {
@@ -117,11 +160,32 @@
     "url": "/tools/qr-generator"
   },
   {
+    "slug": "qr-reader",
+    "name": "二维码识别",
+    "description": "从本地图片或剪贴板中识别二维码内容",
+    "emoji": "📷",
+    "url": "/tools/qr-reader"
+  },
+  {
     "slug": "color-picker",
     "name": "颜色选择器",
     "description": "HEX/RGB/RGBA/HSL/HSLA/HSV/CMYK 颜色格式互转",
     "emoji": "🎨",
     "url": "/tools/color-picker"
+  },
+  {
+    "slug": "image-toolbox",
+    "name": "图片压缩与格式转换",
+    "description": "本地压缩、缩放并转换 PNG/JPEG/WebP 图片",
+    "emoji": "🖼️",
+    "url": "/tools/image-toolbox"
+  },
+  {
+    "slug": "exif-cleaner",
+    "name": "EXIF 查看与清除",
+    "description": "本地查看图片元数据并导出去除 EXIF 的副本",
+    "emoji": "🕶️",
+    "url": "/tools/exif-cleaner"
   },
   {
     "slug": "periodic-table",
@@ -152,6 +216,20 @@
     "url": "/tools/timestamp"
   },
   {
+    "slug": "date-calculator",
+    "name": "日期计算",
+    "description": "日期加减、间隔与工作日天数计算",
+    "emoji": "📅",
+    "url": "/tools/date-calculator"
+  },
+  {
+    "slug": "cron-parser",
+    "name": "Cron 表达式",
+    "description": "校验并解释 Cron，预览未来执行时间",
+    "emoji": "🗓️",
+    "url": "/tools/cron-parser"
+  },
+  {
     "slug": "whiteboard",
     "name": "白板工具",
     "description": "在线白板绘图工具，支持画笔、马赛克、橡皮擦、文字、框选、图片上传，撤销重做，导出",
@@ -171,6 +249,20 @@
     "description": "阿拉伯数字转中文小写与人民币大写",
     "emoji": "🔢",
     "url": "/tools/number-converter"
+  },
+  {
+    "slug": "base-converter",
+    "name": "进制转换",
+    "description": "2 至 36 进制大整数精准互转",
+    "emoji": "🧩",
+    "url": "/tools/base-converter"
+  },
+  {
+    "slug": "unit-converter",
+    "name": "单位换算",
+    "description": "长度、面积、质量、温度、速度与容量换算",
+    "emoji": "📐",
+    "url": "/tools/unit-converter"
   },
   {
     "slug": "video-to-gif",

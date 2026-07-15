@@ -1,0 +1,886 @@
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .exif-cleaner-container {
+    margin-top: -50px;
+    margin-bottom: 30px;
+  }
+  .exif-cleaner-container .card {
+    border-radius: 8px;
+  }
+  .exif-cleaner-privacy {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 18px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    color: #4f7f0b;
+    background: #f4f9ed;
+    font-size: 0.86rem;
+  }
+  .exif-cleaner-dropzone {
+    min-height: 210px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 26px;
+    border: 2px dashed #d9d9d9;
+    border-radius: 12px;
+    color: #999;
+    background: #fafafa;
+    cursor: pointer;
+    text-align: center;
+    transition: border-color 0.2s, color 0.2s, background 0.2s;
+  }
+  .exif-cleaner-dropzone:hover,
+  .exif-cleaner-dropzone:focus,
+  .exif-cleaner-dropzone.is-dragover {
+    border-color: #5a9600;
+    color: #5a9600;
+    background: #f6fbf0;
+    outline: none;
+  }
+  .exif-cleaner-dropzone i {
+    font-size: 3rem;
+  }
+  .exif-cleaner-dropzone strong {
+    color: #555;
+  }
+  .exif-cleaner-dropzone small {
+    color: #aaa;
+    line-height: 1.6;
+  }
+  .exif-cleaner-workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 0.95fr);
+    gap: 22px;
+    margin-top: 18px;
+  }
+  .exif-cleaner-preview-box,
+  .exif-cleaner-result-preview {
+    min-height: 280px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 12px;
+    border-radius: 10px;
+    background-color: #f3f3f3;
+    background-image:
+      linear-gradient(45deg, #e7e7e7 25%, transparent 25%),
+      linear-gradient(-45deg, #e7e7e7 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #e7e7e7 75%),
+      linear-gradient(-45deg, transparent 75%, #e7e7e7 75%);
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+    background-size: 16px 16px;
+  }
+  .exif-cleaner-preview-box img,
+  .exif-cleaner-result-preview img {
+    display: block;
+    max-width: 100%;
+    max-height: 500px;
+    border-radius: 5px;
+  }
+  .exif-cleaner-file-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 9px;
+    color: #888;
+    font-size: 0.8rem;
+  }
+  .exif-cleaner-file-name {
+    min-width: 0;
+    overflow: hidden;
+    color: #555;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .exif-cleaner-metadata-panel {
+    min-width: 0;
+    padding: 18px;
+    border: 1px solid #ececec;
+    border-radius: 10px;
+    background: #fafafa;
+  }
+  .exif-cleaner-panel-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .exif-cleaner-panel-title h5 {
+    margin: 0;
+    color: #444;
+    font-size: 0.98rem;
+    font-weight: 600;
+  }
+  .exif-cleaner-count {
+    color: #888;
+    font-size: 0.76rem;
+  }
+  .exif-cleaner-metadata {
+    max-height: 390px;
+    overflow: auto;
+    border: 1px solid #ececec;
+    border-radius: 8px;
+    background: #fff;
+  }
+  .exif-cleaner-metadata-row {
+    display: grid;
+    grid-template-columns: minmax(100px, 0.42fr) minmax(0, 0.58fr);
+    gap: 12px;
+    padding: 9px 11px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 0.8rem;
+    line-height: 1.5;
+  }
+  .exif-cleaner-metadata-row:last-child {
+    border-bottom: none;
+  }
+  .exif-cleaner-metadata-label {
+    color: #777;
+  }
+  .exif-cleaner-metadata-value {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    color: #333;
+  }
+  .exif-cleaner-empty,
+  .exif-cleaner-parser-warning {
+    padding: 18px;
+    color: #888;
+    font-size: 0.82rem;
+    line-height: 1.65;
+    text-align: center;
+  }
+  .exif-cleaner-parser-warning {
+    color: #946200;
+    background: #fff8e1;
+  }
+  .exif-cleaner-settings {
+    margin-top: 22px;
+    padding: 18px;
+    border: 1px solid #ececec;
+    border-radius: 10px;
+    background: #fafafa;
+  }
+  .exif-cleaner-settings h5 {
+    margin: 0 0 14px;
+    color: #444;
+    font-size: 0.98rem;
+    font-weight: 600;
+  }
+  .exif-cleaner-fields {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    align-items: end;
+  }
+  .exif-cleaner-field label {
+    display: block;
+    margin-bottom: 6px;
+    color: #777;
+    font-size: 0.78rem;
+  }
+  .exif-cleaner-field select.browser-default {
+    display: block;
+    width: 100%;
+    height: 46px;
+    margin: 0;
+    padding: 0 13px;
+    border: 2px solid #e5e5e5;
+    border-radius: 10px;
+    outline: none;
+    color: #444;
+    background: #fff;
+    box-sizing: border-box;
+    font-family: inherit;
+    font-size: 14px;
+  }
+  .exif-cleaner-field select.browser-default:focus {
+    border-color: #5a9600;
+    box-shadow: 0 0 0 3px rgba(90, 150, 0, 0.1);
+  }
+  .exif-cleaner-quality-row,
+  .exif-cleaner-color-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 46px;
+  }
+  .exif-cleaner-quality-row input[type='range'] {
+    flex: 1;
+    margin: 0;
+  }
+  .exif-cleaner-quality-value {
+    min-width: 38px;
+    color: #5a9600;
+    font-weight: 600;
+    text-align: right;
+  }
+  .exif-cleaner-color-row input[type='color'] {
+    width: 52px;
+    height: 44px;
+    padding: 2px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #fff;
+  }
+  .exif-cleaner-direction,
+  .exif-cleaner-warning,
+  .exif-cleaner-error {
+    margin-top: 13px;
+    padding: 9px 12px;
+    border-radius: 7px;
+    font-size: 0.82rem;
+    line-height: 1.55;
+  }
+  .exif-cleaner-direction {
+    color: #62882b;
+    background: #f2f8e8;
+  }
+  .exif-cleaner-warning {
+    color: #946200;
+    background: #fff8e1;
+  }
+  .exif-cleaner-error {
+    color: #c62828;
+    background: #ffefef;
+  }
+  .exif-cleaner-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .exif-cleaner-btn {
+    min-height: 44px;
+    padding: 0 20px;
+    border: none;
+    border-radius: 22px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+  }
+  .exif-cleaner-btn-primary {
+    color: #fff;
+    background: linear-gradient(135deg, #5a9600, #7ccd00);
+    box-shadow: 0 3px 9px rgba(90, 150, 0, 0.22);
+  }
+  .exif-cleaner-btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 14px rgba(90, 150, 0, 0.3);
+  }
+  .exif-cleaner-btn-secondary {
+    color: #666;
+    background: #ededed;
+  }
+  .exif-cleaner-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+  .exif-cleaner-result-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 240px;
+    gap: 22px;
+    align-items: center;
+  }
+  .exif-cleaner-result-info h5 {
+    margin: 0 0 10px;
+    color: #444;
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+  .exif-cleaner-result-info p {
+    margin: 0 0 16px;
+    color: #777;
+    font-size: 0.84rem;
+    line-height: 1.75;
+  }
+  .exif-cleaner-download {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    color: #fff !important;
+    text-decoration: none;
+    box-sizing: border-box;
+  }
+  .exif-cleaner-notes {
+    margin: 0;
+    padding-left: 20px;
+    color: #888;
+    font-size: 0.84rem;
+    line-height: 1.9;
+  }
+  @media only screen and (max-width: 760px) {
+    .exif-cleaner-workspace,
+    .exif-cleaner-result-layout {
+      grid-template-columns: 1fr;
+    }
+    .exif-cleaner-fields {
+      grid-template-columns: 1fr 1fr;
+    }
+    .exif-cleaner-result-info {
+      text-align: center;
+    }
+    .exif-cleaner-download {
+      width: auto;
+      min-width: 190px;
+    }
+  }
+  @media only screen and (max-width: 601px) {
+    .exif-cleaner-container {
+      margin-top: -30px;
+    }
+    .exif-cleaner-dropzone {
+      min-height: 170px;
+      padding: 20px 14px;
+    }
+    .exif-cleaner-fields {
+      grid-template-columns: 1fr;
+    }
+    .exif-cleaner-actions {
+      flex-direction: column;
+    }
+    .exif-cleaner-btn {
+      width: 100%;
+    }
+    .exif-cleaner-file-meta {
+      flex-direction: column;
+      gap: 3px;
+    }
+    .exif-cleaner-metadata-row {
+      grid-template-columns: 1fr;
+      gap: 3px;
+    }
+  }
+</style>
+
+<main class="content">
+  <div class="container exif-cleaner-container">
+    <div class="card">
+      <%- partial('_partial/tool-header') %>
+      <div class="card-content">
+        <div class="exif-cleaner-privacy">
+          <i class="fas fa-lock"></i>
+          <span>图片读取、元数据解析与清除均在当前浏览器中完成，不会上传到服务器。</span>
+        </div>
+
+        <input id="exifCleanerFile" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+        <div id="exifCleanerDropzone" class="exif-cleaner-dropzone" tabindex="0" role="button" aria-label="选择要查看或清除 EXIF 的图片">
+          <i class="fas fa-camera"></i>
+          <strong>点击选择或拖入图片</strong>
+          <small>支持 JPEG、PNG、WebP；EXIF 信息通常最常见于相机或手机拍摄的 JPEG</small>
+        </div>
+
+        <div id="exifCleanerEditor" hidden>
+          <div class="exif-cleaner-workspace">
+            <div>
+              <div class="exif-cleaner-preview-box">
+                <img id="exifCleanerPreview" alt="原图预览">
+              </div>
+              <div class="exif-cleaner-file-meta">
+                <span id="exifCleanerFileName" class="exif-cleaner-file-name"></span>
+                <span id="exifCleanerSourceMeta"></span>
+              </div>
+            </div>
+            <div class="exif-cleaner-metadata-panel">
+              <div class="exif-cleaner-panel-title">
+                <h5>检测到的元数据</h5>
+                <span id="exifCleanerMetadataCount" class="exif-cleaner-count"></span>
+              </div>
+              <div id="exifCleanerMetadata" class="exif-cleaner-metadata" aria-live="polite"></div>
+            </div>
+          </div>
+
+          <div class="exif-cleaner-settings">
+            <h5>无元数据导出</h5>
+            <div class="exif-cleaner-fields">
+              <div class="exif-cleaner-field">
+                <label for="exifCleanerFormat">输出格式</label>
+                <select id="exifCleanerFormat" class="browser-default">
+                  <option value="image/jpeg">JPEG</option>
+                  <option value="image/png">PNG</option>
+                  <option value="image/webp">WebP</option>
+                </select>
+              </div>
+              <div class="exif-cleaner-field">
+                <label for="exifCleanerQuality">质量（JPEG / WebP）</label>
+                <div class="exif-cleaner-quality-row">
+                  <input id="exifCleanerQuality" type="range" min="10" max="100" value="92">
+                  <span id="exifCleanerQualityValue" class="exif-cleaner-quality-value">92%</span>
+                </div>
+              </div>
+              <div class="exif-cleaner-field">
+                <label for="exifCleanerBackground">JPEG 背景色</label>
+                <div class="exif-cleaner-color-row">
+                  <input id="exifCleanerBackground" type="color" value="#ffffff">
+                  <span id="exifCleanerBackgroundText">#ffffff</span>
+                </div>
+              </div>
+            </div>
+            <div id="exifCleanerDirection" class="exif-cleaner-direction"></div>
+            <div id="exifCleanerWarning" class="exif-cleaner-warning" hidden>JPEG 不支持透明通道，透明区域会填充为上方选择的背景色。</div>
+            <div class="exif-cleaner-actions">
+              <button id="exifCleanerGenerate" class="exif-cleaner-btn exif-cleaner-btn-primary" type="button">
+                <i class="fas fa-eraser"></i>&nbsp; 清除并生成
+              </button>
+              <button id="exifCleanerClear" class="exif-cleaner-btn exif-cleaner-btn-secondary" type="button">更换图片</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="exifCleanerError" class="exif-cleaner-error" role="alert" hidden></div>
+      </div>
+    </div>
+
+    <div id="exifCleanerResultCard" class="card" hidden>
+      <div class="card-content">
+        <div class="exif-cleaner-result-layout">
+          <div class="exif-cleaner-result-preview">
+            <img id="exifCleanerResultPreview" alt="清除元数据后的图片预览">
+          </div>
+          <div class="exif-cleaner-result-info">
+            <h5>元数据已清除</h5>
+            <p id="exifCleanerResultMeta"></p>
+            <a id="exifCleanerDownload" class="exif-cleaner-btn exif-cleaner-btn-primary exif-cleaner-download" href="#" download>
+              <i class="fas fa-download"></i> 下载清理后的图片
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-content">
+        <ul class="exif-cleaner-notes">
+          <li>清理过程会把浏览器显示的画面重新绘制到 Canvas，再编码为新文件，不会复制原文件中的 EXIF、GPS、XMP 或相机信息。</li>
+          <li>导出画面会按浏览器解码后的显示方向写入像素，避免删除 Orientation 后图片出现旋转。</li>
+          <li>Canvas 重编码会改变文件字节和压缩质量；如需保留原始画质，请保留原文件作为备份。</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/exifr@7.1.3/dist/full.umd.js"></script>
+<script>
+(function() {
+  'use strict';
+
+  var MAX_FILE_SIZE = 50 * 1024 * 1024;
+  var MAX_CANVAS_PIXELS = 50000000;
+  var metadataFields = [
+    ['Make', '相机厂商'],
+    ['Model', '相机型号'],
+    ['LensModel', '镜头型号'],
+    ['Software', '处理软件'],
+    ['DateTimeOriginal', '拍摄时间'],
+    ['CreateDate', '创建时间'],
+    ['ModifyDate', '修改时间'],
+    ['Orientation', '方向标记'],
+    ['ExposureTime', '曝光时间'],
+    ['FNumber', '光圈'],
+    ['ISO', 'ISO'],
+    ['FocalLength', '焦距'],
+    ['FocalLengthIn35mmFormat', '等效焦距'],
+    ['ExposureBiasValue', '曝光补偿'],
+    ['ExposureProgram', '曝光程序'],
+    ['MeteringMode', '测光模式'],
+    ['Flash', '闪光灯'],
+    ['WhiteBalance', '白平衡'],
+    ['ColorSpace', '色彩空间'],
+    ['ImageDescription', '图片描述'],
+    ['Artist', '作者'],
+    ['Copyright', '版权'],
+    ['GPSLatitude', 'GPS 纬度'],
+    ['GPSLongitude', 'GPS 经度'],
+    ['GPSAltitude', 'GPS 海拔']
+  ];
+  var metadataKeys = metadataFields.map(function(field) { return field[0]; });
+  var privacyMetadataKeys = [
+    'Make', 'Model', 'LensModel', 'Software', 'DateTimeOriginal', 'CreateDate',
+    'ModifyDate', 'Orientation', 'ImageDescription', 'Artist', 'Copyright',
+    'GPSLatitude', 'GPSLongitude', 'GPSAltitude'
+  ];
+  var selectedFile = null;
+  var sourceDrawable = null;
+  var sourceWidth = 0;
+  var sourceHeight = 0;
+  var sourceUrl = '';
+  var resultUrl = '';
+  var sourceMetadata = null;
+  var isLoading = false;
+
+  function byId(id) {
+    return document.getElementById(id);
+  }
+
+  var fileInput = byId('exifCleanerFile');
+  var dropzone = byId('exifCleanerDropzone');
+  var editor = byId('exifCleanerEditor');
+  var preview = byId('exifCleanerPreview');
+  var metadataBox = byId('exifCleanerMetadata');
+  var formatInput = byId('exifCleanerFormat');
+  var qualityInput = byId('exifCleanerQuality');
+  var backgroundInput = byId('exifCleanerBackground');
+  var warning = byId('exifCleanerWarning');
+  var errorBox = byId('exifCleanerError');
+  var generateButton = byId('exifCleanerGenerate');
+  var clearButton = byId('exifCleanerClear');
+  var resultCard = byId('exifCleanerResultCard');
+  var resultPreview = byId('exifCleanerResultPreview');
+  var downloadLink = byId('exifCleanerDownload');
+  var settingInputs = [formatInput, qualityInput, backgroundInput];
+
+  function formatBytes(bytes) {
+    if (!Number.isFinite(bytes) || bytes < 0) return '—';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+  }
+
+  function formatName(mime) {
+    return mime === 'image/jpeg' ? 'JPEG' : mime.split('/')[1].toUpperCase();
+  }
+
+  function extensionFor(mime) {
+    return mime === 'image/jpeg' ? 'jpg' : mime.split('/')[1];
+  }
+
+  function safeFileName(name, extension) {
+    var base = (name || '').replace(/\.[^.]+$/, '').replace(/[^\w\u4e00-\u9fa5-]+/g, '-');
+    base = base.replace(/^-+|-+$/g, '').slice(0, 60);
+    return (base || 'image') + '-clean.' + extension;
+  }
+
+  function showError(message) {
+    errorBox.textContent = message;
+    errorBox.hidden = false;
+  }
+
+  function clearError() {
+    errorBox.textContent = '';
+    errorBox.hidden = true;
+  }
+
+  function clearResult() {
+    if (resultUrl) URL.revokeObjectURL(resultUrl);
+    resultUrl = '';
+    resultPreview.removeAttribute('src');
+    downloadLink.removeAttribute('href');
+    resultCard.hidden = true;
+  }
+
+  function releaseSource() {
+    if (sourceDrawable && typeof sourceDrawable.close === 'function') sourceDrawable.close();
+    sourceDrawable = null;
+    if (sourceUrl) URL.revokeObjectURL(sourceUrl);
+    sourceUrl = '';
+  }
+
+  function isSupportedImage(file) {
+    return file && ['image/png', 'image/jpeg', 'image/webp'].indexOf(file.type) !== -1;
+  }
+
+  function loadHtmlImage(url) {
+    return new Promise(function(resolve, reject) {
+      var image = new Image();
+      image.onload = function() { resolve(image); };
+      image.onerror = function() { reject(new Error('当前浏览器无法读取这张图片')); };
+      image.src = url;
+    });
+  }
+
+  async function decodeOrientedImage(file, url) {
+    if ('createImageBitmap' in window) {
+      try {
+        return await createImageBitmap(file, { imageOrientation: 'from-image' });
+      } catch (error) {
+        // 继续使用 HTMLImageElement，现代浏览器会按 EXIF 方向显示。
+      }
+    }
+    return loadHtmlImage(url);
+  }
+
+  function formatMetadataValue(key, value) {
+    if (value instanceof Date) return value.toLocaleString('zh-CN', { hour12: false });
+    if (Array.isArray(value)) return value.join(', ');
+    if (key === 'ExposureTime' && typeof value === 'number') {
+      return value > 0 && value < 1 ? '1/' + Math.round(1 / value) + ' 秒' : value + ' 秒';
+    }
+    if (key === 'FNumber' && typeof value === 'number') return 'f/' + value;
+    if ((key === 'FocalLength' || key === 'FocalLengthIn35mmFormat') && typeof value === 'number') return value + ' mm';
+    if (key === 'GPSAltitude' && typeof value === 'number') return value.toFixed(2) + ' m';
+    if ((key === 'GPSLatitude' || key === 'GPSLongitude') && typeof value === 'number') return value.toFixed(6);
+    return String(value);
+  }
+
+  function renderMetadata(metadata, parserAvailable) {
+    metadataBox.innerHTML = '';
+    var count = 0;
+    if (metadata) {
+      metadataFields.forEach(function(field) {
+        var key = field[0];
+        var value = metadata[key];
+        if (value === undefined || value === null || value === '') return;
+        var row = document.createElement('div');
+        row.className = 'exif-cleaner-metadata-row';
+        var label = document.createElement('div');
+        label.className = 'exif-cleaner-metadata-label';
+        label.textContent = field[1];
+        var content = document.createElement('div');
+        content.className = 'exif-cleaner-metadata-value';
+        content.textContent = formatMetadataValue(key, value);
+        row.appendChild(label);
+        row.appendChild(content);
+        metadataBox.appendChild(row);
+        count++;
+      });
+    }
+    byId('exifCleanerMetadataCount').textContent = count ? count + ' 项' : '';
+    if (count) return;
+    var empty = document.createElement('div');
+    empty.className = parserAvailable ? 'exif-cleaner-empty' : 'exif-cleaner-parser-warning';
+    empty.textContent = parserAvailable
+      ? '未检测到常见 EXIF / GPS 元数据；仍可通过重新编码清除其他附加信息。'
+      : '元数据解析组件加载失败，暂时无法查看 EXIF；Canvas 清理与导出仍可使用。';
+    metadataBox.appendChild(empty);
+  }
+
+  function orientationText(value) {
+    if (value === undefined || value === null || value === '') return '未检测到 Orientation；导出会使用当前浏览器显示方向。';
+    var names = {
+      1: '正常',
+      2: '水平翻转',
+      3: '旋转 180°',
+      4: '垂直翻转',
+      5: '水平翻转并旋转 270°',
+      6: '旋转 90°',
+      7: '水平翻转并旋转 90°',
+      8: '旋转 270°'
+    };
+    var name = names[value] || String(value);
+    return 'Orientation：' + name + '。导出会固化为当前正确显示方向，再移除方向标记。';
+  }
+
+  async function readMetadata(file) {
+    if (!window.exifr || typeof window.exifr.parse !== 'function') return null;
+    try {
+      return await window.exifr.parse(file, metadataKeys);
+    } catch (error) {
+      return null;
+    }
+  }
+
+  async function loadFile(file) {
+    clearError();
+    clearResult();
+    if (!isSupportedImage(file)) {
+      showError('请选择 JPEG、PNG 或 WebP 图片');
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      showError('图片超过 50 MB，请选择更小的文件');
+      return;
+    }
+    if (isLoading) return;
+
+    isLoading = true;
+    releaseSource();
+    selectedFile = file;
+    sourceMetadata = null;
+    sourceUrl = URL.createObjectURL(file);
+    preview.src = sourceUrl;
+    dropzone.querySelector('strong').textContent = '正在读取图片...';
+
+    try {
+      sourceDrawable = await decodeOrientedImage(file, sourceUrl);
+      sourceWidth = sourceDrawable.width || sourceDrawable.naturalWidth;
+      sourceHeight = sourceDrawable.height || sourceDrawable.naturalHeight;
+      if (!sourceWidth || !sourceHeight) throw new Error('无法读取图片尺寸');
+      if (sourceWidth * sourceHeight > MAX_CANVAS_PIXELS) throw new Error('图片超过 5000 万像素，当前浏览器可能无法安全重编码');
+
+      var parserAvailable = !!(window.exifr && typeof window.exifr.parse === 'function');
+      sourceMetadata = await readMetadata(file);
+      renderMetadata(sourceMetadata, parserAvailable);
+      byId('exifCleanerDirection').textContent = orientationText(sourceMetadata && sourceMetadata.Orientation);
+      byId('exifCleanerFileName').textContent = file.name;
+      byId('exifCleanerSourceMeta').textContent = sourceWidth + ' × ' + sourceHeight + ' · ' + formatBytes(file.size);
+      if (file.type === 'image/png') formatInput.value = 'image/png';
+      else if (file.type === 'image/webp') formatInput.value = 'image/webp';
+      else formatInput.value = 'image/jpeg';
+      dropzone.querySelector('strong').textContent = '点击选择或拖入图片';
+      dropzone.hidden = true;
+      editor.hidden = false;
+      updateSettings();
+    } catch (error) {
+      resetTool();
+      showError(error.message || '图片读取失败，请尝试其他文件');
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  function updateSettings() {
+    byId('exifCleanerQualityValue').textContent = qualityInput.value + '%';
+    byId('exifCleanerBackgroundText').textContent = backgroundInput.value.toLowerCase();
+    var isPng = formatInput.value === 'image/png';
+    qualityInput.disabled = isPng;
+    backgroundInput.disabled = formatInput.value !== 'image/jpeg';
+    warning.hidden = formatInput.value !== 'image/jpeg';
+    clearResult();
+  }
+
+  function canvasToBlob(canvas, mime, quality) {
+    return new Promise(function(resolve, reject) {
+      if (!canvas.toBlob) {
+        reject(new Error('当前浏览器不支持图片导出'));
+        return;
+      }
+      canvas.toBlob(function(blob) {
+        if (!blob) reject(new Error('图片编码失败，请尝试其他输出格式'));
+        else resolve(blob);
+      }, mime, quality);
+    });
+  }
+
+  async function verifyCleanedBlob(blob) {
+    if (!window.exifr || typeof window.exifr.parse !== 'function') return '已通过 Canvas 重新编码';
+    try {
+      var metadata = await window.exifr.parse(blob, privacyMetadataKeys);
+      var remaining = metadata && privacyMetadataKeys.some(function(key) {
+        return metadata[key] !== undefined && metadata[key] !== null && metadata[key] !== '';
+      });
+      return remaining ? '已重新编码；建议下载后再次检查附加信息' : 'EXIF 复检未检测到常见标签';
+    } catch (error) {
+      return '已通过 Canvas 重新编码';
+    }
+  }
+
+  async function generateCleanImage() {
+    clearError();
+    clearResult();
+    if (!selectedFile || !sourceDrawable) {
+      showError('请先选择图片');
+      return;
+    }
+
+    var inputFile = selectedFile;
+    var mime = formatInput.value;
+    var quality = Number(qualityInput.value) / 100;
+    var background = backgroundInput.value;
+    generateButton.disabled = true;
+    clearButton.disabled = true;
+    settingInputs.forEach(function(input) { input.disabled = true; });
+    generateButton.innerHTML = '<i class="fas fa-spinner fa-pulse"></i>&nbsp; 清理中';
+    try {
+      var canvas = document.createElement('canvas');
+      canvas.width = sourceWidth;
+      canvas.height = sourceHeight;
+      var context = canvas.getContext('2d');
+      if (!context) throw new Error('当前浏览器不支持 Canvas 图片处理');
+      if (mime === 'image/jpeg') {
+        context.fillStyle = background;
+        context.fillRect(0, 0, canvas.width, canvas.height);
+      }
+      context.drawImage(sourceDrawable, 0, 0, canvas.width, canvas.height);
+      var blob = await canvasToBlob(canvas, mime, quality);
+      if (mime === 'image/webp' && blob.type !== 'image/webp') {
+        throw new Error('当前浏览器不支持 WebP 编码，请改用 JPEG 或 PNG');
+      }
+
+      var verification = await verifyCleanedBlob(blob);
+      resultUrl = URL.createObjectURL(blob);
+      resultPreview.src = resultUrl;
+      downloadLink.href = resultUrl;
+      downloadLink.download = safeFileName(inputFile.name, extensionFor(mime));
+      byId('exifCleanerResultMeta').textContent = sourceWidth + ' × ' + sourceHeight + ' · ' + formatName(mime) + ' · ' + formatBytes(blob.size) + '。' + verification + '。';
+      resultCard.hidden = false;
+      resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (error) {
+      showError(error.message || '元数据清理失败，请尝试其他输出格式');
+    } finally {
+      generateButton.disabled = false;
+      clearButton.disabled = false;
+      formatInput.disabled = false;
+      qualityInput.disabled = formatInput.value === 'image/png';
+      backgroundInput.disabled = formatInput.value !== 'image/jpeg';
+      generateButton.innerHTML = '<i class="fas fa-eraser"></i>&nbsp; 清除并生成';
+    }
+  }
+
+  function resetTool() {
+    releaseSource();
+    clearResult();
+    clearError();
+    selectedFile = null;
+    sourceMetadata = null;
+    sourceWidth = 0;
+    sourceHeight = 0;
+    fileInput.value = '';
+    preview.removeAttribute('src');
+    metadataBox.innerHTML = '';
+    editor.hidden = true;
+    dropzone.hidden = false;
+    dropzone.querySelector('strong').textContent = '点击选择或拖入图片';
+  }
+
+  dropzone.addEventListener('click', function() {
+    fileInput.value = '';
+    fileInput.click();
+  });
+  dropzone.addEventListener('keydown', function(event) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      fileInput.value = '';
+      fileInput.click();
+    }
+  });
+  ['dragenter', 'dragover'].forEach(function(type) {
+    dropzone.addEventListener(type, function(event) {
+      event.preventDefault();
+      dropzone.classList.add('is-dragover');
+    });
+  });
+  ['dragleave', 'drop'].forEach(function(type) {
+    dropzone.addEventListener(type, function(event) {
+      event.preventDefault();
+      dropzone.classList.remove('is-dragover');
+    });
+  });
+  dropzone.addEventListener('drop', function(event) {
+    var files = event.dataTransfer && event.dataTransfer.files;
+    if (files && files.length) loadFile(files[0]);
+  });
+  fileInput.addEventListener('change', function() {
+    if (fileInput.files && fileInput.files.length) loadFile(fileInput.files[0]);
+  });
+  settingInputs.forEach(function(input) {
+    input.addEventListener('input', updateSettings);
+    input.addEventListener('change', updateSettings);
+  });
+  generateButton.addEventListener('click', generateCleanImage);
+  clearButton.addEventListener('click', resetTool);
+  window.addEventListener('beforeunload', function() {
+    releaseSource();
+    clearResult();
+  });
+})();
+</script>

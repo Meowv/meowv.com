@@ -1,0 +1,329 @@
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .rt-container { margin-top: -50px; margin-bottom: 30px; }
+  .rt-container .card { border-radius: 8px; }
+  .rt-builder { display: grid; grid-template-columns: minmax(0, 1fr) 130px; gap: 12px; margin-bottom: 12px; }
+  .rt-field { min-width: 0; }
+  .rt-field label { display: block; margin-bottom: 6px; color: #666; font-size: 0.82rem; font-weight: 600; }
+  .rt-input {
+    display: block; width: 100%; height: 46px !important; margin: 0 !important; padding: 0 13px !important;
+    box-sizing: border-box !important; border: 2px solid #e8e8e8 !important; border-radius: 10px !important; background: #fafafa !important;
+    color: #333; font: 0.88rem 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    outline: none; box-shadow: none !important;
+  }
+  .rt-input:focus { border-color: #5a9600 !important; background: #fff !important; }
+  .rt-pattern-wrap { position: relative; }
+  .rt-pattern-wrap::before, .rt-pattern-wrap::after {
+    position: absolute; top: 11px; z-index: 1; color: #aaa; font: 1rem 'SF Mono', monospace;
+  }
+  .rt-pattern-wrap::before { left: 11px; content: '/'; }
+  .rt-pattern-wrap::after { right: 11px; content: '/'; }
+  .rt-pattern-wrap .rt-input { padding-left: 25px; padding-right: 25px; }
+  .rt-replace-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: end; margin-bottom: 14px; }
+  .rt-toolbar { display: flex; flex-wrap: wrap; gap: 8px; }
+  .rt-toolbar .btn {
+    display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 16px;
+    border-radius: 22px; font-size: 13px; line-height: 44px; letter-spacing: 0;
+  }
+  .rt-toolbar .rt-primary { background: linear-gradient(135deg, #5a9600, #7ccd00); }
+  .rt-toolbar .rt-outline { border: 1px solid #ddd; background: transparent; color: #666; box-shadow: none; }
+  .rt-toolbar .rt-outline:hover { border-color: #5a9600; color: #5a9600; }
+  .rt-message { min-height: 22px; margin-bottom: 10px; color: #777; font-size: 0.8rem; }
+  .rt-message.rt-error { color: #e53935; }
+  .rt-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+  .rt-panel { min-width: 0; }
+  .rt-panel-head { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 7px; }
+  .rt-panel-title { color: #666; font-size: 0.88rem; font-weight: 600; }
+  .rt-panel-hint { color: #aaa; font-size: 0.72rem; }
+  .rt-textarea {
+    display: block; width: 100%; min-height: 280px; padding: 14px 16px; box-sizing: border-box;
+    border: 2px solid #e8e8e8; border-radius: 10px; background: #fafafa; color: #333;
+    font: 0.88rem/1.65 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    outline: none; resize: vertical; transition: border-color 0.2s, background 0.2s;
+  }
+  .rt-textarea:focus { border-color: #5a9600; background: #fff; }
+  .rt-highlight {
+    min-height: 280px; max-height: 480px; overflow: auto; padding: 14px 16px; box-sizing: border-box;
+    border: 2px solid #e8e8e8; border-radius: 10px; background: #fafafa; color: #333;
+    font: 0.88rem/1.65 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    white-space: pre-wrap; overflow-wrap: anywhere;
+  }
+  .rt-highlight mark { padding: 1px 0; border-radius: 2px; background: #dff2bf; color: #315500; }
+  .rt-highlight .rt-zero { display: inline-block; width: 2px; height: 1.2em; background: #e08a00; vertical-align: text-bottom; }
+  .rt-detail-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; margin-top: 18px; }
+  .rt-detail-box { min-width: 0; border: 1px solid #e8e8e8; border-radius: 10px; overflow: hidden; }
+  .rt-detail-title { padding: 10px 13px; border-bottom: 1px solid #e8e8e8; background: #f7f9f4; color: #5a9600; font-size: 0.82rem; font-weight: 600; }
+  .rt-detail-content { max-height: 260px; overflow: auto; padding: 10px 13px; background: #fafafa; }
+  .rt-match { padding: 8px 0; border-bottom: 1px solid #eee; }
+  .rt-match:last-child { border-bottom: 0; }
+  .rt-match-head { color: #555; font: 600 0.78rem 'SF Mono', monospace; }
+  .rt-capture { margin-top: 5px; color: #777; font: 0.76rem/1.45 'SF Mono', monospace; overflow-wrap: anywhere; }
+  .rt-empty { padding: 25px 10px; color: #aaa; font-size: 0.8rem; text-align: center; }
+  .rt-replace-preview { margin: 0; min-height: 110px; white-space: pre-wrap; overflow-wrap: anywhere; color: #444; font: 0.8rem/1.55 'SF Mono', monospace; }
+
+  @media only screen and (max-width: 601px) {
+    .rt-container { margin-top: -30px; }
+    .rt-builder, .rt-replace-row, .rt-columns, .rt-detail-grid { grid-template-columns: 1fr; }
+    .rt-toolbar .btn { flex: 1 1 calc(50% - 8px); justify-content: center; padding: 0 10px; }
+    .rt-textarea, .rt-highlight { min-height: 210px; }
+  }
+</style>
+
+<main class="content">
+  <div class="container rt-container">
+    <div class="card">
+      <%- partial('_partial/tool-header') %>
+      <div class="card-content">
+        <div class="rt-builder">
+          <div class="rt-field">
+            <label for="rtPattern">正则表达式</label>
+            <div class="rt-pattern-wrap"><input class="rt-input" id="rtPattern" type="text" spellcheck="false" placeholder="例如：(https?):\/\/([^\s/]+)"></div>
+          </div>
+          <div class="rt-field">
+            <label for="rtFlags">标志</label>
+            <input class="rt-input" id="rtFlags" type="text" value="g" spellcheck="false" placeholder="gim">
+          </div>
+        </div>
+        <div class="rt-replace-row">
+          <div class="rt-field">
+            <label for="rtReplacement">替换内容（支持 $&amp;、$1、$&lt;name&gt;；留空表示删除匹配）</label>
+            <input class="rt-input" id="rtReplacement" type="text" spellcheck="false" placeholder="例如：[$1]">
+          </div>
+          <div class="rt-toolbar">
+            <button class="btn waves-effect rt-primary" id="rtExample" type="button"><i class="fas fa-flask"></i> 示例</button>
+            <button class="btn waves-effect rt-outline" id="rtCopy" type="button"><i class="fas fa-copy"></i> 复制替换结果</button>
+            <button class="btn waves-effect rt-outline" id="rtClear" type="button"><i class="fas fa-trash-alt"></i> 清空</button>
+          </div>
+        </div>
+        <div class="rt-message" id="rtMessage">输入表达式和测试文本后实时匹配；复杂表达式可能导致浏览器短暂卡顿</div>
+
+        <div class="rt-columns">
+          <section class="rt-panel">
+            <div class="rt-panel-head">
+              <span class="rt-panel-title">测试文本</span>
+              <span class="rt-panel-hint">内容不会上传</span>
+            </div>
+            <textarea class="rt-textarea" id="rtText" spellcheck="false" placeholder="输入或粘贴待测试文本…"></textarea>
+          </section>
+          <section class="rt-panel">
+            <div class="rt-panel-head">
+              <span class="rt-panel-title">匹配高亮</span>
+              <span class="rt-panel-hint" id="rtCount">0 个匹配</span>
+            </div>
+            <div class="rt-highlight" id="rtHighlight" aria-live="polite">—</div>
+          </section>
+        </div>
+
+        <div class="rt-detail-grid">
+          <section class="rt-detail-box">
+            <div class="rt-detail-title">匹配与捕获组</div>
+            <div class="rt-detail-content" id="rtMatches"><div class="rt-empty">暂无匹配</div></div>
+          </section>
+          <section class="rt-detail-box">
+            <div class="rt-detail-title">替换预览</div>
+            <div class="rt-detail-content"><pre class="rt-replace-preview" id="rtPreview">—</pre></div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script>
+  (function() {
+    var MATCH_LIMIT = 2000;
+    var replacementResult = null;
+
+    function parseFlags(value) {
+      var flags = value.trim();
+      if (!/^[dgimsuvy]*$/.test(flags)) throw new Error('标志只能包含 d、g、i、m、s、u、v、y');
+      var seen = Object.create(null);
+      for (var i = 0; i < flags.length; i++) {
+        if (seen[flags.charAt(i)]) throw new Error('标志不能重复');
+        seen[flags.charAt(i)] = true;
+      }
+      return flags;
+    }
+
+    function createRegex() {
+      var pattern = $('#rtPattern').val();
+      if (!pattern) return null;
+      var flags = parseFlags($('#rtFlags').val());
+      try {
+        return new RegExp(pattern, flags);
+      } catch (error) {
+        throw new Error('表达式无效：' + error.message);
+      }
+    }
+
+    function advanceIndex(text, index, unicode) {
+      if (!unicode || index >= text.length) return index + 1;
+      var first = text.charCodeAt(index);
+      if (first >= 0xD800 && first <= 0xDBFF && index + 1 < text.length) {
+        var second = text.charCodeAt(index + 1);
+        if (second >= 0xDC00 && second <= 0xDFFF) return index + 2;
+      }
+      return index + 1;
+    }
+
+    function collectMatches(regex, text) {
+      var matcher = new RegExp(regex.source, regex.flags);
+      var repeated = matcher.global;
+      var matches = [];
+      var match;
+      while ((match = matcher.exec(text)) !== null) {
+        matches.push(match);
+        if (matches.length >= MATCH_LIMIT) break;
+        if (!repeated) break;
+        if (match[0] === '') matcher.lastIndex = advanceIndex(text, matcher.lastIndex, matcher.unicode || matcher.unicodeSets);
+      }
+      return { items: matches, limited: matches.length >= MATCH_LIMIT };
+    }
+
+    function renderHighlight(text, matches) {
+      var $target = $('#rtHighlight').empty();
+      if (!text) {
+        $target.text('—');
+        return;
+      }
+      if (!matches.length) {
+        $target.text(text);
+        return;
+      }
+      var fragment = document.createDocumentFragment();
+      var cursor = 0;
+      matches.forEach(function(match) {
+        var start = match.index;
+        var end = start + match[0].length;
+        if (start < cursor) return;
+        fragment.appendChild(document.createTextNode(text.slice(cursor, start)));
+        if (start === end) {
+          var zero = document.createElement('span');
+          zero.className = 'rt-zero';
+          zero.title = '零长度匹配，位置 ' + start;
+          fragment.appendChild(zero);
+        } else {
+          var mark = document.createElement('mark');
+          mark.textContent = text.slice(start, end);
+          fragment.appendChild(mark);
+        }
+        cursor = end;
+      });
+      fragment.appendChild(document.createTextNode(text.slice(cursor)));
+      $target.append(fragment);
+    }
+
+    function renderMatches(matches) {
+      var $target = $('#rtMatches').empty();
+      if (!matches.length) {
+        $target.append('<div class="rt-empty">暂无匹配</div>');
+        return;
+      }
+      matches.forEach(function(match, matchIndex) {
+        var $box = $('<div class="rt-match"></div>');
+        var display = match[0] === '' ? '（零长度匹配）' : match[0];
+        $box.append($('<div class="rt-match-head"></div>').text('#' + (matchIndex + 1) + ' · 位置 ' + match.index + ' · ' + display));
+        for (var i = 1; i < match.length; i++) {
+          var value = match[i] === undefined ? '（未参与匹配）' : match[i];
+          $box.append($('<div class="rt-capture"></div>').text('$' + i + ' = ' + value));
+        }
+        if (match.groups) {
+          Object.keys(match.groups).forEach(function(name) {
+            var value = match.groups[name] === undefined ? '（未参与匹配）' : match.groups[name];
+            $box.append($('<div class="rt-capture"></div>').text('$<' + name + '> = ' + value));
+          });
+        }
+        $target.append($box);
+      });
+    }
+
+    function render() {
+      var text = $('#rtText').val();
+      var regex;
+      try {
+        regex = createRegex();
+      } catch (error) {
+        replacementResult = null;
+        $('#rtMessage').addClass('rt-error').text(error.message);
+        $('#rtCount').text('无法匹配');
+        $('#rtHighlight').text(text || '—');
+        $('#rtMatches').html('<div class="rt-empty">请先修正表达式</div>');
+        $('#rtPreview').text('—');
+        return;
+      }
+
+      if (!regex) {
+        replacementResult = null;
+        $('#rtMessage').removeClass('rt-error').text('请输入正则表达式；表达式内容无需包裹斜杠');
+        $('#rtCount').text('0 个匹配');
+        $('#rtHighlight').text(text || '—');
+        $('#rtMatches').html('<div class="rt-empty">暂无匹配</div>');
+        $('#rtPreview').text('—');
+        return;
+      }
+
+      var result = collectMatches(regex, text);
+      renderHighlight(text, result.items);
+      renderMatches(result.items);
+      $('#rtCount').text(result.items.length + ' 个匹配');
+      replacementResult = text.replace(regex, $('#rtReplacement').val());
+      $('#rtPreview').text(replacementResult || '（空结果）');
+      $('#rtMessage').toggleClass('rt-error', result.limited).text(
+        result.limited ? '匹配数量达到 ' + MATCH_LIMIT + '，已停止继续扫描' :
+          (regex.global ? '已按 g 标志扫描全部匹配' : '未使用 g 标志，仅显示首个匹配')
+      );
+    }
+
+    function flashCopied() {
+      var $button = $('#rtCopy');
+      var original = $button.html();
+      $button.html('<i class="fas fa-check"></i> 已复制');
+      window.setTimeout(function() { $button.html(original); }, 1400);
+    }
+
+    function copyPreview() {
+      if (replacementResult === null) {
+        $('#rtMessage').addClass('rt-error').text('没有可复制的替换结果');
+        return;
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(replacementResult).then(flashCopied).catch(function() {
+          $('#rtMessage').addClass('rt-error').text('复制失败，请手动选择替换预览');
+        });
+      } else {
+        var range = document.createRange();
+        range.selectNodeContents(document.getElementById('rtPreview'));
+        window.getSelection().removeAllRanges();
+        window.getSelection().addRange(range);
+        try { document.execCommand('copy'); flashCopied(); }
+        catch (error) { $('#rtMessage').addClass('rt-error').text('复制失败，请手动选择替换预览'); }
+      }
+    }
+
+    $(document).ready(function() {
+      $('#rtPattern, #rtFlags, #rtReplacement, #rtText').on('input', render);
+      $('#rtExample').on('click', function() {
+        $('#rtPattern').val('(?<protocol>https?):\\/\\/(?<host>[^\\s/]+)');
+        $('#rtFlags').val('gi');
+        $('#rtReplacement').val('$<host>');
+        $('#rtText').val('官网：https://meowv.com\n文档：http://localhost:4000/docs');
+        render();
+      });
+      $('#rtCopy').on('click', copyPreview);
+      $('#rtClear').on('click', function() {
+        $('#rtPattern, #rtReplacement, #rtText').val('');
+        $('#rtFlags').val('g');
+        render();
+        $('#rtPattern').trigger('focus');
+      });
+      render();
+    });
+  })();
+</script>

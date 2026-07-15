@@ -1,0 +1,329 @@
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .baseconv-container { margin-top: -50px; margin-bottom: 30px; }
+  .baseconv-container .card { border-radius: 8px; }
+  .baseconv-controls {
+    display: grid; grid-template-columns: minmax(120px, 0.55fr) minmax(0, 2fr) minmax(120px, 0.55fr);
+    gap: 14px; align-items: end;
+  }
+  .baseconv-field { min-width: 0; }
+  .baseconv-field label {
+    display: block; margin-bottom: 7px; color: #666; font-size: 0.86rem; font-weight: 600;
+  }
+  .baseconv-field input, .baseconv-field select {
+    width: 100% !important; height: 46px !important; margin: 0 !important; padding: 0 13px !important;
+    box-sizing: border-box !important; border: 2px solid #e8e8e8 !important; border-radius: 10px !important;
+    background: #fafafa !important; box-shadow: none !important; color: #333; outline: none;
+    font: 0.94rem 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    text-transform: uppercase;
+  }
+  .baseconv-field input:focus, .baseconv-field select:focus {
+    border-color: #5a9600 !important; background: #fff !important; box-shadow: none !important;
+  }
+  .baseconv-input-wrap { position: relative; }
+  .baseconv-input-wrap input { padding-right: 54px !important; }
+  .baseconv-clear {
+    position: absolute; top: 3px; right: 3px; width: 40px; height: 40px; padding: 0; border: 0;
+    border-radius: 50%; background: transparent; color: #aaa; cursor: pointer; transition: all 0.2s;
+  }
+  .baseconv-clear:hover { background: #f5eaea; color: #e53935; }
+  .baseconv-message { min-height: 21px; margin: 7px 0 12px; color: #999; font-size: 0.78rem; }
+  .baseconv-message.error { color: #e53935; }
+  .baseconv-examples { display: flex; align-items: center; gap: 8px; margin: 0 0 20px; flex-wrap: wrap; }
+  .baseconv-examples-label { color: #999; font-size: 0.78rem; }
+  .baseconv-example {
+    display: inline-flex; align-items: center; justify-content: center; min-height: 36px; padding: 0 11px;
+    border: 1px solid #ddd; border-radius: 18px; background: #fff;
+    color: #666; cursor: pointer; font: 0.76rem 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    transition: all 0.2s;
+  }
+  .baseconv-example:hover { border-color: #5a9600; color: #5a9600; }
+  .baseconv-results { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .baseconv-result {
+    min-width: 0; padding: 15px 16px; border: 1px solid #e5ecd9; border-radius: 10px; background: #f8fbf4;
+  }
+  .baseconv-result.custom { border-color: #d5e6bf; background: #f3f9eb; }
+  .baseconv-result-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .baseconv-result-label { color: #5a9600; font-size: 0.82rem; font-weight: 600; }
+  .baseconv-copy {
+    flex: none; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px;
+    border: 1px solid #d8e4ca; border-radius: 50%; background: #fff; color: #8aa668;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .baseconv-copy:hover:not(:disabled) { border-color: #5a9600; color: #5a9600; }
+  .baseconv-copy:disabled { cursor: default; opacity: 0.4; }
+  .baseconv-copy.copied { border-color: #5a9600; background: #5a9600; color: #fff; }
+  .baseconv-result-value {
+    min-height: 48px; max-height: 150px; margin-top: 11px; overflow: auto; color: #333;
+    font: 0.94rem/1.65 'SF Mono', 'Fira Code', 'Consolas', monospace; overflow-wrap: anywhere;
+  }
+  .baseconv-result-value.empty { color: #bbb; }
+  .baseconv-rule { margin: 17px 0 0; color: #999; font-size: 0.76rem; line-height: 1.7; }
+
+  @media only screen and (max-width: 700px) {
+    .baseconv-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .baseconv-controls .baseconv-field.input { grid-column: 1 / -1; grid-row: 1; }
+  }
+  @media only screen and (max-width: 601px) {
+    .baseconv-container { margin-top: -30px; }
+    .baseconv-results { grid-template-columns: 1fr; }
+    .baseconv-result-value { min-height: 34px; }
+    .baseconv-example { min-height: 44px; font-size: 13px; }
+    .baseconv-copy { width: 44px; height: 44px; }
+    .baseconv-clear { top: 1px; right: 1px; width: 44px; height: 44px; }
+    .baseconv-input-wrap input { padding-right: 58px !important; }
+  }
+</style>
+
+<main class="content">
+  <div class="container baseconv-container">
+    <div class="card">
+      <%- partial('_partial/tool-header') %>
+      <div class="card-content">
+        <div class="baseconv-controls">
+          <div class="baseconv-field">
+            <label for="baseconv-source-base">输入进制</label>
+            <select class="browser-default" id="baseconv-source-base" aria-label="输入进制"></select>
+          </div>
+          <div class="baseconv-field input">
+            <label for="baseconv-input">整数</label>
+            <div class="baseconv-input-wrap">
+              <input id="baseconv-input" type="text" autocomplete="off" spellcheck="false"
+                     placeholder="输入整数，例如 255" aria-describedby="baseconv-message">
+              <button class="baseconv-clear" id="baseconv-clear" type="button" title="清空"><i class="fas fa-times"></i></button>
+            </div>
+          </div>
+          <div class="baseconv-field">
+            <label for="baseconv-target-base">自定义输出</label>
+            <select class="browser-default" id="baseconv-target-base" aria-label="自定义输出进制"></select>
+          </div>
+        </div>
+        <div class="baseconv-message" id="baseconv-message" role="alert">支持 2 至 36 进制、正负整数、全角数字与字母</div>
+
+        <div class="baseconv-examples">
+          <span class="baseconv-examples-label">示例</span>
+          <button class="baseconv-example" type="button" data-base="10" data-value="255">十进制 255</button>
+          <button class="baseconv-example" type="button" data-base="16" data-value="FF">十六进制 FF</button>
+          <button class="baseconv-example" type="button" data-base="2" data-value="101010">二进制 101010</button>
+          <button class="baseconv-example" type="button" data-base="36" data-value="-ZZ">三十六进制 -ZZ</button>
+        </div>
+
+        <div class="baseconv-results">
+          <section class="baseconv-result">
+            <div class="baseconv-result-head">
+              <span class="baseconv-result-label">二进制（2）</span>
+              <button class="baseconv-copy" type="button" data-target="baseconv-result-2" title="复制二进制结果" disabled><i class="fas fa-copy"></i></button>
+            </div>
+            <div class="baseconv-result-value empty" id="baseconv-result-2" aria-live="polite">—</div>
+          </section>
+          <section class="baseconv-result">
+            <div class="baseconv-result-head">
+              <span class="baseconv-result-label">八进制（8）</span>
+              <button class="baseconv-copy" type="button" data-target="baseconv-result-8" title="复制八进制结果" disabled><i class="fas fa-copy"></i></button>
+            </div>
+            <div class="baseconv-result-value empty" id="baseconv-result-8" aria-live="polite">—</div>
+          </section>
+          <section class="baseconv-result">
+            <div class="baseconv-result-head">
+              <span class="baseconv-result-label">十进制（10）</span>
+              <button class="baseconv-copy" type="button" data-target="baseconv-result-10" title="复制十进制结果" disabled><i class="fas fa-copy"></i></button>
+            </div>
+            <div class="baseconv-result-value empty" id="baseconv-result-10" aria-live="polite">—</div>
+          </section>
+          <section class="baseconv-result">
+            <div class="baseconv-result-head">
+              <span class="baseconv-result-label">十六进制（16）</span>
+              <button class="baseconv-copy" type="button" data-target="baseconv-result-16" title="复制十六进制结果" disabled><i class="fas fa-copy"></i></button>
+            </div>
+            <div class="baseconv-result-value empty" id="baseconv-result-16" aria-live="polite">—</div>
+          </section>
+          <section class="baseconv-result custom">
+            <div class="baseconv-result-head">
+              <span class="baseconv-result-label" id="baseconv-custom-label">三十六进制（36）</span>
+              <button class="baseconv-copy" type="button" data-target="baseconv-result-custom" title="复制自定义进制结果" disabled><i class="fas fa-copy"></i></button>
+            </div>
+            <div class="baseconv-result-value empty" id="baseconv-result-custom" aria-live="polite">—</div>
+          </section>
+          <section class="baseconv-result">
+            <div class="baseconv-result-head">
+              <span class="baseconv-result-label">规范化输入</span>
+              <button class="baseconv-copy" type="button" data-target="baseconv-result-normalized" title="复制规范化输入" disabled><i class="fas fa-copy"></i></button>
+            </div>
+            <div class="baseconv-result-value empty" id="baseconv-result-normalized">—</div>
+          </section>
+        </div>
+        <p class="baseconv-rule">字母 A–Z 分别表示 10–35。使用 BigInt 逐位解析，不会把大整数转换为 JavaScript Number；单次输入最多 4096 位。</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script>
+  (function() {
+    var DIGITS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    var DEFAULT_MESSAGE = '支持 2 至 36 进制、正负整数、全角数字与字母';
+    var BASE_NAMES = {
+      2: '二进制', 3: '三进制', 4: '四进制', 5: '五进制', 6: '六进制', 7: '七进制',
+      8: '八进制', 9: '九进制', 10: '十进制', 11: '十一进制', 12: '十二进制',
+      13: '十三进制', 14: '十四进制', 15: '十五进制', 16: '十六进制', 20: '二十进制',
+      32: '三十二进制', 36: '三十六进制'
+    };
+
+    function baseLabel(base) {
+      return (BASE_NAMES[base] || base + ' 进制') + '（' + base + '）';
+    }
+
+    function populateBases() {
+      var options = '';
+      for (var base = 2; base <= 36; base++) {
+        options += '<option value="' + base + '">' + baseLabel(base) + '</option>';
+      }
+      $('#baseconv-source-base, #baseconv-target-base').html(options);
+      $('#baseconv-source-base').val('10');
+      $('#baseconv-target-base').val('36');
+    }
+
+    function normalizeText(value) {
+      return String(value || '').trim()
+        .replace(/[０-９Ａ-Ｚａ-ｚ]/g, function(char) { return String.fromCharCode(char.charCodeAt(0) - 65248); })
+        .replace(/＋/g, '+')
+        .replace(/[－−]/g, '-')
+        .toUpperCase();
+    }
+
+    function parseInteger(value, base) {
+      var source = normalizeText(value);
+      if (!source) return { empty: true };
+      if (source.length > 4097) return { error: '输入过长，最多支持 4096 位整数' };
+      if (!/^[+-]?[0-9A-Z]+$/.test(source)) return { error: '仅支持正负号、数字 0–9 与字母 A–Z' };
+
+      var negative = source.charAt(0) === '-';
+      var start = /^[+-]/.test(source) ? 1 : 0;
+      var body = source.slice(start);
+      if (body.length > 4096) return { error: '输入过长，最多支持 4096 位整数' };
+
+      var result = BigInt(0);
+      var radix = BigInt(base);
+      for (var index = 0; index < body.length; index++) {
+        var digit = DIGITS.indexOf(body.charAt(index));
+        if (digit < 0 || digit >= base) {
+          return { error: '字符“' + body.charAt(index) + '”不属于 ' + base + ' 进制' };
+        }
+        result = result * radix + BigInt(digit);
+      }
+      if (negative && result !== BigInt(0)) result = -result;
+      return { value: result, normalized: result.toString(base).toUpperCase() };
+    }
+
+    function setResult(selector, value) {
+      $(selector).text(value || '—').toggleClass('empty', !value);
+    }
+
+    function clearResults() {
+      $('.baseconv-result-value').text('—').addClass('empty');
+      $('.baseconv-copy').prop('disabled', true);
+    }
+
+    function setMessage(message, isError) {
+      $('#baseconv-message').text(message || DEFAULT_MESSAGE).toggleClass('error', !!isError);
+    }
+
+    function render() {
+      var sourceBase = Number($('#baseconv-source-base').val());
+      var targetBase = Number($('#baseconv-target-base').val());
+      $('#baseconv-custom-label').text(baseLabel(targetBase));
+      var parsed;
+      try {
+        parsed = parseInteger($('#baseconv-input').val(), sourceBase);
+      } catch (error) {
+        clearResults();
+        setMessage('当前浏览器不支持大整数转换，请升级浏览器后重试', true);
+        return;
+      }
+      if (parsed.empty) {
+        clearResults();
+        setMessage(DEFAULT_MESSAGE, false);
+        return;
+      }
+      if (parsed.error) {
+        clearResults();
+        setMessage(parsed.error, true);
+        return;
+      }
+
+      [2, 8, 10, 16].forEach(function(base) {
+        setResult('#baseconv-result-' + base, parsed.value.toString(base).toUpperCase());
+      });
+      setResult('#baseconv-result-custom', parsed.value.toString(targetBase).toUpperCase());
+      setResult('#baseconv-result-normalized', parsed.normalized);
+      $('.baseconv-copy').prop('disabled', false);
+      setMessage('已按 ' + baseLabel(sourceBase) + ' 精确转换', false);
+    }
+
+    function copyText(text) {
+      if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
+      return new Promise(function(resolve, reject) {
+        var textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+          document.execCommand('copy') ? resolve() : reject(new Error('复制失败'));
+        } catch (error) {
+          reject(error);
+        }
+        document.body.removeChild(textarea);
+      });
+    }
+
+    function showCopied($button) {
+      $button.addClass('copied').html('<i class="fas fa-check"></i>');
+      window.setTimeout(function() {
+        $button.removeClass('copied').html('<i class="fas fa-copy"></i>');
+      }, 1500);
+    }
+
+    $(document).ready(function() {
+      populateBases();
+      if (typeof BigInt !== 'function') {
+        $('#baseconv-input').prop('disabled', true);
+        setMessage('当前浏览器不支持 BigInt，请升级浏览器后使用', true);
+        return;
+      }
+
+      $('#baseconv-input').on('input', render);
+      $('#baseconv-source-base, #baseconv-target-base').on('change', render);
+      $('#baseconv-clear').on('click', function() {
+        $('#baseconv-input').val('').focus();
+        render();
+      });
+      $('.baseconv-example').on('click', function() {
+        $('#baseconv-source-base').val(String($(this).data('base')));
+        $('#baseconv-input').val(String($(this).data('value'))).focus();
+        render();
+      });
+      $('.baseconv-copy').on('click', function() {
+        var $button = $(this);
+        var text = $('#' + $button.data('target')).text();
+        if (!text || text === '—') return;
+        copyText(text).then(function() {
+          showCopied($button);
+        }).catch(function() {
+          M.toast({ html: '复制失败，请手动复制', classes: 'rounded red' });
+        });
+      });
+
+      $('#baseconv-input').val('255');
+      render();
+    });
+  })();
+</script>

@@ -1,0 +1,456 @@
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .cronparse-container { margin-top: -50px; margin-bottom: 30px; }
+  .cronparse-container .card { border-radius: 8px; }
+  .cronparse-input-row { display: flex; align-items: center; gap: 10px; }
+  .cronparse-input {
+    width: 100% !important; height: 46px !important; margin: 0 !important; padding: 0 13px !important;
+    box-sizing: border-box !important; border: 2px solid #e8e8e8 !important; border-radius: 10px !important;
+    background: #fafafa !important; box-shadow: none !important; color: #333; outline: none;
+    font: 1rem 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  }
+  .cronparse-input:focus { border-color: #5a9600 !important; background: #fff !important; box-shadow: none !important; }
+  .cronparse-clear {
+    flex: none; height: 44px; min-height: 44px; padding: 0 17px; box-sizing: border-box;
+    border: 1px solid #ddd; border-radius: 10px; background: #fff;
+    color: #777; cursor: pointer; font-size: 0.84rem; transition: all 0.2s;
+  }
+  .cronparse-clear:hover { border-color: #e53935; color: #e53935; }
+  .cronparse-hints {
+    display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin: 8px 0 0;
+    color: #999; font-size: 0.72rem; text-align: center;
+  }
+  .cronparse-hints span { padding: 4px; border-radius: 5px; background: #f7f7f7; }
+  .cronparse-message { min-height: 21px; margin: 6px 0 10px; color: #999; font-size: 0.78rem; }
+  .cronparse-message.error { color: #e53935; }
+  .cronparse-examples { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+  .cronparse-examples-label { color: #999; font-size: 0.78rem; }
+  .cronparse-example {
+    display: inline-flex; align-items: center; justify-content: center; min-height: 36px; padding: 0 11px;
+    border: 1px solid #ddd; border-radius: 18px; background: #fff;
+    color: #666; cursor: pointer; font: 0.75rem 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    transition: all 0.2s;
+  }
+  .cronparse-example:hover { border-color: #5a9600; color: #5a9600; }
+  .cronparse-section-title { margin: 0 0 11px; color: #555; font-size: 0.94rem; font-weight: 600; }
+  .cronparse-fields { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+  .cronparse-field {
+    min-width: 0; padding: 12px; border: 1px solid #e5ecd9; border-radius: 9px; background: #f8fbf4;
+  }
+  .cronparse-field-name { margin-bottom: 6px; color: #5a9600; font-size: 0.76rem; font-weight: 600; }
+  .cronparse-field-value { color: #444; font-size: 0.8rem; line-height: 1.55; overflow-wrap: anywhere; }
+  .cronparse-day-rule {
+    margin: 11px 0 20px; padding: 10px 13px; border-left: 3px solid #7cad38; border-radius: 4px;
+    background: #f5f8f1; color: #68765a; font-size: 0.78rem; line-height: 1.6;
+  }
+  .cronparse-future-head {
+    display: flex; align-items: end; justify-content: space-between; gap: 12px; margin-top: 4px;
+  }
+  .cronparse-future-actions { display: flex; align-items: center; gap: 8px; }
+  .cronparse-count {
+    width: auto; flex: none; height: 44px; margin: 0; padding: 0 11px; border: 2px solid #e8e8e8; border-radius: 10px;
+    background: #fff; color: #555; font-size: 13px; outline: none;
+  }
+  .cronparse-copy {
+    height: 44px; padding: 0 14px; border: 1px solid #d7e4c6; border-radius: 10px;
+    background: #fff; color: #668d30; cursor: pointer; font-size: 13px; transition: all 0.2s;
+  }
+  .cronparse-copy:hover:not(:disabled) { border-color: #5a9600; color: #5a9600; }
+  .cronparse-copy:disabled { cursor: default; opacity: 0.45; }
+  .cronparse-copy.copied { border-color: #5a9600; background: #5a9600; color: #fff; }
+  .cronparse-future-list { margin: 10px 0 0; padding: 0; list-style: none; }
+  .cronparse-future-item {
+    display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 10px; align-items: center;
+    padding: 10px 12px; border-bottom: 1px solid #eee; color: #444;
+    font: 0.88rem 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  }
+  .cronparse-future-item:first-child { border-top: 1px solid #eee; }
+  .cronparse-future-index {
+    display: inline-flex; align-items: center; justify-content: center; width: 27px; height: 27px;
+    border-radius: 50%; background: #eef5e5; color: #5a9600; font-size: 0.72rem;
+  }
+  .cronparse-empty { padding: 20px 12px; border: 1px dashed #ddd; border-radius: 9px; color: #aaa; text-align: center; }
+  .cronparse-search-note { min-height: 20px; margin-top: 7px; color: #999; font-size: 0.74rem; }
+  .cronparse-rule { margin: 17px 0 0; color: #999; font-size: 0.76rem; line-height: 1.7; }
+
+  @media only screen and (max-width: 850px) {
+    .cronparse-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media only screen and (max-width: 601px) {
+    .cronparse-container { margin-top: -30px; }
+    .cronparse-input-row { align-items: stretch; flex-direction: column; }
+    .cronparse-clear { min-height: 44px; }
+    .cronparse-hints { font-size: 0.64rem; }
+    .cronparse-fields { grid-template-columns: 1fr; }
+    .cronparse-future-head { align-items: stretch; flex-direction: column; }
+    .cronparse-future-actions { justify-content: space-between; }
+    .cronparse-future-item { font-size: 0.78rem; }
+    .cronparse-example { min-height: 44px; font-size: 13px; }
+  }
+</style>
+
+<main class="content">
+  <div class="container cronparse-container">
+    <div class="card">
+      <%- partial('_partial/tool-header') %>
+      <div class="card-content">
+        <div class="cronparse-input-row">
+          <input class="cronparse-input" id="cronparse-input" type="text" autocomplete="off" spellcheck="false"
+                 value="0 9 * * 1-5" placeholder="分钟 小时 日 月 星期" aria-describedby="cronparse-message">
+          <button class="cronparse-clear" id="cronparse-clear" type="button"><i class="fas fa-times"></i> 清空</button>
+        </div>
+        <div class="cronparse-hints" aria-hidden="true">
+          <span>分钟 0–59</span><span>小时 0–23</span><span>日 1–31</span><span>月 1–12</span><span>星期 0–7</span>
+        </div>
+        <div class="cronparse-message" id="cronparse-message" role="alert">输入标准 5 字段 Cron 表达式，结果按浏览器本地时区预览</div>
+
+        <div class="cronparse-examples">
+          <span class="cronparse-examples-label">常用</span>
+          <button class="cronparse-example" type="button" data-cron="* * * * *">每分钟</button>
+          <button class="cronparse-example" type="button" data-cron="*/5 * * * *">每 5 分钟</button>
+          <button class="cronparse-example" type="button" data-cron="0 9 * * 1-5">工作日 9:00</button>
+          <button class="cronparse-example" type="button" data-cron="0 0 1 * *">每月 1 日</button>
+          <button class="cronparse-example" type="button" data-cron="30 8 1,15 * *">每月 1/15 日</button>
+          <button class="cronparse-example" type="button" data-cron="0 0 29 2 *">2 月 29 日</button>
+        </div>
+
+        <h3 class="cronparse-section-title">字段解释</h3>
+        <div class="cronparse-fields">
+          <div class="cronparse-field"><div class="cronparse-field-name">分钟</div><div class="cronparse-field-value" id="cronparse-desc-minute">—</div></div>
+          <div class="cronparse-field"><div class="cronparse-field-name">小时</div><div class="cronparse-field-value" id="cronparse-desc-hour">—</div></div>
+          <div class="cronparse-field"><div class="cronparse-field-name">日</div><div class="cronparse-field-value" id="cronparse-desc-dom">—</div></div>
+          <div class="cronparse-field"><div class="cronparse-field-name">月</div><div class="cronparse-field-value" id="cronparse-desc-month">—</div></div>
+          <div class="cronparse-field"><div class="cronparse-field-name">星期</div><div class="cronparse-field-value" id="cronparse-desc-dow">—</div></div>
+        </div>
+        <div class="cronparse-day-rule" id="cronparse-day-rule">—</div>
+
+        <div class="cronparse-future-head">
+          <h3 class="cronparse-section-title">未来执行时间</h3>
+          <div class="cronparse-future-actions">
+            <select class="cronparse-count browser-default" id="cronparse-count" aria-label="预览次数">
+              <option value="5">5 次</option>
+              <option value="10" selected>10 次</option>
+              <option value="15">15 次</option>
+              <option value="20">20 次</option>
+            </select>
+            <button class="cronparse-copy" id="cronparse-copy" type="button" disabled><i class="fas fa-copy"></i> 复制全部</button>
+          </div>
+        </div>
+        <ol class="cronparse-future-list" id="cronparse-future-list">
+          <li class="cronparse-empty">请输入有效表达式</li>
+        </ol>
+        <div class="cronparse-search-note" id="cronparse-search-note"></div>
+        <p class="cronparse-rule">支持 <code>*</code>、逗号列表、连字符范围与斜杠步长，也支持 JAN–DEC、SUN–SAT 英文缩写。预览从下一分钟开始，最多向后搜索 5 年。</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script>
+  (function() {
+    var DEFAULT_MESSAGE = '输入标准 5 字段 Cron 表达式，结果按浏览器本地时区预览';
+    var WEEKDAY_NAMES = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+    var MONTH_NAMES = { JAN: 1, FEB: 2, MAR: 3, APR: 4, MAY: 5, JUN: 6, JUL: 7, AUG: 8, SEP: 9, OCT: 10, NOV: 11, DEC: 12 };
+    var DOW_NAMES = { SUN: 0, MON: 1, TUE: 2, WED: 3, THU: 4, FRI: 5, SAT: 6 };
+    var CONFIGS = [
+      { key: 'minute', label: '分钟', min: 0, max: 59 },
+      { key: 'hour', label: '小时', min: 0, max: 23 },
+      { key: 'dom', label: '日', min: 1, max: 31 },
+      { key: 'month', label: '月', min: 1, max: 12, names: MONTH_NAMES },
+      { key: 'dow', label: '星期', min: 0, max: 7, names: DOW_NAMES, normalize: function(value) { return value === 7 ? 0 : value; } }
+    ];
+    var currentOccurrences = [];
+    var renderTimer = null;
+
+    function normalizeExpression(value) {
+      return String(value || '')
+        .replace(/[０-９Ａ-Ｚａ-ｚ]/g, function(char) { return String.fromCharCode(char.charCodeAt(0) - 65248); })
+        .replace(/[，、]/g, ',')
+        .replace(/[－—]/g, '-')
+        .replace(/／/g, '/')
+        .replace(/＊/g, '*')
+        .replace(/　/g, ' ')
+        .trim()
+        .replace(/\s+/g, ' ')
+        .toUpperCase();
+    }
+
+    function parseValue(token, config) {
+      if (/^\d+$/.test(token)) {
+        var numeric = Number(token);
+        if (numeric >= config.min && numeric <= config.max) return numeric;
+      } else if (config.names && Object.prototype.hasOwnProperty.call(config.names, token)) {
+        return config.names[token];
+      }
+      return null;
+    }
+
+    function parseField(source, config) {
+      var values = new Set();
+      var pieces = source.split(',');
+      if (!source || pieces.some(function(piece) { return !piece; })) {
+        return { error: config.label + '字段包含空列表项' };
+      }
+
+      for (var pieceIndex = 0; pieceIndex < pieces.length; pieceIndex++) {
+        var piece = pieces[pieceIndex];
+        var stepParts = piece.split('/');
+        if (stepParts.length > 2 || !stepParts[0] || (stepParts.length === 2 && !stepParts[1])) {
+          return { error: config.label + '字段的步长格式无效：' + piece };
+        }
+
+        var step = 1;
+        if (stepParts.length === 2) {
+          if (!/^\d+$/.test(stepParts[1])) return { error: config.label + '字段的步长必须为正整数' };
+          step = Number(stepParts[1]);
+          if (step < 1 || step > config.max) {
+            return { error: config.label + '字段的步长需在 1–' + config.max + ' 之间' };
+          }
+        }
+
+        var base = stepParts[0];
+        var start;
+        var end;
+        if (base === '*') {
+          start = config.min;
+          end = config.max;
+        } else if (base.indexOf('-') !== -1) {
+          var range = base.split('-');
+          if (range.length !== 2) return { error: config.label + '字段的范围格式无效：' + base };
+          start = parseValue(range[0], config);
+          end = parseValue(range[1], config);
+          if (start === null || end === null) return { error: config.label + '字段超出范围：' + base };
+          if (start > end) return { error: config.label + '字段的范围起点不能大于终点' };
+        } else {
+          start = parseValue(base, config);
+          if (start === null) return { error: config.label + '字段包含无效值：' + base };
+          end = stepParts.length === 2 ? config.max : start;
+        }
+
+        for (var value = start; value <= end; value += step) {
+          values.add(config.normalize ? config.normalize(value) : value);
+        }
+      }
+
+      if (!values.size) return { error: config.label + '字段没有可用值' };
+      return { raw: source, values: values, wildcard: source === '*' };
+    }
+
+    function parseCron(value) {
+      var source = normalizeExpression(value);
+      if (!source) return { empty: true };
+      var fields = source.split(' ');
+      if (fields.length !== 5) return { error: '标准 Cron 需要 5 个字段，当前为 ' + fields.length + ' 个' };
+
+      var parsed = { expression: source };
+      for (var index = 0; index < CONFIGS.length; index++) {
+        var field = parseField(fields[index], CONFIGS[index]);
+        if (field.error) return { error: field.error };
+        parsed[CONFIGS[index].key] = field;
+      }
+      return parsed;
+    }
+
+    function sortedValues(field) {
+      return Array.from(field.values).sort(function(a, b) { return a - b; });
+    }
+
+    function joinValues(values, formatter) {
+      var visible = values.slice(0, 12).map(formatter);
+      return visible.join('、') + (values.length > 12 ? '…（共 ' + values.length + ' 个值）' : '');
+    }
+
+    function describeField(field, config) {
+      if (field.wildcard) {
+        var wildcardText = { minute: '每分钟', hour: '每小时', dom: '每天', month: '每月', dow: '每天（星期不限）' };
+        return wildcardText[config.key];
+      }
+      var stepMatch = /^\*\/(\d+)$/.exec(field.raw);
+      if (stepMatch && (config.key === 'minute' || config.key === 'hour')) {
+        return '每 ' + stepMatch[1] + (config.key === 'minute' ? ' 分钟' : ' 小时');
+      }
+
+      var values = sortedValues(field);
+      if (config.key === 'dow') return joinValues(values, function(value) { return WEEKDAY_NAMES[value]; });
+      if (config.key === 'month') return joinValues(values, function(value) { return value + ' 月'; });
+      if (config.key === 'dom') return joinValues(values, function(value) { return value + ' 日'; });
+      if (config.key === 'hour') return joinValues(values, function(value) { return String(value).padStart(2, '0') + ' 时'; });
+      return joinValues(values, function(value) { return String(value).padStart(2, '0') + ' 分'; });
+    }
+
+    function describeDayRule(parsed) {
+      if (parsed.dom.wildcard && parsed.dow.wildcard) return '日期规则：日与星期均不限，每个符合月份的日期都可匹配。';
+      if (parsed.dom.wildcard) return '日期规则：日字段不限，仅按星期字段匹配。';
+      if (parsed.dow.wildcard) return '日期规则：星期字段不限，仅按日字段匹配。';
+      return '日期规则：日字段与星期字段任一匹配即可（标准 Cron 的 DOM/DOW OR 语义）。';
+    }
+
+    function dayMatches(date, parsed) {
+      var domMatch = parsed.dom.values.has(date.getDate());
+      var dowMatch = parsed.dow.values.has(date.getDay());
+      if (parsed.dom.wildcard && parsed.dow.wildcard) return true;
+      if (parsed.dom.wildcard) return dowMatch;
+      if (parsed.dow.wildcard) return domMatch;
+      return domMatch || dowMatch;
+    }
+
+    function nextLocalMinute(date) {
+      return new Date(Math.floor(date.getTime() / 60000) * 60000 + 60000);
+    }
+
+    function findOccurrences(parsed, count, startDate) {
+      var occurrences = [];
+      var cursor = nextLocalMinute(startDate);
+      var limit = new Date(cursor.getTime());
+      limit.setFullYear(limit.getFullYear() + 5);
+      var iterations = 0;
+      var maxIterations = 3000000;
+
+      while (occurrences.length < count && cursor <= limit && iterations < maxIterations) {
+        iterations++;
+        if (!parsed.month.values.has(cursor.getMonth() + 1)) {
+          cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1, 0, 0, 0, 0);
+          continue;
+        }
+        if (!dayMatches(cursor, parsed)) {
+          cursor = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() + 1, 0, 0, 0, 0);
+          continue;
+        }
+        if (!parsed.hour.values.has(cursor.getHours())) {
+          cursor.setMinutes(0, 0, 0);
+          cursor.setHours(cursor.getHours() + 1);
+          continue;
+        }
+        if (!parsed.minute.values.has(cursor.getMinutes())) {
+          cursor = new Date(cursor.getTime() + 60000);
+          continue;
+        }
+
+        occurrences.push(new Date(cursor.getTime()));
+        cursor = new Date(cursor.getTime() + 60000);
+      }
+
+      return { values: occurrences, limited: occurrences.length < count };
+    }
+
+    function pad(value) {
+      return String(value).padStart(2, '0');
+    }
+
+    function formatDate(date) {
+      return String(date.getFullYear()).padStart(4, '0') + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) +
+        ' ' + pad(date.getHours()) + ':' + pad(date.getMinutes()) + ' ' + WEEKDAY_NAMES[date.getDay()];
+    }
+
+    function clearOutput() {
+      $('.cronparse-field-value').text('—');
+      $('#cronparse-day-rule').text('—');
+      $('#cronparse-future-list').html('<li class="cronparse-empty">请输入有效表达式</li>');
+      $('#cronparse-search-note').text('');
+      $('#cronparse-copy').prop('disabled', true);
+      currentOccurrences = [];
+    }
+
+    function setMessage(message, isError) {
+      $('#cronparse-message').text(message || DEFAULT_MESSAGE).toggleClass('error', !!isError);
+    }
+
+    function renderOccurrences(parsed) {
+      var count = Number($('#cronparse-count').val());
+      var found = findOccurrences(parsed, count, new Date());
+      currentOccurrences = found.values;
+      var $list = $('#cronparse-future-list').empty();
+      if (!found.values.length) {
+        $list.append($('<li class="cronparse-empty"></li>').text('未来 5 年内未找到执行时间'));
+      } else {
+        found.values.forEach(function(date, index) {
+          var $item = $('<li class="cronparse-future-item"></li>');
+          $item.append($('<span class="cronparse-future-index"></span>').text(index + 1));
+          $item.append($('<span></span>').text(formatDate(date)));
+          $list.append($item);
+        });
+      }
+      $('#cronparse-copy').prop('disabled', !found.values.length);
+      $('#cronparse-search-note').text(found.limited ? '在未来 5 年的搜索范围内仅找到 ' + found.values.length + ' 次。' : '从当前时间的下一分钟开始，按本地时区计算。');
+    }
+
+    function render() {
+      var parsed = parseCron($('#cronparse-input').val());
+      if (parsed.empty) {
+        clearOutput();
+        setMessage(DEFAULT_MESSAGE, false);
+        return;
+      }
+      if (parsed.error) {
+        clearOutput();
+        setMessage(parsed.error, true);
+        return;
+      }
+
+      CONFIGS.forEach(function(config) {
+        $('#cronparse-desc-' + config.key).text(describeField(parsed[config.key], config));
+      });
+      $('#cronparse-day-rule').text(describeDayRule(parsed));
+      setMessage('表达式有效：' + parsed.expression, false);
+      renderOccurrences(parsed);
+    }
+
+    function copyText(text) {
+      if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
+      return new Promise(function(resolve, reject) {
+        var textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+          document.execCommand('copy') ? resolve() : reject(new Error('复制失败'));
+        } catch (error) {
+          reject(error);
+        }
+        document.body.removeChild(textarea);
+      });
+    }
+
+    function showCopied($button) {
+      $button.addClass('copied').html('<i class="fas fa-check"></i> 已复制');
+      window.setTimeout(function() {
+        $button.removeClass('copied').html('<i class="fas fa-copy"></i> 复制全部');
+      }, 1500);
+    }
+
+    $(document).ready(function() {
+      $('#cronparse-input').on('input', function() {
+        window.clearTimeout(renderTimer);
+        renderTimer = window.setTimeout(render, 120);
+      });
+      $('#cronparse-count').on('change', render);
+      $('.cronparse-example').on('click', function() {
+        $('#cronparse-input').val($(this).data('cron')).focus();
+        render();
+      });
+      $('#cronparse-clear').on('click', function() {
+        $('#cronparse-input').val('').focus();
+        render();
+      });
+      $('#cronparse-copy').on('click', function() {
+        if (!currentOccurrences.length) return;
+        var $button = $(this);
+        copyText(currentOccurrences.map(formatDate).join('\n')).then(function() {
+          showCopied($button);
+        }).catch(function() {
+          M.toast({ html: '复制失败，请手动复制', classes: 'rounded red' });
+        });
+      });
+      render();
+    });
+  })();
+</script>

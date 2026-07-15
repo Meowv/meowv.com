@@ -1,0 +1,623 @@
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .hash-checksum-container {
+    margin-top: -50px;
+    margin-bottom: 30px;
+  }
+  .hash-checksum-container .card {
+    border-radius: 8px;
+  }
+  .hash-checksum-privacy {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 18px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    color: #4f7f0b;
+    background: #f4f9ed;
+    font-size: 0.86rem;
+  }
+  .hash-checksum-modes {
+    display: inline-flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    padding: 4px;
+    border-radius: 26px;
+    background: #f0f0f0;
+  }
+  .hash-checksum-mode {
+    min-width: 110px;
+    height: 44px;
+    padding: 0 16px;
+    border: none;
+    border-radius: 22px;
+    color: #777;
+    background: transparent;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.86rem;
+  }
+  .hash-checksum-mode.is-active {
+    color: #fff;
+    background: linear-gradient(135deg, #5a9600, #7ccd00);
+    box-shadow: 0 2px 7px rgba(90, 150, 0, 0.24);
+  }
+  .hash-checksum-textarea,
+  .hash-checksum-expected {
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding: 12px 14px;
+    border: 2px solid #e8e8e8;
+    border-radius: 10px;
+    outline: none;
+    color: #444;
+    background: #fafafa;
+    box-sizing: border-box;
+    font-family: inherit;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .hash-checksum-textarea {
+    min-height: 180px;
+    resize: vertical;
+    line-height: 1.65;
+  }
+  .hash-checksum-expected {
+    width: 100% !important;
+    height: 46px !important;
+    margin: 0 !important;
+    padding: 0 14px !important;
+    border: 2px solid #e8e8e8 !important;
+    border-radius: 10px !important;
+    box-sizing: border-box !important;
+    box-shadow: none !important;
+    font-family: SFMono-Regular, Consolas, monospace;
+    font-size: 0.84rem;
+  }
+  .hash-checksum-textarea:focus,
+  .hash-checksum-expected:focus {
+    border-color: #5a9600 !important;
+    background: #fff;
+    box-shadow: none !important;
+  }
+  .hash-checksum-dropzone {
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    padding: 24px;
+    border: 2px dashed #d9d9d9;
+    border-radius: 12px;
+    color: #999;
+    background: #fafafa;
+    cursor: pointer;
+    text-align: center;
+    transition: border-color 0.2s, color 0.2s, background 0.2s;
+  }
+  .hash-checksum-dropzone:hover,
+  .hash-checksum-dropzone:focus,
+  .hash-checksum-dropzone.is-dragover {
+    border-color: #5a9600;
+    color: #5a9600;
+    background: #f6fbf0;
+    outline: none;
+  }
+  .hash-checksum-dropzone i {
+    font-size: 2.7rem;
+  }
+  .hash-checksum-dropzone strong {
+    max-width: 100%;
+    overflow: hidden;
+    color: #555;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .hash-checksum-dropzone small {
+    color: #aaa;
+    line-height: 1.6;
+  }
+  .hash-checksum-verify {
+    margin-top: 18px;
+  }
+  .hash-checksum-verify label {
+    display: block;
+    margin-bottom: 7px;
+    color: #666;
+    font-size: 0.84rem;
+    font-weight: 600;
+  }
+  .hash-checksum-hint {
+    margin-top: 6px;
+    color: #999;
+    font-size: 0.76rem;
+    line-height: 1.5;
+  }
+  .hash-checksum-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 18px;
+  }
+  .hash-checksum-btn {
+    min-height: 44px;
+    padding: 0 20px;
+    border: none;
+    border-radius: 22px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+  }
+  .hash-checksum-btn-primary {
+    color: #fff;
+    background: linear-gradient(135deg, #5a9600, #7ccd00);
+    box-shadow: 0 3px 9px rgba(90, 150, 0, 0.22);
+  }
+  .hash-checksum-btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 14px rgba(90, 150, 0, 0.3);
+  }
+  .hash-checksum-btn-secondary {
+    color: #666;
+    background: #ededed;
+  }
+  .hash-checksum-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+  .hash-checksum-error,
+  .hash-checksum-verification {
+    margin-top: 14px;
+    padding: 10px 12px;
+    border-radius: 7px;
+    font-size: 0.84rem;
+    line-height: 1.55;
+  }
+  .hash-checksum-error {
+    color: #c62828;
+    background: #ffefef;
+  }
+  .hash-checksum-verification.is-match {
+    color: #3f7800;
+    background: #eff8e5;
+  }
+  .hash-checksum-verification.is-mismatch {
+    color: #b8433b;
+    background: #fff0ef;
+  }
+  .hash-checksum-result-summary {
+    margin-bottom: 14px;
+    color: #777;
+    font-size: 0.84rem;
+  }
+  .hash-checksum-results {
+    display: grid;
+    gap: 10px;
+  }
+  .hash-checksum-result {
+    display: grid;
+    grid-template-columns: 90px minmax(0, 1fr) 44px;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 14px;
+    border: 1px solid #ececec;
+    border-radius: 9px;
+    background: #fafafa;
+  }
+  .hash-checksum-algorithm {
+    color: #555;
+    font-size: 0.84rem;
+    font-weight: 700;
+  }
+  .hash-checksum-value {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    color: #333;
+    font-family: SFMono-Regular, Consolas, monospace;
+    font-size: 0.79rem;
+    line-height: 1.55;
+  }
+  .hash-checksum-copy {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    color: #5a9600;
+    background: #edf6e1;
+    cursor: pointer;
+  }
+  .hash-checksum-copy:hover {
+    background: #e1f0ce;
+  }
+  .hash-checksum-notes {
+    margin: 0;
+    padding-left: 20px;
+    color: #888;
+    font-size: 0.84rem;
+    line-height: 1.9;
+  }
+  @media only screen and (max-width: 601px) {
+    .hash-checksum-container {
+      margin-top: -30px;
+    }
+    .hash-checksum-modes {
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .hash-checksum-mode {
+      flex: 1;
+      min-width: 0;
+    }
+    .hash-checksum-actions {
+      flex-direction: column;
+    }
+    .hash-checksum-btn {
+      width: 100%;
+    }
+    .hash-checksum-result {
+      grid-template-columns: 1fr 44px;
+      gap: 8px;
+    }
+    .hash-checksum-copy {
+      width: 44px;
+      height: 44px;
+    }
+    .hash-checksum-algorithm {
+      grid-column: 1 / -1;
+    }
+  }
+</style>
+
+<main class="content">
+  <div class="container hash-checksum-container">
+    <div class="card">
+      <%- partial('_partial/tool-header') %>
+      <div class="card-content">
+        <div class="hash-checksum-privacy">
+          <i class="fas fa-lock"></i>
+          <span>文本和文件仅在当前浏览器中计算，不会上传到服务器。</span>
+        </div>
+
+        <div class="hash-checksum-modes" role="group" aria-label="输入类型">
+          <button class="hash-checksum-mode is-active" type="button" data-mode="text" aria-pressed="true">文本</button>
+          <button class="hash-checksum-mode" type="button" data-mode="file" aria-pressed="false">文件</button>
+        </div>
+
+        <div id="hashChecksumTextPane">
+          <textarea id="hashChecksumText" class="hash-checksum-textarea" placeholder="输入或粘贴要计算 Hash 的文本；留空可计算空字符串的 Hash"></textarea>
+        </div>
+
+        <div id="hashChecksumFilePane" hidden>
+          <input id="hashChecksumFile" type="file" hidden>
+          <div id="hashChecksumDropzone" class="hash-checksum-dropzone" tabindex="0" role="button" aria-label="选择要校验的文件">
+            <i class="fas fa-file-alt"></i>
+            <strong>点击选择或拖入任意文件</strong>
+            <small>使用 Web Crypto 在本地读取；大文件会占用相应浏览器内存</small>
+          </div>
+        </div>
+
+        <div class="hash-checksum-verify">
+          <label for="hashChecksumExpected">期望校验值（可选）</label>
+          <input id="hashChecksumExpected" class="hash-checksum-expected" type="text" spellcheck="false" autocomplete="off" placeholder="粘贴 SHA-1 / SHA-256 / SHA-384 / SHA-512 十六进制值">
+          <div class="hash-checksum-hint">会根据 40、64、96 或 128 位长度自动识别算法；支持忽略空格和大小写。</div>
+        </div>
+
+        <div class="hash-checksum-actions">
+          <button id="hashChecksumCalculate" class="hash-checksum-btn hash-checksum-btn-primary" type="button">
+            <i class="fas fa-fingerprint"></i>&nbsp; 计算 Hash
+          </button>
+          <button id="hashChecksumClear" class="hash-checksum-btn hash-checksum-btn-secondary" type="button">一键清空</button>
+        </div>
+
+        <div id="hashChecksumError" class="hash-checksum-error" role="alert" hidden></div>
+        <div id="hashChecksumVerification" class="hash-checksum-verification" aria-live="polite" hidden></div>
+      </div>
+    </div>
+
+    <div id="hashChecksumResultCard" class="card" hidden>
+      <div class="card-content">
+        <div id="hashChecksumResultSummary" class="hash-checksum-result-summary"></div>
+        <div class="hash-checksum-results">
+          <div class="hash-checksum-result">
+            <div class="hash-checksum-algorithm">SHA-1</div>
+            <div id="hashChecksumSha1" class="hash-checksum-value">—</div>
+            <button class="hash-checksum-copy" type="button" data-result="hashChecksumSha1" aria-label="复制 SHA-1"><i class="far fa-copy"></i></button>
+          </div>
+          <div class="hash-checksum-result">
+            <div class="hash-checksum-algorithm">SHA-256</div>
+            <div id="hashChecksumSha256" class="hash-checksum-value">—</div>
+            <button class="hash-checksum-copy" type="button" data-result="hashChecksumSha256" aria-label="复制 SHA-256"><i class="far fa-copy"></i></button>
+          </div>
+          <div class="hash-checksum-result">
+            <div class="hash-checksum-algorithm">SHA-384</div>
+            <div id="hashChecksumSha384" class="hash-checksum-value">—</div>
+            <button class="hash-checksum-copy" type="button" data-result="hashChecksumSha384" aria-label="复制 SHA-384"><i class="far fa-copy"></i></button>
+          </div>
+          <div class="hash-checksum-result">
+            <div class="hash-checksum-algorithm">SHA-512</div>
+            <div id="hashChecksumSha512" class="hash-checksum-value">—</div>
+            <button class="hash-checksum-copy" type="button" data-result="hashChecksumSha512" aria-label="复制 SHA-512"><i class="far fa-copy"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-content">
+        <ul class="hash-checksum-notes">
+          <li>SHA-1 已不适合安全签名或密码存储，仅建议用于兼容旧校验值。</li>
+          <li>文件 Hash 由浏览器一次性读取后交给 Web Crypto 计算，超大文件可能占用较多内存。</li>
+          <li>相同内容必须使用相同字符编码；本工具按 UTF-8 编码文本。</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script>
+(function() {
+  'use strict';
+
+  var algorithms = [
+    { name: 'SHA-1', id: 'hashChecksumSha1', length: 40 },
+    { name: 'SHA-256', id: 'hashChecksumSha256', length: 64 },
+    { name: 'SHA-384', id: 'hashChecksumSha384', length: 96 },
+    { name: 'SHA-512', id: 'hashChecksumSha512', length: 128 }
+  ];
+  var mode = 'text';
+  var selectedFile = null;
+  var latestResults = {};
+  var isBusy = false;
+
+  function byId(id) {
+    return document.getElementById(id);
+  }
+
+  var textInput = byId('hashChecksumText');
+  var fileInput = byId('hashChecksumFile');
+  var dropzone = byId('hashChecksumDropzone');
+  var expectedInput = byId('hashChecksumExpected');
+  var calculateButton = byId('hashChecksumCalculate');
+  var clearButton = byId('hashChecksumClear');
+  var errorBox = byId('hashChecksumError');
+  var verificationBox = byId('hashChecksumVerification');
+  var resultCard = byId('hashChecksumResultCard');
+
+  function formatBytes(bytes) {
+    if (!Number.isFinite(bytes) || bytes < 0) return '—';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    if (bytes < 1024 * 1024 * 1024) return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+    return (bytes / 1024 / 1024 / 1024).toFixed(2) + ' GB';
+  }
+
+  function showError(message) {
+    errorBox.textContent = message;
+    errorBox.hidden = false;
+  }
+
+  function clearError() {
+    errorBox.textContent = '';
+    errorBox.hidden = true;
+  }
+
+  function clearResults() {
+    latestResults = {};
+    algorithms.forEach(function(algorithm) {
+      byId(algorithm.id).textContent = '—';
+    });
+    resultCard.hidden = true;
+    verificationBox.hidden = true;
+    verificationBox.className = 'hash-checksum-verification';
+    verificationBox.textContent = '';
+  }
+
+  function switchMode(nextMode) {
+    mode = nextMode;
+    document.querySelectorAll('.hash-checksum-mode').forEach(function(button) {
+      var active = button.getAttribute('data-mode') === mode;
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+    byId('hashChecksumTextPane').hidden = mode !== 'text';
+    byId('hashChecksumFilePane').hidden = mode !== 'file';
+    clearError();
+    clearResults();
+  }
+
+  function selectFile(file) {
+    clearError();
+    clearResults();
+    if (!file) return;
+    selectedFile = file;
+    dropzone.querySelector('strong').textContent = file.name;
+    dropzone.querySelector('small').textContent = formatBytes(file.size) + ' · 点击可更换文件';
+  }
+
+  function toHex(buffer) {
+    return Array.from(new Uint8Array(buffer)).map(function(value) {
+      return value.toString(16).padStart(2, '0');
+    }).join('');
+  }
+
+  function normalizeExpected(value) {
+    return value.trim().replace(/^sha-?(?:1|256|384|512)\s*[:=]\s*/i, '').replace(/\s+/g, '').toLowerCase();
+  }
+
+  function validateExpected() {
+    var expected = normalizeExpected(expectedInput.value);
+    if (!expected) return null;
+    if (!/^[0-9a-f]+$/.test(expected)) throw new Error('期望校验值只能包含十六进制字符');
+    var algorithm = algorithms.find(function(item) { return item.length === expected.length; });
+    if (!algorithm) throw new Error('期望校验值长度应为 40、64、96 或 128 位');
+    return { value: expected, algorithm: algorithm };
+  }
+
+  async function calculateHashes() {
+    clearError();
+    clearResults();
+    if (!window.crypto || !window.crypto.subtle) {
+      showError('当前环境不支持 Web Crypto，请使用最新版浏览器并通过 HTTPS 访问');
+      return;
+    }
+    if (mode === 'file' && !selectedFile) {
+      showError('请先选择要校验的文件');
+      return;
+    }
+
+    var expected;
+    try {
+      expected = validateExpected();
+    } catch (error) {
+      showError(error.message);
+      return;
+    }
+
+    var calculationMode = mode;
+    var inputFile = selectedFile;
+    var inputText = textInput.value;
+    var modeButtons = document.querySelectorAll('.hash-checksum-mode');
+    isBusy = true;
+    calculateButton.disabled = true;
+    clearButton.disabled = true;
+    textInput.disabled = true;
+    expectedInput.disabled = true;
+    fileInput.disabled = true;
+    modeButtons.forEach(function(button) { button.disabled = true; });
+    calculateButton.innerHTML = '<i class="fas fa-spinner fa-pulse"></i>&nbsp; 计算中';
+    try {
+      var payload = calculationMode === 'file'
+        ? await inputFile.arrayBuffer()
+        : new TextEncoder().encode(inputText);
+      var digests = await Promise.all(algorithms.map(function(algorithm) {
+        return window.crypto.subtle.digest(algorithm.name, payload);
+      }));
+
+      algorithms.forEach(function(algorithm, index) {
+        var value = toHex(digests[index]);
+        latestResults[algorithm.name] = value;
+        byId(algorithm.id).textContent = value;
+      });
+      byId('hashChecksumResultSummary').textContent = calculationMode === 'file'
+        ? inputFile.name + ' · ' + formatBytes(inputFile.size)
+        : 'UTF-8 文本 · ' + payload.byteLength + ' 字节';
+      resultCard.hidden = false;
+
+      if (expected) {
+        var matched = latestResults[expected.algorithm.name] === expected.value;
+        verificationBox.textContent = matched
+          ? '校验通过：' + expected.algorithm.name + ' 与期望值一致'
+          : '校验不通过：' + expected.algorithm.name + ' 与期望值不一致';
+        verificationBox.className = 'hash-checksum-verification ' + (matched ? 'is-match' : 'is-mismatch');
+        verificationBox.hidden = false;
+      }
+    } catch (error) {
+      showError(error.message || 'Hash 计算失败，请尝试更小的文件');
+    } finally {
+      calculateButton.disabled = false;
+      clearButton.disabled = false;
+      textInput.disabled = false;
+      expectedInput.disabled = false;
+      fileInput.disabled = false;
+      modeButtons.forEach(function(button) { button.disabled = false; });
+      isBusy = false;
+      calculateButton.innerHTML = '<i class="fas fa-fingerprint"></i>&nbsp; 计算 Hash';
+    }
+  }
+
+  function fallbackCopy(text) {
+    var textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    var copied = document.execCommand('copy');
+    document.body.removeChild(textarea);
+    return copied;
+  }
+
+  async function copyResult(button) {
+    var value = byId(button.getAttribute('data-result')).textContent;
+    if (!value || value === '—') return;
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(value);
+      } else if (!fallbackCopy(value)) {
+        throw new Error('copy failed');
+      }
+      var icon = button.querySelector('i');
+      icon.className = 'fas fa-check';
+      setTimeout(function() { icon.className = 'far fa-copy'; }, 1200);
+    } catch (error) {
+      if (window.M && window.M.toast) window.M.toast({ html: '复制失败，请手动选择结果' });
+    }
+  }
+
+  function clearAll() {
+    selectedFile = null;
+    fileInput.value = '';
+    textInput.value = '';
+    expectedInput.value = '';
+    dropzone.querySelector('strong').textContent = '点击选择或拖入任意文件';
+    dropzone.querySelector('small').textContent = '使用 Web Crypto 在本地读取；大文件会占用相应浏览器内存';
+    clearError();
+    clearResults();
+  }
+
+  document.querySelectorAll('.hash-checksum-mode').forEach(function(button) {
+    button.addEventListener('click', function() { switchMode(button.getAttribute('data-mode')); });
+  });
+  dropzone.addEventListener('click', function() {
+    if (isBusy) return;
+    fileInput.value = '';
+    fileInput.click();
+  });
+  dropzone.addEventListener('keydown', function(event) {
+    if (isBusy) return;
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      fileInput.value = '';
+      fileInput.click();
+    }
+  });
+  ['dragenter', 'dragover'].forEach(function(type) {
+    dropzone.addEventListener(type, function(event) {
+      event.preventDefault();
+      dropzone.classList.add('is-dragover');
+    });
+  });
+  ['dragleave', 'drop'].forEach(function(type) {
+    dropzone.addEventListener(type, function(event) {
+      event.preventDefault();
+      dropzone.classList.remove('is-dragover');
+    });
+  });
+  dropzone.addEventListener('drop', function(event) {
+    if (isBusy) return;
+    var files = event.dataTransfer && event.dataTransfer.files;
+    if (files && files.length) selectFile(files[0]);
+  });
+  fileInput.addEventListener('change', function() {
+    if (fileInput.files && fileInput.files.length) selectFile(fileInput.files[0]);
+  });
+  calculateButton.addEventListener('click', calculateHashes);
+  clearButton.addEventListener('click', clearAll);
+  document.querySelectorAll('.hash-checksum-copy').forEach(function(button) {
+    button.addEventListener('click', function() { copyResult(button); });
+  });
+})();
+</script>

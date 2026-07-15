@@ -1,0 +1,423 @@
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .unitconv-container { margin-top: -50px; margin-bottom: 30px; }
+  .unitconv-container .card { border-radius: 8px; }
+  .unitconv-category-row { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+  .unitconv-field { min-width: 0; }
+  .unitconv-category-row .unitconv-field { width: min(100%, 320px); }
+  .unitconv-field label {
+    display: block; margin-bottom: 7px; color: #666; font-size: 0.86rem; font-weight: 600;
+  }
+  .unitconv-field input, .unitconv-field select {
+    width: 100% !important; height: 46px !important; margin: 0 !important; padding: 0 13px !important;
+    box-sizing: border-box !important; border: 2px solid #e8e8e8 !important; border-radius: 10px !important;
+    background: #fafafa !important; box-shadow: none !important; color: #333; outline: none;
+    font: 0.94rem 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  }
+  .unitconv-field input:focus, .unitconv-field select:focus {
+    border-color: #5a9600 !important; background: #fff !important; box-shadow: none !important;
+  }
+  .unitconv-grid {
+    display: grid; grid-template-columns: minmax(0, 1fr) 48px minmax(0, 1fr); gap: 14px; align-items: center;
+  }
+  .unitconv-side {
+    min-width: 0; padding: 17px; border: 1px solid #e5e5e5; border-radius: 12px; background: #fafafa;
+  }
+  .unitconv-side .unitconv-field + .unitconv-field { margin-top: 12px; }
+  .unitconv-side input { background: #fff !important; font-size: 1.05rem; }
+  .unitconv-swap {
+    display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px;
+    border: 1px solid #d5e3c3; border-radius: 50%; background: #f6faef; color: #5a9600;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .unitconv-swap:hover { border-color: #5a9600; background: #5a9600; color: #fff; transform: rotate(180deg); }
+  .unitconv-input-wrap { position: relative; }
+  .unitconv-input-wrap input { padding-right: 54px !important; }
+  .unitconv-copy {
+    position: absolute; top: 3px; right: 3px; display: inline-flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; padding: 0; border: 1px solid #ddd; border-radius: 50%; background: #fff;
+    color: #999; cursor: pointer; transition: all 0.2s;
+  }
+  .unitconv-copy:hover:not(:disabled) { border-color: #5a9600; color: #5a9600; }
+  .unitconv-copy:disabled { cursor: default; opacity: 0.35; }
+  .unitconv-copy.copied { border-color: #5a9600; background: #5a9600; color: #fff; }
+  .unitconv-message { min-height: 21px; margin: 8px 0 10px; color: #999; font-size: 0.78rem; }
+  .unitconv-message.error { color: #e53935; }
+  .unitconv-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .unitconv-action {
+    display: inline-flex; align-items: center; justify-content: center; min-height: 36px; padding: 0 12px;
+    border: 1px solid #ddd; border-radius: 18px; background: #fff;
+    color: #666; cursor: pointer; font-size: 0.78rem; transition: all 0.2s;
+  }
+  .unitconv-action:hover { border-color: #5a9600; color: #5a9600; }
+  .unitconv-summary {
+    padding: 14px 16px; border: 1px solid #e5ecd9; border-radius: 10px; background: #f8fbf4;
+    color: #52663a; font: 0.9rem/1.7 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    overflow-wrap: anywhere;
+  }
+  .unitconv-note { margin: 15px 0 0; color: #999; font-size: 0.76rem; line-height: 1.7; }
+
+  @media only screen and (max-width: 601px) {
+    .unitconv-container { margin-top: -30px; }
+    .unitconv-category-row { align-items: stretch; flex-direction: column; }
+    .unitconv-category-row .unitconv-field { width: 100%; }
+    .unitconv-grid { grid-template-columns: 1fr; }
+    .unitconv-swap { margin: -3px auto; transform: rotate(90deg); }
+    .unitconv-swap:hover { transform: rotate(270deg); }
+    .unitconv-action { min-height: 44px; font-size: 13px; }
+    .unitconv-copy { top: 1px; right: 1px; width: 44px; height: 44px; }
+    .unitconv-input-wrap input { padding-right: 58px !important; }
+  }
+</style>
+
+<main class="content">
+  <div class="container unitconv-container">
+    <div class="card">
+      <%- partial('_partial/tool-header') %>
+      <div class="card-content">
+        <div class="unitconv-category-row">
+          <div class="unitconv-field">
+            <label for="unitconv-category">换算类型</label>
+            <select class="browser-default" id="unitconv-category">
+              <option value="length">长度</option>
+              <option value="area">面积</option>
+              <option value="mass">质量</option>
+              <option value="temperature">温度</option>
+              <option value="speed">速度</option>
+              <option value="data">数据容量</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="unitconv-grid">
+          <section class="unitconv-side">
+            <div class="unitconv-field">
+              <label for="unitconv-left-value">数值 A</label>
+              <div class="unitconv-input-wrap">
+                <input id="unitconv-left-value" type="text" inputmode="decimal" autocomplete="off" value="1" aria-describedby="unitconv-message">
+                <button class="unitconv-copy" type="button" data-target="unitconv-left-value" title="复制数值 A"><i class="fas fa-copy"></i></button>
+              </div>
+            </div>
+            <div class="unitconv-field">
+              <label for="unitconv-left-unit">单位 A</label>
+              <select class="browser-default" id="unitconv-left-unit"></select>
+            </div>
+          </section>
+
+          <button class="unitconv-swap" id="unitconv-swap" type="button" title="互换单位与数值"><i class="fas fa-exchange-alt"></i></button>
+
+          <section class="unitconv-side">
+            <div class="unitconv-field">
+              <label for="unitconv-right-value">数值 B</label>
+              <div class="unitconv-input-wrap">
+                <input id="unitconv-right-value" type="text" inputmode="decimal" autocomplete="off" aria-describedby="unitconv-message">
+                <button class="unitconv-copy" type="button" data-target="unitconv-right-value" title="复制数值 B"><i class="fas fa-copy"></i></button>
+              </div>
+            </div>
+            <div class="unitconv-field">
+              <label for="unitconv-right-unit">单位 B</label>
+              <select class="browser-default" id="unitconv-right-unit"></select>
+            </div>
+          </section>
+        </div>
+
+        <div class="unitconv-message" id="unitconv-message" role="alert">可编辑任意一侧，另一侧会实时更新</div>
+        <div class="unitconv-actions">
+          <button class="unitconv-action" type="button" data-value="1">填入 1</button>
+          <button class="unitconv-action" type="button" data-value="10">填入 10</button>
+          <button class="unitconv-action" type="button" data-value="100">填入 100</button>
+          <button class="unitconv-action" type="button" id="unitconv-clear"><i class="fas fa-times"></i> 清空</button>
+        </div>
+        <div class="unitconv-summary" id="unitconv-summary" aria-live="polite">—</div>
+        <p class="unitconv-note">数据容量同时提供十进制 KB/MB/GB 与二进制 KiB/MiB/GiB；温度结果低于绝对零度时会提示错误。</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script>
+  (function() {
+    var DEFAULT_MESSAGE = '可编辑任意一侧，另一侧会实时更新';
+    var CATEGORIES = {
+      length: {
+        name: '长度', from: 'm', to: 'km', units: [
+          { id: 'mm', name: '毫米（mm）', factor: 0.001 },
+          { id: 'cm', name: '厘米（cm）', factor: 0.01 },
+          { id: 'm', name: '米（m）', factor: 1 },
+          { id: 'km', name: '千米（km）', factor: 1000 },
+          { id: 'in', name: '英寸（in）', factor: 0.0254 },
+          { id: 'ft', name: '英尺（ft）', factor: 0.3048 },
+          { id: 'yd', name: '码（yd）', factor: 0.9144 },
+          { id: 'mi', name: '英里（mi）', factor: 1609.344 },
+          { id: 'nmi', name: '海里（nmi）', factor: 1852 }
+        ]
+      },
+      area: {
+        name: '面积', from: 'm2', to: 'ft2', units: [
+          { id: 'mm2', name: '平方毫米（mm²）', factor: 0.000001 },
+          { id: 'cm2', name: '平方厘米（cm²）', factor: 0.0001 },
+          { id: 'm2', name: '平方米（m²）', factor: 1 },
+          { id: 'km2', name: '平方千米（km²）', factor: 1000000 },
+          { id: 'ha', name: '公顷（ha）', factor: 10000 },
+          { id: 'mu', name: '亩', factor: 666.6666666666666 },
+          { id: 'acre', name: '英亩（acre）', factor: 4046.8564224 },
+          { id: 'ft2', name: '平方英尺（ft²）', factor: 0.09290304 }
+        ]
+      },
+      mass: {
+        name: '质量', from: 'kg', to: 'lb', units: [
+          { id: 'mg', name: '毫克（mg）', factor: 0.000001 },
+          { id: 'g', name: '克（g）', factor: 0.001 },
+          { id: 'kg', name: '千克（kg）', factor: 1 },
+          { id: 't', name: '吨（t）', factor: 1000 },
+          { id: 'oz', name: '盎司（oz）', factor: 0.028349523125 },
+          { id: 'lb', name: '磅（lb）', factor: 0.45359237 },
+          { id: 'jin', name: '市斤', factor: 0.5 }
+        ]
+      },
+      temperature: {
+        name: '温度', from: 'c', to: 'f', temperature: true, units: [
+          { id: 'c', name: '摄氏度（°C）' },
+          { id: 'f', name: '华氏度（°F）' },
+          { id: 'k', name: '开尔文（K）' }
+        ]
+      },
+      speed: {
+        name: '速度', from: 'kmh', to: 'mph', units: [
+          { id: 'ms', name: '米/秒（m/s）', factor: 1 },
+          { id: 'kmh', name: '千米/时（km/h）', factor: 0.2777777777777778 },
+          { id: 'mph', name: '英里/时（mph）', factor: 0.44704 },
+          { id: 'knot', name: '节（kn）', factor: 0.5144444444444445 },
+          { id: 'fts', name: '英尺/秒（ft/s）', factor: 0.3048 }
+        ]
+      },
+      data: {
+        name: '数据容量', from: 'MB', to: 'MiB', units: [
+          { id: 'bit', name: '比特（bit）', factor: 0.125 },
+          { id: 'B', name: '字节（B）', factor: 1 },
+          { id: 'KB', name: '千字节（KB，10³）', factor: 1000 },
+          { id: 'MB', name: '兆字节（MB，10⁶）', factor: 1000000 },
+          { id: 'GB', name: '吉字节（GB，10⁹）', factor: 1000000000 },
+          { id: 'TB', name: '太字节（TB，10¹²）', factor: 1000000000000 },
+          { id: 'KiB', name: 'Kibibyte（KiB，2¹⁰）', factor: 1024 },
+          { id: 'MiB', name: 'Mebibyte（MiB，2²⁰）', factor: 1048576 },
+          { id: 'GiB', name: 'Gibibyte（GiB，2³⁰）', factor: 1073741824 },
+          { id: 'TiB', name: 'Tebibyte（TiB，2⁴⁰）', factor: 1099511627776 }
+        ]
+      }
+    };
+    var activeSide = 'left';
+
+    function normalizeNumber(value) {
+      var source = String(value || '').trim()
+        .replace(/[０-９]/g, function(char) { return String.fromCharCode(char.charCodeAt(0) - 65248); })
+        .replace(/，/g, ',')
+        .replace(/．/g, '.')
+        .replace(/＋/g, '+')
+        .replace(/[－−]/g, '-')
+        .replace(/[Ｅｅ]/g, 'e');
+      if (!source) return { empty: true };
+
+      if (source.indexOf(',') !== -1) {
+        if (!/^[+-]?\d{1,3}(?:,\d{3})+(?:\.\d*)?(?:[eE][+-]?\d+)?$/.test(source)) {
+          return { error: '千分位需按 1,234.56 格式书写' };
+        }
+        source = source.replace(/,/g, '');
+      }
+      if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(source)) {
+        return { error: '请输入有效数字，可使用小数或科学计数法' };
+      }
+      var number = Number(source);
+      if (!Number.isFinite(number)) return { error: '数值超出可计算范围' };
+      return { value: number };
+    }
+
+    function findUnit(category, id) {
+      for (var index = 0; index < category.units.length; index++) {
+        if (category.units[index].id === id) return category.units[index];
+      }
+      return null;
+    }
+
+    function toBase(category, unit, value) {
+      if (!category.temperature) return value * unit.factor;
+      if (unit.id === 'f') return (value - 32) * 5 / 9;
+      if (unit.id === 'k') return value - 273.15;
+      return value;
+    }
+
+    function fromBase(category, unit, value) {
+      if (!category.temperature) return value / unit.factor;
+      if (unit.id === 'f') return value * 9 / 5 + 32;
+      if (unit.id === 'k') return value + 273.15;
+      return value;
+    }
+
+    function convert(category, fromUnit, toUnit, value) {
+      var baseValue = toBase(category, fromUnit, value);
+      if (category.temperature && baseValue < -273.15 - 1e-10) {
+        return { error: '温度不能低于绝对零度（−273.15 °C）' };
+      }
+      var result = fromBase(category, toUnit, baseValue);
+      if (!Number.isFinite(result)) return { error: '换算结果超出可显示范围' };
+      return { value: result };
+    }
+
+    function trimExponent(value) {
+      return value.replace(/(\.\d*?[1-9])0+e/, '$1e').replace(/\.0+e/, 'e').replace(/e\+/, 'e');
+    }
+
+    function formatNumber(value) {
+      if (value === 0) return '0';
+      var absolute = Math.abs(value);
+      if (absolute >= 1e15 || absolute < 1e-9) return trimExponent(value.toExponential(12));
+      return String(Number(value.toPrecision(14)));
+    }
+
+    function unitOptions(category) {
+      return category.units.map(function(unit) {
+        return '<option value="' + unit.id + '">' + unit.name + '</option>';
+      }).join('');
+    }
+
+    function populateUnits(resetValues) {
+      var category = CATEGORIES[$('#unitconv-category').val()];
+      var options = unitOptions(category);
+      $('#unitconv-left-unit, #unitconv-right-unit').html(options);
+      $('#unitconv-left-unit').val(category.from);
+      $('#unitconv-right-unit').val(category.to);
+      if (resetValues) {
+        activeSide = 'left';
+        $('#unitconv-left-value').val('1');
+      }
+      render(activeSide);
+    }
+
+    function setMessage(message, isError) {
+      $('#unitconv-message').text(message || DEFAULT_MESSAGE).toggleClass('error', !!isError);
+    }
+
+    function render(side) {
+      var category = CATEGORIES[$('#unitconv-category').val()];
+      var sourceSelector = side === 'left' ? '#unitconv-left-value' : '#unitconv-right-value';
+      var targetSelector = side === 'left' ? '#unitconv-right-value' : '#unitconv-left-value';
+      var sourceUnitId = $(side === 'left' ? '#unitconv-left-unit' : '#unitconv-right-unit').val();
+      var targetUnitId = $(side === 'left' ? '#unitconv-right-unit' : '#unitconv-left-unit').val();
+      var parsed = normalizeNumber($(sourceSelector).val());
+      if (parsed.empty) {
+        $(targetSelector).val('');
+        $('#unitconv-summary').text('—');
+        $('.unitconv-copy').prop('disabled', true);
+        setMessage(DEFAULT_MESSAGE, false);
+        return;
+      }
+      if (parsed.error) {
+        $(targetSelector).val('');
+        $('#unitconv-summary').text('—');
+        $('.unitconv-copy').prop('disabled', true);
+        setMessage(parsed.error, true);
+        return;
+      }
+
+      var sourceUnit = findUnit(category, sourceUnitId);
+      var targetUnit = findUnit(category, targetUnitId);
+      var converted = convert(category, sourceUnit, targetUnit, parsed.value);
+      if (converted.error) {
+        $(targetSelector).val('');
+        $('#unitconv-summary').text('—');
+        $('.unitconv-copy').prop('disabled', true);
+        setMessage(converted.error, true);
+        return;
+      }
+
+      var formatted = formatNumber(converted.value);
+      $(targetSelector).val(formatted);
+      $('#unitconv-summary').text(formatNumber(parsed.value) + ' ' + sourceUnit.name + ' = ' + formatted + ' ' + targetUnit.name);
+      $('.unitconv-copy').prop('disabled', false);
+      setMessage('已完成' + category.name + '换算', false);
+    }
+
+    function copyText(text) {
+      if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
+      return new Promise(function(resolve, reject) {
+        var textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+          document.execCommand('copy') ? resolve() : reject(new Error('复制失败'));
+        } catch (error) {
+          reject(error);
+        }
+        document.body.removeChild(textarea);
+      });
+    }
+
+    function showCopied($button) {
+      $button.addClass('copied').html('<i class="fas fa-check"></i>');
+      window.setTimeout(function() {
+        $button.removeClass('copied').html('<i class="fas fa-copy"></i>');
+      }, 1500);
+    }
+
+    $(document).ready(function() {
+      populateUnits(true);
+
+      $('#unitconv-category').on('change', function() {
+        populateUnits(true);
+      });
+      $('#unitconv-left-value').on('input', function() {
+        activeSide = 'left';
+        render(activeSide);
+      });
+      $('#unitconv-right-value').on('input', function() {
+        activeSide = 'right';
+        render(activeSide);
+      });
+      $('#unitconv-left-unit, #unitconv-right-unit').on('change', function() {
+        render(activeSide);
+      });
+      $('#unitconv-swap').on('click', function() {
+        var leftUnit = $('#unitconv-left-unit').val();
+        var leftValue = $('#unitconv-left-value').val();
+        $('#unitconv-left-unit').val($('#unitconv-right-unit').val());
+        $('#unitconv-right-unit').val(leftUnit);
+        $('#unitconv-left-value').val($('#unitconv-right-value').val());
+        $('#unitconv-right-value').val(leftValue);
+        activeSide = activeSide === 'left' ? 'right' : 'left';
+        render(activeSide);
+      });
+      $('.unitconv-action[data-value]').on('click', function() {
+        activeSide = 'left';
+        $('#unitconv-left-value').val(String($(this).data('value'))).focus();
+        render(activeSide);
+      });
+      $('#unitconv-clear').on('click', function() {
+        $('#unitconv-left-value, #unitconv-right-value').val('');
+        $('#unitconv-summary').text('—');
+        $('.unitconv-copy').prop('disabled', true);
+        setMessage(DEFAULT_MESSAGE, false);
+        $('#unitconv-left-value').focus();
+      });
+      $('.unitconv-copy').on('click', function() {
+        var $button = $(this);
+        var text = $('#' + $button.data('target')).val();
+        if (!text) return;
+        copyText(text).then(function() {
+          showCopied($button);
+        }).catch(function() {
+          M.toast({ html: '复制失败，请手动复制', classes: 'rounded red' });
+        });
+      });
+    });
+  })();
+</script>
