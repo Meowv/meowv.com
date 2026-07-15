@@ -1,0 +1,4 @@
+interface:
+  display_name: "小工具开发"
+  short_description: "按项目规范新增、调整并验证 Hexo Labs 小工具"
+  default_prompt: "使用 $build-meowv-tool 新增一个浏览器端小工具。"
