@@ -14,7 +14,6 @@
 <style>
   .tool-container { margin-top: -50px; margin-bottom: 30px; }
   .tool-container .card { border-radius: 8px; }
-  .tool-container .card .card-content .card-title { font-size: 1.4rem; font-weight: 600; margin-bottom: 20px; }
 
   .toolbar {
     display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; justify-content: flex-end;
@@ -91,12 +90,8 @@
 <main class="content">
   <div class="container tool-container">
     <div class="card">
+      <%- partial('_partial/tool-header', { toolTitle: toolTitle, toolDesc: toolDesc }) %>
       <div class="card-content">
-        <span class="card-title" style="display: inline-block"><%= toolTitle %></span>
-        <% if (toolDesc) { %>
-        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
-        <% } %>
-
         <div class="toolbar">
           <button class="btn waves-effect primary" id="formatBtn"><i class="fas fa-align-left"></i> 格式化</button>
           <button class="btn waves-effect primary" id="compressBtn"><i class="fas fa-compress"></i> 压缩</button>

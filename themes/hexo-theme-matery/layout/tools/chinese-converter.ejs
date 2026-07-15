@@ -19,15 +19,6 @@
   .tool-container .card {
     border-radius: 8px;
   }
-  .tool-container .card .card-content .card-title {
-    font-size: 1.4rem;
-    font-weight: 600;
-    margin-bottom: 20px;
-  }
-  .tool-container .card-title i {
-    margin-right: 8px;
-  }
-
   /* 模式选择栏 */
   .mode-bar {
     display: flex;
@@ -145,12 +136,8 @@
 <main class="content">
   <div class="container tool-container">
     <div class="card">
+      <%- partial('_partial/tool-header', { toolTitle: toolTitle, toolDesc: toolDesc }) %>
       <div class="card-content">
-        <span class="card-title" style="display: inline-block"><%= toolTitle %></span>
-        <% if (toolDesc) { %>
-        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
-        <% } %>
-
         <!-- 模式选择栏 -->
         <div class="mode-bar">
           <span class="mode-label source" id="sourceModeLabel">简体</span>

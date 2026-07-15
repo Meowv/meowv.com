@@ -18,10 +18,6 @@
   }
   .whiteboard-wrap .card { border-radius: 8px; overflow: hidden; }
   .whiteboard-wrap .card .card-content { padding: 0; }
-  .whiteboard-wrap .card .card-content .card-title {
-    font-size: 1.4rem; font-weight: 600; margin-bottom: 0;
-    padding: 16px 20px 0;
-  }
 
   .wb-toolbar {
     display: flex; align-items: center; gap: 4px;
@@ -178,12 +174,8 @@
 <main class="content">
   <div class="container whiteboard-wrap">
     <div class="card">
+      <%- partial('_partial/tool-header', { toolTitle: toolTitle, toolDesc: toolDesc }) %>
       <div class="card-content">
-        <span class="card-title" style="display: inline-block"><%= toolTitle %></span>
-        <% if (toolDesc) { %>
-        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
-        <% } %>
-
         <div id="wbFullscreen" class="wb-fullscreen-container">
           <div class="wb-toolbar">
             <div class="group">

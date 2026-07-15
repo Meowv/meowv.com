@@ -14,7 +14,6 @@
 <style>
   .tool-container { margin-top: -50px; margin-bottom: 30px; }
   .tool-container .card { border-radius: 8px; }
-  .tool-container .card .card-content .card-title { font-size: 1.4rem; font-weight: 600; margin-bottom: 20px; }
 
   .pt-controls {
     display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
@@ -133,12 +132,8 @@
 <main class="content">
   <div class="container tool-container">
     <div class="card">
+      <%- partial('_partial/tool-header', { toolTitle: toolTitle, toolDesc: toolDesc }) %>
       <div class="card-content">
-        <span class="card-title" style="display: inline-block"><%= toolTitle %></span>
-        <% if (toolDesc) { %>
-        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
-        <% } %>
-
         <div class="pt-controls">
           <input class="pt-search" type="text" id="ptSearch" placeholder="搜索元素名称或符号...">
           <div class="pt-legend" id="ptLegend"></div>

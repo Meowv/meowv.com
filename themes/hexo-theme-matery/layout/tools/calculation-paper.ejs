@@ -14,7 +14,6 @@
 <style>
   .tool-container { margin-top: -50px; margin-bottom: 30px; }
   .tool-container .card { border-radius: 8px; }
-  .tool-container .card .card-content .card-title { font-size: 1.4rem; font-weight: 600; margin-bottom: 20px; }
 
   .calc-toolbar {
     display: flex; align-items: center; justify-content: space-between; gap: 12px;
@@ -90,12 +89,8 @@
 <main class="content">
   <div class="container tool-container">
     <div class="card">
+      <%- partial('_partial/tool-header', { toolTitle: toolTitle, toolDesc: toolDesc }) %>
       <div class="card-content">
-        <span class="card-title" style="display: inline-block"><%= toolTitle %></span>
-        <% if (toolDesc) { %>
-        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
-        <% } %>
-
         <div class="calc-toolbar">
           <span class="save-status" id="saveStatus">草稿仅保存在当前浏览器</span>
           <button class="btn waves-effect outline" id="clearBtn" type="button"><i class="fas fa-trash-alt"></i> 清空</button>

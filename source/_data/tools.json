@@ -73,6 +73,14 @@
     "category": "文本处理"
   },
   {
+    "slug": "text-steganography",
+    "name": "文字隐写",
+    "description": "将隐藏信息嵌入载体文本，并支持本页面解析",
+    "emoji": "🕵️",
+    "url": "/tools/text-steganography",
+    "category": "文本处理"
+  },
+  {
     "slug": "special-symbols",
     "name": "特殊符号",
     "description": "特殊符号大全，一键复制使用",
@@ -163,6 +171,13 @@
     "description": "阿拉伯数字转中文小写与人民币大写",
     "emoji": "🔢",
     "url": "/tools/number-converter"
+  },
+  {
+    "slug": "video-to-gif",
+    "name": "视频转GIF",
+    "description": "本地截取视频片段并转换为 GIF 动图",
+    "emoji": "🎞️",
+    "url": "/tools/video-to-gif"
   },
   {
     "slug": "video-parser",

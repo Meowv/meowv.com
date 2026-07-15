@@ -1,0 +1,530 @@
+<%
+    var toolTitle = '文字隐写';
+    var toolDesc = '';
+    if (site.data && site.data.tools) {
+        var tool = site.data.tools.find(function(t) { return t.slug === page.toolSlug; });
+        if (tool) {
+            toolTitle = tool.emoji + ' ' + tool.name;
+            toolDesc = tool.description;
+        }
+    }
+%>
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .text-stego-container { margin-top: -50px; margin-bottom: 30px; }
+  .text-stego-container .card { border-radius: 8px; }
+  .text-stego-container .card-content { padding: 0 28px 28px; }
+
+  .text-stego-notice {
+    display: flex; gap: 12px; align-items: flex-start; padding: 13px 15px; margin-bottom: 22px;
+    border: 1px solid #dcebc8; border-radius: 10px; background: #f7fbf2; color: #55723b;
+  }
+  .text-stego-notice > i { color: #5a9600; line-height: 1.5; }
+  .text-stego-notice p { margin: 0 0 3px; font-size: 0.9rem; font-weight: 600; }
+  .text-stego-notice small { display: block; color: #7c8c70; line-height: 1.5; }
+
+  .text-stego-tabs {
+    display: flex; gap: 0; margin-bottom: 22px; border-bottom: 2px solid #eee;
+  }
+  .text-stego-tab {
+    padding: 10px 24px; margin-bottom: -2px; border: 0; border-bottom: 2px solid transparent;
+    background: transparent; color: #999; font-size: 0.9rem; cursor: pointer; outline: none;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .text-stego-tab:hover,
+  .text-stego-tab.is-active { color: #5a9600; }
+  .text-stego-tab.is-active { border-bottom-color: #5a9600; font-weight: 600; }
+
+  .text-stego-panel { display: none; }
+  .text-stego-panel.is-active { display: block; }
+  .text-stego-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .text-stego-field { min-width: 0; }
+  .text-stego-field + .text-stego-field-full { margin-top: 18px; }
+  .text-stego-field-header {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px;
+  }
+  .text-stego-label { color: #555; font-size: 0.9rem; font-weight: 600; }
+  .text-stego-count { color: #aaa; font-size: 0.75rem; white-space: nowrap; }
+  .text-stego-count.is-limit { color: #d9534f; }
+  .text-stego-textarea {
+    display: block; width: 100%; min-height: 170px; height: auto; margin: 0; padding: 14px 16px;
+    border: 2px solid #e8e8e8; border-radius: 10px; background: #fafafa;
+    box-sizing: border-box; box-shadow: none !important; outline: none; resize: vertical;
+    color: #333; font-size: 0.9rem; line-height: 1.65; font-family: inherit;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .text-stego-textarea:focus { border-color: #5a9600; background: #fff; }
+  .text-stego-textarea.is-invalid { border-color: #d9534f; }
+  .text-stego-textarea[readonly] { background: #f5f5f5; color: #444; }
+  .text-stego-textarea[readonly]:focus { border-color: #e8e8e8; background: #f5f5f5; }
+  .text-stego-field-full { margin-top: 18px; }
+
+  .text-stego-actions {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 18px;
+  }
+  .text-stego-btn.btn {
+    display: inline-flex; align-items: center; gap: 7px; height: 36px; line-height: 36px;
+    padding: 0 20px; border-radius: 20px; font-size: 0.9rem; letter-spacing: 1px;
+    text-transform: none;
+  }
+  .text-stego-btn.btn i { font-size: 0.9rem; line-height: inherit; }
+  .text-stego-btn-primary { background: linear-gradient(135deg, #5a9600 0%, #7ccd00 100%); }
+  .text-stego-btn-primary:hover { box-shadow: 0 4px 12px rgba(90, 150, 0, 0.4); }
+  .text-stego-btn-secondary.btn {
+    border: 1px solid #ddd; background: transparent; box-shadow: none; color: #666;
+  }
+  .text-stego-btn-secondary.btn:hover { border-color: #5a9600; color: #5a9600; }
+  .text-stego-btn.btn:disabled {
+    border-color: #e5e5e5; background: #eee; box-shadow: none; color: #aaa; cursor: not-allowed;
+  }
+  .text-stego-message {
+    min-height: 22px; margin-top: 10px; color: #999; font-size: 0.8rem; line-height: 1.5;
+  }
+  .text-stego-message.is-success { color: #5a9600; }
+  .text-stego-message.is-error { color: #d9534f; }
+
+  @media only screen and (max-width: 601px) {
+    .text-stego-container { margin-top: -30px; }
+    .text-stego-container .card-content { padding: 0 16px 20px; }
+    .text-stego-tab { flex: 1; padding: 10px 12px; }
+    .text-stego-grid { grid-template-columns: 1fr; }
+    .text-stego-textarea { min-height: 140px; }
+    .text-stego-actions .text-stego-btn { flex: 1; justify-content: center; padding: 0 12px; }
+  }
+</style>
+
+<main class="content">
+  <div class="container text-stego-container">
+    <div class="card">
+      <%- partial('_partial/tool-header', { toolTitle: toolTitle, toolDesc: toolDesc }) %>
+      <div class="card-content">
+        <div class="text-stego-notice" role="note">
+          <i class="fas fa-info-circle" aria-hidden="true"></i>
+          <div>
+            <p>在本页面写入的隐藏信息，仅支持在本页面进行解析哦~</p>
+            <small>隐写不等同于加密，部分平台可能会过滤用于隐藏信息的零宽字符。</small>
+          </div>
+        </div>
+
+        <div class="text-stego-tabs" role="tablist" aria-label="文字隐写模式">
+          <button type="button" class="text-stego-tab is-active" id="textStegoGenerateTab"
+                  role="tab" aria-selected="true" aria-controls="textStegoGeneratePanel"
+                  data-panel="generate">
+            <i class="fas fa-pen-fancy" aria-hidden="true"></i> 生成
+          </button>
+          <button type="button" class="text-stego-tab" id="textStegoParseTab"
+                  role="tab" aria-selected="false" aria-controls="textStegoParsePanel"
+                  data-panel="parse">
+            <i class="fas fa-search" aria-hidden="true"></i> 解析
+          </button>
+        </div>
+
+        <section class="text-stego-panel is-active" id="textStegoGeneratePanel"
+                 role="tabpanel" aria-labelledby="textStegoGenerateTab">
+          <div class="text-stego-grid">
+            <div class="text-stego-field">
+              <div class="text-stego-field-header">
+                <label class="text-stego-label" for="textStegoCarrier">载体文本</label>
+                <span class="text-stego-count" id="textStegoCarrierCount">0 字</span>
+              </div>
+              <textarea class="text-stego-textarea" id="textStegoCarrier"
+                        placeholder="输入或粘贴用于承载隐藏信息的文本..." spellcheck="false"></textarea>
+            </div>
+            <div class="text-stego-field">
+              <div class="text-stego-field-header">
+                <label class="text-stego-label" for="textStegoSecret">隐藏信息</label>
+                <span class="text-stego-count" id="textStegoSecretCount">0 / 32768 字节</span>
+              </div>
+              <textarea class="text-stego-textarea" id="textStegoSecret"
+                        placeholder="输入希望隐藏的文本信息..." spellcheck="false"></textarea>
+            </div>
+          </div>
+
+          <div class="text-stego-actions">
+            <button type="button" class="btn waves-effect text-stego-btn text-stego-btn-primary"
+                    id="textStegoGenerate">
+              <i class="fas fa-magic" aria-hidden="true"></i> 生成
+            </button>
+            <button type="button" class="btn waves-effect text-stego-btn text-stego-btn-secondary"
+                    id="textStegoClearGenerate">
+              <i class="fas fa-times" aria-hidden="true"></i> 清空
+            </button>
+          </div>
+          <div class="text-stego-message" id="textStegoGenerateMessage" aria-live="polite">
+            填写载体文本和隐藏信息后点击生成。
+          </div>
+
+          <div class="text-stego-field text-stego-field-full">
+            <div class="text-stego-field-header">
+              <label class="text-stego-label" for="textStegoGenerated">隐写文本</label>
+              <span class="text-stego-count">结果看起来与载体文本一致</span>
+            </div>
+            <textarea class="text-stego-textarea" id="textStegoGenerated"
+                      placeholder="生成结果将显示在这里..." readonly></textarea>
+          </div>
+          <div class="text-stego-actions">
+            <button type="button" class="btn waves-effect text-stego-btn text-stego-btn-secondary"
+                    id="textStegoCopyGenerated" disabled>
+              <i class="fas fa-copy" aria-hidden="true"></i> 复制结果
+            </button>
+            <button type="button" class="btn waves-effect text-stego-btn text-stego-btn-secondary"
+                    id="textStegoTryParse" disabled>
+              <i class="fas fa-search" aria-hidden="true"></i> 立即解析
+            </button>
+          </div>
+        </section>
+
+        <section class="text-stego-panel" id="textStegoParsePanel"
+                 role="tabpanel" aria-labelledby="textStegoParseTab" hidden>
+          <div class="text-stego-grid">
+            <div class="text-stego-field">
+              <div class="text-stego-field-header">
+                <label class="text-stego-label" for="textStegoParseInput">待解析文本</label>
+                <span class="text-stego-count">请保留不可见字符</span>
+              </div>
+              <textarea class="text-stego-textarea" id="textStegoParseInput"
+                        placeholder="粘贴由本页面生成的隐写文本..." spellcheck="false"></textarea>
+            </div>
+            <div class="text-stego-field">
+              <div class="text-stego-field-header">
+                <label class="text-stego-label" for="textStegoParsed">解析结果</label>
+                <span class="text-stego-count" id="textStegoParsedCount">0 字</span>
+              </div>
+              <textarea class="text-stego-textarea" id="textStegoParsed"
+                        placeholder="隐藏信息将显示在这里..." readonly></textarea>
+            </div>
+          </div>
+
+          <div class="text-stego-actions">
+            <button type="button" class="btn waves-effect text-stego-btn text-stego-btn-primary"
+                    id="textStegoParse">
+              <i class="fas fa-unlock-alt" aria-hidden="true"></i> 解析
+            </button>
+            <button type="button" class="btn waves-effect text-stego-btn text-stego-btn-secondary"
+                    id="textStegoCopyParsed" disabled>
+              <i class="fas fa-copy" aria-hidden="true"></i> 复制信息
+            </button>
+            <button type="button" class="btn waves-effect text-stego-btn text-stego-btn-secondary"
+                    id="textStegoClearParse">
+              <i class="fas fa-times" aria-hidden="true"></i> 清空
+            </button>
+          </div>
+          <div class="text-stego-message" id="textStegoParseMessage" aria-live="polite">
+            仅能解析由本页面生成且未被平台过滤的隐写文本。
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script>
+  $(document).ready(function() {
+    var START_MARKER = '\u2063\u2060\u2063\u2060\u2063';
+    var END_MARKER = '\u2060\u2063\u2060\u2063\u2060';
+    var ZERO = '\u200B';
+    var ONE = '\u200C';
+    var FORMAT_NAME = 'meowv-text-steganography';
+    var MAX_SECRET_BYTES = 32768;
+
+    function encodeUtf8(text) {
+      if (typeof TextEncoder === 'function') {
+        return Array.prototype.slice.call(new TextEncoder().encode(text));
+      }
+      var encoded = unescape(encodeURIComponent(text));
+      var bytes = [];
+      for (var i = 0; i < encoded.length; i++) bytes.push(encoded.charCodeAt(i));
+      return bytes;
+    }
+
+    function decodeUtf8(bytes) {
+      if (typeof TextDecoder === 'function') {
+        return new TextDecoder('utf-8', { fatal: true }).decode(new Uint8Array(bytes));
+      }
+      var binary = '';
+      for (var i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+      return decodeURIComponent(escape(binary));
+    }
+
+    function encodeHiddenText(secret) {
+      var payload = JSON.stringify({ version: 1, format: FORMAT_NAME, text: secret });
+      var bytes = encodeUtf8(payload);
+      var bits = new Array(bytes.length * 8);
+      var index = 0;
+
+      for (var i = 0; i < bytes.length; i++) {
+        for (var bit = 7; bit >= 0; bit--) {
+          bits[index++] = bytes[i] & (1 << bit) ? ONE : ZERO;
+        }
+      }
+      return START_MARKER + bits.join('') + END_MARKER;
+    }
+
+    function decodeHiddenText(text) {
+      var start = text.lastIndexOf(START_MARKER);
+      if (start < 0) throw new Error('未检测到由本页面生成的隐藏信息');
+
+      var dataStart = start + START_MARKER.length;
+      var end = text.indexOf(END_MARKER, dataStart);
+      if (end < 0) throw new Error('隐写数据不完整，可能在复制过程中被过滤');
+
+      var bits = text.slice(dataStart, end);
+      if (!bits.length || bits.length % 8 !== 0) {
+        throw new Error('隐写数据不完整，可能在复制过程中被过滤');
+      }
+
+      var bytes = [];
+      for (var i = 0; i < bits.length; i += 8) {
+        var byte = 0;
+        for (var bit = 0; bit < 8; bit++) {
+          var char = bits.charAt(i + bit);
+          if (char !== ZERO && char !== ONE) {
+            throw new Error('隐写数据包含无法识别的字符');
+          }
+          byte = (byte << 1) | (char === ONE ? 1 : 0);
+        }
+        bytes.push(byte);
+      }
+
+      var payload;
+      try {
+        payload = JSON.parse(decodeUtf8(bytes));
+      } catch (error) {
+        throw new Error('隐写数据无法识别或已损坏');
+      }
+      if (!payload || payload.version !== 1 || payload.format !== FORMAT_NAME ||
+          typeof payload.text !== 'string') {
+        throw new Error('未检测到本页面支持的隐藏信息');
+      }
+
+      return {
+        text: payload.text,
+        start: start,
+        end: end + END_MARKER.length
+      };
+    }
+
+    function removeExistingHiddenText(text) {
+      try {
+        var frame = decodeHiddenText(text);
+        return {
+          text: text.slice(0, frame.start) + text.slice(frame.end),
+          replaced: true
+        };
+      } catch (error) {
+        return { text: text, replaced: false };
+      }
+    }
+
+    function countCharacters(text) {
+      return Array.from(text).length;
+    }
+
+    function setMessage(selector, message, type) {
+      $(selector)
+        .removeClass('is-success is-error')
+        .addClass(type ? 'is-' + type : '')
+        .text(message);
+    }
+
+    function activatePanel(name) {
+      $('.text-stego-tab').each(function() {
+        var isActive = $(this).data('panel') === name;
+        $(this).toggleClass('is-active', isActive).attr('aria-selected', isActive);
+      });
+      $('.text-stego-panel').each(function() {
+        var isActive = this.id === 'textStego' + (name === 'generate' ? 'Generate' : 'Parse') + 'Panel';
+        $(this).toggleClass('is-active', isActive).prop('hidden', !isActive);
+      });
+    }
+
+    function copyText(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(text);
+      }
+      return new Promise(function(resolve, reject) {
+        var textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+          document.execCommand('copy') ? resolve() : reject(new Error('复制失败'));
+        } catch (error) {
+          reject(error);
+        } finally {
+          document.body.removeChild(textarea);
+        }
+      });
+    }
+
+    function flashCopied($button) {
+      var original = $button.html();
+      $button.prop('disabled', true).html('<i class="fas fa-check" aria-hidden="true"></i> 已复制');
+      setTimeout(function() {
+        $button.prop('disabled', false).html(original);
+      }, 1400);
+    }
+
+    function clearGeneratedResult() {
+      $('#textStegoGenerated').val('');
+      $('#textStegoCopyGenerated, #textStegoTryParse').prop('disabled', true);
+    }
+
+    function updateInputCounts() {
+      var carrier = $('#textStegoCarrier').val();
+      var secret = $('#textStegoSecret').val();
+      var secretBytes = encodeUtf8(secret).length;
+      $('#textStegoCarrierCount').text(countCharacters(carrier) + ' 字');
+      $('#textStegoSecretCount')
+        .text(secretBytes + ' / ' + MAX_SECRET_BYTES + ' 字节')
+        .toggleClass('is-limit', secretBytes > MAX_SECRET_BYTES);
+      return secretBytes;
+    }
+
+    function parseCurrentText() {
+      var input = $('#textStegoParseInput').val();
+      $('#textStegoParseInput').removeClass('is-invalid');
+      $('#textStegoParsed').val('');
+      $('#textStegoParsedCount').text('0 字');
+      $('#textStegoCopyParsed').prop('disabled', true);
+
+      if (!input.length) {
+        $('#textStegoParseInput').addClass('is-invalid').focus();
+        setMessage('#textStegoParseMessage', '请先粘贴需要解析的隐写文本。', 'error');
+        return;
+      }
+
+      try {
+        var result = decodeHiddenText(input);
+        $('#textStegoParsed').val(result.text);
+        $('#textStegoParsedCount').text(countCharacters(result.text) + ' 字');
+        $('#textStegoCopyParsed').prop('disabled', false);
+        setMessage('#textStegoParseMessage', '解析成功，已还原隐藏信息。', 'success');
+      } catch (error) {
+        $('#textStegoParseInput').addClass('is-invalid');
+        setMessage('#textStegoParseMessage', error.message, 'error');
+      }
+    }
+
+    $('.text-stego-tab').on('click', function() {
+      activatePanel($(this).data('panel'));
+    });
+
+    $('#textStegoCarrier, #textStegoSecret').on('input', function() {
+      $('#textStegoCarrier, #textStegoSecret').removeClass('is-invalid');
+      var secretBytes = updateInputCounts();
+      clearGeneratedResult();
+      if (secretBytes > MAX_SECRET_BYTES) {
+        $('#textStegoSecret').addClass('is-invalid');
+        setMessage('#textStegoGenerateMessage', '隐藏信息不能超过 32768 字节。', 'error');
+      } else {
+        setMessage('#textStegoGenerateMessage', '内容已修改，请重新生成。');
+      }
+    });
+
+    $('#textStegoGenerate').on('click', function() {
+      var carrier = $('#textStegoCarrier').val();
+      var secret = $('#textStegoSecret').val();
+      var secretBytes = updateInputCounts();
+      $('#textStegoCarrier, #textStegoSecret').removeClass('is-invalid');
+
+      if (!carrier.length) {
+        $('#textStegoCarrier').addClass('is-invalid').focus();
+        setMessage('#textStegoGenerateMessage', '请输入或粘贴载体文本。', 'error');
+        return;
+      }
+      if (!secret.length) {
+        $('#textStegoSecret').addClass('is-invalid').focus();
+        setMessage('#textStegoGenerateMessage', '请输入希望隐藏的文本信息。', 'error');
+        return;
+      }
+      if (secretBytes > MAX_SECRET_BYTES) {
+        $('#textStegoSecret').addClass('is-invalid').focus();
+        setMessage('#textStegoGenerateMessage', '隐藏信息不能超过 32768 字节。', 'error');
+        return;
+      }
+
+      var carrierResult = removeExistingHiddenText(carrier);
+      var generated = carrierResult.text + encodeHiddenText(secret);
+      $('#textStegoGenerated').val(generated);
+      $('#textStegoCopyGenerated, #textStegoTryParse').prop('disabled', false);
+      setMessage(
+        '#textStegoGenerateMessage',
+        (carrierResult.replaced ? '已替换原有隐藏信息，' : '生成成功，') +
+          '共隐藏 ' + countCharacters(secret) + ' 个字符。',
+        'success'
+      );
+    });
+
+    $('#textStegoClearGenerate').on('click', function() {
+      $('#textStegoCarrier, #textStegoSecret, #textStegoGenerated').val('').removeClass('is-invalid');
+      $('#textStegoCopyGenerated, #textStegoTryParse').prop('disabled', true);
+      updateInputCounts();
+      setMessage('#textStegoGenerateMessage', '已清空生成区内容。');
+      $('#textStegoCarrier').focus();
+    });
+
+    $('#textStegoCopyGenerated').on('click', function() {
+      var text = $('#textStegoGenerated').val();
+      var $button = $(this);
+      if (!text.length) return;
+      copyText(text).then(function() {
+        flashCopied($button);
+        setMessage('#textStegoGenerateMessage', '隐写文本已复制，请注意部分平台可能过滤不可见字符。', 'success');
+      }).catch(function() {
+        setMessage('#textStegoGenerateMessage', '复制失败，请手动选择结果复制。', 'error');
+      });
+    });
+
+    $('#textStegoTryParse').on('click', function() {
+      var text = $('#textStegoGenerated').val();
+      if (!text.length) return;
+      $('#textStegoParseInput').val(text).removeClass('is-invalid');
+      activatePanel('parse');
+      parseCurrentText();
+    });
+
+    $('#textStegoParseInput').on('input', function() {
+      $(this).removeClass('is-invalid');
+      $('#textStegoParsed').val('');
+      $('#textStegoParsedCount').text('0 字');
+      $('#textStegoCopyParsed').prop('disabled', true);
+      setMessage('#textStegoParseMessage', '内容已修改，请点击解析。');
+    });
+
+    $('#textStegoParse').on('click', parseCurrentText);
+
+    $('#textStegoCopyParsed').on('click', function() {
+      var text = $('#textStegoParsed').val();
+      var $button = $(this);
+      if (!text.length) return;
+      copyText(text).then(function() {
+        flashCopied($button);
+        setMessage('#textStegoParseMessage', '隐藏信息已复制。', 'success');
+      }).catch(function() {
+        setMessage('#textStegoParseMessage', '复制失败，请手动选择结果复制。', 'error');
+      });
+    });
+
+    $('#textStegoClearParse').on('click', function() {
+      $('#textStegoParseInput, #textStegoParsed').val('').removeClass('is-invalid');
+      $('#textStegoParsedCount').text('0 字');
+      $('#textStegoCopyParsed').prop('disabled', true);
+      setMessage('#textStegoParseMessage', '已清空解析区内容。');
+      $('#textStegoParseInput').focus();
+    });
+
+    updateInputCounts();
+  });
+</script>

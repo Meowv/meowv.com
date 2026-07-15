@@ -19,13 +19,6 @@
   .video-parser-container .card {
     border-radius: 8px;
   }
-  .input-card .card-title {
-    font-size: 1.4rem;
-    font-weight: 600;
-  }
-  .input-card .card-title i {
-    margin-right: 8px;
-  }
   .parse-row {
     display: flex;
     gap: 10px;
@@ -291,11 +284,8 @@
   <div class="container video-parser-container">
     <!-- 输入卡片 -->
     <div class="card input-card">
+      <%- partial('_partial/tool-header', { toolTitle: toolTitle, toolDesc: toolDesc }) %>
       <div class="card-content">
-        <span class="card-title" style="display: inline"><%= toolTitle %></span>
-        <% if (toolDesc) { %>
-        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
-        <% } %>
         <div class="parse-row">
           <div class="url-input-wrap">
             <textarea

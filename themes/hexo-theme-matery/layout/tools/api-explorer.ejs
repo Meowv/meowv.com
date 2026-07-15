@@ -20,15 +20,6 @@
     border-radius: 8px;
   }
 
-  /* 请求卡片 */
-  .request-card .card-title {
-    font-size: 1.4rem;
-    font-weight: 600;
-  }
-  .request-card .card-title i {
-    margin-right: 8px;
-  }
-
   /* URL 行 */
   .url-row {
     display: flex;
@@ -618,12 +609,8 @@
   <div class="container api-explorer-container">
     <!-- 请求配置卡片 -->
     <div class="card request-card">
+      <%- partial('_partial/tool-header', { toolTitle: toolTitle, toolDesc: toolDesc }) %>
       <div class="card-content">
-        <span class="card-title" style="display: inline"><%= toolTitle %></span>
-        <% if (toolDesc) { %>
-        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
-        <% } %>
-
         <div class="url-row">
           <div class="input-field method-select">
             <select id="methodSelect" class="browser-default">

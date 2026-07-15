@@ -14,7 +14,6 @@
 <style>
   .tool-container { margin-top: -50px; margin-bottom: 30px; }
   .tool-container .card { border-radius: 8px; }
-  .tool-container .card .card-content .card-title { font-size: 1.4rem; font-weight: 600; margin-bottom: 20px; }
 
   .tabs-row { display: flex; gap: 0; margin-bottom: 16px; border-bottom: 2px solid #eee; }
   .tabs-row .tab-btn {
@@ -117,12 +116,8 @@
 <main class="content">
   <div class="container tool-container">
     <div class="card">
+      <%- partial('_partial/tool-header', { toolTitle: toolTitle, toolDesc: toolDesc }) %>
       <div class="card-content">
-        <span class="card-title" style="display: inline-block"><%= toolTitle %></span>
-        <% if (toolDesc) { %>
-        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
-        <% } %>
-
         <div class="tabs-row">
           <button class="tab-btn active" data-tab="text">文本编解码</button>
           <button class="tab-btn" data-tab="image">图片编解码</button>

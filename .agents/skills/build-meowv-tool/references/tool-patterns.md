@@ -64,8 +64,8 @@ toolSlug: example-tool
 <main class="content">
   <div class="container tool-container">
     <div class="card">
+      <%- partial('_partial/tool-header', { toolTitle: toolTitle, toolDesc: toolDesc }) %>
       <div class="card-content">
-        <span class="card-title"><%= toolTitle %></span>
         <!-- 工具界面 -->
       </div>
     </div>
@@ -86,6 +86,7 @@ toolSlug: example-tool
 
 ## 视觉与交互
 
+- 工具标题与描述由 `_partial/tool-header` 统一渲染，不要在页面布局中添加个性化标题结构或样式。
 - 主题强调色使用 `#5a9600`，渐变按钮可搭配 `#7ccd00`。
 - 输入框常用浅灰背景、`2px` 边框、`10px` 圆角；注意覆盖 Materialize 的全局 input 样式。
 - 双栏内容在 `max-width: 601px` 下改为单栏，避免固定宽度和横向滚动。

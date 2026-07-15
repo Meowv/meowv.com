@@ -17,8 +17,7 @@
 <style>
   .tool-container { margin-top: -50px; margin-bottom: 30px; }
   .tool-container .card { border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.08) !important; }
-  .tool-container .card .card-content { padding: 20px; }
-  .tool-container .card .card-content .card-title { font-size: 1.4rem; font-weight: 600; margin-bottom: 20px; }
+  .tool-container .card .card-content { padding: 0 20px 20px; }
 
   #md-editor-app {
     width: 100%;
@@ -98,12 +97,8 @@
 <main class="content">
   <div class="container tool-container">
     <div class="card">
+      <%- partial('_partial/tool-header', { toolTitle: toolTitle, toolDesc: toolDesc }) %>
       <div class="card-content">
-        <span class="card-title" style="display: inline-block"><%= toolTitle %></span>
-        <% if (toolDesc) { %>
-        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
-        <% } %>
-
         <div id="md-editor-app">
           <div v-if="loading" class="md-editor-loading" role="status" aria-live="polite">
             <span class="md-editor-loading-spinner" aria-hidden="true"></span>

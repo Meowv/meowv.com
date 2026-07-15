@@ -14,7 +14,6 @@
 <style>
   .tool-container { margin-top: -50px; margin-bottom: 30px; }
   .tool-container .card { border-radius: 8px; }
-  .tool-container .card .card-content .card-title { font-size: 1.4rem; font-weight: 600; margin-bottom: 20px; }
 
   .number-field-label {
     display: block; margin-bottom: 8px; color: #666; font-size: 0.9rem; font-weight: 600;
@@ -80,12 +79,8 @@
 <main class="content">
   <div class="container tool-container">
     <div class="card">
+      <%- partial('_partial/tool-header', { toolTitle: toolTitle, toolDesc: toolDesc }) %>
       <div class="card-content">
-        <span class="card-title" style="display: inline-block"><%= toolTitle %></span>
-        <% if (toolDesc) { %>
-        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
-        <% } %>
-
         <label class="number-field-label" for="numberInput">阿拉伯数字</label>
         <div class="number-input-row">
           <input class="number-input" id="numberInput" type="text" inputmode="decimal" autocomplete="off"

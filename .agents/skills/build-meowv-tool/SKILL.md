@@ -32,6 +32,7 @@ description: 为博客新增、调整或验证 `/tools/*` 浏览器端小工具�
 ## 实现页面
 
 - 从 `site.data.tools` 按 `page.toolSlug` 读取标题与描述，复用背景封面和 Valine 区块。
+- 工具标题与描述统一使用 `_partial/tool-header`，不要在单个工具中自定义结构或样式。
 - 沿用现有卡片布局、绿色强调色和响应式断点；CSS 类添加工具专属前缀，避免污染主题全局样式。
 - 优先使用页面已有的 jQuery、Materialize 和 Font Awesome，不重复引入库。
 - 根据场景提供实时更新、清空、复制、示例或状态提示；实时校验使用行内错误，不连续弹 Toast。

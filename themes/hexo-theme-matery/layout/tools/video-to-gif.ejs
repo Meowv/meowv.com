@@ -1,0 +1,1060 @@
+<%
+    var toolTitle = '视频转GIF';
+    var toolDesc = '';
+    if (site.data && site.data.tools) {
+        var tool = site.data.tools.find(function(t) { return t.slug === page.toolSlug; });
+        if (tool) {
+            toolTitle = tool.emoji + ' ' + tool.name;
+            toolDesc = tool.description;
+        }
+    }
+%>
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .video-gif-container {
+    margin-top: -50px;
+    margin-bottom: 30px;
+  }
+  .video-gif-container .card {
+    border-radius: 8px;
+  }
+  .video-gif-privacy {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 16px 0;
+    padding: 10px 14px;
+    color: #4f7f0b;
+    background: #f4f9ed;
+    border-radius: 8px;
+    font-size: 0.86rem;
+  }
+  .video-gif-dropzone {
+    min-height: 220px;
+    border: 2px dashed #d9d9d9;
+    border-radius: 12px;
+    background: #fafafa;
+    color: #aaa;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 28px;
+    text-align: center;
+    transition: border-color 0.2s, background 0.2s, color 0.2s;
+  }
+  .video-gif-dropzone:hover,
+  .video-gif-dropzone:focus,
+  .video-gif-dropzone.is-dragover {
+    border-color: #5a9600;
+    background: #f6fbf0;
+    color: #5a9600;
+    outline: none;
+  }
+  .video-gif-dropzone i {
+    font-size: 3rem;
+  }
+  .video-gif-dropzone strong {
+    color: #555;
+    font-size: 1rem;
+  }
+  .video-gif-dropzone small {
+    color: #aaa;
+    line-height: 1.6;
+  }
+  .video-gif-workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+    gap: 22px;
+    margin-top: 18px;
+  }
+  .video-gif-preview {
+    min-width: 0;
+  }
+  .video-gif-video-wrap {
+    overflow: hidden;
+    border-radius: 10px;
+    background: #111;
+  }
+  .video-gif-video-wrap video {
+    display: block;
+    width: 100%;
+    max-height: 460px;
+    background: #111;
+  }
+  .video-gif-file-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 10px;
+    color: #888;
+    font-size: 0.82rem;
+  }
+  .video-gif-file-name {
+    color: #555;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .video-gif-settings {
+    padding: 18px;
+    border: 1px solid #ececec;
+    border-radius: 10px;
+    background: #fafafa;
+  }
+  .video-gif-settings-title {
+    margin-bottom: 14px;
+    color: #444;
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+  .video-gif-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 12px;
+  }
+  .video-gif-field label {
+    display: block;
+    margin-bottom: 6px;
+    color: #777;
+    font-size: 0.78rem;
+  }
+  .video-gif-field input[type='number'],
+  .video-gif-field select.browser-default {
+    display: block;
+    width: 100%;
+    height: 40px;
+    margin: 0;
+    padding: 0 10px;
+    border: 2px solid #e5e5e5;
+    border-radius: 8px;
+    outline: none;
+    background: #fff;
+    box-sizing: border-box;
+    color: #444;
+    font-family: inherit;
+    font-size: 0.88rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .video-gif-field input[type='number']:focus,
+  .video-gif-field select.browser-default:focus {
+    border-color: #5a9600;
+    box-shadow: 0 0 0 3px rgba(90, 150, 0, 0.1);
+  }
+  .video-gif-loop {
+    grid-column: 1 / -1;
+    min-height: 30px;
+    display: flex;
+    align-items: center;
+  }
+  .video-gif-loop label span {
+    color: #666;
+    font-size: 0.84rem;
+  }
+  .video-gif-estimate {
+    margin-top: 14px;
+    padding: 9px 12px;
+    border-radius: 7px;
+    color: #62882b;
+    background: #f2f8e8;
+    font-size: 0.8rem;
+    line-height: 1.5;
+  }
+  .video-gif-estimate.is-invalid {
+    color: #c14c43;
+    background: #fff1f0;
+  }
+  .video-gif-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+  .video-gif-btn {
+    height: 42px;
+    padding: 0 20px;
+    border: none;
+    border-radius: 21px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.88rem;
+    transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+  }
+  .video-gif-btn:focus {
+    outline: none;
+  }
+  .video-gif-btn-primary {
+    color: #fff;
+    background: linear-gradient(135deg, #5a9600, #7ccd00);
+    box-shadow: 0 3px 9px rgba(90, 150, 0, 0.22);
+  }
+  .video-gif-btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 14px rgba(90, 150, 0, 0.3);
+  }
+  .video-gif-btn-secondary {
+    color: #666;
+    background: #ededed;
+  }
+  .video-gif-btn-secondary:hover {
+    background: #e3e3e3;
+  }
+  .video-gif-btn-danger {
+    color: #d9534f;
+    background: #fff0ef;
+  }
+  .video-gif-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+  .video-gif-error {
+    margin-top: 14px;
+    padding: 10px 12px;
+    border-radius: 7px;
+    color: #c62828;
+    background: #ffefef;
+    font-size: 0.84rem;
+    line-height: 1.5;
+  }
+  .video-gif-progress {
+    margin-top: 16px;
+  }
+  .video-gif-progress-track {
+    height: 8px;
+    overflow: hidden;
+    border-radius: 4px;
+    background: #e8e8e8;
+  }
+  .video-gif-progress-fill {
+    width: 0;
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #5a9600, #7ccd00);
+    transition: width 0.15s;
+  }
+  .video-gif-progress-text {
+    margin-top: 7px;
+    color: #888;
+    font-size: 0.8rem;
+  }
+  .video-gif-result-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 220px;
+    gap: 22px;
+    align-items: center;
+  }
+  .video-gif-result-preview {
+    min-height: 220px;
+    padding: 12px;
+    border-radius: 10px;
+    background-color: #f3f3f3;
+    background-image:
+      linear-gradient(45deg, #e8e8e8 25%, transparent 25%),
+      linear-gradient(-45deg, #e8e8e8 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #e8e8e8 75%),
+      linear-gradient(-45deg, transparent 75%, #e8e8e8 75%);
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+    background-size: 16px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .video-gif-result-preview img {
+    display: block;
+    max-width: 100%;
+    max-height: 480px;
+    border-radius: 6px;
+  }
+  .video-gif-result-meta h5 {
+    margin: 0 0 10px;
+    color: #444;
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+  .video-gif-result-meta p {
+    margin: 0 0 16px;
+    color: #888;
+    font-size: 0.84rem;
+    line-height: 1.8;
+  }
+  .video-gif-download {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    color: #fff !important;
+    text-decoration: none;
+    box-sizing: border-box;
+  }
+  .video-gif-notes {
+    margin: 0;
+    padding-left: 20px;
+    color: #888;
+    font-size: 0.84rem;
+    line-height: 1.9;
+  }
+  .video-gif-notes strong {
+    color: #555;
+  }
+  @media only screen and (max-width: 760px) {
+    .video-gif-workspace,
+    .video-gif-result-layout {
+      grid-template-columns: 1fr;
+    }
+    .video-gif-result-meta {
+      text-align: center;
+    }
+    .video-gif-download {
+      width: auto;
+      min-width: 180px;
+    }
+  }
+  @media only screen and (max-width: 601px) {
+    .video-gif-container {
+      margin-top: -30px;
+    }
+    .video-gif-dropzone {
+      min-height: 180px;
+      padding: 22px 14px;
+    }
+    .video-gif-workspace {
+      gap: 16px;
+    }
+    .video-gif-settings {
+      padding: 14px;
+    }
+    .video-gif-fields {
+      grid-template-columns: 1fr;
+    }
+    .video-gif-loop {
+      grid-column: auto;
+    }
+    .video-gif-actions {
+      align-items: stretch;
+      flex-direction: column;
+    }
+    .video-gif-btn {
+      width: 100%;
+    }
+    .video-gif-file-meta {
+      flex-direction: column;
+      gap: 3px;
+    }
+  }
+</style>
+
+<main class="content">
+  <div class="container video-gif-container">
+    <div class="card">
+      <%- partial('_partial/tool-header', { toolTitle: toolTitle, toolDesc: toolDesc }) %>
+      <div class="card-content">
+        <div class="video-gif-privacy">
+          <i class="fas fa-lock"></i>
+          <span>视频仅在当前浏览器中处理，不会上传到服务器。</span>
+        </div>
+
+        <input id="videoGifFile" type="file" accept="video/*" hidden>
+        <div id="videoGifDropzone" class="video-gif-dropzone" tabindex="0" role="button" aria-label="选择视频文件">
+          <i class="fas fa-film"></i>
+          <strong>点击选择或拖入视频</strong>
+          <small>支持格式取决于浏览器，建议使用 MP4 或 WebM</small>
+        </div>
+
+        <div id="videoGifEditor" hidden>
+          <div class="video-gif-workspace">
+            <div class="video-gif-preview">
+              <div class="video-gif-video-wrap">
+                <video id="videoGifSource" controls playsinline preload="metadata"></video>
+              </div>
+              <div class="video-gif-file-meta">
+                <span id="videoGifFileName" class="video-gif-file-name"></span>
+                <span id="videoGifSourceMeta"></span>
+              </div>
+            </div>
+
+            <div class="video-gif-settings">
+              <div class="video-gif-settings-title">转换设置</div>
+              <div class="video-gif-fields">
+                <div class="video-gif-field">
+                  <label for="videoGifStart">开始时间（秒）</label>
+                  <input id="videoGifStart" type="number" min="0" step="0.1" value="0">
+                </div>
+                <div class="video-gif-field">
+                  <label for="videoGifEnd">结束时间（秒）</label>
+                  <input id="videoGifEnd" type="number" min="0" step="0.1" value="5">
+                </div>
+                <div class="video-gif-field">
+                  <label for="videoGifSize">输出最长边（px）</label>
+                  <input id="videoGifSize" type="number" min="120" max="720" step="10" value="480">
+                </div>
+                <div class="video-gif-field">
+                  <label for="videoGifFps">帧率</label>
+                  <select id="videoGifFps" class="browser-default">
+                    <option value="5">5 FPS</option>
+                    <option value="8">8 FPS</option>
+                    <option value="10" selected>10 FPS</option>
+                    <option value="12">12 FPS</option>
+                    <option value="15">15 FPS</option>
+                  </select>
+                </div>
+                <div class="video-gif-field">
+                  <label for="videoGifColor">色彩模式</label>
+                  <select id="videoGifColor" class="browser-default">
+                    <option value="dither" selected>色彩优化（推荐）</option>
+                    <option value="compact">较小体积</option>
+                  </select>
+                </div>
+                <div class="video-gif-loop">
+                  <label>
+                    <input id="videoGifLoop" type="checkbox" class="filled-in" checked>
+                    <span>循环播放</span>
+                  </label>
+                </div>
+              </div>
+
+              <div id="videoGifEstimate" class="video-gif-estimate">选择视频后显示输出信息</div>
+
+              <div class="video-gif-actions">
+                <button id="videoGifGenerate" class="video-gif-btn video-gif-btn-primary" type="button">
+                  <i class="fas fa-magic"></i>&nbsp; 生成 GIF
+                </button>
+                <button id="videoGifChange" class="video-gif-btn video-gif-btn-secondary" type="button">更换视频</button>
+                <button id="videoGifCancel" class="video-gif-btn video-gif-btn-danger" type="button" hidden>取消转换</button>
+              </div>
+
+              <div id="videoGifProgress" class="video-gif-progress" aria-live="polite" hidden>
+                <div class="video-gif-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                  <div id="videoGifProgressFill" class="video-gif-progress-fill"></div>
+                </div>
+                <div id="videoGifProgressText" class="video-gif-progress-text">准备中...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="videoGifError" class="video-gif-error" role="alert" hidden></div>
+      </div>
+    </div>
+
+    <div id="videoGifResultCard" class="card" hidden>
+      <div class="card-content">
+        <div class="video-gif-result-layout">
+          <div class="video-gif-result-preview">
+            <img id="videoGifResult" alt="生成的 GIF 预览">
+          </div>
+          <div class="video-gif-result-meta">
+            <h5>转换完成</h5>
+            <p id="videoGifResultMeta"></p>
+            <a id="videoGifDownload" class="video-gif-btn video-gif-btn-primary video-gif-download" href="#" download>
+              <i class="fas fa-download"></i> 下载 GIF
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-content">
+        <ul class="video-gif-notes">
+          <li><strong>转换范围：</strong>单次最多 180 帧，最长边不超过 720px；超出时可缩短片段或降低帧率。</li>
+          <li><strong>文件大小：</strong>GIF 通常比原视频更大，降低尺寸和帧率可明显减小体积。</li>
+          <li><strong>格式兼容：</strong>能否读取某种视频编码由当前浏览器决定，遇到失败时建议换用 MP4（H.264）。</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script>
+(function() {
+  'use strict';
+
+  var MAX_FRAMES = 180;
+  var MAX_EDGE = 720;
+  var MAX_PIXEL_FRAMES = 48000000;
+  var selectedFile = null;
+  var sourceUrl = '';
+  var resultUrl = '';
+  var isBusy = false;
+  var isCancelled = false;
+
+  function byId(id) {
+    return document.getElementById(id);
+  }
+
+  var fileInput = byId('videoGifFile');
+  var dropzone = byId('videoGifDropzone');
+  var editor = byId('videoGifEditor');
+  var video = byId('videoGifSource');
+  var startInput = byId('videoGifStart');
+  var endInput = byId('videoGifEnd');
+  var sizeInput = byId('videoGifSize');
+  var fpsInput = byId('videoGifFps');
+  var colorInput = byId('videoGifColor');
+  var loopInput = byId('videoGifLoop');
+  var estimate = byId('videoGifEstimate');
+  var generateBtn = byId('videoGifGenerate');
+  var changeBtn = byId('videoGifChange');
+  var cancelBtn = byId('videoGifCancel');
+  var errorBox = byId('videoGifError');
+  var progress = byId('videoGifProgress');
+  var progressFill = byId('videoGifProgressFill');
+  var progressText = byId('videoGifProgressText');
+  var progressTrack = progress.querySelector('[role="progressbar"]');
+  var resultCard = byId('videoGifResultCard');
+  var resultImage = byId('videoGifResult');
+  var downloadLink = byId('videoGifDownload');
+
+  function formatDuration(seconds) {
+    if (!Number.isFinite(seconds)) return '—';
+    var minutes = Math.floor(seconds / 60);
+    var rest = seconds - minutes * 60;
+    return minutes + ':' + rest.toFixed(1).padStart(4, '0');
+  }
+
+  function formatBytes(bytes) {
+    if (!Number.isFinite(bytes) || bytes < 0) return '—';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+  }
+
+  function safeFileName(name) {
+    var base = name.replace(/\.[^.]+$/, '').replace(/[^\w\u4e00-\u9fa5-]+/g, '-');
+    base = base.replace(/^-+|-+$/g, '').slice(0, 60);
+    return (base || 'video') + '.gif';
+  }
+
+  function showError(message) {
+    errorBox.textContent = message;
+    errorBox.hidden = false;
+  }
+
+  function clearError() {
+    errorBox.textContent = '';
+    errorBox.hidden = true;
+  }
+
+  function clearResult() {
+    if (resultUrl) URL.revokeObjectURL(resultUrl);
+    resultUrl = '';
+    resultImage.removeAttribute('src');
+    downloadLink.removeAttribute('href');
+    resultCard.hidden = true;
+  }
+
+  function setProgress(value, message) {
+    var percent = Math.max(0, Math.min(100, Math.round(value * 100)));
+    progress.hidden = false;
+    progressFill.style.width = percent + '%';
+    progressTrack.setAttribute('aria-valuenow', String(percent));
+    progressText.textContent = message;
+  }
+
+  function setBusy(busy) {
+    isBusy = busy;
+    startInput.disabled = busy;
+    endInput.disabled = busy;
+    sizeInput.disabled = busy;
+    fpsInput.disabled = busy;
+    colorInput.disabled = busy;
+    loopInput.disabled = busy;
+    generateBtn.disabled = busy;
+    changeBtn.disabled = busy;
+    cancelBtn.hidden = !busy;
+    cancelBtn.disabled = false;
+    generateBtn.innerHTML = busy
+      ? '<i class="fas fa-spinner fa-pulse"></i>&nbsp; 转换中'
+      : '<i class="fas fa-magic"></i>&nbsp; 生成 GIF';
+  }
+
+  function getSettings() {
+    var start = parseFloat(startInput.value);
+    var end = parseFloat(endInput.value);
+    var edge = Math.round(parseFloat(sizeInput.value));
+    var fps = Number(fpsInput.value);
+
+    if (!selectedFile || !Number.isFinite(video.duration)) throw new Error('请先选择可读取的视频文件');
+    if (!Number.isFinite(start) || !Number.isFinite(end)) throw new Error('请输入有效的开始和结束时间');
+    if (start < 0 || end > video.duration + 0.05) throw new Error('截取时间不能超出视频时长');
+    if (end - start < 0.1) throw new Error('结束时间需至少比开始时间晚 0.1 秒');
+    if (!Number.isFinite(edge) || edge < 1 || edge > MAX_EDGE) throw new Error('输出最长边需在 1 至 720px 之间');
+    if (![5, 8, 10, 12, 15].includes(fps)) throw new Error('请选择有效的输出帧率');
+
+    var scale = Math.min(1, edge / Math.max(video.videoWidth, video.videoHeight));
+    var width = Math.max(1, Math.round(video.videoWidth * scale));
+    var height = Math.max(1, Math.round(video.videoHeight * scale));
+    var frameCount = Math.max(1, Math.ceil((end - start) * fps));
+
+    if (frameCount > MAX_FRAMES) {
+      throw new Error('当前设置会生成 ' + frameCount + ' 帧，请缩短片段或降低帧率（最多 180 帧）');
+    }
+    if (width * height * frameCount > MAX_PIXEL_FRAMES) {
+      throw new Error('当前画面尺寸与帧数较大，请降低最长边、帧率或缩短片段');
+    }
+
+    return {
+      start: start,
+      end: Math.min(end, video.duration),
+      fps: fps,
+      width: width,
+      height: height,
+      frameCount: frameCount,
+      delay: Math.max(2, Math.round(100 / fps)),
+      dither: colorInput.value === 'dither',
+      loop: loopInput.checked
+    };
+  }
+
+  function updateEstimate() {
+    if (!selectedFile || !Number.isFinite(video.duration)) return;
+    try {
+      var settings = getSettings();
+      estimate.textContent = settings.width + ' × ' + settings.height + ' · ' + settings.frameCount + ' 帧 · 约 ' + formatDuration(settings.frameCount * settings.delay / 100);
+      estimate.classList.remove('is-invalid');
+    } catch (error) {
+      estimate.textContent = error.message;
+      estimate.classList.add('is-invalid');
+    }
+  }
+
+  function resetTool() {
+    if (isBusy) return;
+    video.pause();
+    video.removeAttribute('src');
+    video.load();
+    if (sourceUrl) URL.revokeObjectURL(sourceUrl);
+    sourceUrl = '';
+    selectedFile = null;
+    fileInput.value = '';
+    editor.hidden = true;
+    dropzone.hidden = false;
+    progress.hidden = true;
+    estimate.classList.remove('is-invalid');
+    estimate.textContent = '选择视频后显示输出信息';
+    clearError();
+    clearResult();
+  }
+
+  function isVideoFile(file) {
+    if (!file) return false;
+    if (file.type && file.type.indexOf('video/') === 0) return true;
+    return /\.(mp4|m4v|mov|webm|ogv|ogg|mkv|avi)$/i.test(file.name || '');
+  }
+
+  function loadFile(file) {
+    if (isBusy) return;
+    clearError();
+    clearResult();
+    if (!isVideoFile(file)) {
+      fileInput.value = '';
+      showError('请选择有效的视频文件');
+      return;
+    }
+
+    video.pause();
+    var previousUrl = sourceUrl;
+    selectedFile = file;
+    sourceUrl = URL.createObjectURL(file);
+    video.src = sourceUrl;
+    video.load();
+    if (previousUrl) URL.revokeObjectURL(previousUrl);
+    dropzone.querySelector('strong').textContent = '正在读取视频信息...';
+  }
+
+  video.addEventListener('loadedmetadata', function() {
+    if (!selectedFile) return;
+    if (!Number.isFinite(video.duration) || video.duration <= 0 || !video.videoWidth || !video.videoHeight) {
+      dropzone.querySelector('strong').textContent = '点击选择或拖入视频';
+      showError('无法读取视频时长或画面尺寸，请尝试其他格式');
+      return;
+    }
+
+    var maxSourceEdge = Math.max(video.videoWidth, video.videoHeight);
+    var maxEdge = Math.min(MAX_EDGE, maxSourceEdge);
+    sizeInput.min = String(Math.min(120, maxEdge));
+    sizeInput.max = String(maxEdge);
+    sizeInput.value = String(Math.min(480, maxEdge));
+    startInput.max = String(video.duration);
+    endInput.max = String(video.duration);
+    startInput.value = '0';
+    endInput.value = String(Math.min(5, video.duration).toFixed(2));
+    byId('videoGifFileName').textContent = selectedFile.name;
+    byId('videoGifSourceMeta').textContent = video.videoWidth + ' × ' + video.videoHeight + ' · ' + formatDuration(video.duration) + ' · ' + formatBytes(selectedFile.size);
+    dropzone.querySelector('strong').textContent = '点击选择或拖入视频';
+    dropzone.hidden = true;
+    editor.hidden = false;
+    updateEstimate();
+  });
+
+  video.addEventListener('error', function() {
+    if (!selectedFile) return;
+    dropzone.querySelector('strong').textContent = '点击选择或拖入视频';
+    showError('当前浏览器无法解码该视频，请尝试 MP4（H.264）或 WebM 格式');
+  });
+
+  function ByteWriter() {
+    this.parts = [];
+    this.buffer = new Uint8Array(65536);
+    this.offset = 0;
+  }
+
+  ByteWriter.prototype.flush = function() {
+    if (!this.offset) return;
+    this.parts.push(this.buffer.slice(0, this.offset));
+    this.buffer = new Uint8Array(65536);
+    this.offset = 0;
+  };
+
+  ByteWriter.prototype.writeByte = function(value) {
+    if (this.offset === this.buffer.length) this.flush();
+    this.buffer[this.offset++] = value & 255;
+  };
+
+  ByteWriter.prototype.writeBytes = function(values) {
+    var source = values instanceof Uint8Array ? values : Uint8Array.from(values);
+    var sourceOffset = 0;
+    while (sourceOffset < source.length) {
+      if (this.offset === this.buffer.length) this.flush();
+      var length = Math.min(source.length - sourceOffset, this.buffer.length - this.offset);
+      this.buffer.set(source.subarray(sourceOffset, sourceOffset + length), this.offset);
+      this.offset += length;
+      sourceOffset += length;
+    }
+  };
+
+  ByteWriter.prototype.writeShort = function(value) {
+    this.writeByte(value);
+    this.writeByte(value >> 8);
+  };
+
+  ByteWriter.prototype.writeString = function(value) {
+    for (var i = 0; i < value.length; i++) this.writeByte(value.charCodeAt(i));
+  };
+
+  ByteWriter.prototype.toBlob = function() {
+    this.flush();
+    return new Blob(this.parts, { type: 'image/gif' });
+  };
+
+  function writePalette(writer) {
+    var level;
+    for (var red = 0; red < 6; red++) {
+      for (var green = 0; green < 6; green++) {
+        for (var blue = 0; blue < 6; blue++) {
+          writer.writeBytes([red * 51, green * 51, blue * 51]);
+        }
+      }
+    }
+    for (var gray = 0; gray < 40; gray++) {
+      level = Math.round(gray * 255 / 39);
+      writer.writeBytes([level, level, level]);
+    }
+  }
+
+  function writeGifHeader(writer, width, height, loop) {
+    writer.writeString('GIF89a');
+    writer.writeShort(width);
+    writer.writeShort(height);
+    writer.writeBytes([0xf7, 0, 0]);
+    writePalette(writer);
+
+    if (loop) {
+      writer.writeBytes([0x21, 0xff, 0x0b]);
+      writer.writeString('NETSCAPE2.0');
+      writer.writeBytes([0x03, 0x01, 0x00, 0x00, 0x00]);
+    }
+  }
+
+  function encodeLzw(pixels) {
+    var clearCode = 256;
+    var endCode = 257;
+    var dictionary = new Map();
+    var nextCode = 258;
+    var codeSize = 9;
+    var output = [];
+    var bitBuffer = 0;
+    var bitCount = 0;
+
+    function writeCode(code) {
+      bitBuffer |= code << bitCount;
+      bitCount += codeSize;
+      while (bitCount >= 8) {
+        output.push(bitBuffer & 255);
+        bitBuffer >>>= 8;
+        bitCount -= 8;
+      }
+    }
+
+    function resetDictionary() {
+      dictionary.clear();
+      nextCode = 258;
+      codeSize = 9;
+    }
+
+    writeCode(clearCode);
+    var prefix = pixels[0];
+
+    for (var i = 1; i < pixels.length; i++) {
+      var value = pixels[i];
+      var key = prefix * 256 + value;
+      var code = dictionary.get(key);
+
+      if (code !== undefined) {
+        prefix = code;
+        continue;
+      }
+
+      writeCode(prefix);
+      if (nextCode < 4096) {
+        dictionary.set(key, nextCode++);
+        if (nextCode > (1 << codeSize) && codeSize < 12) codeSize++;
+      } else {
+        writeCode(clearCode);
+        resetDictionary();
+      }
+      prefix = value;
+    }
+
+    writeCode(prefix);
+    writeCode(endCode);
+    if (bitCount > 0) output.push(bitBuffer & 255);
+    return Uint8Array.from(output);
+  }
+
+  function writeGifFrame(writer, pixels, width, height, delay) {
+    writer.writeBytes([0x21, 0xf9, 0x04, 0x04]);
+    writer.writeShort(delay);
+    writer.writeBytes([0, 0]);
+    writer.writeByte(0x2c);
+    writer.writeShort(0);
+    writer.writeShort(0);
+    writer.writeShort(width);
+    writer.writeShort(height);
+    writer.writeByte(0);
+    writer.writeByte(8);
+
+    var compressed = encodeLzw(pixels);
+    for (var offset = 0; offset < compressed.length; offset += 255) {
+      var size = Math.min(255, compressed.length - offset);
+      writer.writeByte(size);
+      writer.writeBytes(compressed.subarray(offset, offset + size));
+    }
+    writer.writeByte(0);
+  }
+
+  function toIndexedPixels(imageData, width, height, useDither) {
+    var rgba = imageData.data;
+    var pixels = new Uint8Array(width * height);
+    var matrix = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+
+    for (var y = 0; y < height; y++) {
+      for (var x = 0; x < width; x++) {
+        var pixel = y * width + x;
+        var source = pixel * 4;
+        var red = rgba[source];
+        var green = rgba[source + 1];
+        var blue = rgba[source + 2];
+        var max = Math.max(red, green, blue);
+        var min = Math.min(red, green, blue);
+        var pattern = matrix[(y & 3) * 4 + (x & 3)] - 7.5;
+
+        if (max - min < 14) {
+          var grayOffset = useDither ? pattern * 0.45 : 0;
+          var grayLevel = Math.max(0, Math.min(39, Math.round(((red + green + blue) / 3 + grayOffset) * 39 / 255)));
+          pixels[pixel] = 216 + grayLevel;
+        } else {
+          var colorOffset = useDither ? pattern * 3.2 : 0;
+          var redLevel = Math.max(0, Math.min(5, Math.round((red + colorOffset) / 51)));
+          var greenLevel = Math.max(0, Math.min(5, Math.round((green + colorOffset) / 51)));
+          var blueLevel = Math.max(0, Math.min(5, Math.round((blue + colorOffset) / 51)));
+          pixels[pixel] = redLevel * 36 + greenLevel * 6 + blueLevel;
+        }
+      }
+    }
+    return pixels;
+  }
+
+  function CancelledError() {
+    this.name = 'CancelledError';
+    this.message = '转换已取消';
+  }
+  CancelledError.prototype = Object.create(Error.prototype);
+
+  function seekVideo(time) {
+    return new Promise(function(resolve, reject) {
+      if (isCancelled) {
+        reject(new CancelledError());
+        return;
+      }
+
+      var target = Math.max(0, Math.min(time, Math.max(0, video.duration - 0.001)));
+      if (Math.abs(video.currentTime - target) < 0.002 && video.readyState >= 2) {
+        requestAnimationFrame(resolve);
+        return;
+      }
+
+      var timer = setTimeout(function() {
+        cleanup();
+        reject(new Error('读取视频画面超时，请尝试缩短片段或更换视频格式'));
+      }, 10000);
+
+      function cleanup() {
+        clearTimeout(timer);
+        video.removeEventListener('seeked', onSeeked);
+      }
+
+      function onSeeked() {
+        cleanup();
+        requestAnimationFrame(resolve);
+      }
+
+      video.addEventListener('seeked', onSeeked);
+      try {
+        video.currentTime = target;
+      } catch (error) {
+        cleanup();
+        reject(new Error('无法定位到所选视频片段'));
+      }
+    });
+  }
+
+  async function generateGif() {
+    clearError();
+    clearResult();
+
+    var settings;
+    try {
+      settings = getSettings();
+    } catch (error) {
+      showError(error.message);
+      return;
+    }
+
+    isCancelled = false;
+    setBusy(true);
+    setProgress(0, '正在准备视频画面...');
+    video.pause();
+
+    var canvas = document.createElement('canvas');
+    canvas.width = settings.width;
+    canvas.height = settings.height;
+    var context = canvas.getContext('2d', { willReadFrequently: true });
+    if (!context) {
+      showError('当前浏览器不支持 Canvas，无法生成 GIF');
+      setBusy(false);
+      progress.hidden = true;
+      return;
+    }
+
+    var writer = new ByteWriter();
+    writeGifHeader(writer, settings.width, settings.height, settings.loop);
+
+    try {
+      for (var i = 0; i < settings.frameCount; i++) {
+        if (isCancelled) throw new CancelledError();
+        var time = Math.min(settings.start + i / settings.fps, settings.end - 0.001);
+        await seekVideo(time);
+        if (isCancelled) throw new CancelledError();
+
+        context.fillStyle = '#000';
+        context.fillRect(0, 0, settings.width, settings.height);
+        context.drawImage(video, 0, 0, settings.width, settings.height);
+        var imageData = context.getImageData(0, 0, settings.width, settings.height);
+        var pixels = toIndexedPixels(imageData, settings.width, settings.height, settings.dither);
+        writeGifFrame(writer, pixels, settings.width, settings.height, settings.delay);
+        setProgress((i + 1) / settings.frameCount, '正在处理第 ' + (i + 1) + ' / ' + settings.frameCount + ' 帧');
+      }
+
+      writer.writeByte(0x3b);
+      var blob = writer.toBlob();
+      if (isCancelled) throw new CancelledError();
+
+      resultUrl = URL.createObjectURL(blob);
+      resultImage.src = resultUrl;
+      downloadLink.href = resultUrl;
+      downloadLink.download = safeFileName(selectedFile.name);
+      byId('videoGifResultMeta').textContent = settings.width + ' × ' + settings.height + ' · ' + settings.frameCount + ' 帧 · ' + formatBytes(blob.size);
+      setProgress(1, 'GIF 已生成');
+      resultCard.hidden = false;
+      resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (error) {
+      if (error.name === 'CancelledError') {
+        setProgress(0, '转换已取消');
+      } else {
+        showError(error.message || 'GIF 生成失败，请调整设置后重试');
+      }
+    } finally {
+      setBusy(false);
+      if (isCancelled || errorBox.hidden === false) progress.hidden = true;
+    }
+  }
+
+  dropzone.addEventListener('click', function() {
+    fileInput.value = '';
+    fileInput.click();
+  });
+
+  dropzone.addEventListener('keydown', function(event) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      fileInput.value = '';
+      fileInput.click();
+    }
+  });
+
+  ['dragenter', 'dragover'].forEach(function(type) {
+    dropzone.addEventListener(type, function(event) {
+      event.preventDefault();
+      dropzone.classList.add('is-dragover');
+    });
+  });
+
+  ['dragleave', 'drop'].forEach(function(type) {
+    dropzone.addEventListener(type, function(event) {
+      event.preventDefault();
+      dropzone.classList.remove('is-dragover');
+    });
+  });
+
+  dropzone.addEventListener('drop', function(event) {
+    var files = event.dataTransfer && event.dataTransfer.files;
+    if (files && files.length) loadFile(files[0]);
+  });
+
+  fileInput.addEventListener('change', function() {
+    if (fileInput.files && fileInput.files.length) loadFile(fileInput.files[0]);
+  });
+
+  [startInput, endInput, sizeInput, fpsInput, colorInput, loopInput].forEach(function(input) {
+    input.addEventListener('input', updateEstimate);
+    input.addEventListener('change', updateEstimate);
+  });
+
+  generateBtn.addEventListener('click', generateGif);
+  changeBtn.addEventListener('click', resetTool);
+  cancelBtn.addEventListener('click', function() {
+    isCancelled = true;
+    cancelBtn.disabled = true;
+    progressText.textContent = '正在停止转换...';
+  });
+
+  window.addEventListener('beforeunload', function() {
+    if (sourceUrl) URL.revokeObjectURL(sourceUrl);
+    if (resultUrl) URL.revokeObjectURL(resultUrl);
+  });
+})();
+</script>

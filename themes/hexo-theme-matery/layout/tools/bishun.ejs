@@ -203,12 +203,8 @@
 <main class="content">
   <div class="container tool-container">
     <div class="card">
+      <%- partial('_partial/tool-header', { toolTitle: toolTitle, toolDesc: toolDesc }) %>
       <div class="card-content">
-        <span class="card-title" style="display: inline-block"><%= toolTitle %></span>
-        <% if (toolDesc) { %>
-        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
-        <% } %>
-
         <div class="input-area">
           <input type="text" id="inputText" placeholder="请输入要查询的汉字（支持多个汉字）" maxlength="20">
           <button id="queryBtn" class="btn waves-effect waves-light">查询笔顺</button>

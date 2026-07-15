@@ -219,12 +219,8 @@
 <main class="content">
   <div class="container tool-container">
     <div class="card">
+      <%- partial('_partial/tool-header', { toolTitle: toolTitle, toolDesc: toolDesc }) %>
       <div class="card-content">
-        <span class="card-title" style="display: inline-block"><%= toolTitle %></span>
-        <% if (toolDesc) { %>
-        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
-        <% } %>
-
         <div class="input-area">
           <input type="text" id="inputText" placeholder="请输入中文、英文或数字" maxlength="200">
           <button id="speakBtn" class="btn waves-effect waves-light">发 音</button>

@@ -14,7 +14,6 @@
 <style>
   .tool-container { margin-top: -50px; margin-bottom: 30px; }
   .tool-container .card { border-radius: 8px; }
-  .tool-container .card .card-content .card-title { font-size: 1.4rem; font-weight: 600; margin-bottom: 20px; }
 
   .mm-intro { font-size: 0.95rem; color: #555; line-height: 1.8; padding: 4px 0 6px; }
   .mm-points { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin: 22px 0 28px; }
@@ -122,12 +121,8 @@
 <main class="content">
   <div class="container tool-container">
     <div class="card">
+      <%- partial('_partial/tool-header', { toolTitle: toolTitle, toolDesc: toolDesc }) %>
       <div class="card-content">
-        <span class="card-title" style="display: inline-block"><%= toolTitle %></span>
-        <% if (toolDesc) { %>
-        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
-        <% } %>
-
         <div class="mm-intro">
           <p>这不是一张"AI 会不会写代码"的图，而是一张"AI 如何把开发任务从一句需求推进到可交付结果"的流程图。顺着它往下看，你也会更容易看懂普通 Agent、工作流 Agent、IDE Agent 到底差在哪。</p>
         </div>

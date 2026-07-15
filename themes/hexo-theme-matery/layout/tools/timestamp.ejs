@@ -14,7 +14,6 @@
 <style>
   .tool-container { margin-top: -50px; margin-bottom: 30px; }
   .tool-container .card { border-radius: 8px; }
-  .tool-container .card .card-content .card-title { font-size: 1.4rem; font-weight: 600; margin-bottom: 20px; }
 
   .ts-row { margin-bottom: 16px; }
   .ts-row label { display: block; font-size: 0.9rem; font-weight: 600; color: #666; margin-bottom: 6px; }
@@ -84,12 +83,8 @@
 <main class="content">
   <div class="container tool-container">
     <div class="card">
+      <%- partial('_partial/tool-header', { toolTitle: toolTitle, toolDesc: toolDesc }) %>
       <div class="card-content">
-        <span class="card-title" style="display: inline-block"><%= toolTitle %></span>
-        <% if (toolDesc) { %>
-        <span style="color: #999; font-size: 0.9rem; margin-left: 8px;"><%= toolDesc %></span>
-        <% } %>
-
         <div class="ts-tabs">
           <div class="tab active" data-tab="ts">时间戳 → 日期</div>
           <div class="tab" data-tab="dt">日期 → 时间戳</div>

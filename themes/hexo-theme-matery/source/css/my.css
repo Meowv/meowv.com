@@ -20,3 +20,40 @@
         min-height: 450px;
     }
 }
+
+/* 小工具通用标题 */
+.tool-header {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    margin-bottom: 20px;
+    padding: 24px 24px 0;
+}
+
+.tool-header .tool-title {
+    color: #333;
+    font-size: 1.4rem;
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+.tool-header .tool-desc {
+    color: #999;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.tool-header + .card-content {
+    padding-top: 0;
+}
+
+@media only screen and (max-width: 601px) {
+    .tool-header {
+        gap: 2px;
+    }
+
+    .tool-header .tool-desc {
+        flex-basis: 100%;
+    }
+}
