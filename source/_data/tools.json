@@ -1,5 +1,12 @@
 [
   {
+    "slug": "zitie",
+    "name": "字帖生成",
+    "description": "在线生成可打印的 A4 字帖，支持汉字、词语、段落、拼音、英文、数字、笔画与控笔练习，可导出 PNG、PDF 或直接打印",
+    "emoji": "✍️",
+    "url": "https://zt.meowv.com"
+  },
+  {
     "slug": "plonky",
     "name": "Plonky",
     "description": "基于物理引擎的趣味解谜闯关游戏",
@@ -205,7 +212,7 @@
     "slug": "bishun",
     "name": "汉字笔顺",
     "description": "汉字笔顺查询，支持笔顺绘制与动画演示",
-    "emoji": "✍️",
+    "emoji": "🖌️",
     "url": "/tools/bishun"
   },
   {
