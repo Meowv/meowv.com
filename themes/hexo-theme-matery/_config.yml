@@ -166,8 +166,8 @@ code:
 reward:
   enable: true
   title: ☕️搞杯咖啡喝喝吧~
-  wechat: /medias/reward/wechat.jpg
-  alipay: /medias/reward/alipay.jpg
+  wechat: /medias/reward/wechat.png
+  alipay: /medias/reward/alipay.png
 
 # Whether to activate the copyright information of the blog and author when copying the post content.
 # minCharNumber: Approve copyright information by copying at least how many characters.
