@@ -150,6 +150,7 @@
       curl: state.outputs.codes.curl,
       csharp: state.outputs.codes.csharp,
       javascript: state.outputs.codes.javascript,
+      fetch: state.outputs.codes.fetch,
       java: state.outputs.codes.java,
       preview: state.outputs.markdown
     };
@@ -163,6 +164,7 @@
     byId("adgCurlOutput").textContent = state.outputs.codes.curl;
     byId("adgCSharpOutput").textContent = state.outputs.codes.csharp;
     byId("adgJavaScriptOutput").textContent = state.outputs.codes.javascript;
+    byId("adgFetchOutput").textContent = state.outputs.codes.fetch;
     byId("adgJavaOutput").textContent = state.outputs.codes.java;
     byId("adgPreviewOutput").innerHTML = state.outputs.previewHtml;
     setValidation(state.outputs.validationErrors);
@@ -459,7 +461,7 @@
     byId("adgDraftToggle").checked = false;
     byId("adgDraftStatus").textContent = "草稿未启用";
     byId("adgMarkdownOutput").textContent = "填写左侧信息后点击“一键生成”。";
-    ["adgOpenApiOutput", "adgCurlOutput", "adgCSharpOutput", "adgJavaScriptOutput", "adgJavaOutput", "adgPreviewOutput"].forEach(function (id) {
+    ["adgOpenApiOutput", "adgCurlOutput", "adgCSharpOutput", "adgJavaScriptOutput", "adgFetchOutput", "adgJavaOutput", "adgPreviewOutput"].forEach(function (id) {
       var target = byId(id);
       if (target) target.textContent = "";
     });

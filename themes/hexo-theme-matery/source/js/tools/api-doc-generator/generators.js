@@ -528,6 +528,54 @@
     return lines.join("\n");
   }
 
+  function generateFetch(data) {
+    var headers = Core.sanitizeHeaders(data.headers || {});
+    var isMultipart = data.contentType === "multipart/form-data";
+    if (!isMultipart && !Object.keys(headers).some(function (name) { return /^content-type$/i.test(name); })) headers["Content-Type"] = data.contentType;
+    if (isMultipart) {
+      Object.keys(headers).forEach(function (name) { if (/^content-type$/i.test(name)) delete headers[name]; });
+    }
+    var queries = queryEntries(data);
+    var body = bodyEntries(data);
+    var bodyValue = requestBodyValue(data);
+    var hasBody = bodyValue !== SKIP;
+    var lines = ["async function callApi() {", "  try {", "    const url = new URL(" + jsString(data.url) + ", window.location.origin);"];
+    queries.forEach(function (entry) { lines.push("    url.searchParams.set(" + jsString(entry.name) + ", " + jsString(entry.value) + ");"); });
+    if (hasBody && data.contentType === "application/json") {
+      lines.push("", "    const requestBody = " + jsTemplate(Core.stringifyLossless(bodyValue, 2)) + ";");
+    } else if (hasBody && data.contentType === "application/x-www-form-urlencoded") {
+      lines.push("", "    const form = new URLSearchParams();");
+      body.forEach(function (entry) { lines.push("    form.append(" + jsString(entry.name) + ", " + jsString(entry.value) + ");"); });
+    } else if (hasBody && data.contentType === "multipart/form-data") {
+      lines.push("", "    const form = new FormData();", "    // 浏览器会自动生成 multipart/form-data 的 boundary。");
+      body.forEach(function (entry) { lines.push("    form.append(" + jsString(entry.name) + ", " + jsString(entry.value) + ");"); });
+    }
+    lines.push("", "    const response = await fetch(url, {", "      method: " + jsString(data.method) + ",", "      headers: {");
+    Object.keys(headers).forEach(function (name) { lines.push("        " + jsString(name) + ": " + jsString(headers[name]) + ","); });
+    lines.push("      },");
+    if (hasBody) {
+      if (data.contentType === "application/json") lines.push("      body: requestBody,");
+      else lines.push("      body: form,");
+    }
+    lines.push(
+      "    });",
+      "",
+      "    const responseText = await response.text();",
+      "    let responseData = responseText;",
+      "    try { responseData = responseText ? JSON.parse(responseText) : null; } catch (_) {}",
+      "    if (!response.ok) throw new Error(`HTTP ${response.status}: ${responseText || response.statusText}`);",
+      "",
+      "    console.log(response.status, responseData);",
+      "  } catch (error) {",
+      "    console.error(\"请求失败\", error instanceof Error ? error.message : error);",
+      "  }",
+      "}",
+      "",
+      "callApi();"
+    );
+    return lines.join("\n");
+  }
+
   function javaString(value) {
     return '"' + String(value)
       .replace(/\\/g, "\\\\")
@@ -677,6 +725,7 @@
       ["curl 示例", "bash", codes.curl],
       ["C# HttpClient 示例", "csharp", codes.csharp],
       ["JavaScript Axios 示例", "javascript", codes.javascript],
+      ["JavaScript Fetch 示例", "javascript", codes.fetch],
       ["Java HttpClient 示例", "java", codes.java]
     ].forEach(function (section) {
       lines.push("", "## " + section[0], "", "```" + section[1], section[2], "```");
@@ -729,6 +778,7 @@
       "<h2>curl 示例</h2>", codeHtml("bash", codes.curl),
       "<h2>C# HttpClient 示例</h2>", codeHtml("C#", codes.csharp),
       "<h2>JavaScript Axios 示例</h2>", codeHtml("JavaScript", codes.javascript),
+      "<h2>JavaScript Fetch 示例</h2>", codeHtml("JavaScript", codes.fetch),
       "<h2>Java HttpClient 示例</h2>", codeHtml("Java", codes.java),
       "</article>"
     ].join("");
@@ -739,6 +789,7 @@
       curl: generateCurl(data),
       csharp: generateCSharp(data),
       javascript: generateJavaScript(data),
+      fetch: generateFetch(data),
       java: generateJava(data)
     };
     var openApi = buildOpenApi(data);
@@ -764,6 +815,7 @@
     generateCurl: generateCurl,
     generateCSharp: generateCSharp,
     generateJavaScript: generateJavaScript,
+    generateFetch: generateFetch,
     generateJava: generateJava,
     generateMarkdown: generateMarkdown,
     generatePreviewHtml: generatePreviewHtml,

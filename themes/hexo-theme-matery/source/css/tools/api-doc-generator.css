@@ -521,6 +521,11 @@
 }
 
 .adg-result-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 20px;
+  line-height: 20px;
   min-width: 0;
   color: var(--adg-muted);
   font-size: 0.72rem;
@@ -533,6 +538,7 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  line-height: 20px;
   color: var(--adg-accent);
 }
 

@@ -189,6 +189,7 @@
       ["curl 示例", outputs.codes.curl],
       ["C# HttpClient 示例", outputs.codes.csharp],
       ["JavaScript Axios 示例", outputs.codes.javascript],
+      ["JavaScript Fetch 示例", outputs.codes.fetch],
       ["Java HttpClient 示例", outputs.codes.java]
     ].forEach(function (section) {
       body.push(wordParagraph(section[0], "Heading1", { keepNext: true, pageBreakBefore: true }));
@@ -257,6 +258,7 @@
       ["curl 示例", "bash", outputs.codes.curl],
       ["C# HttpClient 示例", "C#", outputs.codes.csharp],
       ["JavaScript Axios 示例", "JavaScript", outputs.codes.javascript],
+      ["JavaScript Fetch 示例", "JavaScript", outputs.codes.fetch],
       ["Java HttpClient 示例", "Java", outputs.codes.java]
     ].forEach(function (section) {
       blocks.push({ type: "pageBreak" }, { type: "heading", text: section[0] }, { type: "code", label: section[1], text: section[2] });
