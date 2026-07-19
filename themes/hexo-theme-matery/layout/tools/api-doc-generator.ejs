@@ -1,0 +1,212 @@
+<%- partial('_partial/bg-cover') %>
+
+<link rel="stylesheet" href="<%- url_for('/css/tools/api-doc-generator.css') %>">
+
+<main class="content">
+  <div class="container tool-container api-doc-generator-container">
+    <div class="card">
+      <%- partial('_partial/tool-header') %>
+      <div class="card-content">
+        <div class="adg-app" id="apiDocGeneratorApp">
+          <div class="adg-privacy-bar">
+            <span class="adg-privacy-note"><i class="fas fa-shield-alt"></i> 所有解析、生成与导出均在当前浏览器完成，不会上传接口数据。</span>
+            <div class="adg-privacy-controls">
+              <label class="adg-draft-toggle">
+                <span class="adg-switch"><input id="adgDraftToggle" type="checkbox"><i class="adg-switch-track"></i></span>
+                本地草稿
+              </label>
+            </div>
+          </div>
+
+          <div class="adg-shell">
+            <section class="adg-panel" aria-labelledby="adgInputTitle">
+              <div class="adg-panel-head">
+                <h2 class="adg-panel-title" id="adgInputTitle"><i class="fas fa-sliders-h"></i> 接口信息与示例</h2>
+                <span class="adg-status" id="adgDraftStatus">草稿未启用</span>
+              </div>
+              <div class="adg-panel-body">
+                <div class="adg-toast-inline" id="adgGlobalError" role="alert"></div>
+
+                <div class="adg-form-grid">
+                  <div class="adg-field">
+                    <label for="adgName">接口名称 <small>必填</small></label>
+                    <input id="adgName" type="text" autocomplete="off" placeholder="例如：获取用户详情">
+                  </div>
+                  <div class="adg-field">
+                    <label for="adgStatusCode">返回状态码</label>
+                    <input id="adgStatusCode" type="number" min="100" max="599" value="200">
+                  </div>
+                  <div class="adg-field adg-wide">
+                    <label for="adgDescription">接口描述</label>
+                    <textarea id="adgDescription" rows="2" placeholder="说明接口用途、调用条件或业务规则"></textarea>
+                  </div>
+                  <div class="adg-field adg-wide">
+                    <label for="adgUrl">请求地址 <small>自动识别 {path} 参数</small></label>
+                    <div class="adg-input-group">
+                      <select id="adgMethod" class="browser-default" aria-label="请求方式">
+                        <option>GET</option>
+                        <option selected>POST</option>
+                        <option>PUT</option>
+                        <option>PATCH</option>
+                        <option>DELETE</option>
+                      </select>
+                      <input id="adgUrl" type="url" spellcheck="false" autocomplete="off" placeholder="https://api.example.com/users/{id}">
+                    </div>
+                  </div>
+                  <div class="adg-field adg-wide">
+                    <label for="adgContentType">Content-Type</label>
+                    <select id="adgContentType" class="browser-default">
+                      <option>application/json</option>
+                      <option>application/x-www-form-urlencoded</option>
+                      <option>multipart/form-data</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="adg-input-section">
+                  <div class="adg-editor-head">
+                    <span class="adg-section-label">请求头 JSON <small>可选，敏感值会自动脱敏</small></span>
+                    <div class="adg-editor-actions">
+                      <button class="adg-mini-btn" type="button" data-json-action="format" data-target="adgHeadersJson">格式化</button>
+                      <button class="adg-mini-btn" type="button" data-json-action="minify" data-target="adgHeadersJson">压缩</button>
+                    </div>
+                  </div>
+                  <div class="adg-json-editor adg-small" data-editor-for="adgHeadersJson">
+                    <textarea id="adgHeadersJson" spellcheck="false" placeholder='{"Authorization":"Bearer YOUR_TOKEN"}'></textarea>
+                  </div>
+                  <div class="adg-error-text" id="adgHeadersError" aria-live="polite"></div>
+                </div>
+
+                <div class="adg-input-section">
+                  <div class="adg-editor-head">
+                    <span class="adg-section-label">请求参数 JSON <small>空内容按 {} 处理</small></span>
+                    <div class="adg-editor-actions">
+                      <button class="adg-mini-btn" type="button" data-json-action="format" data-target="adgRequestJson">格式化</button>
+                      <button class="adg-mini-btn" type="button" data-json-action="minify" data-target="adgRequestJson">压缩</button>
+                    </div>
+                  </div>
+                  <div class="adg-json-editor" data-editor-for="adgRequestJson">
+                    <textarea id="adgRequestJson" spellcheck="false" placeholder='{"user":{"id":1},"items":[{"status":1}]}'></textarea>
+                  </div>
+                  <div class="adg-error-text" id="adgRequestError" aria-live="polite"></div>
+                </div>
+
+                <div class="adg-input-section">
+                  <div class="adg-editor-head">
+                    <span class="adg-section-label">返回结果 JSON <small>可选，留空代表无响应体</small></span>
+                    <div class="adg-editor-actions">
+                      <button class="adg-mini-btn" type="button" data-json-action="format" data-target="adgResponseJson">格式化</button>
+                      <button class="adg-mini-btn" type="button" data-json-action="minify" data-target="adgResponseJson">压缩</button>
+                    </div>
+                  </div>
+                  <div class="adg-json-editor" data-editor-for="adgResponseJson">
+                    <textarea id="adgResponseJson" spellcheck="false" placeholder='{"code":0,"message":"success","data":{}}'></textarea>
+                  </div>
+                  <div class="adg-error-text" id="adgResponseError" aria-live="polite"></div>
+                </div>
+
+                <div class="adg-input-section">
+                  <div class="adg-field">
+                    <label for="adgFieldNotes">字段说明 <small>字段路径：说明，枚举值：0=禁用，1=启用</small></label>
+                    <textarea id="adgFieldNotes" rows="4" placeholder="user.id：用户 ID&#10;user.name：用户名称&#10;items[].status：状态，枚举值：0=禁用，1=启用"></textarea>
+                    <div class="adg-notes-actions">
+                      <button class="adg-mini-btn" id="adgApplyNotes" type="button"><i class="fas fa-magic"></i> 应用到参数表</button>
+                    </div>
+                  </div>
+                  <div class="adg-field" style="margin-top: 12px;">
+                    <label for="adgErrorCodes">错误码说明 <small>每行“状态码：说明”</small></label>
+                    <textarea id="adgErrorCodes" rows="3">400：请求参数错误
+401：身份认证失败
+500：服务器内部错误</textarea>
+                  </div>
+                </div>
+
+                <div class="adg-field-config" id="adgFieldConfig">
+                  <div class="adg-field-head" id="adgFieldConfigToggle" role="button" tabindex="0" aria-expanded="false">
+                    <div><strong>参数表设置</strong> <span id="adgFieldCount">生成后可编辑字段说明、必填、示例、枚举、默认值和位置</span></div>
+                    <i class="fas fa-chevron-down" aria-hidden="true"></i>
+                  </div>
+                  <div class="adg-field-body">
+                    <div class="adg-field-tabs" role="tablist">
+                      <button class="adg-field-tab adg-active" type="button" data-field-tab="request">请求参数</button>
+                      <button class="adg-field-tab" type="button" data-field-tab="response">返回参数</button>
+                    </div>
+                    <div class="adg-field-table-wrap" data-field-pane="request">
+                      <table class="adg-field-table">
+                        <thead><tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th><th>示例</th><th>枚举值</th><th>默认值</th><th>位置</th></tr></thead>
+                        <tbody id="adgRequestFields"><tr><td class="adg-empty-row" colspan="8">生成后显示请求字段</td></tr></tbody>
+                      </table>
+                    </div>
+                    <div class="adg-field-table-wrap" data-field-pane="response" hidden>
+                      <table class="adg-field-table">
+                        <thead><tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th><th>示例</th><th>枚举值</th><th>默认值</th><th>位置</th></tr></thead>
+                        <tbody id="adgResponseFields"><tr><td class="adg-empty-row" colspan="8">生成后显示返回字段</td></tr></tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="adg-toolbar">
+                  <div class="adg-toolbar-group">
+                    <button class="adg-btn adg-outline" id="adgLoadExample" type="button"><i class="fas fa-flask"></i> 示例</button>
+                    <button class="adg-btn adg-outline adg-danger" id="adgClear" type="button"><i class="fas fa-trash-alt"></i> 清空</button>
+                  </div>
+                  <div class="adg-toolbar-group">
+                    <span class="adg-status" id="adgGenerateStatus">等待生成</span>
+                    <button class="adg-btn adg-primary" id="adgGenerate" type="button"><i class="fas fa-magic"></i> 一键生成</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="adg-panel adg-result-panel" aria-labelledby="adgResultTitle">
+              <div class="adg-result-head">
+                <div class="adg-result-summary">
+                  <strong id="adgResultTitle">生成结果</strong>
+                  <span class="adg-validation" id="adgValidation"><i class="fas fa-circle-info"></i> 尚未生成</span>
+                </div>
+                <button class="adg-icon-btn" id="adgCopyActive" type="button" title="复制当前结果" aria-label="复制当前结果"><i class="fas fa-copy"></i></button>
+              </div>
+              <div class="adg-tab-list" role="tablist" aria-label="生成结果">
+                <button class="adg-tab adg-active" type="button" data-output-tab="markdown">Markdown</button>
+                <button class="adg-tab" type="button" data-output-tab="openapi">OpenAPI JSON</button>
+                <button class="adg-tab" type="button" data-output-tab="curl">curl</button>
+                <button class="adg-tab" type="button" data-output-tab="csharp">C#</button>
+                <button class="adg-tab" type="button" data-output-tab="javascript">JavaScript</button>
+                <button class="adg-tab" type="button" data-output-tab="java">Java</button>
+                <button class="adg-tab" type="button" data-output-tab="preview">文档预览</button>
+              </div>
+              <div class="adg-result-body">
+                <div class="adg-output-pane adg-active" data-output-pane="markdown"><pre id="adgMarkdownOutput">填写左侧信息后点击“一键生成”。</pre></div>
+                <div class="adg-output-pane" data-output-pane="openapi"><pre id="adgOpenApiOutput"></pre></div>
+                <div class="adg-output-pane" data-output-pane="curl"><pre id="adgCurlOutput"></pre></div>
+                <div class="adg-output-pane" data-output-pane="csharp"><pre id="adgCSharpOutput"></pre></div>
+                <div class="adg-output-pane" data-output-pane="javascript"><pre id="adgJavaScriptOutput"></pre></div>
+                <div class="adg-output-pane" data-output-pane="java"><pre id="adgJavaOutput"></pre></div>
+                <div class="adg-output-pane adg-preview-pane" data-output-pane="preview" id="adgPreviewOutput"></div>
+              </div>
+              <div class="adg-export-list">
+                <span class="adg-export-progress" id="adgExportStatus">支持本地导出 Markdown、OpenAPI、Word 和 PDF</span>
+                <button class="adg-btn adg-outline" type="button" data-export="md"><i class="fab fa-markdown"></i> .md</button>
+                <button class="adg-btn adg-outline" type="button" data-export="json"><i class="fas fa-code"></i> .json</button>
+                <button class="adg-btn adg-outline" type="button" data-export="docx"><i class="fas fa-file-word"></i> .docx</button>
+                <button class="adg-btn adg-outline" type="button" data-export="pdf"><i class="fas fa-file-pdf"></i> .pdf</button>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script src="<%- url_for('/js/tools/api-doc-generator/core.js') %>"></script>
+<script src="<%- url_for('/js/tools/api-doc-generator/generators.js') %>"></script>
+<script src="<%- url_for('/js/tools/api-doc-generator/exporters.js') %>"></script>
+<script src="<%- url_for('/js/tools/api-doc-generator/app.js') %>"></script>

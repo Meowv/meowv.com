@@ -1,59 +1,71 @@
 /* Game section responsive styles */
 @media only screen and (max-width: 601px) {
-    .game-card {
-        min-height: 110px;
-        padding: 12px 15px;
-    }
-    .game-card .game-emoji {
-        font-size: 2rem;
-    }
-    .game-card .game-name {
-        font-size: 1rem;
-    }
-    .game-card .game-desc {
-        font-size: 0.8rem;
-    }
-    .game-iframe-wrapper {
-        min-height: 400px;
-    }
-    .game-iframe-wrapper iframe {
-        min-height: 450px;
-    }
+  .game-card {
+    min-height: 110px;
+    padding: 12px 15px;
+  }
+  .game-card .game-emoji {
+    font-size: 2rem;
+  }
+  .game-card .game-name {
+    font-size: 1rem;
+  }
+  .game-card .game-desc {
+    font-size: 0.8rem;
+  }
+  .game-iframe-wrapper {
+    min-height: 400px;
+  }
+  .game-iframe-wrapper iframe {
+    min-height: 450px;
+  }
 }
 
 /* 小工具通用标题 */
 .tool-header {
-    display: flex;
-    align-items: baseline;
-    flex-wrap: wrap;
-    gap: 4px 10px;
-    margin-bottom: 20px;
-    padding: 24px 24px 0;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-bottom: 20px;
+  padding: 24px 24px 0;
 }
 
 .tool-header .tool-title {
-    color: #333;
-    font-size: 1.4rem;
-    font-weight: 600;
-    line-height: 1.5;
+  color: #333;
+  font-size: 1.4rem;
+  font-weight: 600;
+  line-height: 1.5;
 }
 
 .tool-header .tool-desc {
-    color: #999;
-    font-size: 0.9rem;
-    line-height: 1.5;
+  color: #999;
+  font-size: 0.9rem;
+  line-height: 1.5;
 }
 
 .tool-header + .card-content {
-    padding-top: 0;
+  padding-top: 0;
+}
+
+/* 全局按钮焦点：统一博客主题色，并确保焦点文字保持清晰。 */
+button:focus,
+.btn:focus,
+.btn-large:focus,
+.btn-small:focus,
+.btn-floating:focus {
+  outline: 2px solid #5a9600;
+  outline-offset: 2px;
+  background-color: #5a9600 !important;
+  color: #fff !important;
 }
 
 @media only screen and (max-width: 601px) {
-    .tool-header {
-        gap: 2px;
-    }
+  .tool-header {
+    gap: 2px;
+  }
 
-    .tool-header .tool-desc {
-        flex-basis: 100%;
-    }
+  .tool-header .tool-desc {
+    flex-basis: 100%;
+  }
 }

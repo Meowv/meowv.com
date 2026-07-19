@@ -19,9 +19,9 @@ menu:
   留言板:
     url: /contact
     icon: fas fa-comments
-  友情链接:
-    url: /friends
-    icon: fas fa-address-book
+  # 友情链接:
+  #   url: /friends
+  #   icon: fas fa-address-book
   Labs:
     url: /labs
     icon: fas fa-flask

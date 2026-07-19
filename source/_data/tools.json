@@ -30,6 +30,13 @@
     "url": "/tools/api-explorer"
   },
   {
+    "slug": "api-doc-generator",
+    "name": "接口文档生成",
+    "description": "根据请求与返回示例生成 Markdown、OpenAPI 和多语言调用代码",
+    "emoji": "📚",
+    "url": "/tools/api-doc-generator"
+  },
+  {
     "slug": "regex-tester",
     "name": "正则表达式测试",
     "description": "正则实时匹配、捕获分组与替换预览",

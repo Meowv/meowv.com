@@ -4284,7 +4284,10 @@ small {
 .btn-large:focus,
 .btn-small:focus,
 .btn-floating:focus {
-  background-color: #1d7d74;
+  outline: 2px solid #5a9600;
+  outline-offset: 2px;
+  background-color: #5a9600;
+  color: #fff;
 }
 .btn,
 .btn-large,
@@ -5038,8 +5041,10 @@ select:focus {
   outline: 1px solid #c9f3ef;
 }
 button:focus {
-  outline: none;
-  background-color: #2ab7a9;
+  outline: 2px solid #5a9600;
+  outline-offset: 2px;
+  background-color: #5a9600;
+  color: #fff;
 }
 label {
   font-size: 0.8rem;
