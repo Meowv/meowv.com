@@ -1,0 +1,196 @@
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .answer-book-container { max-width: 1180px; margin-top: -50px; margin-bottom: 30px; }
+  .answer-book-container .card { border-radius: 8px; }
+  .answer-book-shell { max-width: 1080px; margin: 0 auto; --ab-ink: #38412e; --ab-muted: #77806d; --ab-green: #5a9600; --ab-paper: #fffdf7; --ab-line: #e5e9df; --ab-gold: #e5c46b; color: var(--ab-ink); }
+  .answer-book-app { max-width: 1080px; margin: 0 auto; }
+  .answer-book-panel-head, .answer-book-toolbar, .answer-book-result-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .answer-book-panel-title i, .answer-book-result-title i { color: var(--ab-green); }
+  .answer-book-shell-grid { display: grid; grid-template-columns: minmax(300px, .82fr) minmax(0, 1.48fr); gap: 16px; }
+  .answer-book-comments { max-width: 1080px; margin: 20px auto 0; }
+  .answer-book-panel { overflow: hidden; border: 1px solid var(--ab-line); border-radius: 8px; background: #fff; box-shadow: 0 2px 8px rgba(49, 69, 39, .04); }
+  .answer-book-panel-head { min-height: 54px; padding: 0 16px; border-bottom: 1px solid var(--ab-line); background: #fbfdf9; }
+  .answer-book-panel-title { margin: 0; color: #45513d; font-size: .97rem; font-weight: 600; }
+  .answer-book-panel-title i { margin-right: 7px; }
+  .answer-book-status { display: inline-flex; align-items: center; min-height: 25px; padding: 0 8px; border: 1px solid #dce8d3; border-radius: 13px; color: #668e2d; background: #f4faef; font-size: .72rem; white-space: nowrap; }
+  .answer-book-panel-body { padding: 16px; }
+  .answer-book-setting-label { display: block; margin-bottom: 8px; color: #53604d; font-size: .8rem; font-weight: 600; }
+  .answer-book-mode { display: flex; width: 100%; margin: 0 0 18px; padding: 4px; border: 1px solid var(--ab-line); border-radius: 7px; background: #f5f7f2; }
+  .answer-book-mode button, .answer-book-theme, .answer-book-icon-button, .answer-book-action { border: 0; font: inherit; cursor: pointer; }
+  .answer-book-mode button { flex: 1; min-height: 38px; padding: 0 12px; border-radius: 5px; color: #70776b; background: transparent; font-size: .84rem; }
+  .answer-book-mode button.is-active { color: #fff; background: var(--ab-green); box-shadow: 0 2px 5px rgba(55, 89, 42, .2); }
+  .answer-book-theme-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; }
+  .answer-book-theme { flex: 1 0 calc(33.333% - 6px); min-height: 34px; padding: 0 8px; border: 1px solid var(--ab-line); border-radius: 5px; color: #697264; background: #fff; font-size: .78rem; }
+  .answer-book-theme.is-active { border-color: var(--ab-green); color: #fff; background: var(--ab-green); }
+  .answer-book-question { width: 100% !important; min-height: 76px; margin: 0 0 18px !important; padding: 11px 13px !important; border: 2px solid #e5e9df !important; border-radius: 7px !important; outline: none; color: var(--ab-ink); background: #fbfdf9 !important; box-sizing: border-box !important; font: inherit; font-size: .88rem; line-height: 1.55; resize: vertical; }
+  .answer-book-question:focus { border-color: var(--ab-green) !important; background: #fff !important; box-shadow: 0 0 0 3px rgba(90, 150, 0, .1) !important; }
+  .answer-book-toolbar { margin-top: 16px; padding-top: 15px; border-top: 1px solid var(--ab-line); }
+  .answer-book-toolbar .answer-book-primary { min-width: 0; flex: 1; }
+  .answer-book-tools { display: flex; align-items: center; gap: 10px; }
+  .answer-book-icon-button { min-height: 36px; padding: 0 4px; color: #697264; background: transparent; font-size: .78rem; }
+  .answer-book-icon-button i { margin-right: 5px; color: var(--ab-green); }
+  .answer-book-result-head { min-height: 54px; padding: 0 16px; border-bottom: 1px solid var(--ab-line); background: #fbfdf9; }
+  .answer-book-result-title { color: #45513d; font-size: .97rem; font-weight: 600; }
+  .answer-book-result-title i { margin-right: 7px; }
+  .answer-book-stage { position: relative; display: grid; place-items: center; min-height: 360px; margin: 0; padding: 26px 20px 22px; overflow: hidden; border-bottom: 1px solid var(--ab-line); background: radial-gradient(circle at 50% 26%, #fffefb, #f3f6ed 76%); }
+  .answer-book-stage::before { content: ''; position: absolute; inset: 0; opacity: .22; pointer-events: none; background-image: repeating-linear-gradient(0deg, transparent 0, transparent 3px, rgba(102, 88, 58, .08) 4px); }
+  .answer-book { position: relative; z-index: 1; width: min(70vw, 395px); height: 240px; perspective: 1200px; cursor: pointer; outline: none; }
+  .answer-book-cover, .answer-book-pages { position: absolute; inset: 0; border-radius: 5px 12px 12px 5px; transform-origin: left center; }
+  .answer-book-pages { overflow: hidden; border: 1px solid #e6dece; background: linear-gradient(90deg, #ece5d7, #fffdf6 8%, #fffef9 93%, #ebe4d6); box-shadow: 14px 13px 21px rgba(62, 57, 40, .18); transform: rotateY(-8deg); }
+  .answer-book-pages::after { content: ''; position: absolute; inset: 8px; border: 1px solid rgba(150, 128, 74, .16); pointer-events: none; }
+  .answer-book-cover { z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid #29412b; color: var(--ab-gold); background: linear-gradient(115deg, #2c4c30, #4d7345 55%, #385a38); box-shadow: 7px 13px 20px rgba(43, 59, 40, .3), inset 4px 0 rgba(255,255,255,.1), inset -6px 0 rgba(0,0,0,.12); transition: transform 1.35s cubic-bezier(.2,.72,.21,1), box-shadow 1.35s ease; }
+  .answer-book-cover::before { content: ''; position: absolute; inset: 13px; border: 1px solid rgba(229,196,107,.66); border-radius: 2px 8px 8px 2px; }
+  .answer-book-cover::after { content: ''; position: absolute; top: 0; bottom: 0; left: 12px; width: 7px; background: linear-gradient(90deg, rgba(0,0,0,.34), transparent); }
+  .answer-book-cover small { z-index: 1; margin-bottom: 13px; font-size: .73rem; letter-spacing: 3px; }
+  .answer-book-cover strong { z-index: 1; font-family: Georgia, 'Songti SC', serif; font-size: 2.15rem; font-weight: 500; letter-spacing: 8px; text-indent: 8px; }
+  .answer-book-cover span { z-index: 1; margin-top: 13px; color: rgba(247, 229, 174, .82); font-size: .75rem; letter-spacing: 2px; }
+  .answer-book-answer { position: absolute; inset: 30px 38px; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; color: #48533e; text-align: center; transform: translateY(8px); transition: opacity .45s ease, transform .45s ease; }
+  .answer-book-answer p { max-width: 290px; margin: 0; font-family: Georgia, 'Songti SC', serif; font-size: clamp(1.45rem, 3vw, 1.8rem); line-height: 1.65; }
+  .answer-book-answer small { margin-top: 22px; color: #8a8f7b; font-size: .75rem; letter-spacing: 1px; }
+  .answer-book.is-opening .answer-book-cover, .answer-book.is-open .answer-book-cover { transform: rotateY(-166deg); box-shadow: 1px 13px 17px rgba(43, 59, 40, .18); }
+  .answer-book.is-open .answer-book-answer { opacity: 1; transform: translateY(0); }
+  .answer-book-hint { position: relative; z-index: 1; margin: 14px 0 0; color: var(--ab-muted); font-size: .78rem; text-align: center; }
+  .answer-book-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 210px; min-height: 46px; padding: 0 22px; border: 0; border-radius: 6px; color: #fff; background: linear-gradient(135deg, #5a9600, #76ad2d); box-shadow: 0 4px 10px rgba(72, 109, 29, .23); font: inherit; font-size: .9rem; cursor: pointer; }
+  .answer-book-primary:disabled { opacity: .65; cursor: wait; box-shadow: none; }
+  .answer-book-primary-row { display: none; }
+  .answer-book-actions { display: none; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 0; padding: 14px 16px 8px; }
+  .answer-book-actions.is-visible { display: flex; }
+  .answer-book-action { min-height: 38px; padding: 0 13px; border: 1px solid var(--ab-line); border-radius: 5px; color: #5e6758; background: #fff; font-size: .8rem; }
+  .answer-book-action i { margin-right: 5px; }
+  .answer-book-action:hover { border-color: #9ab77a; color: var(--ab-green); }
+  .answer-book-notice { min-height: 20px; margin: 8px 16px 12px; color: #668e2d; font-size: .78rem; text-align: center; }
+  .answer-book-drawer { position: fixed; z-index: 9999; inset: 0; display: none; align-items: flex-end; justify-content: center; padding: 18px; background: rgba(28, 35, 24, .48); }
+  .answer-book-drawer.is-visible { display: flex; }
+  .answer-book-drawer-panel { width: min(100%, 680px); max-height: min(78vh, 720px); overflow: auto; padding: 20px; border-radius: 8px; color: var(--ab-ink); background: #fffdf9; box-shadow: 0 16px 50px rgba(0,0,0,.28); }
+  .answer-book-dialog-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 15px; }
+  .answer-book-dialog-title h4 { margin: 0; font-size: 1.1rem; }
+  .answer-book-close { border: 0; color: #798175; background: transparent; font-size: 1.25rem; cursor: pointer; }
+  .answer-book-history-item { position: relative; padding: 12px 34px 12px 0; border-bottom: 1px solid #eee8dd; }
+  .answer-book-history-item:last-child { border-bottom: 0; }
+  .answer-book-history-item p { margin: 0 0 6px; color: #45513d; line-height: 1.6; }
+  .answer-book-history-item small { color: #8b9185; font-size: .74rem; }
+  .answer-book-delete { position: absolute; top: 11px; right: 0; border: 0; color: #ad7771; background: transparent; cursor: pointer; }
+  .answer-book-empty { padding: 28px 0; color: #8b9185; text-align: center; }
+  .answer-book-danger { min-height: 34px; border: 0; border-radius: 5px; color: #a75750; background: #fff0ee; font: inherit; font-size: .77rem; cursor: pointer; }
+  @media (prefers-reduced-motion: reduce) { .answer-book-cover, .answer-book-answer { transition-duration: .01ms !important; } }
+  @media only screen and (max-width: 800px) { .answer-book-shell-grid { grid-template-columns: 1fr; } .answer-book-stage { min-height: 340px; } }
+  @media only screen and (max-width: 601px) { .answer-book-container { margin-top: -30px; } .answer-book-panel-head, .answer-book-result-head { padding: 0 12px; } .answer-book-panel-body { padding: 12px; } .answer-book-toolbar { align-items: flex-start; flex-direction: column; } .answer-book-toolbar .answer-book-primary { width: 100%; min-height: 45px; } .answer-book-stage { min-height: 306px; padding: 22px 14px 18px; } .answer-book { height: 195px; } .answer-book-cover strong { font-size: 1.7rem; } .answer-book-answer { inset: 18px 24px; } .answer-book-actions.is-visible { display: grid; grid-template-columns: 1fr 1fr; width: 100%; } .answer-book-action { width: 100%; padding: 0 8px; } .answer-book-drawer { padding: 10px; } .answer-book-drawer-panel { padding: 16px; } }
+  body.dark .answer-book-shell, .dark .answer-book-shell { --ab-ink: #e8eadf; --ab-muted: #afb5a7; --ab-paper: #343a31; --ab-line: #51594d; }
+  body.dark .answer-book-stage, .dark .answer-book-stage { background: radial-gradient(circle at 50% 30%, #4a5044, #30362e 73%); border-color: #50594c; }
+  body.dark .answer-book-question, .dark .answer-book-question, body.dark .answer-book-theme, .dark .answer-book-theme, body.dark .answer-book-action, .dark .answer-book-action { color: #e8eadf; background: #3b4138 !important; border-color: #586052 !important; }
+  body.dark .answer-book-mode, .dark .answer-book-mode { background: #343a31; border-color: #586052; }
+  body.dark .answer-book-drawer-panel, .dark .answer-book-drawer-panel { color: #e8eadf; background: #343a31; }
+  body.dark .answer-book-panel, .dark .answer-book-panel, body.dark .answer-book-panel-head, .dark .answer-book-panel-head, body.dark .answer-book-result-head, .dark .answer-book-result-head { background: #343a31; border-color: #51594d; }
+  body.dark .answer-book-panel-title, .dark .answer-book-panel-title, body.dark .answer-book-result-title, .dark .answer-book-result-title { color: #e8eadf; }
+</style>
+
+<main class="content">
+  <div class="container answer-book-container">
+    <div class="card answer-book-shell">
+      <%- partial('_partial/tool-header') %>
+      <div class="card-content">
+        <div class="answer-book-app">
+          <div class="answer-book-shell-grid">
+            <section class="answer-book-panel" aria-labelledby="answerBookSettingsTitle">
+              <div class="answer-book-panel-head">
+                <h2 class="answer-book-panel-title" id="answerBookSettingsTitle"><i class="fas fa-sliders-h"></i>提问设置</h2>
+                <span class="answer-book-status">选择后即可翻阅</span>
+              </div>
+              <div class="answer-book-panel-body">
+                <label class="answer-book-setting-label">回答方式</label>
+                <div class="answer-book-mode" role="tablist" aria-label="回答模式">
+                  <button type="button" class="is-active" data-mode="random" role="tab" aria-selected="true">随心一问</button>
+                  <button type="button" data-mode="daily" role="tab" aria-selected="false">今日答案</button>
+                </div>
+                <label class="answer-book-setting-label" for="answerBookQuestion">想问的问题 <small>可选</small></label>
+                <textarea id="answerBookQuestion" class="answer-book-question" maxlength="200" placeholder="写下你的问题，也可以只放在心里"></textarea>
+                <label class="answer-book-setting-label">答案主题</label>
+                <div class="answer-book-theme-row" id="answerBookThemes" aria-label="答案主题"></div>
+                <div class="answer-book-toolbar">
+                  <button type="button" class="answer-book-primary" id="answerBookOpen"><i class="fas fa-book-open"></i>翻开答案之书</button>
+                  <div class="answer-book-tools">
+                    <button type="button" class="answer-book-icon-button" id="answerBookHistory"><i class="fas fa-history"></i>历史</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+            <section class="answer-book-panel answer-book-result-panel" aria-labelledby="answerBookResultTitle">
+              <div class="answer-book-result-head">
+                <span class="answer-book-result-title" id="answerBookResultTitle"><i class="fas fa-book-reader"></i>翻阅结果</span>
+                <span class="answer-book-status" id="answerBookResultStatus">等待翻阅</span>
+              </div>
+              <div class="answer-book-stage">
+                <div id="answerBook" class="answer-book" role="button" tabindex="0" aria-label="翻开答案之书">
+                  <div class="answer-book-pages"><div class="answer-book-answer"><p id="answerBookAnswer"></p><small id="answerBookSource">—— 人生答案之书</small></div></div>
+                  <div class="answer-book-cover"><small id="answerBookCoverSub">给愿意慢慢生活的人</small><strong>答案之书</strong><span id="answerBookCoverTheme">人生</span></div>
+                </div>
+                <p class="answer-book-hint" id="answerBookHint">请在心中默念一个问题</p>
+              </div>
+              <div class="answer-book-actions" id="answerBookActions">
+                <button type="button" class="answer-book-action" id="answerBookAgain"><i class="fas fa-redo"></i>再问一次</button>
+                <button type="button" class="answer-book-action" id="answerBookCopy"><i class="far fa-copy"></i>复制答案</button>
+                <button type="button" class="answer-book-action" id="answerBookClose"><i class="fas fa-book"></i>合上书</button>
+              </div>
+              <p id="answerBookNotice" class="answer-book-notice" aria-live="polite"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card answer-book-comments"><% if (theme.valine && theme.valine.enable) { %><%- partial('_partial/valine') %><% } %></div>
+  </div>
+</main>
+
+<div class="answer-book-drawer" id="answerBookHistoryDrawer" aria-hidden="true"><div class="answer-book-drawer-panel" role="dialog" aria-modal="true" aria-label="本地历史记录"><div class="answer-book-dialog-title"><h4>本地历史</h4><button type="button" class="answer-book-close" data-close="answerBookHistoryDrawer" aria-label="关闭">×</button></div><div id="answerBookHistoryList"></div><button type="button" class="answer-book-danger" id="answerBookClearHistory">清空全部记录</button></div></div>
+<script>
+  (function() {
+    var rawAnswers = <%- JSON.stringify(site.data['answer-book'] || {}) %>;
+    var themes = [
+      { id: 'life', name: '人生', subtitle: '给愿意慢慢生活的人' }, { id: 'love', name: '爱情', subtitle: '给认真感受的人' },
+      { id: 'career', name: '职场', subtitle: '给正在前进的人' }, { id: 'developer', name: '程序员', subtitle: '给解决问题的人' },
+      { id: 'today', name: '今日指引', subtitle: '给今天的你' }, { id: 'midnight', name: '深夜时刻', subtitle: '给还没入睡的人' }
+    ];
+    var answers = {};
+    themes.forEach(function(theme) { answers[theme.id] = (rawAnswers[theme.id] || []).map(function(item, index) { return typeof item === 'string' ? { id: theme.id + '-' + (index + 1), theme: theme.id, text: item, tone: ['gentle', 'positive', 'action', 'caution', 'humor'][index % 5] } : item; }); });
+    var keys = { user: 'meowv:answer-book:user', history: 'meowv:answer-book:history', recent: 'meowv:answer-book:recent', daily: 'meowv:answer-book:daily' };
+    var state = { theme: 'life', mode: 'random', answer: null, opening: false, storage: true, history: [], recent: [] };
+    var $book = $('#answerBook'), $answer = $('#answerBookAnswer'), $notice = $('#answerBookNotice'), $resultStatus = $('#answerBookResultStatus');
+    function read(key, fallback) { try { var value = localStorage.getItem(key); return value ? JSON.parse(value) : fallback; } catch (error) { state.storage = false; return fallback; } }
+    function write(key, value) { if (!state.storage) return; try { localStorage.setItem(key, JSON.stringify(value)); } catch (error) { state.storage = false; showNotice('本地记录暂时不可用，答案仍可正常翻阅。'); } }
+    function showNotice(text) { $notice.text(text); clearTimeout(showNotice.timer); showNotice.timer = setTimeout(function() { $notice.text(''); }, 2600); }
+    function setResultStatus(text) { $resultStatus.text(text); }
+    function randomId() { return String(Date.now()) + '-' + Math.random().toString(36).slice(2, 8); }
+    function getUserId() { var id = read(keys.user, ''); if (!id) { id = randomId(); write(keys.user, id); } return id; }
+    function hash(text) { var value = 2166136261; for (var i = 0; i < text.length; i++) { value ^= text.charCodeAt(i); value += (value << 1) + (value << 4) + (value << 7) + (value << 8) + (value << 24); } return value >>> 0; }
+    function todayKey() { var date = new Date(); return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0'); }
+    function getAnswer() {
+      var list = answers[state.theme] || [];
+      if (!list.length) { showNotice('答案之书暂时没有可翻阅的内容。'); return null; }
+      if (state.mode === 'daily') { return list[hash(todayKey() + ':' + getUserId() + ':' + state.theme) % list.length]; }
+      var recent = state.recent.filter(function(item) { return item.theme === state.theme; }).slice(0, 5).map(function(item) { return item.answerId; });
+      var candidates = list.filter(function(item) { return recent.indexOf(item.id) === -1; });
+      return (candidates.length ? candidates : list)[Math.floor(Math.random() * (candidates.length ? candidates.length : list.length))];
+    }
+    function renderThemes() { $('#answerBookThemes').html(themes.map(function(theme) { return '<button type="button" class="answer-book-theme' + (theme.id === state.theme ? ' is-active' : '') + '" data-theme="' + theme.id + '">' + theme.name + '</button>'; }).join('')); }
+    function setTheme(id) { if (state.opening || !answers[id]) return; state.theme = id; var theme = themes.filter(function(item) { return item.id === id; })[0]; $('#answerBookCoverTheme').text(theme.name); $('#answerBookCoverSub').text(theme.subtitle); $('#answerBookSource').text('—— ' + theme.name + '答案之书'); renderThemes(); closeBook(); }
+    function saveHistory(answer) { var record = { id: randomId(), question: $('#answerBookQuestion').val().trim(), answerId: answer.id, answerText: answer.text, theme: answer.theme, mode: state.mode, createdAt: new Date().toISOString() }; state.history.unshift(record); state.history = state.history.slice(0, 50); write(keys.history, state.history); state.recent.unshift({ theme: answer.theme, answerId: answer.id }); state.recent = state.recent.slice(0, 15); write(keys.recent, state.recent); }
+    function resetBookVisual() { $book.removeClass('is-opening is-open'); $answer.empty(); if ($book[0]) void $book[0].offsetWidth; }
+    function openBook() { if (state.opening) return; var answer = getAnswer(); if (!answer) return; state.opening = true; state.answer = answer; resetBookVisual(); $book.addClass('is-opening'); $('#answerBookOpen').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>正在翻页'); $('#answerBookActions').removeClass('is-visible'); $('#answerBookHint').text(state.mode === 'daily' ? '今日的答案已为你留在这一页' : '让答案慢慢浮现'); setResultStatus('正在翻页'); var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; setTimeout(function() { $answer.text(answer.text); $book.removeClass('is-opening').addClass('is-open'); $('#answerBookOpen').prop('disabled', false).html('<i class="fas fa-book-open"></i>翻开答案之书'); $('#answerBookActions').addClass('is-visible'); $('#answerBookHint').text('答案已经写在这一页'); setResultStatus(state.mode === 'daily' ? '今日答案已揭晓' : '答案已揭晓'); state.opening = false; saveHistory(answer); }, reduced ? 80 : 1450); }
+    function closeBook() { if (state.opening) return; resetBookVisual(); $('#answerBookActions').removeClass('is-visible'); $('#answerBookHint').text('请在心中默念一个问题'); setResultStatus('等待翻阅'); state.answer = null; }
+    function copyAnswer() { if (!state.answer) return; var text = state.answer.text + '\n—— ' + themes.filter(function(item) { return item.id === state.theme; })[0].name + '答案之书'; function done() { showNotice('答案已复制'); } if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(done).catch(function() { fallbackCopy(text); }); } else { fallbackCopy(text); } }
+    function fallbackCopy(text) { var input = document.createElement('textarea'); input.value = text; document.body.appendChild(input); input.select(); try { document.execCommand('copy'); showNotice('答案已复制'); } catch (error) { showNotice('暂时无法复制，请手动选择文字。'); } document.body.removeChild(input); }
+    function formatDate(value) { var date = new Date(value); return date.getFullYear() + '.' + String(date.getMonth() + 1).padStart(2, '0') + '.' + String(date.getDate()).padStart(2, '0') + ' ' + String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0'); }
+    function escapeHtml(text) { return $('<div>').text(text).html(); }
+    function renderHistory() { var content = state.history.length ? state.history.map(function(item) { var theme = themes.filter(function(themeItem) { return themeItem.id === item.theme; })[0]; return '<div class="answer-book-history-item"><p>' + escapeHtml(item.question || '藏在心里的问题') + '</p><p>“' + escapeHtml(item.answerText) + '”</p><small>' + theme.name + ' · ' + (item.mode === 'daily' ? '今日答案' : '随心一问') + ' · ' + formatDate(item.createdAt) + '</small><button type="button" class="answer-book-delete" data-history-id="' + item.id + '" aria-label="删除记录"><i class="fas fa-trash-alt"></i></button></div>'; }).join('') : '<p class="answer-book-empty">还没有翻阅记录。</p>'; $('#answerBookHistoryList').html(content); }
+    function openLayer(id) { $('#' + id).addClass('is-visible').attr('aria-hidden', 'false'); }
+    function closeLayer(id) { $('#' + id).removeClass('is-visible').attr('aria-hidden', 'true'); }
+    $(document).ready(function() {
+      state.history = read(keys.history, []); state.recent = read(keys.recent, []); renderThemes();
+      $('#answerBookThemes').on('click', '[data-theme]', function() { setTheme($(this).data('theme')); });
+      $('[data-mode]').on('click', function() { if (state.opening) return; state.mode = $(this).data('mode'); $('[data-mode]').removeClass('is-active').attr('aria-selected', 'false'); $(this).addClass('is-active').attr('aria-selected', 'true'); closeBook(); });
+      $('#answerBookOpen').on('click', openBook); $book.on('click', openBook).on('keydown', function(event) { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openBook(); } }); $('#answerBookAgain').on('click', function() { closeBook(); setTimeout(openBook, 60); }); $('#answerBookClose').on('click', closeBook); $('#answerBookCopy').on('click', copyAnswer);
+      $('#answerBookHistory').on('click', function() { renderHistory(); openLayer('answerBookHistoryDrawer'); }); $('.answer-book-close').on('click', function() { closeLayer($(this).data('close')); }); $('.answer-book-drawer').on('click', function(event) { if (event.target === this) closeLayer(this.id); }); $('#answerBookHistoryList').on('click', '[data-history-id]', function() { state.history = state.history.filter(function(item) { return item.id !== $(this).data('history-id'); }); write(keys.history, state.history); renderHistory(); }); $('#answerBookClearHistory').on('click', function() { if (state.history.length && window.confirm('确定清空全部本地历史记录吗？此操作无法恢复。')) { state.history = []; state.recent = []; write(keys.history, state.history); write(keys.recent, state.recent); renderHistory(); showNotice('本地历史已清空'); } });
+    });
+  })();
+</script>

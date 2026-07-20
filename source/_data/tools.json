@@ -298,5 +298,12 @@
     "description": "在线倒计时/秒表工具，支持全屏显示与个性化设置",
     "emoji": "⏰",
     "url": "/tools/timer"
+  },
+  {
+    "slug": "answer-book",
+    "name": "答案之书",
+    "description": "默念一个问题，翻开书页，或许你正在寻找的答案就在这里",
+    "emoji": "📖",
+    "url": "/tools/answer-book"
   }
 ]
