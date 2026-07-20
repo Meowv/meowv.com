@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="<%- url_for('/libs/markdown/github.min.css') %>" />
 
 <style>
-  .tool-container { margin-top: -50px; margin-bottom: 30px; }
+  .tool-container.markdown-container { max-width: 1540px; margin-top: -50px; margin-bottom: 30px; }
   .tool-container .card { border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.08) !important; }
   .tool-container .card .card-content { padding: 0 20px 20px; }
 
@@ -84,7 +84,7 @@
 </style>
 
 <main class="content">
-  <div class="container tool-container">
+  <div class="container tool-container markdown-container">
     <div class="card">
       <%- partial('_partial/tool-header') %>
       <div class="card-content">
