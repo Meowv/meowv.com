@@ -359,6 +359,246 @@
       "theme": "life",
       "text": "这件事可以从明天开始。",
       "tone": "gentle"
+    },
+    {
+      "id": "life-61",
+      "theme": "life",
+      "text": "你正在靠近真正想要的生活。",
+      "tone": "gentle"
+    },
+    {
+      "id": "life-62",
+      "theme": "life",
+      "text": "先接受当下，再寻找出口。",
+      "tone": "positive"
+    },
+    {
+      "id": "life-63",
+      "theme": "life",
+      "text": "一个新的选择正在浮现。",
+      "tone": "action"
+    },
+    {
+      "id": "life-64",
+      "theme": "life",
+      "text": "这次可以把自己放在前面。",
+      "tone": "caution"
+    },
+    {
+      "id": "life-65",
+      "theme": "life",
+      "text": "别担心，生活偶尔也会绕路。",
+      "tone": "humor"
+    },
+    {
+      "id": "life-66",
+      "theme": "life",
+      "text": "答案会在你放松时出现。",
+      "tone": "gentle"
+    },
+    {
+      "id": "life-67",
+      "theme": "life",
+      "text": "你没有错过属于自己的时间。",
+      "tone": "positive"
+    },
+    {
+      "id": "life-68",
+      "theme": "life",
+      "text": "先放下必须立刻成功的念头。",
+      "tone": "action"
+    },
+    {
+      "id": "life-69",
+      "theme": "life",
+      "text": "真正的改变，从诚实开始。",
+      "tone": "caution"
+    },
+    {
+      "id": "life-70",
+      "theme": "life",
+      "text": "今天不用解决一生的问题。",
+      "tone": "humor"
+    },
+    {
+      "id": "life-71",
+      "theme": "life",
+      "text": "有些失去正在为新的相遇腾位置。",
+      "tone": "gentle"
+    },
+    {
+      "id": "life-72",
+      "theme": "life",
+      "text": "先做让内心安静的选择。",
+      "tone": "positive"
+    },
+    {
+      "id": "life-73",
+      "theme": "life",
+      "text": "你需要的是方向，不是速度。",
+      "tone": "action"
+    },
+    {
+      "id": "life-74",
+      "theme": "life",
+      "text": "这件事不值得消耗全部情绪。",
+      "tone": "caution"
+    },
+    {
+      "id": "life-75",
+      "theme": "life",
+      "text": "生活没有标准答案，幸好。",
+      "tone": "humor"
+    },
+    {
+      "id": "life-76",
+      "theme": "life",
+      "text": "再给这个可能一次机会。",
+      "tone": "gentle"
+    },
+    {
+      "id": "life-77",
+      "theme": "life",
+      "text": "你比过去更有能力面对它。",
+      "tone": "positive"
+    },
+    {
+      "id": "life-78",
+      "theme": "life",
+      "text": "先分清想要与应该。",
+      "tone": "action"
+    },
+    {
+      "id": "life-79",
+      "theme": "life",
+      "text": "当下的小决定会带来变化。",
+      "tone": "caution"
+    },
+    {
+      "id": "life-80",
+      "theme": "life",
+      "text": "不必把偶尔迷茫看成退步。",
+      "tone": "humor"
+    },
+    {
+      "id": "life-81",
+      "theme": "life",
+      "text": "属于你的，不需要过度追赶。",
+      "tone": "gentle"
+    },
+    {
+      "id": "life-82",
+      "theme": "life",
+      "text": "先离开让你反复内耗的地方。",
+      "tone": "positive"
+    },
+    {
+      "id": "life-83",
+      "theme": "life",
+      "text": "你已经知道哪些事不能再勉强。",
+      "tone": "action"
+    },
+    {
+      "id": "life-84",
+      "theme": "life",
+      "text": "暂时没有答案，也是一种答案。",
+      "tone": "caution"
+    },
+    {
+      "id": "life-85",
+      "theme": "life",
+      "text": "人生不是项目，不必按期交付。",
+      "tone": "humor"
+    },
+    {
+      "id": "life-86",
+      "theme": "life",
+      "text": "让真正重要的事排到前面。",
+      "tone": "gentle"
+    },
+    {
+      "id": "life-87",
+      "theme": "life",
+      "text": "这一次，选择让自己轻松些。",
+      "tone": "positive"
+    },
+    {
+      "id": "life-88",
+      "theme": "life",
+      "text": "先停止想象最坏的结果。",
+      "tone": "action"
+    },
+    {
+      "id": "life-89",
+      "theme": "life",
+      "text": "你会遇见更适合自己的节奏。",
+      "tone": "caution"
+    },
+    {
+      "id": "life-90",
+      "theme": "life",
+      "text": "事情可能比计划中更有转机。",
+      "tone": "humor"
+    },
+    {
+      "id": "life-91",
+      "theme": "life",
+      "text": "有些决定需要勇敢，也需要温柔。",
+      "tone": "gentle"
+    },
+    {
+      "id": "life-92",
+      "theme": "life",
+      "text": "先把能控制的部分做好。",
+      "tone": "positive"
+    },
+    {
+      "id": "life-93",
+      "theme": "life",
+      "text": "你正在经历一次必要的调整。",
+      "tone": "action"
+    },
+    {
+      "id": "life-94",
+      "theme": "life",
+      "text": "不适合的路，走慢一点也无妨。",
+      "tone": "caution"
+    },
+    {
+      "id": "life-95",
+      "theme": "life",
+      "text": "世界很大，不必困在这一页。",
+      "tone": "humor"
+    },
+    {
+      "id": "life-96",
+      "theme": "life",
+      "text": "答案不远，只是需要安静下来。",
+      "tone": "gentle"
+    },
+    {
+      "id": "life-97",
+      "theme": "life",
+      "text": "这件事会以另一种方式圆满。",
+      "tone": "positive"
+    },
+    {
+      "id": "life-98",
+      "theme": "life",
+      "text": "先问问自己愿意承担什么。",
+      "tone": "action"
+    },
+    {
+      "id": "life-99",
+      "theme": "life",
+      "text": "你可以认真，也可以不执着。",
+      "tone": "caution"
+    },
+    {
+      "id": "life-100",
+      "theme": "life",
+      "text": "新的篇章已经留出了空白。",
+      "tone": "humor"
     }
   ],
   "love": [
@@ -721,6 +961,246 @@
       "theme": "love",
       "text": "今天适合好好爱自己。",
       "tone": "gentle"
+    },
+    {
+      "id": "love-61",
+      "theme": "love",
+      "text": "喜欢你的人，会愿意靠近真实的你。",
+      "tone": "gentle"
+    },
+    {
+      "id": "love-62",
+      "theme": "love",
+      "text": "先看彼此是否愿意坦诚。",
+      "tone": "positive"
+    },
+    {
+      "id": "love-63",
+      "theme": "love",
+      "text": "这次适合把心里话说出来。",
+      "tone": "action"
+    },
+    {
+      "id": "love-64",
+      "theme": "love",
+      "text": "不要用委屈维持表面的和平。",
+      "tone": "caution"
+    },
+    {
+      "id": "love-65",
+      "theme": "love",
+      "text": "爱情不是阅读理解，别过度分析。",
+      "tone": "humor"
+    },
+    {
+      "id": "love-66",
+      "theme": "love",
+      "text": "有人正在用自己的方式在意你。",
+      "tone": "gentle"
+    },
+    {
+      "id": "love-67",
+      "theme": "love",
+      "text": "真正的靠近不会让你长期不安。",
+      "tone": "positive"
+    },
+    {
+      "id": "love-68",
+      "theme": "love",
+      "text": "先给这段关系一次平静的沟通。",
+      "tone": "action"
+    },
+    {
+      "id": "love-69",
+      "theme": "love",
+      "text": "你想要的回应，需要明确表达。",
+      "tone": "caution"
+    },
+    {
+      "id": "love-70",
+      "theme": "love",
+      "text": "不必急着证明谁更在乎。",
+      "tone": "humor"
+    },
+    {
+      "id": "love-71",
+      "theme": "love",
+      "text": "有些心动值得慢慢确认。",
+      "tone": "gentle"
+    },
+    {
+      "id": "love-72",
+      "theme": "love",
+      "text": "先判断这是喜欢，还是不甘心。",
+      "tone": "positive"
+    },
+    {
+      "id": "love-73",
+      "theme": "love",
+      "text": "关系会在真诚里找到方向。",
+      "tone": "action"
+    },
+    {
+      "id": "love-74",
+      "theme": "love",
+      "text": "别把偶尔的温柔当成长期承诺。",
+      "tone": "caution"
+    },
+    {
+      "id": "love-75",
+      "theme": "love",
+      "text": "消息没回，手机可能只是没电。",
+      "tone": "humor"
+    },
+    {
+      "id": "love-76",
+      "theme": "love",
+      "text": "这次的答案藏在对方的行动里。",
+      "tone": "gentle"
+    },
+    {
+      "id": "love-77",
+      "theme": "love",
+      "text": "你值得一段不用猜来猜去的关系。",
+      "tone": "positive"
+    },
+    {
+      "id": "love-78",
+      "theme": "love",
+      "text": "先把误会说开，再谈结果。",
+      "tone": "action"
+    },
+    {
+      "id": "love-79",
+      "theme": "love",
+      "text": "真正合适的人会尊重你的边界。",
+      "tone": "caution"
+    },
+    {
+      "id": "love-80",
+      "theme": "love",
+      "text": "不必为了被爱而改变全部自己。",
+      "tone": "humor"
+    },
+    {
+      "id": "love-81",
+      "theme": "love",
+      "text": "有人愿意听见你的真实感受。",
+      "tone": "gentle"
+    },
+    {
+      "id": "love-82",
+      "theme": "love",
+      "text": "先别在情绪最满时做决定。",
+      "tone": "positive"
+    },
+    {
+      "id": "love-83",
+      "theme": "love",
+      "text": "这段关系需要更多实际的陪伴。",
+      "tone": "action"
+    },
+    {
+      "id": "love-84",
+      "theme": "love",
+      "text": "等待太久，本身也是一种信息。",
+      "tone": "caution"
+    },
+    {
+      "id": "love-85",
+      "theme": "love",
+      "text": "爱情不是 KPI，不必天天复盘。",
+      "tone": "humor"
+    },
+    {
+      "id": "love-86",
+      "theme": "love",
+      "text": "把期待说出来，比暗自失望更有效。",
+      "tone": "gentle"
+    },
+    {
+      "id": "love-87",
+      "theme": "love",
+      "text": "这次可以给彼此一个台阶。",
+      "tone": "positive"
+    },
+    {
+      "id": "love-88",
+      "theme": "love",
+      "text": "先确认对方是否也在努力。",
+      "tone": "action"
+    },
+    {
+      "id": "love-89",
+      "theme": "love",
+      "text": "有些缘分需要主动创造机会。",
+      "tone": "caution"
+    },
+    {
+      "id": "love-90",
+      "theme": "love",
+      "text": "别因为舍不得，就忽略不合适。",
+      "tone": "humor"
+    },
+    {
+      "id": "love-91",
+      "theme": "love",
+      "text": "真正的安全感来自稳定的回应。",
+      "tone": "gentle"
+    },
+    {
+      "id": "love-92",
+      "theme": "love",
+      "text": "先把自己的生活过得完整。",
+      "tone": "positive"
+    },
+    {
+      "id": "love-93",
+      "theme": "love",
+      "text": "你们需要的是共识，不是输赢。",
+      "tone": "action"
+    },
+    {
+      "id": "love-94",
+      "theme": "love",
+      "text": "若总是疲惫，就该重新看待关系。",
+      "tone": "caution"
+    },
+    {
+      "id": "love-95",
+      "theme": "love",
+      "text": "爱可以热烈，聊天不必写小作文。",
+      "tone": "humor"
+    },
+    {
+      "id": "love-96",
+      "theme": "love",
+      "text": "这份心意可能比你想象中更清楚。",
+      "tone": "gentle"
+    },
+    {
+      "id": "love-97",
+      "theme": "love",
+      "text": "适合把关系推进到下一步。",
+      "tone": "positive"
+    },
+    {
+      "id": "love-98",
+      "theme": "love",
+      "text": "先接受对方和想象中并不一样。",
+      "tone": "action"
+    },
+    {
+      "id": "love-99",
+      "theme": "love",
+      "text": "有人爱你，也会让你感到自由。",
+      "tone": "caution"
+    },
+    {
+      "id": "love-100",
+      "theme": "love",
+      "text": "今天适合给爱一个温柔的答案。",
+      "tone": "humor"
     }
   ],
   "career": [
@@ -1083,6 +1563,246 @@
       "theme": "career",
       "text": "先把下一步说清楚。",
       "tone": "gentle"
+    },
+    {
+      "id": "career-61",
+      "theme": "career",
+      "text": "你的下一步，比眼前的焦虑更重要。",
+      "tone": "gentle"
+    },
+    {
+      "id": "career-62",
+      "theme": "career",
+      "text": "先确认这件事是否真的值得做。",
+      "tone": "positive"
+    },
+    {
+      "id": "career-63",
+      "theme": "career",
+      "text": "适合主动争取一次机会。",
+      "tone": "action"
+    },
+    {
+      "id": "career-64",
+      "theme": "career",
+      "text": "不要用忙碌掩盖优先级混乱。",
+      "tone": "caution"
+    },
+    {
+      "id": "career-65",
+      "theme": "career",
+      "text": "这个会议也许可以是一封邮件。",
+      "tone": "humor"
+    },
+    {
+      "id": "career-66",
+      "theme": "career",
+      "text": "你的积累正在形成新的优势。",
+      "tone": "gentle"
+    },
+    {
+      "id": "career-67",
+      "theme": "career",
+      "text": "现在适合展示成果，而不是解释辛苦。",
+      "tone": "positive"
+    },
+    {
+      "id": "career-68",
+      "theme": "career",
+      "text": "先把需求和资源重新对齐。",
+      "tone": "action"
+    },
+    {
+      "id": "career-69",
+      "theme": "career",
+      "text": "一次清晰的沟通会减少很多返工。",
+      "tone": "caution"
+    },
+    {
+      "id": "career-70",
+      "theme": "career",
+      "text": "别替模糊的目标承担确定的责任。",
+      "tone": "humor"
+    },
+    {
+      "id": "career-71",
+      "theme": "career",
+      "text": "有个机会正在靠近你的能力边界。",
+      "tone": "gentle"
+    },
+    {
+      "id": "career-72",
+      "theme": "career",
+      "text": "先把最关键的数据准备好。",
+      "tone": "positive"
+    },
+    {
+      "id": "career-73",
+      "theme": "career",
+      "text": "这次可以更坚定地表达立场。",
+      "tone": "action"
+    },
+    {
+      "id": "career-74",
+      "theme": "career",
+      "text": "不要在没有信息时急着承诺。",
+      "tone": "caution"
+    },
+    {
+      "id": "career-75",
+      "theme": "career",
+      "text": "先别辞职，至少把奖金拿到。",
+      "tone": "humor"
+    },
+    {
+      "id": "career-76",
+      "theme": "career",
+      "text": "你需要的是可执行方案，不是更多焦虑。",
+      "tone": "gentle"
+    },
+    {
+      "id": "career-77",
+      "theme": "career",
+      "text": "适合把工作成果公开展示出来。",
+      "tone": "positive"
+    },
+    {
+      "id": "career-78",
+      "theme": "career",
+      "text": "先确定谁拥有最终决策权。",
+      "tone": "action"
+    },
+    {
+      "id": "career-79",
+      "theme": "career",
+      "text": "今天的一次主动会带来后续机会。",
+      "tone": "caution"
+    },
+    {
+      "id": "career-80",
+      "theme": "career",
+      "text": "别让临时任务长期占据主线。",
+      "tone": "humor"
+    },
+    {
+      "id": "career-81",
+      "theme": "career",
+      "text": "你的专业判断值得被尊重。",
+      "tone": "gentle"
+    },
+    {
+      "id": "career-82",
+      "theme": "career",
+      "text": "先为重要任务争取完整时间。",
+      "tone": "positive"
+    },
+    {
+      "id": "career-83",
+      "theme": "career",
+      "text": "这次需要从结果倒推行动。",
+      "tone": "action"
+    },
+    {
+      "id": "career-84",
+      "theme": "career",
+      "text": "不合理的要求，可以要求重新评估。",
+      "tone": "caution"
+    },
+    {
+      "id": "career-85",
+      "theme": "career",
+      "text": "努力很重要，保存文件也很重要。",
+      "tone": "humor"
+    },
+    {
+      "id": "career-86",
+      "theme": "career",
+      "text": "适合建立一套可复用的方法。",
+      "tone": "gentle"
+    },
+    {
+      "id": "career-87",
+      "theme": "career",
+      "text": "你可以提出更有野心的方案。",
+      "tone": "positive"
+    },
+    {
+      "id": "career-88",
+      "theme": "career",
+      "text": "先把风险讲清楚，再讨论进度。",
+      "tone": "action"
+    },
+    {
+      "id": "career-89",
+      "theme": "career",
+      "text": "眼前的困难会提升你的议价能力。",
+      "tone": "caution"
+    },
+    {
+      "id": "career-90",
+      "theme": "career",
+      "text": "不要把别人的紧急变成你的混乱。",
+      "tone": "humor"
+    },
+    {
+      "id": "career-91",
+      "theme": "career",
+      "text": "这次适合寻找新的合作伙伴。",
+      "tone": "gentle"
+    },
+    {
+      "id": "career-92",
+      "theme": "career",
+      "text": "先用小范围结果证明方向。",
+      "tone": "positive"
+    },
+    {
+      "id": "career-93",
+      "theme": "career",
+      "text": "你的成长已经超过当前岗位的边界。",
+      "tone": "action"
+    },
+    {
+      "id": "career-94",
+      "theme": "career",
+      "text": "暂缓决定，先收集更多事实。",
+      "tone": "caution"
+    },
+    {
+      "id": "career-95",
+      "theme": "career",
+      "text": "工作不会跑，但下班时间会。",
+      "tone": "humor"
+    },
+    {
+      "id": "career-96",
+      "theme": "career",
+      "text": "有些成果需要主动让人看见。",
+      "tone": "gentle"
+    },
+    {
+      "id": "career-97",
+      "theme": "career",
+      "text": "适合为下一阶段提前布局。",
+      "tone": "positive"
+    },
+    {
+      "id": "career-98",
+      "theme": "career",
+      "text": "先区分真正的问题和情绪压力。",
+      "tone": "action"
+    },
+    {
+      "id": "career-99",
+      "theme": "career",
+      "text": "你可能需要换方法，而不是更用力。",
+      "tone": "caution"
+    },
+    {
+      "id": "career-100",
+      "theme": "career",
+      "text": "下一次选择，会更接近你的长期目标。",
+      "tone": "humor"
     }
   ],
   "developer": [
@@ -1445,6 +2165,246 @@
       "theme": "developer",
       "text": "今天适合早点收工。",
       "tone": "gentle"
+    },
+    {
+      "id": "developer-61",
+      "theme": "developer",
+      "text": "先确认你运行的是刚改的代码。",
+      "tone": "gentle"
+    },
+    {
+      "id": "developer-62",
+      "theme": "developer",
+      "text": "这个问题可能和数据有关。",
+      "tone": "positive"
+    },
+    {
+      "id": "developer-63",
+      "theme": "developer",
+      "text": "适合把复杂逻辑拆成纯函数。",
+      "tone": "action"
+    },
+    {
+      "id": "developer-64",
+      "theme": "developer",
+      "text": "别在没有备份时执行那条 SQL。",
+      "tone": "caution"
+    },
+    {
+      "id": "developer-65",
+      "theme": "developer",
+      "text": "能稳定复现，Bug 就已经输了一半。",
+      "tone": "humor"
+    },
+    {
+      "id": "developer-66",
+      "theme": "developer",
+      "text": "答案也许藏在浏览器控制台里。",
+      "tone": "gentle"
+    },
+    {
+      "id": "developer-67",
+      "theme": "developer",
+      "text": "先检查请求参数是否真的传到了后端。",
+      "tone": "positive"
+    },
+    {
+      "id": "developer-68",
+      "theme": "developer",
+      "text": "这个依赖值得升级，但不是现在。",
+      "tone": "action"
+    },
+    {
+      "id": "developer-69",
+      "theme": "developer",
+      "text": "写一个失败用例，再开始修复。",
+      "tone": "caution"
+    },
+    {
+      "id": "developer-70",
+      "theme": "developer",
+      "text": "不要默认生产环境和本地一样。",
+      "tone": "humor"
+    },
+    {
+      "id": "developer-71",
+      "theme": "developer",
+      "text": "先问一句：它以前真的正常吗？",
+      "tone": "gentle"
+    },
+    {
+      "id": "developer-72",
+      "theme": "developer",
+      "text": "日志级别可能开错了。",
+      "tone": "positive"
+    },
+    {
+      "id": "developer-73",
+      "theme": "developer",
+      "text": "适合把这段重复逻辑抽出来。",
+      "tone": "action"
+    },
+    {
+      "id": "developer-74",
+      "theme": "developer",
+      "text": "别为了少写三行代码增加三天理解成本。",
+      "tone": "caution"
+    },
+    {
+      "id": "developer-75",
+      "theme": "developer",
+      "text": "命名困难，通常说明职责太多。",
+      "tone": "humor"
+    },
+    {
+      "id": "developer-76",
+      "theme": "developer",
+      "text": "先检查数据库连接池。",
+      "tone": "gentle"
+    },
+    {
+      "id": "developer-77",
+      "theme": "developer",
+      "text": "这个异常可能只是表象。",
+      "tone": "positive"
+    },
+    {
+      "id": "developer-78",
+      "theme": "developer",
+      "text": "适合把异步调用从头梳理一遍。",
+      "tone": "action"
+    },
+    {
+      "id": "developer-79",
+      "theme": "developer",
+      "text": "先验证序列化后的实际内容。",
+      "tone": "caution"
+    },
+    {
+      "id": "developer-80",
+      "theme": "developer",
+      "text": "不要在循环里悄悄访问数据库。",
+      "tone": "humor"
+    },
+    {
+      "id": "developer-81",
+      "theme": "developer",
+      "text": "缓存键可能比缓存值更可疑。",
+      "tone": "gentle"
+    },
+    {
+      "id": "developer-82",
+      "theme": "developer",
+      "text": "先检查是否存在竞态条件。",
+      "tone": "positive"
+    },
+    {
+      "id": "developer-83",
+      "theme": "developer",
+      "text": "这个接口需要幂等保护。",
+      "tone": "action"
+    },
+    {
+      "id": "developer-84",
+      "theme": "developer",
+      "text": "别用 try-catch 把错误藏起来。",
+      "tone": "caution"
+    },
+    {
+      "id": "developer-85",
+      "theme": "developer",
+      "text": "删掉那行代码试试，科学从大胆开始。",
+      "tone": "humor"
+    },
+    {
+      "id": "developer-86",
+      "theme": "developer",
+      "text": "先把性能问题量化。",
+      "tone": "gentle"
+    },
+    {
+      "id": "developer-87",
+      "theme": "developer",
+      "text": "真正的瓶颈可能在网络往返。",
+      "tone": "positive"
+    },
+    {
+      "id": "developer-88",
+      "theme": "developer",
+      "text": "适合增加一个集成测试。",
+      "tone": "action"
+    },
+    {
+      "id": "developer-89",
+      "theme": "developer",
+      "text": "先确认事务边界是否合理。",
+      "tone": "caution"
+    },
+    {
+      "id": "developer-90",
+      "theme": "developer",
+      "text": "不要把警告留给未来的自己。",
+      "tone": "humor"
+    },
+    {
+      "id": "developer-91",
+      "theme": "developer",
+      "text": "这次问题可能来自默认值。",
+      "tone": "gentle"
+    },
+    {
+      "id": "developer-92",
+      "theme": "developer",
+      "text": "先检查前后端字段命名是否一致。",
+      "tone": "positive"
+    },
+    {
+      "id": "developer-93",
+      "theme": "developer",
+      "text": "这个查询值得看一下执行计划。",
+      "tone": "action"
+    },
+    {
+      "id": "developer-94",
+      "theme": "developer",
+      "text": "不要在生产环境验证你的猜想。",
+      "tone": "caution"
+    },
+    {
+      "id": "developer-95",
+      "theme": "developer",
+      "text": "如果注释写了“临时”，它可能已经三年了。",
+      "tone": "humor"
+    },
+    {
+      "id": "developer-96",
+      "theme": "developer",
+      "text": "先回顾最近升级的依赖。",
+      "tone": "gentle"
+    },
+    {
+      "id": "developer-97",
+      "theme": "developer",
+      "text": "也许需要限制并发，而不是增加超时。",
+      "tone": "positive"
+    },
+    {
+      "id": "developer-98",
+      "theme": "developer",
+      "text": "适合将配置集中管理。",
+      "tone": "action"
+    },
+    {
+      "id": "developer-99",
+      "theme": "developer",
+      "text": "先确认部署产物是否包含最新文件。",
+      "tone": "caution"
+    },
+    {
+      "id": "developer-100",
+      "theme": "developer",
+      "text": "修好了，记得补上为什么会坏。",
+      "tone": "humor"
     }
   ],
   "today": [
@@ -1807,6 +2767,246 @@
       "theme": "today",
       "text": "适合相信一个温柔的开始。",
       "tone": "gentle"
+    },
+    {
+      "id": "today-61",
+      "theme": "today",
+      "text": "今天适合做一件让未来轻松的事。",
+      "tone": "gentle"
+    },
+    {
+      "id": "today-62",
+      "theme": "today",
+      "text": "先回复那条真正重要的消息。",
+      "tone": "positive"
+    },
+    {
+      "id": "today-63",
+      "theme": "today",
+      "text": "给自己一个不被打扰的小时。",
+      "tone": "action"
+    },
+    {
+      "id": "today-64",
+      "theme": "today",
+      "text": "今天不适合把所有问题揽过来。",
+      "tone": "caution"
+    },
+    {
+      "id": "today-65",
+      "theme": "today",
+      "text": "计划写得很好，现在可以开始了。",
+      "tone": "humor"
+    },
+    {
+      "id": "today-66",
+      "theme": "today",
+      "text": "一个小惊喜正在日常里发生。",
+      "tone": "gentle"
+    },
+    {
+      "id": "today-67",
+      "theme": "today",
+      "text": "今天适合把拖延变成五分钟行动。",
+      "tone": "positive"
+    },
+    {
+      "id": "today-68",
+      "theme": "today",
+      "text": "先完成最能减轻压力的事情。",
+      "tone": "action"
+    },
+    {
+      "id": "today-69",
+      "theme": "today",
+      "text": "给重要的人多一点耐心。",
+      "tone": "caution"
+    },
+    {
+      "id": "today-70",
+      "theme": "today",
+      "text": "今天不用接受所有人的期待。",
+      "tone": "humor"
+    },
+    {
+      "id": "today-71",
+      "theme": "today",
+      "text": "适合重新捡起一个小兴趣。",
+      "tone": "gentle"
+    },
+    {
+      "id": "today-72",
+      "theme": "today",
+      "text": "先清理一个长期占据注意力的待办。",
+      "tone": "positive"
+    },
+    {
+      "id": "today-73",
+      "theme": "today",
+      "text": "今天的好运来自一次主动。",
+      "tone": "action"
+    },
+    {
+      "id": "today-74",
+      "theme": "today",
+      "text": "别在匆忙中答应新的安排。",
+      "tone": "caution"
+    },
+    {
+      "id": "today-75",
+      "theme": "today",
+      "text": "可以认真工作，也可以准时下班。",
+      "tone": "humor"
+    },
+    {
+      "id": "today-76",
+      "theme": "today",
+      "text": "今天适合穿让自己舒服的衣服。",
+      "tone": "gentle"
+    },
+    {
+      "id": "today-77",
+      "theme": "today",
+      "text": "先完成那件只差最后一步的事。",
+      "tone": "positive"
+    },
+    {
+      "id": "today-78",
+      "theme": "today",
+      "text": "给自己准备一点喜欢的食物。",
+      "tone": "action"
+    },
+    {
+      "id": "today-79",
+      "theme": "today",
+      "text": "今天会遇到一个值得记录的瞬间。",
+      "tone": "caution"
+    },
+    {
+      "id": "today-80",
+      "theme": "today",
+      "text": "不必因为计划改变而责怪自己。",
+      "tone": "humor"
+    },
+    {
+      "id": "today-81",
+      "theme": "today",
+      "text": "适合把一个想法分享出去。",
+      "tone": "gentle"
+    },
+    {
+      "id": "today-82",
+      "theme": "today",
+      "text": "先做对明天最有帮助的准备。",
+      "tone": "positive"
+    },
+    {
+      "id": "today-83",
+      "theme": "today",
+      "text": "今天的重点是保持清醒，而非忙碌。",
+      "tone": "action"
+    },
+    {
+      "id": "today-84",
+      "theme": "today",
+      "text": "别让无关紧要的事占满情绪。",
+      "tone": "caution"
+    },
+    {
+      "id": "today-85",
+      "theme": "today",
+      "text": "运气不错，尤其是在按下保存之后。",
+      "tone": "humor"
+    },
+    {
+      "id": "today-86",
+      "theme": "today",
+      "text": "今天适合整理照片或旧物。",
+      "tone": "gentle"
+    },
+    {
+      "id": "today-87",
+      "theme": "today",
+      "text": "先给一件困难的事设置开始时间。",
+      "tone": "positive"
+    },
+    {
+      "id": "today-88",
+      "theme": "today",
+      "text": "允许自己拒绝一次无效消耗。",
+      "tone": "action"
+    },
+    {
+      "id": "today-89",
+      "theme": "today",
+      "text": "今天可能收到一个迟来的回应。",
+      "tone": "caution"
+    },
+    {
+      "id": "today-90",
+      "theme": "today",
+      "text": "不必把每一分钟都安排得有意义。",
+      "tone": "humor"
+    },
+    {
+      "id": "today-91",
+      "theme": "today",
+      "text": "适合完成一件对自己有益的小事。",
+      "tone": "gentle"
+    },
+    {
+      "id": "today-92",
+      "theme": "today",
+      "text": "先把最想逃避的问题看一眼。",
+      "tone": "positive"
+    },
+    {
+      "id": "today-93",
+      "theme": "today",
+      "text": "今天的突破来自一个简单决定。",
+      "tone": "action"
+    },
+    {
+      "id": "today-94",
+      "theme": "today",
+      "text": "不要因为别人着急就打乱节奏。",
+      "tone": "caution"
+    },
+    {
+      "id": "today-95",
+      "theme": "today",
+      "text": "待办可以很多，今天只能是一天。",
+      "tone": "humor"
+    },
+    {
+      "id": "today-96",
+      "theme": "today",
+      "text": "今天适合联系一个很久没见的人。",
+      "tone": "gentle"
+    },
+    {
+      "id": "today-97",
+      "theme": "today",
+      "text": "先为完成的事情画一个勾。",
+      "tone": "positive"
+    },
+    {
+      "id": "today-98",
+      "theme": "today",
+      "text": "给自己留一段真正放松的时间。",
+      "tone": "action"
+    },
+    {
+      "id": "today-99",
+      "theme": "today",
+      "text": "今天会比预想中顺利一些。",
+      "tone": "caution"
+    },
+    {
+      "id": "today-100",
+      "theme": "today",
+      "text": "适合带着轻一点的心情出发。",
+      "tone": "humor"
     }
   ],
   "midnight": [
@@ -2143,7 +3343,7 @@
     {
       "id": "midnight-56",
       "theme": "midnight",
-      "text": "先让自己被被子接住。",
+      "text": "先让自己被被窝接住。",
       "tone": "positive"
     },
     {
@@ -2169,6 +3369,246 @@
       "theme": "midnight",
       "text": "晚安，答案会在路上。",
       "tone": "gentle"
+    },
+    {
+      "id": "midnight-61",
+      "theme": "midnight",
+      "text": "夜晚会放大问题，也会暂时遮住答案。",
+      "tone": "gentle"
+    },
+    {
+      "id": "midnight-62",
+      "theme": "midnight",
+      "text": "先把手机屏幕调暗。",
+      "tone": "positive"
+    },
+    {
+      "id": "midnight-63",
+      "theme": "midnight",
+      "text": "你现在需要休息，不需要结论。",
+      "tone": "action"
+    },
+    {
+      "id": "midnight-64",
+      "theme": "midnight",
+      "text": "别在最疲惫时审判自己。",
+      "tone": "caution"
+    },
+    {
+      "id": "midnight-65",
+      "theme": "midnight",
+      "text": "深夜的脑子很会写灾难片。",
+      "tone": "humor"
+    },
+    {
+      "id": "midnight-66",
+      "theme": "midnight",
+      "text": "明天醒来，事情会有新的角度。",
+      "tone": "gentle"
+    },
+    {
+      "id": "midnight-67",
+      "theme": "midnight",
+      "text": "今晚先把自己照顾好。",
+      "tone": "positive"
+    },
+    {
+      "id": "midnight-68",
+      "theme": "midnight",
+      "text": "有些答案不值得用睡眠交换。",
+      "tone": "action"
+    },
+    {
+      "id": "midnight-69",
+      "theme": "midnight",
+      "text": "让今天停在这里就好。",
+      "tone": "caution"
+    },
+    {
+      "id": "midnight-70",
+      "theme": "midnight",
+      "text": "别反复阅读那段让你难过的话。",
+      "tone": "humor"
+    },
+    {
+      "id": "midnight-71",
+      "theme": "midnight",
+      "text": "你已经平安走过了今天。",
+      "tone": "gentle"
+    },
+    {
+      "id": "midnight-72",
+      "theme": "midnight",
+      "text": "先把心事从脑海写到纸上。",
+      "tone": "positive"
+    },
+    {
+      "id": "midnight-73",
+      "theme": "midnight",
+      "text": "今晚不需要解决未来。",
+      "tone": "action"
+    },
+    {
+      "id": "midnight-74",
+      "theme": "midnight",
+      "text": "不要把孤独误认为无人爱你。",
+      "tone": "caution"
+    },
+    {
+      "id": "midnight-75",
+      "theme": "midnight",
+      "text": "先睡，世界暂时不会合并代码。",
+      "tone": "humor"
+    },
+    {
+      "id": "midnight-76",
+      "theme": "midnight",
+      "text": "疲惫时的否定不一定是真的。",
+      "tone": "gentle"
+    },
+    {
+      "id": "midnight-77",
+      "theme": "midnight",
+      "text": "明天会有更充足的力气处理它。",
+      "tone": "positive"
+    },
+    {
+      "id": "midnight-78",
+      "theme": "midnight",
+      "text": "今晚适合原谅自己的不完美。",
+      "tone": "action"
+    },
+    {
+      "id": "midnight-79",
+      "theme": "midnight",
+      "text": "先听一会儿安静的声音。",
+      "tone": "caution"
+    },
+    {
+      "id": "midnight-80",
+      "theme": "midnight",
+      "text": "不要在凌晨决定一段关系的结局。",
+      "tone": "humor"
+    },
+    {
+      "id": "midnight-81",
+      "theme": "midnight",
+      "text": "你可以把答案留给清晨。",
+      "tone": "gentle"
+    },
+    {
+      "id": "midnight-82",
+      "theme": "midnight",
+      "text": "今晚先停止和过去争辩。",
+      "tone": "positive"
+    },
+    {
+      "id": "midnight-83",
+      "theme": "midnight",
+      "text": "身体的疲惫也需要被认真听见。",
+      "tone": "action"
+    },
+    {
+      "id": "midnight-84",
+      "theme": "midnight",
+      "text": "不必为今天没做完的事惩罚自己。",
+      "tone": "caution"
+    },
+    {
+      "id": "midnight-85",
+      "theme": "midnight",
+      "text": "月亮都下班了，你也可以。",
+      "tone": "humor"
+    },
+    {
+      "id": "midnight-86",
+      "theme": "midnight",
+      "text": "先把呼吸放慢，再把眼睛闭上。",
+      "tone": "gentle"
+    },
+    {
+      "id": "midnight-87",
+      "theme": "midnight",
+      "text": "明天的阳光会重新定义此刻。",
+      "tone": "positive"
+    },
+    {
+      "id": "midnight-88",
+      "theme": "midnight",
+      "text": "今晚适合把担心暂时寄存。",
+      "tone": "action"
+    },
+    {
+      "id": "midnight-89",
+      "theme": "midnight",
+      "text": "这份情绪不会永远停留。",
+      "tone": "caution"
+    },
+    {
+      "id": "midnight-90",
+      "theme": "midnight",
+      "text": "别把一时清醒变成长久失眠。",
+      "tone": "humor"
+    },
+    {
+      "id": "midnight-91",
+      "theme": "midnight",
+      "text": "你已经足够努力地生活了。",
+      "tone": "gentle"
+    },
+    {
+      "id": "midnight-92",
+      "theme": "midnight",
+      "text": "先把声音、灯光和期待都调低。",
+      "tone": "positive"
+    },
+    {
+      "id": "midnight-93",
+      "theme": "midnight",
+      "text": "今晚只需要完成睡觉这件事。",
+      "tone": "action"
+    },
+    {
+      "id": "midnight-94",
+      "theme": "midnight",
+      "text": "不要向深夜索要白天的理性。",
+      "tone": "caution"
+    },
+    {
+      "id": "midnight-95",
+      "theme": "midnight",
+      "text": "凌晨的灵感，记下来就别实现。",
+      "tone": "humor"
+    },
+    {
+      "id": "midnight-96",
+      "theme": "midnight",
+      "text": "明天仍然可以重新选择。",
+      "tone": "gentle"
+    },
+    {
+      "id": "midnight-97",
+      "theme": "midnight",
+      "text": "今晚适合相信事情会慢慢变好。",
+      "tone": "positive"
+    },
+    {
+      "id": "midnight-98",
+      "theme": "midnight",
+      "text": "先让自己回到柔软的被窝里。",
+      "tone": "action"
+    },
+    {
+      "id": "midnight-99",
+      "theme": "midnight",
+      "text": "你不需要带着答案才能入睡。",
+      "tone": "caution"
+    },
+    {
+      "id": "midnight-100",
+      "theme": "midnight",
+      "text": "晚安，剩下的交给明天。",
+      "tone": "humor"
     }
   ]
 }
