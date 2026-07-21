@@ -1,0 +1,18 @@
+- name: 在 Meowv 写下星光 1
+  url: /musics/meowv-starlight-1.mp3
+  cover: /medias/music/meowv-starlight-cover.png
+- name: 在 Meowv 写下星光 2
+  url: /musics/meowv-starlight-2.mp3
+  cover: /medias/music/meowv-starlight-cover.png
+- name: 在 Meowv 写下星光 3
+  url: /musics/meowv-starlight-3.mp3
+  cover: /medias/music/meowv-starlight-cover.png
+- name: 在 Meowv 写下星光 4
+  url: /musics/meowv-starlight-4.mp3
+  cover: /medias/music/meowv-starlight-cover.png
+- name: 在 Meowv 写下星光 5
+  url: /musics/meowv-starlight-5.mp3
+  cover: /medias/music/meowv-starlight-cover.png
+- name: 在 Meowv 写下星光 6
+  url: /musics/meowv-starlight-6.mp3
+  cover: /medias/music/meowv-starlight-cover.png

@@ -76,7 +76,10 @@ dream:
 # Whether to display the musics.
 # 是否在首页显示音乐.
 music:
-  enable: false
+  enable: true
+  mode: local # 播放模式，可选值: 'local', 'meting'
+  local:
+    artist: Meowv # 本地歌曲默认作者，歌单文件为 source/_data/music.yml
   title: #非吸底模式有效
     enable: true
     show: 听听音乐

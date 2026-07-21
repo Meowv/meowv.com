@@ -1,4 +1,31 @@
 <link rel="stylesheet" href="<%- theme.cdn.url %><%- url_for(theme.libs.css.aplayer) %>">
+<%
+    var musicMode = theme.music.mode || 'meting';
+    var isLocalMusic = musicMode === 'local';
+    var localMusic = site.data && Array.isArray(site.data.music) ? site.data.music : [];
+    var localAudio = localMusic.map(function (track) {
+        return {
+            name: track.name,
+            artist: track.artist || (theme.music.local && theme.music.local.artist) || config.author,
+            url: track.url ? url_for(track.url) : '',
+            cover: track.cover ? url_for(track.cover) : '',
+            lrc: track.lrc ? url_for(track.lrc) : ''
+        };
+    }).filter(function (track) {
+        return track.name && track.url;
+    });
+    var localPlayerOptions = JSON.stringify({
+        fixed: theme.music.fixed,
+        autoplay: theme.music.autoplay,
+        theme: theme.music.theme,
+        loop: theme.music.loop,
+        order: theme.music.order,
+        preload: theme.music.preload,
+        volume: Number(theme.music.volume),
+        listFolded: theme.music.listFolded,
+        audio: localAudio
+    }).replace(/</g, '\\u003c');
+%>
 <style>
     .aplayer .aplayer-lrc p {
         <%if(theme.music.hideLrc){%>
@@ -35,6 +62,11 @@
         </div>
     <% } %>
     <div class="row">
+        <% if (isLocalMusic && localAudio.length) { %>
+        <div id="local-music-player" class="col l8 offset-l2 m10 offset-m1 s12"></div>
+        <% } else if (isLocalMusic) { %>
+        <p class="center-align">本地音乐列表暂未配置。</p>
+        <% } else { %>
         <meting-js class="col l8 offset-l2 m10 offset-m1 s12"
                    server="<%- theme.music.server %>"
                    type="<%- theme.music.type %>"
@@ -49,8 +81,17 @@
                    list-folded='<%- theme.music.listFolded ? 'true' : 'false' %>'
         >
         </meting-js>
+        <% } %>
     </div>
 </div>
 
 <script src="<%- theme.cdn.url %><%- url_for(theme.libs.js.aplayer) %>"></script>
+<% if (isLocalMusic && localAudio.length) { %>
+<script>
+    var localMusicPlayerOptions = <%- localPlayerOptions %>;
+    localMusicPlayerOptions.container = document.getElementById('local-music-player');
+    new APlayer(localMusicPlayerOptions);
+</script>
+<% } else if (!isLocalMusic) { %>
 <script src="https://cdn.jsdelivr.net/npm/meting@2/dist/Meting.min.js"></script>
+<% } %>
