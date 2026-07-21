@@ -79,7 +79,7 @@ music:
   enable: true
   mode: local # 播放模式，可选值: 'local', 'meting'
   local:
-    artist: Meowv # 本地歌曲默认作者，歌单文件为 source/_data/music.yml
+    artist: 阿星𝑷𝒍𝒖𝒔 # 本地歌曲默认作者，歌单文件为 source/_data/music.yml
   title: #非吸底模式有效
     enable: true
     show: 听听音乐
@@ -89,7 +89,7 @@ music:
   id: 503838841 #require	song id / playlist id / album id / search keyword
   fixed: true # 开启吸底模式
   autoplay: false # 是否自动播放
-  theme: "#42b983"
+  theme: "#5a9600"
   loop: "all" # 音频循环播放, 可选值: 'all', 'one', 'none'
   order: "random" # 音频循环顺序, 可选值: 'list', 'random'
   preload: "auto" # 预加载，可选值: 'none', 'metadata', 'auto'
@@ -108,7 +108,7 @@ video:
   thumbnails:
   height: # 如：400
   autoplay: false # 是否自动播放
-  theme: "#42b983"
+  theme: "#5a9600"
   loop: false # 是否循环播放
   preload: "auto" # 预加载，可选值: 'none', 'metadata', 'auto'
   volume: 0.7
