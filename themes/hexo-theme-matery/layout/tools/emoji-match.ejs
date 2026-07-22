@@ -1,0 +1,563 @@
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .emoji-match-container { margin-top: -50px; margin-bottom: 30px; }
+  .emoji-match-container .card { border-radius: 8px; }
+  .emoji-match-shell {
+    --emoji-match-green: #5a9600;
+    --emoji-match-light-green: #7ccd00;
+    --emoji-match-ink: #3c4858;
+    --emoji-match-muted: #7b8490;
+    --emoji-match-line: #e6eadf;
+    max-width: 760px;
+    margin: 0 auto;
+    color: var(--emoji-match-ink);
+  }
+  .emoji-match-rule {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+    padding: 11px 14px;
+    border: 1px solid #dfe9d4;
+    border-radius: 8px;
+    color: #617052;
+    background: #f7faf3;
+    font-size: .84rem;
+    line-height: 1.55;
+  }
+  .emoji-match-rule i { flex: 0 0 auto; color: var(--emoji-match-green); }
+  .emoji-match-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .emoji-match-stat {
+    position: relative;
+    min-width: 0;
+    padding: 11px 8px;
+    border: 1px solid var(--emoji-match-line);
+    border-radius: 8px;
+    background: #fff;
+    text-align: center;
+  }
+  .emoji-match-stat-label {
+    display: block;
+    margin-bottom: 3px;
+    color: var(--emoji-match-muted);
+    font-size: .72rem;
+  }
+  .emoji-match-stat-value {
+    display: block;
+    overflow: hidden;
+    color: var(--emoji-match-ink);
+    font-size: 1.12rem;
+    font-weight: 700;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .emoji-match-time {
+    font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+  .emoji-match-time.is-low { color: #d1493f; }
+  .emoji-match-bonus {
+    position: absolute;
+    top: 50%;
+    left: calc(50% + 42px);
+    opacity: 0;
+    color: var(--emoji-match-green);
+    font-size: .78rem;
+    font-weight: 700;
+    pointer-events: none;
+  }
+  .emoji-match-bonus.is-visible { animation: emoji-match-bonus .75s ease both; }
+  .emoji-match-game {
+    position: relative;
+    overflow: hidden;
+    padding: 22px;
+    border: 1px solid var(--emoji-match-line);
+    border-radius: 12px;
+    background: linear-gradient(145deg, #fbfcf9, #f4f7ef);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .9);
+  }
+  .emoji-match-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    width: min(100%, 500px);
+    margin: 0 auto;
+  }
+  .emoji-match-tile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1;
+    min-width: 0;
+    padding: 0;
+    border: 2px solid #e1e6da;
+    border-radius: 14px;
+    outline: none;
+    color: inherit;
+    background: #fff;
+    box-shadow: 0 2px 7px rgba(58, 75, 45, .06);
+    font: inherit;
+    font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+    font-size: clamp(1.85rem, 5vw, 2.75rem);
+    line-height: 1;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    animation: emoji-match-appear .28s cubic-bezier(.18, .8, .3, 1.25) both;
+    animation-delay: var(--emoji-match-delay, 0ms);
+    transition: border-color .16s ease, background .16s ease, box-shadow .16s ease, transform .1s ease;
+  }
+  .emoji-match-tile:hover {
+    border-color: #b8ce9e;
+    background: #fbfdf8;
+    box-shadow: 0 4px 12px rgba(90, 150, 0, .12);
+  }
+  .emoji-match-tile:active { transform: scale(.95); }
+  .emoji-match-tile:focus-visible {
+    border-color: var(--emoji-match-green);
+    box-shadow: 0 0 0 3px rgba(90, 150, 0, .16);
+  }
+  .emoji-match-tile.is-selected {
+    border-color: var(--emoji-match-green);
+    background: #f2f8e9;
+    box-shadow: 0 0 0 3px rgba(90, 150, 0, .12);
+  }
+  .emoji-match-tile.is-matched {
+    border-color: #48a825;
+    background: #edf8e8;
+    animation: emoji-match-found .42s ease both;
+  }
+  .emoji-match-tile:disabled { opacity: 1; cursor: default; }
+  .emoji-match-controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .emoji-match-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-width: 138px;
+    min-height: 40px;
+    padding: 0 18px;
+    border: 1px solid transparent;
+    border-radius: 22px;
+    font: inherit;
+    font-size: .84rem;
+    cursor: pointer;
+    transition: color .2s ease, border-color .2s ease, background .2s ease, box-shadow .2s ease;
+  }
+  .emoji-match-action-primary {
+    color: #fff;
+    background: linear-gradient(135deg, var(--emoji-match-green), var(--emoji-match-light-green));
+    box-shadow: 0 4px 10px rgba(90, 150, 0, .2);
+  }
+  .emoji-match-action-primary:hover { color: #fff; box-shadow: 0 5px 14px rgba(90, 150, 0, .3); }
+  .emoji-match-action-primary:disabled { opacity: .52; cursor: not-allowed; box-shadow: none; }
+  .emoji-match-action-secondary { border-color: #dce2d6; color: #66705e; background: #fff; }
+  .emoji-match-action-secondary:hover { border-color: var(--emoji-match-green); color: var(--emoji-match-green); background: #fbfdf8; }
+  .emoji-match-notice {
+    min-height: 21px;
+    margin: 11px 0 0;
+    color: var(--emoji-match-muted);
+    font-size: .78rem;
+    line-height: 1.5;
+    text-align: center;
+  }
+  .emoji-match-overlay {
+    position: absolute;
+    z-index: 5;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(255, 255, 255, .94);
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
+  }
+  .emoji-match-overlay[hidden] { display: none; }
+  .emoji-match-result { max-width: 360px; text-align: center; animation: emoji-match-result .3s ease both; }
+  .emoji-match-result-icon { margin-bottom: 9px; color: var(--emoji-match-green); font-size: 2rem; }
+  .emoji-match-result h3 { margin: 0 0 8px; color: var(--emoji-match-ink); font-size: 1.35rem; }
+  .emoji-match-result p { margin: 0 0 17px; color: var(--emoji-match-muted); font-size: .9rem; }
+  .emoji-match-result strong { color: var(--emoji-match-green); font-size: 1.15rem; }
+  @keyframes emoji-match-appear {
+    from { opacity: 0; transform: scale(.72); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes emoji-match-found {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(.82) rotate(5deg); }
+  }
+  @keyframes emoji-match-bonus {
+    0% { opacity: 0; transform: translateY(6px) scale(.8); }
+    25%, 70% { opacity: 1; transform: translateY(-3px) scale(1); }
+    100% { opacity: 0; transform: translateY(-14px) scale(1.08); }
+  }
+  @keyframes emoji-match-result {
+    from { opacity: 0; transform: translateY(8px) scale(.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  body.dark .emoji-match-shell, .dark .emoji-match-shell {
+    --emoji-match-ink: #e8eadf;
+    --emoji-match-muted: #afb5a7;
+    --emoji-match-line: #51594d;
+  }
+  body.dark .emoji-match-rule, .dark .emoji-match-rule {
+    border-color: #53604b;
+    color: #c6cebc;
+    background: #343a31;
+  }
+  body.dark .emoji-match-stat, .dark .emoji-match-stat,
+  body.dark .emoji-match-tile, .dark .emoji-match-tile,
+  body.dark .emoji-match-action-secondary, .dark .emoji-match-action-secondary {
+    border-color: #51594d;
+    color: #e8eadf;
+    background: #3b4138;
+  }
+  body.dark .emoji-match-game, .dark .emoji-match-game {
+    border-color: #50594c;
+    background: linear-gradient(145deg, #343a31, #2e342c);
+  }
+  body.dark .emoji-match-tile:hover, .dark .emoji-match-tile:hover {
+    border-color: #799b58;
+    background: #41493c;
+  }
+  body.dark .emoji-match-tile.is-selected, .dark .emoji-match-tile.is-selected {
+    border-color: #86b84c;
+    background: #3e4b34;
+  }
+  body.dark .emoji-match-tile.is-matched, .dark .emoji-match-tile.is-matched {
+    border-color: #67ad45;
+    background: #354a31;
+  }
+  body.dark .emoji-match-overlay, .dark .emoji-match-overlay { background: rgba(47, 53, 44, .95); }
+  @media (prefers-reduced-motion: reduce) {
+    .emoji-match-tile, .emoji-match-result, .emoji-match-bonus { animation-duration: .01ms !important; animation-delay: 0ms !important; }
+    .emoji-match-tile, .emoji-match-action { transition-duration: .01ms !important; }
+  }
+  @media only screen and (max-width: 601px) {
+    .emoji-match-container { margin-top: -30px; }
+    .emoji-match-rule { align-items: flex-start; margin-bottom: 14px; padding: 9px 11px; font-size: .78rem; }
+    .emoji-match-stats { gap: 6px; }
+    .emoji-match-stat { padding: 9px 4px; }
+    .emoji-match-stat-label { font-size: .66rem; }
+    .emoji-match-stat-value { font-size: .94rem; }
+    .emoji-match-bonus { left: calc(50% + 32px); font-size: .7rem; }
+    .emoji-match-game { padding: 12px; border-radius: 10px; }
+    .emoji-match-grid { gap: 7px; }
+    .emoji-match-tile { border-radius: 10px; font-size: clamp(1.6rem, 9vw, 2.35rem); }
+    .emoji-match-controls { gap: 8px; margin-top: 13px; }
+    .emoji-match-action { flex: 1; min-width: 0; padding: 0 10px; font-size: .78rem; }
+  }
+</style>
+
+<main class="content">
+  <div class="container emoji-match-container">
+    <div class="card">
+      <%- partial('_partial/tool-header') %>
+      <div class="card-content">
+        <div class="emoji-match-shell">
+          <div class="emoji-match-rule">
+            <i class="fas fa-info-circle" aria-hidden="true"></i>
+            <span>每轮 16 个表情中只有一对相同。首次选择即开始 60 秒倒计时，配对成功奖励 5 秒并刷新棋盘。</span>
+          </div>
+
+          <div class="emoji-match-stats" aria-label="游戏状态">
+            <div class="emoji-match-stat">
+              <span class="emoji-match-stat-label">剩余时间</span>
+              <strong class="emoji-match-stat-value emoji-match-time" id="emojiMatchTime">60:00</strong>
+              <span class="emoji-match-bonus" id="emojiMatchBonus" aria-hidden="true">+5 秒</span>
+            </div>
+            <div class="emoji-match-stat">
+              <span class="emoji-match-stat-label">已找到</span>
+              <strong class="emoji-match-stat-value" id="emojiMatchScore">0 对</strong>
+            </div>
+            <div class="emoji-match-stat">
+              <span class="emoji-match-stat-label">当前状态</span>
+              <strong class="emoji-match-stat-value" id="emojiMatchStatus">等待开始</strong>
+            </div>
+          </div>
+
+          <div class="emoji-match-game">
+            <div class="emoji-match-grid" id="emojiMatchGrid" aria-label="表情符号棋盘"></div>
+            <div class="emoji-match-overlay" id="emojiMatchOverlay" hidden>
+              <div class="emoji-match-result">
+                <div class="emoji-match-result-icon"><i class="fas fa-trophy" aria-hidden="true"></i></div>
+                <h3>时间到！</h3>
+                <p>本次一共找到 <strong id="emojiMatchFinalScore">0 对</strong></p>
+                <button type="button" class="emoji-match-action emoji-match-action-primary waves-effect" id="emojiMatchReplay">
+                  <i class="fas fa-redo" aria-hidden="true"></i>再玩一次
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="emoji-match-controls">
+            <button type="button" class="emoji-match-action emoji-match-action-primary waves-effect" id="emojiMatchHint" disabled>
+              <i class="fas fa-lightbulb" aria-hidden="true"></i><span>提示（5）</span>
+            </button>
+            <button type="button" class="emoji-match-action emoji-match-action-secondary waves-effect" id="emojiMatchRestart">
+              <i class="fas fa-undo" aria-hidden="true"></i>重新开始
+            </button>
+          </div>
+          <p class="emoji-match-notice" id="emojiMatchNotice" aria-live="polite">选择任意表情开始计时。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script>
+  $(document).ready(function() {
+    var EMOJIS = [
+      '😄', '🤣', '🙂', '🙃', '😉', '😇', '😍', '🤥', '😘', '😚',
+      '😛', '😜', '😋', '🤗', '🤔', '🤐', '😶', '🤑', '😏', '🙄',
+      '😳', '😬', '😴', '🤕', '🤠', '🤧', '😢', '😵', '😎', '🤓',
+      '😡', '🤢', '😭', '😫', '😠'
+    ];
+    var INITIAL_TIME = 60000;
+    var MATCH_BONUS = 5000;
+    var HINT_DELAY = 5000;
+    var APPEAR_ORDER = [5, 6, 9, 10, 4, 7, 8, 11, 1, 2, 13, 14, 0, 3, 12, 15];
+    var state = {};
+    var frameId = null;
+    var boardTimer = null;
+    var bonusTimer = null;
+
+    function shuffle(items) {
+      for (var i = items.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = items[i];
+        items[i] = items[j];
+        items[j] = temp;
+      }
+      return items;
+    }
+
+    function createBoardValues() {
+      var chosen = shuffle(EMOJIS.slice()).slice(0, 15);
+      state.hint = chosen[14];
+      chosen.push(state.hint);
+      return shuffle(chosen);
+    }
+
+    function formatTime(milliseconds) {
+      var safeValue = Math.max(0, milliseconds);
+      var seconds = Math.floor(safeValue / 1000);
+      var centiseconds = Math.floor((safeValue % 1000) / 10);
+      return String(seconds).padStart(2, '0') + ':' + String(centiseconds).padStart(2, '0');
+    }
+
+    function setNotice(text) {
+      $('#emojiMatchNotice').text(text);
+    }
+
+    function updateStats() {
+      $('#emojiMatchTime').text(formatTime(state.timeLeft)).toggleClass('is-low', state.started && state.timeLeft <= 10000);
+      $('#emojiMatchScore').text(state.score + ' 对');
+    }
+
+    function updateHintButton() {
+      var $button = $('#emojiMatchHint');
+      var $label = $button.find('span');
+      if (!state.started || state.ended) {
+        $button.prop('disabled', true);
+        $label.text('提示（5）');
+        return;
+      }
+      if (state.locked) {
+        $button.prop('disabled', true);
+        $label.text('正在刷新');
+        return;
+      }
+      if (state.hintShown) {
+        $button.prop('disabled', false);
+        $label.text('已提示：' + state.hint);
+        return;
+      }
+      if (state.boardAge < HINT_DELAY) {
+        $button.prop('disabled', true);
+        $label.text('提示（' + Math.ceil((HINT_DELAY - state.boardAge) / 1000) + '）');
+        return;
+      }
+      $button.prop('disabled', false);
+      $label.text('查看提示');
+    }
+
+    function setBoardLocked(locked) {
+      state.locked = locked;
+      $('#emojiMatchGrid .emoji-match-tile').prop('disabled', locked || state.ended);
+      updateHintButton();
+    }
+
+    function renderBoard() {
+      state.board = createBoardValues();
+      var delays = [];
+      var $grid = $('#emojiMatchGrid').empty();
+      APPEAR_ORDER.forEach(function(index, order) {
+        delays[index] = order * 18;
+      });
+      state.board.forEach(function(emoji, index) {
+        $('<button>', {
+          type: 'button',
+          class: 'emoji-match-tile',
+          'data-index': index,
+          'aria-label': '第 ' + (index + 1) + ' 格，' + emoji,
+          'aria-pressed': 'false'
+        }).text(emoji).css('--emoji-match-delay', delays[index] + 'ms').appendTo($grid);
+      });
+      state.selectedIndex = null;
+      state.boardAge = 0;
+      state.hintShown = false;
+      setBoardLocked(false);
+      updateHintButton();
+      $('#emojiMatchStatus').text(state.started ? '寻找配对' : '等待开始');
+    }
+
+    function startTimer() {
+      if (state.started || state.ended) return;
+      state.started = true;
+      state.lastFrame = 0;
+      $('#emojiMatchStatus').text('进行中');
+      setNotice('计时已开始，找出唯一相同的一对表情。');
+      updateHintButton();
+      frameId = window.requestAnimationFrame(tick);
+    }
+
+    function tick(timestamp) {
+      if (!state.started || state.ended) return;
+      if (state.lastFrame) {
+        var elapsed = timestamp - state.lastFrame;
+        state.timeLeft -= elapsed;
+        state.boardAge += elapsed;
+      }
+      state.lastFrame = timestamp;
+      if (state.timeLeft <= 0) {
+        endGame();
+        return;
+      }
+      updateStats();
+      updateHintButton();
+      frameId = window.requestAnimationFrame(tick);
+    }
+
+    function showBonus() {
+      var $bonus = $('#emojiMatchBonus');
+      clearTimeout(bonusTimer);
+      $bonus.removeClass('is-visible');
+      void $bonus[0].offsetWidth;
+      $bonus.addClass('is-visible');
+      bonusTimer = setTimeout(function() {
+        $bonus.removeClass('is-visible');
+      }, 800);
+    }
+
+    function handleTileClick() {
+      if (state.ended || state.locked) return;
+      startTimer();
+      var $tile = $(this);
+      var index = Number($tile.attr('data-index'));
+      if (state.selectedIndex === index) return;
+
+      if (state.selectedIndex !== null) {
+        var $previous = $('#emojiMatchGrid .emoji-match-tile[data-index="' + state.selectedIndex + '"]');
+        if (state.board[state.selectedIndex] === state.board[index]) {
+          state.score += 1;
+          state.timeLeft += MATCH_BONUS;
+          state.selectedIndex = null;
+          $previous.removeClass('is-selected').addClass('is-matched').attr('aria-pressed', 'false');
+          $tile.addClass('is-matched').attr('aria-pressed', 'false');
+          setBoardLocked(true);
+          updateStats();
+          showBonus();
+          $('#emojiMatchStatus').text('配对成功');
+          setNotice('配对成功，奖励 5 秒！');
+          clearTimeout(boardTimer);
+          boardTimer = setTimeout(function() {
+            if (!state.ended) renderBoard();
+          }, 600);
+          return;
+        }
+        $previous.removeClass('is-selected').attr('aria-pressed', 'false');
+      }
+
+      $tile.addClass('is-selected').attr('aria-pressed', 'true');
+      state.selectedIndex = index;
+      $('#emojiMatchStatus').text('已选择 1 个');
+    }
+
+    function endGame() {
+      state.timeLeft = 0;
+      state.started = false;
+      state.ended = true;
+      clearTimeout(boardTimer);
+      boardTimer = null;
+      if (frameId !== null) window.cancelAnimationFrame(frameId);
+      frameId = null;
+      $('#emojiMatchGrid .emoji-match-tile').removeClass('is-selected').attr('aria-pressed', 'false');
+      setBoardLocked(true);
+      updateStats();
+      updateHintButton();
+      $('#emojiMatchStatus').text('时间到');
+      $('#emojiMatchFinalScore').text(state.score + ' 对');
+      $('#emojiMatchOverlay').prop('hidden', false);
+      setNotice('本局结束，点击“再玩一次”重新挑战。');
+    }
+
+    function resetGame() {
+      if (frameId !== null) window.cancelAnimationFrame(frameId);
+      clearTimeout(boardTimer);
+      clearTimeout(bonusTimer);
+      frameId = null;
+      boardTimer = null;
+      bonusTimer = null;
+      state = {
+        timeLeft: INITIAL_TIME,
+        score: 0,
+        board: [],
+        selectedIndex: null,
+        hint: '',
+        hintShown: false,
+        boardAge: 0,
+        started: false,
+        ended: false,
+        locked: false,
+        lastFrame: 0
+      };
+      $('#emojiMatchBonus').removeClass('is-visible');
+      $('#emojiMatchOverlay').prop('hidden', true);
+      updateStats();
+      renderBoard();
+      setNotice('选择任意表情开始计时。');
+    }
+
+    $('#emojiMatchGrid').on('click', '.emoji-match-tile', handleTileClick);
+    $('#emojiMatchHint').on('click', function() {
+      if (!state.started || state.ended || state.locked || state.boardAge < HINT_DELAY) return;
+      state.hintShown = true;
+      updateHintButton();
+      setNotice('本轮重复的表情是 ' + state.hint + '。');
+    });
+    $('#emojiMatchRestart, #emojiMatchReplay').on('click', resetGame);
+
+    resetGame();
+  });
+</script>

@@ -153,6 +153,13 @@
     "url": "/tools/emojis"
   },
   {
+    "slug": "emoji-match",
+    "name": "表情符号消除",
+    "description": "在限时挑战中找出唯一成对的表情符号",
+    "emoji": "🎯",
+    "url": "/tools/emoji-match"
+  },
+  {
     "slug": "chinese-converter",
     "name": "繁简互转",
     "description": "中文简繁体实时在线转换",
