@@ -84,14 +84,14 @@ music:
     enable: true
     show: 听听音乐
   autoHide: true # hide automaticaly
-  server: netease #require	music platform: netease, tencent, kugou, xiami, baidu
-  type: playlist #require song, playlist, album, search, artist
-  id: 503838841 #require	song id / playlist id / album id / search keyword
+  server: tencent #require	music platform: netease, tencent, kugou, xiami, baidu
+  type: album #require song, playlist, album, search, artist
+  id: 002L1Oq13Va8PX #require	song id / playlist id / album id / search keyword
   fixed: true # 开启吸底模式
   autoplay: false # 是否自动播放
   theme: "#5a9600"
   loop: "all" # 音频循环播放, 可选值: 'all', 'one', 'none'
-  order: "random" # 音频循环顺序, 可选值: 'list', 'random'
+  order: "list" # 音频循环顺序, 可选值: 'list', 'random'
   preload: "auto" # 预加载，可选值: 'none', 'metadata', 'auto'
   volume: 0.7 # 默认音量，请注意播放器会记忆用户设置，用户手动设置音量后默认音量即失效
   listFolded: true # 列表默认折叠
