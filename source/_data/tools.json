@@ -18,9 +18,16 @@
     "slug": "ztype",
     "name": "打字练习",
     "description": "打字消灭敌机，在游戏中提升打字速度！",
-    "emoji": "⌨️",
+    "emoji": "🛸",
     "url": "/games/ztype",
     "fullscreen": true
+  },
+  {
+    "slug": "keyboard-visualizer",
+    "name": "键盘可视化",
+    "description": "机械键盘按键测试、组合键展示与 RGB 灯效体验",
+    "emoji": "⌨️",
+    "url": "/tools/keyboard-visualizer"
   },
   {
     "slug": "api-explorer",

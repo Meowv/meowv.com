@@ -1,0 +1,1677 @@
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .kbv-container {
+    width: 92%;
+    max-width: 1440px;
+    margin-top: -50px;
+    margin-bottom: 30px;
+  }
+  .kbv-container .card { border-radius: 8px; }
+  .kbv-shell {
+    --kbv-green: #5a9600;
+    --kbv-light-green: #7ccd00;
+    --kbv-ink: #354052;
+    --kbv-muted: #7b8491;
+    --kbv-line: #e3e8dc;
+    color: var(--kbv-ink);
+  }
+  .kbv-toolbar {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 12px 18px;
+    margin-bottom: 16px;
+    padding: 12px 14px;
+    border: 1px solid var(--kbv-line);
+    border-radius: 10px;
+    background: #f8faf5;
+  }
+  .kbv-control {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .kbv-control-label {
+    color: var(--kbv-muted);
+    font-size: .68rem;
+    line-height: 1;
+  }
+  .kbv-options {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .kbv-option,
+  .kbv-action {
+    min-height: 32px;
+    margin: 0;
+    padding: 0 12px;
+    border: 1px solid #dce3d5;
+    border-radius: 17px;
+    outline: none;
+    color: #5c6756 !important;
+    background: #fff !important;
+    box-shadow: none;
+    font: inherit;
+    font-size: .74rem;
+    line-height: 30px;
+    cursor: pointer;
+    transition: border-color .2s ease, color .2s ease, background .2s ease, box-shadow .2s ease;
+  }
+  .kbv-option:hover,
+  .kbv-action:hover {
+    border-color: #a9c58c;
+    color: var(--kbv-green) !important;
+    background: #fbfdf8 !important;
+  }
+  .kbv-option:focus,
+  .kbv-action:focus {
+    color: #5c6756 !important;
+    background: #fff !important;
+  }
+  .kbv-option:focus-visible,
+  .kbv-action:focus-visible {
+    border-color: var(--kbv-green);
+    box-shadow: 0 0 0 3px rgba(90, 150, 0, .16);
+  }
+  .kbv-option.is-active,
+  .kbv-option.is-active:focus {
+    border-color: transparent;
+    color: #fff !important;
+    background: linear-gradient(135deg, var(--kbv-green), var(--kbv-light-green)) !important;
+    box-shadow: 0 3px 8px rgba(90, 150, 0, .2);
+  }
+  .kbv-toolbar-actions {
+    display: flex;
+    gap: 7px;
+    margin-left: auto;
+  }
+  .kbv-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .kbv-stage {
+    position: relative;
+    overflow: hidden;
+    padding: 16px;
+    border: 1px solid #252c37;
+    border-radius: 16px;
+    outline: none;
+    color: #e9edf5;
+    background:
+      radial-gradient(circle at 50% 0, rgba(71, 91, 123, .18), transparent 42%),
+      linear-gradient(145deg, #11151c, #090c11);
+    box-shadow: 0 18px 38px rgba(23, 31, 43, .2), inset 0 1px 0 rgba(255, 255, 255, .06);
+  }
+  .kbv-stage-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin: 0 4px 12px;
+  }
+  .kbv-brand {
+    color: #96a0b1;
+    font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+    font-size: .68rem;
+    letter-spacing: .12em;
+  }
+  .kbv-locks {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .kbv-lock {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: #6f7888;
+    font-size: .61rem;
+    letter-spacing: .04em;
+  }
+  .kbv-lock-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #343c48;
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, .5);
+  }
+  .kbv-lock.is-on { color: #c9ff7a; }
+  .kbv-lock.is-on .kbv-lock-dot {
+    background: #9cff32;
+    box-shadow: 0 0 8px rgba(156, 255, 50, .85);
+  }
+  .kbv-lock-state {
+    color: #687181;
+    font-size: .48rem;
+  }
+  .kbv-lock.is-on .kbv-lock-state { color: #c9ff7a; }
+  .kbv-stage-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .kbv-stage-exit {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 30px;
+    padding: 0 11px;
+    border: 1px solid #465166;
+    border-radius: 16px;
+    outline: none;
+    color: #dbe1eb !important;
+    background: #252d39 !important;
+    font: inherit;
+    font-size: .65rem;
+    cursor: pointer;
+  }
+  .kbv-stage-exit:focus {
+    color: #dbe1eb !important;
+    background: #252d39 !important;
+  }
+  .kbv-stage-exit:focus-visible {
+    border-color: #9cff32;
+    box-shadow: 0 0 0 3px rgba(156, 255, 50, .16);
+  }
+  .kbv-combo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 48px;
+    margin-bottom: 12px;
+    padding: 8px 12px;
+    border: 1px solid rgba(255, 255, 255, .07);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, .035);
+  }
+  .kbv-combo-label {
+    flex: 0 0 auto;
+    color: #737e8f;
+    font-size: .68rem;
+  }
+  .kbv-combo-keys {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-width: 0;
+  }
+  .kbv-combo-empty {
+    color: #8d97a6;
+    font-size: .78rem;
+  }
+  .kbv-combo-key {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    padding: 0 10px;
+    border: 1px solid #485466;
+    border-radius: 6px;
+    color: #f4f7fb;
+    background: linear-gradient(180deg, #333c49, #202630);
+    box-shadow: 0 2px 0 #090c10;
+    font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+    font-size: .72rem;
+    font-weight: 700;
+  }
+  .kbv-combo-plus { color: #667183; font-size: .7rem; }
+  .kbv-keyboard-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 3px 2px 9px;
+    border-radius: 12px;
+    outline: none;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-color: #465166 #171c25;
+    scrollbar-width: thin;
+  }
+  .kbv-keyboard-scroll:focus,
+  .kbv-keyboard-scroll:focus-visible { outline: none; }
+  .kbv-keyboard-scroll::-webkit-scrollbar { height: 8px; }
+  .kbv-keyboard-scroll::-webkit-scrollbar-track {
+    border-radius: 5px;
+    background: #171c25;
+  }
+  .kbv-keyboard-scroll::-webkit-scrollbar-thumb {
+    border-radius: 5px;
+    background: #465166;
+  }
+  .kbv-keyboard {
+    --kbv-unit: 42px;
+    --kbv-gap: 5px;
+    width: 1087px;
+    min-width: 1087px;
+    margin: 0 auto;
+    padding: 18px;
+    border: 1px solid #303844;
+    border-radius: 13px;
+    background:
+      linear-gradient(145deg, rgba(255, 255, 255, .045), transparent 28%),
+      linear-gradient(160deg, #272e38, #161b23 72%);
+    box-shadow:
+      0 10px 24px rgba(0, 0, 0, .36),
+      inset 0 1px 0 rgba(255, 255, 255, .08),
+      inset 0 -2px 0 rgba(0, 0, 0, .38);
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: pan-x pan-y;
+  }
+  .kbv-function-row,
+  .kbv-keyboard-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .kbv-function-row { margin-bottom: 14px; }
+  .kbv-keyboard-row {
+    height: var(--kbv-unit);
+    margin-bottom: var(--kbv-gap);
+  }
+  .kbv-keyboard-row:last-child { margin-bottom: 0; }
+  .kbv-section,
+  .kbv-function-main,
+  .kbv-function-group {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--kbv-gap);
+  }
+  .kbv-main-section,
+  .kbv-function-main {
+    flex: 0 0 700px;
+    width: 700px;
+  }
+  .kbv-function-main { justify-content: space-between; }
+  .kbv-nav-section,
+  .kbv-function-nav {
+    flex: 0 0 136px;
+    width: 136px;
+  }
+  .kbv-numpad-section,
+  .kbv-function-spacer {
+    flex: 0 0 183px;
+    width: 183px;
+  }
+  .kbv-keyboard[data-layout="tkl"] {
+    width: 888px;
+    min-width: 888px;
+  }
+  .kbv-keyboard[data-layout="tkl"] .kbv-numpad-section,
+  .kbv-keyboard[data-layout="tkl"] .kbv-function-spacer,
+  .kbv-stage[data-layout="tkl"] #kbvNumLock { display: none; }
+  .kbv-key,
+  .kbv-key-placeholder {
+    position: relative;
+    flex: 0 0 auto;
+    width: var(--kbv-unit);
+    height: var(--kbv-unit);
+    box-sizing: border-box;
+  }
+  .kbv-key {
+    z-index: 1;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .kbv-key.is-tall {
+    z-index: 3;
+    height: 89px;
+  }
+  .kbv-key-light {
+    position: absolute;
+    z-index: 0;
+    inset: 3px;
+    opacity: 0;
+    border-radius: 8px;
+    background: hsl(var(--kbv-hue) 96% 62%);
+    filter: blur(8px);
+    transform: scale(.78);
+    transition: opacity .32s ease, transform .2s ease;
+    pointer-events: none;
+  }
+  .kbv-key-cap {
+    position: absolute;
+    z-index: 1;
+    inset: 0 0 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 5px;
+    border: 1px solid #4a5361;
+    border-radius: 7px;
+    color: #e4e8ef;
+    background:
+      linear-gradient(145deg, rgba(255, 255, 255, .09), transparent 32%),
+      linear-gradient(180deg, #3b4350, #282f39);
+    box-shadow:
+      0 4px 0 #11151b,
+      0 6px 7px rgba(0, 0, 0, .28),
+      inset 0 1px 0 rgba(255, 255, 255, .09);
+    box-sizing: border-box;
+    font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+    font-size: .68rem;
+    font-weight: 600;
+    line-height: 1.05;
+    text-align: center;
+    transform: translateY(0);
+    transition: transform .07s ease-out, box-shadow .07s ease-out, border-color .14s ease, color .14s ease;
+  }
+  .kbv-key.is-wide .kbv-key-cap {
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 7px 8px;
+    font-size: .61rem;
+  }
+  .kbv-key.is-tall .kbv-key-cap {
+    align-items: flex-end;
+    justify-content: flex-end;
+    padding: 9px 7px;
+  }
+  .kbv-key-label { display: block; }
+  .kbv-key-sub {
+    position: absolute;
+    top: 5px;
+    left: 6px;
+    color: #99a3b2;
+    font-size: .48rem;
+    font-weight: 500;
+  }
+  .kbv-key:not(.has-sub) .kbv-key-label { margin-top: 1px; }
+  .kbv-key.is-wide .kbv-key-sub {
+    top: auto;
+    right: 7px;
+    bottom: 6px;
+    left: auto;
+  }
+  .kbv-key.is-pressed .kbv-key-light,
+  .kbv-key.is-preview .kbv-key-light {
+    opacity: .98;
+    transform: scale(1.12);
+  }
+  .kbv-key.is-pressed .kbv-key-cap,
+  .kbv-key.is-preview .kbv-key-cap {
+    border-color: hsl(var(--kbv-hue) 72% 61%);
+    color: #fff;
+    box-shadow:
+      0 1px 0 #11151b,
+      0 2px 3px rgba(0, 0, 0, .32),
+      inset 0 0 12px hsla(var(--kbv-hue), 88%, 62%, .17);
+    transform: translateY(4px);
+  }
+  .kbv-key.is-repeating .kbv-key-cap { border-color: #f3c45d; }
+  .kbv-key.is-suspected .kbv-key-cap {
+    border-color: #ff6961;
+    box-shadow:
+      0 1px 0 #11151b,
+      0 0 10px rgba(255, 105, 97, .34),
+      inset 0 0 9px rgba(255, 105, 97, .12);
+  }
+  .kbv-key.is-tested .kbv-key-cap::after {
+    position: absolute;
+    right: 5px;
+    bottom: 5px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #8ddd31;
+    box-shadow: 0 0 5px rgba(141, 221, 49, .72);
+    content: '';
+  }
+  .kbv-keyboard[data-effect="rainbow"] .kbv-key-light {
+    opacity: .54;
+    transform: scale(.9);
+    animation: kbv-rainbow-wave 2.2s ease-in-out infinite;
+    animation-delay: var(--kbv-wave-delay);
+  }
+  .kbv-keyboard[data-effect="rainbow"] .kbv-key.is-pressed .kbv-key-light {
+    opacity: 1;
+    transform: scale(1.14);
+  }
+  .kbv-stage.is-complete .kbv-key-light {
+    animation: kbv-complete .85s ease-out both;
+    animation-delay: var(--kbv-complete-delay);
+  }
+  .kbv-mobile-hint {
+    display: none;
+    margin: 11px 2px 0;
+    color: #8994a5;
+    font-size: .68rem;
+    line-height: 1.5;
+    text-align: center;
+  }
+  .kbv-stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .kbv-stat {
+    min-width: 0;
+    padding: 12px 13px;
+    border: 1px solid var(--kbv-line);
+    border-radius: 9px;
+    background: #fff;
+  }
+  .kbv-stat-label {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--kbv-muted);
+    font-size: .69rem;
+  }
+  .kbv-stat-value {
+    display: block;
+    overflow: hidden;
+    color: var(--kbv-ink);
+    font-size: 1.1rem;
+    font-weight: 700;
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .kbv-progress {
+    overflow: hidden;
+    height: 3px;
+    margin-top: 7px;
+    border-radius: 3px;
+    background: #edf1e8;
+  }
+  .kbv-progress span {
+    display: block;
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--kbv-green), var(--kbv-light-green));
+    transition: width .25s ease;
+  }
+  .kbv-detail-grid {
+    display: grid;
+    grid-template-columns: minmax(0, .9fr) minmax(0, 0.9fr);
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .kbv-panel {
+    padding: 15px;
+    border: 1px solid var(--kbv-line);
+    border-radius: 9px;
+    background: #fff;
+  }
+  .kbv-panel h3 {
+    margin: 0 0 12px;
+    color: var(--kbv-ink);
+    font-size: .88rem;
+    font-weight: 700;
+  }
+  .kbv-event-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .kbv-event-item { min-width: 0; }
+  .kbv-event-label {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--kbv-muted);
+    font-size: .62rem;
+  }
+  .kbv-event-value {
+    display: block;
+    overflow: hidden;
+    color: #475266;
+    font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+    font-size: .72rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .kbv-notes {
+    display: grid;
+    gap: 8px;
+  }
+  .kbv-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 0;
+    color: #687383;
+    font-size: .71rem;
+    line-height: 1.55;
+  }
+  .kbv-note i {
+    flex: 0 0 auto;
+    margin-top: 3px;
+    color: var(--kbv-green);
+  }
+  .kbv-sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    clip-path: inset(50%) !important;
+    white-space: nowrap !important;
+  }
+  .kbv-stage:fullscreen {
+    --kbv-fullscreen-scale: 1;
+    --kbv-fullscreen-keyboard-height: 335px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 100vw;
+    height: 100vh;
+    overflow: auto;
+    padding: 28px;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background:
+      radial-gradient(circle at 50% 0, rgba(71, 91, 123, .24), transparent 48%),
+      #090c11;
+    box-sizing: border-box;
+  }
+  .kbv-stage:fullscreen .kbv-stage-top,
+  .kbv-stage:fullscreen .kbv-combo {
+    width: min(1320px, 100%);
+    margin-right: auto;
+    margin-left: auto;
+  }
+  .kbv-stage:fullscreen .kbv-keyboard-scroll {
+    width: min(1600px, 100%);
+    min-height: var(--kbv-fullscreen-keyboard-height);
+    margin-right: auto;
+    margin-left: auto;
+  }
+  .kbv-stage:fullscreen .kbv-keyboard {
+    transform: scale(var(--kbv-fullscreen-scale));
+    transform-origin: top center;
+  }
+  .kbv-stage:fullscreen .kbv-stage-exit { display: inline-flex; }
+  @keyframes kbv-rainbow-wave {
+    0%, 100% { opacity: .28; transform: scale(.76); }
+    50% { opacity: .78; transform: scale(1.03); }
+  }
+  @keyframes kbv-complete {
+    0%, 100% { opacity: 0; transform: scale(.75); }
+    48% { opacity: 1; transform: scale(1.15); }
+  }
+  body.dark .kbv-shell,
+  .dark .kbv-shell {
+    --kbv-ink: #e5e9df;
+    --kbv-muted: #a8b0a3;
+    --kbv-line: #50584c;
+  }
+  body.dark .kbv-toolbar,
+  .dark .kbv-toolbar {
+    border-color: #50584c;
+    background: #343a31;
+  }
+  body.dark .kbv-option,
+  .dark .kbv-option,
+  body.dark .kbv-action,
+  .dark .kbv-action,
+  body.dark .kbv-option:focus,
+  .dark .kbv-option:focus,
+  body.dark .kbv-action:focus,
+  .dark .kbv-action:focus {
+    border-color: #596152;
+    color: #d8ddd3 !important;
+    background: #3b4138 !important;
+  }
+  body.dark .kbv-option.is-active,
+  .dark .kbv-option.is-active,
+  body.dark .kbv-option.is-active:focus,
+  .dark .kbv-option.is-active:focus {
+    color: #fff !important;
+    background: linear-gradient(135deg, var(--kbv-green), var(--kbv-light-green)) !important;
+  }
+  body.dark .kbv-stat,
+  .dark .kbv-stat,
+  body.dark .kbv-panel,
+  .dark .kbv-panel {
+    border-color: #50584c;
+    background: #373d34;
+  }
+  body.dark .kbv-event-value,
+  .dark .kbv-event-value { color: #d5dbcf; }
+  body.dark .kbv-note,
+  .dark .kbv-note { color: #b5bcae; }
+  body.dark .kbv-progress,
+  .dark .kbv-progress { background: #4a5246; }
+  @media (prefers-reduced-motion: reduce) {
+    .kbv-option,
+    .kbv-action,
+    .kbv-key-light,
+    .kbv-key-cap,
+    .kbv-progress span {
+      transition-duration: .01ms !important;
+    }
+    .kbv-keyboard[data-effect="rainbow"] .kbv-key-light {
+      opacity: .3;
+      animation: none !important;
+    }
+    .kbv-stage.is-complete .kbv-key-light { animation: none !important; }
+  }
+  @media only screen and (max-width: 900px) {
+    .kbv-container { width: 94%; }
+    .kbv-toolbar-actions { width: 100%; margin-left: 0; }
+    .kbv-event-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  @media only screen and (min-width: 1280px) {
+    .kbv-stage:fullscreen {
+      --kbv-fullscreen-scale: 1.1;
+      --kbv-fullscreen-keyboard-height: 365px;
+    }
+  }
+  @media only screen and (min-width: 1440px) {
+    .kbv-stage:fullscreen {
+      --kbv-fullscreen-scale: 1.2;
+      --kbv-fullscreen-keyboard-height: 400px;
+    }
+  }
+  @media only screen and (min-width: 1680px) {
+    .kbv-stage:fullscreen {
+      --kbv-fullscreen-scale: 1.34;
+      --kbv-fullscreen-keyboard-height: 445px;
+    }
+  }
+  @media only screen and (min-width: 1920px) {
+    .kbv-stage:fullscreen {
+      --kbv-fullscreen-scale: 1.5;
+      --kbv-fullscreen-keyboard-height: 495px;
+    }
+  }
+  @media only screen and (max-height: 640px) {
+    .kbv-stage:fullscreen { justify-content: flex-start; }
+  }
+  @media only screen and (max-width: 601px) {
+    .kbv-container {
+      width: 96%;
+      margin-top: -30px;
+    }
+    .kbv-toolbar {
+      align-items: stretch;
+      padding: 11px;
+    }
+    .kbv-control { width: 100%; }
+    .kbv-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .kbv-option { width: 100%; padding: 0 8px; }
+    .kbv-toolbar-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .kbv-stage { padding: 11px; border-radius: 12px; }
+    .kbv-stage-top { align-items: flex-start; flex-wrap: wrap; }
+    .kbv-brand { font-size: .58rem; }
+    .kbv-locks { gap: 7px; }
+    .kbv-lock { gap: 3px; font-size: .53rem; }
+    .kbv-combo {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 5px;
+      min-height: 58px;
+    }
+    .kbv-mobile-hint { display: block; }
+    .kbv-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+    .kbv-stat { padding: 10px; }
+    .kbv-stat-value { font-size: .98rem; }
+    .kbv-detail-grid { grid-template-columns: 1fr; }
+    .kbv-event-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .kbv-stage:fullscreen { padding: 12px; }
+  }
+</style>
+
+<main class="content">
+  <div class="container kbv-container">
+    <div class="card">
+      <%- partial('_partial/tool-header') %>
+      <div class="card-content">
+        <div class="kbv-shell" id="keyboardVisualizer">
+          <span class="kbv-sr-only" id="kbvAnnouncement" aria-live="polite"></span>
+
+          <div class="kbv-toolbar" aria-label="键盘可视化设置">
+            <div class="kbv-control">
+              <span class="kbv-control-label">键帽标识</span>
+              <div class="kbv-options" role="group" aria-label="键帽标识">
+                <button type="button" class="kbv-option is-active" data-kbv-platform="windows" aria-pressed="true">Windows</button>
+                <button type="button" class="kbv-option" data-kbv-platform="mac" aria-pressed="false" title="切换常用 Mac 键帽标识与修饰键位置">Mac</button>
+              </div>
+            </div>
+            <div class="kbv-control">
+              <span class="kbv-control-label">键盘配列</span>
+              <div class="kbv-options" role="group" aria-label="键盘配列">
+                <button type="button" class="kbv-option is-active" data-kbv-layout="full" aria-pressed="true">104 键</button>
+                <button type="button" class="kbv-option" data-kbv-layout="tkl" aria-pressed="false">87 键 TKL</button>
+              </div>
+            </div>
+            <div class="kbv-control">
+              <span class="kbv-control-label">RGB 灯效</span>
+              <div class="kbv-options" role="group" aria-label="RGB 灯效">
+                <button type="button" class="kbv-option is-active" data-kbv-effect="reactive" aria-pressed="true">响应</button>
+                <button type="button" class="kbv-option" data-kbv-effect="ripple" aria-pressed="false">涟漪</button>
+                <button type="button" class="kbv-option" data-kbv-effect="rainbow" aria-pressed="false">彩虹波浪</button>
+              </div>
+            </div>
+            <div class="kbv-toolbar-actions">
+              <button type="button" class="kbv-action" id="kbvReset">
+                <i class="fas fa-undo" aria-hidden="true"></i>重置记录
+              </button>
+              <button type="button" class="kbv-action" id="kbvFullscreen" aria-label="进入沉浸模式">
+                <i class="fas fa-expand" id="kbvFullscreenIcon" aria-hidden="true"></i>
+                <span id="kbvFullscreenText">沉浸模式</span>
+              </button>
+            </div>
+          </div>
+
+          <section class="kbv-stage" id="kbvStage" data-layout="full" tabindex="0" aria-label="键盘事件捕获区域">
+            <div class="kbv-stage-top">
+              <span class="kbv-brand" id="kbvBrand">MEOWV // FULL SIZE 104</span>
+              <div class="kbv-stage-controls">
+                <div class="kbv-locks" aria-label="锁定键状态">
+                  <span class="kbv-lock" id="kbvCapsLock" aria-label="Caps Lock：关"><span class="kbv-lock-dot"></span>CAPS <span class="kbv-lock-state">OFF</span></span>
+                  <span class="kbv-lock" id="kbvNumLock" aria-label="Num Lock：关"><span class="kbv-lock-dot"></span>NUM <span class="kbv-lock-state">OFF</span></span>
+                  <span class="kbv-lock" id="kbvScrollLock" aria-label="Scroll Lock：关"><span class="kbv-lock-dot"></span>SCROLL <span class="kbv-lock-state">OFF</span></span>
+                </div>
+                <button type="button" class="kbv-stage-exit" id="kbvStageExit" aria-label="退出沉浸模式">
+                  <i class="fas fa-compress" aria-hidden="true"></i>退出沉浸
+                </button>
+              </div>
+            </div>
+            <div class="kbv-combo">
+              <span class="kbv-combo-label">当前组合键</span>
+              <div class="kbv-combo-keys" id="kbvCombo">
+                <span class="kbv-combo-empty">等待按键</span>
+              </div>
+            </div>
+            <div class="kbv-keyboard-scroll" id="kbvKeyboardScroll" role="region" aria-label="可横向滚动的完整键盘">
+              <div class="kbv-keyboard" id="kbvKeyboard" data-effect="reactive" data-layout="full" role="img" aria-label="Windows 104 键可视化键盘"></div>
+            </div>
+            <p class="kbv-mobile-hint">建议使用电脑连接实体键盘体验；手机端可横向滑动并点按键帽预览动画，预览不会计入检测。</p>
+          </section>
+
+          <div class="kbv-stats" aria-label="键盘检测统计">
+            <div class="kbv-stat">
+              <span class="kbv-stat-label">已检测按键</span>
+              <strong class="kbv-stat-value" id="kbvTested">0 / 104</strong>
+              <div class="kbv-progress" aria-hidden="true"><span id="kbvProgress"></span></div>
+            </div>
+            <div class="kbv-stat">
+              <span class="kbv-stat-label">当前按下</span>
+              <strong class="kbv-stat-value" id="kbvPressed">0</strong>
+            </div>
+            <div class="kbv-stat">
+              <span class="kbv-stat-label">最高同时按下</span>
+              <strong class="kbv-stat-value" id="kbvMaximum">0</strong>
+            </div>
+            <div class="kbv-stat">
+              <span class="kbv-stat-label">本次有效按下</span>
+              <strong class="kbv-stat-value" id="kbvPressCount">0</strong>
+            </div>
+          </div>
+
+          <div class="kbv-detail-grid">
+            <section class="kbv-panel" aria-labelledby="kbvEventTitle">
+              <h3 id="kbvEventTitle">最近一次键盘事件</h3>
+              <div class="kbv-event-grid">
+                <div class="kbv-event-item">
+                  <span class="kbv-event-label">event.code</span>
+                  <span class="kbv-event-value" id="kbvEventCode">—</span>
+                </div>
+                <div class="kbv-event-item">
+                  <span class="kbv-event-label">event.key</span>
+                  <span class="kbv-event-value" id="kbvEventKey">—</span>
+                </div>
+                <div class="kbv-event-item">
+                  <span class="kbv-event-label">事件状态</span>
+                  <span class="kbv-event-value" id="kbvEventType">—</span>
+                </div>
+                <div class="kbv-event-item">
+                  <span class="kbv-event-label">按键位置</span>
+                  <span class="kbv-event-value" id="kbvEventLocation">—</span>
+                </div>
+                <div class="kbv-event-item">
+                  <span class="kbv-event-label">长按重复</span>
+                  <span class="kbv-event-value" id="kbvEventRepeat">—</span>
+                </div>
+              </div>
+            </section>
+            <section class="kbv-panel" aria-labelledby="kbvNotesTitle">
+              <h3 id="kbvNotesTitle">检测说明</h3>
+              <div class="kbv-notes">
+                <p class="kbv-note"><i class="fas fa-shield-alt" aria-hidden="true"></i><span>本地处理 · 不保存输入内容。按键事件只在当前页面内完成，页面也不会拼接或上传可还原的输入文本。</span></p>
+                <p class="kbv-note"><i class="fas fa-info-circle" aria-hidden="true"></i><span>Fn、亮度键及部分系统或浏览器快捷键可能被拦截，因此未亮起不一定代表键盘故障。</span></p>
+                <p class="kbv-note"><i class="fas fa-keyboard" aria-hidden="true"></i><span>未配备数字小键盘时请选择 87 键 TKL；切换配列会重置本次检测记录。</span></p>
+                <p class="kbv-note"><i class="fas fa-laptop" aria-hidden="true"></i><span>Mac 模式用于常用键帽标识与修饰键位置切换，不代表完整 Apple 键盘配列。</span></p>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script>
+  $(document).ready(function() {
+    var UNIT = 42;
+    var GAP = 5;
+    var SECTION_OFFSETS = { main: 0, nav: 16.4, numpad: 20.2 };
+    var platform = 'windows';
+    var keyboardLayout = 'full';
+    var effect = 'reactive';
+    var pressedCodes = new Set();
+    var testedCodes = new Set();
+    var keyElements = Object.create(null);
+    var layoutOrder = Object.create(null);
+    var previewTimers = Object.create(null);
+    var holdTimers = Object.create(null);
+    var suppressedControlCodes = new Set();
+    var suppressedControlTimers = Object.create(null);
+    var rippleAnimations = [];
+    var pressCount = 0;
+    var maximumPressed = 0;
+    var celebrated = false;
+    var celebrationTimer = null;
+    var fullscreenWasActive = false;
+    var HOLD_WARNING_TIMEOUT = 30000;
+    var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    var root = document.getElementById('keyboardVisualizer');
+    var stage = document.getElementById('kbvStage');
+    var keyboard = document.getElementById('kbvKeyboard');
+    var statusText = document.querySelector('#kbvStatus span');
+    var combo = document.getElementById('kbvCombo');
+    var announcement = document.getElementById('kbvAnnouncement');
+
+    function key(code, label, width, options) {
+      var item = {
+        code: code,
+        label: label,
+        width: width || 1
+      };
+      Object.keys(options || {}).forEach(function(name) {
+        item[name] = options[name];
+      });
+      return item;
+    }
+
+    function placeholder(width) {
+      return { placeholder: true, width: width || 1 };
+    }
+
+    function functionGroup(start) {
+      var keys = [];
+      for (var number = start; number < start + 4; number++) {
+        keys.push(key('F' + number, 'F' + number));
+      }
+      return keys;
+    }
+
+    function letterKeys(letters) {
+      return letters.split('').map(function(letter) {
+        return key('Key' + letter, letter);
+      });
+    }
+
+    var functionGroups = [
+      [key('Escape', 'Esc')],
+      functionGroup(1),
+      functionGroup(5),
+      functionGroup(9)
+    ];
+
+    var functionNav = [
+      key('PrintScreen', 'PrtSc'),
+      key('ScrollLock', 'ScrLk'),
+      key('Pause', 'Pause')
+    ];
+
+    var rows = [
+      {
+        main: [
+          key('Backquote', '`', 1, { sub: '~' }),
+          key('Digit1', '1', 1, { sub: '!' }),
+          key('Digit2', '2', 1, { sub: '@' }),
+          key('Digit3', '3', 1, { sub: '#' }),
+          key('Digit4', '4', 1, { sub: '$' }),
+          key('Digit5', '5', 1, { sub: '%' }),
+          key('Digit6', '6', 1, { sub: '^' }),
+          key('Digit7', '7', 1, { sub: '&' }),
+          key('Digit8', '8', 1, { sub: '*' }),
+          key('Digit9', '9', 1, { sub: '(' }),
+          key('Digit0', '0', 1, { sub: ')' }),
+          key('Minus', '-', 1, { sub: '_' }),
+          key('Equal', '=', 1, { sub: '+' }),
+          key('Backspace', 'Backspace', 2, { mac: '⌫' })
+        ],
+        nav: [
+          key('Insert', 'Insert'),
+          key('Home', 'Home'),
+          key('PageUp', 'PgUp')
+        ],
+        numpad: [
+          key('NumLock', 'Num', 1, { sub: 'Lock' }),
+          key('NumpadDivide', '/'),
+          key('NumpadMultiply', '×'),
+          key('NumpadSubtract', '−')
+        ]
+      },
+      {
+        main: [key('Tab', 'Tab', 1.5, { mac: '⇥' })]
+          .concat(letterKeys('QWERTYUIOP'))
+          .concat([
+            key('BracketLeft', '[', 1, { sub: '{' }),
+            key('BracketRight', ']', 1, { sub: '}' }),
+            key('Backslash', '\\', 1.5, { sub: '|' })
+          ]),
+        nav: [
+          key('Delete', 'Delete', 1, { mac: '⌦' }),
+          key('End', 'End'),
+          key('PageDown', 'PgDn')
+        ],
+        numpad: [
+          key('Numpad7', '7', 1, { sub: 'Home' }),
+          key('Numpad8', '8', 1, { sub: '↑' }),
+          key('Numpad9', '9', 1, { sub: 'PgUp' }),
+          key('NumpadAdd', '+', 1, { tall: true })
+        ]
+      },
+      {
+        main: [key('CapsLock', 'Caps', 1.75, { sub: 'Lock', mac: '⇪', macSub: '' })]
+          .concat(letterKeys('ASDFGHJKL'))
+          .concat([
+            key('Semicolon', ';', 1, { sub: ':' }),
+            key('Quote', "'", 1, { sub: '"' }),
+            key('Enter', 'Enter', 2.25, { mac: '↩' })
+          ]),
+        nav: [placeholder(), placeholder(), placeholder()],
+        numpad: [
+          key('Numpad4', '4', 1, { sub: '←' }),
+          key('Numpad5', '5'),
+          key('Numpad6', '6', 1, { sub: '→' }),
+          placeholder()
+        ]
+      },
+      {
+        main: [key('ShiftLeft', 'Shift', 2.25, { mac: '⇧' })]
+          .concat(letterKeys('ZXCVBNM'))
+          .concat([
+            key('Comma', ',', 1, { sub: '<' }),
+            key('Period', '.', 1, { sub: '>' }),
+            key('Slash', '/', 1, { sub: '?' }),
+            key('ShiftRight', 'Shift', 2.75, { mac: '⇧' })
+          ]),
+        nav: [placeholder(), key('ArrowUp', '↑'), placeholder()],
+        numpad: [
+          key('Numpad1', '1', 1, { sub: 'End' }),
+          key('Numpad2', '2', 1, { sub: '↓' }),
+          key('Numpad3', '3', 1, { sub: 'PgDn' }),
+          key('NumpadEnter', 'Enter', 1, { tall: true, mac: '↩' })
+        ]
+      },
+      {
+        main: [
+          key('ControlLeft', 'Ctrl', 1.25, { mac: '⌃' }),
+          key('MetaLeft', 'Win', 1.25, { mac: '⌥', macCode: 'AltLeft' }),
+          key('AltLeft', 'Alt', 1.25, { mac: '⌘', macCode: 'MetaLeft' }),
+          key('Space', 'Space', 6.25),
+          key('AltRight', 'Alt', 1.25, { mac: '⌘', macCode: 'MetaRight' }),
+          key('MetaRight', 'Win', 1.25, { mac: '⌥', macCode: 'AltRight' }),
+          key('ContextMenu', 'Menu', 1.25),
+          key('ControlRight', 'Ctrl', 1.25, { mac: '⌃' })
+        ],
+        nav: [
+          key('ArrowLeft', '←'),
+          key('ArrowDown', '↓'),
+          key('ArrowRight', '→')
+        ],
+        numpad: [
+          key('Numpad0', '0', 2, { sub: 'Ins' }),
+          key('NumpadDecimal', '.', 1, { sub: 'Del' }),
+          placeholder()
+        ]
+      }
+    ];
+
+    var layoutKeys = [];
+    functionGroups.forEach(function(group) {
+      group.forEach(function(item) { layoutKeys.push(item); });
+    });
+    functionNav.forEach(function(item) { layoutKeys.push(item); });
+    rows.forEach(function(row) {
+      ['main', 'nav', 'numpad'].forEach(function(sectionName) {
+        row[sectionName].forEach(function(item) {
+          if (!item.placeholder) layoutKeys.push(item);
+        });
+      });
+    });
+    var uniqueLayoutCodes = new Set(layoutKeys.map(function(item) { return item.code; }));
+    if (layoutKeys.length !== 104 || uniqueLayoutCodes.size !== 104) {
+      console.error('键盘布局配置异常：应包含 104 个唯一键位。');
+    }
+    var numpadCodes = new Set();
+    rows.forEach(function(row) {
+      row.numpad.forEach(function(item) {
+        if (!item.placeholder) numpadCodes.add(item.code);
+      });
+    });
+    var activeLayoutKeys = layoutKeys.slice();
+
+    function layoutLabel() {
+      return keyboardLayout === 'tkl' ? '87 键 TKL' : '104 键';
+    }
+
+    function updateActiveLayoutKeys() {
+      activeLayoutKeys = keyboardLayout === 'tkl'
+        ? layoutKeys.filter(function(item) { return !numpadCodes.has(item.code); })
+        : layoutKeys.slice();
+    }
+
+    function updateLayoutMetadata() {
+      var label = layoutLabel();
+      keyboard.dataset.layout = keyboardLayout;
+      stage.dataset.layout = keyboardLayout;
+      document.getElementById('kbvBrand').textContent = 'MEOWV // ' + (keyboardLayout === 'tkl' ? 'TKL 87' : 'FULL SIZE 104');
+      keyboard.setAttribute('aria-label', (platform === 'mac' ? 'Mac 标识' : 'Windows') + ' ' + label + '可视化键盘');
+    }
+
+    function pixelWidth(width) {
+      return (UNIT * width) + (GAP * (width - 1));
+    }
+
+    function keyCodeForPlatform(item) {
+      return platform === 'mac' && item.macCode ? item.macCode : item.code;
+    }
+
+    function keyLabelForPlatform(item) {
+      return platform === 'mac' && item.mac ? item.mac : item.label;
+    }
+
+    function keySubForPlatform(item) {
+      if (platform === 'mac' && Object.prototype.hasOwnProperty.call(item, 'macSub')) return item.macSub;
+      return item.sub || '';
+    }
+
+    function createKeyElement(item, x, y) {
+      var keyElement = document.createElement('div');
+      var light = document.createElement('span');
+      var cap = document.createElement('span');
+      var sub = document.createElement('span');
+      var label = document.createElement('span');
+
+      keyElement.className = 'kbv-key';
+      if (item.width > 1) keyElement.classList.add('is-wide');
+      if (item.tall) keyElement.classList.add('is-tall');
+      keyElement.style.width = pixelWidth(item.width) + 'px';
+      keyElement.style.setProperty('--kbv-hue', Math.round((x * 19 + y * 31 + 188) % 360));
+      keyElement.style.setProperty('--kbv-wave-delay', (-2200 + (x * 95)) + 'ms');
+      keyElement.style.setProperty('--kbv-complete-delay', (Math.abs(x - 10.5) * 22) + 'ms');
+      keyElement._kbvItem = item;
+      keyElement._kbvX = x;
+      keyElement._kbvY = y;
+
+      light.className = 'kbv-key-light';
+      cap.className = 'kbv-key-cap';
+      sub.className = 'kbv-key-sub';
+      label.className = 'kbv-key-label';
+      cap.appendChild(sub);
+      cap.appendChild(label);
+      keyElement.appendChild(light);
+      keyElement.appendChild(cap);
+      item.element = keyElement;
+      return keyElement;
+    }
+
+    function createPlaceholder(item) {
+      var empty = document.createElement('span');
+      empty.className = 'kbv-key-placeholder';
+      empty.style.width = pixelWidth(item.width) + 'px';
+      empty.setAttribute('aria-hidden', 'true');
+      return empty;
+    }
+
+    function renderSection(className, items, xOffset, y) {
+      var section = document.createElement('div');
+      var x = 0;
+      section.className = 'kbv-section ' + className;
+      items.forEach(function(item) {
+        if (item.placeholder) {
+          section.appendChild(createPlaceholder(item));
+        } else {
+          section.appendChild(createKeyElement(item, xOffset + x + (item.width / 2), y));
+        }
+        x += item.width;
+      });
+      return section;
+    }
+
+    function renderKeyboard() {
+      var functionRow = document.createElement('div');
+      var functionMain = document.createElement('div');
+      var functionStarts = [0, 1.67, 6.34, 11.01];
+      functionRow.className = 'kbv-function-row';
+      functionMain.className = 'kbv-function-main';
+
+      functionGroups.forEach(function(group, groupIndex) {
+        var groupElement = document.createElement('div');
+        var x = functionStarts[groupIndex];
+        groupElement.className = 'kbv-function-group';
+        group.forEach(function(item) {
+          groupElement.appendChild(createKeyElement(item, x + .5, 0));
+          x += 1;
+        });
+        functionMain.appendChild(groupElement);
+      });
+      functionRow.appendChild(functionMain);
+      functionRow.appendChild(renderSection('kbv-function-nav', functionNav, SECTION_OFFSETS.nav, 0));
+      var functionSpacer = document.createElement('div');
+      functionSpacer.className = 'kbv-function-spacer';
+      functionRow.appendChild(functionSpacer);
+      keyboard.appendChild(functionRow);
+
+      rows.forEach(function(row, rowIndex) {
+        var rowElement = document.createElement('div');
+        rowElement.className = 'kbv-keyboard-row';
+        rowElement.appendChild(renderSection('kbv-main-section', row.main, SECTION_OFFSETS.main, rowIndex + 1));
+        rowElement.appendChild(renderSection('kbv-nav-section', row.nav, SECTION_OFFSETS.nav, rowIndex + 1));
+        rowElement.appendChild(renderSection('kbv-numpad-section', row.numpad, SECTION_OFFSETS.numpad, rowIndex + 1));
+        keyboard.appendChild(rowElement);
+      });
+    }
+
+    function updateKeyLegend(item) {
+      var keyElement = item.element;
+      var label = keyLabelForPlatform(item);
+      var sub = keySubForPlatform(item);
+      var code = keyCodeForPlatform(item);
+      keyElement.dataset.code = code;
+      keyElement.querySelector('.kbv-key-label').textContent = label;
+      keyElement.querySelector('.kbv-key-sub').textContent = sub;
+      keyElement.classList.toggle('has-sub', Boolean(sub));
+      keyElement.classList.toggle('is-tested', testedCodes.has(code));
+      keyElement.classList.toggle('is-pressed', pressedCodes.has(code));
+      keyElement.title = label + ' · ' + code;
+    }
+
+    function setPlatform(nextPlatform, silent) {
+      clearPressed();
+      platform = nextPlatform;
+      keyElements = Object.create(null);
+      layoutOrder = Object.create(null);
+      layoutKeys.forEach(function(item) {
+        updateKeyLegend(item);
+      });
+      activeLayoutKeys.forEach(function(item, index) {
+        var code = keyCodeForPlatform(item);
+        keyElements[code] = item.element;
+        layoutOrder[code] = index;
+      });
+      root.querySelectorAll('[data-kbv-platform]').forEach(function(button) {
+        var active = button.dataset.kbvPlatform === platform;
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-pressed', String(active));
+      });
+      updateLayoutMetadata();
+      updateCombo();
+      updateStats();
+      var message = platform === 'mac'
+        ? '已切换 Mac 键帽标识，按键事件仍以 event.code 定位。'
+        : '已切换 Windows ' + layoutLabel() + '键帽标识。';
+      setStatus(message);
+      if (!silent) announce(message);
+    }
+
+    function setKeyboardLayout(nextLayout, silent) {
+      if (keyboardLayout === nextLayout) return;
+      keyboardLayout = nextLayout;
+      updateActiveLayoutKeys();
+      setPlatform(platform, true);
+      resetSession(true);
+      root.querySelectorAll('[data-kbv-layout]').forEach(function(button) {
+        var active = button.dataset.kbvLayout === keyboardLayout;
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-pressed', String(active));
+      });
+      var message = '已切换为' + layoutLabel() + '配列，检测记录已重置。';
+      setStatus(message);
+      if (!silent) announce(message);
+    }
+
+    function setEffect(nextEffect, silent) {
+      cancelRippleAnimations();
+      effect = nextEffect;
+      keyboard.dataset.effect = effect;
+      root.querySelectorAll('[data-kbv-effect]').forEach(function(button) {
+        var active = button.dataset.kbvEffect === effect;
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-pressed', String(active));
+      });
+      var effectNames = {
+        reactive: '响应',
+        ripple: '涟漪',
+        rainbow: '彩虹波浪'
+      };
+      var message = 'RGB 灯效已切换为“' + effectNames[effect] + '”。';
+      setStatus(message);
+      if (!silent) announce(message);
+    }
+
+    function setStatus(message) {
+      if (statusText) statusText.textContent = message;
+    }
+
+    function announce(message) {
+      announcement.textContent = message;
+    }
+
+    function updateStats() {
+      var total = activeLayoutKeys.length;
+      document.getElementById('kbvTested').textContent = testedCodes.size + ' / ' + total;
+      document.getElementById('kbvPressed').textContent = pressedCodes.size;
+      document.getElementById('kbvMaximum').textContent = maximumPressed;
+      document.getElementById('kbvPressCount').textContent = pressCount;
+      document.getElementById('kbvProgress').style.width = ((testedCodes.size / total) * 100) + '%';
+    }
+
+    var modifierOrder = {
+      ControlLeft: 1,
+      ControlRight: 2,
+      AltLeft: 3,
+      AltRight: 4,
+      ShiftLeft: 5,
+      ShiftRight: 6,
+      MetaLeft: 7,
+      MetaRight: 8
+    };
+
+    function comboLabel(code) {
+      var keyElement = keyElements[code];
+      var label = keyElement ? keyLabelForPlatform(keyElement._kbvItem) : code;
+      var oppositeCode = {
+        ControlLeft: 'ControlRight',
+        ControlRight: 'ControlLeft',
+        AltLeft: 'AltRight',
+        AltRight: 'AltLeft',
+        ShiftLeft: 'ShiftRight',
+        ShiftRight: 'ShiftLeft',
+        MetaLeft: 'MetaRight',
+        MetaRight: 'MetaLeft'
+      }[code];
+      if (oppositeCode && pressedCodes.has(oppositeCode)) {
+        label += code.slice(-4) === 'Left' ? ' (左)' : ' (右)';
+      }
+      return label;
+    }
+
+    function updateCombo() {
+      var codes = Array.from(pressedCodes);
+      codes.sort(function(left, right) {
+        var leftRank = modifierOrder[left] || 100;
+        var rightRank = modifierOrder[right] || 100;
+        if (leftRank !== rightRank) return leftRank - rightRank;
+        return (layoutOrder[left] || 0) - (layoutOrder[right] || 0);
+      });
+      combo.innerHTML = '';
+      if (!codes.length) {
+        var empty = document.createElement('span');
+        empty.className = 'kbv-combo-empty';
+        empty.textContent = '等待按键';
+        combo.appendChild(empty);
+        return;
+      }
+      codes.forEach(function(code, index) {
+        if (index > 0) {
+          var plus = document.createElement('span');
+          plus.className = 'kbv-combo-plus';
+          plus.textContent = '+';
+          combo.appendChild(plus);
+        }
+        var chip = document.createElement('span');
+        chip.className = 'kbv-combo-key';
+        chip.textContent = comboLabel(code);
+        combo.appendChild(chip);
+      });
+    }
+
+    function readableKey(value) {
+      if (value === ' ') return '空格';
+      if (!value) return '—';
+      return value;
+    }
+
+    function locationLabel(location) {
+      return ['标准键区', '左侧', '右侧', '数字键区'][location] || '未知';
+    }
+
+    function updateEventPanel(event, type) {
+      document.getElementById('kbvEventCode').textContent = event.code || '—';
+      document.getElementById('kbvEventKey').textContent = readableKey(event.key);
+      document.getElementById('kbvEventType').textContent = type;
+      document.getElementById('kbvEventLocation').textContent = locationLabel(event.location);
+      document.getElementById('kbvEventRepeat').textContent = event.repeat ? '是' : '否';
+    }
+
+    function updateLocks(event) {
+      if (!event.getModifierState) return;
+      [
+        ['CapsLock', 'kbvCapsLock', 'Caps Lock'],
+        ['NumLock', 'kbvNumLock', 'Num Lock'],
+        ['ScrollLock', 'kbvScrollLock', 'Scroll Lock']
+      ].forEach(function(lock) {
+        var active = event.getModifierState(lock[0]);
+        var lockElement = document.getElementById(lock[1]);
+        lockElement.classList.toggle('is-on', active);
+        lockElement.querySelector('.kbv-lock-state').textContent = active ? 'ON' : 'OFF';
+        lockElement.setAttribute('aria-label', lock[2] + '：' + (active ? '开' : '关'));
+      });
+    }
+
+    function cancelRippleAnimations() {
+      rippleAnimations.forEach(function(animation) { animation.cancel(); });
+      rippleAnimations = [];
+    }
+
+    function triggerRipple(sourceElement) {
+      if (effect !== 'ripple' || reducedMotion || !sourceElement) return;
+      activeLayoutKeys.forEach(function(item) {
+        var target = item.element;
+        var distance = Math.hypot(target._kbvX - sourceElement._kbvX, target._kbvY - sourceElement._kbvY);
+        if (distance > 5.8) return;
+        var light = target.querySelector('.kbv-key-light');
+        if (!light.animate) return;
+        var animation = light.animate([
+          { opacity: 0, transform: 'scale(.65)' },
+          { opacity: .92, transform: 'scale(1.06)', offset: .42 },
+          { opacity: 0, transform: 'scale(.82)' }
+        ], {
+          duration: 480,
+          delay: distance * 28,
+          easing: 'ease-out'
+        });
+        rippleAnimations.push(animation);
+        animation.onfinish = function() {
+          var index = rippleAnimations.indexOf(animation);
+          if (index >= 0) rippleAnimations.splice(index, 1);
+        };
+      });
+    }
+
+    function celebrateCompletion() {
+      if (celebrated || testedCodes.size !== activeLayoutKeys.length) return;
+      celebrated = true;
+      stage.classList.add('is-complete');
+      clearTimeout(celebrationTimer);
+      celebrationTimer = setTimeout(function() {
+        stage.classList.remove('is-complete');
+      }, 1500);
+      var message = '已检测到全部可视化键位的响应。';
+      setStatus('🎉 ' + message);
+      announce(message);
+    }
+
+    function clearHoldTimer(code) {
+      clearTimeout(holdTimers[code]);
+      delete holdTimers[code];
+    }
+
+    function clearHoldTimers() {
+      Object.keys(holdTimers).forEach(clearHoldTimer);
+    }
+
+    function scheduleHoldWarning(code, keyElement) {
+      clearHoldTimer(code);
+      holdTimers[code] = setTimeout(function() {
+        keyElement.classList.add('is-suspected');
+        delete holdTimers[code];
+        setStatus(code + ' 已持续按下 30 秒，可能是正常长按，也可能未收到 keyup。');
+      }, HOLD_WARNING_TIMEOUT);
+    }
+
+    function isControlTarget(target) {
+      return target && target.closest && Boolean(target.closest('input, textarea, select, button, a, [contenteditable]:not([contenteditable="false"])'));
+    }
+
+    function suppressControlCode(code) {
+      if (!code) return;
+      clearTimeout(suppressedControlTimers[code]);
+      suppressedControlCodes.add(code);
+      suppressedControlTimers[code] = setTimeout(function() {
+        suppressedControlCodes.delete(code);
+        delete suppressedControlTimers[code];
+      }, 5000);
+    }
+
+    function consumeSuppressedControlCode(code) {
+      if (!suppressedControlCodes.has(code)) return false;
+      suppressedControlCodes.delete(code);
+      clearTimeout(suppressedControlTimers[code]);
+      delete suppressedControlTimers[code];
+      return true;
+    }
+
+    var preventWhenFocused = {
+      Space: true,
+      ArrowUp: true,
+      ArrowDown: true,
+      ArrowLeft: true,
+      ArrowRight: true,
+      PageUp: true,
+      PageDown: true,
+      Home: true,
+      End: true
+    };
+
+    function handleKeyDown(event) {
+      if (isControlTarget(event.target)) {
+        suppressControlCode(event.code);
+        return;
+      }
+      var keyElement = keyElements[event.code];
+      updateLocks(event);
+      if (!keyElement) {
+        updateEventPanel(event, '未展示');
+        setStatus('已捕获未展示键位 · ' + (event.code || 'Unidentified'));
+        return;
+      }
+      if (document.activeElement === stage && preventWhenFocused[event.code]) event.preventDefault();
+      updateEventPanel(event, '按下');
+      keyElement.classList.remove('is-suspected');
+      scheduleHoldWarning(event.code, keyElement);
+
+      if (event.repeat || pressedCodes.has(event.code)) {
+        keyElement.classList.add('is-repeating');
+        setStatus('检测到长按重复 · ' + event.code);
+        return;
+      }
+
+      pressedCodes.add(event.code);
+      testedCodes.add(event.code);
+      pressCount += 1;
+      maximumPressed = Math.max(maximumPressed, pressedCodes.size);
+      keyElement.classList.add('is-pressed', 'is-tested');
+      keyElement.classList.remove('is-repeating');
+      triggerRipple(keyElement);
+      updateCombo();
+      updateStats();
+      setStatus('已捕获 ' + event.code + ' · 正在监听浏览器键盘事件。');
+      celebrateCompletion();
+    }
+
+    function handleKeyUp(event) {
+      if (consumeSuppressedControlCode(event.code)) return;
+      var keyElement = keyElements[event.code];
+      if (!keyElement) {
+        if (!isControlTarget(event.target)) updateEventPanel(event, '未展示');
+        return;
+      }
+      if (isControlTarget(event.target) && !pressedCodes.has(event.code)) return;
+      updateLocks(event);
+      updateEventPanel(event, '松开');
+      clearHoldTimer(event.code);
+      pressedCodes.delete(event.code);
+      testedCodes.add(event.code);
+      keyElement.classList.remove('is-pressed', 'is-repeating', 'is-suspected');
+      keyElement.classList.add('is-tested');
+      updateCombo();
+      updateStats();
+      celebrateCompletion();
+    }
+
+    function clearPressed(message) {
+      clearHoldTimers();
+      pressedCodes.clear();
+      layoutKeys.forEach(function(item) {
+        if (item.element) item.element.classList.remove('is-pressed', 'is-repeating', 'is-suspected');
+      });
+      updateCombo();
+      updateStats();
+      if (message) setStatus(message);
+    }
+
+    function resetSession(silent) {
+      clearTimeout(celebrationTimer);
+      clearHoldTimers();
+      cancelRippleAnimations();
+      Object.keys(previewTimers).forEach(function(code) {
+        clearTimeout(previewTimers[code]);
+      });
+      previewTimers = Object.create(null);
+      pressedCodes.clear();
+      testedCodes.clear();
+      pressCount = 0;
+      maximumPressed = 0;
+      celebrated = false;
+      stage.classList.remove('is-complete');
+      layoutKeys.forEach(function(item) {
+        item.element.classList.remove('is-pressed', 'is-preview', 'is-repeating', 'is-suspected', 'is-tested');
+      });
+      ['kbvCapsLock', 'kbvNumLock', 'kbvScrollLock'].forEach(function(id) {
+        var lockElement = document.getElementById(id);
+        lockElement.classList.remove('is-on');
+        lockElement.querySelector('.kbv-lock-state').textContent = 'OFF';
+      });
+      document.getElementById('kbvCapsLock').setAttribute('aria-label', 'Caps Lock：关');
+      document.getElementById('kbvNumLock').setAttribute('aria-label', 'Num Lock：关');
+      document.getElementById('kbvScrollLock').setAttribute('aria-label', 'Scroll Lock：关');
+      ['kbvEventCode', 'kbvEventKey', 'kbvEventType', 'kbvEventLocation', 'kbvEventRepeat'].forEach(function(id) {
+        document.getElementById(id).textContent = '—';
+      });
+      updateCombo();
+      updateStats();
+      stage.focus({ preventScroll: true });
+      var message = '检测记录已重置，按下任意键重新开始。';
+      setStatus(message);
+      if (!silent) announce(message);
+    }
+
+    function previewKey(keyElement) {
+      var code = keyElement.dataset.code;
+      clearTimeout(previewTimers[code]);
+      keyElement.classList.add('is-preview');
+      triggerRipple(keyElement);
+      previewTimers[code] = setTimeout(function() {
+        keyElement.classList.remove('is-preview');
+        delete previewTimers[code];
+      }, 180);
+      setStatus('虚拟键帽预览 · ' + comboLabel(code) + '（不计入检测）');
+    }
+
+    function updateFullscreenButton() {
+      var active = document.fullscreenElement === stage;
+      document.getElementById('kbvFullscreenIcon').className = active ? 'fas fa-compress' : 'fas fa-expand';
+      document.getElementById('kbvFullscreenText').textContent = active ? '退出沉浸' : '沉浸模式';
+      document.getElementById('kbvFullscreen').setAttribute('aria-label', active ? '退出沉浸模式' : '进入沉浸模式');
+      document.getElementById('kbvFullscreen').setAttribute('aria-pressed', String(active));
+      if (active !== fullscreenWasActive) {
+        announce(active ? '已进入沉浸模式。' : '已退出沉浸模式。');
+        fullscreenWasActive = active;
+      }
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenEnabled || !stage.requestFullscreen) {
+        var unsupportedMessage = '当前浏览器不支持页面沉浸模式。';
+        stage.focus({ preventScroll: true });
+        setStatus(unsupportedMessage);
+        announce(unsupportedMessage);
+        return;
+      }
+      var request = document.fullscreenElement === stage
+        ? document.exitFullscreen()
+        : stage.requestFullscreen();
+      if (request && request.then) {
+        request.then(function() {
+          stage.focus({ preventScroll: true });
+        }).catch(function() {
+          var failureMessage = '未能切换沉浸模式，请检查浏览器权限。';
+          stage.focus({ preventScroll: true });
+          setStatus(failureMessage);
+          announce(failureMessage);
+        });
+      }
+    }
+
+    root.querySelectorAll('[data-kbv-platform]').forEach(function(button) {
+      button.addEventListener('click', function() {
+        stage.focus({ preventScroll: true });
+        setPlatform(button.dataset.kbvPlatform);
+      });
+    });
+    root.querySelectorAll('[data-kbv-layout]').forEach(function(button) {
+      button.addEventListener('click', function() {
+        stage.focus({ preventScroll: true });
+        setKeyboardLayout(button.dataset.kbvLayout);
+      });
+    });
+    root.querySelectorAll('[data-kbv-effect]').forEach(function(button) {
+      button.addEventListener('click', function() {
+        stage.focus({ preventScroll: true });
+        setEffect(button.dataset.kbvEffect);
+      });
+    });
+    document.getElementById('kbvReset').addEventListener('click', resetSession);
+    document.getElementById('kbvFullscreen').addEventListener('click', toggleFullscreen);
+    document.getElementById('kbvStageExit').addEventListener('click', toggleFullscreen);
+    document.addEventListener('fullscreenchange', updateFullscreenButton);
+    keyboard.addEventListener('pointerdown', function(event) {
+      var keyElement = event.target.closest('.kbv-key');
+      if (!keyElement) return;
+      if (event.pointerType !== 'touch') event.preventDefault();
+      stage.focus({ preventScroll: true });
+      previewKey(keyElement);
+    });
+    stage.addEventListener('pointerdown', function(event) {
+      if (!event.target.closest('.kbv-key')) {
+        if (event.pointerType !== 'touch') event.preventDefault();
+        stage.focus({ preventScroll: true });
+      }
+    });
+    stage.addEventListener('focus', function() {
+      setStatus('已就绪，按下实体键盘按键开始检测。');
+    });
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('blur', function() {
+      clearPressed('窗口已失去焦点，按下状态已清除。');
+    });
+    document.addEventListener('visibilitychange', function() {
+      if (document.hidden) clearPressed('页面已转入后台，按下状态已清除。');
+    });
+    window.addEventListener('pagehide', function() {
+      clearPressed();
+    });
+
+    renderKeyboard();
+    setPlatform('windows', true);
+    setEffect('reactive', true);
+    updateStats();
+    updateFullscreenButton();
+    setStatus('点击键盘区域，然后按下任意键开始。');
+  });
+</script>
