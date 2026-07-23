@@ -1,32 +1,39 @@
-- name: 在 Meowv 写下星光1
-  url: /medias/musics/在Meowv写下星光/在Meowv写下星光1.mp3
-  cover: /medias/musics/在Meowv写下星光/在Meowv写下星光.png
-- name: 在 Meowv 写下星光2
-  url: /medias/musics/在Meowv写下星光/在Meowv写下星光2.mp3
-  cover: /medias/musics/在Meowv写下星光/在Meowv写下星光.png
-- name: 在 Meowv 写下星光3
-  url: /medias/musics/在Meowv写下星光/在Meowv写下星光3.mp3
-  cover: /medias/musics/在Meowv写下星光/在Meowv写下星光.png
-- name: 在 Meowv 写下星光4
-  url: /medias/musics/在Meowv写下星光/在Meowv写下星光4.mp3
-  cover: /medias/musics/在Meowv写下星光/在Meowv写下星光.png
-- name: 在 Meowv 写下星光5
-  url: /medias/musics/在Meowv写下星光/在Meowv写下星光5.mp3
-  cover: /medias/musics/在Meowv写下星光/在Meowv写下星光.png
-- name: 在 Meowv 写下星光6
-  url: /medias/musics/在Meowv写下星光/在Meowv写下星光6.mp3
-  cover: /medias/musics/在Meowv写下星光/在Meowv写下星光.png
+- name: 写下星光
+  url: /medias/musics/代码之外/写下星光.mp3
+  cover: /medias/musics/代码之外/cover.png
 
-- name: 陪你长成风1
-  url: /medias/musics/陪你长成风/陪你长成风1.mp3
-  cover: /medias/musics/陪你长成风/陪你长成风.png
-- name: 陪你长成风2
+- name: 凌晨的提交记录
+  url: /medias/musics/代码之外/凌晨的提交记录.mp3
+  cover: /medias/musics/代码之外/cover.png
+
+- name: 地铁穿过清晨
+  url: /medias/musics/代码之外/地铁穿过清晨.mp3
+  cover: /medias/musics/代码之外/cover.png
+
+- name: 生活没有撤销键
+  url: /medias/musics/代码之外/生活没有撤销键.mp3
+  cover: /medias/musics/代码之外/cover.png
+
+- name: 代码之外
+  url: /medias/musics/代码之外/代码之外.mp3
+  cover: /medias/musics/代码之外/cover.png
+
+- name: 向着光生长
+  url: /medias/musics/代码之外/向着光生长.mp3
+  cover: /medias/musics/代码之外/cover.png
+
+- name: 和你把日子过成歌
+  url: /medias/musics/代码之外/和你把日子过成歌.mp3
+  cover: /medias/musics/代码之外/cover.png
+
+- name: 陪你长成风
   url: /medias/musics/陪你长成风/陪你长成风2.mp3
-  cover: /medias/musics/陪你长成风/陪你长成风.png
+  cover: /medias/musics/代码之外/cover.png
 
-- name: 向着光生长2
-  url: /medias/musics/向着光生长/向着光生长1.mp3
-  cover: /medias/musics/向着光生长/向着光生长.png
-- name: 向着光生长2
-  url: /medias/musics/向着光生长/向着光生长2.mp3
-  cover: /medias/musics/向着光生长/向着光生长.png
+- name: 来时的路
+  url: /medias/musics/代码之外/来时的路.mp3
+  cover: /medias/musics/代码之外/cover.png
+
+- name: 认真生活的人
+  url: /medias/musics/代码之外/认真生活的人.mp3
+  cover: /medias/musics/代码之外/cover.png
