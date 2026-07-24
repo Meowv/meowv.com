@@ -1,0 +1,2947 @@
+<%- partial('_partial/bg-cover') %>
+
+<style>
+  .g3d-container {
+    width: 94%;
+    max-width: 1480px;
+    margin-top: -50px;
+    margin-bottom: 30px;
+  }
+  .g3d-container > .card {
+    overflow: hidden;
+    border-radius: 8px;
+  }
+  .g3d-container > .card > .card-content {
+    padding: 12px;
+  }
+  .g3d-app {
+    --g3d-accent: #7ccd00;
+    --g3d-green: #5a9600;
+    --g3d-cyan: #45d9d0;
+    --g3d-panel: rgba(7, 22, 37, .82);
+    --g3d-panel-strong: rgba(6, 18, 31, .94);
+    --g3d-line: rgba(142, 220, 232, .2);
+    --g3d-text: #eefcff;
+    --g3d-muted: #91aebb;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid #dfe8e9;
+    border-radius: 12px;
+    color: var(--g3d-text);
+    background: #030a13;
+    box-shadow: 0 18px 45px rgba(3, 19, 29, .16);
+  }
+  .g3d-app *,
+  .g3d-app *::before,
+  .g3d-app *::after {
+    box-sizing: border-box;
+  }
+  .g3d-sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+  }
+  .g3d-toolbar {
+    position: relative;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 64px;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--g3d-line);
+    background: linear-gradient(180deg, rgba(10, 29, 45, .98), rgba(7, 23, 37, .94));
+  }
+  .g3d-mode-chip {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 7px;
+    min-height: 40px;
+    padding: 0 12px;
+    border: 1px solid rgba(124, 205, 0, .3);
+    border-radius: 20px;
+    color: #c9ee9e;
+    background: rgba(90, 150, 0, .12);
+    font-size: .75rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .g3d-mode-chip i {
+    color: var(--g3d-accent);
+  }
+  .g3d-search-wrap {
+    position: relative;
+    flex: 1 1 430px;
+    max-width: 620px;
+    min-width: 190px;
+  }
+  .g3d-search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 44px;
+    overflow: hidden;
+    border: 1px solid rgba(145, 203, 215, .26);
+    border-radius: 22px;
+    background: rgba(255, 255, 255, .08);
+    transition: border-color .2s ease, background .2s ease, box-shadow .2s ease;
+  }
+  .g3d-search-box:focus-within {
+    border-color: rgba(124, 205, 0, .74);
+    background: rgba(255, 255, 255, .11);
+    box-shadow: 0 0 0 3px rgba(124, 205, 0, .1);
+  }
+  .g3d-search-icon {
+    flex: 0 0 38px;
+    color: #83a7b4;
+    text-align: center;
+  }
+  .g3d-search-input {
+    width: 100% !important;
+    height: 42px !important;
+    margin: 0 !important;
+    padding: 0 38px 0 0 !important;
+    border: 0 !important;
+    outline: 0 !important;
+    color: #fff !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    font-size: .86rem !important;
+  }
+  .g3d-search-input::-webkit-search-cancel-button {
+    display: none;
+  }
+  .g3d-search-input::placeholder {
+    color: #78939e;
+  }
+  .g3d-search-clear {
+    position: absolute;
+    top: 5px;
+    right: 7px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    color: #9bb2ba;
+    background: transparent;
+    cursor: pointer;
+  }
+  .g3d-search-clear.is-visible {
+    display: inline-flex;
+  }
+  .g3d-search-results {
+    position: absolute;
+    z-index: 90;
+    top: calc(100% + 8px);
+    right: 0;
+    left: 0;
+    display: none;
+    max-height: min(420px, 62vh);
+    overflow-y: auto;
+    padding: 7px;
+    border: 1px solid rgba(133, 207, 219, .25);
+    border-radius: 12px;
+    background: rgba(5, 19, 32, .98);
+    box-shadow: 0 18px 45px rgba(0, 0, 0, .38);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+  }
+  .g3d-search-results.is-open {
+    display: block;
+  }
+  .g3d-search-option {
+    display: flex;
+    width: 100%;
+    min-height: 54px;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 10px;
+    border: 0;
+    border-radius: 8px;
+    color: #e9f8fb;
+    background: transparent;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .g3d-search-option:hover,
+  .g3d-search-option.is-active,
+  .g3d-search-option:focus {
+    color: #fff !important;
+    background: rgba(74, 137, 152, .24) !important;
+    outline: none;
+  }
+  .g3d-search-option-icon {
+    display: grid;
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    place-items: center;
+    border: 1px solid rgba(124, 205, 0, .24);
+    border-radius: 10px;
+    color: #b8eb7a;
+    background: rgba(124, 205, 0, .08);
+    font-size: .95rem;
+  }
+  .g3d-search-option-copy {
+    min-width: 0;
+    flex: 1;
+  }
+  .g3d-search-option-name,
+  .g3d-search-option-sub {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .g3d-search-option-name {
+    font-size: .84rem;
+    font-weight: 600;
+  }
+  .g3d-search-option-sub {
+    margin-top: 2px;
+    color: #829ca7;
+    font-size: .68rem;
+  }
+  .g3d-search-option-type {
+    flex: 0 0 auto;
+    padding: 3px 7px;
+    border: 1px solid rgba(134, 207, 219, .2);
+    border-radius: 10px;
+    color: #8fb5bf;
+    font-size: .62rem;
+  }
+  .g3d-search-empty {
+    margin: 0;
+    padding: 22px 12px;
+    color: #87a2ac;
+    font-size: .78rem;
+    text-align: center;
+  }
+  .g3d-toolbar-actions {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+  }
+  .g3d-tool-button,
+  .g3d-panel-close,
+  .g3d-guide-close,
+  .g3d-mini-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(145, 203, 215, .2);
+    color: #bdd1d7;
+    background: rgba(255, 255, 255, .06);
+    cursor: pointer;
+    transition: color .18s ease, border-color .18s ease, background .18s ease, transform .18s ease;
+  }
+  .g3d-tool-button {
+    position: relative;
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    border-radius: 11px;
+    font-size: .92rem;
+  }
+  .g3d-tool-button:hover,
+  .g3d-panel-close:hover,
+  .g3d-guide-close:hover,
+  .g3d-mini-button:hover {
+    border-color: rgba(124, 205, 0, .52);
+    color: #d9ffad;
+    background: rgba(124, 205, 0, .13);
+  }
+  .g3d-tool-button:focus,
+  .g3d-panel-close:focus,
+  .g3d-guide-close:focus,
+  .g3d-mini-button:focus,
+  .g3d-search-clear:focus {
+    color: #e9ffcb !important;
+    background: rgba(124, 205, 0, .16) !important;
+    outline: 2px solid rgba(124, 205, 0, .74) !important;
+    outline-offset: 2px;
+  }
+  .g3d-tool-button[aria-pressed="true"],
+  .g3d-tool-button[aria-expanded="true"] {
+    border-color: rgba(124, 205, 0, .56);
+    color: #d8ffac;
+    background: rgba(90, 150, 0, .23);
+    box-shadow: inset 0 0 0 1px rgba(124, 205, 0, .08);
+  }
+  .g3d-tool-button:disabled {
+    opacity: .38;
+    cursor: not-allowed;
+  }
+  .g3d-tool-button .g3d-button-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+  .g3d-stage {
+    position: relative;
+    height: clamp(620px, 70vh, 820px);
+    min-height: 620px;
+    overflow: hidden;
+    outline: none;
+    background:
+      radial-gradient(circle at 50% 45%, rgba(13, 67, 92, .28), transparent 34%),
+      linear-gradient(160deg, #06111e, #02070d 72%);
+  }
+  .g3d-stage:focus-visible {
+    box-shadow: inset 0 0 0 3px rgba(124, 205, 0, .62);
+  }
+  .g3d-stage::before,
+  .g3d-stage::after {
+    content: "";
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+    pointer-events: none;
+    transition: opacity .35s ease;
+  }
+  .g3d-stage::before {
+    opacity: 0;
+    background-image:
+      radial-gradient(circle at 8% 12%, rgba(255,255,255,.88) 0 1px, transparent 1.5px),
+      radial-gradient(circle at 22% 76%, rgba(142,220,232,.8) 0 1px, transparent 1.5px),
+      radial-gradient(circle at 38% 26%, rgba(255,255,255,.7) 0 1px, transparent 1.5px),
+      radial-gradient(circle at 54% 84%, rgba(255,255,255,.78) 0 1px, transparent 1.5px),
+      radial-gradient(circle at 68% 18%, rgba(142,220,232,.72) 0 1px, transparent 1.5px),
+      radial-gradient(circle at 83% 62%, rgba(255,255,255,.8) 0 1px, transparent 1.5px),
+      radial-gradient(circle at 94% 30%, rgba(255,255,255,.62) 0 1px, transparent 1.5px);
+    background-size: 170px 170px, 230px 230px, 310px 310px, 270px 270px, 190px 190px, 290px 290px, 370px 370px;
+  }
+  .g3d-app.is-stars .g3d-stage::before {
+    opacity: .58;
+  }
+  .g3d-stage::after {
+    z-index: 4;
+    background: radial-gradient(circle at center, transparent 38%, rgba(0, 5, 12, .38) 100%);
+  }
+  .g3d-app.is-night .g3d-stage {
+    background:
+      radial-gradient(circle at 50% 45%, rgba(55, 87, 122, .19), transparent 32%),
+      linear-gradient(160deg, #040916, #01040a 72%);
+  }
+  .g3d-canvas {
+    position: absolute;
+    z-index: 2;
+    inset: 0;
+    overflow: hidden;
+    touch-action: none;
+    opacity: 0;
+    transition: opacity .7s ease;
+  }
+  .g3d-canvas.is-ready {
+    opacity: 1;
+  }
+  .g3d-canvas canvas {
+    display: block;
+    outline: none;
+  }
+  .g3d-map-label {
+    max-width: 150px;
+    padding: 3px 7px;
+    border: 1px solid rgba(168, 228, 237, .24);
+    border-radius: 11px;
+    color: #e8fbff;
+    background: rgba(4, 23, 35, .7);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, .22);
+    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-size: 11px;
+    line-height: 1.2;
+    text-align: center;
+    white-space: nowrap;
+    pointer-events: none;
+    user-select: none;
+    transform: translateY(-4px);
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
+  }
+  .g3d-map-label.is-city {
+    border-color: rgba(255, 204, 98, .25);
+    color: #ffe4a9;
+    background: rgba(34, 27, 13, .76);
+    font-size: 10px;
+  }
+  .g3d-map-label.is-landmark {
+    border-color: rgba(235, 128, 255, .26);
+    color: #f4c7ff;
+    background: rgba(40, 13, 45, .76);
+    font-size: 10px;
+  }
+  .g3d-panel {
+    position: absolute;
+    z-index: 25;
+    top: 16px;
+    bottom: 54px;
+    width: 292px;
+    overflow: hidden;
+    border: 1px solid var(--g3d-line);
+    border-radius: 14px;
+    background: var(--g3d-panel);
+    box-shadow: 0 16px 38px rgba(0, 0, 0, .28);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    transition: opacity .25s ease, transform .32s cubic-bezier(.2, .72, .21, 1);
+  }
+  .g3d-layer-panel {
+    left: 16px;
+    max-height: 520px;
+    transform: translateX(calc(-100% - 30px));
+    opacity: 0;
+    pointer-events: none;
+  }
+  .g3d-info-panel {
+    right: 16px;
+    width: 328px;
+    transform: translateX(calc(100% + 30px));
+    opacity: 0;
+    pointer-events: none;
+  }
+  .g3d-panel.is-open {
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .g3d-panel-head {
+    display: flex;
+    min-height: 54px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 0 14px;
+    border-bottom: 1px solid var(--g3d-line);
+    background: rgba(255, 255, 255, .025);
+  }
+  .g3d-panel-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    color: #eefcff;
+    font-size: .9rem;
+    font-weight: 600;
+  }
+  .g3d-panel-title i {
+    color: var(--g3d-accent);
+  }
+  .g3d-panel-close,
+  .g3d-guide-close {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border-radius: 9px;
+  }
+  .g3d-panel-body {
+    height: calc(100% - 54px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .g3d-layer-list {
+    padding: 8px;
+  }
+  .g3d-layer-switch {
+    display: flex;
+    width: 100%;
+    min-height: 48px;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 9px;
+    border: 0;
+    border-radius: 9px;
+    color: #d3e5e9;
+    background: transparent;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .g3d-layer-switch:hover,
+  .g3d-layer-switch:focus {
+    color: #fff !important;
+    background: rgba(255, 255, 255, .055) !important;
+    outline: none;
+  }
+  .g3d-layer-switch:focus-visible {
+    box-shadow: inset 0 0 0 2px rgba(124, 205, 0, .65);
+  }
+  .g3d-layer-switch:disabled {
+    opacity: .4;
+    cursor: not-allowed;
+  }
+  .g3d-layer-icon {
+    display: grid;
+    flex: 0 0 32px;
+    width: 32px;
+    height: 32px;
+    place-items: center;
+    border: 1px solid rgba(141, 207, 219, .18);
+    border-radius: 9px;
+    color: #86b3bd;
+    background: rgba(255, 255, 255, .035);
+  }
+  .g3d-layer-name {
+    min-width: 0;
+    flex: 1;
+    font-size: .78rem;
+  }
+  .g3d-switch-track {
+    position: relative;
+    flex: 0 0 38px;
+    width: 38px;
+    height: 22px;
+    border: 1px solid rgba(145, 203, 215, .22);
+    border-radius: 11px;
+    background: rgba(125, 151, 160, .2);
+    transition: background .2s ease, border-color .2s ease;
+  }
+  .g3d-switch-track::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #a8bec5;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, .28);
+    transition: transform .2s ease, background .2s ease;
+  }
+  .g3d-layer-switch[aria-checked="true"] .g3d-switch-track {
+    border-color: rgba(124, 205, 0, .56);
+    background: rgba(90, 150, 0, .5);
+  }
+  .g3d-layer-switch[aria-checked="true"] .g3d-switch-track::after {
+    background: #e5ffc6;
+    transform: translateX(16px);
+  }
+  .g3d-data-status {
+    margin: 4px 9px 10px;
+    padding: 10px;
+    border: 1px solid rgba(145, 203, 215, .13);
+    border-radius: 9px;
+    color: #8fa9b3;
+    background: rgba(255, 255, 255, .025);
+    font-size: .68rem;
+    line-height: 1.55;
+  }
+  .g3d-data-status i {
+    margin-right: 5px;
+    color: #8fc0ca;
+  }
+  .g3d-data-status.is-error {
+    border-color: rgba(255, 137, 113, .28);
+    color: #f1b1a5;
+    background: rgba(132, 47, 35, .12);
+  }
+  .g3d-retry-data {
+    display: none;
+    margin: 8px 0 0;
+    padding: 0;
+    border: 0;
+    color: #cfff96;
+    background: transparent;
+    font: inherit;
+    cursor: pointer;
+  }
+  .g3d-data-status.is-error .g3d-retry-data {
+    display: block;
+  }
+  .g3d-info-content {
+    padding: 16px;
+  }
+  .g3d-info-eyebrow {
+    margin: 0 0 7px;
+    color: #83a6b1;
+    font-size: .65rem;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+  }
+  .g3d-info-heading {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+  }
+  .g3d-info-emoji {
+    display: grid;
+    flex: 0 0 48px;
+    width: 48px;
+    height: 48px;
+    place-items: center;
+    border: 1px solid rgba(145, 203, 215, .18);
+    border-radius: 13px;
+    background: rgba(255, 255, 255, .045);
+    font-size: 1.55rem;
+  }
+  .g3d-info-title-wrap {
+    min-width: 0;
+  }
+  .g3d-info-title {
+    margin: 1px 0 2px;
+    color: #fff;
+    font-size: 1.22rem;
+    font-weight: 650;
+    line-height: 1.25;
+  }
+  .g3d-info-subtitle {
+    margin: 0;
+    color: #91aeb8;
+    font-size: .73rem;
+    line-height: 1.45;
+  }
+  .g3d-info-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+  }
+  .g3d-info-tag {
+    padding: 4px 8px;
+    border: 1px solid rgba(124, 205, 0, .2);
+    border-radius: 11px;
+    color: #c8ee9a;
+    background: rgba(124, 205, 0, .07);
+    font-size: .64rem;
+  }
+  .g3d-info-description {
+    margin: 14px 0 0;
+    color: #bfd0d5;
+    font-size: .76rem;
+    line-height: 1.72;
+  }
+  .g3d-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 15px;
+  }
+  .g3d-info-stat {
+    min-width: 0;
+    min-height: 63px;
+    padding: 9px 10px;
+    border: 1px solid rgba(145, 203, 215, .12);
+    border-radius: 9px;
+    background: rgba(255, 255, 255, .032);
+  }
+  .g3d-info-stat-label,
+  .g3d-info-stat-value {
+    display: block;
+  }
+  .g3d-info-stat-label {
+    margin-bottom: 5px;
+    color: #7896a0;
+    font-size: .61rem;
+  }
+  .g3d-info-stat-value {
+    overflow: hidden;
+    color: #edf9fb;
+    font-size: .75rem;
+    font-weight: 600;
+    line-height: 1.35;
+    text-overflow: ellipsis;
+  }
+  .g3d-info-note {
+    margin: 13px 0 0;
+    color: #718d97;
+    font-size: .61rem;
+    line-height: 1.55;
+  }
+  .g3d-loader,
+  .g3d-fatal {
+    position: absolute;
+    z-index: 45;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(2, 8, 14, .82);
+    transition: opacity .35s ease, visibility .35s ease;
+  }
+  .g3d-loader.is-hidden {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .g3d-loader-box,
+  .g3d-fatal-box {
+    max-width: 430px;
+    color: #dff6fa;
+    text-align: center;
+  }
+  .g3d-loader-orbit {
+    position: relative;
+    width: 74px;
+    height: 74px;
+    margin: 0 auto 17px;
+    border: 1px solid rgba(87, 213, 207, .26);
+    border-radius: 50%;
+  }
+  .g3d-loader-orbit::before {
+    content: "🌍";
+    position: absolute;
+    inset: 12px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: rgba(14, 92, 112, .22);
+    font-size: 1.65rem;
+  }
+  .g3d-loader-orbit::after {
+    content: "";
+    position: absolute;
+    top: -3px;
+    left: 31px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--g3d-accent);
+    box-shadow: 0 0 14px rgba(124, 205, 0, .8);
+    transform-origin: 6px 40px;
+    animation: g3d-orbit 1.6s linear infinite;
+  }
+  @keyframes g3d-orbit {
+    to { transform: rotate(360deg); }
+  }
+  .g3d-loader-text {
+    margin: 0;
+    color: #9bb7c0;
+    font-size: .8rem;
+  }
+  .g3d-fatal[hidden] {
+    display: none;
+  }
+  .g3d-fatal-icon {
+    display: grid;
+    width: 66px;
+    height: 66px;
+    margin: 0 auto 15px;
+    place-items: center;
+    border: 1px solid rgba(255, 145, 118, .3);
+    border-radius: 50%;
+    color: #ff9b81;
+    background: rgba(125, 40, 27, .16);
+    font-size: 1.45rem;
+  }
+  .g3d-fatal-title {
+    margin: 0 0 8px;
+    color: #fff;
+    font-size: 1.05rem;
+  }
+  .g3d-fatal-message {
+    margin: 0;
+    color: #9db3ba;
+    font-size: .78rem;
+    line-height: 1.65;
+  }
+  .g3d-fatal-action {
+    min-height: 40px;
+    margin-top: 16px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 8px;
+    color: #fff;
+    background: linear-gradient(135deg, #5a9600, #7ccd00);
+    font: inherit;
+    font-size: .78rem;
+    cursor: pointer;
+  }
+  .g3d-guide {
+    position: absolute;
+    z-index: 18;
+    bottom: 70px;
+    left: 50%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: calc(100% - 36px);
+    padding: 10px 10px 10px 14px;
+    border: 1px solid rgba(145, 203, 215, .2);
+    border-radius: 13px;
+    color: #c9dde2;
+    background: rgba(7, 22, 37, .78);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, .25);
+    font-size: .7rem;
+    white-space: nowrap;
+    transform: translateX(-50%);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    transition: opacity .3s ease, transform .3s ease;
+  }
+  .g3d-guide.is-hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, 10px);
+  }
+  .g3d-guide-steps {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+  }
+  .g3d-guide-step i {
+    margin-right: 5px;
+    color: var(--g3d-accent);
+  }
+  .g3d-guide-close {
+    flex: 0 0 30px;
+    width: 30px;
+    height: 30px;
+  }
+  .g3d-marker-card {
+    position: absolute;
+    z-index: 20;
+    right: 16px;
+    bottom: 62px;
+    display: none;
+    align-items: center;
+    gap: 9px;
+    max-width: calc(100% - 32px);
+    padding: 9px 10px 9px 12px;
+    border: 1px solid rgba(255, 197, 95, .26);
+    border-radius: 12px;
+    color: #f6e8c6;
+    background: rgba(37, 27, 11, .86);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, .25);
+    font-size: .69rem;
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+  .g3d-marker-card.is-visible {
+    display: flex;
+  }
+  .g3d-marker-copy {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .g3d-mini-button {
+    flex: 0 0 32px;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 8px;
+  }
+  .g3d-statusbar {
+    position: absolute;
+    z-index: 17;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: grid;
+    min-height: 42px;
+    grid-template-columns: minmax(150px, 1.2fr) minmax(105px, .7fr) minmax(130px, .8fr) minmax(220px, 1.3fr);
+    align-items: center;
+    border-top: 1px solid var(--g3d-line);
+    background: rgba(4, 16, 27, .88);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+  .g3d-status-item {
+    min-width: 0;
+    padding: 0 12px;
+    overflow: hidden;
+    border-right: 1px solid rgba(145, 203, 215, .12);
+    color: #85a2ac;
+    font-size: .65rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .g3d-status-item:last-child {
+    border-right: 0;
+  }
+  .g3d-status-item i {
+    margin-right: 6px;
+    color: #8dc2cc;
+  }
+  .g3d-toast {
+    position: absolute;
+    z-index: 70;
+    top: 18px;
+    left: 50%;
+    max-width: min(480px, calc(100% - 36px));
+    padding: 9px 14px;
+    border: 1px solid rgba(145, 203, 215, .25);
+    border-radius: 11px;
+    color: #dff7fb;
+    background: rgba(5, 22, 34, .92);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, .3);
+    font-size: .72rem;
+    text-align: center;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, -8px);
+    transition: opacity .2s ease, transform .2s ease;
+  }
+  .g3d-toast.is-visible {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  .g3d-notes {
+    margin-top: 12px;
+    border: 1px solid #e4ebec;
+    border-radius: 9px;
+    color: #66767c;
+    background: #fafcfc;
+    font-size: .78rem;
+  }
+  .g3d-notes summary {
+    padding: 11px 14px;
+    color: #53656b;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .g3d-notes-body {
+    padding: 0 14px 12px;
+    line-height: 1.75;
+  }
+  .g3d-notes-body p {
+    margin: 0 0 6px;
+  }
+  .g3d-notes-body p:last-child {
+    margin-bottom: 0;
+  }
+  .g3d-notes-body a {
+    color: #5a9600;
+  }
+  .g3d-app:fullscreen,
+  .g3d-app:-webkit-full-screen {
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    flex-direction: column;
+    border: 0;
+    border-radius: 0;
+    background: #030a13;
+  }
+  .g3d-app:fullscreen .g3d-toolbar,
+  .g3d-app:-webkit-full-screen .g3d-toolbar {
+    padding-top: max(9px, env(safe-area-inset-top));
+    padding-right: max(12px, env(safe-area-inset-right));
+    padding-left: max(12px, env(safe-area-inset-left));
+  }
+  .g3d-app:fullscreen .g3d-stage,
+  .g3d-app:-webkit-full-screen .g3d-stage {
+    height: auto;
+    min-height: 0;
+    flex: 1;
+  }
+  .g3d-app:fullscreen .g3d-statusbar,
+  .g3d-app:-webkit-full-screen .g3d-statusbar {
+    min-height: calc(42px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .g3d-app:fullscreen .g3d-panel,
+  .g3d-app:-webkit-full-screen .g3d-panel {
+    bottom: calc(54px + env(safe-area-inset-bottom));
+  }
+  .g3d-app:fullscreen .g3d-marker-card,
+  .g3d-app:-webkit-full-screen .g3d-marker-card {
+    bottom: calc(62px + env(safe-area-inset-bottom));
+  }
+  .g3d-app:fullscreen .g3d-guide,
+  .g3d-app:-webkit-full-screen .g3d-guide {
+    bottom: calc(70px + env(safe-area-inset-bottom));
+  }
+  @media only screen and (max-width: 1100px) {
+    .g3d-mode-chip {
+      display: none;
+    }
+    .g3d-toolbar {
+      flex-wrap: wrap;
+    }
+    .g3d-search-wrap {
+      order: 1;
+      max-width: none;
+    }
+    .g3d-toolbar-actions {
+      order: 2;
+    }
+  }
+  @media only screen and (max-width: 800px) {
+    .g3d-stage {
+      height: min(720px, 76vh);
+      min-height: 620px;
+    }
+    .g3d-panel {
+      top: auto;
+      right: 8px;
+      bottom: 50px;
+      left: 8px;
+      width: auto;
+      max-height: min(58%, 430px);
+      border-radius: 14px 14px 5px 5px;
+      transform: translateY(calc(100% + 60px));
+    }
+    .g3d-layer-panel,
+    .g3d-info-panel {
+      width: auto;
+      transform: translateY(calc(100% + 60px));
+    }
+    .g3d-panel.is-open {
+      transform: translateY(0);
+    }
+    .g3d-info-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .g3d-guide {
+      bottom: 62px;
+    }
+    .g3d-guide-step:nth-child(3) {
+      display: none;
+    }
+    .g3d-marker-card {
+      bottom: 54px;
+    }
+    .g3d-statusbar {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+    .g3d-status-item:last-child {
+      display: none;
+    }
+  }
+  @media only screen and (max-width: 601px) {
+    .g3d-container {
+      width: 100%;
+      margin-top: -30px;
+    }
+    .g3d-container > .card > .card-content {
+      padding: 7px;
+    }
+    .g3d-app {
+      border-radius: 9px;
+    }
+    .g3d-toolbar {
+      gap: 7px;
+      min-height: 108px;
+      padding: 8px;
+    }
+    .g3d-search-wrap {
+      flex-basis: calc(100% - 4px);
+      width: 100%;
+    }
+    .g3d-toolbar-actions {
+      width: 100%;
+      justify-content: space-between;
+      margin: 0;
+    }
+    .g3d-tool-button {
+      width: 44px;
+      height: 42px;
+    }
+    .g3d-search-results {
+      right: -1px;
+      left: -1px;
+    }
+    .g3d-stage {
+      height: 68vh;
+      min-height: 560px;
+      max-height: 700px;
+    }
+    .g3d-info-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+    .g3d-guide {
+      right: 10px;
+      bottom: 58px;
+      left: 10px;
+      justify-content: center;
+      max-width: none;
+      white-space: normal;
+      transform: none;
+    }
+    .g3d-guide.is-hidden {
+      transform: translateY(10px);
+    }
+    .g3d-guide-steps {
+      justify-content: center;
+      gap: 8px;
+    }
+    .g3d-guide-step:nth-child(2),
+    .g3d-guide-step:nth-child(3) {
+      display: none;
+    }
+    .g3d-marker-card {
+      right: 8px;
+      left: 8px;
+      justify-content: center;
+      max-width: none;
+    }
+    .g3d-statusbar {
+      grid-template-columns: 1.1fr .8fr .9fr;
+    }
+    .g3d-status-item {
+      padding: 0 7px;
+      font-size: .57rem;
+      text-align: center;
+    }
+    .g3d-status-item i {
+      display: none;
+    }
+    .g3d-map-label {
+      font-size: 9px;
+    }
+  }
+  @media only screen and (max-width: 960px) and (max-height: 600px) and (orientation: landscape) {
+    .g3d-toolbar {
+      min-height: 58px;
+      flex-wrap: nowrap;
+      gap: 7px;
+      padding: 7px 8px;
+    }
+    .g3d-search-wrap,
+    .g3d-toolbar-actions {
+      order: 0;
+    }
+    .g3d-search-wrap {
+      min-width: 150px;
+      flex-basis: auto;
+    }
+    .g3d-toolbar-actions {
+      width: auto;
+    }
+    .g3d-tool-button {
+      width: 38px;
+      height: 38px;
+    }
+    .g3d-stage {
+      height: calc(100svh - 66px);
+      min-height: 250px;
+      max-height: 460px;
+    }
+    .g3d-panel {
+      max-height: calc(100% - 58px);
+    }
+    .g3d-guide {
+      display: none;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .g3d-app *,
+    .g3d-app *::before,
+    .g3d-app *::after {
+      scroll-behavior: auto !important;
+      animation-duration: .01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .01ms !important;
+    }
+  }
+</style>
+
+<main class="content">
+  <div class="container g3d-container">
+    <div class="card">
+      <%- partial('_partial/tool-header') %>
+      <div class="card-content">
+        <div class="g3d-app is-stars" id="g3dRoot">
+          <p class="g3d-sr-only" id="g3dStageHelp">拖动旋转地球，滚轮或双指缩放。键盘聚焦地球后，可用方向键旋转、加号或减号缩放，也可以使用搜索框查找国家、城市和地标。</p>
+          <div class="g3d-sr-only" id="g3dLive" aria-live="polite"></div>
+
+          <div class="g3d-toolbar">
+            <span class="g3d-mode-chip"><i class="fas fa-globe-asia"></i>探索模式</span>
+            <div class="g3d-search-wrap">
+              <label class="g3d-sr-only" for="g3dSearch">搜索国家、城市或地标</label>
+              <div class="g3d-search-box">
+                <span class="g3d-search-icon"><i class="fas fa-search"></i></span>
+                <input
+                  class="g3d-search-input"
+                  id="g3dSearch"
+                  type="search"
+                  autocomplete="off"
+                  placeholder="搜索国家、城市或地标"
+                  role="combobox"
+                  aria-autocomplete="list"
+                  aria-controls="g3dSearchResults"
+                  aria-expanded="false"
+                  disabled>
+                <button class="g3d-search-clear" id="g3dSearchClear" type="button" aria-label="清空搜索">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+              <div class="g3d-search-results" id="g3dSearchResults" role="listbox" aria-label="搜索结果"></div>
+            </div>
+
+            <div class="g3d-toolbar-actions">
+              <button class="g3d-tool-button" id="g3dAutoRotate" type="button" aria-label="暂停自动旋转" aria-pressed="true" title="自动旋转" disabled>
+                <i class="fas fa-sync-alt"></i><span class="g3d-button-label">自动旋转</span>
+              </button>
+              <button class="g3d-tool-button" id="g3dResetView" type="button" aria-label="恢复默认视角" title="恢复默认视角" disabled>
+                <i class="fas fa-home"></i><span class="g3d-button-label">恢复默认视角</span>
+              </button>
+              <button class="g3d-tool-button" id="g3dLocate" type="button" aria-label="定位我的位置" title="定位我的位置" disabled>
+                <i class="fas fa-location-arrow"></i><span class="g3d-button-label">定位我的位置</span>
+              </button>
+              <button class="g3d-tool-button" id="g3dLayersToggle" type="button" aria-label="打开图层面板" aria-controls="g3dLayerPanel" aria-expanded="false" title="图层" disabled>
+                <i class="fas fa-layer-group"></i><span class="g3d-button-label">图层</span>
+              </button>
+              <button class="g3d-tool-button" id="g3dFullscreen" type="button" aria-label="进入全屏" aria-pressed="false" title="全屏" disabled>
+                <i class="fas fa-expand"></i><span class="g3d-button-label">全屏</span>
+              </button>
+            </div>
+          </div>
+
+          <section class="g3d-stage" id="g3dStage" tabindex="0" aria-label="交互式三维地球仪" aria-describedby="g3dStageHelp">
+            <div class="g3d-canvas" id="g3dCanvas"></div>
+
+            <div class="g3d-loader" id="g3dLoader" role="status">
+              <div class="g3d-loader-box">
+                <div class="g3d-loader-orbit"></div>
+                <p class="g3d-loader-text" id="g3dLoaderText">正在加载 3D 引擎…</p>
+              </div>
+            </div>
+
+            <div class="g3d-fatal" id="g3dFatal" role="alert" hidden>
+              <div class="g3d-fatal-box">
+                <div class="g3d-fatal-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                <h3 class="g3d-fatal-title" id="g3dFatalTitle">无法显示三维地球</h3>
+                <p class="g3d-fatal-message" id="g3dFatalMessage"></p>
+                <button class="g3d-fatal-action" id="g3dReload" type="button"><i class="fas fa-redo-alt"></i> 刷新重试</button>
+              </div>
+            </div>
+
+            <aside class="g3d-panel g3d-layer-panel" id="g3dLayerPanel" aria-hidden="true" aria-label="图层控制" inert>
+              <div class="g3d-panel-head">
+                <h3 class="g3d-panel-title"><i class="fas fa-layer-group"></i>图层控制</h3>
+                <button class="g3d-panel-close" id="g3dLayerClose" type="button" aria-label="关闭图层面板"><i class="fas fa-times"></i></button>
+              </div>
+              <div class="g3d-panel-body">
+                <div class="g3d-layer-list">
+                  <button class="g3d-layer-switch" type="button" role="switch" aria-checked="true" data-layer="borders">
+                    <span class="g3d-layer-icon"><i class="fas fa-draw-polygon"></i></span>
+                    <span class="g3d-layer-name">国家边界</span><span class="g3d-switch-track"></span>
+                  </button>
+                  <button class="g3d-layer-switch" type="button" role="switch" aria-checked="true" data-layer="countryLabels">
+                    <span class="g3d-layer-icon"><i class="fas fa-tags"></i></span>
+                    <span class="g3d-layer-name">国家名称</span><span class="g3d-switch-track"></span>
+                  </button>
+                  <button class="g3d-layer-switch" type="button" role="switch" aria-checked="true" data-layer="cities">
+                    <span class="g3d-layer-icon"><i class="fas fa-city"></i></span>
+                    <span class="g3d-layer-name">主要城市</span><span class="g3d-switch-track"></span>
+                  </button>
+                  <button class="g3d-layer-switch" type="button" role="switch" aria-checked="true" data-layer="landmarks">
+                    <span class="g3d-layer-icon"><i class="fas fa-landmark"></i></span>
+                    <span class="g3d-layer-name">精选地标</span><span class="g3d-switch-track"></span>
+                  </button>
+                  <button class="g3d-layer-switch" type="button" role="switch" aria-checked="false" data-layer="graticules">
+                    <span class="g3d-layer-icon"><i class="fas fa-th"></i></span>
+                    <span class="g3d-layer-name">经纬网</span><span class="g3d-switch-track"></span>
+                  </button>
+                  <button class="g3d-layer-switch" type="button" role="switch" aria-checked="true" data-layer="atmosphere">
+                    <span class="g3d-layer-icon"><i class="fas fa-circle-notch"></i></span>
+                    <span class="g3d-layer-name">大气光晕</span><span class="g3d-switch-track"></span>
+                  </button>
+                  <button class="g3d-layer-switch" type="button" role="switch" aria-checked="false" data-layer="night">
+                    <span class="g3d-layer-icon"><i class="fas fa-moon"></i></span>
+                    <span class="g3d-layer-name">夜景地球</span><span class="g3d-switch-track"></span>
+                  </button>
+                  <button class="g3d-layer-switch" type="button" role="switch" aria-checked="true" data-layer="stars">
+                    <span class="g3d-layer-icon"><i class="fas fa-star"></i></span>
+                    <span class="g3d-layer-name">星空背景</span><span class="g3d-switch-track"></span>
+                  </button>
+                </div>
+                <div class="g3d-data-status" id="g3dDataStatus">
+                  <i class="fas fa-circle-notch fa-spin"></i><span id="g3dDataStatusText">正在加载国家边界数据…</span>
+                  <button class="g3d-retry-data" id="g3dRetryData" type="button"><i class="fas fa-redo-alt"></i> 重新加载数据</button>
+                </div>
+              </div>
+            </aside>
+
+            <aside class="g3d-panel g3d-info-panel" id="g3dInfoPanel" aria-hidden="true" aria-label="地理信息" inert>
+              <div class="g3d-panel-head">
+                <h3 class="g3d-panel-title"><i class="fas fa-info-circle"></i>地理信息</h3>
+                <button class="g3d-panel-close" id="g3dInfoClose" type="button" aria-label="关闭信息面板"><i class="fas fa-times"></i></button>
+              </div>
+              <div class="g3d-panel-body">
+                <div class="g3d-info-content" id="g3dInfoContent"></div>
+              </div>
+            </aside>
+
+            <div class="g3d-guide" id="g3dGuide" aria-hidden="false">
+              <div class="g3d-guide-steps">
+                <span class="g3d-guide-step"><i class="fas fa-hand-pointer"></i>拖动旋转</span>
+                <span class="g3d-guide-step"><i class="fas fa-search-plus"></i>滚轮或双指缩放</span>
+                <span class="g3d-guide-step"><i class="fas fa-map-marker-alt"></i>点击国家查看信息</span>
+              </div>
+              <button class="g3d-guide-close" id="g3dGuideClose" type="button" aria-label="关闭操作引导"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="g3d-marker-card" id="g3dMarkerCard" aria-hidden="true" inert>
+              <i class="fas fa-map-pin"></i>
+              <span class="g3d-marker-copy" id="g3dMarkerCoords">—</span>
+              <button class="g3d-mini-button" id="g3dCopyCoords" type="button" aria-label="复制坐标" title="复制坐标"><i class="fas fa-copy"></i></button>
+              <button class="g3d-mini-button" id="g3dClearMarker" type="button" aria-label="清除坐标标记" title="清除标记"><i class="fas fa-trash-alt"></i></button>
+            </div>
+
+            <div class="g3d-toast" id="g3dToast" role="status"></div>
+
+            <div class="g3d-statusbar" aria-label="地球状态">
+              <div class="g3d-status-item"><i class="fas fa-crosshairs"></i><span id="g3dPointerCoords">移动指针查看经纬度</span></div>
+              <div class="g3d-status-item"><i class="fas fa-search-location"></i><span id="g3dZoomStatus">全球视角</span></div>
+              <div class="g3d-status-item"><i class="far fa-clock"></i><span id="g3dUtcTime">--:--:-- UTC</span></div>
+              <div class="g3d-status-item"><i class="fas fa-mouse-pointer"></i><span id="g3dStatusHint">正在初始化地球…</span></div>
+            </div>
+          </section>
+        </div>
+
+        <details class="g3d-notes">
+          <summary>数据来源与使用说明</summary>
+          <div class="g3d-notes-body">
+            <p>三维渲染使用固定版本 <a href="https://globe.gl/" target="_blank" rel="noopener noreferrer">Globe.gl 2.46.1</a>；国家边界与人口估算来自 <a href="https://www.naturalearthdata.com/" target="_blank" rel="noopener noreferrer">Natural Earth 110m</a> 数据集，人口年份会随国家信息单独标注。日间、夜景与凹凸纹理采用 three-globe 示例资源，加载失败时会自动切换备用 CDN 或降级为纯色地球。边界采用数据集的可视化口径，不用于法律或行政判断。</p>
+            <p>城市与地标是用于探索和搜索的精选本地数据，并非全量目录；夜景模式为静态夜间纹理，不代表实时昼夜分布。</p>
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (theme.valine && theme.valine.enable) { %>
+      <%- partial('_partial/valine') %>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script
+  src="https://cdn.jsdelivr.net/npm/globe.gl@2.46.1/dist/globe.gl.min.js"
+  onerror="this.onerror=null;this.src='https://unpkg.com/globe.gl@2.46.1/dist/globe.gl.min.js';"></script>
+
+<script>
+(function() {
+  'use strict';
+
+  var root = document.getElementById('g3dRoot');
+  if (!root || window.__meowv3dGlobeInitialized) return;
+  window.__meowv3dGlobeInitialized = true;
+
+  var q = function(selector) { return root.querySelector(selector); };
+  var qa = function(selector) { return Array.prototype.slice.call(root.querySelectorAll(selector)); };
+  var canvasHost = q('#g3dCanvas');
+  var stage = q('#g3dStage');
+  var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var lowPower = (navigator.deviceMemory && navigator.deviceMemory <= 4) ||
+    (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4);
+
+  var DEFAULT_VIEW = { lat: 29.5, lng: 104, altitude: 2.15 };
+  var ENGINE_VERSION = '2.46.1';
+  var COUNTRY_URLS = [
+    'https://cdn.jsdelivr.net/npm/globe.gl@' + ENGINE_VERSION + '/example/datasets/ne_110m_admin_0_countries.geojson',
+    'https://unpkg.com/globe.gl@' + ENGINE_VERSION + '/example/datasets/ne_110m_admin_0_countries.geojson'
+  ];
+  var TEXTURE_VERSION = '2.45.1';
+  var TEXTURE_URLS = {
+    day: [
+      'https://cdn.jsdelivr.net/npm/three-globe@' + TEXTURE_VERSION + '/example/img/earth-blue-marble.jpg',
+      'https://unpkg.com/three-globe@' + TEXTURE_VERSION + '/example/img/earth-blue-marble.jpg'
+    ],
+    night: [
+      'https://cdn.jsdelivr.net/npm/three-globe@' + TEXTURE_VERSION + '/example/img/earth-night.jpg',
+      'https://unpkg.com/three-globe@' + TEXTURE_VERSION + '/example/img/earth-night.jpg'
+    ],
+    bump: [
+      'https://cdn.jsdelivr.net/npm/three-globe@' + TEXTURE_VERSION + '/example/img/earth-topology.png',
+      'https://unpkg.com/three-globe@' + TEXTURE_VERSION + '/example/img/earth-topology.png'
+    ]
+  };
+
+  var CONTINENT_NAMES = {
+    Africa: '非洲',
+    Asia: '亚洲',
+    Europe: '欧洲',
+    'North America': '北美洲',
+    'South America': '南美洲',
+    Oceania: '大洋洲',
+    Antarctica: '南极洲',
+    'Seven seas (open ocean)': '公海'
+  };
+
+  var COUNTRY_OVERRIDES = {
+    CHN: { zh: '中国', aliases: '中华人民共和国 中国大陆 PRC', capital: '北京', area: 9596961, language: '汉语', currency: '人民币 CNY', timezone: 'Asia/Shanghai', lat: 35.9, lng: 104.2, description: '位于东亚，拥有广阔多样的地形与悠久的历史文化。' },
+    USA: { zh: '美国', aliases: '美利坚合众国 US USA United States of America', capital: '华盛顿', area: 9833517, language: '英语', currency: '美元 USD', timezone: 'America/New_York', lat: 39.8, lng: -98.6, description: '横跨北美洲的联邦国家，地理景观从大西洋延伸到太平洋。' },
+    RUS: { zh: '俄罗斯', aliases: '俄罗斯联邦 Russian Federation', capital: '莫斯科', area: 17098246, language: '俄语', currency: '俄罗斯卢布 RUB', timezone: 'Europe/Moscow', lat: 61.5, lng: 90, description: '横跨欧亚大陆，是世界上国土面积最大的国家。' },
+    CAN: { zh: '加拿大', capital: '渥太华', area: 9984670, language: '英语、法语', currency: '加拿大元 CAD', timezone: 'America/Toronto', lat: 57, lng: -106, description: '位于北美洲北部，以辽阔森林、湖泊和北极景观闻名。' },
+    BRA: { zh: '巴西', aliases: 'Brasil', capital: '巴西利亚', area: 8515767, language: '葡萄牙语', currency: '巴西雷亚尔 BRL', timezone: 'America/Sao_Paulo', lat: -10.8, lng: -52.9, description: '南美洲面积最大的国家，亚马孙雨林覆盖其北部广大区域。' },
+    AUS: { zh: '澳大利亚', aliases: '澳洲 Australia', capital: '堪培拉', area: 7692024, language: '英语', currency: '澳大利亚元 AUD', timezone: 'Australia/Sydney', lat: -25.3, lng: 133.8, description: '位于南半球，拥有独特生态系统、广阔内陆与漫长海岸线。' },
+    IND: { zh: '印度', capital: '新德里', area: 3287263, language: '印地语、英语等', currency: '印度卢比 INR', timezone: 'Asia/Kolkata', lat: 22.8, lng: 79, description: '位于南亚次大陆，人口、语言与文化高度多样。' },
+    JPN: { zh: '日本', aliases: 'Nippon Japan', capital: '东京', area: 377975, language: '日语', currency: '日元 JPY', timezone: 'Asia/Tokyo', lat: 36.2, lng: 138.3, description: '由北海道、本州、四国、九州等岛屿构成的东亚岛国。' },
+    DEU: { zh: '德国', aliases: 'Germany Deutschland', capital: '柏林', area: 357022, language: '德语', currency: '欧元 EUR', timezone: 'Europe/Berlin', lat: 51.1, lng: 10.4, description: '位于欧洲中部，是连接欧洲多地的重要交通与文化节点。' },
+    FRA: { zh: '法国', aliases: 'France République française', capital: '巴黎', area: 551695, language: '法语', currency: '欧元 EUR', timezone: 'Europe/Paris', lat: 46.3, lng: 2.2, description: '位于西欧，拥有多样自然景观和深厚的艺术文化传统。' },
+    GBR: { zh: '英国', aliases: '大不列颠 联合王国 UK United Kingdom Britain', capital: '伦敦', area: 243610, language: '英语', currency: '英镑 GBP', timezone: 'Europe/London', lat: 54, lng: -2.5, description: '由英格兰、苏格兰、威尔士和北爱尔兰组成的欧洲岛国。' },
+    ITA: { zh: '意大利', aliases: 'Italia Italy', capital: '罗马', area: 301340, language: '意大利语', currency: '欧元 EUR', timezone: 'Europe/Rome', lat: 42.8, lng: 12.8, description: '位于南欧，亚平宁半岛伸入地中海，历史城市众多。' },
+    ESP: { zh: '西班牙', aliases: 'España Spain', capital: '马德里', area: 505990, language: '西班牙语', currency: '欧元 EUR', timezone: 'Europe/Madrid', lat: 40.3, lng: -3.7, description: '位于伊比利亚半岛，拥有丰富的区域文化与地中海景观。' },
+    KOR: { zh: '韩国', aliases: '大韩民国 South Korea Republic of Korea', capital: '首尔', area: 100210, language: '韩语', currency: '韩元 KRW', timezone: 'Asia/Seoul', lat: 36.4, lng: 127.9, description: '位于朝鲜半岛南部，城市化程度较高的东亚国家。' },
+    IDN: { zh: '印度尼西亚', aliases: '印尼 Indonesia', capital: '雅加达', area: 1904569, language: '印度尼西亚语', currency: '印度尼西亚盾 IDR', timezone: 'Asia/Jakarta', lat: -2.5, lng: 118, description: '由上万个岛屿组成，横跨赤道，是世界最大的群岛国家。' },
+    MEX: { zh: '墨西哥', aliases: 'México Mexico', capital: '墨西哥城', area: 1964375, language: '西班牙语', currency: '墨西哥比索 MXN', timezone: 'America/Mexico_City', lat: 23.6, lng: -102.5, description: '位于北美洲南部，连接北美与中美洲。' },
+    ZAF: { zh: '南非', aliases: 'South Africa RSA', capital: '比勒陀利亚', area: 1221037, language: '祖鲁语、科萨语、英语等', currency: '南非兰特 ZAR', timezone: 'Africa/Johannesburg', lat: -30.6, lng: 22.9, description: '位于非洲大陆最南端，拥有多样地貌与生态系统。' },
+    EGY: { zh: '埃及', aliases: 'Egypt', capital: '开罗', area: 1001450, language: '阿拉伯语', currency: '埃及镑 EGP', timezone: 'Africa/Cairo', lat: 26.8, lng: 30.8, description: '横跨非洲东北部与亚洲西奈半岛，尼罗河贯穿其境。' },
+    SAU: { zh: '沙特阿拉伯', aliases: 'Saudi Arabia', capital: '利雅得', area: 2149690, language: '阿拉伯语', currency: '沙特里亚尔 SAR', timezone: 'Asia/Riyadh', lat: 23.9, lng: 45.1, description: '位于阿拉伯半岛，国土以沙漠与高原地貌为主。' },
+    TUR: { zh: '土耳其', aliases: 'Türkiye Turkey', capital: '安卡拉', area: 783562, language: '土耳其语', currency: '土耳其里拉 TRY', timezone: 'Europe/Istanbul', lat: 39, lng: 35.2, description: '横跨欧亚两洲，博斯普鲁斯海峡连接黑海与地中海。' },
+    ARG: { zh: '阿根廷', aliases: 'Argentina', capital: '布宜诺斯艾利斯', area: 2780400, language: '西班牙语', currency: '阿根廷比索 ARS', timezone: 'America/Argentina/Buenos_Aires', lat: -38.4, lng: -63.6, description: '位于南美洲南部，从安第斯山脉延伸至大西洋沿岸。' },
+    NZL: { zh: '新西兰', aliases: 'New Zealand Aotearoa', capital: '惠灵顿', area: 268838, language: '英语、毛利语', currency: '新西兰元 NZD', timezone: 'Pacific/Auckland', lat: -41.3, lng: 174.8, description: '位于南太平洋，以山地、峡湾与火山地貌闻名。' },
+    SGP: { zh: '新加坡', aliases: 'Singapore', capital: '新加坡', area: 734, language: '英语、马来语、华语、泰米尔语', currency: '新加坡元 SGD', timezone: 'Asia/Singapore', lat: 1.35, lng: 103.82, description: '位于马来半岛南端的城市国家和重要国际港口。' },
+    THA: { zh: '泰国', aliases: 'Thailand Siam', capital: '曼谷', area: 513120, language: '泰语', currency: '泰铢 THB', timezone: 'Asia/Bangkok', lat: 15.9, lng: 100.9, description: '位于东南亚中南半岛中部，地貌从北部山地延伸至南部海岸。' },
+    VNM: { zh: '越南', aliases: 'Vietnam Viet Nam', capital: '河内', area: 331212, language: '越南语', currency: '越南盾 VND', timezone: 'Asia/Ho_Chi_Minh', lat: 16.5, lng: 107.6, description: '位于中南半岛东部，拥有狭长海岸线与多样地形。' },
+    PAK: { zh: '巴基斯坦', aliases: 'Pakistan', capital: '伊斯兰堡', area: 881913, language: '乌尔都语、英语', currency: '巴基斯坦卢比 PKR', timezone: 'Asia/Karachi', lat: 30.4, lng: 69.3, description: '位于南亚西北部，从阿拉伯海延伸至喀喇昆仑山脉。' },
+    IRN: { zh: '伊朗', aliases: 'Iran Persia', capital: '德黑兰', area: 1648195, language: '波斯语', currency: '伊朗里亚尔 IRR', timezone: 'Asia/Tehran', lat: 32.4, lng: 53.7, description: '位于西亚的伊朗高原，连接中亚、南亚与中东。' },
+    TWN: { zh: '中国台湾', aliases: '台湾 Taiwan', capital: '台北', area: 36197, language: '汉语', currency: '新台币 TWD', timezone: 'Asia/Taipei', lat: 23.7, lng: 121, description: '位于中国东南沿海的岛屿地区，中央山脉纵贯南北。' },
+    PSE: { zh: '巴勒斯坦', aliases: 'Palestine', capital: '拉姆安拉', area: 6020, language: '阿拉伯语', currency: '以色列新谢克尔 ILS', timezone: 'Asia/Hebron', lat: 31.9, lng: 35.2, description: '位于西亚地中海东岸的地区。' },
+    XKX: { zh: '科索沃', aliases: 'Kosovo', capital: '普里什蒂纳', area: 10887, language: '阿尔巴尼亚语、塞尔维亚语', currency: '欧元 EUR', timezone: 'Europe/Belgrade', lat: 42.6, lng: 20.9, description: '位于巴尔干半岛中部的内陆地区。' }
+  };
+
+  var PLACES = [
+    { id: 'beijing', type: 'city', zh: '北京', en: 'Beijing', country: 'CHN', lat: 39.9042, lng: 116.4074, timezone: 'Asia/Shanghai', importance: 1, capital: true, description: '中国首都，位于华北平原北部。' },
+    { id: 'shanghai', type: 'city', zh: '上海', en: 'Shanghai', country: 'CHN', lat: 31.2304, lng: 121.4737, timezone: 'Asia/Shanghai', importance: 1, description: '位于长江入海口的国际化都市。' },
+    { id: 'tokyo', type: 'city', zh: '东京', en: 'Tokyo', country: 'JPN', lat: 35.6762, lng: 139.6503, timezone: 'Asia/Tokyo', importance: 1, capital: true, description: '日本首都，位于本州关东平原。' },
+    { id: 'seoul', type: 'city', zh: '首尔', en: 'Seoul', country: 'KOR', lat: 37.5665, lng: 126.978, timezone: 'Asia/Seoul', importance: 1, capital: true, description: '韩国首都，汉江穿城而过。' },
+    { id: 'singapore', type: 'city', zh: '新加坡', en: 'Singapore', country: 'SGP', lat: 1.3521, lng: 103.8198, timezone: 'Asia/Singapore', importance: 1, capital: true, description: '位于马六甲海峡东端的城市国家。' },
+    { id: 'bangkok', type: 'city', zh: '曼谷', en: 'Bangkok', country: 'THA', lat: 13.7563, lng: 100.5018, timezone: 'Asia/Bangkok', importance: 1, capital: true, description: '泰国首都，坐落于湄南河下游。' },
+    { id: 'new-delhi', type: 'city', zh: '新德里', en: 'New Delhi', country: 'IND', lat: 28.6139, lng: 77.209, timezone: 'Asia/Kolkata', importance: 1, capital: true, description: '印度首都，位于恒河平原西缘。' },
+    { id: 'dubai', type: 'city', zh: '迪拜', en: 'Dubai', country: 'ARE', lat: 25.2048, lng: 55.2708, timezone: 'Asia/Dubai', importance: 1, description: '阿拉伯联合酋长国的重要城市。' },
+    { id: 'moscow', type: 'city', zh: '莫斯科', en: 'Moscow', country: 'RUS', lat: 55.7558, lng: 37.6173, timezone: 'Europe/Moscow', importance: 1, capital: true, description: '俄罗斯首都，莫斯科河穿城而过。' },
+    { id: 'london', type: 'city', zh: '伦敦', en: 'London', country: 'GBR', lat: 51.5074, lng: -0.1278, timezone: 'Europe/London', importance: 1, capital: true, description: '英国首都，坐落于泰晤士河沿岸。' },
+    { id: 'paris', type: 'city', zh: '巴黎', en: 'Paris', country: 'FRA', lat: 48.8566, lng: 2.3522, timezone: 'Europe/Paris', importance: 1, capital: true, description: '法国首都，塞纳河贯穿城市。' },
+    { id: 'berlin', type: 'city', zh: '柏林', en: 'Berlin', country: 'DEU', lat: 52.52, lng: 13.405, timezone: 'Europe/Berlin', importance: 2, capital: true, description: '德国首都，位于欧洲中部平原。' },
+    { id: 'rome', type: 'city', zh: '罗马', en: 'Rome', country: 'ITA', lat: 41.9028, lng: 12.4964, timezone: 'Europe/Rome', importance: 2, capital: true, description: '意大利首都，拥有众多古代遗迹。' },
+    { id: 'cairo', type: 'city', zh: '开罗', en: 'Cairo', country: 'EGY', lat: 30.0444, lng: 31.2357, timezone: 'Africa/Cairo', importance: 1, capital: true, description: '埃及首都，位于尼罗河三角洲南端。' },
+    { id: 'nairobi', type: 'city', zh: '内罗毕', en: 'Nairobi', country: 'KEN', lat: -1.2921, lng: 36.8219, timezone: 'Africa/Nairobi', importance: 2, capital: true, description: '肯尼亚首都，位于东非高原。' },
+    { id: 'new-york', type: 'city', zh: '纽约', en: 'New York', country: 'USA', lat: 40.7128, lng: -74.006, timezone: 'America/New_York', importance: 1, description: '位于美国大西洋沿岸的重要城市。' },
+    { id: 'los-angeles', type: 'city', zh: '洛杉矶', en: 'Los Angeles', country: 'USA', lat: 34.0522, lng: -118.2437, timezone: 'America/Los_Angeles', importance: 2, description: '位于美国加利福尼亚州南部。' },
+    { id: 'mexico-city', type: 'city', zh: '墨西哥城', en: 'Mexico City', country: 'MEX', lat: 19.4326, lng: -99.1332, timezone: 'America/Mexico_City', importance: 1, capital: true, description: '墨西哥首都，位于墨西哥高原南部。' },
+    { id: 'sao-paulo', type: 'city', zh: '圣保罗', en: 'São Paulo', country: 'BRA', lat: -23.5505, lng: -46.6333, timezone: 'America/Sao_Paulo', importance: 1, description: '巴西人口密集的经济与文化中心。' },
+    { id: 'buenos-aires', type: 'city', zh: '布宜诺斯艾利斯', en: 'Buenos Aires', country: 'ARG', lat: -34.6037, lng: -58.3816, timezone: 'America/Argentina/Buenos_Aires', importance: 2, capital: true, description: '阿根廷首都，位于拉普拉塔河西岸。' },
+    { id: 'toronto', type: 'city', zh: '多伦多', en: 'Toronto', country: 'CAN', lat: 43.6532, lng: -79.3832, timezone: 'America/Toronto', importance: 2, description: '位于安大略湖西北岸的加拿大城市。' },
+    { id: 'sydney', type: 'city', zh: '悉尼', en: 'Sydney', country: 'AUS', lat: -33.8688, lng: 151.2093, timezone: 'Australia/Sydney', importance: 1, description: '澳大利亚东海岸的重要港口城市。' },
+    { id: 'auckland', type: 'city', zh: '奥克兰', en: 'Auckland', country: 'NZL', lat: -36.8509, lng: 174.7645, timezone: 'Pacific/Auckland', importance: 2, description: '新西兰北岛北部的港湾城市。' },
+    { id: 'great-wall', type: 'landmark', zh: '万里长城', en: 'Great Wall', country: 'CHN', lat: 40.4319, lng: 116.5704, timezone: 'Asia/Shanghai', importance: 1, description: '沿中国北部山地延伸的古代防御工程体系。' },
+    { id: 'eiffel-tower', type: 'landmark', zh: '埃菲尔铁塔', en: 'Eiffel Tower', country: 'FRA', lat: 48.8584, lng: 2.2945, timezone: 'Europe/Paris', importance: 1, description: '位于巴黎战神广场的标志性铁塔。' },
+    { id: 'statue-liberty', type: 'landmark', zh: '自由女神像', en: 'Statue of Liberty', country: 'USA', lat: 40.6892, lng: -74.0445, timezone: 'America/New_York', importance: 1, description: '位于纽约港自由岛的纪念性雕像。' },
+    { id: 'pyramids-giza', type: 'landmark', zh: '吉萨金字塔群', en: 'Pyramids of Giza', country: 'EGY', lat: 29.9792, lng: 31.1342, timezone: 'Africa/Cairo', importance: 1, description: '位于开罗西南吉萨高原的古埃及遗迹。' },
+    { id: 'sydney-opera', type: 'landmark', zh: '悉尼歌剧院', en: 'Sydney Opera House', country: 'AUS', lat: -33.8568, lng: 151.2153, timezone: 'Australia/Sydney', importance: 1, description: '坐落于悉尼港畔的标志性建筑。' },
+    { id: 'mount-fuji', type: 'landmark', zh: '富士山', en: 'Mount Fuji', country: 'JPN', lat: 35.3606, lng: 138.7274, timezone: 'Asia/Tokyo', importance: 1, description: '日本最高峰，位于本州岛中部。' },
+    { id: 'taj-mahal', type: 'landmark', zh: '泰姬陵', en: 'Taj Mahal', country: 'IND', lat: 27.1751, lng: 78.0421, timezone: 'Asia/Kolkata', importance: 1, description: '位于印度阿格拉的白色大理石陵墓。' },
+    { id: 'burj-khalifa', type: 'landmark', zh: '哈利法塔', en: 'Burj Khalifa', country: 'ARE', lat: 25.1972, lng: 55.2744, timezone: 'Asia/Dubai', importance: 1, description: '位于迪拜市中心的超高层建筑。' },
+    { id: 'christ-redeemer', type: 'landmark', zh: '救世基督像', en: 'Christ the Redeemer', country: 'BRA', lat: -22.9519, lng: -43.2105, timezone: 'America/Sao_Paulo', importance: 2, description: '位于里约热内卢科尔科瓦多山顶的雕像。' },
+    { id: 'machu-picchu', type: 'landmark', zh: '马丘比丘', en: 'Machu Picchu', country: 'PER', lat: -13.1631, lng: -72.545, timezone: 'America/Lima', importance: 2, description: '位于安第斯山脉高处的印加文明遗址。' }
+  ];
+
+  var state = {
+    world: null,
+    controls: null,
+    rendererCanvas: null,
+    countries: [],
+    countryByCode: {},
+    searchItems: [],
+    selectedCountry: null,
+    hoveredCountry: null,
+    focusedPlace: null,
+    marker: null,
+    activeTimezone: null,
+    activeSearchIndex: -1,
+    visibleSearchItems: [],
+    countryStatus: 'loading',
+    layerPanelOpen: window.innerWidth > 1100,
+    infoPanelOpen: false,
+    autoRotateWanted: !reducedMotion,
+    interactionTimer: null,
+    guideTimer: null,
+    toastTimer: null,
+    contextLossTimer: null,
+    clockTimer: null,
+    resizeFrame: null,
+    pointerFrame: null,
+    zoomBand: -1,
+    currentAltitude: DEFAULT_VIEW.altitude,
+    fetchController: null,
+    countryRequestId: 0,
+    resizeObserver: null,
+    destroyed: false,
+    pausedForVisibility: false,
+    experienceReady: false,
+    fullscreenSupported: !!(document.fullscreenEnabled || document.webkitFullscreenEnabled || root.requestFullscreen || root.webkitRequestFullscreen),
+    textureUrls: {},
+    textureStatus: { day: 'idle', night: 'idle', bump: 'idle' },
+    texturePromises: {},
+    layers: {
+      borders: true,
+      countryLabels: true,
+      cities: true,
+      landmarks: true,
+      graticules: false,
+      atmosphere: true,
+      night: false,
+      stars: true
+    }
+  };
+  var cleanup = [];
+
+  function listen(target, type, handler, options) {
+    if (!target) return;
+    target.addEventListener(type, handler, options);
+    cleanup.push(function() { target.removeEventListener(type, handler, options); });
+  }
+
+  function clearNode(node) {
+    while (node && node.firstChild) node.removeChild(node.firstChild);
+  }
+
+  function makeElement(tag, className, text) {
+    var el = document.createElement(tag);
+    if (className) el.className = className;
+    if (text !== undefined && text !== null) el.textContent = String(text);
+    return el;
+  }
+
+  function setInert(element, inert) {
+    if (!element) return;
+    if (inert) element.setAttribute('inert', '');
+    else element.removeAttribute('inert');
+  }
+
+  function focusSafely(element) {
+    if (!element || typeof element.focus !== 'function') return;
+    try { element.focus({ preventScroll: true }); }
+    catch (error) { element.focus(); }
+  }
+
+  function isMobileLayout() {
+    return !!(window.matchMedia && window.matchMedia('(max-width: 800px)').matches);
+  }
+
+  function hideGuide() {
+    var guide = q('#g3dGuide');
+    if (!guide) return;
+    var hadFocus = guide.contains(document.activeElement);
+    guide.classList.add('is-hidden');
+    guide.setAttribute('aria-hidden', 'true');
+    setInert(guide, true);
+    if (hadFocus) focusSafely(stage);
+  }
+
+  function escapeHtml(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function normalizeText(value) {
+    var text = String(value || '').toLowerCase().trim();
+    if (text.normalize) text = text.normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
+    return text.replace(/\s+/g, ' ');
+  }
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function formatNumber(value) {
+    if (value === null || value === undefined || !isFinite(Number(value))) return '—';
+    try { return Number(value).toLocaleString('zh-CN'); }
+    catch (error) { return String(value); }
+  }
+
+  function formatCoordinateValue(value, positive, negative) {
+    if (value === null || value === undefined || !isFinite(value)) return '—';
+    return Math.abs(value).toFixed(2) + '°' + (value >= 0 ? positive : negative);
+  }
+
+  function formatCoordinates(lat, lng) {
+    return formatCoordinateValue(lat, 'N', 'S') + '  ' + formatCoordinateValue(lng, 'E', 'W');
+  }
+
+  function flagEmoji(code2) {
+    if (!code2 || !/^[A-Z]{2}$/.test(code2)) return '🌐';
+    return String.fromCodePoint(code2.charCodeAt(0) + 127397, code2.charCodeAt(1) + 127397);
+  }
+
+  function announce(message) {
+    q('#g3dLive').textContent = '';
+    window.setTimeout(function() {
+      if (!state.destroyed) q('#g3dLive').textContent = message;
+    }, 20);
+  }
+
+  function setHint(message) {
+    q('#g3dStatusHint').textContent = message;
+  }
+
+  function showToast(message, duration) {
+    var toast = q('#g3dToast');
+    toast.textContent = message;
+    toast.classList.add('is-visible');
+    window.clearTimeout(state.toastTimer);
+    state.toastTimer = window.setTimeout(function() {
+      toast.classList.remove('is-visible');
+    }, duration || 2600);
+  }
+
+  function setLoading(message) {
+    q('#g3dLoaderText').textContent = message;
+    q('#g3dLoader').classList.remove('is-hidden');
+  }
+
+  function hideLoading() {
+    q('#g3dLoader').classList.add('is-hidden');
+  }
+
+  function showFatal(title, message) {
+    setExperienceReady(false);
+    q('#g3dFatalTitle').textContent = title;
+    q('#g3dFatalMessage').textContent = message;
+    q('#g3dFatal').hidden = false;
+    hideLoading();
+    setHint('三维地球不可用');
+    announce(title + '。' + message);
+  }
+
+  function setExperienceReady(ready) {
+    state.experienceReady = !!ready;
+    q('#g3dSearch').disabled = !state.experienceReady;
+    q('#g3dSearchClear').disabled = !state.experienceReady;
+    ['#g3dAutoRotate', '#g3dResetView', '#g3dLocate', '#g3dLayersToggle'].forEach(function(selector) {
+      q(selector).disabled = !state.experienceReady;
+    });
+    q('#g3dFullscreen').disabled = !state.experienceReady || !state.fullscreenSupported;
+    if (!state.experienceReady) closeSearchResults();
+    syncLayerButtons();
+  }
+
+  function supportsWebGL2() {
+    try {
+      var canvas = document.createElement('canvas');
+      return !!(window.WebGL2RenderingContext && canvas.getContext('webgl2'));
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function loadImageFrom(urls, index) {
+    return new Promise(function(resolve, reject) {
+      if (!window.Image || !urls[index]) {
+        reject(new Error('没有可用的纹理地址'));
+        return;
+      }
+      var image = new Image();
+      var settled = false;
+      var timer = window.setTimeout(function() {
+        if (settled) return;
+        if (index + 1 < urls.length) finish(resolve, loadImageFrom(urls, index + 1));
+        else finish(reject, new Error('纹理加载超时'));
+      }, 8000);
+      function finish(callback, value) {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timer);
+        image.onload = null;
+        image.onerror = null;
+        callback(value);
+      }
+      image.crossOrigin = 'anonymous';
+      image.decoding = 'async';
+      image.onload = function() { finish(resolve, urls[index]); };
+      image.onerror = function() {
+        if (index + 1 < urls.length) {
+          finish(resolve, loadImageFrom(urls, index + 1));
+        } else {
+          finish(reject, new Error('纹理加载失败'));
+        }
+      };
+      image.src = urls[index];
+    }).then(function(result) {
+      return result && typeof result.then === 'function' ? result : Promise.resolve(result);
+    });
+  }
+
+  function setGlobeMaterialColor(color) {
+    if (!state.world) return;
+    try {
+      var material = state.world.globeMaterial();
+      if (material && material.color && material.color.set) material.color.set(color);
+    } catch (error) {}
+  }
+
+  function applyResolvedTexture(kind, url) {
+    if (!state.world || !url) return;
+    if (kind === 'bump') {
+      if (!lowPower) state.world.bumpImageUrl(url);
+      return;
+    }
+    if ((kind === 'day' && !state.layers.night) || (kind === 'night' && state.layers.night)) {
+      setGlobeMaterialColor('#ffffff');
+      state.world.globeImageUrl(url);
+    }
+  }
+
+  function loadTexture(kind) {
+    if (state.textureStatus[kind] === 'ready') return Promise.resolve(state.textureUrls[kind]);
+    if (state.texturePromises[kind]) return state.texturePromises[kind];
+    state.textureStatus[kind] = 'loading';
+    state.texturePromises[kind] = loadImageFrom(TEXTURE_URLS[kind] || [], 0).then(function(url) {
+      if (state.destroyed) return null;
+      state.textureUrls[kind] = url;
+      state.textureStatus[kind] = 'ready';
+      applyResolvedTexture(kind, url);
+      return url;
+    }).catch(function(error) {
+      if (state.destroyed) return null;
+      state.textureStatus[kind] = 'error';
+      if (kind === 'day') {
+        if (!state.layers.night) {
+          if (state.world) state.world.globeImageUrl(null);
+          setGlobeMaterialColor('#174b56');
+          showToast('卫星纹理加载失败，已使用纯色地球', 4200);
+        }
+      } else if (kind === 'night' && state.layers.night) {
+        state.layers.night = false;
+        root.classList.remove('is-night');
+        if (state.textureUrls.day) applyResolvedTexture('day', state.textureUrls.day);
+        else {
+          if (state.world) state.world.globeImageUrl(null);
+          setGlobeMaterialColor('#174b56');
+        }
+        syncLayerButtons();
+        showToast('夜景纹理加载失败，已恢复日间模式', 4200);
+      }
+      if (window.console && console.warn) console.warn('[3D 地球仪] ' + kind + ' 纹理加载失败：', error);
+      return null;
+    }).finally(function() {
+      state.texturePromises[kind] = null;
+    });
+    return state.texturePromises[kind];
+  }
+
+  function countryOverride(code3) {
+    return COUNTRY_OVERRIDES[code3] || {};
+  }
+
+  var displayNames = null;
+  try {
+    if (window.Intl && Intl.DisplayNames) displayNames = new Intl.DisplayNames(['zh-CN'], { type: 'region' });
+  } catch (error) {
+    displayNames = null;
+  }
+
+  function chineseCountryName(code2, code3, fallback) {
+    var override = countryOverride(code3);
+    if (override.zh) return override.zh;
+    if (displayNames && code2 && /^[A-Z]{2}$/.test(code2)) {
+      try {
+        var localized = displayNames.of(code2);
+        if (localized && localized !== code2) return localized;
+      } catch (error) {}
+    }
+    return fallback || code3 || '未知地区';
+  }
+
+  function ringAreaAndCenter(ring) {
+    if (!ring || ring.length < 3) return null;
+    var baseLng = ring[0][0];
+    var points = ring.map(function(point) {
+      var lng = Number(point[0]);
+      while (lng - baseLng > 180) lng -= 360;
+      while (lng - baseLng < -180) lng += 360;
+      return [lng, Number(point[1])];
+    });
+    var twiceArea = 0;
+    var cx = 0;
+    var cy = 0;
+    for (var i = 0; i < points.length - 1; i++) {
+      var cross = points[i][0] * points[i + 1][1] - points[i + 1][0] * points[i][1];
+      twiceArea += cross;
+      cx += (points[i][0] + points[i + 1][0]) * cross;
+      cy += (points[i][1] + points[i + 1][1]) * cross;
+    }
+    var area = twiceArea / 2;
+    if (!isFinite(area) || Math.abs(area) < .000001) {
+      var sumLng = 0;
+      var sumLat = 0;
+      points.forEach(function(point) { sumLng += point[0]; sumLat += point[1]; });
+      return { area: 0, lng: sumLng / points.length, lat: sumLat / points.length, span: 5 };
+    }
+    var lng = cx / (6 * area);
+    while (lng > 180) lng -= 360;
+    while (lng < -180) lng += 360;
+    var lats = points.map(function(point) { return point[1]; });
+    var lngs = points.map(function(point) { return point[0]; });
+    return {
+      area: Math.abs(area),
+      lng: lng,
+      lat: cy / (6 * area),
+      span: Math.max(Math.max.apply(null, lats) - Math.min.apply(null, lats), Math.max.apply(null, lngs) - Math.min.apply(null, lngs))
+    };
+  }
+
+  function featurePoint(feature) {
+    var props = feature.properties || {};
+    var code3 = props.ISO_A3 && props.ISO_A3 !== '-99' ? props.ISO_A3 : (props.ADM0_A3 || props.SOV_A3);
+    var override = countryOverride(code3);
+    if (isFinite(override.lat) && isFinite(override.lng)) {
+      return { lat: override.lat, lng: override.lng, span: Math.sqrt(override.area || 300000) / 110 };
+    }
+    var geometry = feature.geometry || {};
+    var rings = [];
+    if (geometry.type === 'Polygon') {
+      if (geometry.coordinates && geometry.coordinates[0]) rings.push(geometry.coordinates[0]);
+    } else if (geometry.type === 'MultiPolygon') {
+      (geometry.coordinates || []).forEach(function(polygon) {
+        if (polygon && polygon[0]) rings.push(polygon[0]);
+      });
+    }
+    var best = null;
+    rings.forEach(function(ring) {
+      var result = ringAreaAndCenter(ring);
+      if (result && (!best || result.area > best.area)) best = result;
+    });
+    return best || { lat: 0, lng: 0, span: 20 };
+  }
+
+  function prepareFeature(feature) {
+    var props = feature.properties || {};
+    var code3 = props.ISO_A3 && props.ISO_A3 !== '-99' ? props.ISO_A3 : (props.ADM0_A3 || props.SOV_A3 || '');
+    var code2 = props.ISO_A2 && props.ISO_A2 !== '-99' ? props.ISO_A2 : (props.POSTAL || '');
+    var en = props.ADMIN || props.NAME_LONG || props.NAME || code3;
+    var override = countryOverride(code3);
+    feature.__g3d = {
+      code3: code3,
+      code2: code2,
+      en: en,
+      zh: chineseCountryName(code2, code3, en),
+      aliases: override.aliases || '',
+      continent: props.CONTINENT || props.REGION_UN || '',
+      labelRank: Number(props.LABELRANK || 9),
+      population: Number(props.POP_EST),
+      populationYear: props.POP_YEAR,
+      point: featurePoint(feature)
+    };
+    feature.__g3d.search = normalizeText([
+      feature.__g3d.zh,
+      en,
+      code2,
+      code3,
+      props.ABBREV,
+      props.NAME_LONG,
+      override.aliases
+    ].join(' '));
+    return feature;
+  }
+
+  function countryNameByCode(code3) {
+    var feature = state.countryByCode[code3];
+    if (feature && feature.__g3d) return feature.__g3d.zh;
+    var override = countryOverride(code3);
+    return override.zh || code3 || '未知地区';
+  }
+
+  function countryTooltip(feature) {
+    var data = feature && feature.__g3d;
+    if (!data) return '';
+    return '<div style="padding:3px 2px"><strong>' + escapeHtml(data.zh) + '</strong><br><span style="opacity:.72">' +
+      escapeHtml(data.en) + (data.code3 ? ' · ' + escapeHtml(data.code3) : '') + '</span></div>';
+  }
+
+  function placeTooltip(place) {
+    return '<div style="padding:3px 2px"><strong>' + escapeHtml(place.zh) + '</strong><br><span style="opacity:.72">' +
+      escapeHtml(place.en) + ' · ' + escapeHtml(countryNameByCode(place.country)) + '</span></div>';
+  }
+
+  function refreshPolygonStyles() {
+    if (!state.world) return;
+    state.world
+      .polygonCapColor(function(feature) {
+        if (feature === state.selectedCountry) return 'rgba(124, 205, 0, .48)';
+        if (feature === state.hoveredCountry) return 'rgba(69, 217, 208, .3)';
+        return 'rgba(34, 158, 166, .055)';
+      })
+      .polygonSideColor(function(feature) {
+        return feature === state.selectedCountry ? 'rgba(124, 205, 0, .32)' : 'rgba(21, 83, 98, .04)';
+      })
+      .polygonStrokeColor(function(feature) {
+        if (feature === state.selectedCountry) return '#b7ff61';
+        if (feature === state.hoveredCountry) return '#63f1e7';
+        return 'rgba(157, 222, 231, .54)';
+      })
+      .polygonAltitude(function(feature) {
+        if (feature === state.selectedCountry) return .025;
+        if (feature === state.hoveredCountry) return .014;
+        return .006;
+      });
+  }
+
+  function currentZoomBand(altitude) {
+    if (altitude > 1.9) return 0;
+    if (altitude > 1.15) return 1;
+    if (altitude > .7) return 2;
+    return 3;
+  }
+
+  function visibleCountriesForLabels(band) {
+    if (!state.layers.countryLabels || !state.countries.length) return [];
+    var limits = [12, 24, 38, 52];
+    var list = state.countries.slice().sort(function(a, b) {
+      var rank = a.__g3d.labelRank - b.__g3d.labelRank;
+      return rank || b.__g3d.population - a.__g3d.population;
+    });
+    if (state.selectedCountry) {
+      list = list.filter(function(feature) { return feature !== state.selectedCountry; });
+      list.unshift(state.selectedCountry);
+    }
+    return list.slice(0, limits[band]);
+  }
+
+  function visiblePlaces(band) {
+    return PLACES.filter(function(place) {
+      if (place.type === 'city' && !state.layers.cities) return false;
+      if (place.type === 'landmark' && !state.layers.landmarks) return false;
+      if (place === state.focusedPlace) return true;
+      if (place.type === 'city') {
+        if (band === 0) return place.importance === 1 && place.capital;
+        if (band === 1) return place.importance === 1 || place.capital;
+        return true;
+      }
+      return band >= 2 || (band === 1 && place.importance === 1);
+    });
+  }
+
+  function createMapLabel(item) {
+    var el = document.createElement('div');
+    el.className = 'g3d-map-label' + (item.kind === 'city' ? ' is-city' : '') + (item.kind === 'landmark' ? ' is-landmark' : '');
+    el.textContent = item.text;
+    el.title = item.subtitle || item.text;
+    el.setAttribute('aria-hidden', 'true');
+    return el;
+  }
+
+  function updateDynamicLayers(force) {
+    if (!state.world) return;
+    var band = currentZoomBand(state.currentAltitude);
+    if (!force && band === state.zoomBand) return;
+    state.zoomBand = band;
+
+    var countries = visibleCountriesForLabels(band).map(function(feature) {
+      return {
+        kind: 'country',
+        text: feature.__g3d.zh,
+        subtitle: feature.__g3d.en,
+        lat: feature.__g3d.point.lat,
+        lng: feature.__g3d.point.lng,
+        altitude: .012,
+        feature: feature
+      };
+    });
+    var places = visiblePlaces(band);
+    var placeLabels = places.map(function(place) {
+      return {
+        kind: place.type,
+        text: place.zh,
+        subtitle: place.en,
+        lat: place.lat,
+        lng: place.lng,
+        altitude: place.type === 'landmark' ? .055 : .04,
+        place: place
+      };
+    });
+    state.world
+      .htmlElementsData(countries.concat(placeLabels))
+      .pointsData(places.concat(state.marker ? [state.marker] : []));
+  }
+
+  function updateMarkerLayers() {
+    if (!state.world) return;
+    updateDynamicLayers(true);
+    state.world.ringsData(state.marker && !reducedMotion ? [state.marker] : []);
+    var card = q('#g3dMarkerCard');
+    if (state.marker) {
+      q('#g3dMarkerCoords').textContent = (state.marker.label ? state.marker.label + ' · ' : '') + formatCoordinates(state.marker.lat, state.marker.lng);
+      card.classList.add('is-visible');
+      card.setAttribute('aria-hidden', 'false');
+      setInert(card, false);
+    } else {
+      var hadFocus = card.contains(document.activeElement);
+      card.classList.remove('is-visible');
+      card.setAttribute('aria-hidden', 'true');
+      setInert(card, true);
+      if (hadFocus) focusSafely(stage);
+    }
+  }
+
+  function updateGlobeOffset() {
+    if (!state.world) return;
+    var mobile = window.matchMedia && window.matchMedia('(max-width: 800px)').matches;
+    state.world.globeOffset(state.infoPanelOpen && !mobile ? [-92, 0] : [0, 0]);
+  }
+
+  function setLayerPanel(open, returnFocus) {
+    if (open && isMobileLayout() && state.infoPanelOpen) setInfoPanel(false);
+    state.layerPanelOpen = !!open;
+    var panel = q('#g3dLayerPanel');
+    var hadFocus = panel.contains(document.activeElement);
+    panel.classList.toggle('is-open', state.layerPanelOpen);
+    panel.setAttribute('aria-hidden', state.layerPanelOpen ? 'false' : 'true');
+    setInert(panel, !state.layerPanelOpen);
+    q('#g3dLayersToggle').setAttribute('aria-expanded', state.layerPanelOpen ? 'true' : 'false');
+    q('#g3dLayersToggle').setAttribute('aria-label', state.layerPanelOpen ? '关闭图层面板' : '打开图层面板');
+    if (!state.layerPanelOpen && returnFocus && hadFocus) focusSafely(q('#g3dLayersToggle'));
+  }
+
+  function setInfoPanel(open, returnFocus) {
+    if (open && isMobileLayout() && state.layerPanelOpen) setLayerPanel(false);
+    state.infoPanelOpen = !!open;
+    var panel = q('#g3dInfoPanel');
+    var hadFocus = panel.contains(document.activeElement);
+    panel.classList.toggle('is-open', state.infoPanelOpen);
+    panel.setAttribute('aria-hidden', state.infoPanelOpen ? 'false' : 'true');
+    setInert(panel, !state.infoPanelOpen);
+    if (!state.infoPanelOpen) state.activeTimezone = null;
+    updateGlobeOffset();
+    if (!state.infoPanelOpen && returnFocus && hadFocus) focusSafely(stage);
+  }
+
+  function closeInfo(clearSelection, returnFocus) {
+    setInfoPanel(false, returnFocus);
+    if (clearSelection !== false) {
+      state.selectedCountry = null;
+      state.focusedPlace = null;
+      refreshPolygonStyles();
+      updateDynamicLayers(true);
+    }
+  }
+
+  function addInfoTag(container, text) {
+    if (!text) return;
+    container.appendChild(makeElement('span', 'g3d-info-tag', text));
+  }
+
+  function addInfoStat(container, label, value, id) {
+    var stat = makeElement('div', 'g3d-info-stat');
+    stat.appendChild(makeElement('span', 'g3d-info-stat-label', label));
+    var valueEl = makeElement('span', 'g3d-info-stat-value', value || '—');
+    if (id) valueEl.id = id;
+    stat.appendChild(valueEl);
+    container.appendChild(stat);
+  }
+
+  function renderCountryInfo(feature) {
+    var data = feature.__g3d;
+    var props = feature.properties || {};
+    var override = countryOverride(data.code3);
+    var content = q('#g3dInfoContent');
+    clearNode(content);
+
+    content.appendChild(makeElement('p', 'g3d-info-eyebrow', '国家 / 地区'));
+    var heading = makeElement('div', 'g3d-info-heading');
+    heading.appendChild(makeElement('div', 'g3d-info-emoji', flagEmoji(data.code2)));
+    var titleWrap = makeElement('div', 'g3d-info-title-wrap');
+    titleWrap.appendChild(makeElement('h2', 'g3d-info-title', data.zh));
+    titleWrap.appendChild(makeElement('p', 'g3d-info-subtitle', data.en));
+    heading.appendChild(titleWrap);
+    content.appendChild(heading);
+
+    var tags = makeElement('div', 'g3d-info-tags');
+    addInfoTag(tags, data.code3 || data.code2);
+    addInfoTag(tags, CONTINENT_NAMES[data.continent] || data.continent);
+    if (props.SUBREGION) addInfoTag(tags, props.SUBREGION);
+    content.appendChild(tags);
+
+    var description = override.description || ('位于' + (CONTINENT_NAMES[data.continent] || data.continent || '世界') + '的国家或地区。可继续缩放地球查看周边位置。');
+    content.appendChild(makeElement('p', 'g3d-info-description', description));
+
+    var grid = makeElement('div', 'g3d-info-grid');
+    addInfoStat(grid, '首都', override.capital || '—');
+    addInfoStat(grid, '人口估算', data.population > 0 ? formatNumber(data.population) + ' 人' : '—');
+    addInfoStat(grid, '国土面积', override.area ? formatNumber(override.area) + ' km²' : '—');
+    addInfoStat(grid, '首都当地时间', override.timezone ? '计算中…' : '—', 'g3dLocalTime');
+    addInfoStat(grid, '语言', override.language || '—');
+    addInfoStat(grid, '货币', override.currency || '—');
+    addInfoStat(grid, '聚焦坐标', formatCoordinates(data.point.lat, data.point.lng));
+    addInfoStat(grid, 'ISO 代码', [data.code2, data.code3].filter(Boolean).join(' / ') || '—');
+    content.appendChild(grid);
+
+    var note = data.populationYear ? '人口为 Natural Earth 数据集中的 ' + data.populationYear + ' 年估算值；面积与其他资料仅为本地精选数据。' : '该地区的详细资料未收录，边界与名称仍可用于探索。';
+    content.appendChild(makeElement('p', 'g3d-info-note', note));
+    state.activeTimezone = override.timezone || null;
+    updateClock();
+  }
+
+  function renderPlaceInfo(place) {
+    var content = q('#g3dInfoContent');
+    clearNode(content);
+    content.appendChild(makeElement('p', 'g3d-info-eyebrow', place.type === 'city' ? '城市' : '地标'));
+    var heading = makeElement('div', 'g3d-info-heading');
+    heading.appendChild(makeElement('div', 'g3d-info-emoji', place.type === 'city' ? '🏙️' : '📍'));
+    var titleWrap = makeElement('div', 'g3d-info-title-wrap');
+    titleWrap.appendChild(makeElement('h2', 'g3d-info-title', place.zh));
+    titleWrap.appendChild(makeElement('p', 'g3d-info-subtitle', place.en));
+    heading.appendChild(titleWrap);
+    content.appendChild(heading);
+    var tags = makeElement('div', 'g3d-info-tags');
+    addInfoTag(tags, countryNameByCode(place.country));
+    if (place.capital) addInfoTag(tags, '首都');
+    addInfoTag(tags, place.type === 'city' ? '主要城市' : '精选地标');
+    content.appendChild(tags);
+    content.appendChild(makeElement('p', 'g3d-info-description', place.description));
+    var grid = makeElement('div', 'g3d-info-grid');
+    addInfoStat(grid, '纬度', formatCoordinateValue(place.lat, 'N', 'S'));
+    addInfoStat(grid, '经度', formatCoordinateValue(place.lng, 'E', 'W'));
+    addInfoStat(grid, '当地时间', '计算中…', 'g3dLocalTime');
+    addInfoStat(grid, '所属国家', countryNameByCode(place.country));
+    content.appendChild(grid);
+    content.appendChild(makeElement('p', 'g3d-info-note', '城市与地标为精选探索数据，位置精度适合全球视角浏览。'));
+    state.activeTimezone = place.timezone || null;
+    updateClock();
+  }
+
+  function cameraDuration() {
+    return reducedMotion ? 0 : 1100;
+  }
+
+  function pauseAutoRotate(resumeLater) {
+    if (!state.controls) return;
+    state.controls.autoRotate = false;
+    window.clearTimeout(state.interactionTimer);
+    if (resumeLater && state.autoRotateWanted && !document.hidden) {
+      state.interactionTimer = window.setTimeout(function() {
+        if (state.controls && state.autoRotateWanted && !state.destroyed && !document.hidden) {
+          state.controls.autoRotate = true;
+        }
+      }, 7000);
+    }
+  }
+
+  function syncAutoRotateButton() {
+    var button = q('#g3dAutoRotate');
+    button.setAttribute('aria-pressed', state.autoRotateWanted ? 'true' : 'false');
+    button.setAttribute('aria-label', state.autoRotateWanted ? '暂停自动旋转' : '开启自动旋转');
+    button.title = state.autoRotateWanted ? '暂停自动旋转' : '开启自动旋转';
+    if (state.controls) state.controls.autoRotate = state.autoRotateWanted && !document.hidden;
+  }
+
+  function selectCountry(feature, point) {
+    if (!feature || !feature.__g3d || !state.world) return;
+    pauseAutoRotate(true);
+    state.selectedCountry = feature;
+    state.focusedPlace = null;
+    if (window.matchMedia && window.matchMedia('(max-width: 800px)').matches) setLayerPanel(false);
+    renderCountryInfo(feature);
+    setInfoPanel(true);
+    refreshPolygonStyles();
+    updateDynamicLayers(true);
+    var target = point && isFinite(point.lat) ? point : feature.__g3d.point;
+    var span = feature.__g3d.point.span || 12;
+    var altitude = clamp(.45 + span / 28, .55, 1.65);
+    state.world.pointOfView({ lat: target.lat, lng: target.lng, altitude: altitude }, cameraDuration());
+    setHint('已选择 ' + feature.__g3d.zh);
+    announce('已选择' + feature.__g3d.zh + '，信息面板已打开。');
+  }
+
+  function selectPlace(place) {
+    if (!place || !state.world) return;
+    pauseAutoRotate(true);
+    if (place.type === 'city') state.layers.cities = true;
+    if (place.type === 'landmark') state.layers.landmarks = true;
+    syncLayerButtons();
+    state.focusedPlace = place;
+    state.selectedCountry = state.countryByCode[place.country] || null;
+    if (window.matchMedia && window.matchMedia('(max-width: 800px)').matches) setLayerPanel(false);
+    renderPlaceInfo(place);
+    setInfoPanel(true);
+    refreshPolygonStyles();
+    updateDynamicLayers(true);
+    state.world.pointOfView({ lat: place.lat, lng: place.lng, altitude: place.type === 'city' ? .48 : .34 }, cameraDuration());
+    setHint('已定位到 ' + place.zh);
+    announce('已定位到' + place.zh + '，信息面板已打开。');
+  }
+
+  function setMarker(coords, label, kind) {
+    state.marker = {
+      id: 'active-marker',
+      type: 'marker',
+      lat: Number(coords.lat),
+      lng: Number(coords.lng),
+      label: label || '坐标标记',
+      kind: kind || 'pin'
+    };
+    updateMarkerLayers();
+  }
+
+  function clearMarker() {
+    state.marker = null;
+    updateMarkerLayers();
+    showToast('坐标标记已清除');
+  }
+
+  function resetView() {
+    if (!state.world) return;
+    pauseAutoRotate(true);
+    closeInfo(true);
+    state.marker = null;
+    updateMarkerLayers();
+    closeSearchResults();
+    state.world.pointOfView(DEFAULT_VIEW, cameraDuration());
+    setHint('已恢复默认视角');
+    showToast('已恢复亚洲与中国附近的默认视角');
+  }
+
+  function switchLayer(layer) {
+    if (!Object.prototype.hasOwnProperty.call(state.layers, layer)) return;
+    if ((layer === 'borders' || layer === 'countryLabels') && state.countryStatus === 'error') {
+      showToast('国家边界数据尚未加载，请先重新加载数据');
+      return;
+    }
+    state.layers[layer] = !state.layers[layer];
+    if (!state.world) {
+      syncLayerButtons();
+      return;
+    }
+    if (layer === 'borders') {
+      state.world.polygonsData(state.layers.borders ? state.countries : []);
+      refreshPolygonStyles();
+    } else if (layer === 'countryLabels' || layer === 'cities' || layer === 'landmarks') {
+      updateDynamicLayers(true);
+    } else if (layer === 'graticules') {
+      state.world.showGraticules(state.layers.graticules);
+    } else if (layer === 'atmosphere') {
+      state.world.showAtmosphere(state.layers.atmosphere);
+    } else if (layer === 'night') {
+      root.classList.toggle('is-night', state.layers.night);
+      if (state.layers.night) {
+        if (state.textureUrls.night) {
+          applyResolvedTexture('night', state.textureUrls.night);
+          showToast('已切换为静态夜景纹理');
+        } else {
+          showToast('正在加载夜景纹理…');
+          loadTexture('night');
+        }
+      } else {
+        if (state.textureUrls.day) {
+          applyResolvedTexture('day', state.textureUrls.day);
+        } else {
+          state.world.globeImageUrl(null);
+          setGlobeMaterialColor('#174b56');
+          loadTexture('day');
+        }
+        showToast('已切换为日间地球');
+      }
+    } else if (layer === 'stars') {
+      root.classList.toggle('is-stars', state.layers.stars);
+    }
+    syncLayerButtons();
+  }
+
+  function syncLayerButtons() {
+    qa('[data-layer]').forEach(function(button) {
+      var layer = button.getAttribute('data-layer');
+      button.setAttribute('aria-checked', state.layers[layer] ? 'true' : 'false');
+      button.disabled = !state.experienceReady ||
+        ((layer === 'borders' || layer === 'countryLabels') && state.countryStatus === 'error') ||
+        (layer === 'night' && state.textureStatus.night === 'error');
+    });
+  }
+
+  function updateDataStatus(status, message) {
+    state.countryStatus = status;
+    var box = q('#g3dDataStatus');
+    var icon = box.querySelector('i');
+    box.classList.toggle('is-error', status === 'error');
+    q('#g3dDataStatusText').textContent = message;
+    icon.className = status === 'loading' ? 'fas fa-circle-notch fa-spin' : (status === 'error' ? 'fas fa-exclamation-circle' : 'fas fa-check-circle');
+    syncLayerButtons();
+  }
+
+  function buildSearchIndex() {
+    var countries = state.countries.map(function(feature) {
+      return {
+        id: 'country-' + feature.__g3d.code3,
+        type: 'country',
+        zh: feature.__g3d.zh,
+        en: feature.__g3d.en,
+        search: feature.__g3d.search,
+        feature: feature
+      };
+    });
+    var places = PLACES.map(function(place) {
+      return {
+        id: 'place-' + place.id,
+        type: place.type,
+        zh: place.zh,
+        en: place.en,
+        search: normalizeText([place.zh, place.en, countryNameByCode(place.country), place.country].join(' ')),
+        place: place
+      };
+    });
+    state.searchItems = countries.concat(places);
+  }
+
+  function searchScore(item, query) {
+    var zh = normalizeText(item.zh);
+    var en = normalizeText(item.en);
+    if (zh === query || en === query) return 0;
+    if (zh.indexOf(query) === 0) return 1;
+    if (en.indexOf(query) === 0) return 2;
+    var index = item.search.indexOf(query);
+    return index === -1 ? 9999 : 10 + index;
+  }
+
+  function renderSearchResults() {
+    var input = q('#g3dSearch');
+    var results = q('#g3dSearchResults');
+    var query = normalizeText(input.value);
+    q('#g3dSearchClear').classList.toggle('is-visible', !!input.value);
+    clearNode(results);
+    state.activeSearchIndex = -1;
+    state.visibleSearchItems = [];
+    if (!query) {
+      closeSearchResults();
+      return;
+    }
+    state.visibleSearchItems = state.searchItems
+      .map(function(item) { return { item: item, score: searchScore(item, query) }; })
+      .filter(function(result) { return result.score < 9999; })
+      .sort(function(a, b) {
+        var typeOrder = { country: 0, city: 1, landmark: 2 };
+        return a.score - b.score ||
+          typeOrder[a.item.type] - typeOrder[b.item.type] ||
+          a.item.zh.localeCompare(b.item.zh, 'zh-CN');
+      })
+      .slice(0, 9)
+      .map(function(result) { return result.item; });
+
+    if (!state.visibleSearchItems.length) {
+      var message = state.countryStatus === 'loading'
+        ? '国家数据仍在加载，暂未找到匹配的城市或地标'
+        : (state.countryStatus === 'error'
+          ? '国家索引暂不可用，精选城市与地标中也没有匹配结果'
+          : '没有找到匹配的国家、城市或地标');
+      results.appendChild(makeElement('p', 'g3d-search-empty', message));
+    } else {
+      state.visibleSearchItems.forEach(function(item, index) {
+        var button = makeElement('button', 'g3d-search-option');
+        button.type = 'button';
+        button.id = 'g3dSearchOption' + index;
+        button.setAttribute('role', 'option');
+        button.setAttribute('aria-selected', 'false');
+        button.setAttribute('data-search-index', index);
+        var icon = makeElement('span', 'g3d-search-option-icon');
+        var iconEl = document.createElement('i');
+        iconEl.className = item.type === 'country' ? 'fas fa-flag' : (item.type === 'city' ? 'fas fa-city' : 'fas fa-landmark');
+        icon.appendChild(iconEl);
+        button.appendChild(icon);
+        var copy = makeElement('span', 'g3d-search-option-copy');
+        copy.appendChild(makeElement('span', 'g3d-search-option-name', item.zh));
+        copy.appendChild(makeElement('span', 'g3d-search-option-sub', item.en + (item.type === 'country' ? '' : ' · ' + countryNameByCode(item.place.country))));
+        button.appendChild(copy);
+        button.appendChild(makeElement('span', 'g3d-search-option-type', item.type === 'country' ? '国家' : (item.type === 'city' ? '城市' : '地标')));
+        results.appendChild(button);
+      });
+    }
+    results.classList.add('is-open');
+    input.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeSearchResults() {
+    q('#g3dSearchResults').classList.remove('is-open');
+    q('#g3dSearch').setAttribute('aria-expanded', 'false');
+    q('#g3dSearch').removeAttribute('aria-activedescendant');
+    state.activeSearchIndex = -1;
+  }
+
+  function setActiveSearchIndex(index) {
+    if (!state.visibleSearchItems.length) return;
+    state.activeSearchIndex = (index + state.visibleSearchItems.length) % state.visibleSearchItems.length;
+    qa('.g3d-search-option').forEach(function(button, buttonIndex) {
+      var active = buttonIndex === state.activeSearchIndex;
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-selected', active ? 'true' : 'false');
+      if (active) button.scrollIntoView({ block: 'nearest' });
+    });
+    q('#g3dSearch').setAttribute('aria-activedescendant', 'g3dSearchOption' + state.activeSearchIndex);
+  }
+
+  function activateSearchItem(item) {
+    if (!item) return;
+    var search = q('#g3dSearch');
+    var keepSearchFocus = document.activeElement === search;
+    search.value = item.zh;
+    q('#g3dSearchClear').classList.add('is-visible');
+    closeSearchResults();
+    if (item.type === 'country') selectCountry(item.feature, item.feature.__g3d.point);
+    else selectPlace(item.place);
+    if (!keepSearchFocus) focusSafely(stage);
+  }
+
+  function fetchJson(url, timeout) {
+    var controller = window.AbortController ? new AbortController() : null;
+    state.fetchController = controller;
+    var timer = window.setTimeout(function() {
+      if (controller) controller.abort();
+    }, timeout || 12000);
+    return fetch(url, {
+      signal: controller ? controller.signal : undefined,
+      cache: 'force-cache'
+    }).then(function(response) {
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      return response.json();
+    }).finally(function() {
+      window.clearTimeout(timer);
+      if (state.fetchController === controller) state.fetchController = null;
+    });
+  }
+
+  function fetchCountriesFrom(index, requestId) {
+    return fetchJson(COUNTRY_URLS[index], 14000).catch(function(error) {
+      if (requestId !== state.countryRequestId) throw error;
+      if (index + 1 < COUNTRY_URLS.length && !state.destroyed) return fetchCountriesFrom(index + 1, requestId);
+      throw error;
+    });
+  }
+
+  function loadCountries() {
+    if (state.destroyed) return;
+    var requestId = ++state.countryRequestId;
+    if (state.fetchController) state.fetchController.abort();
+    updateDataStatus('loading', '正在加载国家边界数据…');
+    setHint('正在加载国家边界与名称…');
+    fetchCountriesFrom(0, requestId).then(function(data) {
+      if (state.destroyed || requestId !== state.countryRequestId) return;
+      if (!data || !Array.isArray(data.features)) throw new Error('GeoJSON 格式不正确');
+      state.countries = data.features.filter(function(feature) {
+        return feature && feature.geometry && (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon');
+      }).map(prepareFeature);
+      state.countryByCode = {};
+      state.countries.forEach(function(feature) {
+        if (feature.__g3d.code3) state.countryByCode[feature.__g3d.code3] = feature;
+      });
+      buildSearchIndex();
+      if (state.world) {
+        state.world.polygonsData(state.layers.borders ? state.countries : []);
+        refreshPolygonStyles();
+        updateDynamicLayers(true);
+      }
+      updateDataStatus('ready', '已加载 ' + state.countries.length + ' 个国家与地区边界');
+      if (q('#g3dSearch').value && q('#g3dSearchResults').classList.contains('is-open')) renderSearchResults();
+      setHint('拖动地球开始探索');
+      announce('国家边界数据加载完成，可以搜索或点击国家查看信息。');
+    }).catch(function(error) {
+      if (state.destroyed || requestId !== state.countryRequestId) return;
+      state.countries = [];
+      state.countryByCode = {};
+      buildSearchIndex();
+      updateDataStatus('error', '国家边界加载失败，基础地球仍可使用');
+      if (q('#g3dSearch').value && q('#g3dSearchResults').classList.contains('is-open')) renderSearchResults();
+      setHint('国家数据加载失败，可在图层面板重试');
+      showToast('国家边界加载失败，已保留基础地球操作', 4200);
+      if (window.console && console.error) console.error('[3D 地球仪] 国家数据加载失败：', error);
+    });
+  }
+
+  function updateClock() {
+    var now = new Date();
+    q('#g3dUtcTime').textContent = now.toISOString().slice(11, 19) + ' UTC';
+    var local = q('#g3dLocalTime');
+    if (local && state.activeTimezone) {
+      try {
+        local.textContent = new Intl.DateTimeFormat('zh-CN', {
+          timeZone: state.activeTimezone,
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        }).format(now);
+      } catch (error) {
+        local.textContent = '—';
+      }
+    }
+  }
+
+  function updateZoomStatus(altitude) {
+    var text = altitude > 1.8 ? '全球视角' : (altitude > 1.05 ? '区域视角' : (altitude > .55 ? '国家视角' : '城市标记视角'));
+    q('#g3dZoomStatus').textContent = text + ' · ' + altitude.toFixed(2) + '×';
+  }
+
+  function resizeGlobe() {
+    if (!state.world || state.destroyed) return;
+    var width = Math.max(1, stage.clientWidth);
+    var height = Math.max(1, stage.clientHeight);
+    state.world.width(width).height(height);
+    updateGlobeOffset();
+    try {
+      state.world.renderer().setPixelRatio(Math.min(window.devicePixelRatio || 1, lowPower ? 1.35 : 1.8));
+    } catch (error) {}
+  }
+
+  function scheduleResize() {
+    if (state.resizeFrame) return;
+    state.resizeFrame = window.requestAnimationFrame(function() {
+      state.resizeFrame = null;
+      resizeGlobe();
+    });
+  }
+
+  function requestFullscreen() {
+    var active = document.fullscreenElement || document.webkitFullscreenElement;
+    if (!active) {
+      var request = root.requestFullscreen || root.webkitRequestFullscreen;
+      if (!request) {
+        showToast('当前浏览器不支持全屏模式');
+        return;
+      }
+      var result = request.call(root);
+      if (result && result.catch) result.catch(function() { showToast('无法进入全屏模式'); });
+    } else {
+      var exit = document.exitFullscreen || document.webkitExitFullscreen;
+      if (exit) exit.call(document);
+    }
+  }
+
+  function onFullscreenChange() {
+    var active = document.fullscreenElement === root || document.webkitFullscreenElement === root;
+    var button = q('#g3dFullscreen');
+    button.setAttribute('aria-pressed', active ? 'true' : 'false');
+    button.setAttribute('aria-label', active ? '退出全屏' : '进入全屏');
+    button.title = active ? '退出全屏' : '全屏';
+    button.querySelector('i').className = active ? 'fas fa-compress' : 'fas fa-expand';
+    scheduleResize();
+    announce(active ? '已进入全屏模式。' : '已退出全屏模式。');
+  }
+
+  function locateUser() {
+    if (!navigator.geolocation) {
+      showToast('当前浏览器不支持定位功能');
+      return;
+    }
+    var button = q('#g3dLocate');
+    button.disabled = true;
+    button.querySelector('i').className = 'fas fa-circle-notch fa-spin';
+    showToast('正在获取你的位置…', 2200);
+    navigator.geolocation.getCurrentPosition(function(position) {
+      if (state.destroyed) return;
+      button.disabled = !state.experienceReady;
+      button.querySelector('i').className = 'fas fa-location-arrow';
+      var coords = { lat: position.coords.latitude, lng: position.coords.longitude };
+      setMarker(coords, '我的位置', 'location');
+      pauseAutoRotate(true);
+      if (state.world) state.world.pointOfView({ lat: coords.lat, lng: coords.lng, altitude: .55 }, cameraDuration());
+      closeInfo(true);
+      setHint('已定位到你的大致位置');
+      announce('已定位到你的大致位置。');
+      showToast('定位成功，位置仅用于当前页面显示');
+    }, function(error) {
+      if (state.destroyed) return;
+      button.disabled = !state.experienceReady;
+      button.querySelector('i').className = 'fas fa-location-arrow';
+      var message = error && error.code === 1 ? '你没有授权位置访问，其他功能不受影响' : '暂时无法获取位置，请稍后重试';
+      showToast(message, 3600);
+      announce(message);
+    }, { enableHighAccuracy: false, timeout: 12000, maximumAge: 300000 });
+  }
+
+  function copyCoordinates() {
+    if (!state.marker) return;
+    var text = state.marker.lat.toFixed(6) + ', ' + state.marker.lng.toFixed(6);
+    function done() { showToast('经纬度已复制'); }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(function() { fallbackCopy(text, done); });
+    } else {
+      fallbackCopy(text, done);
+    }
+  }
+
+  function fallbackCopy(text, callback) {
+    var input = document.createElement('textarea');
+    input.value = text;
+    input.style.position = 'fixed';
+    input.style.left = '-9999px';
+    document.body.appendChild(input);
+    input.select();
+    try {
+      if (document.execCommand('copy')) callback();
+      else showToast('复制失败，请手动记录坐标');
+    } catch (error) {
+      showToast('复制失败，请手动记录坐标');
+    }
+    document.body.removeChild(input);
+  }
+
+  function onRendererPointerMove(event) {
+    if (!state.world || state.pointerFrame) return;
+    state.pointerFrame = window.requestAnimationFrame(function() {
+      state.pointerFrame = null;
+      var rect = canvasHost.getBoundingClientRect();
+      var coords = state.world.toGlobeCoords(event.clientX - rect.left, event.clientY - rect.top);
+      q('#g3dPointerCoords').textContent = coords ? formatCoordinates(coords.lat, coords.lng) : '指针位于地球之外';
+    });
+  }
+
+  function onStageKeydown(event) {
+    if (event.target !== stage || !state.world || !state.experienceReady) return;
+    var key = event.key;
+    var isZoomIn = key === '+' || key === '=' || event.code === 'NumpadAdd';
+    var isZoomOut = key === '-' || key === '_' || event.code === 'NumpadSubtract';
+    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].indexOf(key) === -1 && !isZoomIn && !isZoomOut) return;
+    event.preventDefault();
+    var current;
+    try { current = state.world.pointOfView(); } catch (error) { current = null; }
+    current = current || { lat: DEFAULT_VIEW.lat, lng: DEFAULT_VIEW.lng, altitude: state.currentAltitude };
+    var step = event.shiftKey ? 15 : 6;
+    var lat = Number(current.lat) || 0;
+    var lng = Number(current.lng) || 0;
+    var altitude = Number(current.altitude) || state.currentAltitude || DEFAULT_VIEW.altitude;
+    if (key === 'ArrowLeft') lng -= step;
+    if (key === 'ArrowRight') lng += step;
+    if (key === 'ArrowUp') lat += step;
+    if (key === 'ArrowDown') lat -= step;
+    if (isZoomIn) altitude *= .8;
+    if (isZoomOut) altitude *= 1.25;
+    lat = clamp(lat, -85, 85);
+    lng = ((lng + 180) % 360 + 360) % 360 - 180;
+    altitude = clamp(altitude, .22, 4.5);
+    pauseAutoRotate(true);
+    state.world.pointOfView({ lat: lat, lng: lng, altitude: altitude }, reducedMotion ? 0 : 240);
+    setHint(isZoomIn || isZoomOut ? '已使用键盘缩放地球' : '已使用方向键旋转地球');
+  }
+
+  function onVisibilityChange() {
+    if (document.hidden) {
+      state.pausedForVisibility = true;
+      pauseAutoRotate(false);
+      if (state.world) state.world.pauseAnimation();
+    } else if (state.pausedForVisibility) {
+      state.pausedForVisibility = false;
+      if (state.world) {
+        state.world.resumeAnimation();
+        syncAutoRotateButton();
+      }
+    }
+  }
+
+  function bindUi() {
+    listen(q('#g3dAutoRotate'), 'click', function() {
+      state.autoRotateWanted = !state.autoRotateWanted;
+      window.clearTimeout(state.interactionTimer);
+      syncAutoRotateButton();
+      showToast(state.autoRotateWanted ? '自动旋转已开启' : '自动旋转已暂停');
+    });
+    listen(q('#g3dResetView'), 'click', resetView);
+    listen(q('#g3dLocate'), 'click', locateUser);
+    listen(q('#g3dLayersToggle'), 'click', function() { setLayerPanel(!state.layerPanelOpen); });
+    listen(q('#g3dLayerClose'), 'click', function() { setLayerPanel(false, true); });
+    listen(q('#g3dInfoClose'), 'click', function() { closeInfo(true, true); });
+    listen(q('#g3dFullscreen'), 'click', requestFullscreen);
+    listen(q('#g3dGuideClose'), 'click', hideGuide);
+    listen(q('#g3dCopyCoords'), 'click', copyCoordinates);
+    listen(q('#g3dClearMarker'), 'click', clearMarker);
+    listen(q('#g3dRetryData'), 'click', loadCountries);
+    listen(q('#g3dReload'), 'click', function() { window.location.reload(); });
+    qa('[data-layer]').forEach(function(button) {
+      listen(button, 'click', function() { switchLayer(button.getAttribute('data-layer')); });
+    });
+
+    var search = q('#g3dSearch');
+    listen(search, 'input', renderSearchResults);
+    listen(search, 'focus', function() {
+      if (search.value) renderSearchResults();
+    });
+    listen(search, 'keydown', function(event) {
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        setActiveSearchIndex(state.activeSearchIndex + 1);
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        setActiveSearchIndex(state.activeSearchIndex - 1);
+      } else if (event.key === 'Enter' && state.activeSearchIndex >= 0) {
+        event.preventDefault();
+        activateSearchItem(state.visibleSearchItems[state.activeSearchIndex]);
+      } else if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        closeSearchResults();
+      }
+    });
+    listen(q('#g3dSearchResults'), 'click', function(event) {
+      var button = event.target.closest('[data-search-index]');
+      if (!button) return;
+      activateSearchItem(state.visibleSearchItems[Number(button.getAttribute('data-search-index'))]);
+    });
+    listen(q('#g3dSearchClear'), 'click', function() {
+      search.value = '';
+      q('#g3dSearchClear').classList.remove('is-visible');
+      closeSearchResults();
+      search.focus();
+    });
+    listen(document, 'pointerdown', function(event) {
+      if (!q('.g3d-search-wrap').contains(event.target)) closeSearchResults();
+    });
+    listen(document, 'keydown', function(event) {
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      if (q('#g3dSearchResults').classList.contains('is-open')) {
+        closeSearchResults();
+      } else if (state.infoPanelOpen) {
+        closeInfo(true, true);
+      } else if (state.layerPanelOpen) {
+        setLayerPanel(false, true);
+      }
+    });
+    listen(stage, 'keydown', onStageKeydown);
+    listen(document, 'fullscreenchange', onFullscreenChange);
+    listen(document, 'webkitfullscreenchange', onFullscreenChange);
+    listen(document, 'visibilitychange', onVisibilityChange);
+    listen(window, 'resize', scheduleResize);
+    listen(window, 'orientationchange', scheduleResize);
+    listen(window, 'pagehide', function(event) {
+      if (event.persisted) {
+        if (state.world) state.world.pauseAnimation();
+      } else {
+        destroy();
+      }
+    });
+    listen(window, 'pageshow', function(event) {
+      if (event.persisted && state.world) {
+        if (document.hidden) {
+          state.pausedForVisibility = true;
+          state.world.pauseAnimation();
+        } else {
+          state.pausedForVisibility = false;
+          state.world.resumeAnimation();
+          syncAutoRotateButton();
+          scheduleResize();
+        }
+      }
+    });
+  }
+
+  function configureWorld() {
+    setLoading('正在创建三维地球…');
+    try {
+      state.world = new Globe(canvasHost, {
+        rendererConfig: { antialias: !lowPower, alpha: true, powerPreference: lowPower ? 'default' : 'high-performance' },
+        waitForGlobeReady: false,
+        animateIn: !reducedMotion
+      })
+        .backgroundColor('rgba(0,0,0,0)')
+        .showAtmosphere(state.layers.atmosphere)
+        .atmosphereColor('#6ce6ef')
+        .atmosphereAltitude(.18)
+        .showGraticules(state.layers.graticules)
+        .polygonLabel(countryTooltip)
+        .polygonCapCurvatureResolution(3)
+        .polygonsTransitionDuration(reducedMotion ? 0 : 260)
+        .onPolygonHover(function(feature) {
+          state.hoveredCountry = feature || null;
+          refreshPolygonStyles();
+          if (feature && feature.__g3d) setHint(feature.__g3d.zh + ' · 点击查看信息');
+          else if (!state.infoPanelOpen) setHint('拖动地球开始探索');
+        })
+        .onPolygonClick(function(feature, event, coords) {
+          selectCountry(feature, coords || feature.__g3d.point);
+        })
+        .pointLat('lat')
+        .pointLng('lng')
+        .pointAltitude(function(item) { return item.type === 'marker' ? .07 : (item.type === 'landmark' ? .045 : .032); })
+        .pointRadius(function(item) { return item.type === 'marker' ? .26 : (item === state.focusedPlace ? .2 : .12); })
+        .pointColor(function(item) {
+          if (item.type === 'marker') return item.kind === 'location' ? '#7ccd00' : '#ffca62';
+          if (item === state.focusedPlace) return '#ffffff';
+          return item.type === 'landmark' ? '#e37cff' : '#ffca62';
+        })
+        .pointLabel(function(item) { return item.type === 'marker' ? escapeHtml(item.label) : placeTooltip(item); })
+        .pointsTransitionDuration(reducedMotion ? 0 : 320)
+        .onPointClick(function(item) {
+          if (item.type !== 'marker') selectPlace(item);
+        })
+        .ringLat('lat')
+        .ringLng('lng')
+        .ringAltitude(.012)
+        .ringColor(function(item) { return function(t) { return 'rgba(255, 202, 98, ' + (1 - t) + ')'; }; })
+        .ringMaxRadius(2.8)
+        .ringPropagationSpeed(1.5)
+        .ringRepeatPeriod(1000)
+        .htmlLat('lat')
+        .htmlLng('lng')
+        .htmlAltitude('altitude')
+        .htmlElement(createMapLabel)
+        .htmlTransitionDuration(reducedMotion ? 0 : 260)
+        .onGlobeClick(function(coords, event) {
+          if (!coords) return;
+          closeInfo(true);
+          setMarker(coords, '坐标标记', 'pin');
+          if (event && event.detail > 1) {
+            pauseAutoRotate(true);
+            state.world.pointOfView({ lat: coords.lat, lng: coords.lng, altitude: .48 }, cameraDuration());
+            setHint('已放大到双击位置');
+          } else {
+            setHint('已标记 ' + formatCoordinates(coords.lat, coords.lng));
+          }
+        })
+        .onZoom(function(pov) {
+          state.currentAltitude = Number(pov.altitude) || DEFAULT_VIEW.altitude;
+          updateZoomStatus(state.currentAltitude);
+          updateDynamicLayers(false);
+        });
+
+      try {
+        var material = state.world.globeMaterial();
+        if (material && material.color && material.color.set) material.color.set(state.textureUrls.day ? '#ffffff' : '#174b56');
+        if (material && material.shininess !== undefined) material.shininess = 12;
+      } catch (error) {}
+      if (state.textureUrls.day) applyResolvedTexture('day', state.textureUrls.day);
+      if (!lowPower && state.textureUrls.bump) applyResolvedTexture('bump', state.textureUrls.bump);
+
+      state.controls = state.world.controls();
+      state.controls.enableDamping = true;
+      state.controls.dampingFactor = .08;
+      state.controls.enablePan = false;
+      state.controls.zoomSpeed = .75;
+      state.controls.rotateSpeed = .55;
+      state.controls.autoRotateSpeed = .24;
+      var radius = state.world.getGlobeRadius();
+      state.controls.minDistance = radius * 1.18;
+      state.controls.maxDistance = radius * 5.6;
+      listen(state.controls, 'start', function() {
+        pauseAutoRotate(false);
+        hideGuide();
+      });
+      listen(state.controls, 'end', function() { pauseAutoRotate(true); });
+      syncAutoRotateButton();
+
+      state.world.pointOfView(DEFAULT_VIEW, 0);
+      state.currentAltitude = DEFAULT_VIEW.altitude;
+      updateZoomStatus(state.currentAltitude);
+      resizeGlobe();
+      state.world.polygonsData(state.layers.borders ? state.countries : []);
+      refreshPolygonStyles();
+      updateDynamicLayers(true);
+
+      state.rendererCanvas = state.world.renderer().domElement;
+      state.rendererCanvas.setAttribute('aria-label', '可拖动和缩放的三维地球');
+      listen(state.rendererCanvas, 'pointermove', onRendererPointerMove);
+      listen(state.rendererCanvas, 'pointerleave', function() {
+        q('#g3dPointerCoords').textContent = '移动指针查看经纬度';
+      });
+      listen(state.rendererCanvas, 'webglcontextlost', function(event) {
+        event.preventDefault();
+        if (state.world) state.world.pauseAnimation();
+        setExperienceReady(false);
+        window.clearTimeout(state.contextLossTimer);
+        state.contextLossTimer = window.setTimeout(function() {
+          if (!state.destroyed && !state.experienceReady) {
+            showFatal('三维显示未能自动恢复', 'WebGL 图形上下文长时间不可用，请刷新页面重新创建三维地球。');
+          }
+        }, 8000);
+        showToast('图形上下文已丢失，正在等待浏览器恢复', 5000);
+        setHint('WebGL 上下文暂时不可用');
+      });
+      listen(state.rendererCanvas, 'webglcontextrestored', function() {
+        window.clearTimeout(state.contextLossTimer);
+        state.contextLossTimer = null;
+        q('#g3dFatal').hidden = true;
+        setExperienceReady(true);
+        if (document.hidden) {
+          state.pausedForVisibility = true;
+          return;
+        }
+        if (state.world) state.world.resumeAnimation();
+        syncAutoRotateButton();
+        scheduleResize();
+        showToast('三维地球显示已恢复');
+      });
+
+      setExperienceReady(true);
+      canvasHost.classList.add('is-ready');
+      hideLoading();
+      setHint(state.countryStatus === 'ready' ? '拖动地球开始探索' : '地球已就绪，正在加载国家边界…');
+      announce('三维地球已加载。拖动旋转，滚轮或双指缩放。');
+      if (document.hidden) {
+        state.pausedForVisibility = true;
+        state.world.pauseAnimation();
+      }
+      if (window.ResizeObserver) {
+        state.resizeObserver = new ResizeObserver(scheduleResize);
+        state.resizeObserver.observe(stage);
+      }
+    } catch (error) {
+      if (window.console && console.error) console.error('[3D 地球仪] 初始化失败：', error);
+      showFatal('3D 引擎初始化失败', '浏览器无法创建三维场景，请刷新页面或更换支持 WebGL2 的现代浏览器后重试。');
+    }
+  }
+
+  function destroy() {
+    if (state.destroyed) return;
+    state.destroyed = true;
+    window.clearTimeout(state.interactionTimer);
+    window.clearTimeout(state.guideTimer);
+    window.clearTimeout(state.toastTimer);
+    window.clearTimeout(state.contextLossTimer);
+    window.clearInterval(state.clockTimer);
+    if (state.resizeFrame) window.cancelAnimationFrame(state.resizeFrame);
+    if (state.pointerFrame) window.cancelAnimationFrame(state.pointerFrame);
+    if (state.fetchController) state.fetchController.abort();
+    if (state.resizeObserver) state.resizeObserver.disconnect();
+    cleanup.splice(0).forEach(function(remove) {
+      try { remove(); } catch (error) {}
+    });
+    if (state.world) {
+      try { state.world.pauseAnimation(); } catch (error) {}
+      try { state.world.renderer().dispose(); } catch (error) {}
+    }
+    window.__meowv3dGlobeInitialized = false;
+  }
+
+  function waitForEngine(attempt) {
+    if (state.destroyed) return;
+    if (typeof window.Globe === 'function') {
+      configureWorld();
+      return;
+    }
+    if (attempt >= 100) {
+      showFatal('3D 资源加载失败', '无法从 CDN 加载 Globe.gl。请检查网络连接、内容拦截设置，或稍后刷新重试。');
+      return;
+    }
+    window.setTimeout(function() { waitForEngine(attempt + 1); }, 100);
+  }
+
+  function init() {
+    bindUi();
+    buildSearchIndex();
+    setExperienceReady(false);
+    syncAutoRotateButton();
+    setLayerPanel(state.layerPanelOpen);
+    syncLayerButtons();
+    updateClock();
+    state.clockTimer = window.setInterval(updateClock, 1000);
+    state.guideTimer = window.setTimeout(function() {
+      hideGuide();
+    }, 7200);
+    if (!state.fullscreenSupported) {
+      q('#g3dFullscreen').disabled = true;
+      q('#g3dFullscreen').title = '当前浏览器不支持全屏';
+    }
+    if (!supportsWebGL2()) {
+      showFatal('当前设备不支持三维地球', '当前浏览器或设备不支持三维地球展示，请升级浏览器后重试。');
+      return;
+    }
+    loadTexture('day');
+    if (!lowPower) loadTexture('bump');
+    loadCountries();
+    waitForEngine(0);
+  }
+
+  init();
+})();
+</script>

@@ -223,6 +223,13 @@
     "url": "/tools/periodic-table"
   },
   {
+    "slug": "3d-globe",
+    "name": "3D 地球仪",
+    "description": "可旋转缩放的交互式地球仪，支持国家搜索、边界与地理信息探索",
+    "emoji": "🌍",
+    "url": "/tools/3d-globe"
+  },
+  {
     "slug": "pronunciation",
     "name": "汉字标准发音",
     "description": "汉字标准发音查询，支持拼音标注与语音朗读",
