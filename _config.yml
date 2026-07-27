@@ -13,7 +13,7 @@ root: # 根目录
 permalink: /:title/ # 永久链接
 permalink_defaults: # 永久链接中各部分的默认值
 pretty_urls:
-  trailing_index: true # Set to false to remove trailing 'index.html' from permalinks
+  trailing_index: false # Set to false to remove trailing 'index.html' from permalinks
   trailing_html: true # Set to false to remove trailing '.html' from permalinks
 
 # Directory
@@ -105,6 +105,13 @@ deploy:
 search:
   path: search.xml
   field: post
+
+# 站点地图
+sitemap:
+  path: sitemap.xml
+  rel: true
+  tags: false
+  categories: false
 
 # 中文链接转拼音
 permalink_pinyin:

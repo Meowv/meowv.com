@@ -19,6 +19,7 @@
     "hexo-generator-feed": "^3.0.0",
     "hexo-generator-index": "^3.0.0",
     "hexo-generator-search": "^2.4.3",
+    "hexo-generator-sitemap": "^3.0.1",
     "hexo-generator-tag": "^2.0.0",
     "hexo-neat": "^1.0.9",
     "hexo-permalink-pinyin": "^1.1.0",

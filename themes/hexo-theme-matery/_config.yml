@@ -77,7 +77,7 @@ dream:
 # 是否在首页显示音乐.
 music:
   enable: true
-  mode: local # 播放模式，可选值: 'local', 'meting'
+  mode: meting # 播放模式，可选值: 'local', 'meting'
   local:
     artist: 阿星𝑷𝒍𝒖𝒔 # 本地歌曲默认作者，歌单文件为 source/_data/music.yml
   title: #非吸底模式有效
@@ -86,7 +86,7 @@ music:
   autoHide: true # hide automaticaly
   server: tencent #require	music platform: netease, tencent, kugou, xiami, baidu
   type: album #require song, playlist, album, search, artist
-  id: 002L1Oq13Va8PX #require	song id / playlist id / album id / search keyword
+  id: 003Um0z84a4HqO #require	song id / playlist id / album id / search keyword
   fixed: true # 开启吸底模式
   autoplay: false # 是否自动播放
   theme: "#5a9600"

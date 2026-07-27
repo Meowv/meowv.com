@@ -43,14 +43,105 @@
     	keyWords = title ? title  + ', ' + keyWords : keyWords;
     }
 
-    // description.
-    var description = null;
-    if (page.summary) {
-        description = page.summary;
-    } else if (page.hasOwnProperty('__post') && page.__post) {
-        description = strip_html(page.content).substring(0, 120);
+    // 页面 SEO 信息。
+    var toolData = null;
+    if (page.toolSlug && site.data && site.data.tools) {
+        toolData = site.data.tools.find(function (tool) {
+            return tool.slug === page.toolSlug;
+        });
     }
-    description = description ? description : pageTitle;
+
+    var description = page.description || (toolData && toolData.description) || page.summary;
+    if (!description && page.hasOwnProperty('__post') && page.__post) {
+        description = strip_html(page.content).substring(0, 160);
+    }
+    description = strip_html(description || config.description || pageTitle)
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    var siteUrl = config.url.replace(/\/+$/, '');
+    var canonicalPath = page.path ? url_for(page.path) : url_for('/');
+    canonicalPath = canonicalPath.replace(/index\.html$/, '');
+    var canonicalUrl = siteUrl + canonicalPath;
+    var isNotFoundPage = page.path === '404.html';
+    var isPostPage = page.hasOwnProperty('__post') && page.__post;
+
+    var absoluteUrl = function (value) {
+        if (/^https?:\/\//i.test(value)) {
+            return value;
+        }
+        return siteUrl + url_for(value);
+    };
+
+    var socialImage = absoluteUrl(page.img || '/medias/logo.png');
+    var structuredData = {
+        '@context': 'https://schema.org',
+        '@type': 'WebPage',
+        name: pageTitle,
+        description: description,
+        url: canonicalUrl,
+        isPartOf: {
+            '@type': 'WebSite',
+            name: config.title,
+            url: siteUrl + '/'
+        }
+    };
+
+    if (isPostPage) {
+        structuredData = {
+            '@context': 'https://schema.org',
+            '@type': 'BlogPosting',
+            headline: title || pageTitle,
+            description: description,
+            url: canonicalUrl,
+            mainEntityOfPage: canonicalUrl,
+            image: socialImage,
+            author: {
+                '@type': 'Person',
+                name: page.author || config.author,
+                url: siteUrl + '/about/'
+            },
+            publisher: {
+                '@type': 'Person',
+                name: config.author,
+                url: siteUrl + '/about/'
+            },
+            datePublished: page.date && page.date.toISOString
+                ? page.date.toISOString()
+                : undefined
+        };
+    } else if (toolData) {
+        structuredData = {
+            '@context': 'https://schema.org',
+            '@type': 'WebApplication',
+            name: toolData.name,
+            description: description,
+            url: canonicalUrl,
+            applicationCategory: 'UtilitiesApplication',
+            operatingSystem: 'Any',
+            browserRequirements: 'Requires JavaScript',
+            offers: {
+                '@type': 'Offer',
+                price: '0',
+                priceCurrency: 'CNY'
+            }
+        };
+    } else if (page.type === 'labs' || page.layout === 'labs') {
+        structuredData['@type'] = 'CollectionPage';
+    } else if (canonicalPath === '/') {
+        structuredData = {
+            '@context': 'https://schema.org',
+            '@type': 'WebSite',
+            name: config.title,
+            alternateName: '阿星Plus',
+            description: description,
+            url: canonicalUrl,
+            inLanguage: config.language
+        };
+    }
+
+    var structuredDataJson = JSON.stringify(structuredData)
+        .replace(/</g, '\\u003c');
 
     let iconType = 'image/png'
     let faviconExt = theme.favicon.substr(theme.favicon.lastIndexOf('.') + 1, theme.favicon.length)
@@ -72,7 +163,23 @@
 <head>
     <meta charset="utf-8">
     <meta name="keywords" content="<%= keyWords %>">
-    <meta name="description" content="<%= config.description %>">
+    <meta name="description" content="<%= description %>">
+    <% if (isNotFoundPage) { %>
+    <meta name="robots" content="noindex, follow">
+    <% } else { %>
+    <link rel="canonical" href="<%= canonicalUrl %>">
+    <% } %>
+    <meta property="og:type" content="<%= isPostPage ? 'article' : 'website' %>">
+    <meta property="og:site_name" content="<%= config.title %>">
+    <meta property="og:title" content="<%= pageTitle %>">
+    <meta property="og:description" content="<%= description %>">
+    <meta property="og:url" content="<%= canonicalUrl %>">
+    <meta property="og:image" content="<%= socialImage %>">
+    <meta property="og:locale" content="zh_CN">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="<%= pageTitle %>">
+    <meta name="twitter:description" content="<%= description %>">
+    <meta name="twitter:image" content="<%= socialImage %>">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta name="renderer" content="webkit|ie-stand|ie-comp">
@@ -82,6 +189,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <%- partial('_partial/google-analytics') %>
     <title><%= pageTitle %></title>
+    <script type="application/ld+json"><%- structuredDataJson %></script>
     <link rel="icon" type="<%= iconType %>" href="<%- theme.cdn.url %><%- url_for(theme.favicon) %>">
 
     <link rel="stylesheet" type="text/css" href="<%- theme.cdn.url %><%- url_for(theme.libs.css.fontAwesome) %>">
