@@ -7,6 +7,13 @@
     "url": "https://zt.meowv.com"
   },
   {
+    "slug": "excel",
+    "name": "在线 Excel 处理",
+    "description": "无需登录、数据不上传，在浏览器中创建、编辑和导出Excel文件",
+    "emoji": "💹",
+    "url": "https://excel.meowv.com"
+  },
+  {
     "slug": "plonky",
     "name": "Plonky",
     "description": "基于物理引擎的趣味解谜闯关游戏",
