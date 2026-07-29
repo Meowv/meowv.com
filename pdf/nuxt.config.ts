@@ -36,6 +36,15 @@ export default defineNuxtConfig({
           name: "viewport",
           content: "width=device-width, initial-scale=1, viewport-fit=cover"
         }
+      ],
+      script: [
+        {
+          async: true,
+          src: "https://www.googletagmanager.com/gtag/js?id=G-CKC14F63ME"
+        },
+        {
+          src: "/google-analytics.js"
+        }
       ]
     }
   },

@@ -126,8 +126,8 @@ empty → loading → ready → processing → completed
 - PDF.js 禁止依赖动态代码求值，预览器不执行 PDF 内嵌 JavaScript。
 - 不自动打开 PDF 中的链接、附件或启动动作。
 - 大型二进制在模块间使用 `ArrayBuffer`、`Uint8Array` 和 Blob，不转为 Base64。
-- 依赖和 Worker 随站点构建，不从公共 CDN 加载。
-- Nginx CSP 允许本站 Worker、Blob Worker、Canvas 数据和本地字体，同时禁止对象嵌入和第三方脚本。
+- PDF 处理依赖和 Worker 随站点构建，不从公共 CDN 加载。
+- Nginx CSP 允许本站 Worker、Blob Worker、Canvas 数据、本地字体和 Google Analytics 所需的脚本与统计请求，同时禁止对象嵌入和其他第三方脚本。
 
 ## 扩展原则
 

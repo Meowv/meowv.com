@@ -71,6 +71,11 @@ useHead({
         HTML、CSS、JavaScript、图标和其他静态资源。这些请求不包含你选择的 PDF
         或图片内容。核心处理引擎、Worker 与字体资源均由本站随构建产物提供，不从公共 CDN 动态加载。
       </p>
+      <p>
+        本站使用 Google Analytics 了解页面访问和基本使用情况。浏览器会连接 Google
+        的统计服务，并可能发送页面地址、来源页面、设备与浏览器信息及网络请求所需的 IP
+        地址；不会发送你选择的文件内容、文件名、处理参数或生成结果。
+      </p>
     </section>
 
     <aside class="content-page__note">
