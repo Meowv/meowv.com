@@ -35,6 +35,19 @@
 - `pdf.meowv.com` 是规划域名，在用户确认上线前不得描述为已上线。
 - 不自行推断 `www` 跳转、证书覆盖、Nginx 路由或生产目录；部署前应检查实际环境。
 
+## 根目录脚本
+
+- `run.sh`：不传参数时并行启动四个项目；传入 `blog`、`excel`、`pdf` 或 `zitie` 时
+  只启动对应项目。
+- 固定开发端口依次为 Blog `4000`、Excel `4001`、PDF `4002`、Zitie `4003`，不得静默
+  改用其他端口。
+- `build.sh`：不传参数时依次编译四个项目；传入项目名时只编译并发布对应项目。
+- 汇总产物固定为 `build/meowv.com/`、`build/excel.meowv.com/`、
+  `build/pdf.meowv.com/` 和 `build/zt.meowv.com/`。
+- Zitie 只将 `zitie/dist/client/` 复制到汇总目录，不复制 `zitie/dist/server/`。
+- `build/` 是可替换的生成目录，不提交到 Git。修改脚本时继续保持全量构建完成后再替换
+  旧目录，避免失败时留下半套发布产物。
+
 ## Blog 约定
 
 ### 结构

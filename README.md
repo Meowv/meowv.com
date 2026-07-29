@@ -27,6 +27,75 @@
 4 个目录不是 npm/pnpm workspace。安装依赖、开发、检查和构建时，应先进入目标项目目录，
 不要在仓库根目录混用包管理命令。
 
+## macOS 一键脚本
+
+根目录提供 `run.sh` 和 `build.sh`，仓库已保留可执行权限。如果通过压缩包等方式传输后
+权限丢失，可重新执行：
+
+```bash
+chmod +x run.sh build.sh
+```
+
+### 启动项目
+
+不传参数或传入 `all` 时并行启动全部项目：
+
+```bash
+./run.sh
+./run.sh all
+```
+
+传入项目名时只启动指定项目：
+
+```bash
+./run.sh blog
+./run.sh excel
+./run.sh pdf
+./run.sh zitie
+```
+
+固定开发端口：
+
+| 项目  | 地址                    |
+| ----- | ----------------------- |
+| Blog  | `http://localhost:4000` |
+| Excel | `http://localhost:4001` |
+| PDF   | `http://localhost:4002` |
+| Zitie | `http://localhost:4003` |
+
+脚本不会自动安装依赖。启动全部项目后，按 `Ctrl+C` 会统一停止四个开发服务器。
+
+### 编译项目
+
+不传参数或传入 `all` 时依次编译全部项目：
+
+```bash
+./build.sh
+./build.sh all
+```
+
+传入项目名时只编译并更新指定项目：
+
+```bash
+./build.sh blog
+./build.sh excel
+./build.sh pdf
+./build.sh zitie
+```
+
+编译产物统一发布到根目录 `build/`：
+
+```text
+build/
+├── meowv.com/        # blog/public/
+├── excel.meowv.com/  # excel/dist/client/
+├── pdf.meowv.com/    # pdf/.output/public/
+└── zt.meowv.com/     # zitie/dist/client/
+```
+
+全量编译时，四个项目都成功后才会替换原有 `build/`。单项目编译只替换对应域名目录，不会
+修改另外三个项目的已有产物。`build/`、临时暂存目录和备份目录均已加入 Git 忽略。
+
 ## 环境与常用命令
 
 ### Blog
@@ -82,7 +151,8 @@
 - 类型检查：`npx tsc --noEmit`
 - 生产构建：`npm run build`
 - 预览构建：`npm run start`
-- 产物：`zitie/dist/`
+- 构建目录：`zitie/dist/`
+- 汇总部署产物：`zitie/dist/client/`（不复制 `dist/server/`）
 
 字帖应用使用浏览器 Canvas 完成分页、绘制、打印，以及 PNG、PDF、ZIP 导出。当前覆盖
 汉字、词语、中文段落、笔画、拼音、英文字母、英文单词与段落、数字和控笔练习。
