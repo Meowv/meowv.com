@@ -109,7 +109,7 @@ $uri/index.html
 - `Cross-Origin-Opener-Policy: same-origin`
 - `X-Frame-Options: DENY`
 
-CSP 默认只允许本站脚本和资源，并额外开放 Google Analytics 所需的 `www.googletagmanager.com` 脚本及 Google Analytics 统计请求；统计初始化脚本由本站静态托管，因此不需要开放 `'unsafe-inline'`。同时允许本站或 Blob Worker、Blob/Canvas 图片与 WebAssembly 编译，并禁止对象嵌入和其他第三方脚本。PDF.js 配置了 `isEvalSupported: false`，因此不需要开放通用的 `'unsafe-eval'`。
+CSP 默认只允许本站脚本和资源，并额外开放 Google Analytics 所需的 `www.googletagmanager.com` 脚本及 Google Analytics 统计请求。Nuxt 静态产物会生成 `importmap` 与客户端启动数据两段内联脚本，且启动数据包含每次构建都会变化的构建 ID，因此 `script-src` 必须保留 `'unsafe-inline'`；不能使用固定哈希替代。其余来源仍限制为本站、Google Analytics、Blob Worker、Blob/Canvas 图片与 WebAssembly 编译，并禁止对象嵌入和其他第三方脚本。PDF.js 配置了 `isEvalSupported: false`，因此不需要开放通用的 `'unsafe-eval'`。
 
 修改 CSP 后需要在 Chrome、Firefox 和 Safari 实机检查 PDF Worker、缩略图、图片导出、ZIP 下载与捐赠二维码，不能只确认首页能打开。
 
