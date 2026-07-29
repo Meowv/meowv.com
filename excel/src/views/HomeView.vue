@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   ArrowDownAZ,
+  ArrowUpRight,
   ArrowUpAZ,
   CalendarDays,
   CheckCircle2,
@@ -9,6 +10,7 @@ import {
   Download,
   FilePlus2,
   FileSpreadsheet,
+  FileText,
   FolderOpen,
   HandCoins,
   MoreHorizontal,
@@ -17,6 +19,7 @@ import {
   Search,
   Settings,
   ShieldCheck,
+  SquarePen,
   Trash2,
   Upload,
   X,
@@ -869,31 +872,49 @@ onMounted(async () => {
     <footer class="site-footer">
       <div class="site-footer__inner">
         <section class="site-footer__brand" aria-label="产品信息">
-          <AppLogo subtitle="浏览器里的本地表格工作台" />
+          <AppLogo subtitle="无需登录 · 数据不上传" />
           <p>无需登录，工作簿与文件仅在当前设备处理。</p>
+          <span class="site-footer__trust">
+            <ShieldCheck :size="16" />
+            本地处理 · 数据不上传
+          </span>
         </section>
 
-        <span class="site-footer__trust">
-          <ShieldCheck :size="15" />
-          本地处理 · 数据不上传
-        </span>
-
-        <nav class="site-footer__nav" aria-label="页脚导航">
-          <div class="site-footer__group">
-            <strong>在线 Excel 工具</strong>
+        <nav class="site-footer__links" aria-label="页脚导航">
+          <div class="site-footer__link-group">
+            <strong>在线 Excel 处理</strong>
             <RouterLink to="/settings">本地数据与设置</RouterLink>
             <RouterLink to="/settings#privacy">隐私与安全</RouterLink>
+            <RouterLink to="/settings#support">捐赠支持</RouterLink>
           </div>
 
-          <div class="site-footer__group">
+          <div class="site-footer__link-group">
             <strong>更多工具</strong>
             <a
-              class="site-footer__tool-link"
+              class="site-footer__product-link"
+              href="https://pdf.meowv.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <FileText :size="18" aria-hidden="true" />
+              <span>
+                <b>在线 PDF 处理</b>
+                <small>浏览器里的本地 PDF 工具</small>
+              </span>
+              <ArrowUpRight :size="15" aria-hidden="true" />
+            </a>
+            <a
+              class="site-footer__product-link"
               href="https://zt.meowv.com/"
               target="_blank"
               rel="noopener noreferrer"
             >
-              <span> 字帖生成 </span>
+              <SquarePen :size="18" aria-hidden="true" />
+              <span>
+                <b>字帖生成</b>
+                <small>在线制作 A4 练字纸</small>
+              </span>
+              <ArrowUpRight :size="15" aria-hidden="true" />
             </a>
           </div>
         </nav>
@@ -1617,128 +1638,111 @@ main {
 }
 
 .site-footer {
-  border-top: 1px solid var(--primary-border);
+  border-top: 1px solid var(--border);
   background: var(--surface-subtle);
-  color: var(--text-secondary);
 }
 
-.site-footer__inner,
-.site-footer__bottom {
-  width: min(1260px, calc(100% - 48px));
+.site-footer__inner {
+  width: min(1180px, calc(100% - 48px));
   margin: 0 auto;
 }
 
 .site-footer__inner {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  gap: clamp(56px, 9vw, 128px);
-  padding: 44px 0 5px;
+  grid-template-columns: minmax(260px, 0.72fr) minmax(480px, 1.28fr);
+  gap: clamp(64px, 9vw, 130px);
+  padding: 57px 0 46px;
 }
 
 .site-footer__brand {
-  display: grid;
-  max-width: 440px;
-  justify-items: start;
+  align-content: start;
 }
 
 .site-footer__brand p {
-  margin: 12px 0 14px;
+  max-width: 330px;
+  margin: 17px 0 13px;
   color: var(--text-tertiary);
   font-size: 12px;
-  line-height: 1.65;
 }
 
 .site-footer__trust {
   display: inline-flex;
   align-items: center;
-  justify-self: center;
   gap: 6px;
   color: var(--primary-text-soft);
-  font-size: 13px;
-  font-weight: 650;
-  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 680;
 }
 
-.site-footer__trust svg {
-  width: 19px;
-  height: 19px;
-}
-
-.site-footer__nav {
+.site-footer__links {
   display: grid;
-  grid-template-columns: repeat(2, minmax(150px, 1fr));
-  justify-self: end;
-  gap: clamp(36px, 6vw, 76px);
+  grid-template-columns: minmax(130px, 0.5fr) minmax(250px, 1fr);
+  gap: clamp(44px, 7vw, 84px);
 }
 
-.site-footer__group {
+.site-footer__link-group {
   display: grid;
   align-content: start;
-  gap: 10px;
+  gap: 9px;
 }
 
-.site-footer__group > strong {
-  margin-bottom: 3px;
+.site-footer__link-group > strong {
+  margin-bottom: 5px;
   color: var(--text-tertiary);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
-.site-footer__group > a {
+.site-footer__link-group > a {
   width: fit-content;
   color: var(--text-tertiary);
   font-size: 12px;
   text-decoration: none;
-  transition: color 150ms ease;
 }
 
-.site-footer__group > a:hover {
+.site-footer__link-group > a:hover {
   color: var(--primary-text);
 }
 
-.site-footer__tool-link {
-  display: inline-flex;
+.site-footer__link-group .site-footer__product-link {
+  display: grid;
+  width: 100%;
+  max-width: 320px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  padding: 7px 0;
 }
 
-.site-footer__tool-link > span {
+.site-footer__product-link > svg:first-child {
+  color: var(--primary-text-soft);
+}
+
+.site-footer__product-link > svg:last-child {
+  color: var(--text-tertiary);
+  transition: transform 150ms ease;
+}
+
+.site-footer__product-link:hover > svg:last-child {
+  transform: translate(2px, -2px);
+}
+
+.site-footer__product-link > span {
   display: grid;
   gap: 1px;
 }
 
-.site-footer__tool-link b {
+.site-footer__product-link b {
   color: var(--text-secondary);
-  font-weight: 650;
+  font-size: 12px;
+  font-weight: 680;
 }
 
-.site-footer__tool-link small {
+.site-footer__product-link small {
   color: var(--text-tertiary);
   font-size: 10px;
-}
-
-.site-footer__tool-link svg {
-  flex: none;
-  transition: transform 150ms ease;
-}
-
-.site-footer__tool-link:hover svg {
-  transform: translate(2px, -2px);
-}
-
-.site-footer__bottom {
-  display: flex;
-  min-height: 48px;
-  align-items: center;
-  justify-content: space-between;
-  border-top: 1px solid var(--border);
-  color: var(--text-tertiary);
-  font-size: 10px;
-}
-
-.site-footer__bottom span:first-child {
-  color: var(--text-secondary);
-  font-weight: 650;
 }
 
 .visually-hidden {
@@ -1764,18 +1768,8 @@ main {
   }
 
   .site-footer__inner {
-    grid-template-columns: minmax(280px, 1fr) auto;
-    column-gap: 48px;
-    row-gap: 28px;
-  }
-
-  .site-footer__trust {
-    justify-self: end;
-  }
-
-  .site-footer__nav {
-    grid-column: 1 / -1;
-    justify-self: start;
+    grid-template-columns: minmax(220px, 0.65fr) minmax(430px, 1.35fr);
+    gap: 40px;
   }
 }
 
@@ -1821,27 +1815,19 @@ main {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .site-footer__inner,
-  .site-footer__bottom {
-    width: min(100% - 32px, 680px);
+  .site-footer__inner {
+    width: min(100% - 30px, 680px);
   }
 
   .site-footer__inner {
     grid-template-columns: 1fr;
-    gap: 28px;
+    gap: 43px;
+    padding-top: 48px;
   }
 
-  .site-footer__trust {
-    justify-self: start;
-    align-self: start;
-  }
-
-  .site-footer__nav {
-    grid-column: auto;
-  }
-
-  .site-footer__brand {
-    max-width: 520px;
+  .site-footer__links {
+    grid-template-columns: minmax(105px, 0.55fr) minmax(210px, 1fr);
+    gap: 30px;
   }
 }
 
@@ -1896,17 +1882,9 @@ main {
     grid-template-columns: 1fr;
   }
 
-  .site-footer__nav {
+  .site-footer__links {
     grid-template-columns: 1fr;
-    gap: 24px;
-  }
-
-  .site-footer__bottom {
-    min-height: 58px;
-    align-items: flex-start;
-    flex-direction: column;
-    justify-content: center;
-    gap: 4px;
+    gap: 31px;
   }
 }
 
@@ -1914,8 +1892,8 @@ main {
   .dropzone,
   .workbook-card,
   .progress > span,
-  .site-footer__tool-link,
-  .site-footer__tool-link svg {
+  .site-footer__product-link,
+  .site-footer__product-link svg {
     transition: none;
   }
 
