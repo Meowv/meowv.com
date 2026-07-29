@@ -1,0 +1,15 @@
+# 依赖与构建产物
+node_modules/
+.vinext/
+.next/
+dist/
+.wrangler/
+
+# 笔顺数据由 npm 脚本在开发和构建前生成
+public/hanzi-data/
+
+# 本地环境与系统文件
+.env*
+*.tsbuildinfo
+.DS_Store
+npm-debug.log*

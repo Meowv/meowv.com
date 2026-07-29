@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="无需登录、数据不上传，在浏览器中创建、编辑和导出Excel文件。"
+    />
+    <meta name="theme-color" content="#16a34a" />
+    <link rel="icon" type="image/png" href="/assets/app-icon-192.png" />
+    <link rel="apple-touch-icon" href="/assets/app-icon-192.png" />
+    <title>在线 Excel 处理</title>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-LQYZEJYHZK"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-LQYZEJYHZK");
+    </script>
+  </head>
+  <body>
+    <noscript>在线 Excel 处理需要启用 JavaScript 才能运行。</noscript>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

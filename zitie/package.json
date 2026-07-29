@@ -1,0 +1,40 @@
+{
+  "name": "zitie",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "prepare:data": "node scripts/sync-hanzi-data.mjs",
+    "dev": "npm run prepare:data && vinext dev",
+    "build": "npm run prepare:data && vinext build",
+    "start": "vinext start"
+  },
+  "scriptNotes": {
+    "prepare:data": "同步运行期所需的笔顺数据，生成文件不提交。",
+    "dev": "本地开发。",
+    "build": "生成独立站点的静态部署产物。",
+    "start": "预览最近一次生产构建结果。"
+  },
+  "dependencies": {
+    "fflate": "0.8.3",
+    "hanzi-writer-data": "2.0.1",
+    "next": "16.2.6",
+    "pinyin-pro": "3.28.1",
+    "react": "19.2.6",
+    "react-dom": "19.2.6"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.19",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.0.2",
+    "@vitejs/plugin-rsc": "0.5.26",
+    "react-server-dom-webpack": "19.2.6",
+    "typescript": "5.9.3",
+    "vinext": "0.0.50",
+    "vite": "8.0.13"
+  },
+  "type": "module"
+}

@@ -1,0 +1,49 @@
+{
+  "name": "pdf-meowv",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.9.0",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt generate",
+    "preview": "nuxt preview",
+    "typecheck": "nuxt typecheck",
+    "lint": "pnpm lint:code && pnpm lint:style && pnpm format:check",
+    "lint:code": "eslint .",
+    "lint:style": "stylelint \"app/**/*.css\"",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@vueuse/core": "^14.3.0",
+    "@lucide/vue": "^1.27.0",
+    "jszip": "^3.10.1",
+    "nuxt": "^4.5.1",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^6.1.200",
+    "vue": "^3.5.40",
+    "vue-draggable-plus": "^0.6.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@nuxt/eslint": "^1.16.0",
+    "@playwright/test": "^1.62.0",
+    "@vue/test-utils": "^2.4.11",
+    "eslint": "^10.8.0",
+    "eslint-config-prettier": "^10.1.8",
+    "happy-dom": "^20.8.3",
+    "prettier": "^3.9.6",
+    "stylelint": "^17.14.1",
+    "stylelint-config-standard": "^40.0.0",
+    "typescript": "^6.0.3",
+    "vue-tsc": "^3.3.8",
+    "vitest": "^4.1.10"
+  }
+}
