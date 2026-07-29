@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { ArrowUpRight, FileSpreadsheet, FileText, ShieldCheck, SquarePen } from "@lucide/vue";
+import { ArrowUpRight, FileSpreadsheet, ShieldCheck, SquarePen } from "@lucide/vue";
 import AppLogo from "~/components/layout/AppLogo.vue";
 import { siteConfig } from "~/config/site";
-
-const currentYear = new Date().getFullYear();
 </script>
 
 <template>
@@ -21,7 +19,6 @@ const currentYear = new Date().getFullYear();
       <nav class="site-footer__links" aria-label="页脚导航">
         <div class="site-footer__link-group">
           <strong>在线 PDF 处理</strong>
-          <NuxtLink to="/">首页</NuxtLink>
           <NuxtLink to="/#tools">全部工具</NuxtLink>
           <NuxtLink to="/privacy">隐私说明</NuxtLink>
           <NuxtLink to="/help">使用帮助</NuxtLink>
@@ -29,20 +26,7 @@ const currentYear = new Date().getFullYear();
         </div>
 
         <div class="site-footer__link-group">
-          <strong>Meowv 工具</strong>
-          <a
-            class="site-footer__product-link"
-            :href="siteConfig.links.worksheet"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <SquarePen :size="18" aria-hidden="true" />
-            <span>
-              <b>字帖生成</b>
-              <small>在线制作 A4 练字纸</small>
-            </span>
-            <ArrowUpRight :size="15" aria-hidden="true" />
-          </a>
+          <strong>更多工具</strong>
           <a
             class="site-footer__product-link"
             :href="siteConfig.links.excel"
@@ -58,24 +42,19 @@ const currentYear = new Date().getFullYear();
           </a>
           <a
             class="site-footer__product-link"
-            :href="siteConfig.links.meowv"
+            :href="siteConfig.links.worksheet"
             target="_blank"
             rel="noopener noreferrer"
           >
-            <FileText :size="18" aria-hidden="true" />
+            <SquarePen :size="18" aria-hidden="true" />
             <span>
-              <b>Meowv</b>
-              <small>发现更多内容与工具</small>
+              <b>字帖生成</b>
+              <small>在线制作 A4 练字纸</small>
             </span>
             <ArrowUpRight :size="15" aria-hidden="true" />
           </a>
         </div>
       </nav>
-    </div>
-
-    <div class="site-footer__bottom">
-      <span>© {{ currentYear }} Meowv</span>
-      <span>原始文件不会被修改，结果由你的浏览器生成</span>
     </div>
   </footer>
 </template>

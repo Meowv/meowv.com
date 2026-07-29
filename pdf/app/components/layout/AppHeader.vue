@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { ExternalLink, Heart, Menu, X } from "@lucide/vue";
+import { Heart, Menu, X } from "@lucide/vue";
 import AppLogo from "~/components/layout/AppLogo.vue";
 import ThemeSwitch from "~/components/layout/ThemeSwitch.vue";
-import { siteConfig } from "~/config/site";
 
 const route = useRoute();
 const mobileMenuOpen = ref(false);
@@ -28,10 +27,6 @@ watch(
           <Heart :size="16" />
           捐赠支持
         </NuxtLink>
-        <a :href="siteConfig.links.meowv" target="_blank" rel="noopener noreferrer">
-          返回 Meowv
-          <ExternalLink :size="14" aria-hidden="true" />
-        </a>
       </nav>
 
       <div class="site-header__actions">
@@ -60,10 +55,6 @@ watch(
       <NuxtLink to="/privacy">隐私说明</NuxtLink>
       <NuxtLink to="/help">使用帮助</NuxtLink>
       <NuxtLink to="/donate">捐赠支持</NuxtLink>
-      <a :href="siteConfig.links.meowv" target="_blank" rel="noopener noreferrer">
-        返回 Meowv
-        <ExternalLink :size="15" aria-hidden="true" />
-      </a>
     </nav>
   </header>
 </template>

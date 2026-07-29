@@ -11,18 +11,9 @@ const themeLabel = computed(() => {
 </script>
 
 <template>
-  <button
-    class="theme-switch"
-    type="button"
-    :title="themeLabel"
-    :aria-label="themeLabel"
-    @click="cycleTheme"
-  >
+  <button class="theme-switch" type="button" :aria-label="themeLabel" @click="cycleTheme">
     <Laptop v-if="preference === 'system'" :size="18" />
     <Sun v-else-if="preference === 'light'" :size="18" />
     <Moon v-else :size="18" />
-    <span class="theme-switch__label">
-      {{ preference === "system" ? "跟随系统" : preference === "light" ? "浅色" : "深色" }}
-    </span>
   </button>
 </template>

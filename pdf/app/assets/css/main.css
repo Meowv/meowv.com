@@ -401,10 +401,8 @@ img {
 }
 
 .theme-switch {
-  gap: 7px;
-  padding: 7px 10px;
-  font-size: 12px;
-  font-weight: 650;
+  width: 40px;
+  padding: 0;
 }
 
 .theme-switch:hover,
@@ -1029,23 +1027,6 @@ img {
   font-size: 10px;
 }
 
-.site-footer__bottom {
-  display: flex;
-  width: min(var(--container-width), calc(100% - 48px));
-  min-height: 50px;
-  align-items: center;
-  justify-content: space-between;
-  margin: 0 auto;
-  border-top: 1px solid var(--color-border);
-  color: var(--color-text-tertiary);
-  font-size: 10px;
-}
-
-.site-footer__bottom span:first-child {
-  color: var(--color-text-secondary);
-  font-weight: 700;
-}
-
 /* Privacy and help pages */
 .content-page {
   max-width: 960px;
@@ -1412,7 +1393,7 @@ img {
   .site-header__mobile-nav {
     display: grid;
     width: min(var(--container-width), calc(100% - 48px));
-    grid-template-columns: repeat(5, auto);
+    grid-template-columns: repeat(4, auto);
     justify-content: end;
     margin: 0 auto;
     gap: 6px;
@@ -1484,8 +1465,7 @@ img {
   .section-container,
   .site-header__inner,
   .site-header__mobile-nav,
-  .site-footer__inner,
-  .site-footer__bottom {
+  .site-footer__inner {
     width: min(100% - 30px, var(--container-width));
   }
 
@@ -1502,20 +1482,6 @@ img {
     display: none;
   }
 
-  .theme-switch {
-    width: 39px;
-    padding: 0;
-  }
-
-  .theme-switch__label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-
   .site-header__mobile-nav {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     justify-content: stretch;
@@ -1525,10 +1491,6 @@ img {
   .site-header__mobile-nav a {
     border: 1px solid var(--color-border);
     background: var(--color-surface);
-  }
-
-  .site-header__mobile-nav a:last-child {
-    grid-column: 1 / -1;
   }
 
   .hero {
@@ -1649,14 +1611,6 @@ img {
   .site-footer__links {
     grid-template-columns: minmax(105px, 0.55fr) minmax(210px, 1fr);
     gap: 30px;
-  }
-
-  .site-footer__bottom {
-    align-items: flex-start;
-    flex-direction: column;
-    justify-content: center;
-    gap: 2px;
-    padding: 10px 0;
   }
 
   .content-page,

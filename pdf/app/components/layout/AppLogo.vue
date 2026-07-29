@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { FileText } from "@lucide/vue";
+import { siteConfig } from "~/config/site";
 
 withDefaults(
   defineProps<{
@@ -20,7 +21,7 @@ withDefaults(
     </span>
     <span class="app-logo__copy">
       <strong>在线 PDF 处理</strong>
-      <small v-if="!compact">Meowv PDF</small>
+      <small v-if="!compact">{{ siteConfig.shortName }}</small>
     </span>
   </NuxtLink>
 </template>

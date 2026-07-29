@@ -26,6 +26,10 @@ export default defineNuxtConfig({
   app: {
     head: {
       htmlAttrs: { lang: "zh-CN" },
+      link: [
+        { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-32.png" },
+        { rel: "apple-touch-icon", sizes: "192x192", href: "/app-icon-192.png" }
+      ],
       meta: [
         { name: "theme-color", content: "#d84a4a" },
         {
