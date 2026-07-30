@@ -68,6 +68,7 @@ import {
 import {
   downloadDocx,
   downloadHtml,
+  downloadImage,
   downloadMarkdown,
   downloadPdf,
   type ExportExtension,
@@ -1986,6 +1987,10 @@ export const useWorkspaceStore = defineStore("workspace", () => {
         if (format === "html") {
           warnings = (
             await downloadHtml(previewHtml.value, exportOptions)
+          ).warnings;
+        } else if (format === "png") {
+          warnings = (
+            await downloadImage(previewHtml.value, exportOptions)
           ).warnings;
         } else if (format === "pdf") {
           warnings = (

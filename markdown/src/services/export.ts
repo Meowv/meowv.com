@@ -1,7 +1,7 @@
 import DOMPurify from "dompurify";
 import type { Paragraph, ParagraphChild, Table } from "docx";
 
-export type ExportExtension = "md" | "html" | "pdf" | "docx";
+export type ExportExtension = "md" | "html" | "pdf" | "png" | "docx";
 
 export type ExportErrorCode =
   | "INVALID_CONTENT"
@@ -32,6 +32,11 @@ export interface PdfExportOptions extends BaseExportOptions {
   readonly scale?: number;
 }
 
+export interface ImageExportOptions extends BaseExportOptions {
+  readonly backgroundColor?: string;
+  readonly scale?: number;
+}
+
 export interface DocxExportOptions extends BaseExportOptions {
   readonly creator?: string;
 }
@@ -57,10 +62,11 @@ const MIME_TYPES: Readonly<Record<ExportExtension, string>> = {
   md: "text/markdown;charset=utf-8",
   html: "text/html;charset=utf-8",
   pdf: "application/pdf",
+  png: "image/png",
   docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 };
 
-const KNOWN_EXPORT_EXTENSION = /\.(?:md|markdown|html?|pdf|docx)$/i;
+const KNOWN_EXPORT_EXTENSION = /\.(?:md|markdown|html?|pdf|png|docx)$/i;
 const RESERVED_WINDOWS_NAME =
   /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/i;
 const SAFE_EMBEDDED_IMAGE =
@@ -1035,6 +1041,74 @@ async function waitForPdfImages(
   );
 }
 
+export async function createImageExport(
+  previewHtml: string,
+  options: ImageExportOptions = {},
+): Promise<ExportArtifact> {
+  ensureString(previewHtml, "HTML");
+  ensureDomSupport();
+  ensureBlobSupport();
+
+  const prepared = await prepareRenderedExportHtml(previewHtml, {
+    embedRemoteImages: true,
+    resolveImageBlob: options.resolveImageBlob,
+  });
+  const backgroundColor = options.backgroundColor?.trim() || "#ffffff";
+  const scale = positiveNumber(
+    options.scale,
+    Math.min(globalThis.devicePixelRatio || 1.5, 2),
+    0.5,
+    3,
+  );
+  const container = createPdfRenderContainer(prepared.html, backgroundColor);
+  const warnings = [...prepared.warnings];
+
+  try {
+    const { html2canvas } = await loadPdfRenderer();
+    await waitForPdfImages(container, warnings);
+    await document.fonts?.ready;
+    const canvas = await html2canvas(container, {
+      allowTaint: false,
+      backgroundColor,
+      foreignObjectRendering: false,
+      logging: false,
+      removeContainer: true,
+      scale,
+      useCORS: true,
+    });
+
+    if (!canvas.width || !canvas.height) {
+      throw new ExportError(
+        "RENDER_FAILED",
+        "图片渲染结果为空，请确认文档内容后重试。",
+      );
+    }
+
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, "image/png");
+    });
+    if (!blob) {
+      throw new ExportError(
+        "RENDER_FAILED",
+        "图片编码失败，请检查浏览器是否支持 PNG 导出。",
+      );
+    }
+
+    return createArtifact(blob, "png", options, warnings);
+  } catch (error) {
+    if (error instanceof ExportError) {
+      throw error;
+    }
+    throw new ExportError(
+      "RENDER_FAILED",
+      "图片导出失败。请减少超大图片或文档长度后重试。",
+      error,
+    );
+  } finally {
+    container.remove();
+  }
+}
+
 export async function createPdfExport(
   previewHtml: string,
   options: PdfExportOptions = {},
@@ -1971,6 +2045,15 @@ export async function downloadPdf(
   options: PdfExportOptions = {},
 ): Promise<ExportArtifact> {
   const artifact = await createPdfExport(previewHtml, options);
+  downloadExport(artifact);
+  return artifact;
+}
+
+export async function downloadImage(
+  previewHtml: string,
+  options: ImageExportOptions = {},
+): Promise<ExportArtifact> {
+  const artifact = await createImageExport(previewHtml, options);
   downloadExport(artifact);
   return artifact;
 }

@@ -7,6 +7,7 @@ import {
   FileText,
   FileType2,
   Folder,
+  Image,
   Link2,
   LoaderCircle,
   PanelLeftClose,
@@ -427,6 +428,15 @@ onBeforeUnmount(() => {
             >
               <FileType2 :size="16" aria-hidden="true" />
               <span>PDF 文档 (.pdf)</span>
+            </button>
+            <button
+              class="context-menu__item"
+              type="button"
+              role="menuitem"
+              @click="exportDocument('png')"
+            >
+              <Image :size="16" aria-hidden="true" />
+              <span>图片 (.png)</span>
             </button>
           </div>
         </div>
