@@ -67,6 +67,16 @@ function handleKeyboardShortcut(event: KeyboardEvent): void {
   }
 
   const key = event.key.toLocaleLowerCase();
+  const target = event.target;
+  const isTextEditing =
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    (target instanceof HTMLElement && target.isContentEditable);
+  if (key === "z" && !event.shiftKey && !isTextEditing && store.canUndoMove) {
+    event.preventDefault();
+    void store.undoLastMove();
+    return;
+  }
   if (key === "s") {
     event.preventDefault();
     void store.saveActiveDocument();
@@ -86,10 +96,7 @@ function handleFullscreenChange(): void {
 }
 
 function handleBeforeUnload(event: BeforeUnloadEvent): void {
-  if (
-    store.activePath &&
-    store.activeContent !== store.activeDocument?.content
-  ) {
+  if (store.hasEditableDocument && store.saveState === "dirty") {
     event.preventDefault();
     event.returnValue = "";
   }
@@ -104,7 +111,9 @@ watchEffect(() => {
     "--editor-width",
     `${store.preferences.editorWidth}px`,
   );
-  if (!store.preferences.previewEnabled && store.mobileView === "preview") {
+  if (!store.preferences.editorVisible || store.isActiveDocumentLocked) {
+    store.mobileView = "preview";
+  } else if (!store.preferences.previewEnabled && store.mobileView === "preview") {
     store.mobileView = "editor";
   }
 });
@@ -144,6 +153,8 @@ onBeforeUnmount(() => {
         'workspace-shell--sidebar-compact':
           store.sidebarOpen && store.preferences.sidebarWidth <= 220,
         'workspace-shell--preview-hidden': !store.preferences.previewEnabled,
+        'workspace-shell--editor-hidden':
+          !store.preferences.editorVisible || store.isActiveDocumentLocked,
         'workspace-shell--fullscreen-editor': store.fullscreenPane === 'editor',
         'workspace-shell--fullscreen-preview': store.fullscreenPane === 'preview',
         'workspace-shell--fullscreen-workspace': store.fullscreenPane === 'workspace',
@@ -157,13 +168,21 @@ onBeforeUnmount(() => {
       <WorkspaceResizer target="sidebarWidth" label="调整左侧侧栏宽度" />
       <EditorPane />
       <WorkspaceResizer
-        v-if="store.preferences.previewEnabled"
+        v-if="
+          store.preferences.previewEnabled &&
+          store.preferences.editorVisible &&
+          !store.isActiveDocumentLocked
+        "
         target="editorWidth"
         label="调整编辑器和预览区域宽度"
       />
       <PreviewPane v-if="store.preferences.previewEnabled" />
 
-      <nav class="mobile-view-switch" aria-label="编辑和预览视图">
+      <nav
+        v-if="store.preferences.editorVisible && !store.isActiveDocumentLocked"
+        class="mobile-view-switch"
+        aria-label="编辑和预览视图"
+      >
         <button
           type="button"
           :class="{ 'mobile-view-switch__active': store.mobileView === 'editor' }"

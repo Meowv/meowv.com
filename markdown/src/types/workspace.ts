@@ -91,7 +91,7 @@ export type ThemePreference = "system" | "light" | "dark";
 export type AutoSaveDelay = 1000 | 2000 | 5000;
 
 /**
- * 这里只保存界面和编辑体验偏好，不允许存放文件正文、文件名或访问历史。
+ * 这里只保存界面与编辑体验偏好，不允许存放文件正文、文件名或访问历史。
  */
 export interface WorkspacePreferences {
   theme: ThemePreference;
@@ -101,9 +101,11 @@ export interface WorkspacePreferences {
   wordWrap: boolean;
   lineNumbers: boolean;
   previewEnabled: boolean;
+  editorVisible: boolean;
   syncScroll: boolean;
   sidebarWidth: number;
   editorWidth: number;
+  restoreRecentWorkspaceOnStartup: boolean;
 }
 
 export const DEFAULT_WORKSPACE_PREFERENCES: Readonly<WorkspacePreferences> = {
@@ -114,7 +116,9 @@ export const DEFAULT_WORKSPACE_PREFERENCES: Readonly<WorkspacePreferences> = {
   wordWrap: true,
   lineNumbers: true,
   previewEnabled: true,
+  editorVisible: true,
   syncScroll: true,
   sidebarWidth: 280,
   editorWidth: 620,
+  restoreRecentWorkspaceOnStartup: true,
 };

@@ -5,6 +5,7 @@ import {
   findEntryByPath,
   getDirectoryHandleByRelativePath,
   getFileHandleByRelativePath,
+  moveEntry,
   normalizeWorkspacePath,
   readTextFile,
   renameEntry,
@@ -300,6 +301,34 @@ describe("file-system", () => {
     );
     expect(copied).not.toBeNull();
     expect(await readTextFile(copied!)).toBe("# Post");
+  });
+
+  it("通过完整复制后删除源条目来跨文件夹移动文件", async () => {
+    const source = new VirtualDirectory("草稿", [
+      new VirtualFile("会议.md", "# 会议"),
+    ]);
+    const destination = new VirtualDirectory("归档");
+    const root = new VirtualDirectory("Notes", [source, destination]);
+    const rootHandle = root.asHandle();
+    const sourceHandle = await getDirectoryHandleByRelativePath(
+      rootHandle,
+      "草稿",
+    );
+    const destinationHandle = await getDirectoryHandleByRelativePath(
+      rootHandle,
+      "归档",
+    );
+
+    await moveEntry(sourceHandle!, "会议.md", destinationHandle!);
+
+    expect(
+      await getFileHandleByRelativePath(rootHandle, "草稿/会议.md"),
+    ).toBeNull();
+    const moved = await getFileHandleByRelativePath(
+      rootHandle,
+      "归档/会议.md",
+    );
+    expect(await readTextFile(moved!)).toBe("# 会议");
   });
 
   it("复制失败时保留源条目并清理不完整目标", async () => {

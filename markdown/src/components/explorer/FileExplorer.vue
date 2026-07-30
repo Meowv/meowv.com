@@ -28,6 +28,21 @@ interface ContextMenuState {
   node: DisplayTreeNode;
 }
 
+interface PointerDragState {
+  node: DisplayTreeNode;
+  pointerId: number;
+  startX: number;
+  startY: number;
+  moved: boolean;
+}
+
+type DropTargetState = "none" | "valid" | "invalid";
+
+interface DropTarget {
+  path: string | null;
+  state: DropTargetState;
+}
+
 const store = useWorkspaceStore();
 const expandedPaths = ref(new Set(["", "技术", "技术/.NET", "前端", "生活"]));
 const contextMenu = ref<ContextMenuState | null>(null);
@@ -37,6 +52,13 @@ const dialogValue = ref("");
 const dialogBusy = ref(false);
 const dialogInput = ref<HTMLInputElement | null>(null);
 const visibleRootCount = ref(ROOT_BATCH_SIZE);
+const draggingNode = ref<DisplayTreeNode | null>(null);
+const dropTargetPath = ref<string | null>(null);
+const dropTargetState = ref<DropTargetState>("none");
+let pointerDrag: PointerDragState | null = null;
+let suppressDraggedClick = false;
+let pointerFrame: number | undefined;
+let pendingPointerPosition: { x: number; y: number } | null = null;
 const rootChildren = computed(() => store.treeRoot?.children ?? []);
 const visibleRootChildren = computed(() =>
   rootChildren.value.slice(0, visibleRootCount.value),
@@ -200,6 +222,158 @@ function showMoreRootNodes(): void {
   );
 }
 
+function canMoveTo(node: DisplayTreeNode, destinationPath: string): boolean {
+  const sourceParentPath = actionParentPath(node);
+  if (sourceParentPath === destinationPath) {
+    return false;
+  }
+  return !(
+    node.kind === "directory" &&
+    (destinationPath === node.path ||
+      destinationPath.startsWith(`${node.path}/`))
+  );
+}
+
+function beginPointerDrag(event: PointerEvent, node: DisplayTreeNode): void {
+  if (event.button !== 0 || store.isDemo) {
+    return;
+  }
+  endDrag();
+  pointerDrag = {
+    node,
+    pointerId: event.pointerId,
+    startX: event.clientX,
+    startY: event.clientY,
+    moved: false,
+  };
+}
+
+function endDrag(): void {
+  if (pointerFrame !== undefined) {
+    globalThis.cancelAnimationFrame(pointerFrame);
+    pointerFrame = undefined;
+  }
+  pointerDrag = null;
+  pendingPointerPosition = null;
+  draggingNode.value = null;
+  dropTargetPath.value = null;
+  dropTargetState.value = "none";
+  document.body.classList.remove(
+    "tree-dragging",
+    "tree-dragging--valid",
+    "tree-dragging--invalid",
+  );
+}
+
+function findDropTarget(
+  x: number,
+  y: number,
+  node: DisplayTreeNode,
+): DropTarget {
+  const target = document
+    .elementFromPoint(x, y)
+    ?.closest<HTMLElement>("[data-tree-kind]");
+  if (!target) {
+    return { path: null, state: "none" };
+  }
+  if (target.dataset.treeKind !== "directory") {
+    return { path: null, state: "invalid" };
+  }
+  const path = target.dataset.treePath;
+  if (path === undefined || !canMoveTo(node, path)) {
+    return { path: null, state: "invalid" };
+  }
+  return { path, state: "valid" };
+}
+
+function updateDragCursor(state: DropTargetState): void {
+  document.body.classList.toggle("tree-dragging--valid", state === "valid");
+  document.body.classList.toggle("tree-dragging--invalid", state === "invalid");
+}
+
+function updateDropTarget(x: number, y: number): void {
+  if (!pointerDrag?.moved) {
+    return;
+  }
+  const target = findDropTarget(x, y, pointerDrag.node);
+  if (dropTargetPath.value !== target.path) {
+    dropTargetPath.value = target.path;
+  }
+  if (dropTargetState.value !== target.state) {
+    dropTargetState.value = target.state;
+    updateDragCursor(target.state);
+  }
+}
+
+function scheduleDropTargetUpdate(x: number, y: number): void {
+  pendingPointerPosition = { x, y };
+  if (pointerFrame !== undefined) {
+    return;
+  }
+  pointerFrame = globalThis.requestAnimationFrame(() => {
+    pointerFrame = undefined;
+    const position = pendingPointerPosition;
+    pendingPointerPosition = null;
+    if (position) {
+      updateDropTarget(position.x, position.y);
+    }
+  });
+}
+
+function handlePointerMove(event: PointerEvent): void {
+  if (!pointerDrag || event.pointerId !== pointerDrag.pointerId) {
+    return;
+  }
+  if (!pointerDrag.moved) {
+    const distance = Math.hypot(
+      event.clientX - pointerDrag.startX,
+      event.clientY - pointerDrag.startY,
+    );
+    if (distance < 6) {
+      return;
+    }
+    pointerDrag.moved = true;
+    draggingNode.value = pointerDrag.node;
+    document.body.classList.add("tree-dragging");
+  }
+  event.preventDefault();
+  scheduleDropTargetUpdate(event.clientX, event.clientY);
+}
+
+function completePointerDrag(event: PointerEvent): void {
+  if (!pointerDrag || event.pointerId !== pointerDrag.pointerId) {
+    return;
+  }
+  const { moved, node } = pointerDrag;
+  const target = moved
+    ? findDropTarget(event.clientX, event.clientY, node)
+    : { path: null, state: "none" };
+  endDrag();
+  if (target.path === null) {
+    return;
+  }
+  suppressDraggedClick = true;
+  globalThis.setTimeout(() => {
+    suppressDraggedClick = false;
+  }, 160);
+  void store.moveNode(node, target.path);
+}
+
+function cancelPointerDrag(event: PointerEvent): void {
+  if (pointerDrag && event.pointerId === pointerDrag.pointerId) {
+    endDrag();
+  }
+}
+
+function preventDraggedClick(event: MouseEvent): void {
+  if (!suppressDraggedClick) {
+    return;
+  }
+  suppressDraggedClick = false;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+}
+
 function handleDocumentKeydown(event: KeyboardEvent): void {
   if (event.key === "Escape" && dialogKind.value) {
     closeDialog();
@@ -210,12 +384,21 @@ function handleDocumentKeydown(event: KeyboardEvent): void {
 
 onMounted(() => {
   document.addEventListener("click", closeContextMenu);
+  document.addEventListener("click", preventDraggedClick, true);
   document.addEventListener("keydown", handleDocumentKeydown);
+  document.addEventListener("pointermove", handlePointerMove);
+  document.addEventListener("pointerup", completePointerDrag);
+  document.addEventListener("pointercancel", cancelPointerDrag);
 });
 
 onBeforeUnmount(() => {
+  endDrag();
   document.removeEventListener("click", closeContextMenu);
+  document.removeEventListener("click", preventDraggedClick, true);
   document.removeEventListener("keydown", handleDocumentKeydown);
+  document.removeEventListener("pointermove", handlePointerMove);
+  document.removeEventListener("pointerup", completePointerDrag);
+  document.removeEventListener("pointercancel", cancelPointerDrag);
 });
 </script>
 
@@ -259,7 +442,23 @@ onBeforeUnmount(() => {
     </header>
 
     <div class="panel__body">
-      <div v-if="store.treeRoot" class="tree" role="tree">
+      <div
+        v-if="store.treeRoot"
+        class="tree"
+        :class="{
+          'tree--dragging': draggingNode,
+        }"
+        role="tree"
+      >
+        <div
+          v-if="draggingNode && canMoveTo(draggingNode, '')"
+          class="tree-root-drop-target"
+          :class="{ 'tree-root-drop-target--active': dropTargetPath === '' }"
+          data-tree-kind="directory"
+          data-tree-path=""
+        >
+          移动到工作空间根目录
+        </div>
         <FileTreeNode
           v-for="node in visibleRootChildren"
           :key="node.path"
@@ -267,9 +466,12 @@ onBeforeUnmount(() => {
           :depth="0"
           :active-path="store.activePath"
           :expanded-paths="expandedPaths"
+          :dragging-path="draggingNode?.path"
+          :drop-target-path="dropTargetPath ?? undefined"
           @open="store.openDocument($event.path)"
           @toggle="toggleDirectory"
           @context="openContextMenu"
+          @pointerdown="beginPointerDrag"
         />
         <button
           v-if="remainingRootCount"
@@ -299,128 +501,128 @@ onBeforeUnmount(() => {
       <span>{{ directoryCount }} 个文件夹</span>
       <span v-if="store.indexing">· 正在索引</span>
     </footer>
+
+    <Teleport to="body">
+      <div
+        v-if="contextMenu"
+        class="context-menu"
+        :style="{ left: `${contextMenu.x}px`, top: `${contextMenu.y}px` }"
+        role="menu"
+        @click.stop
+      >
+        <template v-if="contextMenu.node.kind === 'directory'">
+          <button
+            class="context-menu__item"
+            type="button"
+            role="menuitem"
+            @click="openDialog('new-file', contextMenu.node)"
+          >
+            <FilePlus2 :size="16" />新建 Markdown 文件
+          </button>
+          <button
+            class="context-menu__item"
+            type="button"
+            role="menuitem"
+            @click="openDialog('new-folder', contextMenu.node)"
+          >
+            <FolderPlus :size="16" />新建文件夹
+          </button>
+          <button
+            class="context-menu__item"
+            type="button"
+            role="menuitem"
+            :disabled="store.refreshing"
+            @click="refreshWorkspace"
+          >
+            <RotateCcw
+              :size="16"
+              :class="{ 'animate-spin': store.refreshing }"
+            />刷新
+          </button>
+          <div class="context-menu__separator" />
+        </template>
+        <button
+          class="context-menu__item"
+          type="button"
+          role="menuitem"
+          @click="openDialog('rename', contextMenu.node)"
+        >
+          <Pencil :size="16" />重命名
+        </button>
+        <button
+          class="context-menu__item context-menu__item--danger"
+          type="button"
+          role="menuitem"
+          @click="openDialog('delete', contextMenu.node)"
+        >
+          <Trash2 :size="16" />删除
+        </button>
+      </div>
+
+      <div
+        v-if="dialogKind"
+        class="modal-backdrop"
+        role="presentation"
+        @mousedown.self="closeDialog()"
+      >
+        <section
+          class="modal"
+          role="dialog"
+          aria-modal="true"
+          :aria-labelledby="`file-dialog-${dialogKind}`"
+        >
+          <header class="modal__header">
+            <h2 :id="`file-dialog-${dialogKind}`">{{ dialogTitle }}</h2>
+          </header>
+          <div class="modal__body">
+            <p
+              v-if="dialogDescription"
+              class="m-0 text-[var(--color-text-muted)]"
+            >
+              {{ dialogDescription }}
+            </p>
+            <label v-if="dialogKind !== 'delete'" class="field mt-4">
+              <span class="sr-only">名称</span>
+              <input
+                ref="dialogInput"
+                v-model="dialogValue"
+                type="text"
+                autocomplete="off"
+                placeholder="输入名称"
+                @keydown.enter.prevent="submitDialog"
+              />
+            </label>
+          </div>
+          <footer class="modal__footer">
+            <button
+              class="secondary-button button--small"
+              type="button"
+              @click="closeDialog()"
+            >
+              取消
+            </button>
+            <button
+              :class="
+                dialogKind === 'delete' ? 'danger-button' : 'primary-button'
+              "
+              class="button--small"
+              type="button"
+              :disabled="
+                dialogBusy || (dialogKind !== 'delete' && !dialogValue.trim())
+              "
+              @click="submitDialog"
+            >
+              {{
+                dialogBusy
+                  ? "处理中…"
+                  : dialogKind === "delete"
+                    ? "永久删除"
+                    : "确认"
+              }}
+            </button>
+          </footer>
+        </section>
+      </div>
+    </Teleport>
   </section>
-
-  <Teleport to="body">
-    <div
-      v-if="contextMenu"
-      class="context-menu"
-      :style="{ left: `${contextMenu.x}px`, top: `${contextMenu.y}px` }"
-      role="menu"
-      @click.stop
-    >
-      <template v-if="contextMenu.node.kind === 'directory'">
-        <button
-          class="context-menu__item"
-          type="button"
-          role="menuitem"
-          @click="openDialog('new-file', contextMenu.node)"
-        >
-          <FilePlus2 :size="16" />新建 Markdown 文件
-        </button>
-        <button
-          class="context-menu__item"
-          type="button"
-          role="menuitem"
-          @click="openDialog('new-folder', contextMenu.node)"
-        >
-          <FolderPlus :size="16" />新建文件夹
-        </button>
-        <button
-          class="context-menu__item"
-          type="button"
-          role="menuitem"
-          :disabled="store.refreshing"
-          @click="refreshWorkspace"
-        >
-          <RotateCcw
-            :size="16"
-            :class="{ 'animate-spin': store.refreshing }"
-          />刷新
-        </button>
-        <div class="context-menu__separator" />
-      </template>
-      <button
-        class="context-menu__item"
-        type="button"
-        role="menuitem"
-        @click="openDialog('rename', contextMenu.node)"
-      >
-        <Pencil :size="16" />重命名
-      </button>
-      <button
-        class="context-menu__item context-menu__item--danger"
-        type="button"
-        role="menuitem"
-        @click="openDialog('delete', contextMenu.node)"
-      >
-        <Trash2 :size="16" />删除
-      </button>
-    </div>
-
-    <div
-      v-if="dialogKind"
-      class="modal-backdrop"
-      role="presentation"
-      @mousedown.self="closeDialog()"
-    >
-      <section
-        class="modal"
-        role="dialog"
-        aria-modal="true"
-        :aria-labelledby="`file-dialog-${dialogKind}`"
-      >
-        <header class="modal__header">
-          <h2 :id="`file-dialog-${dialogKind}`">{{ dialogTitle }}</h2>
-        </header>
-        <div class="modal__body">
-          <p
-            v-if="dialogDescription"
-            class="m-0 text-[var(--color-text-muted)]"
-          >
-            {{ dialogDescription }}
-          </p>
-          <label v-if="dialogKind !== 'delete'" class="field mt-4">
-            <span class="sr-only">名称</span>
-            <input
-              ref="dialogInput"
-              v-model="dialogValue"
-              type="text"
-              autocomplete="off"
-              placeholder="输入名称"
-              @keydown.enter.prevent="submitDialog"
-            />
-          </label>
-        </div>
-        <footer class="modal__footer">
-          <button
-            class="secondary-button button--small"
-            type="button"
-            @click="closeDialog()"
-          >
-            取消
-          </button>
-          <button
-            :class="
-              dialogKind === 'delete' ? 'danger-button' : 'primary-button'
-            "
-            class="button--small"
-            type="button"
-            :disabled="
-              dialogBusy || (dialogKind !== 'delete' && !dialogValue.trim())
-            "
-            @click="submitDialog"
-          >
-            {{
-              dialogBusy
-                ? "处理中…"
-                : dialogKind === "delete"
-                  ? "永久删除"
-                  : "确认"
-            }}
-          </button>
-        </footer>
-      </section>
-    </div>
-  </Teleport>
 </template>

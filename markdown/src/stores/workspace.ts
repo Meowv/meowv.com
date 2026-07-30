@@ -23,6 +23,7 @@ import {
   getDirectoryHandleByRelativePath,
   getFileHandleByRelativePath,
   isFileSystemAccessSupported,
+  moveEntry,
   openDirectory,
   readFile,
   readTextFile,
@@ -52,10 +53,17 @@ import {
   type SearchDocument,
 } from "@/services/search";
 import {
+  clearRecentDirectory,
   getPreferences,
   getRecentDirectory,
+  getWorkspaceHistory,
+  isDocumentLocked,
+  removeWorkspaceHistory,
   savePreferences,
   saveRecentDirectory,
+  saveWorkspaceHistory,
+  setDocumentLocked,
+  type WorkspaceHistoryEntry,
 } from "@/services/storage";
 import {
   downloadDocx,
@@ -114,6 +122,18 @@ export interface AppToast {
   kind: ToastKind;
   title: string;
   message?: string;
+  action?: {
+    label: string;
+    run: () => void;
+  };
+}
+
+interface WorkspaceMove {
+  id: number;
+  name: string;
+  kind: DisplayTreeNode["kind"];
+  sourceParentPath: string;
+  destinationParentPath: string;
 }
 
 const DEFAULT_DEMO_PATH = "技术/.NET/EFCore性能优化.md";
@@ -241,12 +261,16 @@ export const useWorkspaceStore = defineStore("workspace", () => {
   const workspaceName = ref("");
   const rootHandle = shallowRef<FileSystemDirectoryHandle | null>(null);
   const recentDirectory = shallowRef<FileSystemDirectoryHandle | null>(null);
+  const workspaceHistory = ref<WorkspaceHistoryEntry[]>([]);
   const treeRoot = shallowRef<DisplayTreeNode | null>(null);
   const documentNodes = shallowRef<WorkspaceFileNode[]>([]);
   const documents = shallowRef(new Map<string, LoadedDocument>());
   const assets = ref<WorkspaceAsset[]>([]);
   const assetUrls = ref<Record<string, string>>({});
   const activePath = ref("");
+  const untitledDraft = ref(false);
+  const draftSaveRequested = ref(false);
+  const lockedDocumentPaths = ref<ReadonlySet<string>>(new Set());
   const activeContent = ref("");
   const previewContent = ref("");
   const lastSavedContent = ref("");
@@ -267,8 +291,11 @@ export const useWorkspaceStore = defineStore("workspace", () => {
   const cursorLine = ref(1);
   const cursorColumn = ref(1);
   const toasts = ref<AppToast[]>([]);
+  const lastMove = shallowRef<WorkspaceMove | null>(null);
   const systemPrefersDark = ref(false);
   let toastSequence = 0;
+  let moveSequence = 0;
+  let moveInProgress = false;
   let autosaveTimer: ReturnType<typeof setTimeout> | undefined;
   let previewTimer: ReturnType<typeof setTimeout> | undefined;
   let savePromise: Promise<boolean> | null = null;
@@ -282,14 +309,24 @@ export const useWorkspaceStore = defineStore("workspace", () => {
   let systemThemeMedia: MediaQueryList | null = null;
 
   const hasWorkspace = computed(() => treeRoot.value !== null);
+  const hasEditableDocument = computed(
+    () => Boolean(activePath.value) || untitledDraft.value,
+  );
   const fileSystemSupported = computed(() =>
     isFileSystemAccessSupported(),
   );
+  const canUndoMove = computed(() => lastMove.value !== null);
   const activeDocument = computed(
     () => documents.value.get(activePath.value) ?? null,
   );
-  const activeName = computed(() =>
-    activePath.value ? fileNameFromPath(activePath.value) : "",
+  const activeName = computed(() => {
+    if (activePath.value) {
+      return fileNameFromPath(activePath.value);
+    }
+    return untitledDraft.value ? "未命名文档" : "";
+  });
+  const isActiveDocumentLocked = computed(
+    () => lockedDocumentPaths.value.has(activePath.value),
   );
   const resolvedTheme = computed<"light" | "dark">(() => {
     if (preferences.value.theme === "system") {
@@ -298,7 +335,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
     return preferences.value.theme;
   });
   const parsedDocument = computed(() => {
-    if (!activePath.value) {
+    if (!hasEditableDocument.value) {
       return EMPTY_PARSED;
     }
 
@@ -345,6 +382,16 @@ export const useWorkspaceStore = defineStore("workspace", () => {
       ),
     );
   });
+
+  function setDocumentLockState(path: string, locked: boolean): void {
+    const next = new Set(lockedDocumentPaths.value);
+    if (locked) {
+      next.add(path);
+    } else {
+      next.delete(path);
+    }
+    lockedDocumentPaths.value = next;
+  }
 
   function enforceSafeImages(html: string): string {
     if (typeof DOMParser === "undefined") {
@@ -401,6 +448,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
     kind: ToastKind,
     title: string,
     message?: string,
+    action?: AppToast["action"],
   ): void {
     toastSequence += 1;
     const toast: AppToast = {
@@ -408,6 +456,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
       kind,
       title,
       ...(message ? { message } : {}),
+      ...(action ? { action } : {}),
     };
     toasts.value = [...toasts.value, toast];
     globalThis.setTimeout(() => dismissToast(toast.id), 4200);
@@ -458,16 +507,52 @@ export const useWorkspaceStore = defineStore("workspace", () => {
       recentDirectory.value = null;
     }
 
+    try {
+      workspaceHistory.value = await getWorkspaceHistory();
+    } catch {
+      workspaceHistory.value = [];
+    }
+
+    if (recentDirectory.value && workspaceHistory.value.length === 0) {
+      try {
+        workspaceHistory.value = await saveWorkspaceHistory(
+          recentDirectory.value,
+        );
+      } catch {
+        // 历史记录不可用时，仍保留原有的最近工作空间入口。
+      }
+    }
+
     const query = new URLSearchParams(globalThis.location?.search ?? "");
     if (query.get("demo") === "1") {
       await loadDemoWorkspace();
+      return;
+    }
+
+    if (
+      recentDirectory.value &&
+      preferences.value.restoreRecentWorkspaceOnStartup
+    ) {
+      await openWorkspaceHandle(
+        recentDirectory.value,
+        workspaceHistory.value[0],
+        {
+          requestPermission: false,
+          notifyError: false,
+          restoreAutoOpen: false,
+        },
+      );
     }
   }
 
   async function updatePreferences(
     values: Partial<WorkspacePreferences>,
   ): Promise<void> {
-    preferences.value = { ...preferences.value, ...values };
+    const nextPreferences = { ...preferences.value, ...values };
+    if (!nextPreferences.previewEnabled && !nextPreferences.editorVisible) {
+      nextPreferences.editorVisible = true;
+    }
+    preferences.value = nextPreferences;
     applyTheme();
     try {
       preferences.value = await savePreferences(preferences.value);
@@ -499,16 +584,70 @@ export const useWorkspaceStore = defineStore("workspace", () => {
     fullscreenPane.value = fullscreenPane.value === pane ? null : pane;
   }
 
+  async function toggleEditorVisibility(): Promise<void> {
+    await updatePreferences({
+      editorVisible: !preferences.value.editorVisible,
+      previewEnabled: true,
+    });
+  }
+
+  async function setRestoreRecentWorkspaceOnStartup(
+    value: boolean,
+  ): Promise<void> {
+    if (preferences.value.restoreRecentWorkspaceOnStartup === value) {
+      return;
+    }
+    preferences.value = {
+      ...preferences.value,
+      restoreRecentWorkspaceOnStartup: value,
+    };
+    try {
+      preferences.value = await savePreferences(preferences.value);
+    } catch (error) {
+      notify("error", "设置未能保存", toMessage(error));
+    }
+  }
+
+  async function toggleActiveDocumentLock(): Promise<void> {
+    const path = activePath.value;
+    if (!path) {
+      return;
+    }
+    if (isActiveDocumentLocked.value) {
+      try {
+        await setDocumentLocked(workspaceName.value, path, false);
+        setDocumentLockState(path, false);
+        notify("success", "文档已解锁", "现在可以继续编辑当前 Markdown 文档。");
+      } catch (error) {
+        notify("error", "无法解锁文档", toMessage(error));
+      }
+      return;
+    }
+    if (!(await saveActiveDocument()) || activePath.value !== path) {
+      return;
+    }
+    try {
+      if (!preferences.value.previewEnabled) {
+        await updatePreferences({ previewEnabled: true });
+      }
+      await setDocumentLocked(workspaceName.value, path, true);
+      setDocumentLockState(path, true);
+      notify("success", "文档已锁定", "当前 Markdown 文档已切换为只读。");
+    } catch (error) {
+      notify("error", "无法锁定文档", toMessage(error));
+    }
+  }
+
   async function openLocalWorkspace(): Promise<void> {
     busy.value = true;
     try {
       const handle = await openDirectory({ mode: "readwrite" });
-      if (activePath.value && !(await saveActiveDocument())) {
+      if (hasEditableDocument.value && !(await saveActiveDocument())) {
         return;
       }
       await loadRealWorkspace(handle);
-      await saveRecentDirectory(handle);
-      recentDirectory.value = handle;
+      await rememberWorkspace(handle);
+      await setRestoreRecentWorkspaceOnStartup(true);
     } catch (error) {
       const normalized = toWorkspaceError(error);
       if (normalized.code !== "CANCELLED") {
@@ -525,17 +664,111 @@ export const useWorkspaceStore = defineStore("workspace", () => {
       return;
     }
 
+    await openWorkspaceHandle(handle, workspaceHistory.value[0]);
+  }
+
+  async function openWorkspaceHistory(id: string): Promise<void> {
+    const entry = workspaceHistory.value.find((item) => item.id === id);
+    if (!entry) {
+      return;
+    }
+
+    await openWorkspaceHandle(entry.handle, entry);
+  }
+
+  async function openWorkspaceHandle(
+    handle: FileSystemDirectoryHandle,
+    historyEntry?: WorkspaceHistoryEntry,
+    options: {
+      requestPermission?: boolean;
+      notifyError?: boolean;
+      restoreAutoOpen?: boolean;
+    } = {},
+  ): Promise<boolean> {
     busy.value = true;
     try {
-      await ensurePermission(handle, "readwrite");
-      if (activePath.value && !(await saveActiveDocument())) {
-        return;
+      const permitted = await ensurePermission(
+        handle,
+        "readwrite",
+        options.requestPermission ?? true,
+      );
+      if (!permitted) {
+        return false;
+      }
+      if (hasEditableDocument.value && !(await saveActiveDocument())) {
+        return false;
       }
       await loadRealWorkspace(handle);
+      await rememberWorkspace(handle);
+      if (options.restoreAutoOpen ?? true) {
+        await setRestoreRecentWorkspaceOnStartup(true);
+      }
+      return true;
     } catch (error) {
-      notify("error", "无法重新打开工作空间", toMessage(error));
+      const normalized = toWorkspaceError(error);
+      if (normalized.code === "NOT_FOUND" && historyEntry) {
+        await forgetUnavailableWorkspaceHistory(historyEntry);
+        if (options.notifyError ?? true) {
+          notify(
+            "error",
+            "工作空间已不存在",
+            `“${historyEntry.name}”已从历史记录移除，当前工作空间未切换。`,
+          );
+        }
+      } else if (options.notifyError ?? true) {
+        notify("error", "无法切换工作空间", normalized.message);
+      }
+      return false;
     } finally {
       busy.value = false;
+    }
+  }
+
+  async function rememberWorkspace(
+    handle: FileSystemDirectoryHandle,
+  ): Promise<void> {
+    recentDirectory.value = handle;
+    let storageError: unknown;
+
+    try {
+      await saveRecentDirectory(handle);
+    } catch (error) {
+      storageError = error;
+    }
+
+    try {
+      workspaceHistory.value = await saveWorkspaceHistory(handle);
+    } catch (error) {
+      storageError ??= error;
+    }
+
+    if (storageError) {
+      notify("info", "工作空间已打开", "历史记录未能保存到浏览器本地存储。");
+    }
+  }
+
+  async function forgetUnavailableWorkspaceHistory(
+    entry: WorkspaceHistoryEntry,
+  ): Promise<void> {
+    const wasRecent = workspaceHistory.value[0]?.id === entry.id;
+
+    try {
+      workspaceHistory.value = await removeWorkspaceHistory(entry.id);
+    } catch {
+      workspaceHistory.value = workspaceHistory.value.filter(
+        (item) => item.id !== entry.id,
+      );
+    }
+
+    if (!wasRecent) {
+      return;
+    }
+
+    recentDirectory.value = null;
+    try {
+      await clearRecentDirectory();
+    } catch {
+      // 当前页面不再展示失效入口；下次启动时会重新读取浏览器存储。
     }
   }
 
@@ -556,6 +789,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
       return;
     }
     releaseAllObjectUrls();
+    lastMove.value = null;
     rootHandle.value = markRaw(handle);
     isDemo.value = false;
     workspaceName.value = handle.name;
@@ -567,7 +801,10 @@ export const useWorkspaceStore = defineStore("workspace", () => {
       handle: markRaw(node.handle),
     }));
     documents.value = new Map();
+    lockedDocumentPaths.value = new Set();
     activePath.value = "";
+    untitledDraft.value = false;
+    draftSaveRequested.value = false;
     activeContent.value = "";
     previewContent.value = "";
     lastSavedContent.value = "";
@@ -586,6 +823,8 @@ export const useWorkspaceStore = defineStore("workspace", () => {
           createSearchDocument(openedDocument),
         ]);
       }
+    } else {
+      startUntitledDraft();
     }
     void hydrateDocumentIndex(result.documents, operation, {
       preservePublishedDocuments: true,
@@ -597,19 +836,35 @@ export const useWorkspaceStore = defineStore("workspace", () => {
     });
   }
 
+  function startUntitledDraft(): void {
+    activePath.value = "";
+    untitledDraft.value = true;
+    draftSaveRequested.value = false;
+    lockedDocumentPaths.value = new Set();
+    activeContent.value = "";
+    previewContent.value = "";
+    lastSavedContent.value = "";
+    lastSavedAt.value = null;
+    saveState.value = "idle";
+    cursorLine.value = 1;
+    cursorColumn.value = 1;
+    activeContentRevision += 1;
+  }
+
   async function loadDemoWorkspace(): Promise<void> {
     busy.value = true;
     const operation = ++workspaceOperationSequence;
     documentOpenSequence += 1;
     indexing.value = false;
     try {
-      if (activePath.value && !(await saveActiveDocument())) {
+      if (hasEditableDocument.value && !(await saveActiveDocument())) {
         return;
       }
       if (operation !== workspaceOperationSequence) {
         return;
       }
       releaseAllObjectUrls();
+      lastMove.value = null;
       rootHandle.value = null;
       isDemo.value = true;
       workspaceName.value = DEMO_WORKSPACE_NAME;
@@ -622,6 +877,8 @@ export const useWorkspaceStore = defineStore("workspace", () => {
         return;
       }
       activePath.value = "";
+      untitledDraft.value = false;
+      draftSaveRequested.value = false;
       activeContent.value = "";
       previewContent.value = "";
       lastSavedContent.value = "";
@@ -646,6 +903,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
       assetUrls.value = Object.fromEntries(
         DEMO_ASSETS.map((asset) => [asset.path, asset.url]),
       );
+      lockedDocumentPaths.value = new Set();
       await searchController.replaceAll(
         [...loaded.values()].map(createSearchDocument),
       );
@@ -754,7 +1012,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
 
     const workspaceOperation = workspaceOperationSequence;
     const openOperation = ++documentOpenSequence;
-    if (activePath.value && !(await saveActiveDocument())) {
+    if (hasEditableDocument.value && !(await saveActiveDocument())) {
       return;
     }
     if (
@@ -806,7 +1064,23 @@ export const useWorkspaceStore = defineStore("workspace", () => {
       return;
     }
 
+    let documentLocked = false;
+    try {
+      documentLocked = await isDocumentLocked(workspaceName.value, path);
+    } catch {
+      // 本地锁定状态不可用时，仍允许正常打开文档。
+    }
+    if (
+      workspaceOperation !== workspaceOperationSequence ||
+      openOperation !== documentOpenSequence
+    ) {
+      return;
+    }
+
     activePath.value = path;
+    untitledDraft.value = false;
+    draftSaveRequested.value = false;
+    setDocumentLockState(path, documentLocked);
     activeContent.value = document.content;
     previewContent.value = document.content;
     lastSavedContent.value = document.content;
@@ -821,7 +1095,11 @@ export const useWorkspaceStore = defineStore("workspace", () => {
   }
 
   function updateContent(content: string): void {
-    if (!activePath.value || content === activeContent.value) {
+    if (
+      !hasEditableDocument.value ||
+      isActiveDocumentLocked.value ||
+      content === activeContent.value
+    ) {
       return;
     }
     activeContent.value = content;
@@ -858,6 +1136,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
       clearTimeout(autosaveTimer);
     }
     if (
+      untitledDraft.value ||
       !preferences.value.autoSaveEnabled ||
       saveState.value !== "dirty"
     ) {
@@ -875,6 +1154,14 @@ export const useWorkspaceStore = defineStore("workspace", () => {
         if (!(await savePromise)) {
           return false;
         }
+      }
+
+      if (untitledDraft.value) {
+        if (activeContent.value !== lastSavedContent.value) {
+          draftSaveRequested.value = true;
+          return false;
+        }
+        return true;
       }
 
       const path = activePath.value;
@@ -940,6 +1227,60 @@ export const useWorkspaceStore = defineStore("workspace", () => {
     }
   }
 
+  function cancelUntitledDraftSave(): void {
+    draftSaveRequested.value = false;
+  }
+
+  async function saveUntitledDraft(requestedName: string): Promise<boolean> {
+    if (!untitledDraft.value || isDemo.value) {
+      return false;
+    }
+
+    const name = normalizeMarkdownName(requestedName);
+    if (!name) {
+      return false;
+    }
+
+    const handle = rootHandle.value;
+    if (!handle) {
+      notify("error", "保存失败", "工作空间未打开。");
+      return false;
+    }
+
+    const content = activeContent.value;
+    try {
+      const fileHandle = await createMarkdownFile(handle, name, content);
+      const document: LoadedDocument = {
+        path: name,
+        name,
+        content,
+        parsed: parseMarkdownDocument(content, { path: name }),
+        handle: markRaw(fileHandle),
+      };
+      documents.value = new Map(documents.value).set(name, document);
+      activePath.value = name;
+      untitledDraft.value = false;
+      draftSaveRequested.value = false;
+      setDocumentLockState(name, false);
+      activeContent.value = content;
+      previewContent.value = content;
+      lastSavedContent.value = content;
+      lastSavedAt.value = new Date();
+      saveState.value = "saved";
+      await searchController.upsert(createSearchDocument(document));
+      try {
+        await refreshWorkspace();
+      } catch {
+        notify("info", "文件已保存", "文件树将在下次刷新时更新。");
+      }
+      notify("success", "Markdown 文件已保存", name);
+      return true;
+    } catch (error) {
+      notify("error", "保存失败", toMessage(error));
+      return false;
+    }
+  }
+
   async function refreshWorkspace(
     options: { feedback?: boolean } = {},
   ): Promise<void> {
@@ -968,7 +1309,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
       const operation = ++workspaceOperationSequence;
       const documentOperation = ++documentOpenSequence;
       const handle = rootHandle.value;
-      if (activePath.value && !(await saveActiveDocument())) {
+      if (hasEditableDocument.value && !(await saveActiveDocument())) {
         if (options.feedback) {
           notify("info", "刷新已取消", "请先处理当前文档的保存失败问题。");
         }
@@ -1029,7 +1370,9 @@ export const useWorkspaceStore = defineStore("workspace", () => {
       documents.value = new Map(refreshedDocuments);
       searchResults.value = [];
 
-      if (activePathAtCommit) {
+      if (result.documents.length === 0) {
+        startUntitledDraft();
+      } else if (activePathAtCommit) {
         const committedDocument = documents.value.get(activePathAtCommit);
         if (!committedDocument) {
           activePath.value = "";
@@ -1193,7 +1536,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
     }
 
     try {
-      if (activePath.value && !(await saveActiveDocument())) {
+      if (hasEditableDocument.value && !(await saveActiveDocument())) {
         return;
       }
       const parent = await parentDirectoryHandle(node.path);
@@ -1217,6 +1560,132 @@ export const useWorkspaceStore = defineStore("workspace", () => {
       notify("success", "重命名完成", `${node.name} → ${name}`);
     } catch (error) {
       notify("error", "重命名失败", toMessage(error));
+    }
+  }
+
+  function movedPath(parentPath: string, name: string): string {
+    return parentPath ? `${parentPath}/${name}` : name;
+  }
+
+  function relocatedActivePath(
+    node: DisplayTreeNode,
+    fromPath: string,
+    toPath: string,
+  ): string | null {
+    if (fromPath === node.path) {
+      return toPath;
+    }
+    if (node.kind === "directory" && fromPath.startsWith(`${node.path}/`)) {
+      return `${toPath}${fromPath.slice(node.path.length)}`;
+    }
+    return null;
+  }
+
+  async function moveNode(
+    node: DisplayTreeNode,
+    destinationParentPath: string,
+  ): Promise<void> {
+    if (isDemo.value) {
+      notify("info", "示例模式不会移动文件", "请打开本地文件夹后使用此功能。");
+      return;
+    }
+    if (moveInProgress) {
+      return;
+    }
+
+    const sourceParentPath = directoryPath(node.path);
+    if (sourceParentPath === destinationParentPath) {
+      return;
+    }
+    if (
+      node.kind === "directory" &&
+      (destinationParentPath === node.path ||
+        destinationParentPath.startsWith(`${node.path}/`))
+    ) {
+      notify("error", "无法移动文件夹", "不能移动到自身或其子文件夹中。");
+      return;
+    }
+
+    moveInProgress = true;
+    try {
+      if (hasEditableDocument.value && !(await saveActiveDocument())) {
+        return;
+      }
+      const sourceParent = await directoryHandle(sourceParentPath);
+      const destinationParent = await directoryHandle(destinationParentPath);
+      const activePathAfterMove = relocatedActivePath(
+        node,
+        activePath.value,
+        movedPath(destinationParentPath, node.name),
+      );
+      await moveEntry(sourceParent, node.name, destinationParent);
+      await refreshWorkspace();
+      if (activePathAfterMove) {
+        await openDocument(activePathAfterMove);
+      }
+
+      const move: WorkspaceMove = {
+        id: ++moveSequence,
+        name: node.name,
+        kind: node.kind,
+        sourceParentPath,
+        destinationParentPath,
+      };
+      lastMove.value = move;
+      notify(
+        "success",
+        "移动完成",
+        `${node.name} 已移动，可按 Ctrl / ⌘ + Z 撤回。`,
+        {
+          label: "撤回",
+          run: () => void undoLastMove(move.id),
+        },
+      );
+    } catch (error) {
+      notify("error", "移动失败", toMessage(error));
+    } finally {
+      moveInProgress = false;
+    }
+  }
+
+  async function undoLastMove(moveId?: number): Promise<boolean> {
+    const move = lastMove.value;
+    if (
+      !move ||
+      moveInProgress ||
+      isDemo.value ||
+      (moveId !== undefined && move.id !== moveId)
+    ) {
+      return false;
+    }
+
+    const currentPath = movedPath(move.destinationParentPath, move.name);
+    const restoredPath = movedPath(move.sourceParentPath, move.name);
+    moveInProgress = true;
+    try {
+      if (hasEditableDocument.value && !(await saveActiveDocument())) {
+        return false;
+      }
+      const currentParent = await directoryHandle(move.destinationParentPath);
+      const originalParent = await directoryHandle(move.sourceParentPath);
+      const activePathAfterUndo = relocatedActivePath(
+        { kind: move.kind, name: move.name, path: currentPath },
+        activePath.value,
+        restoredPath,
+      );
+      await moveEntry(currentParent, move.name, originalParent);
+      await refreshWorkspace();
+      if (activePathAfterUndo) {
+        await openDocument(activePathAfterUndo);
+      }
+      lastMove.value = null;
+      notify("success", "已撤回移动", move.name);
+      return true;
+    } catch (error) {
+      notify("error", "撤回失败", toMessage(error));
+      return false;
+    } finally {
+      moveInProgress = false;
     }
   }
 
@@ -1300,7 +1769,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
     const sequence = assetResolveSequence;
     const documentPath = activePath.value;
 
-    if (!documentPath) {
+    if (!hasEditableDocument.value) {
       releaseActiveObjectUrls();
       assetUrls.value = {};
       return;
@@ -1572,12 +2041,13 @@ export const useWorkspaceStore = defineStore("workspace", () => {
   async function closeWorkspace(): Promise<void> {
     const operation = ++workspaceOperationSequence;
     documentOpenSequence += 1;
-    if (activePath.value && !(await saveActiveDocument())) {
+    if (hasEditableDocument.value && !(await saveActiveDocument())) {
       return;
     }
     if (operation !== workspaceOperationSequence) {
       return;
     }
+    await setRestoreRecentWorkspaceOnStartup(false);
     if (autosaveTimer) {
       clearTimeout(autosaveTimer);
       autosaveTimer = undefined;
@@ -1588,6 +2058,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
     }
     indexing.value = false;
     releaseAllObjectUrls();
+    lastMove.value = null;
     rootHandle.value = null;
     treeRoot.value = null;
     documentNodes.value = [];
@@ -1595,6 +2066,9 @@ export const useWorkspaceStore = defineStore("workspace", () => {
     assets.value = [];
     assetUrls.value = {};
     activePath.value = "";
+    untitledDraft.value = false;
+    draftSaveRequested.value = false;
+    lockedDocumentPaths.value = new Set();
     activeContent.value = "";
     previewContent.value = "";
     lastSavedContent.value = "";
@@ -1661,9 +2135,13 @@ export const useWorkspaceStore = defineStore("workspace", () => {
     isDemo,
     workspaceName,
     recentDirectory,
+    workspaceHistory,
+    untitledDraft,
+    draftSaveRequested,
     treeRoot,
     assets,
     activePath,
+    isActiveDocumentLocked,
     activeContent,
     saveState,
     lastSavedAt,
@@ -1681,7 +2159,9 @@ export const useWorkspaceStore = defineStore("workspace", () => {
     cursorColumn,
     toasts,
     hasWorkspace,
+    hasEditableDocument,
     fileSystemSupported,
+    canUndoMove,
     activeDocument,
     activeName,
     resolvedTheme,
@@ -1696,16 +2176,23 @@ export const useWorkspaceStore = defineStore("workspace", () => {
     setLayoutWidth,
     persistLayoutWidths,
     toggleFullscreen,
+    toggleEditorVisibility,
+    toggleActiveDocumentLock,
     openLocalWorkspace,
     reopenRecentWorkspace,
+    openWorkspaceHistory,
     loadDemoWorkspace,
     openDocument,
     updateContent,
     saveActiveDocument,
+    cancelUntitledDraftSave,
+    saveUntitledDraft,
     refreshWorkspace,
     createDocument,
     createFolder,
     renameNode,
+    moveNode,
+    undoLastMove,
     removeNode,
     performSearch,
     selectPanel,

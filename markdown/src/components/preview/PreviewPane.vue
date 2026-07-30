@@ -9,6 +9,8 @@ import {
   Folder,
   Link2,
   LoaderCircle,
+  PanelLeftClose,
+  PanelLeftOpen,
   Tags,
 } from "@lucide/vue";
 import {
@@ -345,7 +347,31 @@ onBeforeUnmount(() => {
 <template>
   <section class="preview-pane" aria-labelledby="preview-pane-title">
     <header class="preview-toolbar">
-      <span id="preview-pane-title" class="preview-toolbar__title">预览</span>
+      <div class="preview-toolbar__heading">
+        <button
+          v-if="!store.isActiveDocumentLocked"
+          class="icon-button preview-toolbar__layout-toggle"
+          type="button"
+          :title="
+            store.preferences.editorVisible ? '仅显示预览' : '显示编辑器'
+          "
+          :aria-label="
+            store.preferences.editorVisible
+              ? '隐藏编辑器，仅显示预览'
+              : '显示编辑器'
+          "
+          :aria-pressed="!store.preferences.editorVisible"
+          @click="void store.toggleEditorVisibility()"
+        >
+          <PanelLeftClose
+            v-if="store.preferences.editorVisible"
+            :size="17"
+            aria-hidden="true"
+          />
+          <PanelLeftOpen v-else :size="17" aria-hidden="true" />
+        </button>
+        <span id="preview-pane-title" class="preview-toolbar__title">预览</span>
+      </div>
 
       <div class="preview-toolbar__actions">
         <div ref="exportMenu" class="relative">
@@ -413,7 +439,7 @@ onBeforeUnmount(() => {
       @scroll.passive="handlePreviewScroll"
     >
       <article
-        v-if="store.activePath"
+        v-if="store.hasEditableDocument"
         ref="previewRoot"
         class="markdown-preview"
         :style="previewStyle"

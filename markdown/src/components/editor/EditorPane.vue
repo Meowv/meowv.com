@@ -7,7 +7,6 @@ import {
   Eye,
   EyeOff,
   Image,
-  ImagePlus,
   Italic,
   Link2,
   List,
@@ -16,6 +15,7 @@ import {
   Minimize2,
   Quote,
   Redo2,
+  Save,
   Table2,
   Undo2,
 } from "@lucide/vue";
@@ -54,15 +54,24 @@ const store = useWorkspaceStore();
 const editorMount = ref<HTMLDivElement | null>(null);
 const imageInput = ref<HTMLInputElement | null>(null);
 const remoteImageInput = ref<HTMLInputElement | null>(null);
+const draftNameInput = ref<HTMLInputElement | null>(null);
+const imageMenu = ref<HTMLElement | null>(null);
 const dragDepth = ref(0);
 const importingImages = ref(false);
+const imageMenuOpen = ref(false);
+const imageMenuPosition = ref({ left: 0, top: 0 });
 const remoteImageDialogOpen = ref(false);
 const remoteImageUrl = ref("");
+const draftName = ref("");
+const savingDraft = ref(false);
 const toolbarDisabled = computed(
-  () => !store.activePath || importingImages.value,
+  () =>
+    !store.hasEditableDocument ||
+    importingImages.value ||
+    store.isActiveDocumentLocked,
 );
 const isDraggingImage = computed(
-  () => dragDepth.value > 0 && Boolean(store.activePath),
+  () => dragDepth.value > 0 && store.hasEditableDocument,
 );
 const isFullscreen = computed(() => store.fullscreenPane !== null);
 
@@ -133,6 +142,7 @@ function editorOptions(): monaco.editor.IStandaloneEditorConstructionOptions {
     bracketPairColorization: { enabled: false },
     cursorBlinking: "smooth",
     cursorSmoothCaretAnimation: "on",
+    domReadOnly: !store.hasEditableDocument || store.isActiveDocumentLocked,
     fontFamily:
       '"SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace',
     fontLigatures: true,
@@ -141,7 +151,7 @@ function editorOptions(): monaco.editor.IStandaloneEditorConstructionOptions {
     lineNumbers: store.preferences.lineNumbers ? "on" : "off",
     minimap: { enabled: false },
     padding: { bottom: 24, top: 18 },
-    readOnly: !store.activePath,
+    readOnly: !store.hasEditableDocument || store.isActiveDocumentLocked,
     renderLineHighlight: "line",
     renderWhitespace: "selection",
     scrollBeyondLastLine: false,
@@ -162,7 +172,18 @@ function syncEditorFromStore(): void {
     return;
   }
 
-  editor.updateOptions({ readOnly: !store.activePath });
+  editor.updateOptions({
+    domReadOnly: !store.hasEditableDocument || store.isActiveDocumentLocked,
+    readOnly: !store.hasEditableDocument || store.isActiveDocumentLocked,
+  });
+  const editorNode = editor.getDomNode();
+  if (
+    store.isActiveDocumentLocked &&
+    document.activeElement instanceof HTMLElement &&
+    editorNode?.contains(document.activeElement)
+  ) {
+    document.activeElement.blur();
+  }
   if (model.getValue() === store.activeContent) {
     return;
   }
@@ -399,10 +420,38 @@ function openImagePicker(): void {
   }
 }
 
+function toggleImageMenu(event: MouseEvent): void {
+  if (!toolbarDisabled.value) {
+    const trigger = event.currentTarget;
+    if (trigger instanceof HTMLElement) {
+      const bounds = trigger.getBoundingClientRect();
+      const menuHeight = 86;
+      const menuWidth = 205;
+      imageMenuPosition.value = {
+        left: Math.max(
+          8,
+          Math.min(bounds.left, globalThis.innerWidth - menuWidth - 8),
+        ),
+        top:
+          bounds.bottom + menuHeight > globalThis.innerHeight
+            ? Math.max(8, bounds.top - menuHeight)
+            : bounds.bottom + 6,
+      };
+    }
+    imageMenuOpen.value = !imageMenuOpen.value;
+  }
+}
+
+function selectLocalImage(): void {
+  imageMenuOpen.value = false;
+  openImagePicker();
+}
+
 function openRemoteImageDialog(): void {
   if (toolbarDisabled.value) {
     return;
   }
+  imageMenuOpen.value = false;
   remoteImageUrl.value = "";
   remoteImageDialogOpen.value = true;
   void nextTick(() => remoteImageInput.value?.focus());
@@ -452,7 +501,7 @@ function insertImageReferences(references: string[]): void {
   const editor = editorInstance;
   const model = editor?.getModel();
   const selection = editor?.getSelection();
-  if (!editor || !model || !selection) {
+  if (!editor || !model || !selection || toolbarDisabled.value) {
     return;
   }
 
@@ -482,7 +531,7 @@ function insertImageReferences(references: string[]): void {
 }
 
 async function importImages(files: readonly File[]): Promise<void> {
-  if (!store.activePath || !files.length || importingImages.value) {
+  if (toolbarDisabled.value || !files.length) {
     return;
   }
 
@@ -511,6 +560,9 @@ function onImageInput(event: Event): void {
 }
 
 function onPaste(event: ClipboardEvent): void {
+  if (toolbarDisabled.value) {
+    return;
+  }
   const files = Array.from(event.clipboardData?.items ?? [])
     .filter((item) => item.kind === "file" && item.type.startsWith("image/"))
     .map((item) => item.getAsFile())
@@ -532,7 +584,7 @@ function containsFiles(dataTransfer: DataTransfer | null): boolean {
 }
 
 function onDragEnter(event: DragEvent): void {
-  if (!containsFiles(event.dataTransfer)) {
+  if (toolbarDisabled.value || !containsFiles(event.dataTransfer)) {
     return;
   }
   event.preventDefault();
@@ -541,7 +593,7 @@ function onDragEnter(event: DragEvent): void {
 }
 
 function onDragOver(event: DragEvent): void {
-  if (!containsFiles(event.dataTransfer)) {
+  if (toolbarDisabled.value || !containsFiles(event.dataTransfer)) {
     return;
   }
   event.preventDefault();
@@ -562,7 +614,7 @@ function onDragLeave(event: DragEvent): void {
 
 function onDrop(event: DragEvent): void {
   dragDepth.value = 0;
-  if (!containsFiles(event.dataTransfer)) {
+  if (toolbarDisabled.value || !containsFiles(event.dataTransfer)) {
     return;
   }
   event.preventDefault();
@@ -585,6 +637,43 @@ function handlePreviewScroll(event: Event): void {
   globalThis.requestAnimationFrame(() => {
     syncingScroll = false;
   });
+}
+
+function closeImageMenu(event: Event): void {
+  const target = event.target;
+  if (
+    imageMenuOpen.value &&
+    target instanceof Node &&
+    !imageMenu.value?.contains(target)
+  ) {
+    imageMenuOpen.value = false;
+  }
+}
+
+function handleEscape(event: KeyboardEvent): void {
+  if (event.key === "Escape") {
+    imageMenuOpen.value = false;
+    if (store.draftSaveRequested) {
+      store.cancelUntitledDraftSave();
+    }
+  }
+}
+
+function saveDocument(): void {
+  void store.saveActiveDocument();
+}
+
+async function saveUntitledDraft(): Promise<void> {
+  if (savingDraft.value) {
+    return;
+  }
+
+  savingDraft.value = true;
+  try {
+    await store.saveUntitledDraft(draftName.value);
+  } finally {
+    savingDraft.value = false;
+  }
 }
 
 onMounted(() => {
@@ -631,12 +720,30 @@ onMounted(() => {
     }),
   );
   globalThis.addEventListener("markdown-preview-scroll", handlePreviewScroll);
+  document.addEventListener("pointerdown", closeImageMenu);
+  document.addEventListener("keydown", handleEscape);
 });
 
 watch(
-  [() => store.activePath, () => store.activeContent],
+  [
+    () => store.activePath,
+    () => store.hasEditableDocument,
+    () => store.activeContent,
+    () => store.isActiveDocumentLocked,
+  ],
   () => syncEditorFromStore(),
   { flush: "post" },
+);
+
+watch(
+  () => store.draftSaveRequested,
+  (requested) => {
+    if (!requested) {
+      return;
+    }
+    draftName.value = "";
+    void nextTick(() => draftNameInput.value?.focus());
+  },
 );
 
 watch(
@@ -667,6 +774,8 @@ onBeforeUnmount(() => {
     "markdown-preview-scroll",
     handlePreviewScroll,
   );
+  document.removeEventListener("pointerdown", closeImageMenu);
+  document.removeEventListener("keydown", handleEscape);
   editorDisposables.forEach((disposable) => disposable.dispose());
   editorDisposables.length = 0;
   editorInstance?.dispose();
@@ -677,7 +786,7 @@ onBeforeUnmount(() => {
 <template>
   <section class="editor-pane" aria-label="Markdown 编辑区">
     <div class="editor-tabbar">
-      <div class="editor-tab" :title="store.activePath || '未打开文档'">
+      <div class="editor-tab" :title="store.activeName || '未打开文档'">
         <FileText :size="16" aria-hidden="true" />
         <span class="editor-tab__name">
           {{ store.activeName || "未打开文档" }}
@@ -687,6 +796,18 @@ onBeforeUnmount(() => {
           class="editor-tab__dirty"
           aria-label="有未保存更改"
         />
+      </div>
+      <div class="editor-tabbar__actions">
+        <button
+          class="icon-button"
+          type="button"
+          title="保存文档"
+          aria-label="保存文档"
+          :disabled="!store.hasEditableDocument || store.isActiveDocumentLocked"
+          @click="saveDocument"
+        >
+          <Save :size="17" aria-hidden="true" />
+        </button>
       </div>
     </div>
 
@@ -821,28 +942,21 @@ onBeforeUnmount(() => {
       >
         <Link2 aria-hidden="true" />
       </button>
-      <button
-        class="toolbar-button"
-        type="button"
-        :title="importingImages ? '正在保存图片…' : '插入本地图片'"
-        aria-label="插入本地图片"
-        :disabled="toolbarDisabled"
-        @mousedown.prevent
-        @click="openImagePicker"
-      >
-        <Image aria-hidden="true" />
-      </button>
-      <button
-        class="toolbar-button"
-        type="button"
-        title="添加线上图片地址"
-        aria-label="添加线上图片地址"
-        :disabled="toolbarDisabled"
-        @mousedown.prevent
-        @click="openRemoteImageDialog"
-      >
-        <ImagePlus aria-hidden="true" />
-      </button>
+      <div ref="imageMenu" class="toolbar-image-menu">
+        <button
+          class="toolbar-button"
+          type="button"
+          :title="importingImages ? '正在保存图片…' : '插入图片'"
+          aria-label="插入图片"
+          aria-haspopup="menu"
+          :aria-expanded="imageMenuOpen"
+          :disabled="toolbarDisabled"
+          @mousedown.prevent
+          @click="toggleImageMenu"
+        >
+          <Image aria-hidden="true" />
+        </button>
+      </div>
       <button
         class="toolbar-button"
         type="button"
@@ -872,6 +986,39 @@ onBeforeUnmount(() => {
         <Maximize2 v-else aria-hidden="true" />
       </button>
     </div>
+
+    <Teleport to="body">
+      <div
+        v-if="imageMenuOpen"
+        class="toolbar-image-menu__popover context-menu"
+        :style="{
+          left: `${imageMenuPosition.left}px`,
+          top: `${imageMenuPosition.top}px`,
+        }"
+        role="menu"
+        aria-label="插入图片方式"
+        @pointerdown.stop
+      >
+        <button
+          class="context-menu__item"
+          type="button"
+          role="menuitem"
+          @click="selectLocalImage"
+        >
+          <Image :size="16" aria-hidden="true" />
+          <span>上传本地图片</span>
+        </button>
+        <button
+          class="context-menu__item"
+          type="button"
+          role="menuitem"
+          @click="openRemoteImageDialog"
+        >
+          <Link2 :size="16" aria-hidden="true" />
+          <span>添加线上图片</span>
+        </button>
+      </div>
+    </Teleport>
 
     <div
       class="editor-host"
@@ -942,6 +1089,56 @@ onBeforeUnmount(() => {
               :disabled="!remoteImageUrl.trim()"
             >
               添加图片
+            </button>
+          </footer>
+        </form>
+      </div>
+    </Teleport>
+
+    <Teleport to="body">
+      <div
+        v-if="store.draftSaveRequested"
+        class="modal-backdrop"
+        role="presentation"
+        @mousedown.self="store.cancelUntitledDraftSave"
+      >
+        <form
+          class="modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="draft-name-dialog-title"
+          @submit.prevent="saveUntitledDraft"
+        >
+          <header class="modal__header">
+            <h2 id="draft-name-dialog-title">保存 Markdown 文档</h2>
+          </header>
+          <div class="modal__body">
+            <label class="field">
+              <span class="sr-only">文档名称</span>
+              <input
+                ref="draftNameInput"
+                v-model="draftName"
+                type="text"
+                autocomplete="off"
+                placeholder="输入文档名称"
+              />
+            </label>
+          </div>
+          <footer class="modal__footer">
+            <button
+              class="secondary-button button--small"
+              type="button"
+              :disabled="savingDraft"
+              @click="store.cancelUntitledDraftSave"
+            >
+              取消
+            </button>
+            <button
+              class="primary-button button--small"
+              type="submit"
+              :disabled="savingDraft || !draftName.trim()"
+            >
+              {{ savingDraft ? "保存中…" : "保存" }}
             </button>
           </footer>
         </form>

@@ -8,6 +8,11 @@ import {
 import { useWorkspaceStore } from "@/stores/workspace";
 
 const store = useWorkspaceStore();
+
+function runAction(toast: (typeof store.toasts)[number]): void {
+  store.dismissToast(toast.id);
+  toast.action?.run();
+}
 </script>
 
 <template>
@@ -49,6 +54,15 @@ const store = useWorkspaceStore();
         <strong>{{ toast.title }}</strong>
         <p v-if="toast.message">{{ toast.message }}</p>
       </div>
+
+      <button
+        v-if="toast.action"
+        class="toast__action"
+        type="button"
+        @click="runAction(toast)"
+      >
+        {{ toast.action.label }}
+      </button>
 
       <button
         class="icon-button !h-7 !w-7 !basis-7"

@@ -72,4 +72,44 @@ describe("FileTreeNode", () => {
       container.remove();
     }
   });
+
+  it("嵌套文件夹和文件会暴露指针拖动所需的路径", async () => {
+    const container = document.createElement("div");
+    const app = createApp(FileTreeNode, {
+      node: {
+        kind: "directory",
+        name: "文档",
+        path: "docs",
+        children: [
+          {
+            kind: "directory",
+            name: "归档",
+            path: "docs/archive",
+            children: [
+              {
+                kind: "file",
+                category: "markdown",
+                name: "会议.md",
+                path: "docs/archive/会议.md",
+              },
+            ],
+          },
+        ],
+      } satisfies DisplayTreeNode,
+      depth: 0,
+      activePath: "",
+      expandedPaths: reactive(new Set<string>(["docs", "docs/archive"])),
+    });
+    app.mount(container);
+
+    try {
+      expect(container.querySelectorAll("[data-tree-path]")).toHaveLength(3);
+      expect(
+        container.querySelector('[data-tree-path="docs/archive/会议.md"]'),
+      ).not.toBeNull();
+    } finally {
+      app.unmount();
+      container.remove();
+    }
+  });
 });

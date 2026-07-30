@@ -689,64 +689,61 @@ async function copyDirectoryContents(
 }
 
 /**
- * File System Access API 尚无通用 rename；先完整复制，确认成功后再删除源条目。
+ * File System Access API 没有通用的原子移动操作；先完整复制，确认成功后再删除源条目。
  */
-export async function renameEntry(
-  parent: FileSystemDirectoryHandle,
-  oldName: string,
-  newName: string,
+async function relocateEntry(
+  sourceParent: FileSystemDirectoryHandle,
+  sourceName: string,
+  destinationParent: FileSystemDirectoryHandle,
+  destinationName: string,
 ): Promise<FileSystemHandle> {
-  assertEntryName(oldName);
-  assertEntryName(newName);
-  await ensurePermission(parent, "readwrite");
-
-  if (oldName === newName) {
-    const unchanged = await findChildByName(parent, oldName);
-    if (!unchanged) {
-      throw new WorkspaceError("NOT_FOUND", `“${oldName}”不存在。`);
-    }
-    return unchanged;
-  }
+  assertEntryName(sourceName);
+  assertEntryName(destinationName);
+  await ensurePermission(sourceParent, "readwrite");
+  await ensurePermission(destinationParent, "readwrite");
 
   let destinationCreated = false;
 
   try {
-    const source = await findChildByName(parent, oldName);
+    const source = await findChildByName(sourceParent, sourceName);
     if (!source) {
-      throw new WorkspaceError("NOT_FOUND", `“${oldName}”不存在。`);
+      throw new WorkspaceError("NOT_FOUND", `“${sourceName}”不存在。`);
     }
 
-    await assertEntryDoesNotExist(parent, newName);
+    await assertEntryDoesNotExist(destinationParent, destinationName);
 
     let destination: FileSystemHandle;
     if (isDirectoryHandle(source)) {
-      const directory = await parent.getDirectoryHandle(newName, {
-        create: true,
-      });
+      const directory = await destinationParent.getDirectoryHandle(
+        destinationName,
+        { create: true },
+      );
       destination = directory;
       destinationCreated = true;
       await copyDirectoryContents(source, directory);
     } else {
-      const file = await parent.getFileHandle(newName, { create: true });
+      const file = await destinationParent.getFileHandle(destinationName, {
+        create: true,
+      });
       destination = file;
       destinationCreated = true;
       await copyFileContents(source as FileSystemFileHandle, file);
     }
 
     try {
-      await parent.removeEntry(oldName, {
+      await sourceParent.removeEntry(sourceName, {
         recursive: source.kind === "directory",
       });
     } catch (error) {
       try {
-        await parent.removeEntry(newName, {
+        await destinationParent.removeEntry(destinationName, {
           recursive: destination.kind === "directory",
         });
         destinationCreated = false;
       } catch {
         throw new WorkspaceError(
           "OPERATION_FAILED",
-          `“${oldName}”未能删除，且复制出的“${newName}”需要手动清理。`,
+          `“${sourceName}”未能删除，且复制出的“${destinationName}”需要手动清理。`,
           { cause: error },
         );
       }
@@ -757,11 +754,59 @@ export async function renameEntry(
   } catch (error) {
     if (destinationCreated) {
       try {
-        await parent.removeEntry(newName, { recursive: true });
+        await destinationParent.removeEntry(destinationName, {
+          recursive: true,
+        });
       } catch {
         // 若清理也失败，外层错误仍会提示重命名未完成。
       }
     }
+    throw error;
+  }
+}
+
+/**
+ * File System Access API 尚无通用 rename；先完整复制，确认成功后再删除源条目。
+ */
+export async function renameEntry(
+  parent: FileSystemDirectoryHandle,
+  oldName: string,
+  newName: string,
+): Promise<FileSystemHandle> {
+  assertEntryName(oldName);
+  assertEntryName(newName);
+
+  if (oldName === newName) {
+    const unchanged = await findChildByName(parent, oldName);
+    if (!unchanged) {
+      throw new WorkspaceError("NOT_FOUND", `“${oldName}”不存在。`);
+    }
+    return unchanged;
+  }
+
+  try {
+    return await relocateEntry(parent, oldName, parent, newName);
+  } catch (error) {
     throw toWorkspaceError(error, `无法将“${oldName}”重命名为“${newName}”。`);
+  }
+}
+
+/**
+ * 将条目移动到另一个已授权的文件夹。调用方需阻止文件夹移动到自身或其子文件夹。
+ */
+export async function moveEntry(
+  sourceParent: FileSystemDirectoryHandle,
+  sourceName: string,
+  destinationParent: FileSystemDirectoryHandle,
+): Promise<FileSystemHandle> {
+  try {
+    return await relocateEntry(
+      sourceParent,
+      sourceName,
+      destinationParent,
+      sourceName,
+    );
+  } catch (error) {
+    throw toWorkspaceError(error, `无法移动“${sourceName}”。`);
   }
 }

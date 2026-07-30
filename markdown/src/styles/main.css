@@ -162,6 +162,7 @@ a {
 }
 
 .topbar {
+  position: relative;
   z-index: 30;
   display: grid;
   min-width: 0;
@@ -314,6 +315,38 @@ a {
   gap: 7px;
 }
 
+.topbar__reopen-workspace {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  display: inline-flex;
+  max-width: min(280px, calc(100% - 340px));
+  height: 36px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: var(--color-surface);
+  color: var(--color-text-strong);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transform: translate(-50%, -50%);
+}
+
+.topbar__reopen-workspace:hover:not(:disabled) {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-hover);
+}
+
+.topbar__reopen-workspace span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .topbar__status {
   gap: 6px;
   padding: 7px 10px;
@@ -390,6 +423,16 @@ a {
   grid-template-columns: var(--activity-width) 0 0 minmax(0, 1fr);
 }
 
+.workspace-shell--editor-hidden {
+  grid-template-columns:
+    var(--activity-width) var(--sidebar-width) var(--splitter-width)
+    minmax(0, 1fr);
+}
+
+.workspace-shell--sidebar-hidden.workspace-shell--editor-hidden {
+  grid-template-columns: var(--activity-width) 0 0 minmax(0, 1fr);
+}
+
 .workspace-shell--sidebar-hidden {
   grid-template-columns:
     var(--activity-width) 0 0 minmax(360px, var(--editor-width))
@@ -422,9 +465,14 @@ a {
 }
 
 .workspace-shell--sidebar-hidden .workspace-resizer--sidebar,
-.workspace-shell--preview-hidden .workspace-resizer--editor {
+.workspace-shell--preview-hidden .workspace-resizer--editor,
+.workspace-shell--editor-hidden .workspace-resizer--editor {
   visibility: hidden;
   pointer-events: none;
+}
+
+.workspace-shell--editor-hidden .editor-pane {
+  display: none;
 }
 
 .workspace-shell--fullscreen-editor,
@@ -463,6 +511,21 @@ a {
 .workspace-shell--fullscreen-workspace .editor-pane,
 .workspace-shell--fullscreen-workspace .preview-pane {
   display: grid;
+  height: 100%;
+}
+
+.workspace-shell--fullscreen-workspace.workspace-shell--editor-hidden {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.workspace-shell--fullscreen-workspace.workspace-shell--editor-hidden .editor-pane {
+  display: none;
+}
+
+.workspace-shell--fullscreen-workspace.workspace-shell--editor-hidden .preview-pane {
+  display: grid;
+  grid-column: 1;
+  grid-row: 1;
   height: 100%;
 }
 
@@ -585,7 +648,7 @@ a {
 }
 
 .workspace-shell--sidebar-compact .panel__header {
-  justify-content: center;
+  justify-content: flex-start;
   padding-inline: 6px;
 }
 
@@ -595,8 +658,8 @@ a {
 
 .workspace-shell--sidebar-compact .panel__actions {
   width: 100%;
-  justify-content: space-between;
-  gap: 0;
+  justify-content: flex-start;
+  gap: 2px;
 }
 
 .workspace-shell--sidebar-compact .panel__actions .icon-button {
@@ -873,6 +936,12 @@ a {
   height: 54px;
 }
 
+.editor-tabbar__actions {
+  display: flex;
+  margin-left: auto;
+  padding: 0 8px;
+}
+
 .editor-tab {
   display: flex;
   width: min(100%, 300px);
@@ -980,6 +1049,19 @@ a {
 .preview-toolbar__title {
   color: var(--color-text-strong);
   font-weight: 650;
+}
+
+.preview-toolbar__heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+}
+
+.preview-toolbar__layout-toggle {
+  width: 30px;
+  height: 30px;
+  flex-basis: 30px;
 }
 
 .preview-toolbar__actions {
@@ -1350,6 +1432,27 @@ a {
 .statusbar__privacy {
   color: var(--color-brand);
   font-weight: 600;
+}
+
+.statusbar__lock-button {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-left: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.statusbar__lock-button:hover:not(:disabled) {
+  color: var(--color-text-strong);
+}
+
+.statusbar__lock-button--locked {
+  color: var(--color-brand);
 }
 
 .welcome {
@@ -1880,6 +1983,48 @@ button:disabled {
   color: var(--color-danger);
 }
 
+.context-menu__workspace-switch {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.context-menu__workspace-switch > .context-menu__item {
+  min-width: 0;
+  flex: 1;
+}
+
+.context-menu__history-wrap {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.context-menu__history-button {
+  width: 34px;
+  height: 34px;
+  flex-basis: 34px;
+}
+
+.context-menu--workspace-history {
+  position: absolute;
+  top: 0;
+  left: calc(100% + 8px);
+  width: 238px;
+}
+
+.context-menu__label {
+  margin: 4px 9px 6px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.context-menu__history-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .context-menu__separator {
   height: 1px;
   margin: 5px 4px;
@@ -1933,6 +2078,70 @@ button:disabled {
   margin: 2px 0 0;
   color: var(--color-text-muted);
   font-size: 12px;
+}
+
+.toast__action {
+  flex: none;
+  border: 0;
+  padding: 2px 4px;
+  background: transparent;
+  color: var(--color-brand);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.toast__action:hover,
+.toast__action:focus-visible {
+  text-decoration: underline;
+}
+
+.tree-row--dragging {
+  cursor: grabbing;
+  opacity: 0.55;
+}
+
+.tree-row--drop-target {
+  outline: 1px solid var(--color-brand);
+  outline-offset: -1px;
+  background: var(--color-surface-soft);
+}
+
+.tree-root-drop-target {
+  margin: 4px 8px 6px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: 6px;
+  padding: 6px 8px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.tree-root-drop-target--active {
+  border-color: var(--color-brand);
+  background: var(--color-surface-soft);
+  color: var(--color-brand);
+}
+
+.tree--dragging,
+.tree--dragging * {
+  user-select: none;
+}
+
+body.tree-dragging,
+body.tree-dragging * {
+  cursor: grabbing !important;
+}
+
+body.tree-dragging--valid,
+body.tree-dragging--valid * {
+  cursor: move !important;
+}
+
+body.tree-dragging--invalid,
+body.tree-dragging--invalid * {
+  cursor: not-allowed !important;
 }
 
 .graph-host {
@@ -2147,6 +2356,19 @@ button:disabled {
 
   .topbar__actions {
     gap: 1px;
+  }
+
+  .topbar__reopen-workspace {
+    width: 34px;
+    max-width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .topbar__reopen-workspace span {
+    display: none;
   }
 
   .icon-button {

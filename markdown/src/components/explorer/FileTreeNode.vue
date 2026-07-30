@@ -19,12 +19,15 @@ const props = defineProps<{
   depth: number;
   activePath: string;
   expandedPaths: Set<string>;
+  draggingPath?: string;
+  dropTargetPath?: string;
 }>();
 
 const emit = defineEmits<{
   open: [node: DisplayTreeNode];
   toggle: [node: DisplayTreeNode];
   context: [event: MouseEvent, node: DisplayTreeNode];
+  pointerdown: [event: PointerEvent, node: DisplayTreeNode];
 }>();
 
 const expanded = computed(() => props.expandedPaths.has(props.node.path));
@@ -71,21 +74,36 @@ function showMoreChildren(): void {
     visibleChildCount.value + CHILD_BATCH_SIZE,
   );
 }
+
+function onPointerDown(event: PointerEvent): void {
+  const target = event.currentTarget;
+  if (event.button === 0 && target instanceof HTMLButtonElement) {
+    target.setPointerCapture(event.pointerId);
+  }
+  emit("pointerdown", event, props.node);
+}
 </script>
 
 <template>
   <div>
     <button
       class="tree-row"
-      :class="{ 'tree-row--active': active }"
+      :class="{
+        'tree-row--active': active,
+        'tree-row--dragging': draggingPath === node.path,
+        'tree-row--drop-target': dropTargetPath === node.path,
+      }"
       type="button"
       role="treeitem"
+      :data-tree-path="node.path"
+      :data-tree-kind="node.kind"
       :aria-level="depth + 1"
       :style="{ paddingLeft: `${8 + depth * 17}px` }"
       :aria-expanded="node.kind === 'directory' ? expanded : undefined"
       :aria-current="active ? 'page' : undefined"
       @click="activate"
       @contextmenu.prevent="emit('context', $event, node)"
+      @pointerdown="onPointerDown"
     >
       <span v-if="node.kind === 'directory'" class="tree-row__chevron">
         <ChevronDown v-if="expanded" :size="14" aria-hidden="true" />
@@ -117,9 +135,12 @@ function showMoreChildren(): void {
         :depth="depth + 1"
         :active-path="activePath"
         :expanded-paths="expandedPaths"
+        :dragging-path="draggingPath"
+        :drop-target-path="dropTargetPath"
         @open="emit('open', $event)"
         @toggle="emit('toggle', $event)"
         @context="(event, item) => emit('context', event, item)"
+        @pointerdown="(event, item) => emit('pointerdown', event, item)"
       />
       <button
         v-if="remainingChildCount"

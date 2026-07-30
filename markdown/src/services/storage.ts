@@ -7,13 +7,26 @@ import {
 } from "../types/workspace";
 
 const DATABASE_NAME = "meowv-markdown-studio";
-const DATABASE_VERSION = 1;
+const DATABASE_VERSION = 2;
 const HANDLE_STORE = "workspace-handles";
 const PREFERENCE_STORE = "preferences";
+const DOCUMENT_LOCK_STORE = "document-locks";
 const RECENT_DIRECTORY_KEY = "recent-directory";
+const WORKSPACE_HISTORY_KEY = "workspace-history";
 const PREFERENCES_KEY = "workspace-preferences";
+const MAX_WORKSPACE_HISTORY = 8;
 
-type StoreName = typeof HANDLE_STORE | typeof PREFERENCE_STORE;
+type StoreName =
+  | typeof HANDLE_STORE
+  | typeof PREFERENCE_STORE
+  | typeof DOCUMENT_LOCK_STORE;
+
+export interface WorkspaceHistoryEntry {
+  id: string;
+  name: string;
+  handle: FileSystemDirectoryHandle;
+  lastOpenedAt: number;
+}
 
 function getIndexedDB(): IDBFactory {
   if (typeof globalThis.indexedDB === "undefined") {
@@ -73,6 +86,9 @@ function openDatabase(): Promise<IDBDatabase> {
       }
       if (!database.objectStoreNames.contains(PREFERENCE_STORE)) {
         database.createObjectStore(PREFERENCE_STORE);
+      }
+      if (!database.objectStoreNames.contains(DOCUMENT_LOCK_STORE)) {
+        database.createObjectStore(DOCUMENT_LOCK_STORE);
       }
     };
 
@@ -146,7 +162,7 @@ async function withStore<T>(
 }
 
 /**
- * 只保存一个最近工作空间的 DirectoryHandle，不保存子文件列表或文件名历史。
+ * 只保存最近工作空间的目录句柄，不保存子文件列表或文档内容。
  */
 export async function saveRecentDirectory(
   handle: FileSystemDirectoryHandle,
@@ -185,6 +201,156 @@ export async function getRecentDirectory(): Promise<FileSystemDirectoryHandle | 
 export async function clearRecentDirectory(): Promise<void> {
   await withStore(HANDLE_STORE, "readwrite", async (store) => {
     await requestResult(store.delete(RECENT_DIRECTORY_KEY));
+  });
+}
+
+function isDirectoryHandle(value: unknown): value is FileSystemDirectoryHandle {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "kind" in value &&
+    value.kind === "directory"
+  );
+}
+
+function isWorkspaceHistoryEntry(value: unknown): value is WorkspaceHistoryEntry {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "id" in value &&
+    typeof value.id === "string" &&
+    "name" in value &&
+    typeof value.name === "string" &&
+    "handle" in value &&
+    isDirectoryHandle(value.handle) &&
+    "lastOpenedAt" in value &&
+    typeof value.lastOpenedAt === "number" &&
+    Number.isFinite(value.lastOpenedAt)
+  );
+}
+
+function createHistoryEntryId(): string {
+  if (typeof globalThis.crypto?.randomUUID === "function") {
+    return globalThis.crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+async function sameDirectory(
+  left: FileSystemDirectoryHandle,
+  right: FileSystemDirectoryHandle,
+): Promise<boolean> {
+  if (typeof left.isSameEntry !== "function") {
+    return false;
+  }
+
+  try {
+    return await left.isSameEntry(right);
+  } catch {
+    return false;
+  }
+}
+
+export async function getWorkspaceHistory(): Promise<WorkspaceHistoryEntry[]> {
+  return withStore(HANDLE_STORE, "readonly", async (store) => {
+    const stored = await requestResult<unknown>(store.get(WORKSPACE_HISTORY_KEY));
+    if (!Array.isArray(stored)) {
+      return [];
+    }
+
+    return stored
+      .filter(isWorkspaceHistoryEntry)
+      .sort((left, right) => right.lastOpenedAt - left.lastOpenedAt)
+      .slice(0, MAX_WORKSPACE_HISTORY);
+  });
+}
+
+export async function saveWorkspaceHistory(
+  handle: FileSystemDirectoryHandle,
+): Promise<WorkspaceHistoryEntry[]> {
+  if (!isDirectoryHandle(handle)) {
+    throw new WorkspaceError(
+      "INVALID_PATH",
+      "工作空间历史只能保存目录句柄。",
+    );
+  }
+
+  const history = await getWorkspaceHistory();
+  let existing: WorkspaceHistoryEntry | undefined;
+  const remaining: WorkspaceHistoryEntry[] = [];
+
+  for (const entry of history) {
+    if (!existing && (await sameDirectory(entry.handle, handle))) {
+      existing = entry;
+      continue;
+    }
+    remaining.push(entry);
+  }
+
+  const next: WorkspaceHistoryEntry[] = [
+    {
+      id: existing?.id ?? createHistoryEntryId(),
+      name: handle.name,
+      handle,
+      lastOpenedAt: Date.now(),
+    },
+    ...remaining,
+  ].slice(0, MAX_WORKSPACE_HISTORY);
+
+  await withStore(HANDLE_STORE, "readwrite", async (store) => {
+    await requestResult(store.put(next, WORKSPACE_HISTORY_KEY));
+  });
+
+  return next;
+}
+
+export async function removeWorkspaceHistory(
+  id: string,
+): Promise<WorkspaceHistoryEntry[]> {
+  const history = await getWorkspaceHistory();
+  const next = history.filter((entry) => entry.id !== id);
+  if (next.length === history.length) {
+    return history;
+  }
+
+  await withStore(HANDLE_STORE, "readwrite", async (store) => {
+    await requestResult(store.put(next, WORKSPACE_HISTORY_KEY));
+  });
+
+  return next;
+}
+
+function documentLockKey(workspaceName: string, path: string): string {
+  return `${workspaceName}\u0000${path}`;
+}
+
+/**
+ * 锁定标记只保存用户主动锁定的工作空间内相对路径，不保存文件正文。
+ */
+export async function isDocumentLocked(
+  workspaceName: string,
+  path: string,
+): Promise<boolean> {
+  return withStore(DOCUMENT_LOCK_STORE, "readonly", async (store) => {
+    const value = await requestResult<unknown>(
+      store.get(documentLockKey(workspaceName, path)),
+    );
+    return value === true;
+  });
+}
+
+export async function setDocumentLocked(
+  workspaceName: string,
+  path: string,
+  locked: boolean,
+): Promise<void> {
+  await withStore(DOCUMENT_LOCK_STORE, "readwrite", async (store) => {
+    const key = documentLockKey(workspaceName, path);
+    if (locked) {
+      await requestResult(store.put(true, key));
+    } else {
+      await requestResult(store.delete(key));
+    }
   });
 }
 
@@ -242,6 +408,10 @@ function normalizePreferences(value: unknown): WorkspacePreferences {
       stored.previewEnabled,
       defaults.previewEnabled,
     ),
+    editorVisible: booleanOrDefault(
+      stored.editorVisible,
+      defaults.editorVisible,
+    ),
     syncScroll: booleanOrDefault(stored.syncScroll, defaults.syncScroll),
     sidebarWidth: finiteNumberInRange(
       stored.sidebarWidth,
@@ -254,6 +424,10 @@ function normalizePreferences(value: unknown): WorkspacePreferences {
       360,
       1200,
       defaults.editorWidth,
+    ),
+    restoreRecentWorkspaceOnStartup: booleanOrDefault(
+      stored.restoreRecentWorkspaceOnStartup,
+      defaults.restoreRecentWorkspaceOnStartup,
     ),
   };
 }
@@ -303,7 +477,7 @@ export async function clearPreferences(): Promise<void> {
 export async function clearWorkspaceStorage(): Promise<void> {
   const database = await openDatabase();
   const transaction = database.transaction(
-    [HANDLE_STORE, PREFERENCE_STORE],
+    [HANDLE_STORE, PREFERENCE_STORE, DOCUMENT_LOCK_STORE],
     "readwrite",
   );
   const done = transactionDone(transaction);
@@ -315,7 +489,10 @@ export async function clearWorkspaceStorage(): Promise<void> {
     const preferenceClear = requestResult(
       transaction.objectStore(PREFERENCE_STORE).clear(),
     );
-    await Promise.all([handleClear, preferenceClear]);
+    const documentLockClear = requestResult(
+      transaction.objectStore(DOCUMENT_LOCK_STORE).clear(),
+    );
+    await Promise.all([handleClear, preferenceClear, documentLockClear]);
     await done;
   } catch (error) {
     abortTransaction(transaction);

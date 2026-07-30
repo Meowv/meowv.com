@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { FileText, ShieldCheck } from "@lucide/vue";
+import { FileText, LockKeyhole, LockKeyholeOpen, ShieldCheck } from "@lucide/vue";
 import { useWorkspaceStore } from "@/stores/workspace";
 
 const store = useWorkspaceStore();
@@ -17,6 +17,10 @@ const documentPathSegments = computed(() => documentPath.value.split("/"));
 
 const privacyLabel = computed(() =>
   store.isDemo ? "示例内容仅在当前页面处理" : "文件内容仅在本地处理",
+);
+
+const lockLabel = computed(() =>
+  store.isActiveDocumentLocked ? "解锁当前文档" : "锁定当前文档",
 );
 </script>
 
@@ -54,6 +58,23 @@ const privacyLabel = computed(() =>
       >
         行 {{ store.cursorLine }}，列 {{ store.cursorColumn }}
       </span>
+      <button
+        class="statusbar__lock-button"
+        :class="{ 'statusbar__lock-button--locked': store.isActiveDocumentLocked }"
+        type="button"
+        :title="lockLabel"
+        :aria-label="lockLabel"
+        :aria-pressed="store.isActiveDocumentLocked"
+        :disabled="!store.activePath || store.saveState === 'saving'"
+        @click="void store.toggleActiveDocumentLock()"
+      >
+        <LockKeyhole
+          v-if="store.isActiveDocumentLocked"
+          :size="14"
+          aria-hidden="true"
+        />
+        <LockKeyholeOpen v-else :size="14" aria-hidden="true" />
+      </button>
       <span
         class="statusbar__item statusbar__privacy"
         :title="privacyLabel"

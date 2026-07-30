@@ -4,7 +4,8 @@ import {
   Check,
   ChevronDown,
   FileText,
-  FolderOpen,
+  FolderInput,
+  History,
   LoaderCircle,
   LogOut,
   Moon,
@@ -16,6 +17,10 @@ import { useWorkspaceStore } from "@/stores/workspace";
 
 const store = useWorkspaceStore();
 const workspaceMenuOpen = ref(false);
+const workspaceHistoryOpen = ref(false);
+const switchableWorkspaceHistory = computed(() =>
+  store.isDemo ? store.workspaceHistory : store.workspaceHistory.slice(1),
+);
 
 const statusText = computed(() => {
   if (store.saveState === "saving") {
@@ -50,21 +55,31 @@ async function refreshWorkspace(): Promise<void> {
 
 async function openAnotherWorkspace(): Promise<void> {
   workspaceMenuOpen.value = false;
+  workspaceHistoryOpen.value = false;
   await store.openLocalWorkspace();
+}
+
+async function openWorkspaceHistory(id: string): Promise<void> {
+  workspaceMenuOpen.value = false;
+  workspaceHistoryOpen.value = false;
+  await store.openWorkspaceHistory(id);
 }
 
 async function closeWorkspace(): Promise<void> {
   workspaceMenuOpen.value = false;
+  workspaceHistoryOpen.value = false;
   await store.closeWorkspace();
 }
 
 function closeWorkspaceMenu(): void {
   workspaceMenuOpen.value = false;
+  workspaceHistoryOpen.value = false;
 }
 
 function handleDocumentKeydown(event: KeyboardEvent): void {
   if (event.key === "Escape") {
     workspaceMenuOpen.value = false;
+    workspaceHistoryOpen.value = false;
   }
 }
 
@@ -122,15 +137,52 @@ onBeforeUnmount(() => {
               />
               刷新工作空间
             </button>
-            <button
-              class="context-menu__item"
-              type="button"
-              role="menuitem"
-              @click="openAnotherWorkspace"
-            >
-              <FolderOpen :size="16" aria-hidden="true" />
-              打开其他文件夹
-            </button>
+            <div class="context-menu__workspace-switch">
+              <button
+                class="context-menu__item"
+                type="button"
+                role="menuitem"
+                @click="openAnotherWorkspace"
+              >
+                <FolderInput :size="16" aria-hidden="true" />
+                切换工作空间
+              </button>
+              <div class="context-menu__history-wrap">
+                <button
+                  class="icon-button context-menu__history-button"
+                  type="button"
+                  title="打开工作空间历史"
+                  aria-label="打开工作空间历史"
+                  :aria-expanded="workspaceHistoryOpen"
+                  aria-haspopup="menu"
+                  :disabled="!switchableWorkspaceHistory.length"
+                  @click="workspaceHistoryOpen = !workspaceHistoryOpen"
+                >
+                  <History :size="16" aria-hidden="true" />
+                </button>
+
+                <div
+                  v-if="workspaceHistoryOpen"
+                  class="context-menu context-menu--workspace-history"
+                  role="menu"
+                  aria-label="工作空间历史"
+                >
+                  <p class="context-menu__label">最近打开</p>
+                  <button
+                    v-for="entry in switchableWorkspaceHistory"
+                    :key="entry.id"
+                    class="context-menu__item context-menu__history-item"
+                    type="button"
+                    role="menuitem"
+                    :disabled="store.busy"
+                    @click="openWorkspaceHistory(entry.id)"
+                  >
+                    <FolderInput :size="16" aria-hidden="true" />
+                    <span>{{ entry.name }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
             <div class="context-menu__separator" />
             <button
               class="context-menu__item"
@@ -182,5 +234,17 @@ onBeforeUnmount(() => {
         <Sun v-else />
       </button>
     </div>
+
+    <button
+      v-if="!store.hasWorkspace && store.recentDirectory"
+      class="topbar__reopen-workspace"
+      type="button"
+      :aria-label="`重新打开 ${store.recentDirectory.name}`"
+      :disabled="store.busy"
+      @click="store.reopenRecentWorkspace"
+    >
+      <History :size="16" aria-hidden="true" />
+      <span>重新打开 {{ store.recentDirectory.name }}</span>
+    </button>
   </header>
 </template>
