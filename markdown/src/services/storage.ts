@@ -324,6 +324,10 @@ function documentLockKey(workspaceName: string, path: string): string {
   return `${workspaceName}\u0000${path}`;
 }
 
+function lastActiveDocumentKey(workspaceId: string): string {
+  return `last-active-document\u0000${workspaceId}`;
+}
+
 /**
  * 锁定标记只保存用户主动锁定的工作空间内相对路径，不保存文件正文。
  */
@@ -351,6 +355,32 @@ export async function setDocumentLocked(
     } else {
       await requestResult(store.delete(key));
     }
+  });
+}
+
+/**
+ * 只保存用户明确打开过的相对路径，用于恢复同一工作空间的编辑位置。
+ */
+export async function getLastActiveDocumentPath(
+  workspaceId: string,
+): Promise<string | null> {
+  return withStore(DOCUMENT_LOCK_STORE, "readonly", async (store) => {
+    const value = await requestResult<unknown>(
+      store.get(lastActiveDocumentKey(workspaceId)),
+    );
+    return typeof value === "string" && value ? value : null;
+  });
+}
+
+export async function saveLastActiveDocumentPath(
+  workspaceId: string,
+  path: string,
+): Promise<void> {
+  if (!workspaceId || !path) {
+    return;
+  }
+  await withStore(DOCUMENT_LOCK_STORE, "readwrite", async (store) => {
+    await requestResult(store.put(path, lastActiveDocumentKey(workspaceId)));
   });
 }
 

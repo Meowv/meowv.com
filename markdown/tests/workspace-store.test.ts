@@ -11,6 +11,9 @@ const ensurePermissionMock = vi.hoisted(() => vi.fn());
 const recentDirectoryMock = vi.hoisted(() => vi.fn());
 const savePreferencesMock = vi.hoisted(() => vi.fn());
 const getPreferencesMock = vi.hoisted(() => vi.fn());
+const getLastActiveDocumentPathMock = vi.hoisted(() => vi.fn());
+const saveLastActiveDocumentPathMock = vi.hoisted(() => vi.fn());
+const saveWorkspaceHistoryMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/services/file-system", async () => {
   const actual = await vi.importActual<typeof import("@/services/file-system")>(
@@ -47,8 +50,11 @@ vi.mock("@/services/storage", async () => {
     ),
     getWorkspaceHistory: vi.fn(async () => workspaceHistoryEntries),
     getPreferences: getPreferencesMock,
+    getLastActiveDocumentPath: getLastActiveDocumentPathMock,
     getRecentDirectory: recentDirectoryMock,
     savePreferences: savePreferencesMock,
+    saveLastActiveDocumentPath: saveLastActiveDocumentPathMock,
+    saveWorkspaceHistory: saveWorkspaceHistoryMock,
     removeWorkspaceHistory: removeWorkspaceHistoryMock.mockImplementation(
       async (id: string) => {
         const next = workspaceHistoryEntries.filter((entry) => entry.id !== id);
@@ -74,6 +80,9 @@ describe("workspace store safety barriers", () => {
     recentDirectoryMock.mockClear();
     savePreferencesMock.mockClear();
     getPreferencesMock.mockClear();
+    getLastActiveDocumentPathMock.mockClear();
+    saveLastActiveDocumentPathMock.mockClear();
+    saveWorkspaceHistoryMock.mockClear();
     ensurePermissionMock.mockResolvedValue(true);
     recentDirectoryMock.mockResolvedValue(null);
     savePreferencesMock.mockImplementation(async (value) => value);
@@ -91,6 +100,20 @@ describe("workspace store safety barriers", () => {
       editorWidth: 620,
       restoreRecentWorkspaceOnStartup: true,
     });
+    getLastActiveDocumentPathMock.mockResolvedValue(null);
+    saveLastActiveDocumentPathMock.mockResolvedValue(undefined);
+    saveWorkspaceHistoryMock.mockImplementation(
+      async (handle: FileSystemDirectoryHandle) => {
+        const entry = {
+          id: "recent-workspace",
+          name: handle.name,
+          handle,
+          lastOpenedAt: Date.now(),
+        };
+        workspaceHistoryEntries.splice(0, workspaceHistoryEntries.length, entry);
+        return workspaceHistoryEntries;
+      },
+    );
   });
 
   it("手动关闭工作空间后不再自动恢复最近工作空间", async () => {
@@ -111,15 +134,58 @@ describe("workspace store safety barriers", () => {
       name: "会议记录",
     } as FileSystemDirectoryHandle;
     recentDirectoryMock.mockResolvedValue(handle);
+    getLastActiveDocumentPathMock.mockResolvedValue("专题.md");
+    const readmeHandle = {
+      kind: "file",
+      name: "README.md",
+    } as FileSystemFileHandle;
+    const selectedHandle = {
+      kind: "file",
+      name: "专题.md",
+    } as FileSystemFileHandle;
     scanWorkspaceMock.mockResolvedValue({
       root: {
         kind: "directory",
         name: "会议记录",
         path: "",
         handle,
-        children: [],
+        children: [
+          {
+            kind: "file",
+            name: "README.md",
+            path: "README.md",
+            category: "markdown",
+            extension: ".md",
+            handle: readmeHandle,
+          },
+          {
+            kind: "file",
+            name: "专题.md",
+            path: "专题.md",
+            category: "markdown",
+            extension: ".md",
+            handle: selectedHandle,
+          },
+        ],
       },
-      documents: [],
+      documents: [
+        {
+          kind: "file",
+          name: "README.md",
+          path: "README.md",
+          category: "markdown",
+          extension: ".md",
+          handle: readmeHandle,
+        },
+        {
+          kind: "file",
+          name: "专题.md",
+          path: "专题.md",
+          category: "markdown",
+          extension: ".md",
+          handle: selectedHandle,
+        },
+      ],
       assets: [],
     });
 
@@ -133,6 +199,7 @@ describe("workspace store safety barriers", () => {
     );
     expect(store.workspaceName).toBe("会议记录");
     expect(store.hasWorkspace).toBe(true);
+    expect(store.activePath).toBe("专题.md");
   });
 
   it("手动关闭后，刷新不会自动恢复最近工作空间", async () => {

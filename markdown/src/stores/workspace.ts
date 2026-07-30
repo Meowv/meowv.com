@@ -55,11 +55,13 @@ import {
 import {
   clearRecentDirectory,
   getPreferences,
+  getLastActiveDocumentPath,
   getRecentDirectory,
   getWorkspaceHistory,
   isDocumentLocked,
   removeWorkspaceHistory,
   savePreferences,
+  saveLastActiveDocumentPath,
   saveRecentDirectory,
   saveWorkspaceHistory,
   setDocumentLocked,
@@ -261,6 +263,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
   const isDemo = ref(false);
   const workspaceName = ref("");
   const rootHandle = shallowRef<FileSystemDirectoryHandle | null>(null);
+  const workspaceHistoryId = ref("");
   const recentDirectory = shallowRef<FileSystemDirectoryHandle | null>(null);
   const workspaceHistory = ref<WorkspaceHistoryEntry[]>([]);
   const treeRoot = shallowRef<DisplayTreeNode | null>(null);
@@ -647,7 +650,13 @@ export const useWorkspaceStore = defineStore("workspace", () => {
         return;
       }
       await loadRealWorkspace(handle);
-      await rememberWorkspace(handle);
+      const historyId = await rememberWorkspace(handle);
+      workspaceHistoryId.value = historyId;
+      if (historyId && activePath.value) {
+        void saveLastActiveDocumentPath(historyId, activePath.value).catch(
+          () => undefined,
+        );
+      }
       await setRestoreRecentWorkspaceOnStartup(true);
     } catch (error) {
       const normalized = toWorkspaceError(error);
@@ -699,8 +708,14 @@ export const useWorkspaceStore = defineStore("workspace", () => {
       if (hasEditableDocument.value && !(await saveActiveDocument())) {
         return false;
       }
-      await loadRealWorkspace(handle);
-      await rememberWorkspace(handle);
+      await loadRealWorkspace(handle, historyEntry?.id ?? "");
+      const historyId = await rememberWorkspace(handle);
+      workspaceHistoryId.value = historyId;
+      if (historyId && activePath.value) {
+        void saveLastActiveDocumentPath(historyId, activePath.value).catch(
+          () => undefined,
+        );
+      }
       if (options.restoreAutoOpen ?? true) {
         await setRestoreRecentWorkspaceOnStartup(true);
       }
@@ -727,9 +742,10 @@ export const useWorkspaceStore = defineStore("workspace", () => {
 
   async function rememberWorkspace(
     handle: FileSystemDirectoryHandle,
-  ): Promise<void> {
+  ): Promise<string> {
     recentDirectory.value = handle;
     let storageError: unknown;
+    let historyId = "";
 
     try {
       await saveRecentDirectory(handle);
@@ -739,6 +755,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
 
     try {
       workspaceHistory.value = await saveWorkspaceHistory(handle);
+      historyId = workspaceHistory.value[0]?.id ?? "";
     } catch (error) {
       storageError ??= error;
     }
@@ -746,6 +763,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
     if (storageError) {
       notify("info", "工作空间已打开", "历史记录未能保存到浏览器本地存储。");
     }
+    return historyId;
   }
 
   async function forgetUnavailableWorkspaceHistory(
@@ -775,6 +793,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
 
   async function loadRealWorkspace(
     handle: FileSystemDirectoryHandle,
+    historyId = "",
   ): Promise<void> {
     const operation = ++workspaceOperationSequence;
     documentOpenSequence += 1;
@@ -792,6 +811,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
     releaseAllObjectUrls();
     lastMove.value = null;
     rootHandle.value = markRaw(handle);
+    workspaceHistoryId.value = historyId;
     isDemo.value = false;
     workspaceName.value = handle.name;
     treeRoot.value = markRaw(cloneDisplayTree(result.root));
@@ -810,7 +830,18 @@ export const useWorkspaceStore = defineStore("workspace", () => {
     previewContent.value = "";
     lastSavedContent.value = "";
     saveState.value = "idle";
+    let lastActivePath: string | null = null;
+    if (historyId) {
+      try {
+        lastActivePath = await getLastActiveDocumentPath(historyId);
+      } catch {
+        // 恢复记录不可用时，仍按默认规则打开文档。
+      }
+    }
     const firstDocument =
+      (lastActivePath
+        ? result.documents.find((document) => document.path === lastActivePath)
+        : undefined) ??
       result.documents.find((document) => /readme\.md$/i.test(document.path)) ??
       result.documents[0];
     if (firstDocument) {
@@ -867,6 +898,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
       releaseAllObjectUrls();
       lastMove.value = null;
       rootHandle.value = null;
+      workspaceHistoryId.value = "";
       isDemo.value = true;
       workspaceName.value = DEMO_WORKSPACE_NAME;
       treeRoot.value = markRaw(cloneDisplayTree(DEMO_TREE));
@@ -1079,6 +1111,11 @@ export const useWorkspaceStore = defineStore("workspace", () => {
     }
 
     activePath.value = path;
+    if (!isDemo.value && workspaceHistoryId.value) {
+      void saveLastActiveDocumentPath(workspaceHistoryId.value, path).catch(
+        () => undefined,
+      );
+    }
     untitledDraft.value = false;
     draftSaveRequested.value = false;
     setDocumentLockState(path, documentLocked);
@@ -2065,6 +2102,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
     releaseAllObjectUrls();
     lastMove.value = null;
     rootHandle.value = null;
+    workspaceHistoryId.value = "";
     treeRoot.value = null;
     documentNodes.value = [];
     documents.value = new Map();

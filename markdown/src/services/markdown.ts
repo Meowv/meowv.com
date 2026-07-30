@@ -269,6 +269,7 @@ export function sanitizeMarkdownHtml(html: string): string {
   }
 
   return DOMPurify.sanitize(html, {
+    ADD_ATTR: ["target"],
     ALLOW_DATA_ATTR: true,
     ALLOWED_URI_REGEXP: SAFE_URI_PATTERN,
     FORBID_ATTR: ["style", "srcdoc"],
@@ -448,11 +449,8 @@ function renderMarkdownBody(
 
   walkTokens(tokens, (token) => {
     if (token.type === "link_open") {
-      const href = token.attrGet("href") ?? "";
-      if (/^https?:\/\//iu.test(href)) {
-        token.attrSet("target", "_blank");
-        token.attrSet("rel", "noopener noreferrer");
-      }
+      token.attrSet("target", "_blank");
+      token.attrSet("rel", "noopener noreferrer");
       return;
     }
 

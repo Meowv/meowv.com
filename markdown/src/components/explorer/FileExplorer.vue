@@ -70,9 +70,32 @@ const nextRootBatchSize = computed(() =>
   Math.min(ROOT_BATCH_SIZE, remainingRootCount.value),
 );
 
+function expandPathAncestors(path: string): void {
+  const segments = path.split("/");
+  segments.pop();
+  if (!segments.length) {
+    return;
+  }
+  const next = new Set(expandedPaths.value);
+  for (let index = 1; index <= segments.length; index += 1) {
+    next.add(segments.slice(0, index).join("/"));
+  }
+  expandedPaths.value = next;
+}
+
 watch([() => store.workspaceName, () => rootChildren.value.length], () => {
   visibleRootCount.value = ROOT_BATCH_SIZE;
 });
+
+watch(
+  () => store.activePath,
+  (path) => {
+    if (path) {
+      expandPathAncestors(path);
+    }
+  },
+  { immediate: true },
+);
 
 const documentCount = computed(() => {
   let count = 0;

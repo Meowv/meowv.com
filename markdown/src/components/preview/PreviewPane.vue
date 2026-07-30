@@ -26,7 +26,6 @@ import {
   preloadPdfExporter,
   type ExportExtension,
 } from "@/services/export";
-import { resolveRelativePath } from "@/services/file-system";
 import { sanitizeMermaidSvg } from "@/services/mermaid-security";
 import { useWorkspaceStore } from "@/stores/workspace";
 
@@ -141,29 +140,6 @@ async function handlePreviewClick(event: MouseEvent): Promise<void> {
       await scrollToPreviewAnchor(link.dataset.wikiAnchor);
     }
     return;
-  }
-
-  const href = link.getAttribute("href")?.trim();
-  if (
-    !href ||
-    href.startsWith("#") ||
-    href.startsWith("//") ||
-    /^[a-z][a-z\d+.-]*:/iu.test(href)
-  ) {
-    return;
-  }
-
-  const resolvedPath = resolveRelativePath(store.activePath, href);
-  if (!resolvedPath || !/\.(?:md|markdown)$/iu.test(resolvedPath)) {
-    return;
-  }
-
-  event.preventDefault();
-  await store.openDocument(resolvedPath);
-
-  const fragmentIndex = href.indexOf("#");
-  if (fragmentIndex >= 0) {
-    await scrollToPreviewAnchor(href.slice(fragmentIndex + 1));
   }
 }
 

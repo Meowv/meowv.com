@@ -107,6 +107,16 @@ graph TD
     );
   });
 
+  it("标准 Markdown 链接使用新窗口并隔离来源页面", () => {
+    const parsed = parseMarkdownDocument(
+      "[线上文档](https://example.com/docs) [本地文档](notes/meeting.md)",
+    );
+
+    expect(parsed.html).toContain('target="_blank"');
+    expect(parsed.html).toContain('rel="noopener noreferrer"');
+    expect(parsed.html).toContain('href="notes/meeting.md"');
+  });
+
   it("无效 Front Matter 不阻断正文预览", () => {
     const source = `---
 tags: [unclosed
