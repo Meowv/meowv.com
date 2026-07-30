@@ -8,6 +8,7 @@ import {
   Clock3,
   Copy,
   Download,
+  FileCode2,
   FilePlus2,
   FileSpreadsheet,
   FileText,
@@ -890,6 +891,19 @@ onMounted(async () => {
 
           <div class="site-footer__link-group">
             <strong>更多工具</strong>
+            <a
+              class="site-footer__product-link"
+              href="https://md.meowv.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <FileCode2 :size="18" aria-hidden="true" />
+              <span>
+                <b>Markdown Studio</b>
+                <small>浏览器里的本地 Markdown 工作台</small>
+              </span>
+              <ArrowUpRight :size="15" aria-hidden="true" />
+            </a>
             <a
               class="site-footer__product-link"
               href="https://pdf.meowv.com/"

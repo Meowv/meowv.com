@@ -30,6 +30,7 @@ export default function SiteFooter() {
           <span>田字格 · 米字格 · 四线格 · A4 打印</span>
           <a href="/donate/">捐赠支持</a>
           <span>更多工具：
+            <a href="https://md.meowv.com" target="_blank" rel="noreferrer">Markdown Studio</a>、
             <a href="https://excel.meowv.com" target="_blank" rel="noreferrer">在线 Excel 处理</a>、
             <a href="https://pdf.meowv.com" target="_blank" rel="noreferrer">在线 PDF 处理</a>
           </span>
