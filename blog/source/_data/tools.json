@@ -1,10 +1,10 @@
 [
   {
-    "slug": "zitie",
-    "name": "字帖生成",
-    "description": "在线生成可打印的 A4 字帖，支持汉字、词语、段落、拼音、英文、数字、笔画与控笔练习，可导出 PNG、PDF 或直接打印",
-    "emoji": "✍️",
-    "url": "https://zt.meowv.com"
+    "slug": "markdown",
+    "name": "Markdown Studio",
+    "description": "无需登录、数据不上传，浏览器里的本地 Markdown 工作台",
+    "emoji": "📄",
+    "url": "https://md.meowv.com"
   },
   {
     "slug": "excel",
@@ -19,6 +19,13 @@
     "description": "无需登录、文件不上传，在浏览器中完成 PDF 合并、拆分、页面整理、转换、水印与页码处理",
     "emoji": "📕",
     "url": "https://pdf.meowv.com"
+  },
+  {
+    "slug": "zitie",
+    "name": "字帖生成",
+    "description": "在线生成可打印的 A4 字帖，支持汉字、词语、段落、拼音、英文、数字、笔画与控笔练习，可导出 PNG、PDF 或直接打印",
+    "emoji": "✍️",
+    "url": "https://zt.meowv.com"
   },
   {
     "slug": "plonky",
@@ -126,13 +133,6 @@
     "description": "拆解 URL 组成并查看重复查询参数",
     "emoji": "🧭",
     "url": "/tools/url-parser"
-  },
-  {
-    "slug": "markdown",
-    "name": "Markdown",
-    "description": "在线 Markdown 编辑与实时预览",
-    "emoji": "📄",
-    "url": "/tools/markdown"
   },
   {
     "slug": "text-diff",
