@@ -2,11 +2,11 @@
 
 ## 适用范围
 
-本文件适用于仓库中的 `blog/`、`excel/`、`zitie/` 和 `pdf/`。子项目不再维护独立的
+本文件适用于仓库中的 `blog/`、`markdown/`、`excel/`、`zitie/` 和 `pdf/`。子项目不再维护独立的
 `AGENTS.md` 或 `README.md`；项目总览和通用说明统一维护在根目录 `README.md`，协作
 规则统一维护在本文件。
 
-这是同一 Git 仓库内的 4 个独立项目，不是统一的 npm/pnpm workspace。执行命令前先进入
+这是同一 Git 仓库内的 5 个独立项目，不是统一的 npm/pnpm workspace。执行命令前先进入
 目标目录，并使用该项目已有的包管理器、锁文件、脚本和代码风格。
 
 ## 沟通与修改原则
@@ -25,24 +25,25 @@
 | 目录     | 线上状态                 | 技术栈                             | 包管理器 |
 | -------- | ------------------------ | ---------------------------------- | -------- |
 | `blog/`  | `meowv.com` 已上线       | Hexo 7、EJS、Stylus                | Yarn     |
+| `markdown/` | `md.meowv.com` 已上线    | Vue 3、TypeScript、Vite            | npm      |
 | `excel/` | `excel.meowv.com` 已上线 | Vue 3、TypeScript、Vite            | pnpm     |
-| `zitie/` | `zt.meowv.com` 已上线    | Vinext、Next.js、React、TypeScript | npm      |
 | `pdf/`   | `pdf.meowv.com` 已上线    | Nuxt 4、Vue 3、TypeScript          | pnpm     |
+| `zitie/` | `zt.meowv.com` 已上线    | Vinext、Next.js、React、TypeScript | npm      |
 
 涉及站点链接、Canonical、Sitemap、分享信息或跨站导航时：
 
-- 保持 `meowv.com`、`excel.meowv.com`、`zt.meowv.com` 和 `pdf.meowv.com` 的现有线上地址。
+- 保持 `meowv.com`、`md.meowv.com`、`excel.meowv.com`、`pdf.meowv.com` 和 `zt.meowv.com` 的现有线上地址。
 - 不自行推断 `www` 跳转、证书覆盖、Nginx 路由或生产目录；部署前应检查实际环境。
 
 ## 根目录脚本
 
-- `run.sh`：不传参数时并行启动四个项目；传入 `blog`、`excel`、`pdf` 或 `zitie` 时
+- `run.sh`：不传参数时按 `blog`、`md`、`excel`、`pdf`、`zt` 并行启动五个项目；传入其中一个参数时
   只启动对应项目。
-- 固定开发端口依次为 Blog `4000`、Excel `4001`、PDF `4002`、Zitie `4003`，不得静默
+- 固定开发端口依次为 Blog `4000`、Markdown `4001`、Excel `4002`、PDF `4003`、Zitie `4004`，不得静默
   改用其他端口。
-- `build.sh`：不传参数时依次编译四个项目；传入项目名时只编译并发布对应项目。
+- `build.sh`：不传参数时依次编译五个项目；传入项目名时只编译并发布对应项目。
 - 汇总产物固定为 `build/meowv.com/`、`build/excel.meowv.com/`、
-  `build/pdf.meowv.com/` 和 `build/zt.meowv.com/`。
+  `build/pdf.meowv.com/`、`build/zt.meowv.com/` 和 `build/md.meowv.com/`。
 - Zitie 只将 `zitie/dist/client/` 复制到汇总目录，不复制 `zitie/dist/server/`。
 - `build/` 是可替换的生成目录，不提交到 Git。修改脚本时继续保持全量构建完成后再替换
   旧目录，避免失败时留下半套发布产物。
@@ -69,6 +70,32 @@
 
 修改文章、Front Matter、主题配置或模板时，检查 YAML/JSON/EJS 语法和生成后的目标页面。
 修改交互工具时，还应在浏览器检查桌面端、移动端、控制台和异常路径。
+
+## Markdown Studio 约定
+
+### 结构
+
+- `src/components/`：布局、编辑器、预览、侧栏、欢迎页和反馈组件。
+- `src/services/`：文件系统、Markdown、导出、搜索、知识图谱和存储服务。
+- `src/stores/`：工作区与偏好状态。
+- `src/workers/`：搜索 Worker。
+- `tests/`：Vitest 与 Sites 产物测试。
+
+使用 Vue 3 Composition API、严格 TypeScript 和现有 `@/` 路径别名。必须保持浏览器本地
+处理边界：Markdown 内容、图片和附件不得上传，也不得写入 Cookie、日志或远程数据库。
+涉及文件系统、导出、Mermaid、Worker 或对象 URL 时，保留现有的授权、取消和资源释放处理。
+
+### 命令与托管契约
+
+- 开发：`npm run dev`
+- 类型检查：`npm run typecheck`
+- 单元测试：`npm test`
+- 构建：`npm run build`
+- 构建产物契约：构建后运行 `npm run test:sites`
+
+保持 `.openai/hosting.json`、`worker/index.js`、`scripts/prepare-sites-build.mjs` 和
+`tests/sites-worker.test.mjs` 的现有协作关系。部署静态产物使用 `dist/client/`，不要提交
+`dist/`。
 
 ## Excel 约定
 

@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ALL_PROJECTS=(blog excel pdf zitie)
+ALL_PROJECTS=(blog md excel pdf zt)
 SELECTED_PROJECTS=()
 PIDS=()
 PID_PROJECTS=()
@@ -17,36 +17,40 @@ usage() {
 
 可选项目：
   blog    http://localhost:4000
-  excel   http://localhost:4001
-  pdf     http://localhost:4002
-  zitie   http://localhost:4003
+  md      http://localhost:4001
+  excel   http://localhost:4002
+  pdf     http://localhost:4003
+  zt      http://localhost:4004
 EOF
 }
 
 project_port() {
   case "$1" in
     blog) echo "4000" ;;
-    excel) echo "4001" ;;
-    pdf) echo "4002" ;;
-    zitie) echo "4003" ;;
+    md) echo "4001" ;;
+    excel) echo "4002" ;;
+    pdf) echo "4003" ;;
+    zt) echo "4004" ;;
   esac
 }
 
 project_binary() {
   case "$1" in
     blog) echo "$ROOT_DIR/blog/node_modules/.bin/hexo" ;;
+    md) echo "$ROOT_DIR/markdown/node_modules/.bin/vite" ;;
     excel) echo "$ROOT_DIR/excel/node_modules/.bin/vite" ;;
     pdf) echo "$ROOT_DIR/pdf/node_modules/.bin/nuxt" ;;
-    zitie) echo "$ROOT_DIR/zitie/node_modules/.bin/vinext" ;;
+    zt) echo "$ROOT_DIR/zitie/node_modules/.bin/vinext" ;;
   esac
 }
 
 install_hint() {
   case "$1" in
     blog) echo "cd blog && yarn install --frozen-lockfile" ;;
+    md) echo "cd markdown && npm ci" ;;
     excel) echo "cd excel && pnpm install --frozen-lockfile" ;;
     pdf) echo "cd pdf && pnpm install --frozen-lockfile" ;;
-    zitie) echo "cd zitie && npm ci" ;;
+    zt) echo "cd zitie && npm ci" ;;
   esac
 }
 
@@ -83,6 +87,10 @@ run_project() {
       cd "$ROOT_DIR/blog"
       exec ./node_modules/.bin/hexo server --port "$port"
       ;;
+    md)
+      cd "$ROOT_DIR/markdown"
+      exec ./node_modules/.bin/vite --port "$port" --strictPort
+      ;;
     excel)
       cd "$ROOT_DIR/excel"
       exec ./node_modules/.bin/vite --port "$port" --strictPort
@@ -91,7 +99,7 @@ run_project() {
       cd "$ROOT_DIR/pdf"
       exec ./node_modules/.bin/nuxt dev --port "$port"
       ;;
-    zitie)
+    zt)
       cd "$ROOT_DIR/zitie"
       node scripts/sync-hanzi-data.mjs
       exec ./node_modules/.bin/vinext dev --port "$port"
@@ -129,7 +137,7 @@ elif [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
   exit 0
 else
   case "$1" in
-    blog | excel | pdf | zitie) SELECTED_PROJECTS=("$1") ;;
+    blog | md | excel | pdf | zt) SELECTED_PROJECTS=("$1") ;;
     *)
       echo "错误：未知项目 ${1}。" >&2
       usage >&2
@@ -157,7 +165,7 @@ for project in "${SELECTED_PROJECTS[@]}"; do
 done
 
 echo
-echo "4 个项目已启动，按 Ctrl+C 全部停止。"
+echo "${#ALL_PROJECTS[@]} 个项目已启动，按 Ctrl+C 全部停止。"
 
 while true; do
   for index in "${!PIDS[@]}"; do

@@ -1,30 +1,32 @@
 # Meowv Web Projects
 
-这是 Meowv 旗下 4 个 Web 项目的统一代码仓库。各项目位于独立目录，拥有各自的依赖、
-开发命令和构建产物；仓库根目录目前不提供统一的工作区脚本。
+这是 Meowv 旗下 5 个 Web 项目的统一代码仓库。各项目位于独立目录，拥有各自的依赖、
+开发命令和构建产物；它们不是统一的 npm/pnpm workspace，根目录提供统一的启动和编译脚本。
 
 ## 项目概览
 
 | 目录     | 项目                 | 技术栈                                     | 状态   | 地址                                       |
 | -------- | -------------------- | ------------------------------------------ | ------ | ------------------------------------------ |
 | `blog/`  | 个人博客与 Labs 工具 | Hexo 7、EJS、Stylus                        | 已上线 | [meowv.com](https://meowv.com)             |
+| `markdown/` | Markdown Studio     | Vue 3、TypeScript、Vite、Monaco Editor     | 已上线 | [md.meowv.com](https://md.meowv.com)       |
 | `excel/` | 在线 Excel 处理      | Vue 3、TypeScript、Vite、Univer、SheetJS   | 已上线 | [excel.meowv.com](https://excel.meowv.com) |
-| `zitie/` | 在线字帖生成         | Vinext、Next.js 16、React 19、TypeScript   | 已上线 | [zt.meowv.com](https://zt.meowv.com)       |
 | `pdf/`   | 在线 PDF 处理        | Nuxt 4、Vue 3、TypeScript、PDF.js、pdf-lib | 已上线 | [pdf.meowv.com](https://pdf.meowv.com)     |
+| `zitie/` | 在线字帖生成         | Vinext、Next.js 16、React 19、TypeScript   | 已上线 | [zt.meowv.com](https://zt.meowv.com)       |
 
 ## 仓库结构
 
 ```text
 .
 ├── blog/       # 博客、文章、独立游戏和 Labs 工具
+├── markdown/   # 浏览器本地 Markdown 工作台
 ├── excel/      # 浏览器端电子表格应用
-├── zitie/      # 浏览器端字帖生成与导出应用
 ├── pdf/        # 浏览器端 PDF 工具站
+├── zitie/      # 浏览器端字帖生成与导出应用
 ├── AGENTS.md   # 全仓库协作与修改约定
 └── README.md   # 项目总览
 ```
 
-4 个目录不是 npm/pnpm workspace。安装依赖、开发、检查和构建时，应先进入目标项目目录，
+5 个目录不是 npm/pnpm workspace。安装依赖、开发、检查和构建时，应先进入目标项目目录，
 不要在仓库根目录混用包管理命令。
 
 ## macOS 一键脚本
@@ -49,9 +51,10 @@ chmod +x run.sh build.sh
 
 ```bash
 ./run.sh blog
+./run.sh md
 ./run.sh excel
 ./run.sh pdf
-./run.sh zitie
+./run.sh zt
 ```
 
 固定开发端口：
@@ -59,11 +62,12 @@ chmod +x run.sh build.sh
 | 项目  | 地址                    |
 | ----- | ----------------------- |
 | Blog  | `http://localhost:4000` |
-| Excel | `http://localhost:4001` |
-| PDF   | `http://localhost:4002` |
-| Zitie | `http://localhost:4003` |
+| Markdown | `http://localhost:4001` |
+| Excel | `http://localhost:4002` |
+| PDF   | `http://localhost:4003` |
+| Zitie | `http://localhost:4004` |
 
-脚本不会自动安装依赖。启动全部项目后，按 `Ctrl+C` 会统一停止四个开发服务器。
+脚本不会自动安装依赖。启动全部项目后，按 `Ctrl+C` 会统一停止五个开发服务器。
 
 ### 编译项目
 
@@ -78,9 +82,10 @@ chmod +x run.sh build.sh
 
 ```bash
 ./build.sh blog
+./build.sh md
 ./build.sh excel
 ./build.sh pdf
-./build.sh zitie
+./build.sh zt
 ```
 
 编译产物统一发布到根目录 `build/`：
@@ -88,13 +93,14 @@ chmod +x run.sh build.sh
 ```text
 build/
 ├── meowv.com/        # blog/public/
+├── md.meowv.com/     # markdown/dist/client/
 ├── excel.meowv.com/  # excel/dist/client/
 ├── pdf.meowv.com/    # pdf/.output/public/
 └── zt.meowv.com/     # zitie/dist/client/
 ```
 
-全量编译时，四个项目都成功后才会替换原有 `build/`。单项目编译只替换对应域名目录，不会
-修改另外三个项目的已有产物。`build/`、临时暂存目录和备份目录均已加入 Git 忽略。
+全量编译时，五个项目都成功后才会替换原有 `build/`。单项目编译只替换对应域名目录，不会
+修改另外四个项目的已有产物。`build/`、临时暂存目录和备份目录均已加入 Git 忽略。
 
 ## 环境与常用命令
 
@@ -115,6 +121,22 @@ build/
 - `source/tools/<slug>/index.md`
 - `themes/hexo-theme-matery/layout/tools/<slug>.ejs`
 - `source/_data/tools.json` 中的入口配置
+
+### Markdown Studio
+
+- 环境：Node.js `>= 22.12.0`、npm
+- 安装：`cd markdown && npm ci`
+- 开发：`npm run dev`
+- 类型检查：`npm run typecheck`
+- 单元测试：`npm test`
+- 生产构建：`npm run build`
+- Sites 产物契约测试：构建后运行 `npm run test:sites`
+- 产物：`markdown/dist/client/`
+
+Markdown Studio 是浏览器本地的 Markdown 工作台，使用 File System Access API 打开并保存
+用户选择的文件夹，提供文件管理、编辑、实时预览、搜索、图谱和导出能力。Markdown 内容、
+图片和附件不上传；修改文件系统、预览、导出或 Mermaid 相关功能时，应保留现有的本地处理、
+清理和安全边界。
 
 ### Excel
 
@@ -189,15 +211,16 @@ PDF 项目已经完成首期开发并上线。它使用静态生成模式，文�
 
 ## 隐私与安全边界
 
-Excel、Zitie 和 PDF 都以浏览器本地处理为核心。修改相关功能时必须保持以下边界：
+Markdown Studio、Excel、Zitie 和 PDF 都以浏览器本地处理为核心。修改相关功能时必须保持以下边界：
 
 - 不把用户选择的表格、PDF、图片或其内容发送到第三方服务。
 - 不在日志、统计信息或 URL 中记录文件内容和敏感文件信息。
 - 不执行工作簿宏、PDF 内嵌脚本或其他不受信任的主动内容。
 - 新增外部服务、文件上传、远程转换或遥测前，必须先明确说明并取得授权。
 
-各应用的数据持久化策略不同：Excel 使用 IndexedDB 保存工作簿；Zitie 可以保存非敏感
-练习设置；PDF 刷新或关闭页面后不恢复文件工作区。不要在项目之间直接套用存储逻辑。
+各应用的数据持久化策略不同：Markdown Studio 通过浏览器授权读写用户选择的本地文件夹；
+Excel 使用 IndexedDB 保存工作簿；Zitie 可以保存非敏感练习设置；PDF 刷新或关闭页面后不
+恢复文件工作区。不要在项目之间直接套用存储逻辑。
 
 ## 生成内容
 
@@ -205,6 +228,7 @@ Excel、Zitie 和 PDF 都以浏览器本地处理为核心。修改相关功能�
 
 - 通用：`node_modules/`、`.DS_Store`
 - Blog：`public/`、`db.json`
+- Markdown Studio：`dist/`
 - Excel：`dist/`、`.pnpm-store/`、`coverage/`、`playwright-report/`、
   `test-results/`、`*.tsbuildinfo`
 - Zitie：`public/hanzi-data/`、`dist/`、`.vinext/`、`.next/`、`*.tsbuildinfo`

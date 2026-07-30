@@ -9,11 +9,20 @@
     />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; base-uri 'self'; connect-src 'self' https: ws: wss:; font-src 'self' data:; img-src 'self' blob: data: https:; media-src 'none'; object-src 'none'; frame-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; form-action 'none'"
+      content="default-src 'self'; base-uri 'self'; connect-src 'self' https: ws: wss:; font-src 'self' data:; img-src 'self' blob: data: https:; media-src 'none'; object-src 'none'; frame-src 'none'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; form-action 'none'"
     />
     <meta name="theme-color" content="#ffffff" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>Markdown Studio · 浏览器本地 Markdown IDE</title>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-Z8L57GCMQP"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-Z8L57GCMQP");
+    </script>
   </head>
   <body>
     <div id="app"></div>

@@ -4,7 +4,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="$ROOT_DIR/build"
-ALL_PROJECTS=(blog excel pdf zitie)
+ALL_PROJECTS=(blog md excel pdf zt)
 SELECTED_PROJECTS=()
 STAGING_DIR="$ROOT_DIR/.build-staging.$$"
 BACKUP_PATH=""
@@ -19,45 +19,50 @@ usage() {
 
 可选项目：
   blog    -> build/meowv.com
+  md      -> build/md.meowv.com
   excel   -> build/excel.meowv.com
   pdf     -> build/pdf.meowv.com
-  zitie   -> build/zt.meowv.com
+  zt      -> build/zt.meowv.com
 EOF
 }
 
 destination_name() {
   case "$1" in
     blog) echo "meowv.com" ;;
+    md) echo "md.meowv.com" ;;
     excel) echo "excel.meowv.com" ;;
     pdf) echo "pdf.meowv.com" ;;
-    zitie) echo "zt.meowv.com" ;;
+    zt) echo "zt.meowv.com" ;;
   esac
 }
 
 source_path() {
   case "$1" in
     blog) echo "$ROOT_DIR/blog/public" ;;
+    md) echo "$ROOT_DIR/markdown/dist/client" ;;
     excel) echo "$ROOT_DIR/excel/dist/client" ;;
     pdf) echo "$ROOT_DIR/pdf/.output/public" ;;
-    zitie) echo "$ROOT_DIR/zitie/dist/client" ;;
+    zt) echo "$ROOT_DIR/zitie/dist/client" ;;
   esac
 }
 
 project_binary() {
   case "$1" in
     blog) echo "$ROOT_DIR/blog/node_modules/.bin/hexo" ;;
+    md) echo "$ROOT_DIR/markdown/node_modules/.bin/vite" ;;
     excel) echo "$ROOT_DIR/excel/node_modules/.bin/vite" ;;
     pdf) echo "$ROOT_DIR/pdf/node_modules/.bin/nuxt" ;;
-    zitie) echo "$ROOT_DIR/zitie/node_modules/.bin/vinext" ;;
+    zt) echo "$ROOT_DIR/zitie/node_modules/.bin/vinext" ;;
   esac
 }
 
 install_hint() {
   case "$1" in
     blog) echo "cd blog && yarn install --frozen-lockfile" ;;
+    md) echo "cd markdown && npm ci" ;;
     excel) echo "cd excel && pnpm install --frozen-lockfile" ;;
     pdf) echo "cd pdf && pnpm install --frozen-lockfile" ;;
-    zitie) echo "cd zitie && npm ci" ;;
+    zt) echo "cd zitie && npm ci" ;;
   esac
 }
 
@@ -76,6 +81,12 @@ check_project() {
       binaries=(
         "$ROOT_DIR/excel/node_modules/.bin/vue-tsc"
         "$ROOT_DIR/excel/node_modules/.bin/vite"
+      )
+      ;;
+    md)
+      binaries=(
+        "$ROOT_DIR/markdown/node_modules/.bin/vue-tsc"
+        "$ROOT_DIR/markdown/node_modules/.bin/vite"
       )
       ;;
     *)
@@ -106,6 +117,14 @@ build_project() {
         ./node_modules/.bin/hexo generate
       )
       ;;
+    md)
+      (
+        cd "$ROOT_DIR/markdown"
+        ./node_modules/.bin/vue-tsc --noEmit
+        ./node_modules/.bin/vite build
+        node scripts/prepare-sites-build.mjs
+      )
+      ;;
     excel)
       (
         cd "$ROOT_DIR/excel"
@@ -120,7 +139,7 @@ build_project() {
         ./node_modules/.bin/nuxt generate
       )
       ;;
-    zitie)
+    zt)
       (
         cd "$ROOT_DIR/zitie"
         node scripts/sync-hanzi-data.mjs
@@ -251,7 +270,7 @@ elif [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
   exit 0
 else
   case "$1" in
-    blog | excel | pdf | zitie) SELECTED_PROJECTS=("$1") ;;
+    blog | md | excel | pdf | zt) SELECTED_PROJECTS=("$1") ;;
     *)
       echo "错误：未知项目 ${1}。" >&2
       usage >&2
@@ -280,7 +299,7 @@ for project in "${SELECTED_PROJECTS[@]}"; do
   stage_output "$project"
 done
 
-if [ "${#SELECTED_PROJECTS[@]}" -eq 4 ]; then
+if [ "${#SELECTED_PROJECTS[@]}" -eq "${#ALL_PROJECTS[@]}" ]; then
   publish_all
 else
   publish_one "${SELECTED_PROJECTS[0]}"
