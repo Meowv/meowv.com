@@ -97,10 +97,10 @@ onBeforeUnmount(() => {
 <template>
   <header class="topbar">
     <div class="topbar__brand">
-      <span class="app-logo" aria-hidden="true">
+      <span class="app-logo app-logo--animated" aria-hidden="true">
         <FileText />
       </span>
-      <span class="topbar__product">Markdown Studio</span>
+      <span class="topbar__product topbar__product--animated">Markdown Studio</span>
 
       <template v-if="store.hasWorkspace">
         <span class="topbar__divider" aria-hidden="true" />

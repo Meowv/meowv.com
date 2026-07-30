@@ -220,6 +220,17 @@ a {
   stroke-width: 1.9;
 }
 
+.app-logo--animated {
+  background: linear-gradient(
+    115deg,
+    var(--color-brand),
+    #8b5cf6,
+    var(--color-brand)
+  );
+  background-size: 180% 100%;
+  animation: logo-gradient-flow 5s ease-in-out infinite;
+}
+
 .topbar__product {
   overflow: hidden;
   color: var(--color-text-strong);
@@ -228,6 +239,33 @@ a {
   letter-spacing: -0.02em;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.topbar__product--animated,
+.site-footer__product--animated {
+  background: linear-gradient(
+    105deg,
+    var(--color-text-strong) 20%,
+    var(--color-brand) 45%,
+    #8b5cf6 57%,
+    var(--color-text-strong) 80%
+  );
+  background-size: 210% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: logo-gradient-flow 5s ease-in-out infinite;
+}
+
+@keyframes logo-gradient-flow {
+  0%,
+  100% {
+    background-position: 100% 50%;
+  }
+
+  50% {
+    background-position: 0 50%;
+  }
 }
 
 .topbar__divider {
@@ -518,11 +556,13 @@ a {
   grid-template-columns: minmax(0, 1fr);
 }
 
-.workspace-shell--fullscreen-workspace.workspace-shell--editor-hidden .editor-pane {
+.workspace-shell--fullscreen-workspace.workspace-shell--editor-hidden
+  .editor-pane {
   display: none;
 }
 
-.workspace-shell--fullscreen-workspace.workspace-shell--editor-hidden .preview-pane {
+.workspace-shell--fullscreen-workspace.workspace-shell--editor-hidden
+  .preview-pane {
   display: grid;
   grid-column: 1;
   grid-row: 1;
@@ -1494,6 +1534,58 @@ a {
   line-height: 1.04;
 }
 
+.welcome__title {
+  position: relative;
+  display: inline-block;
+  isolation: isolate;
+}
+
+.welcome__title span {
+  display: inline-block;
+  background: linear-gradient(
+    105deg,
+    var(--color-text-strong) 15%,
+    var(--color-brand) 44%,
+    #8b5cf6 56%,
+    var(--color-text-strong) 78%
+  );
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: welcome-title-flow 6s ease-in-out infinite;
+}
+
+.welcome__title::after {
+  position: absolute;
+  right: 0%;
+  bottom: -13px;
+  left: 0%;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-brand),
+    #8b5cf6,
+    transparent
+  );
+  background-size: 200% 100%;
+  content: "";
+  animation: welcome-title-flow 4s ease-in-out infinite reverse;
+}
+
+@keyframes welcome-title-flow {
+  0%,
+  100% {
+    background-position: 100% 50%;
+  }
+
+  50% {
+    background-position: 0 50%;
+  }
+}
+
 .welcome__lead {
   max-width: 610px;
   margin: 25px 0 0;
@@ -1633,6 +1725,11 @@ button:disabled {
 .site-footer__logo .app-logo svg {
   width: 19px;
   height: 19px;
+}
+
+.site-footer__logo:hover .app-logo--animated,
+.site-footer__logo:hover .site-footer__product--animated {
+  animation-duration: 1.8s;
 }
 
 .site-footer__brand p {

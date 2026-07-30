@@ -20,7 +20,9 @@ const store = useWorkspaceStore();
           <Sparkles :size="14" aria-hidden="true" />
           无需登录 · 数据不上传
         </span>
-        <h1 id="welcome-title">Markdown Studio</h1>
+        <h1 id="welcome-title" class="welcome__title">
+          <span>Markdown Studio</span>
+        </h1>
         <p class="welcome__lead">
           打开你的 Markdown
           文件夹，管理文档、专注写作并实时预览。文件始终留在当前设备，不上传，也不经过服务器。

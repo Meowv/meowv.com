@@ -21,10 +21,10 @@ function openDonation(): void {
     <div class="site-footer__inner">
       <section class="site-footer__brand" aria-label="产品信息">
         <div class="site-footer__logo">
-          <span class="app-logo" aria-hidden="true">
+          <span class="app-logo app-logo--animated" aria-hidden="true">
             <FileText />
           </span>
-          <strong>Markdown Studio</strong>
+          <strong class="site-footer__product--animated">Markdown Studio</strong>
         </div>
         <p>浏览器里的本地 Markdown 工作台。无需登录，文件不上传。</p>
         <span class="site-footer__trust">
