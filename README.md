@@ -10,7 +10,7 @@
 | `blog/`  | 个人博客与 Labs 工具 | Hexo 7、EJS、Stylus                        | 已上线 | [meowv.com](https://meowv.com)             |
 | `excel/` | 在线 Excel 处理      | Vue 3、TypeScript、Vite、Univer、SheetJS   | 已上线 | [excel.meowv.com](https://excel.meowv.com) |
 | `zitie/` | 在线字帖生成         | Vinext、Next.js 16、React 19、TypeScript   | 已上线 | [zt.meowv.com](https://zt.meowv.com)       |
-| `pdf/`   | 在线 PDF 处理        | Nuxt 4、Vue 3、TypeScript、PDF.js、pdf-lib | 待上线 | 规划域名 `pdf.meowv.com`                   |
+| `pdf/`   | 在线 PDF 处理        | Nuxt 4、Vue 3、TypeScript、PDF.js、pdf-lib | 已上线 | [pdf.meowv.com](https://pdf.meowv.com)     |
 
 ## 仓库结构
 
@@ -173,7 +173,7 @@ build/
 - 生产构建：`pnpm build`
 - 产物：`pdf/.output/public/`
 
-PDF 项目已经完成首期开发，尚未上线。它使用静态生成模式，文件读取、预览、处理和导出
+PDF 项目已经完成首期开发并上线。它使用静态生成模式，文件读取、预览、处理和导出
 均在当前浏览器内完成，不提供文件上传接口，也不依赖服务端或第三方文件转换服务。
 
 当前工具包括：

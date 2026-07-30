@@ -27,12 +27,11 @@
 | `blog/`  | `meowv.com` 已上线       | Hexo 7、EJS、Stylus                | Yarn     |
 | `excel/` | `excel.meowv.com` 已上线 | Vue 3、TypeScript、Vite            | pnpm     |
 | `zitie/` | `zt.meowv.com` 已上线    | Vinext、Next.js、React、TypeScript | npm      |
-| `pdf/`   | 已开发完成，尚未上线     | Nuxt 4、Vue 3、TypeScript          | pnpm     |
+| `pdf/`   | `pdf.meowv.com` 已上线    | Nuxt 4、Vue 3、TypeScript          | pnpm     |
 
 涉及站点链接、Canonical、Sitemap、分享信息或跨站导航时：
 
-- 保持 `meowv.com`、`excel.meowv.com` 和 `zt.meowv.com` 的现有线上地址。
-- `pdf.meowv.com` 是规划域名，在用户确认上线前不得描述为已上线。
+- 保持 `meowv.com`、`excel.meowv.com`、`zt.meowv.com` 和 `pdf.meowv.com` 的现有线上地址。
 - 不自行推断 `www` 跳转、证书覆盖、Nginx 路由或生产目录；部署前应检查实际环境。
 
 ## 根目录脚本
