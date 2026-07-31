@@ -3,6 +3,15 @@
     .about-cover {
         height: 75vh;
     }
+    #aboutme .avatar {
+        display: inline-block;
+    }
+    #aboutme .avatar-img {
+        --about-avatar-rotate: 0deg;
+        will-change: transform;
+        transform-origin: center center;
+        transform: translate3d(0, -65%, 0) rotate(var(--about-avatar-rotate));
+    }
 </style>
 
 <%- partial('_partial/bg-cover') %>
@@ -61,3 +70,56 @@
         </div>
     </div>
 </main>
+
+<script>
+    (function () {
+        var avatar = document.querySelector('#aboutme .avatar-img');
+        if (!avatar) {
+            return;
+        }
+
+        var animationHandle = null;
+        var hoverStartTs = null;
+        var previousTs = null;
+        var angle = 0;
+        var isHovering = false;
+        var baseSpeed = 30;
+        var speedStep = 18;
+        var maxSpeed = 320;
+
+        var animate = function (timestamp) {
+            if (!isHovering) {
+                return;
+            }
+            if (hoverStartTs === null) {
+                hoverStartTs = timestamp;
+                previousTs = timestamp;
+            }
+
+            var elapsedSec = (timestamp - hoverStartTs) / 1000;
+            var currentSpeed = Math.min(maxSpeed, baseSpeed + speedStep * elapsedSec);
+            var deltaSec = (timestamp - previousTs) / 1000;
+            angle = (angle + currentSpeed * deltaSec) % 360;
+
+            avatar.style.setProperty('--about-avatar-rotate', angle + 'deg');
+            previousTs = timestamp;
+            animationHandle = window.requestAnimationFrame(animate);
+        };
+
+        avatar.addEventListener('mouseenter', function () {
+            isHovering = true;
+            hoverStartTs = null;
+            previousTs = null;
+            animationHandle = window.requestAnimationFrame(animate);
+        });
+
+        avatar.addEventListener('mouseleave', function () {
+            isHovering = false;
+            if (animationHandle) {
+                window.cancelAnimationFrame(animationHandle);
+                animationHandle = null;
+            }
+            avatar.style.removeProperty('--about-avatar-rotate');
+        });
+    })();
+</script>
