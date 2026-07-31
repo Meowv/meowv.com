@@ -24,7 +24,7 @@
 /* 小工具通用标题 */
 .tool-header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   flex-wrap: wrap;
   gap: 4px 10px;
   margin-bottom: 20px;
@@ -42,6 +42,23 @@
   color: #999;
   font-size: 0.9rem;
   line-height: 1.5;
+}
+
+.tool-header .tool-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  margin-left: auto;
+  border-radius: 50%;
+  color: #5a9600;
+}
+
+.tool-header .tool-back:hover,
+.tool-header .tool-back:focus {
+  background-color: rgba(90, 150, 0, 0.1);
+  color: #3d6900;
 }
 
 .tool-header + .card-content {
@@ -67,5 +84,6 @@ button:focus,
 
   .tool-header .tool-desc {
     flex-basis: 100%;
+    order: 1;
   }
 }

@@ -31,80 +31,304 @@ var gradients = [
   'linear-gradient(135deg, #e96443 0%, #904e95 100%)',
   'linear-gradient(135deg, #0ba360 0%, #3cba92 100%)',
 ];
+var tools = site.data && site.data.tools ? site.data.tools : [];
+var categoryOrder = [];
+var toolsByCategory = {};
+for (var t = 0; t < tools.length; t++) {
+  var currentTool = tools[t];
+  var category = currentTool.category || '其他';
+  if (!toolsByCategory[category]) {
+    toolsByCategory[category] = [];
+    categoryOrder.push(category);
+  }
+  toolsByCategory[category].push(currentTool);
+}
+var featuredTools = tools.filter(function (tool) { return tool.featured; });
 %>
 <%- partial('_partial/bg-cover') %>
 
 <style>
     .labs-container {
-        margin-top: -50px;
+        margin-top: 30px;
         margin-bottom: 30px;
     }
-    .labs-section {
-        margin-bottom: 20px;
+    .labs-controls {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 18px 22px;
+    }
+    .labs-search {
+        flex: 0 0 320px;
+        position: relative;
+        margin: 0;
+    }
+    .labs-search__icon {
+        position: absolute;
+        top: 50%;
+        left: 15px;
+        transform: translateY(-50%);
+        color: #8a93a7;
+        pointer-events: none;
+    }
+    .labs-search input[type="search"] {
+        box-sizing: border-box;
+        width: 100%;
+        height: 46px;
+        margin: 0;
+        padding: 0 50px 0 42px;
+        border: 0;
+        border-radius: 9px;
+        background: #fff;
+        box-shadow: none;
+        color: #344054;
+        font-size: 0.9rem;
+    }
+    .labs-search__clear {
+        position: absolute;
+        top: 50%;
+        right: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        border: 0;
+        border-radius: 50%;
+        background: transparent;
+        box-shadow: none;
+        color: #8a93a7;
+        cursor: pointer;
+        transform: translateY(-50%);
+        transition: background-color 0.2s ease, color 0.2s ease;
+    }
+    .labs-search__clear:hover {
+        background: rgba(90, 150, 0, 0.1);
+        color: #5a9600;
+    }
+    .labs-search__clear:focus {
+        background: #5a9600 !important;
+        color: #fff !important;
+        outline: 2px solid rgba(90, 150, 0, 0.25);
+        outline-offset: 1px;
+    }
+    .labs-search__clear[hidden] {
+        display: none;
+    }
+    .labs-search input[type="search"]:not(.browser-default):focus:not([readonly]) {
+        border: 1px solid #5a9600;
+        border-bottom: 1px solid #5a9600;
+        box-shadow: 0 0 0 3px rgba(90, 150, 0, 0.18);
+        caret-color: #5a9600;
+    }
+    .labs-filter-bar {
+        flex: 1 1 auto;
+        min-width: 0;
+        display: flex;
+        gap: 8px;
+        margin: 0;
+        overflow-x: auto;
+        padding: 3px 1px 8px;
+        scrollbar-width: thin;
+    }
+    .labs-filter {
+        flex: 0 0 auto;
+        min-height: 34px;
+        padding: 0 13px;
+        border: 1px solid #e3e7ee;
+        border-radius: 18px;
+        background: #fff;
+        box-shadow: none;
+        color: #5a6475;
+        font-size: 0.78rem;
+        line-height: 32px;
+        text-transform: none;
+    }
+    .labs-filter:hover,
+    .labs-filter:focus {
+        border-color: #5a9600;
+        background: rgba(90, 150, 0, 0.08);
+        color: #5a9600;
+    }
+    .labs-filter.is-active {
+        border-color: #5a9600;
+        background: #5a9600;
+        color: #fff;
+    }
+    .labs-filter__count {
+        margin-left: 4px;
+        opacity: 0.74;
+        font-size: 0.72rem;
+    }
+    .labs-featured,
+    .labs-group {
+        padding: 22px 22px 8px;
+    }
+    .labs-featured {
+        margin-top: 24px;
+    }
+    .labs-group {
+        margin-top: 26px;
+    }
+    .labs-group__heading {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 14px;
+        margin: 0 8px 10px;
+    }
+    .labs-group__title {
+        margin: 0;
+        color: #30394a;
+        font-size: 1.08rem;
+        font-weight: 700;
+    }
+    .labs-group__count {
+        flex: 0 0 auto;
+        color: #98a1b1;
+        font-size: 0.78rem;
     }
     .lab-row {
         margin-bottom: 0;
     }
     .lab-col {
         padding: 0.5rem;
-        margin-bottom: 1.5rem;
+        margin-bottom: 0.5rem;
+        animation: labs-card-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+        animation-delay: calc(var(--lab-delay, 0) * 45ms);
     }
     .lab-col .lab-link {
         display: block;
         width: 100%;
-        text-decoration: none;
         color: inherit;
+        text-decoration: none;
     }
     .lab-col .lab-link:hover {
         text-decoration: none;
     }
     .lab-card {
-        padding: 16px;
-        border-radius: 10px;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        overflow: hidden;
-        position: relative;
-        height: 110px;
-        color: #fff !important;
-        margin: 0;
         display: flex;
         flex-direction: column;
         justify-content: center;
+        height: 110px;
+        margin: 0;
+        padding: 16px;
+        border: 0;
+        border-radius: 10px;
+        background-image: var(--lab-gradient);
+        box-shadow: none;
+        color: #fff;
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
         box-sizing: border-box;
     }
-    .lab-card:hover {
+    .lab-link:hover .lab-card,
+    .lab-link:focus .lab-card {
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
         transform: translateY(-4px);
-        box-shadow: 0 10px 30px rgba(0,0,0,0.25) !important;
     }
-    .lab-card .lab-emoji {
-        font-size: 1.6rem;
+    .lab-icon {
+        display: flex;
         margin-bottom: 4px;
-        display: block;
+        font-size: 1.6rem;
         line-height: 1.2;
     }
-    .lab-card .lab-name {
+    .lab-name {
+        color: #fff;
         font-size: 0.95rem;
         font-weight: bold;
-        margin-bottom: 2px;
+        line-height: 1.35;
     }
-    .lab-card .lab-desc {
-        color: rgba(255,255,255,0.85);
+    .lab-desc {
+        margin-top: 2px;
+        color: rgba(255, 255, 255, 0.85);
         font-size: 0.7rem;
         line-height: 1.3;
     }
-
+    .labs-empty {
+        margin-top: 18px;
+        padding: 44px 20px;
+        border: 1px dashed #d9dfeb;
+        border-radius: 10px;
+        background: #fff;
+        color: #808a9c;
+        text-align: center;
+        font-size: 0.9rem;
+    }
+    .labs-empty i {
+        display: block;
+        margin-bottom: 8px;
+        color: #5a9600;
+        font-size: 1.6rem;
+    }
+    .labs-featured[hidden],
+    .labs-group[hidden],
+    .lab-col[hidden],
+    .labs-empty[hidden] {
+        display: none !important;
+    }
+    @keyframes labs-card-in {
+        from {
+            opacity: 0;
+            transform: translateY(12px) scale(0.98);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .lab-col {
+            animation: none;
+        }
+    }
+    .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
     @media only screen and (max-width: 601px) {
+        .labs-container {
+            margin-top: 22px;
+        }
+        .labs-controls {
+            display: block;
+            padding: 14px 10px;
+        }
+        .labs-search {
+            margin-top: 8px;
+        }
+        .labs-featured,
+        .labs-group {
+            padding: 15px 10px 6px;
+        }
+        .labs-group {
+            margin-top: 20px;
+        }
+        .labs-group__heading {
+            margin: 0 4px 7px;
+        }
+        .lab-col {
+            padding: 0.35rem;
+        }
         .lab-card {
             height: 100px;
             padding: 10px 12px;
         }
-        .lab-card .lab-emoji {
+        .lab-icon {
+            margin-bottom: 3px;
             font-size: 1.4rem;
         }
-        .lab-card .lab-name {
+        .lab-name {
             font-size: 0.85rem;
         }
-        .lab-card .lab-desc {
+        .lab-desc {
             font-size: 0.65rem;
         }
     }
@@ -112,28 +336,84 @@ var gradients = [
 
 <main class="content">
     <div class="container labs-container">
-        <div class="card labs-section">
-            <div class="card-content">
-                <article>
-                    <% if (site.data && site.data.tools) { %>
-                    <% var tools = site.data.tools; %>
-                    <div class="row lab-row">
-                        <% for (var i = 0, len = tools.length; i < len; i++) { %>
-                        <% var tool = tools[i]; %>
-                        <div class="col s6 m6 l3 lab-col" data-aos="zoom-in-up">
-                            <a href="<%= tool.url %>" class="lab-link"<%= tool.fullscreen ? ' target="_blank" rel="noopener noreferrer"' : '' %>>
-                                <div class="card lab-card" style="background-image: <%= tool.gradient || gradients[i % gradients.length] %>">
-                                    <span class="lab-emoji"><%= tool.emoji %></span>
-                                    <div class="lab-name"><%= tool.name %></div>
-                                    <div class="lab-desc"><%= tool.description %></div>
-                                </div>
-                            </a>
-                        </div>
-                        <% } %>
-                    </div>
-                    <% } %>
-                </article>
+        <section class="card labs-controls" aria-label="工具筛选与搜索">
+            <div class="labs-filter-bar" role="toolbar" aria-label="工具分类筛选">
+                <button class="waves-effect labs-filter is-active" type="button" data-category="all" aria-pressed="true">全部<span class="labs-filter__count"><%= tools.length %></span></button>
+                <% for (var i = 0; i < categoryOrder.length; i++) { %>
+                <% var categoryName = categoryOrder[i]; var categoryTools = toolsByCategory[categoryName]; %>
+                <% if (categoryTools && categoryTools.length) { %>
+                <button class="waves-effect labs-filter" type="button" data-category="<%= categoryName %>" aria-pressed="false"><%= categoryName %><span class="labs-filter__count"><%= categoryTools.length %></span></button>
+                <% } %>
+                <% } %>
             </div>
+            <div class="labs-search">
+                <label class="sr-only" for="labs-search-input">搜索</label>
+                <i class="fas fa-search labs-search__icon" aria-hidden="true"></i>
+                <input id="labs-search-input" type="search" placeholder="搜索：例如 JSON、压缩、二维码" autocomplete="off">
+                <button class="labs-search__clear" id="labs-search-clear" type="button" aria-label="清空搜索" title="清空搜索" hidden>
+                    <i class="fas fa-times" aria-hidden="true"></i>
+                </button>
+            </div>
+        </section>
+        <% if (featuredTools.length) { %>
+        <section class="card labs-featured" data-featured aria-labelledby="labs-featured-title">
+            <div class="labs-group__heading">
+                <div>
+                    <h2 class="labs-group__title" id="labs-featured-title">精选工具</h2>
+                </div>
+            </div>
+            <div class="row lab-row">
+                <% for (var f = 0; f < featuredTools.length; f++) { %>
+                <% var featuredTool = featuredTools[f]; var featuredSearch = [featuredTool.name, featuredTool.description, featuredTool.keywords || '', featuredTool.category || ''].join(' ').toLowerCase(); %>
+                <div class="col s6 m6 l3 lab-col" style="--lab-delay: <%= f %>" data-featured-tool data-category="<%= featuredTool.category %>" data-search="<%= featuredSearch %>">
+                    <a href="<%= featuredTool.url %>" class="lab-link"<%= featuredTool.fullscreen ? ' target="_blank" rel="noopener noreferrer"' : '' %>>
+                        <div class="lab-card" style="--lab-gradient: <%= featuredTool.gradient || gradients[f % gradients.length] %>">
+                            <span class="lab-icon" aria-hidden="true"><%= featuredTool.emoji %></span>
+                            <div class="lab-card__content">
+                                <div class="lab-name"><%= featuredTool.name %></div>
+                                <div class="lab-desc"><%= featuredTool.description %></div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <% } %>
+            </div>
+        </section>
+        <% } %>
+
+        <% for (var g = 0; g < categoryOrder.length; g++) { %>
+        <% var groupName = categoryOrder[g]; var groupTools = toolsByCategory[groupName]; %>
+        <% if (groupTools && groupTools.length) { %>
+        <section class="card labs-group" data-group="<%= groupName %>" aria-labelledby="labs-group-<%= g %>">
+            <div class="labs-group__heading">
+                <div>
+                    <h2 class="labs-group__title" id="labs-group-<%= g %>"><%= groupName %></h2>
+                </div>
+                <span class="labs-group__count"><%= groupTools.length %> 个</span>
+            </div>
+            <div class="row lab-row">
+                <% for (var j = 0; j < groupTools.length; j++) { %>
+                <% var tool = groupTools[j]; var searchText = [tool.name, tool.description, tool.keywords || '', tool.category || ''].join(' ').toLowerCase(); %>
+                <div class="col s6 m6 l3 lab-col" style="--lab-delay: <%= (g * 4 + j) % 12 %>" data-tool data-category="<%= tool.category %>" data-search="<%= searchText %>">
+                    <a href="<%= tool.url %>" class="lab-link"<%= tool.fullscreen ? ' target="_blank" rel="noopener noreferrer"' : '' %>>
+                        <div class="lab-card" style="--lab-gradient: <%= tool.gradient || gradients[(g + j) % gradients.length] %>">
+                            <span class="lab-icon" aria-hidden="true"><%= tool.emoji %></span>
+                            <div class="lab-card__content">
+                                <div class="lab-name"><%= tool.name %></div>
+                                <div class="lab-desc"><%= tool.description %></div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <% } %>
+            </div>
+        </section>
+        <% } %>
+        <% } %>
+
+        <div class="labs-empty" id="labs-empty" hidden>
+            <i class="far fa-compass" aria-hidden="true"></i>
+            没有找到匹配的工具，试试更短的关键词或切换分类。
         </div>
 
         <% if (page.content && page.content.length > 0) { %>
@@ -144,10 +424,76 @@ var gradients = [
         </div>
         <% } %>
 
+        <% if (theme.valine && theme.valine.enable) { %>
         <div class="card">
-            <% if (theme.valine && theme.valine.enable) { %>
             <%- partial('_partial/valine') %>
-            <% } %>
         </div>
+        <% } %>
     </div>
 </main>
+
+<script>
+    (function () {
+        var searchInput = document.getElementById('labs-search-input');
+        var clearButton = document.getElementById('labs-search-clear');
+        var filters = Array.prototype.slice.call(document.querySelectorAll('.labs-filter'));
+        var tools = Array.prototype.slice.call(document.querySelectorAll('[data-tool]'));
+        var featuredSection = document.querySelector('[data-featured]');
+        var featuredTools = Array.prototype.slice.call(document.querySelectorAll('[data-featured-tool]'));
+        var groups = Array.prototype.slice.call(document.querySelectorAll('[data-group]'));
+        var emptyState = document.getElementById('labs-empty');
+        var selectedCategory = 'all';
+
+        function matches(tool) {
+            var keyword = searchInput.value.trim().toLowerCase();
+            var categoryMatches = selectedCategory === 'all' || tool.getAttribute('data-category') === selectedCategory;
+            return categoryMatches && (!keyword || tool.getAttribute('data-search').indexOf(keyword) !== -1);
+        }
+
+        function updateTools() {
+            var visibleCount = 0;
+            clearButton.hidden = searchInput.value.length === 0;
+
+            tools.forEach(function (tool) {
+                var visible = matches(tool);
+                tool.hidden = !visible;
+                if (visible) visibleCount++;
+            });
+
+            groups.forEach(function (group) {
+                var visibleTools = group.querySelectorAll('[data-tool]:not([hidden])');
+                group.hidden = visibleTools.length === 0;
+            });
+
+            if (featuredSection) {
+                featuredSection.hidden = selectedCategory !== 'all' || searchInput.value.trim() !== '';
+                featuredTools.forEach(function (tool) {
+                    tool.hidden = !matches(tool);
+                });
+            }
+
+            emptyState.hidden = visibleCount !== 0;
+        }
+
+        filters.forEach(function (filter) {
+            filter.addEventListener('click', function () {
+                selectedCategory = filter.getAttribute('data-category');
+                searchInput.value = '';
+                filters.forEach(function (item) {
+                    var isActive = item === filter;
+                    item.classList.toggle('is-active', isActive);
+                    item.setAttribute('aria-pressed', String(isActive));
+                });
+                updateTools();
+            });
+        });
+
+        searchInput.addEventListener('input', updateTools);
+        clearButton.addEventListener('click', function () {
+            searchInput.value = '';
+            updateTools();
+            searchInput.focus();
+        });
+        updateTools();
+    })();
+</script>

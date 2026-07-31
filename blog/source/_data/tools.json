@@ -4,135 +4,212 @@
     "name": "Markdown Studio",
     "description": "无需登录、数据不上传，浏览器里的本地 Markdown 工作台",
     "emoji": "📄",
-    "url": "https://md.meowv.com"
+    "url": "https://md.meowv.com",
+    "category": "效率办公",
+    "featured": true
   },
   {
     "slug": "excel",
     "name": "在线 Excel 处理",
     "description": "无需登录、数据不上传，在浏览器中创建、编辑和导出Excel文件",
     "emoji": "💹",
-    "url": "https://excel.meowv.com"
+    "url": "https://excel.meowv.com",
+    "category": "效率办公",
+    "featured": true
   },
   {
     "slug": "pdf",
     "name": "在线 PDF 处理",
     "description": "无需登录、文件不上传，在浏览器中完成 PDF 合并、拆分、页面整理、转换、水印与页码处理",
     "emoji": "📕",
-    "url": "https://pdf.meowv.com"
+    "url": "https://pdf.meowv.com",
+    "category": "效率办公",
+    "featured": true
   },
   {
     "slug": "zitie",
     "name": "字帖生成",
     "description": "在线生成可打印的 A4 字帖，支持汉字、词语、段落、拼音、英文、数字、笔画与控笔练习，可导出 PNG、PDF 或直接打印",
     "emoji": "✍️",
-    "url": "https://zt.meowv.com"
+    "url": "https://zt.meowv.com",
+    "category": "效率办公",
+    "featured": true
   },
   {
-    "slug": "plonky",
-    "name": "Plonky",
-    "description": "基于物理引擎的趣味解谜闯关游戏",
-    "emoji": "🕹️",
-    "url": "/games/plonky",
-    "fullscreen": true
+    "slug": "date-calculator",
+    "name": "日期计算",
+    "description": "日期加减、间隔与工作日天数计算",
+    "emoji": "📅",
+    "url": "/tools/date-calculator",
+    "category": "效率办公"
   },
   {
-    "slug": "ztype",
-    "name": "打字练习",
-    "description": "打字消灭敌机，在游戏中提升打字速度！",
-    "emoji": "🛸",
-    "url": "/games/ztype",
-    "fullscreen": true
+    "slug": "whiteboard",
+    "name": "白板工具",
+    "description": "在线白板绘图工具，支持画笔、马赛克、橡皮擦、文字、框选、图片上传，撤销重做，导出",
+    "emoji": "✏️",
+    "url": "/tools/whiteboard",
+    "category": "效率办公"
+  },
+  {
+    "slug": "calculation-paper",
+    "name": "计算稿纸",
+    "description": "从混合文本中提取数字，自动逐行计算与汇总",
+    "emoji": "🧮",
+    "url": "/tools/calculation-paper",
+    "category": "效率办公"
+  },
+  {
+    "slug": "number-converter",
+    "name": "数字大小写转换",
+    "description": "阿拉伯数字转中文小写与人民币大写",
+    "emoji": "🔢",
+    "url": "/tools/number-converter",
+    "category": "效率办公"
+  },
+  {
+    "slug": "unit-converter",
+    "name": "单位换算",
+    "description": "长度、面积、质量、温度、速度与容量换算",
+    "emoji": "📐",
+    "url": "/tools/unit-converter",
+    "category": "效率办公"
+  },
+  {
+    "slug": "timer",
+    "name": "计时器",
+    "description": "在线倒计时/秒表工具，支持全屏显示与个性化设置",
+    "emoji": "⏰",
+    "url": "/tools/timer",
+    "category": "效率办公"
   },
   {
     "slug": "keyboard-visualizer",
     "name": "键盘可视化",
     "description": "机械键盘按键测试、组合键展示与 RGB 灯效体验",
     "emoji": "⌨️",
-    "url": "/tools/keyboard-visualizer"
+    "url": "/tools/keyboard-visualizer",
+    "category": "开发与数据"
   },
   {
     "slug": "api-explorer",
     "name": "API Explorer",
     "description": "HTTP API 在线调试工具",
     "emoji": "🔧",
-    "url": "/tools/api-explorer"
+    "url": "/tools/api-explorer",
+    "category": "开发与数据"
   },
   {
     "slug": "api-doc-generator",
     "name": "接口文档生成",
     "description": "根据请求与返回示例生成 Markdown、OpenAPI 和多语言调用代码",
     "emoji": "📚",
-    "url": "/tools/api-doc-generator"
+    "url": "/tools/api-doc-generator",
+    "category": "开发与数据"
   },
   {
     "slug": "regex-tester",
     "name": "正则表达式测试",
     "description": "正则实时匹配、捕获分组与替换预览",
     "emoji": "🔍",
-    "url": "/tools/regex-tester"
+    "url": "/tools/regex-tester",
+    "category": "开发与数据"
   },
   {
     "slug": "base64",
     "name": "Base64 编解码",
     "description": "Base64 文本与图片在线编解码",
     "emoji": "🔒",
-    "url": "/tools/base64"
+    "url": "/tools/base64",
+    "category": "开发与数据"
   },
   {
     "slug": "hash-checksum",
     "name": "Hash / 文件校验",
     "description": "本地计算文本与文件的多种 SHA 哈希值",
     "emoji": "#️⃣",
-    "url": "/tools/hash-checksum"
+    "url": "/tools/hash-checksum",
+    "category": "开发与数据"
   },
   {
     "slug": "jwt-decoder",
     "name": "JWT 解析",
     "description": "本地解析 JWT 结构、声明与有效时间",
     "emoji": "🪪",
-    "url": "/tools/jwt-decoder"
+    "url": "/tools/jwt-decoder",
+    "category": "开发与数据"
   },
   {
     "slug": "uuid-generator",
     "name": "GUID/UUID 生成器",
     "description": "GUID/UUID 在线生成工具，支持批量生成、大小写、连字符配置",
     "emoji": "🔑",
-    "url": "/tools/uuid-generator"
+    "url": "/tools/uuid-generator",
+    "category": "开发与数据"
   },
   {
     "slug": "json-formatter",
     "name": "JSON 格式化",
     "description": "JSON 格式化、压缩、校验工具",
     "emoji": "📝",
-    "url": "/tools/json-formatter"
+    "url": "/tools/json-formatter",
+    "category": "开发与数据"
   },
   {
     "slug": "json-yaml",
     "name": "JSON / YAML 互转",
     "description": "JSON 与 YAML 格式在线互转工具",
     "emoji": "📋",
-    "url": "/tools/json-yaml"
+    "url": "/tools/json-yaml",
+    "category": "开发与数据"
   },
   {
     "slug": "csv-json",
     "name": "CSV / JSON 互转",
     "description": "CSV 表格与 JSON 数据本地互相转换",
     "emoji": "🗂️",
-    "url": "/tools/csv-json"
+    "url": "/tools/csv-json",
+    "category": "开发与数据"
   },
   {
     "slug": "url-encode",
     "name": "URL 编解码",
     "description": "URL 在线编码与解码工具",
     "emoji": "🔗",
-    "url": "/tools/url-encode"
+    "url": "/tools/url-encode",
+    "category": "开发与数据"
   },
   {
     "slug": "url-parser",
     "name": "URL 解析",
     "description": "拆解 URL 组成并查看重复查询参数",
     "emoji": "🧭",
-    "url": "/tools/url-parser"
+    "url": "/tools/url-parser",
+    "category": "开发与数据"
+  },
+  {
+    "slug": "timestamp",
+    "name": "时间戳转换",
+    "description": "Unix 时间戳与日期时间在线互转，支持毫秒/秒",
+    "emoji": "⏱️",
+    "url": "/tools/timestamp",
+    "category": "开发与数据"
+  },
+  {
+    "slug": "cron-parser",
+    "name": "Cron 表达式",
+    "description": "校验并解释 Cron，预览未来执行时间",
+    "emoji": "🗓️",
+    "url": "/tools/cron-parser",
+    "category": "开发与数据"
+  },
+  {
+    "slug": "base-converter",
+    "name": "进制转换",
+    "description": "2 至 36 进制大整数精准互转",
+    "emoji": "🧩",
+    "url": "/tools/base-converter",
+    "category": "开发与数据"
   },
   {
     "slug": "text-diff",
@@ -140,7 +217,7 @@
     "description": "在线文本差异对比工具，支持行级对比",
     "emoji": "📊",
     "url": "/tools/text-diff",
-    "category": "文本处理"
+    "category": "文本与语言"
   },
   {
     "slug": "text-toolbox",
@@ -148,7 +225,7 @@
     "description": "多行文本清理、去重、排序与批量加工",
     "emoji": "🧹",
     "url": "/tools/text-toolbox",
-    "category": "文本处理"
+    "category": "文本与语言"
   },
   {
     "slug": "text-steganography",
@@ -156,7 +233,7 @@
     "description": "将隐藏信息嵌入载体文本，并支持本页面解析",
     "emoji": "🕵️",
     "url": "/tools/text-steganography",
-    "category": "文本处理"
+    "category": "文本与语言"
   },
   {
     "slug": "special-symbols",
@@ -164,181 +241,152 @@
     "description": "特殊符号大全，一键复制使用",
     "emoji": "✨",
     "url": "/tools/special-symbols",
-    "category": "文本处理"
+    "category": "文本与语言"
   },
   {
     "slug": "emojis",
     "name": "Emoji 表情",
     "description": "Emoji 表情大全，一键复制使用",
     "emoji": "😊",
-    "url": "/tools/emojis"
-  },
-  {
-    "slug": "emoji-match",
-    "name": "表情符号消除",
-    "description": "在限时挑战中找出唯一成对的表情符号",
-    "emoji": "🎯",
-    "url": "/tools/emoji-match"
+    "url": "/tools/emojis",
+    "category": "文本与语言"
   },
   {
     "slug": "chinese-converter",
     "name": "繁简互转",
     "description": "中文简繁体实时在线转换",
     "emoji": "🔄",
-    "url": "/tools/chinese-converter"
+    "url": "/tools/chinese-converter",
+    "category": "文本与语言"
   },
   {
     "slug": "translate",
     "name": "翻译工具",
     "description": "中英互译在线翻译工具",
     "emoji": "🌐",
-    "url": "/tools/translate"
-  },
-  {
-    "slug": "qr-generator",
-    "name": "二维码生成",
-    "description": "在线文本/链接二维码生成器",
-    "emoji": "🔳",
-    "url": "/tools/qr-generator"
-  },
-  {
-    "slug": "qr-reader",
-    "name": "二维码识别",
-    "description": "从本地图片或剪贴板中识别二维码内容",
-    "emoji": "📷",
-    "url": "/tools/qr-reader"
-  },
-  {
-    "slug": "color-picker",
-    "name": "颜色选择器",
-    "description": "HEX/RGB/RGBA/HSL/HSLA/HSV/CMYK 颜色格式互转",
-    "emoji": "🎨",
-    "url": "/tools/color-picker"
-  },
-  {
-    "slug": "image-toolbox",
-    "name": "图片压缩与格式转换",
-    "description": "本地压缩、缩放并转换 PNG/JPEG/WebP 图片",
-    "emoji": "🖼️",
-    "url": "/tools/image-toolbox"
-  },
-  {
-    "slug": "exif-cleaner",
-    "name": "EXIF 查看与清除",
-    "description": "本地查看图片元数据并导出去除 EXIF 的副本",
-    "emoji": "🕶️",
-    "url": "/tools/exif-cleaner"
-  },
-  {
-    "slug": "periodic-table",
-    "name": "元素周期表",
-    "description": "118个化学元素交互式周期表，支持搜索与分类筛选",
-    "emoji": "🧪",
-    "url": "/tools/periodic-table"
-  },
-  {
-    "slug": "3d-globe",
-    "name": "3D 地球仪",
-    "description": "可旋转缩放的交互式地球仪，支持国家搜索、边界与地理信息探索",
-    "emoji": "🌍",
-    "url": "/tools/3d-globe"
+    "url": "/tools/translate",
+    "category": "文本与语言"
   },
   {
     "slug": "pronunciation",
     "name": "汉字标准发音",
     "description": "汉字标准发音查询，支持拼音标注与语音朗读",
     "emoji": "🔊",
-    "url": "/tools/pronunciation"
+    "url": "/tools/pronunciation",
+    "category": "文本与语言"
   },
   {
     "slug": "bishun",
     "name": "汉字笔顺",
     "description": "汉字笔顺查询，支持笔顺绘制与动画演示",
     "emoji": "🖌️",
-    "url": "/tools/bishun"
+    "url": "/tools/bishun",
+    "category": "文本与语言"
   },
   {
-    "slug": "timestamp",
-    "name": "时间戳转换",
-    "description": "Unix 时间戳与日期时间在线互转，支持毫秒/秒",
-    "emoji": "⏱️",
-    "url": "/tools/timestamp"
+    "slug": "qr-generator",
+    "name": "二维码生成",
+    "description": "在线文本/链接二维码生成器",
+    "emoji": "🔳",
+    "url": "/tools/qr-generator",
+    "category": "图片与媒体"
   },
   {
-    "slug": "date-calculator",
-    "name": "日期计算",
-    "description": "日期加减、间隔与工作日天数计算",
-    "emoji": "📅",
-    "url": "/tools/date-calculator"
+    "slug": "qr-reader",
+    "name": "二维码识别",
+    "description": "从本地图片或剪贴板中识别二维码内容",
+    "emoji": "📷",
+    "url": "/tools/qr-reader",
+    "category": "图片与媒体"
   },
   {
-    "slug": "cron-parser",
-    "name": "Cron 表达式",
-    "description": "校验并解释 Cron，预览未来执行时间",
-    "emoji": "🗓️",
-    "url": "/tools/cron-parser"
+    "slug": "color-picker",
+    "name": "颜色选择器",
+    "description": "HEX/RGB/RGBA/HSL/HSLA/HSV/CMYK 颜色格式互转",
+    "emoji": "🎨",
+    "url": "/tools/color-picker",
+    "category": "图片与媒体"
   },
   {
-    "slug": "whiteboard",
-    "name": "白板工具",
-    "description": "在线白板绘图工具，支持画笔、马赛克、橡皮擦、文字、框选、图片上传，撤销重做，导出",
-    "emoji": "✏️",
-    "url": "/tools/whiteboard"
+    "slug": "image-toolbox",
+    "name": "图片压缩与格式转换",
+    "description": "本地压缩、缩放并转换 PNG/JPEG/WebP 图片",
+    "emoji": "🖼️",
+    "url": "/tools/image-toolbox",
+    "category": "图片与媒体"
   },
   {
-    "slug": "calculation-paper",
-    "name": "计算稿纸",
-    "description": "从混合文本中提取数字，自动逐行计算与汇总",
-    "emoji": "🧮",
-    "url": "/tools/calculation-paper"
-  },
-  {
-    "slug": "number-converter",
-    "name": "数字大小写转换",
-    "description": "阿拉伯数字转中文小写与人民币大写",
-    "emoji": "🔢",
-    "url": "/tools/number-converter"
-  },
-  {
-    "slug": "base-converter",
-    "name": "进制转换",
-    "description": "2 至 36 进制大整数精准互转",
-    "emoji": "🧩",
-    "url": "/tools/base-converter"
-  },
-  {
-    "slug": "unit-converter",
-    "name": "单位换算",
-    "description": "长度、面积、质量、温度、速度与容量换算",
-    "emoji": "📐",
-    "url": "/tools/unit-converter"
+    "slug": "exif-cleaner",
+    "name": "EXIF 查看与清除",
+    "description": "本地查看图片元数据并导出去除 EXIF 的副本",
+    "emoji": "🕶️",
+    "url": "/tools/exif-cleaner",
+    "category": "图片与媒体"
   },
   {
     "slug": "video-to-gif",
     "name": "视频转GIF",
     "description": "本地截取视频片段并转换为 GIF 动图",
     "emoji": "🎞️",
-    "url": "/tools/video-to-gif"
+    "url": "/tools/video-to-gif",
+    "category": "图片与媒体"
   },
   {
     "slug": "video-parser",
     "name": "短视频解析",
     "description": "全平台短视频链接解析去水印工具",
     "emoji": "🎬",
-    "url": "/tools/video-parser"
+    "url": "/tools/video-parser",
+    "category": "图片与媒体"
   },
   {
-    "slug": "timer",
-    "name": "计时器",
-    "description": "在线倒计时/秒表工具，支持全屏显示与个性化设置",
-    "emoji": "⏰",
-    "url": "/tools/timer"
+    "slug": "periodic-table",
+    "name": "元素周期表",
+    "description": "118个化学元素交互式周期表，支持搜索与分类筛选",
+    "emoji": "🧪",
+    "url": "/tools/periodic-table",
+    "category": "学习探索"
+  },
+  {
+    "slug": "3d-globe",
+    "name": "3D 地球仪",
+    "description": "可旋转缩放的交互式地球仪，支持国家搜索、边界与地理信息探索",
+    "emoji": "🌍",
+    "url": "/tools/3d-globe",
+    "category": "学习探索"
+  },
+  {
+    "slug": "plonky",
+    "name": "Plonky",
+    "description": "基于物理引擎的趣味解谜闯关游戏",
+    "emoji": "🕹️",
+    "url": "/games/plonky",
+    "fullscreen": true,
+    "category": "趣味游戏"
+  },
+  {
+    "slug": "ztype",
+    "name": "打字练习",
+    "description": "打字消灭敌机，在游戏中提升打字速度！",
+    "emoji": "🛸",
+    "url": "/games/ztype",
+    "fullscreen": true,
+    "category": "趣味游戏"
+  },
+  {
+    "slug": "emoji-match",
+    "name": "表情符号消除",
+    "description": "在限时挑战中找出唯一成对的表情符号",
+    "emoji": "🎯",
+    "url": "/tools/emoji-match",
+    "category": "趣味游戏"
   },
   {
     "slug": "answer-book",
     "name": "答案之书",
     "description": "默念一个问题，翻开书页，或许你正在寻找的答案就在这里",
     "emoji": "📖",
-    "url": "/tools/answer-book"
+    "url": "/tools/answer-book",
+    "category": "趣味游戏"
   }
 ]
