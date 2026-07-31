@@ -276,6 +276,15 @@
     "category": "文本与语言"
   },
   {
+    "slug": "image",
+    "name": "Image Studio",
+    "description": "无需登录、图片不上传，在浏览器中完成图片压缩、格式转换、尺寸调整与裁剪",
+    "emoji": "🖼️",
+    "url": "https://img.meowv.com",
+    "category": "图片与媒体",
+    "featured": true
+  },
+  {
     "slug": "bishun",
     "name": "汉字笔顺",
     "description": "汉字笔顺查询，支持笔顺绘制与动画演示",
@@ -305,14 +314,6 @@
     "description": "HEX/RGB/RGBA/HSL/HSLA/HSV/CMYK 颜色格式互转",
     "emoji": "🎨",
     "url": "/tools/color-picker",
-    "category": "图片与媒体"
-  },
-  {
-    "slug": "image-toolbox",
-    "name": "图片压缩与格式转换",
-    "description": "本地压缩、缩放并转换 PNG/JPEG/WebP 图片",
-    "emoji": "🖼️",
-    "url": "/tools/image-toolbox",
     "category": "图片与媒体"
   },
   {
