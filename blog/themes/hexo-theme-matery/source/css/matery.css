@@ -318,7 +318,35 @@ header .brand-logo .logo-img {
 }
 
 header .brand-logo .logo-span {
+  display: inline-block;
+  background: linear-gradient(120deg, #ffffff 0%, #5a9600 24%, #4cbf30 60%, #0a3e1e 84%, #ffffff 100%);
+  background-size: 260% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.25), 0 0 18px rgba(90, 150, 0, 0.24);
   font-size: 1.6rem;
+  animation: slogan-shimmer 5s linear infinite, logo-float 4s ease-in-out infinite;
+}
+
+header #headNav:not(.nav-transparent) .brand-logo .logo-span {
+  background: none;
+  -webkit-background-clip: initial;
+  background-clip: initial;
+  color: #fff;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.35);
+  animation: logo-float 4s ease-in-out infinite;
+}
+
+@keyframes logo-float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-2px);
+  }
 }
 
 /*修改顶部 logo 的文字垂直对齐为 top，避免默认 middle 看起来偏下*/
@@ -603,11 +631,60 @@ header .go-back i {
   position: relative;
 }
 
+.bg-cover .home-slogan {
+  animation: slogan-float 4s ease-in-out infinite;
+}
+
+.bg-cover .home-slogan-text {
+  display: inline-block;
+  background: linear-gradient(120deg, #ffffff 0%, #5a9600 22%, #4cbf30 48%, #0a3e1e 75%, #ffffff 100%);
+  background-size: 260% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.25), 0 0 24px rgba(90, 150, 0, 0.28);
+  animation: slogan-shimmer 5s linear infinite;
+}
+
+body.has-nav-bg .bg-cover .home-slogan-text {
+  background: none;
+  -webkit-background-clip: initial;
+  background-clip: initial;
+  color: #fff;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.35);
+  animation: none;
+}
+
 .bg-cover .description {
   font-weight: 300;
   font-size: 1.25rem;
   line-height: 1.4em;
   color: #eee;
+}
+
+@keyframes slogan-shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes slogan-float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-4px);
+  }
 }
 
 .bg-cover .post-title {

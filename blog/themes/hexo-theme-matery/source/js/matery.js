@@ -140,9 +140,13 @@ $(function () {
         if (position < showPosition) {
             $nav.addClass('nav-transparent');
             $backTop.slideUp(300);
+
+            $('body').removeClass('has-nav-bg');
         } else {
             $nav.removeClass('nav-transparent');
             $backTop.slideDown(300);
+
+            $('body').addClass('has-nav-bg');
         }
     }
 
