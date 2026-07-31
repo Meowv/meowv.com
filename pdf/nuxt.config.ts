@@ -43,7 +43,7 @@ export default defineNuxtConfig({
       script: [
         {
           async: true,
-          src: "https://www.googletagmanager.com/gtag/js?id=G-CKC14F63ME"
+          src: "https://www.googletagmanager.com/gtag/js?id=G-EPJQW4WXS0"
         },
         {
           src: "/google-analytics.js"

@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { ArrowUpRight, FileCode2, FileSpreadsheet, ShieldCheck, SquarePen } from "@lucide/vue";
+import {
+  ArrowUpRight,
+  FileCode2,
+  FileSpreadsheet,
+  Image as ImageIcon,
+  ShieldCheck,
+  SquarePen,
+} from "@lucide/vue";
 import AppLogo from "~/components/layout/AppLogo.vue";
 import { siteConfig } from "~/config/site";
 </script>
@@ -27,6 +34,19 @@ import { siteConfig } from "~/config/site";
 
         <div class="site-footer__link-group">
           <strong>更多工具</strong>
+          <a
+            class="site-footer__product-link"
+            href="https://img.meowv.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <ImageIcon :size="18" aria-hidden="true" />
+            <span>
+              <b>Image Studio</b>
+              <small>浏览器里的本地图片处理工具</small>
+            </span>
+            <ArrowUpRight :size="15" aria-hidden="true" />
+          </a>
           <a
             class="site-footer__product-link"
             :href="siteConfig.links.markdown"
