@@ -95,10 +95,9 @@ check_project() {
       )
       ;;
     img)
-      (
-        cd "$ROOT_DIR/image"
-        ./node_modules/.bin/vue-tsc --noEmit
-        ./node_modules/.bin/vite build
+      binaries=(
+        "$ROOT_DIR/image/node_modules/.bin/vue-tsc"
+        "$ROOT_DIR/image/node_modules/.bin/vite"
       )
       ;;
     *)
@@ -127,6 +126,13 @@ build_project() {
         cd "$ROOT_DIR/blog"
         ./node_modules/.bin/hexo clean
         ./node_modules/.bin/hexo generate
+      )
+      ;;
+    img)
+      (
+        cd "$ROOT_DIR/image"
+        ./node_modules/.bin/vue-tsc --noEmit
+        ./node_modules/.bin/vite build
       )
       ;;
     md)
