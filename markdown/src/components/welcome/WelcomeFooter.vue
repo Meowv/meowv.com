@@ -4,6 +4,7 @@ import {
   FileSpreadsheet,
   FileText,
   Heart,
+  Image,
   ShieldCheck,
   SquarePen,
 } from "@lucide/vue";
@@ -31,19 +32,32 @@ function openDonation(): void {
           <ShieldCheck :size="16" aria-hidden="true" />
           本地处理 · 数据不上传
         </span>
+        <button
+          class="site-footer__support-link"
+          type="button"
+          @click="openDonation"
+        >
+          <Heart :size="14" aria-hidden="true" />
+          捐赠支持
+        </button>
       </section>
 
-      <nav class="site-footer__links" aria-label="页脚导航">
-        <div class="site-footer__link-group">
-          <strong>Markdown Studio</strong>
-          <button type="button" @click="openDonation">
-            <Heart :size="14" aria-hidden="true" />
-            捐赠支持
-          </button>
-        </div>
-
+      <nav class="site-footer__links site-footer__links--products" aria-label="页脚导航">
         <div class="site-footer__link-group">
           <strong>更多工具</strong>
+          <a
+            class="site-footer__product-link"
+            href="https://img.meowv.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Image :size="18" aria-hidden="true" />
+            <span>
+              <b>Image Studio</b>
+              <small>浏览器里的本地图片处理工具</small>
+            </span>
+            <ArrowUpRight :size="15" aria-hidden="true" />
+          </a>
           <a
             class="site-footer__product-link"
             href="https://excel.meowv.com/"

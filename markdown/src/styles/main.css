@@ -1748,10 +1748,32 @@ button:disabled {
   font-weight: 680;
 }
 
+.site-footer__support-link {
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.site-footer__support-link:hover {
+  color: var(--color-brand);
+}
+
 .site-footer__links {
   display: grid;
   grid-template-columns: minmax(130px, 0.5fr) minmax(250px, 1fr);
   gap: clamp(44px, 7vw, 84px);
+}
+
+.site-footer__links--products {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .site-footer__link-group {
@@ -1797,6 +1819,10 @@ button:disabled {
   align-items: center;
   gap: 10px;
   padding: 7px 0;
+}
+
+.site-footer__links--products .site-footer__product-link {
+  max-width: none;
 }
 
 .site-footer__product-link > svg:first-child {
