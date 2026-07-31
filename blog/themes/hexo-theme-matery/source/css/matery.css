@@ -319,12 +319,12 @@ header .brand-logo .logo-img {
 
 header .brand-logo .logo-span {
   display: inline-block;
-  background: linear-gradient(120deg, #ffffff 0%, #5a9600 24%, #4cbf30 60%, #0a3e1e 84%, #ffffff 100%);
+  background: linear-gradient(120deg, #ffffff 0%, rgba(255, 255, 255, 0.995) 34%, rgba(90, 150, 0, 0.12) 56%, rgba(76, 191, 48, 0.09) 74%, rgba(10, 62, 30, 0.06) 90%, #ffffff 100%);
   background-size: 260% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.25), 0 0 18px rgba(90, 150, 0, 0.24);
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.18), 0 0 8px rgba(90, 150, 0, 0.08);
   font-size: 1.6rem;
   animation: slogan-shimmer 5s linear infinite, logo-float 4s ease-in-out infinite;
 }
@@ -637,12 +637,12 @@ header .go-back i {
 
 .bg-cover .home-slogan-text {
   display: inline-block;
-  background: linear-gradient(120deg, #ffffff 0%, #5a9600 22%, #4cbf30 48%, #0a3e1e 75%, #ffffff 100%);
+  background: linear-gradient(120deg, #ffffff 0%, rgba(255, 255, 255, 0.995) 32%, rgba(90, 150, 0, 0.11) 54%, rgba(76, 191, 48, 0.08) 72%, rgba(10, 62, 30, 0.05) 88%, #ffffff 100%);
   background-size: 260% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.25), 0 0 24px rgba(90, 150, 0, 0.28);
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.18), 0 0 8px rgba(90, 150, 0, 0.08);
   animation: slogan-shimmer 5s linear infinite;
 }
 

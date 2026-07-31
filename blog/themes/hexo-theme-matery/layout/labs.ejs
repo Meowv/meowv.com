@@ -55,6 +55,9 @@ var featuredTools = tools.filter(function (tool) { return tool.featured; });
     .labs-container .card {
         background-color: transparent;
     }
+    .labs-container .card.labs-comments-card {
+        background-color: #fff;
+    }
     .labs-controls {
         display: flex;
         align-items: center;
@@ -429,7 +432,7 @@ var featuredTools = tools.filter(function (tool) { return tool.featured; });
         <% } %>
 
         <% if (theme.valine && theme.valine.enable) { %>
-        <div class="card">
+        <div class="card labs-comments-card">
             <%- partial('_partial/valine') %>
         </div>
         <% } %>
