@@ -1,0 +1,266 @@
+<%
+  var maxNodes = 48;
+  var maxLinks = 160;
+
+  var categoryCountMap = {};
+  site.categories.map(function(category) {
+      categoryCountMap[category.name] = {
+          name: category.name,
+          value: category.length,
+          path: decodeURI(url_for(category.path))
+      };
+  });
+
+  var topCategories = [];
+  for (var categoryName in categoryCountMap) {
+      if (Object.prototype.hasOwnProperty.call(categoryCountMap, categoryName)) {
+          topCategories.push(categoryCountMap[categoryName]);
+      }
+  }
+  topCategories.sort(function (a, b) {
+      return b.value - a.value;
+  });
+
+  var nodes = [];
+  var nodeSet = {};
+  for (var i = 0; i < Math.min(maxNodes, topCategories.length); i++) {
+      var nodeItem = topCategories[i];
+      nodes.push({
+          name: nodeItem.name,
+          value: nodeItem.value,
+          path: nodeItem.path
+      });
+      nodeSet[nodeItem.name] = true;
+  }
+
+  var categoryTagSetMap = {};
+  site.posts.map(function (post) {
+      if (!post.categories || post.categories.length === 0 || !post.tags || post.tags.length === 0) {
+          return;
+      }
+
+      var linkedCategories = [];
+      post.categories.forEach(function (category) {
+          if (nodeSet[category.name]) {
+              linkedCategories.push(category.name);
+          }
+      });
+      if (linkedCategories.length === 0) {
+          return;
+      }
+
+      post.tags.forEach(function (tag) {
+          if (!tag || !tag.name) {
+              return;
+          }
+          linkedCategories.forEach(function (categoryName) {
+              if (!categoryTagSetMap[categoryName]) {
+                  categoryTagSetMap[categoryName] = {};
+              }
+              categoryTagSetMap[categoryName][tag.name] = true;
+          });
+      });
+  });
+
+  var linkMap = {};
+  var linkedCategoryNames = [];
+  for (var idx = 0; idx < nodes.length; idx++) {
+      linkedCategoryNames.push(nodes[idx].name);
+  }
+  for (var m = 0; m < linkedCategoryNames.length; m++) {
+      var sourceName = linkedCategoryNames[m];
+      var sourceTagSet = categoryTagSetMap[sourceName] || {};
+      for (var n = m + 1; n < linkedCategoryNames.length; n++) {
+          var targetName = linkedCategoryNames[n];
+          var targetTagSet = categoryTagSetMap[targetName] || {};
+          var sharedCount = 0;
+
+          for (var tagName in sourceTagSet) {
+              if (!Object.prototype.hasOwnProperty.call(sourceTagSet, tagName)) {
+                  continue;
+              }
+              if (targetTagSet[tagName]) {
+                  sharedCount++;
+              }
+          }
+
+          if (sharedCount > 0) {
+              linkMap[sourceName + '||' + targetName] = sharedCount;
+          }
+      }
+  }
+
+  var links = [];
+  for (var pair in linkMap) {
+      if (!Object.prototype.hasOwnProperty.call(linkMap, pair)) {
+          continue;
+      }
+      var parts = pair.split('||');
+      if (parts.length !== 2) {
+          continue;
+      }
+      links.push({
+          source: parts[0],
+          target: parts[1],
+          value: linkMap[pair]
+      });
+  }
+
+  links.sort(function (a, b) {
+      return b.value - a.value;
+  });
+  links = links.slice(0, Math.min(maxLinks, links.length));
+
+  var graphData = JSON.stringify({
+      nodes: nodes,
+      links: links
+  });
+%>
+
+<style type="text/css">
+    .category-knowledge-graph-wrap {
+        position: relative;
+    }
+    #category-knowledge-graph {
+        width: 100%;
+        height: 460px;
+    }
+    .tag-knowledge-empty {
+        color: #8090a0;
+        text-align: center;
+        padding: 24px 0 30px;
+    }
+</style>
+
+<div class="container category-knowledge-graph-wrap" data-aos="fade-up">
+    <div class="card">
+        <div id="category-knowledge-graph" class="card-content"></div>
+    </div>
+</div>
+
+<script type="text/javascript" src="<%- theme.cdn.url %><%- url_for(theme.libs.js.echarts) %>"></script>
+<script>
+        (function () {
+        var graphData = <%- graphData %>;
+        var chartContainer = document.getElementById('category-knowledge-graph');
+        var hasData = graphData && graphData.nodes && graphData.nodes.length > 0;
+        if (!hasData) {
+            chartContainer.innerHTML = '<div class="tag-knowledge-empty">分类关系不足，暂时无法生成分类知识图谱</div>';
+            return;
+        }
+        var hasLinks = graphData && graphData.links && graphData.links.length > 0;
+        var graphLayout = hasLinks ? 'force' : 'circular';
+
+        var colorPalette = [
+            '#5a9600',
+            '#4cbf30',
+            '#0a3e1e',
+            '#1abc9c',
+            '#16a085',
+            '#2ecc71',
+            '#27ae60',
+            '#9b59b6',
+            '#3498db',
+            '#2980b9',
+            '#f39c12',
+            '#e67e22',
+            '#e74c3c',
+            '#c0392b',
+            '#f1c40f'
+        ];
+        var themeColor = '#5a9600';
+        var tooltipTextColor = '#ffffff';
+
+        var stableColor = function (text) {
+            var hash = 0;
+            for (var i = 0; i < text.length; i++) {
+                hash = ((hash << 5) - hash) + text.charCodeAt(i);
+                hash |= 0;
+            }
+            return colorPalette[Math.abs(hash) % colorPalette.length];
+        };
+
+        var chart = echarts.init(chartContainer);
+        var seriesOption = {
+            type: 'graph',
+            layout: graphLayout,
+            roam: true,
+            draggable: true,
+            data: graphData.nodes.map(function (node) {
+                var nodeColor = stableColor(node.name);
+                return {
+                    name: node.name,
+                    value: node.value,
+                    symbolSize: Math.max(14, Math.min(46, 10 + Math.sqrt(node.value) * 5)),
+                    itemStyle: {
+                        color: nodeColor
+                    },
+                    label: {
+                        show: true,
+                        position: 'right',
+                        color: '#2f3a4d',
+                        fontSize: 11,
+                        emphasis: {
+                            color: themeColor
+                        }
+                    }
+                };
+            }),
+            links: graphData.links.map(function (link) {
+                return {
+                    source: link.source,
+                    target: link.target,
+                    value: link.value,
+                    lineStyle: {
+                        color: stableColor(link.source + '::' + link.target),
+                        width: 1.2,
+                        curveness: 0.2,
+                        opacity: 0.62
+                    }
+                };
+            }),
+            emphasis: {
+                focus: 'adjacency',
+                label: {
+                    color: themeColor,
+                    fontWeight: 'bold'
+                },
+                lineStyle: {
+                    width: 2.4
+                }
+            }
+        };
+        if (hasLinks) {
+            seriesOption.force = {
+                repulsion: 210,
+                edgeLength: [55, 120],
+                gravity: 0.12
+            };
+        }
+        var graphOption = {
+            tooltip: {
+                trigger: 'item',
+                textStyle: {
+                    color: tooltipTextColor
+                },
+                formatter: function (params) {
+                    if (params.dataType === 'edge') {
+                        return '<span style="color:' + tooltipTextColor + ';">' + params.data.source + ' ↔ ' + params.data.target + '</span><br/><span style="color:' + tooltipTextColor + ';">共享标签：' + params.data.value + ' 个</span>';
+                    }
+                    if (params.dataType === 'node') {
+                        return '<a href="' + params.data.path + '" style="color:' + tooltipTextColor + '; text-decoration:none;">分类：' + params.data.name + '</a><br/><span style="color:' + tooltipTextColor + ';">文章数：' + params.data.value + '</span>';
+                    }
+                    return '';
+                }
+            },
+            series: [seriesOption],
+            animationDuration: 300,
+            animationEasingUpdate: 'quarticOut'
+        };
+
+        chart.setOption(graphOption);
+        window.addEventListener('resize', function () {
+            chart.resize();
+        });
+    })();
+</script>
