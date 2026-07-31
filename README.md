@@ -1,6 +1,6 @@
 # Meowv Web Projects
 
-这是 Meowv 旗下 5 个 Web 项目的统一代码仓库。各项目位于独立目录，拥有各自的依赖、
+这是 Meowv 旗下 6 个 Web 项目的统一代码仓库。各项目位于独立目录，拥有各自的依赖、
 开发命令和构建产物；它们不是统一的 npm/pnpm workspace，根目录提供统一的启动和编译脚本。
 
 ## 项目概览
@@ -8,6 +8,7 @@
 | 目录     | 项目                 | 技术栈                                     | 状态   | 地址                                       |
 | -------- | -------------------- | ------------------------------------------ | ------ | ------------------------------------------ |
 | `blog/`  | 个人博客与 Labs 工具 | Hexo 7、EJS、Stylus                        | 已上线 | [meowv.com](https://meowv.com)             |
+| `image/` | Image Studio        | Vue 3、TypeScript、Vite                    | 已上线 | [img.meowv.com](https://img.meowv.com)     |
 | `markdown/` | Markdown Studio     | Vue 3、TypeScript、Vite、Monaco Editor     | 已上线 | [md.meowv.com](https://md.meowv.com)       |
 | `excel/` | 在线 Excel 处理      | Vue 3、TypeScript、Vite、Univer、SheetJS   | 已上线 | [excel.meowv.com](https://excel.meowv.com) |
 | `pdf/`   | 在线 PDF 处理        | Nuxt 4、Vue 3、TypeScript、PDF.js、pdf-lib | 已上线 | [pdf.meowv.com](https://pdf.meowv.com)     |
@@ -18,6 +19,7 @@
 ```text
 .
 ├── blog/       # 博客、文章、独立游戏和 Labs 工具
+├── image/      # 浏览器端图片处理应用
 ├── markdown/   # 浏览器本地 Markdown 工作台
 ├── excel/      # 浏览器端电子表格应用
 ├── pdf/        # 浏览器端 PDF 工具站
@@ -26,7 +28,7 @@
 └── README.md   # 项目总览
 ```
 
-5 个目录不是 npm/pnpm workspace。安装依赖、开发、检查和构建时，应先进入目标项目目录，
+6 个目录不是 npm/pnpm workspace。安装依赖、开发、检查和构建时，应先进入目标项目目录，
 不要在仓库根目录混用包管理命令。
 
 ## macOS 一键脚本
@@ -51,6 +53,7 @@ chmod +x run.sh build.sh
 
 ```bash
 ./run.sh blog
+./run.sh img
 ./run.sh md
 ./run.sh excel
 ./run.sh pdf
@@ -61,13 +64,14 @@ chmod +x run.sh build.sh
 
 | 项目  | 地址                    |
 | ----- | ----------------------- |
-| Blog  | `http://localhost:4000` |
-| Markdown | `http://localhost:4001` |
-| Excel | `http://localhost:4002` |
-| PDF   | `http://localhost:4003` |
-| Zitie | `http://localhost:4004` |
+| Blog | `http://localhost:4000` |
+| Image | `http://localhost:4001` |
+| Markdown | `http://localhost:4002` |
+| Excel | `http://localhost:4003` |
+| PDF | `http://localhost:4004` |
+| Zitie | `http://localhost:4005` |
 
-脚本不会自动安装依赖。启动全部项目后，按 `Ctrl+C` 会统一停止五个开发服务器。
+脚本不会自动安装依赖。启动全部项目后，按 `Ctrl+C` 会统一停止六个开发服务器。
 
 ### 编译项目
 
@@ -82,6 +86,7 @@ chmod +x run.sh build.sh
 
 ```bash
 ./build.sh blog
+./build.sh img
 ./build.sh md
 ./build.sh excel
 ./build.sh pdf
@@ -93,6 +98,7 @@ chmod +x run.sh build.sh
 ```text
 build/
 ├── meowv.com/        # blog/public/
+├── img.meowv.com/    # image/dist/
 ├── md.meowv.com/     # markdown/dist/client/
 ├── excel.meowv.com/  # excel/dist/client/
 ├── pdf.meowv.com/    # pdf/.output/public/

@@ -2,11 +2,11 @@
 
 ## 适用范围
 
-本文件适用于仓库中的 `blog/`、`markdown/`、`excel/`、`zitie/` 和 `pdf/`。子项目不再维护独立的
+本文件适用于仓库中的 `blog/`、`image/`、`markdown/`、`excel/`、`zitie/` 和 `pdf/`。子项目不再维护独立的
 `AGENTS.md` 或 `README.md`；项目总览和通用说明统一维护在根目录 `README.md`，协作
 规则统一维护在本文件。
 
-这是同一 Git 仓库内的 5 个独立项目，不是统一的 npm/pnpm workspace。执行命令前先进入
+这是同一 Git 仓库内的 6 个独立项目，不是统一的 npm/pnpm workspace。执行命令前先进入
 目标目录，并使用该项目已有的包管理器、锁文件、脚本和代码风格。
 
 ## 沟通与修改原则
@@ -25,6 +25,7 @@
 | 目录     | 线上状态                 | 技术栈                             | 包管理器 |
 | -------- | ------------------------ | ---------------------------------- | -------- |
 | `blog/`  | `meowv.com` 已上线       | Hexo 7、EJS、Stylus                | Yarn     |
+| `image/` | `img.meowv.com` 已上线 | Vue 3、TypeScript、Vite | npm |
 | `markdown/` | `md.meowv.com` 已上线    | Vue 3、TypeScript、Vite            | npm      |
 | `excel/` | `excel.meowv.com` 已上线 | Vue 3、TypeScript、Vite            | pnpm     |
 | `pdf/`   | `pdf.meowv.com` 已上线    | Nuxt 4、Vue 3、TypeScript          | pnpm     |
@@ -37,11 +38,11 @@
 
 ## 根目录脚本
 
-- `run.sh`：不传参数时按 `blog`、`md`、`excel`、`pdf`、`zt` 并行启动五个项目；传入其中一个参数时
+- `run.sh`：不传参数时按 `blog`、`img`、`md`、`excel`、`pdf`、`zt` 并行启动六个项目；传入其中一个参数时
   只启动对应项目。
-- 固定开发端口依次为 Blog `4000`、Markdown `4001`、Excel `4002`、PDF `4003`、Zitie `4004`，不得静默
+- 固定开发端口依次为 Blog `4000`、Image `4001`、Markdown `4002`、Excel `4003`、PDF `4004`、Zitie `4005`，不得静默
   改用其他端口。
-- `build.sh`：不传参数时依次编译五个项目；传入项目名时只编译并发布对应项目。
+- `build.sh`：不传参数时依次编译六个项目；传入项目名时只编译并发布对应项目。
 - 汇总产物固定为 `build/meowv.com/`、`build/excel.meowv.com/`、
   `build/pdf.meowv.com/`、`build/zt.meowv.com/` 和 `build/md.meowv.com/`。
 - Zitie 只将 `zitie/dist/client/` 复制到汇总目录，不复制 `zitie/dist/server/`。

@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ALL_PROJECTS=(blog md excel pdf zt)
+ALL_PROJECTS=(blog img md excel pdf zt)
 SELECTED_PROJECTS=()
 PIDS=()
 PID_PROJECTS=()
@@ -17,26 +17,29 @@ usage() {
 
 可选项目：
   blog    http://localhost:4000
-  md      http://localhost:4001
-  excel   http://localhost:4002
-  pdf     http://localhost:4003
-  zt      http://localhost:4004
+  img     http://localhost:4001
+  md      http://localhost:4002
+  excel   http://localhost:4003
+  pdf     http://localhost:4004
+  zt      http://localhost:4005
 EOF
 }
 
 project_port() {
   case "$1" in
     blog) echo "4000" ;;
-    md) echo "4001" ;;
-    excel) echo "4002" ;;
-    pdf) echo "4003" ;;
-    zt) echo "4004" ;;
+    img) echo "4001" ;;
+    md) echo "4002" ;;
+    excel) echo "4003" ;;
+    pdf) echo "4004" ;;
+    zt) echo "4005" ;;
   esac
 }
 
 project_binary() {
   case "$1" in
     blog) echo "$ROOT_DIR/blog/node_modules/.bin/hexo" ;;
+    img) echo "$ROOT_DIR/image/node_modules/.bin/vite" ;;
     md) echo "$ROOT_DIR/markdown/node_modules/.bin/vite" ;;
     excel) echo "$ROOT_DIR/excel/node_modules/.bin/vite" ;;
     pdf) echo "$ROOT_DIR/pdf/node_modules/.bin/nuxt" ;;
@@ -47,6 +50,7 @@ project_binary() {
 install_hint() {
   case "$1" in
     blog) echo "cd blog && yarn install --frozen-lockfile" ;;
+    img) echo "cd image && npm ci" ;;
     md) echo "cd markdown && npm ci" ;;
     excel) echo "cd excel && pnpm install --frozen-lockfile" ;;
     pdf) echo "cd pdf && pnpm install --frozen-lockfile" ;;
@@ -86,6 +90,10 @@ run_project() {
     blog)
       cd "$ROOT_DIR/blog"
       exec ./node_modules/.bin/hexo server --port "$port"
+      ;;
+    img)
+      cd "$ROOT_DIR/image"
+      exec ./node_modules/.bin/vite --port "$port" --strictPort
       ;;
     md)
       cd "$ROOT_DIR/markdown"
@@ -136,8 +144,8 @@ elif [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
   usage
   exit 0
 else
-  case "$1" in
-    blog | md | excel | pdf | zt) SELECTED_PROJECTS=("$1") ;;
+    case "$1" in
+    blog | img | md | excel | pdf | zt) SELECTED_PROJECTS=("$1") ;;
     *)
       echo "错误：未知项目 ${1}。" >&2
       usage >&2

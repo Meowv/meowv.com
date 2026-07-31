@@ -4,7 +4,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="$ROOT_DIR/build"
-ALL_PROJECTS=(blog md excel pdf zt)
+ALL_PROJECTS=(blog img md excel pdf zt)
 SELECTED_PROJECTS=()
 STAGING_DIR="$ROOT_DIR/.build-staging.$$"
 BACKUP_PATH=""
@@ -19,6 +19,7 @@ usage() {
 
 可选项目：
   blog    -> build/meowv.com
+  img     -> build/img.meowv.com
   md      -> build/md.meowv.com
   excel   -> build/excel.meowv.com
   pdf     -> build/pdf.meowv.com
@@ -29,6 +30,7 @@ EOF
 destination_name() {
   case "$1" in
     blog) echo "meowv.com" ;;
+    img) echo "img.meowv.com" ;;
     md) echo "md.meowv.com" ;;
     excel) echo "excel.meowv.com" ;;
     pdf) echo "pdf.meowv.com" ;;
@@ -39,6 +41,7 @@ destination_name() {
 source_path() {
   case "$1" in
     blog) echo "$ROOT_DIR/blog/public" ;;
+    img) echo "$ROOT_DIR/image/dist" ;;
     md) echo "$ROOT_DIR/markdown/dist/client" ;;
     excel) echo "$ROOT_DIR/excel/dist/client" ;;
     pdf) echo "$ROOT_DIR/pdf/.output/public" ;;
@@ -49,6 +52,7 @@ source_path() {
 project_binary() {
   case "$1" in
     blog) echo "$ROOT_DIR/blog/node_modules/.bin/hexo" ;;
+    img) echo "$ROOT_DIR/image/node_modules/.bin/vite" ;;
     md) echo "$ROOT_DIR/markdown/node_modules/.bin/vite" ;;
     excel) echo "$ROOT_DIR/excel/node_modules/.bin/vite" ;;
     pdf) echo "$ROOT_DIR/pdf/node_modules/.bin/nuxt" ;;
@@ -59,6 +63,7 @@ project_binary() {
 install_hint() {
   case "$1" in
     blog) echo "cd blog && yarn install --frozen-lockfile" ;;
+    img) echo "cd image && npm ci" ;;
     md) echo "cd markdown && npm ci" ;;
     excel) echo "cd excel && pnpm install --frozen-lockfile" ;;
     pdf) echo "cd pdf && pnpm install --frozen-lockfile" ;;
@@ -87,6 +92,13 @@ check_project() {
       binaries=(
         "$ROOT_DIR/markdown/node_modules/.bin/vue-tsc"
         "$ROOT_DIR/markdown/node_modules/.bin/vite"
+      )
+      ;;
+    img)
+      (
+        cd "$ROOT_DIR/image"
+        ./node_modules/.bin/vue-tsc --noEmit
+        ./node_modules/.bin/vite build
       )
       ;;
     *)
@@ -269,8 +281,8 @@ elif [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
   usage
   exit 0
 else
-  case "$1" in
-    blog | md | excel | pdf | zt) SELECTED_PROJECTS=("$1") ;;
+    case "$1" in
+    blog | img | md | excel | pdf | zt) SELECTED_PROJECTS=("$1") ;;
     *)
       echo "错误：未知项目 ${1}。" >&2
       usage >&2
