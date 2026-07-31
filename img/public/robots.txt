@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://img.meowv.com/sitemap.xml
+
