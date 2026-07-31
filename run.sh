@@ -58,6 +58,51 @@ install_hint() {
   esac
 }
 
+free_port() {
+  local project="$1"
+  local port="$2"
+  local pids
+  local pid
+  local attempt
+
+  if ! command -v lsof >/dev/null 2>&1; then
+    echo "错误：未找到 lsof，无法检查并释放端口 ${port}。" >&2
+    exit 1
+  fi
+
+  pids="$(lsof -tiTCP:"$port" -sTCP:LISTEN || true)"
+  if [ -z "$pids" ]; then
+    return
+  fi
+
+  echo "端口 ${port} 已被占用，正在停止占用进程后启动 ${project}。"
+  while IFS= read -r pid; do
+    [ -n "$pid" ] && kill "$pid" >/dev/null 2>&1 || true
+  done <<EOF
+$pids
+EOF
+
+  for attempt in 1 2 3 4 5; do
+    if ! lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then
+      return
+    fi
+    sleep 1
+  done
+
+  pids="$(lsof -tiTCP:"$port" -sTCP:LISTEN || true)"
+  echo "端口 ${port} 未在等待时间内释放，正在强制停止占用进程。" >&2
+  while IFS= read -r pid; do
+    [ -n "$pid" ] && kill -9 "$pid" >/dev/null 2>&1 || true
+  done <<EOF
+$pids
+EOF
+
+  if lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then
+    echo "错误：端口 ${port} 仍被占用，无法启动 ${project}。" >&2
+    exit 1
+  fi
+}
+
 check_project() {
   local project="$1"
   local binary
@@ -72,11 +117,7 @@ check_project() {
     exit 1
   fi
 
-  if command -v lsof >/dev/null 2>&1 &&
-    lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then
-    echo "错误：端口 $port 已被占用，无法启动 ${project}。" >&2
-    exit 1
-  fi
+  free_port "$project" "$port"
 }
 
 run_project() {

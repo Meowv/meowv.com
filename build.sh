@@ -41,7 +41,7 @@ destination_name() {
 source_path() {
   case "$1" in
     blog) echo "$ROOT_DIR/blog/public" ;;
-    img) echo "$ROOT_DIR/image/dist" ;;
+    img) echo "$ROOT_DIR/image/dist/client" ;;
     md) echo "$ROOT_DIR/markdown/dist/client" ;;
     excel) echo "$ROOT_DIR/excel/dist/client" ;;
     pdf) echo "$ROOT_DIR/pdf/.output/public" ;;
