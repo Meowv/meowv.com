@@ -42,14 +42,14 @@ export default function RootLayout({
       </head>
       <body>
         <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-B1NEBD44H7"
+          src="https://www.googletagmanager.com/gtag/js?id=G-EPJQW4WXS0"
           strategy="afterInteractive"
         />
         <Script id="google-analytics" strategy="afterInteractive">
           {`window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
-          gtag('config', 'G-B1NEBD44H7');`}
+          gtag('config', 'G-EPJQW4WXS0');`}
         </Script>
         {children}
         <SiteFooter />
