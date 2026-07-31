@@ -14,6 +14,7 @@ import {
   FileText,
   FolderOpen,
   HandCoins,
+  Image as ImageIcon,
   MoreHorizontal,
   Pencil,
   RotateCcw,
@@ -891,6 +892,19 @@ onMounted(async () => {
 
           <div class="site-footer__link-group">
             <strong>更多工具</strong>
+            <a
+              class="site-footer__product-link"
+              href="https://img.meowv.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <ImageIcon :size="18" aria-hidden="true" />
+              <span>
+                <b>Image Studio</b>
+                <small>浏览器里的本地图片处理工具</small>
+              </span>
+              <ArrowUpRight :size="15" aria-hidden="true" />
+            </a>
             <a
               class="site-footer__product-link"
               href="https://md.meowv.com/"
