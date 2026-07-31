@@ -1962,24 +1962,62 @@ button:disabled {
 }
 
 .select {
-  min-width: 140px;
+  min-width: 156px;
   height: 38px;
-  padding: 0 32px 0 10px;
+  padding: 0 36px 0 12px;
   border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: var(--color-surface);
+  appearance: none;
+  background-color: var(--color-surface);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-position: right 12px center;
+  background-repeat: no-repeat;
+  box-shadow: var(--shadow-sm);
+  color: var(--color-text-strong);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease;
+}
+
+.select:hover:not(:disabled) {
+  border-color: var(--color-brand-border);
+  background-color: var(--color-surface-hover);
+}
+
+.select:focus {
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px var(--color-brand-soft);
+  outline: 0;
+}
+
+.select:disabled {
+  background-color: var(--color-surface-soft);
+  color: var(--color-text-faint);
+  cursor: not-allowed;
+  opacity: 0.72;
 }
 
 .toggle {
   position: relative;
+  display: inline-flex;
   width: 42px;
   height: 24px;
   flex: 0 0 42px;
   padding: 0;
+  border: 1px solid transparent;
   border-radius: 999px;
   background: var(--color-border-strong);
   cursor: pointer;
-  transition: background 160ms ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    opacity 160ms ease;
 }
 
 .toggle::after {
@@ -2001,6 +2039,20 @@ button:disabled {
 
 .toggle--on::after {
   transform: translateX(18px);
+}
+
+.toggle:hover:not(:disabled) {
+  border-color: var(--color-brand-border);
+}
+
+.toggle--on:hover:not(:disabled) {
+  background: var(--color-brand-hover);
+  border-color: var(--color-brand-hover);
+}
+
+.toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .context-menu {
@@ -2555,13 +2607,22 @@ body.tree-dragging--invalid * {
   }
 
   .settings-row {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 10px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px 16px;
+    min-height: 60px;
   }
 
   .select {
+    grid-column: 1 / -1;
     width: 100%;
+  }
+
+  .toggle {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
   }
 }
 
