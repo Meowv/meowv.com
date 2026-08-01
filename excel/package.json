@@ -9,15 +9,14 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc -b && vite build && node scripts/prepare-sites-build.mjs",
+    "build": "vue-tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "vue-tsc -b",
     "lint": "eslint .",
     "format": "prettier --write .",
     "test": "vitest run",
     "test:unit": "vitest run",
-    "test:e2e": "playwright test",
-    "test:sites": "node --test tests/sites-worker.test.mjs"
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@lucide/vue": "1.26.0",

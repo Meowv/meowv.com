@@ -7,9 +7,8 @@
     "dev": "vite",
     "typecheck": "vue-tsc --noEmit",
     "test": "vitest run",
-    "build": "vue-tsc --noEmit && vite build && node scripts/prepare-sites-build.mjs",
-    "preview": "vite preview",
-    "test:sites": "node --test tests/sites-worker.test.mjs"
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
     "@lucide/vue": "^1.27.0",

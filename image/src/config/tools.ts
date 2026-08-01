@@ -107,9 +107,9 @@ export const productLinks = [
     icon: FileCode2,
   },
   {
-    name: "在线 Excel 处理",
-    description: "浏览器里的本地表格工作台",
-    href: "https://excel.meowv.com/",
+    name: "Meowv Office",
+    description: "浏览器本地 Office 编辑器",
+    href: "https://office.meowv.com/",
     icon: FileSpreadsheet,
   },
   {
