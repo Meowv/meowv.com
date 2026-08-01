@@ -1,0 +1,47 @@
+{
+  "name": "@ranuts/shared",
+  "version": "0.0.1",
+  "description": "Shared primitives for the document app: file-type utils, shared types, i18n, and the global document store.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./document-utils": {
+      "types": "./dist/document-utils.d.ts",
+      "import": "./dist/document-utils.js"
+    },
+    "./document-types": {
+      "types": "./dist/document-types.d.ts",
+      "import": "./dist/document-types.js"
+    },
+    "./i18n": {
+      "types": "./dist/i18n.d.ts",
+      "import": "./dist/i18n.js"
+    },
+    "./store": {
+      "types": "./dist/store.d.ts",
+      "import": "./dist/store.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "prepare": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "ranuts": "0.4.0-alpha.1"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
+  },
+  "license": "MIT"
+}

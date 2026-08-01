@@ -1,0 +1,20 @@
+{
+  "name": "Meowv Office",
+  "short_name": "Meowv Office",
+  "description": "无需登录，在浏览器本地打开、编辑并保存 Office 文档。",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "lang": "zh-CN",
+  "display": "standalone",
+  "background_color": "#f5f7f5",
+  "theme_color": "#16803d",
+  "icons": [
+    {
+      "src": "brand/office-mark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

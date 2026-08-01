@@ -1,0 +1,9 @@
+# Generated lockfile — managed by pnpm, not prettier.
+pnpm-lock.yaml
+
+# Vendored ranui design-token layer (copied from ranui/dist by bin/build.sh).
+public/ran-tokens.css
+
+# Vendored ranui per-component bundles (official dist/iife files, copied from
+# ranui by bin/build.sh) — generated and minified, not hand-written.
+public/ranui-iife/

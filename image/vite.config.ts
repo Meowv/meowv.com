@@ -15,7 +15,7 @@ export default defineConfig({
   },
   server: {
     host: "0.0.0.0",
-    port: 4005,
+    port: 4001,
     strictPort: true,
     allowedHosts: ["terminal.local"],
     warmup: {
@@ -26,4 +26,3 @@ export default defineConfig({
     environment: "jsdom",
   },
 });
-

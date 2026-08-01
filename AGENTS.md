@@ -2,11 +2,11 @@
 
 ## 适用范围
 
-本文件适用于仓库中的 `blog/`、`image/`、`markdown/`、`excel/`、`zitie/` 和 `pdf/`。子项目不再维护独立的
+本文件适用于仓库中的 `blog/`、`image/`、`markdown/`、`excel/`、`office/`、`zitie/` 和 `pdf/`。子项目不再维护独立的
 `AGENTS.md` 或 `README.md`；项目总览和通用说明统一维护在根目录 `README.md`，协作
 规则统一维护在本文件。
 
-这是同一 Git 仓库内的 6 个独立项目，不是统一的 npm/pnpm workspace。执行命令前先进入
+这是同一 Git 仓库内的 7 个独立项目，不是统一的 npm/pnpm workspace。执行命令前先进入
 目标目录，并使用该项目已有的包管理器、锁文件、脚本和代码风格。
 
 ## 沟通与修改原则
@@ -28,22 +28,23 @@
 | `image/` | `img.meowv.com` 已上线 | Vue 3、TypeScript、Vite | npm |
 | `markdown/` | `md.meowv.com` 已上线    | Vue 3、TypeScript、Vite            | npm      |
 | `excel/` | `excel.meowv.com` 已上线 | Vue 3、TypeScript、Vite            | pnpm     |
+| `office/` | `office.meowv.com` 开发中 | TypeScript、Vite、OnlyOffice、x2t WASM | pnpm |
 | `pdf/`   | `pdf.meowv.com` 已上线    | Nuxt 4、Vue 3、TypeScript          | pnpm     |
 | `zitie/` | `zt.meowv.com` 已上线    | Vinext、Next.js、React、TypeScript | npm      |
 
 涉及站点链接、Canonical、Sitemap、分享信息或跨站导航时：
 
-- 保持 `meowv.com`、`md.meowv.com`、`excel.meowv.com`、`pdf.meowv.com` 和 `zt.meowv.com` 的现有线上地址。
+- 保持 `meowv.com`、`md.meowv.com`、`excel.meowv.com`、`office.meowv.com`、`pdf.meowv.com` 和 `zt.meowv.com` 的既定地址；Office 上线前不得写成已上线。
 - 不自行推断 `www` 跳转、证书覆盖、Nginx 路由或生产目录；部署前应检查实际环境。
 
 ## 根目录脚本
 
-- `run.sh`：不传参数时按 `blog`、`img`、`md`、`excel`、`pdf`、`zt` 并行启动六个项目；传入其中一个参数时
+- `run.sh`：不传参数时按 `blog`、`img`、`md`、`excel`、`office`、`pdf`、`zt` 并行启动七个项目；传入其中一个参数时
   只启动对应项目。
-- 固定开发端口依次为 Blog `4000`、Image `4001`、Markdown `4002`、Excel `4003`、PDF `4004`、Zitie `4005`，不得静默
+- 固定开发端口依次为 Blog `4000`、Image `4001`、Markdown `4002`、Excel `4003`、PDF `4004`、Zitie `4005`、Office `4006`，不得静默
   改用其他端口。
-- `build.sh`：不传参数时依次编译六个项目；传入项目名时只编译并发布对应项目。
-- 汇总产物固定为 `build/meowv.com/`、`build/excel.meowv.com/`、
+- `build.sh`：不传参数时依次编译七个项目；传入项目名时只编译并发布对应项目。
+- 汇总产物固定为 `build/meowv.com/`、`build/excel.meowv.com/`、`build/office.meowv.com/`、
   `build/pdf.meowv.com/`、`build/zt.meowv.com/` 和 `build/md.meowv.com/`。
 - Zitie 只将 `zitie/dist/client/` 复制到汇总目录，不复制 `zitie/dist/server/`。
 - `build/` 是可替换的生成目录，不提交到 Git。修改脚本时继续保持全量构建完成后再替换
@@ -80,23 +81,20 @@
 - `src/services/`：文件系统、Markdown、导出、搜索、知识图谱和存储服务。
 - `src/stores/`：工作区与偏好状态。
 - `src/workers/`：搜索 Worker。
-- `tests/`：Vitest 与 Sites 产物测试。
+- `tests/`：Vitest 测试。
 
 使用 Vue 3 Composition API、严格 TypeScript 和现有 `@/` 路径别名。必须保持浏览器本地
 处理边界：Markdown 内容、图片和附件不得上传，也不得写入 Cookie、日志或远程数据库。
 涉及文件系统、导出、Mermaid、Worker 或对象 URL 时，保留现有的授权、取消和资源释放处理。
 
-### 命令与托管契约
+### 命令与构建产物
 
 - 开发：`npm run dev`
 - 类型检查：`npm run typecheck`
 - 单元测试：`npm test`
 - 构建：`npm run build`
-- 构建产物契约：构建后运行 `npm run test:sites`
 
-保持 `.openai/hosting.json`、`worker/index.js`、`scripts/prepare-sites-build.mjs` 和
-`tests/sites-worker.test.mjs` 的现有协作关系。部署静态产物使用 `dist/client/`，不要提交
-`dist/`。
+部署静态产物使用 `dist/client/`，不要提交 `dist/`。
 
 ## Excel 约定
 
@@ -107,7 +105,7 @@
 - `src/services/`：工作簿、自动保存、历史、导入导出和备份。
 - `src/components/`、`src/views/`：公共组件和页面。
 - `src/workers/`：文件导入导出 Worker。
-- `tests/`：Vitest、Playwright 和 Sites 产物测试。
+- `tests/`：Vitest 与 Playwright 测试。
 
 优先使用 Vue 3 Composition API、严格 TypeScript 和现有 `@/` 路径别名。遵循项目现有
 Prettier/ESLint 格式，不手工修改 `vendor/xlsx-0.20.3.tgz`。
@@ -116,17 +114,25 @@ Prettier/ESLint 格式，不手工修改 `vendor/xlsx-0.20.3.tgz`。
 修改保存、恢复、历史、图片或导入导出时，要保留 IndexedDB 事务、Worker 终止、对象 URL
 释放和兼容性提示等既有保护。
 
-### 命令与托管契约
+### 命令与构建产物
 
 - 开发：`pnpm dev`
 - 类型检查：`pnpm typecheck`
 - Lint：`pnpm lint`
 - 单元测试：`pnpm test`
 - 构建：`pnpm build`
-- 构建产物契约：构建后运行 `pnpm test:sites`
 
-保持 `.openai/hosting.json`、`worker/index.js`、`scripts/prepare-sites-build.mjs` 和
-`tests/sites-worker.test.mjs` 的现有协作关系。构建产物为 `dist/`，不要提交。
+构建产物为 `dist/`，不要提交。
+
+## Office 约定
+
+- `office/` 与 `excel/` 并行维护；Office 验收前不得删除、移动或重写旧 Excel 项目。
+- OnlyOffice、SDKJS、x2t WASM、字体和编辑器资源必须同源自托管，不得 iframe 第三方在线实例。
+- 首发仅承诺 DOCX、XLSX、PPTX、CSV；不执行宏、ActiveX、文档脚本，不引入 AI、账户、云存储或转换后端。
+- 上游必须固定提交并维护 `docs/upstream.md` 和 `docs/upstream-patches.md`；保留 AGPL、OnlyOffice 与字体许可。
+- 首页不得预加载 OnlyOffice 与 WASM；文件打开、新建、保存和销毁必须经过统一会话与串行编辑器队列。
+- 开发：`pnpm dev`；类型：`pnpm tsc`；Lint：`pnpm lint`；测试：`pnpm test`；构建：`pnpm build`。
+- 构建产物为 `office/dist/client/`，不要提交 `dist/`。
 
 ## Zitie 约定
 

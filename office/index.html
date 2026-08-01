@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Meowv Office - 浏览器本地 Office 文档编辑器</title>
+    <meta
+      name="description"
+      content="无需安装、无需登录，在浏览器本地打开、编辑并保存 Word、Excel、PowerPoint 和 CSV 文件。文件内容不上传。"
+    />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#16a34a" />
+    <link rel="canonical" href="https://office.meowv.com/" />
+    <link rel="alternate" hreflang="zh-CN" href="https://office.meowv.com/" />
+    <link rel="alternate" hreflang="x-default" href="https://office.meowv.com/" />
+    <link rel="icon" type="image/svg+xml" href="/brand/office-mark.svg" />
+    <link rel="apple-touch-icon" href="/brand/office-mark.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="stylesheet" href="/ran-fonts/fonts.css" />
+    <link rel="stylesheet" href="/ran-tokens.css" />
+    <link rel="stylesheet" href="/home.css" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Meowv Office" />
+    <meta property="og:title" content="Meowv Office - 浏览器本地 Office 文档编辑器" />
+    <meta
+      property="og:description"
+      content="在浏览器本地打开、编辑并保存 DOCX、XLSX、PPTX 和 CSV 文件，文件内容不上传。"
+    />
+    <meta property="og:url" content="https://office.meowv.com/" />
+    <meta property="og:image" content="https://office.meowv.com/og.png" />
+    <meta property="og:image:width" content="1730" />
+    <meta property="og:image:height" content="909" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://office.meowv.com/og.png" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Meowv Office",
+        "url": "https://office.meowv.com/",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "任何支持 WebAssembly 的现代浏览器",
+        "description": "无需安装、无需登录，在浏览器本地打开、编辑并保存 DOCX、XLSX、PPTX 和 CSV 文件。",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" },
+        "featureList": [
+          "浏览器本地处理 Office 文件",
+          "支持 DOCX、XLSX、PPTX 和 CSV",
+          "无需登录或安装软件",
+          "首次加载完整资源后支持离线使用"
+        ]
+      }
+    </script>
+    <script>
+      try {
+        var theme = localStorage.getItem('ran-theme');
+        if (theme === 'dark' || theme === 'light') {
+          document.documentElement.setAttribute('data-ran-theme', theme);
+          document.documentElement.setAttribute('theme', theme);
+        }
+      } catch (error) {}
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <noscript><p class="noscript">Meowv Office 需要启用 JavaScript 才能在浏览器中处理文档。</p></noscript>
+    <script type="module" src="/index.ts"></script>
+  </body>
+</html>

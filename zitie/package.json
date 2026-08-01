@@ -7,7 +7,7 @@
   },
   "scripts": {
     "prepare:data": "node scripts/sync-hanzi-data.mjs",
-    "dev": "npm run prepare:data && vinext dev --port 4004",
+    "dev": "npm run prepare:data && vinext dev --port 4005",
     "build": "npm run prepare:data && vinext build",
     "start": "vinext start"
   },

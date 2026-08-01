@@ -1,0 +1,77 @@
+{
+  "name": "meowv-office",
+  "version": "0.1.0",
+  "packageManager": "pnpm@11.4.0",
+  "description": "无需安装、无需登录，在浏览器本地打开、编辑并保存 Office 文档。",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host --force",
+    "build": "sh ./bin/build.sh",
+    "build:single": "node bin/bundle_single_html.js",
+    "preview": "vite preview",
+    "tsc": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint:ts": "oxlint && tsc --noEmit",
+    "lint": "pnpm run lint:ts"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "keywords": [
+    "onlyoffice",
+    "document-editor",
+    "privacy",
+    "web-based",
+    "docx",
+    "xlsx",
+    "pptx",
+    "csv",
+    "wasm",
+    "webassembly",
+    "local-editor",
+    "browser-editor",
+    "document-converter",
+    "office-suite"
+  ],
+  "author": "Meowv contributors and ranuts contributors",
+  "license": "AGPL-3.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Meowv/meowv.com.git",
+    "directory": "office"
+  },
+  "homepage": "https://office.meowv.com/",
+  "bugs": {
+    "url": "https://github.com/Meowv/meowv.com/issues"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "@tailwindcss/postcss": "^4.3.2",
+    "@types/node": "^26.1.1",
+    "@vitejs/plugin-vue": "^6.0.8",
+    "@vitest/coverage-v8": "^4.1.10",
+    "jsdom": "^29.1.1",
+    "oxlint": "^1.73.0",
+    "postcss": "^8.5.16",
+    "prettier": "^3.9.5",
+    "tailwindcss": "^4.3.2",
+    "typescript": "^7.0.2",
+    "vite": "^8.1.4",
+    "vitest": "^4.1.10"
+  },
+  "dependencies": {
+    "@khmyznikov/pwa-install": "^0.6.4",
+    "@ranuts/converter": "workspace:*",
+    "@ranuts/shared": "workspace:*",
+    "ranui": "0.4.2-alpha.2",
+    "ranuts": "0.4.0-alpha.1",
+    "vue": "^3.5.40",
+    "vue-router": "^4.6.4"
+  }
+}

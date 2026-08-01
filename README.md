@@ -1,18 +1,22 @@
 # Meowv Web Projects
 
-这是 Meowv 旗下 6 个 Web 项目的统一代码仓库。各项目位于独立目录，拥有各自的依赖、
+这是 Meowv 旗下 7 个 Web 项目的统一代码仓库。各项目位于独立目录，拥有各自的依赖、
 开发命令和构建产物；它们不是统一的 npm/pnpm workspace，根目录提供统一的启动和编译脚本。
+
+所有项目均在本地完成检查与生产构建，再将根目录 `build/` 中对应域名的静态产物自行部署到
+服务器。仓库不使用 GitHub Actions、OpenAI Sites 或其他托管平台执行构建和发布。
 
 ## 项目概览
 
-| 目录     | 项目                 | 技术栈                                     | 状态   | 地址                                       |
-| -------- | -------------------- | ------------------------------------------ | ------ | ------------------------------------------ |
-| `blog/`  | 个人博客与 Labs 工具 | Hexo 7、EJS、Stylus                        | 已上线 | [meowv.com](https://meowv.com)             |
-| `image/` | Image Studio        | Vue 3、TypeScript、Vite                    | 已上线 | [img.meowv.com](https://img.meowv.com)     |
-| `markdown/` | Markdown Studio     | Vue 3、TypeScript、Vite、Monaco Editor     | 已上线 | [md.meowv.com](https://md.meowv.com)       |
-| `excel/` | 在线 Excel 处理      | Vue 3、TypeScript、Vite、Univer、SheetJS   | 已上线 | [excel.meowv.com](https://excel.meowv.com) |
-| `pdf/`   | 在线 PDF 处理        | Nuxt 4、Vue 3、TypeScript、PDF.js、pdf-lib | 已上线 | [pdf.meowv.com](https://pdf.meowv.com)     |
-| `zitie/` | 在线字帖生成         | Vinext、Next.js 16、React 19、TypeScript   | 已上线 | [zt.meowv.com](https://zt.meowv.com)       |
+| 目录        | 项目                 | 技术栈                                     | 状态   | 地址                                         |
+| ----------- | -------------------- | ------------------------------------------ | ------ | -------------------------------------------- |
+| `blog/`     | 个人博客与 Labs 工具 | Hexo 7、EJS、Stylus                        | 已上线 | [meowv.com](https://meowv.com)               |
+| `image/`    | Image Studio         | Vue 3、TypeScript、Vite                    | 已上线 | [img.meowv.com](https://img.meowv.com)       |
+| `markdown/` | Markdown Studio      | Vue 3、TypeScript、Vite、Monaco Editor     | 已上线 | [md.meowv.com](https://md.meowv.com)         |
+| `excel/`    | 在线 Excel 处理      | Vue 3、TypeScript、Vite、Univer、SheetJS   | 已上线 | [excel.meowv.com](https://excel.meowv.com)   |
+| `office/`   | Meowv Office         | TypeScript、Vite、OnlyOffice、x2t WASM     | 开发中 | [office.meowv.com](https://office.meowv.com) |
+| `pdf/`      | 在线 PDF 处理        | Nuxt 4、Vue 3、TypeScript、PDF.js、pdf-lib | 已上线 | [pdf.meowv.com](https://pdf.meowv.com)       |
+| `zitie/`    | 在线字帖生成         | Vinext、Next.js 16、React 19、TypeScript   | 已上线 | [zt.meowv.com](https://zt.meowv.com)         |
 
 ## 仓库结构
 
@@ -22,13 +26,14 @@
 ├── image/      # 浏览器端图片处理应用
 ├── markdown/   # 浏览器本地 Markdown 工作台
 ├── excel/      # 浏览器端电子表格应用
+├── office/     # 浏览器本地 Office 文档编辑器
 ├── pdf/        # 浏览器端 PDF 工具站
 ├── zitie/      # 浏览器端字帖生成与导出应用
 ├── AGENTS.md   # 全仓库协作与修改约定
 └── README.md   # 项目总览
 ```
 
-6 个目录不是 npm/pnpm workspace。安装依赖、开发、检查和构建时，应先进入目标项目目录，
+7 个目录不是统一的 npm/pnpm workspace。安装依赖、开发、检查和构建时，应先进入目标项目目录，
 不要在仓库根目录混用包管理命令。
 
 ## macOS 一键脚本
@@ -56,22 +61,24 @@ chmod +x run.sh build.sh
 ./run.sh img
 ./run.sh md
 ./run.sh excel
+./run.sh office
 ./run.sh pdf
 ./run.sh zt
 ```
 
 固定开发端口：
 
-| 项目  | 地址                    |
-| ----- | ----------------------- |
-| Blog | `http://localhost:4000` |
-| Image | `http://localhost:4001` |
+| 项目     | 地址                    |
+| -------- | ----------------------- |
+| Blog     | `http://localhost:4000` |
+| Image    | `http://localhost:4001` |
 | Markdown | `http://localhost:4002` |
-| Excel | `http://localhost:4003` |
-| PDF | `http://localhost:4004` |
-| Zitie | `http://localhost:4005` |
+| Excel    | `http://localhost:4003` |
+| PDF      | `http://localhost:4004` |
+| Zitie    | `http://localhost:4005` |
+| Office   | `http://localhost:4006` |
 
-脚本不会自动安装依赖。启动全部项目后，按 `Ctrl+C` 会统一停止六个开发服务器。
+脚本不会自动安装依赖。启动全部项目后，按 `Ctrl+C` 会统一停止七个开发服务器。
 
 ### 编译项目
 
@@ -89,6 +96,7 @@ chmod +x run.sh build.sh
 ./build.sh img
 ./build.sh md
 ./build.sh excel
+./build.sh office
 ./build.sh pdf
 ./build.sh zt
 ```
@@ -101,12 +109,13 @@ build/
 ├── img.meowv.com/    # image/dist/
 ├── md.meowv.com/     # markdown/dist/client/
 ├── excel.meowv.com/  # excel/dist/client/
+├── office.meowv.com/ # office/dist/client/
 ├── pdf.meowv.com/    # pdf/.output/public/
 └── zt.meowv.com/     # zitie/dist/client/
 ```
 
-全量编译时，五个项目都成功后才会替换原有 `build/`。单项目编译只替换对应域名目录，不会
-修改另外四个项目的已有产物。`build/`、临时暂存目录和备份目录均已加入 Git 忽略。
+全量编译时，七个项目都成功后才会替换原有 `build/`。单项目编译只替换对应域名目录，不会
+修改其他项目的已有产物。`build/`、临时暂存目录和备份目录均已加入 Git 忽略。
 
 ## 环境与常用命令
 
@@ -136,7 +145,6 @@ build/
 - 类型检查：`npm run typecheck`
 - 单元测试：`npm test`
 - 生产构建：`npm run build`
-- Sites 产物契约测试：构建后运行 `npm run test:sites`
 - 产物：`markdown/dist/client/`
 
 Markdown Studio 是浏览器本地的 Markdown 工作台，使用 File System Access API 打开并保存
@@ -153,7 +161,6 @@ Markdown Studio 是浏览器本地的 Markdown 工作台，使用 File System Ac
 - 代码检查：`pnpm lint`
 - 单元测试：`pnpm test`
 - 生产构建：`pnpm build`
-- Sites 产物契约测试：构建后运行 `pnpm test:sites`
 - 产物：`excel/dist/`
 
 这是纯前端电子表格应用，工作簿在浏览器内解析和处理，主要保存在 IndexedDB，不提供文件

@@ -74,7 +74,7 @@ export default defineConfig({
   },
   server: {
     host: "0.0.0.0",
-    port: 4002,
+    port: 4003,
     strictPort: true,
     allowedHosts: ["terminal.local"],
     warmup: {

@@ -17,7 +17,7 @@ const toolRoutes = [
 export default defineNuxtConfig({
   compatibilityDate: "2026-07-28",
   devServer: {
-    port: 4003
+    port: 4004
   },
   devtools: { enabled: false },
   css: ["~/assets/css/main.css"],

@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ALL_PROJECTS=(blog img md excel pdf zt)
+ALL_PROJECTS=(blog img md excel office pdf zt)
 SELECTED_PROJECTS=()
 PIDS=()
 PID_PROJECTS=()
@@ -20,6 +20,7 @@ usage() {
   img     http://localhost:4001
   md      http://localhost:4002
   excel   http://localhost:4003
+  office  http://localhost:4006
   pdf     http://localhost:4004
   zt      http://localhost:4005
 EOF
@@ -31,6 +32,7 @@ project_port() {
     img) echo "4001" ;;
     md) echo "4002" ;;
     excel) echo "4003" ;;
+    office) echo "4006" ;;
     pdf) echo "4004" ;;
     zt) echo "4005" ;;
   esac
@@ -41,6 +43,7 @@ project_binary() {
     blog) echo "$ROOT_DIR/blog/node_modules/.bin/hexo" ;;
     img) echo "$ROOT_DIR/image/node_modules/.bin/vite" ;;
     md) echo "$ROOT_DIR/markdown/node_modules/.bin/vite" ;;
+    office) echo "$ROOT_DIR/office/node_modules/.bin/vite" ;;
     excel) echo "$ROOT_DIR/excel/node_modules/.bin/vite" ;;
     pdf) echo "$ROOT_DIR/pdf/node_modules/.bin/nuxt" ;;
     zt) echo "$ROOT_DIR/zitie/node_modules/.bin/vinext" ;;
@@ -52,6 +55,7 @@ install_hint() {
     blog) echo "cd blog && yarn install --frozen-lockfile" ;;
     img) echo "cd image && npm ci" ;;
     md) echo "cd markdown && npm ci" ;;
+    office) echo "cd office && pnpm install --frozen-lockfile" ;;
     excel) echo "cd excel && pnpm install --frozen-lockfile" ;;
     pdf) echo "cd pdf && pnpm install --frozen-lockfile" ;;
     zt) echo "cd zitie && npm ci" ;;
@@ -140,6 +144,10 @@ run_project() {
       cd "$ROOT_DIR/markdown"
       exec ./node_modules/.bin/vite --port "$port" --strictPort
       ;;
+    office)
+      cd "$ROOT_DIR/office"
+      exec ./node_modules/.bin/vite --port "$port" --strictPort
+      ;;
     excel)
       cd "$ROOT_DIR/excel"
       exec ./node_modules/.bin/vite --port "$port" --strictPort
@@ -186,7 +194,7 @@ elif [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
   exit 0
 else
     case "$1" in
-    blog | img | md | excel | pdf | zt) SELECTED_PROJECTS=("$1") ;;
+    blog | img | md | office | excel | pdf | zt) SELECTED_PROJECTS=("$1") ;;
     *)
       echo "错误：未知项目 ${1}。" >&2
       usage >&2

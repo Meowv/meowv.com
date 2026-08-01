@@ -1,0 +1,22 @@
+{
+  "semi": true,
+  "tabWidth": 2,
+  "singleQuote": true,
+  "printWidth": 120,
+  "trailingComma": "all",
+  "overrides": [
+    {
+      "files": ["*.json5"],
+      "options": {
+        "singleQuote": false,
+        "quoteProps": "preserve"
+      }
+    },
+    {
+      "files": ["*.yml"],
+      "options": {
+        "singleQuote": false
+      }
+    }
+  ]
+}

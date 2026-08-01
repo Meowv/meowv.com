@@ -1,0 +1,21 @@
+# claude code local settings
+.claude/
+
+# npm
+node_modules
+# common
+.temp
+cache
+# mac
+.DS_Store
+# eslint
+.eslintcache
+# vite
+vite.config.ts.timestamp*
+config.ts.timestamp*
+dist
+# test artifacts
+coverage/
+playwright-report/
+test-results/
+public/fonts/__fallback__/
