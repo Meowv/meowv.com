@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { IconHeart } from '@tabler/icons-vue';
+import { IconHeartFilled, IconBlobFilled } from '@tabler/icons-vue';
 
 const emit = defineEmits<{ support: [] }>();
 </script>
@@ -19,8 +19,11 @@ const emit = defineEmits<{ support: [] }>();
 
       <nav class="studio-footer__links" aria-label="页脚链接">
         <a href="https://zt.meowv.com" target="_blank" rel="noreferrer">✍️ 字帖生成</a>
+        <a href="https://meowv.com" target="_blank" rel="noreferrer"
+          ><IconBlobFilled :size="18" stroke-width="1.9" aria-hidden="true" />阿星𝑷𝒍𝒖𝒔</a
+        >
         <button type="button" @click="emit('support')">
-          <IconHeart :size="18" stroke-width="1.9" aria-hidden="true" />
+          <IconHeartFilled :size="18" stroke-width="1.9" aria-hidden="true" />
           赞助支持
         </button>
       </nav>
