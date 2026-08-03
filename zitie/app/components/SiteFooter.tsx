@@ -29,12 +29,7 @@ export default function SiteFooter() {
           <strong>一笔一画，写好中国字</strong>
           <span>田字格 · 米字格 · 四线格 · A4 打印</span>
           <a href="/donate/">捐赠支持</a>
-          <span>更多工具：
-            <a href="https://img.meowv.com" target="_blank" rel="noreferrer">Image Studio</a>、
-            <a href="https://md.meowv.com" target="_blank" rel="noreferrer">Markdown Studio</a>、
-            <a href="https://excel.meowv.com" target="_blank" rel="noreferrer">在线 Excel 处理</a>、
-            <a href="https://pdf.meowv.com" target="_blank" rel="noreferrer">在线 PDF 处理</a>
-          </span>
+          <a href="https://studio.meowv.com" target="_blank" rel="noreferrer">Meowv Studio</a>
         </div>
       </div>
     </footer>
