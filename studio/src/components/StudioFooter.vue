@@ -8,12 +8,10 @@ const emit = defineEmits<{ support: [] }>();
   <footer class="studio-footer">
     <div class="studio-footer__inner">
       <div class="studio-footer__brand">
-        <RouterLink
-          class="studio-footer__wordmark home-copy__product--animated"
-          to="/"
-          aria-label="返回 Meowv Studio 首页"
-          ><strong>Meowv</strong> Studio</RouterLink
-        >
+        <RouterLink class="studio-footer__wordmark" to="/" aria-label="返回 Meowv Studio 首页">
+          <span class="home-copy__product--animated"><strong>Meowv</strong> Studio</span>
+          <span class="studio-logo__leaf" aria-hidden="true">●</span>
+        </RouterLink>
         <span>专注浏览器处理的本地文件工作台</span>
       </div>
 

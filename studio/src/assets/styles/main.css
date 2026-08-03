@@ -262,7 +262,10 @@ button {
 }
 
 .studio-footer__wordmark {
+  display: inline-flex;
+  align-items: center;
   flex: 0 0 auto;
+  gap: 9px;
   color: var(--color-brand-strong);
   font-size: 20px;
   font-weight: 540;
