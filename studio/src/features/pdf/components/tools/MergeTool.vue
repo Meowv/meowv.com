@@ -3,17 +3,10 @@ import { Files, Plus, Trash2 } from '@/features/pdf/icons';
 import { mergePdfFiles } from '@/features/pdf/core/merge';
 import { formatFileSize } from '@/features/pdf/core/shared/format';
 import { warnForLargePdf } from '@/features/pdf/core/shared/file';
-import { useFileHandoff } from '@/core/browser/file-handoff';
 
 const { files, loading, errors, addFiles, removeFile, clearFiles, replaceFiles } = usePdfFiles();
 const operation = usePdfOperation();
 const outputName = ref('merged.pdf');
-const { take } = useFileHandoff();
-
-onMounted(() => {
-  const file = take('pdf');
-  if (file) void addFiles([file]);
-});
 
 const totalPages = computed(() => files.value.reduce((total, file) => total + file.pageCount, 0));
 const totalSize = computed(() => files.value.reduce((total, file) => total + file.size, 0));

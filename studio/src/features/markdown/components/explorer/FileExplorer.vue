@@ -1,19 +1,54 @@
 <script setup lang="ts">
 import {
   ChevronsDown,
+  FileDescription,
+  FileTypePdf,
   FilePlus2,
   FolderPlus,
+  Image,
+  Music,
   Pencil,
   RefreshCw,
   RotateCcw,
   Trash2,
+  Video,
 } from '@/features/markdown/icons';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import FileTreeNode from './FileTreeNode.vue';
 import { useWorkspaceStore, type DisplayTreeNode } from '@/features/markdown/stores/workspace';
+import { createTypedMediaBlob } from '@/features/markdown/services/media';
+import {
+  handoffFile,
+  openWindowFileHandoff,
+  type StudioFeature,
+} from '@/core/browser/file-handoff';
 
 type DialogKind = 'new-file' | 'new-folder' | 'rename' | 'delete';
 const ROOT_BATCH_SIZE = 200;
+const IMAGE_TOOLS = [
+  ['compress', '图片压缩'],
+  ['convert', '格式转换'],
+  ['resize', '尺寸调整'],
+  ['crop', '图片裁剪'],
+  ['watermark', '添加水印'],
+  ['rounded', '添加圆角'],
+  ['padding', '补边留白'],
+  ['images-to-pdf', '图片转 PDF'],
+  ['merge-gif', '合并为 GIF'],
+] as const;
+const PDF_TOOLS = [
+  ['merge-pdf', '合并 PDF'],
+  ['split-pdf', '拆分 PDF'],
+  ['organize-pdf', '整理 PDF 页面'],
+  ['delete-pdf-pages', '删除 PDF 页面'],
+  ['extract-pdf-pages', '提取 PDF 页面'],
+  ['rotate-pdf', '旋转 PDF'],
+  ['pdf-to-images', 'PDF 转图片'],
+  ['watermark-pdf', 'PDF 添加水印'],
+  ['add-pdf-page-numbers', 'PDF 添加页码'],
+  ['pdf-metadata', 'PDF 元数据'],
+] as const;
 
 interface ContextMenuState {
   x: number;
@@ -37,6 +72,7 @@ interface DropTarget {
 }
 
 const store = useWorkspaceStore();
+const router = useRouter();
 const expandedPaths = ref(new Set(['', '技术', '技术/.NET', '前端', '生活']));
 const contextMenu = ref<ContextMenuState | null>(null);
 const dialogKind = ref<DialogKind | null>(null);
@@ -48,6 +84,17 @@ const visibleRootCount = ref(ROOT_BATCH_SIZE);
 const draggingNode = ref<DisplayTreeNode | null>(null);
 const dropTargetPath = ref<string | null>(null);
 const dropTargetState = ref<DropTargetState>('none');
+const imagePreview = ref<{ name: string; url: string } | null>(null);
+const mediaPreview = ref<{
+  name: string;
+  url: string;
+  category: 'audio' | 'video';
+} | null>(null);
+const mediaError = ref('');
+const officeTarget = ref<DisplayTreeNode | null>(null);
+const officeBusy = ref(false);
+const pdfTarget = ref<{ node: DisplayTreeNode; slug: string; label: string } | null>(null);
+const pdfBusy = ref(false);
 let pointerDrag: PointerDragState | null = null;
 let suppressDraggedClick = false;
 let pointerFrame: number | undefined;
@@ -148,13 +195,189 @@ function toggleDirectory(node: DisplayTreeNode): void {
 }
 
 function openContextMenu(event: MouseEvent, node: DisplayTreeNode): void {
+  if (node.kind === 'file' && node.category === 'other') {
+    return;
+  }
   const menuWidth = 188;
-  const menuHeight = node.kind === 'directory' ? 184 : 80;
+  const menuHeight =
+    node.category === 'image' || node.category === 'pdf'
+      ? Math.min(430, globalThis.innerHeight - 16)
+      : node.category === 'audio' || node.category === 'video'
+        ? 132
+        : node.kind === 'directory'
+          ? 184
+          : 96;
   contextMenu.value = {
     x: Math.min(event.clientX, globalThis.innerWidth - menuWidth),
     y: Math.min(event.clientY, globalThis.innerHeight - menuHeight),
     node,
   };
+}
+
+async function getNodeFile(node: DisplayTreeNode): Promise<File | null> {
+  if (node.kind !== 'file' || node.handle?.kind !== 'file') {
+    return null;
+  }
+  return (node.handle as FileSystemFileHandle).getFile();
+}
+
+async function openNode(node: DisplayTreeNode): Promise<void> {
+  if (node.category === 'markdown' || node.category === 'text') {
+    await store.openDocument(node.path);
+    return;
+  }
+  if (node.category === 'image') {
+    closeMediaPreview();
+    closeImagePreview();
+    try {
+      const file = await getNodeFile(node);
+      if (file) {
+        imagePreview.value = { name: node.name, url: URL.createObjectURL(file) };
+      }
+    } catch (error) {
+      store.notify('error', '无法预览图片', error instanceof Error ? error.message : node.name);
+    }
+    return;
+  }
+  if (node.category === 'audio' || node.category === 'video') {
+    await openMediaPreview(node);
+    return;
+  }
+  if (node.category === 'office') {
+    officeTarget.value = node;
+    return;
+  }
+  if (node.category === 'pdf') {
+    promptPdfTool(node, 'organize-pdf', '整理 PDF 页面');
+  }
+}
+
+function closeImagePreview(): void {
+  if (imagePreview.value) {
+    URL.revokeObjectURL(imagePreview.value.url);
+    imagePreview.value = null;
+  }
+}
+
+async function openMediaPreview(node: DisplayTreeNode): Promise<void> {
+  closeImagePreview();
+  closeMediaPreview();
+  try {
+    const file = await getNodeFile(node);
+    if (!file || (node.category !== 'audio' && node.category !== 'video')) {
+      return;
+    }
+    mediaPreview.value = {
+      name: node.name,
+      url: URL.createObjectURL(createTypedMediaBlob(file, node.category)),
+      category: node.category,
+    };
+  } catch (error) {
+    store.notify('error', '无法打开媒体文件', error instanceof Error ? error.message : node.name);
+  }
+}
+
+function closeMediaPreview(): void {
+  if (mediaPreview.value) {
+    URL.revokeObjectURL(mediaPreview.value.url);
+    mediaPreview.value = null;
+  }
+  mediaError.value = '';
+}
+
+function handleMediaError(): void {
+  mediaError.value = '当前浏览器不支持此文件的媒体编码。';
+}
+
+async function openResourceTool(
+  node: DisplayTreeNode,
+  feature: Extract<StudioFeature, 'image' | 'pdf'>,
+  slug: string,
+): Promise<void> {
+  contextMenu.value = null;
+  try {
+    if (!(await store.saveActiveDocument())) {
+      return;
+    }
+    const file = await getNodeFile(node);
+    if (!file || !handoffFile(file, feature)) {
+      throw new Error('当前文件无法交给目标工具。');
+    }
+    closeImagePreview();
+    closeMediaPreview();
+    await router.push(`/${feature}/${slug}`);
+  } catch (error) {
+    store.notify('error', '无法打开工具', error instanceof Error ? error.message : node.name);
+  }
+}
+
+function promptPdfTool(node: DisplayTreeNode, slug: string, label: string): void {
+  contextMenu.value = null;
+  pdfTarget.value = { node, slug, label };
+}
+
+async function confirmPdfTool(): Promise<void> {
+  const target = pdfTarget.value;
+  if (!target || target.node.kind !== 'file' || target.node.handle?.kind !== 'file') {
+    return;
+  }
+  const popup = globalThis.open('about:blank', '_blank');
+  if (!popup) {
+    store.notify('error', '无法打开 PDF 工具', '浏览器阻止了新窗口，请允许本站打开弹出式窗口。');
+    return;
+  }
+  pdfBusy.value = true;
+  try {
+    const handle = target.node.handle as FileSystemFileHandle;
+    const permission = await handle.requestPermission({ mode: 'read' });
+    if (permission !== 'granted') {
+      popup.close();
+      store.notify('info', '未获得文件授权', 'PDF 工具没有打开此文件。');
+      return;
+    }
+    const file = await handle.getFile();
+    openWindowFileHandoff(popup, `/pdf/${target.slug}`, 'pdf', file);
+    pdfTarget.value = null;
+  } catch (error) {
+    popup.close();
+    store.notify(
+      'error',
+      '无法打开 PDF 工具',
+      error instanceof Error ? error.message : target.node.name,
+    );
+  } finally {
+    pdfBusy.value = false;
+  }
+}
+
+async function openOfficeInNewWindow(): Promise<void> {
+  const node = officeTarget.value;
+  if (!node || node.kind !== 'file' || node.handle?.kind !== 'file') {
+    return;
+  }
+  const popup = globalThis.open('about:blank', '_blank');
+  if (!popup) {
+    store.notify('error', '无法打开 Office', '浏览器阻止了新窗口，请允许本站打开弹出式窗口。');
+    return;
+  }
+  officeBusy.value = true;
+  try {
+    const handle = node.handle as FileSystemFileHandle;
+    const permission = await handle.requestPermission({ mode: 'readwrite' });
+    if (permission !== 'granted') {
+      popup.close();
+      store.notify('info', '未获得文件授权', 'Office 编辑器没有打开此文件。');
+      return;
+    }
+    const file = await handle.getFile();
+    openWindowFileHandoff(popup, '/office', 'office', file, handle);
+    officeTarget.value = null;
+  } catch (error) {
+    popup.close();
+    store.notify('error', '无法打开 Office', error instanceof Error ? error.message : node.name);
+  } finally {
+    officeBusy.value = false;
+  }
 }
 
 function actionParentPath(node: DisplayTreeNode | null): string {
@@ -239,7 +462,7 @@ function canMoveTo(node: DisplayTreeNode, destinationPath: string): boolean {
 }
 
 function beginPointerDrag(event: PointerEvent, node: DisplayTreeNode): void {
-  if (event.button !== 0 || store.isDemo) {
+  if (event.button !== 0 || store.isDemo || (node.kind === 'file' && node.category === 'other')) {
     return;
   }
   endDrag();
@@ -369,9 +592,12 @@ function preventDraggedClick(event: MouseEvent): void {
 }
 
 function handleDocumentKeydown(event: KeyboardEvent): void {
-  if (event.key === 'Escape' && dialogKind.value) {
-    closeDialog();
-    return;
+  if (event.key === 'Escape') {
+    if (dialogKind.value) closeDialog();
+    if (imagePreview.value) closeImagePreview();
+    if (mediaPreview.value) closeMediaPreview();
+    if (officeTarget.value) officeTarget.value = null;
+    if (pdfTarget.value) pdfTarget.value = null;
   }
   contextMenu.value = null;
 }
@@ -387,6 +613,8 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   endDrag();
+  closeImagePreview();
+  closeMediaPreview();
   document.removeEventListener('click', closeContextMenu);
   document.removeEventListener('click', preventDraggedClick, true);
   document.removeEventListener('keydown', handleDocumentKeydown);
@@ -459,7 +687,7 @@ onBeforeUnmount(() => {
           :expanded-paths="expandedPaths"
           :dragging-path="draggingNode?.path"
           :drop-target-path="dropTargetPath ?? undefined"
-          @open="store.openDocument($event.path)"
+          @open="openNode"
           @toggle="toggleDirectory"
           @context="openContextMenu"
           @pointerdown="beginPointerDrag"
@@ -486,7 +714,7 @@ onBeforeUnmount(() => {
     </div>
 
     <footer class="workspace-summary">
-      <span>{{ documentCount }} 个文档</span>
+      <span>{{ documentCount }} 个文件</span>
       <span>·</span>
       <span>{{ directoryCount }} 个文件夹</span>
       <span v-if="store.indexing">· 正在索引</span>
@@ -528,6 +756,66 @@ onBeforeUnmount(() => {
           </button>
           <div class="context-menu__separator" />
         </template>
+        <template v-else-if="contextMenu.node.category === 'image'">
+          <p class="context-menu__label">图片工具</p>
+          <button
+            v-for="tool in IMAGE_TOOLS"
+            :key="tool[0]"
+            class="context-menu__item"
+            type="button"
+            role="menuitem"
+            @click="openResourceTool(contextMenu.node, 'image', tool[0])"
+          >
+            <Image :size="16" />{{ tool[1] }}
+          </button>
+          <div class="context-menu__separator" />
+        </template>
+        <template v-else-if="contextMenu.node.category === 'pdf'">
+          <p class="context-menu__label">PDF 工具</p>
+          <button
+            v-for="tool in PDF_TOOLS"
+            :key="tool[0]"
+            class="context-menu__item"
+            type="button"
+            role="menuitem"
+            @click="promptPdfTool(contextMenu.node, tool[0], tool[1])"
+          >
+            <FileTypePdf :size="16" />{{ tool[1] }}
+          </button>
+          <div class="context-menu__separator" />
+        </template>
+        <template
+          v-else-if="contextMenu.node.category === 'audio' || contextMenu.node.category === 'video'"
+        >
+          <button
+            class="context-menu__item"
+            type="button"
+            role="menuitem"
+            @click="
+              openMediaPreview(contextMenu.node);
+              contextMenu = null;
+            "
+          >
+            <Music v-if="contextMenu.node.category === 'audio'" :size="16" />
+            <Video v-else :size="16" />
+            播放
+          </button>
+          <div class="context-menu__separator" />
+        </template>
+        <template v-else-if="contextMenu.node.category === 'office'">
+          <button
+            class="context-menu__item"
+            type="button"
+            role="menuitem"
+            @click="
+              officeTarget = contextMenu.node;
+              contextMenu = null;
+            "
+          >
+            <FileDescription :size="16" />使用 Office 打开
+          </button>
+          <div class="context-menu__separator" />
+        </template>
         <button
           class="context-menu__item"
           type="button"
@@ -544,6 +832,153 @@ onBeforeUnmount(() => {
         >
           <Trash2 :size="16" />删除
         </button>
+      </div>
+
+      <div
+        v-if="pdfTarget"
+        class="markdown-studio modal-backdrop"
+        role="presentation"
+        @mousedown.self="pdfTarget = null"
+      >
+        <section class="modal" role="dialog" aria-modal="true" aria-labelledby="pdf-open-title">
+          <header class="modal__header">
+            <h2 id="pdf-open-title">使用 PDF 工具打开</h2>
+          </header>
+          <div class="modal__body">
+            <p class="m-0 text-[var(--color-text-muted)]">
+              将请求“{{ pdfTarget.node.name }}”的本地读取权限，并在新窗口中使用“{{
+                pdfTarget.label
+              }}”打开。
+            </p>
+          </div>
+          <footer class="modal__footer">
+            <button
+              class="secondary-button button--small"
+              type="button"
+              :disabled="pdfBusy"
+              @click="pdfTarget = null"
+            >
+              取消
+            </button>
+            <button
+              class="primary-button button--small"
+              type="button"
+              :disabled="pdfBusy"
+              @click="confirmPdfTool"
+            >
+              {{ pdfBusy ? '正在授权…' : '授权并打开' }}
+            </button>
+          </footer>
+        </section>
+      </div>
+
+      <div
+        v-if="imagePreview"
+        class="markdown-studio modal-backdrop"
+        role="presentation"
+        @mousedown.self="closeImagePreview"
+      >
+        <section
+          class="modal image-preview-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="image-preview-title"
+        >
+          <header class="modal__header">
+            <h2 id="image-preview-title">{{ imagePreview.name }}</h2>
+          </header>
+          <div class="image-preview-dialog__body">
+            <img :src="imagePreview.url" :alt="imagePreview.name" />
+          </div>
+          <footer class="modal__footer">
+            <button class="secondary-button button--small" type="button" @click="closeImagePreview">
+              关闭
+            </button>
+          </footer>
+        </section>
+      </div>
+
+      <div
+        v-if="mediaPreview"
+        class="markdown-studio modal-backdrop"
+        role="presentation"
+        @mousedown.self="closeMediaPreview"
+      >
+        <section
+          class="modal media-preview-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="media-preview-title"
+        >
+          <header class="modal__header">
+            <h2 id="media-preview-title">{{ mediaPreview.name }}</h2>
+          </header>
+          <div class="media-preview-dialog__body">
+            <audio
+              v-if="mediaPreview.category === 'audio'"
+              :src="mediaPreview.url"
+              :aria-label="`播放 ${mediaPreview.name}`"
+              controls
+              preload="metadata"
+              @loadedmetadata="mediaError = ''"
+              @error="handleMediaError"
+            />
+            <video
+              v-else
+              :src="mediaPreview.url"
+              :aria-label="`播放 ${mediaPreview.name}`"
+              controls
+              playsinline
+              preload="metadata"
+              @loadedmetadata="mediaError = ''"
+              @error="handleMediaError"
+            />
+            <p v-if="mediaError" class="media-preview-dialog__error" role="alert">
+              {{ mediaError }}
+            </p>
+          </div>
+          <footer class="modal__footer">
+            <button class="secondary-button button--small" type="button" @click="closeMediaPreview">
+              关闭
+            </button>
+          </footer>
+        </section>
+      </div>
+
+      <div
+        v-if="officeTarget"
+        class="markdown-studio modal-backdrop"
+        role="presentation"
+        @mousedown.self="officeTarget = null"
+      >
+        <section class="modal" role="dialog" aria-modal="true" aria-labelledby="office-open-title">
+          <header class="modal__header">
+            <h2 id="office-open-title">使用 Office 打开</h2>
+          </header>
+          <div class="modal__body">
+            <p class="m-0 text-[var(--color-text-muted)]">
+              将请求“{{ officeTarget.name }}”的本地读写权限，并在新窗口中打开 Office 编辑器。
+            </p>
+          </div>
+          <footer class="modal__footer">
+            <button
+              class="secondary-button button--small"
+              type="button"
+              :disabled="officeBusy"
+              @click="officeTarget = null"
+            >
+              取消
+            </button>
+            <button
+              class="primary-button button--small"
+              type="button"
+              :disabled="officeBusy"
+              @click="openOfficeInNewWindow"
+            >
+              {{ officeBusy ? '正在授权…' : '授权并打开' }}
+            </button>
+          </footer>
+        </section>
       </div>
 
       <div

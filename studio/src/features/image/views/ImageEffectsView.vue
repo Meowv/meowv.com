@@ -15,6 +15,7 @@ import {
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 import ImageDropzone from '@/features/image/components/upload/ImageDropzone.vue';
+import { useFileHandoff } from '@/core/browser/file-handoff';
 import ImageToolHeader from '@/features/image/components/layout/ImageToolHeader.vue';
 import {
   addImagePadding,
@@ -565,6 +566,10 @@ watch(
 );
 
 onMounted(async () => {
+  const handoff = useFileHandoff().take('image');
+  if (handoff) {
+    await selectSource([handoff]);
+  }
   try {
     const capabilities = await detectEncodingCapabilities();
     webpSupported.value = capabilities.webp;

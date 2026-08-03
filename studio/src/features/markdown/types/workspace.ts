@@ -1,8 +1,64 @@
 export const MARKDOWN_EXTENSIONS = ['.md', '.markdown'] as const;
-export const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.webp'] as const;
+export const TEXT_EXTENSIONS = [
+  '.txt',
+  '.log',
+  '.json',
+  '.jsonc',
+  '.yaml',
+  '.yml',
+  '.xml',
+  '.html',
+  '.htm',
+  '.css',
+  '.scss',
+  '.less',
+  '.js',
+  '.mjs',
+  '.cjs',
+  '.ts',
+  '.tsx',
+  '.jsx',
+  '.vue',
+  '.svelte',
+  '.py',
+  '.java',
+  '.cs',
+  '.go',
+  '.rs',
+  '.c',
+  '.h',
+  '.cpp',
+  '.hpp',
+  '.sh',
+  '.zsh',
+  '.sql',
+  '.ini',
+  '.conf',
+  '.config',
+  '.env',
+  '.key',
+  '.webmanifest',
+] as const;
+export const IMAGE_EXTENSIONS = [
+  '.avif',
+  '.bmp',
+  '.gif',
+  '.heic',
+  '.heif',
+  '.jpeg',
+  '.jpg',
+  '.png',
+  '.svg',
+  '.webp',
+] as const;
+export const AUDIO_EXTENSIONS = ['.aac', '.flac', '.m4a', '.mp3', '.ogg', '.wav'] as const;
+export const VIDEO_EXTENSIONS = ['.m4v', '.mov', '.mp4', '.ogv', '.webm'] as const;
+export const OFFICE_EXTENSIONS = ['.csv', '.docx', '.pptx', '.xlsx'] as const;
+export const PDF_EXTENSIONS = ['.pdf'] as const;
 
 export type WorkspaceEntryKind = 'directory' | 'file';
-export type WorkspaceFileCategory = 'markdown' | 'image' | 'other';
+export type WorkspaceFileCategory =
+  'markdown' | 'text' | 'image' | 'audio' | 'video' | 'office' | 'pdf' | 'other';
 
 interface WorkspaceNodeBase {
   name: string;
@@ -50,6 +106,7 @@ export interface WorkspaceScanOptions {
 
 export interface WorkspaceScanResult {
   root: WorkspaceDirectoryNode;
+  files: WorkspaceFileNode[];
   documents: WorkspaceFileNode[];
   assets: WorkspaceFileNode[];
 }

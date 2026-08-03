@@ -72,6 +72,7 @@ import {
   DEFAULT_WORKSPACE_PREFERENCES,
   WorkspaceError,
   type WorkspaceFileNode,
+  type WorkspaceFileCategory,
   type WorkspaceNode,
   type WorkspacePreferences,
 } from '@/features/markdown/types/workspace';
@@ -87,7 +88,8 @@ export interface DisplayTreeNode {
   name: string;
   path: string;
   kind: 'directory' | 'file';
-  category?: 'markdown' | 'image' | 'other';
+  category?: WorkspaceFileCategory;
+  extension?: string;
   children?: DisplayTreeNode[];
   handle?: FileSystemHandle;
 }
@@ -97,6 +99,7 @@ export interface LoadedDocument {
   name: string;
   content: string;
   parsed: ParsedMarkdownDocument;
+  category?: 'markdown' | 'text';
   handle?: FileSystemFileHandle;
 }
 
@@ -140,6 +143,7 @@ function cloneDisplayTree(node: WorkspaceNode | DemoTreeNode): DisplayTreeNode {
       name: node.name,
       path: node.path,
       category: 'category' in node ? node.category : 'markdown',
+      ...('extension' in node ? { extension: node.extension } : {}),
       ...('handle' in node ? { handle: markRaw(node.handle) } : {}),
     };
   }
@@ -245,7 +249,9 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
   const workspaceHistory = ref<WorkspaceHistoryEntry[]>([]);
   const treeRoot = shallowRef<DisplayTreeNode | null>(null);
   const documentNodes = shallowRef<WorkspaceFileNode[]>([]);
+  const fileNodes = shallowRef<WorkspaceFileNode[]>([]);
   const documents = shallowRef(new Map<string, LoadedDocument>());
+  const activeLoadedDocument = shallowRef<LoadedDocument | null>(null);
   const assets = ref<WorkspaceAsset[]>([]);
   const assetUrls = ref<Record<string, string>>({});
   const activePath = ref('');
@@ -289,7 +295,8 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
   const hasEditableDocument = computed(() => Boolean(activePath.value) || untitledDraft.value);
   const fileSystemSupported = computed(() => isFileSystemAccessSupported());
   const canUndoMove = computed(() => lastMove.value !== null);
-  const activeDocument = computed(() => documents.value.get(activePath.value) ?? null);
+  const activeDocument = computed(() => activeLoadedDocument.value);
+  const isPlainTextDocument = computed(() => activeLoadedDocument.value?.category === 'text');
   const activeName = computed(() => {
     if (activePath.value) {
       return fileNameFromPath(activePath.value);
@@ -537,7 +544,7 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
       try {
         await setDocumentLocked(workspaceName.value, path, false);
         setDocumentLockState(path, false);
-        notify('success', '文档已解锁', '现在可以继续编辑当前 Markdown 文档。');
+        notify('success', '文档已解锁', '现在可以继续编辑当前文档。');
       } catch (error) {
         notify('error', '无法解锁文档', toMessage(error));
       }
@@ -552,7 +559,7 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
       }
       await setDocumentLocked(workspaceName.value, path, true);
       setDocumentLockState(path, true);
-      notify('success', '文档已锁定', '当前 Markdown 文档已切换为只读。');
+      notify('success', '文档已锁定', '当前文档已切换为只读。');
     } catch (error) {
       notify('error', '无法锁定文档', toMessage(error));
     }
@@ -704,7 +711,10 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
     const operation = ++workspaceOperationSequence;
     documentOpenSequence += 1;
     indexing.value = false;
-    const result = await scanWorkspace(handle);
+    const result = await scanWorkspace(handle, {
+      includeImagesInTree: true,
+      includeOtherFiles: true,
+    });
     if (operation !== workspaceOperationSequence) {
       return;
     }
@@ -723,12 +733,14 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
     workspaceName.value = handle.name;
     treeRoot.value = markRaw(cloneDisplayTree(result.root));
     documentNodes.value = result.documents.map((node) => markRaw(node));
+    fileNodes.value = result.files.map((node) => markRaw(node));
     assets.value = result.assets.map((node) => ({
       name: node.name,
       path: node.path,
       handle: markRaw(node.handle),
     }));
     documents.value = new Map();
+    activeLoadedDocument.value = null;
     lockedDocumentPaths.value = new Set();
     activePath.value = '';
     untitledDraft.value = false;
@@ -747,10 +759,15 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
     }
     const firstDocument =
       (lastActivePath
-        ? result.documents.find((document) => document.path === lastActivePath)
+        ? result.files.find(
+            (file) =>
+              file.path === lastActivePath &&
+              (file.category === 'markdown' || file.category === 'text'),
+          )
         : undefined) ??
       result.documents.find((document) => /readme\.md$/i.test(document.path)) ??
-      result.documents[0];
+      result.documents[0] ??
+      result.files.find((file) => file.category === 'text');
     if (firstDocument) {
       await openDocument(firstDocument.path);
       if (operation !== workspaceOperationSequence) {
@@ -775,6 +792,7 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
 
   function startUntitledDraft(): void {
     activePath.value = '';
+    activeLoadedDocument.value = null;
     untitledDraft.value = true;
     draftSaveRequested.value = false;
     lockedDocumentPaths.value = new Set();
@@ -822,7 +840,9 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
         children: [{ kind: 'file', name: path, path, category: 'markdown' }],
       } satisfies DisplayTreeNode);
       documentNodes.value = [];
+      fileNodes.value = [];
       documents.value = new Map([[path, document]]);
+      activeLoadedDocument.value = document;
       assets.value = [];
       activePath.value = path;
       untitledDraft.value = false;
@@ -864,6 +884,7 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
       workspaceName.value = DEMO_WORKSPACE_NAME;
       treeRoot.value = markRaw(cloneDisplayTree(DEMO_TREE));
       documentNodes.value = [];
+      fileNodes.value = [];
       assets.value = DEMO_ASSETS.map((asset) => ({ ...asset }));
       searchResults.value = [];
       await searchController.clear();
@@ -894,6 +915,7 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
         });
       }
       documents.value = loaded;
+      activeLoadedDocument.value = null;
       assetUrls.value = Object.fromEntries(DEMO_ASSETS.map((asset) => [asset.path, asset.url]));
       lockedDocumentPaths.value = new Set();
       await searchController.replaceAll([...loaded.values()].map(createSearchDocument));
@@ -1003,10 +1025,15 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
       return;
     }
 
+    const fileNode = fileNodes.value.find((item) => item.path === path);
+    if (fileNode && fileNode.category !== 'markdown' && fileNode.category !== 'text') {
+      return;
+    }
+
     let document = documents.value.get(path);
     if (!document && rootHandle.value) {
       try {
-        const node = documentNodes.value.find((item) => item.path === path);
+        const node = fileNode ?? documentNodes.value.find((item) => item.path === path);
         const handle = node?.handle ?? (await getFileHandleByRelativePath(rootHandle.value, path));
         if (
           workspaceOperation !== workspaceOperationSequence ||
@@ -1030,9 +1057,12 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
           name: fileNameFromPath(path),
           content,
           parsed: parseMarkdownDocument(content, { path }),
+          category: node?.category === 'text' ? 'text' : 'markdown',
           handle: markRaw(handle),
         };
-        documents.value = new Map(documents.value).set(path, document);
+        if (document.category !== 'text') {
+          documents.value = new Map(documents.value).set(path, document);
+        }
       } catch (error) {
         notify('error', '无法打开文件', `${path}：${toMessage(error)}`);
         return;
@@ -1057,6 +1087,7 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
     }
 
     activePath.value = path;
+    activeLoadedDocument.value = document;
     if (!isDemo.value && workspaceHistoryId.value) {
       void saveLastActiveDocumentPath(workspaceHistoryId.value, path).catch(() => undefined);
     }
@@ -1070,7 +1101,12 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
     saveState.value = 'saved';
     cursorLine.value = 1;
     cursorColumn.value = 1;
-    await resolveActiveAssets();
+    if (document.category === 'text') {
+      releaseActiveObjectUrls();
+      assetUrls.value = {};
+    } else {
+      await resolveActiveAssets();
+    }
     if (globalThis.innerWidth <= 980) {
       sidebarOpen.value = false;
     }
@@ -1152,7 +1188,8 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
       }
 
       const contentToSave = activeContent.value;
-      const current = documents.value.get(path);
+      const current =
+        activeLoadedDocument.value?.path === path ? activeLoadedDocument.value : undefined;
       saveState.value = 'saving';
       const task = (async (): Promise<boolean> => {
         try {
@@ -1177,8 +1214,11 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
             content: contentToSave,
             parsed: parseMarkdownDocument(contentToSave, { path }),
           };
-          documents.value = new Map(documents.value).set(path, updated);
-          await searchController.upsert(createSearchDocument(updated));
+          activeLoadedDocument.value = updated;
+          if (updated.category !== 'text') {
+            documents.value = new Map(documents.value).set(path, updated);
+            await searchController.upsert(createSearchDocument(updated));
+          }
 
           if (activePath.value === path) {
             lastSavedContent.value = contentToSave;
@@ -1243,6 +1283,7 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
       };
       documents.value = new Map(documents.value).set(name, document);
       activePath.value = name;
+      activeLoadedDocument.value = document;
       untitledDraft.value = false;
       draftSaveRequested.value = false;
       setDocumentLockState(name, false);
@@ -1301,9 +1342,28 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
         return;
       }
       const contentRevision = activeContentRevision;
-      const result = await scanWorkspace(handle);
+      const result = await scanWorkspace(handle, {
+        includeImagesInTree: true,
+        includeOtherFiles: true,
+      });
       if (operation !== workspaceOperationSequence) {
         return;
+      }
+      const activePathBeforeRefresh = activePath.value;
+      const activeTextNode = result.files.find(
+        (node) => node.path === activePathBeforeRefresh && node.category === 'text',
+      );
+      let refreshedActiveText: LoadedDocument | null = null;
+      if (activeTextNode) {
+        const content = await readTextFile(activeTextNode.handle);
+        refreshedActiveText = {
+          path: activeTextNode.path,
+          name: activeTextNode.name,
+          content,
+          parsed: parseMarkdownDocument(content, { path: activeTextNode.path }),
+          category: 'text',
+          handle: markRaw(activeTextNode.handle),
+        };
       }
       const refreshedDocuments = await hydrateDocumentIndex(result.documents, operation, {
         publishDocuments: false,
@@ -1320,25 +1380,34 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
       const activeChangedDuringRefresh =
         documentOperation !== documentOpenSequence || contentRevision !== activeContentRevision;
       const activeRefreshedDocument = activePathAtCommit
-        ? refreshedDocuments.get(activePathAtCommit)
+        ? (refreshedActiveText ?? refreshedDocuments.get(activePathAtCommit))
         : undefined;
 
       if (activePathAtCommit && activeChangedDuringRefresh) {
-        const activePreviousDocument = previousDocuments.get(activePathAtCommit);
+        const activePreviousDocument =
+          activeLoadedDocument.value?.path === activePathAtCommit
+            ? activeLoadedDocument.value
+            : previousDocuments.get(activePathAtCommit);
         const baseDocument = activeRefreshedDocument ?? activePreviousDocument;
         if (baseDocument) {
-          refreshedDocuments.set(activePathAtCommit, {
+          const preservedDocument = {
             ...baseDocument,
             content: activeContentAtCommit,
             parsed: parseMarkdownDocument(activeContentAtCommit, {
               path: activePathAtCommit,
             }),
-          });
+          };
+          if (preservedDocument.category === 'text') {
+            refreshedActiveText = preservedDocument;
+          } else {
+            refreshedDocuments.set(activePathAtCommit, preservedDocument);
+          }
         }
       }
 
       treeRoot.value = markRaw(cloneDisplayTree(result.root));
       documentNodes.value = result.documents.map((node) => markRaw(node));
+      fileNodes.value = result.files.map((node) => markRaw(node));
       assets.value = result.assets.map((node) => ({
         name: node.name,
         path: node.path,
@@ -1347,12 +1416,19 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
       documents.value = new Map(refreshedDocuments);
       searchResults.value = [];
 
-      if (result.documents.length === 0) {
+      const editableFileCount = result.files.filter(
+        (node) => node.category === 'markdown' || node.category === 'text',
+      ).length;
+      if (editableFileCount === 0) {
         startUntitledDraft();
       } else if (activePathAtCommit) {
-        const committedDocument = documents.value.get(activePathAtCommit);
+        const committedDocument =
+          refreshedActiveText?.path === activePathAtCommit
+            ? refreshedActiveText
+            : documents.value.get(activePathAtCommit);
         if (!committedDocument) {
           activePath.value = '';
+          activeLoadedDocument.value = null;
           activeContent.value = '';
           previewContent.value = '';
           lastSavedContent.value = '';
@@ -1363,8 +1439,14 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
           previewContent.value = committedDocument.content;
           lastSavedContent.value = committedDocument.content;
           saveState.value = 'saved';
+          activeLoadedDocument.value = committedDocument;
           activeContentRevision += 1;
-          await resolveActiveAssets();
+          if (committedDocument.category === 'text') {
+            releaseActiveObjectUrls();
+            assetUrls.value = {};
+          } else {
+            await resolveActiveAssets();
+          }
         }
       }
 
@@ -1488,6 +1570,7 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
         activePath.value === node.path || activePath.value.startsWith(`${node.path}/`);
       if (wasActive) {
         activePath.value = '';
+        activeLoadedDocument.value = null;
         activeContent.value = '';
         previewContent.value = '';
         lastSavedContent.value = '';
@@ -1626,6 +1709,7 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
       });
       if (activePath.value === node.path || activePath.value.startsWith(`${node.path}/`)) {
         activePath.value = '';
+        activeLoadedDocument.value = null;
         activeContent.value = '';
         previewContent.value = '';
         lastSavedContent.value = '';
@@ -2006,6 +2090,7 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
     fileSystemSupported,
     canUndoMove,
     activeDocument,
+    isPlainTextDocument,
     activeName,
     resolvedTheme,
     parsedDocument,

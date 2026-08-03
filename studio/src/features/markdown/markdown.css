@@ -394,6 +394,16 @@
     minmax(0, 1fr);
 }
 
+.markdown-studio .workspace-shell--plain-text {
+  grid-template-columns:
+    var(--activity-width) var(--sidebar-width) var(--splitter-width)
+    minmax(0, 1fr);
+}
+
+.markdown-studio .workspace-shell--sidebar-hidden.workspace-shell--plain-text {
+  grid-template-columns: var(--activity-width) 0 0 minmax(0, 1fr);
+}
+
 .markdown-studio .workspace-shell--sidebar-hidden.workspace-shell--preview-hidden {
   grid-template-columns: var(--activity-width) 0 0 minmax(0, 1fr);
 }
@@ -441,6 +451,7 @@
 
 .markdown-studio .workspace-shell--sidebar-hidden .workspace-resizer--sidebar,
 .markdown-studio .workspace-shell--preview-hidden .workspace-resizer--editor,
+.markdown-studio .workspace-shell--plain-text .workspace-resizer--editor,
 .markdown-studio .workspace-shell--editor-hidden .workspace-resizer--editor {
   visibility: hidden;
   pointer-events: none;
@@ -708,6 +719,15 @@ body.workspace-resizing * {
   background: color-mix(in srgb, var(--color-brand-soft) 82%, var(--color-brand) 8%);
 }
 
+.markdown-studio .tree-row--unavailable {
+  color: var(--color-text-faint);
+  opacity: 0.58;
+}
+
+.markdown-studio .tree-row--unavailable:hover {
+  background: transparent;
+}
+
 .markdown-studio .tree-row__chevron,
 .markdown-studio .tree-row__indent {
   display: inline-flex;
@@ -969,6 +989,10 @@ body.workspace-resizing * {
   padding: 0 11px;
   border-bottom: 1px solid var(--color-border);
   overflow-x: auto;
+}
+
+.markdown-studio .format-toolbar--disabled {
+  background: color-mix(in srgb, var(--color-surface-muted) 72%, var(--color-surface));
 }
 
 .markdown-studio .toolbar-divider {
@@ -2253,8 +2277,18 @@ body.workspace-resizing * {
 
 .markdown-studio.context-menu--explorer {
   width: 180px;
+  max-height: min(430px, calc(100dvh - 16px));
   padding: 4px;
   border-radius: 7px;
+  overflow-y: auto;
+}
+
+.markdown-studio.context-menu--explorer .context-menu__label {
+  margin: 0;
+  padding: 6px 7px 4px;
+  color: var(--color-text-faint);
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .markdown-studio.context-menu--explorer .context-menu__item {
@@ -2277,6 +2311,63 @@ body.workspace-resizing * {
   height: 1px;
   margin: 5px 4px;
   background: var(--color-border);
+}
+
+.markdown-studio .image-preview-dialog {
+  display: grid;
+  width: min(920px, calc(100vw - 40px));
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.markdown-studio .image-preview-dialog__body {
+  display: grid;
+  min-height: 0;
+  place-items: center;
+  padding: 18px;
+  overflow: auto;
+  background: var(--color-surface-muted);
+}
+
+.markdown-studio .image-preview-dialog__body img {
+  display: block;
+  max-width: 100%;
+  max-height: calc(100dvh - 190px);
+  object-fit: contain;
+}
+
+.markdown-studio .media-preview-dialog {
+  display: grid;
+  width: min(860px, calc(100vw - 40px));
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.markdown-studio .media-preview-dialog__body {
+  display: grid;
+  min-height: 120px;
+  place-items: center;
+  gap: 14px;
+  padding: 18px;
+  overflow: auto;
+  background: var(--color-surface-muted);
+}
+
+.markdown-studio .media-preview-dialog__body audio {
+  width: min(100%, 640px);
+}
+
+.markdown-studio .media-preview-dialog__body video {
+  display: block;
+  width: 100%;
+  max-height: calc(100dvh - 190px);
+  background: #000;
+  object-fit: contain;
+}
+
+.markdown-studio .media-preview-dialog__error {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: 13px;
+  text-align: center;
 }
 
 .markdown-studio .toast-region {

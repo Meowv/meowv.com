@@ -100,7 +100,9 @@ watchEffect(() => {
     '--markdown-editor-width',
     `${store.preferences.editorWidth}px`,
   );
-  if (!store.preferences.editorVisible || store.isActiveDocumentLocked) {
+  if (store.isPlainTextDocument) {
+    store.mobileView = 'editor';
+  } else if (!store.preferences.editorVisible || store.isActiveDocumentLocked) {
     store.mobileView = 'preview';
   } else if (!store.preferences.previewEnabled && store.mobileView === 'preview') {
     store.mobileView = 'editor';
@@ -138,9 +140,12 @@ onBeforeUnmount(() => {
         'workspace-shell--sidebar-hidden': !store.sidebarOpen,
         'workspace-shell--sidebar-compact':
           store.sidebarOpen && store.preferences.sidebarWidth <= 220,
-        'workspace-shell--preview-hidden': !store.preferences.previewEnabled,
+        'workspace-shell--preview-hidden':
+          !store.preferences.previewEnabled || store.isPlainTextDocument,
+        'workspace-shell--plain-text': store.isPlainTextDocument,
         'workspace-shell--editor-hidden':
-          !store.preferences.editorVisible || store.isActiveDocumentLocked,
+          (!store.preferences.editorVisible && !store.isPlainTextDocument) ||
+          store.isActiveDocumentLocked,
         'workspace-shell--fullscreen-editor': store.fullscreenPane === 'editor',
         'workspace-shell--fullscreen-preview': store.fullscreenPane === 'preview',
         'workspace-shell--fullscreen-workspace': store.fullscreenPane === 'workspace',
@@ -156,16 +161,21 @@ onBeforeUnmount(() => {
       <WorkspaceResizer
         v-if="
           store.preferences.previewEnabled &&
+          !store.isPlainTextDocument &&
           store.preferences.editorVisible &&
           !store.isActiveDocumentLocked
         "
         target="editorWidth"
         label="调整编辑器和预览区域宽度"
       />
-      <PreviewPane v-if="store.preferences.previewEnabled" />
+      <PreviewPane v-if="store.preferences.previewEnabled && !store.isPlainTextDocument" />
 
       <nav
-        v-if="store.preferences.editorVisible && !store.isActiveDocumentLocked"
+        v-if="
+          store.preferences.editorVisible &&
+          !store.isActiveDocumentLocked &&
+          !store.isPlainTextDocument
+        "
         class="mobile-view-switch"
         aria-label="编辑和预览视图"
       >

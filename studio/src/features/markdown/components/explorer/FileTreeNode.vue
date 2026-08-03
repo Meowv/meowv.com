@@ -3,9 +3,19 @@ import {
   ChevronDown,
   ChevronsDown,
   ChevronRight,
+  File,
+  FileCode2,
+  FileDescription,
+  FileSpreadsheet,
+  FileTypePdf,
   FileText,
   Folder,
   FolderOpen,
+  Image,
+  Music,
+  Presentation,
+  Table2,
+  Video,
 } from '@/features/markdown/icons';
 import { computed, ref, watch } from 'vue';
 import type { DisplayTreeNode } from '@/features/markdown/stores/workspace';
@@ -32,6 +42,56 @@ const emit = defineEmits<{
 
 const expanded = computed(() => props.expandedPaths.has(props.node.path));
 const active = computed(() => props.node.kind === 'file' && props.activePath === props.node.path);
+const unavailable = computed(() => props.node.kind === 'file' && props.node.category === 'other');
+const codeExtensions = new Set([
+  '.c',
+  '.conf',
+  '.cpp',
+  '.cs',
+  '.css',
+  '.go',
+  '.h',
+  '.hpp',
+  '.html',
+  '.htm',
+  '.java',
+  '.js',
+  '.jsx',
+  '.json',
+  '.jsonc',
+  '.less',
+  '.mjs',
+  '.py',
+  '.rs',
+  '.scss',
+  '.sh',
+  '.sql',
+  '.svelte',
+  '.ts',
+  '.tsx',
+  '.vue',
+  '.webmanifest',
+  '.xml',
+  '.yaml',
+  '.yml',
+  '.zsh',
+]);
+const fileIcon = computed(() => {
+  if (props.node.category === 'markdown') return FileText;
+  if (props.node.category === 'image') return Image;
+  if (props.node.category === 'audio') return Music;
+  if (props.node.category === 'video') return Video;
+  if (props.node.category === 'pdf') return FileTypePdf;
+  if (props.node.extension === '.xlsx') return FileSpreadsheet;
+  if (props.node.extension === '.pptx') return Presentation;
+  if (props.node.extension === '.csv') return Table2;
+  if (props.node.category === 'office') return FileDescription;
+  if (props.node.category === 'text' && codeExtensions.has(props.node.extension ?? '')) {
+    return FileCode2;
+  }
+  if (props.node.category === 'text') return FileDescription;
+  return File;
+});
 const visibleChildCount = ref(CHILD_BATCH_SIZE);
 const children = computed(() =>
   props.node.kind === 'directory' ? (props.node.children ?? []) : [],
@@ -55,7 +115,9 @@ function activate(): void {
   if (props.node.kind === 'directory') {
     emit('toggle', props.node);
   } else {
-    emit('open', props.node);
+    if (!unavailable.value) {
+      emit('open', props.node);
+    }
   }
 }
 
@@ -83,6 +145,7 @@ function onPointerDown(event: PointerEvent): void {
         'tree-row--active': active,
         'tree-row--dragging': draggingPath === node.path,
         'tree-row--drop-target': dropTargetPath === node.path,
+        'tree-row--unavailable': unavailable,
       }"
       type="button"
       role="treeitem"
@@ -92,6 +155,7 @@ function onPointerDown(event: PointerEvent): void {
       :style="{ paddingLeft: `${8 + depth * 17}px` }"
       :aria-expanded="node.kind === 'directory' ? expanded : undefined"
       :aria-current="active ? 'page' : undefined"
+      :aria-disabled="unavailable || undefined"
       @click="activate"
       @contextmenu.prevent="emit('context', $event, node)"
       @pointerdown="onPointerDown"
@@ -105,7 +169,7 @@ function onPointerDown(event: PointerEvent): void {
       <span class="tree-row__icon">
         <FolderOpen v-if="node.kind === 'directory' && expanded" :size="17" aria-hidden="true" />
         <Folder v-else-if="node.kind === 'directory'" :size="17" aria-hidden="true" />
-        <FileText v-else :size="16" aria-hidden="true" />
+        <component :is="fileIcon" v-else :size="16" aria-hidden="true" />
       </span>
       <span class="tree-row__name">{{ node.name }}</span>
     </button>

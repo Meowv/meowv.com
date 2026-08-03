@@ -15,6 +15,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import CropEditor from '@/features/image/components/crop/CropEditor.vue';
 import ImageToolHeader from '@/features/image/components/layout/ImageToolHeader.vue';
 import ImageDropzone from '@/features/image/components/upload/ImageDropzone.vue';
+import { useFileHandoff } from '@/core/browser/file-handoff';
 import {
   MAX_IMAGE_PIXELS,
   MAX_IMAGE_SIDE,
@@ -399,6 +400,10 @@ async function exportCrop() {
 }
 
 onMounted(async () => {
+  const handoff = useFileHandoff().take('image');
+  if (handoff) {
+    selectDropzoneFiles([handoff]);
+  }
   try {
     const capabilities = await detectEncodingCapabilities();
     webpSupported.value = capabilities.webp;

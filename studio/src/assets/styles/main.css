@@ -92,6 +92,10 @@ button {
   padding-left: 5px;
 }
 
+.studio-shell--markdown {
+  --nav-accent: #2563eb;
+}
+
 .studio-header-toggle {
   position: fixed;
   z-index: 40;
@@ -101,13 +105,13 @@ button {
   height: 30px;
   display: grid;
   padding: 0;
-  border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
+  border: 1px solid color-mix(in srgb, var(--nav-accent, var(--color-brand)) 82%, transparent);
   border-radius: 999px;
-  color: var(--color-text-muted);
-  background: color-mix(in srgb, var(--color-surface-solid) 72%, transparent);
-  box-shadow: 0 3px 10px rgb(32 45 26 / 8%);
+  color: #fff;
+  background: var(--nav-accent, var(--color-brand));
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--nav-accent, var(--color-brand)) 28%, transparent);
   cursor: pointer;
-  opacity: 0.28;
+  opacity: 0.18;
   place-items: center;
   transform: translateX(-50%);
   transition:
@@ -123,8 +127,8 @@ button {
 
 .studio-header-toggle:hover,
 .studio-header-toggle:focus-visible {
-  color: var(--color-brand-strong);
-  background: var(--color-brand-soft);
+  color: #fff;
+  background: color-mix(in srgb, var(--nav-accent, var(--color-brand)) 88%, #000);
   opacity: 1;
   transform: translate(-50%, -1px);
 }

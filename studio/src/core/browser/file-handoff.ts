@@ -8,6 +8,18 @@ export interface FileHandoff {
   createdAt: number;
 }
 
+interface WindowFileHandoffMessage {
+  type: 'studio-file-handoff';
+  feature: StudioFeature;
+  file: File;
+  handle?: FileSystemFileHandle;
+}
+
+interface WindowFileHandoffReadyMessage {
+  type: 'studio-file-handoff-ready';
+  feature: StudioFeature;
+}
+
 const currentHandoff = shallowRef<FileHandoff | null>(null);
 
 const extensionGroups: Record<StudioFeature, Set<string>> = {
@@ -42,6 +54,81 @@ export function handoffFile(file: File, feature = featureForFile(file)): FileHan
   const handoff = { feature, file, createdAt: Date.now() } satisfies FileHandoff;
   currentHandoff.value = handoff;
   return handoff;
+}
+
+export function openWindowFileHandoff(
+  popup: Window,
+  route: string,
+  feature: StudioFeature,
+  file: File,
+  handle?: FileSystemFileHandle,
+): () => void {
+  const origin = globalThis.location.origin;
+  const onMessage = (event: MessageEvent<WindowFileHandoffReadyMessage>): void => {
+    if (
+      event.origin !== origin ||
+      event.source !== popup ||
+      event.data?.type !== 'studio-file-handoff-ready' ||
+      event.data.feature !== feature
+    ) {
+      return;
+    }
+    popup.postMessage(
+      {
+        type: 'studio-file-handoff',
+        feature,
+        file,
+        ...(handle ? { handle } : {}),
+      } satisfies WindowFileHandoffMessage,
+      origin,
+    );
+    cleanup();
+  };
+  const timeout = globalThis.setTimeout(() => cleanup(), 15_000);
+  const cleanup = (): void => {
+    globalThis.clearTimeout(timeout);
+    globalThis.removeEventListener('message', onMessage);
+  };
+
+  globalThis.addEventListener('message', onMessage);
+  popup.location.href = route;
+  return cleanup;
+}
+
+export function receiveWindowFileHandoff(
+  feature: StudioFeature,
+  onFile: (file: File, handle?: FileSystemFileHandle) => void,
+): () => void {
+  const opener = globalThis.opener;
+  if (!opener) {
+    return () => undefined;
+  }
+  const origin = globalThis.location.origin;
+  const onMessage = (event: MessageEvent<WindowFileHandoffMessage>): void => {
+    if (
+      event.origin !== origin ||
+      event.source !== opener ||
+      event.data?.type !== 'studio-file-handoff' ||
+      event.data.feature !== feature ||
+      !(event.data.file instanceof File)
+    ) {
+      return;
+    }
+    onFile(event.data.file, event.data.handle);
+    cleanup();
+  };
+  const timeout = globalThis.setTimeout(() => cleanup(), 15_000);
+  const cleanup = (): void => {
+    globalThis.clearTimeout(timeout);
+    globalThis.removeEventListener('message', onMessage);
+  };
+
+  globalThis.addEventListener('message', onMessage);
+  opener.postMessage(
+    { type: 'studio-file-handoff-ready', feature } satisfies WindowFileHandoffReadyMessage,
+    origin,
+  );
+  return cleanup;
 }
 
 export function useFileHandoff() {

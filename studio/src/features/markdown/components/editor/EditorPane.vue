@@ -21,7 +21,25 @@ import {
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import * as monaco from 'monaco-editor/editor/editor.api.js';
 import EditorWorker from 'monaco-editor/editor/editor.worker.js?worker';
+import 'monaco-editor/languages/definitions/cpp/register.js';
+import 'monaco-editor/languages/definitions/csharp/register.js';
+import 'monaco-editor/languages/definitions/css/register.js';
+import 'monaco-editor/languages/definitions/dockerfile/register.js';
+import 'monaco-editor/languages/definitions/go/register.js';
+import 'monaco-editor/languages/definitions/html/register.js';
+import 'monaco-editor/languages/definitions/ini/register.js';
+import 'monaco-editor/languages/definitions/java/register.js';
+import 'monaco-editor/languages/definitions/javascript/register.js';
+import 'monaco-editor/languages/definitions/less/register.js';
 import 'monaco-editor/languages/definitions/markdown/register.js';
+import 'monaco-editor/languages/definitions/python/register.js';
+import 'monaco-editor/languages/definitions/rust/register.js';
+import 'monaco-editor/languages/definitions/scss/register.js';
+import 'monaco-editor/languages/definitions/shell/register.js';
+import 'monaco-editor/languages/definitions/sql/register.js';
+import 'monaco-editor/languages/definitions/typescript/register.js';
+import 'monaco-editor/languages/definitions/xml/register.js';
+import 'monaco-editor/languages/definitions/yaml/register.js';
 import { useWorkspaceStore } from '@/features/markdown/stores/workspace';
 
 interface MonacoWorkerEnvironment {
@@ -57,12 +75,19 @@ const remoteImageUrl = ref('');
 const draftName = ref('');
 const savingDraft = ref(false);
 const toolbarDisabled = computed(
-  () => !store.hasEditableDocument || importingImages.value || store.isActiveDocumentLocked,
+  () =>
+    !store.hasEditableDocument ||
+    importingImages.value ||
+    store.isActiveDocumentLocked ||
+    store.isPlainTextDocument,
 );
 const isDraggingImage = computed(() => dragDepth.value > 0 && store.hasEditableDocument);
 const isFullscreen = computed(() => store.fullscreenPane !== null);
 
 function togglePreview(): void {
+  if (store.isPlainTextDocument) {
+    return;
+  }
   const previewEnabled = !store.preferences.previewEnabled;
   if (previewEnabled && store.fullscreenPane === 'editor') {
     store.fullscreenPane = 'workspace';
@@ -94,6 +119,82 @@ const editorDisposables: Array<{ dispose(): void }> = [];
 
 const EDITOR_LIGHT_THEME = 'markdown-light';
 const EDITOR_DARK_THEME = 'markdown-dark';
+const GENERIC_TEXT_LANGUAGE = 'generic-text';
+const TEXT_LANGUAGE_BY_EXTENSION: Readonly<Record<string, string>> = {
+  '.c': 'cpp',
+  '.cjs': 'javascript',
+  '.conf': 'ini',
+  '.config': 'ini',
+  '.cpp': 'cpp',
+  '.cs': 'csharp',
+  '.css': 'css',
+  '.env': 'shell',
+  '.go': 'go',
+  '.h': 'cpp',
+  '.hpp': 'cpp',
+  '.htm': 'html',
+  '.html': 'html',
+  '.ini': 'ini',
+  '.java': 'java',
+  '.js': 'javascript',
+  '.json': 'javascript',
+  '.jsonc': 'javascript',
+  '.jsx': 'javascript',
+  '.less': 'less',
+  '.mjs': 'javascript',
+  '.py': 'python',
+  '.rs': 'rust',
+  '.scss': 'scss',
+  '.sh': 'shell',
+  '.sql': 'sql',
+  '.svelte': 'html',
+  '.ts': 'typescript',
+  '.tsx': 'typescript',
+  '.vue': 'html',
+  '.webmanifest': 'javascript',
+  '.xml': 'xml',
+  '.yaml': 'yaml',
+  '.yml': 'yaml',
+  '.zsh': 'shell',
+};
+
+function registerGenericTextLanguage(): void {
+  if (monaco.languages.getLanguages().some(({ id }) => id === GENERIC_TEXT_LANGUAGE)) {
+    return;
+  }
+
+  monaco.languages.register({ id: GENERIC_TEXT_LANGUAGE });
+  monaco.languages.setMonarchTokensProvider(GENERIC_TEXT_LANGUAGE, {
+    tokenizer: {
+      root: [
+        [/^-{5}(?:BEGIN|END)\s+[\w ]+-{5}$/u, 'keyword'],
+        [/"(?:\\.|[^"\\])*"/u, 'string'],
+        [/'(?:\\.|[^'\\])*'/u, 'string'],
+        [/`(?:\\.|[^`\\])*`/u, 'string'],
+        [/\/\/.*$/u, 'comment'],
+        [/^\s*[#;].*$/u, 'comment'],
+        [/\b(?:false|no|null|off|on|true|undefined|yes)\b/iu, 'keyword'],
+        [/\b(?:0x[\da-f]+|\d+(?:\.\d+)?)\b/iu, 'number'],
+        [/^\s*[A-Za-z_][\w.-]*(?=\s*[:=])/u, 'type.identifier'],
+        [/[{}[\]()]/u, 'delimiter.bracket'],
+      ],
+    },
+  });
+}
+
+function activeEditorLanguage(): string {
+  if (!store.isPlainTextDocument) {
+    return 'markdown';
+  }
+
+  const name = store.activeName.toLowerCase();
+  if (name === 'dockerfile') {
+    return 'dockerfile';
+  }
+  const dotIndex = name.lastIndexOf('.');
+  const extension = dotIndex >= 0 ? name.slice(dotIndex) : '';
+  return TEXT_LANGUAGE_BY_EXTENSION[extension] ?? GENERIC_TEXT_LANGUAGE;
+}
 
 function editorThemeName(theme: 'light' | 'dark'): string {
   return theme === 'dark' ? EDITOR_DARK_THEME : EDITOR_LIGHT_THEME;
@@ -126,7 +227,7 @@ function registerEditorThemes(): void {
 
 function editorOptions(): monaco.editor.IStandaloneEditorConstructionOptions {
   return {
-    ariaLabel: 'Markdown 编辑器',
+    ariaLabel: store.isPlainTextDocument ? '文本编辑器' : 'Markdown 编辑器',
     automaticLayout: true,
     bracketPairColorization: { enabled: false },
     cursorBlinking: 'smooth',
@@ -135,7 +236,7 @@ function editorOptions(): monaco.editor.IStandaloneEditorConstructionOptions {
     fontFamily: '"SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace',
     fontLigatures: true,
     fontSize: store.preferences.editorFontSize,
-    language: 'markdown',
+    language: activeEditorLanguage(),
     lineNumbers: store.preferences.lineNumbers ? 'on' : 'off',
     minimap: { enabled: false },
     padding: { bottom: 24, top: 18 },
@@ -164,6 +265,7 @@ function syncEditorFromStore(): void {
     domReadOnly: !store.hasEditableDocument || store.isActiveDocumentLocked,
     readOnly: !store.hasEditableDocument || store.isActiveDocumentLocked,
   });
+  monaco.editor.setModelLanguage(model, activeEditorLanguage());
   const editorNode = editor.getDomNode();
   if (
     store.isActiveDocumentLocked &&
@@ -618,6 +720,7 @@ onMounted(() => {
   }
 
   registerEditorThemes();
+  registerGenericTextLanguage();
   editorInstance = monaco.editor.create(editorMount.value, editorOptions());
   editorInstance.addCommand(
     monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS,
@@ -710,7 +813,10 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="editor-pane" aria-label="Markdown 编辑区">
+  <section
+    class="editor-pane"
+    :aria-label="store.isPlainTextDocument ? '文本编辑区' : 'Markdown 编辑区'"
+  >
     <div class="editor-tabbar">
       <div class="editor-tab" :title="store.activeName || '未打开文档'">
         <FileText :size="16" aria-hidden="true" />
@@ -725,7 +831,12 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <div class="format-toolbar" role="toolbar" aria-label="Markdown 格式工具">
+    <div
+      class="format-toolbar"
+      :class="{ 'format-toolbar--disabled': store.isPlainTextDocument }"
+      role="toolbar"
+      aria-label="Markdown 格式工具"
+    >
       <button
         class="toolbar-button"
         type="button"
@@ -878,6 +989,7 @@ onBeforeUnmount(() => {
           store.preferences.previewEnabled ? '实时预览已开启，点击关闭' : '实时预览已关闭，点击开启'
         "
         :aria-label="store.preferences.previewEnabled ? '关闭实时预览' : '显示实时预览'"
+        :disabled="store.isPlainTextDocument"
         @mousedown.prevent
         @click="togglePreview"
       >

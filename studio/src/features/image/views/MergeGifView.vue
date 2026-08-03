@@ -16,7 +16,7 @@ import {
   Trash2,
   X,
 } from '@/features/image/icons';
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 import ImageDropzone from '@/features/image/components/upload/ImageDropzone.vue';
 import ImageToolHeader from '@/features/image/components/layout/ImageToolHeader.vue';
@@ -35,6 +35,7 @@ import {
 import { sanitizeSvgFile } from '@/features/image/core/image/process';
 import { downloadBlob } from '@/features/image/utils/download';
 import { formatBytes } from '@/features/image/utils/format';
+import { useFileHandoff } from '@/core/browser/file-handoff';
 
 interface GifSource {
   id: string;
@@ -43,6 +44,13 @@ interface GifSource {
   width: number;
   height: number;
 }
+
+onMounted(() => {
+  const handoff = useFileHandoff().take('image');
+  if (handoff) {
+    void addFiles([handoff]);
+  }
+});
 
 interface DecodedSource {
   source: CanvasImageSource;

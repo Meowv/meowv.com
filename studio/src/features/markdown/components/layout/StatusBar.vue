@@ -152,7 +152,7 @@ function setEditorFontSize(event: Event): void {
         <input
           type="checkbox"
           :checked="store.preferences.syncScroll"
-          :disabled="!store.preferences.previewEnabled"
+          :disabled="!store.preferences.previewEnabled || store.isPlainTextDocument"
           @change="setBooleanPreference('syncScroll', $event)"
         />
         <span>同步滚动</span>

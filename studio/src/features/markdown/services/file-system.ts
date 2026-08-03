@@ -1,6 +1,11 @@
 import {
+  AUDIO_EXTENSIONS,
   IMAGE_EXTENSIONS,
   MARKDOWN_EXTENSIONS,
+  OFFICE_EXTENSIONS,
+  PDF_EXTENSIONS,
+  TEXT_EXTENSIONS,
+  VIDEO_EXTENSIONS,
   WorkspaceError,
   type WorkspaceDirectoryNode,
   type WorkspaceFileCategory,
@@ -22,6 +27,23 @@ export interface DeleteEntryOptions {
 }
 
 const DEFAULT_PICKER_ID = 'meowv-markdown-workspace';
+const TEXT_EXTENSION_SET = normalizeExtensions(TEXT_EXTENSIONS);
+const AUDIO_EXTENSION_SET = normalizeExtensions(AUDIO_EXTENSIONS);
+const VIDEO_EXTENSION_SET = normalizeExtensions(VIDEO_EXTENSIONS);
+const OFFICE_EXTENSION_SET = normalizeExtensions(OFFICE_EXTENSIONS);
+const PDF_EXTENSION_SET = normalizeExtensions(PDF_EXTENSIONS);
+const TEXT_FILE_NAMES = new Set([
+  'authors',
+  'changelog',
+  'contributors',
+  'copying',
+  'dockerfile',
+  'license',
+  'makefile',
+  'notice',
+  'readme',
+]);
+const TEXT_SNIFF_BYTES = 4096;
 
 function getWindow(): Window | undefined {
   return typeof window === 'undefined' ? undefined : window;
@@ -191,17 +213,65 @@ interface ScanContext {
   includeOtherFiles: boolean;
   documents: WorkspaceFileNode[];
   assets: WorkspaceFileNode[];
+  files: WorkspaceFileNode[];
   signal?: AbortSignal;
 }
 
-function categorizeFile(extension: string, context: ScanContext): WorkspaceFileCategory {
+function categorizeFile(
+  name: string,
+  extension: string,
+  context: ScanContext,
+): WorkspaceFileCategory {
   if (context.documentExtensions.has(extension)) {
     return 'markdown';
+  }
+  if (TEXT_EXTENSION_SET.has(extension) || TEXT_FILE_NAMES.has(name.toLowerCase())) {
+    return 'text';
   }
   if (context.imageExtensions.has(extension)) {
     return 'image';
   }
+  if (AUDIO_EXTENSION_SET.has(extension)) {
+    return 'audio';
+  }
+  if (VIDEO_EXTENSION_SET.has(extension)) {
+    return 'video';
+  }
+  if (OFFICE_EXTENSION_SET.has(extension)) {
+    return 'office';
+  }
+  if (PDF_EXTENSION_SET.has(extension)) {
+    return 'pdf';
+  }
   return 'other';
+}
+
+async function isLikelyTextFile(handle: FileSystemFileHandle): Promise<boolean> {
+  try {
+    const file = await handle.getFile();
+    const bytes = new Uint8Array(await file.slice(0, TEXT_SNIFF_BYTES).arrayBuffer());
+    if (bytes.length === 0) {
+      return true;
+    }
+
+    let controlBytes = 0;
+    for (const byte of bytes) {
+      if (byte === 0) {
+        return false;
+      }
+      if (byte < 32 && byte !== 9 && byte !== 10 && byte !== 12 && byte !== 13) {
+        controlBytes += 1;
+      }
+    }
+    if (controlBytes / bytes.length > 0.01) {
+      return false;
+    }
+
+    new TextDecoder('utf-8', { fatal: true }).decode(bytes, { stream: true });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function scanDirectory(
@@ -215,6 +285,9 @@ async function scanDirectory(
 
   for await (const [name, childHandle] of handle.entries()) {
     throwIfAborted(context.signal);
+    if (name.startsWith('.')) {
+      continue;
+    }
     const childPath = path ? `${path}/${name}` : name;
 
     if (isDirectoryHandle(childHandle)) {
@@ -226,7 +299,10 @@ async function scanDirectory(
     }
 
     const extension = getFileExtension(name);
-    const category = categorizeFile(extension, context);
+    let category = categorizeFile(name, extension, context);
+    if (category === 'other' && !extension && (await isLikelyTextFile(childHandle))) {
+      category = 'text';
+    }
     const fileNode: WorkspaceFileNode = {
       kind: 'file',
       name,
@@ -235,6 +311,7 @@ async function scanDirectory(
       category,
       handle: childHandle,
     };
+    context.files.push(fileNode);
 
     if (category === 'markdown') {
       context.documents.push(fileNode);
@@ -273,6 +350,7 @@ export async function scanWorkspace(
     includeOtherFiles: options.includeOtherFiles ?? false,
     documents: [],
     assets: [],
+    files: [],
     signal: options.signal,
   };
 
@@ -293,6 +371,7 @@ export async function scanWorkspace(
 
     return {
       root,
+      files: context.files,
       documents: context.documents,
       assets: context.assets,
     };

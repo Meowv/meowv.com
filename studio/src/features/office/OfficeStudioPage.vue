@@ -16,7 +16,7 @@ import {
   IconTable,
   IconTrash,
 } from '@tabler/icons-vue';
-import { useFileHandoff } from '@/core/browser/file-handoff';
+import { receiveWindowFileHandoff, useFileHandoff } from '@/core/browser/file-handoff';
 import { STORAGE_POLICY, storageAvailable } from '@/core/privacy/storage';
 import { workspaceActive, workspaceHeaderVisible } from '@/core/shared/route-state';
 import type { RecentDocument } from './runtime/lib/recent-documents';
@@ -59,6 +59,7 @@ let menuDrag:
       height: number;
     }
   | undefined;
+let stopWindowFileHandoff: () => void = () => undefined;
 
 const MENU_POSITION_STORAGE_KEY = `${STORAGE_POLICY.namespace('office')}:editor-menu-position`;
 
@@ -467,6 +468,9 @@ onMounted(async () => {
   await refreshRecent();
   const handoff = take('office');
   if (handoff) await openFile(handoff);
+  stopWindowFileHandoff = receiveWindowFileHandoff('office', (file, handle) => {
+    void openFile(file, handle as RecentDocument['handle']);
+  });
 });
 
 onBeforeRouteLeave(() => {
@@ -477,6 +481,7 @@ onBeforeRouteLeave(() => {
 });
 
 onBeforeUnmount(() => {
+  stopWindowFileHandoff();
   document.removeEventListener('fullscreenchange', syncFullscreenState);
   window.removeEventListener('resize', keepMenuInViewport);
   window.removeEventListener('mousemove', moveMenuWithMouse);
