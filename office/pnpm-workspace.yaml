@@ -1,5 +1,0 @@
-packages:
-  - packages/*
-minimumReleaseAgeExclude:
-  - ranui
-  - ranuts
