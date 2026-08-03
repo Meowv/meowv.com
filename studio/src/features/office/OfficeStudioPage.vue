@@ -5,7 +5,8 @@ import {
   IconArrowLeft,
   IconArrowsMaximize,
   IconArrowsMinimize,
-  IconLayoutNavbar,
+  IconLayoutNavbarCollapseFilled,
+  IconLayoutNavbarExpandFilled,
   IconFileSpreadsheet,
   IconFileText,
   IconFolderOpen,
@@ -630,7 +631,8 @@ onBeforeUnmount(() => {
           :title="workspaceHeaderVisible ? '隐藏顶部栏' : '显示顶部栏'"
           @click="toggleWorkspaceHeader"
         >
-          <IconLayoutNavbar :size="18" />
+          <IconLayoutNavbarCollapseFilled v-if="workspaceHeaderVisible" :size="18" />
+          <IconLayoutNavbarExpandFilled v-else :size="18" />
         </button>
         <button
           type="button"

@@ -2573,7 +2573,7 @@ body.tree-dragging--invalid .markdown-studio * {
   .markdown-studio {
     --topbar-height: 52px;
     --activity-width: 54px;
-    --statusbar-height: 28px;
+    --statusbar-height: 40px;
   }
 
   .markdown-studio .topbar {
@@ -2623,12 +2623,52 @@ body.tree-dragging--invalid .markdown-studio * {
     height: 44px;
   }
 
-  .markdown-studio .statusbar__group:last-child .statusbar__item:not(.statusbar__privacy) {
+  .markdown-studio .statusbar {
+    padding: 0 8px 0 10px;
+  }
+
+  .markdown-studio .statusbar__item--word-count,
+  .markdown-studio .statusbar__item--cursor-position,
+  .markdown-studio .statusbar__select-control--font-size,
+  .markdown-studio .statusbar__sync-control--autosave,
+  .markdown-studio .statusbar__select-control--autosave-delay,
+  .markdown-studio .statusbar__sync-control--line-numbers {
     display: none;
   }
 
-  .markdown-studio .statusbar {
-    padding: 0 8px;
+  .markdown-studio .statusbar__workspace {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    justify-content: center;
+    padding: 0;
+    border-radius: 6px;
+  }
+
+  .markdown-studio .statusbar__workspace svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .markdown-studio .statusbar__workspace-name {
+    display: none;
+  }
+
+  .markdown-studio .statusbar__document-path {
+    max-width: min(34vw, 180px);
+    padding-left: 8px;
+  }
+
+  .markdown-studio .statusbar__sync-control {
+    height: 34px;
+    padding: 0 6px;
+    gap: 4px;
+    font-size: 11px;
+  }
+
+  .markdown-studio .statusbar__lock-button {
+    width: 30px;
+    height: 34px;
   }
 
   .markdown-studio .editor-tab {

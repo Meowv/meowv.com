@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import {
   IconBrandOffice,
@@ -7,7 +7,9 @@ import {
   IconChevronUp,
   IconFileTypePdf,
   IconMarkdown,
+  IconMenu2,
   IconPhoto,
+  IconX,
 } from '@tabler/icons-vue';
 import StudioDonationDialog from '@/components/StudioDonationDialog.vue';
 import StudioFooter from '@/components/StudioFooter.vue';
@@ -29,6 +31,8 @@ const showFooter = computed(
   () => ['home', 'image', 'pdf', 'office'].includes(String(route.name)) && !workspaceActive.value,
 );
 const donationDialogOpen = ref(false);
+const mobileNavigationOpen = ref(false);
+const headerElement = ref<HTMLElement | null>(null);
 
 watch(
   isMarkdownPage,
@@ -58,6 +62,30 @@ function toggleMarkdownHeader(): void {
   }
 }
 
+function closeMobileNavigation(): void {
+  mobileNavigationOpen.value = false;
+}
+
+function handleDocumentPointerDown(event: PointerEvent): void {
+  if (event.target instanceof Node && !headerElement.value?.contains(event.target)) {
+    closeMobileNavigation();
+  }
+}
+
+function handleDocumentKeydown(event: KeyboardEvent): void {
+  if (event.key === 'Escape') closeMobileNavigation();
+}
+
+onMounted(() => {
+  document.addEventListener('pointerdown', handleDocumentPointerDown);
+  document.addEventListener('keydown', handleDocumentKeydown);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', handleDocumentPointerDown);
+  document.removeEventListener('keydown', handleDocumentKeydown);
+});
+
 const primaryRoutes = [
   { label: 'Image', to: '/image', icon: IconPhoto, className: 'nav-image' },
   { label: 'PDF', to: '/pdf', icon: IconFileTypePdf, className: 'nav-pdf' },
@@ -79,14 +107,33 @@ const primaryRoutes = [
       :key="isMarkdownPage ? 'markdown-header' : 'default-header'"
       v-show="showHeader"
       class="studio-header"
+      ref="headerElement"
     >
       <StudioLogo />
-      <nav class="studio-nav" aria-label="主要工具">
+      <button
+        class="studio-nav-toggle"
+        type="button"
+        :aria-expanded="mobileNavigationOpen"
+        aria-controls="studio-primary-navigation"
+        :aria-label="mobileNavigationOpen ? '关闭菜单' : '打开菜单'"
+        :title="mobileNavigationOpen ? '关闭菜单' : '打开菜单'"
+        @click="mobileNavigationOpen = !mobileNavigationOpen"
+      >
+        <IconX v-if="mobileNavigationOpen" :size="22" aria-hidden="true" />
+        <IconMenu2 v-else :size="22" aria-hidden="true" />
+      </button>
+      <nav
+        id="studio-primary-navigation"
+        class="studio-nav"
+        :class="{ 'studio-nav--open': mobileNavigationOpen }"
+        aria-label="主要工具"
+      >
         <RouterLink
           v-for="navRoute in primaryRoutes"
           :key="navRoute.to"
           :to="navRoute.to"
           :class="navRoute.className"
+          @click="closeMobileNavigation"
         >
           <component :is="navRoute.icon" :size="21" stroke-width="1.8" aria-hidden="true" />
           <span>{{ navRoute.label }}</span>

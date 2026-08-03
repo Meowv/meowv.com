@@ -77,16 +77,22 @@ function setEditorFontSize(event: Event): void {
     </div>
 
     <div class="statusbar__group statusbar__group--controls">
-      <span class="statusbar__item" :aria-label="`字数 ${characterCount}`">
+      <span
+        class="statusbar__item statusbar__item--word-count"
+        :aria-label="`字数 ${characterCount}`"
+      >
         {{ characterCount }} 字
       </span>
       <span
-        class="statusbar__item"
+        class="statusbar__item statusbar__item--cursor-position"
         :aria-label="`第 ${store.cursorLine} 行，第 ${store.cursorColumn} 列`"
       >
         行 {{ store.cursorLine }}，列 {{ store.cursorColumn }}
       </span>
-      <label class="statusbar__select-control" title="编辑器字号">
+      <label
+        class="statusbar__select-control statusbar__select-control--font-size"
+        title="编辑器字号"
+      >
         <span>字号</span>
         <select
           :value="store.preferences.editorFontSize"
@@ -96,7 +102,10 @@ function setEditorFontSize(event: Event): void {
           <option v-for="size in fontSizeOptions" :key="size" :value="size">{{ size }} px</option>
         </select>
       </label>
-      <label class="statusbar__sync-control" title="停止输入一段时间后自动保存当前文档">
+      <label
+        class="statusbar__sync-control statusbar__sync-control--autosave"
+        title="停止输入一段时间后自动保存当前文档"
+      >
         <input
           type="checkbox"
           :checked="store.preferences.autoSaveEnabled"
@@ -104,7 +113,10 @@ function setEditorFontSize(event: Event): void {
         />
         <span>自动保存</span>
       </label>
-      <label class="statusbar__select-control" title="自动保存延迟">
+      <label
+        class="statusbar__select-control statusbar__select-control--autosave-delay"
+        title="自动保存延迟"
+      >
         <span>延迟</span>
         <select
           :value="store.preferences.autoSaveDelay"
@@ -125,7 +137,10 @@ function setEditorFontSize(event: Event): void {
         />
         <span>自动换行</span>
       </label>
-      <label class="statusbar__sync-control" title="在编辑器左侧显示源码行号">
+      <label
+        class="statusbar__sync-control statusbar__sync-control--line-numbers"
+        title="在编辑器左侧显示源码行号"
+      >
         <input
           type="checkbox"
           :checked="store.preferences.lineNumbers"

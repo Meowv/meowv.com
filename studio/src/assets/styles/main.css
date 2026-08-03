@@ -169,6 +169,10 @@ button {
   gap: 8px;
 }
 
+.studio-nav-toggle {
+  display: none;
+}
+
 .studio-nav a {
   position: relative;
   display: inline-flex;
@@ -1096,36 +1100,72 @@ body.has-dialog-open {
 
 @media (max-width: 760px) {
   .studio-header {
+    position: sticky;
     padding: 0 12px;
     gap: 6px;
   }
-  .studio-logo span:not(.studio-logo__leaf) {
-    display: none;
-  }
   .studio-logo {
-    gap: 0;
+    gap: 7px;
+    font-size: 17px;
   }
   .studio-logo img {
     width: 36px;
     height: 36px;
   }
   .studio-logo__leaf {
-    display: none;
+    display: inline-block;
   }
   .studio-nav {
-    overflow: visible;
-    justify-content: flex-end;
-    gap: 0;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 12px;
+    left: 12px;
+    display: none;
+    min-width: 0;
+    padding: 6px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-solid);
+    box-shadow: 0 12px 26px rgba(62, 82, 51, 0.14);
+  }
+  .studio-nav--open {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+  }
+  .studio-nav-toggle {
+    display: inline-grid;
+    width: 38px;
+    height: 38px;
+    margin-left: auto;
+    padding: 0;
+    border: 1px solid var(--color-border);
+    border-radius: 7px;
+    background: var(--color-surface-solid);
+    color: var(--color-text);
+    cursor: pointer;
+    place-items: center;
   }
   .studio-nav a {
-    min-width: 0;
-    padding: 0 4px;
-    gap: 4px;
-    font-size: 12px;
+    height: 42px;
+    justify-content: flex-start;
+    padding: 0 10px;
+    gap: 7px;
+    border-radius: 6px;
+    font-size: 13px;
+  }
+  .studio-nav a::after {
+    display: none;
+  }
+  .studio-nav a.router-link-active {
+    background: var(--color-brand-soft);
   }
   .studio-nav a svg {
     width: 18px;
     height: 18px;
+  }
+  .home-shortcuts__item strong {
+    text-align: left;
   }
   .studio-footer__inner {
     width: min(calc(100% - 32px), 680px);
@@ -1204,12 +1244,19 @@ body.has-dialog-open {
 }
 
 @media (max-width: 460px) {
-  .home-shortcuts {
-    grid-template-columns: 1fr;
-  }
-
   .home-shortcuts__item {
     min-height: 74px;
+    padding: 12px 10px;
+    gap: 8px;
+  }
+
+  .home-shortcuts__icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .home-shortcuts__item small {
+    font-size: 11px;
   }
 }
 
