@@ -21,12 +21,12 @@
 | 目录      | 线上状态                  | 技术栈                              | 包管理器 |
 | --------- | ------------------------- | ----------------------------------- | -------- |
 | `blog/`   | `meowv.com` 已上线        | Hexo 7、EJS、Stylus                 | Yarn     |
-| `studio/` | `studio.meowv.com` 开发中 | Vue 3、TypeScript、Vite、Vue Router | pnpm     |
+| `studio/` | `studio.meowv.com` 已上线 | Vue 3、TypeScript、Vite、Vue Router | pnpm     |
 | `zitie/`  | `zt.meowv.com` 已上线     | Vinext、Next.js、React、TypeScript  | npm      |
 
 涉及站点链接、Canonical、Sitemap、分享信息或跨站导航时：
 
-- 保持 `meowv.com`、`studio.meowv.com` 与 `zt.meowv.com` 的既定地址；Studio 上线前不得写成已上线。
+- 保持 `meowv.com`、`studio.meowv.com` 与 `zt.meowv.com` 的既定地址。
 - 不自行推断 `www` 跳转、证书覆盖、Nginx 路由或生产目录；部署前应检查实际环境。
 
 ## 根目录脚本

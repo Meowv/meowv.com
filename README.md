@@ -9,7 +9,7 @@
 | 目录       | 项目                 | 技术栈                              | 状态   | 地址                                         |
 | ---------- | -------------------- | ----------------------------------- | ------ | -------------------------------------------- |
 | `blog/`    | 个人博客与 Labs 工具 | Hexo 7、EJS、Stylus                 | 已上线 | [meowv.com](https://meowv.com)               |
-| `studio/`  | Meowv Studio         | Vue 3、TypeScript、Vite、Vue Router | 开发中 | [studio.meowv.com](https://studio.meowv.com) |
+| `studio/`  | Meowv Studio         | Vue 3、TypeScript、Vite、Vue Router | 已上线 | [studio.meowv.com](https://studio.meowv.com) |
 | `zitie/`   | 在线字帖生成         | Vinext、Next.js、React、TypeScript  | 已上线 | [zt.meowv.com](https://zt.meowv.com)         |
 
 ## 仓库结构
