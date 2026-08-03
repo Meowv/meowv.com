@@ -12,6 +12,7 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable", "WebWorker"],
     "skipLibCheck": true,
     "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
     "paths": {
       "@/*": ["src/*"],
       "@ranuts/shared": ["src/features/office/runtime/shared/index.ts"],
