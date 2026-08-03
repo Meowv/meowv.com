@@ -3,7 +3,7 @@
     "slug": "studio",
     "name": "Meowv Studio",
     "description": "Meowv Studio 是一个无需上传、在浏览器本地处理图片、Markdown、PDF 与 Office 文档的本地文件工作台",
-    "emoji": "🧰",
+    "emoji": "⚙ ⚙ ⚙",
     "url": "https://studio.meowv.com",
     "category": "效率办公",
     "featured": true
@@ -256,15 +256,6 @@
     "emoji": "🔊",
     "url": "/tools/pronunciation",
     "category": "文本与语言"
-  },
-  {
-    "slug": "image",
-    "name": "Image Studio",
-    "description": "无需登录、图片不上传，在浏览器中完成图片压缩、格式转换、尺寸调整与裁剪",
-    "emoji": "🖼️",
-    "url": "https://img.meowv.com",
-    "category": "图片与媒体",
-    "featured": true
   },
   {
     "slug": "bishun",
