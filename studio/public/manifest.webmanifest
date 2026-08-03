@@ -1,0 +1,47 @@
+{
+  "name": "Meowv Studio",
+  "short_name": "Studio",
+  "description": "无需上传，在浏览器本地处理图片、Markdown、PDF 与 Office 文档。",
+  "lang": "zh-CN",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#fbfcf8",
+  "theme_color": "#5a9600",
+  "icons": [
+    {
+      "src": "/icons/studio-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/studio-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Image",
+      "url": "/image",
+      "icons": [{ "src": "/icons/studio-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "PDF",
+      "url": "/pdf",
+      "icons": [{ "src": "/icons/studio-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Markdown",
+      "url": "/markdown",
+      "icons": [{ "src": "/icons/studio-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Office",
+      "url": "/office",
+      "icons": [{ "src": "/icons/studio-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

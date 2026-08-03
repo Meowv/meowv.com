@@ -1,0 +1,17 @@
+import { createApp } from 'vue';
+import { createPinia } from 'pinia';
+import App from './App.vue';
+import router from './router';
+import './assets/styles/main.css';
+
+document.documentElement.removeAttribute('data-theme');
+
+createApp(App).use(createPinia()).use(router).mount('#app');
+
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    void navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch((error: unknown) => {
+      console.warn('Studio Service Worker 注册失败，将继续使用在线模式。', error);
+    });
+  });
+}
