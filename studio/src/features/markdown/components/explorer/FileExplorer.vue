@@ -13,9 +13,10 @@ import {
   Trash2,
   Video,
 } from '@/features/markdown/icons';
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, toRef, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import FileTreeNode from './FileTreeNode.vue';
+import { ACTIVE_TREE_PATH, EXPANDED_TREE_PATHS } from './tree-state';
 import { useWorkspaceStore, type DisplayTreeNode } from '@/features/markdown/stores/workspace';
 import { createTypedMediaBlob } from '@/features/markdown/services/media';
 import {
@@ -74,6 +75,8 @@ interface DropTarget {
 const store = useWorkspaceStore();
 const router = useRouter();
 const expandedPaths = ref(new Set(['', '技术', '技术/.NET', '前端', '生活']));
+provide(ACTIVE_TREE_PATH, toRef(store, 'activePath'));
+provide(EXPANDED_TREE_PATHS, expandedPaths);
 const contextMenu = ref<ContextMenuState | null>(null);
 const dialogKind = ref<DialogKind | null>(null);
 const dialogTarget = ref<DisplayTreeNode | null>(null);
@@ -113,10 +116,17 @@ function expandPathAncestors(path: string): void {
     return;
   }
   const next = new Set(expandedPaths.value);
+  let changed = false;
   for (let index = 1; index <= segments.length; index += 1) {
-    next.add(segments.slice(0, index).join('/'));
+    const ancestor = segments.slice(0, index).join('/');
+    if (!next.has(ancestor)) {
+      next.add(ancestor);
+      changed = true;
+    }
   }
-  expandedPaths.value = next;
+  if (changed) {
+    expandedPaths.value = next;
+  }
 }
 
 watch([() => store.workspaceName, () => rootChildren.value.length], () => {
@@ -683,8 +693,6 @@ onBeforeUnmount(() => {
           :key="node.path"
           :node="node"
           :depth="0"
-          :active-path="store.activePath"
-          :expanded-paths="expandedPaths"
           :dragging-path="draggingNode?.path"
           :drop-target-path="dropTargetPath ?? undefined"
           @open="openNode"

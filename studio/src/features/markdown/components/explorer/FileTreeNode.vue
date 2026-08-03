@@ -17,33 +17,14 @@ import {
   Table2,
   Video,
 } from '@/features/markdown/icons';
-import { computed, ref, watch } from 'vue';
+import { computed, inject, ref, watch } from 'vue';
 import type { DisplayTreeNode } from '@/features/markdown/stores/workspace';
+import { ACTIVE_TREE_PATH, EXPANDED_TREE_PATHS } from './tree-state';
 
 defineOptions({ name: 'FileTreeNode' });
 
 const CHILD_BATCH_SIZE = 200;
-
-const props = defineProps<{
-  node: DisplayTreeNode;
-  depth: number;
-  activePath: string;
-  expandedPaths: Set<string>;
-  draggingPath?: string;
-  dropTargetPath?: string;
-}>();
-
-const emit = defineEmits<{
-  open: [node: DisplayTreeNode];
-  toggle: [node: DisplayTreeNode];
-  context: [event: MouseEvent, node: DisplayTreeNode];
-  pointerdown: [event: PointerEvent, node: DisplayTreeNode];
-}>();
-
-const expanded = computed(() => props.expandedPaths.has(props.node.path));
-const active = computed(() => props.node.kind === 'file' && props.activePath === props.node.path);
-const unavailable = computed(() => props.node.kind === 'file' && props.node.category === 'other');
-const codeExtensions = new Set([
+const CODE_EXTENSIONS = new Set([
   '.c',
   '.conf',
   '.cpp',
@@ -76,6 +57,26 @@ const codeExtensions = new Set([
   '.yml',
   '.zsh',
 ]);
+
+const props = defineProps<{
+  node: DisplayTreeNode;
+  depth: number;
+  draggingPath?: string;
+  dropTargetPath?: string;
+}>();
+
+const emit = defineEmits<{
+  open: [node: DisplayTreeNode];
+  toggle: [node: DisplayTreeNode];
+  context: [event: MouseEvent, node: DisplayTreeNode];
+  pointerdown: [event: PointerEvent, node: DisplayTreeNode];
+}>();
+
+const activePath = inject(ACTIVE_TREE_PATH, ref(''));
+const expandedPaths = inject(EXPANDED_TREE_PATHS, ref(new Set<string>()));
+const expanded = computed(() => expandedPaths.value.has(props.node.path));
+const active = computed(() => props.node.kind === 'file' && activePath.value === props.node.path);
+const unavailable = computed(() => props.node.kind === 'file' && props.node.category === 'other');
 const fileIcon = computed(() => {
   if (props.node.category === 'markdown') return FileText;
   if (props.node.category === 'image') return Image;
@@ -86,7 +87,7 @@ const fileIcon = computed(() => {
   if (props.node.extension === '.pptx') return Presentation;
   if (props.node.extension === '.csv') return Table2;
   if (props.node.category === 'office') return FileDescription;
-  if (props.node.category === 'text' && codeExtensions.has(props.node.extension ?? '')) {
+  if (props.node.category === 'text' && CODE_EXTENSIONS.has(props.node.extension ?? '')) {
     return FileCode2;
   }
   if (props.node.category === 'text') return FileDescription;
@@ -180,8 +181,6 @@ function onPointerDown(event: PointerEvent): void {
         :key="child.path"
         :node="child"
         :depth="depth + 1"
-        :active-path="activePath"
-        :expanded-paths="expandedPaths"
         :dragging-path="draggingPath"
         :drop-target-path="dropTargetPath"
         @open="emit('open', $event)"

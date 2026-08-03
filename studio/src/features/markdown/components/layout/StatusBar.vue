@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { FileText, FolderInput, LockKeyhole, LockKeyholeOpen } from '@/features/markdown/icons';
 import { useWorkspaceStore } from '@/features/markdown/stores/workspace';
 import type { AutoSaveDelay, WorkspacePreferences } from '@/features/markdown/types/workspace';
@@ -8,7 +8,40 @@ type BooleanPreferenceKey = 'autoSaveEnabled' | 'wordWrap' | 'lineNumbers' | 'sy
 
 const store = useWorkspaceStore();
 
-const characterCount = computed(() => Array.from(store.activeContent.replace(/\s/gu, '')).length);
+const characterCount = ref(0);
+let characterCountTimer: ReturnType<typeof setTimeout> | undefined;
+let countedPath = '';
+
+function updateCharacterCount(content: string, immediate = false): void {
+  if (characterCountTimer) {
+    clearTimeout(characterCountTimer);
+  }
+  const update = (): void => {
+    characterCountTimer = undefined;
+    characterCount.value = Array.from(content.replace(/\s/gu, '')).length;
+  };
+  if (immediate) {
+    update();
+    return;
+  }
+  characterCountTimer = globalThis.setTimeout(update, 180);
+}
+
+watch(
+  () => [store.activePath, store.activeContent] as const,
+  ([path, content]) => {
+    const pathChanged = path !== countedPath;
+    countedPath = path;
+    updateCharacterCount(content, pathChanged);
+  },
+  { immediate: true },
+);
+
+onBeforeUnmount(() => {
+  if (characterCountTimer) {
+    clearTimeout(characterCountTimer);
+  }
+});
 
 const documentPath = computed(() => store.activePath || '当前未打开 Markdown 文档');
 

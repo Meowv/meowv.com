@@ -114,6 +114,7 @@ function toggleFullscreen(): void {
 
 let editorInstance: monaco.editor.IStandaloneCodeEditor | null = null;
 let syncingFromStore = false;
+let syncingFromEditor = false;
 let syncingScroll = false;
 const editorDisposables: Array<{ dispose(): void }> = [];
 
@@ -730,7 +731,9 @@ onMounted(() => {
   editorDisposables.push(
     editorInstance.onDidChangeModelContent(() => {
       if (!syncingFromStore && editorInstance) {
+        syncingFromEditor = true;
         store.updateContent(editorInstance.getValue());
+        syncingFromEditor = false;
       }
     }),
     editorInstance.onDidChangeCursorPosition(({ position }) => {
@@ -760,11 +763,21 @@ watch(
   [
     () => store.activePath,
     () => store.hasEditableDocument,
-    () => store.activeContent,
     () => store.isActiveDocumentLocked,
+    () => store.isPlainTextDocument,
   ],
   () => syncEditorFromStore(),
   { flush: 'post' },
+);
+
+watch(
+  () => store.activeContent,
+  () => {
+    if (!syncingFromEditor) {
+      syncEditorFromStore();
+    }
+  },
+  { flush: 'sync' },
 );
 
 watch(

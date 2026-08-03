@@ -135,6 +135,21 @@ const ALLOWED_IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.webp'];
 const EMPTY_PARSED = parseMarkdownDocument('');
 const searchController = markRaw(createSearchController());
 const MINIMUM_REFRESH_INDICATOR_DURATION = 1000;
+const PREVIEW_REFRESH_DELAY = 160;
+const LARGE_DOCUMENT_PREVIEW_REFRESH_DELAY = 360;
+const LARGE_DOCUMENT_THRESHOLD = 250_000;
+const DOCUMENT_INDEX_BATCH_SIZE = 4;
+const DOCUMENT_INDEX_PUBLISH_INTERVAL = 32;
+
+function yieldDocumentIndexFrame(): Promise<void> {
+  return new Promise((resolve) => {
+    if (typeof globalThis.requestAnimationFrame === 'function') {
+      globalThis.requestAnimationFrame(() => resolve());
+      return;
+    }
+    globalThis.setTimeout(resolve, 16);
+  });
+}
 
 function cloneDisplayTree(node: WorkspaceNode | DemoTreeNode): DisplayTreeNode {
   if (node.kind === 'file') {
@@ -205,7 +220,9 @@ function relativePathBetween(fromFilePath: string, targetPath: string): string {
   return joined || fileNameFromPath(targetPath);
 }
 
-function createSearchDocument(document: LoadedDocument): SearchDocument {
+function createSearchDocument(
+  document: Pick<LoadedDocument, 'path' | 'content' | 'parsed'>,
+): SearchDocument {
   return {
     id: document.path,
     path: document.path,
@@ -962,11 +979,11 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
     };
 
     try {
-      for (let offset = 0; offset < nodes.length; offset += 8) {
+      for (let offset = 0; offset < nodes.length; offset += DOCUMENT_INDEX_BATCH_SIZE) {
         if (operation !== workspaceOperationSequence) {
           return loaded;
         }
-        const batch = nodes.slice(offset, offset + 8);
+        const batch = nodes.slice(offset, offset + DOCUMENT_INDEX_BATCH_SIZE);
         const results = await Promise.all(
           batch.map(async (node) => {
             try {
@@ -992,14 +1009,23 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
             loaded.set(document.path, document);
           }
         }
-        publishProgress();
-        await new Promise<void>((resolve) => globalThis.setTimeout(resolve, 0));
+        if (updateSearch) {
+          const updates: Promise<void>[] = [];
+          for (const document of results) {
+            if (document) {
+              updates.push(searchController.upsert(createSearchDocument(document)));
+            }
+          }
+          await Promise.all(updates);
+        }
+        const indexedCount = offset + batch.length;
+        if (indexedCount === nodes.length || indexedCount % DOCUMENT_INDEX_PUBLISH_INTERVAL === 0) {
+          publishProgress();
+        }
+        await yieldDocumentIndexFrame();
       }
 
       publishProgress();
-      if (updateSearch) {
-        await searchController.replaceAll([...loaded.values()].map(createSearchDocument));
-      }
       return loaded;
     } finally {
       if (operation === workspaceOperationSequence) {
@@ -1124,17 +1150,24 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
     activeContentRevision += 1;
     saveState.value = content === lastSavedContent.value ? 'saved' : 'dirty';
     scheduleAutosave();
-    schedulePreviewRefresh();
+    if (!isPlainTextDocument.value) {
+      schedulePreviewRefresh();
+    }
   }
 
   function schedulePreviewRefresh(): void {
     if (previewTimer) {
       clearTimeout(previewTimer);
     }
-    previewTimer = globalThis.setTimeout(() => {
-      previewContent.value = activeContent.value;
-      void resolveActiveAssets();
-    }, 120);
+    previewTimer = globalThis.setTimeout(
+      () => {
+        previewContent.value = activeContent.value;
+        void resolveActiveAssets();
+      },
+      activeContent.value.length >= LARGE_DOCUMENT_THRESHOLD
+        ? LARGE_DOCUMENT_PREVIEW_REFRESH_DELAY
+        : PREVIEW_REFRESH_DELAY,
+    );
   }
 
   async function flushPreview(): Promise<void> {
