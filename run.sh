@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ALL_PROJECTS=(blog img md excel office pdf zt)
+ALL_PROJECTS=(blog studio zitie)
 SELECTED_PROJECTS=()
 PIDS=()
 PID_PROJECTS=()
@@ -16,49 +16,33 @@ usage() {
   ./run.sh <project>         启动指定项目
 
 可选项目：
-  blog    http://localhost:4000
-  img     http://localhost:4001
-  md      http://localhost:4002
-  excel   http://localhost:4003
-  office  http://localhost:4006
-  pdf     http://localhost:4004
-  zt      http://localhost:4005
+  blog, b    http://localhost:4000
+  studio, s  http://localhost:4001
+  zitie, z   http://localhost:4002
 EOF
 }
 
 project_port() {
   case "$1" in
     blog) echo "4000" ;;
-    img) echo "4001" ;;
-    md) echo "4002" ;;
-    excel) echo "4003" ;;
-    office) echo "4006" ;;
-    pdf) echo "4004" ;;
-    zt) echo "4005" ;;
+    studio) echo "4001" ;;
+    zitie) echo "4002" ;;
   esac
 }
 
 project_binary() {
   case "$1" in
     blog) echo "$ROOT_DIR/blog/node_modules/.bin/hexo" ;;
-    img) echo "$ROOT_DIR/image/node_modules/.bin/vite" ;;
-    md) echo "$ROOT_DIR/markdown/node_modules/.bin/vite" ;;
-    office) echo "$ROOT_DIR/office/node_modules/.bin/vite" ;;
-    excel) echo "$ROOT_DIR/excel/node_modules/.bin/vite" ;;
-    pdf) echo "$ROOT_DIR/pdf/node_modules/.bin/nuxt" ;;
-    zt) echo "$ROOT_DIR/zitie/node_modules/.bin/vinext" ;;
+    studio) echo "$ROOT_DIR/studio/node_modules/.bin/vite" ;;
+    zitie) echo "$ROOT_DIR/zitie/node_modules/.bin/vinext" ;;
   esac
 }
 
 install_hint() {
   case "$1" in
     blog) echo "cd blog && yarn install --frozen-lockfile" ;;
-    img) echo "cd image && npm ci" ;;
-    md) echo "cd markdown && npm ci" ;;
-    office) echo "cd office && pnpm install --frozen-lockfile" ;;
-    excel) echo "cd excel && pnpm install --frozen-lockfile" ;;
-    pdf) echo "cd pdf && pnpm install --frozen-lockfile" ;;
-    zt) echo "cd zitie && npm ci" ;;
+    studio) echo "cd studio && pnpm install --frozen-lockfile" ;;
+    zitie) echo "cd zitie && npm ci" ;;
   esac
 }
 
@@ -136,27 +120,11 @@ run_project() {
       cd "$ROOT_DIR/blog"
       exec ./node_modules/.bin/hexo server --port "$port"
       ;;
-    img)
-      cd "$ROOT_DIR/image"
+    studio)
+      cd "$ROOT_DIR/studio"
       exec ./node_modules/.bin/vite --port "$port" --strictPort
       ;;
-    md)
-      cd "$ROOT_DIR/markdown"
-      exec ./node_modules/.bin/vite --port "$port" --strictPort
-      ;;
-    office)
-      cd "$ROOT_DIR/office"
-      exec ./node_modules/.bin/vite --port "$port" --strictPort
-      ;;
-    excel)
-      cd "$ROOT_DIR/excel"
-      exec ./node_modules/.bin/vite --port "$port" --strictPort
-      ;;
-    pdf)
-      cd "$ROOT_DIR/pdf"
-      exec ./node_modules/.bin/nuxt dev --port "$port"
-      ;;
-    zt)
+    zitie)
       cd "$ROOT_DIR/zitie"
       node scripts/sync-hanzi-data.mjs
       exec ./node_modules/.bin/vinext dev --port "$port"
@@ -193,8 +161,10 @@ elif [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
   usage
   exit 0
 else
-    case "$1" in
-    blog | img | md | office | excel | pdf | zt) SELECTED_PROJECTS=("$1") ;;
+  case "$1" in
+    blog | b) SELECTED_PROJECTS=("blog") ;;
+    studio | s) SELECTED_PROJECTS=("studio") ;;
+    zitie | z) SELECTED_PROJECTS=("zitie") ;;
     *)
       echo "错误：未知项目 ${1}。" >&2
       usage >&2
