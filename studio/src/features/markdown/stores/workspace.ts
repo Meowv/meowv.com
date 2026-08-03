@@ -554,7 +554,7 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
       return;
     }
     try {
-      if (!preferences.value.previewEnabled) {
+      if (!isPlainTextDocument.value && !preferences.value.previewEnabled) {
         await updatePreferences({ previewEnabled: true });
       }
       await setDocumentLocked(workspaceName.value, path, true);

@@ -145,7 +145,7 @@ onBeforeUnmount(() => {
         'workspace-shell--plain-text': store.isPlainTextDocument,
         'workspace-shell--editor-hidden':
           (!store.preferences.editorVisible && !store.isPlainTextDocument) ||
-          store.isActiveDocumentLocked,
+          (store.isActiveDocumentLocked && !store.isPlainTextDocument),
         'workspace-shell--fullscreen-editor': store.fullscreenPane === 'editor',
         'workspace-shell--fullscreen-preview': store.fullscreenPane === 'preview',
         'workspace-shell--fullscreen-workspace': store.fullscreenPane === 'workspace',
