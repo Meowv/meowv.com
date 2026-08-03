@@ -86,6 +86,7 @@ onBeforeUnmount(resetDialogState);
                   :alt="`${method.name}收款二维码`"
                   width="240"
                   height="240"
+                  draggable="false"
                 />
                 <figcaption>{{ method.name }}</figcaption>
               </figure>
