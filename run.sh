@@ -13,7 +13,7 @@ usage() {
 用法：
   ./run.sh                   启动全部项目
   ./run.sh all               启动全部项目
-  ./run.sh <project>         启动指定项目
+  ./run.sh <project> [...]   启动一个或多个指定项目
 
 可选项目：
   blog, b    http://localhost:4000
@@ -150,27 +150,44 @@ stop_all() {
   exit "$exit_code"
 }
 
-if [ "$#" -gt 1 ]; then
-  usage >&2
-  exit 1
-fi
+add_project() {
+  local project="$1"
+  local selected
 
-if [ "$#" -eq 0 ] || [ "${1:-}" = "all" ]; then
+  if [ -n "${SELECTED_PROJECTS[*]:-}" ]; then
+    for selected in "${SELECTED_PROJECTS[@]}"; do
+      if [ "$selected" = "$project" ]; then
+        return
+      fi
+    done
+  fi
+
+  SELECTED_PROJECTS+=("$project")
+}
+
+if [ "$#" -eq 0 ] || { [ "$#" -eq 1 ] && [ "$1" = "all" ]; }; then
   SELECTED_PROJECTS=("${ALL_PROJECTS[@]}")
-elif [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
+elif [ "$#" -eq 1 ] && { [ "$1" = "-h" ] || [ "$1" = "--help" ]; }; then
   usage
   exit 0
 else
-  case "$1" in
-    blog | b) SELECTED_PROJECTS=("blog") ;;
-    studio | s) SELECTED_PROJECTS=("studio") ;;
-    zitie | z) SELECTED_PROJECTS=("zitie") ;;
-    *)
-      echo "错误：未知项目 ${1}。" >&2
-      usage >&2
-      exit 1
-      ;;
-  esac
+  for argument in "$@"; do
+    case "$argument" in
+      blog | b) add_project "blog" ;;
+      studio | s) add_project "studio" ;;
+      zitie | z) add_project "zitie" ;;
+      all)
+        echo "错误：all 只能单独使用。" >&2
+        usage >&2
+        exit 1
+        ;;
+      *)
+        echo "错误：未知项目 ${argument}。" >&2
+        usage >&2
+        exit 1
+        ;;
+    esac
+  done
 fi
 
 for project in "${SELECTED_PROJECTS[@]}"; do
@@ -192,7 +209,7 @@ for project in "${SELECTED_PROJECTS[@]}"; do
 done
 
 echo
-echo "${#ALL_PROJECTS[@]} 个项目已启动，按 Ctrl+C 全部停止。"
+echo "${#SELECTED_PROJECTS[@]} 个项目已启动，按 Ctrl+C 全部停止。"
 
 while true; do
   for index in "${!PIDS[@]}"; do

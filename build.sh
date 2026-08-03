@@ -15,7 +15,7 @@ usage() {
 用法：
   ./build.sh                 编译全部项目
   ./build.sh all             编译全部项目
-  ./build.sh <project>       编译指定项目
+  ./build.sh <project> [...] 编译一个或多个指定项目
 
 可选项目：
   blog, b    -> build/meowv.com
@@ -217,8 +217,6 @@ publish_one() {
   fi
 
   mv "$STAGING_DIR/$folder" "$destination"
-  rmdir "$STAGING_DIR"
-  STAGING_DIR=""
 
   if [ -n "$BACKUP_PATH" ] && [ -e "$BACKUP_PATH" ]; then
     rm -rf "$BACKUP_PATH"
@@ -227,27 +225,44 @@ publish_one() {
   RESTORE_PATH=""
 }
 
-if [ "$#" -gt 1 ]; then
-  usage >&2
-  exit 1
-fi
+add_project() {
+  local project="$1"
+  local selected
 
-if [ "$#" -eq 0 ] || [ "${1:-}" = "all" ]; then
+  if [ -n "${SELECTED_PROJECTS[*]:-}" ]; then
+    for selected in "${SELECTED_PROJECTS[@]}"; do
+      if [ "$selected" = "$project" ]; then
+        return
+      fi
+    done
+  fi
+
+  SELECTED_PROJECTS+=("$project")
+}
+
+if [ "$#" -eq 0 ] || { [ "$#" -eq 1 ] && [ "$1" = "all" ]; }; then
   SELECTED_PROJECTS=("${ALL_PROJECTS[@]}")
-elif [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
+elif [ "$#" -eq 1 ] && { [ "$1" = "-h" ] || [ "$1" = "--help" ]; }; then
   usage
   exit 0
 else
-  case "$1" in
-    blog | b) SELECTED_PROJECTS=("blog") ;;
-    studio | s) SELECTED_PROJECTS=("studio") ;;
-    zitie | z) SELECTED_PROJECTS=("zitie") ;;
-    *)
-      echo "错误：未知项目 ${1}。" >&2
-      usage >&2
-      exit 1
-      ;;
-  esac
+  for argument in "$@"; do
+    case "$argument" in
+      blog | b) add_project "blog" ;;
+      studio | s) add_project "studio" ;;
+      zitie | z) add_project "zitie" ;;
+      all)
+        echo "错误：all 只能单独使用。" >&2
+        usage >&2
+        exit 1
+        ;;
+      *)
+        echo "错误：未知项目 ${argument}。" >&2
+        usage >&2
+        exit 1
+        ;;
+    esac
+  done
 fi
 
 for project in "${SELECTED_PROJECTS[@]}"; do
@@ -273,7 +288,11 @@ done
 if [ "${#SELECTED_PROJECTS[@]}" -eq "${#ALL_PROJECTS[@]}" ]; then
   publish_all
 else
-  publish_one "${SELECTED_PROJECTS[0]}"
+  for project in "${SELECTED_PROJECTS[@]}"; do
+    publish_one "$project"
+  done
+  rmdir "$STAGING_DIR"
+  STAGING_DIR=""
 fi
 
 trap - EXIT INT TERM
