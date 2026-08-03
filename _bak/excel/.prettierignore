@@ -1,8 +1,0 @@
-dist
-coverage
-node_modules
-.pnpm-store
-pnpm-lock.yaml
-public/assets
-vendor
-tsconfig.app.tsbuildinfo

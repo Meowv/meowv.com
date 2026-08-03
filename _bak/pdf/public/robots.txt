@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://pdf.meowv.com/sitemap.xml
