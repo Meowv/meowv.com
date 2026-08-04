@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, ref, watch } from 'vue';
-import { IconHeart, IconX } from '@tabler/icons-vue';
+import { IconHeartFilled, IconX } from '@tabler/icons-vue';
 
 const props = defineProps<{ modelValue: boolean }>();
 const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>();
@@ -72,7 +72,7 @@ onBeforeUnmount(resetDialogState);
 
           <header class="donation-dialog__header">
             <p class="donation-dialog__eyebrow">
-              <IconHeart :size="16" aria-hidden="true" /> 感谢你的支持
+              <IconHeartFilled :size="16" aria-hidden="true" /> 感谢你的支持
             </p>
             <h2 id="donation-dialog-title">让好用的工具更加好用</h2>
             <p>如果 Meowv Studio 为你省下了时间，欢迎扫码支持。</p>
