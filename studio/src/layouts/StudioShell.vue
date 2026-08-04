@@ -91,8 +91,8 @@ onBeforeUnmount(() => {
 
 const primaryRoutes = [
   { label: 'Image', to: '/image', icon: IconPhoto, className: 'nav-image' },
-  { label: 'OCR', to: '/ocr', icon: IconTextScan2, className: 'nav-ocr' },
   { label: 'PDF', to: '/pdf', icon: IconFileTypePdf, className: 'nav-pdf' },
+  { label: 'OCR', to: '/ocr', icon: IconTextScan2, className: 'nav-ocr' },
   { label: 'Markdown', to: '/markdown', icon: IconMarkdown, className: 'nav-markdown' },
   { label: 'Office', to: '/office', icon: IconBrandOffice, className: 'nav-office' },
 ];

@@ -655,8 +655,8 @@ body.has-dialog-open {
   background: linear-gradient(
     105deg,
     var(--menu-image) 0%,
-    var(--menu-ocr) 20%,
-    var(--menu-pdf) 40%,
+    var(--menu-pdf) 20%,
+    var(--menu-ocr) 40%,
     var(--menu-markdown) 60%,
     var(--menu-office) 80%,
     var(--menu-image) 100%
@@ -685,8 +685,8 @@ body.has-dialog-open {
     90deg,
     transparent,
     var(--menu-image),
-    var(--menu-ocr),
     var(--menu-pdf),
+    var(--menu-ocr),
     var(--menu-markdown),
     var(--menu-office),
     transparent

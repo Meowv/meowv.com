@@ -22,6 +22,16 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/pdf/:tool?',
+    name: 'pdf',
+    component: () => import('@/features/pdf/PdfStudioPage.vue'),
+    meta: {
+      title: 'PDF · Meowv Studio',
+      description: '在浏览器本地处理 PDF 合并、拆分、整理、转换与编辑，文件无需上传。',
+      feature: 'pdf',
+    },
+  },
+  {
     path: '/ocr',
     name: 'ocr',
     component: () => import('@/features/ocr/OcrStudioPage.vue'),
@@ -39,16 +49,6 @@ const routes: RouteRecordRaw[] = [
       title: 'Markdown · Meowv Studio',
       description: '在浏览器本地编辑、预览、搜索并导出 Markdown 文档，内容无需上传。',
       feature: 'markdown',
-    },
-  },
-  {
-    path: '/pdf/:tool?',
-    name: 'pdf',
-    component: () => import('@/features/pdf/PdfStudioPage.vue'),
-    meta: {
-      title: 'PDF · Meowv Studio',
-      description: '在浏览器本地处理 PDF 合并、拆分、整理、转换与编辑，文件无需上传。',
-      feature: 'pdf',
     },
   },
   {

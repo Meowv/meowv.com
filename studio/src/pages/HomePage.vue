@@ -23,18 +23,18 @@ const quickRoutes = [
     tone: 'image',
   },
   {
-    label: 'OCR',
-    description: '图片文字识别',
-    to: '/ocr',
-    icon: IconTextScan2,
-    tone: 'ocr',
-  },
-  {
     label: 'PDF',
     description: '合并、拆分、标注',
     to: '/pdf',
     icon: IconFileTypePdf,
     tone: 'pdf',
+  },
+  {
+    label: 'OCR',
+    description: '图片文字识别',
+    to: '/ocr',
+    icon: IconTextScan2,
+    tone: 'ocr',
   },
   {
     label: 'Markdown',
