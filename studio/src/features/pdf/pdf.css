@@ -25,6 +25,32 @@
   --header-height: 70px;
 }
 
+:root[data-theme='dark'] .pdf-studio {
+  color-scheme: dark;
+  --color-primary: #f87171;
+  --color-primary-hover: #fca5a5;
+  --color-primary-strong: #fecaca;
+  --color-primary-button: #b91c1c;
+  --color-primary-button-hover: #991b1b;
+  --color-primary-soft: #3b1d21;
+  --color-primary-border: #7f1d1d;
+  --color-text: #d1d5db;
+  --color-text-secondary: #9ca3af;
+  --color-text-tertiary: #64748b;
+  --color-border: #2b313b;
+  --color-border-strong: #3a424f;
+  --color-background: #12161d;
+  --color-surface: #171b22;
+  --color-surface-raised: #171b22;
+  --color-surface-subtle: #1d222b;
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-danger: #f87171;
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 24%), 0 2px 8px rgb(0 0 0 / 24%);
+  --shadow-md: 0 12px 32px rgb(0 0 0 / 32%);
+  --shadow-primary: 0 10px 24px rgb(0 0 0 / 28%);
+}
+
 .pdf-studio *,
 .pdf-studio *::before,
 .pdf-studio *::after {

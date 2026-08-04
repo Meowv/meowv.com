@@ -2,9 +2,10 @@ import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import App from './App.vue';
 import router from './router';
+import { initializeTheme } from './composables/useTheme';
 import './assets/styles/main.css';
 
-document.documentElement.removeAttribute('data-theme');
+initializeTheme();
 
 createApp(App).use(createPinia()).use(router).mount('#app');
 

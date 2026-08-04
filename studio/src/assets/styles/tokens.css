@@ -23,3 +23,21 @@
   --radius-lg: 24px;
   --header-height: 64px;
 }
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --color-brand: #60a5fa;
+  --color-brand-strong: #93c5fd;
+  --color-brand-soft: #172554;
+  --color-bg: #12161d;
+  --color-surface: #171b22;
+  --color-surface-solid: #171b22;
+  --color-surface-soft: #1d222b;
+  --color-text: #d1d5db;
+  --color-text-muted: #9ca3af;
+  --color-border: #2b313b;
+  --color-border-strong: #3a424f;
+  --color-danger: #f87171;
+  --shadow-soft: 0 18px 55px rgb(0 0 0 / 32%);
+  --shadow-action: 0 12px 28px rgb(0 0 0 / 28%);
+}

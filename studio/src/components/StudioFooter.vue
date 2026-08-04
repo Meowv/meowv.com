@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { IconHeartFilled, IconStarFilled } from '@tabler/icons-vue';
+import ThemeToggle from '@/components/ThemeToggle.vue';
 
 const emit = defineEmits<{ support: [] }>();
 </script>
@@ -24,6 +25,7 @@ const emit = defineEmits<{ support: [] }>();
           <IconHeartFilled :size="18" stroke-width="1.9" aria-hidden="true" />
           赞助支持
         </button>
+        <ThemeToggle />
       </nav>
     </div>
   </footer>

@@ -12,6 +12,10 @@
   color: var(--ink);
 }
 
+:root[data-theme='dark'] .office-studio {
+  --shadow-sm: 0 8px 24px rgb(0 0 0 / 28%);
+}
+
 .office-studio button:not(:disabled) {
   cursor: pointer;
 }
@@ -50,6 +54,12 @@
   border-radius: 14px;
   color: #8e3027;
   background: #fff1ef;
+}
+
+:root[data-theme='dark'] .office-error {
+  border-color: #7f1d1d;
+  color: #fecaca;
+  background: #3b1d21;
 }
 
 .office-recent {
@@ -256,6 +266,11 @@
 .office-recent-item__delete:hover:not(:disabled) {
   color: #b43830;
   background: #fff0ee;
+}
+
+:root[data-theme='dark'] .office-recent-item__delete:hover:not(:disabled) {
+  color: #fca5a5;
+  background: #3b1d21;
 }
 
 .office-recent-item__icon {

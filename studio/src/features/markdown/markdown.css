@@ -36,6 +36,54 @@
     'SFMono-Regular', 'Cascadia Code', 'Roboto Mono', Consolas, 'Liberation Mono', monospace;
 }
 
+.markdown-studio--dark {
+  color-scheme: dark;
+  --color-brand: #60a5fa;
+  --color-brand-hover: #93c5fd;
+  --color-brand-soft: #172554;
+  --color-brand-border: #1d4ed8;
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-danger: #f87171;
+  --color-bg: #12161d;
+  --color-surface: #171b22;
+  --color-surface-soft: #1d222b;
+  --color-surface-hover: #242a34;
+  --color-text-strong: #f8fafc;
+  --color-text: #d1d5db;
+  --color-text-muted: #9ca3af;
+  --color-text-faint: #64748b;
+  --color-border: #2b313b;
+  --color-border-strong: #3a424f;
+  --color-overlay: rgb(2 6 23 / 70%);
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 24%);
+  --shadow-md: 0 10px 28px rgb(0 0 0 / 32%);
+  --shadow-popover: 0 18px 48px rgb(0 0 0 / 44%);
+}
+
+.markdown-studio--dark .hljs {
+  background: var(--color-surface-soft);
+  color: var(--color-text);
+}
+
+.markdown-studio--dark .hljs-comment,
+.markdown-studio--dark .hljs-quote {
+  color: #8b949e;
+}
+
+.markdown-studio--dark .hljs-keyword,
+.markdown-studio--dark .hljs-selector-tag,
+.markdown-studio--dark .hljs-title,
+.markdown-studio--dark .hljs-type {
+  color: #ff7b72;
+}
+
+.markdown-studio--dark .hljs-string,
+.markdown-studio--dark .hljs-attribute,
+.markdown-studio--dark .hljs-addition {
+  color: #a5d6ff;
+}
+
 .markdown-studio * {
   box-sizing: border-box;
 }
@@ -573,6 +621,19 @@
 .markdown-studio .activity-button:hover {
   background: var(--color-surface-hover);
   color: var(--color-text);
+}
+
+.markdown-studio .activity-button--theme {
+  width: 48px !important;
+  height: 48px;
+  border-radius: 9px !important;
+  background: transparent !important;
+  color: var(--color-text-faint) !important;
+}
+
+.markdown-studio .activity-button--theme:hover {
+  background: var(--color-surface-hover) !important;
+  color: var(--color-text) !important;
 }
 
 .markdown-studio .activity-button--active {
@@ -2714,6 +2775,19 @@ body.tree-dragging--invalid .markdown-studio * {
     height: 44px;
   }
 
+  .markdown-studio .activity-button--theme {
+    width: 42px !important;
+    height: 44px;
+  }
+
+  .markdown-studio .preview-toolbar {
+    justify-content: flex-end;
+  }
+
+  .markdown-studio .preview-toolbar__heading {
+    display: none;
+  }
+
   .markdown-studio .statusbar {
     padding: 0 8px 0 10px;
   }
@@ -2723,7 +2797,8 @@ body.tree-dragging--invalid .markdown-studio * {
   .markdown-studio .statusbar__select-control--font-size,
   .markdown-studio .statusbar__sync-control--autosave,
   .markdown-studio .statusbar__select-control--autosave-delay,
-  .markdown-studio .statusbar__sync-control--line-numbers {
+  .markdown-studio .statusbar__sync-control--line-numbers,
+  .markdown-studio .statusbar__sync-control--sync-scroll {
     display: none;
   }
 
@@ -2745,8 +2820,14 @@ body.tree-dragging--invalid .markdown-studio * {
     display: none;
   }
 
+  .markdown-studio .statusbar__group:first-child {
+    flex: 1 1 auto;
+    overflow: hidden;
+  }
+
   .markdown-studio .statusbar__document-path {
-    max-width: min(34vw, 180px);
+    flex: 1 1 auto;
+    max-width: none;
     padding-left: 8px;
   }
 

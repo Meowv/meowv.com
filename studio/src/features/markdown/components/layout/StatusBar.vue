@@ -181,7 +181,10 @@ function setEditorFontSize(event: Event): void {
         />
         <span>显示行号</span>
       </label>
-      <label class="statusbar__sync-control" title="同步编辑器与预览区域的滚动位置">
+      <label
+        class="statusbar__sync-control statusbar__sync-control--sync-scroll"
+        title="同步编辑器与预览区域的滚动位置"
+      >
         <input
           type="checkbox"
           :checked="store.preferences.syncScroll"

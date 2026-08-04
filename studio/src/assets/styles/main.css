@@ -158,7 +158,7 @@ button {
   height: 18px;
   margin-left: 1px;
   overflow: hidden;
-  color: var(--color-brand);
+  color: #5a9600;
   font-size: 15px;
   line-height: 18px;
   transform: rotate(-32deg) scaleX(0.68);
@@ -303,6 +303,27 @@ button {
 
 .studio-footer__links :is(a, button):hover {
   color: var(--color-brand-strong);
+}
+
+.theme-toggle {
+  display: inline-grid !important;
+  width: 34px;
+  height: 34px;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  color: var(--color-text-muted) !important;
+  background: var(--color-surface-solid) !important;
+  place-items: center;
+  transition:
+    border-color 160ms ease,
+    color 160ms ease,
+    background 160ms ease;
+}
+
+.theme-toggle:hover {
+  color: var(--color-brand-strong) !important;
+  background: var(--color-brand-soft) !important;
 }
 
 body.has-dialog-open {
@@ -762,6 +783,10 @@ body.has-dialog-open {
   background: #eaf2ff;
 }
 
+:root[data-theme='dark'] .home-shortcuts__item--image .home-shortcuts__icon {
+  background: #172554;
+}
+
 .home-shortcuts__item--pdf {
   color: #c2413d;
 }
@@ -770,12 +795,20 @@ body.has-dialog-open {
   background: #fff0ee;
 }
 
+:root[data-theme='dark'] .home-shortcuts__item--pdf .home-shortcuts__icon {
+  background: #3b1d21;
+}
+
 .home-shortcuts__item--markdown {
   color: #4f46e5;
 }
 
 .home-shortcuts__item--markdown .home-shortcuts__icon {
   background: #eeedff;
+}
+
+:root[data-theme='dark'] .home-shortcuts__item--markdown .home-shortcuts__icon {
+  background: #27224a;
 }
 
 .home-shortcuts__item--office {
@@ -891,7 +924,6 @@ body.has-dialog-open {
 .file-portal--dragging {
   border-color: var(--color-brand);
   background: color-mix(in srgb, var(--color-brand-soft) 38%, var(--color-surface));
-  transform: translateY(-3px);
 }
 
 .file-portal__art {
