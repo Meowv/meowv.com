@@ -182,7 +182,7 @@ button {
   display: inline-flex;
   flex: none;
   height: 100%;
-  padding: 0 13px;
+  padding: 0 10px;
   color: var(--color-text-muted);
   align-items: center;
   gap: 7px;
@@ -206,7 +206,7 @@ button {
 }
 
 .studio-nav a.router-link-active {
-  color: var(--color-text);
+  color: var(--nav-accent, var(--color-brand));
 }
 
 .studio-nav a.router-link-active::after {
