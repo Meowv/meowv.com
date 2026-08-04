@@ -16,6 +16,11 @@
   --color-border: rgba(37, 48, 39, 0.13);
   --color-border-strong: rgba(56, 96, 11, 0.34);
   --color-danger: #c2413d;
+  --menu-image: #4f46e5;
+  --menu-ocr: #0f766e;
+  --menu-pdf: #d84a4a;
+  --menu-markdown: #2563eb;
+  --menu-office: #5a9600;
   --shadow-soft: 0 18px 55px rgba(62, 82, 51, 0.1);
   --shadow-action: 0 12px 28px rgba(90, 150, 0, 0.24);
   --radius-sm: 8px;

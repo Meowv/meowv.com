@@ -19,6 +19,8 @@
   },
   "dependencies": {
     "@tabler/icons-vue": "^3.35.0",
+    "@tesseract.js-data/chi_sim": "^1.0.0",
+    "@tesseract.js-data/eng": "^1.0.0",
     "@vue/devtools-api": "^8.2.1",
     "@vueuse/core": "^14.4.0",
     "d3": "^7.9.0",
@@ -38,6 +40,7 @@
     "pinia": "^4.0.2",
     "ranui": "0.4.2-alpha.2",
     "ranuts": "0.4.0-alpha.1",
+    "tesseract.js": "^7.0.0",
     "vue": "^3.5.40",
     "vue-draggable-plus": "^0.6.1",
     "vue-router": "4.6.4",

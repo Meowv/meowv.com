@@ -234,7 +234,12 @@
 }
 
 .markdown-studio .app-logo--animated {
-  background: linear-gradient(115deg, var(--color-brand), #8b5cf6, var(--color-brand));
+  background: linear-gradient(
+    115deg,
+    var(--color-brand),
+    var(--color-brand-hover),
+    var(--color-brand)
+  );
   background-size: 180% 100%;
   animation: logo-gradient-flow 5s ease-in-out infinite;
 }
@@ -255,7 +260,7 @@
     105deg,
     var(--color-text-strong) 20%,
     var(--color-brand) 45%,
-    #8b5cf6 57%,
+    var(--color-brand-hover) 57%,
     var(--color-text-strong) 80%
   );
   background-size: 210% 100%;
@@ -1681,7 +1686,7 @@ body.workspace-resizing * {
     105deg,
     var(--color-text-strong) 15%,
     var(--color-brand) 44%,
-    #8b5cf6 56%,
+    var(--color-brand-hover) 56%,
     var(--color-text-strong) 78%
   );
   background-size: 220% 100%;
@@ -1747,7 +1752,13 @@ body.workspace-resizing * {
   left: 0%;
   height: 4px;
   border-radius: 999px;
-  background: linear-gradient(90deg, transparent, var(--color-brand), #8b5cf6, transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-brand),
+    var(--color-brand-hover),
+    transparent
+  );
   background-size: 200% 100%;
   content: '';
   animation: welcome-title-flow 4s ease-in-out infinite reverse;

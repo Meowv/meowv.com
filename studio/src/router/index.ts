@@ -22,6 +22,16 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/ocr',
+    name: 'ocr',
+    component: () => import('@/features/ocr/OcrStudioPage.vue'),
+    meta: {
+      title: 'OCR 文字识别 · Meowv Studio',
+      description: '在浏览器本地识别图片中的中文和英文文字，图片无需上传。',
+      feature: 'ocr',
+    },
+  },
+  {
     path: '/markdown',
     name: 'markdown',
     component: () => import('@/features/markdown/MarkdownStudioPage.vue'),

@@ -1,8 +1,10 @@
 import type { StudioFeature } from '@/core/browser/file-handoff';
 
+type StorageFeature = StudioFeature | 'ocr';
+
 export const STORAGE_POLICY = {
   preferences: 'meowv-studio:preferences:v1',
-  namespace(feature: StudioFeature): string {
+  namespace(feature: StorageFeature): string {
     return `meowv-studio:${feature}:v1`;
   },
 } as const;

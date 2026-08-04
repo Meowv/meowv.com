@@ -9,6 +9,7 @@ import {
   IconMarkdown,
   IconMenu2,
   IconPhoto,
+  IconTextScan2,
   IconX,
 } from '@tabler/icons-vue';
 import StudioDonationDialog from '@/components/StudioDonationDialog.vue';
@@ -28,7 +29,9 @@ const showHeader = computed(() =>
     : !workspaceActive.value || workspaceHeaderVisible.value,
 );
 const showFooter = computed(
-  () => ['home', 'image', 'pdf', 'office'].includes(String(route.name)) && !workspaceActive.value,
+  () =>
+    ['home', 'image', 'ocr', 'pdf', 'office'].includes(String(route.name)) &&
+    !workspaceActive.value,
 );
 const donationDialogOpen = ref(false);
 const mobileNavigationOpen = ref(false);
@@ -88,6 +91,7 @@ onBeforeUnmount(() => {
 
 const primaryRoutes = [
   { label: 'Image', to: '/image', icon: IconPhoto, className: 'nav-image' },
+  { label: 'OCR', to: '/ocr', icon: IconTextScan2, className: 'nav-ocr' },
   { label: 'PDF', to: '/pdf', icon: IconFileTypePdf, className: 'nav-pdf' },
   { label: 'Markdown', to: '/markdown', icon: IconMarkdown, className: 'nav-markdown' },
   { label: 'Office', to: '/office', icon: IconBrandOffice, className: 'nav-office' },
@@ -104,10 +108,10 @@ const primaryRoutes = [
     }"
   >
     <header
-      :key="isMarkdownPage ? 'markdown-header' : 'default-header'"
       v-show="showHeader"
-      class="studio-header"
       ref="headerElement"
+      :key="isMarkdownPage ? 'markdown-header' : 'default-header'"
+      class="studio-header"
     >
       <StudioLogo />
       <button

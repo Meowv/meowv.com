@@ -1,8 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { IconBrandOffice, IconFileTypePdf, IconMarkdown, IconPhoto } from '@tabler/icons-vue';
+import {
+  IconBrandOffice,
+  IconFileTypePdf,
+  IconMarkdown,
+  IconPhoto,
+  IconTextScan2,
+} from '@tabler/icons-vue';
 import { STUDIO_FILE_ACCEPT, useFileLauncher } from '@/composables/useFileLauncher';
-import fileOrbitUrl from '@/assets/images/file-orbit.jpg';
+import fileOrbitUrl from '@/assets/images/file-orbit.png';
 
 const dragActive = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
@@ -15,6 +21,13 @@ const quickRoutes = [
     to: '/image',
     icon: IconPhoto,
     tone: 'image',
+  },
+  {
+    label: 'OCR',
+    description: '图片文字识别',
+    to: '/ocr',
+    icon: IconTextScan2,
+    tone: 'ocr',
   },
   {
     label: 'PDF',
