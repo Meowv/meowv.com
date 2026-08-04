@@ -8,7 +8,8 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/HomePage.vue'),
     meta: {
       title: 'Meowv Studio · 本地文件工作台',
-      description: '在浏览器本地处理图片、Markdown、PDF 与 Office 文件，内容无需上传。',
+      description:
+        'Meowv Studio 是在浏览器中处理图片、PDF、Markdown 与 Office 文档，内容始终留在你的设备上的本地文件工作台。',
     },
   },
   {
