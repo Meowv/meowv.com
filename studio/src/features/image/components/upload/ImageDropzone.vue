@@ -10,17 +10,17 @@ const props = withDefaults(
     accept?: string;
     description?: string;
     disabled?: boolean;
-    details?: string;
     multiple?: boolean;
     compact?: boolean;
+    prompt?: string;
   }>(),
   {
     accept: defaultAcceptedExtensions,
     description: '支持 JPG、PNG、WebP、GIF、BMP、ICO、SVG，最多 100 张',
     disabled: false,
-    details: 'TIFF、HEIC 可在浏览器支持解码时处理',
     multiple: true,
     compact: false,
+    prompt: '拖入图片，或点击选择本地文件',
   },
 );
 
@@ -81,11 +81,10 @@ function onDrop(event: DragEvent) {
       <UploadCloud :size="25" :stroke-width="1.8" aria-hidden="true" />
     </span>
     <strong class="text-[15px] font-semibold text-[var(--text)]">
-      拖入图片，或点击选择本地文件
+      {{ prompt }}
     </strong>
     <span class="image-dropzone__description">
       <span>{{ description }}</span>
-      <span v-if="details" class="image-dropzone__details">{{ details }}</span>
     </span>
   </button>
 

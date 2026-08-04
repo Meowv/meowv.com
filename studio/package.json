@@ -23,6 +23,7 @@
     "@tesseract.js-data/eng": "^1.0.0",
     "@vue/devtools-api": "^8.2.1",
     "@vueuse/core": "^14.4.0",
+    "ag-psd": "^31.0.2",
     "d3": "^7.9.0",
     "docx": "^9.7.1",
     "dompurify": "^3.4.12",

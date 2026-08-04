@@ -1,6 +1,6 @@
 import { shallowRef } from 'vue';
 
-export type StudioFeature = 'image' | 'markdown' | 'pdf' | 'office';
+export type StudioFeature = 'image' | 'psd' | 'markdown' | 'pdf' | 'office';
 
 export interface FileHandoff {
   feature: StudioFeature;
@@ -24,6 +24,7 @@ const currentHandoff = shallowRef<FileHandoff | null>(null);
 
 const extensionGroups: Record<StudioFeature, Set<string>> = {
   image: new Set(['avif', 'bmp', 'gif', 'heic', 'heif', 'jpeg', 'jpg', 'png', 'svg', 'webp']),
+  psd: new Set(['psd']),
   markdown: new Set(['markdown', 'md', 'mdown', 'mkd', 'txt']),
   pdf: new Set(['pdf']),
   office: new Set(['csv', 'docx', 'pptx', 'xlsx']),
@@ -41,6 +42,7 @@ export function featureForFile(file: File): StudioFeature | null {
 export function routeForFeature(feature: StudioFeature): string {
   const defaultRoutes: Record<StudioFeature, string> = {
     image: '/image/compress',
+    psd: '/image/psd-viewer',
     markdown: '/markdown',
     pdf: '/pdf/merge-pdf',
     office: '/office',

@@ -190,12 +190,6 @@
   line-height: 24px;
 }
 
-.image-feature .image-dropzone__details {
-  color: var(--text-muted);
-  font-size: 12px;
-  line-height: 20px;
-}
-
 .image-feature .image-dropzone__description > span {
   min-width: 0;
 }
@@ -387,4 +381,470 @@
 
 .image-feature .no-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+.image-feature .psd-viewer-page {
+  padding-bottom: 48px;
+}
+
+.image-feature .psd-viewer {
+  margin-top: 32px;
+}
+
+.image-feature .psd-viewer:fullscreen {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 16px;
+  overflow: auto;
+  border: 0;
+  border-radius: 0;
+  background: var(--surface);
+}
+
+.image-feature .psd-viewer__compatibility,
+.image-feature .psd-viewer__progress {
+  display: grid;
+  min-height: 360px;
+  place-content: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.image-feature .psd-viewer__empty {
+  min-height: 0;
+  padding: 24px 0;
+}
+
+.image-feature .psd-viewer__compatibility p,
+.image-feature .psd-viewer__export-hint {
+  color: var(--text-soft);
+  font-size: 14px;
+}
+
+.image-feature .psd-viewer__compatibility {
+  max-width: 640px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.image-feature .psd-viewer__compatibility h2,
+.image-feature .psd-viewer__info h2,
+.image-feature .psd-viewer__export h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.image-feature .psd-viewer__progress {
+  grid-template-columns: auto minmax(180px, 380px);
+  align-items: center;
+  text-align: left;
+}
+
+.image-feature .psd-viewer__progress-ring {
+  grid-row: span 2;
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--primary-border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: psd-spin 800ms linear infinite;
+}
+
+.image-feature .psd-viewer__progress-track {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--surface-subtle);
+}
+
+.image-feature .psd-viewer__progress-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+  transition: width 180ms ease;
+}
+
+@keyframes psd-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.image-feature .psd-viewer__toolbar,
+.image-feature .psd-viewer__toolbar-actions,
+.image-feature .psd-viewer__actions,
+.image-feature .psd-viewer__file-name {
+  display: flex;
+  align-items: center;
+}
+
+.image-feature .psd-viewer__toolbar {
+  min-height: 52px;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.image-feature .psd-viewer__toolbar-actions,
+.image-feature .psd-viewer__actions {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.image-feature .psd-viewer__backgrounds {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 8px;
+  border-right: 1px solid var(--border);
+}
+
+.image-feature .psd-viewer__background-swatch {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.image-feature .psd-viewer__background-swatch--checkerboard {
+  background-color: #fff;
+  background-image:
+    linear-gradient(45deg, #bfc4ca 25%, transparent 25%),
+    linear-gradient(-45deg, #bfc4ca 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #bfc4ca 75%),
+    linear-gradient(-45deg, transparent 75%, #bfc4ca 75%);
+  background-position:
+    0 0,
+    0 5px,
+    5px -5px,
+    -5px 0;
+  background-size: 10px 10px;
+}
+
+.image-feature .psd-viewer__background-swatch--white {
+  background: #fff;
+}
+
+.image-feature .psd-viewer__background-swatch--black {
+  background: #000;
+}
+
+.image-feature .psd-viewer__background-swatch--selected,
+.image-feature .psd-viewer__background-swatch:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.image-feature .psd-viewer__file-name {
+  min-width: 0;
+  gap: 8px;
+  color: var(--text-soft);
+}
+
+.image-feature .psd-viewer__file-name strong {
+  overflow: hidden;
+  color: var(--text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.image-feature .psd-viewer__button,
+.image-feature .psd-viewer__icon-button,
+.image-feature .psd-viewer__zoom {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.image-feature .psd-viewer__button {
+  padding: 0 11px;
+}
+
+.image-feature .psd-viewer__icon-button {
+  width: 36px;
+  padding: 0;
+}
+
+.image-feature .psd-viewer__zoom {
+  width: 62px;
+}
+
+.image-feature .psd-viewer__button:hover:not(:disabled),
+.image-feature .psd-viewer__icon-button:hover,
+.image-feature .psd-viewer__zoom:hover {
+  border-color: var(--primary);
+  color: var(--primary-hover);
+}
+
+.image-feature .psd-viewer__button:focus-visible,
+.image-feature .psd-viewer__icon-button:focus-visible,
+.image-feature .psd-viewer__zoom:focus-visible,
+.image-feature .psd-viewer__export input:focus-visible,
+.image-feature .psd-viewer__export select:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--primary) 22%, transparent);
+  outline-offset: 2px;
+}
+
+.image-feature .psd-viewer__button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.image-feature .psd-viewer__button--primary {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+}
+
+.image-feature .psd-viewer__button--primary:hover:not(:disabled) {
+  border-color: var(--primary-hover);
+  background: var(--primary-hover);
+  color: #fff;
+}
+
+.image-feature .psd-viewer__viewport {
+  position: relative;
+  height: min(62vh, 720px);
+  min-height: 360px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.image-feature .psd-viewer__viewport--dragging {
+  cursor: grabbing;
+}
+
+.image-feature .psd-viewer__viewport--checkerboard {
+  background-color: #f3f4f6;
+  background-image:
+    linear-gradient(45deg, #d9dde2 25%, transparent 25%),
+    linear-gradient(-45deg, #d9dde2 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #d9dde2 75%),
+    linear-gradient(-45deg, transparent 75%, #d9dde2 75%);
+  background-position:
+    0 0,
+    0 10px,
+    10px -10px,
+    -10px 0;
+  background-size: 20px 20px;
+}
+
+.image-feature .psd-viewer__viewport--white {
+  background: #fff;
+}
+
+.image-feature .psd-viewer__viewport--black {
+  background: #000;
+}
+
+.image-feature .psd-viewer__canvas {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  max-width: none;
+  max-height: none;
+  image-rendering: auto;
+  transform-origin: center;
+  will-change: transform;
+}
+
+.image-feature .psd-viewer__coordinates {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  max-width: calc(100% - 20px);
+  padding: 6px 8px;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 22%);
+  border-radius: 4px;
+  background: rgb(0 0 0 / 72%);
+  color: #fff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.image-feature .psd-viewer__lower {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+  gap: 28px;
+  margin-top: 22px;
+}
+
+.image-feature .psd-viewer__info,
+.image-feature .psd-viewer__export {
+  min-width: 0;
+}
+
+.image-feature .psd-viewer__info dl {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  margin: 14px 0 0;
+  border-top: 1px solid var(--border);
+}
+
+.image-feature .psd-viewer__info dt,
+.image-feature .psd-viewer__info dd {
+  min-width: 0;
+  margin: 0;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.image-feature .psd-viewer__info dt {
+  color: var(--text-soft);
+}
+
+.image-feature .psd-viewer__info dd {
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-weight: 650;
+}
+
+.image-feature .psd-viewer__export {
+  display: grid;
+  align-content: start;
+  gap: 13px;
+  padding-left: 28px;
+  border-left: 1px solid var(--border);
+}
+
+.image-feature .psd-viewer__export label {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-soft);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.image-feature .psd-viewer__export output {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.image-feature .psd-viewer__export input[type='range'] {
+  width: 100%;
+  accent-color: var(--primary);
+}
+
+.image-feature .psd-viewer__select {
+  position: relative;
+  display: block;
+}
+
+.image-feature .psd-viewer__select select {
+  width: 100%;
+  min-height: 36px;
+  padding: 0 31px 0 10px;
+  appearance: none;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+}
+
+.image-feature .psd-viewer__select svg {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  pointer-events: none;
+  color: var(--primary);
+  transform: translateY(-50%);
+}
+
+.image-feature .psd-viewer__checkbox {
+  grid-template-columns: 84px minmax(0, 1fr) !important;
+}
+
+.image-feature .psd-viewer__checkbox input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--primary);
+}
+
+.image-feature .psd-viewer__error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.image-feature .psd-viewer__notice {
+  margin: 0;
+  color: var(--success);
+  font-size: 13px;
+}
+
+@media (max-width: 800px) {
+  .image-feature .psd-viewer {
+    margin-top: 20px;
+  }
+
+  .image-feature .psd-viewer__toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .image-feature .psd-viewer__viewport {
+    height: 54vh;
+    min-height: 300px;
+  }
+
+  .image-feature .psd-viewer__lower {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .image-feature .psd-viewer__export {
+    padding-top: 24px;
+    padding-left: 0;
+    border-top: 1px solid var(--border);
+    border-left: 0;
+  }
+}
+
+@media (max-width: 520px) {
+  .image-feature .psd-viewer__toolbar-actions {
+    gap: 6px;
+  }
+
+  .image-feature .psd-viewer__button {
+    padding: 0 9px;
+  }
+
+  .image-feature .psd-viewer__info dl {
+    grid-template-columns: 106px minmax(0, 1fr);
+  }
+
+  .image-feature .psd-viewer__export label {
+    grid-template-columns: 70px minmax(0, 1fr) auto;
+  }
+
+  .image-feature .psd-viewer__checkbox {
+    grid-template-columns: 70px minmax(0, 1fr) !important;
+  }
 }

@@ -477,7 +477,6 @@ onBeforeUnmount(() => {
           accept="image/jpeg,image/png,image/webp,image/gif,image/bmp"
           description="支持 JPG、JPEG、PNG、WebP、GIF 和 BMP，单个文件不超过 50 MB"
           :disabled="isReading"
-          details=""
           :multiple="false"
           @files="selectDropzoneFiles"
         />

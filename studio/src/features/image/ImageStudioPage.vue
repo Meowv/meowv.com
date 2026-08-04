@@ -3,6 +3,7 @@ import { computed, defineAsyncComponent, watchEffect } from 'vue';
 import { useRoute } from 'vue-router';
 import {
   IconAdjustments,
+  IconBrandAdobePhotoshop,
   IconCrop,
   IconFileTypePdf,
   IconMovie,
@@ -21,6 +22,7 @@ const CropView = defineAsyncComponent(() => import('./views/CropView.vue'));
 const ImageEffectsView = defineAsyncComponent(() => import('./views/ImageEffectsView.vue'));
 const ImagesToPdfView = defineAsyncComponent(() => import('./views/ImagesToPdfView.vue'));
 const MergeGifView = defineAsyncComponent(() => import('./views/MergeGifView.vue'));
+const PsdViewerView = defineAsyncComponent(() => import('./views/PsdViewerView.vue'));
 
 const tools = [
   {
@@ -72,6 +74,12 @@ const tools = [
     description: '设置帧率、画布、背景与循环。',
     icon: IconMovie,
   },
+  {
+    slug: 'psd-viewer',
+    name: 'PSD 查看',
+    description: '本地解析 Photoshop 合成图并导出预览。',
+    icon: IconBrandAdobePhotoshop,
+  },
 ] as const;
 
 const tool = computed(() => String(route.params.tool ?? ''));
@@ -86,6 +94,7 @@ const activeView = computed(() => {
   }
   if (tool.value === 'images-to-pdf') return { component: ImagesToPdfView, props: {} };
   if (tool.value === 'merge-gif') return { component: MergeGifView, props: {} };
+  if (tool.value === 'psd-viewer') return { component: PsdViewerView, props: {} };
   return null;
 });
 

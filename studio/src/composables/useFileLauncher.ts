@@ -3,7 +3,7 @@ import { useRouter } from 'vue-router';
 import { handoffFile, routeForFeature } from '@/core/browser/file-handoff';
 
 export const STUDIO_FILE_ACCEPT =
-  '.avif,.bmp,.gif,.heic,.heif,.jpeg,.jpg,.png,.svg,.webp,.md,.markdown,.txt,.pdf,.docx,.xlsx,.pptx,.csv';
+  '.avif,.bmp,.gif,.heic,.heif,.jpeg,.jpg,.png,.psd,.svg,.webp,.md,.markdown,.txt,.pdf,.docx,.xlsx,.pptx,.csv';
 
 export function useFileLauncher() {
   const router = useRouter();
