@@ -72,12 +72,7 @@ function resetAll(): void {
     :upload-errors="errors"
     :operation-error="operation.error.value"
   >
-    <FileDropzone
-      title="将多个 PDF 拖到这里"
-      hint="至少添加两个 PDF，文件只在浏览器本地读取"
-      multiple
-      @files="addFiles"
-    />
+    <FileDropzone hint="至少添加两个 PDF，文件只在浏览器本地读取" multiple @files="addFiles" />
 
     <template #main>
       <header class="workspace-panel__header">

@@ -134,7 +134,7 @@ function modeHelp(value: SplitMode): string {
     :upload-errors="errors"
     :operation-error="operation.error.value"
   >
-    <FileDropzone title="将一个 PDF 拖到这里" @files="addSingle" />
+    <FileDropzone @files="addSingle" />
 
     <template #main>
       <header class="workspace-panel__header">

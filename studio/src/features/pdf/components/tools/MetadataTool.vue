@@ -118,7 +118,7 @@ function resetAll(): void {
     :operation-error="operation.error.value"
     :additional-errors="metadataError ? [metadataError] : []"
   >
-    <FileDropzone title="将一个 PDF 拖到这里" @files="addSingle" />
+    <FileDropzone @files="addSingle" />
 
     <template #main>
       <header class="workspace-panel__header">
