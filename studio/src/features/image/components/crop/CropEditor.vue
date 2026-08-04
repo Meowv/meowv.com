@@ -429,7 +429,7 @@ onBeforeUnmount(() => {
   <div class="space-y-4">
     <div
       ref="stageRef"
-      class="crop-stage relative isolate min-h-[320px] w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-950 shadow-inner sm:min-h-[420px]"
+      class="crop-stage relative isolate min-h-[320px] w-full overflow-hidden rounded-2xl border border-slate-200 shadow-inner sm:min-h-[420px]"
       @pointermove="onPointerMove"
       @pointerup="finishPointer"
       @pointercancel="finishPointer"
@@ -522,12 +522,12 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .crop-stage {
-  background-color: #0f172a;
+  background-color: #f8fafc;
   background-image:
-    linear-gradient(45deg, rgba(255, 255, 255, 0.055) 25%, transparent 25%),
-    linear-gradient(-45deg, rgba(255, 255, 255, 0.055) 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.055) 75%),
-    linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.055) 75%);
+    linear-gradient(45deg, rgba(100, 116, 139, 0.1) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(100, 116, 139, 0.1) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(100, 116, 139, 0.1) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(100, 116, 139, 0.1) 75%);
   background-position:
     0 0,
     0 8px,
@@ -536,11 +536,26 @@ onBeforeUnmount(() => {
   background-size: 16px 16px;
 }
 
+:global(:root[data-theme='dark']) .crop-stage {
+  background-color: #0f172a;
+  background-image:
+    linear-gradient(45deg, rgba(255, 255, 255, 0.055) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(255, 255, 255, 0.055) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.055) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.055) 75%);
+}
+
 .crop-frame {
+  box-shadow:
+    0 0 0 1px rgba(71, 85, 105, 0.3),
+    0 0 0 9999px rgba(148, 163, 184, 0.34);
+  touch-action: none;
+}
+
+:global(:root[data-theme='dark']) .crop-frame {
   box-shadow:
     0 0 0 1px rgba(15, 23, 42, 0.48),
     0 0 0 9999px rgba(2, 6, 23, 0.58);
-  touch-action: none;
 }
 
 .crop-frame:focus-visible {

@@ -1,54 +1,47 @@
 <script setup lang="ts">
 import {
+  Adjustments,
+  BrandAdobePhotoshop,
   ChevronsDown,
+  Crop,
   FileDescription,
   FileTypePdf,
   FilePlus2,
   FolderPlus,
-  Image,
+  ImageDown,
+  ImageUp,
   Music,
+  Movie,
   Pencil,
+  PhotoEdit,
+  PhotoScan,
   RefreshCw,
+  Resize,
   RotateCcw,
   Trash2,
   Video,
 } from '@/features/markdown/icons';
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, toRef, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import AppToolIcon from '@/features/pdf/components/common/AppToolIcon.vue';
+import { pdfTools } from '@/features/pdf/config/tools';
 import FileTreeNode from './FileTreeNode.vue';
 import { ACTIVE_TREE_PATH, EXPANDED_TREE_PATHS } from './tree-state';
 import { useWorkspaceStore, type DisplayTreeNode } from '@/features/markdown/stores/workspace';
 import { createTypedMediaBlob } from '@/features/markdown/services/media';
-import {
-  handoffFile,
-  openWindowFileHandoff,
-  type StudioFeature,
-} from '@/core/browser/file-handoff';
+import { openWindowFileHandoff } from '@/core/browser/file-handoff';
 
 type DialogKind = 'new-file' | 'new-folder' | 'rename' | 'delete';
 const ROOT_BATCH_SIZE = 200;
 const IMAGE_TOOLS = [
-  ['compress', '图片压缩'],
-  ['convert', '格式转换'],
-  ['resize', '尺寸调整'],
-  ['crop', '图片裁剪'],
-  ['watermark', '添加水印'],
-  ['rounded', '添加圆角'],
-  ['padding', '补边留白'],
-  ['images-to-pdf', '图片转 PDF'],
-  ['merge-gif', '合并为 GIF'],
-] as const;
-const PDF_TOOLS = [
-  ['merge-pdf', '合并 PDF'],
-  ['split-pdf', '拆分 PDF'],
-  ['organize-pdf', '整理 PDF 页面'],
-  ['delete-pdf-pages', '删除 PDF 页面'],
-  ['extract-pdf-pages', '提取 PDF 页面'],
-  ['rotate-pdf', '旋转 PDF'],
-  ['pdf-to-images', 'PDF 转图片'],
-  ['watermark-pdf', 'PDF 添加水印'],
-  ['add-pdf-page-numbers', 'PDF 添加页码'],
-  ['pdf-metadata', 'PDF 元数据'],
+  { slug: 'compress', label: '图片压缩', icon: ImageDown },
+  { slug: 'convert', label: '格式转换', icon: ImageUp },
+  { slug: 'resize', label: '尺寸调整', icon: Resize },
+  { slug: 'crop', label: '图片裁剪', icon: Crop },
+  { slug: 'watermark', label: '添加水印', icon: PhotoEdit },
+  { slug: 'rounded', label: '添加圆角', icon: PhotoScan },
+  { slug: 'padding', label: '补边留白', icon: Adjustments },
+  { slug: 'images-to-pdf', label: '图片转 PDF', icon: FileTypePdf },
+  { slug: 'merge-gif', label: '合并为 GIF', icon: Movie },
 ] as const;
 
 interface ContextMenuState {
@@ -73,7 +66,6 @@ interface DropTarget {
 }
 
 const store = useWorkspaceStore();
-const router = useRouter();
 const expandedPaths = ref(new Set(['', '技术', '技术/.NET', '前端', '生活']));
 provide(ACTIVE_TREE_PATH, toRef(store, 'activePath'));
 provide(EXPANDED_TREE_PATHS, expandedPaths);
@@ -237,6 +229,10 @@ async function openNode(node: DisplayTreeNode): Promise<void> {
     return;
   }
   if (node.category === 'image') {
+    if (node.extension === '.psd') {
+      await openPsdViewerInNewWindow(node);
+      return;
+    }
     closeMediaPreview();
     closeImagePreview();
     try {
@@ -299,25 +295,53 @@ function handleMediaError(): void {
   mediaError.value = '当前浏览器不支持此文件的媒体编码。';
 }
 
-async function openResourceTool(
-  node: DisplayTreeNode,
-  feature: Extract<StudioFeature, 'image' | 'pdf'>,
-  slug: string,
-): Promise<void> {
+async function openResourceTool(node: DisplayTreeNode, slug: string): Promise<void> {
   contextMenu.value = null;
+  const popup = globalThis.open('about:blank', '_blank');
+  if (!popup) {
+    store.notify('error', '无法打开图片工具', '浏览器阻止了新窗口，请允许本站打开弹出式窗口。');
+    return;
+  }
   try {
     if (!(await store.saveActiveDocument())) {
+      popup.close();
       return;
     }
     const file = await getNodeFile(node);
-    if (!file || !handoffFile(file, feature)) {
+    if (!file) {
       throw new Error('当前文件无法交给目标工具。');
     }
     closeImagePreview();
     closeMediaPreview();
-    await router.push(`/${feature}/${slug}`);
+    openWindowFileHandoff(popup, `/image/${slug}`, 'image', file);
   } catch (error) {
+    popup.close();
     store.notify('error', '无法打开工具', error instanceof Error ? error.message : node.name);
+  }
+}
+
+async function openPsdViewerInNewWindow(node: DisplayTreeNode): Promise<void> {
+  contextMenu.value = null;
+  const popup = globalThis.open('about:blank', '_blank');
+  if (!popup) {
+    store.notify('error', '无法打开 PSD 查看', '浏览器阻止了新窗口，请允许本站打开弹出式窗口。');
+    return;
+  }
+  try {
+    if (!(await store.saveActiveDocument())) {
+      popup.close();
+      return;
+    }
+    const file = await getNodeFile(node);
+    if (!file) {
+      throw new Error('无法读取 PSD 文件。');
+    }
+    closeImagePreview();
+    closeMediaPreview();
+    openWindowFileHandoff(popup, '/image/psd-viewer', 'psd', file);
+  } catch (error) {
+    popup.close();
+    store.notify('error', '无法打开 PSD 查看', error instanceof Error ? error.message : node.name);
   }
 }
 
@@ -764,31 +788,45 @@ onBeforeUnmount(() => {
           </button>
           <div class="context-menu__separator" />
         </template>
+        <template
+          v-else-if="contextMenu.node.category === 'image' && contextMenu.node.extension === '.psd'"
+        >
+          <p class="context-menu__label">PSD 查看</p>
+          <button
+            class="context-menu__item"
+            type="button"
+            role="menuitem"
+            @click="openPsdViewerInNewWindow(contextMenu.node)"
+          >
+            <BrandAdobePhotoshop :size="16" />使用 PSD 查看
+          </button>
+          <div class="context-menu__separator" />
+        </template>
         <template v-else-if="contextMenu.node.category === 'image'">
           <p class="context-menu__label">图片工具</p>
           <button
             v-for="tool in IMAGE_TOOLS"
-            :key="tool[0]"
+            :key="tool.slug"
             class="context-menu__item"
             type="button"
             role="menuitem"
-            @click="openResourceTool(contextMenu.node, 'image', tool[0])"
+            @click="openResourceTool(contextMenu.node, tool.slug)"
           >
-            <Image :size="16" />{{ tool[1] }}
+            <component :is="tool.icon" :size="16" aria-hidden="true" />{{ tool.label }}
           </button>
           <div class="context-menu__separator" />
         </template>
         <template v-else-if="contextMenu.node.category === 'pdf'">
           <p class="context-menu__label">PDF 工具</p>
           <button
-            v-for="tool in PDF_TOOLS"
-            :key="tool[0]"
+            v-for="tool in pdfTools"
+            :key="tool.slug"
             class="context-menu__item"
             type="button"
             role="menuitem"
-            @click="promptPdfTool(contextMenu.node, tool[0], tool[1])"
+            @click="promptPdfTool(contextMenu.node, tool.slug, tool.name)"
           >
-            <FileTypePdf :size="16" />{{ tool[1] }}
+            <AppToolIcon :name="tool.icon" :size="16" :stroke-width="1.8" />{{ tool.name }}
           </button>
           <div class="context-menu__separator" />
         </template>

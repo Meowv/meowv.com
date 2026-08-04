@@ -13,7 +13,6 @@ declare module 'vue' {
   export interface GlobalComponents {
     AppToolIcon: typeof import('./components/common/AppToolIcon.vue')['default']
     FileDropzone: typeof import('./components/upload/FileDropzone.vue')['default']
-    ImagesToPdfTool: typeof import('./components/tools/ImagesToPdfTool.vue')['default']
     MergeTool: typeof import('./components/tools/MergeTool.vue')['default']
     MetadataTool: typeof import('./components/tools/MetadataTool.vue')['default']
     OperationResult: typeof import('./components/workspace/OperationResult.vue')['default']

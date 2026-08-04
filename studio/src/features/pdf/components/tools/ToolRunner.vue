@@ -12,7 +12,6 @@ const loaders: Record<string, () => Promise<{ default: Component }>> = {
   'delete-pdf-pages': () => import('./PageTool.vue'),
   'extract-pdf-pages': () => import('./PageTool.vue'),
   'rotate-pdf': () => import('./PageTool.vue'),
-  'images-to-pdf': () => import('./ImagesToPdfTool.vue'),
   'pdf-to-images': () => import('./PdfToImagesTool.vue'),
   'watermark-pdf': () => import('./WatermarkTool.vue'),
   'add-pdf-page-numbers': () => import('./PageNumbersTool.vue'),

@@ -16,7 +16,7 @@ import {
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import ImageToolHeader from '@/features/image/components/layout/ImageToolHeader.vue';
 import ImageDropzone from '@/features/image/components/upload/ImageDropzone.vue';
-import { useFileHandoff } from '@/core/browser/file-handoff';
+import { receiveWindowFileHandoff, useFileHandoff } from '@/core/browser/file-handoff';
 import { downloadBlob } from '@/features/image/utils/download';
 import { formatBytes } from '@/features/image/utils/format';
 
@@ -81,6 +81,7 @@ let parserWorker: Worker | null = null;
 let resizeObserver: ResizeObserver | null = null;
 let dragStart: { x: number; y: number; panX: number; panY: number } | null = null;
 let copiedTimer: number | undefined;
+let stopWindowFileHandoff: () => void = () => undefined;
 
 const hasPreview = computed(() => status.value === 'ready' && metadata.value !== null);
 const qualityEnabled = computed(() => exportMime.value !== 'image/png');
@@ -506,8 +507,12 @@ function handleInput(event: Event): void {
 }
 
 onMounted(() => {
-  const handoff = useFileHandoff().take('psd');
+  const { take } = useFileHandoff();
+  const handoff = take('psd');
   if (handoff) void acceptFile(handoff);
+  stopWindowFileHandoff = receiveWindowFileHandoff('psd', (file) => {
+    void acceptFile(file);
+  });
   document.addEventListener('fullscreenchange', syncFullscreen);
   resizeObserver = new ResizeObserver(() => {
     if (hasPreview.value) fitToViewport();
@@ -517,6 +522,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   stopParsing();
+  stopWindowFileHandoff();
   resizeObserver?.disconnect();
   document.removeEventListener('fullscreenchange', syncFullscreen);
   window.clearTimeout(copiedTimer);

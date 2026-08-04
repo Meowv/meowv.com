@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, watchEffect } from 'vue';
+import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watchEffect } from 'vue';
 import { useRoute } from 'vue-router';
 import {
   IconAdjustments,
@@ -13,9 +13,12 @@ import {
   IconPhotoUp,
   IconResize,
 } from '@tabler/icons-vue';
+import { handoffFile, receiveWindowFileHandoff } from '@/core/browser/file-handoff';
 import './image.css';
 
 const route = useRoute();
+const windowHandoffVersion = ref(0);
+let stopWindowFileHandoff: () => void = () => undefined;
 
 const BatchToolView = defineAsyncComponent(() => import('./views/BatchToolView.vue'));
 const CropView = defineAsyncComponent(() => import('./views/CropView.vue'));
@@ -102,11 +105,25 @@ watchEffect(() => {
   const current = tools.find((item) => item.slug === tool.value);
   document.title = current ? `${current.name} · Meowv Studio` : 'Image · Meowv Studio';
 });
+
+onMounted(() => {
+  stopWindowFileHandoff = receiveWindowFileHandoff('image', (file) => {
+    handoffFile(file, 'image');
+    windowHandoffVersion.value += 1;
+  });
+});
+
+onBeforeUnmount(() => stopWindowFileHandoff());
 </script>
 
 <template>
   <div class="image-feature">
-    <component :is="activeView.component" v-if="activeView" v-bind="activeView.props" />
+    <component
+      :is="activeView.component"
+      v-if="activeView"
+      :key="`${tool}-${windowHandoffVersion}`"
+      v-bind="activeView.props"
+    />
     <section v-else class="tool-hub">
       <nav class="tool-hub__grid" aria-label="图片工具">
         <RouterLink

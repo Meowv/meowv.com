@@ -3,6 +3,7 @@ import {
   ChevronDown,
   ChevronsDown,
   ChevronRight,
+  BrandAdobePhotoshop,
   File,
   FileCode2,
   FileDescription,
@@ -79,6 +80,7 @@ const active = computed(() => props.node.kind === 'file' && activePath.value ===
 const unavailable = computed(() => props.node.kind === 'file' && props.node.category === 'other');
 const fileIcon = computed(() => {
   if (props.node.category === 'markdown') return FileText;
+  if (props.node.extension === '.psd') return BrandAdobePhotoshop;
   if (props.node.category === 'image') return Image;
   if (props.node.category === 'audio') return Music;
   if (props.node.category === 'video') return Video;

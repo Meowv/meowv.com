@@ -48,6 +48,7 @@ export const IMAGE_EXTENSIONS = [
   '.jpeg',
   '.jpg',
   '.png',
+  '.psd',
   '.svg',
   '.webp',
 ] as const;

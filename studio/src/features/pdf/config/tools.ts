@@ -7,7 +7,6 @@ export type PdfToolIcon =
   | 'trash'
   | 'file-output'
   | 'rotate'
-  | 'images'
   | 'image-down'
   | 'stamp'
   | 'hash'
@@ -149,23 +148,6 @@ export const pdfTools: ReadonlyArray<PdfToolDefinition> = [
     seo: {
       title: '旋转 PDF｜在线旋转 PDF 页面 - Meowv',
       description: '在线旋转 PDF 的全部或指定页面，支持 90° 与 180°，文件不会上传。',
-    },
-  },
-  {
-    slug: 'images-to-pdf',
-    name: '图片转 PDF',
-    shortName: '图片转 PDF',
-    description: '将 JPG、PNG 或 WebP 图片整理为 PDF。',
-    icon: 'images',
-    category: 'convert',
-    accept: ['image/jpeg', 'image/png', 'image/webp', '.jpg', '.jpeg', '.png', '.webp'],
-    multiple: true,
-    enabled: true,
-    featured: true,
-    seo: {
-      title: '图片转 PDF｜在线将 JPG、PNG、WebP 转为 PDF - Meowv',
-      description:
-        '在线将 JPG、PNG 和 WebP 图片转换为 PDF，支持排序、页面尺寸和边距设置，图片不会上传。',
     },
   },
   {
