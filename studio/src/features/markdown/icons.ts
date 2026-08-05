@@ -7,6 +7,7 @@ export {
   IconBold as Bold,
   IconBrandAdobePhotoshop as BrandAdobePhotoshop,
   IconCalendar as CalendarDays,
+  IconChalkboard as Chalkboard,
   IconCheck as Check,
   IconChevronDown as ChevronDown,
   IconChevronRight as ChevronRight,

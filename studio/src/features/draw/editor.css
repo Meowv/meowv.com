@@ -507,38 +507,6 @@
   flex: 1 1 auto;
 }
 
-.draw-editor__notice {
-  position: absolute;
-  z-index: 50;
-  right: 16px;
-  bottom: 16px;
-  display: flex;
-  width: min(460px, calc(100% - 32px));
-  padding: 10px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  color: var(--color-text);
-  background: var(--color-surface-solid);
-  box-shadow: var(--shadow-soft);
-  font-size: 13px;
-  align-items: start;
-  gap: 10px;
-}
-
-.draw-editor__notice > span {
-  flex: 1;
-}
-
-.draw-editor__notice button {
-  padding: 0;
-  border: 0;
-  color: var(--color-text-muted);
-  background: transparent;
-  font-size: 18px;
-  line-height: 1;
-  cursor: pointer;
-}
-
 .draw-editor__library {
   position: absolute;
   z-index: 40;

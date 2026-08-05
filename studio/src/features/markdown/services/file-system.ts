@@ -1,5 +1,6 @@
 import {
   AUDIO_EXTENSIONS,
+  DRAW_EXTENSIONS,
   IMAGE_EXTENSIONS,
   MARKDOWN_EXTENSIONS,
   OFFICE_EXTENSIONS,
@@ -32,6 +33,7 @@ const AUDIO_EXTENSION_SET = normalizeExtensions(AUDIO_EXTENSIONS);
 const VIDEO_EXTENSION_SET = normalizeExtensions(VIDEO_EXTENSIONS);
 const OFFICE_EXTENSION_SET = normalizeExtensions(OFFICE_EXTENSIONS);
 const PDF_EXTENSION_SET = normalizeExtensions(PDF_EXTENSIONS);
+const DRAW_EXTENSION_SET = normalizeExtensions(DRAW_EXTENSIONS);
 const TEXT_FILE_NAMES = new Set([
   'authors',
   'changelog',
@@ -242,6 +244,9 @@ function categorizeFile(
   }
   if (PDF_EXTENSION_SET.has(extension)) {
     return 'pdf';
+  }
+  if (DRAW_EXTENSION_SET.has(extension)) {
+    return 'draw';
   }
   return 'other';
 }

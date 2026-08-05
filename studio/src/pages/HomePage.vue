@@ -60,10 +60,51 @@ const quickRoutes = [
   },
 ];
 
-const openFile = () => {
-  if (!fileInput.value) return;
-  fileInput.value.value = '';
-  fileInput.value.click();
+const STUDIO_FILE_PICKER_TYPES = [
+  {
+    description: 'Studio 支持的文件',
+    accept: {
+      'image/avif': ['.avif'],
+      'image/bmp': ['.bmp'],
+      'image/gif': ['.gif'],
+      'image/heic': ['.heic', '.heif'],
+      'image/jpeg': ['.jpeg', '.jpg'],
+      'image/png': ['.png'],
+      'image/vnd.adobe.photoshop': ['.psd'],
+      'image/svg+xml': ['.svg'],
+      'image/webp': ['.webp'],
+      'text/markdown': ['.md', '.markdown'],
+      'text/plain': ['.txt'],
+      'application/pdf': ['.pdf'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation': ['.pptx'],
+      'text/csv': ['.csv'],
+      'application/vnd.excalidraw+json': ['.excalidraw'],
+    },
+  },
+];
+
+const openFile = async () => {
+  const picker = window.showOpenFilePicker;
+  if (!picker) {
+    if (!fileInput.value) return;
+    fileInput.value.value = '';
+    fileInput.value.click();
+    return;
+  }
+
+  try {
+    const [handle] = await picker({
+      multiple: false,
+      types: STUDIO_FILE_PICKER_TYPES,
+    });
+    if (handle) await launchFile(await handle.getFile(), handle);
+  } catch (reason) {
+    if ((reason as DOMException).name !== 'AbortError') {
+      error.value = reason instanceof Error ? reason.message : '无法打开本地文件。';
+    }
+  }
 };
 
 const onFileSelected = async (event: Event) => {
@@ -74,6 +115,21 @@ const onFileSelected = async (event: Event) => {
 
 const onDrop = async (event: DragEvent) => {
   dragActive.value = false;
+  const item = event.dataTransfer?.items[0] as
+    | (DataTransferItem & {
+        getAsFileSystemHandle?: () => Promise<FileSystemHandle | null>;
+      })
+    | undefined;
+  try {
+    const handle = await item?.getAsFileSystemHandle?.();
+    if (handle?.kind === 'file') {
+      const fileHandle = handle as FileSystemFileHandle;
+      await launchFile(await fileHandle.getFile(), fileHandle);
+      return;
+    }
+  } catch {
+    // 无法取得文件句柄时退回普通 File 拖放。
+  }
   const file = event.dataTransfer?.files[0];
   if (file) await launchFile(file);
 };
@@ -139,7 +195,6 @@ const onDrop = async (event: DragEvent) => {
       <img class="file-portal__art" :src="fileOrbitUrl" alt="" draggable="false" />
       <div>
         <strong>拖拽文件到这里，或点击打开</strong>
-        <span>支持图片、PDF、Markdown、DOCX、XLSX、PPTX、CSV</span>
         <small>文件内容不会离开当前设备</small>
       </div>
     </div>

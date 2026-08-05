@@ -2,6 +2,7 @@
 import {
   Adjustments,
   BrandAdobePhotoshop,
+  Chalkboard,
   ChevronsDown,
   Crop,
   FileDescription,
@@ -204,7 +205,7 @@ function openContextMenu(event: MouseEvent, node: DisplayTreeNode): void {
   const menuHeight =
     node.category === 'image' || node.category === 'pdf'
       ? Math.min(430, globalThis.innerHeight - 16)
-      : node.category === 'audio' || node.category === 'video'
+      : node.category === 'audio' || node.category === 'video' || node.category === 'draw'
         ? 132
         : node.kind === 'directory'
           ? 184
@@ -255,6 +256,10 @@ async function openNode(node: DisplayTreeNode): Promise<void> {
   }
   if (node.category === 'pdf') {
     promptPdfTool(node, 'organize-pdf', '整理 PDF 页面');
+    return;
+  }
+  if (node.category === 'draw') {
+    await openDrawInNewWindow(node);
   }
 }
 
@@ -342,6 +347,40 @@ async function openPsdViewerInNewWindow(node: DisplayTreeNode): Promise<void> {
   } catch (error) {
     popup.close();
     store.notify('error', '无法打开 PSD 查看', error instanceof Error ? error.message : node.name);
+  }
+}
+
+async function openDrawInNewWindow(node: DisplayTreeNode): Promise<void> {
+  contextMenu.value = null;
+  const popup = globalThis.open('about:blank', '_blank');
+  if (!popup) {
+    store.notify('error', '无法打开白板', '浏览器阻止了新窗口，请允许本站打开弹出式窗口。');
+    return;
+  }
+  try {
+    if (!(await store.saveActiveDocument())) {
+      popup.close();
+      return;
+    }
+    if (node.kind !== 'file' || node.handle?.kind !== 'file') {
+      throw new Error('无法读取 Excalidraw 文件。');
+    }
+    const handle = node.handle as FileSystemFileHandle;
+    try {
+      const currentPermission = await handle.queryPermission({ mode: 'readwrite' });
+      if (currentPermission !== 'granted') {
+        await handle.requestPermission({ mode: 'readwrite' });
+      }
+    } catch {
+      // 句柄仍会交给白板，用户可在后续保存时重新授权。
+    }
+    const file = await handle.getFile();
+    closeImagePreview();
+    closeMediaPreview();
+    openWindowFileHandoff(popup, '/draw', 'draw', file, handle);
+  } catch (error) {
+    popup.close();
+    store.notify('error', '无法打开白板', error instanceof Error ? error.message : node.name);
   }
 }
 
@@ -827,6 +866,17 @@ onBeforeUnmount(() => {
             @click="promptPdfTool(contextMenu.node, tool.slug, tool.name)"
           >
             <AppToolIcon :name="tool.icon" :size="16" :stroke-width="1.8" />{{ tool.name }}
+          </button>
+          <div class="context-menu__separator" />
+        </template>
+        <template v-else-if="contextMenu.node.category === 'draw'">
+          <button
+            class="context-menu__item"
+            type="button"
+            role="menuitem"
+            @click="openDrawInNewWindow(contextMenu.node)"
+          >
+            <Chalkboard :size="16" />使用白板打开
           </button>
           <div class="context-menu__separator" />
         </template>

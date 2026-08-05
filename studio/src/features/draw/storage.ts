@@ -2,6 +2,8 @@ export interface DrawDocumentRecord {
   id: string;
   title: string;
   sceneJson: string;
+  fileHandle?: FileSystemFileHandle;
+  fileSyncPending?: boolean;
   schemaVersion: 1;
   createdAt: number;
   updatedAt: number;
@@ -29,6 +31,7 @@ const DATABASE_VERSION = 1;
 const DOCUMENTS_STORE = 'documents';
 const SETTINGS_STORE = 'settings';
 const LIBRARY_STORE = 'library';
+const EXCALIDRAW_FILE_MIME_TYPE = 'application/vnd.excalidraw+json';
 
 export const EMPTY_DRAW_SCENE = JSON.stringify({
   type: 'excalidraw',
@@ -46,6 +49,34 @@ function createDrawId(): string {
     return crypto.randomUUID();
   }
   return `draw:${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+export async function requestDrawFileWritePermission(
+  handle: FileSystemFileHandle,
+  requestIfNeeded = false,
+): Promise<boolean> {
+  const current = await handle.queryPermission({ mode: 'readwrite' });
+  if (current === 'granted') return true;
+  if (!requestIfNeeded) return false;
+  return (await handle.requestPermission({ mode: 'readwrite' })) === 'granted';
+}
+
+export async function writeDrawDocumentFile(
+  handle: FileSystemFileHandle,
+  sceneJson: string,
+  requestPermission = false,
+): Promise<boolean> {
+  if (!(await requestDrawFileWritePermission(handle, requestPermission))) return false;
+
+  const writable = await handle.createWritable();
+  try {
+    await writable.write(new Blob([sceneJson], { type: EXCALIDRAW_FILE_MIME_TYPE }));
+    await writable.close();
+    return true;
+  } catch (error) {
+    await writable.abort(error).catch(() => undefined);
+    throw error;
+  }
 }
 
 function requestAsPromise<T>(request: IDBRequest<T>): Promise<T> {
@@ -116,6 +147,19 @@ async function putRecord<T>(storeName: string, record: T): Promise<void> {
   });
 }
 
+async function updateDrawDocumentRecord(
+  id: string,
+  update: (document: DrawDocumentRecord) => DrawDocumentRecord,
+): Promise<DrawDocumentRecord> {
+  return useStore(DOCUMENTS_STORE, 'readwrite', async (store) => {
+    const document = (await requestAsPromise(store.get(id))) as DrawDocumentRecord | undefined;
+    if (!document) throw new Error('当前画板不存在。');
+    const record = update(document);
+    await requestAsPromise(store.put(record));
+    return record;
+  });
+}
+
 export async function listDrawDocuments(): Promise<DrawDocumentRecord[]> {
   const documents = await useStore(
     DOCUMENTS_STORE,
@@ -137,12 +181,14 @@ export async function getDrawDocument(id: string): Promise<DrawDocumentRecord | 
 export async function createDrawDocument(
   title = '未命名画板',
   sceneJson = EMPTY_DRAW_SCENE,
+  fileHandle?: FileSystemFileHandle,
 ): Promise<DrawDocumentRecord> {
   const timestamp = Date.now();
   const record: DrawDocumentRecord = {
     id: createDrawId(),
     title: title.trim() || '未命名画板',
     sceneJson,
+    ...(fileHandle ? { fileHandle, fileSyncPending: false } : {}),
     schemaVersion: 1,
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -158,41 +204,43 @@ export async function saveDrawDocument(
   id: string,
   sceneJson: string,
   elementCount: number,
+  fileHandle?: FileSystemFileHandle,
+  fileSyncPending?: boolean,
 ): Promise<DrawDocumentRecord> {
-  const document = await getDrawDocument(id);
-  if (!document) throw new Error('当前画板不存在。');
-
-  const record: DrawDocumentRecord = {
+  return updateDrawDocumentRecord(id, (document) => ({
     ...document,
     sceneJson,
+    ...(fileHandle ? { fileHandle } : {}),
+    ...(typeof fileSyncPending === 'boolean' ? { fileSyncPending } : {}),
     elementCount,
     size: new Blob([sceneJson]).size,
     updatedAt: Date.now(),
-  };
-  await putRecord(DOCUMENTS_STORE, record);
-  return record;
+  }));
+}
+
+export async function setDrawDocumentFileSyncPending(
+  id: string,
+  fileSyncPending: boolean,
+): Promise<DrawDocumentRecord> {
+  return updateDrawDocumentRecord(id, (document) => ({
+    ...document,
+    fileSyncPending,
+  }));
 }
 
 export async function renameDrawDocument(id: string, title: string): Promise<DrawDocumentRecord> {
-  const document = await getDrawDocument(id);
-  if (!document) throw new Error('当前画板不存在。');
-
-  const record: DrawDocumentRecord = {
+  return updateDrawDocumentRecord(id, (document) => ({
     ...document,
     title: title.trim() || '未命名画板',
     updatedAt: Date.now(),
-  };
-  await putRecord(DOCUMENTS_STORE, record);
-  return record;
+  }));
 }
 
 export async function touchDrawDocument(id: string): Promise<DrawDocumentRecord> {
-  const document = await getDrawDocument(id);
-  if (!document) throw new Error('当前画板不存在。');
-
-  const record: DrawDocumentRecord = { ...document, lastOpenedAt: Date.now() };
-  await putRecord(DOCUMENTS_STORE, record);
-  return record;
+  return updateDrawDocumentRecord(id, (document) => ({
+    ...document,
+    lastOpenedAt: Date.now(),
+  }));
 }
 
 export async function duplicateDrawDocument(id: string): Promise<DrawDocumentRecord> {

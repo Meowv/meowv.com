@@ -6,12 +6,14 @@ import {
   useRef,
   useState,
   type ChangeEvent,
+  type ReactElement,
   type ReactNode,
   type Ref,
 } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   Excalidraw,
+  getSceneVersion,
   loadFromBlob,
   loadLibraryFromBlob,
   MainMenu,
@@ -27,6 +29,7 @@ import type {
 } from '@excalidraw/excalidraw/types';
 import '@excalidraw/excalidraw/index.css';
 import '@/features/draw/editor.css';
+import { receiveWindowFileHandoff, useFileHandoff } from '@/core/browser/file-handoff';
 import { downloadBlob } from '@/features/image/utils/download';
 import {
   EMPTY_DRAW_SCENE,
@@ -38,10 +41,13 @@ import {
   getDrawSettings,
   listDrawDocuments,
   renameDrawDocument,
+  requestDrawFileWritePermission,
   saveDrawDocument,
   saveDrawLibrary,
+  setDrawDocumentFileSyncPending,
   touchDrawDocument,
   updateDrawSettings,
+  writeDrawDocumentFile,
   type DrawDocumentRecord,
 } from '@/features/draw/storage';
 
@@ -69,6 +75,14 @@ interface SceneSnapshot {
   elements: SceneElements;
   appState: AppState;
   files: BinaryFiles;
+  signature: string;
+}
+
+interface DrawSceneSaveSnapshot {
+  document: DrawDocumentRecord;
+  sceneJson: string;
+  elementCount: number;
+  signature: string;
 }
 
 interface DrawEditorOptions {
@@ -84,16 +98,21 @@ interface CommandItem {
 }
 
 const EMPTY_LIBRARY: LibraryItems = [];
+const EXCALIDRAW_FILE_MIME_TYPE = 'application/vnd.excalidraw+json';
+const EXCALIDRAW_LIBRARY_FILE_MIME_TYPE = 'application/vnd.excalidrawlib+json';
+const drawFileHandoff = useFileHandoff();
 
 function createTemporaryDocument(
   title = '未命名画板',
   sceneJson = EMPTY_DRAW_SCENE,
+  fileHandle?: FileSystemFileHandle,
 ): DrawDocumentRecord {
   const timestamp = Date.now();
   return {
     id: `temporary:${timestamp.toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
     title,
     sceneJson,
+    ...(fileHandle ? { fileHandle, fileSyncPending: false } : {}),
     schemaVersion: 1,
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -145,16 +164,38 @@ function hasDrawnElements(scene: ExcalidrawInitialDataState): boolean {
   return Array.isArray(scene.elements) && scene.elements.some((element) => !element.isDeleted);
 }
 
+function getSceneSignature(
+  elements: SceneElements,
+  appState: AppState,
+  files: BinaryFiles,
+): string {
+  return [
+    getSceneVersion(elements),
+    elements.length,
+    appState.gridSize ?? '',
+    appState.gridStep ?? '',
+    appState.gridModeEnabled ? 1 : 0,
+    appState.viewBackgroundColor ?? '',
+    Object.keys(files).sort().join(','),
+  ].join('|');
+}
+
 function getExtraToolType(type: AppState['activeTool']['type']): ExtraToolType | null {
   return type === 'frame' || type === 'embeddable' || type === 'laser' ? type : null;
 }
 
-function SaveIndicator({ state }: { state: SaveState }): ReactNode {
+function SaveIndicator({
+  state,
+  fileBacked,
+}: {
+  state: SaveState;
+  fileBacked: boolean;
+}): ReactNode {
   const labels: Record<SaveState, string> = {
     loading: '正在恢复…',
-    saved: '已自动保存',
-    saving: '正在保存…',
-    dirty: '有未保存更改',
+    saved: fileBacked ? '已保存到原文件' : '已自动保存',
+    saving: fileBacked ? '正在写回原文件…' : '正在保存…',
+    dirty: fileBacked ? '等待写回原文件' : '有未保存更改',
     failed: '保存失败',
     unavailable: '本地保存不可用',
   };
@@ -209,7 +250,7 @@ function HeaderToggle({ visible, onClick }: { visible: boolean; onClick: () => v
   );
 }
 
-function HeaderIcon({ name }: { name: HeaderIconName }): ReactNode {
+function HeaderIcon({ name }: { name: HeaderIconName }): ReactElement {
   const svgProps = {
     className: 'draw-editor__header-icon',
     viewBox: '0 0 24 24',
@@ -397,19 +438,18 @@ function DrawEditor({ returnToStudio, setTheme }: DrawEditorOptions): ReactNode 
   const saveTimerRef = useRef<number | null>(null);
   const librarySaveTimerRef = useRef<number | null>(null);
   const materialLibraryOpenRef = useRef(false);
-  const savingRef = useRef(false);
-  const queuedSaveRef = useRef(false);
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const fileWriteBlockedRef = useRef(new Set<string>());
   const dirtyRef = useRef(false);
-  const sceneVersionRef = useRef(0);
   const restoringRef = useRef(false);
   const storageEnabledRef = useRef(true);
   const persistRequestedRef = useRef(false);
   const libraryRef = useRef<LibraryItems>(EMPTY_LIBRARY);
+  const pendingNoticeRef = useRef<string | null>(null);
 
   const [documents, setDocuments] = useState<DrawDocumentRecord[]>([]);
   const [activeDocument, setActiveDocument] = useState<DrawDocumentRecord | null>(null);
   const [saveState, setSaveState] = useState<SaveState>('loading');
-  const [notice, setNotice] = useState('');
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [dialog, setDialog] = useState<DialogState>(null);
@@ -422,7 +462,17 @@ function DrawEditor({ returnToStudio, setTheme }: DrawEditorOptions): ReactNode 
   const [activeExtraTool, setActiveExtraTool] = useState<ExtraToolType | null>(null);
   const [studioTheme, setStudioTheme] = useState<'light' | 'dark'>(getStudioTheme);
   const [showEmptyGuide, setShowEmptyGuide] = useState(false);
+  const [initialized, setInitialized] = useState(false);
   const studioThemeRef = useRef(studioTheme);
+
+  const setNotice = useCallback((message: string) => {
+    const api = apiRef.current;
+    if (!api) {
+      pendingNoticeRef.current = message;
+      return;
+    }
+    api.setToast({ message, closable: true, duration: 5000 });
+  }, []);
 
   const replaceDocument = useCallback((record: DrawDocumentRecord) => {
     setDocuments((current) =>
@@ -432,49 +482,193 @@ function DrawEditor({ returnToStudio, setTheme }: DrawEditorOptions): ReactNode 
     );
   }, []);
 
-  const saveCurrentScene = useCallback(async (): Promise<void> => {
-    const document = activeDocumentRef.current;
-    const scene = sceneRef.current;
-    if (!document || !scene || !storageEnabledRef.current || restoringRef.current) return;
+  const enqueueSaveOperation = useCallback((operation: () => Promise<void>): Promise<void> => {
+    const queued = saveQueueRef.current.then(operation, operation);
+    saveQueueRef.current = queued.catch(() => undefined);
+    return queued;
+  }, []);
 
+  const captureCurrentScene = useCallback((): DrawSceneSaveSnapshot | null => {
+    const document = activeDocumentRef.current;
+    if (!document || restoringRef.current) return null;
+
+    const api = apiRef.current;
+    const scene = sceneRef.current;
+    if (!api && !scene) {
+      return {
+        document,
+        sceneJson: document.sceneJson,
+        elementCount: document.elementCount,
+        signature: document.sceneJson,
+      };
+    }
+
+    const elements = api?.getSceneElementsIncludingDeleted() ?? scene!.elements;
+    const appState = api?.getAppState() ?? scene!.appState;
+    const files = api?.getFiles() ?? scene!.files;
+    return {
+      document,
+      sceneJson: serializeAsJSON(elements, appState, files, 'local'),
+      elementCount: elements.length,
+      signature: getSceneSignature(elements, appState, files),
+    };
+  }, []);
+
+  const saveCurrentScene = useCallback((): Promise<void> => {
     if (saveTimerRef.current !== null) {
       window.clearTimeout(saveTimerRef.current);
       saveTimerRef.current = null;
     }
-    if (savingRef.current) {
-      queuedSaveRef.current = true;
-      return;
+    if (!dirtyRef.current) return Promise.resolve();
+
+    let snapshot: DrawSceneSaveSnapshot | null;
+    try {
+      snapshot = captureCurrentScene();
+    } catch (error) {
+      setSaveState('failed');
+      setNotice(error instanceof Error ? error.message : '无法生成白板保存内容。');
+      return Promise.resolve();
+    }
+    if (!snapshot) return Promise.resolve();
+
+    const fileSyncPending = Boolean(
+      snapshot.document.fileHandle && snapshot.document.fileSyncPending,
+    );
+    if (snapshot.sceneJson === snapshot.document.sceneJson && !fileSyncPending) {
+      dirtyRef.current = false;
+      setSaveState(
+        storageEnabledRef.current || snapshot.document.fileHandle ? 'saved' : 'unavailable',
+      );
+      return Promise.resolve();
     }
 
-    savingRef.current = true;
-    setSaveState('saving');
-    const savedVersion = sceneVersionRef.current;
-    try {
-      const sceneJson = serializeAsJSON(scene.elements, scene.appState, scene.files, 'local');
-      const savedDocument = await saveDrawDocument(document.id, sceneJson, scene.elements.length);
-      if (activeDocumentRef.current?.id === savedDocument.id) {
-        activeDocumentRef.current = savedDocument;
-        replaceDocument(savedDocument);
-      }
-      if (sceneVersionRef.current === savedVersion) {
-        dirtyRef.current = false;
-        setSaveState('saved');
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : '本地保存失败。';
-      setNotice(`${message} 请立即下载源文件备份。`);
-      setSaveState('failed');
-    } finally {
-      savingRef.current = false;
-      if (queuedSaveRef.current || dirtyRef.current) {
-        queuedSaveRef.current = false;
-        saveTimerRef.current = window.setTimeout(() => void saveCurrentScene(), 800);
-      }
+    const canSaveToBrowser = storageEnabledRef.current;
+    const canSaveToFile = Boolean(snapshot.document.fileHandle);
+    if (!canSaveToBrowser && !canSaveToFile) {
+      setSaveState('unavailable');
+      return Promise.resolve();
     }
-  }, [replaceDocument]);
+
+    return enqueueSaveOperation(async () => {
+      try {
+        const isActive = activeDocumentRef.current?.id === snapshot.document.id;
+        if (isActive) setSaveState('saving');
+
+        const fileHandle = snapshot.document.fileHandle;
+        let savedDocument: DrawDocumentRecord = {
+          ...snapshot.document,
+          sceneJson: snapshot.sceneJson,
+          ...(fileHandle ? { fileSyncPending: true } : {}),
+          elementCount: snapshot.elementCount,
+          size: new Blob([snapshot.sceneJson]).size,
+          updatedAt: Date.now(),
+        };
+        let browserSaved = false;
+        let browserSaveError: unknown;
+        if (canSaveToBrowser) {
+          try {
+            savedDocument = await saveDrawDocument(
+              snapshot.document.id,
+              snapshot.sceneJson,
+              snapshot.elementCount,
+              fileHandle,
+              Boolean(fileHandle),
+            );
+            browserSaved = true;
+          } catch (error) {
+            browserSaveError = error;
+          }
+        }
+
+        let fileSaved = !fileHandle;
+        let fileSaveError: unknown;
+        let shouldNotifyFileFailure = false;
+        if (fileHandle) {
+          const writeBlocked = fileWriteBlockedRef.current.has(snapshot.document.id);
+          if (writeBlocked) {
+            fileSaveError = new Error('原文件需要重新授权。');
+          } else {
+            try {
+              fileSaved = await writeDrawDocumentFile(fileHandle, snapshot.sceneJson);
+              if (!fileSaved) {
+                fileWriteBlockedRef.current.add(snapshot.document.id);
+                fileSaveError = new Error('原文件需要重新授权。');
+                shouldNotifyFileFailure = true;
+              }
+            } catch (error) {
+              fileSaveError = error;
+              shouldNotifyFileFailure = true;
+            }
+          }
+        }
+
+        if (fileHandle && fileSaved) {
+          fileWriteBlockedRef.current.delete(snapshot.document.id);
+          savedDocument = { ...savedDocument, fileSyncPending: false };
+          if (browserSaved) {
+            try {
+              savedDocument = await setDrawDocumentFileSyncPending(snapshot.document.id, false);
+            } catch (error) {
+              browserSaveError ??= error;
+            }
+          }
+        }
+
+        replaceDocument(savedDocument);
+        if (activeDocumentRef.current?.id === savedDocument.id) {
+          activeDocumentRef.current = savedDocument;
+          setActiveDocument(savedDocument);
+          const primarySaved = fileHandle ? fileSaved : browserSaved;
+          let sceneIsCurrent = false;
+          try {
+            sceneIsCurrent = captureCurrentScene()?.signature === snapshot.signature;
+          } catch {
+            // 下一次场景变更会重新安排保存。
+          }
+          if (primarySaved && sceneIsCurrent) {
+            dirtyRef.current = false;
+            setSaveState('saved');
+          } else if (primarySaved) {
+            dirtyRef.current = true;
+            setSaveState('dirty');
+          } else if (!primarySaved) {
+            dirtyRef.current = true;
+            setSaveState('failed');
+          }
+        }
+
+        if (fileHandle && !fileSaved && shouldNotifyFileFailure) {
+          const message =
+            fileSaveError instanceof Error ? fileSaveError.message : '无法写回原文件。';
+          setNotice(
+            `${browserSaved ? '浏览器内副本已保存，' : ''}${message} 请点击保存按钮重新授权或重试。`,
+          );
+        } else if (browserSaveError) {
+          const message =
+            browserSaveError instanceof Error ? browserSaveError.message : '浏览器内备份失败。';
+          setNotice(
+            fileHandle && fileSaved
+              ? `已写回原文件，但${message}`
+              : `${message} 请立即保存源文件备份。`,
+          );
+        }
+      } catch (error) {
+        if (activeDocumentRef.current?.id === snapshot.document.id) {
+          dirtyRef.current = true;
+          setSaveState('failed');
+        }
+        setNotice(error instanceof Error ? error.message : '本地保存失败。');
+      }
+    });
+  }, [captureCurrentScene, enqueueSaveOperation, replaceDocument]);
 
   const scheduleSave = useCallback(() => {
-    if (!storageEnabledRef.current || restoringRef.current) return;
+    if (
+      restoringRef.current ||
+      (!storageEnabledRef.current && !activeDocumentRef.current?.fileHandle)
+    ) {
+      return;
+    }
     if (saveTimerRef.current !== null) window.clearTimeout(saveTimerRef.current);
     saveTimerRef.current = window.setTimeout(() => void saveCurrentScene(), 800);
   }, [saveCurrentScene]);
@@ -517,31 +711,46 @@ function DrawEditor({ returnToStudio, setTheme }: DrawEditorOptions): ReactNode 
         : { ...nextDocument, lastOpenedAt: Date.now() };
       activeDocumentRef.current = currentDocument;
       sceneRef.current = null;
-      dirtyRef.current = false;
+      const fileSyncPending = Boolean(
+        currentDocument.fileHandle && currentDocument.fileSyncPending,
+      );
+      dirtyRef.current = fileSyncPending;
       setShowEmptyGuide(!hasDrawnElements(nextScene));
       setActiveDocument(currentDocument);
       setTitleDraft(currentDocument.title);
       replaceDocument(currentDocument);
-      setSaveState(storageEnabledRef.current ? 'saved' : 'unavailable');
+      setSaveState(
+        fileSyncPending
+          ? 'dirty'
+          : storageEnabledRef.current || currentDocument.fileHandle
+            ? 'saved'
+            : 'unavailable',
+      );
       if (storageEnabledRef.current) {
         void updateDrawSettings({ activeDocumentId: currentDocument.id });
       }
       window.setTimeout(() => {
         restoringRef.current = false;
+        if (fileSyncPending) scheduleSave();
       }, 0);
     },
-    [replaceDocument, saveCurrentScene],
+    [replaceDocument, saveCurrentScene, scheduleSave],
   );
 
   const createDocument = useCallback(
-    async (title = '未命名画板', sceneJson = EMPTY_DRAW_SCENE): Promise<void> => {
+    async (
+      title = '未命名画板',
+      sceneJson = EMPTY_DRAW_SCENE,
+      fileHandle?: FileSystemFileHandle,
+    ): Promise<DrawDocumentRecord> => {
       await saveCurrentScene();
       const document = storageEnabledRef.current
-        ? await createDrawDocument(title, sceneJson)
-        : createTemporaryDocument(title, sceneJson);
+        ? await createDrawDocument(title, sceneJson, fileHandle)
+        : createTemporaryDocument(title, sceneJson, fileHandle);
       replaceDocument(document);
       await setActive(document, true);
       setLibraryOpen(false);
+      return document;
     },
     [replaceDocument, saveCurrentScene, setActive],
   );
@@ -564,17 +773,13 @@ function DrawEditor({ returnToStudio, setTheme }: DrawEditorOptions): ReactNode 
 
   const exportScene = useCallback(() => {
     const document = activeDocumentRef.current;
-    const api = apiRef.current;
-    const scene = sceneRef.current;
-    if (!document || !scene) return;
+    if (!document) return;
 
     try {
-      const elements = api?.getSceneElementsIncludingDeleted() ?? scene.elements;
-      const appState = api?.getAppState() ?? scene.appState;
-      const files = api?.getFiles() ?? scene.files;
-      const sceneJson = serializeAsJSON(elements, appState, files, 'local');
+      const snapshot = captureCurrentScene();
+      if (!snapshot) return;
       downloadBlob(
-        new Blob([sceneJson], { type: 'application/json;charset=utf-8' }),
+        new Blob([snapshot.sceneJson], { type: EXCALIDRAW_FILE_MIME_TYPE }),
         `${safeFilename(titleDraft || document.title)}.excalidraw`,
       );
       setNotice('已下载白板源文件。');
@@ -582,12 +787,135 @@ function DrawEditor({ returnToStudio, setTheme }: DrawEditorOptions): ReactNode 
       const message = error instanceof Error ? error.message : '源文件导出失败。';
       setNotice(message);
     }
-  }, [titleDraft]);
+  }, [captureCurrentScene, titleDraft]);
+
+  const saveSceneToLocalFile = useCallback(async (): Promise<void> => {
+    const selectedDocument = activeDocumentRef.current;
+    if (!selectedDocument) return;
+
+    let fileHandle = selectedDocument.fileHandle;
+    try {
+      if (fileHandle) {
+        const writable = await requestDrawFileWritePermission(fileHandle, true);
+        if (!writable) {
+          setSaveState('failed');
+          setNotice('未获得原文件写入权限，浏览器内画板仍会保留。');
+          return;
+        }
+      } else {
+        const picker = window.showSaveFilePicker;
+        if (!picker) {
+          exportScene();
+          return;
+        }
+        fileHandle = await picker({
+          suggestedName: `${safeFilename(titleDraft || selectedDocument.title)}.excalidraw`,
+          types: [
+            {
+              description: 'Excalidraw 文件',
+              accept: { [EXCALIDRAW_FILE_MIME_TYPE]: ['.excalidraw'] },
+            },
+          ],
+        });
+      }
+    } catch (error) {
+      if ((error as DOMException).name !== 'AbortError') {
+        setSaveState('failed');
+        setNotice(error instanceof Error ? error.message : '无法获取本地文件写入权限。');
+      }
+      return;
+    }
+
+    if (!fileHandle) return;
+    const targetFileHandle = fileHandle;
+    fileWriteBlockedRef.current.delete(selectedDocument.id);
+
+    let snapshot: DrawSceneSaveSnapshot | null;
+    try {
+      snapshot = captureCurrentScene();
+    } catch (error) {
+      setSaveState('failed');
+      setNotice(error instanceof Error ? error.message : '无法生成白板保存内容。');
+      return;
+    }
+    if (!snapshot || snapshot.document.id !== selectedDocument.id) {
+      setNotice('当前画板已切换，未写入刚才选择的文件。');
+      return;
+    }
+
+    if (saveTimerRef.current !== null) {
+      window.clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+
+    try {
+      await enqueueSaveOperation(async () => {
+        if (activeDocumentRef.current?.id !== snapshot.document.id) {
+          setNotice('当前画板已切换，未写入刚才选择的文件。');
+          return;
+        }
+
+        setSaveState('saving');
+        const fileSaved = await writeDrawDocumentFile(targetFileHandle, snapshot.sceneJson);
+        if (!fileSaved) throw new Error('需要本地文件写入权限才能保存。');
+
+        let savedDocument: DrawDocumentRecord = {
+          ...snapshot.document,
+          fileHandle: targetFileHandle,
+          fileSyncPending: false,
+          sceneJson: snapshot.sceneJson,
+          elementCount: snapshot.elementCount,
+          size: new Blob([snapshot.sceneJson]).size,
+          updatedAt: Date.now(),
+        };
+        let browserSaveError: unknown;
+        if (storageEnabledRef.current) {
+          try {
+            savedDocument = await saveDrawDocument(
+              snapshot.document.id,
+              snapshot.sceneJson,
+              snapshot.elementCount,
+              targetFileHandle,
+              false,
+            );
+          } catch (error) {
+            browserSaveError = error;
+          }
+        }
+
+        replaceDocument(savedDocument);
+        activeDocumentRef.current = savedDocument;
+        setActiveDocument(savedDocument);
+
+        let sceneIsCurrent = false;
+        try {
+          sceneIsCurrent = captureCurrentScene()?.signature === snapshot.signature;
+        } catch {
+          // 下一次场景变更会重新安排保存。
+        }
+        if (sceneIsCurrent) {
+          dirtyRef.current = false;
+          setSaveState('saved');
+        } else {
+          setSaveState('dirty');
+        }
+
+        if (browserSaveError) {
+          const message =
+            browserSaveError instanceof Error ? browserSaveError.message : '浏览器内备份未更新。';
+          setNotice(`已保存到原文件，但${message}`);
+        }
+      });
+    } catch (error) {
+      setSaveState('failed');
+      setNotice(error instanceof Error ? error.message : '写入本地 Excalidraw 文件失败。');
+    }
+  }, [captureCurrentScene, enqueueSaveOperation, exportScene, replaceDocument, titleDraft]);
 
   const exportStoredDocument = useCallback((document: DrawDocumentRecord) => {
     try {
       downloadBlob(
-        new Blob([document.sceneJson], { type: 'application/json;charset=utf-8' }),
+        new Blob([document.sceneJson], { type: EXCALIDRAW_FILE_MIME_TYPE }),
         `${safeFilename(document.title)}.excalidraw`,
       );
       setNotice('已下载白板源文件。');
@@ -603,11 +931,15 @@ function DrawEditor({ returnToStudio, setTheme }: DrawEditorOptions): ReactNode 
       if (appState.theme !== studioThemeRef.current) setTheme(appState.theme);
       const nextExtraTool = getExtraToolType(appState.activeTool.type);
       setActiveExtraTool((current) => (current === nextExtraTool ? current : nextExtraTool));
-      sceneRef.current = { elements, appState, files };
-      sceneVersionRef.current += 1;
+      const signature = getSceneSignature(elements, appState, files);
+      const sceneChanged = sceneRef.current?.signature !== signature;
+      sceneRef.current = { elements, appState, files, signature };
+      if (!sceneChanged) return;
       if (elements.some((element) => !element.isDeleted)) setShowEmptyGuide(false);
       dirtyRef.current = true;
-      setSaveState(storageEnabledRef.current ? 'dirty' : 'unavailable');
+      setSaveState(
+        storageEnabledRef.current || activeDocumentRef.current.fileHandle ? 'dirty' : 'unavailable',
+      );
       requestPersistentStorage();
       scheduleSave();
     },
@@ -623,18 +955,14 @@ function DrawEditor({ returnToStudio, setTheme }: DrawEditorOptions): ReactNode 
     }, 500);
   }, []);
 
-  const importFile = useCallback(
-    async (event: ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
-      event.target.value = '';
-      if (!file) return;
-
+  const openExcalidrawFile = useCallback(
+    async (file: File, fileHandle?: FileSystemFileHandle): Promise<boolean> => {
       try {
         if (file.name.toLowerCase().endsWith('.excalidrawlib')) {
           const items = await loadLibraryFromBlob(file);
           await apiRef.current?.updateLibrary({ libraryItems: items, merge: true });
           setNotice('素材库已合并到本地白板。');
-          return;
+          return true;
         }
 
         if (!file.name.toLowerCase().endsWith('.excalidraw')) {
@@ -648,14 +976,101 @@ function DrawEditor({ returnToStudio, setTheme }: DrawEditorOptions): ReactNode 
           'local',
         );
         const title = file.name.replace(/\.excalidraw$/i, '').trim() || '未命名画板';
-        await createDocument(title, sceneJson);
-        setNotice('已作为新的本地画板打开。');
+        let writable = false;
+        if (fileHandle) {
+          try {
+            writable = await requestDrawFileWritePermission(fileHandle);
+          } catch {
+            // 文件仍以浏览器内画板打开，保存时可重新授权。
+          }
+        }
+        const document = await createDocument(title, sceneJson, fileHandle);
+        if (fileHandle) {
+          if (writable) fileWriteBlockedRef.current.delete(document.id);
+          else fileWriteBlockedRef.current.add(document.id);
+        }
+        setNotice(
+          fileHandle
+            ? writable
+              ? '已打开本地画板，后续修改将自动保存回原文件。'
+              : '已打开本地画板；点击保存按钮授权后可自动写回原文件。'
+            : '已作为新的本地画板打开。',
+        );
+        return true;
       } catch (error) {
         const message = error instanceof Error ? error.message : '无法识别该 Excalidraw 文件。';
         setNotice(message);
+        return false;
       }
     },
     [createDocument],
+  );
+
+  const importFile = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      event.target.value = '';
+      if (file) void openExcalidrawFile(file);
+    },
+    [openExcalidrawFile],
+  );
+
+  const chooseExcalidrawFile = useCallback(async (): Promise<void> => {
+    const picker = window.showOpenFilePicker;
+    if (!picker) {
+      importInputRef.current?.click();
+      return;
+    }
+
+    try {
+      const [handle] = await picker({
+        multiple: false,
+        types: [
+          {
+            description: 'Excalidraw 文件',
+            accept: {
+              [EXCALIDRAW_FILE_MIME_TYPE]: ['.excalidraw'],
+              [EXCALIDRAW_LIBRARY_FILE_MIME_TYPE]: ['.excalidrawlib'],
+            },
+          },
+        ],
+      });
+      if (!handle) return;
+      const isScene = handle.name.toLowerCase().endsWith('.excalidraw');
+      if (isScene) {
+        try {
+          await requestDrawFileWritePermission(handle, true);
+        } catch {
+          // 文件仍会打开，用户可在后续保存时重新授权。
+        }
+      }
+      const file = await handle.getFile();
+      await openExcalidrawFile(file, isScene ? handle : undefined);
+    } catch (error) {
+      if ((error as DOMException).name !== 'AbortError') {
+        setNotice(error instanceof Error ? error.message : '无法打开本地 Excalidraw 文件。');
+      }
+    }
+  }, [openExcalidrawFile]);
+
+  const openStoredDocument = useCallback(
+    async (document: DrawDocumentRecord): Promise<void> => {
+      let writable = true;
+      if (document.fileHandle) {
+        try {
+          writable = await requestDrawFileWritePermission(document.fileHandle, true);
+        } catch {
+          writable = false;
+        }
+        if (writable) fileWriteBlockedRef.current.delete(document.id);
+        else fileWriteBlockedRef.current.add(document.id);
+      }
+      await setActive(document);
+      if (document.fileHandle && !writable) {
+        setNotice('已打开浏览器内画板；点击保存按钮可重新授权写回原文件。');
+      }
+    },
+    [setActive],
   );
 
   const deleteDocument = useCallback(
@@ -747,6 +1162,10 @@ function DrawEditor({ returnToStudio, setTheme }: DrawEditorOptions): ReactNode 
 
   const setExcalidrawApi = useCallback((api: ExcalidrawImperativeAPI) => {
     apiRef.current = api;
+    if (pendingNoticeRef.current) {
+      api.setToast({ message: pendingNoticeRef.current, closable: true, duration: 5000 });
+      pendingNoticeRef.current = null;
+    }
     if (libraryRef.current.length > 0) {
       void api.updateLibrary({ libraryItems: libraryRef.current });
     }
@@ -856,6 +1275,8 @@ function DrawEditor({ returnToStudio, setTheme }: DrawEditorOptions): ReactNode 
         const temporary = createTemporaryDocument();
         setDocuments([temporary]);
         await setActive(temporary, true);
+      } finally {
+        if (active) setInitialized(true);
       }
     };
     void restore();
@@ -863,6 +1284,18 @@ function DrawEditor({ returnToStudio, setTheme }: DrawEditorOptions): ReactNode 
       active = false;
     };
   }, [createDocument, setActive]);
+
+  useEffect(() => {
+    if (!initialized) return;
+    const pendingHandoff = drawFileHandoff.takeHandoff('draw');
+    if (pendingHandoff) {
+      void openExcalidrawFile(pendingHandoff.file, pendingHandoff.handle);
+    }
+    return receiveWindowFileHandoff(
+      'draw',
+      (file, handle) => void openExcalidrawFile(file, handle),
+    );
+  }, [initialized, openExcalidrawFile]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -893,7 +1326,17 @@ function DrawEditor({ returnToStudio, setTheme }: DrawEditorOptions): ReactNode 
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLocaleLowerCase('en-US') === 'o') {
         event.preventDefault();
-        importInputRef.current?.click();
+        void chooseExcalidrawFile();
+        return;
+      }
+      if ((event.metaKey || event.ctrlKey) && event.key.toLocaleLowerCase('en-US') === 's') {
+        event.preventDefault();
+        void saveSceneToLocalFile();
+        return;
+      }
+      if ((event.metaKey || event.ctrlKey) && event.code === 'Slash') {
+        event.preventDefault();
+        openCommandPalette();
         return;
       }
       if (event.key !== 'Escape') return;
@@ -917,7 +1360,15 @@ function DrawEditor({ returnToStudio, setTheme }: DrawEditorOptions): ReactNode 
       if (librarySaveTimerRef.current !== null) window.clearTimeout(librarySaveTimerRef.current);
       void saveCurrentScene();
     };
-  }, [commandPaletteOpen, dialog, libraryOpen, saveCurrentScene]);
+  }, [
+    chooseExcalidrawFile,
+    commandPaletteOpen,
+    dialog,
+    libraryOpen,
+    openCommandPalette,
+    saveCurrentScene,
+    saveSceneToLocalFile,
+  ]);
 
   const activeInitialData = useMemo(
     () => (activeDocument ? parseScene(activeDocument.sceneJson) : null),
@@ -936,7 +1387,7 @@ function DrawEditor({ returnToStudio, setTheme }: DrawEditorOptions): ReactNode 
       label: '打开本地 Excalidraw 文件',
       keywords: '打开 导入 文件 excalidraw',
       shortcut: 'Cmd+O',
-      onSelect: () => importInputRef.current?.click(),
+      onSelect: () => void chooseExcalidrawFile(),
     },
     {
       label: '查看本地画板',
@@ -944,9 +1395,10 @@ function DrawEditor({ returnToStudio, setTheme }: DrawEditorOptions): ReactNode 
       onSelect: () => setLibraryOpen(true),
     },
     {
-      label: '下载 Excalidraw 文件',
-      keywords: '下载 导出 文件',
-      onSelect: exportScene,
+      label: '保存 Excalidraw 文件',
+      keywords: '保存 下载 导出 文件',
+      shortcut: 'Cmd+S',
+      onSelect: () => void saveSceneToLocalFile(),
     },
     {
       label: '导出图片',
@@ -988,35 +1440,43 @@ function DrawEditor({ returnToStudio, setTheme }: DrawEditorOptions): ReactNode 
   const mainMenu = createElement(
     MainMenu,
     null,
-    createElement(MainMenu.DefaultItems.LoadScene),
-    createElement(MainMenu.DefaultItems.SaveToActiveFile),
-    createElement(MainMenu.DefaultItems.Export),
+    createElement(MainMenu.Item, {
+      'aria-label': '打开本地 Excalidraw 文件',
+      icon: HeaderIcon({ name: 'open' }),
+      onSelect: () => void chooseExcalidrawFile(),
+      shortcut: 'Cmd+O',
+      children: '打开本地文件',
+    }),
+    createElement(MainMenu.Item, {
+      'aria-label': '保存 Excalidraw 文件',
+      icon: HeaderIcon({ name: 'download' }),
+      onSelect: () => void saveSceneToLocalFile(),
+      shortcut: 'Cmd+S',
+      children: '保存到本地',
+    }),
     createElement(MainMenu.DefaultItems.SaveAsImage),
     createElement(MainMenu.DefaultItems.SearchMenu),
-    createElement(
-      MainMenu.Item,
-      {
-        'aria-label': '命令面板',
-        icon: createElement(
-          'svg',
-          {
-            'aria-hidden': true,
-            fill: 'none',
-            stroke: 'currentColor',
-            strokeLinecap: 'round',
-            strokeLinejoin: 'round',
-            strokeWidth: 1.7,
-            viewBox: '0 0 24 24',
-          },
-          createElement('path', { d: 'm13 2 -10 12h7l-1 8 12 -15h-8z' }),
-        ),
-        onSelect: openCommandPalette,
-        shortcut: 'Cmd+/',
-      },
-      '命令面板',
-    ),
-    createElement(MainMenu.DefaultItems.Help),
+    createElement(MainMenu.Item, {
+      'aria-label': '命令面板',
+      icon: createElement(
+        'svg',
+        {
+          'aria-hidden': true,
+          fill: 'none',
+          stroke: 'currentColor',
+          strokeLinecap: 'round',
+          strokeLinejoin: 'round',
+          strokeWidth: 1.7,
+          viewBox: '0 0 24 24',
+        },
+        createElement('path', { d: 'm13 2 -10 12h7l-1 8 12 -15h-8z' }),
+      ),
+      onSelect: openCommandPalette,
+      shortcut: 'Cmd+/',
+      children: '命令面板',
+    }),
     createElement(MainMenu.DefaultItems.ClearCanvas),
+    createElement(MainMenu.DefaultItems.Help),
     createElement(MainMenu.Separator),
     createElement(MainMenu.DefaultItems.ToggleTheme),
     createElement(MainMenu.DefaultItems.ChangeCanvasBackground),
@@ -1192,7 +1652,7 @@ function DrawEditor({ returnToStudio, setTheme }: DrawEditorOptions): ReactNode 
             }),
             HeaderButton({
               children: HeaderIcon({ name: 'open' }),
-              onClick: () => importInputRef.current?.click(),
+              onClick: () => void chooseExcalidrawFile(),
               title: '打开 .excalidraw 文件',
               iconOnly: true,
             }),
@@ -1205,8 +1665,8 @@ function DrawEditor({ returnToStudio, setTheme }: DrawEditorOptions): ReactNode 
             }),
             HeaderButton({
               children: HeaderIcon({ name: 'download' }),
-              onClick: exportScene,
-              title: '下载 .excalidraw 文件',
+              onClick: () => void saveSceneToLocalFile(),
+              title: '保存 .excalidraw 文件',
               iconOnly: true,
             }),
             HeaderButton({
@@ -1245,7 +1705,8 @@ function DrawEditor({ returnToStudio, setTheme }: DrawEditorOptions): ReactNode 
       ref: importInputRef,
       className: 'draw-editor__file-input',
       type: 'file',
-      accept: '.excalidraw,.excalidrawlib,application/json',
+      accept:
+        '.excalidraw,.excalidrawlib,application/vnd.excalidraw+json,application/vnd.excalidrawlib+json,application/json',
       onChange: importFile,
     }),
     activeDocument
@@ -1254,7 +1715,7 @@ function DrawEditor({ returnToStudio, setTheme }: DrawEditorOptions): ReactNode 
           { className: 'draw-editor__canvas', key: activeDocument.id },
           createElement(Excalidraw, editorProps, mainMenu),
           showEmptyGuide
-            ? EmptyGuide({ onOpen: () => importInputRef.current?.click(), onHelp: openHelpDialog })
+            ? EmptyGuide({ onOpen: () => void chooseExcalidrawFile(), onHelp: openHelpDialog })
             : null,
         )
       : createElement(
@@ -1262,20 +1723,8 @@ function DrawEditor({ returnToStudio, setTheme }: DrawEditorOptions): ReactNode 
           { className: 'draw-editor__loading', role: 'status' },
           '正在准备本地白板…',
         ),
-    SaveIndicator({ state: saveState }),
+    SaveIndicator({ state: saveState, fileBacked: Boolean(activeDocument?.fileHandle) }),
     commandPaletteContent,
-    notice
-      ? createElement(
-          'div',
-          { className: 'draw-editor__notice', role: 'status' },
-          createElement('span', null, notice),
-          createElement(
-            'button',
-            { type: 'button', onClick: () => setNotice(''), 'aria-label': '关闭提示' },
-            '×',
-          ),
-        )
-      : null,
     libraryOpen
       ? createElement(
           'aside',
@@ -1322,7 +1771,7 @@ function DrawEditor({ returnToStudio, setTheme }: DrawEditorOptions): ReactNode 
                       {
                         className: 'draw-editor__document-open',
                         type: 'button',
-                        onClick: () => void setActive(document),
+                        onClick: () => void openStoredDocument(document),
                       },
                       createElement('strong', null, document.title),
                       createElement(

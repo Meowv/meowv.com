@@ -1,10 +1,11 @@
 import { shallowRef } from 'vue';
 
-export type StudioFeature = 'image' | 'psd' | 'markdown' | 'pdf' | 'office';
+export type StudioFeature = 'image' | 'psd' | 'markdown' | 'pdf' | 'office' | 'draw';
 
 export interface FileHandoff {
   feature: StudioFeature;
   file: File;
+  handle?: FileSystemFileHandle;
   createdAt: number;
 }
 
@@ -28,6 +29,7 @@ const extensionGroups: Record<StudioFeature, Set<string>> = {
   markdown: new Set(['markdown', 'md', 'mdown', 'mkd', 'txt']),
   pdf: new Set(['pdf']),
   office: new Set(['csv', 'docx', 'pptx', 'xlsx']),
+  draw: new Set(['excalidraw']),
 };
 
 export function featureForFile(file: File): StudioFeature | null {
@@ -46,14 +48,24 @@ export function routeForFeature(feature: StudioFeature): string {
     markdown: '/markdown',
     pdf: '/pdf/merge-pdf',
     office: '/office',
+    draw: '/draw',
   };
 
   return defaultRoutes[feature];
 }
 
-export function handoffFile(file: File, feature = featureForFile(file)): FileHandoff | null {
+export function handoffFile(
+  file: File,
+  feature = featureForFile(file),
+  handle?: FileSystemFileHandle,
+): FileHandoff | null {
   if (!feature) return null;
-  const handoff = { feature, file, createdAt: Date.now() } satisfies FileHandoff;
+  const handoff = {
+    feature,
+    file,
+    ...(handle ? { handle } : {}),
+    createdAt: Date.now(),
+  } satisfies FileHandoff;
   currentHandoff.value = handoff;
   return handoff;
 }
@@ -134,12 +146,13 @@ export function receiveWindowFileHandoff(
 }
 
 export function useFileHandoff() {
-  const take = (feature: StudioFeature): File | null => {
+  const takeHandoff = (feature: StudioFeature): FileHandoff | null => {
     if (currentHandoff.value?.feature !== feature) return null;
-    const file = currentHandoff.value.file;
+    const handoff = currentHandoff.value;
     currentHandoff.value = null;
-    return file;
+    return handoff;
   };
+  const take = (feature: StudioFeature): File | null => takeHandoff(feature)?.file ?? null;
 
-  return { currentHandoff, take };
+  return { currentHandoff, take, takeHandoff };
 }
