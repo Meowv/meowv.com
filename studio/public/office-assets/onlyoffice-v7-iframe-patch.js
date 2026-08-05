@@ -1,7 +1,7 @@
 /**
  * OnlyOffice v7 浏览器补丁。
  *
- * 仅处理 Safari 的 requestIdleCallback 兼容，以及电子表格编辑器的字体路径映射。
+ * 处理 Safari 的 requestIdleCallback 兼容，并为所有编辑器映射桌面端字体路径。
  * 路径从脚本自身地址推导，因此支持站点根目录和子目录部署。
  */
 (function () {
@@ -36,7 +36,6 @@
     .catch(function () {});
 
   var fallbackFont = 'NotoSansSC-VF.ttf';
-  var disableFontRemap = window.location.pathname.indexOf('spreadsheeteditor') === -1;
 
   function extractFilename(path) {
     return path.split(/[/\\]/).pop().toLowerCase();
@@ -44,7 +43,7 @@
 
   var originalOpen = window.XMLHttpRequest.prototype.open;
   window.XMLHttpRequest.prototype.open = function (method, url) {
-    if (!disableFontRemap && typeof url === 'string') {
+    if (typeof url === 'string') {
       var fileName;
       if (url.indexOf('ascdesktop://fonts/') === 0) {
         fileName = extractFilename(url.slice(19));
