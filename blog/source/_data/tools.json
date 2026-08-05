@@ -2,7 +2,7 @@
   {
     "slug": "studio",
     "name": "Meowv Studio",
-    "description": "Meowv Studio 是在浏览器中处理图片、PDF、Markdown 与 Office 文档，内容始终留在你的设备上的本地文件工作台",
+    "description": "无需上传文件的本地文件工作台：在浏览器中处理图片、PDF、Markdown 与 Office 文档，内容始终留在你的设备上",
     "emoji": "⚙ ⚙ ⚙",
     "url": "https://studio.meowv.com",
     "category": "效率办公",
@@ -23,14 +23,6 @@
     "description": "日期加减、间隔与工作日天数计算",
     "emoji": "📅",
     "url": "/tools/date-calculator",
-    "category": "效率办公"
-  },
-  {
-    "slug": "whiteboard",
-    "name": "白板工具",
-    "description": "在线白板绘图工具，支持画笔、马赛克、橡皮擦、文字、框选、图片上传，撤销重做，导出",
-    "emoji": "✏️",
-    "url": "/tools/whiteboard",
     "category": "效率办公"
   },
   {
