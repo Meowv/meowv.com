@@ -9,7 +9,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       title: 'Meowv Studio · 本地文件工作台',
       description:
-        'Meowv Studio 是在浏览器中处理图片、PDF、Markdown 与 Office 文档，内容始终留在你的设备上的本地文件工作台。',
+        '无需上传文件的本地文件工作台：在浏览器中处理图片、PDF、Markdown 与 Office 文档，内容始终留在你的设备上。',
     },
   },
   {
