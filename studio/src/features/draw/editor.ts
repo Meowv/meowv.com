@@ -1193,7 +1193,7 @@ function DrawEditor({ returnToStudio, setTheme }: DrawEditorOptions): ReactNode 
             HeaderButton({
               children: HeaderIcon({ name: 'open' }),
               onClick: () => importInputRef.current?.click(),
-              title: '打开 .excalidraw 或 .excalidrawlib 文件',
+              title: '打开 .excalidraw 文件',
               iconOnly: true,
             }),
             HeaderButton({
