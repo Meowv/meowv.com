@@ -2,7 +2,7 @@
 
 .markdown-studio {
   color-scheme: light;
-  --color-brand: #2563eb;
+  --color-brand: var(--menu-markdown);
   --color-brand-hover: #1d4ed8;
   --color-brand-soft: #eff6ff;
   --color-brand-border: #bfdbfe;
@@ -38,7 +38,7 @@
 
 .markdown-studio--dark {
   color-scheme: dark;
-  --color-brand: #60a5fa;
+  --color-brand: var(--menu-markdown-foreground);
   --color-brand-hover: #93c5fd;
   --color-brand-soft: #172554;
   --color-brand-border: #1d4ed8;

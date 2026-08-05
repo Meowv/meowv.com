@@ -1,12 +1,12 @@
 .ocr-page {
-  --ocr-primary: #0f766e;
+  --ocr-primary: var(--menu-ocr);
   --ocr-primary-soft: #e2f3ef;
   --ocr-primary-border: #a7dbd1;
   min-height: calc(100vh - var(--header-height));
   color: var(--color-text);
 }
 :root[data-theme='dark'] .ocr-page {
-  --ocr-primary: #5eead4;
+  --ocr-primary: var(--menu-ocr-foreground);
   --ocr-primary-soft: #123b39;
   --ocr-primary-border: #256d65;
 }

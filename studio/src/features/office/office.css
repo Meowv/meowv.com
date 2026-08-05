@@ -1,7 +1,7 @@
 .office-studio {
-  --brand: var(--color-brand);
-  --brand-strong: var(--color-brand-strong);
-  --brand-soft: var(--color-brand-soft);
+  --brand: var(--menu-office);
+  --brand-strong: #3e7200;
+  --brand-soft: #edf6df;
   --ink: var(--color-text);
   --ink-soft: var(--color-text-muted);
   --surface: var(--color-surface-solid);
@@ -13,6 +13,9 @@
 }
 
 :root[data-theme='dark'] .office-studio {
+  --brand: var(--menu-office-foreground);
+  --brand-strong: #c4ec8d;
+  --brand-soft: #243b16;
   --shadow-sm: 0 8px 24px rgb(0 0 0 / 28%);
 }
 

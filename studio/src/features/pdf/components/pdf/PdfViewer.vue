@@ -56,7 +56,7 @@ function overlayBaseStyle(): CSSProperties {
   const fontSize = clamp((props.overlayFontSize ?? 36) * 0.7, 12, 72);
   return {
     opacity: props.overlayOpacity ?? 0.35,
-    color: props.overlayColor ?? '#d84a4a',
+    color: props.overlayColor ?? 'var(--color-primary)',
     fontSize: `${fontSize}px`,
   };
 }

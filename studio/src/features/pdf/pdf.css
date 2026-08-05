@@ -1,5 +1,5 @@
 .pdf-studio {
-  --color-primary: #d84a4a;
+  --color-primary: var(--menu-pdf);
   --color-primary-hover: #c43f3f;
   --color-primary-strong: #a93434;
   --color-primary-button: #b93838;
@@ -20,14 +20,14 @@
   --color-danger: #b91c1c;
   --shadow-sm: 0 1px 2px rgb(16 24 40 / 4%), 0 2px 8px rgb(16 24 40 / 4%);
   --shadow-md: 0 12px 32px rgb(16 24 40 / 8%);
-  --shadow-primary: 0 10px 24px rgb(216 74 74 / 22%);
+  --shadow-primary: 0 10px 24px color-mix(in srgb, var(--color-primary) 22%, transparent);
   --container-width: 1180px;
   --header-height: 70px;
 }
 
 :root[data-theme='dark'] .pdf-studio {
   color-scheme: dark;
-  --color-primary: #f87171;
+  --color-primary: var(--menu-pdf-foreground);
   --color-primary-hover: #fca5a5;
   --color-primary-strong: #fecaca;
   --color-primary-button: #b91c1c;
@@ -2652,7 +2652,7 @@
   align-items: center;
   justify-content: center;
   transform: translate(-50%, -50%) rotate(-24deg);
-  color: #d84a4a;
+  color: var(--color-primary);
   font-size: clamp(18px, 4vw, 42px);
   font-weight: 800;
   line-height: 1.2;

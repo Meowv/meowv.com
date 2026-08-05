@@ -93,16 +93,20 @@ button {
 }
 
 .studio-shell--markdown {
-  --nav-accent: #2563eb;
+  --nav-accent: var(--menu-markdown-foreground);
+}
+
+.studio-shell--draw {
+  --nav-accent: var(--menu-draw-foreground);
 }
 
 .studio-header-toggle {
   position: fixed;
   z-index: 40;
-  top: calc(var(--header-height) - 15px);
+  top: calc(var(--header-height) - 13px);
   left: 50%;
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   display: grid;
   padding: 0;
   border: 1px solid color-mix(in srgb, var(--nav-accent, var(--color-brand)) 82%, transparent);
@@ -122,7 +126,12 @@ button {
 }
 
 .studio-header-toggle--collapsed {
-  top: 12px;
+  top: 14px;
+}
+
+.studio-header-toggle > svg {
+  width: 10px;
+  height: 10px;
 }
 
 .studio-header-toggle:hover,
@@ -214,25 +223,29 @@ button {
 }
 
 .nav-image {
-  --nav-accent: var(--menu-image);
+  --nav-accent: var(--menu-image-foreground);
 }
 .nav-markdown {
-  --nav-accent: var(--menu-markdown);
+  --nav-accent: var(--menu-markdown-foreground);
 }
 .nav-pdf {
-  --nav-accent: var(--menu-pdf);
+  --nav-accent: var(--menu-pdf-foreground);
 }
 .nav-office {
-  --nav-accent: var(--menu-office);
+  --nav-accent: var(--menu-office-foreground);
 }
 .nav-ocr {
-  --nav-accent: var(--menu-ocr);
+  --nav-accent: var(--menu-ocr-foreground);
+}
+.nav-draw {
+  --nav-accent: var(--menu-draw-foreground);
 }
 
 .nav-image svg,
 .nav-markdown svg,
 .nav-pdf svg,
-.nav-office svg {
+.nav-office svg,
+.nav-draw svg {
   color: var(--nav-accent);
 }
 .nav-ocr svg {
@@ -652,16 +665,8 @@ body.has-dialog-open {
 
 .home-copy__product--animated {
   width: fit-content;
-  background: linear-gradient(
-    105deg,
-    var(--menu-image) 0%,
-    var(--menu-pdf) 20%,
-    var(--menu-ocr) 40%,
-    var(--menu-markdown) 60%,
-    var(--menu-office) 80%,
-    var(--menu-image) 100%
-  );
-  background-size: 160% 100%;
+  background: var(--studio-menu-gradient);
+  background-size: 180% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -681,16 +686,7 @@ body.has-dialog-open {
   left: 0;
   height: 4px;
   border-radius: 999px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--menu-image),
-    var(--menu-pdf),
-    var(--menu-ocr),
-    var(--menu-markdown),
-    var(--menu-office),
-    transparent
-  );
+  background: var(--studio-menu-gradient);
   background-size: 200% 100%;
   content: '';
   animation: studio-title-flow 4s ease-in-out infinite reverse;
@@ -741,12 +737,14 @@ body.has-dialog-open {
 }
 
 .home-shortcuts__item {
+  --shortcut-accent: var(--color-brand);
+  --shortcut-solid: var(--color-brand);
   display: flex;
   min-height: 84px;
   padding: 14px 16px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  color: var(--color-text);
+  color: var(--shortcut-accent);
   background: color-mix(in srgb, var(--color-surface-solid) 76%, transparent);
   align-items: center;
   gap: 12px;
@@ -774,7 +772,12 @@ body.has-dialog-open {
   width: 40px;
   height: 40px;
   border-radius: 12px;
+  background: color-mix(in srgb, var(--shortcut-solid) 10%, var(--color-surface-solid));
   place-items: center;
+}
+
+:root[data-theme='dark'] .home-shortcuts__icon {
+  background: color-mix(in srgb, var(--shortcut-solid) 24%, var(--color-surface-solid));
 }
 
 .home-shortcuts__item strong,
@@ -795,59 +798,33 @@ body.has-dialog-open {
 }
 
 .home-shortcuts__item--image {
-  color: #2563eb;
-}
-
-.home-shortcuts__item--image .home-shortcuts__icon {
-  background: #eaf2ff;
-}
-
-:root[data-theme='dark'] .home-shortcuts__item--image .home-shortcuts__icon {
-  background: #172554;
+  --shortcut-accent: var(--menu-image-foreground);
+  --shortcut-solid: var(--menu-image);
 }
 
 .home-shortcuts__item--ocr {
-  color: #0f766e;
-}
-
-.home-shortcuts__item--ocr .home-shortcuts__icon {
-  background: #e2f3ef;
-}
-
-:root[data-theme='dark'] .home-shortcuts__item--ocr .home-shortcuts__icon {
-  background: #123b39;
+  --shortcut-accent: var(--menu-ocr-foreground);
+  --shortcut-solid: var(--menu-ocr);
 }
 
 .home-shortcuts__item--pdf {
-  color: #c2413d;
-}
-
-.home-shortcuts__item--pdf .home-shortcuts__icon {
-  background: #fff0ee;
-}
-
-:root[data-theme='dark'] .home-shortcuts__item--pdf .home-shortcuts__icon {
-  background: #3b1d21;
+  --shortcut-accent: var(--menu-pdf-foreground);
+  --shortcut-solid: var(--menu-pdf);
 }
 
 .home-shortcuts__item--markdown {
-  color: #4f46e5;
-}
-
-.home-shortcuts__item--markdown .home-shortcuts__icon {
-  background: #eeedff;
-}
-
-:root[data-theme='dark'] .home-shortcuts__item--markdown .home-shortcuts__icon {
-  background: #27224a;
+  --shortcut-accent: var(--menu-markdown-foreground);
+  --shortcut-solid: var(--menu-markdown);
 }
 
 .home-shortcuts__item--office {
-  color: var(--color-brand-strong);
+  --shortcut-accent: var(--menu-office-foreground);
+  --shortcut-solid: var(--menu-office);
 }
 
-.home-shortcuts__item--office .home-shortcuts__icon {
-  background: var(--color-brand-soft);
+.home-shortcuts__item--draw {
+  --shortcut-accent: var(--menu-draw-foreground);
+  --shortcut-solid: var(--menu-draw);
 }
 
 .home-trust {
@@ -1105,11 +1082,39 @@ body.has-dialog-open {
   padding: clamp(72px, 9vw, 128px) 0;
 }
 
+.empty-page {
+  display: grid;
+  height: 100%;
+  text-align: center;
+  place-items: center;
+}
+
 .empty-page h1,
 .feature-placeholder h1,
 .app-error h1 {
   font-size: clamp(38px, 5vw, 62px);
 }
+
+.empty-page h1 {
+  max-width: none;
+  font-size: 34px;
+  white-space: nowrap;
+}
+
+.empty-page h1.empty-page__title--wrapped {
+  max-width: 860px;
+  white-space: normal;
+}
+
+@media (max-width: 900px) {
+  .empty-page h1,
+  .empty-page h1.empty-page__title--wrapped {
+    max-width: 100%;
+    font-size: 32px;
+    white-space: normal;
+  }
+}
+
 .empty-page > p,
 .feature-placeholder > p:not(.eyebrow) {
   max-width: 760px;

@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import {
   IconBrandOffice,
+  IconChalkboard,
   IconChevronDown,
   IconChevronUp,
   IconFileTypePdf,
@@ -20,17 +21,22 @@ import { workspaceActive, workspaceHeaderVisible } from '@/core/shared/route-sta
 
 const route = useRoute();
 const isMarkdownPage = computed(() => route.meta.feature === 'markdown');
-const isImmersive = computed(() => route.meta.feature === 'markdown' || workspaceActive.value);
+const isDrawPage = computed(() => route.meta.feature === 'draw');
+const isImmersive = computed(
+  () => route.meta.feature === 'markdown' || isDrawPage.value || workspaceActive.value,
+);
 const markdownHeaderVisible = ref(true);
 const MARKDOWN_HEADER_PREFERENCE_KEY = `${STORAGE_POLICY.namespace('markdown')}:header-collapsed`;
 const showHeader = computed(() =>
-  isMarkdownPage.value
-    ? markdownHeaderVisible.value
-    : !workspaceActive.value || workspaceHeaderVisible.value,
+  isDrawPage.value
+    ? false
+    : isMarkdownPage.value
+      ? markdownHeaderVisible.value
+      : !workspaceActive.value || workspaceHeaderVisible.value,
 );
 const showFooter = computed(
   () =>
-    ['home', 'image', 'ocr', 'pdf', 'office'].includes(String(route.name)) &&
+    ['home', 'image', 'ocr', 'pdf', 'office', 'not-found'].includes(String(route.name)) &&
     !workspaceActive.value,
 );
 const donationDialogOpen = ref(false);
@@ -95,6 +101,7 @@ const primaryRoutes = [
   { label: 'OCR', to: '/ocr', icon: IconTextScan2, className: 'nav-ocr' },
   { label: 'Markdown', to: '/markdown', icon: IconMarkdown, className: 'nav-markdown' },
   { label: 'Office', to: '/office', icon: IconBrandOffice, className: 'nav-office' },
+  { label: 'Whiteboard', to: '/draw', icon: IconChalkboard, className: 'nav-draw' },
 ];
 </script>
 
@@ -104,6 +111,7 @@ const primaryRoutes = [
     :class="{
       'studio-shell--immersive': isImmersive,
       'studio-shell--markdown': isMarkdownPage,
+      'studio-shell--draw': isDrawPage,
       'studio-shell--with-footer': showFooter,
     }"
   >

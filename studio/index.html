@@ -11,12 +11,15 @@
     <meta name="color-scheme" content="light" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: https://www.googletagmanager.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: http: https:; media-src 'self' blob:; font-src 'self' blob: data:; connect-src 'self' blob: http: https:; frame-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: https://www.googletagmanager.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: http: https:; media-src 'self' blob:; font-src 'self' blob: data:; connect-src 'self' blob: http: https:; frame-src 'self' blob: http: https:; object-src 'none'; base-uri 'self'; form-action 'self'"
     />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" type="image/png" href="/brand/studio.png" />
     <link rel="apple-touch-icon" href="/icons/studio-192.png" />
     <title>Meowv Studio · 本地文件工作台</title>
+    <script>
+      window.EXCALIDRAW_ASSET_PATH = '/excalidraw-assets/';
+    </script>
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-EPJQW4WXS0"></script>
     <script>
       window.dataLayer = window.dataLayer || [];

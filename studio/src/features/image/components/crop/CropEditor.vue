@@ -655,7 +655,7 @@ onBeforeUnmount(() => {
 
 .crop-range {
   height: 4px;
-  accent-color: #4f46e5;
+  accent-color: var(--primary);
   cursor: pointer;
 }
 

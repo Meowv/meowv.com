@@ -63,6 +63,16 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/draw',
+    name: 'draw',
+    component: () => import('@/features/draw/DrawPage.vue'),
+    meta: {
+      title: 'Whiteboard · Meowv Studio',
+      description: '在浏览器本地绘制草图、流程图和白板内容，画板无需上传。',
+      feature: 'draw',
+    },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
     component: () => import('@/pages/NotFoundPage.vue'),

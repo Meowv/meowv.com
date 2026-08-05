@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import {
   IconBrandOffice,
+  IconChalkboard,
   IconFileTypePdf,
   IconMarkdown,
   IconPhoto,
@@ -49,6 +50,13 @@ const quickRoutes = [
     to: '/office',
     icon: IconBrandOffice,
     tone: 'office',
+  },
+  {
+    label: 'Whiteboard',
+    description: '草图、流程图、无限画布',
+    to: '/draw',
+    icon: IconChalkboard,
+    tone: 'draw',
   },
 ];
 

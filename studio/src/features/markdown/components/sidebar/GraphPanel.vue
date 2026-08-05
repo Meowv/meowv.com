@@ -84,7 +84,7 @@ function nodeColor(node: GraphNode): string {
   if (node.type === 'missing') {
     return '#98a2b3';
   }
-  return '#2563eb';
+  return 'var(--color-brand)';
 }
 
 function renderGraph(): void {
