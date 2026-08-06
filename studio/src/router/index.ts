@@ -53,7 +53,7 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
-    path: '/office/:format?',
+    path: '/office',
     name: 'office',
     component: () => import('@/features/office/OfficeStudioPage.vue'),
     meta: {
