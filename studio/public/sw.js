@@ -1,6 +1,6 @@
 /* global self, caches, fetch, URL */
 
-const CACHE_VERSION = '2026-08-01-v1';
+const CACHE_VERSION = 'v1';
 const CACHE_PREFIX = 'meowv-studio-';
 const SHELL_CACHE = `${CACHE_PREFIX}shell-${CACHE_VERSION}`;
 const ASSET_CACHE = `${CACHE_PREFIX}assets-${CACHE_VERSION}`;
