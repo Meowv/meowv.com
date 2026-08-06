@@ -71,6 +71,7 @@ export {
   IconSearch as Search,
   IconSettings as Settings,
   IconShieldCheck as ShieldCheck,
+  IconSitemap as Sitemap,
   IconSparkles as Sparkles,
   IconSun as Sun,
   IconTable as Table2,

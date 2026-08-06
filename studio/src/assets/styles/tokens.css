@@ -22,20 +22,23 @@
   --menu-markdown: #2563eb;
   --menu-office: #4d7c0f;
   --menu-draw: #6965db;
+  --menu-mind: #2563a8;
   --menu-image-foreground: var(--menu-image);
   --menu-pdf-foreground: var(--menu-pdf);
   --menu-ocr-foreground: var(--menu-ocr);
   --menu-markdown-foreground: var(--menu-markdown);
   --menu-office-foreground: var(--menu-office);
   --menu-draw-foreground: var(--menu-draw);
+  --menu-mind-foreground: var(--menu-mind);
   --studio-menu-gradient: linear-gradient(
     90deg in oklch,
     var(--menu-image-foreground) 0%,
-    var(--menu-pdf-foreground) 16.67%,
-    var(--menu-ocr-foreground) 33.33%,
-    var(--menu-markdown-foreground) 50%,
-    var(--menu-office-foreground) 66.67%,
-    var(--menu-draw-foreground) 83.33%,
+    var(--menu-pdf-foreground) 14.29%,
+    var(--menu-ocr-foreground) 28.57%,
+    var(--menu-markdown-foreground) 42.86%,
+    var(--menu-office-foreground) 57.14%,
+    var(--menu-draw-foreground) 71.43%,
+    var(--menu-mind-foreground) 85.71%,
     var(--menu-image-foreground) 100%
   );
   --shadow-soft: 0 18px 55px rgba(62, 82, 51, 0.1);
@@ -66,6 +69,7 @@
   --menu-markdown-foreground: #60a5fa;
   --menu-office-foreground: #a3d65c;
   --menu-draw-foreground: #9b97f2;
+  --menu-mind-foreground: #93c5fd;
   --shadow-soft: 0 18px 55px rgb(0 0 0 / 32%);
   --shadow-action: 0 12px 28px rgb(0 0 0 / 28%);
 }

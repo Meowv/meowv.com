@@ -19,6 +19,7 @@ import {
   RefreshCw,
   Resize,
   RotateCcw,
+  Sitemap,
   Trash2,
   Video,
 } from '@/features/markdown/icons';
@@ -201,20 +202,24 @@ function openContextMenu(event: MouseEvent, node: DisplayTreeNode): void {
   if (node.kind === 'file' && node.category === 'other') {
     return;
   }
-  const menuWidth = 188;
-  const menuHeight =
-    node.category === 'image' || node.category === 'pdf'
-      ? Math.min(430, globalThis.innerHeight - 16)
-      : node.category === 'audio' || node.category === 'video' || node.category === 'draw'
-        ? 132
-        : node.kind === 'directory'
-          ? 184
-          : 96;
   contextMenu.value = {
-    x: Math.min(event.clientX, globalThis.innerWidth - menuWidth),
-    y: Math.min(event.clientY, globalThis.innerHeight - menuHeight),
+    x: event.clientX,
+    y: event.clientY,
     node,
   };
+  void nextTick(() => {
+    const menu = document.querySelector<HTMLElement>('.context-menu--explorer');
+    if (!menu || contextMenu.value?.node !== node) {
+      return;
+    }
+    const { width, height } = menu.getBoundingClientRect();
+    const inset = 8;
+    contextMenu.value = {
+      ...contextMenu.value,
+      x: Math.max(inset, Math.min(event.clientX, globalThis.innerWidth - width - inset)),
+      y: Math.max(inset, Math.min(event.clientY, globalThis.innerHeight - height - inset)),
+    };
+  });
 }
 
 async function getNodeFile(node: DisplayTreeNode): Promise<File | null> {
@@ -260,6 +265,10 @@ async function openNode(node: DisplayTreeNode): Promise<void> {
   }
   if (node.category === 'draw') {
     await openDrawInNewWindow(node);
+    return;
+  }
+  if (node.category === 'mind') {
+    await openMindInNewWindow(node);
   }
 }
 
@@ -381,6 +390,31 @@ async function openDrawInNewWindow(node: DisplayTreeNode): Promise<void> {
   } catch (error) {
     popup.close();
     store.notify('error', '无法打开白板', error instanceof Error ? error.message : node.name);
+  }
+}
+
+async function openMindInNewWindow(node: DisplayTreeNode): Promise<void> {
+  contextMenu.value = null;
+  const popup = globalThis.open('about:blank', '_blank');
+  if (!popup) {
+    store.notify('error', '无法打开思维导图', '浏览器阻止了新窗口，请允许本站打开弹出式窗口。');
+    return;
+  }
+  try {
+    if (!(await store.saveActiveDocument())) {
+      popup.close();
+      return;
+    }
+    const file = await getNodeFile(node);
+    if (!file) {
+      throw new Error('无法读取 .mind 文件。');
+    }
+    closeImagePreview();
+    closeMediaPreview();
+    openWindowFileHandoff(popup, '/mind', 'mind', file);
+  } catch (error) {
+    popup.close();
+    store.notify('error', '无法打开思维导图', error instanceof Error ? error.message : node.name);
   }
 }
 
@@ -877,6 +911,17 @@ onBeforeUnmount(() => {
             @click="openDrawInNewWindow(contextMenu.node)"
           >
             <Chalkboard :size="16" />使用白板打开
+          </button>
+          <div class="context-menu__separator" />
+        </template>
+        <template v-else-if="contextMenu.node.category === 'mind'">
+          <button
+            class="context-menu__item"
+            type="button"
+            role="menuitem"
+            @click="openMindInNewWindow(contextMenu.node)"
+          >
+            <Sitemap :size="16" />使用思维导图打开
           </button>
           <div class="context-menu__separator" />
         </template>

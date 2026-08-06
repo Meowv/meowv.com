@@ -73,6 +73,16 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/mind',
+    name: 'mind',
+    component: () => import('@/features/mind/MindPage.vue'),
+    meta: {
+      title: '思维导图 · Meowv Studio',
+      description: '在浏览器本地创建、整理、保存和导出思维导图与 Markdown 脑图，内容无需上传。',
+      feature: 'mind',
+    },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
     component: () => import('@/pages/NotFoundPage.vue'),

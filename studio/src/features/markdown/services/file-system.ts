@@ -3,6 +3,7 @@ import {
   DRAW_EXTENSIONS,
   IMAGE_EXTENSIONS,
   MARKDOWN_EXTENSIONS,
+  MIND_EXTENSIONS,
   OFFICE_EXTENSIONS,
   PDF_EXTENSIONS,
   TEXT_EXTENSIONS,
@@ -34,6 +35,7 @@ const VIDEO_EXTENSION_SET = normalizeExtensions(VIDEO_EXTENSIONS);
 const OFFICE_EXTENSION_SET = normalizeExtensions(OFFICE_EXTENSIONS);
 const PDF_EXTENSION_SET = normalizeExtensions(PDF_EXTENSIONS);
 const DRAW_EXTENSION_SET = normalizeExtensions(DRAW_EXTENSIONS);
+const MIND_EXTENSION_SET = normalizeExtensions(MIND_EXTENSIONS);
 const TEXT_FILE_NAMES = new Set([
   'authors',
   'changelog',
@@ -247,6 +249,9 @@ function categorizeFile(
   }
   if (DRAW_EXTENSION_SET.has(extension)) {
     return 'draw';
+  }
+  if (MIND_EXTENSION_SET.has(extension)) {
+    return 'mind';
   }
   return 'other';
 }

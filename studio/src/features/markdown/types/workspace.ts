@@ -57,10 +57,11 @@ export const VIDEO_EXTENSIONS = ['.m4v', '.mov', '.mp4', '.ogv', '.webm'] as con
 export const OFFICE_EXTENSIONS = ['.csv', '.docx', '.pptx', '.xlsx'] as const;
 export const PDF_EXTENSIONS = ['.pdf'] as const;
 export const DRAW_EXTENSIONS = ['.excalidraw'] as const;
+export const MIND_EXTENSIONS = ['.mind'] as const;
 
 export type WorkspaceEntryKind = 'directory' | 'file';
 export type WorkspaceFileCategory =
-  'markdown' | 'text' | 'image' | 'audio' | 'video' | 'office' | 'pdf' | 'draw' | 'other';
+  'markdown' | 'text' | 'image' | 'audio' | 'video' | 'office' | 'pdf' | 'draw' | 'mind' | 'other';
 
 interface WorkspaceNodeBase {
   name: string;

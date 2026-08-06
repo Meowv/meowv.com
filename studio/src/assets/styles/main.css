@@ -240,12 +240,16 @@ button {
 .nav-draw {
   --nav-accent: var(--menu-draw-foreground);
 }
+.nav-mind {
+  --nav-accent: var(--menu-mind-foreground);
+}
 
 .nav-image svg,
 .nav-markdown svg,
 .nav-pdf svg,
 .nav-office svg,
-.nav-draw svg {
+.nav-draw svg,
+.nav-mind svg {
   color: var(--nav-accent);
 }
 .nav-ocr svg {
@@ -732,7 +736,7 @@ body.has-dialog-open {
   display: grid;
   max-width: 540px;
   margin-top: 34px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -825,6 +829,41 @@ body.has-dialog-open {
 .home-shortcuts__item--draw {
   --shortcut-accent: var(--menu-draw-foreground);
   --shortcut-solid: var(--menu-draw);
+}
+
+.home-shortcuts__item--mind {
+  --shortcut-accent: var(--menu-mind-foreground);
+  --shortcut-solid: #dbeafe;
+}
+
+:root[data-theme='dark'] .home-shortcuts__item--mind {
+  --shortcut-solid: #1e3a5f;
+}
+
+.home-shortcuts__item--notes {
+  --shortcut-accent: var(--color-text-muted);
+  --shortcut-solid: var(--color-text-muted);
+  cursor: default;
+  opacity: 0.66;
+}
+
+.home-shortcuts__item--notes:hover {
+  border-color: var(--color-border);
+  box-shadow: none;
+  transform: none;
+}
+
+.home-shortcuts__item--tools {
+  --shortcut-accent: var(--color-text-muted);
+  --shortcut-solid: var(--color-text-muted);
+  cursor: default;
+  opacity: 0.66;
+}
+
+.home-shortcuts__item--tools:hover {
+  border-color: var(--color-border);
+  box-shadow: none;
+  transform: none;
 }
 
 .home-trust {
@@ -1317,6 +1356,7 @@ body.has-dialog-open {
   }
   .home-shortcuts {
     max-width: 520px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .home-trust {
     justify-content: center;
@@ -1354,6 +1394,10 @@ body.has-dialog-open {
 }
 
 @media (max-width: 460px) {
+  .home-shortcuts {
+    grid-template-columns: 1fr;
+  }
+
   .home-shortcuts__item {
     min-height: 74px;
     padding: 12px 10px;

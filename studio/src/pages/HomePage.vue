@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { RouterLink } from 'vue-router';
 import {
   IconBrandOffice,
   IconChalkboard,
   IconFileTypePdf,
   IconMarkdown,
+  IconNotes,
+  IconSitemap,
   IconPhoto,
   IconTextScan2,
+  IconApps,
 } from '@tabler/icons-vue';
 import { STUDIO_FILE_ACCEPT, useFileLauncher } from '@/composables/useFileLauncher';
 import fileOrbitUrl from '@/assets/images/file-orbit.png';
@@ -58,6 +62,29 @@ const quickRoutes = [
     icon: IconChalkboard,
     tone: 'draw',
   },
+  {
+    label: 'Mind',
+    description: '本地脑图、Markdown 脑图',
+    to: '/mind',
+    icon: IconSitemap,
+    tone: 'mind',
+  },
+  {
+    label: 'Notes',
+    description: '功能暂未开放',
+    to: '/notes',
+    icon: IconNotes,
+    tone: 'notes',
+    unavailable: true,
+  },
+  {
+    label: 'Tools',
+    description: '功能暂未开放',
+    to: '/tools',
+    icon: IconApps,
+    tone: 'tools',
+    unavailable: true,
+  },
 ];
 
 const STUDIO_FILE_PICKER_TYPES = [
@@ -81,6 +108,7 @@ const STUDIO_FILE_PICKER_TYPES = [
       'application/vnd.openxmlformats-officedocument.presentationml.presentation': ['.pptx'],
       'text/csv': ['.csv'],
       'application/vnd.excalidraw+json': ['.excalidraw'],
+      'application/x-meowv-mind': ['.mind'],
     },
   },
 ];
@@ -154,12 +182,13 @@ const onDrop = async (event: DragEvent) => {
         打开、编辑、转换、导出，一站式处理，<strong>本地处理 · 文件不上传。</strong>
       </p>
       <nav class="home-shortcuts" aria-label="快捷工作台">
-        <RouterLink
+        <component
+          :is="shortcut.unavailable ? 'div' : RouterLink"
           v-for="shortcut in quickRoutes"
           :key="shortcut.to"
           class="home-shortcuts__item"
           :class="`home-shortcuts__item--${shortcut.tone}`"
-          :to="shortcut.to"
+          v-bind="shortcut.unavailable ? { 'aria-disabled': 'true' } : { to: shortcut.to }"
         >
           <span class="home-shortcuts__icon" aria-hidden="true">
             <component :is="shortcut.icon" :size="21" stroke-width="1.9" />
@@ -168,7 +197,7 @@ const onDrop = async (event: DragEvent) => {
             <strong>{{ shortcut.label }}</strong>
             <small>{{ shortcut.description }}</small>
           </span>
-        </RouterLink>
+        </component>
       </nav>
       <ul class="home-trust" aria-label="本地处理承诺">
         <li>浏览器本地处理</li>

@@ -1,6 +1,8 @@
 allowBuilds:
   core-js: true
   tesseract.js: false
+minimumReleaseAgeExclude:
+  - mind-elixir@5.15.1
 onlyBuiltDependencies:
   - core-js
 patchedDependencies:
