@@ -41,7 +41,7 @@ export function featureForFile(file: File): StudioFeature | null {
   );
 }
 
-export function routeForFeature(feature: StudioFeature): string {
+export function routeForFeature(feature: StudioFeature, file?: File): string {
   const defaultRoutes: Record<StudioFeature, string> = {
     image: '/image/compress',
     psd: '/image/psd-viewer',
@@ -51,7 +51,15 @@ export function routeForFeature(feature: StudioFeature): string {
     draw: '/draw',
   };
 
-  return defaultRoutes[feature];
+  if (feature !== 'office' || !file) return defaultRoutes[feature];
+  const extension = file.name.split('.').pop()?.toLowerCase();
+  const officeRoutes: Record<string, string> = {
+    docx: '/office/doc',
+    xlsx: '/office/xls',
+    pptx: '/office/ppt',
+    csv: '/office/csv',
+  };
+  return officeRoutes[extension || ''] || defaultRoutes.office;
 }
 
 export function handoffFile(

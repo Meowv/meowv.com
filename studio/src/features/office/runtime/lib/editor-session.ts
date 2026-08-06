@@ -1,4 +1,5 @@
 import { getDocmentObj, setDocmentObj } from '@ranuts/shared/store';
+import { updateActiveOfficeSnapshot, type OfficeRouteFormat } from './active-documents';
 import {
   markRecentDocumentSaved,
   rememberRecentDocument,
@@ -97,6 +98,7 @@ class EditorSession {
   private objectUrls = new Set<string>();
   private fileHandle: StoredFileHandle | undefined;
   private recentDocumentId: string | undefined;
+  private activeRouteFormat: OfficeRouteFormat | undefined;
   private autosaveTimer: number | undefined;
   private saveInFlight: Promise<void> | null = null;
   private autosaveDisabled = false;
@@ -115,6 +117,7 @@ class EditorSession {
     readonly = false,
     fileHandle?: StoredFileHandle,
     recentDocumentId?: string,
+    activeRouteFormat?: OfficeRouteFormat,
   ): void {
     this.releaseObjectUrls();
     if (objectUrl) this.objectUrls.add(String(objectUrl));
@@ -122,6 +125,7 @@ class EditorSession {
     this.readonlyMode = readonly;
     this.fileHandle = fileHandle;
     this.recentDocumentId = recentDocumentId;
+    this.activeRouteFormat = activeRouteFormat;
     this.autosaveDisabled = false;
     this.updateWorkspace(fileName, readonly ? '只读' : '正在加载…');
   }
@@ -138,7 +142,9 @@ class EditorSession {
     if (this.readonlyMode) return;
     this.dirty = true;
     this.updateStatus(
-      this.fileHandle?.createWritable && !this.autosaveDisabled ? '正在准备自动保存…' : '未保存',
+      (this.fileHandle?.createWritable || this.activeRouteFormat) && !this.autosaveDisabled
+        ? '正在准备自动保存…'
+        : '未保存',
     );
     this.scheduleAutoSave();
   }
@@ -151,9 +157,15 @@ class EditorSession {
     this.updateStatus('正在保存…');
   }
 
-  markSaved(): void {
+  markSaved(isAutomatic = false): void {
     this.dirty = false;
-    this.updateStatus(this.fileHandle?.createWritable ? '已保存到原文件' : '已导出到本地');
+    this.updateStatus(
+      this.fileHandle?.createWritable
+        ? '已保存到原文件'
+        : isAutomatic && this.activeRouteFormat
+          ? '已自动保存到浏览器'
+          : '已导出到本地',
+    );
   }
 
   markSaveFailed(): void {
@@ -179,6 +191,7 @@ class EditorSession {
     this.autosaveTimer = undefined;
     this.fileHandle = undefined;
     this.recentDocumentId = undefined;
+    this.activeRouteFormat = undefined;
     this.dirty = false;
     document.body.classList.remove('workspace-active');
     setDocmentObj({ fileName: '', file: undefined, url: undefined });
@@ -204,7 +217,12 @@ class EditorSession {
   }
 
   private scheduleAutoSave(): void {
-    if (this.readonlyMode || this.autosaveDisabled || !this.fileHandle?.createWritable) return;
+    if (
+      this.readonlyMode ||
+      this.autosaveDisabled ||
+      (!this.fileHandle?.createWritable && !this.activeRouteFormat)
+    )
+      return;
     if (this.autosaveTimer) window.clearTimeout(this.autosaveTimer);
     this.autosaveTimer = window.setTimeout(() => {
       this.autosaveTimer = undefined;
@@ -227,11 +245,23 @@ class EditorSession {
     const handle = await saveFileLocally(file, this.fileHandle, allowSavePicker);
     if (handle) this.fileHandle = handle;
     const savedFile = fileWithHandleName(file, this.fileHandle);
+    if (this.activeRouteFormat) {
+      await updateActiveOfficeSnapshot(this.activeRouteFormat, savedFile, this.fileHandle);
+    }
     if (this.recentDocumentId) {
       await markRecentDocumentSaved(this.recentDocumentId, savedFile, this.fileHandle);
       return;
     }
     this.recentDocumentId = await rememberRecentDocument(savedFile, this.fileHandle);
+  }
+
+  async saveAutomaticFile(file: File): Promise<void> {
+    if (this.fileHandle?.createWritable) {
+      await this.saveExportedFile(file, false);
+      return;
+    }
+    if (!this.activeRouteFormat) throw new Error('当前文档没有可用的自动保存位置');
+    await updateActiveOfficeSnapshot(this.activeRouteFormat, file);
   }
 
   async saveFromEditor(file: File): Promise<void> {
@@ -263,12 +293,15 @@ export async function saveCurrentDocument(isAutomatic = false): Promise<void> {
     if (!requestSave) throw new Error('保存组件尚未就绪');
     const saved = await requestSave(getFileExtension(documentState.fileName));
     const renamed = new File([saved], safeFileName(documentState.fileName), { type: saved.type });
-    await editorSession.saveExportedFile(renamed, !isAutomatic);
-    editorSession.markSaved();
+    if (isAutomatic) await editorSession.saveAutomaticFile(renamed);
+    else await editorSession.saveExportedFile(renamed);
+    editorSession.markSaved(isAutomatic);
   } catch (error) {
     if ((error as Error).name !== 'AbortError') {
       console.error('保存失败：', error);
-      window.alert(`保存失败：${error instanceof Error ? error.message : '未知错误'}`);
+      if (!isAutomatic) {
+        window.alert(`保存失败：${error instanceof Error ? error.message : '未知错误'}`);
+      }
     }
     editorSession.markSaveFailed();
   }

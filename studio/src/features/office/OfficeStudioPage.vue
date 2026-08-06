@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
+import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router';
 import {
   IconArrowLeft,
   IconArrowsMaximize,
@@ -16,7 +16,7 @@ import {
   IconTable,
   IconTrash,
 } from '@tabler/icons-vue';
-import { receiveWindowFileHandoff, useFileHandoff } from '@/core/browser/file-handoff';
+import { handoffFile, receiveWindowFileHandoff, useFileHandoff } from '@/core/browser/file-handoff';
 import { STORAGE_POLICY, storageAvailable } from '@/core/privacy/storage';
 import { workspaceActive, workspaceHeaderVisible } from '@/core/shared/route-state';
 import type { RecentDocument } from './runtime/lib/recent-documents';
@@ -25,17 +25,22 @@ import {
   deleteOfficeRecentDocument,
   disposeOfficeRuntime,
   hasUnsavedOfficeChanges,
+  loadActiveOfficeFile,
   loadRecentOfficeDocuments,
+  loadRecentOfficeFile,
+  officeFormatForRoute,
   OFFICE_FORMATS,
+  OFFICE_ROUTE_FORMATS,
   openOfficeFile,
-  openRecentOfficeDocument,
+  routeFormatForFileName,
   type OfficeFormat,
 } from './runtime/office-controller';
+import type { OfficeRouteFormat } from './runtime/lib/active-documents';
 import './office.css';
 
 const route = useRoute();
 const router = useRouter();
-const { take } = useFileHandoff();
+const { takeHandoff } = useFileHandoff();
 const fileInput = ref<HTMLInputElement | null>(null);
 const workspaceElement = ref<HTMLElement | null>(null);
 const workspaceMenuElement = ref<HTMLElement | null>(null);
@@ -76,13 +81,20 @@ watch(isWorkspace, (active) => {
   workspaceHeaderVisible.value = !active;
 });
 
-const requestedFormat = computed<OfficeFormat | null>(() => {
+const requestedRouteFormat = computed<OfficeRouteFormat | null>(() => {
   const format = typeof route.params.format === 'string' ? route.params.format.toLowerCase() : '';
-  return OFFICE_FORMATS.includes(format as OfficeFormat) ? (format as OfficeFormat) : null;
+  return OFFICE_ROUTE_FORMATS.includes(format as OfficeRouteFormat)
+    ? (format as OfficeRouteFormat)
+    : null;
 });
+
+const requestedFormat = computed<OfficeFormat | null>(() =>
+  requestedRouteFormat.value ? officeFormatForRoute(requestedRouteFormat.value) : null,
+);
 
 const formatCards: Array<{
   format: OfficeFormat;
+  routeFormat: OfficeRouteFormat;
   label: string;
   title: string;
   description: string;
@@ -91,6 +103,7 @@ const formatCards: Array<{
 }> = [
   {
     format: 'docx',
+    routeFormat: 'doc',
     label: 'DOCX',
     title: '文字文档',
     description: '撰写、排版与审阅 Word 文档',
@@ -99,6 +112,7 @@ const formatCards: Array<{
   },
   {
     format: 'xlsx',
+    routeFormat: 'xls',
     label: 'XLSX',
     title: '电子表格',
     description: '公式、图表与多工作表编辑',
@@ -107,6 +121,7 @@ const formatCards: Array<{
   },
   {
     format: 'pptx',
+    routeFormat: 'ppt',
     label: 'PPTX',
     title: '演示文稿',
     description: '创建与整理本地幻灯片',
@@ -115,6 +130,7 @@ const formatCards: Array<{
   },
   {
     format: 'csv',
+    routeFormat: 'csv',
     label: 'CSV',
     title: '数据表格',
     description: '以表格方式编辑纯文本数据',
@@ -175,13 +191,20 @@ async function runInWorkspace(name: string, action: () => Promise<void>): Promis
 }
 
 async function openFile(file: File, handle?: RecentDocument['handle']): Promise<void> {
-  if (!extensionOf(file.name)) {
+  const routeFormat = routeFormatForFileName(file.name);
+  if (!routeFormat) {
     error.value = '仅支持 DOCX、XLSX、PPTX 与 CSV 文件。';
+    return;
+  }
+  if (requestedRouteFormat.value !== routeFormat) {
+    handoffFile(file, 'office', handle as FileSystemFileHandle | undefined);
+    await router.push(`/office/${routeFormat}`);
     return;
   }
   await runInWorkspace(file.name, () =>
     openOfficeFile(file, {
       handle,
+      routeFormat,
       onStage: (message) => {
         stage.value = message;
       },
@@ -189,7 +212,7 @@ async function openFile(file: File, handle?: RecentDocument['handle']): Promise<
   );
 }
 
-async function createDocument(format: OfficeFormat): Promise<void> {
+async function createDocument(format: OfficeFormat, routeFormat: OfficeRouteFormat): Promise<void> {
   const names: Record<OfficeFormat, string> = {
     docx: '新建文档.docx',
     xlsx: '新建工作簿.xlsx',
@@ -197,18 +220,27 @@ async function createDocument(format: OfficeFormat): Promise<void> {
     csv: '新建表格.csv',
   };
   await runInWorkspace(names[format], () =>
-    createOfficeDocument(format, (message) => {
-      stage.value = message;
-    }),
+    createOfficeDocument(
+      format,
+      (message) => {
+        stage.value = message;
+      },
+      routeFormat,
+    ),
   );
 }
 
+async function openFormat(routeFormat: OfficeRouteFormat): Promise<void> {
+  await router.push(`/office/${routeFormat}`);
+}
+
 async function openRecent(record: RecentDocument): Promise<void> {
-  await runInWorkspace(record.name, () =>
-    openRecentOfficeDocument(record, (message) => {
-      stage.value = message;
-    }),
-  );
+  try {
+    const { file, handle } = await loadRecentOfficeFile(record);
+    await openFile(file, handle);
+  } catch (reason) {
+    error.value = reason instanceof Error ? reason.message : '本地文件访问权限不可用。';
+  }
 }
 
 function recentIcon(extension: string): typeof IconFileText {
@@ -466,8 +498,20 @@ onMounted(async () => {
   window.addEventListener('resize', keepMenuInViewport);
   restoreMenuPosition();
   await refreshRecent();
-  const handoff = take('office');
-  if (handoff) await openFile(handoff);
+  const handoff = takeHandoff('office');
+  if (handoff) {
+    await openFile(handoff.file, handoff.handle as RecentDocument['handle']);
+  } else if (requestedRouteFormat.value) {
+    const activeDocument = await loadActiveOfficeFile(requestedRouteFormat.value);
+    if (activeDocument) {
+      await openFile(activeDocument.file, activeDocument.handle);
+    } else {
+      await createDocument(
+        officeFormatForRoute(requestedRouteFormat.value),
+        requestedRouteFormat.value,
+      );
+    }
+  }
   stopWindowFileHandoff = receiveWindowFileHandoff('office', (file, handle) => {
     void openFile(file, handle as RecentDocument['handle']);
   });
@@ -477,6 +521,12 @@ onBeforeRouteLeave(() => {
   if (hasUnsavedOfficeChanges() && !window.confirm('当前文档有未保存修改，确定离开 Office 吗？'))
     return false;
   disposeOfficeRuntime();
+  return true;
+});
+
+onBeforeRouteUpdate(() => {
+  if (hasUnsavedOfficeChanges() && !window.confirm('当前文档有未保存修改，确定切换页面吗？'))
+    return false;
   return true;
 });
 
@@ -513,7 +563,7 @@ onBeforeUnmount(() => {
               ]"
               type="button"
               :disabled="busy"
-              @click="createDocument(card.format)"
+              @click="openFormat(card.routeFormat)"
             >
               <span class="office-format-card__icon">
                 <component :is="card.icon" :size="30" />

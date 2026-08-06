@@ -19,19 +19,23 @@ export function useFileLauncher() {
         error.value = `暂不支持“${file.name}”的文件格式。`;
         return;
       }
-      if (feature === 'draw' && handle) {
+      if ((feature === 'draw' || feature === 'office') && handle) {
         try {
           const currentPermission = await handle.queryPermission({ mode: 'readwrite' });
           if (currentPermission !== 'granted') {
             await handle.requestPermission({ mode: 'readwrite' });
           }
         } catch {
-          // 句柄仍会交给白板，用户可在后续保存时重新授权。
+          // 句柄仍会交给目标编辑器，用户可在后续保存时重新授权。
         }
       }
-      const handoff = handoffFile(file, feature, feature === 'draw' ? handle : undefined);
+      const handoff = handoffFile(
+        file,
+        feature,
+        feature === 'draw' || feature === 'office' ? handle : undefined,
+      );
       if (!handoff) return;
-      await router.push(routeForFeature(handoff.feature));
+      await router.push(routeForFeature(handoff.feature, file));
     } finally {
       busy.value = false;
     }
