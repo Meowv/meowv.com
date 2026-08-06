@@ -158,3 +158,5 @@ Studio 和 Zitie 都以浏览器本地处理为核心。修改相关功能时必
 - 当前仓库没有统一许可证；使用、分发或二次开发前，应分别确认各项目的授权情况。
 
 更具体的协作规则见根目录 [AGENTS.md](./AGENTS.md)。
+
+近期迭代中沉淀的本地处理、界面验收、生产验证和交付实践见 [docs/engineering-experience.md](./docs/engineering-experience.md)。
