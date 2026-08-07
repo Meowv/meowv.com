@@ -473,6 +473,19 @@
   background: color-mix(in srgb, var(--note-fg) 16%, transparent);
 }
 
+.note-editor__status {
+  align-self: center;
+  margin-left: auto;
+  padding: 0 4px;
+  color: color-mix(in srgb, var(--note-fg) 72%, transparent);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.note-editor__status--error {
+  color: #ef4444;
+}
+
 .note-editor__textarea {
   flex: 1 1 auto;
   min-height: 0;
