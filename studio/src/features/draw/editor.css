@@ -240,6 +240,12 @@
   filter: saturate(1.15) brightness(0.92);
 }
 
+.draw-editor__name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-brand-strong);
+}
+
 .draw-editor__title {
   position: absolute;
   top: 50%;
@@ -826,7 +832,8 @@
   }
 
   .draw-editor__studio-logo .studio-logo__wordmark,
-  .draw-editor__studio-logo .studio-logo__leaf {
+  .draw-editor__studio-logo .studio-logo__leaf,
+  .draw-editor__name {
     display: none;
   }
 

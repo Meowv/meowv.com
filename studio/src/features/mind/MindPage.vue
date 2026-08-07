@@ -804,6 +804,7 @@ onBeforeUnmount(() => {
         <RouterLink class="mind-editor__home" to="/" aria-label="返回 Studio">
           <StudioLogo />
         </RouterLink>
+        <strong class="mind-editor__name">思维导图</strong>
       </div>
 
       <input

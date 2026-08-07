@@ -80,6 +80,12 @@
   margin-left: -2px;
 }
 
+.mind-editor__name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--mind-accent-strong);
+}
+
 .mind-editor__title {
   position: absolute;
   top: 50%;
@@ -602,6 +608,7 @@
 
   .mind-editor__home .studio-logo__wordmark,
   .mind-editor__home .studio-logo__leaf,
+  .mind-editor__name,
   .mind-editor__action-group > .mind-action:nth-child(-n + 2) {
     display: none;
   }

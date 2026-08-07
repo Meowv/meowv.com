@@ -17,7 +17,7 @@ const routes: RouteRecordRaw[] = [
     name: 'image',
     component: () => import('@/features/image/ImageStudioPage.vue'),
     meta: {
-      title: 'Image · Meowv Studio',
+      title: '图片工具 · Meowv Studio',
       description: '在浏览器本地完成图片压缩、转换、裁剪与导出，文件无需上传。',
       feature: 'image',
     },
@@ -27,7 +27,7 @@ const routes: RouteRecordRaw[] = [
     name: 'pdf',
     component: () => import('@/features/pdf/PdfStudioPage.vue'),
     meta: {
-      title: 'PDF · Meowv Studio',
+      title: 'PDF 工具 · Meowv Studio',
       description: '在浏览器本地处理 PDF 合并、拆分、整理、转换与编辑，文件无需上传。',
       feature: 'pdf',
     },
@@ -67,7 +67,7 @@ const routes: RouteRecordRaw[] = [
     name: 'draw',
     component: () => import('@/features/draw/DrawPage.vue'),
     meta: {
-      title: 'Whiteboard · Meowv Studio',
+      title: '白板 · Meowv Studio',
       description: '在浏览器本地绘制草图、流程图和白板内容，画板无需上传。',
       feature: 'draw',
     },

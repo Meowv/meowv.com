@@ -1627,6 +1627,7 @@ function DrawEditor({ returnToStudio, setTheme }: DrawEditorOptions): ReactNode 
             'div',
             { className: 'draw-editor__header-start' },
             StudioHomeButton({ onClick: returnToStudio }),
+            createElement('strong', { className: 'draw-editor__name' }, '白板'),
           ),
           createElement('input', {
             className: 'draw-editor__title',

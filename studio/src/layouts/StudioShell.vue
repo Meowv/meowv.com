@@ -26,6 +26,7 @@ const isMarkdownPage = computed(() => route.meta.feature === 'markdown');
 const isDrawPage = computed(() => route.meta.feature === 'draw');
 const isMindPage = computed(() => route.meta.feature === 'mind');
 const isNotesPage = computed(() => route.meta.feature === 'notes');
+const isOfficePage = computed(() => route.meta.feature === 'office' && workspaceActive.value);
 const isImmersive = computed(
   () =>
     route.meta.feature === 'markdown' ||
@@ -125,6 +126,7 @@ const primaryRoutes = [
       'studio-shell--draw': isDrawPage,
       'studio-shell--mind': isMindPage,
       'studio-shell--notes': isNotesPage,
+      'studio-shell--office': isOfficePage,
       'studio-shell--with-footer': showFooter,
     }"
   >

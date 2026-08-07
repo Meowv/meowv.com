@@ -96,6 +96,16 @@ button {
   --nav-accent: var(--menu-markdown-foreground);
 }
 
+.studio-shell--office {
+  --header-height: 48px;
+}
+
+.studio-shell--office .studio-header {
+  gap: 12px;
+  padding-right: 16px;
+  padding-left: 16px;
+}
+
 .studio-shell--draw {
   --nav-accent: var(--menu-draw-foreground);
 }

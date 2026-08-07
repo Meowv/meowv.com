@@ -36,7 +36,7 @@ const quickRoutes = [
   },
   {
     label: 'OCR',
-    description: '图片文字识别',
+    description: '图片、PDF 文字识别',
     to: '/ocr',
     icon: IconTextScan2,
     tone: 'ocr',
