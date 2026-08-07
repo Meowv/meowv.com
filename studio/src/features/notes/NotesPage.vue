@@ -228,6 +228,11 @@ let fxHeight = 0;
 let toastTimer: number | null = null;
 let collapseCycleTimer: number | null = null;
 let collapseCycleInfinite = false;
+let carnivalAudioSource: AudioBufferSourceNode | null = null;
+let audioContext: AudioContext | null = null;
+let audioGain: GainNode | null = null;
+let carnivalAudioBuffer: AudioBuffer | null = null;
+let carnivalBeatInterval: number | null = null;
 
 const allCollapsed = computed(
   () => notes.value.length > 0 && notes.value.every((n) => n.collapsed),
@@ -749,6 +754,7 @@ async function startCarnival(): Promise<void> {
     showCarnivalToast();
     spawnParticles(140);
     runCollapseCycle(true);
+    startCarnivalAudio();
   }
 }
 
@@ -866,9 +872,180 @@ function runCollapseCycle(infinite = false): void {
       remaining -= 1;
     }
     if (collapseCycleInfinite) toggleThemeLive();
-    collapseCycleTimer = window.setTimeout(step, COLLAPSE_CYCLE_INTERVAL);
+    collapseCycleTimer = window.setTimeout(step, carnivalBeatInterval ?? COLLAPSE_CYCLE_INTERVAL);
   };
   step();
+}
+
+function findCarnivalMusicEnd(buffer: AudioBuffer): number {
+  const data = buffer.getChannelData(0);
+  const sampleRate = buffer.sampleRate;
+  const frameSize = Math.max(1, Math.floor(sampleRate * 0.02));
+  const threshold = 0.005;
+  const silenceWindow = Math.floor(sampleRate * 0.2);
+  let silent = 0;
+  let candidate = data.length;
+  for (let index = data.length - frameSize; index >= 0; index -= frameSize) {
+    let peak = 0;
+    for (let sample = index; sample < index + frameSize && sample < data.length; sample++) {
+      const value = Math.abs(data[sample]);
+      if (value > peak) peak = value;
+    }
+    if (peak < threshold) {
+      if (silent === 0) candidate = index;
+      silent += frameSize;
+      if (silent >= silenceWindow) return candidate / sampleRate;
+    } else {
+      silent = 0;
+    }
+  }
+  return data.length / sampleRate;
+}
+
+function scrubCarnivalTail(buffer: AudioBuffer): void {
+  const channelCount = buffer.numberOfChannels;
+  const length = buffer.length;
+  const sampleRate = buffer.sampleRate;
+  const frameSize = Math.max(1, Math.floor(sampleRate * 0.01));
+  const blockRms = new Float32Array(Math.ceil(length / frameSize));
+  let maxBlock = 0;
+  for (let start = 0; start < length; start += frameSize) {
+    const end = Math.min(start + frameSize, length);
+    let sum = 0;
+    for (let channel = 0; channel < channelCount; channel++) {
+      const data = buffer.getChannelData(channel);
+      for (let index = start; index < end; index++) {
+        const value = data[index];
+        sum += value * value;
+      }
+    }
+    const rms = Math.sqrt(sum / ((end - start) * channelCount));
+    blockRms[Math.floor(start / frameSize)] = rms;
+    if (rms > maxBlock) maxBlock = rms;
+  }
+  if (maxBlock <= 0.4) return;
+  const lastBlock = blockRms.length - 1;
+  if (blockRms[lastBlock] <= 0.4) return;
+  const previous = blockRms[lastBlock - 1] ?? 0;
+  if (previous >= blockRms[lastBlock] * 0.4) return;
+  let clearedFrom = lastBlock * frameSize;
+  for (let block = lastBlock; block > 0 && blockRms[block] > 0.4; block--) {
+    clearedFrom = block * frameSize;
+  }
+  if (lastBlock * frameSize - clearedFrom > sampleRate * 0.1) return;
+  for (let channel = 0; channel < channelCount; channel++) {
+    const data = buffer.getChannelData(channel);
+    for (let index = clearedFrom; index < length; index++) data[index] = 0;
+  }
+}
+
+function detectCarnivalTempo(buffer: AudioBuffer): number | null {
+  const data = buffer.getChannelData(0);
+  const sampleRate = buffer.sampleRate;
+  const frameSize = Math.max(1, Math.floor(sampleRate * 0.01));
+  const frameCount = Math.floor(data.length / frameSize);
+  if (frameCount < 64) return null;
+  const frames: number[] = [];
+  let maxFrame = 0;
+  for (let index = 0; index < frameCount; index++) {
+    const start = index * frameSize;
+    const end = Math.min(start + frameSize, data.length);
+    let sum = 0;
+    for (let sample = start; sample < end; sample++) {
+      const value = data[sample];
+      sum += value * value;
+    }
+    const rms = Math.sqrt(sum / (end - start));
+    frames.push(rms);
+    if (rms > maxFrame) maxFrame = rms;
+  }
+  if (maxFrame === 0) return null;
+  const onsets: number[] = [];
+  const threshold = maxFrame * 0.35;
+  const neighbor = Math.max(3, Math.round(0.25 / 0.01));
+  for (let index = 1; index < frameCount - 1; index++) {
+    if (frames[index] < threshold) continue;
+    let localPeak = true;
+    for (
+      let offset = Math.max(0, index - neighbor);
+      offset <= Math.min(frameCount - 1, index + neighbor);
+      offset++
+    ) {
+      if (frames[offset] > frames[index]) {
+        localPeak = false;
+        break;
+      }
+    }
+    if (localPeak) onsets.push(index * 0.01);
+  }
+  if (onsets.length < 4) return null;
+  const candidates: { bpm: number; score: number }[] = [];
+  for (let index = 1; index < onsets.length; index++) {
+    const interval = onsets[index] - onsets[index - 1];
+    if (interval < 0.25 || interval > 2) continue;
+    const bpm = 60 / interval;
+    let score = 0;
+    for (let other = 1; other < onsets.length; other++) {
+      const otherInterval = onsets[other] - onsets[other - 1];
+      if (otherInterval < 0.2 || otherInterval > 2) continue;
+      const ratio = otherInterval / interval;
+      const rounded = Math.round(ratio);
+      if (rounded >= 1 && rounded <= 4 && Math.abs(ratio - rounded) < 0.12) score += 1;
+    }
+    candidates.push({ bpm, score });
+  }
+  if (candidates.length === 0) return null;
+  candidates.sort((a, b) => b.score - a.score);
+  if (candidates[0].score < 3) return null;
+  return Math.min(200, Math.max(60, Math.round(candidates[0].bpm)));
+}
+
+async function startCarnivalAudio(): Promise<void> {
+  if (carnivalAudioSource) return;
+  try {
+    if (!audioContext) {
+      audioContext = new AudioContext();
+      audioGain = audioContext.createGain();
+      audioGain.gain.value = 0.5;
+      audioGain.connect(audioContext.destination);
+    }
+    if (audioContext.state === 'suspended') await audioContext.resume();
+    if (!carnivalAudioBuffer) {
+      const response = await fetch('/sounds/carnival.wav');
+      const arrayBuffer = await response.arrayBuffer();
+      carnivalAudioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      scrubCarnivalTail(carnivalAudioBuffer);
+      const bpm = detectCarnivalTempo(carnivalAudioBuffer);
+      carnivalBeatInterval = bpm ? 60000 / bpm : null;
+    }
+    const source = audioContext.createBufferSource();
+    source.buffer = carnivalAudioBuffer;
+    source.loop = true;
+    const musicEnd = findCarnivalMusicEnd(carnivalAudioBuffer);
+    if (musicEnd > 0.05 && musicEnd < carnivalAudioBuffer.duration) {
+      source.loopEnd = musicEnd;
+    }
+    source.connect(audioGain ?? audioContext.destination);
+    source.start();
+    carnivalAudioSource = source;
+  } catch (error) {
+    console.error('播放狂欢音效失败：', error);
+  }
+}
+
+function stopCarnivalAudio(): void {
+  if (!carnivalAudioSource) return;
+  carnivalAudioSource.stop();
+  carnivalAudioSource = null;
+}
+
+function disposeCarnivalAudio(): void {
+  stopCarnivalAudio();
+  carnivalAudioBuffer = null;
+  carnivalBeatInterval = null;
+  audioGain = null;
+  void audioContext?.close().catch(() => undefined);
+  audioContext = null;
 }
 
 function collapseOthers(id: string): void {
@@ -973,10 +1150,14 @@ function handleVisibilityChange(): void {
     flushSaves();
     pauseCarnival();
     stopCollapseCycle();
+    stopCarnivalAudio();
     return;
   }
   resumeCarnival();
-  if (carnivalLevel.value >= 8) runCollapseCycle(true);
+  if (carnivalLevel.value >= 8) {
+    runCollapseCycle(true);
+    startCarnivalAudio();
+  }
 }
 
 function handleBeforeUnload(event: BeforeUnloadEvent): void {
@@ -1002,6 +1183,7 @@ onBeforeUnmount(() => {
   carnivalCenter = null;
   if (toastTimer !== null) window.clearTimeout(toastTimer);
   stopCollapseCycle();
+  disposeCarnivalAudio();
   document.removeEventListener('visibilitychange', handleVisibilityChange);
   window.removeEventListener('beforeunload', handleBeforeUnload);
 });
