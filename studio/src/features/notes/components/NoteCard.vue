@@ -366,10 +366,10 @@ function updateContent(value: string): void {
   emit('save', props.note.id);
 }
 
-function setCarnivalTransform(x: number, y: number, rotation: number): void {
+function setCarnivalTransform(x: number, y: number, rotation: number, scale = 1): void {
   rootRef.value?.style.setProperty(
     'transform',
-    `translate3d(${x}px, ${y}px, 0) rotate(${rotation}deg)`,
+    `translate3d(${x}px, ${y}px, 0) rotate(${rotation}deg) scale(${scale})`,
   );
 }
 

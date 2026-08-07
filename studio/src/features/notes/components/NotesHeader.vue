@@ -2,6 +2,7 @@
 import { RouterLink } from 'vue-router';
 import {
   IconArrowsMaximize,
+  IconChevronUp,
   IconChevronDown,
   IconCircleChevronUp,
   IconCircleChevronDown,

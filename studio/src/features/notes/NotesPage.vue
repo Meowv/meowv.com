@@ -17,12 +17,17 @@ import '@/features/notes/notes.css';
 
 const HEADER_PREFERENCE_KEY = `${STORAGE_POLICY.namespace('notes')}:header-collapsed`;
 
-const { resolved: resolvedTheme, toggle: toggleTheme } = useTheme();
-
+const {
+  resolved: resolvedTheme,
+  toggle: toggleTheme,
+  toggleWithoutPersist: toggleThemeLive,
+} = useTheme();
 interface CarnivalCard {
-  setCarnivalTransform(x: number, y: number, rotation: number): void;
+  setCarnivalTransform(x: number, y: number, rotation: number, scale?: number): void;
   clearCarnivalTransform(): void;
 }
+
+type CarnivalDanceType = 'wobble' | 'bounce' | 'circle' | 'spin';
 
 interface CarnivalPhysics {
   x: number;
@@ -33,6 +38,9 @@ interface CarnivalPhysics {
   rotationSpeed: number;
   bobPhase: number;
   nextImpulseAt: number;
+  danceType: CarnivalDanceType;
+  dancePhase: number;
+  scale: number;
 }
 
 interface CarnivalProfile {
@@ -42,7 +50,48 @@ interface CarnivalProfile {
   maxRotation: number;
   maxRotationSpeed: number;
   bobForce: number;
+  repulsion: number;
+  repulsionRadius: number;
+  danceStrength: number;
+  attraction: number;
+  trail: boolean;
 }
+
+interface CarnivalCenter {
+  x: number;
+  y: number;
+  angle: number;
+  radius: number;
+  speed: number;
+}
+
+type ParticleKind = 'confetti' | 'star' | 'dot';
+
+interface Particle {
+  x: number;
+  y: number;
+  velocityX: number;
+  velocityY: number;
+  life: number;
+  maxLife: number;
+  size: number;
+  color: string;
+  kind: ParticleKind;
+  rotation: number;
+  rotationSpeed: number;
+}
+
+const CARNIVAL_DANCE_TYPES: CarnivalDanceType[] = ['wobble', 'bounce', 'circle', 'spin'];
+const PARTICLE_COLORS = [
+  '#f43f5e',
+  '#f59e0b',
+  '#22c55e',
+  '#06b6d4',
+  '#8b5cf6',
+  '#ec4899',
+  '#fbbf24',
+];
+const MAX_PARTICLES = 150;
 
 const CARNIVAL_PROFILES: CarnivalProfile[] = [
   {
@@ -52,6 +101,11 @@ const CARNIVAL_PROFILES: CarnivalProfile[] = [
     maxRotation: 5,
     maxRotationSpeed: 16,
     bobForce: 38,
+    repulsion: 0,
+    repulsionRadius: 100,
+    danceStrength: 0,
+    attraction: 0,
+    trail: false,
   },
   {
     initialSpeed: 68,
@@ -60,6 +114,11 @@ const CARNIVAL_PROFILES: CarnivalProfile[] = [
     maxRotation: 9,
     maxRotationSpeed: 30,
     bobForce: 64,
+    repulsion: 0,
+    repulsionRadius: 100,
+    danceStrength: 0,
+    attraction: 0,
+    trail: false,
   },
   {
     initialSpeed: 112,
@@ -68,6 +127,11 @@ const CARNIVAL_PROFILES: CarnivalProfile[] = [
     maxRotation: 14,
     maxRotationSpeed: 52,
     bobForce: 98,
+    repulsion: 0,
+    repulsionRadius: 100,
+    danceStrength: 0,
+    attraction: 0,
+    trail: false,
   },
   {
     initialSpeed: 164,
@@ -76,6 +140,63 @@ const CARNIVAL_PROFILES: CarnivalProfile[] = [
     maxRotation: 20,
     maxRotationSpeed: 78,
     bobForce: 138,
+    repulsion: 0,
+    repulsionRadius: 100,
+    danceStrength: 0,
+    attraction: 0,
+    trail: false,
+  },
+  {
+    initialSpeed: 210,
+    maxSpeed: 300,
+    impulse: 110,
+    maxRotation: 26,
+    maxRotationSpeed: 96,
+    bobForce: 165,
+    repulsion: 620,
+    repulsionRadius: 100,
+    danceStrength: 0,
+    attraction: 0,
+    trail: false,
+  },
+  {
+    initialSpeed: 240,
+    maxSpeed: 330,
+    impulse: 120,
+    maxRotation: 32,
+    maxRotationSpeed: 120,
+    bobForce: 190,
+    repulsion: 620,
+    repulsionRadius: 110,
+    danceStrength: 70,
+    attraction: 0,
+    trail: false,
+  },
+  {
+    initialSpeed: 260,
+    maxSpeed: 350,
+    impulse: 130,
+    maxRotation: 40,
+    maxRotationSpeed: 140,
+    bobForce: 60,
+    repulsion: 620,
+    repulsionRadius: 120,
+    danceStrength: 90,
+    attraction: 300,
+    trail: false,
+  },
+  {
+    initialSpeed: 280,
+    maxSpeed: 380,
+    impulse: 150,
+    maxRotation: 48,
+    maxRotationSpeed: 160,
+    bobForce: 80,
+    repulsion: 700,
+    repulsionRadius: 130,
+    danceStrength: 110,
+    attraction: 320,
+    trail: true,
   },
 ];
 
@@ -86,8 +207,12 @@ const topZ = ref(0);
 const canvasRef = ref<HTMLElement | null>(null);
 const carnivalLevel = ref(0);
 const isCarnival = ref(false);
+const carnivalToast = ref(false);
 const cardRefs = new Map<string, CarnivalCard>();
 const carnivalPhysics = new Map<string, CarnivalPhysics>();
+const carnivalTrails = new Map<string, { x: number; y: number; color: string }[]>();
+const particles: Particle[] = [];
+const fxCanvasRef = ref<HTMLCanvasElement | null>(null);
 
 let saveTimer: number | null = null;
 let saveQueue = Promise.resolve();
@@ -95,6 +220,14 @@ let pendingSaves = new Set<string>();
 let createdCount = 0;
 let carnivalFrame: number | null = null;
 let carnivalLastFrame = 0;
+let carnivalCenter: CarnivalCenter | null = null;
+let carnivalEventAt = 0;
+let fxContext: CanvasRenderingContext2D | null = null;
+let fxWidth = 0;
+let fxHeight = 0;
+let toastTimer: number | null = null;
+let collapseCycleTimer: number | null = null;
+let collapseCycleInfinite = false;
 
 const allCollapsed = computed(
   () => notes.value.length > 0 && notes.value.every((n) => n.collapsed),
@@ -193,6 +326,9 @@ function createCarnivalPhysics(
     rotationSpeed: randomSigned(profile.maxRotationSpeed),
     bobPhase: randomBetween(0, Math.PI * 2),
     nextImpulseAt: now + randomBetween(240, 720),
+    danceType: CARNIVAL_DANCE_TYPES[Math.floor(Math.random() * CARNIVAL_DANCE_TYPES.length)],
+    dancePhase: randomBetween(0, Math.PI * 2),
+    scale: 1,
   };
   limitVelocity(state, profile.maxSpeed);
   return state;
@@ -247,9 +383,14 @@ function updateCarnival(now: number): void {
   const canvasWidth = canvas.clientWidth;
   const canvasHeight = canvas.clientHeight;
 
+  updateCarnivalCenter(profile, elapsed, canvasWidth, canvasHeight);
+  maybeTriggerCarnivalEvent(profile, now, canvasWidth, canvasHeight);
+
+  const states: CarnivalPhysics[] = [];
   for (const note of notes.value) {
     const state = carnivalPhysics.get(note.id);
     if (!state) continue;
+    states.push(state);
 
     if (now >= state.nextImpulseAt) {
       state.velocityX += randomSigned(profile.impulse);
@@ -263,6 +404,9 @@ function updateCarnival(now: number): void {
     }
 
     state.velocityY += Math.sin(now * 0.007 + state.bobPhase) * profile.bobForce * elapsed;
+    if (profile.attraction > 0 && carnivalCenter) {
+      applyAttraction(state, carnivalCenter, profile.attraction, elapsed);
+    }
     limitVelocity(state, profile.maxSpeed);
     state.x += state.velocityX * elapsed;
     state.y += state.velocityY * elapsed;
@@ -286,10 +430,282 @@ function updateCarnival(now: number): void {
       state.rotation = Math.sign(state.rotation) * profile.maxRotation;
       state.rotationSpeed *= -0.92;
     }
-    cardRefs.get(note.id)?.setCarnivalTransform(state.x - note.x, state.y - note.y, state.rotation);
   }
 
+  if (profile.repulsion > 0) applyRepulsion(states, profile, elapsed);
+
+  for (const note of notes.value) {
+    const state = carnivalPhysics.get(note.id);
+    if (!state) continue;
+    const dance = danceOffset(state, profile, now);
+    const scale =
+      profile.danceStrength > 0 ? 1 + Math.sin(now * 0.005 + state.dancePhase) * 0.05 : 1;
+    state.scale = scale;
+    if (profile.trail) {
+      const points = carnivalTrails.get(note.id) ?? [];
+      points.push({ x: state.x + dance.x, y: state.y + dance.y, color: note.color });
+      if (points.length > 12) points.shift();
+      carnivalTrails.set(note.id, points);
+    } else {
+      carnivalTrails.delete(note.id);
+    }
+    cardRefs
+      .get(note.id)
+      ?.setCarnivalTransform(
+        state.x - note.x + dance.x,
+        state.y - note.y + dance.y,
+        state.rotation + dance.rotation,
+        scale,
+      );
+  }
+
+  updateAndDrawFx(now, elapsed, profile);
   resumeCarnival();
+}
+
+function danceOffset(
+  state: CarnivalPhysics,
+  profile: CarnivalProfile,
+  now: number,
+): { x: number; y: number; rotation: number } {
+  if (profile.danceStrength <= 0) return { x: 0, y: 0, rotation: 0 };
+  const strength = profile.danceStrength;
+  const phase = state.dancePhase;
+  const time = now * 0.001;
+  switch (state.danceType) {
+    case 'wobble':
+      return {
+        x: Math.sin(time * 4.6 + phase) * strength,
+        y: 0,
+        rotation: Math.sin(time * 3.1 + phase) * strength * 0.35,
+      };
+    case 'bounce':
+      return {
+        x: 0,
+        y: Math.abs(Math.sin(time * 5.4 + phase)) * strength * 1.25,
+        rotation: 0,
+      };
+    case 'circle': {
+      const radius = strength * 1.15;
+      const angle = time * 2.8 + phase;
+      return { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius, rotation: 0 };
+    }
+    case 'spin':
+      return { x: 0, y: 0, rotation: time * 34 * (strength / 100) };
+  }
+}
+
+function applyRepulsion(
+  states: CarnivalPhysics[],
+  profile: CarnivalProfile,
+  elapsed: number,
+): void {
+  const radius = profile.repulsionRadius;
+  const radiusSquared = radius * radius;
+  for (let i = 0; i < states.length; i++) {
+    const a = states[i];
+    for (let j = i + 1; j < states.length; j++) {
+      const b = states[j];
+      const dx = a.x - b.x;
+      const dy = a.y - b.y;
+      const distanceSquared = dx * dx + dy * dy;
+      if (distanceSquared >= radiusSquared || distanceSquared === 0) continue;
+      const distance = Math.sqrt(distanceSquared);
+      const force = profile.repulsion * (1 - distance / radius) * elapsed;
+      const nx = dx / distance;
+      const ny = dy / distance;
+      a.velocityX += nx * force;
+      a.velocityY += ny * force;
+      b.velocityX -= nx * force;
+      b.velocityY -= ny * force;
+    }
+  }
+}
+
+function applyAttraction(
+  state: CarnivalPhysics,
+  center: CarnivalCenter,
+  strength: number,
+  elapsed: number,
+): void {
+  const dx = center.x - state.x;
+  const dy = center.y - state.y;
+  const distance = Math.max(1, Math.hypot(dx, dy));
+  state.velocityX += (dx / distance) * strength * elapsed;
+  state.velocityY += (dy / distance) * strength * elapsed;
+  state.velocityX += (-dy / distance) * strength * 0.35 * elapsed;
+  state.velocityY += (dx / distance) * strength * 0.35 * elapsed;
+}
+
+function updateCarnivalCenter(
+  profile: CarnivalProfile,
+  elapsed: number,
+  width: number,
+  height: number,
+): void {
+  if (profile.attraction <= 0) {
+    carnivalCenter = null;
+    return;
+  }
+  if (!carnivalCenter) {
+    const base = Math.min(width, height);
+    carnivalCenter = {
+      x: width / 2,
+      y: height / 2,
+      angle: randomBetween(0, Math.PI * 2),
+      radius: randomBetween(base * 0.16, base * 0.34),
+      speed: randomBetween(0.5, 0.9),
+    };
+  }
+  carnivalCenter.angle += carnivalCenter.speed * elapsed;
+  carnivalCenter.x = width / 2 + Math.cos(carnivalCenter.angle) * carnivalCenter.radius;
+  carnivalCenter.y = height / 2 + Math.sin(carnivalCenter.angle) * carnivalCenter.radius;
+}
+
+function maybeTriggerCarnivalEvent(
+  profile: CarnivalProfile,
+  now: number,
+  width: number,
+  height: number,
+): void {
+  if (profile.attraction <= 0 || carnivalPhysics.size === 0) return;
+  if (now < carnivalEventAt) return;
+  carnivalEventAt = now + randomBetween(3000, 5000);
+  const kind = Math.floor(Math.random() * 3);
+  if (kind === 0) {
+    const cx = width / 2;
+    const cy = height / 2;
+    for (const state of carnivalPhysics.values()) {
+      const dx = cx - state.x;
+      const dy = cy - state.y;
+      const distance = Math.max(1, Math.hypot(dx, dy));
+      state.velocityX += (dx / distance) * 460;
+      state.velocityY += (dy / distance) * 460;
+    }
+    spawnParticles(18);
+  } else if (kind === 1) {
+    const targets = [...carnivalPhysics.values()];
+    const target = targets[Math.floor(Math.random() * targets.length)];
+    target.velocityX = randomSigned(560);
+    target.velocityY = randomSigned(560);
+    spawnParticles(26, target.x, target.y);
+  } else {
+    for (const state of carnivalPhysics.values()) {
+      state.velocityX *= 0.42;
+      state.velocityY *= 0.42;
+      state.rotationSpeed *= 0.8;
+    }
+    spawnParticles(10);
+  }
+}
+
+function ensureFxCanvas(): void {
+  const canvas = fxCanvasRef.value;
+  const workspace = canvasRef.value;
+  if (!canvas || !workspace) return;
+  const width = workspace.clientWidth;
+  const height = workspace.clientHeight;
+  if (width === 0 || height === 0 || (canvas.width > 0 && fxWidth === width)) return;
+  const ratio = Math.min(2, window.devicePixelRatio || 1);
+  canvas.width = Math.round(width * ratio);
+  canvas.height = Math.round(height * ratio);
+  fxContext = canvas.getContext('2d');
+  fxContext?.setTransform(ratio, 0, 0, ratio, 0, 0);
+  fxWidth = width;
+  fxHeight = height;
+}
+
+function spawnParticles(count: number, x?: number, y?: number): void {
+  const originX = x ?? randomBetween(0, fxWidth || 1);
+  const originY = y ?? randomBetween(0, (fxHeight || 1) * 0.6);
+  for (let index = 0; index < count && particles.length < MAX_PARTICLES; index++) {
+    const roll = Math.random();
+    const kind: ParticleKind = roll < 0.5 ? 'confetti' : roll < 0.78 ? 'dot' : 'star';
+    particles.push({
+      x: originX,
+      y: originY,
+      velocityX: randomSigned(randomBetween(60, 260)),
+      velocityY: randomBetween(-320, -40),
+      life: 0,
+      maxLife: randomBetween(0.7, 1.3),
+      size:
+        kind === 'confetti'
+          ? randomBetween(4, 8)
+          : kind === 'star'
+            ? randomBetween(10, 16)
+            : randomBetween(2, 4),
+      color: PARTICLE_COLORS[Math.floor(Math.random() * PARTICLE_COLORS.length)],
+      kind,
+      rotation: randomBetween(0, Math.PI * 2),
+      rotationSpeed: randomSigned(7),
+    });
+  }
+}
+
+function updateAndDrawFx(now: number, elapsed: number, profile: CarnivalProfile): void {
+  ensureFxCanvas();
+  const context = fxContext;
+  if (!context) return;
+  context.clearRect(0, 0, fxWidth, fxHeight);
+
+  if (profile.trail) {
+    for (const points of carnivalTrails.values()) {
+      const count = points.length;
+      for (let index = 0; index < count; index++) {
+        const point = points[index];
+        context.globalAlpha = ((index + 1) / count) * 0.45;
+        context.beginPath();
+        context.arc(point.x, point.y, 2.5, 0, Math.PI * 2);
+        context.fillStyle = point.color;
+        context.fill();
+      }
+    }
+  }
+
+  if (profile.danceStrength > 0 && particles.length < MAX_PARTICLES && Math.random() < 0.35) {
+    spawnParticles(1);
+  }
+
+  for (let index = particles.length - 1; index >= 0; index--) {
+    const particle = particles[index];
+    particle.life += elapsed;
+    if (particle.life >= particle.maxLife) {
+      particles.splice(index, 1);
+      continue;
+    }
+    particle.velocityY += 36 * elapsed;
+    particle.x += particle.velocityX * elapsed;
+    particle.y += particle.velocityY * elapsed;
+    particle.rotation += particle.rotationSpeed * elapsed;
+    const alpha = 1 - particle.life / particle.maxLife;
+    context.globalAlpha = alpha;
+    context.fillStyle = particle.color;
+    if (particle.kind === 'confetti') {
+      context.save();
+      context.translate(particle.x, particle.y);
+      context.rotate(particle.rotation);
+      context.fillRect(-particle.size / 2, -particle.size / 2, particle.size, particle.size * 0.6);
+      context.restore();
+    } else if (particle.kind === 'star') {
+      context.font = `${particle.size}px serif`;
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      context.fillText('✦', particle.x, particle.y);
+    } else {
+      context.beginPath();
+      context.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+      context.fill();
+    }
+  }
+  context.globalAlpha = 1;
+}
+
+function showCarnivalToast(): void {
+  carnivalToast.value = true;
+  if (toastTimer !== null) window.clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => {
+    carnivalToast.value = false;
+  }, 3600);
 }
 
 function boostCarnival(): void {
@@ -309,16 +725,31 @@ function boostCarnival(): void {
 }
 
 async function startCarnival(): Promise<void> {
-  carnivalLevel.value = Math.min(carnivalLevel.value + 1, CARNIVAL_PROFILES.length);
-  if (isCarnival.value) {
-    boostCarnival();
+  carnivalLevel.value += 1;
+  const isFirstEntry = !isCarnival.value;
+  if (isFirstEntry) {
+    arrangeCanvas();
+    await nextTick();
+    isCarnival.value = true;
+    initializeCarnivalPhysics();
+    ensureFxCanvas();
+    spawnParticles(90);
+    resumeCarnival();
     return;
   }
-  arrangeCanvas();
-  await nextTick();
-  isCarnival.value = true;
-  initializeCarnivalPhysics();
-  resumeCarnival();
+  boostCarnival();
+  if (carnivalLevel.value === 5) {
+    runCollapseCycle();
+  }
+  if (carnivalLevel.value === 7) {
+    carnivalCenter = null;
+    carnivalEventAt = performance.now() + randomBetween(3000, 5000);
+  }
+  if (carnivalLevel.value === 8) {
+    showCarnivalToast();
+    spawnParticles(140);
+    runCollapseCycle(true);
+  }
 }
 
 function maxPinnedZ(): number {
@@ -368,6 +799,10 @@ async function deleteNote(id: string): Promise<void> {
   notes.value = notes.value.filter((item) => item.id !== id);
   pendingSaves.delete(id);
   carnivalPhysics.delete(id);
+  carnivalTrails.delete(id);
+  if (isCarnival.value && getCarnivalProfile().danceStrength > 0) {
+    spawnParticles(16, note.x + note.width / 2, note.y + note.height / 2);
+  }
   try {
     await deleteNoteSticky(id);
   } catch (error) {
@@ -383,19 +818,57 @@ async function clearAll(): Promise<void> {
   topZ.value = 0;
   createdCount = 0;
   carnivalPhysics.clear();
+  carnivalTrails.clear();
+  particles.length = 0;
+  fxContext?.clearRect(0, 0, fxWidth, fxHeight);
+  stopCollapseCycle();
   await clearNoteStickies().catch((error: unknown) => {
     console.error('清空便签失败：', error);
   });
 }
 
-function toggleAll(): void {
-  if (notes.value.length === 0) return;
-  const nextCollapsed = !allCollapsed.value;
+function applyCollapse(nextCollapsed: boolean, persist: boolean): void {
   for (const note of notes.value) {
     note.collapsed = nextCollapsed;
-    pendingSaves.add(note.id);
+    if (persist) pendingSaves.add(note.id);
   }
-  flushSaves();
+  if (persist) flushSaves();
+}
+
+function toggleAll(): void {
+  if (notes.value.length === 0) return;
+  applyCollapse(!allCollapsed.value, true);
+}
+
+const COLLAPSE_CYCLE_COUNT = 8;
+const COLLAPSE_CYCLE_INTERVAL = 260;
+
+function stopCollapseCycle(): void {
+  collapseCycleInfinite = false;
+  if (collapseCycleTimer !== null) {
+    window.clearTimeout(collapseCycleTimer);
+    collapseCycleTimer = null;
+  }
+}
+
+function runCollapseCycle(infinite = false): void {
+  stopCollapseCycle();
+  collapseCycleInfinite = infinite;
+  let remaining = infinite ? 0 : COLLAPSE_CYCLE_COUNT;
+  const step = (): void => {
+    const done = !collapseCycleInfinite && remaining <= 0;
+    if (!isCarnival.value || done) {
+      collapseCycleTimer = null;
+      return;
+    }
+    if (notes.value.length > 0) {
+      applyCollapse(!allCollapsed.value, !collapseCycleInfinite);
+      remaining -= 1;
+    }
+    if (collapseCycleInfinite) toggleThemeLive();
+    collapseCycleTimer = window.setTimeout(step, COLLAPSE_CYCLE_INTERVAL);
+  };
+  step();
 }
 
 function collapseOthers(id: string): void {
@@ -499,9 +972,11 @@ function handleVisibilityChange(): void {
   if (document.visibilityState === 'hidden') {
     flushSaves();
     pauseCarnival();
+    stopCollapseCycle();
     return;
   }
   resumeCarnival();
+  if (carnivalLevel.value >= 8) runCollapseCycle(true);
 }
 
 function handleBeforeUnload(event: BeforeUnloadEvent): void {
@@ -522,6 +997,11 @@ onBeforeUnmount(() => {
   pauseCarnival();
   clearCarnivalTransforms();
   carnivalPhysics.clear();
+  carnivalTrails.clear();
+  particles.length = 0;
+  carnivalCenter = null;
+  if (toastTimer !== null) window.clearTimeout(toastTimer);
+  stopCollapseCycle();
   document.removeEventListener('visibilitychange', handleVisibilityChange);
   window.removeEventListener('beforeunload', handleBeforeUnload);
 });
@@ -549,6 +1029,7 @@ onBeforeUnmount(() => {
 
     <main ref="canvasRef" class="notes-editor__workspace">
       <div class="notes-editor__surface" aria-hidden="true"></div>
+      <canvas ref="fxCanvasRef" class="notes-editor__fx" aria-hidden="true"></canvas>
       <template v-if="!loading">
         <NoteCard
           v-for="note in notes"
@@ -567,5 +1048,8 @@ onBeforeUnmount(() => {
         </div>
       </template>
     </main>
+    <div v-if="carnivalToast" class="notes-editor__toast" role="status" aria-live="polite">
+      🎉 你发现了便签宇宙。
+    </div>
   </section>
 </template>

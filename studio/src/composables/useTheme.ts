@@ -63,5 +63,11 @@ export function useTheme() {
     setPreference(resolved.value === 'dark' ? 'light' : 'dark');
   }
 
-  return { preference, resolved, setPreference, toggle };
+  function toggleWithoutPersist(): void {
+    const next = resolved.value === 'dark' ? 'light' : 'dark';
+    preference.value = next;
+    applyTheme(next);
+  }
+
+  return { preference, resolved, setPreference, toggle, toggleWithoutPersist };
 }
