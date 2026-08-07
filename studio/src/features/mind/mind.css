@@ -314,6 +314,10 @@
   box-shadow: 0 0 0 8px color-mix(in srgb, var(--mind-accent) 18%, transparent) !important;
 }
 
+.mind-visual-canvas .map-container me-parent me-epd {
+  z-index: 25;
+}
+
 .mind-node-actions {
   position: absolute;
   z-index: 18;

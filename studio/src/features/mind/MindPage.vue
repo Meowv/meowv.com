@@ -250,7 +250,7 @@ function handleWorkspacePointerMove(event: PointerEvent): void {
   hoveredNodeAction.value = {
     id,
     left: nodeRect.left + nodeRect.width / 2 - hostRect.left,
-    top: nodeRect.bottom + 5 - hostRect.top,
+    top: nodeRect.top - 35 - hostRect.top,
     deletable: !node.closest('me-root'),
   };
 }

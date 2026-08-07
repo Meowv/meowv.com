@@ -35,6 +35,19 @@ export class VisualMindEditorAdapter {
     if (target) void this.instance.beginEdit(target as Topic);
   };
 
+  // overflowHidden 会禁用 MindElixir 内置的折叠按钮点击，这里自行处理
+  private readonly handleExpandClick = (event: MouseEvent): void => {
+    if (!this.instance || event.button !== 0) return;
+    const target = event.target instanceof Element ? event.target.closest('me-epd') : null;
+    if (!target) return;
+    const topic = target.previousElementSibling;
+    if (!(topic instanceof HTMLElement) || topic.tagName !== 'ME-TPC') return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.ctrlKey || event.metaKey) this.instance.expandNodeAll(topic as Topic);
+    else this.instance.expandNode(topic as Topic);
+  };
+
   private readonly handleNodePointerDown = (event: PointerEvent): void => {
     if (!(event.target instanceof Element)) return;
     const node = event.target.closest<Topic>('me-tpc');
@@ -202,6 +215,7 @@ export class VisualMindEditorAdapter {
     });
     this.instance.bus.addListener('expandNode', callbacks.onChange);
     container.addEventListener('dblclick', this.handleDoubleClick);
+    container.addEventListener('click', this.handleExpandClick);
     container.addEventListener('pointerdown', this.handleNodePointerDown, true);
     container.addEventListener('pointerdown', this.handleCanvasPointerDown, true);
     container.addEventListener('keydown', this.handleNodeKeyDown, true);
@@ -291,6 +305,7 @@ export class VisualMindEditorAdapter {
   }
   dispose(): void {
     this.container?.removeEventListener('dblclick', this.handleDoubleClick);
+    this.container?.removeEventListener('click', this.handleExpandClick);
     this.container?.removeEventListener('pointerdown', this.handleNodePointerDown, true);
     this.container?.removeEventListener('pointerdown', this.handleCanvasPointerDown, true);
     this.container?.removeEventListener('keydown', this.handleNodeKeyDown, true);
