@@ -115,6 +115,10 @@ const primaryRoutes = [
   { label: 'Mind', to: '/mind', icon: IconSitemap, className: 'nav-mind' },
   { label: 'Notes', to: '/notes', icon: IconNotes, className: 'nav-notes' },
 ];
+
+function isRouteActive(to: string): boolean {
+  return route.path === to || route.path.startsWith(`${to}/`);
+}
 </script>
 
 <template>
@@ -159,7 +163,7 @@ const primaryRoutes = [
           v-for="navRoute in primaryRoutes"
           :key="navRoute.to"
           :to="navRoute.to"
-          :class="navRoute.className"
+          :class="[navRoute.className, { 'is-active': isRouteActive(navRoute.to) }]"
           @click="closeMobileNavigation"
         >
           <component :is="navRoute.icon" :size="21" stroke-width="1.8" aria-hidden="true" />

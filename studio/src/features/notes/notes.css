@@ -155,7 +155,7 @@
   color: #fff;
   background: var(--note-accent);
   box-shadow: 0 3px 10px color-mix(in srgb, var(--note-accent) 28%, transparent);
-  opacity: 0.35;
+  opacity: 0.18;
   transform: translateX(-50%);
   transition:
     top 160ms ease,
@@ -172,7 +172,7 @@
 .notes-editor__header-toggle:focus-visible {
   color: #fff;
   background: color-mix(in srgb, var(--note-accent) 88%, #000);
-  opacity: 1;
+  opacity: 0.6;
 }
 
 .notes-editor__header-toggle > svg {

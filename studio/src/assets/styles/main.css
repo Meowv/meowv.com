@@ -148,7 +148,7 @@ button {
 .studio-header-toggle:focus-visible {
   color: #fff;
   background: color-mix(in srgb, var(--nav-accent, var(--color-brand)) 88%, #000);
-  opacity: 1;
+  opacity: 0.6;
   transform: translate(-50%, -1px);
 }
 
@@ -224,11 +224,11 @@ button {
   color: var(--nav-accent, var(--color-brand));
 }
 
-.studio-nav a.router-link-active {
+.studio-nav a.is-active {
   color: var(--nav-accent, var(--color-brand));
 }
 
-.studio-nav a.router-link-active::after {
+.studio-nav a.is-active::after {
   background: var(--nav-accent, var(--color-brand));
 }
 
@@ -1312,7 +1312,7 @@ body.has-dialog-open {
   .studio-nav a::after {
     display: none;
   }
-  .studio-nav a.router-link-active {
+  .studio-nav a.is-active {
     background: color-mix(in srgb, var(--nav-accent, var(--color-brand)) 12%, transparent);
     color: var(--nav-accent, var(--color-brand));
   }

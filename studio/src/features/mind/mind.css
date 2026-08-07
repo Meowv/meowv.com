@@ -150,7 +150,7 @@
 .mind-editor__header-toggle:hover,
 .mind-editor__header-toggle:focus-visible {
   background: var(--mind-accent-strong);
-  opacity: 1;
+  opacity: 0.6;
   transform: translate(-50%, -1px);
 }
 
