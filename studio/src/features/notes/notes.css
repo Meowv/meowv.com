@@ -136,6 +136,26 @@
   background: color-mix(in srgb, var(--color-danger) 12%, transparent);
 }
 
+.note-action--carnival {
+  color: var(--note-accent);
+}
+
+.note-action--carnival > svg {
+  animation: note-action-carnival 300ms cubic-bezier(0.22, 0.8, 0.24, 1);
+}
+
+@keyframes note-action-carnival {
+  0% {
+    transform: scale(1) rotate(0);
+  }
+  55% {
+    transform: scale(1.28) rotate(24deg);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+  }
+}
+
 .notes-editor__separator {
   width: 1px;
   height: 20px;
@@ -187,6 +207,10 @@
   min-height: 0;
   overflow: hidden;
   isolation: isolate;
+}
+
+.notes-editor--carnival .note-card {
+  will-change: transform;
 }
 
 .notes-editor__surface {

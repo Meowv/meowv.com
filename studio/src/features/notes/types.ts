@@ -24,7 +24,7 @@ export interface NotesPreferences {
   headerVisible?: boolean;
 }
 
-export const NOTE_DEFAULT_COLOR = '#d97706';
+export const NOTE_DEFAULT_COLOR = '#FEF3C7';
 export const NOTE_DEFAULT_OPACITY = 0.85;
 export const NOTE_MIN_OPACITY = 0.3;
 export const NOTE_MAX_OPACITY = 1;
@@ -34,17 +34,15 @@ export const NOTE_MIN_HEIGHT = 140;
 export const NOTE_DEFAULT_WIDTH = 300;
 export const NOTE_DEFAULT_HEIGHT = 220;
 
-export const NOTE_COLOR_OPTIONS: string[] = [
-  '#d97706',
-  '#f59e0b',
-  '#fbbf24',
-  '#ef4444',
-  '#ec4899',
-  '#8b5cf6',
-  '#6366f1',
-  '#0ea5e9',
-  '#14b8a6',
-  '#22c55e',
-  '#475569',
-  '#a3a3a3',
+export const NOTE_COLOR_OPTIONS = [
+  { name: '经典黄', value: '#FEF3C7' },
+  { name: '蜜桃橙', value: '#FED7AA' },
+  { name: '珊瑚红', value: '#FECACA' },
+  { name: '樱花粉', value: '#FBCFE8' },
+  { name: '薰衣草', value: '#E9D5FF' },
+  { name: '淡靛蓝', value: '#C7D2FE' },
+  { name: '天空蓝', value: '#BAE6FD' },
+  { name: '薄荷青', value: '#99F6E4' },
+  { name: '抹茶绿', value: '#BBF7D0' },
+  { name: '雾灰', value: '#E2E8F0' },
 ];

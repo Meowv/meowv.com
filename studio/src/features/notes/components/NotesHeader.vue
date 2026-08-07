@@ -5,6 +5,7 @@ import {
   IconChevronDown,
   IconCircleChevronUp,
   IconCircleChevronDown,
+  IconConfetti,
   IconFilePlus,
   IconMoon,
   IconSun,
@@ -15,6 +16,7 @@ import StudioLogo from '@/components/StudioLogo.vue';
 defineProps<{
   headerVisible: boolean;
   allCollapsed: boolean;
+  carnivalLevel: number;
   resolvedTheme: 'light' | 'dark';
 }>();
 
@@ -23,6 +25,7 @@ const emit = defineEmits<{
   (e: 'create'): void;
   (e: 'toggle-all'): void;
   (e: 'arrange'): void;
+  (e: 'carnival'): void;
   (e: 'clear'): void;
   (e: 'toggle-theme'): void;
 }>();
@@ -65,6 +68,16 @@ const emit = defineEmits<{
         @click="emit('arrange')"
       >
         <IconArrowsMaximize :size="18" />
+      </button>
+      <button
+        class="note-action"
+        :class="{ 'note-action--carnival': carnivalLevel > 0 }"
+        type="button"
+        aria-label="狂欢"
+        data-tooltip="狂欢"
+        @click="emit('carnival')"
+      >
+        <IconConfetti :key="carnivalLevel" :size="18" />
       </button>
       <span class="notes-editor__separator" aria-hidden="true"></span>
       <button

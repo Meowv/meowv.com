@@ -201,10 +201,7 @@ function detectShakeTrigger(event: PointerEvent): void {
   if (distance < SHAKE_MIN_DISTANCE || distance <= Math.abs(dy)) return;
 
   const duration = now - shakeAnchorTime;
-  if (
-    duration > SHAKE_MAX_SEGMENT_DURATION ||
-    distance / Math.max(duration, 1) < SHAKE_MIN_SPEED
-  ) {
+  if (duration > SHAKE_MAX_SEGMENT_DURATION || distance / Math.max(duration, 1) < SHAKE_MIN_SPEED) {
     resetShakeTracking(event.clientX, event.clientY, now);
     return;
   }
@@ -368,6 +365,19 @@ function updateContent(value: string): void {
   emit('update', props.note.id, { content: value });
   emit('save', props.note.id);
 }
+
+function setCarnivalTransform(x: number, y: number, rotation: number): void {
+  rootRef.value?.style.setProperty(
+    'transform',
+    `translate3d(${x}px, ${y}px, 0) rotate(${rotation}deg)`,
+  );
+}
+
+function clearCarnivalTransform(): void {
+  rootRef.value?.style.removeProperty('transform');
+}
+
+defineExpose({ setCarnivalTransform, clearCarnivalTransform });
 </script>
 
 <template>
@@ -431,13 +441,14 @@ function updateContent(value: string): void {
           >
             <button
               v-for="color in NOTE_COLOR_OPTIONS"
-              :key="color"
+              :key="color.value"
               class="note-card__color"
-              :class="{ 'note-card__color--active': color === note.color }"
+              :class="{ 'note-card__color--active': color.value === note.color }"
               type="button"
-              :style="{ background: color }"
-              :aria-label="`使用颜色 ${color}`"
-              @click="selectColor(color)"
+              :style="{ background: color.value }"
+              :title="color.name"
+              :aria-label="`使用颜色 ${color.name}`"
+              @click="selectColor(color.value)"
             ></button>
           </span>
         </span>
