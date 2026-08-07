@@ -148,6 +148,15 @@ function toggleAll(): void {
   flushSaves();
 }
 
+function collapseOthers(id: string): void {
+  if (notes.value.length < 2) return;
+  for (const note of notes.value) {
+    note.collapsed = note.id !== id;
+    pendingSaves.add(note.id);
+  }
+  flushSaves();
+}
+
 function arrangeCanvas(): void {
   const canvas = canvasRef.value;
   if (!canvas) return;
@@ -284,6 +293,7 @@ onBeforeUnmount(() => {
           @save="saveNote"
           @delete="deleteNote"
           @front="bringToFront"
+          @shake="collapseOthers"
         />
         <div v-if="notes.length === 0" class="notes-editor__empty" role="status">
           <strong>还没有便签</strong>

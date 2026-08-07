@@ -77,7 +77,7 @@ function insertImage(dataUrl: string): void {
   const after = textarea.value.slice(textarea.selectionEnd);
   const needLeadingBreak = before.length > 0 && !before.endsWith('\n');
   const trailingBreak = after.length > 0 && !after.startsWith('\n');
-  const wrapped = `${needLeadingBreak ? '\n' : ''}![图片](${dataUrl})${trailingBreak ? '\n' : ''}`;
+  const wrapped = `${needLeadingBreak ? '\n' : ''}![](${dataUrl})${trailingBreak ? '\n' : ''}`;
   const next = `${before}${wrapped}${after}`;
   const cursor = before.length + wrapped.length;
   emit('update:modelValue', next);

@@ -28,11 +28,24 @@ const emit = defineEmits<{
   (e: 'save', id: string): void;
   (e: 'delete', id: string): void;
   (e: 'front', id: string): void;
+  (e: 'shake', id: string): void;
 }>();
+
+const SHAKE_MIN_DISTANCE = 32;
+const SHAKE_MIN_SPEED = 0.5;
+const SHAKE_MAX_SEGMENT_DURATION = 140;
+const SHAKE_REQUIRED_REVERSALS = 3;
+let shakeAnchorX = 0;
+let shakeAnchorY = 0;
+let shakeAnchorTime = 0;
+let shakeDirection = 0;
+let shakeReversals = 0;
+let shakeTriggered = false;
 
 const rootRef = ref<HTMLElement | null>(null);
 const colorMenuOpen = ref(false);
 const opacityMenuOpen = ref(false);
+const shakeFeedback = ref(false);
 const sliderRef = ref<HTMLElement | null>(null);
 let sliderDragging = false;
 const dragState = ref<{
@@ -44,6 +57,7 @@ const dragState = ref<{
   maxX: number;
   maxY: number;
 } | null>(null);
+let dragMoved = false;
 const resizeState = ref<{
   pointerId: number;
   startX: number;
@@ -95,6 +109,7 @@ const collapsedTitle = computed(() => {
   const firstLine = props.note.content.split('\n').find((line) => line.trim().length > 0) ?? '';
   return (
     firstLine
+      .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
       .replace(/^#+\s*/, '')
       .replace(/[*_~`>|-]/g, '')
       .trim() || '空白便签'
@@ -119,6 +134,9 @@ function onHeaderPointerDown(event: PointerEvent): void {
   if (target instanceof Element && target.closest('button')) return;
   const parent = rootRef.value?.parentElement;
   emit('front', props.note.id);
+  dragMoved = false;
+  resetShakeTracking(event.clientX, event.clientY, performance.now());
+  shakeTriggered = false;
   dragState.value = {
     pointerId: event.pointerId,
     startX: event.clientX,
@@ -134,6 +152,10 @@ function onHeaderPointerDown(event: PointerEvent): void {
 function onHeaderPointerMove(event: PointerEvent): void {
   const state = dragState.value;
   if (!state || state.pointerId !== event.pointerId) return;
+  if (!dragMoved && Math.hypot(event.clientX - state.startX, event.clientY - state.startY) > 6) {
+    dragMoved = true;
+  }
+  if (!shakeTriggered) detectShakeTrigger(event);
   const keepVisible = 16;
   const x = state.startLeft + event.clientX - state.startX;
   const y = state.startTop + event.clientY - state.startY;
@@ -151,6 +173,67 @@ function onHeaderPointerUp(event: PointerEvent): void {
   if (dragState.value?.pointerId !== event.pointerId) return;
   dragState.value = null;
   emit('save', props.note.id);
+}
+
+function onHeaderDoubleClick(event: MouseEvent): void {
+  if (dragMoved) {
+    dragMoved = false;
+    return;
+  }
+  const target = event.target;
+  if (target instanceof Element && target.closest('button')) return;
+  toggleCollapsed();
+}
+
+function resetShakeTracking(x: number, y: number, time: number): void {
+  shakeAnchorX = x;
+  shakeAnchorY = y;
+  shakeAnchorTime = time;
+  shakeDirection = 0;
+  shakeReversals = 0;
+}
+
+function detectShakeTrigger(event: PointerEvent): void {
+  const now = performance.now();
+  const dx = event.clientX - shakeAnchorX;
+  const dy = event.clientY - shakeAnchorY;
+  const distance = Math.abs(dx);
+  if (distance < SHAKE_MIN_DISTANCE || distance <= Math.abs(dy)) return;
+
+  const duration = now - shakeAnchorTime;
+  if (
+    duration > SHAKE_MAX_SEGMENT_DURATION ||
+    distance / Math.max(duration, 1) < SHAKE_MIN_SPEED
+  ) {
+    resetShakeTracking(event.clientX, event.clientY, now);
+    return;
+  }
+
+  const direction = dx > 0 ? 1 : -1;
+  if (shakeDirection === 0) {
+    shakeDirection = direction;
+  } else if (direction !== shakeDirection) {
+    shakeDirection = direction;
+    shakeReversals += 1;
+    if (shakeReversals >= SHAKE_REQUIRED_REVERSALS) {
+      triggerShake();
+      return;
+    }
+  }
+
+  shakeAnchorX = event.clientX;
+  shakeAnchorY = event.clientY;
+  shakeAnchorTime = now;
+}
+
+function triggerShake(): void {
+  shakeTriggered = true;
+  dragMoved = true;
+  shakeFeedback.value = true;
+  window.setTimeout(() => {
+    shakeFeedback.value = false;
+  }, 420);
+  emit('shake', props.note.id);
 }
 
 function onResizePointerDown(event: PointerEvent, fromLeft = false): void {
@@ -294,6 +377,7 @@ function updateContent(value: string): void {
     :class="{
       'note-card--collapsed': note.collapsed,
       'note-card--pinned': note.pinned,
+      'note-card--shake': shakeFeedback,
     }"
     :style="cardStyle()"
     aria-label="便签"
@@ -303,6 +387,7 @@ function updateContent(value: string): void {
       @pointerdown="onHeaderPointerDown"
       @pointermove="onHeaderPointerMove"
       @pointerup="onHeaderPointerUp"
+      @dblclick="onHeaderDoubleClick"
     >
       <button
         class="note-card__button"
@@ -425,14 +510,16 @@ function updateContent(value: string): void {
       </span>
     </header>
 
-    <div v-if="!note.collapsed" class="note-card__body" @pointerdown="emit('front', note.id)">
-      <NoteEditor
-        v-if="note.mode === 'edit'"
-        :model-value="note.content"
-        @update:model-value="updateContent"
-      />
-      <NotePreview v-else :content="note.content" />
-    </div>
+    <Transition name="note-card__body">
+      <div v-if="!note.collapsed" class="note-card__body" @pointerdown="emit('front', note.id)">
+        <NoteEditor
+          v-if="note.mode === 'edit'"
+          :model-value="note.content"
+          @update:model-value="updateContent"
+        />
+        <NotePreview v-else :content="note.content" />
+      </div>
+    </Transition>
 
     <span
       class="note-card__resizer"
