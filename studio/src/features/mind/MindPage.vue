@@ -513,6 +513,27 @@ function updateMarkdown(event: Event): void {
   scheduleSave();
 }
 
+const MARKDOWN_INDENT = '  ';
+
+function handleMarkdownKeydown(event: KeyboardEvent): void {
+  if (event.key !== 'Tab') return;
+  const target = event.target as HTMLTextAreaElement;
+  event.preventDefault();
+  const { selectionStart: start, selectionEnd: end, value } = target;
+  const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+  if (start === end) {
+    target.setRangeText(MARKDOWN_INDENT, start, end, 'end');
+  } else {
+    const blockEnd = value.indexOf('\n', end);
+    const endIndex = blockEnd === -1 ? value.length : blockEnd;
+    const block = value.slice(lineStart, endIndex);
+    const indented = block.replace(/^/gm, MARKDOWN_INDENT);
+    target.setRangeText(indented, lineStart, endIndex, 'end');
+    target.setSelectionRange(lineStart, lineStart + indented.length);
+  }
+  target.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
 function changeSplit(event: PointerEvent): void {
   const startX = event.clientX;
   const initial = markdownSplit.value;
@@ -1120,6 +1141,7 @@ onBeforeUnmount(() => {
           :value="activeDocument?.markdown"
           aria-label="Markdown 脑图内容"
           @input="updateMarkdown"
+          @keydown="handleMarkdownKeydown"
         ></textarea>
         <div
           class="mind-markdown-resizer"

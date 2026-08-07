@@ -44,5 +44,7 @@ export const NOTE_COLOR_OPTIONS = [
   { name: '天空蓝', value: '#BAE6FD' },
   { name: '薄荷青', value: '#99F6E4' },
   { name: '抹茶绿', value: '#BBF7D0' },
-  { name: '雾灰', value: '#E2E8F0' },
+  { name: '云雾灰', value: '#E2E8F0' },
+  { name: '奶油白', value: '#FEFCE8' },
+  { name: '燕麦棕', value: '#E7D7C9' },
 ];
