@@ -1313,7 +1313,8 @@ body.has-dialog-open {
     width: 18px;
     height: 18px;
   }
-  .home-shortcuts__item strong {
+  .home-shortcuts__item strong,
+  .home-shortcuts__item small {
     text-align: left;
   }
   .studio-footer__inner {
@@ -1395,7 +1396,7 @@ body.has-dialog-open {
 
 @media (max-width: 460px) {
   .home-shortcuts {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .home-shortcuts__item {

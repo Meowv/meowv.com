@@ -54,8 +54,33 @@
 - macOS Bash 3.2 在 `set -u` 下访问空数组会报错；遍历可为空的选择列表前使用安全的空值保护。
 - 构建应先在暂存位置完成，再替换对应发布目录，避免失败时留下半套产物。Zitie 只发布 `dist/client/`，不复制 `dist/server/`。
 - 不主动执行生产部署、Nginx reload、远程资源删除或覆盖；这些动作必须在明确授权后进行，并报告影响范围和可恢复方式。
+- Vite 配置文件自带的开发端口必须与根脚本、AGENTS.md 的固定端口一致（Blog 4000、Studio 4001、Zitie 4002）。`run.sh` 会以 `--port` 强制覆盖，但不要依赖这一覆盖：`vite.config.ts` 的 `server`/`preview` 端口应当与脚本保持一致，避免直接 `pnpm dev` 时静默占用其他端口。
 
-## 7. 交付清单
+## 7. 沉浸式编辑器的布局与双引擎集成
+
+- 沉浸式路由（Whiteboard、Mind）不渲染 Studio 默认顶栏和页脚。`StudioShell` 通过 `route.meta.feature` 计算 `isImmersive`，隐藏外壳头部；这些页面自带可折叠自绘顶部栏（偏好存 localStorage）与返回首页入口，全屏画布占满 `.studio-main`。
+- Draw 是 Vue 壳 + React（Excalidraw）双引擎：`DrawPage.vue` 在 `onMounted` 动态 import `editor.ts` 并 `createRoot(element)` 挂载，`onBeforeUnmount` 卸载根实例；编辑器代码用 `createElement` 书写、不引入 JSX 构建步骤。第三方编辑器必须延迟加载、路由退出时销毁，避免残留事件与动画。
+- React 层自建顶栏、空画布引导、本地画板侧栏、命令面板和重命名/删除/清空对话框，不再依赖 Excalidraw 自带组件；顶部栏可折叠并持久化。`Editor` 的标题、保存状态、画板列表都走 React state，通过 `apiRef`（`excalidrawAPI`）与 Excalidraw 实例交互。
+- 主题双向同步：Vue 的 `data-theme` 变化由 `MutationObserver` 读回 `studioTheme` 刷新 React；Excalidraw 的画布 `appState.theme` 变化则回写 `setTheme`，避免两种主题状态分叉。
+- Excalidraw 原生菜单文案通过 `MutationObserver` 在渲染后批量替换 `aria-label`/`title`/`placeholder` 和文本节点；自定义 tooltip 已承担提示时移除重复的原生 `title`。
+- 白板保存状态机（loading/saved/saving/dirty/failed/unavailable）区分「已保存到原文件」与「已自动保存」；变更防抖（800ms）后写 IndexedDB，并在 `visibilitychange`/`beforeunload` 兜底落盘。写回本地文件使用 File System Access 的 `createWritable`，权限失效记录到阻断集合，下一次保存重新 `requestPermission`；浏览器内副本与原文件写回是两条通道，状态文案和提示要同时覆盖两者。
+- Mind 用 adapter 隔离第三方引擎：`VisualMindEditorAdapter` 封装 mind-elixir 的挂载/增删改/缩放/主题/方向，`MarkmapAdapter` 封装 markmap 的 SVG 渲染与缩放，页面不直接依赖第三方 API。
+- Mind 支持两类文档（visual 可视化、markdown 分栏预览），工具栏按文档类型切换：可视化视图提供撤销/重做/缩放/适应/布局切换和悬停节点操作（添加子、同级、删除）；Markdown 视图只有缩放/适应，并用可拖拽分隔条控制编辑区与预览区宽度（`--markdown-split` 变量约束在 20%~70%）。
+- Mind 主题按文档保存：`settings.themeId` 对应 6 套内建配色，切换时按当前深浅主题取 `accent`/`darkAccent` 生成 `--mind-accent` 系列变量并同步给两个编辑器；`changeMindTheme` 与布局切换后立即 `scheduleSave`。
+- Mind 导入导出链路：`.mind` 实际是 ZIP（`manifest.json` + `map.json`/`content.md`），图片导出走 `@zumer/snapdom` 截图（scale 2）；`.json/.md/.txt` 有不同的解析与回退逻辑，导入失败需要给出明确提示并保持原文档不变。
+- 保存队列串行化：`saveQueue = saveQueue.then(...)` 保证对 IndexedDB/文件系统的写入不并发交错；切换文档、新建、导入、导出前都先落盘当前文档再操作目标文档。
+- 沉浸式页面的验收覆盖：空画布引导、有内容画布、深浅色主题、窄屏无横向溢出、两种文档互切后保存无丢失、文件授权失效后的提示与重新授权、导出 PNG/PDF 等产物与实际浏览器验证。
+
+## 8. 菜单色、页面主题与首页渐变色
+
+- 菜单主题色以 `assets/styles/tokens.css` 为单一来源，`--menu-{image,pdf,ocr,markdown,office,draw,mind}` 及暗色下更亮的 `--menu-{feature}-foreground` 成对定义；各功能页面把对应菜单色锚定为自己的主题令牌，命名并不统一：image(`--primary`/`--color-primary`)、pdf(`--color-primary`)、office(`--brand`)、markdown(`--color-brand` 系)、draw(`--color-brand`)、mind(`--mind-accent` 系)。
+- 导航栏每个链接通过 `.nav-{feature}` 设置 `--nav-accent`，激活态下划线使用该色；沉浸式页面用 `--nav-accent` 渲染收起/展开按钮（`studio-header-toggle`）与某些元素。
+- 首页「快捷工作台」卡片用 `.home-shortcuts__item--{feature}` 设置 `--shortcut-accent`/`--shortcut-solid` 主题色，与导航、页面主题保持一致；修改菜单名称、颜色或顺序时，按第 1 篇的要点核对所有引用：`tokens.css`、主样式的 `.nav-*` 与 `--nav-accent`、`main.css` 的 `.home-shortcuts__item--*`、各 feature CSS 的锚定变量，最后是首页渐变。
+- 首页标题“Meowv Studio”使用 `--studio-menu-gradient` 做 `background-clip: text` 字色渐变，并叠加 `background-position` 动画流动出「颜色滚动」效果；其下的短下划线用同一渐变反向往返运动。渐变色由 7 个菜单色在 `oklch` 空间分段插值（每段约 14.29%）首尾相接，因此对菜单色的修改会同时反映在标题渐变上。
+- 渐变类和动画定义在 `.home-copy__product--animated`，白板编辑器内的返回首页按钮与空画布引导也复用该类，保证跨工具首页品牌一致。
+- 修改此处颜色时不要只改某一处：在 `tokens.css` 更新 `--menu-{feature}`/`--menu-{feature}-foreground` 后，检索所有 `--menu-{feature}`、`--shortcut-*`、`--nav-accent`、`--color-brand*`、`--mind-accent` 引用，以及 `--studio-menu-gradient` 的插值节点，逐个确认是否需要同步（暗色值与亮色会在渐变和暗色主题中同时出现）。
+
+## 9. 交付清单
 
 每次交付至少说明：
 

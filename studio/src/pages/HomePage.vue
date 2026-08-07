@@ -64,7 +64,7 @@ const quickRoutes = [
   },
   {
     label: 'Mind',
-    description: '本地脑图、Markdown 脑图',
+    description: '思维导图、Markdown 脑图',
     to: '/mind',
     icon: IconSitemap,
     tone: 'mind',

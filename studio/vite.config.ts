@@ -71,13 +71,13 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0',
-    port: 4007,
+    port: 4001,
     strictPort: true,
     allowedHosts: ['terminal.local'],
   },
   preview: {
     host: '0.0.0.0',
-    port: 4007,
+    port: 4001,
     strictPort: true,
     allowedHosts: ['terminal.local'],
   },
