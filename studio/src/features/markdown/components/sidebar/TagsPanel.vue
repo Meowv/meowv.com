@@ -14,11 +14,7 @@ const store = useWorkspaceStore();
 
     <div class="panel__body">
       <div v-if="store.tagCounts.length" class="tag-list">
-        <div
-          v-for="item in store.tagCounts"
-          :key="item.tag"
-          class="tag-group"
-        >
+        <div v-for="item in store.tagCounts" :key="item.tag" class="tag-group">
           <button
             class="tag-row"
             :class="{

@@ -10,6 +10,7 @@ import {
   IconMarkdown,
   IconMenu2,
   IconSitemap,
+  IconNotes,
   IconPhoto,
   IconTextScan2,
   IconX,
@@ -24,17 +25,19 @@ const route = useRoute();
 const isMarkdownPage = computed(() => route.meta.feature === 'markdown');
 const isDrawPage = computed(() => route.meta.feature === 'draw');
 const isMindPage = computed(() => route.meta.feature === 'mind');
+const isNotesPage = computed(() => route.meta.feature === 'notes');
 const isImmersive = computed(
   () =>
     route.meta.feature === 'markdown' ||
     isDrawPage.value ||
     isMindPage.value ||
+    isNotesPage.value ||
     workspaceActive.value,
 );
 const markdownHeaderVisible = ref(true);
 const MARKDOWN_HEADER_PREFERENCE_KEY = `${STORAGE_POLICY.namespace('markdown')}:header-collapsed`;
 const showHeader = computed(() =>
-  isDrawPage.value || isMindPage.value
+  isDrawPage.value || isMindPage.value || isNotesPage.value
     ? false
     : isMarkdownPage.value
       ? markdownHeaderVisible.value
@@ -109,6 +112,7 @@ const primaryRoutes = [
   { label: 'Office', to: '/office', icon: IconBrandOffice, className: 'nav-office' },
   { label: 'Whiteboard', to: '/draw', icon: IconChalkboard, className: 'nav-draw' },
   { label: 'Mind', to: '/mind', icon: IconSitemap, className: 'nav-mind' },
+  { label: 'Notes', to: '/notes', icon: IconNotes, className: 'nav-notes' },
 ];
 </script>
 
@@ -120,6 +124,7 @@ const primaryRoutes = [
       'studio-shell--markdown': isMarkdownPage,
       'studio-shell--draw': isDrawPage,
       'studio-shell--mind': isMindPage,
+      'studio-shell--notes': isNotesPage,
       'studio-shell--with-footer': showFooter,
     }"
   >

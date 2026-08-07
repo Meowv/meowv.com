@@ -244,12 +244,17 @@ button {
   --nav-accent: var(--menu-mind-foreground);
 }
 
+.nav-notes {
+  --nav-accent: var(--menu-notes-foreground);
+}
+
 .nav-image svg,
 .nav-markdown svg,
 .nav-pdf svg,
 .nav-office svg,
 .nav-draw svg,
-.nav-mind svg {
+.nav-mind svg,
+.nav-notes svg {
   color: var(--nav-accent);
 }
 .nav-ocr svg {
@@ -841,16 +846,8 @@ body.has-dialog-open {
 }
 
 .home-shortcuts__item--notes {
-  --shortcut-accent: var(--color-text-muted);
-  --shortcut-solid: var(--color-text-muted);
-  cursor: default;
-  opacity: 0.66;
-}
-
-.home-shortcuts__item--notes:hover {
-  border-color: var(--color-border);
-  box-shadow: none;
-  transform: none;
+  --shortcut-accent: var(--menu-notes-foreground);
+  --shortcut-solid: var(--menu-notes);
 }
 
 .home-shortcuts__item--tools {

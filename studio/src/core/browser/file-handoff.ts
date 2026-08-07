@@ -1,6 +1,7 @@
 import { shallowRef } from 'vue';
 
-export type StudioFeature = 'image' | 'psd' | 'markdown' | 'pdf' | 'office' | 'draw' | 'mind';
+export type StudioFeature =
+  'image' | 'psd' | 'markdown' | 'pdf' | 'office' | 'draw' | 'mind' | 'notes';
 
 export interface FileHandoff {
   feature: StudioFeature;
@@ -31,6 +32,7 @@ const extensionGroups: Record<StudioFeature, Set<string>> = {
   office: new Set(['csv', 'docx', 'pptx', 'xlsx']),
   draw: new Set(['excalidraw']),
   mind: new Set(['mind']),
+  notes: new Set<string>([]),
 };
 
 export function featureForFile(file: File): StudioFeature | null {
@@ -51,6 +53,7 @@ export function routeForFeature(feature: StudioFeature, file?: File): string {
     office: '/office',
     draw: '/draw',
     mind: '/mind',
+    notes: '/notes',
   };
 
   if (feature !== 'office' || !file) return defaultRoutes[feature];

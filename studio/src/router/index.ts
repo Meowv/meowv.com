@@ -83,6 +83,16 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/notes',
+    name: 'notes',
+    component: () => import('@/features/notes/NotesPage.vue'),
+    meta: {
+      title: '便签 · Meowv Studio',
+      description: '在浏览器本地自由放置、编辑彩色便签，内容自动保存且无需上传。',
+      feature: 'notes',
+    },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
     component: () => import('@/pages/NotFoundPage.vue'),

@@ -1,0 +1,102 @@
+<script setup lang="ts">
+import { RouterLink } from 'vue-router';
+import {
+  IconArrowsMaximize,
+  IconChevronDown,
+  IconCircleChevronUp,
+  IconCircleChevronDown,
+  IconFilePlus,
+  IconMoon,
+  IconSun,
+  IconTrash,
+} from '@tabler/icons-vue';
+import StudioLogo from '@/components/StudioLogo.vue';
+
+defineProps<{
+  headerVisible: boolean;
+  allCollapsed: boolean;
+  resolvedTheme: 'light' | 'dark';
+}>();
+
+const emit = defineEmits<{
+  (e: 'toggle-header'): void;
+  (e: 'create'): void;
+  (e: 'toggle-all'): void;
+  (e: 'arrange'): void;
+  (e: 'clear'): void;
+  (e: 'toggle-theme'): void;
+}>();
+</script>
+
+<template>
+  <header v-show="headerVisible" class="notes-editor__header">
+    <div class="notes-editor__header-start">
+      <RouterLink class="notes-editor__home" to="/" aria-label="返回 Studio">
+        <StudioLogo />
+      </RouterLink>
+      <strong class="notes-editor__name">便签</strong>
+    </div>
+
+    <div class="notes-editor__actions" aria-label="便签操作">
+      <button
+        class="note-action"
+        type="button"
+        aria-label="新建便签"
+        data-tooltip="新建便签"
+        @click="emit('create')"
+      >
+        <IconFilePlus :size="18" />
+      </button>
+      <button
+        class="note-action"
+        type="button"
+        :aria-label="allCollapsed ? '全部展开' : '全部折叠'"
+        :data-tooltip="allCollapsed ? '全部展开' : '全部折叠'"
+        @click="emit('toggle-all')"
+      >
+        <IconCircleChevronDown v-if="allCollapsed" :size="18" />
+        <IconCircleChevronUp v-else :size="18" />
+      </button>
+      <button
+        class="note-action"
+        type="button"
+        aria-label="整理画布"
+        data-tooltip="整理画布"
+        @click="emit('arrange')"
+      >
+        <IconArrowsMaximize :size="18" />
+      </button>
+      <span class="notes-editor__separator" aria-hidden="true"></span>
+      <button
+        class="note-action note-action--danger"
+        type="button"
+        aria-label="清空全部便签"
+        data-tooltip="清空全部便签"
+        @click="emit('clear')"
+      >
+        <IconTrash :size="18" />
+      </button>
+      <button
+        class="note-action"
+        type="button"
+        :aria-label="resolvedTheme === 'dark' ? '切换浅色主题' : '切换深色主题'"
+        :data-tooltip="resolvedTheme === 'dark' ? '浅色主题' : '深色主题'"
+        @click="emit('toggle-theme')"
+      >
+        <IconSun v-if="resolvedTheme === 'dark'" :size="18" />
+        <IconMoon v-else :size="18" />
+      </button>
+    </div>
+  </header>
+
+  <button
+    class="notes-editor__header-toggle"
+    :class="{ 'notes-editor__header-toggle--collapsed': !headerVisible }"
+    type="button"
+    :aria-label="headerVisible ? '隐藏顶部栏' : '显示顶部栏'"
+    @click="emit('toggle-header')"
+  >
+    <IconChevronUp v-if="headerVisible" :size="10" />
+    <IconChevronDown v-else :size="10" />
+  </button>
+</template>

@@ -71,11 +71,10 @@ const quickRoutes = [
   },
   {
     label: 'Notes',
-    description: '功能暂未开放',
+    description: '便签、灵感草稿',
     to: '/notes',
     icon: IconNotes,
     tone: 'notes',
-    unavailable: true,
   },
   {
     label: 'Tools',
