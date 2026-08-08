@@ -22,63 +22,63 @@ const { error, launchFile } = useFileLauncher();
 const quickRoutes = [
   {
     label: 'Image',
-    description: '编辑、压缩、转换',
+    description: '压缩、转换、编辑、调整',
     to: '/image',
     icon: IconPhoto,
     tone: 'image',
   },
   {
     label: 'PDF',
-    description: '合并、拆分、标注',
+    description: '合并、拆分、查看、转换',
     to: '/pdf',
     icon: IconFileTypePdf,
     tone: 'pdf',
   },
   {
     label: 'OCR',
-    description: '图片、PDF 文字识别',
+    description: '图片 / PDF 转可编辑文本',
     to: '/ocr',
     icon: IconTextScan2,
     tone: 'ocr',
   },
   {
     label: 'Markdown',
-    description: '写作、预览、导出',
+    description: '写作、编辑、预览、导出',
     to: '/markdown',
     icon: IconMarkdown,
     tone: 'markdown',
   },
   {
     label: 'Office',
-    description: '打开、编辑、保存',
+    description: 'Word、Excel、PPT 在线编辑',
     to: '/office',
     icon: IconBrandOffice,
     tone: 'office',
   },
   {
     label: 'Whiteboard',
-    description: '草图、流程图、无限画布',
+    description: '画图、流程图、无限画布',
     to: '/draw',
     icon: IconChalkboard,
     tone: 'draw',
   },
   {
     label: 'Mind',
-    description: '思维导图、Markdown 脑图',
+    description: '思维导图、知识整理',
     to: '/mind',
     icon: IconSitemap,
     tone: 'mind',
   },
   {
     label: 'Notes',
-    description: '便签、灵感草稿',
+    description: '便签、灵感随手记录',
     to: '/notes',
     icon: IconNotes,
     tone: 'notes',
   },
   {
     label: 'Tools',
-    description: '功能暂未开放',
+    description: '更多实用工具…',
     to: '/tools',
     icon: IconApps,
     tone: 'tools',
@@ -178,7 +178,7 @@ const onDrop = async (event: DragEvent) => {
         Meowv Studio
       </h1>
       <p class="home-copy__summary">
-        打开、编辑、转换、导出，一站式处理，<strong>本地处理 · 文件不上传。</strong>
+        本地处理，无需上传文件，直接在浏览器中<strong>打开、编辑、转换和导出。</strong>
       </p>
       <nav class="home-shortcuts" aria-label="快捷工作台">
         <component
@@ -199,9 +199,9 @@ const onDrop = async (event: DragEvent) => {
         </component>
       </nav>
       <ul class="home-trust" aria-label="本地处理承诺">
+        <li>不保留云端副本</li>
         <li>浏览器本地处理</li>
         <li>无需登录账号</li>
-        <li>不保留云端副本</li>
       </ul>
       <p v-if="error" class="home-error" role="alert">{{ error }}</p>
     </div>
