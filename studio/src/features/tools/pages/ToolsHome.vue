@@ -15,14 +15,13 @@ const query = ref('');
 const activeCategory = ref<string>(toolCategories[0]?.id ?? '');
 const catalogElement = ref<HTMLElement | null>(null);
 const sidebarHovered = ref(false);
-const sidebarManualOpen = ref(false);
 const SIDEBAR_PIN_KEY = `${STORAGE_POLICY.preferences}:tools-sidebar-pinned`;
+const SIDEBAR_SIDE_KEY = `${STORAGE_POLICY.preferences}:tools-sidebar-side`;
 const SEARCH_VISIBILITY_KEY = `${STORAGE_POLICY.preferences}:tools-search-visible`;
 const sidebarPinned = ref(readSidebarPinned());
+const sidebarSide = ref(readSidebarSide());
 const searchVisible = ref(readSearchVisible());
-const sidebarVisible = computed(
-  () => sidebarPinned.value || sidebarHovered.value || sidebarManualOpen.value,
-);
+const sidebarVisible = computed(() => sidebarPinned.value || sidebarHovered.value);
 const filteredTools = computed(() => searchTools(query.value, tools));
 const toolGroups = computed(() =>
   toolCategories
@@ -35,10 +34,11 @@ const toolGroups = computed(() =>
 
 function updateActiveCategory(): void {
   const catalogTop = catalogElement.value?.getBoundingClientRect().top ?? 0;
-  const anchorTop =
-    (document.querySelector<HTMLElement>('.tools-toolbar')?.getBoundingClientRect().bottom ??
-      catalogTop) + 4;
-  const sections = document.querySelectorAll<HTMLElement>('.tools-category-section');
+  const toolbarBottom = document
+    .querySelector<HTMLElement>('.tools-toolbar')
+    ?.getBoundingClientRect().bottom;
+  const anchorTop = toolbarBottom === undefined ? catalogTop + 12 : toolbarBottom + 4;
+  const sections = Array.from(document.querySelectorAll<HTMLElement>('.tools-category-section'));
   let current = sections[0]?.dataset.category;
 
   for (const section of sections) {
@@ -68,7 +68,6 @@ async function scrollToCategory(categoryId: string, behavior: ScrollBehavior = '
 
   if (!sidebarPinned.value) {
     sidebarHovered.value = false;
-    sidebarManualOpen.value = false;
   }
 }
 
@@ -78,6 +77,15 @@ function readSidebarPinned(): boolean {
     return localStorage.getItem(SIDEBAR_PIN_KEY) === 'true';
   } catch {
     return false;
+  }
+}
+
+function readSidebarSide(): 'left' | 'right' {
+  if (!storageAvailable()) return 'left';
+  try {
+    return localStorage.getItem(SIDEBAR_SIDE_KEY) === 'right' ? 'right' : 'left';
+  } catch {
+    return 'left';
   }
 }
 
@@ -93,11 +101,20 @@ function readSearchVisible(): boolean {
 function setSidebarPinned(pinned: boolean): void {
   sidebarPinned.value = pinned;
   sidebarHovered.value = pinned;
-  sidebarManualOpen.value = false;
   if (!storageAvailable()) return;
   try {
     if (pinned) localStorage.setItem(SIDEBAR_PIN_KEY, 'true');
     else localStorage.removeItem(SIDEBAR_PIN_KEY);
+  } catch {
+    // 本地偏好不可用时仅保留当前页面状态。
+  }
+}
+
+function setSidebarSide(side: 'left' | 'right'): void {
+  sidebarSide.value = side;
+  if (!storageAvailable()) return;
+  try {
+    localStorage.setItem(SIDEBAR_SIDE_KEY, side);
   } catch {
     // 本地偏好不可用时仅保留当前页面状态。
   }
@@ -118,23 +135,9 @@ async function setSearchVisible(visible: boolean): Promise<void> {
   updateActiveCategory();
 }
 
-function toggleSidebar(): void {
-  if (sidebarPinned.value) {
-    setSidebarPinned(false);
-    return;
-  }
-  sidebarManualOpen.value = !sidebarManualOpen.value;
-  if (!sidebarManualOpen.value) sidebarHovered.value = false;
-}
-
 function handleSidebarLeave(): void {
   if (sidebarPinned.value) return;
   sidebarHovered.value = false;
-  sidebarManualOpen.value = false;
-}
-
-function scrollCatalog(deltaY: number): void {
-  catalogElement.value?.scrollBy({ top: deltaY, behavior: 'auto' });
 }
 
 watch(toolGroups, async (groups) => {
@@ -161,19 +164,25 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="tools-page tools-home" :class="{ 'tools-home--sidebar-pinned': sidebarPinned }">
+  <section
+    class="tools-page tools-home"
+    :class="{
+      'tools-home--sidebar-pinned': sidebarPinned,
+      'tools-home--sidebar-right': sidebarSide === 'right',
+    }"
+  >
     <ToolSidebar
       :categories="toolCategories"
       :active-category="activeCategory"
       :visible="sidebarVisible"
       :pinned="sidebarPinned"
+      :side="sidebarSide"
       :search-visible="searchVisible"
       @enter="sidebarHovered = true"
       @leave="handleSidebarLeave"
-      @scroll="scrollCatalog"
       @select="scrollToCategory"
-      @toggle="toggleSidebar"
       @update:pinned="setSidebarPinned"
+      @update:side="setSidebarSide"
       @update:search-visible="setSearchVisible"
     />
 
