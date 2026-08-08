@@ -3,6 +3,9 @@
   --mind-accent: var(--menu-mind-foreground);
   --mind-accent-strong: #1e4f87;
   --mind-accent-soft: #dbeafe;
+  --studio-header-toggle-position: absolute;
+  --studio-header-toggle-color: var(--mind-accent);
+  --studio-header-toggle-hover-color: var(--mind-accent-strong);
   position: relative;
   display: flex;
   width: 100%;
@@ -116,42 +119,6 @@
   height: 20px;
   margin: 0 3px;
   background: var(--mind-border);
-}
-
-.mind-editor__header-toggle {
-  position: absolute;
-  z-index: 50;
-  top: 35px;
-  left: 50%;
-  display: grid;
-  width: 26px;
-  height: 26px;
-  padding: 0;
-  border: 1px solid color-mix(in srgb, var(--mind-accent) 82%, transparent);
-  border-radius: 999px;
-  color: #fff;
-  background: var(--mind-accent);
-  box-shadow: 0 3px 10px color-mix(in srgb, var(--mind-accent) 28%, transparent);
-  cursor: pointer;
-  opacity: 0.18;
-  place-items: center;
-  transform: translateX(-50%);
-  transition:
-    top 180ms ease,
-    opacity 180ms ease,
-    background 180ms ease,
-    transform 180ms ease;
-}
-
-.mind-editor__header-toggle--collapsed {
-  top: 14px;
-}
-
-.mind-editor__header-toggle:hover,
-.mind-editor__header-toggle:focus-visible {
-  background: var(--mind-accent-strong);
-  opacity: 0.6;
-  transform: translate(-50%, -1px);
 }
 
 .mind-action {

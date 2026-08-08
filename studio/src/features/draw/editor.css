@@ -1,4 +1,7 @@
 .draw-editor {
+  --studio-header-toggle-position: absolute;
+  --studio-header-toggle-color: var(--color-brand);
+  --studio-header-toggle-hover-color: var(--color-brand-strong);
   position: relative;
   display: flex;
   width: 100%;
@@ -100,46 +103,6 @@
   box-shadow: 0 4px 18px rgb(76 29 149 / 7%);
   align-items: center;
   gap: 16px;
-}
-
-.draw-editor__header-toggle {
-  position: absolute;
-  z-index: 50;
-  top: 35px;
-  left: 50%;
-  display: grid;
-  width: 26px;
-  height: 26px;
-  padding: 0;
-  border: 1px solid color-mix(in srgb, var(--color-brand) 82%, transparent);
-  border-radius: 999px;
-  color: #fff;
-  background: var(--color-brand);
-  box-shadow: 0 3px 10px color-mix(in srgb, var(--color-brand) 28%, transparent);
-  cursor: pointer;
-  opacity: 0.18;
-  place-items: center;
-  transform: translateX(-50%);
-  transition:
-    opacity 180ms ease,
-    background 180ms ease,
-    transform 180ms ease;
-}
-
-.draw-editor__header-toggle--collapsed {
-  top: 14px;
-}
-
-.draw-editor__header-toggle .draw-editor__header-icon {
-  width: 10px;
-  height: 10px;
-}
-
-.draw-editor__header-toggle:hover,
-.draw-editor__header-toggle:focus-visible {
-  background: var(--color-brand-strong);
-  opacity: 0.6;
-  transform: translate(-50%, -1px);
 }
 
 .draw-editor__header-start,

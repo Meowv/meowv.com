@@ -94,6 +94,8 @@ button {
 
 .studio-shell--markdown {
   --nav-accent: var(--menu-markdown-foreground);
+  --studio-header-toggle-top: calc(var(--header-height) - 13px);
+  --studio-header-toggle-color: var(--nav-accent, var(--color-brand));
 }
 
 .studio-shell--office {
@@ -108,48 +110,6 @@ button {
 
 .studio-shell--draw {
   --nav-accent: var(--menu-draw-foreground);
-}
-
-.studio-header-toggle {
-  position: fixed;
-  z-index: 40;
-  top: calc(var(--header-height) - 13px);
-  left: 50%;
-  width: 26px;
-  height: 26px;
-  display: grid;
-  padding: 0;
-  border: 1px solid color-mix(in srgb, var(--nav-accent, var(--color-brand)) 82%, transparent);
-  border-radius: 999px;
-  color: #fff;
-  background: var(--nav-accent, var(--color-brand));
-  box-shadow: 0 3px 10px color-mix(in srgb, var(--nav-accent, var(--color-brand)) 28%, transparent);
-  cursor: pointer;
-  opacity: 0.18;
-  place-items: center;
-  transform: translateX(-50%);
-  transition:
-    opacity 180ms ease,
-    color 180ms ease,
-    background 180ms ease,
-    transform 180ms ease;
-}
-
-.studio-header-toggle--collapsed {
-  top: 14px;
-}
-
-.studio-header-toggle > svg {
-  width: 10px;
-  height: 10px;
-}
-
-.studio-header-toggle:hover,
-.studio-header-toggle:focus-visible {
-  color: #fff;
-  background: color-mix(in srgb, var(--nav-accent, var(--color-brand)) 88%, #000);
-  opacity: 0.6;
-  transform: translate(-50%, -1px);
 }
 
 .studio-logo {

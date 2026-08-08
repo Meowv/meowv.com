@@ -6,8 +6,6 @@ import {
   IconArrowForwardUp,
   IconArrowRight,
   IconArrowsMaximize,
-  IconChevronDown,
-  IconChevronUp,
   IconCirclePlus,
   IconCode,
   IconCopy,
@@ -1073,16 +1071,7 @@ onBeforeUnmount(() => {
       </div>
     </header>
 
-    <button
-      class="mind-editor__header-toggle"
-      :class="{ 'mind-editor__header-toggle--collapsed': !headerVisible }"
-      type="button"
-      :aria-label="headerVisible ? '隐藏顶部栏' : '显示顶部栏'"
-      @click="toggleHeader"
-    >
-      <IconChevronUp v-if="headerVisible" :size="10" />
-      <IconChevronDown v-else :size="10" />
-    </button>
+    <studio-header-toggle :visible="headerVisible" @click="toggleHeader" />
 
     <main
       class="mind-editor__workspace"

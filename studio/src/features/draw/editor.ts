@@ -236,20 +236,6 @@ function HeaderButton({
   );
 }
 
-function HeaderToggle({ visible, onClick }: { visible: boolean; onClick: () => void }): ReactNode {
-  const title = visible ? '隐藏顶部栏' : '显示顶部栏';
-  return createElement(
-    'button',
-    {
-      className: `draw-editor__header-toggle${visible ? '' : ' draw-editor__header-toggle--collapsed'}`,
-      type: 'button',
-      onClick,
-      'aria-label': title,
-    },
-    HeaderIcon({ name: visible ? 'chevronUp' : 'chevronDown' }),
-  );
-}
-
 function HeaderIcon({ name }: { name: HeaderIconName }): ReactElement {
   const svgProps = {
     className: 'draw-editor__header-icon',
@@ -1686,7 +1672,7 @@ function DrawEditor({ returnToStudio, setTheme }: DrawEditorOptions): ReactNode 
         )
       : null,
     !fullscreen
-      ? HeaderToggle({
+      ? createElement('studio-header-toggle', {
           visible: headerVisible,
           onClick: toggleHeader,
         })

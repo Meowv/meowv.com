@@ -4,8 +4,6 @@ import { useRoute } from 'vue-router';
 import {
   IconBrandOffice,
   IconChalkboard,
-  IconChevronDown,
-  IconChevronUp,
   IconFileTypePdf,
   IconMarkdown,
   IconMenu2,
@@ -171,18 +169,11 @@ function isRouteActive(to: string): boolean {
         </RouterLink>
       </nav>
     </header>
-    <button
+    <studio-header-toggle
       v-if="isMarkdownPage"
-      class="studio-header-toggle"
-      :class="{ 'studio-header-toggle--collapsed': !markdownHeaderVisible }"
-      type="button"
-      :aria-label="markdownHeaderVisible ? '隐藏顶部栏' : '显示顶部栏'"
-      :title="markdownHeaderVisible ? '隐藏顶部栏' : '显示顶部栏'"
+      :visible="markdownHeaderVisible"
       @click="toggleMarkdownHeader"
-    >
-      <IconChevronUp v-if="markdownHeaderVisible" :size="18" />
-      <IconChevronDown v-else :size="18" />
-    </button>
+    />
 
     <main class="studio-main">
       <slot />

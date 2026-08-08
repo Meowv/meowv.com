@@ -1,6 +1,7 @@
 .notes-editor {
   --note-accent: var(--menu-notes-foreground);
   --note-border: var(--color-border);
+  --studio-header-toggle-color: var(--note-accent);
   position: relative;
   display: flex;
   width: 100%;
@@ -16,8 +17,7 @@
   outline-color: color-mix(in srgb, var(--note-accent) 62%, transparent);
 }
 
-.note-action,
-.notes-editor__header-toggle {
+.note-action {
   display: inline-grid;
   place-items: center;
   border: 0;
@@ -161,43 +161,6 @@
   height: 20px;
   margin: 0 3px;
   background: var(--note-border);
-}
-
-.notes-editor__header-toggle {
-  position: fixed;
-  z-index: 50;
-  top: 35px;
-  left: 50%;
-  width: 26px;
-  height: 26px;
-  border: 1px solid color-mix(in srgb, var(--note-accent) 82%, transparent);
-  border-radius: 999px;
-  color: #fff;
-  background: var(--note-accent);
-  box-shadow: 0 3px 10px color-mix(in srgb, var(--note-accent) 28%, transparent);
-  opacity: 0.18;
-  transform: translateX(-50%);
-  transition:
-    top 160ms ease,
-    opacity 160ms ease,
-    background 160ms ease,
-    transform 160ms ease;
-}
-
-.notes-editor__header-toggle--collapsed {
-  top: 14px;
-}
-
-.notes-editor__header-toggle:hover,
-.notes-editor__header-toggle:focus-visible {
-  color: #fff;
-  background: color-mix(in srgb, var(--note-accent) 88%, #000);
-  opacity: 0.6;
-}
-
-.notes-editor__header-toggle > svg {
-  width: 10px;
-  height: 10px;
 }
 
 /* 画布 */

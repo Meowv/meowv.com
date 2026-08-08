@@ -2,8 +2,6 @@
 import { RouterLink } from 'vue-router';
 import {
   IconArrowsMaximize,
-  IconChevronUp,
-  IconChevronDown,
   IconCircleChevronUp,
   IconCircleChevronDown,
   IconConfetti,
@@ -103,14 +101,5 @@ const emit = defineEmits<{
     </div>
   </header>
 
-  <button
-    class="notes-editor__header-toggle"
-    :class="{ 'notes-editor__header-toggle--collapsed': !headerVisible }"
-    type="button"
-    :aria-label="headerVisible ? '隐藏顶部栏' : '显示顶部栏'"
-    @click="emit('toggle-header')"
-  >
-    <IconChevronUp v-if="headerVisible" :size="10" />
-    <IconChevronDown v-else :size="10" />
-  </button>
+  <studio-header-toggle :visible="headerVisible" @click="emit('toggle-header')" />
 </template>

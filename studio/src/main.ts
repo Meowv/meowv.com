@@ -3,9 +3,11 @@ import { createPinia } from 'pinia';
 import App from './App.vue';
 import router from './router';
 import { initializeTheme } from './composables/useTheme';
+import { registerStudioHeaderToggle } from './core/components/StudioHeaderToggle';
 import './assets/styles/main.css';
 
 initializeTheme();
+registerStudioHeaderToggle();
 
 createApp(App).use(createPinia()).use(router).mount('#app');
 
