@@ -1,6 +1,13 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
-import { FileText, FolderInput, LockKeyhole, LockKeyholeOpen } from '@/features/markdown/icons';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import {
+  FileText,
+  Folder,
+  FolderInput,
+  History,
+  LockKeyhole,
+  LockKeyholeOpen,
+} from '@/features/markdown/icons';
 import { useWorkspaceStore } from '@/features/markdown/stores/workspace';
 import type { AutoSaveDelay, WorkspacePreferences } from '@/features/markdown/types/workspace';
 
@@ -41,6 +48,8 @@ onBeforeUnmount(() => {
   if (characterCountTimer) {
     clearTimeout(characterCountTimer);
   }
+  document.removeEventListener('click', onDocumentClick);
+  document.removeEventListener('keydown', onDocumentKeydown);
 });
 
 const documentPath = computed(() => store.activePath || '当前未打开 Markdown 文档');
@@ -75,6 +84,50 @@ function setEditorFontSize(event: Event): void {
     void store.updatePreferences({ editorFontSize: value });
   }
 }
+
+const historyWrap = ref<HTMLElement | null>(null);
+const historyMenuOpen = ref(false);
+
+function formatLastOpened(timestamp: number): string {
+  const elapsed = Date.now() - timestamp;
+  if (elapsed < 60_000) return '刚刚';
+  if (elapsed < 3_600_000) return `${Math.floor(elapsed / 60_000)} 分钟前`;
+  if (elapsed < 86_400_000) return `${Math.floor(elapsed / 3_600_000)} 小时前`;
+  if (elapsed < 604_800_000) return `${Math.floor(elapsed / 86_400_000)} 天前`;
+  return new Date(timestamp).toLocaleDateString('zh-CN');
+}
+
+function closeHistoryMenu(): void {
+  historyMenuOpen.value = false;
+}
+
+function toggleHistoryMenu(): void {
+  if (!store.busy) {
+    historyMenuOpen.value = !historyMenuOpen.value;
+  }
+}
+
+function onDocumentClick(event: MouseEvent): void {
+  if (historyMenuOpen.value && !historyWrap.value?.contains(event.target as Node)) {
+    closeHistoryMenu();
+  }
+}
+
+function onDocumentKeydown(event: KeyboardEvent): void {
+  if (event.key === 'Escape') {
+    closeHistoryMenu();
+  }
+}
+
+function openHistoryWorkspace(id: string): void {
+  closeHistoryMenu();
+  void store.openWorkspaceHistory(id);
+}
+
+onMounted(() => {
+  document.addEventListener('click', onDocumentClick);
+  document.addEventListener('keydown', onDocumentKeydown);
+});
 </script>
 
 <template>
@@ -90,6 +143,49 @@ function setEditorFontSize(event: Event): void {
         <FolderInput :size="14" aria-hidden="true" />
         <span class="statusbar__workspace-name">{{ store.workspaceName }}</span>
       </button>
+      <div ref="historyWrap" class="statusbar__history-wrap">
+        <button
+          class="statusbar__history-button"
+          type="button"
+          title="工作空间历史"
+          aria-label="工作空间历史"
+          aria-haspopup="menu"
+          :aria-expanded="historyMenuOpen"
+          :disabled="store.busy"
+          @click="toggleHistoryMenu"
+        >
+          <History :size="14" aria-hidden="true" />
+        </button>
+        <div
+          v-if="historyMenuOpen"
+          class="statusbar__history-menu"
+          role="menu"
+          aria-label="最近打开的工作空间"
+        >
+          <p class="statusbar__history-label">最近打开的工作空间</p>
+          <template v-if="store.workspaceHistory.length > 0">
+            <button
+              v-for="entry in store.workspaceHistory"
+              :key="entry.id"
+              class="statusbar__history-item"
+              type="button"
+              role="menuitem"
+              :disabled="store.busy || entry.id === store.workspaceHistoryId"
+              @click="openHistoryWorkspace(entry.id)"
+            >
+              <Folder :size="15" class="statusbar__history-item-icon" aria-hidden="true" />
+              <span class="statusbar__history-item-body">
+                <strong>{{ entry.name }}</strong>
+                <small>{{ formatLastOpened(entry.lastOpenedAt) }}</small>
+              </span>
+              <span v-if="entry.id === store.workspaceHistoryId" class="statusbar__history-current"
+                >当前</span
+              >
+            </button>
+          </template>
+          <p v-else class="statusbar__history-empty">暂无历史记录</p>
+        </div>
+      </div>
       <span
         class="statusbar__item statusbar__document-path min-w-0 max-w-[48vw]"
         :title="documentPath"

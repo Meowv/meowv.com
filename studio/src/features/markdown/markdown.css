@@ -1570,6 +1570,122 @@ body.workspace-resizing * {
   color: var(--color-brand);
 }
 
+.markdown-studio .statusbar__history-wrap {
+  position: relative;
+}
+
+.markdown-studio .statusbar__history-button {
+  display: inline-flex;
+  width: 28px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.markdown-studio .statusbar__history-button:hover:not(:disabled) {
+  color: var(--color-text-strong);
+}
+
+.markdown-studio .statusbar__history-button:disabled {
+  color: var(--color-text-faint);
+  cursor: not-allowed;
+}
+
+.markdown-studio .statusbar__history-menu {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  z-index: 90;
+  width: 292px;
+  max-height: min(360px, calc(100dvh - 24px));
+  padding: 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-popover);
+  overflow-y: auto;
+}
+
+.markdown-studio .statusbar__history-label {
+  margin: 0;
+  padding: 6px 9px 4px;
+  color: var(--color-text-faint);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.markdown-studio .statusbar__history-item {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 9px;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.markdown-studio .statusbar__history-item:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+}
+
+.markdown-studio .statusbar__history-item:disabled {
+  color: var(--color-text-faint);
+  cursor: default;
+}
+
+.markdown-studio .statusbar__history-item-icon {
+  flex: 0 0 auto;
+  color: var(--color-text-muted);
+}
+
+.markdown-studio .statusbar__history-item-body {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.markdown-studio .statusbar__history-item-body strong {
+  overflow: hidden;
+  color: var(--color-text-strong);
+  font-size: 13px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.markdown-studio .statusbar__history-item-body small {
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.markdown-studio .statusbar__history-current {
+  flex: 0 0 auto;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--color-brand-soft);
+  color: var(--color-brand);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.markdown-studio .statusbar__history-empty {
+  margin: 0;
+  padding: 14px 9px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
 .markdown-studio .statusbar__sync-control {
   display: inline-flex;
   height: 24px;
@@ -2850,6 +2966,11 @@ body.tree-dragging--invalid .markdown-studio * {
   }
 
   .markdown-studio .statusbar__lock-button {
+    width: 30px;
+    height: 34px;
+  }
+
+  .markdown-studio .statusbar__history-button {
     width: 30px;
     height: 34px;
   }
