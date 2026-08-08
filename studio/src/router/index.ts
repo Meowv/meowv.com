@@ -93,6 +93,26 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/tools',
+    name: 'tools',
+    component: () => import('@/features/tools/pages/ToolsHome.vue'),
+    meta: {
+      title: 'Tools 工具箱 · Meowv Studio',
+      description: '纯前端、本地处理的在线工具箱，覆盖开发、数据、编码、文本与设计等常用场景。',
+      feature: 'tools',
+    },
+  },
+  {
+    path: '/tools/:toolId',
+    name: 'tool-detail',
+    component: () => import('@/features/tools/pages/ToolDetail.vue'),
+    meta: {
+      title: '在线工具 · Meowv Studio',
+      description: '在浏览器本地使用 Studio Tools，处理内容无需上传。',
+      feature: 'tools',
+    },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
     component: () => import('@/pages/NotFoundPage.vue'),
@@ -106,7 +126,7 @@ const routes: RouteRecordRaw[] = [
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
-  scrollBehavior: () => ({ top: 0 }),
+  scrollBehavior: (to) => (to.path === '/tools' && to.hash ? false : { top: 0 }),
 });
 
 router.beforeEach(() => {

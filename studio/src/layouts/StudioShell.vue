@@ -3,14 +3,12 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import {
   IconBrandOffice,
+  IconApps,
   IconChalkboard,
-  IconFileTypePdf,
   IconMarkdown,
   IconMenu2,
   IconSitemap,
   IconNotes,
-  IconPhoto,
-  IconTextScan2,
   IconX,
 } from '@tabler/icons-vue';
 import StudioDonationDialog from '@/components/StudioDonationDialog.vue';
@@ -24,13 +22,16 @@ const isMarkdownPage = computed(() => route.meta.feature === 'markdown');
 const isDrawPage = computed(() => route.meta.feature === 'draw');
 const isMindPage = computed(() => route.meta.feature === 'mind');
 const isNotesPage = computed(() => route.meta.feature === 'notes');
-const isOfficePage = computed(() => route.meta.feature === 'office' && workspaceActive.value);
+const isToolsPage = computed(() => route.meta.feature === 'tools');
+const isToolsHomePage = computed(() => route.name === 'tools');
+const isOfficePage = computed(() => route.meta.feature === 'office');
 const isImmersive = computed(
   () =>
     route.meta.feature === 'markdown' ||
     isDrawPage.value ||
     isMindPage.value ||
     isNotesPage.value ||
+    isToolsHomePage.value ||
     workspaceActive.value,
 );
 const markdownHeaderVisible = ref(true);
@@ -44,8 +45,9 @@ const showHeader = computed(() =>
 );
 const showFooter = computed(
   () =>
-    ['home', 'image', 'ocr', 'pdf', 'office', 'not-found'].includes(String(route.name)) &&
-    !workspaceActive.value,
+    ['home', 'image', 'ocr', 'pdf', 'office', 'tool-detail', 'not-found'].includes(
+      String(route.name),
+    ) && !workspaceActive.value,
 );
 const donationDialogOpen = ref(false);
 const mobileNavigationOpen = ref(false);
@@ -104,14 +106,12 @@ onBeforeUnmount(() => {
 });
 
 const primaryRoutes = [
-  { label: 'Image', to: '/image', icon: IconPhoto, className: 'nav-image' },
-  { label: 'PDF', to: '/pdf', icon: IconFileTypePdf, className: 'nav-pdf' },
-  { label: 'OCR', to: '/ocr', icon: IconTextScan2, className: 'nav-ocr' },
   { label: 'Markdown', to: '/markdown', icon: IconMarkdown, className: 'nav-markdown' },
   { label: 'Office', to: '/office', icon: IconBrandOffice, className: 'nav-office' },
   { label: 'Whiteboard', to: '/draw', icon: IconChalkboard, className: 'nav-draw' },
   { label: 'Mind', to: '/mind', icon: IconSitemap, className: 'nav-mind' },
   { label: 'Notes', to: '/notes', icon: IconNotes, className: 'nav-notes' },
+  { label: 'Tools', to: '/tools', icon: IconApps, className: 'nav-tools' },
 ];
 
 function isRouteActive(to: string): boolean {
@@ -128,6 +128,7 @@ function isRouteActive(to: string): boolean {
       'studio-shell--draw': isDrawPage,
       'studio-shell--mind': isMindPage,
       'studio-shell--notes': isNotesPage,
+      'studio-shell--tools': isToolsPage,
       'studio-shell--office': isOfficePage,
       'studio-shell--with-footer': showFooter,
     }"
@@ -162,6 +163,7 @@ function isRouteActive(to: string): boolean {
           :key="navRoute.to"
           :to="navRoute.to"
           :class="[navRoute.className, { 'is-active': isRouteActive(navRoute.to) }]"
+          :aria-label="navRoute.label"
           @click="closeMobileNavigation"
         >
           <component :is="navRoute.icon" :size="21" stroke-width="1.8" aria-hidden="true" />

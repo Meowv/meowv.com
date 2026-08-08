@@ -4,12 +4,9 @@ import { RouterLink } from 'vue-router';
 import {
   IconBrandOffice,
   IconChalkboard,
-  IconFileTypePdf,
   IconMarkdown,
   IconNotes,
   IconSitemap,
-  IconPhoto,
-  IconTextScan2,
   IconApps,
 } from '@tabler/icons-vue';
 import { STUDIO_FILE_ACCEPT, useFileLauncher } from '@/composables/useFileLauncher';
@@ -20,27 +17,6 @@ const fileInput = ref<HTMLInputElement | null>(null);
 const { error, launchFile } = useFileLauncher();
 
 const quickRoutes = [
-  {
-    label: 'Image',
-    description: '压缩、转换、编辑、调整',
-    to: '/image',
-    icon: IconPhoto,
-    tone: 'image',
-  },
-  {
-    label: 'PDF',
-    description: '合并、拆分、查看、转换',
-    to: '/pdf',
-    icon: IconFileTypePdf,
-    tone: 'pdf',
-  },
-  {
-    label: 'OCR',
-    description: '图片 / PDF 转可编辑文本',
-    to: '/ocr',
-    icon: IconTextScan2,
-    tone: 'ocr',
-  },
   {
     label: 'Markdown',
     description: '写作、编辑、预览、导出',
@@ -78,11 +54,10 @@ const quickRoutes = [
   },
   {
     label: 'Tools',
-    description: '更多实用工具…',
+    description: '更多实用工具',
     to: '/tools',
     icon: IconApps,
     tone: 'tools',
-    unavailable: true,
   },
 ];
 
@@ -181,13 +156,12 @@ const onDrop = async (event: DragEvent) => {
         本地处理，无需上传文件，直接在浏览器中<strong>打开、编辑、转换和导出。</strong>
       </p>
       <nav class="home-shortcuts" aria-label="快捷工作台">
-        <component
-          :is="shortcut.unavailable ? 'div' : RouterLink"
+        <RouterLink
           v-for="shortcut in quickRoutes"
           :key="shortcut.to"
           class="home-shortcuts__item"
           :class="`home-shortcuts__item--${shortcut.tone}`"
-          v-bind="shortcut.unavailable ? { 'aria-disabled': 'true' } : { to: shortcut.to }"
+          :to="shortcut.to"
         >
           <span class="home-shortcuts__icon" aria-hidden="true">
             <component :is="shortcut.icon" :size="21" stroke-width="1.9" />
@@ -196,7 +170,7 @@ const onDrop = async (event: DragEvent) => {
             <strong>{{ shortcut.label }}</strong>
             <small>{{ shortcut.description }}</small>
           </span>
-        </component>
+        </RouterLink>
       </nav>
       <ul class="home-trust" aria-label="本地处理承诺">
         <li>不保留云端副本</li>

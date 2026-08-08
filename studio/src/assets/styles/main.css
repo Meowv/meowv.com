@@ -87,25 +87,38 @@ button {
   gap: 34px;
 }
 
-.studio-shell--markdown .studio-header {
-  padding-right: 5px;
-  padding-left: 5px;
-}
-
 .studio-shell--markdown {
   --nav-accent: var(--menu-markdown-foreground);
   --studio-header-toggle-top: calc(var(--header-height) - 13px);
   --studio-header-toggle-color: var(--nav-accent, var(--color-brand));
 }
 
-.studio-shell--office {
+.studio-shell--markdown,
+.studio-shell--office,
+.studio-shell--tools {
   --header-height: 48px;
 }
 
-.studio-shell--office .studio-header {
+.studio-shell--markdown .studio-header,
+.studio-shell--office .studio-header,
+.studio-shell--tools .studio-header {
   gap: 12px;
   padding-right: 16px;
   padding-left: 16px;
+}
+
+.studio-shell--markdown .studio-logo,
+.studio-shell--office .studio-logo,
+.studio-shell--tools .studio-logo {
+  gap: 6px;
+  font-size: 16px;
+}
+
+.studio-shell--markdown .studio-logo img,
+.studio-shell--office .studio-logo img,
+.studio-shell--tools .studio-logo img {
+  width: 34px;
+  height: 34px;
 }
 
 .studio-shell--draw {
@@ -174,10 +187,11 @@ button {
   right: 12px;
   bottom: 0;
   left: 12px;
-  height: 2px;
-  border-radius: 999px;
+  height: 4px;
   background: transparent;
   content: '';
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='4' viewBox='0 0 12 4'%3E%3Cpath d='M0 2C2 0 4 0 6 2s4 2 6 0' fill='none' stroke='%23000' stroke-width='1.5'/%3E%3C/svg%3E")
+    repeat-x center / 12px 4px;
 }
 
 .studio-nav a:hover {
@@ -218,13 +232,18 @@ button {
   --nav-accent: var(--menu-notes-foreground);
 }
 
+.nav-tools {
+  --nav-accent: var(--menu-tools-foreground);
+}
+
 .nav-image svg,
 .nav-markdown svg,
 .nav-pdf svg,
 .nav-office svg,
 .nav-draw svg,
 .nav-mind svg,
-.nav-notes svg {
+.nav-notes svg,
+.nav-tools svg {
   color: var(--nav-accent);
 }
 .nav-ocr svg {
@@ -661,13 +680,14 @@ body.has-dialog-open {
 .home-copy .home-copy__product--animated::after {
   position: absolute;
   right: 0;
-  bottom: -13px;
+  bottom: -15px;
   left: 0;
-  height: 4px;
-  border-radius: 999px;
+  height: 8px;
   background: var(--studio-menu-gradient);
   background-size: 200% 100%;
   content: '';
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='8' viewBox='0 0 32 8'%3E%3Cpath d='M0 4C5 1 11 1 16 4s11 3 16 0' fill='none' stroke='%23000' stroke-width='2'/%3E%3C/svg%3E")
+    repeat-x center / 32px 8px;
   animation: studio-title-flow 4s ease-in-out infinite reverse;
 }
 
@@ -711,7 +731,7 @@ body.has-dialog-open {
   display: grid;
   max-width: 540px;
   margin-top: 34px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -821,16 +841,8 @@ body.has-dialog-open {
 }
 
 .home-shortcuts__item--tools {
-  --shortcut-accent: var(--color-text-muted);
-  --shortcut-solid: var(--color-text-muted);
-  cursor: default;
-  opacity: 0.66;
-}
-
-.home-shortcuts__item--tools:hover {
-  border-color: var(--color-border);
-  box-shadow: none;
-  transform: none;
+  --shortcut-accent: var(--menu-tools-foreground);
+  --shortcut-solid: var(--menu-tools);
 }
 
 .home-trust {
@@ -1213,6 +1225,26 @@ body.has-dialog-open {
   }
 }
 
+@media (min-width: 761px) and (max-width: 1100px) {
+  .studio-header {
+    padding-right: 24px;
+    padding-left: 24px;
+    gap: 18px;
+  }
+
+  .studio-nav {
+    gap: 3px;
+  }
+
+  .studio-nav a {
+    padding: 0 9px;
+  }
+
+  .studio-nav a span {
+    display: none;
+  }
+}
+
 @media (max-width: 760px) {
   .studio-header {
     position: sticky;
@@ -1279,6 +1311,9 @@ body.has-dialog-open {
   .studio-nav a svg {
     width: 18px;
     height: 18px;
+  }
+  .studio-nav a span {
+    display: inline;
   }
   .home-shortcuts__item strong,
   .home-shortcuts__item small {
