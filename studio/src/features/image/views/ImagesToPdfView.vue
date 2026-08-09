@@ -47,6 +47,8 @@ onMounted(() => {
   }
 });
 
+defineProps<{ embedded?: boolean }>();
+
 const acceptedExtensions = new Set([
   'jpg',
   'jpeg',
@@ -332,7 +334,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main id="main-content" class="min-h-[calc(100vh-72px)] bg-[var(--page)]">
+  <component :is="embedded ? 'div' : 'main'" id="main-content" class="min-h-[calc(100vh-72px)] bg-[var(--page)]">
     <ImageToolHeader
       title="图片转 PDF"
       description="按列表顺序将多张图片整理为单个 PDF 文件。"
@@ -719,5 +721,5 @@ onBeforeUnmount(() => {
         </aside>
       </div>
     </section>
-  </main>
+  </component>
 </template>

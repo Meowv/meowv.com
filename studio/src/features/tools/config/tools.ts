@@ -3,8 +3,13 @@ import {
   toolCategoryMap,
   type ToolCategoryId,
 } from '@/features/tools/config/toolCategories';
+import {
+  resolveRelatedToolIds,
+  resolveToolContract,
+  type ToolContract,
+} from '@/features/tools/config/toolContracts';
 
-export interface ToolConfig {
+export interface ToolConfig extends ToolContract {
   id: string;
   name: string;
   description: string;
@@ -12,6 +17,7 @@ export interface ToolConfig {
   icon: string;
   route: string;
   keywords: string;
+  relatedToolIds: string[];
 }
 type ToolSeed = readonly [
   id: string,
@@ -128,7 +134,7 @@ const toolSeeds: Record<ToolCategoryId, ToolSeed[]> = {
       'json-format',
       'JSON 格式化',
       '格式化 beautify pretty',
-      'JSON Formatter：对内容进行格式化、美化和缩进处理，提高可读性。',
+      '在线格式化 JSON 数据，自动整理缩进结构，提高可读性。',
       'braces',
     ],
     [
@@ -1303,7 +1309,7 @@ const toolSeeds: Record<ToolCategoryId, ToolSeed[]> = {
 function createTool(
   categoryId: ToolCategoryId,
   [id, name, keywords, description, icon]: ToolSeed,
-): ToolConfig {
+): Omit<ToolConfig, 'relatedToolIds'> {
   const category = toolCategoryMap.get(categoryId);
   if (!category) throw new Error(`未知工具分类：${categoryId}`);
 
@@ -1315,12 +1321,18 @@ function createTool(
     icon,
     route: `/tools/${id}`,
     keywords: `${name} ${category.name} ${category.label} ${keywords}`,
+    ...resolveToolContract(id, categoryId),
   };
 }
 
-export const tools: ToolConfig[] = toolCategories.flatMap((category) =>
+const toolBases = toolCategories.flatMap((category) =>
   toolSeeds[category.id].map((seed) => createTool(category.id, seed)),
 );
+
+export const tools: ToolConfig[] = toolBases.map((tool) => ({
+  ...tool,
+  relatedToolIds: resolveRelatedToolIds(tool, toolBases),
+}));
 
 export function getToolById(toolId: string): ToolConfig | undefined {
   return tools.find((tool) => tool.id === toolId);

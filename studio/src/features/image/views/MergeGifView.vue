@@ -59,6 +59,8 @@ interface DecodedSource {
   dispose: () => void;
 }
 
+defineProps<{ embedded?: boolean }>();
+
 const MAX_FILE_BYTES = 25 * 1024 * 1024;
 const acceptedExtensions = new Set([
   'jpg',
@@ -585,7 +587,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main id="main-content" class="min-h-[calc(100vh-72px)] bg-[var(--page)]">
+  <component :is="embedded ? 'div' : 'main'" id="main-content" class="min-h-[calc(100vh-72px)] bg-[var(--page)]">
     <ImageToolHeader
       title="合并为 GIF"
       description="按图片顺序设置帧间隔、画布与循环方式，生成 GIF 动画。"
@@ -975,5 +977,5 @@ onBeforeUnmount(() => {
         </aside>
       </div>
     </section>
-  </main>
+  </component>
 </template>

@@ -99,6 +99,25 @@ button {
   --header-height: 48px;
 }
 
+.studio-shell--tool-detail {
+  --header-height: 58px;
+}
+
+.studio-shell--tool-detail .studio-header {
+  padding-right: 24px;
+  padding-left: 24px;
+}
+
+.studio-shell--tool-detail .studio-logo {
+  gap: 8px;
+  font-size: 17px;
+}
+
+.studio-shell--tool-detail .studio-logo img {
+  width: 40px;
+  height: 40px;
+}
+
 .studio-shell--markdown .studio-header,
 .studio-shell--office .studio-header,
 .studio-shell--tools .studio-header {

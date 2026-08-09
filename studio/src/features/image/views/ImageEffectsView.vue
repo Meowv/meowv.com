@@ -43,6 +43,7 @@ import { formatBytes } from '@/features/image/utils/format';
 
 const props = defineProps<{
   mode: ImageEffectMode;
+  embedded?: boolean;
 }>();
 
 const contentByMode = {
@@ -589,7 +590,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main id="main-content" class="min-h-[calc(100vh-72px)] bg-[var(--page)]">
+  <component :is="embedded ? 'div' : 'main'" id="main-content" class="min-h-[calc(100vh-72px)] bg-[var(--page)]">
     <ImageToolHeader
       :title="content.title"
       :description="content.description"
@@ -1313,5 +1314,5 @@ onBeforeUnmount(() => {
         </aside>
       </div>
     </section>
-  </main>
+  </component>
 </template>

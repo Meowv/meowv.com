@@ -45,6 +45,8 @@ interface PsdMetadata {
   photoshopVersion: string | null;
 }
 
+defineProps<{ embedded?: boolean }>();
+
 const DEFAULT_MAX_FILE_SIZE = 200 * 1024 * 1024;
 const DEFAULT_MAX_PIXELS = 60_000_000;
 const DEFAULT_MEMORY_BUDGET = 512 * 1024 * 1024;
@@ -530,7 +532,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main class="psd-viewer-page">
+  <component :is="embedded ? 'div' : 'main'" class="psd-viewer-page">
     <input
       ref="fileInput"
       class="sr-only"
@@ -778,5 +780,5 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </section>
-  </main>
+  </component>
 </template>

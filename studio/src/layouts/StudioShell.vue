@@ -24,6 +24,7 @@ const isMindPage = computed(() => route.meta.feature === 'mind');
 const isNotesPage = computed(() => route.meta.feature === 'notes');
 const isToolsPage = computed(() => route.meta.feature === 'tools');
 const isToolsHomePage = computed(() => route.name === 'tools');
+const isToolDetailPage = computed(() => route.name === 'tool-detail');
 const isOfficePage = computed(() => route.meta.feature === 'office');
 const isImmersive = computed(
   () =>
@@ -129,6 +130,7 @@ function isRouteActive(to: string): boolean {
       'studio-shell--mind': isMindPage,
       'studio-shell--notes': isNotesPage,
       'studio-shell--tools': isToolsPage,
+      'studio-shell--tool-detail': isToolDetailPage,
       'studio-shell--office': isOfficePage,
       'studio-shell--with-footer': showFooter,
     }"

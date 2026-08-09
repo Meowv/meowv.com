@@ -34,6 +34,8 @@ interface AspectPreset {
   ratio: number | null;
 }
 
+defineProps<{ embedded?: boolean }>();
+
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 const acceptedInputExtensions = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp']);
 
@@ -429,7 +431,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main id="main-content" class="min-h-[calc(100vh-4rem)] bg-transparent">
+  <component :is="embedded ? 'div' : 'main'" id="main-content" class="min-h-[calc(100vh-4rem)] bg-transparent">
     <input
       ref="fileInput"
       class="sr-only"
@@ -741,5 +743,5 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </section>
-  </main>
+  </component>
 </template>

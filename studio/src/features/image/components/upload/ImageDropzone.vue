@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { UploadCloud } from '@/features/image/icons';
-import { ref } from 'vue';
+import { ref, useAttrs } from 'vue';
+
+defineOptions({ inheritAttrs: false });
+
+const attrs = useAttrs();
 
 const defaultAcceptedExtensions =
   '.jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.ico,.heic,.heif,.svg,image/jpeg,image/png,image/webp,image/gif,image/bmp,image/tiff,image/vnd.microsoft.icon,image/heic,image/heif,image/svg+xml';
@@ -55,6 +59,7 @@ function onDrop(event: DragEvent) {
 
 <template>
   <button
+    v-bind="attrs"
     type="button"
     data-testid="image-dropzone"
     class="group relative flex w-full cursor-pointer flex-col items-center justify-center overflow-hidden border border-dashed text-center transition duration-200 disabled:cursor-not-allowed"
