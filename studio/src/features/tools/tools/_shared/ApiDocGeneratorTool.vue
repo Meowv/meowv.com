@@ -16,7 +16,7 @@ const example = JSON.stringify(
     path: '/api/tools/:id',
     headers: { Authorization: 'Bearer TOKEN' },
     query: { locale: 'zh-CN' },
-    response: { id: 'json-format', name: 'JSON 格式化', ready: true },
+    response: { id: 'json-tool', name: 'JSON 工具', ready: true },
   },
   null,
   2,

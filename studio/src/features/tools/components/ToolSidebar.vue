@@ -11,14 +11,20 @@ import ThemeToggle from '@/components/ThemeToggle.vue';
 import ToolIcon from '@/features/tools/components/ToolIcon.vue';
 import type { ToolCategoryConfig } from '@/features/tools/config/toolCategories';
 
-const props = defineProps<{
-  categories: ToolCategoryConfig[];
-  activeCategory: string;
-  visible: boolean;
-  pinned: boolean;
-  side: 'left' | 'right';
-  searchVisible: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    id?: string;
+    categories: ToolCategoryConfig[];
+    activeCategory: string;
+    visible: boolean;
+    pinned: boolean;
+    side: 'left' | 'right';
+    searchVisible: boolean;
+    /** 是否显示搜索框开关按钮，详情页等无搜索场景可关闭 */
+    searchButton?: boolean;
+  }>(),
+  { searchButton: true },
+);
 
 const emit = defineEmits<{
   select: [categoryId: string];
@@ -38,6 +44,7 @@ const sidebarClass = computed(() => ({
 
 <template>
   <div
+    :id="id"
     class="tools-sidebar-dock"
     :class="sidebarClass"
     @mouseenter="emit('enter')"
@@ -78,9 +85,13 @@ const sidebarClass = computed(() => ({
         </button>
       </nav>
 
-      <div class="tools-sidebar__footer">
+      <div
+        class="tools-sidebar__footer"
+        :class="{ 'tools-sidebar__footer--no-search': !searchButton }"
+      >
         <ThemeToggle :size="16" />
         <button
+          v-if="searchButton"
           class="tools-sidebar__setting tools-sidebar__setting--search"
           type="button"
           :aria-label="searchVisible ? '隐藏搜索框' : '显示搜索框'"

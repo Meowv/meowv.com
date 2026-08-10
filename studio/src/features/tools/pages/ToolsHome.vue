@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
+import { IconStarFilled } from '@tabler/icons-vue';
 import ToolCard from '@/features/tools/components/ToolCard.vue';
 import ToolIcon from '@/features/tools/components/ToolIcon.vue';
 import ToolSearch from '@/features/tools/components/ToolSearch.vue';
@@ -15,14 +16,17 @@ const query = ref('');
 const activeCategory = ref<string>(toolCategories[0]?.id ?? '');
 const catalogElement = ref<HTMLElement | null>(null);
 const sidebarHovered = ref(false);
+const FAVORITES_KEY = `${STORAGE_POLICY.preferences}:tools-favorites`;
 const SIDEBAR_PIN_KEY = `${STORAGE_POLICY.preferences}:tools-sidebar-pinned`;
 const SIDEBAR_SIDE_KEY = `${STORAGE_POLICY.preferences}:tools-sidebar-side`;
 const SEARCH_VISIBILITY_KEY = `${STORAGE_POLICY.preferences}:tools-search-visible`;
 const sidebarPinned = ref(readSidebarPinned());
 const sidebarSide = ref(readSidebarSide());
 const searchVisible = ref(readSearchVisible());
+const favoriteIds = ref<string[]>([]);
 const sidebarVisible = computed(() => sidebarPinned.value || sidebarHovered.value);
 const filteredTools = computed(() => searchTools(query.value, tools));
+const favoriteTools = computed(() => tools.filter((tool) => favoriteIds.value.includes(tool.id)));
 const toolGroups = computed(() =>
   toolCategories
     .map((category) => ({
@@ -98,6 +102,18 @@ function readSearchVisible(): boolean {
   }
 }
 
+function readFavorites(): void {
+  if (!storageAvailable()) return;
+  try {
+    const stored = JSON.parse(localStorage.getItem(FAVORITES_KEY) ?? '[]') as unknown;
+    favoriteIds.value = Array.isArray(stored)
+      ? stored.filter((value): value is string => typeof value === 'string')
+      : [];
+  } catch {
+    favoriteIds.value = [];
+  }
+}
+
 function setSidebarPinned(pinned: boolean): void {
   sidebarPinned.value = pinned;
   sidebarHovered.value = pinned;
@@ -149,6 +165,7 @@ watch(toolGroups, async (groups) => {
 });
 
 onMounted(async () => {
+  readFavorites();
   catalogElement.value?.addEventListener('scroll', updateActiveCategory, { passive: true });
   const categoryId = route.hash.replace(/^#/, '');
   if (toolCategories.some((category) => category.id === categoryId)) {
@@ -194,6 +211,20 @@ onBeforeUnmount(() => {
       <div v-if="searchVisible" class="tools-toolbar">
         <ToolSearch v-model="query" />
       </div>
+
+      <section
+        v-if="favoriteTools.length"
+        class="tools-favorites"
+        aria-labelledby="tools-favorites-title"
+      >
+        <header class="tools-favorites__marker">
+          <span><IconStarFilled :size="16" aria-hidden="true" /></span>
+          <strong id="tools-favorites-title">我的收藏</strong>
+        </header>
+        <div class="tools-grid">
+          <ToolCard v-for="tool in favoriteTools" :key="tool.id" :tool="tool" />
+        </div>
+      </section>
 
       <div v-if="toolGroups.length" class="tools-category-sections" aria-live="polite">
         <section

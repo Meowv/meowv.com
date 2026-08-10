@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref } from 'vue';
-import { IconChevronRight, IconMenu2 } from '@tabler/icons-vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { IconApps, IconChevronRight, IconMenu2 } from '@tabler/icons-vue';
 import ToolCard from '@/features/tools/components/ToolCard.vue';
-import ToolDataBoundaryNotice from '@/features/tools/components/ToolDataBoundaryNotice.vue';
-import ToolDetailSidebar from '@/features/tools/components/ToolDetailSidebar.vue';
 import ToolHeader from '@/features/tools/components/ToolHeader.vue';
-import { TOOL_HELP_REGISTRATION, type ToolHelpContent } from '@/features/tools/components/toolHelpContext';
+import ToolIcon from '@/features/tools/components/ToolIcon.vue';
+import ToolSidebar from '@/features/tools/components/ToolSidebar.vue';
 import { STORAGE_POLICY, storageAvailable } from '@/core/privacy/storage';
-import type { ToolCategoryConfig } from '@/features/tools/config/toolCategories';
+import { toolCategories, type ToolCategoryConfig } from '@/features/tools/config/toolCategories';
 import { getToolById, type ToolConfig } from '@/features/tools/config/tools';
 
 const props = defineProps<{
@@ -16,14 +16,18 @@ const props = defineProps<{
 }>();
 
 const FAVORITES_KEY = `${STORAGE_POLICY.preferences}:tools-favorites`;
+const SIDEBAR_PIN_KEY = `${STORAGE_POLICY.preferences}:tools-sidebar-pinned`;
+const SIDEBAR_SIDE_KEY = `${STORAGE_POLICY.preferences}:tools-sidebar-side`;
+const router = useRouter();
 const favoriteIds = ref<string[]>([]);
 const sidebarOpen = ref(false);
+const sidebarPinned = ref(readSidebarPinned());
+const sidebarSide = ref(readSidebarSide());
+const sidebarHovered = ref(false);
+const sidebarVisible = computed(
+  () => sidebarOpen.value || sidebarPinned.value || sidebarHovered.value,
+);
 const sidebarButton = ref<HTMLButtonElement | null>(null);
-const help = ref<ToolHelpContent | null>(null);
-
-provide(TOOL_HELP_REGISTRATION, (content) => {
-  help.value = content;
-});
 
 const relatedTools = computed(() =>
   props.tool.relatedToolIds
@@ -44,6 +48,56 @@ function readFavorites(): void {
   }
 }
 
+function readSidebarPinned(): boolean {
+  if (!storageAvailable()) return false;
+  try {
+    return localStorage.getItem(SIDEBAR_PIN_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function readSidebarSide(): 'left' | 'right' {
+  if (!storageAvailable()) return 'left';
+  try {
+    return localStorage.getItem(SIDEBAR_SIDE_KEY) === 'right' ? 'right' : 'left';
+  } catch {
+    return 'left';
+  }
+}
+
+function setSidebarPinned(pinned: boolean): void {
+  sidebarPinned.value = pinned;
+  sidebarHovered.value = pinned;
+  if (!storageAvailable()) return;
+  try {
+    if (pinned) localStorage.setItem(SIDEBAR_PIN_KEY, 'true');
+    else localStorage.removeItem(SIDEBAR_PIN_KEY);
+  } catch {
+    // 本地偏好不可用时仅保留当前页面状态。
+  }
+}
+
+function setSidebarSide(side: 'left' | 'right'): void {
+  sidebarSide.value = side;
+  if (!storageAvailable()) return;
+  try {
+    localStorage.setItem(SIDEBAR_SIDE_KEY, side);
+  } catch {
+    // 本地偏好不可用时仅保留当前页面状态。
+  }
+}
+
+function handleSidebarLeave(): void {
+  if (sidebarPinned.value || sidebarOpen.value) return;
+  sidebarHovered.value = false;
+}
+
+function selectCategory(categoryId: string): void {
+  sidebarOpen.value = false;
+  void router.push({ path: '/tools', hash: `#${categoryId}` });
+}
+
 function toggleFavorite(): void {
   favoriteIds.value = favorite.value
     ? favoriteIds.value.filter((toolId) => toolId !== props.tool.id)
@@ -59,7 +113,7 @@ function toggleFavorite(): void {
 async function openSidebar(): Promise<void> {
   sidebarOpen.value = true;
   await nextTick();
-  document.querySelector<HTMLElement>('#tool-detail-categories a')?.focus();
+  document.querySelector<HTMLElement>('#tool-detail-categories nav button')?.focus();
 }
 
 function closeSidebar(restoreFocus = true): void {
@@ -81,7 +135,14 @@ onBeforeUnmount(() => document.removeEventListener('keydown', handleKeydown));
 </script>
 
 <template>
-  <div class="tool-detail-shell">
+  <div
+    class="tool-detail-shell"
+    :class="{
+      'tool-detail-shell--sidebar-pinned': sidebarPinned,
+      'tool-detail-shell--sidebar-open': sidebarOpen,
+      'tool-detail-shell--sidebar-right': sidebarSide === 'right',
+    }"
+  >
     <button
       v-if="sidebarOpen"
       type="button"
@@ -89,10 +150,20 @@ onBeforeUnmount(() => document.removeEventListener('keydown', handleKeydown));
       aria-label="关闭工具分类"
       @click="closeSidebar()"
     ></button>
-    <ToolDetailSidebar
+    <ToolSidebar
+      id="tool-detail-categories"
+      :categories="toolCategories"
       :active-category="category.id"
-      :open="sidebarOpen"
-      @close="closeSidebar()"
+      :visible="sidebarVisible"
+      :pinned="sidebarPinned"
+      :side="sidebarSide"
+      :search-visible="true"
+      :search-button="false"
+      @enter="sidebarHovered = true"
+      @leave="handleSidebarLeave"
+      @select="selectCategory"
+      @update:pinned="setSidebarPinned"
+      @update:side="setSidebarSide"
     />
 
     <div class="tool-detail-main">
@@ -108,11 +179,20 @@ onBeforeUnmount(() => document.removeEventListener('keydown', handleKeydown));
           <IconMenu2 :size="18" aria-hidden="true" />
           工具分类
         </button>
-        <RouterLink to="/tools">工具</RouterLink>
+        <RouterLink to="/tools">
+          <IconApps :size="14" aria-hidden="true" />
+          工具
+        </RouterLink>
         <IconChevronRight :size="14" aria-hidden="true" />
-        <RouterLink :to="`/tools#${category.id}`">{{ category.label }}</RouterLink>
+        <RouterLink :to="`/tools#${category.id}`">
+          <ToolIcon :name="category.icon" :size="14" />
+          {{ category.label }}
+        </RouterLink>
         <IconChevronRight :size="14" aria-hidden="true" />
-        <span aria-current="page">{{ tool.name }}</span>
+        <span aria-current="page">
+          <ToolIcon :name="tool.icon" :size="14" />
+          {{ tool.name }}
+        </span>
       </nav>
 
       <ToolHeader
@@ -125,31 +205,29 @@ onBeforeUnmount(() => document.removeEventListener('keydown', handleKeydown));
         @toggle-favorite="toggleFavorite"
       />
 
-      <ToolDataBoundaryNotice :boundary="tool.dataBoundary" />
-
-      <div class="tools-detail__content" :data-layout="tool.layout" :data-settings="tool.settingsMode">
+      <div
+        class="tools-detail__content"
+        :data-layout="tool.layout"
+        :data-settings="tool.settingsMode"
+      >
         <slot />
       </div>
 
-      <section v-if="relatedTools.length" class="tools-detail__related" aria-labelledby="related-title">
+      <section
+        v-if="relatedTools.length"
+        class="tools-detail__related"
+        aria-labelledby="related-title"
+      >
         <div class="tools-detail__section-heading">
-          <h2 id="related-title">相关工具</h2>
-          <RouterLink :to="`/tools#${category.id}`">查看 {{ category.label }}</RouterLink>
+          <h2 id="related-title">
+            <ToolIcon :name="'icons'" :size="18" />
+            相关工具
+          </h2>
         </div>
         <div class="tools-detail__related-grid">
           <ToolCard v-for="item in relatedTools" :key="item.id" :tool="item" compact />
         </div>
       </section>
-
-      <details v-if="help" class="tools-detail__help">
-        <summary>{{ help.title }}</summary>
-        <div class="tools-detail__help-content">
-          <ol>
-            <li v-for="step in help.steps" :key="step">{{ step }}</li>
-          </ol>
-          <p v-if="help.note">{{ help.note }}</p>
-        </div>
-      </details>
     </div>
   </div>
 </template>

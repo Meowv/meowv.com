@@ -26,7 +26,7 @@ const emit = defineEmits<{
       <span>{{ backLabel ?? '返回 Tools' }}</span>
     </RouterLink>
     <span v-if="icon" class="tools-page-header__icon" aria-hidden="true">
-      <ToolIcon :name="icon" :size="legacy ? 25 : 42" />
+      <ToolIcon :name="icon" :size="legacy ? 25 : 26" />
     </span>
     <div class="tools-page-header__content">
       <p v-if="legacy" class="eyebrow">{{ eyebrow }}</p>

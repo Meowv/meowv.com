@@ -41,13 +41,16 @@ const relatedTools = computed(() =>
     <slot />
   </div>
 
-  <section v-if="relatedTools.length" class="tools-detail__related" aria-labelledby="legacy-related-title">
+  <section
+    v-if="relatedTools.length"
+    class="tools-detail__related"
+    aria-labelledby="legacy-related-title"
+  >
     <div class="tools-detail__section-heading">
       <div>
         <p class="eyebrow">RELATED</p>
         <h2 id="legacy-related-title">相关工具</h2>
       </div>
-      <RouterLink :to="`/tools#${category.id}`">查看 {{ category.label }}</RouterLink>
     </div>
     <div class="tools-grid">
       <ToolCard v-for="item in relatedTools" :key="item.id" :tool="item" />
