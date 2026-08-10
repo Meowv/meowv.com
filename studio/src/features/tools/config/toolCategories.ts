@@ -1,8 +1,6 @@
 export const TOOL_CATEGORY_IDS = [
   'developer',
   'converter',
-  'encode',
-  'security',
   'text',
   'language',
   'date',
@@ -38,20 +36,6 @@ export const toolCategories: ToolCategoryConfig[] = [
     label: '格式转换',
     icon: 'converter',
     accent: '#0891b2',
-  },
-  {
-    id: 'encode',
-    name: 'Encode',
-    label: '编码转换',
-    icon: 'encode',
-    accent: '#0f766e',
-  },
-  {
-    id: 'security',
-    name: 'Security',
-    label: '加密安全',
-    icon: 'shield',
-    accent: '#dc2626',
   },
   {
     id: 'text',

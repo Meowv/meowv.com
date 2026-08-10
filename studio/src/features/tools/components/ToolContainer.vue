@@ -8,7 +8,7 @@ import ToolIcon from '@/features/tools/components/ToolIcon.vue';
 import ToolSidebar from '@/features/tools/components/ToolSidebar.vue';
 import { STORAGE_POLICY, storageAvailable } from '@/core/privacy/storage';
 import { toolCategories, type ToolCategoryConfig } from '@/features/tools/config/toolCategories';
-import { getToolById, type ToolConfig } from '@/features/tools/config/tools';
+import { getToolsByCategory, type ToolConfig } from '@/features/tools/config/tools';
 
 const props = defineProps<{
   tool: ToolConfig;
@@ -30,9 +30,7 @@ const sidebarVisible = computed(
 const sidebarButton = ref<HTMLButtonElement | null>(null);
 
 const relatedTools = computed(() =>
-  props.tool.relatedToolIds
-    .map((toolId) => getToolById(toolId))
-    .filter((item): item is ToolConfig => Boolean(item)),
+  getToolsByCategory(props.category.id).filter((item) => item.id !== props.tool.id),
 );
 const favorite = computed(() => favoriteIds.value.includes(props.tool.id));
 

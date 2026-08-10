@@ -12,9 +12,7 @@ const props = defineProps<{
 }>();
 
 const relatedTools = computed(() =>
-  getToolsByCategory(props.category.id)
-    .filter((item) => item.id !== props.tool.id)
-    .slice(0, 3),
+  getToolsByCategory(props.category.id).filter((item) => item.id !== props.tool.id),
 );
 </script>
 

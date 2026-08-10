@@ -1609,86 +1609,6 @@
   font-size: 24px;
 }
 
-.tool-json-view {
-  min-height: 320px;
-  overflow: auto;
-  color: var(--color-text-muted);
-  font-size: 11px;
-}
-
-.tool-json-node {
-  margin: 5px 0;
-}
-
-.tool-json-node > summary {
-  display: flex;
-  width: fit-content;
-  min-height: 30px;
-  padding: 5px 8px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  align-items: center;
-  gap: 8px;
-  background: var(--color-surface-soft);
-  cursor: pointer;
-}
-
-.tool-json-node summary strong,
-.tool-json-leaf strong {
-  color: var(--tools-accent);
-}
-
-.tool-json-node summary span {
-  color: var(--color-text-muted);
-  font-size: 9px;
-}
-
-.tool-json-node__children {
-  margin-left: 15px;
-  padding-left: 13px;
-  border-left: 1px solid color-mix(in srgb, var(--tools-accent) 28%, var(--color-border));
-}
-
-.tool-json-leaf {
-  display: flex;
-  width: fit-content;
-  min-height: 29px;
-  margin: 5px 0;
-  padding: 5px 8px;
-  border-radius: 7px;
-  align-items: center;
-  gap: 8px;
-  background: var(--color-surface-soft);
-}
-
-.tool-json-leaf code {
-  color: var(--color-text);
-}
-
-.tool-json-node.is-graph > summary,
-.tool-json-node.is-graph .tool-json-leaf {
-  box-shadow: 0 4px 12px color-mix(in srgb, var(--tools-accent) 8%, transparent);
-}
-
-.tool-markdown-preview {
-  min-height: 300px;
-  padding: 18px;
-  overflow: auto;
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  background: var(--color-surface-soft);
-  color: var(--color-text);
-  font-size: 12px;
-  line-height: 1.7;
-}
-
-.tool-markdown-preview > :first-child {
-  margin-top: 0;
-}
-.tool-markdown-preview > :last-child {
-  margin-bottom: 0;
-}
-
 .tool-video-preview {
   display: block;
   width: 100%;
@@ -1731,74 +1651,6 @@
   border-radius: 12px;
 }
 
-.tool-avatar-preview {
-  width: 180px;
-  aspect-ratio: 1;
-  border-radius: 28px;
-  box-shadow: 0 14px 32px rgb(15 23 42 / 12%);
-}
-
-.tool-qr-preview {
-  width: min(100%, 340px);
-  aspect-ratio: 1;
-  border: 1px solid var(--line);
-}
-
-.tool-markdown-preview {
-  min-height: 240px;
-  line-height: 1.75;
-}
-
-.tool-table-scroll {
-  overflow: auto;
-  max-height: 520px;
-}
-
-.tool-data-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.tool-data-table th,
-.tool-data-table td {
-  padding: 9px 12px;
-  border: 1px solid var(--line);
-  text-align: left;
-  white-space: nowrap;
-}
-
-.tool-data-table th {
-  background: color-mix(in srgb, var(--tools-accent) 9%, var(--surface));
-}
-
-.tool-timer-display {
-  font:
-    700 clamp(3rem, 9vw, 6rem) / 1 ui-monospace,
-    monospace;
-  letter-spacing: -0.06em;
-  text-align: center;
-}
-
-.tool-keyboard-stage {
-  display: grid;
-  gap: 8px;
-  min-height: 180px;
-  place-content: center;
-  padding: 24px;
-  border: 2px dashed color-mix(in srgb, var(--tools-accent) 45%, var(--line));
-  border-radius: 18px;
-  text-align: center;
-}
-
-.tool-keyboard-stage strong {
-  font-size: 1.5rem;
-}
-.tool-key-history {
-  display: grid;
-  gap: 6px;
-  margin: 0;
-  padding-left: 24px;
-}
 .tool-elements {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
@@ -1870,46 +1722,6 @@
   text-align: center;
 }
 
-.tool-game-canvas {
-  width: 100%;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  cursor: crosshair;
-}
-.tool-typing-stage {
-  position: relative;
-  min-height: 360px;
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: linear-gradient(#e0f2fe, #f8fafc);
-}
-.tool-typing-stage::after {
-  position: absolute;
-  right: 0;
-  bottom: 8%;
-  left: 0;
-  border-top: 2px dashed #ef4444;
-  content: '';
-}
-.tool-typing-enemy {
-  position: absolute;
-  z-index: 1;
-  padding: 5px 9px;
-  border-radius: 999px;
-  background: white;
-  box-shadow: 0 6px 16px rgb(15 23 42 / 14%);
-  color: #0f172a;
-  font:
-    700 0.84rem/1.2 ui-monospace,
-    monospace;
-  transform: translateX(-50%);
-}
-.tool-game-score {
-  color: var(--text-muted);
-  font-weight: 700;
-  text-align: center;
-}
 .tool-emoji-board {
   display: grid;
   grid-template-columns: repeat(4, minmax(54px, 1fr));
