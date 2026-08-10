@@ -254,11 +254,23 @@
   color: var(--note-fg);
   box-shadow: 0 10px 26px color-mix(in srgb, var(--note-color) 30%, transparent);
   flex-direction: column;
-  transition: height 360ms cubic-bezier(0.22, 0.8, 0.24, 1);
+  transition:
+    width 360ms cubic-bezier(0.22, 0.8, 0.24, 1),
+    height 360ms cubic-bezier(0.22, 0.8, 0.24, 1),
+    transform 350ms cubic-bezier(0.22, 0.8, 0.24, 1);
 }
 
 .note-card--collapsed {
-  height: 34px !important;
+  height: 48px !important;
+}
+
+.note-card--collapsed .note-card__header {
+  height: 48px;
+  min-height: 48px;
+}
+
+.note-card--collapsed .note-card__title {
+  line-height: 48px;
 }
 
 .note-card__header {

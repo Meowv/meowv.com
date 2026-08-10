@@ -11,7 +11,7 @@ import {
   listNoteStickies,
   saveNotesBatch,
 } from '@/features/notes/storage';
-import type { NoteSticky } from '@/features/notes/types';
+import type { NoteLayoutMode, NoteSticky } from '@/features/notes/types';
 import { NOTE_PIN_Z_BASE } from '@/features/notes/types';
 import '@/features/notes/notes.css';
 
@@ -25,6 +25,27 @@ const {
 interface CarnivalCard {
   setCarnivalTransform(x: number, y: number, rotation: number, scale?: number): void;
   clearCarnivalTransform(): void;
+  playLayoutTransition(deltaX: number, deltaY: number): void;
+}
+
+interface NoteLayout {
+  id: string;
+  width: number;
+  height: number;
+  x: number;
+  y: number;
+  mode: NoteLayoutMode;
+}
+
+interface NoteLayoutSize {
+  width: number;
+  height: number;
+}
+
+interface NoteGridPlacement {
+  column: number;
+  span: number;
+  y: number;
 }
 
 type CarnivalDanceType = 'wobble' | 'bounce' | 'circle' | 'spin';
@@ -92,6 +113,18 @@ const PARTICLE_COLORS = [
   '#fbbf24',
 ];
 const MAX_PARTICLES = 150;
+const NOTE_LAYOUT_SIZES = {
+  large: { width: 320, height: 240 },
+  normal: { width: 260, height: 180 },
+  small: { width: 220, height: 150 },
+  compact: { width: 220, height: 48 },
+} satisfies Record<string, NoteLayoutSize>;
+const COMPACT_NOTE_LAYOUT = {
+  padding: 16,
+  gap: 10,
+  stackLimit: 5,
+  stackOffset: 8,
+};
 
 const CARNIVAL_PROFILES: CarnivalProfile[] = [
   {
@@ -233,6 +266,10 @@ let audioContext: AudioContext | null = null;
 let audioGain: GainNode | null = null;
 let carnivalAudioBuffer: AudioBuffer | null = null;
 let carnivalBeatInterval: number | null = null;
+let autoLayoutFrame: number | null = null;
+let canvasResizeObserver: ResizeObserver | null = null;
+let observedCanvasWidth = 0;
+let observedCanvasHeight = 0;
 
 const allCollapsed = computed(
   () => notes.value.length > 0 && notes.value.every((n) => n.collapsed),
@@ -274,7 +311,10 @@ function patchNote(id: string, patch: Partial<NoteSticky>): void {
       note.zIndex = topZ.value;
     }
   }
-  Object.assign(note, patch);
+  const now = Date.now();
+  if (patch.content !== undefined && patch.content !== note.content) note.lastEditedAt = now;
+  if (patch.collapsed !== undefined) note.layoutMode = undefined;
+  Object.assign(note, patch, { updatedAt: now });
 }
 
 function saveNote(id: string): void {
@@ -284,7 +324,7 @@ function saveNote(id: string): void {
 
 function setCardRef(id: string, instance: unknown): void {
   const card = instance as Partial<CarnivalCard> | null;
-  if (card?.setCarnivalTransform && card.clearCarnivalTransform) {
+  if (card?.setCarnivalTransform && card.clearCarnivalTransform && card.playLayoutTransition) {
     cardRefs.set(id, card as CarnivalCard);
     return;
   }
@@ -733,7 +773,7 @@ async function startCarnival(): Promise<void> {
   carnivalLevel.value += 1;
   const isFirstEntry = !isCarnival.value;
   if (isFirstEntry) {
-    arrangeCanvas();
+    arrangeCanvas(false);
     await nextTick();
     isCarnival.value = true;
     initializeCarnivalPhysics();
@@ -787,6 +827,7 @@ function createNote(): void {
   notes.value.push(note);
   createdCount += 1;
   scheduleSave(note, 0);
+  scheduleCanvasLayout();
   if (isCarnival.value) {
     const profile = getCarnivalProfile();
     const now = performance.now();
@@ -806,6 +847,7 @@ async function deleteNote(id: string): Promise<void> {
   pendingSaves.delete(id);
   carnivalPhysics.delete(id);
   carnivalTrails.delete(id);
+  scheduleCanvasLayout();
   if (isCarnival.value && getCarnivalProfile().danceStrength > 0) {
     spawnParticles(16, note.x + note.width / 2, note.y + note.height / 2);
   }
@@ -836,6 +878,7 @@ async function clearAll(): Promise<void> {
 function applyCollapse(nextCollapsed: boolean, persist: boolean): void {
   for (const note of notes.value) {
     note.collapsed = nextCollapsed;
+    if (persist) note.layoutMode = undefined;
     if (persist) pendingSaves.add(note.id);
   }
   if (persist) flushSaves();
@@ -1052,51 +1095,209 @@ function collapseOthers(id: string): void {
   if (notes.value.length < 2) return;
   for (const note of notes.value) {
     note.collapsed = note.id !== id;
+    note.layoutMode = undefined;
     pendingSaves.add(note.id);
   }
   flushSaves();
 }
 
-function arrangeCanvas(): void {
+function compareNotePriority(a: NoteSticky, b: NoteSticky): number {
+  if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+  const aActivityAt = Math.max(a.lastEditedAt, a.updatedAt, a.createdAt);
+  const bActivityAt = Math.max(b.lastEditedAt, b.updatedAt, b.createdAt);
+  if (aActivityAt !== bActivityAt) return bActivityAt - aActivityAt;
+  return b.createdAt - a.createdAt;
+}
+
+function getPreferredLayoutSizes(note: NoteSticky): NoteLayoutSize[] {
+  if (note.collapsed && note.layoutMode === undefined) {
+    return [{ width: note.width, height: NOTE_LAYOUT_SIZES.compact.height }];
+  }
+  if (note.pinned) return [{ width: note.width, height: note.height }];
+  return [NOTE_LAYOUT_SIZES.normal, NOTE_LAYOUT_SIZES.small];
+}
+
+function applyNoteLayout(
+  note: NoteSticky,
+  layout: NoteLayout,
+  preserveManualCollapse = false,
+): void {
+  note.x = layout.x;
+  note.y = layout.y;
+  note.width = layout.width;
+  note.height = layout.height;
+  note.collapsed = layout.mode !== 'full';
+  note.layoutMode = preserveManualCollapse ? undefined : layout.mode;
+  pendingSaves.add(note.id);
+}
+
+function getGridColumnSpan(
+  width: number,
+  columnWidth: number,
+  columnCount: number,
+  gap: number,
+): number {
+  return Math.min(columnCount, Math.max(1, Math.ceil((width + gap) / (columnWidth + gap))));
+}
+
+function findGridPlacement(columnHeights: number[], span: number): NoteGridPlacement {
+  let placement: NoteGridPlacement = { column: 0, span, y: Number.POSITIVE_INFINITY };
+  for (let column = 0; column <= columnHeights.length - span; column += 1) {
+    const y = Math.max(...columnHeights.slice(column, column + span));
+    if (y < placement.y) placement = { column, span, y };
+  }
+  return placement;
+}
+
+function fillGridColumns(
+  columnHeights: number[],
+  placement: NoteGridPlacement,
+  height: number,
+  gap: number,
+): void {
+  const nextHeight = placement.y + height + gap;
+  for (let column = placement.column; column < placement.column + placement.span; column += 1) {
+    columnHeights[column] = nextHeight;
+  }
+}
+
+function scheduleCanvasLayout(): void {
+  if (autoLayoutFrame !== null) return;
+  autoLayoutFrame = window.requestAnimationFrame(() => {
+    autoLayoutFrame = null;
+    arrangeCanvas();
+  });
+}
+
+function observeCanvasResize(): void {
+  const canvas = canvasRef.value;
+  if (!canvas || typeof ResizeObserver === 'undefined') return;
+  canvasResizeObserver?.disconnect();
+  let initialized = false;
+  canvasResizeObserver = new ResizeObserver(([entry]) => {
+    const { width, height } = entry.contentRect;
+    if (!initialized) {
+      initialized = true;
+      observedCanvasWidth = width;
+      observedCanvasHeight = height;
+      return;
+    }
+    if (width === observedCanvasWidth && height === observedCanvasHeight) return;
+    observedCanvasWidth = width;
+    observedCanvasHeight = height;
+    scheduleCanvasLayout();
+  });
+  canvasResizeObserver.observe(canvas);
+}
+
+function arrangeCanvas(animate = true): void {
   const canvas = canvasRef.value;
   if (!canvas) return;
-  const gap = 16;
   const viewportWidth = canvas.clientWidth;
   const viewportHeight = canvas.clientHeight;
-  const sorted = [...notes.value].sort((a, b) => a.zIndex - b.zIndex);
-  const keepVisible = 16;
-  const stackStepY = 24;
-  const stackPerColumn = 8;
-  const stackColumnWidth = 320;
-  const stackOriginX = viewportWidth - 340;
-  const stackOriginY = viewportHeight - 240;
-  let x = gap;
-  let y = gap;
-  let rowHeight = 0;
+  const sorted = [...notes.value].sort(compareNotePriority);
+  if (sorted.length === 0) return;
+
+  const { gap, padding, stackLimit, stackOffset } = COMPACT_NOTE_LAYOUT;
+  const availableWidth = Math.max(0, viewportWidth - padding * 2);
+  const columnCount = Math.max(
+    1,
+    Math.floor((availableWidth + gap) / (NOTE_LAYOUT_SIZES.normal.width + gap)),
+  );
+  const columnWidth = Math.max(1, (availableWidth - gap * (columnCount - 1)) / columnCount);
+  const viewportBottom = Math.max(padding, viewportHeight - padding);
+  const columnHeights = Array.from({ length: columnCount }, () => padding);
+  const previousPositions = new Map(sorted.map((note) => [note.id, { x: note.x, y: note.y }]));
   let stacked = 0;
+
   for (const note of sorted) {
-    if (x + note.width + gap > viewportWidth) {
-      x = gap;
-      y += rowHeight + gap;
-      rowHeight = 0;
-    }
-    if (y + note.height > viewportHeight - keepVisible) {
-      const column = Math.floor(stacked / stackPerColumn);
-      const index = stacked % stackPerColumn;
-      note.x = stackOriginX - column * stackColumnWidth + index * 10;
-      note.y = stackOriginY + index * stackStepY;
-      stacked += 1;
-      pendingSaves.add(note.id);
+    const manuallyCollapsed = note.collapsed && note.layoutMode === undefined;
+    const preferred = getPreferredLayoutSizes(note)
+      .map((size) => {
+        const placement = findGridPlacement(
+          columnHeights,
+          getGridColumnSpan(size.width, columnWidth, columnCount, gap),
+        );
+        return { size, placement };
+      })
+      .find(({ size, placement }) => placement.y + size.height <= viewportBottom);
+
+    if (preferred) {
+      const { size, placement } = preferred;
+      const width =
+        manuallyCollapsed || note.pinned ? note.width : Math.min(size.width, columnWidth);
+      const occupiedWidth = placement.span * columnWidth + (placement.span - 1) * gap;
+      applyNoteLayout(
+        note,
+        {
+          id: note.id,
+          width,
+          height: manuallyCollapsed ? note.height : size.height,
+          x: padding + placement.column * (columnWidth + gap) + (occupiedWidth - width) / 2,
+          y: placement.y,
+          mode: manuallyCollapsed ? 'compact' : 'full',
+        },
+        manuallyCollapsed,
+      );
+      fillGridColumns(columnHeights, placement, size.height, gap);
       continue;
     }
-    note.x = x;
-    note.y = y;
-    x += note.width + gap;
-    rowHeight = Math.max(rowHeight, note.height);
-    pendingSaves.add(note.id);
+
+    const compactWidth = Math.min(NOTE_LAYOUT_SIZES.compact.width, columnWidth);
+    const compactPlacement = findGridPlacement(
+      columnHeights,
+      getGridColumnSpan(compactWidth, columnWidth, columnCount, gap),
+    );
+    if (!note.pinned && compactPlacement.y + NOTE_LAYOUT_SIZES.compact.height <= viewportBottom) {
+      const occupiedWidth = compactPlacement.span * columnWidth + (compactPlacement.span - 1) * gap;
+      applyNoteLayout(note, {
+        id: note.id,
+        width: compactWidth,
+        height: NOTE_LAYOUT_SIZES.compact.height,
+        x:
+          padding +
+          compactPlacement.column * (columnWidth + gap) +
+          (occupiedWidth - compactWidth) / 2,
+        y: compactPlacement.y,
+        mode: 'compact',
+      });
+      fillGridColumns(columnHeights, compactPlacement, NOTE_LAYOUT_SIZES.compact.height, gap);
+      continue;
+    }
+
+    const stackIndex = Math.min(stacked, stackLimit - 1);
+    const stackWidth = manuallyCollapsed || note.pinned ? note.width : compactWidth;
+    const stackHeight =
+      manuallyCollapsed || note.pinned ? note.height : NOTE_LAYOUT_SIZES.compact.height;
+    const stackDisplayHeight = manuallyCollapsed ? NOTE_LAYOUT_SIZES.compact.height : stackHeight;
+    applyNoteLayout(
+      note,
+      {
+        id: note.id,
+        width: stackWidth,
+        height: stackHeight,
+        x: Math.max(padding, viewportWidth - padding - stackWidth - stackIndex * stackOffset),
+        y: Math.max(
+          padding,
+          viewportHeight - padding - stackDisplayHeight - stackIndex * stackOffset,
+        ),
+        mode: manuallyCollapsed ? 'compact' : note.pinned ? 'full' : 'stack',
+      },
+      manuallyCollapsed,
+    );
+    stacked += 1;
   }
   if (pendingSaves.size > 0) flushSaves();
   if (isCarnival.value) rebaseCarnivalPhysics();
+  else if (animate) {
+    void nextTick(() => {
+      for (const note of sorted) {
+        const previous = previousPositions.get(note.id);
+        if (!previous) continue;
+        cardRefs.get(note.id)?.playLayoutTransition(previous.x - note.x, previous.y - note.y);
+      }
+    });
+  }
 }
 
 function toggleHeader(): void {
@@ -1143,6 +1344,8 @@ async function initialize(): Promise<void> {
   }
   if (notes.value.length === 0) createNote();
   loading.value = false;
+  await nextTick();
+  observeCanvasResize();
 }
 
 function handleVisibilityChange(): void {
@@ -1175,6 +1378,8 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   flushSaves();
+  if (autoLayoutFrame !== null) window.cancelAnimationFrame(autoLayoutFrame);
+  canvasResizeObserver?.disconnect();
   pauseCarnival();
   clearCarnivalTransforms();
   carnivalPhysics.clear();

@@ -1,10 +1,12 @@
 export type NoteEditorMode = 'edit' | 'preview';
+export type NoteLayoutMode = 'full' | 'compact' | 'stack';
 
 export interface NoteSticky {
   id: string;
   content: string;
   color: string;
   collapsed: boolean;
+  layoutMode?: NoteLayoutMode;
   mode: NoteEditorMode;
   opacity: number;
   pinned: boolean;

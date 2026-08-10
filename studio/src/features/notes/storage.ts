@@ -1,4 +1,5 @@
 import {
+  NOTE_COLOR_OPTIONS,
   NOTE_DEFAULT_COLOR,
   NOTE_DEFAULT_OPACITY,
   type NotesPreferences,
@@ -61,10 +62,13 @@ function openDatabase(): Promise<IDBDatabase> {
 
 export function createNoteSticky(title: string, x: number, y: number, zIndex: number): NoteSticky {
   const timestamp = Date.now();
+  const color =
+    NOTE_COLOR_OPTIONS[Math.floor(Math.random() * NOTE_COLOR_OPTIONS.length)]?.value ??
+    NOTE_DEFAULT_COLOR;
   return {
     id: newNoteId(),
     content: title,
-    color: NOTE_DEFAULT_COLOR,
+    color,
     collapsed: false,
     mode: 'edit',
     opacity: NOTE_DEFAULT_OPACITY,

@@ -48,6 +48,7 @@ const opacityMenuOpen = ref(false);
 const shakeFeedback = ref(false);
 const sliderRef = ref<HTMLElement | null>(null);
 let sliderDragging = false;
+let layoutTransitionFrame: number | null = null;
 const dragState = ref<{
   pointerId: number;
   startX: number;
@@ -85,6 +86,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', handleOutsidePointerDown);
+  if (layoutTransitionFrame !== null) window.cancelAnimationFrame(layoutTransitionFrame);
 });
 
 function handleOutsidePointerDown(event: PointerEvent): void {
@@ -377,7 +379,21 @@ function clearCarnivalTransform(): void {
   rootRef.value?.style.removeProperty('transform');
 }
 
-defineExpose({ setCarnivalTransform, clearCarnivalTransform });
+function playLayoutTransition(deltaX: number, deltaY: number): void {
+  if ((deltaX === 0 && deltaY === 0) || !rootRef.value) return;
+  if (layoutTransitionFrame !== null) window.cancelAnimationFrame(layoutTransitionFrame);
+  const root = rootRef.value;
+  root.style.setProperty('transition', 'none');
+  root.style.setProperty('transform', `translate3d(${deltaX}px, ${deltaY}px, 0)`);
+  void root.offsetWidth;
+  layoutTransitionFrame = window.requestAnimationFrame(() => {
+    root.style.removeProperty('transition');
+    root.style.removeProperty('transform');
+    layoutTransitionFrame = null;
+  });
+}
+
+defineExpose({ setCarnivalTransform, clearCarnivalTransform, playLayoutTransition });
 </script>
 
 <template>
