@@ -9,7 +9,9 @@ import { detectImageMime } from '@/features/image/core/image';
 import { formatBytes } from '@/features/image/utils/format';
 import { colorDetails, dominantColors, type ImageColor } from './image-colors';
 
-const props = defineProps<{ mode: 'picker' | 'dominant' }>();
+type ImageColorMode = 'picker' | 'dominant' | 'both';
+
+const props = defineProps<{ mode: ImageColorMode }>();
 
 const canvas = ref<HTMLCanvasElement | null>(null);
 const file = ref<File | null>(null);
@@ -18,11 +20,20 @@ const picked = ref<ImageColor | null>(null);
 const palette = ref<ImageColor[]>([]);
 const error = ref('');
 const processing = ref(false);
+const activeMode = ref<'picker' | 'dominant'>(props.mode === 'dominant' ? 'dominant' : 'picker');
+const pickerActive = computed(() =>
+  props.mode === 'both' ? activeMode.value === 'picker' : props.mode === 'picker',
+);
+const dominantActive = computed(() =>
+  props.mode === 'both' ? activeMode.value === 'dominant' : props.mode === 'dominant',
+);
 
 const content = computed(() =>
   props.mode === 'picker'
     ? { title: '图片取色器', description: '点击图片中的任意位置读取颜色。' }
-    : { title: '主色提取', description: '分析图片并提取出现频率最高的颜色。' },
+    : props.mode === 'dominant'
+      ? { title: '主色提取', description: '分析图片并提取出现频率最高的颜色。' }
+      : { title: '图片取色与主色提取', description: '点击图片精确取色，或提取图片的主色调色板。' },
 );
 
 function releasePreview(): void {
@@ -59,7 +70,7 @@ async function select(files: File[]): Promise<void> {
     releasePreview();
     file.value = selected;
     previewUrl.value = URL.createObjectURL(selected);
-    if (props.mode === 'dominant') {
+    if (props.mode !== 'picker') {
       const sample = document.createElement('canvas');
       const sampleScale = Math.min(1, 128 / Math.max(target.width, target.height));
       sample.width = Math.max(1, Math.round(target.width * sampleScale));
@@ -78,7 +89,7 @@ async function select(files: File[]): Promise<void> {
 }
 
 function pick(event: MouseEvent): void {
-  if (props.mode !== 'picker' || !canvas.value || !file.value) return;
+  if (!pickerActive.value || !canvas.value || !file.value) return;
   const rect = canvas.value.getBoundingClientRect();
   const x = Math.min(
     canvas.value.width - 1,
@@ -133,19 +144,45 @@ onBeforeUnmount(releasePreview);
     </ToolSection>
 
     <ToolSection
-      :title="mode === 'picker' ? '取色画布' : '颜色分析结果'"
-      :description="mode === 'picker' ? '上传后直接点击图片取色。' : '点击颜色值即可复制。'"
+      :title="pickerActive ? '取色画布' : '颜色分析结果'"
+      :description="pickerActive ? '上传后直接点击图片取色。' : '点击颜色值即可复制。'"
       tone="output"
     >
       <div class="tool-stack">
         <div
+          v-if="mode === 'both'"
+          class="tool-color-mode-tabs"
+          role="tablist"
+          aria-label="图片颜色功能"
+        >
+          <button
+            type="button"
+            role="tab"
+            :aria-selected="pickerActive"
+            :class="{ 'is-active': pickerActive }"
+            @click="activeMode = 'picker'"
+          >
+            图片取色
+          </button>
+          <button
+            type="button"
+            role="tab"
+            :aria-selected="dominantActive"
+            :class="{ 'is-active': dominantActive }"
+            @click="activeMode = 'dominant'"
+          >
+            主色提取
+          </button>
+        </div>
+        <div
+          v-show="pickerActive"
           class="tool-color-canvas"
-          :class="{ 'tool-color-canvas--picker': mode === 'picker' && file }"
+          :class="{ 'tool-color-canvas--picker': pickerActive && file }"
         >
           <canvas ref="canvas" :class="{ 'is-empty': !file }" @click="pick" />
           <span v-if="!file">图片将在这里显示</span>
         </div>
-        <div v-if="picked" class="tool-picked-color">
+        <div v-if="picked && pickerActive" class="tool-picked-color">
           <span :style="{ backgroundColor: picked.hex }" aria-hidden="true" />
           <div>
             <strong>{{ picked.hex }}</strong
@@ -153,7 +190,7 @@ onBeforeUnmount(releasePreview);
           </div>
           <CopyButton :text="picked.hex" label="复制 HEX" />
         </div>
-        <div v-if="palette.length" class="tool-color-palette">
+        <div v-if="palette.length && dominantActive" class="tool-color-palette">
           <article v-for="color in palette" :key="color.hex">
             <span :style="{ backgroundColor: color.hex }" aria-hidden="true" />
             <div>
@@ -170,8 +207,38 @@ onBeforeUnmount(releasePreview);
     :steps="
       mode === 'picker'
         ? ['选择本地图片。', '点击图片中的目标位置。', '复制 HEX、RGB 或 HSL 颜色值。']
-        : ['选择本地图片。', '等待浏览器提取主色。', '复制需要的调色板颜色。']
+        : mode === 'dominant'
+          ? ['选择本地图片。', '等待浏览器提取主色。', '复制需要的调色板颜色。']
+          : ['选择本地图片。', '在图片取色和主色提取间切换。', '复制需要的颜色值。']
     "
     note="动态 GIF 仅分析第一帧；透明度低于 50% 的像素不计入主色。"
   />
 </template>
+
+<style scoped>
+.tool-color-mode-tabs {
+  display: inline-flex;
+  align-self: flex-start;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+}
+
+.tool-color-mode-tabs button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-right: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.tool-color-mode-tabs button:last-child {
+  border-right: 0;
+}
+.tool-color-mode-tabs button.is-active {
+  background: var(--tools-accent);
+  color: #fff;
+}
+</style>

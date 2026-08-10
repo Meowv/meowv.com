@@ -41,15 +41,7 @@ const EMBEDDED_TOOL_IDS = new Set([
   'ocr-recognition',
 ]);
 
-const FILE_TOOL_IDS = new Set([
-  'video-to-gif',
-  'image-to-base64',
-  'base64-to-image',
-  'image-dimensions',
-  'image-metadata',
-  'exif-viewer',
-  'qr-code-reader',
-]);
+const FILE_TOOL_IDS = new Set(['video-to-gif']);
 
 const VISUAL_TOOL_IDS = new Set([
   'keyboard-visualizer',
@@ -60,7 +52,7 @@ const VISUAL_TOOL_IDS = new Set([
 
 const INLINE_SETTING_IDS = new Set(['json-tool']);
 
-const PANEL_SETTING_IDS = new Set(['qr-code-generator']);
+const PANEL_SETTING_IDS = new Set<string>();
 
 const BLOG_SOURCE_BY_TOOL: Record<string, ToolSource> = {};
 
@@ -78,18 +70,13 @@ registerBlogSource('calculation-paper', ['calculation-paper'], 'full');
 registerBlogSource('keyboard-visualizer', ['keyboard-visualizer'], 'full');
 registerBlogSource('api-explorer', ['api-explorer'], 'adapted');
 registerBlogSource('json-formatter', ['json-tool'], 'adapted');
-registerBlogSource('cron-parser', ['cron-parser'], 'full');
-registerBlogSource('text-diff', ['text-diff'], 'full');
 registerBlogSource('special-symbols', ['special-symbols'], 'full');
 registerBlogSource('emojis', ['emoji'], 'full');
 registerBlogSource('chinese-converter', ['simplified-traditional-converter'], 'adapted');
 registerBlogSource('translate', ['translation'], 'adapted');
 registerBlogSource('pronunciation', ['chinese-pronunciation'], 'full');
 registerBlogSource('bishun', ['chinese-stroke-order'], 'full');
-registerBlogSource('qr-generator', ['qr-code-generator'], 'full');
-registerBlogSource('qr-reader', ['qr-code-reader'], 'full');
 registerBlogSource('color-picker', ['color-picker'], 'full');
-registerBlogSource('exif-cleaner', ['exif-viewer', 'image-metadata'], 'adapted');
 registerBlogSource('video-to-gif', ['video-to-gif'], 'adapted');
 registerBlogSource('video-parser', ['short-video-parser'], 'adapted');
 registerBlogSource('periodic-table', ['periodic-table'], 'full');
