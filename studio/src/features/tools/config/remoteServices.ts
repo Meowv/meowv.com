@@ -6,12 +6,6 @@ export interface RemoteServiceConfig {
 }
 
 export const remoteServices = {
-  dns: {
-    provider: 'Cloudflare DNS',
-    origin: 'https://cloudflare-dns.com',
-    timeoutMs: 10_000,
-    transmittedFields: ['域名', 'DNS 记录类型'],
-  },
   translation: {
     provider: 'MyMemory Translation',
     origin: 'https://api.mymemory.translated.net',

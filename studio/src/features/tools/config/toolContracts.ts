@@ -138,7 +138,7 @@ registerBlogSource('api-doc-generator', ['api-doc-generator'], 'adapted');
 registerBlogSource('regex-tester', ['regex-tester'], 'full');
 registerBlogSource(
   'base64',
-  ['base64-encode', 'base64-decode', 'base64-image-viewer', 'base64-file-converter'],
+  ['base64-converter', 'base64-image-viewer', 'base64-file-converter'],
   'adapted',
 );
 registerBlogSource(
@@ -146,13 +146,13 @@ registerBlogSource(
   ['md5-hash', 'sha1-hash', 'sha256-hash', 'sha512-hash', 'file-hash-checker'],
   'adapted',
 );
-registerBlogSource('jwt-decoder', ['jwt-decode', 'jwt-debugger'], 'adapted');
-registerBlogSource('uuid-generator', ['uuid-generator', 'guid-generator', 'uuid-v4'], 'adapted');
+registerBlogSource('jwt-decoder', ['jwt-tool', 'jwt-debugger'], 'adapted');
+registerBlogSource('uuid-generator', ['uuid-generator', 'guid-generator'], 'adapted');
 registerBlogSource('json-formatter', ['json-tool'], 'adapted');
 registerBlogSource('json-yaml', ['yaml-to-json'], 'adapted');
 registerBlogSource('csv-json', ['csv-to-json'], 'adapted');
-registerBlogSource('url-encode', ['url-encode', 'url-decode'], 'adapted');
-registerBlogSource('url-parser', ['encode-url-parser', 'network-url-parser'], 'adapted');
+registerBlogSource('url-encode', ['url-converter'], 'adapted');
+registerBlogSource('url-parser', ['encode-url-parser'], 'adapted');
 registerBlogSource(
   'timestamp',
   [
@@ -199,14 +199,12 @@ const RELATED_GROUPS: readonly (readonly string[])[] = [
     'jwt-debugger',
   ],
   [
-    'base64-encode',
-    'base64-decode',
+    'base64-converter',
     'base64-file-converter',
     'base64-image-viewer',
-    'url-encode',
-    'url-decode',
-    'html-encode',
-    'html-decode',
+    'url-converter',
+    'html-converter',
+    'unicode-converter',
   ],
   [
     'md5-hash',
@@ -218,15 +216,7 @@ const RELATED_GROUPS: readonly (readonly string[])[] = [
     'hmac-md5',
     'hmac-sha256',
   ],
-  [
-    'uuid-generator',
-    'uuid-v1',
-    'uuid-v4',
-    'uuid-v7',
-    'guid-generator',
-    'security-guid-generator',
-    'nanoid-generator',
-  ],
+  ['uuid-generator', 'guid-generator', 'security-guid-generator', 'nanoid-generator'],
   [
     'unix-timestamp-to-date',
     'date-to-unix-timestamp',
@@ -243,15 +233,6 @@ const RELATED_GROUPS: readonly (readonly string[])[] = [
     'date-formatter',
   ],
   ['cron-parser', 'cron-generator', 'timer', 'date-add-subtract', 'unix-timestamp-to-date'],
-  [
-    'dns-query',
-    'dns-lookup',
-    'ip-address-viewer',
-    'ipv4-converter',
-    'ipv6-converter',
-    'cidr-calculator',
-    'network-url-parser',
-  ],
   [
     'word-count',
     'character-count',

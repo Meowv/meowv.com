@@ -1,13 +1,11 @@
 export const TOOL_CATEGORY_IDS = [
   'developer',
-  'json',
   'converter',
   'encode',
   'security',
   'text',
   'language',
   'date',
-  'network',
   'image',
   'pdf',
   'design',
@@ -33,13 +31,6 @@ export const toolCategories: ToolCategoryConfig[] = [
     label: '开发者工具',
     icon: 'code',
     accent: '#2563eb',
-  },
-  {
-    id: 'json',
-    name: 'JSON',
-    label: 'JSON 工具',
-    icon: 'braces',
-    accent: '#f59e0b',
   },
   {
     id: 'converter',
@@ -82,13 +73,6 @@ export const toolCategories: ToolCategoryConfig[] = [
     label: '时间日期',
     icon: 'calendar',
     accent: '#d97706',
-  },
-  {
-    id: 'network',
-    name: 'Network',
-    label: '网络工具',
-    icon: 'network',
-    accent: '#0284c7',
   },
   {
     id: 'image',
