@@ -4,7 +4,7 @@ import ts from 'typescript';
 
 const projectRoot = process.cwd();
 const sourceRoot = path.join(projectRoot, 'src');
-const configFile = path.join(sourceRoot, 'features/tools/config/tools.ts');
+const configFile = path.join(sourceRoot, 'features/tools/tools.ts');
 const linksConfigFile = path.join(projectRoot, 'public/tools-links.json');
 const toolsRoot = path.join(sourceRoot, 'features/tools/tools');
 const retiredFeatureRoots = ['image', 'pdf', 'ocr'].map((name) =>

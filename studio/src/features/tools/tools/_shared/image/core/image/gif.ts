@@ -1,6 +1,9 @@
 export const MAX_GIF_FRAMES = 50;
 export const MAX_GIF_SIDE = 1280;
 export const MAX_GIF_TOTAL_PIXELS = 20_000_000;
+export const MAX_VIDEO_GIF_FRAMES = 180;
+export const MAX_VIDEO_GIF_SIDE = 720;
+export const MAX_VIDEO_GIF_TOTAL_PIXELS = 48_000_000;
 
 export interface GifFrame {
   data: Uint8ClampedArray;
@@ -18,6 +21,13 @@ export interface GifAnimationOptions {
    */
   loop?: number | null;
   signal?: AbortSignal;
+  profile?: 'image-sequence' | 'video';
+  colorMode?: 'compact' | 'dither';
+}
+
+export interface GifAnimationEncoder {
+  addFrame: (frame: GifFrame) => void;
+  finish: () => Blob;
 }
 
 class ByteWriter {
@@ -105,12 +115,37 @@ function throwIfAborted(signal?: AbortSignal) {
   }
 }
 
-function createPalette(): Uint8Array {
+function createRgbPalette(): Uint8Array {
   const palette = new Uint8Array(256 * 3);
   for (let index = 0; index < 256; index += 1) {
     palette[index * 3] = Math.round((((index >> 5) & 0x07) * 255) / 7);
     palette[index * 3 + 1] = Math.round((((index >> 2) & 0x07) * 255) / 7);
     palette[index * 3 + 2] = Math.round(((index & 0x03) * 255) / 3);
+  }
+  return palette;
+}
+
+function createVideoPalette(): Uint8Array {
+  const palette = new Uint8Array(256 * 3);
+  let offset = 0;
+
+  for (let red = 0; red < 6; red += 1) {
+    for (let green = 0; green < 6; green += 1) {
+      for (let blue = 0; blue < 6; blue += 1) {
+        palette[offset] = red * 51;
+        palette[offset + 1] = green * 51;
+        palette[offset + 2] = blue * 51;
+        offset += 3;
+      }
+    }
+  }
+
+  for (let gray = 0; gray < 40; gray += 1) {
+    const level = Math.round((gray * 255) / 39);
+    palette[offset] = level;
+    palette[offset + 1] = level;
+    palette[offset + 2] = level;
+    offset += 3;
   }
   return palette;
 }
@@ -138,6 +173,51 @@ function quantizeFrame(frame: GifFrame, signal?: AbortSignal): Uint8Array {
       (((blue * 3 + 127) / 255) & 0x03);
   }
 
+  return indices;
+}
+
+const BAYER_MATRIX = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+
+function quantizeVideoFrame(
+  frame: GifFrame,
+  colorMode: 'compact' | 'dither',
+  signal?: AbortSignal,
+): Uint8Array {
+  const indices = new Uint8Array(frame.width * frame.height);
+  const useDither = colorMode === 'dither';
+
+  for (let y = 0; y < frame.height; y += 1) {
+    for (let x = 0; x < frame.width; x += 1) {
+      const pixel = y * frame.width + x;
+      if ((pixel & 0xffff) === 0) {
+        throwIfAborted(signal);
+      }
+
+      const offset = pixel * 4;
+      const alpha = frame.data[offset + 3] ?? 255;
+      const red = compositeChannel(frame.data[offset] ?? 0, alpha);
+      const green = compositeChannel(frame.data[offset + 1] ?? 0, alpha);
+      const blue = compositeChannel(frame.data[offset + 2] ?? 0, alpha);
+      const maximum = Math.max(red, green, blue);
+      const minimum = Math.min(red, green, blue);
+      const pattern = (BAYER_MATRIX[(y & 3) * 4 + (x & 3)] ?? 0) - 7.5;
+
+      if (maximum - minimum < 14) {
+        const grayOffset = useDither ? pattern * 0.45 : 0;
+        const grayLevel = Math.max(
+          0,
+          Math.min(39, Math.round((((red + green + blue) / 3 + grayOffset) * 39) / 255)),
+        );
+        indices[pixel] = 216 + grayLevel;
+      } else {
+        const colorOffset = useDither ? pattern * 3.2 : 0;
+        const redLevel = Math.max(0, Math.min(5, Math.round((red + colorOffset) / 51)));
+        const greenLevel = Math.max(0, Math.min(5, Math.round((green + colorOffset) / 51)));
+        const blueLevel = Math.max(0, Math.min(5, Math.round((blue + colorOffset) / 51)));
+        indices[pixel] = redLevel * 36 + greenLevel * 6 + blueLevel;
+      }
+    }
+  }
   return indices;
 }
 
@@ -216,17 +296,14 @@ function normalizeDelay(delayMs: number): number {
   return Math.max(0, Math.min(65535, Math.round(delayMs / 10)));
 }
 
-export function encodeGifAnimation(
-  frames: readonly GifFrame[],
-  options: GifAnimationOptions,
-): Blob {
+export function createGifAnimationEncoder(options: GifAnimationOptions): GifAnimationEncoder {
   assertInteger(options.width, 'GIF 宽度', 1, MAX_GIF_SIDE);
   assertInteger(options.height, 'GIF 高度', 1, MAX_GIF_SIDE);
-  if (frames.length === 0 || frames.length > MAX_GIF_FRAMES) {
-    throw new RangeError(`GIF 帧数必须是 1–${MAX_GIF_FRAMES}`);
-  }
-  if (options.width * options.height * frames.length > MAX_GIF_TOTAL_PIXELS) {
-    throw new RangeError(`GIF 总处理像素不能超过 ${MAX_GIF_TOTAL_PIXELS.toLocaleString('zh-CN')}`);
+  const isVideo = options.profile === 'video';
+  const maximumFrames = isVideo ? MAX_VIDEO_GIF_FRAMES : MAX_GIF_FRAMES;
+  const maximumTotalPixels = isVideo ? MAX_VIDEO_GIF_TOTAL_PIXELS : MAX_GIF_TOTAL_PIXELS;
+  if (isVideo && (options.width > MAX_VIDEO_GIF_SIDE || options.height > MAX_VIDEO_GIF_SIDE)) {
+    throw new RangeError(`视频 GIF 最长边不能超过 ${MAX_VIDEO_GIF_SIDE}`);
   }
 
   const loop = options.loop === undefined ? 0 : options.loop;
@@ -239,7 +316,7 @@ export function encodeGifAnimation(
   writer.pushUint16(options.width);
   writer.pushUint16(options.height);
   writer.push(0xf7, 0xff, 0);
-  writer.pushBytes(createPalette());
+  writer.pushBytes(isVideo ? createVideoPalette() : createRgbPalette());
 
   if (loop !== null) {
     writer.push(0x21, 0xff, 0x0b);
@@ -249,37 +326,73 @@ export function encodeGifAnimation(
     writer.push(0);
   }
 
-  for (const frame of frames) {
-    throwIfAborted(options.signal);
-    if (frame.width !== options.width || frame.height !== options.height) {
-      throw new RangeError('每一帧的尺寸必须与 GIF 输出尺寸一致');
-    }
-    if (frame.data.length !== frame.width * frame.height * 4) {
-      throw new RangeError('帧像素数据长度与尺寸不匹配');
-    }
+  let frameCount = 0;
+  let finished = false;
 
-    const delay = normalizeDelay(frame.delayMs ?? options.delayMs ?? 500);
-    writer.push(0x21, 0xf9, 0x04, 0x04);
-    writer.pushUint16(delay);
-    writer.push(0, 0);
+  return {
+    addFrame(frame) {
+      if (finished) {
+        throw new Error('GIF 编码器已经结束');
+      }
+      throwIfAborted(options.signal);
+      if (frame.width !== options.width || frame.height !== options.height) {
+        throw new RangeError('每一帧的尺寸必须与 GIF 输出尺寸一致');
+      }
+      if (frame.data.length !== frame.width * frame.height * 4) {
+        throw new RangeError('帧像素数据长度与尺寸不匹配');
+      }
+      if (frameCount >= maximumFrames) {
+        throw new RangeError(`GIF 帧数必须是 1–${maximumFrames}`);
+      }
+      if (options.width * options.height * (frameCount + 1) > maximumTotalPixels) {
+        throw new RangeError(
+          `GIF 总处理像素不能超过 ${maximumTotalPixels.toLocaleString('zh-CN')}`,
+        );
+      }
 
-    writer.push(0x2c);
-    writer.pushUint16(0);
-    writer.pushUint16(0);
-    writer.pushUint16(options.width);
-    writer.pushUint16(options.height);
-    writer.push(0);
+      const delay = normalizeDelay(frame.delayMs ?? options.delayMs ?? 500);
+      writer.push(0x21, 0xf9, 0x04, 0x04);
+      writer.pushUint16(delay);
+      writer.push(0, 0);
 
-    const indices = quantizeFrame(frame, options.signal);
-    const encoded = encodeLzw(indices);
-    writer.push(8);
-    writeSubBlocks(writer, encoded);
-  }
+      writer.push(0x2c);
+      writer.pushUint16(0);
+      writer.pushUint16(0);
+      writer.pushUint16(options.width);
+      writer.pushUint16(options.height);
+      writer.push(0);
 
-  throwIfAborted(options.signal);
-  writer.push(0x3b);
-  const bytes = writer.toUint8Array();
-  const buffer = new ArrayBuffer(bytes.byteLength);
-  new Uint8Array(buffer).set(bytes);
-  return new Blob([buffer], { type: 'image/gif' });
+      const indices = isVideo
+        ? quantizeVideoFrame(frame, options.colorMode ?? 'dither', options.signal)
+        : quantizeFrame(frame, options.signal);
+      const encoded = encodeLzw(indices);
+      writer.push(8);
+      writeSubBlocks(writer, encoded);
+      frameCount += 1;
+    },
+    finish() {
+      if (finished) {
+        throw new Error('GIF 编码器已经结束');
+      }
+      if (frameCount === 0) {
+        throw new RangeError('GIF 至少需要一帧');
+      }
+      throwIfAborted(options.signal);
+      finished = true;
+      writer.push(0x3b);
+      const bytes = writer.toUint8Array();
+      const buffer = new ArrayBuffer(bytes.byteLength);
+      new Uint8Array(buffer).set(bytes);
+      return new Blob([buffer], { type: 'image/gif' });
+    },
+  };
+}
+
+export function encodeGifAnimation(
+  frames: readonly GifFrame[],
+  options: GifAnimationOptions,
+): Blob {
+  const encoder = createGifAnimationEncoder(options);
+  frames.forEach((frame) => encoder.addFrame(frame));
+  return encoder.finish();
 }

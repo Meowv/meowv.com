@@ -237,9 +237,6 @@ button {
 .nav-office {
   --nav-accent: var(--menu-office-foreground);
 }
-.nav-ocr {
-  --nav-accent: var(--menu-ocr-foreground);
-}
 .nav-draw {
   --nav-accent: var(--menu-draw-foreground);
 }
@@ -263,9 +260,6 @@ button {
 .nav-mind svg,
 .nav-notes svg,
 .nav-tools svg {
-  color: var(--nav-accent);
-}
-.nav-ocr svg {
   color: var(--nav-accent);
 }
 
@@ -718,11 +712,6 @@ body.has-dialog-open {
 .home-shortcuts__item--image {
   --shortcut-accent: var(--menu-image-foreground);
   --shortcut-solid: var(--menu-image);
-}
-
-.home-shortcuts__item--ocr {
-  --shortcut-accent: var(--menu-ocr-foreground);
-  --shortcut-solid: var(--menu-ocr);
 }
 
 .home-shortcuts__item--pdf {

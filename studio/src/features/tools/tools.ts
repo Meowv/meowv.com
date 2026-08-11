@@ -60,95 +60,35 @@ const toolCategorySeeds = {
       },
     ],
   },
-  converter: {
-    name: 'Converter',
-    label: '格式转换',
-    icon: 'converter',
-    color: '#0891b2',
-    tools: [
-      {
-        id: 'video-to-gif',
-        name: '视频转GIF',
-        description: '截取本地视频片段并转换为 GIF 动图。',
-        icon: 'video',
-      },
-      {
-        id: 'short-video-parser',
-        name: '短视频解析',
-        description: '解析短视频链接及其媒体信息。',
-        icon: 'link',
-      },
-    ],
-  },
-  text: {
-    name: 'Text',
-    label: '文本工具',
-    icon: 'text',
-    color: '#c2410c',
-    tools: [
-      {
-        id: 'ocr-recognition',
-        name: 'OCR 识别',
-        description: '识别图片中的文字并导出可编辑文本。',
-        icon: 'text-recognition',
-      },
-      {
-        id: 'special-symbols',
-        name: '特殊符号',
-        description: '快速查找、复制和组合常用特殊符号。',
-        icon: 'asterisk',
-      },
-      {
-        id: 'emoji',
-        name: 'Emoji 表情',
-        description: '查找、复制和使用 Emoji 表情符号。',
-        icon: 'mood-smile',
-      },
-    ],
-  },
   language: {
     name: 'Language',
     label: '语言工具',
     icon: 'language',
-    color: '#db2777',
+    color: '#0f766e',
     tools: [
       {
         id: 'translation',
-        name: '翻译',
-        description: '在多种语言之间翻译文本内容。',
+        name: '中英翻译',
+        description: '在中文与英文之间翻译文本内容。',
         icon: 'language',
       },
       {
         id: 'simplified-traditional-converter',
         name: '繁简互转',
         description: '在简体中文与繁体中文之间转换。',
-        icon: 'language',
+        icon: 'switch-horizontal',
       },
       {
         id: 'chinese-pronunciation',
         name: '汉字标准发音',
         description: '查询汉字的标准读音与拼音。',
-        icon: 'writing',
+        icon: 'volume',
       },
       {
         id: 'chinese-stroke-order',
         name: '汉字笔顺',
         description: '查看汉字的笔画顺序与书写过程。',
         icon: 'writing',
-      },
-    ],
-  },
-  date: {
-    name: 'Date',
-    label: '时间日期',
-    icon: 'calendar',
-    color: '#d97706',
-    tools: [
-      {
-        id: 'cron',
-        name: 'Cron 表达式',
-        description: '解析标准 5 字段 Cron 表达式并预览未来执行时间。',
-        icon: 'clock',
       },
     ],
   },
@@ -198,6 +138,12 @@ const toolCategorySeeds = {
         id: 'merge-gif',
         name: '合并为 GIF',
         description: '设置帧率、画布、背景与循环。',
+        icon: 'video',
+      },
+      {
+        id: 'video-to-gif',
+        name: '视频转 GIF',
+        description: '截取本地视频片段，优化色彩并转换为 GIF 动图。',
         icon: 'video',
       },
       {
@@ -294,11 +240,11 @@ const toolCategorySeeds = {
       },
     ],
   },
-  design: {
-    name: 'Design',
-    label: '设计工具',
-    icon: 'palette',
-    color: '#9333ea',
+  misc: {
+    name: 'Misc',
+    label: '其他工具',
+    icon: 'tools',
+    color: '#d97706',
     tools: [
       {
         id: 'color-picker',
@@ -306,28 +252,24 @@ const toolCategorySeeds = {
         description: '在 HEX、RGB、RGBA、HSL、HSLA、HSV 与 CMYK 之间实时转换。',
         icon: 'color-picker',
       },
-    ],
-  },
-  generator: {
-    name: 'Generator',
-    label: '生成工具',
-    icon: 'sparkles',
-    color: '#65a30d',
-    tools: [
       {
         id: 'qr-code',
         name: 'QR Code',
         description: '在浏览器本地生成或识别 QR Code。',
         icon: 'qrcode',
       },
-    ],
-  },
-  misc: {
-    name: 'Misc',
-    label: '其他工具',
-    icon: 'tools',
-    color: '#64748B',
-    tools: [
+      {
+        id: 'special-symbols',
+        name: '特殊符号',
+        description: '快速查找、复制和组合常用特殊符号。',
+        icon: 'asterisk',
+      },
+      {
+        id: 'emoji',
+        name: 'Emoji 表情',
+        description: '查找、复制和使用 Emoji 表情符号。',
+        icon: 'mood-smile',
+      },
       {
         id: 'keyboard-visualizer',
         name: '键盘可视化',
@@ -351,6 +293,12 @@ const toolCategorySeeds = {
         name: '答案之书',
         description: '默念一个问题，翻开书页寻找答案。',
         icon: 'book',
+      },
+      {
+        id: 'short-video-parser',
+        name: '短视频解析',
+        description: '解析短视频链接，预览并下载视频与备用画质。',
+        icon: 'link',
       },
     ],
   },

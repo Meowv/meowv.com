@@ -20,6 +20,7 @@ type ImageToolMode =
   | 'padding'
   | 'images-to-pdf'
   | 'merge-gif'
+  | 'video-to-gif'
   | 'psd-viewer';
 
 const props = defineProps<{
@@ -38,6 +39,7 @@ const loaders: Record<ImageToolMode, () => Promise<{ default: Component }>> = {
   padding: () => import('@/features/tools/tools/_shared/image/views/ImageEffectsView.vue'),
   'images-to-pdf': () => import('@/features/tools/tools/_shared/image/views/ImagesToPdfView.vue'),
   'merge-gif': () => import('@/features/tools/tools/_shared/image/views/MergeGifView.vue'),
+  'video-to-gif': () => import('@/features/tools/tools/_shared/image/views/VideoToGifView.vue'),
   'psd-viewer': () => import('@/features/tools/tools/_shared/image/views/PsdViewerView.vue'),
 };
 
@@ -49,7 +51,7 @@ const activeProps = computed(() =>
 );
 
 onMounted(() => {
-  if (props.mode === 'psd-viewer') return;
+  if (props.mode === 'psd-viewer' || props.mode === 'video-to-gif') return;
   stopWindowFileHandoff = receiveWindowFileHandoff('image', (file) => {
     handoffFile(file, 'image');
     handoffVersion.value += 1;

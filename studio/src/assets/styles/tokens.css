@@ -18,7 +18,6 @@
   --color-danger: #c2413d;
   --menu-image: #b42375;
   --menu-pdf: #c2413d;
-  --menu-ocr: #0f766e;
   --menu-markdown: #2563eb;
   --menu-office: #4d7c0f;
   --menu-draw: #6965db;
@@ -27,7 +26,6 @@
   --menu-tools: #7c3aed;
   --menu-image-foreground: var(--menu-image);
   --menu-pdf-foreground: var(--menu-pdf);
-  --menu-ocr-foreground: var(--menu-ocr);
   --menu-markdown-foreground: var(--menu-markdown);
   --menu-office-foreground: var(--menu-office);
   --menu-draw-foreground: var(--menu-draw);
@@ -68,7 +66,6 @@
   --color-danger: #f87171;
   --menu-image-foreground: #f472b6;
   --menu-pdf-foreground: #f87171;
-  --menu-ocr-foreground: #2dd4bf;
   --menu-markdown-foreground: #60a5fa;
   --menu-office-foreground: #a3d65c;
   --menu-draw-foreground: #9b97f2;

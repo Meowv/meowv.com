@@ -1873,8 +1873,7 @@
 
 .tools-embedded-feature--image .tool-workbench,
 .tools-embedded-feature--image .image-crop-page,
-.tools-embedded-feature--pdf .container,
-.tools-detail .ocr-page__content {
+.tools-embedded-feature--pdf .container {
   width: 100%;
   max-width: none;
 }
@@ -1887,8 +1886,7 @@
   padding-top: 0;
 }
 
-.tools-embedded-feature--pdf .workspace,
-.tools-detail .ocr-page__content {
+.tools-embedded-feature--pdf .workspace {
   margin-top: 0;
 }
 
