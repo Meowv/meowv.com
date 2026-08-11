@@ -30,7 +30,7 @@ import type {
 import '@excalidraw/excalidraw/index.css';
 import '@/features/draw/editor.css';
 import { receiveWindowFileHandoff, useFileHandoff } from '@/core/browser/file-handoff';
-import { downloadBlob } from '@/features/image/utils/download';
+import { downloadBlob } from '@/core/browser/download';
 import {
   EMPTY_DRAW_SCENE,
   clearDrawDocuments,

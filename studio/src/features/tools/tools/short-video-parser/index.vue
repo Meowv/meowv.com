@@ -1,4 +1,4 @@
 <script setup lang="ts">
-import ShortVideoParserTool from '../_shared/ShortVideoParserTool.vue';
+import ShortVideoParserTool from './ShortVideoParserTool.vue';
 </script>
 <template><ShortVideoParserTool /></template>

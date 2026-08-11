@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import PdfTool from '@/features/tools/tools/_shared/PdfTool.vue';
+import PdfTool from '@/features/tools/tools/_shared/pdf/PdfTool.vue';
 </script>
 
 <template>

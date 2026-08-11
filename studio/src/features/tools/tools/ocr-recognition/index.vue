@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import OcrStudioPage from '@/features/ocr/OcrStudioPage.vue';
+import OcrTool from './OcrTool.vue';
 </script>
 
 <template>
-  <OcrStudioPage />
+  <OcrTool />
 </template>

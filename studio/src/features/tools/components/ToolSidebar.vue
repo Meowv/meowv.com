@@ -9,7 +9,7 @@ import {
 } from '@tabler/icons-vue';
 import ThemeToggle from '@/components/ThemeToggle.vue';
 import ToolIcon from '@/features/tools/components/ToolIcon.vue';
-import type { ToolCategoryConfig } from '@/features/tools/config/toolCategories';
+import type { ToolCategoryConfig } from '@/features/tools/config/tools';
 
 const props = withDefaults(
   defineProps<{

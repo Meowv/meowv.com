@@ -7,8 +7,7 @@ import ToolIcon from '@/features/tools/components/ToolIcon.vue';
 import ToolSearch from '@/features/tools/components/ToolSearch.vue';
 import ToolSidebar from '@/features/tools/components/ToolSidebar.vue';
 import { STORAGE_POLICY, storageAvailable } from '@/core/privacy/storage';
-import { toolCategories } from '@/features/tools/config/toolCategories';
-import { searchTools, tools } from '@/features/tools/config/tools';
+import { searchTools, toolCategories, tools } from '@/features/tools/config/tools';
 import '@/features/tools/tools.css';
 
 const route = useRoute();

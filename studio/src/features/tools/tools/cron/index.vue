@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import CronGenerator from '../cron-generator/index.vue';
-import CronParser from '../cron-parser/index.vue';
+import CronGenerator from './generator/index.vue';
+import CronParser from './parser/index.vue';
 
 const activeMode = ref<'generate' | 'parse'>('generate');
 </script>

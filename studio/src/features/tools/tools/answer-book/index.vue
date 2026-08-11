@@ -1,4 +1,4 @@
 <script setup lang="ts">
-import AnswerBookTool from '../_shared/AnswerBookTool.vue';
+import AnswerBookTool from './AnswerBookTool.vue';
 </script>
 <template><AnswerBookTool /></template>

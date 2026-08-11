@@ -46,10 +46,10 @@ export function featureForFile(file: File): StudioFeature | null {
 
 export function routeForFeature(feature: StudioFeature, file?: File): string {
   const defaultRoutes: Record<StudioFeature, string> = {
-    image: '/image/compress',
-    psd: '/image/psd-viewer',
+    image: '/tools/image-compress',
+    psd: '/tools/psd-viewer',
     markdown: '/markdown',
-    pdf: '/pdf/merge-pdf',
+    pdf: '/tools/merge-pdf',
     office: '/office',
     draw: '/draw',
     mind: '/mind',

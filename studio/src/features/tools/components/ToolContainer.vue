@@ -7,8 +7,12 @@ import ToolHeader from '@/features/tools/components/ToolHeader.vue';
 import ToolIcon from '@/features/tools/components/ToolIcon.vue';
 import ToolSidebar from '@/features/tools/components/ToolSidebar.vue';
 import { STORAGE_POLICY, storageAvailable } from '@/core/privacy/storage';
-import { toolCategories, type ToolCategoryConfig } from '@/features/tools/config/toolCategories';
-import { getToolsByCategory, type ToolConfig } from '@/features/tools/config/tools';
+import {
+  getToolsByCategory,
+  toolCategories,
+  type ToolCategoryConfig,
+  type ToolConfig,
+} from '@/features/tools/config/tools';
 
 const props = defineProps<{
   tool: ToolConfig;
@@ -194,7 +198,6 @@ onBeforeUnmount(() => document.removeEventListener('keydown', handleKeydown));
       </nav>
 
       <ToolHeader
-        eyebrow="STUDIO TOOLS"
         :title="tool.name"
         :description="tool.description"
         :icon="tool.icon"
@@ -203,11 +206,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', handleKeydown));
         @toggle-favorite="toggleFavorite"
       />
 
-      <div
-        class="tools-detail__content"
-        :data-layout="tool.layout"
-        :data-settings="tool.settingsMode"
-      >
+      <div class="tools-detail__content">
         <slot />
       </div>
 

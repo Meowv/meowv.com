@@ -1,4 +1,4 @@
 <script setup lang="ts">
-import VideoToGifTool from '../_shared/VideoToGifTool.vue';
+import VideoToGifTool from './VideoToGifTool.vue';
 </script>
 <template><VideoToGifTool /></template>

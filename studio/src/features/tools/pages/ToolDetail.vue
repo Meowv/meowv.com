@@ -1,18 +1,16 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, type Component } from 'vue';
 import { useRoute } from 'vue-router';
+import { usePageMeta } from '@/composables/usePageMeta';
 import ToolContainer from '@/features/tools/components/ToolContainer.vue';
-import ToolLegacyContainer from '@/features/tools/components/ToolLegacyContainer.vue';
 import ToolUnavailable from '@/features/tools/components/ToolUnavailable.vue';
-import { DEFERRED_TOOL_IDS } from '@/features/tools/config/toolContracts';
-import { toolCategoryMap, type ToolCategoryId } from '@/features/tools/config/toolCategories';
-import { getToolById } from '@/features/tools/config/tools';
+import { getToolById, toolCategoryMap } from '@/features/tools/config/tools';
 import '@/features/tools/tools.css';
 
 const route = useRoute();
 const tool = computed(() => getToolById(String(route.params.toolId)));
 const category = computed(() =>
-  tool.value ? toolCategoryMap.get(tool.value.category as ToolCategoryId) : undefined,
+  tool.value ? toolCategoryMap.get(tool.value.category) : undefined,
 );
 
 const componentLoaders = import.meta.glob<Component>('../tools/*/index.vue', {
@@ -36,22 +34,22 @@ const toolComponent = computed<Component | null>(() => {
   if (!tool.value) return null;
   return resolveToolComponent(tool.value.id);
 });
-const deferred = computed(() => Boolean(tool.value && DEFERRED_TOOL_IDS.has(tool.value.id)));
+usePageMeta({
+  title: () => tool.value?.seo?.title ?? `${tool.value?.name ?? '在线工具'} · Meowv Studio`,
+  description: () =>
+    tool.value?.seo?.description ?? tool.value?.description ?? '在浏览器本地使用 Studio Tools。',
+  canonical: () => (tool.value ? `https://studio.meowv.com${tool.value.route}` : undefined),
+});
 </script>
 
 <template>
   <section
     v-if="tool && category"
     class="tools-detail-route"
-    :class="{ 'tools-detail-route--legacy': deferred }"
     :style="{ '--tools-accent': category.accent }"
     aria-labelledby="tool-title"
   >
-    <ToolLegacyContainer v-if="deferred" :tool="tool" :category="category">
-      <component :is="toolComponent" v-if="toolComponent" :key="tool.id" />
-      <ToolUnavailable v-else />
-    </ToolLegacyContainer>
-    <ToolContainer v-else :tool="tool" :category="category">
+    <ToolContainer :tool="tool" :category="category">
       <component :is="toolComponent" v-if="toolComponent" :key="tool.id" />
       <ToolUnavailable v-else />
     </ToolContainer>

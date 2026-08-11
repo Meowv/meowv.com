@@ -32,7 +32,7 @@ import StudioLogo from '@/components/StudioLogo.vue';
 import { useTheme } from '@/composables/useTheme';
 import { receiveWindowFileHandoff, useFileHandoff } from '@/core/browser/file-handoff';
 import { STORAGE_POLICY, storageAvailable } from '@/core/privacy/storage';
-import { downloadBlob } from '@/features/image/utils/download';
+import { downloadBlob } from '@/core/browser/download';
 import { MarkmapAdapter } from './adapters/MarkmapAdapter';
 import { VisualMindEditorAdapter } from './adapters/VisualMindEditorAdapter';
 import { markdownToMind, mindToMarkdown, textOutlineToMind } from './conversion';

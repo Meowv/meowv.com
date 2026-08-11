@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import QrGeneratorTool from '../_shared/QrGeneratorTool.vue';
-import QrReaderTool from '../_shared/QrReaderTool.vue';
+import QrGeneratorTool from './QrGeneratorTool.vue';
+import QrReaderTool from './QrReaderTool.vue';
 
 const activeMode = ref<'generate' | 'read'>('generate');
 </script>

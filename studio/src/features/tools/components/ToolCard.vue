@@ -2,14 +2,13 @@
 import { computed } from 'vue';
 import { IconArrowRight } from '@tabler/icons-vue';
 import ToolIcon from '@/features/tools/components/ToolIcon.vue';
-import { toolCategoryMap, type ToolCategoryId } from '@/features/tools/config/toolCategories';
-import type { ToolConfig } from '@/features/tools/config/tools';
+import { toolCategoryMap, type ToolConfig } from '@/features/tools/config/tools';
 
 const props = withDefaults(defineProps<{ tool: ToolConfig; compact?: boolean }>(), {
   compact: false,
 });
 
-const category = computed(() => toolCategoryMap.get(props.tool.category as ToolCategoryId));
+const category = computed(() => toolCategoryMap.get(props.tool.category));
 const accentStyle = computed(() => ({ '--tool-accent': category.value?.accent }));
 </script>
 

@@ -2,7 +2,6 @@ import { fileURLToPath, URL } from 'node:url';
 import tailwindcss from '@tailwindcss/vite';
 import vue from '@vitejs/plugin-vue';
 import AutoImport from 'unplugin-auto-import/vite';
-import Components from 'unplugin-vue-components/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
@@ -16,12 +15,7 @@ export default defineConfig({
     }),
     AutoImport({
       imports: ['vue'],
-      dirs: ['./src/features/pdf/composables'],
-      dts: './src/features/pdf/auto-imports.d.ts',
-    }),
-    Components({
-      dirs: ['./src/features/pdf/components'],
-      dts: './src/features/pdf/components.d.ts',
+      dts: './src/auto-imports.d.ts',
     }),
     tailwindcss(),
   ],

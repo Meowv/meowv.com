@@ -1,4 +1,4 @@
 <script setup lang="ts">
-import DesignTool from '../_shared/DesignTool.vue';
+import DesignTool from './DesignTool.vue';
 </script>
 <template><DesignTool mode="picker" /></template>

@@ -21,8 +21,6 @@
   "dependencies": {
     "@excalidraw/excalidraw": "0.18.1",
     "@tabler/icons-vue": "^3.35.0",
-    "@tesseract.js-data/chi_sim": "^1.0.0",
-    "@tesseract.js-data/eng": "^1.0.0",
     "@vue/devtools-api": "^8.2.1",
     "@vueuse/core": "^14.4.0",
     "@zumer/snapdom": "2.23.2",
@@ -33,7 +31,6 @@
     "d3": "^7.9.0",
     "docx": "^9.7.1",
     "dompurify": "^3.4.12",
-    "globe.gl": "2.46.1",
     "highlight.js": "^11.11.1",
     "html2canvas": "^1.4.1",
     "js-yaml": "^5.2.2",
@@ -58,7 +55,6 @@
     "react-dom": "18.3.1",
     "tesseract.js": "^7.0.0",
     "three": "0.185.1",
-    "three-globe": "2.45.2",
     "vue": "^3.5.40",
     "vue-draggable-plus": "^0.6.1",
     "vue-router": "4.6.4",
@@ -84,7 +80,6 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.54.0",
     "unplugin-auto-import": "^20.3.0",
-    "unplugin-vue-components": "^31.1.0",
     "vite": "^8.1.5",
     "vue-tsc": "^3.3.9"
   }

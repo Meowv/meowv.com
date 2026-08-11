@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import JsonWorkbench from '../json-format/JsonWorkbench.vue';
-import DataConvertTool from '../_shared/DataConvertTool.vue';
-import type { DataConvertMode } from '../_shared/data-converters';
+import JsonWorkbench from './JsonWorkbench.vue';
+import DataConvertTool from './DataConvertTool.vue';
+import type { DataConvertMode } from './data-converters';
 
 type Mode = 'format' | 'minify' | 'validate' | DataConvertMode;
 

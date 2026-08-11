@@ -1,4 +1,4 @@
 <script setup lang="ts">
-import EmojiMatchGame from '../_shared/EmojiMatchGame.vue';
+import EmojiMatchGame from './EmojiMatchGame.vue';
 </script>
 <template><EmojiMatchGame /></template>

@@ -1,18 +1,57 @@
-import {
-  toolCategories,
-  toolCategoryMap,
-  type ToolCategoryId,
-} from '@/features/tools/config/toolCategories';
-import { resolveToolContract, type ToolContract } from '@/features/tools/config/toolContracts';
+type ToolCategorySeed = readonly [
+  id: string,
+  name: string,
+  label: string,
+  icon: string,
+  accent: string,
+];
 
-export interface ToolConfig extends ToolContract {
+const toolCategorySeeds = [
+  ['developer', 'Developer', '开发者工具', 'code', '#2563eb'],
+  ['converter', 'Converter', '格式转换', 'converter', '#0891b2'],
+  ['text', 'Text', '文本工具', 'text', '#c2410c'],
+  ['language', 'Language', '语言工具', 'language', '#db2777'],
+  ['date', 'Date', '时间日期', 'calendar', '#d97706'],
+  ['image', 'Image', '图片工具', 'image', '#b42375'],
+  ['pdf', 'PDF', 'PDF 工具', 'pdf', '#c2413d'],
+  ['design', 'Design', '设计工具', 'palette', '#9333ea'],
+  ['generator', 'Generator', '生成工具', 'sparkles', '#65a30d'],
+  ['misc', 'Misc', '其他工具', 'tools', '#64748B'],
+  ['games', 'Games', '趣味游戏', 'gamepad', '#7c3aed'],
+] as const satisfies readonly ToolCategorySeed[];
+
+export type ToolCategoryId = (typeof toolCategorySeeds)[number][0];
+
+export interface ToolCategoryConfig {
+  id: ToolCategoryId;
+  name: string;
+  label: string;
+  icon: string;
+  accent: string;
+}
+
+export const toolCategories: ToolCategoryConfig[] = toolCategorySeeds.map(
+  ([id, name, label, icon, accent]) => ({ id, name, label, icon, accent }),
+);
+
+export const toolCategoryMap = new Map<ToolCategoryId, ToolCategoryConfig>(
+  toolCategories.map((category) => [category.id, category]),
+);
+
+export interface ToolSeoMeta {
+  title: string;
+  description: string;
+}
+
+export interface ToolConfig {
   id: string;
   name: string;
   description: string;
-  category: string;
+  category: ToolCategoryId;
   icon: string;
   route: string;
   keywords: string;
+  seo?: ToolSeoMeta;
 }
 
 type ToolSeed = readonly [
@@ -32,7 +71,13 @@ const toolSeeds: Record<ToolCategoryId, ToolSeed[]> = {
       '调试 HTTP API 请求并查看响应。',
       'api',
     ],
-    ['json-tool', 'JSON 工具', '格式化 校验 压缩 转义 可视化', '这里是描述', 'braces'],
+    [
+      'json-tool',
+      'JSON 工具',
+      '格式化 校验 压缩 转义 可视化',
+      '格式化、压缩和校验 JSON，并在常见数据格式之间转换。',
+      'braces',
+    ],
   ],
   converter: [
     ['video-to-gif', '视频转GIF', 'video gif 动图', '截取本地视频片段并转换为 GIF 动图。', 'video'],
@@ -261,7 +306,6 @@ const toolSeeds: Record<ToolCategoryId, ToolSeed[]> = {
       '交互式查看 118 个化学元素。',
       'flask',
     ],
-    ['3d-globe', '3D 地球仪', 'globe earth geography map', '可旋转缩放的交互式地球仪。', 'map'],
     [
       'answer-book',
       '答案之书',
@@ -281,6 +325,53 @@ const toolSeeds: Record<ToolCategoryId, ToolSeed[]> = {
   ],
 };
 
+const TOOL_SEO_BY_ID: Partial<Record<string, ToolSeoMeta>> = {
+  'merge-pdf': {
+    title: '合并 PDF｜在线免费合并多个 PDF 文件 - Meowv',
+    description:
+      '免费在线合并多个 PDF 文件，支持拖拽排序和页面预览。文件不上传，在浏览器本地完成合并，无需注册登录。',
+  },
+  'split-pdf': {
+    title: '拆分 PDF｜在线按页或范围拆分 PDF - Meowv',
+    description: '免费在线拆分 PDF，支持按页、页码范围和自定义分组导出。文件仅在浏览器本地处理。',
+  },
+  'organize-pdf': {
+    title: '整理 PDF 页面｜在线排序与调整 PDF 页面 - Meowv',
+    description:
+      '在线整理 PDF 页面，支持拖拽排序、复制、旋转和删除。处理过程在当前浏览器本地完成。',
+  },
+  'delete-pdf-pages': {
+    title: '删除 PDF 页面｜在线移除 PDF 指定页面 - Meowv',
+    description: '在线选择并删除 PDF 指定页面，原始文件不会被修改，文件不会上传到服务器。',
+  },
+  'extract-pdf-pages': {
+    title: '提取 PDF 页面｜在线导出 PDF 指定页面 - Meowv',
+    description: '在线提取 PDF 指定页面，可合并为一个 PDF 或分别导出，文件仅在浏览器本地处理。',
+  },
+  'rotate-pdf': {
+    title: '旋转 PDF｜在线旋转 PDF 页面 - Meowv',
+    description: '在线旋转 PDF 的全部或指定页面，支持 90° 与 180°，文件不会上传。',
+  },
+  'pdf-to-images': {
+    title: 'PDF 转图片｜在线将 PDF 转为 PNG、JPG、WebP - Meowv',
+    description:
+      '在线将 PDF 页面转换为 PNG、JPG 或 WebP 图片，支持选择页码和输出清晰度。文件仅在浏览器本地处理。',
+  },
+  'watermark-pdf': {
+    title: 'PDF 添加水印｜在线添加文字或图片水印 - Meowv',
+    description: '在线为 PDF 添加文字或图片水印，支持位置、透明度和页面范围设置，文件不会上传。',
+  },
+  'add-pdf-page-numbers': {
+    title: 'PDF 添加页码｜在线为 PDF 添加页码 - Meowv',
+    description:
+      '在线为 PDF 添加页码，自定义格式、起始页、位置和边距，所有处理均在浏览器本地完成。',
+  },
+  'pdf-metadata': {
+    title: 'PDF 元数据｜在线查看与编辑 PDF 信息 - Meowv',
+    description: '在线查看和编辑 PDF 标题、作者、主题、关键词与日期等基础元数据，不修改原始文件。',
+  },
+};
+
 function createTool(
   categoryId: ToolCategoryId,
   [id, name, keywords, description, icon]: ToolSeed,
@@ -296,7 +387,7 @@ function createTool(
     icon,
     route: `/tools/${id}`,
     keywords: `${name} ${category.name} ${category.label} ${keywords}`,
-    ...resolveToolContract(id, categoryId),
+    seo: TOOL_SEO_BY_ID[id],
   };
 }
 
@@ -317,7 +408,7 @@ export function searchTools(query: string, source: ToolConfig[] = tools): ToolCo
   if (!terms.length) return source;
 
   return source.filter((tool) => {
-    const category = toolCategoryMap.get(tool.category as ToolCategoryId);
+    const category = toolCategoryMap.get(tool.category);
     const searchable = [
       tool.id,
       tool.name,

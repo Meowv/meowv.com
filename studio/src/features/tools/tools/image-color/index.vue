@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import ImageColorTool from '../_shared/ImageColorTool.vue';
+import ImageColorTool from './ImageColorTool.vue';
 </script>
 
 <template><ImageColorTool mode="both" /></template>

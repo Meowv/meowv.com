@@ -1,4 +1,4 @@
 <script setup lang="ts">
-import KeyboardVisualizerTool from '../_shared/KeyboardVisualizerTool.vue';
+import KeyboardVisualizerTool from './KeyboardVisualizerTool.vue';
 </script>
 <template><KeyboardVisualizerTool /></template>

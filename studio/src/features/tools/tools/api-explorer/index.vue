@@ -1,4 +1,4 @@
 <script setup lang="ts">
-import ApiExplorerTool from '../_shared/ApiExplorerTool.vue';
+import ApiExplorerTool from './ApiExplorerTool.vue';
 </script>
 <template><ApiExplorerTool /></template>

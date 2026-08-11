@@ -45,9 +45,7 @@ const showHeader = computed(() =>
       : !workspaceActive.value || workspaceHeaderVisible.value,
 );
 const showFooter = computed(
-  () =>
-    ['home', 'image', 'ocr', 'pdf', 'office', 'not-found'].includes(String(route.name)) &&
-    !workspaceActive.value,
+  () => ['home', 'office', 'not-found'].includes(String(route.name)) && !workspaceActive.value,
 );
 const donationDialogOpen = ref(false);
 const mobileNavigationOpen = ref(false);
