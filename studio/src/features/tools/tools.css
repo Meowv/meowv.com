@@ -445,6 +445,7 @@
 .tools-card {
   --tool-accent: var(--color-brand);
 
+  position: relative;
   display: grid;
   min-width: 0;
   min-height: 70px;
@@ -460,6 +461,18 @@
     border-color 150ms ease,
     box-shadow 150ms ease,
     transform 150ms ease;
+}
+
+.tools-card__target {
+  position: absolute;
+  z-index: 1;
+  border-radius: inherit;
+  inset: 0;
+}
+
+.tools-card__target:focus-visible {
+  outline: 2px solid var(--tool-accent);
+  outline-offset: 2px;
 }
 
 .tools-card:hover {
@@ -482,16 +495,51 @@
   background: color-mix(in srgb, var(--tool-accent) 18%, var(--color-surface-solid));
 }
 
-.tools-card__icon svg {
+.tools-card__icon :is(svg, img) {
+  display: block;
   width: 18px;
   height: 18px;
+  object-fit: contain;
 }
 
 .tools-card__content {
   display: grid;
   min-width: 0;
+  padding-right: 24px;
   align-content: center;
   gap: 3px;
+}
+
+.tools-card__favorite {
+  position: absolute;
+  z-index: 2;
+  top: 5px;
+  right: 5px;
+  display: grid;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  place-items: center;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition:
+    color 150ms ease,
+    background 150ms ease;
+}
+
+.tools-card__favorite:hover,
+.tools-card__favorite:focus-visible,
+.tools-card__favorite.is-active {
+  background: color-mix(in srgb, var(--tool-accent) 12%, var(--color-surface-solid));
+  color: var(--tool-accent);
+}
+
+.tools-card__favorite:focus-visible {
+  outline: 2px solid var(--tool-accent);
+  outline-offset: 1px;
 }
 
 .tools-card__content > strong {
@@ -582,7 +630,7 @@
     height: 30px;
   }
 
-  .tools-card__icon svg {
+  .tools-card__icon :is(svg, img) {
     width: 17px;
     height: 17px;
   }
@@ -811,7 +859,7 @@
 
 .tools-card--compact {
   min-height: 70px;
-  grid-template-columns: 36px minmax(0, 1fr) auto;
+  grid-template-columns: 36px minmax(0, 1fr);
 }
 
 .tools-card--compact .tools-card__content > small {
@@ -822,6 +870,9 @@
 }
 
 .tools-card__arrow {
+  position: absolute;
+  right: 8px;
+  bottom: 7px;
   color: color-mix(in srgb, var(--tool-accent) 74%, var(--color-text-muted));
   transition: transform 150ms ease;
 }

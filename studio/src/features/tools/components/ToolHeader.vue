@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { IconChevronLeft, IconStar, IconStarFilled } from '@tabler/icons-vue';
 import ToolIcon from '@/features/tools/components/ToolIcon.vue';
+import type { ToolIconSource } from '@/features/tools/config/tools';
 
 defineProps<{
   title: string;
   description: string;
-  icon?: string;
+  icon?: ToolIconSource;
   category?: string;
   backTo?: string;
   backLabel?: string;
@@ -24,7 +25,7 @@ const emit = defineEmits<{
       <span>{{ backLabel ?? '返回 Tools' }}</span>
     </RouterLink>
     <span v-if="icon" class="tools-page-header__icon" aria-hidden="true">
-      <ToolIcon :name="icon" :size="26" />
+      <ToolIcon :icon="icon" :size="26" />
     </span>
     <div class="tools-page-header__content">
       <div>

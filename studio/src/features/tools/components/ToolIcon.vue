@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, type Component } from 'vue';
+import { computed, ref, watch, type Component } from 'vue';
 import {
   IconApi,
   IconArrowsExchange,
@@ -53,8 +53,9 @@ import {
   IconWriting,
   IconBrandAdobePhotoshop,
 } from '@tabler/icons-vue';
+import type { ToolIconSource } from '@/features/tools/config/tools';
 
-const props = withDefaults(defineProps<{ name: string; size?: number }>(), { size: 22 });
+const props = withDefaults(defineProps<{ icon: ToolIconSource; size?: number }>(), { size: 22 });
 
 const icons: Record<string, Component> = {
   api: IconApi,
@@ -112,9 +113,32 @@ const icons: Record<string, Component> = {
   writing: IconWriting,
 };
 
-const icon = computed(() => icons[props.name] ?? IconTools);
+const imageFailed = ref(false);
+const imageUrl = computed(() => (typeof props.icon === 'string' ? null : props.icon.url));
+const iconComponent = computed(() =>
+  typeof props.icon === 'string' ? (icons[props.icon] ?? IconTools) : IconTools,
+);
+
+watch(
+  () => props.icon,
+  () => {
+    imageFailed.value = false;
+  },
+);
 </script>
 
 <template>
-  <component :is="icon" :size="size" stroke-width="1.8" aria-hidden="true" />
+  <img
+    v-if="imageUrl && !imageFailed"
+    :src="imageUrl"
+    :width="size"
+    :height="size"
+    alt=""
+    loading="lazy"
+    decoding="async"
+    referrerpolicy="no-referrer"
+    aria-hidden="true"
+    @error="imageFailed = true"
+  />
+  <component :is="iconComponent" v-else :size="size" stroke-width="1.8" aria-hidden="true" />
 </template>

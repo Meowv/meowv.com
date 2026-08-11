@@ -7,23 +7,24 @@ import ToolHeader from '@/features/tools/components/ToolHeader.vue';
 import ToolIcon from '@/features/tools/components/ToolIcon.vue';
 import ToolSidebar from '@/features/tools/components/ToolSidebar.vue';
 import { STORAGE_POLICY, storageAvailable } from '@/core/privacy/storage';
+import { useToolCatalog } from '@/features/tools/composables/useToolCatalog';
+import { useToolFavorites } from '@/features/tools/composables/useToolFavorites';
 import {
-  getToolsByCategory,
   toolCategories,
   type ToolCategoryConfig,
-  type ToolConfig,
+  type InternalToolConfig,
 } from '@/features/tools/config/tools';
 
 const props = defineProps<{
-  tool: ToolConfig;
+  tool: InternalToolConfig;
   category: ToolCategoryConfig;
 }>();
 
-const FAVORITES_KEY = `${STORAGE_POLICY.preferences}:tools-favorites`;
 const SIDEBAR_PIN_KEY = `${STORAGE_POLICY.preferences}:tools-sidebar-pinned`;
 const SIDEBAR_SIDE_KEY = `${STORAGE_POLICY.preferences}:tools-sidebar-side`;
 const router = useRouter();
-const favoriteIds = ref<string[]>([]);
+const { tools: catalogTools, refreshLinks } = useToolCatalog();
+const { isFavorite, toggleFavorite } = useToolFavorites();
 const sidebarOpen = ref(false);
 const sidebarPinned = ref(readSidebarPinned());
 const sidebarSide = ref(readSidebarSide());
@@ -34,21 +35,11 @@ const sidebarVisible = computed(
 const sidebarButton = ref<HTMLButtonElement | null>(null);
 
 const relatedTools = computed(() =>
-  getToolsByCategory(props.category.id).filter((item) => item.id !== props.tool.id),
+  catalogTools.value.filter(
+    (item) => item.category === props.category.id && item.id !== props.tool.id,
+  ),
 );
-const favorite = computed(() => favoriteIds.value.includes(props.tool.id));
-
-function readFavorites(): void {
-  if (!storageAvailable()) return;
-  try {
-    const stored = JSON.parse(localStorage.getItem(FAVORITES_KEY) ?? '[]') as unknown;
-    favoriteIds.value = Array.isArray(stored)
-      ? stored.filter((value): value is string => typeof value === 'string')
-      : [];
-  } catch {
-    favoriteIds.value = [];
-  }
-}
+const favorite = computed(() => isFavorite(props.tool.id));
 
 function readSidebarPinned(): boolean {
   if (!storageAvailable()) return false;
@@ -100,18 +91,6 @@ function selectCategory(categoryId: string): void {
   void router.push({ path: '/tools', hash: `#${categoryId}` });
 }
 
-function toggleFavorite(): void {
-  favoriteIds.value = favorite.value
-    ? favoriteIds.value.filter((toolId) => toolId !== props.tool.id)
-    : [...favoriteIds.value, props.tool.id];
-  if (!storageAvailable()) return;
-  try {
-    localStorage.setItem(FAVORITES_KEY, JSON.stringify(favoriteIds.value));
-  } catch {
-    // 本地偏好不可用时仍保留当前页面状态。
-  }
-}
-
 async function openSidebar(): Promise<void> {
   sidebarOpen.value = true;
   await nextTick();
@@ -129,7 +108,7 @@ function handleKeydown(event: KeyboardEvent): void {
 }
 
 onMounted(() => {
-  readFavorites();
+  void refreshLinks();
   document.addEventListener('keydown', handleKeydown);
 });
 
@@ -187,12 +166,12 @@ onBeforeUnmount(() => document.removeEventListener('keydown', handleKeydown));
         </RouterLink>
         <IconChevronRight :size="14" aria-hidden="true" />
         <RouterLink :to="`/tools#${category.id}`">
-          <ToolIcon :name="category.icon" :size="14" />
+          <ToolIcon :icon="category.icon" :size="14" />
           {{ category.label }}
         </RouterLink>
         <IconChevronRight :size="14" aria-hidden="true" />
         <span aria-current="page">
-          <ToolIcon :name="tool.icon" :size="14" />
+          <ToolIcon :icon="tool.icon" :size="14" />
           {{ tool.name }}
         </span>
       </nav>
@@ -203,7 +182,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', handleKeydown));
         :icon="tool.icon"
         :category="category.label"
         :favorite="favorite"
-        @toggle-favorite="toggleFavorite"
+        @toggle-favorite="toggleFavorite(tool.id)"
       />
 
       <div class="tools-detail__content">
@@ -217,12 +196,19 @@ onBeforeUnmount(() => document.removeEventListener('keydown', handleKeydown));
       >
         <div class="tools-detail__section-heading">
           <h2 id="related-title">
-            <ToolIcon :name="'icons'" :size="18" />
+            <ToolIcon icon="icons" :size="18" />
             相关工具
           </h2>
         </div>
         <div class="tools-detail__related-grid">
-          <ToolCard v-for="item in relatedTools" :key="item.id" :tool="item" compact />
+          <ToolCard
+            v-for="item in relatedTools"
+            :key="item.id"
+            :tool="item"
+            :favorite="isFavorite(item.id)"
+            compact
+            @toggle-favorite="toggleFavorite"
+          />
         </div>
       </section>
     </div>

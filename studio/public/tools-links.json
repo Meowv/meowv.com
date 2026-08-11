@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "links": [
+    {
+      "id": "postwoman",
+      "category": "developer",
+      "name": "Postwoman",
+      "description": "A free, fast and beautiful API request builder",
+      "icon": {
+        "url": "https://postwoman.com.cn/favicon.ico"
+      },
+      "url": "https://postwoman.com.cn"
+    }
+  ]
+}

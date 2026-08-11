@@ -77,7 +77,7 @@ const sidebarClass = computed(() => ({
           :aria-current="category.id === activeCategory ? 'true' : undefined"
           @click="emit('select', category.id)"
         >
-          <ToolIcon :name="category.icon" :size="18" />
+          <ToolIcon :icon="category.icon" :size="18" />
           <span>
             <strong>{{ category.name }}</strong>
             <small>{{ category.label }}</small>
