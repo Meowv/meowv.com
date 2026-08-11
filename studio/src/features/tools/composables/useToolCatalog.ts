@@ -8,7 +8,7 @@ import {
   type ToolCategoryId,
   type ToolConfig,
   type ToolIconSource,
-} from '@/features/tools/config/tools';
+} from '@/features/tools/tools';
 
 const LINKS_CONFIG_URL = '/tools-links.json';
 const LINKS_CACHE_KEY = `${STORAGE_POLICY.preferences}:tools-links-cache`;

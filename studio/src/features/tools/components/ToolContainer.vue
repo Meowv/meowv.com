@@ -13,7 +13,7 @@ import {
   toolCategories,
   type ToolCategoryConfig,
   type InternalToolConfig,
-} from '@/features/tools/config/tools';
+} from '@/features/tools/tools';
 
 const props = defineProps<{
   tool: InternalToolConfig;

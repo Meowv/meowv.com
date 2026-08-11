@@ -25,7 +25,7 @@ import {
 } from '@/features/markdown/icons';
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, toRef, watch } from 'vue';
 import ToolIcon from '@/features/tools/components/ToolIcon.vue';
-import { getToolsByCategory } from '@/features/tools/config/tools';
+import { getToolsByCategory } from '@/features/tools/tools';
 import FileTreeNode from './FileTreeNode.vue';
 import { ACTIVE_TREE_PATH, EXPANDED_TREE_PATHS } from './tree-state';
 import { useWorkspaceStore, type DisplayTreeNode } from '@/features/markdown/stores/workspace';

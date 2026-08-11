@@ -9,7 +9,7 @@ import ToolSidebar from '@/features/tools/components/ToolSidebar.vue';
 import { STORAGE_POLICY, storageAvailable } from '@/core/privacy/storage';
 import { useToolCatalog } from '@/features/tools/composables/useToolCatalog';
 import { useToolFavorites } from '@/features/tools/composables/useToolFavorites';
-import { searchTools, toolCategories } from '@/features/tools/config/tools';
+import { searchTools, toolCategories } from '@/features/tools/tools';
 import '@/features/tools/tools.css';
 
 const route = useRoute();

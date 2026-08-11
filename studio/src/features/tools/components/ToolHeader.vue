@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { IconChevronLeft, IconStar, IconStarFilled } from '@tabler/icons-vue';
 import ToolIcon from '@/features/tools/components/ToolIcon.vue';
-import type { ToolIconSource } from '@/features/tools/config/tools';
+import type { ToolIconSource } from '@/features/tools/tools';
 
 defineProps<{
   title: string;

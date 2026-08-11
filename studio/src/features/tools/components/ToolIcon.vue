@@ -52,7 +52,7 @@ import {
   IconWriting,
   IconBrandAdobePhotoshop,
 } from '@tabler/icons-vue';
-import type { ToolIconSource } from '@/features/tools/config/tools';
+import type { ToolIconSource } from '@/features/tools/tools';
 
 const props = withDefaults(defineProps<{ icon: ToolIconSource; size?: number }>(), { size: 22 });
 

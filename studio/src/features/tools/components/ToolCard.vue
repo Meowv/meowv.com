@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
 import { IconArrowRight, IconStar, IconStarFilled } from '@tabler/icons-vue';
 import ToolIcon from '@/features/tools/components/ToolIcon.vue';
-import { toolCategoryMap, type ToolConfig } from '@/features/tools/config/tools';
+import { toolCategoryMap, type ToolConfig } from '@/features/tools/tools';
 
 const props = withDefaults(
   defineProps<{ tool: ToolConfig; compact?: boolean; favorite?: boolean }>(),

@@ -4,7 +4,7 @@ import { useRoute } from 'vue-router';
 import { usePageMeta } from '@/composables/usePageMeta';
 import ToolContainer from '@/features/tools/components/ToolContainer.vue';
 import ToolUnavailable from '@/features/tools/components/ToolUnavailable.vue';
-import { getToolById, toolCategoryMap } from '@/features/tools/config/tools';
+import { getToolById, toolCategoryMap } from '@/features/tools/tools';
 import '@/features/tools/tools.css';
 
 const route = useRoute();
