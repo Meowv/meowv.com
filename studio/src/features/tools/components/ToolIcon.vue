@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch, type Component } from 'vue';
 import {
-  IconApi,
   IconArrowsExchange,
   IconAsterisk,
   IconBinary,
@@ -58,7 +57,6 @@ import type { ToolIconSource } from '@/features/tools/config/tools';
 const props = withDefaults(defineProps<{ icon: ToolIconSource; size?: number }>(), { size: 22 });
 
 const icons: Record<string, Component> = {
-  api: IconApi,
   'arrows-exchange': IconArrowsExchange,
   asterisk: IconAsterisk,
   binary: IconBinary,

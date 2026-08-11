@@ -53,12 +53,6 @@ const toolCategorySeeds = {
     color: '#2563eb',
     tools: [
       {
-        id: 'api-explorer',
-        name: 'API Explorer',
-        description: '调试 HTTP API 请求并查看响应。',
-        icon: 'api',
-      },
-      {
         id: 'json-tool',
         name: 'JSON 工具',
         description: '格式化、压缩和校验 JSON，并在常见数据格式之间转换。',
