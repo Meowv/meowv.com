@@ -147,7 +147,7 @@ const toolCategorySeeds = {
       {
         id: 'cron',
         name: 'Cron 表达式',
-        description: '生成、解析并预览 Linux、Quartz 与 Hangfire Cron 表达式。',
+        description: '解析标准 5 字段 Cron 表达式并预览未来执行时间。',
         icon: 'clock',
       },
     ],
@@ -303,7 +303,7 @@ const toolCategorySeeds = {
       {
         id: 'color-picker',
         name: '颜色选择器',
-        description: '可视化生成设计参数，并实时预览效果。',
+        description: '在 HEX、RGB、RGBA、HSL、HSLA、HSV 与 CMYK 之间实时转换。',
         icon: 'color-picker',
       },
     ],
