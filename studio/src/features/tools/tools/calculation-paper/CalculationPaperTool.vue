@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { IconCalculator, IconEraser } from '@tabler/icons-vue';
-import ToolHelp from '@/features/tools/components/ToolHelp.vue';
 import { calculateExpression } from '../_shared/misc-utils';
 
 const example = '苹果 12 + 香蕉 8\n买菜 12 元，饮料 8.5 元\n2 × (3 + 4)\n100 ÷ 4 - 5';
@@ -95,14 +94,6 @@ calculate();
       </ol>
     </section>
   </div>
-  <ToolHelp
-    :steps="[
-      '每行输入一条内容，可在数字和运算符之间写说明文字。',
-      '点击“计算全部”，工具会提取每行算式并独立计算。',
-      '检查原文、提取后的表达式与结果，错误行不会影响其他行。',
-    ]"
-    note="支持 +、-、×、÷、*、/、%、括号和小数；所有计算在浏览器本地完成。"
-  />
 </template>
 
 <style scoped>

@@ -4,7 +4,6 @@ import { IconBraces, IconCheck, IconEraser, IconFileZip, IconRefresh } from '@ta
 import CopyButton from '@/features/tools/components/CopyButton.vue';
 import DownloadButton from '@/features/tools/components/DownloadButton.vue';
 import ToolCodeEditor from '@/features/tools/components/ToolCodeEditor.vue';
-import ToolHelp from '@/features/tools/components/ToolHelp.vue';
 import ToolPane from '@/features/tools/components/ToolPane.vue';
 import ToolWorkspace from '@/features/tools/components/ToolWorkspace.vue';
 import { formatJson, minifyJson, parseJson } from './utils';
@@ -163,13 +162,4 @@ onMounted(() => run(props.mode));
       <p v-else-if="message" class="tool-pane__message" role="status">{{ message }}</p>
     </ToolPane>
   </ToolWorkspace>
-
-  <ToolHelp
-    :steps="[
-      '输入或粘贴 JSON，编辑器会保留行号与结构高亮。',
-      '根据当前工具执行格式化、压缩或校验。',
-      '确认状态后复制结果或下载 JSON 文件。',
-    ]"
-    note="解析与格式化由浏览器原生 JSON API 在本地完成。"
-  />
 </template>

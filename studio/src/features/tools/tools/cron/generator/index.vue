@@ -2,7 +2,6 @@
 import { computed, ref } from 'vue';
 import { IconClockPlus } from '@tabler/icons-vue';
 import ToolActions from '@/features/tools/components/ToolActions.vue';
-import ToolHelp from '@/features/tools/components/ToolHelp.vue';
 import ToolOutput from '@/features/tools/components/ToolOutput.vue';
 import ToolSection from '@/features/tools/components/ToolSection.vue';
 import {
@@ -128,7 +127,4 @@ function generate(): void {
     </ToolSection>
     <ToolOutput title="Cron 表达式" :value="output" filename="cron-expression.txt" />
   </div>
-  <ToolHelp
-    :steps="['选择 Cron 类型和执行频率。', '填写时间参数。', '生成表达式并核对未来 5 次执行时间。']"
-  />
 </template>

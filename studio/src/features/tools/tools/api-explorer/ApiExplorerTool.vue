@@ -2,7 +2,6 @@
 import { computed, onBeforeUnmount, ref } from 'vue';
 import { IconPlayerPlay, IconPlayerStop } from '@tabler/icons-vue';
 import ToolActions from '@/features/tools/components/ToolActions.vue';
-import ToolHelp from '@/features/tools/components/ToolHelp.vue';
 import ToolInput from '@/features/tools/components/ToolInput.vue';
 import ToolOutput from '@/features/tools/components/ToolOutput.vue';
 import ToolSection from '@/features/tools/components/ToolSection.vue';
@@ -146,8 +145,4 @@ onBeforeUnmount(cancel);
     </ToolSection>
     <ToolOutput title="HTTP 响应" :value="output" filename="api-response.txt" :rows="18" />
   </div>
-  <ToolHelp
-    :steps="['选择 Method 并输入 API URL。', '填写 Header 与可选 Body。', '发送请求并检查响应。']"
-    note="请求会直接发送到填写的目标地址；目标服务必须允许浏览器 CORS。认证信息不会被 Studio 保存。"
-  />
 </template>

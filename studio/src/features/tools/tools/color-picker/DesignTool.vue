@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import ToolHelp from '@/features/tools/components/ToolHelp.vue';
 import ToolOutput from '@/features/tools/components/ToolOutput.vue';
 import ToolSection from '@/features/tools/components/ToolSection.vue';
 import {
@@ -296,8 +295,4 @@ const previewStyle = computed(() => {
     ></ToolSection>
     <ToolOutput :title="`${title}结果`" :value="result" filename="design-result.css" />
   </div>
-  <ToolHelp
-    :steps="['调整颜色或布局参数。', '实时检查预览效果。', '复制生成结果。']"
-    note="所有计算和预览均在浏览器本地完成。"
-  />
 </template>

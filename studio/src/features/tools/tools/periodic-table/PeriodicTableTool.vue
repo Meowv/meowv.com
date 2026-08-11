@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { IconSearch } from '@tabler/icons-vue';
-import ToolHelp from '@/features/tools/components/ToolHelp.vue';
 import { elements } from '../_shared/misc-utils';
 
 const GROUPS: Record<number, number[]> = {
@@ -108,14 +107,6 @@ const matches = computed(() => {
       </aside>
     </div>
   </section>
-  <ToolHelp
-    :steps="[
-      '按名称、元素符号或原子序数搜索。',
-      '点击周期表中的元素卡片。',
-      '在右侧查看原子序数、周期、族与区块。',
-    ]"
-    note="页面包含 1–118 号全部元素；镧系与锕系按常用的独立两行方式展示。"
-  />
 </template>
 
 <style scoped>

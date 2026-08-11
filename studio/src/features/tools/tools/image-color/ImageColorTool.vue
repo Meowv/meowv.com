@@ -3,7 +3,6 @@ import { computed, nextTick, onBeforeUnmount, ref } from 'vue';
 import { IconEraser } from '@tabler/icons-vue';
 import CopyButton from '@/features/tools/components/CopyButton.vue';
 import FileUploader from '@/features/tools/components/FileUploader.vue';
-import ToolHelp from '@/features/tools/components/ToolHelp.vue';
 import ToolSection from '@/features/tools/components/ToolSection.vue';
 import { detectImageMime } from '@/features/tools/tools/_shared/image/core/image';
 import { formatBytes } from '@/features/tools/tools/_shared/image/format';
@@ -203,16 +202,6 @@ onBeforeUnmount(releasePreview);
       </div>
     </ToolSection>
   </div>
-  <ToolHelp
-    :steps="
-      mode === 'picker'
-        ? ['选择本地图片。', '点击图片中的目标位置。', '复制 HEX、RGB 或 HSL 颜色值。']
-        : mode === 'dominant'
-          ? ['选择本地图片。', '等待浏览器提取主色。', '复制需要的调色板颜色。']
-          : ['选择本地图片。', '在图片取色和主色提取间切换。', '复制需要的颜色值。']
-    "
-    note="动态 GIF 仅分析第一帧；透明度低于 50% 的像素不计入主色。"
-  />
 </template>
 
 <style scoped>

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { IconTrash } from '@tabler/icons-vue';
-import ToolHelp from '@/features/tools/components/ToolHelp.vue';
 
 interface KeySpec {
   code: string;
@@ -230,14 +229,6 @@ onBeforeUnmount(() => {
       </aside>
     </div>
   </section>
-  <ToolHelp
-    :steps="[
-      '选择 104 键或 TKL 布局。',
-      '点击键盘区域，让它获得焦点。',
-      '按下实体键盘按键并查看 code、key 与按下/释放状态。',
-    ]"
-    note="只有测试区域获得焦点时才会阻止浏览器默认快捷键；窗口失焦或页面切换会立即释放全部高亮。"
-  />
 </template>
 
 <style scoped>

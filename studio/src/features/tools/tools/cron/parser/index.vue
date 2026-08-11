@@ -2,7 +2,6 @@
 import { computed, ref } from 'vue';
 import { IconClockSearch, IconEraser } from '@tabler/icons-vue';
 import ToolActions from '@/features/tools/components/ToolActions.vue';
-import ToolHelp from '@/features/tools/components/ToolHelp.vue';
 import ToolOutput from '@/features/tools/components/ToolOutput.vue';
 import ToolSection from '@/features/tools/components/ToolSection.vue';
 import { dialectLabel, nextCronRuns, parseCron, type CronDialect, type ParsedCron } from './utils';
@@ -106,8 +105,4 @@ function clear(): void {
     </ToolSection>
     <ToolOutput title="解析结果" :value="output" filename="cron-analysis.txt" />
   </div>
-  <ToolHelp
-    :steps="['选择 Cron 类型。', '输入表达式并点击解析。', '核对字段含义和未来 5 次执行时间。']"
-    note="当前支持通配符、列表、范围、步长、月份与星期英文缩写；暂不支持 L、W、# 扩展语法。"
-  />
 </template>

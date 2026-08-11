@@ -3,7 +3,6 @@ import { computed, ref } from 'vue';
 import { IconBook2, IconHistory, IconRefresh } from '@tabler/icons-vue';
 import answerData from '@/assets/tools/answer-book.json';
 import { STORAGE_POLICY, storageAvailable } from '@/core/privacy/storage';
-import ToolHelp from '@/features/tools/components/ToolHelp.vue';
 
 type ThemeId = keyof typeof answerData;
 interface Answer {
@@ -188,14 +187,6 @@ function clearHistory(): void {
       </aside>
     </div>
   </section>
-  <ToolHelp
-    :steps="[
-      '选择随心一问或每日固定答案，并选择主题。',
-      '写下问题或留在心里，点击翻开答案之书。',
-      '历史记录只保存在当前浏览器，可随时清空。',
-    ]"
-    note="答案内容与六个主题原生迁移自 Blog；今日答案按日期和主题稳定生成。答案仅供娱乐和启发，不替代专业建议。"
-  />
 </template>
 
 <style scoped>

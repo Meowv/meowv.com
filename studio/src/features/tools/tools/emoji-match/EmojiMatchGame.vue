@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from 'vue';
 import { IconBulb, IconRefresh, IconTrophy } from '@tabler/icons-vue';
-import ToolHelp from '@/features/tools/components/ToolHelp.vue';
 
 const EMOJIS = Array.from('😄🤣🙂🙃😉😇😍🤥😘😚😛😜😋🤗🤔🤐😶🤑😏🙄😳😬😴🤕🤠🤧😢😵😎🤓😡🤢😭😫😠');
 const INITIAL_TIME = 60_000;
@@ -264,15 +263,6 @@ resetGame();
     </div>
     <p class="emoji-match__notice" aria-live="polite">{{ notice }}</p>
   </section>
-
-  <ToolHelp
-    :steps="[
-      '选择任意表情后开始 60 秒倒计时。',
-      '依次选择两个相同表情，成功后奖励 5 秒并刷新棋盘。',
-      '每轮开始 5 秒后可以查看提示。',
-    ]"
-    note="页面会在刷新棋盘期间锁定操作，避免连续点击产生状态竞争。"
-  />
 </template>
 
 <style scoped>

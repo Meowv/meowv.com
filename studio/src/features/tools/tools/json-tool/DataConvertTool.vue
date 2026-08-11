@@ -2,7 +2,6 @@
 import { computed, ref } from 'vue';
 import { IconArrowsExchange, IconEraser } from '@tabler/icons-vue';
 import ToolActions from '@/features/tools/components/ToolActions.vue';
-import ToolHelp from '@/features/tools/components/ToolHelp.vue';
 import ToolInput from '@/features/tools/components/ToolInput.vue';
 import ToolOutput from '@/features/tools/components/ToolOutput.vue';
 import ToolSection from '@/features/tools/components/ToolSection.vue';
@@ -80,8 +79,4 @@ function clear(): void {
       :filename="`result.${target === 'typescript' ? 'ts' : target === 'csharp' ? 'cs' : target}`"
     />
   </div>
-  <ToolHelp
-    :steps="[`输入有效的 ${labels[source]}。`, `转换为 ${labels[target]}。`, '复制或下载结果。']"
-    note="转换过程完全在浏览器本地完成；复杂格式的注释与自定义类型不会保留。"
-  />
 </template>

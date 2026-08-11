@@ -3,7 +3,6 @@ import { computed, onBeforeUnmount, ref } from 'vue';
 import { IconDownload, IconEraser, IconMovie } from '@tabler/icons-vue';
 import FileUploader from '@/features/tools/components/FileUploader.vue';
 import ToolActions from '@/features/tools/components/ToolActions.vue';
-import ToolHelp from '@/features/tools/components/ToolHelp.vue';
 import ToolSection from '@/features/tools/components/ToolSection.vue';
 import {
   encodeGifAnimation,
@@ -227,8 +226,4 @@ onBeforeUnmount(releaseUrls);
       </div>
     </ToolSection>
   </div>
-  <ToolHelp
-    :steps="['选择本地视频。', '设置开始时间、时长、帧率与宽度。', '生成并下载 GIF。']"
-    note="为控制浏览器内存，单次最多 10 秒、50 帧、640px 宽；音频不会写入 GIF。"
-  />
 </template>

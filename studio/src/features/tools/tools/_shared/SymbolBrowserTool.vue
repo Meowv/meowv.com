@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { IconCheck, IconCopy, IconSearch } from '@tabler/icons-vue';
-import ToolHelp from '@/features/tools/components/ToolHelp.vue';
 import ToolSection from '@/features/tools/components/ToolSection.vue';
 
 const props = defineProps<{ mode: 'symbols' | 'emoji' }>();
@@ -164,5 +163,4 @@ async function copy(value: string): Promise<void> {
       <p v-if="!filtered.length" class="tool-status">没有匹配的字符。</p>
     </div>
   </ToolSection>
-  <ToolHelp :steps="['浏览或筛选字符。', '点击需要的字符。', '粘贴到任意应用中。']" />
 </template>

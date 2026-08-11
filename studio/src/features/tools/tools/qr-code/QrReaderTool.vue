@@ -4,7 +4,6 @@ import { IconScan } from '@tabler/icons-vue';
 import jsQR from 'jsqr';
 import FileUploader from '@/features/tools/components/FileUploader.vue';
 import ToolActions from '@/features/tools/components/ToolActions.vue';
-import ToolHelp from '@/features/tools/components/ToolHelp.vue';
 import ToolOutput from '@/features/tools/components/ToolOutput.vue';
 import ToolSection from '@/features/tools/components/ToolSection.vue';
 
@@ -90,14 +89,6 @@ onBeforeUnmount(revokePreview);
     </ToolSection>
     <ToolOutput title="识别结果" :value="output" filename="qr-result.txt" />
   </div>
-  <ToolHelp
-    :steps="[
-      '选择包含完整 QR Code 的图片。',
-      '在浏览器本地读取像素并解码。',
-      '复制或下载识别结果。',
-    ]"
-    note="图片只在当前页面内存中处理，离开页面后对象 URL 会释放。"
-  />
 </template>
 
 <style scoped>

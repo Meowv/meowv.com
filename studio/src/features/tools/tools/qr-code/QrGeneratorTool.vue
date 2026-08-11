@@ -3,7 +3,6 @@ import { onBeforeUnmount, ref } from 'vue';
 import { IconDownload, IconQrcode } from '@tabler/icons-vue';
 import QRCode from 'qrcode';
 import ToolActions from '@/features/tools/components/ToolActions.vue';
-import ToolHelp from '@/features/tools/components/ToolHelp.vue';
 import ToolInput from '@/features/tools/components/ToolInput.vue';
 import ToolOutput from '@/features/tools/components/ToolOutput.vue';
 import ToolSection from '@/features/tools/components/ToolSection.vue';
@@ -108,14 +107,6 @@ void generate();
       mime-type="image/svg+xml;charset=utf-8"
     />
   </div>
-  <ToolHelp
-    :steps="[
-      '输入文本、网址或联系方式。',
-      '按使用场景选择容错级别与图片尺寸。',
-      '生成后下载 PNG 或复制 SVG。',
-    ]"
-    note="编码过程完全在浏览器本地完成；内容不会发送到服务器。"
-  />
 </template>
 
 <style scoped>

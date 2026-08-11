@@ -6,7 +6,6 @@ import order from 'cnchar-order';
 import trad from 'cnchar-trad';
 import { pinyin } from 'pinyin-pro';
 import ToolActions from '@/features/tools/components/ToolActions.vue';
-import ToolHelp from '@/features/tools/components/ToolHelp.vue';
 import ToolInput from '@/features/tools/components/ToolInput.vue';
 import ToolOutput from '@/features/tools/components/ToolOutput.vue';
 import ToolSection from '@/features/tools/components/ToolSection.vue';
@@ -225,12 +224,4 @@ onBeforeUnmount(() => {
       filename="language-result.txt"
     />
   </div>
-  <ToolHelp
-    :steps="['输入需要处理的内容。', '选择方向、语言或朗读参数。', '处理后检查并复制结果。']"
-    :note="
-      mode === 'translation'
-        ? '原文和语言选项会发送到 MyMemory Translation；Studio 不保存内容。'
-        : '转换、拼音和笔顺在当前浏览器本地完成。'
-    "
-  />
 </template>

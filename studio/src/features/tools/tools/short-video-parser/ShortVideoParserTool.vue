@@ -2,7 +2,6 @@
 import { onBeforeUnmount, ref } from 'vue';
 import { IconEraser, IconLink, IconPlayerStop } from '@tabler/icons-vue';
 import ToolActions from '@/features/tools/components/ToolActions.vue';
-import ToolHelp from '@/features/tools/components/ToolHelp.vue';
 import ToolInput from '@/features/tools/components/ToolInput.vue';
 import ToolOutput from '@/features/tools/components/ToolOutput.vue';
 import ToolSection from '@/features/tools/components/ToolSection.vue';
@@ -122,12 +121,4 @@ onBeforeUnmount(cancel);
       mime-type="application/json;charset=utf-8"
     />
   </div>
-  <ToolHelp
-    :steps="[
-      '粘贴短视频平台的公开分享文本或链接。',
-      '工具提取链接并发送到解析服务。',
-      '检查标题、作者、封面及媒体地址等结构化结果。',
-    ]"
-    note="分享链接会发送到 api.bugpk.com；Studio 不保存链接或结果。请遵守内容平台规则与著作权要求。"
-  />
 </template>
