@@ -21,6 +21,7 @@ type ImageToolMode =
   | 'images-to-pdf'
   | 'merge-gif'
   | 'video-to-gif'
+  | 'image-color'
   | 'psd-viewer';
 
 const props = defineProps<{
@@ -40,6 +41,7 @@ const loaders: Record<ImageToolMode, () => Promise<{ default: Component }>> = {
   'images-to-pdf': () => import('@/features/tools/tools/_shared/image/views/ImagesToPdfView.vue'),
   'merge-gif': () => import('@/features/tools/tools/_shared/image/views/MergeGifView.vue'),
   'video-to-gif': () => import('@/features/tools/tools/_shared/image/views/VideoToGifView.vue'),
+  'image-color': () => import('@/features/tools/tools/_shared/image/views/ImageColorView.vue'),
   'psd-viewer': () => import('@/features/tools/tools/_shared/image/views/PsdViewerView.vue'),
 };
 

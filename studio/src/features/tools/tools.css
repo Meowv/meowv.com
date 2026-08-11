@@ -550,11 +550,15 @@
 }
 
 .tools-card__content > small {
-  display: block;
+  display: -webkit-box;
+  max-height: 2.7em;
+  overflow: hidden;
   color: var(--color-text-muted);
   font-size: 11px;
   line-height: 1.35;
   overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .tools-empty {
