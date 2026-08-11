@@ -48,7 +48,7 @@ export type ToolConfig = InternalToolConfig | LinkToolConfig;
 const toolCategorySeeds = {
   developer: {
     name: 'Developer',
-    label: '开发者工具',
+    label: '开发工具',
     icon: 'code',
     color: '#2563eb',
     tools: [
@@ -255,7 +255,7 @@ const toolCategorySeeds = {
       {
         id: 'qr-code',
         name: 'QR Code',
-        description: '在浏览器本地生成或识别 QR Code。',
+        description: '二维码生成与识别。',
         icon: 'qrcode',
       },
       {
@@ -273,7 +273,7 @@ const toolCategorySeeds = {
       {
         id: 'keyboard-visualizer',
         name: '键盘可视化',
-        description: '展示按键、组合键与键盘布局。',
+        description: '机械键盘按键测试、组合键展示与 RGB 灯效体验。',
         icon: 'keyboard',
       },
       {
@@ -297,7 +297,7 @@ const toolCategorySeeds = {
       {
         id: 'short-video-parser',
         name: '短视频解析',
-        description: '解析短视频链接，预览并下载视频与备用画质。',
+        description: '解析全平台短视频分享链接，预览并下载无水印视频与备用画质。',
         icon: 'link',
       },
     ],

@@ -39,7 +39,7 @@ const fieldDefinitions: Array<{ id: ColorFieldId; label: string; placeholder: st
   { id: 'cmyk', label: 'CMYK', placeholder: 'cmyk(c%, m%, y%, k%)' },
 ];
 const fields = reactive<Record<ColorFieldId, string>>({
-  hex: '#5a9600',
+  hex: '#d97706',
   rgb: 'rgb(90, 150, 0)',
   rgba: 'rgba(90, 150, 0, 1)',
   hsl: 'hsl(90, 100%, 29%)',
@@ -47,7 +47,7 @@ const fields = reactive<Record<ColorFieldId, string>>({
   hsv: 'hsv(90, 100%, 59%)',
   cmyk: 'cmyk(40%, 0%, 100%, 41%)',
 });
-const previewHex = ref('#5a9600');
+const previewHex = ref('#d97706');
 const copiedField = ref<ColorFieldId | null>(null);
 let copiedTimer: number | null = null;
 

@@ -1,226 +1,291 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from 'vue';
-import { IconLanguage, IconPlayerPlay, IconPlayerStop } from '@tabler/icons-vue';
+import { IconArrowsExchange, IconCheck, IconCopy, IconX } from '@tabler/icons-vue';
 import cnchar from 'cnchar';
-import order from 'cnchar-order';
 import trad from 'cnchar-trad';
-import { pinyin } from 'pinyin-pro';
-import ToolActions from '@/features/tools/components/ToolActions.vue';
-import ToolInput from '@/features/tools/components/ToolInput.vue';
-import ToolOutput from '@/features/tools/components/ToolOutput.vue';
-import ToolSection from '@/features/tools/components/ToolSection.vue';
 
-const mode: 'translation' | 'convert' | 'pronunciation' | 'stroke' = 'convert';
-cnchar.use(order, trad);
+type ConversionDirection = 's2t' | 't2s';
 
-const input = ref('');
-const output = ref('');
-const error = ref('');
-const processing = ref(false);
-const direction = ref<'s2t' | 't2s'>('s2t');
-const sourceLanguage = ref('en');
-const targetLanguage = ref('zh-CN');
-const rate = ref(1);
-let controller: AbortController | null = null;
+cnchar.use(trad);
 
-const title = computed(
-  () =>
-    ({
-      translation: '在线翻译',
-      convert: '简繁转换',
-      pronunciation: '拼音与发音',
-      stroke: '汉字笔顺',
-    })[mode],
+const direction = ref<ConversionDirection>('s2t');
+const sourceText = ref('');
+const copied = ref(false);
+const copyError = ref('');
+let copiedTimer: number | null = null;
+
+const sourceMode = computed(() => (direction.value === 's2t' ? '简体' : '繁体'));
+const targetMode = computed(() => (direction.value === 's2t' ? '繁体' : '简体'));
+const targetText = computed(() =>
+  direction.value === 's2t'
+    ? cnchar.convert.simpleToTrad(sourceText.value)
+    : cnchar.convert.tradToSimple(sourceText.value),
 );
-const description = computed(() => {
-  if (mode === 'translation') return '将文本发送到 MyMemory Translation，并显示翻译结果与匹配度。';
-  if (mode === 'pronunciation') return '生成带声调拼音，并使用浏览器语音朗读中文。';
-  if (mode === 'stroke') return '查询常用汉字的笔画名称与书写顺序。';
-  return '使用本地字库在简体中文与繁体中文之间转换。';
-});
 
-async function translate(): Promise<string> {
-  if (new TextEncoder().encode(input.value).length > 500)
-    throw new Error('MyMemory 单次翻译原文不能超过 500 个 UTF-8 字节。');
-  controller?.abort();
-  controller = new AbortController();
-  const timeout = window.setTimeout(() => controller?.abort('timeout'), 15_000);
+function swapDirection(): void {
+  const converted = targetText.value;
+  direction.value = direction.value === 's2t' ? 't2s' : 's2t';
+  if (converted) sourceText.value = converted;
+  copyError.value = '';
+}
+
+function clear(): void {
+  sourceText.value = '';
+  copied.value = false;
+  copyError.value = '';
+}
+
+async function copyResult(): Promise<void> {
+  if (!targetText.value) return;
   try {
-    const endpoint = new URL('/get', 'https://api.mymemory.translated.net');
-    endpoint.searchParams.set('q', input.value);
-    endpoint.searchParams.set('langpair', `${sourceLanguage.value}|${targetLanguage.value}`);
-    const response = await fetch(endpoint, { credentials: 'omit', signal: controller.signal });
-    if (!response.ok) throw new Error(`翻译服务返回 HTTP ${response.status}。`);
-    const payload = (await response.json()) as {
-      responseStatus?: number;
-      responseDetails?: string | null;
-      responseData?: { translatedText?: string; match?: number };
-    };
-    if (payload.responseStatus && payload.responseStatus !== 200)
-      throw new Error(payload.responseDetails || `翻译服务返回状态 ${payload.responseStatus}。`);
-    const translated = payload.responseData?.translatedText ?? '';
-    if (!translated) throw new Error('翻译服务没有返回有效结果。');
-    const match = payload.responseData?.match;
-    return `源语言：${sourceLanguage.value}\n目标语言：${targetLanguage.value}${typeof match === 'number' ? `\n匹配度：${Math.round(match * 100)}%` : ''}\n\n${translated}`;
-  } catch (cause) {
-    if (controller?.signal.aborted) throw new Error('翻译请求已取消或超时。');
-    throw cause;
-  } finally {
-    window.clearTimeout(timeout);
-    controller = null;
+    await navigator.clipboard.writeText(targetText.value);
+    copied.value = true;
+    copyError.value = '';
+    if (copiedTimer !== null) window.clearTimeout(copiedTimer);
+    copiedTimer = window.setTimeout(() => {
+      copied.value = false;
+      copiedTimer = null;
+    }, 1500);
+  } catch {
+    copyError.value = '复制失败，请手动选择转换结果复制。';
   }
-}
-
-async function run(): Promise<void> {
-  error.value = '';
-  output.value = '';
-  if (!input.value.trim()) {
-    error.value = '请输入需要处理的内容。';
-    return;
-  }
-  processing.value = true;
-  try {
-    if (mode === 'translation') output.value = await translate();
-    else if (mode === 'convert') {
-      output.value =
-        direction.value === 's2t'
-          ? cnchar.convert.simpleToTrad(input.value)
-          : cnchar.convert.tradToSimple(input.value);
-    } else if (mode === 'stroke') {
-      const characters = Array.from(input.value.replace(/[^\p{Script=Han}]/gu, '')).slice(0, 20);
-      if (!characters.length) throw new Error('请输入汉字。');
-      const names = cnchar.stroke(characters.join(''), 'order', 'name') as string[][];
-      output.value = characters
-        .map(
-          (character, index) =>
-            `${character} · ${names[index]?.length ?? 0} 画\n${names[index]?.join(' → ') || '暂无笔顺数据'}`,
-        )
-        .join('\n\n');
-    } else {
-      const tone = pinyin(input.value, { toneType: 'symbol', type: 'array', nonZh: 'consecutive' });
-      const numbered = pinyin(input.value, {
-        toneType: 'num',
-        type: 'array',
-        nonZh: 'consecutive',
-      });
-      output.value = `带声调\n${tone.join(' ')}\n\n数字声调\n${numbered.join(' ')}`;
-    }
-  } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : '语言处理失败。';
-  } finally {
-    processing.value = false;
-  }
-}
-
-function speak(): void {
-  error.value = '';
-  if (!input.value.trim()) {
-    error.value = '请输入需要朗读的中文。';
-    return;
-  }
-  if (!('speechSynthesis' in window)) {
-    error.value = '当前浏览器不支持语音合成。';
-    return;
-  }
-  speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(input.value);
-  utterance.lang = 'zh-CN';
-  utterance.rate = rate.value;
-  utterance.onerror = () => {
-    error.value = '浏览器语音播放失败。';
-  };
-  speechSynthesis.speak(utterance);
-}
-
-function stop(): void {
-  if ('speechSynthesis' in window) speechSynthesis.cancel();
 }
 
 onBeforeUnmount(() => {
-  controller?.abort();
-  stop();
+  if (copiedTimer !== null) window.clearTimeout(copiedTimer);
 });
 </script>
 
 <template>
-  <div class="tool-workspace-grid">
-    <ToolSection :title="title" :description="description">
-      <div class="tool-stack">
-        <ToolInput
-          v-model="input"
-          label="输入内容"
-          :placeholder="mode === 'stroke' ? '永字八法' : '输入要处理的文本'"
-        />
-        <div v-if="mode === 'translation'" class="tool-form-grid tool-form-grid--two">
-          <label class="tool-field"
-            ><span>源语言</span
-            ><select v-model="sourceLanguage">
-              <option value="zh-CN">中文</option>
-              <option value="en">英语</option>
-              <option value="ja">日语</option>
-              <option value="ko">韩语</option>
-              <option value="fr">法语</option>
-              <option value="de">德语</option>
-            </select></label
-          >
-          <label class="tool-field"
-            ><span>目标语言</span
-            ><select v-model="targetLanguage">
-              <option value="zh-CN">中文</option>
-              <option value="en">英语</option>
-              <option value="ja">日语</option>
-              <option value="ko">韩语</option>
-              <option value="fr">法语</option>
-              <option value="de">德语</option>
-            </select></label
-          >
-        </div>
-        <label v-if="mode === 'convert'" class="tool-field"
-          ><span>转换方向</span
-          ><select v-model="direction">
-            <option value="s2t">简体 → 繁体</option>
-            <option value="t2s">繁体 → 简体</option>
-          </select></label
-        >
-        <label v-if="mode === 'pronunciation'" class="tool-field"
-          ><span>朗读语速：{{ rate.toFixed(1) }}</span
-          ><input v-model.number="rate" type="range" min="0.5" max="2" step="0.1"
-        /></label>
-        <ToolActions>
-          <button
-            type="button"
-            class="tool-button tool-button--primary"
-            :disabled="processing"
-            @click="run"
-          >
-            <IconLanguage :size="16" aria-hidden="true" />{{
-              processing ? '处理中…' : mode === 'translation' ? '翻译' : '处理'
-            }}
-          </button>
-          <button
-            v-if="mode === 'pronunciation'"
-            type="button"
-            class="tool-button tool-button--secondary"
-            @click="speak"
-          >
-            <IconPlayerPlay :size="16" aria-hidden="true" />朗读
-          </button>
-          <button
-            v-if="mode === 'pronunciation'"
-            type="button"
-            class="tool-button tool-button--quiet"
-            @click="stop"
-          >
-            <IconPlayerStop :size="16" aria-hidden="true" />停止
-          </button>
-        </ToolActions>
-        <p v-if="error" class="tool-status tool-status--error" role="alert">{{ error }}</p>
+  <section class="tool-section" aria-label="繁简转换工作区">
+    <div class="tool-section__body chinese-converter">
+      <div class="chinese-converter__direction" aria-label="转换方向">
+        <strong>{{ sourceMode }}</strong>
+        <button type="button" title="交换模式" aria-label="交换转换模式" @click="swapDirection">
+          <IconArrowsExchange :size="19" aria-hidden="true" />
+        </button>
+        <strong>{{ targetMode }}</strong>
       </div>
-    </ToolSection>
-    <ToolOutput
-      :title="mode === 'translation' ? '翻译结果' : '处理结果'"
-      :value="output"
-      filename="language-result.txt"
-    />
-  </div>
+
+      <div class="chinese-converter__columns">
+        <div class="chinese-converter__column">
+          <div class="chinese-converter__column-header">
+            <label for="converter-source">输入</label>
+            <small>{{ sourceText.length }} 字</small>
+          </div>
+          <div class="chinese-converter__textarea-wrap">
+            <textarea
+              id="converter-source"
+              v-model="sourceText"
+              placeholder="请输入要转换的文字…"
+            ></textarea>
+            <button
+              type="button"
+              class="chinese-converter__corner-button"
+              :disabled="!sourceText"
+              title="清空输入"
+              aria-label="清空输入"
+              @click="clear"
+            >
+              <IconX :size="16" aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+
+        <div class="chinese-converter__column">
+          <div class="chinese-converter__column-header">
+            <label for="converter-target">结果</label>
+          </div>
+          <div class="chinese-converter__textarea-wrap">
+            <textarea
+              id="converter-target"
+              :value="targetText"
+              class="chinese-converter__output"
+              placeholder="转换结果将实时显示在这里…"
+              readonly
+            ></textarea>
+            <button
+              type="button"
+              class="chinese-converter__corner-button"
+              :class="{ 'is-copied': copied }"
+              :disabled="!targetText"
+              :title="copied ? '已复制' : '复制结果'"
+              :aria-label="copied ? '转换结果已复制' : '复制转换结果'"
+              @click="copyResult"
+            >
+              <IconCheck v-if="copied" :size="16" aria-hidden="true" />
+              <IconCopy v-else :size="16" aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <p v-if="copyError" class="tool-status tool-status--error" role="alert">
+        {{ copyError }}
+      </p>
+    </div>
+  </section>
 </template>
+
+<style scoped>
+.chinese-converter {
+  display: grid;
+  gap: 14px;
+}
+
+.chinese-converter__direction {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.chinese-converter__direction strong {
+  min-width: 78px;
+  color: var(--tools-accent);
+  font-size: 13px;
+  text-align: center;
+}
+
+.chinese-converter__direction strong:last-child {
+  color: #2563eb;
+}
+
+.chinese-converter__direction button,
+.chinese-converter__corner-button {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface-solid);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease,
+    transform 180ms ease;
+}
+
+.chinese-converter__direction button:hover,
+.chinese-converter__direction button:focus-visible {
+  border-color: var(--tools-accent);
+  outline: none;
+  color: var(--tools-accent);
+  transform: rotate(180deg);
+}
+
+.chinese-converter__columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 12px;
+}
+
+.chinese-converter__column {
+  display: grid;
+  min-width: 0;
+  grid-template-rows: auto minmax(230px, 1fr);
+  gap: 7px;
+}
+
+.chinese-converter__column-header {
+  display: flex;
+  min-height: 18px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chinese-converter__column-header label {
+  color: var(--color-text);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.chinese-converter__column-header small {
+  color: var(--color-text-muted);
+  font-size: 9px;
+}
+
+.chinese-converter__textarea-wrap {
+  position: relative;
+  display: flex;
+  min-height: 0;
+}
+
+.chinese-converter__textarea-wrap textarea {
+  width: 100%;
+  height: 100%;
+  min-height: 230px;
+  padding: 12px 42px 12px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  outline: none;
+  resize: none;
+  background: var(--color-surface-solid);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.7;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.chinese-converter__textarea-wrap textarea:focus {
+  border-color: color-mix(in srgb, var(--tools-accent) 52%, var(--color-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tools-accent) 9%, transparent);
+}
+
+.chinese-converter__textarea-wrap textarea.chinese-converter__output {
+  background: color-mix(in srgb, var(--color-surface-soft) 72%, var(--color-surface-solid));
+}
+
+.chinese-converter__corner-button {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  width: 30px;
+  height: 30px;
+}
+
+.chinese-converter__corner-button:hover:not(:disabled),
+.chinese-converter__corner-button:focus-visible:not(:disabled),
+.chinese-converter__corner-button.is-copied {
+  border-color: var(--tools-accent);
+  outline: none;
+  background: var(--tools-accent);
+  color: #fff;
+}
+
+.chinese-converter__corner-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+@media (max-width: 640px) {
+  .chinese-converter__columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .chinese-converter__textarea-wrap textarea {
+    min-height: 145px;
+  }
+
+  .chinese-converter__column {
+    grid-template-rows: auto 145px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chinese-converter__direction button,
+  .chinese-converter__corner-button {
+    transition: none;
+  }
+}
+</style>

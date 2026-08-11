@@ -482,7 +482,6 @@ onBeforeUnmount(() => {
 
         <ImageDropzone
           v-if="!selectedFile"
-          class="mx-auto max-w-4xl"
           accept="image/jpeg,image/png,image/webp,image/gif,image/bmp"
           description="支持 JPG、JPEG、PNG、WebP、GIF 和 BMP，单个文件不超过 50 MB"
           :disabled="isReading"

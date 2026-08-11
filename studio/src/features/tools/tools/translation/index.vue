@@ -1,226 +1,388 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from 'vue';
-import { IconLanguage, IconPlayerPlay, IconPlayerStop } from '@tabler/icons-vue';
-import cnchar from 'cnchar';
-import order from 'cnchar-order';
-import trad from 'cnchar-trad';
-import { pinyin } from 'pinyin-pro';
-import ToolActions from '@/features/tools/components/ToolActions.vue';
-import ToolInput from '@/features/tools/components/ToolInput.vue';
-import ToolOutput from '@/features/tools/components/ToolOutput.vue';
-import ToolSection from '@/features/tools/components/ToolSection.vue';
+import { IconArrowsExchange, IconCheck, IconCopy, IconLanguage } from '@tabler/icons-vue';
 
-const mode: 'translation' | 'convert' | 'pronunciation' | 'stroke' = 'translation';
-cnchar.use(order, trad);
+type TranslationDirection = 'zh2en' | 'en2zh';
 
-const input = ref('');
-const output = ref('');
-const error = ref('');
-const processing = ref(false);
-const direction = ref<'s2t' | 't2s'>('s2t');
-const sourceLanguage = ref('en');
-const targetLanguage = ref('zh-CN');
-const rate = ref(1);
-let controller: AbortController | null = null;
-
-const title = computed(
-  () =>
-    ({
-      translation: '在线翻译',
-      convert: '简繁转换',
-      pronunciation: '拼音与发音',
-      stroke: '汉字笔顺',
-    })[mode],
-);
-const description = computed(() => {
-  if (mode === 'translation') return '将文本发送到 MyMemory Translation，并显示翻译结果与匹配度。';
-  if (mode === 'pronunciation') return '生成带声调拼音，并使用浏览器语音朗读中文。';
-  if (mode === 'stroke') return '查询常用汉字的笔画名称与书写顺序。';
-  return '使用本地字库在简体中文与繁体中文之间转换。';
-});
-
-async function translate(): Promise<string> {
-  if (new TextEncoder().encode(input.value).length > 500)
-    throw new Error('MyMemory 单次翻译原文不能超过 500 个 UTF-8 字节。');
-  controller?.abort();
-  controller = new AbortController();
-  const timeout = window.setTimeout(() => controller?.abort('timeout'), 15_000);
-  try {
-    const endpoint = new URL('/get', 'https://api.mymemory.translated.net');
-    endpoint.searchParams.set('q', input.value);
-    endpoint.searchParams.set('langpair', `${sourceLanguage.value}|${targetLanguage.value}`);
-    const response = await fetch(endpoint, { credentials: 'omit', signal: controller.signal });
-    if (!response.ok) throw new Error(`翻译服务返回 HTTP ${response.status}。`);
-    const payload = (await response.json()) as {
-      responseStatus?: number;
-      responseDetails?: string | null;
-      responseData?: { translatedText?: string; match?: number };
-    };
-    if (payload.responseStatus && payload.responseStatus !== 200)
-      throw new Error(payload.responseDetails || `翻译服务返回状态 ${payload.responseStatus}。`);
-    const translated = payload.responseData?.translatedText ?? '';
-    if (!translated) throw new Error('翻译服务没有返回有效结果。');
-    const match = payload.responseData?.match;
-    return `源语言：${sourceLanguage.value}\n目标语言：${targetLanguage.value}${typeof match === 'number' ? `\n匹配度：${Math.round(match * 100)}%` : ''}\n\n${translated}`;
-  } catch (cause) {
-    if (controller?.signal.aborted) throw new Error('翻译请求已取消或超时。');
-    throw cause;
-  } finally {
-    window.clearTimeout(timeout);
-    controller = null;
-  }
+interface TranslationResponse {
+  responseStatus?: number;
+  responseDetails?: string | null;
+  responseData?: {
+    translatedText?: string;
+  };
 }
 
-async function run(): Promise<void> {
-  error.value = '';
-  output.value = '';
-  if (!input.value.trim()) {
-    error.value = '请输入需要处理的内容。';
-    return;
+const direction = ref<TranslationDirection>('zh2en');
+const sourceText = ref('');
+const targetText = ref('');
+const processing = ref(false);
+const error = ref('');
+const copied = ref(false);
+let requestController: AbortController | null = null;
+let copiedTimer: number | null = null;
+
+const sourceLanguage = computed(() => (direction.value === 'zh2en' ? '中文' : 'English'));
+const targetLanguage = computed(() => (direction.value === 'zh2en' ? 'English' : '中文'));
+
+async function requestTranslation(text: string, signal: AbortSignal): Promise<string> {
+  if (new TextEncoder().encode(text).length > 500) {
+    throw new Error('单次翻译原文不能超过 500 个 UTF-8 字节。');
   }
+
+  const endpoint = new URL('/get', 'https://api.mymemory.translated.net');
+  endpoint.searchParams.set('q', text);
+  endpoint.searchParams.set('langpair', direction.value === 'zh2en' ? 'zh-CN|en' : 'en|zh-CN');
+
+  const response = await fetch(endpoint, {
+    credentials: 'omit',
+    signal,
+  });
+  if (!response.ok) throw new Error(`翻译服务返回 HTTP ${response.status}。`);
+
+  const payload = (await response.json()) as TranslationResponse;
+  if (payload.responseStatus && payload.responseStatus !== 200) {
+    throw new Error(payload.responseDetails || `翻译服务返回状态 ${payload.responseStatus}。`);
+  }
+
+  const result = payload.responseData?.translatedText?.trim() ?? '';
+  if (!result) throw new Error('翻译服务没有返回有效结果。');
+  return result;
+}
+
+async function translate(): Promise<void> {
+  const text = sourceText.value.trim();
+  if (!text || processing.value) return;
+
+  requestController?.abort();
+  requestController = new AbortController();
+  const activeController = requestController;
+  const timeout = window.setTimeout(() => activeController.abort('timeout'), 15_000);
+
   processing.value = true;
+  error.value = '';
   try {
-    if (mode === 'translation') output.value = await translate();
-    else if (mode === 'convert') {
-      output.value =
-        direction.value === 's2t'
-          ? cnchar.convert.simpleToTrad(input.value)
-          : cnchar.convert.tradToSimple(input.value);
-    } else if (mode === 'stroke') {
-      const characters = Array.from(input.value.replace(/[^\p{Script=Han}]/gu, '')).slice(0, 20);
-      if (!characters.length) throw new Error('请输入汉字。');
-      const names = cnchar.stroke(characters.join(''), 'order', 'name') as string[][];
-      output.value = characters
-        .map(
-          (character, index) =>
-            `${character} · ${names[index]?.length ?? 0} 画\n${names[index]?.join(' → ') || '暂无笔顺数据'}`,
-        )
-        .join('\n\n');
-    } else {
-      const tone = pinyin(input.value, { toneType: 'symbol', type: 'array', nonZh: 'consecutive' });
-      const numbered = pinyin(input.value, {
-        toneType: 'num',
-        type: 'array',
-        nonZh: 'consecutive',
-      });
-      output.value = `带声调\n${tone.join(' ')}\n\n数字声调\n${numbered.join(' ')}`;
-    }
+    targetText.value = await requestTranslation(text, activeController.signal);
   } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : '语言处理失败。';
+    if (activeController.signal.aborted) error.value = '翻译超时，请稍后重试。';
+    else
+      error.value =
+        cause instanceof Error ? `翻译失败：${cause.message}` : '翻译失败，请稍后重试。';
   } finally {
+    window.clearTimeout(timeout);
+    if (requestController === activeController) requestController = null;
     processing.value = false;
   }
 }
 
-function speak(): void {
+function swapDirection(): void {
+  direction.value = direction.value === 'zh2en' ? 'en2zh' : 'zh2en';
+  if (targetText.value) {
+    sourceText.value = targetText.value;
+    targetText.value = '';
+  }
   error.value = '';
-  if (!input.value.trim()) {
-    error.value = '请输入需要朗读的中文。';
-    return;
-  }
-  if (!('speechSynthesis' in window)) {
-    error.value = '当前浏览器不支持语音合成。';
-    return;
-  }
-  speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(input.value);
-  utterance.lang = 'zh-CN';
-  utterance.rate = rate.value;
-  utterance.onerror = () => {
-    error.value = '浏览器语音播放失败。';
-  };
-  speechSynthesis.speak(utterance);
 }
 
-function stop(): void {
-  if ('speechSynthesis' in window) speechSynthesis.cancel();
+function handleKeydown(event: KeyboardEvent): void {
+  if (event.key !== 'Enter' || (!event.ctrlKey && !event.metaKey)) return;
+  event.preventDefault();
+  void translate();
+}
+
+async function copyResult(): Promise<void> {
+  if (!targetText.value) return;
+  try {
+    await navigator.clipboard.writeText(targetText.value);
+    copied.value = true;
+    error.value = '';
+    if (copiedTimer !== null) window.clearTimeout(copiedTimer);
+    copiedTimer = window.setTimeout(() => {
+      copied.value = false;
+      copiedTimer = null;
+    }, 1500);
+  } catch {
+    error.value = '复制失败，请手动选择译文复制。';
+  }
 }
 
 onBeforeUnmount(() => {
-  controller?.abort();
-  stop();
+  requestController?.abort();
+  if (copiedTimer !== null) window.clearTimeout(copiedTimer);
 });
 </script>
 
 <template>
-  <div class="tool-workspace-grid">
-    <ToolSection :title="title" :description="description">
-      <div class="tool-stack">
-        <ToolInput
-          v-model="input"
-          label="输入内容"
-          :placeholder="mode === 'stroke' ? '永字八法' : '输入要处理的文本'"
-        />
-        <div v-if="mode === 'translation'" class="tool-form-grid tool-form-grid--two">
-          <label class="tool-field"
-            ><span>源语言</span
-            ><select v-model="sourceLanguage">
-              <option value="zh-CN">中文</option>
-              <option value="en">英语</option>
-              <option value="ja">日语</option>
-              <option value="ko">韩语</option>
-              <option value="fr">法语</option>
-              <option value="de">德语</option>
-            </select></label
-          >
-          <label class="tool-field"
-            ><span>目标语言</span
-            ><select v-model="targetLanguage">
-              <option value="zh-CN">中文</option>
-              <option value="en">英语</option>
-              <option value="ja">日语</option>
-              <option value="ko">韩语</option>
-              <option value="fr">法语</option>
-              <option value="de">德语</option>
-            </select></label
-          >
-        </div>
-        <label v-if="mode === 'convert'" class="tool-field"
-          ><span>转换方向</span
-          ><select v-model="direction">
-            <option value="s2t">简体 → 繁体</option>
-            <option value="t2s">繁体 → 简体</option>
-          </select></label
-        >
-        <label v-if="mode === 'pronunciation'" class="tool-field"
-          ><span>朗读语速：{{ rate.toFixed(1) }}</span
-          ><input v-model.number="rate" type="range" min="0.5" max="2" step="0.1"
-        /></label>
-        <ToolActions>
-          <button
-            type="button"
-            class="tool-button tool-button--primary"
-            :disabled="processing"
-            @click="run"
-          >
-            <IconLanguage :size="16" aria-hidden="true" />{{
-              processing ? '处理中…' : mode === 'translation' ? '翻译' : '处理'
-            }}
-          </button>
-          <button
-            v-if="mode === 'pronunciation'"
-            type="button"
-            class="tool-button tool-button--secondary"
-            @click="speak"
-          >
-            <IconPlayerPlay :size="16" aria-hidden="true" />朗读
-          </button>
-          <button
-            v-if="mode === 'pronunciation'"
-            type="button"
-            class="tool-button tool-button--quiet"
-            @click="stop"
-          >
-            <IconPlayerStop :size="16" aria-hidden="true" />停止
-          </button>
-        </ToolActions>
-        <p v-if="error" class="tool-status tool-status--error" role="alert">{{ error }}</p>
+  <section class="tool-section" aria-label="翻译工作区">
+    <div class="tool-section__body translation-tool">
+      <div class="translation-tool__direction" aria-label="翻译方向">
+        <strong>{{ sourceLanguage }}</strong>
+        <button type="button" title="交换语言" aria-label="交换翻译语言" @click="swapDirection">
+          <IconArrowsExchange :size="19" aria-hidden="true" />
+        </button>
+        <strong>{{ targetLanguage }}</strong>
       </div>
-    </ToolSection>
-    <ToolOutput
-      :title="mode === 'translation' ? '翻译结果' : '处理结果'"
-      :value="output"
-      filename="language-result.txt"
-    />
-  </div>
+
+      <div class="translation-tool__columns">
+        <div class="translation-tool__column">
+          <span class="translation-tool__column-header">
+            <label for="translation-source">原文</label>
+            <small>{{ sourceText.length }} 字</small>
+          </span>
+          <textarea
+            id="translation-source"
+            v-model="sourceText"
+            placeholder="请输入要翻译的文字…"
+            :disabled="processing"
+            @keydown="handleKeydown"
+          ></textarea>
+        </div>
+
+        <div class="translation-tool__column">
+          <span class="translation-tool__column-header">
+            <label for="translation-target">译文</label>
+          </span>
+          <span class="translation-tool__output-wrap">
+            <textarea
+              id="translation-target"
+              :value="targetText"
+              class="translation-tool__output"
+              placeholder="翻译结果将显示在这里…"
+              readonly
+            ></textarea>
+            <button
+              type="button"
+              class="translation-tool__copy"
+              :class="{ 'is-copied': copied }"
+              :disabled="!targetText"
+              :title="copied ? '已复制' : '复制译文'"
+              :aria-label="copied ? '译文已复制' : '复制译文'"
+              @click="copyResult"
+            >
+              <IconCheck v-if="copied" :size="16" aria-hidden="true" />
+              <IconCopy v-else :size="16" aria-hidden="true" />
+            </button>
+          </span>
+        </div>
+      </div>
+
+      <p v-if="error" class="tool-status tool-status--error" role="alert">{{ error }}</p>
+
+      <button
+        type="button"
+        class="tool-button tool-button--primary translation-tool__submit"
+        :disabled="!sourceText.trim() || processing"
+        @click="translate"
+      >
+        <span v-if="processing" class="translation-tool__spinner" aria-hidden="true"></span>
+        <IconLanguage v-else :size="16" aria-hidden="true" />
+        {{ processing ? '翻译中…' : '翻译' }}
+      </button>
+      <p class="translation-tool__shortcut">Ctrl / Command + Enter 快速翻译</p>
+    </div>
+  </section>
 </template>
+
+<style scoped>
+.translation-tool {
+  display: grid;
+  gap: 14px;
+}
+
+.translation-tool__direction {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.translation-tool__direction strong {
+  min-width: 78px;
+  color: var(--tools-accent);
+  font-size: 13px;
+  text-align: center;
+}
+
+.translation-tool__direction strong:last-child {
+  color: #2563eb;
+}
+
+.translation-tool__direction button,
+.translation-tool__copy {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface-solid);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease,
+    transform 180ms ease;
+}
+
+.translation-tool__direction button:hover,
+.translation-tool__direction button:focus-visible {
+  border-color: var(--tools-accent);
+  outline: none;
+  color: var(--tools-accent);
+  transform: rotate(180deg);
+}
+
+.translation-tool__columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 12px;
+}
+
+.translation-tool__column {
+  display: grid;
+  min-width: 0;
+  grid-template-rows: auto minmax(220px, 1fr);
+  gap: 7px;
+}
+
+.translation-tool__column-header {
+  display: flex;
+  min-height: 18px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.translation-tool__column-header label {
+  color: var(--color-text);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.translation-tool__column-header small {
+  color: var(--color-text-muted);
+  font-size: 9px;
+}
+
+.translation-tool__column textarea {
+  width: 100%;
+  min-height: 220px;
+  padding: 12px 42px 12px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  outline: none;
+  resize: none;
+  background: var(--color-surface-solid);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.7;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.translation-tool__column:first-child textarea {
+  padding-right: 12px;
+}
+
+.translation-tool__column textarea:focus {
+  border-color: color-mix(in srgb, var(--tools-accent) 52%, var(--color-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tools-accent) 9%, transparent);
+}
+
+.translation-tool__output-wrap {
+  position: relative;
+  display: flex;
+  min-height: 0;
+}
+
+.translation-tool__output-wrap textarea {
+  height: 100%;
+}
+
+.translation-tool__column textarea.translation-tool__output {
+  background: color-mix(in srgb, var(--color-surface-soft) 72%, var(--color-surface-solid));
+}
+
+.translation-tool__copy {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  width: 30px;
+  height: 30px;
+}
+
+.translation-tool__copy:hover:not(:disabled),
+.translation-tool__copy:focus-visible:not(:disabled),
+.translation-tool__copy.is-copied {
+  border-color: var(--tools-accent);
+  outline: none;
+  background: var(--tools-accent);
+  color: #fff;
+}
+
+.translation-tool__copy:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.translation-tool__submit {
+  min-width: 120px;
+  margin: 0 auto;
+}
+
+.translation-tool__spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgb(255 255 255 / 42%);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: translation-spin 650ms linear infinite;
+}
+
+.translation-tool__shortcut {
+  margin: -8px 0 0;
+  color: var(--color-text-muted);
+  font-size: 9px;
+  text-align: center;
+}
+
+@keyframes translation-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 640px) {
+  .translation-tool__columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .translation-tool__column textarea {
+    min-height: 145px;
+  }
+
+  .translation-tool__column {
+    grid-template-rows: auto 145px;
+  }
+
+  .translation-tool__submit {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .translation-tool__direction button,
+  .translation-tool__copy {
+    transition: none;
+  }
+
+  .translation-tool__spinner {
+    animation-duration: 1.5s;
+  }
+}
+</style>

@@ -1,16 +1,6 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue';
-import {
-  IconDownload,
-  IconEraser,
-  IconLink,
-  IconLoader2,
-  IconPlayerPlay,
-  IconPlayerStop,
-  IconUser,
-} from '@tabler/icons-vue';
-import ToolActions from '@/features/tools/components/ToolActions.vue';
-import ToolSection from '@/features/tools/components/ToolSection.vue';
+import { computed, nextTick, onBeforeUnmount, ref } from 'vue';
+import { IconDownload, IconLoader2, IconPlayerPlay, IconUser } from '@tabler/icons-vue';
 import { downloadBlob } from '@/core/browser/download';
 
 interface ShortVideoAuthor {
@@ -42,9 +32,12 @@ const playingUrl = ref('');
 const error = ref('');
 const processing = ref(false);
 const downloadingUrl = ref('');
+const resultElement = ref<HTMLElement | null>(null);
+const playerElement = ref<HTMLElement | null>(null);
 let requestController: AbortController | null = null;
 let downloadController: AbortController | null = null;
 
+const canParse = computed(() => Boolean(input.value.trim()) && !processing.value);
 const hasAuthor = computed(() =>
   Boolean(result.value?.author?.name || result.value?.author?.avatar),
 );
@@ -135,6 +128,10 @@ function formatBitrate(bitrate: number): string {
   return `${bitrate} bps`;
 }
 
+function variantFormat(variant: ShortVideoVariant): string {
+  return [variant.format, variant.codec].filter(Boolean).join(' ') || '—';
+}
+
 function videoFilename(url: string, contentType: string, format = ''): string {
   const normalizedFormat = format.toLowerCase().replace(/[^a-z0-9]/gu, '');
   const typeExtension = contentType.match(/^video\/([a-z0-9.+-]+)/iu)?.[1]?.split('+')[0] ?? '';
@@ -146,12 +143,22 @@ function videoFilename(url: string, contentType: string, format = ''): string {
   return `video_${Date.now()}.${extension || 'mp4'}`;
 }
 
+function scrollTo(element: HTMLElement | null): void {
+  element?.scrollIntoView({
+    behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+    block: 'start',
+  });
+}
+
 async function parse(): Promise<void> {
+  if (processing.value) return;
   error.value = '';
   result.value = null;
   playingUrl.value = '';
+
   let shareUrl: string;
   try {
+    if (!input.value.trim()) throw new Error('请输入分享链接。');
     shareUrl = extractUrl(input.value);
     const parsedUrl = new URL(shareUrl);
     if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
@@ -167,6 +174,7 @@ async function parse(): Promise<void> {
   requestController = controller;
   processing.value = true;
   const timeout = window.setTimeout(() => controller.abort('timeout'), 15_000);
+
   try {
     const endpoint = new URL('/api/short_videos', 'https://api.bugpk.com');
     endpoint.searchParams.set('url', shareUrl);
@@ -176,18 +184,20 @@ async function parse(): Promise<void> {
       signal: controller.signal,
     });
     if (!response.ok) throw new Error(`解析服务返回 HTTP ${response.status}。`);
+
     const payload = (await response.json()) as {
       code?: number;
       msg?: string;
       data?: unknown;
     };
     if (payload.code !== 200) throw new Error(payload.msg || '解析失败，请稍后重试。');
-    const normalized = normalizeResult(payload.data);
-    result.value = normalized;
-    playingUrl.value = normalized.cover ? '' : normalized.url;
+
+    result.value = normalizeResult(payload.data);
+    await nextTick();
+    scrollTo(resultElement.value);
   } catch (cause) {
     if (controller.signal.aborted) {
-      if (!['clear', 'replace', 'unmount'].includes(String(controller.signal.reason))) {
+      if (!['replace', 'unmount'].includes(String(controller.signal.reason))) {
         error.value =
           controller.signal.reason === 'timeout' ? '请求超时，请检查网络后重试。' : '请求已取消。';
       }
@@ -203,19 +213,6 @@ async function parse(): Promise<void> {
   }
 }
 
-function cancel(): void {
-  requestController?.abort('cancel');
-}
-
-function clear(): void {
-  requestController?.abort('clear');
-  downloadController?.abort();
-  input.value = '';
-  result.value = null;
-  playingUrl.value = '';
-  error.value = '';
-}
-
 function handlePaste(): void {
   window.setTimeout(() => {
     try {
@@ -223,29 +220,33 @@ function handlePaste(): void {
     } catch {
       // 分享文本未包含 URL 时保留原始输入，交由解析操作提示。
     }
-  });
+  }, 50);
 }
 
 function handleInputKeydown(event: KeyboardEvent): void {
-  if (event.key === 'Enter' && !event.shiftKey) {
-    event.preventDefault();
-    if (!processing.value) void parse();
-  }
+  if (event.key !== 'Enter' || event.shiftKey) return;
+  event.preventDefault();
+  if (canParse.value) void parse();
 }
 
-function playVideo(url?: string): void {
+async function playVideo(url?: string): Promise<void> {
   const target = safeHttpUrl(url || result.value?.url);
-  if (target) playingUrl.value = target;
+  if (!target) return;
+  playingUrl.value = target;
+  await nextTick();
+  scrollTo(playerElement.value);
 }
 
 async function downloadVideo(url?: string, format = ''): Promise<void> {
   const target = safeHttpUrl(url || playingUrl.value || result.value?.url);
   if (!target || downloadingUrl.value) return;
+
   error.value = '';
   downloadController?.abort();
   const controller = new AbortController();
   downloadController = controller;
   downloadingUrl.value = target;
+
   try {
     const response = await fetch(target, {
       credentials: 'omit',
@@ -274,51 +275,44 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="tool-workspace-grid tool-workspace-grid--single video-parser">
-    <ToolSection title="短视频解析" description="粘贴公开短视频分享链接或含链接的分享文本。">
-      <div class="video-parser__input-row">
-        <label class="tool-field video-parser__input">
-          <span class="tool-field__label">分享链接</span>
-          <textarea
-            v-model="input"
-            rows="1"
-            placeholder="粘贴分享链接或含链接的文本…"
-            spellcheck="false"
-            @keydown="handleInputKeydown"
-            @paste="handlePaste"
-          ></textarea>
-        </label>
-        <button
-          type="button"
-          class="tool-button tool-button--primary video-parser__parse"
-          :disabled="processing"
-          @click="parse"
-        >
-          <IconLoader2 v-if="processing" class="video-parser__spinner" :size="16" />
-          <IconLink v-else :size="16" aria-hidden="true" />
-          {{ processing ? '解析中…' : '解析视频' }}
-        </button>
+  <div class="video-parser">
+    <section class="tool-section" aria-label="短视频解析工作区">
+      <div class="tool-section__body video-parser__input-panel">
+        <div class="video-parser__input-row">
+          <label class="video-parser__input">
+            <span class="tool-visually-hidden">分享链接</span>
+            <textarea
+              v-model="input"
+              rows="1"
+              placeholder="粘贴分享链接或含链接的文本…"
+              spellcheck="false"
+              @keydown="handleInputKeydown"
+              @paste="handlePaste"
+            ></textarea>
+          </label>
+          <button
+            type="button"
+            class="tool-button tool-button--primary video-parser__parse"
+            :disabled="!canParse"
+            @click="parse"
+          >
+            <IconLoader2 v-if="processing" class="video-parser__spinner" :size="16" />
+            <IconPlayerPlay v-else :size="16" aria-hidden="true" />
+            {{ processing ? '解析中…' : '解析' }}
+          </button>
+        </div>
+
+        <div v-if="processing" class="video-parser__loading" aria-live="polite" aria-busy="true">
+          <IconLoader2 class="video-parser__spinner" :size="18" aria-hidden="true" />
+          <span>解析中，请稍候…</span>
+        </div>
+        <p v-if="error" class="tool-status tool-status--error" role="alert">{{ error }}</p>
       </div>
+    </section>
 
-      <ToolActions>
-        <button
-          type="button"
-          class="tool-button tool-button--secondary"
-          :disabled="!processing"
-          @click="cancel"
-        >
-          <IconPlayerStop :size="16" aria-hidden="true" />取消
-        </button>
-        <button type="button" class="tool-button tool-button--danger" @click="clear">
-          <IconEraser :size="16" aria-hidden="true" />清空
-        </button>
-      </ToolActions>
-      <p v-if="error" class="tool-status tool-status--error" role="alert">{{ error }}</p>
-    </ToolSection>
-
-    <ToolSection v-if="result" title="解析结果" tone="output">
-      <div class="video-parser__result">
-        <div class="video-parser__media">
+    <section v-if="result" ref="resultElement" class="tool-section video-parser__result-card">
+      <div class="tool-section__body video-parser__result">
+        <div ref="playerElement" class="video-parser__media">
           <button
             v-if="result.cover && !playingUrl"
             type="button"
@@ -344,34 +338,35 @@ onBeforeUnmount(() => {
               referrerpolicy="no-referrer"
             ></iframe>
           </div>
-          <div v-else class="video-parser__media-empty">解析结果没有可用的封面预览</div>
+          <button v-else type="button" class="video-parser__media-empty" @click="playVideo()">
+            <IconPlayerPlay :size="24" aria-hidden="true" />
+            <span>没有可用封面，点击播放视频</span>
+          </button>
+        </div>
+
+        <div class="video-parser__download-bar">
+          <button
+            type="button"
+            class="tool-button tool-button--primary video-parser__download"
+            :disabled="Boolean(downloadingUrl)"
+            @click="downloadVideo()"
+          >
+            <IconLoader2
+              v-if="downloadingUrl === result.url"
+              class="video-parser__spinner"
+              :size="16"
+            />
+            <IconDownload v-else :size="16" aria-hidden="true" />
+            {{ downloadingUrl === result.url ? '下载中…' : '下载视频' }}
+          </button>
         </div>
 
         <div class="video-parser__details">
-          <div class="video-parser__heading">
-            <div>
-              <h3 v-if="result.title">{{ result.title }}</h3>
-              <p v-if="result.duration" class="video-parser__duration">
-                时长 {{ formatDuration(result.duration) }}
-              </p>
-            </div>
-            <button
-              type="button"
-              class="tool-button tool-button--primary"
-              :disabled="Boolean(downloadingUrl)"
-              @click="downloadVideo()"
-            >
-              <IconLoader2
-                v-if="downloadingUrl === result.url"
-                class="video-parser__spinner"
-                :size="16"
-              />
-              <IconDownload v-else :size="16" aria-hidden="true" />
-              {{ downloadingUrl === result.url ? '下载中…' : '下载视频' }}
-            </button>
-          </div>
-          <p v-if="result.description" class="video-parser__description">
-            {{ result.description }}
+          <h2>{{ result.title || '暂无标题' }}</h2>
+          <p class="video-parser__description">
+            <span v-if="result.duration">{{ formatDuration(result.duration) }}</span>
+            <span v-if="result.duration && result.description" aria-hidden="true"> · </span>
+            <span>{{ result.description || '暂无描述' }}</span>
           </p>
 
           <div v-if="hasAuthor && result.author" class="video-parser__author">
@@ -386,7 +381,7 @@ onBeforeUnmount(() => {
           </div>
 
           <section class="video-parser__variants" aria-labelledby="video-variants-title">
-            <h4 id="video-variants-title">备用画质</h4>
+            <h3 id="video-variants-title">备用画质</h3>
             <div class="video-parser__table-wrap">
               <table>
                 <thead>
@@ -400,20 +395,24 @@ onBeforeUnmount(() => {
                 <tbody>
                   <tr v-for="variant in result.variants" :key="variant.url">
                     <td>{{ variant.quality || '未知' }}</td>
-                    <td>{{ [variant.format, variant.codec].filter(Boolean).join(' ') || '—' }}</td>
+                    <td>{{ variantFormat(variant) }}</td>
                     <td>{{ formatBitrate(variant.bitrate) }}</td>
                     <td>
                       <div class="video-parser__variant-actions">
                         <button
                           type="button"
-                          class="tool-button tool-button--secondary"
+                          class="video-parser__variant-button"
+                          title="播放此画质"
+                          aria-label="播放此画质"
                           @click="playVideo(variant.url)"
                         >
-                          <IconPlayerPlay :size="14" aria-hidden="true" />播放
+                          <IconPlayerPlay :size="14" aria-hidden="true" />
                         </button>
                         <button
                           type="button"
-                          class="tool-button tool-button--secondary"
+                          class="video-parser__variant-button"
+                          title="下载此画质"
+                          aria-label="下载此画质"
                           :disabled="Boolean(downloadingUrl)"
                           @click="downloadVideo(variant.url, variant.format)"
                         >
@@ -422,7 +421,7 @@ onBeforeUnmount(() => {
                             class="video-parser__spinner"
                             :size="14"
                           />
-                          <IconDownload v-else :size="14" aria-hidden="true" />下载
+                          <IconDownload v-else :size="14" aria-hidden="true" />
                         </button>
                       </div>
                     </td>
@@ -436,79 +435,124 @@ onBeforeUnmount(() => {
           </section>
         </div>
       </div>
-    </ToolSection>
+    </section>
   </div>
 </template>
 
 <style scoped>
 .video-parser {
+  display: grid;
   gap: 14px;
+}
+
+.video-parser__input-panel {
+  display: grid;
+  gap: 12px;
 }
 
 .video-parser__input-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
+  align-items: center;
   gap: 10px;
 }
 
+.video-parser__input {
+  min-width: 0;
+}
+
 .video-parser__input textarea {
-  min-height: 44px;
+  display: block;
+  width: 100%;
   height: 44px;
-  padding-block: 11px;
+  padding: 11px 13px;
   overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  outline: none;
   resize: none;
-  font-family: inherit;
+  background: var(--color-surface-soft);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 12px;
   line-height: 20px;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.video-parser__input textarea:focus {
+  border-color: color-mix(in srgb, var(--tools-accent) 52%, var(--color-border));
+  background: var(--color-surface-solid);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tools-accent) 9%, transparent);
+}
+
+.video-parser__input textarea::placeholder {
+  color: var(--color-text-muted);
 }
 
 .video-parser__parse {
+  min-width: 96px;
   min-height: 44px;
   padding-inline: 18px;
+  border-radius: 22px;
+}
+
+.video-parser__loading {
+  display: flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: var(--color-text-muted);
+  font-size: 11px;
 }
 
 .video-parser__spinner {
   animation: video-parser-spin 0.8s linear infinite;
 }
 
+.video-parser__result-card {
+  scroll-margin-top: calc(var(--header-height) + 16px);
+}
+
 .video-parser__result {
   display: grid;
-  grid-template-columns: minmax(280px, 0.9fr) minmax(0, 1.1fr);
-  gap: 18px;
+  gap: 14px;
 }
 
 .video-parser__media {
   min-width: 0;
-}
-
-.video-parser__cover,
-.video-parser__player,
-.video-parser__media-empty {
-  position: relative;
-  display: grid;
-  width: 100%;
-  min-height: 360px;
-  padding: 0;
-  overflow: hidden;
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  place-items: center;
-  background: #000;
+  scroll-margin-top: calc(var(--header-height) + 16px);
 }
 
 .video-parser__cover {
+  position: relative;
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 10px;
+  margin-inline: auto;
+  background: #000;
   cursor: pointer;
 }
 
 .video-parser__cover img {
   display: block;
-  width: 100%;
-  max-height: 560px;
+  max-width: 100%;
+  max-height: 420px;
   object-fit: contain;
+  transition: opacity 160ms ease;
 }
 
 .video-parser__cover > span {
   position: absolute;
+  top: 50%;
+  left: 50%;
   display: grid;
   width: 64px;
   height: 64px;
@@ -516,67 +560,92 @@ onBeforeUnmount(() => {
   place-items: center;
   background: rgb(0 0 0 / 64%);
   color: #fff;
+  transform: translate(-50%, -50%);
   transition:
-    transform 160ms ease,
-    background 160ms ease;
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.video-parser__cover:hover img {
+  opacity: 0.86;
 }
 
 .video-parser__cover:hover > span {
-  background: rgb(0 0 0 / 78%);
-  transform: scale(1.05);
+  background: rgb(0 0 0 / 76%);
+  transform: translate(-50%, -50%) scale(1.05);
+}
+
+.video-parser__player {
+  overflow: hidden;
+  border-radius: 10px;
+  background: #000;
 }
 
 .video-parser__player iframe {
   display: block;
   width: 100%;
-  min-height: 560px;
+  height: 70vh;
+  min-height: 360px;
+  max-height: 600px;
   border: 0;
   background: #000;
 }
 
 .video-parser__media-empty {
+  display: grid;
+  width: 100%;
+  min-height: 220px;
   padding: 20px;
-  color: #aaa;
+  border: 1px dashed var(--color-border);
+  border-radius: 10px;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  background: var(--color-surface-soft);
+  color: var(--color-text-muted);
+  cursor: pointer;
   font-size: 11px;
-  text-align: center;
+}
+
+.video-parser__media-empty:hover {
+  border-color: color-mix(in srgb, var(--tools-accent) 48%, var(--color-border));
+  color: var(--tools-accent);
+}
+
+.video-parser__download-bar {
+  display: flex;
+  justify-content: center;
+}
+
+.video-parser__download {
+  min-height: 40px;
+  padding-inline: 18px;
+  border-radius: 20px;
 }
 
 .video-parser__details {
   display: grid;
   min-width: 0;
-  align-content: start;
-  gap: 14px;
+  gap: 12px;
 }
 
-.video-parser__heading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 14px;
-}
-
-.video-parser__heading h3 {
+.video-parser__details > h2 {
   margin: 0;
-  font-size: 18px;
-  line-height: 1.45;
+  font-size: 16px;
+  line-height: 1.5;
 }
 
-.video-parser__duration,
 .video-parser__description {
-  margin: 5px 0 0;
+  margin: 0;
   color: var(--color-text-muted);
   font-size: 11px;
   line-height: 1.65;
-}
-
-.video-parser__description {
-  margin: 0;
   white-space: pre-wrap;
 }
 
 .video-parser__author {
   display: flex;
-  min-height: 50px;
+  min-height: 52px;
   padding-block: 8px;
   border-top: 1px solid var(--color-border);
   border-bottom: 1px solid var(--color-border);
@@ -587,8 +656,8 @@ onBeforeUnmount(() => {
 .video-parser__author img,
 .video-parser__author > span {
   display: grid;
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   flex: 0 0 auto;
   border-radius: 50%;
   place-items: center;
@@ -601,7 +670,7 @@ onBeforeUnmount(() => {
   font-size: 12px;
 }
 
-.video-parser__variants h4 {
+.video-parser__variants h3 {
   margin: 0 0 9px;
   font-size: 12px;
 }
@@ -621,7 +690,7 @@ onBeforeUnmount(() => {
 
 .video-parser__variants th,
 .video-parser__variants td {
-  padding: 9px 8px;
+  padding: 10px 8px;
   border-bottom: 1px solid var(--color-border);
   text-align: center;
   word-break: break-word;
@@ -638,31 +707,51 @@ onBeforeUnmount(() => {
 }
 
 .video-parser__variants th:first-child {
-  width: 16%;
-}
-
-.video-parser__variants th:nth-child(2) {
-  width: 22%;
-}
-
-.video-parser__variants th:nth-child(3) {
   width: 18%;
 }
 
+.video-parser__variants th:nth-child(2) {
+  width: 24%;
+}
+
+.video-parser__variants th:nth-child(3) {
+  width: 22%;
+}
+
 .video-parser__variants th:last-child {
-  width: 44%;
+  width: 36%;
 }
 
 .video-parser__variant-actions {
   display: flex;
   justify-content: center;
-  gap: 5px;
+  gap: 6px;
 }
 
-.video-parser__variant-actions .tool-button {
-  min-height: 30px;
-  padding-inline: 8px;
-  font-size: 9px;
+.video-parser__variant-button {
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--tools-accent) 56%, var(--color-border));
+  border-radius: 50%;
+  place-items: center;
+  background: var(--tools-accent);
+  color: #fff;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    transform 150ms ease;
+}
+
+.video-parser__variant-button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--tools-accent) 86%, #000);
+  transform: translateY(-1px);
+}
+
+.video-parser__variant-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .video-parser__empty {
@@ -676,38 +765,26 @@ onBeforeUnmount(() => {
   }
 }
 
-@media (max-width: 980px) {
-  .video-parser__result {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .video-parser__cover,
-  .video-parser__player,
-  .video-parser__media-empty {
-    min-height: 300px;
-  }
-
-  .video-parser__player iframe {
-    min-height: 420px;
-  }
-}
-
 @media (max-width: 600px) {
   .video-parser__input-row {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .video-parser__heading {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .video-parser__heading .tool-button {
+  .video-parser__parse {
     width: 100%;
   }
 
+  .video-parser__cover img {
+    max-height: 300px;
+  }
+
+  .video-parser__player iframe {
+    height: 52vh;
+    min-height: 300px;
+  }
+
   .video-parser__variants table {
-    min-width: 520px;
+    min-width: 460px;
   }
 }
 </style>

@@ -1,226 +1,459 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue';
-import { IconLanguage, IconPlayerPlay, IconPlayerStop } from '@tabler/icons-vue';
-import cnchar from 'cnchar';
-import order from 'cnchar-order';
-import trad from 'cnchar-trad';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { IconPlayerStop, IconVolume2 } from '@tabler/icons-vue';
 import { pinyin } from 'pinyin-pro';
-import ToolActions from '@/features/tools/components/ToolActions.vue';
-import ToolInput from '@/features/tools/components/ToolInput.vue';
-import ToolOutput from '@/features/tools/components/ToolOutput.vue';
 import ToolSection from '@/features/tools/components/ToolSection.vue';
 
-const mode: 'translation' | 'convert' | 'pronunciation' | 'stroke' = 'pronunciation';
-cnchar.use(order, trad);
+interface PronunciationItem {
+  character: string;
+  pinyin: string;
+  isChinese: boolean;
+}
 
-const input = ref('');
-const output = ref('');
+const quickPhrases = ['你好世界', '中文发音', '恭喜发财', '大展宏图'];
+const inputText = ref('');
+const displayText = ref('');
+const speaking = ref(false);
 const error = ref('');
-const processing = ref(false);
-const direction = ref<'s2t' | 't2s'>('s2t');
-const sourceLanguage = ref('en');
-const targetLanguage = ref('zh-CN');
-const rate = ref(1);
-let controller: AbortController | null = null;
+const voiceInfo = ref('正在查找中文语音…');
+let currentUtterance: SpeechSynthesisUtterance | null = null;
+let preferredVoice: SpeechSynthesisVoice | null = null;
 
-const title = computed(
-  () =>
-    ({
-      translation: '在线翻译',
-      convert: '简繁转换',
-      pronunciation: '拼音与发音',
-      stroke: '汉字笔顺',
-    })[mode],
-);
-const description = computed(() => {
-  if (mode === 'translation') return '将文本发送到 MyMemory Translation，并显示翻译结果与匹配度。';
-  if (mode === 'pronunciation') return '生成带声调拼音，并使用浏览器语音朗读中文。';
-  if (mode === 'stroke') return '查询常用汉字的笔画名称与书写顺序。';
-  return '使用本地字库在简体中文与繁体中文之间转换。';
+const pronunciationItems = computed<PronunciationItem[]>(() => {
+  const characters = Array.from(displayText.value);
+  const pronunciations = pinyin(displayText.value, {
+    type: 'array',
+    toneType: 'symbol',
+    nonZh: 'removed',
+  });
+  let pronunciationIndex = 0;
+
+  return characters.map((character) => {
+    const isChinese = /\p{Script=Han}/u.test(character);
+    return {
+      character,
+      isChinese,
+      pinyin: isChinese ? (pronunciations[pronunciationIndex++] ?? '') : '',
+    };
+  });
 });
 
-async function translate(): Promise<string> {
-  if (new TextEncoder().encode(input.value).length > 500)
-    throw new Error('MyMemory 单次翻译原文不能超过 500 个 UTF-8 字节。');
-  controller?.abort();
-  controller = new AbortController();
-  const timeout = window.setTimeout(() => controller?.abort('timeout'), 15_000);
-  try {
-    const endpoint = new URL('/get', 'https://api.mymemory.translated.net');
-    endpoint.searchParams.set('q', input.value);
-    endpoint.searchParams.set('langpair', `${sourceLanguage.value}|${targetLanguage.value}`);
-    const response = await fetch(endpoint, { credentials: 'omit', signal: controller.signal });
-    if (!response.ok) throw new Error(`翻译服务返回 HTTP ${response.status}。`);
-    const payload = (await response.json()) as {
-      responseStatus?: number;
-      responseDetails?: string | null;
-      responseData?: { translatedText?: string; match?: number };
-    };
-    if (payload.responseStatus && payload.responseStatus !== 200)
-      throw new Error(payload.responseDetails || `翻译服务返回状态 ${payload.responseStatus}。`);
-    const translated = payload.responseData?.translatedText ?? '';
-    if (!translated) throw new Error('翻译服务没有返回有效结果。');
-    const match = payload.responseData?.match;
-    return `源语言：${sourceLanguage.value}\n目标语言：${targetLanguage.value}${typeof match === 'number' ? `\n匹配度：${Math.round(match * 100)}%` : ''}\n\n${translated}`;
-  } catch (cause) {
-    if (controller?.signal.aborted) throw new Error('翻译请求已取消或超时。');
-    throw cause;
-  } finally {
-    window.clearTimeout(timeout);
-    controller = null;
-  }
+function findChineseVoice(): SpeechSynthesisVoice | null {
+  const voices = window.speechSynthesis.getVoices();
+  return (
+    voices.find((voice) => /^(zh|cmn)/i.test(voice.lang) && voice.localService) ??
+    voices.find((voice) => /^(zh|cmn)/i.test(voice.lang)) ??
+    null
+  );
 }
 
-async function run(): Promise<void> {
-  error.value = '';
-  output.value = '';
-  if (!input.value.trim()) {
-    error.value = '请输入需要处理的内容。';
-    return;
-  }
-  processing.value = true;
-  try {
-    if (mode === 'translation') output.value = await translate();
-    else if (mode === 'convert') {
-      output.value =
-        direction.value === 's2t'
-          ? cnchar.convert.simpleToTrad(input.value)
-          : cnchar.convert.tradToSimple(input.value);
-    } else if (mode === 'stroke') {
-      const characters = Array.from(input.value.replace(/[^\p{Script=Han}]/gu, '')).slice(0, 20);
-      if (!characters.length) throw new Error('请输入汉字。');
-      const names = cnchar.stroke(characters.join(''), 'order', 'name') as string[][];
-      output.value = characters
-        .map(
-          (character, index) =>
-            `${character} · ${names[index]?.length ?? 0} 画\n${names[index]?.join(' → ') || '暂无笔顺数据'}`,
-        )
-        .join('\n\n');
-    } else {
-      const tone = pinyin(input.value, { toneType: 'symbol', type: 'array', nonZh: 'consecutive' });
-      const numbered = pinyin(input.value, {
-        toneType: 'num',
-        type: 'array',
-        nonZh: 'consecutive',
-      });
-      output.value = `带声调\n${tone.join(' ')}\n\n数字声调\n${numbered.join(' ')}`;
-    }
-  } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : '语言处理失败。';
-  } finally {
-    processing.value = false;
-  }
+function updateVoice(): void {
+  preferredVoice = findChineseVoice();
+  voiceInfo.value = preferredVoice
+    ? `语音：${preferredVoice.name || '中文'}`
+    : '未找到中文语音，将使用浏览器默认语音';
 }
 
-function speak(): void {
-  error.value = '';
-  if (!input.value.trim()) {
-    error.value = '请输入需要朗读的中文。';
-    return;
-  }
+function extractSpeechText(text: string): string {
+  return text.replace(/[^a-zA-Z0-9\p{Script=Han}\s.,!?;:，。！？；：·～~@#%&*()（）+\-=/]/gu, '');
+}
+
+function stopSpeaking(): void {
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  currentUtterance = null;
+  speaking.value = false;
+}
+
+function speak(text: string): void {
   if (!('speechSynthesis' in window)) {
     error.value = '当前浏览器不支持语音合成。';
     return;
   }
-  speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(input.value);
+
+  const speechText = extractSpeechText(text).trim();
+  if (!speechText) {
+    error.value = '请输入有效内容。';
+    return;
+  }
+
+  stopSpeaking();
+  error.value = '';
+
+  const utterance = new SpeechSynthesisUtterance(speechText);
   utterance.lang = 'zh-CN';
-  utterance.rate = rate.value;
-  utterance.onerror = () => {
-    error.value = '浏览器语音播放失败。';
+  utterance.rate = 1;
+  if (preferredVoice) utterance.voice = preferredVoice;
+  utterance.onstart = () => {
+    if (currentUtterance === utterance) speaking.value = true;
   };
-  speechSynthesis.speak(utterance);
+  utterance.onend = () => {
+    if (currentUtterance !== utterance) return;
+    currentUtterance = null;
+    speaking.value = false;
+  };
+  utterance.onerror = (event) => {
+    if (currentUtterance !== utterance) return;
+    currentUtterance = null;
+    speaking.value = false;
+    if (event.error !== 'canceled' && event.error !== 'interrupted') {
+      error.value = '浏览器语音播放失败。';
+    }
+  };
+
+  currentUtterance = utterance;
+  window.speechSynthesis.speak(utterance);
 }
 
-function stop(): void {
-  if ('speechSynthesis' in window) speechSynthesis.cancel();
+function handleSpeak(): void {
+  if (currentUtterance) {
+    stopSpeaking();
+    return;
+  }
+
+  const text = inputText.value.trim();
+  if (!text) {
+    error.value = '请输入内容。';
+    return;
+  }
+
+  displayText.value = text;
+  speak(text);
 }
+
+function useQuickPhrase(phrase: string): void {
+  inputText.value = phrase;
+  displayText.value = phrase;
+  speak(phrase);
+}
+
+function handleKeydown(event: KeyboardEvent): void {
+  if (event.key !== 'Enter') return;
+  event.preventDefault();
+  handleSpeak();
+}
+
+onMounted(() => {
+  if (!('speechSynthesis' in window)) {
+    voiceInfo.value = '当前浏览器不支持语音合成';
+    return;
+  }
+  updateVoice();
+  window.speechSynthesis.addEventListener('voiceschanged', updateVoice);
+});
 
 onBeforeUnmount(() => {
-  controller?.abort();
-  stop();
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.removeEventListener('voiceschanged', updateVoice);
+  }
+  stopSpeaking();
 });
 </script>
 
 <template>
-  <div class="tool-workspace-grid">
-    <ToolSection :title="title" :description="description">
-      <div class="tool-stack">
-        <ToolInput
-          v-model="input"
-          label="输入内容"
-          :placeholder="mode === 'stroke' ? '永字八法' : '输入要处理的文本'"
-        />
-        <div v-if="mode === 'translation'" class="tool-form-grid tool-form-grid--two">
-          <label class="tool-field"
-            ><span>源语言</span
-            ><select v-model="sourceLanguage">
-              <option value="zh-CN">中文</option>
-              <option value="en">英语</option>
-              <option value="ja">日语</option>
-              <option value="ko">韩语</option>
-              <option value="fr">法语</option>
-              <option value="de">德语</option>
-            </select></label
-          >
-          <label class="tool-field"
-            ><span>目标语言</span
-            ><select v-model="targetLanguage">
-              <option value="zh-CN">中文</option>
-              <option value="en">英语</option>
-              <option value="ja">日语</option>
-              <option value="ko">韩语</option>
-              <option value="fr">法语</option>
-              <option value="de">德语</option>
-            </select></label
-          >
-        </div>
-        <label v-if="mode === 'convert'" class="tool-field"
-          ><span>转换方向</span
-          ><select v-model="direction">
-            <option value="s2t">简体 → 繁体</option>
-            <option value="t2s">繁体 → 简体</option>
-          </select></label
+  <div class="pronunciation-tool">
+    <ToolSection title="汉字标准发音" description="查询逐字拼音，并使用浏览器中文语音朗读。">
+      <div class="pronunciation-tool__input-row">
+        <label class="pronunciation-tool__input">
+          <span class="sr-only">需要发音的内容</span>
+          <input
+            v-model="inputText"
+            type="text"
+            maxlength="200"
+            placeholder="请输入中文、英文或数字"
+            @keydown="handleKeydown"
+          />
+        </label>
+        <button
+          type="button"
+          class="tool-button tool-button--primary pronunciation-tool__speak"
+          @click="handleSpeak"
         >
-        <label v-if="mode === 'pronunciation'" class="tool-field"
-          ><span>朗读语速：{{ rate.toFixed(1) }}</span
-          ><input v-model.number="rate" type="range" min="0.5" max="2" step="0.1"
-        /></label>
-        <ToolActions>
+          <IconPlayerStop v-if="speaking" :size="16" aria-hidden="true" />
+          <IconVolume2 v-else :size="16" aria-hidden="true" />
+          {{ speaking ? '停止' : '发音' }}
+        </button>
+      </div>
+
+      <div class="pronunciation-tool__quick-list">
+        <span>试试：</span>
+        <button
+          v-for="phrase in quickPhrases"
+          :key="phrase"
+          type="button"
+          @click="useQuickPhrase(phrase)"
+        >
+          {{ phrase }}
+        </button>
+      </div>
+
+      <p v-if="error" class="tool-status tool-status--error" role="alert">{{ error }}</p>
+    </ToolSection>
+
+    <ToolSection
+      v-if="displayText"
+      id="pronunciation-result"
+      title="拼音与发音"
+      description="点击单个汉字可单独朗读。"
+      tone="output"
+    >
+      <div class="pronunciation-tool__result">
+        <template v-for="(item, index) in pronunciationItems" :key="`${item.character}-${index}`">
           <button
+            v-if="item.isChinese"
             type="button"
-            class="tool-button tool-button--primary"
-            :disabled="processing"
-            @click="run"
+            class="pronunciation-tool__item"
+            :title="`点击朗读「${item.character}」`"
+            :aria-label="`${item.character}，拼音 ${item.pinyin}，点击朗读`"
+            @click="speak(item.character)"
           >
-            <IconLanguage :size="16" aria-hidden="true" />{{
-              processing ? '处理中…' : mode === 'translation' ? '翻译' : '处理'
-            }}
+            <strong>{{ item.character }}</strong>
+            <span>{{ item.pinyin }}</span>
+            <small>点击朗读</small>
           </button>
-          <button
-            v-if="mode === 'pronunciation'"
-            type="button"
-            class="tool-button tool-button--secondary"
-            @click="speak"
-          >
-            <IconPlayerPlay :size="16" aria-hidden="true" />朗读
-          </button>
-          <button
-            v-if="mode === 'pronunciation'"
-            type="button"
-            class="tool-button tool-button--quiet"
-            @click="stop"
-          >
-            <IconPlayerStop :size="16" aria-hidden="true" />停止
-          </button>
-        </ToolActions>
-        <p v-if="error" class="tool-status tool-status--error" role="alert">{{ error }}</p>
+          <div v-else class="pronunciation-tool__item pronunciation-tool__item--plain">
+            <strong>{{ item.character }}</strong>
+          </div>
+        </template>
+      </div>
+
+      <div class="pronunciation-tool__status">
+        <span v-if="speaking" class="pronunciation-tool__indicator" role="status">
+          <i></i><i></i><i></i>朗读中…
+        </span>
+        <span v-else></span>
+        <small>{{ voiceInfo }}</small>
       </div>
     </ToolSection>
-    <ToolOutput
-      :title="mode === 'translation' ? '翻译结果' : '处理结果'"
-      :value="output"
-      filename="language-result.txt"
-    />
   </div>
 </template>
+
+<style scoped>
+.pronunciation-tool {
+  display: grid;
+  gap: 14px;
+}
+
+.pronunciation-tool__input-row {
+  display: flex;
+  gap: 10px;
+}
+
+.pronunciation-tool__input {
+  flex: 1;
+}
+
+.pronunciation-tool__input input {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  outline: none;
+  background: var(--color-surface-solid);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 12px;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.pronunciation-tool__input input:focus {
+  border-color: color-mix(in srgb, var(--tools-accent) 52%, var(--color-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tools-accent) 9%, transparent);
+}
+
+.pronunciation-tool__speak {
+  min-width: 98px;
+}
+
+.pronunciation-tool__quick-list {
+  display: flex;
+  margin-top: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+
+.pronunciation-tool__quick-list > span {
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.pronunciation-tool__quick-list button {
+  min-height: 29px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: var(--color-surface-soft);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.pronunciation-tool__quick-list button:hover,
+.pronunciation-tool__quick-list button:focus-visible {
+  border-color: var(--tools-accent);
+  outline: none;
+  background: var(--tools-accent);
+  color: #fff;
+}
+
+.pronunciation-tool__result {
+  display: flex;
+  min-height: 96px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--tools-accent) 20%, var(--color-border));
+  border-radius: 11px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px 14px;
+  background: color-mix(in srgb, var(--tools-accent) 6%, var(--color-surface-solid));
+}
+
+.pronunciation-tool__item {
+  display: flex;
+  min-width: 58px;
+  min-height: 76px;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 9px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  font: inherit;
+  transition: background-color 150ms ease;
+}
+
+.pronunciation-tool__item:hover,
+.pronunciation-tool__item:focus-visible {
+  outline: none;
+  background: color-mix(in srgb, var(--tools-accent) 11%, transparent);
+}
+
+.pronunciation-tool__item strong {
+  font-size: 23px;
+  line-height: 1.15;
+  white-space: pre;
+}
+
+.pronunciation-tool__item span {
+  color: var(--tools-accent);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.pronunciation-tool__item small {
+  color: var(--color-text-muted);
+  font-size: 8px;
+}
+
+.pronunciation-tool__item--plain {
+  min-width: auto;
+  cursor: default;
+}
+
+.pronunciation-tool__item--plain strong {
+  color: var(--color-text-muted);
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.pronunciation-tool__status {
+  display: flex;
+  min-height: 28px;
+  padding-top: 9px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.pronunciation-tool__status small {
+  color: var(--color-text-muted);
+  font-size: 9px;
+}
+
+.pronunciation-tool__indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--tools-accent);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.pronunciation-tool__indicator i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  animation: pronunciation-pulse 800ms ease-in-out infinite;
+  background: var(--tools-accent);
+}
+
+.pronunciation-tool__indicator i:nth-child(2) {
+  animation-delay: 160ms;
+}
+
+.pronunciation-tool__indicator i:nth-child(3) {
+  animation-delay: 320ms;
+}
+
+@keyframes pronunciation-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.8);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+@media (max-width: 600px) {
+  .pronunciation-tool__input-row {
+    flex-direction: column;
+  }
+
+  .pronunciation-tool__speak {
+    width: 100%;
+  }
+
+  .pronunciation-tool__result {
+    padding: 10px;
+    gap: 7px;
+  }
+
+  .pronunciation-tool__item {
+    min-width: 52px;
+    min-height: 68px;
+    padding: 6px;
+  }
+
+  .pronunciation-tool__item strong {
+    font-size: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pronunciation-tool__quick-list button,
+  .pronunciation-tool__item {
+    transition: none;
+  }
+
+  .pronunciation-tool__indicator i {
+    animation: none;
+  }
+}
+</style>

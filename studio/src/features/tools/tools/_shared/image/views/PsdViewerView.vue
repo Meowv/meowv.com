@@ -554,7 +554,6 @@ onBeforeUnmount(() => {
       <div v-if="status === 'idle' || status === 'error'" class="psd-viewer__empty">
         <p v-if="status === 'error'" class="psd-viewer__error" role="alert">{{ message }}</p>
         <ImageDropzone
-          class="mx-auto w-full max-w-4xl"
           accept=".psd,image/vnd.adobe.photoshop"
           description="支持 Photoshop PSD，默认最大 200 MB / 60 MP"
           :multiple="false"

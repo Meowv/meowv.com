@@ -1193,8 +1193,8 @@ onBeforeUnmount(() => {
 .answer-book {
   position: relative;
   z-index: 1;
-  width: min(96%, 620px);
-  height: 260px;
+  width: min(96%, 682px);
+  height: 286px;
   outline: none;
   perspective: 1800px;
   cursor: pointer;

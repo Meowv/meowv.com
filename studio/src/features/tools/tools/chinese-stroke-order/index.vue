@@ -1,226 +1,390 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue';
-import { IconLanguage, IconPlayerPlay, IconPlayerStop } from '@tabler/icons-vue';
+import { ref } from 'vue';
+import { IconRefresh, IconSearch } from '@tabler/icons-vue';
 import cnchar from 'cnchar';
 import order from 'cnchar-order';
-import trad from 'cnchar-trad';
-import { pinyin } from 'pinyin-pro';
-import ToolActions from '@/features/tools/components/ToolActions.vue';
-import ToolInput from '@/features/tools/components/ToolInput.vue';
-import ToolOutput from '@/features/tools/components/ToolOutput.vue';
 import ToolSection from '@/features/tools/components/ToolSection.vue';
 
-const mode: 'translation' | 'convert' | 'pronunciation' | 'stroke' = 'stroke';
-cnchar.use(order, trad);
+interface StrokeItem {
+  shape: string;
+  name: string;
+}
 
-const input = ref('');
-const output = ref('');
+interface CharacterStrokeResult {
+  character: string;
+  strokes: StrokeItem[];
+}
+
+cnchar.use(order);
+
+const quickCharacters = ['你', '好', '世', '界'];
+const inputText = ref('');
+const results = ref<CharacterStrokeResult[]>([]);
 const error = ref('');
-const processing = ref(false);
-const direction = ref<'s2t' | 't2s'>('s2t');
-const sourceLanguage = ref('en');
-const targetLanguage = ref('zh-CN');
-const rate = ref(1);
-let controller: AbortController | null = null;
+const animationRun = ref(0);
 
-const title = computed(
-  () =>
-    ({
-      translation: '在线翻译',
-      convert: '简繁转换',
-      pronunciation: '拼音与发音',
-      stroke: '汉字笔顺',
-    })[mode],
-);
-const description = computed(() => {
-  if (mode === 'translation') return '将文本发送到 MyMemory Translation，并显示翻译结果与匹配度。';
-  if (mode === 'pronunciation') return '生成带声调拼音，并使用浏览器语音朗读中文。';
-  if (mode === 'stroke') return '查询常用汉字的笔画名称与书写顺序。';
-  return '使用本地字库在简体中文与繁体中文之间转换。';
-});
+function normalizeStrokeValue(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => String(item));
+}
 
-async function translate(): Promise<string> {
-  if (new TextEncoder().encode(input.value).length > 500)
-    throw new Error('MyMemory 单次翻译原文不能超过 500 个 UTF-8 字节。');
-  controller?.abort();
-  controller = new AbortController();
-  const timeout = window.setTimeout(() => controller?.abort('timeout'), 15_000);
+function queryStroke(): void {
+  const characters = Array.from(inputText.value)
+    .filter((character) => /\p{Script=Han}/u.test(character))
+    .slice(0, 20);
+
+  if (!inputText.value.trim()) {
+    error.value = '请输入要查询的汉字。';
+    results.value = [];
+    return;
+  }
+  if (!characters.length) {
+    error.value = '请输入有效的汉字。';
+    results.value = [];
+    return;
+  }
+
   try {
-    const endpoint = new URL('/get', 'https://api.mymemory.translated.net');
-    endpoint.searchParams.set('q', input.value);
-    endpoint.searchParams.set('langpair', `${sourceLanguage.value}|${targetLanguage.value}`);
-    const response = await fetch(endpoint, { credentials: 'omit', signal: controller.signal });
-    if (!response.ok) throw new Error(`翻译服务返回 HTTP ${response.status}。`);
-    const payload = (await response.json()) as {
-      responseStatus?: number;
-      responseDetails?: string | null;
-      responseData?: { translatedText?: string; match?: number };
-    };
-    if (payload.responseStatus && payload.responseStatus !== 200)
-      throw new Error(payload.responseDetails || `翻译服务返回状态 ${payload.responseStatus}。`);
-    const translated = payload.responseData?.translatedText ?? '';
-    if (!translated) throw new Error('翻译服务没有返回有效结果。');
-    const match = payload.responseData?.match;
-    return `源语言：${sourceLanguage.value}\n目标语言：${targetLanguage.value}${typeof match === 'number' ? `\n匹配度：${Math.round(match * 100)}%` : ''}\n\n${translated}`;
+    const text = characters.join('');
+    const shapes = cnchar.stroke(text, 'order', 'shape') as unknown[];
+    const names = cnchar.stroke(text, 'order', 'name') as unknown[];
+    results.value = characters.map((character, characterIndex) => {
+      const characterShapes = normalizeStrokeValue(shapes[characterIndex]);
+      const characterNames = normalizeStrokeValue(names[characterIndex]);
+      return {
+        character,
+        strokes: characterShapes.map((shape, strokeIndex) => ({
+          shape: shape.split('|')[0] ?? shape,
+          name: characterNames[strokeIndex] ?? '未知笔画',
+        })),
+      };
+    });
+    error.value = '';
+    animationRun.value += 1;
   } catch (cause) {
-    if (controller?.signal.aborted) throw new Error('翻译请求已取消或超时。');
-    throw cause;
-  } finally {
-    window.clearTimeout(timeout);
-    controller = null;
+    results.value = [];
+    error.value = cause instanceof Error ? `查询失败：${cause.message}` : '查询笔顺失败。';
   }
 }
 
-async function run(): Promise<void> {
-  error.value = '';
-  output.value = '';
-  if (!input.value.trim()) {
-    error.value = '请输入需要处理的内容。';
-    return;
-  }
-  processing.value = true;
-  try {
-    if (mode === 'translation') output.value = await translate();
-    else if (mode === 'convert') {
-      output.value =
-        direction.value === 's2t'
-          ? cnchar.convert.simpleToTrad(input.value)
-          : cnchar.convert.tradToSimple(input.value);
-    } else if (mode === 'stroke') {
-      const characters = Array.from(input.value.replace(/[^\p{Script=Han}]/gu, '')).slice(0, 20);
-      if (!characters.length) throw new Error('请输入汉字。');
-      const names = cnchar.stroke(characters.join(''), 'order', 'name') as string[][];
-      output.value = characters
-        .map(
-          (character, index) =>
-            `${character} · ${names[index]?.length ?? 0} 画\n${names[index]?.join(' → ') || '暂无笔顺数据'}`,
-        )
-        .join('\n\n');
-    } else {
-      const tone = pinyin(input.value, { toneType: 'symbol', type: 'array', nonZh: 'consecutive' });
-      const numbered = pinyin(input.value, {
-        toneType: 'num',
-        type: 'array',
-        nonZh: 'consecutive',
-      });
-      output.value = `带声调\n${tone.join(' ')}\n\n数字声调\n${numbered.join(' ')}`;
-    }
-  } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : '语言处理失败。';
-  } finally {
-    processing.value = false;
-  }
+function useQuickCharacter(character: string): void {
+  inputText.value = character;
+  queryStroke();
 }
 
-function speak(): void {
-  error.value = '';
-  if (!input.value.trim()) {
-    error.value = '请输入需要朗读的中文。';
-    return;
-  }
-  if (!('speechSynthesis' in window)) {
-    error.value = '当前浏览器不支持语音合成。';
-    return;
-  }
-  speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(input.value);
-  utterance.lang = 'zh-CN';
-  utterance.rate = rate.value;
-  utterance.onerror = () => {
-    error.value = '浏览器语音播放失败。';
-  };
-  speechSynthesis.speak(utterance);
+function replay(): void {
+  animationRun.value += 1;
 }
 
-function stop(): void {
-  if ('speechSynthesis' in window) speechSynthesis.cancel();
+function handleKeydown(event: KeyboardEvent): void {
+  if (event.key !== 'Enter') return;
+  event.preventDefault();
+  queryStroke();
 }
-
-onBeforeUnmount(() => {
-  controller?.abort();
-  stop();
-});
 </script>
 
 <template>
-  <div class="tool-workspace-grid">
-    <ToolSection :title="title" :description="description">
-      <div class="tool-stack">
-        <ToolInput
-          v-model="input"
-          label="输入内容"
-          :placeholder="mode === 'stroke' ? '永字八法' : '输入要处理的文本'"
-        />
-        <div v-if="mode === 'translation'" class="tool-form-grid tool-form-grid--two">
-          <label class="tool-field"
-            ><span>源语言</span
-            ><select v-model="sourceLanguage">
-              <option value="zh-CN">中文</option>
-              <option value="en">英语</option>
-              <option value="ja">日语</option>
-              <option value="ko">韩语</option>
-              <option value="fr">法语</option>
-              <option value="de">德语</option>
-            </select></label
-          >
-          <label class="tool-field"
-            ><span>目标语言</span
-            ><select v-model="targetLanguage">
-              <option value="zh-CN">中文</option>
-              <option value="en">英语</option>
-              <option value="ja">日语</option>
-              <option value="ko">韩语</option>
-              <option value="fr">法语</option>
-              <option value="de">德语</option>
-            </select></label
-          >
-        </div>
-        <label v-if="mode === 'convert'" class="tool-field"
-          ><span>转换方向</span
-          ><select v-model="direction">
-            <option value="s2t">简体 → 繁体</option>
-            <option value="t2s">繁体 → 简体</option>
-          </select></label
+  <div class="stroke-order-tool">
+    <ToolSection title="汉字笔顺" description="查询汉字的标准笔画名称与书写顺序。">
+      <div class="stroke-order-tool__input-row">
+        <label class="stroke-order-tool__input">
+          <span class="sr-only">要查询笔顺的汉字</span>
+          <input
+            v-model="inputText"
+            type="text"
+            maxlength="20"
+            placeholder="请输入要查询的汉字（支持多个汉字）"
+            @keydown="handleKeydown"
+          />
+        </label>
+        <button
+          type="button"
+          class="tool-button tool-button--primary stroke-order-tool__query"
+          @click="queryStroke"
         >
-        <label v-if="mode === 'pronunciation'" class="tool-field"
-          ><span>朗读语速：{{ rate.toFixed(1) }}</span
-          ><input v-model.number="rate" type="range" min="0.5" max="2" step="0.1"
-        /></label>
-        <ToolActions>
-          <button
-            type="button"
-            class="tool-button tool-button--primary"
-            :disabled="processing"
-            @click="run"
-          >
-            <IconLanguage :size="16" aria-hidden="true" />{{
-              processing ? '处理中…' : mode === 'translation' ? '翻译' : '处理'
-            }}
-          </button>
-          <button
-            v-if="mode === 'pronunciation'"
-            type="button"
-            class="tool-button tool-button--secondary"
-            @click="speak"
-          >
-            <IconPlayerPlay :size="16" aria-hidden="true" />朗读
-          </button>
-          <button
-            v-if="mode === 'pronunciation'"
-            type="button"
-            class="tool-button tool-button--quiet"
-            @click="stop"
-          >
-            <IconPlayerStop :size="16" aria-hidden="true" />停止
-          </button>
-        </ToolActions>
-        <p v-if="error" class="tool-status tool-status--error" role="alert">{{ error }}</p>
+          <IconSearch :size="16" aria-hidden="true" />查询笔顺
+        </button>
+      </div>
+
+      <div class="stroke-order-tool__quick-list">
+        <span>快速选择：</span>
+        <button
+          v-for="character in quickCharacters"
+          :key="character"
+          type="button"
+          @click="useQuickCharacter(character)"
+        >
+          {{ character }}
+        </button>
+      </div>
+
+      <p v-if="error" class="tool-status tool-status--error" role="alert">{{ error }}</p>
+    </ToolSection>
+
+    <ToolSection
+      v-if="results.length"
+      title="笔顺与书写演示"
+      description="笔画按书写顺序依次呈现。"
+      tone="output"
+    >
+      <template #actions>
+        <button type="button" class="tool-button tool-button--secondary" @click="replay">
+          <IconRefresh :size="15" aria-hidden="true" />重新演示
+        </button>
+      </template>
+
+      <div :key="animationRun" class="stroke-order-tool__results">
+        <article
+          v-for="(result, resultIndex) in results"
+          :key="`${result.character}-${resultIndex}`"
+          class="stroke-order-tool__character"
+        >
+          <header>
+            <strong>{{ result.character }}</strong>
+            <span>{{ result.strokes.length ? `${result.strokes.length} 画` : '暂无数据' }}</span>
+          </header>
+
+          <ol v-if="result.strokes.length" class="stroke-order-tool__sequence">
+            <li
+              v-for="(stroke, index) in result.strokes"
+              :key="`${result.character}-${index}`"
+              :style="{ '--stroke-delay': `${index * 90}ms` }"
+              :aria-label="`第 ${index + 1} 画，${stroke.name}`"
+            >
+              <small>{{ index + 1 }}</small>
+              <b aria-hidden="true">{{ stroke.shape }}</b>
+              <span>{{ stroke.name }}</span>
+            </li>
+          </ol>
+          <p v-else>笔顺库暂未收录该汉字。</p>
+        </article>
       </div>
     </ToolSection>
-    <ToolOutput
-      :title="mode === 'translation' ? '翻译结果' : '处理结果'"
-      :value="output"
-      filename="language-result.txt"
-    />
   </div>
 </template>
+
+<style scoped>
+.stroke-order-tool {
+  display: grid;
+  gap: 14px;
+}
+
+.stroke-order-tool__input-row {
+  display: flex;
+  gap: 10px;
+}
+
+.stroke-order-tool__input {
+  flex: 1;
+}
+
+.stroke-order-tool__input input {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  outline: none;
+  background: var(--color-surface-solid);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 12px;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.stroke-order-tool__input input:focus {
+  border-color: color-mix(in srgb, var(--tools-accent) 52%, var(--color-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tools-accent) 9%, transparent);
+}
+
+.stroke-order-tool__query {
+  min-width: 112px;
+}
+
+.stroke-order-tool__quick-list {
+  display: flex;
+  margin-top: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+
+.stroke-order-tool__quick-list > span {
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.stroke-order-tool__quick-list button {
+  min-width: 32px;
+  min-height: 29px;
+  padding: 0 9px;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: var(--color-surface-soft);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.stroke-order-tool__quick-list button:hover,
+.stroke-order-tool__quick-list button:focus-visible {
+  border-color: var(--tools-accent);
+  outline: none;
+  background: var(--tools-accent);
+  color: #fff;
+}
+
+.stroke-order-tool__results {
+  display: grid;
+  gap: 12px;
+}
+
+.stroke-order-tool__character {
+  display: grid;
+  padding: 13px;
+  border: 1px solid var(--color-border);
+  border-radius: 11px;
+  grid-template-columns: 76px minmax(0, 1fr);
+  align-items: start;
+  gap: 13px;
+  background: var(--color-surface-solid);
+}
+
+.stroke-order-tool__character header {
+  display: grid;
+  min-height: 74px;
+  border-right: 1px solid var(--color-border);
+  place-items: center;
+  align-content: center;
+  gap: 4px;
+}
+
+.stroke-order-tool__character header strong {
+  color: var(--tools-accent);
+  font-size: 34px;
+  line-height: 1;
+}
+
+.stroke-order-tool__character header span,
+.stroke-order-tool__character > p {
+  color: var(--color-text-muted);
+  font-size: 9px;
+}
+
+.stroke-order-tool__character > p {
+  margin: 27px 0 0;
+}
+
+.stroke-order-tool__sequence {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+}
+
+.stroke-order-tool__sequence li {
+  position: relative;
+  display: grid;
+  width: 66px;
+  min-height: 74px;
+  padding: 7px 5px 5px;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  place-items: center;
+  align-content: center;
+  gap: 2px;
+  opacity: 0;
+  background: var(--color-surface-soft);
+  animation: stroke-order-enter 360ms ease-out forwards;
+  animation-delay: var(--stroke-delay);
+}
+
+.stroke-order-tool__sequence li small {
+  position: absolute;
+  top: 5px;
+  left: 6px;
+  display: grid;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  place-items: center;
+  background: color-mix(in srgb, var(--tools-accent) 12%, var(--color-surface-solid));
+  color: var(--tools-accent);
+  font-size: 8px;
+  font-weight: 750;
+}
+
+.stroke-order-tool__sequence li b {
+  color: var(--color-text);
+  font-size: 25px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.stroke-order-tool__sequence li span {
+  overflow: hidden;
+  max-width: 100%;
+  color: var(--color-text-muted);
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@keyframes stroke-order-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 600px) {
+  .stroke-order-tool__input-row {
+    flex-direction: column;
+  }
+
+  .stroke-order-tool__query {
+    width: 100%;
+  }
+
+  .stroke-order-tool__character {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .stroke-order-tool__character header {
+    min-height: 60px;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .stroke-order-tool__sequence li {
+    width: 58px;
+    min-height: 68px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stroke-order-tool__quick-list button {
+    transition: none;
+  }
+
+  .stroke-order-tool__sequence li {
+    opacity: 1;
+    animation: none;
+  }
+}
+</style>

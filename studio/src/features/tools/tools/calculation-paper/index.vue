@@ -16,6 +16,7 @@ interface LineResult {
 
 const STORAGE_KEY = `${STORAGE_POLICY.preferences}:calculation-paper-draft`;
 const input = ref('');
+const inputElement = ref<HTMLTextAreaElement | null>(null);
 const saveStatus = ref('草稿仅保存在当前浏览器');
 const saveError = ref(false);
 let ready = false;
@@ -184,6 +185,13 @@ const total = computed(() =>
   validResults.value.reduce((sum, item) => sum + (item.result.valid ? item.result.value : 0), 0),
 );
 
+function resizeInput(): void {
+  const element = inputElement.value;
+  if (!element) return;
+  element.style.height = 'auto';
+  element.style.height = `${element.scrollHeight + element.offsetHeight - element.clientHeight}px`;
+}
+
 function setSaveStatus(text: string, isError = false): void {
   saveStatus.value = text;
   saveError.value = isError;
@@ -221,13 +229,18 @@ function clearDraft(): void {
   }
 }
 
-watch(input, () => {
-  if (skipNextSave) {
-    skipNextSave = false;
-    return;
-  }
-  if (ready) queueSave();
-});
+watch(
+  input,
+  () => {
+    resizeInput();
+    if (skipNextSave) {
+      skipNextSave = false;
+      return;
+    }
+    if (ready) queueSave();
+  },
+  { flush: 'post' },
+);
 
 onMounted(() => {
   try {
@@ -240,6 +253,7 @@ onMounted(() => {
   } catch {
     setSaveStatus('浏览器无法读取草稿', true);
   }
+  resizeInput();
   ready = true;
 });
 
@@ -266,6 +280,7 @@ onBeforeUnmount(() => {
           <span>每行独立计算</span>
         </header>
         <textarea
+          ref="inputElement"
           v-model="input"
           class="calculation-paper__input"
           spellcheck="false"
@@ -352,9 +367,12 @@ onBeforeUnmount(() => {
   gap: 16px;
 }
 .calculation-paper__column {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
 }
 .calculation-paper__column-head {
+  flex: 0 0 auto;
   min-height: 32px;
   margin-bottom: 8px;
 }
@@ -364,8 +382,10 @@ onBeforeUnmount(() => {
 }
 .calculation-paper__input,
 .calculation-paper__result-panel {
+  flex: 1 1 auto;
   width: 100%;
   min-height: 360px;
+  box-sizing: border-box;
   border: 1px solid var(--color-border);
   border-radius: 10px;
   background: var(--color-surface-soft);
@@ -373,6 +393,7 @@ onBeforeUnmount(() => {
 .calculation-paper__input {
   display: block;
   padding: 14px 16px;
+  overflow-y: hidden;
   outline: none;
   color: var(--color-text);
   box-sizing: border-box;
@@ -392,6 +413,8 @@ onBeforeUnmount(() => {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--tools-accent) 10%, transparent);
 }
 .calculation-paper__result-panel {
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 .calculation-paper__summary {
@@ -474,7 +497,8 @@ onBeforeUnmount(() => {
 }
 .calculation-paper__empty {
   display: grid;
-  min-height: 300px;
+  flex: 1;
+  min-height: 0;
   place-items: center;
   align-content: center;
   gap: 10px;
