@@ -9,7 +9,7 @@ const props = withDefaults(defineProps<{ tool: ToolConfig; compact?: boolean }>(
 });
 
 const category = computed(() => toolCategoryMap.get(props.tool.category));
-const accentStyle = computed(() => ({ '--tool-accent': category.value?.accent }));
+const accentStyle = computed(() => ({ '--tool-accent': category.value?.color }));
 </script>
 
 <template>

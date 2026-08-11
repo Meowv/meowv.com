@@ -35,9 +35,8 @@ const toolComponent = computed<Component | null>(() => {
   return resolveToolComponent(tool.value.id);
 });
 usePageMeta({
-  title: () => tool.value?.seo?.title ?? `${tool.value?.name ?? '在线工具'} · Meowv Studio`,
-  description: () =>
-    tool.value?.seo?.description ?? tool.value?.description ?? '在浏览器本地使用 Studio Tools。',
+  title: () => `${tool.value?.name ?? '在线工具'} · Meowv Studio`,
+  description: () => tool.value?.description ?? '在浏览器本地使用 Studio Tools。',
   canonical: () => (tool.value ? `https://studio.meowv.com${tool.value.route}` : undefined),
 });
 </script>
@@ -46,7 +45,7 @@ usePageMeta({
   <section
     v-if="tool && category"
     class="tools-detail-route"
-    :style="{ '--tools-accent': category.accent }"
+    :style="{ '--tools-accent': category.color }"
     aria-labelledby="tool-title"
   >
     <ToolContainer :tool="tool" :category="category">

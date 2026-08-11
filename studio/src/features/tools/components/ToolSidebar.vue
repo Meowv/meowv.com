@@ -73,7 +73,7 @@ const sidebarClass = computed(() => ({
           :key="category.id"
           type="button"
           :class="{ 'is-active': category.id === activeCategory }"
-          :style="{ '--tool-accent': category.accent }"
+          :style="{ '--tool-accent': category.color }"
           :aria-current="category.id === activeCategory ? 'true' : undefined"
           @click="emit('select', category.id)"
         >

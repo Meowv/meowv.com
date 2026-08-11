@@ -19,7 +19,19 @@ function walkFiles(root) {
   });
 }
 
-function readToolSeeds() {
+function unwrapExpression(node) {
+  while (
+    ts.isAsExpression(node) ||
+    ts.isSatisfiesExpression(node) ||
+    ts.isParenthesizedExpression(node) ||
+    ts.isTypeAssertionExpression(node)
+  ) {
+    node = node.expression;
+  }
+  return node;
+}
+
+function readToolCategorySeeds() {
   const sourceText = fs.readFileSync(configFile, 'utf8');
   const sourceFile = ts.createSourceFile(
     configFile,
@@ -31,26 +43,45 @@ function readToolSeeds() {
   let initializer;
 
   function visit(node) {
-    if (ts.isVariableDeclaration(node) && node.name.getText(sourceFile) === 'toolSeeds') {
-      initializer = node.initializer;
+    if (ts.isVariableDeclaration(node) && node.name.getText(sourceFile) === 'toolCategorySeeds') {
+      initializer = node.initializer ? unwrapExpression(node.initializer) : undefined;
     }
     ts.forEachChild(node, visit);
   }
   visit(sourceFile);
 
   if (!initializer || !ts.isObjectLiteralExpression(initializer)) {
-    errors.push('无法从 tools.ts 读取 toolSeeds。');
+    errors.push('无法从 tools.ts 读取 toolCategorySeeds。');
     return [];
   }
 
   const seeds = [];
   for (const category of initializer.properties) {
-    if (!ts.isPropertyAssignment(category) || !ts.isArrayLiteralExpression(category.initializer)) {
+    if (!ts.isPropertyAssignment(category)) {
       continue;
     }
-    for (const entry of category.initializer.elements) {
+
+    const categoryInitializer = unwrapExpression(category.initializer);
+    if (!ts.isObjectLiteralExpression(categoryInitializer)) continue;
+
+    const toolsProperty = categoryInitializer.properties.find(
+      (property) =>
+        ts.isPropertyAssignment(property) && property.name.getText(sourceFile) === 'tools',
+    );
+    if (!toolsProperty || !ts.isPropertyAssignment(toolsProperty)) {
+      errors.push(`分类 ${category.name.getText(sourceFile)} 缺少 tools 配置。`);
+      continue;
+    }
+
+    const toolsInitializer = unwrapExpression(toolsProperty.initializer);
+    if (!ts.isArrayLiteralExpression(toolsInitializer)) {
+      errors.push(`分类 ${category.name.getText(sourceFile)} 的 tools 配置无效。`);
+      continue;
+    }
+
+    for (const entry of toolsInitializer.elements) {
       if (!ts.isArrayLiteralExpression(entry)) continue;
-      const [id, name, , description] = entry.elements;
+      const [id, name, description] = entry.elements;
       if (
         !id ||
         !name ||
@@ -68,7 +99,7 @@ function readToolSeeds() {
   return seeds;
 }
 
-const seeds = readToolSeeds();
+const seeds = readToolCategorySeeds();
 const ids = seeds.map((seed) => seed.id);
 const duplicateIds = ids.filter((id, index) => ids.indexOf(id) !== index);
 if (duplicateIds.length) {

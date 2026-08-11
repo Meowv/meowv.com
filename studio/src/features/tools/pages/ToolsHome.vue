@@ -232,7 +232,7 @@ onBeforeUnmount(() => {
           :key="group.category.id"
           class="tools-category-section"
           :data-category="group.category.id"
-          :style="{ '--tool-accent': group.category.accent }"
+          :style="{ '--tool-accent': group.category.color }"
           :aria-labelledby="`tools-category-title-${group.category.id}`"
         >
           <header class="tools-category-marker">
