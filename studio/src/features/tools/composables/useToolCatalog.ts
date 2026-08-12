@@ -1,4 +1,5 @@
 import { computed, shallowRef } from 'vue';
+import { load as loadYaml } from 'js-yaml';
 import { STORAGE_POLICY, storageAvailable } from '@/core/privacy/storage';
 import {
   toolCategories,
@@ -20,7 +21,7 @@ interface ParsedCatalog {
   bookmarks: BookmarkConfig[];
 }
 
-const LINKS_CONFIG_URL = '/tools-links.json';
+const LINKS_CONFIG_URL = '/tools-links.yaml';
 const LINKS_CACHE_KEY = `${STORAGE_POLICY.preferences}:tools-links-cache`;
 const TOOL_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -159,7 +160,7 @@ async function refreshLinks(): Promise<void> {
       });
       if (!response.ok) return;
 
-      const payload = (await response.json()) as unknown;
+      const payload = loadYaml(await response.text()) as unknown;
       const parsed = parseCatalog(payload);
       if (!parsed) return;
 

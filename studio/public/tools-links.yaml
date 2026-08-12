@@ -1,0 +1,127 @@
+categories:
+  developer:
+    - id: postwoman
+      name: Postwoman
+      description: A free, fast and beautiful API request builder
+      icon:
+        url: https://postwoman.com.cn/favicon.ico
+      url: https://postwoman.com.cn
+
+    - id: hoppscotch
+      name: Hoppscotch
+      description: Open source API development ecosystem
+      icon:
+        url: https://hoppscotch.io/favicon.ico
+      url: https://hoppscotch.io
+
+    - id: drawio
+      name: Drawio
+      description: Flowchart Maker & Online Diagram Software
+      icon:
+        url: https://app.diagrams.net/favicon.ico
+      url: https://app.diagrams.net
+
+    - id: it-tools
+      name: IT - Tools
+      description: Handy tools for developers
+      icon:
+        url: https://it-tools.tech/favicon.ico
+      url: https://it-tools.tech
+
+  games:
+    - id: plonky
+      name: Plonky
+      description: 基于物理引擎的趣味解谜闯关游戏
+      icon:
+        url: https://cdn.vietdp.com/file/vietdp-games/games/t52025/plonky/icons/icon-32.png
+      url: https://cdn.vietdp.com/file/vietdp-games/games/t52025/plonky/index.html
+
+  bookmarks:
+    - id: zitie
+      name: 字帖生成
+      icon:
+        url: https://zt.meowv.com/icon.png
+      url: https://zt.meowv.com
+
+    - id: massgrave
+      name: Microsoft Activation Scripts
+      icon:
+        url: https://massgrave.dev/img/favicon.ico
+      url: https://massgrave.dev
+
+    - id: itellyou
+      name: NEXT, ITELLYOU
+      icon:
+        url: https://next.itellyou.cn/favicon.ico
+      url: https://next.itellyou.cn
+
+    - id: picsum
+      name: Lorem Picsum
+      icon:
+        url: https://picsum.photos/favicon.ico
+      url: https://picsum.photos
+
+    - id: bgsub
+      name: 消除或者替换图像背景
+      icon:
+        url: https://bgsub.cn/favicon.ico
+      url: https://bgsub.cn
+
+    - id: remove-bg
+      name: 在线抠图软件，图片去除背景
+      icon:
+        url: https://www.remove.bg/favicon-32x32.png
+      url: https://www.remove.bg
+
+    - id: ps-gaoding
+      name: 在线PS
+      icon:
+        url: https://ps.gaoding.com/favicon.ico
+      url: https://ps.gaoding.com
+
+    - id: dute
+      name: 独特工具箱
+      icon:
+        url: https://static-r1.tool.dute.me/assets/images/web/favicon.ico
+      url: https://www.dute.org
+
+    - id: tool-browser
+      name: 帮小忙
+      icon:
+        url: https://tool.browser.qq.com/favicon.ico
+      url: https://tool.browser.qq.com
+
+    - id: sv-bugpk
+      name: 短视频去水印解析工具
+      icon:
+        url: https://static.esa.ifphp.com/img/bugpk-Api-256%C3%97256.ico
+      url: https://sv.bugpk.com
+
+    - id: yiso
+      name: 易搜
+      icon: search
+      url: https://yiso.fun
+
+    - id: upyunso
+      name: UP云搜
+      icon:
+        url: https://www.upyunso.com/favicon.ico
+      url: https://www.upyunso.com
+
+    - id: nmme
+      name: 橘子盘搜
+      icon:
+        url: https://www.nmme.xyz/favicon.ico
+      url: https://www.nmme.xyz
+
+    - id: netflixgc
+      name: 奈飞工厂
+      icon:
+        url: https://www.netflixgc.com/upload/site/20241029-1/708c271d0bbf43725b96fad94d0c1eb4.png
+      url: https://www.netflixgc.com
+
+    - id: flysheep6
+      name: 一个免费的二次元风格游戏站
+      icon:
+        url: https://r534.com/flysheep/i/2023/02/25/5fgq.jpg
+      url: https://www.flysheep6.com
