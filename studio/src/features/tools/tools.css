@@ -129,8 +129,8 @@
 
   display: grid;
   width: 100%;
-  min-height: 43px;
-  padding: 5px 6px;
+  min-height: 48px;
+  padding: 7px 6px;
   border: 0;
   border-radius: 7px;
   grid-template-columns: 24px minmax(0, 1fr);
@@ -178,6 +178,20 @@
 .tools-sidebar nav > button.is-active {
   background: color-mix(in srgb, var(--tool-accent) 10%, transparent);
   color: color-mix(in srgb, var(--tool-accent) 82%, var(--color-text));
+}
+
+.tools-sidebar nav > button.tools-sidebar__bookmarks {
+  --tool-accent: #0891b2;
+
+  margin-top: 5px;
+  box-shadow: 0 -1px var(--color-border);
+}
+
+.tools-sidebar nav > button.tools-sidebar__favorites {
+  --tool-accent: var(--tools-accent);
+
+  margin-bottom: 5px;
+  box-shadow: 0 1px var(--color-border);
 }
 
 :root[data-theme='dark'] .tools-sidebar nav > button:hover,
@@ -346,6 +360,10 @@
   padding-top: 10px;
 }
 
+.tools-catalog--without-search .tools-bookmarks {
+  padding-top: 10px;
+}
+
 .tools-catalog--without-search .tools-category-section {
   scroll-margin-top: 10px;
 }
@@ -366,6 +384,54 @@
 .tools-favorites {
   min-width: 0;
   margin-bottom: 26px;
+  scroll-margin-top: 74px;
+}
+
+.tools-bookmarks {
+  --tools-accent: #0891b2;
+
+  min-width: 0;
+  scroll-margin-top: 74px;
+}
+
+.tools-bookmarks__marker {
+  display: grid;
+  min-height: 34px;
+  margin-bottom: 6px;
+  grid-template-columns: 30px auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.tools-bookmarks__marker > span {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  place-items: center;
+  background: color-mix(in srgb, var(--tools-accent) 10%, var(--color-surface-solid));
+  color: var(--tools-accent);
+}
+
+:root[data-theme='dark'] .tools-bookmarks__marker > span {
+  background: color-mix(in srgb, var(--tools-accent) 20%, var(--color-surface-solid));
+}
+
+.tools-bookmarks__marker > div {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.tools-bookmarks__marker strong {
+  font-size: 13px;
+  font-weight: 760;
+}
+
+.tools-bookmarks__marker small {
+  color: var(--color-text-muted);
+  font-size: 10px;
 }
 
 .tools-favorites__marker {
@@ -559,6 +625,96 @@
   overflow-wrap: anywhere;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+}
+
+.bookmark-card {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: 58px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  grid-template-columns: 32px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  background: color-mix(in srgb, var(--color-surface-solid) 90%, transparent);
+  box-shadow: 0 1px 3px rgb(16 24 40 / 3%);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+.bookmark-card:hover {
+  border-color: color-mix(in srgb, var(--tools-accent) 42%, var(--color-border));
+  box-shadow: 0 8px 22px rgb(16 24 40 / 7%);
+  transform: translateY(-2px);
+}
+
+.bookmark-card:focus-visible {
+  outline: 2px solid var(--tools-accent);
+  outline-offset: 2px;
+}
+
+.bookmark-card__icon {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  place-items: center;
+  background: color-mix(in srgb, var(--tools-accent) 9%, var(--color-surface-solid));
+  color: var(--tools-accent);
+}
+
+:root[data-theme='dark'] .bookmark-card__icon {
+  background: color-mix(in srgb, var(--tools-accent) 18%, var(--color-surface-solid));
+}
+
+.bookmark-card__icon :is(svg, img) {
+  display: block;
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.bookmark-card__content {
+  display: grid;
+  min-width: 0;
+  padding-right: 16px;
+  gap: 3px;
+}
+
+.bookmark-card__content small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bookmark-card__content strong {
+  font-size: 13px;
+  font-weight: 730;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.bookmark-card__content small {
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.bookmark-card__external {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  color: var(--color-text-muted);
+  transition: color 150ms ease;
+}
+
+.bookmark-card:hover .bookmark-card__external {
+  color: var(--tools-accent);
 }
 
 .tools-empty {

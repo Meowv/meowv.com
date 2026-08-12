@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import { IconStarFilled } from '@tabler/icons-vue';
+import { IconBookmark, IconStarFilled } from '@tabler/icons-vue';
+import BookmarkCard from '@/features/tools/components/BookmarkCard.vue';
 import ToolCard from '@/features/tools/components/ToolCard.vue';
 import ToolIcon from '@/features/tools/components/ToolIcon.vue';
 import ToolSearch from '@/features/tools/components/ToolSearch.vue';
@@ -17,13 +18,15 @@ const query = ref('');
 const activeCategory = ref<string>(toolCategories[0]?.id ?? '');
 const catalogElement = ref<HTMLElement | null>(null);
 const sidebarHovered = ref(false);
+const navigationTarget = ref<string | null>(null);
+let navigationTargetTimer: ReturnType<typeof setTimeout> | undefined;
 const SIDEBAR_PIN_KEY = `${STORAGE_POLICY.preferences}:tools-sidebar-pinned`;
 const SIDEBAR_SIDE_KEY = `${STORAGE_POLICY.preferences}:tools-sidebar-side`;
 const SEARCH_VISIBILITY_KEY = `${STORAGE_POLICY.preferences}:tools-search-visible`;
 const sidebarPinned = ref(readSidebarPinned());
 const sidebarSide = ref(readSidebarSide());
 const searchVisible = ref(readSearchVisible());
-const { tools, refreshLinks } = useToolCatalog();
+const { tools, bookmarks, refreshLinks } = useToolCatalog();
 const { favoriteIds, isFavorite, toggleFavorite } = useToolFavorites();
 const sidebarVisible = computed(() => sidebarPinned.value || sidebarHovered.value);
 const filteredTools = computed(() => searchTools(query.value, tools.value));
@@ -40,17 +43,22 @@ const toolGroups = computed(() =>
 );
 
 function updateActiveCategory(): void {
+  if (navigationTarget.value) {
+    activeCategory.value = navigationTarget.value;
+    return;
+  }
+
   const catalogTop = catalogElement.value?.getBoundingClientRect().top ?? 0;
   const toolbarBottom = document
     .querySelector<HTMLElement>('.tools-toolbar')
     ?.getBoundingClientRect().bottom;
   const anchorTop = toolbarBottom === undefined ? catalogTop + 12 : toolbarBottom + 4;
-  const sections = Array.from(document.querySelectorAll<HTMLElement>('.tools-category-section'));
-  let current = sections[0]?.dataset.category;
+  const sections = Array.from(document.querySelectorAll<HTMLElement>('[data-tools-navigation]'));
+  let current = sections[0]?.dataset.toolsNavigation;
 
   for (const section of sections) {
     if (section.getBoundingClientRect().top > anchorTop) break;
-    current = section.dataset.category;
+    current = section.dataset.toolsNavigation;
   }
 
   if (current) {
@@ -62,6 +70,47 @@ function updateActiveCategory(): void {
   }
 }
 
+function setNavigationTarget(target: string): void {
+  navigationTarget.value = target;
+  activeCategory.value = target;
+  window.history.replaceState(window.history.state, '', `#${target}`);
+  clearTimeout(navigationTargetTimer);
+  navigationTargetTimer = setTimeout(() => {
+    navigationTarget.value = null;
+    updateActiveCategory();
+  }, 700);
+}
+
+async function scrollToBookmarks(behavior: ScrollBehavior = 'smooth') {
+  if (query.value) query.value = '';
+  await nextTick();
+
+  const section = document.getElementById('tools-bookmarks');
+  if (!section) return;
+
+  setNavigationTarget('bookmarks');
+  section.scrollIntoView({ behavior, block: 'start' });
+
+  if (!sidebarPinned.value) {
+    sidebarHovered.value = false;
+  }
+}
+
+async function scrollToFavorites(behavior: ScrollBehavior = 'smooth') {
+  if (query.value) query.value = '';
+  await nextTick();
+
+  const section = document.getElementById('tools-favorites');
+  if (!section) return;
+
+  setNavigationTarget('favorites');
+  section.scrollIntoView({ behavior, block: 'start' });
+
+  if (!sidebarPinned.value) {
+    sidebarHovered.value = false;
+  }
+}
+
 async function scrollToCategory(categoryId: string, behavior: ScrollBehavior = 'smooth') {
   if (query.value) query.value = '';
   await nextTick();
@@ -69,9 +118,8 @@ async function scrollToCategory(categoryId: string, behavior: ScrollBehavior = '
   const section = document.getElementById(`tools-category-${categoryId}`);
   if (!section) return;
 
-  activeCategory.value = categoryId;
+  setNavigationTarget(categoryId);
   section.scrollIntoView({ behavior, block: 'start' });
-  window.history.replaceState(window.history.state, '', `#${categoryId}`);
 
   if (!sidebarPinned.value) {
     sidebarHovered.value = false;
@@ -149,17 +197,34 @@ function handleSidebarLeave(): void {
 
 watch(toolGroups, async (groups) => {
   await nextTick();
-  if (groups.length && !groups.some((group) => group.category.id === activeCategory.value)) {
+  if (
+    groups.length &&
+    activeCategory.value !== 'favorites' &&
+    activeCategory.value !== 'bookmarks' &&
+    !groups.some((group) => group.category.id === activeCategory.value)
+  ) {
     activeCategory.value = groups[0].category.id;
   }
   updateActiveCategory();
 });
 
+watch(favoriteTools, async (favorites) => {
+  if (favorites.length || activeCategory.value !== 'favorites') return;
+  navigationTarget.value = null;
+  clearTimeout(navigationTargetTimer);
+  await nextTick();
+  updateActiveCategory();
+});
+
 onMounted(async () => {
-  void refreshLinks();
   catalogElement.value?.addEventListener('scroll', updateActiveCategory, { passive: true });
+  await refreshLinks();
   const categoryId = route.hash.replace(/^#/, '');
-  if (toolCategories.some((category) => category.id === categoryId)) {
+  if (categoryId === 'favorites' && favoriteTools.value.length) {
+    await scrollToFavorites('auto');
+  } else if (categoryId === 'bookmarks' && bookmarks.value.length) {
+    await scrollToBookmarks('auto');
+  } else if (toolCategories.some((category) => category.id === categoryId)) {
     await scrollToCategory(categoryId, 'auto');
   } else {
     updateActiveCategory();
@@ -167,6 +232,7 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+  clearTimeout(navigationTargetTimer);
   catalogElement.value?.removeEventListener('scroll', updateActiveCategory);
 });
 </script>
@@ -186,9 +252,13 @@ onBeforeUnmount(() => {
       :pinned="sidebarPinned"
       :side="sidebarSide"
       :search-visible="searchVisible"
+      :favorites-visible="favoriteTools.length > 0"
+      :bookmarks-visible="bookmarks.length > 0"
       @enter="sidebarHovered = true"
       @leave="handleSidebarLeave"
       @select="scrollToCategory"
+      @select-favorites="scrollToFavorites"
+      @select-bookmarks="scrollToBookmarks"
       @update:pinned="setSidebarPinned"
       @update:side="setSidebarSide"
       @update:search-visible="setSearchVisible"
@@ -205,7 +275,9 @@ onBeforeUnmount(() => {
 
       <section
         v-if="favoriteTools.length"
+        id="tools-favorites"
         class="tools-favorites"
+        data-tools-navigation="favorites"
         aria-labelledby="tools-favorites-title"
       >
         <header class="tools-favorites__marker">
@@ -230,6 +302,7 @@ onBeforeUnmount(() => {
           :key="group.category.id"
           class="tools-category-section"
           :data-category="group.category.id"
+          :data-tools-navigation="group.category.id"
           :style="{ '--tool-accent': group.category.color }"
           :aria-labelledby="`tools-category-title-${group.category.id}`"
         >
@@ -250,6 +323,25 @@ onBeforeUnmount(() => {
               :favorite="isFavorite(tool.id)"
               @toggle-favorite="toggleFavorite"
             />
+          </div>
+        </section>
+
+        <section
+          v-if="bookmarks.length && !query"
+          id="tools-bookmarks"
+          class="tools-bookmarks"
+          data-tools-navigation="bookmarks"
+          aria-labelledby="tools-bookmarks-title"
+        >
+          <header class="tools-bookmarks__marker">
+            <span><IconBookmark :size="17" aria-hidden="true" /></span>
+            <div>
+              <strong id="tools-bookmarks-title">Bookmarks</strong>
+              <small>收藏夹</small>
+            </div>
+          </header>
+          <div class="tools-grid">
+            <BookmarkCard v-for="bookmark in bookmarks" :key="bookmark.id" :bookmark="bookmark" />
           </div>
         </section>
       </div>

@@ -23,8 +23,8 @@ const props = defineProps<{
 const SIDEBAR_PIN_KEY = `${STORAGE_POLICY.preferences}:tools-sidebar-pinned`;
 const SIDEBAR_SIDE_KEY = `${STORAGE_POLICY.preferences}:tools-sidebar-side`;
 const router = useRouter();
-const { tools: catalogTools, refreshLinks } = useToolCatalog();
-const { isFavorite, toggleFavorite } = useToolFavorites();
+const { tools: catalogTools, bookmarks, refreshLinks } = useToolCatalog();
+const { favoriteIds, isFavorite, toggleFavorite } = useToolFavorites();
 const sidebarOpen = ref(false);
 const sidebarPinned = ref(readSidebarPinned());
 const sidebarSide = ref(readSidebarSide());
@@ -91,6 +91,16 @@ function selectCategory(categoryId: string): void {
   void router.push({ path: '/tools', hash: `#${categoryId}` });
 }
 
+function selectFavorites(): void {
+  sidebarOpen.value = false;
+  void router.push({ path: '/tools', hash: '#favorites' });
+}
+
+function selectBookmarks(): void {
+  sidebarOpen.value = false;
+  void router.push({ path: '/tools', hash: '#bookmarks' });
+}
+
 async function openSidebar(): Promise<void> {
   sidebarOpen.value = true;
   await nextTick();
@@ -140,9 +150,13 @@ onBeforeUnmount(() => document.removeEventListener('keydown', handleKeydown));
       :side="sidebarSide"
       :search-visible="true"
       :search-button="false"
+      :favorites-visible="favoriteIds.length > 0"
+      :bookmarks-visible="bookmarks.length > 0"
       @enter="sidebarHovered = true"
       @leave="handleSidebarLeave"
       @select="selectCategory"
+      @select-favorites="selectFavorites"
+      @select-bookmarks="selectBookmarks"
       @update:pinned="setSidebarPinned"
       @update:side="setSidebarSide"
     />

@@ -3,9 +3,11 @@ import { computed } from 'vue';
 import {
   IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarRightCollapse,
+  IconBookmark,
   IconPin,
   IconPinFilled,
   IconSearch,
+  IconStarFilled,
 } from '@tabler/icons-vue';
 import ThemeToggle from '@/components/ThemeToggle.vue';
 import ToolIcon from '@/features/tools/components/ToolIcon.vue';
@@ -20,14 +22,18 @@ const props = withDefaults(
     pinned: boolean;
     side: 'left' | 'right';
     searchVisible: boolean;
+    favoritesVisible?: boolean;
+    bookmarksVisible?: boolean;
     /** 是否显示搜索框开关按钮，详情页等无搜索场景可关闭 */
     searchButton?: boolean;
   }>(),
-  { searchButton: true },
+  { bookmarksVisible: false, favoritesVisible: false, searchButton: true },
 );
 
 const emit = defineEmits<{
   select: [categoryId: string];
+  'select-favorites': [];
+  'select-bookmarks': [];
   enter: [];
   leave: [];
   'update:pinned': [value: boolean];
@@ -69,6 +75,20 @@ const sidebarClass = computed(() => ({
 
       <nav>
         <button
+          v-if="favoritesVisible"
+          class="tools-sidebar__favorites"
+          type="button"
+          :class="{ 'is-active': activeCategory === 'favorites' }"
+          :aria-current="activeCategory === 'favorites' ? 'true' : undefined"
+          @click="emit('select-favorites')"
+        >
+          <IconStarFilled :size="18" aria-hidden="true" />
+          <span>
+            <strong>Favorites</strong>
+            <small>我的收藏</small>
+          </span>
+        </button>
+        <button
           v-for="category in categories"
           :key="category.id"
           type="button"
@@ -81,6 +101,20 @@ const sidebarClass = computed(() => ({
           <span>
             <strong>{{ category.name }}</strong>
             <small>{{ category.label }}</small>
+          </span>
+        </button>
+        <button
+          v-if="bookmarksVisible"
+          class="tools-sidebar__bookmarks"
+          type="button"
+          :class="{ 'is-active': activeCategory === 'bookmarks' }"
+          :aria-current="activeCategory === 'bookmarks' ? 'true' : undefined"
+          @click="emit('select-bookmarks')"
+        >
+          <IconBookmark :size="18" aria-hidden="true" />
+          <span>
+            <strong>Bookmarks</strong>
+            <small>收藏夹</small>
           </span>
         </button>
       </nav>
