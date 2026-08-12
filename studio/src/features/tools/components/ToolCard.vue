@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
-import { IconArrowRight, IconStar, IconStarFilled } from '@tabler/icons-vue';
+import { IconStar, IconStarFilled } from '@tabler/icons-vue';
 import ToolIcon from '@/features/tools/components/ToolIcon.vue';
 import { toolCategoryMap, type ToolConfig } from '@/features/tools/tools';
 
@@ -43,7 +43,6 @@ const targetAttributes = computed(() =>
       <strong>{{ tool.name }}</strong>
       <small>{{ tool.description }}</small>
     </span>
-    <IconArrowRight v-if="compact" class="tools-card__arrow" :size="18" aria-hidden="true" />
     <button
       class="tools-card__favorite"
       :class="{ 'is-active': favorite }"

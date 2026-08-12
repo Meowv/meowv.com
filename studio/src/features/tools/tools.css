@@ -1172,18 +1172,6 @@
   -webkit-line-clamp: 2;
 }
 
-.tools-card__arrow {
-  position: absolute;
-  right: 8px;
-  bottom: 7px;
-  color: color-mix(in srgb, var(--tool-accent) 74%, var(--color-text-muted));
-  transition: transform 150ms ease;
-}
-
-.tools-card--compact:hover .tools-card__arrow {
-  transform: translateX(2px);
-}
-
 .tool-detail-sidebar-backdrop {
   display: none;
 }
@@ -1299,10 +1287,6 @@
   .tools-sidebar__setting--carnival.is-celebrating > svg,
   .tools-home--celebrating :is(.tools-card, .bookmark-card).is-tools-celebration-visible {
     animation: none;
-  }
-
-  .tools-card__arrow {
-    transition: none;
   }
 }
 
