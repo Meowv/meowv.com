@@ -36,6 +36,103 @@ categories:
         url: https://cdn.vietdp.com/file/vietdp-games/games/t52025/plonky/icons/icon-32.png
       url: https://cdn.vietdp.com/file/vietdp-games/games/t52025/plonky/index.html
 
+  ai:
+    - id: chatgpt
+      name: ChatGPT
+      icon:
+        url: /icons/tools/chatgpt.ico
+      url: https://chatgpt.com
+
+    - id: claude
+      name: Claude
+      icon:
+        url: /icons/tools/claude.ico
+      url: https://claude.ai
+
+    - id: gemini
+      name: Gemini
+      icon:
+        url: /icons/tools/gemini.svg
+      url: https://gemini.google.com
+
+    - id: deepseek
+      name: DeepSeek
+      icon:
+        url: https://fe-static.deepseek.com/chat/favicon.svg
+      url: https://chat.deepseek.com
+
+    - id: grok
+      name: Grok
+      icon:
+        url: /icons/tools/grok.svg
+      url: https://grok.com
+
+    - id: kimi
+      name: Kimi
+      icon:
+        url: https://www.kimi.com/favicon.ico
+      url: https://www.kimi.com
+
+    - id: perplexity
+      name: Perplexity
+      icon:
+        url: /icons/tools/perplexity.png
+      url: https://www.perplexity.ai
+
+    - id: github
+      name: GitHub Copilot
+      icon:
+        url: https://github.githubassets.com/favicons/favicon.svg
+      url: https://github.com
+
+    - id: microsoft
+      name: Microsoft Copilot
+      icon:
+        url: https://copilot.microsoft.com/favicon.ico
+      url: https://copilot.microsoft.com
+
+    - id: doubao
+      name: 豆包
+      icon:
+        url: https://lf-flow-web-cdn.doubao.com/obj/flow-doubao/doubao/chat/favicon-doubao.png
+      url: https://www.doubao.com
+
+    - id: qianwen
+      name: 千问
+      icon:
+        url: https://img.alicdn.com/imgextra/i2/O1CN01taBbMS1CfyJoOt0lB_!!6000000000109-2-tps-80-80.png
+      url: https://www.qianwen.com
+
+    - id: yuanbao
+      name: 元宝
+      icon:
+        url: https://static.yuanbao.tencent.com/m/yuanbao-web/favicon_new@32.png
+      url: https://yuanbao.tencent.com
+
+    - id: chatglm
+      name: 智谱清言
+      icon:
+        url: https://chatglm.cn/favicon.ico
+      url: https://chatglm.cn
+
+    - id: xinghuo
+      name: 讯飞星火
+      icon:
+        url: https://xinghuo.xfyun.cn/spark-icon.ico
+      url: https://xinghuo.xfyun.cn/desk
+
+    - id: xiaomimimo
+      name: 小米 MIMO
+      icon:
+        url: https://aistudio.xiaomimimo.com/favicon.png
+      url: https://aistudio.xiaomimimo.com
+
+    - id: xiaoyi
+      name: 小艺
+      icon:
+        url: https://search-static-drcn.dbankcdn.com/celia/v2/favicon-transparent.ico
+      url: https://xiaoyi.huawei.com
+
   bookmarks:
     - id: zitie
       name: 字帖生成
@@ -99,7 +196,8 @@ categories:
 
     - id: yiso
       name: 易搜
-      icon: search
+      icon:
+        url: /icons/tools/yiso.png
       url: https://yiso.fun
 
     - id: upyunso
