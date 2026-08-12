@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router';
 import { usePageMeta } from '@/composables/usePageMeta';
 import ToolContainer from '@/features/tools/components/ToolContainer.vue';
 import { getToolById, toolCategoryMap } from '@/features/tools/tools';
+import JsonEditorLoading from '@/features/tools/tools/json/JsonEditorLoading.vue';
 import '@/features/tools/tools.css';
 
 const route = useRoute();
@@ -20,7 +21,15 @@ const componentLoaders = import.meta.glob<Component>('../tools/*/index.vue', {
 const toolComponents: Record<string, Component> = Object.fromEntries(
   Object.entries(componentLoaders).map(([modulePath, loader]) => [
     modulePath,
-    defineAsyncComponent(loader),
+    defineAsyncComponent(
+      modulePath === '../tools/json/index.vue'
+        ? {
+            loader,
+            loadingComponent: JsonEditorLoading,
+            delay: 0,
+          }
+        : loader,
+    ),
   ]),
 );
 function getToolModulePath(toolId: string): string {
