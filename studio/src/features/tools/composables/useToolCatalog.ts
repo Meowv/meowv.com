@@ -22,7 +22,7 @@ interface ParsedCatalog {
   bookmarks: BookmarkConfig[];
 }
 
-const LINKS_CONFIG_URL = '/tools-links.yaml';
+const LINKS_CONFIG_URL = '/data/tools-links.yaml';
 const LINKS_CACHE_KEY = `${STORAGE_POLICY.preferences}:tools-links-cache`;
 const TOOL_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
