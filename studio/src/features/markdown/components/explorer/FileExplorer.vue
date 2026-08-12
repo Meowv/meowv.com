@@ -900,7 +900,7 @@ onBeforeUnmount(() => {
             role="menuitem"
             @click="promptPdfTool(contextMenu.node, tool.id, tool.name)"
           >
-            <ToolIcon :name="tool.icon" :size="16" />{{ tool.name }}
+            <ToolIcon :icon="tool.icon" :size="16" />{{ tool.name }}
           </button>
           <div class="context-menu__separator" />
         </template>
