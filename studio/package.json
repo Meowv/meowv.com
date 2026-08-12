@@ -22,7 +22,6 @@
     "@excalidraw/excalidraw": "0.18.1",
     "@tabler/icons-vue": "^3.35.0",
     "@vue/devtools-api": "^8.2.1",
-    "@vueuse/core": "^14.4.0",
     "@zumer/snapdom": "2.23.2",
     "ag-psd": "^31.0.2",
     "cnchar": "3.2.6",
@@ -53,11 +52,9 @@
     "ranuts": "0.4.0-alpha.1",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "three": "0.185.1",
     "vue": "^3.5.40",
     "vue-draggable-plus": "^0.6.1",
-    "vue-router": "4.6.4",
-    "zod": "^4.4.3"
+    "vue-router": "4.6.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
