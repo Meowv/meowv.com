@@ -319,23 +319,15 @@ header .brand-logo .logo-img {
 
 header .brand-logo .logo-span {
   display: inline-block;
-  background: linear-gradient(120deg, #ffffff 0%, rgba(255, 255, 255, 0.995) 34%, rgba(90, 150, 0, 0.12) 56%, rgba(76, 191, 48, 0.09) 74%, rgba(10, 62, 30, 0.06) 90%, #ffffff 100%);
-  background-size: 260% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: #fff;
   text-shadow: 0 0 6px rgba(255, 255, 255, 0.18), 0 0 8px rgba(90, 150, 0, 0.08);
   font-size: 1.6rem;
-  animation: slogan-shimmer 5s linear infinite, logo-float 4s ease-in-out infinite;
+  animation: logo-float 4s ease-in-out infinite;
 }
 
 header #headNav:not(.nav-transparent) .brand-logo .logo-span {
-  background: none;
-  -webkit-background-clip: initial;
-  background-clip: initial;
   color: #fff;
   text-shadow: 0 0 8px rgba(255, 255, 255, 0.35);
-  animation: logo-float 4s ease-in-out infinite;
 }
 
 @keyframes logo-float {
@@ -637,22 +629,13 @@ header .go-back i {
 
 .bg-cover .home-slogan-text {
   display: inline-block;
-  background: linear-gradient(120deg, #ffffff 0%, rgba(255, 255, 255, 0.995) 32%, rgba(90, 150, 0, 0.11) 54%, rgba(76, 191, 48, 0.08) 72%, rgba(10, 62, 30, 0.05) 88%, #ffffff 100%);
-  background-size: 260% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: #fff;
   text-shadow: 0 0 6px rgba(255, 255, 255, 0.18), 0 0 8px rgba(90, 150, 0, 0.08);
-  animation: slogan-shimmer 5s linear infinite;
 }
 
 body.has-nav-bg .bg-cover .home-slogan-text {
-  background: none;
-  -webkit-background-clip: initial;
-  background-clip: initial;
   color: #fff;
   text-shadow: 0 0 8px rgba(255, 255, 255, 0.35);
-  animation: none;
 }
 
 .bg-cover .description {
@@ -660,20 +643,6 @@ body.has-nav-bg .bg-cover .home-slogan-text {
   font-size: 1.25rem;
   line-height: 1.4em;
   color: #eee;
-}
-
-@keyframes slogan-shimmer {
-  0% {
-    background-position: 0% 50%;
-  }
-
-  50% {
-    background-position: 100% 50%;
-  }
-
-  100% {
-    background-position: 0% 50%;
-  }
 }
 
 @keyframes slogan-float {

@@ -22,9 +22,9 @@ menu:
   # 友情链接:
   #   url: /friends
   #   icon: fas fa-address-book
-  Labs:
-    url: /labs
-    icon: fas fa-flask
+  Studio:
+    url: https://studio.meowv.com
+    icon: fas fa-tools
   # Secondary menu example
   # 二级菜单写法如下
   #Medias:
