@@ -9,7 +9,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       title: 'Meowv Studio · 本地文件工作台',
       description:
-        '无需上传文件的本地文件工作台：在浏览器中处理图片、PDF、Markdown 与 Office 文档，内容始终留在你的设备上。',
+        'Meowv Studio 是无需上传文件的浏览器本地工作台，支持图片、PDF、Markdown、Office、白板、思维导图、便签等工具，内容始终留在你的设备上。',
     },
   },
   {
@@ -18,7 +18,8 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/features/markdown/MarkdownStudioPage.vue'),
     meta: {
       title: 'Markdown · Meowv Studio',
-      description: '在浏览器本地编辑、预览、搜索并导出 Markdown 文档，内容无需上传。',
+      description:
+        '在浏览器本地打开、编辑和预览 Markdown，支持文件夹工作空间、全文搜索及 HTML、PDF、Word 等格式导出，文档无需上传。',
       feature: 'markdown',
     },
   },
@@ -28,7 +29,8 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/features/office/OfficeStudioPage.vue'),
     meta: {
       title: 'Office · Meowv Studio',
-      description: '在浏览器本地打开、编辑并保存 DOCX、XLSX、PPTX 与 CSV 文件，内容无需上传。',
+      description:
+        '在浏览器本地打开、创建、编辑并保存 Word、Excel、PowerPoint 和 CSV 文件，无需上传文档，兼顾常用 Office 编辑体验与数据隐私。',
       feature: 'office',
     },
   },
@@ -38,7 +40,8 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/features/draw/DrawPage.vue'),
     meta: {
       title: '白板 · Meowv Studio',
-      description: '在浏览器本地绘制草图、流程图和白板内容，画板无需上传。',
+      description:
+        '基于 Excalidraw 的浏览器本地白板，可绘制草图、流程图和架构图，支持自动保存及 PNG、SVG、Excalidraw 文件导出。',
       feature: 'draw',
     },
   },
@@ -48,7 +51,8 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/features/mind/MindPage.vue'),
     meta: {
       title: '思维导图 · Meowv Studio',
-      description: '在浏览器本地创建、整理、保存和导出思维导图与 Markdown 脑图，内容无需上传。',
+      description:
+        '在浏览器本地创建和整理思维导图与 Markdown 脑图，支持自动保存，并可导出 Markdown、PNG、SVG、JSON 等格式。',
       feature: 'mind',
     },
   },
@@ -58,7 +62,8 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/features/notes/NotesPage.vue'),
     meta: {
       title: '便签 · Meowv Studio',
-      description: '在浏览器本地自由放置、编辑彩色便签，内容自动保存且无需上传。',
+      description:
+        '在浏览器本地创建和整理彩色便签，支持自由布局、置顶、折叠与自动保存，灵感和待办内容无需上传。',
       feature: 'notes',
     },
   },
@@ -67,8 +72,9 @@ const routes: RouteRecordRaw[] = [
     name: 'tools',
     component: () => import('@/features/tools/pages/ToolsHome.vue'),
     meta: {
-      title: 'Tools 工具箱 · Meowv Studio',
-      description: '纯前端、本地处理的在线工具箱，覆盖开发、数据、编码、文本与设计等常用场景。',
+      title: '工具 · Meowv Studio',
+      description:
+        '汇集图片、PDF、文本、编码、数据与设计等实用在线工具，分类清晰、搜索便捷，打开浏览器即可使用。',
       feature: 'tools',
     },
   },
@@ -77,8 +83,8 @@ const routes: RouteRecordRaw[] = [
     name: 'tool-detail',
     component: () => import('@/features/tools/pages/ToolDetail.vue'),
     meta: {
-      title: '在线工具 · Meowv Studio',
-      description: '在浏览器本地使用 Studio Tools，处理内容无需上传。',
+      title: '工具 · Meowv Studio',
+      description: '使用 Meowv Studio 在线工具处理文件、文本与数据，打开浏览器即可使用。',
       feature: 'tools',
     },
   },
@@ -88,7 +94,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/NotFoundPage.vue'),
     meta: {
       title: '页面未找到 · Meowv Studio',
-      description: '请求的页面不存在。',
+      description: '你访问的页面不存在或已被移动，请返回 Meowv Studio 首页继续使用本地文件工作台。',
     },
   },
 ];
