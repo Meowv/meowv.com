@@ -54,7 +54,7 @@ const quickRoutes = [
   },
   {
     label: 'Tools',
-    description: '更多实用工具',
+    description: '超多实用工具',
     to: '/tools',
     icon: IconApps,
     tone: 'tools',
