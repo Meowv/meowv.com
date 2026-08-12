@@ -248,6 +248,12 @@ const toolCategorySeeds = {
     color: 'var(--tools-category-misc)',
     tools: [
       {
+        id: 'calendar',
+        name: '日历',
+        description: '支持年、月、周、日视图，查看农历、中国节日和二十四节气。',
+        icon: 'calendar',
+      },
+      {
         id: 'color-picker',
         name: '颜色选择器',
         description: '在 HEX、RGB、RGBA、HSL、HSLA、HSV 与 CMYK 之间实时转换。',
