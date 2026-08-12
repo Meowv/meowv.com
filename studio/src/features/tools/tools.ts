@@ -53,9 +53,10 @@ const toolCategorySeeds = {
     color: '#2563eb',
     tools: [
       {
-        id: 'json-tool',
-        name: 'JSON 工具',
-        description: '格式化、压缩和校验 JSON，并在常见数据格式之间转换。',
+        id: 'json',
+        name: 'JSON 编辑器',
+        description:
+          '编辑、格式化和折叠 JSON，支持 XML/YAML 粘贴转换、注释清理、压缩复制与 JS 过滤。',
         icon: 'braces',
       },
     ],

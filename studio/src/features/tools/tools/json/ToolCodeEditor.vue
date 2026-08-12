@@ -18,19 +18,28 @@ monacoGlobal.MonacoEnvironment ??= {
 };
 
 const model = defineModel<string>({ required: true });
+const emit = defineEmits<{
+  'paste-text': [text: string, event: ClipboardEvent];
+}>();
 const props = withDefaults(
   defineProps<{
     language?: string;
     readOnly?: boolean;
     wordWrap?: boolean;
+    lineNumbers?: boolean;
+    folding?: boolean;
     label: string;
     minHeight?: number;
+    placeholder?: string;
   }>(),
   {
     language: 'plaintext',
     readOnly: false,
     wordWrap: true,
+    lineNumbers: true,
+    folding: true,
     minHeight: 350,
+    placeholder: '',
   },
 );
 
@@ -41,7 +50,9 @@ let themeObserver: MutationObserver | null = null;
 let syncing = false;
 
 function resolveTheme(): string {
-  return document.documentElement.dataset.theme === 'dark' ? 'studio-tools-dark' : 'studio-tools-light';
+  return document.documentElement.dataset.theme === 'dark'
+    ? 'studio-tools-dark'
+    : 'studio-tools-light';
 }
 
 function registerThemes(): void {
@@ -75,6 +86,27 @@ function mountEditor(element: Element | ComponentPublicInstance | null): void {
   mountElement = element instanceof HTMLDivElement ? element : null;
 }
 
+async function foldAll(): Promise<void> {
+  await editor?.getAction('editor.foldAll')?.run();
+}
+
+async function unfoldAll(): Promise<void> {
+  await editor?.getAction('editor.unfoldAll')?.run();
+}
+
+function focus(): void {
+  editor?.focus();
+}
+
+function handlePaste(event: ClipboardEvent): void {
+  const text = event.clipboardData?.getData('text/plain');
+  if (!text) return;
+  emit('paste-text', text, event);
+  if (event.defaultPrevented) event.stopImmediatePropagation();
+}
+
+defineExpose({ foldAll, unfoldAll, focus });
+
 onMounted(() => {
   if (!mountElement) return;
   registerThemes();
@@ -87,11 +119,15 @@ onMounted(() => {
     fontFamily: '"SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace',
     fontLigatures: true,
     fontSize: 12,
-    folding: true,
+    folding: props.folding,
+    glyphMargin: props.folding,
     language: props.language,
-    lineNumbers: 'on',
+    lineDecorationsWidth: props.lineNumbers ? 10 : 0,
+    lineNumbers: props.lineNumbers ? 'on' : 'off',
+    lineNumbersMinChars: props.lineNumbers ? 3 : 0,
     minimap: { enabled: false },
     padding: { bottom: 14, top: 10 },
+    placeholder: props.placeholder,
     readOnly: props.readOnly,
     renderLineHighlight: 'line',
     scrollBeyondLastLine: false,
@@ -107,8 +143,12 @@ onMounted(() => {
     if (syncing || !editor) return;
     model.value = editor.getValue();
   });
+  mountElement.addEventListener('paste', handlePaste, true);
   themeObserver = new MutationObserver(() => monaco.editor.setTheme(resolveTheme()));
-  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  themeObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-theme'],
+  });
 });
 
 watch(model, (value) => {
@@ -128,7 +168,13 @@ watch(
   (readOnly) => editor?.updateOptions({ readOnly }),
 );
 
+watch(
+  () => props.placeholder,
+  (placeholder) => editor?.updateOptions({ placeholder }),
+);
+
 onBeforeUnmount(() => {
+  mountElement?.removeEventListener('paste', handlePaste, true);
   contentDisposable?.dispose();
   editor?.dispose();
   themeObserver?.disconnect();

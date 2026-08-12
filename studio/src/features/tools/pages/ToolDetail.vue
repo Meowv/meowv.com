@@ -3,7 +3,6 @@ import { computed, defineAsyncComponent, type Component } from 'vue';
 import { useRoute } from 'vue-router';
 import { usePageMeta } from '@/composables/usePageMeta';
 import ToolContainer from '@/features/tools/components/ToolContainer.vue';
-import ToolUnavailable from '@/features/tools/components/ToolUnavailable.vue';
 import { getToolById, toolCategoryMap } from '@/features/tools/tools';
 import '@/features/tools/tools.css';
 
@@ -50,7 +49,6 @@ usePageMeta({
   >
     <ToolContainer :tool="tool" :category="category">
       <component :is="toolComponent" v-if="toolComponent" :key="tool.id" />
-      <ToolUnavailable v-else />
     </ToolContainer>
   </section>
 
