@@ -6,6 +6,7 @@
   --tools-category-pdf: #c2413d;
   --tools-category-misc: #c2410c;
   --tools-category-games: #7e22ce;
+  --tools-category-ai: #4338ca;
   --tools-category-bookmarks: #0e7490;
 }
 
@@ -17,6 +18,7 @@
   --tools-category-pdf: #f87171;
   --tools-category-misc: #fb923c;
   --tools-category-games: #c084fc;
+  --tools-category-ai: #818cf8;
   --tools-category-bookmarks: #22d3ee;
 }
 
@@ -202,11 +204,15 @@
   color: color-mix(in srgb, var(--tool-accent) 82%, var(--color-text));
 }
 
-.tools-sidebar nav > button.tools-sidebar__bookmarks {
-  --tool-accent: var(--tools-category-bookmarks);
+.tools-sidebar nav > button.tools-sidebar__ai {
+  --tool-accent: var(--tools-category-ai);
 
   margin-top: 5px;
   box-shadow: 0 -1px var(--color-border);
+}
+
+.tools-sidebar nav > button.tools-sidebar__bookmarks {
+  --tool-accent: var(--tools-category-bookmarks);
 }
 
 .tools-sidebar nav > button.tools-sidebar__favorites {
@@ -382,7 +388,7 @@
   padding-top: 10px;
 }
 
-.tools-catalog--without-search .tools-bookmarks {
+.tools-catalog--without-search :is(.tools-ai, .tools-bookmarks) {
   padding-top: 10px;
 }
 
@@ -411,6 +417,13 @@
   scroll-margin-top: 74px;
 }
 
+.tools-ai {
+  --tools-accent: var(--tools-category-ai);
+
+  min-width: 0;
+  scroll-margin-top: 74px;
+}
+
 .tools-bookmarks {
   --tools-accent: var(--tools-category-bookmarks);
 
@@ -418,7 +431,7 @@
   scroll-margin-top: 74px;
 }
 
-.tools-bookmarks__marker {
+.tools-link-section__marker {
   display: grid;
   min-height: 34px;
   margin-bottom: 6px;
@@ -427,7 +440,7 @@
   gap: 8px;
 }
 
-.tools-bookmarks__marker > span {
+.tools-link-section__marker > span {
   display: grid;
   width: 28px;
   height: 28px;
@@ -437,23 +450,23 @@
   color: var(--tools-accent);
 }
 
-:root[data-theme='dark'] .tools-bookmarks__marker > span {
+:root[data-theme='dark'] .tools-link-section__marker > span {
   background: color-mix(in srgb, var(--tools-accent) 20%, var(--color-surface-solid));
 }
 
-.tools-bookmarks__marker > div {
+.tools-link-section__marker > div {
   display: flex;
   align-items: baseline;
   gap: 7px;
   white-space: nowrap;
 }
 
-.tools-bookmarks__marker strong {
+.tools-link-section__marker strong {
   font-size: 13px;
   font-weight: 760;
 }
 
-.tools-bookmarks__marker small {
+.tools-link-section__marker small {
   color: var(--color-text-muted);
   font-size: 10px;
 }

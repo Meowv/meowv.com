@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import { IconBookmark, IconStarFilled } from '@tabler/icons-vue';
+import { IconAi, IconBookmark, IconStarFilled } from '@tabler/icons-vue';
 import BookmarkCard from '@/features/tools/components/BookmarkCard.vue';
 import ToolCard from '@/features/tools/components/ToolCard.vue';
 import ToolIcon from '@/features/tools/components/ToolIcon.vue';
@@ -26,7 +26,7 @@ const SEARCH_VISIBILITY_KEY = `${STORAGE_POLICY.preferences}:tools-search-visibl
 const sidebarPinned = ref(readSidebarPinned());
 const sidebarSide = ref(readSidebarSide());
 const searchVisible = ref(readSearchVisible());
-const { tools, bookmarks, refreshLinks } = useToolCatalog();
+const { tools, aiSites, bookmarks, refreshLinks } = useToolCatalog();
 const { favoriteIds, isFavorite, toggleFavorite } = useToolFavorites();
 const sidebarVisible = computed(() => sidebarPinned.value || sidebarHovered.value);
 const filteredTools = computed(() => searchTools(query.value, tools.value));
@@ -89,6 +89,21 @@ async function scrollToBookmarks(behavior: ScrollBehavior = 'smooth') {
   if (!section) return;
 
   setNavigationTarget('bookmarks');
+  section.scrollIntoView({ behavior, block: 'start' });
+
+  if (!sidebarPinned.value) {
+    sidebarHovered.value = false;
+  }
+}
+
+async function scrollToAi(behavior: ScrollBehavior = 'smooth') {
+  if (query.value) query.value = '';
+  await nextTick();
+
+  const section = document.getElementById('tools-ai');
+  if (!section) return;
+
+  setNavigationTarget('ai');
   section.scrollIntoView({ behavior, block: 'start' });
 
   if (!sidebarPinned.value) {
@@ -200,6 +215,7 @@ watch(toolGroups, async (groups) => {
   if (
     groups.length &&
     activeCategory.value !== 'favorites' &&
+    activeCategory.value !== 'ai' &&
     activeCategory.value !== 'bookmarks' &&
     !groups.some((group) => group.category.id === activeCategory.value)
   ) {
@@ -222,6 +238,8 @@ onMounted(async () => {
   const categoryId = route.hash.replace(/^#/, '');
   if (categoryId === 'favorites' && favoriteTools.value.length) {
     await scrollToFavorites('auto');
+  } else if (categoryId === 'ai' && aiSites.value.length) {
+    await scrollToAi('auto');
   } else if (categoryId === 'bookmarks' && bookmarks.value.length) {
     await scrollToBookmarks('auto');
   } else if (toolCategories.some((category) => category.id === categoryId)) {
@@ -253,11 +271,13 @@ onBeforeUnmount(() => {
       :side="sidebarSide"
       :search-visible="searchVisible"
       :favorites-visible="favoriteTools.length > 0"
+      :ai-visible="aiSites.length > 0"
       :bookmarks-visible="bookmarks.length > 0"
       @enter="sidebarHovered = true"
       @leave="handleSidebarLeave"
       @select="scrollToCategory"
       @select-favorites="scrollToFavorites"
+      @select-ai="scrollToAi"
       @select-bookmarks="scrollToBookmarks"
       @update:pinned="setSidebarPinned"
       @update:side="setSidebarSide"
@@ -327,13 +347,32 @@ onBeforeUnmount(() => {
         </section>
 
         <section
+          v-if="aiSites.length && !query"
+          id="tools-ai"
+          class="tools-ai"
+          data-tools-navigation="ai"
+          aria-labelledby="tools-ai-title"
+        >
+          <header class="tools-link-section__marker">
+            <span><IconAi :size="17" aria-hidden="true" /></span>
+            <div>
+              <strong id="tools-ai-title">AI</strong>
+              <small>AI 站</small>
+            </div>
+          </header>
+          <div class="tools-grid">
+            <BookmarkCard v-for="site in aiSites" :key="site.id" :bookmark="site" />
+          </div>
+        </section>
+
+        <section
           v-if="bookmarks.length && !query"
           id="tools-bookmarks"
           class="tools-bookmarks"
           data-tools-navigation="bookmarks"
           aria-labelledby="tools-bookmarks-title"
         >
-          <header class="tools-bookmarks__marker">
+          <header class="tools-link-section__marker">
             <span><IconBookmark :size="17" aria-hidden="true" /></span>
             <div>
               <strong id="tools-bookmarks-title">Bookmarks</strong>

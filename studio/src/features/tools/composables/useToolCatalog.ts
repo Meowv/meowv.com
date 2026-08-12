@@ -18,6 +18,7 @@ export interface BookmarkConfig {
 
 interface ParsedCatalog {
   links: LinkToolConfig[];
+  aiSites: BookmarkConfig[];
   bookmarks: BookmarkConfig[];
 }
 
@@ -26,6 +27,7 @@ const LINKS_CACHE_KEY = `${STORAGE_POLICY.preferences}:tools-links-cache`;
 const TOOL_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 const linkTools = shallowRef<LinkToolConfig[]>([]);
+const aiSites = shallowRef<BookmarkConfig[]>([]);
 const bookmarks = shallowRef<BookmarkConfig[]>([]);
 let initialized = false;
 let loading: Promise<void> | null = null;
@@ -93,32 +95,36 @@ function parseCatalog(payload: unknown): ParsedCatalog | null {
     }
   }
 
-  const parsedBookmarks: BookmarkConfig[] = [];
+  function parseSites(values: unknown, fallbackIcon: ToolIconSource): BookmarkConfig[] {
+    const sites: BookmarkConfig[] = [];
+    for (const value of Array.isArray(values) ? values : []) {
+      if (!isRecord(value)) continue;
+      const id = typeof value.id === 'string' ? value.id.trim() : '';
+      const name = typeof value.name === 'string' ? value.name.trim() : '';
+      const url = typeof value.url === 'string' ? value.url.trim() : '';
+      const icon = value.icon === undefined ? fallbackIcon : parseIcon(value.icon);
 
-  const bookmarkValues = payload.categories.bookmarks;
-  for (const value of Array.isArray(bookmarkValues) ? bookmarkValues : []) {
-    if (!isRecord(value)) continue;
-    const id = typeof value.id === 'string' ? value.id.trim() : '';
-    const name = typeof value.name === 'string' ? value.name.trim() : '';
-    const url = typeof value.url === 'string' ? value.url.trim() : '';
-    const icon = value.icon === undefined ? 'bookmark' : parseIcon(value.icon);
+      if (
+        !TOOL_ID_PATTERN.test(id) ||
+        knownIds.has(id) ||
+        !name ||
+        !url ||
+        !isAllowedUrl(url) ||
+        !icon
+      ) {
+        continue;
+      }
 
-    if (
-      !TOOL_ID_PATTERN.test(id) ||
-      knownIds.has(id) ||
-      !name ||
-      !url ||
-      !isAllowedUrl(url) ||
-      !icon
-    ) {
-      continue;
+      knownIds.add(id);
+      sites.push({ id, name, icon, url });
     }
-
-    knownIds.add(id);
-    parsedBookmarks.push({ id, name, icon, url });
+    return sites;
   }
 
-  return { links, bookmarks: parsedBookmarks };
+  const parsedAiSites = parseSites(payload.categories.ai, 'ai');
+  const parsedBookmarks = parseSites(payload.categories.bookmarks, 'bookmark');
+
+  return { links, aiSites: parsedAiSites, bookmarks: parsedBookmarks };
 }
 
 function mergeTools(links: LinkToolConfig[]): ToolConfig[] {
@@ -128,15 +134,18 @@ function mergeTools(links: LinkToolConfig[]): ToolConfig[] {
   ]);
 }
 
+function applyParsedCatalog(parsed: ParsedCatalog): void {
+  linkTools.value = parsed.links;
+  aiSites.value = parsed.aiSites;
+  bookmarks.value = parsed.bookmarks;
+}
+
 function readCachedLinks(): void {
   if (!storageAvailable()) return;
   try {
     const cached = JSON.parse(localStorage.getItem(LINKS_CACHE_KEY) ?? 'null') as unknown;
     const parsed = parseCatalog(cached);
-    if (parsed) {
-      linkTools.value = parsed.links;
-      bookmarks.value = parsed.bookmarks;
-    }
+    if (parsed) applyParsedCatalog(parsed);
   } catch {
     // 缓存不可用时仅展示内置工具。
   }
@@ -164,8 +173,7 @@ async function refreshLinks(): Promise<void> {
       const parsed = parseCatalog(payload);
       if (!parsed) return;
 
-      linkTools.value = parsed.links;
-      bookmarks.value = parsed.bookmarks;
+      applyParsedCatalog(parsed);
       if (storageAvailable()) {
         try {
           localStorage.setItem(LINKS_CACHE_KEY, JSON.stringify(payload));
@@ -189,6 +197,7 @@ export function useToolCatalog() {
 
   return {
     tools,
+    aiSites,
     bookmarks,
     refreshLinks,
   };

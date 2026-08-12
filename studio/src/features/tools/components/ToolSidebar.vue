@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import {
+  IconAi,
+  IconBookmark,
   IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarRightCollapse,
-  IconBookmark,
   IconPin,
   IconPinFilled,
   IconSearch,
@@ -23,16 +24,18 @@ const props = withDefaults(
     side: 'left' | 'right';
     searchVisible: boolean;
     favoritesVisible?: boolean;
+    aiVisible?: boolean;
     bookmarksVisible?: boolean;
     /** 是否显示搜索框开关按钮，详情页等无搜索场景可关闭 */
     searchButton?: boolean;
   }>(),
-  { bookmarksVisible: false, favoritesVisible: false, searchButton: true },
+  { aiVisible: false, bookmarksVisible: false, favoritesVisible: false, searchButton: true },
 );
 
 const emit = defineEmits<{
   select: [categoryId: string];
   'select-favorites': [];
+  'select-ai': [];
   'select-bookmarks': [];
   enter: [];
   leave: [];
@@ -101,6 +104,20 @@ const sidebarClass = computed(() => ({
           <span>
             <strong>{{ category.name }}</strong>
             <small>{{ category.label }}</small>
+          </span>
+        </button>
+        <button
+          v-if="aiVisible"
+          class="tools-sidebar__ai"
+          type="button"
+          :class="{ 'is-active': activeCategory === 'ai' }"
+          :aria-current="activeCategory === 'ai' ? 'true' : undefined"
+          @click="emit('select-ai')"
+        >
+          <IconAi :size="18" aria-hidden="true" />
+          <span>
+            <strong>AI</strong>
+            <small>AI 站</small>
           </span>
         </button>
         <button
