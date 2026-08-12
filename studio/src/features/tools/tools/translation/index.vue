@@ -4,12 +4,10 @@ import { IconArrowsExchange, IconCheck, IconCopy, IconLanguage } from '@tabler/i
 
 type TranslationDirection = 'zh2en' | 'en2zh';
 
-interface TranslationResponse {
-  responseStatus?: number;
-  responseDetails?: string | null;
-  responseData?: {
-    translatedText?: string;
-  };
+type GoogleTranslationResponse = [Array<[string | null, ...unknown[]] | null> | null, ...unknown[]];
+
+interface FallbackTranslationResponse {
+  data?: string;
 }
 
 const direction = ref<TranslationDirection>('zh2en');
@@ -24,14 +22,18 @@ let copiedTimer: number | null = null;
 const sourceLanguage = computed(() => (direction.value === 'zh2en' ? '中文' : 'English'));
 const targetLanguage = computed(() => (direction.value === 'zh2en' ? 'English' : '中文'));
 
-async function requestTranslation(text: string, signal: AbortSignal): Promise<string> {
-  if (new TextEncoder().encode(text).length > 500) {
-    throw new Error('单次翻译原文不能超过 500 个 UTF-8 字节。');
-  }
-
-  const endpoint = new URL('/get', 'https://api.mymemory.translated.net');
+async function requestPrimaryTranslation(
+  text: string,
+  from: string,
+  to: string,
+  signal: AbortSignal,
+): Promise<string> {
+  const endpoint = new URL('/translate_a/single', 'https://translate.googleapis.com');
+  endpoint.searchParams.set('client', 'gtx');
+  endpoint.searchParams.set('sl', from);
+  endpoint.searchParams.set('tl', to);
+  endpoint.searchParams.set('dt', 't');
   endpoint.searchParams.set('q', text);
-  endpoint.searchParams.set('langpair', direction.value === 'zh2en' ? 'zh-CN|en' : 'en|zh-CN');
 
   const response = await fetch(endpoint, {
     credentials: 'omit',
@@ -39,14 +41,46 @@ async function requestTranslation(text: string, signal: AbortSignal): Promise<st
   });
   if (!response.ok) throw new Error(`翻译服务返回 HTTP ${response.status}。`);
 
-  const payload = (await response.json()) as TranslationResponse;
-  if (payload.responseStatus && payload.responseStatus !== 200) {
-    throw new Error(payload.responseDetails || `翻译服务返回状态 ${payload.responseStatus}。`);
-  }
-
-  const result = payload.responseData?.translatedText?.trim() ?? '';
+  const payload = (await response.json()) as GoogleTranslationResponse;
+  const result = payload[0]?.map((segment) => segment?.[0] ?? '').join('') ?? '';
   if (!result) throw new Error('翻译服务没有返回有效结果。');
   return result;
+}
+
+async function requestFallbackTranslation(
+  text: string,
+  from: string,
+  to: string,
+  signal: AbortSignal,
+): Promise<string> {
+  const endpoint = new URL('/api/translate', 'https://openapi.dwo.cc');
+  endpoint.searchParams.set('text', text);
+  endpoint.searchParams.set('source_lang', from === 'zh-CN' ? 'zh' : from);
+  endpoint.searchParams.set('target_lang', to === 'zh-CN' ? 'zh' : to);
+  endpoint.searchParams.set('ckey', 'O7E9KK24O2YA414FGRL7');
+
+  const response = await fetch(endpoint, {
+    credentials: 'omit',
+    signal,
+  });
+  if (!response.ok) throw new Error(`备用翻译服务返回 HTTP ${response.status}。`);
+
+  const payload = (await response.json()) as FallbackTranslationResponse;
+  const result = typeof payload.data === 'string' ? payload.data.trim() : '';
+  if (!result) throw new Error('备用翻译服务没有返回有效结果。');
+  return result;
+}
+
+async function requestTranslation(text: string, signal: AbortSignal): Promise<string> {
+  const from = direction.value === 'zh2en' ? 'zh-CN' : 'en';
+  const to = direction.value === 'zh2en' ? 'en' : 'zh-CN';
+
+  try {
+    return await requestPrimaryTranslation(text, from, to, signal);
+  } catch (cause) {
+    if (signal.aborted) throw cause;
+    return requestFallbackTranslation(text, from, to, signal);
+  }
 }
 
 async function translate(): Promise<void> {
@@ -177,7 +211,6 @@ onBeforeUnmount(() => {
         <IconLanguage v-else :size="16" aria-hidden="true" />
         {{ processing ? '翻译中…' : '翻译' }}
       </button>
-      <p class="translation-tool__shortcut">Ctrl / Command + Enter 快速翻译</p>
     </div>
   </section>
 </template>
@@ -342,13 +375,6 @@ onBeforeUnmount(() => {
   border-top-color: #fff;
   border-radius: 50%;
   animation: translation-spin 650ms linear infinite;
-}
-
-.translation-tool__shortcut {
-  margin: -8px 0 0;
-  color: var(--color-text-muted);
-  font-size: 9px;
-  text-align: center;
 }
 
 @keyframes translation-spin {
