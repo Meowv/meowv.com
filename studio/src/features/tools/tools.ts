@@ -50,7 +50,7 @@ const toolCategorySeeds = {
     name: 'Developer',
     label: '开发工具',
     icon: 'code',
-    color: '#2563eb',
+    color: 'var(--tools-category-developer)',
     tools: [
       {
         id: 'json',
@@ -65,7 +65,7 @@ const toolCategorySeeds = {
     name: 'Language',
     label: '语言工具',
     icon: 'language',
-    color: '#0f766e',
+    color: 'var(--tools-category-language)',
     tools: [
       {
         id: 'translation',
@@ -97,7 +97,7 @@ const toolCategorySeeds = {
     name: 'Image',
     label: '图片工具',
     icon: 'image',
-    color: '#b42375',
+    color: 'var(--tools-category-image)',
     tools: [
       {
         id: 'image-compress',
@@ -177,7 +177,7 @@ const toolCategorySeeds = {
     name: 'PDF',
     label: 'PDF 工具',
     icon: 'pdf',
-    color: '#c2413d',
+    color: 'var(--tools-category-pdf)',
     tools: [
       {
         id: 'merge-pdf',
@@ -245,7 +245,7 @@ const toolCategorySeeds = {
     name: 'Misc',
     label: '其他工具',
     icon: 'tools',
-    color: '#d97706',
+    color: 'var(--tools-category-misc)',
     tools: [
       {
         id: 'color-picker',
@@ -307,7 +307,7 @@ const toolCategorySeeds = {
     name: 'Games',
     label: '趣味游戏',
     icon: 'gamepad',
-    color: '#7c3aed',
+    color: 'var(--tools-category-games)',
     tools: [
       {
         id: 'emoji-match',

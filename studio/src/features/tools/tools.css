@@ -1,3 +1,25 @@
+:root {
+  --tools-category-favorites: #b45309;
+  --tools-category-developer: #1d4ed8;
+  --tools-category-language: #047857;
+  --tools-category-image: #b42375;
+  --tools-category-pdf: #c2413d;
+  --tools-category-misc: #c2410c;
+  --tools-category-games: #7e22ce;
+  --tools-category-bookmarks: #0e7490;
+}
+
+:root[data-theme='dark'] {
+  --tools-category-favorites: #fbbf24;
+  --tools-category-developer: #60a5fa;
+  --tools-category-language: #34d399;
+  --tools-category-image: #f472b6;
+  --tools-category-pdf: #f87171;
+  --tools-category-misc: #fb923c;
+  --tools-category-games: #c084fc;
+  --tools-category-bookmarks: #22d3ee;
+}
+
 .tools-page {
   --tools-accent: var(--menu-tools-foreground);
 
@@ -181,14 +203,14 @@
 }
 
 .tools-sidebar nav > button.tools-sidebar__bookmarks {
-  --tool-accent: #0891b2;
+  --tool-accent: var(--tools-category-bookmarks);
 
   margin-top: 5px;
   box-shadow: 0 -1px var(--color-border);
 }
 
 .tools-sidebar nav > button.tools-sidebar__favorites {
-  --tool-accent: var(--tools-accent);
+  --tool-accent: var(--tools-category-favorites);
 
   margin-bottom: 5px;
   box-shadow: 0 1px var(--color-border);
@@ -382,13 +404,15 @@
 }
 
 .tools-favorites {
+  --tools-accent: var(--tools-category-favorites);
+
   min-width: 0;
   margin-bottom: 26px;
   scroll-margin-top: 74px;
 }
 
 .tools-bookmarks {
-  --tools-accent: #0891b2;
+  --tools-accent: var(--tools-category-bookmarks);
 
   min-width: 0;
   scroll-margin-top: 74px;
