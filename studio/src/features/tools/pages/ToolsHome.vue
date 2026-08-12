@@ -10,6 +10,7 @@ import ToolSidebar from '@/features/tools/components/ToolSidebar.vue';
 import { STORAGE_POLICY, storageAvailable } from '@/core/privacy/storage';
 import { useToolCatalog } from '@/features/tools/composables/useToolCatalog';
 import { useToolFavorites } from '@/features/tools/composables/useToolFavorites';
+import { useToolsCelebration } from '@/features/tools/composables/useToolsCelebration';
 import { searchTools, toolCategories } from '@/features/tools/tools';
 import '@/features/tools/tools.css';
 
@@ -17,6 +18,7 @@ const route = useRoute();
 const query = ref('');
 const activeCategory = ref<string>(toolCategories[0]?.id ?? '');
 const catalogElement = ref<HTMLElement | null>(null);
+const carnivalFxElement = ref<HTMLCanvasElement | null>(null);
 const sidebarHovered = ref(false);
 const navigationTarget = ref<string | null>(null);
 let navigationTargetTimer: ReturnType<typeof setTimeout> | undefined;
@@ -28,6 +30,26 @@ const sidebarSide = ref(readSidebarSide());
 const searchVisible = ref(readSearchVisible());
 const { tools, aiSites, bookmarks, refreshLinks } = useToolCatalog();
 const { favoriteIds, isFavorite, toggleFavorite } = useToolFavorites();
+const { celebrationBurst, celebrationLevel, triggerCelebration } = useToolsCelebration(
+  carnivalFxElement,
+  catalogElement,
+);
+const celebrationStyle = computed<Record<string, string>>(() => {
+  if (celebrationLevel.value === 0) return {} as Record<string, string>;
+  const distance = 0.35 + celebrationLevel.value * 0.16;
+  const verticalDistance = distance * 0.42;
+  const rotation = 0.03 + celebrationLevel.value * 0.028;
+  const duration = Math.max(460, 780 - celebrationLevel.value * 40);
+  return {
+    '--tools-card-shake-duration': `${duration}ms`,
+    '--tools-card-shake-negative-rotation': `-${rotation.toFixed(3)}deg`,
+    '--tools-card-shake-negative-x': `-${distance.toFixed(2)}px`,
+    '--tools-card-shake-negative-y': `-${verticalDistance.toFixed(2)}px`,
+    '--tools-card-shake-positive-rotation': `${rotation.toFixed(3)}deg`,
+    '--tools-card-shake-positive-x': `${distance.toFixed(2)}px`,
+    '--tools-card-shake-positive-y': `${verticalDistance.toFixed(2)}px`,
+  };
+});
 const sidebarVisible = computed(() => sidebarPinned.value || sidebarHovered.value);
 const filteredTools = computed(() => searchTools(query.value, tools.value));
 const favoriteTools = computed(() =>
@@ -261,7 +283,9 @@ onBeforeUnmount(() => {
     :class="{
       'tools-home--sidebar-pinned': sidebarPinned,
       'tools-home--sidebar-right': sidebarSide === 'right',
+      'tools-home--celebrating': celebrationLevel > 0,
     }"
+    :style="celebrationStyle"
   >
     <ToolSidebar
       :categories="toolCategories"
@@ -273,16 +297,21 @@ onBeforeUnmount(() => {
       :favorites-visible="favoriteTools.length > 0"
       :ai-visible="aiSites.length > 0"
       :bookmarks-visible="bookmarks.length > 0"
+      :carnival-button="true"
+      :carnival-burst="celebrationBurst"
       @enter="sidebarHovered = true"
       @leave="handleSidebarLeave"
       @select="scrollToCategory"
       @select-favorites="scrollToFavorites"
       @select-ai="scrollToAi"
       @select-bookmarks="scrollToBookmarks"
+      @carnival="triggerCelebration"
       @update:pinned="setSidebarPinned"
       @update:side="setSidebarSide"
       @update:search-visible="setSearchVisible"
     />
+
+    <canvas ref="carnivalFxElement" class="tools-carnival__fx" aria-hidden="true"></canvas>
 
     <div
       ref="catalogElement"

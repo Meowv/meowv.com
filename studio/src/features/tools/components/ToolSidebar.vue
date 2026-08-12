@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import {
   IconAi,
   IconBookmark,
+  IconConfetti,
   IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarRightCollapse,
   IconPin,
@@ -26,10 +27,19 @@ const props = withDefaults(
     favoritesVisible?: boolean;
     aiVisible?: boolean;
     bookmarksVisible?: boolean;
+    carnivalButton?: boolean;
+    carnivalBurst?: number;
     /** 是否显示搜索框开关按钮，详情页等无搜索场景可关闭 */
     searchButton?: boolean;
   }>(),
-  { aiVisible: false, bookmarksVisible: false, favoritesVisible: false, searchButton: true },
+  {
+    aiVisible: false,
+    bookmarksVisible: false,
+    carnivalButton: false,
+    carnivalBurst: 0,
+    favoritesVisible: false,
+    searchButton: true,
+  },
 );
 
 const emit = defineEmits<{
@@ -37,6 +47,7 @@ const emit = defineEmits<{
   'select-favorites': [];
   'select-ai': [];
   'select-bookmarks': [];
+  carnival: [];
   enter: [];
   leave: [];
   'update:pinned': [value: boolean];
@@ -138,9 +149,23 @@ const sidebarClass = computed(() => ({
 
       <div
         class="tools-sidebar__footer"
-        :class="{ 'tools-sidebar__footer--no-search': !searchButton }"
+        :class="{
+          'tools-sidebar__footer--carnival': carnivalButton,
+          'tools-sidebar__footer--no-search': !searchButton,
+        }"
       >
         <ThemeToggle :size="16" />
+        <button
+          v-if="carnivalButton"
+          class="tools-sidebar__setting tools-sidebar__setting--carnival"
+          :class="{ 'is-active': carnivalBurst > 0, 'is-celebrating': carnivalBurst > 0 }"
+          type="button"
+          aria-label="狂欢"
+          title="狂欢"
+          @click="emit('carnival')"
+        >
+          <IconConfetti :key="carnivalBurst" :size="17" aria-hidden="true" />
+        </button>
         <button
           v-if="searchButton"
           class="tools-sidebar__setting tools-sidebar__setting--search"
