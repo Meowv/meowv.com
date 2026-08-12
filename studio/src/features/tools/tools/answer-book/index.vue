@@ -12,7 +12,7 @@ import {
   IconX,
 } from '@tabler/icons-vue';
 import QRCode from 'qrcode';
-import answerData from '@/assets/tools/answer-book.json';
+import answerData from './answer-book.json';
 import { STORAGE_POLICY, storageAvailable } from '@/core/privacy/storage';
 
 const themes = [
