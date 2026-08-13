@@ -7,3 +7,4 @@ onlyBuiltDependencies:
   - core-js
 patchedDependencies:
   '@excalidraw/excalidraw@0.18.1': patches/@excalidraw__excalidraw@0.18.1.patch
+  jsoncrack-react@1.0.3: patches/jsoncrack-react@1.0.3.patch

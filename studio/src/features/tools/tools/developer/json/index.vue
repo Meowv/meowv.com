@@ -3,13 +3,15 @@ import {
   IconArrowsMaximize,
   IconArrowsMinimize,
   IconBraces,
+  IconChartDots3,
   IconCheck,
   IconCopy,
   IconMessageOff,
   IconQuote,
 } from '@tabler/icons-vue';
 import { load as loadYaml } from 'js-yaml';
-import { computed, onBeforeUnmount, ref } from 'vue';
+import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import JsonVisualizationLoading from './JsonVisualizationLoading.vue';
 import ToolCodeEditor from './ToolCodeEditor.vue';
 
 interface JsonEditorHandle {
@@ -18,13 +20,124 @@ interface JsonEditorHandle {
   focus(): void;
 }
 
+interface JsonVisualizationHandle {
+  fit(): void;
+}
+
+const JsonVisualization = defineAsyncComponent({
+  loader: () => import('./JsonVisualization.vue'),
+  loadingComponent: JsonVisualizationLoading,
+  delay: 0,
+});
+const MIN_EDITOR_WIDTH = 280;
+const MIN_VISUALIZATION_WIDTH = 320;
+const SEPARATOR_WIDTH = 9;
+const STACKED_LAYOUT_WIDTH = 760;
 const editorRef = ref<JsonEditorHandle | null>(null);
+const visualizationRef = ref<JsonVisualizationHandle | null>(null);
+const workspaceLayoutRef = ref<HTMLDivElement | null>(null);
 const jsonInput = ref('');
 const filterExpression = ref('');
 const statusMessage = ref('');
 const statusTone = ref<'success' | 'error'>('success');
 const copiedAction = ref<'minify' | 'escape' | null>(null);
+const visualizationOpen = ref(false);
+const resizing = ref(false);
+const editorWidthPercent = ref(35);
+const workspaceWidth = ref(0);
 let statusTimer: number | undefined;
+let workspaceResizeObserver: ResizeObserver | null = null;
+let resizePointerId: number | null = null;
+let resizeHandle: HTMLElement | null = null;
+
+const splitBounds = computed(() => {
+  const width = workspaceWidth.value;
+  if (width <= STACKED_LAYOUT_WIDTH) return { minimum: 0, maximum: 100 };
+  return {
+    minimum: (MIN_EDITOR_WIDTH / width) * 100,
+    maximum: ((width - SEPARATOR_WIDTH - MIN_VISUALIZATION_WIDTH) / width) * 100,
+  };
+});
+
+function clampEditorWidth(value: number): number {
+  return Math.min(splitBounds.value.maximum, Math.max(splitBounds.value.minimum, value));
+}
+
+function updateWorkspaceWidth(): void {
+  const width = workspaceLayoutRef.value?.getBoundingClientRect().width ?? 0;
+  workspaceWidth.value = width;
+  if (width > STACKED_LAYOUT_WIDTH) {
+    editorWidthPercent.value = clampEditorWidth(editorWidthPercent.value);
+  }
+}
+
+function fitVisualization(): void {
+  void nextTick(() => visualizationRef.value?.fit());
+}
+
+function finishResize(): void {
+  const pointerId = resizePointerId;
+  window.removeEventListener('pointermove', moveResize);
+  window.removeEventListener('pointerup', stopResize);
+  window.removeEventListener('pointercancel', stopResize);
+  resizePointerId = null;
+  resizing.value = false;
+  document.body.classList.remove('json-editor-resizing');
+  if (pointerId !== null && resizeHandle?.hasPointerCapture(pointerId)) {
+    resizeHandle.releasePointerCapture(pointerId);
+  }
+  resizeHandle = null;
+  fitVisualization();
+}
+
+function startResize(event: PointerEvent): void {
+  if (
+    event.button !== 0 ||
+    !event.isPrimary ||
+    resizePointerId !== null ||
+    workspaceWidth.value <= STACKED_LAYOUT_WIDTH ||
+    !(event.currentTarget instanceof HTMLElement)
+  ) {
+    return;
+  }
+  resizePointerId = event.pointerId;
+  resizing.value = true;
+  resizeHandle = event.currentTarget;
+  event.currentTarget.setPointerCapture(event.pointerId);
+  window.addEventListener('pointermove', moveResize);
+  window.addEventListener('pointerup', stopResize);
+  window.addEventListener('pointercancel', stopResize);
+  document.body.classList.add('json-editor-resizing');
+}
+
+function moveResize(event: PointerEvent): void {
+  if (resizePointerId !== event.pointerId || !workspaceLayoutRef.value) return;
+  const bounds = workspaceLayoutRef.value.getBoundingClientRect();
+  editorWidthPercent.value = clampEditorWidth(((event.clientX - bounds.left) / bounds.width) * 100);
+}
+
+function stopResize(event: PointerEvent): void {
+  if (resizePointerId !== event.pointerId) return;
+  finishResize();
+}
+
+function handleSeparatorKeydown(event: KeyboardEvent): void {
+  let nextWidth = editorWidthPercent.value;
+  const step = event.shiftKey ? 10 : 2;
+  if (event.key === 'ArrowLeft') nextWidth -= step;
+  else if (event.key === 'ArrowRight') nextWidth += step;
+  else if (event.key === 'Home') nextWidth = splitBounds.value.minimum;
+  else if (event.key === 'End') nextWidth = splitBounds.value.maximum;
+  else return;
+  event.preventDefault();
+  editorWidthPercent.value = clampEditorWidth(nextWidth);
+  fitVisualization();
+}
+
+function toggleVisualization(): void {
+  if (visualizationOpen.value) finishResize();
+  visualizationOpen.value = !visualizationOpen.value;
+}
 
 function showStatus(message: string, tone: 'success' | 'error' = 'success'): void {
   statusMessage.value = message;
@@ -261,121 +374,242 @@ async function unfoldAll(): Promise<void> {
   showStatus('已展开全部');
 }
 
-onBeforeUnmount(() => window.clearTimeout(statusTimer));
+onMounted(() => {
+  if (!workspaceLayoutRef.value) return;
+  workspaceResizeObserver = new ResizeObserver(updateWorkspaceWidth);
+  workspaceResizeObserver.observe(workspaceLayoutRef.value);
+  updateWorkspaceWidth();
+});
+
+onBeforeUnmount(() => {
+  window.clearTimeout(statusTimer);
+  workspaceResizeObserver?.disconnect();
+  workspaceResizeObserver = null;
+  finishResize();
+});
 </script>
 
 <template>
-  <section class="json-editor" aria-label="JSON 编辑器">
-    <div class="json-editor__panes" :class="{ 'json-editor__panes--split': hasFilter }">
-      <ToolCodeEditor
-        ref="editorRef"
-        v-model="jsonInput"
-        language="json"
-        label="JSON 编辑器"
-        :min-height="520"
-        :word-wrap="false"
-        placeholder="XML、YAML 粘贴自动转为 JSON"
-        @paste-text="handleEditorPaste"
-      />
-      <ToolCodeEditor
-        v-if="hasFilter"
-        class="json-editor__result"
-        :model-value="filterOutput"
-        language="json"
-        label="JS 过滤结果"
-        :min-height="520"
-        :word-wrap="false"
-        :line-numbers="false"
-        :folding="false"
-        read-only
+  <div class="json-editor-workspace">
+    <div
+      ref="workspaceLayoutRef"
+      class="json-editor-workspace__layout"
+      :class="{ 'json-editor-workspace__layout--visualizing': visualizationOpen }"
+      :style="{ '--json-editor-left-width': `${editorWidthPercent}%` }"
+    >
+      <section id="json-editor-input-pane" class="json-editor" aria-label="JSON 编辑器">
+        <div class="json-editor__panes" :class="{ 'json-editor__panes--split': hasFilter }">
+          <ToolCodeEditor
+            ref="editorRef"
+            v-model="jsonInput"
+            language="json"
+            label="JSON 编辑器"
+            :min-height="520"
+            :word-wrap="false"
+            placeholder="XML、YAML 粘贴自动转为 JSON"
+            @paste-text="handleEditorPaste"
+          />
+          <ToolCodeEditor
+            v-if="hasFilter"
+            class="json-editor__result"
+            :model-value="filterOutput"
+            language="json"
+            label="JS 过滤结果"
+            :min-height="520"
+            :word-wrap="false"
+            :line-numbers="false"
+            :folding="false"
+            read-only
+          />
+        </div>
+
+        <p
+          v-if="statusMessage"
+          class="json-editor__status"
+          :class="`json-editor__status--${statusTone}`"
+          :role="statusTone === 'error' ? 'alert' : 'status'"
+        >
+          {{ statusMessage }}
+        </p>
+
+        <footer class="json-editor__footer">
+          <div class="json-editor__filter" aria-label="JS 过滤">
+            <span aria-hidden="true">this</span>
+            <input
+              v-model="filterExpression"
+              type="text"
+              aria-label="JS 过滤表达式"
+              placeholder='JS 过滤：示例 ".key.subkey"、"[0][1]"、".map(x=>x.val)"'
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+
+          <div class="json-editor__actions" aria-label="JSON 操作">
+            <button
+              type="button"
+              class="json-editor__action"
+              data-tooltip="格式化"
+              aria-label="格式化"
+              @click="formatJson"
+            >
+              <IconBraces :size="18" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              class="json-editor__action"
+              data-tooltip="折叠全部"
+              aria-label="折叠全部"
+              @click="foldAll"
+            >
+              <IconArrowsMinimize :size="18" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              class="json-editor__action"
+              data-tooltip="展开全部"
+              aria-label="展开全部"
+              @click="unfoldAll"
+            >
+              <IconArrowsMaximize :size="18" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              class="json-editor__action"
+              data-tooltip="去除注释"
+              aria-label="去除注释"
+              @click="removeComments"
+            >
+              <IconMessageOff :size="18" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              class="json-editor__action"
+              data-tooltip="压缩并复制"
+              aria-label="压缩并复制"
+              @click="copyJson('minify')"
+            >
+              <IconCheck v-if="copiedAction === 'minify'" :size="18" aria-hidden="true" />
+              <IconCopy v-else :size="18" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              class="json-editor__action"
+              data-tooltip="压缩转义并复制"
+              aria-label="压缩转义并复制"
+              @click="copyJson('escape')"
+            >
+              <IconCheck v-if="copiedAction === 'escape'" :size="18" aria-hidden="true" />
+              <IconQuote v-else :size="18" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              class="json-editor__action"
+              :data-tooltip="visualizationOpen ? '关闭可视化' : '打开可视化'"
+              :aria-label="visualizationOpen ? '关闭可视化' : '打开可视化'"
+              :aria-pressed="visualizationOpen"
+              @click="toggleVisualization"
+            >
+              <IconChartDots3 :size="18" aria-hidden="true" />
+            </button>
+          </div>
+        </footer>
+      </section>
+
+      <div
+        v-if="visualizationOpen"
+        class="json-editor-workspace__separator"
+        :class="{ 'is-resizing': resizing }"
+        role="separator"
+        tabindex="0"
+        aria-label="调整编辑区和可视化区宽度"
+        aria-orientation="vertical"
+        aria-controls="json-editor-input-pane json-visualization-pane"
+        :aria-valuemin="Math.round(splitBounds.minimum)"
+        :aria-valuemax="Math.round(splitBounds.maximum)"
+        :aria-valuenow="Math.round(editorWidthPercent)"
+        :aria-valuetext="`编辑区 ${Math.round(editorWidthPercent)}%，可视化区 ${100 - Math.round(editorWidthPercent)}%`"
+        @keydown="handleSeparatorKeydown"
+        @pointerdown.prevent="startResize"
+        @lostpointercapture="stopResize"
+      ></div>
+
+      <JsonVisualization
+        v-if="visualizationOpen"
+        id="json-visualization-pane"
+        ref="visualizationRef"
+        class="json-editor-workspace__visualization"
+        :source="jsonInput"
       />
     </div>
-
-    <p
-      v-if="statusMessage"
-      class="json-editor__status"
-      :class="`json-editor__status--${statusTone}`"
-      :role="statusTone === 'error' ? 'alert' : 'status'"
-    >
-      {{ statusMessage }}
-    </p>
-
-    <footer class="json-editor__footer">
-      <div class="json-editor__filter" aria-label="JS 过滤">
-        <span aria-hidden="true">this</span>
-        <input
-          v-model="filterExpression"
-          type="text"
-          aria-label="JS 过滤表达式"
-          placeholder='JS 过滤：示例 ".key.subkey"、"[0][1]"、".map(x=>x.val)"'
-          autocomplete="off"
-          spellcheck="false"
-        />
-      </div>
-
-      <div class="json-editor__actions" aria-label="JSON 操作">
-        <button
-          type="button"
-          class="json-editor__action"
-          data-tooltip="格式化"
-          aria-label="格式化"
-          @click="formatJson"
-        >
-          <IconBraces :size="18" aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          class="json-editor__action"
-          data-tooltip="折叠全部"
-          aria-label="折叠全部"
-          @click="foldAll"
-        >
-          <IconArrowsMinimize :size="18" aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          class="json-editor__action"
-          data-tooltip="展开全部"
-          aria-label="展开全部"
-          @click="unfoldAll"
-        >
-          <IconArrowsMaximize :size="18" aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          class="json-editor__action"
-          data-tooltip="去除注释"
-          aria-label="去除注释"
-          @click="removeComments"
-        >
-          <IconMessageOff :size="18" aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          class="json-editor__action"
-          data-tooltip="压缩并复制"
-          aria-label="压缩并复制"
-          @click="copyJson('minify')"
-        >
-          <IconCheck v-if="copiedAction === 'minify'" :size="18" aria-hidden="true" />
-          <IconCopy v-else :size="18" aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          class="json-editor__action"
-          data-tooltip="压缩转义并复制"
-          aria-label="压缩转义并复制"
-          @click="copyJson('escape')"
-        >
-          <IconCheck v-if="copiedAction === 'escape'" :size="18" aria-hidden="true" />
-          <IconQuote v-else :size="18" aria-hidden="true" />
-        </button>
-      </div>
-    </footer>
-  </section>
+  </div>
 </template>
 
 <style scoped>
+.json-editor-workspace,
+.json-editor-workspace__layout {
+  min-width: 0;
+}
+
+.json-editor-workspace {
+  container-type: inline-size;
+}
+
+.json-editor-workspace__layout--visualizing {
+  display: grid;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 13px;
+  grid-template-columns:
+    clamp(280px, var(--json-editor-left-width), calc(100% - 329px)) 9px
+    minmax(320px, 1fr);
+  align-items: stretch;
+  background: var(--color-surface-solid);
+  box-shadow: 0 4px 18px rgb(16 24 40 / 3%);
+}
+
+.json-editor-workspace__layout--visualizing > .json-editor {
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  container-type: inline-size;
+  box-shadow: none;
+}
+
+.json-editor-workspace__separator {
+  position: relative;
+  z-index: 3;
+  min-width: 0;
+  outline: 0;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.json-editor-workspace__separator::before {
+  position: absolute;
+  inset-block: 0;
+  left: 4px;
+  width: 1px;
+  background: var(--color-border);
+  content: '';
+  transition:
+    width 120ms ease,
+    background 120ms ease;
+}
+
+.json-editor-workspace__separator:is(:hover, :focus-visible)::before,
+.json-editor-workspace__separator.is-resizing::before {
+  left: 3px;
+  width: 3px;
+  background: var(--tools-accent);
+}
+
+.json-editor-workspace__visualization {
+  min-width: 0;
+  min-height: 0;
+}
+
 .json-editor {
   position: relative;
   display: flex;
@@ -391,6 +625,7 @@ onBeforeUnmount(() => window.clearTimeout(statusTimer));
 .json-editor__panes {
   display: grid;
   min-width: 0;
+  flex: 1 1 auto;
   grid-template-columns: minmax(0, 1fr);
 }
 
@@ -480,7 +715,8 @@ onBeforeUnmount(() => window.clearTimeout(statusTimer));
 }
 
 .json-editor__action:hover,
-.json-editor__action:focus-visible {
+.json-editor__action:focus-visible,
+.json-editor__action[aria-pressed='true'] {
   color: var(--tools-accent);
   background: color-mix(in srgb, var(--tools-accent) 10%, transparent);
 }
@@ -539,6 +775,75 @@ onBeforeUnmount(() => window.clearTimeout(statusTimer));
   border-color: color-mix(in srgb, var(--color-danger) 34%, var(--color-border));
   background: color-mix(in srgb, var(--color-danger) 9%, var(--color-surface-solid));
   color: var(--color-danger);
+}
+
+@container (max-width: 760px) {
+  .json-editor-workspace__layout--visualizing {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .json-editor-workspace__separator {
+    display: none;
+  }
+
+  .json-editor-workspace__visualization {
+    min-height: 440px;
+    border-top: 1px solid var(--color-border);
+  }
+}
+
+@container (max-width: 620px) {
+  .json-editor-workspace__layout--visualizing .json-editor__panes {
+    height: max(520px, calc(100dvh - var(--header-height) - 260px));
+    min-height: 520px;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .json-editor-workspace__layout--visualizing .json-editor__panes--split {
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+  }
+
+  .json-editor-workspace__layout--visualizing .json-editor__result {
+    border-top: 1px solid var(--color-border);
+    border-left: 0;
+  }
+
+  .json-editor-workspace__layout--visualizing .json-editor__panes :deep(.tool-code-editor) {
+    height: 100%;
+    min-height: 0 !important;
+  }
+}
+
+@container (max-width: 520px) {
+  .json-editor-workspace__layout--visualizing .json-editor__footer {
+    min-height: 84px;
+    flex-direction: column;
+  }
+
+  .json-editor-workspace__layout--visualizing .json-editor__filter {
+    min-height: 42px;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .json-editor-workspace__layout--visualizing .json-editor__actions {
+    min-height: 42px;
+    border-left: 0;
+    justify-content: flex-end;
+  }
+
+  .json-editor-workspace__layout--visualizing .json-editor__status {
+    bottom: 94px;
+  }
+}
+
+:global(body.json-editor-resizing) {
+  cursor: col-resize;
+  user-select: none;
+}
+
+:global(body.json-editor-resizing *) {
+  cursor: col-resize !important;
 }
 
 @media (max-width: 760px) {

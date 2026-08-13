@@ -59,6 +59,18 @@ const toolCategorySeeds = {
           '编辑、格式化和折叠 JSON，支持 XML/YAML 粘贴转换、注释清理、压缩复制与 JS 过滤。',
         icon: 'braces',
       },
+      {
+        id: 'text-json-diff',
+        name: '文本 / JSON 对比',
+        description: '并排对比文本或 JSON 内容，高亮显示新增、删除与修改差异。',
+        icon: 'file-diff',
+      },
+      {
+        id: 'encoding-converter',
+        name: '编码转换',
+        description: '支持 Base64、URL、Unicode、HTML Entity 与 Hex 编码转换。',
+        icon: 'binary',
+      },
     ],
   },
   language: {

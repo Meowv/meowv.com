@@ -5,6 +5,7 @@ import { usePageMeta } from '@/composables/usePageMeta';
 import ToolContainer from '@/features/tools/components/ToolContainer.vue';
 import { getToolById, toolCategoryMap } from '@/features/tools/tools';
 import JsonEditorLoading from '@/features/tools/tools/developer/json/JsonEditorLoading.vue';
+import TextJsonDiffLoading from '@/features/tools/tools/developer/text-json-diff/TextJsonDiffLoading.vue';
 import '@/features/tools/tools.css';
 
 const route = useRoute();
@@ -19,18 +20,26 @@ const componentLoaders = import.meta.glob<Component>('../tools/*/*/index.vue', {
 });
 // 工具目录由分类和配置 id 直接映射，新增工具无需再维护组件注册表。
 const toolComponents: Record<string, Component> = Object.fromEntries(
-  Object.entries(componentLoaders).map(([modulePath, loader]) => [
-    modulePath,
-    defineAsyncComponent(
+  Object.entries(componentLoaders).map(([modulePath, loader]) => {
+    const loadingComponent =
       modulePath === '../tools/developer/json/index.vue'
-        ? {
-            loader,
-            loadingComponent: JsonEditorLoading,
-            delay: 0,
-          }
-        : loader,
-    ),
-  ]),
+        ? JsonEditorLoading
+        : modulePath === '../tools/developer/text-json-diff/index.vue'
+          ? TextJsonDiffLoading
+          : undefined;
+    return [
+      modulePath,
+      defineAsyncComponent(
+        loadingComponent
+          ? {
+              loader,
+              loadingComponent,
+              delay: 0,
+            }
+          : loader,
+      ),
+    ];
+  }),
 );
 function getToolModulePath(categoryId: string, toolId: string): string {
   return `../tools/${categoryId}/${toolId}/index.vue`;

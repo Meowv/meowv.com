@@ -1,0 +1,1291 @@
+diff --git a/dist/JSONCrackComponent.d.ts b/dist/JSONCrackComponent.d.ts
+index baca3e61ec4805263bd8bf83dd060541efc4a39f..1b228a8d3b8e6c97fa1b584ca004c02d6e35e22b 100644
+--- a/dist/JSONCrackComponent.d.ts
++++ b/dist/JSONCrackComponent.d.ts
+@@ -1,4 +1,5 @@
+ import { type CSSProperties, type ReactNode } from "react";
++import type { JSONPath } from "jsonc-parser";
+ import type { ViewPort } from "react-zoomable-ui";
+ import { type JsonInput } from "./canvasHelpers";
+ import type { CanvasThemeMode, GraphData, LayoutDirection, NodeData } from "./types";
+@@ -14,6 +15,14 @@ export interface JSONCrackRef {
+     centerView: () => void;
+     /** Center and zoom on the root node of the graph. */
+     focusFirstNode: () => void;
++    /** Toggle collapse for a specific JSON path (uncontrolled mode only). */
++    toggleCollapse: (path: JSONPath) => void;
++    /** Collapse every first-level container of the root (uncontrolled mode only). */
++    collapseAll: () => void;
++    /** Clear all collapsed paths (uncontrolled mode only). */
++    expandAll: () => void;
++    /** Current collapsed-paths snapshot (serialized keys). */
++    getCollapsedPaths: () => string[];
+ }
+ /** Props accepted by the `JSONCrack` component. */
+ export interface JSONCrackProps {
+@@ -47,6 +56,17 @@ export interface JSONCrackProps {
+     onViewportCreate?: (viewPort: ViewPort) => void;
+     /** Custom renderer shown when the graph exceeds `maxRenderableNodes`. */
+     renderNodeLimitExceeded?: (nodeCount: number, maxRenderableNodes: number) => ReactNode;
++    /**
++     * Controlled collapsed-paths set (serialized via `pathKey` / `JSON.stringify`).
++     * When provided, the component becomes controlled for collapse state and
++     * `onToggleCollapse` is required to mutate it. When omitted, the component
++     * manages collapse state internally.
++     */
++    collapsedPaths?: string[];
++    /** Called with the `JSONPath` of a row's value when the user clicks a chevron (controlled mode). */
++    onToggleCollapse?: (path: JSONPath) => void;
++    /** Observe the internal collapsed-paths set (uncontrolled mode). */
++    onCollapseChange?: (collapsedPaths: string[]) => void;
+ }
+ /** Interactive JSON-to-graph visualization. Forwards a `JSONCrackRef` for imperative viewport control. */
+ export declare const JSONCrack: import("react").ForwardRefExoticComponent<JSONCrackProps & import("react").RefAttributes<JSONCrackRef>>;
+diff --git a/dist/JSONCrackComponent.d.ts.map b/dist/JSONCrackComponent.d.ts.map
+index c4e2c187154c2336b575f24281d1468f8259d69b..0b1cb2a5149497a7b7e8d801bfaffcb0019faf1e 100644
+--- a/dist/JSONCrackComponent.d.ts.map
++++ b/dist/JSONCrackComponent.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"JSONCrackComponent.d.ts","sourceRoot":"","sources":["../src/JSONCrackComponent.tsx"],"names":[],"mappings":"AAEA,OAAO,EAQL,KAAK,aAAa,EAClB,KAAK,SAAS,EACf,MAAM,OAAO,CAAC;AACf,OAAO,KAAK,EAAE,QAAQ,EAAE,MAAM,mBAAmB,CAAC;AAMlD,OAAO,EAWL,KAAK,SAAS,EACf,MAAM,iBAAiB,CAAC;AAIzB,OAAO,KAAK,EAAE,eAAe,EAAE,SAAS,EAAE,eAAe,EAAE,QAAQ,EAAE,MAAM,SAAS,CAAC;AAQrF,4EAA4E;AAC5E,MAAM,WAAW,YAAY;IAC3B,+EAA+E;IAC/E,MAAM,EAAE,MAAM,IAAI,CAAC;IACnB,iFAAiF;IACjF,OAAO,EAAE,MAAM,IAAI,CAAC;IACpB,kEAAkE;IAClE,OAAO,EAAE,CAAC,UAAU,EAAE,MAAM,KAAK,IAAI,CAAC;IACtC,wDAAwD;IACxD,UAAU,EAAE,MAAM,IAAI,CAAC;IACvB,qDAAqD;IACrD,cAAc,EAAE,MAAM,IAAI,CAAC;CAC5B;AAED,mDAAmD;AACnD,MAAM,WAAW,cAAc;IAC7B,2DAA2D;IAC3D,IAAI,EAAE,SAAS,CAAC;IAChB,uEAAuE;IACvE,KAAK,CAAC,EAAE,eAAe,CAAC;IACxB,oEAAoE;IACpE,eAAe,CAAC,EAAE,eAAe,CAAC;IAClC,qFAAqF;IACrF,YAAY,CAAC,EAAE,OAAO,CAAC;IACvB,+DAA+D;IAC/D,QAAQ,CAAC,EAAE,OAAO,CAAC;IACnB,0FAA0F;IAC1F,YAAY,CAAC,EAAE,OAAO,CAAC;IACvB,yEAAyE;IACzE,cAAc,CAAC,EAAE,OAAO,CAAC;IACzB,iGAAiG;IACjG,kBAAkB,CAAC,EAAE,MAAM,CAAC;IAC5B,4DAA4D;IAC5D,SAAS,CAAC,EAAE,MAAM,CAAC;IACnB,8DAA8D;IAC9D,KAAK,CAAC,EAAE,aAAa,CAAC;IACtB,qCAAqC;IACrC,WAAW,CAAC,EAAE,CAAC,IAAI,EAAE,QAAQ,KAAK,IAAI,CAAC;IACvC,sEAAsE;IACtE,OAAO,CAAC,EAAE,CAAC,KAAK,EAAE,SAAS,KAAK,IAAI,CAAC;IACrC,8EAA8E;IAC9E,YAAY,CAAC,EAAE,CAAC,KAAK,EAAE,KAAK,KAAK,IAAI,CAAC;IACtC,+EAA+E;IAC/E,gBAAgB,CAAC,EAAE,CAAC,QAAQ,EAAE,QAAQ,KAAK,IAAI,CAAC;IAChD,yEAAyE;IACzE,uBAAuB,CAAC,EAAE,CAAC,SAAS,EAAE,MAAM,EAAE,kBAAkB,EAAE,MAAM,KAAK,SAAS,CAAC;CACxF;AAED,0GAA0G;AAC1G,eAAO,MAAM,SAAS,yGAwQrB,CAAC"}
+\ No newline at end of file
++{"version":3,"file":"JSONCrackComponent.d.ts","sourceRoot":"","sources":["../src/JSONCrackComponent.tsx"],"names":[],"mappings":"AAEA,OAAO,EAQL,KAAK,aAAa,EAClB,KAAK,SAAS,EACf,MAAM,OAAO,CAAC;AACf,OAAO,KAAK,EAAE,QAAQ,EAAE,MAAM,cAAc,CAAC;AAC7C,OAAO,KAAK,EAAE,QAAQ,EAAE,MAAM,mBAAmB,CAAC;AAMlD,OAAO,EAWL,KAAK,SAAS,EACf,MAAM,iBAAiB,CAAC;AAKzB,OAAO,KAAK,EAAE,eAAe,EAAE,SAAS,EAAE,eAAe,EAAE,QAAQ,EAAE,MAAM,SAAS,CAAC;AAQrF,4EAA4E;AAC5E,MAAM,WAAW,YAAY;IAC3B,+EAA+E;IAC/E,MAAM,EAAE,MAAM,IAAI,CAAC;IACnB,iFAAiF;IACjF,OAAO,EAAE,MAAM,IAAI,CAAC;IACpB,kEAAkE;IAClE,OAAO,EAAE,CAAC,UAAU,EAAE,MAAM,KAAK,IAAI,CAAC;IACtC,wDAAwD;IACxD,UAAU,EAAE,MAAM,IAAI,CAAC;IACvB,qDAAqD;IACrD,cAAc,EAAE,MAAM,IAAI,CAAC;IAC3B,yEAAyE;IACzE,cAAc,EAAE,CAAC,IAAI,EAAE,QAAQ,KAAK,IAAI,CAAC;IACzC,iFAAiF;IACjF,WAAW,EAAE,MAAM,IAAI,CAAC;IACxB,0DAA0D;IAC1D,SAAS,EAAE,MAAM,IAAI,CAAC;IACtB,0DAA0D;IAC1D,iBAAiB,EAAE,MAAM,MAAM,EAAE,CAAC;CACnC;AAED,mDAAmD;AACnD,MAAM,WAAW,cAAc;IAC7B,2DAA2D;IAC3D,IAAI,EAAE,SAAS,CAAC;IAChB,uEAAuE;IACvE,KAAK,CAAC,EAAE,eAAe,CAAC;IACxB,oEAAoE;IACpE,eAAe,CAAC,EAAE,eAAe,CAAC;IAClC,qFAAqF;IACrF,YAAY,CAAC,EAAE,OAAO,CAAC;IACvB,+DAA+D;IAC/D,QAAQ,CAAC,EAAE,OAAO,CAAC;IACnB,0FAA0F;IAC1F,YAAY,CAAC,EAAE,OAAO,CAAC;IACvB,yEAAyE;IACzE,cAAc,CAAC,EAAE,OAAO,CAAC;IACzB,iGAAiG;IACjG,kBAAkB,CAAC,EAAE,MAAM,CAAC;IAC5B,4DAA4D;IAC5D,SAAS,CAAC,EAAE,MAAM,CAAC;IACnB,8DAA8D;IAC9D,KAAK,CAAC,EAAE,aAAa,CAAC;IACtB,qCAAqC;IACrC,WAAW,CAAC,EAAE,CAAC,IAAI,EAAE,QAAQ,KAAK,IAAI,CAAC;IACvC,sEAAsE;IACtE,OAAO,CAAC,EAAE,CAAC,KAAK,EAAE,SAAS,KAAK,IAAI,CAAC;IACrC,8EAA8E;IAC9E,YAAY,CAAC,EAAE,CAAC,KAAK,EAAE,KAAK,KAAK,IAAI,CAAC;IACtC,+EAA+E;IAC/E,gBAAgB,CAAC,EAAE,CAAC,QAAQ,EAAE,QAAQ,KAAK,IAAI,CAAC;IAChD,yEAAyE;IACzE,uBAAuB,CAAC,EAAE,CAAC,SAAS,EAAE,MAAM,EAAE,kBAAkB,EAAE,MAAM,KAAK,SAAS,CAAC;IACvF;;;;;OAKG;IACH,cAAc,CAAC,EAAE,MAAM,EAAE,CAAC;IAC1B,oGAAoG;IACpG,gBAAgB,CAAC,EAAE,CAAC,IAAI,EAAE,QAAQ,KAAK,IAAI,CAAC;IAC5C,oEAAoE;IACpE,gBAAgB,CAAC,EAAE,CAAC,cAAc,EAAE,MAAM,EAAE,KAAK,IAAI,CAAC;CACvD;AAED,0GAA0G;AAC1G,eAAO,MAAM,SAAS,yGAufrB,CAAC"}
+\ No newline at end of file
+diff --git a/dist/components/CollapseContext.d.ts b/dist/components/CollapseContext.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..9b3427b541a537b63be02069f2d9b8f10660cc03
+--- /dev/null
++++ b/dist/components/CollapseContext.d.ts
+@@ -0,0 +1,17 @@
++import type { JSONPath } from "jsonc-parser";
++export interface CollapseContextValue {
++    collapsedSet: Set<string>;
++    onToggleCollapse?: (path: JSONPath) => void;
++}
++export declare const CollapseContext: import("react").Context<CollapseContextValue>;
++export declare const useCollapseContext: () => CollapseContextValue;
++export declare const pathKey: (path: JSONPath) => string;
++export declare const isPathCollapsed: (collapsedSet: Set<string>, path: JSONPath) => boolean;
++export declare const isNodeHidden: (collapsedPrefixes: readonly JSONPath[], nodePath: JSONPath | undefined) => boolean;
++/**
++ * Drop serialized collapsed-paths that no longer resolve to an object/array
++ * in the given JSON. Invalid JSON returns the input verbatim so a transient
++ * edit error doesn't nuke state.
++ */
++export declare const prunePaths: (jsonText: string, paths: readonly string[]) => string[];
++//# sourceMappingURL=CollapseContext.d.ts.map
+\ No newline at end of file
+diff --git a/dist/components/CollapseContext.d.ts.map b/dist/components/CollapseContext.d.ts.map
+new file mode 100644
+index 0000000000000000000000000000000000000000..b88c1ba928ee45f4d07974c723c73aefb529b130
+--- /dev/null
++++ b/dist/components/CollapseContext.d.ts.map
+@@ -0,0 +1 @@
++{"version":3,"file":"CollapseContext.d.ts","sourceRoot":"","sources":["../../src/components/CollapseContext.ts"],"names":[],"mappings":"AACA,OAAO,KAAK,EAAE,QAAQ,EAAE,MAAM,cAAc,CAAC;AAE7C,MAAM,WAAW,oBAAoB;IACnC,YAAY,EAAE,GAAG,CAAC,MAAM,CAAC,CAAC;IAC1B,gBAAgB,CAAC,EAAE,CAAC,IAAI,EAAE,QAAQ,KAAK,IAAI,CAAC;CAC7C;AAID,eAAO,MAAM,eAAe,+CAA6C,CAAC;AAE1E,eAAO,MAAM,kBAAkB,QAAO,oBAAmD,CAAC;AAE1F,eAAO,MAAM,OAAO,GAAI,MAAM,QAAQ,KAAG,MAA8B,CAAC;AAExE,eAAO,MAAM,eAAe,GAAI,cAAc,GAAG,CAAC,MAAM,CAAC,EAAE,MAAM,QAAQ,KAAG,OAC3C,CAAC;AAElC,eAAO,MAAM,YAAY,GACvB,mBAAmB,SAAS,QAAQ,EAAE,EACtC,UAAU,QAAQ,GAAG,SAAS,KAC7B,OAcF,CAAC;AAEF;;;;GAIG;AACH,eAAO,MAAM,UAAU,GAAI,UAAU,MAAM,EAAE,OAAO,SAAS,MAAM,EAAE,KAAG,MAAM,EA4B7E,CAAC"}
+\ No newline at end of file
+diff --git a/dist/components/ObjectNode.d.ts.map b/dist/components/ObjectNode.d.ts.map
+index 75ca1be95d4e0bb0a8b532548b99de62b637de63..a2af967e97997b916ade0f7347f8313dc4f9bfb2 100644
+--- a/dist/components/ObjectNode.d.ts.map
++++ b/dist/components/ObjectNode.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"ObjectNode.d.ts","sourceRoot":"","sources":["../../src/components/ObjectNode.tsx"],"names":[],"mappings":"AAAA,OAAO,KAAK,MAAM,OAAO,CAAC;AAC1B,OAAO,KAAK,EAAE,QAAQ,EAAE,MAAM,UAAU,CAAC;AAKzC,KAAK,eAAe,GAAG;IACrB,IAAI,EAAE,QAAQ,CAAC;IACf,CAAC,EAAE,MAAM,CAAC;IACV,CAAC,EAAE,MAAM,CAAC;CACX,CAAC;AAkGF,eAAO,MAAM,UAAU,6CAzDiB,eAAe,6CAyDY,CAAC"}
+\ No newline at end of file
++{"version":3,"file":"ObjectNode.d.ts","sourceRoot":"","sources":["../../src/components/ObjectNode.tsx"],"names":[],"mappings":"AAAA,OAAO,KAAK,MAAM,OAAO,CAAC;AAE1B,OAAO,KAAK,EAAE,QAAQ,EAAE,MAAM,UAAU,CAAC;AAMzC,KAAK,eAAe,GAAG;IACrB,IAAI,EAAE,QAAQ,CAAC;IACf,CAAC,EAAE,MAAM,CAAC;IACV,CAAC,EAAE,MAAM,CAAC;CACX,CAAC;AAuKF,eAAO,MAAM,UAAU,6CA9EiB,eAAe,6CA8EY,CAAC"}
+\ No newline at end of file
+diff --git a/dist/index.css b/dist/index.css
+index 1f587a6ed7add46756767a6dc57462e65745d5ad..879076868e010e4fd9c2346893fbca771eea6220 100644
+--- a/dist/index.css
++++ b/dist/index.css
+@@ -1,2 +1,2 @@
+-._canvasWrapper_p95tl_1{background-color:var(--bg-color);width:100%;height:100%;position:relative}._showGrid_p95tl_8{background-image:linear-gradient(var(--line-color-1) 1.5px, transparent 1.5px), linear-gradient(90deg, var(--line-color-1) 1.5px, transparent 1.5px), linear-gradient(var(--line-color-2) 1px, transparent 1px), linear-gradient(90deg, var(--line-color-2) 1px, transparent 1px);background-position:-1.5px -1.5px,-1.5px -1.5px,-1px -1px,-1px -1px;background-size:100px 100px,100px 100px,20px 20px,20px 20px}._canvasWrapper_p95tl_1 .jsoncrack-space{cursor:grab}._canvasWrapper_p95tl_1 .jsoncrack-space:active{cursor:grabbing}._canvasWrapper_p95tl_1 .dragging,._canvasWrapper_p95tl_1 .dragging *{pointer-events:none!important}._canvasWrapper_p95tl_1 text{fill:var(--interactive-normal)!important;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif!important}._canvasWrapper_p95tl_1 rect{fill:var(--node-fill)}._overlay_p95tl_49{z-index:30;pointer-events:none;background:radial-gradient(circle at center, var(--overlay-bg) 0 44px, transparent 96px);justify-content:center;align-items:center;display:flex;position:absolute;inset:0}._spinner_p95tl_60{border:3px solid var(--spinner-track);border-top-color:var(--spinner-head);border-right-color:var(--spinner-head);border-radius:9999px;width:30px;height:30px;animation:.9s linear infinite _spin_p95tl_60}@keyframes _spin_p95tl_60{to{transform:rotate(360deg)}}._tooLarge_p95tl_76{z-index:40;text-align:center;color:#fff;background:#0000009e;justify-content:center;align-items:center;padding:24px;font-size:14px;display:flex;position:absolute;inset:0}._controls_1ataj_1{z-index:100;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);background:#14141461;border:1px solid #ffffff2e;border-radius:8px;align-items:center;gap:6px;padding:6px;display:inline-flex;position:absolute;bottom:10px;left:10px}._button_1ataj_16{cursor:pointer;color:#fff;background:#ffffff2e;border:none;border-radius:6px;min-width:30px;height:30px;padding:0 8px;font-size:12px}._button_1ataj_16:hover{background:#ffffff47}._foreignObject_1otgx_1{text-align:center;color:var(--node-text);pointer-events:none;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-size:12px;font-weight:500;overflow:hidden}._objectForeignObject_1otgx_13{text-align:left}._key_1otgx_17{text-overflow:ellipsis;white-space:nowrap;display:inline;overflow:hidden}._row_1otgx_24{text-overflow:ellipsis;white-space:nowrap;border-bottom:1px solid var(--node-divider);box-sizing:border-box;height:30px;padding:3px 10px;line-height:24px;display:block;overflow:hidden}._row_1otgx_24:last-of-type{border-bottom:none}._textNodeWrapper_1otgx_40{justify-content:flex-start;align-items:center;width:100%;height:100%;padding:0 10px;display:flex;overflow:hidden}._foreignObject_1otgx_1.searched{border:1px solid var(--text-positive);box-sizing:border-box;background:#1bff001a;border-radius:2px}._foreignObject_1otgx_1 .highlight{background:#ffd60026}._foreignObject_1otgx_1.searched ._row_1otgx_24{border-bottom:1px solid var(--text-positive)}._row_1qsfh_1{vertical-align:middle;align-items:center;gap:4px;display:inline-flex;overflow:hidden}._colorPreview_1qsfh_9{border:1px solid #00000040;border-radius:3px;width:12px;height:12px;display:inline-block}._link_1qsfh_17{pointer-events:all;text-decoration:underline}
++._canvasWrapper_2tqo2_1{background-color:var(--bg-color);width:100%;height:100%;position:relative}._showGrid_2tqo2_8{background-image:linear-gradient(var(--line-color-1) 1.5px, transparent 1.5px), linear-gradient(90deg, var(--line-color-1) 1.5px, transparent 1.5px), linear-gradient(var(--line-color-2) 1px, transparent 1px), linear-gradient(90deg, var(--line-color-2) 1px, transparent 1px);background-position:-1.5px -1.5px,-1.5px -1.5px,-1px -1px,-1px -1px;background-size:100px 100px,100px 100px,20px 20px,20px 20px}._canvasWrapper_2tqo2_1 .jsoncrack-space{cursor:grab}._canvasWrapper_2tqo2_1 .jsoncrack-space:active{cursor:grabbing}._canvasWrapper_2tqo2_1 .dragging,._canvasWrapper_2tqo2_1 .dragging *{pointer-events:none!important}._canvasWrapper_2tqo2_1 text{fill:var(--interactive-normal)!important;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif!important}._canvasWrapper_2tqo2_1 rect{fill:var(--node-fill)}._overlay_2tqo2_49{z-index:30;pointer-events:all;-webkit-backdrop-filter:blur(6px)saturate(110%);background:#0000001a;justify-content:center;align-items:center;display:flex;position:absolute;inset:0}._spinner_2tqo2_62{border:3px solid var(--spinner-track);border-top-color:var(--spinner-head);border-right-color:var(--spinner-head);border-radius:9999px;width:30px;height:30px;animation:.9s linear infinite _spin_2tqo2_62}@keyframes _spin_2tqo2_62{to{transform:rotate(360deg)}}._tooLarge_2tqo2_78{z-index:40;text-align:center;color:#fff;background:#0000009e;justify-content:center;align-items:center;padding:24px;font-size:14px;display:flex;position:absolute;inset:0}._controls_1ataj_1{z-index:100;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);background:#14141461;border:1px solid #ffffff2e;border-radius:8px;align-items:center;gap:6px;padding:6px;display:inline-flex;position:absolute;bottom:10px;left:10px}._button_1ataj_16{cursor:pointer;color:#fff;background:#ffffff2e;border:none;border-radius:6px;min-width:30px;height:30px;padding:0 8px;font-size:12px}._button_1ataj_16:hover{background:#ffffff47}._foreignObject_1tpk4_1{text-align:center;color:var(--node-text);pointer-events:none;border-radius:5px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-size:12px;font-weight:500;overflow:hidden}._objectForeignObject_1tpk4_14{text-align:left}._key_1tpk4_18{text-overflow:ellipsis;white-space:nowrap;display:inline;overflow:hidden}._row_1tpk4_25{text-overflow:ellipsis;white-space:nowrap;border-bottom:1px solid var(--node-divider);box-sizing:border-box;height:30px;padding:3px 10px;line-height:24px;display:block;overflow:hidden}._row_1tpk4_25._collapsed_1tpk4_37{opacity:.7;font-style:italic}._collapseButton_1tpk4_42{width:14px;height:14px;color:var(--interactive-normal);border:1px solid var(--node-divider);opacity:.6;pointer-events:all;cursor:pointer;-webkit-user-select:none;user-select:none;vertical-align:middle;background:0 0;border-radius:3px;justify-content:center;align-items:center;margin-top:-2px;margin-right:6px;font-size:11px;font-weight:600;line-height:1;transition:opacity .12s,background .12s;display:inline-flex}._collapseButton_1tpk4_42:hover,._collapseButton_1tpk4_42:focus-visible{opacity:1;background:var(--node-divider)}._collapseButton_1tpk4_42:focus-visible{outline:2px solid var(--interactive-normal);outline-offset:1px}._row_1tpk4_25:last-of-type{border-bottom:none}._textNodeWrapper_1tpk4_82{justify-content:flex-start;align-items:center;width:100%;height:100%;padding:0 10px;display:flex;overflow:hidden}._row_1tpk4_25.searched,._textNodeWrapper_1tpk4_82.searched{background:#22c55e2e;box-shadow:inset 3px 0 #22c55e99}._row_1tpk4_25.highlight,._textNodeWrapper_1tpk4_82.highlight{background:#16a34a8c;box-shadow:inset 3px 0 #15803d}._row_1qsfh_1{vertical-align:middle;align-items:center;gap:4px;display:inline-flex;overflow:hidden}._colorPreview_1qsfh_9{border:1px solid #00000040;border-radius:3px;width:12px;height:12px;display:inline-block}._link_1qsfh_17{pointer-events:all;text-decoration:underline}
+ /*$vite$:1*/
+\ No newline at end of file
+diff --git a/dist/index.js b/dist/index.js
+index c246aafdc613df2ed96d348b0b228472cd9c4704..2494cead61d37ba118dff87a3c6c666be5cf5952 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -1,51 +1,51 @@
+-import e, { forwardRef as t, useCallback as n, useEffect as r, useImperativeHandle as i, useMemo as a, useRef as o, useState as s } from "react";
+-import { Space as c } from "react-zoomable-ui";
+-import { Canvas as l, Edge as u, Node as d } from "reaflow";
+-import { getNodePath as f, parseTree as p } from "jsonc-parser";
+-import { Fragment as m, jsx as h, jsxs as g } from "react/jsx-runtime";
+-//#region ../../node_modules/.pnpm/use-long-press@3.3.0_react@19.2.4/node_modules/use-long-press/index.mjs
+-var _ = /* @__PURE__ */ ((e) => (e.Mouse = "mouse", e.Touch = "touch", e.Pointer = "pointer", e))(_ || {}), v = /* @__PURE__ */ ((e) => (e.CancelledByMovement = "cancelled-by-movement", e.CancelledByRelease = "cancelled-by-release", e.CancelledOutsideElement = "cancelled-outside-element", e))(v || {}), y = [
++import e, { createContext as t, forwardRef as n, useCallback as r, useContext as i, useEffect as a, useImperativeHandle as o, useMemo as s, useRef as c, useState as l } from "react";
++import { Space as u } from "react-zoomable-ui";
++import { Canvas as d, Edge as f, Node as p } from "reaflow";
++import { getNodePath as m, parseTree as h } from "jsonc-parser";
++import { Fragment as g, jsx as _, jsxs as v } from "react/jsx-runtime";
++//#region ../../../../../Users/qix/Coding/meowv.com/studio/node_modules/.pnpm/use-long-press@3.3.0_react@18.3.1/node_modules/use-long-press/index.mjs
++var y = /* @__PURE__ */ ((e) => (e.Mouse = "mouse", e.Touch = "touch", e.Pointer = "pointer", e))(y || {}), b = /* @__PURE__ */ ((e) => (e.CancelledByMovement = "cancelled-by-movement", e.CancelledByRelease = "cancelled-by-release", e.CancelledOutsideElement = "cancelled-outside-element", e))(b || {}), x = [
+ 	"mousedown",
+ 	"mousemove",
+ 	"mouseup",
+ 	"mouseleave",
+ 	"mouseout"
+-], b = [
++], S = [
+ 	"touchstart",
+ 	"touchmove",
+ 	"touchend",
+ 	"touchcancel"
+-], x = [
++], C = [
+ 	"pointerdown",
+ 	"pointermove",
+ 	"pointerup",
+ 	"pointerleave",
+ 	"pointerout"
+ ];
+-function S(e) {
++function w(e) {
+ 	return typeof e == "object" && !!e && "pageX" in e && typeof e.pageX == "number" && "pageY" in e && typeof e.pageY == "number";
+ }
+-function C(e) {
+-	return y.includes(e?.nativeEvent?.type);
+-}
+-function w(e) {
+-	return b.includes(e?.nativeEvent?.type) || "touches" in e;
++function ee(e) {
++	return x.includes(e?.nativeEvent?.type);
+ }
+ function T(e) {
++	return S.includes(e?.nativeEvent?.type) || "touches" in e;
++}
++function te(e) {
+ 	let { nativeEvent: t } = e;
+-	return t ? x.includes(t?.type) || "pointerId" in t : !1;
++	return t ? C.includes(t?.type) || "pointerId" in t : !1;
+ }
+-function E(e) {
+-	return C(e) || w(e) || T(e);
++function ne(e) {
++	return ee(e) || T(e) || te(e);
+ }
+-function D(e) {
+-	let t = w(e) ? e?.touches?.[0] : e;
+-	return S(t) ? {
++function E(e) {
++	let t = T(e) ? e?.touches?.[0] : e;
++	return w(t) ? {
+ 		x: t.pageX,
+ 		y: t.pageY
+ 	} : null;
+ }
+-function O(e) {
++function D(e) {
+ 	return {
+ 		target: e.target,
+ 		currentTarget: e.currentTarget,
+@@ -53,128 +53,128 @@ function O(e) {
+ 		persist: () => {}
+ 	};
+ }
+-function ee(e, { threshold: t = 400, captureEvent: i = !1, detect: a = _.Pointer, cancelOnMovement: s = !1, cancelOutsideElement: c = !0, filterEvents: l, onStart: u, onMove: d, onFinish: f, onCancel: p } = {}) {
+-	let m = o(!1), h = o(!1), g = o(), y = o(), b = o(e), x = o(null), S = n((e) => (n) => {
+-		h.current || E(n) && (l !== void 0 && !l(n) || (i && n.persist(), u?.(n, { context: e }), x.current = D(n), h.current = !0, g.current = n.currentTarget, y.current = setTimeout(() => {
+-			b.current && (b.current(n, { context: e }), m.current = !0);
++function re(e, { threshold: t = 400, captureEvent: n = !1, detect: i = y.Pointer, cancelOnMovement: o = !1, cancelOutsideElement: s = !0, filterEvents: l, onStart: u, onMove: d, onFinish: f, onCancel: p } = {}) {
++	let m = c(!1), h = c(!1), g = c(), _ = c(), v = c(e), x = c(null), S = r((e) => (r) => {
++		h.current || ne(r) && (l !== void 0 && !l(r) || (n && r.persist(), u?.(r, { context: e }), x.current = E(r), h.current = !0, g.current = r.currentTarget, _.current = setTimeout(() => {
++			v.current && (v.current(r, { context: e }), m.current = !0);
+ 		}, t)));
+ 	}, [
+-		i,
++		n,
+ 		l,
+ 		u,
+ 		t
+-	]), C = n((e) => (t, n) => {
+-		E(t) && h.current && (x.current = null, i && t.persist(), m.current ? f?.(t, { context: e }) : h.current && p?.(t, {
++	]), C = r((e) => (t, r) => {
++		ne(t) && h.current && (x.current = null, n && t.persist(), m.current ? f?.(t, { context: e }) : h.current && p?.(t, {
+ 			context: e,
+-			reason: n ?? v.CancelledByRelease
+-		}), m.current = !1, h.current = !1, y.current !== void 0 && clearTimeout(y.current));
++			reason: r ?? b.CancelledByRelease
++		}), m.current = !1, h.current = !1, _.current !== void 0 && clearTimeout(_.current));
+ 	}, [
+-		i,
++		n,
+ 		f,
+ 		p
+-	]), w = n((e) => (t) => {
+-		if (E(t) && (d?.(t, { context: e }), s !== !1 && x.current)) {
+-			let n = D(t);
++	]), w = r((e) => (t) => {
++		if (ne(t) && (d?.(t, { context: e }), o !== !1 && x.current)) {
++			let n = E(t);
+ 			if (n) {
+-				let r = s === !0 ? 25 : s, i = {
++				let r = o === !0 ? 25 : o, i = {
+ 					x: Math.abs(n.x - x.current.x),
+ 					y: Math.abs(n.y - x.current.y)
+ 				};
+-				(i.x > r || i.y > r) && C(e)(t, v.CancelledByMovement);
++				(i.x > r || i.y > r) && C(e)(t, b.CancelledByMovement);
+ 			}
+ 		}
+ 	}, [
+ 		C,
+-		s,
++		o,
+ 		d
+-	]), T = n((t) => {
++	]), ee = r((t) => {
+ 		if (e === null) return {};
+-		switch (a) {
+-			case _.Mouse: {
++		switch (i) {
++			case y.Mouse: {
+ 				let e = {
+ 					onMouseDown: S(t),
+ 					onMouseMove: w(t),
+ 					onMouseUp: C(t)
+ 				};
+-				return c && (e.onMouseLeave = (e) => {
+-					C(t)(e, v.CancelledOutsideElement);
++				return s && (e.onMouseLeave = (e) => {
++					C(t)(e, b.CancelledOutsideElement);
+ 				}), e;
+ 			}
+-			case _.Touch: return {
++			case y.Touch: return {
+ 				onTouchStart: S(t),
+ 				onTouchMove: w(t),
+ 				onTouchEnd: C(t)
+ 			};
+-			case _.Pointer: {
++			case y.Pointer: {
+ 				let e = {
+ 					onPointerDown: S(t),
+ 					onPointerMove: w(t),
+ 					onPointerUp: C(t)
+ 				};
+-				return c && (e.onPointerLeave = (e) => C(t)(e, v.CancelledOutsideElement)), e;
++				return s && (e.onPointerLeave = (e) => C(t)(e, b.CancelledOutsideElement)), e;
+ 			}
+ 		}
+ 	}, [
+ 		e,
+ 		C,
+-		c,
+-		a,
++		s,
++		i,
+ 		w,
+ 		S
+ 	]);
+-	return r(() => {
++	return a(() => {
+ 		function e(e) {
+-			let t = O(e);
++			let t = D(e);
+ 			C()(t);
+ 		}
+ 		return window.addEventListener("mouseup", e), window.addEventListener("touchend", e), window.addEventListener("pointerup", e), () => {
+ 			window.removeEventListener("mouseup", e), window.removeEventListener("touchend", e), window.removeEventListener("pointerup", e);
+ 		};
+-	}, [C]), r(() => () => {
+-		y.current !== void 0 && clearTimeout(y.current);
+-	}, []), r(() => {
+-		b.current = e;
+-	}, [e]), T;
++	}, [C]), a(() => () => {
++		_.current !== void 0 && clearTimeout(_.current);
++	}, []), a(() => {
++		v.current = e;
++	}, [e]), ee;
+ }
+-var k = {
+-	canvasWrapper: "_canvasWrapper_p95tl_1",
+-	showGrid: "_showGrid_p95tl_8",
+-	overlay: "_overlay_p95tl_49",
+-	spinner: "_spinner_p95tl_60",
+-	spin: "_spin_p95tl_60",
+-	tooLarge: "_tooLarge_p95tl_76"
+-}, A = {
++var O = {
++	canvasWrapper: "_canvasWrapper_2tqo2_1",
++	showGrid: "_showGrid_2tqo2_8",
++	overlay: "_overlay_2tqo2_49",
++	spinner: "_spinner_2tqo2_62",
++	spin: "_spin_2tqo2_62",
++	tooLarge: "_tooLarge_2tqo2_78"
++}, k = {
+ 	ROW_HEIGHT: 30,
+ 	PARENT_HEIGHT: 36
+-}, j = 12e4, M = /* @__PURE__ */ new Map(), N = Date.now(), P = (e) => Array.isArray(e) ? e.map(([e, t]) => `${e}: ${JSON.stringify(t).slice(0, 80)}`).join("\n") : `${e}`, F = (e, t) => {
++}, ie = 12e4, A = /* @__PURE__ */ new Map(), j = Date.now(), ae = (e) => Array.isArray(e) ? e.map(([e, t]) => `${e}: ${JSON.stringify(t).slice(0, 80)}`).join("\n") : `${e}`, oe = (e, t) => {
+ 	let n = e.split("\n"), r = n.reduce((e, t) => Math.max(e, t.length), 0);
+ 	return {
+ 		width: Math.min(700, Math.max(45, r * 8 + 24)),
+-		height: t ? A.PARENT_HEIGHT : n.length * A.ROW_HEIGHT
++		height: t ? k.PARENT_HEIGHT : n.length * k.ROW_HEIGHT
+ 	};
+-}, I = (e, t = !1) => {
++}, M = (e, t = !1) => {
+ 	if (!e) return {
+ 		width: 45,
+ 		height: 45
+ 	};
+-	if (typeof document > "u") return F(e, t);
++	if (typeof document > "u") return oe(e, t);
+ 	let n = document.createElement("div");
+ 	n.style.position = "absolute", n.style.visibility = "hidden", n.style.pointerEvents = "none", n.style.whiteSpace = t ? "nowrap" : "pre-wrap", n.innerText = e, n.style.fontSize = "12px", n.style.width = "fit-content", n.style.padding = "0 10px", n.style.fontWeight = "500", n.style.fontFamily = "monospace", document.body.appendChild(n);
+-	let r = n.getBoundingClientRect(), i = e.split("\n").length, a = r.width + 4, o = t ? A.PARENT_HEIGHT : i * A.ROW_HEIGHT;
++	let r = n.getBoundingClientRect(), i = e.split("\n").length, a = r.width + 4, o = t ? k.PARENT_HEIGHT : i * k.ROW_HEIGHT;
+ 	return document.body.removeChild(n), {
+ 		width: a,
+ 		height: o
+ 	};
+-}, L = () => {
+-	Date.now() - N < j || (M.clear(), N = Date.now());
+-}, R = (e, t = !1) => {
+-	L();
+-	let n = `${JSON.stringify(e)}-${t}`, r = M.get(n);
++}, N = () => {
++	Date.now() - j < ie || (A.clear(), j = Date.now());
++}, P = (e, t = !1) => {
++	N();
++	let n = `${JSON.stringify(e)}-${t}`, r = A.get(n);
+ 	if (r) return r;
+-	let i = I(P(e), typeof e == "string");
+-	return t && (i.width += 80), i.width > 700 && (i.width = 700), M.set(n, i), i;
+-}, z = (e) => {
+-	let t = [], n = p(e, t);
++	let i = M(ae(e), typeof e == "string");
++	return t && (i.width += 80), i.width > 700 && (i.width = 700), A.set(n, i), i;
++}, se = (e) => {
++	let t = [], n = h(e, t);
+ 	if (!n) return {
+ 		nodes: [],
+ 		edges: [],
+@@ -191,7 +191,7 @@ var k = {
+ 		});
+ 		let l = e.type === "array", u = !e.parent || e.parent.type === "array";
+ 		if (l && u) {
+-			let { width: t, height: i } = R(`[${e.children?.length ?? "0"} items]`);
++			let { width: t, height: i } = P(`[${e.children?.length ?? "0"} items]`);
+ 			return r.push({
+ 				id: n,
+ 				text: [{
+@@ -258,7 +258,7 @@ var k = {
+ 			childrenCount: 0
+ 		});
+ 		let d = () => {
+-			let t = (e) => f(e)?.pop()?.toString();
++			let t = (e) => m(e)?.pop()?.toString();
+ 			return e.parent ? e.parent.type === "array" ? {
+ 				parentKey: t(e.parent),
+ 				parentType: "array"
+@@ -275,7 +275,7 @@ var k = {
+ 		};
+ 		if (c.length === 0) {
+ 			if (e.value === void 0) return;
+-			let { width: t, height: i } = R(e.value);
++			let { width: t, height: i } = P(e.value);
+ 			r.push({
+ 				id: n,
+ 				text: [{
+@@ -285,7 +285,7 @@ var k = {
+ 				}],
+ 				width: t,
+ 				height: i,
+-				path: f(e),
++				path: m(e),
+ 				...d()
+ 			});
+ 		} else {
+@@ -294,13 +294,13 @@ var k = {
+ 				let t = e.key === null ? "" : e.key;
+ 				return e.type === "object" ? [t, `{${e.childrenCount ?? 0} keys}`] : e.type === "array" ? [t, `[${e.childrenCount ?? 0} items]`] : e.value === null ? [t, "null"] : [t, `${e.value}`];
+ 			}) : `${c[0].value}`;
+-			let { width: i, height: a } = R(t);
++			let { width: i, height: a } = P(t);
+ 			r.push({
+ 				id: n,
+ 				text: c,
+ 				width: i,
+ 				height: a,
+-				path: f(e),
++				path: m(e),
+ 				...d()
+ 			});
+ 		}
+@@ -311,7 +311,7 @@ var k = {
+ 		edges: i,
+ 		errors: t
+ 	};
+-}, B = {
++}, ce = {
+ 	dark: {
+ 		NODE_COLORS: {
+ 			TEXT: "#DCE5E7",
+@@ -356,21 +356,21 @@ var k = {
+ 		GRID_COLOR_PRIMARY: "#ebe8e8",
+ 		GRID_COLOR_SECONDARY: "#f2eeee"
+ 	}
+-}, V = /* @__PURE__ */ new WeakMap(), te = (e) => {
++}, le = /* @__PURE__ */ new WeakMap(), ue = (e) => {
+ 	if (typeof e == "string") return e;
+ 	if (e && typeof e == "object") {
+-		let t = V.get(e);
++		let t = le.get(e);
+ 		if (t) return t;
+ 		let n = JSON.stringify(e, null, 2);
+-		return V.set(e, n), n;
++		return le.set(e, n), n;
+ 	}
+ 	return JSON.stringify(e, null, 2);
+-}, ne = (e, t) => [
+-	k.canvasWrapper,
+-	e ? k.showGrid : "",
++}, de = (e, t) => [
++	O.canvasWrapper,
++	e ? O.showGrid : "",
+ 	t
+-].filter(Boolean).join(" "), re = (e, t) => {
+-	let n = B[e], r = e === "dark";
++].filter(Boolean).join(" "), fe = (e, t) => {
++	let n = ce[e], r = e === "dark";
+ 	return {
+ 		"--bg-color": n.GRID_BG_COLOR,
+ 		"--line-color-1": n.GRID_COLOR_PRIMARY,
+@@ -396,9 +396,9 @@ var k = {
+ 		"--overlay-bg": r ? "rgba(0, 0, 0, 0.2)" : "rgba(255, 255, 255, 0.38)",
+ 		...t
+ 	};
+-}, ie = (e, t) => {
++}, pe = (e, t) => {
+ 	try {
+-		let n = z(e);
++		let n = se(e);
+ 		return n.nodes.length > t ? {
+ 			kind: "above-limit",
+ 			total: n.nodes.length
+@@ -413,17 +413,17 @@ var k = {
+ 			error: e instanceof Error ? e : /* @__PURE__ */ Error("Unable to parse data.")
+ 		};
+ 	}
+-}, ae = (e) => {
++}, me = (e) => {
+ 	let t = /* @__PURE__ */ new Map();
+ 	for (let n = 0; n < e.length; n += 1) {
+ 		let r = e[n];
+ 		t.set(r.id, r.to);
+ 	}
+ 	return t;
+-}, H = (e, t) => {
++}, he = (e, t) => {
+ 	let n = e?.querySelector(".jsoncrack-canvas");
+ 	n && n.classList.toggle("dragging", t);
+-}, U = .02, oe = (e) => {
++}, F = .02, ge = (e) => {
+ 	let t = e.querySelectorAll("g[id]"), n = Infinity, r = Infinity, i = -Infinity, a = -Infinity, o = !1;
+ 	for (let e = 0; e < t.length; e += 1) {
+ 		let s = t[e].getBoundingClientRect();
+@@ -435,7 +435,7 @@ var k = {
+ 		width: i - n,
+ 		height: a - r
+ 	} : null;
+-}, W = (e, t, n, r, i, a) => {
++}, _e = (e, t, n, r, i, a) => {
+ 	let o = e.createSVGPoint();
+ 	o.x = n, o.y = r;
+ 	let s = e.createSVGPoint();
+@@ -447,12 +447,12 @@ var k = {
+ 		width: Math.abs(l.x - c.x),
+ 		height: Math.abs(l.y - c.y)
+ 	};
+-}, se = (e, t) => {
++}, ve = (e, t) => {
+ 	if (!e) return null;
+ 	let n = e.querySelector(".jsoncrack-canvas svg");
+ 	if (!n) return null;
+ 	let r = null, i = n.querySelector(":scope > g");
+-	if (i && (r = oe(i)), !r && i) {
++	if (i && (r = ge(i)), !r && i) {
+ 		let e = i.getBoundingClientRect();
+ 		e.width > 0 && e.height > 0 && (r = {
+ 			left: e.left,
+@@ -463,75 +463,114 @@ var k = {
+ 	}
+ 	if (!r && i && typeof i.getScreenCTM == "function") try {
+ 		let e = i.getBBox(), t = i.getScreenCTM();
+-		t && e.width > 0 && e.height > 0 && (r = W(n, t, e.x, e.y, e.width, e.height));
++		t && e.width > 0 && e.height > 0 && (r = _e(n, t, e.x, e.y, e.width, e.height));
+ 	} catch {}
+ 	if (!r && t && t.width > 0 && t.height > 0 && typeof n.getScreenCTM == "function") {
+ 		let e = n.getScreenCTM();
+-		e && (r = W(n, e, 0, 0, t.width, t.height));
++		e && (r = _e(n, e, 0, 0, t.width, t.height));
+ 	}
+ 	if (!r || r.width <= 0 || r.height <= 0) return null;
+-	let a = r.width * U, o = r.height * U;
++	let a = r.width * F, o = r.height * F;
+ 	return DOMRect.fromRect({
+ 		x: r.left - a,
+ 		y: r.top - o,
+ 		width: r.width + a * 2,
+ 		height: r.height + o * 2
+ 	});
+-}, ce = (e, t, n) => {
++}, ye = (e, t, n) => {
+ 	if (!e || !t) return;
+ 	e.updateContainerSize();
+-	let r = se(t, n);
++	let r = ve(t, n);
+ 	if (!r) return;
+ 	let i = e.translateClientRectToVirtualSpace(r);
+ 	e.camera?.centerFitAreaIntoView(i);
+-}, le = (e, t) => {
++}, be = (e, t) => {
+ 	if (!e || !t) return;
+ 	let n = t.querySelector("g[id$='node-1']");
+ 	n && e.camera?.centerFitElementIntoView(n, { elementExtraMarginForZoom: 100 });
+-}, ue = (e, t) => {
++}, xe = (e, t) => {
+ 	e && e.camera?.recenter(e.centerX, e.centerY, t);
+-}, de = (e, t) => {
++}, Se = (e, t) => {
+ 	e && e.camera?.recenter(e.centerX, e.centerY, e.zoomFactor + t);
+-}, G = {
++}, Ce = t({ collapsedSet: /* @__PURE__ */ new Set() }), we = () => i(Ce), I = (e) => JSON.stringify(e), L = (e, t) => e.has(I(t)), Te = (e, t) => {
++	if (!t || e.length === 0) return !1;
++	for (let n of e) {
++		if (n.length > t.length) continue;
++		let e = !0;
++		for (let r = 0; r < n.length; r += 1) if (n[r] !== t[r]) {
++			e = !1;
++			break;
++		}
++		if (e) return !0;
++	}
++	return !1;
++}, Ee = (e, t) => {
++	if (t.length === 0) return t;
++	let n;
++	try {
++		n = JSON.parse(e);
++	} catch {
++		return t;
++	}
++	let r = [];
++	for (let e of t) {
++		let t;
++		try {
++			t = JSON.parse(e);
++		} catch {
++			continue;
++		}
++		let i = n, a = !0;
++		for (let e of t) {
++			if (typeof i != "object" || !i) {
++				a = !1;
++				break;
++			}
++			i = i[e];
++		}
++		a && typeof i == "object" && i && r.push(e);
++	}
++	return r;
++}, R = {
+ 	controls: "_controls_1ataj_1",
+ 	button: "_button_1ataj_16"
+-}, fe = ({ onFocusRoot: e, onCenterView: t, onZoomOut: n, onZoomIn: r }) => /* @__PURE__ */ g("div", {
+-	className: G.controls,
++}, De = ({ onFocusRoot: e, onCenterView: t, onZoomOut: n, onZoomIn: r }) => /* @__PURE__ */ v("div", {
++	className: R.controls,
+ 	children: [
+-		/* @__PURE__ */ h("button", {
+-			className: G.button,
++		/* @__PURE__ */ _("button", {
++			className: R.button,
+ 			type: "button",
+ 			onClick: e,
+ 			title: "Center first node",
+ 			children: "Root"
+ 		}),
+-		/* @__PURE__ */ h("button", {
+-			className: G.button,
++		/* @__PURE__ */ _("button", {
++			className: R.button,
+ 			type: "button",
+ 			onClick: t,
+ 			title: "Fit view",
+ 			children: "Fit"
+ 		}),
+-		/* @__PURE__ */ h("button", {
+-			className: G.button,
++		/* @__PURE__ */ _("button", {
++			className: R.button,
+ 			type: "button",
+ 			onClick: n,
+ 			title: "Zoom out",
+ 			children: "-"
+ 		}),
+-		/* @__PURE__ */ h("button", {
+-			className: G.button,
++		/* @__PURE__ */ _("button", {
++			className: R.button,
+ 			type: "button",
+ 			onClick: r,
+ 			title: "Zoom in",
+ 			children: "+"
+ 		})
+ 	]
+-}), K = (e) => typeof e == "object" && !!e && "querySelector" in e && typeof e.querySelector == "function", pe = e.memo(({ viewPort: t, edgeTargetById: n, hostElement: r, ...i }) => {
++}), Oe = (e) => typeof e == "object" && !!e && "querySelector" in e && typeof e.querySelector == "function", ke = e.memo(({ viewPort: t, edgeTargetById: n, hostElement: r, ...i }) => {
+ 	let [a, o] = e.useState(!1), s = i.properties?.id, c = e.useCallback(() => {
+ 		let e = s ? n.get(s) : void 0;
+ 		if (!e) return;
+-		let i = K(r) ? r : typeof document < "u" ? document : null;
++		let i = Oe(r) ? r : typeof document < "u" ? document : null;
+ 		if (!i) return;
+ 		let a = i.querySelector(`[data-id$="node-${e}"]`);
+ 		a?.parentElement && t?.camera.centerFitElementIntoView(a.parentElement, { elementExtraMarginForZoom: 150 });
+@@ -541,7 +580,7 @@ var k = {
+ 		n,
+ 		t
+ 	]);
+-	return /* @__PURE__ */ h(u, {
++	return /* @__PURE__ */ _(f, {
+ 		containerClassName: `edge-${i.id}`,
+ 		onClick: c,
+ 		onEnter: () => o(!0),
+@@ -552,114 +591,158 @@ var k = {
+ 		},
+ 		...i
+ 	});
+-}), q = {
+-	foreignObject: "_foreignObject_1otgx_1",
+-	objectForeignObject: "_objectForeignObject_1otgx_13",
+-	key: "_key_1otgx_17",
+-	row: "_row_1otgx_24",
+-	textNodeWrapper: "_textNodeWrapper_1otgx_40"
+-}, J = {
++}), z = {
++	foreignObject: "_foreignObject_1tpk4_1",
++	objectForeignObject: "_objectForeignObject_1tpk4_14",
++	key: "_key_1tpk4_18",
++	row: "_row_1tpk4_25",
++	collapsed: "_collapsed_1tpk4_37",
++	collapseButton: "_collapseButton_1tpk4_42",
++	textNodeWrapper: "_textNodeWrapper_1tpk4_82"
++}, B = {
+ 	row: "_row_1qsfh_1",
+ 	colorPreview: "_colorPreview_1qsfh_9",
+ 	link: "_link_1qsfh_17"
+-}, me = /^(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?[a-z0-9]+([-.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?$/i, Y = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, X = /^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/, Z = /^rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(0|1|0\.\d+)\s*\)$/, he = (e) => me.test(e), ge = (e) => Y.test(e) || X.test(e) || Z.test(e), _e = ({ text: e }) => {
+-	if (!he(e)) return /* @__PURE__ */ h(m, { children: e });
++}, V = /^(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?[a-z0-9]+([-.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?$/i, H = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, U = /^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/, W = /^rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(0|1|0\.\d+)\s*\)$/, G = (e) => V.test(e), K = (e) => H.test(e) || U.test(e) || W.test(e), q = ({ text: e }) => {
++	if (!G(e)) return /* @__PURE__ */ _(g, { children: e });
+ 	let t = e.startsWith("http://") || e.startsWith("https://") ? e : `https://${e}`;
+-	return /* @__PURE__ */ h("a", {
+-		className: J.link,
++	return /* @__PURE__ */ _("a", {
++		className: B.link,
+ 		onClick: (e) => e.stopPropagation(),
+ 		href: t,
+ 		target: "_blank",
+ 		rel: "noopener noreferrer",
+ 		children: e
+ 	});
+-}, Q = ({ children: e }) => typeof e == "string" && ge(e) ? /* @__PURE__ */ g("span", {
+-	className: J.row,
+-	children: [/* @__PURE__ */ h("span", {
+-		className: J.colorPreview,
++}, J = ({ children: e }) => typeof e == "string" && K(e) ? /* @__PURE__ */ v("span", {
++	className: B.row,
++	children: [/* @__PURE__ */ _("span", {
++		className: B.colorPreview,
+ 		style: { backgroundColor: e }
+ 	}), e]
+-}) : typeof e == "string" ? /* @__PURE__ */ h(_e, { text: e }) : /* @__PURE__ */ h(m, { children: `${e}` }), $ = ({ type: e, value: t }) => t === null ? "var(--node-null)" : e === "object" ? "var(--node-key)" : e === "number" ? "var(--node-integer)" : t === !0 ? "var(--node-bool-true)" : t === !1 ? "var(--node-bool-false)" : "var(--node-value)", ve = 30, ye = ({ row: e, x: t, y: n, index: r }) => {
+-	let i = r * ve, a = () => e.type === "object" ? `{${e.childrenCount ?? 0} keys}` : e.type === "array" ? `[${e.childrenCount ?? 0} items]` : e.value;
+-	return /* @__PURE__ */ g("span", {
+-		className: q.row,
+-		style: { color: $({
+-			value: e.value,
+-			type: typeof e.value
++}) : typeof e == "string" ? /* @__PURE__ */ _(q, { text: e }) : /* @__PURE__ */ _(g, { children: `${e}` }), Y = ({ type: e, value: t }) => t === null ? "var(--node-null)" : e === "object" ? "var(--node-key)" : e === "number" ? "var(--node-integer)" : t === !0 ? "var(--node-bool-true)" : t === !1 ? "var(--node-bool-false)" : "var(--node-value)", X = 30, Z = ({ row: t, x: n, y: r, index: i, parentPath: a }) => {
++	let o = i * X, { collapsedSet: s, onToggleCollapse: c } = we(), l = (t.type === "object" || t.type === "array") && (t.childrenCount ?? 0) > 0, u = e.useMemo(() => l && t.key != null ? [...a, t.key] : null, [
++		l,
++		a,
++		t.key
++	]), d = u != null && L(s, u), f = () => {
++		if (t.type === "object") {
++			let e = t.childrenCount ?? 0;
++			return d ? `⋯ ${e} keys` : `{${e} keys}`;
++		}
++		if (t.type === "array") {
++			let e = t.childrenCount ?? 0;
++			return d ? `⋯ ${e} items` : `[${e} items]`;
++		}
++		return t.value;
++	}, p = (e) => {
++		!u || !c || (e.stopPropagation(), e.preventDefault(), c(u));
++	}, m = (e) => {
++		(e.key === "Enter" || e.key === " ") && (!u || !c || (e.stopPropagation(), e.preventDefault(), c(u)));
++	}, h = d ? `${z.row} ${z.collapsed}` : z.row;
++	return /* @__PURE__ */ v("span", {
++		className: h,
++		style: { color: Y({
++			value: t.value,
++			type: typeof t.value
+ 		}) },
+-		"data-key": `${e.key}: ${e.value}`,
+-		"data-x": t,
+-		"data-y": n + i,
+-		children: [/* @__PURE__ */ g("span", {
+-			className: q.key,
+-			style: { color: $({
+-				type: "object",
+-				value: e.value
+-			}) },
+-			children: [
+-				e.key,
+-				":",
+-				" "
+-			]
+-		}), /* @__PURE__ */ h(Q, { children: a() })]
++		"data-key": `${t.key}: ${t.value}`,
++		"data-x": n,
++		"data-y": r + o,
++		children: [
++			l && u && /* @__PURE__ */ _("span", {
++				role: "button",
++				tabIndex: 0,
++				"aria-label": d ? "展开节点" : "折叠节点",
++				"aria-expanded": !d,
++				className: z.collapseButton,
++				"data-collapse-path": JSON.stringify(u),
++				onClick: p,
++				onKeyDown: m,
++				onMouseDown: (e) => e.stopPropagation(),
++				children: d ? "+" : "−"
++			}),
++			/* @__PURE__ */ v("span", {
++				className: z.key,
++				style: { color: Y({
++					type: "object",
++					value: t.value
++				}) },
++				children: [
++					t.key,
++					":",
++					" "
++				]
++			}),
++			/* @__PURE__ */ _(J, { children: f() })
++		]
++	});
++}, Ae = ({ node: e, x: t, y: n }) => {
++	let r = e.path ?? [];
++	return /* @__PURE__ */ _("foreignObject", {
++		className: `${z.foreignObject} ${z.objectForeignObject}`,
++		"data-id": `node-${e.id}`,
++		width: e.width,
++		height: e.height,
++		x: 0,
++		y: 0,
++		children: e.text.map((i, a) => /* @__PURE__ */ _(Z, {
++			row: i,
++			x: t,
++			y: n,
++			index: a,
++			parentPath: r
++		}, `${e.id}-${a}`))
+ 	});
+-}, be = ({ node: e, x: t, y: n }) => /* @__PURE__ */ h("foreignObject", {
+-	className: `${q.foreignObject} ${q.objectForeignObject}`,
+-	"data-id": `node-${e.id}`,
+-	width: e.width,
+-	height: e.height,
+-	x: 0,
+-	y: 0,
+-	children: e.text.map((r, i) => /* @__PURE__ */ h(ye, {
+-		row: r,
+-		x: t,
+-		y: n,
+-		index: i
+-	}, `${e.id}-${i}`))
+-}), xe = (e, t) => {
++}, je = (e, t) => {
+ 	if (e === t) return !0;
+ 	if (!e || !t || e.length !== t.length) return !1;
+ 	for (let n = 0; n < e.length; n += 1) if (e[n] !== t[n]) return !1;
+ 	return !0;
+-}, Se = (e, t) => {
++}, Q = (e, t) => {
+ 	if (e === t) return !0;
+ 	if (e.length !== t.length) return !1;
+ 	for (let n = 0; n < e.length; n += 1) {
+ 		let r = e[n], i = t[n];
+-		if (r.key !== i.key || r.value !== i.value || r.type !== i.type || r.childrenCount !== i.childrenCount || !xe(r.to, i.to)) return !1;
++		if (r.key !== i.key || r.value !== i.value || r.type !== i.type || r.childrenCount !== i.childrenCount || !je(r.to, i.to)) return !1;
+ 	}
+ 	return !0;
+-}, Ce = e.memo(be, (e, t) => e.node.width === t.node.width && e.node.height === t.node.height && Se(e.node.text, t.node.text)), we = e.memo(({ node: e, x: t, y: n }) => {
++}, $ = (e, t) => {
++	if (e === t) return !0;
++	if (!e || !t || e.length !== t.length) return !1;
++	for (let n = 0; n < e.length; n += 1) if (e[n] !== t[n]) return !1;
++	return !0;
++}, Me = e.memo(Ae, (e, t) => e.node.width === t.node.width && e.node.height === t.node.height && $(e.node.path, t.node.path) && Q(e.node.text, t.node.text)), Ne = e.memo(({ node: e, x: t, y: n }) => {
+ 	let { text: r, width: i, height: a } = e, o = r[0];
+ 	if (!o) return null;
+ 	let s = o.value;
+-	return /* @__PURE__ */ h("foreignObject", {
+-		className: q.foreignObject,
++	return /* @__PURE__ */ _("foreignObject", {
++		className: z.foreignObject,
+ 		"data-id": `node-${e.id}`,
+ 		width: i,
+ 		height: a,
+ 		x: 0,
+ 		y: 0,
+-		children: /* @__PURE__ */ h("span", {
+-			className: q.textNodeWrapper,
++		children: /* @__PURE__ */ _("span", {
++			className: z.textNodeWrapper,
+ 			"data-x": t,
+ 			"data-y": n,
+ 			"data-key": JSON.stringify(r),
+-			children: /* @__PURE__ */ h("span", {
+-				className: q.key,
+-				style: { color: $({
++			children: /* @__PURE__ */ _("span", {
++				className: z.key,
++				style: { color: Y({
+ 					value: s,
+ 					type: typeof s
+ 				}) },
+-				children: /* @__PURE__ */ h(Q, { children: s })
++				children: /* @__PURE__ */ _(J, { children: s })
+ 			})
+ 		})
+ 	});
+-}, (e, t) => e.node.text === t.node.text && e.node.width === t.node.width), Te = e.memo(({ onNodeClick: t, ...n }) => {
++}, (e, t) => e.node.text === t.node.text && e.node.width === t.node.width), Pe = e.memo(({ onNodeClick: t, ...n }) => {
+ 	let r = e.useCallback((e, n) => {
+ 		t?.(n);
+ 	}, [t]);
+-	return /* @__PURE__ */ h(d, {
++	return /* @__PURE__ */ _(p, {
+ 		...n,
+ 		onClick: r,
+ 		animated: !1,
+@@ -675,171 +758,320 @@ var k = {
+ 			stroke: "var(--node-stroke)",
+ 			strokeWidth: 1
+ 		},
+-		children: ({ node: e, x: t, y: r }) => n.properties.text[0]?.key == null ? /* @__PURE__ */ h(we, {
++		children: ({ node: e, x: t, y: r }) => n.properties.text[0]?.key == null ? /* @__PURE__ */ _(Ne, {
+ 			node: n.properties,
+ 			x: t,
+ 			y: r
+-		}) : /* @__PURE__ */ h(Ce, {
++		}) : /* @__PURE__ */ _(Me, {
+ 			node: e,
+ 			x: t,
+ 			y: r
+ 		})
+ 	});
+-}), Ee = {
++}), Fe = {
+ 	"elk.layered.compaction.postCompaction.strategy": "EDGE_LENGTH",
+ 	"elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
+ 	"elk.spacing.edgeLabel": "15"
+-}, De = t(({ json: e, theme: t = "dark", layoutDirection: u = "RIGHT", showControls: d = !0, showGrid: f = !0, trackpadZoom: p = !1, centerOnLayout: m = !0, maxRenderableNodes: _ = 1500, className: v, style: y, onNodeClick: b, onParse: x, onParseError: S, onViewportCreate: C, renderNodeLimitExceeded: w }, T) => {
+-	let E = o(null), [D, O] = s(null), [A, j] = s([]), [M, N] = s([]), [P, F] = s(!0), [I, L] = s(!1), [R, z] = s(!1), [B, V] = s(0), [U, oe] = s(2e3), [W, se] = s(2e3), G = o(null), K = o({
++}, Ie = n(({ json: e, theme: t = "dark", layoutDirection: n = "RIGHT", showControls: i = !0, showGrid: f = !0, trackpadZoom: p = !1, centerOnLayout: m = !0, maxRenderableNodes: h = 1500, className: g, style: y, onNodeClick: b, onParse: x, onParseError: S, onViewportCreate: C, renderNodeLimitExceeded: w, collapsedPaths: ee, onToggleCollapse: T, onCollapseChange: te }, ne) => {
++	let E = c(null), [D, k] = l(null), [ie, A] = l([]), [j, ae] = l([]), [oe, M] = l(!0), [N, P] = l(!1), [se, ce] = l(!1), [le, F] = l(0), [ge, _e] = l(2e3), [ve, we] = l(2e3), I = c(null), L = c({
+ 		onParse: x,
+ 		onParseError: S
+-	}), q = o(C);
+-	r(() => {
+-		K.current = {
++	}), R = c(C);
++	a(() => {
++		L.current = {
+ 			onParse: x,
+ 			onParseError: S
+ 		};
+-	}, [x, S]), r(() => {
+-		q.current = C;
++	}, [x, S]), a(() => {
++		R.current = C;
+ 	}, [C]);
+-	let J = a(() => ne(f, v), [f, v]), me = a(() => re(t, y), [t, y]), Y = a(() => te(e), [e]);
+-	r(() => {
+-		F(!0), L(!1);
+-		let e = ie(Y, _);
++	let Oe = s(() => de(f, g), [f, g]), z = s(() => fe(t, y), [t, y]), B = s(() => ue(e), [e]);
++	a(() => {
++		M(!0), P(!1);
++		let e = pe(B, h);
+ 		if (e.kind === "error") {
+-			j([]), N([]), F(!1), K.current.onParseError?.(e.error);
++			A([]), ae([]), M(!1), L.current.onParseError?.(e.error);
+ 			return;
+ 		}
+ 		if (e.kind === "above-limit") {
+-			V(e.total), z(!0), j([]), N([]), F(!1);
++			F(e.total), ce(!0), A([]), ae([]), M(!1);
+ 			return;
+ 		}
+ 		let { graph: t, syntaxErrorCount: n } = e;
+-		n > 0 && K.current.onParseError?.(/* @__PURE__ */ Error(`Failed to parse data (${n} syntax error(s)).`)), V(t.nodes.length), z(!1), j(t.nodes), N(t.edges), K.current.onParse?.({
++		n > 0 && L.current.onParseError?.(/* @__PURE__ */ Error(`Failed to parse data (${n} syntax error(s)).`)), F(t.nodes.length), ce(!1), A(t.nodes), ae(t.edges), L.current.onParse?.({
+ 			nodes: t.nodes,
+ 			edges: t.edges
+-		}), t.nodes.length === 0 && F(!1);
+-	}, [Y, _]), r(() => {
++		}), t.nodes.length === 0 && M(!1);
++	}, [B, h]), a(() => {
+ 		if (!D) return;
+ 		let e = E.current;
+ 		if (!e || typeof ResizeObserver > "u") return;
+ 		let t = new ResizeObserver(() => {
+-			e.clientWidth === 0 || e.clientHeight === 0 || D.updateContainerSize();
++			e.clientWidth !== 0 && e.clientHeight !== 0 && D.updateContainerSize();
+ 		});
+ 		return t.observe(e), () => t.disconnect();
+ 	}, [D]);
+-	let X = a(() => ({
+-		zoomIn: () => de(D, .1),
+-		zoomOut: () => de(D, -.1),
+-		setZoom: (e) => ue(D, e),
+-		centerView: () => ce(D, E.current, G.current),
+-		focusFirstNode: () => le(D, E.current)
+-	}), [D]);
+-	i(T, () => X, [X]);
+-	let Z = a(() => ae(M), [M]), he = n((e) => {
++	let V = s(() => ({
++		zoomIn: () => Se(D, .1),
++		zoomOut: () => Se(D, -.1),
++		setZoom: (e) => xe(D, e),
++		centerView: () => ye(D, E.current, I.current),
++		focusFirstNode: () => be(D, E.current)
++	}), [D]), [H, U] = l([]), W = ee !== void 0, G = W ? ee : H, K = c(te);
++	a(() => {
++		K.current = te;
++	}, [te]), a(() => {
++		if (W || H.length === 0) return;
++		let e = Ee(B, H);
++		e.length !== H.length && U(e);
++	}, [
++		B,
++		H,
++		W
++	]);
++	let q = s(() => new Set(G ?? []), [G]), J = s(() => {
++		if (q.size === 0) return [];
++		let e = [];
++		for (let t of q) try {
++			e.push(JSON.parse(t));
++		} catch {}
++		return e;
++	}, [q]), { visibleNodes: Y, visibleEdges: X } = s(() => {
++		if (J.length === 0) return {
++			visibleNodes: ie,
++			visibleEdges: j
++		};
++		let e = /* @__PURE__ */ new Set(), t = [];
++		for (let n of ie) Te(J, n.path) ? e.add(n.id) : t.push(n);
++		return {
++			visibleNodes: t,
++			visibleEdges: j.filter((t) => !e.has(t.from) && !e.has(t.to))
++		};
++	}, [
++		ie,
++		j,
++		J
++	]), Z = c(null), [Ae, je] = l(!1), Q = r((e) => {
++		let t = E.current;
++		if (!t) return null;
++		let n = t.querySelectorAll("[data-collapse-path]");
++		for (let t = 0; t < n.length; t += 1) if (n[t].getAttribute("data-collapse-path") === e) return n[t];
++		return null;
++	}, []), $ = r((e) => {
++		let t = JSON.stringify(e), n = Q(t);
++		if (n) {
++			let e = n.getBoundingClientRect();
++			Z.current = {
++				key: t,
++				clientX: e.left + e.width / 2,
++				clientY: e.top + e.height / 2
++			}, je(!0);
++		} else Z.current = null;
++		if (W) {
++			T?.(e);
++			return;
++		}
++		U((e) => {
++			let n = e.includes(t) ? e.filter((e) => e !== t) : [...e, t];
++			return K.current?.(n), n;
++		});
++	}, [
++		W,
++		T,
++		Q
++	]), Me = s(() => ({
++		collapsedSet: q,
++		onToggleCollapse: $
++	}), [q, $]), Ne = c(G);
++	Ne.current = G;
++	let Ie = s(() => ({
++		toggleCollapse: (e) => $(e),
++		collapseAll: () => {
++			if (W) return;
++			let e;
++			try {
++				e = JSON.parse(B);
++			} catch {
++				return;
++			}
++			if (!e || typeof e != "object") return;
++			let t = Array.isArray(e) ? e.map((e, t) => t) : Object.keys(e), n = [];
++			for (let r of t) {
++				let t = e[r];
++				if (t && typeof t == "object") {
++					if (Array.isArray(t) && t.length === 0 || !Array.isArray(t) && Object.keys(t).length === 0) continue;
++					n.push(JSON.stringify([r]));
++				}
++			}
++			U(n), K.current?.(n);
++		},
++		expandAll: () => {
++			W || (U([]), K.current?.([]));
++		},
++		getCollapsedPaths: () => Ne.current ?? []
++	}), [
++		W,
++		B,
++		$
++	]);
++	o(ne, () => ({
++		...V,
++		...Ie
++	}), [V, Ie]);
++	let Le = s(() => me(X), [X]), Re = c(Y);
++	Re.current = Y;
++	let ze = c(!0);
++	a(() => {
++		if (ze.current) {
++			ze.current = !1;
++			return;
++		}
++		Re.current.length > 0 && M(!0);
++	}, [q]);
++	let Be = r((e) => {
+ 		if (!e.width || !e.height) {
+-			F(!1);
++			M(!1);
+ 			return;
+ 		}
+-		G.current = {
++		I.current = {
+ 			width: e.width,
+ 			height: e.height
+-		}, oe(e.width + 50), se(e.height + 50), F(!1);
++		}, _e(e.width + 50), we(e.height + 50), M(!1);
+ 	}, []);
+-	r(() => {
+-		if (I) return;
++	a(() => {
++		let e = Z.current;
++		if (!e) return;
++		Z.current = null;
++		let t = !1, n = 0, r = null, i = null, a = !1, o = (t, n) => {
++			if (t !== void 0 && n !== void 0) {
++				let r = t - e.clientX, i = n - e.clientY;
++				(Math.abs(r) >= 1 || Math.abs(i) >= 1) && D?.camera?.moveByInClientSpace(r, i);
++			}
++			je(!1);
++		}, s = () => {
++			if (t) return;
++			n += 1;
++			let c = Q(e.key);
++			if (!c) {
++				n < 180 ? requestAnimationFrame(s) : o();
++				return;
++			}
++			let l = c.getBoundingClientRect(), u = l.left + l.width / 2, d = l.top + l.height / 2;
++			if (r !== null) {
++				if (Math.abs(u - r) >= .5 || Math.abs(d - (i ?? 0)) >= .5) a = !0;
++				else if (a) {
++					o(u, d);
++					return;
++				}
++			}
++			r = u, i = d, n < 180 ? requestAnimationFrame(s) : a ? o(u, d) : o();
++		}, c = requestAnimationFrame(s);
++		return () => {
++			t = !0, cancelAnimationFrame(c), je(!1);
++		};
++	}, [
++		Y,
++		X,
++		D,
++		Q
++	]), a(() => {
++		if (N) return;
+ 		if (!m) {
+-			L(!0);
++			P(!0);
+ 			return;
+ 		}
+-		if (!D || A.length === 0 || P || !G.current) return;
++		if (!D || Y.length === 0 || oe || !I.current) return;
+ 		let e = !1, t = window.requestAnimationFrame(() => {
+-			e || (ce(D, E.current, G.current), L(!0));
++			e || (ye(D, E.current, I.current), P(!0));
+ 		});
+ 		return () => {
+ 			e = !0, window.cancelAnimationFrame(t);
+ 		};
+ 	}, [
+ 		D,
+-		A,
+-		P,
++		Y,
++		oe,
+ 		m,
+-		I,
+-		U,
+-		W
++		N,
++		ge,
++		ve
+ 	]);
+-	let ge = n((e) => /* @__PURE__ */ h(Te, {
++	let Ve = r((e) => /* @__PURE__ */ _(Pe, {
+ 		...e,
+ 		onNodeClick: b
+-	}), [b]), _e = n((e) => /* @__PURE__ */ h(pe, {
++	}), [b]), He = r((e) => /* @__PURE__ */ _(ke, {
+ 		...e,
+ 		viewPort: D,
+-		edgeTargetById: Z,
++		edgeTargetById: Le,
+ 		hostElement: E.current
+-	}), [D, Z]), Q = ee(() => H(E.current, !0), {
++	}), [D, Le]), Ue = re(() => he(E.current, !0), {
+ 		threshold: 150,
+-		onFinish: () => H(E.current, !1)
+-	}), $ = w?.(B, _);
+-	return /* @__PURE__ */ g("div", {
++		onFinish: () => he(E.current, !1)
++	}), We = w?.(le, h);
++	return /* @__PURE__ */ v("div", {
+ 		ref: E,
+-		className: J,
+-		style: me,
++		className: Oe,
++		style: z,
+ 		role: "img",
+ 		"aria-label": "JSON data visualization",
+ 		onContextMenu: (e) => e.preventDefault(),
+-		...Q(),
++		...Ue(),
+ 		children: [
+-			d && /* @__PURE__ */ h(fe, {
+-				onFocusRoot: X.focusFirstNode,
+-				onCenterView: X.centerView,
+-				onZoomOut: X.zoomOut,
+-				onZoomIn: X.zoomIn
++			i && /* @__PURE__ */ _(De, {
++				onFocusRoot: V.focusFirstNode,
++				onCenterView: V.centerView,
++				onZoomOut: V.zoomOut,
++				onZoomIn: V.zoomIn
+ 			}),
+-			R && ($ || /* @__PURE__ */ h("div", {
+-				className: k.tooLarge,
+-				children: `This graph has ${B} nodes and exceeds the maxRenderableNodes limit (${_}).`
++			se && (We || /* @__PURE__ */ _("div", {
++				className: O.tooLarge,
++				children: `This graph has ${le} nodes and exceeds the maxRenderableNodes limit (${h}).`
+ 			})),
+-			P && /* @__PURE__ */ h("div", {
+-				className: k.overlay,
+-				children: /* @__PURE__ */ h("div", { className: k.spinner })
++			oe && /* @__PURE__ */ _("div", {
++				className: O.overlay,
++				children: /* @__PURE__ */ _("div", { className: O.spinner })
+ 			}),
+-			/* @__PURE__ */ h(c, {
++			/* @__PURE__ */ _(u, {
+ 				onCreate: (e) => {
+-					O(e), q.current?.(e);
++					k(e), R.current?.(e);
+ 				},
+ 				onContextMenu: (e) => e.preventDefault(),
+ 				treatTwoFingerTrackPadGesturesLikeTouch: p,
+ 				className: "jsoncrack-space",
+ 				style: {
+-					opacity: I ? 1 : 0,
++					opacity: N && !Ae ? 1 : 0,
++					visibility: Ae ? "hidden" : "visible",
+ 					transition: "opacity 120ms"
+ 				},
+-				children: /* @__PURE__ */ h(l, {
+-					className: "jsoncrack-canvas",
+-					onLayoutChange: he,
+-					node: ge,
+-					edge: _e,
+-					nodes: A,
+-					edges: M,
+-					arrow: null,
+-					maxHeight: W,
+-					maxWidth: U,
+-					height: W,
+-					width: U,
+-					direction: u,
+-					layoutOptions: Ee,
+-					pannable: !1,
+-					zoomable: !1,
+-					animated: !1,
+-					readonly: !0,
+-					dragEdge: null,
+-					dragNode: null,
+-					defaultPosition: null
+-				}, u)
++				children: /* @__PURE__ */ _(Ce.Provider, {
++					value: Me,
++					children: /* @__PURE__ */ _(d, {
++						className: "jsoncrack-canvas",
++						onLayoutChange: Be,
++						node: Ve,
++						edge: He,
++						nodes: Y,
++						edges: X,
++						arrow: null,
++						maxHeight: ve,
++						maxWidth: ge,
++						height: ve,
++						width: ge,
++						direction: n,
++						layoutOptions: Fe,
++						pannable: !1,
++						zoomable: !1,
++						animated: !1,
++						readonly: !0,
++						dragEdge: null,
++						dragNode: null,
++						defaultPosition: null
++					}, n)
++				})
+ 			})
+ 		]
+ 	});
+ });
+-De.displayName = "JSONCrack";
++Ie.displayName = "JSONCrack";
+ //#endregion
+-export { De as JSONCrack, z as parseGraph };
++export { Ie as JSONCrack, se as parseGraph };
