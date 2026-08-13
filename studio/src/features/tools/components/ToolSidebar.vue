@@ -118,20 +118,6 @@ const sidebarClass = computed(() => ({
           </span>
         </button>
         <button
-          v-if="aiVisible"
-          class="tools-sidebar__ai"
-          type="button"
-          :class="{ 'is-active': activeCategory === 'ai' }"
-          :aria-current="activeCategory === 'ai' ? 'true' : undefined"
-          @click="emit('select-ai')"
-        >
-          <IconAi :size="18" aria-hidden="true" />
-          <span>
-            <strong>AI</strong>
-            <small>AI 站</small>
-          </span>
-        </button>
-        <button
           v-if="bookmarksVisible"
           class="tools-sidebar__bookmarks"
           type="button"
@@ -143,6 +129,19 @@ const sidebarClass = computed(() => ({
           <span>
             <strong>Bookmarks</strong>
             <small>收藏夹</small>
+          </span>
+        </button>
+        <button
+          v-if="aiVisible"
+          class="tools-sidebar__ai"
+          type="button"
+          :class="{ 'is-active': activeCategory === 'ai' }"
+          :aria-current="activeCategory === 'ai' ? 'true' : undefined"
+          @click="emit('select-ai')"
+        >
+          <IconAi :size="18" aria-hidden="true" />
+          <span>
+            <strong>AI</strong>
           </span>
         </button>
       </nav>

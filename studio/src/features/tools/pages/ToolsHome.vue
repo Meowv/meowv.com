@@ -376,25 +376,6 @@ onBeforeUnmount(() => {
         </section>
 
         <section
-          v-if="aiSites.length && !query"
-          id="tools-ai"
-          class="tools-ai"
-          data-tools-navigation="ai"
-          aria-labelledby="tools-ai-title"
-        >
-          <header class="tools-link-section__marker">
-            <span><IconAi :size="17" aria-hidden="true" /></span>
-            <div>
-              <strong id="tools-ai-title">AI</strong>
-              <small>AI 站</small>
-            </div>
-          </header>
-          <div class="tools-grid">
-            <BookmarkCard v-for="site in aiSites" :key="site.id" :bookmark="site" />
-          </div>
-        </section>
-
-        <section
           v-if="bookmarks.length && !query"
           id="tools-bookmarks"
           class="tools-bookmarks"
@@ -410,6 +391,24 @@ onBeforeUnmount(() => {
           </header>
           <div class="tools-grid">
             <BookmarkCard v-for="bookmark in bookmarks" :key="bookmark.id" :bookmark="bookmark" />
+          </div>
+        </section>
+
+        <section
+          v-if="aiSites.length && !query"
+          id="tools-ai"
+          class="tools-ai"
+          data-tools-navigation="ai"
+          aria-labelledby="tools-ai-title"
+        >
+          <header class="tools-link-section__marker">
+            <span><IconAi :size="17" aria-hidden="true" /></span>
+            <div>
+              <strong id="tools-ai-title">AI</strong>
+            </div>
+          </header>
+          <div class="tools-grid">
+            <BookmarkCard v-for="site in aiSites" :key="site.id" :bookmark="site" />
           </div>
         </section>
       </div>
