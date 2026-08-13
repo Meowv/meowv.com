@@ -6,7 +6,12 @@ import {
   MeshStandardMaterial,
 } from 'three';
 import { type BookConfig } from '../BookConfig';
-import { computePageCurlPoint, getGutterOffset, type TurnDirection } from '../turn/PageCurl';
+import {
+  computePageCurlPoint,
+  getGutterEdgeInfluence,
+  getGutterOffset,
+  type TurnDirection,
+} from '../turn/PageCurl';
 import { createPageTexture, disposeTexture } from '../three-utils';
 
 interface TurningSheetOptions {
@@ -89,6 +94,7 @@ export class TurningSheet {
     for (let index = 0; index < vertexCount; index += 1) {
       const offset = index * 3;
       const distanceFromSpine = Math.abs(this.#basePositions[offset]);
+      const y = this.#basePositions[offset + 1];
       const point = computePageCurlPoint({
         x: this.#basePositions[offset],
         y: this.#basePositions[offset + 1],
@@ -108,7 +114,12 @@ export class TurningSheet {
         point.y,
         point.z +
           this.#basePositions[offset + 2] +
-          getGutterOffset(distanceFromSpine, this.#config) * settledGutter,
+          getGutterOffset(
+            distanceFromSpine,
+            this.#config,
+            getGutterEdgeInfluence(y, this.#pageHeight),
+          ) *
+            settledGutter,
       );
     }
     positions.needsUpdate = true;

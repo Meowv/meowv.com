@@ -6,7 +6,7 @@ import {
   MeshStandardMaterial,
   PlaneGeometry,
 } from 'three';
-import { getGutterOffset, easeInOutCubic } from '../turn/PageCurl';
+import { easeInOutCubic, getGutterEdgeInfluence, getGutterOffset } from '../turn/PageCurl';
 import { getStackThicknesses, getTotalPaperThickness, type BookConfig } from '../BookConfig';
 import { createPageTexture, disposeObject } from '../three-utils';
 import { TurningSheet } from './TurningSheet';
@@ -34,9 +34,12 @@ export class BookModel {
   readonly #frontCoverMaterial: MeshStandardMaterial;
   readonly #leftStack: Mesh<BoxGeometry>;
   readonly #rightStack: Mesh<BoxGeometry>;
+  readonly #leftPageEdges = new Group();
+  readonly #rightPageEdges = new Group();
   readonly #spine: Mesh<BoxGeometry>;
   readonly #pageWidth: number;
   readonly #pageCount: number;
+  readonly #totalThickness: number;
   readonly #config: Readonly<BookConfig>;
   readonly #maxAnisotropy: number;
   #leftTexture: CanvasTexture | null = null;
@@ -50,6 +53,7 @@ export class BookModel {
     this.#maxAnisotropy = options.maxAnisotropy;
 
     const totalThickness = getTotalPaperThickness(options.pageCount, options.config);
+    this.#totalThickness = totalThickness;
     const pageMaterial = () =>
       new MeshStandardMaterial({
         color: 0xfffdf7,
@@ -102,7 +106,15 @@ export class BookModel {
     });
     const frontCover = new Mesh(
       new BoxGeometry(coverWidth, coverHeight, options.config.coverThickness),
-      this.#frontCoverMaterial,
+      Array.from({ length: 6 }, (_, materialIndex) =>
+        materialIndex === 4
+          ? this.#frontCoverMaterial
+          : new MeshStandardMaterial({
+              color: 0x5d3327,
+              metalness: 0,
+              roughness: 0.73,
+            }),
+      ),
     );
     frontCover.position.x = coverWidth / 2;
     frontCover.position.z = options.config.coverThickness / 2 + 0.006;
@@ -116,10 +128,10 @@ export class BookModel {
     this.#spine.position.z = -totalThickness * 0.8;
     this.#spine.castShadow = true;
 
-    this.leftHalf.add(this.#leftStack, this.#leftPage);
-    this.rightHalf.add(this.#rightStack, this.#rightPage);
+    this.leftHalf.add(this.#leftStack, this.#leftPage, this.#leftPageEdges);
+    this.rightHalf.add(this.#rightStack, this.#rightPage, this.#rightPageEdges);
     this.root.add(backCover, this.leftHalf, this.rightHalf, this.#frontCoverPivot, this.#spine);
-    addVisiblePageEdges(this.leftHalf, this.rightHalf, options, totalThickness);
+    addVisiblePageEdges(this.#leftPageEdges, this.#rightPageEdges, options, totalThickness);
 
     this.turningSheet = new TurningSheet({
       pageWidth: options.pageWidth,
@@ -171,17 +183,27 @@ export class BookModel {
   setOpenProgress(progress: number): void {
     const eased = easeInOutCubic(progress);
     this.root.position.x = (-this.#pageWidth / 2) * (1 - eased);
+    this.#frontCoverPivot.position.z = (-this.#totalThickness + 0.006) * eased;
     this.#frontCoverPivot.rotation.y = Math.PI * eased;
     this.leftHalf.rotation.y = Math.PI * (1 - eased);
+    this.#setPageEdgesVisible(eased);
     this.#spine.visible = eased < 0.82;
   }
 
   setClosedFromOpenProgress(progress: number): void {
     const eased = easeInOutCubic(progress);
     this.root.position.x = (-this.#pageWidth / 2) * eased;
+    this.#frontCoverPivot.position.z = (-this.#totalThickness + 0.006) * (1 - eased);
     this.leftHalf.rotation.y = Math.PI * eased;
     this.#frontCoverPivot.rotation.y = Math.PI * (1 - eased);
+    this.#setPageEdgesVisible(1 - eased);
     this.#spine.visible = eased > 0.18;
+  }
+
+  #setPageEdgesVisible(openProgress: number): void {
+    const visible = openProgress > 0.14;
+    this.#leftPageEdges.visible = visible;
+    this.#rightPageEdges.visible = visible;
   }
 
   dispose(): void {
@@ -209,11 +231,12 @@ function createStaticPage(
   const array = positions.array;
   for (let index = 0; index < array.length; index += 3) {
     const distance = Math.abs(Number(array[index]));
+    const y = Number(array[index + 1]);
     positions.setXYZ(
       index / 3,
       Number(array[index]),
-      Number(array[index + 1]),
-      getGutterOffset(distance, options.config),
+      y,
+      getGutterOffset(distance, options.config, getGutterEdgeInfluence(y, options.pageHeight)),
     );
   }
   positions.needsUpdate = true;
@@ -225,8 +248,8 @@ function createStaticPage(
 }
 
 function addVisiblePageEdges(
-  leftHalf: Group,
-  rightHalf: Group,
+  leftPageEdges: Group,
+  rightPageEdges: Group,
   options: BookModelOptions,
   totalThickness: number,
 ): void {
@@ -245,7 +268,7 @@ function addVisiblePageEdges(
       edge.position.x = (side * options.pageWidth) / 2 + Math.sin(index * 4.2) * 0.0008;
       edge.position.y = -options.pageHeight / 2 + 0.002 + index * 0.00135;
       edge.position.z = -totalThickness * level;
-      (side === -1 ? leftHalf : rightHalf).add(edge);
+      (side === -1 ? leftPageEdges : rightPageEdges).add(edge);
     }
   }
 }

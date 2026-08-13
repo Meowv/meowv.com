@@ -80,7 +80,7 @@ const actionTitle = (action: string, shortcut: string): string => `${action}（$
         aria-label="上一页"
         @click="$emit('previous')"
       >
-        <IconArrowLeft :size="16" aria-hidden="true" />
+        <IconArrowLeft :size="14" aria-hidden="true" />
       </button>
       <div class="books-progress">
         <span
@@ -104,7 +104,7 @@ const actionTitle = (action: string, shortcut: string): string => `${action}（$
         aria-label="下一页"
         @click="$emit('next')"
       >
-        <IconArrowRight :size="16" aria-hidden="true" />
+        <IconArrowRight :size="14" aria-hidden="true" />
       </button>
     </div>
   </div>

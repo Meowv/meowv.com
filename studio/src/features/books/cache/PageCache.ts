@@ -68,6 +68,28 @@ export class PageCache {
     return entry.page;
   }
 
+  getBest(
+    pageNumber: number,
+    qualityOrder: readonly RenderedPage['quality'][] = ['reading', 'preview'],
+  ): RenderedPage | undefined {
+    for (const quality of qualityOrder) {
+      let bestKey: string | null = null;
+      let bestWidth = -1;
+      for (const [key, entry] of this.#entries) {
+        if (
+          entry.page.pageNumber === pageNumber &&
+          entry.page.quality === quality &&
+          entry.page.targetWidth > bestWidth
+        ) {
+          bestKey = key;
+          bestWidth = entry.page.targetWidth;
+        }
+      }
+      if (bestKey) return this.get(bestKey);
+    }
+    return undefined;
+  }
+
   set(key: string, page: RenderedPage): void {
     const existing = this.#entries.get(key);
     if (existing) {

@@ -77,9 +77,16 @@ export function computePageCurlPoint(input: PageCurlInput): PageCurlPoint {
 export function getGutterOffset(
   distanceFromSpine: number,
   config: Pick<BookConfig, 'gutterDepth' | 'gutterFalloff'> = DEFAULT_BOOK_CONFIG,
+  edgeInfluence = 1,
 ): number {
   const distance = Math.max(0, distanceFromSpine);
-  return config.gutterDepth * (1 - Math.exp(-distance / config.gutterFalloff));
+  const gutterOffset = config.gutterDepth * (1 - Math.exp(-distance / config.gutterFalloff));
+  return config.gutterDepth + (gutterOffset - config.gutterDepth) * clamp(edgeInfluence, 0, 1);
+}
+
+export function getGutterEdgeInfluence(y: number, pageHeight: number): number {
+  const distanceFromEdge = Math.max(0, pageHeight / 2 - Math.abs(y));
+  return smoothstep(0, pageHeight * 0.04, distanceFromEdge);
 }
 
 export function progressFromDrag(

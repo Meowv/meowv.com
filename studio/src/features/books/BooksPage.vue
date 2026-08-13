@@ -36,6 +36,7 @@ const spreadIndex = ref(0);
 const canGoForward = ref(false);
 const canGoBack = ref(false);
 const showReaderTip = ref(false);
+const pagePreparing = ref(false);
 const pageStateMachine = new BookStateMachine();
 pageStateMachine.subscribe((snapshot) => {
   state.value = snapshot.state;
@@ -141,6 +142,7 @@ async function returnHome(message = ''): Promise<void> {
   canGoForward.value = false;
   canGoBack.value = false;
   showReaderTip.value = false;
+  pagePreparing.value = false;
   uiHidden.value = false;
   errorMessage.value = message;
 }
@@ -209,6 +211,11 @@ async function openFile(file: File, handle?: FileSystemFileHandle): Promise<void
     const instance = new BookEngine(host, {
       onError: (error) => {
         if (currentOperation === operationId) void returnHome(pdfErrorMessage(error));
+      },
+      onPagePreparationChange: (preparing) => {
+        if (currentOperation === operationId && engine === instance) {
+          pagePreparing.value = preparing;
+        }
       },
     });
     engine = instance;
@@ -477,6 +484,10 @@ onBeforeUnmount(() => {
       <p v-if="readerReady && showReaderTip" class="books-reader__hint">
         点击封面打开；滚轮缩放页面；拖动纸张外侧或使用方向键翻页
       </p>
+      <div v-if="readerReady && pagePreparing" class="books-reader__preparing" role="status">
+        <span aria-hidden="true"></span>
+        正在整理书页…
+      </div>
       <p class="books-orientation-hint">横屏阅读会更舒展</p>
       <ReaderControls
         v-if="readerReady"
