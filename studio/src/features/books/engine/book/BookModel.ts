@@ -6,7 +6,7 @@ import {
   MeshStandardMaterial,
   PlaneGeometry,
 } from 'three';
-import { easeInOutCubic, getGutterEdgeInfluence, getGutterOffset } from '../turn/PageCurl';
+import { getGutterEdgeInfluence, getGutterOffset } from '../turn/PageCurl';
 import { getStackThicknesses, getTotalPaperThickness, type BookConfig } from '../BookConfig';
 import { createPageTexture, disposeObject } from '../three-utils';
 import { TurningSheet } from './TurningSheet';
@@ -181,23 +181,33 @@ export class BookModel {
   }
 
   setOpenProgress(progress: number): void {
-    const eased = easeInOutCubic(progress);
-    this.root.position.x = (-this.#pageWidth / 2) * (1 - eased);
-    this.#frontCoverPivot.position.z = (-this.#totalThickness + 0.006) * eased;
-    this.#frontCoverPivot.rotation.y = Math.PI * eased;
-    this.leftHalf.rotation.y = Math.PI * (1 - eased);
-    this.#setPageEdgesVisible(eased);
-    this.#spine.visible = eased < 0.82;
+    const coverProgress = phaseProgress(progress, 0, 0.78);
+    const pageProgress = phaseProgress(progress, 0.12, 1);
+    const centeringProgress = phaseProgress(progress, 0.06, 0.92);
+    this.root.position.x = (-this.#pageWidth / 2) * (1 - centeringProgress);
+    this.#frontCoverPivot.position.z =
+      (-this.#totalThickness + 0.006) * coverProgress + Math.sin(Math.PI * coverProgress) * 0.045;
+    this.#frontCoverPivot.rotation.y = Math.PI * coverProgress;
+    this.leftHalf.position.z = Math.sin(Math.PI * pageProgress) * 0.018;
+    this.leftHalf.rotation.y = Math.PI * (1 - pageProgress);
+    this.#setPageEdgesVisible(pageProgress);
+    this.#spine.visible = pageProgress < 0.9;
   }
 
   setClosedFromOpenProgress(progress: number): void {
-    const eased = easeInOutCubic(progress);
-    this.root.position.x = (-this.#pageWidth / 2) * eased;
-    this.#frontCoverPivot.position.z = (-this.#totalThickness + 0.006) * (1 - eased);
-    this.leftHalf.rotation.y = Math.PI * eased;
-    this.#frontCoverPivot.rotation.y = Math.PI * (1 - eased);
-    this.#setPageEdgesVisible(1 - eased);
-    this.#spine.visible = eased > 0.18;
+    const pageCloseProgress = phaseProgress(progress, 0, 0.82);
+    const coverCloseProgress = phaseProgress(progress, 0.08, 1);
+    const centeringProgress = phaseProgress(progress, 0.12, 0.96);
+    const coverOpenProgress = 1 - coverCloseProgress;
+    this.root.position.x = (-this.#pageWidth / 2) * centeringProgress;
+    this.#frontCoverPivot.position.z =
+      (-this.#totalThickness + 0.006) * coverOpenProgress +
+      Math.sin(Math.PI * coverCloseProgress) * 0.045;
+    this.leftHalf.position.z = Math.sin(Math.PI * pageCloseProgress) * 0.018;
+    this.leftHalf.rotation.y = Math.PI * pageCloseProgress;
+    this.#frontCoverPivot.rotation.y = Math.PI * coverOpenProgress;
+    this.#setPageEdgesVisible(1 - pageCloseProgress);
+    this.#spine.visible = pageCloseProgress > 0.1;
   }
 
   #setPageEdgesVisible(openProgress: number): void {
@@ -213,6 +223,11 @@ export class BookModel {
     this.turningSheet.dispose();
     disposeObject(this.root);
   }
+}
+
+function phaseProgress(progress: number, start: number, end: number): number {
+  const unit = Math.min(1, Math.max(0, (progress - start) / Math.max(0.001, end - start)));
+  return unit * unit * (3 - 2 * unit);
 }
 
 function createStaticPage(

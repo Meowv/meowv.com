@@ -9,7 +9,7 @@ import {
   IconFolderOpen,
 } from '@tabler/icons-vue';
 
-defineProps<{
+const props = defineProps<{
   bookClosed: boolean;
   bookOpen: boolean;
   canGoBack: boolean;
@@ -29,6 +29,9 @@ defineEmits<{
 }>();
 
 const actionTitle = (action: string, shortcut: string): string => `${action}（${shortcut}）`;
+const previousAction = (): string => (props.currentPage <= 1 ? '合上书' : '上一页');
+const nextAction = (): string =>
+  props.currentPage >= Math.max(1, props.pageCount - 1) ? '合上书' : '下一页';
 </script>
 
 <template>
@@ -76,8 +79,8 @@ const actionTitle = (action: string, shortcut: string): string => `${action}（$
       <button
         type="button"
         :disabled="!canGoBack"
-        :title="actionTitle('上一页', '← / PageUp')"
-        aria-label="上一页"
+        :title="actionTitle(previousAction(), '← / PageUp')"
+        :aria-label="previousAction()"
         @click="$emit('previous')"
       >
         <IconArrowLeft :size="14" aria-hidden="true" />
@@ -100,8 +103,8 @@ const actionTitle = (action: string, shortcut: string): string => `${action}（$
       <button
         type="button"
         :disabled="!canGoForward"
-        :title="actionTitle('下一页', '→ / PageDown / Space')"
-        aria-label="下一页"
+        :title="actionTitle(nextAction(), '→ / PageDown / Space')"
+        :aria-label="nextAction()"
         @click="$emit('next')"
       >
         <IconArrowRight :size="14" aria-hidden="true" />
