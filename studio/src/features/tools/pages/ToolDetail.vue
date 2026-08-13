@@ -4,7 +4,7 @@ import { useRoute } from 'vue-router';
 import { usePageMeta } from '@/composables/usePageMeta';
 import ToolContainer from '@/features/tools/components/ToolContainer.vue';
 import { getToolById, toolCategoryMap } from '@/features/tools/tools';
-import JsonEditorLoading from '@/features/tools/tools/json/JsonEditorLoading.vue';
+import JsonEditorLoading from '@/features/tools/tools/developer/json/JsonEditorLoading.vue';
 import '@/features/tools/tools.css';
 
 const route = useRoute();
@@ -13,16 +13,16 @@ const category = computed(() =>
   tool.value ? toolCategoryMap.get(tool.value.category) : undefined,
 );
 
-const componentLoaders = import.meta.glob<Component>('../tools/*/index.vue', {
+const componentLoaders = import.meta.glob<Component>('../tools/*/*/index.vue', {
   eager: false,
   import: 'default',
 });
-// 工具目录由配置 id 直接映射，新增工具无需再维护组件注册表。
+// 工具目录由分类和配置 id 直接映射，新增工具无需再维护组件注册表。
 const toolComponents: Record<string, Component> = Object.fromEntries(
   Object.entries(componentLoaders).map(([modulePath, loader]) => [
     modulePath,
     defineAsyncComponent(
-      modulePath === '../tools/json/index.vue'
+      modulePath === '../tools/developer/json/index.vue'
         ? {
             loader,
             loadingComponent: JsonEditorLoading,
@@ -32,15 +32,15 @@ const toolComponents: Record<string, Component> = Object.fromEntries(
     ),
   ]),
 );
-function getToolModulePath(toolId: string): string {
-  return `../tools/${toolId}/index.vue`;
+function getToolModulePath(categoryId: string, toolId: string): string {
+  return `../tools/${categoryId}/${toolId}/index.vue`;
 }
-function resolveToolComponent(toolId: string): Component | null {
-  return toolComponents[getToolModulePath(toolId)] ?? null;
+function resolveToolComponent(categoryId: string, toolId: string): Component | null {
+  return toolComponents[getToolModulePath(categoryId, toolId)] ?? null;
 }
 const toolComponent = computed<Component | null>(() => {
   if (!tool.value) return null;
-  return resolveToolComponent(tool.value.id);
+  return resolveToolComponent(tool.value.category, tool.value.id);
 });
 usePageMeta({
   title: () => `${tool.value?.name ?? '在线工具'} · Meowv Studio`,

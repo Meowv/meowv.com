@@ -9,7 +9,6 @@
   },
   "scripts": {
     "dev": "vite",
-    "tools:audit": "node scripts/audit-tools.mjs",
     "typecheck": "vue-tsc --noEmit",
     "lint": "eslint . && prettier --check .",
     "lint:fix": "eslint . --fix && prettier --write .",
