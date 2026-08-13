@@ -79,7 +79,7 @@ export function getGutterOffset(
   config: Pick<BookConfig, 'gutterDepth' | 'gutterFalloff'> = DEFAULT_BOOK_CONFIG,
 ): number {
   const distance = Math.max(0, distanceFromSpine);
-  return -config.gutterDepth * Math.exp(-distance / config.gutterFalloff);
+  return config.gutterDepth * (1 - Math.exp(-distance / config.gutterFalloff));
 }
 
 export function progressFromDrag(

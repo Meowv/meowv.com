@@ -34,6 +34,7 @@ export class BookModel {
   readonly #frontCoverMaterial: MeshStandardMaterial;
   readonly #leftStack: Mesh<BoxGeometry>;
   readonly #rightStack: Mesh<BoxGeometry>;
+  readonly #spine: Mesh<BoxGeometry>;
   readonly #pageWidth: number;
   readonly #pageCount: number;
   readonly #config: Readonly<BookConfig>;
@@ -108,16 +109,16 @@ export class BookModel {
     frontCover.castShadow = true;
     this.#frontCoverPivot.add(frontCover);
 
-    const spine = new Mesh(
-      new BoxGeometry(options.config.coverThickness * 1.9, coverHeight, totalThickness * 2.1),
+    this.#spine = new Mesh(
+      new BoxGeometry(options.config.coverThickness * 0.9, coverHeight, totalThickness * 1.6),
       new MeshStandardMaterial({ color: 0x422219, metalness: 0, roughness: 0.78 }),
     );
-    spine.position.z = -options.config.coverThickness * 0.2;
-    spine.castShadow = true;
+    this.#spine.position.z = -totalThickness * 0.8;
+    this.#spine.castShadow = true;
 
     this.leftHalf.add(this.#leftStack, this.#leftPage);
     this.rightHalf.add(this.#rightStack, this.#rightPage);
-    this.root.add(backCover, this.leftHalf, this.rightHalf, this.#frontCoverPivot, spine);
+    this.root.add(backCover, this.leftHalf, this.rightHalf, this.#frontCoverPivot, this.#spine);
     addVisiblePageEdges(this.leftHalf, this.rightHalf, options, totalThickness);
 
     this.turningSheet = new TurningSheet({
@@ -125,7 +126,7 @@ export class BookModel {
       pageHeight: options.pageHeight,
       config: options.config,
     });
-    this.turningSheet.mesh.position.z = totalThickness + 0.008;
+    this.turningSheet.mesh.position.z = 0.004;
     this.root.add(this.turningSheet.mesh);
     this.setProgress(0);
     this.setOpenProgress(0);
@@ -172,6 +173,7 @@ export class BookModel {
     this.root.position.x = (-this.#pageWidth / 2) * (1 - eased);
     this.#frontCoverPivot.rotation.y = Math.PI * eased;
     this.leftHalf.rotation.y = Math.PI * (1 - eased);
+    this.#spine.visible = eased < 0.82;
   }
 
   setClosedFromOpenProgress(progress: number): void {
@@ -179,6 +181,7 @@ export class BookModel {
     this.root.position.x = (-this.#pageWidth / 2) * eased;
     this.leftHalf.rotation.y = Math.PI * eased;
     this.#frontCoverPivot.rotation.y = Math.PI * (1 - eased);
+    this.#spine.visible = eased > 0.18;
   }
 
   dispose(): void {

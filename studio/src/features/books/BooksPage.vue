@@ -1,16 +1,25 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
-import { BookAudio } from './audio/BookAudio';
 import BookWelcome from './components/BookWelcome.vue';
 import LoadingBook from './components/LoadingBook.vue';
 import ReaderControls from './components/ReaderControls.vue';
 import { BookEngine } from './engine/BookEngine';
 import { BookStateMachine } from './engine/BookStateMachine';
 import { createBookFingerprint } from './persistence/BookFingerprint';
+import { rememberRecentBook, restoreRecentBook } from './persistence/RecentBook';
 import { loadReadingProgress, saveReadingProgress } from './persistence/ReadingProgress';
 import { PdfPageProvider } from './publication/pdf/PdfPageProvider';
 import type { BookState, TurnDirection } from './types/reader';
 import './books.css';
+
+type BookOpenPicker = (options?: {
+  multiple?: boolean;
+  types?: Array<{ description?: string; accept: Record<string, string[]> }>;
+}) => Promise<FileSystemFileHandle[]>;
+
+type HandleDropItem = DataTransferItem & {
+  getAsFileSystemHandle?: () => Promise<FileSystemHandle | null>;
+};
 
 const root = ref<HTMLElement | null>(null);
 const canvasHost = ref<HTMLElement | null>(null);
@@ -21,29 +30,29 @@ const readerReady = ref(false);
 const dragging = ref(false);
 const uiHidden = ref(false);
 const fullscreen = ref(false);
-const soundEnabled = ref(true);
 const errorMessage = ref('');
 const pageCount = ref(0);
 const spreadIndex = ref(0);
 const canGoForward = ref(false);
 const canGoBack = ref(false);
-const zoomPercent = ref(100);
-const canZoomIn = ref(true);
-const canZoomOut = ref(false);
+const showReaderTip = ref(false);
 const pageStateMachine = new BookStateMachine();
 pageStateMachine.subscribe((snapshot) => {
   state.value = snapshot.state;
 });
 
-const audio = new BookAudio({ enabled: soundEnabled.value });
 let engine: BookEngine | null = null;
 let unsubscribeEngine: (() => void) | null = null;
 let loadController: AbortController | null = null;
 let bookId = '';
 let operationId = 0;
+let restoreId = 0;
 let dragDepth = 0;
 let hideTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
+let tipTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
 let hideAt = 0;
+
+const READER_TIP_KEY = 'meowv-studio:books:reader-tip:v2';
 
 const bookClosed = computed(() => state.value === 'CLOSED');
 const bookOpen = computed(() => state.value === 'OPEN');
@@ -81,6 +90,21 @@ function revealUi(): void {
   scheduleUiHide();
 }
 
+function showReaderTipOnce(): void {
+  if (showReaderTip.value || tipTimer) return;
+  try {
+    if (localStorage.getItem(READER_TIP_KEY) === 'true') return;
+    localStorage.setItem(READER_TIP_KEY, 'true');
+  } catch {
+    // 本地偏好不可用时，当前页面内仍只展示一次。
+  }
+  showReaderTip.value = true;
+  tipTimer = globalThis.setTimeout(() => {
+    showReaderTip.value = false;
+    tipTimer = null;
+  }, 5200);
+}
+
 function syncEngineSnapshot(): void {
   if (!engine) return;
   const snapshot = engine.snapshot;
@@ -89,9 +113,6 @@ function syncEngineSnapshot(): void {
   spreadIndex.value = snapshot.spreadIndex;
   canGoForward.value = engine.canGoForward;
   canGoBack.value = engine.canGoBackward;
-  zoomPercent.value = Math.round(engine.zoom * 100);
-  canZoomIn.value = engine.canZoomIn;
-  canZoomOut.value = engine.canZoomOut;
 }
 
 async function disposeReader(): Promise<void> {
@@ -119,9 +140,7 @@ async function returnHome(message = ''): Promise<void> {
   spreadIndex.value = 0;
   canGoForward.value = false;
   canGoBack.value = false;
-  zoomPercent.value = 100;
-  canZoomIn.value = true;
-  canZoomOut.value = false;
+  showReaderTip.value = false;
   uiHidden.value = false;
   errorMessage.value = message;
 }
@@ -139,12 +158,13 @@ function isPdf(file: File): boolean {
   return file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
 }
 
-async function openFile(file: File): Promise<void> {
+async function openFile(file: File, handle?: FileSystemFileHandle): Promise<void> {
   if (!isPdf(file)) {
     errorMessage.value = '请选择 PDF 文件。';
     return;
   }
 
+  restoreId += 1;
   const currentOperation = ++operationId;
   await disposeReader();
   if (currentOperation !== operationId) return;
@@ -211,6 +231,8 @@ async function openFile(file: File): Promise<void> {
     if (currentOperation !== operationId) return;
     syncEngineSnapshot();
     readerReady.value = true;
+    void rememberRecentBook({ file, fingerprint, ...(handle ? { handle } : {}) });
+    showReaderTipOnce();
     scheduleUiHide();
   } catch (reason) {
     await orphanProvider?.dispose().catch(() => undefined);
@@ -219,8 +241,31 @@ async function openFile(file: File): Promise<void> {
   }
 }
 
-function chooseFile(): void {
-  fileInput.value?.click();
+async function chooseFile(): Promise<void> {
+  restoreId += 1;
+  const picker = (globalThis as typeof globalThis & { showOpenFilePicker?: BookOpenPicker })
+    .showOpenFilePicker;
+  if (typeof picker !== 'function') {
+    fileInput.value?.click();
+    return;
+  }
+  try {
+    const [handle] = await picker({
+      multiple: false,
+      types: [
+        {
+          description: 'PDF 文档',
+          accept: { 'application/pdf': ['.pdf'] },
+        },
+      ],
+    });
+    if (!handle) return;
+    await openFile(await handle.getFile(), handle);
+  } catch (reason) {
+    if (!(reason instanceof DOMException && reason.name === 'AbortError')) {
+      errorMessage.value = '无法读取所选 PDF，请重新选择。';
+    }
+  }
 }
 
 function onCanvasClick(): void {
@@ -250,19 +295,38 @@ function onDragLeave(): void {
   if (dragDepth === 0) dragging.value = false;
 }
 
-function onDrop(event: DragEvent): void {
+async function onDrop(event: DragEvent): Promise<void> {
+  restoreId += 1;
   dragDepth = 0;
   dragging.value = false;
-  const file = [...(event.dataTransfer?.files ?? [])].find(isPdf);
-  if (file) void openFile(file);
-  else errorMessage.value = '这里只能打开本地 PDF。';
+  const dataTransfer = event.dataTransfer;
+  const item = [...(dataTransfer?.items ?? [])].find((candidate) => {
+    const file = candidate.kind === 'file' ? candidate.getAsFile() : null;
+    return file ? isPdf(file) : false;
+  }) as HandleDropItem | undefined;
+  const fallbackFile = [...(dataTransfer?.files ?? [])].find(isPdf);
+  if (!item && !fallbackFile) {
+    errorMessage.value = '这里只能打开本地 PDF。';
+    return;
+  }
+
+  try {
+    const handle = await item?.getAsFileSystemHandle?.();
+    if (handle?.kind === 'file') {
+      const fileHandle = handle as FileSystemFileHandle;
+      await openFile(await fileHandle.getFile(), fileHandle);
+      return;
+    }
+  } catch {
+    // 无法取得句柄时仍可用拖入的 File 完成本次阅读。
+  }
+  if (fallbackFile) await openFile(fallbackFile);
 }
 
 async function openBook(): Promise<void> {
   if (!engine || state.value !== 'CLOSED') return;
   const activeEngine = engine;
   revealUi();
-  void audio.playOpen();
   try {
     await activeEngine.open();
   } catch (reason) {
@@ -279,7 +343,6 @@ async function closeBook(): Promise<void> {
   if (!engine || state.value !== 'OPEN') return;
   const activeEngine = engine;
   revealUi();
-  void audio.playClose();
   try {
     await activeEngine.close();
   } catch (reason) {
@@ -297,24 +360,8 @@ async function turn(direction: TurnDirection): Promise<void> {
   const allowed = direction === 'forward' ? engine.canGoForward : engine.canGoBackward;
   if (!allowed) return;
   revealUi();
-  void audio.playTurn(direction);
   if (direction === 'forward') await engine.next();
   else await engine.previous();
-}
-
-function toggleSound(): void {
-  soundEnabled.value = !soundEnabled.value;
-  audio.setEnabled(soundEnabled.value);
-  revealUi();
-}
-
-function changeZoom(action: 'in' | 'out' | 'reset'): void {
-  if (!engine || state.value !== 'OPEN') return;
-  if (action === 'in') engine.zoomIn();
-  else if (action === 'out') engine.zoomOut();
-  else engine.resetZoom();
-  syncEngineSnapshot();
-  revealUi();
 }
 
 async function toggleFullscreen(): Promise<void> {
@@ -361,17 +408,23 @@ function onKeydown(event: KeyboardEvent): void {
 onMounted(() => {
   globalThis.addEventListener('keydown', onKeydown);
   document.addEventListener('fullscreenchange', syncFullscreen);
+  const restoreOperation = ++restoreId;
+  void restoreRecentBook().then((source) => {
+    if (!source || restoreOperation !== restoreId) return;
+    void openFile(source.file, source.handle);
+  });
 });
 
 onBeforeUnmount(() => {
   operationId += 1;
+  restoreId += 1;
   globalThis.removeEventListener('keydown', onKeydown);
   document.removeEventListener('fullscreenchange', syncFullscreen);
   clearHideTimer();
+  if (tipTimer) globalThis.clearTimeout(tipTimer);
   loadController?.abort();
   if (document.fullscreenElement === root.value) void document.exitFullscreen();
   void disposeReader();
-  void audio.dispose();
 });
 </script>
 
@@ -421,14 +474,8 @@ onBeforeUnmount(() => {
         :class="{ 'books-reader__canvas--closed': bookClosed }"
         @click="onCanvasClick"
       ></div>
-      <p v-if="readerReady" class="books-reader__hint">
-        {{
-          bookClosed
-            ? '点击封面打开这本书'
-            : zoomPercent > 100
-              ? '点击左右页切换焦点，滚轮上下移动；纸张外缘仍可翻页'
-              : '拖动纸张外侧，或使用方向键翻页'
-        }}
+      <p v-if="readerReady && showReaderTip" class="books-reader__hint">
+        点击封面打开；滚轮缩放页面；拖动纸张外侧或使用方向键翻页
       </p>
       <p class="books-orientation-hint">横屏阅读会更舒展</p>
       <ReaderControls
@@ -439,21 +486,13 @@ onBeforeUnmount(() => {
         :can-go-forward="canGoForward"
         :current-page="currentPage"
         :page-count="pageCount"
-        :sound-enabled="soundEnabled"
         :fullscreen="fullscreen"
-        :zoom-percent="zoomPercent"
-        :can-zoom-in="canZoomIn"
-        :can-zoom-out="canZoomOut"
         @previous="turn('backward')"
         @next="turn('forward')"
         @replace="chooseFile"
         @open="openBook"
         @close="closeBook"
-        @toggle-sound="toggleSound"
         @toggle-fullscreen="toggleFullscreen"
-        @zoom-in="changeZoom('in')"
-        @zoom-out="changeZoom('out')"
-        @reset-zoom="changeZoom('reset')"
       />
     </section>
 

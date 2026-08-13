@@ -164,18 +164,6 @@ export class BookEngine {
     return canTurnBackward(this.#spreadIndex, this.pageCount);
   }
 
-  get zoom(): number {
-    return this.#zoom;
-  }
-
-  get canZoomIn(): boolean {
-    return this.#zoom < 2.25;
-  }
-
-  get canZoomOut(): boolean {
-    return this.#zoom > 1;
-  }
-
   subscribe(listener: BookStateListener): () => void {
     return this.#stateMachine.subscribe(listener);
   }
@@ -264,33 +252,25 @@ export class BookEngine {
     await this.turn('backward');
   }
 
-  zoomIn(): number {
-    return this.setZoom(this.#zoom + 0.35);
-  }
-
-  zoomOut(): number {
-    return this.setZoom(this.#zoom - 0.35);
-  }
-
-  resetZoom(): number {
-    return this.setZoom(1);
-  }
-
-  setZoom(zoom: number): number {
-    if (this.#disposed) return this.#zoom;
+  #setZoom(zoom: number, focus?: Vector3 | null): void {
+    if (this.#disposed) return;
     const nextZoom = clamp(zoom, 1, 2.25);
-    if (Math.abs(nextZoom - this.#zoom) < 0.01) return this.#zoom;
+    if (Math.abs(nextZoom - this.#zoom) < 0.002) return;
     const wasFitted = this.#zoom <= 1.01;
     this.#zoom = nextZoom;
     if (nextZoom <= 1.01) {
       this.#focusX = 0;
       this.#focusY = 0;
+    } else if (focus) {
+      const pageWidth = this.#config.pageHeight * this.#pageAspect;
+      const maximumPanY = this.#config.pageHeight * 0.36 * ((nextZoom - 1) / nextZoom);
+      this.#focusX = focus.x < 0 ? -pageWidth / 2 : pageWidth / 2;
+      this.#focusY = clamp(focus.y, -maximumPanY, maximumPanY);
     } else if (wasFitted && this.#focusX === 0) {
       this.#focusX = (this.#config.pageHeight * this.#pageAspect) / 2;
     }
     this.#applyCamera();
     this.#scheduleReadingUpgrade(this.#generation);
-    return this.#zoom;
   }
 
   async turn(direction: TurnDirection): Promise<void> {
@@ -793,13 +773,12 @@ export class BookEngine {
   };
 
   #onWheel = (event: WheelEvent): void => {
-    if (this.#zoom <= 1.05 || this.#stateMachine.state !== 'OPEN') return;
+    if (this.#stateMachine.state !== 'OPEN') return;
     event.preventDefault();
-    const pageHeight = this.#config.pageHeight;
-    const maximumPan = pageHeight * 0.34 * ((this.#zoom - 1) / this.#zoom);
-    const worldDelta = (event.deltaY / Math.max(320, this.#host.clientHeight)) * pageHeight * 0.8;
-    this.#focusY = clamp(this.#focusY - worldDelta, -maximumPan, maximumPan);
-    this.#applyCamera();
+    const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? this.#host.clientHeight : 1;
+    const delta = clamp(event.deltaY * unit, -240, 240);
+    const focus = this.#localBookPoint(event);
+    this.#setZoom(this.#zoom * Math.exp(-delta * 0.0018), focus);
   };
 
   async #finishDrag(drag: DragSession, cancelled = false): Promise<void> {
@@ -831,7 +810,7 @@ export class BookEngine {
     }
   }
 
-  #localBookPoint(event: PointerEvent): Vector3 | null {
+  #localBookPoint(event: MouseEvent): Vector3 | null {
     const rect = this.#renderer.domElement.getBoundingClientRect();
     if (!rect.width || !rect.height) return null;
     this.#pointerNdc.set(

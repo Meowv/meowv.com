@@ -7,11 +7,6 @@ import {
   IconBook2,
   IconBookOff,
   IconFolderOpen,
-  IconVolume,
-  IconVolumeOff,
-  IconZoomIn,
-  IconZoomOut,
-  IconZoomReset,
 } from '@tabler/icons-vue';
 
 defineProps<{
@@ -21,11 +16,7 @@ defineProps<{
   canGoForward: boolean;
   currentPage: number;
   pageCount: number;
-  soundEnabled: boolean;
   fullscreen: boolean;
-  zoomPercent: number;
-  canZoomIn: boolean;
-  canZoomOut: boolean;
 }>();
 
 defineEmits<{
@@ -34,11 +25,7 @@ defineEmits<{
   replace: [];
   open: [];
   close: [];
-  toggleSound: [];
   toggleFullscreen: [];
-  zoomIn: [];
-  zoomOut: [];
-  resetZoom: [];
 }>();
 
 const actionTitle = (action: string, shortcut: string): string => `${action}（${shortcut}）`;
@@ -57,16 +44,6 @@ const actionTitle = (action: string, shortcut: string): string => `${action}（$
         </button>
         <button
           type="button"
-          :title="soundEnabled ? '关闭翻页声音' : '开启翻页声音'"
-          :aria-label="soundEnabled ? '关闭翻页声音' : '开启翻页声音'"
-          :aria-pressed="soundEnabled"
-          @click="$emit('toggleSound')"
-        >
-          <IconVolume v-if="soundEnabled" :size="19" aria-hidden="true" />
-          <IconVolumeOff v-else :size="19" aria-hidden="true" />
-        </button>
-        <button
-          type="button"
           :title="fullscreen ? '退出全屏（F）' : '进入全屏（F）'"
           :aria-label="fullscreen ? '退出全屏' : '进入全屏'"
           @click="$emit('toggleFullscreen')"
@@ -74,37 +51,6 @@ const actionTitle = (action: string, shortcut: string): string => `${action}（$
           <IconArrowsMinimize v-if="fullscreen" :size="19" aria-hidden="true" />
           <IconArrowsMaximize v-else :size="19" aria-hidden="true" />
         </button>
-        <template v-if="bookOpen">
-          <button
-            type="button"
-            :disabled="!canZoomOut"
-            title="缩小页面"
-            aria-label="缩小页面"
-            @click="$emit('zoomOut')"
-          >
-            <IconZoomOut :size="19" aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            class="books-reader-controls__zoom-value"
-            :disabled="zoomPercent === 100"
-            :title="zoomPercent === 100 ? '当前为适合窗口' : '恢复适合窗口'"
-            :aria-label="`当前缩放 ${zoomPercent}%，点击恢复适合窗口`"
-            @click="$emit('resetZoom')"
-          >
-            <IconZoomReset v-if="zoomPercent !== 100" :size="17" aria-hidden="true" />
-            <span v-else>100%</span>
-          </button>
-          <button
-            type="button"
-            :disabled="!canZoomIn"
-            title="放大页面"
-            aria-label="放大页面"
-            @click="$emit('zoomIn')"
-          >
-            <IconZoomIn :size="19" aria-hidden="true" />
-          </button>
-        </template>
         <button
           v-if="bookClosed"
           type="button"
@@ -134,7 +80,7 @@ const actionTitle = (action: string, shortcut: string): string => `${action}（$
         aria-label="上一页"
         @click="$emit('previous')"
       >
-        <IconArrowLeft :size="19" aria-hidden="true" />
+        <IconArrowLeft :size="16" aria-hidden="true" />
       </button>
       <div class="books-progress">
         <span
@@ -158,7 +104,7 @@ const actionTitle = (action: string, shortcut: string): string => `${action}（$
         aria-label="下一页"
         @click="$emit('next')"
       >
-        <IconArrowRight :size="19" aria-hidden="true" />
+        <IconArrowRight :size="16" aria-hidden="true" />
       </button>
     </div>
   </div>

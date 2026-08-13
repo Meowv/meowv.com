@@ -381,14 +381,23 @@
 
 .books-reader__hint {
   position: absolute;
-  z-index: 4;
-  bottom: 94px;
+  z-index: 9;
+  bottom: 48px;
   left: 50%;
   margin: 0;
-  color: rgb(244 235 220 / 46%);
+  max-width: calc(100% - 32px);
+  padding: 7px 12px;
+  border: 1px solid rgb(244 229 207 / 14%);
+  border-radius: 999px;
+  color: rgb(255 250 242 / 92%);
+  background: rgb(25 20 17 / 82%);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 24%);
   font-size: 12px;
+  line-height: 1.35;
   pointer-events: none;
+  text-align: center;
   transform: translateX(-50%);
+  backdrop-filter: blur(12px);
   transition: opacity 300ms ease;
 }
 
@@ -464,48 +473,42 @@
   opacity: 0.3;
 }
 
-.books-reader-controls__zoom-value span {
-  font-size: 10px;
-  font-variant-numeric: tabular-nums;
-  font-weight: 720;
-}
-
 .books-reader-controls__bottom {
   position: absolute;
-  bottom: 22px;
+  bottom: 6px;
   left: 50%;
-  min-height: 50px;
-  padding: 5px;
+  min-height: 34px;
+  padding: 2px 3px;
   border: 1px solid rgb(244 229 207 / 10%);
   border-radius: 999px;
   background: rgb(25 20 17 / 55%);
-  box-shadow: 0 14px 34px rgb(0 0 0 / 24%);
-  gap: 9px;
+  box-shadow: 0 8px 20px rgb(0 0 0 / 20%);
+  gap: 3px;
   transform: translateX(-50%);
   backdrop-filter: blur(16px);
 }
 
 .books-reader-controls__bottom button {
-  width: 38px;
-  height: 38px;
+  width: 30px;
+  height: 30px;
   border-color: transparent;
   background: transparent;
 }
 
 .books-progress {
   display: grid;
-  width: min(38vw, 360px);
-  min-width: 180px;
-  padding: 0 8px;
-  grid-template-columns: minmax(80px, 1fr) auto;
+  width: min(25vw, 220px);
+  min-width: 120px;
+  padding: 0 4px;
+  grid-template-columns: minmax(60px, 1fr) auto;
   align-items: center;
-  gap: 12px;
+  gap: 7px;
 }
 
 .books-progress__track {
   position: relative;
   display: block;
-  height: 3px;
+  height: 2px;
   overflow: hidden;
   border-radius: 999px;
   background: rgb(244 230 210 / 18%);
@@ -523,15 +526,14 @@
 }
 
 .books-progress__label {
-  min-width: 66px;
+  min-width: 48px;
   color: rgb(247 237 223 / 62%);
   font-variant-numeric: tabular-nums;
-  font-size: 11px;
+  font-size: 10px;
   text-align: right;
 }
 
-.books-page--ui-hidden .books-reader-controls,
-.books-page--ui-hidden .books-reader__hint {
+.books-page--ui-hidden .books-reader-controls {
   opacity: 0;
   pointer-events: none;
 }
@@ -620,15 +622,15 @@
   }
 
   .books-reader-controls__bottom {
-    right: 14px;
-    bottom: 14px;
-    left: 14px;
+    right: auto;
+    bottom: 6px;
+    left: 50%;
     justify-content: center;
-    transform: none;
+    transform: translateX(-50%);
   }
 
   .books-progress {
-    width: min(62vw, 320px);
+    width: min(48vw, 200px);
     min-width: 0;
   }
 }

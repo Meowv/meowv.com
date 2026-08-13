@@ -6,7 +6,7 @@ import {
   MeshStandardMaterial,
 } from 'three';
 import { type BookConfig } from '../BookConfig';
-import { computePageCurlPoint, type TurnDirection } from '../turn/PageCurl';
+import { computePageCurlPoint, getGutterOffset, type TurnDirection } from '../turn/PageCurl';
 import { createPageTexture, disposeTexture } from '../three-utils';
 
 interface TurningSheetOptions {
@@ -14,7 +14,13 @@ interface TurningSheetOptions {
   pageHeight: number;
   config: Pick<
     BookConfig,
-    'widthSegments' | 'heightSegments' | 'curlStrength' | 'twistStrength' | 'sagStrength'
+    | 'widthSegments'
+    | 'heightSegments'
+    | 'gutterDepth'
+    | 'gutterFalloff'
+    | 'curlStrength'
+    | 'twistStrength'
+    | 'sagStrength'
   >;
 }
 
@@ -79,8 +85,10 @@ export class TurningSheet {
   update(progress: number, direction: TurnDirection, pointerV = 0.82, verticalDrag = 0): void {
     const positions = this.#geometry.attributes.position;
     const vertexCount = this.#basePositions.length / 3;
+    const settledGutter = 1 - Math.sin(Math.PI * Math.min(1, Math.max(0, progress)));
     for (let index = 0; index < vertexCount; index += 1) {
       const offset = index * 3;
+      const distanceFromSpine = Math.abs(this.#basePositions[offset]);
       const point = computePageCurlPoint({
         x: this.#basePositions[offset],
         y: this.#basePositions[offset + 1],
@@ -94,7 +102,14 @@ export class TurningSheet {
         twistStrength: this.#config.twistStrength,
         sagStrength: this.#config.sagStrength,
       });
-      positions.setXYZ(index, point.x, point.y, point.z + this.#basePositions[offset + 2]);
+      positions.setXYZ(
+        index,
+        point.x,
+        point.y,
+        point.z +
+          this.#basePositions[offset + 2] +
+          getGutterOffset(distanceFromSpine, this.#config) * settledGutter,
+      );
     }
     positions.needsUpdate = true;
     this.#geometry.computeVertexNormals();
