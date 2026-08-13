@@ -26,9 +26,11 @@ const isToolsPage = computed(() => route.meta.feature === 'tools');
 const isToolsHomePage = computed(() => route.name === 'tools');
 const isToolDetailPage = computed(() => route.name === 'tool-detail');
 const isOfficePage = computed(() => route.meta.feature === 'office');
+const isBooksPage = computed(() => route.meta.feature === 'books');
 const isImmersive = computed(
   () =>
     route.meta.feature === 'markdown' ||
+    isBooksPage.value ||
     isDrawPage.value ||
     isMindPage.value ||
     isNotesPage.value ||
@@ -36,13 +38,16 @@ const isImmersive = computed(
     workspaceActive.value,
 );
 const markdownHeaderVisible = ref(true);
+const booksHeaderVisible = ref(false);
 const MARKDOWN_HEADER_PREFERENCE_KEY = `${STORAGE_POLICY.namespace('markdown')}:header-collapsed`;
 const showHeader = computed(() =>
   isDrawPage.value || isMindPage.value || isNotesPage.value
     ? false
     : isMarkdownPage.value
       ? markdownHeaderVisible.value
-      : !workspaceActive.value || workspaceHeaderVisible.value,
+      : isBooksPage.value
+        ? booksHeaderVisible.value
+        : !workspaceActive.value || workspaceHeaderVisible.value,
 );
 const showFooter = computed(
   () => ['home', 'office', 'not-found'].includes(String(route.name)) && !workspaceActive.value,
@@ -68,6 +73,10 @@ watch(
   { immediate: true },
 );
 
+watch(isBooksPage, (active) => {
+  if (!active) booksHeaderVisible.value = false;
+});
+
 function toggleMarkdownHeader(): void {
   markdownHeaderVisible.value = !markdownHeaderVisible.value;
   if (!storageAvailable()) return;
@@ -77,6 +86,10 @@ function toggleMarkdownHeader(): void {
   } catch {
     // 本地偏好不可用不影响当前页面切换。
   }
+}
+
+function toggleBooksHeader(): void {
+  booksHeaderVisible.value = !booksHeaderVisible.value;
 }
 
 function closeMobileNavigation(): void {
@@ -129,13 +142,14 @@ function isRouteActive(to: string): boolean {
       'studio-shell--tools': isToolsPage,
       'studio-shell--tool-detail': isToolDetailPage,
       'studio-shell--office': isOfficePage,
+      'studio-shell--books': isBooksPage,
       'studio-shell--with-footer': showFooter,
     }"
   >
     <header
       v-show="showHeader"
       ref="headerElement"
-      :key="isMarkdownPage ? 'markdown-header' : 'default-header'"
+      :key="isMarkdownPage ? 'markdown-header' : isBooksPage ? 'books-header' : 'default-header'"
       class="studio-header"
     >
       <StudioLogo />
@@ -174,6 +188,11 @@ function isRouteActive(to: string): boolean {
       v-if="isMarkdownPage"
       :visible="markdownHeaderVisible"
       @click="toggleMarkdownHeader"
+    />
+    <studio-header-toggle
+      v-if="isBooksPage"
+      :visible="booksHeaderVisible"
+      @click="toggleBooksHeader"
     />
 
     <main class="studio-main">

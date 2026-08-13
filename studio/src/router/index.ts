@@ -35,6 +35,17 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/books',
+    name: 'books',
+    component: () => import('@/features/books/BooksPage.vue'),
+    meta: {
+      title: '仿真书 · Meowv Studio',
+      description:
+        '在浏览器本地打开 PDF，以仿真书的方式阅读和翻页，文件无需上传，阅读内容始终留在你的设备上。',
+      feature: 'books',
+    },
+  },
+  {
     path: '/draw',
     name: 'draw',
     component: () => import('@/features/draw/DrawPage.vue'),
