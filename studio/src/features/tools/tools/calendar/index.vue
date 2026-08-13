@@ -822,16 +822,31 @@ const {
 
 @media (max-width: 560px) {
   .calendar-toolbar {
+    min-height: 104px;
     padding: 10px;
+    gap: 8px;
+  }
+
+  .calendar-toolbar h2 {
+    font-size: 16px;
+    line-height: 1.35;
+  }
+
+  .calendar-toolbar__navigation {
+    gap: 6px;
+  }
+
+  .calendar-toolbar__arrows button {
+    width: 34px;
   }
 
   .calendar-toolbar__views button {
-    min-width: 36px;
-    padding: 0 8px;
+    min-width: 34px;
+    padding: 0 6px;
   }
 
   .calendar-toolbar__today {
-    padding: 0 9px;
+    padding: 0 8px;
   }
 
   .calendar-tool__viewport {
@@ -839,103 +854,132 @@ const {
   }
 
   .calendar-year-view {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 30px;
+    padding: 2px 0 14px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 26px 14px;
+  }
+
+  .calendar-tool .calendar-mini-month__title {
+    min-height: 28px;
+    margin-bottom: 8px;
+    font-size: 16px;
+  }
+
+  .calendar-mini-month__weekdays {
+    margin-bottom: 6px;
+    font-size: 9px;
+  }
+
+  .calendar-mini-month__days {
+    row-gap: 4px;
   }
 
   .calendar-mini-month__days button {
-    height: 30px;
-    font-size: 12px;
+    height: 24px;
+    font-size: 10px;
+  }
+
+  .calendar-month-view {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .calendar-month-view__weekdays,
+  .calendar-month-view__grid {
+    width: 700px;
+    min-width: 700px;
   }
 
   .calendar-month-view__weekdays {
-    min-height: 32px;
+    min-height: 38px;
   }
 
   .calendar-month-view__grid {
-    grid-auto-rows: minmax(84px, auto);
-  }
-
-  .calendar-month-view__weekdays span {
-    font-size: 0;
-  }
-
-  .calendar-month-view__weekdays span::after {
-    font-size: 9px;
-    content: attr(class);
-  }
-
-  .calendar-month-view__weekdays span:nth-child(1)::after {
-    content: '一';
-  }
-  .calendar-month-view__weekdays span:nth-child(2)::after {
-    content: '二';
-  }
-  .calendar-month-view__weekdays span:nth-child(3)::after {
-    content: '三';
-  }
-  .calendar-month-view__weekdays span:nth-child(4)::after {
-    content: '四';
-  }
-  .calendar-month-view__weekdays span:nth-child(5)::after {
-    content: '五';
-  }
-  .calendar-month-view__weekdays span:nth-child(6)::after {
-    content: '六';
-  }
-  .calendar-month-view__weekdays span:nth-child(7)::after {
-    content: '日';
+    grid-auto-rows: minmax(112px, auto);
   }
 
   .calendar-day-cell {
-    padding: 5px;
-    gap: 1px;
+    padding: 7px;
+    gap: 4px;
   }
 
   .calendar-day-cell__header {
-    min-height: 23px;
+    min-height: 25px;
   }
 
   .calendar-day-cell__date-group {
-    gap: 2px;
+    gap: 4px;
   }
 
   .calendar-day-cell__status {
-    width: 17px;
-    height: 17px;
+    width: 19px;
+    height: 19px;
     border-radius: 5px;
-    font-size: 8px;
+    font-size: 9px;
   }
 
   .calendar-day-cell__lunar,
   .calendar-day-cell__date {
-    font-size: 8px;
+    font-size: 10px;
   }
 
   .calendar-day-cell__date {
-    min-width: 23px;
-    height: 23px;
+    min-width: 26px;
+    height: 26px;
   }
 
   .calendar-day-cell__event {
-    min-height: 18px;
-    padding: 2px 4px;
-    gap: 3px;
-    font-size: 8px;
+    min-height: 21px;
+    padding: 3px 6px;
+    gap: 4px;
+    font-size: 9px;
   }
 
   .calendar-day-cell__event svg {
-    width: 10px;
-    height: 10px;
+    width: 12px;
+    height: 12px;
+  }
+
+  .calendar-week-view {
+    padding-bottom: 6px;
+    grid-template-columns: repeat(7, minmax(280px, 1fr));
+    scroll-snap-type: x proximity;
+  }
+
+  .calendar-week-card {
+    min-height: 230px;
+    padding: 16px 12px;
+    scroll-snap-align: start;
   }
 
   .calendar-day-hero {
-    min-height: 300px;
-    padding: 22px;
+    min-height: 250px;
+    padding: 18px;
+  }
+
+  .calendar-day-hero > strong {
+    width: 96px;
+    height: 96px;
+    font-size: 52px;
   }
 
   .calendar-day-details > div {
-    grid-template-columns: 58px minmax(0, 1fr);
+    min-height: 58px;
+    padding-inline: 14px;
+    grid-template-columns: 62px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 350px) {
+  .calendar-year-view {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .calendar-mini-month__days button {
+    height: 28px;
+    font-size: 11px;
   }
 }
 

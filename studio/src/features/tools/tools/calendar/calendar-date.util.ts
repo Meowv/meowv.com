@@ -216,7 +216,7 @@ export function getIsoWeekNumber(date: Date): number {
 }
 
 export function formatCalendarTitle(date: Date, view: 'year' | 'month' | 'week' | 'day'): string {
-  if (view === 'year') return `${date.getFullYear()} 年 ${getLunarYearName(date.getFullYear())}`;
+  if (view === 'year') return `${date.getFullYear()} - ${getLunarYearName(date.getFullYear())}`;
   if (view === 'month') return `${date.getFullYear()} 年 ${date.getMonth() + 1} 月`;
   if (view === 'day') {
     return `${date.getFullYear()} 年 ${date.getMonth() + 1} 月 ${date.getDate()} 日`;

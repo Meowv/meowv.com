@@ -1,4 +1,5 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { STORAGE_POLICY, storageAvailable } from '@/core/privacy/storage';
 import {
   addDays,
   createLocalDate,
@@ -12,10 +13,25 @@ import {
   normalizeDate,
 } from './calendar-date.util';
 import { fetchHolidayCalendar, parseHolidayCalendar } from './holiday.service';
-import type { CalendarView, HolidayEvent } from './types';
+import { CALENDAR_VIEWS, type CalendarView, type HolidayEvent } from './types';
+
+const VIEW_STORAGE_KEY = `${STORAGE_POLICY.preferences}:calendar-view`;
+
+function readStoredView(): CalendarView {
+  if (!storageAvailable()) return 'month';
+
+  try {
+    const storedView = localStorage.getItem(VIEW_STORAGE_KEY);
+    return CALENDAR_VIEWS.includes(storedView as CalendarView)
+      ? (storedView as CalendarView)
+      : 'month';
+  } catch {
+    return 'month';
+  }
+}
 
 export function useCalendar() {
-  const currentView = ref<CalendarView>('month');
+  const currentView = ref<CalendarView>(readStoredView());
   const selectedDate = ref(normalizeDate(new Date()));
   const holidays = ref<HolidayEvent[]>([]);
   const holidayLoading = ref(false);
@@ -119,6 +135,14 @@ export function useCalendar() {
   }
 
   watch(selectedYear, rebuildHolidays);
+  watch(currentView, (view) => {
+    if (!storageAvailable()) return;
+    try {
+      localStorage.setItem(VIEW_STORAGE_KEY, view);
+    } catch {
+      // 本地偏好不可用时仍保留当前页面状态。
+    }
+  });
   onMounted(() => void loadHolidays());
   onBeforeUnmount(() => {
     holidayRequestId += 1;
