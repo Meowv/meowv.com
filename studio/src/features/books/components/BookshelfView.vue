@@ -6,7 +6,6 @@ import BookshelfCover from './BookshelfCover.vue';
 defineProps<{
   entries: BookshelfEntry[];
   persistent: boolean;
-  error?: string;
 }>();
 
 defineEmits<{
@@ -29,7 +28,6 @@ function progress(entry: BookshelfEntry): number {
     <p v-if="!persistent" class="books-shelf__notice" role="status">
       当前浏览器无法持久化文件句柄；刷新后需要重新选择书籍。
     </p>
-    <p v-if="error" class="books-shelf__error" role="alert">{{ error }}</p>
 
     <div class="books-shelf__grid">
       <article v-for="entry in entries" :key="entry.id" class="books-shelf-card">
@@ -52,6 +50,9 @@ function progress(entry: BookshelfEntry): number {
           <BookshelfCover :blob="entry.coverThumbnail" :alt="`${entry.metadata.title} 封面`" />
           <i>{{ entry.format.toUpperCase() }}</i>
           <em v-if="entry.availability !== 'available'">需要重新添加</em>
+          <span v-else class="books-shelf-card__builtin">{{
+            entry.builtIn ? '内置' : '本地'
+          }}</span>
           <span
             class="books-shelf-card__cover-progress"
             :aria-label="`阅读进度 ${progress(entry)}%`"

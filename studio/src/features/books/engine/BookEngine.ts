@@ -639,7 +639,8 @@ export class BookEngine {
 
   async #prepareTurn(direction: TurnDirection): Promise<void> {
     const targetIndex = getAdjacentSpreadIndex(this.#spreadIndex, this.pageCount, direction);
-    if (targetIndex === null || !this.#book) throw new Error('已经到达书籍边缘。');
+    const book = this.#book;
+    if (targetIndex === null || !book) throw new Error('已经到达书籍边缘。');
     this.#preparedTurnSpread = null;
     const controller = this.#loadController ?? new AbortController();
     const current = getSpread(this.#spreadIndex, this.pageCount);
@@ -648,36 +649,47 @@ export class BookEngine {
     const backPage = direction === 'forward' ? target.leftPage : current.leftPage;
     const underLeftPage = direction === 'forward' ? current.leftPage : target.leftPage;
     const underRightPage = direction === 'forward' ? target.rightPage : current.rightPage;
-    const [front, back, underLeft, underRight] = await Promise.all([
-      frontPage ? this.#getInteractionPage(frontPage, controller.signal) : this.#blankPage(),
-      backPage ? this.#getInteractionPage(backPage, controller.signal) : this.#blankPage(),
-      underLeftPage
-        ? this.#getInteractionPage(underLeftPage, controller.signal)
-        : this.#blankPage(),
-      underRightPage
-        ? this.#getInteractionPage(underRightPage, controller.signal)
-        : this.#blankPage(),
-    ]);
-    this.#book.setStaticPages(underLeft.canvas, underRight.canvas);
-    this.#book.turningSheet.setEdgeKind('paper');
-    this.#book.turningSheet.setPages(front.canvas, back.canvas);
-    const textures = this.#book.prewarmSurfaces([
-      front.canvas,
-      back.canvas,
-      underLeft.canvas,
-      underRight.canvas,
-    ]);
-    for (const texture of textures) this.#renderer.initTexture(texture);
-    this.#preparedTurnSpread = {
-      targetIndex,
-      left: direction === 'forward' ? back : underLeft,
-      right: direction === 'forward' ? underRight : front,
-    };
-    this.#book.pruneSurfaces();
-    this.#book.turningSheet.update(0, direction);
-    // 纸面就绪姿态关闭纸边与投影，需要重绘阴影贴图。
+    book.setTurnPreparationPage(direction === 'forward' ? 'right' : 'left');
     this.#markAnimatedShadow();
     this.invalidate();
+    try {
+      const [front, back, underLeft, underRight] = await Promise.all([
+        frontPage ? this.#getInteractionPage(frontPage, controller.signal) : this.#blankPage(),
+        backPage ? this.#getInteractionPage(backPage, controller.signal) : this.#blankPage(),
+        underLeftPage
+          ? this.#getInteractionPage(underLeftPage, controller.signal)
+          : this.#blankPage(),
+        underRightPage
+          ? this.#getInteractionPage(underRightPage, controller.signal)
+          : this.#blankPage(),
+      ]);
+      book.setTurnPreparationPage(null);
+      book.setStaticPages(underLeft.canvas, underRight.canvas);
+      book.turningSheet.setEdgeKind('paper');
+      book.turningSheet.setPages(front.canvas, back.canvas);
+      const textures = book.prewarmSurfaces([
+        front.canvas,
+        back.canvas,
+        underLeft.canvas,
+        underRight.canvas,
+      ]);
+      for (const texture of textures) this.#renderer.initTexture(texture);
+      this.#preparedTurnSpread = {
+        targetIndex,
+        left: direction === 'forward' ? back : underLeft,
+        right: direction === 'forward' ? underRight : front,
+      };
+      book.pruneSurfaces();
+      book.turningSheet.update(0, direction);
+      // 纸面就绪姿态关闭纸边与投影，需要重绘阴影贴图。
+      this.#markAnimatedShadow();
+      this.invalidate();
+    } catch (reason) {
+      book.setTurnPreparationPage(null);
+      this.#markAnimatedShadow();
+      this.invalidate();
+      throw reason;
+    }
   }
 
   async #prepareBoundaryTurn(edge: 'front' | 'back', initialOpenProgress: 0 | 1): Promise<void> {

@@ -24,10 +24,12 @@ interface PdfJsModule {
     disableAutoFetch: boolean;
     disableRange: boolean;
     disableStream: boolean;
+    wasmUrl?: string;
   }): PDFDocumentLoadingTask;
   GlobalWorkerOptions: {
     workerSrc: string;
   };
+  wasmUrl?: string;
 }
 
 let pdfJsPromise: Promise<PdfJsModule> | null = null;
@@ -41,10 +43,14 @@ async function getPdfJs(): Promise<PdfJsModule> {
     pdfJsPromise = Promise.all([
       import('pdfjs-dist'),
       import('pdfjs-dist/build/pdf.worker.min.mjs?url'),
-    ]).then(([pdfJs, worker]) => {
+      import('pdfjs-dist/wasm/jbig2.wasm?url'),
+    ]).then(([pdfJs, worker, jbig2Wasm]) => {
       // 使用 Vite 产出的同源 worker 文件，避免 pdf.js 回退到主线程伪 worker。
       pdfJs.GlobalWorkerOptions.workerSrc = worker.default;
-      return pdfJs as unknown as PdfJsModule;
+      // wasm 目录与 worker 同源：扫描版 PDF 的 JBIG2 图片需要 JBig2 wasm 解码，
+      // 默认目录相对 build/ 不存在，缺省会整页图片被忽略而渲染为空白页。
+      const wasmUrl = new URL('.', new URL(jbig2Wasm.default, location.href)).href;
+      return { ...(pdfJs as unknown as PdfJsModule), wasmUrl };
     });
   }
   return pdfJsPromise;
@@ -127,6 +133,7 @@ export async function loadPdfDocument(
     disableAutoFetch: true,
     disableRange: true,
     disableStream: true,
+    wasmUrl: pdfJs.wasmUrl,
   });
 
   const abort = (): void => {

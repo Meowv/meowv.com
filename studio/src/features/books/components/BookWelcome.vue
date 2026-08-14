@@ -3,7 +3,6 @@ import { IconBook2, IconBooks, IconFolderOpen } from '@tabler/icons-vue';
 
 defineProps<{
   dragging: boolean;
-  error?: string;
 }>();
 
 defineEmits<{
@@ -37,7 +36,6 @@ defineEmits<{
       </button>
       <span class="books-welcome__formats">PDF · EPUB · TXT · MOBI · AZW3 · FB2 · CBZ</span>
       <small>文件仅在当前浏览器中处理，不会离开你的设备</small>
-      <p v-if="error" class="books-welcome__error" role="alert">{{ error }}</p>
     </div>
 
     <div v-if="dragging" class="books-drop-curtain" aria-live="polite">

@@ -38,6 +38,24 @@ function getSubtleCrypto(): SubtleCrypto {
 }
 
 /**
+ * 由文件大小、时间戳与头尾采样字节计算指纹；供完整文件与远端分段读取复用。
+ */
+export async function createBookFingerprintFromParts(
+  size: number,
+  lastModified: number,
+  head: Uint8Array,
+  tail: Uint8Array,
+): Promise<string> {
+  const metadataBytes = 16;
+  const input = new Uint8Array(metadataBytes + head.byteLength + tail.byteLength);
+  appendUint64(input, 0, size);
+  appendUint64(input, 8, lastModified);
+  input.set(head, metadataBytes);
+  input.set(tail, metadataBytes + head.byteLength);
+  return toHex(await getSubtleCrypto().digest('SHA-256', input));
+}
+
+/**
  * 指纹仅读取文件头尾固定片段，并加入 size/lastModified；不会保存文件名或正文。
  */
 export async function createBookFingerprint(
@@ -57,14 +75,12 @@ export async function createBookFingerprint(
     source.slice(tailStart, source.size).arrayBuffer(),
   ]);
 
-  const metadataBytes = 16;
-  const input = new Uint8Array(metadataBytes + head.byteLength + tail.byteLength);
-  appendUint64(input, 0, source.size);
-  appendUint64(input, 8, source.lastModified ?? 0);
-  input.set(new Uint8Array(head), metadataBytes);
-  input.set(new Uint8Array(tail), metadataBytes + head.byteLength);
-
-  return toHex(await getSubtleCrypto().digest('SHA-256', input));
+  return createBookFingerprintFromParts(
+    source.size,
+    source.lastModified ?? 0,
+    new Uint8Array(head),
+    new Uint8Array(tail),
+  );
 }
 
 export class BookFingerprint {

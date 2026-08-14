@@ -16,6 +16,7 @@ import {
   FRONT_COVER_CLEARANCE,
   getFrontCoverSpineBend,
   STATIC_PAGE_SURFACE_Z,
+  TURNING_PAGE_READY_LIFT,
   TurningSheet,
 } from './TurningSheet';
 
@@ -67,6 +68,7 @@ export class BookModel {
   #rightTexture: CanvasTexture | null = null;
   #coverTexture: CanvasTexture | null = null;
   #cornerLift: { target: BookCornerTarget; corner: BookCorner } | null = null;
+  #turnPreparationPage: PageSide | null = null;
 
   constructor(options: BookModelOptions) {
     this.#pageWidth = options.pageWidth;
@@ -283,6 +285,13 @@ export class BookModel {
     (side === 'left' ? this.#leftPage : this.#rightPage).visible = visible;
   }
 
+  setTurnPreparationPage(side: PageSide | null): void {
+    if (this.#turnPreparationPage === side) return;
+    this.clearCornerLift();
+    this.#turnPreparationPage = side;
+    this.#setStaticPageSurfacePositions();
+  }
+
   // 当前静态页对应的画布，供引擎判断纹理是否需要替换。
   get staticPageCanvases(): Readonly<{
     left: HTMLCanvasElement | null;
@@ -299,8 +308,15 @@ export class BookModel {
     const stacks = getStackThicknesses(progress, total, this.#config.minimumStackThickness);
     this.#setStack(this.#leftStack, stacks.left, -1);
     this.#setStack(this.#rightStack, stacks.right, 1);
-    this.#leftPage.position.z = STATIC_PAGE_SURFACE_Z;
-    this.#rightPage.position.z = STATIC_PAGE_SURFACE_Z;
+    this.#turnPreparationPage = null;
+    this.#setStaticPageSurfacePositions();
+  }
+
+  #setStaticPageSurfacePositions(): void {
+    this.#leftPage.position.z =
+      STATIC_PAGE_SURFACE_Z + (this.#turnPreparationPage === 'left' ? TURNING_PAGE_READY_LIFT : 0);
+    this.#rightPage.position.z =
+      STATIC_PAGE_SURFACE_Z + (this.#turnPreparationPage === 'right' ? TURNING_PAGE_READY_LIFT : 0);
   }
 
   #setStack(stack: Mesh<BoxGeometry>, thickness: number, side: -1 | 1): void {

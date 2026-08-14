@@ -1,3 +1,4 @@
+import { builtinDefForEntry, fetchBuiltinFile } from '../builtin/BuiltinShelf';
 import type { BookFormat, PublicationMetadata } from '../types/reader';
 import type { ReadingProgressV2 } from './ReadingProgress';
 
@@ -8,11 +9,17 @@ export interface BookshelfEntry {
   format: BookFormat;
   metadata: PublicationMetadata;
   coverThumbnail?: Blob;
+  /** 封面缩略图为书名占位图（无法轻量提取封面内容的内置书，如 PDF）；打开书籍后由真实封面替换。 */
+  coverThumbnailPlaceholder?: boolean;
   handle?: FileSystemFileHandle;
   availability: BookshelfAvailability;
   progress?: ReadingProgressV2;
   addedAt: number;
   lastOpenedAt: number;
+  /** 内置书籍标记（数据来自项目书库目录，无本地文件句柄）。 */
+  builtIn?: boolean;
+  /** 内置书籍标识，即书库目录中的文件名（不含扩展名）。 */
+  builtinSlug?: string;
 }
 
 interface RecentBookRecordV1 {
@@ -106,7 +113,7 @@ function cloneEntry(entry: BookshelfEntry): BookshelfEntry {
 }
 
 function runtimeAvailability(entry: BookshelfEntry): BookshelfEntry {
-  if (entry.handle || sessionFiles.has(entry.id)) return entry;
+  if (entry.builtIn || entry.handle || sessionFiles.has(entry.id)) return entry;
   return { ...entry, availability: 'missing' };
 }
 
@@ -151,7 +158,10 @@ export class BookshelfRepository {
   async upsert(entry: BookshelfEntry): Promise<void> {
     const normalized = cloneEntry(entry);
     sessionEntries.set(entry.id, normalized);
-    if (!this.persistent || !this.persistentHandles || !entry.handle) return;
+    // 内置书籍没有本地句柄，仍需写入 IndexedDB，刷新后保留进度与封面。
+    const shouldPersist =
+      entry.builtIn || (this.persistent && this.persistentHandles && !!entry.handle);
+    if (!shouldPersist) return;
     try {
       await withStore('readwrite', (store) => store.put(normalized));
     } catch (error) {
@@ -184,6 +194,12 @@ export async function resolveBookshelfFile(
   entry: BookshelfEntry,
   requestPermission = false,
 ): Promise<File | null> {
+  if (entry.builtIn && entry.builtinSlug) {
+    const slug = entry.builtinSlug;
+    return fetchBuiltinFile(builtinDefForEntry({ builtinSlug: slug, format: entry.format })).catch(
+      () => null,
+    );
+  }
   const sessionFile = sessionFiles.get(entry.id);
   if (sessionFile) return sessionFile;
   if (!entry.handle) return null;
