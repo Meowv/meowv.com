@@ -5,8 +5,6 @@ import {
   IconArrowLeft,
   IconArrowsMaximize,
   IconArrowsMinimize,
-  IconLayoutNavbarCollapseFilled,
-  IconLayoutNavbarExpandFilled,
   IconFileSpreadsheet,
   IconFileText,
   IconFolderOpen,
@@ -682,15 +680,6 @@ onBeforeUnmount(() => {
         </span>
         <button
           type="button"
-          :aria-label="workspaceHeaderVisible ? '隐藏顶部栏' : '显示顶部栏'"
-          :title="workspaceHeaderVisible ? '隐藏顶部栏' : '显示顶部栏'"
-          @click="toggleWorkspaceHeader"
-        >
-          <IconLayoutNavbarCollapseFilled v-if="workspaceHeaderVisible" :size="18" />
-          <IconLayoutNavbarExpandFilled v-else :size="18" />
-        </button>
-        <button
-          type="button"
           :aria-label="isFullscreen ? '退出全屏' : '全屏编辑'"
           :title="isFullscreen ? '退出全屏' : '全屏编辑'"
           @click="toggleFullscreen"
@@ -702,6 +691,7 @@ onBeforeUnmount(() => {
           <IconArrowLeft :size="19" />
         </button>
       </nav>
+      <studio-header-toggle :visible="workspaceHeaderVisible" @click="toggleWorkspaceHeader" />
     </section>
 
     <input

@@ -49,16 +49,15 @@ class StudioHeaderToggle extends HTMLElement {
           width: 100%;
           height: 100%;
           padding: 0;
-          border: 1px solid color-mix(in srgb, var(--studio-header-toggle-color, var(--color-brand)) 82%, transparent);
-          border-radius: 999px;
-          color: #fff;
-          background: var(--studio-header-toggle-color, var(--color-brand));
-          box-shadow: 0 3px 10px color-mix(in srgb, var(--studio-header-toggle-color, var(--color-brand)) 28%, transparent);
+          border: 0;
+          color: var(--studio-header-toggle-color, var(--color-brand));
+          background: transparent;
+          box-shadow: none;
           cursor: pointer;
-          opacity: 0.18;
+          opacity: 0.5;
           place-items: center;
           touch-action: none;
-          transition: opacity 180ms ease, color 180ms ease, background 180ms ease;
+          transition: opacity 180ms ease, color 180ms ease;
         }
 
         :host(:hover), :host(:focus-within) {
@@ -66,9 +65,9 @@ class StudioHeaderToggle extends HTMLElement {
         }
 
         :host(:hover) button, button:focus-visible {
-          color: #fff;
-          background: var(--studio-header-toggle-hover-color, color-mix(in srgb, var(--studio-header-toggle-color, var(--color-brand)) 88%, #000));
-          opacity: 0.6;
+          color: var(--studio-header-toggle-hover-color, color-mix(in srgb, var(--studio-header-toggle-color, var(--color-brand)) 88%, #000));
+          background: transparent;
+          opacity: 1;
         }
 
         button:focus-visible {

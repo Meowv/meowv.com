@@ -270,6 +270,7 @@ let autoLayoutFrame: number | null = null;
 let canvasResizeObserver: ResizeObserver | null = null;
 let observedCanvasWidth = 0;
 let observedCanvasHeight = 0;
+let ignoreNextHeaderResize = false;
 
 const allCollapsed = computed(
   () => notes.value.length > 0 && notes.value.every((n) => n.collapsed),
@@ -1185,6 +1186,10 @@ function observeCanvasResize(): void {
     if (width === observedCanvasWidth && height === observedCanvasHeight) return;
     observedCanvasWidth = width;
     observedCanvasHeight = height;
+    if (ignoreNextHeaderResize) {
+      ignoreNextHeaderResize = false;
+      return;
+    }
     scheduleCanvasLayout();
   });
   canvasResizeObserver.observe(canvas);
@@ -1301,6 +1306,7 @@ function arrangeCanvas(animate = true): void {
 }
 
 function toggleHeader(): void {
+  ignoreNextHeaderResize = true;
   headerVisible.value = !headerVisible.value;
   if (!storageAvailable()) return;
   try {
