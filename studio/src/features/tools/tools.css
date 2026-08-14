@@ -947,7 +947,6 @@
   }
 }
 
-/* 工具详情页产品化框架 */
 .tools-detail-route {
   --tools-accent: var(--menu-tools-foreground);
 
@@ -1301,7 +1300,6 @@
   }
 }
 
-/* 工具详情页与公共工作区 */
 .tools-page.tools-detail {
   width: min(1180px, calc(100% - 48px));
   padding-top: 22px;
@@ -2267,7 +2265,6 @@
   }
 }
 
-/* 详情页标准工作区原语 */
 .tools-detail-route .tool-workspace {
   display: grid;
   overflow: hidden;
