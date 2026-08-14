@@ -12,10 +12,12 @@ interface PdfJsModule {
     data: Uint8Array;
     isEvalSupported: boolean;
     useWorkerFetch: boolean;
+    wasmUrl?: string;
   }) => PDFDocumentLoadingTask;
   GlobalWorkerOptions: {
     workerSrc: string;
   };
+  wasmUrl?: string;
 }
 
 export interface ManagedPdfDocument extends PDFDocumentProxy {
@@ -29,9 +31,14 @@ async function getPdfJs(): Promise<PdfJsModule> {
     pdfJsPromise = Promise.all([
       import('pdfjs-dist'),
       import('pdfjs-dist/build/pdf.worker.min.mjs?url'),
-    ]).then(([pdfJs, worker]) => {
+      import('pdfjs-dist/wasm/jbig2.wasm?url'),
+    ]).then(([pdfJs, worker, jbig2Wasm]) => {
       pdfJs.GlobalWorkerOptions.workerSrc = worker.default;
-      return pdfJs as unknown as PdfJsModule;
+      const module = pdfJs as unknown as PdfJsModule;
+      // 扫描版 PDF 的 JBIG2 图片需要 JBig2 wasm 解码，默认目录相对 build/ 不存在，
+      // 缺省会整页图片被忽略而渲染为空白页。
+      module.wasmUrl = new URL('.', new URL(jbig2Wasm.default, location.href)).href;
+      return module;
     });
   }
   return pdfJsPromise;
@@ -44,6 +51,7 @@ export async function openPdfDocument(bytes: Uint8Array): Promise<ManagedPdfDocu
       data: bytes.slice(),
       isEvalSupported: false,
       useWorkerFetch: true,
+      wasmUrl: pdfJs.wasmUrl,
     });
     const document = (await loadingTask.promise) as ManagedPdfDocument;
     document.destroyDocument = async () => {
