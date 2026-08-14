@@ -6,7 +6,10 @@ import {
   IconArrowsMinimize,
   IconBook2,
   IconBookOff,
+  IconBooks,
+  IconListTree,
   IconFolderOpen,
+  IconTypography,
 } from '@tabler/icons-vue';
 
 const props = defineProps<{
@@ -17,6 +20,8 @@ const props = defineProps<{
   currentPage: number;
   pageCount: number;
   fullscreen: boolean;
+  title: string;
+  canConfigure: boolean;
 }>();
 
 defineEmits<{
@@ -26,6 +31,9 @@ defineEmits<{
   open: [];
   close: [];
   toggleFullscreen: [];
+  shelf: [];
+  toc: [];
+  settings: [];
 }>();
 
 const actionTitle = (action: string, shortcut: string): string => `${action}（${shortcut}）`;
@@ -37,11 +45,26 @@ const nextAction = (): string =>
 <template>
   <div class="books-reader-controls">
     <div class="books-reader-controls__top">
-      <div class="books-reader-controls__identity" aria-hidden="true">
+      <div class="books-reader-controls__identity" :title="title">
         <IconBook2 :size="19" stroke-width="1.7" />
-        <span>Books</span>
+        <span>{{ title }}</span>
       </div>
       <div class="books-reader-controls__actions">
+        <button type="button" title="返回书架" aria-label="返回书架" @click="$emit('shelf')">
+          <IconBooks :size="19" aria-hidden="true" />
+        </button>
+        <button type="button" title="目录" aria-label="打开目录" @click="$emit('toc')">
+          <IconListTree :size="19" aria-hidden="true" />
+        </button>
+        <button
+          v-if="canConfigure"
+          type="button"
+          title="排版"
+          aria-label="打开排版设置"
+          @click="$emit('settings')"
+        >
+          <IconTypography :size="19" aria-hidden="true" />
+        </button>
         <button type="button" title="更换书籍" aria-label="更换书籍" @click="$emit('replace')">
           <IconFolderOpen :size="19" aria-hidden="true" />
         </button>

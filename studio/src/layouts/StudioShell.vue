@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router';
 import {
   IconBrandOffice,
   IconApps,
+  IconBook2,
   IconChalkboard,
   IconMarkdown,
   IconMenu2,
@@ -119,6 +120,7 @@ onBeforeUnmount(() => {
 const primaryRoutes = [
   { label: 'Markdown', to: '/markdown', icon: IconMarkdown, className: 'nav-markdown' },
   { label: 'Office', to: '/office', icon: IconBrandOffice, className: 'nav-office' },
+  { label: 'Books', to: '/books', icon: IconBook2, className: 'nav-books' },
   { label: 'Whiteboard', to: '/draw', icon: IconChalkboard, className: 'nav-draw' },
   { label: 'Mind', to: '/mind', icon: IconSitemap, className: 'nav-mind' },
   { label: 'Notes', to: '/notes', icon: IconNotes, className: 'nav-notes' },
@@ -152,7 +154,11 @@ function isRouteActive(to: string): boolean {
       :key="isMarkdownPage ? 'markdown-header' : isBooksPage ? 'books-header' : 'default-header'"
       class="studio-header"
     >
-      <StudioLogo />
+      <div class="studio-header__start">
+        <StudioLogo />
+        <strong v-if="isBooksPage" class="studio-header__feature-name">仿真书</strong>
+        <strong v-else-if="isToolsPage" class="studio-header__feature-name">工具</strong>
+      </div>
       <button
         class="studio-nav-toggle"
         type="button"

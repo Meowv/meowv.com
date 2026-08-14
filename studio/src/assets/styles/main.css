@@ -87,6 +87,20 @@ button {
   gap: 34px;
 }
 
+.studio-header__start {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.studio-header__feature-name {
+  color: var(--color-brand-strong);
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .studio-shell--markdown {
   --nav-accent: var(--menu-markdown-foreground);
   --studio-header-toggle-top: calc(var(--header-height) - 13px);
@@ -245,6 +259,9 @@ button {
 .nav-office {
   --nav-accent: var(--menu-office-foreground);
 }
+.nav-books {
+  --nav-accent: var(--menu-books-foreground);
+}
 .nav-draw {
   --nav-accent: var(--menu-draw-foreground);
 }
@@ -264,6 +281,7 @@ button {
 .nav-markdown svg,
 .nav-pdf svg,
 .nav-office svg,
+.nav-books svg,
 .nav-draw svg,
 .nav-mind svg,
 .nav-notes svg,

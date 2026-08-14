@@ -22,6 +22,18 @@ export interface PageCurlPoint {
   z: number;
 }
 
+export interface PageCurlFrame {
+  pageWidth: number;
+  pageHeight: number;
+  progress: number;
+  direction: TurnDirection;
+  pointerV: number;
+  verticalDrag: number;
+  curlStrength: number;
+  twistStrength: number;
+  sagStrength: number;
+}
+
 export interface DragTurnDecisionInput {
   progress: number;
   velocity: number;
@@ -72,6 +84,31 @@ export function computePageCurlPoint(input: PageCurlInput): PageCurlPoint {
     y: input.y + twist * (v - 0.5) * 2,
     z: Math.max(0, distanceFromSpine * Math.sin(theta) - sag) + twist * profile * 0.24,
   };
+}
+
+export function writePageCurlPoint(
+  target: Float32Array,
+  offset: number,
+  x: number,
+  y: number,
+  frame: PageCurlFrame,
+): void {
+  const progress = clamp(frame.progress, 0, 1);
+  const distanceFromSpine = Math.abs(x);
+  const u = clamp(distanceFromSpine / Math.max(frame.pageWidth, Number.EPSILON), 0, 1);
+  const v = clamp(y / Math.max(frame.pageHeight, Number.EPSILON) + 0.5, 0, 1);
+  const phase = Math.sin(Math.PI * progress);
+  const profile = Math.sin(Math.PI * u);
+  const cornerInfluence = 1 - smoothstep(0.15, 0.9, Math.abs(v - frame.pointerV));
+  const curl = frame.curlStrength * phase * profile * (0.7 + cornerInfluence * 0.3);
+  const baseAngle = frame.direction === 'forward' ? Math.PI * progress : Math.PI * (1 - progress);
+  const theta = baseAngle + curl * (frame.direction === 'forward' ? 1 : -1);
+  const twist = clamp(frame.verticalDrag, -1, 1) * frame.twistStrength * profile * phase;
+  const sag = frame.sagStrength * profile * phase;
+  target[offset] = distanceFromSpine * Math.cos(theta);
+  target[offset + 1] = y + twist * (v - 0.5) * 2;
+  target[offset + 2] =
+    Math.max(0, distanceFromSpine * Math.sin(theta) - sag) + twist * profile * 0.24;
 }
 
 export function getGutterOffset(

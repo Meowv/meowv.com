@@ -3,6 +3,7 @@ allowBuilds:
   tesseract.js: false
 minimumReleaseAgeExclude:
   - mind-elixir@5.15.1
+  - '@zip.js/zip.js@2.8.46'
 onlyBuiltDependencies:
   - core-js
 patchedDependencies:

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { IconBook2, IconFileTypePdf, IconFolderOpen } from '@tabler/icons-vue';
+import { IconBook2, IconBooks, IconFolderOpen } from '@tabler/icons-vue';
 
 defineProps<{
   dragging: boolean;
@@ -26,15 +26,16 @@ defineEmits<{
 
     <div class="books-welcome__copy">
       <p class="books-welcome__eyebrow">
-        <IconFileTypePdf :size="16" aria-hidden="true" />
-        PURE FRONTEND BOOK
+        <IconBooks :size="16" aria-hidden="true" />
+        PURE FRONTEND LIBRARY
       </p>
       <h1 id="books-welcome-title">打开一本书</h1>
-      <p>把 PDF 放进来，剩下的交给它。</p>
+      <p>选择本地书籍，剩下的交给它。</p>
       <button type="button" class="books-welcome__action" @click="$emit('pick')">
         <IconFolderOpen :size="20" aria-hidden="true" />
-        选择本地 PDF
+        选择本地书籍
       </button>
+      <span class="books-welcome__formats">PDF · EPUB · TXT · MOBI · AZW3 · FB2 · CBZ</span>
       <small>文件仅在当前浏览器中处理，不会离开你的设备</small>
       <p v-if="error" class="books-welcome__error" role="alert">{{ error }}</p>
     </div>
@@ -42,7 +43,7 @@ defineEmits<{
     <div v-if="dragging" class="books-drop-curtain" aria-live="polite">
       <IconBook2 :size="44" stroke-width="1.35" aria-hidden="true" />
       <strong>松手，打开这本书</strong>
-      <span>仅支持本地 PDF</span>
+      <span>支持 PDF、EPUB、TXT、MOBI、AZW3、FB2 和 CBZ</span>
     </div>
   </section>
 </template>

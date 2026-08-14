@@ -29,7 +29,12 @@ import type {
 import { resolveBookConfig, type BookConfig } from './BookConfig';
 import { BookStateMachine } from './BookStateMachine';
 import { BookModel } from './book/BookModel';
-import { getAdjacentSpreadIndex, getLastSpreadIndex, getSpread } from './spreads';
+import {
+  getAdjacentSpreadIndex,
+  getLastSpreadIndex,
+  getSpread,
+  getSpreadIndexForPage,
+} from './spreads';
 import { disposeObject } from './three-utils';
 import { progressFromDrag, shouldCommitTurn } from './turn/PageCurl';
 import { Spring } from './turn/Spring';
@@ -37,8 +42,26 @@ import { Spring } from './turn/Spring';
 export interface BookEngineOptions {
   config?: Partial<BookConfig>;
   initialSpreadIndex?: number;
+  stateMachine?: BookStateMachine;
   onError?: (error: Error) => void;
   onPagePreparationChange?: (preparing: boolean) => void;
+}
+
+export interface BookEngineDiagnostics {
+  state: BookSnapshot['state'];
+  renderFrames: number;
+  rendererTextures: number;
+  rendererGeometries: number;
+  cpuCacheEntries: number;
+  cpuCacheBytes: number;
+  cpuCacheMaxBytes: number;
+  gpuCacheEntries: number;
+  gpuCacheBytes: number;
+  gpuCacheMaxBytes: number;
+  activePageRenders: number;
+  queuedPageRenders: number;
+  animating: boolean;
+  lastInteractionLatencyMs: number | null;
 }
 
 interface DragSession {
@@ -61,6 +84,13 @@ interface AnimationHandle {
   reject: (reason: unknown) => void;
 }
 
+interface PageRenderJob {
+  signal?: AbortSignal;
+  run(): Promise<RenderedPage>;
+  resolve(page: RenderedPage): void;
+  reject(reason: unknown): void;
+}
+
 const clamp = (value: number, minimum: number, maximum: number): number =>
   Math.min(maximum, Math.max(minimum, value));
 
@@ -74,11 +104,30 @@ const cancelIdle = (handle: number): void => {
   else globalThis.clearTimeout(handle);
 };
 
+function waitForPage<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> {
+  if (!signal) return promise;
+  if (signal.aborted) return Promise.reject(new DOMException('书籍页面渲染已取消。', 'AbortError'));
+  return new Promise<T>((resolve, reject) => {
+    const abort = (): void => reject(new DOMException('书籍页面渲染已取消。', 'AbortError'));
+    signal.addEventListener('abort', abort, { once: true });
+    void promise.then(
+      (value) => {
+        signal.removeEventListener('abort', abort);
+        resolve(value);
+      },
+      (reason) => {
+        signal.removeEventListener('abort', abort);
+        reject(reason);
+      },
+    );
+  });
+}
+
 export class BookEngine {
   readonly #host: HTMLElement;
   readonly #options: BookEngineOptions;
   readonly #config: Readonly<BookConfig>;
-  readonly #stateMachine = new BookStateMachine();
+  readonly #stateMachine: BookStateMachine;
   readonly #scene = new Scene();
   readonly #camera = new PerspectiveCamera(34, 1, 0.05, 80);
   readonly #renderer: WebGLRenderer;
@@ -90,8 +139,11 @@ export class BookEngine {
   readonly #resizeObserver: ResizeObserver;
   readonly #cleanups: Array<() => void> = [];
   readonly #pendingPages = new Map<string, Promise<RenderedPage>>();
+  readonly #renderQueue: PageRenderJob[] = [];
+  #activeRenders = 0;
   #provider: PageProvider | null = null;
   #book: BookModel | null = null;
+  #contactShadow: Mesh<PlaneGeometry, MeshBasicMaterial> | null = null;
   #pageAspect = 0.72;
   #spreadIndex = 0;
   #cameraDistance = 1.8;
@@ -103,23 +155,36 @@ export class BookEngine {
   #idleHandle = 0;
   #prefetchIdleHandle = 0;
   #preparationNoticeTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
+  #backgroundDeadlineTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
   #preparationNoticeVisible = false;
   #drag: DragSession | null = null;
   #loadController: AbortController | null = null;
   #readingUpgradeController: AbortController | null = null;
   #prefetchController: AbortController | null = null;
   #blankPageSource: RenderedPage | null = null;
+  #backCoverPageSource: RenderedPage | null = null;
+  #blankPageColor = '#fffdf8';
+  #publicationCoverCanvas: HTMLCanvasElement | null = null;
   #disposed = false;
   #generation = 0;
   #spreadRevision = 0;
   #lastAnimatedShadowAt = 0;
+  #lastTurnDirection: TurnDirection = 'forward';
+  #closedEdge: 'front' | 'back' = 'front';
+  #interactionStartedAt = 0;
+  #lastInteractionLatencyMs: number | null = null;
 
   constructor(host: HTMLElement, options: BookEngineOptions = {}) {
     this.#host = host;
     this.#options = options;
     this.#config = resolveBookConfig(options.config);
+    this.#stateMachine = options.stateMachine ?? new BookStateMachine();
+    const deviceMemory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8;
     this.#pageCache = new PageCache({
-      maxBytes: this.#config.textureBudgetBytes,
+      maxBytes: Math.min(
+        this.#config.textureBudgetBytes,
+        deviceMemory < 4 ? 32 * 1024 * 1024 : Infinity,
+      ),
       maxEntries: 24,
     });
     this.#scene.background = new Color(0x171311);
@@ -165,24 +230,53 @@ export class BookEngine {
     return this.#stateMachine.state === 'OPEN' && this.pageCount > 0;
   }
 
+  get diagnostics(): Readonly<BookEngineDiagnostics> {
+    const surfaces = this.#book?.surfaceMetrics;
+    return {
+      state: this.#stateMachine.state,
+      renderFrames: this.#renderer.info.render.frame,
+      rendererTextures: this.#renderer.info.memory.textures,
+      rendererGeometries: this.#renderer.info.memory.geometries,
+      cpuCacheEntries: this.#pageCache.size,
+      cpuCacheBytes: this.#pageCache.byteSize,
+      cpuCacheMaxBytes: this.#pageCache.maxBytes,
+      gpuCacheEntries: surfaces?.entries ?? 0,
+      gpuCacheBytes: surfaces?.byteSize ?? 0,
+      gpuCacheMaxBytes: surfaces?.maxBytes ?? 0,
+      activePageRenders: this.#activeRenders,
+      queuedPageRenders: this.#renderQueue.length,
+      animating: this.#animation !== null,
+      lastInteractionLatencyMs: this.#lastInteractionLatencyMs,
+    };
+  }
+
   subscribe(listener: BookStateListener): () => void {
     return this.#stateMachine.subscribe(listener);
   }
 
-  async load(provider: PageProvider, initialSpreadIndex = 0): Promise<void> {
+  async load(
+    provider: PageProvider,
+    initialSpreadIndex = 0,
+    publicationCoverCanvas?: HTMLCanvasElement,
+  ): Promise<void> {
     this.#assertUsable();
-    if (this.#stateMachine.state !== 'EMPTY') {
-      throw new Error('当前书籍尚未释放，无法载入另一份 PDF。');
+    if (this.#stateMachine.state !== 'EMPTY' && this.#stateMachine.state !== 'LOADING') {
+      throw new Error('当前书籍尚未释放，无法载入另一本书。');
     }
-    this.#stateMachine.transition('LOADING', { pageCount: provider.pageCount });
+    if (this.#stateMachine.state === 'EMPTY') {
+      this.#stateMachine.transition('LOADING', { pageCount: provider.pageCount });
+    } else {
+      this.#stateMachine.update({ pageCount: provider.pageCount });
+    }
     this.#provider = provider;
+    this.#publicationCoverCanvas = publicationCoverCanvas ?? null;
     const generation = ++this.#generation;
     this.#loadController?.abort();
     const controller = new AbortController();
     this.#loadController = controller;
 
     try {
-      if (provider.pageCount < 1) throw new Error('这份 PDF 没有可阅读的页面。');
+      if (provider.pageCount < 1) throw new Error('这本书没有可阅读的页面。');
       const pageSize = await provider.getPageSize(1);
       this.#pageAspect = clamp(pageSize.width / pageSize.height, 0.38, 1.65);
       this.#spreadIndex = clamp(
@@ -193,21 +287,33 @@ export class BookEngine {
 
       const cover = await this.#getPage(1, 'preview', controller.signal);
       this.#assertGeneration(generation);
+      this.#publicationCoverCanvas = publicationCoverCanvas ?? cover.canvas;
+      this.#blankPageColor = sampleCanvasBackground(cover.canvas, this.#blankPageColor);
       const pageHeight = this.#config.pageHeight;
       const pageWidth = pageHeight * this.#pageAspect;
+      const deviceMemory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8;
       this.#book = new BookModel({
         pageWidth,
         pageHeight,
         pageCount: provider.pageCount,
         config: this.#config,
         maxAnisotropy: this.#renderer.capabilities.getMaxAnisotropy(),
+        gpuTextureBudgetBytes: Math.min(
+          this.#config.gpuTextureBudgetBytes,
+          deviceMemory < 4 ? 48 * 1024 * 1024 : Infinity,
+        ),
       });
-      this.#book.setCover(cover.canvas);
+      this.#book.setCover(this.#publicationCoverCanvas);
       this.#scene.add(this.#book.root);
       await this.#showSpread(this.#spreadIndex, 'preview', controller.signal);
       this.#book.setProgress(this.#readingProgress(this.#spreadIndex));
+      await this.#prewarmAdjacentPages(controller.signal);
+      this.#book.turningSheet.setPages(cover.canvas, this.#blankPage().canvas);
+      this.#book.turningSheet.update(0, 'forward');
+      this.#setContactOpenProgress(0);
       this.#renderer.shadowMap.needsUpdate = true;
       await this.#renderer.compileAsync(this.#scene, this.#camera);
+      this.#book.turningSheet.hide();
       this.#assertGeneration(generation);
       this.invalidate();
       this.#stateMachine.transition('CLOSED', {
@@ -218,7 +324,7 @@ export class BookEngine {
       this.#schedulePrefetch(generation);
     } catch (reason) {
       if (controller.signal.aborted || this.#disposed) throw reason;
-      const error = reason instanceof Error ? reason : new Error('无法打开这份 PDF。');
+      const error = reason instanceof Error ? reason : new Error('无法打开这本书。');
       this.#stateMachine.transition('ERROR', { error });
       this.#options.onError?.(error);
       throw error;
@@ -230,37 +336,30 @@ export class BookEngine {
     this.#pauseBackgroundWork();
     this.#lastAnimatedShadowAt = 0;
     this.#stateMachine.transition('OPENING');
-    await this.#animate(
-      0,
-      1,
-      this.#config.openDuration,
-      (progress) => {
-        this.#book?.setOpenProgress(progress);
-        this.#markAnimatedShadow(progress);
-        this.invalidate();
-      },
-      false,
-    );
+    await this.#prepareBoundaryTurn(this.#closedEdge);
+    await this.#animate(0, 1, this.#config.clickTurnDuration, (progress) => {
+      this.#updateBoundaryTurn(progress, this.#closedEdge, true, false);
+    });
+    this.#book.settleBoundaryTurn(this.#closedEdge, true);
+    this.#book.turningSheet.hide();
     this.#stateMachine.transition('OPEN');
     this.invalidate();
     this.#schedulePrefetch(this.#generation);
     this.#scheduleReadingUpgrade(this.#generation);
   }
 
-  async close(): Promise<void> {
+  async close(edge: 'front' | 'back' = 'front'): Promise<void> {
     if (!this.#book || this.#stateMachine.state !== 'OPEN') return;
     this.#pauseBackgroundWork();
     this.#lastAnimatedShadowAt = 0;
     this.#stateMachine.transition('CLOSING');
-    await this.#animate(
-      0,
-      1,
-      this.#config.closeDuration,
-      (progress) => {
-        this.#updateBoundaryClose(progress);
-      },
-      false,
-    );
+    await this.#prepareBoundaryTurn(edge);
+    await this.#animate(0, 1, this.#config.clickTurnDuration, (progress) => {
+      this.#updateBoundaryTurn(progress, edge, false, false);
+    });
+    this.#book.settleBoundaryTurn(edge, false);
+    this.#book.turningSheet.hide();
+    this.#closedEdge = edge;
     this.#stateMachine.transition('CLOSED');
     this.invalidate();
   }
@@ -271,6 +370,23 @@ export class BookEngine {
 
   async previous(): Promise<void> {
     await this.turn('backward');
+  }
+
+  async goToPage(pageNumber: number): Promise<void> {
+    if (!this.#book || this.#stateMachine.state !== 'CLOSED') {
+      throw new Error('请先合上书，再切换阅读位置。');
+    }
+    this.#pauseBackgroundWork();
+    const targetIndex = getSpreadIndexForPage(pageNumber, this.pageCount);
+    this.#spreadIndex = targetIndex;
+    this.#spreadRevision += 1;
+    await this.#showSpreadForInteraction(targetIndex, this.#loadController?.signal);
+    this.#book.setProgress(this.#readingProgress(targetIndex));
+    this.#stateMachine.update({ spreadIndex: targetIndex, pageCount: this.pageCount });
+    this.#renderer.shadowMap.needsUpdate = true;
+    this.invalidate();
+    this.#schedulePrefetch(this.#generation);
+    this.#scheduleReadingUpgrade(this.#generation);
   }
 
   #setZoom(zoom: number, focus?: Vector3 | null): void {
@@ -296,9 +412,10 @@ export class BookEngine {
 
   async turn(direction: TurnDirection): Promise<void> {
     if (this.#stateMachine.state !== 'OPEN') return;
+    this.#interactionStartedAt = performance.now();
     const target = getAdjacentSpreadIndex(this.#spreadIndex, this.pageCount, direction);
     if (target === null) {
-      await this.close();
+      await this.close(direction === 'forward' ? 'back' : 'front');
       return;
     }
     this.#pauseBackgroundWork();
@@ -306,7 +423,7 @@ export class BookEngine {
     try {
       await this.#prepareTurnWithFeedback(direction);
       await this.#animate(0, 1, this.#config.clickTurnDuration, (progress) => {
-        this.#updateTurn(progress, direction, 0.82, 0);
+        this.#updateTurn(progress, direction, 0.82, 0, false);
       });
       await this.#completeTurn(target);
     } catch (reason) {
@@ -367,16 +484,33 @@ export class BookEngine {
     if (this.#prefetchIdleHandle) cancelIdle(this.#prefetchIdleHandle);
     this.#prefetchIdleHandle = 0;
     this.#hidePreparationNotice();
+    if (this.#backgroundDeadlineTimer) globalThis.clearTimeout(this.#backgroundDeadlineTimer);
+    this.#backgroundDeadlineTimer = null;
     this.#resizeObserver.disconnect();
     for (const cleanup of this.#cleanups.splice(0).reverse()) cleanup();
     this.#pageCache.clear();
     this.#pendingPages.clear();
+    for (const job of this.#renderQueue.splice(0)) {
+      job.reject(new DOMException('书籍页面渲染已取消。', 'AbortError'));
+    }
     const provider = this.#provider;
     this.#provider = null;
-    disposeObject(this.#scene);
+    const book = this.#book;
+    if (book) {
+      this.#scene.remove(book.root);
+      book.dispose();
+    }
     this.#book = null;
+    disposeObject(this.#scene);
     this.#blankPageSource?.dispose();
     this.#blankPageSource = null;
+    this.#backCoverPageSource?.dispose();
+    this.#backCoverPageSource = null;
+    if (this.#publicationCoverCanvas) {
+      this.#publicationCoverCanvas.width = 1;
+      this.#publicationCoverCanvas.height = 1;
+      this.#publicationCoverCanvas = null;
+    }
     this.#renderer.renderLists.dispose();
     this.#renderer.dispose();
     this.#renderer.forceContextLoss();
@@ -389,8 +523,8 @@ export class BookEngine {
   }
 
   #createEnvironment(): void {
-    const ambient = new AmbientLight(0xd9c7b2, 0.88);
-    const keyLight = new DirectionalLight(0xffddb3, 2.15);
+    const ambient = new AmbientLight(0xe4d5c4, 1.24);
+    const keyLight = new DirectionalLight(0xffddb3, 1.62);
     keyLight.position.set(-2.8, -2.2, 5.4);
     keyLight.castShadow = true;
     keyLight.shadow.mapSize.width = 1024;
@@ -401,7 +535,9 @@ export class BookEngine {
     keyLight.shadow.camera.right = 4;
     keyLight.shadow.camera.top = 3;
     keyLight.shadow.camera.bottom = -3;
-    keyLight.shadow.bias = -0.0006;
+    keyLight.shadow.bias = -0.00025;
+    keyLight.shadow.normalBias = 0.012;
+    keyLight.shadow.radius = 3;
 
     const desk = new Mesh(
       new PlaneGeometry(22, 16),
@@ -413,16 +549,25 @@ export class BookEngine {
     const contactTexture = new CanvasTexture(createContactShadowCanvas());
     contactTexture.needsUpdate = true;
     const contact = new Mesh(
-      new PlaneGeometry(3.9, 0.78),
+      new PlaneGeometry(3.25, 0.64),
       new MeshBasicMaterial({
         map: contactTexture,
         transparent: true,
-        opacity: 0.18,
+        opacity: 0.14,
         depthWrite: false,
       }),
     );
     contact.position.z = -0.225;
+    this.#contactShadow = contact;
     this.#scene.add(ambient, keyLight, desk, contact);
+  }
+
+  #setContactOpenProgress(progress: number): void {
+    const contact = this.#contactShadow;
+    if (!contact) return;
+    const openProgress = clamp(progress, 0, 1);
+    contact.scale.x = 0.56 + openProgress * 0.44;
+    contact.material.opacity = 0.08 + openProgress * 0.06;
   }
 
   async #showSpread(
@@ -484,12 +629,28 @@ export class BookEngine {
         : this.#blankPage(),
     ]);
     this.#book.setStaticPages(underLeft.canvas, underRight.canvas);
-    this.#book.turningSheet.setPages(
-      front.canvas,
-      back.canvas,
-      this.#renderer.capabilities.getMaxAnisotropy(),
-    );
+    this.#book.turningSheet.setPages(front.canvas, back.canvas);
+    this.#book.pruneSurfaces();
     this.#book.turningSheet.update(0, direction);
+    this.invalidate();
+  }
+
+  async #prepareBoundaryTurn(edge: 'front' | 'back'): Promise<void> {
+    const book = this.#book;
+    if (!book) throw new Error('仿真书尚未准备完成。');
+    const spread = getSpread(this.#spreadIndex, this.pageCount);
+    const movingPageNumber = edge === 'front' ? spread.leftPage : spread.rightPage;
+    const movingPage = movingPageNumber
+      ? await this.#getInteractionPage(movingPageNumber, this.#loadController?.signal)
+      : this.#blankPage();
+    const coverPage =
+      edge === 'front'
+        ? (this.#publicationCoverCanvas ?? this.#blankPage().canvas)
+        : this.#backCoverPage().canvas;
+    if (edge === 'front') book.turningSheet.setPages(coverPage, movingPage.canvas);
+    else book.turningSheet.setPages(movingPage.canvas, coverPage);
+    book.beginBoundaryTurn(edge);
+    book.pruneSurfaces();
     this.invalidate();
   }
 
@@ -498,21 +659,35 @@ export class BookEngine {
     direction: TurnDirection,
     pointerV: number,
     verticalDrag: number,
+    scheduleRender = true,
   ): void {
+    this.#markInteractionVisible();
     this.#book?.turningSheet.update(progress, direction, pointerV, verticalDrag);
     const fractionalSpread = this.#spreadIndex + (direction === 'forward' ? progress : -progress);
     this.#book?.setProgress(this.#readingProgress(fractionalSpread));
     this.#markAnimatedShadow(progress);
-    this.invalidate();
+    if (scheduleRender) this.invalidate();
   }
 
-  #updateBoundaryClose(progress: number): void {
-    this.#book?.setClosedFromOpenProgress(progress);
+  #updateBoundaryTurn(
+    progress: number,
+    edge: 'front' | 'back',
+    opening: boolean,
+    scheduleRender = true,
+  ): void {
+    this.#markInteractionVisible();
+    const direction: TurnDirection =
+      edge === 'front' ? (opening ? 'forward' : 'backward') : opening ? 'backward' : 'forward';
+    this.#book?.turningSheet.update(progress, direction, 0.82, 0);
+    const openProgress = opening ? progress : 1 - progress;
+    this.#book?.setBoundaryOpenProgress(openProgress, edge);
+    this.#setContactOpenProgress(openProgress);
     this.#markAnimatedShadow(progress);
-    this.invalidate();
+    if (scheduleRender) this.invalidate();
   }
 
   async #completeTurn(targetIndex: number): Promise<void> {
+    this.#lastTurnDirection = targetIndex >= this.#spreadIndex ? 'forward' : 'backward';
     this.#spreadIndex = targetIndex;
     this.#spreadRevision += 1;
     await this.#showSpreadForInteraction(targetIndex, this.#loadController?.signal);
@@ -547,7 +722,7 @@ export class BookEngine {
     signal?: AbortSignal,
   ): Promise<RenderedPage> {
     const provider = this.#provider;
-    if (!provider) throw new Error('尚未载入 PDF。');
+    if (!provider) throw new Error('尚未载入书籍。');
     const targetWidth = this.#targetTextureWidth(quality);
     const key = createPageCacheKey(pageNumber, targetWidth, quality);
     const cached = this.#pageCache.get(key);
@@ -555,7 +730,7 @@ export class BookEngine {
     const pending = this.#pendingPages.get(key);
     if (pending) {
       try {
-        return await pending;
+        return await waitForPage(pending, signal);
       } catch (reason) {
         if (!(reason instanceof DOMException && reason.name === 'AbortError') || signal?.aborted) {
           throw reason;
@@ -563,12 +738,14 @@ export class BookEngine {
       }
     }
     const generation = this.#generation;
-    const render = provider
-      .renderPage(pageNumber, { targetWidth, quality, signal })
+    const render = this.#schedulePageRender(
+      () => provider.renderPage(pageNumber, { targetWidth, quality, signal }),
+      signal,
+    )
       .then((page) => {
         if (this.#disposed || generation !== this.#generation || signal?.aborted) {
           page.dispose();
-          throw new DOMException('PDF 页面渲染已取消。', 'AbortError');
+          throw new DOMException('书籍页面渲染已取消。', 'AbortError');
         }
         this.#pageCache.set(key, page);
         return this.#pageCache.get(key) ?? page;
@@ -578,6 +755,54 @@ export class BookEngine {
       });
     this.#pendingPages.set(key, render);
     return render;
+  }
+
+  #schedulePageRender(
+    run: () => Promise<RenderedPage>,
+    signal?: AbortSignal,
+  ): Promise<RenderedPage> {
+    return new Promise((resolve, reject) => {
+      const finish =
+        <T>(callback: (value: T) => void) =>
+        (value: T): void => {
+          signal?.removeEventListener('abort', abort);
+          callback(value);
+        };
+      const job: PageRenderJob = {
+        run,
+        signal,
+        resolve: finish(resolve),
+        reject: finish(reject),
+      };
+      const abort = (): void => {
+        const index = this.#renderQueue.indexOf(job);
+        if (index < 0) return;
+        this.#renderQueue.splice(index, 1);
+        job.reject(new DOMException('书籍页面渲染已取消。', 'AbortError'));
+      };
+      signal?.addEventListener('abort', abort, { once: true });
+      this.#renderQueue.push(job);
+      this.#drainRenderQueue();
+    });
+  }
+
+  #drainRenderQueue(): void {
+    while (!this.#disposed && this.#activeRenders < 2 && this.#renderQueue.length) {
+      const job = this.#renderQueue.shift();
+      if (!job) return;
+      if (job.signal?.aborted) {
+        job.reject(new DOMException('书籍页面渲染已取消。', 'AbortError'));
+        continue;
+      }
+      this.#activeRenders += 1;
+      void job
+        .run()
+        .then(job.resolve, job.reject)
+        .finally(() => {
+          this.#activeRenders -= 1;
+          this.#drainRenderQueue();
+        });
+    }
   }
 
   #getInteractionPage(pageNumber: number, signal?: AbortSignal): Promise<RenderedPage> {
@@ -607,7 +832,7 @@ export class BookEngine {
     canvas.height = Math.round(width / this.#pageAspect);
     const context = canvas.getContext('2d');
     if (context) {
-      context.fillStyle = '#fffdf8';
+      context.fillStyle = this.#blankPageColor;
       context.fillRect(0, 0, canvas.width, canvas.height);
     }
     this.#blankPageSource = {
@@ -624,6 +849,33 @@ export class BookEngine {
       },
     };
     return this.#blankPageSource;
+  }
+
+  #backCoverPage(): RenderedPage {
+    if (this.#backCoverPageSource) return this.#backCoverPageSource;
+    const width = Math.round(this.#targetTextureWidth('reading'));
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = Math.round(width / this.#pageAspect);
+    const context = canvas.getContext('2d');
+    if (context) {
+      context.fillStyle = '#5d3327';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    this.#backCoverPageSource = {
+      pageNumber: -1,
+      canvas,
+      width: canvas.width,
+      height: canvas.height,
+      targetWidth: width,
+      quality: 'reading',
+      byteSize: canvas.width * canvas.height * 4,
+      dispose: () => {
+        canvas.width = 0;
+        canvas.height = 0;
+      },
+    };
+    return this.#backCoverPageSource;
   }
 
   #scheduleReadingUpgrade(generation: number): void {
@@ -667,6 +919,7 @@ export class BookEngine {
         })
         .catch(() => undefined);
     });
+    this.#armBackgroundDeadline();
   }
 
   #schedulePrefetch(generation: number): void {
@@ -685,11 +938,15 @@ export class BookEngine {
         return;
       }
       const pageNumbers = new Set<number>();
-      for (
-        let index = Math.max(0, this.#spreadIndex - 3);
-        index <= Math.min(getLastSpreadIndex(this.pageCount), this.#spreadIndex + 3);
-        index += 1
-      ) {
+      const direction = this.#lastTurnDirection === 'forward' ? 1 : -1;
+      const spreadQueue = [
+        this.#spreadIndex + direction,
+        this.#spreadIndex + direction * 2,
+        this.#spreadIndex + direction * 3,
+        this.#spreadIndex - direction,
+      ];
+      for (const index of spreadQueue) {
+        if (index < 0 || index > getLastSpreadIndex(this.pageCount)) continue;
         const spread = getSpread(index, this.pageCount);
         if (spread.leftPage) pageNumbers.add(spread.leftPage);
         if (spread.rightPage) pageNumbers.add(spread.rightPage);
@@ -704,9 +961,37 @@ export class BookEngine {
       };
       void Promise.all([work(), work()]);
     });
+    this.#armBackgroundDeadline();
+  }
+
+  async #prewarmAdjacentPages(signal: AbortSignal): Promise<void> {
+    const pages = new Set<number>();
+    for (const offset of [-1, 0, 1]) {
+      const index = this.#spreadIndex + offset;
+      if (index < 0 || index > getLastSpreadIndex(this.pageCount)) continue;
+      const spread = getSpread(index, this.pageCount);
+      if (spread.leftPage) pages.add(spread.leftPage);
+      if (spread.rightPage) pages.add(spread.rightPage);
+    }
+    const queue = [...pages];
+    const rendered: RenderedPage[] = [];
+    const work = async (): Promise<void> => {
+      while (queue.length) {
+        const pageNumber = queue.shift();
+        if (!pageNumber) return;
+        rendered.push(await this.#getPage(pageNumber, 'preview', signal));
+      }
+    };
+    await Promise.all([work(), work()]);
+    const textures = this.#book?.prewarmSurfaces(rendered.map((page) => page.canvas)) ?? [];
+    for (const texture of textures) this.#renderer.initTexture(texture);
   }
 
   #pauseBackgroundWork(): void {
+    if (this.#backgroundDeadlineTimer) {
+      globalThis.clearTimeout(this.#backgroundDeadlineTimer);
+      this.#backgroundDeadlineTimer = null;
+    }
     if (this.#idleHandle) cancelIdle(this.#idleHandle);
     this.#idleHandle = 0;
     if (this.#prefetchIdleHandle) cancelIdle(this.#prefetchIdleHandle);
@@ -715,6 +1000,21 @@ export class BookEngine {
     this.#readingUpgradeController = null;
     this.#prefetchController?.abort();
     this.#prefetchController = null;
+  }
+
+  #armBackgroundDeadline(): void {
+    if (this.#backgroundDeadlineTimer) globalThis.clearTimeout(this.#backgroundDeadlineTimer);
+    this.#backgroundDeadlineTimer = globalThis.setTimeout(() => {
+      this.#backgroundDeadlineTimer = null;
+      if (this.#idleHandle) cancelIdle(this.#idleHandle);
+      this.#idleHandle = 0;
+      if (this.#prefetchIdleHandle) cancelIdle(this.#prefetchIdleHandle);
+      this.#prefetchIdleHandle = 0;
+      this.#readingUpgradeController?.abort();
+      this.#readingUpgradeController = null;
+      this.#prefetchController?.abort();
+      this.#prefetchController = null;
+    }, 1850);
   }
 
   #hidePreparationNotice(): void {
@@ -833,12 +1133,16 @@ export class BookEngine {
     }
 
     event.preventDefault();
+    this.#interactionStartedAt = performance.now();
     this.#renderer.domElement.setPointerCapture(event.pointerId);
     this.#stateMachine.transition('DRAGGING', { turnDirection: direction });
     this.#pauseBackgroundWork();
     const boundaryClose =
       getAdjacentSpreadIndex(this.#spreadIndex, this.pageCount, direction) === null;
-    const prepared = boundaryClose ? Promise.resolve() : this.#prepareTurnWithFeedback(direction);
+    const boundaryEdge = direction === 'forward' ? 'back' : 'front';
+    const prepared = boundaryClose
+      ? this.#prepareBoundaryTurn(boundaryEdge)
+      : this.#prepareTurnWithFeedback(direction);
     const drag: DragSession = {
       pointerId: event.pointerId,
       direction,
@@ -858,8 +1162,13 @@ export class BookEngine {
       .then(() => {
         if (this.#drag === drag) {
           drag.ready = true;
-          if (drag.boundaryClose) this.#updateBoundaryClose(drag.progress);
-          else this.#updateTurn(drag.progress, drag.direction, drag.pointerV, drag.verticalDrag);
+          if (drag.boundaryClose) {
+            this.#updateBoundaryTurn(
+              drag.progress,
+              drag.direction === 'forward' ? 'back' : 'front',
+              false,
+            );
+          } else this.#updateTurn(drag.progress, drag.direction, drag.pointerV, drag.verticalDrag);
         }
       })
       .catch((reason) => this.#handleRuntimeError(reason));
@@ -883,8 +1192,9 @@ export class BookEngine {
     drag.pointerV = clamp(point.y / pageHeight + 0.5, 0, 1);
     drag.verticalDrag = clamp((point.y - drag.start.y) / pageHeight, -1, 1);
     if (drag.ready) {
-      if (drag.boundaryClose) this.#updateBoundaryClose(progress);
-      else this.#updateTurn(progress, drag.direction, drag.pointerV, drag.verticalDrag);
+      if (drag.boundaryClose) {
+        this.#updateBoundaryTurn(progress, drag.direction === 'forward' ? 'back' : 'front', false);
+      } else this.#updateTurn(progress, drag.direction, drag.pointerV, drag.verticalDrag);
     }
   };
 
@@ -915,6 +1225,12 @@ export class BookEngine {
     this.#setZoom(this.#zoom * Math.exp(-delta * 0.0018), focus);
   };
 
+  #markInteractionVisible(): void {
+    if (!this.#interactionStartedAt) return;
+    this.#lastInteractionLatencyMs = performance.now() - this.#interactionStartedAt;
+    this.#interactionStartedAt = 0;
+  }
+
   async #finishDrag(drag: DragSession, cancelled = false): Promise<void> {
     try {
       await drag.prepared;
@@ -924,6 +1240,7 @@ export class BookEngine {
         !cancelled &&
         (isClick || shouldCommitTurn({ progress: drag.progress, velocity: drag.velocity }));
       if (drag.boundaryClose) {
+        const edge = drag.direction === 'forward' ? 'back' : 'front';
         if (commit) {
           this.#stateMachine.transition('CLOSING');
           this.#lastAnimatedShadowAt = 0;
@@ -931,22 +1248,26 @@ export class BookEngine {
             await this.#animate(
               drag.progress,
               1,
-              this.#config.closeDuration * (1 - drag.progress),
-              (progress) => this.#updateBoundaryClose(progress),
-              false,
+              this.#config.clickTurnDuration * (1 - drag.progress),
+              (progress) => this.#updateBoundaryTurn(progress, edge, false, false),
             );
           } else {
             await this.#animateSpring(drag.progress, 1, Math.max(0, drag.velocity), (progress) =>
-              this.#updateBoundaryClose(progress),
+              this.#updateBoundaryTurn(progress, edge, false, false),
             );
           }
+          this.#book?.settleBoundaryTurn(edge, false);
+          this.#book?.turningSheet.hide();
+          this.#closedEdge = edge;
           this.#stateMachine.transition('CLOSED');
           this.invalidate();
         } else {
           this.#stateMachine.transition('SNAPPING_BACK', { turnDirection: drag.direction });
           await this.#animateSpring(drag.progress, 0, Math.min(0, drag.velocity), (progress) =>
-            this.#updateBoundaryClose(progress),
+            this.#updateBoundaryTurn(progress, edge, false, false),
           );
+          this.#book?.settleBoundaryTurn(edge, true);
+          this.#book?.turningSheet.hide();
           this.#stateMachine.transition('OPEN', { spreadIndex: this.#spreadIndex });
           this.#schedulePrefetch(this.#generation);
           this.#scheduleReadingUpgrade(this.#generation);
@@ -961,12 +1282,12 @@ export class BookEngine {
             1,
             this.#config.clickTurnDuration * (1 - drag.progress),
             (progress) => {
-              this.#updateTurn(progress, drag.direction, drag.pointerV, drag.verticalDrag);
+              this.#updateTurn(progress, drag.direction, drag.pointerV, drag.verticalDrag, false);
             },
           );
         } else {
           await this.#animateSpring(drag.progress, 1, Math.max(0, drag.velocity), (progress) => {
-            this.#updateTurn(progress, drag.direction, drag.pointerV, drag.verticalDrag);
+            this.#updateTurn(progress, drag.direction, drag.pointerV, drag.verticalDrag, false);
           });
         }
         const target = getAdjacentSpreadIndex(this.#spreadIndex, this.pageCount, drag.direction);
@@ -975,7 +1296,7 @@ export class BookEngine {
       } else {
         this.#stateMachine.transition('SNAPPING_BACK', { turnDirection: drag.direction });
         await this.#animateSpring(drag.progress, 0, Math.min(0, drag.velocity), (progress) => {
-          this.#updateTurn(progress, drag.direction, drag.pointerV, drag.verticalDrag);
+          this.#updateTurn(progress, drag.direction, drag.pointerV, drag.verticalDrag, false);
         });
         await this.#restoreCurrentSpread();
         this.#stateMachine.transition('OPEN', { spreadIndex: this.#spreadIndex });
@@ -996,7 +1317,7 @@ export class BookEngine {
     const point = this.#raycaster.ray.intersectPlane(this.#bookPlane, this.#intersection);
     if (!point) return null;
     this.#book?.root.updateMatrixWorld(true);
-    return this.#book?.root.worldToLocal(point.clone()) ?? null;
+    return this.#book?.root.worldToLocal(point) ?? null;
   }
 
   #listen<K extends keyof HTMLElementEventMap>(
@@ -1041,4 +1362,29 @@ function createContactShadowCanvas(): HTMLCanvasElement {
   context.fillStyle = gradient;
   context.fillRect(0, 0, canvas.width, canvas.height);
   return canvas;
+}
+
+function sampleCanvasBackground(canvas: HTMLCanvasElement, fallback: string): string {
+  const context = canvas.getContext('2d', { willReadFrequently: true });
+  if (!context || canvas.width < 2 || canvas.height < 2) return fallback;
+  try {
+    const insetX = Math.max(1, Math.round(canvas.width * 0.018));
+    const insetY = Math.max(1, Math.round(canvas.height * 0.018));
+    const points = [
+      [insetX, insetY],
+      [canvas.width - insetX - 1, insetY],
+      [insetX, canvas.height - insetY - 1],
+      [canvas.width - insetX - 1, canvas.height - insetY - 1],
+    ] as const;
+    const samples = points.map(([x, y]) => context.getImageData(x, y, 1, 1).data);
+    const red = Math.round(samples.reduce((sum, sample) => sum + sample[0], 0) / samples.length);
+    const green = Math.round(samples.reduce((sum, sample) => sum + sample[1], 0) / samples.length);
+    const blue = Math.round(samples.reduce((sum, sample) => sum + sample[2], 0) / samples.length);
+    const luminance = red * 0.2126 + green * 0.7152 + blue * 0.0722;
+    const chroma = Math.max(red, green, blue) - Math.min(red, green, blue);
+    if (luminance < 155 || chroma > 72) return fallback;
+    return `rgb(${red} ${green} ${blue})`;
+  } catch {
+    return fallback;
+  }
 }

@@ -18,6 +18,55 @@ export const BOOK_STATES = [
 export type BookState = (typeof BOOK_STATES)[number];
 export type PageRenderQuality = 'preview' | 'reading';
 
+export const BOOK_FORMATS = ['pdf', 'epub', 'txt', 'mobi', 'azw3', 'fb2', 'cbz'] as const;
+
+export type BookFormat = (typeof BOOK_FORMATS)[number];
+export type BookLayoutKind = 'fixed' | 'reflowable';
+export type PageTheme = 'paper' | 'warm' | 'night';
+export type ReaderFontFamily = 'publisher' | 'serif' | 'sans';
+
+export interface PublicationMetadata {
+  title: string;
+  authors: string[];
+  language?: string;
+  description?: string;
+}
+
+export interface TocItem {
+  label: string;
+  locator: BookLocator;
+  children?: TocItem[];
+}
+
+export type BookLocator =
+  | { kind: 'fixed'; pageNumber: number }
+  | {
+      kind: 'reflowable';
+      sectionIndex: number;
+      progression: number;
+      cfi?: string;
+    };
+
+export interface ReaderLayoutProfile {
+  fontFamily: ReaderFontFamily;
+  fontSize: number;
+  lineHeight: number;
+  pageMargin: number;
+  theme: PageTheme;
+}
+
+export interface PublicationProgress {
+  stage: 'detecting' | 'parsing' | 'paginating' | 'cover' | 'warming';
+  value: number;
+  message: string;
+}
+
+export interface PublicationPaginateOptions {
+  signal?: AbortSignal;
+  onProgress?: (progress: PublicationProgress) => void;
+  paginationKey?: string;
+}
+
 export interface PageSize {
   width: number;
   height: number;
@@ -43,6 +92,21 @@ export interface PageProvider {
   readonly pageCount: number;
   getPageSize(pageNumber: number): Promise<PageSize>;
   renderPage(pageNumber: number, options: PageRenderOptions): Promise<RenderedPage>;
+  locatorForPage(pageNumber: number): BookLocator;
+  pageForLocator(locator: BookLocator): number;
+  dispose(): Promise<void>;
+}
+
+export interface Publication {
+  readonly format: BookFormat;
+  readonly layout: BookLayoutKind;
+  readonly metadata: PublicationMetadata;
+  readonly toc: TocItem[];
+  readonly cover: Blob | null;
+  paginate(
+    profile: ReaderLayoutProfile,
+    options?: PublicationPaginateOptions,
+  ): Promise<PageProvider>;
   dispose(): Promise<void>;
 }
 

@@ -1,15 +1,39 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import BookshelfView from './components/BookshelfView.vue';
 import BookWelcome from './components/BookWelcome.vue';
 import LoadingBook from './components/LoadingBook.vue';
 import ReaderControls from './components/ReaderControls.vue';
+import ReaderPanel from './components/ReaderPanel.vue';
 import { BookEngine } from './engine/BookEngine';
 import { BookStateMachine } from './engine/BookStateMachine';
+import { getSpreadIndexForPage } from './engine/spreads';
 import { createBookFingerprint } from './persistence/BookFingerprint';
-import { rememberRecentBook, restoreRecentBook } from './persistence/RecentBook';
-import { loadReadingProgress, saveReadingProgress } from './persistence/ReadingProgress';
-import { PdfPageProvider } from './publication/pdf/PdfPageProvider';
-import type { BookState, TurnDirection } from './types/reader';
+import {
+  BookshelfRepository,
+  rememberBookshelfSessionFile,
+  resolveBookshelfFile,
+  type BookshelfEntry,
+} from './persistence/BookshelfRepository';
+import {
+  loadReadingProgress,
+  saveReadingProgress,
+  type ReadingProgressV2,
+} from './persistence/ReadingProgress';
+import {
+  DEFAULT_READER_LAYOUT,
+  normalizeReaderLayout,
+  readerLayoutKey,
+} from './publication/defaults';
+import { BOOK_FILE_ACCEPT, PublicationLoader } from './publication/PublicationLoader';
+import type {
+  BookLocator,
+  BookState,
+  PageProvider,
+  Publication,
+  ReaderLayoutProfile,
+  TurnDirection,
+} from './types/reader';
 import './books.css';
 
 type BookOpenPicker = (options?: {
@@ -21,6 +45,16 @@ type HandleDropItem = DataTransferItem & {
   getAsFileSystemHandle?: () => Promise<FileSystemHandle | null>;
 };
 
+interface OpenBookOptions {
+  autoOpen?: boolean;
+  locator?: BookLocator;
+  existingEntry?: BookshelfEntry;
+  reflowing?: boolean;
+}
+
+const READER_TIP_KEY = 'meowv-studio:books:reader-tip:v2';
+const READER_LAYOUT_KEY = 'meowv-studio:books:layout:v2';
+const bookshelf = new BookshelfRepository();
 const root = ref<HTMLElement | null>(null);
 const canvasHost = ref<HTMLElement | null>(null);
 const fileInput = ref<HTMLInputElement | null>(null);
@@ -31,29 +65,44 @@ const dragging = ref(false);
 const uiHidden = ref(false);
 const fullscreen = ref(false);
 const errorMessage = ref('');
+const loadMessage = ref('正在识别书籍…');
+const loadProgress = ref(0);
 const pageCount = ref(0);
 const spreadIndex = ref(0);
 const canGoForward = ref(false);
 const canGoBack = ref(false);
 const showReaderTip = ref(false);
 const pagePreparing = ref(false);
+const shelfEntries = ref<BookshelfEntry[]>([]);
+const persistentShelf = ref(bookshelf.persistentHandles);
+const readerPanel = ref<'toc' | 'settings' | null>(null);
+const currentTitle = ref('Books');
+const currentLayout = ref<'fixed' | 'reflowable'>('fixed');
+const currentToc = ref<Publication['toc']>([]);
+const readerProfile = ref<ReaderLayoutProfile>(loadReaderLayout());
 const pageStateMachine = new BookStateMachine();
+
 pageStateMachine.subscribe((snapshot) => {
   state.value = snapshot.state;
 });
 
 let engine: BookEngine | null = null;
+let publication: Publication | null = null;
+let pageProvider: PageProvider | null = null;
 let unsubscribeEngine: (() => void) | null = null;
 let loadController: AbortController | null = null;
+let currentFile: File | null = null;
+let currentHandle: FileSystemFileHandle | undefined;
+let currentEntry: BookshelfEntry | null = null;
+let pendingRelinkEntry: BookshelfEntry | null = null;
 let bookId = '';
 let operationId = 0;
 let restoreId = 0;
 let dragDepth = 0;
+let pendingTurn: TurnDirection | null = null;
 let hideTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
 let tipTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
 let hideAt = 0;
-
-const READER_TIP_KEY = 'meowv-studio:books:reader-tip:v2';
 
 const bookClosed = computed(() => state.value === 'CLOSED');
 const bookOpen = computed(() => state.value === 'OPEN');
@@ -61,6 +110,26 @@ const currentPage = computed(() => {
   if (pageCount.value < 1) return 0;
   return spreadIndex.value === 0 ? 1 : Math.min(pageCount.value, spreadIndex.value * 2);
 });
+const sortedShelfEntries = computed(() => {
+  return [...shelfEntries.value].sort((left, right) => right.lastOpenedAt - left.lastOpenedAt);
+});
+
+function loadReaderLayout(): ReaderLayoutProfile {
+  try {
+    const value: unknown = JSON.parse(localStorage.getItem(READER_LAYOUT_KEY) ?? 'null');
+    return normalizeReaderLayout(value as Partial<ReaderLayoutProfile>);
+  } catch {
+    return { ...DEFAULT_READER_LAYOUT };
+  }
+}
+
+function persistReaderLayout(profile: ReaderLayoutProfile): void {
+  try {
+    localStorage.setItem(READER_LAYOUT_KEY, JSON.stringify(profile));
+  } catch {
+    // 隐私模式下仅保留当前会话设置。
+  }
+}
 
 function clearHideTimer(): void {
   if (!hideTimer) return;
@@ -70,7 +139,7 @@ function clearHideTimer(): void {
 }
 
 function scheduleUiHide(): void {
-  if (state.value !== 'OPEN' && state.value !== 'CLOSED') return;
+  if ((state.value !== 'OPEN' && state.value !== 'CLOSED') || readerPanel.value) return;
   hideAt = performance.now() + 2600;
   if (hideTimer) return;
   const check = (): void => {
@@ -81,7 +150,7 @@ function scheduleUiHide(): void {
     }
     hideTimer = null;
     hideAt = 0;
-    if (!document.hidden) uiHidden.value = true;
+    if (!document.hidden && !readerPanel.value) uiHidden.value = true;
   };
   hideTimer = globalThis.setTimeout(check, 2600);
 }
@@ -116,6 +185,57 @@ function syncEngineSnapshot(): void {
   canGoBack.value = engine.canGoBackward;
 }
 
+async function refreshShelf(): Promise<void> {
+  shelfEntries.value = await bookshelf.list();
+  persistentShelf.value = bookshelf.persistentHandles;
+}
+
+function newestProgress(
+  local: ReadingProgressV2 | null,
+  stored: ReadingProgressV2 | undefined,
+): ReadingProgressV2 | null {
+  if (!local) return stored ?? null;
+  if (!stored) return local;
+  return local.updatedAt >= stored.updatedAt ? local : stored;
+}
+
+function pageForProgress(
+  activePublication: Publication,
+  provider: PageProvider,
+  progress: ReadingProgressV2 | null,
+): number {
+  if (!progress) return 1;
+  const expectedLocator = activePublication.layout === 'fixed' ? 'fixed' : 'reflowable';
+  if (progress.format === activePublication.format && progress.locator.kind === expectedLocator) {
+    try {
+      return provider.pageForLocator(progress.locator);
+    } catch {
+      // 分页结构变化时使用格式无关的兜底进度。
+    }
+  }
+  return Math.min(
+    provider.pageCount,
+    Math.max(1, Math.round(progress.fallbackProgress * (provider.pageCount - 1)) + 1),
+  );
+}
+
+async function saveCurrentProgress(): Promise<void> {
+  if (!bookId || !publication || !pageProvider || !currentEntry || pageCount.value < 1) return;
+  try {
+    const pageNumber = Math.min(pageCount.value, Math.max(1, currentPage.value));
+    const progress = saveReadingProgress(bookId, {
+      format: publication.format,
+      locator: pageProvider.locatorForPage(pageNumber),
+      fallbackProgress: pageCount.value <= 1 ? 0 : (pageNumber - 1) / (pageCount.value - 1),
+      layoutKey: publication.layout === 'fixed' ? 'fixed' : readerLayoutKey(readerProfile.value),
+    });
+    currentEntry = { ...currentEntry, progress, lastOpenedAt: Date.now() };
+    await bookshelf.upsert(currentEntry);
+  } catch {
+    // 存储失败不应中断本地阅读。
+  }
+}
+
 async function disposeReader(): Promise<void> {
   clearHideTimer();
   loadController?.abort();
@@ -123,18 +243,20 @@ async function disposeReader(): Promise<void> {
   unsubscribeEngine?.();
   unsubscribeEngine = null;
   const activeEngine = engine;
+  const activePublication = publication;
   engine = null;
+  publication = null;
+  pageProvider = null;
   await activeEngine?.dispose().catch(() => undefined);
+  await activePublication?.dispose().catch(() => undefined);
+  currentFile = null;
+  currentHandle = undefined;
+  currentEntry = null;
   bookId = '';
 }
 
-async function returnHome(message = ''): Promise<void> {
-  const currentOperation = ++operationId;
-  await disposeReader();
-  if (currentOperation !== operationId) return;
-  if (pageStateMachine.state !== 'EMPTY' && pageStateMachine.canTransition('EMPTY')) {
-    pageStateMachine.transition('EMPTY');
-  }
+function resetReaderView(): void {
+  if (pageStateMachine.state !== 'EMPTY') pageStateMachine.reset();
   readerReady.value = false;
   readerMounted.value = false;
   pageCount.value = 0;
@@ -143,45 +265,145 @@ async function returnHome(message = ''): Promise<void> {
   canGoBack.value = false;
   showReaderTip.value = false;
   pagePreparing.value = false;
+  pendingTurn = null;
+  readerPanel.value = null;
   uiHidden.value = false;
-  errorMessage.value = message;
 }
 
-function pdfErrorMessage(reason: unknown): string {
+async function returnToShelf(message = ''): Promise<void> {
+  const currentOperation = ++operationId;
+  await saveCurrentProgress();
+  if (engine?.snapshot.state === 'OPEN') await engine.close().catch(() => undefined);
+  await disposeReader();
+  if (currentOperation !== operationId) return;
+  resetReaderView();
+  errorMessage.value = message;
+  await refreshShelf();
+}
+
+function bookErrorMessage(reason: unknown): string {
   if (reason instanceof DOMException && reason.name === 'AbortError') return '';
   if (reason instanceof Error) {
     if (reason.name === 'PasswordException') return '暂不支持受密码保护的 PDF。';
     if (reason.name === 'InvalidPDFException') return '这份 PDF 已损坏或格式不受支持。';
+    if (/DRM|encrypt|encryption/i.test(reason.message))
+      return '这本书受 DRM 或加密保护，无法打开。';
+    if (reason.message) return reason.message;
   }
-  return '无法打开这份 PDF，请确认文件完整后再试。';
+  return '无法打开这本书，请确认文件完整后再试。';
 }
 
-function isPdf(file: File): boolean {
-  return file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+async function canvasBlob(canvas: HTMLCanvasElement): Promise<Blob | null> {
+  return new Promise((resolve) => canvas.toBlob(resolve, 'image/webp', 0.78));
 }
 
-async function openFile(file: File, handle?: FileSystemFileHandle): Promise<void> {
-  if (!isPdf(file)) {
-    errorMessage.value = '请选择 PDF 文件。';
-    return;
+async function renderPublicationCover(
+  activePublication: Publication,
+  provider: PageProvider,
+  signal: AbortSignal,
+): Promise<HTMLCanvasElement | undefined> {
+  if (!activePublication.cover || typeof createImageBitmap !== 'function') return undefined;
+  const [bitmap, pageSize] = await Promise.all([
+    createImageBitmap(activePublication.cover),
+    provider.getPageSize(1),
+  ]);
+  try {
+    if (signal.aborted) throw new DOMException('封面准备已取消。', 'AbortError');
+    const canvas = document.createElement('canvas');
+    canvas.width = 1024;
+    canvas.height = Math.max(1, Math.round(canvas.width * (pageSize.height / pageSize.width)));
+    const context = canvas.getContext('2d', { alpha: false });
+    if (!context) return undefined;
+    context.fillStyle = '#ead0aa';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    const scale = Math.min(canvas.width / bitmap.width, canvas.height / bitmap.height);
+    const width = bitmap.width * scale;
+    const height = bitmap.height * scale;
+    context.drawImage(
+      bitmap,
+      (canvas.width - width) / 2,
+      (canvas.height - height) / 2,
+      width,
+      height,
+    );
+    return canvas;
+  } finally {
+    bitmap.close();
   }
+}
 
+async function createCoverThumbnail(
+  activePublication: Publication,
+  provider: PageProvider,
+  signal: AbortSignal,
+): Promise<Blob | undefined> {
+  let source: CanvasImageSource;
+  let width: number;
+  let height: number;
+  let rendered: Awaited<ReturnType<PageProvider['renderPage']>> | null = null;
+  let bitmap: ImageBitmap | null = null;
+  try {
+    if (activePublication.cover && typeof createImageBitmap === 'function') {
+      bitmap = await createImageBitmap(activePublication.cover);
+      source = bitmap;
+      width = bitmap.width;
+      height = bitmap.height;
+    } else {
+      rendered = await provider.renderPage(1, {
+        targetWidth: 240,
+        quality: 'preview',
+        signal,
+      });
+      source = rendered.canvas;
+      width = rendered.width;
+      height = rendered.height;
+    }
+    if (signal.aborted) return undefined;
+    const canvas = document.createElement('canvas');
+    canvas.width = 180;
+    canvas.height = 252;
+    const context = canvas.getContext('2d', { alpha: false });
+    if (!context) return undefined;
+    context.fillStyle = '#ead0aa';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    const scale = Math.min(canvas.width / width, canvas.height / height);
+    const drawWidth = width * scale;
+    const drawHeight = height * scale;
+    context.drawImage(
+      source,
+      (canvas.width - drawWidth) / 2,
+      (canvas.height - drawHeight) / 2,
+      drawWidth,
+      drawHeight,
+    );
+    const result = (await canvasBlob(canvas)) ?? undefined;
+    canvas.width = 1;
+    canvas.height = 1;
+    return result;
+  } finally {
+    bitmap?.close();
+    rendered?.dispose();
+  }
+}
+
+async function openFile(
+  file: File,
+  handle?: FileSystemFileHandle,
+  options: OpenBookOptions = {},
+): Promise<void> {
   restoreId += 1;
   const currentOperation = ++operationId;
+  await saveCurrentProgress();
+  if (engine?.snapshot.state === 'OPEN') await engine.close().catch(() => undefined);
   await disposeReader();
   if (currentOperation !== operationId) return;
 
-  try {
-    if (pageStateMachine.state !== 'EMPTY') {
-      if (pageStateMachine.canTransition('EMPTY')) pageStateMachine.transition('EMPTY');
-      else throw new Error('页面状态尚未完成清理。');
-    }
-    pageStateMachine.transition('LOADING');
-  } catch {
-    await returnHome('当前书籍尚未完成清理，请刷新页面后重试。');
-    return;
-  }
+  if (pageStateMachine.state !== 'EMPTY') pageStateMachine.reset();
+  pageStateMachine.transition('LOADING');
+
   errorMessage.value = '';
+  loadMessage.value = options.reflowing ? '正在重新排版…' : '正在识别书籍…';
+  loadProgress.value = 0.03;
   readerMounted.value = true;
   readerReady.value = false;
   uiHidden.value = false;
@@ -189,90 +411,246 @@ async function openFile(file: File, handle?: FileSystemFileHandle): Promise<void
 
   const host = canvasHost.value;
   if (!host) {
-    await returnHome('无法创建仿真书画布，请刷新页面后重试。');
+    await returnToShelf('无法创建仿真书画布，请刷新页面后重试。');
     return;
   }
 
   const controller = new AbortController();
   loadController = controller;
-  let orphanProvider: PdfPageProvider | null = null;
+  let orphanPublication: Publication | null = null;
+  const instance = new BookEngine(host, {
+    stateMachine: pageStateMachine,
+    onError: (error) => {
+      if (currentOperation === operationId) void returnToShelf(bookErrorMessage(error));
+    },
+    onPagePreparationChange: (preparing) => {
+      if (currentOperation === operationId && engine === instance) pagePreparing.value = preparing;
+    },
+  });
+  engine = instance;
+  unsubscribeEngine = instance.subscribe((snapshot, previousSnapshot) => {
+    if (currentOperation !== operationId) return;
+    syncEngineSnapshot();
+    if (snapshot.state === 'OPEN' && previousSnapshot.state === 'TURNING') {
+      void saveCurrentProgress();
+    }
+    if (snapshot.state === 'OPEN' && pendingTurn) {
+      const direction = pendingTurn;
+      pendingTurn = null;
+      queueMicrotask(() => void turn(direction));
+    }
+    scheduleUiHide();
+  });
 
   try {
     const fingerprint = await createBookFingerprint(file);
-    if (currentOperation !== operationId) return;
-    orphanProvider = await PdfPageProvider.open(file, { signal: controller.signal });
+    if (options.existingEntry && options.existingEntry.id !== fingerprint) {
+      throw new Error('所选文件与书架记录不一致，请重新选择原文件。');
+    }
+    orphanPublication = await PublicationLoader.open(file, {
+      signal: controller.signal,
+      onProgress: (progress) => {
+        loadMessage.value = options.reflowing ? '正在重新排版…' : progress.message;
+        loadProgress.value = progress.value;
+      },
+    });
+    const openedPublication = orphanPublication;
+    const provider = await openedPublication.paginate(readerProfile.value, {
+      signal: controller.signal,
+      paginationKey: `${fingerprint}:books-renderer-v2:${
+        openedPublication.layout === 'fixed' ? 'fixed' : readerLayoutKey(readerProfile.value)
+      }`,
+      onProgress: (progress) => {
+        loadMessage.value = options.reflowing ? '正在重新排版…' : progress.message;
+        loadProgress.value = progress.value;
+      },
+    });
     if (currentOperation !== operationId) {
-      await orphanProvider.dispose();
+      await openedPublication.dispose();
       return;
     }
 
-    const provider = orphanProvider;
-    const restoredProgress = loadReadingProgress(fingerprint);
-    const instance = new BookEngine(host, {
-      onError: (error) => {
-        if (currentOperation === operationId) void returnHome(pdfErrorMessage(error));
-      },
-      onPagePreparationChange: (preparing) => {
-        if (currentOperation === operationId && engine === instance) {
-          pagePreparing.value = preparing;
-        }
-      },
-    });
-    engine = instance;
-    orphanProvider = null;
+    loadMessage.value = options.reflowing ? '正在重新排版…' : '正在准备封面…';
+    loadProgress.value = 0.82;
+    const previous = options.existingEntry ?? (await bookshelf.get(fingerprint));
+    const restoredProgress = options.locator
+      ? null
+      : newestProgress(loadReadingProgress(fingerprint), previous?.progress);
+    const entryProgress = restoredProgress ?? previous?.progress;
+    const initialPage = options.locator
+      ? provider.pageForLocator(options.locator)
+      : pageForProgress(openedPublication, provider, restoredProgress);
+    const initialSpread = getSpreadIndexForPage(initialPage, provider.pageCount);
+    const publicationCover = await renderPublicationCover(
+      openedPublication,
+      provider,
+      controller.signal,
+    ).catch(() => undefined);
+    loadMessage.value = options.reflowing ? '正在重新排版…' : '正在预热翻页…';
+    loadProgress.value = 0.9;
+    publication = openedPublication;
+    pageProvider = provider;
+    orphanPublication = null;
+    currentFile = file;
+    currentHandle = handle;
     bookId = fingerprint;
-    unsubscribeEngine = instance.subscribe((snapshot, previousSnapshot) => {
-      if (currentOperation !== operationId) return;
-      syncEngineSnapshot();
-      if (snapshot.state === 'OPEN' && previousSnapshot.state === 'TURNING' && bookId) {
-        try {
-          saveReadingProgress(bookId, snapshot.spreadIndex);
-        } catch {
-          // 隐私模式或存储配额不足时，阅读本身仍应继续工作。
-        }
-      }
-      scheduleUiHide();
-    });
+    currentTitle.value = openedPublication.metadata.title;
+    currentLayout.value = openedPublication.layout;
+    currentToc.value = openedPublication.toc;
+    const now = Date.now();
+    currentEntry = {
+      id: fingerprint,
+      format: openedPublication.format,
+      metadata: openedPublication.metadata,
+      ...(previous?.coverThumbnail ? { coverThumbnail: previous.coverThumbnail } : {}),
+      ...(handle ? { handle } : previous?.handle ? { handle: previous.handle } : {}),
+      availability: 'available',
+      ...(entryProgress ? { progress: entryProgress } : {}),
+      addedAt: previous?.addedAt ?? now,
+      lastOpenedAt: now,
+    };
+    rememberBookshelfSessionFile(fingerprint, file);
+    await bookshelf.upsert(currentEntry);
 
-    await instance.load(provider, restoredProgress?.spreadIndex ?? 0);
+    await instance.load(provider, initialSpread, publicationCover);
     if (currentOperation !== operationId) return;
     syncEngineSnapshot();
     readerReady.value = true;
-    void rememberRecentBook({ file, fingerprint, ...(handle ? { handle } : {}) });
+    loadProgress.value = 1;
     showReaderTipOnce();
     scheduleUiHide();
+    if (!currentEntry.coverThumbnail) {
+      void createCoverThumbnail(openedPublication, provider, controller.signal)
+        .then(async (cover) => {
+          if (!cover || currentOperation !== operationId || !currentEntry) return;
+          currentEntry = { ...currentEntry, coverThumbnail: cover };
+          await bookshelf.upsert(currentEntry);
+        })
+        .catch(() => undefined);
+    }
+    if (options.autoOpen) {
+      await instance.open();
+      await saveCurrentProgress();
+    }
   } catch (reason) {
-    await orphanProvider?.dispose().catch(() => undefined);
+    await orphanPublication?.dispose().catch(() => undefined);
     if (currentOperation !== operationId || controller.signal.aborted) return;
-    await returnHome(pdfErrorMessage(reason));
+    await returnToShelf(bookErrorMessage(reason));
   }
+}
+
+function pickerOptions(): Parameters<BookOpenPicker>[0] {
+  return {
+    multiple: false,
+    types: [
+      {
+        description: '本地书籍',
+        accept: {
+          'application/pdf': ['.pdf'],
+          'application/epub+zip': ['.epub'],
+          'text/plain': ['.txt'],
+          'application/octet-stream': ['.mobi', '.azw3', '.fb2', '.cbz'],
+        },
+      },
+    ],
+  };
+}
+
+async function pickHandle(): Promise<FileSystemFileHandle | null> {
+  const picker = (globalThis as typeof globalThis & { showOpenFilePicker?: BookOpenPicker })
+    .showOpenFilePicker;
+  if (typeof picker !== 'function') return null;
+  const [handle] = await picker(pickerOptions());
+  return handle ?? null;
 }
 
 async function chooseFile(): Promise<void> {
   restoreId += 1;
+  pendingRelinkEntry = null;
+  try {
+    const handle = await pickHandle();
+    if (!handle) {
+      fileInput.value?.click();
+      return;
+    }
+    await openFile(await handle.getFile(), handle);
+  } catch (reason) {
+    if (!(reason instanceof DOMException && reason.name === 'AbortError')) {
+      errorMessage.value = '无法读取所选书籍，请重新选择。';
+    }
+  }
+}
+
+async function openShelfEntry(entry: BookshelfEntry): Promise<void> {
+  errorMessage.value = '';
+  const file = await resolveBookshelfFile(entry, true);
+  if (!file) {
+    await bookshelf.upsert({
+      ...entry,
+      availability: entry.handle ? 'permission-required' : 'missing',
+    });
+    await refreshShelf();
+    await relinkShelfEntry(entry);
+    return;
+  }
+  try {
+    const fingerprint = await createBookFingerprint(file);
+    if (fingerprint !== entry.id) throw new Error('文件内容已经变化');
+    await openFile(file, entry.handle, { autoOpen: true, existingEntry: entry });
+  } catch {
+    await bookshelf.upsert({ ...entry, availability: 'missing' });
+    await refreshShelf();
+    await relinkShelfEntry(entry);
+  }
+}
+
+async function finishRelink(
+  entry: BookshelfEntry,
+  file: File,
+  handle?: FileSystemFileHandle,
+): Promise<void> {
+  if ((await createBookFingerprint(file)) !== entry.id) {
+    errorMessage.value = '所选文件不是书架中的原文件，记录未被替换。';
+    return;
+  }
+  const relinkedEntry: BookshelfEntry = {
+    ...entry,
+    ...(handle ? { handle } : {}),
+    availability: 'available',
+    lastOpenedAt: Date.now(),
+  };
+  if (handle) await bookshelf.relink(entry.id, handle);
+  else await bookshelf.upsert(relinkedEntry);
+  rememberBookshelfSessionFile(entry.id, file);
+  await refreshShelf();
+  await openFile(file, handle, {
+    autoOpen: true,
+    existingEntry: relinkedEntry,
+  });
+}
+
+async function relinkShelfEntry(entry: BookshelfEntry): Promise<void> {
+  errorMessage.value = '';
   const picker = (globalThis as typeof globalThis & { showOpenFilePicker?: BookOpenPicker })
     .showOpenFilePicker;
   if (typeof picker !== 'function') {
+    pendingRelinkEntry = entry;
     fileInput.value?.click();
     return;
   }
   try {
-    const [handle] = await picker({
-      multiple: false,
-      types: [
-        {
-          description: 'PDF 文档',
-          accept: { 'application/pdf': ['.pdf'] },
-        },
-      ],
-    });
-    if (!handle) return;
-    await openFile(await handle.getFile(), handle);
+    const handle = await pickHandle();
+    if (handle) await finishRelink(entry, await handle.getFile(), handle);
   } catch (reason) {
     if (!(reason instanceof DOMException && reason.name === 'AbortError')) {
-      errorMessage.value = '无法读取所选 PDF，请重新选择。';
+      errorMessage.value = '重新添加失败，请确认文件仍然可读。';
     }
   }
+}
+
+async function removeShelfEntry(entry: BookshelfEntry, removeProgress: boolean): Promise<void> {
+  await bookshelf.remove(entry.id, { removeProgress });
+  await refreshShelf();
 }
 
 function onCanvasClick(): void {
@@ -283,7 +661,11 @@ function onFileChange(event: Event): void {
   const input = event.currentTarget as HTMLInputElement;
   const file = input.files?.[0];
   input.value = '';
-  if (file) void openFile(file);
+  const relinkEntry = pendingRelinkEntry;
+  pendingRelinkEntry = null;
+  if (!file) return;
+  if (relinkEntry) void finishRelink(relinkEntry, file);
+  else void openFile(file);
 }
 
 function onDragEnter(event: DragEvent): void {
@@ -307,16 +689,10 @@ async function onDrop(event: DragEvent): Promise<void> {
   dragDepth = 0;
   dragging.value = false;
   const dataTransfer = event.dataTransfer;
-  const item = [...(dataTransfer?.items ?? [])].find((candidate) => {
-    const file = candidate.kind === 'file' ? candidate.getAsFile() : null;
-    return file ? isPdf(file) : false;
-  }) as HandleDropItem | undefined;
-  const fallbackFile = [...(dataTransfer?.files ?? [])].find(isPdf);
-  if (!item && !fallbackFile) {
-    errorMessage.value = '这里只能打开本地 PDF。';
-    return;
-  }
-
+  const item = [...(dataTransfer?.items ?? [])].find((candidate) => candidate.kind === 'file') as
+    HandleDropItem | undefined;
+  const fallbackFile = dataTransfer?.files?.[0];
+  if (!item && !fallbackFile) return;
   try {
     const handle = await item?.getAsFileSystemHandle?.();
     if (handle?.kind === 'file') {
@@ -341,7 +717,7 @@ async function openBook(): Promise<void> {
       !(reason instanceof DOMException && reason.name === 'AbortError') &&
       engine === activeEngine
     ) {
-      await returnHome(pdfErrorMessage(reason));
+      await returnToShelf(bookErrorMessage(reason));
     }
   }
 }
@@ -352,23 +728,58 @@ async function closeBook(): Promise<void> {
   revealUi();
   try {
     await activeEngine.close();
+    await saveCurrentProgress();
   } catch (reason) {
     if (
       !(reason instanceof DOMException && reason.name === 'AbortError') &&
       engine === activeEngine
     ) {
-      await returnHome(pdfErrorMessage(reason));
+      await returnToShelf(bookErrorMessage(reason));
     }
   }
 }
 
 async function turn(direction: TurnDirection): Promise<void> {
-  if (!engine || state.value !== 'OPEN') return;
-  const allowed = direction === 'forward' ? engine.canGoForward : engine.canGoBackward;
-  if (!allowed) return;
+  if (!engine) return;
+  if (state.value !== 'OPEN') {
+    if (state.value === 'TURNING' || state.value === 'DRAGGING' || pagePreparing.value) {
+      pendingTurn = direction;
+    }
+    return;
+  }
   revealUi();
   if (direction === 'forward') await engine.next();
   else await engine.previous();
+}
+
+async function navigateTo(locator: BookLocator): Promise<void> {
+  if (!engine || !pageProvider || !readerReady.value) return;
+  readerPanel.value = null;
+  try {
+    if (engine.snapshot.state === 'OPEN') await engine.close();
+    await engine.goToPage(pageProvider.pageForLocator(locator));
+    await engine.open();
+    await saveCurrentProgress();
+  } catch (reason) {
+    await returnToShelf(bookErrorMessage(reason));
+  }
+}
+
+async function applyReaderProfile(profile: ReaderLayoutProfile): Promise<void> {
+  if (currentLayout.value !== 'reflowable' || !currentFile || !pageProvider) return;
+  const file = currentFile;
+  const handle = currentHandle;
+  const entry = currentEntry ?? undefined;
+  const locator = pageProvider.locatorForPage(Math.max(1, currentPage.value));
+  readerProfile.value = normalizeReaderLayout(profile);
+  persistReaderLayout(readerProfile.value);
+  readerPanel.value = null;
+  await openFile(file, handle, {
+    autoOpen: true,
+    locator,
+    existingEntry: entry,
+    reflowing: true,
+  });
 }
 
 async function toggleFullscreen(): Promise<void> {
@@ -388,15 +799,19 @@ function syncFullscreen(): void {
   revealUi();
 }
 
+function toggleReaderPanel(mode: 'toc' | 'settings'): void {
+  readerPanel.value = readerPanel.value === mode ? null : mode;
+  uiHidden.value = false;
+  clearHideTimer();
+}
+
 function onKeydown(event: KeyboardEvent): void {
   const target = event.target as HTMLElement | null;
   if (
     target?.matches('input, textarea, select, button, [contenteditable="true"]') ||
     !readerReady.value
-  ) {
+  )
     return;
-  }
-
   if (event.key === 'ArrowRight' || event.key === 'PageDown' || event.key === ' ') {
     event.preventDefault();
     void turn('forward');
@@ -407,19 +822,43 @@ function onKeydown(event: KeyboardEvent): void {
     event.preventDefault();
     void toggleFullscreen();
   } else if (event.key === 'Escape') {
+    readerPanel.value = null;
     uiHidden.value = false;
     if (document.fullscreenElement) void document.exitFullscreen();
   }
+}
+
+async function restoreLastBook(): Promise<void> {
+  await refreshShelf();
+  const candidate = [...shelfEntries.value].sort(
+    (left, right) => right.lastOpenedAt - left.lastOpenedAt,
+  )[0];
+  if (!candidate) return;
+  const file = await resolveBookshelfFile(candidate, false);
+  if (!file) {
+    if (candidate.availability === 'available') {
+      await bookshelf.upsert({ ...candidate, availability: 'permission-required' });
+      await refreshShelf();
+    }
+    return;
+  }
+  if ((await createBookFingerprint(file)) !== candidate.id) {
+    await bookshelf.upsert({ ...candidate, availability: 'missing' });
+    await refreshShelf();
+    return;
+  }
+  await openFile(file, candidate.handle, { autoOpen: true, existingEntry: candidate });
 }
 
 onMounted(() => {
   globalThis.addEventListener('keydown', onKeydown);
   document.addEventListener('fullscreenchange', syncFullscreen);
   const restoreOperation = ++restoreId;
-  void restoreRecentBook().then((source) => {
-    if (!source || restoreOperation !== restoreId) return;
-    void openFile(source.file, source.handle);
-  });
+  void restoreLastBook()
+    .catch(() => undefined)
+    .finally(() => {
+      if (restoreOperation !== restoreId) return;
+    });
 });
 
 onBeforeUnmount(() => {
@@ -431,7 +870,7 @@ onBeforeUnmount(() => {
   if (tipTimer) globalThis.clearTimeout(tipTimer);
   loadController?.abort();
   if (document.fullscreenElement === root.value) void document.exitFullscreen();
-  void disposeReader();
+  void saveCurrentProgress().finally(() => disposeReader());
 });
 </script>
 
@@ -442,6 +881,7 @@ onBeforeUnmount(() => {
     :class="{
       'books-page--dragging': dragging,
       'books-page--ui-hidden': uiHidden,
+      'books-page--shelf': !readerMounted,
     }"
     @dragenter.prevent="onDragEnter"
     @dragover.prevent="onDragOver"
@@ -454,25 +894,39 @@ onBeforeUnmount(() => {
       ref="fileInput"
       class="books-file-input"
       type="file"
-      accept="application/pdf,.pdf"
-      aria-label="选择本地 PDF"
+      :accept="BOOK_FILE_ACCEPT"
+      aria-label="选择本地书籍"
       @change="onFileChange"
     />
 
     <BookWelcome
-      v-if="!readerMounted"
+      v-if="!readerMounted && !shelfEntries.length"
       :dragging="dragging"
       :error="errorMessage"
       @pick="chooseFile"
     />
+    <BookshelfView
+      v-else-if="!readerMounted"
+      :entries="sortedShelfEntries"
+      :persistent="persistentShelf"
+      :error="errorMessage"
+      @pick="chooseFile"
+      @open="openShelfEntry"
+      @remove="removeShelfEntry"
+    />
 
-    <LoadingBook v-if="state === 'LOADING'" />
+    <LoadingBook
+      v-if="state === 'LOADING'"
+      :message="loadMessage"
+      :progress="loadProgress"
+      @cancel="returnToShelf()"
+    />
 
     <section
       v-if="readerMounted"
       class="books-reader"
       :class="{ 'books-reader--ready': readerReady }"
-      :aria-busy="state === 'LOADING'"
+      :aria-busy="state === 'LOADING' || pagePreparing"
       aria-label="仿真书阅读器"
     >
       <div
@@ -484,9 +938,13 @@ onBeforeUnmount(() => {
       <p v-if="readerReady && showReaderTip" class="books-reader__hint">
         点击封面打开；滚轮缩放页面；拖动纸张外侧或使用方向键翻页
       </p>
-      <div v-if="readerReady && pagePreparing" class="books-reader__preparing" role="status">
-        <span aria-hidden="true"></span>
-        正在整理书页…
+      <div
+        v-if="readerReady && pagePreparing"
+        class="books-reader__preparing"
+        role="status"
+        aria-live="polite"
+      >
+        <span aria-hidden="true"></span>正在整理书页…
       </div>
       <p class="books-orientation-hint">横屏阅读会更舒展</p>
       <ReaderControls
@@ -498,12 +956,27 @@ onBeforeUnmount(() => {
         :current-page="currentPage"
         :page-count="pageCount"
         :fullscreen="fullscreen"
+        :title="currentTitle"
+        :can-configure="currentLayout === 'reflowable'"
         @previous="turn('backward')"
         @next="turn('forward')"
         @replace="chooseFile"
         @open="openBook"
         @close="closeBook"
+        @shelf="returnToShelf()"
+        @toc="toggleReaderPanel('toc')"
+        @settings="toggleReaderPanel('settings')"
         @toggle-fullscreen="toggleFullscreen"
+      />
+      <ReaderPanel
+        v-if="readerPanel"
+        :mode="readerPanel"
+        :toc="currentToc"
+        :layout="currentLayout"
+        :profile="readerProfile"
+        @close="readerPanel = null"
+        @navigate="navigateTo"
+        @apply="applyReaderProfile"
       />
     </section>
 

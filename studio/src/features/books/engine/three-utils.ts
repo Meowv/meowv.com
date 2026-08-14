@@ -1,39 +1,34 @@
-import {
-  CanvasTexture,
-  LinearFilter,
-  SRGBColorSpace,
-  type Material,
-  type Mesh,
-  type Object3D,
-  type Texture,
-} from 'three';
-
-export function createPageTexture(canvas: HTMLCanvasElement, anisotropy = 2): CanvasTexture {
-  const texture = new CanvasTexture(canvas);
-  texture.colorSpace = SRGBColorSpace;
-  texture.generateMipmaps = false;
-  texture.minFilter = LinearFilter;
-  texture.magFilter = LinearFilter;
-  texture.anisotropy = Math.min(4, Math.max(1, anisotropy));
-  texture.needsUpdate = true;
-  return texture;
-}
+import { type Material, type Mesh, type Object3D, type Texture } from 'three';
 
 export function disposeTexture(texture: Texture | null | undefined): void {
   texture?.dispose();
 }
 
 export function disposeObject(root: Object3D): void {
+  const geometries = new Set<{ dispose(): void }>();
+  const materials = new Set<Material>();
+  const textures = new Set<Texture>();
   root.traverse((object) => {
     const mesh = object as Mesh;
-    mesh.geometry?.dispose?.();
-    const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-    for (const material of materials.filter(Boolean) as Material[]) {
-      const candidate = material as Material & { map?: Texture | null };
-      candidate.map?.dispose();
-      candidate.dispose();
+    if (mesh.geometry) geometries.add(mesh.geometry);
+    const meshMaterials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    for (const material of meshMaterials.filter(Boolean) as Material[]) {
+      materials.add(material);
+      for (const value of Object.values(material)) {
+        if (
+          value &&
+          typeof value === 'object' &&
+          'isTexture' in value &&
+          (value as Texture).isTexture
+        ) {
+          textures.add(value as Texture);
+        }
+      }
     }
   });
+  for (const texture of textures) texture.dispose();
+  for (const material of materials) material.dispose();
+  for (const geometry of geometries) geometry.dispose();
 }
 
 export function createPaperNoiseCanvas(size = 256): HTMLCanvasElement {

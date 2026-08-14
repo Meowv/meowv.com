@@ -17,6 +17,7 @@ export interface BookConfig {
   clickTurnDuration: number;
   maxTextureEdge: number;
   textureBudgetBytes: number;
+  gpuTextureBudgetBytes: number;
 }
 
 export const DEFAULT_BOOK_CONFIG: Readonly<BookConfig> = Object.freeze({
@@ -37,7 +38,8 @@ export const DEFAULT_BOOK_CONFIG: Readonly<BookConfig> = Object.freeze({
   closeDuration: 920,
   clickTurnDuration: 720,
   maxTextureEdge: 2048,
-  textureBudgetBytes: 96 * 1024 * 1024,
+  textureBudgetBytes: 64 * 1024 * 1024,
+  gpuTextureBudgetBytes: 80 * 1024 * 1024,
 });
 
 export function resolveBookConfig(overrides: Partial<BookConfig> = {}): Readonly<BookConfig> {

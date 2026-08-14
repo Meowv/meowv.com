@@ -112,6 +112,29 @@ export class BookStateMachine {
     return this.#snapshot;
   }
 
+  update(patch: BookSnapshotPatch): Readonly<BookSnapshot> {
+    const previousSnapshot = this.#snapshot;
+    this.#snapshot = Object.freeze({
+      state: previousSnapshot.state,
+      previousState: previousSnapshot.previousState,
+      ...normalizePatch(previousSnapshot.state, previousSnapshot, patch),
+      changedAt: Date.now(),
+    });
+    for (const listener of this.#listeners) listener(this.#snapshot, previousSnapshot);
+    return this.#snapshot;
+  }
+
+  reset(): Readonly<BookSnapshot> {
+    const previousSnapshot = this.#snapshot;
+    this.#snapshot = initialSnapshot({
+      state: 'EMPTY',
+      previousState: previousSnapshot.state,
+      changedAt: Date.now(),
+    });
+    for (const listener of this.#listeners) listener(this.#snapshot, previousSnapshot);
+    return this.#snapshot;
+  }
+
   subscribe(listener: BookStateListener): () => void {
     this.#listeners.add(listener);
     return () => this.#listeners.delete(listener);

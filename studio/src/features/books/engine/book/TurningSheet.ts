@@ -4,15 +4,17 @@ import {
   FrontSide,
   Mesh,
   MeshStandardMaterial,
+  type CanvasTexture,
+  type Texture,
 } from 'three';
 import { type BookConfig } from '../BookConfig';
 import {
-  computePageCurlPoint,
   getGutterEdgeInfluence,
   getGutterOffset,
+  writePageCurlPoint,
+  type PageCurlFrame,
   type TurnDirection,
 } from '../turn/PageCurl';
-import { createPageTexture, disposeTexture } from '../three-utils';
 
 interface TurningSheetOptions {
   pageWidth: number;
@@ -27,6 +29,9 @@ interface TurningSheetOptions {
     | 'twistStrength'
     | 'sagStrength'
   >;
+  paperRoughness: Texture;
+  acquireTexture(canvas: HTMLCanvasElement): CanvasTexture;
+  releaseTexture(texture: CanvasTexture | null | undefined): void;
 }
 
 export class TurningSheet {
@@ -36,16 +41,31 @@ export class TurningSheet {
   readonly #backMaterial: MeshStandardMaterial;
   readonly #edgeMaterial: MeshStandardMaterial;
   readonly #basePositions: Float32Array;
-  readonly #pageWidth: number;
   readonly #pageHeight: number;
   readonly #config: TurningSheetOptions['config'];
-  #frontTexture: ReturnType<typeof createPageTexture> | null = null;
-  #backTexture: ReturnType<typeof createPageTexture> | null = null;
+  readonly #acquireTexture: TurningSheetOptions['acquireTexture'];
+  readonly #releaseTexture: TurningSheetOptions['releaseTexture'];
+  readonly #curlPoint = new Float32Array(3);
+  readonly #curlFrame: PageCurlFrame;
+  #frontTexture: CanvasTexture | null = null;
+  #backTexture: CanvasTexture | null = null;
 
   constructor(options: TurningSheetOptions) {
-    this.#pageWidth = options.pageWidth;
     this.#pageHeight = options.pageHeight;
     this.#config = options.config;
+    this.#acquireTexture = options.acquireTexture;
+    this.#releaseTexture = options.releaseTexture;
+    this.#curlFrame = {
+      pageWidth: options.pageWidth,
+      pageHeight: options.pageHeight,
+      progress: 0,
+      direction: 'forward',
+      pointerV: 0.82,
+      verticalDrag: 0,
+      curlStrength: options.config.curlStrength,
+      twistStrength: options.config.twistStrength,
+      sagStrength: options.config.sagStrength,
+    };
     const result = createTurningSheetGeometry(options);
     this.#geometry = result.geometry;
     this.#basePositions = result.basePositions;
@@ -53,18 +73,21 @@ export class TurningSheet {
       color: 0xfffdf8,
       metalness: 0,
       roughness: 0.9,
+      roughnessMap: options.paperRoughness,
       side: FrontSide,
     });
     this.#backMaterial = new MeshStandardMaterial({
       color: 0xfffdf8,
       metalness: 0,
       roughness: 0.9,
+      roughnessMap: options.paperRoughness,
       side: FrontSide,
     });
     this.#edgeMaterial = new MeshStandardMaterial({
       color: 0xd8d0c2,
       metalness: 0,
       roughness: 0.96,
+      roughnessMap: options.paperRoughness,
     });
     this.mesh = new Mesh(this.#geometry, [
       this.#frontMaterial,
@@ -72,68 +95,69 @@ export class TurningSheet {
       this.#edgeMaterial,
     ]);
     this.mesh.castShadow = true;
+    this.mesh.frustumCulled = false;
     // 双面纸层非常接近，接收自身阴影会把翻页面压成整块灰影；只让它向下方页面投影。
     this.mesh.receiveShadow = false;
     this.mesh.visible = false;
   }
 
-  setPages(front: HTMLCanvasElement, back: HTMLCanvasElement, anisotropy = 2): void {
-    disposeTexture(this.#frontTexture);
-    disposeTexture(this.#backTexture);
-    this.#frontTexture = createPageTexture(front, anisotropy);
-    this.#backTexture = createPageTexture(back, anisotropy);
+  setPages(front: HTMLCanvasElement, back: HTMLCanvasElement): void {
+    const previousFront = this.#frontTexture;
+    const previousBack = this.#backTexture;
+    this.#frontTexture = this.#acquireTexture(front);
+    this.#backTexture = this.#acquireTexture(back);
+    this.#releaseTexture(previousFront);
+    this.#releaseTexture(previousBack);
     this.#frontMaterial.map = this.#frontTexture;
     this.#backMaterial.map = this.#backTexture;
+    this.#frontMaterial.needsUpdate = true;
+    this.#backMaterial.needsUpdate = true;
     this.mesh.visible = true;
   }
 
   update(progress: number, direction: TurnDirection, pointerV = 0.82, verticalDrag = 0): void {
     const positions = this.#geometry.attributes.position;
+    const positionArray = positions.array as Float32Array;
     const vertexCount = this.#basePositions.length / 3;
     const settledGutter = 1 - Math.sin(Math.PI * Math.min(1, Math.max(0, progress)));
+    this.#curlFrame.progress = progress;
+    this.#curlFrame.direction = direction;
+    this.#curlFrame.pointerV = pointerV;
+    this.#curlFrame.verticalDrag = verticalDrag;
     for (let index = 0; index < vertexCount; index += 1) {
       const offset = index * 3;
       const distanceFromSpine = Math.abs(this.#basePositions[offset]);
       const y = this.#basePositions[offset + 1];
-      const point = computePageCurlPoint({
-        x: this.#basePositions[offset],
-        y: this.#basePositions[offset + 1],
-        pageWidth: this.#pageWidth,
-        pageHeight: this.#pageHeight,
-        progress,
-        direction,
-        pointerV,
-        verticalDrag,
-        curlStrength: this.#config.curlStrength,
-        twistStrength: this.#config.twistStrength,
-        sagStrength: this.#config.sagStrength,
-      });
-      positions.setXYZ(
-        index,
-        point.x,
-        point.y,
-        point.z +
-          this.#basePositions[offset + 2] +
-          getGutterOffset(
-            distanceFromSpine,
-            this.#config,
-            getGutterEdgeInfluence(y, this.#pageHeight),
-          ) *
-            settledGutter,
-      );
+      writePageCurlPoint(this.#curlPoint, 0, this.#basePositions[offset], y, this.#curlFrame);
+      positionArray[offset] = this.#curlPoint[0];
+      positionArray[offset + 1] = this.#curlPoint[1];
+      positionArray[offset + 2] =
+        this.#curlPoint[2] +
+        this.#basePositions[offset + 2] +
+        getGutterOffset(
+          distanceFromSpine,
+          this.#config,
+          getGutterEdgeInfluence(y, this.#pageHeight),
+        ) *
+          settledGutter;
     }
     positions.needsUpdate = true;
-    this.#geometry.computeVertexNormals();
-    this.#geometry.computeBoundingSphere();
+    updateNormals(this.#geometry);
   }
 
   hide(): void {
     this.mesh.visible = false;
   }
 
+  get textures(): readonly CanvasTexture[] {
+    return [this.#frontTexture, this.#backTexture].filter((texture): texture is CanvasTexture =>
+      Boolean(texture),
+    );
+  }
+
   dispose(): void {
-    disposeTexture(this.#frontTexture);
-    disposeTexture(this.#backTexture);
+    this.#releaseTexture(this.#frontTexture);
+    this.#releaseTexture(this.#backTexture);
     this.#frontTexture = null;
     this.#backTexture = null;
     this.#geometry.dispose();
@@ -141,6 +165,47 @@ export class TurningSheet {
     this.#backMaterial.dispose();
     this.#edgeMaterial.dispose();
   }
+}
+
+function updateNormals(geometry: BufferGeometry): void {
+  const positions = geometry.attributes.position.array as Float32Array;
+  const normals = geometry.attributes.normal.array as Float32Array;
+  const indices = geometry.index?.array;
+  if (!indices) return;
+  normals.fill(0);
+  for (let offset = 0; offset < indices.length; offset += 3) {
+    const a = Number(indices[offset]) * 3;
+    const b = Number(indices[offset + 1]) * 3;
+    const c = Number(indices[offset + 2]) * 3;
+    const abx = positions[b] - positions[a];
+    const aby = positions[b + 1] - positions[a + 1];
+    const abz = positions[b + 2] - positions[a + 2];
+    const acx = positions[c] - positions[a];
+    const acy = positions[c + 1] - positions[a + 1];
+    const acz = positions[c + 2] - positions[a + 2];
+    const nx = aby * acz - abz * acy;
+    const ny = abz * acx - abx * acz;
+    const nz = abx * acy - aby * acx;
+    normals[a] += nx;
+    normals[a + 1] += ny;
+    normals[a + 2] += nz;
+    normals[b] += nx;
+    normals[b + 1] += ny;
+    normals[b + 2] += nz;
+    normals[c] += nx;
+    normals[c + 1] += ny;
+    normals[c + 2] += nz;
+  }
+  for (let offset = 0; offset < normals.length; offset += 3) {
+    const x = normals[offset];
+    const y = normals[offset + 1];
+    const z = normals[offset + 2];
+    const length = Math.hypot(x, y, z) || 1;
+    normals[offset] = x / length;
+    normals[offset + 1] = y / length;
+    normals[offset + 2] = z / length;
+  }
+  geometry.attributes.normal.needsUpdate = true;
 }
 
 function createTurningSheetGeometry({ pageWidth, pageHeight, config }: TurningSheetOptions): {

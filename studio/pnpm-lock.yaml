@@ -21,6 +21,9 @@ importers:
       '@vue/devtools-api':
         specifier: ^8.2.1
         version: 8.2.1
+      '@zip.js/zip.js':
+        specifier: 2.8.46
+        version: 2.8.46
       '@zumer/snapdom':
         specifier: 2.23.2
         version: 2.23.2
@@ -45,6 +48,12 @@ importers:
       dompurify:
         specifier: ^3.4.12
         version: 3.4.12
+      fflate:
+        specifier: 0.8.3
+        version: 0.8.3
+      foliate-js:
+        specifier: github:johnfactotum/foliate-js#78914aef4466eb960965702401634c2cb348e9b1
+        version: https://codeload.github.com/johnfactotum/foliate-js/tar.gz/78914aef4466eb960965702401634c2cb348e9b1
       highlight.js:
         specifier: ^11.11.1
         version: 11.11.1
@@ -1284,6 +1293,10 @@ packages:
     peerDependencies:
       vue: ^3.5.0
 
+  '@zip.js/zip.js@2.8.46':
+    resolution: {integrity: sha512-sU4XqRtSYimdrIzmc7omaCEeliFd7e+nbFlAaFu2NZn0SnWDW/NRs5nBCBRzbY1Ymt8lD5DkOEtltKc7y4NCUQ==}
+    engines: {bun: '>=0.7.0', deno: '>=1.0.0', node: '>=18.0.0'}
+
   '@zumer/snapdom@2.23.2':
     resolution: {integrity: sha512-pt/FYBYyDq1LXIjP2CI9qvR78o+hy9rdtTaFxEiDZTD8A3JhNkEj3CT6BQXAsa95UCZXbJKRxf1tEc89oVd7dA==}
 
@@ -2016,6 +2029,10 @@ packages:
 
   focus-trap@7.8.0:
     resolution: {integrity: sha512-/yNdlIkpWbM0ptxno3ONTuf+2g318kh2ez3KSeZN5dZ8YC6AAmgeWz+GasYYiBJPFaYcSAPeu4GfhUaChzIJXA==}
+
+  foliate-js@https://codeload.github.com/johnfactotum/foliate-js/tar.gz/78914aef4466eb960965702401634c2cb348e9b1:
+    resolution: {gitHosted: true, integrity: sha512-YmnYMiOUgcsd+5deF7DKOUvkBBhONGKor4JP7JFCZ9QiMs10ap4xg7XbIGHkCiZNLsASlpNGgavHuYePQH1Gzg==, tarball: https://codeload.github.com/johnfactotum/foliate-js/tar.gz/78914aef4466eb960965702401634c2cb348e9b1}
+    version: 0.0.0
 
   for-each@0.3.5:
     resolution: {integrity: sha512-dKx12eRCVIzqCxFGplyFKJMPvLEWgmNtUrpTiJIR5u97zEhRG8ySrtboPHZXx7daLxQVrl643cTzbab2tkQjxg==}
@@ -4907,6 +4924,8 @@ snapshots:
       vue: 3.5.40(typescript@5.9.3)
     optional: true
 
+  '@zip.js/zip.js@2.8.46': {}
+
   '@zumer/snapdom@2.23.2': {}
 
   acorn-jsx@5.3.2(acorn@8.18.0):
@@ -5768,6 +5787,8 @@ snapshots:
   focus-trap@7.8.0:
     dependencies:
       tabbable: 6.5.0
+
+  foliate-js@https://codeload.github.com/johnfactotum/foliate-js/tar.gz/78914aef4466eb960965702401634c2cb348e9b1: {}
 
   for-each@0.3.5:
     dependencies:

@@ -1,5 +1,12 @@
 import type { PDFPageProxy, RenderTask } from 'pdfjs-dist/types/src/display/api';
-import type { PageProvider, PageRenderOptions, PageSize, RenderedPage } from '../../types/reader';
+import type {
+  BookLocator,
+  PageProvider,
+  PageRenderOptions,
+  PageSize,
+  RenderedPage,
+} from '../../types/reader';
+import { applyPageFinish } from '../rendered-page';
 import {
   loadPdfDocument,
   type LoadedPdfDocument,
@@ -44,6 +51,7 @@ function createRenderedPage(
 export class PdfPageProvider implements PageProvider {
   readonly #loadedDocument: LoadedPdfDocument;
   readonly #renderTasks = new Map<RenderTask, Promise<void>>();
+  #referenceSizePromise: Promise<PageSize> | null = null;
   #disposePromise: Promise<void> | null = null;
 
   constructor(loadedDocument: LoadedPdfDocument) {
@@ -59,6 +67,16 @@ export class PdfPageProvider implements PageProvider {
 
   get pageCount(): number {
     return this.#loadedDocument.document.numPages;
+  }
+
+  locatorForPage(pageNumber: number): BookLocator {
+    this.#assertPageNumber(pageNumber);
+    return { kind: 'fixed', pageNumber };
+  }
+
+  pageForLocator(locator: BookLocator): number {
+    if (locator.kind !== 'fixed') return 1;
+    return Math.min(this.pageCount, Math.max(1, Math.trunc(locator.pageNumber)));
   }
 
   #assertUsable(): void {
@@ -82,13 +100,18 @@ export class PdfPageProvider implements PageProvider {
   }
 
   async getPageSize(pageNumber: number): Promise<PageSize> {
-    const page = await this.#getPage(pageNumber);
-    try {
-      const viewport = page.getViewport({ scale: 1 });
-      return { width: viewport.width, height: viewport.height };
-    } finally {
-      page.cleanup();
+    this.#assertPageNumber(pageNumber);
+    if (!this.#referenceSizePromise) {
+      this.#referenceSizePromise = this.#getPage(1).then((page) => {
+        try {
+          const viewport = page.getViewport({ scale: 1 });
+          return { width: viewport.width, height: viewport.height };
+        } finally {
+          page.cleanup();
+        }
+      });
     }
+    return this.#referenceSizePromise;
   }
 
   async renderPage(pageNumber: number, options: PageRenderOptions): Promise<RenderedPage> {
@@ -106,7 +129,10 @@ export class PdfPageProvider implements PageProvider {
       throw new Error('当前环境无法创建 PDF 页面 Canvas。');
     }
 
-    const page = await this.#getPage(pageNumber);
+    const [page, referenceSize] = await Promise.all([
+      this.#getPage(pageNumber),
+      this.getPageSize(1),
+    ]);
     if (options.signal?.aborted) {
       page.cleanup();
       throw createAbortError();
@@ -117,14 +143,23 @@ export class PdfPageProvider implements PageProvider {
       throw new Error(`PDF 第 ${pageNumber} 页尺寸无效。`);
     }
 
+    const canvasWidth = Math.max(1, Math.min(MAX_TEXTURE_EDGE, Math.round(options.targetWidth)));
+    const canvasHeight = Math.max(
+      1,
+      Math.min(
+        MAX_TEXTURE_EDGE,
+        Math.round(canvasWidth * (referenceSize.height / referenceSize.width)),
+      ),
+    );
     const scale = Math.min(
-      options.targetWidth / baseViewport.width,
+      canvasWidth / baseViewport.width,
+      canvasHeight / baseViewport.height,
       MAX_TEXTURE_EDGE / Math.max(baseViewport.width, baseViewport.height),
     );
     const viewport = page.getViewport({ scale });
     const canvas = globalThis.document.createElement('canvas');
-    canvas.width = Math.max(1, Math.round(viewport.width));
-    canvas.height = Math.max(1, Math.round(viewport.height));
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
     const context = canvas.getContext('2d', { alpha: false });
     if (!context) {
       page.cleanup();
@@ -133,6 +168,10 @@ export class PdfPageProvider implements PageProvider {
     }
     context.imageSmoothingEnabled = true;
     context.imageSmoothingQuality = options.quality === 'reading' ? 'high' : 'medium';
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    const offsetX = (canvas.width - viewport.width) / 2;
+    const offsetY = (canvas.height - viewport.height) / 2;
 
     const renderTask = page.render({
       canvas,
@@ -140,6 +179,7 @@ export class PdfPageProvider implements PageProvider {
       viewport,
       intent: 'display',
       background: '#ffffff',
+      transform: [1, 0, 0, 1, offsetX, offsetY],
     });
     const renderPromise = renderTask.promise;
     this.#renderTasks.set(renderTask, renderPromise);
@@ -153,6 +193,7 @@ export class PdfPageProvider implements PageProvider {
         throw createAbortError();
       }
       this.#assertUsable();
+      applyPageFinish(canvas);
       return createRenderedPage(pageNumber, canvas, options);
     } catch (error) {
       releaseCanvas(canvas);
