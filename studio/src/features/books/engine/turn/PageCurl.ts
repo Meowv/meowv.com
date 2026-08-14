@@ -14,6 +14,7 @@ export interface PageCurlInput {
   curlStrength?: number;
   twistStrength?: number;
   sagStrength?: number;
+  cornerPickupStrength?: number;
 }
 
 export interface PageCurlPoint {
@@ -32,6 +33,7 @@ export interface PageCurlFrame {
   curlStrength: number;
   twistStrength: number;
   sagStrength: number;
+  cornerPickupStrength: number;
 }
 
 export interface DragTurnDecisionInput {
@@ -49,6 +51,9 @@ const smoothstep = (minimum: number, maximum: number, value: number): number => 
   return unit * unit * (3 - 2 * unit);
 };
 
+const cornerPickupEnvelope = (progress: number): number =>
+  smoothstep(0, 0.12, progress) * (1 - smoothstep(0.18, 0.52, progress));
+
 export function easeInOutCubic(value: number): number {
   const unit = clamp(value, 0, 1);
   return unit < 0.5 ? 4 * unit ** 3 : 1 - (-2 * unit + 2) ** 3 / 2;
@@ -64,25 +69,36 @@ export function computePageCurlPoint(input: PageCurlInput): PageCurlPoint {
     curlStrength = DEFAULT_BOOK_CONFIG.curlStrength,
     twistStrength = DEFAULT_BOOK_CONFIG.twistStrength,
     sagStrength = DEFAULT_BOOK_CONFIG.sagStrength,
+    cornerPickupStrength = 1,
   } = input;
   const progress = clamp(input.progress, 0, 1);
+  const turnProgress = smoothstep(0.045, 0.96, progress);
   const distanceFromSpine = Math.abs(input.x);
   const u = clamp(distanceFromSpine / Math.max(pageWidth, Number.EPSILON), 0, 1);
   const v = clamp(input.y / Math.max(pageHeight, Number.EPSILON) + 0.5, 0, 1);
-  const phase = Math.sin(Math.PI * progress);
-  const profile = Math.sin(Math.PI * u);
+  const phaseSine = Math.sin(Math.PI * progress);
+  const phase = phaseSine * phaseSine;
+  const edgeProfile = smoothstep(0.56, 1, u);
+  const profile = Math.sin(Math.PI * u) * 0.72 + edgeProfile * 0.28;
   const cornerInfluence = 1 - smoothstep(0.15, 0.9, Math.abs(v - pointerV));
   const curl = curlStrength * phase * profile * (0.7 + cornerInfluence * 0.3);
-  const baseAngle = direction === 'forward' ? Math.PI * progress : Math.PI * (1 - progress);
+  const baseAngle = direction === 'forward' ? Math.PI * turnProgress : Math.PI * (1 - turnProgress);
   const curlSign = direction === 'forward' ? 1 : -1;
-  const theta = baseAngle + curl * curlSign;
+  const curlLimit = direction === 'forward' ? Math.PI - baseAngle : baseAngle;
+  const theta = clamp(baseAngle + Math.min(curl, curlLimit * 0.86) * curlSign, 0, Math.PI);
   const twist = clamp(verticalDrag, -1, 1) * twistStrength * profile * phase;
   const sag = sagStrength * profile * phase;
+  const pickup = cornerPickupEnvelope(progress);
+  const cornerPickup =
+    pageWidth * 0.032 * edgeProfile * edgeProfile * cornerInfluence * cornerInfluence * pickup;
 
   return {
     x: distanceFromSpine * Math.cos(theta),
     y: input.y + twist * (v - 0.5) * 2,
-    z: Math.max(0, distanceFromSpine * Math.sin(theta) - sag) + twist * profile * 0.24,
+    z:
+      Math.max(0, distanceFromSpine * Math.sin(theta) - sag) +
+      twist * profile * 0.24 +
+      cornerPickup * cornerPickupStrength,
   };
 }
 
@@ -92,23 +108,43 @@ export function writePageCurlPoint(
   x: number,
   y: number,
   frame: PageCurlFrame,
+  surfaceOffset = 0,
 ): void {
   const progress = clamp(frame.progress, 0, 1);
+  const turnProgress = smoothstep(0.045, 0.96, progress);
   const distanceFromSpine = Math.abs(x);
   const u = clamp(distanceFromSpine / Math.max(frame.pageWidth, Number.EPSILON), 0, 1);
   const v = clamp(y / Math.max(frame.pageHeight, Number.EPSILON) + 0.5, 0, 1);
-  const phase = Math.sin(Math.PI * progress);
-  const profile = Math.sin(Math.PI * u);
+  const phaseSine = Math.sin(Math.PI * progress);
+  const phase = phaseSine * phaseSine;
+  const edgeProfile = smoothstep(0.56, 1, u);
+  const profile = Math.sin(Math.PI * u) * 0.72 + edgeProfile * 0.28;
   const cornerInfluence = 1 - smoothstep(0.15, 0.9, Math.abs(v - frame.pointerV));
   const curl = frame.curlStrength * phase * profile * (0.7 + cornerInfluence * 0.3);
-  const baseAngle = frame.direction === 'forward' ? Math.PI * progress : Math.PI * (1 - progress);
-  const theta = baseAngle + curl * (frame.direction === 'forward' ? 1 : -1);
+  const baseAngle =
+    frame.direction === 'forward' ? Math.PI * turnProgress : Math.PI * (1 - turnProgress);
+  const curlLimit = frame.direction === 'forward' ? Math.PI - baseAngle : baseAngle;
+  const curlSign = frame.direction === 'forward' ? 1 : -1;
+  const theta = clamp(baseAngle + Math.min(curl, curlLimit * 0.86) * curlSign, 0, Math.PI);
   const twist = clamp(frame.verticalDrag, -1, 1) * frame.twistStrength * profile * phase;
   const sag = frame.sagStrength * profile * phase;
-  target[offset] = distanceFromSpine * Math.cos(theta);
+  const pickup = cornerPickupEnvelope(progress);
+  const cornerPickup =
+    frame.pageWidth *
+    0.032 *
+    edgeProfile *
+    edgeProfile *
+    cornerInfluence *
+    cornerInfluence *
+    pickup *
+    frame.cornerPickupStrength;
+  target[offset] = distanceFromSpine * Math.cos(theta) - surfaceOffset * Math.sin(theta);
   target[offset + 1] = y + twist * (v - 0.5) * 2;
   target[offset + 2] =
-    Math.max(0, distanceFromSpine * Math.sin(theta) - sag) + twist * profile * 0.24;
+    Math.max(0, distanceFromSpine * Math.sin(theta) - sag) +
+    twist * profile * 0.24 +
+    cornerPickup +
+    surfaceOffset * Math.cos(theta);
 }
 
 export function getGutterOffset(

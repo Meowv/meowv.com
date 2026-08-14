@@ -69,9 +69,10 @@ interface DragSession {
   direction: TurnDirection;
   start: Vector3;
   previousProgress: number;
-  previousTime: number;
   progress: number;
   velocity: number;
+  velocitySamples: Array<{ progress: number; time: number }>;
+  lastMotionTime: number;
   pointerV: number;
   verticalDrag: number;
   prepared: Promise<void>;
@@ -91,8 +92,19 @@ interface PageRenderJob {
   reject(reason: unknown): void;
 }
 
+interface PreparedTurnSpread {
+  targetIndex: number;
+  left: RenderedPage;
+  right: RenderedPage;
+}
+
 const clamp = (value: number, minimum: number, maximum: number): number =>
   Math.min(maximum, Math.max(minimum, value));
+
+const DRAG_VELOCITY_WINDOW_MS = 90;
+const DRAG_VELOCITY_DECAY_MS = 110;
+const DRAG_MOTION_EPSILON = 0.0005;
+const MAX_DRAG_VELOCITY = 4;
 
 const idle = (callback: () => void): number =>
   'requestIdleCallback' in globalThis
@@ -168,9 +180,11 @@ export class BookEngine {
   #disposed = false;
   #generation = 0;
   #spreadRevision = 0;
-  #lastAnimatedShadowAt = 0;
   #lastTurnDirection: TurnDirection = 'forward';
   #closedEdge: 'front' | 'back' = 'front';
+  #cornerPreviewKey: string | null = null;
+  #cornerPreviewV = 0.82;
+  #preparedTurnSpread: PreparedTurnSpread | null = null;
   #interactionStartedAt = 0;
   #lastInteractionLatencyMs: number | null = null;
 
@@ -205,6 +219,8 @@ export class BookEngine {
     this.#listen(this.#renderer.domElement, 'pointermove', this.#onPointerMove);
     this.#listen(this.#renderer.domElement, 'pointerup', this.#onPointerUp);
     this.#listen(this.#renderer.domElement, 'pointercancel', this.#onPointerCancel);
+    this.#listen(this.#renderer.domElement, 'lostpointercapture', this.#onLostPointerCapture);
+    this.#listen(this.#renderer.domElement, 'pointerleave', this.#onPointerLeave);
     this.#listen(this.#renderer.domElement, 'wheel', this.#onWheel);
     this.#listen(this.#renderer.domElement, 'contextmenu', (event) => event.preventDefault());
     this.resize();
@@ -269,6 +285,7 @@ export class BookEngine {
       this.#stateMachine.update({ pageCount: provider.pageCount });
     }
     this.#provider = provider;
+    this.#preparedTurnSpread = null;
     this.#publicationCoverCanvas = publicationCoverCanvas ?? null;
     const generation = ++this.#generation;
     this.#loadController?.abort();
@@ -305,9 +322,10 @@ export class BookEngine {
       });
       this.#book.setCover(this.#publicationCoverCanvas);
       this.#scene.add(this.#book.root);
-      await this.#showSpread(this.#spreadIndex, 'preview', controller.signal);
+      await this.#showSpread(this.#spreadIndex, 'reading', controller.signal);
       this.#book.setProgress(this.#readingProgress(this.#spreadIndex));
       await this.#prewarmAdjacentPages(controller.signal);
+      this.#book.turningSheet.setEdgeKind('paper');
       this.#book.turningSheet.setPages(cover.canvas, this.#blankPage().canvas);
       this.#book.turningSheet.update(0, 'forward');
       this.#setContactOpenProgress(0);
@@ -333,15 +351,16 @@ export class BookEngine {
 
   async open(): Promise<void> {
     if (!this.#book || this.#stateMachine.state !== 'CLOSED') return;
+    const pointerV = this.#cornerPreviewV;
+    this.#resetCornerPreview();
     this.#pauseBackgroundWork();
-    this.#lastAnimatedShadowAt = 0;
     this.#stateMachine.transition('OPENING');
-    await this.#prepareBoundaryTurn(this.#closedEdge);
+    await this.#prepareBoundaryTurn(this.#closedEdge, 0);
+    this.#updateBoundaryTurn(0, this.#closedEdge, true, pointerV, 0, false);
     await this.#animate(0, 1, this.#config.clickTurnDuration, (progress) => {
-      this.#updateBoundaryTurn(progress, this.#closedEdge, true, false);
+      this.#updateBoundaryTurn(progress, this.#closedEdge, true, pointerV, 0, false);
     });
-    this.#book.settleBoundaryTurn(this.#closedEdge, true);
-    this.#book.turningSheet.hide();
+    this.#settleBoundaryTurn(this.#closedEdge, true);
     this.#stateMachine.transition('OPEN');
     this.invalidate();
     this.#schedulePrefetch(this.#generation);
@@ -350,15 +369,15 @@ export class BookEngine {
 
   async close(edge: 'front' | 'back' = 'front'): Promise<void> {
     if (!this.#book || this.#stateMachine.state !== 'OPEN') return;
+    this.#resetCornerPreview();
     this.#pauseBackgroundWork();
-    this.#lastAnimatedShadowAt = 0;
     this.#stateMachine.transition('CLOSING');
-    await this.#prepareBoundaryTurn(edge);
+    await this.#prepareBoundaryTurn(edge, 1);
+    this.#updateBoundaryTurn(0, edge, false, 0.82, 0, false);
     await this.#animate(0, 1, this.#config.clickTurnDuration, (progress) => {
-      this.#updateBoundaryTurn(progress, edge, false, false);
+      this.#updateBoundaryTurn(progress, edge, false, 0.82, 0, false);
     });
-    this.#book.settleBoundaryTurn(edge, false);
-    this.#book.turningSheet.hide();
+    this.#settleBoundaryTurn(edge, false);
     this.#closedEdge = edge;
     this.#stateMachine.transition('CLOSED');
     this.invalidate();
@@ -412,10 +431,15 @@ export class BookEngine {
 
   async turn(direction: TurnDirection): Promise<void> {
     if (this.#stateMachine.state !== 'OPEN') return;
+    this.#resetCornerPreview();
     this.#interactionStartedAt = performance.now();
     const target = getAdjacentSpreadIndex(this.#spreadIndex, this.pageCount, direction);
     if (target === null) {
-      await this.close(direction === 'forward' ? 'back' : 'front');
+      try {
+        await this.close(direction === 'forward' ? 'back' : 'front');
+      } catch (reason) {
+        this.#handleRuntimeError(reason);
+      }
       return;
     }
     this.#pauseBackgroundWork();
@@ -476,6 +500,7 @@ export class BookEngine {
     this.#prefetchController?.abort();
     this.#prefetchController = null;
     this.#drag = null;
+    this.#preparedTurnSpread = null;
     if (this.#renderFrame) cancelAnimationFrame(this.#renderFrame);
     this.#renderFrame = 0;
     this.#cancelAnimation(new DOMException('仿真书已关闭。', 'AbortError'));
@@ -611,6 +636,7 @@ export class BookEngine {
   async #prepareTurn(direction: TurnDirection): Promise<void> {
     const targetIndex = getAdjacentSpreadIndex(this.#spreadIndex, this.pageCount, direction);
     if (targetIndex === null || !this.#book) throw new Error('已经到达书籍边缘。');
+    this.#preparedTurnSpread = null;
     const controller = this.#loadController ?? new AbortController();
     const current = getSpread(this.#spreadIndex, this.pageCount);
     const target = getSpread(targetIndex, this.pageCount);
@@ -629,13 +655,26 @@ export class BookEngine {
         : this.#blankPage(),
     ]);
     this.#book.setStaticPages(underLeft.canvas, underRight.canvas);
+    this.#book.turningSheet.setEdgeKind('paper');
     this.#book.turningSheet.setPages(front.canvas, back.canvas);
+    const textures = this.#book.prewarmSurfaces([
+      front.canvas,
+      back.canvas,
+      underLeft.canvas,
+      underRight.canvas,
+    ]);
+    for (const texture of textures) this.#renderer.initTexture(texture);
+    this.#preparedTurnSpread = {
+      targetIndex,
+      left: direction === 'forward' ? back : underLeft,
+      right: direction === 'forward' ? underRight : front,
+    };
     this.#book.pruneSurfaces();
     this.#book.turningSheet.update(0, direction);
     this.invalidate();
   }
 
-  async #prepareBoundaryTurn(edge: 'front' | 'back'): Promise<void> {
+  async #prepareBoundaryTurn(edge: 'front' | 'back', initialOpenProgress: 0 | 1): Promise<void> {
     const book = this.#book;
     if (!book) throw new Error('仿真书尚未准备完成。');
     const spread = getSpread(this.#spreadIndex, this.pageCount);
@@ -649,7 +688,8 @@ export class BookEngine {
         : this.#backCoverPage().canvas;
     if (edge === 'front') book.turningSheet.setPages(coverPage, movingPage.canvas);
     else book.turningSheet.setPages(movingPage.canvas, coverPage);
-    book.beginBoundaryTurn(edge);
+    book.turningSheet.setEdgeKind('cover', edge === 'front' ? 'front' : 'back');
+    book.beginBoundaryTurn(edge, initialOpenProgress);
     book.pruneSurfaces();
     this.invalidate();
   }
@@ -665,7 +705,7 @@ export class BookEngine {
     this.#book?.turningSheet.update(progress, direction, pointerV, verticalDrag);
     const fractionalSpread = this.#spreadIndex + (direction === 'forward' ? progress : -progress);
     this.#book?.setProgress(this.#readingProgress(fractionalSpread));
-    this.#markAnimatedShadow(progress);
+    this.#markAnimatedShadow();
     if (scheduleRender) this.invalidate();
   }
 
@@ -673,37 +713,59 @@ export class BookEngine {
     progress: number,
     edge: 'front' | 'back',
     opening: boolean,
+    pointerV = 0.82,
+    verticalDrag = 0,
     scheduleRender = true,
   ): void {
     this.#markInteractionVisible();
     const direction: TurnDirection =
       edge === 'front' ? (opening ? 'forward' : 'backward') : opening ? 'backward' : 'forward';
-    this.#book?.turningSheet.update(progress, direction, 0.82, 0);
+    this.#book?.turningSheet.update(progress, direction, pointerV, verticalDrag);
     const openProgress = opening ? progress : 1 - progress;
     this.#book?.setBoundaryOpenProgress(openProgress, edge);
     this.#setContactOpenProgress(openProgress);
-    this.#markAnimatedShadow(progress);
+    this.#markAnimatedShadow();
     if (scheduleRender) this.invalidate();
+  }
+
+  #settleBoundaryTurn(edge: 'front' | 'back', open: boolean): void {
+    const book = this.#book;
+    if (!book) return;
+    book.turningSheet.hide();
+    book.settleBoundaryTurn(edge, open);
+    this.#renderer.shadowMap.needsUpdate = true;
+    // 边界开合会同时切换动态纸张、封面和页束。连续提交两次且不让出绘制时机，
+    // 避免浏览器把首个阴影/可见性预热帧呈现给用户。
+    this.#renderAnimationFrame();
+    this.#renderAnimationFrame();
   }
 
   async #completeTurn(targetIndex: number): Promise<void> {
     this.#lastTurnDirection = targetIndex >= this.#spreadIndex ? 'forward' : 'backward';
     this.#spreadIndex = targetIndex;
     this.#spreadRevision += 1;
-    await this.#showSpreadForInteraction(targetIndex, this.#loadController?.signal);
+    const preparedSpread = this.#preparedTurnSpread;
+    this.#preparedTurnSpread = null;
+    if (preparedSpread?.targetIndex === targetIndex) {
+      this.#book?.setStaticPages(preparedSpread.left.canvas, preparedSpread.right.canvas);
+    } else {
+      await this.#showSpreadForInteraction(targetIndex, this.#loadController?.signal);
+    }
     this.#book?.turningSheet.hide();
     this.#book?.setProgress(this.#readingProgress(targetIndex));
     this.#renderer.shadowMap.needsUpdate = true;
+    // 落地静态页和动态纸张在同一绘制提交中交接，避免中间帧同时显示两张纸面。
+    this.#renderAnimationFrame();
     this.#stateMachine.transition('OPEN', {
       spreadIndex: targetIndex,
       pageCount: this.pageCount,
     });
-    this.invalidate();
     this.#schedulePrefetch(this.#generation);
     this.#scheduleReadingUpgrade(this.#generation);
   }
 
   async #restoreCurrentSpread(): Promise<void> {
+    this.#preparedTurnSpread = null;
     await this.#showSpreadForInteraction(this.#spreadIndex, this.#loadController?.signal);
     this.#book?.turningSheet.hide();
     this.#book?.setProgress(this.#readingProgress(this.#spreadIndex));
@@ -807,7 +869,7 @@ export class BookEngine {
 
   #getInteractionPage(pageNumber: number, signal?: AbortSignal): Promise<RenderedPage> {
     const cached = this.#pageCache.getBest(pageNumber);
-    return cached ? Promise.resolve(cached) : this.#getPage(pageNumber, 'preview', signal);
+    return cached ? Promise.resolve(cached) : this.#getPage(pageNumber, 'reading', signal);
   }
 
   #targetTextureWidth(quality: PageRenderQuality): number {
@@ -979,7 +1041,8 @@ export class BookEngine {
       while (queue.length) {
         const pageNumber = queue.shift();
         if (!pageNumber) return;
-        rendered.push(await this.#getPage(pageNumber, 'preview', signal));
+        const cached = this.#pageCache.getBest(pageNumber);
+        rendered.push(cached ?? (await this.#getPage(pageNumber, 'preview', signal)));
       }
     };
     await Promise.all([work(), work()]);
@@ -1000,6 +1063,7 @@ export class BookEngine {
     this.#readingUpgradeController = null;
     this.#prefetchController?.abort();
     this.#prefetchController = null;
+    this.#preparedTurnSpread = null;
   }
 
   #armBackgroundDeadline(): void {
@@ -1065,12 +1129,26 @@ export class BookEngine {
     update: (value: number) => void,
   ): Promise<void> {
     this.#cancelAnimation(new DOMException('动画已被新操作替换。', 'AbortError'));
-    const spring = new Spring({ initialPosition: from, initialVelocity: velocity, target });
+    const maximumInitialVelocity = Math.min(MAX_DRAG_VELOCITY, Math.abs(target - from) * 8);
+    const spring = new Spring({
+      initialPosition: from,
+      initialVelocity: clamp(velocity, -maximumInitialVelocity, maximumInitialVelocity),
+      target,
+    });
+    const advances = target >= from;
     return new Promise((resolve, reject) => {
       let previous = performance.now();
       const frame = (now: number): void => {
         const value = spring.step((now - previous) / 1000);
         previous = now;
+        if ((advances && value >= target) || (!advances && value <= target)) {
+          spring.settle();
+          update(target);
+          this.#renderAnimationFrame();
+          this.#animation = null;
+          resolve();
+          return;
+        }
         update(clamp(value, 0, 1));
         this.#renderAnimationFrame();
         if (!spring.isSettled() && !this.#disposed) {
@@ -1101,21 +1179,18 @@ export class BookEngine {
     this.#renderer.render(this.#scene, this.#camera);
   }
 
-  #markAnimatedShadow(progress: number): void {
-    const now = performance.now();
-    if (progress >= 0.999 || now - this.#lastAnimatedShadowAt >= 32) {
-      this.#renderer.shadowMap.needsUpdate = true;
-      this.#lastAnimatedShadowAt = now;
-    }
+  #markAnimatedShadow(): void {
+    this.#renderer.shadowMap.needsUpdate = true;
   }
 
   #onPointerDown = (event: PointerEvent): void => {
     if (event.button !== 0 || this.#stateMachine.state !== 'OPEN' || !this.#book) return;
     const point = this.#localBookPoint(event);
     if (!point) return;
+    this.#resetCornerPreview();
     const pageWidth = this.#config.pageHeight * this.#pageAspect;
     const pageHeight = this.#config.pageHeight;
-    if (Math.abs(point.y) > pageHeight * 0.55) return;
+    if (Math.abs(point.y) > pageHeight * 0.55 || Math.abs(point.x) > pageWidth * 1.04) return;
     const outerThreshold = this.#zoom > 1.05 ? 0.76 : 0.28;
     const direction: TurnDirection | null =
       point.x > pageWidth * outerThreshold && this.canGoForward
@@ -1141,16 +1216,17 @@ export class BookEngine {
       getAdjacentSpreadIndex(this.#spreadIndex, this.pageCount, direction) === null;
     const boundaryEdge = direction === 'forward' ? 'back' : 'front';
     const prepared = boundaryClose
-      ? this.#prepareBoundaryTurn(boundaryEdge)
+      ? this.#prepareBoundaryTurn(boundaryEdge, 1)
       : this.#prepareTurnWithFeedback(direction);
     const drag: DragSession = {
       pointerId: event.pointerId,
       direction,
       start: point.clone(),
       previousProgress: 0,
-      previousTime: performance.now(),
       progress: 0,
       velocity: 0,
+      velocitySamples: [{ progress: 0, time: performance.now() }],
+      lastMotionTime: performance.now(),
       pointerV: clamp(point.y / pageHeight + 0.5, 0, 1),
       verticalDrag: 0,
       prepared,
@@ -1167,6 +1243,8 @@ export class BookEngine {
               drag.progress,
               drag.direction === 'forward' ? 'back' : 'front',
               false,
+              drag.pointerV,
+              drag.verticalDrag,
             );
           } else this.#updateTurn(drag.progress, drag.direction, drag.pointerV, drag.verticalDrag);
         }
@@ -1176,7 +1254,11 @@ export class BookEngine {
 
   #onPointerMove = (event: PointerEvent): void => {
     const drag = this.#drag;
-    if (!drag || drag.pointerId !== event.pointerId) return;
+    if (!drag) {
+      this.#updateCornerPreview(event);
+      return;
+    }
+    if (drag.pointerId !== event.pointerId) return;
     const point = this.#localBookPoint(event);
     if (!point) return;
     event.preventDefault();
@@ -1184,16 +1266,19 @@ export class BookEngine {
     const pageHeight = this.#config.pageHeight;
     const progress = progressFromDrag(drag.start.x, point.x, pageWidth * 1.55, drag.direction);
     const now = performance.now();
-    const elapsed = Math.max(8, now - drag.previousTime) / 1000;
-    drag.velocity = (progress - drag.previousProgress) / elapsed;
-    drag.previousProgress = progress;
-    drag.previousTime = now;
+    this.#updateDragVelocity(drag, progress, now);
     drag.progress = progress;
     drag.pointerV = clamp(point.y / pageHeight + 0.5, 0, 1);
     drag.verticalDrag = clamp((point.y - drag.start.y) / pageHeight, -1, 1);
     if (drag.ready) {
       if (drag.boundaryClose) {
-        this.#updateBoundaryTurn(progress, drag.direction === 'forward' ? 'back' : 'front', false);
+        this.#updateBoundaryTurn(
+          progress,
+          drag.direction === 'forward' ? 'back' : 'front',
+          false,
+          drag.pointerV,
+          drag.verticalDrag,
+        );
       } else this.#updateTurn(progress, drag.direction, drag.pointerV, drag.verticalDrag);
     }
   };
@@ -1203,27 +1288,127 @@ export class BookEngine {
     if (!drag || drag.pointerId !== event.pointerId) return;
     event.preventDefault();
     this.#drag = null;
+    this.#decayDragVelocity(drag, performance.now());
     if (this.#renderer.domElement.hasPointerCapture(event.pointerId)) {
       this.#renderer.domElement.releasePointerCapture(event.pointerId);
     }
     void this.#finishDrag(drag);
   };
 
-  #onPointerCancel = (event: PointerEvent): void => {
+  #onPointerCancel = (event: PointerEvent): void => this.#cancelPointerDrag(event);
+
+  #onLostPointerCapture = (event: PointerEvent): void => this.#cancelPointerDrag(event);
+
+  #cancelPointerDrag(event: PointerEvent): void {
     const drag = this.#drag;
     if (!drag || drag.pointerId !== event.pointerId) return;
     this.#drag = null;
+    this.#decayDragVelocity(drag, performance.now());
     void this.#finishDrag(drag, true);
+  }
+
+  #updateDragVelocity(drag: DragSession, progress: number, now: number): void {
+    if (Math.abs(progress - drag.previousProgress) >= DRAG_MOTION_EPSILON) {
+      drag.lastMotionTime = now;
+    }
+    drag.previousProgress = progress;
+    drag.velocitySamples.push({ progress, time: now });
+    const cutoff = now - DRAG_VELOCITY_WINDOW_MS;
+    while (drag.velocitySamples.length > 1 && drag.velocitySamples[0].time <= cutoff) {
+      drag.velocitySamples.shift();
+    }
+    if (drag.velocitySamples.length < 2) {
+      drag.velocity = 0;
+      return;
+    }
+    const first = drag.velocitySamples[0];
+    const elapsed = Math.max(8, now - first.time) / 1000;
+    drag.velocity = clamp(
+      (progress - first.progress) / elapsed,
+      -MAX_DRAG_VELOCITY,
+      MAX_DRAG_VELOCITY,
+    );
+  }
+
+  #decayDragVelocity(drag: DragSession, now: number): void {
+    const idleProgress = clamp((now - drag.lastMotionTime) / DRAG_VELOCITY_DECAY_MS, 0, 1);
+    drag.velocity = clamp(
+      drag.velocity * (1 - idleProgress),
+      -MAX_DRAG_VELOCITY,
+      MAX_DRAG_VELOCITY,
+    );
+  }
+
+  #onPointerLeave = (): void => {
+    if (!this.#drag) this.#resetCornerPreview();
   };
 
   #onWheel = (event: WheelEvent): void => {
     if (this.#stateMachine.state !== 'OPEN') return;
+    this.#resetCornerPreview();
     event.preventDefault();
     const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? this.#host.clientHeight : 1;
     const delta = clamp(event.deltaY * unit, -240, 240);
     const focus = this.#localBookPoint(event);
     this.#setZoom(this.#zoom * Math.exp(-delta * 0.0018), focus);
   };
+
+  #updateCornerPreview(event: PointerEvent): void {
+    const state = this.#stateMachine.state;
+    const book = this.#book;
+    if (!book || (state !== 'OPEN' && state !== 'CLOSED') || this.#animation) {
+      this.#resetCornerPreview();
+      return;
+    }
+    const point = this.#localBookPoint(event);
+    if (!point) {
+      this.#resetCornerPreview();
+      return;
+    }
+    const pageWidth = this.#config.pageHeight * this.#pageAspect;
+    const pageHeight = this.#config.pageHeight;
+    const vertical = Math.abs(point.y);
+    if (
+      vertical < pageHeight * 0.27 ||
+      vertical > pageHeight * 0.54 ||
+      Math.abs(point.x) > pageWidth * this.#config.coverOversize * 1.02
+    ) {
+      this.#resetCornerPreview();
+      return;
+    }
+    const corner = point.y >= 0 ? 'top' : 'bottom';
+    let target: 'left' | 'right' | 'front-cover' | 'back-cover' | null = null;
+    if (state === 'OPEN') {
+      if (point.x > pageWidth * 0.68) target = 'right';
+      else if (point.x < -pageWidth * 0.68) target = 'left';
+    } else if (this.#closedEdge === 'front' && point.x > pageWidth * 0.62) {
+      target = 'front-cover';
+    } else if (this.#closedEdge === 'back' && point.x < -pageWidth * 0.62) {
+      target = 'back-cover';
+    }
+    if (!target) {
+      this.#resetCornerPreview();
+      return;
+    }
+    const key = `${target}:${corner}`;
+    this.#cornerPreviewV = clamp(point.y / pageHeight + 0.5, 0, 1);
+    if (this.#cornerPreviewKey === key) return;
+    book.setCornerLift(target, corner);
+    this.#cornerPreviewKey = key;
+    this.#renderer.domElement.style.cursor = 'grab';
+    this.#renderer.shadowMap.needsUpdate = true;
+    this.invalidate();
+  }
+
+  #resetCornerPreview(): void {
+    if (!this.#cornerPreviewKey) return;
+    this.#book?.clearCornerLift();
+    this.#cornerPreviewKey = null;
+    this.#cornerPreviewV = 0.82;
+    this.#renderer.domElement.style.removeProperty('cursor');
+    this.#renderer.shadowMap.needsUpdate = true;
+    this.invalidate();
+  }
 
   #markInteractionVisible(): void {
     if (!this.#interactionStartedAt) return;
@@ -1243,31 +1428,50 @@ export class BookEngine {
         const edge = drag.direction === 'forward' ? 'back' : 'front';
         if (commit) {
           this.#stateMachine.transition('CLOSING');
-          this.#lastAnimatedShadowAt = 0;
           if (isClick) {
             await this.#animate(
               drag.progress,
               1,
               this.#config.clickTurnDuration * (1 - drag.progress),
-              (progress) => this.#updateBoundaryTurn(progress, edge, false, false),
+              (progress) =>
+                this.#updateBoundaryTurn(
+                  progress,
+                  edge,
+                  false,
+                  drag.pointerV,
+                  drag.verticalDrag,
+                  false,
+                ),
             );
           } else {
             await this.#animateSpring(drag.progress, 1, Math.max(0, drag.velocity), (progress) =>
-              this.#updateBoundaryTurn(progress, edge, false, false),
+              this.#updateBoundaryTurn(
+                progress,
+                edge,
+                false,
+                drag.pointerV,
+                drag.verticalDrag,
+                false,
+              ),
             );
           }
-          this.#book?.settleBoundaryTurn(edge, false);
-          this.#book?.turningSheet.hide();
+          this.#settleBoundaryTurn(edge, false);
           this.#closedEdge = edge;
           this.#stateMachine.transition('CLOSED');
           this.invalidate();
         } else {
           this.#stateMachine.transition('SNAPPING_BACK', { turnDirection: drag.direction });
           await this.#animateSpring(drag.progress, 0, Math.min(0, drag.velocity), (progress) =>
-            this.#updateBoundaryTurn(progress, edge, false, false),
+            this.#updateBoundaryTurn(
+              progress,
+              edge,
+              false,
+              drag.pointerV,
+              drag.verticalDrag,
+              false,
+            ),
           );
-          this.#book?.settleBoundaryTurn(edge, true);
-          this.#book?.turningSheet.hide();
+          this.#settleBoundaryTurn(edge, true);
           this.#stateMachine.transition('OPEN', { spreadIndex: this.#spreadIndex });
           this.#schedulePrefetch(this.#generation);
           this.#scheduleReadingUpgrade(this.#generation);

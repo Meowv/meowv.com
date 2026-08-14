@@ -82,10 +82,6 @@ const currentToc = ref<Publication['toc']>([]);
 const readerProfile = ref<ReaderLayoutProfile>(loadReaderLayout());
 const pageStateMachine = new BookStateMachine();
 
-pageStateMachine.subscribe((snapshot) => {
-  state.value = snapshot.state;
-});
-
 let engine: BookEngine | null = null;
 let publication: Publication | null = null;
 let pageProvider: PageProvider | null = null;
@@ -103,6 +99,13 @@ let pendingTurn: TurnDirection | null = null;
 let hideTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
 let tipTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
 let hideAt = 0;
+
+pageStateMachine.subscribe((snapshot) => {
+  state.value = snapshot.state;
+  if (snapshot.state === 'CLOSED' || snapshot.state === 'LOADING' || snapshot.state === 'ERROR') {
+    pendingTurn = null;
+  }
+});
 
 const bookClosed = computed(() => state.value === 'CLOSED');
 const bookOpen = computed(() => state.value === 'OPEN');
@@ -237,6 +240,7 @@ async function saveCurrentProgress(): Promise<void> {
 }
 
 async function disposeReader(): Promise<void> {
+  pendingTurn = null;
   clearHideTimer();
   loadController?.abort();
   loadController = null;
@@ -391,6 +395,7 @@ async function openFile(
   handle?: FileSystemFileHandle,
   options: OpenBookOptions = {},
 ): Promise<void> {
+  pendingTurn = null;
   restoreId += 1;
   const currentOperation = ++operationId;
   await saveCurrentProgress();
@@ -434,10 +439,18 @@ async function openFile(
     if (snapshot.state === 'OPEN' && previousSnapshot.state === 'TURNING') {
       void saveCurrentProgress();
     }
-    if (snapshot.state === 'OPEN' && pendingTurn) {
+    if (
+      snapshot.state === 'OPEN' &&
+      (previousSnapshot.state === 'TURNING' || previousSnapshot.state === 'SNAPPING_BACK') &&
+      pendingTurn
+    ) {
       const direction = pendingTurn;
       pendingTurn = null;
-      queueMicrotask(() => void turn(direction));
+      queueMicrotask(() => {
+        if (currentOperation !== operationId || engine !== instance || state.value !== 'OPEN')
+          return;
+        void turn(direction);
+      });
     }
     scheduleUiHide();
   });
@@ -742,7 +755,11 @@ async function closeBook(): Promise<void> {
 async function turn(direction: TurnDirection): Promise<void> {
   if (!engine) return;
   if (state.value !== 'OPEN') {
-    if (state.value === 'TURNING' || state.value === 'DRAGGING' || pagePreparing.value) {
+    if (
+      state.value === 'TURNING' ||
+      state.value === 'DRAGGING' ||
+      state.value === 'SNAPPING_BACK'
+    ) {
       pendingTurn = direction;
     }
     return;

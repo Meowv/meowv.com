@@ -12,7 +12,12 @@ import { PageSurfaceCache } from '../../cache/PageSurfaceCache';
 import { getGutterEdgeInfluence, getGutterOffset } from '../turn/PageCurl';
 import { getStackThicknesses, getTotalPaperThickness, type BookConfig } from '../BookConfig';
 import { createPaperNoiseCanvas, disposeObject } from '../three-utils';
-import { TurningSheet } from './TurningSheet';
+import {
+  FRONT_COVER_CLEARANCE,
+  getFrontCoverSpineBend,
+  STATIC_PAGE_SURFACE_Z,
+  TurningSheet,
+} from './TurningSheet';
 
 interface BookModelOptions {
   pageWidth: number;
@@ -24,6 +29,8 @@ interface BookModelOptions {
 }
 
 type PageSide = 'left' | 'right';
+type BookCornerTarget = PageSide | 'front-cover' | 'back-cover';
+type BookCorner = 'top' | 'bottom';
 
 export class BookModel {
   readonly root = new Group();
@@ -32,8 +39,14 @@ export class BookModel {
   readonly turningSheet: TurningSheet;
   readonly #frontCoverPivot = new Group();
   readonly #backCoverPivot = new Group();
+  readonly #frontCover: Mesh<BoxGeometry>;
+  readonly #backCover: Mesh<BoxGeometry>;
   readonly #leftPage: Mesh<PlaneGeometry>;
   readonly #rightPage: Mesh<PlaneGeometry>;
+  readonly #leftPageBasePositions: Float32Array;
+  readonly #rightPageBasePositions: Float32Array;
+  readonly #frontCoverBasePositions: Float32Array;
+  readonly #backCoverBasePositions: Float32Array;
   readonly #leftPageMaterial: MeshStandardMaterial;
   readonly #rightPageMaterial: MeshStandardMaterial;
   readonly #frontCoverMaterial: MeshStandardMaterial;
@@ -53,6 +66,7 @@ export class BookModel {
   #leftTexture: CanvasTexture | null = null;
   #rightTexture: CanvasTexture | null = null;
   #coverTexture: CanvasTexture | null = null;
+  #cornerLift: { target: BookCornerTarget; corner: BookCorner } | null = null;
 
   constructor(options: BookModelOptions) {
     this.#pageWidth = options.pageWidth;
@@ -78,6 +92,12 @@ export class BookModel {
     this.#rightPageMaterial = pageMaterial();
     this.#leftPage = createStaticPage('left', options, this.#leftPageMaterial);
     this.#rightPage = createStaticPage('right', options, this.#rightPageMaterial);
+    this.#leftPageBasePositions = Float32Array.from(
+      this.#leftPage.geometry.attributes.position.array,
+    );
+    this.#rightPageBasePositions = Float32Array.from(
+      this.#rightPage.geometry.attributes.position.array,
+    );
 
     const stackMaterial = new MeshStandardMaterial({
       color: 0xe8dfd1,
@@ -105,23 +125,26 @@ export class BookModel {
       metalness: 0,
       roughness: 0.73,
     });
-    const backCover = new Mesh(
-      new BoxGeometry(coverWidth, coverHeight, options.config.coverThickness),
+    this.#backCover = new Mesh(
+      new BoxGeometry(coverWidth, coverHeight, options.config.coverThickness, 32, 20, 1),
       coverMaterial,
     );
-    backCover.position.x = coverWidth / 2;
-    backCover.position.z = -options.config.coverThickness / 2;
-    backCover.castShadow = true;
-    backCover.receiveShadow = true;
+    this.#backCover.position.x = coverWidth / 2;
+    this.#backCover.position.z = -options.config.coverThickness / 2;
+    this.#backCover.castShadow = true;
+    this.#backCover.receiveShadow = true;
     this.#backCoverPivot.position.z = -totalThickness;
-    this.#backCoverPivot.add(backCover);
+    this.#backCoverPivot.add(this.#backCover);
+    this.#backCoverBasePositions = Float32Array.from(
+      this.#backCover.geometry.attributes.position.array,
+    );
 
     this.#frontCoverMaterial = new MeshStandardMaterial({
       color: 0xffffff,
       metalness: 0,
       roughness: 0.72,
     });
-    const frontCover = new Mesh(
+    this.#frontCover = new Mesh(
       createFrontCoverGeometry(coverWidth, coverHeight, options.config.coverThickness),
       Array.from({ length: 6 }, (_, materialIndex) =>
         materialIndex === 4
@@ -133,10 +156,13 @@ export class BookModel {
             }),
       ),
     );
-    frontCover.position.x = coverWidth / 2;
-    frontCover.position.z = options.config.coverThickness / 2 + 0.006;
-    frontCover.castShadow = true;
-    this.#frontCoverPivot.add(frontCover);
+    this.#frontCover.position.x = coverWidth / 2;
+    this.#frontCover.position.z = options.config.coverThickness / 2 + FRONT_COVER_CLEARANCE;
+    this.#frontCover.castShadow = true;
+    this.#frontCoverPivot.add(this.#frontCover);
+    this.#frontCoverBasePositions = Float32Array.from(
+      this.#frontCover.geometry.attributes.position.array,
+    );
 
     for (let index = 0; index < 7; index += 1) {
       const leaf = new Group();
@@ -193,14 +219,13 @@ export class BookModel {
     const gutterTexture = new CanvasTexture(createGutterShadowCanvas());
     gutterTexture.needsUpdate = true;
     this.#gutterShadow = new Mesh(
-      new PlaneGeometry(options.pageWidth * 0.09, options.pageHeight * 0.982),
+      createGutterShadowGeometry(options),
       new MeshBasicMaterial({
         map: gutterTexture,
         transparent: true,
         depthWrite: false,
       }),
     );
-    this.#gutterShadow.position.z = 0.0065;
     this.#gutterShadow.renderOrder = 2;
 
     this.leftHalf.add(this.#leftStack, this.#leftPage, this.#leftPageEdges);
@@ -220,12 +245,12 @@ export class BookModel {
     this.turningSheet = new TurningSheet({
       pageWidth: options.pageWidth,
       pageHeight: options.pageHeight,
+      totalThickness,
       config: options.config,
       paperRoughness,
       acquireTexture: (canvas) => this.#surfaceCache.acquire(canvas),
       releaseTexture: (texture) => this.#surfaceCache.release(texture),
     });
-    this.turningSheet.mesh.position.z = 0.004;
     this.root.add(this.turningSheet.mesh);
     this.setProgress(0);
     this.#setBackOpeningLeaves(1);
@@ -236,8 +261,7 @@ export class BookModel {
     const previous = this.#coverTexture;
     this.#coverTexture = this.#surfaceCache.acquire(canvas);
     this.#surfaceCache.release(previous);
-    this.#frontCoverMaterial.map = this.#coverTexture;
-    this.#frontCoverMaterial.needsUpdate = true;
+    setMaterialMap(this.#frontCoverMaterial, this.#coverTexture);
     this.#pruneSurfaces();
   }
 
@@ -248,10 +272,8 @@ export class BookModel {
     this.#rightTexture = right ? this.#surfaceCache.acquire(right) : null;
     this.#surfaceCache.release(previousLeft);
     this.#surfaceCache.release(previousRight);
-    this.#leftPageMaterial.map = this.#leftTexture;
-    this.#rightPageMaterial.map = this.#rightTexture;
-    this.#leftPageMaterial.needsUpdate = true;
-    this.#rightPageMaterial.needsUpdate = true;
+    setMaterialMap(this.#leftPageMaterial, this.#leftTexture);
+    setMaterialMap(this.#rightPageMaterial, this.#rightTexture);
     this.#leftPage.visible = Boolean(left);
     this.#rightPage.visible = Boolean(right);
     this.#pruneSurfaces();
@@ -266,8 +288,8 @@ export class BookModel {
     const stacks = getStackThicknesses(progress, total, this.#config.minimumStackThickness);
     this.#setStack(this.#leftStack, stacks.left, -1);
     this.#setStack(this.#rightStack, stacks.right, 1);
-    this.#leftPage.position.z = 0.002;
-    this.#rightPage.position.z = 0.002;
+    this.#leftPage.position.z = STATIC_PAGE_SURFACE_Z;
+    this.#rightPage.position.z = STATIC_PAGE_SURFACE_Z;
   }
 
   #setStack(stack: Mesh<BoxGeometry>, thickness: number, side: -1 | 1): void {
@@ -282,7 +304,8 @@ export class BookModel {
     const centeringProgress = phaseProgress(progress, 0.06, 0.92);
     this.root.position.x = (-this.#pageWidth / 2) * (1 - centeringProgress);
     this.#frontCoverPivot.position.z =
-      (-this.#totalThickness + 0.006) * coverProgress + Math.sin(Math.PI * coverProgress) * 0.045;
+      (-this.#totalThickness + FRONT_COVER_CLEARANCE) * coverProgress +
+      Math.sin(Math.PI * coverProgress) * 0.045;
     this.#frontCoverPivot.rotation.y = Math.PI * coverProgress;
     this.leftHalf.position.z = Math.sin(Math.PI * pageProgress) * 0.018;
     this.leftHalf.rotation.y = Math.PI * (1 - pageProgress);
@@ -306,19 +329,20 @@ export class BookModel {
     this.#spine.visible = pageProgress < 0.9;
   }
 
-  beginBoundaryTurn(edge: 'front' | 'back'): void {
+  beginBoundaryTurn(edge: 'front' | 'back', initialOpenProgress: 0 | 1): void {
     this.#frontCoverPivot.visible = edge !== 'front';
     this.#backCoverPivot.visible = edge !== 'back';
     this.leftHalf.rotation.y = 0;
     this.leftHalf.position.z = 0;
     this.rightHalf.rotation.y = 0;
     this.rightHalf.position.z = 0;
-    this.leftHalf.visible = edge !== 'front';
-    this.rightHalf.visible = edge !== 'back';
+    this.leftHalf.visible = edge === 'back';
+    this.rightHalf.visible = edge === 'front';
     for (const leaf of this.#openingLeaves) leaf.visible = false;
     for (const leaf of this.#backOpeningLeaves) leaf.visible = false;
     this.#setPageEdgesVisible(1);
     this.#spine.visible = false;
+    this.setBoundaryOpenProgress(initialOpenProgress, edge);
   }
 
   setBoundaryOpenProgress(progress: number, edge: 'front' | 'back'): void {
@@ -336,6 +360,39 @@ export class BookModel {
     this.rightHalf.visible = true;
     for (const leaf of this.#openingLeaves) leaf.visible = false;
     for (const leaf of this.#backOpeningLeaves) leaf.visible = false;
+  }
+
+  setCornerLift(target: BookCornerTarget, corner: BookCorner): void {
+    if (this.#cornerLift?.target === target && this.#cornerLift.corner === corner) return;
+    this.clearCornerLift();
+    this.#cornerLift = { target, corner };
+    if (target === 'left') {
+      liftGeometryCorner(this.#leftPage.geometry, this.#leftPageBasePositions, -1, corner, 0.032);
+    } else if (target === 'right') {
+      liftGeometryCorner(this.#rightPage.geometry, this.#rightPageBasePositions, 1, corner, 0.032);
+    } else if (target === 'front-cover') {
+      liftGeometryCorner(
+        this.#frontCover.geometry,
+        this.#frontCoverBasePositions,
+        1,
+        corner,
+        0.014,
+      );
+    } else {
+      liftGeometryCorner(this.#backCover.geometry, this.#backCoverBasePositions, 1, corner, -0.014);
+    }
+  }
+
+  clearCornerLift(): void {
+    if (!this.#cornerLift) return;
+    const target = this.#cornerLift.target;
+    if (target === 'left') restoreGeometry(this.#leftPage.geometry, this.#leftPageBasePositions);
+    else if (target === 'right') {
+      restoreGeometry(this.#rightPage.geometry, this.#rightPageBasePositions);
+    } else if (target === 'front-cover') {
+      restoreGeometry(this.#frontCover.geometry, this.#frontCoverBasePositions);
+    } else restoreGeometry(this.#backCover.geometry, this.#backCoverBasePositions);
+    this.#cornerLift = null;
   }
 
   pruneSurfaces(): void {
@@ -411,17 +468,61 @@ export class BookModel {
 }
 
 function createFrontCoverGeometry(width: number, height: number, depth: number): BoxGeometry {
-  const geometry = new BoxGeometry(width, height, depth, 12, 1, 1);
+  const geometry = new BoxGeometry(width, height, depth, 32, 20, 1);
   const positions = geometry.attributes.position;
   for (let index = 0; index < positions.count; index += 1) {
     const x = positions.getX(index);
     const distanceFromSpine = Math.max(0, x + width / 2);
-    const bend = Math.exp(-distanceFromSpine / Math.max(0.001, width * 0.11)) * depth * 0.16;
+    const bend = getFrontCoverSpineBend(distanceFromSpine, width, depth);
     positions.setZ(index, positions.getZ(index) + bend);
   }
   positions.needsUpdate = true;
   geometry.computeVertexNormals();
   return geometry;
+}
+
+function liftGeometryCorner(
+  geometry: BoxGeometry | PlaneGeometry,
+  basePositions: Float32Array,
+  outerDirection: -1 | 1,
+  corner: BookCorner,
+  lift: number,
+): void {
+  const positions = geometry.attributes.position;
+  const positionArray = positions.array as Float32Array;
+  let maximumX = 0;
+  let maximumY = 0;
+  for (let offset = 0; offset < basePositions.length; offset += 3) {
+    maximumX = Math.max(maximumX, Math.abs(basePositions[offset]));
+    maximumY = Math.max(maximumY, Math.abs(basePositions[offset + 1]));
+  }
+  for (let offset = 0; offset < basePositions.length; offset += 3) {
+    const x = basePositions[offset];
+    const y = basePositions[offset + 1];
+    const outer = smoothstep(0.42, 1, (x * outerDirection) / Math.max(maximumX, 0.001));
+    const vertical = smoothstep(
+      0.34,
+      1,
+      (y * (corner === 'top' ? 1 : -1)) / Math.max(maximumY, 0.001),
+    );
+    const influence = outer * outer * vertical * vertical;
+    positionArray[offset] = x;
+    positionArray[offset + 1] = y;
+    positionArray[offset + 2] = basePositions[offset + 2] + lift * influence;
+  }
+  positions.needsUpdate = true;
+  geometry.computeVertexNormals();
+}
+
+function restoreGeometry(geometry: BoxGeometry | PlaneGeometry, basePositions: Float32Array): void {
+  (geometry.attributes.position.array as Float32Array).set(basePositions);
+  geometry.attributes.position.needsUpdate = true;
+  geometry.computeVertexNormals();
+}
+
+function smoothstep(minimum: number, maximum: number, value: number): number {
+  const unit = Math.min(1, Math.max(0, (value - minimum) / (maximum - minimum)));
+  return unit * unit * (3 - 2 * unit);
 }
 
 function phaseProgress(progress: number, start: number, end: number): number {
@@ -459,6 +560,39 @@ function createStaticPage(
   mesh.castShadow = true;
   mesh.receiveShadow = true;
   return mesh;
+}
+
+function createGutterShadowGeometry(options: BookModelOptions): PlaneGeometry {
+  const geometry = new PlaneGeometry(
+    options.pageWidth * 0.09,
+    options.pageHeight * 0.982,
+    8,
+    options.config.heightSegments,
+  );
+  const positions = geometry.attributes.position;
+  for (let index = 0; index < positions.count; index += 1) {
+    const x = positions.getX(index);
+    const y = positions.getY(index);
+    positions.setZ(
+      index,
+      STATIC_PAGE_SURFACE_Z +
+        getGutterOffset(
+          Math.abs(x),
+          options.config,
+          getGutterEdgeInfluence(y, options.pageHeight),
+        ) +
+        0.00035,
+    );
+  }
+  positions.needsUpdate = true;
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+function setMaterialMap(material: MeshStandardMaterial, map: CanvasTexture | null): void {
+  if (material.map === map) return;
+  material.map = map;
+  material.needsUpdate = true;
 }
 
 function addVisiblePageEdges(
