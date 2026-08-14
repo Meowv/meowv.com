@@ -45,6 +45,7 @@ export interface BookEngineOptions {
   stateMachine?: BookStateMachine;
   onError?: (error: Error) => void;
   onPagePreparationChange?: (preparing: boolean) => void;
+  onPrewarmProgress?: (progress: number) => void;
 }
 
 export interface BookEngineDiagnostics {
@@ -140,6 +141,7 @@ export class BookEngine {
   readonly #options: BookEngineOptions;
   readonly #config: Readonly<BookConfig>;
   readonly #stateMachine: BookStateMachine;
+  readonly #memoryLimited: boolean;
   readonly #scene = new Scene();
   readonly #camera = new PerspectiveCamera(34, 1, 0.05, 80);
   readonly #renderer: WebGLRenderer;
@@ -194,10 +196,11 @@ export class BookEngine {
     this.#config = resolveBookConfig(options.config);
     this.#stateMachine = options.stateMachine ?? new BookStateMachine();
     const deviceMemory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8;
+    this.#memoryLimited = deviceMemory < 4;
     this.#pageCache = new PageCache({
       maxBytes: Math.min(
         this.#config.textureBudgetBytes,
-        deviceMemory < 4 ? 32 * 1024 * 1024 : Infinity,
+        this.#memoryLimited ? 32 * 1024 * 1024 : Infinity,
       ),
       maxEntries: 24,
     });
@@ -308,7 +311,6 @@ export class BookEngine {
       this.#blankPageColor = sampleCanvasBackground(cover.canvas, this.#blankPageColor);
       const pageHeight = this.#config.pageHeight;
       const pageWidth = pageHeight * this.#pageAspect;
-      const deviceMemory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8;
       this.#book = new BookModel({
         pageWidth,
         pageHeight,
@@ -317,7 +319,7 @@ export class BookEngine {
         maxAnisotropy: this.#renderer.capabilities.getMaxAnisotropy(),
         gpuTextureBudgetBytes: Math.min(
           this.#config.gpuTextureBudgetBytes,
-          deviceMemory < 4 ? 48 * 1024 * 1024 : Infinity,
+          this.#memoryLimited ? 48 * 1024 * 1024 : Infinity,
         ),
       });
       this.#book.setCover(this.#publicationCoverCanvas);
@@ -606,6 +608,7 @@ export class BookEngine {
       spread.rightPage ? this.#getPage(spread.rightPage, quality, signal) : this.#blankPage(),
     ]);
     this.#book?.setStaticPages(left.canvas, right.canvas);
+    this.#touchStaticPages();
     this.invalidate();
   }
 
@@ -616,6 +619,7 @@ export class BookEngine {
       spread.rightPage ? this.#getInteractionPage(spread.rightPage, signal) : this.#blankPage(),
     ]);
     this.#book?.setStaticPages(left.canvas, right.canvas);
+    this.#touchStaticPages();
     this.invalidate();
   }
 
@@ -671,6 +675,8 @@ export class BookEngine {
     };
     this.#book.pruneSurfaces();
     this.#book.turningSheet.update(0, direction);
+    // 纸面就绪姿态关闭纸边与投影，需要重绘阴影贴图。
+    this.#markAnimatedShadow();
     this.invalidate();
   }
 
@@ -751,6 +757,7 @@ export class BookEngine {
     } else {
       await this.#showSpreadForInteraction(targetIndex, this.#loadController?.signal);
     }
+    this.#touchStaticPages();
     this.#book?.turningSheet.hide();
     this.#book?.setProgress(this.#readingProgress(targetIndex));
     this.#renderer.shadowMap.needsUpdate = true;
@@ -767,6 +774,7 @@ export class BookEngine {
   async #restoreCurrentSpread(): Promise<void> {
     this.#preparedTurnSpread = null;
     await this.#showSpreadForInteraction(this.#spreadIndex, this.#loadController?.signal);
+    this.#touchStaticPages();
     this.#book?.turningSheet.hide();
     this.#book?.setProgress(this.#readingProgress(this.#spreadIndex));
     this.#renderer.shadowMap.needsUpdate = true;
@@ -867,20 +875,35 @@ export class BookEngine {
     }
   }
 
+  // 翻页素材统一使用 reading 质量：落页静态页与纸面同源同质，
+  // 避免翻页完成后由 preview 升级到 reading 造成整幅纹理弹变。
   #getInteractionPage(pageNumber: number, signal?: AbortSignal): Promise<RenderedPage> {
-    const cached = this.#pageCache.getBest(pageNumber);
-    return cached ? Promise.resolve(cached) : this.#getPage(pageNumber, 'reading', signal);
+    return this.#getPage(pageNumber, 'reading', signal);
+  }
+
+  // 正在展示的静态页不允许被 PageCache 按 LRU 驱逐：被驱逐后阅读升级会
+  // 重新渲染（字体已加载的像素与翻页素材不同）并整体替换纹理，造成
+  // 翻页完成后的文字弹变。落页时把静态页的缓存项触到队尾保护起来。
+  #touchStaticPages(): void {
+    const spread = getSpread(this.#spreadIndex, this.pageCount);
+    const width = Math.round(this.#targetTextureWidth('reading'));
+    for (const pageNumber of [spread.leftPage, spread.rightPage]) {
+      if (!pageNumber) continue;
+      this.#pageCache.touch(createPageCacheKey(pageNumber, width, 'reading'));
+    }
   }
 
   #targetTextureWidth(quality: PageRenderQuality): number {
     const width = Math.max(320, this.#host.clientWidth);
     const height = Math.max(260, this.#host.clientHeight);
     const cssWidth = Math.min(width * 0.42, height * 0.61 * this.#pageAspect);
-    const ratio = quality === 'reading' ? 1 : 0.52;
+    const ratio = quality === 'reading' ? 1 : this.#memoryLimited ? 0.52 : 0.7;
+    const edgeLimit =
+      this.#config.maxTextureEdge * (quality === 'reading' && this.#memoryLimited ? 0.72 : 1);
     return Math.max(
       quality === 'reading' ? 640 : 320,
       Math.min(
-        this.#config.maxTextureEdge * Math.min(1, this.#pageAspect),
+        edgeLimit * Math.min(1, this.#pageAspect),
         Math.round(cssWidth * Math.min(2, globalThis.devicePixelRatio || 1) * ratio * this.#zoom),
       ),
     );
@@ -976,6 +999,10 @@ export class BookEngine {
           ) {
             return;
           }
+          const current = this.#book?.staticPageCanvases;
+          // 升级渲染与翻页素材同源（静态页已在缓存中）时无需替换，
+          // 避免无谓的纹理交接帧；仅在放大或重渲染出更高分辨率时更新。
+          if (current && left.canvas === current.left && right.canvas === current.right) return;
           this.#book?.setStaticPages(left.canvas, right.canvas);
           this.invalidate();
         })
@@ -1013,12 +1040,14 @@ export class BookEngine {
         if (spread.leftPage) pageNumbers.add(spread.leftPage);
         if (spread.rightPage) pageNumbers.add(spread.rightPage);
       }
-      const queue = [...pageNumbers];
+      const queue = [...pageNumbers].slice(0, this.#memoryLimited ? 2 : 4);
       const work = async (): Promise<void> => {
         while (!this.#disposed && !controller.signal.aborted && generation === this.#generation) {
           const pageNumber = queue.shift();
           if (!pageNumber) return;
-          await this.#getPage(pageNumber, 'preview', controller.signal).catch(() => undefined);
+          // 与翻页素材同质量预热，翻页时缓存直接命中，避免落页后的质量跳变。
+          // 限量渲染避免驱逐正在展示的静态页（由 #touchStaticPages 保护）。
+          await this.#getPage(pageNumber, 'reading', controller.signal).catch(() => undefined);
         }
       };
       void Promise.all([work(), work()]);
@@ -1036,13 +1065,16 @@ export class BookEngine {
       if (spread.rightPage) pages.add(spread.rightPage);
     }
     const queue = [...pages];
+    const total = queue.length;
+    let completed = 0;
     const rendered: RenderedPage[] = [];
     const work = async (): Promise<void> => {
       while (queue.length) {
         const pageNumber = queue.shift();
         if (!pageNumber) return;
-        const cached = this.#pageCache.getBest(pageNumber);
-        rendered.push(cached ?? (await this.#getPage(pageNumber, 'preview', signal)));
+        rendered.push(await this.#getPage(pageNumber, 'reading', signal));
+        completed += 1;
+        this.#options.onPrewarmProgress?.(completed / Math.max(1, total));
       }
     };
     await Promise.all([work(), work()]);

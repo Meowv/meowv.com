@@ -56,6 +56,17 @@ export class PageCache {
     return this.#entries.has(key);
   }
 
+  // 触碰缓存项以更新 LRU 顺序而不改变内容，用于保护正在展示的页面。
+  touch(key: string): boolean {
+    const entry = this.#entries.get(key);
+    if (!entry) {
+      return false;
+    }
+    this.#entries.delete(key);
+    this.#entries.set(key, entry);
+    return true;
+  }
+
   get(key: string): RenderedPage | undefined {
     const entry = this.#entries.get(key);
     if (!entry) {

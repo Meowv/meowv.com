@@ -170,7 +170,14 @@ export class TurningSheet {
     const coverTurn = this.#edgeKind === 'cover';
     const vertexCount = coverTurn ? this.#basePositions.length / 3 : this.#boardVertexCount;
     const safeProgress = Math.min(1, Math.max(0, progress));
-    const settledGutter = 1 - Math.sin(Math.PI * safeProgress);
+    // 纸面平铺贴合（就绪/趋平）时看不到纸页厚度与投影，
+    // 只在中段竖起时显示纸边和投影，避免"页面浮起一层纸"的错觉。
+    const settled = Math.min(safeProgress, 1 - safeProgress);
+    const paperEdgeVisible = coverTurn || settled > 0.08;
+    if (this.#edgeMaterial.visible !== paperEdgeVisible) {
+      this.#edgeMaterial.visible = paperEdgeVisible;
+      this.mesh.castShadow = paperEdgeVisible;
+    }
     this.#curlFrame.progress = safeProgress;
     this.#curlFrame.direction = direction;
     this.#curlFrame.pointerV = pointerV;
@@ -221,6 +228,11 @@ export class TurningSheet {
       this.#curlFrame.pageWidth = surfaceWidth;
       this.#curlFrame.pageHeight = surfaceHeight;
       writePageCurlPoint(this.#curlPoint, 0, baseX, y, this.#curlFrame, surfaceOffset);
+      const gutterOffset = getGutterOffset(
+        distanceFromSpine,
+        this.#config,
+        getGutterEdgeInfluence(y, surfaceHeight),
+      );
       const insetLiftProgress = smoothstep(0.35, 1, coverOpenProgress);
       const insetLift =
         coverTurn && vertexKind !== BOARD_VERTEX
@@ -237,16 +249,7 @@ export class TurningSheet {
           : 0;
       positionArray[offset] = this.#curlPoint[0];
       positionArray[offset + 1] = this.#curlPoint[1];
-      positionArray[offset + 2] =
-        this.#curlPoint[2] +
-        insetLift +
-        (coverTurn
-          ? 0
-          : getGutterOffset(
-              distanceFromSpine,
-              this.#config,
-              getGutterEdgeInfluence(y, surfaceHeight),
-            ) * settledGutter);
+      positionArray[offset + 2] = this.#curlPoint[2] + insetLift + (coverTurn ? 0 : gutterOffset);
     }
     positions.needsUpdate = true;
     updateNormals(this.#geometry, coverTurn ? undefined : this.#paperIndexCount);

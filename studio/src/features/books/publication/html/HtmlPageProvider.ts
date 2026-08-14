@@ -240,12 +240,17 @@ export class HtmlPageProvider implements PageProvider {
   readonly #viewport = document.createElement('div');
   readonly #content = document.createElement('article');
   readonly #pagination: SectionPagination[] = [];
+  readonly #sanitizedCache = new Map<number, string>();
+  readonly #sanitizeInflight = new Map<number, Promise<string>>();
   #currentSection = -1;
   #pageSize: PageSize = REFLOWABLE_PAGE_SIZE;
   #fixedSourceSize: PageSize = REFLOWABLE_PAGE_SIZE;
   #pageCount = 0;
   #disposed = false;
   #renderQueue = Promise.resolve();
+
+  static readonly SANITIZED_CACHE_LIMIT = 2;
+  static readonly SANITIZED_CACHE_MAX_LENGTH = 2 * 1024 * 1024;
 
   private constructor(options: HtmlPageProviderOptions) {
     this.#sections = options.sections;
@@ -296,7 +301,7 @@ export class HtmlPageProvider implements PageProvider {
     const cachedCounts = options.paginationKey
       ? await loadPaginationIndex(options.paginationKey, this.#sections.length)
       : null;
-    if (cachedCounts) {
+    if (cachedCounts && (await this.#verifyCachedPagination(cachedCounts, options.signal))) {
       for (const pageCount of cachedCounts) {
         this.#pagination.push({ startPage: this.#pageCount + 1, pageCount });
         this.#pageCount += pageCount;
@@ -340,6 +345,23 @@ export class HtmlPageProvider implements PageProvider {
 
   #pageMarginPixels(): number {
     return Math.round((this.#pageSize.width * this.#profile.pageMargin) / 100);
+  }
+
+  async #verifyCachedPagination(cachedCounts: number[], signal?: AbortSignal): Promise<boolean> {
+    // 固定版式每章恒为一页，无需抽查。
+    if (this.#fixedLayout) return true;
+    try {
+      await this.#mountSection(0, signal);
+      const actual = Math.max(
+        1,
+        Math.ceil(
+          (this.#content.scrollWidth + this.#pageMarginPixels() * 2) / this.#pageSize.width,
+        ),
+      );
+      return actual === cachedCounts[0];
+    } catch {
+      return false;
+    }
   }
 
   #syncViewportSize(): void {
@@ -429,10 +451,57 @@ export class HtmlPageProvider implements PageProvider {
         this.#syncViewportSize();
       }
     }
-    this.#content.innerHTML = sanitizeHtml(html);
+    this.#content.innerHTML = await this.#sanitizeSection(index, html, signal);
     this.#applyLayout();
     this.#currentSection = index;
     await waitForImages(this.#content, signal);
+    this.#scheduleAdjacentSanitize(index, signal);
+  }
+
+  async #sanitizeSection(index: number, html: string, signal?: AbortSignal): Promise<string> {
+    const cached = this.#sanitizedCache.get(index);
+    if (cached) return cached;
+    const inflight = this.#sanitizeInflight.get(index);
+    if (inflight) return inflight;
+    const task = (async (): Promise<string> => {
+      assertNotAborted(signal);
+      const sanitized = sanitizeHtml(html);
+      if (!this.#disposed && sanitized.length <= HtmlPageProvider.SANITIZED_CACHE_MAX_LENGTH) {
+        this.#sanitizedCache.set(index, sanitized);
+        this.#evictSanitizedCache();
+      }
+      return sanitized;
+    })();
+    this.#sanitizeInflight.set(index, task);
+    try {
+      return await task;
+    } finally {
+      this.#sanitizeInflight.delete(index);
+    }
+  }
+
+  #evictSanitizedCache(): void {
+    while (this.#sanitizedCache.size > HtmlPageProvider.SANITIZED_CACHE_LIMIT) {
+      const oldest = this.#sanitizedCache.keys().next().value;
+      if (oldest === undefined) return;
+      this.#sanitizedCache.delete(oldest);
+    }
+  }
+
+  #scheduleAdjacentSanitize(index: number, signal?: AbortSignal): void {
+    for (const adjacent of [index + 1, index - 1]) {
+      if (adjacent < 0 || adjacent >= this.#sections.length) continue;
+      if (this.#sanitizedCache.has(adjacent) || this.#sanitizeInflight.has(adjacent)) continue;
+      void this.#sections[adjacent]
+        .load()
+        .then(async (source) => {
+          const html = /^(?:blob:|data:)/i.test(source)
+            ? await fetch(source).then((response) => response.text())
+            : source;
+          await this.#sanitizeSection(adjacent, html, signal);
+        })
+        .catch(() => undefined);
+    }
   }
 
   #unloadCurrentSection(): void {
@@ -452,6 +521,12 @@ export class HtmlPageProvider implements PageProvider {
     const sectionIndex = this.#pagination.findIndex(
       ({ startPage, pageCount }) => pageNumber >= startPage && pageNumber < startPage + pageCount,
     );
+    if (sectionIndex < 0) {
+      // 分页索引过期时兜底到最后一章末页，避免越界导致整书渲染失败。
+      const last = this.#pagination.length - 1;
+      const pagination = this.#pagination[last];
+      return { sectionIndex: last, pageIndex: pagination.pageCount - 1 };
+    }
     const pagination = this.#pagination[sectionIndex];
     return { sectionIndex, pageIndex: pageNumber - pagination.startPage };
   }
@@ -520,6 +595,7 @@ export class HtmlPageProvider implements PageProvider {
         disposeCanvas(captured);
         throw abortError();
       }
+      assertNotAborted(options.signal);
       paintVisibleText(captured, this.#viewport, this.#content);
       const targetHeight = Math.max(
         1,
@@ -556,11 +632,40 @@ export class HtmlPageProvider implements PageProvider {
   async dispose(): Promise<void> {
     if (this.#disposed) return;
     this.#disposed = true;
+    this.#sanitizedCache.clear();
+    this.#sanitizeInflight.clear();
     this.#unloadCurrentSection();
     this.#host.remove();
     await this.#onDispose?.();
   }
 }
+
+const BLOCK_TEXT_TAGS = new Set([
+  'P',
+  'DIV',
+  'H1',
+  'H2',
+  'H3',
+  'H4',
+  'H5',
+  'H6',
+  'LI',
+  'BLOCKQUOTE',
+  'PRE',
+  'UL',
+  'OL',
+  'DL',
+  'TABLE',
+  'TR',
+  'TD',
+  'TH',
+  'FIGCAPTION',
+  'ASIDE',
+  'SECTION',
+  'ARTICLE',
+  'HEADER',
+  'FOOTER',
+]);
 
 function paintVisibleText(
   canvas: HTMLCanvasElement,
@@ -573,10 +678,36 @@ function paintVisibleText(
   const scaleX = canvas.width / viewportRect.width;
   const scaleY = canvas.height / viewportRect.height;
   if (!Number.isFinite(scaleX) || !Number.isFinite(scaleY)) return;
+
+  // 块级预筛：整块落在视口外的文本节点不必逐字测量与重绘。
+  const skippedBlocks = new Set<HTMLElement>();
+  const blocksOf = new Map<Text, HTMLElement>();
+  const blockWalker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT);
+  for (let node = blockWalker.nextNode(); node; node = blockWalker.nextNode()) {
+    if (!(node instanceof Text) || !node.data.trim()) continue;
+    const block = nearestTextBlock(node.parentElement);
+    if (!block) continue;
+    blocksOf.set(node, block);
+    if (skippedBlocks.has(block)) continue;
+    const rect = block.getBoundingClientRect();
+    if (
+      rect.width <= 0 ||
+      rect.height <= 0 ||
+      rect.right <= viewportRect.left ||
+      rect.left >= viewportRect.right ||
+      rect.bottom <= viewportRect.top ||
+      rect.top >= viewportRect.bottom
+    ) {
+      skippedBlocks.add(block);
+    }
+  }
+
   const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT);
   const range = document.createRange();
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
     if (!(node instanceof Text) || !node.data.trim()) continue;
+    const block = blocksOf.get(node);
+    if (block && skippedBlocks.has(block)) continue;
     const parent = node.parentElement;
     if (!parent) continue;
     const style = getComputedStyle(parent);
@@ -606,6 +737,15 @@ function paintVisibleText(
     context.restore();
   }
   range.detach();
+}
+
+function nearestTextBlock(element: HTMLElement | null): HTMLElement | null {
+  let current: HTMLElement | null = element;
+  while (current && current !== document.body) {
+    if (BLOCK_TEXT_TAGS.has(current.tagName)) return current;
+    current = current.parentElement;
+  }
+  return null;
 }
 
 function visibleGlyphs(node: Text, range: Range, viewport: DOMRect): TextGlyph[] {

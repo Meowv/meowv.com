@@ -283,6 +283,17 @@ export class BookModel {
     (side === 'left' ? this.#leftPage : this.#rightPage).visible = visible;
   }
 
+  // 当前静态页对应的画布，供引擎判断纹理是否需要替换。
+  get staticPageCanvases(): Readonly<{
+    left: HTMLCanvasElement | null;
+    right: HTMLCanvasElement | null;
+  }> {
+    return {
+      left: (this.#leftTexture?.image as HTMLCanvasElement | undefined) ?? null,
+      right: (this.#rightTexture?.image as HTMLCanvasElement | undefined) ?? null,
+    };
+  }
+
   setProgress(progress: number): void {
     const total = getTotalPaperThickness(this.#pageCount, this.#config);
     const stacks = getStackThicknesses(progress, total, this.#config.minimumStackThickness);

@@ -431,6 +431,11 @@ async function openFile(
     onPagePreparationChange: (preparing) => {
       if (currentOperation === operationId && engine === instance) pagePreparing.value = preparing;
     },
+    onPrewarmProgress: (progress) => {
+      if (currentOperation === operationId && engine === instance) {
+        loadProgress.value = 0.9 + progress * 0.1;
+      }
+    },
   });
   engine = instance;
   unsubscribeEngine = instance.subscribe((snapshot, previousSnapshot) => {
