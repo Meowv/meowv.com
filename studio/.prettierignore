@@ -1,7 +1,4 @@
 dist
+public/excalidraw-assets
 public/office-assets
-public/tesseract
 pnpm-lock.yaml
-MIGRATION_PLAN.md
-src/features/pdf/auto-imports.d.ts
-src/features/pdf/components.d.ts
