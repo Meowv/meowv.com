@@ -194,7 +194,6 @@
   min-width: 0;
 }
 
-/* 图片工具的配置控件统一使用当前主题变量，避免保留独立的 Tailwind 靛蓝色值。 */
 .image-feature .bg-indigo-50 {
   background-color: var(--primary-soft) !important;
 }
