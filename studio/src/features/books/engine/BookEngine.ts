@@ -39,10 +39,13 @@ import { disposeObject } from './three-utils';
 import { progressFromDrag, shouldCommitTurn } from './turn/PageCurl';
 import { Spring } from './turn/Spring';
 
+export type BookTheme = 'light' | 'dark';
+
 export interface BookEngineOptions {
   config?: Partial<BookConfig>;
   initialSpreadIndex?: number;
   stateMachine?: BookStateMachine;
+  theme?: BookTheme;
   onError?: (error: Error) => void;
   onPagePreparationChange?: (preparing: boolean) => void;
   onPrewarmProgress?: (progress: number) => void;
@@ -158,6 +161,10 @@ export class BookEngine {
   #provider: PageProvider | null = null;
   #book: BookModel | null = null;
   #contactShadow: Mesh<PlaneGeometry, MeshBasicMaterial> | null = null;
+  #ambientLight: AmbientLight | null = null;
+  #keyLight: DirectionalLight | null = null;
+  #deskMaterial: MeshStandardMaterial | null = null;
+  #theme: BookTheme = 'dark';
   #pageAspect = 0.72;
   #spreadIndex = 0;
   #cameraDistance = 1.8;
@@ -194,6 +201,7 @@ export class BookEngine {
     this.#host = host;
     this.#options = options;
     this.#config = resolveBookConfig(options.config);
+    this.#theme = options.theme ?? 'dark';
     this.#stateMachine = options.stateMachine ?? new BookStateMachine();
     const deviceMemory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8;
     this.#memoryLimited = deviceMemory < 4;
@@ -369,18 +377,22 @@ export class BookEngine {
     this.#scheduleReadingUpgrade(this.#generation);
   }
 
-  async close(edge: 'front' | 'back' = 'front'): Promise<void> {
+  async close(edge?: 'front' | 'back'): Promise<void> {
     if (!this.#book || this.#stateMachine.state !== 'OPEN') return;
+    const closedEdge = edge ?? this.#closedEdge;
     this.#resetCornerPreview();
     this.#pauseBackgroundWork();
     this.#stateMachine.transition('CLOSING');
-    await this.#prepareBoundaryTurn(edge, 1);
-    this.#updateBoundaryTurn(0, edge, false, 0.82, 0, false);
+    await this.#prepareBoundaryTurn(closedEdge, 1);
+    this.#updateBoundaryTurn(0, closedEdge, false, 0.82, 0, false);
     await this.#animate(0, 1, this.#config.clickTurnDuration, (progress) => {
-      this.#updateBoundaryTurn(progress, edge, false, 0.82, 0, false);
+      // 合书时让封面进度提前收敛：前段快速平铺盖住书芯，后段只做书本合拢，
+      // 避免动画大部分时间书芯白纸裸露、封面边缘翘起造成的"合上错位"观感。
+      const sheetProgress = Math.min(1, progress * 2.2);
+      this.#updateBoundaryTurn(progress, closedEdge, false, 0.82, 0, false, sheetProgress);
     });
-    this.#settleBoundaryTurn(edge, false);
-    this.#closedEdge = edge;
+    this.#settleBoundaryTurn(closedEdge, false);
+    this.#closedEdge = closedEdge;
     this.#stateMachine.transition('CLOSED');
     this.invalidate();
   }
@@ -566,10 +578,12 @@ export class BookEngine {
     keyLight.shadow.normalBias = 0.012;
     keyLight.shadow.radius = 3;
 
-    const desk = new Mesh(
-      new PlaneGeometry(22, 16),
-      new MeshStandardMaterial({ color: 0x2a211c, metalness: 0, roughness: 0.92 }),
-    );
+    const deskMaterial = new MeshStandardMaterial({
+      color: 0x2a211c,
+      metalness: 0,
+      roughness: 0.92,
+    });
+    const desk = new Mesh(new PlaneGeometry(22, 16), deskMaterial);
     desk.position.z = -0.24;
     desk.receiveShadow = true;
 
@@ -586,7 +600,41 @@ export class BookEngine {
     );
     contact.position.z = -0.225;
     this.#contactShadow = contact;
+    this.#ambientLight = ambient;
+    this.#keyLight = keyLight;
+    this.#deskMaterial = deskMaterial;
     this.#scene.add(ambient, keyLight, desk, contact);
+    this.#applyTheme();
+  }
+
+  /** 应用当前主题的环境配色：场景背景、灯光与桌面材质。 */
+  #applyTheme(): void {
+    const ambient = this.#ambientLight;
+    const key = this.#keyLight;
+    const deskMaterial = this.#deskMaterial;
+    if (this.#theme === 'light') {
+      this.#scene.background = new Color(0xe9dfcd);
+      ambient?.color.setHex(0xf4ece0);
+      if (ambient) ambient.intensity = 1.1;
+      key?.color.setHex(0xffffff);
+      if (key) key.intensity = 1.1;
+      deskMaterial?.color.setHex(0xdccdb2);
+    } else {
+      this.#scene.background = new Color(0x171311);
+      ambient?.color.setHex(0xe4d5c4);
+      if (ambient) ambient.intensity = 1.24;
+      key?.color.setHex(0xffddb3);
+      if (key) key.intensity = 1.62;
+      deskMaterial?.color.setHex(0x2a211c);
+    }
+  }
+
+  /** 切换阅读环境的主题配色。 */
+  setTheme(theme: BookTheme): void {
+    if (this.#theme === theme) return;
+    this.#theme = theme;
+    this.#applyTheme();
+    this.invalidate();
   }
 
   #setContactOpenProgress(progress: number): void {
@@ -734,11 +782,12 @@ export class BookEngine {
     pointerV = 0.82,
     verticalDrag = 0,
     scheduleRender = true,
+    sheetProgress = progress,
   ): void {
     this.#markInteractionVisible();
     const direction: TurnDirection =
       edge === 'front' ? (opening ? 'forward' : 'backward') : opening ? 'backward' : 'forward';
-    this.#book?.turningSheet.update(progress, direction, pointerV, verticalDrag);
+    this.#book?.turningSheet.update(sheetProgress, direction, pointerV, verticalDrag);
     const openProgress = opening ? progress : 1 - progress;
     this.#book?.setBoundaryOpenProgress(openProgress, edge);
     this.#setContactOpenProgress(openProgress);

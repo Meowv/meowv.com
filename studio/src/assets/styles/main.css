@@ -109,6 +109,16 @@ button {
 
 .studio-shell--books {
   --studio-header-toggle-top: calc(var(--header-height) - 13px);
+  --studio-header-toggle-color: var(--menu-books-foreground);
+}
+
+.studio-shell--books .studio-header {
+  background: var(--books-page-bg);
+  background-attachment: fixed;
+}
+
+.studio-shell--books .studio-header__feature-name {
+  color: var(--menu-books-foreground);
 }
 
 .studio-shell--markdown,

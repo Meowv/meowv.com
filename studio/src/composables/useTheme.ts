@@ -69,5 +69,11 @@ export function useTheme() {
     applyTheme(next);
   }
 
-  return { preference, resolved, setPreference, toggle, toggleWithoutPersist };
+  /** 临时切换到指定主题而不写入本地偏好；配合进入/离开沉浸式页面时使用。 */
+  function setWithoutPersist(theme: 'light' | 'dark'): void {
+    preference.value = theme;
+    applyTheme(theme);
+  }
+
+  return { preference, resolved, setPreference, toggle, toggleWithoutPersist, setWithoutPersist };
 }

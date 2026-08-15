@@ -1,3 +1,9 @@
+:root {
+  --books-page-bg:
+    radial-gradient(circle at 50% 35%, rgb(139 99 66 / 20%), transparent 34%),
+    linear-gradient(145deg, #201b18 0%, #161310 52%, #0e0d0c 100%);
+}
+
 .books-page {
   position: relative;
   isolation: isolate;
@@ -6,9 +12,8 @@
   min-height: calc(100dvh - var(--header-height));
   overflow: hidden;
   color: #f4eee5;
-  background:
-    radial-gradient(circle at 50% 35%, rgb(139 99 66 / 20%), transparent 34%),
-    linear-gradient(145deg, #201b18 0%, #161310 52%, #0e0d0c 100%);
+  background: var(--books-page-bg);
+  background-attachment: fixed;
   font-family: var(--font-ui);
 }
 

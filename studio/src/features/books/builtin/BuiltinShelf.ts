@@ -11,7 +11,7 @@ let manifestFetchedAt = 0;
 const fileCache = new Map<string, Promise<File>>();
 
 export function builtinDirectoryUrl(): string {
-  return `${import.meta.env.BASE_URL}books/`;
+  return `${import.meta.env.BASE_URL}data/books/`;
 }
 
 function builtinFileUrl(fileName: string): string {
@@ -55,8 +55,14 @@ function parseAutoindexNames(html: string): string[] {
   const document = new DOMParser().parseFromString(html, 'text/html');
   const names: string[] = [];
   for (const anchor of Array.from(document.querySelectorAll('a'))) {
-    const name = anchor.getAttribute('href')?.trim() ?? '';
-    if (!name || name === '../' || name === '..' || name === '/') continue;
+    const raw = anchor.getAttribute('href')?.trim() ?? '';
+    if (!raw || raw === '../' || raw === '..' || raw === '/') continue;
+    let name = raw;
+    try {
+      name = decodeURIComponent(raw);
+    } catch {
+      // 非百分号编码的文件名保持原样。
+    }
     names.push(name);
   }
   return names;

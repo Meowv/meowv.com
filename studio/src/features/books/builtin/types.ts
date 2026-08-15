@@ -6,7 +6,7 @@ export interface BuiltinBookDef {
   /** 兜底标题，即文件名（不含扩展名）；打开后由内容元数据覆盖。 */
   title: string;
   format: BookFormat;
-  /** 绝对路径，例如 /books/xxx.epub。 */
+  /** 绝对路径，例如 /data/books/xxx.epub。 */
   url: string;
 }
 

@@ -4,8 +4,8 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import path from 'node:path';
 import type { Connect, Plugin } from 'vite';
 
-const BOOKS_DIR = path.resolve(process.cwd(), 'public/books');
-const BOOKS_PATH = '/books/';
+const BOOKS_DIR = path.resolve(process.cwd(), 'public/data/books');
+const BOOKS_PATH = '/data/books/';
 
 const BOOKS_CONTENT_TYPES: Record<string, string> = {
   '.epub': 'application/epub+zip',
@@ -32,9 +32,9 @@ function autoindexHtml(files: string[]): string {
     .join('');
   return [
     '<html>',
-    '<head><title>Index of /books/</title></head>',
+    '<head><title>Index of /data/books/</title></head>',
     '<body>',
-    '<h1>Index of /books/</h1>',
+    '<h1>Index of /data/books/</h1>',
     '<hr>',
     '<pre>',
     rows,

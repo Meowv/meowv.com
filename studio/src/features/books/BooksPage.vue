@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import { useTheme, type ThemePreference } from '@/composables/useTheme';
 import BookshelfView from './components/BookshelfView.vue';
 import BookWelcome from './components/BookWelcome.vue';
 import LoadingBook from './components/LoadingBook.vue';
@@ -134,6 +135,13 @@ const currentLayout = ref<'fixed' | 'reflowable'>('fixed');
 const currentToc = ref<Publication['toc']>([]);
 const readerProfile = ref<ReaderLayoutProfile>(loadReaderLayout());
 const pageStateMachine = new BookStateMachine();
+const {
+  preference: themePreference,
+  resolved: resolvedTheme,
+  setPreference,
+  setWithoutPersist,
+} = useTheme();
+let previousThemePreference: ThemePreference = 'system';
 
 let engine: BookEngine | null = null;
 let publication: Publication | null = null;
@@ -472,6 +480,7 @@ async function openFile(
   try {
     instance = new BookEngine(host, {
       stateMachine: pageStateMachine,
+      theme: 'dark',
       onError: (error) => {
         if (currentOperation === operationId) void returnToShelf(bookErrorMessage(error));
       },
@@ -994,6 +1003,8 @@ async function restoreLastBook(): Promise<void> {
 
 onMounted(() => {
   shelfActive = true;
+  previousThemePreference = themePreference.value;
+  if (resolvedTheme.value !== 'dark') setWithoutPersist('dark');
   globalThis.addEventListener('keydown', onKeydown);
   globalThis.addEventListener('keyup', onKeyup);
   globalThis.addEventListener('blur', clearHeldTurnDirections);
@@ -1010,6 +1021,9 @@ onBeforeUnmount(() => {
   shelfActive = false;
   operationId += 1;
   restoreId += 1;
+  if (themePreference.value !== previousThemePreference) {
+    setPreference(previousThemePreference);
+  }
   globalThis.removeEventListener('keydown', onKeydown);
   globalThis.removeEventListener('keyup', onKeyup);
   globalThis.removeEventListener('blur', clearHeldTurnDirections);
