@@ -3,4 +3,4 @@ dist/
 *.tsbuildinfo
 .DS_Store
 design-*.png
-public/books/
+public/data/books/
