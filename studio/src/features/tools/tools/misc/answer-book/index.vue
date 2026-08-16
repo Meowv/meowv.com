@@ -1055,7 +1055,7 @@ onBeforeUnmount(() => {
           <button type="button" @click="openShare">
             <IconShare3 :size="15" aria-hidden="true" />分享卡片
           </button>
-          <button type="button" class="answer-book-actions__tertiary" @click="closeBook()">
+          <button type="button" @click="closeBook()">
             <IconBook :size="15" aria-hidden="true" />合上书
           </button>
         </div>
@@ -1917,10 +1917,6 @@ onBeforeUnmount(() => {
 .answer-book-actions .answer-book-actions__primary:hover {
   color: #fff;
   box-shadow: 0 7px 17px color-mix(in srgb, var(--tools-accent) 27%, transparent);
-}
-.answer-book-actions .answer-book-actions__tertiary {
-  border-color: transparent;
-  background: transparent;
 }
 .answer-book-actions button:focus-visible,
 .answer-book-history-button:focus-visible,
