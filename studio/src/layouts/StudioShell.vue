@@ -4,7 +4,7 @@ import { useRoute } from 'vue-router';
 import {
   IconBrandOffice,
   IconApps,
-  IconBook2,
+  IconBook,
   IconChalkboard,
   IconMarkdown,
   IconMenu2,
@@ -39,8 +39,9 @@ const isImmersive = computed(
     workspaceActive.value,
 );
 const markdownHeaderVisible = ref(true);
-const booksHeaderVisible = ref(false);
+const booksHeaderVisible = ref(true);
 const MARKDOWN_HEADER_PREFERENCE_KEY = `${STORAGE_POLICY.namespace('markdown')}:header-collapsed`;
+const BOOKS_HEADER_PREFERENCE_KEY = `${STORAGE_POLICY.namespace('books')}:header-collapsed`;
 const showHeader = computed(() =>
   isDrawPage.value || isMindPage.value || isNotesPage.value
     ? false
@@ -74,9 +75,22 @@ watch(
   { immediate: true },
 );
 
-watch(isBooksPage, (active) => {
-  if (!active) booksHeaderVisible.value = false;
-});
+watch(
+  isBooksPage,
+  (active) => {
+    if (!active) {
+      booksHeaderVisible.value = true;
+      return;
+    }
+    if (!storageAvailable()) return;
+    try {
+      booksHeaderVisible.value = localStorage.getItem(BOOKS_HEADER_PREFERENCE_KEY) !== 'true';
+    } catch {
+      // 本地偏好不可用时保留默认展开状态。
+    }
+  },
+  { immediate: true },
+);
 
 function toggleMarkdownHeader(): void {
   markdownHeaderVisible.value = !markdownHeaderVisible.value;
@@ -91,6 +105,13 @@ function toggleMarkdownHeader(): void {
 
 function toggleBooksHeader(): void {
   booksHeaderVisible.value = !booksHeaderVisible.value;
+  if (!storageAvailable()) return;
+  try {
+    if (booksHeaderVisible.value) localStorage.removeItem(BOOKS_HEADER_PREFERENCE_KEY);
+    else localStorage.setItem(BOOKS_HEADER_PREFERENCE_KEY, 'true');
+  } catch {
+    // 本地偏好不可用不影响当前页面切换。
+  }
 }
 
 function closeMobileNavigation(): void {
@@ -120,7 +141,7 @@ onBeforeUnmount(() => {
 const primaryRoutes = [
   { label: 'Markdown', to: '/markdown', icon: IconMarkdown, className: 'nav-markdown' },
   { label: 'Office', to: '/office', icon: IconBrandOffice, className: 'nav-office' },
-  { label: 'Books', to: '/books', icon: IconBook2, className: 'nav-books' },
+  { label: 'Books', to: '/books', icon: IconBook, className: 'nav-books' },
   { label: 'Whiteboard', to: '/draw', icon: IconChalkboard, className: 'nav-draw' },
   { label: 'Mind', to: '/mind', icon: IconSitemap, className: 'nav-mind' },
   { label: 'Notes', to: '/notes', icon: IconNotes, className: 'nav-notes' },
@@ -145,6 +166,7 @@ function isRouteActive(to: string): boolean {
       'studio-shell--tool-detail': isToolDetailPage,
       'studio-shell--office': isOfficePage,
       'studio-shell--books': isBooksPage,
+      'studio-shell--books-header': isBooksPage && booksHeaderVisible,
       'studio-shell--with-footer': showFooter,
     }"
   >

@@ -133,7 +133,8 @@ function readableSections(book: FoliateBook): HtmlBookSection[] {
   return book.sections.map((section) => ({
     ...(section.id == null ? {} : { id: String(section.id) }),
     ...(section.cfi ? { cfi: section.cfi } : {}),
-    load: () => section.load(),
+    // FB2 的 load 直接返回字符串 URL，统一包装为 Promise，避免调用方依赖返回类型。
+    load: () => Promise.resolve(section.load()),
     ...(section.unload ? { unload: () => section.unload?.() } : {}),
   }));
 }

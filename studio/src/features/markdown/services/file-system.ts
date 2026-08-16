@@ -1,5 +1,6 @@
 import {
   AUDIO_EXTENSIONS,
+  BOOK_EXTENSIONS,
   DRAW_EXTENSIONS,
   IMAGE_EXTENSIONS,
   MARKDOWN_EXTENSIONS,
@@ -36,6 +37,7 @@ const OFFICE_EXTENSION_SET = normalizeExtensions(OFFICE_EXTENSIONS);
 const PDF_EXTENSION_SET = normalizeExtensions(PDF_EXTENSIONS);
 const DRAW_EXTENSION_SET = normalizeExtensions(DRAW_EXTENSIONS);
 const MIND_EXTENSION_SET = normalizeExtensions(MIND_EXTENSIONS);
+const BOOK_EXTENSION_SET = normalizeExtensions(BOOK_EXTENSIONS);
 const TEXT_FILE_NAMES = new Set([
   'authors',
   'changelog',
@@ -252,6 +254,9 @@ function categorizeFile(
   }
   if (MIND_EXTENSION_SET.has(extension)) {
     return 'mind';
+  }
+  if (BOOK_EXTENSION_SET.has(extension)) {
+    return 'book';
   }
   return 'other';
 }

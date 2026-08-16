@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { IconBook2 } from '@tabler/icons-vue';
+import { IconBook } from '@tabler/icons-vue';
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 const props = defineProps<{
@@ -60,6 +60,6 @@ onBeforeUnmount(() => {
 <template>
   <span ref="host" class="books-shelf-cover">
     <img v-if="source" :src="source" :alt="alt" decoding="async" draggable="false" />
-    <span v-else aria-hidden="true"><IconBook2 :size="42" stroke-width="1.25" /></span>
+    <span v-else aria-hidden="true"><IconBook :size="42" stroke-width="1.25" /></span>
   </span>
 </template>

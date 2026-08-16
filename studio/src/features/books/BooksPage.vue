@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useTheme, type ThemePreference } from '@/composables/useTheme';
+import { receiveWindowFileHandoff, useFileHandoff } from '@/core/browser/file-handoff';
 import BookshelfView from './components/BookshelfView.vue';
 import BookWelcome from './components/BookWelcome.vue';
 import LoadingBook from './components/LoadingBook.vue';
@@ -62,6 +63,7 @@ const bookshelf = new BookshelfRepository();
 const root = ref<HTMLElement | null>(null);
 const canvasHost = ref<HTMLElement | null>(null);
 const fileInput = ref<HTMLInputElement | null>(null);
+const { takeHandoff } = useFileHandoff();
 const state = ref<BookState>('EMPTY');
 const readerMounted = ref(false);
 const readerReady = ref(false);
@@ -163,6 +165,9 @@ let hideTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
 let tipTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
 let hideAt = 0;
 let shelfActive = false;
+let stopWindowFileHandoff: (() => void) | null = null;
+/** 收到外部文件交接后，阻止自动恢复上次阅读的书籍覆盖新打开的书。 */
+let handoffArrived = false;
 
 /** 指针是否悬停在阅读进度条（底部控制条）上；悬停期间不自动隐藏。 */
 function pointerOverControls(): boolean {
@@ -993,11 +998,13 @@ async function restoreLastBook(): Promise<void> {
     }
     return;
   }
+  if (handoffArrived) return;
   if ((await createBookFingerprint(file)) !== candidate.id) {
     await bookshelf.upsert({ ...candidate, availability: 'missing' });
     await refreshShelf();
     return;
   }
+  if (handoffArrived) return;
   await openFile(file, candidate.handle, { autoOpen: true, existingEntry: candidate });
 }
 
@@ -1010,17 +1017,30 @@ onMounted(() => {
   globalThis.addEventListener('blur', clearHeldTurnDirections);
   document.addEventListener('fullscreenchange', syncFullscreen);
   const restoreOperation = ++restoreId;
+  const handoff = takeHandoff('book');
+  if (handoff) {
+    handoffArrived = true;
+    restoreId += 1;
+    void openFile(handoff.file, handoff.handle, { autoOpen: true });
+  }
   void restoreLastBook()
     .catch(() => undefined)
     .finally(() => {
       if (restoreOperation !== restoreId) return;
     });
+  stopWindowFileHandoff = receiveWindowFileHandoff('book', (file, handle) => {
+    handoffArrived = true;
+    restoreId += 1;
+    void openFile(file, handle, { autoOpen: true });
+  });
 });
 
 onBeforeUnmount(() => {
   shelfActive = false;
   operationId += 1;
   restoreId += 1;
+  stopWindowFileHandoff?.();
+  stopWindowFileHandoff = null;
   if (themePreference.value !== previousThemePreference) {
     setPreference(previousThemePreference);
   }

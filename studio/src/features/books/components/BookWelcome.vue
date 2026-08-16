@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { IconBook2, IconBooks, IconFolderOpen } from '@tabler/icons-vue';
+import { IconBook, IconFolderOpen } from '@tabler/icons-vue';
 
 defineProps<{
   dragging: boolean;
@@ -17,17 +17,13 @@ defineEmits<{
       <div class="books-welcome__back-cover"></div>
       <div class="books-welcome__pages"></div>
       <div class="books-welcome__front-cover">
-        <IconBook2 :size="46" stroke-width="1.25" />
+        <IconBook :size="46" stroke-width="1.25" />
         <span>MEOWV</span>
       </div>
       <div class="books-welcome__spine"></div>
     </div>
 
     <div class="books-welcome__copy">
-      <p class="books-welcome__eyebrow">
-        <IconBooks :size="16" aria-hidden="true" />
-        PURE FRONTEND LIBRARY
-      </p>
       <h1 id="books-welcome-title">打开一本书</h1>
       <p>选择本地书籍，剩下的交给它。</p>
       <button type="button" class="books-welcome__action" @click="$emit('pick')">
@@ -39,7 +35,7 @@ defineEmits<{
     </div>
 
     <div v-if="dragging" class="books-drop-curtain" aria-live="polite">
-      <IconBook2 :size="44" stroke-width="1.35" aria-hidden="true" />
+      <IconBook :size="44" stroke-width="1.35" aria-hidden="true" />
       <strong>松手，打开这本书</strong>
       <span>支持 PDF、EPUB、TXT、MOBI、AZW3、FB2 和 CBZ</span>
     </div>

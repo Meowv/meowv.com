@@ -1,6 +1,6 @@
 import type { StudioFeature } from '@/core/browser/file-handoff';
 
-type StorageFeature = StudioFeature | 'ocr';
+type StorageFeature = StudioFeature | 'ocr' | 'books';
 
 export const STORAGE_POLICY = {
   preferences: 'meowv-studio:preferences:v1',

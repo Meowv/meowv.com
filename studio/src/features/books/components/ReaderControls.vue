@@ -4,7 +4,7 @@ import {
   IconArrowRight,
   IconArrowsMaximize,
   IconArrowsMinimize,
-  IconBook2,
+  IconBook,
   IconBookOff,
   IconBooks,
   IconListTree,
@@ -46,7 +46,7 @@ const nextAction = (): string =>
   <div class="books-reader-controls">
     <div class="books-reader-controls__top">
       <div class="books-reader-controls__identity" :title="title">
-        <IconBook2 :size="19" stroke-width="1.7" />
+        <IconBook :size="19" stroke-width="1.7" />
         <span>{{ title }}</span>
       </div>
       <div class="books-reader-controls__actions">
@@ -80,11 +80,11 @@ const nextAction = (): string =>
         <button
           v-if="bookClosed"
           type="button"
-          title="打开书籍"
-          aria-label="打开书籍"
+          title="打开书"
+          aria-label="打开书"
           @click="$emit('open')"
         >
-          <IconBook2 :size="19" aria-hidden="true" />
+          <IconBook :size="19" aria-hidden="true" />
         </button>
         <button
           v-else-if="bookOpen"

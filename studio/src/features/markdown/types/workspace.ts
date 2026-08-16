@@ -58,10 +58,21 @@ export const OFFICE_EXTENSIONS = ['.csv', '.docx', '.pptx', '.xlsx'] as const;
 export const PDF_EXTENSIONS = ['.pdf'] as const;
 export const DRAW_EXTENSIONS = ['.excalidraw'] as const;
 export const MIND_EXTENSIONS = ['.mind'] as const;
+export const BOOK_EXTENSIONS = ['.azw3', '.cbz', '.epub', '.fb2', '.mobi'] as const;
 
 export type WorkspaceEntryKind = 'directory' | 'file';
 export type WorkspaceFileCategory =
-  'markdown' | 'text' | 'image' | 'audio' | 'video' | 'office' | 'pdf' | 'draw' | 'mind' | 'other';
+  | 'markdown'
+  | 'text'
+  | 'image'
+  | 'audio'
+  | 'video'
+  | 'office'
+  | 'pdf'
+  | 'draw'
+  | 'mind'
+  | 'book'
+  | 'other';
 
 interface WorkspaceNodeBase {
   name: string;

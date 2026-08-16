@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+  Book,
   ChevronDown,
   ChevronsDown,
   ChevronRight,
@@ -89,6 +90,7 @@ const fileIcon = computed(() => {
   if (props.node.category === 'audio') return Music;
   if (props.node.category === 'video') return Video;
   if (props.node.category === 'pdf') return FileTypePdf;
+  if (props.node.category === 'book') return Book;
   if (props.node.extension === '.xlsx') return FileSpreadsheet;
   if (props.node.extension === '.pptx') return Presentation;
   if (props.node.extension === '.csv') return Table2;

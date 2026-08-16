@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   Adjustments,
+  Book,
   BrandAdobePhotoshop,
   Chalkboard,
   ChevronsDown,
@@ -260,8 +261,8 @@ async function openNode(node: DisplayTreeNode): Promise<void> {
     officeTarget.value = node;
     return;
   }
-  if (node.category === 'pdf') {
-    promptPdfTool(node, 'organize-pdf', '整理 PDF 页面');
+  if (node.category === 'pdf' || node.category === 'book') {
+    await openBookInNewWindow(node);
     return;
   }
   if (node.category === 'draw') {
@@ -416,6 +417,37 @@ async function openMindInNewWindow(node: DisplayTreeNode): Promise<void> {
   } catch (error) {
     popup.close();
     store.notify('error', '无法打开思维导图', error instanceof Error ? error.message : node.name);
+  }
+}
+
+async function openBookInNewWindow(node: DisplayTreeNode): Promise<void> {
+  contextMenu.value = null;
+  const popup = globalThis.open('about:blank', '_blank');
+  if (!popup) {
+    store.notify('error', '无法打开仿真书', '浏览器阻止了新窗口，请允许本站打开弹出式窗口。');
+    return;
+  }
+  try {
+    if (!(await store.saveActiveDocument())) {
+      popup.close();
+      return;
+    }
+    const file = await getNodeFile(node);
+    if (!file) {
+      throw new Error('无法读取书籍文件。');
+    }
+    closeImagePreview();
+    closeMediaPreview();
+    openWindowFileHandoff(
+      popup,
+      '/books',
+      'book',
+      file,
+      node.handle?.kind === 'file' ? (node.handle as FileSystemFileHandle) : undefined,
+    );
+  } catch (error) {
+    popup.close();
+    store.notify('error', '无法打开仿真书', error instanceof Error ? error.message : node.name);
   }
 }
 
@@ -891,6 +923,14 @@ onBeforeUnmount(() => {
           <div class="context-menu__separator" />
         </template>
         <template v-else-if="contextMenu.node.category === 'pdf'">
+          <button
+            class="context-menu__item"
+            type="button"
+            role="menuitem"
+            @click="openBookInNewWindow(contextMenu.node)"
+          >
+            <Book :size="16" />使用仿真书打开
+          </button>
           <p class="context-menu__label">PDF 工具</p>
           <button
             v-for="tool in PDF_TOOLS"
@@ -901,6 +941,30 @@ onBeforeUnmount(() => {
             @click="promptPdfTool(contextMenu.node, tool.id, tool.name)"
           >
             <ToolIcon :icon="tool.icon" :size="16" />{{ tool.name }}
+          </button>
+          <div class="context-menu__separator" />
+        </template>
+        <template v-else-if="contextMenu.node.category === 'book'">
+          <button
+            class="context-menu__item"
+            type="button"
+            role="menuitem"
+            @click="openBookInNewWindow(contextMenu.node)"
+          >
+            <Book :size="16" />使用仿真书打开
+          </button>
+          <div class="context-menu__separator" />
+        </template>
+        <template
+          v-else-if="contextMenu.node.category === 'text' && contextMenu.node.extension === '.txt'"
+        >
+          <button
+            class="context-menu__item"
+            type="button"
+            role="menuitem"
+            @click="openBookInNewWindow(contextMenu.node)"
+          >
+            <Book :size="16" />使用仿真书打开
           </button>
           <div class="context-menu__separator" />
         </template>
