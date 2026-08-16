@@ -1,6 +1,6 @@
 import type { BookshelfEntry, BookshelfRepository } from '../persistence/BookshelfRepository';
 import { drawCoverThumbnail, drawPlaceholderCover } from '../persistence/coverThumbnail';
-import { listBuiltinBooks } from './BuiltinShelf';
+import { getRemovedSlugs, listBuiltinBooks } from './BuiltinShelf';
 import { probeBookMetadata } from './metadata';
 
 const CONCURRENCY = 6;
@@ -36,6 +36,7 @@ export async function probeBuiltinBooks(
   onUpdated?: () => void,
 ): Promise<void> {
   const defs = await listBuiltinBooks();
+  const removed = getRemovedSlugs();
   const storedBySlug = new Map<string, BookshelfEntry>(
     stored
       .filter((entry) => entry.builtinSlug)
@@ -43,6 +44,8 @@ export async function probeBuiltinBooks(
   );
   const pending = defs.filter((def) => {
     if (probing.has(def.slug)) return false;
+    // 用户已移出的内置书不再重新探测，避免删除后又写回书架。
+    if (removed.has(def.slug) || removed.has(def.slug.trim())) return false;
     const storedEntry = storedBySlug.get(def.slug);
     if (!storedEntry) return true;
     return !storedEntry.coverThumbnail;
@@ -92,6 +95,9 @@ export async function probeBuiltinBooks(
           addedAt: existing?.addedAt ?? 0,
           lastOpenedAt: existing?.lastOpenedAt ?? 0,
         };
+        // 探测期间用户可能已移出该书，写回前再次确认。
+        const currentRemoved = getRemovedSlugs();
+        if (currentRemoved.has(def.slug) || currentRemoved.has(def.slug.trim())) continue;
         await bookshelf.upsert(entry);
         probing.delete(def.slug);
         onUpdated?.();
