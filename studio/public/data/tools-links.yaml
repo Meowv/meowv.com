@@ -36,265 +36,6 @@ categories:
         url: https://cdn.vietdp.com/file/vietdp-games/games/t52025/plonky/icons/icon-32.png
       url: https://cdn.vietdp.com/file/vietdp-games/games/t52025/plonky/index.html
 
-  ai:
-    - id: chatgpt
-      name: ChatGPT
-      icon:
-        url: /icons/tools/chatgpt.ico
-      url: https://chatgpt.com
-
-    - id: claude
-      name: Claude
-      icon:
-        url: /icons/tools/claude.ico
-      url: https://claude.ai
-
-    - id: gemini
-      name: Gemini
-      icon:
-        url: /icons/tools/gemini.svg
-      url: https://gemini.google.com
-
-    - id: deepseek
-      name: DeepSeek
-      icon:
-        url: /icons/tools/deepseek.svg
-      url: https://chat.deepseek.com
-
-    - id: kimi
-      name: Kimi
-      icon:
-        url: /icons/tools/kimi.ico
-      url: https://www.kimi.com
-
-    - id: doubao
-      name: 豆包
-      icon:
-        url: /icons/tools/doubao.png
-      url: https://www.doubao.com
-
-    - id: qianwen
-      name: 千问
-      icon:
-        url: /icons/tools/qianwen.png
-      url: https://www.qianwen.com
-
-    - id: yuanbao
-      name: 元宝
-      icon:
-        url: /icons/tools/yuanbao.png
-      url: https://yuanbao.tencent.com
-
-    - id: grok
-      name: Grok
-      icon:
-        url: /icons/tools/grok.svg
-      url: https://grok.com
-
-    - id: microsoft
-      name: Microsoft Copilot
-      icon:
-        url: /icons/tools/microsoft.ico
-      url: https://copilot.microsoft.com
-
-    - id: perplexity
-      name: Perplexity
-      icon:
-        url: /icons/tools/perplexity.png
-      url: https://www.perplexity.ai
-
-    - id: notebooklm
-      name: NotebookLM
-      icon:
-        url: /icons/tools/notebooklm.svg
-      url: https://notebooklm.google.com
-
-    - id: metaso
-      name: 秘塔
-      icon:
-        url: /icons/tools/metaso.ico
-      url: https://metaso.cn
-
-    - id: ima
-      name: ima
-      icon:
-        url: /icons/tools/ima.svg
-      url: https://ima.qq.com
-
-    - id: you
-      name: You.com
-      icon:
-        url: /icons/tools/you.png
-      url: https://you.com
-
-    - id: duckai
-      name: Duck.ai
-      icon:
-        url: /icons/tools/duckai.ico
-      url: https://duck.ai
-
-    - id: nanoai
-      name: 纳米
-      icon:
-        url: /icons/tools/nanoai.svg
-      url: https://www.n.cn
-
-    - id: genspark
-      name: Genspark
-      icon:
-        url: /icons/tools/genspark.ico
-      url: https://www.genspark.ai
-
-    - id: github
-      name: GitHub Copilot
-      icon:
-        url: /icons/tools/github.svg
-      url: https://github.com/features/copilot
-
-    - id: cursor
-      name: Cursor
-      icon:
-        url: /icons/tools/cursor.ico
-      url: https://cursor.com
-
-    - id: trae
-      name: TRAE
-      icon:
-        url: /icons/tools/trae.png
-      url: https://www.trae.ai
-
-    - id: qoder
-      name: Qoder
-      icon:
-        url: /icons/tools/qoder.png
-      url: https://qoder.com
-
-    - id: replit
-      name: Replit
-      icon:
-        url: /icons/tools/replit.webp
-      url: https://replit.com
-
-    - id: devin
-      name: Devin
-      icon:
-        url: /icons/tools/devin.svg
-      url: https://devin.ai
-
-    - id: blackbox
-      name: BLACKBOX
-      icon:
-        url: /icons/tools/blackbox.ico
-      url: https://www.blackbox.ai
-
-    - id: manus
-      name: Manus
-      icon:
-        url: /icons/tools/manus.png
-      url: https://manus.im
-
-    - id: minimax
-      name: MiniMax
-      icon:
-        url: /icons/tools/minimax.png
-      url: https://agent.minimax.io
-
-    - id: coze
-      name: 扣子
-      icon:
-        url: /icons/tools/coze.ico
-      url: https://www.coze.cn
-
-    - id: flowith
-      name: Flowith
-      icon:
-        url: /icons/tools/flowith.png
-      url: https://flowith.io
-
-    - id: monica
-      name: Monica
-      icon:
-        url: /icons/tools/monica.png
-      url: https://monica.im
-
-    - id: poe
-      name: Poe
-      icon:
-        url: /icons/tools/poe.ico
-      url: https://poe.com
-
-    - id: meta
-      name: Meta
-      icon:
-        url: /icons/tools/meta.ico
-      url: https://www.meta.ai
-
-    - id: mistral
-      name: Mistral Vibe
-      icon:
-        url: /icons/tools/mistral.png
-      url: https://chat.mistral.ai
-
-    - id: zai
-      name: Z.ai
-      icon:
-        url: /icons/tools/zai.svg
-      url: https://z.ai
-
-    - id: chatglm
-      name: 智谱清言
-      icon:
-        url: /icons/tools/chatglm.ico
-      url: https://chatglm.cn
-
-    - id: xinghuo
-      name: 讯飞星火
-      icon:
-        url: /icons/tools/xinghuo.ico
-      url: https://xinghuo.xfyun.cn/desk
-
-    - id: wenxin
-      name: 文心
-      icon:
-        url: /icons/tools/wenxin.ico
-      url: https://wenxin.baidu.com
-
-    - id: xiaomimimo
-      name: 小米 MIMO
-      icon:
-        url: /icons/tools/xiaomimimo.png
-      url: https://aistudio.xiaomimimo.com
-
-    - id: xiaoyi
-      name: 小艺
-      icon:
-        url: /icons/tools/xiaoyi.ico
-      url: https://xiaoyi.huawei.com
-
-    - id: tiangong
-      name: 天工
-      icon:
-        url: /icons/tools/tiangong.ico
-      url: https://www.tiangong.cn
-
-    - id: huggingchat
-      name: HuggingChat
-      icon:
-        url: /icons/tools/huggingchat.png
-      url: https://huggingface.co/chat
-
-    - id: character
-      name: Character
-      icon:
-        url: /icons/tools/character.ico
-      url: https://character.ai
-
-    - id: pi
-      name: Pi
-      icon:
-        url: /icons/tools/pi.png
-      url: https://pi.ai
-
   bookmarks:
     - id: zitie
       name: 字帖生成
@@ -381,7 +122,25 @@ categories:
       url: https://www.netflixgc.com
 
     - id: flysheep6
-      name: 一个免费的二次元风格游戏站
+      name: flysheep资源避难所
       icon:
         url: https://r534.com/flysheep/i/2023/02/25/5fgq.jpg
       url: https://www.flysheep6.com
+
+    - id: archive
+      name: Wayback Machine
+      icon:
+        url: https://web-static.archive.org/_static/images/archive.ico
+      url: https://web.archive.org
+
+    - id: radio
+      name: Radio Garden
+      icon:
+        url: https://radio.garden/icons/favicon.png
+      url: https://radio.garden
+
+    - id: copychar
+      name: Copychar
+      icon:
+        url: https://copychar.cc/assets/images/icons/favicon-32x32.png
+      url: https://copychar.cc
