@@ -40,8 +40,10 @@ const isImmersive = computed(
 );
 const markdownHeaderVisible = ref(true);
 const booksHeaderVisible = ref(true);
+const toolsHeaderVisible = ref(true);
 const MARKDOWN_HEADER_PREFERENCE_KEY = `${STORAGE_POLICY.namespace('markdown')}:header-collapsed`;
 const BOOKS_HEADER_PREFERENCE_KEY = `${STORAGE_POLICY.namespace('books')}:header-collapsed`;
+const TOOLS_HEADER_PREFERENCE_KEY = `${STORAGE_POLICY.preferences}:tools-header-collapsed`;
 const showHeader = computed(() =>
   isDrawPage.value || isMindPage.value || isNotesPage.value
     ? false
@@ -49,7 +51,9 @@ const showHeader = computed(() =>
       ? markdownHeaderVisible.value
       : isBooksPage.value
         ? booksHeaderVisible.value
-        : !workspaceActive.value || workspaceHeaderVisible.value,
+        : isToolsPage.value
+          ? toolsHeaderVisible.value
+          : !workspaceActive.value || workspaceHeaderVisible.value,
 );
 const showFooter = computed(
   () => ['home', 'office', 'not-found'].includes(String(route.name)) && !workspaceActive.value,
@@ -92,6 +96,23 @@ watch(
   { immediate: true },
 );
 
+watch(
+  isToolsPage,
+  (active) => {
+    if (!active) {
+      toolsHeaderVisible.value = true;
+      return;
+    }
+    if (!storageAvailable()) return;
+    try {
+      toolsHeaderVisible.value = localStorage.getItem(TOOLS_HEADER_PREFERENCE_KEY) !== 'true';
+    } catch {
+      // 本地偏好不可用时保留默认展开状态。
+    }
+  },
+  { immediate: true },
+);
+
 function toggleMarkdownHeader(): void {
   markdownHeaderVisible.value = !markdownHeaderVisible.value;
   if (!storageAvailable()) return;
@@ -109,6 +130,17 @@ function toggleBooksHeader(): void {
   try {
     if (booksHeaderVisible.value) localStorage.removeItem(BOOKS_HEADER_PREFERENCE_KEY);
     else localStorage.setItem(BOOKS_HEADER_PREFERENCE_KEY, 'true');
+  } catch {
+    // 本地偏好不可用不影响当前页面切换。
+  }
+}
+
+function toggleToolsHeader(): void {
+  toolsHeaderVisible.value = !toolsHeaderVisible.value;
+  if (!storageAvailable()) return;
+  try {
+    if (toolsHeaderVisible.value) localStorage.removeItem(TOOLS_HEADER_PREFERENCE_KEY);
+    else localStorage.setItem(TOOLS_HEADER_PREFERENCE_KEY, 'true');
   } catch {
     // 本地偏好不可用不影响当前页面切换。
   }
@@ -163,6 +195,7 @@ function isRouteActive(to: string): boolean {
       'studio-shell--mind': isMindPage,
       'studio-shell--notes': isNotesPage,
       'studio-shell--tools': isToolsPage,
+      'studio-shell--tools-header': isToolsPage && toolsHeaderVisible,
       'studio-shell--tool-detail': isToolDetailPage,
       'studio-shell--office': isOfficePage,
       'studio-shell--books': isBooksPage,
@@ -221,6 +254,11 @@ function isRouteActive(to: string): boolean {
       v-if="isBooksPage"
       :visible="booksHeaderVisible"
       @click="toggleBooksHeader"
+    />
+    <studio-header-toggle
+      v-if="isToolsPage"
+      :visible="toolsHeaderVisible"
+      @click="toggleToolsHeader"
     />
 
     <main class="studio-main">

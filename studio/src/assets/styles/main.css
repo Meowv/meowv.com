@@ -112,6 +112,11 @@ button {
   --studio-header-toggle-color: var(--menu-books-foreground);
 }
 
+.studio-shell--tools {
+  --studio-header-toggle-top: calc(var(--header-height) - 13px);
+  --studio-header-toggle-color: var(--menu-tools-foreground);
+}
+
 .studio-shell--books .studio-header {
   background: var(--books-page-bg);
   background-attachment: fixed;
@@ -130,6 +135,10 @@ button {
 
 .studio-shell--tool-detail {
   --header-height: 58px;
+}
+
+.studio-shell--tools:not(.studio-shell--tools-header) {
+  --header-height: 0px;
 }
 
 .studio-shell--tool-detail .studio-header {
