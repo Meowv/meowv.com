@@ -49,6 +49,12 @@ categories:
         url: https://massgrave.dev/img/favicon.ico
       url: https://massgrave.dev
 
+    - id: officetool
+      name: Office Tool Plus
+      icon:
+        url: https://www.officetool.plus/favicon.ico
+      url: https://www.officetool.plus
+
     - id: itellyou
       name: NEXT, ITELLYOU
       icon:
@@ -100,7 +106,7 @@ categories:
     - id: yiso
       name: 易搜
       icon:
-        url: /icons/tools/yiso.png
+        url: https://i.imgur.com/ngVYS9s.png
       url: https://yiso.fun
 
     - id: upyunso
@@ -115,11 +121,23 @@ categories:
         url: https://www.nmme.xyz/favicon.ico
       url: https://www.nmme.xyz
 
+    - id: botvod
+      name: 在线视频下载网站
+      icon:
+        url: https://botvod.com/favicon.ico
+      url: https://botvod.com
+
     - id: netflixgc
       name: 奈飞工厂
       icon:
         url: https://www.netflixgc.com/upload/site/20241029-1/708c271d0bbf43725b96fad94d0c1eb4.png
       url: https://www.netflixgc.com
+
+    - id: i8k
+      name: 在线影视网站导航
+      icon:
+        url: https://best.i8k.tv/favicon.ico
+      url: https://i8k.tv
 
     - id: flysheep6
       name: flysheep资源避难所
