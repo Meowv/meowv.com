@@ -32,9 +32,11 @@ import {
 } from '@/features/tools/tools/_shared/image/core/image/effects';
 import { readImageDimensions } from '@/features/tools/tools/_shared/image/core/image/dimensions';
 import {
+  createImagePreviewBlob,
   detectEncodingCapabilities,
   detectImageMime,
   getOutputFilename,
+  INPUT_IMAGE_ACCEPT,
   sanitizeSvgFile,
 } from '@/features/tools/tools/_shared/image/core/image';
 import type { ImageDimensions } from '@/features/tools/tools/_shared/image/types/image';
@@ -257,7 +259,7 @@ async function selectLogo(event: Event): Promise<void> {
     }
     const preparedFile = detectedMime === 'image/svg+xml' ? await sanitizeSvgFile(file) : file;
     await readImageDimensions(preparedFile);
-    nextUrl = URL.createObjectURL(preparedFile);
+    nextUrl = URL.createObjectURL(await createImagePreviewBlob(preparedFile));
 
     if (sequence !== logoSequence) {
       URL.revokeObjectURL(nextUrl);
@@ -319,7 +321,7 @@ async function selectSource(files: File[]): Promise<void> {
     }
     const preparedFile = detectedMime === 'image/svg+xml' ? await sanitizeSvgFile(file) : file;
     const dimensions = await readImageDimensions(preparedFile);
-    nextUrl = URL.createObjectURL(preparedFile);
+    nextUrl = URL.createObjectURL(await createImagePreviewBlob(preparedFile));
 
     if (sequence !== loadSequence) {
       URL.revokeObjectURL(nextUrl);
@@ -784,7 +786,7 @@ onBeforeUnmount(() => {
                 ref="logoInputRef"
                 class="sr-only"
                 type="file"
-                accept=".jpg,.jpeg,.png,.webp,.gif,.bmp,.ico,.svg,image/jpeg,image/png,image/webp,image/gif,image/bmp,image/vnd.microsoft.icon,image/svg+xml"
+                :accept="INPUT_IMAGE_ACCEPT"
                 tabindex="-1"
                 @change="selectLogo"
               />

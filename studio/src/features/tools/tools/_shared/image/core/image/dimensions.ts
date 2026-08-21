@@ -235,6 +235,17 @@ function readTiffDimensions(bytes: Uint8Array, view: DataView): ImageDimensions 
   return width && height ? { width, height } : null;
 }
 
+function readPsdDimensions(bytes: Uint8Array, view: DataView): ImageDimensions | null {
+  if (bytes.length < 26 || view.getUint16(4) !== 1) {
+    return null;
+  }
+
+  return {
+    width: view.getUint32(18),
+    height: view.getUint32(14),
+  };
+}
+
 async function readTiffDimensionsFromBlob(
   blob: Blob,
   headerBytes: Uint8Array,
@@ -410,7 +421,10 @@ function readDimensionsFromHeader(bytes: Uint8Array, mime: string): ImageDimensi
     case 'image/vnd.microsoft.icon':
       return readIcoDimensions(bytes);
     case 'image/heic':
+    case 'image/avif':
       return readHeifDimensions(bytes, view);
+    case 'image/vnd.adobe.photoshop':
+      return readPsdDimensions(bytes, view);
     case 'image/svg+xml':
       return readSvgDimensions(new TextDecoder('utf-8', { fatal: false }).decode(bytes));
     default:

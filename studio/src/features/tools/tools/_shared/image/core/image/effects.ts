@@ -1,6 +1,7 @@
 import { MAX_IMAGE_PIXELS, MAX_IMAGE_SIDE, readImageDimensions } from './dimensions';
 import { detectImageMime, isMatchingMime, normalizeMime } from './formats';
 import { sanitizeSvgFile } from './process';
+import { createImagePreviewBlob } from './preview';
 
 export type EffectOutputMime = 'image/png' | 'image/jpeg' | 'image/webp';
 export type ImageEffectMode = 'watermark' | 'rounded' | 'padding';
@@ -170,13 +171,13 @@ function normalizedOutput(
   return output;
 }
 
-async function prepareSource(file: File): Promise<File> {
+async function prepareSource(file: File): Promise<Blob> {
   const mime = await detectImageMime(file);
   if (!mime) {
     throw new TypeError('无法识别图片格式，文件可能已损坏');
   }
 
-  return mime === 'image/svg+xml' ? sanitizeSvgFile(file) : file;
+  return mime === 'image/svg+xml' ? sanitizeSvgFile(file) : createImagePreviewBlob(file);
 }
 
 function loadHtmlImage(blob: Blob, signal?: AbortSignal): Promise<DecodedImage> {
@@ -363,7 +364,7 @@ function fillOutputBackground(
 async function withDecodedSource(
   file: File,
   signal: AbortSignal | undefined,
-  draw: (decoded: DecodedImage, preparedFile: File) => Promise<EffectResult>,
+  draw: (decoded: DecodedImage) => Promise<EffectResult>,
 ): Promise<EffectResult> {
   checkAborted(signal);
   const preparedFile = await prepareSource(file);
@@ -382,7 +383,7 @@ async function withDecodedSource(
   const decoded = await decodeImage(preparedFile, signal);
   try {
     assertSafeDimensions(decoded.width, decoded.height);
-    return await draw(decoded, preparedFile);
+    return await draw(decoded);
   } finally {
     decoded.dispose();
   }

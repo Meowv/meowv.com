@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import { UploadCloud } from '@/features/tools/tools/_shared/image/icons';
+import { INPUT_IMAGE_ACCEPT } from '@/features/tools/tools/_shared/image/core/image';
 import { ref, useAttrs } from 'vue';
 
 defineOptions({ inheritAttrs: false });
 
 const attrs = useAttrs();
-
-const defaultAcceptedExtensions =
-  '.jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.ico,.heic,.heif,.svg,image/jpeg,image/png,image/webp,image/gif,image/bmp,image/tiff,image/vnd.microsoft.icon,image/heic,image/heif,image/svg+xml';
 
 const props = withDefaults(
   defineProps<{
@@ -19,8 +17,8 @@ const props = withDefaults(
     prompt?: string;
   }>(),
   {
-    accept: defaultAcceptedExtensions,
-    description: '支持 JPG、PNG、WebP、GIF、BMP、ICO、SVG，最多 100 张',
+    accept: INPUT_IMAGE_ACCEPT,
+    description: '支持 AVIF、BMP、GIF、HEIC、JPEG、PNG、PSD、SVG、TIFF、WebP，最多 100 张',
     disabled: false,
     multiple: true,
     compact: false,

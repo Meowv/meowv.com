@@ -28,6 +28,8 @@ import { useImageWorkspace } from '@/features/tools/tools/_shared/image/composab
 import {
   detectEncodingCapabilities,
   detectImageMime,
+  INPUT_IMAGE_ACCEPT,
+  isSupportedImageFilename,
   sanitizeSvgFile,
   type OutputMime,
 } from '@/features/tools/tools/_shared/image/core/image';
@@ -186,20 +188,6 @@ const showQuality = computed(
     selectedOutput.value === 'image/webp',
 );
 
-const acceptedExtensions = new Set([
-  'jpg',
-  'jpeg',
-  'png',
-  'webp',
-  'gif',
-  'bmp',
-  'tif',
-  'tiff',
-  'ico',
-  'heic',
-  'heif',
-  'svg',
-]);
 const maxFileBytes = 50 * 1024 * 1024;
 const maxTaskCount = 100;
 const maxCanvasEdge = 16384;
@@ -225,9 +213,9 @@ async function handleFiles(files: File[]) {
   }
 
   const oversized = files.filter((file) => file.size > maxFileBytes);
-  const unsupported = files.filter((file) => !acceptedExtensions.has(fileExtension(file.name)));
+  const unsupported = files.filter((file) => !isSupportedImageFilename(file.name));
   const valid = files
-    .filter((file) => file.size <= maxFileBytes && acceptedExtensions.has(fileExtension(file.name)))
+    .filter((file) => file.size <= maxFileBytes && isSupportedImageFilename(file.name))
     .slice(0, remaining);
 
   const sequence = ++addSequence;
@@ -594,7 +582,7 @@ onBeforeUnmount(() => {
                 type="file"
                 multiple
                 tabindex="-1"
-                accept=".jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.ico,.heic,.heif,.svg"
+                :accept="INPUT_IMAGE_ACCEPT"
                 :disabled="workspaceBusy"
                 @change="handleMoreFiles"
               />
@@ -837,7 +825,7 @@ onBeforeUnmount(() => {
                 class="flex items-start gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-3 text-xs leading-5 text-blue-900 dark:border-blue-900 dark:bg-blue-950/50 dark:text-blue-200"
               >
                 <Info class="mt-0.5 shrink-0" :size="15" aria-hidden="true" />
-                JPEG、PNG、WebP 会保持格式；GIF、BMP、TIFF、ICO、HEIC 与 SVG 会转为
+                JPEG、PNG、WebP 会保持格式；AVIF、BMP、GIF、HEIC/HEIF、ICO、PSD、SVG 与 TIFF 会转为
                 PNG。动画图片仅保留当前解码帧。
               </div>
 

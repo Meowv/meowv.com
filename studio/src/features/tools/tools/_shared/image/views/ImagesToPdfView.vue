@@ -17,6 +17,11 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
 import ImageDropzone from '@/features/tools/tools/_shared/image/components/upload/ImageDropzone.vue';
 import ImageToolHeader from '@/features/tools/tools/_shared/image/components/layout/ImageToolHeader.vue';
+import {
+  createImagePreviewBlob,
+  INPUT_IMAGE_ACCEPT,
+  isSupportedImageFilename,
+} from '@/features/tools/tools/_shared/image/core/image';
 import { readImageDimensions } from '@/features/tools/tools/_shared/image/core/image/dimensions';
 import {
   createImagesPdf,
@@ -48,21 +53,6 @@ onMounted(() => {
 });
 
 defineProps<{ embedded?: boolean }>();
-
-const acceptedExtensions = new Set([
-  'jpg',
-  'jpeg',
-  'png',
-  'webp',
-  'gif',
-  'bmp',
-  'tif',
-  'tiff',
-  'ico',
-  'heic',
-  'heif',
-  'svg',
-]);
 
 const items = ref<PdfImageItem[]>([]);
 const pageSize = ref<PdfPageSize>('a4');
@@ -157,7 +147,7 @@ async function addFiles(files: File[]): Promise<void> {
       if (
         originalFile.size === 0 ||
         originalFile.size > MAX_PDF_IMAGE_BYTES ||
-        !acceptedExtensions.has(fileExtension) ||
+        !isSupportedImageFilename(originalFile.name) ||
         (originalFile.type && !originalFile.type.startsWith('image/')) ||
         workingTotal + originalFile.size > MAX_PDF_TOTAL_BYTES
       ) {
@@ -176,7 +166,7 @@ async function addFiles(files: File[]): Promise<void> {
           break;
         }
 
-        previewUrl = URL.createObjectURL(file);
+        previewUrl = URL.createObjectURL(await createImagePreviewBlob(file, 'thumbnail'));
         items.value.push({
           id: createId(),
           file,
@@ -420,7 +410,7 @@ onBeforeUnmount(() => {
                 type="file"
                 multiple
                 tabindex="-1"
-                accept="image/*,.ico,.heic,.heif,.tif,.tiff,.svg"
+                :accept="INPUT_IMAGE_ACCEPT"
                 :disabled="busy"
                 @change="handleMoreInput"
               />

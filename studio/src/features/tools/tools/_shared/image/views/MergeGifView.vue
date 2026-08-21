@@ -32,6 +32,11 @@ import {
   MAX_IMAGE_SIDE,
   readImageDimensions,
 } from '@/features/tools/tools/_shared/image/core/image/dimensions';
+import {
+  createImagePreviewBlob,
+  INPUT_IMAGE_ACCEPT,
+  isSupportedImageFilename,
+} from '@/features/tools/tools/_shared/image/core/image';
 import { sanitizeSvgFile } from '@/features/tools/tools/_shared/image/core/image/process';
 import { downloadBlob } from '@/core/browser/download';
 import { formatBytes } from '@/features/tools/tools/_shared/image/format';
@@ -40,6 +45,7 @@ import { useFileHandoff } from '@/core/browser/file-handoff';
 interface GifSource {
   id: string;
   file: File;
+  renderBlob: Blob;
   previewUrl: string;
   width: number;
   height: number;
@@ -62,21 +68,6 @@ interface DecodedSource {
 defineProps<{ embedded?: boolean }>();
 
 const MAX_FILE_BYTES = 25 * 1024 * 1024;
-const acceptedExtensions = new Set([
-  'jpg',
-  'jpeg',
-  'png',
-  'webp',
-  'gif',
-  'bmp',
-  'tif',
-  'tiff',
-  'ico',
-  'heic',
-  'heif',
-  'svg',
-]);
-
 const sources = ref<GifSource[]>([]);
 const isAdding = ref(false);
 const isGenerating = ref(false);
@@ -184,8 +175,7 @@ async function addFiles(files: File[]) {
         break;
       }
 
-      const extension = fileExtension(originalFile.name);
-      if (!acceptedExtensions.has(extension)) {
+      if (!isSupportedImageFilename(originalFile.name)) {
         rejected.push(`${originalFile.name}：格式不支持`);
         continue;
       }
@@ -204,16 +194,18 @@ async function addFiles(files: File[]) {
         ) {
           throw new RangeError('IMAGE_TOO_LARGE');
         }
-        const decoded = await decodeSource(file, controller.signal);
+        const renderBlob = await createImagePreviewBlob(file);
+        const decoded = await decodeSource(renderBlob, controller.signal);
         decoded.dispose();
         if (sequence !== addSequence) {
           break;
         }
 
-        const previewUrl = URL.createObjectURL(file);
+        const previewUrl = URL.createObjectURL(renderBlob);
         accepted.push({
           id: `gif-frame-${Date.now()}-${sourceId++}`,
           file,
+          renderBlob,
           previewUrl,
           width: dimensions.width,
           height: dimensions.height,
@@ -366,7 +358,7 @@ function abortError() {
   return new DOMException('GIF 生成已取消', 'AbortError');
 }
 
-function loadHtmlImage(file: File, signal: AbortSignal): Promise<DecodedSource> {
+function loadHtmlImage(file: Blob, signal: AbortSignal): Promise<DecodedSource> {
   const url = URL.createObjectURL(file);
   const image = new Image();
 
@@ -415,7 +407,7 @@ function loadHtmlImage(file: File, signal: AbortSignal): Promise<DecodedSource> 
   });
 }
 
-async function decodeSource(file: File, signal: AbortSignal): Promise<DecodedSource> {
+async function decodeSource(file: Blob, signal: AbortSignal): Promise<DecodedSource> {
   if (signal.aborted) {
     throw abortError();
   }
@@ -476,7 +468,7 @@ async function renderFrames(
       throw abortError();
     }
 
-    const decoded = await decodeSource(item.file, signal);
+    const decoded = await decodeSource(item.renderBlob, signal);
     try {
       context.fillStyle = background.value;
       context.fillRect(0, 0, width, height);
@@ -675,7 +667,7 @@ onBeforeUnmount(() => {
                   type="file"
                   multiple
                   tabindex="-1"
-                  accept=".jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.ico,.heic,.heif,.svg"
+                  :accept="INPUT_IMAGE_ACCEPT"
                   :disabled="isBusy"
                   @change="onContinueInput"
                 />

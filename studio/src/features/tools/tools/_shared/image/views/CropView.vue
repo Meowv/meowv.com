@@ -17,6 +17,11 @@ import ImageToolHeader from '@/features/tools/tools/_shared/image/components/lay
 import ImageDropzone from '@/features/tools/tools/_shared/image/components/upload/ImageDropzone.vue';
 import { useFileHandoff } from '@/core/browser/file-handoff';
 import {
+  createImagePreviewBlob,
+  INPUT_IMAGE_ACCEPT,
+  isSupportedImageFilename,
+} from '@/features/tools/tools/_shared/image/core/image';
+import {
   MAX_IMAGE_PIXELS,
   MAX_IMAGE_SIDE,
   readImageDimensions,
@@ -40,7 +45,6 @@ interface AspectPreset {
 defineProps<{ embedded?: boolean }>();
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
-const acceptedInputExtensions = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp']);
 
 const aspectPresets: AspectPreset[] = [
   { id: 'free', label: '自由', ratio: null },
@@ -146,11 +150,6 @@ function fitAspectRect(source: ImageDimensions, ratio: number | null): SourceRec
   };
 }
 
-function fileExtension(filename: string): string {
-  const dotIndex = filename.lastIndexOf('.');
-  return dotIndex >= 0 ? filename.slice(dotIndex + 1).toLowerCase() : '';
-}
-
 function releasePreviewUrl() {
   if (!previewUrl.value) {
     return;
@@ -198,8 +197,8 @@ async function selectFile(file: File) {
     errorMessage.value = `图片超过 ${formatBytes(MAX_FILE_SIZE)}，请先缩小文件后再试。`;
     return;
   }
-  if (!acceptedInputExtensions.has(fileExtension(file.name))) {
-    errorMessage.value = '当前裁剪支持 JPG、JPEG、PNG、WebP、GIF 和 BMP 图片。';
+  if (!isSupportedImageFilename(file.name)) {
+    errorMessage.value = '当前裁剪不支持这个图片格式。';
     return;
   }
   if (file.type && !file.type.startsWith('image/')) {
@@ -222,7 +221,8 @@ async function selectFile(file: File) {
       throw new RangeError('IMAGE_TOO_LARGE');
     }
 
-    nextPreviewUrl = URL.createObjectURL(file);
+    const preview = await createImagePreviewBlob(file);
+    nextPreviewUrl = URL.createObjectURL(preview);
     await verifyPreview(nextPreviewUrl);
     if (sequence !== loadSequence) {
       URL.revokeObjectURL(nextPreviewUrl);
@@ -443,7 +443,7 @@ onBeforeUnmount(() => {
       ref="fileInput"
       class="sr-only"
       type="file"
-      accept="image/jpeg,image/png,image/webp,image/gif,image/bmp"
+      :accept="INPUT_IMAGE_ACCEPT"
       tabindex="-1"
       aria-hidden="true"
       @change="onFileInput"
@@ -482,8 +482,8 @@ onBeforeUnmount(() => {
 
         <ImageDropzone
           v-if="!selectedFile"
-          accept="image/jpeg,image/png,image/webp,image/gif,image/bmp"
-          description="支持 JPG、JPEG、PNG、WebP、GIF 和 BMP，单个文件不超过 50 MB"
+          :accept="INPUT_IMAGE_ACCEPT"
+          description="支持 AVIF、BMP、GIF、HEIC、JPEG、PNG、PSD、SVG、TIFF、WebP，单个文件不超过 50 MB"
           :disabled="isReading"
           :multiple="false"
           @files="selectDropzoneFiles"

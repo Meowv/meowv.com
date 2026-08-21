@@ -1,6 +1,7 @@
 import { computed, onBeforeUnmount, ref } from 'vue';
 
 import {
+  createImagePreviewBlob,
   getOutputFilename,
   processImage,
   readImageDimensions,
@@ -31,7 +32,7 @@ function createTaskId(): string {
   return `image-${Date.now()}-${fallbackId}`;
 }
 
-function createPreviewUrl(file: File): string {
+function createPreviewUrl(file: Blob): string {
   if (typeof URL === 'undefined' || typeof URL.createObjectURL !== 'function') {
     return '';
   }
@@ -113,7 +114,7 @@ export function useImageWorkspace() {
     const addedTasks = Array.from(files, (file): ImageTask => ({
       id: createTaskId(),
       file,
-      previewUrl: createPreviewUrl(file),
+      previewUrl: '',
       status: 'ready',
       progress: 0,
       width: 0,
@@ -127,8 +128,10 @@ export function useImageWorkspace() {
     await runPool(queuedTasks, async (task) => {
       try {
         const dimensions = await readImageDimensions(task.file);
+        const preview = await createImagePreviewBlob(task.file, 'thumbnail');
         task.width = dimensions.width;
         task.height = dimensions.height;
+        task.previewUrl = createPreviewUrl(preview);
       } catch (error) {
         task.status = 'failed';
         task.error = errorMessage(error);

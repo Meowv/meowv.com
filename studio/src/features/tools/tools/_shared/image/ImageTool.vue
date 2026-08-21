@@ -8,6 +8,7 @@ import {
   type Component,
 } from 'vue';
 import { handoffFile, receiveWindowFileHandoff } from '@/core/browser/file-handoff';
+import { disposeImagePreviewDecoder } from '@/features/tools/tools/_shared/image/core/image';
 import '@/features/tools/tools/_shared/image/image.css';
 
 type ImageToolMode =
@@ -60,7 +61,10 @@ onMounted(() => {
   });
 });
 
-onBeforeUnmount(() => stopWindowFileHandoff());
+onBeforeUnmount(() => {
+  stopWindowFileHandoff();
+  disposeImagePreviewDecoder();
+});
 </script>
 
 <template>

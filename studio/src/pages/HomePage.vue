@@ -73,6 +73,7 @@ const STUDIO_FILE_PICKER_TYPES = [
       'image/png': ['.png'],
       'image/vnd.adobe.photoshop': ['.psd'],
       'image/svg+xml': ['.svg'],
+      'image/tiff': ['.tif', '.tiff'],
       'image/webp': ['.webp'],
       'text/markdown': ['.md', '.markdown'],
       'text/plain': ['.txt'],

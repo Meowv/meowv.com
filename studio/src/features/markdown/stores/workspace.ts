@@ -137,6 +137,9 @@ interface WorkspaceMove {
 
 const DEFAULT_DEMO_PATH = '技术/.NET/EFCore性能优化.md';
 const ALLOWED_IMAGE_TYPES = new Set([
+  'image/avif',
+  'image/bmp',
+  'image/vnd.adobe.photoshop',
   'image/png',
   'image/jpeg',
   'image/gif',
@@ -145,8 +148,12 @@ const ALLOWED_IMAGE_TYPES = new Set([
   'image/heif',
   'image/tif',
   'image/tiff',
+  'image/svg+xml',
 ]);
 const ALLOWED_IMAGE_EXTENSIONS = [
+  '.avif',
+  '.bmp',
+  '.psd',
   '.png',
   '.jpg',
   '.jpeg',
@@ -156,6 +163,7 @@ const ALLOWED_IMAGE_EXTENSIONS = [
   '.heif',
   '.tif',
   '.tiff',
+  '.svg',
 ];
 const EMPTY_PARSED = parseMarkdownDocument('');
 const searchController = markRaw(createSearchController());
@@ -1972,7 +1980,11 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
 
   async function saveImageAsset(file: File): Promise<string | null> {
     if (!isAllowedImageFile(file)) {
-      notify('error', '不支持的图片格式', '仅支持 PNG、JPG、GIF、WebP、HEIC 和 TIFF。');
+      notify(
+        'error',
+        '不支持的图片格式',
+        '仅支持 AVIF、BMP、GIF、HEIC/HEIF、JPEG、PNG、PSD、SVG、TIFF 和 WebP。',
+      );
       return null;
     }
 

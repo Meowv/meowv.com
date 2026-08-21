@@ -74,7 +74,7 @@ const remoteImageDialogOpen = ref(false);
 const remoteImageUrl = ref('');
 const draftName = ref('');
 const savingDraft = ref(false);
-const IMPORT_IMAGE_EXTENSION = /\.(?:gif|heic|heif|jpe?g|png|tiff?|webp)$/i;
+const IMPORT_IMAGE_EXTENSION = /\.(?:avif|bmp|gif|heic|heif|jpe?g|png|psd|svg|tiff?|webp)$/i;
 const toolbarDisabled = computed(
   () =>
     !store.hasEditableDocument ||
@@ -1070,7 +1070,7 @@ onBeforeUnmount(() => {
         ref="imageInput"
         hidden
         type="file"
-        accept="image/png,image/jpeg,image/gif,image/webp,image/heic,image/heif,image/tiff,.heic,.heif,.tif,.tiff"
+        accept=".avif,.bmp,.gif,.heic,.heif,.jpeg,.jpg,.png,.psd,.svg,.tif,.tiff,.webp,image/avif,image/bmp,image/gif,image/heic,image/heif,image/jpeg,image/png,image/svg+xml,image/tiff,image/vnd.adobe.photoshop,image/webp"
         multiple
         @change="onImageInput"
       />

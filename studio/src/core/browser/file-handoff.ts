@@ -25,7 +25,20 @@ interface WindowFileHandoffReadyMessage {
 const currentHandoff = shallowRef<FileHandoff | null>(null);
 
 const extensionGroups: Record<StudioFeature, Set<string>> = {
-  image: new Set(['avif', 'bmp', 'gif', 'heic', 'heif', 'jpeg', 'jpg', 'png', 'svg', 'webp']),
+  image: new Set([
+    'avif',
+    'bmp',
+    'gif',
+    'heic',
+    'heif',
+    'jpeg',
+    'jpg',
+    'png',
+    'svg',
+    'tif',
+    'tiff',
+    'webp',
+  ]),
   psd: new Set(['psd']),
   markdown: new Set(['markdown', 'md', 'mdown', 'mkd', 'txt']),
   pdf: new Set(['pdf']),

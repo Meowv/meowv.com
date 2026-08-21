@@ -5,7 +5,49 @@ const MIME_ALIASES: Readonly<Record<string, string>> = {
   'image/x-icon': 'image/vnd.microsoft.icon',
   'image/ico': 'image/vnd.microsoft.icon',
   'image/tif': 'image/tiff',
+  'image/x-tiff': 'image/tiff',
+  'image/x-photoshop': 'image/vnd.adobe.photoshop',
 };
+
+export const INPUT_IMAGE_EXTENSIONS = [
+  '.avif',
+  '.bmp',
+  '.gif',
+  '.heic',
+  '.heif',
+  '.ico',
+  '.jpeg',
+  '.jpg',
+  '.png',
+  '.psd',
+  '.svg',
+  '.tif',
+  '.tiff',
+  '.webp',
+] as const;
+
+export const INPUT_IMAGE_ACCEPT = [
+  ...INPUT_IMAGE_EXTENSIONS,
+  'image/avif',
+  'image/bmp',
+  'image/gif',
+  'image/heic',
+  'image/heif',
+  'image/jpeg',
+  'image/png',
+  'image/svg+xml',
+  'image/tiff',
+  'image/vnd.adobe.photoshop',
+  'image/vnd.microsoft.icon',
+  'image/webp',
+].join(',');
+
+const INPUT_IMAGE_EXTENSION_SET = new Set<string>(INPUT_IMAGE_EXTENSIONS);
+
+export function isSupportedImageFilename(name: string): boolean {
+  const dot = name.lastIndexOf('.');
+  return dot >= 0 && INPUT_IMAGE_EXTENSION_SET.has(name.slice(dot).toLowerCase());
+}
 
 export const OUTPUT_MIME_TYPES = [
   'image/jpeg',
@@ -50,6 +92,10 @@ function detectIsoBmffMime(bytes: Uint8Array): string | null {
 
   if (brands.some((brand) => ['heic', 'heix', 'hevc', 'hevx', 'heim', 'heis'].includes(brand))) {
     return 'image/heic';
+  }
+
+  if (brands.some((brand) => brand === 'avif' || brand === 'avis')) {
+    return 'image/avif';
   }
 
   return null;
@@ -97,6 +143,10 @@ export function detectImageMimeFromBytes(bytes: Uint8Array): string | null {
     hasBytes(bytes, 0, [0x4d, 0x4d, 0x00, 0x2a])
   ) {
     return 'image/tiff';
+  }
+
+  if (hasBytes(bytes, 0, [0x38, 0x42, 0x50, 0x53])) {
+    return 'image/vnd.adobe.photoshop';
   }
 
   if (hasBytes(bytes, 0, [0x00, 0x00, 0x01, 0x00])) {

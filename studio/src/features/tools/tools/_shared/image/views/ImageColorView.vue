@@ -2,7 +2,12 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import ImageToolHeader from '@/features/tools/tools/_shared/image/components/layout/ImageToolHeader.vue';
 import ImageDropzone from '@/features/tools/tools/_shared/image/components/upload/ImageDropzone.vue';
-import { detectImageMime } from '@/features/tools/tools/_shared/image/core/image';
+import {
+  createImagePreviewBlob,
+  detectImageMime,
+  INPUT_IMAGE_ACCEPT,
+  sanitizeSvgFile,
+} from '@/features/tools/tools/_shared/image/core/image';
 import {
   Check,
   ColorPicker,
@@ -32,9 +37,6 @@ interface ImageDimensions {
 defineProps<{ embedded?: boolean }>();
 
 const MAX_FILE_BYTES = 50 * 1024 * 1024;
-const ACCEPTED_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/bmp'];
-const ACCEPTED_FILES =
-  '.jpg,.jpeg,.png,.webp,.gif,.bmp,image/jpeg,image/png,image/webp,image/gif,image/bmp';
 
 const canvas = ref<HTMLCanvasElement | null>(null);
 const sourceFile = ref<File | null>(null);
@@ -148,11 +150,12 @@ async function selectSource(files: File[]): Promise<void> {
 
   try {
     const mime = await detectImageMime(selected);
-    if (!mime || !ACCEPTED_MIME_TYPES.includes(mime)) {
-      throw new TypeError('请选择 JPG、PNG、WebP、GIF 或 BMP 图片。');
+    if (!mime) {
+      throw new TypeError('无法识别图片格式，文件可能已损坏。');
     }
 
-    bitmap = await createImageBitmap(selected);
+    const prepared = mime === 'image/svg+xml' ? await sanitizeSvgFile(selected) : selected;
+    bitmap = await createImageBitmap(await createImagePreviewBlob(prepared));
     if (sequence !== loadSequence) return;
 
     sourceFile.value = selected;
@@ -287,7 +290,7 @@ onBeforeUnmount(() => {
 
       <div v-if="!sourceFile" class="grid gap-3">
         <ImageDropzone
-          :accept="ACCEPTED_FILES"
+          :accept="INPUT_IMAGE_ACCEPT"
           description="支持 JPG、PNG、WebP、GIF、BMP，单张不超过 50 MB"
           :disabled="isReading"
           :multiple="false"
@@ -346,7 +349,7 @@ onBeforeUnmount(() => {
         <aside class="grid content-start gap-4" aria-label="颜色分析结果">
           <ImageDropzone
             compact
-            :accept="ACCEPTED_FILES"
+            :accept="INPUT_IMAGE_ACCEPT"
             description="选择另一张本地图片"
             :disabled="isReading"
             :multiple="false"
