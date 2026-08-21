@@ -296,7 +296,12 @@ function createCanvas(width: number, height: number): CanvasTarget {
 }
 
 function getContext(canvas: CanvasTarget): CanvasContext {
-  const context = canvas.getContext('2d');
+  let context: CanvasContext | null;
+  if ('toBlob' in canvas) {
+    context = canvas.getContext('2d');
+  } else {
+    context = canvas.getContext('2d');
+  }
   if (!context) {
     throw new Error('无法创建 Canvas 2D 上下文');
   }

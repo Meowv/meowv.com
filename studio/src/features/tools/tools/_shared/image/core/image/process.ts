@@ -21,6 +21,7 @@ export interface ProcessedImage extends ImageDimensions {
 }
 
 type CanvasTarget = HTMLCanvasElement | OffscreenCanvas;
+type CanvasContext = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
 const MAX_RENDER_SIDE = 16_384;
 const MAX_RENDER_PIXELS = 50_000_000;
@@ -227,8 +228,13 @@ function createCanvas(width: number, height: number): CanvasTarget {
   throw new Error('当前浏览器不支持 Canvas 图片处理');
 }
 
-function getContext(canvas: CanvasTarget) {
-  const context = canvas.getContext('2d');
+function getContext(canvas: CanvasTarget): CanvasContext {
+  let context: CanvasContext | null;
+  if ('toBlob' in canvas) {
+    context = canvas.getContext('2d');
+  } else {
+    context = canvas.getContext('2d');
+  }
   if (!context) {
     throw new Error('无法创建 Canvas 2D 上下文');
   }
