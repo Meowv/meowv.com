@@ -22,7 +22,7 @@ const props = withDefaults(
     disabled: false,
     multiple: true,
     compact: false,
-    prompt: '拖入图片，或点击选择本地文件',
+    prompt: '拖入、粘贴图片，或点击选择本地文件',
   },
 );
 

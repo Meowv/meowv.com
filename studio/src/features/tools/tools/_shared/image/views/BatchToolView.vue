@@ -24,6 +24,7 @@ import { useFileHandoff } from '@/core/browser/file-handoff';
 import ImageTaskList from '@/features/tools/tools/_shared/image/components/batch/ImageTaskList.vue';
 import ImageToolHeader from '@/features/tools/tools/_shared/image/components/layout/ImageToolHeader.vue';
 import ImageDropzone from '@/features/tools/tools/_shared/image/components/upload/ImageDropzone.vue';
+import { useImagePaste } from '@/features/tools/tools/_shared/image/composables/useImagePaste';
 import { useImageWorkspace } from '@/features/tools/tools/_shared/image/composables/useImageWorkspace';
 import {
   detectEncodingCapabilities,
@@ -132,6 +133,8 @@ const progressText = computed(() => {
   return `${completedCount.value} / ${tasks.value.length} 张完成`;
 });
 const workspaceBusy = computed(() => isAdding.value || isProcessing.value || isPackaging.value);
+
+useImagePaste(handleFiles, { disabled: workspaceBusy });
 
 const formatOptions = computed(() => {
   const options = [

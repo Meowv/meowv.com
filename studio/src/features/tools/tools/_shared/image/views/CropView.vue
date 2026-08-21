@@ -15,6 +15,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import CropEditor from '@/features/tools/tools/_shared/image/components/crop/CropEditor.vue';
 import ImageToolHeader from '@/features/tools/tools/_shared/image/components/layout/ImageToolHeader.vue';
 import ImageDropzone from '@/features/tools/tools/_shared/image/components/upload/ImageDropzone.vue';
+import { useImagePaste } from '@/features/tools/tools/_shared/image/composables/useImagePaste';
 import { useFileHandoff } from '@/core/browser/file-handoff';
 import {
   createImagePreviewBlob,
@@ -129,6 +130,11 @@ const qualityEnabled = computed(
 );
 
 const exportButtonText = computed(() => (isExporting.value ? '正在生成…' : '导出裁剪图片'));
+
+useImagePaste((files) => selectFile(files[0]!), {
+  disabled: () => isReading.value || isExporting.value,
+  multiple: false,
+});
 
 function fitAspectRect(source: ImageDimensions, ratio: number | null): SourceRect {
   if (!ratio) {

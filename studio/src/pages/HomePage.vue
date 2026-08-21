@@ -10,11 +10,14 @@ import {
   IconApps,
 } from '@tabler/icons-vue';
 import { STUDIO_FILE_ACCEPT, useFileLauncher } from '@/composables/useFileLauncher';
+import { useImagePaste } from '@/features/tools/tools/_shared/image/composables/useImagePaste';
 import fileOrbitUrl from '@/assets/images/file-orbit.png';
 
 const dragActive = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
 const { error, launchFile } = useFileLauncher();
+
+useImagePaste((files) => launchFile(files[0]!), { multiple: false });
 
 const quickRoutes = [
   {
@@ -186,7 +189,7 @@ const onDrop = async (event: DragEvent) => {
       :class="{ 'file-portal--dragging': dragActive }"
       role="button"
       tabindex="0"
-      aria-label="拖放文件到这里，或点击打开本地文件"
+      aria-label="拖放文件到这里、粘贴图片，或点击打开本地文件"
       @click="openFile"
       @keydown.enter="openFile"
       @keydown.space.prevent="openFile"
@@ -197,7 +200,7 @@ const onDrop = async (event: DragEvent) => {
     >
       <img class="file-portal__art" :src="fileOrbitUrl" alt="" draggable="false" />
       <div>
-        <strong>拖拽文件到这里，或点击打开</strong>
+        <strong>拖拽文件到这里，粘贴图片，或点击打开</strong>
         <small>文件内容不会离开当前设备</small>
       </div>
     </div>

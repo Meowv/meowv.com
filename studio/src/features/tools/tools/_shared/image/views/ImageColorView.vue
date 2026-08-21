@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import ImageToolHeader from '@/features/tools/tools/_shared/image/components/layout/ImageToolHeader.vue';
 import ImageDropzone from '@/features/tools/tools/_shared/image/components/upload/ImageDropzone.vue';
+import { useImagePaste } from '@/features/tools/tools/_shared/image/composables/useImagePaste';
 import {
   createImagePreviewBlob,
   detectImageMime,
@@ -53,6 +54,8 @@ let copiedTimer: number | undefined;
 
 const pickerActive = computed(() => activeMode.value === 'picker');
 const dominantActive = computed(() => activeMode.value === 'dominant');
+
+useImagePaste(selectSource, { disabled: isReading, multiple: false });
 
 function channelToHex(value: number): string {
   return value.toString(16).padStart(2, '0');
@@ -291,7 +294,7 @@ onBeforeUnmount(() => {
       <div v-if="!sourceFile" class="grid gap-3">
         <ImageDropzone
           :accept="INPUT_IMAGE_ACCEPT"
-          description="支持 JPG、PNG、WebP、GIF、BMP，单张不超过 50 MB"
+          description="支持 AVIF、BMP、GIF、HEIC、JPEG、PNG、PSD、SVG、TIFF、WebP，单张不超过 50 MB"
           :disabled="isReading"
           :multiple="false"
           @files="selectSource"

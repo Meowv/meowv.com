@@ -16,6 +16,7 @@ import {
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import ImageToolHeader from '@/features/tools/tools/_shared/image/components/layout/ImageToolHeader.vue';
 import ImageDropzone from '@/features/tools/tools/_shared/image/components/upload/ImageDropzone.vue';
+import { useImagePaste } from '@/features/tools/tools/_shared/image/composables/useImagePaste';
 import { receiveWindowFileHandoff, useFileHandoff } from '@/core/browser/file-handoff';
 import { downloadBlob } from '@/core/browser/download';
 import { formatBytes } from '@/features/tools/tools/_shared/image/format';
@@ -98,6 +99,12 @@ const exportPixels = computed(() => {
   return Math.round(source.width * scale) * Math.round(source.height * scale);
 });
 const exportBlocked = computed(() => exportPixels.value > MAX_EXPORT_PIXELS);
+
+useImagePaste((files) => acceptFile(files[0]!), {
+  disabled: () => status.value === 'reading' || isExporting.value,
+  multiple: false,
+  filter: isPsdFile,
+});
 const infoRows = computed(() => {
   const file = selectedFile.value;
   const info = metadata.value;
@@ -557,7 +564,7 @@ onBeforeUnmount(() => {
           accept=".psd,image/vnd.adobe.photoshop"
           description="支持 Photoshop PSD，默认最大 200 MB / 60 MP"
           :multiple="false"
-          prompt="拖入 PSD，或点击选择本地文件"
+          prompt="拖入、粘贴 PSD，或点击选择本地文件"
           @files="(files) => files[0] && acceptFile(files[0])"
         />
       </div>

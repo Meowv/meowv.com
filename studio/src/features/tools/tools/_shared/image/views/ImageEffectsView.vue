@@ -15,6 +15,7 @@ import {
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 import ImageDropzone from '@/features/tools/tools/_shared/image/components/upload/ImageDropzone.vue';
+import { useImagePaste } from '@/features/tools/tools/_shared/image/composables/useImagePaste';
 import { useFileHandoff } from '@/core/browser/file-handoff';
 import ImageToolHeader from '@/features/tools/tools/_shared/image/components/layout/ImageToolHeader.vue';
 import {
@@ -145,6 +146,8 @@ const paddingBackgroundMode = ref<'solid' | 'gradient' | 'transparent'>('solid')
 
 const content = computed(() => contentByMode[props.mode]);
 const busy = computed(() => isReading.value || isLogoReading.value || isProcessing.value);
+
+useImagePaste(selectSource, { disabled: busy, multiple: false });
 const qualityEnabled = computed(
   () => outputMime.value === 'image/jpeg' || outputMime.value === 'image/webp',
 );

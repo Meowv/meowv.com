@@ -20,6 +20,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 import ImageDropzone from '@/features/tools/tools/_shared/image/components/upload/ImageDropzone.vue';
 import ImageToolHeader from '@/features/tools/tools/_shared/image/components/layout/ImageToolHeader.vue';
+import { useImagePaste } from '@/features/tools/tools/_shared/image/composables/useImagePaste';
 import {
   encodeGifAnimation,
   MAX_GIF_FRAMES,
@@ -90,6 +91,8 @@ let generationController: AbortController | null = null;
 let sourceId = 0;
 
 const isBusy = computed(() => isAdding.value || isGenerating.value);
+
+useImagePaste(addFiles, { disabled: isBusy });
 const totalSourceBytes = computed(() =>
   sources.value.reduce((total, item) => total + item.file.size, 0),
 );

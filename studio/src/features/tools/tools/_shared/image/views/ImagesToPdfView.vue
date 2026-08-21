@@ -17,6 +17,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
 import ImageDropzone from '@/features/tools/tools/_shared/image/components/upload/ImageDropzone.vue';
 import ImageToolHeader from '@/features/tools/tools/_shared/image/components/layout/ImageToolHeader.vue';
+import { useImagePaste } from '@/features/tools/tools/_shared/image/composables/useImagePaste';
 import {
   createImagePreviewBlob,
   INPUT_IMAGE_ACCEPT,
@@ -74,6 +75,8 @@ let fallbackId = 0;
 
 const totalBytes = computed(() => items.value.reduce((total, item) => total + item.file.size, 0));
 const busy = computed(() => isAdding.value || isGenerating.value);
+
+useImagePaste(addFiles, { disabled: busy });
 const progress = computed(() =>
   items.value.length > 0 ? Math.round((completedPages.value / items.value.length) * 100) : 0,
 );
