@@ -48,7 +48,11 @@ export default defineConfig({
     outDir: 'dist',
     target: 'es2022',
     sourcemap: false,
-    rollupOptions: {
+    chunkSizeWarningLimit: 7000,
+    rolldownOptions: {
+      checks: {
+        pluginTimings: false,
+      },
       output: {
         manualChunks(id) {
           if (!id.includes('node_modules')) return undefined;

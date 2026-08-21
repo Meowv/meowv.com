@@ -1,6 +1,6 @@
 import { builtinDefForEntry, fetchBuiltinFile } from '../builtin/BuiltinShelf';
 import type { BookFormat, PublicationMetadata } from '../types/reader';
-import type { ReadingProgressV2 } from './ReadingProgress';
+import { removeReadingProgress, type ReadingProgressV2 } from './ReadingProgress';
 
 export type BookshelfAvailability = 'available' | 'permission-required' | 'missing';
 
@@ -184,7 +184,6 @@ export class BookshelfRepository {
       await withStore('readwrite', (store) => store.delete(id)).catch(() => undefined);
     }
     if (options.removeProgress) {
-      const { removeReadingProgress } = await import('./ReadingProgress');
       removeReadingProgress(id);
     }
   }
