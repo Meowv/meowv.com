@@ -74,6 +74,7 @@ const remoteImageDialogOpen = ref(false);
 const remoteImageUrl = ref('');
 const draftName = ref('');
 const savingDraft = ref(false);
+const IMPORT_IMAGE_EXTENSION = /\.(?:gif|heic|heif|jpe?g|png|tiff?|webp)$/i;
 const toolbarDisabled = computed(
   () =>
     !store.hasEditableDocument ||
@@ -595,10 +596,10 @@ async function importImages(files: readonly File[]): Promise<void> {
         references.push(`![${imageAltText(file)}](${markdownImagePath(relativePath)})`);
       }
     }
-    insertImageReferences(references);
   } finally {
     importingImages.value = false;
   }
+  insertImageReferences(references);
 }
 
 function onImageInput(event: Event): void {
@@ -613,9 +614,12 @@ function onPaste(event: ClipboardEvent): void {
     return;
   }
   const files = Array.from(event.clipboardData?.items ?? [])
-    .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
+    .filter((item) => item.kind === 'file')
     .map((item) => item.getAsFile())
-    .filter((file): file is File => file !== null);
+    .filter(
+      (file): file is File =>
+        file !== null && (file.type.startsWith('image/') || IMPORT_IMAGE_EXTENSION.test(file.name)),
+    );
 
   if (!files.length) {
     return;
@@ -1066,7 +1070,7 @@ onBeforeUnmount(() => {
         ref="imageInput"
         hidden
         type="file"
-        accept="image/png,image/jpeg,image/gif,image/webp"
+        accept="image/png,image/jpeg,image/gif,image/webp,image/heic,image/heif,image/tiff,.heic,.heif,.tif,.tiff"
         multiple
         @change="onImageInput"
       />

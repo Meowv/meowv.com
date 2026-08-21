@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Copy, Image, Search } from '@/features/markdown/icons';
+import { Copy, Image, LoaderCircle, Search } from '@/features/markdown/icons';
 import { computed, ref, watch } from 'vue';
 import { useWorkspaceStore } from '@/features/markdown/stores/workspace';
 
@@ -52,7 +52,7 @@ async function showMoreAssets(): Promise<void> {
           :key="asset.path"
           class="asset-card"
           type="button"
-          :title="`复制 ${asset.name} 的 Markdown 引用`"
+          :title="asset.previewError || `复制 ${asset.name} 的 Markdown 引用`"
           @click="store.copyAssetReference(asset)"
         >
           <span class="asset-card__preview">
@@ -62,6 +62,12 @@ async function showMoreAssets(): Promise<void> {
               :alt="asset.name"
               loading="lazy"
               decoding="async"
+            />
+            <LoaderCircle
+              v-else-if="asset.previewStatus === 'loading'"
+              :size="24"
+              class="animate-spin"
+              aria-label="正在生成图片预览"
             />
             <Image v-else :size="28" aria-hidden="true" />
           </span>

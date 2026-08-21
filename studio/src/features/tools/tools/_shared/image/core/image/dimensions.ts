@@ -235,6 +235,109 @@ function readTiffDimensions(bytes: Uint8Array, view: DataView): ImageDimensions 
   return width && height ? { width, height } : null;
 }
 
+async function readTiffDimensionsFromBlob(
+  blob: Blob,
+  headerBytes: Uint8Array,
+): Promise<ImageDimensions | null> {
+  const headerView = new DataView(
+    headerBytes.buffer,
+    headerBytes.byteOffset,
+    headerBytes.byteLength,
+  );
+  const headerDimensions = readTiffDimensions(headerBytes, headerView);
+  if (headerDimensions || headerBytes.length < 8) {
+    return headerDimensions;
+  }
+
+  const littleEndian = headerBytes[0] === 0x49;
+  const ifdOffset = headerView.getUint32(4, littleEndian);
+  if (ifdOffset > blob.size - 2) {
+    return null;
+  }
+
+  const countBytes = new Uint8Array(await blob.slice(ifdOffset, ifdOffset + 2).arrayBuffer());
+  if (countBytes.length < 2) {
+    return null;
+  }
+
+  const count = new DataView(
+    countBytes.buffer,
+    countBytes.byteOffset,
+    countBytes.byteLength,
+  ).getUint16(0, littleEndian);
+  const directorySize = 2 + count * 12;
+  if (directorySize > blob.size - ifdOffset) {
+    return null;
+  }
+
+  const directoryBytes = new Uint8Array(
+    await blob.slice(ifdOffset, ifdOffset + directorySize).arrayBuffer(),
+  );
+  if (directoryBytes.length < directorySize) {
+    return null;
+  }
+
+  const directoryView = new DataView(
+    directoryBytes.buffer,
+    directoryBytes.byteOffset,
+    directoryBytes.byteLength,
+  );
+  let width: number | null = null;
+  let height: number | null = null;
+
+  for (let index = 0; index < count; index += 1) {
+    const entryOffset = 2 + index * 12;
+    const tag = directoryView.getUint16(entryOffset, littleEndian);
+    if (tag !== 256 && tag !== 257) {
+      continue;
+    }
+
+    const type = directoryView.getUint16(entryOffset + 2, littleEndian);
+    const valueCount = directoryView.getUint32(entryOffset + 4, littleEndian);
+    const typeSize = type === 3 ? 2 : type === 4 ? 4 : 0;
+    if (!typeSize || valueCount < 1) {
+      continue;
+    }
+
+    const storedSize = typeSize * valueCount;
+    let value: number | null;
+    if (storedSize <= 4) {
+      value = readTiffValue(directoryView, littleEndian, type, valueCount, entryOffset + 8);
+    } else {
+      const valueOffset = directoryView.getUint32(entryOffset + 8, littleEndian);
+      if (valueOffset > blob.size - typeSize) {
+        continue;
+      }
+
+      const valueBytes = new Uint8Array(
+        await blob.slice(valueOffset, valueOffset + typeSize).arrayBuffer(),
+      );
+      if (valueBytes.length < typeSize) {
+        continue;
+      }
+      value = readTiffValue(
+        new DataView(valueBytes.buffer, valueBytes.byteOffset, valueBytes.byteLength),
+        littleEndian,
+        type,
+        valueCount,
+        0,
+      );
+    }
+
+    if (tag === 256) {
+      width = value;
+    } else {
+      height = value;
+    }
+
+    if (width && height) {
+      return { width, height };
+    }
+  }
+
+  return null;
+}
+
 function readHeifDimensions(bytes: Uint8Array, view: DataView) {
   for (let offset = 4; offset + 16 <= bytes.length; offset += 1) {
     if (
@@ -371,7 +474,10 @@ export async function readImageDimensions(file: Blob): Promise<ImageDimensions> 
     throw new TypeError('无法识别图片格式，文件可能已损坏');
   }
 
-  const headerDimensions = readDimensionsFromHeader(bytes, mime);
+  const headerDimensions =
+    mime === 'image/tiff'
+      ? await readTiffDimensionsFromBlob(file, bytes)
+      : readDimensionsFromHeader(bytes, mime);
   if (isValidDimensions(headerDimensions)) {
     assertSafeDimensions(headerDimensions);
   }

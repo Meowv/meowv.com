@@ -76,6 +76,10 @@ import {
   type WorkspaceNode,
   type WorkspacePreferences,
 } from '@/features/markdown/types/workspace';
+import {
+  createImagePreviewBlob,
+  disposeImagePreviewDecoder,
+} from '@/features/markdown/services/image-preview';
 
 export type WorkspacePanel = 'explorer' | 'search' | 'tags' | 'assets' | 'graph';
 export type MobileWorkspaceView = 'editor' | 'preview';
@@ -108,6 +112,8 @@ export interface WorkspaceAsset {
   path: string;
   url?: string;
   handle?: FileSystemFileHandle;
+  previewStatus: 'idle' | 'loading' | 'ready' | 'error';
+  previewError?: string;
 }
 
 export interface AppToast {
@@ -130,8 +136,27 @@ interface WorkspaceMove {
 }
 
 const DEFAULT_DEMO_PATH = '技术/.NET/EFCore性能优化.md';
-const ALLOWED_IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
-const ALLOWED_IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.webp'];
+const ALLOWED_IMAGE_TYPES = new Set([
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/webp',
+  'image/heic',
+  'image/heif',
+  'image/tif',
+  'image/tiff',
+]);
+const ALLOWED_IMAGE_EXTENSIONS = [
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.webp',
+  '.heic',
+  '.heif',
+  '.tif',
+  '.tiff',
+];
 const EMPTY_PARSED = parseMarkdownDocument('');
 const searchController = markRaw(createSearchController());
 const MINIMUM_REFRESH_INDICATOR_DURATION = 1000;
@@ -185,6 +210,13 @@ function directoryPath(path: string): string {
 function extensionOf(name: string): string {
   const index = name.lastIndexOf('.');
   return index >= 0 ? name.slice(index) : '';
+}
+
+function isAllowedImageFile(file: File): boolean {
+  return (
+    ALLOWED_IMAGE_TYPES.has(file.type.toLowerCase()) ||
+    ALLOWED_IMAGE_EXTENSIONS.some((extension) => file.name.toLowerCase().endsWith(extension))
+  );
 }
 
 function normalizeMarkdownName(name: string): string {
@@ -304,6 +336,7 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
   let documentOpenSequence = 0;
   let activeContentRevision = 0;
   let assetResolveSequence = 0;
+  let assetPreviewSequence = 0;
   let activeAssetDocumentPath = '';
   let activeObjectUrls = new Map<string, string>();
   let assetPreviewObjectUrls: string[] = [];
@@ -755,6 +788,7 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
       name: node.name,
       path: node.path,
       handle: markRaw(node.handle),
+      previewStatus: 'idle',
     }));
     documents.value = new Map();
     activeLoadedDocument.value = null;
@@ -902,7 +936,7 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
       treeRoot.value = markRaw(cloneDisplayTree(DEMO_TREE));
       documentNodes.value = [];
       fileNodes.value = [];
-      assets.value = DEMO_ASSETS.map((asset) => ({ ...asset }));
+      assets.value = DEMO_ASSETS.map((asset) => ({ ...asset, previewStatus: 'ready' }));
       searchResults.value = [];
       await searchController.clear();
       if (operation !== workspaceOperationSequence) {
@@ -1445,6 +1479,7 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
         name: node.name,
         path: node.path,
         handle: markRaw(node.handle),
+        previewStatus: 'idle',
       }));
       documents.value = new Map(refreshedDocuments);
       searchResults.value = [];
@@ -1849,10 +1884,11 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
             return;
           }
           const file = await readFile(fileHandle);
-          if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+          if (!isAllowedImageFile(file)) {
             return;
           }
-          const url = URL.createObjectURL(file);
+          const preview = await createImagePreviewBlob(file);
+          const url = URL.createObjectURL(preview);
           createdUrls.set(resolved, url);
           nextUrls[resolved] = url;
         } catch {
@@ -1881,41 +1917,70 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
   }
 
   async function loadAssetPreviews(limit = 120): Promise<void> {
+    const sequence = ++assetPreviewSequence;
     releaseAssetPreviewUrls();
     if (isDemo.value) {
       return;
     }
 
     const currentAssets = [...assets.value];
-    const previews: WorkspaceAsset[] = [];
+    const requestedPaths = new Set(currentAssets.slice(0, limit).map((asset) => asset.path));
+    assets.value = currentAssets.map((asset) => ({
+      name: asset.name,
+      path: asset.path,
+      ...(asset.handle ? { handle: asset.handle } : {}),
+      previewStatus: requestedPaths.has(asset.path) ? 'loading' : 'idle',
+    }));
+
     for (const asset of currentAssets.slice(0, limit)) {
       if (!asset.handle) {
-        previews.push(asset);
+        assets.value = assets.value.map((item) =>
+          item.path === asset.path ? { ...item, previewStatus: 'error' } : item,
+        );
         continue;
       }
       try {
         const file = await readFile(asset.handle);
-        const url = URL.createObjectURL(file);
+        const preview = await createImagePreviewBlob(file, 'thumbnail');
+        const url = URL.createObjectURL(preview);
+        if (sequence !== assetPreviewSequence) {
+          URL.revokeObjectURL(url);
+          return;
+        }
         assetPreviewObjectUrls.push(url);
-        previews.push({ ...asset, url });
-      } catch {
-        previews.push(asset);
+        assets.value = assets.value.map((item) =>
+          item.path === asset.path
+            ? { ...item, url, previewStatus: 'ready', previewError: undefined }
+            : item,
+        );
+      } catch (error) {
+        if (sequence !== assetPreviewSequence) {
+          return;
+        }
+        assets.value = assets.value.map((item) =>
+          item.path === asset.path
+            ? {
+                ...item,
+                previewStatus: 'error',
+                previewError: error instanceof Error ? error.message : '图片预览失败',
+              }
+            : item,
+        );
       }
     }
-    const remaining = currentAssets.slice(limit).map((asset) => ({
-      name: asset.name,
-      path: asset.path,
-      ...(asset.handle ? { handle: asset.handle } : {}),
-    }));
-    assets.value = [...previews, ...remaining];
   }
 
   async function saveImageAsset(file: File): Promise<string | null> {
-    if (
-      !ALLOWED_IMAGE_TYPES.has(file.type) &&
-      !ALLOWED_IMAGE_EXTENSIONS.some((extension) => file.name.toLowerCase().endsWith(extension))
-    ) {
-      notify('error', '不支持的图片格式', '仅支持 PNG、JPG、GIF 和 WebP。');
+    if (!isAllowedImageFile(file)) {
+      notify('error', '不支持的图片格式', '仅支持 PNG、JPG、GIF、WebP、HEIC 和 TIFF。');
+      return null;
+    }
+
+    let preparedPreview: Blob;
+    try {
+      preparedPreview = await createImagePreviewBlob(file);
+    } catch (error) {
+      notify('error', '图片解析失败', toMessage(error));
       return null;
     }
 
@@ -1925,10 +1990,13 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
         const reader = new FileReader();
         reader.onload = () => resolve(String(reader.result));
         reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(preparedPreview);
       });
       const path = `assets/${initialName}`;
-      assets.value = [...assets.value, { name: initialName, path, url: dataUrl }];
+      assets.value = [
+        ...assets.value,
+        { name: initialName, path, url: dataUrl, previewStatus: 'ready' },
+      ];
       assetUrls.value = { ...assetUrls.value, [path]: dataUrl };
       return relativePathBetween(activePath.value, path);
     }
@@ -2028,18 +2096,12 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
   }
 
   async function resolveWorkspaceExportImage(source: string): Promise<Blob | undefined> {
-    const handle = rootHandle.value;
-    if (!handle) {
-      return undefined;
-    }
-
     const path = [...activeObjectUrls.entries()].find(([, url]) => url === source)?.[0];
     if (!path) {
       return undefined;
     }
-
-    const fileHandle = await getFileHandleByRelativePath(handle, path);
-    return fileHandle ? await readFile(fileHandle) : undefined;
+    const response = await fetch(source);
+    return response.ok ? await response.blob() : undefined;
   }
 
   function releaseActiveObjectUrls(): void {
@@ -2059,6 +2121,7 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
   }
 
   function releaseAllObjectUrls(): void {
+    assetPreviewSequence += 1;
     releaseActiveObjectUrls();
     releaseAssetPreviewUrls();
   }
@@ -2079,6 +2142,7 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
       previewTimer = undefined;
     }
     releaseAllObjectUrls();
+    disposeImagePreviewDecoder();
     searchController.dispose();
   }
 

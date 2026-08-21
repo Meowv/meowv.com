@@ -50,6 +50,8 @@ export const IMAGE_EXTENSIONS = [
   '.png',
   '.psd',
   '.svg',
+  '.tif',
+  '.tiff',
   '.webp',
 ] as const;
 export const AUDIO_EXTENSIONS = ['.aac', '.flac', '.m4a', '.mp3', '.ogg', '.wav'] as const;

@@ -12,6 +12,7 @@ import {
   FolderPlus,
   ImageDown,
   ImageUp,
+  LoaderCircle,
   Music,
   Movie,
   Pencil,
@@ -31,6 +32,7 @@ import FileTreeNode from './FileTreeNode.vue';
 import { ACTIVE_TREE_PATH, EXPANDED_TREE_PATHS } from './tree-state';
 import { useWorkspaceStore, type DisplayTreeNode } from '@/features/markdown/stores/workspace';
 import { createTypedMediaBlob } from '@/features/markdown/services/media';
+import { createImagePreviewBlob } from '@/features/markdown/services/image-preview';
 import { openWindowFileHandoff } from '@/core/browser/file-handoff';
 
 type DialogKind = 'new-file' | 'new-folder' | 'rename' | 'delete';
@@ -83,7 +85,7 @@ const visibleRootCount = ref(ROOT_BATCH_SIZE);
 const draggingNode = ref<DisplayTreeNode | null>(null);
 const dropTargetPath = ref<string | null>(null);
 const dropTargetState = ref<DropTargetState>('none');
-const imagePreview = ref<{ name: string; url: string } | null>(null);
+const imagePreview = ref<{ name: string; url?: string; loading: boolean } | null>(null);
 const mediaPreview = ref<{
   name: string;
   url: string;
@@ -98,6 +100,7 @@ let pointerDrag: PointerDragState | null = null;
 let suppressDraggedClick = false;
 let pointerFrame: number | undefined;
 let pendingPointerPosition: { x: number; y: number } | null = null;
+let imagePreviewSequence = 0;
 const rootChildren = computed(() => store.treeRoot?.children ?? []);
 const visibleRootChildren = computed(() => rootChildren.value.slice(0, visibleRootCount.value));
 const remainingRootCount = computed(() =>
@@ -243,12 +246,23 @@ async function openNode(node: DisplayTreeNode): Promise<void> {
     }
     closeMediaPreview();
     closeImagePreview();
+    const sequence = imagePreviewSequence;
+    imagePreview.value = { name: node.name, loading: true };
     try {
       const file = await getNodeFile(node);
       if (file) {
-        imagePreview.value = { name: node.name, url: URL.createObjectURL(file) };
+        const preview = await createImagePreviewBlob(file);
+        const url = URL.createObjectURL(preview);
+        if (sequence !== imagePreviewSequence) {
+          URL.revokeObjectURL(url);
+          return;
+        }
+        imagePreview.value = { name: node.name, url, loading: false };
       }
     } catch (error) {
+      if (sequence === imagePreviewSequence) {
+        closeImagePreview();
+      }
       store.notify('error', '无法预览图片', error instanceof Error ? error.message : node.name);
     }
     return;
@@ -275,10 +289,11 @@ async function openNode(node: DisplayTreeNode): Promise<void> {
 }
 
 function closeImagePreview(): void {
-  if (imagePreview.value) {
+  imagePreviewSequence += 1;
+  if (imagePreview.value?.url) {
     URL.revokeObjectURL(imagePreview.value.url);
-    imagePreview.value = null;
   }
+  imagePreview.value = null;
 }
 
 async function openMediaPreview(node: DisplayTreeNode): Promise<void> {
@@ -1094,7 +1109,13 @@ onBeforeUnmount(() => {
             <h2 id="image-preview-title">{{ imagePreview.name }}</h2>
           </header>
           <div class="image-preview-dialog__body">
-            <img :src="imagePreview.url" :alt="imagePreview.name" />
+            <LoaderCircle
+              v-if="imagePreview.loading"
+              :size="30"
+              class="animate-spin text-[var(--color-text-muted)]"
+              aria-label="正在解析图片"
+            />
+            <img v-else-if="imagePreview.url" :src="imagePreview.url" :alt="imagePreview.name" />
           </div>
           <footer class="modal__footer">
             <button class="secondary-button button--small" type="button" @click="closeImagePreview">
