@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
-import { IconLoader2, IconRefresh, IconSearch, IconWindmill, IconX } from '@tabler/icons-vue';
+import { IconRefresh, IconSearch, IconWindmill, IconX } from '@tabler/icons-vue';
 import { useToolsBackground } from '@/features/tools/composables/useToolsBackground';
 import { useToolsPreferences } from '@/features/tools/composables/useToolsPreferences';
 
@@ -103,7 +103,12 @@ onBeforeUnmount(() => {
                   </p>
                   <small v-if="videoName">{{ videoName }}</small>
                 </div>
-                <IconLoader2 v-if="isLoading" class="is-spinning" :size="17" aria-label="加载中" />
+                <IconWindmill
+                  v-if="isLoading"
+                  class="tools-windmill-icon is-spinning"
+                  :size="18"
+                  aria-label="加载中"
+                />
               </div>
 
               <div

@@ -29,6 +29,7 @@ const surfaceOpacity = ref(DEFAULT_SURFACE_OPACITY);
 const randomShortcutEnabled = ref(false);
 const pendingVideoUrl = ref<string | null>(null);
 const isLoading = ref(false);
+const requestSequence = ref(0);
 const errorMessage = ref('');
 const settingsOpen = ref(false);
 const availableVideos = ref<string[]>([...bundledBackgroundVideos]);
@@ -179,6 +180,7 @@ function requestVideo(nextVideoUrl: string | null): void {
 }
 
 async function requestRandomVideo(): Promise<void> {
+  requestSequence.value += 1;
   await refreshAvailableVideos();
   requestVideo(chooseRandomVideo());
 }
@@ -246,6 +248,7 @@ export function useToolsBackground() {
     surfaceOpacity,
     randomShortcutEnabled,
     isLoading,
+    requestSequence,
     errorMessage,
     settingsOpen,
     openSettings,
