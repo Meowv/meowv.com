@@ -9,45 +9,81 @@ import {
 const { activeVideoUrl, pendingVideoUrl, opacity, blur, setLoading, commitVideo, rejectVideo } =
   useToolsBackground();
 
-const videoElement = ref<HTMLVideoElement | null>(null);
-const ready = ref(false);
+type VideoSlot = 0 | 1;
+
+const firstVideoElement = ref<HTMLVideoElement | null>(null);
+const secondVideoElement = ref<HTMLVideoElement | null>(null);
+const visibleSlot = ref<VideoSlot | null>(null);
+const visibleVideoUrl = ref<string | null>(null);
 let loadToken = 0;
-let loadedSource: BackgroundVideoSource | null = null;
+let pendingSlot: VideoSlot | null = null;
+let pendingUrl: string | null = null;
+const loadedSources: [BackgroundVideoSource | null, BackgroundVideoSource | null] = [null, null];
+const cleanupTimers: [
+  ReturnType<typeof setTimeout> | undefined,
+  ReturnType<typeof setTimeout> | undefined,
+] = [undefined, undefined];
+const VIDEO_CROSSFADE_MS = 280;
 
 const requestedVideoUrl = computed(() => pendingVideoUrl.value ?? activeVideoUrl.value);
+const ready = computed(() => visibleSlot.value !== null);
 const backgroundStyle = computed<Record<string, string>>(() => ({
   '--tools-background-opacity': String(opacity.value),
   '--tools-background-blur': `${blur.value}px`,
 }));
 
-function resetVideo(): void {
-  ready.value = false;
-  const video = videoElement.value;
+function getVideoElement(slot: VideoSlot): HTMLVideoElement | null {
+  return slot === 0 ? firstVideoElement.value : secondVideoElement.value;
+}
+
+function cleanupSlot(slot: VideoSlot): void {
+  clearTimeout(cleanupTimers[slot]);
+  cleanupTimers[slot] = undefined;
+
+  const video = getVideoElement(slot);
   if (video) {
     video.pause();
     video.removeAttribute('src');
     video.load();
   }
-  loadedSource?.release();
-  loadedSource = null;
+  loadedSources[slot]?.release();
+  loadedSources[slot] = null;
+}
+
+function resetVideos(): void {
+  visibleSlot.value = null;
+  visibleVideoUrl.value = null;
+  pendingSlot = null;
+  pendingUrl = null;
+  cleanupSlot(0);
+  cleanupSlot(1);
+}
+
+function scheduleSlotCleanup(slot: VideoSlot): void {
+  clearTimeout(cleanupTimers[slot]);
+  cleanupTimers[slot] = setTimeout(() => {
+    if (visibleSlot.value !== slot && pendingSlot !== slot) cleanupSlot(slot);
+  }, VIDEO_CROSSFADE_MS);
 }
 
 async function loadVideo(url: string | null): Promise<void> {
-  const video = videoElement.value;
-  if (!url || !video) return;
+  if (!url) return;
 
   const token = ++loadToken;
-  ready.value = false;
   setLoading(true);
-  video.pause();
+  const targetSlot: VideoSlot = visibleSlot.value === 0 ? 1 : 0;
+  pendingSlot = targetSlot;
+  pendingUrl = url;
+  cleanupSlot(targetSlot);
+
   const source = await loadBackgroundVideoSource(url);
-  if (token !== loadToken) {
+  const video = getVideoElement(targetSlot);
+  if (token !== loadToken || pendingSlot !== targetSlot || !video) {
     source.release();
     return;
   }
 
-  loadedSource?.release();
-  loadedSource = source;
+  loadedSources[targetSlot] = source;
   video.src = source.src;
   video.load();
 
@@ -55,22 +91,35 @@ async function loadVideo(url: string | null): Promise<void> {
   if (token !== loadToken) return;
 }
 
-async function handleCanPlay(): Promise<void> {
-  const video = videoElement.value;
-  const url = requestedVideoUrl.value;
-  if (!video || !url) return;
+async function handleCanPlay(slot: VideoSlot): Promise<void> {
+  const video = getVideoElement(slot);
+  const url = pendingUrl;
+  if (!video || pendingSlot !== slot || !url) return;
 
-  ready.value = true;
-  setLoading(false);
   await video.play().catch(() => undefined);
+  if (pendingSlot !== slot || pendingUrl !== url) return;
+
+  const previousSlot = visibleSlot.value;
+  visibleSlot.value = slot;
+  visibleVideoUrl.value = url;
+  pendingSlot = null;
+  pendingUrl = null;
+  setLoading(false);
 
   if (pendingVideoUrl.value === url) {
     commitVideo(url);
   }
+
+  if (previousSlot !== null && previousSlot !== slot) {
+    scheduleSlotCleanup(previousSlot);
+  }
 }
 
-function handleError(): void {
-  ready.value = false;
+function handleError(slot: VideoSlot): void {
+  if (pendingSlot !== slot) return;
+  cleanupSlot(slot);
+  pendingSlot = null;
+  pendingUrl = null;
   rejectVideo();
 }
 
@@ -79,10 +128,11 @@ watch(
   (url) => {
     if (!url) {
       ++loadToken;
-      resetVideo();
+      resetVideos();
       setLoading(false);
       return;
     }
+    if (url === visibleVideoUrl.value) return;
     void nextTick(() => loadVideo(url));
   },
   { immediate: true },
@@ -90,7 +140,7 @@ watch(
 
 onBeforeUnmount(() => {
   ++loadToken;
-  resetVideo();
+  resetVideos();
   setLoading(false);
 });
 </script>
@@ -104,14 +154,26 @@ onBeforeUnmount(() => {
     aria-hidden="true"
   >
     <video
-      ref="videoElement"
+      ref="firstVideoElement"
       class="tools-background__video"
+      :class="{ 'is-active': visibleSlot === 0 }"
       preload="none"
       muted
       loop
       playsinline
-      @canplay="handleCanPlay"
-      @error="handleError"
+      @canplay="handleCanPlay(0)"
+      @error="handleError(0)"
+    ></video>
+    <video
+      ref="secondVideoElement"
+      class="tools-background__video"
+      :class="{ 'is-active': visibleSlot === 1 }"
+      preload="none"
+      muted
+      loop
+      playsinline
+      @canplay="handleCanPlay(1)"
+      @error="handleError(1)"
     ></video>
     <div class="tools-background__scrim"></div>
   </div>

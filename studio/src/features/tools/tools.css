@@ -67,8 +67,13 @@
   left: -24px;
   object-fit: cover;
   filter: blur(var(--tools-background-blur));
-  opacity: var(--tools-background-opacity);
+  opacity: 0;
   transform: scale(1.04);
+  transition: opacity 260ms ease;
+}
+
+.tools-background__video.is-active {
+  opacity: var(--tools-background-opacity);
 }
 
 .tools-background__scrim {
