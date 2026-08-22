@@ -4,9 +4,11 @@ import vue from '@vitejs/plugin-vue';
 import AutoImport from 'unplugin-auto-import/vite';
 import { defineConfig } from 'vite';
 import { builtinBooksDevPlugin } from './vite/builtinBooksDevPlugin.ts';
+import { toolsBackgroundVideosPlugin } from './vite/toolsBackgroundVideosPlugin.ts';
 
 export default defineConfig({
   plugins: [
+    toolsBackgroundVideosPlugin(),
     builtinBooksDevPlugin(),
     vue({
       template: {

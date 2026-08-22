@@ -2,16 +2,17 @@
 import { computed } from 'vue';
 import {
   IconAi,
+  IconAdjustments,
   IconBookmark,
   IconConfetti,
   IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarRightCollapse,
   IconPin,
   IconPinFilled,
-  IconSearch,
   IconStarFilled,
 } from '@tabler/icons-vue';
 import ThemeToggle from '@/components/ThemeToggle.vue';
+import { useToolsBackground } from '@/features/tools/composables/useToolsBackground';
 import ToolIcon from '@/features/tools/components/ToolIcon.vue';
 import type { ToolCategoryConfig } from '@/features/tools/tools';
 
@@ -23,14 +24,11 @@ const props = withDefaults(
     visible: boolean;
     pinned: boolean;
     side: 'left' | 'right';
-    searchVisible: boolean;
     favoritesVisible?: boolean;
     aiVisible?: boolean;
     bookmarksVisible?: boolean;
     carnivalButton?: boolean;
     carnivalBurst?: number;
-    /** 是否显示搜索框开关按钮，详情页等无搜索场景可关闭 */
-    searchButton?: boolean;
   }>(),
   {
     aiVisible: false,
@@ -38,7 +36,6 @@ const props = withDefaults(
     carnivalButton: false,
     carnivalBurst: 0,
     favoritesVisible: false,
-    searchButton: true,
   },
 );
 
@@ -52,8 +49,9 @@ const emit = defineEmits<{
   leave: [];
   'update:pinned': [value: boolean];
   'update:side': [value: 'left' | 'right'];
-  'update:searchVisible': [value: boolean];
 }>();
+
+const { openSettings } = useToolsBackground();
 
 const sidebarClass = computed(() => ({
   'tools-sidebar-dock--visible': props.visible,
@@ -148,12 +146,18 @@ const sidebarClass = computed(() => ({
 
       <div
         class="tools-sidebar__footer"
-        :class="{
-          'tools-sidebar__footer--carnival': carnivalButton,
-          'tools-sidebar__footer--no-search': !searchButton,
-        }"
+        :class="{ 'tools-sidebar__footer--carnival': carnivalButton }"
       >
         <ThemeToggle :size="16" />
+        <button
+          class="tools-sidebar__setting tools-sidebar__setting--background"
+          type="button"
+          aria-label="工具设置"
+          title="工具设置"
+          @click="openSettings"
+        >
+          <IconAdjustments :size="17" aria-hidden="true" />
+        </button>
         <button
           v-if="carnivalButton"
           class="tools-sidebar__setting tools-sidebar__setting--carnival"
@@ -164,17 +168,6 @@ const sidebarClass = computed(() => ({
           @click="emit('carnival')"
         >
           <IconConfetti :key="carnivalBurst" :size="17" aria-hidden="true" />
-        </button>
-        <button
-          v-if="searchButton"
-          class="tools-sidebar__setting tools-sidebar__setting--search"
-          type="button"
-          :aria-label="searchVisible ? '隐藏搜索框' : '显示搜索框'"
-          :title="searchVisible ? '隐藏搜索框' : '显示搜索框'"
-          :aria-pressed="searchVisible"
-          @click="emit('update:searchVisible', !searchVisible)"
-        >
-          <IconSearch :size="17" aria-hidden="true" />
         </button>
         <button
           class="tools-sidebar__setting tools-sidebar__setting--dock"

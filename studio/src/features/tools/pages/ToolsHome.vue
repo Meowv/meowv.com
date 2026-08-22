@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import { IconAi, IconBookmark, IconStarFilled } from '@tabler/icons-vue';
+import { IconAi, IconBookmark, IconStarFilled, IconWindmill } from '@tabler/icons-vue';
 import BookmarkCard from '@/features/tools/components/BookmarkCard.vue';
 import ToolCard from '@/features/tools/components/ToolCard.vue';
 import ToolIcon from '@/features/tools/components/ToolIcon.vue';
@@ -11,6 +11,8 @@ import { STORAGE_POLICY, storageAvailable } from '@/core/privacy/storage';
 import { useToolCatalog } from '@/features/tools/composables/useToolCatalog';
 import { useToolFavorites } from '@/features/tools/composables/useToolFavorites';
 import { useToolsCelebration } from '@/features/tools/composables/useToolsCelebration';
+import { useToolsBackground } from '@/features/tools/composables/useToolsBackground';
+import { useToolsPreferences } from '@/features/tools/composables/useToolsPreferences';
 import { searchTools, toolCategories } from '@/features/tools/tools';
 import '@/features/tools/tools.css';
 
@@ -22,18 +24,25 @@ const carnivalFxElement = ref<HTMLCanvasElement | null>(null);
 const sidebarHovered = ref(false);
 const navigationTarget = ref<string | null>(null);
 let navigationTargetTimer: ReturnType<typeof setTimeout> | undefined;
+let windmillTimer: ReturnType<typeof setTimeout> | undefined;
 const SIDEBAR_PIN_KEY = `${STORAGE_POLICY.preferences}:tools-sidebar-pinned`;
 const SIDEBAR_SIDE_KEY = `${STORAGE_POLICY.preferences}:tools-sidebar-side`;
-const SEARCH_VISIBILITY_KEY = `${STORAGE_POLICY.preferences}:tools-search-visible`;
 const sidebarPinned = ref(readSidebarPinned());
 const sidebarSide = ref(readSidebarSide());
-const searchVisible = ref(readSearchVisible());
+const { searchVisible } = useToolsPreferences();
 const { tools, aiSites, bookmarks, refreshLinks } = useToolCatalog();
 const { favoriteIds, isFavorite, toggleFavorite } = useToolFavorites();
 const { celebrationBurst, celebrationLevel, triggerCelebration } = useToolsCelebration(
   carnivalFxElement,
   catalogElement,
 );
+const {
+  hasAvailableVideos,
+  randomShortcutEnabled,
+  isLoading: backgroundLoading,
+  requestRandomVideo,
+} = useToolsBackground();
+const windmillBurst = ref(0);
 const celebrationStyle = computed<Record<string, string>>(() => {
   if (celebrationLevel.value === 0) return {} as Record<string, string>;
   const distance = 0.35 + celebrationLevel.value * 0.16;
@@ -63,6 +72,9 @@ const toolGroups = computed(() =>
     }))
     .filter((group) => group.tools.length),
 );
+const randomShortcutVisible = computed(
+  () => randomShortcutEnabled.value && hasAvailableVideos.value,
+);
 
 function updateActiveCategory(): void {
   if (navigationTarget.value) {
@@ -71,10 +83,7 @@ function updateActiveCategory(): void {
   }
 
   const catalogTop = catalogElement.value?.getBoundingClientRect().top ?? 0;
-  const toolbarBottom = document
-    .querySelector<HTMLElement>('.tools-toolbar')
-    ?.getBoundingClientRect().bottom;
-  const anchorTop = toolbarBottom === undefined ? catalogTop + 12 : toolbarBottom + 4;
+  const anchorTop = catalogTop + 12;
   const sections = Array.from(document.querySelectorAll<HTMLElement>('[data-tools-navigation]'));
   let current = sections[0]?.dataset.toolsNavigation;
 
@@ -111,7 +120,7 @@ async function scrollToBookmarks(behavior: ScrollBehavior = 'smooth') {
   if (!section) return;
 
   setNavigationTarget('bookmarks');
-  section.scrollIntoView({ behavior, block: 'start' });
+  section.scrollIntoView({ behavior, block: 'start', inline: 'nearest' });
 
   if (!sidebarPinned.value) {
     sidebarHovered.value = false;
@@ -126,7 +135,7 @@ async function scrollToAi(behavior: ScrollBehavior = 'smooth') {
   if (!section) return;
 
   setNavigationTarget('ai');
-  section.scrollIntoView({ behavior, block: 'start' });
+  section.scrollIntoView({ behavior, block: 'start', inline: 'nearest' });
 
   if (!sidebarPinned.value) {
     sidebarHovered.value = false;
@@ -141,7 +150,7 @@ async function scrollToFavorites(behavior: ScrollBehavior = 'smooth') {
   if (!section) return;
 
   setNavigationTarget('favorites');
-  section.scrollIntoView({ behavior, block: 'start' });
+  section.scrollIntoView({ behavior, block: 'start', inline: 'nearest' });
 
   if (!sidebarPinned.value) {
     sidebarHovered.value = false;
@@ -156,7 +165,7 @@ async function scrollToCategory(categoryId: string, behavior: ScrollBehavior = '
   if (!section) return;
 
   setNavigationTarget(categoryId);
-  section.scrollIntoView({ behavior, block: 'start' });
+  section.scrollIntoView({ behavior, block: 'start', inline: 'nearest' });
 
   if (!sidebarPinned.value) {
     sidebarHovered.value = false;
@@ -178,15 +187,6 @@ function readSidebarSide(): 'left' | 'right' {
     return localStorage.getItem(SIDEBAR_SIDE_KEY) === 'right' ? 'right' : 'left';
   } catch {
     return 'left';
-  }
-}
-
-function readSearchVisible(): boolean {
-  if (!storageAvailable()) return true;
-  try {
-    return localStorage.getItem(SEARCH_VISIBILITY_KEY) !== 'false';
-  } catch {
-    return true;
   }
 }
 
@@ -212,24 +212,19 @@ function setSidebarSide(side: 'left' | 'right'): void {
   }
 }
 
-async function setSearchVisible(visible: boolean): Promise<void> {
-  searchVisible.value = visible;
-  if (!visible) query.value = '';
-  if (storageAvailable()) {
-    try {
-      if (visible) localStorage.removeItem(SEARCH_VISIBILITY_KEY);
-      else localStorage.setItem(SEARCH_VISIBILITY_KEY, 'false');
-    } catch {
-      // 本地偏好不可用时仅保留当前页面状态。
-    }
-  }
-  await nextTick();
-  updateActiveCategory();
-}
-
 function handleSidebarLeave(): void {
   if (sidebarPinned.value) return;
   sidebarHovered.value = false;
+}
+
+function triggerRandomBackground(): void {
+  if (backgroundLoading.value) return;
+  windmillBurst.value += 1;
+  clearTimeout(windmillTimer);
+  windmillTimer = setTimeout(() => {
+    windmillBurst.value = 0;
+  }, 520);
+  requestRandomVideo();
 }
 
 watch(toolGroups, async (groups) => {
@@ -254,6 +249,12 @@ watch(favoriteTools, async (favorites) => {
   updateActiveCategory();
 });
 
+watch(searchVisible, async (visible) => {
+  if (!visible) query.value = '';
+  await nextTick();
+  updateActiveCategory();
+});
+
 onMounted(async () => {
   catalogElement.value?.addEventListener('scroll', updateActiveCategory, { passive: true });
   await refreshLinks();
@@ -273,6 +274,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   clearTimeout(navigationTargetTimer);
+  clearTimeout(windmillTimer);
   catalogElement.value?.removeEventListener('scroll', updateActiveCategory);
 });
 </script>
@@ -293,7 +295,6 @@ onBeforeUnmount(() => {
       :visible="sidebarVisible"
       :pinned="sidebarPinned"
       :side="sidebarSide"
-      :search-visible="searchVisible"
       :favorites-visible="favoriteTools.length > 0"
       :ai-visible="aiSites.length > 0"
       :bookmarks-visible="bookmarks.length > 0"
@@ -308,8 +309,21 @@ onBeforeUnmount(() => {
       @carnival="triggerCelebration"
       @update:pinned="setSidebarPinned"
       @update:side="setSidebarSide"
-      @update:search-visible="setSearchVisible"
     />
+
+    <button
+      v-if="randomShortcutVisible"
+      class="tools-home__random-background"
+      :class="{ 'is-rotating': windmillBurst > 0 }"
+      type="button"
+      aria-label="随机切换视频背景"
+      title="随机切换视频背景"
+      :aria-busy="backgroundLoading"
+      :disabled="backgroundLoading"
+      @click="triggerRandomBackground"
+    >
+      <IconWindmill class="tools-windmill-icon" :size="18" aria-hidden="true" />
+    </button>
 
     <canvas ref="carnivalFxElement" class="tools-carnival__fx" aria-hidden="true"></canvas>
 

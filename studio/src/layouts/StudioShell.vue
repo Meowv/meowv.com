@@ -15,6 +15,9 @@ import {
 import StudioDonationDialog from '@/components/StudioDonationDialog.vue';
 import StudioFooter from '@/components/StudioFooter.vue';
 import StudioLogo from '@/components/StudioLogo.vue';
+import ToolsBackground from '@/features/tools/components/ToolsBackground.vue';
+import ToolsBackgroundSettings from '@/features/tools/components/ToolsBackgroundSettings.vue';
+import { useToolsBackground } from '@/features/tools/composables/useToolsBackground';
 import { STORAGE_POLICY, storageAvailable } from '@/core/privacy/storage';
 import { workspaceActive, workspaceHeaderVisible } from '@/core/shared/route-state';
 
@@ -28,6 +31,16 @@ const isToolsHomePage = computed(() => route.name === 'tools');
 const isToolDetailPage = computed(() => route.name === 'tool-detail');
 const isOfficePage = computed(() => route.meta.feature === 'office');
 const isBooksPage = computed(() => route.meta.feature === 'books');
+const { enabled: toolsBackgroundEnabled, surfaceOpacity: toolsBackgroundSurfaceOpacity } =
+  useToolsBackground();
+const toolsBackgroundStyle = computed<Record<string, string>>(() => {
+  const surfaceOpacity = toolsBackgroundSurfaceOpacity.value;
+  const textHaloOpacity = Math.max(0.12, 0.82 * (1 - surfaceOpacity));
+  return {
+    '--tools-background-surface-opacity': `${Math.round(surfaceOpacity * 100)}%`,
+    '--tools-background-text-halo-opacity': textHaloOpacity.toFixed(2),
+  };
+});
 const isImmersive = computed(
   () =>
     route.meta.feature === 'markdown' ||
@@ -195,6 +208,7 @@ function isRouteActive(to: string): boolean {
       'studio-shell--mind': isMindPage,
       'studio-shell--notes': isNotesPage,
       'studio-shell--tools': isToolsPage,
+      'studio-shell--tools-background': isToolsPage && toolsBackgroundEnabled,
       'studio-shell--tools-header': isToolsPage && toolsHeaderVisible,
       'studio-shell--tool-detail': isToolDetailPage,
       'studio-shell--office': isOfficePage,
@@ -202,6 +216,7 @@ function isRouteActive(to: string): boolean {
       'studio-shell--books-header': isBooksPage && booksHeaderVisible,
       'studio-shell--with-footer': showFooter,
     }"
+    :style="isToolsPage ? toolsBackgroundStyle : undefined"
   >
     <header
       v-show="showHeader"
@@ -260,6 +275,11 @@ function isRouteActive(to: string): boolean {
       :visible="toolsHeaderVisible"
       @click="toggleToolsHeader"
     />
+
+    <template v-if="isToolsPage">
+      <ToolsBackground />
+      <ToolsBackgroundSettings />
+    </template>
 
     <main class="studio-main">
       <slot />
