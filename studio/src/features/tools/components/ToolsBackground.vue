@@ -91,6 +91,7 @@ watch(
 onBeforeUnmount(() => {
   ++loadToken;
   resetVideo();
+  setLoading(false);
 });
 </script>
 

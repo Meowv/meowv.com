@@ -24,7 +24,6 @@ const carnivalFxElement = ref<HTMLCanvasElement | null>(null);
 const sidebarHovered = ref(false);
 const navigationTarget = ref<string | null>(null);
 let navigationTargetTimer: ReturnType<typeof setTimeout> | undefined;
-let windmillTimer: ReturnType<typeof setTimeout> | undefined;
 const SIDEBAR_PIN_KEY = `${STORAGE_POLICY.preferences}:tools-sidebar-pinned`;
 const SIDEBAR_SIDE_KEY = `${STORAGE_POLICY.preferences}:tools-sidebar-side`;
 const sidebarPinned = ref(readSidebarPinned());
@@ -42,7 +41,6 @@ const {
   isLoading: backgroundLoading,
   requestRandomVideo,
 } = useToolsBackground();
-const windmillBurst = ref(0);
 const celebrationStyle = computed<Record<string, string>>(() => {
   if (celebrationLevel.value === 0) return {} as Record<string, string>;
   const distance = 0.35 + celebrationLevel.value * 0.16;
@@ -219,11 +217,6 @@ function handleSidebarLeave(): void {
 
 function triggerRandomBackground(): void {
   if (backgroundLoading.value) return;
-  windmillBurst.value += 1;
-  clearTimeout(windmillTimer);
-  windmillTimer = setTimeout(() => {
-    windmillBurst.value = 0;
-  }, 520);
   void requestRandomVideo();
 }
 
@@ -274,7 +267,6 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   clearTimeout(navigationTargetTimer);
-  clearTimeout(windmillTimer);
   catalogElement.value?.removeEventListener('scroll', updateActiveCategory);
 });
 </script>
@@ -314,7 +306,7 @@ onBeforeUnmount(() => {
     <button
       v-if="randomShortcutVisible"
       class="tools-home__random-background"
-      :class="{ 'is-rotating': windmillBurst > 0 }"
+      :class="{ 'is-rotating': backgroundLoading }"
       type="button"
       aria-label="随机切换视频背景"
       title="随机切换视频背景"
