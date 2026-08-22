@@ -825,6 +825,16 @@ body.has-dialog-open {
   content: '';
 }
 
+:root:not([data-theme='dark']) .home-trust li::before {
+  width: 7px;
+  height: 7px;
+  border: 1px solid rgb(255 255 255 / 92%);
+  background: var(--color-brand-strong);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--color-brand) 18%, transparent),
+    0 2px 5px rgb(62 114 0 / 24%);
+}
+
 .button {
   display: inline-flex;
   min-height: 48px;
@@ -948,6 +958,82 @@ body.has-dialog-open {
 :root[data-theme='dark'] .file-portal__art {
   filter: invert(1) hue-rotate(180deg);
   mix-blend-mode: screen;
+}
+
+.studio-shell--home-background {
+  --home-background-surface: color-mix(
+    in srgb,
+    var(--color-surface-solid) var(--home-background-surface-opacity, 24%),
+    transparent
+  );
+  --home-background-text-shadow:
+    0 0 1px rgb(255 255 255 / var(--tools-background-text-halo-opacity, 0.56)),
+    0 1px 4px rgb(255 255 255 / var(--tools-background-text-halo-opacity, 0.56));
+
+  position: relative;
+  isolation: isolate;
+  color: #11181b;
+  background: transparent;
+}
+
+:root[data-theme='dark'] .studio-shell--home-background {
+  --home-background-text-shadow:
+    0 0 1px rgb(0 0 0 / var(--tools-background-text-halo-opacity, 0.56)),
+    0 1px 4px rgb(0 0 0 / var(--tools-background-text-halo-opacity, 0.56));
+
+  color: #f3f4f6;
+}
+
+.studio-shell--home-background > :is(.studio-header, .studio-main, .studio-footer) {
+  position: relative;
+}
+
+.studio-shell--home-background > .studio-header {
+  z-index: 30;
+}
+
+.studio-shell--home-background > :is(.studio-main, .studio-footer) {
+  z-index: 1;
+}
+
+.studio-shell--home-background
+  :is(.studio-header, .studio-footer, .home-shortcuts__item, .file-portal) {
+  background: var(--home-background-surface);
+}
+
+.studio-shell--home-background
+  :is(
+    .studio-header,
+    .home-copy,
+    .home-shortcuts__item,
+    .home-trust,
+    .file-portal,
+    .studio-footer
+  ) {
+  text-shadow: var(--home-background-text-shadow);
+}
+
+.studio-shell--home-background .home-copy__product--animated {
+  text-shadow: none;
+  filter: none;
+}
+
+.studio-shell--home-background .theme-toggle {
+  background: var(--home-background-surface) !important;
+}
+
+.studio-shell--home-background .file-portal:hover,
+.studio-shell--home-background .file-portal--dragging {
+  background: color-mix(in srgb, var(--color-brand-soft) 38%, var(--home-background-surface));
+}
+
+:root[data-theme='dark'] .studio-shell--home-background .file-portal {
+  background: var(--home-background-surface);
+}
+
+:root[data-theme='dark'] .studio-shell--home-background .file-portal:hover,
+:root[data-theme='dark'] .studio-shell--home-background .file-portal--dragging {
+  background: color-mix(in srgb, var(--color-brand-soft) 30%, var(--home-background-surface));
 }
 
 .file-portal strong,

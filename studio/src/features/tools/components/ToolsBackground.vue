@@ -178,3 +178,42 @@ onBeforeUnmount(() => {
     <div class="tools-background__scrim"></div>
   </div>
 </template>
+
+<style>
+.tools-background {
+  position: fixed;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 260ms ease;
+}
+
+.tools-background--ready {
+  opacity: 1;
+}
+
+.tools-background__video {
+  position: absolute;
+  width: calc(100% + 48px);
+  height: calc(100% + 48px);
+  top: -24px;
+  left: -24px;
+  object-fit: cover;
+  filter: blur(var(--tools-background-blur));
+  opacity: 0;
+  transform: scale(1.04);
+  transition: opacity 260ms ease;
+}
+
+.tools-background__video.is-active {
+  opacity: var(--tools-background-opacity);
+}
+
+.tools-background__scrim {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--color-bg) 40%, transparent);
+}
+</style>

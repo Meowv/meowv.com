@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
-import { IconRefresh, IconSearch, IconWindmill, IconX } from '@tabler/icons-vue';
+import { IconHome, IconRefresh, IconSearch, IconWindmill, IconX } from '@tabler/icons-vue';
 import { useToolsBackground } from '@/features/tools/composables/useToolsBackground';
 import { useToolsPreferences } from '@/features/tools/composables/useToolsPreferences';
 
@@ -12,6 +12,7 @@ const {
   blur,
   surfaceOpacity,
   randomShortcutEnabled,
+  applyToHome,
   hasAvailableVideos,
   isLoading,
   errorMessage,
@@ -21,6 +22,7 @@ const {
   setBlur,
   setSurfaceOpacity,
   setRandomShortcutEnabled,
+  setApplyToHome,
   cancelBackground,
 } = useToolsBackground();
 const { searchVisible, setSearchVisible } = useToolsPreferences();
@@ -188,6 +190,19 @@ onBeforeUnmount(() => {
                   aria-label="开启切换背景快捷操作"
                   :checked="randomShortcutEnabled"
                   @change="setRandomShortcutEnabled(($event.target as HTMLInputElement).checked)"
+                />
+              </label>
+
+              <label class="tools-background-dialog__toggle">
+                <span>
+                  <IconHome :size="17" aria-hidden="true" />
+                  <span><b>应用于首页</b><small>在首页同步显示视频背景</small></span>
+                </span>
+                <input
+                  type="checkbox"
+                  aria-label="将视频背景应用于首页"
+                  :checked="applyToHome"
+                  @change="setApplyToHome(($event.target as HTMLInputElement).checked)"
                 />
               </label>
             </template>

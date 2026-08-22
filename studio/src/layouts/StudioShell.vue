@@ -22,6 +22,7 @@ import { STORAGE_POLICY, storageAvailable } from '@/core/privacy/storage';
 import { workspaceActive, workspaceHeaderVisible } from '@/core/shared/route-state';
 
 const route = useRoute();
+const isHomePage = computed(() => route.name === 'home');
 const isMarkdownPage = computed(() => route.meta.feature === 'markdown');
 const isDrawPage = computed(() => route.meta.feature === 'draw');
 const isMindPage = computed(() => route.meta.feature === 'mind');
@@ -31,13 +32,21 @@ const isToolsHomePage = computed(() => route.name === 'tools');
 const isToolDetailPage = computed(() => route.name === 'tool-detail');
 const isOfficePage = computed(() => route.meta.feature === 'office');
 const isBooksPage = computed(() => route.meta.feature === 'books');
-const { enabled: toolsBackgroundEnabled, surfaceOpacity: toolsBackgroundSurfaceOpacity } =
-  useToolsBackground();
+const {
+  enabled: toolsBackgroundEnabled,
+  surfaceOpacity: toolsBackgroundSurfaceOpacity,
+  applyToHome: toolsBackgroundApplyToHome,
+} = useToolsBackground();
+const homeBackgroundEnabled = computed(
+  () => isHomePage.value && toolsBackgroundEnabled.value && toolsBackgroundApplyToHome.value,
+);
+const supportsToolsBackground = computed(() => isToolsPage.value || homeBackgroundEnabled.value);
 const toolsBackgroundStyle = computed<Record<string, string>>(() => {
   const surfaceOpacity = toolsBackgroundSurfaceOpacity.value;
   const textHaloOpacity = Math.max(0.12, 0.82 * (1 - surfaceOpacity));
   return {
     '--tools-background-surface-opacity': `${Math.round(surfaceOpacity * 100)}%`,
+    '--home-background-surface-opacity': `${Math.round(Math.max(0.18, surfaceOpacity) * 100)}%`,
     '--tools-background-text-halo-opacity': textHaloOpacity.toFixed(2),
   };
 });
@@ -209,6 +218,7 @@ function isRouteActive(to: string): boolean {
       'studio-shell--notes': isNotesPage,
       'studio-shell--tools': isToolsPage,
       'studio-shell--tools-background': isToolsPage && toolsBackgroundEnabled,
+      'studio-shell--home-background': homeBackgroundEnabled,
       'studio-shell--tools-header': isToolsPage && toolsHeaderVisible,
       'studio-shell--tool-detail': isToolDetailPage,
       'studio-shell--office': isOfficePage,
@@ -216,7 +226,7 @@ function isRouteActive(to: string): boolean {
       'studio-shell--books-header': isBooksPage && booksHeaderVisible,
       'studio-shell--with-footer': showFooter,
     }"
-    :style="isToolsPage ? toolsBackgroundStyle : undefined"
+    :style="supportsToolsBackground ? toolsBackgroundStyle : undefined"
   >
     <header
       v-show="showHeader"
@@ -276,9 +286,9 @@ function isRouteActive(to: string): boolean {
       @click="toggleToolsHeader"
     />
 
-    <template v-if="isToolsPage">
+    <template v-if="supportsToolsBackground">
       <ToolsBackground />
-      <ToolsBackgroundSettings />
+      <ToolsBackgroundSettings v-if="isToolsPage" />
     </template>
 
     <main class="studio-main">

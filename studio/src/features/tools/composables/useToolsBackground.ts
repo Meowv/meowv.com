@@ -19,6 +19,7 @@ type PersistedBackgroundState = {
   blur?: number;
   surfaceOpacity?: number;
   randomShortcutEnabled?: boolean;
+  applyToHome?: boolean;
 };
 
 const enabled = ref(false);
@@ -27,6 +28,7 @@ const opacity = ref(DEFAULT_OPACITY);
 const blur = ref(DEFAULT_BLUR);
 const surfaceOpacity = ref(DEFAULT_SURFACE_OPACITY);
 const randomShortcutEnabled = ref(false);
+const applyToHome = ref(false);
 const pendingVideoUrl = ref<string | null>(null);
 const isLoading = ref(false);
 const requestSequence = ref(0);
@@ -53,6 +55,7 @@ function persist(): void {
       blur: blur.value,
       surfaceOpacity: surfaceOpacity.value,
       randomShortcutEnabled: randomShortcutEnabled.value,
+      applyToHome: applyToHome.value,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch {
@@ -136,6 +139,7 @@ function initialize(): void {
       1,
     );
     randomShortcutEnabled.value = state.randomShortcutEnabled === true;
+    applyToHome.value = state.applyToHome === true;
 
     const savedVideoUrl = typeof state.videoUrl === 'string' ? state.videoUrl : null;
     const savedVideoPath = savedVideoUrl ? getBackgroundVideoPath(savedVideoUrl) : null;
@@ -224,6 +228,11 @@ function setRandomShortcutEnabled(value: boolean): void {
   persist();
 }
 
+function setApplyToHome(value: boolean): void {
+  applyToHome.value = value;
+  persist();
+}
+
 function cancelBackground(): void {
   enabled.value = false;
   videoUrl.value = null;
@@ -247,6 +256,7 @@ export function useToolsBackground() {
     blur,
     surfaceOpacity,
     randomShortcutEnabled,
+    applyToHome,
     isLoading,
     requestSequence,
     errorMessage,
@@ -261,6 +271,7 @@ export function useToolsBackground() {
     setBlur,
     setSurfaceOpacity,
     setRandomShortcutEnabled,
+    setApplyToHome,
     cancelBackground,
   };
 }
