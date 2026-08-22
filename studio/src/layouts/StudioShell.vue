@@ -19,7 +19,12 @@ import ToolsBackground from '@/features/tools/components/ToolsBackground.vue';
 import ToolsBackgroundSettings from '@/features/tools/components/ToolsBackgroundSettings.vue';
 import { useToolsBackground } from '@/features/tools/composables/useToolsBackground';
 import { STORAGE_POLICY, storageAvailable } from '@/core/privacy/storage';
-import { workspaceActive, workspaceHeaderVisible } from '@/core/shared/route-state';
+import {
+  drawWelcomeBackgroundVisible,
+  markdownFullscreenActive,
+  workspaceActive,
+  workspaceHeaderVisible,
+} from '@/core/shared/route-state';
 
 const route = useRoute();
 const isHomePage = computed(() => route.name === 'home');
@@ -47,8 +52,27 @@ const officeBackgroundEnabled = computed(
     toolsBackgroundEnabled.value &&
     toolsBackgroundApplyToOtherPages.value,
 );
+const markdownBackgroundEnabled = computed(
+  () =>
+    isMarkdownPage.value &&
+    !markdownFullscreenActive.value &&
+    toolsBackgroundEnabled.value &&
+    toolsBackgroundApplyToOtherPages.value,
+);
+const drawBackgroundEnabled = computed(
+  () =>
+    isDrawPage.value &&
+    drawWelcomeBackgroundVisible.value &&
+    toolsBackgroundEnabled.value &&
+    toolsBackgroundApplyToOtherPages.value,
+);
 const supportsToolsBackground = computed(
-  () => isToolsPage.value || homeBackgroundEnabled.value || officeBackgroundEnabled.value,
+  () =>
+    isToolsPage.value ||
+    homeBackgroundEnabled.value ||
+    officeBackgroundEnabled.value ||
+    markdownBackgroundEnabled.value ||
+    drawBackgroundEnabled.value,
 );
 const toolsBackgroundStyle = computed<Record<string, string>>(() => {
   const surfaceOpacity = toolsBackgroundSurfaceOpacity.value;
@@ -57,6 +81,8 @@ const toolsBackgroundStyle = computed<Record<string, string>>(() => {
     '--tools-background-surface-opacity': `${Math.round(surfaceOpacity * 100)}%`,
     '--home-background-surface-opacity': `${Math.round(Math.max(0.18, surfaceOpacity) * 100)}%`,
     '--office-background-surface-opacity': `${Math.round(Math.max(0.18, surfaceOpacity) * 100)}%`,
+    '--markdown-background-surface-opacity': `${Math.round(Math.max(0.78, surfaceOpacity) * 100)}%`,
+    '--draw-background-surface-opacity': `${Math.round(Math.max(0.18, surfaceOpacity) * 100)}%`,
     '--tools-background-text-halo-opacity': textHaloOpacity.toFixed(2),
   };
 });
@@ -230,6 +256,8 @@ function isRouteActive(to: string): boolean {
       'studio-shell--tools-background': isToolsPage && toolsBackgroundEnabled,
       'studio-shell--home-background': homeBackgroundEnabled,
       'studio-shell--office-background': officeBackgroundEnabled,
+      'studio-shell--markdown-background': markdownBackgroundEnabled,
+      'studio-shell--draw-background': drawBackgroundEnabled,
       'studio-shell--tools-header': isToolsPage && toolsHeaderVisible,
       'studio-shell--tool-detail': isToolDetailPage,
       'studio-shell--office': isOfficePage,

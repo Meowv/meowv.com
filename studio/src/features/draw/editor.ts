@@ -88,6 +88,7 @@ interface DrawSceneSaveSnapshot {
 interface DrawEditorOptions {
   returnToStudio: () => void;
   setTheme: (theme: 'light' | 'dark') => void;
+  onVideoWelcomeChange: (visible: boolean) => void;
 }
 
 interface CommandItem {
@@ -413,7 +414,11 @@ function EmptyGuide({ onOpen, onHelp }: { onOpen: () => void; onHelp: () => void
   );
 }
 
-function DrawEditor({ returnToStudio, setTheme }: DrawEditorOptions): ReactNode {
+function DrawEditor({
+  returnToStudio,
+  setTheme,
+  onVideoWelcomeChange,
+}: DrawEditorOptions): ReactNode {
   const editorRootRef = useRef<HTMLElement | null>(null);
   const libraryButtonRef = useRef<HTMLButtonElement | null>(null);
   const libraryPanelRef = useRef<HTMLElement | null>(null);
@@ -450,6 +455,18 @@ function DrawEditor({ returnToStudio, setTheme }: DrawEditorOptions): ReactNode 
   const [showEmptyGuide, setShowEmptyGuide] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const studioThemeRef = useRef(studioTheme);
+  const videoWelcomeVisible = showEmptyGuide && !fullscreen;
+
+  useEffect(() => {
+    onVideoWelcomeChange(videoWelcomeVisible);
+  }, [onVideoWelcomeChange, videoWelcomeVisible]);
+
+  useEffect(
+    () => () => {
+      onVideoWelcomeChange(false);
+    },
+    [onVideoWelcomeChange],
+  );
 
   const setNotice = useCallback((message: string) => {
     const api = apiRef.current;
@@ -921,7 +938,9 @@ function DrawEditor({ returnToStudio, setTheme }: DrawEditorOptions): ReactNode 
       const sceneChanged = sceneRef.current?.signature !== signature;
       sceneRef.current = { elements, appState, files, signature };
       if (!sceneChanged) return;
-      if (elements.some((element) => !element.isDeleted)) setShowEmptyGuide(false);
+      if (elements.some((element) => !element.isDeleted)) {
+        setShowEmptyGuide(false);
+      }
       dirtyRef.current = true;
       setSaveState(
         storageEnabledRef.current || activeDocumentRef.current.fileHandle ? 'dirty' : 'unavailable',
@@ -1601,7 +1620,7 @@ function DrawEditor({ returnToStudio, setTheme }: DrawEditorOptions): ReactNode 
     'section',
     {
       ref: editorRootRef,
-      className: `draw-editor${fullscreen ? ' draw-editor--fullscreen' : ''}${headerVisible ? '' : ' draw-editor--header-collapsed'}`,
+      className: `draw-editor${fullscreen ? ' draw-editor--fullscreen' : ''}${headerVisible ? '' : ' draw-editor--header-collapsed'}${videoWelcomeVisible ? ' draw-editor--video-welcome' : ''}`,
       'data-extra-tool': activeExtraTool ?? undefined,
       'aria-label': '白板编辑器',
     },

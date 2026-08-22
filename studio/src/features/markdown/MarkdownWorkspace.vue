@@ -13,6 +13,7 @@ import SearchPanel from '@/features/markdown/components/sidebar/SearchPanel.vue'
 import TagsPanel from '@/features/markdown/components/sidebar/TagsPanel.vue';
 import { useWorkspaceStore } from '@/features/markdown/stores/workspace';
 import { useFileHandoff } from '@/core/browser/file-handoff';
+import { markdownFullscreenActive } from '@/core/shared/route-state';
 
 const store = useWorkspaceStore();
 const { take: takeHandoffFile } = useFileHandoff();
@@ -92,6 +93,7 @@ function handleBeforeUnload(event: BeforeUnloadEvent): void {
 }
 
 watchEffect(() => {
+  markdownFullscreenActive.value = store.fullscreenPane !== null;
   document.documentElement.style.setProperty(
     '--markdown-sidebar-width',
     `${store.preferences.sidebarWidth}px`,
@@ -121,6 +123,7 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+  markdownFullscreenActive.value = false;
   document.removeEventListener('keydown', handleKeyboardShortcut);
   document.removeEventListener('fullscreenchange', handleFullscreenChange);
   globalThis.removeEventListener('beforeunload', handleBeforeUnload);

@@ -1086,6 +1086,40 @@ body.has-dialog-open {
   background: var(--office-background-surface) !important;
 }
 
+.studio-shell--markdown-background,
+.studio-shell--draw-background {
+  position: relative;
+  isolation: isolate;
+  background: transparent;
+}
+
+.studio-shell--markdown-background > .studio-main,
+.studio-shell--draw-background > .studio-main {
+  position: relative;
+  z-index: 1;
+}
+
+.studio-shell--markdown-background .markdown-studio {
+  --markdown-background-surface: color-mix(
+    in srgb,
+    var(--color-surface) var(--markdown-background-surface-opacity, 78%),
+    transparent
+  );
+
+  background: transparent;
+}
+
+.studio-shell--markdown-background .markdown-studio .app-shell {
+  background: transparent;
+}
+
+.studio-shell--markdown-background
+  .markdown-studio
+  :is(.topbar, .activity-bar, .sidebar, .statusbar) {
+  background: var(--markdown-background-surface);
+  backdrop-filter: blur(18px) saturate(125%);
+}
+
 .file-portal strong,
 .file-portal span,
 .file-portal small {

@@ -196,7 +196,10 @@ onBeforeUnmount(() => {
               <label class="tools-background-dialog__toggle">
                 <span>
                   <IconApps :size="17" aria-hidden="true" />
-                  <span><b>应用于其他页面</b><small>在首页与 Office 页面显示视频背景</small></span>
+                  <span
+                    ><b>应用于其他页面</b
+                    ><small>在首页、Office、Markdown 与白板欢迎页显示视频背景</small></span
+                  >
                 </span>
                 <input
                   type="checkbox"

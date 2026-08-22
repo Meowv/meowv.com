@@ -283,6 +283,30 @@
   height: 100%;
 }
 
+.studio-shell--draw-background:has(> .tools-background--ready) .draw-editor--video-welcome,
+.studio-shell--draw-background:has(> .tools-background--ready)
+  .draw-editor--video-welcome
+  .excalidraw {
+  background: transparent;
+}
+
+.studio-shell--draw-background:has(> .tools-background--ready)
+  .draw-editor--video-welcome
+  .excalidraw__canvas {
+  opacity: 0;
+}
+
+.studio-shell--draw-background:has(> .tools-background--ready)
+  .draw-editor--video-welcome
+  .draw-editor__header {
+  background: color-mix(
+    in srgb,
+    var(--color-surface-solid) var(--draw-background-surface-opacity, 18%),
+    transparent
+  );
+  backdrop-filter: blur(18px) saturate(125%);
+}
+
 .draw-editor__empty-guide {
   position: absolute;
   z-index: 4;

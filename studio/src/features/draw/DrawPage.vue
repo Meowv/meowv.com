@@ -2,6 +2,7 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useTheme } from '@/composables/useTheme';
+import { drawWelcomeBackgroundVisible } from '@/core/shared/route-state';
 
 const router = useRouter();
 const { setPreference } = useTheme();
@@ -13,6 +14,10 @@ function reloadPage(): void {
   window.location.reload();
 }
 
+function setVideoWelcomeVisible(visible: boolean): void {
+  drawWelcomeBackgroundVisible.value = visible;
+}
+
 onMounted(async () => {
   if (!editorHost.value) return;
 
@@ -21,6 +26,7 @@ onMounted(async () => {
     disposeEditor = mountDrawEditor(editorHost.value, {
       returnToStudio: () => void router.push('/'),
       setTheme: setPreference,
+      onVideoWelcomeChange: setVideoWelcomeVisible,
     });
   } catch (error) {
     loadError.value = error instanceof Error ? error.message : '白板加载失败，请稍后重试。';
@@ -28,6 +34,7 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+  drawWelcomeBackgroundVisible.value = false;
   disposeEditor?.();
   disposeEditor = null;
 });
