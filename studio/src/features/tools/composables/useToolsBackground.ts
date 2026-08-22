@@ -19,6 +19,7 @@ type PersistedBackgroundState = {
   blur?: number;
   surfaceOpacity?: number;
   randomShortcutEnabled?: boolean;
+  applyToOtherPages?: boolean;
   applyToHome?: boolean;
 };
 
@@ -28,7 +29,7 @@ const opacity = ref(DEFAULT_OPACITY);
 const blur = ref(DEFAULT_BLUR);
 const surfaceOpacity = ref(DEFAULT_SURFACE_OPACITY);
 const randomShortcutEnabled = ref(false);
-const applyToHome = ref(false);
+const applyToOtherPages = ref(false);
 const pendingVideoUrl = ref<string | null>(null);
 const isLoading = ref(false);
 const requestSequence = ref(0);
@@ -55,7 +56,7 @@ function persist(): void {
       blur: blur.value,
       surfaceOpacity: surfaceOpacity.value,
       randomShortcutEnabled: randomShortcutEnabled.value,
-      applyToHome: applyToHome.value,
+      applyToOtherPages: applyToOtherPages.value,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch {
@@ -139,7 +140,7 @@ function initialize(): void {
       1,
     );
     randomShortcutEnabled.value = state.randomShortcutEnabled === true;
-    applyToHome.value = state.applyToHome === true;
+    applyToOtherPages.value = state.applyToOtherPages === true || state.applyToHome === true;
 
     const savedVideoUrl = typeof state.videoUrl === 'string' ? state.videoUrl : null;
     const savedVideoPath = savedVideoUrl ? getBackgroundVideoPath(savedVideoUrl) : null;
@@ -228,8 +229,8 @@ function setRandomShortcutEnabled(value: boolean): void {
   persist();
 }
 
-function setApplyToHome(value: boolean): void {
-  applyToHome.value = value;
+function setApplyToOtherPages(value: boolean): void {
+  applyToOtherPages.value = value;
   persist();
 }
 
@@ -256,7 +257,7 @@ export function useToolsBackground() {
     blur,
     surfaceOpacity,
     randomShortcutEnabled,
-    applyToHome,
+    applyToOtherPages,
     isLoading,
     requestSequence,
     errorMessage,
@@ -271,7 +272,7 @@ export function useToolsBackground() {
     setBlur,
     setSurfaceOpacity,
     setRandomShortcutEnabled,
-    setApplyToHome,
+    setApplyToOtherPages,
     cancelBackground,
   };
 }

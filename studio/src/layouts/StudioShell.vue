@@ -35,18 +35,28 @@ const isBooksPage = computed(() => route.meta.feature === 'books');
 const {
   enabled: toolsBackgroundEnabled,
   surfaceOpacity: toolsBackgroundSurfaceOpacity,
-  applyToHome: toolsBackgroundApplyToHome,
+  applyToOtherPages: toolsBackgroundApplyToOtherPages,
 } = useToolsBackground();
 const homeBackgroundEnabled = computed(
-  () => isHomePage.value && toolsBackgroundEnabled.value && toolsBackgroundApplyToHome.value,
+  () => isHomePage.value && toolsBackgroundEnabled.value && toolsBackgroundApplyToOtherPages.value,
 );
-const supportsToolsBackground = computed(() => isToolsPage.value || homeBackgroundEnabled.value);
+const officeBackgroundEnabled = computed(
+  () =>
+    isOfficePage.value &&
+    !workspaceActive.value &&
+    toolsBackgroundEnabled.value &&
+    toolsBackgroundApplyToOtherPages.value,
+);
+const supportsToolsBackground = computed(
+  () => isToolsPage.value || homeBackgroundEnabled.value || officeBackgroundEnabled.value,
+);
 const toolsBackgroundStyle = computed<Record<string, string>>(() => {
   const surfaceOpacity = toolsBackgroundSurfaceOpacity.value;
   const textHaloOpacity = Math.max(0.12, 0.82 * (1 - surfaceOpacity));
   return {
     '--tools-background-surface-opacity': `${Math.round(surfaceOpacity * 100)}%`,
     '--home-background-surface-opacity': `${Math.round(Math.max(0.18, surfaceOpacity) * 100)}%`,
+    '--office-background-surface-opacity': `${Math.round(Math.max(0.18, surfaceOpacity) * 100)}%`,
     '--tools-background-text-halo-opacity': textHaloOpacity.toFixed(2),
   };
 });
@@ -219,6 +229,7 @@ function isRouteActive(to: string): boolean {
       'studio-shell--tools': isToolsPage,
       'studio-shell--tools-background': isToolsPage && toolsBackgroundEnabled,
       'studio-shell--home-background': homeBackgroundEnabled,
+      'studio-shell--office-background': officeBackgroundEnabled,
       'studio-shell--tools-header': isToolsPage && toolsHeaderVisible,
       'studio-shell--tool-detail': isToolDetailPage,
       'studio-shell--office': isOfficePage,

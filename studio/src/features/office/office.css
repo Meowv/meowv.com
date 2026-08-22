@@ -19,6 +19,12 @@
   --shadow-sm: 0 8px 24px rgb(0 0 0 / 28%);
 }
 
+.studio-shell--office-background .office-studio {
+  --surface: var(--office-background-surface);
+
+  text-shadow: var(--office-background-text-shadow);
+}
+
 .office-studio button:not(:disabled) {
   cursor: pointer;
 }

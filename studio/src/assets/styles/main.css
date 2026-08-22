@@ -1036,6 +1036,56 @@ body.has-dialog-open {
   background: color-mix(in srgb, var(--color-brand-soft) 30%, var(--home-background-surface));
 }
 
+.studio-shell--office-background {
+  --office-background-surface: color-mix(
+    in srgb,
+    var(--color-surface-solid) var(--office-background-surface-opacity, 24%),
+    transparent
+  );
+  --office-background-text-shadow:
+    0 0 1px rgb(255 255 255 / var(--tools-background-text-halo-opacity, 0.56)),
+    0 1px 4px rgb(255 255 255 / var(--tools-background-text-halo-opacity, 0.56));
+
+  position: relative;
+  isolation: isolate;
+  color: #11181b;
+  background: transparent;
+}
+
+:root[data-theme='dark'] .studio-shell--office-background {
+  --office-background-text-shadow:
+    0 0 1px rgb(0 0 0 / var(--tools-background-text-halo-opacity, 0.56)),
+    0 1px 4px rgb(0 0 0 / var(--tools-background-text-halo-opacity, 0.56));
+
+  color: #f3f4f6;
+}
+
+.studio-shell--office-background > :is(.studio-header, .studio-main, .studio-footer) {
+  position: relative;
+}
+
+.studio-shell--office-background > .studio-header {
+  z-index: 30;
+}
+
+.studio-shell--office-background > :is(.studio-main, .studio-footer) {
+  z-index: 1;
+}
+
+.studio-shell--office-background :is(.studio-header, .studio-footer) {
+  background: var(--office-background-surface);
+  text-shadow: var(--office-background-text-shadow);
+}
+
+.studio-shell--office-background .home-copy__product--animated {
+  text-shadow: none;
+  filter: none;
+}
+
+.studio-shell--office-background .theme-toggle {
+  background: var(--office-background-surface) !important;
+}
+
 .file-portal strong,
 .file-portal span,
 .file-portal small {

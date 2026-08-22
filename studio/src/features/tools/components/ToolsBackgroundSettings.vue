@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
-import { IconHome, IconRefresh, IconSearch, IconWindmill, IconX } from '@tabler/icons-vue';
+import { IconApps, IconRefresh, IconSearch, IconWindmill, IconX } from '@tabler/icons-vue';
 import { useToolsBackground } from '@/features/tools/composables/useToolsBackground';
 import { useToolsPreferences } from '@/features/tools/composables/useToolsPreferences';
 
@@ -12,7 +12,7 @@ const {
   blur,
   surfaceOpacity,
   randomShortcutEnabled,
-  applyToHome,
+  applyToOtherPages,
   hasAvailableVideos,
   isLoading,
   errorMessage,
@@ -22,7 +22,7 @@ const {
   setBlur,
   setSurfaceOpacity,
   setRandomShortcutEnabled,
-  setApplyToHome,
+  setApplyToOtherPages,
   cancelBackground,
 } = useToolsBackground();
 const { searchVisible, setSearchVisible } = useToolsPreferences();
@@ -195,14 +195,14 @@ onBeforeUnmount(() => {
 
               <label class="tools-background-dialog__toggle">
                 <span>
-                  <IconHome :size="17" aria-hidden="true" />
-                  <span><b>应用于首页</b><small>在首页同步显示视频背景</small></span>
+                  <IconApps :size="17" aria-hidden="true" />
+                  <span><b>应用于其他页面</b><small>在首页与 Office 页面显示视频背景</small></span>
                 </span>
                 <input
                   type="checkbox"
-                  aria-label="将视频背景应用于首页"
-                  :checked="applyToHome"
-                  @change="setApplyToHome(($event.target as HTMLInputElement).checked)"
+                  aria-label="将视频背景应用于其他页面"
+                  :checked="applyToOtherPages"
+                  @change="setApplyToOtherPages(($event.target as HTMLInputElement).checked)"
                 />
               </label>
             </template>
