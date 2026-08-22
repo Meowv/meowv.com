@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { useToolsBackground } from '@/features/tools/composables/useToolsBackground';
+import {
+  loadBackgroundVideoSource,
+  type BackgroundVideoSource,
+} from '@/features/tools/services/background-video-cache';
 
 const { activeVideoUrl, pendingVideoUrl, opacity, blur, setLoading, commitVideo, rejectVideo } =
   useToolsBackground();
@@ -8,6 +12,7 @@ const { activeVideoUrl, pendingVideoUrl, opacity, blur, setLoading, commitVideo,
 const videoElement = ref<HTMLVideoElement | null>(null);
 const ready = ref(false);
 let loadToken = 0;
+let loadedSource: BackgroundVideoSource | null = null;
 
 const requestedVideoUrl = computed(() => pendingVideoUrl.value ?? activeVideoUrl.value);
 const backgroundStyle = computed<Record<string, string>>(() => ({
@@ -18,10 +23,13 @@ const backgroundStyle = computed<Record<string, string>>(() => ({
 function resetVideo(): void {
   ready.value = false;
   const video = videoElement.value;
-  if (!video) return;
-  video.pause();
-  video.removeAttribute('src');
-  video.load();
+  if (video) {
+    video.pause();
+    video.removeAttribute('src');
+    video.load();
+  }
+  loadedSource?.release();
+  loadedSource = null;
 }
 
 async function loadVideo(url: string | null): Promise<void> {
@@ -32,7 +40,15 @@ async function loadVideo(url: string | null): Promise<void> {
   ready.value = false;
   setLoading(true);
   video.pause();
-  video.src = url;
+  const source = await loadBackgroundVideoSource(url);
+  if (token !== loadToken) {
+    source.release();
+    return;
+  }
+
+  loadedSource?.release();
+  loadedSource = source;
+  video.src = source.src;
   video.load();
 
   await nextTick();
@@ -89,7 +105,6 @@ onBeforeUnmount(() => {
     <video
       ref="videoElement"
       class="tools-background__video"
-      :src="requestedVideoUrl"
       preload="none"
       muted
       loop

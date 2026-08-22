@@ -224,7 +224,7 @@ function triggerRandomBackground(): void {
   windmillTimer = setTimeout(() => {
     windmillBurst.value = 0;
   }, 520);
-  requestRandomVideo();
+  void requestRandomVideo();
 }
 
 watch(toolGroups, async (groups) => {

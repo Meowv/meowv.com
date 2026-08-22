@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { IconLoader2, IconRefresh, IconSearch, IconWindmill, IconX } from '@tabler/icons-vue';
 import { useToolsBackground } from '@/features/tools/composables/useToolsBackground';
 import { useToolsPreferences } from '@/features/tools/composables/useToolsPreferences';
@@ -26,6 +26,15 @@ const {
 const { searchVisible, setSearchVisible } = useToolsPreferences();
 
 const closeButton = ref<HTMLButtonElement | null>(null);
+const videoName = computed(() => {
+  const encodedName = videoUrl.value?.split('/').pop()?.split('?')[0];
+  if (!encodedName) return '';
+  try {
+    return decodeURIComponent(encodedName);
+  } catch {
+    return encodedName;
+  }
+});
 let lastActiveElement: HTMLElement | null = null;
 
 function close(): void {
@@ -92,7 +101,7 @@ onBeforeUnmount(() => {
                   <p v-if="errorMessage" class="tools-background-dialog__error" role="status">
                     {{ errorMessage }}
                   </p>
-                  <small v-if="videoUrl">{{ videoUrl.split('/').pop() }}</small>
+                  <small v-if="videoName">{{ videoName }}</small>
                 </div>
                 <IconLoader2 v-if="isLoading" class="is-spinning" :size="17" aria-label="加载中" />
               </div>

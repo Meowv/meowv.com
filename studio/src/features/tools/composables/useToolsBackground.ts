@@ -1,6 +1,11 @@
 import { computed, ref } from 'vue';
-import backgroundVideos from 'virtual:tools-background-videos';
+import bundledBackgroundVideos from 'virtual:tools-background-videos';
 import { STORAGE_POLICY, storageAvailable } from '@/core/privacy/storage';
+import {
+  fetchBackgroundVideoCatalog,
+  getBackgroundVideoPath,
+} from '@/features/tools/services/background-video-catalog';
+import { pruneBackgroundVideoCache } from '@/features/tools/services/background-video-cache';
 
 const STORAGE_KEY = `${STORAGE_POLICY.preferences}:tools-background`;
 const DEFAULT_OPACITY = 0.3;
@@ -26,9 +31,10 @@ const pendingVideoUrl = ref<string | null>(null);
 const isLoading = ref(false);
 const errorMessage = ref('');
 const settingsOpen = ref(false);
+const availableVideos = ref<string[]>([...bundledBackgroundVideos]);
 let initialized = false;
+let catalogRefresh: Promise<void> | null = null;
 
-const availableVideos = computed(() => backgroundVideos);
 const hasAvailableVideos = computed(() => availableVideos.value.length > 0);
 const activeVideoUrl = computed(() => (enabled.value ? videoUrl.value : null));
 
@@ -65,48 +71,90 @@ function readPersistedState(): PersistedBackgroundState | null {
   }
 }
 
+function reconcileActiveVideo(videos: string[]): void {
+  const currentUrl = videoUrl.value;
+  if (!enabled.value || !currentUrl) return;
+
+  const currentPath = getBackgroundVideoPath(currentUrl);
+  const currentVideo = videos.find(
+    (candidate) => getBackgroundVideoPath(candidate) === currentPath,
+  );
+  if (currentVideo) {
+    if (currentVideo !== currentUrl) {
+      videoUrl.value = currentVideo;
+      persist();
+    }
+    return;
+  }
+
+  cancelBackground();
+}
+
+async function refreshAvailableVideos(): Promise<void> {
+  if (catalogRefresh) return catalogRefresh;
+
+  catalogRefresh = (async () => {
+    try {
+      const videos = await fetchBackgroundVideoCatalog();
+      availableVideos.value = videos;
+      reconcileActiveVideo(videos);
+      await pruneBackgroundVideoCache(videos);
+    } catch {
+      // 开发服务器不提供目录 JSON 时继续使用构建阶段生成的列表。
+    } finally {
+      catalogRefresh = null;
+    }
+  })();
+
+  return catalogRefresh;
+}
+
 function initialize(): void {
   if (initialized) return;
   initialized = true;
 
   const state = readPersistedState();
-  if (!state) return;
+  if (state) {
+    opacity.value = clamp(
+      typeof state.opacity === 'number' && Number.isFinite(state.opacity)
+        ? state.opacity
+        : DEFAULT_OPACITY,
+      0,
+      1,
+    );
+    blur.value = clamp(
+      typeof state.blur === 'number' && Number.isFinite(state.blur) ? state.blur : 0,
+      0,
+      24,
+    );
+    surfaceOpacity.value = clamp(
+      typeof state.surfaceOpacity === 'number' && Number.isFinite(state.surfaceOpacity)
+        ? state.surfaceOpacity
+        : DEFAULT_SURFACE_OPACITY,
+      0,
+      1,
+    );
+    randomShortcutEnabled.value = state.randomShortcutEnabled === true;
 
-  opacity.value = clamp(
-    typeof state.opacity === 'number' && Number.isFinite(state.opacity)
-      ? state.opacity
-      : DEFAULT_OPACITY,
-    0,
-    1,
-  );
-  blur.value = clamp(
-    typeof state.blur === 'number' && Number.isFinite(state.blur) ? state.blur : 0,
-    0,
-    24,
-  );
-  surfaceOpacity.value = clamp(
-    typeof state.surfaceOpacity === 'number' && Number.isFinite(state.surfaceOpacity)
-      ? state.surfaceOpacity
-      : DEFAULT_SURFACE_OPACITY,
-    0,
-    1,
-  );
-  randomShortcutEnabled.value = state.randomShortcutEnabled === true;
-
-  const savedVideoUrl = typeof state.videoUrl === 'string' ? state.videoUrl : null;
-  if (state.enabled === true && savedVideoUrl && backgroundVideos.includes(savedVideoUrl)) {
-    enabled.value = true;
-    videoUrl.value = savedVideoUrl;
-  } else if (state.enabled === true && savedVideoUrl) {
-    // 持久化的视频已被删除，避免后续重复请求失效资源。
-    enabled.value = false;
-    videoUrl.value = null;
-    persist();
+    const savedVideoUrl = typeof state.videoUrl === 'string' ? state.videoUrl : null;
+    const savedVideoPath = savedVideoUrl ? getBackgroundVideoPath(savedVideoUrl) : null;
+    if (
+      state.enabled === true &&
+      savedVideoUrl &&
+      savedVideoPath &&
+      /^\/data\/background\/[^/]+\.mp4$/i.test(savedVideoPath)
+    ) {
+      enabled.value = true;
+      videoUrl.value = savedVideoUrl;
+    }
   }
+
+  void refreshAvailableVideos();
 }
 
 function openSettings(): void {
   settingsOpen.value = true;
+  void refreshAvailableVideos();
 }
 
 function closeSettings(): void {
@@ -114,22 +162,24 @@ function closeSettings(): void {
 }
 
 function chooseRandomVideo(): string | null {
-  if (!backgroundVideos.length) return null;
-  if (backgroundVideos.length === 1) return backgroundVideos[0] ?? null;
+  const videos = availableVideos.value;
+  if (!videos.length) return null;
+  if (videos.length === 1) return videos[0] ?? null;
 
-  const candidates = backgroundVideos.filter((candidate) => candidate !== videoUrl.value);
-  const pool = candidates.length ? candidates : backgroundVideos;
+  const candidates = videos.filter((candidate) => candidate !== videoUrl.value);
+  const pool = candidates.length ? candidates : videos;
   const index = Math.floor(Math.random() * pool.length);
   return pool[index] ?? null;
 }
 
 function requestVideo(nextVideoUrl: string | null): void {
-  if (!nextVideoUrl || !backgroundVideos.includes(nextVideoUrl)) return;
+  if (!nextVideoUrl || !availableVideos.value.includes(nextVideoUrl)) return;
   errorMessage.value = '';
   pendingVideoUrl.value = nextVideoUrl;
 }
 
-function requestRandomVideo(): void {
+async function requestRandomVideo(): Promise<void> {
+  await refreshAvailableVideos();
   requestVideo(chooseRandomVideo());
 }
 
