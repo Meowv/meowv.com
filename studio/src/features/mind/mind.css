@@ -267,6 +267,31 @@
   cursor: grab;
 }
 
+.studio-shell--mind-background:has(> .tools-background--ready)
+  :is(.mind-editor, .mind-editor__workspace),
+.studio-shell--mind-background:has(> .tools-background--ready) .mind-visual-canvas .map-container {
+  background: transparent !important;
+}
+
+.studio-shell--mind-background:has(> .tools-background--ready)
+  :is(.mind-markdown-editor, .mind-markmap-preview) {
+  background: color-mix(
+    in srgb,
+    var(--color-surface-solid) var(--mind-background-surface-opacity, 18%),
+    transparent
+  );
+  backdrop-filter: blur(18px) saturate(125%);
+}
+
+.studio-shell--mind-background:has(> .tools-background--ready) .mind-editor__header {
+  background: color-mix(
+    in srgb,
+    var(--color-surface-solid) var(--mind-background-surface-opacity, 18%),
+    transparent
+  );
+  backdrop-filter: blur(18px) saturate(125%);
+}
+
 .mind-visual-canvas.mind-is-panning .map-container {
   cursor: grabbing;
 }

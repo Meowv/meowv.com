@@ -170,6 +170,19 @@
   isolation: isolate;
 }
 
+.studio-shell--notes-background:has(> .tools-background--ready) .notes-editor {
+  background: transparent;
+}
+
+.studio-shell--notes-background:has(> .tools-background--ready) .notes-editor__header {
+  background: color-mix(
+    in srgb,
+    var(--color-surface-solid) var(--notes-background-surface-opacity, 18%),
+    transparent
+  );
+  backdrop-filter: blur(18px) saturate(125%);
+}
+
 .notes-editor--carnival .note-card {
   will-change: transform;
 }

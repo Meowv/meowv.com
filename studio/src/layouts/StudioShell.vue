@@ -66,13 +66,24 @@ const drawBackgroundEnabled = computed(
     toolsBackgroundEnabled.value &&
     toolsBackgroundApplyToOtherPages.value,
 );
+const mindBackgroundEnabled = computed(
+  () =>
+    isMindPage.value &&
+    toolsBackgroundEnabled.value &&
+    toolsBackgroundApplyToOtherPages.value,
+);
+const notesBackgroundEnabled = computed(
+  () => isNotesPage.value && toolsBackgroundEnabled.value && toolsBackgroundApplyToOtherPages.value,
+);
 const supportsToolsBackground = computed(
   () =>
     isToolsPage.value ||
     homeBackgroundEnabled.value ||
     officeBackgroundEnabled.value ||
     markdownBackgroundEnabled.value ||
-    drawBackgroundEnabled.value,
+    drawBackgroundEnabled.value ||
+    mindBackgroundEnabled.value ||
+    notesBackgroundEnabled.value,
 );
 const toolsBackgroundStyle = computed<Record<string, string>>(() => {
   const surfaceOpacity = toolsBackgroundSurfaceOpacity.value;
@@ -83,6 +94,8 @@ const toolsBackgroundStyle = computed<Record<string, string>>(() => {
     '--office-background-surface-opacity': `${Math.round(Math.max(0.18, surfaceOpacity) * 100)}%`,
     '--markdown-background-surface-opacity': `${Math.round(Math.max(0.78, surfaceOpacity) * 100)}%`,
     '--draw-background-surface-opacity': `${Math.round(Math.max(0.18, surfaceOpacity) * 100)}%`,
+    '--mind-background-surface-opacity': `${Math.round(Math.max(0.18, surfaceOpacity) * 100)}%`,
+    '--notes-background-surface-opacity': `${Math.round(Math.max(0.18, surfaceOpacity) * 100)}%`,
     '--tools-background-text-halo-opacity': textHaloOpacity.toFixed(2),
   };
 });
@@ -258,6 +271,8 @@ function isRouteActive(to: string): boolean {
       'studio-shell--office-background': officeBackgroundEnabled,
       'studio-shell--markdown-background': markdownBackgroundEnabled,
       'studio-shell--draw-background': drawBackgroundEnabled,
+      'studio-shell--mind-background': mindBackgroundEnabled,
+      'studio-shell--notes-background': notesBackgroundEnabled,
       'studio-shell--tools-header': isToolsPage && toolsHeaderVisible,
       'studio-shell--tool-detail': isToolDetailPage,
       'studio-shell--office': isOfficePage,
