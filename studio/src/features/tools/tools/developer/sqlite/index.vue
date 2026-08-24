@@ -853,14 +853,14 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .sqlite-tool {
-  min-height: 620px;
+  min-height: 0;
   color: var(--tools-text, #20232a);
 }
 .sqlite-welcome {
   display: grid;
   place-items: center;
-  min-height: 550px;
-  padding: 48px 24px;
+  min-height: 390px;
+  padding: 32px 24px;
   text-align: center;
   border: 1px dashed color-mix(in srgb, var(--tools-accent) 42%, transparent);
   border-radius: 24px;
