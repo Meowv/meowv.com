@@ -2939,10 +2939,6 @@
 .studio-shell--tools-background:has(> .tools-background--ready)
   .tools-detail__content
   :is(
-    .tool-code-editor,
-    .monaco-editor,
-    .monaco-diff-editor,
-    .sqlite-sql-editor,
     .json-visualization__canvas,
     .stroke-order-tool__character,
     .tool-image-preview,
@@ -2962,6 +2958,13 @@
   --color-surface-soft: var(--tools-background-content-soft);
   --color-surface-muted: var(--tools-background-content-soft);
   --tools-surface: var(--tools-background-content-solid);
+}
+
+.studio-shell--tools-background:has(> .tools-background--ready)
+  .tools-detail__content
+  :is(.tool-code-editor, .monaco-diff-editor, .sqlite-sql-editor)
+  :is(.monaco-editor, .monaco-editor-background, .margin, .lines-decorations, .ime-text-area) {
+  background: transparent !important;
 }
 
 .studio-shell--tools-background:has(> .tools-background--ready)
