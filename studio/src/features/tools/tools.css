@@ -2898,7 +2898,18 @@
 .studio-shell--tools-background:has(> .tools-background--ready)
   .tools-detail__content
   :is(
-    input:not([type='range'], [type='radio'], [type='checkbox'], [type='color']),
+    input:not(
+      [type='range'],
+      [type='radio'],
+      [type='checkbox'],
+      [type='color'],
+      [type='file'],
+      [type='hidden'],
+      [type='button'],
+      [type='submit'],
+      [type='reset'],
+      [type='image']
+    ),
     textarea,
     select,
     [contenteditable='true'],
@@ -2907,6 +2918,22 @@
     .tool-symbol-search
   ) {
   background: var(--tools-background-surface-control) !important;
+}
+
+.studio-shell--tools-background:has(> .tools-background--ready)
+  .tools-detail-route
+  :is(.tool-button--secondary, .tool-button--quiet):hover:not(:disabled),
+.studio-shell--tools-background:has(> .tools-background--ready)
+  .tools-detail-route
+  .tools-page-header__favorite:is(:hover, .is-active),
+.studio-shell--tools-background:has(> .tools-background--ready)
+  .tools-detail-route
+  .tool-file-uploader__dropzone:is(:hover, .is-dragging) {
+  background: color-mix(
+    in srgb,
+    var(--tools-accent) 10%,
+    var(--tools-background-surface-control)
+  ) !important;
 }
 
 .studio-shell--tools-background:has(> .tools-background--ready)

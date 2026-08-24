@@ -465,6 +465,11 @@
   transition: width 180ms ease;
 }
 
+.image-feature .psd-viewer__progress > .psd-viewer__button {
+  grid-column: 2;
+  justify-self: end;
+}
+
 @keyframes psd-spin {
   to {
     transform: rotate(360deg);
@@ -806,7 +811,12 @@
 
 .studio-shell--tools-background:has(> .tools-background--ready)
   .image-feature
-  :is(.image-select__control, .psd-viewer__button, .psd-viewer__icon-button, .psd-viewer__zoom) {
+  :is(
+    .image-select__control,
+    .psd-viewer__button:not(.psd-viewer__button--primary),
+    .psd-viewer__icon-button,
+    .psd-viewer__zoom
+  ) {
   background: var(--tools-background-surface-control);
 }
 
