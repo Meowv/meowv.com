@@ -1,7 +1,7 @@
 import { shallowRef } from 'vue';
 
 export type StudioFeature =
-  'image' | 'psd' | 'markdown' | 'pdf' | 'office' | 'draw' | 'mind' | 'notes' | 'book';
+  'image' | 'psd' | 'markdown' | 'pdf' | 'office' | 'draw' | 'mind' | 'notes' | 'book' | 'sqlite';
 
 export interface FileHandoff {
   feature: StudioFeature;
@@ -47,6 +47,7 @@ const extensionGroups: Record<StudioFeature, Set<string>> = {
   mind: new Set(['mind']),
   notes: new Set<string>([]),
   book: new Set(['azw3', 'cbz', 'epub', 'fb2', 'mobi']),
+  sqlite: new Set(['db', 'sqlite', 'sqlite3', 'db3']),
 };
 
 export function featureForFile(file: File): StudioFeature | null {
@@ -69,6 +70,7 @@ export function routeForFeature(feature: StudioFeature, file?: File): string {
     mind: '/mind',
     notes: '/notes',
     book: '/books',
+    sqlite: '/tools/sqlite',
   };
 
   if (feature !== 'office' || !file) return defaultRoutes[feature];

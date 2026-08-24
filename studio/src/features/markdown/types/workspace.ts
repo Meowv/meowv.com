@@ -61,6 +61,7 @@ export const PDF_EXTENSIONS = ['.pdf'] as const;
 export const DRAW_EXTENSIONS = ['.excalidraw'] as const;
 export const MIND_EXTENSIONS = ['.mind'] as const;
 export const BOOK_EXTENSIONS = ['.azw3', '.cbz', '.epub', '.fb2', '.mobi'] as const;
+export const SQLITE_EXTENSIONS = ['.db', '.sqlite', '.sqlite3', '.db3'] as const;
 
 export type WorkspaceEntryKind = 'directory' | 'file';
 export type WorkspaceFileCategory =
@@ -74,6 +75,7 @@ export type WorkspaceFileCategory =
   | 'draw'
   | 'mind'
   | 'book'
+  | 'sqlite'
   | 'other';
 
 interface WorkspaceNodeBase {

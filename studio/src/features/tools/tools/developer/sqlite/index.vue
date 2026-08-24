@@ -17,6 +17,7 @@ import {
 } from '@tabler/icons-vue';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { downloadBlob } from '@/core/browser/download';
+import { receiveWindowFileHandoff, useFileHandoff } from '@/core/browser/file-handoff';
 import SqlCodeEditor from './components/SqlCodeEditor.vue';
 import { useSqliteWorker } from './composables/useSqliteWorker';
 import type {
@@ -35,6 +36,7 @@ type EditorMode = 'insert' | 'update';
 const ACCEPTED_FILES = '.db,.sqlite,.sqlite3,.db3,application/x-sqlite3,application/vnd.sqlite3';
 const PAGE_SIZES = [20, 50, 100, 200, 500];
 const { request } = useSqliteWorker();
+const sqliteFileHandoff = useFileHandoff();
 const fileInput = ref<HTMLInputElement | null>(null);
 const activeTab = ref<WorkspaceTab>('browse');
 const meta = ref<DatabaseMeta | null>(null);
@@ -63,6 +65,7 @@ const editingIdentity = ref<RowIdentity | null>(null);
 const formValues = ref<Record<string, string>>({});
 const nullColumns = ref(new Set<string>());
 const rowEditorOpen = ref(false);
+let stopWindowFileHandoff = (): void => undefined;
 
 const tables = computed(() => schemaObjects.value.filter((object) => object.type === 'table'));
 const views = computed(() => schemaObjects.value.filter((object) => object.type === 'view'));
@@ -405,6 +408,9 @@ watch([pageSize, search, searchColumn, sortColumn, sortDirection], () => {
 onMounted(async () => {
   window.addEventListener('keydown', handleKeyboard);
   window.addEventListener('beforeunload', preventUnload);
+  const pendingHandoff = sqliteFileHandoff.take('sqlite');
+  if (pendingHandoff) void openDatabase(pendingHandoff);
+  stopWindowFileHandoff = receiveWindowFileHandoff('sqlite', (file) => void openDatabase(file));
   try {
     await request('init');
   } catch (cause) {
@@ -415,6 +421,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleKeyboard);
   window.removeEventListener('beforeunload', preventUnload);
+  stopWindowFileHandoff();
 });
 </script>
 

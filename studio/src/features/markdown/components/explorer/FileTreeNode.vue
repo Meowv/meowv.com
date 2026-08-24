@@ -5,6 +5,7 @@ import {
   ChevronsDown,
   ChevronRight,
   BrandAdobePhotoshop,
+  Database,
   Chalkboard,
   File,
   FileCode2,
@@ -91,6 +92,7 @@ const fileIcon = computed(() => {
   if (props.node.category === 'video') return Video;
   if (props.node.category === 'pdf') return FileTypePdf;
   if (props.node.category === 'book') return Book;
+  if (props.node.category === 'sqlite') return Database;
   if (props.node.extension === '.xlsx') return FileSpreadsheet;
   if (props.node.extension === '.pptx') return Presentation;
   if (props.node.extension === '.csv') return Table2;

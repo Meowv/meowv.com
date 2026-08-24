@@ -18,6 +18,7 @@ export {
   IconCoin as HandCoins,
   IconCopy as Copy,
   IconCrop as Crop,
+  IconDatabase as Database,
   IconDeviceFloppy as Save,
   IconDownload as Download,
   IconEdit as SquarePen,

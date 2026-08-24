@@ -6,6 +6,7 @@ import {
   Chalkboard,
   ChevronsDown,
   Crop,
+  Database,
   FileDescription,
   FileTypePdf,
   FilePlus2,
@@ -285,6 +286,10 @@ async function openNode(node: DisplayTreeNode): Promise<void> {
   }
   if (node.category === 'mind') {
     await openMindInNewWindow(node);
+    return;
+  }
+  if (node.category === 'sqlite') {
+    await openSqliteInNewWindow(node);
   }
 }
 
@@ -432,6 +437,39 @@ async function openMindInNewWindow(node: DisplayTreeNode): Promise<void> {
   } catch (error) {
     popup.close();
     store.notify('error', '无法打开思维导图', error instanceof Error ? error.message : node.name);
+  }
+}
+
+async function openSqliteInNewWindow(node: DisplayTreeNode): Promise<void> {
+  contextMenu.value = null;
+  const popup = globalThis.open('about:blank', '_blank');
+  if (!popup) {
+    store.notify(
+      'error',
+      '无法打开 SQLite Online',
+      '浏览器阻止了新窗口，请允许本站打开弹出式窗口。',
+    );
+    return;
+  }
+  try {
+    if (!(await store.saveActiveDocument())) {
+      popup.close();
+      return;
+    }
+    const file = await getNodeFile(node);
+    if (!file) {
+      throw new Error('无法读取 SQLite 数据库文件。');
+    }
+    closeImagePreview();
+    closeMediaPreview();
+    openWindowFileHandoff(popup, '/tools/sqlite', 'sqlite', file);
+  } catch (error) {
+    popup.close();
+    store.notify(
+      'error',
+      '无法打开 SQLite Online',
+      error instanceof Error ? error.message : node.name,
+    );
   }
 }
 
@@ -1002,6 +1040,17 @@ onBeforeUnmount(() => {
             @click="openMindInNewWindow(contextMenu.node)"
           >
             <Sitemap :size="16" />使用思维导图打开
+          </button>
+          <div class="context-menu__separator" />
+        </template>
+        <template v-else-if="contextMenu.node.category === 'sqlite'">
+          <button
+            class="context-menu__item"
+            type="button"
+            role="menuitem"
+            @click="openSqliteInNewWindow(contextMenu.node)"
+          >
+            <Database :size="16" />使用 SQLite Online 打开
           </button>
           <div class="context-menu__separator" />
         </template>

@@ -7,6 +7,7 @@ import {
   MIND_EXTENSIONS,
   OFFICE_EXTENSIONS,
   PDF_EXTENSIONS,
+  SQLITE_EXTENSIONS,
   TEXT_EXTENSIONS,
   VIDEO_EXTENSIONS,
   WorkspaceError,
@@ -38,6 +39,7 @@ const PDF_EXTENSION_SET = normalizeExtensions(PDF_EXTENSIONS);
 const DRAW_EXTENSION_SET = normalizeExtensions(DRAW_EXTENSIONS);
 const MIND_EXTENSION_SET = normalizeExtensions(MIND_EXTENSIONS);
 const BOOK_EXTENSION_SET = normalizeExtensions(BOOK_EXTENSIONS);
+const SQLITE_EXTENSION_SET = normalizeExtensions(SQLITE_EXTENSIONS);
 const TEXT_FILE_NAMES = new Set([
   'authors',
   'changelog',
@@ -257,6 +259,9 @@ function categorizeFile(
   }
   if (BOOK_EXTENSION_SET.has(extension)) {
     return 'book';
+  }
+  if (SQLITE_EXTENSION_SET.has(extension)) {
+    return 'sqlite';
   }
   return 'other';
 }
