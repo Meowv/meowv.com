@@ -303,20 +303,6 @@
   box-shadow: var(--shadow-md);
 }
 
-.pdf-studio .workspace__privacy {
-  display: flex;
-  min-height: 48px;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 8px;
-  padding: 12px 24px;
-  border-bottom: 1px solid var(--color-primary-border);
-  background: var(--color-primary-soft);
-  color: var(--color-primary-strong);
-  font-size: 13px;
-  font-weight: 650;
-}
-
 .pdf-studio .workspace__empty {
   padding: 24px;
 }
@@ -1231,13 +1217,6 @@
   .pdf-studio .workspace {
     overflow: visible;
     border-radius: 14px;
-  }
-
-  .pdf-studio .workspace__privacy {
-    justify-content: flex-start;
-    padding-right: 16px;
-    padding-left: 16px;
-    font-size: 12px;
   }
 
   .pdf-studio .workspace__empty {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ShieldCheck, SlidersHorizontal, X } from '@/features/tools/tools/_shared/pdf/icons';
+import { SlidersHorizontal, X } from '@/features/tools/tools/_shared/pdf/icons';
 
 interface WorkspaceUploadError {
   readonly name?: string;
@@ -70,10 +70,6 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
 
 <template>
   <section class="workspace">
-    <div class="workspace__privacy">
-      <ShieldCheck :size="16" aria-hidden="true" />
-      <span>本地处理 · 文件不上传</span>
-    </div>
     <div
       v-if="errorMessages.length"
       class="notice notice--error"

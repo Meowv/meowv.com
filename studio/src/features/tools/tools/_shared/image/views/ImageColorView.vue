@@ -16,7 +16,6 @@ import {
   Info,
   LoaderCircle,
   Palette,
-  ShieldCheck,
   Trash2,
   X,
 } from '@/features/tools/tools/_shared/image/icons';
@@ -258,11 +257,6 @@ onBeforeUnmount(() => {
     />
 
     <section class="tool-workbench" aria-label="图片取色与主色提取工作台">
-      <div class="tool-workbench__privacy" role="note">
-        <ShieldCheck :size="16" aria-hidden="true" />
-        <span>本地处理 · 文件不上传</span>
-      </div>
-
       <div
         v-if="errorMessage"
         class="mb-5 flex items-start justify-between gap-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950/60 dark:text-rose-200"

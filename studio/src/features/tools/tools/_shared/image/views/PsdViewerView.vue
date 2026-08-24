@@ -556,8 +556,6 @@ onBeforeUnmount(() => {
     />
 
     <section ref="viewerElement" class="psd-viewer tool-workbench" aria-label="PSD 查看器">
-      <div class="tool-workbench__privacy">本地处理 · 文件不上传</div>
-
       <div v-if="status === 'idle' || status === 'error'" class="psd-viewer__empty">
         <p v-if="status === 'error'" class="psd-viewer__error" role="alert">{{ message }}</p>
         <ImageDropzone

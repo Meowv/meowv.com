@@ -97,7 +97,7 @@
 .image-feature .tool-workbench {
   width: min(1180px, calc(100% - 48px));
   margin: 32px auto 48px;
-  padding: 0 24px 24px;
+  padding: 24px;
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 18px;
@@ -111,7 +111,7 @@
   align-items: center;
   justify-content: flex-start;
   gap: 8px;
-  margin: 0 -24px 24px;
+  margin: -24px -24px 24px;
   padding: 12px 24px;
   border-bottom: 1px solid var(--primary-border);
   background: var(--primary-soft);
@@ -327,6 +327,7 @@
 
   .image-feature .tool-workbench {
     margin-top: 20px;
+    padding-top: 24px;
     padding-right: 16px;
     padding-left: 16px;
     border-radius: 14px;
@@ -352,6 +353,7 @@
   }
 
   .image-feature .tool-workbench__privacy {
+    margin-top: -24px;
     margin-right: -16px;
     margin-left: -16px;
     padding-right: 16px;

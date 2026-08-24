@@ -6,7 +6,6 @@ import {
   Download,
   FileImage,
   RotateCcw,
-  ShieldCheck,
   Upload,
   X,
 } from '@/features/tools/tools/_shared/image/icons';
@@ -463,11 +462,6 @@ onBeforeUnmount(() => {
       />
 
       <div class="tool-workbench" aria-label="图片裁剪工作台">
-        <div class="tool-workbench__privacy" role="note">
-          <ShieldCheck :size="16" aria-hidden="true" />
-          <span>本地处理 · 文件不上传</span>
-        </div>
-
         <div
           v-if="errorMessage"
           class="mx-auto mb-5 flex max-w-5xl items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/60 dark:text-red-200"
