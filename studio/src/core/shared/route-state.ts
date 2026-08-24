@@ -6,3 +6,4 @@ export const workspaceHeaderVisible = ref(true);
 export const drawWelcomeBackgroundVisible = ref(false);
 export const markdownFullscreenActive = ref(false);
 export const markdownBackgroundPreviewActive = ref(false);
+export const toolsBackgroundPreviewActive = ref(false);

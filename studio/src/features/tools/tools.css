@@ -28,6 +28,13 @@
   background: transparent;
 }
 
+.studio-shell--tool-detail {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
 .studio-shell--tools > .studio-header,
 .studio-shell--tools > .studio-main {
   position: relative;
@@ -38,7 +45,13 @@
 }
 
 .studio-shell--tool-detail > .studio-header {
-  position: sticky;
+  position: relative;
+}
+
+.studio-shell--tool-detail > .studio-main {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .studio-shell--tools > .studio-main {
@@ -2926,6 +2939,13 @@
 
 .studio-shell--tools-background:has(> .tools-background--ready)
   .tools-detail__content
-  :is(.tool-code-editor, .sqlite-sql-editor, .json-visualization__canvas) {
+  :is(.tool-code-editor, .monaco-diff-editor, .sqlite-sql-editor)
+  .view-line {
+  text-shadow: var(--tools-background-text-shadow);
+}
+
+.studio-shell--tools-background:has(> .tools-background--ready)
+  .tools-detail__content
+  :is(.json-visualization__canvas) {
   background: var(--tools-background-content-solid) !important;
 }

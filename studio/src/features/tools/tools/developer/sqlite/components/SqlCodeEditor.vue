@@ -3,6 +3,7 @@ import { onBeforeUnmount, onMounted, watch, type ComponentPublicInstance } from 
 import * as monaco from 'monaco-editor';
 import EditorWorker from 'monaco-editor/editor/editor.worker.js?worker';
 import 'monaco-editor/basic-languages/monaco.contribution.js';
+import { toolsBackgroundPreviewActive } from '@/core/shared/route-state';
 
 interface MonacoWorkerEnvironment {
   getWorker(moduleId: string, label: string): Worker;
@@ -26,6 +27,11 @@ function setMountElement(element: Element | ComponentPublicInstance | null): voi
 }
 
 function theme(): string {
+  if (toolsBackgroundPreviewActive.value) {
+    return document.documentElement.dataset.theme === 'dark'
+      ? 'studio-sql-dark-background-preview'
+      : 'studio-sql-light-background-preview';
+  }
   return document.documentElement.dataset.theme === 'dark' ? 'studio-sql-dark' : 'studio-sql-light';
 }
 
@@ -41,6 +47,26 @@ function registerThemes(): void {
     inherit: true,
     rules: [],
     colors: { 'editor.background': '#171b22', 'editorGutter.background': '#141820' },
+  });
+  monaco.editor.defineTheme('studio-sql-light-background-preview', {
+    base: 'vs',
+    inherit: true,
+    rules: [],
+    colors: {
+      'editor.background': '#ffffff00',
+      'editorGutter.background': '#ffffff00',
+      'editor.lineHighlightBackground': '#ffffff24',
+    },
+  });
+  monaco.editor.defineTheme('studio-sql-dark-background-preview', {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [],
+    colors: {
+      'editor.background': '#171b2200',
+      'editorGutter.background': '#171b2200',
+      'editor.lineHighlightBackground': '#00000030',
+    },
   });
 }
 
@@ -78,6 +104,8 @@ onMounted(() => {
   observer = new MutationObserver(() => monaco.editor.setTheme(theme()));
   observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 });
+
+watch(toolsBackgroundPreviewActive, () => monaco.editor.setTheme(theme()));
 
 watch(model, (value) => {
   if (!editor || editor.getValue() === value) return;

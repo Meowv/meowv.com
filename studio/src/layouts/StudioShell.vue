@@ -23,6 +23,7 @@ import {
   drawWelcomeBackgroundVisible,
   markdownBackgroundPreviewActive,
   markdownFullscreenActive,
+  toolsBackgroundPreviewActive,
   workspaceActive,
   workspaceHeaderVisible,
 } from '@/core/shared/route-state';
@@ -64,6 +65,16 @@ watch(
   markdownBackgroundEnabled,
   (active) => {
     markdownBackgroundPreviewActive.value = active;
+  },
+  { immediate: true },
+);
+const toolsBackgroundPreviewEnabled = computed(
+  () => isToolsPage.value && toolsBackgroundEnabled.value,
+);
+watch(
+  toolsBackgroundPreviewEnabled,
+  (active) => {
+    toolsBackgroundPreviewActive.value = active;
   },
   { immediate: true },
 );

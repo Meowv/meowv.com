@@ -4,6 +4,7 @@ import * as monaco from 'monaco-editor';
 import EditorWorker from 'monaco-editor/editor/editor.worker.js?worker';
 import JsonWorker from 'monaco-editor/language/json/json.worker.js?worker';
 import 'monaco-editor/language/json/monaco.contribution.js';
+import { toolsBackgroundPreviewActive } from '@/core/shared/route-state';
 
 interface MonacoWorkerEnvironment {
   getWorker(moduleId: string, label: string): Worker;
@@ -50,6 +51,11 @@ let themeObserver: MutationObserver | null = null;
 let syncing = false;
 
 function resolveTheme(): string {
+  if (toolsBackgroundPreviewActive.value) {
+    return document.documentElement.dataset.theme === 'dark'
+      ? 'studio-tools-dark-background-preview'
+      : 'studio-tools-light-background-preview';
+  }
   return document.documentElement.dataset.theme === 'dark'
     ? 'studio-tools-dark'
     : 'studio-tools-light';
@@ -78,6 +84,30 @@ function registerThemes(): void {
       'editor.lineHighlightBackground': '#1d222b',
       'editorLineNumber.foreground': '#69717f',
       'editorLineNumber.activeForeground': '#aab1bd',
+    },
+  });
+  monaco.editor.defineTheme('studio-tools-light-background-preview', {
+    base: 'vs',
+    inherit: true,
+    rules: [],
+    colors: {
+      'editor.background': '#ffffff00',
+      'editorGutter.background': '#ffffff00',
+      'editor.lineHighlightBackground': '#ffffff24',
+      'editorLineNumber.foreground': '#747b86',
+      'editorLineNumber.activeForeground': '#3f4651',
+    },
+  });
+  monaco.editor.defineTheme('studio-tools-dark-background-preview', {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [],
+    colors: {
+      'editor.background': '#171b2200',
+      'editorGutter.background': '#171b2200',
+      'editor.lineHighlightBackground': '#00000030',
+      'editorLineNumber.foreground': '#b6bec9',
+      'editorLineNumber.activeForeground': '#f3f4f6',
     },
   });
 }
@@ -150,6 +180,8 @@ onMounted(() => {
     attributeFilter: ['data-theme'],
   });
 });
+
+watch(toolsBackgroundPreviewActive, () => monaco.editor.setTheme(resolveTheme()));
 
 watch(model, (value) => {
   if (!editor || editor.getValue() === value) return;

@@ -4,6 +4,7 @@ import * as monaco from 'monaco-editor';
 import EditorWorker from 'monaco-editor/editor/editor.worker.js?worker';
 import JsonWorker from 'monaco-editor/language/json/json.worker.js?worker';
 import 'monaco-editor/language/json/monaco.contribution.js';
+import { toolsBackgroundPreviewActive } from '@/core/shared/route-state';
 
 interface MonacoWorkerEnvironment {
   getWorker?(moduleId: string, label: string): Worker | Promise<Worker>;
@@ -264,6 +265,11 @@ function refreshOverviewRuler(): void {
 }
 
 function resolveTheme(): string {
+  if (toolsBackgroundPreviewActive.value) {
+    return document.documentElement.dataset.theme === 'dark'
+      ? 'studio-diff-dark-background-preview'
+      : 'studio-diff-light-background-preview';
+  }
   return document.documentElement.dataset.theme === 'dark'
     ? 'studio-diff-dark'
     : 'studio-diff-light';
@@ -306,18 +312,55 @@ function registerThemes(): void {
       'diffEditorOverview.removedForeground': '#ef4444bb',
     },
   });
+  monaco.editor.defineTheme('studio-diff-light-background-preview', {
+    base: 'vs',
+    inherit: true,
+    rules: [],
+    colors: {
+      'editor.background': '#ffffff00',
+      'editorGutter.background': '#ffffff00',
+      'editor.lineHighlightBackground': '#ffffff24',
+      'diffEditor.insertedTextBackground': '#b7e4a466',
+      'diffEditor.removedTextBackground': '#ffb4ad66',
+      'diffEditor.insertedLineBackground': '#eaf7e566',
+      'diffEditor.removedLineBackground': '#fff0ee66',
+      'diffEditorGutter.insertedLineBackground': '#5a960055',
+      'diffEditorGutter.removedLineBackground': '#ef444455',
+      'diffEditorOverview.insertedForeground': '#5a960099',
+      'diffEditorOverview.removedForeground': '#ef444499',
+    },
+  });
+  monaco.editor.defineTheme('studio-diff-dark-background-preview', {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [],
+    colors: {
+      'editor.background': '#171b2200',
+      'editorGutter.background': '#171b2200',
+      'editor.lineHighlightBackground': '#00000030',
+      'diffEditor.insertedTextBackground': '#347a3f70',
+      'diffEditor.removedTextBackground': '#9b3d3d70',
+      'diffEditor.insertedLineBackground': '#234b2d55',
+      'diffEditor.removedLineBackground': '#572b2b55',
+      'diffEditorGutter.insertedLineBackground': '#5a960077',
+      'diffEditorGutter.removedLineBackground': '#ef444477',
+      'diffEditorOverview.insertedForeground': '#5a9600bb',
+      'diffEditorOverview.removedForeground': '#ef4444bb',
+    },
+  });
 }
 
 function refreshTheme(): void {
   const dark = document.documentElement.dataset.theme === 'dark';
+  const backgroundPreview = toolsBackgroundPreviewActive.value;
   monaco.editor.defineTheme('studio-diff-custom-light', {
     base: 'vs',
     inherit: true,
     rules: [],
     colors: {
-      'editor.background': '#ffffff',
-      'editorGutter.background': '#f8f9fb',
-      'editor.lineHighlightBackground': '#f7f8fa',
+      'editor.background': backgroundPreview ? '#ffffff00' : '#ffffff',
+      'editorGutter.background': backgroundPreview ? '#ffffff00' : '#f8f9fb',
+      'editor.lineHighlightBackground': backgroundPreview ? '#ffffff24' : '#f7f8fa',
       'diffEditor.insertedTextBackground': '#b7e4a466',
       'diffEditor.removedTextBackground': '#ffb4ad66',
       'diffEditor.insertedLineBackground': '#00000000',
@@ -329,9 +372,9 @@ function refreshTheme(): void {
     inherit: true,
     rules: [],
     colors: {
-      'editor.background': '#171b22',
-      'editorGutter.background': '#141820',
-      'editor.lineHighlightBackground': '#1d222b',
+      'editor.background': backgroundPreview ? '#171b2200' : '#171b22',
+      'editorGutter.background': backgroundPreview ? '#171b2200' : '#141820',
+      'editor.lineHighlightBackground': backgroundPreview ? '#00000030' : '#1d222b',
       'diffEditor.insertedTextBackground': '#347a3f70',
       'diffEditor.removedTextBackground': '#9b3d3d70',
       'diffEditor.insertedLineBackground': '#00000000',
@@ -487,6 +530,8 @@ watch(
   () => props.renderSideBySide,
   (renderSideBySide) => editor?.updateOptions({ renderSideBySide }),
 );
+
+watch(toolsBackgroundPreviewActive, refreshTheme);
 
 onBeforeUnmount(() => {
   if (decorationTimer) clearTimeout(decorationTimer);
