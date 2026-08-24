@@ -1176,6 +1176,32 @@
   text-align: left;
 }
 
+.studio-shell--tools-background:has(> .tools-background--ready) .pdf-studio {
+  --color-background: transparent;
+  --color-surface: var(--tools-background-surface);
+  --color-surface-raised: var(--tools-background-surface-raised);
+  --color-surface-subtle: var(--tools-background-surface-subtle);
+}
+
+.studio-shell--tools-background:has(> .tools-background--ready)
+  .pdf-studio
+  :is(.workspace__settings, .workspace__action-bar, .result-card, .processing-card) {
+  background: var(--tools-background-surface-raised);
+}
+
+.studio-shell--tools-background:has(> .tools-background--ready)
+  .pdf-studio
+  :is(
+    .pdf-viewer__page,
+    .pdf-viewer canvas,
+    .thumbnail-card__preview,
+    .thumbnail-card__preview canvas
+  ) {
+  --color-surface: var(--tools-background-content-solid);
+  --color-surface-raised: var(--tools-background-content-solid);
+  --color-surface-subtle: var(--tools-background-content-soft);
+}
+
 @media (width <= 980px) {
   .pdf-studio .workspace__grid {
     grid-template-columns: 1fr;

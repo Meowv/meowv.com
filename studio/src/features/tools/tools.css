@@ -634,12 +634,29 @@
   transform: translateY(10px) scale(0.98);
 }
 
-.studio-shell--tools-background {
+.studio-shell--tools-background:has(> .tools-background--ready) {
+  --tools-background-content-solid: #fff;
+  --tools-background-content-soft: #f7f9f4;
   --color-text: #11181b;
   --color-text-muted: #3f4943;
   --tools-background-surface: color-mix(
     in srgb,
-    var(--color-surface-solid) var(--tools-background-surface-opacity, 32%),
+    var(--tools-background-content-solid) var(--tools-background-surface-opacity, 32%),
+    transparent
+  );
+  --tools-background-surface-subtle: color-mix(
+    in srgb,
+    var(--tools-background-content-soft) max(var(--tools-background-surface-opacity, 32%), 18%),
+    transparent
+  );
+  --tools-background-surface-raised: color-mix(
+    in srgb,
+    var(--tools-background-content-solid) max(var(--tools-background-surface-opacity, 32%), 44%),
+    transparent
+  );
+  --tools-background-surface-control: color-mix(
+    in srgb,
+    var(--tools-background-content-solid) max(var(--tools-background-surface-opacity, 32%), 68%),
     transparent
   );
   --tools-background-text-shadow:
@@ -649,7 +666,9 @@
   color: var(--color-text);
 }
 
-:root[data-theme='dark'] .studio-shell--tools-background {
+:root[data-theme='dark'] .studio-shell--tools-background:has(> .tools-background--ready) {
+  --tools-background-content-solid: #171b22;
+  --tools-background-content-soft: #1d222b;
   --color-text: #f3f4f6;
   --color-text-muted: #d1d5db;
   --tools-background-text-shadow:
@@ -657,12 +676,12 @@
     0 1px 4px rgb(0 0 0 / var(--tools-background-text-halo-opacity, 0.56));
 }
 
-.studio-shell--tools-background
+.studio-shell--tools-background:has(> .tools-background--ready)
   :is(.studio-header, .tools-sidebar, .tools-search, .tools-empty, .tools-card, .bookmark-card) {
   background: var(--tools-background-surface);
 }
 
-.studio-shell--tools-background
+.studio-shell--tools-background:has(> .tools-background--ready)
   :is(
     .studio-header__feature-name,
     .studio-nav,
@@ -678,48 +697,22 @@
   text-shadow: var(--tools-background-text-shadow);
 }
 
-.studio-shell--tools-background .studio-logo__wordmark {
+.studio-shell--tools-background:has(> .tools-background--ready) .studio-logo__wordmark {
   filter: drop-shadow(0 0 1px rgb(255 255 255 / 62%)) drop-shadow(0 1px 2px rgb(0 0 0 / 28%));
 }
 
-.studio-shell--tools-background .tools-search input::placeholder {
+.studio-shell--tools-background:has(> .tools-background--ready) .tools-search input::placeholder {
   color: var(--color-text-muted);
   opacity: 1;
 }
 
-.studio-shell--tools-background
+.studio-shell--tools-background:has(> .tools-background--ready)
   :is(
     .tools-link-section__marker > span,
     .tools-favorites__marker > span,
     .tools-category-marker > span
   ) {
   background: color-mix(in srgb, var(--tools-accent, var(--tool-accent)) 12%, transparent);
-}
-
-.studio-shell--tools-background
-  :is(
-    .tools-detail-route .tools-page-header,
-    .tools-detail-route .tool-workspace-grid,
-    .tools-detail-route .tool-section,
-    .tools-detail-route .tools-detail__related,
-    .tools-detail-route .tool-workspace,
-    .tools-detail-route .tool-pane
-  ) {
-  background: var(--tools-background-surface);
-}
-
-.studio-shell--tools-background
-  :is(
-    .tools-detail-route .tool-section__header,
-    .tools-detail-route .tool-pane__footer,
-    .tool-section__header,
-    .tool-file-summary,
-    .tool-image-preview,
-    .tool-symbol-grid button,
-    .tool-button--secondary,
-    .tool-button--quiet
-  ) {
-  background: var(--tools-background-surface);
 }
 
 .tools-catalog {
@@ -2851,8 +2844,16 @@
   }
 }
 
-/* 详情工具中的基础面板有更具体的后置规则，背景模式下统一改为半透明表面。 */
-.studio-shell--tools-background
+/* 视频就绪后才启用详情工具的分层表面，加载失败时完整保留原样。 */
+.studio-shell--tools-background:has(> .tools-background--ready) .tools-detail__content {
+  --color-surface: var(--tools-background-surface-raised);
+  --color-surface-solid: var(--tools-background-surface-raised);
+  --color-surface-soft: var(--tools-background-surface-subtle);
+  --color-surface-muted: var(--tools-background-surface-subtle);
+  --tools-surface: var(--tools-background-surface-raised);
+}
+
+.studio-shell--tools-background:has(> .tools-background--ready)
   :is(
     .tools-detail-route .tools-page-header,
     .tools-detail-route .tool-workspace-grid,
@@ -2865,21 +2866,11 @@
   background: var(--tools-background-surface) !important;
 }
 
-.studio-shell--tools-background
+.studio-shell--tools-background:has(> .tools-background--ready)
   :is(
     .tools-detail-route .tool-section__header,
     .tools-detail-route .tool-pane__footer,
-    .tools-detail-route .tool-field textarea,
-    .tools-detail-route .tool-field input,
-    .tools-detail-route .tool-field select,
-    .tools-detail-route .tool-control,
-    .tools-detail-route .tool-output,
     .tools-detail-route .tool-file-summary,
-    .tools-detail-route .tool-image-preview,
-    .tools-detail-route .tool-color-canvas,
-    .tools-detail-route .tool-picked-color,
-    .tools-detail-route .tool-color-palette article,
-    .tools-detail-route .tool-symbol-search,
     .tools-detail-route .tool-symbol-grid button,
     .tools-detail-route .tool-button--secondary,
     .tools-detail-route .tool-button--quiet,
@@ -2888,5 +2879,53 @@
     .tools-detail-route .tool-check,
     .tools-detail-route .tool-file-uploader__dropzone
   ) {
-  background: var(--tools-background-surface) !important;
+  background: var(--tools-background-surface-subtle) !important;
+}
+
+.studio-shell--tools-background:has(> .tools-background--ready)
+  .tools-detail__content
+  :is(
+    input:not([type='range'], [type='radio'], [type='checkbox'], [type='color']),
+    textarea,
+    select,
+    [contenteditable='true'],
+    .tool-control,
+    .tool-output,
+    .tool-symbol-search
+  ) {
+  background: var(--tools-background-surface-control) !important;
+}
+
+.studio-shell--tools-background:has(> .tools-background--ready)
+  .tools-detail__content
+  :is(
+    .tool-code-editor,
+    .monaco-editor,
+    .monaco-diff-editor,
+    .sqlite-sql-editor,
+    .json-visualization__canvas,
+    .stroke-order-tool__character,
+    .tool-image-preview,
+    .tool-color-canvas,
+    .tool-picked-color,
+    .tool-color-palette article,
+    .qr-code-tool__preview,
+    .qr-code-tool__dropzone:has(img),
+    .video-parser__media,
+    .keyboard-visualizer__stage,
+    .answer-book-stage,
+    .answer-book-share__preview,
+    .emoji-match__game
+  ) {
+  --color-surface: var(--tools-background-content-solid);
+  --color-surface-solid: var(--tools-background-content-solid);
+  --color-surface-soft: var(--tools-background-content-soft);
+  --color-surface-muted: var(--tools-background-content-soft);
+  --tools-surface: var(--tools-background-content-solid);
+}
+
+.studio-shell--tools-background:has(> .tools-background--ready)
+  .tools-detail__content
+  :is(.tool-code-editor, .sqlite-sql-editor, .json-visualization__canvas) {
+  background: var(--tools-background-content-solid) !important;
 }

@@ -798,6 +798,26 @@
   font-size: 13px;
 }
 
+.studio-shell--tools-background:has(> .tools-background--ready) .image-feature {
+  --surface: var(--tools-background-surface);
+  --surface-subtle: var(--tools-background-surface-subtle);
+  --surface-raised: var(--tools-background-surface-raised);
+}
+
+.studio-shell--tools-background:has(> .tools-background--ready)
+  .image-feature
+  :is(.image-select__control, .psd-viewer__button, .psd-viewer__icon-button, .psd-viewer__zoom) {
+  background: var(--tools-background-surface-control);
+}
+
+.studio-shell--tools-background:has(> .tools-background--ready)
+  .image-feature
+  :is(.checkerboard, .psd-viewer__viewport, canvas, video) {
+  --surface: var(--tools-background-content-solid);
+  --surface-subtle: var(--tools-background-content-soft);
+  --surface-raised: var(--tools-background-content-solid);
+}
+
 @media (max-width: 800px) {
   .image-feature .psd-viewer {
     margin-top: 20px;
