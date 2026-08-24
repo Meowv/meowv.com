@@ -37,6 +37,10 @@
   z-index: 30;
 }
 
+.studio-shell--tool-detail > .studio-header {
+  position: sticky;
+}
+
 .studio-shell--tools > .studio-main {
   z-index: 1;
 }
