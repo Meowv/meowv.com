@@ -66,6 +66,12 @@ const toolCategorySeeds = {
         icon: 'file-diff',
       },
       {
+        id: 'sqlite',
+        name: 'SQLite Online',
+        description: '在浏览器中打开、查询和编辑 SQLite 数据库，数据不会上传。',
+        icon: 'database',
+      },
+      {
         id: 'encoding-converter',
         name: '编码转换',
         description: '支持 Base64、URL、Unicode、HTML Entity 与 Hex 编码转换。',
