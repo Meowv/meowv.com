@@ -17,16 +17,20 @@ interface PdfJsModule {
   GlobalWorkerOptions: {
     workerSrc: string;
   };
-  wasmUrl?: string;
+}
+
+interface PdfJsRuntime {
+  module: PdfJsModule;
+  wasmUrl: string;
 }
 
 export interface ManagedPdfDocument extends PDFDocumentProxy {
   destroyDocument: () => Promise<void>;
 }
 
-let pdfJsPromise: Promise<PdfJsModule> | null = null;
+let pdfJsPromise: Promise<PdfJsRuntime> | null = null;
 
-async function getPdfJs(): Promise<PdfJsModule> {
+async function getPdfJs(): Promise<PdfJsRuntime> {
   if (!pdfJsPromise) {
     pdfJsPromise = Promise.all([
       import('pdfjs-dist'),
@@ -34,11 +38,12 @@ async function getPdfJs(): Promise<PdfJsModule> {
       import('pdfjs-dist/wasm/jbig2.wasm?url'),
     ]).then(([pdfJs, worker, jbig2Wasm]) => {
       pdfJs.GlobalWorkerOptions.workerSrc = worker.default;
-      const module = pdfJs as unknown as PdfJsModule;
       // 扫描版 PDF 的 JBIG2 图片需要 JBig2 wasm 解码，默认目录相对 build/ 不存在，
       // 缺省会整页图片被忽略而渲染为空白页。
-      module.wasmUrl = new URL('.', new URL(jbig2Wasm.default, location.href)).href;
-      return module;
+      return {
+        module: pdfJs as unknown as PdfJsModule,
+        wasmUrl: new URL('.', new URL(jbig2Wasm.default, location.href)).href,
+      };
     });
   }
   return pdfJsPromise;
@@ -47,7 +52,7 @@ async function getPdfJs(): Promise<PdfJsModule> {
 export async function openPdfDocument(bytes: Uint8Array): Promise<ManagedPdfDocument> {
   try {
     const pdfJs = await getPdfJs();
-    const loadingTask = pdfJs.getDocument({
+    const loadingTask = pdfJs.module.getDocument({
       data: bytes.slice(),
       isEvalSupported: false,
       useWorkerFetch: true,
