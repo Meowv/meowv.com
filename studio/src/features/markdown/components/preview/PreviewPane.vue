@@ -311,7 +311,7 @@ onBeforeUnmount(() => {
 
           <div
             v-if="exportMenuOpen"
-            class="absolute top-[calc(100%+6px)] right-0 z-[90] w-[220px] rounded-[9px] border border-[var(--color-border)] bg-[var(--color-surface)] p-1.5 shadow-[var(--shadow-popover)]"
+            class="preview-export-menu absolute top-[calc(100%+6px)] right-0 z-[90] w-[220px] rounded-[9px] border border-[var(--color-border)] bg-[var(--color-surface)] p-1.5 shadow-[var(--shadow-popover)]"
             role="menu"
             aria-label="导出当前文档"
             @pointerdown.stop

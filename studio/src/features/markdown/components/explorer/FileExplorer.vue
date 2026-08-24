@@ -818,7 +818,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="panel" aria-labelledby="explorer-title">
+  <section class="panel panel--explorer" aria-labelledby="explorer-title">
     <header class="panel__header">
       <h2 id="explorer-title" class="panel__title">资源管理器</h2>
       <div class="panel__actions">

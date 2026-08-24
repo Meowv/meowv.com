@@ -40,6 +40,10 @@ import 'monaco-editor/languages/definitions/sql/register.js';
 import 'monaco-editor/languages/definitions/typescript/register.js';
 import 'monaco-editor/languages/definitions/xml/register.js';
 import 'monaco-editor/languages/definitions/yaml/register.js';
+import {
+  markdownBackgroundPreviewActive,
+  markdownFullscreenActive,
+} from '@/core/shared/route-state';
 import { useWorkspaceStore } from '@/features/markdown/stores/workspace';
 
 interface MonacoWorkerEnvironment {
@@ -121,6 +125,8 @@ const editorDisposables: Array<{ dispose(): void }> = [];
 
 const EDITOR_LIGHT_THEME = 'markdown-light';
 const EDITOR_DARK_THEME = 'markdown-dark';
+const EDITOR_LIGHT_BACKGROUND_PREVIEW_THEME = 'markdown-light-background-preview';
+const EDITOR_DARK_BACKGROUND_PREVIEW_THEME = 'markdown-dark-background-preview';
 const GENERIC_TEXT_LANGUAGE = 'generic-text';
 const TEXT_LANGUAGE_BY_EXTENSION: Readonly<Record<string, string>> = {
   '.c': 'cpp',
@@ -198,7 +204,16 @@ function activeEditorLanguage(): string {
   return TEXT_LANGUAGE_BY_EXTENSION[extension] ?? GENERIC_TEXT_LANGUAGE;
 }
 
-function editorThemeName(theme: 'light' | 'dark'): string {
+const backgroundPreviewActive = computed(
+  () => markdownBackgroundPreviewActive.value && !markdownFullscreenActive.value,
+);
+
+function editorThemeName(theme: 'light' | 'dark', backgroundPreview: boolean): string {
+  if (backgroundPreview) {
+    return theme === 'dark'
+      ? EDITOR_DARK_BACKGROUND_PREVIEW_THEME
+      : EDITOR_LIGHT_BACKGROUND_PREVIEW_THEME;
+  }
   return theme === 'dark' ? EDITOR_DARK_THEME : EDITOR_LIGHT_THEME;
 }
 
@@ -225,6 +240,28 @@ function registerEditorThemes(): void {
       'editorIndentGuide.activeBackground1': '#3a424f',
     },
   });
+  monaco.editor.defineTheme(EDITOR_LIGHT_BACKGROUND_PREVIEW_THEME, {
+    base: 'vs',
+    inherit: true,
+    rules: [],
+    colors: {
+      'editor.background': '#ffffff00',
+      'editorGutter.background': '#ffffff00',
+      'editor.lineHighlightBackground': '#ffffff24',
+    },
+  });
+  monaco.editor.defineTheme(EDITOR_DARK_BACKGROUND_PREVIEW_THEME, {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [],
+    colors: {
+      'editor.background': '#171b2200',
+      'editorGutter.background': '#171b2200',
+      'editor.lineHighlightBackground': '#00000030',
+      'editorIndentGuide.background1': '#ffffff24',
+      'editorIndentGuide.activeBackground1': '#ffffff52',
+    },
+  });
 }
 
 function editorOptions(): monaco.editor.IStandaloneEditorConstructionOptions {
@@ -249,7 +286,7 @@ function editorOptions(): monaco.editor.IStandaloneEditorConstructionOptions {
     smoothScrolling: true,
     stickyScroll: { enabled: false },
     tabSize: 2,
-    theme: editorThemeName(store.resolvedTheme),
+    theme: editorThemeName(store.resolvedTheme, backgroundPreviewActive.value),
     value: store.activeContent,
     wordWrap: store.preferences.wordWrap ? 'on' : 'off',
     wrappingIndent: 'indent',
@@ -795,12 +832,9 @@ watch(
   },
 );
 
-watch(
-  () => store.resolvedTheme,
-  (theme) => {
-    monaco.editor.setTheme(editorThemeName(theme));
-  },
-);
+watch([() => store.resolvedTheme, backgroundPreviewActive], ([theme, backgroundPreview]) => {
+  monaco.editor.setTheme(editorThemeName(theme, backgroundPreview));
+});
 
 watch(
   () =>

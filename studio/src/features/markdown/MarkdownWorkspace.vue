@@ -13,7 +13,10 @@ import SearchPanel from '@/features/markdown/components/sidebar/SearchPanel.vue'
 import TagsPanel from '@/features/markdown/components/sidebar/TagsPanel.vue';
 import { useWorkspaceStore } from '@/features/markdown/stores/workspace';
 import { useFileHandoff } from '@/core/browser/file-handoff';
-import { markdownFullscreenActive } from '@/core/shared/route-state';
+import {
+  markdownBackgroundPreviewActive,
+  markdownFullscreenActive,
+} from '@/core/shared/route-state';
 
 const store = useWorkspaceStore();
 const { take: takeHandoffFile } = useFileHandoff();
@@ -123,6 +126,7 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+  markdownBackgroundPreviewActive.value = false;
   markdownFullscreenActive.value = false;
   document.removeEventListener('keydown', handleKeyboardShortcut);
   document.removeEventListener('fullscreenchange', handleFullscreenChange);

@@ -742,6 +742,39 @@ body.workspace-resizing * {
   overscroll-behavior: contain;
 }
 
+@media (hover: hover) {
+  .markdown-studio .panel--explorer .panel__body {
+    scrollbar-color: transparent transparent;
+    scrollbar-width: thin;
+  }
+
+  .markdown-studio .panel--explorer .panel__body::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .markdown-studio .panel--explorer .panel__body::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .markdown-studio .panel--explorer .panel__body::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background: transparent;
+    background-clip: padding-box;
+  }
+
+  .markdown-studio .panel--explorer:is(:hover, :focus-within) .panel__body {
+    scrollbar-color: var(--color-border-strong) transparent;
+  }
+
+  .markdown-studio
+    .panel--explorer:is(:hover, :focus-within)
+    .panel__body::-webkit-scrollbar-thumb {
+    background-color: var(--color-border-strong);
+  }
+}
+
 .markdown-studio .panel__empty {
   display: grid;
   min-height: 240px;

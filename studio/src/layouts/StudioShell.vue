@@ -21,6 +21,7 @@ import { useToolsBackground } from '@/features/tools/composables/useToolsBackgro
 import { STORAGE_POLICY, storageAvailable } from '@/core/privacy/storage';
 import {
   drawWelcomeBackgroundVisible,
+  markdownBackgroundPreviewActive,
   markdownFullscreenActive,
   workspaceActive,
   workspaceHeaderVisible,
@@ -59,6 +60,13 @@ const markdownBackgroundEnabled = computed(
     toolsBackgroundEnabled.value &&
     toolsBackgroundApplyToOtherPages.value,
 );
+watch(
+  markdownBackgroundEnabled,
+  (active) => {
+    markdownBackgroundPreviewActive.value = active;
+  },
+  { immediate: true },
+);
 const drawBackgroundEnabled = computed(
   () =>
     isDrawPage.value &&
@@ -67,10 +75,7 @@ const drawBackgroundEnabled = computed(
     toolsBackgroundApplyToOtherPages.value,
 );
 const mindBackgroundEnabled = computed(
-  () =>
-    isMindPage.value &&
-    toolsBackgroundEnabled.value &&
-    toolsBackgroundApplyToOtherPages.value,
+  () => isMindPage.value && toolsBackgroundEnabled.value && toolsBackgroundApplyToOtherPages.value,
 );
 const notesBackgroundEnabled = computed(
   () => isNotesPage.value && toolsBackgroundEnabled.value && toolsBackgroundApplyToOtherPages.value,
@@ -92,7 +97,7 @@ const toolsBackgroundStyle = computed<Record<string, string>>(() => {
     '--tools-background-surface-opacity': `${Math.round(surfaceOpacity * 100)}%`,
     '--home-background-surface-opacity': `${Math.round(Math.max(0.18, surfaceOpacity) * 100)}%`,
     '--office-background-surface-opacity': `${Math.round(Math.max(0.18, surfaceOpacity) * 100)}%`,
-    '--markdown-background-surface-opacity': `${Math.round(Math.max(0.78, surfaceOpacity) * 100)}%`,
+    '--markdown-background-surface-opacity': `${Math.round(Math.max(0.18, surfaceOpacity) * 100)}%`,
     '--draw-background-surface-opacity': `${Math.round(Math.max(0.18, surfaceOpacity) * 100)}%`,
     '--mind-background-surface-opacity': `${Math.round(Math.max(0.18, surfaceOpacity) * 100)}%`,
     '--notes-background-surface-opacity': `${Math.round(Math.max(0.18, surfaceOpacity) * 100)}%`,
@@ -270,6 +275,7 @@ function isRouteActive(to: string): boolean {
       'studio-shell--home-background': homeBackgroundEnabled,
       'studio-shell--office-background': officeBackgroundEnabled,
       'studio-shell--markdown-background': markdownBackgroundEnabled,
+      'studio-shell--markdown-background-preview': markdownBackgroundEnabled,
       'studio-shell--draw-background': drawBackgroundEnabled,
       'studio-shell--mind-background': mindBackgroundEnabled,
       'studio-shell--notes-background': notesBackgroundEnabled,
