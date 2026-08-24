@@ -438,7 +438,6 @@ onBeforeUnmount(() => {
       @dragleave.prevent="dragging = false"
       @drop.prevent="handleDrop"
     >
-      <span class="sqlite-welcome__icon"><IconDatabase :size="34" /></span>
       <h2>在浏览器中打开 SQLite 数据库</h2>
       <p>数据库只在当前浏览器内存中运行，不会上传。修改后请下载保存副本。</p>
       <div class="sqlite-welcome__actions">
@@ -859,7 +858,7 @@ onBeforeUnmount(() => {
 .sqlite-welcome {
   display: grid;
   place-items: center;
-  min-height: 390px;
+  min-height: 300px;
   padding: 32px 24px;
   text-align: center;
   border: 1px dashed color-mix(in srgb, var(--tools-accent) 42%, transparent);
@@ -872,16 +871,6 @@ onBeforeUnmount(() => {
 .sqlite-welcome.is-dragging {
   border-color: var(--tools-accent);
   background: color-mix(in srgb, var(--tools-accent) 10%, var(--tools-surface, #fff));
-}
-.sqlite-welcome__icon {
-  display: grid;
-  place-items: center;
-  width: 68px;
-  height: 68px;
-  margin-bottom: 14px;
-  color: var(--tools-accent);
-  background: color-mix(in srgb, var(--tools-accent) 12%, transparent);
-  border-radius: 19px;
 }
 .sqlite-welcome h2 {
   margin: 0;
