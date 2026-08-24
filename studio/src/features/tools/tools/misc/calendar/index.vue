@@ -576,7 +576,6 @@ const {
   grid-template-columns: repeat(7, minmax(146px, 1fr));
   gap: 10px;
   overscroll-behavior-x: contain;
-  scrollbar-width: thin;
 }
 
 .calendar-week-card {
@@ -882,7 +881,6 @@ const {
   .calendar-month-view {
     overflow-x: auto;
     overscroll-behavior-x: contain;
-    scrollbar-width: thin;
     -webkit-overflow-scrolling: touch;
   }
 

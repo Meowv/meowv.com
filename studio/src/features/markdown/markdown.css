@@ -744,17 +744,16 @@ body.workspace-resizing * {
 
 @media (hover: hover) {
   .markdown-studio .panel--explorer .panel__body {
-    scrollbar-color: transparent transparent;
-    scrollbar-width: thin;
+    scrollbar-color: transparent var(--studio-scrollbar-track);
   }
 
   .markdown-studio .panel--explorer .panel__body::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: var(--studio-scrollbar-size);
+    height: var(--studio-scrollbar-size);
   }
 
   .markdown-studio .panel--explorer .panel__body::-webkit-scrollbar-track {
-    background: transparent;
+    background: var(--studio-scrollbar-track);
   }
 
   .markdown-studio .panel--explorer .panel__body::-webkit-scrollbar-thumb {
@@ -765,13 +764,19 @@ body.workspace-resizing * {
   }
 
   .markdown-studio .panel--explorer:is(:hover, :focus-within) .panel__body {
-    scrollbar-color: var(--color-border-strong) transparent;
+    scrollbar-color: var(--studio-scrollbar-thumb) var(--studio-scrollbar-track);
   }
 
   .markdown-studio
     .panel--explorer:is(:hover, :focus-within)
     .panel__body::-webkit-scrollbar-thumb {
-    background-color: var(--color-border-strong);
+    background-color: var(--studio-scrollbar-thumb);
+  }
+
+  .markdown-studio
+    .panel--explorer:is(:hover, :focus-within)
+    .panel__body::-webkit-scrollbar-thumb:hover {
+    background-color: var(--studio-scrollbar-thumb-hover);
   }
 }
 

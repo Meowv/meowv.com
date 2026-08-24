@@ -1065,7 +1065,6 @@
   border: 1px solid var(--color-border);
   border-radius: 11px;
   background: var(--color-surface-subtle);
-  scrollbar-width: thin;
 }
 
 .pdf-studio .bulk-toolbar .text-button {

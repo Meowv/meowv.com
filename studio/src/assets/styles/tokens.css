@@ -51,6 +51,10 @@
   --radius-md: 14px;
   --radius-lg: 24px;
   --header-height: 64px;
+  --studio-scrollbar-size: 9px;
+  --studio-scrollbar-track: transparent;
+  --studio-scrollbar-thumb: color-mix(in srgb, var(--color-text-muted) 42%, transparent);
+  --studio-scrollbar-thumb-hover: color-mix(in srgb, var(--color-text) 58%, transparent);
 }
 
 :root[data-theme='dark'] {

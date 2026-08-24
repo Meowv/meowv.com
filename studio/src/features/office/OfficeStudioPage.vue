@@ -545,7 +545,11 @@ onBeforeUnmount(() => {
 
 <template>
   <section class="office-studio" :class="{ 'office-studio--workspace': isWorkspace }">
-    <div v-show="!isWorkspace" class="office-landing">
+    <div
+      v-show="!isWorkspace"
+      class="office-landing"
+      :class="{ 'office-landing--empty': !recentDocuments.length }"
+    >
       <p v-if="error" class="office-error" role="alert">{{ error }}</p>
 
       <section class="office-format-section" aria-label="新建文档">

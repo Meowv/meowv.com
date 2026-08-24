@@ -39,6 +39,10 @@
   padding: clamp(56px, 7vw, 88px) 0 72px;
 }
 
+.office-landing--empty {
+  padding-bottom: 0;
+}
+
 .office-studio--workspace {
   height: 100%;
   min-height: 0;

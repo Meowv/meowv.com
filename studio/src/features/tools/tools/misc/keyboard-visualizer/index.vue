@@ -1158,23 +1158,27 @@ onBeforeUnmount(() => {
   overflow-y: hidden;
   border-radius: 12px;
   outline: none;
-  scrollbar-color: #465166 #171c25;
-  scrollbar-width: thin;
+  scrollbar-color: var(--studio-scrollbar-thumb) var(--studio-scrollbar-track);
   -webkit-overflow-scrolling: touch;
 }
 
 .keyboard-visualizer__keyboard-scroll::-webkit-scrollbar {
-  height: 8px;
+  height: var(--studio-scrollbar-size);
 }
 
 .keyboard-visualizer__keyboard-scroll::-webkit-scrollbar-track {
-  border-radius: 5px;
-  background: #171c25;
+  background: var(--studio-scrollbar-track);
 }
 
 .keyboard-visualizer__keyboard-scroll::-webkit-scrollbar-thumb {
-  border-radius: 5px;
-  background: #465166;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: var(--studio-scrollbar-thumb);
+  background-clip: padding-box;
+}
+
+.keyboard-visualizer__keyboard-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: var(--studio-scrollbar-thumb-hover);
 }
 
 .keyboard-visualizer__keyboard {
