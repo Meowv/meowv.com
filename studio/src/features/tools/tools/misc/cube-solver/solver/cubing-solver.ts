@@ -141,7 +141,10 @@ export class CubingCubeSolver implements CubeSolver {
       import('cubing/kpuzzle'),
       import('cubing/search'),
     ]);
-    search.setSearchDebug({ logPerf: false });
+    search.setSearchDebug({
+      logPerf: false,
+      prioritizeEsbuildWorkaroundForWorkerInstantiation: true,
+    });
     const puzzle = await cube3x3x3.kpuzzle();
     this.#modules = {
       puzzle,
@@ -303,6 +306,7 @@ export class CubingCubeSolver implements CubeSolver {
   }
 
   async randomScramble(): Promise<CubeMove[]> {
+    await this.initialize();
     const { randomScrambleForEvent } = await import('cubing/scramble');
     return parseAlgorithm((await randomScrambleForEvent('333')).toString());
   }

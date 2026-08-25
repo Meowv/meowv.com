@@ -57,6 +57,9 @@ export default defineConfig({
       },
       output: {
         manualChunks(id) {
+          // cubing 的搜索 Worker 会复用 Vite 的动态导入助手。将助手固定拆分，
+          // 避免 Rolldown 把它合并进依赖 document 的应用主入口。
+          if (id === '\0vite/preload-helper.js') return 'vite-preload-helper';
           if (!id.includes('node_modules')) return undefined;
           if (id.includes('vue-router')) return 'vue-router';
           if (id.includes('/vue/')) return 'vue';
