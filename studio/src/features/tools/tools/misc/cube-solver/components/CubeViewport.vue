@@ -116,9 +116,12 @@ onBeforeUnmount(() => {
         <span>仍可通过展开图、公式按钮和步骤列表完成还原。</span>
       </div>
     </div>
-    <div v-if="showLabels" class="cube-viewport__labels" aria-hidden="true">
-      <span>U · 上</span><span>F · 前</span><span>R · 右</span>
-      <span v-if="stickerEditing">双击贴纸着色</span>
+    <div v-if="showLabels" class="cube-viewport__guide" role="note">
+      <p><strong>当前朝向</strong><span>U 上 · F 前 · R 右</span></p>
+      <p class="cube-viewport__guide-actions">
+        <span>拖动空白处旋转视角</span>
+        <span v-if="stickerEditing">双击贴纸即可着色</span>
+      </p>
     </div>
     <div v-if="showMoveArrows && currentMove" class="cube-viewport__move-hint" aria-hidden="true">
       <strong>{{ currentMove.notation }}</strong>

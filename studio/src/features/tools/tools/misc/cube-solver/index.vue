@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import {
   IconBook2,
   IconBrandSpeedtest,
@@ -53,6 +53,7 @@ type ViewportExpose = {
 };
 
 const route = useRoute();
+const router = useRouter();
 const store = useCubeStore();
 store.initialize();
 const {
@@ -92,11 +93,15 @@ const cameraMessage = ref('');
 const operationBusy = ref(false);
 const mobilePanel = ref<MobilePanel>(mode.value === 'beginner' ? 'teaching' : 'input');
 const announcement = ref('魔方工作台已准备好。');
+const shareFeedback = ref<'idle' | 'copied' | 'error'>('idle');
+const sharedStateNotice = ref('');
 const moveCount = ref(0);
 const practicePast = ref<CubePosition[]>([]);
 const practiceFuture = ref<CubePosition[]>([]);
 let playbackToken = 0;
 let operationToken = 0;
+let shareFeedbackTimer: ReturnType<typeof globalThis.setTimeout> | undefined;
+let sharedStateNoticeTimer: ReturnType<typeof globalThis.setTimeout> | undefined;
 let disposed = false;
 
 const modes: Array<{ id: CubeMode; label: string; description: string }> = [
@@ -458,22 +463,38 @@ async function shareState(): Promise<void> {
   if (editStatus.value !== 'valid') return;
   const url = new URL(globalThis.location.href);
   url.hash = `cube=v1:${store.faceletString}`;
+  if (shareFeedbackTimer !== undefined) globalThis.clearTimeout(shareFeedbackTimer);
   try {
     await navigator.clipboard.writeText(url.toString());
-    announcement.value = '当前魔方状态链接已复制。';
+    shareFeedback.value = 'copied';
+    announcement.value = '当前状态的分享链接已复制。';
   } catch {
-    globalThis.location.hash = url.hash;
-    announcement.value = '分享状态已写入当前地址。';
+    shareFeedback.value = 'error';
+    announcement.value = '分享链接复制失败，请重试或检查剪贴板权限。';
   }
+  shareFeedbackTimer = globalThis.setTimeout(() => {
+    shareFeedback.value = 'idle';
+    shareFeedbackTimer = undefined;
+  }, 1800);
 }
 
-function loadSharedState(hash: string): void {
+async function loadSharedState(hash: string): Promise<void> {
   const match = /^#cube=v1:([URFDLB]{54})$/i.exec(hash);
   if (!match) return;
   if (store.loadFaceletString(match[1]!)) {
     inputMethod.value = 'manual';
     mode.value = 'solve';
-    announcement.value = '已从分享链接载入魔方状态。';
+    await router.replace({ path: route.path, query: route.query, hash: '' });
+    const message = '分享状态已导入，后续操作会自动保存在本地。';
+    announcement.value = message;
+    sharedStateNotice.value = message;
+    if (sharedStateNoticeTimer !== undefined) {
+      globalThis.clearTimeout(sharedStateNoticeTimer);
+    }
+    sharedStateNoticeTimer = globalThis.setTimeout(() => {
+      sharedStateNotice.value = '';
+      sharedStateNoticeTimer = undefined;
+    }, 3200);
   }
 }
 
@@ -533,7 +554,7 @@ function handleKeydown(event: KeyboardEvent): void {
 
 watch(
   () => route.hash,
-  (hash) => loadSharedState(hash),
+  (hash) => void loadSharedState(hash),
 );
 
 watch(
@@ -546,13 +567,15 @@ watch(
 );
 
 onMounted(() => {
-  loadSharedState(route.hash);
+  void loadSharedState(route.hash);
   document.addEventListener('keydown', handleKeydown);
 });
 
 onBeforeUnmount(() => {
   disposed = true;
   stopPlayback();
+  if (shareFeedbackTimer !== undefined) globalThis.clearTimeout(shareFeedbackTimer);
+  if (sharedStateNoticeTimer !== undefined) globalThis.clearTimeout(sharedStateNoticeTimer);
   document.removeEventListener('keydown', handleKeydown);
 });
 </script>
@@ -566,6 +589,9 @@ onBeforeUnmount(() => {
     aria-label="3D 魔方还原工作台"
   >
     <p class="visually-hidden" aria-live="polite">{{ announcement }}</p>
+    <p v-if="sharedStateNotice" class="cube-status-toast" role="status">
+      <IconCheck :size="16" aria-hidden="true" />{{ sharedStateNotice }}
+    </p>
 
     <nav class="cube-mode-tabs" aria-label="魔方工具模式">
       <button
@@ -686,8 +712,25 @@ onBeforeUnmount(() => {
             <button type="button" :disabled="!canSolve" @click="runSolve(true)">
               <IconBook2 :size="17" aria-hidden="true" />新手教学
             </button>
-            <button type="button" :disabled="editStatus !== 'valid'" @click="shareState">
-              <IconShare3 :size="16" aria-hidden="true" />分享状态
+            <button
+              class="cube-share-button"
+              :class="{
+                'is-copied': shareFeedback === 'copied',
+                'is-error': shareFeedback === 'error',
+              }"
+              type="button"
+              :disabled="editStatus !== 'valid'"
+              @click="shareState"
+            >
+              <IconCheck v-if="shareFeedback === 'copied'" :size="16" aria-hidden="true" />
+              <IconShare3 v-else :size="16" aria-hidden="true" />
+              {{
+                shareFeedback === 'copied'
+                  ? '状态已复制'
+                  : shareFeedback === 'error'
+                    ? '复制失败'
+                    : '分享状态'
+              }}
             </button>
           </div>
         </section>
