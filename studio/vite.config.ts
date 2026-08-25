@@ -66,7 +66,7 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    exclude: ['pdfjs-dist'],
+    exclude: ['pdfjs-dist', 'cubing'],
   },
   worker: {
     format: 'es',

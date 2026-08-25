@@ -9,6 +9,8 @@
   },
   "scripts": {
     "dev": "vite",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
     "typecheck": "vue-tsc --noEmit",
     "lint": "eslint . && prettier --check .",
     "lint:fix": "eslint . --fix && prettier --write .",
@@ -27,6 +29,7 @@
     "cnchar": "3.2.6",
     "cnchar-order": "3.2.6",
     "cnchar-trad": "3.2.6",
+    "cubing": "0.63.4",
     "d3": "^7.9.0",
     "docx": "^9.7.1",
     "dompurify": "^3.4.12",
@@ -89,6 +92,7 @@
     "typescript-eslint": "^8.54.0",
     "unplugin-auto-import": "^20.3.0",
     "vite": "^8.1.5",
+    "vitest": "^4.1.11",
     "vue-tsc": "^3.3.9"
   }
 }

@@ -4,6 +4,7 @@ allowBuilds:
 minimumReleaseAgeExclude:
   - mind-elixir@5.15.1
   - '@zip.js/zip.js@2.8.46'
+  - cubing@0.63.4
 onlyBuiltDependencies:
   - core-js
 patchedDependencies:
