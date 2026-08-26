@@ -22,7 +22,13 @@ import {
   type Facelet,
   type StickerRef,
 } from '../types';
-import { CUBIE_COORDINATES, faceletIndex, facesForPosition, layerForFace } from './geometry';
+import {
+  CUBIE_COORDINATES,
+  faceletIndex,
+  facesForPosition,
+  layerForFace,
+  turnAmountForStickerDrag,
+} from './geometry';
 
 interface CubeSceneOptions {
   colorScheme: CubeColorScheme;
@@ -35,7 +41,7 @@ interface PointerCandidate {
   x: number;
   y: number;
   sticker: StickerRef;
-  moved: boolean;
+  triggered: boolean;
 }
 
 const BODY_COLOR = 0x17191f;
@@ -105,6 +111,7 @@ export class CubeScene {
   #animationReject: ((reason: Error) => void) | null = null;
   #animationPivot: Group | null = null;
   #pointerCandidate: PointerCandidate | null = null;
+  #layerDraggingEnabled = false;
   #disposed = false;
 
   constructor(host: HTMLElement, options: CubeSceneOptions) {
@@ -188,6 +195,16 @@ export class CubeScene {
   setTeachingView(enabled: boolean): void {
     this.#controls.enableRotate = !enabled;
     if (enabled) this.resetCamera();
+  }
+
+  setLayerDragging(enabled: boolean): void {
+    this.#layerDraggingEnabled = enabled;
+    this.#renderer.domElement.classList.toggle('is-layer-drag-enabled', enabled);
+    this.#renderer.domElement.setAttribute(
+      'aria-label',
+      enabled ? '三阶魔方：拖动贴纸转动对应层，拖动空白区域旋转观察视角' : '可拖动观察的三阶魔方',
+    );
+    if (!enabled) this.#finishPointerCandidate();
   }
 
   resetCamera(): void {
@@ -322,7 +339,7 @@ export class CubeScene {
   }
 
   #onPointerDown = (event: PointerEvent): void => {
-    if (this.#animationReject) return;
+    if (this.#animationReject || !this.#layerDraggingEnabled) return;
     const sticker = this.#hitSticker(event);
     if (!sticker) return;
     this.#pointerCandidate = {
@@ -330,25 +347,22 @@ export class CubeScene {
       x: event.clientX,
       y: event.clientY,
       sticker,
-      moved: false,
+      triggered: false,
     };
     this.#controls.enabled = false;
+    this.#renderer.domElement.classList.add('is-layer-drag-active');
     this.#renderer.domElement.setPointerCapture(event.pointerId);
   };
 
   #onPointerMove = (event: PointerEvent): void => {
     const candidate = this.#pointerCandidate;
-    if (!candidate || candidate.pointerId !== event.pointerId || candidate.moved) return;
+    if (!candidate || candidate.pointerId !== event.pointerId || candidate.triggered) return;
     const dx = event.clientX - candidate.x;
     const dy = event.clientY - candidate.y;
-    if (Math.hypot(dx, dy) < 8) return;
-    candidate.moved = true;
-    const invertedFace =
-      candidate.sticker.face === 'D' ||
-      candidate.sticker.face === 'L' ||
-      candidate.sticker.face === 'B';
-    const forward = Math.abs(dx) >= Math.abs(dy) ? dx > 0 : dy > 0;
-    const amount = forward !== invertedFace ? 1 : -1;
+    const amount = turnAmountForStickerDrag(candidate.sticker.face, dx, dy);
+    if (amount === null) return;
+    candidate.triggered = true;
+    event.preventDefault();
     this.#options.onMove?.({
       face: candidate.sticker.face,
       amount,
@@ -359,12 +373,18 @@ export class CubeScene {
   #onPointerUp = (event: PointerEvent): void => {
     const candidate = this.#pointerCandidate;
     if (!candidate || candidate.pointerId !== event.pointerId) return;
+    this.#finishPointerCandidate();
+  };
+
+  #finishPointerCandidate(): void {
+    const candidate = this.#pointerCandidate;
     this.#pointerCandidate = null;
     this.#controls.enabled = true;
-    if (this.#renderer.domElement.hasPointerCapture(event.pointerId)) {
-      this.#renderer.domElement.releasePointerCapture(event.pointerId);
+    this.#renderer.domElement.classList.remove('is-layer-drag-active');
+    if (candidate && this.#renderer.domElement.hasPointerCapture(candidate.pointerId)) {
+      this.#renderer.domElement.releasePointerCapture(candidate.pointerId);
     }
-  };
+  }
 
   #onDoubleClick = (event: MouseEvent): void => {
     if (this.#animationReject) return;
@@ -422,6 +442,7 @@ export class CubeScene {
     cancelAnimationFrame(this.#animationFrame);
     cancelAnimationFrame(this.#resizeFrame);
     this.#resizeObserver.disconnect();
+    this.#finishPointerCandidate();
     this.#controls.dispose();
     this.#renderer.domElement.removeEventListener('pointerdown', this.#onPointerDown);
     this.#renderer.domElement.removeEventListener('pointermove', this.#onPointerMove);

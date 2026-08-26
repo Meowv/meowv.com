@@ -526,7 +526,12 @@
   font-weight: 700;
 }
 
-.cube-keyboard-hint {
+.cube-practice-hints {
+  display: grid;
+  gap: 3px;
+}
+
+.cube-practice-hints p {
   margin: 0;
   color: var(--color-text-muted);
   font-size: 11px;
@@ -604,6 +609,14 @@
 .cube-viewport__host canvas {
   display: block;
   touch-action: none;
+}
+
+.cube-viewport__host canvas.is-layer-drag-enabled {
+  cursor: grab;
+}
+
+.cube-viewport__host canvas.is-layer-drag-active {
+  cursor: grabbing;
 }
 
 .cube-viewport__loading {

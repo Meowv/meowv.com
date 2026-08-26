@@ -5,6 +5,7 @@ import {
   faceletIndex,
   facesForPosition,
   layerForFace,
+  turnAmountForStickerDrag,
 } from '../renderer/geometry';
 
 describe('3D cubie geometry', () => {
@@ -32,5 +33,13 @@ describe('3D cubie geometry', () => {
         CUBIE_COORDINATES.filter((coordinate) => coordinate[layer.axis] === layer.coordinate),
       ).toHaveLength(9);
     }
+  });
+
+  it('贴纸拖动仅在距离和方向明确时生成转层方向', () => {
+    expect(turnAmountForStickerDrag('F', 8, 0)).toBeNull();
+    expect(turnAmountForStickerDrag('F', 20, 18)).toBeNull();
+    expect(turnAmountForStickerDrag('F', 20, 2)).toBe(1);
+    expect(turnAmountForStickerDrag('F', -20, 2)).toBe(-1);
+    expect(turnAmountForStickerDrag('B', 20, 2)).toBe(-1);
   });
 });

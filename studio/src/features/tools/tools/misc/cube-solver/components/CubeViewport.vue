@@ -12,9 +12,10 @@ const props = withDefaults(
     showMoveArrows: boolean;
     teachingView: boolean;
     stickerEditing?: boolean;
+    layerDragging?: boolean;
     currentMove: CubeMove | null;
   }>(),
-  { stickerEditing: false },
+  { stickerEditing: false, layerDragging: false },
 );
 
 const emit = defineEmits<{
@@ -55,6 +56,7 @@ async function initializeScene(): Promise<void> {
     });
     scene.setFacelets(props.facelets);
     scene.setTeachingView(props.teachingView);
+    scene.setLayerDragging(props.layerDragging);
   } catch (error) {
     webglError.value = error instanceof Error ? error.message : '当前浏览器无法创建 3D 场景。';
   } finally {
@@ -77,6 +79,10 @@ watch(
 watch(
   () => props.teachingView,
   (enabled) => scene?.setTeachingView(enabled),
+);
+watch(
+  () => props.layerDragging,
+  (enabled) => scene?.setLayerDragging(enabled),
 );
 
 async function animateMove(
@@ -116,9 +122,14 @@ onBeforeUnmount(() => {
         <span>仍可通过展开图、公式按钮和步骤列表完成还原。</span>
       </div>
     </div>
-    <div v-if="showLabels" class="cube-viewport__guide" role="note">
-      <p><strong>当前朝向</strong><span>U 上 · F 前 · R 右</span></p>
+    <div
+      v-if="showLabels || stickerEditing || layerDragging"
+      class="cube-viewport__guide"
+      role="note"
+    >
+      <p v-if="showLabels"><strong>当前朝向</strong><span>U 上 · F 前 · R 右</span></p>
       <p class="cube-viewport__guide-actions">
+        <span v-if="layerDragging">拖动贴纸转层</span>
         <span>拖动空白处旋转视角</span>
         <span v-if="stickerEditing">双击贴纸即可着色</span>
       </p>

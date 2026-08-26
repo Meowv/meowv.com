@@ -771,7 +771,7 @@ onBeforeUnmount(() => {
             <IconKeyboard :size="20" aria-hidden="true" />
             <div>
               <h2>自由练习</h2>
-              <small>拖动贴纸、点击动作或使用键盘</small>
+              <small>拖动贴纸转层，也可点击动作或使用键盘</small>
             </div>
           </header>
           <div class="cube-practice-stats">
@@ -810,7 +810,10 @@ onBeforeUnmount(() => {
               {{ notation }}
             </button>
           </div>
-          <p class="cube-keyboard-hint">键盘：R/L/U/D/F/B · Shift 反向 · ⌘/Ctrl+Z 撤销</p>
+          <div class="cube-practice-hints">
+            <p>鼠标：拖动贴纸转层 · 拖动空白处旋转视角</p>
+            <p>键盘：R/L/U/D/F/B · Shift 反向 · ⌘/Ctrl+Z 撤销</p>
+          </div>
         </section>
 
         <section v-else class="cube-teaching-panel">
@@ -864,6 +867,7 @@ onBeforeUnmount(() => {
           :show-move-arrows="preferences.showMoveArrows"
           :teaching-view="mode === 'beginner' && preferences.teachingView"
           :sticker-editing="mode === 'solve' && inputMethod === 'manual'"
+          :layer-dragging="mode === 'practice'"
           :current-move="currentMove"
           @sticker-click="handleStickerClick"
           @move="handleViewportMove"
