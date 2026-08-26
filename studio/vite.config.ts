@@ -4,6 +4,7 @@ import vue from '@vitejs/plugin-vue';
 import AutoImport from 'unplugin-auto-import/vite';
 import { defineConfig } from 'vite';
 import { builtinBooksDevPlugin } from './vite/builtinBooksDevPlugin.ts';
+import { cubingWorkerPreloadPlugin } from './vite/cubingWorkerPreloadPlugin.ts';
 import { toolsBackgroundVideosPlugin } from './vite/toolsBackgroundVideosPlugin.ts';
 
 export default defineConfig({
@@ -22,6 +23,7 @@ export default defineConfig({
       dts: './src/auto-imports.d.ts',
     }),
     tailwindcss(),
+    cubingWorkerPreloadPlugin(),
   ],
   resolve: {
     alias: [
@@ -51,15 +53,13 @@ export default defineConfig({
     target: 'es2022',
     sourcemap: false,
     chunkSizeWarningLimit: 7000,
+    modulePreload: false,
     rolldownOptions: {
       checks: {
         pluginTimings: false,
       },
       output: {
         manualChunks(id) {
-          // cubing 的搜索 Worker 会复用 Vite 的动态导入助手。将助手固定拆分，
-          // 避免 Rolldown 把它合并进依赖 document 的应用主入口。
-          if (id === '\0vite/preload-helper.js') return 'vite-preload-helper';
           if (!id.includes('node_modules')) return undefined;
           if (id.includes('vue-router')) return 'vue-router';
           if (id.includes('/vue/')) return 'vue';
