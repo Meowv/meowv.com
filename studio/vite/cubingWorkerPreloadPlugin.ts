@@ -11,7 +11,9 @@ type BuildChunk = {
   isEntry: boolean;
 };
 
-const WORKER_PRELOAD_FILE = 'assets/cubing-worker-preload.js';
+const WORKER_BUNDLE_VERSION = 'v1';
+const WORKER_FILE_PREFIX = `cubing-worker-${WORKER_BUNDLE_VERSION}-`;
+const WORKER_PRELOAD_FILE = `assets/${WORKER_FILE_PREFIX}preload.js`;
 
 function relativeSpecifier(from: string, to: string): string {
   const relative = posix.relative(posix.dirname(from), to);
@@ -29,6 +31,9 @@ function replaceSpecifier(code: string, source: string, target: string): string 
 export function cubingWorkerPreloadPlugin(): Plugin {
   return {
     name: 'studio-cubing-worker-preload',
+    augmentChunkHash(chunkInfo) {
+      if (chunkInfo.exports.includes('WORKER_ENTRY_FILE_URL')) return WORKER_BUNDLE_VERSION;
+    },
     generateBundle(_options, bundle) {
       const chunks = Object.values(bundle).filter((item) => item.type === 'chunk') as BuildChunk[];
       const workerEntry = chunks.find((chunk) => chunk.exports.includes('WORKER_ENTRY_FILE_URL'));
@@ -56,7 +61,7 @@ export function cubingWorkerPreloadPlugin(): Plugin {
       const cloneNames = new Map(
         [...workerDependencies].map((fileName) => [
           fileName,
-          `assets/cubing-worker-${posix.basename(fileName)}`,
+          `assets/${WORKER_FILE_PREFIX}${posix.basename(fileName)}`,
         ]),
       );
 
