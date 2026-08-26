@@ -1,5 +1,6 @@
 .cube-solver {
   --cube-accent: var(--tools-accent, var(--color-brand));
+  --cube-layout-gap: 12px;
   --cube-panel: color-mix(in srgb, var(--color-surface-solid) 94%, transparent);
   --cube-panel-soft: color-mix(in srgb, var(--color-surface-soft) 82%, transparent);
   min-width: 0;
@@ -129,7 +130,7 @@
 .cube-mode-tabs {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+  gap: var(--cube-layout-gap);
   margin-bottom: 12px;
 }
 
@@ -172,8 +173,8 @@
 
 .cube-workbench {
   display: grid;
-  grid-template-columns: 320px minmax(420px, 1fr) 340px;
-  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--cube-layout-gap);
   align-items: stretch;
   min-width: 0;
 }
@@ -195,6 +196,7 @@
 .cube-center-panel {
   position: sticky;
   top: calc(var(--studio-header-height, 72px) + 12px);
+  grid-column: span 2;
   overflow: hidden;
 }
 
