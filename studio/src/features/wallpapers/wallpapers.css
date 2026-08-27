@@ -172,7 +172,7 @@
   order: 3;
 }
 .studio-shell--wallpapers-header .wallpapers-category-bar {
-  top: 0;
+  top: var(--header-height);
 }
 .wallpapers-category-bar button {
   border-radius: 6px;
