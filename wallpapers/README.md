@@ -1,0 +1,611 @@
+# Wallpapers Crawler
+
+公开壁纸接口采集器。项目使用 Python 3.12 和 SQLite，默认只保存壁纸元数据以及图片、封面、视频预览的 CDN 地址，不下载媒体文件。
+
+## 快速开始
+
+在项目根目录（`wallpapers/`）执行。无需安装项目时，使用 `PYTHONPATH`：
+
+```bash
+PYTHONPATH=src python3 -m wallpapers crawl
+PYTHONPATH=src python3 -m wallpapers stats
+PYTHONPATH=src python3 -m wallpapers check
+```
+
+也可以安装为本地命令：
+
+```bash
+python3 -m pip install -e .
+wallpapers crawl
+wallpapers stats
+```
+
+默认数据库路径为：
+
+```text
+./wallpapers.db
+```
+
+可以使用 `--db` 指定其他 SQLite 文件。`--db` 可以放在根命令后，也可以放在子命令后：
+
+```bash
+PYTHONPATH=src python3 -m wallpapers --db ./data/wallpapers.db crawl
+PYTHONPATH=src python3 -m wallpapers crawl --db ./data/wallpapers.db
+```
+
+## 数据范围
+
+采集器区分以下维度：
+
+| 维度       | 可选值                                                 | 说明                                   |
+| ---------- | ------------------------------------------------------ | -------------------------------------- |
+| 设备       | `desktop`、`mobile`                                    | 电脑端或手机端资源                     |
+| 内容       | `dynamic`、`static`                                    | 动态壁纸或静态壁纸                     |
+| 媒体类型   | `image`、`video`                                       | 图片或视频资源                         |
+| 媒体角色   | `image`、`cover`、`video_preview`、`video_original` 等 | 当前公开接口主要提供图片和视频预览地址 |
+| 关键词类型 | `query`、`tag`                                         | 用户传入的搜索词，或接口返回的资源标签 |
+
+项目只访问公开接口，不登录、不读取 Cookie、不提交用户数据，也不绕过付费或权限校验。接口中的 `fee_type` 和 `price` 会原样保存。
+
+## 数据库表结构
+
+数据库初始化和兼容迁移由 [`src/wallpapers/db.py`](src/wallpapers/db.py) 完成。所有时间字段使用 UTC ISO 8601 文本；SQLite 布尔值使用 `0` / `1`。
+
+### `wallpaper`
+
+壁纸主表，每个稳定资源一行。
+
+| 字段                                | 说明                                            |
+| ----------------------------------- | ----------------------------------------------- |
+| `id`                                | 本地自增主键                                    |
+| `source`                            | 数据来源标识，例如 `shanhutech-desktop-dynamic` |
+| `remote_id`、`remote_qid`           | 远程接口中的资源 ID、作者/队列 ID               |
+| `stable_key`                        | 稳定去重键，唯一                                |
+| `device_type`                       | `desktop` 或 `mobile`                           |
+| `content_type`                      | `static` 或 `dynamic`                           |
+| `title`、`author`                   | 标题和作者                                      |
+| `fee_type`、`price`                 | 付费类型和接口价格                              |
+| `resolution_raw`、`width`、`height` | 原始分辨率和解析后的宽高                        |
+| `duration_seconds`                  | 动态资源时长（若接口提供）                      |
+| `remote_created_at`                 | 远程创建时间                                    |
+| `first_seen_at`、`last_seen_at`     | 首次和最近发现时间                              |
+| `status`                            | `active`、`missing`、`inactive`                 |
+| `last_seen_run_id`                  | 最近一次发现该资源的抓取任务                    |
+| `missing_count`                     | 完整校对中连续未发现次数                        |
+| `raw_json`                          | 最近一次接口返回的原始资源 JSON                 |
+
+### `asset`
+
+媒体资源表，按规范化 CDN URL 去重。
+
+| 字段                                  | 说明                                                   |
+| ------------------------------------- | ------------------------------------------------------ |
+| `id`                                  | 本地自增主键                                           |
+| `url`                                 | 原始或规范化后的 CDN 地址，唯一                        |
+| `normalized_url`                      | 统一后的地址，当前会将 `http` 转为 `https`             |
+| `media_type`                          | `image`、`video`、`other`                              |
+| `media_role`                          | `image`、`cover`、`video_preview`、`video_original` 等 |
+| `width`、`height`、`duration_seconds` | 媒体属性                                               |
+| `file_size`、`mime_type`              | 文件大小和 MIME 类型                                   |
+| `http_status`、`accessible`           | 最近一次地址检查结果                                   |
+| `first_checked_at`、`last_checked_at` | 地址检查时间                                           |
+
+### 关系表
+
+| 表                   | 说明                                                 |
+| -------------------- | ---------------------------------------------------- |
+| `wallpaper_asset`    | 壁纸与图片/视频资源的多对多关系，包含主资源和排序    |
+| `wallpaper_category` | 壁纸与分类的多对多关系，区分 `primary` / `secondary` |
+| `wallpaper_keyword`  | 壁纸与搜索词、标签的多对多关系                       |
+
+### `category`
+
+分类表，支持一级、二级分类。
+
+| 字段                          | 说明                           |
+| ----------------------------- | ------------------------------ |
+| `source`                      | 分类来源                       |
+| `device_type`、`content_type` | 分类所属设备和内容类型         |
+| `remote_key`                  | 接口分类 ID 或分类名称         |
+| `name`                        | 分类名称                       |
+| `level`                       | `1` 为一级分类，`2` 为二级分类 |
+| `parent_id`                   | 二级分类对应的一级分类         |
+| `sort_order`                  | 接口排序值                     |
+
+### `keyword`
+
+关键词表。
+
+| 字段           | 说明                                         |
+| -------------- | -------------------------------------------- |
+| `keyword`      | 关键词文本                                   |
+| `keyword_type` | `query` 表示命令行搜索词，`tag` 表示接口标签 |
+
+### `crawl_run`
+
+一次抓取任务的汇总记录。
+
+| 字段                        | 说明                                      |
+| --------------------------- | ----------------------------------------- |
+| `id`                        | 任务 ID                                   |
+| `started_at`、`finished_at` | 开始和结束时间                            |
+| `status`                    | `running`、`success`、`partial`、`failed` |
+| `mode`                      | `quick`、`incremental`、`full`            |
+| `total_requests`            | 本次请求数量                              |
+| `total_items`               | 本次处理的资源数量                        |
+| `total_assets`              | 数据库中的媒体资源总数                    |
+| `error_message`             | 任务级错误信息                            |
+
+### `crawl_request`
+
+每个分类、搜索、分页或 manifest 请求的明细。
+
+| 字段                          | 说明                                                   |
+| ----------------------------- | ------------------------------------------------------ |
+| `run_id`                      | 所属抓取任务                                           |
+| `request_type`                | `manifest`、`newest`、`category`、`search`、`fallback` |
+| `endpoint`                    | 实际请求地址                                           |
+| `device_type`、`content_type` | 请求所属维度                                           |
+| `category_id`                 | 请求对应的本地分类                                     |
+| `search_keyword`              | 请求使用的搜索词                                       |
+| `page`、`page_size`           | 分页参数                                               |
+| `http_status`                 | HTTP 状态码                                            |
+| `response_hash`               | 响应摘要                                               |
+| `response_json`               | 原始 JSON 文本                                         |
+| `error_message`               | 请求错误信息                                           |
+
+### `wallpaper_discovery`
+
+记录某个壁纸由哪个请求发现，可用于追踪来源、分页和搜索词。
+
+### `crawl_cursor`
+
+增量抓取游标。按来源、设备、内容类型和作用域保存最近成功位置。
+
+| 字段                     | 说明                           |
+| ------------------------ | ------------------------------ |
+| `scope_type`             | `newest`、`category`、`search` |
+| `scope_key`              | 分类名称、分类 ID 或搜索词     |
+| `last_remote_created_at` | 最近成功页的远程创建时间水位   |
+| `last_remote_id`         | 最近成功页的远程 ID            |
+| `last_page_hash`         | 首页稳定键摘要                 |
+| `last_success_at`        | 游标更新时间                   |
+
+## `crawl` 抓取命令
+
+基本格式：
+
+```bash
+PYTHONPATH=src python3 -m wallpapers crawl [选项]
+```
+
+### 参数说明
+
+| 参数              | 默认值          | 说明                                                                   |
+| ----------------- | --------------- | ---------------------------------------------------------------------- |
+| `--db PATH`       | `wallpapers.db` | SQLite 数据库路径。可放在根命令后或 `crawl` 后                         |
+| `--device VALUE`  | `all`           | 设备范围：`desktop`、`mobile`、`all`                                   |
+| `--content VALUE` | `all`           | 内容范围：`static`、`dynamic`、`all`                                   |
+| `--mode VALUE`    | `incremental`   | 抓取模式：`quick`、`incremental`、`full`                               |
+| `--category NAME` | 空              | 分类过滤，可重复传入。没有关键字时生效                                 |
+| `--keyword TEXT`  | 空              | 搜索关键字，可重复传入。传入后优先走搜索接口，分类过滤不再参与分页抓取 |
+| `--page-size N`   | `24`            | 每页请求数量，程序会将小于 `1` 的值修正为 `1`                          |
+| `--max-pages N`   | 不限制          | 单个分类或搜索作用域最多抓取页数                                       |
+| `--refresh`       | 关闭            | 兼容参数，等同于 `--mode full`                                         |
+| `-h`、`--help`    | -               | 显示抓取命令帮助                                                       |
+
+### 抓取模式
+
+#### `incremental`
+
+默认模式。每个分类或搜索作用域从第一页开始。如果已有成功游标，并且当前页资源全部已知、同时没有更新的远程资源，就停止继续翻页。新作用域没有游标时会完整遍历。
+
+#### `quick`
+
+每个作用域只请求第一页，不更新正式游标。适合高频检查新增内容。
+
+#### `full`
+
+遍历全部分页并更新游标。当没有指定分类、关键字或 `--max-pages` 时，还会执行完整校对：资源第一次未发现标记为 `missing`，连续两次完整校对未发现后标记为 `inactive`；重新发现会恢复为 `active`。
+
+### 示例
+
+抓取全部设备和内容：
+
+```bash
+PYTHONPATH=src python3 -m wallpapers crawl
+```
+
+只抓电脑动态壁纸的风景分类：
+
+```bash
+PYTHONPATH=src python3 -m wallpapers crawl \
+  --device desktop \
+  --content dynamic \
+  --category 风景
+```
+
+只抓手机静态壁纸，每个分类最多 3 页：
+
+```bash
+PYTHONPATH=src python3 -m wallpapers crawl \
+  --device mobile \
+  --content static \
+  --max-pages 3
+```
+
+按多个关键字搜索：
+
+```bash
+PYTHONPATH=src python3 -m wallpapers crawl \
+  --keyword 雨夜 \
+  --keyword 溪流 \
+  --mode quick
+```
+
+强制执行完整抓取：
+
+```bash
+PYTHONPATH=src python3 -m wallpapers crawl --refresh
+```
+
+## 站点规划查询 SQL
+
+推荐将站点导航统一映射为三层：
+
+| 导航层级 | 数据字段 | 展示值 |
+| --- | --- | --- |
+| 大分类 | `wallpaper.device_type` | `desktop` 显示为“电脑壁纸”，`mobile` 显示为“手机壁纸” |
+| 小分类 | `wallpaper.content_type` | `dynamic` 显示为“动态壁纸”，`static` 显示为“静态壁纸” |
+| 壁纸分类 | `category` + `wallpaper_category` | “双屏”“动漫”“美女”等，支持一级分类和二级分类 |
+
+“全部”是界面筛选项，不需要在 `category` 表中增加一条特殊记录。查询时传入 `NULL` 或字符串“全部”即可表示不限制该维度。
+
+### 推荐查询视图
+
+该视图将数据库字段转换成适合站点列表和后台管理的展示字段。一个壁纸拥有多个分类时会返回多行，这是有意保留的分类关系。
+
+```sql
+CREATE VIEW IF NOT EXISTS v_wallpaper_catalog AS
+SELECT
+    w.id,
+    w.stable_key,
+    w.source,
+    w.remote_id,
+    w.title,
+    w.author,
+    w.device_type,
+    CASE w.device_type
+        WHEN 'desktop' THEN '电脑壁纸'
+        WHEN 'mobile' THEN '手机壁纸'
+    END AS big_category,
+    w.content_type,
+    CASE w.content_type
+        WHEN 'dynamic' THEN '动态壁纸'
+        WHEN 'static' THEN '静态壁纸'
+    END AS small_category,
+    CASE WHEN c.level = 2 THEN parent.name ELSE c.name END AS category_name,
+    CASE WHEN c.level = 2 THEN c.name END AS subcategory_name,
+    c.level AS category_level,
+    w.status,
+    w.width,
+    w.height,
+    w.duration_seconds,
+    w.remote_created_at,
+    w.first_seen_at,
+    w.last_seen_at
+FROM wallpaper AS w
+LEFT JOIN wallpaper_category AS wc ON wc.wallpaper_id = w.id
+LEFT JOIN category AS c ON c.id = wc.category_id
+LEFT JOIN category AS parent ON parent.id = c.parent_id;
+```
+
+### 首页或“全部”列表
+
+以下参数约定：`:device` 可取 `desktop`、`mobile`、`all`；`:content` 可取 `static`、`dynamic`、`all`；`:category` 为分类名称或“全部”。
+
+```sql
+SELECT
+    v.*,
+    a.url AS asset_url,
+    a.media_type,
+    a.media_role
+FROM v_wallpaper_catalog AS v
+LEFT JOIN wallpaper_asset AS wa ON wa.wallpaper_id = v.id
+LEFT JOIN asset AS a ON a.id = wa.asset_id
+WHERE (:device = 'all' OR v.device_type = :device)
+  AND (:content = 'all' OR v.content_type = :content)
+  AND (:category IS NULL OR :category = '全部' OR v.category_name = :category OR v.subcategory_name = :category)
+  AND v.status = 'active'
+ORDER BY COALESCE(v.remote_created_at, v.first_seen_at) DESC, v.id DESC
+LIMIT :limit OFFSET :offset;
+```
+
+如果列表只需要每个壁纸一行，不要直接连接 `asset`，或者使用 `EXISTS` 过滤资源：
+
+```sql
+SELECT v.*
+FROM v_wallpaper_catalog AS v
+WHERE (:device = 'all' OR v.device_type = :device)
+  AND (:content = 'all' OR v.content_type = :content)
+  AND (:category IS NULL OR :category = '全部' OR v.category_name = :category OR v.subcategory_name = :category)
+  AND v.status = 'active'
+GROUP BY v.id
+ORDER BY COALESCE(v.remote_created_at, v.first_seen_at) DESC, v.id DESC
+LIMIT :limit OFFSET :offset;
+```
+
+### 动态壁纸同时包含静态壁纸
+
+站点可以提供一个“动态 + 静态”展示模式。建议使用参数值 `dynamic_with_static`，而不是修改数据库中的 `content_type`：
+
+```sql
+SELECT v.*
+FROM v_wallpaper_catalog AS v
+WHERE (:device = 'all' OR v.device_type = :device)
+  AND (
+        :content_mode = 'all'
+        OR v.content_type = :content_mode
+        OR (
+            :content_mode = 'dynamic_with_static'
+            AND v.content_type IN ('dynamic', 'static')
+        )
+      )
+  AND (:category IS NULL OR :category = '全部' OR v.category_name = :category OR v.subcategory_name = :category)
+  AND v.status = 'active'
+GROUP BY v.id
+ORDER BY COALESCE(v.remote_created_at, v.first_seen_at) DESC, v.id DESC
+LIMIT :limit OFFSET :offset;
+```
+
+如果需要优先展示动态，再展示静态，可以增加排序：
+
+```sql
+ORDER BY
+    CASE v.content_type WHEN 'dynamic' THEN 0 ELSE 1 END,
+    COALESCE(v.remote_created_at, v.first_seen_at) DESC,
+    v.id DESC;
+```
+
+### 分类导航，包含“全部”和二级分类
+
+返回某个设备和内容类型下的一级分类，并在最前面加入界面使用的“全部”：
+
+```sql
+SELECT
+    0 AS id,
+    '全部' AS name,
+    NULL AS parent_id,
+    0 AS level,
+    0 AS sort_order
+UNION ALL
+SELECT id, name, parent_id, level, sort_order
+FROM category
+WHERE (:device = 'all' OR device_type = :device)
+  AND (:content = 'all' OR content_type = :content)
+  AND level = 1
+ORDER BY sort_order, id;
+```
+
+查询某个一级分类下的二级分类：
+
+```sql
+SELECT id, name, parent_id, level, sort_order
+FROM category
+WHERE parent_id = :parent_category_id
+ORDER BY sort_order, id;
+```
+
+查询分类及其资源数量：
+
+```sql
+SELECT
+    c.id,
+    c.name,
+    c.level,
+    c.parent_id,
+    COUNT(DISTINCT w.id) AS wallpaper_count
+FROM category AS c
+LEFT JOIN wallpaper_category AS wc ON wc.category_id = c.id
+LEFT JOIN wallpaper AS w ON w.id = wc.wallpaper_id AND w.status = 'active'
+WHERE (:device = 'all' OR c.device_type = :device)
+  AND (:content = 'all' OR c.content_type = :content)
+GROUP BY c.id
+ORDER BY c.level, c.sort_order, c.id;
+```
+
+### 查询单个壁纸的全部 CDN 地址
+
+```sql
+SELECT
+    w.id,
+    w.title,
+    w.device_type,
+    w.content_type,
+    a.url,
+    a.media_type,
+    a.media_role,
+    a.mime_type,
+    a.width,
+    a.height,
+    a.duration_seconds,
+    a.accessible,
+    a.last_checked_at
+FROM wallpaper AS w
+JOIN wallpaper_asset AS wa ON wa.wallpaper_id = w.id
+JOIN asset AS a ON a.id = wa.asset_id
+WHERE w.id = :wallpaper_id
+ORDER BY wa.sort_order, a.id;
+```
+
+只查询动态壁纸视频预览地址：
+
+```sql
+SELECT w.id, w.title, a.url
+FROM wallpaper AS w
+JOIN wallpaper_asset AS wa ON wa.wallpaper_id = w.id
+JOIN asset AS a ON a.id = wa.asset_id
+WHERE w.device_type = :device
+  AND w.content_type = 'dynamic'
+  AND a.media_role = 'video_preview'
+  AND w.status = 'active'
+ORDER BY COALESCE(w.remote_created_at, w.first_seen_at) DESC;
+```
+
+### 关键词搜索
+
+搜索用户输入的关键字，`keyword_type = 'query'`；搜索接口返回的标签，使用 `keyword_type = 'tag'`。
+
+```sql
+SELECT DISTINCT v.*
+FROM v_wallpaper_catalog AS v
+JOIN wallpaper_keyword AS wk ON wk.wallpaper_id = v.id
+JOIN keyword AS k ON k.id = wk.keyword_id
+WHERE k.keyword = :keyword
+  AND k.keyword_type IN ('query', 'tag')
+  AND v.status = 'active'
+  AND (:device = 'all' OR v.device_type = :device)
+  AND (:content = 'all' OR v.content_type = :content)
+ORDER BY COALESCE(v.remote_created_at, v.first_seen_at) DESC, v.id DESC
+LIMIT :limit OFFSET :offset;
+```
+
+### 分页总数
+
+分页查询必须使用与列表查询相同的筛选条件。由于分类视图可能一壁纸多行，使用 `COUNT(DISTINCT v.id)`：
+
+```sql
+SELECT COUNT(DISTINCT v.id) AS total
+FROM v_wallpaper_catalog AS v
+WHERE (:device = 'all' OR v.device_type = :device)
+  AND (:content = 'all' OR v.content_type = :content)
+  AND (:category IS NULL OR :category = '全部' OR v.category_name = :category OR v.subcategory_name = :category)
+  AND v.status = 'active';
+```
+
+### 站点统计
+
+按大分类和小分类统计：
+
+```sql
+SELECT
+    CASE device_type WHEN 'desktop' THEN '电脑壁纸' ELSE '手机壁纸' END AS big_category,
+    CASE content_type WHEN 'dynamic' THEN '动态壁纸' ELSE '静态壁纸' END AS small_category,
+    COUNT(*) AS wallpaper_count
+FROM wallpaper
+WHERE status = 'active'
+GROUP BY device_type, content_type
+ORDER BY device_type, content_type;
+```
+
+按媒体角色统计 CDN 地址：
+
+```sql
+SELECT media_type, media_role, COUNT(*) AS asset_count
+FROM asset
+GROUP BY media_type, media_role
+ORDER BY media_type, media_role;
+```
+
+查询最近一次抓取任务：
+
+```sql
+SELECT id, mode, status, started_at, finished_at,
+       total_requests, total_items, total_assets, error_message
+FROM crawl_run
+ORDER BY id DESC
+LIMIT 1;
+```
+
+### CDN 健康和数据维护
+
+查询当前无法访问的资源：
+
+```sql
+SELECT id, url, media_type, media_role, http_status, last_checked_at
+FROM asset
+WHERE accessible = 0
+   OR (http_status IS NOT NULL AND http_status >= 400)
+ORDER BY last_checked_at ASC;
+```
+
+查询待复核或已下架的壁纸：
+
+```sql
+SELECT id, title, device_type, content_type, status, missing_count, last_seen_at
+FROM wallpaper
+WHERE status IN ('missing', 'inactive')
+ORDER BY last_seen_at ASC;
+```
+
+查询没有任何媒体地址的异常壁纸：
+
+```sql
+SELECT w.id, w.stable_key, w.title
+FROM wallpaper AS w
+LEFT JOIN wallpaper_asset AS wa ON wa.wallpaper_id = w.id
+WHERE wa.wallpaper_id IS NULL;
+```
+
+这些查询可以直接用于后续站点的首页、设备导航、动态/静态筛选、分类页、搜索页、详情页和后台数据看板。
+
+## `stats` 统计命令
+
+基本格式：
+
+```bash
+PYTHONPATH=src python3 -m wallpapers stats [--db PATH]
+```
+
+参数：
+
+| 参数           | 默认值          | 说明                   |
+| -------------- | --------------- | ---------------------- |
+| `--db PATH`    | `wallpapers.db` | 要读取的 SQLite 数据库 |
+| `-h`、`--help` | -               | 显示帮助               |
+
+输出每个 `device_type + content_type` 组合的壁纸数量。
+
+## `check` CDN 检查命令
+
+基本格式：
+
+```bash
+PYTHONPATH=src python3 -m wallpapers check [--db PATH]
+```
+
+该命令逐条对 `asset.url` 发起 `HEAD` 请求，并更新 `http_status`、`mime_type`、`accessible` 和检查时间。它不会下载媒体内容。
+
+参数：
+
+| 参数           | 默认值          | 说明                   |
+| -------------- | --------------- | ---------------------- |
+| `--db PATH`    | `wallpapers.db` | 要检查的 SQLite 数据库 |
+| `-h`、`--help` | -               | 显示帮助               |
+
+## 来源接口
+
+采集器优先使用公开 JSON 接口：
+
+- 电脑动态：`bizhi.shanhutech.cn/live/...`
+- 电脑静态：`wp.shanhutech.cn/intf/...`
+- 手机动态和静态：`digbird.shanhutech.cn/intf/...`
+- 静态 manifest：`ios.25pan.com/wallpaper/list.json`
+
+请求具有超时、限速和 `429/5xx` 指数退避重试。HTML 或错误 JSON 不会被当作有效 manifest。
+
+## 验证
+
+```bash
+PYTHONPATH=src python3 -m compileall -q src
+PYTHONPATH=src python3 -m pytest
+git diff --check
+```
+
+`pytest` 属于可选测试依赖，可通过以下命令安装：
+
+```bash
+python3 -m pip install -e '.[test]'
+```
+
+项目默认不执行整站线上抓取。需要运行完整任务时，请确认接口访问频率和资源使用符合站点规则。
