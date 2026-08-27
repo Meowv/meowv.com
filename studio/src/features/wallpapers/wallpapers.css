@@ -18,6 +18,9 @@
 .wallpapers-filter-group {
   flex: none;
 }
+.wallpapers-filter-group--content {
+  margin-left: auto;
+}
 .wallpapers-segment {
   display: inline-flex;
   border: 1px solid var(--border-color, #d7dbe2);
@@ -27,7 +30,8 @@
 .wallpapers-segment button,
 .wallpapers-category-bar button,
 .wallpapers-error button,
-.wallpapers-lightbox-actions button {
+.wallpapers-lightbox-download-trigger,
+.wallpapers-download-menu button {
   border: 0;
   background: transparent;
   padding: 6px 10px;
@@ -46,10 +50,33 @@
   gap: 6px;
   border: 1px solid var(--border-color, #d7dbe2);
   border-radius: 8px;
-  padding: 0 10px;
-  min-width: min(280px, 100%);
+  justify-content: center;
+  width: 36px;
+  min-width: 36px;
   height: 34px;
-  margin-left: auto;
+  padding: 0;
+  overflow: hidden;
+  transition:
+    width 0.2s ease,
+    min-width 0.2s ease,
+    padding 0.2s ease;
+}
+.wallpapers-search--expanded {
+  justify-content: initial;
+  width: min(280px, 100%);
+  min-width: min(280px, 100%);
+  padding: 0 10px;
+}
+.wallpapers-search-toggle {
+  display: inline-grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  padding: 0;
+  color: var(--wallpapers-accent);
+  background: transparent;
+  cursor: pointer;
 }
 .wallpapers-search input {
   border: 0;
@@ -59,6 +86,20 @@
   width: 100%;
   color: var(--wallpapers-accent);
 }
+.wallpapers-search-clear {
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  padding: 3px;
+  color: var(--wallpapers-accent);
+  background: transparent;
+  cursor: pointer;
+  opacity: 0.68;
+}
+.wallpapers-search-clear:hover {
+  opacity: 1;
+}
 .wallpapers-search input::placeholder {
   color: color-mix(in srgb, var(--wallpapers-accent) 48%, var(--color-text-muted));
 }
@@ -66,10 +107,15 @@
 .wallpapers-lightbox-close {
   display: inline-grid;
   place-items: center;
-  border: 0;
-  background: transparent;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 6px;
+  background: rgb(0 0 0 / 42%);
   cursor: pointer;
   padding: 8px;
+}
+.wallpapers-lightbox-close:hover,
+.wallpapers-lightbox-download-trigger:hover {
+  background: rgb(0 0 0 / 62%);
 }
 .wallpapers-category-bar {
   display: flex;
@@ -77,9 +123,18 @@
   gap: 6px;
   align-items: center;
   margin-bottom: 14px;
-  padding-bottom: 3px;
+  padding: 6px 0 7px;
   position: relative;
+  position: sticky;
+  top: 0;
+  z-index: 20;
   overflow: visible;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 72%, transparent);
+  background: color-mix(in srgb, var(--color-surface-solid) 94%, transparent);
+  backdrop-filter: blur(16px) saturate(130%);
+}
+.studio-shell--wallpapers-header .wallpapers-category-bar {
+  top: var(--header-height, 48px);
 }
 .wallpapers-category-bar button {
   border-radius: 6px;
@@ -247,7 +302,8 @@
   padding: 72px 20px;
 }
 .wallpapers-error button,
-.wallpapers-lightbox-actions button {
+.wallpapers-lightbox-download-trigger,
+.wallpapers-download-menu button {
   display: inline-flex;
   gap: 6px;
   align-items: center;
@@ -276,19 +332,61 @@
   top: 18px;
   color: white;
 }
-.wallpapers-lightbox-actions {
+.wallpapers-lightbox-download {
   position: absolute;
-  bottom: 20px;
-  display: flex;
-  gap: 8px;
+  z-index: 1;
+  top: 62px;
+  right: 18px;
+}
+.wallpapers-lightbox-download-trigger {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  min-height: 36px;
+  padding: 7px;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 6px;
+  background: rgb(0 0 0 / 42%);
+  cursor: pointer;
+}
+.wallpapers-lightbox-download-trigger:disabled,
+.wallpapers-download-menu button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.wallpapers-download-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  display: grid;
+  min-width: 126px;
+  gap: 4px;
+  padding: 5px;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 7px;
+  background: rgb(20 24 30 / 96%);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 28%);
+}
+.wallpapers-download-menu button {
+  justify-content: flex-start;
+  width: 100%;
+  padding: 7px 8px;
+  background: transparent;
+  text-align: left;
 }
 @media (max-width: 760px) {
   .wallpapers-filters {
     justify-content: start;
   }
   .wallpapers-search {
-    flex: 1 1 100%;
     margin-left: 0;
+  }
+  .wallpapers-search--expanded {
+    flex: 1 1 100%;
+    width: auto;
+    min-width: 0;
   }
   .wallpapers-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

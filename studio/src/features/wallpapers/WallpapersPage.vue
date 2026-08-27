@@ -35,12 +35,16 @@ const {
   retry,
 } = useWallpapers();
 const selected = ref<WallpaperItem | null>(null);
+const downloadMenuOpen = ref(false);
 const sentinel = ref<HTMLElement | null>(null);
 const categoryBar = ref<HTMLElement | null>(null);
 const categoryMeasure = ref<HTMLElement | null>(null);
 const moreOpen = ref(false);
 const visibleCategoryCount = ref(8);
 const pinnedCategoryId = ref<number | null>(null);
+const searchExpanded = ref(false);
+const searchDraft = ref('');
+const searchInput = ref<HTMLInputElement | null>(null);
 let observer: IntersectionObserver | null = null;
 let categoryResizeObserver: ResizeObserver | null = null;
 
@@ -99,9 +103,35 @@ function handleScroll(): void {
 
 function open(item: WallpaperItem): void {
   selected.value = item;
+  downloadMenuOpen.value = false;
 }
 function close(): void {
   selected.value = null;
+  downloadMenuOpen.value = false;
+}
+async function expandSearch(): Promise<void> {
+  searchExpanded.value = true;
+  await nextTick();
+  searchInput.value?.focus();
+}
+function clearSearch(): void {
+  searchDraft.value = '';
+  searchExpanded.value = false;
+  if (filters.value.keyword) void setFilters({ keyword: '' });
+}
+function handleSearchInput(event: Event): void {
+  const value = (event.target as HTMLInputElement).value;
+  searchDraft.value = value;
+}
+function commitSearch(): void {
+  const keyword = searchDraft.value.trim();
+  if (!keyword) {
+    clearSearch();
+    return;
+  }
+  if (filters.value.keyword === keyword) return;
+  searchExpanded.value = true;
+  void setFilters({ keyword });
 }
 function download(item: WallpaperItem, url: string | null, filename: string): void {
   if (!url) return;
@@ -117,10 +147,22 @@ function download(item: WallpaperItem, url: string | null, filename: string): vo
 function onKeydown(event: KeyboardEvent): void {
   if (event.key === 'Escape') close();
 }
+function handleDocumentPointerDown(event: PointerEvent): void {
+  if (!(event.target instanceof Element)) return;
+  if (!event.target.closest('.wallpapers-more-wrap')) moreOpen.value = false;
+  if (
+    searchExpanded.value &&
+    !searchDraft.value.trim() &&
+    !event.target.closest('.wallpapers-search')
+  ) {
+    searchExpanded.value = false;
+  }
+}
 onMounted(() => {
   window.addEventListener('keydown', onKeydown);
   window.addEventListener('scroll', handleScroll, { passive: true });
   window.addEventListener('resize', handleScroll, { passive: true });
+  document.addEventListener('pointerdown', handleDocumentPointerDown);
   handleScroll();
   categoryResizeObserver = new ResizeObserver(recomputeCategoryCapacity);
   if (categoryBar.value) categoryResizeObserver.observe(categoryBar.value);
@@ -132,6 +174,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown);
   window.removeEventListener('scroll', handleScroll);
   window.removeEventListener('resize', handleScroll);
+  document.removeEventListener('pointerdown', handleDocumentPointerDown);
 });
 
 watch(categoryOptions, () => void nextTick(recomputeCategoryCapacity), { deep: true });
@@ -141,6 +184,15 @@ watch(
     pinnedCategoryId.value = null;
     moreOpen.value = false;
   },
+);
+watch(
+  () => filters.value.keyword,
+  (keyword) => {
+    searchDraft.value = keyword;
+    if (keyword.trim()) searchExpanded.value = true;
+    else searchExpanded.value = false;
+  },
+  { immediate: true },
 );
 </script>
 
@@ -164,7 +216,7 @@ watch(
             </button>
           </div>
         </div>
-        <div class="wallpapers-filter-group" aria-label="内容类型">
+        <div class="wallpapers-filter-group wallpapers-filter-group--content" aria-label="内容类型">
           <div class="wallpapers-segment">
             <button
               :class="{ active: filters.content === 'dynamic' }"
@@ -180,12 +232,39 @@ watch(
             </button>
           </div>
         </div>
-        <label class="wallpapers-search"
-          ><IconSearch :size="18" /><input
-            :value="filters.keyword"
-            placeholder="搜索标题、作者或标签"
-            @change="setFilters({ keyword: ($event.target as HTMLInputElement).value })"
-        /></label>
+        <div class="wallpapers-search" :class="{ 'wallpapers-search--expanded': searchExpanded }">
+          <button
+            v-if="!searchExpanded"
+            type="button"
+            class="wallpapers-search-toggle"
+            aria-label="搜索壁纸"
+            title="搜索壁纸"
+            @click="expandSearch"
+          >
+            <IconSearch :size="18" />
+          </button>
+          <template v-else>
+            <IconSearch :size="18" />
+            <input
+              ref="searchInput"
+              :value="searchDraft"
+              placeholder="搜索壁纸，关键词……"
+              @input="handleSearchInput"
+              @change="commitSearch"
+              @keyup.enter="commitSearch"
+            />
+            <button
+              v-if="searchDraft"
+              type="button"
+              class="wallpapers-search-clear"
+              aria-label="清空搜索"
+              title="清空搜索"
+              @click="clearSearch"
+            >
+              <IconX :size="18" />
+            </button>
+          </template>
+        </div>
       </div>
     </header>
 
@@ -286,8 +365,54 @@ watch(
       @click.self="close"
     >
       <button class="wallpapers-lightbox-close" title="关闭" @click="close">
-        <IconX :size="22" />
+        <IconX :size="18" />
       </button>
+      <div class="wallpapers-lightbox-download" @click.stop>
+        <button
+          v-if="selected.previewVideoUrl"
+          class="wallpapers-lightbox-download-trigger"
+          :aria-expanded="downloadMenuOpen"
+          aria-haspopup="menu"
+          title="下载"
+          @click="downloadMenuOpen = !downloadMenuOpen"
+        >
+          <IconDownload :size="18" /><IconChevronDown :size="15" />
+        </button>
+        <button
+          v-else
+          class="wallpapers-lightbox-download-trigger"
+          :disabled="!selected.coverUrl"
+          title="下载图片"
+          @click="download(selected, selected.coverUrl, `wallpaper-${selected.id}.jpg`)"
+        >
+          <IconDownload :size="18" />
+        </button>
+        <div
+          v-if="downloadMenuOpen && selected.previewVideoUrl"
+          class="wallpapers-download-menu"
+          role="menu"
+        >
+          <button
+            :disabled="!selected.coverUrl"
+            role="menuitem"
+            @click.stop="
+              download(selected, selected.coverUrl, `wallpaper-${selected.id}.jpg`);
+              downloadMenuOpen = false;
+            "
+          >
+            <IconDownload :size="16" />下载图片
+          </button>
+          <button
+            role="menuitem"
+            @click.stop="
+              download(selected, selected.previewVideoUrl, `wallpaper-${selected.id}.mp4`);
+              downloadMenuOpen = false;
+            "
+          >
+            <IconDownload :size="16" />下载视频
+          </button>
+        </div>
+      </div>
       <video
         v-if="selected.contentType === 'dynamic' && selected.previewVideoUrl"
         :src="selected.previewVideoUrl"
@@ -304,19 +429,6 @@ watch(
         :alt="selected.title || '壁纸预览'"
         referrerpolicy="no-referrer"
       />
-      <div class="wallpapers-lightbox-actions">
-        <button
-          :disabled="!selected.coverUrl"
-          @click="download(selected, selected.coverUrl, `wallpaper-${selected.id}.jpg`)"
-        >
-          <IconDownload :size="18" />下载图片</button
-        ><button
-          v-if="selected.previewVideoUrl"
-          @click="download(selected, selected.previewVideoUrl, `wallpaper-${selected.id}.mp4`)"
-        >
-          <IconDownload :size="18" />下载视频
-        </button>
-      </div>
     </div>
   </main>
 </template>
