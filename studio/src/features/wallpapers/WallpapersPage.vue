@@ -10,8 +10,12 @@ import {
 } from 'vue';
 import {
   IconChevronDown,
+  IconDeviceDesktop,
+  IconDeviceMobile,
   IconDownload,
   IconPlayerPlay,
+  IconMovie,
+  IconPhoto,
   IconRefresh,
   IconSearch,
   IconX,
@@ -38,7 +42,9 @@ const selected = ref<WallpaperItem | null>(null);
 const downloadMenuOpen = ref(false);
 const sentinel = ref<HTMLElement | null>(null);
 const categoryBar = ref<HTMLElement | null>(null);
+const categoryItems = ref<HTMLElement | null>(null);
 const categoryMeasure = ref<HTMLElement | null>(null);
+const searchBar = ref<HTMLElement | null>(null);
 const moreOpen = ref(false);
 const visibleCategoryCount = ref(8);
 const pinnedCategoryId = ref<number | null>(null);
@@ -71,19 +77,24 @@ function observeSentinel(element: Element | ComponentPublicInstance | null): voi
   if (!(element instanceof HTMLElement)) return;
   observer = new IntersectionObserver(
     (entries) => {
-      if (entries[0]?.isIntersecting && items.value.length) void loadMore();
+      if (entries[0]?.isIntersecting) void loadMore();
     },
     { rootMargin: '800px' },
   );
   observer.observe(element);
+  handleScroll();
 }
 
 function recomputeCategoryCapacity(): void {
-  const container = categoryBar.value;
+  const container = categoryItems.value;
   const measure = categoryMeasure.value;
   if (!container || !measure) return;
-  const available = Math.max(0, container.clientWidth - 78);
+  const available = Math.max(0, container.clientWidth - 66);
   const buttons = [...measure.querySelectorAll<HTMLElement>('[data-category-measure]')];
+  if (window.innerWidth <= 760) {
+    visibleCategoryCount.value = Math.max(1, buttons.length);
+    return;
+  }
   let used = 52;
   let count = 0;
   for (const button of buttons) {
@@ -99,6 +110,15 @@ function handleScroll(): void {
   const element = sentinel.value;
   if (!element || !items.value.length || !hasMore.value || loadingMore.value) return;
   if (element.getBoundingClientRect().top <= window.innerHeight + 800) void loadMore();
+}
+
+function handleVideoContextMenu(event: MouseEvent): void {
+  event.preventDefault();
+}
+
+function handleVideoInteraction(event: Event): void {
+  event.preventDefault();
+  event.stopPropagation();
 }
 
 function open(item: WallpaperItem): void {
@@ -166,6 +186,8 @@ onMounted(() => {
   handleScroll();
   categoryResizeObserver = new ResizeObserver(recomputeCategoryCapacity);
   if (categoryBar.value) categoryResizeObserver.observe(categoryBar.value);
+  if (categoryItems.value) categoryResizeObserver.observe(categoryItems.value);
+  if (searchBar.value) categoryResizeObserver.observe(searchBar.value);
   void nextTick(recomputeCategoryCapacity);
 });
 onBeforeUnmount(() => {
@@ -178,6 +200,11 @@ onBeforeUnmount(() => {
 });
 
 watch(categoryOptions, () => void nextTick(recomputeCategoryCapacity), { deep: true });
+watch(searchExpanded, () => void nextTick(recomputeCategoryCapacity));
+watch(
+  () => [items.value.length, loading.value, loadingMore.value, hasMore.value],
+  () => void nextTick(handleScroll),
+);
 watch(
   () => [filters.value.device, filters.value.content],
   () => {
@@ -198,41 +225,102 @@ watch(
 
 <template>
   <main class="wallpapers-page">
-    <header class="wallpapers-toolbar">
+    <section ref="categoryBar" class="wallpapers-category-bar" aria-label="壁纸分类">
+      <div ref="categoryItems" class="wallpapers-category-items">
+        <template v-if="categoriesLoading">
+          <span v-for="index in 6" :key="index" class="wallpapers-category-skeleton" />
+        </template>
+        <template v-else>
+          <button
+            :class="{ active: !filters.categoryId }"
+            @click="setFilters({ categoryId: null })"
+          >
+            全部
+          </button>
+          <button
+            v-for="category in visibleCategoryItems"
+            :key="category.id"
+            :class="{ active: filters.categoryId === category.id }"
+            @click="
+              pinnedCategoryId = category.id;
+              setFilters({ categoryId: category.id });
+            "
+          >
+            {{ category.name }}
+          </button>
+          <div v-if="moreCategoryItems.length" class="wallpapers-more-wrap">
+            <button class="wallpapers-more-button" @click="moreOpen = !moreOpen">
+              更多 {{ moreCategoryItems.length }}<IconChevronDown :size="15" />
+            </button>
+            <div v-if="moreOpen" class="wallpapers-more-menu">
+              <button
+                v-for="category in moreCategoryItems"
+                :key="category.id"
+                :class="{ active: filters.categoryId === category.id }"
+                @click="
+                  pinnedCategoryId = category.id;
+                  moreOpen = false;
+                  setFilters({ categoryId: category.id });
+                "
+              >
+                {{ category.name }}
+              </button>
+            </div>
+          </div>
+          <div ref="categoryMeasure" class="wallpapers-category-measure" aria-hidden="true">
+            <button v-for="category in categoryOptions" :key="category.id" data-category-measure>
+              {{ category.name }}
+            </button>
+          </div>
+        </template>
+      </div>
       <div class="wallpapers-filters">
         <div class="wallpapers-filter-group" aria-label="设备类型">
           <div class="wallpapers-segment">
             <button
+              :aria-label="filters.device === 'desktop' ? '电脑壁纸' : '切换到电脑壁纸'"
+              :title="filters.device === 'desktop' ? '电脑壁纸' : '电脑壁纸'"
               :class="{ active: filters.device === 'desktop' }"
               @click="setFilters({ device: 'desktop' })"
             >
-              电脑
+              <IconDeviceDesktop :size="18" />
             </button>
             <button
+              :aria-label="filters.device === 'mobile' ? '手机壁纸' : '切换到手机壁纸'"
+              :title="filters.device === 'mobile' ? '手机壁纸' : '手机壁纸'"
               :class="{ active: filters.device === 'mobile' }"
               @click="setFilters({ device: 'mobile' })"
             >
-              手机
+              <IconDeviceMobile :size="18" />
             </button>
           </div>
         </div>
-        <div class="wallpapers-filter-group wallpapers-filter-group--content" aria-label="内容类型">
+        <div class="wallpapers-filter-group" aria-label="内容类型">
           <div class="wallpapers-segment">
             <button
+              :aria-label="filters.content === 'dynamic' ? '动态壁纸' : '切换到动态壁纸'"
+              title="动态壁纸"
               :class="{ active: filters.content === 'dynamic' }"
               @click="setFilters({ content: 'dynamic' })"
             >
-              动态
+              <IconMovie :size="18" />
             </button>
             <button
+              :aria-label="filters.content === 'static' ? '静态壁纸' : '切换到静态壁纸'"
+              title="静态壁纸"
               :class="{ active: filters.content === 'static' }"
               @click="setFilters({ content: 'static' })"
             >
-              静态
+              <IconPhoto :size="18" />
             </button>
           </div>
         </div>
-        <div class="wallpapers-search" :class="{ 'wallpapers-search--expanded': searchExpanded }">
+        <div
+          ref="searchBar"
+          class="wallpapers-search"
+          :class="{ 'wallpapers-search--expanded': searchExpanded }"
+          @transitionend="recomputeCategoryCapacity"
+        >
           <button
             v-if="!searchExpanded"
             type="button"
@@ -266,52 +354,6 @@ watch(
           </template>
         </div>
       </div>
-    </header>
-
-    <section ref="categoryBar" class="wallpapers-category-bar" aria-label="壁纸分类">
-      <template v-if="categoriesLoading">
-        <span v-for="index in 6" :key="index" class="wallpapers-category-skeleton" />
-      </template>
-      <template v-else>
-        <button :class="{ active: !filters.categoryId }" @click="setFilters({ categoryId: null })">
-          全部
-        </button>
-        <button
-          v-for="category in visibleCategoryItems"
-          :key="category.id"
-          :class="{ active: filters.categoryId === category.id }"
-          @click="
-            pinnedCategoryId = category.id;
-            setFilters({ categoryId: category.id });
-          "
-        >
-          {{ category.name }}
-        </button>
-        <div v-if="moreCategoryItems.length" class="wallpapers-more-wrap">
-          <button class="wallpapers-more-button" @click="moreOpen = !moreOpen">
-            更多 {{ moreCategoryItems.length }}<IconChevronDown :size="15" />
-          </button>
-          <div v-if="moreOpen" class="wallpapers-more-menu">
-            <button
-              v-for="category in moreCategoryItems"
-              :key="category.id"
-              :class="{ active: filters.categoryId === category.id }"
-              @click="
-                pinnedCategoryId = category.id;
-                moreOpen = false;
-                setFilters({ categoryId: category.id });
-              "
-            >
-              {{ category.name }}
-            </button>
-          </div>
-        </div>
-        <div ref="categoryMeasure" class="wallpapers-category-measure" aria-hidden="true">
-          <button v-for="category in categoryOptions" :key="category.id" data-category-measure>
-            {{ category.name }}
-          </button>
-        </div>
-      </template>
     </section>
 
     <div v-if="error && !items.length" class="wallpapers-error">
@@ -416,12 +458,26 @@ watch(
       <video
         v-if="selected.contentType === 'dynamic' && selected.previewVideoUrl"
         :src="selected.previewVideoUrl"
-        controls
         autoplay
         muted
         playsinline
         preload="metadata"
+        disablepictureinpicture
+        controlslist="nodownload noplaybackrate noremoteplayback"
+        tabindex="-1"
+        aria-label="动态壁纸预览"
+        draggable="false"
         referrerpolicy="no-referrer"
+        @contextmenu="handleVideoContextMenu"
+        @click="handleVideoInteraction"
+        @dblclick="handleVideoInteraction"
+        @mousedown="handleVideoInteraction"
+        @mouseup="handleVideoInteraction"
+        @pointerdown="handleVideoInteraction"
+        @pointerup="handleVideoInteraction"
+        @touchstart="handleVideoInteraction"
+        @touchend="handleVideoInteraction"
+        @keydown="handleVideoInteraction"
       />
       <img
         v-else-if="selected.coverUrl"
