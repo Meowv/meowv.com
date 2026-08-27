@@ -6,12 +6,10 @@ import { defineConfig } from 'vite';
 import { builtinBooksDevPlugin } from './vite/builtinBooksDevPlugin.ts';
 import { cubingWorkerPreloadPlugin } from './vite/cubingWorkerPreloadPlugin.ts';
 import { toolsBackgroundVideosPlugin } from './vite/toolsBackgroundVideosPlugin.ts';
-import { wallpapersCatalogCachePlugin } from './vite/wallpapersCatalogCachePlugin.ts';
 
 export default defineConfig({
   plugins: [
     toolsBackgroundVideosPlugin(),
-    wallpapersCatalogCachePlugin(),
     builtinBooksDevPlugin(),
     vue({
       template: {

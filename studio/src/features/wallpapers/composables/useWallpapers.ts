@@ -178,6 +178,7 @@ export function useWallpapers() {
   async function initialize(): Promise<void> {
     filters.value = readFilters();
     const cached = readCachedPage(filters.value);
+    let hasBootstrap = false;
     if (cached) {
       items.value = cached.items;
       cursor = cached.nextCursor;
@@ -186,9 +187,26 @@ export function useWallpapers() {
     loading.value = true;
     categoriesLoading.value = true;
     try {
-      await repository.init();
-      categories.value = await repository.categories(filters.value.device, filters.value.content);
-      await load(true, Boolean(cached));
+      const useBootstrap =
+        !cached &&
+        filters.value.device === 'desktop' &&
+        filters.value.content === 'dynamic' &&
+        filters.value.categoryId === null &&
+        !filters.value.keyword.trim();
+      const bootstrapPromise = useBootstrap ? repository.bootstrap() : null;
+      const categoriesPromise = repository.categories(filters.value.device, filters.value.content);
+      const initPromise = repository.init();
+      if (bootstrapPromise) {
+        const bootstrap = await bootstrapPromise;
+        if (bootstrap.items.length) {
+          items.value = bootstrap.items;
+          hasBootstrap = true;
+        }
+      }
+      categories.value = await categoriesPromise;
+      categoriesLoading.value = false;
+      await initPromise;
+      await load(true, Boolean(cached) || hasBootstrap);
     } catch (reason) {
       error.value = reason instanceof Error ? reason.message : '壁纸数据库加载失败。';
       loading.value = false;

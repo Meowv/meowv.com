@@ -1,4 +1,5 @@
 import type {
+  WallpaperBootstrapResult,
   WallpaperCategory,
   WallpaperPageResult,
   WallpaperQuery,
@@ -50,6 +51,10 @@ export class WallpaperRepository {
 
   init(): Promise<void> {
     return this.request('init');
+  }
+
+  bootstrap(): Promise<WallpaperBootstrapResult> {
+    return this.request('bootstrap');
   }
 
   categories(device: string, content: string): Promise<WallpaperCategory[]> {

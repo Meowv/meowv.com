@@ -38,6 +38,7 @@ export interface WallpaperItem {
 export interface WallpaperCursor {
   remoteCreatedAt: string | null;
   id: number | null;
+  contentRank?: 0 | 1;
 }
 
 export interface WallpaperQuery {
@@ -55,9 +56,15 @@ export interface WallpaperPageResult {
   hasMore: boolean;
 }
 
+export interface WallpaperBootstrapResult {
+  items: WallpaperItem[];
+  categories: WallpaperCategory[];
+  generatedAt: string | null;
+}
+
 export interface WallpaperWorkerRequest {
   id: string;
-  action: 'init' | 'categories' | 'query' | 'detail';
+  action: 'init' | 'bootstrap' | 'categories' | 'query' | 'detail';
   payload?: unknown;
 }
 

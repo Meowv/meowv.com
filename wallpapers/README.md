@@ -21,9 +21,15 @@ wallpapers crawl
 wallpapers stats
 ```
 
-## 生成 Studio 发布库
+## 生成 Studio 发布目录
 
-`publish` 会从 `wallpapers/wallpapers.db` 生成仅供前端查询的只读数据库，并写入版本化文件名和 manifest。发布库不包含抓取日志、游标和原始响应 JSON。
+`publish` 会从 `wallpapers/wallpapers.db` 生成供 Studio 前端使用的发布目录：
+
+- 版本化 JSON 目录：Studio Wallpapers 默认读取该文件，不再通过 SQL 查询 SQLite。
+- bootstrap JSON：只包含默认筛选的首屏 20 条壁纸，用于快速首屏展示。
+- manifest：记录 JSON 目录和 bootstrap 的版本化文件名与大小。
+
+JSON 目录包含壁纸元数据、封面 CDN 地址、视频预览 CDN 地址、标签和分类 ID。前端 Worker 会在浏览器中建立索引，并将完整 JSON 保存到 IndexedDB；后续刷新优先从本地持久化目录读取。
 
 ```bash
 PYTHONPATH=src python3 -m wallpapers publish \
@@ -37,7 +43,7 @@ PYTHONPATH=src python3 -m wallpapers publish \
 ./build.sh studio --with-wallpapers
 ```
 
-普通 `./build.sh studio` 不会读取源数据库。`studio/public/data/wallpapers.catalog.json` 和版本化 `.db` 文件均为部署产物，不提交 Git。
+普通 `./build.sh studio` 不会读取源数据库。`studio/public/data/wallpapers.catalog.json`、版本化完整 `.json` 和 bootstrap `.json` 均为部署产物，不提交 Git。
 
 默认数据库路径为：
 

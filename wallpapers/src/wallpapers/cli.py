@@ -38,7 +38,7 @@ def build_parser() -> argparse.ArgumentParser:
     stats.add_argument("--db", default=argparse.SUPPRESS, help="SQLite 数据库路径")
     check = sub.add_parser("check", help="检查已保存 CDN 地址")
     check.add_argument("--db", default=argparse.SUPPRESS, help="SQLite 数据库路径")
-    publish = sub.add_parser("publish", help="生成供 Studio 前端使用的精简 SQLite 发布库")
+    publish = sub.add_parser("publish", help="生成供 Studio 前端使用的 JSON 发布目录")
     publish.add_argument("--db", default=argparse.SUPPRESS, help="源 SQLite 数据库路径")
     publish.add_argument(
         "--output-dir",
@@ -95,8 +95,8 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"{row['device_type']}\t{row['content_type']}\t{row['count']}")
             return 0
         if args.command == "publish":
-            database_path, manifest_path = publish_catalog(db_path, args.output_dir)
-            print(f"database={database_path}")
+            catalog_path, manifest_path = publish_catalog(db_path, args.output_dir)
+            print(f"catalog={catalog_path}")
             print(f"manifest={manifest_path}")
             return 0
         checked = _check_assets(db)
