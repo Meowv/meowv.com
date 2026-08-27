@@ -10,6 +10,7 @@ import {
   IconMenu2,
   IconSitemap,
   IconNotes,
+  IconWallpaper,
   IconX,
 } from '@tabler/icons-vue';
 import StudioDonationDialog from '@/components/StudioDonationDialog.vue';
@@ -39,6 +40,7 @@ const isToolsHomePage = computed(() => route.name === 'tools');
 const isToolDetailPage = computed(() => route.name === 'tool-detail');
 const isOfficePage = computed(() => route.meta.feature === 'office');
 const isBooksPage = computed(() => route.meta.feature === 'books');
+const isWallpapersPage = computed(() => route.meta.feature === 'wallpapers');
 const {
   enabled: toolsBackgroundEnabled,
   surfaceOpacity: toolsBackgroundSurfaceOpacity,
@@ -128,9 +130,11 @@ const isImmersive = computed(
 const markdownHeaderVisible = ref(true);
 const booksHeaderVisible = ref(true);
 const toolsHeaderVisible = ref(true);
+const wallpapersHeaderVisible = ref(true);
 const MARKDOWN_HEADER_PREFERENCE_KEY = `${STORAGE_POLICY.namespace('markdown')}:header-collapsed`;
 const BOOKS_HEADER_PREFERENCE_KEY = `${STORAGE_POLICY.namespace('books')}:header-collapsed`;
 const TOOLS_HEADER_PREFERENCE_KEY = `${STORAGE_POLICY.preferences}:tools-header-collapsed`;
+const WALLPAPERS_HEADER_PREFERENCE_KEY = `${STORAGE_POLICY.preferences}:wallpapers-header-collapsed`;
 const showHeader = computed(() =>
   isDrawPage.value || isMindPage.value || isNotesPage.value
     ? false
@@ -140,7 +144,9 @@ const showHeader = computed(() =>
         ? booksHeaderVisible.value
         : isToolsPage.value
           ? toolsHeaderVisible.value
-          : !workspaceActive.value || workspaceHeaderVisible.value,
+          : isWallpapersPage.value
+            ? wallpapersHeaderVisible.value
+            : !workspaceActive.value || workspaceHeaderVisible.value,
 );
 const showFooter = computed(
   () => ['home', 'office', 'not-found'].includes(String(route.name)) && !workspaceActive.value,
@@ -200,6 +206,24 @@ watch(
   { immediate: true },
 );
 
+watch(
+  isWallpapersPage,
+  (active) => {
+    if (!active) {
+      wallpapersHeaderVisible.value = true;
+      return;
+    }
+    if (!storageAvailable()) return;
+    try {
+      wallpapersHeaderVisible.value =
+        localStorage.getItem(WALLPAPERS_HEADER_PREFERENCE_KEY) !== 'true';
+    } catch {
+      // 本地偏好不可用时保留默认展开状态。
+    }
+  },
+  { immediate: true },
+);
+
 function toggleMarkdownHeader(): void {
   markdownHeaderVisible.value = !markdownHeaderVisible.value;
   if (!storageAvailable()) return;
@@ -228,6 +252,17 @@ function toggleToolsHeader(): void {
   try {
     if (toolsHeaderVisible.value) localStorage.removeItem(TOOLS_HEADER_PREFERENCE_KEY);
     else localStorage.setItem(TOOLS_HEADER_PREFERENCE_KEY, 'true');
+  } catch {
+    // 本地偏好不可用不影响当前页面切换。
+  }
+}
+
+function toggleWallpapersHeader(): void {
+  wallpapersHeaderVisible.value = !wallpapersHeaderVisible.value;
+  if (!storageAvailable()) return;
+  try {
+    if (wallpapersHeaderVisible.value) localStorage.removeItem(WALLPAPERS_HEADER_PREFERENCE_KEY);
+    else localStorage.setItem(WALLPAPERS_HEADER_PREFERENCE_KEY, 'true');
   } catch {
     // 本地偏好不可用不影响当前页面切换。
   }
@@ -264,6 +299,7 @@ const primaryRoutes = [
   { label: 'Whiteboard', to: '/draw', icon: IconChalkboard, className: 'nav-draw' },
   { label: 'Mind', to: '/mind', icon: IconSitemap, className: 'nav-mind' },
   { label: 'Notes', to: '/notes', icon: IconNotes, className: 'nav-notes' },
+  { label: 'Wallpapers', to: '/wallpapers', icon: IconWallpaper, className: 'nav-wallpapers' },
   { label: 'Tools', to: '/tools', icon: IconApps, className: 'nav-tools' },
 ];
 
@@ -295,6 +331,8 @@ function isRouteActive(to: string): boolean {
       'studio-shell--office': isOfficePage,
       'studio-shell--books': isBooksPage,
       'studio-shell--books-header': isBooksPage && booksHeaderVisible,
+      'studio-shell--wallpapers': isWallpapersPage,
+      'studio-shell--wallpapers-header': isWallpapersPage && wallpapersHeaderVisible,
       'studio-shell--with-footer': showFooter,
     }"
     :style="supportsToolsBackground ? toolsBackgroundStyle : undefined"
@@ -302,13 +340,22 @@ function isRouteActive(to: string): boolean {
     <header
       v-show="showHeader"
       ref="headerElement"
-      :key="isMarkdownPage ? 'markdown-header' : isBooksPage ? 'books-header' : 'default-header'"
+      :key="
+        isMarkdownPage
+          ? 'markdown-header'
+          : isBooksPage
+            ? 'books-header'
+            : isWallpapersPage
+              ? 'wallpapers-header'
+              : 'default-header'
+      "
       class="studio-header"
     >
       <div class="studio-header__start">
         <StudioLogo />
         <strong v-if="isBooksPage" class="studio-header__feature-name">仿真书</strong>
         <strong v-else-if="isToolsPage" class="studio-header__feature-name">工具</strong>
+        <strong v-else-if="isWallpapersPage" class="studio-header__feature-name">壁纸</strong>
       </div>
       <button
         class="studio-nav-toggle"
@@ -355,6 +402,11 @@ function isRouteActive(to: string): boolean {
       v-if="isToolsPage"
       :visible="toolsHeaderVisible"
       @click="toggleToolsHeader"
+    />
+    <studio-header-toggle
+      v-if="isWallpapersPage"
+      :visible="wallpapersHeaderVisible"
+      @click="toggleWallpapersHeader"
     />
 
     <template v-if="supportsToolsBackground">

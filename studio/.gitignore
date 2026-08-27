@@ -5,3 +5,4 @@ dist/
 design-*.png
 public/data/background/
 *.db
+public/data/wallpapers.catalog.json

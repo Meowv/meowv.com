@@ -16,6 +16,7 @@ usage() {
   ./build.sh                 编译全部项目
   ./build.sh all             编译全部项目
   ./build.sh <project> [...] 编译一个或多个指定项目
+  ./build.sh studio --with-wallpapers 生成并发布 Wallpapers 精简数据库
 
 可选项目：
   blog, b    -> build/meowv.com
@@ -23,6 +24,8 @@ usage() {
   zitie, z   -> build/zt.meowv.com
 EOF
 }
+
+WITH_WALLPAPERS=0
 
 destination_name() {
   case "$1" in
@@ -248,6 +251,7 @@ elif [ "$#" -eq 1 ] && { [ "$1" = "-h" ] || [ "$1" = "--help" ]; }; then
 else
   for argument in "$@"; do
     case "$argument" in
+      --with-wallpapers) WITH_WALLPAPERS=1 ;;
       blog | b) add_project "blog" ;;
       studio | s) add_project "studio" ;;
       zitie | z) add_project "zitie" ;;
@@ -269,6 +273,17 @@ for project in "${SELECTED_PROJECTS[@]}"; do
   check_project "$project"
 done
 
+if [ "$WITH_WALLPAPERS" -eq 1 ]; then
+  found_studio=0
+  for project in "${SELECTED_PROJECTS[@]}"; do
+    [ "$project" = "studio" ] && found_studio=1
+  done
+  if [ "$found_studio" -eq 0 ]; then
+    echo "错误：--with-wallpapers 只能和 studio 一起使用。" >&2
+    exit 1
+  fi
+fi
+
 if [ -e "$STAGING_DIR" ]; then
   echo "错误：临时目录已存在：$STAGING_DIR" >&2
   exit 1
@@ -281,6 +296,12 @@ trap 'exit 143' TERM
 mkdir "$STAGING_DIR"
 
 for project in "${SELECTED_PROJECTS[@]}"; do
+  if [ "$project" = "studio" ] && [ "$WITH_WALLPAPERS" -eq 1 ]; then
+    (
+      cd "$ROOT_DIR/wallpapers"
+      PYTHONPATH=src python3 -m wallpapers publish --db "$ROOT_DIR/wallpapers/wallpapers.db" --output-dir "$ROOT_DIR/studio/public/data"
+    )
+  fi
   build_project "$project"
   stage_output "$project"
 done

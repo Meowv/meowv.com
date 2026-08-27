@@ -10,6 +10,7 @@
 PYTHONPATH=src python3 -m wallpapers crawl
 PYTHONPATH=src python3 -m wallpapers stats
 PYTHONPATH=src python3 -m wallpapers check
+PYTHONPATH=src python3 -m wallpapers publish --db wallpapers.db --output-dir ../studio/public/data
 ```
 
 也可以安装为本地命令：
@@ -19,6 +20,24 @@ python3 -m pip install -e .
 wallpapers crawl
 wallpapers stats
 ```
+
+## 生成 Studio 发布库
+
+`publish` 会从 `wallpapers/wallpapers.db` 生成仅供前端查询的只读数据库，并写入版本化文件名和 manifest。发布库不包含抓取日志、游标和原始响应 JSON。
+
+```bash
+PYTHONPATH=src python3 -m wallpapers publish \
+  --db wallpapers.db \
+  --output-dir ../studio/public/data
+```
+
+也可以在仓库根目录构建 Studio 时显式生成：
+
+```bash
+./build.sh studio --with-wallpapers
+```
+
+普通 `./build.sh studio` 不会读取源数据库。`studio/public/data/wallpapers.catalog.json` 和版本化 `.db` 文件均为部署产物，不提交 Git。
 
 默认数据库路径为：
 

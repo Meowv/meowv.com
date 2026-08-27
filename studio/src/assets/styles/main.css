@@ -143,6 +143,12 @@ button {
   --studio-header-toggle-color: var(--menu-tools-foreground);
 }
 
+.studio-shell--wallpapers {
+  --nav-accent: var(--menu-wallpapers-foreground);
+  --studio-header-toggle-top: calc(var(--header-height) - 13px);
+  --studio-header-toggle-color: var(--menu-wallpapers-foreground);
+}
+
 .studio-shell--books .studio-header {
   background: var(--books-page-bg);
   background-attachment: fixed;
@@ -155,7 +161,8 @@ button {
 .studio-shell--markdown,
 .studio-shell--office,
 .studio-shell--books,
-.studio-shell--tools {
+.studio-shell--tools,
+.studio-shell--wallpapers {
   --header-height: 48px;
 }
 
@@ -185,7 +192,8 @@ button {
 .studio-shell--markdown .studio-header,
 .studio-shell--office .studio-header,
 .studio-shell--books .studio-header,
-.studio-shell--tools .studio-header {
+.studio-shell--tools .studio-header,
+.studio-shell--wallpapers .studio-header {
   gap: 12px;
   padding-right: 16px;
   padding-left: 16px;
@@ -194,7 +202,8 @@ button {
 .studio-shell--markdown .studio-logo,
 .studio-shell--office .studio-logo,
 .studio-shell--books .studio-logo,
-.studio-shell--tools .studio-logo {
+.studio-shell--tools .studio-logo,
+.studio-shell--wallpapers .studio-logo {
   gap: 6px;
   font-size: 16px;
 }
@@ -202,7 +211,8 @@ button {
 .studio-shell--markdown .studio-logo img,
 .studio-shell--office .studio-logo img,
 .studio-shell--books .studio-logo img,
-.studio-shell--tools .studio-logo img {
+.studio-shell--tools .studio-logo img,
+.studio-shell--wallpapers .studio-logo img {
   width: 34px;
   height: 34px;
 }
@@ -322,6 +332,10 @@ button {
   --nav-accent: var(--menu-tools-foreground);
 }
 
+.nav-wallpapers {
+  --nav-accent: var(--menu-wallpapers-foreground);
+}
+
 .nav-image svg,
 .nav-markdown svg,
 .nav-pdf svg,
@@ -330,7 +344,8 @@ button {
 .nav-draw svg,
 .nav-mind svg,
 .nav-notes svg,
-.nav-tools svg {
+.nav-tools svg,
+.nav-wallpapers svg {
   color: var(--nav-accent);
 }
 

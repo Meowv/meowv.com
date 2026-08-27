@@ -25,6 +25,7 @@
   --menu-mind: #2563a8;
   --menu-notes: #d97706;
   --menu-tools: #7c3aed;
+  --menu-wallpapers: #0f766e;
   --menu-image-foreground: var(--menu-image);
   --menu-pdf-foreground: var(--menu-pdf);
   --menu-markdown-foreground: var(--menu-markdown);
@@ -34,15 +35,17 @@
   --menu-mind-foreground: var(--menu-mind);
   --menu-notes-foreground: var(--menu-notes);
   --menu-tools-foreground: var(--menu-tools);
+  --menu-wallpapers-foreground: var(--menu-wallpapers);
   --studio-menu-gradient: linear-gradient(
     90deg in oklch,
     var(--menu-markdown-foreground) 0%,
-    var(--menu-office-foreground) 14.29%,
-    var(--menu-books-foreground) 28.57%,
-    var(--menu-draw-foreground) 42.86%,
-    var(--menu-mind-foreground) 57.14%,
-    var(--menu-notes-foreground) 71.43%,
-    var(--menu-tools-foreground) 85.71%,
+    var(--menu-office-foreground) 12.5%,
+    var(--menu-books-foreground) 25%,
+    var(--menu-draw-foreground) 37.5%,
+    var(--menu-mind-foreground) 50%,
+    var(--menu-notes-foreground) 62.5%,
+    var(--menu-wallpapers-foreground) 75%,
+    var(--menu-tools-foreground) 87.5%,
     var(--menu-markdown-foreground) 100%
   );
   --shadow-soft: 0 18px 55px rgba(62, 82, 51, 0.1);
@@ -80,6 +83,7 @@
   --menu-mind-foreground: #93c5fd;
   --menu-notes-foreground: #fbbf24;
   --menu-tools-foreground: #c4b5fd;
+  --menu-wallpapers-foreground: #2dd4bf;
   --shadow-soft: 0 18px 55px rgb(0 0 0 / 32%);
   --shadow-action: 0 12px 28px rgb(0 0 0 / 28%);
 }

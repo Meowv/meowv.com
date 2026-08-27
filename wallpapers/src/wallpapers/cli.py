@@ -10,6 +10,7 @@ from urllib.request import Request, urlopen
 from .config import DEFAULT_PAGE_SIZE
 from .db import Database
 from .pipeline import Crawler
+from .publish import publish_catalog
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -37,6 +38,13 @@ def build_parser() -> argparse.ArgumentParser:
     stats.add_argument("--db", default=argparse.SUPPRESS, help="SQLite 数据库路径")
     check = sub.add_parser("check", help="检查已保存 CDN 地址")
     check.add_argument("--db", default=argparse.SUPPRESS, help="SQLite 数据库路径")
+    publish = sub.add_parser("publish", help="生成供 Studio 前端使用的精简 SQLite 发布库")
+    publish.add_argument("--db", default=argparse.SUPPRESS, help="源 SQLite 数据库路径")
+    publish.add_argument(
+        "--output-dir",
+        default="../studio/public/data",
+        help="发布库输出目录，默认 ../studio/public/data",
+    )
     return parser
 
 
@@ -85,6 +93,11 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "stats":
             for row in db.stats():
                 print(f"{row['device_type']}\t{row['content_type']}\t{row['count']}")
+            return 0
+        if args.command == "publish":
+            database_path, manifest_path = publish_catalog(db_path, args.output_dir)
+            print(f"database={database_path}")
+            print(f"manifest={manifest_path}")
             return 0
         checked = _check_assets(db)
         print(f"checked={checked}")

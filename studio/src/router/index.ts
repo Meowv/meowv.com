@@ -79,6 +79,16 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/wallpapers',
+    name: 'wallpapers',
+    component: () => import('@/features/wallpapers/WallpapersPage.vue'),
+    meta: {
+      title: '壁纸 · Meowv Studio',
+      description: '电脑和手机壁纸，支持动态预览、分类筛选壁纸下载。',
+      feature: 'wallpapers',
+    },
+  },
+  {
     path: '/tools',
     name: 'tools',
     component: () => import('@/features/tools/pages/ToolsHome.vue'),

@@ -5,7 +5,8 @@ const CACHE_PREFIX = 'meowv-studio-';
 const SHELL_CACHE = `${CACHE_PREFIX}shell-${CACHE_VERSION}`;
 const ASSET_CACHE = `${CACHE_PREFIX}assets-${CACHE_VERSION}`;
 const OFFICE_CACHE = `${CACHE_PREFIX}office-${CACHE_VERSION}`;
-const CURRENT_CACHES = new Set([SHELL_CACHE, ASSET_CACHE, OFFICE_CACHE]);
+const WALLPAPERS_CACHE = `${CACHE_PREFIX}wallpapers-${CACHE_VERSION}`;
+const CURRENT_CACHES = new Set([SHELL_CACHE, ASSET_CACHE, OFFICE_CACHE, WALLPAPERS_CACHE]);
 const APP_SHELL = ['/', '/manifest.webmanifest', '/brand/studio.png'];
 
 self.addEventListener('install', (event) => {
@@ -53,6 +54,20 @@ async function networkFirst(request) {
   }
 }
 
+async function cacheWallpaperRange(request) {
+  const cache = await caches.open(WALLPAPERS_CACHE);
+  const range = request.headers.get('range');
+  const cacheUrl = new URL(request.url);
+  if (range) cacheUrl.searchParams.set('__wallpapers_range', range);
+  const cacheKey = new Request(cacheUrl.toString(), { method: 'GET' });
+  const cached = await cache.match(cacheKey);
+  if (cached) return cached;
+
+  const response = await fetch(request);
+  if (response.ok || response.status === 206) await cache.put(cacheKey, response.clone());
+  return response;
+}
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -67,6 +82,11 @@ self.addEventListener('fetch', (event) => {
 
   if (url.pathname.startsWith('/office-assets/')) {
     event.respondWith(cacheFirst(request, OFFICE_CACHE));
+    return;
+  }
+
+  if (/^\/data\/wallpapers\.catalog\.[^/]+\.db$/.test(url.pathname)) {
+    event.respondWith(cacheWallpaperRange(request));
     return;
   }
 
