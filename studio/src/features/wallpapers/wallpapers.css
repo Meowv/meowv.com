@@ -36,8 +36,7 @@
 .wallpapers-segment button,
 .wallpapers-category-bar button,
 .wallpapers-error button,
-.wallpapers-lightbox-download-trigger,
-.wallpapers-download-menu button {
+.wallpapers-lightbox-download-trigger {
   border: 0;
   background: transparent;
   padding: 6px 10px;
@@ -341,8 +340,7 @@
   padding: 72px 20px;
 }
 .wallpapers-error button,
-.wallpapers-lightbox-download-trigger,
-.wallpapers-download-menu button {
+.wallpapers-lightbox-download-trigger {
   display: inline-flex;
   gap: 6px;
   align-items: center;
@@ -381,6 +379,9 @@
 .wallpapers-lightbox-download {
   position: absolute;
   z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   top: 62px;
   right: 18px;
 }
@@ -397,30 +398,25 @@
   background: rgb(0 0 0 / 42%);
   cursor: pointer;
 }
-.wallpapers-lightbox-download-trigger:disabled,
-.wallpapers-download-menu button:disabled {
+.wallpapers-lightbox-download-trigger:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
-.wallpapers-download-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  display: grid;
-  min-width: 126px;
-  gap: 4px;
-  padding: 5px;
-  border: 1px solid rgb(255 255 255 / 18%);
-  border-radius: 7px;
-  background: rgb(20 24 30 / 96%);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 28%);
+.wallpapers-download-icon {
+  position: relative;
+  display: inline-grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
 }
-.wallpapers-download-menu button {
-  justify-content: flex-start;
-  width: 100%;
-  padding: 7px 8px;
-  background: transparent;
-  text-align: left;
+.wallpapers-download-icon-type {
+  position: absolute;
+  right: -5px;
+  bottom: -4px;
+  padding: 1px;
+  border-radius: 3px;
+  background: rgb(0 0 0 / 78%);
+  box-sizing: content-box;
 }
 @media (max-width: 760px) {
   .wallpapers-filters {

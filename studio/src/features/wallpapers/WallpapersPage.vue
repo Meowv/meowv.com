@@ -39,7 +39,7 @@ const {
   retry,
 } = useWallpapers();
 const selected = ref<WallpaperItem | null>(null);
-const downloadMenuOpen = ref(false);
+const downloadBusy = ref(false);
 const sentinel = ref<HTMLElement | null>(null);
 const categoryBar = ref<HTMLElement | null>(null);
 const categoryItems = ref<HTMLElement | null>(null);
@@ -112,22 +112,21 @@ function handleScroll(): void {
   if (element.getBoundingClientRect().top <= window.innerHeight + 800) void loadMore();
 }
 
-function handleVideoContextMenu(event: MouseEvent): void {
+function handleMediaContextMenu(event: MouseEvent): void {
   event.preventDefault();
+  event.stopPropagation();
 }
 
-function handleVideoInteraction(event: Event): void {
+function handleMediaInteraction(event: Event): void {
   event.preventDefault();
   event.stopPropagation();
 }
 
 function open(item: WallpaperItem): void {
   selected.value = item;
-  downloadMenuOpen.value = false;
 }
 function close(): void {
   selected.value = null;
-  downloadMenuOpen.value = false;
 }
 async function expandSearch(): Promise<void> {
   searchExpanded.value = true;
@@ -153,16 +152,69 @@ function commitSearch(): void {
   searchExpanded.value = true;
   void setFilters({ keyword });
 }
-function download(item: WallpaperItem, url: string | null, filename: string): void {
+function sanitizeFilename(value: string): string {
+  return (
+    value
+      .replace(/[<>:"/\\|?*]/g, '-')
+      .split('')
+      .filter((character) => character.charCodeAt(0) >= 32)
+      .join('')
+      .replace(/\s+/g, ' ')
+      .replace(/[. ]+$/g, '')
+      .trim()
+      .slice(0, 80) || 'wallpaper'
+  );
+}
+
+async function download(item: WallpaperItem, url: string | null, filename: string): Promise<void> {
   if (!url) return;
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.rel = 'noreferrer';
-  anchor.target = '_blank';
-  document.body.append(anchor);
-  anchor.click();
-  anchor.remove();
+  if (downloadBusy.value) return;
+  downloadBusy.value = true;
+  const isVideo = filename.endsWith('.mp4');
+  const baseName = item.title
+    ? `${sanitizeFilename(item.title)}-${item.id}`
+    : `wallpaper-${item.id}`;
+  const fallbackName = `${baseName}${isVideo ? '.mp4' : '.jpg'}`;
+  try {
+    if (isVideo) {
+      const downloadUrl = new URL(url);
+      downloadUrl.searchParams.set(
+        'response-content-disposition',
+        `attachment;filename*=UTF-8''${encodeURIComponent(fallbackName)}`,
+      );
+      const anchor = document.createElement('a');
+      anchor.href = downloadUrl.toString();
+      anchor.download = fallbackName;
+      anchor.rel = 'noreferrer';
+      document.body.append(anchor);
+      anchor.click();
+      anchor.remove();
+      return;
+    }
+    const response = await fetch(url, { credentials: 'omit' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = objectUrl;
+    anchor.download = fallbackName;
+    anchor.rel = 'noreferrer';
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 30_000);
+  } catch {
+    // CDN 未开放 CORS 时无法在前端转 Blob，退回打开原始地址。
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.target = '_blank';
+    anchor.rel = 'noopener noreferrer';
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+  } finally {
+    downloadBusy.value = false;
+  }
 }
 function onKeydown(event: KeyboardEvent): void {
   if (event.key === 'Escape') close();
@@ -336,7 +388,7 @@ watch(
             <input
               ref="searchInput"
               :value="searchDraft"
-              placeholder="搜索壁纸，关键词……"
+              placeholder="搜索壁纸，关键词…"
               @input="handleSearchInput"
               @change="commitSearch"
               @keyup.enter="commitSearch"
@@ -413,52 +465,33 @@ watch(
         <button
           v-if="selected.previewVideoUrl"
           class="wallpapers-lightbox-download-trigger"
-          :aria-expanded="downloadMenuOpen"
-          aria-haspopup="menu"
-          title="下载"
-          @click="downloadMenuOpen = !downloadMenuOpen"
+          title="下载动态壁纸"
+          :disabled="downloadBusy"
+          @click="download(selected, selected.previewVideoUrl, `wallpaper-${selected.id}.mp4`)"
         >
-          <IconDownload :size="18" /><IconChevronDown :size="15" />
+          <span class="wallpapers-download-icon" aria-hidden="true">
+            <IconDownload :size="18" />
+            <IconMovie class="wallpapers-download-icon-type" :size="11" />
+          </span>
         </button>
         <button
-          v-else
+          v-if="selected.coverUrl"
           class="wallpapers-lightbox-download-trigger"
-          :disabled="!selected.coverUrl"
-          title="下载图片"
+          :disabled="downloadBusy"
+          title="下载静态壁纸"
           @click="download(selected, selected.coverUrl, `wallpaper-${selected.id}.jpg`)"
         >
-          <IconDownload :size="18" />
+          <span class="wallpapers-download-icon" aria-hidden="true">
+            <IconDownload :size="18" />
+            <IconPhoto class="wallpapers-download-icon-type" :size="11" />
+          </span>
         </button>
-        <div
-          v-if="downloadMenuOpen && selected.previewVideoUrl"
-          class="wallpapers-download-menu"
-          role="menu"
-        >
-          <button
-            :disabled="!selected.coverUrl"
-            role="menuitem"
-            @click.stop="
-              download(selected, selected.coverUrl, `wallpaper-${selected.id}.jpg`);
-              downloadMenuOpen = false;
-            "
-          >
-            <IconDownload :size="16" />下载图片
-          </button>
-          <button
-            role="menuitem"
-            @click.stop="
-              download(selected, selected.previewVideoUrl, `wallpaper-${selected.id}.mp4`);
-              downloadMenuOpen = false;
-            "
-          >
-            <IconDownload :size="16" />下载视频
-          </button>
-        </div>
       </div>
       <video
         v-if="selected.contentType === 'dynamic' && selected.previewVideoUrl"
         :src="selected.previewVideoUrl"
         autoplay
+        loop
         muted
         playsinline
         preload="metadata"
@@ -468,22 +501,33 @@ watch(
         aria-label="动态壁纸预览"
         draggable="false"
         referrerpolicy="no-referrer"
-        @contextmenu="handleVideoContextMenu"
-        @click="handleVideoInteraction"
-        @dblclick="handleVideoInteraction"
-        @mousedown="handleVideoInteraction"
-        @mouseup="handleVideoInteraction"
-        @pointerdown="handleVideoInteraction"
-        @pointerup="handleVideoInteraction"
-        @touchstart="handleVideoInteraction"
-        @touchend="handleVideoInteraction"
-        @keydown="handleVideoInteraction"
+        @contextmenu="handleMediaContextMenu"
+        @click="handleMediaInteraction"
+        @dblclick="handleMediaInteraction"
+        @mousedown="handleMediaInteraction"
+        @mouseup="handleMediaInteraction"
+        @pointerdown="handleMediaInteraction"
+        @pointerup="handleMediaInteraction"
+        @touchstart="handleMediaInteraction"
+        @touchend="handleMediaInteraction"
+        @keydown="handleMediaInteraction"
       />
       <img
         v-else-if="selected.coverUrl"
         :src="selected.coverUrl"
         :alt="selected.title || '壁纸预览'"
+        draggable="false"
         referrerpolicy="no-referrer"
+        @contextmenu="handleMediaContextMenu"
+        @dragstart="handleMediaInteraction"
+        @click="handleMediaInteraction"
+        @dblclick="handleMediaInteraction"
+        @mousedown="handleMediaInteraction"
+        @mouseup="handleMediaInteraction"
+        @pointerdown="handleMediaInteraction"
+        @pointerup="handleMediaInteraction"
+        @touchstart="handleMediaInteraction"
+        @touchend="handleMediaInteraction"
       />
     </div>
   </main>
