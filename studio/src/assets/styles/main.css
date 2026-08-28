@@ -158,6 +158,10 @@ button {
   color: var(--menu-books-foreground);
 }
 
+.studio-shell--tools .studio-header__feature-name {
+  color: var(--menu-tools-foreground);
+}
+
 .studio-shell--wallpapers .studio-header__feature-name {
   color: var(--menu-wallpapers-foreground);
 }
