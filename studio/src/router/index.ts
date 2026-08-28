@@ -126,8 +126,8 @@ const router = createRouter({
   scrollBehavior: (to) => (to.path === '/tools' && to.hash ? false : { top: 0 }),
 });
 
-router.beforeEach(() => {
-  routeLoading.value = true;
+router.beforeEach((to, from) => {
+  routeLoading.value = !from.name || to.path !== from.path;
 });
 
 router.afterEach((to) => {
