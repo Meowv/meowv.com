@@ -43,6 +43,15 @@ PYTHONPATH=src python3 -m wallpapers publish \
 ./build.sh studio --with-wallpapers
 ```
 
+如果只需要生成或更新 JSON，不执行 Studio 构建：
+
+```bash
+./build.sh wallpapers
+./build.sh w
+```
+
+该命令以 `studio/public/data/` 为源目录；当 `build/studio.meowv.com/` 已存在时，会额外同步 JSON 到其 `data/` 目录。
+
 普通 `./build.sh studio` 不会读取源数据库。`studio/public/data/wallpapers.catalog.json`、版本化完整 `.json` 和 bootstrap `.json` 均为部署产物，不提交 Git。
 
 默认数据库路径为：

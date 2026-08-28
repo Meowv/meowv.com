@@ -16,7 +16,8 @@ usage() {
   ./build.sh                 编译全部项目
   ./build.sh all             编译全部项目
   ./build.sh <project> [...] 编译一个或多个指定项目
-  ./build.sh studio --with-wallpapers 生成并发布 Wallpapers 精简数据库
+  ./build.sh studio --with-wallpapers 构建 Studio，并在构建前生成壁纸目录 JSON
+  ./build.sh wallpapers      只生成 Studio 壁纸目录 JSON，不执行项目构建
 
 可选项目：
   blog, b    -> build/meowv.com
@@ -26,6 +27,28 @@ EOF
 }
 
 WITH_WALLPAPERS=0
+
+publish_wallpapers_only() {
+  local source_dir="$ROOT_DIR/studio/public/data"
+  local build_data_dir="$BUILD_DIR/studio.meowv.com/data"
+
+  echo "[wallpapers] 生成 Studio 壁纸 JSON 数据..."
+  (
+    cd "$ROOT_DIR/wallpapers"
+    PYTHONPATH=src python3 -m wallpapers publish \
+      --db "$ROOT_DIR/wallpapers/wallpapers.db" \
+      --output-dir "$source_dir"
+  )
+
+  # 已存在构建产物时同步一份，便于直接部署 build/studio.meowv.com。
+  if [ -d "$BUILD_DIR/studio.meowv.com" ]; then
+    mkdir -p "$build_data_dir"
+    cp "$source_dir"/wallpapers.catalog*.json "$build_data_dir"/
+    echo "[wallpapers] JSON 数据已同步到 $build_data_dir"
+  fi
+
+  echo "[wallpapers] JSON 数据源目录：$source_dir"
+}
 
 destination_name() {
   case "$1" in
@@ -248,6 +271,9 @@ if [ "$#" -eq 0 ] || { [ "$#" -eq 1 ] && [ "$1" = "all" ]; }; then
 elif [ "$#" -eq 1 ] && { [ "$1" = "-h" ] || [ "$1" = "--help" ]; }; then
   usage
   exit 0
+elif [ "$#" -eq 1 ] && { [ "$1" = "wallpapers" ] || [ "$1" = "w" ]; }; then
+  publish_wallpapers_only
+  exit 0
 else
   for argument in "$@"; do
     case "$argument" in
@@ -279,7 +305,7 @@ if [ "$WITH_WALLPAPERS" -eq 1 ]; then
     [ "$project" = "studio" ] && found_studio=1
   done
   if [ "$found_studio" -eq 0 ]; then
-    echo "错误：--with-wallpapers 只能和 studio 一起使用。" >&2
+    echo "错误：--with-wallpapers 只能与 studio 项目一起使用。" >&2
     exit 1
   fi
 fi

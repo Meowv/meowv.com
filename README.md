@@ -78,6 +78,15 @@ chmod +x run.sh build.sh
 ./build.sh studio zitie
 ```
 
+只生成壁纸 JSON 时，不需要执行 Studio 构建：
+
+```bash
+./build.sh wallpapers
+./build.sh w
+```
+
+该命令先更新 `studio/public/data/`；如果 `build/studio.meowv.com/` 已存在，还会同步更新其中的 `data/` 目录，便于直接部署构建产物。
+
 产物映射如下：
 
 ```text
