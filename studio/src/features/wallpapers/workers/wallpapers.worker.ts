@@ -9,6 +9,7 @@ import type {
   WallpaperWorkerRequest,
   WallpaperWorkerResponse,
 } from '../types';
+import { gunzipSync } from 'fflate';
 
 interface CatalogItem extends WallpaperItem {
   categoryIds: number[];
@@ -34,6 +35,7 @@ interface CatalogManifest {
   bootstrap?: string;
   encryption?: string;
   encryptionVersion?: number;
+  compression?: string;
   generatedAt?: string;
 }
 
@@ -64,10 +66,12 @@ let itemsById = new Map<number, CatalogItem>();
 let cacheCleanupPromise: Promise<void> | null = null;
 let prefetchPromise: Promise<PromiseSettledResult<WallpaperCatalog>[]> | null = null;
 
-const CATALOG_ENCRYPTION_VERSION = 1;
+const CATALOG_ENCRYPTION_VERSION = 2;
 const CATALOG_ENCRYPTION_NAME = 'aes-256-gcm';
+const CATALOG_COMPRESSION = 'gzip';
 const CATALOG_MAGIC = new Uint8Array([0x4d, 0x57, 0x50, 0x43]);
-let catalogKeyPromise: Promise<CryptoKey> | null = null;
+const CATALOG_RELEASE_KEY = import.meta.env.VITE_WALLPAPER_CATALOG_KEY as string | undefined;
+const catalogKeyPromises = new Map<string, Promise<CryptoKey>>();
 
 function dataBaseUrl(): string {
   return `${import.meta.env.BASE_URL}data/`;
@@ -88,7 +92,8 @@ async function loadManifest(): Promise<CatalogManifest> {
   }
   if (
     manifest.encryption !== CATALOG_ENCRYPTION_NAME ||
-    manifest.encryptionVersion !== CATALOG_ENCRYPTION_VERSION
+    manifest.encryptionVersion !== CATALOG_ENCRYPTION_VERSION ||
+    manifest.compression !== CATALOG_COMPRESSION
   ) {
     throw new Error('壁纸目录加密格式不受支持。');
   }
@@ -105,21 +110,40 @@ function requiredBuckets(query: WallpaperQuery): CatalogBucket[] {
   return [bucketKey(query.device, 'static')];
 }
 
-async function encryptionKey(): Promise<CryptoKey> {
-  if (catalogKeyPromise) return catalogKeyPromise;
-  catalogKeyPromise = (async () => {
-    const material = new Uint8Array([...CATALOG_MAGIC, CATALOG_ENCRYPTION_VERSION]);
+function decodeBase64(value: string): Uint8Array {
+  const binary = atob(value);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  return bytes;
+}
+
+async function encryptionKey(context: string): Promise<CryptoKey> {
+  const pending = catalogKeyPromises.get(context);
+  if (pending) return pending;
+  const promise = (async () => {
+    if (!CATALOG_RELEASE_KEY) throw new Error('壁纸目录解密密钥不可用。');
+    const masterKey = decodeBase64(CATALOG_RELEASE_KEY);
+    if (masterKey.length !== 32) throw new Error('壁纸目录解密密钥无效。');
+    const contextBytes = new TextEncoder().encode(context);
+    const material = new Uint8Array(
+      masterKey.length + CATALOG_MAGIC.length + 1 + contextBytes.length,
+    );
+    material.set(masterKey, 0);
+    material.set(CATALOG_MAGIC, masterKey.length);
+    material[masterKey.length + CATALOG_MAGIC.length] = CATALOG_ENCRYPTION_VERSION;
+    material.set(contextBytes, masterKey.length + CATALOG_MAGIC.length + 1);
     const digest = await crypto.subtle.digest('SHA-256', material);
     return crypto.subtle.importKey('raw', digest, { name: 'AES-GCM' }, false, ['decrypt']);
   })();
+  catalogKeyPromises.set(context, promise);
   try {
-    return await catalogKeyPromise;
+    return await promise;
   } finally {
-    catalogKeyPromise = null;
+    catalogKeyPromises.delete(context);
   }
 }
 
-async function decryptPayload(payload: ArrayBuffer): Promise<string> {
+async function decryptPayload(payload: ArrayBuffer, context: string): Promise<string> {
   const bytes = new Uint8Array(payload);
   const headerSize = CATALOG_MAGIC.length + 1 + 12 + 16;
   if (bytes.length <= headerSize) throw new Error('壁纸目录加密文件格式无效。');
@@ -139,10 +163,10 @@ async function decryptPayload(payload: ArrayBuffer): Promise<string> {
   try {
     const clear = await crypto.subtle.decrypt(
       { name: 'AES-GCM', iv, tagLength: 128 },
-      await encryptionKey(),
+      await encryptionKey(context),
       encrypted,
     );
-    return new TextDecoder().decode(clear);
+    return new TextDecoder().decode(gunzipSync(new Uint8Array(clear)));
   } catch {
     throw new Error('壁纸目录解密失败。');
   }
@@ -247,7 +271,10 @@ async function loadCatalog(bucket: CatalogBucket): Promise<WallpaperCatalog> {
       void writeCachedCatalog({ key, version, bucket, payload });
     }
     await cleanupCachedCatalogs(version);
-    return prepareCatalog(JSON.parse(await decryptPayload(payload)) as WallpaperCatalog, bucket);
+    return prepareCatalog(
+      JSON.parse(await decryptPayload(payload, bucket)) as WallpaperCatalog,
+      bucket,
+    );
   })();
   catalogPromises.set(bucket, promise);
   try {
@@ -288,7 +315,7 @@ async function getBootstrap(): Promise<WallpaperBootstrapResult> {
     });
     if (!response.ok) throw new Error(`无法加载壁纸首屏目录（HTTP ${response.status}）。`);
     const payload = await response.arrayBuffer();
-    const value = JSON.parse(await decryptPayload(payload)) as {
+    const value = JSON.parse(await decryptPayload(payload, 'bootstrap')) as {
       items?: WallpaperItem[];
       categories?: WallpaperCategory[];
       generatedAt?: string;

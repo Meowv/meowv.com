@@ -9,6 +9,7 @@ SELECTED_PROJECTS=()
 STAGING_DIR="$ROOT_DIR/.build-staging.$$"
 BACKUP_PATH=""
 RESTORE_PATH=""
+CATALOG_KEY_FILE="$ROOT_DIR/.wallpaper-catalog-key"
 
 usage() {
   cat <<'EOF'
@@ -16,8 +17,8 @@ usage() {
   ./build.sh                 编译全部项目
   ./build.sh all             编译全部项目
   ./build.sh <project> [...] 编译一个或多个指定项目
-  ./build.sh studio --with-wallpapers 构建 Studio，并在构建前生成壁纸目录 JSON
-  ./build.sh wallpapers      只生成 Studio 壁纸目录 JSON，不执行项目构建
+  ./build.sh studio --with-wallpapers 构建 Studio，并在构建前生成壁纸目录
+  ./build.sh wallpapers      只生成 Studio 壁纸目录，不执行项目构建
 
 可选项目：
   blog, b    -> build/meowv.com
@@ -39,7 +40,8 @@ publish_wallpapers_only() {
       --db "$ROOT_DIR/wallpapers/wallpapers.db" \
       --output-dir "$source_dir"
   )
-  node "$ROOT_DIR/studio/scripts/encrypt-wallpaper-catalog.mjs" "$source_dir"
+  node "$ROOT_DIR/studio/scripts/encrypt-wallpaper-catalog.mjs" "$source_dir" \
+    --key-file "$CATALOG_KEY_FILE" --reuse-key
 
   # 已存在构建产物时同步一份，便于直接部署 build/studio.meowv.com。
   if [ -d "$BUILD_DIR/studio.meowv.com" ]; then
@@ -330,7 +332,8 @@ for project in "${SELECTED_PROJECTS[@]}"; do
       cd "$ROOT_DIR/wallpapers"
       PYTHONPATH=src python3 -m wallpapers publish --db "$ROOT_DIR/wallpapers/wallpapers.db" --output-dir "$ROOT_DIR/studio/public/data"
     )
-    node "$ROOT_DIR/studio/scripts/encrypt-wallpaper-catalog.mjs" "$ROOT_DIR/studio/public/data"
+    node "$ROOT_DIR/studio/scripts/encrypt-wallpaper-catalog.mjs" \
+      "$ROOT_DIR/studio/public/data" --key-file "$CATALOG_KEY_FILE"
   fi
   build_project "$project"
   stage_output "$project"

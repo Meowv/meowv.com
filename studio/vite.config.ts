@@ -1,3 +1,4 @@
+import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath, URL } from 'node:url';
 import tailwindcss from '@tailwindcss/vite';
 import vue from '@vitejs/plugin-vue';
@@ -7,7 +8,17 @@ import { builtinBooksDevPlugin } from './vite/builtinBooksDevPlugin.ts';
 import { cubingWorkerPreloadPlugin } from './vite/cubingWorkerPreloadPlugin.ts';
 import { toolsBackgroundVideosPlugin } from './vite/toolsBackgroundVideosPlugin.ts';
 
+const wallpaperCatalogKeyFile = fileURLToPath(
+  new URL('../.wallpaper-catalog-key', import.meta.url),
+);
+const wallpaperCatalogKey =
+  process.env.VITE_WALLPAPER_CATALOG_KEY ??
+  (existsSync(wallpaperCatalogKeyFile) ? readFileSync(wallpaperCatalogKeyFile, 'utf8').trim() : '');
+
 export default defineConfig({
+  define: wallpaperCatalogKey
+    ? { 'import.meta.env.VITE_WALLPAPER_CATALOG_KEY': JSON.stringify(wallpaperCatalogKey) }
+    : undefined,
   plugins: [
     toolsBackgroundVideosPlugin(),
     builtinBooksDevPlugin(),
