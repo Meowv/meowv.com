@@ -95,8 +95,8 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"{row['device_type']}\t{row['content_type']}\t{row['count']}")
             return 0
         if args.command == "publish":
-            catalog_path, manifest_path = publish_catalog(db_path, args.output_dir)
-            print(f"catalog={catalog_path}")
+            catalog_paths, manifest_path = publish_catalog(db_path, args.output_dir)
+            print(f"catalogs={','.join(f'{bucket}:{path}' for bucket, path in catalog_paths.items())}")
             print(f"manifest={manifest_path}")
             return 0
         checked = _check_assets(db)

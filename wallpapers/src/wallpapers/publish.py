@@ -19,7 +19,21 @@ JSON_WALLPAPER_FIELDS = (
     "first_seen_at",
 )
 
-def _build_json_catalog(source_db: sqlite3.Connection, target_dir: Path, stamp: str) -> tuple[Path, Path]:
+CATALOG_BUCKETS = (
+    ("desktop", "dynamic"),
+    ("desktop", "static"),
+    ("mobile", "dynamic"),
+    ("mobile", "static"),
+)
+
+
+def catalog_bucket(device: str, content: str) -> str:
+    return f"{device}:{content}"
+
+
+def _build_json_catalog(
+    source_db: sqlite3.Connection, target_dir: Path, stamp: str
+) -> tuple[dict[str, Path], Path]:
     rows = source_db.execute(
         "SELECT " + ", ".join(JSON_WALLPAPER_FIELDS) + " FROM wallpaper WHERE status = 'active'"
     ).fetchall()
@@ -116,19 +130,36 @@ def _build_json_catalog(source_db: sqlite3.Connection, target_dir: Path, stamp: 
 
     items.sort(key=lambda item: (str(item["remoteCreatedAt"] or ""), int(item["id"])), reverse=True)
     items.sort(key=lambda item: 0 if item["contentType"] == "dynamic" else 1)
-    catalog = {
-        "schemaVersion": 1,
-        "generatedAt": datetime.now(timezone.utc).isoformat(),
-        "categories": categories,
-        "items": items,
-    }
-    catalog_name = f"wallpapers.catalog.{stamp}.json"
+    generated_at = datetime.now(timezone.utc).isoformat()
+    catalog_paths: dict[str, Path] = {}
+    for device, content in CATALOG_BUCKETS:
+        bucket = catalog_bucket(device, content)
+        catalog_name = f"wallpapers.catalog.{device}.{content}.{stamp}.json"
+        catalog_path = target_dir / catalog_name
+        bucket_items = [
+            item
+            for item in items
+            if item["deviceType"] == device and item["contentType"] == content
+        ]
+        catalog_path.write_text(
+            json.dumps(
+                {
+                    "schemaVersion": 2,
+                    "generatedAt": generated_at,
+                    "deviceType": device,
+                    "contentType": content,
+                    "categories": categories,
+                    "items": bucket_items,
+                },
+                ensure_ascii=False,
+                separators=(",", ":"),
+            ),
+            encoding="utf-8",
+        )
+        catalog_paths[bucket] = catalog_path
+
     bootstrap_name = f"wallpapers.catalog.bootstrap.{stamp}.json"
-    catalog_path = target_dir / catalog_name
     bootstrap_path = target_dir / bootstrap_name
-    catalog_path.write_text(
-        json.dumps(catalog, ensure_ascii=False, separators=(",", ":")), encoding="utf-8"
-    )
     bootstrap_items = [
         item
         for item in items
@@ -137,8 +168,8 @@ def _build_json_catalog(source_db: sqlite3.Connection, target_dir: Path, stamp: 
     bootstrap_path.write_text(
         json.dumps(
             {
-                "schemaVersion": 1,
-                "generatedAt": catalog["generatedAt"],
+                "schemaVersion": 2,
+                "generatedAt": generated_at,
                 "categories": categories,
                 "items": bootstrap_items,
             },
@@ -148,26 +179,28 @@ def _build_json_catalog(source_db: sqlite3.Connection, target_dir: Path, stamp: 
         encoding="utf-8",
     )
     for previous in target_dir.glob("wallpapers.catalog.*.json"):
-        if previous not in (catalog_path, bootstrap_path, target_dir / "wallpapers.catalog.json"):
+        if previous not in (*catalog_paths.values(), bootstrap_path, target_dir / "wallpapers.catalog.json"):
             previous.unlink(missing_ok=True)
     for previous in target_dir.glob("wallpapers.catalog.*.db"):
         previous.unlink(missing_ok=True)
-    return catalog_path, bootstrap_path
+    return catalog_paths, bootstrap_path
 
 
-def publish_catalog(source: str | Path, output_dir: str | Path) -> tuple[Path, Path]:
+def publish_catalog(source: str | Path, output_dir: str | Path) -> tuple[dict[str, Path], Path]:
     source_path = Path(source).resolve()
     target_dir = Path(output_dir).resolve()
     target_dir.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
     with sqlite3.connect(f"file:{source_path}?mode=ro", uri=True) as source_db:
-        catalog_path, bootstrap_path = _build_json_catalog(source_db, target_dir, stamp)
+        catalog_paths, bootstrap_path = _build_json_catalog(source_db, target_dir, stamp)
 
     manifest_path = target_dir / "wallpapers.catalog.json"
     manifest = {
-        "schemaVersion": 1,
-        "catalog": catalog_path.name,
-        "catalogFileSize": catalog_path.stat().st_size,
+        "schemaVersion": 2,
+        "catalogs": {
+            bucket: {"file": path.name, "fileSize": path.stat().st_size}
+            for bucket, path in catalog_paths.items()
+        },
         "bootstrap": bootstrap_path.name,
         "bootstrapFileSize": bootstrap_path.stat().st_size,
         "generatedAt": datetime.now(timezone.utc).isoformat(),
@@ -175,4 +208,4 @@ def publish_catalog(source: str | Path, output_dir: str | Path) -> tuple[Path, P
     manifest_path.write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
-    return catalog_path, manifest_path
+    return catalog_paths, manifest_path

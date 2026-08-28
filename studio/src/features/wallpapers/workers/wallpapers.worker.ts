@@ -1,6 +1,8 @@
 import type {
   WallpaperBootstrapResult,
   WallpaperCategory,
+  WallpaperContent,
+  WallpaperDevice,
   WallpaperItem,
   WallpaperPageResult,
   WallpaperQuery,
@@ -13,22 +15,32 @@ interface CatalogItem extends WallpaperItem {
 }
 
 interface WallpaperCatalog {
-  schemaVersion: number;
+  schemaVersion: 2;
   generatedAt: string;
+  deviceType: WallpaperDevice;
+  contentType: WallpaperContent;
   categories: WallpaperCategory[];
   items: CatalogItem[];
 }
 
+interface CatalogEntry {
+  file: string;
+  fileSize?: number;
+}
+
 interface CatalogManifest {
   schemaVersion?: number;
-  catalog?: string;
+  catalogs?: Record<string, CatalogEntry>;
   bootstrap?: string;
   encryption?: string;
   encryptionVersion?: number;
+  generatedAt?: string;
 }
 
 interface PersistedCatalog {
+  key: string;
   version: string;
+  bucket: string;
   payload: ArrayBuffer;
 }
 
@@ -36,11 +48,21 @@ const CATALOG_CACHE_DB = 'meowv-wallpapers-catalog';
 const CATALOG_CACHE_STORE = 'catalogs';
 
 let manifest: CatalogManifest | null = null;
-let catalog: WallpaperCatalog | null = null;
-let catalogPromise: Promise<WallpaperCatalog> | null = null;
+const CATALOG_BUCKETS = [
+  'desktop:dynamic',
+  'desktop:static',
+  'mobile:dynamic',
+  'mobile:static',
+] as const;
+type CatalogBucket = (typeof CATALOG_BUCKETS)[number];
+
+const catalogs = new Map<CatalogBucket, WallpaperCatalog>();
+const catalogPromises = new Map<CatalogBucket, Promise<WallpaperCatalog>>();
 let bootstrap: WallpaperBootstrapResult | null = null;
 let bootstrapPromise: Promise<WallpaperBootstrapResult> | null = null;
 let itemsById = new Map<number, CatalogItem>();
+let cacheCleanupPromise: Promise<void> | null = null;
+let prefetchPromise: Promise<PromiseSettledResult<WallpaperCatalog>[]> | null = null;
 
 const CATALOG_ENCRYPTION_VERSION = 1;
 const CATALOG_ENCRYPTION_NAME = 'aes-256-gcm';
@@ -56,7 +78,14 @@ async function loadManifest(): Promise<CatalogManifest> {
   const response = await fetch(`${dataBaseUrl()}wallpapers.catalog.json`, { cache: 'no-cache' });
   if (!response.ok) throw new Error(`无法加载壁纸目录清单（HTTP ${response.status}）。`);
   manifest = (await response.json()) as CatalogManifest;
-  if (!manifest.catalog) throw new Error('壁纸目录清单缺少 catalog 字段。');
+  if (manifest.schemaVersion !== 2 || !manifest.catalogs) {
+    throw new Error('壁纸目录清单格式不受支持。');
+  }
+  for (const bucket of CATALOG_BUCKETS) {
+    if (!manifest.catalogs[bucket]?.file) {
+      throw new Error(`壁纸目录清单缺少 ${bucket} bucket。`);
+    }
+  }
   if (
     manifest.encryption !== CATALOG_ENCRYPTION_NAME ||
     manifest.encryptionVersion !== CATALOG_ENCRYPTION_VERSION
@@ -64,6 +93,16 @@ async function loadManifest(): Promise<CatalogManifest> {
     throw new Error('壁纸目录加密格式不受支持。');
   }
   return manifest;
+}
+
+function bucketKey(device: WallpaperDevice, content: WallpaperContent): CatalogBucket {
+  return `${device}:${content}` as CatalogBucket;
+}
+
+function requiredBuckets(query: WallpaperQuery): CatalogBucket[] {
+  const dynamic = bucketKey(query.device, 'dynamic');
+  if (query.content === 'dynamic') return [dynamic, bucketKey(query.device, 'static')];
+  return [bucketKey(query.device, 'static')];
 }
 
 async function encryptionKey(): Promise<CryptoKey> {
@@ -111,27 +150,28 @@ async function decryptPayload(payload: ArrayBuffer): Promise<string> {
 
 function openCache(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(CATALOG_CACHE_DB, 1);
+    const request = indexedDB.open(CATALOG_CACHE_DB, 2);
     request.onupgradeneeded = () => {
-      request.result.createObjectStore(CATALOG_CACHE_STORE, { keyPath: 'version' });
+      const db = request.result;
+      if (db.objectStoreNames.contains(CATALOG_CACHE_STORE)) {
+        db.deleteObjectStore(CATALOG_CACHE_STORE);
+      }
+      db.createObjectStore(CATALOG_CACHE_STORE, { keyPath: 'key' });
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error ?? new Error('无法打开壁纸本地缓存。'));
   });
 }
 
-async function readCachedCatalog(version: string): Promise<ArrayBuffer | null> {
+async function readCachedCatalog(key: string): Promise<PersistedCatalog | null> {
   try {
     const db = await openCache();
     return await new Promise((resolve, reject) => {
       const request = db
         .transaction(CATALOG_CACHE_STORE, 'readonly')
         .objectStore(CATALOG_CACHE_STORE)
-        .get(version);
-      request.onsuccess = () => {
-        const payload = (request.result as PersistedCatalog | undefined)?.payload;
-        resolve(payload instanceof ArrayBuffer ? payload : null);
-      };
+        .get(key);
+      request.onsuccess = () => resolve((request.result as PersistedCatalog | undefined) ?? null);
       request.onerror = () => reject(request.error ?? new Error('无法读取壁纸本地缓存。'));
     });
   } catch {
@@ -139,19 +179,13 @@ async function readCachedCatalog(version: string): Promise<ArrayBuffer | null> {
   }
 }
 
-async function writeCachedCatalog(version: string, payload: ArrayBuffer): Promise<void> {
+async function writeCachedCatalog(record: PersistedCatalog): Promise<void> {
   try {
     const db = await openCache();
     await new Promise<void>((resolve, reject) => {
       const transaction = db.transaction(CATALOG_CACHE_STORE, 'readwrite');
       const store = transaction.objectStore(CATALOG_CACHE_STORE);
-      store.put({ version, payload } satisfies PersistedCatalog);
-      store.openCursor().onsuccess = (event) => {
-        const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
-        if (!cursor) return;
-        if (cursor.key !== version) cursor.delete();
-        cursor.continue();
-      };
+      store.put(record);
       transaction.oncomplete = () => resolve();
       transaction.onerror = () => reject(transaction.error ?? new Error('无法保存壁纸本地缓存。'));
     });
@@ -160,33 +194,87 @@ async function writeCachedCatalog(version: string, payload: ArrayBuffer): Promis
   }
 }
 
-function prepareCatalog(value: WallpaperCatalog): WallpaperCatalog {
-  itemsById = new Map(value.items.map((item) => [item.id, item]));
+async function cleanupCachedCatalogs(version: string): Promise<void> {
+  if (cacheCleanupPromise) return cacheCleanupPromise;
+  cacheCleanupPromise = (async () => {
+    try {
+      const db = await openCache();
+      await new Promise<void>((resolve, reject) => {
+        const transaction = db.transaction(CATALOG_CACHE_STORE, 'readwrite');
+        transaction.objectStore(CATALOG_CACHE_STORE).openCursor().onsuccess = (event) => {
+          const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
+          if (!cursor) return;
+          const value = cursor.value as PersistedCatalog;
+          if (value.version !== version) cursor.delete();
+          cursor.continue();
+        };
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () =>
+          reject(transaction.error ?? new Error('无法清理壁纸本地缓存。'));
+      });
+    } catch {
+      // 本地缓存不可用时继续使用内存目录。
+    }
+  })();
+  return cacheCleanupPromise;
+}
+
+function prepareCatalog(value: WallpaperCatalog, bucket: CatalogBucket): WallpaperCatalog {
+  if (value.schemaVersion !== 2 || bucketKey(value.deviceType, value.contentType) !== bucket) {
+    throw new Error('壁纸目录分片内容不匹配。');
+  }
+  for (const item of value.items) itemsById.set(item.id, item);
+  catalogs.set(bucket, value);
   return value;
 }
 
-async function ensureCatalog(): Promise<WallpaperCatalog> {
-  if (catalog) return catalog;
-  if (catalogPromise) return catalogPromise;
-  catalogPromise = (async () => {
+async function loadCatalog(bucket: CatalogBucket): Promise<WallpaperCatalog> {
+  const existing = catalogs.get(bucket);
+  if (existing) return existing;
+  const pending = catalogPromises.get(bucket);
+  if (pending) return pending;
+  const promise = (async () => {
     const currentManifest = await loadManifest();
-    const version = currentManifest.catalog!;
-    const cachedPayload = await readCachedCatalog(version);
-    let payload = cachedPayload;
+    const version = currentManifest.generatedAt ?? 'unknown';
+    const file = currentManifest.catalogs![bucket].file;
+    const key = `${version}:${bucket}`;
+    const cached = await readCachedCatalog(key);
+    let payload = cached?.payload ?? null;
     if (!payload) {
-      const response = await fetch(`${dataBaseUrl()}${version}`, { cache: 'force-cache' });
+      const response = await fetch(`${dataBaseUrl()}${file}`, { cache: 'force-cache' });
       if (!response.ok) throw new Error(`无法加载壁纸目录（HTTP ${response.status}）。`);
       payload = await response.arrayBuffer();
-      void writeCachedCatalog(version, payload);
+      void writeCachedCatalog({ key, version, bucket, payload });
     }
-    catalog = prepareCatalog(JSON.parse(await decryptPayload(payload)) as WallpaperCatalog);
-    return catalog;
+    await cleanupCachedCatalogs(version);
+    return prepareCatalog(JSON.parse(await decryptPayload(payload)) as WallpaperCatalog, bucket);
   })();
+  catalogPromises.set(bucket, promise);
   try {
-    return await catalogPromise;
+    return await promise;
   } finally {
-    catalogPromise = null;
+    catalogPromises.delete(bucket);
   }
+}
+
+async function prefetchCatalogs(): Promise<PromiseSettledResult<WallpaperCatalog>[]> {
+  if (prefetchPromise) return prefetchPromise;
+  prefetchPromise = Promise.allSettled(CATALOG_BUCKETS.map((bucket) => loadCatalog(bucket)));
+  try {
+    return await prefetchPromise;
+  } finally {
+    prefetchPromise = null;
+  }
+}
+
+async function queryCatalog(query: WallpaperQuery): Promise<WallpaperCatalog> {
+  const values = await Promise.all(requiredBuckets(query).map((bucket) => loadCatalog(bucket)));
+  const first = values[0];
+  if (!first) throw new Error('壁纸目录分片为空。');
+  return {
+    ...first,
+    items: values.flatMap((value) => value.items),
+  };
 }
 
 async function getBootstrap(): Promise<WallpaperBootstrapResult> {
@@ -298,7 +386,7 @@ function publicItem(item: CatalogItem): WallpaperItem {
 }
 
 async function queryWallpapers(query: WallpaperQuery): Promise<WallpaperPageResult> {
-  const value = await ensureCatalog();
+  const value = await queryCatalog(query);
   const filtered = value.items
     .filter((item) => item.deviceType === query.device)
     .filter((item) => query.content === 'dynamic' || item.contentType === query.content)
@@ -326,7 +414,17 @@ async function queryWallpapers(query: WallpaperQuery): Promise<WallpaperPageResu
 }
 
 async function detail(id: number): Promise<WallpaperItem | null> {
-  await ensureCatalog();
+  for (const bucket of CATALOG_BUCKETS) {
+    if (!itemsById.has(id) && !catalogs.has(bucket)) {
+      try {
+        await loadCatalog(bucket);
+      } catch {
+        // 单个分片损坏或暂时不可用时继续查找其他分片。
+      }
+    }
+    const item = itemsById.get(id);
+    if (item) return publicItem(item);
+  }
   const item = itemsById.get(id);
   if (!item) return null;
   return publicItem(item);
@@ -336,8 +434,25 @@ self.onmessage = async (event: MessageEvent<WallpaperWorkerRequest>) => {
   const request = event.data;
   const response: WallpaperWorkerResponse = { id: request.id, ok: true };
   try {
-    if (request.action === 'init') await ensureCatalog();
-    else if (request.action === 'bootstrap') response.data = await getBootstrap();
+    if (request.action === 'init') {
+      const payload = request.payload as { device: WallpaperDevice; content: WallpaperContent };
+      await Promise.all(
+        requiredBuckets({
+          device: payload.device,
+          content: payload.content,
+          categoryId: null,
+          keyword: null,
+          cursor: null,
+          pageSize: 1,
+        }).map((bucket) => loadCatalog(bucket)),
+      );
+    } else if (request.action === 'prefetch') {
+      const results = await prefetchCatalogs();
+      response.data = {
+        loaded: results.filter((result) => result.status === 'fulfilled').length,
+        failed: results.filter((result) => result.status === 'rejected').length,
+      };
+    } else if (request.action === 'bootstrap') response.data = await getBootstrap();
     else if (request.action === 'categories')
       response.data = await getCategories(request.payload as { device: string; content: string });
     else if (request.action === 'query')

@@ -23,7 +23,14 @@ def test_publish_catalog_writes_json_catalog_and_bootstrap(tmp_path):
         db.commit()
 
     output = tmp_path / "output"
-    catalog_path, manifest_path = publish_catalog(source, output)
+    catalog_paths, manifest_path = publish_catalog(source, output)
+    assert set(catalog_paths) == {
+        "desktop:dynamic",
+        "desktop:static",
+        "mobile:dynamic",
+        "mobile:static",
+    }
+    catalog_path = catalog_paths["desktop:static"]
     catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
     assert len(catalog["items"]) == 1
     assert catalog["items"][0]["title"] == "Demo"
@@ -32,5 +39,6 @@ def test_publish_catalog_writes_json_catalog_and_bootstrap(tmp_path):
     bootstrap = json.loads(bootstrap_path.read_text(encoding="utf-8"))
     assert len(bootstrap["items"]) == 1
     assert bootstrap["categories"] == []
-    assert manifest["catalog"] == catalog_path.name
-    assert manifest["catalogFileSize"] == catalog_path.stat().st_size
+    assert manifest["schemaVersion"] == 2
+    assert manifest["catalogs"]["desktop:static"]["file"] == catalog_path.name
+    assert manifest["catalogs"]["desktop:static"]["fileSize"] == catalog_path.stat().st_size

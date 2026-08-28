@@ -64,7 +64,7 @@ export interface WallpaperBootstrapResult {
 
 export interface WallpaperWorkerRequest {
   id: string;
-  action: 'init' | 'bootstrap' | 'categories' | 'query' | 'detail';
+  action: 'init' | 'prefetch' | 'bootstrap' | 'categories' | 'query' | 'detail';
   payload?: unknown;
 }
 

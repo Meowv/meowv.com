@@ -187,6 +187,7 @@ export function useWallpapers() {
     loading.value = true;
     categoriesLoading.value = true;
     try {
+      const prefetchPromise = repository.prefetch();
       const useBootstrap =
         !cached &&
         filters.value.device === 'desktop' &&
@@ -195,7 +196,7 @@ export function useWallpapers() {
         !filters.value.keyword.trim();
       const bootstrapPromise = useBootstrap ? repository.bootstrap() : null;
       const categoriesPromise = repository.categories(filters.value.device, filters.value.content);
-      const initPromise = repository.init();
+      const initPromise = repository.init(filters.value.device, filters.value.content);
       if (bootstrapPromise) {
         const bootstrap = await bootstrapPromise;
         if (bootstrap.items.length) {
@@ -207,6 +208,7 @@ export function useWallpapers() {
       categoriesLoading.value = false;
       await initPromise;
       await load(true, Boolean(cached) || hasBootstrap);
+      void prefetchPromise.catch(() => undefined);
     } catch (reason) {
       error.value = reason instanceof Error ? reason.message : '壁纸数据库加载失败。';
       loading.value = false;

@@ -5,6 +5,10 @@ import { basename, join } from 'node:path';
 export const CATALOG_ENCRYPTION_VERSION = 1;
 export const CATALOG_ENCRYPTION_NAME = 'aes-256-gcm';
 export const CATALOG_MAGIC = Buffer.from('MWPC', 'ascii');
+const CATALOG_JSON_PATTERN =
+  /^wallpapers\.catalog\.(?:desktop\.(?:dynamic|static)|mobile\.(?:dynamic|static)|bootstrap)\.\d{8}-\d{6}\.json$/;
+const CATALOG_BIN_PATTERN =
+  /^wallpapers\.catalog(?:\.(?:desktop\.(?:dynamic|static)|mobile\.(?:dynamic|static)|bootstrap))?\.\d{8}-\d{6}\.bin$/;
 
 function encryptionKey() {
   return createHash('sha256')
@@ -46,12 +50,10 @@ export function decryptPayload(payload) {
 }
 
 export function encryptCatalogDirectory(directory) {
-  const names = readdirSync(directory).filter(
-    (name) =>
-      /^wallpapers\.catalog\.\d{8}-\d{6}\.json$/.test(name) ||
-      /^wallpapers\.catalog\.bootstrap\.\d{8}-\d{6}\.json$/.test(name),
-  );
-  if (names.length === 0) throw new Error(`未找到待加密的壁纸目录 JSON：${directory}`);
+  const names = readdirSync(directory).filter((name) => CATALOG_JSON_PATTERN.test(name));
+  if (names.length !== 5) {
+    throw new Error(`壁纸目录 JSON 数量应为 5，实际为 ${names.length}：${directory}`);
+  }
 
   const encryptedNames = new Map();
   for (const name of names) {
@@ -64,11 +66,7 @@ export function encryptCatalogDirectory(directory) {
   }
 
   for (const name of readdirSync(directory)) {
-    if (
-      (/^wallpapers\.catalog\.\d{8}-\d{6}\.bin$/.test(name) ||
-        /^wallpapers\.catalog\.bootstrap\.\d{8}-\d{6}\.bin$/.test(name)) &&
-      !encryptedNames.has(name.replace(/\.bin$/, '.json'))
-    ) {
+    if (CATALOG_BIN_PATTERN.test(name) && !encryptedNames.has(name.replace(/\.bin$/, '.json'))) {
       unlinkSync(join(directory, name));
     }
   }
@@ -76,12 +74,22 @@ export function encryptCatalogDirectory(directory) {
   const manifestPath = join(directory, 'wallpapers.catalog.json');
   if (!existsSync(manifestPath)) throw new Error(`缺少壁纸目录 manifest：${manifestPath}`);
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-  manifest.catalog = encryptedNames.get(manifest.catalog) ?? manifest.catalog;
+  const catalogs = Object.fromEntries(
+    Object.entries(manifest.catalogs ?? {}).map(([bucket, entry]) => {
+      const file = encryptedNames.get(entry.file) ?? entry.file;
+      return [bucket, { ...entry, file, fileSize: readFileSync(join(directory, file)).length }];
+    }),
+  );
+  if (Object.keys(catalogs).length !== 4) {
+    throw new Error('壁纸目录 manifest 缺少四个 catalog bucket。');
+  }
+  manifest.schemaVersion = 2;
+  manifest.catalogs = catalogs;
+  delete manifest.catalog;
+  delete manifest.catalogFileSize;
   manifest.bootstrap = encryptedNames.get(manifest.bootstrap) ?? manifest.bootstrap;
   manifest.encryption = CATALOG_ENCRYPTION_NAME;
   manifest.encryptionVersion = CATALOG_ENCRYPTION_VERSION;
-  if (manifest.catalog)
-    manifest.catalogFileSize = readFileSync(join(directory, manifest.catalog)).length;
   if (manifest.bootstrap)
     manifest.bootstrapFileSize = readFileSync(join(directory, manifest.bootstrap)).length;
   writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');

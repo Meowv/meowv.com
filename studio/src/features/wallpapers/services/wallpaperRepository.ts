@@ -33,24 +33,31 @@ export class WallpaperRepository {
     };
   }
 
-  request<T>(action: WallpaperWorkerRequest['action'], payload?: unknown): Promise<T> {
+  private send<T>(action: WallpaperWorkerRequest['action'], payload?: unknown): Promise<T> {
     const id = `wallpapers-${Date.now()}-${this.sequence++}`;
-    const request = () =>
-      new Promise<T>((resolve, reject) => {
-        if (this.disposed) {
-          reject(new Error('壁纸页面已关闭。'));
-          return;
-        }
-        this.pending.set(id, { resolve: resolve as (value: unknown) => void, reject });
-        this.worker.postMessage({ id, action, payload } satisfies WallpaperWorkerRequest);
-      });
+    return new Promise<T>((resolve, reject) => {
+      if (this.disposed) {
+        reject(new Error('壁纸页面已关闭。'));
+        return;
+      }
+      this.pending.set(id, { resolve: resolve as (value: unknown) => void, reject });
+      this.worker.postMessage({ id, action, payload } satisfies WallpaperWorkerRequest);
+    });
+  }
+
+  request<T>(action: WallpaperWorkerRequest['action'], payload?: unknown): Promise<T> {
+    const request = () => this.send<T>(action, payload);
     const result = this.queue.then(request, request);
     this.queue = result.catch(() => undefined);
     return result;
   }
 
-  init(): Promise<void> {
-    return this.request('init');
+  init(device: string, content: string): Promise<void> {
+    return this.request('init', { device, content });
+  }
+
+  prefetch(): Promise<void> {
+    return this.send('prefetch').then(() => undefined);
   }
 
   bootstrap(): Promise<WallpaperBootstrapResult> {
