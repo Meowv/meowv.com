@@ -36,6 +36,27 @@ categories:
         url: https://cdn.vietdp.com/file/vietdp-games/games/t52025/plonky/icons/icon-32.png
       url: https://cdn.vietdp.com/file/vietdp-games/games/t52025/plonky/index.html
 
+    - id: imsai
+      name: 竹知了
+      description: 传统竹蝉玩具的网页模拟版：按住画圈甩起来，转得越快叫得越响
+      icon:
+        url: https://imsai.top/icon-192.png
+      url: https://imsai.top
+
+    - id: paiwawa
+      name: 拍哇哇
+      description: 3D 街景拍照解谜游戏
+      icon:
+        url: https://paiwawa.site/favicon.ico
+      url: https://paiwawa.site
+
+    - id: museum
+      name: 史前动物博物馆
+      description: 亲子 3D 史前动物展
+      icon:
+        url: https://leon-made-this.work/museum/favicon.svg
+      url: https://leon-made-this.work/museum
+
   bookmarks:
     - id: zitie
       name: 字帖生成
