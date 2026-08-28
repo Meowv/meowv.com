@@ -254,16 +254,18 @@
   border-radius: 8px;
   background: #e8ebef;
   cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 .wallpapers-card img {
   width: 100%;
   height: 100%;
   display: block;
   object-fit: cover;
-  transition: transform 0.25s ease;
-}
-.wallpapers-card:hover img {
-  transform: scale(1.02);
+  transition:
+    transform 0.25s ease,
+    filter 0.2s ease;
 }
 .wallpapers-card-info {
   position: absolute;
@@ -273,8 +275,10 @@
   display: grid;
   gap: 3px;
   padding: 28px 10px 9px;
+  z-index: 2;
   color: #fff;
   background: linear-gradient(transparent, rgb(0 0 0 / 78%));
+  transition: padding-bottom 0.2s ease;
 }
 .wallpapers-card-title {
   overflow: hidden;
@@ -303,6 +307,7 @@
   left: 8px;
   top: 8px;
   display: inline-flex;
+  z-index: 2;
   gap: 4px;
   align-items: center;
   background: rgba(0, 0, 0, 0.68);
@@ -310,6 +315,50 @@
   border-radius: 5px;
   padding: 4px 7px;
   font-size: 12px;
+}
+.wallpapers-card-play {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 50%;
+  display: inline-grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border: 1px solid rgb(255 255 255 / 52%);
+  border-radius: 50%;
+  background: rgb(0 0 0 / 52%);
+  color: white;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.82);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+  backdrop-filter: blur(8px);
+}
+@media (hover: hover) {
+  .wallpapers-card:hover {
+    z-index: 1;
+    transform: translateY(-2px);
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--wallpapers-accent) 70%, white),
+      0 12px 26px rgb(0 0 0 / 24%);
+  }
+  .wallpapers-card:hover img {
+    filter: brightness(0.84) saturate(1.08);
+    transform: scale(1.02);
+  }
+  .wallpapers-card:hover .wallpapers-card-info {
+    padding-bottom: 12px;
+  }
+  .wallpapers-card:hover .wallpapers-card-play {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+.wallpapers-card:active {
+  transform: scale(0.99);
 }
 .wallpapers-skeleton {
   aspect-ratio: 16 / 9;

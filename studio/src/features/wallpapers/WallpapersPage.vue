@@ -432,6 +432,9 @@ watch(
           class="wallpapers-card-badge"
           ><IconPlayerPlay :size="14" />动态</span
         >
+        <span v-if="item.contentType === 'dynamic'" class="wallpapers-card-play" aria-hidden="true">
+          <IconPlayerPlay :size="24" fill="currentColor" />
+        </span>
         <div class="wallpapers-card-info">
           <strong v-if="item.title" class="wallpapers-card-title">{{ item.title }}</strong>
           <div v-if="item.tags.length" class="wallpapers-card-tags">
