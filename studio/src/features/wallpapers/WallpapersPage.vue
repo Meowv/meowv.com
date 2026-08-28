@@ -481,11 +481,6 @@ watch(
           referrerpolicy="no-referrer"
         />
         <div v-else class="wallpapers-card-placeholder">暂无预览</div>
-        <span
-          v-if="filters.content === 'dynamic' && item.contentType === 'dynamic'"
-          class="wallpapers-card-badge"
-          ><IconPlayerPlay :size="14" />动态</span
-        >
         <span v-if="item.contentType === 'dynamic'" class="wallpapers-card-play" aria-hidden="true">
           <IconPlayerPlay :size="24" fill="currentColor" />
         </span>
