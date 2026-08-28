@@ -46,14 +46,15 @@
 }
 .wallpapers-segment button {
   display: inline-grid;
-  min-width: 42px;
-  min-height: 34px;
+  min-width: 38px;
+  min-height: 30px;
+  padding: 4px 8px;
   place-items: center;
 }
-.wallpapers-segment button.active,
-.wallpapers-category-bar button.active {
-  background: var(--wallpapers-accent);
-  color: white;
+.wallpapers-segment button.active {
+  background: color-mix(in srgb, var(--wallpapers-accent) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--wallpapers-accent) 45%, transparent);
+  color: var(--wallpapers-accent);
 }
 .wallpapers-search {
   display: inline-flex;
@@ -63,9 +64,9 @@
   border: 1px solid var(--border-color, #d7dbe2);
   border-radius: 8px;
   justify-content: center;
-  width: 36px;
-  min-width: 36px;
-  height: 34px;
+  width: 32px;
+  min-width: 32px;
+  height: 30px;
   padding: 0;
   overflow: hidden;
   transition:
@@ -75,19 +76,20 @@
 }
 .wallpapers-search--expanded {
   justify-content: initial;
-  width: clamp(240px, 16vw, 260px);
-  min-width: 240px;
-  flex: 0 1 clamp(240px, 16vw, 260px);
-  max-width: 260px;
-  padding: 0 10px;
+  width: 210px;
+  min-width: 210px;
+  flex: 0 1 210px;
+  max-width: 210px;
+  padding: 0 8px;
 }
-.wallpapers-search-toggle {
+.wallpapers-category-bar .wallpapers-search-toggle {
   display: inline-grid;
   place-items: center;
   width: 100%;
   height: 100%;
   border: 0;
   padding: 0;
+  line-height: 1;
   color: var(--wallpapers-accent);
   background: transparent;
   cursor: pointer;
@@ -100,7 +102,7 @@
   width: 100%;
   color: var(--wallpapers-accent);
 }
-.wallpapers-search-clear {
+.wallpapers-category-bar .wallpapers-search-clear {
   display: inline-grid;
   flex: 0 0 auto;
   place-items: center;
@@ -111,7 +113,7 @@
   cursor: pointer;
   opacity: 0.68;
 }
-.wallpapers-search-clear:hover {
+.wallpapers-category-bar .wallpapers-search-clear:hover {
   opacity: 1;
 }
 .wallpapers-search input::placeholder {
@@ -138,10 +140,10 @@
   min-width: 0;
   display: flex;
   flex-wrap: nowrap;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
-  margin-bottom: 14px;
-  padding: 6px 0 7px;
+  margin-bottom: 12px;
+  padding: 4px 0 5px;
   position: relative;
   position: sticky;
   top: 0;
@@ -156,7 +158,7 @@
   display: flex;
   min-width: 0;
   flex: 1 1 auto;
-  gap: 6px;
+  gap: 5px;
   align-items: center;
   overflow: visible;
   order: 2;
@@ -176,6 +178,33 @@
 .wallpapers-category-bar button {
   border-radius: 6px;
   color: var(--wallpapers-accent);
+}
+.wallpapers-category-items > button,
+.wallpapers-more-button,
+.wallpapers-more-menu button,
+.wallpapers-category-measure button {
+  padding: 5px 8px;
+  font-size: 13px;
+  line-height: 18px;
+}
+.wallpapers-category-items > button.active,
+.wallpapers-more-menu button.active {
+  background: transparent;
+  color: var(--wallpapers-accent);
+  font-weight: 600;
+  text-decoration-line: underline;
+  text-decoration-style: wavy;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 4px;
+  text-decoration-skip-ink: none;
+}
+@media (hover: hover) {
+  .wallpapers-segment button:not(.active):hover,
+  .wallpapers-category-items > button:hover,
+  .wallpapers-more-menu button:hover {
+    background: color-mix(in srgb, var(--wallpapers-accent) 9%, transparent);
+    color: var(--wallpapers-accent);
+  }
 }
 .wallpapers-category-children {
   display: inline-flex;
@@ -475,10 +504,10 @@
     margin-left: 0;
   }
   .wallpapers-search--expanded {
-    flex: 0 1 220px;
-    width: 220px;
-    min-width: 200px;
-    max-width: 260px;
+    flex: 0 1 190px;
+    width: 190px;
+    min-width: 180px;
+    max-width: 200px;
   }
   .wallpapers-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
