@@ -32,19 +32,22 @@ publish_wallpapers_only() {
   local source_dir="$ROOT_DIR/studio/public/data"
   local build_data_dir="$BUILD_DIR/studio.meowv.com/data"
 
-  echo "[wallpapers] 生成 Studio 壁纸 JSON 数据..."
+  echo "[wallpapers] 生成 Studio 壁纸目录数据..."
   (
     cd "$ROOT_DIR/wallpapers"
     PYTHONPATH=src python3 -m wallpapers publish \
       --db "$ROOT_DIR/wallpapers/wallpapers.db" \
       --output-dir "$source_dir"
   )
+  node "$ROOT_DIR/studio/scripts/encrypt-wallpaper-catalog.mjs" "$source_dir"
 
   # 已存在构建产物时同步一份，便于直接部署 build/studio.meowv.com。
   if [ -d "$BUILD_DIR/studio.meowv.com" ]; then
     mkdir -p "$build_data_dir"
-    cp "$source_dir"/wallpapers.catalog*.json "$build_data_dir"/
-    echo "[wallpapers] JSON 数据已同步到 $build_data_dir"
+    rm -f "$build_data_dir"/wallpapers.catalog.*.bin
+    rm -f "$build_data_dir"/wallpapers.catalog.*.json
+    cp "$source_dir"/wallpapers.catalog.json "$source_dir"/wallpapers.catalog.*.bin "$build_data_dir"/
+    echo "[wallpapers] 加密目录数据已同步到 $build_data_dir"
   fi
 
   echo "[wallpapers] JSON 数据源目录：$source_dir"
@@ -327,6 +330,7 @@ for project in "${SELECTED_PROJECTS[@]}"; do
       cd "$ROOT_DIR/wallpapers"
       PYTHONPATH=src python3 -m wallpapers publish --db "$ROOT_DIR/wallpapers/wallpapers.db" --output-dir "$ROOT_DIR/studio/public/data"
     )
+    node "$ROOT_DIR/studio/scripts/encrypt-wallpaper-catalog.mjs" "$ROOT_DIR/studio/public/data"
   fi
   build_project "$project"
   stage_output "$project"

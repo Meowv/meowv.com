@@ -34,7 +34,7 @@ wallpapers stats
 
 ## 生成 Studio 发布目录
 
-`publish` 会从 `wallpapers/wallpapers.db` 生成供 Studio 前端使用的发布目录：
+`publish` 会从 `wallpapers/wallpapers.db` 生成供 Studio 前端使用的临时发布目录：
 
 - 版本化 JSON 目录：Studio Wallpapers 默认读取该文件，不再通过 SQL 查询 SQLite。
 - bootstrap JSON：只包含默认筛选的首屏 20 条壁纸，用于快速首屏展示。
@@ -63,7 +63,9 @@ PYTHONPATH=src python3 -m wallpapers publish \
 
 该命令以 `studio/public/data/` 为源目录；当 `build/studio.meowv.com/` 已存在时，会额外同步 JSON 到其 `data/` 目录。
 
-普通 `./build.sh studio` 不会读取源数据库。`studio/public/data/wallpapers.catalog.json`、版本化完整 `.json` 和 bootstrap `.json` 均为部署产物，不提交 Git。
+普通 `./build.sh studio` 不会读取源数据库。通过 `./build.sh wallpapers` 或 `./build.sh studio --with-wallpapers` 生成的 Studio 部署目录会自动将 catalog 和 bootstrap 加密为版本化 `.bin` 文件；公开的 `wallpapers.catalog.json` 仅包含 manifest 元数据。上述目录均为部署产物，不提交 Git。
+
+直接运行 `python3 -m wallpapers publish` 只生成加密前的临时 JSON，适合调试发布内容；部署前应使用根目录的 `build.sh wallpapers` 完成加密和清理。
 
 默认数据库路径为：
 

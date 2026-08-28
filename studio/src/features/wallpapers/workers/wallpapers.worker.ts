@@ -23,11 +23,13 @@ interface CatalogManifest {
   schemaVersion?: number;
   catalog?: string;
   bootstrap?: string;
+  encryption?: string;
+  encryptionVersion?: number;
 }
 
 interface PersistedCatalog {
   version: string;
-  payload: string;
+  payload: ArrayBuffer;
 }
 
 const CATALOG_CACHE_DB = 'meowv-wallpapers-catalog';
@@ -40,6 +42,13 @@ let bootstrap: WallpaperBootstrapResult | null = null;
 let bootstrapPromise: Promise<WallpaperBootstrapResult> | null = null;
 let itemsById = new Map<number, CatalogItem>();
 
+const CATALOG_ENCRYPTION_VERSION = 1;
+const CATALOG_ENCRYPTION_NAME = 'aes-256-gcm';
+const CATALOG_MAGIC = new Uint8Array([0x4d, 0x57, 0x50, 0x43]);
+// 该材料会随前端发布，只用于阻止静态文件被直接阅读。
+const CATALOG_KEY_MATERIAL = 'meowv-studio-wallpaper-catalog-v1';
+let catalogKeyPromise: Promise<CryptoKey> | null = null;
+
 function dataBaseUrl(): string {
   return `${import.meta.env.BASE_URL}data/`;
 }
@@ -50,7 +59,56 @@ async function loadManifest(): Promise<CatalogManifest> {
   if (!response.ok) throw new Error(`无法加载壁纸目录清单（HTTP ${response.status}）。`);
   manifest = (await response.json()) as CatalogManifest;
   if (!manifest.catalog) throw new Error('壁纸目录清单缺少 catalog 字段。');
+  if (
+    manifest.encryption !== CATALOG_ENCRYPTION_NAME ||
+    manifest.encryptionVersion !== CATALOG_ENCRYPTION_VERSION
+  ) {
+    throw new Error('壁纸目录加密格式不受支持。');
+  }
   return manifest;
+}
+
+async function encryptionKey(): Promise<CryptoKey> {
+  if (catalogKeyPromise) return catalogKeyPromise;
+  catalogKeyPromise = (async () => {
+    const material = new TextEncoder().encode(CATALOG_KEY_MATERIAL);
+    const digest = await crypto.subtle.digest('SHA-256', material);
+    return crypto.subtle.importKey('raw', digest, { name: 'AES-GCM' }, false, ['decrypt']);
+  })();
+  try {
+    return await catalogKeyPromise;
+  } finally {
+    catalogKeyPromise = null;
+  }
+}
+
+async function decryptPayload(payload: ArrayBuffer): Promise<string> {
+  const bytes = new Uint8Array(payload);
+  const headerSize = CATALOG_MAGIC.length + 1 + 12 + 16;
+  if (bytes.length <= headerSize) throw new Error('壁纸目录加密文件格式无效。');
+  for (let index = 0; index < CATALOG_MAGIC.length; index += 1) {
+    if (bytes[index] !== CATALOG_MAGIC[index]) throw new Error('壁纸目录加密文件格式无效。');
+  }
+  if (bytes[CATALOG_MAGIC.length] !== CATALOG_ENCRYPTION_VERSION) {
+    throw new Error('壁纸目录加密版本不匹配。');
+  }
+  const ivStart = CATALOG_MAGIC.length + 1;
+  const tagStart = ivStart + 12;
+  const ciphertextStart = tagStart + 16;
+  const iv = bytes.slice(ivStart, tagStart);
+  const encrypted = new Uint8Array(bytes.length - ciphertextStart + 16);
+  encrypted.set(bytes.slice(ciphertextStart), 0);
+  encrypted.set(bytes.slice(tagStart, ciphertextStart), bytes.length - ciphertextStart);
+  try {
+    const clear = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv, tagLength: 128 },
+      await encryptionKey(),
+      encrypted,
+    );
+    return new TextDecoder().decode(clear);
+  } catch {
+    throw new Error('壁纸目录解密失败。');
+  }
 }
 
 function openCache(): Promise<IDBDatabase> {
@@ -64,7 +122,7 @@ function openCache(): Promise<IDBDatabase> {
   });
 }
 
-async function readCachedCatalog(version: string): Promise<string | null> {
+async function readCachedCatalog(version: string): Promise<ArrayBuffer | null> {
   try {
     const db = await openCache();
     return await new Promise((resolve, reject) => {
@@ -72,8 +130,10 @@ async function readCachedCatalog(version: string): Promise<string | null> {
         .transaction(CATALOG_CACHE_STORE, 'readonly')
         .objectStore(CATALOG_CACHE_STORE)
         .get(version);
-      request.onsuccess = () =>
-        resolve((request.result as PersistedCatalog | undefined)?.payload ?? null);
+      request.onsuccess = () => {
+        const payload = (request.result as PersistedCatalog | undefined)?.payload;
+        resolve(payload instanceof ArrayBuffer ? payload : null);
+      };
       request.onerror = () => reject(request.error ?? new Error('无法读取壁纸本地缓存。'));
     });
   } catch {
@@ -81,7 +141,7 @@ async function readCachedCatalog(version: string): Promise<string | null> {
   }
 }
 
-async function writeCachedCatalog(version: string, payload: string): Promise<void> {
+async function writeCachedCatalog(version: string, payload: ArrayBuffer): Promise<void> {
   try {
     const db = await openCache();
     await new Promise<void>((resolve, reject) => {
@@ -118,10 +178,10 @@ async function ensureCatalog(): Promise<WallpaperCatalog> {
     if (!payload) {
       const response = await fetch(`${dataBaseUrl()}${version}`, { cache: 'force-cache' });
       if (!response.ok) throw new Error(`无法加载壁纸目录（HTTP ${response.status}）。`);
-      payload = await response.text();
+      payload = await response.arrayBuffer();
       void writeCachedCatalog(version, payload);
     }
-    catalog = prepareCatalog(JSON.parse(payload) as WallpaperCatalog);
+    catalog = prepareCatalog(JSON.parse(await decryptPayload(payload)) as WallpaperCatalog);
     return catalog;
   })();
   try {
@@ -141,7 +201,8 @@ async function getBootstrap(): Promise<WallpaperBootstrapResult> {
       cache: 'force-cache',
     });
     if (!response.ok) throw new Error(`无法加载壁纸首屏目录（HTTP ${response.status}）。`);
-    const value = (await response.json()) as {
+    const payload = await response.arrayBuffer();
+    const value = JSON.parse(await decryptPayload(payload)) as {
       items?: WallpaperItem[];
       categories?: WallpaperCategory[];
       generatedAt?: string;
