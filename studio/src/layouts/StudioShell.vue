@@ -143,6 +143,9 @@ const wallpapersHeaderAutoHidden = ref(false);
 const wallpapersHeaderShown = computed(
   () => wallpapersHeaderVisible.value && !wallpapersHeaderAutoHidden.value,
 );
+function isDesktopViewport(): boolean {
+  return window.innerWidth > 760;
+}
 const MARKDOWN_HEADER_PREFERENCE_KEY = `${STORAGE_POLICY.namespace('markdown')}:header-collapsed`;
 const BOOKS_HEADER_PREFERENCE_KEY = `${STORAGE_POLICY.namespace('books')}:header-collapsed`;
 const TOOLS_HEADER_PREFERENCE_KEY = `${STORAGE_POLICY.preferences}:tools-header-collapsed`;
@@ -234,7 +237,8 @@ watch(
         // 本地偏好不可用时保留默认展开状态。
       }
     }
-    wallpapersHeaderAutoHidden.value = wallpapersHeaderVisible.value && window.scrollY > 8;
+    wallpapersHeaderAutoHidden.value =
+      isDesktopViewport() && wallpapersHeaderVisible.value && window.scrollY > 8;
   },
   { immediate: true },
 );
@@ -302,17 +306,22 @@ function handleDocumentKeydown(event: KeyboardEvent): void {
 }
 
 function handleWindowScroll(): void {
-  if (!isWallpapersPage.value || !wallpapersHeaderVisible.value) {
+  if (!isDesktopViewport() || !isWallpapersPage.value || !wallpapersHeaderVisible.value) {
     wallpapersHeaderAutoHidden.value = false;
     return;
   }
   wallpapersHeaderAutoHidden.value = window.scrollY > 8;
 }
 
+function handleWindowResize(): void {
+  handleWindowScroll();
+}
+
 onMounted(() => {
   document.addEventListener('pointerdown', handleDocumentPointerDown);
   document.addEventListener('keydown', handleDocumentKeydown);
   window.addEventListener('scroll', handleWindowScroll, { passive: true });
+  window.addEventListener('resize', handleWindowResize, { passive: true });
   handleWindowScroll();
 });
 
@@ -320,6 +329,7 @@ onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', handleDocumentPointerDown);
   document.removeEventListener('keydown', handleDocumentKeydown);
   window.removeEventListener('scroll', handleWindowScroll);
+  window.removeEventListener('resize', handleWindowResize);
 });
 
 const primaryRoutes = [

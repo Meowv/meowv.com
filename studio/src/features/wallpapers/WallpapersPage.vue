@@ -118,6 +118,44 @@ function recomputeCategoryCapacity(): void {
   visibleCategoryCount.value = Math.max(1, count);
 }
 
+function scrollCategoryButtonIntoView(button: HTMLElement): void {
+  const container = button.closest<HTMLElement>('.wallpapers-category-items');
+  if (!container || container.scrollWidth <= container.clientWidth) return;
+  const maxScrollLeft = container.scrollWidth - container.clientWidth;
+  const targetLeft = button.offsetLeft - (container.clientWidth - button.offsetWidth) / 2;
+  const nextScrollLeft = Math.max(0, Math.min(maxScrollLeft, targetLeft));
+  container.scrollLeft = nextScrollLeft;
+  container.scrollTo({
+    left: nextScrollLeft,
+    behavior: 'smooth',
+  });
+}
+
+function scrollSelectedCategoryIntoView(): void {
+  const container = document.querySelector<HTMLElement>('.wallpapers-category-items');
+  const selected = container?.querySelector<HTMLElement>(':scope > button.active');
+  if (selected) scrollCategoryButtonIntoView(selected);
+}
+
+function scheduleSelectedCategoryScroll(): void {
+  void nextTick(() => {
+    scrollSelectedCategoryIntoView();
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(scrollSelectedCategoryIntoView);
+    });
+  });
+}
+
+async function selectCategory(categoryId: number | null, event?: MouseEvent): Promise<void> {
+  pinnedCategoryId.value = categoryId;
+  const clickedButton = event?.currentTarget;
+  if (clickedButton instanceof HTMLElement) scrollCategoryButtonIntoView(clickedButton);
+  const update = setFilters({ categoryId });
+  scheduleSelectedCategoryScroll();
+  await update;
+  scheduleSelectedCategoryScroll();
+}
+
 function handleScroll(): void {
   const element = sentinel.value;
   if (!element || !items.value.length || !hasMore.value || loadingMore.value) return;
@@ -301,7 +339,15 @@ onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', handleDocumentPointerDown);
 });
 
-watch(categoryOptions, () => void nextTick(recomputeCategoryCapacity), { deep: true });
+watch(
+  [categoryOptions, () => filters.value.categoryId],
+  () =>
+    void nextTick(() => {
+      recomputeCategoryCapacity();
+      scheduleSelectedCategoryScroll();
+    }),
+  { deep: true },
+);
 watch(searchExpanded, () => void nextTick(recomputeCategoryCapacity));
 watch(selected, (item) => {
   if (item) lockPageScroll();
@@ -337,20 +383,14 @@ watch(
           <span v-for="index in 6" :key="index" class="wallpapers-category-skeleton" />
         </template>
         <template v-else>
-          <button
-            :class="{ active: !filters.categoryId }"
-            @click="setFilters({ categoryId: null })"
-          >
+          <button :class="{ active: !filters.categoryId }" @click="selectCategory(null, $event)">
             全部
           </button>
           <button
             v-for="category in visibleCategoryItems"
             :key="category.id"
             :class="{ active: filters.categoryId === category.id }"
-            @click="
-              pinnedCategoryId = category.id;
-              setFilters({ categoryId: category.id });
-            "
+            @click="selectCategory(category.id, $event)"
           >
             {{ category.name }}
           </button>
@@ -364,9 +404,8 @@ watch(
                 :key="category.id"
                 :class="{ active: filters.categoryId === category.id }"
                 @click="
-                  pinnedCategoryId = category.id;
                   moreOpen = false;
-                  setFilters({ categoryId: category.id });
+                  selectCategory(category.id, $event);
                 "
               >
                 {{ category.name }}
