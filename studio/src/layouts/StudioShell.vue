@@ -93,6 +93,12 @@ const mindBackgroundEnabled = computed(
 const notesBackgroundEnabled = computed(
   () => isNotesPage.value && toolsBackgroundEnabled.value && toolsBackgroundApplyToOtherPages.value,
 );
+const wallpapersBackgroundEnabled = computed(
+  () =>
+    isWallpapersPage.value &&
+    toolsBackgroundEnabled.value &&
+    toolsBackgroundApplyToOtherPages.value,
+);
 const supportsToolsBackground = computed(
   () =>
     isToolsPage.value ||
@@ -101,7 +107,8 @@ const supportsToolsBackground = computed(
     markdownBackgroundEnabled.value ||
     drawBackgroundEnabled.value ||
     mindBackgroundEnabled.value ||
-    notesBackgroundEnabled.value,
+    notesBackgroundEnabled.value ||
+    wallpapersBackgroundEnabled.value,
 );
 const toolsBackgroundStyle = computed<Record<string, string>>(() => {
   const surfaceOpacity = toolsBackgroundSurfaceOpacity.value;
@@ -114,6 +121,7 @@ const toolsBackgroundStyle = computed<Record<string, string>>(() => {
     '--draw-background-surface-opacity': `${Math.round(Math.max(0.18, surfaceOpacity) * 100)}%`,
     '--mind-background-surface-opacity': `${Math.round(Math.max(0.18, surfaceOpacity) * 100)}%`,
     '--notes-background-surface-opacity': `${Math.round(Math.max(0.18, surfaceOpacity) * 100)}%`,
+    '--wallpapers-background-surface-opacity': `${Math.round(Math.max(0.18, surfaceOpacity) * 100)}%`,
     '--tools-background-text-halo-opacity': textHaloOpacity.toFixed(2),
   };
 });
@@ -131,6 +139,10 @@ const markdownHeaderVisible = ref(true);
 const booksHeaderVisible = ref(true);
 const toolsHeaderVisible = ref(true);
 const wallpapersHeaderVisible = ref(true);
+const wallpapersHeaderAutoHidden = ref(false);
+const wallpapersHeaderShown = computed(
+  () => wallpapersHeaderVisible.value && !wallpapersHeaderAutoHidden.value,
+);
 const MARKDOWN_HEADER_PREFERENCE_KEY = `${STORAGE_POLICY.namespace('markdown')}:header-collapsed`;
 const BOOKS_HEADER_PREFERENCE_KEY = `${STORAGE_POLICY.namespace('books')}:header-collapsed`;
 const TOOLS_HEADER_PREFERENCE_KEY = `${STORAGE_POLICY.preferences}:tools-header-collapsed`;
@@ -145,7 +157,7 @@ const showHeader = computed(() =>
         : isToolsPage.value
           ? toolsHeaderVisible.value
           : isWallpapersPage.value
-            ? wallpapersHeaderVisible.value
+            ? wallpapersHeaderShown.value
             : !workspaceActive.value || workspaceHeaderVisible.value,
 );
 const showFooter = computed(
@@ -211,15 +223,18 @@ watch(
   (active) => {
     if (!active) {
       wallpapersHeaderVisible.value = true;
+      wallpapersHeaderAutoHidden.value = false;
       return;
     }
-    if (!storageAvailable()) return;
-    try {
-      wallpapersHeaderVisible.value =
-        localStorage.getItem(WALLPAPERS_HEADER_PREFERENCE_KEY) !== 'true';
-    } catch {
-      // 本地偏好不可用时保留默认展开状态。
+    if (storageAvailable()) {
+      try {
+        wallpapersHeaderVisible.value =
+          localStorage.getItem(WALLPAPERS_HEADER_PREFERENCE_KEY) !== 'true';
+      } catch {
+        // 本地偏好不可用时保留默认展开状态。
+      }
     }
+    wallpapersHeaderAutoHidden.value = wallpapersHeaderVisible.value && window.scrollY > 8;
   },
   { immediate: true },
 );
@@ -258,6 +273,10 @@ function toggleToolsHeader(): void {
 }
 
 function toggleWallpapersHeader(): void {
+  if (wallpapersHeaderAutoHidden.value) {
+    wallpapersHeaderAutoHidden.value = false;
+    return;
+  }
   wallpapersHeaderVisible.value = !wallpapersHeaderVisible.value;
   if (!storageAvailable()) return;
   try {
@@ -282,14 +301,25 @@ function handleDocumentKeydown(event: KeyboardEvent): void {
   if (event.key === 'Escape') closeMobileNavigation();
 }
 
+function handleWindowScroll(): void {
+  if (!isWallpapersPage.value || !wallpapersHeaderVisible.value) {
+    wallpapersHeaderAutoHidden.value = false;
+    return;
+  }
+  wallpapersHeaderAutoHidden.value = window.scrollY > 8;
+}
+
 onMounted(() => {
   document.addEventListener('pointerdown', handleDocumentPointerDown);
   document.addEventListener('keydown', handleDocumentKeydown);
+  window.addEventListener('scroll', handleWindowScroll, { passive: true });
+  handleWindowScroll();
 });
 
 onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', handleDocumentPointerDown);
   document.removeEventListener('keydown', handleDocumentKeydown);
+  window.removeEventListener('scroll', handleWindowScroll);
 });
 
 const primaryRoutes = [
@@ -326,13 +356,14 @@ function isRouteActive(to: string): boolean {
       'studio-shell--draw-background': drawBackgroundEnabled,
       'studio-shell--mind-background': mindBackgroundEnabled,
       'studio-shell--notes-background': notesBackgroundEnabled,
+      'studio-shell--wallpapers-background': wallpapersBackgroundEnabled,
       'studio-shell--tools-header': isToolsPage && toolsHeaderVisible,
       'studio-shell--tool-detail': isToolDetailPage,
       'studio-shell--office': isOfficePage,
       'studio-shell--books': isBooksPage,
       'studio-shell--books-header': isBooksPage && booksHeaderVisible,
       'studio-shell--wallpapers': isWallpapersPage,
-      'studio-shell--wallpapers-header': isWallpapersPage && wallpapersHeaderVisible,
+      'studio-shell--wallpapers-header': isWallpapersPage && wallpapersHeaderShown,
       'studio-shell--with-footer': showFooter,
     }"
     :style="supportsToolsBackground ? toolsBackgroundStyle : undefined"
@@ -405,7 +436,7 @@ function isRouteActive(to: string): boolean {
     />
     <studio-header-toggle
       v-if="isWallpapersPage"
-      :visible="wallpapersHeaderVisible"
+      :visible="wallpapersHeaderShown"
       @click="toggleWallpapersHeader"
     />
 

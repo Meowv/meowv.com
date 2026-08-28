@@ -53,6 +53,18 @@ const searchDraft = ref('');
 const searchInput = ref<HTMLInputElement | null>(null);
 let observer: IntersectionObserver | null = null;
 let categoryResizeObserver: ResizeObserver | null = null;
+let pageScrollLock:
+  | {
+      scrollY: number;
+      htmlOverflow: string;
+      bodyOverflow: string;
+      bodyPosition: string;
+      bodyTop: string;
+      bodyLeft: string;
+      bodyRight: string;
+      bodyWidth: string;
+    }
+  | undefined;
 
 const categoryOptions = computed(() => [...visibleCategories.value, ...childCategories.value]);
 const visibleCategoryItems = computed(() => {
@@ -127,6 +139,43 @@ function open(item: WallpaperItem): void {
 }
 function close(): void {
   selected.value = null;
+}
+function lockPageScroll(): void {
+  if (pageScrollLock) return;
+  const html = document.documentElement;
+  const body = document.body;
+  pageScrollLock = {
+    scrollY: window.scrollY,
+    htmlOverflow: html.style.overflow,
+    bodyOverflow: body.style.overflow,
+    bodyPosition: body.style.position,
+    bodyTop: body.style.top,
+    bodyLeft: body.style.left,
+    bodyRight: body.style.right,
+    bodyWidth: body.style.width,
+  };
+  html.style.overflow = 'hidden';
+  body.style.overflow = 'hidden';
+  body.style.position = 'fixed';
+  body.style.top = `-${pageScrollLock.scrollY}px`;
+  body.style.left = '0';
+  body.style.right = '0';
+  body.style.width = '100%';
+}
+function unlockPageScroll(): void {
+  if (!pageScrollLock) return;
+  const lock = pageScrollLock;
+  pageScrollLock = undefined;
+  const html = document.documentElement;
+  const body = document.body;
+  html.style.overflow = lock.htmlOverflow;
+  body.style.overflow = lock.bodyOverflow;
+  body.style.position = lock.bodyPosition;
+  body.style.top = lock.bodyTop;
+  body.style.left = lock.bodyLeft;
+  body.style.right = lock.bodyRight;
+  body.style.width = lock.bodyWidth;
+  window.scrollTo(0, lock.scrollY);
 }
 async function expandSearch(): Promise<void> {
   searchExpanded.value = true;
@@ -243,6 +292,7 @@ onMounted(() => {
   void nextTick(recomputeCategoryCapacity);
 });
 onBeforeUnmount(() => {
+  unlockPageScroll();
   observer?.disconnect();
   categoryResizeObserver?.disconnect();
   window.removeEventListener('keydown', onKeydown);
@@ -253,6 +303,10 @@ onBeforeUnmount(() => {
 
 watch(categoryOptions, () => void nextTick(recomputeCategoryCapacity), { deep: true });
 watch(searchExpanded, () => void nextTick(recomputeCategoryCapacity));
+watch(selected, (item) => {
+  if (item) lockPageScroll();
+  else unlockPageScroll();
+});
 watch(
   () => [items.value.length, loading.value, loadingMore.value, hasMore.value],
   () => void nextTick(handleScroll),
@@ -460,6 +514,8 @@ watch(
       role="dialog"
       aria-modal="true"
       @click.self="close"
+      @wheel.stop.prevent
+      @touchmove.stop.prevent
     >
       <button class="wallpapers-lightbox-close" title="关闭" @click="close">
         <IconX :size="18" />

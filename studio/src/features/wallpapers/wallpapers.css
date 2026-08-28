@@ -13,6 +13,58 @@
   min-width: 0;
   overflow-x: clip;
 }
+.studio-shell--wallpapers-background:has(> .tools-background--ready) {
+  --wallpapers-background-surface: color-mix(
+    in srgb,
+    var(--color-surface-solid) var(--wallpapers-background-surface-opacity, 18%),
+    transparent
+  );
+  --wallpapers-background-surface-raised: color-mix(
+    in srgb,
+    var(--color-surface-solid) max(var(--wallpapers-background-surface-opacity, 18%), 68%),
+    transparent
+  );
+  --wallpapers-background-text-shadow:
+    0 0 1px rgb(255 255 255 / var(--tools-background-text-halo-opacity, 0.56)),
+    0 1px 4px rgb(255 255 255 / var(--tools-background-text-halo-opacity, 0.56));
+}
+:root[data-theme='dark'] .studio-shell--wallpapers-background:has(> .tools-background--ready) {
+  --wallpapers-background-text-shadow:
+    0 0 1px rgb(0 0 0 / var(--tools-background-text-halo-opacity, 0.56)),
+    0 1px 4px rgb(0 0 0 / var(--tools-background-text-halo-opacity, 0.56));
+}
+.studio-shell--wallpapers-background:has(> .tools-background--ready) > .studio-header {
+  background: var(--wallpapers-background-surface);
+  backdrop-filter: blur(18px) saturate(125%);
+}
+.studio-shell--wallpapers-background:has(> .tools-background--ready)
+  .studio-header
+  :is(.studio-header__feature-name, .studio-nav) {
+  text-shadow: var(--wallpapers-background-text-shadow);
+}
+.studio-shell--wallpapers-background:has(> .tools-background--ready) .studio-logo__wordmark {
+  filter: drop-shadow(0 0 1px rgb(255 255 255 / 62%)) drop-shadow(0 1px 2px rgb(0 0 0 / 28%));
+}
+.studio-shell--wallpapers-background:has(> .tools-background--ready) .wallpapers-category-bar {
+  border-bottom-color: transparent;
+  background: transparent;
+  text-shadow: var(--wallpapers-background-text-shadow);
+  backdrop-filter: none;
+}
+.studio-shell--wallpapers-background:not(.studio-shell--wallpapers-header):has(
+    > .tools-background--ready
+  )
+  .wallpapers-category-bar::before {
+  opacity: 1;
+}
+.studio-shell--wallpapers-background:has(> .tools-background--ready) .wallpapers-more-menu {
+  background: var(--wallpapers-background-surface-raised);
+  backdrop-filter: blur(18px) saturate(125%);
+}
+.studio-shell--wallpapers-background:has(> .tools-background--ready)
+  :is(.wallpapers-empty, .wallpapers-end, .wallpapers-error) {
+  text-shadow: var(--wallpapers-background-text-shadow);
+}
 .wallpapers-toolbar {
   display: flex;
   margin-bottom: 12px;
@@ -29,7 +81,7 @@
 }
 .wallpapers-segment {
   display: inline-flex;
-  border: 1px solid var(--border-color, #d7dbe2);
+  border: 1px solid color-mix(in srgb, var(--wallpapers-accent) 28%, transparent);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -50,6 +102,10 @@
   min-height: 30px;
   padding: 4px 8px;
   place-items: center;
+  transition:
+    background 0.18s ease,
+    box-shadow 0.18s ease,
+    color 0.18s ease;
 }
 .wallpapers-segment button.active {
   background: color-mix(in srgb, var(--wallpapers-accent) 14%, transparent);
@@ -61,7 +117,7 @@
   box-sizing: border-box;
   align-items: center;
   gap: 6px;
-  border: 1px solid var(--border-color, #d7dbe2);
+  border: 1px solid color-mix(in srgb, var(--wallpapers-accent) 28%, transparent);
   border-radius: 8px;
   justify-content: center;
   width: 32px;
@@ -72,7 +128,10 @@
   transition:
     width 0.2s ease,
     min-width 0.2s ease,
-    padding 0.2s ease;
+    padding 0.2s ease,
+    border-color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease;
 }
 .wallpapers-search--expanded {
   justify-content: initial;
@@ -119,6 +178,45 @@
 .wallpapers-search input::placeholder {
   color: color-mix(in srgb, var(--wallpapers-accent) 48%, var(--color-text-muted));
 }
+.wallpapers-segment button svg,
+.wallpapers-search svg {
+  transition:
+    color 0.18s ease,
+    filter 0.18s ease,
+    opacity 0.18s ease;
+}
+:root[data-theme='dark'] .wallpapers-segment {
+  border-color: color-mix(in srgb, var(--wallpapers-accent) 34%, transparent);
+  background: color-mix(in srgb, var(--wallpapers-accent) 3%, transparent);
+}
+:root[data-theme='dark'] .wallpapers-segment button:not(.active) {
+  color: color-mix(in srgb, var(--wallpapers-accent) 68%, var(--color-text-muted));
+}
+:root[data-theme='dark'] .wallpapers-segment button.active {
+  background: color-mix(in srgb, var(--wallpapers-accent) 18%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--wallpapers-accent) 34%, transparent);
+  color: var(--wallpapers-accent);
+}
+:root[data-theme='dark'] .wallpapers-search-toggle svg {
+  filter: none;
+}
+:root[data-theme='dark'] .wallpapers-search {
+  border-color: color-mix(in srgb, var(--wallpapers-accent) 34%, transparent);
+  background: color-mix(in srgb, var(--wallpapers-accent) 3%, transparent);
+}
+:root[data-theme='dark'] .wallpapers-category-bar .wallpapers-search-toggle,
+:root[data-theme='dark'] .wallpapers-category-bar .wallpapers-search-clear,
+:root[data-theme='dark'] .wallpapers-search > svg {
+  color: var(--wallpapers-accent);
+}
+@media (hover: hover) {
+  :root[data-theme='dark'] .wallpapers-segment button:not(.active):hover,
+  :root[data-theme='dark'] .wallpapers-search:hover {
+    border-color: color-mix(in srgb, var(--wallpapers-accent) 52%, transparent);
+    background: color-mix(in srgb, var(--wallpapers-accent) 9%, transparent);
+    color: var(--wallpapers-accent);
+  }
+}
 .wallpapers-icon-button,
 .wallpapers-lightbox-close {
   display: inline-grid;
@@ -128,10 +226,6 @@
   background: rgb(0 0 0 / 42%);
   cursor: pointer;
   padding: 8px;
-}
-.wallpapers-lightbox-close:hover,
-.wallpapers-lightbox-download-trigger:hover {
-  background: rgb(0 0 0 / 62%);
 }
 .wallpapers-category-bar {
   box-sizing: border-box;
@@ -149,9 +243,29 @@
   top: 0;
   z-index: 20;
   overflow: visible;
+  isolation: isolate;
   border-bottom: 1px solid color-mix(in srgb, var(--color-border) 72%, transparent);
   background: color-mix(in srgb, var(--color-surface-solid) 94%, transparent);
   backdrop-filter: blur(16px) saturate(130%);
+}
+.wallpapers-category-bar::before {
+  position: absolute;
+  z-index: -1;
+  top: -4px;
+  right: calc(-1 * clamp(14px, 3vw, 36px));
+  bottom: -12px;
+  left: calc(-1 * clamp(14px, 3vw, 36px));
+  background: linear-gradient(
+    to bottom,
+    var(--wallpapers-background-surface-raised) 0,
+    var(--wallpapers-background-surface-raised) calc(100% - 12px),
+    transparent 100%
+  );
+  content: '';
+  opacity: 0;
+  transition: opacity 180ms ease;
+  pointer-events: none;
+  backdrop-filter: blur(18px) saturate(125%);
 }
 .wallpapers-category-items {
   position: relative;
@@ -474,7 +588,24 @@
   border: 1px solid rgb(255 255 255 / 18%);
   border-radius: 6px;
   background: rgb(0 0 0 / 42%);
+  color: white;
   cursor: pointer;
+}
+.wallpapers-lightbox-close,
+.wallpapers-lightbox-download-trigger {
+  box-sizing: border-box;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-color: rgb(255 255 255 / 24%);
+  background: rgb(12 16 22 / 64%);
+  box-shadow: 0 4px 14px rgb(0 0 0 / 24%);
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease;
+  backdrop-filter: blur(10px);
 }
 .wallpapers-lightbox-download-trigger:disabled {
   cursor: not-allowed;
@@ -495,6 +626,25 @@
   border-radius: 3px;
   background: rgb(0 0 0 / 78%);
   box-sizing: content-box;
+  transition:
+    transform 0.18s ease,
+    background 0.18s ease,
+    color 0.18s ease;
+}
+@media (hover: hover) {
+  .wallpapers-lightbox-close:hover,
+  .wallpapers-lightbox-download-trigger:not(:disabled):hover {
+    border-color: rgb(255 255 255 / 58%);
+    background: rgb(12 16 22 / 64%);
+    color: white;
+    box-shadow:
+      0 0 0 1px rgb(255 255 255 / 10%),
+      0 6px 16px rgb(0 0 0 / 32%);
+  }
+}
+.wallpapers-lightbox-close:active,
+.wallpapers-lightbox-download-trigger:not(:disabled):active {
+  opacity: 0.72;
 }
 @media (max-width: 760px) {
   .wallpapers-filters {
