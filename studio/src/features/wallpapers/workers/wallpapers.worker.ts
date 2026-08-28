@@ -50,6 +50,7 @@ const CATALOG_CACHE_DB = 'meowv-wallpapers-catalog';
 const CATALOG_CACHE_STORE = 'catalogs';
 
 let manifest: CatalogManifest | null = null;
+let manifestPromise: Promise<CatalogManifest> | null = null;
 const CATALOG_BUCKETS = [
   'desktop:dynamic',
   'desktop:static',
@@ -79,25 +80,34 @@ function dataBaseUrl(): string {
 
 async function loadManifest(): Promise<CatalogManifest> {
   if (manifest) return manifest;
-  const response = await fetch(`${dataBaseUrl()}wallpapers.catalog.json`, { cache: 'no-cache' });
-  if (!response.ok) throw new Error(`无法加载壁纸目录清单（HTTP ${response.status}）。`);
-  manifest = (await response.json()) as CatalogManifest;
-  if (manifest.schemaVersion !== 2 || !manifest.catalogs) {
-    throw new Error('壁纸目录清单格式不受支持。');
-  }
-  for (const bucket of CATALOG_BUCKETS) {
-    if (!manifest.catalogs[bucket]?.file) {
-      throw new Error(`壁纸目录清单缺少 ${bucket} bucket。`);
+  if (manifestPromise) return manifestPromise;
+  manifestPromise = (async () => {
+    const response = await fetch(`${dataBaseUrl()}wallpapers.catalog.json`, { cache: 'no-cache' });
+    if (!response.ok) throw new Error(`无法加载壁纸目录清单（HTTP ${response.status}）。`);
+    const value = (await response.json()) as CatalogManifest;
+    if (value.schemaVersion !== 2 || !value.catalogs) {
+      throw new Error('壁纸目录清单格式不受支持。');
     }
+    for (const bucket of CATALOG_BUCKETS) {
+      if (!value.catalogs[bucket]?.file) {
+        throw new Error(`壁纸目录清单缺少 ${bucket} bucket。`);
+      }
+    }
+    if (
+      value.encryption !== CATALOG_ENCRYPTION_NAME ||
+      value.encryptionVersion !== CATALOG_ENCRYPTION_VERSION ||
+      value.compression !== CATALOG_COMPRESSION
+    ) {
+      throw new Error('壁纸目录加密格式不受支持。');
+    }
+    manifest = value;
+    return value;
+  })();
+  try {
+    return await manifestPromise;
+  } finally {
+    manifestPromise = null;
   }
-  if (
-    manifest.encryption !== CATALOG_ENCRYPTION_NAME ||
-    manifest.encryptionVersion !== CATALOG_ENCRYPTION_VERSION ||
-    manifest.compression !== CATALOG_COMPRESSION
-  ) {
-    throw new Error('壁纸目录加密格式不受支持。');
-  }
-  return manifest;
 }
 
 function bucketKey(device: WallpaperDevice, content: WallpaperContent): CatalogBucket {
