@@ -5,10 +5,11 @@ import { basename, join } from 'node:path';
 export const CATALOG_ENCRYPTION_VERSION = 1;
 export const CATALOG_ENCRYPTION_NAME = 'aes-256-gcm';
 export const CATALOG_MAGIC = Buffer.from('MWPC', 'ascii');
-export const CATALOG_KEY_MATERIAL = 'meowv-studio-wallpaper-catalog-v1';
 
 function encryptionKey() {
-  return createHash('sha256').update(CATALOG_KEY_MATERIAL, 'utf8').digest();
+  return createHash('sha256')
+    .update(Buffer.concat([CATALOG_MAGIC, Buffer.from([CATALOG_ENCRYPTION_VERSION])]))
+    .digest();
 }
 
 export function encryptPayload(payload) {

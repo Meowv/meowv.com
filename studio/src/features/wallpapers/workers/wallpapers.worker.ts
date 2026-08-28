@@ -45,8 +45,6 @@ let itemsById = new Map<number, CatalogItem>();
 const CATALOG_ENCRYPTION_VERSION = 1;
 const CATALOG_ENCRYPTION_NAME = 'aes-256-gcm';
 const CATALOG_MAGIC = new Uint8Array([0x4d, 0x57, 0x50, 0x43]);
-// 该材料会随前端发布，只用于阻止静态文件被直接阅读。
-const CATALOG_KEY_MATERIAL = 'meowv-studio-wallpaper-catalog-v1';
 let catalogKeyPromise: Promise<CryptoKey> | null = null;
 
 function dataBaseUrl(): string {
@@ -71,7 +69,7 @@ async function loadManifest(): Promise<CatalogManifest> {
 async function encryptionKey(): Promise<CryptoKey> {
   if (catalogKeyPromise) return catalogKeyPromise;
   catalogKeyPromise = (async () => {
-    const material = new TextEncoder().encode(CATALOG_KEY_MATERIAL);
+    const material = new Uint8Array([...CATALOG_MAGIC, CATALOG_ENCRYPTION_VERSION]);
     const digest = await crypto.subtle.digest('SHA-256', material);
     return crypto.subtle.importKey('raw', digest, { name: 'AES-GCM' }, false, ['decrypt']);
   })();

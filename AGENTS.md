@@ -2,13 +2,13 @@
 
 ## 适用范围与信息来源
 
-本文件适用于根目录及 `blog/`、`studio/`、`zitie/`。子项目不单独维护 `AGENTS.md` 或 `README.md`：
+本文件适用于根目录及 `blog/`、`studio/`、`zitie/`、`wallpapers/`。除 `wallpapers/README.md` 外，子项目不单独维护 `AGENTS.md` 或 `README.md`：
 
-- `README.md` 记录项目概览、环境、命令、端口和产物映射。
+- 根目录 `README.md` 记录项目概览、环境、命令、端口和产物映射；`wallpapers/README.md` 记录采集器的 CLI、数据库和发布细节。
 - 本文件记录修改边界、项目约定、验证和交付要求。
 - 实际脚本、`package.json`、锁文件与源码配置是可执行行为的最终依据；发现文档不一致时，应在任务范围内同步修正。
 
-三个目录是同一 Git 仓库中的独立项目，不是统一 workspace。执行命令前先进入目标目录，并使用该项目现有的包管理器和代码风格。
+四个目录是同一 Git 仓库中的独立项目，不是统一 workspace。执行命令前先进入目标目录，并使用该项目现有的包管理器、运行时和代码风格。
 
 ## 通用协作原则
 
@@ -31,12 +31,14 @@
 ## 根目录脚本约定
 
 - `run.sh` 和 `build.sh` 必须同时支持无参数、独占的 `all`、一个或多个项目参数，以及 `blog`/`b`、`studio`/`s`、`zitie`/`z` 简写。
+- `run.sh` 的 `wallpapers`/`w` 分支执行 Wallpapers CLI，默认子命令为 `crawl`；支持 `crawl`、`publish`、`stats`、`check`，其余参数原样传递。
 - 固定开发端口为 Blog `4000`、Studio `4001`、Zitie `4002`，不得静默改用其他端口。
 - `run.sh` 并行启动多个项目，并统一处理退出；修改端口清理逻辑时，不得扩大终止进程的范围。
 - `build.sh` 按参数顺序构建。全量构建必须全部成功后再替换 `build/`；指定项目构建只替换对应域名目录。
 - 汇总目录固定为 `build/meowv.com/`、`build/studio.meowv.com/`、`build/zt.meowv.com/`。Zitie 只复制 `zitie/dist/client/`。
 - 保持 macOS Bash 3.2 兼容性；在 `set -u` 下遍历可能为空的数组前先使用 `${SELECTED_PROJECTS[*]:-}` 防护。
 - `build/`、暂存目录和备份目录均为可替换生成内容，不提交 Git。
+- `build.sh wallpapers` 只生成并加密 Studio 壁纸目录，不构建项目；`./build.sh studio --with-wallpapers` 仅允许与 `studio` 一起使用，并在 Studio 构建前生成目录数据。
 
 修改脚本时，应同步检查参数帮助、项目数组、别名、端口、依赖检查、启动或构建分支、源目录和目标目录，避免只更新其中一处。
 
@@ -69,6 +71,24 @@
 
 用户文件、图片和附件不得上传，也不得写入 Cookie、日志或远程数据库。涉及文件系统、导出、Worker 或对象 URL 时，保留现有的授权、取消和资源释放处理。
 
+## Wallpapers 约定
+
+### 代码结构
+
+- `src/wallpapers/cli.py`：CLI 参数与命令分发。
+- `src/wallpapers/pipeline.py`：公开接口抓取、增量游标和资源校验流程。
+- `src/wallpapers/db.py`：SQLite 初始化、兼容迁移和查询。
+- `src/wallpapers/publish.py`：从 SQLite 生成 Studio catalog、bootstrap 和 manifest。
+- `tests/`：数据库、规范化、抓取流程和发布逻辑测试。
+
+使用 Python `>= 3.12`。项目无运行时第三方依赖；测试依赖按 `pyproject.toml` 的 `[test]` extra 安装。默认数据库为 `wallpapers/wallpapers.db`，该文件属于本地数据，不提交 Git。
+
+采集器只访问公开接口并保存元数据和 CDN 地址，不登录、不读取 Cookie、不下载媒体文件，也不绕过付费或权限校验。新增接口、字段或抓取范围时，保持 `device_type`、`content_type`、资源角色和 UTC 时间字段的既有约定。
+
+`publish` 生成的 JSON 仅作为加密前的临时目录；部署目录必须经 `studio/scripts/encrypt-wallpaper-catalog.mjs` 处理，使用现有 AES-256-GCM 版本化 `.bin` 格式，并保留 manifest 中的加密版本和文件大小信息。不要在源码、日志或文档中写入新的密钥材料。
+
+修改采集、数据库或发布逻辑时，优先运行 `cd wallpapers && pytest`；修改加密脚本时，至少执行 `node --check studio/scripts/encrypt-wallpaper-catalog.mjs`，并检查 manifest、旧版本文件清理和 `.bin` 输出。
+
 ## Zitie 约定
 
 ### 代码结构
@@ -95,6 +115,7 @@
 
 - 不输出或提交真实 API 密钥、令牌、密码、证书、个人文件内容或其他敏感信息；示例使用环境变量或明确占位符。
 - 不提交 `node_modules/`、构建目录、测试报告、覆盖率目录、`*.tsbuildinfo`、`.DS_Store` 或 `.gitignore` 已排除的内容。
+- 不提交 Wallpapers 的 `*.db`、`.venv/`、`__pycache__/`、`.pytest_cache/`，也不手工修改生成的 Studio 壁纸 catalog、bootstrap、manifest 或加密 `.bin` 文件。
 - 清理前先区分源码、配置、依赖、缓存、构建产物和用户本地数据；列出拟删除目标及依据，不确定用途时先查引用和 Git 历史。
 - 批量删除、覆盖重要文件、强制推送、改写历史、生产部署、远程资源删除等操作，执行前必须再次确认范围、影响和恢复方式。
 
