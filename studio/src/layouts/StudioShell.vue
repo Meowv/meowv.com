@@ -301,6 +301,10 @@ function handleDocumentPointerDown(event: PointerEvent): void {
   }
 }
 
+function handleDocumentContextMenu(event: MouseEvent): void {
+  event.preventDefault();
+}
+
 function handleDocumentKeydown(event: KeyboardEvent): void {
   if (event.key === 'Escape') closeMobileNavigation();
 }
@@ -319,6 +323,7 @@ function handleWindowResize(): void {
 
 onMounted(() => {
   document.addEventListener('pointerdown', handleDocumentPointerDown);
+  document.addEventListener('contextmenu', handleDocumentContextMenu);
   document.addEventListener('keydown', handleDocumentKeydown);
   window.addEventListener('scroll', handleWindowScroll, { passive: true });
   window.addEventListener('resize', handleWindowResize, { passive: true });
@@ -327,6 +332,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', handleDocumentPointerDown);
+  document.removeEventListener('contextmenu', handleDocumentContextMenu);
   document.removeEventListener('keydown', handleDocumentKeydown);
   window.removeEventListener('scroll', handleWindowScroll);
   window.removeEventListener('resize', handleWindowResize);
