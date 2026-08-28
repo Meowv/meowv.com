@@ -233,7 +233,6 @@ export function useWallpapers() {
     error.value = null;
     try {
       if (next.device || next.content) {
-        categoriesLoading.value = true;
         categories.value = await repository.categories(filters.value.device, filters.value.content);
       }
       await load(true, Boolean(cached));

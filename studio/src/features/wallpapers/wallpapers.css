@@ -9,6 +9,9 @@
   padding: 16px clamp(14px, 3vw, 36px) 48px;
   color: var(--wallpapers-accent);
 }
+.studio-shell--wallpapers:not(.studio-shell--wallpapers-header) .wallpapers-page {
+  padding-top: 0;
+}
 .studio-shell--wallpapers .studio-main {
   min-width: 0;
   overflow-x: clip;
