@@ -14,12 +14,34 @@ usage() {
   ./run.sh                   启动全部项目
   ./run.sh all               启动全部项目
   ./run.sh <project> [...]   启动一个或多个指定项目
+  ./run.sh wallpapers [...] 执行 Wallpapers 命令（默认 crawl）
 
 可选项目：
   blog, b    http://localhost:4000
   studio, s  http://localhost:4001
   zitie, z   http://localhost:4002
+  wallpapers, w  crawl / publish / stats / check
 EOF
+}
+
+run_wallpapers() {
+  local command="crawl"
+
+  if [ "$#" -gt 0 ]; then
+    case "$1" in
+      crawl | publish | stats | check)
+        command="$1"
+        shift
+        ;;
+    esac
+  fi
+
+  echo "[wallpapers] 执行：${command}"
+  (
+    cd "$ROOT_DIR/wallpapers"
+    PYTHONPATH=src python3 -m wallpapers "$command" \
+      --db "$ROOT_DIR/wallpapers/wallpapers.db" "$@"
+  )
 }
 
 project_port() {
@@ -169,6 +191,10 @@ if [ "$#" -eq 0 ] || { [ "$#" -eq 1 ] && [ "$1" = "all" ]; }; then
   SELECTED_PROJECTS=("${ALL_PROJECTS[@]}")
 elif [ "$#" -eq 1 ] && { [ "$1" = "-h" ] || [ "$1" = "--help" ]; }; then
   usage
+  exit 0
+elif [ "$1" = "wallpapers" ] || [ "$1" = "w" ]; then
+  shift
+  run_wallpapers "$@"
   exit 0
 else
   for argument in "$@"; do

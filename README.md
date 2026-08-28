@@ -59,11 +59,23 @@ chmod +x run.sh build.sh
 ./run.sh studio zitie  # 等同于 ./run.sh s z
 ```
 
+壁纸脚本也可以通过 `run.sh` 调用。未指定子命令时默认执行增量抓取，后面的参数会传递给 Wallpapers CLI：
+
+```bash
+./run.sh w
+./run.sh wallpapers --device desktop --content dynamic
+./run.sh w crawl --category 风景 --keyword 雨夜 --max-pages 2
+./run.sh w publish
+./run.sh w stats
+./run.sh w check
+```
+
 | 参数           | 本地地址                |
 | -------------- | ----------------------- |
 | `blog` / `b`   | `http://localhost:4000` |
 | `studio` / `s` | `http://localhost:4001` |
 | `zitie` / `z`  | `http://localhost:4002` |
+| `wallpapers` / `w` | 执行壁纸抓取或数据命令 |
 
 脚本不会自动安装依赖。启动前会检查固定端口，并停止占用端口的本机进程；运行前请确认这些进程可以结束。并行启动后，按 `Ctrl+C` 会停止本次启动的全部开发服务器。
 

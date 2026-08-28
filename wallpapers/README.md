@@ -13,6 +13,17 @@ PYTHONPATH=src python3 -m wallpapers check
 PYTHONPATH=src python3 -m wallpapers publish --db wallpapers.db --output-dir ../studio/public/data
 ```
 
+也可以从仓库根目录通过 `run.sh` 调用。默认执行 `crawl`，参数会继续传递给壁纸 CLI：
+
+```bash
+../run.sh w
+../run.sh wallpapers --device desktop --content dynamic
+../run.sh w crawl --category 风景 --keyword 雨夜 --max-pages 2
+../run.sh w publish
+../run.sh w stats
+../run.sh w check
+```
+
 也可以安装为本地命令：
 
 ```bash
