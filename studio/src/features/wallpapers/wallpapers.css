@@ -40,6 +40,9 @@
   background: var(--wallpapers-background-surface);
   backdrop-filter: blur(18px) saturate(125%);
 }
+.studio-shell--wallpapers-background:has(.wallpapers-lightbox) > .studio-header {
+  z-index: 0;
+}
 .studio-shell--wallpapers-background:has(> .tools-background--ready)
   .studio-header
   :is(.studio-header__feature-name, .studio-nav) {
@@ -638,6 +641,7 @@
 @media (max-width: 760px) {
   .wallpapers-category-bar {
     flex-wrap: wrap;
+    column-gap: 6px;
     row-gap: 6px;
   }
   .wallpapers-category-bar > .wallpapers-filters > .wallpapers-search {
@@ -652,14 +656,24 @@
   .wallpapers-filters {
     justify-content: start;
   }
+  .wallpapers-segment button {
+    min-width: 32px;
+    min-height: 28px;
+    padding: 3px 6px;
+  }
+  .wallpapers-segment button svg,
+  .wallpapers-search svg {
+    width: 16px;
+    height: 16px;
+  }
   .wallpapers-search {
     margin-left: 0;
   }
   .wallpapers-search--expanded {
-    flex: 0 1 190px;
-    width: 190px;
-    min-width: 180px;
-    max-width: 200px;
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+    max-width: none;
   }
   .wallpapers-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

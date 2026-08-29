@@ -13,6 +13,7 @@ import { WallpaperRepository } from '../services/wallpaperRepository';
 
 const STORAGE_KEY = 'meowv-studio:wallpapers:filters';
 const PAGE_CACHE_KEY = 'meowv-studio:wallpapers:pages:v1';
+const CATEGORIES_CACHE_KEY = 'meowv-studio:wallpapers:categories:v1';
 const defaults = {
   device: 'desktop' as WallpaperDevice,
   content: 'dynamic' as WallpaperContent,
@@ -82,6 +83,48 @@ export function useWallpapers() {
     } catch {
       /* 忽略不可用的本地存储 */
     }
+  }
+
+  function categoriesCacheKey(device: WallpaperDevice, content: WallpaperContent): string {
+    return `${device}:${content}`;
+  }
+
+  function readCachedCategories(
+    device: WallpaperDevice,
+    content: WallpaperContent,
+  ): WallpaperCategory[] | null {
+    try {
+      const raw = localStorage.getItem(CATEGORIES_CACHE_KEY);
+      if (!raw) return null;
+      const categories = JSON.parse(raw) as Record<string, unknown>;
+      const value = categories[categoriesCacheKey(device, content)];
+      return Array.isArray(value) ? (value as WallpaperCategory[]) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function saveCachedCategories(
+    device: WallpaperDevice,
+    content: WallpaperContent,
+    value: WallpaperCategory[],
+  ): void {
+    try {
+      const raw = localStorage.getItem(CATEGORIES_CACHE_KEY);
+      const categories = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
+      categories[categoriesCacheKey(device, content)] = value;
+      localStorage.setItem(CATEGORIES_CACHE_KEY, JSON.stringify(categories));
+    } catch {
+      /* 忽略不可用的本地存储 */
+    }
+  }
+
+  function filterCategories(value: WallpaperCategory[]): WallpaperCategory[] {
+    return value.filter(
+      (category) =>
+        category.deviceType === filters.value.device &&
+        (filters.value.content === 'dynamic' || category.contentType === 'static'),
+    );
   }
 
   function loadStoredFilters(): typeof defaults {
@@ -178,14 +221,16 @@ export function useWallpapers() {
   async function initialize(): Promise<void> {
     filters.value = readFilters();
     const cached = readCachedPage(filters.value);
+    const cachedCategories = readCachedCategories(filters.value.device, filters.value.content);
     let hasBootstrap = false;
     if (cached) {
       items.value = cached.items;
       cursor = cached.nextCursor;
       hasMore.value = cached.hasMore;
     }
+    if (cachedCategories) categories.value = cachedCategories;
     loading.value = true;
-    categoriesLoading.value = true;
+    categoriesLoading.value = !cachedCategories;
     try {
       const prefetchPromise = repository.prefetch();
       const useBootstrap =
@@ -194,18 +239,17 @@ export function useWallpapers() {
         filters.value.content === 'dynamic' &&
         filters.value.categoryId === null &&
         !filters.value.keyword.trim();
-      const bootstrapPromise = useBootstrap ? repository.bootstrap() : null;
-      const categoriesPromise = repository.categories(filters.value.device, filters.value.content);
+      const bootstrapPromise = repository.bootstrap();
       const initPromise = repository.init(filters.value.device, filters.value.content);
-      if (bootstrapPromise) {
-        const bootstrap = await bootstrapPromise;
-        if (bootstrap.items.length) {
-          items.value = bootstrap.items;
-          hasBootstrap = true;
-        }
-      }
-      categories.value = await categoriesPromise;
+      const bootstrap = await bootstrapPromise;
+      const nextCategories = filterCategories(bootstrap.categories);
+      categories.value = nextCategories;
+      saveCachedCategories(filters.value.device, filters.value.content, nextCategories);
       categoriesLoading.value = false;
+      if (useBootstrap && bootstrap.items.length) {
+        items.value = bootstrap.items;
+        hasBootstrap = true;
+      }
       await initPromise;
       await load(true, Boolean(cached) || hasBootstrap);
       void prefetchPromise.catch(() => undefined);
@@ -235,7 +279,12 @@ export function useWallpapers() {
     error.value = null;
     try {
       if (next.device || next.content) {
-        categories.value = await repository.categories(filters.value.device, filters.value.content);
+        const nextCategories = await repository.categories(
+          filters.value.device,
+          filters.value.content,
+        );
+        categories.value = nextCategories;
+        saveCachedCategories(filters.value.device, filters.value.content, nextCategories);
       }
       await load(true, Boolean(cached));
     } catch (reason) {

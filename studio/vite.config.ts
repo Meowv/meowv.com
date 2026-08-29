@@ -7,6 +7,7 @@ import { defineConfig } from 'vite';
 import { builtinBooksDevPlugin } from './vite/builtinBooksDevPlugin.ts';
 import { cubingWorkerPreloadPlugin } from './vite/cubingWorkerPreloadPlugin.ts';
 import { toolsBackgroundVideosPlugin } from './vite/toolsBackgroundVideosPlugin.ts';
+import { wallpaperDownloadProxyPlugin } from './vite/wallpaperDownloadProxyPlugin.ts';
 
 const wallpaperCatalogKeyFile = fileURLToPath(
   new URL('../.wallpaper-catalog-key', import.meta.url),
@@ -20,6 +21,7 @@ export default defineConfig({
     ? { 'import.meta.env.VITE_WALLPAPER_CATALOG_KEY': JSON.stringify(wallpaperCatalogKey) }
     : undefined,
   plugins: [
+    wallpaperDownloadProxyPlugin(),
     toolsBackgroundVideosPlugin(),
     builtinBooksDevPlugin(),
     vue({

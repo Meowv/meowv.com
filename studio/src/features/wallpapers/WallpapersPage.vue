@@ -278,6 +278,17 @@ async function download(item: WallpaperItem, url: string | null, filename: strin
       anchor.remove();
       return;
     }
+    if (import.meta.env.DEV) {
+      const params = new URLSearchParams({ url, filename: fallbackName });
+      const anchor = document.createElement('a');
+      anchor.href = `/__wallpaper-download?${params.toString()}`;
+      anchor.download = fallbackName;
+      anchor.rel = 'noreferrer';
+      document.body.append(anchor);
+      anchor.click();
+      anchor.remove();
+      return;
+    }
     const response = await fetch(url, { credentials: 'omit' });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const blob = await response.blob();
