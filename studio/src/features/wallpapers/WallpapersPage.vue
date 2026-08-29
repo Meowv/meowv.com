@@ -10,6 +10,8 @@ import {
 } from 'vue';
 import {
   IconChevronDown,
+  IconChevronLeft,
+  IconChevronRight,
   IconDeviceDesktop,
   IconDeviceMobile,
   IconDownload,
@@ -40,6 +42,9 @@ const {
 } = useWallpapers();
 const selected = ref<WallpaperItem | null>(null);
 const downloadBusy = ref(false);
+const navigationBusy = ref(false);
+const mediaLoading = ref(false);
+const mediaLoadFailed = ref(false);
 const sentinel = ref<HTMLElement | null>(null);
 const categoryBar = ref<HTMLElement | null>(null);
 const categoryItems = ref<HTMLElement | null>(null);
@@ -177,6 +182,39 @@ function open(item: WallpaperItem): void {
 }
 function close(): void {
   selected.value = null;
+}
+const selectedIndex = computed(() =>
+  selected.value ? items.value.findIndex((item) => item.id === selected.value?.id) : -1,
+);
+const canNavigateNext = computed(
+  () => selectedIndex.value >= 0 && (selectedIndex.value < items.value.length - 1 || hasMore.value),
+);
+async function navigate(delta: -1 | 1): Promise<void> {
+  if (!selected.value || navigationBusy.value) return;
+  const currentId = selected.value.id;
+  const currentIndex = items.value.findIndex((item) => item.id === currentId);
+  if (currentIndex < 0) return;
+  if (delta < 0) {
+    const previous = items.value[currentIndex - 1];
+    if (previous) selected.value = previous;
+    return;
+  }
+  const next = items.value[currentIndex + 1];
+  if (next) {
+    selected.value = next;
+    return;
+  }
+  if (!hasMore.value) return;
+  navigationBusy.value = true;
+  try {
+    await loadMore();
+    if (selected.value?.id !== currentId) return;
+    const refreshedIndex = items.value.findIndex((item) => item.id === currentId);
+    const loadedNext = refreshedIndex >= 0 ? items.value[refreshedIndex + 1] : undefined;
+    if (loadedNext) selected.value = loadedNext;
+  } finally {
+    navigationBusy.value = false;
+  }
 }
 function lockPageScroll(): void {
   if (pageScrollLock) return;
@@ -316,6 +354,21 @@ async function download(item: WallpaperItem, url: string | null, filename: strin
 }
 function onKeydown(event: KeyboardEvent): void {
   if (event.key === 'Escape') close();
+  else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+    event.preventDefault();
+    void navigate(-1);
+  } else if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+    event.preventDefault();
+    void navigate(1);
+  }
+}
+function handleMediaLoaded(): void {
+  mediaLoading.value = false;
+  mediaLoadFailed.value = false;
+}
+function handleMediaLoadError(): void {
+  mediaLoading.value = false;
+  mediaLoadFailed.value = true;
 }
 function handleDocumentPointerDown(event: PointerEvent): void {
   if (!(event.target instanceof Element)) return;
@@ -361,6 +414,8 @@ watch(
 );
 watch(searchExpanded, () => void nextTick(recomputeCategoryCapacity));
 watch(selected, (item) => {
+  mediaLoading.value = Boolean(item?.coverUrl || item?.previewVideoUrl);
+  mediaLoadFailed.value = false;
   if (item) lockPageScroll();
   else unlockPageScroll();
 });
@@ -558,12 +613,33 @@ watch(
       class="wallpapers-lightbox"
       role="dialog"
       aria-modal="true"
-      @click.self="close"
       @wheel.stop.prevent
       @touchmove.stop.prevent
     >
       <button class="wallpapers-lightbox-close" title="关闭" @click="close">
         <IconX :size="18" />
+      </button>
+      <button
+        v-if="selectedIndex > 0"
+        class="wallpapers-lightbox-nav wallpapers-lightbox-nav--previous"
+        type="button"
+        title="上一张"
+        aria-label="上一张"
+        :disabled="navigationBusy"
+        @click.stop="void navigate(-1)"
+      >
+        <IconChevronLeft :size="24" />
+      </button>
+      <button
+        v-if="canNavigateNext"
+        class="wallpapers-lightbox-nav wallpapers-lightbox-nav--next"
+        type="button"
+        title="下一张"
+        aria-label="下一张"
+        :disabled="navigationBusy"
+        @click.stop="void navigate(1)"
+      >
+        <IconChevronRight :size="24" />
       </button>
       <div class="wallpapers-lightbox-download" @click.stop>
         <button
@@ -593,6 +669,7 @@ watch(
       </div>
       <video
         v-if="selected.contentType === 'dynamic' && selected.previewVideoUrl"
+        :key="`video-${selected.id}`"
         :src="selected.previewVideoUrl"
         autoplay
         loop
@@ -615,9 +692,12 @@ watch(
         @touchstart="handleMediaInteraction"
         @touchend="handleMediaInteraction"
         @keydown="handleMediaInteraction"
+        @loadeddata="handleMediaLoaded"
+        @error="handleMediaLoadError"
       />
       <img
         v-else-if="selected.coverUrl"
+        :key="`image-${selected.id}`"
         :src="selected.coverUrl"
         :alt="selected.title || '壁纸预览'"
         draggable="false"
@@ -632,7 +712,16 @@ watch(
         @pointerup="handleMediaInteraction"
         @touchstart="handleMediaInteraction"
         @touchend="handleMediaInteraction"
+        @load="handleMediaLoaded"
+        @error="handleMediaLoadError"
       />
+      <div v-if="mediaLoading || navigationBusy" class="wallpapers-lightbox-loading">
+        <span class="wallpapers-lightbox-loading-spinner" aria-hidden="true" />
+        <span>加载中…</span>
+      </div>
+      <div v-else-if="mediaLoadFailed" class="wallpapers-lightbox-loading">
+        <span>预览加载失败</span>
+      </div>
     </div>
   </main>
 </template>

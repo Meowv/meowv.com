@@ -560,6 +560,75 @@
   top: 18px;
   color: white;
 }
+.wallpapers-lightbox-nav {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 64px;
+  border: 1px solid rgb(255 255 255 / 24%);
+  border-radius: 8px;
+  background: rgb(12 16 22 / 64%);
+  color: white;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 24%);
+  transform: translateY(-50%);
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease;
+  backdrop-filter: blur(10px);
+  opacity: 0;
+  pointer-events: none;
+}
+.wallpapers-lightbox-nav--previous {
+  left: 18px;
+}
+.wallpapers-lightbox-nav--next {
+  right: 18px;
+}
+.wallpapers-lightbox:hover .wallpapers-lightbox-nav,
+.wallpapers-lightbox-nav:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+.wallpapers-lightbox-nav:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.wallpapers-lightbox-loading {
+  position: absolute;
+  z-index: 2;
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  min-width: 108px;
+  min-height: 42px;
+  padding: 8px 14px;
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 8px;
+  background: rgb(12 16 22 / 76%);
+  color: white;
+  box-shadow: 0 4px 18px rgb(0 0 0 / 28%);
+  backdrop-filter: blur(10px);
+}
+.wallpapers-lightbox-loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgb(255 255 255 / 32%);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: wallpapers-lightbox-spin 0.8s linear infinite;
+}
+@keyframes wallpapers-lightbox-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 .wallpapers-lightbox-download {
   position: absolute;
   z-index: 1;
@@ -599,6 +668,12 @@
     box-shadow 0.18s ease;
   backdrop-filter: blur(10px);
 }
+.wallpapers-lightbox-nav {
+  box-sizing: border-box;
+  width: 42px;
+  height: 64px;
+  padding: 0;
+}
 .wallpapers-lightbox-download-trigger:disabled {
   cursor: not-allowed;
   opacity: 0.5;
@@ -625,6 +700,7 @@
 }
 @media (hover: hover) {
   .wallpapers-lightbox-close:hover,
+  .wallpapers-lightbox-nav:not(:disabled):hover,
   .wallpapers-lightbox-download-trigger:not(:disabled):hover {
     border-color: rgb(255 255 255 / 58%);
     background: rgb(12 16 22 / 64%);
@@ -635,6 +711,7 @@
   }
 }
 .wallpapers-lightbox-close:active,
+.wallpapers-lightbox-nav:not(:disabled):active,
 .wallpapers-lightbox-download-trigger:not(:disabled):active {
   opacity: 0.72;
 }
@@ -678,6 +755,16 @@
   .wallpapers-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
+  }
+  .wallpapers-lightbox-nav {
+    width: 36px;
+    height: 52px;
+  }
+  .wallpapers-lightbox-nav--previous {
+    left: 8px;
+  }
+  .wallpapers-lightbox-nav--next {
+    right: 8px;
   }
   .wallpapers-category-items {
     overflow-x: auto;
