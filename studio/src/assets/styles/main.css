@@ -243,6 +243,9 @@ button {
   width: 44px;
   height: 44px;
   object-fit: contain;
+  transform: rotate(var(--studio-logo-rotation, 0deg));
+  transform-origin: center;
+  will-change: transform;
 }
 
 .studio-logo strong {
