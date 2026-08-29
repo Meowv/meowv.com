@@ -57,6 +57,9 @@ const searchExpanded = ref(false);
 const searchDraft = ref('');
 const searchInput = ref<HTMLInputElement | null>(null);
 let observer: IntersectionObserver | null = null;
+let cardObserver: IntersectionObserver | null = null;
+const observedCardIds = new WeakMap<Element, number>();
+const lazyCardIds = ref(new Set<number>());
 let categoryResizeObserver: ResizeObserver | null = null;
 let pageScrollLock:
   | {
@@ -100,6 +103,37 @@ function observeSentinel(element: Element | ComponentPublicInstance | null): voi
   );
   observer.observe(element);
   handleScroll();
+}
+
+function markCardAsVisible(id: number, element?: Element): void {
+  const next = new Set(lazyCardIds.value);
+  next.add(id);
+  lazyCardIds.value = next;
+  if (element) cardObserver?.unobserve(element);
+}
+
+function observeCard(element: Element | ComponentPublicInstance | null, item: WallpaperItem): void {
+  if (!(element instanceof HTMLElement) || !item.coverUrl || lazyCardIds.value.has(item.id)) return;
+  if (!('IntersectionObserver' in window)) {
+    markCardAsVisible(item.id);
+    return;
+  }
+  if (!cardObserver) {
+    cardObserver = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          const id = observedCardIds.get(entry.target);
+          if (id === undefined) continue;
+          markCardAsVisible(id, entry.target);
+          observedCardIds.delete(entry.target);
+        }
+      },
+      { rootMargin: '300px 0px' },
+    );
+  }
+  observedCardIds.set(element, item.id);
+  cardObserver.observe(element);
 }
 
 function recomputeCategoryCapacity(): void {
@@ -396,6 +430,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   unlockPageScroll();
   observer?.disconnect();
+  cardObserver?.disconnect();
   categoryResizeObserver?.disconnect();
   window.removeEventListener('keydown', onKeydown);
   window.removeEventListener('scroll', handleScroll);
@@ -574,17 +609,24 @@ watch(
     <div v-else-if="loading && !items.length" class="wallpapers-grid" aria-busy="true">
       <div v-for="index in 12" :key="index" class="wallpapers-skeleton" />
     </div>
-    <div v-else-if="!items.length" class="wallpapers-empty">没有找到符合条件的壁纸。</div>
+    <div v-else-if="!items.length" class="wallpapers-empty">没有找到符合条件的壁纸</div>
     <div v-else class="wallpapers-grid">
-      <article v-for="item in items" :key="item.id" class="wallpapers-card" @click="open(item)">
+      <article
+        v-for="item in items"
+        :key="item.id"
+        :ref="(element) => observeCard(element, item)"
+        class="wallpapers-card"
+        @click="open(item)"
+      >
         <img
-          v-if="item.coverUrl"
+          v-if="item.coverUrl && lazyCardIds.has(item.id)"
           :src="item.coverUrl"
           :alt="item.title || '壁纸'"
           loading="lazy"
           decoding="async"
           referrerpolicy="no-referrer"
         />
+        <div v-else-if="item.coverUrl" class="wallpapers-card-placeholder">加载预览中…</div>
         <div v-else class="wallpapers-card-placeholder">暂无预览</div>
         <span v-if="item.contentType === 'dynamic'" class="wallpapers-card-play" aria-hidden="true">
           <IconPlayerPlay :size="24" fill="currentColor" />
