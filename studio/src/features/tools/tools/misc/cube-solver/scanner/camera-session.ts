@@ -1,5 +1,41 @@
 import { median } from './color';
 
+const preferredCameraConstraints: MediaStreamConstraints = {
+  audio: false,
+  video: {
+    facingMode: { ideal: 'environment' },
+    width: { ideal: 1280 },
+    height: { ideal: 720 },
+  },
+};
+
+const fallbackCameraConstraints: MediaStreamConstraints = {
+  audio: false,
+  video: true,
+};
+
+function waitForVideoMetadata(video: HTMLVideoElement): Promise<void> {
+  if (video.readyState >= 1) return Promise.resolve();
+
+  return new Promise((resolve, reject) => {
+    const cleanup = (): void => {
+      video.removeEventListener('loadedmetadata', onReady);
+      video.removeEventListener('error', onError);
+    };
+    const onReady = (): void => {
+      cleanup();
+      resolve();
+    };
+    const onError = (): void => {
+      cleanup();
+      reject(new Error('相机画面无法加载，请重试或改用手动录入。'));
+    };
+
+    video.addEventListener('loadedmetadata', onReady, { once: true });
+    video.addEventListener('error', onError, { once: true });
+  });
+}
+
 export class CameraSession {
   #stream: MediaStream | null = null;
   #generation = 0;
@@ -10,21 +46,30 @@ export class CameraSession {
     }
     this.stop();
     const generation = this.#generation;
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: false,
-      video: {
-        facingMode: { ideal: 'environment' },
-        width: { ideal: 1280 },
-        height: { ideal: 720 },
-      },
-    });
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia(preferredCameraConstraints);
+    } catch (error) {
+      if (!(error instanceof DOMException) || error.name !== 'OverconstrainedError') throw error;
+      stream = await navigator.mediaDevices.getUserMedia(fallbackCameraConstraints);
+    }
     if (generation !== this.#generation) {
       stream.getTracks().forEach((track) => track.stop());
       throw new Error('相机请求已取消。');
     }
     this.#stream = stream;
+    video.autoplay = true;
+    video.muted = true;
+    video.playsInline = true;
     video.srcObject = stream;
-    await video.play();
+    try {
+      await video.play();
+      await waitForVideoMetadata(video);
+    } catch (error) {
+      this.stop();
+      video.srcObject = null;
+      throw error;
+    }
   }
 
   async capture(
