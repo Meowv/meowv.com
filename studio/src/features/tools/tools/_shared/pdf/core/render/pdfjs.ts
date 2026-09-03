@@ -24,6 +24,10 @@ interface PdfJsRuntime {
   wasmUrl: string;
 }
 
+interface AssetUrlModule {
+  default: string;
+}
+
 export interface ManagedPdfDocument extends PDFDocumentProxy {
   destroyDocument: () => Promise<void>;
 }
@@ -34,15 +38,26 @@ async function getPdfJs(): Promise<PdfJsRuntime> {
   if (!pdfJsPromise) {
     pdfJsPromise = Promise.all([
       import('pdfjs-dist'),
-      import('pdfjs-dist/build/pdf.worker.min.mjs?url'),
+      import('pdfjs-dist/build/pdf.worker.min.mjs?worker&url'),
       import('pdfjs-dist/wasm/jbig2.wasm?url'),
-    ]).then(([pdfJs, worker, jbig2Wasm]) => {
+      import('pdfjs-dist/wasm/jbig2_nowasm_fallback.js?url'),
+      import('pdfjs-dist/wasm/openjpeg.wasm?url'),
+      import('pdfjs-dist/wasm/openjpeg_nowasm_fallback.js?url'),
+      import('pdfjs-dist/wasm/qcms_bg.wasm?url'),
+    ]).then(([pdfJs, worker, ...wasmAssets]) => {
       pdfJs.GlobalWorkerOptions.workerSrc = worker.default;
-      // 扫描版 PDF 的 JBIG2 图片需要 JBig2 wasm 解码，默认目录相对 build/ 不存在，
-      // 缺省会整页图片被忽略而渲染为空白页。
+      const assetUrls = (wasmAssets as AssetUrlModule[]).map(
+        ({ default: url }) => new URL(url, location.href),
+      );
+      const wasmUrl = new URL('.', assetUrls[0]).href;
+
+      if (assetUrls.some((url) => new URL('.', url).href !== wasmUrl)) {
+        throw new Error('PDF.js WASM 资源未输出到同一目录。');
+      }
+
       return {
         module: pdfJs as unknown as PdfJsModule,
-        wasmUrl: new URL('.', new URL(jbig2Wasm.default, location.href)).href,
+        wasmUrl,
       };
     });
   }

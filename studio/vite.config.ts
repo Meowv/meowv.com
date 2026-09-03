@@ -16,6 +16,14 @@ const wallpaperCatalogKey =
   process.env.VITE_WALLPAPER_CATALOG_KEY ??
   (existsSync(wallpaperCatalogKeyFile) ? readFileSync(wallpaperCatalogKeyFile, 'utf8').trim() : '');
 
+const pdfJsRuntimeAssets = new Set([
+  'jbig2.wasm',
+  'jbig2_nowasm_fallback.js',
+  'openjpeg.wasm',
+  'openjpeg_nowasm_fallback.js',
+  'qcms_bg.wasm',
+]);
+
 export default defineConfig({
   define: wallpaperCatalogKey
     ? { 'import.meta.env.VITE_WALLPAPER_CATALOG_KEY': JSON.stringify(wallpaperCatalogKey) }
@@ -72,6 +80,12 @@ export default defineConfig({
         pluginTimings: false,
       },
       output: {
+        assetFileNames(assetInfo) {
+          const pdfJsAssetName = assetInfo.names.find((name) => pdfJsRuntimeAssets.has(name));
+          return pdfJsAssetName
+            ? `assets/pdfjs/${pdfJsAssetName}`
+            : 'assets/[name]-[hash][extname]';
+        },
         manualChunks(id) {
           if (!id.includes('node_modules')) return undefined;
           if (id.includes('vue-router')) return 'vue-router';
@@ -86,6 +100,11 @@ export default defineConfig({
   },
   worker: {
     format: 'es',
+    rolldownOptions: {
+      output: {
+        entryFileNames: 'assets/[name]-[hash].js',
+      },
+    },
   },
   server: {
     host: '0.0.0.0',
