@@ -10,7 +10,10 @@
   --border-strong: var(--color-border-strong);
   --primary: var(--menu-image);
   --primary-hover: #8f1b60;
+  --primary-solid: var(--menu-image);
+  --primary-solid-hover: #8f1b60;
   --primary-soft: #fce7f3;
+  --primary-soft-hover: #f9d7e8;
   --primary-border: #f3c4da;
   --accent: #c026d3;
   --success: #16865c;
@@ -31,7 +34,10 @@
   --surface-subtle: #1d222b;
   --primary: var(--menu-image-foreground);
   --primary-hover: #f9a8d4;
+  --primary-solid: #9d174d;
+  --primary-solid-hover: #831843;
   --primary-soft: #4a1536;
+  --primary-soft-hover: #632047;
   --primary-border: #9d174d;
   --accent: #f9a8d4;
   --success: #34d399;
@@ -123,7 +129,7 @@
 .image-feature .primary-action,
 .image-feature .bg-indigo-600,
 .image-feature .image-crop-page .bg-violet-600 {
-  color: #fff;
+  color: #fff !important;
 }
 
 .image-feature button {
@@ -199,7 +205,7 @@
 }
 
 .image-feature .bg-indigo-600 {
-  background-color: var(--primary) !important;
+  background-color: var(--primary-solid) !important;
 }
 
 .image-feature .text-indigo-600,
@@ -227,10 +233,14 @@
   color: var(--primary) !important;
 }
 
-.image-feature .hover\:bg-indigo-100:hover,
+.image-feature .hover\:bg-indigo-100:hover {
+  background-color: var(--primary-soft-hover) !important;
+  color: var(--primary-hover) !important;
+}
+
 .image-feature .hover\:bg-indigo-700:hover {
-  background-color: var(--primary-hover) !important;
-  color: #fff;
+  background-color: var(--primary-solid-hover) !important;
+  color: #fff !important;
 }
 
 .image-feature .focus\:border-indigo-500:focus,
@@ -256,7 +266,7 @@
 }
 
 .image-feature .image-crop-page .bg-violet-600 {
-  background-color: var(--primary) !important;
+  background-color: var(--primary-solid) !important;
 }
 
 .image-feature .image-crop-page .bg-violet-50 {
@@ -299,7 +309,8 @@
 }
 
 .image-feature .image-crop-page .hover\:bg-violet-700:hover {
-  background-color: var(--primary-hover) !important;
+  background-color: var(--primary-solid-hover) !important;
+  color: #fff !important;
 }
 
 .image-feature .image-crop-page .focus-visible\:ring-violet-200:focus-visible,
@@ -611,14 +622,14 @@
 }
 
 .image-feature .psd-viewer__button--primary {
-  border-color: var(--primary);
-  background: var(--primary);
+  border-color: var(--primary-solid);
+  background: var(--primary-solid);
   color: #fff;
 }
 
 .image-feature .psd-viewer__button--primary:hover:not(:disabled) {
-  border-color: var(--primary-hover);
-  background: var(--primary-hover);
+  border-color: var(--primary-solid-hover);
+  background: var(--primary-solid-hover);
   color: #fff;
 }
 
