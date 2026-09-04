@@ -2,13 +2,13 @@
 
 ## 适用范围与信息来源
 
-本文件适用于根目录及 `blog/`、`studio/`、`zitie/`、`wallpapers/`。除 `wallpapers/README.md` 外，子项目不单独维护 `AGENTS.md` 或 `README.md`：
+本文件适用于根目录及 `blog/`、`studio/`、`wallpapers/`。除 `wallpapers/README.md` 外，子项目不单独维护 `AGENTS.md` 或 `README.md`：
 
 - 根目录 `README.md` 记录项目概览、环境、命令、端口和产物映射；`wallpapers/README.md` 记录采集器的 CLI、数据库和发布细节。
 - 本文件记录修改边界、项目约定、验证和交付要求。
 - 实际脚本、`package.json`、锁文件与源码配置是可执行行为的最终依据；发现文档不一致时，应在任务范围内同步修正。
 
-四个目录是同一 Git 仓库中的独立项目，不是统一 workspace。执行命令前先进入目标目录，并使用该项目现有的包管理器、运行时和代码风格。
+三个目录是同一 Git 仓库中的独立项目，不是统一 workspace。执行命令前先进入目标目录，并使用该项目现有的包管理器、运行时和代码风格。
 
 ## 通用协作原则
 
@@ -24,18 +24,18 @@
 
 - Blog：`https://meowv.com`
 - Studio：`https://studio.meowv.com`
-- Zitie：`https://zt.meowv.com`
+- Zitie：`https://studio.meowv.com/zitie/`
 
 不得自行推断 `www` 跳转、证书覆盖、Nginx 路由或生产目录；部署前检查实际环境。
 
 ## 根目录脚本约定
 
-- `run.sh` 和 `build.sh` 必须同时支持无参数、独占的 `all`、一个或多个项目参数，以及 `blog`/`b`、`studio`/`s`、`zitie`/`z` 简写。
+- `run.sh` 和 `build.sh` 必须同时支持无参数、独占的 `all`、一个或多个项目参数，以及 `blog`/`b`、`studio`/`s` 简写。
 - `run.sh` 的 `wallpapers`/`w` 分支执行 Wallpapers CLI，默认子命令为 `crawl`；支持 `crawl`、`publish`、`stats`、`check`，其余参数原样传递。
-- 固定开发端口为 Blog `4000`、Studio `4001`、Zitie `4002`，不得静默改用其他端口。
+- 固定开发端口为 Blog `4000`、Studio `4001`；Zitie 由 Studio 的 `/zitie/` 多页面入口提供，不另启端口。
 - `run.sh` 并行启动多个项目，并统一处理退出；修改端口清理逻辑时，不得扩大终止进程的范围。
 - `build.sh` 按参数顺序构建。全量构建必须全部成功后再替换 `build/`；指定项目构建只替换对应域名目录。
-- 汇总目录固定为 `build/meowv.com/`、`build/studio.meowv.com/`、`build/zt.meowv.com/`。Zitie 只复制 `zitie/dist/client/`。
+- 汇总目录固定为 `build/meowv.com/`、`build/studio.meowv.com/`。Studio 产物包含 `dist/zitie/`。
 - 保持 macOS Bash 3.2 兼容性；在 `set -u` 下遍历可能为空的数组前先使用 `${SELECTED_PROJECTS[*]:-}` 防护。
 - `build/`、暂存目录和备份目录均为可替换生成内容，不提交 Git。
 - `build.sh wallpapers` 只生成并加密 Studio 壁纸目录，不构建项目；`./build.sh studio --with-wallpapers` 仅允许与 `studio` 一起使用，并在 Studio 构建前生成目录数据。
@@ -66,10 +66,17 @@
 - `src/components/`、`src/composables/`：共享组件和组合式逻辑。
 - `src/core/`：浏览器、本地隐私和通用基础能力。
 - `src/assets/`、`public/`：样式和静态资源。
+- `src/features/zitie/`：独立 React 字帖应用的组件、配置、Canvas、字体和导出逻辑。
+- `zitie/index.html`：Zitie 所有页面共用的唯一 HTML 源模板。
+- `public/zitie/`：Zitie 字体、Logo、图标等静态资源。
 
 使用 Vue 3 Composition API、严格 TypeScript 和现有 `@/` 路径别名。首页不得预加载重型编辑器或 WASM；文件打开、新建、保存和销毁必须经过统一会话与串行编辑器队列。
 
 用户文件、图片和附件不得上传，也不得写入 Cookie、日志或远程数据库。涉及文件系统、导出、Worker 或对象 URL 时，保留现有的授权、取消和资源释放处理。
+
+Zitie 使用 React 18 函数组件和严格 TypeScript，遵循 Studio 的 Prettier 规则、PascalCase 组件和 camelCase 函数命名。其 HTML 只加载 Zitie React 入口和 CSS，不加载 Vue、`StudioShell` 或 Studio CSS；不要将 `/zitie` 注册到 Vue Router。
+
+Zitie 的 pathname、练习模式和页面元数据统一维护在 `src/features/zitie/routes.ts`。开发时由 Vite 中间件从单一 HTML 模板响应各页面，构建时再生成目录式 HTML；不要为每条路由复制相同的源 HTML。笔顺数据在开发时直接从 `hanzi-writer-data` 响应，构建时复制到 `dist/zitie/hanzi-data/`；不要生成或提交 `public/zitie/hanzi-data/`。涉及分页、Canvas、字体、打印或导出时，验证应覆盖多页、PNG/PDF/ZIP 导出、打印、窄屏布局和资源路径。
 
 ## Wallpapers 约定
 
@@ -88,21 +95,6 @@
 `publish` 生成的 JSON 仅作为加密前的临时目录；部署目录必须经 `studio/scripts/encrypt-wallpaper-catalog.mjs` 处理，使用现有 AES-256-GCM 版本化 `.bin` 格式，并保留 manifest 中的加密版本和文件大小信息。不要在源码、日志或文档中写入新的密钥材料。
 
 修改采集、数据库或发布逻辑时，优先运行 `cd wallpapers && pytest`；修改加密脚本时，至少执行 `node --check studio/scripts/encrypt-wallpaper-catalog.mjs`，并检查 manifest、旧版本文件清理和 `.bin` 输出。
-
-## Zitie 约定
-
-### 代码结构
-
-- `app/*/page.tsx`：练习模式路由。
-- `app/components/`：共享界面和字帖编辑器。
-- `app/lib/`：分页、Canvas 绘制、字体、导出和类型。
-- `app/config/`：页面内容与配置。
-- `public/fonts/`、`public/brand/`：字体和品牌静态资源。
-- `scripts/sync-hanzi-data.mjs`：笔顺数据同步。
-
-使用 React 函数组件和严格 TypeScript，延续现有两空格缩进、分号、双引号 import、PascalCase 组件和 camelCase 函数命名。可复用行为放入 `app/lib/` 或 `app/components/`，不要在路由之间复制。
-
-保持 `next.config.ts` 中的静态导出配置。`public/hanzi-data/` 由脚本生成，不手工修改，也不提交。涉及分页、Canvas、字体、打印或导出时，验证应覆盖多页、PNG/PDF/ZIP 导出、打印、窄屏布局和资源路径。
 
 ## 验证规则
 

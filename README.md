@@ -1,23 +1,21 @@
 # Meowv Projects
 
-Meowv 的 Web 项目与壁纸数据工具仓库，包含 Blog、Meowv Studio、Zitie 和 Wallpapers Crawler。各项目彼此独立，不是 npm/pnpm workspace；依赖安装、开发和构建命令都应在对应目录中执行。
+Meowv 的 Web 项目与壁纸数据工具仓库，包含 Blog、Meowv Studio 和 Wallpapers Crawler。各顶层项目彼此独立，不是 npm/pnpm workspace；依赖安装、开发和构建命令都应在对应目录中执行。
 
 生产构建在本地完成，根目录脚本会把静态产物汇总到 `build/`，再由维护者自行部署。仓库不通过 GitHub Actions、OpenAI Sites 或其他托管平台构建和发布。
 
 ## 项目概览
 
-| 目录         | 项目                 | 技术栈                                  | 线上地址                                     |
-| ------------ | -------------------- | --------------------------------------- | -------------------------------------------- |
-| `blog/`      | 个人博客与 Labs 工具 | Hexo 7、EJS、Stylus                     | [meowv.com](https://meowv.com)               |
-| `studio/`    | Meowv Studio         | Vue 3、TypeScript、Vite、Vue Router     | [studio.meowv.com](https://studio.meowv.com) |
-| `zitie/`     | 在线字帖生成         | Vinext、Next.js、React、TypeScript      | [zt.meowv.com](https://zt.meowv.com)         |
-| `wallpapers/` | 壁纸接口采集与目录发布 | Python 3.12、SQLite、urllib             | 仅供本地数据处理                             |
+| 目录          | 项目                   | 技术栈                            | 线上地址                                     |
+| ------------- | ---------------------- | --------------------------------- | -------------------------------------------- |
+| `blog/`       | 个人博客与 Labs 工具   | Hexo 7、EJS、Stylus               | [meowv.com](https://meowv.com)               |
+| `studio/`     | Meowv Studio           | Vue 3、React 18、TypeScript、Vite | [studio.meowv.com](https://studio.meowv.com) |
+| `wallpapers/` | 壁纸接口采集与目录发布 | Python 3.12、SQLite、urllib       | 仅供本地数据处理                             |
 
 ```text
 .
 ├── blog/       # 博客、文章、独立游戏和 Labs 工具
 ├── studio/     # 浏览器本地工作台
-├── zitie/      # 字帖生成与导出应用
 ├── wallpapers/ # 公开壁纸接口采集器与 Studio 目录发布工具
 ├── run.sh      # 开发环境启动脚本
 ├── build.sh    # 生产构建与产物汇总脚本
@@ -32,10 +30,9 @@ Meowv 的 Web 项目与壁纸数据工具仓库，包含 Blog、Meowv Studio、Z
 ```bash
 (cd blog && yarn install --frozen-lockfile)
 (cd studio && pnpm install --frozen-lockfile)
-(cd zitie && npm ci)
 ```
 
-Studio 固定使用 pnpm `11.9.0`。Blog、Studio、Zitie 各自维护锁文件，不要在仓库根目录统一安装依赖或混用包管理器。
+Studio 固定使用 pnpm `11.9.0`。Blog 和 Studio 各自维护锁文件，不要在仓库根目录统一安装依赖或混用包管理器。
 
 Wallpapers Crawler 无运行时第三方依赖；运行测试时需要 `pytest`，可在 `wallpapers/` 中按需安装测试依赖：
 
@@ -64,7 +61,7 @@ chmod +x run.sh build.sh
 
 ```bash
 ./run.sh blog          # 等同于 ./run.sh b
-./run.sh studio zitie  # 等同于 ./run.sh s z
+./run.sh studio        # 等同于 ./run.sh s，包含 /zitie/
 ```
 
 壁纸脚本也可以通过 `run.sh` 调用。未指定子命令时默认执行增量抓取，后面的参数会传递给 Wallpapers CLI：
@@ -78,12 +75,11 @@ chmod +x run.sh build.sh
 ./run.sh w check
 ```
 
-| 参数           | 本地地址                |
-| -------------- | ----------------------- |
-| `blog` / `b`   | `http://localhost:4000` |
-| `studio` / `s` | `http://localhost:4001` |
-| `zitie` / `z`  | `http://localhost:4002` |
-| `wallpapers` / `w` | 执行壁纸抓取或数据命令 |
+| 参数               | 本地地址                                    |
+| ------------------ | ------------------------------------------- |
+| `blog` / `b`       | `http://localhost:4000`                     |
+| `studio` / `s`     | `http://localhost:4001`，Zitie 为 `/zitie/` |
+| `wallpapers` / `w` | 执行壁纸抓取或数据命令                      |
 
 脚本不会自动安装依赖。启动前会检查固定端口，并停止占用端口的本机进程；运行前请确认这些进程可以结束。并行启动后，按 `Ctrl+C` 会停止本次启动的全部开发服务器。
 
@@ -95,7 +91,7 @@ chmod +x run.sh build.sh
 ./build.sh
 ./build.sh all
 ./build.sh blog
-./build.sh studio zitie
+./build.sh studio
 ```
 
 只生成壁纸目录时，不需要执行 Studio 构建：
@@ -112,11 +108,10 @@ chmod +x run.sh build.sh
 ```text
 build/
 ├── meowv.com/        # blog/public/
-├── studio.meowv.com/ # studio/dist/
-└── zt.meowv.com/     # zitie/dist/client/
+└── studio.meowv.com/ # studio/dist/，包含 zitie/
 ```
 
-全量构建会在三个项目全部成功后替换整个 `build/`。指定项目构建会按参数顺序执行，只替换对应域名目录并保留其他产物。Zitie 仅汇总 `dist/client/`，不复制 `dist/server/`。
+全量构建会在 Blog 和 Studio 全部成功后替换整个 `build/`。指定项目构建会按参数顺序执行，只替换对应域名目录并保留其他产物。Studio 的一次 Vite 多入口构建会同时输出 Vue 应用和 `dist/zitie/`。
 
 ## 单项目命令
 
@@ -151,16 +146,9 @@ pnpm preview
 
 ### Zitie
 
-```bash
-cd zitie
-npm run dev
-npm run prepare:data
-npx tsc --noEmit
-npm run build
-npm run start
-```
+Zitie 是 Studio Vite 中独立的 React 多页面应用，线上地址为 [studio.meowv.com/zitie/](https://studio.meowv.com/zitie/)。源码位于 `studio/src/features/zitie/`，唯一 HTML 模板为 `studio/zitie/index.html`，字体和品牌资源位于 `studio/public/zitie/`。它与 Studio Vue 应用使用不同 HTML 入口，不加载 `StudioShell` 或 Studio CSS。
 
-路由页位于 `app/*/page.tsx`，共享界面位于 `app/components/`，分页、Canvas 绘制、字体和导出逻辑位于 `app/lib/`。开发和构建命令会运行 `scripts/sync-hanzi-data.mjs`，生成所需的 `public/hanzi-data/`。直接执行 `npm run dev` 使用 `4005` 端口；通过根目录 `./run.sh zitie` 启动时固定使用 `4002`。
+开发时直接启动 Studio 并访问 `http://localhost:4001/zitie/`。Vite 根据 pathname 从同一模板动态渲染各页面；生产构建再自动生成目录式 HTML。笔顺 JSON 由 Vite 从 `hanzi-writer-data` 依赖按请求返回，不需要预先同步；生产构建会自动复制到 `studio/dist/zitie/hanzi-data/` 并校验页面和关键资源。
 
 ### Wallpapers Crawler
 
@@ -184,8 +172,7 @@ Studio 和 Zitie 均以浏览器本地处理为核心。用户选择的文件、
 
 - 通用：`node_modules/`、`.DS_Store`、根目录 `build/` 与临时构建目录
 - Blog：`public/`、`db.json`
-- Studio：`dist/`、壁纸背景素材、`public/data/wallpapers.catalog.json` 及版本化 `.bin`
-- Zitie：`public/hanzi-data/`、`dist/`、`.vinext/`、`.next/`、`*.tsbuildinfo`
+- Studio：`dist/`、`dist/zitie/hanzi-data/`、壁纸背景素材、`public/data/wallpapers.catalog.json` 及版本化 `.bin`
 - Wallpapers：`wallpapers.db`、Python 缓存和 `.venv/`
 
 生产部署、Nginx 修改、域名切换、`yarn deploy` 和远程资源操作均不属于日常本地开发步骤，需要单独确认。仓库没有统一许可证，使用、分发或二次开发前应分别确认各项目的授权情况。具体协作与验证规则见 [AGENTS.md](./AGENTS.md)。

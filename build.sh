@@ -4,7 +4,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="$ROOT_DIR/build"
-ALL_PROJECTS=(blog studio zitie)
+ALL_PROJECTS=(blog studio)
 SELECTED_PROJECTS=()
 STAGING_DIR="$ROOT_DIR/.build-staging.$$"
 BACKUP_PATH=""
@@ -23,7 +23,6 @@ usage() {
 可选项目：
   blog, b    -> build/meowv.com
   studio, s  -> build/studio.meowv.com
-  zitie, z   -> build/zt.meowv.com
 EOF
 }
 
@@ -59,7 +58,6 @@ destination_name() {
   case "$1" in
     blog) echo "meowv.com" ;;
     studio) echo "studio.meowv.com" ;;
-    zitie) echo "zt.meowv.com" ;;
   esac
 }
 
@@ -67,7 +65,6 @@ source_path() {
   case "$1" in
     blog) echo "$ROOT_DIR/blog/public" ;;
     studio) echo "$ROOT_DIR/studio/dist" ;;
-    zitie) echo "$ROOT_DIR/zitie/dist/client" ;;
   esac
 }
 
@@ -75,7 +72,6 @@ project_binary() {
   case "$1" in
     blog) echo "$ROOT_DIR/blog/node_modules/.bin/hexo" ;;
     studio) echo "$ROOT_DIR/studio/node_modules/.bin/vite" ;;
-    zitie) echo "$ROOT_DIR/zitie/node_modules/.bin/vinext" ;;
   esac
 }
 
@@ -83,7 +79,6 @@ install_hint() {
   case "$1" in
     blog) echo "cd blog && yarn install --frozen-lockfile" ;;
     studio) echo "cd studio && pnpm install --frozen-lockfile" ;;
-    zitie) echo "cd zitie && npm ci" ;;
   esac
 }
 
@@ -137,13 +132,6 @@ build_project() {
         cd "$ROOT_DIR/studio"
         ./node_modules/.bin/vue-tsc --noEmit
         ./node_modules/.bin/vite build
-      )
-      ;;
-    zitie)
-      (
-        cd "$ROOT_DIR/zitie"
-        node scripts/sync-hanzi-data.mjs
-        ./node_modules/.bin/vinext build
       )
       ;;
   esac
@@ -285,7 +273,6 @@ else
       --with-wallpapers) WITH_WALLPAPERS=1 ;;
       blog | b) add_project "blog" ;;
       studio | s) add_project "studio" ;;
-      zitie | z) add_project "zitie" ;;
       all)
         echo "错误：all 只能单独使用。" >&2
         usage >&2

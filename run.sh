@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ALL_PROJECTS=(blog studio zitie)
+ALL_PROJECTS=(blog studio)
 SELECTED_PROJECTS=()
 PIDS=()
 PID_PROJECTS=()
@@ -19,7 +19,6 @@ usage() {
 可选项目：
   blog, b    http://localhost:4000
   studio, s  http://localhost:4001
-  zitie, z   http://localhost:4002
   wallpapers, w  crawl / publish / stats / check
 EOF
 }
@@ -48,7 +47,6 @@ project_port() {
   case "$1" in
     blog) echo "4000" ;;
     studio) echo "4001" ;;
-    zitie) echo "4002" ;;
   esac
 }
 
@@ -56,7 +54,6 @@ project_binary() {
   case "$1" in
     blog) echo "$ROOT_DIR/blog/node_modules/.bin/hexo" ;;
     studio) echo "$ROOT_DIR/studio/node_modules/.bin/vite" ;;
-    zitie) echo "$ROOT_DIR/zitie/node_modules/.bin/vinext" ;;
   esac
 }
 
@@ -64,7 +61,6 @@ install_hint() {
   case "$1" in
     blog) echo "cd blog && yarn install --frozen-lockfile" ;;
     studio) echo "cd studio && pnpm install --frozen-lockfile" ;;
-    zitie) echo "cd zitie && npm ci" ;;
   esac
 }
 
@@ -146,11 +142,6 @@ run_project() {
       cd "$ROOT_DIR/studio"
       exec ./node_modules/.bin/vite --port "$port" --strictPort
       ;;
-    zitie)
-      cd "$ROOT_DIR/zitie"
-      node scripts/sync-hanzi-data.mjs
-      exec ./node_modules/.bin/vinext dev --port "$port"
-      ;;
   esac
 }
 
@@ -201,7 +192,6 @@ else
     case "$argument" in
       blog | b) add_project "blog" ;;
       studio | s) add_project "studio" ;;
-      zitie | z) add_project "zitie" ;;
       all)
         echo "错误：all 只能单独使用。" >&2
         usage >&2
