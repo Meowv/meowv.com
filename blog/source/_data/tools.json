@@ -9,15 +9,6 @@
     "featured": true
   },
   {
-    "slug": "zitie",
-    "name": "字帖生成",
-    "description": "在线生成可打印的 A4 字帖，支持汉字、词语、段落、拼音、英文、数字、笔画与控笔练习，可导出 PNG、PDF 或直接打印",
-    "emoji": "✍️",
-    "url": "https://zt.meowv.com",
-    "category": "效率办公",
-    "featured": true
-  },
-  {
     "slug": "date-calculator",
     "name": "日期计算",
     "description": "日期加减、间隔与工作日天数计算",
