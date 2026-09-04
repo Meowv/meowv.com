@@ -1,37 +1,25 @@
-import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath, URL } from 'node:url';
+import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import vue from '@vitejs/plugin-vue';
 import AutoImport from 'unplugin-auto-import/vite';
 import { defineConfig } from 'vite';
 import { builtinBooksDevPlugin } from './vite/builtinBooksDevPlugin.ts';
+import { studioBuildConfig } from './vite/buildConfig.ts';
 import { cubingWorkerPreloadPlugin } from './vite/cubingWorkerPreloadPlugin.ts';
 import { toolsBackgroundVideosPlugin } from './vite/toolsBackgroundVideosPlugin.ts';
+import { wallpaperCatalogDefine } from './vite/wallpaperCatalogConfig.ts';
 import { wallpaperDownloadProxyPlugin } from './vite/wallpaperDownloadProxyPlugin.ts';
-
-const wallpaperCatalogKeyFile = fileURLToPath(
-  new URL('../.wallpaper-catalog-key', import.meta.url),
-);
-const wallpaperCatalogKey =
-  process.env.VITE_WALLPAPER_CATALOG_KEY ??
-  (existsSync(wallpaperCatalogKeyFile) ? readFileSync(wallpaperCatalogKeyFile, 'utf8').trim() : '');
-
-const pdfJsRuntimeAssets = new Set([
-  'jbig2.wasm',
-  'jbig2_nowasm_fallback.js',
-  'openjpeg.wasm',
-  'openjpeg_nowasm_fallback.js',
-  'qcms_bg.wasm',
-]);
+import { zitiePlugin } from './vite/zitiePlugin.ts';
 
 export default defineConfig({
-  define: wallpaperCatalogKey
-    ? { 'import.meta.env.VITE_WALLPAPER_CATALOG_KEY': JSON.stringify(wallpaperCatalogKey) }
-    : undefined,
+  define: wallpaperCatalogDefine(),
   plugins: [
     wallpaperDownloadProxyPlugin(),
     toolsBackgroundVideosPlugin(),
     builtinBooksDevPlugin(),
+    zitiePlugin(),
+    react({ include: /src\/features\/zitie\/.*\.[jt]sx$/ }),
     vue({
       template: {
         compilerOptions: {
@@ -69,32 +57,7 @@ export default defineConfig({
       { find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) },
     ],
   },
-  build: {
-    outDir: 'dist',
-    target: 'es2022',
-    sourcemap: false,
-    chunkSizeWarningLimit: 7000,
-    modulePreload: false,
-    rolldownOptions: {
-      checks: {
-        pluginTimings: false,
-      },
-      output: {
-        assetFileNames(assetInfo) {
-          const pdfJsAssetName = assetInfo.names.find((name) => pdfJsRuntimeAssets.has(name));
-          return pdfJsAssetName
-            ? `assets/pdfjs/${pdfJsAssetName}`
-            : 'assets/[name]-[hash][extname]';
-        },
-        manualChunks(id) {
-          if (!id.includes('node_modules')) return undefined;
-          if (id.includes('vue-router')) return 'vue-router';
-          if (id.includes('/vue/')) return 'vue';
-          return undefined;
-        },
-      },
-    },
-  },
+  build: studioBuildConfig,
   optimizeDeps: {
     exclude: ['pdfjs-dist', 'cubing'],
   },
