@@ -183,3 +183,15 @@ categories:
       icon:
         url: https://copychar.cc/assets/images/icons/favicon-32x32.png
       url: https://copychar.cc
+
+    - id: tophub
+      name: 今日热榜
+      icon:
+        url: https://i.imgur.com/wEdxAPV.png
+      url: https://tophub.today
+
+    - id: newsnow
+      name: NewsNow
+      icon:
+        url: https://newsnow.busiyi.world/icon.svg
+      url: https://newsnow.busiyi.world
