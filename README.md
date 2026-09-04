@@ -146,7 +146,7 @@ pnpm preview
 
 ### Zitie
 
-Zitie 是 Studio Vite 中独立的 React 多页面应用，线上地址为 [studio.meowv.com/zitie/](https://studio.meowv.com/zitie/)。源码位于 `studio/src/features/zitie/`，唯一 HTML 模板为 `studio/zitie/index.html`，字体和品牌资源位于 `studio/public/zitie/`。它与 Studio Vue 应用使用不同 HTML 入口，不加载 `StudioShell` 或 Studio CSS。
+Zitie 是 Studio Vite 中独立的 React 多页面应用，线上地址为 [studio.meowv.com/zitie/](https://studio.meowv.com/zitie/)。源码位于 `studio/src/features/zitie/`，唯一 HTML 模板为 `studio/zitie.html`，字体和品牌资源位于 `studio/public/zitie/`。它与 Studio Vue 应用使用不同 HTML 入口，不加载 `StudioShell` 或 Studio CSS。
 
 开发时直接启动 Studio 并访问 `http://localhost:4001/zitie/`。Vite 根据 pathname 从同一模板动态渲染各页面；生产构建再自动生成目录式 HTML。笔顺 JSON 由 Vite 从 `hanzi-writer-data` 依赖按请求返回，不需要预先同步；生产构建会自动复制到 `studio/dist/zitie/hanzi-data/` 并校验页面和关键资源。
 

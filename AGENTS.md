@@ -67,7 +67,7 @@
 - `src/core/`：浏览器、本地隐私和通用基础能力。
 - `src/assets/`、`public/`：样式和静态资源。
 - `src/features/zitie/`：独立 React 字帖应用的组件、配置、Canvas、字体和导出逻辑。
-- `zitie/index.html`：Zitie 所有页面共用的唯一 HTML 源模板。
+- `zitie.html`：Zitie 所有页面共用的唯一 HTML 源模板。
 - `public/zitie/`：Zitie 字体、Logo、图标等静态资源。
 
 使用 Vue 3 Composition API、严格 TypeScript 和现有 `@/` 路径别名。首页不得预加载重型编辑器或 WASM；文件打开、新建、保存和销毁必须经过统一会话与串行编辑器队列。

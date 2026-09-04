@@ -18,7 +18,7 @@ export const studioBuildConfig = {
   rolldownOptions: {
     input: {
       main: fileURLToPath(new URL('../index.html', import.meta.url)),
-      zitie: fileURLToPath(new URL('../zitie/index.html', import.meta.url)),
+      zitie: fileURLToPath(new URL('../zitie.html', import.meta.url)),
     },
     checks: {
       pluginTimings: false,

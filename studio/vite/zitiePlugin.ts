@@ -1,5 +1,5 @@
 import { createReadStream, existsSync } from 'node:fs';
-import { cp, mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readFile, readdir, stat, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Plugin } from 'vite';
@@ -13,7 +13,8 @@ import {
 } from '../src/features/zitie/routes.ts';
 
 const studioRoot = fileURLToPath(new URL('..', import.meta.url));
-const zitieHtmlTemplate = path.join(studioRoot, 'zitie', 'index.html');
+const zitieHtmlTemplate = path.join(studioRoot, 'zitie.html');
+const zitieBuildTemplate = path.join(studioRoot, 'dist', 'zitie.html');
 const zitieOutputRoot = path.join(studioRoot, 'dist', 'zitie');
 const hanziDataSource = path.join(studioRoot, 'node_modules', 'hanzi-writer-data');
 const hanziDataOutput = path.join(zitieOutputRoot, 'hanzi-data');
@@ -23,6 +24,7 @@ const pageHeadStart = '<!-- zitie-page-head:start -->';
 const pageHeadEnd = '<!-- zitie-page-head:end -->';
 
 function htmlContextPath(contextPath: string): string {
+  if (contextPath === '/zitie.html') return '/zitie/';
   if (contextPath.endsWith('/index.html')) return contextPath.slice(0, -'index.html'.length);
   return contextPath;
 }
@@ -107,17 +109,18 @@ async function copyHanziData(): Promise<number> {
 }
 
 async function generateZitiePages(): Promise<void> {
-  const rootHtmlPath = path.join(zitieOutputRoot, 'index.html');
-  const rootHtml = await readFile(rootHtmlPath, 'utf8');
+  const template = await readFile(zitieBuildTemplate, 'utf8');
   for (const page of ZITIE_PAGES) {
-    if (page.path === '/') continue;
     const outputPath =
-      page.path === '/404.html'
-        ? path.join(zitieOutputRoot, '404.html')
-        : path.join(zitieOutputRoot, page.path, 'index.html');
+      page.path === '/'
+        ? path.join(zitieOutputRoot, 'index.html')
+        : page.path === '/404.html'
+          ? path.join(zitieOutputRoot, '404.html')
+          : path.join(zitieOutputRoot, page.path, 'index.html');
     await mkdir(path.dirname(outputPath), { recursive: true });
-    await writeFile(outputPath, injectPageHead(rootHtml, page));
+    await writeFile(outputPath, injectPageHead(template, page));
   }
+  await unlink(zitieBuildTemplate);
 }
 
 async function validateZitieOutput(): Promise<void> {
@@ -137,6 +140,9 @@ async function validateZitieOutput(): Promise<void> {
     if (!existsSync(requiredPath) || (await stat(requiredPath)).size === 0) {
       throw new Error(`字帖构建产物缺失：${requiredPath}`);
     }
+  }
+  if (existsSync(zitieBuildTemplate)) {
+    throw new Error(`字帖临时构建入口未清理：${zitieBuildTemplate}`);
   }
 }
 
@@ -168,7 +174,11 @@ export function zitiePlugin(): Plugin {
           return;
         }
 
-        if (requestUrl.pathname === '/zitie') {
+        if (
+          requestUrl.pathname === '/zitie' ||
+          requestUrl.pathname === '/zitie.html' ||
+          requestUrl.pathname === '/zitie/index.html'
+        ) {
           response.statusCode = 308;
           response.setHeader('Location', '/zitie/');
           response.end();
@@ -191,8 +201,7 @@ export function zitiePlugin(): Plugin {
         if (isZitieHtmlRequest) {
           try {
             const template = await readFile(zitieHtmlTemplate, 'utf8');
-            const contextPath =
-              requestUrl.pathname === '/zitie/index.html' ? '/zitie/' : requestUrl.pathname;
+            const contextPath = requestUrl.pathname;
             const html = await server.transformIndexHtml(contextPath, template, request.url);
             response.statusCode = knownPagePaths.has(contextPath) ? 200 : 404;
             response.setHeader('Content-Type', 'text/html; charset=utf-8');
