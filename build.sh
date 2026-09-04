@@ -9,7 +9,7 @@ SELECTED_PROJECTS=()
 STAGING_DIR="$ROOT_DIR/.build-staging.$$"
 BACKUP_PATH=""
 RESTORE_PATH=""
-CATALOG_KEY_FILE="$ROOT_DIR/.wallpaper-catalog-key"
+WALLPAPER_KEY_FILE="$ROOT_DIR/.wallpaper-key"
 
 usage() {
   cat <<'EOF'
@@ -39,8 +39,8 @@ publish_wallpapers_only() {
       --db "$ROOT_DIR/wallpapers/wallpapers.db" \
       --output-dir "$source_dir"
   )
-  node "$ROOT_DIR/studio/scripts/encrypt-wallpaper-catalog.mjs" "$source_dir" \
-    --key-file "$CATALOG_KEY_FILE" --reuse-key
+  node "$ROOT_DIR/studio/scripts/encrypt-wallpaper.mjs" "$source_dir" \
+    --key-file "$WALLPAPER_KEY_FILE" --reuse-key
 
   # 已存在构建产物时同步一份，便于直接部署 build/studio.meowv.com。
   if [ -d "$BUILD_DIR/studio.meowv.com" ]; then
@@ -319,8 +319,8 @@ for project in "${SELECTED_PROJECTS[@]}"; do
       cd "$ROOT_DIR/wallpapers"
       PYTHONPATH=src python3 -m wallpapers publish --db "$ROOT_DIR/wallpapers/wallpapers.db" --output-dir "$ROOT_DIR/studio/public/data"
     )
-    node "$ROOT_DIR/studio/scripts/encrypt-wallpaper-catalog.mjs" \
-      "$ROOT_DIR/studio/public/data" --key-file "$CATALOG_KEY_FILE"
+    node "$ROOT_DIR/studio/scripts/encrypt-wallpaper.mjs" \
+      "$ROOT_DIR/studio/public/data" --key-file "$WALLPAPER_KEY_FILE"
   fi
   build_project "$project"
   stage_output "$project"

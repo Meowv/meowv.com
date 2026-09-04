@@ -92,9 +92,9 @@ Zitie 的 pathname、练习模式和页面元数据统一维护在 `src/features
 
 采集器只访问公开接口并保存元数据和 CDN 地址，不登录、不读取 Cookie、不下载媒体文件，也不绕过付费或权限校验。新增接口、字段或抓取范围时，保持 `device_type`、`content_type`、资源角色和 UTC 时间字段的既有约定。
 
-`publish` 生成的 JSON 仅作为加密前的临时目录；部署目录必须经 `studio/scripts/encrypt-wallpaper-catalog.mjs` 处理，使用现有 AES-256-GCM 版本化 `.bin` 格式，并保留 manifest 中的加密版本和文件大小信息。不要在源码、日志或文档中写入新的密钥材料。
+`publish` 生成的 JSON 仅作为加密前的临时目录；部署目录必须经 `studio/scripts/encrypt-wallpaper.mjs` 处理，使用现有 AES-256-GCM 版本化 `.bin` 格式，并保留 manifest 中的加密版本和文件大小信息。不要在源码、日志或文档中写入新的密钥材料。
 
-修改采集、数据库或发布逻辑时，优先运行 `cd wallpapers && pytest`；修改加密脚本时，至少执行 `node --check studio/scripts/encrypt-wallpaper-catalog.mjs`，并检查 manifest、旧版本文件清理和 `.bin` 输出。
+修改采集、数据库或发布逻辑时，优先运行 `cd wallpapers && pytest`；修改加密脚本时，至少执行 `node --check studio/scripts/encrypt-wallpaper.mjs`，并检查 manifest、旧版本文件清理和 `.bin` 输出。
 
 ## 验证规则
 

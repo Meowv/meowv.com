@@ -8,12 +8,12 @@ import { builtinBooksDevPlugin } from './vite/builtinBooksDevPlugin.ts';
 import { studioBuildConfig } from './vite/buildConfig.ts';
 import { cubingWorkerPreloadPlugin } from './vite/cubingWorkerPreloadPlugin.ts';
 import { toolsBackgroundVideosPlugin } from './vite/toolsBackgroundVideosPlugin.ts';
-import { wallpaperCatalogDefine } from './vite/wallpaperCatalogConfig.ts';
+import { wallpaperDefine } from './vite/wallpaperConfig.ts';
 import { wallpaperDownloadProxyPlugin } from './vite/wallpaperDownloadProxyPlugin.ts';
 import { zitiePlugin } from './vite/zitiePlugin.ts';
 
 export default defineConfig({
-  define: wallpaperCatalogDefine(),
+  define: wallpaperDefine(),
   plugins: [
     wallpaperDownloadProxyPlugin(),
     toolsBackgroundVideosPlugin(),

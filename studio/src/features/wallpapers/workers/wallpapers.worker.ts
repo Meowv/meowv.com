@@ -71,7 +71,7 @@ const CATALOG_ENCRYPTION_VERSION = 2;
 const CATALOG_ENCRYPTION_NAME = 'aes-256-gcm';
 const CATALOG_COMPRESSION = 'gzip';
 const CATALOG_MAGIC = new Uint8Array([0x4d, 0x57, 0x50, 0x43]);
-const CATALOG_RELEASE_KEY = import.meta.env.VITE_WALLPAPER_CATALOG_KEY as string | undefined;
+const WALLPAPER_RELEASE_KEY = import.meta.env.VITE_WALLPAPER_KEY as string | undefined;
 const catalogKeyPromises = new Map<string, Promise<CryptoKey>>();
 
 function dataBaseUrl(): string {
@@ -131,8 +131,8 @@ async function encryptionKey(context: string): Promise<CryptoKey> {
   const pending = catalogKeyPromises.get(context);
   if (pending) return pending;
   const promise = (async () => {
-    if (!CATALOG_RELEASE_KEY) throw new Error('壁纸目录解密密钥不可用。');
-    const masterKey = decodeBase64(CATALOG_RELEASE_KEY);
+    if (!WALLPAPER_RELEASE_KEY) throw new Error('壁纸目录解密密钥不可用。');
+    const masterKey = decodeBase64(WALLPAPER_RELEASE_KEY);
     if (masterKey.length !== 32) throw new Error('壁纸目录解密密钥无效。');
     const contextBytes = new TextEncoder().encode(context);
     const material = new Uint8Array(

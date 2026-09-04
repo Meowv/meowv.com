@@ -154,7 +154,7 @@ if (process.argv[1] && basename(process.argv[1]) === basename(import.meta.url)) 
   const keyFile = keyFlag >= 0 ? process.argv[keyFlag + 1] : undefined;
   const reuseKey = process.argv.includes('--reuse-key');
   if (!directory || !keyFile) {
-    console.error('用法：node encrypt-wallpaper-catalog.mjs <目录> --key-file <密钥文件>');
+    console.error('用法：node encrypt-wallpaper.mjs <目录> --key-file <密钥文件>');
     process.exit(1);
   }
   encryptCatalogDirectory(directory, { keyFile, reuseKey });
