@@ -17,6 +17,7 @@ const emit = defineEmits<{ support: [] }>();
       </div>
 
       <nav class="studio-footer__links" aria-label="页脚链接">
+        <a href="https://zt.meowv.com" target="_blank" rel="noreferrer">✍️ 字帖生成</a>
         <a href="https://meowv.com" target="_blank" rel="noreferrer"
           ><IconStarFilled :size="18" stroke-width="1.9" aria-hidden="true" />阿星𝑷𝒍𝒖𝒔</a
         >
