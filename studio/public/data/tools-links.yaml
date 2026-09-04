@@ -58,12 +58,6 @@ categories:
       url: https://leon-made-this.work/museum
 
   bookmarks:
-    - id: zitie
-      name: 字帖生成
-      icon:
-        url: https://zt.meowv.com/icon.png
-      url: https://zt.meowv.com
-
     - id: massgrave
       name: Microsoft Activation Scripts
       icon:
