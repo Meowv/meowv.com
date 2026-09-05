@@ -62,9 +62,14 @@ export interface WallpaperBootstrapResult {
   generatedAt: string | null;
 }
 
+export interface WallpaperRandomBackgroundRequest {
+  excludeId?: number | null;
+}
+
 export interface WallpaperWorkerRequest {
   id: string;
-  action: 'init' | 'prefetch' | 'bootstrap' | 'categories' | 'query' | 'detail';
+  action:
+    'init' | 'prefetch' | 'bootstrap' | 'categories' | 'query' | 'detail' | 'random-background';
   payload?: unknown;
 }
 

@@ -1,10 +1,5 @@
 /// <reference types="vite/client" />
 
-declare module 'virtual:tools-background-videos' {
-  const videos: string[];
-  export default videos;
-}
-
 interface FileSystemFileHandle {
   getFile(): Promise<File>;
 }

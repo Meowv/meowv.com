@@ -12,17 +12,21 @@ import {
   IconChevronDown,
   IconChevronLeft,
   IconChevronRight,
+  IconCheck,
   IconDeviceDesktop,
   IconDeviceMobile,
   IconDownload,
+  IconLoader2,
   IconPlayerPlay,
   IconMovie,
   IconPhoto,
   IconRefresh,
   IconSearch,
+  IconWallpaper,
   IconX,
 } from '@tabler/icons-vue';
 import { useWallpapers } from './composables/useWallpapers';
+import { useToolsBackground } from '@/features/tools/composables/useToolsBackground';
 import type { WallpaperItem } from './types';
 import './wallpapers.css';
 
@@ -40,11 +44,20 @@ const {
   setFilters,
   retry,
 } = useWallpapers();
+const {
+  enabled: backgroundEnabled,
+  activeWallpaperId,
+  pendingSource: pendingBackgroundSource,
+  isLoading: backgroundLoading,
+  requestWallpaperBackground,
+  errorMessage: backgroundErrorMessage,
+} = useToolsBackground();
 const selected = ref<WallpaperItem | null>(null);
 const downloadBusy = ref(false);
 const navigationBusy = ref(false);
 const mediaLoading = ref(false);
 const mediaLoadFailed = ref(false);
+const backgroundStatusMessage = ref('');
 const sentinel = ref<HTMLElement | null>(null);
 const categoryBar = ref<HTMLElement | null>(null);
 const categoryItems = ref<HTMLElement | null>(null);
@@ -61,6 +74,7 @@ let cardObserver: IntersectionObserver | null = null;
 const observedCardIds = new WeakMap<Element, number>();
 const lazyCardIds = ref(new Set<number>());
 let categoryResizeObserver: ResizeObserver | null = null;
+let backgroundStatusTimer: ReturnType<typeof setTimeout> | undefined;
 let pageScrollLock:
   | {
       scrollY: number;
@@ -217,11 +231,52 @@ function open(item: WallpaperItem): void {
 function close(): void {
   selected.value = null;
 }
+async function setSelectedAsBackground(): Promise<void> {
+  const item = selected.value;
+  if (!item || !canSetSelectedAsBackground.value || setBackgroundDisabled.value) return;
+  backgroundStatusMessage.value = '';
+  clearTimeout(backgroundStatusTimer);
+  const success = await requestWallpaperBackground(item);
+  if (selected.value?.id !== item.id) return;
+  backgroundStatusMessage.value = success
+    ? '已设为壁纸'
+    : backgroundErrorMessage.value || '设置视频背景失败。';
+  backgroundStatusTimer = setTimeout(() => {
+    backgroundStatusMessage.value = '';
+  }, 2400);
+}
 const selectedIndex = computed(() =>
   selected.value ? items.value.findIndex((item) => item.id === selected.value?.id) : -1,
 );
 const canNavigateNext = computed(
   () => selectedIndex.value >= 0 && (selectedIndex.value < items.value.length - 1 || hasMore.value),
+);
+const canSetSelectedAsBackground = computed(
+  () =>
+    selected.value?.deviceType === 'desktop' &&
+    selected.value.contentType === 'dynamic' &&
+    Boolean(selected.value.previewVideoUrl),
+);
+const selectedIsBackground = computed(
+  () =>
+    canSetSelectedAsBackground.value &&
+    backgroundEnabled.value &&
+    activeWallpaperId.value === selected.value?.id,
+);
+const selectedBackgroundPending = computed(
+  () =>
+    canSetSelectedAsBackground.value &&
+    pendingBackgroundSource.value?.wallpaperId === selected.value?.id,
+);
+const setBackgroundDisabled = computed(
+  () =>
+    !canSetSelectedAsBackground.value ||
+    selectedBackgroundPending.value ||
+    selectedIsBackground.value ||
+    backgroundLoading.value ||
+    navigationBusy.value ||
+    mediaLoading.value ||
+    mediaLoadFailed.value,
 );
 async function navigate(delta: -1 | 1): Promise<void> {
   if (!selected.value || navigationBusy.value) return;
@@ -428,6 +483,7 @@ onMounted(() => {
   void nextTick(recomputeCategoryCapacity);
 });
 onBeforeUnmount(() => {
+  clearTimeout(backgroundStatusTimer);
   unlockPageScroll();
   observer?.disconnect();
   cardObserver?.disconnect();
@@ -451,6 +507,8 @@ watch(searchExpanded, () => void nextTick(recomputeCategoryCapacity));
 watch(selected, (item) => {
   mediaLoading.value = Boolean(item?.coverUrl || item?.previewVideoUrl);
   mediaLoadFailed.value = false;
+  backgroundStatusMessage.value = '';
+  clearTimeout(backgroundStatusTimer);
   if (item) lockPageScroll();
   else unlockPageScroll();
 });
@@ -685,6 +743,37 @@ watch(
       </button>
       <div class="wallpapers-lightbox-download" @click.stop>
         <button
+          v-if="canSetSelectedAsBackground"
+          class="wallpapers-lightbox-download-trigger"
+          :class="{ 'is-active': selectedIsBackground }"
+          type="button"
+          :disabled="setBackgroundDisabled"
+          :aria-label="
+            selectedIsBackground
+              ? '当前视频已设为壁纸'
+              : selectedBackgroundPending
+                ? '正在设为壁纸'
+                : '设为壁纸'
+          "
+          :aria-pressed="selectedIsBackground"
+          :title="
+            selectedIsBackground
+              ? '当前视频已设为壁纸'
+              : selectedBackgroundPending
+                ? '正在设为壁纸'
+                : '设为壁纸'
+          "
+          @click="void setSelectedAsBackground()"
+        >
+          <IconLoader2
+            v-if="selectedBackgroundPending"
+            class="wallpapers-action-spinning"
+            :size="18"
+          />
+          <IconCheck v-else-if="selectedIsBackground" :size="18" />
+          <IconWallpaper v-else :size="18" />
+        </button>
+        <button
           v-if="selected.previewVideoUrl"
           class="wallpapers-lightbox-download-trigger"
           title="下载动态壁纸"
@@ -709,6 +798,13 @@ watch(
           </span>
         </button>
       </div>
+      <span
+        v-if="backgroundStatusMessage"
+        class="wallpapers-lightbox-background-status"
+        role="status"
+      >
+        {{ backgroundStatusMessage }}
+      </span>
       <video
         v-if="selected.contentType === 'dynamic' && selected.previewVideoUrl"
         :key="`video-${selected.id}`"

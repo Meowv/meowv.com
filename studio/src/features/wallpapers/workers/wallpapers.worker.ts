@@ -6,6 +6,7 @@ import type {
   WallpaperItem,
   WallpaperPageResult,
   WallpaperQuery,
+  WallpaperRandomBackgroundRequest,
   WallpaperWorkerRequest,
   WallpaperWorkerResponse,
 } from '../types';
@@ -63,7 +64,7 @@ const catalogs = new Map<CatalogBucket, WallpaperCatalog>();
 const catalogPromises = new Map<CatalogBucket, Promise<WallpaperCatalog>>();
 let bootstrap: WallpaperBootstrapResult | null = null;
 let bootstrapPromise: Promise<WallpaperBootstrapResult> | null = null;
-let itemsById = new Map<number, CatalogItem>();
+const itemsById = new Map<number, CatalogItem>();
 let cacheCleanupPromise: Promise<void> | null = null;
 let prefetchPromise: Promise<PromiseSettledResult<WallpaperCatalog>[]> | null = null;
 
@@ -467,6 +468,28 @@ async function detail(id: number): Promise<WallpaperItem | null> {
   return publicItem(item);
 }
 
+async function randomBackground(
+  payload: WallpaperRandomBackgroundRequest,
+): Promise<WallpaperItem | null> {
+  const catalog = await loadCatalog('desktop:dynamic');
+  const playable = catalog.items.filter(
+    (item) =>
+      item.deviceType === 'desktop' &&
+      item.contentType === 'dynamic' &&
+      Boolean(item.previewVideoUrl),
+  );
+  if (!playable.length) return null;
+
+  const excludeId = Number.isInteger(payload.excludeId) ? payload.excludeId : null;
+  const candidates =
+    playable.length > 1 && excludeId !== null
+      ? playable.filter((item) => item.id !== excludeId)
+      : playable;
+  const pool = candidates.length ? candidates : playable;
+  const selected = pool[Math.floor(Math.random() * pool.length)];
+  return selected ? publicItem(selected) : null;
+}
+
 self.onmessage = async (event: MessageEvent<WallpaperWorkerRequest>) => {
   const request = event.data;
   const response: WallpaperWorkerResponse = { id: request.id, ok: true };
@@ -496,6 +519,10 @@ self.onmessage = async (event: MessageEvent<WallpaperWorkerRequest>) => {
       response.data = await queryWallpapers(request.payload as WallpaperQuery);
     else if (request.action === 'detail')
       response.data = await detail(Number((request.payload as { id: number }).id));
+    else if (request.action === 'random-background')
+      response.data = await randomBackground(
+        (request.payload ?? {}) as WallpaperRandomBackgroundRequest,
+      );
     self.postMessage(response);
   } catch (error) {
     response.ok = false;

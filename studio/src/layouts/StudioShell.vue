@@ -43,6 +43,7 @@ const isBooksPage = computed(() => route.meta.feature === 'books');
 const isWallpapersPage = computed(() => route.meta.feature === 'wallpapers');
 const {
   enabled: toolsBackgroundEnabled,
+  pendingSource: toolsBackgroundPendingSource,
   surfaceOpacity: toolsBackgroundSurfaceOpacity,
   applyToOtherPages: toolsBackgroundApplyToOtherPages,
 } = useToolsBackground();
@@ -102,6 +103,7 @@ const wallpapersBackgroundEnabled = computed(
 const supportsToolsBackground = computed(
   () =>
     isToolsPage.value ||
+    Boolean(toolsBackgroundPendingSource.value) ||
     homeBackgroundEnabled.value ||
     officeBackgroundEnabled.value ||
     markdownBackgroundEnabled.value ||

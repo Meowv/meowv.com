@@ -40,7 +40,6 @@ const { celebrationBurst, celebrationLevel, triggerCelebration } = useToolsCeleb
   catalogElement,
 );
 const {
-  hasAvailableVideos,
   randomShortcutEnabled,
   isLoading: backgroundLoading,
   requestSequence: backgroundRequestSequence,
@@ -76,9 +75,7 @@ const toolGroups = computed(() =>
     }))
     .filter((group) => group.tools.length),
 );
-const randomShortcutVisible = computed(
-  () => randomShortcutEnabled.value && hasAvailableVideos.value,
-);
+const randomShortcutVisible = computed(() => randomShortcutEnabled.value);
 
 function updateActiveCategory(): void {
   if (navigationTarget.value) {

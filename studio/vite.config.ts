@@ -7,7 +7,6 @@ import { defineConfig } from 'vite';
 import { builtinBooksDevPlugin } from './vite/builtinBooksDevPlugin.ts';
 import { studioBuildConfig } from './vite/buildConfig.ts';
 import { cubingWorkerPreloadPlugin } from './vite/cubingWorkerPreloadPlugin.ts';
-import { toolsBackgroundVideosPlugin } from './vite/toolsBackgroundVideosPlugin.ts';
 import { wallpaperDefine } from './vite/wallpaperConfig.ts';
 import { wallpaperDownloadProxyPlugin } from './vite/wallpaperDownloadProxyPlugin.ts';
 import { zitiePlugin } from './vite/zitiePlugin.ts';
@@ -16,7 +15,6 @@ export default defineConfig({
   define: wallpaperDefine(),
   plugins: [
     wallpaperDownloadProxyPlugin(),
-    toolsBackgroundVideosPlugin(),
     builtinBooksDevPlugin(),
     zitiePlugin(),
     react({ include: /src\/features\/zitie\/.*\.[jt]sx$/ }),

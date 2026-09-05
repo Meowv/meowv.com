@@ -1,8 +1,10 @@
 import type {
   WallpaperBootstrapResult,
   WallpaperCategory,
+  WallpaperItem,
   WallpaperPageResult,
   WallpaperQuery,
+  WallpaperRandomBackgroundRequest,
   WallpaperWorkerRequest,
   WallpaperWorkerResponse,
 } from '../types';
@@ -70,6 +72,12 @@ export class WallpaperRepository {
 
   query(query: WallpaperQuery): Promise<WallpaperPageResult> {
     return this.request('query', query);
+  }
+
+  randomBackground(excludeId?: number | null): Promise<WallpaperItem | null> {
+    return this.request('random-background', {
+      excludeId,
+    } satisfies WallpaperRandomBackgroundRequest);
   }
 
   dispose(): void {
