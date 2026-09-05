@@ -190,6 +190,12 @@ categories:
         url: https://i.imgur.com/wEdxAPV.png
       url: https://tophub.today
 
+    - id: rebang
+      name: 全网热榜
+      icon:
+        url: https://rebang.today/favicon.ico
+      url: https://rebang.today
+
     - id: newsnow
       name: NewsNow
       icon:
