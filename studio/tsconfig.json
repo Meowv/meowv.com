@@ -4,6 +4,7 @@
     "useDefineForClassFields": true,
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "noEmit": true,
     "strict": true,
     "jsx": "preserve",
     "resolveJsonModule": true,
@@ -12,12 +13,11 @@
     "allowImportingTsExtensions": true,
     "lib": ["ES2022", "DOM", "DOM.Iterable", "WebWorker"],
     "skipLibCheck": true,
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@ranuts/shared": ["src/features/office/runtime/shared/index.ts"],
-      "@ranuts/shared/*": ["src/features/office/runtime/shared/*"],
-      "@ranuts/converter": ["src/features/office/runtime/converter/index.ts"]
+      "@/*": ["./src/*"],
+      "@ranuts/shared": ["./src/features/office/runtime/shared/index.ts"],
+      "@ranuts/shared/*": ["./src/features/office/runtime/shared/*"],
+      "@ranuts/converter": ["./src/features/office/runtime/converter/index.ts"]
     },
     "types": ["vite/client", "node"]
   },
