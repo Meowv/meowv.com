@@ -160,6 +160,30 @@ categories:
         url: https://best.i8k.tv/favicon.ico
       url: https://i8k.tv
 
+    - id: ppnix
+      name: PPnix - 在线看电影看电视
+      icon:
+        url: https://www.ppnix.com/favicon.ico
+      url: https://www.ppnix.com
+
+    - id: moovie
+      name: Moovie 影牛
+      icon:
+        url: https://moovie.c2v2.com/static/img/moovie-app.png
+      url: https://moovie.c2v2.com
+
+    - id: rrdynb
+      name: 人人电影网
+      icon:
+        url: https://www.rrdynb.com/favicon.ico
+      url: https://www.rrdynb.com
+
+    - id: 1lou
+      name: BT之家1LOU站
+      icon:
+        url: https://1lou.me/view/img/favicon.ico
+      url: https://1lou.me
+
     - id: flysheep6
       name: flysheep资源避难所
       icon:
@@ -201,3 +225,9 @@ categories:
       icon:
         url: https://newsnow.busiyi.world/icon.svg
       url: https://newsnow.busiyi.world
+
+    - id: whatshot
+      name: 什么火了
+      icon:
+        url: https://whatshot.top/favicon.ico
+      url: https://whatshot.top
