@@ -142,6 +142,12 @@ const toolCategorySeeds = {
         icon: 'crop',
       },
       {
+        id: 'image-merge',
+        name: '图片合并',
+        description: '自由拖动、缩放和排列多张图片，合并导出为一张图片。',
+        icon: 'photo-edit',
+      },
+      {
         id: 'images-to-pdf',
         name: '图片转 PDF',
         description: '多图排序并生成常用纸张 PDF。',

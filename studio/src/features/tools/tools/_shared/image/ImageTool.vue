@@ -16,6 +16,7 @@ type ImageToolMode =
   | 'convert'
   | 'resize'
   | 'crop'
+  | 'merge'
   | 'watermark'
   | 'rounded'
   | 'padding'
@@ -36,6 +37,7 @@ const loaders: Record<ImageToolMode, () => Promise<{ default: Component }>> = {
   convert: () => import('@/features/tools/tools/_shared/image/views/BatchToolView.vue'),
   resize: () => import('@/features/tools/tools/_shared/image/views/BatchToolView.vue'),
   crop: () => import('@/features/tools/tools/_shared/image/views/CropView.vue'),
+  merge: () => import('@/features/tools/tools/_shared/image/views/ImageMergeView.vue'),
   watermark: () => import('@/features/tools/tools/_shared/image/views/ImageEffectsView.vue'),
   rounded: () => import('@/features/tools/tools/_shared/image/views/ImageEffectsView.vue'),
   padding: () => import('@/features/tools/tools/_shared/image/views/ImageEffectsView.vue'),
