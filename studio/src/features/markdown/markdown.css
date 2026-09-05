@@ -637,7 +637,7 @@
 }
 
 .markdown-studio .activity-button--theme:hover {
-  background: var(--color-surface-hover) !important;
+  background: transparent !important;
   color: var(--color-text) !important;
 }
 

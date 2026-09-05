@@ -457,7 +457,8 @@ button {
   border: 0 !important;
   border-radius: 8px !important;
   color: var(--color-text-muted) !important;
-  background: var(--color-surface-solid) !important;
+  background: transparent !important;
+  cursor: pointer;
   place-items: center;
   transition:
     border-color 160ms ease,
@@ -467,7 +468,7 @@ button {
 
 .theme-toggle:hover {
   color: var(--color-brand-strong) !important;
-  background: var(--color-brand-soft) !important;
+  background: transparent !important;
 }
 
 body.has-dialog-open {
@@ -1085,7 +1086,7 @@ body.has-dialog-open {
 }
 
 .studio-shell--home-background .theme-toggle {
-  background: var(--home-background-surface) !important;
+  background: transparent !important;
 }
 
 .studio-shell--home-background .file-portal:hover,
@@ -1149,7 +1150,7 @@ body.has-dialog-open {
 }
 
 .studio-shell--office-background .theme-toggle {
-  background: var(--office-background-surface) !important;
+  background: transparent !important;
 }
 
 .studio-shell--markdown-background,
