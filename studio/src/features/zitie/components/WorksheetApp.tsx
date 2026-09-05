@@ -1195,8 +1195,9 @@ function WorksheetCanvas({
     const canvas = canvasRef.current;
     if (!canvas) return;
     let cancelled = false;
+    const controller = new AbortController();
     setRendering(true);
-    renderWorksheetPage(canvas, page, 96)
+    renderWorksheetPage(canvas, page, 96, { signal: controller.signal })
       .then((warnings) => {
         if (!cancelled) onWarnings(page.index, warnings);
       })
@@ -1208,6 +1209,7 @@ function WorksheetCanvas({
       });
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, [page, onWarnings]);
 

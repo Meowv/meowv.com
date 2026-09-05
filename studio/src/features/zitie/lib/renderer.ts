@@ -18,6 +18,10 @@ export interface PdfImagePage {
   height: number;
 }
 
+interface RenderWorksheetOptions {
+  signal?: AbortSignal;
+}
+
 const hanziDataCache = new Map<string, Promise<HanziData | null>>();
 
 export async function loadHanziData(character: string): Promise<HanziData | null> {
@@ -50,13 +54,15 @@ export async function renderWorksheetPage(
   canvas: HTMLCanvasElement,
   page: WorksheetPage,
   dpi: number,
+  options: RenderWorksheetOptions = {},
 ): Promise<string[]> {
   const width = mmToPx(A4_WIDTH_MM, dpi);
   const height = mmToPx(A4_HEIGHT_MM, dpi);
-  if (canvas.width !== width) canvas.width = width;
-  if (canvas.height !== height) canvas.height = height;
+  const renderCanvas = options.signal ? canvas.ownerDocument.createElement('canvas') : canvas;
+  if (renderCanvas.width !== width) renderCanvas.width = width;
+  if (renderCanvas.height !== height) renderCanvas.height = height;
 
-  const context = canvas.getContext('2d', { alpha: false });
+  const context = renderCanvas.getContext('2d', { alpha: false });
   if (!context) throw new Error('当前浏览器无法创建画布。');
   context.setTransform(1, 0, 0, 1, 0, 0);
   context.fillStyle = '#ffffff';
@@ -65,20 +71,11 @@ export async function renderWorksheetPage(
   context.lineCap = 'round';
   context.lineJoin = 'round';
 
-  if (typeof document !== 'undefined' && 'fonts' in document) {
-    const usesPenControlFont = page.commands.some((command) => command.kind === 'pattern');
-    if (usesPenControlFont) {
-      // 控笔图案依赖图标字体；先按实际会用到的字重完成加载，避免画布首帧回退为字母或数字。
-      await Promise.all([
-        document.fonts.load('400 16px "Practice Pen Control"'),
-        document.fonts.load('700 16px "Practice Pen Control"'),
-      ]);
-    }
-    await document.fonts.ready;
-  }
+  await loadWorksheetFonts(page);
 
   const warnings = new Set(page.warnings);
   for (const command of page.commands) {
+    if (options.signal?.aborted) return Array.from(warnings);
     if (command.kind === 'grid') drawGrid(context, command);
     if (command.kind === 'text') drawText(context, command);
     if (command.kind === 'pattern') drawPattern(context, command);
@@ -87,7 +84,50 @@ export async function renderWorksheetPage(
       if (warning) warnings.add(warning);
     }
   }
+  if (options.signal?.aborted) return Array.from(warnings);
+  if (renderCanvas === canvas) return Array.from(warnings);
+
+  if (canvas.width !== width) canvas.width = width;
+  if (canvas.height !== height) canvas.height = height;
+  const targetContext = canvas.getContext('2d', { alpha: false });
+  if (!targetContext) throw new Error('当前浏览器无法创建画布。');
+  targetContext.setTransform(1, 0, 0, 1, 0, 0);
+  targetContext.drawImage(renderCanvas, 0, 0);
   return Array.from(warnings);
+}
+
+async function loadWorksheetFonts(page: WorksheetPage): Promise<void> {
+  if (typeof document === 'undefined' || !('fonts' in document)) return;
+
+  const requests = new Map<string, Set<string>>();
+  const addRequest = (font: string, text: string) => {
+    const characters = requests.get(font) ?? new Set<string>();
+    Array.from(text).forEach((character) => characters.add(character));
+    requests.set(font, characters);
+  };
+
+  page.commands.forEach((command) => {
+    if (command.kind === 'text') {
+      addRequest(
+        `${command.fontWeight === 'bold' ? 700 : 400} 16px ${command.fontFamily}`,
+        command.text,
+      );
+    } else if (command.kind === 'stroke') {
+      addRequest(`400 16px ${command.fallbackFontFamily}`, command.character);
+    } else if (command.kind === 'pattern') {
+      addRequest(
+        `${command.weight === 'bold' ? 700 : 400} 16px ${BUILT_IN_FONT_FAMILIES.penControl}`,
+        command.pattern,
+      );
+    }
+  });
+
+  await Promise.all(
+    Array.from(requests, ([font, characters]) =>
+      document.fonts.load(font, Array.from(characters).join('')).catch(() => []),
+    ),
+  );
+  await document.fonts.ready;
 }
 
 function drawGrid(
