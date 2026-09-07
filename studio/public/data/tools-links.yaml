@@ -64,6 +64,12 @@ categories:
         url: /zitie/icon.png
       url: https://studio.meowv.com/zitie
 
+    - id: xszn
+      name: 免费和开源软件列表
+      icon:
+        url: https://xszn.org/favicon.ico
+      url: https://xszn.org
+
     - id: massgrave
       name: Microsoft Activation Scripts
       icon:
@@ -141,6 +147,12 @@ categories:
       icon:
         url: https://www.nmme.xyz/favicon.ico
       url: https://www.nmme.xyz
+
+    - id: zhuiju
+      name: 追剧么指南
+      icon:
+        url: https://zhuiju.me/icon.svg
+      url: https://zhuiju.me
 
     - id: botvod
       name: 在线视频下载网站
