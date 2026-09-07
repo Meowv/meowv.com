@@ -296,12 +296,57 @@ export function useWallpapers() {
     }
   }
 
+  function sameFilters(left: typeof defaults, right: typeof defaults): boolean {
+    return (
+      left.device === right.device &&
+      left.content === right.content &&
+      left.categoryId === right.categoryId &&
+      left.keyword === right.keyword
+    );
+  }
+
+  async function syncFromRoute(): Promise<void> {
+    if (route.name !== 'wallpapers') return;
+    const nextFilters = readFilters();
+    if (sameFilters(filters.value, nextFilters)) return;
+
+    const deviceOrContentChanged =
+      filters.value.device !== nextFilters.device || filters.value.content !== nextFilters.content;
+    filters.value = nextFilters;
+    const cached = readCachedPage(nextFilters);
+    if (cached) {
+      items.value = cached.items;
+      cursor = cached.nextCursor;
+      hasMore.value = cached.hasMore;
+    } else {
+      items.value = [];
+      cursor = null;
+      hasMore.value = true;
+    }
+    loading.value = true;
+    loadingMore.value = false;
+    error.value = null;
+    try {
+      if (deviceOrContentChanged) {
+        categoriesLoading.value = true;
+        const nextCategories = await repository.categories(nextFilters.device, nextFilters.content);
+        categories.value = nextCategories;
+        saveCachedCategories(nextFilters.device, nextFilters.content, nextCategories);
+      }
+      await load(true, Boolean(cached));
+    } catch (reason) {
+      error.value = reason instanceof Error ? reason.message : '壁纸加载失败。';
+      loading.value = false;
+      loadingMore.value = false;
+    } finally {
+      categoriesLoading.value = false;
+    }
+  }
+
   onBeforeUnmount(() => repository.dispose());
   watch(
     () => route.query,
-    () => {
-      if (route.name === 'wallpapers') filters.value = readFilters();
-    },
+    () => void syncFromRoute(),
     { deep: true },
   );
   void initialize();
