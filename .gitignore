@@ -2,3 +2,5 @@
 /.build-staging.*/
 /.build-backup.*/
 /.wallpaper-key
+/.deploy.env
+/.deploy-cache/

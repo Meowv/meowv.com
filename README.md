@@ -2,7 +2,7 @@
 
 Meowv 的 Web 项目与壁纸数据工具仓库，包含 Blog、Meowv Studio 和 Wallpapers Crawler。各顶层项目彼此独立，不是 npm/pnpm workspace；依赖安装、开发和构建命令都应在对应目录中执行。
 
-生产构建在本地完成，根目录脚本会把静态产物汇总到 `build/`，再由维护者自行部署。仓库不通过 GitHub Actions、OpenAI Sites 或其他托管平台构建和发布。
+生产构建在本地完成，根目录脚本会把静态产物汇总到 `build/`，再由维护者通过 `deploy.sh` 上传到 Windows Nginx 服务器，也可以手动拷贝。仓库不通过 GitHub Actions、OpenAI Sites 或其他托管平台构建和发布。
 
 ## 项目概览
 
@@ -19,6 +19,7 @@ Meowv 的 Web 项目与壁纸数据工具仓库，包含 Blog、Meowv Studio 和
 ├── wallpapers/ # 公开壁纸接口采集器与 Studio 目录发布工具
 ├── run.sh      # 开发环境启动脚本
 ├── build.sh    # 生产构建与产物汇总脚本
+├── deploy.sh   # 上传已有构建产物到 Windows 服务器
 ├── AGENTS.md   # 全仓库协作约定
 └── README.md   # 项目说明
 ```
@@ -45,7 +46,7 @@ Wallpapers Crawler 无运行时第三方依赖；运行测试时需要 `pytest`�
 脚本面向 macOS Bash，并已保留可执行权限。若权限在文件传输后丢失，可执行：
 
 ```bash
-chmod +x run.sh build.sh
+chmod +x run.sh build.sh deploy.sh
 ```
 
 ### 启动
@@ -112,6 +113,35 @@ build/
 ```
 
 全量构建会在 Blog 和 Studio 全部成功后替换整个 `build/`。指定项目构建会按参数顺序执行，只替换对应域名目录并保留其他产物。Studio 的一次 Vite 多入口构建会同时输出 Vue 应用和 `dist/zitie/`。
+
+### 上传到 Windows Nginx
+
+服务器需已安装并启动 OpenSSH Server，且可以通过 `ssh` 登录。本机需安装 `rclone`。`deploy.sh` 通过 SFTP 上传已有构建产物，不执行构建。
+
+首次使用创建本地配置：
+
+```bash
+cp .deploy.env.example .deploy.env
+```
+
+将 `.deploy.env` 中的 `DEPLOY_HOST` 改为已经成功连接的 `administrator@服务器地址`，`DEPLOY_PORT` 默认为 `22`。环境变量优先于配置文件。配置文件已被 Git 忽略，不要写入密码或私钥。脚本会按需询问 SSH 密码，并使用 `~/.ssh/known_hosts` 校验服务器身份。
+
+```bash
+./deploy.sh studio --dry-run # 连接服务器，预览需要上传的文件
+./deploy.sh studio           # 上传 Studio（包含 /zitie/）
+./deploy.sh blog             # 上传博客
+./deploy.sh all              # 顺序上传博客、Studio；无参数也是全部
+./deploy.sh b s              # 支持项目简写和去重
+```
+
+命令执行后默认直接上传，不再要求输入确认。`--dry-run` 会连接服务器并比较文件，但不实际上传。
+
+| 项目 | 本地产物 | 服务器站点目录 |
+| --- | --- | --- |
+| Blog | `build/meowv.com/` | `C:\_qix\meowv.com` |
+| Studio | `build/studio.meowv.com/` | `C:\_qix\studio.meowv.com` |
+
+目录取自仓库 `nginx.conf`；部署前确认服务器实际使用同一配置。脚本在本机 `.deploy-cache/` 保存上次成功上传的 SHA-256 清单，只把新增或内容变化的文件交给 SFTP，内容相同的文件会跳过。首次运行会上传全部文件；如果服务器文件曾被手工修改，移除对应清单后再运行即可强制重新上传全部文件。脚本关闭远程修改时间同步，以兼容 Windows OpenSSH 的 `SetModTime failed`。上传不会清空目标目录，因此旧构建留下、而新构建不再包含的文件仍会保留。脚本不提供备份、回滚、页面校验或 Nginx 重启。
 
 ## 单项目命令
 
