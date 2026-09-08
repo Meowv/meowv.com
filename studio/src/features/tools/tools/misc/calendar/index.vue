@@ -1,4 +1,13 @@
 <script setup lang="ts">
+import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import {
+  addDays,
+  clampDate,
+  formatDateKey,
+  parseDateKey,
+  shiftCalendarDate,
+  startOfWeek,
+} from './calendar-date.util';
 import CalendarToolbar from './components/CalendarToolbar.vue';
 import DayView from './components/DayView.vue';
 import MonthView from './components/MonthView.vue';
@@ -6,10 +15,18 @@ import WeekView from './components/WeekView.vue';
 import YearView from './components/YearView.vue';
 import { useCalendar } from './useCalendar';
 
+const CalendarDialog = defineAsyncComponent(() => import('./components/CalendarDialog.vue'));
+
 const {
   currentView,
-  holidayLoading,
-  holidayError,
+  selectedDate,
+  selectedKey,
+  selectedYear,
+  today,
+  preferences,
+  panel,
+  repositoryState,
+  holidayData,
   calendarTitle,
   yearMonths,
   monthDays,
@@ -22,7 +39,90 @@ const {
   goPrevious,
   goNext,
   retryHolidays,
+  canGoPrevious,
+  canGoNext,
+  updatePreferences,
 } = useCalendar();
+
+const viewport = ref<HTMLElement | null>(null);
+const isNarrow = ref(false);
+let mediaQuery: MediaQueryList | null = null;
+const holidayError = computed(() =>
+  Object.keys(repositoryState.value.errors).length
+    ? repositoryState.value.snapshots.length
+      ? '部分来源更新失败，继续使用已获取的数据'
+      : '休班安排暂时无法更新，农历和节气仍可使用'
+    : null,
+);
+const selectedCoverage = computed(
+  () => holidayData.value.coverage[selectedYear.value] ?? 'unavailable',
+);
+const isCompact = computed(
+  () =>
+    preferences.value.monthDensity === 'compact' ||
+    (preferences.value.monthDensity === 'auto' && isNarrow.value),
+);
+
+function updateMedia(): void {
+  isNarrow.value = mediaQuery?.matches ?? false;
+}
+onMounted(() => {
+  mediaQuery = window.matchMedia('(max-width: 560px)');
+  updateMedia();
+  mediaQuery.addEventListener('change', updateMedia);
+});
+onBeforeUnmount(() => mediaQuery?.removeEventListener('change', updateMedia));
+
+function openDay(date: Date): void {
+  selectDate(date, 'day');
+}
+function jumpToDate(date: Date): void {
+  selectDate(date);
+  panel.value = null;
+}
+
+async function handleGridKey(event: KeyboardEvent): Promise<void> {
+  const target = (event.target as HTMLElement).closest<HTMLButtonElement>(
+    'button[data-calendar-date]',
+  );
+  if (!target || event.altKey || event.ctrlKey || event.metaKey) return;
+  const date = parseDateKey(target.dataset.calendarDate ?? '');
+  if (!date) return;
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    openDay(date);
+    await nextTick();
+    viewport.value?.focus();
+    return;
+  }
+  let next: Date;
+  const offsets: Record<string, number> = {
+    ArrowLeft: -1,
+    ArrowRight: 1,
+    ArrowUp: -7,
+    ArrowDown: 7,
+  };
+  if (event.key in offsets) next = clampDate(addDays(date, offsets[event.key]!));
+  else if (event.key === 'Home')
+    next = clampDate(startOfWeek(date, preferences.value.weekStartsOn));
+  else if (event.key === 'End')
+    next = clampDate(addDays(startOfWeek(date, preferences.value.weekStartsOn), 6));
+  else if (event.key === 'PageUp' || event.key === 'PageDown')
+    next = shiftCalendarDate(
+      date,
+      event.key === 'PageUp' ? -1 : 1,
+      event.shiftKey ? 'year' : 'month',
+    );
+  else return;
+  event.preventDefault();
+  selectDate(next);
+  await nextTick();
+  viewport.value
+    ?.querySelector<HTMLButtonElement>(
+      `button[data-calendar-date="${formatDateKey(next)}"][data-current-month="true"]`,
+    )
+    ?.focus();
+}
 </script>
 
 <template>
@@ -30,21 +130,71 @@ const {
     <CalendarToolbar
       :current-view="currentView"
       :title="calendarTitle"
-      :holiday-loading="holidayLoading"
+      :holiday-loading="repositoryState.loading"
       :holiday-error="holidayError"
+      :can-go-previous="canGoPrevious"
+      :can-go-next="canGoNext"
       @previous="goPrevious"
       @next="goNext"
       @today="goToday"
       @retry="retryHolidays"
       @update:view="setView"
+      @open-panel="panel = $event"
     />
 
-    <div class="calendar-tool__viewport">
-      <YearView v-if="currentView === 'year'" :months="yearMonths" @open-month="openMonth" />
-      <MonthView v-else-if="currentView === 'month'" :days="monthDays" @open-day="selectDate" />
-      <WeekView v-else-if="currentView === 'week'" :days="weekDays" @select-date="selectDate" />
-      <DayView v-else :day="dayInfo" />
+    <div ref="viewport" class="calendar-tool__viewport" tabindex="-1" @keydown="handleGridKey">
+      <YearView
+        v-if="currentView === 'year'"
+        :months="yearMonths"
+        :selected-key="selectedKey"
+        :preferences="preferences"
+        @open-month="openMonth"
+        @select-date="selectDate"
+        @open-day="openDay"
+      />
+      <MonthView
+        v-else-if="currentView === 'month'"
+        :days="monthDays"
+        :selected-key="selectedKey"
+        :preferences="preferences"
+        :class="{ 'is-compact': isCompact }"
+        @open-day="openDay"
+        @select-date="selectDate"
+      />
+      <WeekView
+        v-else-if="currentView === 'week'"
+        :days="weekDays"
+        :selected-key="selectedKey"
+        :preferences="preferences"
+        @select-date="openDay"
+      />
+      <DayView v-else :day="dayInfo" :preferences="preferences" :coverage="selectedCoverage" />
+      <section v-if="currentView === 'month'" class="calendar-selection" aria-label="选中日期详情">
+        <header>
+          <h3>{{ selectedKey }} · {{ dayInfo.weekdayText }}</h3>
+          <button type="button" @click="openDay(selectedDate)">查看日视图</button>
+        </header>
+        <DayView :day="dayInfo" :preferences="preferences" :coverage="selectedCoverage" compact />
+      </section>
     </div>
+    <CalendarDialog
+      v-if="panel"
+      :key="panel"
+      :panel="panel"
+      :selected-date="selectedDate"
+      :today="today"
+      :preferences="preferences"
+      :events="holidayData.events"
+      :coverage="holidayData.coverage"
+      :sources-by-year="holidayData.sourcesByYear"
+      :snapshots="repositoryState.snapshots"
+      :errors="repositoryState.errors"
+      :loading="repositoryState.loading"
+      @close="panel = null"
+      @select-date="jumpToDate"
+      @update:preferences="updatePreferences"
+      @refresh="retryHolidays"
+    />
   </section>
 </template>
 
@@ -266,10 +416,6 @@ const {
   font-weight: 650;
 }
 
-.calendar-mini-month__days button:hover {
-  background: color-mix(in srgb, var(--tools-accent) 10%, transparent);
-}
-
 .calendar-mini-month__days button.is-outside {
   color: color-mix(in srgb, var(--color-text-muted) 42%, transparent);
   font-weight: 500;
@@ -308,10 +454,9 @@ const {
   border: 1px solid var(--color-border);
   border-radius: 18px;
   gap: 8px;
-  background: color-mix(in srgb, var(--color-surface-solid) 94%, transparent);
+  background: var(--color-surface-solid);
   box-shadow: 0 16px 38px rgb(15 23 42 / 18%);
   color: var(--color-text);
-  backdrop-filter: blur(18px);
 }
 
 .calendar-year-prompt header {
@@ -987,3 +1132,4 @@ const {
   }
 }
 </style>
+<style src="./calendar-enhancements.css"></style>
