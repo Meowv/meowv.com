@@ -15,10 +15,16 @@ const emit = defineEmits<{
   'clear-history': [];
 }>();
 
-const faceNames: Record<Face, string> = { U: '白', R: '红', F: '绿', D: '黄', L: '橙', B: '蓝' };
+const faceNames: Record<Face, string> = {
+  U: '上面',
+  R: '右面',
+  F: '前面',
+  D: '下面',
+  L: '左面',
+  B: '后面',
+};
 const sourceNames: Record<CubeHistoryItem['source'], string> = {
   manual: '手动录入',
-  camera: '相机扫描',
   state: '状态字符串',
   scramble: '随机打乱',
 };
@@ -76,7 +82,7 @@ function formatDate(value: number): string {
 
     <section>
       <header>
-        <h3>贴纸颜色</h3>
+        <h3>每个面的显示颜色</h3>
         <button type="button" @click="updatePreference('colorScheme', { ...DEFAULT_COLOR_SCHEME })">
           <IconRestore :size="14" aria-hidden="true" />恢复默认
         </button>
@@ -89,7 +95,7 @@ function formatDate(value: number): string {
             :aria-label="`${face} 面颜色`"
             @input="updateColor(face, ($event.target as HTMLInputElement).value)"
           />
-          <span>{{ face }} · {{ faceNames[face] }}</span>
+          <span>{{ face }} · {{ faceNames[face] }}中心</span>
         </label>
       </div>
     </section>

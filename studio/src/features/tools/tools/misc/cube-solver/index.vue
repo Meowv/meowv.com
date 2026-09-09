@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useRoute, useRouter } from 'vue-router';
 import {
   IconBook2,
   IconBrandSpeedtest,
-  IconCamera,
   IconCheck,
   IconCube,
   IconDice5,
@@ -39,12 +38,9 @@ import type {
   CubePosition,
   CubeSolution,
   Face,
-  ScanClassification,
   StickerRef,
 } from './types';
 import './cube-solver.css';
-
-const CubeCameraScanner = defineAsyncComponent(() => import('./components/CubeCameraScanner.vue'));
 
 type MobilePanel = 'input' | 'steps' | 'teaching' | 'settings';
 type ViewportExpose = {
@@ -70,7 +66,6 @@ const {
   playbackStatus,
   selectedColor,
   activeFace,
-  lowConfidence,
   history,
   preferences,
   generation,
@@ -89,7 +84,6 @@ const stateInput = ref('');
 const formulaInput = ref("R U R' U'");
 const formulaMessage = ref('');
 const loopFormula = ref(false);
-const cameraMessage = ref('');
 const operationBusy = ref(false);
 const mobilePanel = ref<MobilePanel>(mode.value === 'beginner' ? 'teaching' : 'input');
 const announcement = ref('魔方工作台已准备好。');
@@ -113,7 +107,6 @@ const modes: Array<{ id: CubeMode; label: string; description: string }> = [
 
 const inputMethods = [
   { id: 'manual' as const, label: '手动录入' },
-  { id: 'camera' as const, label: '相机扫描' },
   { id: 'state' as const, label: '状态字符串' },
 ];
 const mobilePanels: Array<{ id: MobilePanel; label: string }> = [
@@ -437,21 +430,6 @@ function handleStickerClick(sticker: StickerRef): void {
   }
 }
 
-function handleScanComplete(result: ScanClassification): void {
-  cameraMessage.value = '';
-  store.loadFacelets(result.facelets, result.lowConfidence);
-  inputMethod.value = 'manual';
-  announcement.value = result.lowConfidence.length
-    ? `扫描完成，请复核 ${result.lowConfidence.length} 个虚线标记贴纸。`
-    : '扫描完成，状态已录入。';
-}
-
-function handleCameraFallback(message: string): void {
-  cameraMessage.value = message;
-  inputMethod.value = 'manual';
-  announcement.value = message;
-}
-
 function loadStateInput(): void {
   if (store.loadFaceletString(stateInput.value)) {
     stateInput.value = '';
@@ -639,9 +617,7 @@ onBeforeUnmount(() => {
               :aria-pressed="inputMethod === item.id"
               @click="inputMethod = item.id"
             >
-              <IconCamera v-if="item.id === 'camera'" :size="14" aria-hidden="true" />{{
-                item.label
-              }}
+              {{ item.label }}
             </button>
           </div>
 
@@ -653,7 +629,6 @@ onBeforeUnmount(() => {
               :active-face="activeFace"
               :counts="colorCounts"
               :issues="validationIssues"
-              :low-confidence="lowConfidence"
               :can-auto-fill="canAutoFill"
               :can-undo="undoStack.length > 0"
               :can-redo="redoStack.length > 0"
@@ -665,15 +640,7 @@ onBeforeUnmount(() => {
               @undo="store.undo"
               @redo="store.redo"
             />
-            <p v-if="cameraMessage" class="cube-inline-notice">
-              {{ cameraMessage }}
-            </p>
           </template>
-          <CubeCameraScanner
-            v-else-if="inputMethod === 'camera'"
-            @complete="handleScanComplete"
-            @fallback="handleCameraFallback"
-          />
           <div v-else class="cube-state-input">
             <label for="cube-facelet-state">54 位 URFDLB 状态</label>
             <textarea

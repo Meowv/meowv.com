@@ -6,7 +6,6 @@ import {
   type CubeColorScheme,
   type Face,
   type Facelet,
-  type StickerRef,
   type ValidationIssue,
 } from '../types';
 import { FACE_OFFSETS } from '../core/constants';
@@ -18,7 +17,6 @@ const props = defineProps<{
   activeFace: Face;
   counts: Record<Face, number>;
   issues: readonly ValidationIssue[];
-  lowConfidence: readonly StickerRef[];
   canAutoFill: boolean;
   canUndo: boolean;
   canRedo: boolean;
@@ -43,6 +41,10 @@ const faceNames: Record<Face, string> = {
   B: '后面',
 };
 
+const completedCount = computed(() => props.facelets.filter(Boolean).length);
+const paletteLabel = (face: Face): string =>
+  `${faceNames[face]}中心色，已使用 ${props.counts[face]} / 9`;
+
 const issueKeys = computed(
   () =>
     new Set(
@@ -50,9 +52,6 @@ const issueKeys = computed(
         .flatMap((issue) => issue.stickerRefs ?? [])
         .map((item) => `${item.face}-${item.index}`),
     ),
-);
-const lowConfidenceKeys = computed(
-  () => new Set(props.lowConfidence.map((item) => `${item.face}-${item.index}`)),
 );
 
 function faceletsFor(face: Face): Facelet[] {
@@ -62,6 +61,14 @@ function faceletsFor(face: Face): Facelet[] {
 
 <template>
   <div class="cube-net-editor">
+    <div class="cube-input-guide">
+      <strong>先看中心块，再涂同色贴纸</strong>
+      <p>
+        中心块决定这一面的颜色。点击一个中心色，再点击展开图中同色的贴纸；中心块不能修改。
+        右键可清除误填。
+      </p>
+      <span>已录入 {{ completedCount }} / 54 格</span>
+    </div>
     <div class="cube-palette" role="group" aria-label="贴纸颜色">
       <button
         v-for="face in FACES"
@@ -69,7 +76,8 @@ function faceletsFor(face: Face): Facelet[] {
         type="button"
         :class="{ 'is-active': selectedColor === face, 'is-full': counts[face] >= 9 }"
         :aria-pressed="selectedColor === face"
-        :title="`${faceNames[face]}颜色，已使用 ${counts[face]} / 9`"
+        :title="paletteLabel(face)"
+        :aria-label="paletteLabel(face)"
         @click="emit('update:selected-color', face)"
       >
         <span :style="{ '--sticker-color': colorScheme[face] }">{{ face }}</span>
@@ -113,14 +121,13 @@ function faceletsFor(face: Face): Facelet[] {
             :class="{
               'is-empty': !color,
               'is-issue': issueKeys.has(`${face}-${index}`),
-              'is-low-confidence': lowConfidenceKeys.has(`${face}-${index}`),
             }"
             :style="{ '--sticker-color': color ? colorScheme[color] : undefined }"
             :aria-label="`${faceNames[face]}第 ${index + 1} 格，${color ?? '未录入'}`"
             @click="emit('paint', face, index, selectedColor)"
             @contextmenu.prevent="emit('paint', face, index, null)"
           >
-            <span>{{ color ?? '·' }}</span>
+            <span>{{ color ? `${color}` : '·' }}</span>
           </button>
         </div>
       </div>

@@ -310,6 +310,31 @@
   gap: 10px;
 }
 
+.cube-input-guide {
+  display: grid;
+  gap: 4px;
+  padding: 9px 10px;
+  border-left: 3px solid var(--cube-accent);
+  background: color-mix(in srgb, var(--cube-accent) 7%, var(--color-surface-solid));
+}
+
+.cube-input-guide strong {
+  font-size: 12px;
+}
+
+.cube-input-guide p,
+.cube-input-guide span {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.cube-input-guide span {
+  color: var(--cube-accent);
+  font-weight: 700;
+}
+
 .cube-net {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -392,8 +417,7 @@
   border-style: dashed;
 }
 
-.cube-net__grid button.is-issue::after,
-.cube-net__grid button.is-low-confidence::after {
+.cube-net__grid button.is-issue::after {
   position: absolute;
   inset: 1px;
   border: 2px solid var(--color-danger);
@@ -401,16 +425,10 @@
   content: '';
 }
 
-.cube-net__grid button.is-low-confidence::after {
-  border-color: #d18a00;
-  border-style: dashed;
-}
-
 .cube-net-actions,
 .cube-solve-actions,
 .cube-formula-actions,
-.cube-practice-actions,
-.cube-scanner__actions {
+.cube-practice-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -419,8 +437,7 @@
 .cube-net-actions button,
 .cube-solve-actions button,
 .cube-formula-actions button,
-.cube-practice-actions button,
-.cube-scanner__actions button {
+.cube-practice-actions button {
   flex: 1 1 auto;
   padding-inline: 8px;
   font-size: 12px;
@@ -961,70 +978,6 @@
   to {
     transform: rotate(360deg);
   }
-}
-
-.cube-scanner {
-  display: grid;
-  gap: 10px;
-}
-
-.cube-scanner__intro {
-  display: grid;
-  justify-items: center;
-  gap: 8px;
-  padding: 24px 12px;
-  border: 1px dashed var(--color-border-strong);
-  border-radius: 12px;
-  text-align: center;
-  background: var(--cube-panel-soft);
-}
-
-.cube-scanner__intro p,
-.cube-scanner__instruction {
-  margin: 0;
-  color: var(--color-text-muted);
-  font-size: 12px;
-  line-height: 1.55;
-}
-
-.cube-scanner__video {
-  position: relative;
-  overflow: hidden;
-  aspect-ratio: 1;
-  border-radius: 12px;
-  background: #090b0d;
-}
-
-.cube-scanner__video video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.cube-scanner__grid {
-  position: absolute;
-  inset: 19%;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(3, 1fr);
-  gap: 4px;
-}
-
-.cube-scanner__grid span {
-  border: 2px solid rgb(255 255 255 / 72%);
-  border-radius: 4px;
-  box-shadow: 0 0 0 1px rgb(0 0 0 / 35%);
-}
-
-.cube-scanner__step {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  padding: 5px 8px;
-  border-radius: 7px;
-  color: #fff;
-  background: rgb(0 0 0 / 58%);
-  font-size: 11px;
 }
 
 .cube-settings {

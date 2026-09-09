@@ -23,7 +23,6 @@ import {
   type CubeSolution,
   type Face,
   type Facelet,
-  type StickerRef,
   type ValidationIssue,
 } from '../types';
 
@@ -88,7 +87,6 @@ export const useCubeStore = defineStore('cube-solver', () => {
   const playbackStatus = ref<'idle' | 'paused' | 'playing' | 'completed'>('idle');
   const selectedColor = ref<Face>('U');
   const activeFace = ref<Face>('F');
-  const lowConfidence = ref<StickerRef[]>([]);
   const history = ref<CubeHistoryItem[]>([]);
   const preferences = ref<CubePreferences>(defaultPreferences());
   const generation = ref(0);
@@ -188,9 +186,7 @@ export const useCubeStore = defineStore('cube-solver', () => {
           )
             ? (storedSession!.mode as CubeMode)
             : 'solve';
-          inputMethod.value = ['manual', 'camera', 'state'].includes(
-            String(storedSession?.inputMethod),
-          )
+          inputMethod.value = ['manual', 'state'].includes(String(storedSession?.inputMethod))
             ? (storedSession!.inputMethod as CubeInputMethod)
             : 'manual';
           draft.value = { facelets: restored, revision: 0 };
@@ -231,7 +227,6 @@ export const useCubeStore = defineStore('cube-solver', () => {
     draft.value = { facelets: [...next], revision: draft.value.revision + 1 };
     solution.value = null;
     playbackCursor.value = 0;
-    lowConfidence.value = [];
     invalidateAsyncWork();
     validateCurrent();
   }
@@ -240,16 +235,11 @@ export const useCubeStore = defineStore('cube-solver', () => {
     const absoluteIndex = FACE_OFFSETS[face] + index;
     if (CENTER_INDEXES.includes(absoluteIndex as (typeof CENTER_INDEXES)[number])) return;
     const next = [...draft.value.facelets];
-    const remainingConfidence = lowConfidence.value.filter(
-      (sticker) => sticker.face !== face || sticker.index !== index,
-    );
     if (next[absoluteIndex] === color) {
-      lowConfidence.value = remainingConfidence;
       return;
     }
     next[absoluteIndex] = color;
     replaceDraft(next);
-    lowConfidence.value = remainingConfidence;
   }
 
   function clearDraft(): void {
@@ -287,10 +277,9 @@ export const useCubeStore = defineStore('cube-solver', () => {
     if (restored) replaceDraft(restored, false);
   }
 
-  function loadFacelets(next: readonly Facelet[], confidence: StickerRef[] = []): boolean {
+  function loadFacelets(next: readonly Facelet[]): boolean {
     if (next.length !== 54) return false;
     replaceDraft([...next]);
-    lowConfidence.value = confidence;
     return editStatus.value === 'valid';
   }
 
@@ -410,7 +399,6 @@ export const useCubeStore = defineStore('cube-solver', () => {
     playbackStatus,
     selectedColor,
     activeFace,
-    lowConfidence,
     history,
     preferences,
     generation,

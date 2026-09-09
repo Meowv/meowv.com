@@ -4,7 +4,7 @@ export type Face = (typeof FACES)[number];
 export type Facelet = Face | null;
 export type TurnAmount = 1 | -1 | 2;
 export type CubeMode = 'solve' | 'algorithm' | 'practice' | 'beginner';
-export type CubeInputMethod = 'manual' | 'camera' | 'state';
+export type CubeInputMethod = 'manual' | 'state';
 
 export interface StickerRef {
   face: Face;
@@ -102,15 +102,4 @@ export interface CubeHistoryItem {
   solution: string;
   moveCount: number;
   source: CubeInputMethod | 'scramble';
-}
-
-export interface ScannedSticker {
-  face: Face;
-  index: number;
-  rgb: [number, number, number];
-}
-
-export interface ScanClassification {
-  facelets: Face[];
-  lowConfidence: StickerRef[];
 }

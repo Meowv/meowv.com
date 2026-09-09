@@ -37,15 +37,9 @@ describe('cube edit history', () => {
     expect(store.facelets[0]).toBe('U');
   });
 
-  it('逐个确认扫描低置信度贴纸，并在模式切换时丢弃旧结果', () => {
+  it('在模式切换时丢弃旧结果', () => {
     const store = useCubeStore();
     store.initialize();
-    store.loadFacelets(solvedFacelets(), [
-      { face: 'U', index: 0 },
-      { face: 'R', index: 0 },
-    ]);
-    store.setSticker('U', 0, 'U');
-    expect(store.lowConfidence).toEqual([{ face: 'R', index: 0 }]);
 
     store.setSolution({
       mode: 'quick',
