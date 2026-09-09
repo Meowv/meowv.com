@@ -331,12 +331,6 @@ const toolCategorySeeds = {
         description: '本地录入三阶魔方，校验状态并通过 3D 动画逐步完成还原。',
         icon: 'cube',
       },
-      {
-        id: 'short-video-parser',
-        name: '短视频解析',
-        description: '解析全平台短视频分享链接，预览并下载无水印视频与备用画质。',
-        icon: 'link',
-      },
     ],
   },
   games: {
