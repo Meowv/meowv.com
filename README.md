@@ -174,6 +174,54 @@ pnpm preview
 
 功能模块位于 `src/features/`，共享组件与组合式逻辑位于 `src/components/` 和 `src/composables/`，浏览器与本地隐私基础能力位于 `src/core/`。构建产物为 `dist/`。
 
+#### 三方组件清单
+
+Studio 的运行时依赖和开发依赖声明在 `studio/package.json`。下面按用途列出主要三方组件：
+
+| 分类 | 组件 | 用途 |
+| --- | --- | --- |
+| 框架 | `vue` | Studio 主应用框架 |
+| 框架 | `vue-router` | 页面路由与导航 |
+| 框架 | `pinia` | 全局状态管理 |
+| 框架 | `react`、`react-dom` | Zitie 字帖应用及部分 React 工具 |
+| UI | `@tabler/icons-vue` | 图标库 |
+| UI | `ranui` | Ranuts 相关 UI 组件 |
+| 交互 | `vue-draggable-plus` | Vue 拖拽交互 |
+| 绘图 | `@excalidraw/excalidraw` | 白板和手绘风格绘图 |
+| 思维导图 | `mind-elixir` | 思维导图编辑 |
+| 思维导图 | `markmap-lib`、`markmap-view` | Markdown 大纲转思维导图并渲染 |
+| 可视化 | `d3` | 图表和数据可视化 |
+| 可视化 | `three` | 3D 场景和 3D 工具 |
+| 可视化 | `jsoncrack-react` | JSON 结构可视化 |
+| 专业工具 | `cubing` | 魔方状态、算法和交互 |
+| Markdown | `markdown-it` | Markdown 解析和渲染 |
+| Markdown | `highlight.js` | 代码语法高亮 |
+| Markdown | `mermaid` | 流程图、时序图等图表 |
+| Markdown | `monaco-editor` | Markdown 和代码编辑器 |
+| Markdown | `minisearch` | 本地全文搜索 |
+| Markdown | `js-yaml` | YAML 解析 |
+| 安全 | `dompurify` | HTML/SVG 内容清理，防止 XSS |
+| Office | `docx` | 生成 Word 文档 |
+| Office | `ranuts` | Office 编辑器和文档转换支持 |
+| Office | `sql.js` | 浏览器内运行 SQLite |
+| PDF/文档 | `pdfjs-dist` | PDF 解析、预览和 Worker 渲染 |
+| PDF/文档 | `pdf-lib`、`jspdf` | PDF 创建、修改、合并和导出 |
+| 电子书 | `foliate-js` | EPUB 等电子书解析与阅读 |
+| 压缩 | `@zip.js/zip.js`、`jszip`、`fflate` | ZIP 文件读写和压缩 |
+| 图片 | `ag-psd` | PSD 文件解析与处理 |
+| 图片 | `heic-to` | HEIC/HEIF 图片转换 |
+| 图片 | `utif` | TIFF 图片编解码 |
+| 图片 | `html2canvas`、`@zumer/snapdom` | DOM 截图和 Canvas 渲染 |
+| 二维码 | `jsqr` | 识别二维码 |
+| 二维码 | `qrcode` | 生成二维码 |
+| 日历 | `ical.js` | ICS/iCalendar 解析 |
+| 中文 | `pinyin-pro` | 汉字转拼音和多音字处理 |
+| 中文 | `cnchar`、`cnchar-order`、`cnchar-trad` | 汉字处理、笔顺和繁简转换 |
+| 中文 | `hanzi-writer-data` | Zitie 汉字笔顺数据 |
+| 中文 | `lunar-javascript` | 农历、节气和传统日期计算 |
+
+开发和质量检查依赖包括 `vite`、`typescript`、`vue-tsc`、`vitest`、`eslint`、`prettier`、`tailwindcss`、`@vitejs/plugin-vue`、`@vitejs/plugin-react`、`unplugin-auto-import` 及对应的 `@types/*` 类型声明包。
+
 #### 日历工具
 
 `/tools/calendar` 使用本地算法计算农历、常见节日和二十四节气；休班安排由浏览器直接读取 `lanceliao/china-holiday-calender` 的 `holidayAPI.json`，备用为 `muhac/chinese-holidays-calendar` 的放假与补班 ICS。请求不携带凭据或 Referrer，不需要后端代理。上游新增年份后，刷新即可获取，不需要重新构建或手动更新 ICS。
