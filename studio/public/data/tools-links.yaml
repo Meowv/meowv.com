@@ -106,6 +106,12 @@ categories:
         url: https://www.remove.bg/favicon-32x32.png
       url: https://www.remove.bg
 
+    - id: photopea
+      name: Photopea
+      icon:
+        url: https://www.photopea.com/promo/icon512.png
+      url: https://www.photopea.com
+
     - id: ps-gaoding
       name: 在线PS
       icon:
@@ -183,6 +189,24 @@ categories:
       icon:
         url: https://moovie.c2v2.com/static/img/moovie-app.png
       url: https://moovie.c2v2.com
+
+    - id: 1234yy
+      name: FreeOK
+      icon:
+        url: http://www.1234yy.cc/template/MB-002/statics/img/favicon.ico
+      url: http://www.1234yy.cc
+
+    - id: novipnoad
+      name: NO视频
+      icon:
+        url: https://www.novipnoad.ca/favicon.ico
+      url: https://www.novipnoad.ca
+
+    - id: bpz7
+      name: 搜剧AI
+      icon:
+        url: https://bpz7.app/assets/app-icon-64.png
+      url: https://bpz7.app
 
     - id: rrdynb
       name: 人人电影网
