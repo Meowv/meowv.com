@@ -220,6 +220,12 @@ categories:
         url: https://1lou.me/view/img/favicon.ico
       url: https://1lou.me
 
+    - id: libvio
+      name: LIBVIO
+      icon:
+        url: https://libvio.lol/favicon.ico
+      url: https://libvio.lol
+
     - id: flysheep6
       name: flysheep资源避难所
       icon:
