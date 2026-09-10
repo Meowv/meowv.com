@@ -52,11 +52,13 @@ done
 
 HOST_OVERRIDE="${DEPLOY_HOST-}"
 PORT_OVERRIDE="${DEPLOY_PORT-}"
+PASSWORD_OVERRIDE="${DEPLOY_PASSWORD-}"
 if [ -f "$ROOT_DIR/.deploy.env" ]; then
   source "$ROOT_DIR/.deploy.env"
 fi
 DEPLOY_HOST="${HOST_OVERRIDE:-${DEPLOY_HOST:-}}"
 DEPLOY_PORT="${PORT_OVERRIDE:-${DEPLOY_PORT:-22}}"
+DEPLOY_PASSWORD="${PASSWORD_OVERRIDE:-${DEPLOY_PASSWORD:-}}"
 
 [[ "$DEPLOY_HOST" =~ ^[a-zA-Z0-9_][a-zA-Z0-9_.@-]*$ ]] || fail "请在 .deploy.env 中设置 DEPLOY_HOST。"
 [[ "$DEPLOY_PORT" =~ ^[0-9]+$ ]] || fail "DEPLOY_PORT 必须是数字。"
@@ -103,13 +105,18 @@ RCLONE_OPTIONS=(
   --sftp-host "$DEPLOY_SERVER"
   --sftp-user "$DEPLOY_USER"
   --sftp-port "$DEPLOY_PORT"
-  --sftp-ask-password
   --sftp-known-hosts-file "$HOME/.ssh/known_hosts"
   --sftp-shell-type none
   --sftp-set-modtime=false
   --ignore-times
   --progress
 )
+if [ -n "$DEPLOY_PASSWORD" ]; then
+  # DEPLOY_PASSWORD 直接填写 rclone obscure 生成的密文。
+  RCLONE_OPTIONS+=(--sftp-pass "$DEPLOY_PASSWORD")
+else
+  RCLONE_OPTIONS+=(--sftp-ask-password)
+fi
 if [ "$DRY_RUN" -eq 1 ]; then
   RCLONE_OPTIONS+=(--dry-run)
 fi

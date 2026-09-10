@@ -124,7 +124,15 @@ build/
 cp .deploy.env.example .deploy.env
 ```
 
-将 `.deploy.env` 中的 `DEPLOY_HOST` 改为已经成功连接的 `administrator@服务器地址`，`DEPLOY_PORT` 默认为 `22`。环境变量优先于配置文件。配置文件已被 Git 忽略，不要写入密码或私钥。脚本会按需询问 SSH 密码，并使用 `~/.ssh/known_hosts` 校验服务器身份。
+将 `.deploy.env` 中的 `DEPLOY_HOST` 改为已经成功连接的 `administrator@服务器地址`，`DEPLOY_PORT` 默认为 `22`。环境变量优先于配置文件。默认情况下脚本会按需询问 SSH 密码；如果希望记住密码，可加入 `DEPLOY_PASSWORD='rclone 密文'`。该配置是本机敏感文件，请限制为当前用户可读（`chmod 600 .deploy.env`），更推荐改用 SSH 密钥认证。脚本会使用 `~/.ssh/known_hosts` 校验服务器身份。
+
+生成 rclone 密文：
+
+```bash
+rclone obscure '你的 SSH 密码'
+```
+
+将命令输出填入 `.deploy.env` 的 `DEPLOY_PASSWORD`。不要填明文密码；不填写该变量时，脚本会继续手动询问。
 
 ```bash
 ./deploy.sh studio --dry-run # 连接服务器，预览需要上传的文件
