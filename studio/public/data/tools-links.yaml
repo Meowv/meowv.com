@@ -244,6 +244,12 @@ categories:
         url: https://radio.garden/icons/favicon.png
       url: https://radio.garden
 
+    - id: gdstudio
+      name: GD音乐台
+      icon:
+        url: https://music.gdstudio.xyz/favicon.ico
+      url: https://music.gdstudio.xyz
+
     - id: copychar
       name: Copychar
       icon:
