@@ -292,14 +292,8 @@ const toolCategorySeeds = {
       {
         id: 'special-symbols',
         name: '特殊符号',
-        description: '快速查找、复制和组合常用特殊符号。',
+        description: '按分类查找并复制特殊符号、字符和 Emoji。',
         icon: 'asterisk',
-      },
-      {
-        id: 'emoji',
-        name: 'Emoji 表情',
-        description: '查找、复制和使用 Emoji 表情符号。',
-        icon: 'mood-smile',
       },
       {
         id: 'keyboard-visualizer',

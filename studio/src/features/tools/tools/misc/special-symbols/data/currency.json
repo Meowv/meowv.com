@@ -1,0 +1,326 @@
+[
+  {
+    "value": "$",
+    "name": "dollar sign",
+    "unicode": "U+00024",
+    "html": "&dollar;"
+  },
+  {
+    "value": "¢",
+    "name": "cent sign",
+    "unicode": "U+000A2",
+    "html": "&cent;"
+  },
+  {
+    "value": "£",
+    "name": "pound sign",
+    "unicode": "U+000A3",
+    "html": "&pound;"
+  },
+  {
+    "value": "€",
+    "name": "euro sign",
+    "unicode": "U+020AC",
+    "html": "&euro;"
+  },
+  {
+    "value": "¥",
+    "name": "yen sign",
+    "unicode": "U+000A5",
+    "html": "&yen;"
+  },
+  {
+    "value": "₹",
+    "name": "indian rupee sign",
+    "unicode": "U+020B9",
+    "html": "&#8377;"
+  },
+  {
+    "value": "₽",
+    "name": "ruble sign",
+    "unicode": "U+020BD",
+    "html": "&#8381;"
+  },
+  {
+    "value": "元",
+    "name": "yuan character, in china",
+    "unicode": "U+05143",
+    "html": "&#20803;"
+  },
+  {
+    "value": "¤",
+    "name": "currency sign",
+    "unicode": "U+000A4",
+    "html": "&curren;"
+  },
+  {
+    "value": "₠",
+    "name": "euro-currency sign",
+    "unicode": "U+020A0",
+    "html": "&#8352;"
+  },
+  {
+    "value": "₡",
+    "name": "colon sign",
+    "unicode": "U+020A1",
+    "html": "&#8353;"
+  },
+  {
+    "value": "₢",
+    "name": "cruzeiro sign",
+    "unicode": "U+020A2",
+    "html": "&#8354;"
+  },
+  {
+    "value": "₣",
+    "name": "french franc sign",
+    "unicode": "U+020A3",
+    "html": "&#8355;"
+  },
+  {
+    "value": "₤",
+    "name": "lira sign",
+    "unicode": "U+020A4",
+    "html": "&#8356;"
+  },
+  {
+    "value": "₥",
+    "name": "mill sign",
+    "unicode": "U+020A5",
+    "html": "&#8357;"
+  },
+  {
+    "value": "₦",
+    "name": "naira sign",
+    "unicode": "U+020A6",
+    "html": "&#8358;"
+  },
+  {
+    "value": "₧",
+    "name": "peseta sign",
+    "unicode": "U+020A7",
+    "html": "&#8359;"
+  },
+  {
+    "value": "₨",
+    "name": "rupee sign",
+    "unicode": "U+020A8",
+    "html": "&#8360;"
+  },
+  {
+    "value": "₩",
+    "name": "won sign",
+    "unicode": "U+020A9",
+    "html": "&#8361;"
+  },
+  {
+    "value": "₪",
+    "name": "new sheqel sign",
+    "unicode": "U+020AA",
+    "html": "&#8362;"
+  },
+  {
+    "value": "₫",
+    "name": "dong sign",
+    "unicode": "U+020AB",
+    "html": "&#8363;"
+  },
+  {
+    "value": "₭",
+    "name": "kip sign",
+    "unicode": "U+020AD",
+    "html": "&#8365;"
+  },
+  {
+    "value": "₮",
+    "name": "tugrik sign",
+    "unicode": "U+020AE",
+    "html": "&#8366;"
+  },
+  {
+    "value": "₯",
+    "name": "drachma sign",
+    "unicode": "U+020AF",
+    "html": "&#8367;"
+  },
+  {
+    "value": "₰",
+    "name": "german penny symbol",
+    "unicode": "U+020B0",
+    "html": "&#8368;"
+  },
+  {
+    "value": "₱",
+    "name": "peso sign",
+    "unicode": "U+020B1",
+    "html": "&#8369;"
+  },
+  {
+    "value": "₲",
+    "name": "guarani sign",
+    "unicode": "U+020B2",
+    "html": "&#8370;"
+  },
+  {
+    "value": "₳",
+    "name": "austral sign",
+    "unicode": "U+020B3",
+    "html": "&#8371;"
+  },
+  {
+    "value": "₴",
+    "name": "hryvnia sign",
+    "unicode": "U+020B4",
+    "html": "&#8372;"
+  },
+  {
+    "value": "₵",
+    "name": "cedi sign",
+    "unicode": "U+020B5",
+    "html": "&#8373;"
+  },
+  {
+    "value": "₶",
+    "name": "livre tournois sign",
+    "unicode": "U+020B6",
+    "html": "&#8374;"
+  },
+  {
+    "value": "₸",
+    "name": "tenge sign",
+    "unicode": "U+020B8",
+    "html": "&#8376;"
+  },
+  {
+    "value": "₺",
+    "name": "turkish lira sign",
+    "unicode": "U+020BA",
+    "html": "&#8378;"
+  },
+  {
+    "value": "₼",
+    "name": "manat sign",
+    "unicode": "U+020BC",
+    "html": "&#8380;"
+  },
+  {
+    "value": "₿",
+    "name": "bitcoin sign",
+    "unicode": "U+20BF",
+    "html": "&#8383;"
+  },
+  {
+    "value": "৲",
+    "name": "bengali rupee mark",
+    "unicode": "U+009F2",
+    "html": "&#2546;"
+  },
+  {
+    "value": "৳",
+    "name": "bengali rupee sign",
+    "unicode": "U+009F3",
+    "html": "&#2547;"
+  },
+  {
+    "value": "૱",
+    "name": "gujarati rupee sign",
+    "unicode": "U+00AF1",
+    "html": "&#2801;"
+  },
+  {
+    "value": "௹",
+    "name": "tamil rupee sign",
+    "unicode": "U+00BF9",
+    "html": "&#3065;"
+  },
+  {
+    "value": "฿",
+    "name": "thai currency symbol baht",
+    "unicode": "U+00E3F",
+    "html": "&#3647;"
+  },
+  {
+    "value": "៛",
+    "name": "khmer currency symbol riel",
+    "unicode": "U+017DB",
+    "html": "&#6107;"
+  },
+  {
+    "value": "㍐",
+    "name": "square yuan",
+    "unicode": "U+03350",
+    "html": "&#13136;"
+  },
+  {
+    "value": "円",
+    "name": "yen character",
+    "unicode": "U+05186",
+    "html": "&#20870;"
+  },
+  {
+    "value": "圆",
+    "name": "yen/yuan character variant one",
+    "unicode": "U+05706",
+    "html": "&#22278;"
+  },
+  {
+    "value": "圎",
+    "name": "yen/yuan character variant two",
+    "unicode": "U+0570E",
+    "html": "&#22286;"
+  },
+  {
+    "value": "圓",
+    "name": "yuan character, in hong kong and taiwan",
+    "unicode": "U+05713",
+    "html": "&#22291;"
+  },
+  {
+    "value": "圜",
+    "name": "yen/yuan character variant three",
+    "unicode": "U+0571C",
+    "html": "&#22300;"
+  },
+  {
+    "value": "원",
+    "name": "won character",
+    "unicode": "U+0C6D0",
+    "html": "&#50896;"
+  },
+  {
+    "value": "﷼",
+    "name": "rial sign",
+    "unicode": "U+0FDFC",
+    "html": "&#65020;"
+  },
+  {
+    "value": "＄",
+    "name": "fullwidth dollar sign",
+    "unicode": "U+0FF04",
+    "html": "&#65284;"
+  },
+  {
+    "value": "￠",
+    "name": "fullwidth cent sign",
+    "unicode": "U+0FFE0",
+    "html": "&#65504;"
+  },
+  {
+    "value": "￡",
+    "name": "fullwidth pound sign",
+    "unicode": "U+0FFE1",
+    "html": "&#65505;"
+  },
+  {
+    "value": "￥",
+    "name": "fullwidth yen sign",
+    "unicode": "U+0FFE5",
+    "html": "&#65509;"
+  },
+  {
+    "value": "￦",
+    "name": "fullwidth won sign",
+    "unicode": "U+0FFE6",
+    "html": "&#65510;"
+  }
+]

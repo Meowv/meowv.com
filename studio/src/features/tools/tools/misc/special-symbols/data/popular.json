@@ -1,0 +1,1832 @@
+[
+  {
+    "value": "←",
+    "name": "left arrow",
+    "unicode": "U+02190",
+    "html": "&larr;"
+  },
+  {
+    "value": "↑",
+    "name": "up arrow",
+    "unicode": "U+02191",
+    "html": "&uarr;"
+  },
+  {
+    "value": "→",
+    "name": "right arrow",
+    "unicode": "U+02192",
+    "html": "&rarr;"
+  },
+  {
+    "value": "↓",
+    "name": "down arrow",
+    "unicode": "U+02193",
+    "html": "&darr;"
+  },
+  {
+    "value": "·",
+    "name": "middle dot",
+    "unicode": "U+00B7",
+    "html": "&#183;"
+  },
+  {
+    "value": "•",
+    "name": "bullet",
+    "unicode": "U+02022",
+    "html": "&bull;"
+  },
+  {
+    "value": "●",
+    "name": "black circle",
+    "unicode": "U+25CF",
+    "html": "&#9679;"
+  },
+  {
+    "value": "–",
+    "name": "en dash",
+    "unicode": "U+02013",
+    "html": "&ndash;"
+  },
+  {
+    "value": "—",
+    "name": "em dash",
+    "unicode": "U+02014",
+    "html": "&mdash;"
+  },
+  {
+    "value": "―",
+    "name": "horizontal bar",
+    "unicode": "U+02015",
+    "html": "&horbar;"
+  },
+  {
+    "value": "‽",
+    "name": "interrobang",
+    "unicode": "U+0203D",
+    "html": "&#8253;"
+  },
+  {
+    "value": "‖",
+    "name": "double vertical line",
+    "unicode": "U+02016",
+    "html": "&Vert;"
+  },
+  {
+    "value": "«",
+    "name": "double left-pointing angle quotation mark",
+    "unicode": "U+000AB",
+    "html": "&laquo;"
+  },
+  {
+    "value": "»",
+    "name": "double right-pointing angle quotation mark",
+    "unicode": "U+000BB",
+    "html": "&raquo;"
+  },
+  {
+    "value": "‹",
+    "name": "single left-pointing angle quotation mark",
+    "unicode": "U+02039",
+    "html": "&lsaquo;"
+  },
+  {
+    "value": "›",
+    "name": "single right-pointing angle quotation mark",
+    "unicode": "U+0203A",
+    "html": "&rsaquo;"
+  },
+  {
+    "value": "'",
+    "name": "apostrophe",
+    "unicode": "U+00027",
+    "html": "&apos;"
+  },
+  {
+    "value": "‘",
+    "name": "left single quotation mark",
+    "unicode": "U+02018",
+    "html": "&lsquo;"
+  },
+  {
+    "value": "’",
+    "name": "right single quotation mark",
+    "unicode": "U+02019",
+    "html": "&rsquo;"
+  },
+  {
+    "value": "“",
+    "name": "left double quotation mark",
+    "unicode": "U+0201C",
+    "html": "&ldquo;"
+  },
+  {
+    "value": "”",
+    "name": "right double quotation mark",
+    "unicode": "U+0201D",
+    "html": "&rdquo;"
+  },
+  {
+    "value": "„",
+    "name": "double low-9 quotation mark",
+    "unicode": "U+0201E",
+    "html": "&bdquo;"
+  },
+  {
+    "value": "‚",
+    "name": "single low-9 quotation mark",
+    "unicode": "U+0201A",
+    "html": "&sbquo;"
+  },
+  {
+    "value": "❝",
+    "name": "heavy double turned comma quotation mark ornament",
+    "unicode": "U+0275D",
+    "html": "&#10077;"
+  },
+  {
+    "value": "❞",
+    "name": "heavy double comma quotation mark ornament",
+    "unicode": "U+0275E",
+    "html": "&#10078;"
+  },
+  {
+    "value": "✅",
+    "name": "white heavy check mark",
+    "unicode": "U+2705",
+    "html": ""
+  },
+  {
+    "value": "❤️",
+    "name": "red heart",
+    "unicode": "U+2764",
+    "html": ""
+  },
+  {
+    "value": "👍",
+    "name": "thumbs up",
+    "unicode": "U+1F44D",
+    "html": ""
+  },
+  {
+    "value": "✌️",
+    "name": "victory hand",
+    "unicode": "U+270C",
+    "html": ""
+  },
+  {
+    "value": "✍️",
+    "name": "writing hand",
+    "unicode": "U+270D",
+    "html": ""
+  },
+  {
+    "value": "😀",
+    "name": "grinning face",
+    "unicode": "U+1F600",
+    "html": ""
+  },
+  {
+    "value": "😂",
+    "name": "face with tears of joy",
+    "unicode": "U+1F602",
+    "html": ""
+  },
+  {
+    "value": "😃",
+    "name": "grinning face with big eyes",
+    "unicode": "U+1F603",
+    "html": ""
+  },
+  {
+    "value": "😄",
+    "name": "grinning face with smiling eyes",
+    "unicode": "U+1F604",
+    "html": ""
+  },
+  {
+    "value": "😉",
+    "name": "winking face",
+    "unicode": "U+1F609",
+    "html": ""
+  },
+  {
+    "value": "😊",
+    "name": "smiling face with smiling eyes",
+    "unicode": "U+1F60A",
+    "html": ""
+  },
+  {
+    "value": "😍",
+    "name": "smiling face with heart-eyes",
+    "unicode": "U+1F60D",
+    "html": ""
+  },
+  {
+    "value": "😓",
+    "name": "downcast face with sweat",
+    "unicode": "U+1F613",
+    "html": ""
+  },
+  {
+    "value": "😭",
+    "name": "loudly crying face",
+    "unicode": "U+1F62D",
+    "html": ""
+  },
+  {
+    "value": "☠️",
+    "name": "skull and crossbones",
+    "unicode": "U+2620",
+    "html": ""
+  },
+  {
+    "value": "⌘",
+    "name": "place of interest sign",
+    "unicode": "U+2318",
+    "html": "&#8984;"
+  },
+  {
+    "value": "",
+    "name": "private-use-f8ff",
+    "unicode": "U+F8FF",
+    "html": "&#63743;"
+  },
+  {
+    "value": "#",
+    "name": "number sign",
+    "unicode": "U+00023",
+    "html": "&num;"
+  },
+  {
+    "value": "⌥",
+    "name": "option key",
+    "unicode": "U+2325",
+    "html": "&#8997;"
+  },
+  {
+    "value": "⌃",
+    "name": "up arrowhead",
+    "unicode": "U+2303",
+    "html": "&#8963;"
+  },
+  {
+    "value": "⇧",
+    "name": "upwards white arrow",
+    "unicode": "U+21E7",
+    "html": "&#8679;"
+  },
+  {
+    "value": "⇪",
+    "name": "up white arrow from bar",
+    "unicode": "U+021EA",
+    "html": "&#8682;"
+  },
+  {
+    "value": "⌫",
+    "name": "erase to the left",
+    "unicode": "U+232B",
+    "html": "&#9003;"
+  },
+  {
+    "value": "⌦",
+    "name": "erase to the right",
+    "unicode": "U+2326",
+    "html": "&#8998;"
+  },
+  {
+    "value": "␡",
+    "name": "symbol for delete",
+    "unicode": "U+2421",
+    "html": "&#9249;"
+  },
+  {
+    "value": "⎋",
+    "name": "broken circle with northwest arrow",
+    "unicode": "U+238B",
+    "html": "&#9099;"
+  },
+  {
+    "value": "␛",
+    "name": "symbol for escape",
+    "unicode": "U+241B",
+    "html": "&#9243;"
+  },
+  {
+    "value": "⏎",
+    "name": "return symbol",
+    "unicode": "U+23CE",
+    "html": "&#9166;"
+  },
+  {
+    "value": "↩",
+    "name": "leftwards arrow with hook",
+    "unicode": "U+21A9",
+    "html": "&#8617;"
+  },
+  {
+    "value": "␣",
+    "name": "open box",
+    "unicode": "U+2423",
+    "html": "&#9251;"
+  },
+  {
+    "value": "$",
+    "name": "dollar sign",
+    "unicode": "U+00024",
+    "html": "&dollar;"
+  },
+  {
+    "value": "¢",
+    "name": "cent sign",
+    "unicode": "U+000A2",
+    "html": "&cent;"
+  },
+  {
+    "value": "£",
+    "name": "pound sign",
+    "unicode": "U+000A3",
+    "html": "&pound;"
+  },
+  {
+    "value": "€",
+    "name": "euro sign",
+    "unicode": "U+020AC",
+    "html": "&euro;"
+  },
+  {
+    "value": "¥",
+    "name": "yen sign",
+    "unicode": "U+000A5",
+    "html": "&yen;"
+  },
+  {
+    "value": "¬",
+    "name": "not sign",
+    "unicode": "U+000AC",
+    "html": "&not;"
+  },
+  {
+    "value": "@",
+    "name": "at symbol",
+    "unicode": "U+00040",
+    "html": "&commat;"
+  },
+  {
+    "value": "¶",
+    "name": "paragraph sign",
+    "unicode": "U+000B6",
+    "html": "&para;"
+  },
+  {
+    "value": "§",
+    "name": "section sign",
+    "unicode": "U+000A7",
+    "html": "&sect;"
+  },
+  {
+    "value": "©",
+    "name": "copyright sign",
+    "unicode": "U+000A9",
+    "html": "&copy;"
+  },
+  {
+    "value": "®",
+    "name": "registered trade mark sign",
+    "unicode": "U+000AE",
+    "html": "&reg;"
+  },
+  {
+    "value": "™",
+    "name": "trade mark sign",
+    "unicode": "U+02122",
+    "html": "&trade;"
+  },
+  {
+    "value": "°",
+    "name": "degree sign",
+    "unicode": "U+000B0",
+    "html": "&deg;"
+  },
+  {
+    "value": "℃",
+    "name": "degree celsius",
+    "unicode": "U+02103",
+    "html": "&#8451;"
+  },
+  {
+    "value": "℉",
+    "name": "degree fahrenheit",
+    "unicode": "U+02109",
+    "html": "&#8457;"
+  },
+  {
+    "value": "+",
+    "name": "plus sign",
+    "unicode": "U+0002B",
+    "html": "&plus;"
+  },
+  {
+    "value": "−",
+    "name": "minus sign",
+    "unicode": "U+02212",
+    "html": "&minus;"
+  },
+  {
+    "value": "×",
+    "name": "multiplication sign",
+    "unicode": "U+000D7",
+    "html": "&times;"
+  },
+  {
+    "value": "÷",
+    "name": "division sign",
+    "unicode": "U+000F7",
+    "html": "&divide;"
+  },
+  {
+    "value": "=",
+    "name": "equal sign",
+    "unicode": "U+0003D",
+    "html": "&equals;"
+  },
+  {
+    "value": "≠",
+    "name": "not equal to sign",
+    "unicode": "U+02260",
+    "html": "&ne;"
+  },
+  {
+    "value": "±",
+    "name": "plus or minus sign",
+    "unicode": "U+000B1",
+    "html": "&plusmn;"
+  },
+  {
+    "value": "√",
+    "name": "square root",
+    "unicode": "U+0221A",
+    "html": "&radic;"
+  },
+  {
+    "value": "‰",
+    "name": "per mille sign",
+    "unicode": "U+00089",
+    "html": "&permil;"
+  },
+  {
+    "value": "Ω",
+    "name": "ohm sign",
+    "unicode": "U+02126",
+    "html": "&#8486;"
+  },
+  {
+    "value": "∞",
+    "name": "infinity",
+    "unicode": "U+0221E",
+    "html": "&infin;"
+  },
+  {
+    "value": "≈",
+    "name": "almost equal to",
+    "unicode": "U+02248",
+    "html": "&asymp;"
+  },
+  {
+    "value": "~",
+    "name": "tilde",
+    "unicode": "U+0007E",
+    "html": "&tilde;"
+  },
+  {
+    "value": "¹",
+    "name": "superscript one",
+    "unicode": "U+000B9",
+    "html": "&sup1;"
+  },
+  {
+    "value": "²",
+    "name": "superscript two",
+    "unicode": "U+000B2",
+    "html": "&sup2;"
+  },
+  {
+    "value": "³",
+    "name": "superscript three",
+    "unicode": "U+000B3",
+    "html": "&sup3;"
+  },
+  {
+    "value": "ƒ",
+    "name": "function",
+    "unicode": "U+00192",
+    "html": "&fnof;"
+  },
+  {
+    "value": "¼",
+    "name": "fraction one quarter",
+    "unicode": "U+000BC",
+    "html": "&frac14;"
+  },
+  {
+    "value": "½",
+    "name": "fraction one half",
+    "unicode": "U+000BD",
+    "html": "&frac12;"
+  },
+  {
+    "value": "¾",
+    "name": "fraction three quarters",
+    "unicode": "U+000BE",
+    "html": "&frac34;"
+  },
+  {
+    "value": "|",
+    "name": "vertical bar",
+    "unicode": "U+0007C",
+    "html": "&vert;"
+  },
+  {
+    "value": "⁄",
+    "name": "fraction slash",
+    "unicode": "U+02044",
+    "html": "&frasl;"
+  },
+  {
+    "value": "†",
+    "name": "dagger",
+    "unicode": "U+02020",
+    "html": "&dagger;"
+  },
+  {
+    "value": "‡",
+    "name": "double dagger",
+    "unicode": "U+02021",
+    "html": "&Dagger;"
+  },
+  {
+    "value": "․",
+    "name": "one dot leader",
+    "unicode": "U+02024",
+    "html": "&#8228;"
+  },
+  {
+    "value": "‥",
+    "name": "two dot leader",
+    "unicode": "U+02025",
+    "html": "&nldr;"
+  },
+  {
+    "value": "…",
+    "name": "horizontal ellipsis",
+    "unicode": "U+02026",
+    "html": "&hellip;"
+  },
+  {
+    "value": "➥",
+    "name": "heavy black curved down and right arrow",
+    "unicode": "U+027A5",
+    "html": "&#10149;"
+  },
+  {
+    "value": "➽",
+    "name": "heavy wedge-tailed right arrow",
+    "unicode": "U+027BD",
+    "html": "&#10173;"
+  },
+  {
+    "value": "À",
+    "name": "uppercase a with grave",
+    "unicode": "U+000C0",
+    "html": "&Agrave;"
+  },
+  {
+    "value": "Á",
+    "name": "uppercase a with acute",
+    "unicode": "U+000C1",
+    "html": "&Aacute;"
+  },
+  {
+    "value": "Â",
+    "name": "uppercase a with circumflex",
+    "unicode": "U+000C2",
+    "html": "&Acirc;"
+  },
+  {
+    "value": "Ã",
+    "name": "uppercase a with tilde",
+    "unicode": "U+000C3",
+    "html": "&Atilde;"
+  },
+  {
+    "value": "Ä",
+    "name": "uppercase a with umlaut",
+    "unicode": "U+000C4",
+    "html": "&Auml;"
+  },
+  {
+    "value": "Å",
+    "name": "uppercase a with ring",
+    "unicode": "U+000C5",
+    "html": "&Aring;"
+  },
+  {
+    "value": "Æ",
+    "name": "uppercase ae",
+    "unicode": "U+000C6",
+    "html": "&AElig;"
+  },
+  {
+    "value": "Ç",
+    "name": "uppercase c with cedilla",
+    "unicode": "U+000C7",
+    "html": "&Ccedil;"
+  },
+  {
+    "value": "È",
+    "name": "uppercase e with grave",
+    "unicode": "U+000C8",
+    "html": "&Egrave;"
+  },
+  {
+    "value": "É",
+    "name": "uppercase e with acute",
+    "unicode": "U+000C9",
+    "html": "&Eacute;"
+  },
+  {
+    "value": "Ê",
+    "name": "uppercase e with circumflex",
+    "unicode": "U+000CA",
+    "html": "&Ecirc;"
+  },
+  {
+    "value": "Ë",
+    "name": "uppercase e with umlaut",
+    "unicode": "U+000CB",
+    "html": "&Euml;"
+  },
+  {
+    "value": "Ì",
+    "name": "uppercase l with grave",
+    "unicode": "U+000CC",
+    "html": "&Lgrave;"
+  },
+  {
+    "value": "Í",
+    "name": "uppercase l with acute",
+    "unicode": "U+000CD",
+    "html": "&Lacute;"
+  },
+  {
+    "value": "Î",
+    "name": "uppercase l with circumflex",
+    "unicode": "U+000CE",
+    "html": "&Lcirc;"
+  },
+  {
+    "value": "Ï",
+    "name": "uppercase l with umlaut",
+    "unicode": "U+000CF",
+    "html": "&Luml;"
+  },
+  {
+    "value": "Ð",
+    "name": "uppercase eth",
+    "unicode": "U+000D0",
+    "html": "&ETH;"
+  },
+  {
+    "value": "Ñ",
+    "name": "uppercase n with tilde",
+    "unicode": "U+000D1",
+    "html": "&Ntilde;"
+  },
+  {
+    "value": "Ò",
+    "name": "uppercase o with grave",
+    "unicode": "U+000D2",
+    "html": "&Ograve;"
+  },
+  {
+    "value": "Ó",
+    "name": "uppercase o with acute",
+    "unicode": "U+000D3",
+    "html": "&Oacute;"
+  },
+  {
+    "value": "Ô",
+    "name": "uppercase o with circumflex",
+    "unicode": "U+000D4",
+    "html": "&Ocirc;"
+  },
+  {
+    "value": "Õ",
+    "name": "uppercase o with tilde",
+    "unicode": "U+000D5",
+    "html": "&Otilde;"
+  },
+  {
+    "value": "Ö",
+    "name": "uppercase o with umlaut",
+    "unicode": "U+000D6",
+    "html": "&Ouml;"
+  },
+  {
+    "value": "Ø",
+    "name": "uppercase o with slash",
+    "unicode": "U+000D8",
+    "html": "&Oslash;"
+  },
+  {
+    "value": "Ù",
+    "name": "uppercase u with grave",
+    "unicode": "U+000D9",
+    "html": "&Ugrave;"
+  },
+  {
+    "value": "Ú",
+    "name": "uppercase u with acute",
+    "unicode": "U+000DA",
+    "html": "&Uacute;"
+  },
+  {
+    "value": "Û",
+    "name": "uppercase u with circumflex",
+    "unicode": "U+000DB",
+    "html": "&Ucirc;"
+  },
+  {
+    "value": "Ü",
+    "name": "uppercase u with umlaut",
+    "unicode": "U+000DC",
+    "html": "&Uuml;"
+  },
+  {
+    "value": "Ý",
+    "name": "uppercase y with acute",
+    "unicode": "U+000DD",
+    "html": "&Yacute;"
+  },
+  {
+    "value": "Þ",
+    "name": "uppercase thorn",
+    "unicode": "U+000DE",
+    "html": "&THORN;"
+  },
+  {
+    "value": "ß",
+    "name": "lowercase ess-zed",
+    "unicode": "U+000DF",
+    "html": "&szlig;"
+  },
+  {
+    "value": "à",
+    "name": "lowercase a with grave",
+    "unicode": "U+000E0",
+    "html": "&agrave;"
+  },
+  {
+    "value": "á",
+    "name": "lowercase a with acute",
+    "unicode": "U+000E1",
+    "html": "&aacute;"
+  },
+  {
+    "value": "â",
+    "name": "lowercase a with circumflex",
+    "unicode": "U+000E2",
+    "html": "&acirc;"
+  },
+  {
+    "value": "ã",
+    "name": "lowercase a with tilde",
+    "unicode": "U+000E3",
+    "html": "&atilde;"
+  },
+  {
+    "value": "ä",
+    "name": "lowercase a with umlaut",
+    "unicode": "U+000E4",
+    "html": "&auml;"
+  },
+  {
+    "value": "å",
+    "name": "lowercase a with ring",
+    "unicode": "U+000E5",
+    "html": "&aring;"
+  },
+  {
+    "value": "æ",
+    "name": "lowercase ae",
+    "unicode": "U+000E6",
+    "html": "&aelig;"
+  },
+  {
+    "value": "ç",
+    "name": "lowercase c with cedilla",
+    "unicode": "U+000E7",
+    "html": "&ccedil;"
+  },
+  {
+    "value": "è",
+    "name": "lowercase e with grave",
+    "unicode": "U+000E8",
+    "html": "&egrave;"
+  },
+  {
+    "value": "é",
+    "name": "lowercase e with acute",
+    "unicode": "U+000E9",
+    "html": "&eacute;"
+  },
+  {
+    "value": "ê",
+    "name": "lowercase e with circumflex",
+    "unicode": "U+000EA",
+    "html": "&ecirc;"
+  },
+  {
+    "value": "ë",
+    "name": "lowercase e with umlaut",
+    "unicode": "U+000EB",
+    "html": "&euml;"
+  },
+  {
+    "value": "ì",
+    "name": "lowercase i with grave",
+    "unicode": "U+000EC",
+    "html": "&igrave;"
+  },
+  {
+    "value": "í",
+    "name": "lowercase i with acute",
+    "unicode": "U+000ED",
+    "html": "&iacute;"
+  },
+  {
+    "value": "î",
+    "name": "lowercase i with circumflex",
+    "unicode": "U+000EE",
+    "html": "&icirc;"
+  },
+  {
+    "value": "ï",
+    "name": "lowercase i with umlaut",
+    "unicode": "U+000EF",
+    "html": "&iuml;"
+  },
+  {
+    "value": "ð",
+    "name": "lowercase eth",
+    "unicode": "U+000F0",
+    "html": "&eth;"
+  },
+  {
+    "value": "ñ",
+    "name": "lowercase n with tilde",
+    "unicode": "U+000F1",
+    "html": "&ntilde;"
+  },
+  {
+    "value": "ò",
+    "name": "lowercase o with grave",
+    "unicode": "U+000F2",
+    "html": "&ograve;"
+  },
+  {
+    "value": "ó",
+    "name": "lowercase o with acute",
+    "unicode": "U+000F3",
+    "html": "&oacute;"
+  },
+  {
+    "value": "ô",
+    "name": "lowercase o with circumflex",
+    "unicode": "U+000F4",
+    "html": "&ocirc;"
+  },
+  {
+    "value": "õ",
+    "name": "lowercase o with tilde",
+    "unicode": "U+000F5",
+    "html": "&otilde;"
+  },
+  {
+    "value": "ö",
+    "name": "lowercase o with umlaut",
+    "unicode": "U+000F6",
+    "html": "&ouml;"
+  },
+  {
+    "value": "ø",
+    "name": "lowercase o with slash",
+    "unicode": "U+000F8",
+    "html": "&oslash;"
+  },
+  {
+    "value": "ù",
+    "name": "lowercase u with grave",
+    "unicode": "U+000F9",
+    "html": "&ugrave;"
+  },
+  {
+    "value": "ú",
+    "name": "lowercase u with acute",
+    "unicode": "U+000FA",
+    "html": "&uacute;"
+  },
+  {
+    "value": "û",
+    "name": "lowercase u with circumflex",
+    "unicode": "U+000FB",
+    "html": "&ucirc;"
+  },
+  {
+    "value": "ü",
+    "name": "lowercase u with umlaut",
+    "unicode": "U+000FC",
+    "html": "&uuml;"
+  },
+  {
+    "value": "ý",
+    "name": "lowercase y with acute",
+    "unicode": "U+000FD",
+    "html": "&yacute;"
+  },
+  {
+    "value": "þ",
+    "name": "lowercase thorn",
+    "unicode": "U+000FE",
+    "html": "&thorn;"
+  },
+  {
+    "value": "ÿ",
+    "name": "lowercase y with umlaut",
+    "unicode": "U+000FF",
+    "html": "&yuml;"
+  },
+  {
+    "value": "Ā",
+    "name": "uppercase a with macron",
+    "unicode": "U+00100",
+    "html": "&Amacr;"
+  },
+  {
+    "value": "ā",
+    "name": "lowercase a with macron",
+    "unicode": "U+00101",
+    "html": "&amacr;"
+  },
+  {
+    "value": "Ă",
+    "name": "uppercase a with breve",
+    "unicode": "U+00102",
+    "html": "&Abreve;"
+  },
+  {
+    "value": "ă",
+    "name": "lowercase a with breve",
+    "unicode": "U+00103",
+    "html": "&abreve;"
+  },
+  {
+    "value": "Ą",
+    "name": "uppercase a with ogonek",
+    "unicode": "U+00104",
+    "html": "&Aogon;"
+  },
+  {
+    "value": "ą",
+    "name": "lowercase a with ogonek",
+    "unicode": "U+00105",
+    "html": "&aogon;"
+  },
+  {
+    "value": "Ć",
+    "name": "uppercase c with acute",
+    "unicode": "U+00106",
+    "html": "&Cacute;"
+  },
+  {
+    "value": "ć",
+    "name": "lowercase c with acute",
+    "unicode": "U+00107",
+    "html": "&cacute;"
+  },
+  {
+    "value": "Ĉ",
+    "name": "uppercase c with circumflex",
+    "unicode": "U+00108",
+    "html": "&Ccirc;"
+  },
+  {
+    "value": "ĉ",
+    "name": "lowercase c with circumflex",
+    "unicode": "U+00109",
+    "html": "&ccirc;"
+  },
+  {
+    "value": "Ċ",
+    "name": "uppercase c with dot above",
+    "unicode": "U+0010A",
+    "html": "&Cdot;"
+  },
+  {
+    "value": "ċ",
+    "name": "lowercase c with dot above",
+    "unicode": "U+0010B",
+    "html": "&cdot;"
+  },
+  {
+    "value": "Č",
+    "name": "uppercase c with caron",
+    "unicode": "U+0010C",
+    "html": "&Ccaron;"
+  },
+  {
+    "value": "č",
+    "name": "lowercase c with caron",
+    "unicode": "U+0010D",
+    "html": "&ccaron;"
+  },
+  {
+    "value": "Ď",
+    "name": "uppercase d with caron",
+    "unicode": "U+0010E",
+    "html": "&Dcaron;"
+  },
+  {
+    "value": "ď",
+    "name": "lowercase d with caron",
+    "unicode": "U+0010F",
+    "html": "&dcaron;"
+  },
+  {
+    "value": "Đ",
+    "name": "uppercase d with stroke",
+    "unicode": "U+00110",
+    "html": "&Dstrok;"
+  },
+  {
+    "value": "đ",
+    "name": "lowercase d with stroke",
+    "unicode": "U+00111",
+    "html": "&dstrok;"
+  },
+  {
+    "value": "Ē",
+    "name": "uppercase e with macron",
+    "unicode": "U+00112",
+    "html": "&Emacr;"
+  },
+  {
+    "value": "ē",
+    "name": "lowercase e with macron",
+    "unicode": "U+00113",
+    "html": "&emacr;"
+  },
+  {
+    "value": "Ĕ",
+    "name": "uppercase e with breve",
+    "unicode": "U+00114",
+    "html": "&#276;"
+  },
+  {
+    "value": "ĕ",
+    "name": "lowercase e with breve",
+    "unicode": "U+00115",
+    "html": "&#277;"
+  },
+  {
+    "value": "Ė",
+    "name": "uppercase e with dot above",
+    "unicode": "U+00116",
+    "html": "&Edot;"
+  },
+  {
+    "value": "ė",
+    "name": "lowercase e with dot above",
+    "unicode": "U+00117",
+    "html": "&edot;"
+  },
+  {
+    "value": "Ę",
+    "name": "uppercase e with ogonek",
+    "unicode": "U+00118",
+    "html": "&Eogon;"
+  },
+  {
+    "value": "ę",
+    "name": "lowercase e with ogonek",
+    "unicode": "U+00119",
+    "html": "&eogon;"
+  },
+  {
+    "value": "Ě",
+    "name": "uppercase e with caron",
+    "unicode": "U+0011A",
+    "html": "&Ecaron;"
+  },
+  {
+    "value": "ě",
+    "name": "lowercase e with caron",
+    "unicode": "U+0011B",
+    "html": "&ecaron;"
+  },
+  {
+    "value": "Ĝ",
+    "name": "uppercase g with circumflex",
+    "unicode": "U+0011C",
+    "html": "&Gcirc;"
+  },
+  {
+    "value": "ĝ",
+    "name": "lowercase g with circumflex",
+    "unicode": "U+0011D",
+    "html": "&gcirc;"
+  },
+  {
+    "value": "Ğ",
+    "name": "uppercase g with breve",
+    "unicode": "U+0011E",
+    "html": "&Gbreve;"
+  },
+  {
+    "value": "ğ",
+    "name": "lowercase g with breve",
+    "unicode": "U+0011F",
+    "html": "&gbreve;"
+  },
+  {
+    "value": "Ġ",
+    "name": "uppercase g with dot above",
+    "unicode": "U+00120",
+    "html": "&Gdot;"
+  },
+  {
+    "value": "ġ",
+    "name": "lowercase g with dot above",
+    "unicode": "U+00121",
+    "html": "&gdot;"
+  },
+  {
+    "value": "Ģ",
+    "name": "uppercase g with cedilla",
+    "unicode": "U+00122",
+    "html": "&Gcedil;"
+  },
+  {
+    "value": "ģ",
+    "name": "lowercase g with cedilla",
+    "unicode": "U+00123",
+    "html": "&#291;"
+  },
+  {
+    "value": "Ĥ",
+    "name": "uppercase h with circumflex",
+    "unicode": "U+00124",
+    "html": "&Hcirc;"
+  },
+  {
+    "value": "ĥ",
+    "name": "lowercase h with circumflex",
+    "unicode": "U+00125",
+    "html": "&hcirc;"
+  },
+  {
+    "value": "Ħ",
+    "name": "uppercase h with stroke",
+    "unicode": "U+00126",
+    "html": "&Hstrok;"
+  },
+  {
+    "value": "ħ",
+    "name": "lowercase h with stroke",
+    "unicode": "U+00127",
+    "html": "&hstrok;"
+  },
+  {
+    "value": "Ĩ",
+    "name": "uppercase i with tilde",
+    "unicode": "U+00128",
+    "html": "&Itilde;"
+  },
+  {
+    "value": "ĩ",
+    "name": "lowercase i with tilde",
+    "unicode": "U+00129",
+    "html": "&itilde;"
+  },
+  {
+    "value": "Ī",
+    "name": "uppercase i with macron",
+    "unicode": "U+0012A",
+    "html": "&Imacr;"
+  },
+  {
+    "value": "ī",
+    "name": "lowercase i with macron",
+    "unicode": "U+0012B",
+    "html": "&imacr;"
+  },
+  {
+    "value": "Ĭ",
+    "name": "uppercase i with breve",
+    "unicode": "U+0012C",
+    "html": "&#300;"
+  },
+  {
+    "value": "ĭ",
+    "name": "lowercase i with breve",
+    "unicode": "U+0012D",
+    "html": "&#301;"
+  },
+  {
+    "value": "Į",
+    "name": "uppercase i with ogonek",
+    "unicode": "U+0012E",
+    "html": "&Iogon;"
+  },
+  {
+    "value": "į",
+    "name": "lowercase i with ogonek",
+    "unicode": "U+0012F",
+    "html": "&iogon;"
+  },
+  {
+    "value": "İ",
+    "name": "uppercase i with dot above",
+    "unicode": "U+00130",
+    "html": "&Idot;"
+  },
+  {
+    "value": "ı",
+    "name": "lowercase dotless i",
+    "unicode": "U+00131",
+    "html": "&imath;"
+  },
+  {
+    "value": "Ĳ",
+    "name": "latin capital ligature ij",
+    "unicode": "U+00132",
+    "html": "&IJlig;"
+  },
+  {
+    "value": "ĳ",
+    "name": "latin small ligature ij",
+    "unicode": "U+00133",
+    "html": "&ijlig;"
+  },
+  {
+    "value": "Ĵ",
+    "name": "uppercase j with circumflex",
+    "unicode": "U+00134",
+    "html": "&Jcirc;"
+  },
+  {
+    "value": "ĵ",
+    "name": "lowercase j with circumflex",
+    "unicode": "U+00135",
+    "html": "&jcirc;"
+  },
+  {
+    "value": "Ķ",
+    "name": "uppercase k with cedilla",
+    "unicode": "U+00136",
+    "html": "&Kcedil;"
+  },
+  {
+    "value": "ķ",
+    "name": "lowercase k with cedilla",
+    "unicode": "U+00137",
+    "html": "&kcedil;"
+  },
+  {
+    "value": "ĸ",
+    "name": "lowercase kra",
+    "unicode": "U+00138",
+    "html": "&kgreen;"
+  },
+  {
+    "value": "Ĺ",
+    "name": "uppercase l with acute",
+    "unicode": "U+00139",
+    "html": "&Lacute;"
+  },
+  {
+    "value": "ĺ",
+    "name": "lowercase l with acute",
+    "unicode": "U+0013A",
+    "html": "&lacute;"
+  },
+  {
+    "value": "Ļ",
+    "name": "uppercase l with cedilla",
+    "unicode": "U+0013B",
+    "html": "&Lcedil;"
+  },
+  {
+    "value": "ļ",
+    "name": "lowercase l with cedilla",
+    "unicode": "U+0013C",
+    "html": "&lcedil;"
+  },
+  {
+    "value": "Ľ",
+    "name": "uppercase l with caron",
+    "unicode": "U+0013D",
+    "html": "&Lcaron;"
+  },
+  {
+    "value": "ľ",
+    "name": "lowercase l with caron",
+    "unicode": "U+0013E",
+    "html": "&lcaron;"
+  },
+  {
+    "value": "Ŀ",
+    "name": "uppercase l with middle dot",
+    "unicode": "U+0013F",
+    "html": "&Lmidot;"
+  },
+  {
+    "value": "ŀ",
+    "name": "lowercase l with middle dot",
+    "unicode": "U+00140",
+    "html": "&lmidot;"
+  },
+  {
+    "value": "Ł",
+    "name": "uppercase l with stroke",
+    "unicode": "U+00141",
+    "html": "&Lstrok;"
+  },
+  {
+    "value": "ł",
+    "name": "lowercase l with stroke",
+    "unicode": "U+00142",
+    "html": "&lstrok;"
+  },
+  {
+    "value": "Ń",
+    "name": "uppercase n with acute",
+    "unicode": "U+00143",
+    "html": "&Nacute;"
+  },
+  {
+    "value": "ń",
+    "name": "lowercase n with acute",
+    "unicode": "U+00144",
+    "html": "&nacute;"
+  },
+  {
+    "value": "Ņ",
+    "name": "uppercase n with cedilla",
+    "unicode": "U+00145",
+    "html": "&Ncedil;"
+  },
+  {
+    "value": "ņ",
+    "name": "lowercase n with cedilla",
+    "unicode": "U+00146",
+    "html": "&ncedil;"
+  },
+  {
+    "value": "Ň",
+    "name": "uppercase n with caron",
+    "unicode": "U+00147",
+    "html": "&Ncaron;"
+  },
+  {
+    "value": "ň",
+    "name": "lowercase n with caron",
+    "unicode": "U+00148",
+    "html": "&ncaron;"
+  },
+  {
+    "value": "ŉ",
+    "name": "lowercase n preceded by apostrophe",
+    "unicode": "U+00149",
+    "html": "&napos;"
+  },
+  {
+    "value": "Ŋ",
+    "name": "uppercase eng",
+    "unicode": "U+0014A",
+    "html": "&ENG;"
+  },
+  {
+    "value": "ŋ",
+    "name": "lowercase eng",
+    "unicode": "U+0014B",
+    "html": "&eng;"
+  },
+  {
+    "value": "Ō",
+    "name": "uppercase o with macron",
+    "unicode": "U+0014C",
+    "html": "&Omacr;"
+  },
+  {
+    "value": "ō",
+    "name": "lowercase o with macron",
+    "unicode": "U+0014D",
+    "html": "&omacr;"
+  },
+  {
+    "value": "Ŏ",
+    "name": "uppercase o with breve",
+    "unicode": "U+0014E",
+    "html": "&#334;"
+  },
+  {
+    "value": "ŏ",
+    "name": "lowercase o with breve",
+    "unicode": "U+0014F",
+    "html": "&#335;"
+  },
+  {
+    "value": "Ő",
+    "name": "uppercase o with double acute",
+    "unicode": "U+00150",
+    "html": "&Odblac;"
+  },
+  {
+    "value": "ő",
+    "name": "lowercase o with double acute",
+    "unicode": "U+00151",
+    "html": "&odblac;"
+  },
+  {
+    "value": "Œ",
+    "name": "uppercase ligature oe",
+    "unicode": "U+00152",
+    "html": "&OElig;"
+  },
+  {
+    "value": "œ",
+    "name": "lowercase ligature oe",
+    "unicode": "U+00153",
+    "html": "&oelig;"
+  },
+  {
+    "value": "Ŕ",
+    "name": "uppercase r with acute",
+    "unicode": "U+00154",
+    "html": "&Racute;"
+  },
+  {
+    "value": "ŕ",
+    "name": "lowercase r with acute",
+    "unicode": "U+00155",
+    "html": "&racute;"
+  },
+  {
+    "value": "Ŗ",
+    "name": "uppercase r with cedilla",
+    "unicode": "U+00156",
+    "html": "&Rcedil;"
+  },
+  {
+    "value": "ŗ",
+    "name": "lowercase r with cedilla",
+    "unicode": "U+00157",
+    "html": "&rcedil;"
+  },
+  {
+    "value": "Ř",
+    "name": "uppercase r with caron",
+    "unicode": "U+00158",
+    "html": "&Rcaron;"
+  },
+  {
+    "value": "ř",
+    "name": "lowercase r with caron",
+    "unicode": "U+00159",
+    "html": "&rcaron;"
+  },
+  {
+    "value": "Ś",
+    "name": "uppercase s with acute",
+    "unicode": "U+0015A",
+    "html": "&Sacute;"
+  },
+  {
+    "value": "ś",
+    "name": "lowercase s with acute",
+    "unicode": "U+0015B",
+    "html": "&sacute;"
+  },
+  {
+    "value": "Ŝ",
+    "name": "uppercase s with circumflex",
+    "unicode": "U+0015C",
+    "html": "&Scirc;"
+  },
+  {
+    "value": "ŝ",
+    "name": "lowercase s with circumflex",
+    "unicode": "U+0015D",
+    "html": "&scirc;"
+  },
+  {
+    "value": "Ş",
+    "name": "uppercase s with cedilla",
+    "unicode": "U+0015E",
+    "html": "&Scedil;"
+  },
+  {
+    "value": "ş",
+    "name": "lowercase s with cedilla",
+    "unicode": "U+0015F",
+    "html": "&scedil;"
+  },
+  {
+    "value": "Š",
+    "name": "uppercase s with caron",
+    "unicode": "U+00160",
+    "html": "&Scaron;"
+  },
+  {
+    "value": "š",
+    "name": "lowercase s with caron",
+    "unicode": "U+00161",
+    "html": "&scaron;"
+  },
+  {
+    "value": "Ţ",
+    "name": "uppercase t with cedilla",
+    "unicode": "U+00162",
+    "html": "&Tcedil;"
+  },
+  {
+    "value": "ţ",
+    "name": "lowercase t with cedilla",
+    "unicode": "U+00163",
+    "html": "&tcedil;"
+  },
+  {
+    "value": "Ť",
+    "name": "uppercase t with caron",
+    "unicode": "U+00164",
+    "html": "&Tcaron;"
+  },
+  {
+    "value": "ť",
+    "name": "lowercase t with caron",
+    "unicode": "U+00165",
+    "html": "&tcaron;"
+  },
+  {
+    "value": "Ŧ",
+    "name": "uppercase t with stroke",
+    "unicode": "U+00166",
+    "html": "&Tstrok;"
+  },
+  {
+    "value": "ŧ",
+    "name": "lowercase t with stroke",
+    "unicode": "U+00167",
+    "html": "&tstrok;"
+  },
+  {
+    "value": "Ũ",
+    "name": "uppercase u with tilde",
+    "unicode": "U+00168",
+    "html": "&Utilde;"
+  },
+  {
+    "value": "ũ",
+    "name": "lowercase u with tilde",
+    "unicode": "U+00169",
+    "html": "&utilde;"
+  },
+  {
+    "value": "Ū",
+    "name": "uppercase u with macron",
+    "unicode": "U+0016A",
+    "html": "&Umacr;"
+  },
+  {
+    "value": "ū",
+    "name": "lowercase u with macron",
+    "unicode": "U+0016B",
+    "html": "&umacr;"
+  },
+  {
+    "value": "Ŭ",
+    "name": "uppercase u with breve",
+    "unicode": "U+0016C",
+    "html": "&Ubreve;"
+  },
+  {
+    "value": "ŭ",
+    "name": "lowercase u with breve",
+    "unicode": "U+0016D",
+    "html": "&ubreve;"
+  },
+  {
+    "value": "Ů",
+    "name": "uppercase u with ring above",
+    "unicode": "U+0016E",
+    "html": "&Uring;"
+  },
+  {
+    "value": "ů",
+    "name": "lowercase u with ring above",
+    "unicode": "U+0016F",
+    "html": "&uring;"
+  },
+  {
+    "value": "Ű",
+    "name": "uppercase u with double acute",
+    "unicode": "U+00170",
+    "html": "&Udblac;"
+  },
+  {
+    "value": "ű",
+    "name": "lowercase u with double acute",
+    "unicode": "U+00171",
+    "html": "&udblac;"
+  },
+  {
+    "value": "Ų",
+    "name": "uppercase u with ogonek",
+    "unicode": "U+00172",
+    "html": "&Uogon;"
+  },
+  {
+    "value": "ų",
+    "name": "lowercase u with ogonek",
+    "unicode": "U+00173",
+    "html": "&uogon;"
+  },
+  {
+    "value": "Ŵ",
+    "name": "uppercase w with circumflex",
+    "unicode": "U+00174",
+    "html": "&Wcirc;"
+  },
+  {
+    "value": "ŵ",
+    "name": "lowercase w with circumflex",
+    "unicode": "U+00175",
+    "html": "&wcirc;"
+  },
+  {
+    "value": "Ŷ",
+    "name": "uppercase y with circumflex",
+    "unicode": "U+00176",
+    "html": "&Ycirc;"
+  },
+  {
+    "value": "ŷ",
+    "name": "lowercase y with circumflex",
+    "unicode": "U+00177",
+    "html": "&ycirc;"
+  },
+  {
+    "value": "Ÿ",
+    "name": "uppercase y with diaeresis",
+    "unicode": "U+00178",
+    "html": "&Yuml;"
+  },
+  {
+    "value": "Ź",
+    "name": "uppercase z with acute",
+    "unicode": "U+00179",
+    "html": "&Zacute;"
+  },
+  {
+    "value": "ź",
+    "name": "lowercase z with acute",
+    "unicode": "U+0017A",
+    "html": "&zacute;"
+  },
+  {
+    "value": "Ż",
+    "name": "uppercase z with dot above",
+    "unicode": "U+0017B",
+    "html": "&Zdot;"
+  },
+  {
+    "value": "ż",
+    "name": "lowercase z with dot above",
+    "unicode": "U+0017C",
+    "html": "&zdot;"
+  },
+  {
+    "value": "Ž",
+    "name": "uppercase z with caron",
+    "unicode": "U+0017D",
+    "html": "&Zcaron;"
+  },
+  {
+    "value": "☚",
+    "name": "black left pointing index",
+    "unicode": "U+0261A",
+    "html": "&#9754;"
+  },
+  {
+    "value": "☛",
+    "name": "black right pointing index",
+    "unicode": "U+0261B",
+    "html": "&#9755;"
+  },
+  {
+    "value": "☜",
+    "name": "white left pointing index",
+    "unicode": "U+0261C",
+    "html": "&#9756;"
+  },
+  {
+    "value": "☝",
+    "name": "white up pointing index",
+    "unicode": "U+0261D",
+    "html": "&#9757;"
+  },
+  {
+    "value": "☞",
+    "name": "white right pointing index",
+    "unicode": "U+0261E",
+    "html": "&#9758;"
+  },
+  {
+    "value": "☟",
+    "name": "white down pointing index",
+    "unicode": "U+0261F",
+    "html": "&#9759;"
+  },
+  {
+    "value": "★",
+    "name": "black star",
+    "unicode": "U+02605",
+    "html": "&starf;"
+  },
+  {
+    "value": "☆",
+    "name": "white star",
+    "unicode": "U+02606",
+    "html": "&star;"
+  },
+  {
+    "value": "✔",
+    "name": "heavy check mark",
+    "unicode": "U+02714",
+    "html": "&#10004;"
+  },
+  {
+    "value": "♠",
+    "name": "black spade suit",
+    "unicode": "U+02660",
+    "html": "&spades;"
+  },
+  {
+    "value": "♣",
+    "name": "black club suit",
+    "unicode": "U+02663",
+    "html": "&clubs;"
+  },
+  {
+    "value": "♥",
+    "name": "black heart suit",
+    "unicode": "U+02665",
+    "html": "&hearts;"
+  },
+  {
+    "value": "♦",
+    "name": "black diamond suit",
+    "unicode": "U+02666",
+    "html": "&diams;"
+  },
+  {
+    "value": "♪",
+    "name": "eighth note",
+    "unicode": "U+0266A",
+    "html": "&sung;"
+  },
+  {
+    "value": "♫",
+    "name": "beamed eighth notes",
+    "unicode": "U+0266B",
+    "html": "&#9835;"
+  },
+  {
+    "value": "♯",
+    "name": "music sharp sign",
+    "unicode": "U+0266F",
+    "html": "&sharp;"
+  },
+  {
+    "value": "♀",
+    "name": "female sign",
+    "unicode": "U+02640",
+    "html": "&female;"
+  },
+  {
+    "value": "♂",
+    "name": "male sign",
+    "unicode": "U+02642",
+    "html": "&male;"
+  }
+]

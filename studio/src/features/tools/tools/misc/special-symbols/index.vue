@@ -1,425 +1,54 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue';
-import { IconCheck } from '@tabler/icons-vue';
-import ToolSection from '@/features/tools/components/ToolSection.vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { IconCheck, IconRefresh } from '@tabler/icons-vue';
+import { useRoute, useRouter } from 'vue-router';
+import {
+  getSpecialSymbolCategoryFromHash,
+  loadSpecialSymbolCategory,
+  specialSymbolCategories,
+  type CharacterItem,
+  type SpecialSymbolCategoryId,
+} from './categories';
 
-interface SymbolCategory {
-  id: string;
-  name: string;
-  symbols: string[];
-}
-
-const categories: SymbolCategory[] = [
-  {
-    id: 'popular',
-    name: '热门符号',
-    symbols: [
-      '♥',
-      '★',
-      '☺',
-      '♫',
-      '☀',
-      '☂',
-      '☮',
-      '☯',
-      '✓',
-      '✗',
-      'ღ',
-      '•',
-      '⁂',
-      '€',
-      '™',
-      '↑',
-      '→',
-      '↓',
-      '⇝',
-      '√',
-      '∞',
-      '░',
-      '▲',
-      '▶',
-      '◀',
-      '●',
-      '☠',
-      '☢',
-      '☣',
-      '☪',
-    ],
-  },
-  {
-    id: 'emoji',
-    name: '表情符号',
-    symbols: [
-      '☹',
-      '☺',
-      '☻',
-      '😀',
-      '😁',
-      '😂',
-      '😃',
-      '😄',
-      '😅',
-      '😆',
-      '😇',
-      '😈',
-      '😉',
-      '😊',
-      '😋',
-      '😌',
-      '😍',
-      '😎',
-      '😏',
-      '😐',
-    ],
-  },
-  {
-    id: 'heart',
-    name: '心形符号',
-    symbols: [
-      '♡',
-      '♥',
-      '❤',
-      '❥',
-      '❣',
-      '❦',
-      '❧',
-      'ღ',
-      '💕',
-      '💖',
-      '💗',
-      '💘',
-      '💙',
-      '💚',
-      '💛',
-      '💜',
-      '💝',
-      '💞',
-      '💟',
-    ],
-  },
-  {
-    id: 'arrow',
-    name: '箭头符号',
-    symbols: [
-      '←',
-      '→',
-      '↑',
-      '↓',
-      '↔',
-      '↕',
-      '↖',
-      '↗',
-      '↘',
-      '↙',
-      '↚',
-      '↛',
-      '↜',
-      '↝',
-      '↞',
-      '↟',
-      '⇒',
-      '⇐',
-      '⇑',
-      '⇓',
-      '⇔',
-      '⇕',
-      '⇖',
-      '⇗',
-      '⇘',
-      '⇙',
-      '➜',
-      '➤',
-      '➢',
-    ],
-  },
-  {
-    id: 'math',
-    name: '数学符号',
-    symbols: [
-      '∀',
-      '∂',
-      '∃',
-      '∅',
-      '∇',
-      '∈',
-      '∉',
-      '∋',
-      '∏',
-      '∑',
-      '−',
-      '∓',
-      '∗',
-      '∘',
-      '√',
-      '∝',
-      '∞',
-      '∠',
-      '∧',
-      '∨',
-      '∩',
-      '∪',
-      '∫',
-      '∴',
-      '∼',
-      '≅',
-      '≈',
-      '≠',
-      '≡',
-      '≤',
-      '≥',
-      '⊂',
-      '⊃',
-      '⊆',
-      '⊇',
-      '⊕',
-      '⊗',
-      '⊥',
-      '⋅',
-      '⌈',
-      '⌉',
-      '⌊',
-      '⌋',
-      '∑',
-      '∏',
-      '∫',
-    ],
-  },
-  {
-    id: 'currency',
-    name: '货币符号',
-    symbols: [
-      '$',
-      '¢',
-      '£',
-      '¤',
-      '¥',
-      '฿',
-      '₡',
-      '₢',
-      '₣',
-      '₤',
-      '₥',
-      '₦',
-      '₧',
-      '₨',
-      '₩',
-      '₪',
-      '₫',
-      '€',
-      '₭',
-      '₮',
-      '₯',
-      '₰',
-      '₱',
-      '₲',
-      '₳',
-      '₴',
-      '₵',
-      '₸',
-      '₹',
-      '₺',
-      '₽',
-      '₾',
-      '₿',
-    ],
-  },
-  {
-    id: 'music',
-    name: '音乐符号',
-    symbols: ['♩', '♪', '♫', '♬', '♭', '♮', '♯', '𝄞', '𝄢', '𝄪', '𝄫'],
-  },
-  {
-    id: 'chess',
-    name: '国际象棋符号',
-    symbols: ['♔', '♕', '♖', '♗', '♘', '♙', '♚', '♛', '♜', '♝', '♞', '♟'],
-  },
-  {
-    id: 'weather',
-    name: '天气符号',
-    symbols: ['☀', '☁', '☂', '☃', '☄', '☼', '☽', '☾', '❄', '⚡', '☔', '🌈'],
-  },
-  {
-    id: 'card',
-    name: '扑克牌符号',
-    symbols: [
-      '♠',
-      '♥',
-      '♦',
-      '♣',
-      '🂡',
-      '🂢',
-      '🂣',
-      '🂤',
-      '🂥',
-      '🂦',
-      '🂧',
-      '🂨',
-      '🂩',
-      '🂪',
-      '🂫',
-      '🂬',
-      '🂭',
-      '🂮',
-    ],
-  },
-  {
-    id: 'dice',
-    name: '骰子符号',
-    symbols: ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅', '🎲'],
-  },
-  {
-    id: 'unit',
-    name: '单位符号',
-    symbols: [
-      '°',
-      '℃',
-      '℉',
-      'µ',
-      'Ω',
-      '℧',
-      '℥',
-      '℮',
-      '℞',
-      '℗',
-      '℠',
-      '™',
-      '№',
-      '℀',
-      '℁',
-      'ℂ',
-      '℄',
-      '℆',
-      'ℇ',
-    ],
-  },
-  {
-    id: 'number',
-    name: '数字符号',
-    symbols: [
-      '①',
-      '②',
-      '③',
-      '④',
-      '⑤',
-      '⑥',
-      '⑦',
-      '⑧',
-      '⑨',
-      '⑩',
-      '⑪',
-      '⑫',
-      '⑬',
-      '⑭',
-      '⑮',
-      '⑯',
-      '⑰',
-      '⑱',
-      '⑲',
-      '⑳',
-      'Ⅰ',
-      'Ⅱ',
-      'Ⅲ',
-      'Ⅳ',
-      'Ⅴ',
-      'Ⅵ',
-      'Ⅶ',
-      'Ⅷ',
-      'Ⅸ',
-      'Ⅹ',
-      'Ⅺ',
-      'Ⅻ',
-    ],
-  },
-  {
-    id: 'tech',
-    name: '技术符号',
-    symbols: [
-      '⌘',
-      '⌥',
-      '⇧',
-      '⌃',
-      '⎋',
-      '⌫',
-      '⌦',
-      '⏎',
-      '⌤',
-      '␣',
-      '⎇',
-      '⇪',
-      '⌨',
-      '⌚',
-      '⌛',
-      '✉',
-      '✎',
-      '✏',
-      '✂',
-      '✄',
-      '⚙',
-      '🔒',
-      '🔓',
-    ],
-  },
-  {
-    id: 'zodiac',
-    name: '星座符号',
-    symbols: ['♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓', '⛎'],
-  },
-  {
-    id: 'check',
-    name: '打勾符号',
-    symbols: [
-      '✓',
-      '✔',
-      '✗',
-      '✘',
-      '✓',
-      '✕',
-      '✖',
-      '✚',
-      '✱',
-      '❌',
-      '❎',
-      '❓',
-      '❔',
-      '❕',
-      '❗',
-      '✔️',
-      '✖️',
-      '❣️',
-    ],
-  },
-];
-
+const route = useRoute();
+const router = useRouter();
+const characters = ref<readonly CharacterItem[]>([]);
 const copiedKey = ref('');
 const feedback = ref('');
+const isLoading = ref(false);
+const loadFailed = ref(false);
+const tooltip = ref<{ name: string; x: number; y: number } | null>(null);
 let copiedTimer: number | null = null;
 let feedbackTimer: number | null = null;
-let hashScrollFrame: number | null = null;
+let loadingRequest = 0;
 
-function restoreHashPosition(): void {
-  const targetId = window.location.hash.slice(1);
-  const categoryId = targetId.replace(/^symbol-/, '');
-  if (targetId !== `symbol-${categoryId}` || !categories.some(({ id }) => id === categoryId)) {
-    return;
-  }
+const activeCategoryId = computed<SpecialSymbolCategoryId>(() =>
+  getSpecialSymbolCategoryFromHash(route.hash),
+);
 
-  hashScrollFrame = window.requestAnimationFrame(() => {
-    document.getElementById(targetId)?.scrollIntoView({ block: 'start' });
-    hashScrollFrame = null;
-  });
-}
+async function loadCharacters(categoryId: SpecialSymbolCategoryId): Promise<void> {
+  const request = ++loadingRequest;
+  isLoading.value = true;
+  loadFailed.value = false;
 
-function scrollToCategory(categoryId: string): void {
-  const targetId = `symbol-${categoryId}`;
-  document.getElementById(targetId)?.scrollIntoView({ block: 'start' });
-  window.history.replaceState(window.history.state, '', `#${targetId}`);
-}
-
-async function copySymbol(symbol: string, key: string): Promise<void> {
   try {
-    await navigator.clipboard.writeText(symbol);
+    const nextCharacters = await loadSpecialSymbolCategory(categoryId);
+    if (request !== loadingRequest) return;
+    characters.value = nextCharacters;
+  } catch {
+    if (request !== loadingRequest) return;
+    characters.value = [];
+    loadFailed.value = true;
+  } finally {
+    if (request === loadingRequest) isLoading.value = false;
+  }
+}
+
+async function copyCharacter(character: CharacterItem, key: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(character.value);
     copiedKey.value = key;
-    feedback.value = `已复制 ${symbol}`;
+    feedback.value = `已复制 ${character.value}`;
 
     if (copiedTimer !== null) window.clearTimeout(copiedTimer);
     copiedTimer = window.setTimeout(() => {
@@ -437,132 +66,213 @@ async function copySymbol(symbol: string, key: string): Promise<void> {
   }, 1500);
 }
 
-onMounted(restoreHashPosition);
+function showCharacterTooltip(event: MouseEvent, name: string): void {
+  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+  const halfTooltipWidth = Math.min(140, (window.innerWidth - 24) / 2);
+  tooltip.value = {
+    name,
+    x: Math.min(
+      Math.max(rect.left + rect.width / 2, halfTooltipWidth),
+      window.innerWidth - halfTooltipWidth,
+    ),
+    y: rect.top - 8,
+  };
+}
+
+function hideCharacterTooltip(): void {
+  tooltip.value = null;
+}
+
+watch(
+  () => route.hash,
+  (hash) => {
+    const categoryId = getSpecialSymbolCategoryFromHash(hash);
+    void loadCharacters(categoryId);
+    if (hash !== `#${categoryId}`) {
+      void router.replace({ path: route.path, query: route.query, hash: `#${categoryId}` });
+    }
+  },
+  { immediate: true },
+);
 
 onBeforeUnmount(() => {
   if (copiedTimer !== null) window.clearTimeout(copiedTimer);
   if (feedbackTimer !== null) window.clearTimeout(feedbackTimer);
-  if (hashScrollFrame !== null) window.cancelAnimationFrame(hashScrollFrame);
+  loadingRequest += 1;
 });
 </script>
 
 <template>
-  <ToolSection title="特殊符号" description="点击任意符号即可复制到剪贴板。">
-    <nav class="special-symbols__nav" aria-label="符号分类快捷导航">
-      <a
-        v-for="category in categories"
-        :key="category.id"
-        :href="`#symbol-${category.id}`"
-        @click.prevent="scrollToCategory(category.id)"
-      >
-        {{ category.name }}
-      </a>
-    </nav>
+  <section class="tool-section">
+    <div class="tool-section__body">
+      <nav class="symbol-picker__categories" aria-label="字符分类">
+        <RouterLink
+          v-for="category in specialSymbolCategories"
+          :key="category.id"
+          class="symbol-picker__category"
+          :class="{ 'is-active': activeCategoryId === category.id }"
+          :to="{
+            name: 'tool-detail',
+            params: { toolId: 'special-symbols' },
+            hash: `#${category.id}`,
+          }"
+        >
+          {{ category.name }}
+        </RouterLink>
+      </nav>
 
-    <div class="special-symbols__categories">
-      <section
-        v-for="category in categories"
-        :id="`symbol-${category.id}`"
-        :key="category.id"
-        class="special-symbols__section"
-        :aria-labelledby="`symbol-${category.id}-title`"
-      >
-        <h3 :id="`symbol-${category.id}-title`">{{ category.name }}</h3>
-        <div class="special-symbols__grid">
-          <button
-            v-for="(symbol, index) in category.symbols"
-            :key="`${category.id}-${index}`"
-            type="button"
-            :class="{ 'is-copied': copiedKey === `${category.id}-${index}` }"
-            :aria-label="`复制 ${symbol}`"
-            :title="`复制 ${symbol}`"
-            @click="copySymbol(symbol, `${category.id}-${index}`)"
-          >
-            <IconCheck
-              v-if="copiedKey === `${category.id}-${index}`"
-              :size="18"
-              aria-hidden="true"
-            />
-            <span v-else>{{ symbol }}</span>
-          </button>
-        </div>
-      </section>
-    </div>
+      <div v-if="isLoading" class="symbol-picker__state" role="status">正在加载字符...</div>
 
-    <div class="special-symbols__feedback" :class="{ 'is-visible': feedback }" role="status">
-      {{ feedback }}
+      <div
+        v-else-if="loadFailed"
+        class="symbol-picker__state symbol-picker__state--error"
+        role="alert"
+      >
+        <span>字符数据加载失败</span>
+        <button
+          type="button"
+          aria-label="重新加载"
+          title="重新加载"
+          @click="loadCharacters(activeCategoryId)"
+        >
+          <IconRefresh :size="17" aria-hidden="true" />
+        </button>
+      </div>
+
+      <div v-else class="symbol-picker__grid" :class="{ 'is-emoji': activeCategoryId === 'Emoji' }">
+        <button
+          v-for="(character, index) in characters"
+          :key="`${character.unicode}-${index}`"
+          type="button"
+          :class="{
+            'is-copied': copiedKey === `${character.unicode}-${index}`,
+          }"
+          :aria-label="`复制 ${character.name}（${character.unicode}）`"
+          @mouseenter="showCharacterTooltip($event, character.name)"
+          @mouseleave="hideCharacterTooltip"
+          @click="copyCharacter(character, `${character.unicode}-${index}`)"
+        >
+          <IconCheck
+            v-if="copiedKey === `${character.unicode}-${index}`"
+            :size="18"
+            aria-hidden="true"
+          />
+          <span v-else>{{ character.value }}</span>
+        </button>
+      </div>
+
+      <div class="symbol-picker__feedback" :class="{ 'is-visible': feedback }" role="status">
+        {{ feedback }}
+      </div>
     </div>
-  </ToolSection>
+  </section>
+
+  <Teleport to="body">
+    <div
+      v-if="tooltip"
+      class="symbol-picker__tooltip"
+      :style="{ left: `${tooltip.x}px`, top: `${tooltip.y}px` }"
+      role="tooltip"
+    >
+      {{ tooltip.name }}
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
-.special-symbols__nav {
+.symbol-picker__categories {
   display: flex;
   margin-bottom: 22px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--color-border);
-  flex-wrap: wrap;
-  gap: 7px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: thin;
 }
 
-.special-symbols__nav a {
+.symbol-picker__category {
   display: inline-flex;
-  min-height: 30px;
-  padding: 0 12px;
-  border: 1px solid transparent;
-  border-radius: 999px;
+  flex: 1 0 auto;
+  min-width: 0;
+  min-height: 38px;
+  padding: 0 14px;
+  border-right: 1px solid var(--color-border);
   align-items: center;
+  justify-content: center;
   background: var(--color-surface-soft);
   color: var(--color-text-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 650;
+  line-height: 1.2;
+  text-align: center;
   text-decoration: none;
+  white-space: nowrap;
   transition:
-    border-color 150ms ease,
     background-color 150ms ease,
     color 150ms ease;
 }
 
-.special-symbols__nav a:hover,
-.special-symbols__nav a:focus-visible {
-  border-color: var(--tools-accent);
+.symbol-picker__category:last-child {
+  border-right: 0;
+}
+
+.symbol-picker__category:hover,
+.symbol-picker__category:focus-visible,
+.symbol-picker__category.is-active {
   outline: none;
   background: var(--tools-accent);
   color: #fff;
 }
 
-.special-symbols__categories {
-  display: grid;
-  gap: 24px;
-}
-
-.special-symbols__section {
-  scroll-margin-top: calc(var(--header-height) + 16px);
-}
-
-.special-symbols__section h3 {
-  margin: 0 0 11px;
-  padding-left: 9px;
-  border-left: 3px solid var(--tools-accent);
-  color: var(--color-text);
+.symbol-picker__state {
+  display: flex;
+  min-height: 180px;
+  border: 1px dashed var(--color-border);
+  border-radius: 8px;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
   font-size: 13px;
-  font-weight: 750;
-  line-height: 1.25;
 }
 
-.special-symbols__grid {
+.symbol-picker__state--error {
+  gap: 8px;
+  color: var(--color-danger, #dc2626);
+}
+
+.symbol-picker__state--error button {
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.symbol-picker__state--error button:focus-visible {
+  outline: 2px solid var(--tools-accent);
+  outline-offset: 2px;
+}
+
+.symbol-picker__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
   gap: 7px;
 }
 
-.special-symbols__grid button {
+.symbol-picker__grid button {
   display: inline-flex;
+  position: relative;
   min-width: 0;
-  min-height: 46px;
+  min-height: 50px;
   padding: 0;
   border: 1px solid var(--color-border);
-  border-radius: 9px;
+  border-radius: 8px;
   align-items: center;
   justify-content: center;
   background: var(--color-surface-soft);
@@ -577,13 +287,17 @@ onBeforeUnmount(() => {
     transform 150ms ease;
 }
 
-.special-symbols__grid button span {
-  font-size: 20px;
+.symbol-picker__grid button span {
+  font-size: 22px;
   line-height: 1;
 }
 
-.special-symbols__grid button:hover,
-.special-symbols__grid button:focus-visible {
+.symbol-picker__grid.is-emoji button span {
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+}
+
+.symbol-picker__grid button:hover,
+.symbol-picker__grid button:focus-visible {
   border-color: var(--tools-accent);
   outline: none;
   background: color-mix(in srgb, var(--tools-accent) 10%, var(--color-surface-solid));
@@ -591,24 +305,24 @@ onBeforeUnmount(() => {
   transform: translateY(-1px);
 }
 
-.special-symbols__grid button:active {
+.symbol-picker__grid button:active {
   transform: scale(0.96);
 }
 
-.special-symbols__grid button.is-copied {
+.symbol-picker__grid button.is-copied {
   border-color: var(--tools-accent);
   background: var(--tools-accent);
   color: #fff;
 }
 
-.special-symbols__feedback {
+.symbol-picker__feedback {
   position: fixed;
   z-index: 60;
   bottom: 24px;
   left: 50%;
   max-width: calc(100vw - 32px);
   padding: 9px 18px;
-  border-radius: 999px;
+  border-radius: 8px;
   opacity: 0;
   background: rgb(15 23 42 / 88%);
   color: #fff;
@@ -621,38 +335,47 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
-.special-symbols__feedback.is-visible {
+.symbol-picker__feedback.is-visible {
   opacity: 1;
   transform: translate(-50%, 0);
 }
 
-@media (max-width: 600px) {
-  .special-symbols__nav {
-    margin-bottom: 18px;
-  }
+.symbol-picker__tooltip {
+  position: fixed;
+  z-index: 100;
+  max-width: min(280px, calc(100vw - 24px));
+  padding: 6px 9px;
+  border-radius: 6px;
+  background: rgb(28 30 34 / 96%);
+  box-shadow: 0 5px 16px rgb(15 23 42 / 22%);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+  transform: translate(-50%, -100%);
+}
 
-  .special-symbols__categories {
-    gap: 21px;
-  }
-
-  .special-symbols__grid {
-    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+@media (max-width: 720px) {
+  .symbol-picker__grid {
+    grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
     gap: 6px;
   }
 
-  .special-symbols__grid button {
-    min-height: 42px;
+  .symbol-picker__grid button {
+    min-height: 46px;
   }
 
-  .special-symbols__grid button span {
-    font-size: 18px;
+  .symbol-picker__grid button span {
+    font-size: 20px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .special-symbols__nav a,
-  .special-symbols__grid button,
-  .special-symbols__feedback {
+  .symbol-picker__category,
+  .symbol-picker__grid button,
+  .symbol-picker__feedback {
     transition: none;
   }
 }

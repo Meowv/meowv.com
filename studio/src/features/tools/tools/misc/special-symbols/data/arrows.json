@@ -1,0 +1,1772 @@
+[
+  {
+    "value": "←",
+    "name": "left arrow",
+    "unicode": "U+02190",
+    "html": "&larr;"
+  },
+  {
+    "value": "↑",
+    "name": "up arrow",
+    "unicode": "U+02191",
+    "html": "&uarr;"
+  },
+  {
+    "value": "→",
+    "name": "right arrow",
+    "unicode": "U+02192",
+    "html": "&rarr;"
+  },
+  {
+    "value": "↓",
+    "name": "down arrow",
+    "unicode": "U+02193",
+    "html": "&darr;"
+  },
+  {
+    "value": "↔",
+    "name": "left right arrow",
+    "unicode": "U+02194",
+    "html": "&harr;"
+  },
+  {
+    "value": "↕",
+    "name": "up down arrow",
+    "unicode": "U+02195",
+    "html": "&varr;"
+  },
+  {
+    "value": "↖",
+    "name": "north west arrow",
+    "unicode": "U+02196",
+    "html": "&nwarr;"
+  },
+  {
+    "value": "↗",
+    "name": "north east arrow",
+    "unicode": "U+02197",
+    "html": "&nearr;"
+  },
+  {
+    "value": "↘",
+    "name": "south east arrow",
+    "unicode": "U+02198",
+    "html": "&searr;"
+  },
+  {
+    "value": "↙",
+    "name": "south west arrow",
+    "unicode": "U+02199",
+    "html": "&swarr;"
+  },
+  {
+    "value": "↚",
+    "name": "left arrow with stroke",
+    "unicode": "U+0219A",
+    "html": "&nlarr;"
+  },
+  {
+    "value": "↛",
+    "name": "right arrow with stroke",
+    "unicode": "U+0219B",
+    "html": "&nrarr;"
+  },
+  {
+    "value": "↜",
+    "name": "left wave arrow",
+    "unicode": "U+0219C",
+    "html": "&larrw;"
+  },
+  {
+    "value": "↝",
+    "name": "right wave arrow",
+    "unicode": "U+0219D",
+    "html": "&rarrw;"
+  },
+  {
+    "value": "↞",
+    "name": "left two headed arrow",
+    "unicode": "U+0219E",
+    "html": "&Larr;"
+  },
+  {
+    "value": "↟",
+    "name": "up two headed arrow",
+    "unicode": "U+0219F",
+    "html": "&Uarr;"
+  },
+  {
+    "value": "↠",
+    "name": "right two headed arrow",
+    "unicode": "U+021A0",
+    "html": "&Rarr;"
+  },
+  {
+    "value": "↡",
+    "name": "down two headed arrow",
+    "unicode": "U+021A1",
+    "html": "&Darr;"
+  },
+  {
+    "value": "↢",
+    "name": "left arrow with tail",
+    "unicode": "U+021A2",
+    "html": "&larrtl;"
+  },
+  {
+    "value": "↣",
+    "name": "right arrow with tail",
+    "unicode": "U+021A3",
+    "html": "&rarrtl;"
+  },
+  {
+    "value": "↤",
+    "name": "left arrow from bar",
+    "unicode": "U+021A4",
+    "html": "&mapstoleft;"
+  },
+  {
+    "value": "↥",
+    "name": "up arrow from bar",
+    "unicode": "U+021A5",
+    "html": "&mapstoup;"
+  },
+  {
+    "value": "↦",
+    "name": "right arrow from bar",
+    "unicode": "U+021A6",
+    "html": "&mapstoright;"
+  },
+  {
+    "value": "↧",
+    "name": "down arrow from bar",
+    "unicode": "U+021A7",
+    "html": "&mapstodown;"
+  },
+  {
+    "value": "↨",
+    "name": "up down arrow with base",
+    "unicode": "U+021A8",
+    "html": "&#8616;"
+  },
+  {
+    "value": "↩",
+    "name": "left arrow with hook",
+    "unicode": "U+021A9",
+    "html": "&larrhk;"
+  },
+  {
+    "value": "↪",
+    "name": "right arrow with hook",
+    "unicode": "U+021AA",
+    "html": "&rarrhk;"
+  },
+  {
+    "value": "↫",
+    "name": "left arrow with loop",
+    "unicode": "U+021AB",
+    "html": "&larrlp;"
+  },
+  {
+    "value": "↬",
+    "name": "right arrow with loop",
+    "unicode": "U+021AC",
+    "html": "&rarrlp;"
+  },
+  {
+    "value": "↭",
+    "name": "left right wave arrow",
+    "unicode": "U+021AD",
+    "html": "&harrw;"
+  },
+  {
+    "value": "↮",
+    "name": "left right arrow with stroke",
+    "unicode": "U+021AE",
+    "html": "&nharr;"
+  },
+  {
+    "value": "↯",
+    "name": "down zigzag arrow",
+    "unicode": "U+021AF",
+    "html": "&#8623;"
+  },
+  {
+    "value": "↰",
+    "name": "up arrow with tip left",
+    "unicode": "U+021B0",
+    "html": "&lsh;"
+  },
+  {
+    "value": "↱",
+    "name": "up arrow with tip right",
+    "unicode": "U+021B1",
+    "html": "&rsh;"
+  },
+  {
+    "value": "↲",
+    "name": "down arrow with tip left",
+    "unicode": "U+021B2",
+    "html": "&ldsh;"
+  },
+  {
+    "value": "↳",
+    "name": "down arrow with tip right",
+    "unicode": "U+021B3",
+    "html": "&rdsh;"
+  },
+  {
+    "value": "↴",
+    "name": "right arrow with corner down",
+    "unicode": "U+021B4",
+    "html": "&#8628;"
+  },
+  {
+    "value": "↵",
+    "name": "down arrow with corner left",
+    "unicode": "U+021B5",
+    "html": "&crarr;"
+  },
+  {
+    "value": "↶",
+    "name": "anticlockwise top semicircle arrow",
+    "unicode": "U+021B6",
+    "html": "&cularr;"
+  },
+  {
+    "value": "↷",
+    "name": "clockwise top semicircle arrow",
+    "unicode": "U+021B7",
+    "html": "&curarr;"
+  },
+  {
+    "value": "↸",
+    "name": "north west arrow to long bar",
+    "unicode": "U+021B8",
+    "html": "&#8632;"
+  },
+  {
+    "value": "↹",
+    "name": "left arrow to bar over right arrow to bar",
+    "unicode": "U+021B9",
+    "html": "&#8633;"
+  },
+  {
+    "value": "↺",
+    "name": "anticlockwise open circle arrow",
+    "unicode": "U+021BA",
+    "html": "&olarr;"
+  },
+  {
+    "value": "↻",
+    "name": "clockwise open circle arrow",
+    "unicode": "U+021BB",
+    "html": "&orarr;"
+  },
+  {
+    "value": "↼",
+    "name": "left harpoon with barb up",
+    "unicode": "U+021BC",
+    "html": "&lharu;"
+  },
+  {
+    "value": "↽",
+    "name": "left harpoon with barb down",
+    "unicode": "U+021BD",
+    "html": "&lhard;"
+  },
+  {
+    "value": "↾",
+    "name": "up harpoon with barb right",
+    "unicode": "U+021BE",
+    "html": "&uharr;"
+  },
+  {
+    "value": "↿",
+    "name": "up harpoon with barb left",
+    "unicode": "U+021BF",
+    "html": "&uharl;"
+  },
+  {
+    "value": "⇀",
+    "name": "right harpoon with barb up",
+    "unicode": "U+021C0",
+    "html": "&rharu;"
+  },
+  {
+    "value": "⇁",
+    "name": "right harpoon with barb down",
+    "unicode": "U+021C1",
+    "html": "&rhard;"
+  },
+  {
+    "value": "⇂",
+    "name": "down harpoon with barb right",
+    "unicode": "U+021C2",
+    "html": "&dharr;"
+  },
+  {
+    "value": "⇃",
+    "name": "down harpoon with barb left",
+    "unicode": "U+021C3",
+    "html": "&dharl;"
+  },
+  {
+    "value": "⇄",
+    "name": "right arrow over left arrow",
+    "unicode": "U+021C4",
+    "html": "&rlarr;"
+  },
+  {
+    "value": "⇅",
+    "name": "up arrow left of down arrow",
+    "unicode": "U+021C5",
+    "html": "&udarr;"
+  },
+  {
+    "value": "⇆",
+    "name": "left arrow over right arrow",
+    "unicode": "U+021C6",
+    "html": "&lrarr;"
+  },
+  {
+    "value": "⇇",
+    "name": "left paired arrows",
+    "unicode": "U+021C7",
+    "html": "&llarr;"
+  },
+  {
+    "value": "⇈",
+    "name": "up paired arrows",
+    "unicode": "U+021C8",
+    "html": "&uuarr;"
+  },
+  {
+    "value": "⇉",
+    "name": "right paired arrows",
+    "unicode": "U+021C9",
+    "html": "&rrarr;"
+  },
+  {
+    "value": "⇊",
+    "name": "downards paired arrows",
+    "unicode": "U+021CA",
+    "html": "&ddarr;"
+  },
+  {
+    "value": "⇋",
+    "name": "left harpoon over right harpoon",
+    "unicode": "U+021CB",
+    "html": "&lrhar;"
+  },
+  {
+    "value": "⇌",
+    "name": "right harpoon over left harpoon",
+    "unicode": "U+021CC",
+    "html": "&rlhar;"
+  },
+  {
+    "value": "⇍",
+    "name": "left double arrow with stroke",
+    "unicode": "U+021CD",
+    "html": "&nlArr;"
+  },
+  {
+    "value": "⇎",
+    "name": "left right double arrow with stroke",
+    "unicode": "U+021CE",
+    "html": "&nhArr;"
+  },
+  {
+    "value": "⇏",
+    "name": "right double arrow with stroke",
+    "unicode": "U+021CF",
+    "html": "&nrArr;"
+  },
+  {
+    "value": "⇐",
+    "name": "left double arrow",
+    "unicode": "U+021D0",
+    "html": "&lArr;"
+  },
+  {
+    "value": "⇑",
+    "name": "up double arrow",
+    "unicode": "U+021D1",
+    "html": "&uArr;"
+  },
+  {
+    "value": "⇒",
+    "name": "right double arrow",
+    "unicode": "U+021D2",
+    "html": "&rArr;"
+  },
+  {
+    "value": "⇓",
+    "name": "down double arrow",
+    "unicode": "U+021D3",
+    "html": "&dArr;"
+  },
+  {
+    "value": "⇔",
+    "name": "left right double arrow",
+    "unicode": "U+021D4",
+    "html": "&hArr;"
+  },
+  {
+    "value": "⇕",
+    "name": "up down double arrow",
+    "unicode": "U+021D5",
+    "html": "&vArr;"
+  },
+  {
+    "value": "⇖",
+    "name": "north west double arrow",
+    "unicode": "U+021D6",
+    "html": "&nwArr;"
+  },
+  {
+    "value": "⇗",
+    "name": "north east double arrow",
+    "unicode": "U+021D7",
+    "html": "&neArr;"
+  },
+  {
+    "value": "⇘",
+    "name": "south east double arrow",
+    "unicode": "U+021D8",
+    "html": "&seArr;"
+  },
+  {
+    "value": "⇙",
+    "name": "south west double arrow",
+    "unicode": "U+021D9",
+    "html": "&swArr;"
+  },
+  {
+    "value": "⇚",
+    "name": "left triple arrow",
+    "unicode": "U+021DA",
+    "html": "&lAarr;"
+  },
+  {
+    "value": "⇛",
+    "name": "right triple arrow",
+    "unicode": "U+021DB",
+    "html": "&rAarr;"
+  },
+  {
+    "value": "⇜",
+    "name": "left squiggle arrow",
+    "unicode": "U+021DC",
+    "html": "&ziglarr;"
+  },
+  {
+    "value": "⇝",
+    "name": "right squiggle arrow",
+    "unicode": "U+021DD",
+    "html": "&zigrarr;"
+  },
+  {
+    "value": "⇞",
+    "name": "up arrow with double stroke",
+    "unicode": "U+021DE",
+    "html": "&#8670;"
+  },
+  {
+    "value": "⇟",
+    "name": "down arrow with double stroke",
+    "unicode": "U+021DF",
+    "html": "&#8671;"
+  },
+  {
+    "value": "⇠",
+    "name": "left dashed arrow",
+    "unicode": "U+021E0",
+    "html": "&#8672;"
+  },
+  {
+    "value": "⇡",
+    "name": "up dashed arrow",
+    "unicode": "U+021E1",
+    "html": "&#8673;"
+  },
+  {
+    "value": "⇢",
+    "name": "right dashed arrow",
+    "unicode": "U+021E2",
+    "html": "&#8674;"
+  },
+  {
+    "value": "⇣",
+    "name": "down dashed arrow",
+    "unicode": "U+021E3",
+    "html": "&#8675;"
+  },
+  {
+    "value": "⇤",
+    "name": "left arrow to bar",
+    "unicode": "U+021E4",
+    "html": "&larrb;"
+  },
+  {
+    "value": "⇥",
+    "name": "right arrow to bar",
+    "unicode": "U+021E5",
+    "html": "&rarrb;"
+  },
+  {
+    "value": "⇦",
+    "name": "left white arrow",
+    "unicode": "U+021E6",
+    "html": "&#8678;"
+  },
+  {
+    "value": "⇧",
+    "name": "up white arrow",
+    "unicode": "U+021E7",
+    "html": "&#8679;"
+  },
+  {
+    "value": "⇨",
+    "name": "right white arrow",
+    "unicode": "U+021E8",
+    "html": "&#8680;"
+  },
+  {
+    "value": "⇩",
+    "name": "down white arrow",
+    "unicode": "U+021E9",
+    "html": "&#8681;"
+  },
+  {
+    "value": "⇪",
+    "name": "up white arrow from bar",
+    "unicode": "U+021EA",
+    "html": "&#8682;"
+  },
+  {
+    "value": "⇫",
+    "name": "up white arrow on pedestal",
+    "unicode": "U+021EB",
+    "html": "&#8683;"
+  },
+  {
+    "value": "⇬",
+    "name": "up white arrow on pedestal with horizontal bar",
+    "unicode": "U+021EC",
+    "html": "&#8684;"
+  },
+  {
+    "value": "⇭",
+    "name": "up white arrow on pedestal with vertical bar",
+    "unicode": "U+021ED",
+    "html": "&#8685;"
+  },
+  {
+    "value": "⇮",
+    "name": "up white double arrow",
+    "unicode": "U+021EE",
+    "html": "&#8686;"
+  },
+  {
+    "value": "⇯",
+    "name": "up white double arrow on pedestal",
+    "unicode": "U+021EF",
+    "html": "&#8687;"
+  },
+  {
+    "value": "⇰",
+    "name": "right white arrow from wall",
+    "unicode": "U+021F0",
+    "html": "&#8688;"
+  },
+  {
+    "value": "⇱",
+    "name": "north west arrow to corner",
+    "unicode": "U+021F1",
+    "html": "&#8689;"
+  },
+  {
+    "value": "⇲",
+    "name": "south east arrow to corner",
+    "unicode": "U+021F2",
+    "html": "&#8690;"
+  },
+  {
+    "value": "⇳",
+    "name": "up down white arrow",
+    "unicode": "U+021F3",
+    "html": "&#8691;"
+  },
+  {
+    "value": "⇴",
+    "name": "right arrow with small circle",
+    "unicode": "U+021F4",
+    "html": "&#8692;"
+  },
+  {
+    "value": "⇵",
+    "name": "down arrow left of up arrow",
+    "unicode": "U+021F5",
+    "html": "&duarr;"
+  },
+  {
+    "value": "⇶",
+    "name": "three right arrows",
+    "unicode": "U+021F6",
+    "html": "&#8694;"
+  },
+  {
+    "value": "⇷",
+    "name": "left arrow with vertical stroke",
+    "unicode": "U+021F7",
+    "html": "&#8695;"
+  },
+  {
+    "value": "⇸",
+    "name": "right arrow with vertical stroke",
+    "unicode": "U+021F8",
+    "html": "&#8696;"
+  },
+  {
+    "value": "⇹",
+    "name": "left right arrow with vertical stroke",
+    "unicode": "U+021F9",
+    "html": "&#8697;"
+  },
+  {
+    "value": "⇺",
+    "name": "left arrow with double vertical stroke",
+    "unicode": "U+021FA",
+    "html": "&#8698;"
+  },
+  {
+    "value": "⇻",
+    "name": "right arrow with double vertical stroke",
+    "unicode": "U+021FB",
+    "html": "&#8699;"
+  },
+  {
+    "value": "⇼",
+    "name": "left right arrow with double vertical stroke",
+    "unicode": "U+021FC",
+    "html": "&#8700;"
+  },
+  {
+    "value": "⇽",
+    "name": "left open-headed arrow",
+    "unicode": "U+021FD",
+    "html": "&loarr;"
+  },
+  {
+    "value": "⇾",
+    "name": "right open-headed arrow",
+    "unicode": "U+021FE",
+    "html": "&roarr;"
+  },
+  {
+    "value": "⇿",
+    "name": "left right open-headed arrow",
+    "unicode": "U+021FF",
+    "html": "&hoarr;"
+  },
+  {
+    "value": "⟰",
+    "name": "up quadruple arrow",
+    "unicode": "U+027F0",
+    "html": "&#10224;"
+  },
+  {
+    "value": "⟱",
+    "name": "down quadruple arrow",
+    "unicode": "U+027F1",
+    "html": "&#10225;"
+  },
+  {
+    "value": "⟲",
+    "name": "anticlockwise gapped circle arrow",
+    "unicode": "U+027F2",
+    "html": "&#10226;"
+  },
+  {
+    "value": "⟳",
+    "name": "clockwise gapped circle arrow",
+    "unicode": "U+027F3",
+    "html": "&#10227;"
+  },
+  {
+    "value": "⟴",
+    "name": "right arrow with circled plus",
+    "unicode": "U+027F4",
+    "html": "&#10228;"
+  },
+  {
+    "value": "⟵",
+    "name": "long left arrow",
+    "unicode": "U+027F5",
+    "html": "&xlarr;"
+  },
+  {
+    "value": "⟶",
+    "name": "long right arrow",
+    "unicode": "U+027F6",
+    "html": "&xrarr;"
+  },
+  {
+    "value": "⟷",
+    "name": "long left right arrow",
+    "unicode": "U+027F7",
+    "html": "&xharr;"
+  },
+  {
+    "value": "⟸",
+    "name": "long left double arrow",
+    "unicode": "U+027F8",
+    "html": "&xlArr;"
+  },
+  {
+    "value": "⟹",
+    "name": "long right double arrow",
+    "unicode": "U+027F9",
+    "html": "&xrArr;"
+  },
+  {
+    "value": "⟺",
+    "name": "long left right double arrow",
+    "unicode": "U+027FA",
+    "html": "&xhArr;"
+  },
+  {
+    "value": "⟻",
+    "name": "long left arrow from bar",
+    "unicode": "U+027FB",
+    "html": "&#10235;"
+  },
+  {
+    "value": "⟼",
+    "name": "long right arrow from bar",
+    "unicode": "U+027FC",
+    "html": "&xmap;"
+  },
+  {
+    "value": "⟽",
+    "name": "long left double arrow from bar",
+    "unicode": "U+027FD",
+    "html": "&#10237;"
+  },
+  {
+    "value": "⟾",
+    "name": "long right double arrow from bar",
+    "unicode": "U+027FE",
+    "html": "&#10238;"
+  },
+  {
+    "value": "⟿",
+    "name": "long right squiggle arrow",
+    "unicode": "U+027FF",
+    "html": "&dzigrarr;"
+  },
+  {
+    "value": "⤀",
+    "name": "right two-headed arrow with vertical stroke",
+    "unicode": "U+02900",
+    "html": "&#10496;"
+  },
+  {
+    "value": "⤁",
+    "name": "right two-headed arrow with double vertical stroke",
+    "unicode": "U+02901",
+    "html": "&#10497;"
+  },
+  {
+    "value": "⤂",
+    "name": "left double arrow with vertical stroke",
+    "unicode": "U+02902",
+    "html": "&nvlArr;"
+  },
+  {
+    "value": "⤃",
+    "name": "right double arrow with vertical stroke",
+    "unicode": "U+02903",
+    "html": "&nvrArr;"
+  },
+  {
+    "value": "⤄",
+    "name": "left right double arrow with vertical stroke",
+    "unicode": "U+02904",
+    "html": "&nvHarr;"
+  },
+  {
+    "value": "⤅",
+    "name": "right two-headed arrow from bar",
+    "unicode": "U+02905",
+    "html": "&Map;"
+  },
+  {
+    "value": "⤆",
+    "name": "left double arrow from bar",
+    "unicode": "U+02906",
+    "html": "&#10502;"
+  },
+  {
+    "value": "⤇",
+    "name": "right double arrow from bar",
+    "unicode": "U+02907",
+    "html": "&#10503;"
+  },
+  {
+    "value": "⤈",
+    "name": "down arrow with horizontal stroke",
+    "unicode": "U+02908",
+    "html": "&#10504;"
+  },
+  {
+    "value": "⤉",
+    "name": "up arrow with horizontal stroke",
+    "unicode": "U+02909",
+    "html": "&#10505;"
+  },
+  {
+    "value": "⤊",
+    "name": "up triple arrow",
+    "unicode": "U+0290A",
+    "html": "&#10506;"
+  },
+  {
+    "value": "⤋",
+    "name": "down triple arrow",
+    "unicode": "U+0290B",
+    "html": "&#10507;"
+  },
+  {
+    "value": "⤌",
+    "name": "left double dash arrow",
+    "unicode": "U+0290C",
+    "html": "&lbarr;"
+  },
+  {
+    "value": "⤍",
+    "name": "right double dash arrow",
+    "unicode": "U+0290D",
+    "html": "&rbarr;"
+  },
+  {
+    "value": "⤎",
+    "name": "left triple dash arrow",
+    "unicode": "U+0290E",
+    "html": "&lBarr;"
+  },
+  {
+    "value": "⤏",
+    "name": "right triple dash arrow",
+    "unicode": "U+0290F",
+    "html": "&rBarr;"
+  },
+  {
+    "value": "⤐",
+    "name": "right two-headed triple dash arrow",
+    "unicode": "U+02910",
+    "html": "&RBarr;"
+  },
+  {
+    "value": "⤑",
+    "name": "right arrow with dotted stem",
+    "unicode": "U+02911",
+    "html": "&DDotrahd;"
+  },
+  {
+    "value": "⤒",
+    "name": "up arrow to bar",
+    "unicode": "U+02912",
+    "html": "&UpArrowBar;"
+  },
+  {
+    "value": "⤓",
+    "name": "down arrow to bar",
+    "unicode": "U+02913",
+    "html": "&DownArrowBar;"
+  },
+  {
+    "value": "⤔",
+    "name": "right arrow with tail with vertical stroke",
+    "unicode": "U+02914",
+    "html": "&#10516;"
+  },
+  {
+    "value": "⤕",
+    "name": "right arrow with tail with double vertical stroke",
+    "unicode": "U+02915",
+    "html": "&#10517;"
+  },
+  {
+    "value": "⤖",
+    "name": "right two-headed arrow with tail",
+    "unicode": "U+02916",
+    "html": "&Rarrtl;"
+  },
+  {
+    "value": "⤗",
+    "name": "right two-headed arrow with tail with vertical stroke",
+    "unicode": "U+02917",
+    "html": "&#10519;"
+  },
+  {
+    "value": "⤘",
+    "name": "right two-headed arrow with tail with double vertical stroke",
+    "unicode": "U+02918",
+    "html": "&#10520;"
+  },
+  {
+    "value": "⤙",
+    "name": "left arrow-tail",
+    "unicode": "U+02919",
+    "html": "&latail;"
+  },
+  {
+    "value": "⤚",
+    "name": "right arrow-tail",
+    "unicode": "U+0291A",
+    "html": "&ratail;"
+  },
+  {
+    "value": "⤛",
+    "name": "left double arrow-tail",
+    "unicode": "U+0291B",
+    "html": "&lAtail;"
+  },
+  {
+    "value": "⤜",
+    "name": "right double arrow-tail",
+    "unicode": "U+0291C",
+    "html": "&rAtail;"
+  },
+  {
+    "value": "⤝",
+    "name": "left arrow to black diamond",
+    "unicode": "U+0291D",
+    "html": "&larrfs;"
+  },
+  {
+    "value": "⤞",
+    "name": "right arrow to black diamond",
+    "unicode": "U+0291E",
+    "html": "&rarrfs;"
+  },
+  {
+    "value": "⤟",
+    "name": "left arrow from bar to black diamond",
+    "unicode": "U+0291F",
+    "html": "&larrbfs;"
+  },
+  {
+    "value": "⤠",
+    "name": "right arrow from bar to black diamond",
+    "unicode": "U+02920",
+    "html": "&rarrbfs;"
+  },
+  {
+    "value": "⤡",
+    "name": "north west and south east arrow",
+    "unicode": "U+02921",
+    "html": "&#10529;"
+  },
+  {
+    "value": "⤢",
+    "name": "north east and south west arrow",
+    "unicode": "U+02922",
+    "html": "&#10530;"
+  },
+  {
+    "value": "⤣",
+    "name": "north west arrow with hook",
+    "unicode": "U+02923",
+    "html": "&nwarhk;"
+  },
+  {
+    "value": "⤤",
+    "name": "north east arrow with hook",
+    "unicode": "U+02924",
+    "html": "&nearhk;"
+  },
+  {
+    "value": "⤥",
+    "name": "south east arrow with hook",
+    "unicode": "U+02925",
+    "html": "&searhk;"
+  },
+  {
+    "value": "⤦",
+    "name": "south west arrow with hook",
+    "unicode": "U+02926",
+    "html": "&swarhk;"
+  },
+  {
+    "value": "⤧",
+    "name": "north west arrow and north east arrow",
+    "unicode": "U+02927",
+    "html": "&nwnear;"
+  },
+  {
+    "value": "⤨",
+    "name": "north east arrow and south east arrow",
+    "unicode": "U+02928",
+    "html": "&nesear;"
+  },
+  {
+    "value": "⤩",
+    "name": "south east arrow and south west arrow",
+    "unicode": "U+02929",
+    "html": "&seswar;"
+  },
+  {
+    "value": "⤪",
+    "name": "south west arrow and north west arrow",
+    "unicode": "U+0292A",
+    "html": "&swnwar;"
+  },
+  {
+    "value": "⤫",
+    "name": "rising diagonal crossing falling diagonal",
+    "unicode": "U+0292B",
+    "html": "&#10539;"
+  },
+  {
+    "value": "⤬",
+    "name": "falling diagonal crossing rising diagonal",
+    "unicode": "U+0292C",
+    "html": "&#10540;"
+  },
+  {
+    "value": "⤭",
+    "name": "south east arrow crossing north east arrow",
+    "unicode": "U+0292D",
+    "html": "&#10541;"
+  },
+  {
+    "value": "⤮",
+    "name": "north east arrow crossing south east arrow",
+    "unicode": "U+0292E",
+    "html": "&#10542;"
+  },
+  {
+    "value": "⤯",
+    "name": "falling diagonal crossing north east arrow",
+    "unicode": "U+0292F",
+    "html": "&#10543;"
+  },
+  {
+    "value": "⤰",
+    "name": "rising diagonal crossing south east arrow",
+    "unicode": "U+02930",
+    "html": "&#10544;"
+  },
+  {
+    "value": "⤱",
+    "name": "north east arrow crossing north west arrow",
+    "unicode": "U+02931",
+    "html": "&#10545;"
+  },
+  {
+    "value": "⤲",
+    "name": "north west arrow crossing north east arrow",
+    "unicode": "U+02932",
+    "html": "&#10546;"
+  },
+  {
+    "value": "⤳",
+    "name": "wave arrow pointing directly right",
+    "unicode": "U+02933",
+    "html": "&rarrc;"
+  },
+  {
+    "value": "⤴",
+    "name": "arrow pointing right then curving up",
+    "unicode": "U+02934",
+    "html": "&#10548;"
+  },
+  {
+    "value": "⤵",
+    "name": "arrow pointing right then curving down",
+    "unicode": "U+02935",
+    "html": "&cudarrr;"
+  },
+  {
+    "value": "⤶",
+    "name": "arrow pointing down then curving left",
+    "unicode": "U+02936",
+    "html": "&ldca;"
+  },
+  {
+    "value": "⤷",
+    "name": "arrow pointing down then curving right",
+    "unicode": "U+02937",
+    "html": "&rdca;"
+  },
+  {
+    "value": "⤸",
+    "name": "right-side arc clockwise arrow",
+    "unicode": "U+02938",
+    "html": "&cudarrl;"
+  },
+  {
+    "value": "⤹",
+    "name": "left-side arc anticlockwise arrow",
+    "unicode": "U+02939",
+    "html": "&larrpl;"
+  },
+  {
+    "value": "⤺",
+    "name": "top arc anticlockwise arrow",
+    "unicode": "U+0293A",
+    "html": "&#10554;"
+  },
+  {
+    "value": "⤻",
+    "name": "bottom arc anticlockwise arrow",
+    "unicode": "U+0293B",
+    "html": "&#10555;"
+  },
+  {
+    "value": "⤼",
+    "name": "top arc clockwise arrow with minus",
+    "unicode": "U+0293C",
+    "html": "&curarrm;"
+  },
+  {
+    "value": "⤽",
+    "name": "top arc anticlockwise arrow with plus",
+    "unicode": "U+0293D",
+    "html": "&cularrp;"
+  },
+  {
+    "value": "⤾",
+    "name": "lower right semicircular clockwise arrow",
+    "unicode": "U+0293E",
+    "html": "&#10558;"
+  },
+  {
+    "value": "⤿",
+    "name": "lower left semicircular anticlockwise arrow",
+    "unicode": "U+0293F",
+    "html": "&#10559;"
+  },
+  {
+    "value": "⥀",
+    "name": "anticlockwise closed circle arrow",
+    "unicode": "U+02940",
+    "html": "&#10560;"
+  },
+  {
+    "value": "⥁",
+    "name": "clockwise closed circle arrow",
+    "unicode": "U+02941",
+    "html": "&#10561;"
+  },
+  {
+    "value": "⥂",
+    "name": "right arrow above short left arrow",
+    "unicode": "U+02942",
+    "html": "&#10562;"
+  },
+  {
+    "value": "⥃",
+    "name": "left arrow above short right arrow",
+    "unicode": "U+02943",
+    "html": "&#10563;"
+  },
+  {
+    "value": "⥄",
+    "name": "short right arrow above left arrow",
+    "unicode": "U+02944",
+    "html": "&#10564;"
+  },
+  {
+    "value": "⥅",
+    "name": "right arrow with plus below",
+    "unicode": "U+02945",
+    "html": "&rarrpl;"
+  },
+  {
+    "value": "⥆",
+    "name": "left arrow with plus below",
+    "unicode": "U+02946",
+    "html": "&#10566;"
+  },
+  {
+    "value": "⥇",
+    "name": "right arrow through x",
+    "unicode": "U+02947",
+    "html": "&#10567;"
+  },
+  {
+    "value": "⥈",
+    "name": "left right arrow through small circle",
+    "unicode": "U+02948",
+    "html": "&harrcir;"
+  },
+  {
+    "value": "⥉",
+    "name": "up two-headed arrow from small circle",
+    "unicode": "U+02949",
+    "html": "&Uarrocir;"
+  },
+  {
+    "value": "⥊",
+    "name": "left barb up right barb down harpoon",
+    "unicode": "U+0294A",
+    "html": "&lurdshar;"
+  },
+  {
+    "value": "⥋",
+    "name": "left barb down right barb up harpoon",
+    "unicode": "U+0294B",
+    "html": "&ldrushar;"
+  },
+  {
+    "value": "⥌",
+    "name": "up barb right down barb left harpoon",
+    "unicode": "U+0294C",
+    "html": "&#10572;"
+  },
+  {
+    "value": "⥍",
+    "name": "up barb left down barb right harpoon",
+    "unicode": "U+0294D",
+    "html": "&#10573;"
+  },
+  {
+    "value": "⥎",
+    "name": "left barb up right barb up harpoon",
+    "unicode": "U+0294E",
+    "html": "&LeftRightVector;"
+  },
+  {
+    "value": "⥏",
+    "name": "up barb right down barb right harpoon",
+    "unicode": "U+0294F",
+    "html": "&RightUpDownVector;"
+  },
+  {
+    "value": "⥐",
+    "name": "left barb down right barb down harpoon",
+    "unicode": "U+02950",
+    "html": "&DownLeftRightVector;"
+  },
+  {
+    "value": "⥑",
+    "name": "up barb left down barb left harpoon",
+    "unicode": "U+02951",
+    "html": "&LeftUpDownVector;"
+  },
+  {
+    "value": "⥒",
+    "name": "left harpoon with barb up to bar",
+    "unicode": "U+02952",
+    "html": "&LeftVectorBar;"
+  },
+  {
+    "value": "⥓",
+    "name": "right harpoon with barb up to bar",
+    "unicode": "U+02953",
+    "html": "&RightVectorBar;"
+  },
+  {
+    "value": "⥔",
+    "name": "up harpoon with barb right to bar",
+    "unicode": "U+02954",
+    "html": "&RightUpVectorBar;"
+  },
+  {
+    "value": "⥕",
+    "name": "down harpoon with barb right to bar",
+    "unicode": "U+02955",
+    "html": "&RightDownVectorBar;"
+  },
+  {
+    "value": "⥖",
+    "name": "left harpoon with barb down to bar",
+    "unicode": "U+02956",
+    "html": "&DownLeftVectorBar;"
+  },
+  {
+    "value": "⥗",
+    "name": "right harpoon with barb down to bar",
+    "unicode": "U+02957",
+    "html": "&DownRightVectorBar;"
+  },
+  {
+    "value": "⥘",
+    "name": "up harpoon with barb left to bar",
+    "unicode": "U+02958",
+    "html": "&LeftUpVectorBar;"
+  },
+  {
+    "value": "⥙",
+    "name": "down harpoon with barb left to bar",
+    "unicode": "U+02959",
+    "html": "&LeftDownVectorBar;"
+  },
+  {
+    "value": "⥚",
+    "name": "left harpoon with barb up from bar",
+    "unicode": "U+0295A",
+    "html": "&LeftTeeVector;"
+  },
+  {
+    "value": "⥛",
+    "name": "right harpoon with barb up from bar",
+    "unicode": "U+0295B",
+    "html": "&RightTeeVector;"
+  },
+  {
+    "value": "⥜",
+    "name": "up harpoon with barb right from bar",
+    "unicode": "U+0295C",
+    "html": "&RightUpTeeVector;"
+  },
+  {
+    "value": "⥝",
+    "name": "down harpoon with barb right from bar",
+    "unicode": "U+0295D",
+    "html": "&RightDownTeeVector;"
+  },
+  {
+    "value": "⥞",
+    "name": "left harpoon with barb down from bar",
+    "unicode": "U+0295E",
+    "html": "&DownLeftTeeVector;"
+  },
+  {
+    "value": "⥟",
+    "name": "right harpoon with barb down from bar",
+    "unicode": "U+0295F",
+    "html": "&DownRightTeeVector;"
+  },
+  {
+    "value": "⥠",
+    "name": "up harpoon with barb left from bar",
+    "unicode": "U+02960",
+    "html": "&LeftUpTeeVector;"
+  },
+  {
+    "value": "⥡",
+    "name": "down harpoon with barb left from bar",
+    "unicode": "U+02961",
+    "html": "&LeftDownTeeVector;"
+  },
+  {
+    "value": "⥢",
+    "name": "left harpoon with barb up above left harpoon with barb down",
+    "unicode": "U+02962",
+    "html": "&lHar;"
+  },
+  {
+    "value": "⥣",
+    "name": "up harpoon with barb left beside up harpoon with barb right",
+    "unicode": "U+02963",
+    "html": "&uHar;"
+  },
+  {
+    "value": "⥤",
+    "name": "right harpoon with barb up above right harpoon with barb down",
+    "unicode": "U+02964",
+    "html": "&rHar;"
+  },
+  {
+    "value": "⥥",
+    "name": "down harpoon with barb left beside down harpoon with barb right",
+    "unicode": "U+02965",
+    "html": "&dHar;"
+  },
+  {
+    "value": "⥦",
+    "name": "left harpoon with barb up above right harpoon with barb up",
+    "unicode": "U+02966",
+    "html": "&luruhar;"
+  },
+  {
+    "value": "⥧",
+    "name": "left harpoon with barb down above right harpoon with barb down",
+    "unicode": "U+02967",
+    "html": "&ldrdhar;"
+  },
+  {
+    "value": "⥨",
+    "name": "right harpoon with barb up above left harpoon with barb up",
+    "unicode": "U+02968",
+    "html": "&ruluhar;"
+  },
+  {
+    "value": "⥩",
+    "name": "right harpoon with barb down above left harpoon with barb down",
+    "unicode": "U+02969",
+    "html": "&rdldhar;"
+  },
+  {
+    "value": "⥪",
+    "name": "left harpoon with barb up above long dash",
+    "unicode": "U+0296A",
+    "html": "&lharul;"
+  },
+  {
+    "value": "⥫",
+    "name": "left harpoon with barb down below long dash",
+    "unicode": "U+0296B",
+    "html": "&llhard;"
+  },
+  {
+    "value": "⥬",
+    "name": "right harpoon with barb up above long dash",
+    "unicode": "U+0296C",
+    "html": "&rharul;"
+  },
+  {
+    "value": "⥭",
+    "name": "right harpoon with barb down below long dash",
+    "unicode": "U+0296D",
+    "html": "&lrhard;"
+  },
+  {
+    "value": "⥮",
+    "name": "up harpoon with barb left beside down harpoon with barb right",
+    "unicode": "U+0296E",
+    "html": "&udhar;"
+  },
+  {
+    "value": "⥯",
+    "name": "down harpoon with barb left beside up harpoon with barb right",
+    "unicode": "U+0296F",
+    "html": "&duhar;"
+  },
+  {
+    "value": "⥰",
+    "name": "right double arrow with rounded head",
+    "unicode": "U+02970",
+    "html": "&RoundImplies;"
+  },
+  {
+    "value": "⥱",
+    "name": "equals sign above right arrow",
+    "unicode": "U+02971",
+    "html": "&erarr;"
+  },
+  {
+    "value": "⥲",
+    "name": "tilde operator above right arrow",
+    "unicode": "U+02972",
+    "html": "&simrarr;"
+  },
+  {
+    "value": "⥳",
+    "name": "left arrow above tilde operator",
+    "unicode": "U+02973",
+    "html": "&larrsim;"
+  },
+  {
+    "value": "⥴",
+    "name": "right arrow above tilde operator",
+    "unicode": "U+02974",
+    "html": "&rarrsim;"
+  },
+  {
+    "value": "⥵",
+    "name": "right arrow above almost equal to",
+    "unicode": "U+02975",
+    "html": "&rarrap;"
+  },
+  {
+    "value": "⥶",
+    "name": "less-than above left arrow",
+    "unicode": "U+02976",
+    "html": "&ltlarr;"
+  },
+  {
+    "value": "⥷",
+    "name": "left arrow through less-than",
+    "unicode": "U+02977",
+    "html": "&#10615;"
+  },
+  {
+    "value": "⥸",
+    "name": "greater-than above right arrow",
+    "unicode": "U+02978",
+    "html": "&gtrarr;"
+  },
+  {
+    "value": "⥹",
+    "name": "subset above right arrow",
+    "unicode": "U+02979",
+    "html": "&subrarr;"
+  },
+  {
+    "value": "⥺",
+    "name": "left arrow through subset",
+    "unicode": "U+0297A",
+    "html": "&#10618;"
+  },
+  {
+    "value": "⥻",
+    "name": "superset above left arrow",
+    "unicode": "U+0297B",
+    "html": "&suplarr;"
+  },
+  {
+    "value": "⥼",
+    "name": "left fish tail",
+    "unicode": "U+0297C",
+    "html": "&lfisht;"
+  },
+  {
+    "value": "⥽",
+    "name": "right fish tail",
+    "unicode": "U+0297D",
+    "html": "&rfisht;"
+  },
+  {
+    "value": "⥾",
+    "name": "up fish tail",
+    "unicode": "U+0297E",
+    "html": "&ufisht;"
+  },
+  {
+    "value": "⥿",
+    "name": "down fish tail",
+    "unicode": "U+0297F",
+    "html": "&dfisht;"
+  },
+  {
+    "value": "➔",
+    "name": "heavy wide-headed right arrow",
+    "unicode": "U+02794",
+    "html": "&#10132;"
+  },
+  {
+    "value": "➘",
+    "name": "heavy south east arrow",
+    "unicode": "U+02798",
+    "html": "&#10136;"
+  },
+  {
+    "value": "➙",
+    "name": "heavy right arrow",
+    "unicode": "U+02799",
+    "html": "&#10137;"
+  },
+  {
+    "value": "➚",
+    "name": "heavy north east arrow",
+    "unicode": "U+0279A",
+    "html": "&#10138;"
+  },
+  {
+    "value": "➛",
+    "name": "drafting point right arrow",
+    "unicode": "U+0279B",
+    "html": "&#10139;"
+  },
+  {
+    "value": "➜",
+    "name": "heavy round-tipped right arrow",
+    "unicode": "U+0279C",
+    "html": "&#10140;"
+  },
+  {
+    "value": "➝",
+    "name": "triangle-headed right arrow",
+    "unicode": "U+0279D",
+    "html": "&#10141;"
+  },
+  {
+    "value": "➞",
+    "name": "heavy triangle-headed right arrow",
+    "unicode": "U+0279E",
+    "html": "&#10142;"
+  },
+  {
+    "value": "➟",
+    "name": "dashed triangle-headed right arrow",
+    "unicode": "U+0279F",
+    "html": "&#10143;"
+  },
+  {
+    "value": "➠",
+    "name": "heavy dashed triangle-headed right arrow",
+    "unicode": "U+027A0",
+    "html": "&#10144;"
+  },
+  {
+    "value": "➡",
+    "name": "black right arrow",
+    "unicode": "U+027A1",
+    "html": "&#10145;"
+  },
+  {
+    "value": "➢",
+    "name": "three-d top-lighted right arrowhead",
+    "unicode": "U+027A2",
+    "html": "&#10146;"
+  },
+  {
+    "value": "➣",
+    "name": "three-d bottom-lighted right arrowhead",
+    "unicode": "U+027A3",
+    "html": "&#10147;"
+  },
+  {
+    "value": "➤",
+    "name": "black right arrowhead",
+    "unicode": "U+027A4",
+    "html": "&#10148;"
+  },
+  {
+    "value": "➥",
+    "name": "heavy black curved down and right arrow",
+    "unicode": "U+027A5",
+    "html": "&#10149;"
+  },
+  {
+    "value": "➦",
+    "name": "heavy black curved up and right arrow",
+    "unicode": "U+027A6",
+    "html": "&#10150;"
+  },
+  {
+    "value": "➧",
+    "name": "squat black right arrow",
+    "unicode": "U+027A7",
+    "html": "&#10151;"
+  },
+  {
+    "value": "➨",
+    "name": "heavy concave-pointed black right arrow",
+    "unicode": "U+027A8",
+    "html": "&#10152;"
+  },
+  {
+    "value": "➩",
+    "name": "right-shaded white right arrow",
+    "unicode": "U+027A9",
+    "html": "&#10153;"
+  },
+  {
+    "value": "➪",
+    "name": "left-shaded white right arrow",
+    "unicode": "U+027AA",
+    "html": "&#10154;"
+  },
+  {
+    "value": "➫",
+    "name": "back-tilted shadowed white right arrow",
+    "unicode": "U+027AB",
+    "html": "&#10155;"
+  },
+  {
+    "value": "➬",
+    "name": "front-tilted shadowed white right arrow",
+    "unicode": "U+027AC",
+    "html": "&#10156;"
+  },
+  {
+    "value": "➭",
+    "name": "heavy lower right-shadowed white right arrow",
+    "unicode": "U+027AD",
+    "html": "&#10157;"
+  },
+  {
+    "value": "➮",
+    "name": "heavy upper right-shadowed white right arrow",
+    "unicode": "U+027AE",
+    "html": "&#10158;"
+  },
+  {
+    "value": "➯",
+    "name": "notched lower right-shadowed white right arrow",
+    "unicode": "U+027AF",
+    "html": "&#10159;"
+  },
+  {
+    "value": "➱",
+    "name": "notched upper right-shadowed white right arrow",
+    "unicode": "U+027B1",
+    "html": "&#10161;"
+  },
+  {
+    "value": "➲",
+    "name": "circled heavy white right arrow",
+    "unicode": "U+027B2",
+    "html": "&#10162;"
+  },
+  {
+    "value": "➳",
+    "name": "white-feathered right arrow",
+    "unicode": "U+027B3",
+    "html": "&#10163;"
+  },
+  {
+    "value": "➴",
+    "name": "black-feathered south east arrow",
+    "unicode": "U+027B4",
+    "html": "&#10164;"
+  },
+  {
+    "value": "➵",
+    "name": "black-feathered right arrow",
+    "unicode": "U+027B5",
+    "html": "&#10165;"
+  },
+  {
+    "value": "➶",
+    "name": "black-feathered north east arrow",
+    "unicode": "U+027B6",
+    "html": "&#10166;"
+  },
+  {
+    "value": "➷",
+    "name": "heavy black-feathered south east arrow",
+    "unicode": "U+027B7",
+    "html": "&#10167;"
+  },
+  {
+    "value": "➸",
+    "name": "heavy black-feathered right arrow",
+    "unicode": "U+027B8",
+    "html": "&#10168;"
+  },
+  {
+    "value": "➹",
+    "name": "heavy black-feathered north east arrow",
+    "unicode": "U+027B9",
+    "html": "&#10169;"
+  },
+  {
+    "value": "➺",
+    "name": "teardrop-barbed right arrow",
+    "unicode": "U+027BA",
+    "html": "&#10170;"
+  },
+  {
+    "value": "➻",
+    "name": "heavy teardrop-shanked right arrow",
+    "unicode": "U+027BB",
+    "html": "&#10171;"
+  },
+  {
+    "value": "➼",
+    "name": "wedge-tailed right arrow",
+    "unicode": "U+027BC",
+    "html": "&#10172;"
+  },
+  {
+    "value": "➽",
+    "name": "heavy wedge-tailed right arrow",
+    "unicode": "U+027BD",
+    "html": "&#10173;"
+  },
+  {
+    "value": "➾",
+    "name": "open-outlined right arrow",
+    "unicode": "U+027BE",
+    "html": "&#10174;"
+  }
+]

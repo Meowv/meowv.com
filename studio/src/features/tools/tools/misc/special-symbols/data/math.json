@@ -1,0 +1,1850 @@
+[
+  {
+    "value": "+",
+    "name": "plus sign",
+    "unicode": "U+0002B",
+    "html": "&plus;"
+  },
+  {
+    "value": "−",
+    "name": "minus sign",
+    "unicode": "U+02212",
+    "html": "&minus;"
+  },
+  {
+    "value": "×",
+    "name": "multiplication sign",
+    "unicode": "U+000D7",
+    "html": "&times;"
+  },
+  {
+    "value": "÷",
+    "name": "division sign",
+    "unicode": "U+000F7",
+    "html": "&divide;"
+  },
+  {
+    "value": "=",
+    "name": "equal sign",
+    "unicode": "U+0003D",
+    "html": "&equals;"
+  },
+  {
+    "value": "≠",
+    "name": "not equal to sign",
+    "unicode": "U+02260",
+    "html": "&ne;"
+  },
+  {
+    "value": "±",
+    "name": "plus or minus sign",
+    "unicode": "U+000B1",
+    "html": "&plusmn;"
+  },
+  {
+    "value": "¬",
+    "name": "not sign",
+    "unicode": "U+000AC",
+    "html": "&not;"
+  },
+  {
+    "value": "<",
+    "name": "less-than sign",
+    "unicode": "U+0003C",
+    "html": "&lt;"
+  },
+  {
+    "value": ">",
+    "name": "greater-than sign",
+    "unicode": "U+0003E",
+    "html": "&gt;"
+  },
+  {
+    "value": "⋜",
+    "name": "equal to or less-than sign",
+    "unicode": "U+022DC",
+    "html": "&#8924;"
+  },
+  {
+    "value": "⋝",
+    "name": "equal to or greater-than sign",
+    "unicode": "U+022DD",
+    "html": "&#8925;"
+  },
+  {
+    "value": "°",
+    "name": "degree sign",
+    "unicode": "U+000B0",
+    "html": "&deg;"
+  },
+  {
+    "value": "¹",
+    "name": "superscript one",
+    "unicode": "U+000B9",
+    "html": "&sup1;"
+  },
+  {
+    "value": "²",
+    "name": "superscript two",
+    "unicode": "U+000B2",
+    "html": "&sup2;"
+  },
+  {
+    "value": "³",
+    "name": "superscript three",
+    "unicode": "U+000B3",
+    "html": "&sup3;"
+  },
+  {
+    "value": "ƒ",
+    "name": "function",
+    "unicode": "U+00192",
+    "html": "&fnof;"
+  },
+  {
+    "value": "%",
+    "name": "percent sign",
+    "unicode": "U+00025",
+    "html": "&percnt;"
+  },
+  {
+    "value": "‰",
+    "name": "per mille sign",
+    "unicode": "U+00089",
+    "html": "&permil;"
+  },
+  {
+    "value": "‱",
+    "name": "per ten thousand sign",
+    "unicode": "U+02031",
+    "html": "&pertenk;"
+  },
+  {
+    "value": "∀",
+    "name": "for all",
+    "unicode": "U+02200",
+    "html": "&forall;"
+  },
+  {
+    "value": "∁",
+    "name": "complement",
+    "unicode": "U+02201",
+    "html": "&comp;"
+  },
+  {
+    "value": "∂",
+    "name": "partial differential",
+    "unicode": "U+02202",
+    "html": "&part;"
+  },
+  {
+    "value": "∃",
+    "name": "there exists",
+    "unicode": "U+02203",
+    "html": "&exist;"
+  },
+  {
+    "value": "∄",
+    "name": "there does not exist",
+    "unicode": "U+02204",
+    "html": "&nexist;"
+  },
+  {
+    "value": "∅",
+    "name": "empty set",
+    "unicode": "U+02205",
+    "html": "&empty;"
+  },
+  {
+    "value": "∆",
+    "name": "increment",
+    "unicode": "U+02206",
+    "html": "&#8710;"
+  },
+  {
+    "value": "∇",
+    "name": "nabla",
+    "unicode": "U+02207",
+    "html": "&nabla;"
+  },
+  {
+    "value": "∈",
+    "name": "element of",
+    "unicode": "U+02208",
+    "html": "&isin;"
+  },
+  {
+    "value": "∉",
+    "name": "not an element of",
+    "unicode": "U+02209",
+    "html": "&notin;"
+  },
+  {
+    "value": "∊",
+    "name": "small element of",
+    "unicode": "U+0220A",
+    "html": "&#8714;"
+  },
+  {
+    "value": "∋",
+    "name": "contains as member",
+    "unicode": "U+0220B",
+    "html": "&ni;"
+  },
+  {
+    "value": "∌",
+    "name": "does not contain as member",
+    "unicode": "U+0220C",
+    "html": "&notni;"
+  },
+  {
+    "value": "∍",
+    "name": "small contains as member",
+    "unicode": "U+0220D",
+    "html": "&#8717;"
+  },
+  {
+    "value": "∎",
+    "name": "end of proof",
+    "unicode": "U+0220E",
+    "html": "&#8718;"
+  },
+  {
+    "value": "∏",
+    "name": "n-ary product",
+    "unicode": "U+0220F",
+    "html": "&prod;"
+  },
+  {
+    "value": "∐",
+    "name": "n-ary coproduct",
+    "unicode": "U+02210",
+    "html": "&coprod;"
+  },
+  {
+    "value": "∑",
+    "name": "n-ary summation",
+    "unicode": "U+02211",
+    "html": "&sum;"
+  },
+  {
+    "value": "∓",
+    "name": "minus-or-plus sign",
+    "unicode": "U+02213",
+    "html": "&mnplus;"
+  },
+  {
+    "value": "∔",
+    "name": "dot plus",
+    "unicode": "U+02214",
+    "html": "&plusdo;"
+  },
+  {
+    "value": "∕",
+    "name": "division slash",
+    "unicode": "U+02215",
+    "html": "&#8725;"
+  },
+  {
+    "value": "∖",
+    "name": "set minus",
+    "unicode": "U+02216",
+    "html": "&setminus;"
+  },
+  {
+    "value": "∗",
+    "name": "asterisk operator",
+    "unicode": "U+02217",
+    "html": "&lowast;"
+  },
+  {
+    "value": "∘",
+    "name": "ring operator",
+    "unicode": "U+02218",
+    "html": "&compfn;"
+  },
+  {
+    "value": "∙",
+    "name": "bullet operator",
+    "unicode": "U+02219",
+    "html": "&#8729;"
+  },
+  {
+    "value": "√",
+    "name": "square root",
+    "unicode": "U+0221A",
+    "html": "&radic;"
+  },
+  {
+    "value": "∛",
+    "name": "cube root",
+    "unicode": "U+0221B",
+    "html": "&#8731;"
+  },
+  {
+    "value": "∜",
+    "name": "fourth root",
+    "unicode": "U+0221C",
+    "html": "&#8732;"
+  },
+  {
+    "value": "∝",
+    "name": "proportional to",
+    "unicode": "U+0221D",
+    "html": "&prop;"
+  },
+  {
+    "value": "∞",
+    "name": "infinity",
+    "unicode": "U+0221E",
+    "html": "&infin;"
+  },
+  {
+    "value": "∟",
+    "name": "right angle",
+    "unicode": "U+0221F",
+    "html": "&angrt;"
+  },
+  {
+    "value": "∠",
+    "name": "angle",
+    "unicode": "U+02220",
+    "html": "&ang;"
+  },
+  {
+    "value": "∡",
+    "name": "measured angle",
+    "unicode": "U+02221",
+    "html": "&angmsd;"
+  },
+  {
+    "value": "∢",
+    "name": "spherical angle",
+    "unicode": "U+02222",
+    "html": "&angsph;"
+  },
+  {
+    "value": "∣",
+    "name": "divides",
+    "unicode": "U+02223",
+    "html": "&mid;"
+  },
+  {
+    "value": "∤",
+    "name": "does not divide",
+    "unicode": "U+02224",
+    "html": "&nmid;"
+  },
+  {
+    "value": "∥",
+    "name": "parallel to",
+    "unicode": "U+02225",
+    "html": "&parallel;"
+  },
+  {
+    "value": "∦",
+    "name": "not parallel to",
+    "unicode": "U+02226",
+    "html": "&npar;"
+  },
+  {
+    "value": "∧",
+    "name": "logical and",
+    "unicode": "U+02227",
+    "html": "&and;"
+  },
+  {
+    "value": "∨",
+    "name": "logical or",
+    "unicode": "U+02228",
+    "html": "&or;"
+  },
+  {
+    "value": "∩",
+    "name": "intersection",
+    "unicode": "U+02229",
+    "html": "&cap;"
+  },
+  {
+    "value": "∪",
+    "name": "union",
+    "unicode": "U+0222A",
+    "html": "&cup;"
+  },
+  {
+    "value": "∫",
+    "name": "integral",
+    "unicode": "U+0222B",
+    "html": "&int;"
+  },
+  {
+    "value": "∬",
+    "name": "double integral",
+    "unicode": "U+0222C",
+    "html": "&Int;"
+  },
+  {
+    "value": "∭",
+    "name": "triple integral",
+    "unicode": "U+0222D",
+    "html": "&iiint;"
+  },
+  {
+    "value": "∮",
+    "name": "contour integral",
+    "unicode": "U+0222E",
+    "html": "&conint;"
+  },
+  {
+    "value": "∯",
+    "name": "surface integral",
+    "unicode": "U+0222F",
+    "html": "&Conint;"
+  },
+  {
+    "value": "∰",
+    "name": "volume integral",
+    "unicode": "U+02230",
+    "html": "&Cconint;"
+  },
+  {
+    "value": "∱",
+    "name": "clockwise integral",
+    "unicode": "U+02231",
+    "html": "&cwint;"
+  },
+  {
+    "value": "∲",
+    "name": "clockwise contour integral",
+    "unicode": "U+02232",
+    "html": "&cwconint;"
+  },
+  {
+    "value": "∳",
+    "name": "anticlockwise contour integral",
+    "unicode": "U+02233",
+    "html": "&awconint;"
+  },
+  {
+    "value": "V̇",
+    "name": "volume symbol uppercase",
+    "unicode": "U+0056 U+0307",
+    "html": "&#86;&#775;"
+  },
+  {
+    "value": "v̇",
+    "name": "volume symbol lowercase",
+    "unicode": "U+0076 U+0307",
+    "html": "&#118;&#775;"
+  },
+  {
+    "value": "∴",
+    "name": "therefore",
+    "unicode": "U+02234",
+    "html": "&there4;"
+  },
+  {
+    "value": "∵",
+    "name": "because",
+    "unicode": "U+02235",
+    "html": "&because;"
+  },
+  {
+    "value": "∶",
+    "name": "ratio",
+    "unicode": "U+02236",
+    "html": "&ratio;"
+  },
+  {
+    "value": "∷",
+    "name": "proportion",
+    "unicode": "U+02237",
+    "html": "&Colon;"
+  },
+  {
+    "value": "∸",
+    "name": "dot minus",
+    "unicode": "U+02238",
+    "html": "&minusd;"
+  },
+  {
+    "value": "∹",
+    "name": "excess",
+    "unicode": "U+02239",
+    "html": "&#8761;"
+  },
+  {
+    "value": "∺",
+    "name": "geometric proportion",
+    "unicode": "U+0223A",
+    "html": "&mDDot;"
+  },
+  {
+    "value": "∻",
+    "name": "homothetic",
+    "unicode": "U+0223B",
+    "html": "&homtht;"
+  },
+  {
+    "value": "∼",
+    "name": "tilde operator",
+    "unicode": "U+0223C",
+    "html": "&sim;"
+  },
+  {
+    "value": "∽",
+    "name": "reversed tilde",
+    "unicode": "U+0223D",
+    "html": "&bsim;"
+  },
+  {
+    "value": "∾",
+    "name": "inverted lazy s",
+    "unicode": "U+0223E",
+    "html": "&ac;"
+  },
+  {
+    "value": "∿",
+    "name": "sine wave",
+    "unicode": "U+0223F",
+    "html": "&acd;"
+  },
+  {
+    "value": "≀",
+    "name": "wreath product",
+    "unicode": "U+02240",
+    "html": "&wreath;"
+  },
+  {
+    "value": "≁",
+    "name": "not tilde",
+    "unicode": "U+02241",
+    "html": "&nsim;"
+  },
+  {
+    "value": "≂",
+    "name": "minus tilde",
+    "unicode": "U+02242",
+    "html": "&esim;"
+  },
+  {
+    "value": "≃",
+    "name": "asymptotically equal to",
+    "unicode": "U+02243",
+    "html": "&sime;"
+  },
+  {
+    "value": "≄",
+    "name": "not asymptotically equal to",
+    "unicode": "U+02244",
+    "html": "&nsime;"
+  },
+  {
+    "value": "≅",
+    "name": "approximately equal to",
+    "unicode": "U+02245",
+    "html": "&cong;"
+  },
+  {
+    "value": "≆",
+    "name": "approximately but not actually equal to",
+    "unicode": "U+02246",
+    "html": "&simne;"
+  },
+  {
+    "value": "≇",
+    "name": "neither approximately nor actually equal to",
+    "unicode": "U+02247",
+    "html": "&ncong;"
+  },
+  {
+    "value": "≈",
+    "name": "almost equal to",
+    "unicode": "U+02248",
+    "html": "&asymp;"
+  },
+  {
+    "value": "≉",
+    "name": "not almost equal to",
+    "unicode": "U+02249",
+    "html": "&nap;"
+  },
+  {
+    "value": "≊",
+    "name": "almost equal or equal to",
+    "unicode": "U+0224A",
+    "html": "&approxeq;"
+  },
+  {
+    "value": "≋",
+    "name": "triple tilde",
+    "unicode": "U+0224B",
+    "html": "&apid;"
+  },
+  {
+    "value": "≌",
+    "name": "all equal to",
+    "unicode": "U+0224C",
+    "html": "&bcong;"
+  },
+  {
+    "value": "≍",
+    "name": "equivalent to",
+    "unicode": "U+0224D",
+    "html": "&asympeq;"
+  },
+  {
+    "value": "≎",
+    "name": "geometrically equivalent to",
+    "unicode": "U+0224E",
+    "html": "&bump;"
+  },
+  {
+    "value": "≏",
+    "name": "difference between",
+    "unicode": "U+0224F",
+    "html": "&bumpe;"
+  },
+  {
+    "value": "≐",
+    "name": "approaches the limit",
+    "unicode": "U+02250",
+    "html": "&esdot;"
+  },
+  {
+    "value": "≑",
+    "name": "geometrically equal to",
+    "unicode": "U+02251",
+    "html": "&eDot;"
+  },
+  {
+    "value": "≒",
+    "name": "approximately equal to or the image of",
+    "unicode": "U+02252",
+    "html": "&efDot;"
+  },
+  {
+    "value": "≓",
+    "name": "image of or approximately equal to",
+    "unicode": "U+02253",
+    "html": "&erDot;"
+  },
+  {
+    "value": "≔",
+    "name": "colon equals",
+    "unicode": "U+02254",
+    "html": "&colone;"
+  },
+  {
+    "value": "≕",
+    "name": "equals colon",
+    "unicode": "U+02255",
+    "html": "&ecolon;"
+  },
+  {
+    "value": "≖",
+    "name": "ring in equal to",
+    "unicode": "U+02256",
+    "html": "&ecir;"
+  },
+  {
+    "value": "≗",
+    "name": "ring equal to",
+    "unicode": "U+02257",
+    "html": "&cire;"
+  },
+  {
+    "value": "≘",
+    "name": "corresponds to",
+    "unicode": "U+02258",
+    "html": "&#8792;"
+  },
+  {
+    "value": "≙",
+    "name": "estimates",
+    "unicode": "U+02259",
+    "html": "&wedgeq;"
+  },
+  {
+    "value": "≚",
+    "name": "equiangular to",
+    "unicode": "U+0225A",
+    "html": "&veeeq;"
+  },
+  {
+    "value": "≛",
+    "name": "star equals",
+    "unicode": "U+0225B",
+    "html": "&#8795;"
+  },
+  {
+    "value": "≜",
+    "name": "delta equal to",
+    "unicode": "U+0225C",
+    "html": "&trie;"
+  },
+  {
+    "value": "≝",
+    "name": "equal to by definition",
+    "unicode": "U+0225D",
+    "html": "&#8797;"
+  },
+  {
+    "value": "≞",
+    "name": "measured by",
+    "unicode": "U+0225E",
+    "html": "&#8798;"
+  },
+  {
+    "value": "≟",
+    "name": "questioned equal to",
+    "unicode": "U+0225F",
+    "html": "&equest;"
+  },
+  {
+    "value": "≡",
+    "name": "identical to",
+    "unicode": "U+02261",
+    "html": "&equiv;"
+  },
+  {
+    "value": "≢",
+    "name": "not identical to",
+    "unicode": "U+02262",
+    "html": "&nequiv;"
+  },
+  {
+    "value": "≣",
+    "name": "strictly equivalent to",
+    "unicode": "U+02263",
+    "html": "&#8803;"
+  },
+  {
+    "value": "≤",
+    "name": "less-than or equal to",
+    "unicode": "U+02264",
+    "html": "&le;"
+  },
+  {
+    "value": "≥",
+    "name": "greater-than or equal to",
+    "unicode": "U+02265",
+    "html": "&ge;"
+  },
+  {
+    "value": "≦",
+    "name": "less-than over equal to",
+    "unicode": "U+02266",
+    "html": "&lE;"
+  },
+  {
+    "value": "≧",
+    "name": "greater-than over equal to",
+    "unicode": "U+02267",
+    "html": "&gE;"
+  },
+  {
+    "value": "≨",
+    "name": "less-than but not equal to",
+    "unicode": "U+02268",
+    "html": "&lnE;"
+  },
+  {
+    "value": "≩",
+    "name": "greater-than but not equal to",
+    "unicode": "U+02269",
+    "html": "&gnE;"
+  },
+  {
+    "value": "≪",
+    "name": "much less-than",
+    "unicode": "U+0226A",
+    "html": "&Lt;"
+  },
+  {
+    "value": "≫",
+    "name": "much greater-than",
+    "unicode": "U+0226B",
+    "html": "&Gt;"
+  },
+  {
+    "value": "≬",
+    "name": "between",
+    "unicode": "U+0226C",
+    "html": "&between;"
+  },
+  {
+    "value": "≭",
+    "name": "not equivalent to",
+    "unicode": "U+0226D",
+    "html": "&NotCupCap;"
+  },
+  {
+    "value": "≮",
+    "name": "not less-than",
+    "unicode": "U+0226E",
+    "html": "&nlt;"
+  },
+  {
+    "value": "≯",
+    "name": "not greater-than",
+    "unicode": "U+0226F",
+    "html": "&ngt;"
+  },
+  {
+    "value": "≰",
+    "name": "neither less-than nor equal to",
+    "unicode": "U+02270",
+    "html": "&nle;"
+  },
+  {
+    "value": "≱",
+    "name": "neither greater-than nor equal to",
+    "unicode": "U+02271",
+    "html": "&nge;"
+  },
+  {
+    "value": "≲",
+    "name": "less-than or equivalent to",
+    "unicode": "U+02272",
+    "html": "&lsim;"
+  },
+  {
+    "value": "≳",
+    "name": "greater-than or equivalent to",
+    "unicode": "U+02273",
+    "html": "&gsim;"
+  },
+  {
+    "value": "≴",
+    "name": "neither less-than nor equivalent to",
+    "unicode": "U+02274",
+    "html": "&nlsim;"
+  },
+  {
+    "value": "≵",
+    "name": "neither greater-than nor equivalent to",
+    "unicode": "U+02275",
+    "html": "&ngsim;"
+  },
+  {
+    "value": "≶",
+    "name": "less-than or greater-than",
+    "unicode": "U+02276",
+    "html": "&lg;"
+  },
+  {
+    "value": "≷",
+    "name": "greater-than or less-than",
+    "unicode": "U+02277",
+    "html": "&gl;"
+  },
+  {
+    "value": "≸",
+    "name": "neither less-than nor greater-than",
+    "unicode": "U+02278",
+    "html": "&ntlg;"
+  },
+  {
+    "value": "≹",
+    "name": "neither greater-than nor less-than",
+    "unicode": "U+02279",
+    "html": "&ntgl;"
+  },
+  {
+    "value": "≺",
+    "name": "precedes",
+    "unicode": "U+0227A",
+    "html": "&pr;"
+  },
+  {
+    "value": "≻",
+    "name": "succeeds",
+    "unicode": "U+0227B",
+    "html": "&sc;"
+  },
+  {
+    "value": "≼",
+    "name": "precedes or equal to",
+    "unicode": "U+0227C",
+    "html": "&prcue;"
+  },
+  {
+    "value": "≽",
+    "name": "succeeds or equal to",
+    "unicode": "U+0227D",
+    "html": "&sccue;"
+  },
+  {
+    "value": "≾",
+    "name": "precedes or equivalent to",
+    "unicode": "U+0227E",
+    "html": "&prsim;"
+  },
+  {
+    "value": "≿",
+    "name": "succeeds or equivalent to",
+    "unicode": "U+0227F",
+    "html": "&scsim;"
+  },
+  {
+    "value": "⊀",
+    "name": "does not precede",
+    "unicode": "U+02280",
+    "html": "&npr;"
+  },
+  {
+    "value": "⊁",
+    "name": "does not succeed",
+    "unicode": "U+02281",
+    "html": "&nsc;"
+  },
+  {
+    "value": "⊂",
+    "name": "subset of",
+    "unicode": "U+02282",
+    "html": "&sub;"
+  },
+  {
+    "value": "⊃",
+    "name": "superset of",
+    "unicode": "U+02283",
+    "html": "&sup;"
+  },
+  {
+    "value": "⊄",
+    "name": "not a subset of",
+    "unicode": "U+02284",
+    "html": "&nsub;"
+  },
+  {
+    "value": "⊅",
+    "name": "not a superset of",
+    "unicode": "U+02285",
+    "html": "&nsup;"
+  },
+  {
+    "value": "⊆",
+    "name": "subset of or equal to",
+    "unicode": "U+02286",
+    "html": "&sube;"
+  },
+  {
+    "value": "⊇",
+    "name": "superset of or equal to",
+    "unicode": "U+02287",
+    "html": "&supe;"
+  },
+  {
+    "value": "⊈",
+    "name": "neither a subset of nor equal to",
+    "unicode": "U+02288",
+    "html": "&nsube;"
+  },
+  {
+    "value": "⊉",
+    "name": "neither a superset of nor equal to",
+    "unicode": "U+02289",
+    "html": "&nsupe;"
+  },
+  {
+    "value": "⊊",
+    "name": "subset of with not equal to",
+    "unicode": "U+0228A",
+    "html": "&subne;"
+  },
+  {
+    "value": "⊋",
+    "name": "superset of with not equal to",
+    "unicode": "U+0228B",
+    "html": "&supne;"
+  },
+  {
+    "value": "⊌",
+    "name": "multiset",
+    "unicode": "U+0228C",
+    "html": "&#8844;"
+  },
+  {
+    "value": "⊍",
+    "name": "multiset multiplication",
+    "unicode": "U+0228D",
+    "html": "&cupdot;"
+  },
+  {
+    "value": "⊎",
+    "name": "multiset union",
+    "unicode": "U+0228E",
+    "html": "&uplus;"
+  },
+  {
+    "value": "⊏",
+    "name": "square image of",
+    "unicode": "U+0228F",
+    "html": "&sqsub;"
+  },
+  {
+    "value": "⊐",
+    "name": "square original of",
+    "unicode": "U+02290",
+    "html": "&sqsup;"
+  },
+  {
+    "value": "⊑",
+    "name": "square image of or equal to",
+    "unicode": "U+02291",
+    "html": "&sqsube;"
+  },
+  {
+    "value": "⊒",
+    "name": "square original of or equal to",
+    "unicode": "U+02292",
+    "html": "&sqsupe;"
+  },
+  {
+    "value": "⊓",
+    "name": "square cap",
+    "unicode": "U+02293",
+    "html": "&sqcap;"
+  },
+  {
+    "value": "⊔",
+    "name": "square cup",
+    "unicode": "U+02294",
+    "html": "&sqcup;"
+  },
+  {
+    "value": "⊕",
+    "name": "circled plus",
+    "unicode": "U+02295",
+    "html": "&oplus;"
+  },
+  {
+    "value": "⊖",
+    "name": "circled minus",
+    "unicode": "U+02296",
+    "html": "&ominus;"
+  },
+  {
+    "value": "⊗",
+    "name": "circled times",
+    "unicode": "U+02297",
+    "html": "&otimes;"
+  },
+  {
+    "value": "⊘",
+    "name": "circled division slash",
+    "unicode": "U+02298",
+    "html": "&osol;"
+  },
+  {
+    "value": "⊙",
+    "name": "circled dot operator",
+    "unicode": "U+02299",
+    "html": "&odot;"
+  },
+  {
+    "value": "⊚",
+    "name": "circled ring operator",
+    "unicode": "U+0229A",
+    "html": "&ocir;"
+  },
+  {
+    "value": "⊛",
+    "name": "circled asterisk operator",
+    "unicode": "U+0229B",
+    "html": "&oast;"
+  },
+  {
+    "value": "⊜",
+    "name": "circled equals",
+    "unicode": "U+0229C",
+    "html": "&#8860;"
+  },
+  {
+    "value": "⊝",
+    "name": "circled dash",
+    "unicode": "U+0229D",
+    "html": "&odash;"
+  },
+  {
+    "value": "⊞",
+    "name": "squared plus",
+    "unicode": "U+0229E",
+    "html": "&plusb;"
+  },
+  {
+    "value": "⊟",
+    "name": "squared minus",
+    "unicode": "U+0229F",
+    "html": "&minusb;"
+  },
+  {
+    "value": "⊠",
+    "name": "squared times",
+    "unicode": "U+022A0",
+    "html": "&timesb;"
+  },
+  {
+    "value": "⊡",
+    "name": "squared dot operator",
+    "unicode": "U+022A1",
+    "html": "&sdotb;"
+  },
+  {
+    "value": "⊢",
+    "name": "right tack",
+    "unicode": "U+022A2",
+    "html": "&vdash;"
+  },
+  {
+    "value": "⊣",
+    "name": "left tack",
+    "unicode": "U+022A3",
+    "html": "&dashv;"
+  },
+  {
+    "value": "⊤",
+    "name": "down tack",
+    "unicode": "U+022A4",
+    "html": "&top;"
+  },
+  {
+    "value": "⊥",
+    "name": "up tack",
+    "unicode": "U+022A5",
+    "html": "&perp;"
+  },
+  {
+    "value": "⊦",
+    "name": "assertion",
+    "unicode": "U+022A6",
+    "html": "&#8870;"
+  },
+  {
+    "value": "⊧",
+    "name": "models",
+    "unicode": "U+022A7",
+    "html": "&models;"
+  },
+  {
+    "value": "⊨",
+    "name": "true",
+    "unicode": "U+022A8",
+    "html": "&vDash;"
+  },
+  {
+    "value": "⊩",
+    "name": "forces",
+    "unicode": "U+022A9",
+    "html": "&Vdash;"
+  },
+  {
+    "value": "⊪",
+    "name": "triple vertical bar right turnstile",
+    "unicode": "U+022AA",
+    "html": "&Vvdash;"
+  },
+  {
+    "value": "⊫",
+    "name": "double vertical bar double right turnstile",
+    "unicode": "U+022AB",
+    "html": "&VDash;"
+  },
+  {
+    "value": "⊬",
+    "name": "does not prove",
+    "unicode": "U+022AC",
+    "html": "&nvdash;"
+  },
+  {
+    "value": "⊭",
+    "name": "not true",
+    "unicode": "U+022AD",
+    "html": "&nvDash;"
+  },
+  {
+    "value": "⊮",
+    "name": "does not force",
+    "unicode": "U+022AE",
+    "html": "&nVdash;"
+  },
+  {
+    "value": "⊯",
+    "name": "negated double vertical bar double right turnstile",
+    "unicode": "U+022AF",
+    "html": "&nVDash;"
+  },
+  {
+    "value": "⊰",
+    "name": "precedes under relation",
+    "unicode": "U+022B0",
+    "html": "&prurel;"
+  },
+  {
+    "value": "⊱",
+    "name": "succeeds under relation",
+    "unicode": "U+022B1",
+    "html": "&#8881;"
+  },
+  {
+    "value": "⊲",
+    "name": "normal subgroup of",
+    "unicode": "U+022B2",
+    "html": "&vltri;"
+  },
+  {
+    "value": "⊳",
+    "name": "contains as normal subgroup",
+    "unicode": "U+022B3",
+    "html": "&vrtri;"
+  },
+  {
+    "value": "⊴",
+    "name": "normal subgroup of or equal to",
+    "unicode": "U+022B4",
+    "html": "&ltrie;"
+  },
+  {
+    "value": "⊵",
+    "name": "contains as normal subgroup or equal to",
+    "unicode": "U+022B5",
+    "html": "&rtrie;"
+  },
+  {
+    "value": "⊶",
+    "name": "original of",
+    "unicode": "U+022B6",
+    "html": "&origof;"
+  },
+  {
+    "value": "⊷",
+    "name": "image of",
+    "unicode": "U+022B7",
+    "html": "&imof;"
+  },
+  {
+    "value": "⊸",
+    "name": "multimap",
+    "unicode": "U+022B8",
+    "html": "&mumap;"
+  },
+  {
+    "value": "⊹",
+    "name": "hermitian conjugate matrix",
+    "unicode": "U+022B9",
+    "html": "&hercon;"
+  },
+  {
+    "value": "⊺",
+    "name": "intercalate",
+    "unicode": "U+022BA",
+    "html": "&intcal;"
+  },
+  {
+    "value": "⊻",
+    "name": "xor",
+    "unicode": "U+022BB",
+    "html": "&veebar;"
+  },
+  {
+    "value": "⊼",
+    "name": "nand",
+    "unicode": "U+022BC",
+    "html": "&#8892;"
+  },
+  {
+    "value": "⊽",
+    "name": "nor",
+    "unicode": "U+022BD",
+    "html": "&barvee;"
+  },
+  {
+    "value": "⊾",
+    "name": "right angle with arc",
+    "unicode": "U+022BE",
+    "html": "&angrtvb;"
+  },
+  {
+    "value": "⊿",
+    "name": "right triangle",
+    "unicode": "U+022BF",
+    "html": "&lrtri;"
+  },
+  {
+    "value": "⋀",
+    "name": "n-ary logical and",
+    "unicode": "U+022C0",
+    "html": "&xwedge;"
+  },
+  {
+    "value": "⋁",
+    "name": "n-ary logical or",
+    "unicode": "U+022C1",
+    "html": "&xvee;"
+  },
+  {
+    "value": "⋂",
+    "name": "n-ary intersection",
+    "unicode": "U+022C2",
+    "html": "&xcap;"
+  },
+  {
+    "value": "⋃",
+    "name": "n-ary union",
+    "unicode": "U+022C3",
+    "html": "&xcup;"
+  },
+  {
+    "value": "⋄",
+    "name": "diamond operator",
+    "unicode": "U+022C4",
+    "html": "&diamond;"
+  },
+  {
+    "value": "⋅",
+    "name": "dot operator",
+    "unicode": "U+022C5",
+    "html": "&sdot;"
+  },
+  {
+    "value": "⋆",
+    "name": "star operator",
+    "unicode": "U+022C6",
+    "html": "&Star;"
+  },
+  {
+    "value": "⋇",
+    "name": "division times",
+    "unicode": "U+022C7",
+    "html": "&divonx;"
+  },
+  {
+    "value": "⋈",
+    "name": "bowtie",
+    "unicode": "U+022C8",
+    "html": "&bowtie;"
+  },
+  {
+    "value": "⋉",
+    "name": "left normal factor semidirect product",
+    "unicode": "U+022C9",
+    "html": "&ltimes;"
+  },
+  {
+    "value": "⋊",
+    "name": "right normal factor semidirect product",
+    "unicode": "U+022CA",
+    "html": "&rtimes;"
+  },
+  {
+    "value": "⋋",
+    "name": "left semidirect product",
+    "unicode": "U+022CB",
+    "html": "&lthree;"
+  },
+  {
+    "value": "⋌",
+    "name": "right semidirect product",
+    "unicode": "U+022CC",
+    "html": "&rthree;"
+  },
+  {
+    "value": "⋍",
+    "name": "reversed tilde equals",
+    "unicode": "U+022CD",
+    "html": "&bsime;"
+  },
+  {
+    "value": "⋎",
+    "name": "curly logical or",
+    "unicode": "U+022CE",
+    "html": "&cuvee;"
+  },
+  {
+    "value": "⋏",
+    "name": "curly logical and",
+    "unicode": "U+022CF",
+    "html": "&cuwed;"
+  },
+  {
+    "value": "⋐",
+    "name": "double subset",
+    "unicode": "U+022D0",
+    "html": "&Sub;"
+  },
+  {
+    "value": "⋑",
+    "name": "double superset",
+    "unicode": "U+022D1",
+    "html": "&Sup;"
+  },
+  {
+    "value": "⋒",
+    "name": "double intersection",
+    "unicode": "U+022D2",
+    "html": "&Cap;"
+  },
+  {
+    "value": "⋓",
+    "name": "double union",
+    "unicode": "U+022D3",
+    "html": "&Cup;"
+  },
+  {
+    "value": "⋔",
+    "name": "pitchfork",
+    "unicode": "U+022D4",
+    "html": "&fork;"
+  },
+  {
+    "value": "⋕",
+    "name": "equal and parallel to",
+    "unicode": "U+022D5",
+    "html": "&epar;"
+  },
+  {
+    "value": "⋖",
+    "name": "less-than with dot",
+    "unicode": "U+022D6",
+    "html": "&ltdot;"
+  },
+  {
+    "value": "⋗",
+    "name": "greater-than with dot",
+    "unicode": "U+022D7",
+    "html": "&gtdot;"
+  },
+  {
+    "value": "⋘",
+    "name": "very much less-than",
+    "unicode": "U+022D8",
+    "html": "&Ll;"
+  },
+  {
+    "value": "⋙",
+    "name": "very much greater-than",
+    "unicode": "U+022D9",
+    "html": "&Gg;"
+  },
+  {
+    "value": "⋚",
+    "name": "less-than equal to or greater-than",
+    "unicode": "U+022DA",
+    "html": "&leg;"
+  },
+  {
+    "value": "⋛",
+    "name": "greater-than equal to or less-than",
+    "unicode": "U+022DB",
+    "html": "&gel;"
+  },
+  {
+    "value": "⋞",
+    "name": "equal to or precedes",
+    "unicode": "U+022DE",
+    "html": "&cuepr;"
+  },
+  {
+    "value": "⋟",
+    "name": "equal to or succeeds",
+    "unicode": "U+022DF",
+    "html": "&cuesc;"
+  },
+  {
+    "value": "⋠",
+    "name": "does not precede or equal",
+    "unicode": "U+022E0",
+    "html": "&nprcue;"
+  },
+  {
+    "value": "⋡",
+    "name": "does not succeed or equal",
+    "unicode": "U+022E1",
+    "html": "&nsccue;"
+  },
+  {
+    "value": "⋢",
+    "name": "not square image of or equal to",
+    "unicode": "U+022E2",
+    "html": "&nsqsube;"
+  },
+  {
+    "value": "⋣",
+    "name": "not square original of or equal to",
+    "unicode": "U+022E3",
+    "html": "&nsqsupe;"
+  },
+  {
+    "value": "⋤",
+    "name": "square image of or not equal to",
+    "unicode": "U+022E4",
+    "html": "&#8932;"
+  },
+  {
+    "value": "⋥",
+    "name": "square original of or not equal to",
+    "unicode": "U+022E5",
+    "html": "&#8933;"
+  },
+  {
+    "value": "⋦",
+    "name": "less-than but not equivalent to",
+    "unicode": "U+022E6",
+    "html": "&lnsim;"
+  },
+  {
+    "value": "⋧",
+    "name": "greater-than but not equivalent to",
+    "unicode": "U+022E7",
+    "html": "&gnsim;"
+  },
+  {
+    "value": "⋨",
+    "name": "precedes but not equivalent to",
+    "unicode": "U+022E8",
+    "html": "&prnsim;"
+  },
+  {
+    "value": "⋩",
+    "name": "succeeds but not equivalent to",
+    "unicode": "U+022E9",
+    "html": "&scnsim;"
+  },
+  {
+    "value": "⋪",
+    "name": "not normal subgroup of",
+    "unicode": "U+022EA",
+    "html": "&nltri;"
+  },
+  {
+    "value": "⋫",
+    "name": "does not contain as normal subgroup",
+    "unicode": "U+022EB",
+    "html": "&nrtri;"
+  },
+  {
+    "value": "⋬",
+    "name": "not normal subgroup of or equal to",
+    "unicode": "U+022EC",
+    "html": "&nltrie;"
+  },
+  {
+    "value": "⋭",
+    "name": "does not contain as normal subgroup or equal",
+    "unicode": "U+022ED",
+    "html": "&nrtrie;"
+  },
+  {
+    "value": "⋮",
+    "name": "vertical ellipsis",
+    "unicode": "U+022EE",
+    "html": "&vellip;"
+  },
+  {
+    "value": "⋯",
+    "name": "midline horizontal ellipsis",
+    "unicode": "U+022EF",
+    "html": "&ctdot;"
+  },
+  {
+    "value": "⋰",
+    "name": "up right diagonal ellipsis",
+    "unicode": "U+022F0",
+    "html": "&utdot;"
+  },
+  {
+    "value": "⋱",
+    "name": "down right diagonal ellipsis",
+    "unicode": "U+022F1",
+    "html": "&dtdot;"
+  },
+  {
+    "value": "⋲",
+    "name": "element of with long horizontal stroke",
+    "unicode": "U+022F2",
+    "html": "&disin;"
+  },
+  {
+    "value": "⋳",
+    "name": "element of with vertical bar at end of horizontal stroke",
+    "unicode": "U+022F3",
+    "html": "&isinsv;"
+  },
+  {
+    "value": "⋴",
+    "name": "small element of with vertical bar at end of horizontal stroke",
+    "unicode": "U+022F4",
+    "html": "&isins;"
+  },
+  {
+    "value": "⋵",
+    "name": "element of with dot above",
+    "unicode": "U+022F5",
+    "html": "&isindot;"
+  },
+  {
+    "value": "⋶",
+    "name": "element of with overbar",
+    "unicode": "U+022F6",
+    "html": "&notinvc;"
+  },
+  {
+    "value": "⋷",
+    "name": "small element of with overbar",
+    "unicode": "U+022F7",
+    "html": "&notinvb;"
+  },
+  {
+    "value": "⋸",
+    "name": "element of with underbar",
+    "unicode": "U+022F8",
+    "html": "&#8952;"
+  },
+  {
+    "value": "⋹",
+    "name": "element of with two horizontal strokes",
+    "unicode": "U+022F9",
+    "html": "&isinE;"
+  },
+  {
+    "value": "⋺",
+    "name": "contains with long horizontal stroke",
+    "unicode": "U+022FA",
+    "html": "&nisd;"
+  },
+  {
+    "value": "⋻",
+    "name": "contains with vertical bar at end of horizontal stroke",
+    "unicode": "U+022FB",
+    "html": "&xnis;"
+  },
+  {
+    "value": "⋼",
+    "name": "small contains with vertical bar at end of horizontal stroke",
+    "unicode": "U+022FC",
+    "html": "&nis;"
+  },
+  {
+    "value": "⋽",
+    "name": "contains with overbar",
+    "unicode": "U+022FD",
+    "html": "&notnivc;"
+  },
+  {
+    "value": "⋾",
+    "name": "small contains with overbar",
+    "unicode": "U+022FE",
+    "html": "&notnivb;"
+  },
+  {
+    "value": "⋿",
+    "name": "z notation bag membership",
+    "unicode": "U+022FF",
+    "html": "&#8959;"
+  },
+  {
+    "value": "⁰",
+    "name": "superscript zero",
+    "unicode": "U+02070",
+    "html": "&#8304;"
+  },
+  {
+    "value": "ⁱ",
+    "name": "superscript latin small letter i",
+    "unicode": "U+02071",
+    "html": "&#8305;"
+  },
+  {
+    "value": "⁴",
+    "name": "superscript four",
+    "unicode": "U+02074",
+    "html": "&#8308;"
+  },
+  {
+    "value": "⁵",
+    "name": "superscript five",
+    "unicode": "U+02075",
+    "html": "&#8309;"
+  },
+  {
+    "value": "⁶",
+    "name": "superscript six",
+    "unicode": "U+02076",
+    "html": "&#8310;"
+  },
+  {
+    "value": "⁷",
+    "name": "superscript seven",
+    "unicode": "U+02077",
+    "html": "&#8311;"
+  },
+  {
+    "value": "⁸",
+    "name": "superscript eight",
+    "unicode": "U+02078",
+    "html": "&#8312;"
+  },
+  {
+    "value": "⁹",
+    "name": "superscript nine",
+    "unicode": "U+02079",
+    "html": "&#8313;"
+  },
+  {
+    "value": "⁺",
+    "name": "superscript plus sign",
+    "unicode": "U+0207A",
+    "html": "&#8314;"
+  },
+  {
+    "value": "⁻",
+    "name": "superscript minus",
+    "unicode": "U+0207B",
+    "html": "&#8315;"
+  },
+  {
+    "value": "⁼",
+    "name": "superscript equals sign",
+    "unicode": "U+0207C",
+    "html": "&#8316;"
+  },
+  {
+    "value": "⁽",
+    "name": "superscript left parenthesis",
+    "unicode": "U+0207D",
+    "html": "&#8317;"
+  },
+  {
+    "value": "⁾",
+    "name": "superscript right parenthesis",
+    "unicode": "U+0207E",
+    "html": "&#8318;"
+  },
+  {
+    "value": "ⁿ",
+    "name": "superscript latin small letter n",
+    "unicode": "U+0207F",
+    "html": "&#8319;"
+  },
+  {
+    "value": "₀",
+    "name": "subscript zero",
+    "unicode": "U+02080",
+    "html": "&#8320;"
+  },
+  {
+    "value": "₁",
+    "name": "subscript one",
+    "unicode": "U+02081",
+    "html": "&#8321;"
+  },
+  {
+    "value": "₂",
+    "name": "subscript two",
+    "unicode": "U+02082",
+    "html": "&#8322;"
+  },
+  {
+    "value": "₃",
+    "name": "subscript three",
+    "unicode": "U+02083",
+    "html": "&#8323;"
+  },
+  {
+    "value": "₄",
+    "name": "subscript four",
+    "unicode": "U+02084",
+    "html": "&#8324;"
+  },
+  {
+    "value": "₅",
+    "name": "subscript five",
+    "unicode": "U+02085",
+    "html": "&#8325;"
+  },
+  {
+    "value": "₆",
+    "name": "subscript six",
+    "unicode": "U+02086",
+    "html": "&#8326;"
+  },
+  {
+    "value": "₇",
+    "name": "subscript seven",
+    "unicode": "U+02087",
+    "html": "&#8327;"
+  },
+  {
+    "value": "₈",
+    "name": "subscript eight",
+    "unicode": "U+02088",
+    "html": "&#8328;"
+  },
+  {
+    "value": "₉",
+    "name": "subscript nine",
+    "unicode": "U+02089",
+    "html": "&#8329;"
+  },
+  {
+    "value": "₊",
+    "name": "subscript plus sign",
+    "unicode": "U+0208A",
+    "html": "&#8330;"
+  },
+  {
+    "value": "₋",
+    "name": "subscript minus",
+    "unicode": "U+0208B",
+    "html": "&#8331;"
+  },
+  {
+    "value": "₌",
+    "name": "subscript equals sign",
+    "unicode": "U+0208C",
+    "html": "&#8332;"
+  },
+  {
+    "value": "₍",
+    "name": "subscript left parenthesis",
+    "unicode": "U+0208D",
+    "html": "&#8333;"
+  },
+  {
+    "value": "₎",
+    "name": "subscript right parenthesis",
+    "unicode": "U+0208E",
+    "html": "&#8334;"
+  },
+  {
+    "value": "ₐ",
+    "name": "latin subscript small letter a",
+    "unicode": "U+02090",
+    "html": "&#8336;"
+  },
+  {
+    "value": "ₑ",
+    "name": "latin subscript small letter e",
+    "unicode": "U+02091",
+    "html": "&#8337;"
+  },
+  {
+    "value": "ₒ",
+    "name": "latin subscript small letter o",
+    "unicode": "U+02092",
+    "html": "&#8338;"
+  },
+  {
+    "value": "ₓ",
+    "name": "latin subscript small letter x",
+    "unicode": "U+02093",
+    "html": "&#8339;"
+  },
+  {
+    "value": "ₔ",
+    "name": "latin subscript small letter schwa",
+    "unicode": "U+02094",
+    "html": "&#8340;"
+  }
+]

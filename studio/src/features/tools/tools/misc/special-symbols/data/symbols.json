@@ -1,0 +1,4874 @@
+[
+  {
+    "value": "©",
+    "name": "copyright sign",
+    "unicode": "U+000A9",
+    "html": "&copy;"
+  },
+  {
+    "value": "®",
+    "name": "registered trade mark sign",
+    "unicode": "U+000AE",
+    "html": "&reg;"
+  },
+  {
+    "value": "™",
+    "name": "trade mark sign",
+    "unicode": "U+02122",
+    "html": "&trade;"
+  },
+  {
+    "value": "@",
+    "name": "at symbol",
+    "unicode": "U+00040",
+    "html": "&commat;"
+  },
+  {
+    "value": "¶",
+    "name": "paragraph sign",
+    "unicode": "U+000B6",
+    "html": "&para;"
+  },
+  {
+    "value": "§",
+    "name": "section sign",
+    "unicode": "U+000A7",
+    "html": "&sect;"
+  },
+  {
+    "value": "℀",
+    "name": "account of",
+    "unicode": "U+02100",
+    "html": "&#8448;"
+  },
+  {
+    "value": "℁",
+    "name": "addressed to the subject",
+    "unicode": "U+02101",
+    "html": "&#8449;"
+  },
+  {
+    "value": "ℂ",
+    "name": "double-struck capital c",
+    "unicode": "U+02102",
+    "html": "&Copf;"
+  },
+  {
+    "value": "℃",
+    "name": "degree celsius",
+    "unicode": "U+02103",
+    "html": "&#8451;"
+  },
+  {
+    "value": "℄",
+    "name": "centre line symbol",
+    "unicode": "U+02104",
+    "html": "&#8452;"
+  },
+  {
+    "value": "℅",
+    "name": "care of",
+    "unicode": "U+02105",
+    "html": "&incare;"
+  },
+  {
+    "value": "℆",
+    "name": "cada una",
+    "unicode": "U+02106",
+    "html": "&#8454;"
+  },
+  {
+    "value": "ℇ",
+    "name": "euler constant",
+    "unicode": "U+02107",
+    "html": "&#8455;"
+  },
+  {
+    "value": "℈",
+    "name": "scruple",
+    "unicode": "U+02108",
+    "html": "&#8456;"
+  },
+  {
+    "value": "℉",
+    "name": "degree fahrenheit",
+    "unicode": "U+02109",
+    "html": "&#8457;"
+  },
+  {
+    "value": "ℊ",
+    "name": "script small g",
+    "unicode": "U+0210A",
+    "html": "&gscr;"
+  },
+  {
+    "value": "ℋ",
+    "name": "script capital h",
+    "unicode": "U+0210B",
+    "html": "&hamilt;"
+  },
+  {
+    "value": "ℌ",
+    "name": "black-letter capital h",
+    "unicode": "U+0210C",
+    "html": "&Hfr;"
+  },
+  {
+    "value": "ℍ",
+    "name": "double-struck capital h",
+    "unicode": "U+0210D",
+    "html": "&Hopf;"
+  },
+  {
+    "value": "ℎ",
+    "name": "planck constant",
+    "unicode": "U+0210E",
+    "html": "&planckh;"
+  },
+  {
+    "value": "ℏ",
+    "name": "planck constant over two pi",
+    "unicode": "U+0210F",
+    "html": "&planck;"
+  },
+  {
+    "value": "ℐ",
+    "name": "script capital i",
+    "unicode": "U+02110",
+    "html": "&Iscr;"
+  },
+  {
+    "value": "ℑ",
+    "name": "black-letter capital i",
+    "unicode": "U+02111",
+    "html": "&image;"
+  },
+  {
+    "value": "ℒ",
+    "name": "script capital l",
+    "unicode": "U+02112",
+    "html": "&Lscr;"
+  },
+  {
+    "value": "ℓ",
+    "name": "script small l",
+    "unicode": "U+02113",
+    "html": "&ell;"
+  },
+  {
+    "value": "℔",
+    "name": "l b bar symbol",
+    "unicode": "U+02114",
+    "html": "&#8468;"
+  },
+  {
+    "value": "ℕ",
+    "name": "double-struck capital n",
+    "unicode": "U+02115",
+    "html": "&Nopf;"
+  },
+  {
+    "value": "№",
+    "name": "numero sign",
+    "unicode": "U+02116",
+    "html": "&numero;"
+  },
+  {
+    "value": "℗",
+    "name": "sound recording copyright",
+    "unicode": "U+02117",
+    "html": "&copysr;"
+  },
+  {
+    "value": "℘",
+    "name": "script capital p",
+    "unicode": "U+02118",
+    "html": "&weierp;"
+  },
+  {
+    "value": "ℙ",
+    "name": "double-struck capital p",
+    "unicode": "U+02119",
+    "html": "&Popf;"
+  },
+  {
+    "value": "ℚ",
+    "name": "double-struck capital q",
+    "unicode": "U+0211A",
+    "html": "&Qopf;"
+  },
+  {
+    "value": "ℛ",
+    "name": "script capital r",
+    "unicode": "U+0211B",
+    "html": "&Rscr;"
+  },
+  {
+    "value": "ℜ",
+    "name": "black-letter capital r",
+    "unicode": "U+0211C",
+    "html": "&real;"
+  },
+  {
+    "value": "ℝ",
+    "name": "double-struck capital r",
+    "unicode": "U+0211D",
+    "html": "&Ropf;"
+  },
+  {
+    "value": "℞",
+    "name": "prescription take",
+    "unicode": "U+0211E",
+    "html": "&rx;"
+  },
+  {
+    "value": "℟",
+    "name": "response",
+    "unicode": "U+0211F",
+    "html": "&#8479;"
+  },
+  {
+    "value": "℠",
+    "name": "service mark",
+    "unicode": "U+02120",
+    "html": "&#8480;"
+  },
+  {
+    "value": "℡",
+    "name": "telephone sign",
+    "unicode": "U+02121",
+    "html": "&#8481;"
+  },
+  {
+    "value": "℣",
+    "name": "versicle",
+    "unicode": "U+02123",
+    "html": "&#8483;"
+  },
+  {
+    "value": "ℤ",
+    "name": "double-struck capital z",
+    "unicode": "U+02124",
+    "html": "&Zopf;"
+  },
+  {
+    "value": "℥",
+    "name": "ounce sign",
+    "unicode": "U+02125",
+    "html": "&#8485;"
+  },
+  {
+    "value": "Ω",
+    "name": "ohm sign",
+    "unicode": "U+02126",
+    "html": "&#8486;"
+  },
+  {
+    "value": "℧",
+    "name": "inverted ohm sign",
+    "unicode": "U+02127",
+    "html": "&mho;"
+  },
+  {
+    "value": "ℨ",
+    "name": "black-letter capital z",
+    "unicode": "U+02128",
+    "html": "&Zfr;"
+  },
+  {
+    "value": "℩",
+    "name": "turned greek small letter iota",
+    "unicode": "U+02129",
+    "html": "&iiota;"
+  },
+  {
+    "value": "K",
+    "name": "kelvin sign",
+    "unicode": "U+0212A",
+    "html": "&#8490;"
+  },
+  {
+    "value": "Å",
+    "name": "angstrom sign",
+    "unicode": "U+0212B",
+    "html": "&#8491;"
+  },
+  {
+    "value": "ℬ",
+    "name": "script capital b",
+    "unicode": "U+0212C",
+    "html": "&bernou;"
+  },
+  {
+    "value": "ℭ",
+    "name": "black-letter capital c",
+    "unicode": "U+0212D",
+    "html": "&Cfr;"
+  },
+  {
+    "value": "℮",
+    "name": "estimated symbol",
+    "unicode": "U+0212E",
+    "html": "&#8494;"
+  },
+  {
+    "value": "ℯ",
+    "name": "script small e",
+    "unicode": "U+0212F",
+    "html": "&escr;"
+  },
+  {
+    "value": "ℰ",
+    "name": "script capital e",
+    "unicode": "U+02130",
+    "html": "&Escr;"
+  },
+  {
+    "value": "ℱ",
+    "name": "script capital f",
+    "unicode": "U+02131",
+    "html": "&Fscr;"
+  },
+  {
+    "value": "Ⅎ",
+    "name": "turned capital f",
+    "unicode": "U+02132",
+    "html": "&#8498;"
+  },
+  {
+    "value": "ℳ",
+    "name": "script capital m",
+    "unicode": "U+02133",
+    "html": "&Mscr;"
+  },
+  {
+    "value": "ℴ",
+    "name": "script small o",
+    "unicode": "U+02134",
+    "html": "&oscr;"
+  },
+  {
+    "value": "ℹ",
+    "name": "information source",
+    "unicode": "U+02139",
+    "html": "&#8505;"
+  },
+  {
+    "value": "℺",
+    "name": "rotated capital q",
+    "unicode": "U+0213A",
+    "html": "&#8506;"
+  },
+  {
+    "value": "℻",
+    "name": "facsimile sign",
+    "unicode": "U+0213B",
+    "html": "&#8507;"
+  },
+  {
+    "value": "ℼ",
+    "name": "double-struck small pi",
+    "unicode": "U+0213C",
+    "html": "&#8508;"
+  },
+  {
+    "value": "ℽ",
+    "name": "double-struck small gamma",
+    "unicode": "U+0213D",
+    "html": "&#8509;"
+  },
+  {
+    "value": "ℾ",
+    "name": "double-struck capital gamma",
+    "unicode": "U+0213E",
+    "html": "&#8510;"
+  },
+  {
+    "value": "ℿ",
+    "name": "double-struck capital pi",
+    "unicode": "U+0213F",
+    "html": "&#8511;"
+  },
+  {
+    "value": "⅀",
+    "name": "double-struck n-ary summation",
+    "unicode": "U+02140",
+    "html": "&#8512;"
+  },
+  {
+    "value": "⅁",
+    "name": "turned sans-serif capital g",
+    "unicode": "U+02141",
+    "html": "&#8513;"
+  },
+  {
+    "value": "⅂",
+    "name": "turned sans-serif capital l",
+    "unicode": "U+02142",
+    "html": "&#8514;"
+  },
+  {
+    "value": "⅃",
+    "name": "reversed sans-serif capital l",
+    "unicode": "U+02143",
+    "html": "&#8515;"
+  },
+  {
+    "value": "⅄",
+    "name": "turned sans-serif capital y",
+    "unicode": "U+02144",
+    "html": "&#8516;"
+  },
+  {
+    "value": "ⅅ",
+    "name": "double-struck italic capital d",
+    "unicode": "U+02145",
+    "html": "&DD;"
+  },
+  {
+    "value": "ⅆ",
+    "name": "double-struck italic small d",
+    "unicode": "U+02146",
+    "html": "&dd;"
+  },
+  {
+    "value": "ⅇ",
+    "name": "double-struck italic small e",
+    "unicode": "U+02147",
+    "html": "&ee;"
+  },
+  {
+    "value": "ⅈ",
+    "name": "double-struck italic small i",
+    "unicode": "U+02148",
+    "html": "&ii;"
+  },
+  {
+    "value": "ⅉ",
+    "name": "double-struck italic small j",
+    "unicode": "U+02149",
+    "html": "&#8521;"
+  },
+  {
+    "value": "⅊",
+    "name": "property line",
+    "unicode": "U+0214A",
+    "html": "&#8522;"
+  },
+  {
+    "value": "⅋",
+    "name": "turned ampersand",
+    "unicode": "U+0214B",
+    "html": "&#8523;"
+  },
+  {
+    "value": "⅍",
+    "name": "aktieselskab",
+    "unicode": "U+0214D",
+    "html": "&#8525;"
+  },
+  {
+    "value": "ⅎ",
+    "name": "turned small f",
+    "unicode": "U+0214E",
+    "html": "&#8526;"
+  },
+  {
+    "value": "⌘",
+    "name": "place of interest sign",
+    "unicode": "U+2318",
+    "html": "&#8984;"
+  },
+  {
+    "value": "⌥",
+    "name": "option key",
+    "unicode": "U+2325",
+    "html": "&#8997;"
+  },
+  {
+    "value": "⌫",
+    "name": "erase to the left",
+    "unicode": "U+232B",
+    "html": "&#9003;"
+  },
+  {
+    "value": "⌦",
+    "name": "erase to the right",
+    "unicode": "U+2326",
+    "html": "&#8998;"
+  },
+  {
+    "value": "␡",
+    "name": "symbol for delete",
+    "unicode": "U+2421",
+    "html": "&#9249;"
+  },
+  {
+    "value": "⌃",
+    "name": "up arrowhead",
+    "unicode": "U+2303",
+    "html": "&#8963;"
+  },
+  {
+    "value": "⎋",
+    "name": "broken circle with northwest arrow",
+    "unicode": "U+238B",
+    "html": "&#9099;"
+  },
+  {
+    "value": "␛",
+    "name": "symbol for escape",
+    "unicode": "U+241B",
+    "html": "&#9243;"
+  },
+  {
+    "value": "⏎",
+    "name": "return symbol",
+    "unicode": "U+23CE",
+    "html": "&#9166;"
+  },
+  {
+    "value": "␣",
+    "name": "open box",
+    "unicode": "U+2423",
+    "html": "&#9251;"
+  },
+  {
+    "value": "☀",
+    "name": "black sun with rays",
+    "unicode": "U+02600",
+    "html": "&#9728;"
+  },
+  {
+    "value": "☁",
+    "name": "cloud",
+    "unicode": "U+02601",
+    "html": "&#9729;"
+  },
+  {
+    "value": "☂",
+    "name": "umbrella",
+    "unicode": "U+02602",
+    "html": "&#9730;"
+  },
+  {
+    "value": "☃",
+    "name": "snowman",
+    "unicode": "U+02603",
+    "html": "&#9731;"
+  },
+  {
+    "value": "☄",
+    "name": "comet",
+    "unicode": "U+02604",
+    "html": "&#9732;"
+  },
+  {
+    "value": "★",
+    "name": "black star",
+    "unicode": "U+02605",
+    "html": "&starf;"
+  },
+  {
+    "value": "☆",
+    "name": "white star",
+    "unicode": "U+02606",
+    "html": "&star;"
+  },
+  {
+    "value": "☇",
+    "name": "lightning",
+    "unicode": "U+02607",
+    "html": "&#9735;"
+  },
+  {
+    "value": "☈",
+    "name": "thunderstorm",
+    "unicode": "U+02608",
+    "html": "&#9736;"
+  },
+  {
+    "value": "☉",
+    "name": "sun",
+    "unicode": "U+02609",
+    "html": "&#9737;"
+  },
+  {
+    "value": "☊",
+    "name": "ascending node",
+    "unicode": "U+0260A",
+    "html": "&#9738;"
+  },
+  {
+    "value": "☋",
+    "name": "descending node",
+    "unicode": "U+0260B",
+    "html": "&#9739;"
+  },
+  {
+    "value": "☌",
+    "name": "conjunction",
+    "unicode": "U+0260C",
+    "html": "&#9740;"
+  },
+  {
+    "value": "☍",
+    "name": "opposition",
+    "unicode": "U+0260D",
+    "html": "&#9741;"
+  },
+  {
+    "value": "☎",
+    "name": "black telephone",
+    "unicode": "U+0260E",
+    "html": "&phone;"
+  },
+  {
+    "value": "☏",
+    "name": "white telephone",
+    "unicode": "U+0260F",
+    "html": "&#9743;"
+  },
+  {
+    "value": "☐",
+    "name": "ballot box",
+    "unicode": "U+02610",
+    "html": "&#9744;"
+  },
+  {
+    "value": "☑",
+    "name": "ballot box with check",
+    "unicode": "U+02611",
+    "html": "&#9745;"
+  },
+  {
+    "value": "☒",
+    "name": "ballot box with x",
+    "unicode": "U+02612",
+    "html": "&#9746;"
+  },
+  {
+    "value": "☓",
+    "name": "saltire",
+    "unicode": "U+02613",
+    "html": "&#9747;"
+  },
+  {
+    "value": "☖",
+    "name": "white shogi piece",
+    "unicode": "U+02616",
+    "html": "&#9750;"
+  },
+  {
+    "value": "☗",
+    "name": "black shogi piece",
+    "unicode": "U+02617",
+    "html": "&#9751;"
+  },
+  {
+    "value": "☘",
+    "name": "shamrock",
+    "unicode": "U+02618",
+    "html": "&#9752;"
+  },
+  {
+    "value": "☙",
+    "name": "reversed rotated floral heart bullet",
+    "unicode": "U+02619",
+    "html": "&#9753;"
+  },
+  {
+    "value": "☚",
+    "name": "black left pointing index",
+    "unicode": "U+0261A",
+    "html": "&#9754;"
+  },
+  {
+    "value": "☛",
+    "name": "black right pointing index",
+    "unicode": "U+0261B",
+    "html": "&#9755;"
+  },
+  {
+    "value": "☜",
+    "name": "white left pointing index",
+    "unicode": "U+0261C",
+    "html": "&#9756;"
+  },
+  {
+    "value": "☝",
+    "name": "white up pointing index",
+    "unicode": "U+0261D",
+    "html": "&#9757;"
+  },
+  {
+    "value": "☞",
+    "name": "white right pointing index",
+    "unicode": "U+0261E",
+    "html": "&#9758;"
+  },
+  {
+    "value": "☟",
+    "name": "white down pointing index",
+    "unicode": "U+0261F",
+    "html": "&#9759;"
+  },
+  {
+    "value": "☠",
+    "name": "skull and crossbones",
+    "unicode": "U+02620",
+    "html": "&#9760;"
+  },
+  {
+    "value": "☡",
+    "name": "caution sign",
+    "unicode": "U+02621",
+    "html": "&#9761;"
+  },
+  {
+    "value": "☢",
+    "name": "radioactive sign",
+    "unicode": "U+02622",
+    "html": "&#9762;"
+  },
+  {
+    "value": "☣",
+    "name": "biohazard sign",
+    "unicode": "U+02623",
+    "html": "&#9763;"
+  },
+  {
+    "value": "☤",
+    "name": "caduceus",
+    "unicode": "U+02624",
+    "html": "&#9764;"
+  },
+  {
+    "value": "☥",
+    "name": "ankh",
+    "unicode": "U+02625",
+    "html": "&#9765;"
+  },
+  {
+    "value": "☦",
+    "name": "orthodox cross",
+    "unicode": "U+02626",
+    "html": "&#9766;"
+  },
+  {
+    "value": "☧",
+    "name": "chi rho",
+    "unicode": "U+02627",
+    "html": "&#9767;"
+  },
+  {
+    "value": "☨",
+    "name": "cross of lorraine",
+    "unicode": "U+02628",
+    "html": "&#9768;"
+  },
+  {
+    "value": "☩",
+    "name": "cross of jerusalem",
+    "unicode": "U+02629",
+    "html": "&#9769;"
+  },
+  {
+    "value": "☪",
+    "name": "star and crescent",
+    "unicode": "U+0262A",
+    "html": "&#9770;"
+  },
+  {
+    "value": "☫",
+    "name": "farsi symbol",
+    "unicode": "U+0262B",
+    "html": "&#9771;"
+  },
+  {
+    "value": "☬",
+    "name": "adi shakti",
+    "unicode": "U+0262C",
+    "html": "&#9772;"
+  },
+  {
+    "value": "☭",
+    "name": "hammer and sickle",
+    "unicode": "U+0262D",
+    "html": "&#9773;"
+  },
+  {
+    "value": "☮",
+    "name": "peace symbol",
+    "unicode": "U+0262E",
+    "html": "&#9774;"
+  },
+  {
+    "value": "☯",
+    "name": "yin yang",
+    "unicode": "U+0262F",
+    "html": "&#9775;"
+  },
+  {
+    "value": "☰",
+    "name": "trigram for heaven",
+    "unicode": "U+02630",
+    "html": "&#9776;"
+  },
+  {
+    "value": "☱",
+    "name": "trigram for lake",
+    "unicode": "U+02631",
+    "html": "&#9777;"
+  },
+  {
+    "value": "☲",
+    "name": "trigram for fire",
+    "unicode": "U+02632",
+    "html": "&#9778;"
+  },
+  {
+    "value": "☳",
+    "name": "trigram for thunder",
+    "unicode": "U+02633",
+    "html": "&#9779;"
+  },
+  {
+    "value": "☴",
+    "name": "trigram for wind",
+    "unicode": "U+02634",
+    "html": "&#9780;"
+  },
+  {
+    "value": "☵",
+    "name": "trigram for water",
+    "unicode": "U+02635",
+    "html": "&#9781;"
+  },
+  {
+    "value": "☶",
+    "name": "trigram for mountain",
+    "unicode": "U+02636",
+    "html": "&#9782;"
+  },
+  {
+    "value": "☷",
+    "name": "trigram for earth",
+    "unicode": "U+02637",
+    "html": "&#9783;"
+  },
+  {
+    "value": "☸",
+    "name": "wheel of dharma",
+    "unicode": "U+02638",
+    "html": "&#9784;"
+  },
+  {
+    "value": "☹",
+    "name": "white frowning face",
+    "unicode": "U+02639",
+    "html": "&#9785;"
+  },
+  {
+    "value": "☺",
+    "name": "white smiling face",
+    "unicode": "U+0263A",
+    "html": "&#9786;"
+  },
+  {
+    "value": "☻",
+    "name": "black smiling face",
+    "unicode": "U+0263B",
+    "html": "&#9787;"
+  },
+  {
+    "value": "☼",
+    "name": "white sun with rays",
+    "unicode": "U+0263C",
+    "html": "&#9788;"
+  },
+  {
+    "value": "☽",
+    "name": "first quarter moon",
+    "unicode": "U+0263D",
+    "html": "&#9789;"
+  },
+  {
+    "value": "☾",
+    "name": "last quarter moon",
+    "unicode": "U+0263E",
+    "html": "&#9790;"
+  },
+  {
+    "value": "☿",
+    "name": "mercury",
+    "unicode": "U+0263F",
+    "html": "&#9791;"
+  },
+  {
+    "value": "♀",
+    "name": "female sign",
+    "unicode": "U+02640",
+    "html": "&female;"
+  },
+  {
+    "value": "♁",
+    "name": "earth",
+    "unicode": "U+02641",
+    "html": "&#9793;"
+  },
+  {
+    "value": "♂",
+    "name": "male sign",
+    "unicode": "U+02642",
+    "html": "&male;"
+  },
+  {
+    "value": "♃",
+    "name": "jupiter",
+    "unicode": "U+02643",
+    "html": "&#9795;"
+  },
+  {
+    "value": "♄",
+    "name": "saturn",
+    "unicode": "U+02644",
+    "html": "&#9796;"
+  },
+  {
+    "value": "♅",
+    "name": "uranus",
+    "unicode": "U+02645",
+    "html": "&#9797;"
+  },
+  {
+    "value": "♆",
+    "name": "neptune",
+    "unicode": "U+02646",
+    "html": "&#9798;"
+  },
+  {
+    "value": "♇",
+    "name": "pluto",
+    "unicode": "U+02647",
+    "html": "&#9799;"
+  },
+  {
+    "value": "♔",
+    "name": "white chess king",
+    "unicode": "U+02654",
+    "html": "&#9812;"
+  },
+  {
+    "value": "♕",
+    "name": "white chess queen",
+    "unicode": "U+02655",
+    "html": "&#9813;"
+  },
+  {
+    "value": "♖",
+    "name": "white chess rook",
+    "unicode": "U+02656",
+    "html": "&#9814;"
+  },
+  {
+    "value": "♗",
+    "name": "white chess bishop",
+    "unicode": "U+02657",
+    "html": "&#9815;"
+  },
+  {
+    "value": "♘",
+    "name": "white chess knight",
+    "unicode": "U+02658",
+    "html": "&#9816;"
+  },
+  {
+    "value": "♙",
+    "name": "white chess pawn",
+    "unicode": "U+02659",
+    "html": "&#9817;"
+  },
+  {
+    "value": "♚",
+    "name": "black chess king",
+    "unicode": "U+0265A",
+    "html": "&#9818;"
+  },
+  {
+    "value": "♛",
+    "name": "black chess queen",
+    "unicode": "U+0265B",
+    "html": "&#9819;"
+  },
+  {
+    "value": "♜",
+    "name": "black chess rook",
+    "unicode": "U+0265C",
+    "html": "&#9820;"
+  },
+  {
+    "value": "♝",
+    "name": "black chess bishop",
+    "unicode": "U+0265D",
+    "html": "&#9821;"
+  },
+  {
+    "value": "♞",
+    "name": "black chess knight",
+    "unicode": "U+0265E",
+    "html": "&#9822;"
+  },
+  {
+    "value": "♟",
+    "name": "black chess pawn",
+    "unicode": "U+0265F",
+    "html": "&#9823;"
+  },
+  {
+    "value": "♠",
+    "name": "black spade suit",
+    "unicode": "U+02660",
+    "html": "&spades;"
+  },
+  {
+    "value": "♡",
+    "name": "white heart suit",
+    "unicode": "U+02661",
+    "html": "&#9825;"
+  },
+  {
+    "value": "♢",
+    "name": "white diamond suit",
+    "unicode": "U+02662",
+    "html": "&#9826;"
+  },
+  {
+    "value": "♣",
+    "name": "black club suit",
+    "unicode": "U+02663",
+    "html": "&clubs;"
+  },
+  {
+    "value": "♤",
+    "name": "white spade suit",
+    "unicode": "U+02664",
+    "html": "&#9828;"
+  },
+  {
+    "value": "♥",
+    "name": "black heart suit",
+    "unicode": "U+02665",
+    "html": "&hearts;"
+  },
+  {
+    "value": "♦",
+    "name": "black diamond suit",
+    "unicode": "U+02666",
+    "html": "&diams;"
+  },
+  {
+    "value": "♧",
+    "name": "white club suit",
+    "unicode": "U+02667",
+    "html": "&#9831;"
+  },
+  {
+    "value": "♨",
+    "name": "hot springs",
+    "unicode": "U+02668",
+    "html": "&#9832;"
+  },
+  {
+    "value": "♩",
+    "name": "quarter note",
+    "unicode": "U+02669",
+    "html": "&#9833;"
+  },
+  {
+    "value": "♪",
+    "name": "eighth note",
+    "unicode": "U+0266A",
+    "html": "&sung;"
+  },
+  {
+    "value": "♫",
+    "name": "beamed eighth notes",
+    "unicode": "U+0266B",
+    "html": "&#9835;"
+  },
+  {
+    "value": "♬",
+    "name": "beamed sixteenth notes",
+    "unicode": "U+0266C",
+    "html": "&#9836;"
+  },
+  {
+    "value": "♭",
+    "name": "music flat sign",
+    "unicode": "U+0266D",
+    "html": "&flat;"
+  },
+  {
+    "value": "♮",
+    "name": "music natural sign",
+    "unicode": "U+0266E",
+    "html": "&natural;"
+  },
+  {
+    "value": "♯",
+    "name": "music sharp sign",
+    "unicode": "U+0266F",
+    "html": "&sharp;"
+  },
+  {
+    "value": "♰",
+    "name": "west syriac cross",
+    "unicode": "U+02670",
+    "html": "&#9840;"
+  },
+  {
+    "value": "♱",
+    "name": "east syriac cross",
+    "unicode": "U+02671",
+    "html": "&#9841;"
+  },
+  {
+    "value": "♲",
+    "name": "universal recycling symbol",
+    "unicode": "U+02672",
+    "html": "&#9842;"
+  },
+  {
+    "value": "♳",
+    "name": "recycling symbol for type-1 plastics",
+    "unicode": "U+02673",
+    "html": "&#9843;"
+  },
+  {
+    "value": "♴",
+    "name": "recycling symbol for type-2 plastics",
+    "unicode": "U+02674",
+    "html": "&#9844;"
+  },
+  {
+    "value": "♵",
+    "name": "recycling symbol for type-3 plastics",
+    "unicode": "U+02675",
+    "html": "&#9845;"
+  },
+  {
+    "value": "♶",
+    "name": "recycling symbol for type-4 plastics",
+    "unicode": "U+02676",
+    "html": "&#9846;"
+  },
+  {
+    "value": "♷",
+    "name": "recycling symbol for type-5 plastics",
+    "unicode": "U+02677",
+    "html": "&#9847;"
+  },
+  {
+    "value": "♸",
+    "name": "recycling symbol for type-6 plastics",
+    "unicode": "U+02678",
+    "html": "&#9848;"
+  },
+  {
+    "value": "♹",
+    "name": "recycling symbol for type-7 plastics",
+    "unicode": "U+02679",
+    "html": "&#9849;"
+  },
+  {
+    "value": "♺",
+    "name": "recycling symbol for generic materials",
+    "unicode": "U+0267A",
+    "html": "&#9850;"
+  },
+  {
+    "value": "♻",
+    "name": "black universal recycling symbol",
+    "unicode": "U+0267B",
+    "html": "&#9851;"
+  },
+  {
+    "value": "♼",
+    "name": "recycled paper symbol",
+    "unicode": "U+0267C",
+    "html": "&#9852;"
+  },
+  {
+    "value": "♽",
+    "name": "partially-recycled paper symbol",
+    "unicode": "U+0267D",
+    "html": "&#9853;"
+  },
+  {
+    "value": "♾",
+    "name": "permanent paper sign",
+    "unicode": "U+0267E",
+    "html": "&#9854;"
+  },
+  {
+    "value": "⚀",
+    "name": "die face-1",
+    "unicode": "U+02680",
+    "html": "&#9856;"
+  },
+  {
+    "value": "⚁",
+    "name": "die face-2",
+    "unicode": "U+02681",
+    "html": "&#9857;"
+  },
+  {
+    "value": "⚂",
+    "name": "die face-3",
+    "unicode": "U+02682",
+    "html": "&#9858;"
+  },
+  {
+    "value": "⚃",
+    "name": "die face-4",
+    "unicode": "U+02683",
+    "html": "&#9859;"
+  },
+  {
+    "value": "⚄",
+    "name": "die face-5",
+    "unicode": "U+02684",
+    "html": "&#9860;"
+  },
+  {
+    "value": "⚅",
+    "name": "die face-6",
+    "unicode": "U+02685",
+    "html": "&#9861;"
+  },
+  {
+    "value": "⚆",
+    "name": "white circle with dot right",
+    "unicode": "U+02686",
+    "html": "&#9862;"
+  },
+  {
+    "value": "⚇",
+    "name": "white circle with two dots",
+    "unicode": "U+02687",
+    "html": "&#9863;"
+  },
+  {
+    "value": "⚈",
+    "name": "black circle with white dot right",
+    "unicode": "U+02688",
+    "html": "&#9864;"
+  },
+  {
+    "value": "⚉",
+    "name": "black circle with two white dots",
+    "unicode": "U+02689",
+    "html": "&#9865;"
+  },
+  {
+    "value": "⚊",
+    "name": "monogram for yang",
+    "unicode": "U+0268A",
+    "html": "&#9866;"
+  },
+  {
+    "value": "⚋",
+    "name": "monogram for yin",
+    "unicode": "U+0268B",
+    "html": "&#9867;"
+  },
+  {
+    "value": "⚌",
+    "name": "digram for greater yang",
+    "unicode": "U+0268C",
+    "html": "&#9868;"
+  },
+  {
+    "value": "⚍",
+    "name": "digram for lesser yin",
+    "unicode": "U+0268D",
+    "html": "&#9869;"
+  },
+  {
+    "value": "⚎",
+    "name": "digram for lesser yang",
+    "unicode": "U+0268E",
+    "html": "&#9870;"
+  },
+  {
+    "value": "⚏",
+    "name": "digram for greater yin",
+    "unicode": "U+0268F",
+    "html": "&#9871;"
+  },
+  {
+    "value": "⚐",
+    "name": "white flag",
+    "unicode": "U+02690",
+    "html": "&#9872;"
+  },
+  {
+    "value": "⚑",
+    "name": "black flag",
+    "unicode": "U+02691",
+    "html": "&#9873;"
+  },
+  {
+    "value": "⚒",
+    "name": "hammer and pick",
+    "unicode": "U+02692",
+    "html": "&#9874;"
+  },
+  {
+    "value": "⚔",
+    "name": "crossed swords",
+    "unicode": "U+02694",
+    "html": "&#9876;"
+  },
+  {
+    "value": "⚕",
+    "name": "staff of aesculapius",
+    "unicode": "U+02695",
+    "html": "&#9877;"
+  },
+  {
+    "value": "⚖",
+    "name": "scales",
+    "unicode": "U+02696",
+    "html": "&#9878;"
+  },
+  {
+    "value": "⚗",
+    "name": "alembic",
+    "unicode": "U+02697",
+    "html": "&#9879;"
+  },
+  {
+    "value": "⚘",
+    "name": "flower",
+    "unicode": "U+02698",
+    "html": "&#9880;"
+  },
+  {
+    "value": "⚙",
+    "name": "gear",
+    "unicode": "U+02699",
+    "html": "&#9881;"
+  },
+  {
+    "value": "⚚",
+    "name": "staff of hermes",
+    "unicode": "U+0269A",
+    "html": "&#9882;"
+  },
+  {
+    "value": "⚛",
+    "name": "atom symbol",
+    "unicode": "U+0269B",
+    "html": "&#9883;"
+  },
+  {
+    "value": "⚜",
+    "name": "fleur-de-lis",
+    "unicode": "U+0269C",
+    "html": "&#9884;"
+  },
+  {
+    "value": "⚝",
+    "name": "outlined white star",
+    "unicode": "U+0269D",
+    "html": "&#9885;"
+  },
+  {
+    "value": "⚞",
+    "name": "three lines converging right",
+    "unicode": "U+0269E",
+    "html": "&#9886;"
+  },
+  {
+    "value": "⚟",
+    "name": "three lines converging left",
+    "unicode": "U+0269F",
+    "html": "&#9887;"
+  },
+  {
+    "value": "⚠",
+    "name": "warning sign",
+    "unicode": "U+026A0",
+    "html": "&#9888;"
+  },
+  {
+    "value": "⚢",
+    "name": "doubled female sign",
+    "unicode": "U+026A2",
+    "html": "&#9890;"
+  },
+  {
+    "value": "⚣",
+    "name": "doubled male sign",
+    "unicode": "U+026A3",
+    "html": "&#9891;"
+  },
+  {
+    "value": "⚤",
+    "name": "interlocked female and male sign",
+    "unicode": "U+026A4",
+    "html": "&#9892;"
+  },
+  {
+    "value": "⚥",
+    "name": "male and female sign",
+    "unicode": "U+026A5",
+    "html": "&#9893;"
+  },
+  {
+    "value": "⚦",
+    "name": "male with stroke sign",
+    "unicode": "U+026A6",
+    "html": "&#9894;"
+  },
+  {
+    "value": "⚧",
+    "name": "male with stroke and male and female sign",
+    "unicode": "U+026A7",
+    "html": "&#9895;"
+  },
+  {
+    "value": "⚨",
+    "name": "vertical male with stroke sign",
+    "unicode": "U+026A8",
+    "html": "&#9896;"
+  },
+  {
+    "value": "⚩",
+    "name": "horizontal male with stroke sign",
+    "unicode": "U+026A9",
+    "html": "&#9897;"
+  },
+  {
+    "value": "⚬",
+    "name": "medium small white circle",
+    "unicode": "U+026AC",
+    "html": "&#9900;"
+  },
+  {
+    "value": "⚭",
+    "name": "marriage symbol",
+    "unicode": "U+026AD",
+    "html": "&#9901;"
+  },
+  {
+    "value": "⚮",
+    "name": "divorce symbol",
+    "unicode": "U+026AE",
+    "html": "&#9902;"
+  },
+  {
+    "value": "⚯",
+    "name": "unmarried partnership symbol",
+    "unicode": "U+026AF",
+    "html": "&#9903;"
+  },
+  {
+    "value": "⚰",
+    "name": "coffin",
+    "unicode": "U+026B0",
+    "html": "&#9904;"
+  },
+  {
+    "value": "⚱",
+    "name": "funeral urn",
+    "unicode": "U+026B1",
+    "html": "&#9905;"
+  },
+  {
+    "value": "⚲",
+    "name": "neuter",
+    "unicode": "U+026B2",
+    "html": "&#9906;"
+  },
+  {
+    "value": "⚾︎",
+    "name": "baseball",
+    "unicode": "U+026BE",
+    "html": "&#9918;"
+  },
+  {
+    "value": "⛢",
+    "name": "astronomical symbol for uranus",
+    "unicode": "U+026E2",
+    "html": "&#9954;"
+  },
+  {
+    "value": "✁",
+    "name": "upper blade scissors",
+    "unicode": "U+02701",
+    "html": "&#9985;"
+  },
+  {
+    "value": "✂",
+    "name": "black scissors",
+    "unicode": "U+02702",
+    "html": "&#9986;"
+  },
+  {
+    "value": "✃",
+    "name": "lower blade scissors",
+    "unicode": "U+02703",
+    "html": "&#9987;"
+  },
+  {
+    "value": "✄",
+    "name": "white scissors",
+    "unicode": "U+02704",
+    "html": "&#9988;"
+  },
+  {
+    "value": "✆",
+    "name": "telephone location sign",
+    "unicode": "U+02706",
+    "html": "&#9990;"
+  },
+  {
+    "value": "✇",
+    "name": "tape drive",
+    "unicode": "U+02707",
+    "html": "&#9991;"
+  },
+  {
+    "value": "✈",
+    "name": "airplane",
+    "unicode": "U+02708",
+    "html": "&#9992;"
+  },
+  {
+    "value": "✉",
+    "name": "envelope",
+    "unicode": "U+02709",
+    "html": "&#9993;"
+  },
+  {
+    "value": "✌",
+    "name": "victory hand",
+    "unicode": "U+0270C",
+    "html": "&#9996;"
+  },
+  {
+    "value": "✍",
+    "name": "writing hand",
+    "unicode": "U+0270D",
+    "html": "&#9997;"
+  },
+  {
+    "value": "✎",
+    "name": "lower right pencil",
+    "unicode": "U+0270E",
+    "html": "&#9998;"
+  },
+  {
+    "value": "✏",
+    "name": "pencil",
+    "unicode": "U+0270F",
+    "html": "&#9999;"
+  },
+  {
+    "value": "✐",
+    "name": "upper right pencil",
+    "unicode": "U+02710",
+    "html": "&#10000;"
+  },
+  {
+    "value": "✑",
+    "name": "white nib",
+    "unicode": "U+02711",
+    "html": "&#10001;"
+  },
+  {
+    "value": "✒",
+    "name": "black nib",
+    "unicode": "U+02712",
+    "html": "&#10002;"
+  },
+  {
+    "value": "✓",
+    "name": "check mark",
+    "unicode": "U+02713",
+    "html": "&check;"
+  },
+  {
+    "value": "✔",
+    "name": "heavy check mark",
+    "unicode": "U+02714",
+    "html": "&#10004;"
+  },
+  {
+    "value": "✕",
+    "name": "multiplication x",
+    "unicode": "U+02715",
+    "html": "&#10005;"
+  },
+  {
+    "value": "✖",
+    "name": "heavy multiplication x",
+    "unicode": "U+02716",
+    "html": "&#10006;"
+  },
+  {
+    "value": "✗",
+    "name": "ballot x",
+    "unicode": "U+02717",
+    "html": "&cross;"
+  },
+  {
+    "value": "✘",
+    "name": "heavy ballot x",
+    "unicode": "U+02718",
+    "html": "&#10008;"
+  },
+  {
+    "value": "✙",
+    "name": "outlined greek cross",
+    "unicode": "U+02719",
+    "html": "&#10009;"
+  },
+  {
+    "value": "✚",
+    "name": "heavy greek cross",
+    "unicode": "U+0271A",
+    "html": "&#10010;"
+  },
+  {
+    "value": "✛",
+    "name": "open centre cross",
+    "unicode": "U+0271B",
+    "html": "&#10011;"
+  },
+  {
+    "value": "✜",
+    "name": "heavy open centre cross",
+    "unicode": "U+0271C",
+    "html": "&#10012;"
+  },
+  {
+    "value": "✝",
+    "name": "latin cross",
+    "unicode": "U+0271D",
+    "html": "&#10013;"
+  },
+  {
+    "value": "✞",
+    "name": "shadowed white latin cross",
+    "unicode": "U+0271E",
+    "html": "&#10014;"
+  },
+  {
+    "value": "✟",
+    "name": "outlined latin cross",
+    "unicode": "U+0271F",
+    "html": "&#10015;"
+  },
+  {
+    "value": "✠",
+    "name": "maltese cross",
+    "unicode": "U+02720",
+    "html": "&malt;"
+  },
+  {
+    "value": "✡",
+    "name": "star of david",
+    "unicode": "U+02721",
+    "html": "&#10017;"
+  },
+  {
+    "value": "✢",
+    "name": "four teardrop-spoked asterisk",
+    "unicode": "U+02722",
+    "html": "&#10018;"
+  },
+  {
+    "value": "✣",
+    "name": "four balloon-spoked asterisk",
+    "unicode": "U+02723",
+    "html": "&#10019;"
+  },
+  {
+    "value": "✤",
+    "name": "heavy four balloon-spoked asterisk",
+    "unicode": "U+02724",
+    "html": "&#10020;"
+  },
+  {
+    "value": "✥",
+    "name": "four club-spoked asterisk",
+    "unicode": "U+02725",
+    "html": "&#10021;"
+  },
+  {
+    "value": "✦",
+    "name": "black four pointed star",
+    "unicode": "U+02726",
+    "html": "&#10022;"
+  },
+  {
+    "value": "✧",
+    "name": "white four pointed star",
+    "unicode": "U+02727",
+    "html": "&#10023;"
+  },
+  {
+    "value": "✩",
+    "name": "stress outlined white star",
+    "unicode": "U+02729",
+    "html": "&#10025;"
+  },
+  {
+    "value": "✪",
+    "name": "circled white star",
+    "unicode": "U+0272A",
+    "html": "&#10026;"
+  },
+  {
+    "value": "✫",
+    "name": "open centre black star",
+    "unicode": "U+0272B",
+    "html": "&#10027;"
+  },
+  {
+    "value": "✬",
+    "name": "black centre white star",
+    "unicode": "U+0272C",
+    "html": "&#10028;"
+  },
+  {
+    "value": "✭",
+    "name": "outlined black star",
+    "unicode": "U+0272D",
+    "html": "&#10029;"
+  },
+  {
+    "value": "✮",
+    "name": "heavy outlined black star",
+    "unicode": "U+0272E",
+    "html": "&#10030;"
+  },
+  {
+    "value": "✯",
+    "name": "pinwheel star",
+    "unicode": "U+0272F",
+    "html": "&#10031;"
+  },
+  {
+    "value": "✰",
+    "name": "shadowed white star",
+    "unicode": "U+02730",
+    "html": "&#10032;"
+  },
+  {
+    "value": "✱",
+    "name": "heavy asterisk",
+    "unicode": "U+02731",
+    "html": "&#10033;"
+  },
+  {
+    "value": "✲",
+    "name": "open centre asterisk",
+    "unicode": "U+02732",
+    "html": "&#10034;"
+  },
+  {
+    "value": "✳",
+    "name": "eight spoked asterisk",
+    "unicode": "U+02733",
+    "html": "&#10035;"
+  },
+  {
+    "value": "✴",
+    "name": "eight pointed black star",
+    "unicode": "U+02734",
+    "html": "&#10036;"
+  },
+  {
+    "value": "✵",
+    "name": "eight pointed pinwheel star",
+    "unicode": "U+02735",
+    "html": "&#10037;"
+  },
+  {
+    "value": "✶",
+    "name": "six pointed black star",
+    "unicode": "U+02736",
+    "html": "&sext;"
+  },
+  {
+    "value": "✷",
+    "name": "eight pointed rectilinear black star",
+    "unicode": "U+02737",
+    "html": "&#10039;"
+  },
+  {
+    "value": "✸",
+    "name": "heavy eight pointed rectilinear black star",
+    "unicode": "U+02738",
+    "html": "&#10040;"
+  },
+  {
+    "value": "✹",
+    "name": "twelve pointed black star",
+    "unicode": "U+02739",
+    "html": "&#10041;"
+  },
+  {
+    "value": "✺",
+    "name": "sixteen pointed asterisk",
+    "unicode": "U+0273A",
+    "html": "&#10042;"
+  },
+  {
+    "value": "✻",
+    "name": "teardrop-spoked asterisk",
+    "unicode": "U+0273B",
+    "html": "&#10043;"
+  },
+  {
+    "value": "✼",
+    "name": "open centre teardrop-spoked asterisk",
+    "unicode": "U+0273C",
+    "html": "&#10044;"
+  },
+  {
+    "value": "✽",
+    "name": "heavy teardrop-spoked asterisk",
+    "unicode": "U+0273D",
+    "html": "&#10045;"
+  },
+  {
+    "value": "✾",
+    "name": "six petalled black and white florette",
+    "unicode": "U+0273E",
+    "html": "&#10046;"
+  },
+  {
+    "value": "✿",
+    "name": "black florette",
+    "unicode": "U+0273F",
+    "html": "&#10047;"
+  },
+  {
+    "value": "❀",
+    "name": "white florette",
+    "unicode": "U+02740",
+    "html": "&#10048;"
+  },
+  {
+    "value": "❁",
+    "name": "eight petalled outlined black florette",
+    "unicode": "U+02741",
+    "html": "&#10049;"
+  },
+  {
+    "value": "❂",
+    "name": "circled open centre eight pointed star",
+    "unicode": "U+02742",
+    "html": "&#10050;"
+  },
+  {
+    "value": "❃",
+    "name": "heavy teardrop-spoked pinwheel asterisk",
+    "unicode": "U+02743",
+    "html": "&#10051;"
+  },
+  {
+    "value": "❄",
+    "name": "snowflake",
+    "unicode": "U+02744",
+    "html": "&#10052;"
+  },
+  {
+    "value": "❅",
+    "name": "tight trifoliate snowflake",
+    "unicode": "U+02745",
+    "html": "&#10053;"
+  },
+  {
+    "value": "❆",
+    "name": "heavy chevron snowflake",
+    "unicode": "U+02746",
+    "html": "&#10054;"
+  },
+  {
+    "value": "❇",
+    "name": "sparkle",
+    "unicode": "U+02747",
+    "html": "&#10055;"
+  },
+  {
+    "value": "❈",
+    "name": "heavy sparkle",
+    "unicode": "U+02748",
+    "html": "&#10056;"
+  },
+  {
+    "value": "❉",
+    "name": "balloon-spoked asterisk",
+    "unicode": "U+02749",
+    "html": "&#10057;"
+  },
+  {
+    "value": "❊",
+    "name": "eight teardrop-spoked propeller asterisk",
+    "unicode": "U+0274A",
+    "html": "&#10058;"
+  },
+  {
+    "value": "❋",
+    "name": "heavy eight teardrop-spoked propeller asterisk",
+    "unicode": "U+0274B",
+    "html": "&#10059;"
+  },
+  {
+    "value": "❍",
+    "name": "shadowed white circle",
+    "unicode": "U+0274D",
+    "html": "&#10061;"
+  },
+  {
+    "value": "❏",
+    "name": "lower right drop-shadowed white square",
+    "unicode": "U+0274F",
+    "html": "&#10063;"
+  },
+  {
+    "value": "❐",
+    "name": "upper right drop-shadowed white square",
+    "unicode": "U+02750",
+    "html": "&#10064;"
+  },
+  {
+    "value": "❑",
+    "name": "lower right shadowed white square",
+    "unicode": "U+02751",
+    "html": "&#10065;"
+  },
+  {
+    "value": "❒",
+    "name": "upper right shadowed white square",
+    "unicode": "U+02752",
+    "html": "&#10066;"
+  },
+  {
+    "value": "❖",
+    "name": "black diamond minus white x",
+    "unicode": "U+02756",
+    "html": "&#10070;"
+  },
+  {
+    "value": "❘",
+    "name": "light vertical bar",
+    "unicode": "U+02758",
+    "html": "&VerticalSeparator;"
+  },
+  {
+    "value": "❙",
+    "name": "medium vertical bar",
+    "unicode": "U+02759",
+    "html": "&#10073;"
+  },
+  {
+    "value": "❚",
+    "name": "heavy vertical bar",
+    "unicode": "U+0275A",
+    "html": "&#10074;"
+  },
+  {
+    "value": "❛",
+    "name": "heavy single turned comma quotation mark ornament",
+    "unicode": "U+0275B",
+    "html": "&#10075;"
+  },
+  {
+    "value": "❜",
+    "name": "heavy single comma quotation mark ornament",
+    "unicode": "U+0275C",
+    "html": "&#10076;"
+  },
+  {
+    "value": "❝",
+    "name": "heavy double turned comma quotation mark ornament",
+    "unicode": "U+0275D",
+    "html": "&#10077;"
+  },
+  {
+    "value": "❞",
+    "name": "heavy double comma quotation mark ornament",
+    "unicode": "U+0275E",
+    "html": "&#10078;"
+  },
+  {
+    "value": "❡",
+    "name": "curved stem paragraph sign ornament",
+    "unicode": "U+02761",
+    "html": "&#10081;"
+  },
+  {
+    "value": "❢",
+    "name": "heavy exclamation mark ornament",
+    "unicode": "U+02762",
+    "html": "&#10082;"
+  },
+  {
+    "value": "❣",
+    "name": "heavy heart exclamation mark ornament",
+    "unicode": "U+02763",
+    "html": "&#10083;"
+  },
+  {
+    "value": "❤",
+    "name": "heavy black heart",
+    "unicode": "U+02764",
+    "html": "&#10084;"
+  },
+  {
+    "value": "❥",
+    "name": "rotated heavy black heart bullet",
+    "unicode": "U+02765",
+    "html": "&#10085;"
+  },
+  {
+    "value": "❦",
+    "name": "floral heart",
+    "unicode": "U+02766",
+    "html": "&#10086;"
+  },
+  {
+    "value": "❧",
+    "name": "rotated floral heart bullet",
+    "unicode": "U+02767",
+    "html": "&#10087;"
+  },
+  {
+    "value": "❨",
+    "name": "medium left parenthesis ornament",
+    "unicode": "U+02768",
+    "html": "&#10088;"
+  },
+  {
+    "value": "❩",
+    "name": "medium right parenthesis ornament",
+    "unicode": "U+02769",
+    "html": "&#10089;"
+  },
+  {
+    "value": "❪",
+    "name": "medium flattened left parenthesis ornament",
+    "unicode": "U+0276A",
+    "html": "&#10090;"
+  },
+  {
+    "value": "❫",
+    "name": "medium flattened right parenthesis ornament",
+    "unicode": "U+0276B",
+    "html": "&#10091;"
+  },
+  {
+    "value": "❬",
+    "name": "medium left-pointing angle bracket ornament",
+    "unicode": "U+0276C",
+    "html": "&#10092;"
+  },
+  {
+    "value": "❭",
+    "name": "medium right-pointing angle bracket ornament",
+    "unicode": "U+0276D",
+    "html": "&#10093;"
+  },
+  {
+    "value": "❮",
+    "name": "heavy left-pointing angle quotation mark ornament",
+    "unicode": "U+0276E",
+    "html": "&#10094;"
+  },
+  {
+    "value": "❯",
+    "name": "heavy right-pointing angle quotation mark ornament",
+    "unicode": "U+0276F",
+    "html": "&#10095;"
+  },
+  {
+    "value": "❰",
+    "name": "heavy left-pointing angle bracket ornament",
+    "unicode": "U+02770",
+    "html": "&#10096;"
+  },
+  {
+    "value": "❱",
+    "name": "heavy right-pointing angle bracket ornament",
+    "unicode": "U+02771",
+    "html": "&#10097;"
+  },
+  {
+    "value": "❲",
+    "name": "light left tortoise shell bracket ornament",
+    "unicode": "U+02772",
+    "html": "&lbbrk;"
+  },
+  {
+    "value": "❳",
+    "name": "light right tortoise shell bracket ornament",
+    "unicode": "U+02773",
+    "html": "&rbbrk;"
+  },
+  {
+    "value": "❴",
+    "name": "medium left curly bracket ornament",
+    "unicode": "U+02774",
+    "html": "&#10100;"
+  },
+  {
+    "value": "❵",
+    "name": "medium right curly bracket ornament",
+    "unicode": "U+02775",
+    "html": "&#10101;"
+  },
+  {
+    "value": "❶",
+    "name": "dingbat negative circled digit one",
+    "unicode": "U+02776",
+    "html": "&#10102;"
+  },
+  {
+    "value": "❷",
+    "name": "dingbat negative circled digit two",
+    "unicode": "U+02777",
+    "html": "&#10103;"
+  },
+  {
+    "value": "❸",
+    "name": "dingbat negative circled digit three",
+    "unicode": "U+02778",
+    "html": "&#10104;"
+  },
+  {
+    "value": "❹",
+    "name": "dingbat negative circled digit four",
+    "unicode": "U+02779",
+    "html": "&#10105;"
+  },
+  {
+    "value": "❺",
+    "name": "dingbat negative circled digit five",
+    "unicode": "U+0277A",
+    "html": "&#10106;"
+  },
+  {
+    "value": "❻",
+    "name": "dingbat negative circled digit six",
+    "unicode": "U+0277B",
+    "html": "&#10107;"
+  },
+  {
+    "value": "❼",
+    "name": "dingbat negative circled digit seven",
+    "unicode": "U+0277C",
+    "html": "&#10108;"
+  },
+  {
+    "value": "❽",
+    "name": "dingbat negative circled digit eight",
+    "unicode": "U+0277D",
+    "html": "&#10109;"
+  },
+  {
+    "value": "❾",
+    "name": "dingbat negative circled digit nine",
+    "unicode": "U+0277E",
+    "html": "&#10110;"
+  },
+  {
+    "value": "❿",
+    "name": "dingbat negative circled number ten",
+    "unicode": "U+0277F",
+    "html": "&#10111;"
+  },
+  {
+    "value": "➀",
+    "name": "dingbat circled sans-serif digit one",
+    "unicode": "U+02780",
+    "html": "&#10112;"
+  },
+  {
+    "value": "➁",
+    "name": "dingbat circled sans-serif digit two",
+    "unicode": "U+02781",
+    "html": "&#10113;"
+  },
+  {
+    "value": "➂",
+    "name": "dingbat circled sans-serif digit three",
+    "unicode": "U+02782",
+    "html": "&#10114;"
+  },
+  {
+    "value": "➃",
+    "name": "dingbat circled sans-serif digit four",
+    "unicode": "U+02783",
+    "html": "&#10115;"
+  },
+  {
+    "value": "➄",
+    "name": "dingbat circled sans-serif digit five",
+    "unicode": "U+02784",
+    "html": "&#10116;"
+  },
+  {
+    "value": "➅",
+    "name": "dingbat circled sans-serif digit six",
+    "unicode": "U+02785",
+    "html": "&#10117;"
+  },
+  {
+    "value": "➆",
+    "name": "dingbat circled sans-serif digit seven",
+    "unicode": "U+02786",
+    "html": "&#10118;"
+  },
+  {
+    "value": "➇",
+    "name": "dingbat circled sans-serif digit eight",
+    "unicode": "U+02787",
+    "html": "&#10119;"
+  },
+  {
+    "value": "➈",
+    "name": "dingbat circled sans-serif digit nine",
+    "unicode": "U+02788",
+    "html": "&#10120;"
+  },
+  {
+    "value": "➉",
+    "name": "dingbat circled sans-serif number ten",
+    "unicode": "U+02789",
+    "html": "&#10121;"
+  },
+  {
+    "value": "➊",
+    "name": "dingbat negative circled sans-serif digit one",
+    "unicode": "U+0278A",
+    "html": "&#10122;"
+  },
+  {
+    "value": "➋",
+    "name": "dingbat negative circled sans-serif digit two",
+    "unicode": "U+0278B",
+    "html": "&#10123;"
+  },
+  {
+    "value": "➌",
+    "name": "dingbat negative circled sans-serif digit three",
+    "unicode": "U+0278C",
+    "html": "&#10124;"
+  },
+  {
+    "value": "➍",
+    "name": "dingbat negative circled sans-serif digit four",
+    "unicode": "U+0278D",
+    "html": "&#10125;"
+  },
+  {
+    "value": "➎",
+    "name": "dingbat negative circled sans-serif digit five",
+    "unicode": "U+0278E",
+    "html": "&#10126;"
+  },
+  {
+    "value": "➏",
+    "name": "dingbat negative circled sans-serif digit six",
+    "unicode": "U+0278F",
+    "html": "&#10127;"
+  },
+  {
+    "value": "➐",
+    "name": "dingbat negative circled sans-serif digit seven",
+    "unicode": "U+02790",
+    "html": "&#10128;"
+  },
+  {
+    "value": "➑",
+    "name": "dingbat negative circled sans-serif digit eight",
+    "unicode": "U+02791",
+    "html": "&#10129;"
+  },
+  {
+    "value": "➒",
+    "name": "dingbat negative circled sans-serif digit nine",
+    "unicode": "U+02792",
+    "html": "&#10130;"
+  },
+  {
+    "value": "➓",
+    "name": "dingbat negative circled sans-serif number ten",
+    "unicode": "U+02793",
+    "html": "&#10131;"
+  },
+  {
+    "value": "➔",
+    "name": "heavy wide-headed right arrow",
+    "unicode": "U+02794",
+    "html": "&#10132;"
+  },
+  {
+    "value": "➘",
+    "name": "heavy south east arrow",
+    "unicode": "U+02798",
+    "html": "&#10136;"
+  },
+  {
+    "value": "➙",
+    "name": "heavy right arrow",
+    "unicode": "U+02799",
+    "html": "&#10137;"
+  },
+  {
+    "value": "➚",
+    "name": "heavy north east arrow",
+    "unicode": "U+0279A",
+    "html": "&#10138;"
+  },
+  {
+    "value": "➛",
+    "name": "drafting point right arrow",
+    "unicode": "U+0279B",
+    "html": "&#10139;"
+  },
+  {
+    "value": "➜",
+    "name": "heavy round-tipped right arrow",
+    "unicode": "U+0279C",
+    "html": "&#10140;"
+  },
+  {
+    "value": "➝",
+    "name": "triangle-headed right arrow",
+    "unicode": "U+0279D",
+    "html": "&#10141;"
+  },
+  {
+    "value": "➞",
+    "name": "heavy triangle-headed right arrow",
+    "unicode": "U+0279E",
+    "html": "&#10142;"
+  },
+  {
+    "value": "➟",
+    "name": "dashed triangle-headed right arrow",
+    "unicode": "U+0279F",
+    "html": "&#10143;"
+  },
+  {
+    "value": "➠",
+    "name": "heavy dashed triangle-headed right arrow",
+    "unicode": "U+027A0",
+    "html": "&#10144;"
+  },
+  {
+    "value": "➡",
+    "name": "black right arrow",
+    "unicode": "U+027A1",
+    "html": "&#10145;"
+  },
+  {
+    "value": "➢",
+    "name": "three-d top-lighted right arrowhead",
+    "unicode": "U+027A2",
+    "html": "&#10146;"
+  },
+  {
+    "value": "➣",
+    "name": "three-d bottom-lighted right arrowhead",
+    "unicode": "U+027A3",
+    "html": "&#10147;"
+  },
+  {
+    "value": "➤",
+    "name": "black right arrowhead",
+    "unicode": "U+027A4",
+    "html": "&#10148;"
+  },
+  {
+    "value": "➥",
+    "name": "heavy black curved down and right arrow",
+    "unicode": "U+027A5",
+    "html": "&#10149;"
+  },
+  {
+    "value": "➦",
+    "name": "heavy black curved up and right arrow",
+    "unicode": "U+027A6",
+    "html": "&#10150;"
+  },
+  {
+    "value": "➧",
+    "name": "squat black right arrow",
+    "unicode": "U+027A7",
+    "html": "&#10151;"
+  },
+  {
+    "value": "➨",
+    "name": "heavy concave-pointed black right arrow",
+    "unicode": "U+027A8",
+    "html": "&#10152;"
+  },
+  {
+    "value": "➩",
+    "name": "right-shaded white right arrow",
+    "unicode": "U+027A9",
+    "html": "&#10153;"
+  },
+  {
+    "value": "➪",
+    "name": "left-shaded white right arrow",
+    "unicode": "U+027AA",
+    "html": "&#10154;"
+  },
+  {
+    "value": "➫",
+    "name": "back-tilted shadowed white right arrow",
+    "unicode": "U+027AB",
+    "html": "&#10155;"
+  },
+  {
+    "value": "➬",
+    "name": "front-tilted shadowed white right arrow",
+    "unicode": "U+027AC",
+    "html": "&#10156;"
+  },
+  {
+    "value": "➭",
+    "name": "heavy lower right-shadowed white right arrow",
+    "unicode": "U+027AD",
+    "html": "&#10157;"
+  },
+  {
+    "value": "➮",
+    "name": "heavy upper right-shadowed white right arrow",
+    "unicode": "U+027AE",
+    "html": "&#10158;"
+  },
+  {
+    "value": "➯",
+    "name": "notched lower right-shadowed white right arrow",
+    "unicode": "U+027AF",
+    "html": "&#10159;"
+  },
+  {
+    "value": "➱",
+    "name": "notched upper right-shadowed white right arrow",
+    "unicode": "U+027B1",
+    "html": "&#10161;"
+  },
+  {
+    "value": "➲",
+    "name": "circled heavy white right arrow",
+    "unicode": "U+027B2",
+    "html": "&#10162;"
+  },
+  {
+    "value": "➳",
+    "name": "white-feathered right arrow",
+    "unicode": "U+027B3",
+    "html": "&#10163;"
+  },
+  {
+    "value": "➴",
+    "name": "black-feathered south east arrow",
+    "unicode": "U+027B4",
+    "html": "&#10164;"
+  },
+  {
+    "value": "➵",
+    "name": "black-feathered right arrow",
+    "unicode": "U+027B5",
+    "html": "&#10165;"
+  },
+  {
+    "value": "➶",
+    "name": "black-feathered north east arrow",
+    "unicode": "U+027B6",
+    "html": "&#10166;"
+  },
+  {
+    "value": "➷",
+    "name": "heavy black-feathered south east arrow",
+    "unicode": "U+027B7",
+    "html": "&#10167;"
+  },
+  {
+    "value": "➸",
+    "name": "heavy black-feathered right arrow",
+    "unicode": "U+027B8",
+    "html": "&#10168;"
+  },
+  {
+    "value": "➹",
+    "name": "heavy black-feathered north east arrow",
+    "unicode": "U+027B9",
+    "html": "&#10169;"
+  },
+  {
+    "value": "➺",
+    "name": "teardrop-barbed right arrow",
+    "unicode": "U+027BA",
+    "html": "&#10170;"
+  },
+  {
+    "value": "➻",
+    "name": "heavy teardrop-shanked right arrow",
+    "unicode": "U+027BB",
+    "html": "&#10171;"
+  },
+  {
+    "value": "➼",
+    "name": "wedge-tailed right arrow",
+    "unicode": "U+027BC",
+    "html": "&#10172;"
+  },
+  {
+    "value": "➽",
+    "name": "heavy wedge-tailed right arrow",
+    "unicode": "U+027BD",
+    "html": "&#10173;"
+  },
+  {
+    "value": "➾",
+    "name": "open-outlined right arrow",
+    "unicode": "U+027BE",
+    "html": "&#10174;"
+  },
+  {
+    "value": "🄐",
+    "name": "parenthesized latin capital letter a",
+    "unicode": "U+1F110",
+    "html": "&#127248;"
+  },
+  {
+    "value": "🄑",
+    "name": "parenthesized latin capital letter b",
+    "unicode": "U+1F111",
+    "html": "&#127249;"
+  },
+  {
+    "value": "🄒",
+    "name": "parenthesized latin capital letter c",
+    "unicode": "U+1F112",
+    "html": "&#127250;"
+  },
+  {
+    "value": "🄓",
+    "name": "parenthesized latin capital letter d",
+    "unicode": "U+1F113",
+    "html": "&#127251;"
+  },
+  {
+    "value": "🄔",
+    "name": "parenthesized latin capital letter e",
+    "unicode": "U+1F114",
+    "html": "&#127252;"
+  },
+  {
+    "value": "🄕",
+    "name": "parenthesized latin capital letter f",
+    "unicode": "U+1F115",
+    "html": "&#127253;"
+  },
+  {
+    "value": "🄖",
+    "name": "parenthesized latin capital letter g",
+    "unicode": "U+1F116",
+    "html": "&#127254;"
+  },
+  {
+    "value": "🄗",
+    "name": "parenthesized latin capital letter h",
+    "unicode": "U+1F117",
+    "html": "&#127255;"
+  },
+  {
+    "value": "🄘",
+    "name": "parenthesized latin capital letter i",
+    "unicode": "U+1F118",
+    "html": "&#127256;"
+  },
+  {
+    "value": "🄙",
+    "name": "parenthesized latin capital letter j",
+    "unicode": "U+1F119",
+    "html": "&#127257;"
+  },
+  {
+    "value": "🄚",
+    "name": "parenthesized latin capital letter k",
+    "unicode": "U+1F11A",
+    "html": "&#127258;"
+  },
+  {
+    "value": "🄛",
+    "name": "parenthesized latin capital letter l",
+    "unicode": "U+1F11B",
+    "html": "&#127259;"
+  },
+  {
+    "value": "🄜",
+    "name": "parenthesized latin capital letter m",
+    "unicode": "U+1F11C",
+    "html": "&#127260;"
+  },
+  {
+    "value": "🄝",
+    "name": "parenthesized latin capital letter n",
+    "unicode": "U+1F11D",
+    "html": "&#127261;"
+  },
+  {
+    "value": "🄞",
+    "name": "parenthesized latin capital letter o",
+    "unicode": "U+1F11E",
+    "html": "&#127262;"
+  },
+  {
+    "value": "🄟",
+    "name": "parenthesized latin capital letter p",
+    "unicode": "U+1F11F",
+    "html": "&#127263;"
+  },
+  {
+    "value": "🄠",
+    "name": "parenthesized latin capital letter q",
+    "unicode": "U+1F120",
+    "html": "&#127264;"
+  },
+  {
+    "value": "🄡",
+    "name": "parenthesized latin capital letter r",
+    "unicode": "U+1F121",
+    "html": "&#127265;"
+  },
+  {
+    "value": "🄢",
+    "name": "parenthesized latin capital letter s",
+    "unicode": "U+1F122",
+    "html": "&#127266;"
+  },
+  {
+    "value": "🄣",
+    "name": "parenthesized latin capital letter t",
+    "unicode": "U+1F123",
+    "html": "&#127267;"
+  },
+  {
+    "value": "🄤",
+    "name": "parenthesized latin capital letter u",
+    "unicode": "U+1F124",
+    "html": "&#127268;"
+  },
+  {
+    "value": "🄥",
+    "name": "parenthesized latin capital letter v",
+    "unicode": "U+1F125",
+    "html": "&#127269;"
+  },
+  {
+    "value": "🄦",
+    "name": "parenthesized latin capital letter w",
+    "unicode": "U+1F126",
+    "html": "&#127270;"
+  },
+  {
+    "value": "🄧",
+    "name": "parenthesized latin capital letter x",
+    "unicode": "U+1F127",
+    "html": "&#127271;"
+  },
+  {
+    "value": "🄨",
+    "name": "parenthesized latin capital letter y",
+    "unicode": "U+1F128",
+    "html": "&#127272;"
+  },
+  {
+    "value": "🄩",
+    "name": "parenthesized latin capital letter z",
+    "unicode": "U+1F129",
+    "html": "&#127273;"
+  },
+  {
+    "value": "⒜",
+    "name": "parenthesized latin small letter a",
+    "unicode": "U+249C",
+    "html": ""
+  },
+  {
+    "value": "⒝",
+    "name": "parenthesized latin small letter b",
+    "unicode": "U+249D",
+    "html": ""
+  },
+  {
+    "value": "⒞",
+    "name": "parenthesized latin small letter c",
+    "unicode": "U+249E",
+    "html": ""
+  },
+  {
+    "value": "⒟",
+    "name": "parenthesized latin small letter d",
+    "unicode": "U+249F",
+    "html": ""
+  },
+  {
+    "value": "⒠",
+    "name": "parenthesized latin small letter e",
+    "unicode": "U+24A0",
+    "html": ""
+  },
+  {
+    "value": "⒡",
+    "name": "parenthesized latin small letter f",
+    "unicode": "U+24A1",
+    "html": ""
+  },
+  {
+    "value": "⒢",
+    "name": "parenthesized latin small letter g",
+    "unicode": "U+24A2",
+    "html": ""
+  },
+  {
+    "value": "⒣",
+    "name": "parenthesized latin small letter h",
+    "unicode": "U+24A3",
+    "html": ""
+  },
+  {
+    "value": "⒤",
+    "name": "parenthesized latin small letter i",
+    "unicode": "U+24A4",
+    "html": ""
+  },
+  {
+    "value": "⒥",
+    "name": "parenthesized latin small letter j",
+    "unicode": "U+24A5",
+    "html": ""
+  },
+  {
+    "value": "⒦",
+    "name": "parenthesized latin small letter k",
+    "unicode": "U+24A6",
+    "html": ""
+  },
+  {
+    "value": "⒧",
+    "name": "parenthesized latin small letter l",
+    "unicode": "U+24A7",
+    "html": ""
+  },
+  {
+    "value": "⒨",
+    "name": "parenthesized latin small letter m",
+    "unicode": "U+24A8",
+    "html": ""
+  },
+  {
+    "value": "⒩",
+    "name": "parenthesized latin small letter n",
+    "unicode": "U+24A9",
+    "html": ""
+  },
+  {
+    "value": "⒪",
+    "name": "parenthesized latin small letter o",
+    "unicode": "U+24AA",
+    "html": ""
+  },
+  {
+    "value": "⒫",
+    "name": "parenthesized latin small letter p",
+    "unicode": "U+24AB",
+    "html": ""
+  },
+  {
+    "value": "⒬",
+    "name": "parenthesized latin small letter q",
+    "unicode": "U+24AC",
+    "html": ""
+  },
+  {
+    "value": "⒭",
+    "name": "parenthesized latin small letter r",
+    "unicode": "U+24AD",
+    "html": ""
+  },
+  {
+    "value": "⒮",
+    "name": "parenthesized latin small letter s",
+    "unicode": "U+24AE",
+    "html": ""
+  },
+  {
+    "value": "⒯",
+    "name": "parenthesized latin small letter t",
+    "unicode": "U+24AF",
+    "html": ""
+  },
+  {
+    "value": "⒰",
+    "name": "parenthesized latin small letter u",
+    "unicode": "U+24B0",
+    "html": ""
+  },
+  {
+    "value": "⒱",
+    "name": "parenthesized latin small letter v",
+    "unicode": "U+24B1",
+    "html": ""
+  },
+  {
+    "value": "⒲",
+    "name": "parenthesized latin small letter w",
+    "unicode": "U+24B2",
+    "html": ""
+  },
+  {
+    "value": "⒳",
+    "name": "parenthesized latin small letter x",
+    "unicode": "U+24B3",
+    "html": ""
+  },
+  {
+    "value": "⒴",
+    "name": "parenthesized latin small letter y",
+    "unicode": "U+24B4",
+    "html": ""
+  },
+  {
+    "value": "⒵",
+    "name": "parenthesized latin small letter z",
+    "unicode": "U+24B5",
+    "html": ""
+  },
+  {
+    "value": "🄰",
+    "name": "squared latin capital letter a",
+    "unicode": "U+1F130",
+    "html": "&#127280;"
+  },
+  {
+    "value": "🄱",
+    "name": "squared latin capital letter b",
+    "unicode": "U+1F131",
+    "html": "&#127281;"
+  },
+  {
+    "value": "🄲",
+    "name": "squared latin capital letter c",
+    "unicode": "U+1F132",
+    "html": "&#127282;"
+  },
+  {
+    "value": "🄳",
+    "name": "squared latin capital letter d",
+    "unicode": "U+1F133",
+    "html": "&#127283;"
+  },
+  {
+    "value": "🄴",
+    "name": "squared latin capital letter e",
+    "unicode": "U+1F134",
+    "html": "&#127284;"
+  },
+  {
+    "value": "🄵",
+    "name": "squared latin capital letter f",
+    "unicode": "U+1F135",
+    "html": "&#127285;"
+  },
+  {
+    "value": "🄶",
+    "name": "squared latin capital letter g",
+    "unicode": "U+1F136",
+    "html": "&#127286;"
+  },
+  {
+    "value": "🄷",
+    "name": "squared latin capital letter h",
+    "unicode": "U+1F137",
+    "html": "&#127287;"
+  },
+  {
+    "value": "🄸",
+    "name": "squared latin capital letter i",
+    "unicode": "U+1F138",
+    "html": "&#127288;"
+  },
+  {
+    "value": "🄹",
+    "name": "squared latin capital letter j",
+    "unicode": "U+1F139",
+    "html": "&#127289;"
+  },
+  {
+    "value": "🄺",
+    "name": "squared latin capital letter k",
+    "unicode": "U+1F13A",
+    "html": "&#127290;"
+  },
+  {
+    "value": "🄻",
+    "name": "squared latin capital letter l",
+    "unicode": "U+1F13B",
+    "html": "&#127291;"
+  },
+  {
+    "value": "🄼",
+    "name": "squared latin capital letter m",
+    "unicode": "U+1F13C",
+    "html": "&#127292;"
+  },
+  {
+    "value": "🄽",
+    "name": "squared latin capital letter n",
+    "unicode": "U+1F13D",
+    "html": "&#127293;"
+  },
+  {
+    "value": "🄾",
+    "name": "squared latin capital letter o",
+    "unicode": "U+1F13E",
+    "html": "&#127294;"
+  },
+  {
+    "value": "🄿",
+    "name": "squared latin capital letter p",
+    "unicode": "U+1F13F",
+    "html": "&#127295;"
+  },
+  {
+    "value": "🅀",
+    "name": "squared latin capital letter q",
+    "unicode": "U+1F140",
+    "html": "&#127296;"
+  },
+  {
+    "value": "🅁",
+    "name": "squared latin capital letter r",
+    "unicode": "U+1F141",
+    "html": "&#127297;"
+  },
+  {
+    "value": "🅂",
+    "name": "squared latin capital letter s",
+    "unicode": "U+1F142",
+    "html": "&#127298;"
+  },
+  {
+    "value": "🅃",
+    "name": "squared latin capital letter t",
+    "unicode": "U+1F143",
+    "html": "&#127299;"
+  },
+  {
+    "value": "🅄",
+    "name": "squared latin capital letter u",
+    "unicode": "U+1F144",
+    "html": "&#127300;"
+  },
+  {
+    "value": "🅅",
+    "name": "squared latin capital letter v",
+    "unicode": "U+1F145",
+    "html": "&#127301;"
+  },
+  {
+    "value": "🅆",
+    "name": "squared latin capital letter w",
+    "unicode": "U+1F146",
+    "html": "&#127302;"
+  },
+  {
+    "value": "🅇",
+    "name": "squared latin capital letter x",
+    "unicode": "U+1F147",
+    "html": "&#127303;"
+  },
+  {
+    "value": "🅈",
+    "name": "squared latin capital letter y",
+    "unicode": "U+1F148",
+    "html": "&#127304;"
+  },
+  {
+    "value": "🅉",
+    "name": "squared latin capital letter z",
+    "unicode": "U+1F149",
+    "html": "&#127305;"
+  },
+  {
+    "value": "🅰",
+    "name": "negative squared latin capital letter a",
+    "unicode": "U+1F170",
+    "html": "&#127344;"
+  },
+  {
+    "value": "🅱",
+    "name": "negative squared latin capital letter b",
+    "unicode": "U+1F171",
+    "html": "&#127345;"
+  },
+  {
+    "value": "🅲",
+    "name": "negative squared latin capital letter c",
+    "unicode": "U+1F172",
+    "html": "&#127346;"
+  },
+  {
+    "value": "🅳",
+    "name": "negative squared latin capital letter d",
+    "unicode": "U+1F173",
+    "html": "&#127347;"
+  },
+  {
+    "value": "🅴",
+    "name": "negative squared latin capital letter e",
+    "unicode": "U+1F174",
+    "html": "&#127348;"
+  },
+  {
+    "value": "🅵",
+    "name": "negative squared latin capital letter f",
+    "unicode": "U+1F175",
+    "html": "&#127349;"
+  },
+  {
+    "value": "🅶",
+    "name": "negative squared latin capital letter g",
+    "unicode": "U+1F176",
+    "html": "&#127350;"
+  },
+  {
+    "value": "🅷",
+    "name": "negative squared latin capital letter h",
+    "unicode": "U+1F177",
+    "html": "&#127351;"
+  },
+  {
+    "value": "🅸",
+    "name": "negative squared latin capital letter i",
+    "unicode": "U+1F178",
+    "html": "&#127352;"
+  },
+  {
+    "value": "🅹",
+    "name": "negative squared latin capital letter j",
+    "unicode": "U+1F179",
+    "html": "&#127353;"
+  },
+  {
+    "value": "🅺",
+    "name": "negative squared latin capital letter k",
+    "unicode": "U+1F17A",
+    "html": "&#127354;"
+  },
+  {
+    "value": "🅻",
+    "name": "negative squared latin capital letter l",
+    "unicode": "U+1F17B",
+    "html": "&#127355;"
+  },
+  {
+    "value": "🅼",
+    "name": "negative squared latin capital letter m",
+    "unicode": "U+1F17C",
+    "html": "&#127356;"
+  },
+  {
+    "value": "🅽",
+    "name": "negative squared latin capital letter n",
+    "unicode": "U+1F17D",
+    "html": "&#127357;"
+  },
+  {
+    "value": "🅾",
+    "name": "negative squared latin capital letter o",
+    "unicode": "U+1F17E",
+    "html": "&#127358;"
+  },
+  {
+    "value": "🅿",
+    "name": "negative squared latin capital letter p",
+    "unicode": "U+1F17F",
+    "html": "&#127359;"
+  },
+  {
+    "value": "🆀",
+    "name": "negative squared latin capital letter q",
+    "unicode": "U+1F180",
+    "html": "&#127360;"
+  },
+  {
+    "value": "🆁",
+    "name": "negative squared latin capital letter r",
+    "unicode": "U+1F181",
+    "html": "&#127361;"
+  },
+  {
+    "value": "🆂",
+    "name": "negative squared latin capital letter s",
+    "unicode": "U+1F182",
+    "html": "&#127362;"
+  },
+  {
+    "value": "🆃",
+    "name": "negative squared latin capital letter t",
+    "unicode": "U+1F183",
+    "html": "&#127363;"
+  },
+  {
+    "value": "🆄",
+    "name": "negative squared latin capital letter u",
+    "unicode": "U+1F184",
+    "html": "&#127364;"
+  },
+  {
+    "value": "🆅",
+    "name": "negative squared latin capital letter v",
+    "unicode": "U+1F185",
+    "html": "&#127365;"
+  },
+  {
+    "value": "🆆",
+    "name": "negative squared latin capital letter w",
+    "unicode": "U+1F186",
+    "html": "&#127366;"
+  },
+  {
+    "value": "🆇",
+    "name": "negative squared latin capital letter x",
+    "unicode": "U+1F187",
+    "html": "&#127367;"
+  },
+  {
+    "value": "🆈",
+    "name": "negative squared latin capital letter y",
+    "unicode": "U+1F188",
+    "html": "&#127368;"
+  },
+  {
+    "value": "🆉",
+    "name": "negative squared latin capital letter z",
+    "unicode": "U+1F189",
+    "html": "&#127369;"
+  },
+  {
+    "value": "Ⓐ",
+    "name": "circled latin capital letter a",
+    "unicode": "U+24B6",
+    "html": ""
+  },
+  {
+    "value": "Ⓑ",
+    "name": "circled latin capital letter b",
+    "unicode": "U+24B7",
+    "html": ""
+  },
+  {
+    "value": "Ⓒ",
+    "name": "circled latin capital letter c",
+    "unicode": "U+24B8",
+    "html": ""
+  },
+  {
+    "value": "Ⓓ",
+    "name": "circled latin capital letter d",
+    "unicode": "U+24B9",
+    "html": ""
+  },
+  {
+    "value": "Ⓔ",
+    "name": "circled latin capital letter e",
+    "unicode": "U+24BA",
+    "html": ""
+  },
+  {
+    "value": "Ⓕ",
+    "name": "circled latin capital letter f",
+    "unicode": "U+24BB",
+    "html": ""
+  },
+  {
+    "value": "Ⓖ",
+    "name": "circled latin capital letter g",
+    "unicode": "U+24BC",
+    "html": ""
+  },
+  {
+    "value": "Ⓗ",
+    "name": "circled latin capital letter h",
+    "unicode": "U+24BD",
+    "html": ""
+  },
+  {
+    "value": "Ⓘ",
+    "name": "circled latin capital letter i",
+    "unicode": "U+24BE",
+    "html": ""
+  },
+  {
+    "value": "Ⓙ",
+    "name": "circled latin capital letter j",
+    "unicode": "U+24BF",
+    "html": ""
+  },
+  {
+    "value": "Ⓚ",
+    "name": "circled latin capital letter k",
+    "unicode": "U+24C0",
+    "html": ""
+  },
+  {
+    "value": "Ⓛ",
+    "name": "circled latin capital letter l",
+    "unicode": "U+24C1",
+    "html": ""
+  },
+  {
+    "value": "Ⓜ",
+    "name": "circled latin capital letter m",
+    "unicode": "U+24C2",
+    "html": ""
+  },
+  {
+    "value": "Ⓝ",
+    "name": "circled latin capital letter n",
+    "unicode": "U+24C3",
+    "html": ""
+  },
+  {
+    "value": "Ⓞ",
+    "name": "circled latin capital letter o",
+    "unicode": "U+24C4",
+    "html": ""
+  },
+  {
+    "value": "Ⓟ",
+    "name": "circled latin capital letter p",
+    "unicode": "U+24C5",
+    "html": ""
+  },
+  {
+    "value": "Ⓠ",
+    "name": "circled latin capital letter q",
+    "unicode": "U+24C6",
+    "html": ""
+  },
+  {
+    "value": "Ⓡ",
+    "name": "circled latin capital letter r",
+    "unicode": "U+24C7",
+    "html": ""
+  },
+  {
+    "value": "Ⓢ",
+    "name": "circled latin capital letter s",
+    "unicode": "U+24C8",
+    "html": ""
+  },
+  {
+    "value": "Ⓣ",
+    "name": "circled latin capital letter t",
+    "unicode": "U+24C9",
+    "html": ""
+  },
+  {
+    "value": "Ⓤ",
+    "name": "circled latin capital letter u",
+    "unicode": "U+24CA",
+    "html": ""
+  },
+  {
+    "value": "Ⓥ",
+    "name": "circled latin capital letter v",
+    "unicode": "U+24CB",
+    "html": ""
+  },
+  {
+    "value": "Ⓦ",
+    "name": "circled latin capital letter w",
+    "unicode": "U+24CC",
+    "html": ""
+  },
+  {
+    "value": "Ⓧ",
+    "name": "circled latin capital letter x",
+    "unicode": "U+24CD",
+    "html": ""
+  },
+  {
+    "value": "Ⓨ",
+    "name": "circled latin capital letter y",
+    "unicode": "U+24CE",
+    "html": ""
+  },
+  {
+    "value": "Ⓩ",
+    "name": "circled latin capital letter z",
+    "unicode": "U+24CF",
+    "html": ""
+  },
+  {
+    "value": "ⓐ",
+    "name": "circled latin small letter a",
+    "unicode": "U+24D0",
+    "html": ""
+  },
+  {
+    "value": "ⓑ",
+    "name": "circled latin small letter b",
+    "unicode": "U+24D1",
+    "html": ""
+  },
+  {
+    "value": "ⓒ",
+    "name": "circled latin small letter c",
+    "unicode": "U+24D2",
+    "html": ""
+  },
+  {
+    "value": "ⓓ",
+    "name": "circled latin small letter d",
+    "unicode": "U+24D3",
+    "html": ""
+  },
+  {
+    "value": "ⓔ",
+    "name": "circled latin small letter e",
+    "unicode": "U+24D4",
+    "html": ""
+  },
+  {
+    "value": "ⓕ",
+    "name": "circled latin small letter f",
+    "unicode": "U+24D5",
+    "html": ""
+  },
+  {
+    "value": "ⓖ",
+    "name": "circled latin small letter g",
+    "unicode": "U+24D6",
+    "html": ""
+  },
+  {
+    "value": "ⓗ",
+    "name": "circled latin small letter h",
+    "unicode": "U+24D7",
+    "html": ""
+  },
+  {
+    "value": "ⓘ",
+    "name": "circled latin small letter i",
+    "unicode": "U+24D8",
+    "html": ""
+  },
+  {
+    "value": "ⓙ",
+    "name": "circled latin small letter j",
+    "unicode": "U+24D9",
+    "html": ""
+  },
+  {
+    "value": "ⓚ",
+    "name": "circled latin small letter k",
+    "unicode": "U+24DA",
+    "html": ""
+  },
+  {
+    "value": "ⓛ",
+    "name": "circled latin small letter l",
+    "unicode": "U+24DB",
+    "html": ""
+  },
+  {
+    "value": "ⓜ",
+    "name": "circled latin small letter m",
+    "unicode": "U+24DC",
+    "html": ""
+  },
+  {
+    "value": "ⓝ",
+    "name": "circled latin small letter n",
+    "unicode": "U+24DD",
+    "html": ""
+  },
+  {
+    "value": "ⓞ",
+    "name": "circled latin small letter o",
+    "unicode": "U+24DE",
+    "html": ""
+  },
+  {
+    "value": "ⓟ",
+    "name": "circled latin small letter p",
+    "unicode": "U+24DF",
+    "html": ""
+  },
+  {
+    "value": "ⓠ",
+    "name": "circled latin small letter q",
+    "unicode": "U+24E0",
+    "html": ""
+  },
+  {
+    "value": "ⓡ",
+    "name": "circled latin small letter r",
+    "unicode": "U+24E1",
+    "html": ""
+  },
+  {
+    "value": "ⓢ",
+    "name": "circled latin small letter s",
+    "unicode": "U+24E2",
+    "html": ""
+  },
+  {
+    "value": "ⓣ",
+    "name": "circled latin small letter t",
+    "unicode": "U+24E3",
+    "html": ""
+  },
+  {
+    "value": "ⓤ",
+    "name": "circled latin small letter u",
+    "unicode": "U+24E4",
+    "html": ""
+  },
+  {
+    "value": "ⓥ",
+    "name": "circled latin small letter v",
+    "unicode": "U+24E5",
+    "html": ""
+  },
+  {
+    "value": "ⓦ",
+    "name": "circled latin small letter w",
+    "unicode": "U+24E6",
+    "html": ""
+  },
+  {
+    "value": "ⓧ",
+    "name": "circled latin small letter x",
+    "unicode": "U+24E7",
+    "html": ""
+  },
+  {
+    "value": "ⓨ",
+    "name": "circled latin small letter y",
+    "unicode": "U+24E8",
+    "html": ""
+  },
+  {
+    "value": "ⓩ",
+    "name": "circled latin small letter z",
+    "unicode": "U+24E9",
+    "html": ""
+  },
+  {
+    "value": "🅐",
+    "name": "negative circled latin capital letter a",
+    "unicode": "U+1F150",
+    "html": "&#127312;"
+  },
+  {
+    "value": "🅑",
+    "name": "negative circled latin capital letter b",
+    "unicode": "U+1F151",
+    "html": "&#127313;"
+  },
+  {
+    "value": "🅒",
+    "name": "negative circled latin capital letter c",
+    "unicode": "U+1F152",
+    "html": "&#127314;"
+  },
+  {
+    "value": "🅓",
+    "name": "negative circled latin capital letter d",
+    "unicode": "U+1F153",
+    "html": "&#127315;"
+  },
+  {
+    "value": "🅔",
+    "name": "negative circled latin capital letter e",
+    "unicode": "U+1F154",
+    "html": "&#127316;"
+  },
+  {
+    "value": "🅕",
+    "name": "negative circled latin capital letter f",
+    "unicode": "U+1F155",
+    "html": "&#127317;"
+  },
+  {
+    "value": "🅖",
+    "name": "negative circled latin capital letter g",
+    "unicode": "U+1F156",
+    "html": "&#127318;"
+  },
+  {
+    "value": "🅗",
+    "name": "negative circled latin capital letter h",
+    "unicode": "U+1F157",
+    "html": "&#127319;"
+  },
+  {
+    "value": "🅘",
+    "name": "negative circled latin capital letter i",
+    "unicode": "U+1F158",
+    "html": "&#127320;"
+  },
+  {
+    "value": "🅙",
+    "name": "negative circled latin capital letter j",
+    "unicode": "U+1F159",
+    "html": "&#127321;"
+  },
+  {
+    "value": "🅚",
+    "name": "negative circled latin capital letter k",
+    "unicode": "U+1F15A",
+    "html": "&#127322;"
+  },
+  {
+    "value": "🅛",
+    "name": "negative circled latin capital letter l",
+    "unicode": "U+1F15B",
+    "html": "&#127323;"
+  },
+  {
+    "value": "🅜",
+    "name": "negative circled latin capital letter m",
+    "unicode": "U+1F15C",
+    "html": "&#127324;"
+  },
+  {
+    "value": "🅝",
+    "name": "negative circled latin capital letter n",
+    "unicode": "U+1F15D",
+    "html": "&#127325;"
+  },
+  {
+    "value": "🅞",
+    "name": "negative circled latin capital letter o",
+    "unicode": "U+1F15E",
+    "html": "&#127326;"
+  },
+  {
+    "value": "🅟",
+    "name": "negative circled latin capital letter p",
+    "unicode": "U+1F15F",
+    "html": "&#127327;"
+  },
+  {
+    "value": "🅠",
+    "name": "negative circled latin capital letter q",
+    "unicode": "U+1F160",
+    "html": "&#127328;"
+  },
+  {
+    "value": "🅡",
+    "name": "negative circled latin capital letter r",
+    "unicode": "U+1F161",
+    "html": "&#127329;"
+  },
+  {
+    "value": "🅢",
+    "name": "negative circled latin capital letter s",
+    "unicode": "U+1F162",
+    "html": "&#127330;"
+  },
+  {
+    "value": "🅣",
+    "name": "negative circled latin capital letter t",
+    "unicode": "U+1F163",
+    "html": "&#127331;"
+  },
+  {
+    "value": "🅤",
+    "name": "negative circled latin capital letter u",
+    "unicode": "U+1F164",
+    "html": "&#127332;"
+  },
+  {
+    "value": "🅥",
+    "name": "negative circled latin capital letter v",
+    "unicode": "U+1F165",
+    "html": "&#127333;"
+  },
+  {
+    "value": "🅦",
+    "name": "negative circled latin capital letter w",
+    "unicode": "U+1F166",
+    "html": "&#127334;"
+  },
+  {
+    "value": "🅧",
+    "name": "negative circled latin capital letter x",
+    "unicode": "U+1F167",
+    "html": "&#127335;"
+  },
+  {
+    "value": "🅨",
+    "name": "negative circled latin capital letter y",
+    "unicode": "U+1F168",
+    "html": "&#127336;"
+  },
+  {
+    "value": "🅩",
+    "name": "negative circled latin capital letter z",
+    "unicode": "U+1F169",
+    "html": "&#127337;"
+  },
+  {
+    "value": "🇦",
+    "name": "regional indicator symbol letter a",
+    "unicode": "U+1F1E6",
+    "html": "&#127462;"
+  },
+  {
+    "value": "🇧",
+    "name": "regional indicator symbol letter b",
+    "unicode": "U+1F1E7",
+    "html": "&#127463;"
+  },
+  {
+    "value": "🇨",
+    "name": "regional indicator symbol letter c",
+    "unicode": "U+1F1E8",
+    "html": "&#127464;"
+  },
+  {
+    "value": "🇩",
+    "name": "regional indicator symbol letter d",
+    "unicode": "U+1F1E9",
+    "html": "&#127465;"
+  },
+  {
+    "value": "🇪",
+    "name": "regional indicator symbol letter e",
+    "unicode": "U+1F1EA",
+    "html": "&#127466;"
+  },
+  {
+    "value": "🇫",
+    "name": "regional indicator symbol letter f",
+    "unicode": "U+1F1EB",
+    "html": "&#127467;"
+  },
+  {
+    "value": "🇬",
+    "name": "regional indicator symbol letter g",
+    "unicode": "U+1F1EC",
+    "html": "&#127468;"
+  },
+  {
+    "value": "🇭",
+    "name": "regional indicator symbol letter h",
+    "unicode": "U+1F1ED",
+    "html": "&#127469;"
+  },
+  {
+    "value": "🇮",
+    "name": "regional indicator symbol letter i",
+    "unicode": "U+1F1EE",
+    "html": "&#127470;"
+  },
+  {
+    "value": "🇯",
+    "name": "regional indicator symbol letter j",
+    "unicode": "U+1F1EF",
+    "html": "&#127471;"
+  },
+  {
+    "value": "🇰",
+    "name": "regional indicator symbol letter k",
+    "unicode": "U+1F1F0",
+    "html": "&#127472;"
+  },
+  {
+    "value": "🇱",
+    "name": "regional indicator symbol letter l",
+    "unicode": "U+1F1F1",
+    "html": "&#127473;"
+  },
+  {
+    "value": "🇲",
+    "name": "regional indicator symbol letter m",
+    "unicode": "U+1F1F2",
+    "html": "&#127474;"
+  },
+  {
+    "value": "🇳",
+    "name": "regional indicator symbol letter n",
+    "unicode": "U+1F1F3",
+    "html": "&#127475;"
+  },
+  {
+    "value": "🇴",
+    "name": "regional indicator symbol letter o",
+    "unicode": "U+1F1F4",
+    "html": "&#127476;"
+  },
+  {
+    "value": "🇵",
+    "name": "regional indicator symbol letter p",
+    "unicode": "U+1F1F5",
+    "html": "&#127477;"
+  },
+  {
+    "value": "🇶",
+    "name": "regional indicator symbol letter q",
+    "unicode": "U+1F1F6",
+    "html": "&#127478;"
+  },
+  {
+    "value": "🇷",
+    "name": "regional indicator symbol letter r",
+    "unicode": "U+1F1F7",
+    "html": "&#127479;"
+  },
+  {
+    "value": "🇸",
+    "name": "regional indicator symbol letter s",
+    "unicode": "U+1F1F8",
+    "html": "&#127480;"
+  },
+  {
+    "value": "🇹",
+    "name": "regional indicator symbol letter t",
+    "unicode": "U+1F1F9",
+    "html": "&#127481;"
+  },
+  {
+    "value": "🇺",
+    "name": "regional indicator symbol letter u",
+    "unicode": "U+1F1FA",
+    "html": "&#127482;"
+  },
+  {
+    "value": "🇻",
+    "name": "regional indicator symbol letter v",
+    "unicode": "U+1F1FB",
+    "html": "&#127483;"
+  },
+  {
+    "value": "🇼",
+    "name": "regional indicator symbol letter w",
+    "unicode": "U+1F1FC",
+    "html": "&#127484;"
+  },
+  {
+    "value": "🇽",
+    "name": "regional indicator symbol letter x",
+    "unicode": "U+1F1FD",
+    "html": "&#127485;"
+  },
+  {
+    "value": "🇾",
+    "name": "regional indicator symbol letter y",
+    "unicode": "U+1F1FE",
+    "html": "&#127486;"
+  },
+  {
+    "value": "🇿",
+    "name": "regional indicator symbol letter z",
+    "unicode": "U+1F1FF",
+    "html": "&#127487;"
+  },
+  {
+    "value": "🅏",
+    "name": "squared wc",
+    "unicode": "U+1F14F",
+    "html": "&#127311;"
+  },
+  {
+    "value": "🆏",
+    "name": "negative squared wc",
+    "unicode": "U+1F18F",
+    "html": "&#127375;"
+  },
+  {
+    "value": "🀀",
+    "name": "Mahjong Tile East Wind",
+    "unicode": "U+1F000",
+    "html": ""
+  },
+  {
+    "value": "🀁",
+    "name": "Mahjong Tile South Wind",
+    "unicode": "U+1F001",
+    "html": ""
+  },
+  {
+    "value": "🀂",
+    "name": "Mahjong Tile West Wind",
+    "unicode": "U+1F002",
+    "html": ""
+  },
+  {
+    "value": "🀃",
+    "name": "Mahjong Tile North Wind",
+    "unicode": "U+1F003",
+    "html": ""
+  },
+  {
+    "value": "🀄",
+    "name": "Mahjong Tile Red Dragon",
+    "unicode": "U+1F004",
+    "html": ""
+  },
+  {
+    "value": "🀅",
+    "name": "Mahjong Tile Green Dragon",
+    "unicode": "U+1F005",
+    "html": ""
+  },
+  {
+    "value": "🀆",
+    "name": "Mahjong Tile White Dragon",
+    "unicode": "U+1F006",
+    "html": ""
+  },
+  {
+    "value": "🀇",
+    "name": "Mahjong Tile One of Characters",
+    "unicode": "U+1F007",
+    "html": ""
+  },
+  {
+    "value": "🀈",
+    "name": "Mahjong Tile Two of Characters",
+    "unicode": "U+1F008",
+    "html": ""
+  },
+  {
+    "value": "🀉",
+    "name": "Mahjong Tile Three of Characters",
+    "unicode": "U+1F009",
+    "html": ""
+  },
+  {
+    "value": "🀊",
+    "name": "Mahjong Tile Four of Characters",
+    "unicode": "U+1F00A",
+    "html": ""
+  },
+  {
+    "value": "🀋",
+    "name": "Mahjong Tile Five of Characters",
+    "unicode": "U+1F00B",
+    "html": ""
+  },
+  {
+    "value": "🀌",
+    "name": "Mahjong Tile Six of Characters",
+    "unicode": "U+1F00C",
+    "html": ""
+  },
+  {
+    "value": "🀍",
+    "name": "Mahjong Tile Seven of Characters",
+    "unicode": "U+1F00D",
+    "html": ""
+  },
+  {
+    "value": "🀎",
+    "name": "Mahjong Tile Eight of Characters",
+    "unicode": "U+1F00E",
+    "html": ""
+  },
+  {
+    "value": "🀏",
+    "name": "Mahjong Tile Nine of Characters",
+    "unicode": "U+1F00F",
+    "html": ""
+  },
+  {
+    "value": "🀐",
+    "name": "Mahjong Tile One of Bamboos",
+    "unicode": "U+1F010",
+    "html": ""
+  },
+  {
+    "value": "🀑",
+    "name": "Mahjong Tile Two of Bamboos",
+    "unicode": "U+1F011",
+    "html": ""
+  },
+  {
+    "value": "🀒",
+    "name": "Mahjong Tile Three of Bamboos",
+    "unicode": "U+1F012",
+    "html": ""
+  },
+  {
+    "value": "🀓",
+    "name": "Mahjong Tile Four of Bamboos",
+    "unicode": "U+1F013",
+    "html": ""
+  },
+  {
+    "value": "🀔",
+    "name": "Mahjong Tile Five of Bamboos",
+    "unicode": "U+1F014",
+    "html": ""
+  },
+  {
+    "value": "🀕",
+    "name": "Mahjong Tile Six of Bamboos",
+    "unicode": "U+1F015",
+    "html": ""
+  },
+  {
+    "value": "🀖",
+    "name": "Mahjong Tile Seven of Bamboos",
+    "unicode": "U+1F016",
+    "html": ""
+  },
+  {
+    "value": "🀗",
+    "name": "Mahjong Tile Eight of Bamboos",
+    "unicode": "U+1F017",
+    "html": ""
+  },
+  {
+    "value": "🀘",
+    "name": "Mahjong Tile Nine of Bamboos",
+    "unicode": "U+1F018",
+    "html": ""
+  },
+  {
+    "value": "🀙",
+    "name": "Mahjong Tile One of Circles",
+    "unicode": "U+1F019",
+    "html": ""
+  },
+  {
+    "value": "🀚",
+    "name": "Mahjong Tile Two of Circles",
+    "unicode": "U+1F01A",
+    "html": ""
+  },
+  {
+    "value": "🀛",
+    "name": "Mahjong Tile Three of Circles",
+    "unicode": "U+1F01B",
+    "html": ""
+  },
+  {
+    "value": "🀜",
+    "name": "Mahjong Tile Four of Circles",
+    "unicode": "U+1F01C",
+    "html": ""
+  },
+  {
+    "value": "🀝",
+    "name": "Mahjong Tile Five of Circles",
+    "unicode": "U+1F01D",
+    "html": ""
+  },
+  {
+    "value": "🀞",
+    "name": "Mahjong Tile Six of Circles",
+    "unicode": "U+1F01E",
+    "html": ""
+  },
+  {
+    "value": "🀟",
+    "name": "Mahjong Tile Seven of Circles",
+    "unicode": "U+1F01F",
+    "html": ""
+  },
+  {
+    "value": "🀠",
+    "name": "Mahjong Tile Eight of Circles",
+    "unicode": "U+1F020",
+    "html": ""
+  },
+  {
+    "value": "🀡",
+    "name": "Mahjong Tile Nine of Circles",
+    "unicode": "U+1F021",
+    "html": ""
+  },
+  {
+    "value": "🀢",
+    "name": "Mahjong Tile Plum",
+    "unicode": "U+1F022",
+    "html": ""
+  },
+  {
+    "value": "🀣",
+    "name": "Mahjong Tile Orchid",
+    "unicode": "U+1F023",
+    "html": ""
+  },
+  {
+    "value": "🀤",
+    "name": "Mahjong Tile Bamboo",
+    "unicode": "U+1F024",
+    "html": ""
+  },
+  {
+    "value": "🀥",
+    "name": "Mahjong Tile Chrysanthemum",
+    "unicode": "U+1F025",
+    "html": ""
+  },
+  {
+    "value": "🀦",
+    "name": "Mahjong Tile Spring",
+    "unicode": "U+1F026",
+    "html": ""
+  },
+  {
+    "value": "🀧",
+    "name": "Mahjong Tile Summer",
+    "unicode": "U+1F027",
+    "html": ""
+  },
+  {
+    "value": "🀨",
+    "name": "Mahjong Tile Autumn",
+    "unicode": "U+1F028",
+    "html": ""
+  },
+  {
+    "value": "🀩",
+    "name": "Mahjong Tile Winter",
+    "unicode": "U+1F029",
+    "html": ""
+  },
+  {
+    "value": "🀪",
+    "name": "Mahjong Tile Joker",
+    "unicode": "U+1F02A",
+    "html": ""
+  },
+  {
+    "value": "🀫",
+    "name": "Mahjong Tile Back",
+    "unicode": "U+1F02B",
+    "html": ""
+  },
+  {
+    "value": "🀰",
+    "name": "Domino Tile Horizontal Back",
+    "unicode": "U+1F030",
+    "html": ""
+  },
+  {
+    "value": "🀱",
+    "name": "Domino Tile Horizontal-00-00",
+    "unicode": "U+1F031",
+    "html": ""
+  },
+  {
+    "value": "🀲",
+    "name": "Domino Tile Horizontal-00-01",
+    "unicode": "U+1F032",
+    "html": ""
+  },
+  {
+    "value": "🀳",
+    "name": "Domino Tile Horizontal-00-02",
+    "unicode": "U+1F033",
+    "html": ""
+  },
+  {
+    "value": "🀴",
+    "name": "Domino Tile Horizontal-00-03",
+    "unicode": "U+1F034",
+    "html": ""
+  },
+  {
+    "value": "🀵",
+    "name": "Domino Tile Horizontal-00-04",
+    "unicode": "U+1F035",
+    "html": ""
+  },
+  {
+    "value": "🀶",
+    "name": "Domino Tile Horizontal-00-05",
+    "unicode": "U+1F036",
+    "html": ""
+  },
+  {
+    "value": "🀷",
+    "name": "Domino Tile Horizontal-00-06",
+    "unicode": "U+1F037",
+    "html": ""
+  },
+  {
+    "value": "🀸",
+    "name": "Domino Tile Horizontal-01-00",
+    "unicode": "U+1F038",
+    "html": ""
+  },
+  {
+    "value": "🀹",
+    "name": "Domino Tile Horizontal-01-01",
+    "unicode": "U+1F039",
+    "html": ""
+  },
+  {
+    "value": "🀺",
+    "name": "Domino Tile Horizontal-01-02",
+    "unicode": "U+1F03A",
+    "html": ""
+  },
+  {
+    "value": "🀻",
+    "name": "Domino Tile Horizontal-01-03",
+    "unicode": "U+1F03B",
+    "html": ""
+  },
+  {
+    "value": "🀼",
+    "name": "Domino Tile Horizontal-01-04",
+    "unicode": "U+1F03C",
+    "html": ""
+  },
+  {
+    "value": "🀽",
+    "name": "Domino Tile Horizontal-01-05",
+    "unicode": "U+1F03D",
+    "html": ""
+  },
+  {
+    "value": "🀾",
+    "name": "Domino Tile Horizontal-01-06",
+    "unicode": "U+1F03E",
+    "html": ""
+  },
+  {
+    "value": "🀿",
+    "name": "Domino Tile Horizontal-02-00",
+    "unicode": "U+1F03F",
+    "html": ""
+  },
+  {
+    "value": "🁀",
+    "name": "Domino Tile Horizontal-02-01",
+    "unicode": "U+1F040",
+    "html": ""
+  },
+  {
+    "value": "🁁",
+    "name": "Domino Tile Horizontal-02-02",
+    "unicode": "U+1F041",
+    "html": ""
+  },
+  {
+    "value": "🁂",
+    "name": "Domino Tile Horizontal-02-03",
+    "unicode": "U+1F042",
+    "html": ""
+  },
+  {
+    "value": "🁃",
+    "name": "Domino Tile Horizontal-02-04",
+    "unicode": "U+1F043",
+    "html": ""
+  },
+  {
+    "value": "🁄",
+    "name": "Domino Tile Horizontal-02-05",
+    "unicode": "U+1F044",
+    "html": ""
+  },
+  {
+    "value": "🁅",
+    "name": "Domino Tile Horizontal-02-06",
+    "unicode": "U+1F045",
+    "html": ""
+  },
+  {
+    "value": "🁆",
+    "name": "Domino Tile Horizontal-03-00",
+    "unicode": "U+1F046",
+    "html": ""
+  },
+  {
+    "value": "🁇",
+    "name": "Domino Tile Horizontal-03-01",
+    "unicode": "U+1F047",
+    "html": ""
+  },
+  {
+    "value": "🁈",
+    "name": "Domino Tile Horizontal-03-02",
+    "unicode": "U+1F048",
+    "html": ""
+  },
+  {
+    "value": "🁉",
+    "name": "Domino Tile Horizontal-03-03",
+    "unicode": "U+1F049",
+    "html": ""
+  },
+  {
+    "value": "🁊",
+    "name": "Domino Tile Horizontal-03-04",
+    "unicode": "U+1F04A",
+    "html": ""
+  },
+  {
+    "value": "🁋",
+    "name": "Domino Tile Horizontal-03-05",
+    "unicode": "U+1F04B",
+    "html": ""
+  },
+  {
+    "value": "🁌",
+    "name": "Domino Tile Horizontal-03-06",
+    "unicode": "U+1F04C",
+    "html": ""
+  },
+  {
+    "value": "🁍",
+    "name": "Domino Tile Horizontal-04-00",
+    "unicode": "U+1F04D",
+    "html": ""
+  },
+  {
+    "value": "🁎",
+    "name": "Domino Tile Horizontal-04-01",
+    "unicode": "U+1F04E",
+    "html": ""
+  },
+  {
+    "value": "🁏",
+    "name": "Domino Tile Horizontal-04-02",
+    "unicode": "U+1F04F",
+    "html": ""
+  },
+  {
+    "value": "🁐",
+    "name": "Domino Tile Horizontal-04-03",
+    "unicode": "U+1F050",
+    "html": ""
+  },
+  {
+    "value": "🁑",
+    "name": "Domino Tile Horizontal-04-04",
+    "unicode": "U+1F051",
+    "html": ""
+  },
+  {
+    "value": "🁒",
+    "name": "Domino Tile Horizontal-04-05",
+    "unicode": "U+1F052",
+    "html": ""
+  },
+  {
+    "value": "🁓",
+    "name": "Domino Tile Horizontal-04-06",
+    "unicode": "U+1F053",
+    "html": ""
+  },
+  {
+    "value": "🁔",
+    "name": "Domino Tile Horizontal-05-00",
+    "unicode": "U+1F054",
+    "html": ""
+  },
+  {
+    "value": "🁕",
+    "name": "Domino Tile Horizontal-05-01",
+    "unicode": "U+1F055",
+    "html": ""
+  },
+  {
+    "value": "🁖",
+    "name": "Domino Tile Horizontal-05-02",
+    "unicode": "U+1F056",
+    "html": ""
+  },
+  {
+    "value": "🁗",
+    "name": "Domino Tile Horizontal-05-03",
+    "unicode": "U+1F057",
+    "html": ""
+  },
+  {
+    "value": "🁘",
+    "name": "Domino Tile Horizontal-05-04",
+    "unicode": "U+1F058",
+    "html": ""
+  },
+  {
+    "value": "🁙",
+    "name": "Domino Tile Horizontal-05-05",
+    "unicode": "U+1F059",
+    "html": ""
+  },
+  {
+    "value": "🁚",
+    "name": "Domino Tile Horizontal-05-06",
+    "unicode": "U+1F05A",
+    "html": ""
+  },
+  {
+    "value": "🁛",
+    "name": "Domino Tile Horizontal-06-00",
+    "unicode": "U+1F05B",
+    "html": ""
+  },
+  {
+    "value": "🁜",
+    "name": "Domino Tile Horizontal-06-01",
+    "unicode": "U+1F05C",
+    "html": ""
+  },
+  {
+    "value": "🁝",
+    "name": "Domino Tile Horizontal-06-02",
+    "unicode": "U+1F05D",
+    "html": ""
+  },
+  {
+    "value": "🁞",
+    "name": "Domino Tile Horizontal-06-03",
+    "unicode": "U+1F05E",
+    "html": ""
+  },
+  {
+    "value": "🁟",
+    "name": "Domino Tile Horizontal-06-04",
+    "unicode": "U+1F05F",
+    "html": ""
+  },
+  {
+    "value": "🁠",
+    "name": "Domino Tile Horizontal-06-05",
+    "unicode": "U+1F060",
+    "html": ""
+  },
+  {
+    "value": "🁡",
+    "name": "Domino Tile Horizontal-06-06",
+    "unicode": "U+1F061",
+    "html": ""
+  },
+  {
+    "value": "🁢",
+    "name": "Domino Tile Vertical Back",
+    "unicode": "U+1F062",
+    "html": ""
+  },
+  {
+    "value": "🂠",
+    "name": "Playing Card Back",
+    "unicode": "U+1F0A0",
+    "html": ""
+  },
+  {
+    "value": "🂡",
+    "name": "Playing Card Ace of Spades",
+    "unicode": "U+1F0A1",
+    "html": ""
+  },
+  {
+    "value": "🂢",
+    "name": "Playing Card Two of Spades",
+    "unicode": "U+1F0A2",
+    "html": ""
+  },
+  {
+    "value": "🂣",
+    "name": "Playing Card Three of Spades",
+    "unicode": "U+1F0A3",
+    "html": ""
+  },
+  {
+    "value": "🂤",
+    "name": "Playing Card Four of Spades",
+    "unicode": "U+1F0A4",
+    "html": ""
+  },
+  {
+    "value": "🂥",
+    "name": "Playing Card Five of Spades",
+    "unicode": "U+1F0A5",
+    "html": ""
+  },
+  {
+    "value": "🂦",
+    "name": "Playing Card Six of Spades",
+    "unicode": "U+1F0A6",
+    "html": ""
+  },
+  {
+    "value": "🂧",
+    "name": "Playing Card Seven of Spades",
+    "unicode": "U+1F0A7",
+    "html": ""
+  },
+  {
+    "value": "🂨",
+    "name": "Playing Card Eight of Spades",
+    "unicode": "U+1F0A8",
+    "html": ""
+  },
+  {
+    "value": "🂩",
+    "name": "Playing Card Nine of Spades",
+    "unicode": "U+1F0A9",
+    "html": ""
+  },
+  {
+    "value": "🂪",
+    "name": "Playing Card Ten of Spades",
+    "unicode": "U+1F0AA",
+    "html": ""
+  },
+  {
+    "value": "🂫",
+    "name": "Playing Card Jack of Spades",
+    "unicode": "U+1F0AB",
+    "html": ""
+  },
+  {
+    "value": "🂬",
+    "name": "Playing Card Knight of Spades",
+    "unicode": "U+1F0AC",
+    "html": ""
+  },
+  {
+    "value": "🂭",
+    "name": "Playing Card Queen of Spades",
+    "unicode": "U+1F0AD",
+    "html": ""
+  },
+  {
+    "value": "🂮",
+    "name": "Playing Card King of Spades",
+    "unicode": "U+1F0AE",
+    "html": ""
+  },
+  {
+    "value": "🂱",
+    "name": "Playing Card Ace of Hearts",
+    "unicode": "U+1F0B1",
+    "html": ""
+  },
+  {
+    "value": "🂲",
+    "name": "Playing Card Two of Hearts",
+    "unicode": "U+1F0B2",
+    "html": ""
+  },
+  {
+    "value": "🂳",
+    "name": "Playing Card Three of Hearts",
+    "unicode": "U+1F0B3",
+    "html": ""
+  },
+  {
+    "value": "🂴",
+    "name": "Playing Card Four of Hearts",
+    "unicode": "U+1F0B4",
+    "html": ""
+  },
+  {
+    "value": "🂵",
+    "name": "Playing Card Five of Hearts",
+    "unicode": "U+1F0B5",
+    "html": ""
+  },
+  {
+    "value": "🂶",
+    "name": "Playing Card Six of Hearts",
+    "unicode": "U+1F0B6",
+    "html": ""
+  },
+  {
+    "value": "🂷",
+    "name": "Playing Card Seven of Hearts",
+    "unicode": "U+1F0B7",
+    "html": ""
+  },
+  {
+    "value": "🂸",
+    "name": "Playing Card Eight of Hearts",
+    "unicode": "U+1F0B8",
+    "html": ""
+  },
+  {
+    "value": "🂹",
+    "name": "Playing Card Nine of Hearts",
+    "unicode": "U+1F0B9",
+    "html": ""
+  },
+  {
+    "value": "🂺",
+    "name": "Playing Card Ten of Hearts",
+    "unicode": "U+1F0BA",
+    "html": ""
+  },
+  {
+    "value": "🂻",
+    "name": "Playing Card Jack of Hearts",
+    "unicode": "U+1F0BB",
+    "html": ""
+  },
+  {
+    "value": "🂼",
+    "name": "Playing Card Knight of Hearts",
+    "unicode": "U+1F0BC",
+    "html": ""
+  },
+  {
+    "value": "🂽",
+    "name": "Playing Card Queen of Hearts",
+    "unicode": "U+1F0BD",
+    "html": ""
+  },
+  {
+    "value": "🂾",
+    "name": "Playing Card King of Hearts",
+    "unicode": "U+1F0BE",
+    "html": ""
+  },
+  {
+    "value": "🂿",
+    "name": "Playing Card Red Joker",
+    "unicode": "U+1F0BF",
+    "html": ""
+  },
+  {
+    "value": "🃁",
+    "name": "Playing Card Ace of Diamonds",
+    "unicode": "U+1F0C1",
+    "html": ""
+  },
+  {
+    "value": "🃂",
+    "name": "Playing Card Two of Diamonds",
+    "unicode": "U+1F0C2",
+    "html": ""
+  },
+  {
+    "value": "🃃",
+    "name": "Playing Card Three of Diamonds",
+    "unicode": "U+1F0C3",
+    "html": ""
+  },
+  {
+    "value": "🃄",
+    "name": "Playing Card Four of Diamonds",
+    "unicode": "U+1F0C4",
+    "html": ""
+  },
+  {
+    "value": "🃅",
+    "name": "Playing Card Five of Diamonds",
+    "unicode": "U+1F0C5",
+    "html": ""
+  },
+  {
+    "value": "🃆",
+    "name": "Playing Card Six of Diamonds",
+    "unicode": "U+1F0C6",
+    "html": ""
+  },
+  {
+    "value": "🃇",
+    "name": "Playing Card Seven of Diamonds",
+    "unicode": "U+1F0C7",
+    "html": ""
+  },
+  {
+    "value": "🃈",
+    "name": "Playing Card Eight of Diamonds",
+    "unicode": "U+1F0C8",
+    "html": ""
+  },
+  {
+    "value": "🃉",
+    "name": "Playing Card Nine of Diamonds",
+    "unicode": "U+1F0C9",
+    "html": ""
+  },
+  {
+    "value": "🃊",
+    "name": "Playing Card Ten of Diamonds",
+    "unicode": "U+1F0CA",
+    "html": ""
+  },
+  {
+    "value": "🃋",
+    "name": "Playing Card Jack of Diamonds",
+    "unicode": "U+1F0CB",
+    "html": ""
+  },
+  {
+    "value": "🃌",
+    "name": "Playing Card Knight of Diamonds",
+    "unicode": "U+1F0CC",
+    "html": ""
+  },
+  {
+    "value": "🃍",
+    "name": "Playing Card Queen of Diamonds",
+    "unicode": "U+1F0CD",
+    "html": ""
+  },
+  {
+    "value": "🃎",
+    "name": "Playing Card King of Diamonds",
+    "unicode": "U+1F0CE",
+    "html": ""
+  },
+  {
+    "value": "🃏",
+    "name": "Playing Card Black Joker",
+    "unicode": "U+1F0CF",
+    "html": ""
+  },
+  {
+    "value": "🃑",
+    "name": "Playing Card Ace of Clubs",
+    "unicode": "U+1F0D1",
+    "html": ""
+  },
+  {
+    "value": "🃒",
+    "name": "Playing Card Two of Clubs",
+    "unicode": "U+1F0D2",
+    "html": ""
+  },
+  {
+    "value": "🃓",
+    "name": "Playing Card Three of Clubs",
+    "unicode": "U+1F0D3",
+    "html": ""
+  },
+  {
+    "value": "🃔",
+    "name": "Playing Card Four of Clubs",
+    "unicode": "U+1F0D4",
+    "html": ""
+  },
+  {
+    "value": "🃕",
+    "name": "Playing Card Five of Clubs",
+    "unicode": "U+1F0D5",
+    "html": ""
+  },
+  {
+    "value": "🃖",
+    "name": "Playing Card Six of Clubs",
+    "unicode": "U+1F0D6",
+    "html": ""
+  },
+  {
+    "value": "🃗",
+    "name": "Playing Card Seven of Clubs",
+    "unicode": "U+1F0D7",
+    "html": ""
+  },
+  {
+    "value": "🃘",
+    "name": "Playing Card Eight of Clubs",
+    "unicode": "U+1F0D8",
+    "html": ""
+  },
+  {
+    "value": "🃙",
+    "name": "Playing Card Nine of Clubs",
+    "unicode": "U+1F0D9",
+    "html": ""
+  },
+  {
+    "value": "🃚",
+    "name": "Playing Card Ten of Clubs",
+    "unicode": "U+1F0DA",
+    "html": ""
+  },
+  {
+    "value": "🃛",
+    "name": "Playing Card Jack of Clubs",
+    "unicode": "U+1F0DB",
+    "html": ""
+  },
+  {
+    "value": "🃜",
+    "name": "Playing Card Knight of Clubs",
+    "unicode": "U+1F0DC",
+    "html": ""
+  },
+  {
+    "value": "🃝",
+    "name": "Playing Card Queen of Clubs",
+    "unicode": "U+1F0DD",
+    "html": ""
+  },
+  {
+    "value": "🃞",
+    "name": "Playing Card King of Clubs",
+    "unicode": "U+1F0DE",
+    "html": ""
+  },
+  {
+    "value": "🃟",
+    "name": "Playing Card White Joker",
+    "unicode": "U+1F0DF",
+    "html": ""
+  },
+  {
+    "value": "🃠",
+    "name": "Playing Card Fool",
+    "unicode": "U+1F0E0",
+    "html": ""
+  },
+  {
+    "value": "🃡",
+    "name": "Playing Card Trump-1",
+    "unicode": "U+1F0E1",
+    "html": ""
+  },
+  {
+    "value": "🃢",
+    "name": "Playing Card Trump-2",
+    "unicode": "U+1F0E2",
+    "html": ""
+  },
+  {
+    "value": "🃣",
+    "name": "Playing Card Trump-3",
+    "unicode": "U+1F0E3",
+    "html": ""
+  },
+  {
+    "value": "🃤",
+    "name": "Playing Card Trump-4",
+    "unicode": "U+1F0E4",
+    "html": ""
+  },
+  {
+    "value": "🃥",
+    "name": "Playing Card Trump-5",
+    "unicode": "U+1F0E5",
+    "html": ""
+  },
+  {
+    "value": "🃦",
+    "name": "Playing Card Trump-6",
+    "unicode": "U+1F0E6",
+    "html": ""
+  },
+  {
+    "value": "🃧",
+    "name": "Playing Card Trump-7",
+    "unicode": "U+1F0E7",
+    "html": ""
+  },
+  {
+    "value": "🃨",
+    "name": "Playing Card Trump-8",
+    "unicode": "U+1F0E8",
+    "html": ""
+  },
+  {
+    "value": "🃩",
+    "name": "Playing Card Trump-9",
+    "unicode": "U+1F0E9",
+    "html": ""
+  },
+  {
+    "value": "🃪",
+    "name": "Playing Card Trump-10",
+    "unicode": "U+1F0EA",
+    "html": ""
+  },
+  {
+    "value": "🃫",
+    "name": "Playing Card Trump-11",
+    "unicode": "U+1F0EB",
+    "html": ""
+  },
+  {
+    "value": "🃬",
+    "name": "Playing Card Trump-12",
+    "unicode": "U+1F0EC",
+    "html": ""
+  },
+  {
+    "value": "🃭",
+    "name": "Playing Card Trump-13",
+    "unicode": "U+1F0ED",
+    "html": ""
+  },
+  {
+    "value": "🃮",
+    "name": "Playing Card Trump-14",
+    "unicode": "U+1F0EE",
+    "html": ""
+  },
+  {
+    "value": "🃯",
+    "name": "Playing Card Trump-15",
+    "unicode": "U+1F0EF",
+    "html": ""
+  },
+  {
+    "value": "🃰",
+    "name": "Playing Card Trump-16",
+    "unicode": "U+1F0F0",
+    "html": ""
+  },
+  {
+    "value": "🃱",
+    "name": "Playing Card Trump-17",
+    "unicode": "U+1F0F1",
+    "html": ""
+  },
+  {
+    "value": "🃲",
+    "name": "Playing Card Trump-18",
+    "unicode": "U+1F0F2",
+    "html": ""
+  },
+  {
+    "value": "🃳",
+    "name": "Playing Card Trump-19",
+    "unicode": "U+1F0F3",
+    "html": ""
+  },
+  {
+    "value": "🃴",
+    "name": "Playing Card Trump-20",
+    "unicode": "U+1F0F4",
+    "html": ""
+  },
+  {
+    "value": "🃵",
+    "name": "Playing Card Trump-21",
+    "unicode": "U+1F0F5",
+    "html": ""
+  }
+]

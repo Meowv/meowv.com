@@ -1,0 +1,842 @@
+[
+  {
+    "value": "0",
+    "name": "zero",
+    "unicode": "U+00030",
+    "html": "&#48;"
+  },
+  {
+    "value": "1",
+    "name": "one",
+    "unicode": "U+00031",
+    "html": "&#49;"
+  },
+  {
+    "value": "2",
+    "name": "two",
+    "unicode": "U+00032",
+    "html": "&#50;"
+  },
+  {
+    "value": "3",
+    "name": "three",
+    "unicode": "U+00033",
+    "html": "&#51;"
+  },
+  {
+    "value": "4",
+    "name": "four",
+    "unicode": "U+00034",
+    "html": "&#52;"
+  },
+  {
+    "value": "5",
+    "name": "five",
+    "unicode": "U+00035",
+    "html": "&#53;"
+  },
+  {
+    "value": "6",
+    "name": "six",
+    "unicode": "U+00036",
+    "html": "&#54;"
+  },
+  {
+    "value": "7",
+    "name": "seven",
+    "unicode": "U+00037",
+    "html": "&#55;"
+  },
+  {
+    "value": "8",
+    "name": "eight",
+    "unicode": "U+00038",
+    "html": "&#56;"
+  },
+  {
+    "value": "9",
+    "name": "nine",
+    "unicode": "U+00039",
+    "html": "&#57;"
+  },
+  {
+    "value": "¼",
+    "name": "fraction one quarter",
+    "unicode": "U+000BC",
+    "html": "&frac14;"
+  },
+  {
+    "value": "½",
+    "name": "fraction one half",
+    "unicode": "U+000BD",
+    "html": "&frac12;"
+  },
+  {
+    "value": "¾",
+    "name": "fraction three quarters",
+    "unicode": "U+000BE",
+    "html": "&frac34;"
+  },
+  {
+    "value": "⅐",
+    "name": "vulgar fraction one seventh",
+    "unicode": "U+02150",
+    "html": "&#8528;"
+  },
+  {
+    "value": "⅑",
+    "name": "vulgar fraction one ninth",
+    "unicode": "U+02151",
+    "html": "&#8529;"
+  },
+  {
+    "value": "⅒",
+    "name": "vulgar fraction one tenth",
+    "unicode": "U+02152",
+    "html": "&#8530;"
+  },
+  {
+    "value": "⅓",
+    "name": "vulgar fraction one third",
+    "unicode": "U+02153",
+    "html": "&frac13;"
+  },
+  {
+    "value": "⅔",
+    "name": "vulgar fraction two thirds",
+    "unicode": "U+02154",
+    "html": "&frac23;"
+  },
+  {
+    "value": "⅕",
+    "name": "vulgar fraction one fifth",
+    "unicode": "U+02155",
+    "html": "&frac15;"
+  },
+  {
+    "value": "⅖",
+    "name": "vulgar fraction two fifths",
+    "unicode": "U+02156",
+    "html": "&frac25;"
+  },
+  {
+    "value": "⅗",
+    "name": "vulgar fraction three fifths",
+    "unicode": "U+02157",
+    "html": "&frac35;"
+  },
+  {
+    "value": "⅘",
+    "name": "vulgar fraction four fifths",
+    "unicode": "U+02158",
+    "html": "&frac45;"
+  },
+  {
+    "value": "⅙",
+    "name": "vulgar fraction one sixth",
+    "unicode": "U+02159",
+    "html": "&frac16;"
+  },
+  {
+    "value": "⅚",
+    "name": "vulgar fraction five sixths",
+    "unicode": "U+0215A",
+    "html": "&frac56;"
+  },
+  {
+    "value": "⅛",
+    "name": "vulgar fraction one eighth",
+    "unicode": "U+0215B",
+    "html": "&frac18;"
+  },
+  {
+    "value": "⅜",
+    "name": "vulgar fraction three eighths",
+    "unicode": "U+0215C",
+    "html": "&frac38;"
+  },
+  {
+    "value": "⅝",
+    "name": "vulgar fraction five eighths",
+    "unicode": "U+0215D",
+    "html": "&frac58;"
+  },
+  {
+    "value": "⅞",
+    "name": "vulgar fraction seven eighths",
+    "unicode": "U+0215E",
+    "html": "&frac78;"
+  },
+  {
+    "value": "⅟",
+    "name": "fraction numerator one",
+    "unicode": "U+0215F",
+    "html": "&#8543;"
+  },
+  {
+    "value": "Ⅰ",
+    "name": "roman numeral one",
+    "unicode": "U+02160",
+    "html": "&#8544;"
+  },
+  {
+    "value": "Ⅱ",
+    "name": "roman numeral two",
+    "unicode": "U+02161",
+    "html": "&#8545;"
+  },
+  {
+    "value": "Ⅲ",
+    "name": "roman numeral three",
+    "unicode": "U+02162",
+    "html": "&#8546;"
+  },
+  {
+    "value": "Ⅳ",
+    "name": "roman numeral four",
+    "unicode": "U+02163",
+    "html": "&#8547;"
+  },
+  {
+    "value": "Ⅴ",
+    "name": "roman numeral five",
+    "unicode": "U+02164",
+    "html": "&#8548;"
+  },
+  {
+    "value": "Ⅵ",
+    "name": "roman numeral six",
+    "unicode": "U+02165",
+    "html": "&#8549;"
+  },
+  {
+    "value": "Ⅶ",
+    "name": "roman numeral seven",
+    "unicode": "U+02166",
+    "html": "&#8550;"
+  },
+  {
+    "value": "Ⅷ",
+    "name": "roman numeral eight",
+    "unicode": "U+02167",
+    "html": "&#8551;"
+  },
+  {
+    "value": "Ⅸ",
+    "name": "roman numeral nine",
+    "unicode": "U+02168",
+    "html": "&#8552;"
+  },
+  {
+    "value": "Ⅹ",
+    "name": "roman numeral ten",
+    "unicode": "U+02169",
+    "html": "&#8553;"
+  },
+  {
+    "value": "Ⅺ",
+    "name": "roman numeral eleven",
+    "unicode": "U+0216A",
+    "html": "&#8554;"
+  },
+  {
+    "value": "Ⅻ",
+    "name": "roman numeral twelve",
+    "unicode": "U+0216B",
+    "html": "&#8555;"
+  },
+  {
+    "value": "Ⅼ",
+    "name": "roman numeral fifty",
+    "unicode": "U+0216C",
+    "html": "&#8556;"
+  },
+  {
+    "value": "Ⅽ",
+    "name": "roman numeral one hundred",
+    "unicode": "U+0216D",
+    "html": "&#8557;"
+  },
+  {
+    "value": "Ⅾ",
+    "name": "roman numeral five hundred",
+    "unicode": "U+0216E",
+    "html": "&#8558;"
+  },
+  {
+    "value": "Ⅿ",
+    "name": "roman numeral one thousand",
+    "unicode": "U+0216F",
+    "html": "&#8559;"
+  },
+  {
+    "value": "ⅰ",
+    "name": "small roman numeral one",
+    "unicode": "U+02170",
+    "html": "&#8560;"
+  },
+  {
+    "value": "ⅱ",
+    "name": "small roman numeral two",
+    "unicode": "U+02171",
+    "html": "&#8561;"
+  },
+  {
+    "value": "ⅲ",
+    "name": "small roman numeral three",
+    "unicode": "U+02172",
+    "html": "&#8562;"
+  },
+  {
+    "value": "ⅳ",
+    "name": "small roman numeral four",
+    "unicode": "U+02173",
+    "html": "&#8563;"
+  },
+  {
+    "value": "ⅴ",
+    "name": "small roman numeral five",
+    "unicode": "U+02174",
+    "html": "&#8564;"
+  },
+  {
+    "value": "ⅵ",
+    "name": "small roman numeral six",
+    "unicode": "U+02175",
+    "html": "&#8565;"
+  },
+  {
+    "value": "ⅶ",
+    "name": "small roman numeral seven",
+    "unicode": "U+02176",
+    "html": "&#8566;"
+  },
+  {
+    "value": "ⅷ",
+    "name": "small roman numeral eight",
+    "unicode": "U+02177",
+    "html": "&#8567;"
+  },
+  {
+    "value": "ⅸ",
+    "name": "small roman numeral nine",
+    "unicode": "U+02178",
+    "html": "&#8568;"
+  },
+  {
+    "value": "ⅹ",
+    "name": "small roman numeral ten",
+    "unicode": "U+02179",
+    "html": "&#8569;"
+  },
+  {
+    "value": "ⅺ",
+    "name": "small roman numeral eleven",
+    "unicode": "U+0217A",
+    "html": "&#8570;"
+  },
+  {
+    "value": "ⅻ",
+    "name": "small roman numeral twelve",
+    "unicode": "U+0217B",
+    "html": "&#8571;"
+  },
+  {
+    "value": "ⅼ",
+    "name": "small roman numeral fifty",
+    "unicode": "U+0217C",
+    "html": "&#8572;"
+  },
+  {
+    "value": "ⅽ",
+    "name": "small roman numeral one hundred",
+    "unicode": "U+0217D",
+    "html": "&#8573;"
+  },
+  {
+    "value": "ⅾ",
+    "name": "small roman numeral five hundred",
+    "unicode": "U+0217E",
+    "html": "&#8574;"
+  },
+  {
+    "value": "ⅿ",
+    "name": "small roman numeral one thousand",
+    "unicode": "U+0217F",
+    "html": "&#8575;"
+  },
+  {
+    "value": "ↀ",
+    "name": "roman numeral one thousand c d",
+    "unicode": "U+02180",
+    "html": "&#8576;"
+  },
+  {
+    "value": "ↁ",
+    "name": "roman numeral five thousand",
+    "unicode": "U+02181",
+    "html": "&#8577;"
+  },
+  {
+    "value": "ↂ",
+    "name": "roman numeral ten thousand",
+    "unicode": "U+02182",
+    "html": "&#8578;"
+  },
+  {
+    "value": "Ↄ",
+    "name": "roman numeral reversed one hundred",
+    "unicode": "U+02183",
+    "html": "&#8579;"
+  },
+  {
+    "value": "ↄ",
+    "name": "latin small letter reversed c",
+    "unicode": "U+02184",
+    "html": "&#8580;"
+  },
+  {
+    "value": "ↅ",
+    "name": "roman numeral six late form",
+    "unicode": "U+02185",
+    "html": "&#8581;"
+  },
+  {
+    "value": "ↆ",
+    "name": "roman numeral fifty early form",
+    "unicode": "U+02186",
+    "html": "&#8582;"
+  },
+  {
+    "value": "↉",
+    "name": "vulgar fraction zero thirds",
+    "unicode": "U+02189",
+    "html": "&#8585;"
+  },
+  {
+    "value": "🄀",
+    "name": "digit zero full stop",
+    "unicode": "U+1F100",
+    "html": "&#127232;"
+  },
+  {
+    "value": "⒈",
+    "name": "digit one full stop",
+    "unicode": "U+2488",
+    "html": ""
+  },
+  {
+    "value": "⒉",
+    "name": "digit two full stop",
+    "unicode": "U+2489",
+    "html": ""
+  },
+  {
+    "value": "⒊",
+    "name": "digit three full stop",
+    "unicode": "U+248A",
+    "html": ""
+  },
+  {
+    "value": "⒋",
+    "name": "digit four full stop",
+    "unicode": "U+248B",
+    "html": ""
+  },
+  {
+    "value": "⒌",
+    "name": "digit five full stop",
+    "unicode": "U+248C",
+    "html": ""
+  },
+  {
+    "value": "⒍",
+    "name": "digit six full stop",
+    "unicode": "U+248D",
+    "html": ""
+  },
+  {
+    "value": "⒎",
+    "name": "digit seven full stop",
+    "unicode": "U+248E",
+    "html": ""
+  },
+  {
+    "value": "⒏",
+    "name": "digit eight full stop",
+    "unicode": "U+248F",
+    "html": ""
+  },
+  {
+    "value": "⒐",
+    "name": "digit nine full stop",
+    "unicode": "U+2490",
+    "html": ""
+  },
+  {
+    "value": "⒑",
+    "name": "number ten full stop",
+    "unicode": "U+2491",
+    "html": ""
+  },
+  {
+    "value": "⒒",
+    "name": "number eleven full stop",
+    "unicode": "U+2492",
+    "html": ""
+  },
+  {
+    "value": "⒓",
+    "name": "number twelve full stop",
+    "unicode": "U+2493",
+    "html": ""
+  },
+  {
+    "value": "⒔",
+    "name": "number thirteen full stop",
+    "unicode": "U+2494",
+    "html": ""
+  },
+  {
+    "value": "⒕",
+    "name": "number fourteen full stop",
+    "unicode": "U+2495",
+    "html": ""
+  },
+  {
+    "value": "⒖",
+    "name": "number fifteen full stop",
+    "unicode": "U+2496",
+    "html": ""
+  },
+  {
+    "value": "⒗",
+    "name": "number sixteen full stop",
+    "unicode": "U+2497",
+    "html": ""
+  },
+  {
+    "value": "⒘",
+    "name": "number seventeen full stop",
+    "unicode": "U+2498",
+    "html": ""
+  },
+  {
+    "value": "⒙",
+    "name": "number eighteen full stop",
+    "unicode": "U+2499",
+    "html": ""
+  },
+  {
+    "value": "⒚",
+    "name": "number nineteen full stop",
+    "unicode": "U+249A",
+    "html": ""
+  },
+  {
+    "value": "⒛",
+    "name": "number twenty full stop",
+    "unicode": "U+249B",
+    "html": ""
+  },
+  {
+    "value": "🄁",
+    "name": "digit zero comma",
+    "unicode": "U+1F101",
+    "html": "&#127233;"
+  },
+  {
+    "value": "🄂",
+    "name": "digit one comma",
+    "unicode": "U+1F102",
+    "html": "&#127234;"
+  },
+  {
+    "value": "🄃",
+    "name": "digit two comma",
+    "unicode": "U+1F103",
+    "html": "&#127235;"
+  },
+  {
+    "value": "🄄",
+    "name": "digit three comma",
+    "unicode": "U+1F104",
+    "html": "&#127236;"
+  },
+  {
+    "value": "🄅",
+    "name": "digit four comma",
+    "unicode": "U+1F105",
+    "html": "&#127237;"
+  },
+  {
+    "value": "🄆",
+    "name": "digit five comma",
+    "unicode": "U+1F106",
+    "html": "&#127238;"
+  },
+  {
+    "value": "🄇",
+    "name": "digit six comma",
+    "unicode": "U+1F107",
+    "html": "&#127239;"
+  },
+  {
+    "value": "🄈",
+    "name": "digit seven comma",
+    "unicode": "U+1F108",
+    "html": "&#127240;"
+  },
+  {
+    "value": "🄉",
+    "name": "digit eight comma",
+    "unicode": "U+1F109",
+    "html": "&#127241;"
+  },
+  {
+    "value": "🄊",
+    "name": "digit nine comma",
+    "unicode": "U+1F10A",
+    "html": "&#127242;"
+  },
+  {
+    "value": "⑴",
+    "name": "parenthesized digit one",
+    "unicode": "U+2474",
+    "html": ""
+  },
+  {
+    "value": "⑵",
+    "name": "parenthesized digit two",
+    "unicode": "U+2475",
+    "html": ""
+  },
+  {
+    "value": "⑶",
+    "name": "parenthesized digit three",
+    "unicode": "U+2476",
+    "html": ""
+  },
+  {
+    "value": "⑷",
+    "name": "parenthesized digit four",
+    "unicode": "U+2477",
+    "html": ""
+  },
+  {
+    "value": "⑸",
+    "name": "parenthesized digit five",
+    "unicode": "U+2478",
+    "html": ""
+  },
+  {
+    "value": "⑹",
+    "name": "parenthesized digit six",
+    "unicode": "U+2479",
+    "html": ""
+  },
+  {
+    "value": "⑺",
+    "name": "parenthesized digit seven",
+    "unicode": "U+247A",
+    "html": ""
+  },
+  {
+    "value": "⑻",
+    "name": "parenthesized digit eight",
+    "unicode": "U+247B",
+    "html": ""
+  },
+  {
+    "value": "⑼",
+    "name": "parenthesized digit nine",
+    "unicode": "U+247C",
+    "html": ""
+  },
+  {
+    "value": "⑽",
+    "name": "parenthesized number ten",
+    "unicode": "U+247D",
+    "html": ""
+  },
+  {
+    "value": "⑾",
+    "name": "parenthesized number eleven",
+    "unicode": "U+247E",
+    "html": ""
+  },
+  {
+    "value": "⑿",
+    "name": "parenthesized number twelve",
+    "unicode": "U+247F",
+    "html": ""
+  },
+  {
+    "value": "⒀",
+    "name": "parenthesized number thirteen",
+    "unicode": "U+2480",
+    "html": ""
+  },
+  {
+    "value": "⒁",
+    "name": "parenthesized number fourteen",
+    "unicode": "U+2481",
+    "html": ""
+  },
+  {
+    "value": "⒂",
+    "name": "parenthesized number fifteen",
+    "unicode": "U+2482",
+    "html": ""
+  },
+  {
+    "value": "⒃",
+    "name": "parenthesized number sixteen",
+    "unicode": "U+2483",
+    "html": ""
+  },
+  {
+    "value": "⒄",
+    "name": "parenthesized number seventeen",
+    "unicode": "U+2484",
+    "html": ""
+  },
+  {
+    "value": "⒅",
+    "name": "parenthesized number eighteen",
+    "unicode": "U+2485",
+    "html": ""
+  },
+  {
+    "value": "⒆",
+    "name": "parenthesized number nineteen",
+    "unicode": "U+2486",
+    "html": ""
+  },
+  {
+    "value": "⒇",
+    "name": "parenthesized number twenty",
+    "unicode": "U+2487",
+    "html": ""
+  },
+  {
+    "value": "⓪",
+    "name": "circled digit zero",
+    "unicode": "U+24EA",
+    "html": ""
+  },
+  {
+    "value": "①",
+    "name": "circled digit one",
+    "unicode": "U+2460",
+    "html": ""
+  },
+  {
+    "value": "②",
+    "name": "circled digit two",
+    "unicode": "U+2461",
+    "html": ""
+  },
+  {
+    "value": "③",
+    "name": "circled digit three",
+    "unicode": "U+2462",
+    "html": ""
+  },
+  {
+    "value": "④",
+    "name": "circled digit four",
+    "unicode": "U+2463",
+    "html": ""
+  },
+  {
+    "value": "⑤",
+    "name": "circled digit five",
+    "unicode": "U+2464",
+    "html": ""
+  },
+  {
+    "value": "⑥",
+    "name": "circled digit six",
+    "unicode": "U+2465",
+    "html": ""
+  },
+  {
+    "value": "⑦",
+    "name": "circled digit seven",
+    "unicode": "U+2466",
+    "html": ""
+  },
+  {
+    "value": "⑧",
+    "name": "circled digit eight",
+    "unicode": "U+2467",
+    "html": ""
+  },
+  {
+    "value": "⑨",
+    "name": "circled digit nine",
+    "unicode": "U+2468",
+    "html": ""
+  },
+  {
+    "value": "⓵",
+    "name": "double circled digit one",
+    "unicode": "U+24F5",
+    "html": ""
+  },
+  {
+    "value": "⓶",
+    "name": "double circled digit two",
+    "unicode": "U+24F6",
+    "html": ""
+  },
+  {
+    "value": "⓷",
+    "name": "double circled digit three",
+    "unicode": "U+24F7",
+    "html": ""
+  },
+  {
+    "value": "⓸",
+    "name": "double circled digit four",
+    "unicode": "U+24F8",
+    "html": ""
+  },
+  {
+    "value": "⓹",
+    "name": "double circled digit five",
+    "unicode": "U+24F9",
+    "html": ""
+  },
+  {
+    "value": "⓺",
+    "name": "double circled digit six",
+    "unicode": "U+24FA",
+    "html": ""
+  },
+  {
+    "value": "⓻",
+    "name": "double circled digit seven",
+    "unicode": "U+24FB",
+    "html": ""
+  },
+  {
+    "value": "⓼",
+    "name": "double circled digit eight",
+    "unicode": "U+24FC",
+    "html": ""
+  },
+  {
+    "value": "⓽",
+    "name": "double circled digit nine",
+    "unicode": "U+24FD",
+    "html": ""
+  },
+  {
+    "value": "⓾",
+    "name": "double circled number ten",
+    "unicode": "U+24FE",
+    "html": ""
+  }
+]

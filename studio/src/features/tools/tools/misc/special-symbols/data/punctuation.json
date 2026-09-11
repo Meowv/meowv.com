@@ -1,0 +1,722 @@
+[
+  {
+    "value": "!",
+    "name": "exclamation mark",
+    "unicode": "U+00021",
+    "html": "&excl;"
+  },
+  {
+    "value": "",
+    "name": "quotation mark",
+    "unicode": "U+00022",
+    "html": "&quot;"
+  },
+  {
+    "value": "#",
+    "name": "number sign",
+    "unicode": "U+00023",
+    "html": "&num;"
+  },
+  {
+    "value": "%",
+    "name": "percent sign",
+    "unicode": "U+00025",
+    "html": "&percnt;"
+  },
+  {
+    "value": "&",
+    "name": "ampersand",
+    "unicode": "U+00026",
+    "html": "&amp;"
+  },
+  {
+    "value": "'",
+    "name": "apostrophe",
+    "unicode": "U+00027",
+    "html": "&apos;"
+  },
+  {
+    "value": "(",
+    "name": "left parenthesis",
+    "unicode": "U+00028",
+    "html": "&lpar;"
+  },
+  {
+    "value": ")",
+    "name": "right parenthesis",
+    "unicode": "U+00029",
+    "html": "&rpar;"
+  },
+  {
+    "value": "*",
+    "name": "asterisk",
+    "unicode": "U+0002A",
+    "html": "&ast;"
+  },
+  {
+    "value": ",",
+    "name": "comma",
+    "unicode": "U+0002C",
+    "html": "&comma;"
+  },
+  {
+    "value": ".",
+    "name": "period",
+    "unicode": "U+0002E",
+    "html": "&period;"
+  },
+  {
+    "value": "/",
+    "name": "slash",
+    "unicode": "U+0002F",
+    "html": "&sol;"
+  },
+  {
+    "value": ":",
+    "name": "colon",
+    "unicode": "U+0003A",
+    "html": "&colon;"
+  },
+  {
+    "value": ";",
+    "name": "semicolon",
+    "unicode": "U+0003B",
+    "html": "&semi;"
+  },
+  {
+    "value": "?",
+    "name": "question mark",
+    "unicode": "U+0003F",
+    "html": "&quest;"
+  },
+  {
+    "value": "@",
+    "name": "at symbol",
+    "unicode": "U+00040",
+    "html": "&commat;"
+  },
+  {
+    "value": "[",
+    "name": "left bracket",
+    "unicode": "U+0005B",
+    "html": "&lbrack;"
+  },
+  {
+    "value": "\\\\",
+    "name": "backslash",
+    "unicode": "U+0005C",
+    "html": "&bsol;"
+  },
+  {
+    "value": "]",
+    "name": "right bracket",
+    "unicode": "U+0005D",
+    "html": "&rbrack;"
+  },
+  {
+    "value": "^",
+    "name": "caret",
+    "unicode": "U+0005E",
+    "html": "&Hat;"
+  },
+  {
+    "value": "_",
+    "name": "underscore",
+    "unicode": "U+0005F",
+    "html": "&lowbar;"
+  },
+  {
+    "value": "`",
+    "name": "grave accent",
+    "unicode": "U+00060",
+    "html": "&grave;"
+  },
+  {
+    "value": "{",
+    "name": "left brace",
+    "unicode": "U+0007B",
+    "html": "&lbrace;"
+  },
+  {
+    "value": "|",
+    "name": "vertical bar",
+    "unicode": "U+0007C",
+    "html": "&vert;"
+  },
+  {
+    "value": "}",
+    "name": "right brace",
+    "unicode": "U+0007D",
+    "html": "&rbrace;"
+  },
+  {
+    "value": "~",
+    "name": "tilde",
+    "unicode": "U+0007E",
+    "html": "&tilde;"
+  },
+  {
+    "value": "",
+    "name": "non-breaking space",
+    "unicode": "U+000A0",
+    "html": "&nbsp;"
+  },
+  {
+    "value": "¡",
+    "name": "inverted exclamation mark",
+    "unicode": "U+000A1",
+    "html": "&iexcl;"
+  },
+  {
+    "value": "¦",
+    "name": "broken vertical bar",
+    "unicode": "U+000A6",
+    "html": "&brvbar;"
+  },
+  {
+    "value": "§",
+    "name": "section sign",
+    "unicode": "U+000A7",
+    "html": "&sect;"
+  },
+  {
+    "value": "¨",
+    "name": "umlaut",
+    "unicode": "U+000A8",
+    "html": "&uml;"
+  },
+  {
+    "value": "©",
+    "name": "copyright sign",
+    "unicode": "U+000A9",
+    "html": "&copy;"
+  },
+  {
+    "value": "ª",
+    "name": "feminine ordinal indicator",
+    "unicode": "U+000AA",
+    "html": "&ordf;"
+  },
+  {
+    "value": "«",
+    "name": "double left-pointing angle quotation mark",
+    "unicode": "U+000AB",
+    "html": "&laquo;"
+  },
+  {
+    "value": "¬",
+    "name": "not sign",
+    "unicode": "U+000AC",
+    "html": "&not;"
+  },
+  {
+    "value": "®",
+    "name": "registered trade mark sign",
+    "unicode": "U+000AE",
+    "html": "&reg;"
+  },
+  {
+    "value": "¯",
+    "name": "spacing macron",
+    "unicode": "U+000AF",
+    "html": "&macr;"
+  },
+  {
+    "value": "²",
+    "name": "superscript two",
+    "unicode": "U+000B2",
+    "html": "&sup2;"
+  },
+  {
+    "value": "³",
+    "name": "superscript three",
+    "unicode": "U+000B3",
+    "html": "&sup3;"
+  },
+  {
+    "value": "´",
+    "name": "acute accent",
+    "unicode": "U+000B4",
+    "html": "&acute;"
+  },
+  {
+    "value": "µ",
+    "name": "micro sign",
+    "unicode": "U+000B5",
+    "html": "&micro;"
+  },
+  {
+    "value": "¶",
+    "name": "paragraph sign",
+    "unicode": "U+000B6",
+    "html": "&para;"
+  },
+  {
+    "value": "·",
+    "name": "middle dot",
+    "unicode": "U+000B7",
+    "html": "&middot;"
+  },
+  {
+    "value": "¸",
+    "name": "spacing cedilla",
+    "unicode": "U+000B8",
+    "html": "&cedil;"
+  },
+  {
+    "value": "¹",
+    "name": "superscript one",
+    "unicode": "U+000B9",
+    "html": "&sup1;"
+  },
+  {
+    "value": "º",
+    "name": "masculine ordinal indicator",
+    "unicode": "U+000BA",
+    "html": "&ordm;"
+  },
+  {
+    "value": "»",
+    "name": "double right-pointing angle quotation mark",
+    "unicode": "U+000BB",
+    "html": "&raquo;"
+  },
+  {
+    "value": "¿",
+    "name": "inverted question mark",
+    "unicode": "U+000BF",
+    "html": "&iquest;"
+  },
+  {
+    "value": "‐",
+    "name": "hyphen",
+    "unicode": "U+02010",
+    "html": "&hyphen;"
+  },
+  {
+    "value": "‑",
+    "name": "non-breaking hyphen",
+    "unicode": "U+02011",
+    "html": "&#8209;"
+  },
+  {
+    "value": "‒",
+    "name": "figure dash",
+    "unicode": "U+02012",
+    "html": "&#8210;"
+  },
+  {
+    "value": "–",
+    "name": "en dash",
+    "unicode": "U+02013",
+    "html": "&ndash;"
+  },
+  {
+    "value": "—",
+    "name": "em dash",
+    "unicode": "U+02014",
+    "html": "&mdash;"
+  },
+  {
+    "value": "―",
+    "name": "horizontal bar",
+    "unicode": "U+02015",
+    "html": "&horbar;"
+  },
+  {
+    "value": "‖",
+    "name": "double vertical line",
+    "unicode": "U+02016",
+    "html": "&Vert;"
+  },
+  {
+    "value": "‗",
+    "name": "double low line",
+    "unicode": "U+02017",
+    "html": "&#8215;"
+  },
+  {
+    "value": "‘",
+    "name": "left single quotation mark",
+    "unicode": "U+02018",
+    "html": "&lsquo;"
+  },
+  {
+    "value": "’",
+    "name": "right single quotation mark",
+    "unicode": "U+02019",
+    "html": "&rsquo;"
+  },
+  {
+    "value": "‚",
+    "name": "single low-9 quotation mark",
+    "unicode": "U+0201A",
+    "html": "&sbquo;"
+  },
+  {
+    "value": "‛",
+    "name": "single high-reversed-9 quotation mark",
+    "unicode": "U+0201B",
+    "html": "&#8219;"
+  },
+  {
+    "value": "“",
+    "name": "left double quotation mark",
+    "unicode": "U+0201C",
+    "html": "&ldquo;"
+  },
+  {
+    "value": "”",
+    "name": "right double quotation mark",
+    "unicode": "U+0201D",
+    "html": "&rdquo;"
+  },
+  {
+    "value": "„",
+    "name": "double low-9 quotation mark",
+    "unicode": "U+0201E",
+    "html": "&bdquo;"
+  },
+  {
+    "value": "‟",
+    "name": "double high-reversed-9 quotation mark",
+    "unicode": "U+0201F",
+    "html": "&#8223;"
+  },
+  {
+    "value": "†",
+    "name": "dagger",
+    "unicode": "U+02020",
+    "html": "&dagger;"
+  },
+  {
+    "value": "‡",
+    "name": "double dagger",
+    "unicode": "U+02021",
+    "html": "&Dagger;"
+  },
+  {
+    "value": "•",
+    "name": "bullet",
+    "unicode": "U+02022",
+    "html": "&bull;"
+  },
+  {
+    "value": "‣",
+    "name": "triangular bullet",
+    "unicode": "U+02023",
+    "html": "&#8227;"
+  },
+  {
+    "value": "․",
+    "name": "one dot leader",
+    "unicode": "U+02024",
+    "html": "&#8228;"
+  },
+  {
+    "value": "‥",
+    "name": "two dot leader",
+    "unicode": "U+02025",
+    "html": "&nldr;"
+  },
+  {
+    "value": "…",
+    "name": "horizontal ellipsis",
+    "unicode": "U+02026",
+    "html": "&hellip;"
+  },
+  {
+    "value": "‧",
+    "name": "hyphenation point",
+    "unicode": "U+02027",
+    "html": "&#8231;"
+  },
+  {
+    "value": "‰",
+    "name": "per mille sign",
+    "unicode": "U+02030",
+    "html": "&permil;"
+  },
+  {
+    "value": "‱",
+    "name": "per ten thousand sign",
+    "unicode": "U+02031",
+    "html": "&pertenk;"
+  },
+  {
+    "value": "′",
+    "name": "prime",
+    "unicode": "U+02032",
+    "html": "&prime;"
+  },
+  {
+    "value": "″",
+    "name": "double prime",
+    "unicode": "U+02033",
+    "html": "&Prime;"
+  },
+  {
+    "value": "‴",
+    "name": "triple prime",
+    "unicode": "U+02034",
+    "html": "&tprime;"
+  },
+  {
+    "value": "‵",
+    "name": "reversed prime",
+    "unicode": "U+02035",
+    "html": "&bprime;"
+  },
+  {
+    "value": "‶",
+    "name": "reversed double prime",
+    "unicode": "U+02036",
+    "html": "&#8246;"
+  },
+  {
+    "value": "‷",
+    "name": "reversed triple prime",
+    "unicode": "U+02037",
+    "html": "&#8247;"
+  },
+  {
+    "value": "‸",
+    "name": "caret",
+    "unicode": "U+02038",
+    "html": "&#8248;"
+  },
+  {
+    "value": "‹",
+    "name": "single left-pointing angle quotation mark",
+    "unicode": "U+02039",
+    "html": "&lsaquo;"
+  },
+  {
+    "value": "›",
+    "name": "single right-pointing angle quotation mark",
+    "unicode": "U+0203A",
+    "html": "&rsaquo;"
+  },
+  {
+    "value": "※",
+    "name": "reference mark",
+    "unicode": "U+0203B",
+    "html": "&#8251;"
+  },
+  {
+    "value": "‼",
+    "name": "double exclamation mark",
+    "unicode": "U+0203C",
+    "html": "&#8252;"
+  },
+  {
+    "value": "‽",
+    "name": "interrobang",
+    "unicode": "U+0203D",
+    "html": "&#8253;"
+  },
+  {
+    "value": "‾",
+    "name": "overline",
+    "unicode": "U+0203E",
+    "html": "&oline;"
+  },
+  {
+    "value": "‿",
+    "name": "undertie",
+    "unicode": "U+0203F",
+    "html": "&#8255;"
+  },
+  {
+    "value": "⁀",
+    "name": "character tie",
+    "unicode": "U+02040",
+    "html": "&#8256;"
+  },
+  {
+    "value": "⁁",
+    "name": "caret insertion point",
+    "unicode": "U+02041",
+    "html": "&caret;"
+  },
+  {
+    "value": "⁂",
+    "name": "asterism",
+    "unicode": "U+02042",
+    "html": "&#8258;"
+  },
+  {
+    "value": "⁃",
+    "name": "hyphen bullet",
+    "unicode": "U+02043",
+    "html": "&hybull;"
+  },
+  {
+    "value": "⁄",
+    "name": "fraction slash",
+    "unicode": "U+02044",
+    "html": "&frasl;"
+  },
+  {
+    "value": "⁅",
+    "name": "left square bracket with quill",
+    "unicode": "U+02045",
+    "html": "&#8261;"
+  },
+  {
+    "value": "⁆",
+    "name": "right square bracket with quill",
+    "unicode": "U+02046",
+    "html": "&#8262;"
+  },
+  {
+    "value": "⁇",
+    "name": "double question mark",
+    "unicode": "U+02047",
+    "html": "&#8263;"
+  },
+  {
+    "value": "⁈",
+    "name": "question exclamation mark",
+    "unicode": "U+02048",
+    "html": "&#8264;"
+  },
+  {
+    "value": "⁉",
+    "name": "exclamation question mark",
+    "unicode": "U+02049",
+    "html": "&#8265;"
+  },
+  {
+    "value": "⁊",
+    "name": "tironian sign et",
+    "unicode": "U+0204A",
+    "html": "&#8266;"
+  },
+  {
+    "value": "⁋",
+    "name": "reversed pilcrow sign",
+    "unicode": "U+0204B",
+    "html": "&#8267;"
+  },
+  {
+    "value": "⁌",
+    "name": "black left bullet",
+    "unicode": "U+0204C",
+    "html": "&#8268;"
+  },
+  {
+    "value": "⁍",
+    "name": "black right bullet",
+    "unicode": "U+0204D",
+    "html": "&#8269;"
+  },
+  {
+    "value": "⁎",
+    "name": "low asterisk",
+    "unicode": "U+0204E",
+    "html": "&#8270;"
+  },
+  {
+    "value": "⁏",
+    "name": "reversed semicolon",
+    "unicode": "U+0204F",
+    "html": "&bsemi;"
+  },
+  {
+    "value": "⁐",
+    "name": "close up",
+    "unicode": "U+02050",
+    "html": "&#8272;"
+  },
+  {
+    "value": "⁑",
+    "name": "two asterisks aligned vertically",
+    "unicode": "U+02051",
+    "html": "&#8273;"
+  },
+  {
+    "value": "⁒",
+    "name": "commercial minus sign",
+    "unicode": "U+02052",
+    "html": "&#8274;"
+  },
+  {
+    "value": "⁓",
+    "name": "swung dash",
+    "unicode": "U+02053",
+    "html": "&#8275;"
+  },
+  {
+    "value": "⁔",
+    "name": "inverted undertie",
+    "unicode": "U+02054",
+    "html": "&#8276;"
+  },
+  {
+    "value": "⁕",
+    "name": "flower punctuation mark",
+    "unicode": "U+02055",
+    "html": "&#8277;"
+  },
+  {
+    "value": "⁖",
+    "name": "three dot punctuation",
+    "unicode": "U+02056",
+    "html": "&#8278;"
+  },
+  {
+    "value": "⁗",
+    "name": "quadruple prime",
+    "unicode": "U+02057",
+    "html": "&qprime;"
+  },
+  {
+    "value": "⁘",
+    "name": "four dot punctuation",
+    "unicode": "U+02058",
+    "html": "&#8280;"
+  },
+  {
+    "value": "⁙",
+    "name": "five dot punctuation",
+    "unicode": "U+02059",
+    "html": "&#8281;"
+  },
+  {
+    "value": "⁚",
+    "name": "two dot punctuation",
+    "unicode": "U+0205A",
+    "html": "&#8282;"
+  },
+  {
+    "value": "⁛",
+    "name": "four dot mark",
+    "unicode": "U+0205B",
+    "html": "&#8283;"
+  },
+  {
+    "value": "⁜",
+    "name": "dotted cross",
+    "unicode": "U+0205C",
+    "html": "&#8284;"
+  },
+  {
+    "value": "⁝",
+    "name": "tricolon",
+    "unicode": "U+0205D",
+    "html": "&#8285;"
+  },
+  {
+    "value": "⁞",
+    "name": "vertical four dots",
+    "unicode": "U+0205E",
+    "html": "&#8286;"
+  },
+  {
+    "value": "™",
+    "name": "trade mark sign",
+    "unicode": "U+02122",
+    "html": "&trade;"
+  }
+]
