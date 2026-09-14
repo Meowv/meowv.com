@@ -998,7 +998,11 @@ async function exportFile(format: MermaidExportFormat): Promise<void> {
     return;
   }
   const exportSvg = await renderExportSvg();
-  const blob = exportSvg ? await rasterizePreview('image/png', exportSvg) : null;
+  if (!exportSvg) {
+    shareMessage.value = 'PDF 生成失败：图表无法转换为图片。';
+    return;
+  }
+  const blob = await rasterizePreview('image/png', exportSvg);
   if (!blob) {
     shareMessage.value = 'PDF 生成失败：图表无法转换为图片。';
     return;
