@@ -5,6 +5,7 @@ import {
   ChevronsDown,
   ChevronRight,
   BrandAdobePhotoshop,
+  ChartDots3,
   Database,
   Chalkboard,
   File,
@@ -24,6 +25,7 @@ import {
 } from '@/features/markdown/icons';
 import { computed, inject, ref, watch } from 'vue';
 import type { DisplayTreeNode } from '@/features/markdown/stores/workspace';
+import { isMermaidFile } from '@/features/markdown/services/file-system';
 import { ACTIVE_TREE_PATH, EXPANDED_TREE_PATHS } from './tree-state';
 
 defineOptions({ name: 'FileTreeNode' });
@@ -83,6 +85,7 @@ const expanded = computed(() => expandedPaths.value.has(props.node.path));
 const active = computed(() => props.node.kind === 'file' && activePath.value === props.node.path);
 const unavailable = computed(() => props.node.kind === 'file' && props.node.category === 'other');
 const fileIcon = computed(() => {
+  if (isMermaidFile(props.node.name)) return ChartDots3;
   if (props.node.category === 'markdown') return FileText;
   if (props.node.category === 'draw') return Chalkboard;
   if (props.node.category === 'mind') return Sitemap;

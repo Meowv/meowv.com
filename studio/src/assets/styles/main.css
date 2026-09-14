@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
 @import './tokens.css';
+@import '../../features/mermaid/mermaid.css';
 
 *,
 *::before,
@@ -319,6 +320,9 @@ button {
 .nav-markdown {
   --nav-accent: var(--menu-markdown-foreground);
 }
+.nav-mermaid {
+  --nav-accent: var(--menu-mermaid-foreground);
+}
 .nav-pdf {
   --nav-accent: var(--menu-pdf-foreground);
 }
@@ -349,6 +353,7 @@ button {
 
 .nav-image svg,
 .nav-markdown svg,
+.nav-mermaid svg,
 .nav-pdf svg,
 .nav-office svg,
 .nav-books svg,
@@ -754,9 +759,9 @@ body.has-dialog-open {
 
 .home-shortcuts {
   display: grid;
-  max-width: 540px;
+  max-width: 720px;
   margin-top: 34px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -836,9 +841,19 @@ body.has-dialog-open {
   --shortcut-solid: var(--menu-markdown);
 }
 
+.home-shortcuts__item--mermaid {
+  --shortcut-accent: var(--menu-mermaid-foreground);
+  --shortcut-solid: var(--menu-mermaid);
+}
+
 .home-shortcuts__item--office {
   --shortcut-accent: var(--menu-office-foreground);
   --shortcut-solid: var(--menu-office);
+}
+
+.home-shortcuts__item--books {
+  --shortcut-accent: var(--menu-books-foreground);
+  --shortcut-solid: var(--menu-books);
 }
 
 .home-shortcuts__item--draw {
@@ -863,6 +878,11 @@ body.has-dialog-open {
 .home-shortcuts__item--tools {
   --shortcut-accent: var(--menu-tools-foreground);
   --shortcut-solid: var(--menu-tools);
+}
+
+.home-shortcuts__item--wallpapers {
+  --shortcut-accent: var(--menu-wallpapers-foreground);
+  --shortcut-solid: var(--menu-wallpapers);
 }
 
 .home-trust {
@@ -1747,7 +1767,7 @@ body.has-dialog-open {
     font-size: 42px;
   }
   .home-shortcuts {
-    max-width: 520px;
+    max-width: 720px;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .home-trust {

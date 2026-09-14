@@ -11,6 +11,7 @@ import {
 } from '@tabler/icons-vue';
 import { load as loadYaml } from 'js-yaml';
 import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import { receiveWindowFileHandoff, useFileHandoff } from '@/core/browser/file-handoff';
 import JsonVisualizationLoading from './JsonVisualizationLoading.vue';
 import ToolCodeEditor from './ToolCodeEditor.vue';
 
@@ -49,6 +50,8 @@ let statusTimer: number | undefined;
 let workspaceResizeObserver: ResizeObserver | null = null;
 let resizePointerId: number | null = null;
 let resizeHandle: HTMLElement | null = null;
+const { takeHandoff } = useFileHandoff();
+let stopWindowFileHandoff: (() => void) | null = null;
 
 const splitBounds = computed(() => {
   const width = workspaceWidth.value;
@@ -346,6 +349,16 @@ function removeComments(): void {
   }
 }
 
+async function loadHandoffFile(file: File): Promise<void> {
+  try {
+    jsonInput.value = await file.text();
+    showStatus(`已打开 ${file.name}`);
+    editorRef.value?.focus();
+  } catch {
+    showStatus('JSON 文件读取失败。', 'error');
+  }
+}
+
 async function copyJson(mode: 'minify' | 'escape'): Promise<void> {
   try {
     const minified = JSON.stringify(parseJson());
@@ -375,6 +388,14 @@ async function unfoldAll(): Promise<void> {
 }
 
 onMounted(() => {
+  const handoff = takeHandoff('json');
+  if (handoff) {
+    void loadHandoffFile(handoff.file);
+  }
+  stopWindowFileHandoff = receiveWindowFileHandoff('json', (file) => {
+    void loadHandoffFile(file);
+  });
+
   if (!workspaceLayoutRef.value) return;
   workspaceResizeObserver = new ResizeObserver(updateWorkspaceWidth);
   workspaceResizeObserver.observe(workspaceLayoutRef.value);
@@ -385,6 +406,8 @@ onBeforeUnmount(() => {
   window.clearTimeout(statusTimer);
   workspaceResizeObserver?.disconnect();
   workspaceResizeObserver = null;
+  stopWindowFileHandoff?.();
+  stopWindowFileHandoff = null;
   finishResize();
 });
 </script>

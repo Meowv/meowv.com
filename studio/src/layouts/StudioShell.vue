@@ -6,6 +6,7 @@ import {
   IconApps,
   IconBook,
   IconChalkboard,
+  IconChartDots3,
   IconMarkdown,
   IconMenu2,
   IconSitemap,
@@ -32,6 +33,7 @@ import {
 const route = useRoute();
 const isHomePage = computed(() => route.name === 'home');
 const isMarkdownPage = computed(() => route.meta.feature === 'markdown');
+const isMermaidPage = computed(() => route.meta.feature === 'mermaid');
 const isDrawPage = computed(() => route.meta.feature === 'draw');
 const isMindPage = computed(() => route.meta.feature === 'mind');
 const isNotesPage = computed(() => route.meta.feature === 'notes');
@@ -130,6 +132,7 @@ const toolsBackgroundStyle = computed<Record<string, string>>(() => {
 const isImmersive = computed(
   () =>
     route.meta.feature === 'markdown' ||
+    isMermaidPage.value ||
     isBooksPage.value ||
     isDrawPage.value ||
     isMindPage.value ||
@@ -138,6 +141,7 @@ const isImmersive = computed(
     workspaceActive.value,
 );
 const markdownHeaderVisible = ref(true);
+const mermaidHeaderVisible = ref(true);
 const booksHeaderVisible = ref(true);
 const toolsHeaderVisible = ref(true);
 const wallpapersHeaderVisible = ref(true);
@@ -151,9 +155,10 @@ function isDesktopViewport(): boolean {
 const MARKDOWN_HEADER_PREFERENCE_KEY = `${STORAGE_POLICY.namespace('markdown')}:header-collapsed`;
 const BOOKS_HEADER_PREFERENCE_KEY = `${STORAGE_POLICY.namespace('books')}:header-collapsed`;
 const TOOLS_HEADER_PREFERENCE_KEY = `${STORAGE_POLICY.preferences}:tools-header-collapsed`;
+const MERMAID_HEADER_PREFERENCE_KEY = `${STORAGE_POLICY.preferences}:mermaid-header-collapsed`;
 const WALLPAPERS_HEADER_PREFERENCE_KEY = `${STORAGE_POLICY.preferences}:wallpapers-header-collapsed`;
 const showHeader = computed(() =>
-  isDrawPage.value || isMindPage.value || isNotesPage.value
+  isDrawPage.value || isMindPage.value || isNotesPage.value || isMermaidPage.value
     ? false
     : isMarkdownPage.value
       ? markdownHeaderVisible.value
@@ -182,6 +187,23 @@ watch(
     if (!storageAvailable()) return;
     try {
       markdownHeaderVisible.value = localStorage.getItem(MARKDOWN_HEADER_PREFERENCE_KEY) !== 'true';
+    } catch {
+      // 本地偏好不可用时保留默认展开状态。
+    }
+  },
+  { immediate: true },
+);
+
+watch(
+  isMermaidPage,
+  (active) => {
+    if (!active) {
+      mermaidHeaderVisible.value = true;
+      return;
+    }
+    if (!storageAvailable()) return;
+    try {
+      mermaidHeaderVisible.value = localStorage.getItem(MERMAID_HEADER_PREFERENCE_KEY) !== 'true';
     } catch {
       // 本地偏好不可用时保留默认展开状态。
     }
@@ -251,6 +273,17 @@ function toggleMarkdownHeader(): void {
   try {
     if (markdownHeaderVisible.value) localStorage.removeItem(MARKDOWN_HEADER_PREFERENCE_KEY);
     else localStorage.setItem(MARKDOWN_HEADER_PREFERENCE_KEY, 'true');
+  } catch {
+    // 本地偏好不可用不影响当前页面切换。
+  }
+}
+
+function toggleMermaidHeader(): void {
+  mermaidHeaderVisible.value = !mermaidHeaderVisible.value;
+  if (!storageAvailable()) return;
+  try {
+    if (mermaidHeaderVisible.value) localStorage.removeItem(MERMAID_HEADER_PREFERENCE_KEY);
+    else localStorage.setItem(MERMAID_HEADER_PREFERENCE_KEY, 'true');
   } catch {
     // 本地偏好不可用不影响当前页面切换。
   }
@@ -345,6 +378,7 @@ const primaryRoutes = [
   { label: 'Office', to: '/office', icon: IconBrandOffice, className: 'nav-office' },
   { label: 'Books', to: '/books', icon: IconBook, className: 'nav-books' },
   { label: 'Whiteboard', to: '/draw', icon: IconChalkboard, className: 'nav-draw' },
+  { label: 'Mermaid', to: '/mermaid', icon: IconChartDots3, className: 'nav-mermaid' },
   { label: 'Mind', to: '/mind', icon: IconSitemap, className: 'nav-mind' },
   { label: 'Notes', to: '/notes', icon: IconNotes, className: 'nav-notes' },
   { label: 'Wallpapers', to: '/wallpapers', icon: IconWallpaper, className: 'nav-wallpapers' },
@@ -362,6 +396,8 @@ function isRouteActive(to: string): boolean {
     :class="{
       'studio-shell--immersive': isImmersive,
       'studio-shell--markdown': isMarkdownPage,
+      'studio-shell--mermaid': isMermaidPage,
+      'studio-shell--mermaid-header': isMermaidPage && mermaidHeaderVisible,
       'studio-shell--draw': isDrawPage,
       'studio-shell--mind': isMindPage,
       'studio-shell--notes': isNotesPage,
@@ -392,11 +428,13 @@ function isRouteActive(to: string): boolean {
       :key="
         isMarkdownPage
           ? 'markdown-header'
-          : isBooksPage
-            ? 'books-header'
-            : isWallpapersPage
-              ? 'wallpapers-header'
-              : 'default-header'
+          : isMermaidPage
+            ? 'mermaid-header'
+            : isBooksPage
+              ? 'books-header'
+              : isWallpapersPage
+                ? 'wallpapers-header'
+                : 'default-header'
       "
       class="studio-header"
     >
@@ -404,6 +442,7 @@ function isRouteActive(to: string): boolean {
         <StudioLogo />
         <strong v-if="isBooksPage" class="studio-header__feature-name">仿真书</strong>
         <strong v-else-if="isToolsPage" class="studio-header__feature-name">工具</strong>
+        <strong v-else-if="isMermaidPage" class="studio-header__feature-name">Mermaid</strong>
         <strong v-else-if="isWallpapersPage" class="studio-header__feature-name">壁纸</strong>
       </div>
       <button
@@ -441,6 +480,11 @@ function isRouteActive(to: string): boolean {
       v-if="isMarkdownPage"
       :visible="markdownHeaderVisible"
       @click="toggleMarkdownHeader"
+    />
+    <studio-header-toggle
+      v-if="isMermaidPage"
+      :visible="mermaidHeaderVisible"
+      @click="toggleMermaidHeader"
     />
     <studio-header-toggle
       v-if="isBooksPage"

@@ -24,6 +24,16 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/mermaid',
+    name: 'mermaid',
+    component: () => import('@/features/mermaid/MermaidPage.vue'),
+    meta: {
+      title: 'Mermaid · Meowv Studio',
+      description: '在浏览器本地编辑、预览、导出和分享 Mermaid 图表，内容始终留在你的设备上。',
+      feature: 'mermaid',
+    },
+  },
+  {
     path: '/office/:format(doc|xls|ppt|csv)?',
     name: 'office',
     component: () => import('@/features/office/OfficeStudioPage.vue'),

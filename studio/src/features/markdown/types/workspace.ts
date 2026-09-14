@@ -1,4 +1,10 @@
-export const MARKDOWN_EXTENSIONS = ['.md', '.markdown'] as const;
+export const MARKDOWN_EXTENSIONS = [
+  '.md',
+  '.markdown',
+  '.mmd',
+  '.mermaid',
+  '.mermaid.json',
+] as const;
 export const TEXT_EXTENSIONS = [
   '.txt',
   '.log',
@@ -104,7 +110,7 @@ export type WorkspaceNode = WorkspaceDirectoryNode | WorkspaceFileNode;
 
 export interface WorkspaceScanOptions {
   /**
-   * 文档树中展示的文件扩展名。默认仅为 .md 和 .markdown。
+   * 文档树中展示的文件扩展名。默认包含 Markdown 与 Mermaid 文档格式。
    */
   documentExtensions?: readonly string[];
   /**

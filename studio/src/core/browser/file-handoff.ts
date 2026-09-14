@@ -1,7 +1,18 @@
 import { shallowRef } from 'vue';
 
 export type StudioFeature =
-  'image' | 'psd' | 'markdown' | 'pdf' | 'office' | 'draw' | 'mind' | 'notes' | 'book' | 'sqlite';
+  | 'image'
+  | 'psd'
+  | 'markdown'
+  | 'mermaid'
+  | 'json'
+  | 'pdf'
+  | 'office'
+  | 'draw'
+  | 'mind'
+  | 'notes'
+  | 'book'
+  | 'sqlite';
 
 export interface FileHandoff {
   feature: StudioFeature;
@@ -41,6 +52,8 @@ const extensionGroups: Record<StudioFeature, Set<string>> = {
   ]),
   psd: new Set(['psd']),
   markdown: new Set(['markdown', 'md', 'mdown', 'mkd', 'txt']),
+  mermaid: new Set(['mmd', 'mermaid', 'mermaid.json']),
+  json: new Set<string>(),
   pdf: new Set(['pdf']),
   office: new Set(['csv', 'docx', 'pptx', 'xlsx']),
   draw: new Set(['excalidraw']),
@@ -51,7 +64,10 @@ const extensionGroups: Record<StudioFeature, Set<string>> = {
 };
 
 export function featureForFile(file: File): StudioFeature | null {
-  const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
+  const normalizedName = file.name.toLowerCase();
+  const extension = normalizedName.endsWith('.mermaid.json')
+    ? 'mermaid.json'
+    : (normalizedName.split('.').pop() ?? '');
   return (
     (Object.entries(extensionGroups) as Array<[StudioFeature, Set<string>]>).find(
       ([, extensions]) => extensions.has(extension),
@@ -64,6 +80,8 @@ export function routeForFeature(feature: StudioFeature, file?: File): string {
     image: '/tools/image-compress',
     psd: '/tools/psd-viewer',
     markdown: '/markdown',
+    mermaid: '/mermaid',
+    json: '/tools/json',
     pdf: '/tools/merge-pdf',
     office: '/office',
     draw: '/draw',

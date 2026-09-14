@@ -59,6 +59,32 @@ const CSS_RESOURCE_FUNCTION_PATTERN = /url\s*\(\s*([^)]*?)\s*\)/giu;
 const CSS_UNSAFE_CONSTRUCT_PATTERN =
   /@(?:font-face|import)\b|(?:-webkit-)?image-set\s*\(|cross-fade\s*\(/iu;
 const CSS_EXTERNAL_SCHEME_PATTERN = /(?:data|file|ftp|https?|javascript|blob):|\/\//iu;
+const XML_VOID_ELEMENT_PATTERN =
+  /<(br|hr|img|input|link|meta|source|track|wbr)(\s[^<>]*?)?\/?\s*>/giu;
+
+/**
+ * Mermaid places HTML fragments inside SVG foreignObject nodes.  Browsers
+ * commonly emit HTML-style void tags and named entities there, while the XML
+ * parser used by the sanitizer requires XML syntax.  Normalize only these
+ * harmless forms before parsing; the actual element and attribute filtering
+ * below remains the security boundary.
+ */
+function normalizeSvgMarkup(svg: string): string {
+  let normalized = svg
+    .replace(/&nbsp;/giu, '&#160;')
+    .replace(/<\/(br|hr|img|input|link|meta|source|track|wbr)\s*>/giu, '')
+    .replace(XML_VOID_ELEMENT_PATTERN, (match, name: string, attributes = '') => {
+      if (/\/\s*>$/u.test(match)) return match;
+      return `<${name}${attributes}/>`;
+    });
+  if (/\bxlink:/iu.test(normalized) && !/\bxmlns:xlink\s*=/iu.test(normalized)) {
+    normalized = normalized.replace(
+      /^(\s*<svg\b)([^>]*>)/iu,
+      '$1 xmlns:xlink="http://www.w3.org/1999/xlink"$2',
+    );
+  }
+  return normalized;
+}
 
 function isSafeFragmentReference(value: string): boolean {
   const normalized = value.trim();
@@ -147,7 +173,7 @@ export function sanitizeMermaidSvg(svg: string): string {
     throw new Error('当前环境无法安全解析 Mermaid SVG。');
   }
 
-  const parsed = new DOMParser().parseFromString(svg, 'image/svg+xml');
+  const parsed = new DOMParser().parseFromString(normalizeSvgMarkup(svg), 'image/svg+xml');
   if (parsed.querySelector('parsererror')) {
     throw new Error('Mermaid 返回了无效 SVG。');
   }

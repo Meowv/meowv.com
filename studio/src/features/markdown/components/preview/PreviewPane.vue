@@ -18,6 +18,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { preloadPdfExporter, type ExportExtension } from '@/features/markdown/services/export';
 import { sanitizeMermaidSvg } from '@/features/markdown/services/mermaid-security';
 import { useWorkspaceStore } from '@/features/markdown/stores/workspace';
+import { enqueueMermaidTask } from '@/core/mermaid/scheduler';
 
 const store = useWorkspaceStore();
 const previewRoot = ref<HTMLElement | null>(null);
@@ -141,44 +142,44 @@ async function renderMermaidBlocks(): Promise<void> {
   }
 
   try {
-    const mermaid = await loadMermaid();
-    if (sequence !== mermaidRenderSequence) {
-      return;
-    }
+    await enqueueMermaidTask(async () => {
+      const mermaid = await loadMermaid();
+      if (sequence !== mermaidRenderSequence) return;
 
-    mermaid.initialize({
-      startOnLoad: false,
-      securityLevel: 'strict',
-      suppressErrorRendering: true,
-      theme: store.resolvedTheme === 'dark' ? 'dark' : 'default',
-      fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif',
-    });
+      mermaid.initialize({
+        startOnLoad: false,
+        securityLevel: 'strict',
+        suppressErrorRendering: true,
+        theme: store.resolvedTheme === 'dark' ? 'dark' : 'default',
+        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif',
+      });
 
-    for (const [index, block] of blocks.entries()) {
-      if (sequence !== mermaidRenderSequence || !block.isConnected) {
-        return;
-      }
-
-      const encodedSource = block.dataset.mermaidSource;
-      if (!encodedSource) {
-        continue;
-      }
-
-      try {
-        const source = decodeURIComponent(encodedSource);
-        const result = await mermaid.render(`markdown-preview-${sequence}-${index}`, source);
+      for (const [index, block] of blocks.entries()) {
         if (sequence !== mermaidRenderSequence || !block.isConnected) {
           return;
         }
 
-        block.className = 'mermaid-block';
-        block.innerHTML = sanitizeMermaidSvg(result.svg);
-        result.bindFunctions?.(block);
-      } catch {
-        block.className = 'mermaid-block text-sm text-[var(--color-danger)]';
-        block.textContent = 'Mermaid 图表渲染失败，请检查图表语法。';
+        const encodedSource = block.dataset.mermaidSource;
+        if (!encodedSource) {
+          continue;
+        }
+
+        try {
+          const source = decodeURIComponent(encodedSource);
+          const result = await mermaid.render(`markdown-preview-${sequence}-${index}`, source);
+          if (sequence !== mermaidRenderSequence || !block.isConnected) {
+            return;
+          }
+
+          block.className = 'mermaid-block';
+          block.innerHTML = sanitizeMermaidSvg(result.svg);
+          result.bindFunctions?.(block);
+        } catch {
+          block.className = 'mermaid-block text-sm text-[var(--color-danger)]';
+          block.textContent = 'Mermaid 图表渲染失败，请检查图表语法。';
+        }
       }
-    }
+    });
   } catch {
     for (const block of blocks) {
       if (!block.isConnected) {

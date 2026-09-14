@@ -1,5 +1,6 @@
 import DOMPurify from 'dompurify';
 import type { Paragraph, ParagraphChild, Table } from 'docx';
+import { enqueueMermaidTask } from '@/core/mermaid/scheduler';
 
 export type ExportExtension = 'md' | 'html' | 'pdf' | 'png' | 'docx';
 
@@ -722,64 +723,60 @@ async function prepareRenderedExportHtml(
     };
   }
 
-  let mermaid: (typeof import('mermaid'))['default'];
-  try {
-    mermaidPromise ??= import('mermaid').then((module) => module.default);
-    mermaid = await mermaidPromise;
-    mermaid.initialize({
-      flowchart: { htmlLabels: false },
-      securityLevel: 'strict',
-      startOnLoad: false,
-      suppressErrorRendering: true,
-      theme: 'default',
-    });
-  } catch {
-    for (const block of blocks) {
-      block.replaceWith(mermaidErrorPlaceholder(parsed, 'Mermaid 图表渲染器不可用。'));
-    }
-    warnings.push('Mermaid 图表渲染器加载失败，图表未导出。');
-    const prepared = sanitizeExportHtml(root.innerHTML, {
-      allowMermaidStyles: true,
-    });
-    return {
-      html: prepared.html,
-      warnings: uniqueWarnings(warnings, prepared.warnings),
-    };
-  }
-
-  for (const block of blocks) {
-    const encodedSource = block.dataset.mermaidSource;
-    if (!encodedSource) {
-      block.replaceWith(mermaidErrorPlaceholder(parsed, 'Mermaid 图表缺少源数据。'));
-      warnings.push('Mermaid 图表缺少源数据，图表未导出。');
-      continue;
-    }
-
+  await enqueueMermaidTask(async () => {
+    let mermaid: (typeof import('mermaid'))['default'];
     try {
-      const source = sanitizeMermaidImageSources(decodeURIComponent(encodedSource), warnings);
-      mermaidExportSequence += 1;
-      const result = await mermaid.render(
-        `markdown-export-mermaid-${mermaidExportSequence}`,
-        source,
-      );
-      const sanitizedSvg = sanitizeRenderedMermaidSvg(result.svg);
-      const replacement = parsed.createElement('div');
-      replacement.className = 'mermaid-export';
-      replacement.setAttribute('role', 'img');
-      replacement.setAttribute('aria-label', 'Mermaid 图表');
-      replacement.innerHTML = sanitizedSvg;
-      for (const style of Array.from(replacement.querySelectorAll('svg style'))) {
-        style.setAttribute('data-mermaid-export-style', '');
-      }
-      if (!replacement.querySelector('svg')) {
-        throw new ExportError('RENDER_FAILED', 'Mermaid 未生成有效的 SVG 图表。');
-      }
-      block.replaceWith(replacement);
+      mermaidPromise ??= import('mermaid').then((module) => module.default);
+      mermaid = await mermaidPromise;
+      mermaid.initialize({
+        flowchart: { htmlLabels: false },
+        securityLevel: 'strict',
+        startOnLoad: false,
+        suppressErrorRendering: true,
+        theme: 'default',
+      });
     } catch {
-      block.replaceWith(mermaidErrorPlaceholder(parsed, 'Mermaid 图表渲染失败。'));
-      warnings.push('Mermaid 图表渲染失败，图表未导出。');
+      for (const block of blocks) {
+        block.replaceWith(mermaidErrorPlaceholder(parsed, 'Mermaid 图表渲染器不可用。'));
+      }
+      warnings.push('Mermaid 图表渲染器加载失败，图表未导出。');
+      return;
     }
-  }
+
+    for (const block of blocks) {
+      const encodedSource = block.dataset.mermaidSource;
+      if (!encodedSource) {
+        block.replaceWith(mermaidErrorPlaceholder(parsed, 'Mermaid 图表缺少源数据。'));
+        warnings.push('Mermaid 图表缺少源数据，图表未导出。');
+        continue;
+      }
+
+      try {
+        const source = sanitizeMermaidImageSources(decodeURIComponent(encodedSource), warnings);
+        mermaidExportSequence += 1;
+        const result = await mermaid.render(
+          `markdown-export-mermaid-${mermaidExportSequence}`,
+          source,
+        );
+        const sanitizedSvg = sanitizeRenderedMermaidSvg(result.svg);
+        const replacement = parsed.createElement('div');
+        replacement.className = 'mermaid-export';
+        replacement.setAttribute('role', 'img');
+        replacement.setAttribute('aria-label', 'Mermaid 图表');
+        replacement.innerHTML = sanitizedSvg;
+        for (const style of Array.from(replacement.querySelectorAll('svg style'))) {
+          style.setAttribute('data-mermaid-export-style', '');
+        }
+        if (!replacement.querySelector('svg')) {
+          throw new ExportError('RENDER_FAILED', 'Mermaid 未生成有效的 SVG 图表。');
+        }
+        block.replaceWith(replacement);
+      } catch {
+        block.replaceWith(mermaidErrorPlaceholder(parsed, 'Mermaid 图表渲染失败。'));
+        warnings.push('Mermaid 图表渲染失败，图表未导出。');
+      }
+    }
+  });
 
   const prepared = sanitizeExportHtml(root.innerHTML, {
     allowMermaidStyles: true,

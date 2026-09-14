@@ -3,7 +3,9 @@ import {
   Adjustments,
   Book,
   BrandAdobePhotoshop,
+  Braces,
   Chalkboard,
+  ChartDots3,
   ChevronsDown,
   Crop,
   Database,
@@ -34,6 +36,7 @@ import { ACTIVE_TREE_PATH, EXPANDED_TREE_PATHS } from './tree-state';
 import { useWorkspaceStore, type DisplayTreeNode } from '@/features/markdown/stores/workspace';
 import { createTypedMediaBlob } from '@/features/markdown/services/media';
 import { createImagePreviewBlob } from '@/features/markdown/services/image-preview';
+import { isMermaidFile } from '@/features/markdown/services/file-system';
 import { openWindowFileHandoff } from '@/core/browser/file-handoff';
 
 type DialogKind = 'new-file' | 'new-folder' | 'rename' | 'delete';
@@ -228,6 +231,14 @@ function openContextMenu(event: MouseEvent, node: DisplayTreeNode): void {
   });
 }
 
+function isMermaidDocumentNode(node: DisplayTreeNode): boolean {
+  return node.kind === 'file' && isMermaidFile(node.name);
+}
+
+function isJsonDocumentNode(node: DisplayTreeNode): boolean {
+  return node.kind === 'file' && (node.extension === '.json' || node.extension === '.jsonc');
+}
+
 async function getNodeFile(node: DisplayTreeNode): Promise<File | null> {
   if (node.kind !== 'file' || node.handle?.kind !== 'file') {
     return null;
@@ -236,6 +247,14 @@ async function getNodeFile(node: DisplayTreeNode): Promise<File | null> {
 }
 
 async function openNode(node: DisplayTreeNode): Promise<void> {
+  if (isMermaidDocumentNode(node)) {
+    await openMermaidInNewWindow(node);
+    return;
+  }
+  if (isJsonDocumentNode(node)) {
+    await openJsonInNewWindow(node);
+    return;
+  }
   if (node.category === 'markdown' || node.category === 'text') {
     await store.openDocument(node.path);
     return;
@@ -290,6 +309,60 @@ async function openNode(node: DisplayTreeNode): Promise<void> {
   }
   if (node.category === 'sqlite') {
     await openSqliteInNewWindow(node);
+  }
+}
+
+async function openMermaidInNewWindow(node: DisplayTreeNode): Promise<void> {
+  contextMenu.value = null;
+  const popup = globalThis.open('about:blank', '_blank');
+  if (!popup) {
+    store.notify('error', '无法打开 Mermaid', '浏览器阻止了新窗口，请允许本站打开弹出式窗口。');
+    return;
+  }
+  try {
+    if (!(await store.saveActiveDocument())) {
+      popup.close();
+      return;
+    }
+    const file = await getNodeFile(node);
+    if (!file) {
+      throw new Error('无法读取 Mermaid 文件。');
+    }
+    closeImagePreview();
+    closeMediaPreview();
+    openWindowFileHandoff(popup, '/mermaid', 'mermaid', file);
+  } catch (error) {
+    popup.close();
+    store.notify('error', '无法打开 Mermaid', error instanceof Error ? error.message : node.name);
+  }
+}
+
+async function openJsonInNewWindow(node: DisplayTreeNode): Promise<void> {
+  contextMenu.value = null;
+  const popup = globalThis.open('about:blank', '_blank');
+  if (!popup) {
+    store.notify('error', '无法打开 JSON 编辑器', '浏览器阻止了新窗口，请允许本站打开弹出式窗口。');
+    return;
+  }
+  try {
+    if (!(await store.saveActiveDocument())) {
+      popup.close();
+      return;
+    }
+    const file = await getNodeFile(node);
+    if (!file) {
+      throw new Error('无法读取 JSON 文件。');
+    }
+    closeImagePreview();
+    closeMediaPreview();
+    openWindowFileHandoff(popup, '/tools/json', 'json', file);
+  } catch (error) {
+    popup.close();
+    store.notify(
+      'error',
+      '无法打开 JSON 编辑器',
+      error instanceof Error ? error.message : node.name,
+    );
   }
 }
 
@@ -1083,6 +1156,28 @@ onBeforeUnmount(() => {
             "
           >
             <FileDescription :size="16" />使用 Office 打开
+          </button>
+          <div class="context-menu__separator" />
+        </template>
+        <template v-else-if="isMermaidDocumentNode(contextMenu.node)">
+          <button
+            class="context-menu__item"
+            type="button"
+            role="menuitem"
+            @click="openMermaidInNewWindow(contextMenu.node)"
+          >
+            <ChartDots3 :size="16" />使用 Mermaid 打开
+          </button>
+          <div class="context-menu__separator" />
+        </template>
+        <template v-else-if="isJsonDocumentNode(contextMenu.node)">
+          <button
+            class="context-menu__item"
+            type="button"
+            role="menuitem"
+            @click="openJsonInNewWindow(contextMenu.node)"
+          >
+            <Braces :size="16" />使用 JSON 编辑器打开
           </button>
           <div class="context-menu__separator" />
         </template>

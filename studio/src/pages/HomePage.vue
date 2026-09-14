@@ -3,11 +3,14 @@ import { ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import {
   IconBrandOffice,
+  IconBook,
   IconChalkboard,
   IconMarkdown,
-  IconNotes,
+  IconChartDots3,
   IconSitemap,
+  IconNotes,
   IconApps,
+  IconWallpaper,
 } from '@tabler/icons-vue';
 import { STUDIO_FILE_ACCEPT, useFileLauncher } from '@/composables/useFileLauncher';
 import { useImagePaste } from '@/features/tools/tools/_shared/image/composables/useImagePaste';
@@ -35,11 +38,25 @@ const quickRoutes = [
     tone: 'office',
   },
   {
+    label: 'Books',
+    description: '仿真书阅读 PDF',
+    to: '/books',
+    icon: IconBook,
+    tone: 'books',
+  },
+  {
     label: 'Whiteboard',
     description: '画图、流程图、无限画布',
     to: '/draw',
     icon: IconChalkboard,
     tone: 'draw',
+  },
+  {
+    label: 'Mermaid',
+    description: '编辑、预览、分享图表',
+    to: '/mermaid',
+    icon: IconChartDots3,
+    tone: 'mermaid',
   },
   {
     label: 'Mind',
@@ -54,6 +71,13 @@ const quickRoutes = [
     to: '/notes',
     icon: IconNotes,
     tone: 'notes',
+  },
+  {
+    label: 'Wallpapers',
+    description: '电脑和手机壁纸',
+    to: '/wallpapers',
+    icon: IconWallpaper,
+    tone: 'wallpapers',
   },
   {
     label: 'Tools',
@@ -80,6 +104,8 @@ const STUDIO_FILE_PICKER_TYPES = [
       'image/webp': ['.webp'],
       'text/markdown': ['.md', '.markdown'],
       'text/plain': ['.txt'],
+      'text/x-mermaid': ['.mmd', '.mermaid'],
+      'application/json': ['.mermaid.json'],
       'application/pdf': ['.pdf'],
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],

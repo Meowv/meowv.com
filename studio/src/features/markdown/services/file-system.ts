@@ -183,12 +183,21 @@ function normalizeExtensions(extensions: readonly string[]): Set<string> {
 }
 
 export function getFileExtension(name: string): string {
+  const normalizedName = name.toLowerCase();
+  if (normalizedName.endsWith('.mermaid.json')) {
+    return '.mermaid.json';
+  }
   const lastDot = name.lastIndexOf('.');
   return lastDot < 0 ? '' : name.slice(lastDot).toLowerCase();
 }
 
 export function isMarkdownFile(name: string): boolean {
   return normalizeExtensions(MARKDOWN_EXTENSIONS).has(getFileExtension(name));
+}
+
+export function isMermaidFile(name: string): boolean {
+  const extension = getFileExtension(name);
+  return extension === '.mmd' || extension === '.mermaid' || extension === '.mermaid.json';
 }
 
 export function isImageFile(name: string): boolean {
@@ -334,7 +343,9 @@ async function scanDirectory(
     context.files.push(fileNode);
 
     if (category === 'markdown') {
-      context.documents.push(fileNode);
+      if (!isMermaidFile(name)) {
+        context.documents.push(fileNode);
+      }
       children.push(fileNode);
     } else if (category === 'image') {
       context.assets.push(fileNode);
@@ -679,7 +690,7 @@ export async function createMarkdownFile(
   if (!isMarkdownFile(finalName)) {
     throw new WorkspaceError(
       'INVALID_FILE_TYPE',
-      'Markdown 文件必须使用 .md 或 .markdown 扩展名。',
+      '文档必须使用 .md、.markdown、.mmd、.mermaid 或 .mermaid.json 扩展名。',
     );
   }
 

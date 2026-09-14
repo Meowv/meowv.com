@@ -16,6 +16,8 @@ import {
   ensurePermission,
   getDirectoryHandleByRelativePath,
   getFileHandleByRelativePath,
+  getFileExtension,
+  isMarkdownFile,
   isFileSystemAccessSupported,
   moveEntry,
   openDirectory,
@@ -216,8 +218,7 @@ function directoryPath(path: string): string {
 }
 
 function extensionOf(name: string): string {
-  const index = name.lastIndexOf('.');
-  return index >= 0 ? name.slice(index) : '';
+  return getFileExtension(name);
 }
 
 function isAllowedImageFile(file: File): boolean {
@@ -232,7 +233,7 @@ function normalizeMarkdownName(name: string): string {
   if (!trimmed) {
     return '';
   }
-  return /\.(?:md|markdown)$/i.test(trimmed) ? trimmed : `${trimmed}.md`;
+  return isMarkdownFile(trimmed) ? trimmed : `${trimmed}.md`;
 }
 
 function safeAssetName(name: string): string {
