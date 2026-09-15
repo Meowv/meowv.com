@@ -653,6 +653,7 @@ body.has-dialog-open {
 .studio-home {
   --home-panel-height: 510px;
 
+  position: relative;
   display: grid;
   width: min(1320px, calc(100% - 64px));
   min-height: calc(100vh - var(--header-height));
@@ -662,6 +663,10 @@ body.has-dialog-open {
   grid-template-rows: 1fr auto;
   align-items: center;
   gap: 54px;
+}
+
+.studio-home > .tools-background-shortcut {
+  right: calc(20px - max(32px, (100vw - 1320px) / 2));
 }
 
 .home-copy {
@@ -1762,6 +1767,10 @@ body.has-dialog-open {
     width: min(calc(100% - 32px), 680px);
     padding-top: 52px;
     gap: 42px;
+  }
+
+  .studio-home > .tools-background-shortcut {
+    right: -4px;
   }
   .home-copy h1 {
     font-size: 42px;

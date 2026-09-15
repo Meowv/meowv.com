@@ -14,6 +14,7 @@ import {
 } from '@tabler/icons-vue';
 import { STUDIO_FILE_ACCEPT, useFileLauncher } from '@/composables/useFileLauncher';
 import { useImagePaste } from '@/features/tools/tools/_shared/image/composables/useImagePaste';
+import ToolsBackgroundShortcut from '@/features/tools/components/ToolsBackgroundShortcut.vue';
 import fileOrbitUrl from '@/assets/images/file-orbit.png';
 
 const dragActive = ref(false);
@@ -169,6 +170,7 @@ const onDrop = async (event: DragEvent) => {
 
 <template>
   <section class="studio-home" aria-labelledby="studio-home-title">
+    <ToolsBackgroundShortcut />
     <input
       ref="fileInput"
       class="visually-hidden"

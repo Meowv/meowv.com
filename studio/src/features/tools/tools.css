@@ -62,25 +62,13 @@
   background: transparent;
 }
 
-.tools-home__random-background {
-  position: absolute;
-  z-index: 14;
-  top: 14px;
-  right: 20px;
-  display: grid;
-  width: 34px;
-  height: 34px;
-  padding: 0;
-  border: 0;
-  border-radius: 9px;
-  place-items: center;
-  color: var(--tools-accent);
-  cursor: pointer;
-}
+.tools-page {
+  --tools-accent: var(--menu-tools-foreground);
 
-.tools-home__random-background:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--tools-accent) 52%, transparent);
-  outline-offset: 2px;
+  width: min(1320px, calc(100% - 64px));
+  min-height: calc(100vh - var(--header-height));
+  margin: 0 auto;
+  padding: clamp(48px, 6vw, 76px) 0 72px;
 }
 
 .tools-windmill-icon path:nth-of-type(1) {
@@ -97,34 +85,6 @@
 
 .tools-windmill-icon path:nth-of-type(4) {
   stroke: #4388f7;
-}
-
-.tools-home__random-background:disabled {
-  cursor: wait;
-  opacity: 0.72;
-}
-
-.tools-home__random-background.is-rotating > svg {
-  animation: tools-background-windmill 720ms linear infinite;
-}
-
-@keyframes tools-background-windmill {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(1turn);
-  }
-}
-
-.tools-page {
-  --tools-accent: var(--menu-tools-foreground);
-
-  width: min(1320px, calc(100% - 64px));
-  min-height: calc(100vh - var(--header-height));
-  margin: 0 auto;
-  padding: clamp(48px, 6vw, 76px) 0 72px;
 }
 
 .tools-page.tools-home {

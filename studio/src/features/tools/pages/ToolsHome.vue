@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import { IconAi, IconBookmark, IconStarFilled, IconWindmill } from '@tabler/icons-vue';
+import { IconAi, IconBookmark, IconStarFilled } from '@tabler/icons-vue';
 import BookmarkCard from '@/features/tools/components/BookmarkCard.vue';
 import ToolCard from '@/features/tools/components/ToolCard.vue';
 import ToolIcon from '@/features/tools/components/ToolIcon.vue';
 import ToolSearch from '@/features/tools/components/ToolSearch.vue';
 import ToolSidebar from '@/features/tools/components/ToolSidebar.vue';
+import ToolsBackgroundShortcut from '@/features/tools/components/ToolsBackgroundShortcut.vue';
 import { STORAGE_POLICY, storageAvailable } from '@/core/privacy/storage';
 import { useToolCatalog } from '@/features/tools/composables/useToolCatalog';
 import { useToolFavorites } from '@/features/tools/composables/useToolFavorites';
 import { useToolsCelebration } from '@/features/tools/composables/useToolsCelebration';
-import { useToolsBackground } from '@/features/tools/composables/useToolsBackground';
 import { useToolsPreferences } from '@/features/tools/composables/useToolsPreferences';
 import { searchTools, toolCategories } from '@/features/tools/tools';
 import '@/features/tools/tools.css';
@@ -24,10 +24,6 @@ const carnivalFxElement = ref<HTMLCanvasElement | null>(null);
 const sidebarHovered = ref(false);
 const navigationTarget = ref<string | null>(null);
 let navigationTargetTimer: ReturnType<typeof setTimeout> | undefined;
-let windmillTimer: ReturnType<typeof setTimeout> | undefined;
-let windmillMinimumElapsed = true;
-let windmillRequestPending = false;
-const WINDMILL_MINIMUM_ROTATION_MS = 720;
 const SIDEBAR_PIN_KEY = `${STORAGE_POLICY.preferences}:tools-sidebar-pinned`;
 const SIDEBAR_SIDE_KEY = `${STORAGE_POLICY.preferences}:tools-sidebar-side`;
 const sidebarPinned = ref(readSidebarPinned());
@@ -39,13 +35,6 @@ const { celebrationBurst, celebrationLevel, triggerCelebration } = useToolsCeleb
   carnivalFxElement,
   catalogElement,
 );
-const {
-  randomShortcutEnabled,
-  isLoading: backgroundLoading,
-  requestSequence: backgroundRequestSequence,
-  requestRandomVideo,
-} = useToolsBackground();
-const windmillRotating = ref(false);
 const celebrationStyle = computed<Record<string, string>>(() => {
   if (celebrationLevel.value === 0) return {} as Record<string, string>;
   const distance = 0.35 + celebrationLevel.value * 0.16;
@@ -75,7 +64,6 @@ const toolGroups = computed(() =>
     }))
     .filter((group) => group.tools.length),
 );
-const randomShortcutVisible = computed(() => randomShortcutEnabled.value);
 
 function updateActiveCategory(): void {
   if (navigationTarget.value) {
@@ -218,41 +206,6 @@ function handleSidebarLeave(): void {
   sidebarHovered.value = false;
 }
 
-function stopWindmillWhenReady(): void {
-  if (windmillMinimumElapsed && !windmillRequestPending && !backgroundLoading.value) {
-    windmillRotating.value = false;
-  }
-}
-
-function startWindmillRotation(): void {
-  clearTimeout(windmillTimer);
-  windmillMinimumElapsed = false;
-  windmillRotating.value = true;
-  windmillTimer = setTimeout(() => {
-    windmillMinimumElapsed = true;
-    stopWindmillWhenReady();
-  }, WINDMILL_MINIMUM_ROTATION_MS);
-}
-
-async function triggerRandomBackground(): Promise<void> {
-  if (backgroundLoading.value) return;
-  windmillRequestPending = true;
-  try {
-    await requestRandomVideo();
-    await nextTick();
-  } finally {
-    windmillRequestPending = false;
-    stopWindmillWhenReady();
-  }
-}
-
-watch(backgroundRequestSequence, startWindmillRotation, { flush: 'sync' });
-
-watch(backgroundLoading, (loading) => {
-  if (loading) windmillRotating.value = true;
-  else stopWindmillWhenReady();
-});
-
 watch(toolGroups, async (groups) => {
   await nextTick();
   if (
@@ -300,7 +253,6 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   clearTimeout(navigationTargetTimer);
-  clearTimeout(windmillTimer);
   catalogElement.value?.removeEventListener('scroll', updateActiveCategory);
 });
 </script>
@@ -337,19 +289,7 @@ onBeforeUnmount(() => {
       @update:side="setSidebarSide"
     />
 
-    <button
-      v-if="randomShortcutVisible"
-      class="tools-home__random-background"
-      :class="{ 'is-rotating': windmillRotating }"
-      type="button"
-      aria-label="随机切换视频背景"
-      title="随机切换视频背景"
-      :aria-busy="backgroundLoading"
-      :disabled="backgroundLoading"
-      @click="triggerRandomBackground"
-    >
-      <IconWindmill class="tools-windmill-icon" :size="18" aria-hidden="true" />
-    </button>
+    <ToolsBackgroundShortcut />
 
     <canvas ref="carnivalFxElement" class="tools-carnival__fx" aria-hidden="true"></canvas>
 

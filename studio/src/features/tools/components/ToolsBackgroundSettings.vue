@@ -173,7 +173,10 @@ onBeforeUnmount(() => {
             <label class="tools-background-dialog__toggle">
               <span>
                 <IconWindmill class="tools-windmill-icon" :size="17" aria-hidden="true" />
-                <span><b>切换背景快捷操作</b><small>在工具首页显示右上角风车</small></span>
+                <span
+                  ><b>切换背景快捷操作</b
+                  ><small>在工具首页和 Studio 首页显示右上角风车</small></span
+                >
               </span>
               <input
                 type="checkbox"
