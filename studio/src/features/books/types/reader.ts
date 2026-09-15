@@ -93,6 +93,8 @@ export interface RenderedPage extends PageSize {
 
 export interface PageProvider {
   readonly pageCount: number;
+  /** 页面提供器可安全并行执行的渲染数量；DOM 截图类实现必须保持串行。 */
+  readonly renderConcurrency?: number;
   getPageSize(pageNumber: number): Promise<PageSize>;
   renderPage(pageNumber: number, options: PageRenderOptions): Promise<RenderedPage>;
   locatorForPage(pageNumber: number): BookLocator;

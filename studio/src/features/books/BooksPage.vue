@@ -167,6 +167,7 @@ let tipTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
 let hideAt = 0;
 let shelfActive = false;
 let stopWindowFileHandoff: (() => void) | null = null;
+let builtinProbeTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
 /** 收到外部文件交接后，阻止自动恢复上次阅读的书籍覆盖新打开的书。 */
 let handoffArrived = false;
 
@@ -262,13 +263,27 @@ function syncEngineSnapshot(): void {
   canGoBack.value = engine.canGoBackward;
 }
 
+function cancelBuiltinProbe(): void {
+  if (builtinProbeTimer === null) return;
+  globalThis.clearTimeout(builtinProbeTimer);
+  builtinProbeTimer = null;
+}
+
+function scheduleBuiltinProbe(stored: BookshelfEntry[]): void {
+  cancelBuiltinProbe();
+  // 内置书探测会解压 ZIP 并生成缩略图，不能和恢复上次书籍争用主线程。
+  builtinProbeTimer = globalThis.setTimeout(() => {
+    builtinProbeTimer = null;
+    if (!shelfActive || readerMounted.value || loadController) return;
+    void probeBuiltinBooks(bookshelf, stored, () => void refreshShelf()).catch(() => undefined);
+  }, 8000);
+}
+
 async function refreshShelf(): Promise<void> {
   const stored = await bookshelf.list();
   shelfEntries.value = await mergeBuiltinEntries(stored);
   persistentShelf.value = bookshelf.persistentHandles;
-  if (shelfActive) {
-    void probeBuiltinBooks(bookshelf, stored, () => void refreshShelf());
-  }
+  if (shelfActive && !readerMounted.value && !loadController) scheduleBuiltinProbe(stored);
 }
 
 function newestProgress(
@@ -453,6 +468,7 @@ async function openFile(
   handle?: FileSystemFileHandle,
   options: OpenBookOptions = {},
 ): Promise<void> {
+  cancelBuiltinProbe();
   pendingTurn = null;
   restoreId += 1;
   const currentOperation = ++operationId;
@@ -492,11 +508,6 @@ async function openFile(
       onPagePreparationChange: (preparing) => {
         if (currentOperation === operationId && engine === instance)
           pagePreparing.value = preparing;
-      },
-      onPrewarmProgress: (progress) => {
-        if (currentOperation === operationId && engine === instance) {
-          loadProgress.value = 0.9 + progress * 0.1;
-        }
       },
     });
   } catch (error) {
@@ -578,7 +589,7 @@ async function openFile(
       provider,
       controller.signal,
     ).catch(() => undefined);
-    loadMessage.value = options.reflowing ? '正在重新排版…' : '正在预热翻页…';
+    loadMessage.value = options.reflowing ? '正在重新排版…' : '正在生成书页…';
     loadProgress.value = 0.9;
     publication = openedPublication;
     pageProvider = provider;
@@ -1070,6 +1081,7 @@ onBeforeUnmount(() => {
   clearHideTimer();
   if (errorHideTimer !== null) window.clearTimeout(errorHideTimer);
   if (tipTimer) globalThis.clearTimeout(tipTimer);
+  cancelBuiltinProbe();
   loadController?.abort();
   if (document.fullscreenElement === root.value) void document.exitFullscreen();
   void saveCurrentProgress().finally(() => disposeReader());

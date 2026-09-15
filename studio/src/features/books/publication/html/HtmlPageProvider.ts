@@ -234,6 +234,7 @@ function waitForImages(root: HTMLElement, signal?: AbortSignal): Promise<void> {
 }
 
 export class HtmlPageProvider implements PageProvider {
+  readonly renderConcurrency = 1;
   readonly #sections: HtmlBookSection[];
   readonly #profile: ReaderLayoutProfile;
   readonly #fixedLayout: boolean;
@@ -244,6 +245,7 @@ export class HtmlPageProvider implements PageProvider {
   readonly #pagination: SectionPagination[] = [];
   readonly #sanitizedCache = new Map<number, string>();
   readonly #sanitizeInflight = new Map<number, Promise<string>>();
+  readonly #linkedStylesCache = new Map<string, string | null>();
   #currentSection = -1;
   #pageSize: PageSize = REFLOWABLE_PAGE_SIZE;
   #fixedSourceSize: PageSize = REFLOWABLE_PAGE_SIZE;
@@ -304,7 +306,7 @@ export class HtmlPageProvider implements PageProvider {
   async #paginate(options: PublicationPaginateOptions = {}): Promise<void> {
     if (this.#fixedLayout) {
       // 固定版式以首个正文页面确定实体书比例，后续异尺寸页面在该比例内等比留白。
-      await this.#mountSection(0, options.signal);
+      await this.#mountSection(0, options.signal, false);
     }
     const cachedCounts = options.paginationKey
       ? await loadPaginationIndex(options.paginationKey, this.#sections.length)
@@ -324,7 +326,7 @@ export class HtmlPageProvider implements PageProvider {
     }
     for (let index = 0; index < this.#sections.length; index += 1) {
       assertNotAborted(options.signal);
-      await this.#mountSection(index, options.signal);
+      await this.#mountSection(index, options.signal, false);
       const count = this.#fixedLayout
         ? 1
         : Math.max(
@@ -359,7 +361,7 @@ export class HtmlPageProvider implements PageProvider {
     // 固定版式每章恒为一页，无需抽查。
     if (this.#fixedLayout) return true;
     try {
-      await this.#mountSection(0, signal);
+      await this.#mountSection(0, signal, false);
       const actual = Math.max(
         1,
         Math.ceil(
@@ -381,7 +383,7 @@ export class HtmlPageProvider implements PageProvider {
     this.#viewport.style.height = height;
   }
 
-  #applyLayout(): void {
+  #applyLayout(normalizeBlocks = true): void {
     const margin = this.#pageMarginPixels();
     const colors = themeColors(this.#profile);
     const family = fontFamily(this.#profile);
@@ -433,7 +435,7 @@ export class HtmlPageProvider implements PageProvider {
       publicationBody.style.setProperty('color', 'inherit', 'important');
       publicationBody.style.setProperty('min-height', '100%', 'important');
       if (family) publicationBody.style.setProperty('font-family', family, 'important');
-      this.#normalizeReflowableBlocks(publicationBody);
+      if (normalizeBlocks) this.#normalizeReflowableBlocks(publicationBody);
     }
   }
 
@@ -451,7 +453,7 @@ export class HtmlPageProvider implements PageProvider {
     }
   }
 
-  async #mountSection(index: number, signal?: AbortSignal): Promise<void> {
+  async #mountSection(index: number, signal?: AbortSignal, waitForContent = true): Promise<void> {
     if (this.#disposed) throw abortError('电子书页面提供器已释放。');
     if (this.#currentSection === index) return;
     this.#unloadCurrentSection();
@@ -475,9 +477,9 @@ export class HtmlPageProvider implements PageProvider {
       }
     }
     this.#content.innerHTML = await this.#sanitizeSection(index, html, signal);
-    this.#applyLayout();
+    this.#applyLayout(waitForContent);
     this.#currentSection = index;
-    await waitForImages(this.#content, signal);
+    if (waitForContent) await waitForImages(this.#content, signal);
   }
 
   async #sanitizeSection(index: number, html: string, signal?: AbortSignal): Promise<string> {
@@ -515,13 +517,20 @@ export class HtmlPageProvider implements PageProvider {
       const href = link.getAttribute('href')?.trim() ?? '';
       if (isSafeLocalResource(href)) {
         assertNotAborted(signal);
-        try {
-          const response = await fetch(href, { signal });
-          if (response.ok) styleBlocks.push(`<style>${await response.text()}</style>`);
-        } catch {
-          if (signal?.aborted) throw abortError();
-          // 缺失的书内样式不应阻止正文打开，正文仍由默认版式渲染。
+        let css = this.#linkedStylesCache.get(href);
+        if (css === undefined) {
+          try {
+            const response = await fetch(href, { signal });
+            css = response.ok ? await response.text() : null;
+            this.#linkedStylesCache.set(href, css);
+          } catch {
+            if (signal?.aborted) throw abortError();
+            css = null;
+            this.#linkedStylesCache.set(href, css);
+            // 缺失的书内样式不应阻止正文打开，正文仍由默认版式渲染。
+          }
         }
+        if (css) styleBlocks.push(`<style>${css}</style>`);
       }
       link.remove();
     }
@@ -610,13 +619,12 @@ export class HtmlPageProvider implements PageProvider {
       }
       const colors = themeColors(this.#profile);
       const targetWidth = Math.max(1, Math.round(options.targetWidth));
-      await document.fonts.ready;
       const capture = await snapdom(this.#viewport, {
         backgroundColor: colors.background,
         scale: targetWidth / this.#pageSize.width,
         dpr: 1,
-        embedFonts: true,
-        reconcile: true,
+        // 系统字体无需逐页扫描和内嵌；出版方字体模式才保留书内字体资源。
+        embedFonts: this.#profile.fontFamily === 'publisher',
         burst: true,
         invalidate: true,
       });
@@ -663,6 +671,7 @@ export class HtmlPageProvider implements PageProvider {
     this.#disposed = true;
     this.#sanitizedCache.clear();
     this.#sanitizeInflight.clear();
+    this.#linkedStylesCache.clear();
     this.#unloadCurrentSection();
     this.#host.remove();
     await this.#onDispose?.();

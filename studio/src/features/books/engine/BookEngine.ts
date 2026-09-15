@@ -50,7 +50,6 @@ export interface BookEngineOptions {
   theme?: BookTheme;
   onError?: (error: Error) => void;
   onPagePreparationChange?: (preparing: boolean) => void;
-  onPrewarmProgress?: (progress: number) => void;
 }
 
 export interface BookLoadOptions {
@@ -348,10 +347,14 @@ export class BookEngine {
         ? initialPage
         : getPrimaryPageForSpread(this.#spreadIndex, provider.pageCount);
 
-      const cover = await this.#getPage(1, 'preview', controller.signal);
+      const fallbackCover = options.publicationCoverCanvas
+        ? null
+        : await this.#getPage(1, 'preview', controller.signal);
       this.#assertGeneration(generation);
-      this.#publicationCoverCanvas = options.publicationCoverCanvas ?? cover.canvas;
-      this.#blankPageColor = sampleCanvasBackground(cover.canvas, this.#blankPageColor);
+      const coverCanvas = options.publicationCoverCanvas ?? fallbackCover?.canvas;
+      if (!coverCanvas) throw new Error('无法生成书籍封面。');
+      this.#publicationCoverCanvas = coverCanvas;
+      this.#blankPageColor = sampleCanvasBackground(coverCanvas, this.#blankPageColor);
       const pageHeight = this.#config.pageHeight;
       const pageWidth = pageHeight * this.#pageAspect;
       this.#book = new BookModel({
@@ -368,15 +371,20 @@ export class BookEngine {
       this.resize();
       this.#book.setCover(this.#publicationCoverCanvas);
       this.#scene.add(this.#book.root);
-      await this.#showSpread(this.#spreadIndex, 'reading', controller.signal);
+      await this.#showSpread(this.#spreadIndex, 'preview', controller.signal);
       this.#book.setProgress(this.#readingProgress(this.#spreadIndex));
-      void this.#prewarmAdjacentPages(controller.signal).catch(() => undefined);
       this.#book.turningSheet.setEdgeKind('paper');
-      this.#book.turningSheet.setPages(cover.canvas, this.#blankPage().canvas);
+      this.#book.turningSheet.setPages(coverCanvas, this.#blankPage().canvas);
       this.#book.turningSheet.update(0, 'forward');
       this.#setContactOpenProgress(0);
       this.#renderer.shadowMap.needsUpdate = true;
-      await this.#renderer.compileAsync(this.#scene, this.#camera);
+      // WebGL 编译不应继续阻挡正文首屏；给浏览器一个短暂机会完成编译，
+      // 超时后让页面先进入可交互状态，后续首帧仍会按需完成编译。
+      const compile = this.#renderer.compileAsync(this.#scene, this.#camera).catch(() => undefined);
+      await Promise.race([
+        compile,
+        new Promise<void>((resolve) => globalThis.setTimeout(resolve, 180)),
+      ]);
       this.#book.turningSheet.hide();
       this.#assertGeneration(generation);
       this.invalidate();
@@ -1048,7 +1056,8 @@ export class BookEngine {
   }
 
   #drainRenderQueue(): void {
-    while (!this.#disposed && this.#activeRenders < 2 && this.#renderQueue.length) {
+    const concurrency = Math.max(1, Math.trunc(this.#provider?.renderConcurrency ?? 2));
+    while (!this.#disposed && this.#activeRenders < concurrency && this.#renderQueue.length) {
       const job = this.#renderQueue.shift();
       if (!job) return;
       if (job.signal?.aborted) {
@@ -1066,10 +1075,20 @@ export class BookEngine {
     }
   }
 
-  // 翻页素材统一使用 reading 质量：落页静态页与纸面同源同质，
-  // 避免翻页完成后由 preview 升级到 reading 造成整幅纹理弹变。
   #getInteractionPage(pageNumber: number, signal?: AbortSignal): Promise<RenderedPage> {
-    return this.#getPage(pageNumber, 'reading', signal);
+    const cached = this.#getCachedPage(pageNumber);
+    return cached ? Promise.resolve(cached) : this.#getPage(pageNumber, 'reading', signal);
+  }
+
+  #getCachedPage(pageNumber: number): RenderedPage | undefined {
+    for (const quality of ['reading', 'preview'] as const) {
+      const targetWidth = this.#targetTextureWidth(quality);
+      const cached = this.#pageCache.get(
+        createPageCacheKey(pageNumber, targetWidth, quality, this.#appearanceRevision),
+      );
+      if (cached) return cached;
+    }
+    return undefined;
   }
 
   // 正在展示的静态页不允许被 PageCache 按 LRU 驱逐：被驱逐后阅读升级会
@@ -1077,12 +1096,9 @@ export class BookEngine {
   // 翻页完成后的文字弹变。落页时把静态页的缓存项触到队尾保护起来。
   #touchStaticPages(): void {
     const spread = getSpread(this.#spreadIndex, this.pageCount);
-    const width = Math.round(this.#targetTextureWidth('reading'));
     for (const pageNumber of [spread.leftPage, spread.rightPage]) {
       if (!pageNumber) continue;
-      this.#pageCache.touch(
-        createPageCacheKey(pageNumber, width, 'reading', this.#appearanceRevision),
-      );
+      this.#getCachedPage(pageNumber);
     }
   }
 
@@ -1258,33 +1274,6 @@ export class BookEngine {
       void Promise.all([work(), work()]);
     });
     this.#armBackgroundDeadline();
-  }
-
-  async #prewarmAdjacentPages(signal: AbortSignal): Promise<void> {
-    const pages = new Set<number>();
-    for (const offset of [-1, 0, 1]) {
-      const index = this.#spreadIndex + offset;
-      if (index < 0 || index > getLastSpreadIndex(this.pageCount)) continue;
-      const spread = getSpread(index, this.pageCount);
-      if (spread.leftPage) pages.add(spread.leftPage);
-      if (spread.rightPage) pages.add(spread.rightPage);
-    }
-    const queue = [...pages];
-    const total = queue.length;
-    let completed = 0;
-    const rendered: RenderedPage[] = [];
-    const work = async (): Promise<void> => {
-      while (queue.length) {
-        const pageNumber = queue.shift();
-        if (!pageNumber) return;
-        rendered.push(await this.#getPage(pageNumber, 'reading', signal, 18));
-        completed += 1;
-        this.#options.onPrewarmProgress?.(completed / Math.max(1, total));
-      }
-    };
-    await Promise.all([work(), work()]);
-    const textures = this.#book?.prewarmSurfaces(rendered.map((page) => page.canvas)) ?? [];
-    for (const texture of textures) this.#renderer.initTexture(texture);
   }
 
   #pauseBackgroundWork(): void {
