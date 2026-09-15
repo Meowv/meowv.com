@@ -21,6 +21,7 @@ import { PageCache, createPageCacheKey } from '../cache/PageCache';
 import type {
   BookSnapshot,
   BookStateListener,
+  BookDisplayMode,
   PageProvider,
   PageRenderQuality,
   RenderedPage,
@@ -33,6 +34,7 @@ import {
   getAdjacentSpreadIndex,
   getLastSpreadIndex,
   getSpread,
+  getPrimaryPageForSpread,
   getSpreadIndexForPage,
 } from './spreads';
 import { disposeObject } from './three-utils';
@@ -49,6 +51,12 @@ export interface BookEngineOptions {
   onError?: (error: Error) => void;
   onPagePreparationChange?: (preparing: boolean) => void;
   onPrewarmProgress?: (progress: number) => void;
+}
+
+export interface BookLoadOptions {
+  initialPage?: number;
+  initialSpreadIndex?: number;
+  publicationCoverCanvas?: HTMLCanvasElement;
 }
 
 export interface BookEngineDiagnostics {
@@ -82,6 +90,12 @@ interface DragSession {
   prepared: Promise<void>;
   ready: boolean;
   boundaryClose: boolean;
+  focusOnly: boolean;
+  targetPage: number | null;
+  startedAt: number;
+  maxDistancePx: number;
+  startClientX: number;
+  startClientY: number;
 }
 
 interface AnimationHandle {
@@ -90,6 +104,7 @@ interface AnimationHandle {
 }
 
 interface PageRenderJob {
+  priority: number;
   signal?: AbortSignal;
   run(): Promise<RenderedPage>;
   resolve(page: RenderedPage): void;
@@ -100,6 +115,11 @@ interface PreparedTurnSpread {
   targetIndex: number;
   left: RenderedPage;
   right: RenderedPage;
+}
+
+interface PinchSession {
+  startDistance: number;
+  startZoom: number;
 }
 
 const clamp = (value: number, minimum: number, maximum: number): number =>
@@ -157,6 +177,7 @@ export class BookEngine {
   readonly #cleanups: Array<() => void> = [];
   readonly #pendingPages = new Map<string, Promise<RenderedPage>>();
   readonly #renderQueue: PageRenderJob[] = [];
+  readonly #activePointers = new Map<number, { x: number; y: number }>();
   #activeRenders = 0;
   #provider: PageProvider | null = null;
   #book: BookModel | null = null;
@@ -167,6 +188,9 @@ export class BookEngine {
   #theme: BookTheme = 'dark';
   #pageAspect = 0.72;
   #spreadIndex = 0;
+  #currentPage = 1;
+  #displayMode: BookDisplayMode = 'spread';
+  #appearanceRevision = 0;
   #cameraDistance = 1.8;
   #zoom = 1;
   #focusX = 0;
@@ -179,6 +203,7 @@ export class BookEngine {
   #backgroundDeadlineTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
   #preparationNoticeVisible = false;
   #drag: DragSession | null = null;
+  #pinch: PinchSession | null = null;
   #loadController: AbortController | null = null;
   #readingUpgradeController: AbortController | null = null;
   #prefetchController: AbortController | null = null;
@@ -212,7 +237,7 @@ export class BookEngine {
       ),
       maxEntries: 24,
     });
-    this.#scene.background = new Color(0x171311);
+    this.#scene.background = new Color(0x18191c);
     this.#renderer = new WebGLRenderer({ antialias: true, alpha: false });
     this.#renderer.outputColorSpace = SRGBColorSpace;
     this.#renderer.shadowMap.enabled = true;
@@ -249,6 +274,14 @@ export class BookEngine {
     return this.#spreadIndex;
   }
 
+  get currentPage(): number {
+    return this.#currentPage;
+  }
+
+  get displayMode(): BookDisplayMode {
+    return this.#displayMode;
+  }
+
   get canGoForward(): boolean {
     return this.#stateMachine.state === 'OPEN' && this.pageCount > 0;
   }
@@ -281,11 +314,7 @@ export class BookEngine {
     return this.#stateMachine.subscribe(listener);
   }
 
-  async load(
-    provider: PageProvider,
-    initialSpreadIndex = 0,
-    publicationCoverCanvas?: HTMLCanvasElement,
-  ): Promise<void> {
+  async load(provider: PageProvider, options: BookLoadOptions = {}): Promise<void> {
     this.#assertUsable();
     if (this.#stateMachine.state !== 'EMPTY' && this.#stateMachine.state !== 'LOADING') {
       throw new Error('当前书籍尚未释放，无法载入另一本书。');
@@ -297,7 +326,7 @@ export class BookEngine {
     }
     this.#provider = provider;
     this.#preparedTurnSpread = null;
-    this.#publicationCoverCanvas = publicationCoverCanvas ?? null;
+    this.#publicationCoverCanvas = options.publicationCoverCanvas ?? null;
     const generation = ++this.#generation;
     this.#loadController?.abort();
     const controller = new AbortController();
@@ -307,15 +336,21 @@ export class BookEngine {
       if (provider.pageCount < 1) throw new Error('这本书没有可阅读的页面。');
       const pageSize = await provider.getPageSize(1);
       this.#pageAspect = clamp(pageSize.width / pageSize.height, 0.38, 1.65);
-      this.#spreadIndex = clamp(
-        Math.trunc(initialSpreadIndex || this.#options.initialSpreadIndex || 0),
-        0,
-        getLastSpreadIndex(provider.pageCount),
-      );
+      const initialPage = clamp(Math.trunc(options.initialPage ?? 0), 1, provider.pageCount);
+      this.#spreadIndex = options.initialPage
+        ? getSpreadIndexForPage(initialPage, provider.pageCount)
+        : clamp(
+            Math.trunc(options.initialSpreadIndex || this.#options.initialSpreadIndex || 0),
+            0,
+            getLastSpreadIndex(provider.pageCount),
+          );
+      this.#currentPage = options.initialPage
+        ? initialPage
+        : getPrimaryPageForSpread(this.#spreadIndex, provider.pageCount);
 
       const cover = await this.#getPage(1, 'preview', controller.signal);
       this.#assertGeneration(generation);
-      this.#publicationCoverCanvas = publicationCoverCanvas ?? cover.canvas;
+      this.#publicationCoverCanvas = options.publicationCoverCanvas ?? cover.canvas;
       this.#blankPageColor = sampleCanvasBackground(cover.canvas, this.#blankPageColor);
       const pageHeight = this.#config.pageHeight;
       const pageWidth = pageHeight * this.#pageAspect;
@@ -330,11 +365,12 @@ export class BookEngine {
           this.#memoryLimited ? 48 * 1024 * 1024 : Infinity,
         ),
       });
+      this.resize();
       this.#book.setCover(this.#publicationCoverCanvas);
       this.#scene.add(this.#book.root);
       await this.#showSpread(this.#spreadIndex, 'reading', controller.signal);
       this.#book.setProgress(this.#readingProgress(this.#spreadIndex));
-      await this.#prewarmAdjacentPages(controller.signal);
+      void this.#prewarmAdjacentPages(controller.signal).catch(() => undefined);
       this.#book.turningSheet.setEdgeKind('paper');
       this.#book.turningSheet.setPages(cover.canvas, this.#blankPage().canvas);
       this.#book.turningSheet.update(0, 'forward');
@@ -347,6 +383,8 @@ export class BookEngine {
       this.#stateMachine.transition('CLOSED', {
         pageCount: provider.pageCount,
         spreadIndex: this.#spreadIndex,
+        currentPage: this.#currentPage,
+        displayMode: this.#displayMode,
       });
       this.#scheduleReadingUpgrade(generation);
       this.#schedulePrefetch(generation);
@@ -412,10 +450,15 @@ export class BookEngine {
     this.#pauseBackgroundWork();
     const targetIndex = getSpreadIndexForPage(pageNumber, this.pageCount);
     this.#spreadIndex = targetIndex;
+    this.#currentPage = pageNumber;
     this.#spreadRevision += 1;
     await this.#showSpreadForInteraction(targetIndex, this.#loadController?.signal);
     this.#book.setProgress(this.#readingProgress(targetIndex));
-    this.#stateMachine.update({ spreadIndex: targetIndex, pageCount: this.pageCount });
+    this.#stateMachine.update({
+      spreadIndex: targetIndex,
+      currentPage: pageNumber,
+      pageCount: this.pageCount,
+    });
     this.#renderer.shadowMap.needsUpdate = true;
     this.invalidate();
     this.#schedulePrefetch(this.#generation);
@@ -447,6 +490,16 @@ export class BookEngine {
     if (this.#stateMachine.state !== 'OPEN') return;
     this.#resetCornerPreview();
     this.#interactionStartedAt = performance.now();
+    if (this.#displayMode === 'focused') {
+      const targetPage = this.#currentPage + (direction === 'forward' ? 1 : -1);
+      if (targetPage >= 1 && targetPage <= this.pageCount) {
+        const targetIndex = getSpreadIndexForPage(targetPage, this.pageCount);
+        if (targetIndex === this.#spreadIndex) {
+          await this.#focusToPage(targetPage, direction);
+          return;
+        }
+      }
+    }
     const target = getAdjacentSpreadIndex(this.#spreadIndex, this.pageCount, direction);
     if (target === null) {
       try {
@@ -476,15 +529,57 @@ export class BookEngine {
     this.#renderer.setPixelRatio(Math.min(2, globalThis.devicePixelRatio || 1));
     this.#renderer.setSize(width, height, false);
     this.#camera.aspect = width / height;
-    const bookWidth = this.#config.pageHeight * this.#pageAspect * 2.16;
+    const nextMode: BookDisplayMode = width <= 760 && height > width ? 'focused' : 'spread';
+    const modeChanged = nextMode !== this.#displayMode;
+    this.#displayMode = nextMode;
+    if (modeChanged && this.#zoom <= 1.05) {
+      this.#focusX = this.#displayMode === 'focused' ? this.#focusXForPage(this.#currentPage) : 0;
+      this.#focusY = 0;
+    }
+    const pageWidth = this.#config.pageHeight * this.#pageAspect;
+    const bookWidth = this.#displayMode === 'focused' ? pageWidth * 1.16 : pageWidth * 2.16;
     const bookHeight = this.#config.pageHeight * 1.18;
     const verticalFov = (this.#cameraFov() * Math.PI) / 180;
-    const safeFrame = this.#camera.aspect < 0.9 ? 0.84 : 1.08;
+    const safeFrame =
+      this.#displayMode === 'focused' ? 1.08 : this.#camera.aspect < 0.9 ? 0.84 : 1.08;
     const fitHeightDistance = bookHeight / (2 * Math.tan(verticalFov / 2) * safeFrame);
     const fitWidthDistance =
       bookWidth / (2 * Math.tan(verticalFov / 2) * this.#camera.aspect * safeFrame);
     this.#cameraDistance = Math.max(fitHeightDistance, fitWidthDistance, 1.58);
+    this.#stateMachine.update({
+      displayMode: this.#displayMode,
+      currentPage: this.#currentPage,
+    });
     this.#applyCamera();
+  }
+
+  #focusXForPage(pageNumber: number): number {
+    if (!this.pageCount || pageNumber < 1) return 0;
+    const spread = getSpread(getSpreadIndexForPage(pageNumber, this.pageCount), this.pageCount);
+    const pageWidth = this.#config.pageHeight * this.#pageAspect;
+    return spread.leftPage === pageNumber ? -pageWidth / 2 : pageWidth / 2;
+  }
+
+  async #focusToPage(targetPage: number, direction: TurnDirection): Promise<void> {
+    const from = this.#focusX;
+    const target = this.#focusXForPage(targetPage);
+    this.#pauseBackgroundWork();
+    this.#stateMachine.transition('TURNING', { turnDirection: direction });
+    try {
+      await this.#animate(from, target, 200, (value) => {
+        this.#focusX = value;
+        this.#applyCamera();
+      });
+      this.#currentPage = targetPage;
+      this.#stateMachine.transition('OPEN', {
+        currentPage: targetPage,
+        displayMode: this.#displayMode,
+      });
+      this.invalidate();
+      this.#schedulePrefetch(this.#generation);
+    } catch (reason) {
+      this.#handleRuntimeError(reason);
+    }
   }
 
   #applyCamera(): void {
@@ -514,6 +609,8 @@ export class BookEngine {
     this.#prefetchController?.abort();
     this.#prefetchController = null;
     this.#drag = null;
+    this.#pinch = null;
+    this.#activePointers.clear();
     this.#preparedTurnSpread = null;
     if (this.#renderFrame) cancelAnimationFrame(this.#renderFrame);
     this.#renderFrame = 0;
@@ -613,19 +710,19 @@ export class BookEngine {
     const key = this.#keyLight;
     const deskMaterial = this.#deskMaterial;
     if (this.#theme === 'light') {
-      this.#scene.background = new Color(0xe9dfcd);
-      ambient?.color.setHex(0xf4ece0);
+      this.#scene.background = new Color(0xe4e2dd);
+      ambient?.color.setHex(0xf3f2ee);
       if (ambient) ambient.intensity = 1.1;
       key?.color.setHex(0xffffff);
       if (key) key.intensity = 1.1;
-      deskMaterial?.color.setHex(0xdccdb2);
+      deskMaterial?.color.setHex(0xd4d3cf);
     } else {
-      this.#scene.background = new Color(0x171311);
-      ambient?.color.setHex(0xe4d5c4);
+      this.#scene.background = new Color(0x18191c);
+      ambient?.color.setHex(0xe2e3e5);
       if (ambient) ambient.intensity = 1.24;
-      key?.color.setHex(0xffddb3);
-      if (key) key.intensity = 1.62;
-      deskMaterial?.color.setHex(0x2a211c);
+      key?.color.setHex(0xfff8eb);
+      if (key) key.intensity = 1.46;
+      deskMaterial?.color.setHex(0x292a2d);
     }
   }
 
@@ -635,6 +732,23 @@ export class BookEngine {
     this.#theme = theme;
     this.#applyTheme();
     this.invalidate();
+  }
+
+  async refreshPages(): Promise<void> {
+    if (!this.#provider || !this.#book || this.#disposed) return;
+    this.#pauseBackgroundWork();
+    this.#appearanceRevision += 1;
+    await this.#showSpreadForInteraction(this.#spreadIndex, this.#loadController?.signal);
+    if (this.#displayMode === 'focused' && this.#zoom <= 1.05) {
+      this.#focusX = this.#focusXForPage(this.#currentPage);
+      this.#focusY = 0;
+      this.#applyCamera();
+    }
+    this.#spreadRevision += 1;
+    this.#book.turningSheet.hide();
+    this.#touchStaticPages();
+    this.invalidate();
+    this.#schedulePrefetch(this.#generation);
   }
 
   #setContactOpenProgress(progress: number): void {
@@ -810,6 +924,14 @@ export class BookEngine {
   async #completeTurn(targetIndex: number): Promise<void> {
     this.#lastTurnDirection = targetIndex >= this.#spreadIndex ? 'forward' : 'backward';
     this.#spreadIndex = targetIndex;
+    this.#currentPage =
+      this.#displayMode === 'focused'
+        ? clamp(
+            this.#currentPage + (this.#lastTurnDirection === 'forward' ? 1 : -1),
+            1,
+            this.pageCount,
+          )
+        : getPrimaryPageForSpread(targetIndex, this.pageCount);
     this.#spreadRevision += 1;
     const preparedSpread = this.#preparedTurnSpread;
     this.#preparedTurnSpread = null;
@@ -826,6 +948,8 @@ export class BookEngine {
     this.#renderAnimationFrame();
     this.#stateMachine.transition('OPEN', {
       spreadIndex: targetIndex,
+      currentPage: this.#currentPage,
+      displayMode: this.#displayMode,
       pageCount: this.pageCount,
     });
     this.#schedulePrefetch(this.#generation);
@@ -851,11 +975,12 @@ export class BookEngine {
     pageNumber: number,
     quality: PageRenderQuality,
     signal?: AbortSignal,
+    priority = 0,
   ): Promise<RenderedPage> {
     const provider = this.#provider;
     if (!provider) throw new Error('尚未载入书籍。');
     const targetWidth = this.#targetTextureWidth(quality);
-    const key = createPageCacheKey(pageNumber, targetWidth, quality);
+    const key = createPageCacheKey(pageNumber, targetWidth, quality, this.#appearanceRevision);
     const cached = this.#pageCache.get(key);
     if (cached) return cached;
     const pending = this.#pendingPages.get(key);
@@ -870,8 +995,9 @@ export class BookEngine {
     }
     const generation = this.#generation;
     const render = this.#schedulePageRender(
-      () => provider.renderPage(pageNumber, { targetWidth, quality, signal }),
+      () => provider.renderPage(pageNumber, { targetWidth, quality, priority, signal }),
       signal,
+      priority,
     )
       .then((page) => {
         if (this.#disposed || generation !== this.#generation || signal?.aborted) {
@@ -891,6 +1017,7 @@ export class BookEngine {
   #schedulePageRender(
     run: () => Promise<RenderedPage>,
     signal?: AbortSignal,
+    priority = 0,
   ): Promise<RenderedPage> {
     return new Promise((resolve, reject) => {
       const finish =
@@ -900,6 +1027,7 @@ export class BookEngine {
           callback(value);
         };
       const job: PageRenderJob = {
+        priority,
         run,
         signal,
         resolve: finish(resolve),
@@ -912,7 +1040,9 @@ export class BookEngine {
         job.reject(new DOMException('书籍页面渲染已取消。', 'AbortError'));
       };
       signal?.addEventListener('abort', abort, { once: true });
-      this.#renderQueue.push(job);
+      const insertionIndex = this.#renderQueue.findIndex((queued) => queued.priority > priority);
+      if (insertionIndex < 0) this.#renderQueue.push(job);
+      else this.#renderQueue.splice(insertionIndex, 0, job);
       this.#drainRenderQueue();
     });
   }
@@ -950,7 +1080,9 @@ export class BookEngine {
     const width = Math.round(this.#targetTextureWidth('reading'));
     for (const pageNumber of [spread.leftPage, spread.rightPage]) {
       if (!pageNumber) continue;
-      this.#pageCache.touch(createPageCacheKey(pageNumber, width, 'reading'));
+      this.#pageCache.touch(
+        createPageCacheKey(pageNumber, width, 'reading', this.#appearanceRevision),
+      );
     }
   }
 
@@ -961,12 +1093,24 @@ export class BookEngine {
     const ratio = quality === 'reading' ? 1 : this.#memoryLimited ? 0.52 : 0.7;
     const edgeLimit =
       this.#config.maxTextureEdge * (quality === 'reading' && this.#memoryLimited ? 0.72 : 1);
-    return Math.max(
+    const rawWidth = Math.max(
       quality === 'reading' ? 640 : 320,
       Math.min(
         edgeLimit * Math.min(1, this.#pageAspect),
         Math.round(cssWidth * Math.min(2, globalThis.devicePixelRatio || 1) * ratio * this.#zoom),
       ),
+    );
+    const buckets = quality === 'reading' ? [640, 896, 1280, 1536, 2048] : [320, 512, 768, 1024];
+    const maximumWidth = Math.max(
+      quality === 'reading' ? 640 : 320,
+      edgeLimit * Math.min(1, this.#pageAspect),
+    );
+    const cappedWidth = Math.min(rawWidth, maximumWidth);
+    const eligibleBuckets = buckets.filter((bucket) => bucket <= maximumWidth + 0.5);
+    return (
+      eligibleBuckets.find((bucket) => bucket >= cappedWidth) ??
+      eligibleBuckets.at(-1) ??
+      Math.round(maximumWidth)
     );
   }
 
@@ -1043,10 +1187,10 @@ export class BookEngine {
       const spread = getSpread(spreadIndex, this.pageCount);
       void Promise.all([
         spread.leftPage
-          ? this.#getPage(spread.leftPage, 'reading', controller.signal)
+          ? this.#getPage(spread.leftPage, 'reading', controller.signal, 12)
           : this.#blankPage(),
         spread.rightPage
-          ? this.#getPage(spread.rightPage, 'reading', controller.signal)
+          ? this.#getPage(spread.rightPage, 'reading', controller.signal, 12)
           : this.#blankPage(),
       ])
         .then(([left, right]) => {
@@ -1108,7 +1252,7 @@ export class BookEngine {
           if (!pageNumber) return;
           // 与翻页素材同质量预热，翻页时缓存直接命中，避免落页后的质量跳变。
           // 限量渲染避免驱逐正在展示的静态页（由 #touchStaticPages 保护）。
-          await this.#getPage(pageNumber, 'reading', controller.signal).catch(() => undefined);
+          await this.#getPage(pageNumber, 'reading', controller.signal, 24).catch(() => undefined);
         }
       };
       void Promise.all([work(), work()]);
@@ -1133,7 +1277,7 @@ export class BookEngine {
       while (queue.length) {
         const pageNumber = queue.shift();
         if (!pageNumber) return;
-        rendered.push(await this.#getPage(pageNumber, 'reading', signal));
+        rendered.push(await this.#getPage(pageNumber, 'reading', signal, 18));
         completed += 1;
         this.#options.onPrewarmProgress?.(completed / Math.max(1, total));
       }
@@ -1277,6 +1421,23 @@ export class BookEngine {
   }
 
   #onPointerDown = (event: PointerEvent): void => {
+    if (event.pointerType === 'touch') {
+      this.#activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      if (this.#activePointers.size >= 2) {
+        event.preventDefault();
+        this.#renderer.domElement.setPointerCapture(event.pointerId);
+        const drag = this.#drag;
+        if (drag) {
+          this.#drag = null;
+          void this.#finishDrag(drag, true);
+        }
+        this.#pinch = {
+          startDistance: Math.max(1, this.#pointerDistance()),
+          startZoom: this.#zoom,
+        };
+        return;
+      }
+    }
     if (event.button !== 0 || this.#stateMachine.state !== 'OPEN' || !this.#book) return;
     const point = this.#localBookPoint(event);
     if (!point) return;
@@ -1284,13 +1445,39 @@ export class BookEngine {
     const pageWidth = this.#config.pageHeight * this.#pageAspect;
     const pageHeight = this.#config.pageHeight;
     if (Math.abs(point.y) > pageHeight * 0.55 || Math.abs(point.x) > pageWidth * 1.04) return;
-    const outerThreshold = this.#zoom > 1.05 ? 0.76 : 0.28;
+    const focusedSpread =
+      this.#displayMode === 'focused'
+        ? getSpread(getSpreadIndexForPage(this.#currentPage, this.pageCount), this.pageCount)
+        : null;
+    const focusedOnLeft = focusedSpread?.leftPage === this.#currentPage;
+    const forwardThreshold =
+      this.#displayMode === 'focused'
+        ? focusedOnLeft
+          ? -0.18
+          : 0.72
+        : this.#zoom > 1.05
+          ? 0.76
+          : 0.28;
+    const backwardThreshold =
+      this.#displayMode === 'focused'
+        ? focusedOnLeft
+          ? -0.72
+          : 0.18
+        : this.#zoom > 1.05
+          ? 0.76
+          : 0.28;
     const direction: TurnDirection | null =
-      point.x > pageWidth * outerThreshold && this.canGoForward
-        ? 'forward'
-        : point.x < -pageWidth * outerThreshold && this.canGoBackward
-          ? 'backward'
-          : null;
+      this.#displayMode === 'focused'
+        ? point.x > pageWidth * forwardThreshold && this.canGoForward
+          ? 'forward'
+          : point.x < pageWidth * backwardThreshold && this.canGoBackward
+            ? 'backward'
+            : null
+        : point.x > pageWidth * forwardThreshold && this.canGoForward
+          ? 'forward'
+          : point.x < -pageWidth * backwardThreshold && this.canGoBackward
+            ? 'backward'
+            : null;
     if (!direction) {
       if (this.#zoom > 1.05 && Math.abs(point.x) <= pageWidth) {
         event.preventDefault();
@@ -1305,12 +1492,22 @@ export class BookEngine {
     this.#renderer.domElement.setPointerCapture(event.pointerId);
     this.#stateMachine.transition('DRAGGING', { turnDirection: direction });
     this.#pauseBackgroundWork();
+    const targetPage =
+      this.#displayMode === 'focused'
+        ? clamp(this.#currentPage + (direction === 'forward' ? 1 : -1), 1, this.pageCount)
+        : null;
+    const focusOnly =
+      targetPage !== null &&
+      getSpreadIndexForPage(targetPage, this.pageCount) === this.#spreadIndex;
     const boundaryClose =
-      getAdjacentSpreadIndex(this.#spreadIndex, this.pageCount, direction) === null;
+      !focusOnly && getAdjacentSpreadIndex(this.#spreadIndex, this.pageCount, direction) === null;
     const boundaryEdge = direction === 'forward' ? 'back' : 'front';
-    const prepared = boundaryClose
-      ? this.#prepareBoundaryTurn(boundaryEdge, 1)
-      : this.#prepareTurnWithFeedback(direction);
+    const prepared = focusOnly
+      ? Promise.resolve()
+      : boundaryClose
+        ? this.#prepareBoundaryTurn(boundaryEdge, 1)
+        : this.#prepareTurnWithFeedback(direction);
+    const startedAt = performance.now();
     const drag: DragSession = {
       pointerId: event.pointerId,
       direction,
@@ -1325,13 +1522,24 @@ export class BookEngine {
       prepared,
       ready: false,
       boundaryClose,
+      focusOnly,
+      targetPage,
+      startedAt,
+      maxDistancePx: 0,
+      startClientX: event.clientX,
+      startClientY: event.clientY,
     };
     this.#drag = drag;
     void prepared
       .then(() => {
         if (this.#drag === drag) {
           drag.ready = true;
-          if (drag.boundaryClose) {
+          if (drag.focusOnly) {
+            const startFocus = this.#focusXForPage(this.#currentPage);
+            const targetFocus = this.#focusXForPage(drag.targetPage ?? this.#currentPage);
+            this.#focusX = startFocus + (targetFocus - startFocus) * drag.progress;
+            this.#applyCamera();
+          } else if (drag.boundaryClose) {
             this.#updateBoundaryTurn(
               drag.progress,
               drag.direction === 'forward' ? 'back' : 'front',
@@ -1346,6 +1554,22 @@ export class BookEngine {
   };
 
   #onPointerMove = (event: PointerEvent): void => {
+    if (this.#activePointers.has(event.pointerId)) {
+      this.#activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    }
+    if (this.#pinch && this.#activePointers.size >= 2) {
+      event.preventDefault();
+      const points = [...this.#activePointers.values()];
+      const midpoint = {
+        clientX: (points[0].x + points[1].x) / 2,
+        clientY: (points[0].y + points[1].y) / 2,
+      } as MouseEvent;
+      this.#setZoom(
+        this.#pinch.startZoom * (this.#pointerDistance() / this.#pinch.startDistance),
+        this.#localBookPoint(midpoint),
+      );
+      return;
+    }
     const drag = this.#drag;
     if (!drag) {
       this.#updateCornerPreview(event);
@@ -1359,12 +1583,21 @@ export class BookEngine {
     const pageHeight = this.#config.pageHeight;
     const progress = progressFromDrag(drag.start.x, point.x, pageWidth * 1.55, drag.direction);
     const now = performance.now();
+    drag.maxDistancePx = Math.max(
+      drag.maxDistancePx,
+      Math.hypot(event.clientX - drag.startClientX, event.clientY - drag.startClientY),
+    );
     this.#updateDragVelocity(drag, progress, now);
     drag.progress = progress;
     drag.pointerV = clamp(point.y / pageHeight + 0.5, 0, 1);
     drag.verticalDrag = clamp((point.y - drag.start.y) / pageHeight, -1, 1);
     if (drag.ready) {
-      if (drag.boundaryClose) {
+      if (drag.focusOnly) {
+        const startFocus = this.#focusXForPage(this.#currentPage);
+        const targetFocus = this.#focusXForPage(drag.targetPage ?? this.#currentPage);
+        this.#focusX = startFocus + (targetFocus - startFocus) * progress;
+        this.#applyCamera();
+      } else if (drag.boundaryClose) {
         this.#updateBoundaryTurn(
           progress,
           drag.direction === 'forward' ? 'back' : 'front',
@@ -1377,6 +1610,14 @@ export class BookEngine {
   };
 
   #onPointerUp = (event: PointerEvent): void => {
+    this.#activePointers.delete(event.pointerId);
+    if (this.#pinch) {
+      if (this.#activePointers.size < 2) this.#pinch = null;
+      if (this.#renderer.domElement.hasPointerCapture(event.pointerId)) {
+        this.#renderer.domElement.releasePointerCapture(event.pointerId);
+      }
+      return;
+    }
     const drag = this.#drag;
     if (!drag || drag.pointerId !== event.pointerId) return;
     event.preventDefault();
@@ -1388,9 +1629,17 @@ export class BookEngine {
     void this.#finishDrag(drag);
   };
 
-  #onPointerCancel = (event: PointerEvent): void => this.#cancelPointerDrag(event);
+  #onPointerCancel = (event: PointerEvent): void => {
+    this.#activePointers.delete(event.pointerId);
+    if (this.#activePointers.size < 2) this.#pinch = null;
+    this.#cancelPointerDrag(event);
+  };
 
-  #onLostPointerCapture = (event: PointerEvent): void => this.#cancelPointerDrag(event);
+  #onLostPointerCapture = (event: PointerEvent): void => {
+    this.#activePointers.delete(event.pointerId);
+    if (this.#activePointers.size < 2) this.#pinch = null;
+    this.#cancelPointerDrag(event);
+  };
 
   #cancelPointerDrag(event: PointerEvent): void {
     const drag = this.#drag;
@@ -1398,6 +1647,12 @@ export class BookEngine {
     this.#drag = null;
     this.#decayDragVelocity(drag, performance.now());
     void this.#finishDrag(drag, true);
+  }
+
+  #pointerDistance(): number {
+    const points = [...this.#activePointers.values()];
+    if (points.length < 2) return 1;
+    return Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
   }
 
   #updateDragVelocity(drag: DragSession, progress: number, now: number): void {
@@ -1513,10 +1768,47 @@ export class BookEngine {
     try {
       await drag.prepared;
       if (this.#stateMachine.state !== 'DRAGGING') return;
-      const isClick = drag.progress < 0.035 && Math.abs(drag.velocity) < 0.16;
+      const isClick = drag.maxDistancePx <= 8 && performance.now() - drag.startedAt <= 420;
       const commit =
         !cancelled &&
         (isClick || shouldCommitTurn({ progress: drag.progress, velocity: drag.velocity }));
+      if (drag.focusOnly) {
+        const targetPage = drag.targetPage;
+        if (!targetPage) throw new Error('移动端聚焦翻页缺少目标页。');
+        const startFocus = this.#focusXForPage(this.#currentPage);
+        const targetFocus = this.#focusXForPage(targetPage);
+        if (commit) {
+          this.#stateMachine.transition('TURNING', { turnDirection: drag.direction });
+          const update = (value: number): void => {
+            this.#focusX = startFocus + (targetFocus - startFocus) * value;
+            this.#applyCamera();
+          };
+          if (isClick) {
+            await this.#animate(drag.progress, 1, 200 * (1 - drag.progress), update);
+          } else {
+            await this.#animateSpring(drag.progress, 1, Math.max(0, drag.velocity), update);
+          }
+          this.#currentPage = targetPage;
+          this.#stateMachine.transition('OPEN', {
+            currentPage: targetPage,
+            displayMode: this.#displayMode,
+          });
+          this.#schedulePrefetch(this.#generation);
+        } else {
+          this.#stateMachine.transition('SNAPPING_BACK', { turnDirection: drag.direction });
+          const update = (value: number): void => {
+            this.#focusX = startFocus + (targetFocus - startFocus) * value;
+            this.#applyCamera();
+          };
+          await this.#animateSpring(drag.progress, 0, Math.min(0, drag.velocity), update);
+          this.#focusX = startFocus;
+          this.#stateMachine.transition('OPEN', {
+            currentPage: this.#currentPage,
+            displayMode: this.#displayMode,
+          });
+        }
+        return;
+      }
       if (drag.boundaryClose) {
         const edge = drag.direction === 'forward' ? 'back' : 'front';
         if (commit) {
@@ -1565,7 +1857,11 @@ export class BookEngine {
             ),
           );
           this.#settleBoundaryTurn(edge, true);
-          this.#stateMachine.transition('OPEN', { spreadIndex: this.#spreadIndex });
+          this.#stateMachine.transition('OPEN', {
+            spreadIndex: this.#spreadIndex,
+            currentPage: this.#currentPage,
+            displayMode: this.#displayMode,
+          });
           this.#schedulePrefetch(this.#generation);
           this.#scheduleReadingUpgrade(this.#generation);
         }
@@ -1596,7 +1892,11 @@ export class BookEngine {
           this.#updateTurn(progress, drag.direction, drag.pointerV, drag.verticalDrag, false);
         });
         await this.#restoreCurrentSpread();
-        this.#stateMachine.transition('OPEN', { spreadIndex: this.#spreadIndex });
+        this.#stateMachine.transition('OPEN', {
+          spreadIndex: this.#spreadIndex,
+          currentPage: this.#currentPage,
+          displayMode: this.#displayMode,
+        });
       }
     } catch (reason) {
       this.#handleRuntimeError(reason);

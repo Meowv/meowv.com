@@ -1,4 +1,4 @@
-import { clampSpreadIndex } from './spreads';
+import { clampSpreadIndex, getPrimaryPageForSpread } from './spreads';
 import type {
   BookSnapshot,
   BookSnapshotPatch,
@@ -37,12 +37,25 @@ function initialSnapshot(
   const input = typeof initial === 'string' ? { state: initial } : initial;
   const pageCount =
     Number.isInteger(input.pageCount) && (input.pageCount ?? 0) >= 0 ? (input.pageCount ?? 0) : 0;
+  const spreadIndex = clampSpreadIndex(input.spreadIndex ?? 0, pageCount);
+  const currentPage =
+    pageCount === 0
+      ? 0
+      : Math.min(
+          pageCount,
+          Math.max(
+            1,
+            Math.trunc(input.currentPage ?? getPrimaryPageForSpread(spreadIndex, pageCount)),
+          ),
+        );
 
   return Object.freeze({
     state: input.state,
     previousState: input.previousState ?? null,
     pageCount,
-    spreadIndex: clampSpreadIndex(input.spreadIndex ?? 0, pageCount),
+    spreadIndex,
+    currentPage,
+    displayMode: input.displayMode ?? 'spread',
     turnDirection: input.turnDirection ?? null,
     error: input.error ?? null,
     changedAt: input.changedAt ?? Date.now(),
@@ -53,18 +66,30 @@ function normalizePatch(
   state: BookState,
   current: Readonly<BookSnapshot>,
   patch: BookSnapshotPatch,
-): Pick<BookSnapshot, 'pageCount' | 'spreadIndex' | 'turnDirection' | 'error'> {
+): Pick<
+  BookSnapshot,
+  'pageCount' | 'spreadIndex' | 'currentPage' | 'displayMode' | 'turnDirection' | 'error'
+> {
   const pageCount = patch.pageCount ?? current.pageCount;
   if (!Number.isInteger(pageCount) || pageCount < 0) {
     throw new RangeError('pageCount 必须是非负整数。');
   }
 
   const spreadIndex = clampSpreadIndex(patch.spreadIndex ?? current.spreadIndex, pageCount);
+  const currentPage =
+    pageCount === 0
+      ? 0
+      : Math.min(
+          pageCount,
+          Math.max(1, Math.trunc((patch.currentPage ?? current.currentPage) || 1)),
+        );
   const keepsDirection = state === 'DRAGGING' || state === 'TURNING' || state === 'SNAPPING_BACK';
 
   return {
     pageCount,
     spreadIndex,
+    currentPage,
+    displayMode: patch.displayMode ?? current.displayMode,
     turnDirection: keepsDirection ? (patch.turnDirection ?? current.turnDirection) : null,
     error:
       state === 'ERROR' ? (patch.error ?? current.error ?? new Error('仿真书状态异常。')) : null,

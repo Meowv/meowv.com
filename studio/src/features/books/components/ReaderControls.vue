@@ -39,7 +39,7 @@ defineEmits<{
 const actionTitle = (action: string, shortcut: string): string => `${action}（${shortcut}）`;
 const previousAction = (): string => (props.currentPage <= 1 ? '合上书' : '上一页');
 const nextAction = (): string =>
-  props.currentPage >= Math.max(1, props.pageCount - 1) ? '合上书' : '下一页';
+  props.currentPage >= Math.max(1, props.pageCount) ? '合上书' : '下一页';
 </script>
 
 <template>

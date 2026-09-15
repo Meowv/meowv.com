@@ -60,6 +60,11 @@ export function getSpreadIndexForPage(pageNumber: number, pageCount: number): nu
   return pageNumber === 1 ? 0 : Math.floor(pageNumber / 2);
 }
 
+export function getPrimaryPageForSpread(spreadIndex: number, pageCount: number): number {
+  const spread = getSpread(spreadIndex, pageCount);
+  return spread.leftPage ?? spread.rightPage ?? 0;
+}
+
 export function canTurnForward(spreadIndex: number, pageCount: number): boolean {
   return clampSpreadIndex(spreadIndex, pageCount) < getLastSpreadIndex(pageCount);
 }

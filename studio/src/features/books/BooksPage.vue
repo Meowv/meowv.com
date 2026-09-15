@@ -125,6 +125,7 @@ const loadMessage = ref('正在识别书籍…');
 const loadProgress = ref(0);
 const pageCount = ref(0);
 const spreadIndex = ref(0);
+const currentPageValue = ref(0);
 const canGoForward = ref(false);
 const canGoBack = ref(false);
 const showReaderTip = ref(false);
@@ -183,10 +184,7 @@ pageStateMachine.subscribe((snapshot) => {
 
 const bookClosed = computed(() => state.value === 'CLOSED');
 const bookOpen = computed(() => state.value === 'OPEN');
-const currentPage = computed(() => {
-  if (pageCount.value < 1) return 0;
-  return spreadIndex.value === 0 ? 1 : Math.min(pageCount.value, spreadIndex.value * 2);
-});
+const currentPage = computed(() => currentPageValue.value);
 const sortedShelfEntries = computed(() => {
   return [...shelfEntries.value].sort((left, right) => right.lastOpenedAt - left.lastOpenedAt);
 });
@@ -259,6 +257,7 @@ function syncEngineSnapshot(): void {
   state.value = snapshot.state;
   pageCount.value = snapshot.pageCount;
   spreadIndex.value = snapshot.spreadIndex;
+  currentPageValue.value = snapshot.currentPage;
   canGoForward.value = engine.canGoForward;
   canGoBack.value = engine.canGoBackward;
 }
@@ -346,6 +345,7 @@ function resetReaderView(): void {
   readerMounted.value = false;
   pageCount.value = 0;
   spreadIndex.value = 0;
+  currentPageValue.value = 0;
   canGoForward.value = false;
   canGoBack.value = false;
   showReaderTip.value = false;
@@ -549,7 +549,7 @@ async function openFile(
     const openedPublication = orphanPublication;
     const provider = await openedPublication.paginate(readerProfile.value, {
       signal: controller.signal,
-      paginationKey: `${fingerprint}:books-renderer-v2:${
+      paginationKey: `${fingerprint}:books-renderer-v3:${
         openedPublication.layout === 'fixed' ? 'fixed' : readerLayoutKey(readerProfile.value)
       }`,
       onProgress: (progress) => {
@@ -613,7 +613,11 @@ async function openFile(
     await bookshelf.upsert(currentEntry);
     clearReturnedToShelf();
 
-    await instance.load(provider, initialSpread, publicationCover);
+    await instance.load(provider, {
+      initialPage,
+      initialSpreadIndex: initialSpread,
+      publicationCoverCanvas: publicationCover,
+    });
     if (currentOperation !== operationId) return;
     syncEngineSnapshot();
     readerReady.value = true;
@@ -893,6 +897,21 @@ async function applyReaderProfile(profile: ReaderLayoutProfile): Promise<void> {
   const file = currentFile;
   const handle = currentHandle;
   const entry = currentEntry ?? undefined;
+  const previousProfile = readerProfile.value;
+  const themeOnly =
+    previousProfile.fontFamily === profile.fontFamily &&
+    previousProfile.fontSize === profile.fontSize &&
+    previousProfile.lineHeight === profile.lineHeight &&
+    previousProfile.pageMargin === profile.pageMargin &&
+    previousProfile.theme !== profile.theme;
+  if (themeOnly && engine) {
+    readerProfile.value = normalizeReaderLayout(profile);
+    persistReaderLayout(readerProfile.value);
+    await pageProvider.setAppearance?.(readerProfile.value.theme);
+    await engine.refreshPages();
+    readerPanel.value = null;
+    return;
+  }
   const locator = pageProvider.locatorForPage(Math.max(1, currentPage.value));
   readerProfile.value = normalizeReaderLayout(profile);
   persistReaderLayout(readerProfile.value);

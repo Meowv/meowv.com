@@ -36,7 +36,7 @@ function createRenderedPage(
     canvas,
     width: canvas.width,
     height: canvas.height,
-    targetWidth: Math.round(options.targetWidth),
+    targetWidth: canvas.width,
     quality: options.quality,
     byteSize: canvas.width * canvas.height * 4,
     dispose: () => {
@@ -143,14 +143,18 @@ export class PdfPageProvider implements PageProvider {
       throw new Error(`PDF 第 ${pageNumber} 页尺寸无效。`);
     }
 
-    const canvasWidth = Math.max(1, Math.min(MAX_TEXTURE_EDGE, Math.round(options.targetWidth)));
-    const canvasHeight = Math.max(
+    const requestedWidth = Math.max(1, Math.round(options.targetWidth));
+    const requestedHeight = Math.max(
       1,
-      Math.min(
-        MAX_TEXTURE_EDGE,
-        Math.round(canvasWidth * (referenceSize.height / referenceSize.width)),
-      ),
+      Math.round(requestedWidth * (referenceSize.height / referenceSize.width)),
     );
+    const scaleToTexture = Math.min(
+      1,
+      MAX_TEXTURE_EDGE / requestedWidth,
+      MAX_TEXTURE_EDGE / requestedHeight,
+    );
+    const canvasWidth = Math.max(1, Math.round(requestedWidth * scaleToTexture));
+    const canvasHeight = Math.max(1, Math.round(requestedHeight * scaleToTexture));
     const scale = Math.min(
       canvasWidth / baseViewport.width,
       canvasHeight / baseViewport.height,

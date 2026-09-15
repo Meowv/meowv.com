@@ -24,6 +24,7 @@ export type BookFormat = (typeof BOOK_FORMATS)[number];
 export type BookLayoutKind = 'fixed' | 'reflowable';
 export type PageTheme = 'paper' | 'warm' | 'night';
 export type ReaderFontFamily = 'publisher' | 'serif' | 'sans';
+export type BookDisplayMode = 'spread' | 'focused';
 
 export interface PublicationMetadata {
   title: string;
@@ -76,6 +77,8 @@ export interface PageRenderOptions {
   /** Canvas 的目标像素宽度，而不是 CSS 宽度。 */
   targetWidth: number;
   quality: PageRenderQuality;
+  /** 数值越小越优先；后台预热使用较低优先级。 */
+  priority?: number;
   signal?: AbortSignal;
 }
 
@@ -94,6 +97,7 @@ export interface PageProvider {
   renderPage(pageNumber: number, options: PageRenderOptions): Promise<RenderedPage>;
   locatorForPage(pageNumber: number): BookLocator;
   pageForLocator(locator: BookLocator): number;
+  setAppearance?(theme: PageTheme): void | Promise<void>;
   dispose(): Promise<void>;
 }
 
@@ -115,13 +119,18 @@ export interface BookSnapshot {
   previousState: BookState | null;
   pageCount: number;
   spreadIndex: number;
+  currentPage: number;
+  displayMode: BookDisplayMode;
   turnDirection: TurnDirection | null;
   error: Error | null;
   changedAt: number;
 }
 
 export type BookSnapshotPatch = Partial<
-  Pick<BookSnapshot, 'pageCount' | 'spreadIndex' | 'turnDirection' | 'error'>
+  Pick<
+    BookSnapshot,
+    'pageCount' | 'spreadIndex' | 'currentPage' | 'displayMode' | 'turnDirection' | 'error'
+  >
 >;
 
 export type BookStateListener = (

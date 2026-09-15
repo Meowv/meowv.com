@@ -29,8 +29,9 @@ export function createPageCacheKey(
   pageNumber: number,
   targetWidth: number,
   quality: RenderedPage['quality'],
+  appearanceRevision = 0,
 ): string {
-  return `${pageNumber}:${Math.round(targetWidth)}:${quality}`;
+  return `${appearanceRevision}:${pageNumber}:${Math.round(targetWidth)}:${quality}`;
 }
 
 export class PageCache {

@@ -35,6 +35,5 @@ export function readerLayoutKey(profile: ReaderLayoutProfile): string {
     profile.fontSize,
     profile.lineHeight.toFixed(2),
     profile.pageMargin,
-    profile.theme,
   ].join(':');
 }

@@ -45,7 +45,7 @@ export function createRenderedPage(
     canvas,
     width: canvas.width,
     height: canvas.height,
-    targetWidth: Math.round(options.targetWidth),
+    targetWidth: canvas.width,
     quality: options.quality,
     byteSize: canvas.width * canvas.height * 4,
     dispose: () => {

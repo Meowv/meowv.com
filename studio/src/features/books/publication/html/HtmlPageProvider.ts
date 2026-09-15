@@ -33,18 +33,6 @@ interface SectionPagination {
   pageCount: number;
 }
 
-interface TextGlyph {
-  text: string;
-  rect: DOMRect;
-}
-
-interface TextRun {
-  text: string;
-  left: number;
-  top: number;
-  height: number;
-}
-
 function fixedViewport(source: string): PageSize {
   const documentNode = new DOMParser().parseFromString(source, 'text/html');
   const viewport =
@@ -73,6 +61,17 @@ export interface HtmlPageProviderOptions {
 }
 
 const REFLOWABLE_PAGE_SIZE: PageSize = { width: 700, height: 1000 };
+const REFLOWABLE_BLOCK_SELECTOR = [
+  'p',
+  'li',
+  'blockquote',
+  'pre',
+  'figcaption',
+  'dt',
+  'dd',
+  'td',
+  'th',
+].join(',');
 const BLOCKED_TAGS = [
   'script',
   'iframe',
@@ -92,7 +91,7 @@ const BLOCKED_TAGS = [
 function themeColors(profile: ReaderLayoutProfile): { background: string; foreground: string } {
   if (profile.theme === 'night') return { background: '#25221f', foreground: '#e8dfd2' };
   if (profile.theme === 'paper') return { background: '#fffdf8', foreground: '#241f1b' };
-  return { background: '#ead0aa', foreground: '#2c241d' };
+  return { background: '#f2eadc', foreground: '#282521' };
 }
 
 function fontFamily(profile: ReaderLayoutProfile): string | null {
@@ -160,6 +159,9 @@ function sanitizeHtml(source: string): string {
     WHOLE_DOCUMENT: true,
     FORBID_TAGS: BLOCKED_TAGS,
     FORBID_ATTR: ['srcdoc', 'srcset'],
+    // Foliate 会把书内图片、字体和部分样式改写为 blob URL；先保留属性，
+    // 再由下面的本地资源白名单做最终筛选。
+    ADD_URI_SAFE_ATTR: ['src', 'href', 'poster', 'xlink:href'],
   });
   const documentNode = new DOMParser().parseFromString(safe, 'text/html');
   documentNode.querySelectorAll('meta[http-equiv], link').forEach((node) => node.remove());
@@ -291,6 +293,12 @@ export class HtmlPageProvider implements PageProvider {
 
   get pageCount(): number {
     return this.#pageCount;
+  }
+
+  setAppearance(theme: ReaderLayoutProfile['theme']): void {
+    if (this.#profile.theme === theme) return;
+    this.#profile.theme = theme;
+    this.#applyLayout();
   }
 
   async #paginate(options: PublicationPaginateOptions = {}): Promise<void> {
@@ -425,6 +433,21 @@ export class HtmlPageProvider implements PageProvider {
       publicationBody.style.setProperty('color', 'inherit', 'important');
       publicationBody.style.setProperty('min-height', '100%', 'important');
       if (family) publicationBody.style.setProperty('font-family', family, 'important');
+      this.#normalizeReflowableBlocks(publicationBody);
+    }
+  }
+
+  #normalizeReflowableBlocks(publicationBody: HTMLElement): void {
+    for (const element of publicationBody.querySelectorAll<HTMLElement>(
+      REFLOWABLE_BLOCK_SELECTOR,
+    )) {
+      const style = getComputedStyle(element);
+      if (Number.parseFloat(style.marginTop) < 0) {
+        element.style.setProperty('margin-top', '0', 'important');
+      }
+      if (Number.parseFloat(style.marginBottom) < 0) {
+        element.style.setProperty('margin-bottom', '0', 'important');
+      }
     }
   }
 
@@ -455,7 +478,6 @@ export class HtmlPageProvider implements PageProvider {
     this.#applyLayout();
     this.#currentSection = index;
     await waitForImages(this.#content, signal);
-    this.#scheduleAdjacentSanitize(index, signal);
   }
 
   async #sanitizeSection(index: number, html: string, signal?: AbortSignal): Promise<string> {
@@ -465,8 +487,12 @@ export class HtmlPageProvider implements PageProvider {
     if (inflight) return inflight;
     const task = (async (): Promise<string> => {
       assertNotAborted(signal);
-      const sanitized = sanitizeHtml(html);
-      if (!this.#disposed && sanitized.length <= HtmlPageProvider.SANITIZED_CACHE_MAX_LENGTH) {
+      const sanitized = sanitizeHtml(await this.#inlineLinkedStyles(html, signal));
+      if (
+        !this.#disposed &&
+        !/\bblob:/i.test(html) &&
+        sanitized.length <= HtmlPageProvider.SANITIZED_CACHE_MAX_LENGTH
+      ) {
         this.#sanitizedCache.set(index, sanitized);
         this.#evictSanitizedCache();
       }
@@ -480,27 +506,35 @@ export class HtmlPageProvider implements PageProvider {
     }
   }
 
+  async #inlineLinkedStyles(source: string, signal?: AbortSignal): Promise<string> {
+    const documentNode = new DOMParser().parseFromString(source, 'text/html');
+    const styleBlocks: string[] = [];
+    for (const link of [
+      ...documentNode.querySelectorAll<HTMLLinkElement>('link[rel~="stylesheet"]'),
+    ]) {
+      const href = link.getAttribute('href')?.trim() ?? '';
+      if (isSafeLocalResource(href)) {
+        assertNotAborted(signal);
+        try {
+          const response = await fetch(href, { signal });
+          if (response.ok) styleBlocks.push(`<style>${await response.text()}</style>`);
+        } catch {
+          if (signal?.aborted) throw abortError();
+          // 缺失的书内样式不应阻止正文打开，正文仍由默认版式渲染。
+        }
+      }
+      link.remove();
+    }
+    if (styleBlocks.length)
+      documentNode.head.insertAdjacentHTML('afterbegin', styleBlocks.join(''));
+    return documentNode.documentElement.outerHTML;
+  }
+
   #evictSanitizedCache(): void {
     while (this.#sanitizedCache.size > HtmlPageProvider.SANITIZED_CACHE_LIMIT) {
       const oldest = this.#sanitizedCache.keys().next().value;
       if (oldest === undefined) return;
       this.#sanitizedCache.delete(oldest);
-    }
-  }
-
-  #scheduleAdjacentSanitize(index: number, signal?: AbortSignal): void {
-    for (const adjacent of [index + 1, index - 1]) {
-      if (adjacent < 0 || adjacent >= this.#sections.length) continue;
-      if (this.#sanitizedCache.has(adjacent) || this.#sanitizeInflight.has(adjacent)) continue;
-      void this.#sections[adjacent]
-        .load()
-        .then(async (source) => {
-          const html = /^(?:blob:|data:)/i.test(source)
-            ? await fetch(source).then((response) => response.text())
-            : source;
-          await this.#sanitizeSection(adjacent, html, signal);
-        })
-        .catch(() => undefined);
     }
   }
 
@@ -576,27 +610,22 @@ export class HtmlPageProvider implements PageProvider {
       }
       const colors = themeColors(this.#profile);
       const targetWidth = Math.max(1, Math.round(options.targetWidth));
-      this.#content.classList.add('books-publication-render-content--without-text');
-      let capture;
-      try {
-        capture = await snapdom(this.#viewport, {
-          backgroundColor: colors.background,
-          scale: targetWidth / this.#pageSize.width,
-          dpr: 1,
-          embedFonts: false,
-          burst: true,
-          invalidate: true,
-        });
-      } finally {
-        this.#content.classList.remove('books-publication-render-content--without-text');
-      }
+      await document.fonts.ready;
+      const capture = await snapdom(this.#viewport, {
+        backgroundColor: colors.background,
+        scale: targetWidth / this.#pageSize.width,
+        dpr: 1,
+        embedFonts: true,
+        reconcile: true,
+        burst: true,
+        invalidate: true,
+      });
       const captured = await capture.toCanvas();
       if (this.#disposed || options.signal?.aborted) {
         disposeCanvas(captured);
         throw abortError();
       }
       assertNotAborted(options.signal);
-      paintVisibleText(captured, this.#viewport, this.#content);
       const targetHeight = Math.max(
         1,
         Math.round(targetWidth / (this.#pageSize.width / this.#pageSize.height)),
@@ -638,155 +667,4 @@ export class HtmlPageProvider implements PageProvider {
     this.#host.remove();
     await this.#onDispose?.();
   }
-}
-
-const BLOCK_TEXT_TAGS = new Set([
-  'P',
-  'DIV',
-  'H1',
-  'H2',
-  'H3',
-  'H4',
-  'H5',
-  'H6',
-  'LI',
-  'BLOCKQUOTE',
-  'PRE',
-  'UL',
-  'OL',
-  'DL',
-  'TABLE',
-  'TR',
-  'TD',
-  'TH',
-  'FIGCAPTION',
-  'ASIDE',
-  'SECTION',
-  'ARTICLE',
-  'HEADER',
-  'FOOTER',
-]);
-
-function paintVisibleText(
-  canvas: HTMLCanvasElement,
-  viewport: HTMLElement,
-  content: HTMLElement,
-): void {
-  const context = canvas.getContext('2d');
-  if (!context) return;
-  const viewportRect = viewport.getBoundingClientRect();
-  const scaleX = canvas.width / viewportRect.width;
-  const scaleY = canvas.height / viewportRect.height;
-  if (!Number.isFinite(scaleX) || !Number.isFinite(scaleY)) return;
-
-  // 块级预筛：整块落在视口外的文本节点不必逐字测量与重绘。
-  const skippedBlocks = new Set<HTMLElement>();
-  const blocksOf = new Map<Text, HTMLElement>();
-  const blockWalker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT);
-  for (let node = blockWalker.nextNode(); node; node = blockWalker.nextNode()) {
-    if (!(node instanceof Text) || !node.data.trim()) continue;
-    const block = nearestTextBlock(node.parentElement);
-    if (!block) continue;
-    blocksOf.set(node, block);
-    if (skippedBlocks.has(block)) continue;
-    const rect = block.getBoundingClientRect();
-    if (
-      rect.width <= 0 ||
-      rect.height <= 0 ||
-      rect.right <= viewportRect.left ||
-      rect.left >= viewportRect.right ||
-      rect.bottom <= viewportRect.top ||
-      rect.top >= viewportRect.bottom
-    ) {
-      skippedBlocks.add(block);
-    }
-  }
-
-  const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT);
-  const range = document.createRange();
-  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-    if (!(node instanceof Text) || !node.data.trim()) continue;
-    const block = blocksOf.get(node);
-    if (block && skippedBlocks.has(block)) continue;
-    const parent = node.parentElement;
-    if (!parent) continue;
-    const style = getComputedStyle(parent);
-    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0')
-      continue;
-    const glyphs = visibleGlyphs(node, range, viewportRect);
-    if (!glyphs.length) continue;
-    context.save();
-    context.fillStyle = style.color;
-    context.font = [
-      style.fontStyle,
-      style.fontVariant,
-      style.fontWeight,
-      `${parseFloat(style.fontSize) * scaleY}px`,
-      style.fontFamily,
-    ].join(' ');
-    context.textAlign = 'left';
-    context.direction = style.direction === 'rtl' ? 'rtl' : 'ltr';
-    context.textBaseline = 'alphabetic';
-    for (const run of groupGlyphs(glyphs)) {
-      const x = (run.left - viewportRect.left) * scaleX;
-      const top = (run.top - viewportRect.top) * scaleY;
-      const height = run.height * scaleY;
-      const baseline = top + Math.min(height * 0.86, parseFloat(style.fontSize) * scaleY * 0.9);
-      context.fillText(run.text, x, baseline);
-    }
-    context.restore();
-  }
-  range.detach();
-}
-
-function nearestTextBlock(element: HTMLElement | null): HTMLElement | null {
-  let current: HTMLElement | null = element;
-  while (current && current !== document.body) {
-    if (BLOCK_TEXT_TAGS.has(current.tagName)) return current;
-    current = current.parentElement;
-  }
-  return null;
-}
-
-function visibleGlyphs(node: Text, range: Range, viewport: DOMRect): TextGlyph[] {
-  const glyphs: TextGlyph[] = [];
-  for (let start = 0; start < node.data.length;) {
-    const codePoint = node.data.codePointAt(start) ?? 0;
-    const end = start + (codePoint > 0xffff ? 2 : 1);
-    range.setStart(node, start);
-    range.setEnd(node, end);
-    const rect = range.getBoundingClientRect();
-    if (
-      rect.width > 0 &&
-      rect.height > 0 &&
-      rect.right > viewport.left &&
-      rect.left < viewport.right &&
-      rect.bottom > viewport.top &&
-      rect.top < viewport.bottom
-    ) {
-      glyphs.push({ text: node.data.slice(start, end), rect });
-    }
-    start = end;
-  }
-  return glyphs;
-}
-
-function groupGlyphs(glyphs: readonly TextGlyph[]): TextRun[] {
-  const runs: TextRun[] = [];
-  for (const glyph of glyphs) {
-    const previous = runs.at(-1);
-    const sameLine = previous && Math.abs(previous.top - glyph.rect.top) < 1.5;
-    if (sameLine) {
-      previous.text += glyph.text;
-      previous.height = Math.max(previous.height, glyph.rect.height);
-    } else {
-      runs.push({
-        text: glyph.text,
-        left: glyph.rect.left,
-        top: glyph.rect.top,
-        height: glyph.rect.height,
-      });
-    }
-  }
-  return runs;
 }
