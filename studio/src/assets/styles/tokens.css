@@ -1,9 +1,17 @@
+@font-face {
+  font-family: 'Studio Noto Sans SC';
+  src: url('/fonts/studio-noto-sans-sc-vf.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
 :root {
   color-scheme: light;
   --font-ui:
-    Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
-    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  --font-display: 'Avenir Next', 'HarmonyOS Sans SC', var(--font-ui);
+    Inter, 'Studio Noto Sans SC', ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --font-display: 'Avenir Next', 'Studio Noto Sans SC', var(--font-ui);
   --color-brand: #5a9600;
   --color-brand-strong: #3e7200;
   --color-brand-soft: #edf6df;
