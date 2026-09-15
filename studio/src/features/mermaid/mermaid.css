@@ -1026,6 +1026,11 @@
   text-shadow: var(--mermaid-background-text-shadow);
 }
 
+.studio-shell--mermaid-background:has(> .tools-background--ready) .studio-logo__wordmark {
+  filter: none;
+  text-shadow: none;
+}
+
 .studio-shell--mermaid-background:has(> .tools-background--ready) .mermaid-workbench,
 .studio-shell--mermaid-background:has(> .tools-background--ready) .mermaid-config-panel,
 .studio-shell--mermaid-background:has(> .tools-background--ready) .mermaid-canvas {
