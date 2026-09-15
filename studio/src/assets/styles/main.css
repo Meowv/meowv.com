@@ -1179,6 +1179,7 @@ body.has-dialog-open {
 }
 
 .studio-shell--markdown-background,
+.studio-shell--mermaid-background,
 .studio-shell--draw-background,
 .studio-shell--mind-background,
 .studio-shell--notes-background,
@@ -1189,6 +1190,7 @@ body.has-dialog-open {
 }
 
 .studio-shell--markdown-background > .studio-main,
+.studio-shell--mermaid-background > .studio-main,
 .studio-shell--draw-background > .studio-main,
 .studio-shell--mind-background > .studio-main,
 .studio-shell--notes-background > .studio-main,

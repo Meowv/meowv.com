@@ -25,6 +25,7 @@ import {
   drawWelcomeBackgroundVisible,
   markdownBackgroundPreviewActive,
   markdownFullscreenActive,
+  mermaidBackgroundPreviewActive,
   toolsBackgroundPreviewActive,
   workspaceActive,
   workspaceHeaderVisible,
@@ -65,6 +66,17 @@ const markdownBackgroundEnabled = computed(
     !markdownFullscreenActive.value &&
     toolsBackgroundEnabled.value &&
     toolsBackgroundApplyToOtherPages.value,
+);
+const mermaidBackgroundEnabled = computed(
+  () =>
+    isMermaidPage.value && toolsBackgroundEnabled.value && toolsBackgroundApplyToOtherPages.value,
+);
+watch(
+  mermaidBackgroundEnabled,
+  (active) => {
+    mermaidBackgroundPreviewActive.value = active;
+  },
+  { immediate: true },
 );
 watch(
   markdownBackgroundEnabled,
@@ -109,6 +121,7 @@ const supportsToolsBackground = computed(
     homeBackgroundEnabled.value ||
     officeBackgroundEnabled.value ||
     markdownBackgroundEnabled.value ||
+    mermaidBackgroundEnabled.value ||
     drawBackgroundEnabled.value ||
     mindBackgroundEnabled.value ||
     notesBackgroundEnabled.value ||
@@ -122,6 +135,7 @@ const toolsBackgroundStyle = computed<Record<string, string>>(() => {
     '--home-background-surface-opacity': `${Math.round(Math.max(0.18, surfaceOpacity) * 100)}%`,
     '--office-background-surface-opacity': `${Math.round(Math.max(0.18, surfaceOpacity) * 100)}%`,
     '--markdown-background-surface-opacity': `${Math.round(Math.max(0.18, surfaceOpacity) * 100)}%`,
+    '--mermaid-background-surface-opacity': `${Math.round(Math.max(0.18, surfaceOpacity) * 100)}%`,
     '--draw-background-surface-opacity': `${Math.round(Math.max(0.18, surfaceOpacity) * 100)}%`,
     '--mind-background-surface-opacity': `${Math.round(Math.max(0.18, surfaceOpacity) * 100)}%`,
     '--notes-background-surface-opacity': `${Math.round(Math.max(0.18, surfaceOpacity) * 100)}%`,
@@ -407,6 +421,7 @@ function isRouteActive(to: string): boolean {
       'studio-shell--office-background': officeBackgroundEnabled,
       'studio-shell--markdown-background': markdownBackgroundEnabled,
       'studio-shell--markdown-background-preview': markdownBackgroundEnabled,
+      'studio-shell--mermaid-background': mermaidBackgroundEnabled,
       'studio-shell--draw-background': drawBackgroundEnabled,
       'studio-shell--mind-background': mindBackgroundEnabled,
       'studio-shell--notes-background': notesBackgroundEnabled,

@@ -999,6 +999,47 @@
 .mermaid-canvas__message--error {
   color: var(--color-danger);
 }
+
+.studio-shell--mermaid-background:has(> .tools-background--ready) {
+  --mermaid-background-surface: color-mix(
+    in srgb,
+    var(--color-surface-solid) var(--mermaid-background-surface-opacity, 18%),
+    transparent
+  );
+  --mermaid-background-text-shadow:
+    0 0 1px rgb(255 255 255 / var(--tools-background-text-halo-opacity, 0.56)),
+    0 1px 4px rgb(255 255 255 / var(--tools-background-text-halo-opacity, 0.56));
+}
+
+:root[data-theme='dark'] .studio-shell--mermaid-background:has(> .tools-background--ready) {
+  --mermaid-background-text-shadow:
+    0 0 1px rgb(0 0 0 / var(--tools-background-text-halo-opacity, 0.56)),
+    0 1px 4px rgb(0 0 0 / var(--tools-background-text-halo-opacity, 0.56));
+}
+
+.studio-shell--mermaid-background:has(> .tools-background--ready) > .studio-header,
+.studio-shell--mermaid-background:has(> .tools-background--ready)
+  .mermaid-workbench
+  :is(.mermaid-toolbar, .mermaid-sidebar, .mermaid-preview-pane, .mermaid-mobile-tabs) {
+  background: var(--mermaid-background-surface);
+  backdrop-filter: blur(18px) saturate(125%);
+  text-shadow: var(--mermaid-background-text-shadow);
+}
+
+.studio-shell--mermaid-background:has(> .tools-background--ready) .mermaid-workbench,
+.studio-shell--mermaid-background:has(> .tools-background--ready) .mermaid-config-panel,
+.studio-shell--mermaid-background:has(> .tools-background--ready) .mermaid-canvas {
+  background-color: transparent;
+}
+
+.studio-shell--mermaid-background:has(> .tools-background--ready) .mermaid-monaco .view-line {
+  text-shadow: var(--mermaid-background-text-shadow);
+}
+
+.studio-shell--mermaid-background:has(> .tools-background--ready) .mermaid-workbench:fullscreen {
+  background: var(--color-bg);
+}
+
 @media (max-width: 760px) {
   .studio-shell--mermaid .studio-header__feature-name {
     display: none;

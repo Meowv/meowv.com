@@ -39,6 +39,7 @@ import StudioLogo from '@/components/StudioLogo.vue';
 import { sanitizeMermaidSvg } from '@/features/markdown/services/mermaid-security';
 import { useFileHandoff } from '@/core/browser/file-handoff';
 import { enqueueMermaidTask } from '@/core/mermaid/scheduler';
+import { mermaidBackgroundPreviewActive } from '@/core/shared/route-state';
 import {
   DEFAULT_MERMAID_CONFIG,
   DEFAULT_MERMAID_SOURCE,
@@ -266,6 +267,42 @@ function registerThemes(): void {
       'editor.lineHighlightBackground': '#1b2230',
     },
   });
+  monaco.editor.defineTheme('mermaid-light-background-preview', {
+    base: 'vs',
+    inherit: true,
+    rules: [
+      { token: 'keyword', foreground: '9f0035', fontStyle: 'bold' },
+      { token: 'operator', foreground: '0f766e' },
+      { token: 'comment', foreground: '64748b' },
+    ],
+    colors: {
+      'editor.background': '#ffffff00',
+      'editorGutter.background': '#ffffff00',
+      'editor.lineHighlightBackground': '#ffffff24',
+    },
+  });
+  monaco.editor.defineTheme('mermaid-dark-background-preview', {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [
+      { token: 'keyword', foreground: 'ff7aa4', fontStyle: 'bold' },
+      { token: 'operator', foreground: '5eead4' },
+      { token: 'comment', foreground: '94a3b8' },
+    ],
+    colors: {
+      'editor.background': '#14182000',
+      'editorGutter.background': '#14182000',
+      'editor.lineHighlightBackground': '#00000030',
+    },
+  });
+}
+function editorTheme(): string {
+  if (mermaidBackgroundPreviewActive.value) {
+    return resolvedTheme.value === 'dark'
+      ? 'mermaid-dark-background-preview'
+      : 'mermaid-light-background-preview';
+  }
+  return resolvedTheme.value === 'dark' ? 'mermaid-dark' : 'mermaid-light';
 }
 function editorOptions(): monaco.editor.IStandaloneEditorConstructionOptions {
   return {
@@ -280,7 +317,7 @@ function editorOptions(): monaco.editor.IStandaloneEditorConstructionOptions {
     smoothScrolling: true,
     wordWrap: 'on',
     tabSize: 2,
-    theme: resolvedTheme.value === 'dark' ? 'mermaid-dark' : 'mermaid-light',
+    theme: editorTheme(),
     renderLineHighlight: 'line',
     bracketPairColorization: { enabled: true },
     folding: true,
@@ -1228,10 +1265,12 @@ function closeMenus(event: PointerEvent): void {
 watch(resolvedTheme, () => {
   // 主题切换会立即触发一次渲染，不应把已有结果标记为过期。
   previewOutdated.value = false;
-  if (sourceEditor)
-    monaco.editor.setTheme(resolvedTheme.value === 'dark' ? 'mermaid-dark' : 'mermaid-light');
+  if (sourceEditor) monaco.editor.setTheme(editorTheme());
   // 界面主题会影响默认图表主题，即使暂停了输入自动渲染，显式切换主题也应立即同步预览。
   if (initialLoadComplete) void render();
+});
+watch(mermaidBackgroundPreviewActive, () => {
+  if (sourceEditor) monaco.editor.setTheme(editorTheme());
 });
 watch(autoRender, (enabled) => {
   if (enabled && previewOutdated.value) void render();
