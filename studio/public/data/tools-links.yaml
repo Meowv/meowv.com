@@ -154,6 +154,12 @@ categories:
         url: https://www.nmme.xyz/favicon.ico
       url: https://www.nmme.xyz
 
+    - id: kaixinso
+      name: 开心搜
+      icon:
+        url: https://kaixinso.com/favicon.ico
+      url: https://kaixinso.com
+
     - id: zhuiju
       name: 追剧么指南
       icon:
