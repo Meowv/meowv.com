@@ -59,6 +59,7 @@ const CATALOG_BUCKETS = [
   'mobile:static',
 ] as const;
 type CatalogBucket = (typeof CATALOG_BUCKETS)[number];
+const TOOLS_BACKGROUND_CATEGORY_NAME = '美女';
 
 const catalogs = new Map<CatalogBucket, WallpaperCatalog>();
 const catalogPromises = new Map<CatalogBucket, Promise<WallpaperCatalog>>();
@@ -472,10 +473,18 @@ async function randomBackground(
   payload: WallpaperRandomBackgroundRequest,
 ): Promise<WallpaperItem | null> {
   const catalog = await loadCatalog('desktop:dynamic');
+  const category = catalog.categories.find(
+    (item) =>
+      item.deviceType === 'desktop' &&
+      item.contentType === 'dynamic' &&
+      item.name === TOOLS_BACKGROUND_CATEGORY_NAME,
+  );
+  if (!category) return null;
   const playable = catalog.items.filter(
     (item) =>
       item.deviceType === 'desktop' &&
       item.contentType === 'dynamic' &&
+      categoryMatches(item, category.id, catalog.categories) &&
       Boolean(item.previewVideoUrl),
   );
   if (!playable.length) return null;

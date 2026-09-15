@@ -246,7 +246,7 @@ async function requestRandomVideo(): Promise<boolean> {
     if (sequence !== requestSequence.value) return false;
     if (!item) {
       isLoading.value = false;
-      errorMessage.value = '暂未发现可用的电脑动态壁纸。';
+      errorMessage.value = '暂未发现可用的动态壁纸。';
       return false;
     }
     const source = sourceFromWallpaper(item);
