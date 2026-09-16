@@ -75,6 +75,10 @@ import {
   safeMermaidFilename,
 } from '@/features/mermaid/services/export';
 import type { MermaidDocument, MermaidPreviewState } from '@/features/mermaid/types';
+import {
+  MermaidEditingSession,
+  type MermaidVisualRenderResult,
+} from '@/features/mermaid/visual/MermaidEditingSession';
 
 interface MonacoWorkerEnvironment {
   getWorker(moduleId: string, label: string): Worker;
@@ -94,12 +98,9 @@ const title = ref('未命名图表');
 const documentId = ref<string>(crypto.randomUUID());
 const createdAt = ref(Date.now());
 const updatedAt = ref(Date.now());
-const previewSvg = ref('');
 const previewState = ref<MermaidPreviewState>('idle');
 const previewError = ref('');
 const errorLine = ref<number | null>(null);
-const previewOutdated = ref(false);
-const shouldFitNextRender = ref(true);
 const detectedType = ref('');
 const activeTab = ref<'code' | 'config' | 'examples'>('code');
 const mobilePane = ref<'editor' | 'preview'>('editor');
@@ -111,16 +112,11 @@ const documents = ref<MermaidDocument[]>([]);
 const exportOpen = ref(false);
 const copyOpen = ref(false);
 const importing = ref(false);
-const autoRender = ref(true);
 const gridEnabled = ref(true);
 const sidebarWidth = ref(360);
 const isResizingSidebar = ref(false);
 const scale = ref(1);
-const translate = ref({ x: 0, y: 0 });
-const isPanning = ref(false);
-const panStart = ref({ x: 0, y: 0, tx: 0, ty: 0 });
 const canvasElement = ref<HTMLElement | null>(null);
-const svgElement = ref<HTMLElement | null>(null);
 const sourceEditorMount = ref<HTMLElement | null>(null);
 const fileInput = ref<HTMLInputElement | null>(null);
 const saveState = ref<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -130,10 +126,9 @@ const conflictDocument = ref<MermaidDocument | null>(null);
 const isFullscreen = ref(false);
 let sourceEditor: monaco.editor.IStandaloneCodeEditor | null = null;
 let sourceModel: monaco.editor.ITextModel | null = null;
-let renderTimer: number | undefined;
-let renderSequence = 0;
 let saveTimer: number | undefined;
 let saveQueue = Promise.resolve();
+let editingSession: MermaidEditingSession | null = null;
 let persistedDocumentId: string | null = null;
 let persistedDocumentUpdatedAt: number | null = null;
 let initialLoadComplete = false;
@@ -212,7 +207,8 @@ const visualConfig = computed<MermaidVisualConfig>(() =>
 );
 const inlineConfigWarning = computed(() => sourceHasInlineConfig(source.value));
 const canExport = computed(
-  () => previewState.value === 'success' && !previewOutdated.value && Boolean(previewSvg.value),
+  () =>
+    previewState.value === 'success' && Boolean(source.value.trim()) && !parsedConfig.value.error,
 );
 const defaultConfigValue = parseMermaidConfig(DEFAULT_MERMAID_CONFIG).value;
 const isDefaultConfig = computed(
@@ -339,32 +335,6 @@ function mountEditors(): void {
     ...editorOptions(),
     model: sourceModel,
   });
-  sourceEditor.onDidChangeModelContent(() => {
-    if (source.value !== sourceEditor?.getValue()) {
-      source.value = sourceEditor?.getValue() ?? '';
-      changed();
-    }
-  });
-}
-function updateEditorModel(value: string): void {
-  const editor = sourceEditor;
-  if (!editor || editor.getValue() === value) return;
-  editor.pushUndoStop();
-  editor.executeEdits('mermaid-sync', [
-    { range: editor.getModel()?.getFullModelRange() ?? new monaco.Range(1, 1, 1, 1), text: value },
-  ]);
-  editor.pushUndoStop();
-}
-function replaceSourceModel(): void {
-  if (!sourceEditor) return;
-  const uri = monaco.Uri.parse(`inmemory://mermaid/${documentId.value}.mmd`);
-  const nextModel =
-    monaco.editor.getModel(uri) ?? monaco.editor.createModel(source.value, 'mermaid', uri);
-  if (nextModel.getValue() !== source.value) nextModel.setValue(source.value);
-  const previousModel = sourceEditor.getModel();
-  if (previousModel !== nextModel) sourceEditor.setModel(nextModel);
-  sourceModel = nextModel;
-  if (previousModel && previousModel !== nextModel) previousModel.dispose();
 }
 function setSourceMarker(message = '', line: number | null = null): void {
   if (!sourceModel) return;
@@ -390,15 +360,13 @@ function applyVisualConfig(patch: Partial<MermaidVisualConfig>): void {
   if (parsedConfig.value.error) return;
   const next = updateDocumentVisualConfig(parsedConfig.value.value, patch);
   configText.value = serializeMermaidConfig(next);
-  changed(false);
-  previewOutdated.value = false;
-  void render();
+  changed();
+  syncVisualConfig();
 }
 function resetConfig(): void {
   configText.value = DEFAULT_MERMAID_CONFIG;
-  changed(false);
-  previewOutdated.value = false;
-  void render();
+  changed();
+  syncVisualConfig();
 }
 function toggleGrid(): void {
   gridEnabled.value = !gridEnabled.value;
@@ -462,21 +430,20 @@ function handleSidebarResizeKeydown(event: KeyboardEvent): void {
   saveSidebarWidthPreference();
   sourceEditor?.layout();
 }
-function changed(scheduleRender = true): void {
+function changed(): void {
   isDirty.value = true;
   if (shareSnapshotActive) {
     shareSnapshotActive = false;
     void router.replace({ hash: '' });
   }
-  // Invalidate a render that is already queued or running.  The next render
-  // receives a new sequence and cannot publish an old source/config snapshot.
-  renderSequence += 1;
   updatedAt.value = Math.max(Date.now(), updatedAt.value + 1);
   saveState.value = 'idle';
-  previewOutdated.value = true;
-  if (renderTimer) window.clearTimeout(renderTimer);
-  if (scheduleRender && autoRender.value)
-    renderTimer = window.setTimeout(() => void render(), source.value.length > 120_000 ? 650 : 260);
+  if (source.value.trim()) previewState.value = 'loading';
+  else {
+    previewState.value = 'idle';
+    previewError.value = '请输入 Mermaid 源码。';
+    setSourceMarker();
+  }
   if (saveTimer) window.clearTimeout(saveTimer);
   saveTimer = window.setTimeout(() => void saveDocument(true), 800);
 }
@@ -535,88 +502,82 @@ function keepLocalDocument(): void {
   conflictDocument.value = null;
   void saveDocument(false);
 }
-async function render(): Promise<void> {
-  const currentSource = source.value.trim();
-  const parsed = parseMermaidConfig(configText.value);
-  const sequence = ++renderSequence;
-  if (!currentSource) {
-    setSourceMarker();
-    previewSvg.value = '';
+function currentRenderConfig() {
+  return renderConfigForTheme(parsedConfig.value.value, resolvedTheme.value);
+}
+function handleSessionCodeChange(code: string): void {
+  if (source.value === code) return;
+  source.value = code;
+  changed();
+}
+function handleSessionRender(result: MermaidVisualRenderResult): void {
+  if (result.empty) {
     previewState.value = 'idle';
     previewError.value = '请输入 Mermaid 源码。';
-    previewOutdated.value = false;
     detectedType.value = '';
-    return;
-  }
-  if (currentSource.length > 200_000) {
-    setSourceMarker();
-    previewState.value = 'error';
-    previewError.value = '源码过大，请控制在 200,000 个字符以内。';
-    previewOutdated.value = true;
-    detectedType.value = '';
-    return;
-  }
-  if (parsed.error) {
-    setSourceMarker();
-    previewState.value = 'error';
-    previewError.value = parsed.error;
-    previewOutdated.value = true;
     errorLine.value = null;
+    setSourceMarker();
     return;
   }
+  if (result.ok) {
+    previewState.value = 'success';
+    previewError.value = '';
+    detectedType.value = editingSession?.diagramType ?? '';
+    errorLine.value = null;
+    setSourceMarker();
+    return;
+  }
+  previewState.value = 'error';
+  previewError.value = result.error.replace(/\s+/gu, ' ').slice(0, 320) || 'Mermaid 语法无法解析。';
+  const match = result.error.match(/line\s+(\d+)/iu);
+  errorLine.value = match ? Number(match[1]) : null;
+  setSourceMarker(previewError.value, errorLine.value);
+}
+async function mountVisualSession(): Promise<void> {
+  if (!canvasElement.value || !sourceEditor || editingSession) return;
   previewState.value = 'loading';
-  previewError.value = '';
-  errorLine.value = null;
-  setSourceMarker();
-  await enqueueMermaidTask(async () => {
-    let mermaid: (typeof import('mermaid'))['default'];
-    try {
-      mermaid = (await import('mermaid')).default;
-    } catch (error) {
-      if (sequence !== renderSequence) return;
-      previewState.value = 'engine-error';
-      previewOutdated.value = true;
-      previewError.value = error instanceof Error ? error.message : 'Mermaid 渲染器加载失败。';
-      return;
-    }
-    try {
-      if (sequence !== renderSequence) return;
-      const renderConfig = renderConfigForTheme(parsed.value, resolvedTheme.value);
-      mermaid.initialize(renderConfig);
-      try {
-        detectedType.value = mermaid.detectType(currentSource, renderConfig);
-      } catch {
-        detectedType.value = '';
-      }
-      const result = await mermaid.render(`mermaid-workbench-${sequence}`, currentSource);
-      if (sequence !== renderSequence) return;
-      const bindFunctions = result.bindFunctions;
-      previewSvg.value = sanitizeMermaidSvg(result.svg);
-      previewState.value = 'success';
-      previewOutdated.value = false;
-      setSourceMarker();
-      await nextTick();
-      if (sequence !== renderSequence) return;
-      if (bindFunctions && svgElement.value) {
-        try {
-          bindFunctions(svgElement.value);
-        } catch {
-          // 某些图表类型没有可绑定交互，不能影响预览本身。
-        }
-      }
-      if (shouldFitNextRender.value && fitView(true)) {
-        shouldFitNextRender.value = false;
-      }
-    } catch (error) {
-      if (sequence !== renderSequence) return;
-      previewState.value = 'error';
-      const message = error instanceof Error ? error.message : 'Mermaid 语法无法解析。';
-      previewError.value = message.replace(/\s+/gu, ' ').slice(0, 320);
-      const match = message.match(/line\s+(\d+)/iu);
-      errorLine.value = match ? Number(match[1]) : null;
-      setSourceMarker(previewError.value, errorLine.value);
-    }
-  }).catch(() => undefined);
+  const session = new MermaidEditingSession({
+    code: source.value,
+    config: currentRenderConfig(),
+    container: canvasElement.value,
+    monacoEditor: sourceEditor,
+    onCodeChange: handleSessionCodeChange,
+    onRender: handleSessionRender,
+    onViewportScale: (nextScale) => {
+      scale.value = nextScale;
+    },
+  });
+  editingSession = session;
+  try {
+    await session.mount();
+  } catch (error) {
+    session.dispose();
+    if (editingSession === session) editingSession = null;
+    previewState.value = 'engine-error';
+    previewError.value = error instanceof Error ? error.message : '可视化编辑器加载失败。';
+  }
+}
+async function rebuildVisualSession(): Promise<void> {
+  if (!editingSession) return;
+  previewState.value = source.value.trim() ? 'loading' : 'idle';
+  previewError.value = source.value.trim() ? '' : '请输入 Mermaid 源码。';
+  try {
+    await editingSession.setDocument(source.value, currentRenderConfig());
+  } catch (error) {
+    previewState.value = 'engine-error';
+    previewError.value = error instanceof Error ? error.message : '可视化编辑器加载失败。';
+  }
+}
+function syncVisualConfig(): void {
+  if (parsedConfig.value.error) return;
+  editingSession?.setConfig(currentRenderConfig());
+}
+async function render(): Promise<void> {
+  if (!editingSession) {
+    await mountVisualSession();
+    return;
+  }
+  await editingSession.render();
 }
 async function saveDocument(isAuto = false): Promise<void> {
   const document = currentDocumentSnapshot();
@@ -672,10 +633,7 @@ function newDocument(): void {
   isDirty.value = false;
   saveState.value = 'idle';
   saveMessage.value = '';
-  shouldFitNextRender.value = true;
-  replaceSourceModel();
-  resetView();
-  void render();
+  void rebuildVisualSession();
 }
 function loadDocument(document: MermaidDocument): void {
   conflictDocument.value = null;
@@ -695,10 +653,7 @@ function loadDocument(document: MermaidDocument): void {
   isDirty.value = false;
   saveState.value = 'idle';
   saveMessage.value = '';
-  shouldFitNextRender.value = true;
-  replaceSourceModel();
-  resetView();
-  void render();
+  void rebuildVisualSession();
 }
 function loadHistorySnapshot(snapshot: MermaidDocument): void {
   saveMermaidHistory(currentDocumentSnapshot());
@@ -717,13 +672,10 @@ function loadExample(example: MermaidExample): void {
   source.value = example.source;
   title.value = example.title;
   configText.value = example.configText || DEFAULT_MERMAID_CONFIG;
-  shouldFitNextRender.value = true;
-  resetView();
-  updateEditorModel(source.value);
-  changed(false);
+  changed();
   // 载入示例本身不是用户编辑，后续切换示例无需重复确认。
   isDirty.value = false;
-  void render();
+  void rebuildVisualSession();
   mobilePane.value = 'preview';
   openExampleCategory.value = null;
 }
@@ -735,58 +687,22 @@ function handleViewportResize(): void {
   sourceEditor?.layout();
 }
 function undo(): void {
-  sourceEditor?.trigger('toolbar', 'undo', null);
+  editingSession?.undo();
 }
 function redo(): void {
-  sourceEditor?.trigger('toolbar', 'redo', null);
+  editingSession?.redo();
 }
-function resetView(): void {
-  scale.value = 1;
-  translate.value = { x: 0, y: 0 };
-}
-function fitView(shouldReset = true): boolean {
-  if (shouldReset) resetView();
-  const canvas = canvasElement.value;
-  const svg = svgElement.value?.querySelector('svg');
-  if (!canvas || !svg) return false;
-  const width =
-    Number(svg.getAttribute('width')?.replace('px', '')) || svg.getBoundingClientRect().width;
-  const height =
-    Number(svg.getAttribute('height')?.replace('px', '')) || svg.getBoundingClientRect().height;
-  if (!width || !height || canvas.clientWidth <= 0 || canvas.clientHeight <= 0) return false;
-  scale.value = Math.min(
-    1.4,
-    Math.max(0.2, Math.min((canvas.clientWidth - 80) / width, (canvas.clientHeight - 80) / height)),
-  );
-  return true;
+function fitView(): boolean {
+  editingSession?.fitView();
+  return Boolean(editingSession);
 }
 function zoom(delta: number): void {
-  scale.value = Math.min(4, Math.max(0.2, Number((scale.value + delta).toFixed(2))));
+  editingSession?.zoomBy(delta > 0 ? 1.1 : 1 / 1.1);
 }
 function handleWheel(event: WheelEvent): void {
+  if (event.ctrlKey || event.metaKey) return;
   event.preventDefault();
   zoom(event.deltaY > 0 ? -0.1 : 0.1);
-}
-function startPan(event: PointerEvent): void {
-  if ((event.target as Element)?.closest('button,a')) return;
-  isPanning.value = true;
-  panStart.value = {
-    x: event.clientX,
-    y: event.clientY,
-    tx: translate.value.x,
-    ty: translate.value.y,
-  };
-  (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
-}
-function movePan(event: PointerEvent): void {
-  if (!isPanning.value) return;
-  translate.value = {
-    x: panStart.value.tx + event.clientX - panStart.value.x,
-    y: panStart.value.ty + event.clientY - panStart.value.y,
-  };
-}
-function endPan(): void {
-  isPanning.value = false;
 }
 function downloadBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
@@ -846,7 +762,7 @@ function svgDimensions(svg: string): { width: number; height: number } {
 }
 function rasterizePreview(
   mime: 'image/png' | 'image/jpeg' | 'image/webp',
-  svgSource = previewSvg.value,
+  svgSource: string,
 ): Promise<Blob | null> {
   if (!svgSource) return Promise.resolve(null);
   return new Promise((resolve) => {
@@ -954,7 +870,12 @@ async function copyPng(): Promise<void> {
     shareMessage.value = '请先成功渲染图表。';
     return;
   }
-  const blob = await rasterizePreview('image/png');
+  const exportSvg = await renderExportSvg();
+  if (!exportSvg) {
+    shareMessage.value = 'PNG 生成失败，请重试。';
+    return;
+  }
+  const blob = await rasterizePreview('image/png', exportSvg);
   if (!blob) {
     shareMessage.value = 'PNG 生成失败，请重试。';
     return;
@@ -984,10 +905,12 @@ async function exportFile(format: MermaidExportFormat): Promise<void> {
   }
   const safeName = safeMermaidFilename(title.value);
   if (format === 'svg') {
-    downloadBlob(
-      new Blob([previewSvg.value], { type: 'image/svg+xml;charset=utf-8' }),
-      `${safeName}.svg`,
-    );
+    const exportSvg = await renderExportSvg();
+    if (!exportSvg) {
+      shareMessage.value = 'SVG 生成失败，请重试。';
+      return;
+    }
+    downloadBlob(new Blob([exportSvg], { type: 'image/svg+xml;charset=utf-8' }), `${safeName}.svg`);
     return;
   }
   if (format === 'mmd') {
@@ -1026,7 +949,12 @@ async function exportFile(format: MermaidExportFormat): Promise<void> {
   }
   if (format === 'png' || format === 'jpg' || format === 'webp') {
     const mime = format === 'png' ? 'image/png' : format === 'jpg' ? 'image/jpeg' : 'image/webp';
-    const blob = await rasterizePreview(mime);
+    const exportSvg = await renderExportSvg();
+    if (!exportSvg) {
+      shareMessage.value = '图片生成失败，请重试。';
+      return;
+    }
+    const blob = await rasterizePreview(mime, exportSvg);
     if (!blob) {
       shareMessage.value = '图片生成失败，请重试。';
       return;
@@ -1159,10 +1087,8 @@ async function importFile(file: File): Promise<void> {
       source.value = blocks[selectedIndex];
       configText.value = embeddedConfig || DEFAULT_MERMAID_CONFIG;
       title.value = file.name.replace(/\.[^.]+$/u, '');
-      shouldFitNextRender.value = true;
-      updateEditorModel(source.value);
-      changed(false);
-      void render();
+      changed();
+      void rebuildVisualSession();
     } else if (extension === 'mmd' || extension === 'mermaid') {
       const embedded = extractMmdConfig(text);
       if (embedded.configText) validateImportedConfig(embedded.configText);
@@ -1173,10 +1099,8 @@ async function importFile(file: File): Promise<void> {
         .trim();
       configText.value = embedded.configText || DEFAULT_MERMAID_CONFIG;
       title.value = file.name.replace(/\.[^.]+$/u, '');
-      shouldFitNextRender.value = true;
-      updateEditorModel(source.value);
-      changed(false);
-      void render();
+      changed();
+      void rebuildVisualSession();
     } else {
       throw new Error('不支持的 Mermaid 文件类型。');
     }
@@ -1217,7 +1141,6 @@ async function loadInitial(): Promise<void> {
       persistedDocumentId = documentId.value;
       persistedDocumentUpdatedAt = updatedAt.value;
       shareSnapshotActive = true;
-      shouldFitNextRender.value = true;
     } catch {
       shareMessage.value = '分享链接已损坏或过期，已保留本地草稿。';
     }
@@ -1263,17 +1186,11 @@ function closeMenus(event: PointerEvent): void {
   if (!element.closest('.mermaid-example-picker')) openExampleCategory.value = null;
 }
 watch(resolvedTheme, () => {
-  // 主题切换会立即触发一次渲染，不应把已有结果标记为过期。
-  previewOutdated.value = false;
   if (sourceEditor) monaco.editor.setTheme(editorTheme());
-  // 界面主题会影响默认图表主题，即使暂停了输入自动渲染，显式切换主题也应立即同步预览。
-  if (initialLoadComplete) void render();
+  if (initialLoadComplete) syncVisualConfig();
 });
 watch(mermaidBackgroundPreviewActive, () => {
   if (sourceEditor) monaco.editor.setTheme(editorTheme());
-});
-watch(autoRender, (enabled) => {
-  if (enabled && previewOutdated.value) void render();
 });
 watch(activeTab, async (tab) => {
   await nextTick();
@@ -1281,14 +1198,8 @@ watch(activeTab, async (tab) => {
 });
 watch(mobilePane, async (pane) => {
   await nextTick();
-  if (pane === 'preview') {
-    if (shouldFitNextRender.value && fitView(true)) shouldFitNextRender.value = false;
-  } else {
-    sourceEditor?.layout();
-  }
-});
-watch(source, (value) => {
-  if (sourceEditor && sourceEditor.getValue() !== value) updateEditorModel(value);
+  if (pane === 'preview') editingSession?.fitView();
+  else sourceEditor?.layout();
 });
 onMounted(async () => {
   document.addEventListener('pointerdown', closeMenus);
@@ -1310,19 +1221,19 @@ onMounted(async () => {
   await nextTick();
   mountEditors();
   initialLoadComplete = true;
-  void render();
+  await mountVisualSession();
 });
 onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', closeMenus);
   document.removeEventListener('fullscreenchange', syncFullscreenState);
   window.removeEventListener('resize', handleViewportResize);
-  if (renderTimer) clearTimeout(renderTimer);
   if (feedbackTimer) clearTimeout(feedbackTimer);
   cancelPendingSaveTimer();
   if (initialLoadComplete && hasPendingDocumentChanges()) {
     void saveDocument(false);
   }
-  ++renderSequence;
+  editingSession?.dispose();
+  editingSession = null;
   stopSidebarResize?.();
   stopSidebarResize = null;
   mermaidChannel?.close();
@@ -1591,18 +1502,18 @@ onBeforeUnmount(() => {
             <IconChartDots3 :size="16" />代码</button
           ><button
             type="button"
-            title="图表配置"
-            :class="{ active: activeTab === 'config' }"
-            @click="activeTab = 'config'"
-          >
-            <IconSettings :size="16" />配置</button
-          ><button
-            type="button"
             title="图表示例"
             :class="{ active: activeTab === 'examples' }"
             @click="activeTab = 'examples'"
           >
-            <IconClipboard :size="16" />示例
+            <IconClipboard :size="16" />示例</button
+          ><button
+            type="button"
+            title="图表配置"
+            :class="{ active: activeTab === 'config' }"
+            @click="activeTab = 'config'"
+          >
+            <IconSettings :size="16" />配置
           </button>
         </div>
         <div v-show="activeTab === 'code'" class="mermaid-editor-pane">
@@ -1865,7 +1776,7 @@ onBeforeUnmount(() => {
               type="button"
               title="适应画布"
               aria-label="适应画布"
-              @click="fitView(true)"
+              @click="fitView"
             >
               <IconMaximize :size="17" /></button
             ><button
@@ -1884,24 +1795,9 @@ onBeforeUnmount(() => {
         <div
           ref="canvasElement"
           class="mermaid-canvas"
-          :class="{ 'is-panning': isPanning, 'is-grid-hidden': !gridEnabled }"
+          :class="{ 'is-grid-hidden': !gridEnabled, 'is-empty': previewState === 'idle' }"
           @wheel="handleWheel"
-          @pointerdown="startPan"
-          @pointermove="movePan"
-          @pointerup="endPan"
-          @pointercancel="endPan"
-          @pointerleave="endPan"
         >
-          <!-- eslint-disable vue/no-v-html -->
-          <div
-            v-if="previewSvg"
-            ref="svgElement"
-            class="mermaid-svg-stage"
-            :class="{ 'is-stale': previewOutdated }"
-            :style="{ transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})` }"
-            v-html="previewSvg"
-          ></div>
-          <!-- eslint-enable vue/no-v-html -->
           <div
             v-if="previewState === 'loading'"
             class="mermaid-canvas__message mermaid-canvas__message--overlay"
@@ -1932,13 +1828,9 @@ onBeforeUnmount(() => {
             Mermaid 渲染器加载失败，请刷新页面后重试。
           </div>
           <div
-            v-else-if="previewState === 'success' && previewOutdated && previewSvg"
-            class="mermaid-canvas__message mermaid-canvas__message--overlay mermaid-canvas__message--stale"
+            v-else-if="previewState === 'idle' && !source.trim()"
+            class="mermaid-canvas__message"
           >
-            <strong>预览已过期</strong>
-            <p>源码已修改，点击右上角重新渲染以更新图表。</p>
-          </div>
-          <div v-else-if="!previewSvg" class="mermaid-canvas__message">
             输入 Mermaid 源码后，图表会显示在这里。
           </div>
         </div>

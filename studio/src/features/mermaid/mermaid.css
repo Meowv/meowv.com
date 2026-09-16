@@ -342,6 +342,11 @@
   min-height: 0;
   flex: 1;
 }
+.mermaid-monaco .mermaid-monaco-entity {
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--mermaid-accent) 18%, transparent);
+  box-shadow: inset 2px 0 0 var(--mermaid-accent);
+}
 .mermaid-config-panel {
   min-height: 0;
   flex: 1;
@@ -912,6 +917,13 @@
   text-align: center;
 }
 .mermaid-canvas {
+  --mw-accent: var(--mermaid-accent);
+  --mw-editor-bg: var(--color-surface-solid);
+  --mw-chrome-bg: var(--color-surface-solid);
+  --mw-chrome-border: var(--color-border);
+  --mw-chrome-fg: var(--color-text);
+  --mw-chrome-dim: var(--color-text-muted);
+  --mw-chrome-hover: var(--color-surface-soft);
   position: relative;
   display: flex;
   min-height: 0;
@@ -931,24 +943,55 @@
 .mermaid-canvas.is-grid-hidden {
   background-image: none;
 }
-.mermaid-canvas.is-panning {
-  cursor: grabbing;
+.mermaid-canvas.is-empty .mw-svg-host {
+  visibility: hidden;
 }
-.mermaid-svg-stage {
-  position: relative;
-  z-index: 1;
-  max-width: none;
-  transform-origin: center;
-  user-select: none;
-  transition: opacity 120ms ease;
+.mermaid-canvas .mw-error-badge,
+.mermaid-canvas .mw-zoom-controls {
+  display: none !important;
 }
-.mermaid-svg-stage.is-stale {
-  opacity: 0.58;
+.mermaid-canvas .mw-popover,
+.mermaid-canvas .mw-popover-panel,
+.mermaid-canvas .mw-plus-menu {
+  border-radius: 8px;
+  border-color: var(--color-border);
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-surface-solid) 96%, transparent);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(16px) saturate(120%);
 }
-.mermaid-svg-stage svg {
-  display: block;
-  max-width: none;
-  overflow: visible;
+.mermaid-canvas .mw-popover-btn,
+.mermaid-canvas .mw-popover-cell,
+.mermaid-canvas .mw-plus-menu button {
+  color: var(--color-text-muted);
+}
+.mermaid-canvas .mw-popover-btn:hover,
+.mermaid-canvas .mw-popover-cell:hover,
+.mermaid-canvas .mw-plus-menu button:hover {
+  color: var(--color-text);
+  background: var(--color-surface-soft);
+}
+.mermaid-canvas .mw-popover-btn.active,
+.mermaid-canvas .mw-popover-cell.selected {
+  border-color: var(--mermaid-accent);
+  color: var(--color-text);
+  background: var(--mermaid-accent-soft);
+}
+.mermaid-canvas .mw-popover-btn.danger:hover {
+  color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+}
+.mermaid-canvas .mw-popover-panel-title,
+.mermaid-canvas .mw-popover-section-title {
+  color: var(--color-text-muted);
+  letter-spacing: 0;
+}
+.mermaid-canvas .mw-inplace-editor {
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-surface-solid) 78%, transparent);
+}
+.mermaid-canvas .mw-lifeline-plus {
+  background: var(--mermaid-accent);
 }
 .mermaid-canvas__message {
   display: grid;
@@ -971,9 +1014,6 @@
   box-shadow: 0 14px 40px rgb(15 23 42 / 14%);
   backdrop-filter: blur(10px);
   transform: translate(-50%, -50%);
-}
-.mermaid-canvas__message--stale {
-  border-color: color-mix(in srgb, var(--mermaid-accent) 42%, var(--color-border));
 }
 .mermaid-canvas__message strong {
   color: var(--color-text);
