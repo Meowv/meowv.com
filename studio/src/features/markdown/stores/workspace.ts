@@ -1586,7 +1586,7 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
 
   async function createDocument(parentPath: string, requestedName: string): Promise<void> {
     if (isDemo.value) {
-      notify('info', '示例模式不会创建文件', '请打开本地文件夹后使用此功能。');
+      notify('info', '示例模式不会创建文件', '请在左下角打开本地文件夹后使用此功能。');
       return;
     }
     const name = normalizeMarkdownName(requestedName);
@@ -1607,7 +1607,7 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
 
   async function createFolder(parentPath: string, name: string): Promise<void> {
     if (isDemo.value) {
-      notify('info', '示例模式不会创建文件夹', '请打开本地文件夹后使用此功能。');
+      notify('info', '示例模式不会创建文件夹', '请在左下角打开本地文件夹后使用此功能。');
       return;
     }
     if (!name.trim()) {
@@ -1625,7 +1625,7 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
 
   async function renameNode(node: DisplayTreeNode, requestedName: string): Promise<void> {
     if (isDemo.value) {
-      notify('info', '示例模式不会重命名文件', '请打开本地文件夹后使用此功能。');
+      notify('info', '示例模式不会重命名文件', '请在左下角打开本地文件夹后使用此功能。');
       return;
     }
     let name = requestedName.trim();
@@ -1682,7 +1682,7 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
 
   async function moveNode(node: DisplayTreeNode, destinationParentPath: string): Promise<void> {
     if (isDemo.value) {
-      notify('info', '示例模式不会移动文件', '请打开本地文件夹后使用此功能。');
+      notify('info', '示例模式不会移动文件', '请在左下角打开本地文件夹后使用此功能。');
       return;
     }
     if (moveInProgress) {
@@ -1776,7 +1776,7 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
 
   async function removeNode(node: DisplayTreeNode): Promise<void> {
     if (isDemo.value) {
-      notify('info', '示例模式不会删除文件', '请打开本地文件夹后使用此功能。');
+      notify('info', '示例模式不会删除文件', '请在左下角打开本地文件夹后使用此功能。');
       return;
     }
     try {
