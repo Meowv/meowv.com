@@ -83,6 +83,3 @@ export const indexToStickerRef = (absoluteIndex: number): StickerRef => {
   ) ?? ['U', 0];
   return { face, index: absoluteIndex - offset };
 };
-
-export const stickerRefToIndex = ({ face, index }: StickerRef): number =>
-  FACE_OFFSETS[face] + index;

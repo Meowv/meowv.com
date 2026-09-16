@@ -2,25 +2,12 @@
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { IconRefresh } from '@tabler/icons-vue';
 import type { CubeScene as CubeSceneController } from '../renderer/cube-scene';
-import type { CubeColorScheme, CubeMove, Facelet, StickerRef } from '../types';
+import type { CubeColorScheme, CubeMove, Facelet } from '../types';
 
-const props = withDefaults(
-  defineProps<{
-    facelets: readonly Facelet[];
-    colorScheme: CubeColorScheme;
-    showLabels: boolean;
-    showMoveArrows: boolean;
-    teachingView: boolean;
-    stickerEditing?: boolean;
-    layerDragging?: boolean;
-    currentMove: CubeMove | null;
-  }>(),
-  { stickerEditing: false, layerDragging: false },
-);
-
-const emit = defineEmits<{
-  'sticker-click': [sticker: StickerRef];
-  move: [move: CubeMove];
+const props = defineProps<{
+  facelets: readonly Facelet[];
+  colorScheme: CubeColorScheme;
+  currentMove: CubeMove | null;
 }>();
 
 const host = ref<HTMLElement | null>(null);
@@ -47,16 +34,8 @@ async function initializeScene(): Promise<void> {
     const { CubeScene } = await import('../renderer/cube-scene');
     const currentHost = host.value;
     if (disposed || !currentHost) return;
-    scene = new CubeScene(currentHost, {
-      colorScheme: props.colorScheme,
-      onStickerClick: (sticker) => {
-        if (props.stickerEditing) emit('sticker-click', sticker);
-      },
-      onMove: (move) => emit('move', move),
-    });
+    scene = new CubeScene(currentHost, { colorScheme: props.colorScheme });
     scene.setFacelets(props.facelets);
-    scene.setTeachingView(props.teachingView);
-    scene.setLayerDragging(props.layerDragging);
   } catch (error) {
     webglError.value = error instanceof Error ? error.message : '当前浏览器无法创建 3D 场景。';
   } finally {
@@ -68,6 +47,11 @@ onMounted(() => {
   sceneReady = initializeScene();
 });
 
+onBeforeUnmount(() => {
+  disposed = true;
+  scene?.dispose();
+});
+
 watch(
   () => props.facelets,
   (facelets) => scene?.setFacelets(facelets),
@@ -75,14 +59,6 @@ watch(
 watch(
   () => props.colorScheme,
   (scheme) => scene?.setColorScheme(scheme),
-);
-watch(
-  () => props.teachingView,
-  (enabled) => scene?.setTeachingView(enabled),
-);
-watch(
-  () => props.layerDragging,
-  (enabled) => scene?.setLayerDragging(enabled),
 );
 
 async function animateMove(
@@ -104,10 +80,6 @@ function cancelAnimation(): void {
 }
 
 defineExpose({ animateMove, cancelAnimation });
-onBeforeUnmount(() => {
-  disposed = true;
-  scene?.dispose();
-});
 </script>
 
 <template>
@@ -119,22 +91,14 @@ onBeforeUnmount(() => {
       <div v-if="webglError" class="cube-viewport__fallback" role="status">
         <strong>3D 视图暂不可用</strong>
         <p>{{ webglError }}</p>
-        <span>仍可通过展开图、公式按钮和步骤列表完成还原。</span>
+        <span>仍可通过展开图和步骤列表完成还原。</span>
       </div>
     </div>
-    <div
-      v-if="showLabels || stickerEditing || layerDragging"
-      class="cube-viewport__guide"
-      role="note"
-    >
-      <p v-if="showLabels"><strong>当前朝向</strong><span>U 上 · F 前 · R 右</span></p>
-      <p class="cube-viewport__guide-actions">
-        <span v-if="layerDragging">拖动贴纸转层</span>
-        <span>拖动空白处旋转视角</span>
-        <span v-if="stickerEditing">双击贴纸即可着色</span>
-      </p>
+    <div class="cube-viewport__guide" role="note">
+      <p><strong>观察方向</strong><span>U 上 · F 前 · R 右</span></p>
+      <p class="cube-viewport__guide-actions"><span>拖动空白处旋转视角</span></p>
     </div>
-    <div v-if="showMoveArrows && currentMove" class="cube-viewport__move-hint" aria-hidden="true">
+    <div v-if="currentMove" class="cube-viewport__move-hint" aria-hidden="true">
       <strong>{{ currentMove.notation }}</strong>
       <span>{{ currentMove.amount === -1 ? '↺' : '↻' }}</span>
     </div>

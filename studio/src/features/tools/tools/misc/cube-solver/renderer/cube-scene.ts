@@ -7,46 +7,21 @@ import {
   MeshStandardMaterial,
   PerspectiveCamera,
   PlaneGeometry,
-  Raycaster,
   Scene,
-  Vector2,
   WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { FACE_OFFSETS } from '../core/constants';
-import {
-  FACES,
-  type CubeColorScheme,
-  type CubeMove,
-  type Face,
-  type Facelet,
-  type StickerRef,
-} from '../types';
-import {
-  CUBIE_COORDINATES,
-  faceletIndex,
-  facesForPosition,
-  layerForFace,
-  turnAmountForStickerDrag,
-} from './geometry';
+import { FACES, type CubeColorScheme, type CubeMove, type Face, type Facelet } from '../types';
+import { CUBIE_COORDINATES, faceletIndex, facesForPosition, layerForFace } from './geometry';
 
 interface CubeSceneOptions {
   colorScheme: CubeColorScheme;
-  onStickerClick?: (sticker: StickerRef) => void;
-  onMove?: (move: CubeMove) => void;
-}
-
-interface PointerCandidate {
-  pointerId: number;
-  x: number;
-  y: number;
-  sticker: StickerRef;
-  triggered: boolean;
 }
 
 const BODY_COLOR = 0x17191f;
 const EMPTY_STICKER_COLOR = '#6f7785';
 const STICKER_GAP = 0.495;
+const DEFAULT_CAMERA_POSITION = { x: 5.7, y: 5.2, z: 6.6 };
 type StickerMaterialKey = Face | 'empty';
 
 function positionSticker(mesh: Mesh, face: Face): void {
@@ -87,8 +62,6 @@ export class CubeScene {
   readonly #camera = new PerspectiveCamera(32, 1, 0.1, 100);
   readonly #renderer: WebGLRenderer;
   readonly #controls: OrbitControls;
-  readonly #raycaster = new Raycaster();
-  readonly #pointer = new Vector2();
   readonly #resizeObserver: ResizeObserver;
   readonly #root = new Group();
   readonly #options: CubeSceneOptions;
@@ -110,8 +83,6 @@ export class CubeScene {
   #renderHeight = 0;
   #animationReject: ((reason: Error) => void) | null = null;
   #animationPivot: Group | null = null;
-  #pointerCandidate: PointerCandidate | null = null;
-  #layerDraggingEnabled = false;
   #disposed = false;
 
   constructor(host: HTMLElement, options: CubeSceneOptions) {
@@ -126,8 +97,7 @@ export class CubeScene {
     this.#renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio || 1, pixelRatioLimit));
     this.#renderer.setClearColor(0x000000, 0);
     this.#renderer.domElement.className = 'cube-viewport__canvas';
-    this.#renderer.domElement.setAttribute('aria-label', '可拖动观察和转动的三阶魔方');
-    this.#renderer.domElement.tabIndex = 0;
+    this.#renderer.domElement.setAttribute('aria-label', '可拖动观察的三阶魔方');
     host.append(this.#renderer.domElement);
 
     this.#scene.add(this.#root);
@@ -155,7 +125,11 @@ export class CubeScene {
     );
     this.#buildCubies();
 
-    this.#camera.position.set(6.7, 6.1, 7.8);
+    this.#camera.position.set(
+      DEFAULT_CAMERA_POSITION.x,
+      DEFAULT_CAMERA_POSITION.y,
+      DEFAULT_CAMERA_POSITION.z,
+    );
     this.#camera.lookAt(0, 0, 0);
     this.#controls = new OrbitControls(this.#camera, this.#renderer.domElement);
     this.#controls.enableDamping = true;
@@ -166,11 +140,6 @@ export class CubeScene {
 
     this.#resizeObserver = new ResizeObserver(() => this.#scheduleResize());
     this.#resizeObserver.observe(host);
-    this.#renderer.domElement.addEventListener('pointerdown', this.#onPointerDown);
-    this.#renderer.domElement.addEventListener('pointermove', this.#onPointerMove);
-    this.#renderer.domElement.addEventListener('pointerup', this.#onPointerUp);
-    this.#renderer.domElement.addEventListener('pointercancel', this.#onPointerUp);
-    this.#renderer.domElement.addEventListener('dblclick', this.#onDoubleClick);
     this.resize();
   }
 
@@ -192,23 +161,12 @@ export class CubeScene {
     this.invalidate(2);
   }
 
-  setTeachingView(enabled: boolean): void {
-    this.#controls.enableRotate = !enabled;
-    if (enabled) this.resetCamera();
-  }
-
-  setLayerDragging(enabled: boolean): void {
-    this.#layerDraggingEnabled = enabled;
-    this.#renderer.domElement.classList.toggle('is-layer-drag-enabled', enabled);
-    this.#renderer.domElement.setAttribute(
-      'aria-label',
-      enabled ? '三阶魔方：拖动贴纸转动对应层，拖动空白区域旋转观察视角' : '可拖动观察的三阶魔方',
-    );
-    if (!enabled) this.#finishPointerCandidate();
-  }
-
   resetCamera(): void {
-    this.#camera.position.set(6.7, 6.1, 7.8);
+    this.#camera.position.set(
+      DEFAULT_CAMERA_POSITION.x,
+      DEFAULT_CAMERA_POSITION.y,
+      DEFAULT_CAMERA_POSITION.z,
+    );
     this.#controls.target.set(0, 0, 0);
     this.#controls.update();
     this.invalidate(2);
@@ -294,10 +252,6 @@ export class CubeScene {
       for (const face of facesForPosition({ x, y, z })) {
         const absoluteIndex = faceletIndex(face, x, y, z);
         const sticker = new Mesh(this.#stickerGeometry, this.#stickerMaterials.get('empty')!);
-        sticker.userData.sticker = {
-          face,
-          index: absoluteIndex - FACE_OFFSETS[face],
-        } satisfies StickerRef;
         sticker.userData.absoluteIndex = absoluteIndex;
         positionSticker(sticker, face);
         cubie.add(sticker);
@@ -326,72 +280,6 @@ export class CubeScene {
     }
     this.invalidate(2);
   }
-
-  #hitSticker(event: MouseEvent): StickerRef | null {
-    const bounds = this.#renderer.domElement.getBoundingClientRect();
-    this.#pointer.set(
-      ((event.clientX - bounds.left) / bounds.width) * 2 - 1,
-      -((event.clientY - bounds.top) / bounds.height) * 2 + 1,
-    );
-    this.#raycaster.setFromCamera(this.#pointer, this.#camera);
-    const hit = this.#raycaster.intersectObjects(this.#stickers, false)[0];
-    return (hit?.object.userData.sticker as StickerRef | undefined) ?? null;
-  }
-
-  #onPointerDown = (event: PointerEvent): void => {
-    if (this.#animationReject || !this.#layerDraggingEnabled) return;
-    const sticker = this.#hitSticker(event);
-    if (!sticker) return;
-    this.#pointerCandidate = {
-      pointerId: event.pointerId,
-      x: event.clientX,
-      y: event.clientY,
-      sticker,
-      triggered: false,
-    };
-    this.#controls.enabled = false;
-    this.#renderer.domElement.classList.add('is-layer-drag-active');
-    this.#renderer.domElement.setPointerCapture(event.pointerId);
-  };
-
-  #onPointerMove = (event: PointerEvent): void => {
-    const candidate = this.#pointerCandidate;
-    if (!candidate || candidate.pointerId !== event.pointerId || candidate.triggered) return;
-    const dx = event.clientX - candidate.x;
-    const dy = event.clientY - candidate.y;
-    const amount = turnAmountForStickerDrag(candidate.sticker.face, dx, dy);
-    if (amount === null) return;
-    candidate.triggered = true;
-    event.preventDefault();
-    this.#options.onMove?.({
-      face: candidate.sticker.face,
-      amount,
-      notation: `${candidate.sticker.face}${amount === -1 ? "'" : ''}`,
-    });
-  };
-
-  #onPointerUp = (event: PointerEvent): void => {
-    const candidate = this.#pointerCandidate;
-    if (!candidate || candidate.pointerId !== event.pointerId) return;
-    this.#finishPointerCandidate();
-  };
-
-  #finishPointerCandidate(): void {
-    const candidate = this.#pointerCandidate;
-    this.#pointerCandidate = null;
-    this.#controls.enabled = true;
-    this.#renderer.domElement.classList.remove('is-layer-drag-active');
-    if (candidate && this.#renderer.domElement.hasPointerCapture(candidate.pointerId)) {
-      this.#renderer.domElement.releasePointerCapture(candidate.pointerId);
-    }
-  }
-
-  #onDoubleClick = (event: MouseEvent): void => {
-    if (this.#animationReject) return;
-    event.preventDefault();
-    const sticker = this.#hitSticker(event);
-    if (sticker) this.#options.onStickerClick?.(sticker);
-  };
 
   resize(): void {
     const width = this.#host.clientWidth;
@@ -442,13 +330,7 @@ export class CubeScene {
     cancelAnimationFrame(this.#animationFrame);
     cancelAnimationFrame(this.#resizeFrame);
     this.#resizeObserver.disconnect();
-    this.#finishPointerCandidate();
     this.#controls.dispose();
-    this.#renderer.domElement.removeEventListener('pointerdown', this.#onPointerDown);
-    this.#renderer.domElement.removeEventListener('pointermove', this.#onPointerMove);
-    this.#renderer.domElement.removeEventListener('pointerup', this.#onPointerUp);
-    this.#renderer.domElement.removeEventListener('pointercancel', this.#onPointerUp);
-    this.#renderer.domElement.removeEventListener('dblclick', this.#onDoubleClick);
     this.#bodyGeometry.dispose();
     this.#stickerGeometry.dispose();
     this.#bodyMaterial.dispose();

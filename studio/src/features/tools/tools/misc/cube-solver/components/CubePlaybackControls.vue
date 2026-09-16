@@ -34,7 +34,7 @@ const emit = defineEmits<{
     <div class="cube-playback__current" aria-live="polite">
       <span>{{ total ? `第 ${Math.min(cursor + 1, total)} / ${total} 步` : '等待生成步骤' }}</span>
       <strong>{{ currentMove?.notation ?? '—' }}</strong>
-      <small>{{ currentMove ? describeMove(currentMove) : '录入状态或输入公式后开始。' }}</small>
+      <small>{{ currentMove ? describeMove(currentMove) : '完成录入生成还原步骤' }}</small>
     </div>
     <div class="cube-playback__buttons">
       <button

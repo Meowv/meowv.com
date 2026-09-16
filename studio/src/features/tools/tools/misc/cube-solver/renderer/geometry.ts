@@ -1,5 +1,5 @@
 import { FACE_OFFSETS } from '../core/constants';
-import type { Face, TurnAmount } from '../types';
+import type { Face } from '../types';
 
 export interface CubieCoordinate {
   x: number;
@@ -55,21 +55,4 @@ export function layerForFace(face: Face): {
     B: { axis: 'z', coordinate: -1, sign: 1 },
   } as const;
   return layers[face];
-}
-
-export function turnAmountForStickerDrag(
-  face: Face,
-  deltaX: number,
-  deltaY: number,
-  threshold = 12,
-): TurnAmount | null {
-  const horizontal = Math.abs(deltaX);
-  const vertical = Math.abs(deltaY);
-  const dominant = Math.max(horizontal, vertical);
-  const secondary = Math.min(horizontal, vertical);
-  if (dominant < threshold || dominant < secondary * 1.25) return null;
-
-  const forward = horizontal >= vertical ? deltaX > 0 : deltaY > 0;
-  const invertedFace = face === 'D' || face === 'L' || face === 'B';
-  return forward !== invertedFace ? 1 : -1;
 }

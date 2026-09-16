@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { IconCheck, IconCopy, IconRoute } from '@tabler/icons-vue';
+import { onBeforeUnmount, ref } from 'vue';
+import { IconCopy, IconRoute } from '@tabler/icons-vue';
 import { describeMove } from '../core/notation';
 import type { CubeSolution } from '../types';
 
@@ -13,22 +13,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{ seek: [cursor: number] }>();
 const notice = ref('');
-const phaseByMove = computed(() => {
-  const result = new Map<number, string>();
-  props.solution?.phases.forEach((phase) => {
-    for (let index = phase.start; index < phase.end; index += 1) result.set(index, phase.title);
-  });
-  return result;
-});
-const solutionLabel = computed(() => {
-  const labels = {
-    quick: '快速还原',
-    beginner: '七阶段跟练',
-    algorithm: '公式演示',
-    practice: '随机打乱',
-  } as const;
-  return props.solution ? labels[props.solution.mode] : '';
-});
+let noticeTimer: ReturnType<typeof globalThis.setTimeout> | undefined;
 
 async function copyAlgorithm(): Promise<void> {
   if (!props.solution) return;
@@ -38,8 +23,16 @@ async function copyAlgorithm(): Promise<void> {
   } catch {
     notice.value = '复制失败，请手动选择公式。';
   }
-  window.setTimeout(() => (notice.value = ''), 1800);
+  if (noticeTimer !== undefined) globalThis.clearTimeout(noticeTimer);
+  noticeTimer = globalThis.setTimeout(() => {
+    notice.value = '';
+    noticeTimer = undefined;
+  }, 1800);
 }
+
+onBeforeUnmount(() => {
+  if (noticeTimer !== undefined) globalThis.clearTimeout(noticeTimer);
+});
 </script>
 
 <template>
@@ -59,12 +52,12 @@ async function copyAlgorithm(): Promise<void> {
     <div v-else-if="!solution" class="cube-panel-empty">
       <IconRoute :size="30" aria-hidden="true" />
       <strong>{{ solverStatus === 'error' ? '暂时无法生成步骤' : '还没有还原步骤' }}</strong>
-      <p>{{ message || '完成录入并通过状态校验后，选择一种还原方式。' }}</p>
+      <p>{{ message || '完成录入并通过状态校验后生成快速还原步骤。' }}</p>
     </div>
     <template v-else>
       <header class="cube-solution-panel__header">
         <div>
-          <span>{{ solutionLabel }}</span>
+          <span>快速还原</span>
           <strong>{{ solution.moveCount }} 步</strong>
         </div>
         <button type="button" @click="copyAlgorithm">
@@ -72,22 +65,6 @@ async function copyAlgorithm(): Promise<void> {
         </button>
       </header>
       <p v-if="notice" class="cube-inline-notice" role="status">{{ notice }}</p>
-      <div v-if="solution.phases.length" class="cube-solution-phases">
-        <article
-          v-for="phase in solution.phases"
-          :key="phase.id"
-          :class="{
-            'is-active':
-              (cursor >= phase.start && cursor < phase.end) ||
-              (phase.start === phase.end && cursor === phase.start),
-            'is-complete': cursor >= phase.end,
-          }"
-        >
-          <span><IconCheck :size="13" aria-hidden="true" />{{ phase.title }}</span>
-          <small>{{ phase.goal }}</small>
-          <button type="button" @click="emit('seek', phase.start)">从这里演示</button>
-        </article>
-      </div>
       <ol class="cube-solution-steps">
         <li
           v-for="(move, index) in solution.moves"
@@ -95,7 +72,7 @@ async function copyAlgorithm(): Promise<void> {
           :class="{ 'is-current': cursor === index, 'is-complete': cursor > index }"
         >
           <button type="button" @click="emit('seek', index)">
-            <small>{{ phaseByMove.get(index) ?? `步骤 ${index + 1}` }}</small>
+            <small>步骤 {{ index + 1 }}</small>
             <strong>{{ move.notation }}</strong>
             <span>{{ describeMove(move) }}</span>
           </button>

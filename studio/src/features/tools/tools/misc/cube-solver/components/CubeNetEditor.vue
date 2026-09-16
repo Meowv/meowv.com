@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { IconArrowBackUp, IconArrowForwardUp, IconEraser, IconWand } from '@tabler/icons-vue';
+import {
+  IconArrowBackUp,
+  IconArrowForwardUp,
+  IconDice5,
+  IconEraser,
+  IconRestore,
+  IconWand,
+} from '@tabler/icons-vue';
 import {
   FACES,
   type CubeColorScheme,
@@ -8,7 +15,7 @@ import {
   type Facelet,
   type ValidationIssue,
 } from '../types';
-import { FACE_OFFSETS } from '../core/constants';
+import { DEFAULT_COLOR_SCHEME, FACE_OFFSETS } from '../core/constants';
 
 const props = defineProps<{
   facelets: readonly Facelet[];
@@ -20,6 +27,7 @@ const props = defineProps<{
   canAutoFill: boolean;
   canUndo: boolean;
   canRedo: boolean;
+  randomizing: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -28,8 +36,10 @@ const emit = defineEmits<{
   paint: [face: Face, index: number, color: Facelet];
   clear: [];
   'auto-fill': [];
+  randomize: [];
   undo: [];
   redo: [];
+  'update:color-scheme': [colorScheme: CubeColorScheme];
 }>();
 
 const faceNames: Record<Face, string> = {
@@ -56,6 +66,10 @@ const issueKeys = computed(
 
 function faceletsFor(face: Face): Facelet[] {
   return props.facelets.slice(FACE_OFFSETS[face], FACE_OFFSETS[face] + 9);
+}
+
+function updateColor(face: Face, color: string): void {
+  emit('update:color-scheme', { ...props.colorScheme, [face]: color });
 }
 </script>
 
@@ -84,6 +98,27 @@ function faceletsFor(face: Face): Facelet[] {
         <small>{{ counts[face] }}/9</small>
       </button>
     </div>
+
+    <details class="cube-color-settings">
+      <summary>自定义显示颜色</summary>
+      <div class="cube-color-settings__header">
+        <span>只改变页面显示，不改变 U / R / F / D / L / B 求解面。</span>
+        <button type="button" @click="emit('update:color-scheme', { ...DEFAULT_COLOR_SCHEME })">
+          <IconRestore :size="14" aria-hidden="true" />恢复默认
+        </button>
+      </div>
+      <div class="cube-color-settings__grid">
+        <label v-for="face in FACES" :key="face">
+          <input
+            type="color"
+            :value="colorScheme[face]"
+            :aria-label="`${faceNames[face]}显示颜色`"
+            @input="updateColor(face, ($event.target as HTMLInputElement).value)"
+          />
+          <span>{{ face }} · {{ faceNames[face] }}</span>
+        </label>
+      </div>
+    </details>
 
     <div class="cube-face-tabs" role="group" aria-label="移动端录入面">
       <button
@@ -143,8 +178,11 @@ function faceletsFor(face: Face): Facelet[] {
       <button type="button" @click="emit('clear')">
         <IconEraser :size="15" aria-hidden="true" />清空
       </button>
+      <button type="button" :disabled="randomizing" @click="emit('randomize')">
+        <IconDice5 :size="15" aria-hidden="true" />随机
+      </button>
       <button type="button" :disabled="!canAutoFill" @click="emit('auto-fill')">
-        <IconWand :size="15" aria-hidden="true" />自动补全
+        <IconWand :size="15" aria-hidden="true" />补全
       </button>
     </div>
   </div>

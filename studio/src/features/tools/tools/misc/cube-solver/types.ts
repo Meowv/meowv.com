@@ -3,8 +3,6 @@ export const FACES = ['U', 'R', 'F', 'D', 'L', 'B'] as const;
 export type Face = (typeof FACES)[number];
 export type Facelet = Face | null;
 export type TurnAmount = 1 | -1 | 2;
-export type CubeMode = 'solve' | 'algorithm' | 'practice' | 'beginner';
-export type CubeInputMethod = 'manual' | 'state';
 
 export interface StickerRef {
   face: Face;
@@ -53,22 +51,11 @@ export type ValidationResult =
   | { valid: true; position: CubePosition; issues: [] }
   | { valid: false; position: null; issues: ValidationIssue[] };
 
-export interface SolutionPhase {
-  id: string;
-  title: string;
-  goal: string;
-  grip: string;
-  start: number;
-  end: number;
-}
-
 export interface CubeSolution {
-  mode: 'quick' | 'beginner' | 'algorithm' | 'practice';
   algorithm: string;
   moves: CubeMove[];
   moveCount: number;
   baseline: CubePosition;
-  phases: SolutionPhase[];
   revision: number;
 }
 
@@ -89,17 +76,5 @@ export interface CubeColorScheme {
 
 export interface CubePreferences {
   animationSpeed: number;
-  teachingView: boolean;
-  showFaceLabels: boolean;
-  showMoveArrows: boolean;
   colorScheme: CubeColorScheme;
-}
-
-export interface CubeHistoryItem {
-  id: string;
-  createdAt: number;
-  initialFacelets: string;
-  solution: string;
-  moveCount: number;
-  source: CubeInputMethod | 'scramble';
 }
