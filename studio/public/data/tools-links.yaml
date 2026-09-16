@@ -29,6 +29,13 @@ categories:
       url: https://it-tools.tech
 
   games:
+    - id: quenqsvicecity
+      name: Quenq Vice City
+      description: Play GTA Vice City Online in Browser
+      icon:
+        url: https://quenqsvicecity.com/wp-content/uploads/2026/08/cropped-ChatGPT-Image-Aug-1-2026-05_27_50-AM-32x32.png
+      url: https://vc.quenqsvicecity.com
+
     - id: plonky
       name: Plonky
       description: 基于物理引擎的趣味解谜闯关游戏
