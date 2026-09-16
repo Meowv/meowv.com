@@ -144,9 +144,9 @@ rclone obscure '你的 SSH 密码'
 
 命令执行后默认直接上传，不再要求输入确认。`--dry-run` 会连接服务器并比较文件，但不实际上传。
 
-| 项目 | 本地产物 | 服务器站点目录 |
-| --- | --- | --- |
-| Blog | `build/meowv.com/` | `C:\_qix\meowv.com` |
+| 项目   | 本地产物                  | 服务器站点目录             |
+| ------ | ------------------------- | -------------------------- |
+| Blog   | `build/meowv.com/`        | `C:\_qix\meowv.com`        |
 | Studio | `build/studio.meowv.com/` | `C:\_qix\studio.meowv.com` |
 
 目录取自仓库 `nginx.conf`；部署前确认服务器实际使用同一配置。脚本在本机 `.deploy-cache/` 保存上次成功上传的 SHA-256 清单，只把新增或内容变化的文件交给 SFTP，内容相同的文件会跳过。首次运行会上传全部文件；如果服务器文件曾被手工修改，移除对应清单后再运行即可强制重新上传全部文件。脚本关闭远程修改时间同步，以兼容 Windows OpenSSH 的 `SetModTime failed`。上传不会清空目标目录，因此旧构建留下、而新构建不再包含的文件仍会保留。脚本不提供备份、回滚、页面校验或 Nginx 重启。
@@ -186,47 +186,47 @@ pnpm preview
 
 Studio 的运行时依赖和开发依赖声明在 `studio/package.json`。下面按用途列出主要三方组件：
 
-| 分类 | 组件 | 用途 |
-| --- | --- | --- |
-| 框架 | `vue` | Studio 主应用框架 |
-| 框架 | `vue-router` | 页面路由与导航 |
-| 框架 | `pinia` | 全局状态管理 |
-| 框架 | `react`、`react-dom` | Zitie 字帖应用及部分 React 工具 |
-| UI | `@tabler/icons-vue` | 图标库 |
-| UI | `ranui` | Ranuts 相关 UI 组件 |
-| 交互 | `vue-draggable-plus` | Vue 拖拽交互 |
-| 绘图 | `@excalidraw/excalidraw` | 白板和手绘风格绘图 |
-| 思维导图 | `mind-elixir` | 思维导图编辑 |
-| 思维导图 | `markmap-lib`、`markmap-view` | Markdown 大纲转思维导图并渲染 |
-| 可视化 | `d3` | 图表和数据可视化 |
-| 可视化 | `three` | 3D 场景和 3D 工具 |
-| 可视化 | `jsoncrack-react` | JSON 结构可视化 |
-| 专业工具 | `cubing` | 魔方状态、算法和交互 |
-| Markdown | `markdown-it` | Markdown 解析和渲染 |
-| Markdown | `highlight.js` | 代码语法高亮 |
-| Markdown | `mermaid` | 流程图、时序图等图表 |
-| Markdown | `monaco-editor` | Markdown 和代码编辑器 |
-| Markdown | `minisearch` | 本地全文搜索 |
-| Markdown | `js-yaml` | YAML 解析 |
-| 安全 | `dompurify` | HTML/SVG 内容清理，防止 XSS |
-| Office | `docx` | 生成 Word 文档 |
-| Office | `ranuts` | Office 编辑器和文档转换支持 |
-| Office | `sql.js` | 浏览器内运行 SQLite |
-| PDF/文档 | `pdfjs-dist` | PDF 解析、预览和 Worker 渲染 |
-| PDF/文档 | `pdf-lib`、`jspdf` | PDF 创建、修改、合并和导出 |
-| 电子书 | `foliate-js` | EPUB 等电子书解析与阅读 |
-| 压缩 | `@zip.js/zip.js`、`jszip`、`fflate` | ZIP 文件读写和压缩 |
-| 图片 | `ag-psd` | PSD 文件解析与处理 |
-| 图片 | `heic-to` | HEIC/HEIF 图片转换 |
-| 图片 | `utif` | TIFF 图片编解码 |
-| 图片 | `html2canvas`、`@zumer/snapdom` | DOM 截图和 Canvas 渲染 |
-| 二维码 | `jsqr` | 识别二维码 |
-| 二维码 | `qrcode` | 生成二维码 |
-| 日历 | `ical.js` | ICS/iCalendar 解析 |
-| 中文 | `pinyin-pro` | 汉字转拼音和多音字处理 |
-| 中文 | `cnchar`、`cnchar-order`、`cnchar-trad` | 汉字处理、笔顺和繁简转换 |
-| 中文 | `hanzi-writer-data` | Zitie 汉字笔顺数据 |
-| 中文 | `lunar-javascript` | 农历、节气和传统日期计算 |
+| 分类     | 组件                                                          | 用途                                       |
+| -------- | ------------------------------------------------------------- | ------------------------------------------ |
+| 框架     | `vue`                                                         | Studio 主应用框架                          |
+| 框架     | `vue-router`                                                  | 页面路由与导航                             |
+| 框架     | `pinia`                                                       | 全局状态管理                               |
+| 框架     | `react`、`react-dom`                                          | Zitie 字帖应用及部分 React 工具            |
+| UI       | `@tabler/icons-vue`                                           | 图标库                                     |
+| UI       | `ranui`                                                       | Ranuts 相关 UI 组件                        |
+| 交互     | `vue-draggable-plus`                                          | Vue 拖拽交互                               |
+| 绘图     | `@excalidraw/excalidraw`                                      | 白板和手绘风格绘图                         |
+| 思维导图 | `mind-elixir`                                                 | 思维导图编辑                               |
+| 思维导图 | `markmap-lib`、`markmap-view`                                 | Markdown 大纲转思维导图并渲染              |
+| 可视化   | `d3`                                                          | 图表和数据可视化                           |
+| 可视化   | `three`                                                       | 3D 场景和 3D 工具                          |
+| 可视化   | `jsoncrack-react`                                             | JSON 结构可视化                            |
+| 专业工具 | `cubing`                                                      | 魔方状态、算法和交互                       |
+| Markdown | `markdown-it`                                                 | Markdown 解析和渲染                        |
+| Markdown | `highlight.js`                                                | 代码语法高亮                               |
+| Markdown | `mermaid`、`@visimer/core`、`@visimer/dom`、`@visimer/monaco` | Mermaid 图表渲染、可视化编辑与代码双向同步 |
+| Markdown | `monaco-editor`                                               | Markdown 和代码编辑器                      |
+| Markdown | `minisearch`                                                  | 本地全文搜索                               |
+| Markdown | `js-yaml`                                                     | YAML 解析                                  |
+| 安全     | `dompurify`                                                   | HTML/SVG 内容清理，防止 XSS                |
+| Office   | `docx`                                                        | 生成 Word 文档                             |
+| Office   | `ranuts`                                                      | Office 编辑器和文档转换支持                |
+| Office   | `sql.js`                                                      | 浏览器内运行 SQLite                        |
+| PDF/文档 | `pdfjs-dist`                                                  | PDF 解析、预览和 Worker 渲染               |
+| PDF/文档 | `pdf-lib`、`jspdf`                                            | PDF 创建、修改、合并和导出                 |
+| 电子书   | `foliate-js`                                                  | EPUB 等电子书解析与阅读                    |
+| 压缩     | `@zip.js/zip.js`、`jszip`、`fflate`                           | ZIP 文件读写和压缩                         |
+| 图片     | `ag-psd`                                                      | PSD 文件解析与处理                         |
+| 图片     | `heic-to`                                                     | HEIC/HEIF 图片转换                         |
+| 图片     | `utif`                                                        | TIFF 图片编解码                            |
+| 图片     | `html2canvas`、`@zumer/snapdom`                               | DOM 截图和 Canvas 渲染                     |
+| 二维码   | `jsqr`                                                        | 识别二维码                                 |
+| 二维码   | `qrcode`                                                      | 生成二维码                                 |
+| 日历     | `ical.js`                                                     | ICS/iCalendar 解析                         |
+| 中文     | `pinyin-pro`                                                  | 汉字转拼音和多音字处理                     |
+| 中文     | `cnchar`、`cnchar-order`、`cnchar-trad`                       | 汉字处理、笔顺和繁简转换                   |
+| 中文     | `hanzi-writer-data`                                           | Zitie 汉字笔顺数据                         |
+| 中文     | `lunar-javascript`                                            | 农历、节气和传统日期计算                   |
 
 开发和质量检查依赖包括 `vite`、`typescript`、`vue-tsc`、`vitest`、`eslint`、`prettier`、`tailwindcss`、`@vitejs/plugin-vue`、`@vitejs/plugin-react`、`unplugin-auto-import` 及对应的 `@types/*` 类型声明包。
 

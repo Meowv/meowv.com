@@ -18,6 +18,15 @@ importers:
       '@tabler/icons-vue':
         specifier: ^3.35.0
         version: 3.46.0(vue@3.5.40(typescript@5.9.3))
+      '@visimer/core':
+        specifier: 1.1.2
+        version: 1.1.2
+      '@visimer/dom':
+        specifier: 1.1.2
+        version: 1.1.2
+      '@visimer/monaco':
+        specifier: 1.1.2
+        version: 1.1.2
       '@vue/devtools-api':
         specifier: ^8.2.1
         version: 8.2.1
@@ -1277,6 +1286,15 @@ packages:
 
   '@upsetjs/venn.js@2.0.0':
     resolution: {integrity: sha512-WbBhLrooyePuQ1VZxrJjtLvTc4NVfpOyKx0sKqioq9bX1C1m7Jgykkn8gLrtwumBioXIqam8DLxp88Adbue6Hw==}
+
+  '@visimer/core@1.1.2':
+    resolution: {integrity: sha512-do8MDqlLQeDRI1fy2PUTVnzBkLrzpaq260UX1WrtE/3XtSoLge4T5oY+cvSXFyINhYiYKB9tgetkx+o14LFrjA==}
+
+  '@visimer/dom@1.1.2':
+    resolution: {integrity: sha512-Ir+Nl5vRgZA8rQwjGEQrC9ijOkdR0BmD3EjjqU/VedgK0lxleo5dKj8YIoHiocEDS1hlQwmzRZKIKg8MuV2FJw==}
+
+  '@visimer/monaco@1.1.2':
+    resolution: {integrity: sha512-S/vLAFLNgSbuGCoknWrKRldW2pEMdG3kEVfL3UN6HN43G+M27LdHBvk3duwMYI8Kxl0AhjMfW0y0zN9g3AsBJg==}
 
   '@vitejs/plugin-react@6.0.2':
     resolution: {integrity: sha512-DlSMqo4WhThw4vB8Mpn0Woe9J+Jfq1geJ61AKW0QEgLzGMNwtIMdxbDUzLxcun8W7NbJO0e2Jg/Nxm3cCSVzzg==}
@@ -5066,6 +5084,16 @@ snapshots:
     optionalDependencies:
       d3-selection: 3.0.0
       d3-transition: 3.0.1(d3-selection@3.0.0)
+
+  '@visimer/core@1.1.2': {}
+
+  '@visimer/dom@1.1.2':
+    dependencies:
+      '@visimer/core': 1.1.2
+
+  '@visimer/monaco@1.1.2':
+    dependencies:
+      '@visimer/core': 1.1.2
 
   '@vitejs/plugin-react@6.0.2(vite@8.2.0(@types/node@24.13.3)(jiti@2.7.0)(yaml@2.9.0))':
     dependencies:

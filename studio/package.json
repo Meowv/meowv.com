@@ -22,6 +22,9 @@
   "dependencies": {
     "@excalidraw/excalidraw": "0.18.1",
     "@tabler/icons-vue": "^3.35.0",
+    "@visimer/core": "1.1.2",
+    "@visimer/dom": "1.1.2",
+    "@visimer/monaco": "1.1.2",
     "@vue/devtools-api": "^8.2.1",
     "@zip.js/zip.js": "2.8.46",
     "@zumer/snapdom": "2.23.2",
