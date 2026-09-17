@@ -193,8 +193,17 @@ export function parseFrontMatter(source: string): FrontMatterResult {
   const body = source.slice(match[0].length);
   const bodyStartLine = (match[0].match(/\n/gu)?.length ?? 0) + 1;
 
+  const yamlSource = match[1] ?? '';
+  // js-yaml 5 对空文档与仅含注释的输入都会抛错，这两种情况都应按“没有属性”处理。
+  const hasYamlDocument = yamlSource
+    .split(/\r?\n/u)
+    .some((line) => line.trim() && !line.trim().startsWith('#'));
+  if (!hasYamlDocument) {
+    return { attributes: {}, body, bodyStartLine };
+  }
+
   try {
-    const loaded = loadYaml(match[1] ?? '');
+    const loaded = loadYaml(yamlSource);
     const attributes = isPlainRecord(loaded) ? loaded : {};
 
     return {
