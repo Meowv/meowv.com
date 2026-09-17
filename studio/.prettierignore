@@ -2,3 +2,4 @@ dist
 public/excalidraw-assets
 public/office-assets
 pnpm-lock.yaml
+src/auto-imports.d.ts
