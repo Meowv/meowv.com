@@ -20,6 +20,25 @@ describe('formatFileSize', () => {
     expect(formatFileSize(999)).toBe('999 B');
   });
 
+  it('小于 1 字节的正数不会落到负指数单位', () => {
+    // 早期实现会算出 exponent = -1，取出 undefined 单位并输出 "512 undefined"。
+    expect(formatFileSize(0.5)).toBe('1 B');
+    expect(formatFileSize(0.4)).toBe('1 B');
+    expect(formatFileSize(0.999)).toBe('1 B');
+  });
+
+  it('小数形式的字节数按最接近的整数输出', () => {
+    expect(formatFileSize(512.4)).toBe('512 B');
+    expect(formatFileSize(1023.5)).toBe('1024 B');
+  });
+
+  it('任意有限正数都返回带单位的字符串', () => {
+    const samples = [0.001, 0.1, 0.5, 0.999, 1, 512, 1023.9, 1024, 1024 ** 2, 1024 ** 4];
+    for (const bytes of samples) {
+      expect(formatFileSize(bytes)).toMatch(/^\d+(\.\d+)? (B|KB|MB|GB)$/u);
+    }
+  });
+
   it('超过最大单位后仍以 GB 表示', () => {
     expect(formatFileSize(1024 ** 4)).toBe('1024 GB');
   });
