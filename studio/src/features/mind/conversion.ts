@@ -25,16 +25,21 @@ export function markdownToMind(markdown: string, fallbackTitle: string): MindEli
   const root: OutlineNode = { topic: fallbackTitle || '未命名思维导图', children: [] };
   const stack: Array<{ depth: number; node: OutlineNode }> = [{ depth: 0, node: root }];
   let headingCount = 0;
+  let headingDepth = 0;
 
   for (const raw of lines) {
     const heading = raw.match(/^(#{1,6})\s+(.+)$/);
     const item = raw.match(/^(\s*)(?:[-*+] |\d+\. )(.+)$/);
     if (!heading && !item) continue;
+    // 列表层级以最近的标题为基准，否则顶级列表会与同级标题落在同一深度并被弹出栈。
     const depth = heading
       ? heading[1].length
-      : Math.floor(item![1].replace(/\t/g, '  ').length / 2) + 2;
+      : headingDepth + 1 + Math.floor(item![1].replace(/\t/g, '  ').length / 2);
     const node: OutlineNode = { topic: cleanInline(heading?.[2] ?? item![2]), children: [] };
-    if (heading?.[1].length === 1) headingCount += 1;
+    if (heading) {
+      headingDepth = heading[1].length;
+      if (heading[1].length === 1) headingCount += 1;
+    }
     while (stack.length > 1 && stack.at(-1)!.depth >= depth) stack.pop();
     stack.at(-1)!.node.children.push(node);
     stack.push({ depth, node });
