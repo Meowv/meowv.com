@@ -10,7 +10,7 @@
 # 构建配置：默认 **debug**。开发者工具（菜单里的「打印窗口层级表」）用
 # `#if DEBUG` 隔离，只在 debug 构建里存在 —— 想验发布版行为用 ./build.sh（release）。
 #
-# 清单由 App 自己从线上拉取（https://studio.meowv.com/data/livewall.json），
+# 清单由 App 自己从线上拉取（https://studio.meowv.com/data/livewall/catalog.json），
 # 断网时用上次成功拉取的本地副本兜底 —— 这里不再同步任何清单文件。
 #
 # 注意：本脚本是 livewall 子项目的运行脚本，与仓库根目录的 run.sh 无关
@@ -57,7 +57,7 @@ if [[ ! -x "$APP/Contents/MacOS/LiveWall" ]]; then
 fi
 
 echo "[run] 启动 ${APP}（$CONFIGURATION 构建）"
-echo "[run] 清单：https://studio.meowv.com/data/livewall.json"
+echo "[run] 清单：https://studio.meowv.com/data/livewall/catalog.json"
 echo "[run] 日志：~/Library/Logs/com.meowv.livewall/livewall.log"
 echo "[run] 退出：菜单栏图标 → 退出，或 pkill -x LiveWall"
 exec "$APP/Contents/MacOS/LiveWall"

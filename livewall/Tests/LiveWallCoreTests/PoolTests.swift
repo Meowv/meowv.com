@@ -12,18 +12,6 @@ private func makeItems(_ count: Int) -> [WallpaperItem] {
     }
 }
 
-/// 交替作者，用于验证「先过滤出结果集，再在其中按顺序播」。
-private func makeAuthoredItems(_ count: Int) -> [WallpaperItem] {
-    (1...count).map { index in
-        WallpaperItem(
-            id: index,
-            title: "W\(index)",
-            author: index.isMultiple(of: 2) ? "B" : "A",
-            url: "https://cdn.test/\(index).mp4"
-        )
-    }
-}
-
 func poolTests() {
     suite("CandidatePool") {
 
@@ -146,6 +134,79 @@ func poolTests() {
         }
     }
 
+    suite("CandidatePool 指定取回（恢复上次播放）") {
+
+        test("命中候选集时返回该条目并更新 currentID") {
+            var pool = CandidatePool(items: makeItems(5))
+            let restored = pool.restore(id: 3)
+            expectEqual(restored?.id, 3, "应取回指定条目")
+            expectEqual(pool.currentID, 3, "currentID 应指向恢复的条目")
+        }
+
+        test("不在候选集里时返回 nil，且不动 currentID") {
+            // 恢复的条目可能属于别的分类（用户换过分类）或已被清单移除。
+            var pool = CandidatePool(items: makeItems(5))
+            var generator = SeededGenerator(seed: 41)
+            _ = pool.next(using: &generator)
+            let before = pool.currentID
+
+            expectNil(pool.restore(id: 999), "查不到应返回 nil")
+            expectEqual(pool.currentID, before, "失败不该改动 currentID")
+        }
+
+        test("恢复时会把它从已排好的本轮队列里移除") {
+            // 真实场景：第一个槽位走 `next()` 取片（本轮队列随之排好），
+            // 第二个槽位恢复指定条目 —— 那条必须从队列里拿掉，
+            // 否则它会在同一轮里再被取一次。
+            var pool = CandidatePool(items: makeItems(4), order: .sequential)
+            var generator = SeededGenerator(seed: 43)
+            expectEqual(pool.next(using: &generator)?.id, 1, "第一个槽位正常取片，本轮队列已排好")
+            expectEqual(pool.restore(id: 3)?.id, 3, "第二个槽位恢复 3")
+
+            let picked = (0..<3).map { _ in pool.next(using: &generator)?.id ?? -1 }
+            expect(!picked.contains(3), "3 应已从本轮队列移除，实际 \(picked)")
+            expectEqual(picked, [2, 4, 1], "其余照常按原序，队列取空后重排")
+        }
+
+        test("队列还空着时恢复，被恢复的条目仍留在本轮里（顺序模式的既有设计）") {
+            // 启动时的场景：`setItems` 刚清空队列，第一个槽位就恢复。
+            // 顺序模式**刻意不排除当前项** —— 排除会让每轮短一条，实际序列退化成
+            // `A…Z → A…Y → A…X`（见 `refill` 的注释）。所以 3 仍会在本轮里出现，
+            // 只是不会紧接着重复。默认的随机模式则会把当前项排除掉（见下一条）。
+            var pool = CandidatePool(items: makeItems(4), order: .sequential)
+            expectEqual(pool.restore(id: 3)?.id, 3, "先恢复 3")
+            var generator = SeededGenerator(seed: 45)
+            let rest = (0..<4).map { _ in pool.next(using: &generator)?.id ?? -1 }
+            expectEqual(rest, [1, 2, 3, 4], "本轮仍是完整的清单原序，一轮的长度不能变")
+            expect(rest.first != 3, "不应紧接着重复刚恢复的那条")
+        }
+
+        test("随机模式下被恢复的条目会被排除在本轮之外") {
+            var pool = CandidatePool(items: makeItems(4), order: .shuffle)
+            expectEqual(pool.restore(id: 3)?.id, 3, "先恢复 3")
+            var generator = SeededGenerator(seed: 49)
+            let picked = (0..<3).map { _ in pool.next(using: &generator)?.id ?? -1 }
+            expect(!picked.contains(3), "随机模式应排除当前项，实际 \(picked)")
+            expectEqual(Set(picked), [1, 2, 4], "其余三条都该取到")
+        }
+
+        test("候选集被替换后，旧的恢复目标不再命中") {
+            // 换分类就是这个场景：候选集整体换成另一片，旧条目查不到 → 退回正常取片。
+            var pool = CandidatePool(items: makeItems(6))
+            expectEqual(pool.restore(id: 5)?.id, 5, "先确认 5 在候选集里")
+            pool.setItems(makeItems(6).filter { $0.id.isMultiple(of: 2) })
+            expectNil(pool.restore(id: 5), "换候选集后旧目标应查不到")
+            expectNotNil(pool.restore(id: 4), "新候选集里的条目应能恢复")
+        }
+
+        test("恢复不清黑名单") {
+            var pool = CandidatePool(items: makeItems(4))
+            pool.blacklist(id: 2)
+            _ = pool.restore(id: 3)
+            expectEqual(pool.blacklistedCount, 1, "黑名单是资源失效的记录，与恢复无关")
+        }
+    }
+
     suite("CandidatePool 顺序模式") {
 
         test("按清单原序播放，一轮走满全部条目") {
@@ -229,19 +290,19 @@ func poolTests() {
             expectEqual(pool.pendingCount, before, "值没变就不该重建 —— 否则一次误点会重置整轮")
         }
 
-        test("过滤后从新结果集的第一条开始，且跳过的都是被过滤掉的") {
-            var pool = CandidatePool(items: makeAuthoredItems(6), order: .sequential)
-            pool.filter = CandidateFilter(authors: ["B"])
+        test("换候选集后从新结果集的第一条开始") {
+            // 切分类的模型：候选集整体换成原清单的一个子集（这里取偶数 id）
+            var pool = CandidatePool(items: makeItems(6), order: .sequential)
+            pool.setItems(makeItems(6).filter { $0.id.isMultiple(of: 2) })
             var generator = SeededGenerator(seed: 137)
             let picked = (0..<3).map { _ in pool.next(using: &generator)?.id ?? -1 }
-            expectEqual(picked, [2, 4, 6], "应只在 B 的结果集里按原序播放")
+            expectEqual(picked, [2, 4, 6], "应在新结果集里按原序播放")
             expectEqual(pool.totalCount, 3, "结果集规模")
-            expectEqual(pool.filteredOutCount, 3, "被过滤掉的条数")
         }
 
-        test("空结果集返回 nil，不崩也不死循环") {
-            var pool = CandidatePool(items: makeAuthoredItems(4), order: .sequential)
-            pool.filter = CandidateFilter(authors: ["不存在的作者"])
+        test("换成空集后视为耗尽，不崩也不死循环") {
+            var pool = CandidatePool(items: makeItems(4), order: .sequential)
+            pool.setItems([])
             var generator = SeededGenerator(seed: 139)
             expectNil(pool.next(using: &generator), "空结果集应返回 nil")
             expect(pool.isExhausted, "应判定为耗尽")

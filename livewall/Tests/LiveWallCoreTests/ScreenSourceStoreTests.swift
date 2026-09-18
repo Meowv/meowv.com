@@ -25,6 +25,20 @@ func screenSourceStoreTests() {
             expectEqual(store.itemID(for: 3), 2, "后写的应覆盖先写的")
         }
 
+        test("entries 能一次读出整张表") {
+            var store = ScreenSourceStore()
+            store.setItemID(10, for: 1)
+            store.setItemID(20, for: 3)
+            expectEqual(store.entries, [1: 10, 3: 20], "应按 displayID 读出全部记录")
+        }
+
+        test("entries 跳过键解析不出 displayID 的记录") {
+            // 配置被手改过时可能出现这种键。跳过它，别让整张表读不出来。
+            let store = ScreenSourceStore(sources: ["1": 10, "not-a-number": 20, "": 30])
+            expectEqual(store.entries, [1: 10], "坏键应被跳过")
+            expectEqual(store.count, 3, "底层记录数不变（清理交给 prune）")
+        }
+
         test("清理：拔掉的屏会被剔除") {
             var store = ScreenSourceStore()
             store.setItemID(10, for: 1)
@@ -88,6 +102,57 @@ func screenSourceStoreTests() {
             let data = (try? JSONEncoder().encode(store)) ?? Data()
             let text = String(data: data, encoding: .utf8) ?? ""
             expect(text.contains("\"9\""), "键应是字符串形式的 displayID")
+        }
+    }
+
+    suite("ScreenSourceRestore") {
+
+        test("条目都在候选集里时全部可恢复") {
+            var store = ScreenSourceStore()
+            store.setItemID(10, for: 1)
+            store.setItemID(20, for: 3)
+            let plan = ScreenSourceRestore.plan(store: store, candidateIDs: [10, 20, 30])
+            expectEqual(plan, [1: 10, 3: 20], "两块屏都该进计划")
+        }
+
+        test("条目已不在候选集里时被丢弃 —— 换了分类就是这种情况") {
+            // 候选集是**当前分类**的切片。用户换过分类之后，旧条目多半已经不在了；
+            // 拿着它去取片只会让那块屏空着，所以必须丢弃、退回正常取片。
+            var store = ScreenSourceStore()
+            store.setItemID(10, for: 1)      // 还在
+            store.setItemID(999, for: 3)     // 不在当前分类
+            let plan = ScreenSourceRestore.plan(store: store, candidateIDs: [10, 20])
+            expectEqual(plan, [1: 10], "查不到的记录不该进计划")
+        }
+
+        test("全部查不到时计划为空") {
+            var store = ScreenSourceStore()
+            store.setItemID(999, for: 1)
+            let plan = ScreenSourceRestore.plan(store: store, candidateIDs: [1, 2, 3])
+            expect(plan.isEmpty, "一个都不命中就什么都不恢复")
+        }
+
+        test("空记忆或空候选集都得到空计划") {
+            expect(
+                ScreenSourceRestore.plan(store: .empty, candidateIDs: [1, 2]).isEmpty,
+                "没有记忆时无可恢复"
+            )
+            var store = ScreenSourceStore()
+            store.setItemID(1, for: 1)
+            expect(
+                ScreenSourceRestore.plan(store: store, candidateIDs: []).isEmpty,
+                "候选集为空时无可恢复"
+            )
+        }
+
+        test("拔掉的屏仍会被算进计划（由调用方按实际槽位取用）") {
+            // 表里可能留着已经拔掉的屏。计划本身不做屏幕过滤 ——
+            // 调用方只对**实际存在的槽位**取用，多余的项自然用不上。
+            var store = ScreenSourceStore()
+            store.setItemID(10, for: 1)
+            store.setItemID(20, for: 99)
+            let plan = ScreenSourceRestore.plan(store: store, candidateIDs: [10, 20])
+            expectEqual(plan.count, 2, "计划不负责剔除拔掉的屏")
         }
     }
 }

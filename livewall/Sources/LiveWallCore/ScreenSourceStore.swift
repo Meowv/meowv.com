@@ -31,6 +31,20 @@ public struct ScreenSourceStore: Codable, Sendable, Equatable {
         sources[String(displayID)]
     }
 
+    /// 全部记录：displayID → 条目 id。
+    ///
+    /// 恢复时要遍历整张表而不是逐个 `itemID(for:)` —— 「这台机器有几块屏」在启动时
+    /// 才知道，而表里可能还留着已经拔掉的屏（它们由 `prune` 在下次保存时清理）。
+    /// 键解析不出 `UInt32` 的记录直接跳过（配置被手改过时可能这样）。
+    public var entries: [UInt32: Int] {
+        var result: [UInt32: Int] = [:]
+        for (key, itemID) in sources {
+            guard let displayID = UInt32(key) else { continue }
+            result[displayID] = itemID
+        }
+        return result
+    }
+
     public mutating func setItemID(_ itemID: Int, for displayID: UInt32) {
         sources[String(displayID)] = itemID
         trimToLimit()

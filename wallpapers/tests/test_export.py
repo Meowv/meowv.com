@@ -73,6 +73,11 @@ def _read(path):
 
 
 def _items(path):
+    """读某个**分类切片**里的条目 id 集合。
+
+    索引（`catalog.json`）里没有 `items` —— 那是它的设计目标（要足够小），
+    所以这个辅助函数只能用于分类文件。
+    """
     return {item["id"] for item in _read(path)["items"]}
 
 
@@ -120,7 +125,7 @@ def test_removes_stale_category_files(tmp_path):
     assert not stale.exists()
 
 
-# ── 总文件结构 ────────────────────────────────────────────────────
+# ── 索引结构 ──────────────────────────────────────────────────────
 
 
 def test_catalog_shape(tmp_path):
@@ -134,8 +139,29 @@ def test_catalog_shape(tmp_path):
     assert catalog["source"]["deviceType"] == "desktop"
     assert catalog["source"]["contentType"] == "dynamic"
     assert catalog["defaultCategoryId"] == 4001
-    # 总文件是全量超集：不挂任何分类的壁纸 4 也在里面
-    assert _items(catalog_path) == {1, 2, 3, 4, 5}
+    assert set(catalog) == {
+        "schemaVersion",
+        "generatedAt",
+        "source",
+        "defaultCategoryId",
+        "categories",
+    }
+
+
+def test_index_has_no_items(tmp_path):
+    """索引**刻意不含条目** —— 它是启动时唯一必拉的文件，必须很小。
+
+    这条锁住这个约定：谁要是把 `items` 加回来，客户端就会又变成
+    「一次下全量」，那个 4.9 MB 的问题会原地复活。
+    """
+    source = _make_db(tmp_path, BASE_ROWS)
+
+    catalog_path, _ = export_livewall_catalog(source, tmp_path / "data")
+    catalog = _read(catalog_path)
+
+    assert "items" not in catalog
+    # 索引本身应该是几百字节量级，而不是随条目数增长
+    assert catalog_path.stat().st_size < 2048
 
 
 def test_catalog_lists_every_category_including_empty(tmp_path):
@@ -194,21 +220,34 @@ def test_unknown_default_category_falls_back_to_first(tmp_path):
     assert _read(catalog_path)["defaultCategoryId"] == 4001
 
 
-def test_catalog_items_carry_root_category_ids(tmp_path):
+def test_category_items_carry_root_category_ids(tmp_path):
+    """条目上的 `categoryIds` 是**一级分类** id：二级、三级都递归归属到根。"""
     source = _make_db(tmp_path, BASE_ROWS)
 
-    catalog_path, _ = export_livewall_catalog(source, tmp_path / "data")
-    catalog = _read(catalog_path)
+    _, category_paths = export_livewall_catalog(source, tmp_path / "data")
+    beauty = {item["id"]: item for item in _read(category_paths["美女"])["items"]}
 
-    by_id = {item["id"]: item for item in catalog["items"]}
-    assert by_id[1]["categoryIds"] == [4001]
+    assert beauty[1]["categoryIds"] == [4001]
     # 二级分类的壁纸归属到一级分类
-    assert by_id[2]["categoryIds"] == [4001]
+    assert beauty[2]["categoryIds"] == [4001]
     # 三级分类同样递归归属到一级分类
-    assert by_id[5]["categoryIds"] == [4001]
-    assert by_id[3]["categoryIds"] == [5000]
-    # 不挂分类的条目 categoryIds 为空
-    assert by_id[4]["categoryIds"] == []
+    assert beauty[5]["categoryIds"] == [4001]
+
+    scenery = _read(category_paths["风景"])["items"]
+    assert [item["categoryIds"] for item in scenery] == [[5000]]
+
+
+def test_wallpaper_without_category_appears_in_no_slice(tmp_path):
+    """不挂任何分类的壁纸 4 不属于任何切片 —— 索引里也没有它。
+
+    这是「按分类单独加载」的必然结果：它谁都不属于，所以哪儿都到不了。
+    实测线上数据里没有这种条目（每张壁纸都挂了一个一级分类）。
+    """
+    source = _make_db(tmp_path, BASE_ROWS)
+
+    _, category_paths = export_livewall_catalog(source, tmp_path / "data")
+
+    assert all(4 not in _items(path) for path in category_paths.values())
 
 
 def test_catalog_entries_expose_file_and_count(tmp_path):
@@ -273,7 +312,7 @@ def test_category_item_shape(tmp_path):
 
 
 def test_category_files_share_generated_at(tmp_path):
-    """总文件与分类文件必须同批生成，否则客户端无法判断谁更新。"""
+    """索引与分类文件必须同批生成，否则客户端无法判断谁更新。"""
     source = _make_db(tmp_path, BASE_ROWS)
 
     catalog_path, category_paths = export_livewall_catalog(source, tmp_path / "data")
@@ -282,8 +321,8 @@ def test_category_files_share_generated_at(tmp_path):
     assert all(_read(path)["generatedAt"] == generated_at for path in category_paths.values())
 
 
-def test_no_matches_writes_catalog_without_category_files(tmp_path):
-    """壁纸没挂任何分类时总文件仍然写出，只是没有分类文件。"""
+def test_no_matches_writes_index_without_category_files(tmp_path):
+    """壁纸没挂任何分类时索引仍然写出，只是没有分类文件。"""
     source = _make_db(
         tmp_path,
         BASE_ROWS
@@ -299,7 +338,8 @@ def test_no_matches_writes_catalog_without_category_files(tmp_path):
     assert category_paths == {}
     assert catalog["defaultCategoryId"] == 4001
     assert all(entry["itemCount"] == 0 for entry in catalog["categories"])
-    assert _items(catalog_path) == {1, 2, 3, 4, 5}
+    # 一个分类文件都不该落盘
+    assert sorted(p.name for p in (output_dir / "livewall").iterdir()) == ["catalog.json"]
 
 
 # ── 条目筛选（沿用旧版规则，属回归保护）────────────────────────────
@@ -337,10 +377,10 @@ def test_skips_non_video_preview_roles(tmp_path):
 def test_skips_inactive_wallpapers(tmp_path):
     source = _make_db(tmp_path, BASE_ROWS.replace("(2, 'active'", "(2, 'inactive'"))
 
-    catalog_path, category_paths = export_livewall_catalog(source, tmp_path / "data")
+    _, category_paths = export_livewall_catalog(source, tmp_path / "data")
 
     assert _items(category_paths["美女"]) == {1, 5}
-    assert _items(catalog_path) == {1, 3, 4, 5}
+    assert _items(category_paths["风景"]) == {3}
 
 
 def test_deduplicates_multiple_preview_assets_per_wallpaper(tmp_path):
@@ -354,10 +394,10 @@ def test_deduplicates_multiple_preview_assets_per_wallpaper(tmp_path):
         """,
     )
 
-    catalog_path, _ = export_livewall_catalog(source, tmp_path / "data")
-    catalog = _read(catalog_path)
+    _, category_paths = export_livewall_catalog(source, tmp_path / "data")
+    items = _read(category_paths["美女"])["items"]
 
-    assert len([item for item in catalog["items"] if item["id"] == 1]) == 1
+    assert len([item for item in items if item["id"] == 1]) == 1
 
 
 def test_prefers_primary_preview_and_sort_order(tmp_path):

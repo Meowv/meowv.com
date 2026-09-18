@@ -42,33 +42,24 @@ public enum PlaybackOrder: String, Codable, Sendable, CaseIterable {
 ///
 /// 工作方式是把整个候选集排好序后逐个取出，取空再重排。这样比「每次随机抽一条、
 /// 抽到重复就重抽」更可预期：一轮的长度恒等于可用条目数，不会出现连续抽到同一条。
+///
+/// **候选集由调用方备好再灌进来**：内容分类的切片由 `AppDelegate` 异步拉取
+/// （每个分类一个 `category.<id>.json`），这里不关心条目是怎么来的。
 public struct CandidatePool {
 
-    /// 全量候选（未过滤）。
-    private var allItems: [WallpaperItem] = []
-    /// 过滤后的候选（未经排序）。
+    /// 当前候选集（未经排序）。
     private var source: [WallpaperItem] = []
     /// 待取队列。
     private var queue: [WallpaperItem] = []
     /// 失效条目的 id（CDN 404 / 解码失败等）。
     private var blacklist: Set<Int> = []
 
-    /// 选片顺序。改动会重建候选集并清空待取队列 —— **换模式等于重新开始一轮**，
+    /// 选片顺序。改动会清空待取队列 —— **换模式等于重新开始一轮**，
     /// 不然「本轮已经播过哪些」会在两种顺序之间串味。
     public var order: PlaybackOrder = .shuffle {
         didSet {
             guard order != oldValue else { return }
-            rebuildSource()
-        }
-    }
-
-    /// 内容过滤。改动会立即重建候选集并清空待取队列 ——
-    /// 队列里可能还有被过滤掉的条目，不清就会在切换时「漏」出来。
-    /// 黑名单**不清**：那是「资源失效」的记录，与用户选了什么无关。
-    public var filter: CandidateFilter = CandidateFilter() {
-        didSet {
-            guard filter != oldValue else { return }
-            rebuildSource()
+            rebuild()
         }
     }
 
@@ -77,38 +68,27 @@ public struct CandidatePool {
     /// 黑名单重置次数。> 0 说明出现过「全部候选都失效」并已自动重试一轮。
     public private(set) var blacklistResetCount = 0
 
-    /// 全量候选的作者选项（按条目数降序）。在 `setItems` 时算好 —— 菜单每次重建
-    /// 都会读它，不该每次重新遍历 2,600 条。
-    public private(set) var authorOptions: [FilterOption] = []
-
     public init(
         items: [WallpaperItem] = [],
-        filter: CandidateFilter = CandidateFilter(),
         order: PlaybackOrder = .shuffle
     ) {
         self.order = order
-        self.filter = filter
         setItems(items)
     }
 
-    /// 替换候选集。会清空待取队列，但保留黑名单、过滤条件与当前播放项。
+    /// 替换候选集（换分类、或重新加载清单）。会清空待取队列，但**保留黑名单**与当前播放项 ——
+    /// 黑名单是「资源失效」的记录，与用户选了哪个分类无关。
     public mutating func setItems(_ items: [WallpaperItem]) {
-        allItems = items
-        authorOptions = FilterOptions.authors(from: items)
-        rebuildSource()
+        source = items
+        rebuild()
     }
 
-    /// 按当前过滤条件重建候选集，并清空待取队列（下一次 `next()` 会重新排一轮）。
-    private mutating func rebuildSource() {
-        source = filter.apply(to: allItems)
+    /// 候选集变了，本轮作废：下一次 `next()` 会重新排一轮。
+    ///
+    /// 队列里可能还有已经不在候选集里的条目，不清就会在切换时「漏」出来。
+    private mutating func rebuild() {
         queue = []
     }
-
-    /// 清单里的全部条目数（过滤前）。
-    public var catalogCount: Int { allItems.count }
-
-    /// 被过滤掉的条目数。
-    public var filteredOutCount: Int { allItems.count - source.count }
 
     public var totalCount: Int { source.count }
 
@@ -126,6 +106,25 @@ public struct CandidatePool {
     public mutating func blacklist(id: Int) {
         blacklist.insert(id)
         queue.removeAll { $0.id == id }
+    }
+
+    /// 取回**指定**条目（用于「恢复各屏上次播的内容」）。条目不在候选集里时返回 nil。
+    ///
+    /// 与 `next()` 的区别：不按顺序排队、直接点名。但**同样要把它从待取队列里拿掉**，
+    /// 并把 `currentID` 指过去 —— 否则它会在同一轮里再被取一次。
+    ///
+    /// 「下一轮」的语义按 `order` 分，这一点容易误读：随机模式重排时会排除 `currentID`，
+    /// 顺序模式则**刻意不排除**（排除会让每轮短一条，见 `refill` 的注释）。
+    /// 因此**队列还空着时恢复**（启动时的真实场景）在顺序模式下，被恢复的条目仍留在本轮里，
+    /// 只是不会紧接着重复 —— 这是既有设计，不是这里漏了。
+    ///
+    /// 查不到就返回 nil（调用方退回 `next()`）：条目可能属于别的分类，
+    /// 或生成侧重新导出过清单把它去掉了。
+    public mutating func restore(id: Int) -> WallpaperItem? {
+        guard let item = source.first(where: { $0.id == id }) else { return nil }
+        queue.removeAll { $0.id == id }
+        currentID = item.id
+        return item
     }
 
     /// 取下一个候选。队列空时自动重排。
@@ -165,8 +164,8 @@ public struct CandidatePool {
             pool = source
         }
 
-        // 顺序模式：一轮的第一条正好是当前正在播的那条（典型场景是刚改了过滤条件、
-        // 顺序模式或清单，队列被清空重建）时向后让一位 —— 否则用户会以为没生效。
+        // 顺序模式：一轮的第一条正好是当前正在播的那条（典型场景是刚换了分类、
+        // 改了顺序或重载了清单，队列被清空重建）时向后让一位 —— 否则用户会以为没生效。
         // 这只在「新一轮的第一条 == 当前项」时触发：自然轮边界上当前项是上一轮的
         // 最后一条，两者不相等，不会误让。
         if order == .sequential, pool.count > 1, let currentID, pool.first?.id == currentID {

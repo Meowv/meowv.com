@@ -14,9 +14,9 @@ VIDEO_ROLE = "video_preview"
 # 与 publish.py 一致：每个壁纸最多保留 4 个标签
 MAX_TAGS = 4
 
-# 供 livewall 客户端使用的清单目录。总文件与各分类文件都放在这个子目录下：
-#   <output_dir>/livewall/catalog.json
-#   <output_dir>/livewall/category.<一级分类 id>.json
+# 供 livewall 客户端使用的清单目录。索引与各分类文件都放在这个子目录下：
+#   <output_dir>/livewall/catalog.json                索引（分类清单 + 默认分类，不含条目）
+#   <output_dir>/livewall/category.<一级分类 id>.json  各分类的条目切片
 # 放子目录有两个原因：一是与 Studio 的 wallpapers.catalog.* 分开 ——
 # encrypt-wallpaper.mjs 要求该目录下「恰好 5 个」wallpapers.catalog.*.json，
 # 多出来的文件会让它直接报错；二是发布时可以整目录拷贝。
@@ -88,7 +88,7 @@ def _fetch_items(
                 # AVAsset 自行探测，不在这里伪造默认值
                 "durationSeconds": None,
                 "tags": tags.get(wallpaper_id, []),
-                # 该条目所属的**一级分类** id（去重、升序），客户端按它做本地切片
+                # 该条目所属的**一级分类** id（去重、升序），供排查与展示用
                 "categoryIds": [],
             }
         )
@@ -207,7 +207,7 @@ def _resolve_default_category(
 ) -> int | None:
     """把「默认分类」解析成一级分类 id。支持按名称或按 id 指定。
 
-    指定的分类不存在（或没指定）时退回列表首项，保证总文件里总有可用的默认值。
+    指定的分类不存在（或没指定）时退回列表首项，保证索引里总有可用的默认值。
     """
     if default_category is not None:
         wanted = str(default_category).strip()
@@ -230,13 +230,14 @@ def export_livewall_catalog(
 
     产物是「1 + N」两层，全部落在 `<output_dir>/livewall/` 下：
 
-    - `catalog.json` —— 总文件。分类清单（含条目数为 0 的分类）+ 全量条目，
-      每条带所属一级分类 id。客户端一次请求即可同时拿到菜单与内容。
-    - `category.<一级分类 id>.json` —— 每个**有内容**的分类一份，结构沿用
-      旧版 `livewall.json`，客户端按需单独拉取。
+    - `catalog.json` —— **纯索引**：分类清单（含条目数为 0 的分类）与默认分类。
+      **不含任何条目** —— 它是启动时唯一必拉的文件，因此必须很小（几百字节）。
+      客户端拿到它就有菜单了。
+    - `category.<一级分类 id>.json` —— 每个**有内容**的分类一份，结构沿用旧版
+      `livewall.json`。客户端按选中分类单独拉取，并各自缓存。
 
     与 `publish_catalog` 的区别：这里**不做加密**，输出是明文 JSON，
-    直接给本机客户端读取。返回 (总文件路径, {分类名: 分类文件路径})。
+    直接给本机客户端读取。返回 (索引路径, {分类名: 分类文件路径})。
     """
     source_path = Path(source).resolve()
     target_dir = Path(output_dir).resolve() / LIVEWALL_DIR_NAME
@@ -248,8 +249,8 @@ def export_livewall_catalog(
         tree = _fetch_category_tree(source_db, device=device, content=content)
         roots_by_wallpaper = _fetch_wallpaper_roots(source_db, tree)
 
-    # 回填条目的一级分类归属。不属于任何分类的条目只出现在总文件里 ——
-    # 总文件是全量超集，分类文件是它的切片。
+    # 回填条目的一级分类归属。**索引里没有条目**，所以不属于任何分类的条目
+    # 哪儿都到不了 —— 实测线上数据里没有这种条目（每张壁纸都挂了一个一级分类）。
     for item in items:
         item["categoryIds"] = roots_by_wallpaper.get(int(item["id"]), [])
 
@@ -314,15 +315,9 @@ def export_livewall_catalog(
             {
                 "schemaVersion": SCHEMA_VERSION,
                 "generatedAt": generated_at,
-                "source": {
-                    "deviceType": device,
-                    "contentType": content,
-                    "categoryName": None,
-                    "categoryIds": [],
-                },
+                "source": {"deviceType": device, "contentType": content},
                 "defaultCategoryId": default_id,
                 "categories": category_entries,
-                "items": items,
             },
             ensure_ascii=False,
             separators=(",", ":"),

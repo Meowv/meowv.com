@@ -118,7 +118,7 @@
 - `src/wallpapers/pipeline.py`：公开接口抓取、增量游标和资源校验流程。
 - `src/wallpapers/db.py`：SQLite 初始化、兼容迁移和查询。
 - `src/wallpapers/publish.py`：从 SQLite 生成 Studio catalog、bootstrap 和 manifest。
-- `src/wallpapers/export.py`：从 SQLite 导出供 `livewall/` 使用的明文壁纸清单目录（不加密）——`catalog.json` 总文件 + 按一级分类拆分的 `category.<id>.json`。旧版单文件 `livewall.json` 已废弃并删除，不要再加回单文件路径。
+- `src/wallpapers/export.py`：从 SQLite 导出供 `livewall/` 使用的明文壁纸清单目录（不加密）——`catalog.json` 索引（分类清单 + 默认分类，**不含条目**）+ 按一级分类拆分的 `category.<id>.json` 切片。旧版单文件 `livewall.json` 与上一版含全量条目的「总文件」都已废弃，不要再把条目塞回索引。
 - `src/wallpapers/sources/`：各公开接口适配器（`base.py` 提供 `HttpClient` 与 `SourceError`，另有 `desktop.py`、`mobile.py`、`manifest.py`）。
 - `tests/`：数据库、规范化、抓取流程、接口适配和发布逻辑测试。
 
@@ -156,7 +156,10 @@ macOS 视频动态壁纸工具。定位是个人自用 / 小范围共享，不�
 - 壁纸必须静音，且 `preventsDisplaySleepDuringVideoPlayback = false`；覆盖窗口必须 `ignoresMouseEvents = true`，否则桌面右键、框选、拖文件全部失效。
 - **覆盖窗口必须在 `applicationDidFinishLaunching` 里同步创建**，不能推迟到 `asyncAfter`。实测推迟后窗口会被系统加上对称边距（1512×982 的屏幕拿到 `9,5 1494x972`），「覆盖整屏」判定失败并触发无意义的层级降级。
 - **层级判定不能紧跟在建窗口之后**：`orderFrontRegardless()` 是异步的，立刻查窗口列表会查不到自己的窗口。必须等窗口上屏（`ScreenCoordinator.waitForWindowsToAppear`）。
-- 视频源与清单都来自同仓库 `wallpapers/` 项目的 `export-livewall` 子命令。**清单没有本地一层**：输出目录是 `studio/public/data/livewall/`（`catalog.json` 总文件 + `category.<一级分类 id>.json`），随 Studio 一起部署，客户端在运行时从 `https://studio.meowv.com/data/livewall/` 下按需拉取，断网时用上次成功拉取的副本（Application Support 下）兜底。仓库内不保存清单副本，也不要再往 `livewall/data/` 写。清单结构改动需与 `wallpapers/src/wallpapers/export.py` 同步。**旧版单文件 `livewall.json` 已废弃删除，不要再新增单文件清单。**
+- 视频源与清单都来自同仓库 `wallpapers/` 项目的 `export-livewall` 子命令。**清单没有本地一层**：输出目录是 `studio/public/data/livewall/`，里面是**索引 + 按分类切片**两个角色 —— `catalog.json`（**纯索引**：分类清单 + 默认分类，**不含条目**，901 字节）与 `category.<一级分类 id>.json`（每个分类的条目）。随 Studio 一起部署，客户端在运行时从 `https://studio.meowv.com/data/livewall/` 下按需拉取，断网时各自回退本地副本（Application Support 下 `catalog.remote-cache.index.json` / `catalog.remote-cache.slice.json`）。仓库内不保存清单副本，也不要再往 `livewall/data/` 写。清单结构改动需与 `wallpapers/src/wallpapers/export.py` 同步。**旧版单文件 `livewall.json` 与上一版的「总文件」（含全量条目的 4.9 MB `catalog.json`）都已废弃，不要再把条目塞回索引。**
+- **索引必须保持「不含条目」**。`catalog.json` 是启动时唯一必拉的文件，只有几百字节；条目一律按分类单独拉。谁把 `items` 加回索引，启动就会退回「一次下全量」（实测 4.9 MB），这个改造就白做了 —— `test_index_has_no_items` 专门锁这条。
+- **切分类是异步拉一个文件**，因此有两件必须处理的事：① 递增的请求序号，回包时比对丢弃过期结果（否则「点了 B，画面却停在 A」）；② 失败时保持当前画面**与当前勾选** —— 选中项只在拉取成功后才写回配置。`selectedCategoryID` 的语义是「池子里装的是哪个分类」，不是「用户点了哪个」。
+- **分类文件名来自远端，不能照着它发请求**。`LivewallCategoryEntry.resolvedFileURL(relativeTo:)` 只接受纯文件名（不含 `/`、`\`、`:`，不是 `.`/`..`，以 `.json` 结尾）并校验 host/scheme 与索引一致 —— 否则远端改一个字段就能把客户端请求指到任意地址。
 - **失败分类不能靠解析错误文本**。实测 AVFoundation 对 404 的本地化描述是「在此服务器上找不到所请求的URL。」，不含任何数字状态码。`VideoLoader` 必须在播放前做一次 HEAD 探测拿真实状态码，交给 `FailurePolicy.classify(httpStatus:)` 分类。
 - **网络类失败绝不拉黑**。一次断网会把整池好资源丢进黑名单。`FailurePolicy.action` 的判定顺序是硬约束：先看是否已达连续失败阈值 → 再看网络可达性 → 再看是否可重试 → 最后才拉黑。改动顺序会破坏这个保证。
 - **一个视频只建一个 `AVURLAsset`**。每个 asset 都会把整个文件拉一遍，元数据校验与播放各建一个就是双倍流量（实测 6.28MB → 12.55MB）。播放时用 `AVPlayerItem(asset:)` 复用 `VideoLoader` 建好的那个。
@@ -169,7 +172,7 @@ macOS 视频动态壁纸工具。定位是个人自用 / 小范围共享，不�
 - **遍历字典时不要改字典**。`PlaybackEngine.useSlots` 里删槽位、`AppDelegate` 里清 `namesBySlot` 都要先 `filter` 出数组再删 —— Swift 在 `Dictionary was mutated while being iterated` 上是直接崩，不是警告。
 - **遮挡检测不要退回网格采样或 bbox**。网格采样会漏掉窄缝（20px 的缝比 63px 的网格还窄，实测报告「覆盖 100%」），union + bounding box 会把两个并排的半屏窗口误判成完全遮挡。现行实现是 `CoverageGrid` 的坐标压缩法，算精确面积；`legacyBoundingBoxCovers` 只留给测试做对比证据。
 - **`Preferences` 必须保持逐字段容错解码**。Swift 合成的 `Codable` **不会**回退到属性默认值 —— 缺字段直接抛 `keyNotFound`，会让用户已有的 `config.json` 整体解码失败并静默丢配置。新增字段时同步补 `CodingKeys`、`init(from:)` 与往返测试。**枚举字段还要额外用 `try?` 包一层**：键在但取值非法（手改配置写错，如 `"playbackOrder": "random"`）会抛 `dataCorrupted`，后果与缺字段完全一样 —— 整个文件退回默认，用户的其它设置一起被静默清零。
-- **两种选片顺序都必须「走完一轮才重排，一轮内不重复」**（`CandidatePool.order`：`shuffle` 每轮重洗 / `sequential` 按清单原序）。随机模式靠「洗牌前排除当前项」避免连着重复；顺序模式**不能沿用这一招** —— 每轮都会少一条尾巴，实际序列会退化成 `A…Z → A…Y → A…X`，看起来像漏播，正确做法是只在新一轮首条恰好等于当前项时向后让一位。换模式或改过滤条件都会清空待取队列（等于重新开始一轮），但**黑名单不清**。
+- **两种选片顺序都必须「走完一轮才重排，一轮内不重复」**（`CandidatePool.order`：`shuffle` 每轮重洗 / `sequential` 按清单原序）。随机模式靠「洗牌前排除当前项」避免连着重复；顺序模式**不能沿用这一招** —— 每轮都会少一条尾巴，实际序列会退化成 `A…Z → A…Y → A…X`，看起来像漏播，正确做法是只在新一轮首条恰好等于当前项时向后让一位。**换分类或重载清单都会清空待取队列**（等于重新开始一轮），但**黑名单不清**。候选池自己不做任何过滤 —— 候选集由调用方切好再 `setItems` 灌入。
 - **切换间隔的单位是秒，合法区间由 `SwitchInterval` 夹紧（10 秒 – 24 小时）**，写法是「夹到最近的合法值」而不是退回默认，非有限值才退回 `SchedulePolicy.defaultIntervalSeconds`。注意非正数间隔**不等于**「播完即切」——后者要显式开 `switchWhenFinished`。改完间隔要立即重排下一次切换（否则用户盯着看毫无变化，会以为没点上），但「正在等网络恢复」和「当前暂停」两种状态下不要插队。
 - **全局热键用 Carbon `RegisterEventHotKey`，不要换成 `NSEvent.addGlobalMonitorForEvents`** —— 后者需要「辅助功能」授权，会弹窗且要重启 App。代价是热键会**抢占**该组合，所以只挑不常用的 `⌥⌘` 组合，并且**注册失败必须显式提示**：重复注册同一组合返回 `eventHotKeyExistsErr`（-9878），据此区分「被占用」与「其它失败」。
 - **菜单项的快捷键提示写进标题，不要设 `keyEquivalent`**。设了会让菜单打开时全局热键与菜单项各触发一次，切换类操作执行两遍等于互相抵消。
@@ -177,7 +180,12 @@ macOS 视频动态壁纸工具。定位是个人自用 / 小范围共享，不�
 - **`SMAppService.mainApp.status` 在未注册时返回 `notFound` 而不是 `notRegistered`**。曾据此显示「不可用（需在 .app 内运行）」，而 App 不在 `/Applications` 下也能注册成功 —— 一个会让用户放弃使用的假故障。两个「没开启」状态要统一显示为「未开启」。
 - **「仅主屏」用 `NSScreen.screens.first`，不要用 `NSScreen.main`**。后者是「当前键盘焦点所在的屏幕」，会随用户拖窗口漂移，会导致窗口建到副屏上。
 - **等待窗口上屏要等到 bounds 稳定，不能只看「窗口号出现了」**。窗口上屏有一段对称缩放的进入动画，动画期间 WindowServer 报的 bounds 是内缩的（实测 1512×982 被报成 `9,6 1494x970` / `5,3 1502x976`，两次采样值不同），此时 `evaluate` 会得到「未覆盖整屏」并触发无意义的降级。比较时**不能用 `NSWindow.frame`** —— 它用「原点在主屏左下」的坐标系，副屏上会差一个主屏高度（实测同一窗口 `NSWindow.frame.y = -98` 而 `CGWindowBounds.y = 0`）。
-- **内容过滤按作者，不要按标签**。数据源在采集侧没有标签：`desktop + dynamic` 的 2,614 条候选里带 tag 的是 **0 条**，全库 14,449 个 tag 只挂在桌面静态壁纸与手机端壁纸上。`CandidateFilter` 里保留了标签维度，但别在菜单里暴露一个永远为空的选项。
+- **内容过滤按一级分类，不要退回按作者或按标签**。分类是数据源里唯一「既有一级结构、又 100% 非空」的维度（当前 10 个分类 / 20,703 条）；标签在采集侧根本没有（`desktop + dynamic` 的候选里带 tag 的是 0 条）；作者虽然非空但平铺 50 个，用户无法判断该选谁。分类清单来自索引的 `categories`，**条目数为 0 的分类也要显示并置灰**（可点会进空池，表现成「点了没反应」，置灰能一眼看出是数据没抓全）。菜单是**单选**，没有「清除过滤」项 —— 分类恒有选中项，不存在「不限」态。选中的分类存 `Preferences.selectedCategoryID`（存 id 不存名字，分类可能被改名），记忆值不在清单里时回退默认分类并**立刻写回**。
+- **「选中哪个分类」必须经过 `LivewallCatalogIndex.playableCategoryID(remembered:)`**：记忆值 → 默认分类 → 第一个有内容的分类，**每一步都要求 `itemCount > 0`**。理由：菜单里 0 条的分类本来就置灰不可点，客户端不该因为生成侧 `--default-category` 指到一个还没抓过的分类就以「没有可用的内容」收场 —— 索引里明明有别的分类有内容。
+- **菜单的行内容（只显示名字、0 条置灰、单选勾选、根项标题）必须走 `LiveWallCore/CategoryMenu` 的纯函数**，不要在 `AppDelegate` 里另写一套 —— 那里没有测试，而这几条规则正是用户唯一看得见的正确性。**条目数只参与置灰，不显示**（星哥明确要求过）。
+- **容错解码的地方要跟着结构走**：`CatalogSource.categoryIds`（索引的 `source` 只有 deviceType/contentType）与 `WallpaperItem.categoryIds`（手写清单与测试构造的条目没有这个键）都用 `decodeIfPresent` 兜底。Swift 合成的 `Codable` 缺字段时抛 `keyNotFound` 而不是回退默认值 —— 漏一处就会让整份文件解不出来。
+- **每屏源的恢复只做一次，且必须过滤掉已不在当前分类切片里的条目**。`perScreenSources` 在**本次启动第一次成功加载清单**时恢复（`AppDelegate.pendingRestore`，由 `advance()` 取出即清空）：手动重载清单（`⌥⌘R`）时各屏已经记着当前条目，再恢复一次等于把同一段视频重新下一遍；而查不到的条目必须**退回正常取片**，不能让那块屏空着。恢复计划由 `ScreenSourceRestore.plan(store:candidateIDs:)` 这个纯函数算（可单测），`CandidatePool.restore(id:)` 负责机械动作 —— 它会同时把条目从待取队列里拿掉，否则同一轮里会再被取一次。
+- **`Preferences` 里凡是「用户配置项」的字段，改默认值不会迁移老配置**。`remoteCatalogURL` 就是实例：`config.json` 里显式写着地址时，`decodeIfPresent` 会把它读回来，改 `defaultRemoteCatalogURL` 等于没改。改这个默认值时要意识到：**只有配置里没有这个键的人才会用上新地址**。（曾经为此写过一段「按字面量比对旧地址并改写」的迁移，旧地址作废后已删除 —— 现在配置里写什么就用什么。）顺带：启动时 `sanitized() != loaded` 就落盘，写失败要显式告警而不是 `try?` 吞掉。
 
 ## 验证与交付
 

@@ -11,7 +11,10 @@ import Foundation
 public struct Preferences: Codable, Sendable, Equatable {
 
     /// 线上清单地址。这是唯一的内容数据源，没有本地清单这一层。
-    public static let defaultRemoteCatalogURL = "https://studio.meowv.com/data/livewall.json"
+    ///
+    /// 指向**索引**：它同时带分类清单（`categories`）与每个分类的切片文件名，
+    /// 条目按 `category.<一级分类 id>.json` 单独拉。切分类因此是「再拉一个文件」。
+    public static let defaultRemoteCatalogURL = "https://studio.meowv.com/data/livewall/catalog.json"
 
     // 内容源
     /// 远程清单地址。清空则只能用远程副本缓存与内置兜底条目。
@@ -37,11 +40,12 @@ public struct Preferences: Codable, Sendable, Equatable {
     /// **老配置里没有这个字段**，容错解码会回退到 `.empty`（各屏重新取片），
     /// 不影响其它任何设置 —— 这是加字段时不丢用户设置的唯一办法。
     public var perScreenSources: ScreenSourceStore
-    /// 只播放这些作者的作品。空数组 = 不限。
+    /// 内容过滤选中的一级分类 id。nil = 用清单里的默认分类。
     ///
-    /// 用作者而不是标签：数据源里带标签的候选是 0 条（标签只挂在桌面静态壁纸
-    /// 与手机端壁纸上），而作者 100% 非空、共 50 个。详见 `CandidateFilter`。
-    public var authorFilter: [String]
+    /// **存 id 不存分类名**：分类可能被改名或删库，id 是稳定键，name 只用于显示。
+    /// 记忆值在清单里找不到时回退默认分类并**立刻写回**，否则每次启动都要重复回退一次。
+    /// 只在成功取到该分类条目后才写 —— 不把一次失败的选择持久化下来。
+    public var selectedCategoryID: Int?
 
     // 省电
     /// 画面被不透明窗口完全盖满时暂停。收益最大的一项。
@@ -65,7 +69,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         levelPreset: LevelPreset = .recommended,
         multiScreenPolicy: MultiScreenPolicy = .mirror,
         perScreenSources: ScreenSourceStore = .empty,
-        authorFilter: [String] = [],
+        selectedCategoryID: Int? = nil,
         pauseWhenCovered: Bool = true,
         pauseWhenIdle: Bool = true,
         idleThresholdSeconds: Double = 300,
@@ -82,7 +86,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         self.levelPreset = levelPreset
         self.multiScreenPolicy = multiScreenPolicy
         self.perScreenSources = perScreenSources
-        self.authorFilter = authorFilter
+        self.selectedCategoryID = selectedCategoryID
         self.pauseWhenCovered = pauseWhenCovered
         self.pauseWhenIdle = pauseWhenIdle
         self.idleThresholdSeconds = idleThresholdSeconds
@@ -97,7 +101,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         case remoteCatalogURL
         case intervalSeconds, jitterRatio, switchWhenFinished, playbackOrder
         case gravity, levelPreset
-        case multiScreenPolicy, perScreenSources, authorFilter
+        case multiScreenPolicy, perScreenSources, selectedCategoryID
         case pauseWhenCovered, pauseWhenIdle, idleThresholdSeconds
         case pauseOnLowPowerMode, pauseOnBattery, pauseOnThermalPressure
     }
@@ -125,7 +129,9 @@ public struct Preferences: Codable, Sendable, Equatable {
             ?? fallback.multiScreenPolicy
         perScreenSources = (try? container.decodeIfPresent(ScreenSourceStore.self, forKey: .perScreenSources))
             ?? fallback.perScreenSources
-        authorFilter = try container.decodeIfPresent([String].self, forKey: .authorFilter) ?? fallback.authorFilter
+        // 手改配置把这一项写成字符串（`"selectedCategoryID": "美女"`）会抛 typeMismatch，
+        // 后果与缺字段完全一样 —— 整个文件退回默认。所以同样用 `try?` 一视同仁。
+        selectedCategoryID = (try? container.decodeIfPresent(Int.self, forKey: .selectedCategoryID)) ?? nil
         pauseWhenCovered = try container.decodeIfPresent(Bool.self, forKey: .pauseWhenCovered) ?? fallback.pauseWhenCovered
         pauseWhenIdle = try container.decodeIfPresent(Bool.self, forKey: .pauseWhenIdle) ?? fallback.pauseWhenIdle
         idleThresholdSeconds = try container.decodeIfPresent(Double.self, forKey: .idleThresholdSeconds) ?? fallback.idleThresholdSeconds
@@ -196,10 +202,10 @@ public struct Preferences: Codable, Sendable, Equatable {
         if !copy.idleThresholdSeconds.isFinite {
             copy.idleThresholdSeconds = Preferences.default.idleThresholdSeconds
         }
-        // 作者名里的空白项没有意义，会在菜单里变成一个空白选项
-        copy.authorFilter = copy.authorFilter
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
+        // 非正数的分类 id 不可能是合法分类，清掉让它走默认分类
+        if let id = copy.selectedCategoryID, id <= 0 {
+            copy.selectedCategoryID = nil
+        }
         return copy
     }
 }

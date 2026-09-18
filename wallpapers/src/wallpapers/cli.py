@@ -48,13 +48,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     export = sub.add_parser(
-        "export-livewall", help="导出供「动态壁纸」客户端使用的明文壁纸清单"
+        "export-livewall", help="导出供「动态壁纸」客户端使用的明文清单目录（索引 + 分类切片）"
     )
     export.add_argument("--db", default=argparse.SUPPRESS, help="源 SQLite 数据库路径")
     export.add_argument(
         "--output-dir",
         default="../studio/public/data",
-        help="输出目录，清单写入其下的 livewall/ 子目录，默认 ../studio/public/data",
+        help="输出目录，索引与分类切片写入其下的 livewall/ 子目录，默认 ../studio/public/data",
     )
     export.add_argument("--device", choices=("desktop", "mobile"), default="desktop")
     export.add_argument("--content", choices=("static", "dynamic"), default="dynamic")
@@ -62,7 +62,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--default-category",
         default=DEFAULT_CATEGORY_NAME,
         help=(
-            "默认分类，可填分类名称或分类 id；该分类会被排在清单首位，"
+            "默认分类，可填分类名称或分类 id；该分类会被排在索引的 categories 首位，"
             f"默认 {DEFAULT_CATEGORY_NAME}"
         ),
     )
@@ -108,7 +108,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"catalog={catalog_path}")
         for name, path in category_paths.items():
             print(f"category={name}:{path}")
-        print(f"categories={len(category_paths)}")
+        # 刻意不叫 `categories=` —— 索引里的分类总数可能多于这里（0 条的分类只登记不落文件），
+        # 这个名字要说清它数的是「写了几个切片文件」。
+        print(f"slices={len(category_paths)}")
         return 0
 
     with Database(db_path) as db:

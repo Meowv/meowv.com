@@ -94,8 +94,8 @@ PYTHONPATH=src python3 -m wallpapers export-livewall --default-category 风景
 
 | 文件 | 说明 |
 | --- | --- |
-| `catalog.json` | **总文件**。分类清单（含条目数为 0 的分类）+ 全量条目，每条带所属一级分类 id |
-| `category.<一级分类 id>.json` | 每个**有内容**的一级分类一份，结构沿用旧版单文件清单 |
+| `catalog.json` | **纯索引**。分类清单（含条目数为 0 的分类）+ 默认分类，**不含任何条目** —— 它是客户端启动时唯一必拉的文件，因此必须很小（当前 901 字节） |
+| `category.<一级分类 id>.json` | 每个**有内容**的一级分类一份，结构沿用旧版单文件清单。客户端按选中分类单独拉取 |
 
 文件名用数字 id 而不是分类名：中文名进 URL 会触发百分号编码，CDN / nginx 侧行为不可控。放在 `livewall/` 子目录里是为了与 Studio 的 `wallpapers.catalog.*` 分开 —— `encrypt-wallpaper.mjs` 要求同目录下「恰好 5 个」`wallpapers.catalog.*.json`，混在一起会让它直接报错。
 
@@ -113,11 +113,11 @@ PYTHONPATH=src python3 -m wallpapers export-livewall --default-category 风景
 
 - **一级分类**（`parent_id IS NULL`）是切分单位，一棵子树进同一份文件。子树匹配用递归 CTE —— 旧实现只比较「自身或直接父级」，三级及更深的分类会漏掉。
 - **分类清单包含 0 条的分类**（`file` 为 `null`），客户端菜单需要显示全部；但不为它们落文件 —— 客户端拿到 `items` 为空的清单会判定为「解析失败」并触发降级，写出来是个陷阱。
-- **一张壁纸可以出现在多份分类文件里**（`wallpaper_category` 是多对多）。总文件里的 `items` 是全量超集，不属于任何分类的条目只出现在总文件里。
+- **一张壁纸可以出现在多份分类文件里**（`wallpaper_category` 是多对多）。索引里没有条目，所以**不属于任何分类的壁纸哪儿都到不了** —— 实测线上数据里没有这种条目（每张壁纸都挂了一个一级分类）。
 
 导出**不做分类过滤**：数据库只扫一遍，切分在 Python 侧做，所以分类数量不影响耗时。每次导出会清理上一轮遗留的 `category.*.json`（分类被删或改名后会留下孤儿文件）。
 
-总文件与分类文件**同批生成、共用同一个 `generatedAt`**，客户端据此判断两份产物是否一致。清单结构与客户端约定一一对应，改动需两边同步（见 `src/wallpapers/export.py` 与 `livewall/Sources/LiveWallCore/CatalogModel.swift`）。
+索引与分类文件**同批生成、共用同一个 `generatedAt`**，客户端据此判断两份产物是否一致。清单结构与客户端约定一一对应，改动需两边同步（见 `src/wallpapers/export.py` 与 `livewall/Sources/LiveWallCore/CatalogModel.swift`）。
 
 根目录的 `./build.sh wallpapers` 与 `./build.sh studio --with-wallpapers` 在生成并加密 Studio 壁纸目录时，会同时生成 `studio/public/data/livewall/` 并同步到 `build/studio.meowv.com/data/livewall/`。手工单独导出时使用上面的命令。
 

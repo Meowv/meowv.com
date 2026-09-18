@@ -20,6 +20,13 @@ enum PlaybackSlotKey: Hashable, Sendable {
         case .display(let id): return "屏\(id)"
         }
     }
+
+    /// 槽位对应的屏幕。共用槽位没有 —— 它不属于任何一块屏，
+    /// 所以「每屏的源记忆」那套逻辑对它自然不适用。
+    var displayID: UInt32? {
+        guard case .display(let id) = self else { return nil }
+        return id
+    }
 }
 
 /// 播放引擎：持有若干**播放槽位**，每个槽位一个 `AVQueuePlayer`。

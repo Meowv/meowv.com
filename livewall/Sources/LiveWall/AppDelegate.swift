@@ -12,7 +12,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // 配置
     private var preferences = Preferences.default
     private lazy var configURL: URL = Self.applicationSupportDirectory.appendingPathComponent("config.json")
-    private lazy var remoteCacheURL: URL = Self.applicationSupportDirectory.appendingPathComponent("catalog.remote-cache.json")
+    /// 索引副本缓存（几百字节）。
+    private lazy var indexCacheURL: URL = Self.applicationSupportDirectory
+        .appendingPathComponent("catalog.remote-cache.index.json")
+    /// 分类切片副本缓存。**只有一份** —— 配置里的 `selectedCategoryID` 就是
+    /// 「上次成功加载的那个分类」，所以启动时读回来的必然对得上（另有归属校验兜底）。
+    private lazy var sliceCacheURL: URL = Self.applicationSupportDirectory
+        .appendingPathComponent("catalog.remote-cache.slice.json")
+    /// 已经废弃的清单缓存，启动时清掉。
+    ///
+    /// 三个都不能再读：`catalog.json` 是最早那版「本地清单」的残留（`catalogPath` 配置项
+    /// 早已移除，没有任何代码读它）；另外两个分别是 `livewall.json` 时代的单文件缓存
+    /// （里面每条候选都没有 `categoryIds`）与上一版含全量 4.9 MB 条目的「总文件」。
+    private lazy var legacyCacheURLs: [URL] = [
+        Self.applicationSupportDirectory.appendingPathComponent("catalog.json"),
+        Self.applicationSupportDirectory.appendingPathComponent("catalog.remote-cache.json"),
+        Self.applicationSupportDirectory.appendingPathComponent("catalog.remote-cache.catalog.json"),
+    ]
 
     // 组件
     private let screenCoordinator: ScreenCoordinator
@@ -25,7 +41,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self?.preferences.playbackStateResolver ?? PlaybackStateResolver()
     })
     private var pool = CandidatePool()
-    private var catalogItemCount = 0
+
+    // 内容分类
+    /// 清单索引。分类清单与默认分类都从这里取 —— **单一来源**，不再各存一份。
+    private var index: LivewallCatalogIndex?
+    /// 索引里的分类清单（含条目数为 0 的）。菜单的数据源。
+    private var categories: [LivewallCategoryEntry] { index?.categories ?? [] }
+    /// 当前**已经加载好**的一级分类 id。nil = 还没有任何内容。
+    ///
+    /// 注意它表示「池子里装的是哪个分类」，不是「用户点了哪个」——
+    /// 切分类是异步的，只有拉取成功才会更新它（失败时保持旧值，画面与菜单才不会打架）。
+    private var selectedCategoryID: Int?
+    /// 分类切片的请求序号。用户可能连点两次，回包时比对，过期结果直接丢弃 ——
+    /// 否则会出现「点了 B，画面却停在 A」。
+    private var sliceRequestGeneration = 0
+
+    /// 待恢复的每屏源（displayID → 条目 id）。见 `ScreenSourceRestore`。
+    ///
+    /// 只在**本次启动第一次成功加载清单**时填入，由 `advance()` 取出后立刻清空 ——
+    /// 所以它天然是「一次性」的，不会影响之后的定时切换。
+    private var pendingRestore: [UInt32: Int] = [:]
 
     // 失败处理
     private let failurePolicy = FailurePolicy()
@@ -97,7 +132,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - 生命周期
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        preferences = Preferences.load(from: configURL).sanitized()
+        let loaded = Preferences.load(from: configURL)
+        preferences = loaded.sanitized()
+        // 修正过（旧版清单地址迁移、超范围值夹紧、非法分类 id 清掉）就立刻落盘 ——
+        // 否则每次启动都要重算一遍，而且配置里留着的东西和实际生效的不一致。
+        // 写失败必须显式说出来：`try?` 会让「修正了但没存上」看起来像成功。
+        if preferences != loaded {
+            do {
+                try preferences.save(to: configURL)
+                log("配置已修正并写回：\(configURL.lastPathComponent)")
+            } catch {
+                log("⚠️ 配置已修正但写回失败（本次仍按修正后的值运行）：\(error.localizedDescription)")
+            }
+        }
+
+        // 已废弃的清单缓存不再被读取，只剩占位，清掉。
+        for legacy in legacyCacheURLs where FileManager.default.fileExists(atPath: legacy.path) {
+            try? FileManager.default.removeItem(at: legacy)
+            log("已清理废弃的清单缓存 \(legacy.lastPathComponent)")
+        }
 
         buildStatusItem()
         registerNotifications()
@@ -193,47 +246,182 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - 清单
 
+    /// 清单由两个文件组成，启动时按顺序拉：
+    /// 1. **索引** `livewall/catalog.json`（几百字节）—— 拿到分类清单，菜单就能建了；
+    /// 2. **当前分类的切片** `livewall/category.<id>.json`（约 0.6 MB）—— 拿到条目。
+    ///
+    /// 切分类是「再拉一个切片」，不是「在本地全量里筛」：索引里**没有条目**，
+    /// 那是它保持几百字节的前提。
     private func loadCatalogAndStart() {
-        let service = CatalogService(
-            remoteCatalogURL: preferences.resolvedRemoteURL,
-            remoteCacheURL: remoteCacheURL
-        )
-        log("加载清单：远程=\(service.remoteCatalogURL?.absoluteString ?? "未配置")")
+        let service = makeCatalogService()
+        log("加载清单索引：远程=\(service.remoteIndexURL?.absoluteString ?? "未配置")")
+        let requested = preferences.selectedCategoryID
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            let result = service.load()
+            let result = service.loadIndex()
             DispatchQueue.main.async {
                 guard let self else { return }
-                self.handleCatalogResult(result)
+                self.handleIndexResult(result, service: service, requested: requested)
             }
         }
     }
 
-    private func handleCatalogResult(_ result: CatalogLoadResult?) {
-        guard let result else {
+    private func makeCatalogService() -> CatalogService {
+        CatalogService(
+            remoteIndexURL: preferences.resolvedRemoteURL,
+            indexCacheURL: indexCacheURL,
+            sliceCacheURL: sliceCacheURL
+        )
+    }
+
+    private func handleIndexResult(
+        _ result: CatalogIndexLoadResult,
+        service: CatalogService,
+        requested: Int?
+    ) {
+        guard let loaded = result.index, let origin = result.origin else {
+            // 失败原因必须打出来：DNS / TLS / 超时 / 解析 各对应完全不同的处理
+            for warning in result.warnings { log("  ⚠︎ \(warning)") }
             notice = .warning("没有可用的清单")
-            log("清单加载失败：远程、副本、内置全部不可用")
+            log("清单索引加载失败：远程与本地副本都不可用")
             refreshStatusItem()
             return
         }
-        catalogItemCount = result.catalog.items.count
-        // 过滤条件与选片顺序都要在灌入候选集之前设好 —— `setItems` 会按它们直接
-        // 算出 source，之后再设会触发一次多余的整表重建。
-        pool.filter = preferences.authorFilter.isEmpty
-            ? CandidateFilter()
-            : CandidateFilter(authors: Set(preferences.authorFilter))
-        pool.order = preferences.playbackOrder
-        pool.setItems(result.catalog.items)
-        log("清单来源：\(result.origin.label)，共 \(catalogItemCount) 条")
-        log("选片顺序：\(preferences.playbackOrder.label)（\(preferences.playbackOrder.detail)）")
-        if pool.filter.isActive {
-            log("内容过滤：\(pool.filter.summary)，可用 \(pool.totalCount) 条"
-                + "（已排除 \(pool.filteredOutCount) 条）")
-        }
+        index = loaded
         for warning in result.warnings { log("  ⚠︎ \(warning)") }
+        log("索引来源：\(origin.label)，\(categories.count) 个分类")
+
+        guard let target = resolveCategoryID(requested: requested) else {
+            notice = .warning("没有可用的内容")
+            log("索引里没有任何有内容的分类（都是 0 条）")
+            refreshStatusItem()
+            return
+        }
+
+        // 判定要在 `setItems` **之前**做 —— 灌进去之后池子就非空了。
+        loadSlice(for: target, service: service, isFirstLoad: pool.totalCount == 0)
+    }
+
+    /// 拉取并应用某个分类的切片。
+    ///
+    /// 带请求序号：用户可能连点两次分类，回包时比对序号，过期结果直接丢弃 ——
+    /// 否则会出现「点了 B，画面却停在 A」。
+    private func loadSlice(for categoryID: Int, service: CatalogService, isFirstLoad: Bool) {
+        guard let entry = categories.first(where: { $0.id == categoryID }) else { return }
+        sliceRequestGeneration += 1
+        let generation = sliceRequestGeneration
+        log("加载分类切片「\(entry.name)」（id \(entry.id)）…")
+
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let result = service.loadSlice(entry)
+            DispatchQueue.main.async {
+                guard let self else { return }
+                guard generation == self.sliceRequestGeneration else {
+                    self.log("丢弃过期的分类切片结果（\(entry.name)，id \(entry.id)）")
+                    return
+                }
+                self.applySliceResult(result, entry: entry, isFirstLoad: isFirstLoad)
+            }
+        }
+    }
+
+    private func applySliceResult(
+        _ result: CatalogSliceLoadResult,
+        entry: LivewallCategoryEntry,
+        isFirstLoad: Bool
+    ) {
+        guard let slice = result.catalog, let origin = result.origin else {
+            // 刻意不动播放器：保持当前画面比黑屏好。
+            // 首次加载时池子是空的，没有「当前画面」可保持，文案要说实话。
+            for warning in result.warnings { log("  ⚠︎ \(warning)") }
+            if pool.totalCount == 0 {
+                notice = .warning("没有可用的内容")
+                log("⚠️ 分类「\(entry.name)」切片加载失败，且当前没有在播的内容")
+            } else {
+                notice = .warning("分类「\(entry.name)」加载失败，保持当前画面")
+                log("⚠️ 分类「\(entry.name)」（id \(entry.id)）切片加载失败，保持当前画面")
+            }
+            refreshStatusItem()
+            return
+        }
+
+        for warning in result.warnings { log("  ⚠︎ \(warning)") }
+
+        // 切分类时 `selectCategory` 会写一句「正在加载分类「X」…」。那是**进度提示**，
+        // 内容到手就该消失 —— 不能指望 `loadAndPlay` 成功时去清它：
+        // 暂停（或候选池耗尽）时 `advance()` 会提前返回，那句提示就永远挂在状态区了。
+        //
+        // 顺带清掉更早的警告也是对的：这次操作成功了，池子已经换成新分类，
+        // 「候选池已耗尽」不再成立；「已暂停调度」同样不会残留成假信息 ——
+        // 成功取到内容后 `loadAndPlay` 会重排定时器，恢复播放时
+        // `applyPlaybackState(.playing)` 也会重排。
+        notice = nil
+
+        // 只有真的拿到内容才更新选中项：拉取失败时保持旧值，
+        // 菜单的勾选与池子里的内容才不会打架。
+        selectedCategoryID = entry.id
+        if preferences.selectedCategoryID != entry.id {
+            // 首次启动，或记忆值已经不在索引里（分类被删/改名）：立刻写回，
+            // 否则每次启动都要重复回退一次，菜单里的勾选也不稳定。
+            preferences.selectedCategoryID = entry.id
+            try? preferences.save(to: configURL)
+        }
+
+        pool.order = preferences.playbackOrder
+        pool.setItems(slice.items)
+
+        // 每屏独立模式下，各屏上次播的是哪一条记在 `perScreenSources` 里，这里恢复它。
+        //
+        // **只在本次启动第一次成功加载清单时做**：手动重载清单（⌥⌘R）时各屏已经记着
+        // 当前条目，再恢复一次等于把同一段视频重新下一遍。
+        // 计划里只保留**当前分类里确实存在**的条目，其余直接丢弃（见 `ScreenSourceRestore`）。
+        if isFirstLoad {
+            pendingRestore = ScreenSourceRestore.plan(
+                store: preferences.perScreenSources,
+                candidateIDs: Set(slice.items.map(\.id))
+            )
+            if !pendingRestore.isEmpty {
+                let detail = pendingRestore.map { "屏\($0.key)→\($0.value)" }.sorted().joined(separator: "、")
+                log("待恢复的每屏源 \(pendingRestore.count) 条：\(detail)")
+            } else if preferences.multiScreenPolicy == .perScreen,
+                      preferences.perScreenSources.count > 0 {
+                log("每屏源记忆里的条目都不在当前分类，本轮各屏重新取片")
+            }
+        }
+
+        log("内容：\(entry.name)（id \(entry.id)）\(pool.totalCount) 条，来源 \(origin.label)")
+        if isFirstLoad {
+            log("选片顺序：\(preferences.playbackOrder.label)（\(preferences.playbackOrder.detail)）")
+        }
 
         refreshStatusItem()
         advance()
+    }
+
+
+
+    // MARK: - 内容分类
+
+    /// 解析要生效的分类：**记忆值优先**（必须仍在索引里**且有内容**），
+    /// 否则用索引里的默认分类（同样要求有内容），再否则取第一个有内容的分类。
+    ///
+    /// 规则本身在 `LivewallIndex.playableCategoryID` 里（纯函数，可单测）；
+    /// 这里只负责把「为什么换了」记进日志。
+    private func resolveCategoryID(requested: Int?) -> Int? {
+        let resolved = index?.playableCategoryID(remembered: requested) ?? nil
+        guard let requested, resolved != requested else { return resolved }
+
+        // 走到这里说明记忆值没能直接用上，两种情况的原因完全不同，日志要分开说
+        if let entry = categories.first(where: { $0.id == requested }) {
+            log("记忆的分类「\(entry.name)」条目数为 0（还没抓或已被清空），改选有内容的分类")
+        } else {
+            log("记忆的分类 id \(requested) 已不在索引里，回退到默认分类")
+        }
+        return resolved
+    }
+
+    private func categoryName(for id: Int?) -> String {
+        CategoryMenu.selectedName(categories: categories, selectedID: id)
     }
 
     // MARK: - 调度
@@ -244,6 +432,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 不能「加载完一个再挑下一个」—— 两次 `pool.next()` 之间隔着一个网络往返，
     /// 期间屏幕可能已经变化，槽位集合也就变了。
     private func advance() {
+        // 恢复计划只对「紧接着加载完清单的那一次」有效：**先取出再清空**，
+        // 这样即使下面因暂停/耗尽提前 return，它也不会泄漏到之后某一次定时切换。
+        let restorePlan = pendingRestore
+        pendingRestore.removeAll()
+
         // 暂停期间不加载任何新内容：既省流量，也避免「恢复时发现画面是刚拉的」。
         // 这不只是手动暂停 —— 遮挡、锁屏、息屏等任何暂停原因都算，否则网络恢复
         // 之类的旁路触发会在没人看见的时候把视频拉下来。
@@ -268,6 +461,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         var picked: [(key: PlaybackSlotKey, item: WallpaperItem)] = []
         for key in keys {
+            // 恢复优先：这块屏上次播的那条还在候选集里就直接接着播。
+            // 取不到（条目已不属于当前分类 / 已被清单移除）就落下去正常取片 ——
+            // 绝不能因为查不到就让这块屏空着。
+            if let displayID = key.displayID,
+               let remembered = restorePlan[displayID],
+               let item = pool.restore(id: remembered) {
+                log("恢复 \(key.label) 上次播放的条目 \(item.id)")
+                picked.append((key, item))
+                continue
+            }
             guard let item = pool.next() else { break }
             picked.append((key, item))
         }
@@ -594,14 +797,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         currentName = names.isEmpty ? "启动中" : names.joined(separator: " · ")
     }
 
-    /// 把各屏当前播放的条目 id 写回配置，下次启动接着播。
+    /// 把各屏当前播放的条目 id 写回配置，下次启动接着播（恢复见 `advance()` 里的
+    /// `pendingRestore`）。
     ///
     /// 只在每屏独立模式下写 —— 另外两种策略共用一张，没有「每屏」可记。
     private func persistScreenSources() {
         guard preferences.multiScreenPolicy == .perScreen else { return }
         var store = preferences.perScreenSources
         for key in engine.slotKeys() {
-            guard case .display(let displayID) = key, let item = engine.item(on: key) else { continue }
+            guard let displayID = key.displayID, let item = engine.item(on: key) else { continue }
             store.setItemID(item.id, for: displayID)
         }
         let removed = store.prune(keeping: screenCoordinator.displayIDs)
@@ -742,7 +946,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // 开机自启与窗口层级装完基本不动。
         menu.addItem(buildIntervalMenu())
         menu.addItem(buildPowerMenu())
-        menu.addItem(buildFilterMenu())
+        menu.addItem(buildCategoryMenu())
 
         let policyMenu = NSMenu()
         // 顶部一行说明当前策略的代价（尤其流量），这是选择时唯一要权衡的东西
@@ -1071,85 +1275,72 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         scheduleNext(after: engine.primaryDuration)
     }
 
-    /// 内容过滤子菜单。
+    /// 内容过滤子菜单：按一级分类**单选**。
     ///
-    /// 选项取自清单里**实际出现过**的作者（按条目数降序），而不是数据库里的全量作者 ——
-    /// 选了当前清单里没有的作者只会得到「过滤后没有可用内容」。
-    private func buildFilterMenu() -> NSMenuItem {
+    /// 行的内容（标题、置灰、勾选）由 `CategoryMenu` 算好 —— 那是纯逻辑，可以单测；
+    /// 这里只负责把它贴成 `NSMenu`。
+    ///
+    /// 没有「清除过滤」项：分类恒有选中项，不存在「不限」态。
+    private func buildCategoryMenu() -> NSMenuItem {
         let submenu = NSMenu()
+        let entries = CategoryMenu.entries(categories: categories, selectedID: selectedCategoryID)
 
-        let current = NSMenuItem(title: "当前：\(pool.filter.summary)", action: nil, keyEquivalent: "")
-        current.isEnabled = false
-        submenu.addItem(current)
-
-        let clear = NSMenuItem(title: "清除过滤", action: #selector(clearContentFilter), keyEquivalent: "")
-        clear.target = self
-        clear.isEnabled = pool.filter.isActive
-        submenu.addItem(clear)
-
-        submenu.addItem(.separator())
-
-        if pool.authorOptions.isEmpty {
-            let empty = NSMenuItem(title: "清单里没有可用的作者", action: nil, keyEquivalent: "")
+        if entries.isEmpty {
+            let empty = NSMenuItem(title: "清单里没有分类信息", action: nil, keyEquivalent: "")
             empty.isEnabled = false
             submenu.addItem(empty)
         } else {
-            let header = NSMenuItem(title: "按作者（可多选）", action: nil, keyEquivalent: "")
-            header.isEnabled = false
-            submenu.addItem(header)
-            for option in pool.authorOptions {
-                let entry = NSMenuItem(
-                    title: "\(option.value)（\(option.count)）",
-                    action: #selector(toggleAuthorFilter(_:)),
+            for entry in entries {
+                let item = NSMenuItem(
+                    title: entry.title,
+                    action: #selector(selectCategory(_:)),
                     keyEquivalent: ""
                 )
-                entry.target = self
-                entry.representedObject = option.value
-                entry.state = preferences.authorFilter.contains(option.value) ? .on : .off
-                submenu.addItem(entry)
+                item.target = self
+                item.representedObject = entry.id
+                item.state = entry.isSelected ? .on : .off
+                item.isEnabled = entry.isEnabled
+                submenu.addItem(item)
             }
         }
 
-        let root = NSMenuItem(title: "内容过滤（\(pool.filter.summary)）", action: nil, keyEquivalent: "")
+        let root = NSMenuItem(
+            title: CategoryMenu.rootTitle(categories: categories, selectedID: selectedCategoryID),
+            action: nil,
+            keyEquivalent: ""
+        )
         root.submenu = submenu
         return root
     }
 
-    @objc private func toggleAuthorFilter(_ sender: NSMenuItem) {
-        guard let author = sender.representedObject as? String else { return }
-        if sender.state == .on {
-            preferences.authorFilter.removeAll { $0 == author }
-        } else if !preferences.authorFilter.contains(author) {
-            preferences.authorFilter.append(author)
-        }
-        try? preferences.save(to: configURL)
-        applyContentFilter()
-    }
-
-    @objc private func clearContentFilter() {
-        preferences.authorFilter.removeAll()
-        try? preferences.save(to: configURL)
-        applyContentFilter()
-    }
-
-    /// 把过滤条件应用到候选池。
-    private func applyContentFilter() {
-        pool.filter = preferences.authorFilter.isEmpty
-            ? CandidateFilter()
-            : CandidateFilter(authors: Set(preferences.authorFilter))
-        log("内容过滤：\(pool.filter.summary)，可用 \(pool.totalCount) 条"
-            + "（已排除 \(pool.filteredOutCount) 条）")
-
-        if pool.isExhausted {
-            // 刻意不动播放器：保持当前画面比黑屏好
-            notice = .warning("过滤后没有可用内容")
-            log("⚠️ 过滤后没有可用内容，请放宽条件")
+    /// 切换内容分类。
+    ///
+    /// 索引里没有条目，所以这一步是**真的去拉一个文件**（`category.<id>.json`，约 0.6 MB）——
+    /// 换来的好处是启动时不必下全量。因为是异步的，要处理两件事：
+    ///
+    /// - **连点**：用递增的请求序号，回包时比对，过期结果丢弃（`loadSlice` 里做）；
+    /// - **失败**：保持当前画面与当前勾选，不把候选池换空。
+    ///
+    /// 选中项**只在拉取成功后写回**配置，否则菜单的勾选会和池子里的内容打架。
+    @objc private func selectCategory(_ sender: NSMenuItem) {
+        guard let id = sender.representedObject as? Int else { return }
+        guard id != selectedCategoryID else { return }
+        guard let entry = categories.first(where: { $0.id == id }) else { return }
+        guard entry.itemCount > 0 else {
+            // 菜单里这种项本来就置灰了，走到这里说明是别的途径触发的
+            notice = .warning("分类「\(entry.name)」没有可用内容")
+            log("⚠️ 分类「\(entry.name)」条目数为 0，忽略本次切换")
             refreshStatusItem()
-        } else {
-            // 过滤后原来那条多半已不在候选集里，直接换一张 ——
-            // 否则用户改了设置却看不到任何变化
-            advance()
+            return
         }
+
+        failuresBySlot.removeAll()
+        notice = .info("正在加载分类「\(entry.name)」…")
+        refreshStatusItem()
+        // 「首次加载」的判据与 `handleIndexResult` 保持一致：池子还空着才算。
+        // 用户可能在启动那一下（首次切片还在路上）就点了分类，那次也算首次 ——
+        // 写死 `false` 会让「启动后立刻点一下」丢掉每屏源的恢复。
+        loadSlice(for: id, service: makeCatalogService(), isFirstLoad: pool.totalCount == 0)
     }
 
     @objc private func switchMultiScreenPolicy(_ sender: NSMenuItem) {
@@ -1188,8 +1379,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func reloadCatalog() {
-        pool = CandidatePool()
+        // 刻意**不清空候选池**：重载失败时保持现有内容继续播，
+        // 而不是把池子清空、让下一次切换撞上「候选池已耗尽」。
+        // 重载成功时 `handleCatalogResult` 会自己把候选集换成当前分类的那一片。
         failuresBySlot.removeAll()
+        retriesBySlot.removeAll()
         loadCatalogAndStart()
     }
 

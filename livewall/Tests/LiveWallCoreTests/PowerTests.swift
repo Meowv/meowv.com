@@ -330,16 +330,17 @@ func powerTests() {
             expectEqual(decoded?.intervalSeconds, 60, "其它字段仍应保留")
         }
 
-        test("默认清单地址指向线上 livewall.json") {
-            // 数据源唯一来源就是线上这份 JSON。
+        test("默认清单地址指向线上索引 catalog.json") {
+            // 数据源唯一来源就是线上这份 JSON。指向**索引**：它带分类清单与每个分类的
+            // 切片文件名（`category.<id>.json`），条目按分类单独拉。
             expectEqual(
                 Preferences.default.remoteCatalogURL,
-                "https://studio.meowv.com/data/livewall.json",
+                "https://studio.meowv.com/data/livewall/catalog.json",
                 "默认远程地址"
             )
             expectEqual(
                 Preferences.default.resolvedRemoteURL?.absoluteString,
-                "https://studio.meowv.com/data/livewall.json",
+                "https://studio.meowv.com/data/livewall/catalog.json",
                 "默认地址应能解析成 URL"
             )
         }
