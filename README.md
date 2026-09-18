@@ -149,7 +149,7 @@ chmod +x run.sh build.sh deploy.sh
 
 - 从 `wallpapers/wallpapers.db` 重新生成并加密 `studio/public/data/`。
 - 如果 `build/studio.meowv.com/` 已存在，同步更新其中的 `data/` 目录，便于直接部署已有产物。
-- 同时生成 livewall 客户端使用的未加密清单 `studio/public/data/livewall.json`。
+- 同时生成 livewall 客户端使用的未加密清单目录 `studio/public/data/livewall/`（`catalog.json` + `category.<id>.json`）。
 - `--with-wallpapers` 只能与 `studio` 一起使用。
 
 产物映射如下：
@@ -446,7 +446,7 @@ PYTHONPATH=src python3 -m wallpapers publish --db wallpapers.db --output-dir ../
 PYTHONPATH=src python3 -m wallpapers export-livewall
 ```
 
-采集器只保存公开接口返回的元数据和 CDN 地址，不下载媒体文件。`crawl` 默认使用 `incremental` 模式；支持 `quick`、`incremental`、`full`，以及 `--device`、`--content`、`--category`、`--keyword`、`--max-pages` 等过滤参数。`publish` 从 SQLite 生成 catalog、bootstrap 和 manifest；部署前由 `./build.sh wallpapers` 或 `./build.sh studio --with-wallpapers` 将 catalog 与 bootstrap 加密为版本化 `.bin`，公开的 `wallpapers.catalog.json` 仅保留 manifest。`export-livewall` 导出供 livewall 客户端使用的明文清单（不加密），默认输出到 `studio/public/data/livewall.json`。它**不在 `run.sh` 的子命令白名单里**，需在 `wallpapers/` 目录下直接调用；`./build.sh wallpapers` 与 `./build.sh studio --with-wallpapers` 也会自动生成同一份清单。
+采集器只保存公开接口返回的元数据和 CDN 地址，不下载媒体文件。`crawl` 默认使用 `incremental` 模式；支持 `quick`、`incremental`、`full`，以及 `--device`、`--content`、`--category`、`--keyword`、`--max-pages` 等过滤参数。`publish` 从 SQLite 生成 catalog、bootstrap 和 manifest；部署前由 `./build.sh wallpapers` 或 `./build.sh studio --with-wallpapers` 将 catalog 与 bootstrap 加密为版本化 `.bin`，公开的 `wallpapers.catalog.json` 仅保留 manifest。`export-livewall` 导出供 livewall 客户端使用的明文清单目录（不加密），默认输出到 `studio/public/data/livewall/`（`catalog.json` 总文件 + 按一级分类拆分的 `category.<id>.json`）。它**不在 `run.sh` 的子命令白名单里**，需在 `wallpapers/` 目录下直接调用；`./build.sh wallpapers` 与 `./build.sh studio --with-wallpapers` 也会自动生成同一份清单。
 
 壁纸采集器的完整参数、数据库表结构和发布说明见 [`wallpapers/README.md`](./wallpapers/README.md)。
 
@@ -461,7 +461,7 @@ cd livewall
 
 macOS 没有「设置视频为壁纸」的官方 API。livewall 的做法是创建一个无边框窗口，把窗口层级钉在「系统壁纸之上、桌面图标之下」这一层，在里面用 `AVPlayerLayer` 循环播放 mp4。层级值全部由 `CGWindowLevelForKey` 派生，启动时自检是否真的落在有效区间内，并检测同层竞争。
 
-清单由 App 在运行时从 `https://studio.meowv.com/data/livewall.json` 拉取（仓库内不保存副本），断网时用上次拉取的本地副本兜底。详见 [`livewall/README.md`](./livewall/README.md)。
+清单由 App 在运行时从线上拉取（仓库内不保存副本），断网时用上次拉取的本地副本兜底。**客户端接入新的 `data/livewall/` 目录结构尚未完成**，Swift 侧仍指向已删除的单文件清单，详见 [`livewall/README.md`](./livewall/README.md)。
 
 省电靠一套「信号 → 状态」状态机：遮挡 / 锁屏 / 息屏 / 热压力 / 空闲 / 低电量 / 电池，任一命中即暂停，全部解除才恢复；其中「画面被完全遮挡」用坐标压缩法算精确覆盖率，避免半屏窗口被误判成盖满。开关与空闲阈值可在菜单栏的「省电设置」里实时调整。
 

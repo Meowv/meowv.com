@@ -42,7 +42,7 @@
 
 - 通用：`node_modules/`、`.DS_Store`、根目录 `build/`、暂存目录与备份目录。
 - Blog：`public/`、`db.json`。
-- Studio：`dist/`、`dist/zitie/hanzi-data/`、`public/data/wallpapers.catalog.json`、`public/data/wallpapers.catalog.*.json`、`public/data/wallpapers.catalog.*.bin` 与 `public/data/livewall.json`。
+- Studio：`dist/`、`dist/zitie/hanzi-data/`、`public/data/wallpapers.catalog.json`、`public/data/wallpapers.catalog.*.json`、`public/data/wallpapers.catalog.*.bin` 与 `public/data/livewall/`（整目录）。
 - Wallpapers：`wallpapers.db`、Python 缓存和 `.venv/`。
 - livewall：`build/` 与 `.build/`。
 
@@ -57,7 +57,7 @@
 - 保持 macOS Bash 3.2 兼容性，不使用 `mapfile`、关联数组等 4.0+ 特性。Bash 3.2 在 `set -u` 下展开空数组会报 `unbound variable`，遍历前先使用 `${SELECTED_PROJECTS[*]:-}` 防护。
 - 所有 shell 脚本中，变量后紧跟中文或全角字符时一律写成 `${VAR}`。非 `C` locale 下 bash 会把紧随其后的多字节字符首字节并入变量名（`$APP（` 被解析为变量名 `APP\xef`），`set -u` 下直接报 `unbound variable` 并使脚本中断。`LC_ALL=C` 的环境（例如某些沙箱）测不出这个问题，本地跑通不代表对用户的终端成立。
 - `build/`、暂存目录和备份目录均为可替换生成内容，不提交 Git。
-- `build.sh wallpapers` 只生成并加密 Studio 壁纸目录，不构建项目；`./build.sh studio --with-wallpapers` 仅允许与 `studio` 一起使用，并在 Studio 构建前生成目录数据。两者都会同时生成供 livewall 使用的未加密清单 `studio/public/data/livewall.json`。
+- `build.sh wallpapers` 只生成并加密 Studio 壁纸目录，不构建项目；`./build.sh studio --with-wallpapers` 仅允许与 `studio` 一起使用，并在 Studio 构建前生成目录数据。两者都会同时生成供 livewall 使用的未加密清单目录 `studio/public/data/livewall/`，并同步到 `build/studio.meowv.com/data/livewall/`。
 - 修改脚本时，同步检查参数帮助、项目数组、别名、端口、依赖检查、启动或构建分支、源目录和目标目录，避免只更新其中一处。
 
 ## Blog 约定
@@ -118,7 +118,7 @@
 - `src/wallpapers/pipeline.py`：公开接口抓取、增量游标和资源校验流程。
 - `src/wallpapers/db.py`：SQLite 初始化、兼容迁移和查询。
 - `src/wallpapers/publish.py`：从 SQLite 生成 Studio catalog、bootstrap 和 manifest。
-- `src/wallpapers/export.py`：从 SQLite 导出供 `livewall/` 使用的明文壁纸清单（不加密）。
+- `src/wallpapers/export.py`：从 SQLite 导出供 `livewall/` 使用的明文壁纸清单目录（不加密）——`catalog.json` 总文件 + 按一级分类拆分的 `category.<id>.json`。旧版单文件 `livewall.json` 已废弃并删除，不要再加回单文件路径。
 - `src/wallpapers/sources/`：各公开接口适配器（`base.py` 提供 `HttpClient` 与 `SourceError`，另有 `desktop.py`、`mobile.py`、`manifest.py`）。
 - `tests/`：数据库、规范化、抓取流程、接口适配和发布逻辑测试。
 
@@ -156,7 +156,7 @@ macOS 视频动态壁纸工具。定位是个人自用 / 小范围共享，不�
 - 壁纸必须静音，且 `preventsDisplaySleepDuringVideoPlayback = false`；覆盖窗口必须 `ignoresMouseEvents = true`，否则桌面右键、框选、拖文件全部失效。
 - **覆盖窗口必须在 `applicationDidFinishLaunching` 里同步创建**，不能推迟到 `asyncAfter`。实测推迟后窗口会被系统加上对称边距（1512×982 的屏幕拿到 `9,5 1494x972`），「覆盖整屏」判定失败并触发无意义的层级降级。
 - **层级判定不能紧跟在建窗口之后**：`orderFrontRegardless()` 是异步的，立刻查窗口列表会查不到自己的窗口。必须等窗口上屏（`ScreenCoordinator.waitForWindowsToAppear`）。
-- 视频源与清单都来自同仓库 `wallpapers/` 项目的 `export-livewall` 子命令。**清单没有本地一层**：`export-livewall` 输出的 `studio/public/data/livewall.json` 随 Studio 一起部署，客户端在运行时从 `https://studio.meowv.com/data/livewall.json` 拉取，断网时用上次成功拉取的副本（Application Support 下的 `catalog.remote-cache.json`）兜底。仓库内不保存清单副本，也不要再往 `livewall/data/` 写。清单结构改动需与 `wallpapers/src/wallpapers/export.py` 同步。
+- 视频源与清单都来自同仓库 `wallpapers/` 项目的 `export-livewall` 子命令。**清单没有本地一层**：输出目录是 `studio/public/data/livewall/`（`catalog.json` 总文件 + `category.<一级分类 id>.json`），随 Studio 一起部署，客户端在运行时从 `https://studio.meowv.com/data/livewall/` 下按需拉取，断网时用上次成功拉取的副本（Application Support 下）兜底。仓库内不保存清单副本，也不要再往 `livewall/data/` 写。清单结构改动需与 `wallpapers/src/wallpapers/export.py` 同步。**旧版单文件 `livewall.json` 已废弃删除，不要再新增单文件清单。**
 - **失败分类不能靠解析错误文本**。实测 AVFoundation 对 404 的本地化描述是「在此服务器上找不到所请求的URL。」，不含任何数字状态码。`VideoLoader` 必须在播放前做一次 HEAD 探测拿真实状态码，交给 `FailurePolicy.classify(httpStatus:)` 分类。
 - **网络类失败绝不拉黑**。一次断网会把整池好资源丢进黑名单。`FailurePolicy.action` 的判定顺序是硬约束：先看是否已达连续失败阈值 → 再看网络可达性 → 再看是否可重试 → 最后才拉黑。改动顺序会破坏这个保证。
 - **一个视频只建一个 `AVURLAsset`**。每个 asset 都会把整个文件拉一遍，元数据校验与播放各建一个就是双倍流量（实测 6.28MB → 12.55MB）。播放时用 `AVPlayerItem(asset:)` 复用 `VideoLoader` 建好的那个。

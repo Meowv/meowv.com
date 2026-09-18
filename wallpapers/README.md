@@ -82,29 +82,46 @@ PYTHONPATH=src python3 -m wallpapers crawl --db ./data/wallpapers.db
 
 ## 导出 livewall 壁纸清单
 
-`export-livewall` 从 SQLite 导出供 macOS 客户端 [`livewall/`](../livewall/README.md) 使用的**明文 JSON 清单**。与 `publish` 的区别：不加密、不分桶，只导出可直接播放的 `video_preview` 地址。
+`export-livewall` 从 SQLite 导出供 macOS 客户端 [`livewall/`](../livewall/README.md) 使用的**明文 JSON 清单目录**。与 `publish` 的区别：不加密、不分桶，只导出可直接播放的 `video_preview` 地址。
 
 ```bash
 PYTHONPATH=src python3 -m wallpapers export-livewall
-PYTHONPATH=src python3 -m wallpapers export-livewall --category 风景
-PYTHONPATH=src python3 -m wallpapers export-livewall --category "" --device mobile --content dynamic
+PYTHONPATH=src python3 -m wallpapers export-livewall --device mobile --content dynamic
+PYTHONPATH=src python3 -m wallpapers export-livewall --default-category 风景
 ```
 
-默认导出「桌面 + 动态 + 美女」分类，输出到 `../studio/public/data/livewall.json`。
+默认导出「桌面 + 动态」，输出到 `../studio/public/data/livewall/`：
 
-| 参数           | 默认值                             | 说明                                                       |
-| -------------- | ---------------------------------- | ---------------------------------------------------------- |
-| `--db PATH`    | `wallpapers.db`                    | 源 SQLite 数据库路径                                       |
-| `--output PATH`| `../studio/public/data/livewall.json` | 输出 JSON 路径                                             |
-| `--device`     | `desktop`                          | `desktop` 或 `mobile`                                      |
-| `--content`    | `dynamic`                          | `static` 或 `dynamic`                                      |
-| `--category`   | `美女`                             | 分类名称，同时匹配分类自身与其父分类；传空字符串表示不过滤 |
+| 文件 | 说明 |
+| --- | --- |
+| `catalog.json` | **总文件**。分类清单（含条目数为 0 的分类）+ 全量条目，每条带所属一级分类 id |
+| `category.<一级分类 id>.json` | 每个**有内容**的一级分类一份，结构沿用旧版单文件清单 |
+
+文件名用数字 id 而不是分类名：中文名进 URL 会触发百分号编码，CDN / nginx 侧行为不可控。放在 `livewall/` 子目录里是为了与 Studio 的 `wallpapers.catalog.*` 分开 —— `encrypt-wallpaper.mjs` 要求同目录下「恰好 5 个」`wallpapers.catalog.*.json`，混在一起会让它直接报错。
+
+| 参数                 | 默认值                  | 说明                                                             |
+| -------------------- | ----------------------- | ---------------------------------------------------------------- |
+| `--db PATH`          | `wallpapers.db`         | 源 SQLite 数据库路径                                             |
+| `--output-dir DIR`   | `../studio/public/data` | 输出目录，清单写入其下的 `livewall/` 子目录                      |
+| `--device`           | `desktop`               | `desktop` 或 `mobile`                                            |
+| `--content`          | `dynamic`               | `static` 或 `dynamic`                                            |
+| `--default-category` | `美女`                  | 默认分类，可填分类名或分类 id；该分类会被排在 `categories` 首位  |
 
 导出只保留 `status='active'`、`media_role='video_preview'` 且 `accessible=1` 的记录；同一壁纸有多个预览地址时只取第一个。`duration_seconds` 在库里当前全为 NULL，清单里保持 `null`，由客户端在播放时自行探测。
 
-清单结构与客户端约定一一对应，改动需两边同步（见 `src/wallpapers/export.py` 与 `livewall/Sources/LiveWallCore/CatalogModel.swift`）。
+分类切分的三条约定：
 
-根目录的 `./build.sh wallpapers` 与 `./build.sh studio --with-wallpapers` 在生成并加密 Studio 壁纸目录时，会同时生成 `studio/public/data/livewall.json`。手工单独导出时使用上面的命令。
+- **一级分类**（`parent_id IS NULL`）是切分单位，一棵子树进同一份文件。子树匹配用递归 CTE —— 旧实现只比较「自身或直接父级」，三级及更深的分类会漏掉。
+- **分类清单包含 0 条的分类**（`file` 为 `null`），客户端菜单需要显示全部；但不为它们落文件 —— 客户端拿到 `items` 为空的清单会判定为「解析失败」并触发降级，写出来是个陷阱。
+- **一张壁纸可以出现在多份分类文件里**（`wallpaper_category` 是多对多）。总文件里的 `items` 是全量超集，不属于任何分类的条目只出现在总文件里。
+
+导出**不做分类过滤**：数据库只扫一遍，切分在 Python 侧做，所以分类数量不影响耗时。每次导出会清理上一轮遗留的 `category.*.json`（分类被删或改名后会留下孤儿文件）。
+
+总文件与分类文件**同批生成、共用同一个 `generatedAt`**，客户端据此判断两份产物是否一致。清单结构与客户端约定一一对应，改动需两边同步（见 `src/wallpapers/export.py` 与 `livewall/Sources/LiveWallCore/CatalogModel.swift`）。
+
+根目录的 `./build.sh wallpapers` 与 `./build.sh studio --with-wallpapers` 在生成并加密 Studio 壁纸目录时，会同时生成 `studio/public/data/livewall/` 并同步到 `build/studio.meowv.com/data/livewall/`。手工单独导出时使用上面的命令。
+
+> 旧版的单文件清单 `studio/public/data/livewall.json` 已废弃并删除。
 
 ## 数据范围
 

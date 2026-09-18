@@ -28,16 +28,19 @@ EOF
 
 WITH_WALLPAPERS=0
 export_livewall_catalog() {
-  local output="$1"
+  local output_dir="$1"
 
   echo "[livewall] 导出壁纸清单..."
+  # 旧版单文件清单已废弃，先清掉残留 —— 否则它会随 Studio 一起部署到 CDN，
+  # 让还在跑旧版的客户端一直读到过期数据。
+  rm -f "$output_dir/livewall.json"
   (
     cd "$ROOT_DIR/wallpapers"
     PYTHONPATH=src python3 -m wallpapers export-livewall \
       --db "$ROOT_DIR/wallpapers/wallpapers.db" \
-      --output "$output"
+      --output-dir "$output_dir"
   )
-  echo "[livewall] 清单：$output"
+  echo "[livewall] 清单：${output_dir}/livewall"
 }
 
 publish_wallpapers_only() {
@@ -51,7 +54,7 @@ publish_wallpapers_only() {
       --db "$ROOT_DIR/wallpapers/wallpapers.db" \
       --output-dir "$source_dir"
   )
-  export_livewall_catalog "$source_dir/livewall.json"
+  export_livewall_catalog "$source_dir"
   node "$ROOT_DIR/studio/scripts/encrypt-wallpaper.mjs" "$source_dir" \
     --key-file "$WALLPAPER_KEY_FILE" --reuse-key
 
@@ -60,11 +63,15 @@ publish_wallpapers_only() {
     mkdir -p "$build_data_dir"
     rm -f "$build_data_dir"/wallpapers.catalog.*.bin
     rm -f "$build_data_dir"/wallpapers.catalog.*.json
+    # 旧版单文件清单已废弃，清掉避免残留；新产物是 livewall/ 整个目录
+    rm -f "$build_data_dir/livewall.json"
+    rm -f "$build_data_dir"/livewall/*.json
+    mkdir -p "$build_data_dir/livewall"
     cp \
       "$source_dir"/wallpapers.catalog.json \
       "$source_dir"/wallpapers.catalog.*.bin \
-      "$source_dir"/livewall.json \
       "$build_data_dir"/
+    cp "$source_dir"/livewall/*.json "$build_data_dir/livewall"/
     echo "[wallpapers] 加密目录数据已同步到 $build_data_dir"
   fi
 
@@ -336,7 +343,7 @@ for project in "${SELECTED_PROJECTS[@]}"; do
       cd "$ROOT_DIR/wallpapers"
       PYTHONPATH=src python3 -m wallpapers publish --db "$ROOT_DIR/wallpapers/wallpapers.db" --output-dir "$ROOT_DIR/studio/public/data"
     )
-    export_livewall_catalog "$ROOT_DIR/studio/public/data/livewall.json"
+    export_livewall_catalog "$ROOT_DIR/studio/public/data"
     node "$ROOT_DIR/studio/scripts/encrypt-wallpaper.mjs" \
       "$ROOT_DIR/studio/public/data" --key-file "$WALLPAPER_KEY_FILE"
   fi
