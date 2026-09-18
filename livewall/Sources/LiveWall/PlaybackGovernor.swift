@@ -1,0 +1,185 @@
+import AppKit
+import CoreGraphics
+import Foundation
+import IOKit.ps
+import LiveWallCore
+import LiveWallDesktop
+
+/// 采集系统信号，驱动 `PlaybackStateResolver` 求值，并在状态翻转时通知外部。
+///
+/// 设计上刻意把「采集」和「判定」分开：判定是 `LiveWallCore` 里的纯函数，可以穷举验证；
+/// 这里只负责把系统状态读出来，不掺杂任何决策逻辑。
+///
+/// 采集分两类：
+///  - **事件驱动**（热压力）：系统发通知时立刻重算；
+///  - **轮询**（遮挡、空闲、电池、低电量）：每 2 秒采一次。遮挡判定要遍历窗口列表，
+///    挂在通知上没有对应事件；低电量模式的常量在 macOS SDK 里不存在，也只能轮询。
+///    2 秒的延迟对「暂停壁纸」这个用途完全够用。
+final class PlaybackGovernor {
+
+    /// 轮询间隔。遮挡与空闲都靠它。
+    private let sampleInterval: TimeInterval = 2
+
+    private let resolverProvider: () -> PlaybackStateResolver
+    private var observers: [NSObjectProtocol] = []
+    private var timer: Timer?
+
+    private(set) var signals: PlaybackSignals
+    private(set) var state: PlaybackState = .playing
+
+    /// 状态翻转时回调（主线程）。只在真的变化时触发，不会每 2 秒刷一次。
+    var onStateChange: ((PlaybackState, PlaybackSignals) -> Void)?
+
+    init(resolverProvider: @escaping () -> PlaybackStateResolver, userPaused: Bool = false) {
+        self.resolverProvider = resolverProvider
+        self.signals = PlaybackSignals(userPaused: userPaused)
+    }
+
+    deinit {
+        stop()
+    }
+
+    // MARK: - 生命周期
+
+    func start() {
+        guard timer == nil else { return }
+        observeSystemNotifications()
+
+        let timer = Timer(timeInterval: sampleInterval, repeats: true) { [weak self] _ in
+            self?.sampleAndResolve()
+        }
+        // .common 模式：菜单打开时也要继续采样
+        RunLoop.main.add(timer, forMode: .common)
+        self.timer = timer
+
+        sampleAndResolve()
+    }
+
+    func stop() {
+        timer?.invalidate()
+        timer = nil
+        for observer in observers {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        observers.removeAll()
+    }
+
+    // MARK: - 外部设置的信号
+
+    /// 用户手动暂停。优先级最高，不被任何其他信号撤销。
+    func setUserPaused(_ paused: Bool) {
+        guard signals.userPaused != paused else { return }
+        signals.userPaused = paused
+        sampleAndResolve()
+    }
+
+    func setSessionLocked(_ locked: Bool) {
+        guard signals.sessionLocked != locked else { return }
+        signals.sessionLocked = locked
+        sampleAndResolve()
+    }
+
+    func setDisplaySleeping(_ sleeping: Bool) {
+        guard signals.displaySleeping != sleeping else { return }
+        signals.displaySleeping = sleeping
+        sampleAndResolve()
+    }
+
+    /// 立即重新采集并求值（例如刚改了配置）。
+    func refresh() {
+        sampleAndResolve()
+    }
+
+    // MARK: - 采集与求值
+
+    private func sampleAndResolve() {
+        signals.thermalPressure = Self.currentThermalPressure()
+        signals.lowPowerMode = ProcessInfo.processInfo.isLowPowerModeEnabled
+        signals.idleSeconds = Self.systemIdleSeconds()
+        signals.onBattery = Self.isOnBattery()
+        signals.screenFullyCovered = Self.areAwakeScreensCovered()
+
+        let resolved = resolverProvider().resolve(signals)
+        guard resolved != state else { return }
+        state = resolved
+        onStateChange?(resolved, signals)
+    }
+
+    private func observeSystemNotifications() {
+        let center = NotificationCenter.default
+        observers.append(
+            center.addObserver(
+                forName: ProcessInfo.thermalStateDidChangeNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in self?.sampleAndResolve() }
+        )
+        // 低电量模式没有可用通知：`NSProcessInfoPowerStateDidChange` 只在 iOS 声明，
+        // macOS SDK 里查不到，`ProcessInfo` 也没有对应静态成员。改由 2 秒轮询兜住
+        // （采样时直接读 `isLowPowerModeEnabled`），代价可忽略。
+    }
+
+    // MARK: - 具体信号
+
+    private static func currentThermalPressure() -> ThermalPressure {
+        switch ProcessInfo.processInfo.thermalState {
+        case .nominal: return .nominal
+        case .fair: return .fair
+        case .serious: return .serious
+        case .critical: return .critical
+        @unknown default: return .nominal
+        }
+    }
+
+    /// 系统空闲秒数（距离最后一次键鼠输入）。
+    ///
+    /// `kCGAnyInputEventType` 是 `0xFFFFFFFF`，Swift 里没有对应的枚举成员，
+    /// 只能自己构造。已实测 `CGEventType(rawValue: ~0)` 不为 nil。
+    private static func systemIdleSeconds() -> Double {
+        guard let anyEvent = CGEventType(rawValue: ~0) else { return 0 }
+        let seconds = CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: anyEvent)
+        return seconds.isFinite && seconds >= 0 ? seconds : 0
+    }
+
+    /// 是否正在用电池供电。
+    /// 台式机取不到电池条目 → 视为接电源，永不触发「电池暂停」。
+    private static func isOnBattery() -> Bool {
+        guard let blob = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(),
+              let list = IOPSCopyPowerSourcesList(blob)?.takeRetainedValue() as? [CFTypeRef] else {
+            return false
+        }
+        for source in list {
+            guard let description = IOPSGetPowerSourceDescription(blob, source)?
+                .takeUnretainedValue() as? [String: Any] else { continue }
+            let isBattery = (description[kIOPSTypeKey] as? String) == kIOPSInternalBatteryType
+            let onBattery = (description[kIOPSPowerSourceStateKey] as? String) == kIOPSBatteryPowerValue
+            if isBattery && onBattery { return true }
+        }
+        return false
+    }
+
+    /// 所有**处于唤醒状态**的显示器是否都被不透明窗口盖满。
+    ///
+    /// 必须要求「全部」，只要有一块屏还露着壁纸就不该暂停。
+    /// 休眠中的显示器会被跳过 —— 它的壁纸本来就看不见，而且休眠屏上
+    /// 也没有 on-screen 窗口，不跳过的话会永远判成「未遮挡」。
+    private static func areAwakeScreensCovered() -> Bool {
+        let ourPID = Int(ProcessInfo.processInfo.processIdentifier)
+        var checked = 0
+
+        for screen in NSScreen.screens {
+            guard let number = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber else {
+                continue
+            }
+            let displayID = CGDirectDisplayID(number.uint32Value)
+            if CGDisplayIsAsleep(displayID) != 0 { continue }
+
+            checked += 1
+            let bounds = CGDisplayBounds(displayID)
+            if !WindowInspector.isScreenFullyCovered(displayBounds: bounds, excludingPIDs: [ourPID]) {
+                return false
+            }
+        }
+        return checked > 0
+    }
+}

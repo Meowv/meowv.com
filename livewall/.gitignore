@@ -1,0 +1,9 @@
+# SwiftPM 产物
+.build/
+
+# 组装出的 .app
+build/
+*.o
+*.dSYM
+
+.DS_Store

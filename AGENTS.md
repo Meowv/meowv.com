@@ -44,7 +44,7 @@
 - Blog：`public/`、`db.json`。
 - Studio：`dist/`、`dist/zitie/hanzi-data/`、`public/data/wallpapers.catalog.json`、`public/data/wallpapers.catalog.*.json`、`public/data/wallpapers.catalog.*.bin` 与 `public/data/livewall.json`。
 - Wallpapers：`wallpapers.db`、Python 缓存和 `.venv/`。
-- livewall：`build/`、`.build/` 与 `data/manifest.cache.json`。
+- livewall：`build/` 与 `.build/`。
 
 ## 根目录脚本约定
 
@@ -154,7 +154,7 @@ macOS 视频动态壁纸工具。定位是个人自用 / 小范围共享，不�
 - 壁纸必须静音，且 `preventsDisplaySleepDuringVideoPlayback = false`；覆盖窗口必须 `ignoresMouseEvents = true`，否则桌面右键、框选、拖文件全部失效。
 - **覆盖窗口必须在 `applicationDidFinishLaunching` 里同步创建**，不能推迟到 `asyncAfter`。实测推迟后窗口会被系统加上对称边距（1512×982 的屏幕拿到 `9,5 1494x972`），「覆盖整屏」判定失败并触发无意义的层级降级。
 - **层级判定不能紧跟在建窗口之后**：`orderFrontRegardless()` 是异步的，立刻查窗口列表会查不到自己的窗口。必须等窗口上屏（`ScreenCoordinator.waitForWindowsToAppear`）。
-- 视频源与清单来自同仓库 `wallpapers/` 项目的 `export-livewall` 子命令；`studio/public/data/livewall.json` 与 Application Support 下的 `catalog.json` 都属于生成内容，不提交 Git。清单结构改动需与 `wallpapers/src/wallpapers/export.py` 同步。
+- 视频源与清单都来自同仓库 `wallpapers/` 项目的 `export-livewall` 子命令。**清单没有本地一层**：`export-livewall` 输出的 `studio/public/data/livewall.json` 随 Studio 一起部署，客户端在运行时从 `https://studio.meowv.com/data/livewall.json` 拉取，断网时用上次成功拉取的副本（Application Support 下的 `catalog.remote-cache.json`）兜底。仓库内不保存清单副本，也不要再往 `livewall/data/` 写。清单结构改动需与 `wallpapers/src/wallpapers/export.py` 同步。
 - **失败分类不能靠解析错误文本**。实测 AVFoundation 对 404 的本地化描述是「在此服务器上找不到所请求的URL。」，不含任何数字状态码。`VideoLoader` 必须在播放前做一次 HEAD 探测拿真实状态码，交给 `FailurePolicy.classify(httpStatus:)` 分类。
 - **网络类失败绝不拉黑**。一次断网会把整池好资源丢进黑名单。`FailurePolicy.action` 的判定顺序是硬约束：先看是否已达连续失败阈值 → 再看网络可达性 → 再看是否可重试 → 最后才拉黑。改动顺序会破坏这个保证。
 - **一个视频只建一个 `AVURLAsset`**。每个 asset 都会把整个文件拉一遍，元数据校验与播放各建一个就是双倍流量（实测 6.28MB → 12.55MB）。播放时用 `AVPlayerItem(asset:)` 复用 `VideoLoader` 建好的那个。

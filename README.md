@@ -456,10 +456,12 @@ PYTHONPATH=src python3 -m wallpapers export-livewall
 cd livewall
 ./build.sh        # 编译并组装 .app
 ./test.sh         # 运行单元测试
-./run-livewall.sh # 编译、同步清单并启动正式 App（会接管桌面壁纸层）
+./run-livewall.sh # 编译并启动正式 App（会接管桌面壁纸层）
 ```
 
 macOS 没有「设置视频为壁纸」的官方 API。livewall 的做法是创建一个无边框窗口，把窗口层级钉在「系统壁纸之上、桌面图标之下」这一层，在里面用 `AVPlayerLayer` 循环播放 mp4。层级值全部由 `CGWindowLevelForKey` 派生，启动时自检是否真的落在有效区间内，并检测同层竞争。
+
+清单由 App 在运行时从 `https://studio.meowv.com/data/livewall.json` 拉取（仓库内不保存副本），断网时用上次拉取的本地副本兜底。详见 [`livewall/README.md`](./livewall/README.md)。
 
 省电靠一套「信号 → 状态」状态机：遮挡 / 锁屏 / 息屏 / 热压力 / 空闲 / 低电量 / 电池，任一命中即暂停，全部解除才恢复；其中「画面被完全遮挡」用坐标压缩法算精确覆盖率，避免半屏窗口被误判成盖满。开关与空闲阈值可在菜单栏的「省电设置」里实时调整。
 
