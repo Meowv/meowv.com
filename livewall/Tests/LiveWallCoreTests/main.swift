@@ -17,5 +17,7 @@ powerTests()
 multiScreenPolicyTests()
 filterTests()
 logRotationTests()
+screenSourceStoreTests()
+preferencesCompatibilityTests()
 
 exit(TestRunner.shared.report())

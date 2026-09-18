@@ -29,19 +29,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // 失败处理
     private let failurePolicy = FailurePolicy()
-    private var retriesForCurrentItem = 0
+    /// 各槽位的连续失败次数。
+    ///
+    /// 按槽位分开而不是用一个全局计数：每屏独立时副屏挂掉不该把主屏也停掉，
+    /// 否则「某一块屏的问题」会被放大成「壁纸没了」。
+    private var failuresBySlot: [PlaybackSlotKey: Int] = [:]
+    /// 各槽位对同一条目的重试次数。同样是按槽位的。
+    private var retriesBySlot: [PlaybackSlotKey: Int] = [:]
     /// 因网络不可达而暂停切换中。网络恢复时立刻重试，不等定时器。
     private var isHoldingForNetwork = false
 
     // 状态
     private var statusItem: NSStatusItem?
     private var scheduleTimer: Timer?
-    private var consecutiveFailures = 0
     /// 状态区第二行：当前（或最后一次成功播放的）条目名。
     ///
     /// 刻意与 `notice` 分开。以前两者共用一个字段，结果是失败时名称行被
     /// 「候选池已耗尽」顶掉，用户看不到正在循环的是哪张，容易误读成「壁纸掉了」。
     private var currentName = "启动中"
+    /// 各槽位当前播放的条目名。多槽位时状态区把它们拼成一行。
+    private var namesBySlot: [PlaybackSlotKey: String] = [:]
     /// 状态区附注行（容量、暂停原因、设置回执等）。非 nil 时显示一条。
     ///
     /// 成功加载下一条时清空 —— 它的生命周期是「上一次异常或操作到现在」。
@@ -95,8 +102,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         buildStatusItem()
         registerNotifications()
 
-        engine.onFailure = { [weak self] error in
-            self?.handlePlaybackFailure(error)
+        engine.onFailure = { [weak self] key, error in
+            self?.handlePlaybackFailure(key, error)
         }
 
         network.onChange = { [weak self] reachable in
@@ -105,7 +112,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // 之前是因为网络不通才保持画面的，现在恢复了就立刻重试，不等定时器
             if reachable, self.isHoldingForNetwork {
                 self.scheduleTimer?.invalidate()
-                self.consecutiveFailures = 0
+                self.failuresBySlot.removeAll()
                 self.advance()
             }
             self.refreshStatusItem()
@@ -149,7 +156,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard let self else { return }
 
             let calibration = self.screenCoordinator.calibrate(startingFrom: self.preferences.levelPreset)
-            self.engine.attach(to: self.screenCoordinator.windows, gravity: self.gravity)
+            self.syncPlaybackSlots()
 
             self.log("屏幕 \(self.screenCoordinator.screenCount) 块，窗口 \(self.screenCoordinator.windows.count) 个")
             for attempt in calibration.attempts {
@@ -176,6 +183,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         scheduleTimer?.invalidate()
         network.stop()
+        persistScreenSources()
         engine.teardown()
     }
 
@@ -231,6 +239,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - 调度
 
     /// 切到下一条。
+    ///
+    /// 每屏独立时**一次给所有槽位各挑一条**，先挑完再统一开始加载。
+    /// 不能「加载完一个再挑下一个」—— 两次 `pool.next()` 之间隔着一个网络往返，
+    /// 期间屏幕可能已经变化，槽位集合也就变了。
     private func advance() {
         // 暂停期间不加载任何新内容：既省流量，也避免「恢复时发现画面是刚拉的」。
         // 这不只是手动暂停 —— 遮挡、锁屏、息屏等任何暂停原因都算，否则网络恢复
@@ -247,79 +259,146 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             refreshStatusItem()
             return
         }
-        guard let item = pool.next() else {
+
+        let keys = engine.slotKeys()
+        guard !keys.isEmpty else {
+            log("没有可播放的槽位，跳过切换")
+            return
+        }
+
+        var picked: [(key: PlaybackSlotKey, item: WallpaperItem)] = []
+        for key in keys {
+            guard let item = pool.next() else { break }
+            picked.append((key, item))
+        }
+        guard let fallback = picked.first else {
             notice = .warning("候选池为空")
             refreshStatusItem()
             return
         }
-        loadAndPlay(item, attempt: 0)
+        // 候选比槽位少时（池里就剩一两条），后面的槽位分不到片 ——
+        // 宁可几屏同片，也不要有一屏黑着。
+        for key in keys.dropFirst(picked.count) {
+            picked.append((key, fallback.item))
+        }
+
+        for pair in picked {
+            loadAndPlay(pair.item, attempt: 0, on: pair.key)
+        }
+    }
+
+    /// 只给一个槽位补一张。
+    ///
+    /// 与 `advance()` 的区别：那个是全局切换，这个是某槽位自己的条目失败后的补救 ——
+    /// 其它槽位正在正常播放，不该被牵连着一起换片。
+    private func advanceOne(_ key: PlaybackSlotKey) {
+        guard governor.state.isPlaying else { return }
+        guard !pool.isExhausted else {
+            notice = .warning("候选池已耗尽")
+            refreshStatusItem()
+            return
+        }
+        guard let item = pool.next() else { return }
+        loadAndPlay(item, attempt: 0, on: key)
     }
 
     /// 加载并播放指定条目。失败时按 `FailurePolicy` 决定重试、拉黑还是保持画面。
-    private func loadAndPlay(_ item: WallpaperItem, attempt: Int) {
+    private func loadAndPlay(_ item: WallpaperItem, attempt: Int, on key: PlaybackSlotKey) {
         guard let url = item.remoteURL else {
-            log("跳过 URL 非法的条目 \(item.id)")
+            log("跳过 URL 非法的条目 \(item.id)（\(key.label)）")
             pool.blacklist(id: item.id)
-            advance()
+            advanceOne(key)
             return
         }
 
         Task { @MainActor in
             do {
                 let loaded = try await VideoLoader.load(url)
-                engine.play(item, loaded: loaded)
-                consecutiveFailures = 0
-                retriesForCurrentItem = 0
-                isHoldingForNetwork = false
-                currentName = item.displayName
-                notice = nil
-                log("播放 \(item.id) \(item.title)(\(loaded.resolutionText)) 时长 "
-                    + "\(String(format: "%.2f", loaded.durationSeconds))s 编码 \(loaded.codec)")
-                refreshStatusItem()
+                // 加载是异步的，期间槽位可能已经被拆掉（屏拔了 / 策略切了）。
+                // 往一个不存在的槽位里塞内容只会让播放器空转。
+                guard self.engine.slotKeys().contains(key) else {
+                    self.log("槽位 \(key.label) 在加载完成前已失效，丢弃 \(item.id)")
+                    return
+                }
+                self.engine.play(item, loaded: loaded, on: key)
+                self.failuresBySlot[key] = 0
+                self.retriesBySlot[key] = 0
+                self.isHoldingForNetwork = false
+                self.namesBySlot[key] = item.displayName
+                self.refreshCurrentName()
+                self.notice = nil
+                self.log("播放 \(item.id) \(item.title)(\(loaded.resolutionText)) 时长 "
+                    + "\(String(format: "%.2f", loaded.durationSeconds))s 编码 \(loaded.codec)"
+                    + " [\(key.label)]")
+                self.refreshStatusItem()
                 // 加载是异步的，期间状态可能已翻成暂停。播放器必须服从当前状态，
                 // 否则「暂停时正好有加载在飞」会让壁纸在没人看见的时候自己播起来。
                 // 画面保持就位（已解码缓冲），恢复时能立刻无缝续上。
-                if !governor.state.isPlaying {
-                    engine.pause()
-                    log("加载完成时已处于暂停状态，画面就位但不播放")
+                if !self.governor.state.isPlaying {
+                    self.engine.pause()
+                    self.log("加载完成时已处于暂停状态，画面就位但不播放")
                 }
-                scheduleNext(after: loaded.durationSeconds)
+                // 只有主槽位排下一次切换：多个槽位各排一个定时器会互相覆盖。
+                if key == self.engine.primaryKey {
+                    self.scheduleNext(after: loaded.durationSeconds)
+                    self.persistScreenSources()
+                }
             } catch {
-                handleLoadFailure(error, item: item, attempt: attempt)
+                self.handleLoadFailure(error, item: item, attempt: attempt, on: key)
             }
         }
     }
 
     /// 加载失败的统一出口。
-    private func handleLoadFailure(_ error: Error, item: WallpaperItem, attempt: Int) {
+    private func handleLoadFailure(_ error: Error, item: WallpaperItem, attempt: Int, on key: PlaybackSlotKey) {
         let kind = FailurePolicy.classify(error)
+        let failures = (failuresBySlot[key] ?? 0) + 1
         let action = failurePolicy.action(
             for: kind,
             networkReachable: network.isReachable,
-            consecutiveFailures: consecutiveFailures + 1,
+            consecutiveFailures: failures,
             retriesForItem: attempt
         )
-        log("加载失败 \(item.id)：\(kind.label) → \(Self.describe(action))")
+        log("加载失败 \(item.id) [\(key.label)]：\(kind.label) → \(Self.describe(action))")
 
         switch action {
         case .stopScheduling:
-            consecutiveFailures += 1
-            stopScheduling(reason: "连续 \(consecutiveFailures) 次失败")
+            failuresBySlot[key] = failures
+            stopSchedulingForFailedSlot(key)
 
         case .holdCurrent:
             holdCurrent(reason: kind.label)
 
         case .retrySame:
-            retriesForCurrentItem = attempt + 1
-            loadAndPlay(item, attempt: attempt + 1)
+            retriesBySlot[key] = attempt + 1
+            loadAndPlay(item, attempt: attempt + 1, on: key)
 
         case .blacklistAndAdvance:
             // 只有确认是资源本身的问题才拉黑。网络类失败绝不拉黑，
             // 否则一次断网会把整池好资源全丢进黑名单。
             pool.blacklist(id: item.id)
-            consecutiveFailures += 1
-            advance()
+            failuresBySlot[key] = failures
+            advanceOne(key)
         }
+    }
+
+    /// 某个槽位连续失败到阈值时的处理。
+    ///
+    /// **只有所有槽位都失败才停全局调度**：每屏独立时副屏挂掉就把主屏也停掉，
+    /// 等于把「某一块屏的问题」放大成「壁纸没了」。单槽位失败只让它自己保持画面，
+    /// 全局定时器照常走，下次切换时它会重新取片。
+    private func stopSchedulingForFailedSlot(_ key: PlaybackSlotKey) {
+        let keys = engine.slotKeys()
+        let allFailed = !keys.isEmpty && keys.allSatisfy {
+            (failuresBySlot[$0] ?? 0) >= failurePolicy.maxConsecutiveFailures
+        }
+        guard allFailed else {
+            notice = .warning("\(key.label)连续失败，保持其画面")
+            log("\(key.label)连续失败 \(failuresBySlot[key] ?? 0) 次，保持当前画面，其余槽位不受影响")
+            refreshStatusItem()
+            return
+        }
+        stopScheduling(reason: "全部 \(keys.count) 个槽位连续失败")
     }
 
     /// 保持当前画面不动，过一会儿再试。
@@ -335,7 +414,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         scheduleTimer?.invalidate()
         scheduleTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: false) { [weak self] _ in
             guard let self else { return }
-            self.consecutiveFailures = 0
+            self.failuresBySlot.removeAll()
             self.advance()
         }
         RunLoop.main.add(scheduleTimer!, forMode: .common)
@@ -350,31 +429,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// 播放中途失败（`AVPlayerItem.status == .failed`）。
-    private func handlePlaybackFailure(_ error: Error) {
-        guard let item = engine.currentItem else { return }
+    private func handlePlaybackFailure(_ key: PlaybackSlotKey, _ error: Error) {
+        guard let item = engine.item(on: key) else { return }
         let kind = FailurePolicy.classify(error)
-        log("播放失败 \(item.id)：\(kind.label)")
-        scheduleTimer?.invalidate()
+        log("播放失败 \(item.id) [\(key.label)]：\(kind.label)")
+        // 只有主槽位管调度定时器，非主槽位失败不该把它的下一次切换也取消掉
+        if key == engine.primaryKey {
+            scheduleTimer?.invalidate()
+        }
 
+        let failures = (failuresBySlot[key] ?? 0) + 1
         let action = failurePolicy.action(
             for: kind,
             networkReachable: network.isReachable,
-            consecutiveFailures: consecutiveFailures + 1,
-            retriesForItem: retriesForCurrentItem
+            consecutiveFailures: failures,
+            retriesForItem: retriesBySlot[key] ?? 0
         )
         switch action {
         case .stopScheduling:
-            consecutiveFailures += 1
-            stopScheduling(reason: "连续 \(consecutiveFailures) 次失败")
+            failuresBySlot[key] = failures
+            stopSchedulingForFailedSlot(key)
         case .holdCurrent:
             holdCurrent(reason: kind.label)
         case .retrySame:
-            retriesForCurrentItem += 1
-            loadAndPlay(item, attempt: retriesForCurrentItem)
+            let attempt = (retriesBySlot[key] ?? 0) + 1
+            retriesBySlot[key] = attempt
+            loadAndPlay(item, attempt: attempt, on: key)
         case .blacklistAndAdvance:
             pool.blacklist(id: item.id)
-            consecutiveFailures += 1
-            advance()
+            failuresBySlot[key] = failures
+            advanceOne(key)
         }
     }
 
@@ -410,12 +494,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             engine.resume()
             // 暂停期间定时器已被取消，恢复时要重新排一次
             if scheduleTimer == nil || !(scheduleTimer?.isValid ?? false) {
-                if engine.currentItem == nil {
+                if engine.isEmpty {
                     // 启动时就被暂停（或首次加载尚未成功），此时窗口还是空白：
                     // 排下一次切换等于白等 4~6 分钟，应当立刻加载。
                     advance()
                 } else {
-                    scheduleNext(after: engine.currentDuration)
+                    scheduleNext(after: engine.primaryDuration)
                 }
             }
         case .paused(let reason):
@@ -470,12 +554,63 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// 重建窗口并复用同一个播放器，不重开解码器。
+    /// 重建窗口并把播放端对齐到新的屏幕/策略。
     private func rebuildWindows(reason: String) {
         let verdict = screenCoordinator.rebuild()
-        engine.attach(to: screenCoordinator.windows, gravity: gravity)
+        syncPlaybackSlots()
         log("\(reason)后重建 \(screenCoordinator.windows.count) 个窗口：\(verdict.summary)")
         refreshStatusItem()
+        persistScreenSources()
+    }
+
+    /// 让播放端的槽位集合与当前屏幕/策略对齐，并重新绑定窗口。
+    ///
+    /// 屏幕热插拔、系统唤醒、策略切换都走这里。槽位是**按 key 复用**的：
+    /// 没变化的那块屏不会重新拉视频，只有新出现的槽位才需要补一张。
+    private func syncPlaybackSlots() {
+        let keys = screenCoordinator.playbackSlotKeys()
+        let previous = Set(engine.slotKeys())
+        engine.useSlots(keys)
+
+        // 重建窗口后必须重新绑定 —— 新窗口没有 playerLayer，不 attach 就是一片黑
+        for binding in screenCoordinator.windowBindings {
+            engine.attach(binding.window, to: binding.key, gravity: gravity)
+        }
+
+        // 拆掉的槽位不该再占着状态区。先收集再删：遍历字典时改字典会崩。
+        let staleKeys = namesBySlot.keys.filter { !keys.contains($0) }
+        for key in staleKeys { namesBySlot[key] = nil }
+        refreshCurrentName()
+
+        let added = keys.filter { !previous.contains($0) }
+        guard !added.isEmpty else { return }
+        log("新增槽位 \(added.map(\.label).joined(separator: "、"))，各取一张")
+        for key in added { advanceOne(key) }
+    }
+
+    /// 状态区第二行：把所有槽位的条目名拼成一行。
+    private func refreshCurrentName() {
+        let names = engine.slotKeys().compactMap { namesBySlot[$0] }
+        currentName = names.isEmpty ? "启动中" : names.joined(separator: " · ")
+    }
+
+    /// 把各屏当前播放的条目 id 写回配置，下次启动接着播。
+    ///
+    /// 只在每屏独立模式下写 —— 另外两种策略共用一张，没有「每屏」可记。
+    private func persistScreenSources() {
+        guard preferences.multiScreenPolicy == .perScreen else { return }
+        var store = preferences.perScreenSources
+        for key in engine.slotKeys() {
+            guard case .display(let displayID) = key, let item = engine.item(on: key) else { continue }
+            store.setItemID(item.id, for: displayID)
+        }
+        let removed = store.prune(keeping: screenCoordinator.displayIDs)
+        guard store != preferences.perScreenSources || removed > 0 else { return }
+        preferences.perScreenSources = store
+        try? preferences.save(to: configURL)
+        if removed > 0 {
+            log("清理 \(removed) 条已拔掉屏幕的源记录")
+        }
     }
 
     // MARK: - 菜单栏
@@ -615,7 +750,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         policyDetail.isEnabled = false
         policyMenu.addItem(policyDetail)
         policyMenu.addItem(.separator())
-        for policy in MultiScreenPolicy.allCases where policy.isImplemented {
+        for policy in MultiScreenPolicy.allCases {
             let entry = NSMenuItem(
                 title: policy.label,
                 action: #selector(switchMultiScreenPolicy(_:)),
@@ -879,7 +1014,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func nextNow() {
-        consecutiveFailures = 0
+        failuresBySlot.removeAll()
         advance()
     }
 
@@ -933,7 +1068,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             log("当前处于暂停状态，新间隔将在恢复播放后生效")
             return
         }
-        scheduleNext(after: engine.currentDuration)
+        scheduleNext(after: engine.primaryDuration)
     }
 
     /// 内容过滤子菜单。
@@ -1025,13 +1160,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         try? preferences.save(to: configURL)
 
         let verdict = screenCoordinator.apply(policy: policy)
-        // 重建窗口后必须重新绑定 —— 新窗口没有 playerLayer，不 attach 就是一片黑
-        engine.attach(to: screenCoordinator.windows, gravity: gravity)
+        // 槽位集合随策略变化（镜像 1 个 / 每屏独立 N 个），必须重新对齐并绑定窗口。
+        // 失败计数也要清：旧槽位的失败次数跟新槽位没有关系。
+        failuresBySlot.removeAll()
+        retriesBySlot.removeAll()
+        syncPlaybackSlots()
 
         notice = .info("多屏策略：\(policy.label)（\(verdict.summary)）")
         log("多屏策略切换为 \(policy.label)：窗口 \(screenCoordinator.windows.count) 个 / 屏幕 "
-            + "\(screenCoordinator.screenCount) 块 | \(verdict.summary)")
+            + "\(screenCoordinator.screenCount) 块，槽位 \(engine.slotKeys().count) 个 | \(verdict.summary)")
+        if policy == .perScreen, screenCoordinator.slotPlan.hasSharedSlot {
+            log("屏幕数超过每屏独立上限 \(MultiScreenPolicy.maxIndependentScreens) 块，"
+                + "超出的屏幕共用最后一路解码")
+        }
         refreshStatusItem()
+        persistScreenSources()
     }
 
     @objc private func switchLevel(_ sender: NSMenuItem) {
@@ -1046,7 +1189,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func reloadCatalog() {
         pool = CandidatePool()
-        consecutiveFailures = 0
+        failuresBySlot.removeAll()
         loadCatalogAndStart()
     }
 

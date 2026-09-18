@@ -20,6 +20,17 @@ final class ScreenCoordinator {
     /// 多屏策略。决定在哪些屏幕上建窗口。
     private(set) var policy: MultiScreenPolicy
 
+    /// 当前的槽位分组。每屏独立时一组一屏，镜像时只有一组。
+    ///
+    /// 单独存一份而不是每次现算：窗口是按它建的，之后屏幕变化前它不该变。
+    private(set) var slotPlan = ScreenSlotPlan(slots: [])
+
+    /// 窗口按 displayID 索引。
+    ///
+    /// 播放端要按屏绑定槽位（每屏独立时各挂各的 player），
+    /// 而 `windows` 只是个数组，重建后顺序与屏幕的对应关系就断了。
+    private(set) var windowsByDisplayID: [UInt32: DesktopOverlayWindow] = [:]
+
     /// 每个窗口号**期望**覆盖的区域，用 `CGWindowBounds` 的坐标系（原点在主屏左上）。
     ///
     /// 不能拿 `NSWindow.frame` 直接比 —— 它用的是「原点在主屏左下」的坐标系，
@@ -37,6 +48,43 @@ final class ScreenCoordinator {
     }
 
     var screenCount: Int { NSScreen.screens.count }
+
+    /// 当前建了窗口的屏幕 ID。写回每屏独立源记录时要按它裁剪。
+    var displayIDs: Set<UInt32> { Set(windowsByDisplayID.keys) }
+
+    /// 当前策略下需要独立取片的槽位，按主次顺序（第 0 个是主屏）。
+    ///
+    /// 镜像与仅主屏都只有一个 `.shared`；每屏独立时每块屏一个，
+    /// 但受 `MultiScreenPolicy.maxIndependentScreens` 限制。
+    func playbackSlotKeys() -> [PlaybackSlotKey] {
+        guard slotPlan.slotCount > 0 else { return [] }
+        switch policy {
+        case .mirror, .mainScreenOnly:
+            return [.shared]
+        case .perScreen:
+            return slotPlan.slots.compactMap { group in
+                group.first.map { PlaybackSlotKey.display($0.displayID) }
+            }
+        }
+    }
+
+    /// 窗口 → 播放槽位的绑定关系。建窗口、切策略、屏幕变化后都要照它重新绑定。
+    var windowBindings: [(window: DesktopOverlayWindow, key: PlaybackSlotKey)] {
+        var bindings: [(DesktopOverlayWindow, PlaybackSlotKey)] = []
+        for group in slotPlan.slots {
+            let key: PlaybackSlotKey
+            if policy == .perScreen, let first = group.first {
+                key = .display(first.displayID)
+            } else {
+                key = .shared
+            }
+            for screen in group {
+                guard let window = windowsByDisplayID[screen.displayID] else { continue }
+                bindings.append((window, key))
+            }
+        }
+        return bindings
+    }
 
     /// 按当前屏幕列表与策略创建窗口。**不等待上屏** —— 由调用方决定何时做判定。
     ///
@@ -58,11 +106,15 @@ final class ScreenCoordinator {
             }
             return (screen, ScreenIdentity(displayID: number.uint32Value, index: index))
         }
-        let targets = Set(policy.targetScreens(from: paired.map(\.1)).map(\.displayID))
+        let identities = paired.map(\.1)
+        slotPlan = policy.slotPlan(from: identities)
+        let targets = Set(policy.targetScreens(from: identities).map(\.displayID))
+        windowsByDisplayID.removeAll()
 
         for (screen, identity) in paired where targets.contains(identity.displayID) {
             let window = DesktopOverlayWindow(screen: screen, level: level)
             windows.append(window)
+            windowsByDisplayID[identity.displayID] = window
             expectedBounds[window.windowNumber] = CGDisplayBounds(identity.displayID)
         }
     }

@@ -12,6 +12,13 @@ public enum MultiScreenPolicy: String, Codable, Sendable, CaseIterable {
     /// 每块屏各自取片。观感最丰富，但流量与解码开销按屏数翻倍。
     case perScreen
 
+    /// 每屏独立模式下**最多**同时独立解码的屏幕数。
+    ///
+    /// 每多一块独立解码的屏就是多一路解码器加一份流量。超过这个数的屏幕
+    /// 并进最后一个槽位（表现为镜像），避免接了 5 块屏的机器一开机就开 5 路解码。
+    /// 默认 3 —— 覆盖绝大多数多屏配置；屏数更多时降级也只影响最后几块。
+    public static let maxIndependentScreens = 3
+
     public var label: String {
         switch self {
         case .mirror: return "全部同片"
@@ -29,19 +36,37 @@ public enum MultiScreenPolicy: String, Codable, Sendable, CaseIterable {
         }
     }
 
-    /// 是否已落地。
+    /// 把目标屏幕分组成若干播放槽位。
     ///
-    /// `perScreen` 需要「每屏一个独立播放槽位」（各自的播放器、候选池、调度定时器），
-    /// 而当前 App 是单槽位结构，尚未改造。菜单只列已实现的 —— 否则用户会选到一个
-    /// 与「全部同片」表现完全一样的选项，还以为功能坏了。
-    public var isImplemented: Bool {
-        self != .perScreen
+    /// 一个槽位 = 一路独立解码。镜像与仅主屏只有一个槽位（一组，组内可能多屏）；
+    /// 每屏独立时一屏一组，但组数不超过 `maxIndependentScreens`，
+    /// 超出的屏幕并进最后一组共用一路解码。
+    ///
+    /// **组的顺序就是主次顺序**：第 0 组是主屏所在组，状态区显示的就是它。
+    public func slotPlan(from screens: [ScreenIdentity]) -> ScreenSlotPlan {
+        let targets = targetScreens(from: screens)
+        guard !targets.isEmpty else { return ScreenSlotPlan(slots: []) }
+
+        switch self {
+        case .mirror, .mainScreenOnly:
+            return ScreenSlotPlan(slots: [targets])
+        case .perScreen:
+            let limit = max(1, Self.maxIndependentScreens)
+            guard targets.count > limit else {
+                return ScreenSlotPlan(slots: targets.map { [$0] })
+            }
+            // 前 limit-1 屏各自成组，剩下的（至少 2 屏）并进最后一组
+            var slots = targets.prefix(limit - 1).map { [$0] }
+            slots.append(Array(targets.dropFirst(limit - 1)))
+            return ScreenSlotPlan(slots: slots)
+        }
     }
 
     /// 该策略下需要几个独立播放槽位。
     ///
-    /// 镜像与仅主屏都只需要 1 个（窗口可以共用同一个 `AVPlayer`），
-    /// 每屏独立则需要与屏幕数相同的数量。
+    /// 这是**未加上限**的理论值：每屏独立时等于屏幕数，但实际分配会受
+    /// `maxIndependentScreens` 限制，真正的分组看 `slotPlan(from:)`。
+    /// 镜像与仅主屏都只需要 1 个（窗口可以共用同一个 `AVPlayer`）。
     public func slotCount(screenCount: Int) -> Int {
         switch self {
         case .mirror, .mainScreenOnly:
@@ -63,6 +88,32 @@ public enum MultiScreenPolicy: String, Codable, Sendable, CaseIterable {
         case .mainScreenOnly:
             return screens.first.map { [$0] } ?? []
         }
+    }
+}
+
+/// 一次多屏部署的槽位分组结果。
+///
+/// 数组里每一项是一个槽位，槽位内是该槽位要覆盖的屏幕。
+/// 组内多于一屏 = 这几屏共用一路解码（镜像）。
+public struct ScreenSlotPlan: Equatable, Sendable {
+    /// 槽位列表。顺序即主次：第 0 个是主槽位。
+    public let slots: [[ScreenIdentity]]
+
+    public init(slots: [[ScreenIdentity]]) {
+        self.slots = slots
+    }
+
+    public var slotCount: Int { slots.count }
+
+    /// 该槽位覆盖的屏幕数。> 1 表示这几屏共用一路解码。
+    public func screenCount(inSlot index: Int) -> Int {
+        guard slots.indices.contains(index) else { return 0 }
+        return slots[index].count
+    }
+
+    /// 是否存在与其它屏共用解码的槽位。用于提示「有屏幕在复用别人的画面」。
+    public var hasSharedSlot: Bool {
+        slots.contains { $0.count > 1 }
     }
 }
 

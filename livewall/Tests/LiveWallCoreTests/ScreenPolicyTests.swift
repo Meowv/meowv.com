@@ -57,10 +57,51 @@ func multiScreenPolicyTests() {
             expectEqual(targets.first?.displayID, 3, "应跟随列表顺序取第一项")
         }
 
-        test("实现状态：每屏独立尚未落地") {
-            expect(!MultiScreenPolicy.perScreen.isImplemented, "perScreen 尚未实现，菜单不应列出")
-            expect(MultiScreenPolicy.mirror.isImplemented, "镜像已实现")
-            expect(MultiScreenPolicy.mainScreenOnly.isImplemented, "仅主屏已实现")
+        test("槽位分组：镜像与仅主屏都只有一组") {
+            for policy in [MultiScreenPolicy.mirror, .mainScreenOnly] {
+                let plan = policy.slotPlan(from: dual)
+                expectEqual(plan.slotCount, 1, "\(policy.label) 应只有 1 个槽位")
+            }
+            let mirrored = MultiScreenPolicy.mirror.slotPlan(from: dual)
+            expectEqual(mirrored.screenCount(inSlot: 0), 2, "镜像槽位应覆盖 2 块屏")
+            expect(mirrored.hasSharedSlot, "镜像存在共用解码的槽位")
+            let mainOnly = MultiScreenPolicy.mainScreenOnly.slotPlan(from: dual)
+            expectEqual(mainOnly.screenCount(inSlot: 0), 1, "仅主屏只覆盖 1 块屏")
+            expect(!mainOnly.hasSharedSlot, "仅主屏不存在共用槽位")
+        }
+
+        test("槽位分组：每屏独立一屏一组") {
+            let plan = MultiScreenPolicy.perScreen.slotPlan(from: dual)
+            expectEqual(plan.slotCount, 2, "双屏应 2 组")
+            expect(!plan.hasSharedSlot, "未超上限时不应有共用槽位")
+        }
+
+        test("槽位分组：超过上限时超出的屏并进最后一组") {
+            let many = (0..<5).map { ScreenIdentity(displayID: UInt32($0 + 1), index: $0) }
+            let plan = MultiScreenPolicy.perScreen.slotPlan(from: many)
+            let limit = MultiScreenPolicy.maxIndependentScreens
+            expectEqual(plan.slotCount, limit, "槽位数应被上限夹住")
+            expectEqual(
+                plan.screenCount(inSlot: limit - 1),
+                many.count - (limit - 1),
+                "超出的屏应并进最后一组"
+            )
+            expect(plan.hasSharedSlot, "超出上限后应出现共用槽位")
+            // 主屏必须独占一路：被并进共用组的话，「主屏」这个概念就没了
+            expectEqual(plan.screenCount(inSlot: 0), 1, "主屏所在组应独占一路解码")
+        }
+
+        test("槽位分组：无屏幕时不分组") {
+            for policy in MultiScreenPolicy.allCases {
+                expectEqual(policy.slotPlan(from: []).slotCount, 0, "\(policy.label) 无屏时应为 0 组")
+            }
+        }
+
+        test("槽位分组：单屏时任何策略都只有一组") {
+            let single = [ScreenIdentity(displayID: 1, index: 0)]
+            for policy in MultiScreenPolicy.allCases {
+                expectEqual(policy.slotPlan(from: single).slotCount, 1, "\(policy.label) 单屏应 1 组")
+            }
         }
 
         test("文案齐全：每种策略都有标签与代价说明") {

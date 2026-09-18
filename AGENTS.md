@@ -164,6 +164,9 @@ macOS 视频动态壁纸工具。定位是个人自用 / 小范围共享，不�
 - **省电判定必须是纯函数**。`PlaybackStateResolver.resolve(_:)` 在 `LiveWallCore`，只吃 `PlaybackSignals` 吐 `PlaybackState`，不做任何系统调用；采集在 `PlaybackGovernor`。判定优先级顺序（手动暂停 > 锁屏 > 息屏 > 遮挡 > 热压力 > 空闲 > 低电量 > 电池）是硬约束，改动前先看代码里的理由注释。
 - **播放器的暂停与恢复只能在一个地方发生**（`AppDelegate.applyPlaybackState`）。系统通知只负责更新 governor 的信号，绝不直接碰播放器 —— 多路信号各改一次会互相打架。
 - **`VideoLoader.load` 是异步的，加载完成后必须重新核对状态**。否则「暂停时正好有加载在飞」会让壁纸在没人看见的时候自己播起来。`advance()` 开头的状态守卫同理，它挡住的是网络恢复之类的旁路触发。
+- **每屏独立的失败计数必须按槽位分开**。`failuresBySlot` / `retriesBySlot` 是字典而不是单个计数器：副屏挂掉就把主屏也停掉，等于把「某一块屏的问题」放大成「壁纸没了」。只有**全部**槽位都失败才 `stopScheduling`。
+- **只有主槽位排调度定时器**。多个槽位各排一个会互相覆盖 `scheduleTimer`，切换节奏会变成「最后一个加载完的说了算」。
+- **遍历字典时不要改字典**。`PlaybackEngine.useSlots` 里删槽位、`AppDelegate` 里清 `namesBySlot` 都要先 `filter` 出数组再删 —— Swift 在 `Dictionary was mutated while being iterated` 上是直接崩，不是警告。
 - **遮挡检测不要退回网格采样或 bbox**。网格采样会漏掉窄缝（20px 的缝比 63px 的网格还窄，实测报告「覆盖 100%」），union + bounding box 会把两个并排的半屏窗口误判成完全遮挡。现行实现是 `CoverageGrid` 的坐标压缩法，算精确面积；`legacyBoundingBoxCovers` 只留给测试做对比证据。
 - **`Preferences` 必须保持逐字段容错解码**。Swift 合成的 `Codable` **不会**回退到属性默认值 —— 缺字段直接抛 `keyNotFound`，会让用户已有的 `config.json` 整体解码失败并静默丢配置。新增字段时同步补 `CodingKeys`、`init(from:)` 与往返测试。**枚举字段还要额外用 `try?` 包一层**：键在但取值非法（手改配置写错，如 `"playbackOrder": "random"`）会抛 `dataCorrupted`，后果与缺字段完全一样 —— 整个文件退回默认，用户的其它设置一起被静默清零。
 - **两种选片顺序都必须「走完一轮才重排，一轮内不重复」**（`CandidatePool.order`：`shuffle` 每轮重洗 / `sequential` 按清单原序）。随机模式靠「洗牌前排除当前项」避免连着重复；顺序模式**不能沿用这一招** —— 每轮都会少一条尾巴，实际序列会退化成 `A…Z → A…Y → A…X`，看起来像漏播，正确做法是只在新一轮首条恰好等于当前项时向后让一位。换模式或改过滤条件都会清空待取队列（等于重新开始一轮），但**黑名单不清**。

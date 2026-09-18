@@ -32,6 +32,11 @@ public struct Preferences: Codable, Sendable, Equatable {
     public var levelPreset: LevelPreset
     /// 多屏策略。默认镜像 —— 只解一份，流量与解码开销都不随屏数增长。
     public var multiScreenPolicy: MultiScreenPolicy
+    /// 每屏独立模式下，各屏幕上次播放的条目 id。见 `ScreenSourceStore`。
+    ///
+    /// **老配置里没有这个字段**，容错解码会回退到 `.empty`（各屏重新取片），
+    /// 不影响其它任何设置 —— 这是加字段时不丢用户设置的唯一办法。
+    public var perScreenSources: ScreenSourceStore
     /// 只播放这些作者的作品。空数组 = 不限。
     ///
     /// 用作者而不是标签：数据源里带标签的候选是 0 条（标签只挂在桌面静态壁纸
@@ -59,6 +64,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         gravity: String = "fill",
         levelPreset: LevelPreset = .recommended,
         multiScreenPolicy: MultiScreenPolicy = .mirror,
+        perScreenSources: ScreenSourceStore = .empty,
         authorFilter: [String] = [],
         pauseWhenCovered: Bool = true,
         pauseWhenIdle: Bool = true,
@@ -75,6 +81,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         self.gravity = gravity
         self.levelPreset = levelPreset
         self.multiScreenPolicy = multiScreenPolicy
+        self.perScreenSources = perScreenSources
         self.authorFilter = authorFilter
         self.pauseWhenCovered = pauseWhenCovered
         self.pauseWhenIdle = pauseWhenIdle
@@ -90,7 +97,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         case remoteCatalogURL
         case intervalSeconds, jitterRatio, switchWhenFinished, playbackOrder
         case gravity, levelPreset
-        case multiScreenPolicy, authorFilter
+        case multiScreenPolicy, perScreenSources, authorFilter
         case pauseWhenCovered, pauseWhenIdle, idleThresholdSeconds
         case pauseOnLowPowerMode, pauseOnBattery, pauseOnThermalPressure
     }
@@ -116,6 +123,8 @@ public struct Preferences: Codable, Sendable, Equatable {
         levelPreset = (try? container.decodeIfPresent(LevelPreset.self, forKey: .levelPreset)) ?? fallback.levelPreset
         multiScreenPolicy = (try? container.decodeIfPresent(MultiScreenPolicy.self, forKey: .multiScreenPolicy))
             ?? fallback.multiScreenPolicy
+        perScreenSources = (try? container.decodeIfPresent(ScreenSourceStore.self, forKey: .perScreenSources))
+            ?? fallback.perScreenSources
         authorFilter = try container.decodeIfPresent([String].self, forKey: .authorFilter) ?? fallback.authorFilter
         pauseWhenCovered = try container.decodeIfPresent(Bool.self, forKey: .pauseWhenCovered) ?? fallback.pauseWhenCovered
         pauseWhenIdle = try container.decodeIfPresent(Bool.self, forKey: .pauseWhenIdle) ?? fallback.pauseWhenIdle
