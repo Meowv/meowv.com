@@ -21,5 +21,7 @@ screenSourceStoreTests()
 preferencesCompatibilityTests()
 lockScreenPreviewTests()
 downloadNamingTests()
+processUsageTests()
+aboutMenuTests()
 
 exit(TestRunner.shared.report())

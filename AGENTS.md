@@ -56,6 +56,7 @@
 - 汇总目录固定为 `build/meowv.com/`、`build/studio.meowv.com/`。Studio 产物包含 `dist/zitie/`。
 - 保持 macOS Bash 3.2 兼容性，不使用 `mapfile`、关联数组等 4.0+ 特性。Bash 3.2 在 `set -u` 下展开空数组会报 `unbound variable`，遍历前先使用 `${SELECTED_PROJECTS[*]:-}` 防护。
 - 所有 shell 脚本中，变量后紧跟中文或全角字符时一律写成 `${VAR}`。非 `C` locale 下 bash 会把紧随其后的多字节字符首字节并入变量名（`$APP（` 被解析为变量名 `APP\xef`），`set -u` 下直接报 `unbound variable` 并使脚本中断。`LC_ALL=C` 的环境（例如某些沙箱）测不出这个问题，本地跑通不代表对用户的终端成立。
+  **适用范围是仓库内所有 shell 脚本，包括 `livewall/` 等子项目** —— 标题里的「根目录」只是这一节所在的位置，不是适用范围。2026-09-18 新写的 `livewall/make-dmg.sh` 就因为按标题把它理解成「只管根目录」而漏掉这条、重新踩了一次（`$DMG_PATH（` / `$SIZE）` / `$APP_BUNDLE（` 三处）。**新写或改动脚本后跑一遍扫描器与多 locale 运行器**（技能 `shell-locale-safety` 里有：`scan_dollar_nonascii.py <目录>` 与 `run_under_locales.sh <脚本>`）—— `bash -n` 查不出这个问题。
 - `build/`、暂存目录和备份目录均为可替换生成内容，不提交 Git。
 - `build.sh wallpapers` 只生成并加密 Studio 壁纸目录，不构建项目；`./build.sh studio --with-wallpapers` 仅允许与 `studio` 一起使用，并在 Studio 构建前生成目录数据。两者都会同时生成供 livewall 使用的未加密清单目录 `studio/public/data/livewall/`，并同步到 `build/studio.meowv.com/data/livewall/`。
 - 修改脚本时，同步检查参数帮助、项目数组、别名、端口、依赖检查、启动或构建分支、源目录和目标目录，避免只更新其中一处。
@@ -147,7 +148,8 @@ macOS 视频动态壁纸工具。定位是个人自用 / 小范围共享，不�
 ### 约定与验证
 
 - 使用 Swift，**只需要 Command Line Tools，不需要 Xcode**，也不依赖 Node/pnpm。本机因此**没有 XCTest**（`unable to resolve module dependency: 'XCTest'`），测试用 `executableTarget` + 自建断言运行器实现，见 `Package.swift` 顶部说明。不要改成 `testTarget`，那会直接编译失败。
-- 构建与运行只走 `livewall/build.sh`、`livewall/test.sh`、`livewall/run.sh`。**不接入根目录的 `build.sh`、`run.sh`、`deploy.sh`** —— 那些脚本的模型是「Web 产物 → `build/<域名>/` → Nginx」，与本项目无关。注意 `livewall/run.sh` 与根目录 `run.sh` **同名不同物**，前者只在 `livewall/` 目录内使用。
+- 构建与运行只走 `livewall/build.sh`、`livewall/test.sh`、`livewall/run.sh`、`livewall/make-dmg.sh`（打包 DMG）。**不接入根目录的 `build.sh`、`run.sh`、`deploy.sh`** —— 那些脚本的模型是「Web 产物 → `build/<域名>/` → Nginx」，与本项目无关。注意 `livewall/run.sh` 与根目录 `run.sh` **同名不同物**，前者只在 `livewall/` 目录内使用。
+- **本目录的 shell 脚本同样适用「变量后紧跟中文一律写 `${VAR}`」**（规则在「根目录脚本约定」里，但**适用于全仓库脚本**）。新写或改动脚本后跑一次技能 `shell-locale-safety` 的扫描器：`livewall/make-dmg.sh` 首次提交时就带了三处致命项（`$DMG_PATH（` 等），只有 `LC_ALL=C` 的沙箱掩盖了它。
 - **构建配置分界：`build.sh` 默认 release（发布版），`run.sh` 默认 debug（开发版，`--release` 可切到发布版）。** 开发者工具用 `#if DEBUG` 隔离，release 构建里不参与编译 —— 目前是菜单里的「打印窗口层级表」，连同 `WindowInspector.printTable` 和它专用的三个文本对齐转发函数。改默认配置或搬动这段代码前，先确认 release 二进制里搜不到该字符串。
 - 修改纯逻辑后优先运行 `cd livewall && ./test.sh`；修改窗口层级、播放或窗口生命周期逻辑后必须真机跑一次 App 验证（会短暂占用桌面）。
 - **窗口层级值只能由 `CGWindowLevelForKey` 派生**，禁止硬编码魔数；不同 macOS 版本的实际值不同。层级必须落在「系统壁纸之上、桌面图标之下」的开区间内。
@@ -176,7 +178,8 @@ macOS 视频动态壁纸工具。定位是个人自用 / 小范围共享，不�
 - **切换间隔的单位是秒，合法区间由 `SwitchInterval` 夹紧（10 秒 – 24 小时）**，写法是「夹到最近的合法值」而不是退回默认，非有限值才退回 `SchedulePolicy.defaultIntervalSeconds`。注意非正数间隔**不等于**「播完即切」——后者要显式开 `switchWhenFinished`。改完间隔要立即重排下一次切换（否则用户盯着看毫无变化，会以为没点上），但「正在等网络恢复」和「当前暂停」两种状态下不要插队。
 - **全局热键用 Carbon `RegisterEventHotKey`，不要换成 `NSEvent.addGlobalMonitorForEvents`** —— 后者需要「辅助功能」授权，会弹窗且要重启 App。代价是热键会**抢占**该组合，所以只挑不常用的 `⌥⌘` 组合，并且**注册失败必须显式提示**：重复注册同一组合返回 `eventHotKeyExistsErr`（-9878），据此区分「被占用」与「其它失败」。
 - **菜单项的快捷键提示写进标题，不要设 `keyEquivalent`**。设了会让菜单打开时全局热键与菜单项各触发一次，切换类操作执行两遍等于互相抵消。
-- **菜单状态区的「片名」与「附注」必须是两个字段，且附注要分信息 / 警告两级**。共用一个字段时失败信息会顶掉片名，用户看不到正在循环的是哪张，会误读成「壁纸掉了」；而附注既承载真异常（候选池耗尽、保持当前画面），也承载操作回执（窗口层级切换成功、开机自启已开启），**前缀 `⚠` 只能加在警告级上** —— 给回执加警告符号会让人以为操作失败。菜单是「状态 → 播放控制 → 设置 → 维护 → 退出」五段，插入新项时归到对应段，不要打散同类。
+- **菜单状态区的「片名」与「附注」必须是两个字段，且附注要分信息 / 警告两级**。共用一个字段时失败信息会顶掉片名，用户看不到正在循环的是哪张，会误读成「壁纸掉了」；而附注既承载真异常（候选池耗尽、保持当前画面），也承载操作回执（窗口层级切换成功、开机自启已开启），**前缀 `⚠` 只能加在警告级上** —— 给回执加警告符号会让人以为操作失败。菜单是「状态 → 播放控制 → 设置 → 维护 → 关于」五段，插入新项时归到对应段，不要打散同类（**没有「退出」段**：状态项常驻，退出走 `pkill -x LiveWall`）。**菜单父项的括号里只放「值」**：`多屏策略（全部同片）`、`开机自启（未开启）`、`切换间隔（5 分钟）`、`选片顺序（随机）`、`内容过滤（美女）`。**不要写「当前 xxx」**（括号里本来就是当前值，加这两个字纯冗余），**更不要套括号** —— 曾经出现过 `随机模式（当前 随机（每轮重新洗牌））` 这种三层嵌套，说明写进子菜单的选项标题里就够了。
+- **作者信息与赞助入口只在 `LiveWallCore/AboutMenu` 维护一份**（作者名、博客地址、赞助入口 URL、条目顺序与禁用行），`AppDelegate.buildAboutMenu()` 只负责把数据翻译成 `NSMenuItem` —— 与 `buildCategoryMenu` 同一分工，那样才测得到。**赞助指向 studio 首页**（`https://studio.meowv.com`），二维码在那边页脚的弹窗里；客户端不存二维码、也不做 App 内弹窗 —— 那会是本项目第一个普通 UI 窗口，还要在 `LSUIElement` 下自己处理激活（不激活窗口会开在别的 App 后面）、焦点与关闭行为。
 - **`SMAppService.mainApp.status` 在未注册时返回 `notFound` 而不是 `notRegistered`**。曾据此显示「不可用（需在 .app 内运行）」，而 App 不在 `/Applications` 下也能注册成功 —— 一个会让用户放弃使用的假故障。两个「没开启」状态要统一显示为「未开启」。
 - **「仅主屏」用 `NSScreen.screens.first`，不要用 `NSScreen.main`**。后者是「当前键盘焦点所在的屏幕」，会随用户拖窗口漂移，会导致窗口建到副屏上。
 - **等待窗口上屏要等到 bounds 稳定，不能只看「窗口号出现了」**。窗口上屏有一段对称缩放的进入动画，动画期间 WindowServer 报的 bounds 是内缩的（实测 1512×982 被报成 `9,6 1494x970` / `5,3 1502x976`，两次采样值不同），此时 `evaluate` 会得到「未覆盖整屏」并触发无意义的降级。比较时**不能用 `NSWindow.frame`** —— 它用「原点在主屏左下」的坐标系，副屏上会差一个主屏高度（实测同一窗口 `NSWindow.frame.y = -98` 而 `CGWindowBounds.y = 0`）。
@@ -190,6 +193,9 @@ macOS 视频动态壁纸工具。定位是个人自用 / 小范围共享，不�
 - **菜单的行内容（只显示名字、0 条置灰、单选勾选、根项标题）必须走 `LiveWallCore/CategoryMenu` 的纯函数**，不要在 `AppDelegate` 里另写一套 —— 那里没有测试，而这几条规则正是用户唯一看得见的正确性。**条目数只参与置灰，不显示**（星哥明确要求过）。
 - **容错解码的地方要跟着结构走**：`CatalogSource.categoryIds`（索引的 `source` 只有 deviceType/contentType）与 `WallpaperItem.categoryIds`（手写清单与测试构造的条目没有这个键）都用 `decodeIfPresent` 兜底。Swift 合成的 `Codable` 缺字段时抛 `keyNotFound` 而不是回退默认值 —— 漏一处就会让整份文件解不出来。
 - **每屏源的恢复只做一次，且必须过滤掉已不在当前分类切片里的条目**。`perScreenSources` 在**本次启动第一次成功加载清单**时恢复（`AppDelegate.pendingRestore`，由 `advance()` 取出即清空）：手动重载清单（`⌥⌘R`）时各屏已经记着当前条目，再恢复一次等于把同一段视频重新下一遍；而查不到的条目必须**退回正常取片**，不能让那块屏空着。恢复计划由 `ScreenSourceRestore.plan(store:candidateIDs:)` 这个纯函数算（可单测），`CandidatePool.restore(id:)` 负责机械动作 —— 它会同时把条目从待取队列里拿掉，否则同一轮里会再被取一次。
+- **状态项必须常驻，菜单里不再有「退出」项**。`statusItem.behavior = []`（去掉默认的 `.removalAllowed` 与 `.terminationOnRemoval`）：留着前者用户一 ⌘ 拖走图标就没了，留着后者更糟 —— 拖走会直接把 App 终止掉。因为没有退出项，`pkill -x LiveWall` 送的 SIGTERM 就是唯一出口，而 Cocoa 默认不处理它（进程直接死、`applicationWillTerminate` 不跑、系统墙纸恢复不了），所以 `AppDelegate` 用 `DispatchSource` 信号源接住 SIGTERM / SIGINT 并转调 `shutdown()`；系统终止与信号退出共用 `shutdown()`，不要在两个出口各写一份清理。**仍然不要拦系统终止**（`applicationShouldTerminate` 一律放行）—— 拦住会让关机 / 重启 / 注销卡住。
+- **进程自身占用（CPU / 内存）只在菜单展开时采一次，收起即取消，不得引入定时器或后台轮询**。触发点在 `NSMenuDelegate` 的三个回调：`menuNeedsUpdate`（最早，发起采样）、`menuWillOpen`（置 `isMenuOpen`，**只在前者没被回调时**才兜底发起一次）、`menuDidClose`（`ProcessMonitor.cancel()`）。**每次展开只采一次**（`sampledThisOpen` 锁住）—— 采两次会算出「CPU 134%（自启动 0 秒）」这种纯噪音：第一次的结果回主线程后把基线推进到「刚刚那一刻」，第二次就拿着 ≈0 的区间做除法。区间还必须有下限 `ProcessUsage.minimumWindowSeconds`（0.25 s）：低于它**不给占用率**（显示 `CPU —`）且**不推进基线**，否则下一次查看会退化成「距上一次几乎为 0」的一连串假数据；内存是瞬时量，这种情况照样给值。四点约束：① 采样跑在 utility 队列上，回主线程后**只改占用那一行的 title，不重建菜单**（重建会让正在展开的菜单闪一下并重置已展开的子菜单）；② 收起后回来的结果必须丢弃（用递增代号，光靠 `DispatchWorkItem.cancel()` 挡不住已经在跑的那一个）；③ CPU 是**区间量**，必须两次采样求差，所以行内**必须带区间标注**（`近 3 分钟` / `自启动 1 小时`），否则会被读成瞬时值；基线由启动时的**一次性** `prepareBaseline()` 提供，否则第一次查看永远没有起点；④ 采样失败与「算不出占用率」是两回事，都不能显示成 `0%`（那是假数据）：失败 → 整行 `暂不可用`（`sample` 必须回调 nil，静默返回会让行永远停在「测量中…」），算不出 → 只把 CPU 写成 `—`、内存照常显示。
+- **取 CPU 时间用 `proc_pid_rusage`，不要用 `task_info(MACH_TASK_BASIC_INFO)`**。后者在本机（macOS 27.0 / arm64）实测 `user_time` / `system_time` **恒为 0**，而同一结构体里的 `virtual_size` / `resident_size` 有值且返回 `KERN_SUCCESS` —— 直接用会得到一个永远 0% 的占用率，而「0%」看起来完全合理，极难发现。用 `proc_pid_rusage` 时还有两件事：它的 `ri_user_time` / `ri_system_time` 单位是 **mach 滴答**不是纳秒（本机 125/3 ≈ 41.67 ns/滴答，必须乘 `mach_timebase_info`；不换算会差 41 倍），以及第三个参数在 Swift 里要 rebind 成 `Optional<rusage_info_t>`，而 `RUSAGE_INFO_V2` 是宏、只能写常量 2。内存用 `ri_phys_footprint`（口径 = 活动监视器「内存」列）。
 - **`Preferences` 里凡是「用户配置项」的字段，改默认值不会迁移老配置**。`remoteCatalogURL` 就是实例：`config.json` 里显式写着地址时，`decodeIfPresent` 会把它读回来，改 `defaultRemoteCatalogURL` 等于没改。改这个默认值时要意识到：**只有配置里没有这个键的人才会用上新地址**。（曾经为此写过一段「按字面量比对旧地址并改写」的迁移，旧地址作废后已删除 —— 现在配置里写什么就用什么。）顺带：启动时 `sanitized() != loaded` 就落盘，写失败要显式告警而不是 `try?` 吞掉。
 
 ## 验证与交付

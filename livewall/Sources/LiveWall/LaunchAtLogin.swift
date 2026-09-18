@@ -11,7 +11,7 @@ import ServiceManagement
 ///  - 往 `~/Library/LaunchAgents` 写 plist 会绕过登录项的用户可见性 ——
 ///    用户无法在系统设置里关掉它，卸载后还可能残留。
 ///
-/// **实测（2026-09-18）**：App 放在 `~/Coding/.../build/LiveWall.app`（**不在
+/// **实测（2026-09-18）**：App 放在 `~/Coding/.../build/动态壁纸.app`（**不在
 /// `/Applications` 下**）也能注册成功，注册后状态变 `enabled`，注销后回到 `notFound`。
 ///
 /// 注意 `notFound` 这个名字有误导性：**未注册时返回的就是它**，而不是 `notRegistered`。

@@ -44,7 +44,7 @@ public enum CategoryMenu {
         categories: [LivewallCategoryEntry],
         selectedID: Int?
     ) -> String {
-        "内容过滤（当前：\(selectedName(categories: categories, selectedID: selectedID))）"
+        "内容过滤（\(selectedName(categories: categories, selectedID: selectedID))）"
     }
 
     /// 当前分类的显示名。`selectedID` 为 nil（清单里没有分类信息，例如内置兜底）

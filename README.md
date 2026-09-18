@@ -455,6 +455,7 @@ PYTHONPATH=src python3 -m wallpapers export-livewall
 ```bash
 cd livewall
 ./build.sh        # 编译并组装 .app
+./make-dmg.sh     # 打成可分发的 DMG（build/动态壁纸-<版本>.dmg）
 ./test.sh         # 运行单元测试
 ./run.sh          # 编译并启动正式 App（会接管桌面壁纸层）
 ```
@@ -466,6 +467,8 @@ macOS 没有「设置视频为壁纸」的官方 API。livewall 的做法是创�
 省电靠一套「信号 → 状态」状态机：遮挡 / 锁屏 / 息屏 / 热压力 / 空闲 / 低电量 / 电池，任一命中即暂停，全部解除才恢复；其中「画面被完全遮挡」用坐标压缩法算精确覆盖率，避免半屏窗口被误判成盖满。开关与空闲阈值可在菜单栏的「省电设置」里实时调整。
 
 三个全局热键（`⌥⌘P` 暂停 / `⌥⌘N` 下一张 / `⌥⌘R` 重载清单）用 Carbon `RegisterEventHotKey` 实现，**不需要辅助功能授权**；开机自启用 `SMAppService`；内容过滤按一级分类（单选，记忆上次选择）。多屏策略支持「全部同片」「仅主屏」「每屏独立」三档，每屏独立时各屏会在启动时恢复上次播放的条目。
+
+**锁屏预览**：锁屏界面由 `loginwindow` 在安全罩层级绘制，第三方窗口盖不上去，所以锁屏能看到的只有系统墙纸本身 —— 客户端把当前这张对应的静态图（清单里的 `coverUrl`）同步成系统墙纸：桌面态被覆盖窗口挡住看不见，锁屏态正好露出来。静态图拿不到就抓当前帧兜底，退出时恢复用户原来的墙纸。维护段另有「下载当前壁纸」（视频 + 静态预览图 → `~/Downloads/livewall/`）。详见 [`livewall/README.md`](./livewall/README.md) 的「锁屏预览」与「下载当前壁纸」两节。
 
 `Sources/LiveWallCore/` 是不依赖 `NSApplication` 的纯逻辑，可脱离 GUI 单测；`Sources/LiveWallDesktop/` 是依赖 AppKit 的桌面层窗口与层级探测。
 

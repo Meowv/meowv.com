@@ -34,6 +34,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let screenCoordinator: ScreenCoordinator
     private let engine = PlaybackEngine()
     private let network = NetworkMonitor()
+    /// 进程自身的 CPU / 内存采样。**只在菜单展开时采一次**，收起即取消（无定时器）。
+    private let processMonitor = ProcessMonitor()
     /// 锁屏预览：把当前壁纸的静态图同步成系统墙纸（桌面态被覆盖窗口挡住，只在锁屏可见）。
     private lazy var lockScreenPreviewer = LockScreenPreviewer(
         cacheDirectory: Self.applicationSupportDirectory
@@ -94,6 +96,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     ///
     /// 成功加载下一条时清空 —— 它的生命周期是「上一次异常或操作到现在」。
     private var notice: Notice?
+
+    /// 菜单是否处于展开状态。**采样只在这个窗口期有效** —— 收起之后才回来的
+    /// 结果一律丢弃，否则会去更新一个已经不存在的菜单。
+    private var isMenuOpen = false
+    /// 本次展开是否已经发起过采样。**每次展开只采一次**是硬要求 ——
+    /// 采两次的话，第一次的结果回到主线程后会把基线推进到「刚刚那一刻」，
+    /// 第二次就拿着一个≈0 的区间去除，实测算出「CPU 134%（自启动 0 秒）」这种纯噪音；
+    /// 而它还会因为代号更新把第一次的结果直接丢掉。
+    private var sampledThisOpen = false
+    /// 最近一次进程自身占用采样。菜单重建时用它填内容，避免每次都从占位文案开始闪。
+    private var usageReport: ProcessMonitor.Report?
+    /// 上一次采样是否失败。用来把状态区从「测量中…」切到「暂不可用」——
+    /// 一直停在「测量中」会让用户以为程序卡住了，而真相是取不到数据。
+    private var usageFailed = false
+    /// 退出清理只做一次（`applicationWillTerminate` 与信号源可能都触发）。
+    private var isShuttingDown = false
+    /// SIGTERM / SIGINT 的信号源。必须持有 —— 释放了就收不到信号。
+    private var signalSources: [DispatchSourceSignal] = []
+    /// 进程占用那一行的标记。`buildMenu` 重建菜单后靠它在 `menuNeedsUpdate` 里
+    /// 找到对应行 —— 用标记而不是持有 `NSMenuItem`，就不会出现「引用的是上一个菜单里的行」。
+    private static let usageRowID = "usage"
 
     /// 附注内容与级别。
     ///
@@ -158,7 +181,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             log("已清理废弃的清单缓存 \(legacy.lastPathComponent)")
         }
 
+        // 菜单里没有退出项（状态项常驻、不可移除），`pkill` 送的 SIGTERM 是唯一的退出方式 ——
+        // 不接住它，进程会直接死掉而 `applicationWillTerminate` 不跑，系统墙纸就恢复不了。
+        installSignalHandlers()
+
         buildStatusItem()
+
         registerNotifications()
 
         engine.onFailure = { [weak self] key, error in
@@ -245,19 +273,56 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
 
+            // 进程占用的**启动基线**放在启动流程的最后：一次性采样（不是定时器），
+            // 让第一次展开菜单就有可比较的起点。
+            //
+            // 刻意排在窗口与菜单都建好之后 —— 否则首屏那个「自启动 0 秒」会把建窗口 +
+            // 建菜单的一次性开销算进来。实测那样会显示「CPU 85%（自启动 0 秒）」，
+            // 看着像 App 吃满 CPU，其实只是启动那几百毫秒。
+            self.processMonitor.prepareBaseline()
             self.loadCatalogAndStart()
         }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        shutdown()
+    }
+
+    /// 退出清理。系统终止与信号退出走同一条路径 —— 两个出口各写一份早晚会漏。
+    private func shutdown() {
+        guard !isShuttingDown else { return }
+        isShuttingDown = true
+        processMonitor.cancel()
         scheduleTimer?.invalidate()
         network.stop()
         persistScreenSources()
         // 恢复用户原来的墙纸。不恢复的话，退出后桌面会直接露出一张「最后播放过的
-        // 静态图」，用户会以为自己的壁纸被改坏了。进程被强杀时恢复不了，
+        // 静态图」，用户会以为自己的壁纸被改坏了。进程被 SIGKILL 时恢复不了，
         // 原图路径已写在日志里。
         lockScreenPreviewer.restoreUserWallpaper()
         engine.teardown()
+    }
+
+    /// 接住 SIGTERM / SIGINT 并转成正常退出流程。
+    ///
+    /// 菜单里不再有「退出」项，命令行 `pkill -x LiveWall` 就成了唯一出口，而它送的是
+    /// SIGTERM —— Cocoa 默认不处理它，进程直接死掉，`applicationWillTerminate` 不跑。
+    /// 先用 `SIG_IGN` 撤掉默认动作，再让 GCD 的信号源在主线程触发 `shutdown()`。
+    ///
+    /// 刻意**不拦**系统终止（`applicationShouldTerminate` 一律放行）：
+    /// 拦住会让关机 / 重启 / 注销卡住，代价远大于保住一个常驻图标。
+    private func installSignalHandlers() {
+        for sig in [SIGTERM, SIGINT] {
+            signal(sig, SIG_IGN)
+            let source = DispatchSource.makeSignalSource(signal: sig, queue: .main)
+            source.setEventHandler { [weak self] in
+                self?.log("收到信号 \(sig)，开始退出清理")
+                self?.shutdown()
+                exit(0)
+            }
+            source.resume()
+            signalSources.append(source)
+        }
     }
 
     private var gravity: AVLayerVideoGravity {
@@ -896,6 +961,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func buildStatusItem() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        // 常驻：既不允许被 ⌘ 拖走，也不因移除而终止进程。
+        // 默认是 [.removalAllowed, .terminationOnRemoval]，两项都要去掉 ——
+        // 留着 `.terminationOnRemoval` 的话，用户一拖走 App 就跟着退出，
+        // 而拖走这个动作本身是很容易误触的。
+        item.behavior = []
         statusItem = item
         refreshStatusItem()
     }
@@ -919,7 +989,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let menu = NSMenu()
 
         // ── 状态区 ───────────────────────────────────────────
-        // 五段结构：状态 → 播放控制 → 设置 → 维护 → 退出。
+        // 五段结构：状态 → 播放控制 → 设置 → 维护 → 关于。
         // 菜单从光标位置向下展开，到达成本与行号正相关，所以高频动作贴顶、
         // 低频与破坏性操作置底；同一类别必须连续成块，否则会破坏位置记忆。
         let header = NSMenuItem(title: "动态壁纸", action: nil, keyEquivalent: "")
@@ -929,6 +999,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let current = NSMenuItem(title: currentName, action: nil, keyEquivalent: "")
         current.isEnabled = false
         menu.addItem(current)
+
+        // 进程自身占用。**常驻**（不是 debug 工具、也不是异常时才出现）—— 这是
+        // 「一个一直挂在后台的东西到底吃多少资源」的唯一可见处。
+        // 内容只在菜单展开时刷新（见 `NSMenuDelegate` 扩展），所以这两行在菜单收起
+        // 期间显示的是上一次的值；CPU 那行自带区间标注，不会被读成瞬时值。
+        menu.addItem(usageRow(id: Self.usageRowID, text: usageText))
 
         // 暂停原因由 governor 的状态直接推导，不另存一份 —— 存一份就要在每个
         // 恢复路径上记得清掉，漏一处就会残留一句「已手动暂停」。
@@ -1001,7 +1077,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(buildPowerMenu())
         // 锁屏预览紧跟省电设置：同属「画面行为」的开关，且都是开一次就不常动。
         let lockPreview = NSMenuItem(
-            title: "锁屏预览（当前 \(preferences.lockScreenPreview ? "开" : "关")）",
+            title: "锁屏预览（\(preferences.lockScreenPreview ? "开" : "关")）",
             action: #selector(toggleLockScreenPreview),
             keyEquivalent: ""
         )
@@ -1043,7 +1119,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             entry.state = preset.level == screenCoordinator.level ? .on : .off
             levelMenu.addItem(entry)
         }
-        let levelRoot = NSMenuItem(title: "窗口层级（当前 \(screenCoordinator.level)）", action: nil, keyEquivalent: "")
+        let levelRoot = NSMenuItem(title: "窗口层级（\(screenCoordinator.level)）", action: nil, keyEquivalent: "")
         levelRoot.submenu = levelMenu
         menu.addItem(levelRoot)
 
@@ -1090,14 +1166,149 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(dump)
 #endif
 
+        // ── 关于 ────────────────────────────────────────────
+        // 最低频的内容放最末段。
         menu.addItem(.separator())
+        menu.addItem(buildAboutMenu())
 
-        // ── 退出 ────────────────────────────────────────────
-        let quit = NSMenuItem(title: "退出", action: #selector(quit), keyEquivalent: "q")
-        quit.target = self
-        menu.addItem(quit)
-
+        // 没有「退出」段：状态项常驻，不给退出入口（理由见 `installSignalHandlers` 的注释）。
+        // 退出走 `pkill -x LiveWall` —— SIGTERM 由信号源接住转 `shutdown()`，
+        // 与系统终止共用同一条清理路径（含恢复用户原墙纸）。
+        //
+        // 菜单的采样刷新靠 delegate：`NSMenu.delegate` 是 weak，而 `AppDelegate`
+        // 由 `main.swift` 顶层的 `let` 持有到进程结束，所以这里可以直接用 self。
+        menu.delegate = self
         return menu
+    }
+
+    /// 「关于」子菜单：版本、作者、赞助入口。
+    ///
+    /// 内容（顺序、禁用行、链接）全在 `LiveWallCore/AboutMenu`，这里只负责把数据
+    /// 翻译成 `NSMenuItem` —— 与 `buildCategoryMenu` 同一分工，那样才测得到。
+    private func buildAboutMenu() -> NSMenuItem {
+        let submenu = NSMenu()
+        for entry in AboutMenu.entries(version: Self.appVersion) {
+            switch entry {
+            case .info(let title):
+                let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+                item.isEnabled = false
+                submenu.addItem(item)
+            case .link(let title, let action):
+                let item = NSMenuItem(
+                    title: title,
+                    action: Self.selector(for: action),
+                    keyEquivalent: ""
+                )
+                item.target = self
+                submenu.addItem(item)
+            case .separator:
+                submenu.addItem(.separator())
+            }
+        }
+        let root = NSMenuItem(title: "关于动态壁纸", action: nil, keyEquivalent: "")
+        root.submenu = submenu
+        return root
+    }
+
+    /// `AboutMenu.Action` → `Selector` 的映射。
+    ///
+    /// 放在 App 这一侧而不是 `LiveWallCore`：纯逻辑层不该知道 `Selector` 这种 AppKit 概念。
+    private static func selector(for action: AboutMenu.Action) -> Selector {
+        switch action {
+        case .openBlog: return #selector(openAuthorBlog)
+        case .showDonation: return #selector(openDonationPage)
+        }
+    }
+
+    /// App 版本。从 bundle 读，不在代码里维护第二份。
+    /// 不经 .app 直接跑 `.build/` 里的可执行文件时读不到，回退成「开发版」。
+    private static var appVersion: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "开发版"
+    }
+
+    @objc private func openAuthorBlog() {
+        guard let url = URL(string: AboutMenu.blogURLString) else { return }
+        log("打开作者博客：\(url.absoluteString)")
+        NSWorkspace.shared.open(url)
+    }
+
+    /// 赞助支持：打开 studio 首页。
+    ///
+    /// 不直接打开二维码图片、也不在 App 内做二维码弹窗：studio 页脚本来就有「赞助支持」
+    /// 入口（点开是二维码弹窗），送到那里就够了。客户端因此不必存二维码，也不必为了它
+    /// 写一个 UI 窗口 —— 那会是本项目第一个普通窗口，还要在 `LSUIElement` 下自己处理
+    /// 激活（不激活窗口会开在别的 App 后面）、焦点与关闭行为。
+    @objc private func openDonationPage() {
+        guard let url = URL(string: AboutMenu.donationURLString) else { return }
+        log("打开赞助支持页：\(url.absoluteString)")
+        NSWorkspace.shared.open(url)
+    }
+
+    /// 状态区里的一行占用数据。标记用于 `menuNeedsUpdate` 里定位它。
+    private func usageRow(id: String, text: String) -> NSMenuItem {
+        let item = NSMenuItem(title: text, action: nil, keyEquivalent: "")
+        item.isEnabled = false
+        item.representedObject = id
+        return item
+    }
+
+    /// 状态区那一行占用数据：**内存在前、CPU 在后**（两行并一行，省菜单高度）。
+    private var usageText: String {
+        guard let report = usageReport else {
+            // 四态的前两态：还没采到（测量中…）/ 采过但失败（暂不可用）。
+            // 两者都写成「测量中」会让失败被永远掩盖 —— 用户没有任何办法知道真相。
+            // 后两态（有报告但算不出占用率 / 有数据）走下面的 `combinedRow`。
+            let placeholder = usageFailed ? ProcessUsageText.unavailable : ProcessUsageText.measuring
+            return "内存 \(placeholder) · CPU \(placeholder)"
+        }
+        return ProcessUsageText.combinedRow(
+            percent: report.cpuPercent,
+            windowSeconds: report.windowSeconds,
+            sinceLaunch: report.sinceLaunch,
+            bytes: report.memoryBytes,
+            peakBytes: report.peakBytes
+        )
+    }
+
+    // MARK: - 菜单展开期的惰性采样
+
+    /// 发起一次采样。**每次展开只调一次**（由 `sampledThisOpen` 保证）——
+    /// 同一次展开采两次会把基线推到「刚刚那一刻」，第二次的区间≈0，算出纯噪音。
+    private func requestUsageSample() {
+        processMonitor.sample { [weak self] report in
+            guard let self else { return }
+            // `nil` = 采样失败（mach 调用没拿到数据）。失败也要让用户看见 ——
+            // 不处理的话状态区会一直停在「测量中…」，看起来像卡住了。
+            if let report {
+                self.applyUsageReport(report)
+            } else {
+                self.applyUsageFailure()
+            }
+        }
+    }
+
+    /// 采样失败：只改文案，不重建菜单（同 `updateUsageRows` 的理由）。
+    private func applyUsageFailure() {
+        usageFailed = true
+        guard isMenuOpen, let menu = statusItem?.menu else { return }
+        updateUsageRows(in: menu)
+    }
+
+    /// 采样回到主线程。菜单已经收起就直接丢弃 —— 那时行已经不在屏幕上，
+    /// 而 `statusItem.menu` 可能已经被 `refreshStatusItem` 换掉了。
+    private func applyUsageReport(_ report: ProcessMonitor.Report) {
+        usageReport = report
+        usageFailed = false
+        guard isMenuOpen, let menu = statusItem?.menu else { return }
+        updateUsageRows(in: menu)
+    }
+
+    /// 只改这一行的 title，**不重建菜单** —— 重建会让正在展开的菜单闪一下、
+    /// 并把已经展开的子菜单与高亮项重置掉。
+    private func updateUsageRows(in menu: NSMenu) {
+        for item in menu.items where (item.representedObject as? String) == Self.usageRowID {
+            item.title = usageText
+        }
     }
 
     /// 全局热键触发。按 id 分派 —— 走的是和菜单完全相同的入口，不另开一条路径。
@@ -1114,7 +1325,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// 随机模式子菜单：选「随机」还是「顺序」。
+    /// 选片顺序子菜单：选「随机」还是「顺序」。
     ///
     /// 两种模式都会走完一整轮才重排、一轮内不重复，所以这里选的不是「有没有随机」，
     /// 而是「这一轮的排列怎么来」。改成子菜单而不是勾选项：勾选项的「未勾」状态
@@ -1133,7 +1344,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             submenu.addItem(entry)
         }
         let root = NSMenuItem(
-            title: "随机模式（当前 \(preferences.playbackOrder.label)）",
+            title: "选片顺序（\(preferences.playbackOrder.label)）",
             action: nil,
             keyEquivalent: ""
         )
@@ -1530,10 +1741,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 #endif
 
-    @objc private func quit() {
-        NSApp.terminate(nil)
-    }
-
     // MARK: - 日志
 
     /// 日志轮转阈值。要调整改这里，单位见各字段注释。
@@ -1638,5 +1845,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let formatter = DateFormatter()
         formatter.dateFormat = "MM-dd HH:mm:ss.SSS"
         return formatter.string(from: Date())
+    }
+}
+
+// MARK: - 菜单展开期的惰性采样
+
+/// 进程自身的占用**只在菜单展开时采一次**，收起即停 —— 没有后台轮询、没有常驻定时器。
+///
+/// 三个回调的分工：
+///  - `menuNeedsUpdate`：菜单显示前，AppKit 来要内容 —— 这是**最早**的时机，在这里
+///    发起采样，结果最可能在菜单出现前就填好；
+///  - `menuWillOpen`：确认展开，置 `isMenuOpen`。只在 `menuNeedsUpdate` 没被回调时
+///    才兜底发起一次（正常路径上 `menuNeedsUpdate` 一定先于本回调触发）；
+///  - `menuDidClose`：收起 —— 立刻取消未完成的采样并释放它。
+extension AppDelegate: NSMenuDelegate {
+
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        guard menu === statusItem?.menu else { return }
+        sampledThisOpen = true
+        requestUsageSample()
+    }
+
+    func menuWillOpen(_ menu: NSMenu) {
+        guard menu === statusItem?.menu else { return }
+        isMenuOpen = true
+        // 只在 `menuNeedsUpdate` 没被回调时兜底 —— 正常路径上它一定会先于本回调触发。
+        if !sampledThisOpen { requestUsageSample() }
+    }
+
+    func menuDidClose(_ menu: NSMenu) {
+        guard menu === statusItem?.menu else { return }
+        isMenuOpen = false
+        sampledThisOpen = false
+        // 采样到此为止：`ProcessMonitor` 会取消后台队列上未执行的任务，
+        // 已经跑完的也会因为代号不匹配被丢弃。
+        processMonitor.cancel()
     }
 }

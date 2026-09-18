@@ -164,12 +164,12 @@ func categoryTests() {
         test("根项标题显示当前分类") {
             expectEqual(
                 CategoryMenu.rootTitle(categories: categories, selectedID: 4001),
-                "内容过滤（当前：美女）",
+                "内容过滤（美女）",
                 "正常情况"
             )
             expectEqual(
                 CategoryMenu.rootTitle(categories: [], selectedID: nil),
-                "内容过滤（当前：不限）",
+                "内容过滤（不限）",
                 "没有分类信息时显示不限"
             )
         }
@@ -177,7 +177,7 @@ func categoryTests() {
         test("选中的分类已不在清单里时显示 id，不显示空白") {
             expectEqual(
                 CategoryMenu.rootTitle(categories: categories, selectedID: 7777),
-                "内容过滤（当前：id 7777）",
+                "内容过滤（id 7777）",
                 "应让人看出选的是一个已不存在的东西"
             )
         }

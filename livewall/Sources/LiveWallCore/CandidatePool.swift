@@ -13,7 +13,7 @@ public enum PlaybackOrder: String, Codable, Sendable, CaseIterable {
     /// 按清单原序循环。清单本身由 `wallpapers export-livewall` 决定，顺序稳定。
     case sequential
 
-    /// 短名，用于菜单父项标题（「随机模式（当前 随机）」）。
+    /// 短名，用于菜单父项标题（「选片顺序（随机）」）。
     public var label: String {
         switch self {
         case .shuffle: return "随机"
