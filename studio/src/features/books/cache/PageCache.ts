@@ -34,6 +34,12 @@ export function createPageCacheKey(
   return `${appearanceRevision}:${pageNumber}:${Math.round(targetWidth)}:${quality}`;
 }
 
+/** 从缓存键里取回外观版本；键格式由 createPageCacheKey 定义。 */
+export function appearanceRevisionFromKey(key: string): number {
+  const revision = Number.parseInt(key, 10);
+  return Number.isFinite(revision) ? revision : 0;
+}
+
 export class PageCache {
   readonly #entries = new Map<string, CacheEntry>();
   readonly maxBytes: number;
@@ -83,11 +89,20 @@ export class PageCache {
   getBest(
     pageNumber: number,
     qualityOrder: readonly RenderedPage['quality'][] = ['reading', 'preview'],
+    appearanceRevision?: number,
   ): RenderedPage | undefined {
     for (const quality of qualityOrder) {
       let bestKey: string | null = null;
       let bestWidth = -1;
       for (const [key, entry] of this.#entries) {
+        // 外观（主题）变化后旧位图的配色已经失效，必须按版本过滤，
+        // 否则换主题会命中上一版像素、看起来像没生效。
+        if (
+          appearanceRevision !== undefined &&
+          appearanceRevisionFromKey(key) !== appearanceRevision
+        ) {
+          continue;
+        }
         if (
           entry.page.pageNumber === pageNumber &&
           entry.page.quality === quality &&

@@ -25,11 +25,13 @@ import {
   saveReadingProgress,
   type ReadingProgressV2,
 } from './persistence/ReadingProgress';
+import { createProgressSaveCoalescer } from './persistence/progress-save-coalescer';
 import {
   DEFAULT_READER_LAYOUT,
   normalizeReaderLayout,
   readerLayoutKey,
 } from './publication/defaults';
+import { themeColors } from './reader-theme';
 import { BOOK_FILE_ACCEPT, PublicationLoader } from './publication/PublicationLoader';
 import type {
   BookLocator,
@@ -233,7 +235,8 @@ function scheduleUiHide(): void {
 
 function revealUi(): void {
   if (uiHidden.value) uiHidden.value = false;
-  if (pointerOverControls()) return;
+  // 热路径（pointermove / pointerdown）不做 DOM 查询；悬停判定交给 scheduleUiHide 的
+  // check —— 那里本就是每 2.6s 才跑一次，且已带 !pointerOverControls() 守卫。
   scheduleUiHide();
 }
 
@@ -332,6 +335,12 @@ async function saveCurrentProgress(): Promise<void> {
   }
 }
 
+/**
+ * 落页时的进度写入会被合并到一次防抖写入，离开阅读器时再 flush 补齐。
+ * 写入本身仍由 saveCurrentProgress 串行执行，不会并行打开多个 IndexedDB 事务。
+ */
+const progressSave = createProgressSaveCoalescer(() => saveCurrentProgress());
+
 async function disposeReader(): Promise<void> {
   pendingTurn = null;
   heldTurnDirections.clear();
@@ -365,6 +374,7 @@ function resetReaderView(): void {
   canGoBack.value = false;
   showReaderTip.value = false;
   pagePreparing.value = false;
+  pendingThumbnail = null;
   pendingTurn = null;
   readerPanel.value = null;
   uiHidden.value = false;
@@ -372,7 +382,7 @@ function resetReaderView(): void {
 
 async function returnToShelf(message = ''): Promise<void> {
   const currentOperation = ++operationId;
-  await saveCurrentProgress();
+  await progressSave.flush();
   if (engine?.snapshot.state === 'OPEN') await engine.close().catch(() => undefined);
   await disposeReader();
   if (currentOperation !== operationId) return;
@@ -463,6 +473,73 @@ async function createCoverThumbnail(
   }
 }
 
+const THUMBNAIL_IDLE_TIMEOUT_MS = 4000;
+
+interface ThumbnailContext {
+  publication: Publication;
+  provider: PageProvider;
+  signal: AbortSignal;
+  operation: number;
+}
+
+/** 被推迟的缩略图请求；就绪后由 watch(pagePreparing) 补触发。 */
+let pendingThumbnail: ThumbnailContext | null = null;
+
+async function runCoverThumbnail(context: ThumbnailContext): Promise<void> {
+  const cover = await createCoverThumbnail(context.publication, context.provider, context.signal);
+  if (!cover || context.operation !== operationId || !currentEntry) return;
+  currentEntry = {
+    ...currentEntry,
+    coverThumbnail: cover,
+    coverThumbnailPlaceholder: undefined,
+  };
+  await bookshelf.upsert(currentEntry);
+}
+
+/**
+ * 生成封面缩略图需要页面提供器渲染第 1 页，而 HTML 提供器只有一条串行渲染链，
+ * 立刻发起会挡在首次翻页前面。因此放到浏览器空闲时再做。
+ *
+ * 若此刻还在准备书页，不能按固定次数重试 —— 大书的首次渲染可能远超重试窗口，
+ * 那样缩略图会被永久放弃，书架卡片一直停在占位图。改为登记待办，
+ * 等准备结束后补触发一次（见下方 watch）。
+ */
+function scheduleCoverThumbnail(
+  activePublication: Publication,
+  provider: PageProvider,
+  signal: AbortSignal,
+  operation: number,
+): void {
+  const context: ThumbnailContext = {
+    publication: activePublication,
+    provider,
+    signal,
+    operation,
+  };
+  const run = (): void => {
+    if (operation !== operationId || signal.aborted) return;
+    if (!readerReady.value || pagePreparing.value) {
+      pendingThumbnail = context;
+      return;
+    }
+    void runCoverThumbnail(context).catch(() => undefined);
+  };
+  if ('requestIdleCallback' in globalThis) {
+    globalThis.requestIdleCallback(run, { timeout: THUMBNAIL_IDLE_TIMEOUT_MS });
+  } else {
+    globalThis.setTimeout(run, 1500);
+  }
+}
+
+// 阅读器就绪且不再准备书页时，补上被推迟的缩略图。
+watch([pagePreparing, readerReady], () => {
+  const context = pendingThumbnail;
+  if (!context || pagePreparing.value || !readerReady.value) return;
+  pendingThumbnail = null;
+  if (context.operation !== operationId || context.signal.aborted) return;
+  void runCoverThumbnail(context).catch(() => undefined);
+});
+
 async function openFile(
   file: File,
   handle?: FileSystemFileHandle,
@@ -472,7 +549,7 @@ async function openFile(
   pendingTurn = null;
   restoreId += 1;
   const currentOperation = ++operationId;
-  await saveCurrentProgress();
+  await progressSave.flush();
   if (engine?.snapshot.state === 'OPEN') await engine.close().catch(() => undefined);
   await disposeReader();
   if (currentOperation !== operationId) return;
@@ -523,7 +600,7 @@ async function openFile(
     if (currentOperation !== operationId) return;
     syncEngineSnapshot();
     if (snapshot.state === 'OPEN' && previousSnapshot.state === 'TURNING') {
-      void saveCurrentProgress();
+      progressSave.schedule();
     }
     if (
       snapshot.state === 'OPEN' &&
@@ -560,7 +637,9 @@ async function openFile(
     const openedPublication = orphanPublication;
     const provider = await openedPublication.paginate(readerProfile.value, {
       signal: controller.signal,
-      paginationKey: `${fingerprint}:books-renderer-v3:${
+      // v4：v3 的分页索引是在「未归一化」布局下算出的，页数被低估（三体 1096 vs 真值 1293）。
+      // 换 key 让存量错误索引自动失效，无需清理数据。
+      paginationKey: `${fingerprint}:books-renderer-v4:${
         openedPublication.layout === 'fixed' ? 'fixed' : readerLayoutKey(readerProfile.value)
       }`,
       onProgress: (progress) => {
@@ -624,6 +703,12 @@ async function openFile(
     await bookshelf.upsert(currentEntry);
     clearReturnedToShelf();
 
+    // 占位空白页要与阅读主题一致。载入时的封面采样对深色主题无效（亮度下限会拒绝），
+    // 所以这里先按主题设定，采样只当浅色主题下的精修。固定版式没有 setAppearance，
+    // 页色不受阅读主题影响，保持采样值。
+    if (provider.setAppearance) {
+      instance.setBlankPageColor(themeColors(readerProfile.value.theme).background);
+    }
     await instance.load(provider, {
       initialPage,
       initialSpreadIndex: initialSpread,
@@ -636,21 +721,11 @@ async function openFile(
     showReaderTipOnce();
     scheduleUiHide();
     if (!currentEntry.coverThumbnail || currentEntry.coverThumbnailPlaceholder) {
-      void createCoverThumbnail(openedPublication, provider, controller.signal)
-        .then(async (cover) => {
-          if (!cover || currentOperation !== operationId || !currentEntry) return;
-          currentEntry = {
-            ...currentEntry,
-            coverThumbnail: cover,
-            coverThumbnailPlaceholder: undefined,
-          };
-          await bookshelf.upsert(currentEntry);
-        })
-        .catch(() => undefined);
+      scheduleCoverThumbnail(openedPublication, provider, controller.signal, currentOperation);
     }
     if (options.autoOpen) {
       await instance.open();
-      await saveCurrentProgress();
+      await progressSave.flush();
     }
   } catch (reason) {
     await orphanPublication?.dispose().catch(() => undefined);
@@ -862,7 +937,7 @@ async function closeBook(): Promise<void> {
   revealUi();
   try {
     await activeEngine.close();
-    await saveCurrentProgress();
+    await progressSave.flush();
   } catch (reason) {
     if (
       !(reason instanceof DOMException && reason.name === 'AbortError') &&
@@ -897,7 +972,7 @@ async function navigateTo(locator: BookLocator): Promise<void> {
     if (engine.snapshot.state === 'OPEN') await engine.close();
     await engine.goToPage(pageProvider.pageForLocator(locator));
     await engine.open();
-    await saveCurrentProgress();
+    await progressSave.flush();
   } catch (reason) {
     await returnToShelf(bookErrorMessage(reason));
   }
@@ -919,6 +994,7 @@ async function applyReaderProfile(profile: ReaderLayoutProfile): Promise<void> {
     readerProfile.value = normalizeReaderLayout(profile);
     persistReaderLayout(readerProfile.value);
     await pageProvider.setAppearance?.(readerProfile.value.theme);
+    engine.setBlankPageColor(themeColors(readerProfile.value.theme).background);
     await engine.refreshPages();
     readerPanel.value = null;
     return;
@@ -985,9 +1061,12 @@ function clearHeldTurnDirections(): void {
 }
 
 function onKeydown(event: KeyboardEvent): void {
-  const target = event.target as HTMLElement | null;
+  // 监听挂在 globalThis 上，派发到 window 时 event.target 就是 window（非元素），
+  // 直接调 matches() 会抛 TypeError。键盘输入的真实路径下 target 恒为元素，这里只是兜底。
+  const target = event.target;
   if (
-    target?.matches('input, textarea, select, button, [contenteditable="true"]') ||
+    (target instanceof HTMLElement &&
+      target.matches('input, textarea, select, button, [contenteditable="true"]')) ||
     !readerReady.value
   )
     return;
@@ -1084,7 +1163,7 @@ onBeforeUnmount(() => {
   cancelBuiltinProbe();
   loadController?.abort();
   if (document.fullscreenElement === root.value) void document.exitFullscreen();
-  void saveCurrentProgress().finally(() => disposeReader());
+  void progressSave.flush().finally(() => disposeReader());
 });
 </script>
 

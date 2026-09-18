@@ -77,7 +77,7 @@ export interface PageRenderOptions {
   /** Canvas 的目标像素宽度，而不是 CSS 宽度。 */
   targetWidth: number;
   quality: PageRenderQuality;
-  /** 数值越小越优先；后台预热使用较低优先级。 */
+  /** 数值越小越优先；后台预热等可让位的工作使用较大的数值。 */
   priority?: number;
   signal?: AbortSignal;
 }
@@ -88,12 +88,20 @@ export interface RenderedPage extends PageSize {
   targetWidth: number;
   quality: PageRenderQuality;
   byteSize: number;
+  /**
+   * 素材尚未完备的临时位图（例如插图还没解码完就截的图）。
+   * 消费方可以照常展示，但**不要**写进长期缓存，等素材齐了再按同一页重新渲染。
+   */
+  provisional?: boolean;
   dispose(): void;
 }
 
 export interface PageProvider {
   readonly pageCount: number;
-  /** 页面提供器可安全并行执行的渲染数量；DOM 截图类实现必须保持串行。 */
+  /**
+   * 页面提供器可安全并行执行的渲染数量。
+   * DOM 截图类实现必须在同一 viewport 内串行；可用多个 viewport 并行，但须保证同页素材一致。
+   */
   readonly renderConcurrency?: number;
   getPageSize(pageNumber: number): Promise<PageSize>;
   renderPage(pageNumber: number, options: PageRenderOptions): Promise<RenderedPage>;

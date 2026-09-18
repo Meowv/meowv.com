@@ -18,6 +18,8 @@ import {
   WebGLRenderer,
 } from 'three';
 import { PageCache, createPageCacheKey } from '../cache/PageCache';
+import { DEFAULT_READER_LAYOUT } from '../publication/defaults';
+import { themeColors } from '../reader-theme';
 import type {
   BookSnapshot,
   BookStateListener,
@@ -29,6 +31,18 @@ import type {
 } from '../types/reader';
 import { resolveBookConfig, type BookConfig } from './BookConfig';
 import { BookStateMachine } from './BookStateMachine';
+import {
+  MAX_DRAG_VELOCITY,
+  decayDragVelocity,
+  sampleDragVelocity,
+  type DragVelocityState,
+} from './drag-velocity';
+import {
+  PAGE_RENDER_PRIORITY,
+  insertRenderJob,
+  isDroppablePriority,
+  shouldRefreshShadow,
+} from './render-priority';
 import { BookModel } from './book/BookModel';
 import {
   getAdjacentSpreadIndex,
@@ -73,21 +87,37 @@ export interface BookEngineDiagnostics {
   queuedPageRenders: number;
   animating: boolean;
   lastInteractionLatencyMs: number | null;
+  /** 相邻两次绘制的间隔（指数移动平均，毫秒）；空闲超过 250ms 的间隔不计入。 */
+  frameTimeMs: number;
+  /** 自上次动画开始以来最长的绘制间隔（毫秒）。 */
+  maxFrameMs: number;
+  /** 自上次动画开始以来间隔超过 24ms 的帧数。 */
+  longFrames: number;
+  /** 实际触发阴影贴图重绘的次数。 */
+  shadowUpdates: number;
+  /** 页面请求被缓存直接满足的次数。 */
+  pageCacheHits: number;
+  /** 真正发起页面渲染的次数。 */
+  pageRenderStarts: number;
+  /** 复用进行中渲染（同缓存键）的次数。 */
+  pendingPageJoins: number;
 }
 
-interface DragSession {
+const LONG_FRAME_MS = 24;
+const FRAME_IDLE_GAP_MS = 250;
+const FRAME_TIME_SMOOTHING = 0.2;
+
+interface DragSession extends DragVelocityState {
   pointerId: number;
   direction: TurnDirection;
   start: Vector3;
-  previousProgress: number;
   progress: number;
-  velocity: number;
-  velocitySamples: Array<{ progress: number; time: number }>;
-  lastMotionTime: number;
   pointerV: number;
   verticalDrag: number;
   prepared: Promise<void>;
   ready: boolean;
+  /** `ready` 首次置位的时刻；用于把页面准备耗时排除在「点击窗口」之外。 */
+  readyAt: number | null;
   boundaryClose: boolean;
   focusOnly: boolean;
   targetPage: number | null;
@@ -104,6 +134,8 @@ interface AnimationHandle {
 
 interface PageRenderJob {
   priority: number;
+  /** 交互让位时可以从队列里摘掉；由 priority 档位推导。 */
+  background: boolean;
   signal?: AbortSignal;
   run(): Promise<RenderedPage>;
   resolve(page: RenderedPage): void;
@@ -123,11 +155,6 @@ interface PinchSession {
 
 const clamp = (value: number, minimum: number, maximum: number): number =>
   Math.min(maximum, Math.max(minimum, value));
-
-const DRAG_VELOCITY_WINDOW_MS = 90;
-const DRAG_VELOCITY_DECAY_MS = 110;
-const DRAG_MOTION_EPSILON = 0.0005;
-const MAX_DRAG_VELOCITY = 4;
 
 const idle = (callback: () => void): number =>
   'requestIdleCallback' in globalThis
@@ -195,6 +222,7 @@ export class BookEngine {
   #focusX = 0;
   #focusY = 0;
   #renderFrame = 0;
+  #dragFrame = 0;
   #animation: AnimationHandle | null = null;
   #idleHandle = 0;
   #prefetchIdleHandle = 0;
@@ -206,9 +234,13 @@ export class BookEngine {
   #loadController: AbortController | null = null;
   #readingUpgradeController: AbortController | null = null;
   #prefetchController: AbortController | null = null;
+  // 后台工作持有两个信号：渲染信号在硬停时才中止，调度信号在交互让位时就会中止。
+  // 分开之后「让位」只停止补队，不会打断已经在渲染的那一页（其 promise 仍可被复用）。
+  #readingUpgradeScheduleController: AbortController | null = null;
+  #prefetchScheduleController: AbortController | null = null;
   #blankPageSource: RenderedPage | null = null;
   #backCoverPageSource: RenderedPage | null = null;
-  #blankPageColor = '#fffdf8';
+  #blankPageColor = themeColors(DEFAULT_READER_LAYOUT.theme).background;
   #publicationCoverCanvas: HTMLCanvasElement | null = null;
   #disposed = false;
   #generation = 0;
@@ -218,8 +250,18 @@ export class BookEngine {
   #cornerPreviewKey: string | null = null;
   #cornerPreviewV = 0.82;
   #preparedTurnSpread: PreparedTurnSpread | null = null;
+  #turnPreviewActive = false;
   #interactionStartedAt = 0;
   #lastInteractionLatencyMs: number | null = null;
+  #frameTimeMs = 0;
+  #maxFrameMs = 0;
+  #longFrames = 0;
+  #lastFrameAt = 0;
+  #shadowUpdates = 0;
+  #lastShadowProgress = -1;
+  #pageCacheHits = 0;
+  #pageRenderStarts = 0;
+  #pendingPageJoins = 0;
 
   constructor(host: HTMLElement, options: BookEngineOptions = {}) {
     this.#host = host;
@@ -306,7 +348,26 @@ export class BookEngine {
       queuedPageRenders: this.#renderQueue.length,
       animating: this.#animation !== null,
       lastInteractionLatencyMs: this.#lastInteractionLatencyMs,
+      frameTimeMs: this.#frameTimeMs,
+      maxFrameMs: this.#maxFrameMs,
+      longFrames: this.#longFrames,
+      shadowUpdates: this.#shadowUpdates,
+      pageCacheHits: this.#pageCacheHits,
+      pageRenderStarts: this.#pageRenderStarts,
+      pendingPageJoins: this.#pendingPageJoins,
     };
+  }
+
+  /** 归零累计型诊断计数，便于在一次操作前后对比。 */
+  resetDiagnostics(): void {
+    this.#frameTimeMs = 0;
+    this.#maxFrameMs = 0;
+    this.#longFrames = 0;
+    this.#lastFrameAt = 0;
+    this.#shadowUpdates = 0;
+    this.#pageCacheHits = 0;
+    this.#pageRenderStarts = 0;
+    this.#pendingPageJoins = 0;
   }
 
   subscribe(listener: BookStateListener): () => void {
@@ -349,7 +410,7 @@ export class BookEngine {
 
       const fallbackCover = options.publicationCoverCanvas
         ? null
-        : await this.#getPage(1, 'preview', controller.signal);
+        : await this.#getPage(1, 'preview', controller.signal, PAGE_RENDER_PRIORITY.VISIBLE);
       this.#assertGeneration(generation);
       const coverCanvas = options.publicationCoverCanvas ?? fallbackCover?.canvas;
       if (!coverCanvas) throw new Error('无法生成书籍封面。');
@@ -517,7 +578,7 @@ export class BookEngine {
       }
       return;
     }
-    this.#pauseBackgroundWork();
+    this.#yieldBackgroundToInteraction();
     this.#stateMachine.transition('TURNING', { turnDirection: direction });
     try {
       await this.#prepareTurnWithFeedback(direction);
@@ -602,7 +663,7 @@ export class BookEngine {
     if (this.#disposed || this.#renderFrame) return;
     this.#renderFrame = requestAnimationFrame(() => {
       this.#renderFrame = 0;
-      this.#renderer.render(this.#scene, this.#camera);
+      this.#drawScene();
     });
   }
 
@@ -616,10 +677,16 @@ export class BookEngine {
     this.#readingUpgradeController = null;
     this.#prefetchController?.abort();
     this.#prefetchController = null;
+    this.#readingUpgradeScheduleController?.abort();
+    this.#readingUpgradeScheduleController = null;
+    this.#prefetchScheduleController?.abort();
+    this.#prefetchScheduleController = null;
     this.#drag = null;
+    this.#cancelDragVisual();
     this.#pinch = null;
     this.#activePointers.clear();
     this.#preparedTurnSpread = null;
+    this.#turnPreviewActive = false;
     if (this.#renderFrame) cancelAnimationFrame(this.#renderFrame);
     this.#renderFrame = 0;
     this.#cancelAnimation(new DOMException('仿真书已关闭。', 'AbortError'));
@@ -742,6 +809,23 @@ export class BookEngine {
     this.invalidate();
   }
 
+  /**
+   * 更新占位空白页的纸色（跨页缺页与封面内侧使用）。
+   *
+   * 载入时这个颜色由封面采样得到，但 `sampleCanvasBackground` 的亮度下限会拒绝深色，
+   * 所以暗色阅读主题永远采不到正确值、只能落到纸白默认色。宿主应在载入前与阅读主题
+   * 变更时显式调用本方法（`reader-theme.ts` 是纸色的唯一来源）。
+   *
+   * 缓存的占位页会作废，下一次取用时按新颜色重建；正在展示的占位页要等宿主随后的
+   * 重新排版（`refreshPages()`）才会换上新画布。
+   */
+  setBlankPageColor(color: string): void {
+    if (this.#blankPageColor === color) return;
+    this.#blankPageColor = color;
+    this.#blankPageSource?.dispose();
+    this.#blankPageSource = null;
+  }
+
   async refreshPages(): Promise<void> {
     if (!this.#provider || !this.#book || this.#disposed) return;
     this.#pauseBackgroundWork();
@@ -774,8 +858,12 @@ export class BookEngine {
   ): Promise<void> {
     const spread = getSpread(spreadIndex, this.pageCount);
     const [left, right] = await Promise.all([
-      spread.leftPage ? this.#getPage(spread.leftPage, quality, signal) : this.#blankPage(),
-      spread.rightPage ? this.#getPage(spread.rightPage, quality, signal) : this.#blankPage(),
+      spread.leftPage
+        ? this.#getPage(spread.leftPage, quality, signal, PAGE_RENDER_PRIORITY.VISIBLE)
+        : this.#blankPage(),
+      spread.rightPage
+        ? this.#getPage(spread.rightPage, quality, signal, PAGE_RENDER_PRIORITY.VISIBLE)
+        : this.#blankPage(),
     ]);
     this.#book?.setStaticPages(left.canvas, right.canvas);
     this.#touchStaticPages();
@@ -795,16 +883,45 @@ export class BookEngine {
 
   async #prepareTurnWithFeedback(direction: TurnDirection): Promise<void> {
     this.#hidePreparationNotice();
+    // 提示只在准备确实偏慢时出现；正常翻页（含预热命中）应完全看不到它。
     this.#preparationNoticeTimer = globalThis.setTimeout(() => {
       this.#preparationNoticeTimer = null;
       this.#preparationNoticeVisible = true;
       this.#options.onPagePreparationChange?.(true);
-    }, 120);
+    }, 250);
     try {
       await this.#prepareTurn(direction);
     } finally {
       this.#hidePreparationNotice();
     }
+  }
+
+  /**
+   * 拖拽起手时用现有素材同步摆出纸面姿态：就位时可见的那一面总是当前正在展示的静态页
+   * （前翻取右页、后翻取左页），背面优先取缓存、未命中时退回空白纸。
+   * 这样纸张在第一帧就跟随指针，不必等 #prepareTurn 渲染完新页面位图。
+   * 返回是否成功建立预览；失败时调用方回退到「准备完成才跟手」的原行为。
+   */
+  #beginTurnPreview(direction: TurnDirection, pointerV: number): boolean {
+    const book = this.#book;
+    if (!book) return false;
+    const targetIndex = getAdjacentSpreadIndex(this.#spreadIndex, this.pageCount, direction);
+    if (targetIndex === null) return false;
+    const staticPages = book.staticPageCanvases;
+    const visibleCanvas = direction === 'forward' ? staticPages.right : staticPages.left;
+    if (!visibleCanvas) return false;
+    const target = getSpread(targetIndex, this.pageCount);
+    const backPageNumber = direction === 'forward' ? target.leftPage : target.rightPage;
+    const backCanvas =
+      (backPageNumber ? this.#getCachedPage(backPageNumber)?.canvas : null) ??
+      this.#blankPage().canvas;
+    // 不调用 setTurnPreparationPage：抬高静态页会让它盖住已经可见的翻页纸面。
+    book.turningSheet.setEdgeKind('paper');
+    if (direction === 'forward') book.turningSheet.setPages(visibleCanvas, backCanvas);
+    else book.turningSheet.setPages(backCanvas, visibleCanvas);
+    this.#turnPreviewActive = true;
+    this.#updateTurn(0, direction, pointerV, 0);
+    return true;
   }
 
   async #prepareTurn(direction: TurnDirection): Promise<void> {
@@ -819,7 +936,10 @@ export class BookEngine {
     const backPage = direction === 'forward' ? target.leftPage : current.leftPage;
     const underLeftPage = direction === 'forward' ? current.leftPage : target.leftPage;
     const underRightPage = direction === 'forward' ? target.rightPage : current.rightPage;
-    book.setTurnPreparationPage(direction === 'forward' ? 'right' : 'left');
+    // 拖拽预览已经让纸面可见时不能再抬高静态页，否则静态页会盖住正在跟随指针的纸张。
+    const previewing = this.#turnPreviewActive;
+    this.#turnPreviewActive = false;
+    if (!previewing) book.setTurnPreparationPage(direction === 'forward' ? 'right' : 'left');
     this.#markAnimatedShadow();
     this.invalidate();
     try {
@@ -849,8 +969,16 @@ export class BookEngine {
         left: direction === 'forward' ? back : underLeft,
         right: direction === 'forward' ? underRight : front,
       };
+      // 动画期间这 4 页都在用，触到队尾避免被后续渲染挤出缓存后纸面变白。
+      this.#touchPageEntries([frontPage, backPage, underLeftPage, underRightPage]);
       book.pruneSurfaces();
-      book.turningSheet.update(0, direction);
+      // 素材到位时用户可能已经拖开一段距离，必须沿用当前进度，否则纸张会弹回起点。
+      const drag = this.#drag;
+      if (drag?.ready) {
+        this.#updateTurn(drag.progress, direction, drag.pointerV, drag.verticalDrag, false);
+      } else {
+        book.turningSheet.update(0, direction);
+      }
       // 纸面就绪姿态关闭纸边与投影，需要重绘阴影贴图。
       this.#markAnimatedShadow();
       this.invalidate();
@@ -893,7 +1021,7 @@ export class BookEngine {
     this.#book?.turningSheet.update(progress, direction, pointerV, verticalDrag);
     const fractionalSpread = this.#spreadIndex + (direction === 'forward' ? progress : -progress);
     this.#book?.setProgress(this.#readingProgress(fractionalSpread));
-    this.#markAnimatedShadow();
+    this.#markAnimatedShadow(progress);
     if (scheduleRender) this.invalidate();
   }
 
@@ -913,7 +1041,7 @@ export class BookEngine {
     const openProgress = opening ? progress : 1 - progress;
     this.#book?.setBoundaryOpenProgress(openProgress, edge);
     this.#setContactOpenProgress(openProgress);
-    this.#markAnimatedShadow();
+    this.#markAnimatedShadow(sheetProgress);
     if (scheduleRender) this.invalidate();
   }
 
@@ -960,7 +1088,7 @@ export class BookEngine {
       displayMode: this.#displayMode,
       pageCount: this.pageCount,
     });
-    this.#schedulePrefetch(this.#generation);
+    this.#schedulePrefetch(this.#generation, true);
     this.#scheduleReadingUpgrade(this.#generation);
   }
 
@@ -983,16 +1111,20 @@ export class BookEngine {
     pageNumber: number,
     quality: PageRenderQuality,
     signal?: AbortSignal,
-    priority = 0,
+    priority: number = PAGE_RENDER_PRIORITY.BACKGROUND,
   ): Promise<RenderedPage> {
     const provider = this.#provider;
     if (!provider) throw new Error('尚未载入书籍。');
     const targetWidth = this.#targetTextureWidth(quality);
     const key = createPageCacheKey(pageNumber, targetWidth, quality, this.#appearanceRevision);
     const cached = this.#pageCache.get(key);
-    if (cached) return cached;
+    if (cached) {
+      this.#pageCacheHits += 1;
+      return cached;
+    }
     const pending = this.#pendingPages.get(key);
     if (pending) {
+      this.#pendingPageJoins += 1;
       try {
         return await waitForPage(pending, signal);
       } catch (reason) {
@@ -1002,6 +1134,7 @@ export class BookEngine {
       }
     }
     const generation = this.#generation;
+    this.#pageRenderStarts += 1;
     const render = this.#schedulePageRender(
       () => provider.renderPage(pageNumber, { targetWidth, quality, priority, signal }),
       signal,
@@ -1012,6 +1145,9 @@ export class BookEngine {
           page.dispose();
           throw new DOMException('书籍页面渲染已取消。', 'AbortError');
         }
+        // 素材还没齐（插图未解码）的临时位图不进缓存：照常交付展示，
+        // 下一次请求同页时按完备素材重新渲染，缺图不会以缓存的形式固定下来。
+        if (page.provisional) return page;
         this.#pageCache.set(key, page);
         return this.#pageCache.get(key) ?? page;
       })
@@ -1025,7 +1161,7 @@ export class BookEngine {
   #schedulePageRender(
     run: () => Promise<RenderedPage>,
     signal?: AbortSignal,
-    priority = 0,
+    priority: number = PAGE_RENDER_PRIORITY.BACKGROUND,
   ): Promise<RenderedPage> {
     return new Promise((resolve, reject) => {
       const finish =
@@ -1036,6 +1172,7 @@ export class BookEngine {
         };
       const job: PageRenderJob = {
         priority,
+        background: isDroppablePriority(priority),
         run,
         signal,
         resolve: finish(resolve),
@@ -1048,9 +1185,7 @@ export class BookEngine {
         job.reject(new DOMException('书籍页面渲染已取消。', 'AbortError'));
       };
       signal?.addEventListener('abort', abort, { once: true });
-      const insertionIndex = this.#renderQueue.findIndex((queued) => queued.priority > priority);
-      if (insertionIndex < 0) this.#renderQueue.push(job);
-      else this.#renderQueue.splice(insertionIndex, 0, job);
+      insertRenderJob(this.#renderQueue, job);
       this.#drainRenderQueue();
     });
   }
@@ -1076,19 +1211,52 @@ export class BookEngine {
   }
 
   #getInteractionPage(pageNumber: number, signal?: AbortSignal): Promise<RenderedPage> {
+    // 命中计数由 #getCachedPage 负责。
     const cached = this.#getCachedPage(pageNumber);
-    return cached ? Promise.resolve(cached) : this.#getPage(pageNumber, 'reading', signal);
+    if (cached) return Promise.resolve(cached);
+    return this.#getPage(pageNumber, 'reading', signal, PAGE_RENDER_PRIORITY.INTERACTION);
   }
 
-  #getCachedPage(pageNumber: number): RenderedPage | undefined {
+  /**
+   * 取可用的缓存位图：优先精确键，否则退到同页最宽的可用位图。
+   * `countHit` 为 false 时只做 LRU 触碰、不计入诊断命中 ——
+   * 内部的触碰型调用（#touchStaticPages / #touchPageEntries）不该抬高命中读数。
+   */
+  #getCachedPage(pageNumber: number, countHit = true): RenderedPage | undefined {
     for (const quality of ['reading', 'preview'] as const) {
       const targetWidth = this.#targetTextureWidth(quality);
       const cached = this.#pageCache.get(
         createPageCacheKey(pageNumber, targetWidth, quality, this.#appearanceRevision),
       );
-      if (cached) return cached;
+      if (cached) {
+        if (countHit) this.#pageCacheHits += 1;
+        return cached;
+      }
+    }
+    // 精确键未命中时退到同页最宽的可用位图（缩放跨桶、窗口尺寸变化后常见）。
+    // 必须限定当前外观版本：换主题后旧位图的配色已失效。再加宽度下限，
+    // 避免用明显更小的位图顶替当前目标而掉清晰度。
+    const target = this.#targetTextureWidth('reading');
+    const best = this.#pageCache.getBest(pageNumber, ['reading'], this.#appearanceRevision);
+    if (best && best.targetWidth >= target * 0.7) {
+      if (countHit) this.#pageCacheHits += 1;
+      return best;
     }
     return undefined;
+  }
+
+  /**
+   * 把指定页正在使用的缓存项触到 LRU 队尾，保证动画期间不被驱逐 ——
+   * 被驱逐会 dispose() 画布，正在使用的 CanvasTexture 会变空白。
+   *
+   * 必须走 #getCachedPage 解析：展示的位图可能来自跨桶回退（targetWidth 与当前目标不同），
+   * 直接 touch 精确键会保护到另一个对象，真正被引用的那张仍可能被驱逐。
+   */
+  #touchPageEntries(pageNumbers: readonly (number | null)[]): void {
+    for (const pageNumber of pageNumbers) {
+      if (!pageNumber) continue;
+      this.#getCachedPage(pageNumber, false);
+    }
   }
 
   // 正在展示的静态页不允许被 PageCache 按 LRU 驱逐：被驱逐后阅读升级会
@@ -1098,7 +1266,7 @@ export class BookEngine {
     const spread = getSpread(this.#spreadIndex, this.pageCount);
     for (const pageNumber of [spread.leftPage, spread.rightPage]) {
       if (!pageNumber) continue;
-      this.#getCachedPage(pageNumber);
+      this.#getCachedPage(pageNumber, false);
     }
   }
 
@@ -1187,14 +1355,18 @@ export class BookEngine {
   #scheduleReadingUpgrade(generation: number): void {
     if (this.#idleHandle) cancelIdle(this.#idleHandle);
     this.#readingUpgradeController?.abort();
+    this.#readingUpgradeScheduleController?.abort();
     const controller = new AbortController();
+    const scheduleController = new AbortController();
     this.#readingUpgradeController = controller;
+    this.#readingUpgradeScheduleController = scheduleController;
     this.#idleHandle = idle(() => {
       this.#idleHandle = 0;
       const spreadIndex = this.#spreadIndex;
       const spreadRevision = this.#spreadRevision;
       if (
         this.#disposed ||
+        scheduleController.signal.aborted ||
         generation !== this.#generation ||
         (this.#stateMachine.state !== 'OPEN' && this.#stateMachine.state !== 'CLOSED')
       ) {
@@ -1203,10 +1375,20 @@ export class BookEngine {
       const spread = getSpread(spreadIndex, this.pageCount);
       void Promise.all([
         spread.leftPage
-          ? this.#getPage(spread.leftPage, 'reading', controller.signal, 12)
+          ? this.#getPage(
+              spread.leftPage,
+              'reading',
+              controller.signal,
+              PAGE_RENDER_PRIORITY.UPGRADE,
+            )
           : this.#blankPage(),
         spread.rightPage
-          ? this.#getPage(spread.rightPage, 'reading', controller.signal, 12)
+          ? this.#getPage(
+              spread.rightPage,
+              'reading',
+              controller.signal,
+              PAGE_RENDER_PRIORITY.UPGRADE,
+            )
           : this.#blankPage(),
       ])
         .then(([left, right]) => {
@@ -1232,16 +1414,19 @@ export class BookEngine {
     this.#armBackgroundDeadline();
   }
 
-  #schedulePrefetch(generation: number): void {
+  #schedulePrefetch(generation: number, immediate = false): void {
     if (this.#prefetchIdleHandle) cancelIdle(this.#prefetchIdleHandle);
+    this.#prefetchIdleHandle = 0;
     this.#prefetchController?.abort();
+    this.#prefetchScheduleController?.abort();
     const controller = new AbortController();
+    const scheduleController = new AbortController();
     this.#prefetchController = controller;
-    this.#prefetchIdleHandle = idle(() => {
-      this.#prefetchIdleHandle = 0;
+    this.#prefetchScheduleController = scheduleController;
+    const start = (): void => {
       if (
         this.#disposed ||
-        controller.signal.aborted ||
+        scheduleController.signal.aborted ||
         generation !== this.#generation ||
         (this.#stateMachine.state !== 'OPEN' && this.#stateMachine.state !== 'CLOSED')
       ) {
@@ -1249,11 +1434,16 @@ export class BookEngine {
       }
       const pageNumbers = new Set<number>();
       const direction = this.#lastTurnDirection === 'forward' ? 1 : -1;
+      // 队列只取 4 页（= 2 个跨页），排在第三位之后的 spread 永远轮不到预热。
+      // 因此把「反方向」放在第二位：否则用户掉头时那一跨页是冷的。实测（慢章节 EPUB、
+      // dpr2 的 1280 桶）换序前掉头翻页会多出 4~5 次全页截图（命中 3 次 vs 换序后的
+      // 9 次），每次截图约 95ms 且落在主线程上；换序后为 0 次。当前方向 1 个跨页的
+      // 深度足够 —— 预热 4 页能在一次 720ms 翻页动画内跑完，用户来不及连翻两次。
       const spreadQueue = [
         this.#spreadIndex + direction,
+        this.#spreadIndex - direction,
         this.#spreadIndex + direction * 2,
         this.#spreadIndex + direction * 3,
-        this.#spreadIndex - direction,
       ];
       for (const index of spreadQueue) {
         if (index < 0 || index > getLastSpreadIndex(this.pageCount)) continue;
@@ -1263,20 +1453,73 @@ export class BookEngine {
       }
       const queue = [...pageNumbers].slice(0, this.#memoryLimited ? 2 : 4);
       const work = async (): Promise<void> => {
-        while (!this.#disposed && !controller.signal.aborted && generation === this.#generation) {
+        while (
+          !this.#disposed &&
+          !scheduleController.signal.aborted &&
+          generation === this.#generation
+        ) {
           const pageNumber = queue.shift();
           if (!pageNumber) return;
           // 与翻页素材同质量预热，翻页时缓存直接命中，避免落页后的质量跳变。
           // 限量渲染避免驱逐正在展示的静态页（由 #touchStaticPages 保护）。
-          await this.#getPage(pageNumber, 'reading', controller.signal, 24).catch(() => undefined);
+          await this.#getPage(
+            pageNumber,
+            'reading',
+            controller.signal,
+            PAGE_RENDER_PRIORITY.PREFETCH,
+          ).catch(() => undefined);
+          // 每完成一页就续期，只有连续无进展时才让位，避免慢章节渲染到一半被丢弃。
+          this.#armBackgroundDeadline();
         }
       };
       void Promise.all([work(), work()]);
-    });
+    };
+    // 落页后立即起第一页：idle 回调在连续翻页时可能拖到 900ms 之后才执行，
+    // 那时下一次翻页已经开始，预热等于白做。
+    if (immediate) start();
+    else {
+      this.#prefetchIdleHandle = idle(() => {
+        this.#prefetchIdleHandle = 0;
+        start();
+      });
+    }
     this.#armBackgroundDeadline();
   }
 
   #pauseBackgroundWork(): void {
+    this.#cancelBackgroundSchedule();
+    this.#readingUpgradeController?.abort();
+    this.#readingUpgradeController = null;
+    this.#prefetchController?.abort();
+    this.#prefetchController = null;
+    this.#readingUpgradeScheduleController?.abort();
+    this.#readingUpgradeScheduleController = null;
+    this.#prefetchScheduleController?.abort();
+    this.#prefetchScheduleController = null;
+    this.#preparedTurnSpread = null;
+  }
+
+  /**
+   * 交互让位：停止后台工作的补队并从队列里摘掉可丢弃任务，
+   * 但不打断已经在渲染的那一页 —— 它的 promise 仍留在 #pendingPages 中，
+   * 翻页请求同一页时可以直接复用，而不是从头再渲染一遍。
+   */
+  #yieldBackgroundToInteraction(): void {
+    this.#cancelBackgroundSchedule();
+    this.#readingUpgradeScheduleController?.abort();
+    this.#readingUpgradeScheduleController = null;
+    this.#prefetchScheduleController?.abort();
+    this.#prefetchScheduleController = null;
+    for (let index = this.#renderQueue.length - 1; index >= 0; index -= 1) {
+      const job = this.#renderQueue[index];
+      if (!job.background) continue;
+      this.#renderQueue.splice(index, 1);
+      job.reject(new DOMException('书籍页面渲染已取消。', 'AbortError'));
+    }
+  }
+
+  /** 取消后台工作的排队时机：idle 回调与硬截止计时器。 */
+  #cancelBackgroundSchedule(): void {
     if (this.#backgroundDeadlineTimer) {
       globalThis.clearTimeout(this.#backgroundDeadlineTimer);
       this.#backgroundDeadlineTimer = null;
@@ -1285,25 +1528,13 @@ export class BookEngine {
     this.#idleHandle = 0;
     if (this.#prefetchIdleHandle) cancelIdle(this.#prefetchIdleHandle);
     this.#prefetchIdleHandle = 0;
-    this.#readingUpgradeController?.abort();
-    this.#readingUpgradeController = null;
-    this.#prefetchController?.abort();
-    this.#prefetchController = null;
-    this.#preparedTurnSpread = null;
   }
 
   #armBackgroundDeadline(): void {
     if (this.#backgroundDeadlineTimer) globalThis.clearTimeout(this.#backgroundDeadlineTimer);
     this.#backgroundDeadlineTimer = globalThis.setTimeout(() => {
       this.#backgroundDeadlineTimer = null;
-      if (this.#idleHandle) cancelIdle(this.#idleHandle);
-      this.#idleHandle = 0;
-      if (this.#prefetchIdleHandle) cancelIdle(this.#prefetchIdleHandle);
-      this.#prefetchIdleHandle = 0;
-      this.#readingUpgradeController?.abort();
-      this.#readingUpgradeController = null;
-      this.#prefetchController?.abort();
-      this.#prefetchController = null;
+      this.#yieldBackgroundToInteraction();
     }, 1850);
   }
 
@@ -1323,6 +1554,7 @@ export class BookEngine {
     useDefaultEasing = true,
   ): Promise<void> {
     this.#cancelAnimation(new DOMException('动画已被新操作替换。', 'AbortError'));
+    this.#resetFrameWindow();
     const reduced = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     const safeDuration = reduced ? 1 : Math.max(1, duration);
     return new Promise((resolve, reject) => {
@@ -1355,6 +1587,7 @@ export class BookEngine {
     update: (value: number) => void,
   ): Promise<void> {
     this.#cancelAnimation(new DOMException('动画已被新操作替换。', 'AbortError'));
+    this.#resetFrameWindow();
     const maximumInitialVelocity = Math.min(MAX_DRAG_VELOCITY, Math.abs(target - from) * 8);
     const spring = new Spring({
       initialPosition: from,
@@ -1402,10 +1635,45 @@ export class BookEngine {
   #renderAnimationFrame(): void {
     if (this.#renderFrame) cancelAnimationFrame(this.#renderFrame);
     this.#renderFrame = 0;
-    this.#renderer.render(this.#scene, this.#camera);
+    this.#drawScene();
   }
 
-  #markAnimatedShadow(): void {
+  /**
+   * 绘制一帧并采样绘制间隔。间隔反映主线程是否被阻塞，比单次 render 调用耗时更有意义；
+   * 超过 FRAME_IDLE_GAP_MS 的间隔来自空闲等待，不计入统计。
+   */
+  #drawScene(): void {
+    const now = performance.now();
+    this.#renderer.render(this.#scene, this.#camera);
+    const previous = this.#lastFrameAt;
+    this.#lastFrameAt = now;
+    if (!previous) return;
+    const delta = now - previous;
+    if (delta <= 0 || delta > FRAME_IDLE_GAP_MS) return;
+    this.#frameTimeMs =
+      this.#frameTimeMs === 0
+        ? delta
+        : this.#frameTimeMs + (delta - this.#frameTimeMs) * FRAME_TIME_SMOOTHING;
+    if (delta > this.#maxFrameMs) this.#maxFrameMs = delta;
+    if (delta > LONG_FRAME_MS) this.#longFrames += 1;
+  }
+
+  /** 动画开始前重置帧窗口统计，让 maxFrameMs / longFrames 描述单次动画。 */
+  #resetFrameWindow(): void {
+    this.#maxFrameMs = 0;
+    this.#longFrames = 0;
+    this.#lastFrameAt = 0;
+    this.#lastShadowProgress = -1;
+  }
+
+  /**
+   * 请求重绘阴影贴图。传入动画进度时按 SHADOW_PROGRESS_STEP 节流：一次 720ms 翻页原本要
+   * 重绘 43 次 1024² 阴影，节流后约 13 次。传 undefined 表示强制重绘并重置节奏。
+   */
+  #markAnimatedShadow(progress?: number): void {
+    if (progress !== undefined && !shouldRefreshShadow(progress, this.#lastShadowProgress)) return;
+    this.#lastShadowProgress = progress ?? -1;
+    this.#shadowUpdates += 1;
     this.#renderer.shadowMap.needsUpdate = true;
   }
 
@@ -1480,7 +1748,7 @@ export class BookEngine {
     this.#interactionStartedAt = performance.now();
     this.#renderer.domElement.setPointerCapture(event.pointerId);
     this.#stateMachine.transition('DRAGGING', { turnDirection: direction });
-    this.#pauseBackgroundWork();
+    this.#yieldBackgroundToInteraction();
     const targetPage =
       this.#displayMode === 'focused'
         ? clamp(this.#currentPage + (direction === 'forward' ? 1 : -1), 1, this.pageCount)
@@ -1491,6 +1759,10 @@ export class BookEngine {
     const boundaryClose =
       !focusOnly && getAdjacentSpreadIndex(this.#spreadIndex, this.pageCount, direction) === null;
     const boundaryEdge = direction === 'forward' ? 'back' : 'front';
+    const pointerV = clamp(point.y / pageHeight + 0.5, 0, 1);
+    // 普通翻页先同步摆出预览姿态，让纸张在第一帧就跟随指针；聚焦位移与边界开合没有纸张。
+    const previewReady =
+      !focusOnly && !boundaryClose && this.#beginTurnPreview(direction, pointerV);
     const prepared = focusOnly
       ? Promise.resolve()
       : boundaryClose
@@ -1506,10 +1778,11 @@ export class BookEngine {
       velocity: 0,
       velocitySamples: [{ progress: 0, time: performance.now() }],
       lastMotionTime: performance.now(),
-      pointerV: clamp(point.y / pageHeight + 0.5, 0, 1),
+      pointerV,
       verticalDrag: 0,
       prepared,
-      ready: false,
+      ready: previewReady,
+      readyAt: previewReady ? performance.now() : null,
       boundaryClose,
       focusOnly,
       targetPage,
@@ -1523,6 +1796,7 @@ export class BookEngine {
       .then(() => {
         if (this.#drag === drag) {
           drag.ready = true;
+          drag.readyAt ??= performance.now();
           if (drag.focusOnly) {
             const startFocus = this.#focusXForPage(this.#currentPage);
             const targetFocus = this.#focusXForPage(drag.targetPage ?? this.#currentPage);
@@ -1576,26 +1850,12 @@ export class BookEngine {
       drag.maxDistancePx,
       Math.hypot(event.clientX - drag.startClientX, event.clientY - drag.startClientY),
     );
-    this.#updateDragVelocity(drag, progress, now);
+    sampleDragVelocity(drag, progress, now);
     drag.progress = progress;
     drag.pointerV = clamp(point.y / pageHeight + 0.5, 0, 1);
     drag.verticalDrag = clamp((point.y - drag.start.y) / pageHeight, -1, 1);
-    if (drag.ready) {
-      if (drag.focusOnly) {
-        const startFocus = this.#focusXForPage(this.#currentPage);
-        const targetFocus = this.#focusXForPage(drag.targetPage ?? this.#currentPage);
-        this.#focusX = startFocus + (targetFocus - startFocus) * progress;
-        this.#applyCamera();
-      } else if (drag.boundaryClose) {
-        this.#updateBoundaryTurn(
-          progress,
-          drag.direction === 'forward' ? 'back' : 'front',
-          false,
-          drag.pointerV,
-          drag.verticalDrag,
-        );
-      } else this.#updateTurn(progress, drag.direction, drag.pointerV, drag.verticalDrag);
-    }
+    // 视觉更新交给 rAF 合并；采样语义（速度窗口、最大位移）保持原样。
+    this.#requestDragVisual();
   };
 
   #onPointerUp = (event: PointerEvent): void => {
@@ -1610,8 +1870,9 @@ export class BookEngine {
     const drag = this.#drag;
     if (!drag || drag.pointerId !== event.pointerId) return;
     event.preventDefault();
+    this.#flushDragVisual();
     this.#drag = null;
-    this.#decayDragVelocity(drag, performance.now());
+    decayDragVelocity(drag, performance.now());
     if (this.#renderer.domElement.hasPointerCapture(event.pointerId)) {
       this.#renderer.domElement.releasePointerCapture(event.pointerId);
     }
@@ -1633,8 +1894,9 @@ export class BookEngine {
   #cancelPointerDrag(event: PointerEvent): void {
     const drag = this.#drag;
     if (!drag || drag.pointerId !== event.pointerId) return;
+    this.#cancelDragVisual();
     this.#drag = null;
-    this.#decayDragVelocity(drag, performance.now());
+    decayDragVelocity(drag, performance.now());
     void this.#finishDrag(drag, true);
   }
 
@@ -1644,36 +1906,50 @@ export class BookEngine {
     return Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
   }
 
-  #updateDragVelocity(drag: DragSession, progress: number, now: number): void {
-    if (Math.abs(progress - drag.previousProgress) >= DRAG_MOTION_EPSILON) {
-      drag.lastMotionTime = now;
-    }
-    drag.previousProgress = progress;
-    drag.velocitySamples.push({ progress, time: now });
-    const cutoff = now - DRAG_VELOCITY_WINDOW_MS;
-    while (drag.velocitySamples.length > 1 && drag.velocitySamples[0].time <= cutoff) {
-      drag.velocitySamples.shift();
-    }
-    if (drag.velocitySamples.length < 2) {
-      drag.velocity = 0;
+  /** 用当前拖拽状态刷新纸面视觉；采样留在 pointermove 里，这里只负责呈现。 */
+  #applyDragVisual(drag: DragSession): void {
+    const progress = drag.progress;
+    if (drag.focusOnly) {
+      const startFocus = this.#focusXForPage(this.#currentPage);
+      const targetFocus = this.#focusXForPage(drag.targetPage ?? this.#currentPage);
+      this.#focusX = startFocus + (targetFocus - startFocus) * progress;
+      this.#applyCamera();
       return;
     }
-    const first = drag.velocitySamples[0];
-    const elapsed = Math.max(8, now - first.time) / 1000;
-    drag.velocity = clamp(
-      (progress - first.progress) / elapsed,
-      -MAX_DRAG_VELOCITY,
-      MAX_DRAG_VELOCITY,
-    );
+    if (drag.boundaryClose) {
+      this.#updateBoundaryTurn(
+        progress,
+        drag.direction === 'forward' ? 'back' : 'front',
+        false,
+        drag.pointerV,
+        drag.verticalDrag,
+      );
+      return;
+    }
+    this.#updateTurn(progress, drag.direction, drag.pointerV, drag.verticalDrag);
   }
 
-  #decayDragVelocity(drag: DragSession, now: number): void {
-    const idleProgress = clamp((now - drag.lastMotionTime) / DRAG_VELOCITY_DECAY_MS, 0, 1);
-    drag.velocity = clamp(
-      drag.velocity * (1 - idleProgress),
-      -MAX_DRAG_VELOCITY,
-      MAX_DRAG_VELOCITY,
-    );
+  /** 把一帧内的多次 pointermove 合并为一次纸面更新。 */
+  #requestDragVisual(): void {
+    if (this.#dragFrame) return;
+    this.#dragFrame = requestAnimationFrame(() => {
+      this.#dragFrame = 0;
+      const drag = this.#drag;
+      if (drag?.ready) this.#applyDragVisual(drag);
+    });
+  }
+
+  /** 同步补上最后一帧，避免松手瞬间视觉停在上一帧。 */
+  #flushDragVisual(): void {
+    this.#cancelDragVisual();
+    const drag = this.#drag;
+    if (drag?.ready) this.#applyDragVisual(drag);
+  }
+
+  #cancelDragVisual(): void {
+    if (!this.#dragFrame) return;
+    cancelAnimationFrame(this.#dragFrame);
+    this.#dragFrame = 0;
   }
 
   #onPointerLeave = (): void => {
@@ -1757,7 +2033,9 @@ export class BookEngine {
     try {
       await drag.prepared;
       if (this.#stateMachine.state !== 'DRAGGING') return;
-      const isClick = drag.maxDistancePx <= 8 && performance.now() - drag.startedAt <= 420;
+      // 页面准备耗时不计入「点击窗口」，否则准备偏慢时一次干净的点击会被判成拖拽。
+      const elapsed = performance.now() - (drag.readyAt ?? drag.startedAt);
+      const isClick = drag.maxDistancePx <= 8 && elapsed <= 420;
       const commit =
         !cancelled &&
         (isClick || shouldCommitTurn({ progress: drag.progress, velocity: drag.velocity }));
@@ -1782,7 +2060,8 @@ export class BookEngine {
             currentPage: targetPage,
             displayMode: this.#displayMode,
           });
-          this.#schedulePrefetch(this.#generation);
+          // 聚焦翻页同样要在交互结束后把被掐断的预热接回来。
+          this.#schedulePrefetch(this.#generation, true);
         } else {
           this.#stateMachine.transition('SNAPPING_BACK', { turnDirection: drag.direction });
           const update = (value: number): void => {
@@ -1795,6 +2074,8 @@ export class BookEngine {
             currentPage: this.#currentPage,
             displayMode: this.#displayMode,
           });
+          // 原来这里没有任何重排，聚焦模式下拉一下又松手会永久停掉后台预热。
+          this.#schedulePrefetch(this.#generation, true);
         }
         return;
       }
@@ -1833,6 +2114,9 @@ export class BookEngine {
           this.#closedEdge = edge;
           this.#stateMachine.transition('CLOSED');
           this.invalidate();
+          // 拖拽开始时预热被让位掐断，合书后同样要接上，否则重新翻开时第一跨页是冷的。
+          // 这里保持 idle：刚合上书，用户下一步多半不是翻页。
+          this.#schedulePrefetch(this.#generation);
         } else {
           this.#stateMachine.transition('SNAPPING_BACK', { turnDirection: drag.direction });
           await this.#animateSpring(drag.progress, 0, Math.min(0, drag.velocity), (progress) =>
@@ -1851,7 +2135,9 @@ export class BookEngine {
             currentPage: this.#currentPage,
             displayMode: this.#displayMode,
           });
-          this.#schedulePrefetch(this.#generation);
+          // 与普通翻页回弹同理：拖拽起手掐断了预热，这里的落回点虽然没换跨页，
+          // 但被打断的那几页还没补上，必须立刻接上而不是等 idle（可拖到 900ms）。
+          this.#schedulePrefetch(this.#generation, true);
           this.#scheduleReadingUpgrade(this.#generation);
         }
         return;
@@ -1886,6 +2172,8 @@ export class BookEngine {
           currentPage: this.#currentPage,
           displayMode: this.#displayMode,
         });
+        // 拖拽开始时预热被让位掐断，回弹落回原跨页后要重新接上，否则下一次翻页是冷渲染。
+        this.#schedulePrefetch(this.#generation, true);
       }
     } catch (reason) {
       this.#handleRuntimeError(reason);

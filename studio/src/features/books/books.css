@@ -485,7 +485,6 @@
   font-size: 11px;
   pointer-events: none;
   transform: translateX(-50%);
-  backdrop-filter: blur(12px);
   align-items: center;
   gap: 7px;
 }
@@ -584,7 +583,8 @@
   gap: 1px;
   opacity: 0;
   transform: translate(-50%, 5px);
-  backdrop-filter: blur(12px);
+  /* 未悬停时不可见，不需要模糊；否则每帧仍会被合成器重算。 */
+  backdrop-filter: none;
   transition:
     opacity 180ms ease,
     transform 180ms ease;
@@ -601,6 +601,7 @@
 .books-reader-controls__bottom:focus-within {
   opacity: 0.78;
   transform: translate(-50%, 0);
+  backdrop-filter: blur(12px);
 }
 
 .books-reader-controls__bottom button {
@@ -648,13 +649,22 @@
   text-align: right;
 }
 
+/* 注意：这里不能再设 pointer-events: auto。本层是 inset: 0 的全屏覆盖层，与 3D 画布是
+   兄弟节点，一旦可命中就会吞掉隐藏期间画布上的第一次 pointerdown。基类已是 none，
+   子元素（__actions / __bottom）自带 auto，:hover 会沿祖先链传播，悬停唤出照常可用。 */
 .books-page--ui-hidden .books-reader-controls {
   opacity: 0;
-  pointer-events: auto;
 }
 .books-page--ui-hidden .books-reader-controls:hover,
 .books-page--ui-hidden .books-reader-controls:focus-within {
   opacity: 1;
+}
+/* 隐藏态且未悬停时不需要模糊：不可见的模糊层仍会被合成器每帧重算。 */
+.books-page--ui-hidden .books-reader-controls:not(:hover):not(:focus-within) button,
+.books-page--ui-hidden
+  .books-reader-controls:not(:hover):not(:focus-within)
+  .books-reader-controls__bottom {
+  backdrop-filter: none;
 }
 
 .books-orientation-hint {
