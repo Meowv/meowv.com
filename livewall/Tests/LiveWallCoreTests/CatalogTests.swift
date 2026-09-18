@@ -194,6 +194,38 @@ func catalogTests() {
             expectEqual(catalog?.items.first?.categoryIds, [], "应回退空数组")
         }
 
+        test("条目缺 coverUrl 不会让整份切片解不出来") {
+            // 加 coverUrl 之前的清单（老缓存副本）与内置兜底条目都没有这个字段。
+            let json = """
+            {"schemaVersion":1,"generatedAt":"","source":{"deviceType":"desktop","contentType":"dynamic","categoryName":null,"categoryIds":[]},
+             "items":[{"id":1,"title":"T","author":"","url":"https://cdn.test/a.mp4","durationSeconds":null,"tags":[]}]}
+            """
+            let catalog = try? CatalogCoding.decode(Data(json.utf8))
+            expectNotNil(catalog, "缺字段应能解码")
+            expectNil(catalog?.items.first?.coverUrl, "应回退 nil")
+            expectNil(catalog?.items.first?.coverImageURL, "没有静态图地址")
+        }
+
+        test("解析 coverUrl 并校验 scheme") {
+            let json = """
+            {"schemaVersion":1,"generatedAt":"","source":{"deviceType":"desktop","contentType":"dynamic","categoryName":null,"categoryIds":[]},
+             "items":[
+               {"id":1,"title":"T","author":"","url":"https://cdn.test/a.mp4","coverUrl":"https://cdn.test/a.jpg","durationSeconds":null,"tags":[]},
+               {"id":2,"title":"T","author":"","url":"https://cdn.test/b.mp4","coverUrl":"not-a-url","durationSeconds":null,"tags":[]},
+               {"id":3,"title":"T","author":"","url":"https://cdn.test/c.mp4","coverUrl":"   ","durationSeconds":null,"tags":[]}
+             ]}
+            """
+            let catalog = try? CatalogCoding.decode(Data(json.utf8))
+            expectNotNil(catalog, "应能解码")
+            let items = catalog?.items ?? []
+            expectEqual(items.first?.coverUrl, "https://cdn.test/a.jpg", "字段值原样保留")
+            expectEqual(items.first?.coverImageURL?.absoluteString, "https://cdn.test/a.jpg", "合法地址可解析")
+            expectNil(items.dropFirst().first?.coverImageURL, "非 URL 应返回 nil")
+            expectNil(items.dropFirst(2).first?.coverImageURL, "空白串应返回 nil")
+            // 静态图地址非法不该让条目消失：它不影响播放，客户端会退回抓帧
+            expectEqual(CatalogCoding.sanitize(catalog!).items.count, 3, "coverUrl 非法不影响条目保留")
+        }
+
         test("sanitize 剔除非法 URL 与重复") {
             let catalog = try! CatalogCoding.decode(sliceJSON(items: [
                 (1, "https://cdn.test/a.mp4", "A"),

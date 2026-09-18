@@ -82,7 +82,7 @@ PYTHONPATH=src python3 -m wallpapers crawl --db ./data/wallpapers.db
 
 ## 导出 livewall 壁纸清单
 
-`export-livewall` 从 SQLite 导出供 macOS 客户端 [`livewall/`](../livewall/README.md) 使用的**明文 JSON 清单目录**。与 `publish` 的区别：不加密、不分桶，只导出可直接播放的 `video_preview` 地址。
+`export-livewall` 从 SQLite 导出供 macOS 客户端 [`livewall/`](../livewall/README.md) 使用的**明文 JSON 清单目录**。与 `publish` 的区别：不加密、不分桶。每条导出两个地址：可直接播放的 `video_preview`（`url`）与静态图 `image`（`coverUrl`，供客户端的锁屏预览与手动下载使用）。
 
 ```bash
 PYTHONPATH=src python3 -m wallpapers export-livewall
@@ -107,7 +107,11 @@ PYTHONPATH=src python3 -m wallpapers export-livewall --default-category 风景
 | `--content`          | `dynamic`               | `static` 或 `dynamic`                                            |
 | `--default-category` | `美女`                  | 默认分类，可填分类名或分类 id；该分类会被排在 `categories` 首位  |
 
-导出只保留 `status='active'`、`media_role='video_preview'` 且 `accessible=1` 的记录；同一壁纸有多个预览地址时只取第一个。`duration_seconds` 在库里当前全为 NULL，清单里保持 `null`，由客户端在播放时自行探测。
+导出只保留 `status='active'`、`media_role IN ('video_preview','image')` 且 `accessible=1` 的记录；同一壁纸有多个同类地址时，按 `wallpaper_asset` 的 `is_primary` / `sort_order` / `asset.id` 取第一个。**只有 `image`、没有 `video_preview` 的壁纸不进清单** —— 它没有可播放地址。`duration_seconds` 在库里当前全为 NULL，清单里保持 `null`，由客户端在播放时自行探测。
+
+`coverUrl` 的实测情况（2026-09-18，全量 **20,703** 条）：**100% 有值**，域名全部是 `cdn-ali-img-livebz.shanhutech.cn`；其中 **20,447 条与视频同资源 id，256 条不同**（一部分是 `.png`，一部分日期段不同）。所以**不要用「换域名 + 去掉 `_10s_for_html` + 改成 `.jpg`」去推导静态图地址** —— 那 256 条会推错，必须直接读清单字段。抽样 19 条 HEAD 全部 200，`Content-Type` 为 `image/jpeg` 或 `image/png`，体积 46 KB – 4 MB（PNG 偏大）。
+
+注意 `asset.accessible` 对静态图**不是真实探测结果**：`pipeline` 从不做 HEAD（走列默认值 1），只有独立的 `wallpapers check` 子命令才会探测，而 `build.sh` 不调用它。所以 `coverUrl` 仍可能 404，客户端必须能降级。
 
 分类切分的三条约定：
 
@@ -118,6 +122,8 @@ PYTHONPATH=src python3 -m wallpapers export-livewall --default-category 风景
 导出**不做分类过滤**：数据库只扫一遍，切分在 Python 侧做，所以分类数量不影响耗时。每次导出会清理上一轮遗留的 `category.*.json`（分类被删或改名后会留下孤儿文件）。
 
 索引与分类文件**同批生成、共用同一个 `generatedAt`**，客户端据此判断两份产物是否一致。清单结构与客户端约定一一对应，改动需两边同步（见 `src/wallpapers/export.py` 与 `livewall/Sources/LiveWallCore/CatalogModel.swift`）。
+
+**新增条目字段一律不升 `schemaVersion`**：客户端解码用 `decodeIfPresent` 容错，老客户端忽略未知键即可；升版本会让它撞上 `unsupportedSchema` 直接拒绝加载整份清单（`coverUrl` 就是这么加的）。另外**索引刻意不含 `items`**，条目只写在分类切片里 —— 所以新增条目字段只影响切片体积，索引仍是 901 字节。
 
 根目录的 `./build.sh wallpapers` 与 `./build.sh studio --with-wallpapers` 在生成并加密 Studio 壁纸目录时，会同时生成 `studio/public/data/livewall/` 并同步到 `build/studio.meowv.com/data/livewall/`。手工单独导出时使用上面的命令。
 

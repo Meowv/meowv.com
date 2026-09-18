@@ -19,5 +19,7 @@ multiScreenPolicyTests()
 logRotationTests()
 screenSourceStoreTests()
 preferencesCompatibilityTests()
+lockScreenPreviewTests()
+downloadNamingTests()
 
 exit(TestRunner.shared.report())

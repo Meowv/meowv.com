@@ -1,5 +1,6 @@
 import AVFoundation
 import AppKit
+import CoreImage
 import LiveWallCore
 import LiveWallDesktop
 
@@ -156,6 +157,44 @@ final class PlaybackEngine {
     }
 
     var isPlaying: Bool { slots.values.contains { $0.player.rate > 0 } }
+
+    // MARK: - 取帧
+
+    /// 复用同一个 `CIContext`：新建的代价不小，而抓帧是低频动作。
+    private static let ciContext = CIContext()
+
+    /// 取指定槽位**当前显示帧**。取不到返回 nil —— 调用方保留旧图，绝不清空墙纸。
+    ///
+    /// 三条都经真机探针验证（见 `livewall/README.md` 的「关键发现」）：
+    /// - output 必须挂在 **`player.currentItem`** 上。挂在 `AVPlayerLooper` 的 template item
+    ///   上**取不到帧**（实测 24 秒 0 帧；改挂 currentItem 后 0.20 秒拿到首帧）——
+    ///   looper 复制 template item 时不会把 output 一起带上。
+    /// - 抓帧**不产生额外流量**（实测抓帧期间新增传输 0 字节）：解码数据已在缓冲里。
+    /// - 取到即把 output 摘掉：常挂会有每帧回调的开销，而抓帧是低频一次性动作。
+    func currentFrame(on key: PlaybackSlotKey) -> CGImage? {
+        guard let slot = slots[key], let item = slot.player.currentItem else { return nil }
+
+        let output = AVPlayerItemVideoOutput(pixelBufferAttributes: [
+            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
+        ])
+        item.add(output)
+        defer { item.remove(output) }
+
+        // 30fps 下相邻两帧相隔 33ms，0.4 秒的窗口足够（实测首帧 0.20 秒内拿到）。
+        let deadline = Date().addingTimeInterval(0.4)
+        while Date() < deadline {
+            let itemTime = output.itemTime(forHostTime: CACurrentMediaTime())
+            if itemTime.isValid,
+               output.hasNewPixelBuffer(forItemTime: itemTime),
+               let buffer = output.copyPixelBuffer(forItemTime: itemTime, itemTimeForDisplay: nil) {
+                let image = CIImage(cvPixelBuffer: buffer)
+                return Self.ciContext.createCGImage(image, from: image.extent)
+            }
+            // 让 AVFoundation 有机会投递新帧
+            RunLoop.current.run(until: Date().addingTimeInterval(0.02))
+        }
+        return nil
+    }
 
     func teardown() {
         for slot in slots.values { slot.teardown() }

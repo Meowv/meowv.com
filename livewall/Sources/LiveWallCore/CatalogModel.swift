@@ -162,6 +162,10 @@ public struct WallpaperItem: Codable, Sendable, Equatable, Identifiable {
     public let title: String
     public let author: String
     public let url: String
+    /// 静态图地址（数据库里的 `media_role='image'`）。供「锁屏预览」与
+    /// 「下载当前壁纸」使用。可能为 nil：清单里没写、或该条目没有 image 资源 ——
+    /// 此时调用方退回「抓当前帧」，**不要**在这里伪造地址。
+    public let coverUrl: String?
     /// 数据库里的 `asset.duration_seconds` 当前全为 NULL，因此通常是 nil。
     /// 播放时由 AVAsset 自行探测，不要在这里伪造默认值。
     public let durationSeconds: Double?
@@ -175,6 +179,7 @@ public struct WallpaperItem: Codable, Sendable, Equatable, Identifiable {
         title: String,
         author: String,
         url: String,
+        coverUrl: String? = nil,
         durationSeconds: Double? = nil,
         tags: [String] = [],
         categoryIds: [Int] = []
@@ -183,22 +188,25 @@ public struct WallpaperItem: Codable, Sendable, Equatable, Identifiable {
         self.title = title
         self.author = author
         self.url = url
+        self.coverUrl = coverUrl
         self.durationSeconds = durationSeconds
         self.tags = tags
         self.categoryIds = categoryIds
     }
 
     enum CodingKeys: String, CodingKey {
-        case id, title, author, url, durationSeconds, tags, categoryIds
+        case id, title, author, url, coverUrl, durationSeconds, tags, categoryIds
     }
 
-    /// `categoryIds` 必须容错解码：**内置兜底条目**（代码里构造）与手写清单都没有这个字段。
+    /// `categoryIds` 与 `coverUrl` 必须容错解码：**内置兜底条目**（代码里构造）与手写清单
+    /// 都没有这两个字段，`coverUrl` 还可能是旧清单（加字段之前）里的缺失键。
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(Int.self, forKey: .id)
         title = try container.decode(String.self, forKey: .title)
         author = try container.decode(String.self, forKey: .author)
         url = try container.decode(String.self, forKey: .url)
+        coverUrl = try? container.decodeIfPresent(String.self, forKey: .coverUrl)
         durationSeconds = try container.decodeIfPresent(Double.self, forKey: .durationSeconds)
         tags = try container.decode([String].self, forKey: .tags)
         categoryIds = (try? container.decodeIfPresent([Int].self, forKey: .categoryIds)) ?? []
@@ -208,6 +216,19 @@ public struct WallpaperItem: Codable, Sendable, Equatable, Identifiable {
     /// 不能假定每一条都是合法 URL。
     public var remoteURL: URL? {
         guard let url = URL(string: url), url.scheme?.lowercased() == "https" || url.scheme?.lowercased() == "http" else {
+            return nil
+        }
+        return url
+    }
+
+    /// 解析后的静态图地址。与 `remoteURL` 同一套校验：空串与非 http(s) 一律视为不可用
+    /// （清单来自数据库，不能假定字段内容合法）。
+    public var coverImageURL: URL? {
+        guard let raw = coverUrl?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !raw.isEmpty,
+              let url = URL(string: raw),
+              url.scheme?.lowercased() == "https" || url.scheme?.lowercased() == "http"
+        else {
             return nil
         }
         return url

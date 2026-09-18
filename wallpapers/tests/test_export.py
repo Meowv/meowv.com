@@ -302,6 +302,7 @@ def test_category_item_shape(tmp_path):
         "title",
         "author",
         "url",
+        "coverUrl",
         "durationSeconds",
         "tags",
         "categoryIds",
@@ -309,6 +310,8 @@ def test_category_item_shape(tmp_path):
     # duration_seconds 在库里是 NULL，导出保持 null，不伪造默认值
     assert item["durationSeconds"] is None
     assert item["url"].startswith("https://")
+    # BASE_ROWS 里每张壁纸只有 video_preview、没有 image → 静态图地址为 null
+    assert item["coverUrl"] is None
 
 
 def test_category_files_share_generated_at(tmp_path):
@@ -359,8 +362,12 @@ def test_skips_inaccessible_assets(tmp_path):
     assert _items(category_paths["美女"]) == {1, 5}
 
 
-def test_skips_non_video_preview_roles(tmp_path):
-    """image / cover 等角色不是可播放地址，必须排除。"""
+def test_image_role_is_not_a_playable_url(tmp_path):
+    """`image` 角色不是播放地址：只剩它的壁纸整体不进清单。
+
+    注意它**不再是「被排除的角色」** —— 现在 image 会作为 `coverUrl` 导出
+    （见下面「静态图」一节的用例），但它永远不能顶替 `url` 当播放地址。
+    """
     source = _make_db(
         tmp_path,
         BASE_ROWS.replace(
@@ -371,6 +378,7 @@ def test_skips_non_video_preview_roles(tmp_path):
 
     _, category_paths = export_livewall_catalog(source, tmp_path / "data")
 
+    # 壁纸 2 只剩 image：没有可播放地址，整条不导出
     assert _items(category_paths["美女"]) == {1, 5}
 
 
@@ -504,3 +512,91 @@ def test_works_without_match_rank_column(tmp_path):
     _, category_paths = export_livewall_catalog(path, tmp_path / "data")
 
     assert _read(category_paths["美女"])["items"][0]["tags"] == ["标签"]
+
+
+# ── 静态图（coverUrl）────────────────────────────────────────────
+# 客户端的「锁屏预览」与「下载当前壁纸」都要用这个地址：它来自
+# `media_role='image'` 的资源，与播放地址走同一个 ORDER BY 取第一条。
+
+
+def test_exports_cover_url(tmp_path):
+    """有 image 资源时其地址作为 coverUrl 导出，且不影响 url。"""
+    source = _make_db(
+        tmp_path,
+        BASE_ROWS
+        + """
+        INSERT INTO asset VALUES (20, 'https://cdn.test/a.jpg', 'image', 1);
+        INSERT INTO wallpaper_asset VALUES (1, 20, 1, 0);
+        """,
+    )
+
+    _, category_paths = export_livewall_catalog(source, tmp_path / "data")
+    item = next(item for item in _read(category_paths["美女"])["items"] if item["id"] == 1)
+
+    assert item["url"] == "https://cdn.test/a.mp4"
+    assert item["coverUrl"] == "https://cdn.test/a.jpg"
+
+
+def test_cover_url_missing_is_null(tmp_path):
+    """没有 image 资源时 coverUrl 为 null —— 客户端据此退回「抓当前帧」。"""
+    source = _make_db(tmp_path, BASE_ROWS)
+
+    _, category_paths = export_livewall_catalog(source, tmp_path / "data")
+    item = next(item for item in _read(category_paths["美女"])["items"] if item["id"] == 1)
+
+    assert item["coverUrl"] is None
+
+
+def test_cover_url_follows_primary_and_sort_order(tmp_path):
+    """同一壁纸有多个 image 时，按关联表的主资源与排序取第一条。"""
+    source = _make_db(
+        tmp_path,
+        BASE_ROWS
+        + """
+        INSERT INTO asset VALUES (21, 'https://cdn.test/a-cover-late.jpg', 'image', 1);
+        INSERT INTO wallpaper_asset VALUES (1, 21, 0, 5);
+        INSERT INTO asset VALUES (22, 'https://cdn.test/a-cover-first.jpg', 'image', 1);
+        INSERT INTO wallpaper_asset VALUES (1, 22, 1, 0);
+        """,
+    )
+
+    _, category_paths = export_livewall_catalog(source, tmp_path / "data")
+    item = next(item for item in _read(category_paths["美女"])["items"] if item["id"] == 1)
+
+    assert item["coverUrl"] == "https://cdn.test/a-cover-first.jpg"
+
+
+def test_cover_url_ignores_inaccessible_image(tmp_path):
+    """不可访问的 image 不能当静态图地址（与播放地址同一条 accessible=1 过滤）。"""
+    source = _make_db(
+        tmp_path,
+        BASE_ROWS
+        + """
+        INSERT INTO asset VALUES (23, 'https://cdn.test/a-broken.jpg', 'image', 0);
+        INSERT INTO wallpaper_asset VALUES (1, 23, 1, 0);
+        """,
+    )
+
+    _, category_paths = export_livewall_catalog(source, tmp_path / "data")
+    item = next(item for item in _read(category_paths["美女"])["items"] if item["id"] == 1)
+
+    assert item["coverUrl"] is None
+
+
+def test_cover_url_does_not_leak_between_wallpapers(tmp_path):
+    """静态图按壁纸 id 归属，不会串到别的条目上。"""
+    source = _make_db(
+        tmp_path,
+        BASE_ROWS
+        + """
+        INSERT INTO asset VALUES (24, 'https://cdn.test/c.jpg', 'image', 1);
+        INSERT INTO wallpaper_asset VALUES (3, 24, 1, 0);
+        """,
+    )
+
+    _, category_paths = export_livewall_catalog(source, tmp_path / "data")
+    scenery = {item["id"]: item for item in _read(category_paths["风景"])["items"]}
+    beauty = {item["id"]: item for item in _read(category_paths["美女"])["items"]}
+
+    assert scenery[3]["coverUrl"] == "https://cdn.test/c.jpg"
+    assert beauty[1]["coverUrl"] is None

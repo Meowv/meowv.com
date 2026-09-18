@@ -34,6 +34,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let screenCoordinator: ScreenCoordinator
     private let engine = PlaybackEngine()
     private let network = NetworkMonitor()
+    /// 锁屏预览：把当前壁纸的静态图同步成系统墙纸（桌面态被覆盖窗口挡住，只在锁屏可见）。
+    private lazy var lockScreenPreviewer = LockScreenPreviewer(
+        cacheDirectory: Self.applicationSupportDirectory
+    )
+    /// 手动下载当前壁纸（视频 + 静态预览图）到 `~/Downloads/livewall/`。
+    private lazy var downloader = WallpaperDownloader()
     /// 全局热键。Carbon `RegisterEventHotKey`，不需要辅助功能授权。
     private let hotKeys = HotKeyManager()
     /// 省电状态机。延迟创建，因为它的求值依赖已加载的 `preferences`。
@@ -159,6 +165,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.handlePlaybackFailure(key, error)
         }
 
+        // 锁屏预览的日志与提示出口。提示只在真失败时给一次（见 `LockScreenPreviewer`），
+        // 免得每换一张片就刷一条警告。
+        lockScreenPreviewer.log = { [weak self] message in self?.log(message) }
+        lockScreenPreviewer.onNotice = { [weak self] message, isWarning in
+            guard let self else { return }
+            self.notice = isWarning ? .warning(message) : .info(message)
+            self.refreshStatusItem()
+        }
+        downloader.log = { [weak self] message in self?.log(message) }
+
         network.onChange = { [weak self] reachable in
             guard let self else { return }
             self.log(reachable ? "网络已恢复" : "网络已断开（当前画面继续循环，暂不切换）")
@@ -237,6 +253,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         scheduleTimer?.invalidate()
         network.stop()
         persistScreenSources()
+        // 恢复用户原来的墙纸。不恢复的话，退出后桌面会直接露出一张「最后播放过的
+        // 静态图」，用户会以为自己的壁纸被改坏了。进程被强杀时恢复不了，
+        // 原图路径已写在日志里。
+        lockScreenPreviewer.restoreUserWallpaper()
         engine.teardown()
     }
 
@@ -533,6 +553,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self.log("播放 \(item.id) \(item.title)(\(loaded.resolutionText)) 时长 "
                     + "\(String(format: "%.2f", loaded.durationSeconds))s 编码 \(loaded.codec)"
                     + " [\(key.label)]")
+                // 锁屏预览：把这张的静态图同步成系统墙纸。**只跟随主槽位** ——
+                // 系统墙纸全局只有一张，多槽位（每屏独立）时以主槽位为准。
+                // 必须在**播放中**发起：抓帧兜底要求播放器在播，而锁屏通知到达时
+                // governor 已经把播放器暂停了，那一刻只复用已缓存的图。
+                if self.preferences.lockScreenPreview, key == self.engine.primaryKey {
+                    self.refreshLockScreenPreview(for: item, on: key)
+                }
                 self.refreshStatusItem()
                 // 加载是异步的，期间状态可能已翻成暂停。播放器必须服从当前状态，
                 // 否则「暂停时正好有加载在飞」会让壁纸在没人看见的时候自己播起来。
@@ -749,6 +776,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             forName: NSNotification.Name("com.apple.screenIsLocked"), object: nil, queue: .main
         ) { [weak self] _ in
             self?.governor.setSessionLocked(true)
+            // 把最近一次成功的静态图**再设一遍**：`setDesktopImageURL` 生效有延迟，
+            // 而锁屏正是「用户马上要看」的时刻。这里刻意不抓帧 —— 播放器已被
+            // governor 暂停，取不到新帧（见 `PlaybackEngine.currentFrame` 的说明）。
+            self?.lockScreenPreviewer.reapplyCached()
         }
         DistributedNotificationCenter.default().addObserver(
             forName: NSNotification.Name("com.apple.screenIsUnlocked"), object: nil, queue: .main
@@ -785,6 +816,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         for key in staleKeys { namesBySlot[key] = nil }
         refreshCurrentName()
 
+        // 策略或屏幕变了，锁屏预览的目标屏也可能变了（例如切到「仅主屏」）——
+        // 不刷新的话副屏会一直顶着一张不属于它的静态图。
+        if preferences.lockScreenPreview, let primary = engine.primaryKey, let item = engine.item(on: primary) {
+            refreshLockScreenPreview(for: item, on: primary)
+        }
+
         let added = keys.filter { !previous.contains($0) }
         guard !added.isEmpty else { return }
         log("新增槽位 \(added.map(\.label).joined(separator: "、"))，各取一张")
@@ -795,6 +832,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func refreshCurrentName() {
         let names = engine.slotKeys().compactMap { namesBySlot[$0] }
         currentName = names.isEmpty ? "启动中" : names.joined(separator: " · ")
+    }
+
+    /// 把某张壁纸的静态图同步成系统墙纸（锁屏预览）。
+    ///
+    /// 用独立 Task：内部要下载几百 KB（最长 15 秒超时），不能挡住切换排期。
+    /// `frameProvider` 只在静态图不可用时才会被调用，那时播放器仍在播（下载通常几秒内结束）。
+    private func refreshLockScreenPreview(for item: WallpaperItem, on key: PlaybackSlotKey) {
+        let previewer = lockScreenPreviewer
+        let policy = screenCoordinator.policy
+        Task { @MainActor [weak self] in
+            await previewer.update(
+                for: item,
+                multiScreenPolicy: policy,
+                frameProvider: { self?.engine.currentFrame(on: key) }
+            )
+        }
     }
 
     /// 把各屏当前播放的条目 id 写回配置，下次启动接着播（恢复见 `advance()` 里的
@@ -946,6 +999,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // 开机自启与窗口层级装完基本不动。
         menu.addItem(buildIntervalMenu())
         menu.addItem(buildPowerMenu())
+        // 锁屏预览紧跟省电设置：同属「画面行为」的开关，且都是开一次就不常动。
+        let lockPreview = NSMenuItem(
+            title: "锁屏预览（当前 \(preferences.lockScreenPreview ? "开" : "关")）",
+            action: #selector(toggleLockScreenPreview),
+            keyEquivalent: ""
+        )
+        lockPreview.target = self
+        lockPreview.state = preferences.lockScreenPreview ? .on : .off
+        menu.addItem(lockPreview)
         menu.addItem(buildCategoryMenu())
 
         let policyMenu = NSMenu()
@@ -1000,8 +1062,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(.separator())
 
         // ── 维护 ────────────────────────────────────────────
-        // 低频恢复动作。放在设置组之后：它不改变任何设置，只是把清单重新拉一遍，
-        // 混在配置项中间既打断位置记忆，也容易被误点。
+        // 低频一次性动作。放在设置组之后：它们都不改变任何设置，混在配置项中间
+        // 既打断位置记忆，也容易被误点。
+        // 「下载当前壁纸」排在「重新加载清单」之前：前者是主动产出，后者是恢复动作。
+        let downloadCurrent = NSMenuItem(
+            title: downloader.isDownloading ? "下载中…" : "下载当前壁纸",
+            action: #selector(downloadCurrentWallpaper),
+            keyEquivalent: ""
+        )
+        downloadCurrent.target = self
+        downloadCurrent.isEnabled = !downloader.isDownloading && currentDownloadableItem != nil
+        menu.addItem(downloadCurrent)
+
         let reload = NSMenuItem(
             title: "重新加载清单（\(HotKeyManager.Definition.reloadCatalog.display)）",
             action: #selector(reloadCatalog),
@@ -1206,6 +1278,71 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // 立刻重算，否则要等下一次 2 秒轮询才生效，用户会以为没点上
         governor.refresh()
         refreshStatusItem()
+    }
+
+    /// 锁屏预览开关。
+    ///
+    /// 关掉时立刻把系统墙纸恢复成用户原来的那张 —— 否则「关掉」之后锁屏仍是最后
+    /// 一张静态图，用户会以为开关没生效。
+    @objc private func toggleLockScreenPreview() {
+        preferences.lockScreenPreview.toggle()
+        try? preferences.save(to: configURL)
+        log("锁屏预览 → \(preferences.lockScreenPreview ? "开" : "关")")
+        if preferences.lockScreenPreview {
+            notice = .info("锁屏预览已开启")
+            if let primary = engine.primaryKey, let item = engine.item(on: primary) {
+                refreshLockScreenPreview(for: item, on: primary)
+            }
+        } else {
+            notice = .info("锁屏预览已关闭，系统墙纸已恢复")
+            lockScreenPreviewer.restoreUserWallpaper()
+        }
+        refreshStatusItem()
+    }
+
+    /// 当前可下载的条目（主槽位正在播的那张）。没有就置灰菜单项 ——
+    /// 让用户点到一个必然失败的动作比置灰更糟。
+    private var currentDownloadableItem: WallpaperItem? {
+        guard let primary = engine.primaryKey else { return nil }
+        return engine.item(on: primary)
+    }
+
+    /// 下载当前壁纸（视频 + 静态预览图）到 `~/Downloads/livewall/`。
+    ///
+    /// 入口在维护段：它不改播放、不改配置，属于低频的一次性动作。
+    @objc private func downloadCurrentWallpaper() {
+        guard !downloader.isDownloading else {
+            notice = .info("正在下载，请稍候")
+            refreshStatusItem()
+            return
+        }
+        guard let item = currentDownloadableItem else {
+            notice = .warning("当前没有正在播放的壁纸")
+            refreshStatusItem()
+            return
+        }
+
+        notice = .info("正在下载 \(item.displayName)…")
+        refreshStatusItem()
+
+        Task { @MainActor in
+            do {
+                guard let result = try await self.downloader.download(item) else { return }
+                let names = result.files.map(\.lastPathComponent).joined(separator: "、")
+                if result.skippedCover {
+                    // 视频成功、静态图失败：这是「部分成功」，必须说清楚，否则用户
+                    // 只会看到「下载失败」而以为视频也没存下来。
+                    self.notice = .warning("视频已下载（\(names)），静态图未保存")
+                } else {
+                    self.notice = .info("已下载：\(names)")
+                }
+                self.log("下载当前壁纸完成 → \(self.downloader.destinationDirectory.path)")
+            } catch {
+                self.notice = .warning("下载失败：\(error.localizedDescription)")
+                self.log("⚠️ 下载当前壁纸失败：\(error.localizedDescription)")
+            }
+            self.refreshStatusItem()
+        }
     }
 
     @objc private func setIdleThreshold(_ sender: NSMenuItem) {

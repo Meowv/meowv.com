@@ -7,9 +7,16 @@ from pathlib import Path
 
 SCHEMA_VERSION = 1
 
-# 只导出视频预览资源。当前公开接口对「电脑动态」只提供 video_preview，
+# 播放地址只导出 video_preview：当前公开接口对「电脑动态」只提供 video_preview，
 # 没有 video_original，因此这是唯一可用的播放地址。
 VIDEO_ROLE = "video_preview"
+
+# 静态图（`media_role='image'`）。它**不在播放链路上**，只给客户端的「锁屏预览」
+# 与「下载当前壁纸」用 —— 客户端拿它设系统墙纸，锁屏时就能看到当前这张。
+# 每张壁纸入库时都强制带 image（见 `normalize.normalize_item`：拿不到 image 的
+# 整条记录会被丢弃），但它的 `accessible` **不是真实探测结果**（`pipeline` 从不做
+# HEAD，走列默认值 1），所以客户端必须能容忍这个地址 404 并自行降级。
+IMAGE_ROLE = "image"
 
 # 与 publish.py 一致：每个壁纸最多保留 4 个标签
 MAX_TAGS = 4
@@ -41,21 +48,25 @@ def _fetch_items(
     device: str,
     content: str,
 ) -> list[dict[str, object]]:
-    """查询目标壁纸及其视频地址。
+    """查询目标壁纸的播放地址与静态图地址。
 
     **刻意不带分类过滤**：分类切分在 Python 侧做，这样无论有多少个分类，
     数据库只扫一遍。`categoryIds` 留空，由 `export_livewall_catalog` 回填。
+
+    一次查询同时取两种角色（`video_preview` / `image`），各自按**同一个
+    ORDER BY** 取第一个命中的那一条 —— 顺序语义由 `is_primary`、`sort_order`、
+    `a.id` 共同决定，不能改成 `GROUP BY` + 聚合：那会丢掉这套语义。
     """
     rows = source_db.execute(
         f"""
-        SELECT w.id, w.title, w.author, a.url
+        SELECT w.id, w.title, w.author, a.url, a.media_role
           FROM wallpaper AS w
           JOIN wallpaper_asset AS wa ON wa.wallpaper_id = w.id
           JOIN asset AS a ON a.id = wa.asset_id
          WHERE w.status = 'active'
            AND w.device_type = ?
            AND w.content_type = ?
-           AND a.media_role = ?
+           AND a.media_role IN (?, ?)
            AND a.accessible = 1
            AND a.url IS NOT NULL
            AND a.url <> ''
@@ -65,25 +76,45 @@ def _fetch_items(
                   COALESCE(wa.sort_order, 999999) ASC,
                   a.id ASC
         """,
-        (device, content, VIDEO_ROLE),
+        (device, content, VIDEO_ROLE, IMAGE_ROLE),
     ).fetchall()
 
     tags = _fetch_tags(source_db)
 
-    items: list[dict[str, object]] = []
-    seen: set[int] = set()
+    video_urls: dict[int, str] = {}
+    cover_urls: dict[int, str] = {}
+    meta: dict[int, tuple[str, str]] = {}
+    # 条目顺序 = 首次出现 video_preview 的顺序，等价于原来的 `seen` 去重
+    order: list[int] = []
+
     for row in rows:
         wallpaper_id = int(row[0])
-        # 同一壁纸可能有多个 video_preview 资源，按 ORDER BY 取第一个即可
-        if wallpaper_id in seen:
-            continue
-        seen.add(wallpaper_id)
+        role = str(row[4])
+        url = str(row[3])
+        meta.setdefault(wallpaper_id, (row[1] or "", row[2] or ""))
+        if role == VIDEO_ROLE:
+            # 同一壁纸可能有多个 video_preview 资源，按 ORDER BY 取第一个即可
+            if wallpaper_id not in video_urls:
+                video_urls[wallpaper_id] = url
+                order.append(wallpaper_id)
+        else:
+            # 静态图。缺失时保持 None —— 客户端会退回「抓当前帧」，
+            # 不要在这里伪造一个地址。
+            cover_urls.setdefault(wallpaper_id, url)
+
+    items: list[dict[str, object]] = []
+    for wallpaper_id in order:
+        title, author = meta[wallpaper_id]
         items.append(
             {
                 "id": wallpaper_id,
-                "title": row[1] or "",
-                "author": row[2] or "",
-                "url": str(row[3]),
+                "title": title,
+                "author": author,
+                "url": video_urls[wallpaper_id],
+                # 静态图地址（锁屏预览与手动下载用）。可能是 null：
+                # 只有 image、没有 video_preview 的壁纸不会进清单，
+                # 而 image 缺失的壁纸（理论上不该有）在这里如实写 null。
+                "coverUrl": cover_urls.get(wallpaper_id),
                 # 数据库里的 asset.duration_seconds 当前全为 NULL，客户端在播放时用
                 # AVAsset 自行探测，不在这里伪造默认值
                 "durationSeconds": None,

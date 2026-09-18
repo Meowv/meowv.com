@@ -59,6 +59,14 @@ public struct Preferences: Codable, Sendable, Equatable {
     public var pauseOnBattery: Bool
     public var pauseOnThermalPressure: Bool
 
+    // 锁屏预览
+    /// 把当前壁纸的静态图同步为**系统墙纸**，锁屏时就能看到当前这张。
+    ///
+    /// 原理：覆盖窗口在系统墙纸之上，桌面态下静态图被窗口挡住看不见；
+    /// 锁屏态下窗口被 loginwindow 的安全罩挡住，露出的正是这张静态图。
+    /// 默认开启；关掉即完全停用（不下载、不设墙纸）。
+    public var lockScreenPreview: Bool
+
     public init(
         remoteCatalogURL: String? = Preferences.defaultRemoteCatalogURL,
         intervalSeconds: Double = SchedulePolicy.defaultIntervalSeconds,
@@ -75,7 +83,8 @@ public struct Preferences: Codable, Sendable, Equatable {
         idleThresholdSeconds: Double = 300,
         pauseOnLowPowerMode: Bool = true,
         pauseOnBattery: Bool = false,
-        pauseOnThermalPressure: Bool = true
+        pauseOnThermalPressure: Bool = true,
+        lockScreenPreview: Bool = true
     ) {
         self.remoteCatalogURL = remoteCatalogURL
         self.intervalSeconds = intervalSeconds
@@ -93,6 +102,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         self.pauseOnLowPowerMode = pauseOnLowPowerMode
         self.pauseOnBattery = pauseOnBattery
         self.pauseOnThermalPressure = pauseOnThermalPressure
+        self.lockScreenPreview = lockScreenPreview
     }
 
     public static let `default` = Preferences()
@@ -104,6 +114,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         case multiScreenPolicy, perScreenSources, selectedCategoryID
         case pauseWhenCovered, pauseWhenIdle, idleThresholdSeconds
         case pauseOnLowPowerMode, pauseOnBattery, pauseOnThermalPressure
+        case lockScreenPreview
     }
 
     /// 逐字段容错解码：缺字段就用默认值，绝不因为少一个键而整体失败。
@@ -138,6 +149,10 @@ public struct Preferences: Codable, Sendable, Equatable {
         pauseOnLowPowerMode = try container.decodeIfPresent(Bool.self, forKey: .pauseOnLowPowerMode) ?? fallback.pauseOnLowPowerMode
         pauseOnBattery = try container.decodeIfPresent(Bool.self, forKey: .pauseOnBattery) ?? fallback.pauseOnBattery
         pauseOnThermalPressure = try container.decodeIfPresent(Bool.self, forKey: .pauseOnThermalPressure) ?? fallback.pauseOnThermalPressure
+        // 与枚举字段同理用 `try?`：手改配置把 true/false 写成别的类型（`"yes"`）会抛
+        // typeMismatch，后果与缺字段完全一样 —— 整个文件退回默认、静默清零其它设置。
+        lockScreenPreview = (try? container.decodeIfPresent(Bool.self, forKey: .lockScreenPreview))
+            ?? fallback.lockScreenPreview
     }
 
     /// 校验并转成 URL。空串、非 http(s) 一律视为「未配置」。

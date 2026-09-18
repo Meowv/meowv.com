@@ -136,5 +136,57 @@ func preferencesCompatibilityTests() {
             expectEqual(decoded.intervalSeconds, 900, "其它字段应保留")
             expectEqual(decoded.perScreenSources, ScreenSourceStore.empty, "损坏的字段应回退到空表")
         }
+
+        test("老配置（没有 lockScreenPreview）默认开启，且其它设置不丢") {
+            let legacy = """
+            {
+              "intervalSeconds": 1500,
+              "playbackOrder": "sequential"
+            }
+            """
+            guard let decoded = try? JSONDecoder().decode(Preferences.self, from: Data(legacy.utf8)) else {
+                expect(false, "老配置应当能解码")
+                return
+            }
+            expectEqual(decoded.lockScreenPreview, true, "缺字段应回退到默认开启")
+            expectEqual(decoded.intervalSeconds, 1500, "其它字段应保留")
+            expectEqual(decoded.playbackOrder, .sequential, "其它字段应保留")
+        }
+
+        test("lockScreenPreview 关掉后能读回，写坏了也不影响其它字段") {
+            let off = """
+            { "intervalSeconds": 600, "lockScreenPreview": false }
+            """
+            guard let decoded = try? JSONDecoder().decode(Preferences.self, from: Data(off.utf8)) else {
+                expect(false, "应能解码")
+                return
+            }
+            expectEqual(decoded.lockScreenPreview, false, "关闭状态应读回")
+            expectEqual(decoded.intervalSeconds, 600, "其它字段应保留")
+
+            // 手改成字符串：坏一个字段不能把整份配置打回默认
+            let broken = """
+            { "intervalSeconds": 900, "lockScreenPreview": "yes" }
+            """
+            guard let decodedBroken = try? JSONDecoder().decode(Preferences.self, from: Data(broken.utf8)) else {
+                expect(false, "字段损坏时整体解码仍应成功")
+                return
+            }
+            expectEqual(decodedBroken.lockScreenPreview, true, "损坏的字段应回退到默认值")
+            expectEqual(decodedBroken.intervalSeconds, 900, "其它字段应保留")
+        }
+
+        test("lockScreenPreview 往返编码不丢") {
+            var preferences = Preferences()
+            preferences.lockScreenPreview = false
+            preferences.intervalSeconds = 42
+            guard let data = try? JSONEncoder().encode(preferences),
+                  let decoded = try? JSONDecoder().decode(Preferences.self, from: data) else {
+                expect(false, "往返应能成功")
+                return
+            }
+            expectEqual(decoded.lockScreenPreview, false, "关闭状态应保持")
+            expectEqual(decoded.intervalSeconds, 42, "其它字段应保持")
+        }
     }
 }
