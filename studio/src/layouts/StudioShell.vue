@@ -188,8 +188,41 @@ const showFooter = computed(
   () => ['home', 'office', 'not-found'].includes(String(route.name)) && !workspaceActive.value,
 );
 const donationDialogOpen = ref(false);
+const DONATION_HASHES = ['support', 'sponsor', 'donate'];
 const mobileNavigationOpen = ref(false);
 const headerElement = ref<HTMLElement | null>(null);
+
+function isDonationHash(hash: string): boolean {
+  return DONATION_HASHES.includes(hash.replace(/^#/, '').toLowerCase());
+}
+
+function clearLocationHash(): void {
+  window.history.replaceState(
+    window.history.state,
+    '',
+    `${window.location.pathname}${window.location.search}`,
+  );
+}
+
+// 任意页面带上 #support / #sponsor / #donate 都会直接打开赞助支持弹窗。
+watch(
+  () => route.hash,
+  (hash) => {
+    if (isDonationHash(hash)) donationDialogOpen.value = true;
+  },
+  { immediate: true },
+);
+
+// 手动改写地址栏 hash 时路由不一定更新，这里补一次。
+function handleWindowHashChange(): void {
+  if (isDonationHash(window.location.hash)) donationDialogOpen.value = true;
+}
+
+// 关闭后清掉 hash，避免刷新或前进/后退时重复弹出。
+watch(donationDialogOpen, (open) => {
+  if (open || !isDonationHash(window.location.hash)) return;
+  clearLocationHash();
+});
 
 watch(
   isMarkdownPage,
@@ -376,6 +409,7 @@ onMounted(() => {
   document.addEventListener('keydown', handleDocumentKeydown);
   window.addEventListener('scroll', handleWindowScroll, { passive: true });
   window.addEventListener('resize', handleWindowResize, { passive: true });
+  window.addEventListener('hashchange', handleWindowHashChange);
   handleWindowScroll();
 });
 
@@ -385,6 +419,7 @@ onBeforeUnmount(() => {
   document.removeEventListener('keydown', handleDocumentKeydown);
   window.removeEventListener('scroll', handleWindowScroll);
   window.removeEventListener('resize', handleWindowResize);
+  window.removeEventListener('hashchange', handleWindowHashChange);
 });
 
 const primaryRoutes = [
