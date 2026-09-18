@@ -18,9 +18,13 @@ public struct Preferences: Codable, Sendable, Equatable {
     public var remoteCatalogURL: String?
 
     // 节奏
+    /// 自动切换间隔，单位秒。合法区间见 `SwitchInterval`（10 秒 – 24 小时），
+    /// `sanitized()` 会夹紧。实际等待时长还会叠加 `jitterRatio` 的抖动。
     public var intervalSeconds: Double
     public var jitterRatio: Double
     public var switchWhenFinished: Bool
+    /// 选片顺序（随机 / 顺序）。见 `PlaybackOrder`。
+    public var playbackOrder: PlaybackOrder
 
     // 显示
     /// `fill` 裁切铺满 / `fit` 留黑边。
@@ -51,6 +55,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         intervalSeconds: Double = SchedulePolicy.defaultIntervalSeconds,
         jitterRatio: Double = SchedulePolicy.defaultJitterRatio,
         switchWhenFinished: Bool = false,
+        playbackOrder: PlaybackOrder = .shuffle,
         gravity: String = "fill",
         levelPreset: LevelPreset = .recommended,
         multiScreenPolicy: MultiScreenPolicy = .mirror,
@@ -66,6 +71,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         self.intervalSeconds = intervalSeconds
         self.jitterRatio = jitterRatio
         self.switchWhenFinished = switchWhenFinished
+        self.playbackOrder = playbackOrder
         self.gravity = gravity
         self.levelPreset = levelPreset
         self.multiScreenPolicy = multiScreenPolicy
@@ -82,7 +88,7 @@ public struct Preferences: Codable, Sendable, Equatable {
 
     enum CodingKeys: String, CodingKey {
         case remoteCatalogURL
-        case intervalSeconds, jitterRatio, switchWhenFinished
+        case intervalSeconds, jitterRatio, switchWhenFinished, playbackOrder
         case gravity, levelPreset
         case multiScreenPolicy, authorFilter
         case pauseWhenCovered, pauseWhenIdle, idleThresholdSeconds
@@ -90,6 +96,11 @@ public struct Preferences: Codable, Sendable, Equatable {
     }
 
     /// 逐字段容错解码：缺字段就用默认值，绝不因为少一个键而整体失败。
+    ///
+    /// 三个枚举字段额外用 `try?` 包一层：**值非法与缺字段必须一视同仁**。
+    /// `decodeIfPresent` 遇到「键在、但那不是合法取值」（手改配置时很常见，
+    /// 比如 `"playbackOrder": "random"`）会抛 `dataCorrupted`，整个 `config.json`
+    /// 解码失败并退回全默认 —— 等于把用户所有设置静默清零。
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let fallback = Preferences.default
@@ -99,9 +110,11 @@ public struct Preferences: Codable, Sendable, Equatable {
         intervalSeconds = try container.decodeIfPresent(Double.self, forKey: .intervalSeconds) ?? fallback.intervalSeconds
         jitterRatio = try container.decodeIfPresent(Double.self, forKey: .jitterRatio) ?? fallback.jitterRatio
         switchWhenFinished = try container.decodeIfPresent(Bool.self, forKey: .switchWhenFinished) ?? fallback.switchWhenFinished
+        playbackOrder = (try? container.decodeIfPresent(PlaybackOrder.self, forKey: .playbackOrder))
+            ?? fallback.playbackOrder
         gravity = try container.decodeIfPresent(String.self, forKey: .gravity) ?? fallback.gravity
-        levelPreset = try container.decodeIfPresent(LevelPreset.self, forKey: .levelPreset) ?? fallback.levelPreset
-        multiScreenPolicy = try container.decodeIfPresent(MultiScreenPolicy.self, forKey: .multiScreenPolicy)
+        levelPreset = (try? container.decodeIfPresent(LevelPreset.self, forKey: .levelPreset)) ?? fallback.levelPreset
+        multiScreenPolicy = (try? container.decodeIfPresent(MultiScreenPolicy.self, forKey: .multiScreenPolicy))
             ?? fallback.multiScreenPolicy
         authorFilter = try container.decodeIfPresent([String].self, forKey: .authorFilter) ?? fallback.authorFilter
         pauseWhenCovered = try container.decodeIfPresent(Bool.self, forKey: .pauseWhenCovered) ?? fallback.pauseWhenCovered
@@ -161,9 +174,9 @@ public struct Preferences: Codable, Sendable, Equatable {
     /// 修正非法值。配置可能被手工编辑过，不能假定它自洽。
     public func sanitized() -> Preferences {
         var copy = self
-        if !(copy.intervalSeconds > 0) || !copy.intervalSeconds.isFinite {
-            copy.intervalSeconds = SchedulePolicy.defaultIntervalSeconds
-        }
+        // 超范围一律夹紧而不是退回默认：手改配置的人多半只是「填得太短/太长」，
+        // 夹到最近的合法值更接近他的本意。非有限值夹不了，`SwitchInterval.clamp` 里退回默认。
+        copy.intervalSeconds = SwitchInterval.clamp(copy.intervalSeconds)
         if !(copy.jitterRatio >= 0) || !copy.jitterRatio.isFinite {
             copy.jitterRatio = SchedulePolicy.defaultJitterRatio
         }

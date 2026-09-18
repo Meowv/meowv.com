@@ -456,7 +456,7 @@ PYTHONPATH=src python3 -m wallpapers export-livewall
 cd livewall
 ./build.sh        # 编译并组装 .app
 ./test.sh         # 运行单元测试
-./run-livewall.sh # 编译并启动正式 App（会接管桌面壁纸层）
+./run.sh          # 编译并启动正式 App（会接管桌面壁纸层）
 ```
 
 macOS 没有「设置视频为壁纸」的官方 API。livewall 的做法是创建一个无边框窗口，把窗口层级钉在「系统壁纸之上、桌面图标之下」这一层，在里面用 `AVPlayerLayer` 循环播放 mp4。层级值全部由 `CGWindowLevelForKey` 派生，启动时自检是否真的落在有效区间内，并检测同层竞争。

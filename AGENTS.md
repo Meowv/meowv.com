@@ -55,6 +55,7 @@
 - `build.sh` 按参数顺序构建。全量构建必须全部成功后再替换 `build/`；指定项目构建只替换对应域名目录。
 - 汇总目录固定为 `build/meowv.com/`、`build/studio.meowv.com/`。Studio 产物包含 `dist/zitie/`。
 - 保持 macOS Bash 3.2 兼容性，不使用 `mapfile`、关联数组等 4.0+ 特性。Bash 3.2 在 `set -u` 下展开空数组会报 `unbound variable`，遍历前先使用 `${SELECTED_PROJECTS[*]:-}` 防护。
+- 所有 shell 脚本中，变量后紧跟中文或全角字符时一律写成 `${VAR}`。非 `C` locale 下 bash 会把紧随其后的多字节字符首字节并入变量名（`$APP（` 被解析为变量名 `APP\xef`），`set -u` 下直接报 `unbound variable` 并使脚本中断。`LC_ALL=C` 的环境（例如某些沙箱）测不出这个问题，本地跑通不代表对用户的终端成立。
 - `build/`、暂存目录和备份目录均为可替换生成内容，不提交 Git。
 - `build.sh wallpapers` 只生成并加密 Studio 壁纸目录，不构建项目；`./build.sh studio --with-wallpapers` 仅允许与 `studio` 一起使用，并在 Studio 构建前生成目录数据。两者都会同时生成供 livewall 使用的未加密清单 `studio/public/data/livewall.json`。
 - 修改脚本时，同步检查参数帮助、项目数组、别名、端口、依赖检查、启动或构建分支、源目录和目标目录，避免只更新其中一处。
@@ -136,17 +137,18 @@ macOS 视频动态壁纸工具。定位是个人自用 / 小范围共享，不�
 ### 代码结构
 
 - `Package.swift`：SwiftPM 清单，声明三个 target：`LiveWallCore`（纯逻辑库）、`LiveWallDesktop`（依赖 AppKit 的桌面层代码）、`LiveWall`（正式 App），外加 `LiveWallCoreTests` 测试运行器。
-- `Sources/LiveWallCore/`：不依赖 `NSApplication` 的纯逻辑，可脱离 GUI 单测。层级预设、清单模型与降级链、候选池、调度策略、省电信号与状态判定、遮挡覆盖率、多屏策略、内容过滤、配置模型都在这里。**新写的逻辑优先放这里**，这样才测得到。
+- `Sources/LiveWallCore/`：不依赖 `NSApplication` 的纯逻辑，可脱离 GUI 单测。层级预设、清单模型与降级链、候选池、选片顺序、调度策略与切换间隔、时长文案、省电信号与状态判定、遮挡覆盖率、多屏策略、内容过滤、配置模型都在这里。**新写的逻辑优先放这里**，这样才测得到。
 - `Sources/LiveWallDesktop/`：依赖 AppKit 的桌面层代码 —— 桌面层覆盖窗口、窗口层级探测、遮挡检测。
 - `Sources/LiveWall/`：正式 App。菜单栏常驻，负责编排（清单、调度、失败处理、菜单栏、系统事件）。省电信号的采集在 `PlaybackGovernor.swift`，播放器的暂停与恢复只在 `AppDelegate.applyPlaybackState` 一处发生；全局热键在 `HotKeyManager.swift`，开机自启在 `LaunchAtLogin.swift`。
 - `Tests/LiveWallCoreTests/`：测试用例与自建断言运行器（`Harness.swift`）。
-- `build.sh`：编译并组装 `.app`。`test.sh`：跑测试。`run-livewall.sh`：运行正式 App。
+- `build.sh`：编译并组装 `.app`。`test.sh`：跑测试。`run.sh`：运行正式 App。
 - `Resources/Info-LiveWall.plist`：App 的 `LSUIElement=true`（菜单栏常驻，不占 Dock）。
 
 ### 约定与验证
 
 - 使用 Swift，**只需要 Command Line Tools，不需要 Xcode**，也不依赖 Node/pnpm。本机因此**没有 XCTest**（`unable to resolve module dependency: 'XCTest'`），测试用 `executableTarget` + 自建断言运行器实现，见 `Package.swift` 顶部说明。不要改成 `testTarget`，那会直接编译失败。
-- 构建与运行只走 `livewall/build.sh`、`livewall/test.sh`、`livewall/run-livewall.sh`。**不接入根目录的 `build.sh`、`run.sh`、`deploy.sh`** —— 那些脚本的模型是「Web 产物 → `build/<域名>/` → Nginx」，与本项目无关。
+- 构建与运行只走 `livewall/build.sh`、`livewall/test.sh`、`livewall/run.sh`。**不接入根目录的 `build.sh`、`run.sh`、`deploy.sh`** —— 那些脚本的模型是「Web 产物 → `build/<域名>/` → Nginx」，与本项目无关。注意 `livewall/run.sh` 与根目录 `run.sh` **同名不同物**，前者只在 `livewall/` 目录内使用。
+- **构建配置分界：`build.sh` 默认 release（发布版），`run.sh` 默认 debug（开发版，`--release` 可切到发布版）。** 开发者工具用 `#if DEBUG` 隔离，release 构建里不参与编译 —— 目前是菜单里的「打印窗口层级表」，连同 `WindowInspector.printTable` 和它专用的三个文本对齐转发函数。改默认配置或搬动这段代码前，先确认 release 二进制里搜不到该字符串。
 - 修改纯逻辑后优先运行 `cd livewall && ./test.sh`；修改窗口层级、播放或窗口生命周期逻辑后必须真机跑一次 App 验证（会短暂占用桌面）。
 - **窗口层级值只能由 `CGWindowLevelForKey` 派生**，禁止硬编码魔数；不同 macOS 版本的实际值不同。层级必须落在「系统壁纸之上、桌面图标之下」的开区间内。
 - 识别系统壁纸窗口时**不能用宽松子串匹配**（`contains("wallpaper")` 会把第三方壁纸软件误判成系统壁纸）；系统壁纸进程名会随系统语言本地化，中文系统下是「墙纸」。
@@ -163,9 +165,12 @@ macOS 视频动态壁纸工具。定位是个人自用 / 小范围共享，不�
 - **播放器的暂停与恢复只能在一个地方发生**（`AppDelegate.applyPlaybackState`）。系统通知只负责更新 governor 的信号，绝不直接碰播放器 —— 多路信号各改一次会互相打架。
 - **`VideoLoader.load` 是异步的，加载完成后必须重新核对状态**。否则「暂停时正好有加载在飞」会让壁纸在没人看见的时候自己播起来。`advance()` 开头的状态守卫同理，它挡住的是网络恢复之类的旁路触发。
 - **遮挡检测不要退回网格采样或 bbox**。网格采样会漏掉窄缝（20px 的缝比 63px 的网格还窄，实测报告「覆盖 100%」），union + bounding box 会把两个并排的半屏窗口误判成完全遮挡。现行实现是 `CoverageGrid` 的坐标压缩法，算精确面积；`legacyBoundingBoxCovers` 只留给测试做对比证据。
-- **`Preferences` 必须保持逐字段容错解码**。Swift 合成的 `Codable` **不会**回退到属性默认值 —— 缺字段直接抛 `keyNotFound`，会让用户已有的 `config.json` 整体解码失败并静默丢配置。新增字段时同步补 `CodingKeys`、`init(from:)` 与往返测试。
+- **`Preferences` 必须保持逐字段容错解码**。Swift 合成的 `Codable` **不会**回退到属性默认值 —— 缺字段直接抛 `keyNotFound`，会让用户已有的 `config.json` 整体解码失败并静默丢配置。新增字段时同步补 `CodingKeys`、`init(from:)` 与往返测试。**枚举字段还要额外用 `try?` 包一层**：键在但取值非法（手改配置写错，如 `"playbackOrder": "random"`）会抛 `dataCorrupted`，后果与缺字段完全一样 —— 整个文件退回默认，用户的其它设置一起被静默清零。
+- **两种选片顺序都必须「走完一轮才重排，一轮内不重复」**（`CandidatePool.order`：`shuffle` 每轮重洗 / `sequential` 按清单原序）。随机模式靠「洗牌前排除当前项」避免连着重复；顺序模式**不能沿用这一招** —— 每轮都会少一条尾巴，实际序列会退化成 `A…Z → A…Y → A…X`，看起来像漏播，正确做法是只在新一轮首条恰好等于当前项时向后让一位。换模式或改过滤条件都会清空待取队列（等于重新开始一轮），但**黑名单不清**。
+- **切换间隔的单位是秒，合法区间由 `SwitchInterval` 夹紧（10 秒 – 24 小时）**，写法是「夹到最近的合法值」而不是退回默认，非有限值才退回 `SchedulePolicy.defaultIntervalSeconds`。注意非正数间隔**不等于**「播完即切」——后者要显式开 `switchWhenFinished`。改完间隔要立即重排下一次切换（否则用户盯着看毫无变化，会以为没点上），但「正在等网络恢复」和「当前暂停」两种状态下不要插队。
 - **全局热键用 Carbon `RegisterEventHotKey`，不要换成 `NSEvent.addGlobalMonitorForEvents`** —— 后者需要「辅助功能」授权，会弹窗且要重启 App。代价是热键会**抢占**该组合，所以只挑不常用的 `⌥⌘` 组合，并且**注册失败必须显式提示**：重复注册同一组合返回 `eventHotKeyExistsErr`（-9878），据此区分「被占用」与「其它失败」。
 - **菜单项的快捷键提示写进标题，不要设 `keyEquivalent`**。设了会让菜单打开时全局热键与菜单项各触发一次，切换类操作执行两遍等于互相抵消。
+- **菜单状态区的「片名」与「附注」必须是两个字段，且附注要分信息 / 警告两级**。共用一个字段时失败信息会顶掉片名，用户看不到正在循环的是哪张，会误读成「壁纸掉了」；而附注既承载真异常（候选池耗尽、保持当前画面），也承载操作回执（窗口层级切换成功、开机自启已开启），**前缀 `⚠` 只能加在警告级上** —— 给回执加警告符号会让人以为操作失败。菜单是「状态 → 播放控制 → 设置 → 维护 → 退出」五段，插入新项时归到对应段，不要打散同类。
 - **`SMAppService.mainApp.status` 在未注册时返回 `notFound` 而不是 `notRegistered`**。曾据此显示「不可用（需在 .app 内运行）」，而 App 不在 `/Applications` 下也能注册成功 —— 一个会让用户放弃使用的假故障。两个「没开启」状态要统一显示为「未开启」。
 - **「仅主屏」用 `NSScreen.screens.first`，不要用 `NSScreen.main`**。后者是「当前键盘焦点所在的屏幕」，会随用户拖窗口漂移，会导致窗口建到副屏上。
 - **等待窗口上屏要等到 bounds 稳定，不能只看「窗口号出现了」**。窗口上屏有一段对称缩放的进入动画，动画期间 WindowServer 报的 bounds 是内缩的（实测 1512×982 被报成 `9,6 1494x970` / `5,3 1502x976`，两次采样值不同），此时 `evaluate` 会得到「未覆盖整屏」并触发无意义的降级。比较时**不能用 `NSWindow.frame`** —— 它用「原点在主屏左下」的坐标系，副屏上会差一个主屏高度（实测同一窗口 `NSWindow.frame.y = -98` 而 `CGWindowBounds.y = 0`）。

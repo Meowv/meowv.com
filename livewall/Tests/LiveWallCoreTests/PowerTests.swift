@@ -351,6 +351,37 @@ func powerTests() {
             expectEqual(decoded?.pauseWhenIdle, Preferences.default.pauseWhenIdle, "空对象应得到默认省电开关")
         }
 
+        test("缺失的 playbackOrder 用默认值补齐") {
+            let old = Data(#"{"intervalSeconds":60}"#.utf8)
+            let decoded = try? JSONDecoder().decode(Preferences.self, from: old)
+            expectEqual(decoded?.playbackOrder, .shuffle, "缺字段应退回随机")
+            expectEqual(decoded?.playbackOrder, Preferences.default.playbackOrder, "与默认值一致")
+        }
+
+        test("枚举字段的值非法时退回默认，而不是让整份配置解码失败") {
+            // 回归保护：`decodeIfPresent` 遇到「键在、值不是合法枚举成员」会抛
+            // dataCorrupted。不包一层 try? 的话，手改配置写错一个词就会让
+            // 整份 config.json 退回全默认 —— 用户所有设置静默清零。
+            let broken = Data(#"""
+            {
+              "levelPreset": "desktopWindow2",
+              "multiScreenPolicy": "mirrorX",
+              "playbackOrder": "random",
+              "intervalSeconds": 60,
+              "pauseWhenCovered": false
+            }
+            """#.utf8)
+            let decoded = try? JSONDecoder().decode(Preferences.self, from: broken)
+
+            expectNotNil(decoded, "值非法不应导致解码失败")
+            guard let decoded else { return }
+            expectEqual(decoded.playbackOrder, Preferences.default.playbackOrder, "playbackOrder 退回默认")
+            expectEqual(decoded.levelPreset, Preferences.default.levelPreset, "levelPreset 退回默认")
+            expectEqual(decoded.multiScreenPolicy, Preferences.default.multiScreenPolicy, "multiScreenPolicy 退回默认")
+            expectEqual(decoded.intervalSeconds, 60, "合法字段应保留")
+            expectEqual(decoded.pauseWhenCovered, false, "合法字段应保留")
+        }
+
         test("往返编解码保持字段一致") {
             var original = Preferences.default
             original.intervalSeconds = 123
@@ -358,6 +389,7 @@ func powerTests() {
             original.pauseOnBattery = true
             original.idleThresholdSeconds = 45
             original.levelPreset = .iconMinus1
+            original.playbackOrder = .sequential
 
             guard let data = try? JSONEncoder().encode(original),
                   let restored = try? JSONDecoder().decode(Preferences.self, from: data) else {
@@ -365,6 +397,7 @@ func powerTests() {
                 return
             }
             expectEqual(restored, original, "往返后应完全一致")
+            expectEqual(restored.playbackOrder, .sequential, "选片顺序应往返保留")
         }
 
         test("sanitized 修正非法值") {
@@ -375,9 +408,48 @@ func powerTests() {
 
             let fixed = broken.sanitized()
 
-            expectEqual(fixed.intervalSeconds, SchedulePolicy.defaultIntervalSeconds, "负间隔应回退默认")
+            expectEqual(fixed.intervalSeconds, SwitchInterval.minSeconds, "负间隔应夹到下限")
             expectEqual(fixed.jitterRatio, 1, "抖动应夹紧到 1")
             expectEqual(fixed.gravity, "fill", "非法 gravity 应回退 fill")
+        }
+
+        test("sanitized 把间隔夹进合法区间，而不是重置成默认") {
+            // 手改配置的人多半只是「填得太短/太长」，夹到最近的合法值更接近本意。
+            var tooShort = Preferences.default
+            tooShort.intervalSeconds = 1
+            expectEqual(tooShort.sanitized().intervalSeconds, SwitchInterval.minSeconds, "过短夹到下限")
+
+            var tooLong = Preferences.default
+            tooLong.intervalSeconds = 10_000_000
+            expectEqual(tooLong.sanitized().intervalSeconds, SwitchInterval.maxSeconds, "过长夹到上限")
+
+            var notANumber = Preferences.default
+            notANumber.intervalSeconds = .nan
+            expectEqual(
+                notANumber.sanitized().intervalSeconds,
+                SchedulePolicy.defaultIntervalSeconds,
+                "非有限值夹不了，退回默认"
+            )
+
+            // 合法值一律原样保留 —— 预设之外的合法值（手填的）不能被抹掉
+            var custom = Preferences.default
+            custom.intervalSeconds = 45
+            expectEqual(custom.sanitized().intervalSeconds, 45, "合法的手填值应保留")
+        }
+
+        test("间隔经过 sanitized 后一定落在区间内，且派生的策略不再走兜底分支") {
+            for raw in [-100, 0, 5, 30, 300, 86_400, 999_999] as [Double] {
+                var broken = Preferences.default
+                broken.intervalSeconds = raw
+                let fixed = broken.sanitized()
+                let clamped = SwitchInterval.clamp(raw)
+                expectEqual(fixed.intervalSeconds, clamped, "\(raw) 的夹紧结果")
+                expect(
+                    fixed.intervalSeconds >= SwitchInterval.minSeconds
+                        && fixed.intervalSeconds <= SwitchInterval.maxSeconds,
+                    "\(raw) → \(fixed.intervalSeconds) 应落在区间内"
+                )
+            }
         }
 
         test("由配置派生的省电策略与字段一致") {

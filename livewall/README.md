@@ -9,7 +9,7 @@ macOS 视频动态壁纸工具。**个人自用 / 小范围共享**定位，不�
 | 名称 | `livewall` —— live wallpaper 的缩写。目录、Swift 模块、脚本一律用此名 |
 | 界面显示名 | 「动态壁纸」—— 菜单栏标题与系统里显示的应用名（`CFBundleName` / `CFBundleDisplayName`）。**只影响用户可见文案，代码与路径仍是 `livewall`** |
 | 用途 | 把一段 mp4 放到 macOS 桌面层循环播放，替代静态壁纸 |
-| 平台 | 仅 macOS（本机实测 macOS 26.6.2 / arm64） |
+| 平台 | 仅 macOS（本机实测 macOS 27.0 / arm64，见[本机实测基线](#本机实测基线macos-270--arm64--双屏)） |
 | 内容 | 仅视频壁纸（mp4），不做静态图片、不做网页/WebGL 壁纸 |
 | 数据源 | CDN 上的 https 直链，本地不建视频库 |
 | 与 `wallpapers/` 的区别 | `wallpapers/` 是 Python 采集器（抓元数据进 SQLite）；`livewall` 是客户端播放器。两者无代码依赖 |
@@ -18,7 +18,7 @@ macOS 视频动态壁纸工具。**个人自用 / 小范围共享**定位，不�
 
 ## 当前状态
 
-这个 App 可以日常使用：清单拉取 + 洗牌选片 + 5 分钟抖动切换 + HEAD 探测与四路失败处理，一套**信号 → 状态**的省电状态机（遮挡 / 锁屏 / 息屏 / 热压力 / 空闲 / 低电量 / 电池 + 手动暂停），三个免授权的全局热键，开机自启开关，多屏策略（全部同片 / 仅主屏），以及按作者的内容过滤。菜单里能实时改的东西都不需要重启。
+这个 App 可以日常使用：清单拉取 + 选片（随机 / 顺序，都是一轮内不重复）+ 可调切换间隔（默认 5 分钟 ±20% 抖动）+ HEAD 探测与四路失败处理，一套**信号 → 状态**的省电状态机（遮挡 / 锁屏 / 息屏 / 热压力 / 空闲 / 低电量 / 电池 + 手动暂停），三个免授权的全局热键，开机自启开关，多屏策略（全部同片 / 仅主屏），以及按作者的内容过滤。菜单里能实时改的东西都不需要重启。
 
 **未完成**：多屏的「每屏独立」策略需要架构级改造（多播放槽位），见[多屏策略](#多屏策略)。
 
@@ -28,19 +28,23 @@ macOS 视频动态壁纸工具。**个人自用 / 小范围共享**定位，不�
 livewall/
 ├─ Package.swift                SwiftPM 清单，三个 target（见下）
 ├─ README.md                    本文件：项目定位、结构、快速开始
-├─ build.sh                     编译并组装 .app
+├─ build.sh                     编译并组装 .app（默认 release = 发布版）
 ├─ test.sh                      运行 LiveWallCore 单元测试
-├─ run-livewall.sh              运行正式 App
+├─ run.sh                       以 debug 配置编译并启动（开发；--release 走发布版）
 ├─ Resources/
-│  └─ Info-LiveWall.plist   App 的 Info.plist（bundle id com.meowv.livewall）
+│  ├─ Info-LiveWall.plist   App 的 Info.plist（bundle id com.meowv.livewall）
+│  ├─ AppIcon.icns              App 图标（Finder 用），由 AppIcon-source.png 生成
+│  ├─ AppIcon-source.png        图标源图（1024×1024），唯一需要替换的文件
+│  └─ MenuBarIcon*.png          菜单栏状态项图标（播放态 / 暂停态，各 1x/2x/3x）
 ├─ Sources/
 │  ├─ LiveWallCore/     纯逻辑库，不依赖 NSApplication，可脱离 GUI 单测
 │  │  ├─ LevelPreset.swift      层级预设与有效区间（值全部由 CGWindowLevelForKey 派生）
 │  │  ├─ TextLayout.swift       终端显示宽度对齐（中文占两列）
 │  │  ├─ CatalogModel.swift     清单的 Codable 结构 + 解析/清洗
 │  │  ├─ CatalogService.swift   清单降级链（远程 → 远程副本 → 内置）
-│  │  ├─ CandidatePool.swift    洗牌队列，一轮内不重复 + 失效黑名单
-│  │  ├─ SchedulePolicy.swift   切换间隔与抖动
+│  │  ├─ CandidatePool.swift    候选队列，一轮内不重复 + 失效黑名单；选片顺序（随机 / 顺序）
+│  │  ├─ SchedulePolicy.swift   切换间隔与抖动；SwitchInterval 提供预设、合法区间与夹紧
+│  │  ├─ DurationText.swift     时长文案（秒 / 分钟 / 小时），空闲阈值与切换间隔共用
 │  │  ├─ FailurePolicy.swift    失败分类与处理决策（拉黑 / 重试 / 保持画面 / 停止）
 │  │  ├─ VideoLoadError.swift   加载失败原因（含 HTTP 状态码）
 │  │  ├─ PlaybackState.swift    省电信号、状态与判定纯函数 + 空闲阈值文案
@@ -78,6 +82,147 @@ error: unable to resolve module dependency: 'XCTest'
 `./test.sh` 执行，失败时返回非零退出码。功能上够用，代价是没有 IDE 集成与测试筛选。
 **不要把它改成 `testTarget`**，那会直接编译失败。
 
+## 图标
+
+两处图标互相独立，用途与生成方式都不同。
+
+| | App 图标 | 菜单栏状态项图标 |
+| --- | --- | --- |
+| 文件 | `Resources/AppIcon.icns` | `Resources/MenuBarIcon*.png` |
+| 可见位置 | Finder / 访达信息面板 | 菜单栏（日常唯一可见处） |
+| 声明方式 | `Info.plist` 的 `CFBundleIconFile` | 无声明，代码按文件名加载 |
+| 分辨率 | icns 内含 10 档（16→1024） | 18pt 逻辑尺寸，1x/2x/3x 三档 |
+| 状态区分 | 无 | 播放态四色风车 / 暂停态同形状统一中灰 |
+
+两者都由 `build.sh` 拷进 `Contents/Resources/`，并在 ad-hoc 签名时封存（`codesign -dv` 的
+`Sealed Resources files=` 计数应等于拷贝的文件数）。**图标缺失不会中断构建**，
+脚本只打印警告 —— 本地开发时不想带图标是允许的。
+
+### 落位与分辨率
+
+- **App 图标**：`CFBundleIconFile` 的值是 `AppIcon`，**不带扩展名**。icns 内部必须包含全部档位；
+  macOS 不会从单张位图自动缩放，缺档位时该尺寸会走系统兜底。
+- **菜单栏图标**：`AppDelegate.menuBarIcon(named:)` 从 bundle 按名加载，`@2x`/`@3x`
+  与主文件同名即可被识别为同一张图的三档位图。代码显式把逻辑尺寸钉在 18pt，
+  **不依赖 PNG 里的 DPI 元数据** —— 这样即使只加载到 @2x 位图，显示尺寸也不会翻倍，
+  而 Retina 屏仍能采样到全部像素。
+- 菜单栏图标**不是模板图**（`isTemplate = false`）。模板图会被系统压成单色剪影并自动反色，
+  风车的四种颜色会全部丢失 —— 而「带色彩」正是这个图形的全部意义。代价是无法随菜单栏明暗
+  自动反色，因此播放 / 暂停靠**颜色**区分，而不是靠透明度：菜单栏背景是叠在桌面壁纸上的
+  半透明层，低 alpha 会让图标和背景混成一团，实测几乎看不见。暂停态沿用同一形状，
+  只把四片改填统一中灰（明度 112）—— 该值在浅色栏（背景约 242）与深色栏（约 30）
+  上同时有足够对比，是唯一的约束条件，也是它不能更浅或更深的原因。
+
+### 菜单栏风车图的生成
+
+图形由 `Resources/` 下的 PNG 直接决定，没有中间格式。造型与配色都写在下面的脚本里，
+改完重跑即可。几何在设计空间 240×240 里定义，中心 `(120, 120)`：
+
+- **四条臂**：圆头粗笔画，厚 20，圆头圆心距中心 90（尖端落在 19.5 / 219.5）。
+- **每片刀刃**：由内外两条三次贝塞尔围成的闭合形状 —— 外边界从臂端弧出去，落到相邻横杠的上沿；
+  内边界回卷。**曲率是连续变化的，不是圆弧**：外边界上曲率半径从臂端的 ~61 连续变到中段的 ~9
+  再回到 ~27。用一段圆弧去拟合，臂端和刀刃根部各会差出几个像素。
+- **整个图形 = 「上臂 + 右上刀刃」这个单元绕中心旋转 0/90/180/270 的并集**。四份恰好铺满、
+  互不重叠，所以能一色一份：上臂那一片 `#ff5d73`，顺时针依次 `#ffb224`、`#20b875`、`#4388f7`。
+- 中心那个 20×20 的方块由四条臂共同覆盖，**每条臂只保留其中逆时针一侧的 10×10 象限**，
+  中心才呈风车式咬合；否则四色会按绘制顺序互相压盖，看起来像错位。
+
+暂停态是同形状、四片统一填中灰（明度 112）。
+
+```bash
+cd livewall
+/usr/bin/python3 - <<'PY'
+import numpy as np
+from PIL import Image, ImageDraw
+
+COLORS = [(0xFF, 0x5D, 0x73), (0xFF, 0xB2, 0x24), (0x20, 0xB8, 0x75), (0x43, 0x88, 0xF7)]
+PAUSED = (112, 112, 116)                          # 浅色栏 / 深色栏都能看清的中间明度
+CX, ARM_R, ARM_TIP, SS = 120.0, 10.0, 30.0, 8     # 中心、臂半厚、臂端圆头圆心距、超采样倍数
+OUTER = [(123.5, 20.5), (177.05, 26.02), (193.47, 76.83), (166.0, 110.0)]
+INNER = [(132.74, 41.32), (167.14, 51.82), (173.48, 96.18), (130.57, 109.54)]
+
+def bezier(ctrl, n=240):
+    c = np.asarray(ctrl, float)
+    t = np.linspace(0, 1, n)[:, None]
+    return ((1 - t) ** 3 * c[0] + 3 * (1 - t) ** 2 * t * c[1]
+            + 3 * (1 - t) * t ** 2 * c[2] + t ** 3 * c[3])
+
+def unit0(px):
+    """上臂 + 右上刀刃。臂的里端切掉中心方块的右下象限，让给顺时针的下一片。"""
+    n = px * SS
+    step = 240.0 / n
+    yy, xx = np.mgrid[0:n, 0:n].astype(float) * step + step / 2
+    d = np.hypot(xx - CX, np.maximum(np.abs(yy - CX) - (CX - ARM_TIP), 0))
+    arm = (d <= ARM_R) & (yy <= CX) & ~((xx >= CX) & (yy >= CX - ARM_R))
+    poly = [(p[0] / step - .5, p[1] / step - .5)
+            for p in np.vstack([bezier(OUTER), bezier(INNER)[::-1]])]
+    layer = Image.new('L', (n, n), 0)
+    ImageDraw.Draw(layer).polygon(poly, fill=255)
+    cover = np.maximum(arm.astype(float), np.asarray(layer, float) / 255)
+    return cover.reshape(px, SS, px, SS).mean(axis=(1, 3))
+
+def windmill(px, colors):
+    u = unit0(px)
+    out = np.zeros((px, px, 4), np.uint8)
+    for k in range(4):
+        a = np.clip(np.rot90(u, -k) * 255, 0, 255).astype(np.uint8)
+        for ch in range(3):
+            out[..., ch] = np.where(a > out[..., 3], colors[k][ch], out[..., ch])
+        out[..., 3] = np.maximum(out[..., 3], a)
+    return Image.fromarray(out, 'RGBA')
+
+for scale in (1, 2, 3):
+    sfx = '' if scale == 1 else f'@{scale}x'
+    dpi = (72 * scale, 72 * scale)
+    windmill(18 * scale, COLORS).save(f'Resources/MenuBarIcon{sfx}.png', dpi=dpi)
+    windmill(18 * scale, [PAUSED] * 4).save(f'Resources/MenuBarIconPaused{sfx}.png', dpi=dpi)
+PY
+
+./build.sh   # 重新组装 .app
+```
+
+这里写 DPI 只是为了文件元数据自洽；`AppDelegate` 会把逻辑尺寸显式钉在 18pt，不读这个值。
+
+### 替换方法
+
+替换 App 图标只需换 `Resources/AppIcon-source.png`（1024×1024），再重新生成 icns：
+
+```bash
+cd livewall
+
+# 1) 源图直接铺满 1024 画布。圆角与底板由系统绘制，自己加会让图标出现双层边框
+#    （macOS 会为 App 图标统一加圆角玻璃底板，系统 App 也是这个样式）
+/usr/bin/python3 -c "
+from PIL import Image
+Image.open('Resources/AppIcon-source.png').convert('RGB').resize((1024,1024), Image.LANCZOS).save('/tmp/m1024.png')"
+
+# 2) 生成 iconset（10 档）并打包 icns
+mkdir -p /tmp/AppIcon.iconset
+/usr/bin/python3 -c "
+from PIL import Image
+m = Image.open('/tmp/m1024.png')
+for px, n in [(16,'16x16'),(32,'16x16@2x'),(32,'32x32'),(64,'32x32@2x'),(128,'128x128'),
+              (256,'128x128@2x'),(256,'256x256'),(512,'256x256@2x'),(512,'512x512'),(1024,'512x512@2x')]:
+    m.resize((px,px), Image.LANCZOS).save(f'/tmp/AppIcon.iconset/icon_{n}.png')"
+iconutil -c icns /tmp/AppIcon.iconset -o Resources/AppIcon.icns
+
+./build.sh   # 重新组装 .app
+```
+
+菜单栏图标的替换见上一节；若只想手绘，直接改 `Resources/MenuBarIcon*.png` 即可，保持
+18/36/54 三档像素尺寸与 `MenuBarIcon`、`MenuBarIconPaused` 的命名约定。
+
+### 验证
+
+```bash
+cd livewall
+./build.sh
+ls build/LiveWall.app/Contents/Resources/          # 7 个文件：1 个 icns + 6 个 png
+codesign -dv build/LiveWall.app 2>&1 | grep Sealed   # files=7
+```
+
+改完图标后 Finder 可能仍显示旧图标（图标缓存）。`touch` 一下该 `.app` 或重启 Finder 即可刷新。
+
 ## 快速开始
 
 ```bash
@@ -91,7 +236,12 @@ cd livewall
 #   单独导出：cd ../wallpapers && PYTHONPATH=src python3 -m wallpapers export-livewall
 
 # 编译并启动（会接管桌面壁纸层）
-./run-livewall.sh
+./run.sh
+
+# 版本差异：默认 debug 构建，含开发者工具（菜单里的「打印窗口层级表」）；
+# 该菜单项由 `#if DEBUG` 隔离，release 构建里不编译、二进制中也没有。
+./run.sh --release        # 以 release 构建运行，等同发布版行为
+./build.sh                # 只打包，产物 build/LiveWall.app（release）
 
 # 退出：菜单栏图标 → 退出，或 pkill -x LiveWall
 # 日志：~/Library/Logs/com.meowv.livewall/livewall.log
@@ -115,6 +265,7 @@ cd livewall
   "intervalSeconds": 300,
   "jitterRatio": 0.2,
   "switchWhenFinished": false,
+  "playbackOrder": "shuffle",
   "gravity": "fill",
   "levelPreset": "desktopWindow",
   "multiScreenPolicy": "mirror",
@@ -130,13 +281,14 @@ cd livewall
 
 `remoteCatalogURL` 是唯一的清单数据源，默认就是线上地址；改成别的 https 地址即可换源，
 清空则只剩远程副本与内置兜底条目。旧配置里的 `catalogPath` 会被忽略（本地清单这一层已移除）。
-`intervalSeconds` 是切换间隔（默认 300 秒 = 5 分钟），`jitterRatio` 是抖动比例。
+`intervalSeconds` 是切换间隔（单位秒，默认 300 = 5 分钟），`jitterRatio` 是抖动比例；
+`switchWhenFinished` 与 `playbackOrder` 见[选片顺序与切换间隔](#选片顺序与切换间隔)。
 `multiScreenPolicy` 见[多屏策略](#多屏策略)，`authorFilter` 见[内容过滤](#内容过滤)。
 末尾六项是省电开关，语义见[省电策略](#省电策略)。
 
-运行时菜单栏会出现 `◉`/`◐`，可在其中下一张、暂停、切换窗口层级与多屏策略、**逐项开关省电策略**、**按作者过滤内容**、**开关开机自启**、重新加载清单、打印层级表。
+运行时菜单栏会出现 `◉`/`◐`，可在其中下一张、暂停、**切换选片顺序与自动切换间隔**、切换窗口层级与多屏策略、**逐项开关省电策略**、**按作者过滤内容**、**开关开机自启**、重新加载清单。开发构建（debug）额外多一项**打印窗口层级表**（把当前窗口层级快照打到终端，仅排障用，见[快速开始](#快速开始)）。
 
-## 本机实测基线（macOS 26.6.2 / arm64 / 双屏）
+## 本机实测基线（macOS 27.0 / arm64 / 双屏）
 
 ```
 CGWindowLevelForKey(.desktopWindow)     = -2147483623
@@ -148,15 +300,41 @@ CGWindowLevelForKey(.desktopIconWindow) = -2147483603
 
 层级标定实测结果：
 
-| 预设 | 层级 | 在壁纸之上 | 在图标之下 | 结论 |
-| --- | ---: | :---: | :---: | --- |
-| `desktopWindow` | -2147483623 | 是 | 是 | ✅ **推荐基线** |
-| `desktopWindowPlus1` | -2147483622 | 是 | 是 | ✅ |
-| `desktopWindowPlus2` | -2147483621 | 是 | 是 | ✅ |
-| `iconMinus2` | -2147483605 | 是 | 是 | ✅ |
-| `iconMinus1` | -2147483604 | 是 | 是 | ✅ |
-| `iconAboveGap1` | -2147483602 | 是 | **否** | 覆盖桌面图标（"专注模式"用） |
-| `iconAboveGap2` | -2147483601 | 是 | **否** | 覆盖桌面图标（"专注模式"用） |
+| 预设 | 层级 | 在壁纸之上 | 在图标之下 | 同层竞争 | 结论 |
+| --- | ---: | :---: | :---: | :---: | --- |
+| `desktopWindow` | -2147483623 | 是 | 是 | 0 | ✅ **推荐基线** |
+| `desktopWindowPlus1` | -2147483622 | 是 | 是 | **1（`WindowManager`）** | ⚠️ 与系统进程同层，见下 |
+| `desktopWindowPlus2` | -2147483621 | 是 | 是 | 0 | ✅ |
+| `iconMinus2` | -2147483605 | 是 | 是 | 未复测 | ✅ |
+| `iconMinus1` | -2147483604 | 是 | 是 | 未复测 | ✅ |
+| `iconAboveGap1` | -2147483602 | 是 | **否** | 未复测 | 覆盖桌面图标（"专注模式"用） |
+| `iconAboveGap2` | -2147483601 | 是 | **否** | 未复测 | 覆盖桌面图标（"专注模式"用） |
+
+### 区间内的实际占用者（macOS 27.0 实测）
+
+「21 层可选」是理论上限，实际有系统进程常驻。按层级自低向高（实测窗口列表）：
+
+| 层级 | 占用者 | 说明 |
+| ---: | --- | --- |
+| -2147483626 | `Window Server` | 系统壁纸之下 |
+| -2147483625 | 墙纸 | 系统壁纸本身，区间的**下界** |
+| -2147483624 | `WindowManager` | 双屏各一个整屏窗口 |
+| **-2147483623** | **本程序覆盖窗口** | 无竞争 |
+| -2147483622 | `WindowManager` | 整屏窗口（仅主屏）→ 这就是 `desktopWindowPlus1` 的竞争者 |
+| -2147483603 | 访达 | 桌面图标层，区间的**上界** |
+| -2147483602 | `Window Server` | 菜单栏（实测高 83px） |
+
+**`desktopWindowPlus1` 不再是干净选项。** 实测该层级有一个整屏的 `WindowManager` 窗口，程序自己的同层竞争检测会如实报出：
+
+```
+尝试 desktopWindow+1(-2147483622)：层级 -2147483622 | 在系统壁纸之上 ✓ | 在图标之下 ✓ | 覆盖整屏 ✓ | 同层竞争 1 个 ⚠
+```
+
+同层的前后顺序由 WindowServer 决定，不由本程序控制 —— 这正是根 `AGENTS.md` 的「livewall 约定」里要求**必须保留同层竞争检测**的原因。基线 `desktopWindow` 与 `desktopWindowPlus2` 实测均为 0 个竞争。
+
+`WindowManager` 是系统进程（窗口管理 / Stage Manager 相关），不是第三方壁纸软件。它的窗口在实测中不影响壁纸显示（程序已在日常使用），但**不要据此假定该层级可自由使用**。
+
+> 上表后四行的判定来自较早的实测，本次只在 macOS 27.0 上复测了三个 `desktopWindow*` 预设与三个常量；换系统版本后应重测整表，不要只改标题里的版本号。
 
 ## 关键发现
 
@@ -231,6 +409,28 @@ CGWindowLevelForKey(.desktopIconWindow) = -2147483603
 
 ### 菜单
 
+菜单是**五段结构**：状态 → 播放控制 → 设置 → 维护 → 退出。菜单从光标位置向下展开，到达成本与行号正相关，所以高频动作贴顶、低频与破坏性操作置底；同一类别连续成块，破坏位置记忆的插入一律不做。
+
+**状态区**（顶部，全部为禁用行）：
+
+| 行 | 出现时机 | 内容 |
+| --- | --- | --- |
+| `动态壁纸` | 恒有 | 分组标题 |
+| 片名 | 恒有 | 当前（或最后一次成功播放的）条目名 |
+| `已暂停：<原因>` | 仅非播放态 | 原因直接读 governor 状态推导（手动 / 遮挡 / 锁屏 / 息屏 / 热压力 / 空闲 / 低电量 / 电池） |
+| `⚠ 网络不可达，保持当前画面` | 仅不可达 | 网络状态 |
+| 附注 | 有条件 | 见下 |
+| `⚠ 热键冲突：…` | 仅注册失败 | 用户唯一能发现「热键被别的程序抢了」的地方 |
+
+**片名与附注刻意是两个字段**。以前共用一个，失败时片名会被「候选池已耗尽」顶掉，用户看不到正在循环的是哪张，容易误读成「壁纸掉了」。附注行分**信息**与**警告**两级，前缀只加在警告上：
+
+- 信息（原样显示）：操作回执，如「开机自启已开启」「窗口层级：…」「多屏策略：…」
+- 警告（加 `⚠`）：真异常，如「候选池已耗尽」「过滤后没有可用内容」「保持当前画面」「已暂停调度」
+
+给回执加警告符号会让人以为操作失败了。附注在下一条成功加载时清空。
+
+**热键状态不常驻**：三项组合提示已写在各自菜单项的标题里，再常驻一行纯属重复；只有真冲突时才出现一行。
+
 `省电设置` 子菜单逐项开关，改动直接写回 `config.json` 并立即重算，不需要重启。`无操作时` 下面挂着「空闲阈值」子菜单（1 / 5 / 10 / 30 分钟）。
 
 **阈值默认 300 秒而不是更短**：读文档、盯着代码想事情的时候鼠标本来就不动，太短会让画面在用户明明看着它的时候冻住 —— 这是最容易被感知为「坏了」的一项。
@@ -240,7 +440,7 @@ CGWindowLevelForKey(.desktopIconWindow) = -2147483603
 - **暂停时不释放播放器。** `pause()` 只调 `player.pause()`，解码停止，但 `AVPlayer` 仍持有已下载的缓冲（约 6.5MB）与解码器实例。`teardown` + 重建能让长暂停（息屏数小时）释放内存，但恢复时画面会迟到约 1 秒且要重新下载 —— 权衡后选择保持。
 - **低电量模式走轮询而不是通知。** `NSProcessInfoPowerStateDidChange` 只在 iOS 声明，macOS SDK 里查不到，`ProcessInfo` 也没有对应静态成员。2 秒轮询 `isLowPowerModeEnabled` 的代价可忽略。
 
-## 热键、自启、多屏与过滤
+## 热键、自启、多屏、选片与过滤
 
 ### 全局热键
 
@@ -277,6 +477,51 @@ CGWindowLevelForKey(.desktopIconWindow) = -2147483603
 「仅主屏」用 `NSScreen.screens.first` 而不是 `NSScreen.main` —— 后者是「当前键盘焦点所在的屏幕」，会随用户拖窗口漂移，用它会导致窗口建到副屏上。
 
 `perScreen` 需要「每屏一个独立播放槽位」（各自的播放器、候选池、调度定时器），而当前 App 是单槽位结构，尚未改造。菜单里**不列出未实现的策略** —— 否则用户会选到一个与「全部同片」表现完全一样的选项，还以为功能坏了。
+
+### 选片顺序与切换间隔
+
+候选集由「内容过滤」筛出，选片顺序决定这一轮里按什么次序取。
+
+| 顺序 | 一轮的排列 | 说明 |
+| --- | --- | --- |
+| 随机（默认） | 每轮把候选集重新打乱 | 洗牌前排除当前这条，避免刚播完又抽到它 |
+| 顺序 | 按清单原序循环 | 清单顺序由 `wallpapers export-livewall` 决定，稳定可预期 |
+
+**两条共同性质**（因此「一轮内不重复」两种模式都成立）：一轮的长度等于可用条目数（黑名单除外）；走完一轮才重排，不是「每次随机抽一条、抽到重复就重抽」。
+
+**顺序模式不能沿用「排除当前项」。** 那样每轮都会少一条尾巴，实际播放序列会变成 `A…Z → A…Y → A…X` —— 第二轮不是从清单开头重新开始，看起来像漏播。正确做法是整段原序照排，只在**新一轮的第一条恰好等于当前正在播的那条**时向后让一位（典型场景是刚改了顺序或过滤条件，队列被清空重建）。
+
+**切换间隔的单位是秒**，菜单预设 30 秒 / 1 / 2 / 5 / 10 / 30 分钟 / 1 小时，共 7 档：
+
+- 下限 **10 秒** ≈ 一条预览片的时长。再短就是在视频播到一半时切走，解码器反复重建、每张都得重新拉流，纯粹浪费，画面也没来得及看清。
+- 上限 **24 小时**。再长等同「几乎不换」，那是「暂停播放」要解决的问题。
+- 范围外的值**夹到最近的合法值**而不是退回默认 —— 手改配置的人多半只是「填得太短/太长」，夹紧更接近他的本意；非有限值（NaN / ±∞）夹不了，才退回默认 300 秒。
+- 注意 `intervalSeconds` 取 0 或负数**不等于**「播完即切」—— 后者要显式开 `switchWhenFinished`。
+
+实际间隔还会叠加 `jitterRatio`（默认 ±20%）。纯固定间隔会让人形成「什么时候会变」的预期，加抖动更自然。**抖动与合法区间刻意不写进菜单**：子菜单只留 7 档可点的预设，把「为什么不是正好 5 分钟」的解释交给日志（每次切换都会打出生效值）与本节文档 —— 常驻的两行禁用说明在只有 7 个选项的菜单里纯属噪音。
+
+运行时改动怎么生效：
+
+| 改动 | 生效方式 | 验证 |
+| --- | --- | --- |
+| 改自动切换间隔 | 当前这张继续播，**立刻按新间隔重新计时**（作废旧定时器）。否则用户改完盯着看毫无变化，只会以为没点上 | 实测 |
+| 改选片顺序 / 过滤条件 | **不立刻换片**（当前这张在新条件下依然合法），只清空待取队列 —— 等于重新开始一轮，下一张起按新规则取 | 实测 |
+| 任何改动 | 立即写回 `config.json`，重启后保持 | 实测 |
+| 正在等网络恢复 | 间隔改动**不插队**：那条 60 秒重试有自己的节奏，抢过来会变成「每改一次间隔就立刻重试一次加载」 | 代码存在，未真机触发 |
+| 当前处于暂停 | 间隔改动记下，恢复播放后生效 | 代码存在，未真机触发 |
+
+黑名单**任何情况下都不清**（除「黑名单覆盖了全部候选」这种整体失效的兜底）—— 那是「资源失效」的记录，与用户选了什么无关。
+
+**实测证据**（同一秒内改间隔，播放项不变）：
+
+```
+[15:36:48.721] 下次切换在 28.9 秒后（间隔设置 30 秒，抖动 ±20%）
+[15:36:51.825] 切换间隔改为 10 分钟
+[15:36:51.826] 下次切换在 696.5 秒后（间隔设置 10 分钟，抖动 ±20%）
+[15:36:51.839] 选片顺序改为顺序（按清单原序循环）：候选 2614 条，下一张起按新顺序，本轮重新开始
+```
+
+696.5 = 600 × 1.161，抖动落在 ±20% 内；`正在播` 在改动前后是同一张。日志里每次切换都会打出生效值，**这一行就是「改动有没有生效」的判据**。
 
 ### 内容过滤
 
@@ -317,7 +562,7 @@ CGWindowLevelForKey(.desktopIconWindow) = -2147483603
 
 **P3 已知未做**：暂停时不释放播放器（有意，理由见上）；`pauseOnBattery` 默认关闭 —— 插拔电源就暂停会让画面频繁抖动，需要的人自己开。
 
-**P4 的实际能力**：三个全局热键（`⌥⌘P` / `⌥⌘N` / `⌥⌘R`，零权限，被占用时显式提示）；开机自启开关（`SMAppService`）；多屏策略「全部同片」与「仅主屏」；按作者过滤内容（可多选，选项取自清单实际出现的 50 个作者）。顺带修掉一个既有 bug：窗口上屏的进入动画会让 bounds 在动画期间内缩，导致「未覆盖整屏」误判。
+**P4 的实际能力**：三个全局热键（`⌥⌘P` / `⌥⌘N` / `⌥⌘R`，零权限，被占用时显式提示）；开机自启开关（`SMAppService`）；多屏策略「全部同片」与「仅主屏」；按作者过滤内容（可多选，选项取自清单实际出现的 50 个作者）；选片顺序（随机 / 顺序）与自动切换间隔（7 档预设，范围 10 秒 – 24 小时）可在菜单里实时切换并写回配置，见[选片顺序与切换间隔](#选片顺序与切换间隔)。顺带修掉一个既有 bug：窗口上屏的进入动画会让 bounds 在动画期间内缩，导致「未覆盖整屏」误判。
 
 **P4 已知未做**：**「每屏独立」策略未实现**（需要把 App 改造成「每屏一个播放槽位」的多槽位结构，属架构级改动）；热键组合固定，不可配置。标签过滤因**数据源没有标签**（`desktop + dynamic` 的 2,614 条里带 tag 的是 0 条）改为按作者过滤。
 
@@ -327,4 +572,4 @@ CGWindowLevelForKey(.desktopIconWindow) = -2147483603
 - 用 SwiftPM 组织代码，编译只需要 Command Line Tools，不需要 Xcode。
 - 不引入第三方依赖。
 - 纯逻辑一律放 `LiveWallCore`，保持可脱离 GUI 单测。
-- 构建与运行只走本目录的 `build.sh` / `test.sh` / `run-livewall.sh`，**不接入根目录的 `build.sh` / `run.sh` / `deploy.sh`**。
+- 构建与运行只走本目录的 `build.sh` / `test.sh` / `run.sh`，**不接入根目录的 `build.sh` / `run.sh` / `deploy.sh`** —— 注意本目录的 `run.sh` 与根目录的 `run.sh` 是同名不同物，前者只管 livewall。

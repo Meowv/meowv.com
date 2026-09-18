@@ -67,7 +67,7 @@ case "$PRODUCT_KEY" in
     PLIST="Resources/Info-LiveWall.plist"
     ;;
   *)
-    echo "错误：未知产品 $PRODUCT_KEY（唯一可选 livewall）" >&2
+    echo "错误：未知产品 ${PRODUCT_KEY}（唯一可选 livewall）" >&2
     exit 2
     ;;
 esac
@@ -78,7 +78,7 @@ if [[ "$CLEAN" -eq 1 ]]; then
 fi
 
 if [[ ! -f "$ROOT/$PLIST" ]]; then
-  echo "错误：缺少 $PLIST（产品 $PRODUCT_KEY 的 Info.plist）" >&2
+  echo "错误：缺少 ${PLIST}（产品 ${PRODUCT_KEY} 的 Info.plist）" >&2
   exit 1
 fi
 
@@ -98,7 +98,7 @@ grep -vE "^\[[0-9]+/[0-9]+\]|^Building for|^Compiling|^Planning|ld: warning: sea
 rm -f "$BUILD_LOG"
 
 if [[ "$BUILD_STATUS" -ne 0 ]]; then
-  echo "错误：swift build 失败（退出码 $BUILD_STATUS）" >&2
+  echo "错误：swift build 失败（退出码 ${BUILD_STATUS}）" >&2
   exit "$BUILD_STATUS"
 fi
 
@@ -115,9 +115,36 @@ mkdir -p "$APP_BUNDLE/Contents/MacOS" "$APP_BUNDLE/Contents/Resources"
 cp "$ROOT/$PLIST" "$APP_BUNDLE/Contents/Info.plist"
 cp "$BINARY" "$APP_BUNDLE/Contents/MacOS/$PRODUCT"
 
+# App 图标。Info.plist 的 CFBundleIconFile 指向 AppIcon（不带扩展名）。
+# 缺失时不阻断构建，只是产物没有自定义图标 —— 图标非必需。
+ICON="$ROOT/Resources/AppIcon.icns"
+if [[ -f "$ICON" ]]; then
+  cp "$ICON" "$APP_BUNDLE/Contents/Resources/"
+else
+  echo "[build] 警告：缺少 Resources/AppIcon.icns，产物将没有自定义图标" >&2
+fi
+
+# 菜单栏状态项图标。AppDelegate 通过 Bundle.main.image(forResource:) 读取，
+# 因此必须落在 Contents/Resources/ 下，@2x/@3x 与主文件同名才能被识别为同一张图。
+# 同样允许缺失，AppDelegate 会回退到文字字形。
+ICON_COUNT=0
+for f in "$ROOT"/Resources/MenuBarIcon*.png; do
+  [[ -f "$f" ]] || continue
+  cp "$f" "$APP_BUNDLE/Contents/Resources/"
+  ICON_COUNT=$((ICON_COUNT + 1))
+done
+if [[ "$ICON_COUNT" -eq 0 ]]; then
+  echo "[build] 提示：未找到 Resources/MenuBarIcon*.png，菜单栏将使用文字字形" >&2
+fi
+
 # 本地自用：ad-hoc 签名，避免每次都被 Gatekeeper 拦
 codesign --force --sign - "$APP_BUNDLE" >/dev/null 2>&1 \
   || echo "[build] 跳过签名（不影响本地运行）"
 
+# 图标必须被封进签名才会生效（Sealed Resources 的 files 计数应 > 0）
+if [[ -f "$ICON" ]] && ! codesign -dv "$APP_BUNDLE" 2>&1 | grep -q 'files=[1-9]'; then
+  echo "[build] 警告：图标未被封进签名，Finder 里可能不显示" >&2
+fi
+
 echo "[build] 产物：$APP_BUNDLE"
-echo "[build] 运行：./run-livewall.sh"
+echo "[build] 运行：./run.sh"

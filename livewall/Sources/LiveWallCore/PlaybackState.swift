@@ -202,22 +202,10 @@ public enum IdleThreshold {
     /// 菜单提供的预设，单位秒。
     public static let presets: [Double] = [60, 300, 600, 1800]
 
-    /// 人读文案。整除时省略小数（5 分钟，而不是 5.0 分钟）。
+    /// 人读文案。文案规则与「切换间隔」共用 `DurationText`，避免两处各写一套后漂移。
+    /// 这里的 `nil` 落到「关闭」—— 空闲阈值取 0 的语义就是关掉这项。
     public static func label(_ seconds: Double) -> String {
-        guard seconds.isFinite, seconds > 0 else { return "关闭" }
-        if seconds < 60 {
-            return "\(Int(seconds.rounded())) 秒"
-        }
-        let minutes = seconds / 60
-        if minutes < 60 {
-            return minutes == minutes.rounded()
-                ? "\(Int(minutes)) 分钟"
-                : String(format: "%.1f 分钟", minutes)
-        }
-        let hours = minutes / 60
-        return hours == hours.rounded()
-            ? "\(Int(hours)) 小时"
-            : String(format: "%.1f 小时", hours)
+        DurationText.concise(seconds, fallback: "关闭")
     }
 }
 

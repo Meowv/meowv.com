@@ -37,7 +37,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
     private var scheduleTimer: Timer?
     private var consecutiveFailures = 0
-    private var lastMessage = "启动中"
+    /// 状态区第二行：当前（或最后一次成功播放的）条目名。
+    ///
+    /// 刻意与 `notice` 分开。以前两者共用一个字段，结果是失败时名称行被
+    /// 「候选池已耗尽」顶掉，用户看不到正在循环的是哪张，容易误读成「壁纸掉了」。
+    private var currentName = "启动中"
+    /// 状态区附注行（容量、暂停原因、设置回执等）。非 nil 时显示一条。
+    ///
+    /// 成功加载下一条时清空 —— 它的生命周期是「上一次异常或操作到现在」。
+    private var notice: Notice?
+
+    /// 附注内容与级别。
+    ///
+    /// 分级别而不是在展示时统一加「⚠」：这一行既承载「候选池已耗尽」（真出问题），
+    /// 也承载「窗口层级：…」「开机自启已开启」（用户刚做的操作的回执）。
+    /// 给回执加上警告符号会让人以为操作失败了。
+    private struct Notice {
+        enum Level {
+            /// 操作回执、状态说明。原样显示。
+            case info
+            /// 真异常：资源耗尽、设置失败、保持画面等。加「⚠」前缀。
+            case warning
+        }
+
+        var level: Level
+        var text: String
+
+        static func info(_ text: String) -> Notice { Notice(level: .info, text: text) }
+        static func warning(_ text: String) -> Notice { Notice(level: .warning, text: text) }
+
+        /// 菜单里的显示文案。前缀只在这一处加，避免各调用点各写一遍。
+        var display: String {
+            level == .warning ? "⚠ \(text)" : text
+        }
+    }
 
     /// 用户手动暂停。真值存在 governor 的信号里，这里只是方便读取。
     private var isUserPaused: Bool { governor.signals.userPaused }
@@ -170,19 +203,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func handleCatalogResult(_ result: CatalogLoadResult?) {
         guard let result else {
-            lastMessage = "没有可用的清单"
+            notice = .warning("没有可用的清单")
             log("清单加载失败：远程、副本、内置全部不可用")
             refreshStatusItem()
             return
         }
         catalogItemCount = result.catalog.items.count
-        // 过滤条件要在灌入候选集之前设好 —— `setItems` 会按它直接算出 source，
-        // 之后再设 filter 会触发一次多余的整表重建。
+        // 过滤条件与选片顺序都要在灌入候选集之前设好 —— `setItems` 会按它们直接
+        // 算出 source，之后再设会触发一次多余的整表重建。
         pool.filter = preferences.authorFilter.isEmpty
             ? CandidateFilter()
             : CandidateFilter(authors: Set(preferences.authorFilter))
+        pool.order = preferences.playbackOrder
         pool.setItems(result.catalog.items)
         log("清单来源：\(result.origin.label)，共 \(catalogItemCount) 条")
+        log("选片顺序：\(preferences.playbackOrder.label)（\(preferences.playbackOrder.detail)）")
         if pool.filter.isActive {
             log("内容过滤：\(pool.filter.summary)，可用 \(pool.totalCount) 条"
                 + "（已排除 \(pool.filteredOutCount) 条）")
@@ -207,13 +242,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         guard !pool.isExhausted else {
-            lastMessage = "候选池已耗尽"
+            notice = .warning("候选池已耗尽")
             log("候选池耗尽，停止调度")
             refreshStatusItem()
             return
         }
         guard let item = pool.next() else {
-            lastMessage = "候选池为空"
+            notice = .warning("候选池为空")
             refreshStatusItem()
             return
         }
@@ -236,7 +271,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 consecutiveFailures = 0
                 retriesForCurrentItem = 0
                 isHoldingForNetwork = false
-                lastMessage = item.displayName
+                currentName = item.displayName
+                notice = nil
                 log("播放 \(item.id) \(item.title)(\(loaded.resolutionText)) 时长 "
                     + "\(String(format: "%.2f", loaded.durationSeconds))s 编码 \(loaded.codec)")
                 refreshStatusItem()
@@ -292,7 +328,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 一旦清空播放器或换成黑帧，就违反了「任何失败都不能黑屏」的硬约束。
     private func holdCurrent(reason: String) {
         isHoldingForNetwork = true
-        lastMessage = "\(reason)，保持当前画面"
+        notice = .warning("\(reason)，保持当前画面")
         log("保持当前画面（\(reason)），60 秒后重试")
         refreshStatusItem()
 
@@ -308,7 +344,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func stopScheduling(reason: String) {
         scheduleTimer?.invalidate()
         scheduleTimer = nil
-        lastMessage = "\(reason)，已暂停调度"
+        notice = .warning("\(reason)，已暂停调度")
         log("停止调度（\(reason)）—— 保留当前画面，不黑屏")
         refreshStatusItem()
     }
@@ -354,7 +390,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let policy = preferences.schedulePolicy
         let delay = policy.nextDelaySeconds(videoDuration: videoDuration)
-        log("下次切换在 \(String(format: "%.1f", delay)) 秒后")
+        // 把生效的间隔设置一起打出来 —— 验证「改了间隔有没有生效」只看这一行就够
+        log("下次切换在 \(String(format: "%.1f", delay)) 秒后"
+            + "（间隔设置 \(SwitchInterval.label(policy.intervalSeconds))，抖动 ±\(Int(policy.jitterRatio * 100))%）")
         scheduleTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
             self?.advance()
         }
@@ -442,6 +480,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - 菜单栏
 
+    /// 菜单栏状态项图标。资源由 `build.sh` 拷进 `Contents/Resources/`。
+    ///
+    /// 用 `Bundle.main` 而不是 `NSImage(named:)`：本 App 的 .app 由脚本手工组装，
+    /// 没有 asset catalog，资源只在 bundle 根下。
+    private static let playingIcon = menuBarIcon(named: "MenuBarIcon")
+    private static let pausedIcon = menuBarIcon(named: "MenuBarIconPaused")
+
+    /// 显式把逻辑尺寸钉在 18pt，不依赖 PNG 里的 DPI 元数据 ——
+    /// 这样即使只加载到 36px 的 @2x 位图，显示尺寸也不会翻倍，
+    /// 而 Retina 屏仍能采样到全部像素。
+    ///
+    /// 彩色而非模板图：图形是四色风车，转成模板图会被压成单色剪影，颜色全部丢失 ——
+    /// 而「带色彩」正是选它的理由。代价是不会随菜单栏明暗自动反色，所以播放 / 暂停
+    /// 靠颜色区分而非透明度：菜单栏是叠在壁纸上的半透明层，低 alpha 实测几乎看不清。
+    /// 暂停态因而另出一张同形状、统一中灰的图。
+    private static func menuBarIcon(named name: String) -> NSImage? {
+        guard let image = Bundle.main.image(forResource: name) else { return nil }
+        image.isTemplate = false
+        image.size = NSSize(width: 18, height: 18)
+        return image
+    }
+
     private func buildStatusItem() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusItem = item
@@ -450,20 +510,45 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func refreshStatusItem() {
         guard let item = statusItem else { return }
-        item.button?.title = engine.isPlaying ? "◉" : "◐"
+
+        if let icon = engine.isPlaying ? Self.playingIcon : Self.pausedIcon {
+            item.button?.image = icon
+            item.button?.title = ""
+        } else {
+            // 图标资源缺失时的兜底（例如不经 .app 直接跑 .build 里的可执行文件）
+            item.button?.image = nil
+            item.button?.title = engine.isPlaying ? "◉" : "◐"
+        }
+
         item.menu = buildMenu()
     }
 
     private func buildMenu() -> NSMenu {
         let menu = NSMenu()
 
+        // ── 状态区 ───────────────────────────────────────────
+        // 五段结构：状态 → 播放控制 → 设置 → 维护 → 退出。
+        // 菜单从光标位置向下展开，到达成本与行号正相关，所以高频动作贴顶、
+        // 低频与破坏性操作置底；同一类别必须连续成块，否则会破坏位置记忆。
         let header = NSMenuItem(title: "动态壁纸", action: nil, keyEquivalent: "")
         header.isEnabled = false
         menu.addItem(header)
 
-        let current = NSMenuItem(title: lastMessage, action: nil, keyEquivalent: "")
+        let current = NSMenuItem(title: currentName, action: nil, keyEquivalent: "")
         current.isEnabled = false
         menu.addItem(current)
+
+        // 暂停原因由 governor 的状态直接推导，不另存一份 —— 存一份就要在每个
+        // 恢复路径上记得清掉，漏一处就会残留一句「已手动暂停」。
+        if !governor.state.isPlaying {
+            let paused = NSMenuItem(
+                title: "已暂停：\(governor.state.reason?.label ?? "未知原因")",
+                action: nil,
+                keyEquivalent: ""
+            )
+            paused.isEnabled = false
+            menu.addItem(paused)
+        }
 
         if !network.isReachable {
             let networkInfo = NSMenuItem(title: "⚠ 网络不可达，保持当前画面", action: nil, keyEquivalent: "")
@@ -471,34 +556,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             menu.addItem(networkInfo)
         }
 
-        menu.addItem(buildPowerMenu())
+        if let notice {
+            let noticeItem = NSMenuItem(title: notice.display, action: nil, keyEquivalent: "")
+            noticeItem.isEnabled = false
+            menu.addItem(noticeItem)
+        }
 
-        // 开机自启。状态直接读系统（不是读我们自己的配置）—— 用户可能在
-        // 「系统设置 → 通用 → 登录项」里关掉它，那时这里必须如实显示。
-        let loginItem = NSMenuItem(
-            title: "开机自启（\(LaunchAtLogin.statusLabel)）",
-            action: #selector(toggleLaunchAtLogin),
-            keyEquivalent: ""
-        )
-        loginItem.target = self
-        loginItem.state = LaunchAtLogin.isEnabled ? .on : .off
-        menu.addItem(loginItem)
-
-        // 热键状态。全部成功时只列组合；有冲突就单独标出来 —— 这是用户唯一能
-        // 发现「热键被别的程序抢了」的地方。
+        // 热键冲突行只在真出问题时出现。三项热键的组合提示已经写在各自菜单项的
+        // 标题里，再常驻一行纯属重复；而「被别的程序抢了」只有这里能发现。
         let hotKeyFailures = hotKeys.failures
-        let hotKeyItem = NSMenuItem(
-            title: hotKeyFailures.isEmpty
-                ? "热键：" + HotKeyManager.Definition.all.map(\.display).joined(separator: " ")
-                : "⚠ 热键冲突：" + hotKeyFailures.map(\.definition.display).joined(separator: "、"),
-            action: nil,
-            keyEquivalent: ""
-        )
-        hotKeyItem.isEnabled = false
-        menu.addItem(hotKeyItem)
+        if !hotKeyFailures.isEmpty {
+            let conflict = NSMenuItem(
+                title: "⚠ 热键冲突：" + hotKeyFailures.map(\.definition.display).joined(separator: "、")
+                    + "（组合被其它程序占用）",
+                action: nil,
+                keyEquivalent: ""
+            )
+            conflict.isEnabled = false
+            menu.addItem(conflict)
+        }
 
         menu.addItem(.separator())
 
+        // ── 播放控制 ─────────────────────────────────────────
         // 标题里写组合提示，但**不要**设 `keyEquivalent` —— 菜单打开时全局热键与
         // 菜单项会各触发一次，切换类操作执行两遍等于互相抵消。
         let next = NSMenuItem(
@@ -518,19 +598,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         toggle.target = self
         menu.addItem(toggle)
 
+        menu.addItem(buildOrderMenu())
+
         menu.addItem(.separator())
 
-        let levelMenu = NSMenu()
-        for preset in LevelPreset.allCases {
-            let entry = NSMenuItem(title: preset.label, action: #selector(switchLevel(_:)), keyEquivalent: "")
-            entry.target = self
-            entry.representedObject = preset.rawValue
-            entry.state = preset.level == screenCoordinator.level ? .on : .off
-            levelMenu.addItem(entry)
-        }
-        let levelRoot = NSMenuItem(title: "窗口层级（当前 \(screenCoordinator.level)）", action: nil, keyEquivalent: "")
-        levelRoot.submenu = levelMenu
-        menu.addItem(levelRoot)
+        // ── 设置 ────────────────────────────────────────────
+        // 组内按「用户调整它的频率」降序：切换间隔与内容过滤是会用几次就调的，
+        // 开机自启与窗口层级装完基本不动。
+        menu.addItem(buildIntervalMenu())
+        menu.addItem(buildPowerMenu())
+        menu.addItem(buildFilterMenu())
 
         let policyMenu = NSMenu()
         // 顶部一行说明当前策略的代价（尤其流量），这是选择时唯一要权衡的东西
@@ -557,8 +634,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         policyRoot.submenu = policyMenu
         menu.addItem(policyRoot)
 
-        menu.addItem(buildFilterMenu())
+        let levelMenu = NSMenu()
+        for preset in LevelPreset.allCases {
+            let entry = NSMenuItem(title: preset.label, action: #selector(switchLevel(_:)), keyEquivalent: "")
+            entry.target = self
+            entry.representedObject = preset.rawValue
+            entry.state = preset.level == screenCoordinator.level ? .on : .off
+            levelMenu.addItem(entry)
+        }
+        let levelRoot = NSMenuItem(title: "窗口层级（当前 \(screenCoordinator.level)）", action: nil, keyEquivalent: "")
+        levelRoot.submenu = levelMenu
+        menu.addItem(levelRoot)
 
+        // 开机自启放设置组末尾：它属「系统集成」而不是「画面显示」，
+        // 状态直接读系统（不是读我们自己的配置）—— 用户可能在
+        // 「系统设置 → 通用 → 登录项」里关掉它，那时这里必须如实显示。
+        let loginItem = NSMenuItem(
+            title: "开机自启（\(LaunchAtLogin.statusLabel)）",
+            action: #selector(toggleLaunchAtLogin),
+            keyEquivalent: ""
+        )
+        loginItem.target = self
+        loginItem.state = LaunchAtLogin.isEnabled ? .on : .off
+        menu.addItem(loginItem)
+
+        menu.addItem(.separator())
+
+        // ── 维护 ────────────────────────────────────────────
+        // 低频恢复动作。放在设置组之后：它不改变任何设置，只是把清单重新拉一遍，
+        // 混在配置项中间既打断位置记忆，也容易被误点。
         let reload = NSMenuItem(
             title: "重新加载清单（\(HotKeyManager.Definition.reloadCatalog.display)）",
             action: #selector(reloadCatalog),
@@ -567,12 +671,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         reload.target = self
         menu.addItem(reload)
 
+        // 开发者工具：只在 debug 构建里存在。日常使用走 `./build.sh`（release），
+        // 排障走 `./run.sh`（debug）。整块不参与 release 编译，二进制里也没有相关字符串。
+#if DEBUG
         let dump = NSMenuItem(title: "打印窗口层级表", action: #selector(dumpWindows), keyEquivalent: "")
         dump.target = self
         menu.addItem(dump)
+#endif
 
         menu.addItem(.separator())
 
+        // ── 退出 ────────────────────────────────────────────
         let quit = NSMenuItem(title: "退出", action: #selector(quit), keyEquivalent: "q")
         quit.target = self
         menu.addItem(quit)
@@ -592,6 +701,58 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         default:
             log("未知热键 id \(id)")
         }
+    }
+
+    /// 随机模式子菜单：选「随机」还是「顺序」。
+    ///
+    /// 两种模式都会走完一整轮才重排、一轮内不重复，所以这里选的不是「有没有随机」，
+    /// 而是「这一轮的排列怎么来」。改成子菜单而不是勾选项：勾选项的「未勾」状态
+    /// 分不清是「顺序」还是「没设置」。
+    private func buildOrderMenu() -> NSMenuItem {
+        let submenu = NSMenu()
+        for order in PlaybackOrder.allCases {
+            let entry = NSMenuItem(
+                title: order.menuTitle,
+                action: #selector(switchPlaybackOrder(_:)),
+                keyEquivalent: ""
+            )
+            entry.target = self
+            entry.representedObject = order.rawValue
+            entry.state = preferences.playbackOrder == order ? .on : .off
+            submenu.addItem(entry)
+        }
+        let root = NSMenuItem(
+            title: "随机模式（当前 \(preferences.playbackOrder.label)）",
+            action: nil,
+            keyEquivalent: ""
+        )
+        root.submenu = submenu
+        return root
+    }
+
+    /// 切换间隔子菜单。改的是 `intervalSeconds`（单位秒），预设覆盖 30 秒 – 1 小时；
+    /// 想填别的值就手改 `config.json`，范围外的会被 `SwitchInterval.clamp` 夹紧。
+    private func buildIntervalMenu() -> NSMenuItem {
+        let submenu = NSMenu()
+        for seconds in SwitchInterval.presets {
+            let entry = NSMenuItem(
+                title: SwitchInterval.label(seconds),
+                action: #selector(setSwitchInterval(_:)),
+                keyEquivalent: ""
+            )
+            entry.target = self
+            entry.representedObject = seconds
+            entry.state = abs(preferences.intervalSeconds - seconds) < 0.5 ? .on : .off
+            submenu.addItem(entry)
+        }
+
+        let root = NSMenuItem(
+            title: "切换间隔（\(SwitchInterval.label(preferences.intervalSeconds))）",
+            action: nil,
+            keyEquivalent: ""
+        )
+        root.submenu = submenu
+        return root
     }
 
     /// 省电开关的菜单标识。用 `representedObject` 传递，省掉五个几乎相同的 @objc 方法。
@@ -683,12 +844,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func toggleLaunchAtLogin() {
         let target = !LaunchAtLogin.isEnabled
         if let error = LaunchAtLogin.setEnabled(target) {
-            lastMessage = "开机自启设置失败"
+            notice = .warning("开机自启设置失败")
             log("⚠️ 开机自启\(target ? "开启" : "关闭")失败：\(error)")
         } else {
+            notice = .info("开机自启已\(target ? "开启" : "关闭")")
             log("开机自启已\(target ? "开启" : "关闭")，系统状态：\(LaunchAtLogin.statusLabel)")
             // requiresApproval 是成功注册但还没批准 —— 不说清楚用户会以为没生效
             if LaunchAtLogin.requiresApproval {
+                notice = .warning("开机自启待批准（系统设置 → 通用 → 登录项）")
                 log("需在「系统设置 → 通用 → 登录项」里手动批准后才会生效")
             }
         }
@@ -722,9 +885,55 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func togglePause() {
         // 只切信号，暂停/恢复与定时器由 governor 的状态机统一处理，避免两条路径各改一次。
+        // 这里也不改状态区文案：暂停原因由菜单里的状态行直接读 governor 显示，
+        // 写入一个「已手动暂停」反而会在恢复后残留。
         governor.setUserPaused(!isUserPaused)
-        lastMessage = isUserPaused ? "已手动暂停" : (engine.currentItem?.displayName ?? "已恢复")
         refreshStatusItem()
+    }
+
+    /// 切换选片顺序。**刻意不立刻换片** —— 当前这张在新顺序下依然合法，
+    /// 换模式只决定「下一张是谁」（顺序模式下就是清单第一条）。
+    /// 候选池的待取队列会因 `order` 的 didSet 被清空，等于重新开始一轮。
+    @objc private func switchPlaybackOrder(_ sender: NSMenuItem) {
+        guard let raw = sender.representedObject as? String,
+              let order = PlaybackOrder(rawValue: raw) else { return }
+        guard order != preferences.playbackOrder else { return }
+
+        preferences.playbackOrder = order
+        try? preferences.save(to: configURL)
+        pool.order = order
+
+        log("选片顺序改为\(order.label)（\(order.detail)）：候选 \(pool.totalCount) 条，"
+            + "下一张起按新顺序，本轮重新开始")
+        refreshStatusItem()
+    }
+
+    /// 切换自动切换间隔。立即按新间隔重新计时，不换片。
+    @objc private func setSwitchInterval(_ sender: NSMenuItem) {
+        guard let seconds = sender.representedObject as? Double else { return }
+        preferences.intervalSeconds = seconds
+        try? preferences.save(to: configURL)
+        log("切换间隔改为 \(SwitchInterval.label(seconds))")
+
+        // 不重新计时的话，改完要等旧定时器到期才生效 —— 用户改完盯着看却毫无变化，
+        // 只会以为没点上。旧定时器作废，从此刻起按新间隔重新算。
+        rescheduleAfterIntervalChange()
+        refreshStatusItem()
+    }
+
+    /// 间隔变化后重排下一次切换。**当前这张继续播**，只重置「还剩多久切」。
+    private func rescheduleAfterIntervalChange() {
+        // 正在等网络恢复时不要插队 —— 那条 60 秒重试有自己的节奏，
+        // 抢过来会变成「每改一次间隔就立刻重试一次加载」，反而把重试次数刷满。
+        guard !isHoldingForNetwork else {
+            log("正在等待网络恢复，新间隔将在下一次成功加载后生效")
+            return
+        }
+        guard governor.state.isPlaying else {
+            log("当前处于暂停状态，新间隔将在恢复播放后生效")
+            return
+        }
+        scheduleNext(after: engine.currentDuration)
     }
 
     /// 内容过滤子菜单。
@@ -798,7 +1007,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         if pool.isExhausted {
             // 刻意不动播放器：保持当前画面比黑屏好
-            lastMessage = "过滤后没有可用内容"
+            notice = .warning("过滤后没有可用内容")
             log("⚠️ 过滤后没有可用内容，请放宽条件")
             refreshStatusItem()
         } else {
@@ -819,7 +1028,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // 重建窗口后必须重新绑定 —— 新窗口没有 playerLayer，不 attach 就是一片黑
         engine.attach(to: screenCoordinator.windows, gravity: gravity)
 
-        lastMessage = "多屏策略：\(policy.label)"
+        notice = .info("多屏策略：\(policy.label)（\(verdict.summary)）")
         log("多屏策略切换为 \(policy.label)：窗口 \(screenCoordinator.windows.count) 个 / 屏幕 "
             + "\(screenCoordinator.screenCount) 块 | \(verdict.summary)")
         refreshStatusItem()
@@ -830,7 +1039,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let verdict = screenCoordinator.apply(level: preset.level)
         preferences.levelPreset = preset
         try? preferences.save(to: configURL)
-        lastMessage = verdict.summary
+        notice = .info("窗口层级：\(verdict.summary)")
         log("切换到层级 \(preset.shortLabel)（\(preset.level)）：\(verdict.summary)")
         refreshStatusItem()
     }
@@ -841,9 +1050,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         loadCatalogAndStart()
     }
 
+#if DEBUG
     @objc private func dumpWindows() {
         WindowInspector.printTable(highlightPIDs: [Int(ProcessInfo.processInfo.processIdentifier)])
     }
+#endif
 
     @objc private func quit() {
         NSApp.terminate(nil)
