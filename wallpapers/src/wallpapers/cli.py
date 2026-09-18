@@ -53,8 +53,8 @@ def build_parser() -> argparse.ArgumentParser:
     export.add_argument("--db", default=argparse.SUPPRESS, help="源 SQLite 数据库路径")
     export.add_argument(
         "--output",
-        default="../livewall/data/catalog.json",
-        help="输出 JSON 路径，默认 ../livewall/data/catalog.json",
+        default="../studio/public/data/livewall.json",
+        help="输出 JSON 路径，默认 ../studio/public/data/livewall.json",
     )
     export.add_argument("--device", choices=("desktop", "mobile"), default="desktop")
     export.add_argument("--content", choices=("static", "dynamic"), default="dynamic")

@@ -27,6 +27,18 @@ EOF
 }
 
 WITH_WALLPAPERS=0
+export_livewall_catalog() {
+  local output="$1"
+
+  echo "[livewall] 导出壁纸清单..."
+  (
+    cd "$ROOT_DIR/wallpapers"
+    PYTHONPATH=src python3 -m wallpapers export-livewall \
+      --db "$ROOT_DIR/wallpapers/wallpapers.db" \
+      --output "$output"
+  )
+  echo "[livewall] 清单：$output"
+}
 
 publish_wallpapers_only() {
   local source_dir="$ROOT_DIR/studio/public/data"
@@ -39,6 +51,7 @@ publish_wallpapers_only() {
       --db "$ROOT_DIR/wallpapers/wallpapers.db" \
       --output-dir "$source_dir"
   )
+  export_livewall_catalog "$source_dir/livewall.json"
   node "$ROOT_DIR/studio/scripts/encrypt-wallpaper.mjs" "$source_dir" \
     --key-file "$WALLPAPER_KEY_FILE" --reuse-key
 
@@ -47,7 +60,11 @@ publish_wallpapers_only() {
     mkdir -p "$build_data_dir"
     rm -f "$build_data_dir"/wallpapers.catalog.*.bin
     rm -f "$build_data_dir"/wallpapers.catalog.*.json
-    cp "$source_dir"/wallpapers.catalog.json "$source_dir"/wallpapers.catalog.*.bin "$build_data_dir"/
+    cp \
+      "$source_dir"/wallpapers.catalog.json \
+      "$source_dir"/wallpapers.catalog.*.bin \
+      "$source_dir"/livewall.json \
+      "$build_data_dir"/
     echo "[wallpapers] 加密目录数据已同步到 $build_data_dir"
   fi
 
@@ -319,6 +336,7 @@ for project in "${SELECTED_PROJECTS[@]}"; do
       cd "$ROOT_DIR/wallpapers"
       PYTHONPATH=src python3 -m wallpapers publish --db "$ROOT_DIR/wallpapers/wallpapers.db" --output-dir "$ROOT_DIR/studio/public/data"
     )
+    export_livewall_catalog "$ROOT_DIR/studio/public/data/livewall.json"
     node "$ROOT_DIR/studio/scripts/encrypt-wallpaper.mjs" \
       "$ROOT_DIR/studio/public/data" --key-file "$WALLPAPER_KEY_FILE"
   fi

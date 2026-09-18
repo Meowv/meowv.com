@@ -2,14 +2,14 @@
 
 ## 适用范围与信息来源
 
-本文件适用于根目录及 `blog/`、`studio/`、`wallpapers/`。除 `wallpapers/README.md` 外，子项目不单独维护 `AGENTS.md` 或 `README.md`：
+本文件适用于根目录及 `blog/`、`studio/`、`wallpapers/`、`livewall/`。除 `wallpapers/README.md`、`livewall/README.md` 外，子项目不单独维护 `AGENTS.md` 或 `README.md`：
 
-- 根目录 `README.md` 记录项目概览、环境、命令、端口和产物映射；`wallpapers/README.md` 记录采集器的 CLI、数据库和发布细节。
+- 根目录 `README.md` 记录项目概览、环境、命令、端口和产物映射；`wallpapers/README.md` 记录采集器的 CLI、数据库和发布细节，`livewall/README.md` 记录 macOS 视频壁纸的定位、构建方式与实测基线。
 - 本文件记录修改边界、项目约定、验证和交付要求。
 - 实际脚本、`package.json`、锁文件与源码配置是可执行行为的最终依据；发现文档不一致时，应在任务范围内同步修正。
 - 同一事实只在一处维护：需要重复提及时，另一处只写指针链接，不复述内容。新增或修改文档前先判断归属，避免两份文档各存一份副本后逐渐漂移。
 
-三个目录是同一 Git 仓库中的独立项目，不是统一 workspace。执行命令前先进入目标目录，并使用该项目现有的包管理器、运行时和代码风格。
+四个目录是同一 Git 仓库中的独立项目，不是统一 workspace。执行命令前先进入目标目录，并使用该项目现有的包管理器、运行时和代码风格。`blog/`、`studio/` 是 Web 项目（Node/pnpm），`wallpapers/` 是 Python 项目，`livewall/` 是原生 Swift 项目，三者运行时互不相干。
 
 ## 通用协作原则
 
@@ -42,8 +42,9 @@
 
 - 通用：`node_modules/`、`.DS_Store`、根目录 `build/`、暂存目录与备份目录。
 - Blog：`public/`、`db.json`。
-- Studio：`dist/`、`dist/zitie/hanzi-data/`、`public/data/wallpapers.catalog.json`、`public/data/wallpapers.catalog.*.json` 与 `public/data/wallpapers.catalog.*.bin`。
+- Studio：`dist/`、`dist/zitie/hanzi-data/`、`public/data/wallpapers.catalog.json`、`public/data/wallpapers.catalog.*.json`、`public/data/wallpapers.catalog.*.bin` 与 `public/data/livewall.json`。
 - Wallpapers：`wallpapers.db`、Python 缓存和 `.venv/`。
+- livewall：`build/`、`.build/` 与 `data/manifest.cache.json`。
 
 ## 根目录脚本约定
 
@@ -55,7 +56,7 @@
 - 汇总目录固定为 `build/meowv.com/`、`build/studio.meowv.com/`。Studio 产物包含 `dist/zitie/`。
 - 保持 macOS Bash 3.2 兼容性，不使用 `mapfile`、关联数组等 4.0+ 特性。Bash 3.2 在 `set -u` 下展开空数组会报 `unbound variable`，遍历前先使用 `${SELECTED_PROJECTS[*]:-}` 防护。
 - `build/`、暂存目录和备份目录均为可替换生成内容，不提交 Git。
-- `build.sh wallpapers` 只生成并加密 Studio 壁纸目录，不构建项目；`./build.sh studio --with-wallpapers` 仅允许与 `studio` 一起使用，并在 Studio 构建前生成目录数据。
+- `build.sh wallpapers` 只生成并加密 Studio 壁纸目录，不构建项目；`./build.sh studio --with-wallpapers` 仅允许与 `studio` 一起使用，并在 Studio 构建前生成目录数据。两者都会同时生成供 livewall 使用的未加密清单 `studio/public/data/livewall.json`。
 - 修改脚本时，同步检查参数帮助、项目数组、别名、端口、依赖检查、启动或构建分支、源目录和目标目录，避免只更新其中一处。
 
 ## Blog 约定
@@ -116,6 +117,7 @@
 - `src/wallpapers/pipeline.py`：公开接口抓取、增量游标和资源校验流程。
 - `src/wallpapers/db.py`：SQLite 初始化、兼容迁移和查询。
 - `src/wallpapers/publish.py`：从 SQLite 生成 Studio catalog、bootstrap 和 manifest。
+- `src/wallpapers/export.py`：从 SQLite 导出供 `livewall/` 使用的明文壁纸清单（不加密）。
 - `src/wallpapers/sources/`：各公开接口适配器（`base.py` 提供 `HttpClient` 与 `SourceError`，另有 `desktop.py`、`mobile.py`、`manifest.py`）。
 - `tests/`：数据库、规范化、抓取流程、接口适配和发布逻辑测试。
 
@@ -126,6 +128,48 @@
 - 采集器只访问公开接口并保存元数据和 CDN 地址，不登录、不读取 Cookie、不下载媒体文件，也不绕过付费或权限校验。新增接口、字段或抓取范围时，保持 `device_type`、`content_type`、资源角色和 UTC 时间字段的既有约定。
 - `publish` 生成的 JSON 仅作为加密前的临时目录；部署目录必须经 `studio/scripts/encrypt-wallpaper.mjs` 处理，使用现有 AES-256-GCM 版本化 `.bin` 格式，并保留 manifest 中的加密版本和文件大小信息。不要在源码、日志或文档中写入新的密钥材料。
 - 修改采集、数据库或发布逻辑时，优先运行 `cd wallpapers && pytest`；修改加密脚本时，至少执行 `node --check studio/scripts/encrypt-wallpaper.mjs`，并检查 manifest、旧版本文件清理和 `.bin` 输出。
+
+## livewall 约定
+
+macOS 视频动态壁纸工具。定位是个人自用 / 小范围共享，不面向大规模公开发布，因此没有用户系统、后端服务、多租户或权限体系。
+
+### 代码结构
+
+- `Package.swift`：SwiftPM 清单，声明三个 target：`LiveWallCore`（纯逻辑库）、`LiveWallDesktop`（依赖 AppKit 的桌面层代码）、`LiveWall`（正式 App），外加 `LiveWallCoreTests` 测试运行器。
+- `Sources/LiveWallCore/`：不依赖 `NSApplication` 的纯逻辑，可脱离 GUI 单测。层级预设、清单模型与降级链、候选池、调度策略、省电信号与状态判定、遮挡覆盖率、多屏策略、内容过滤、配置模型都在这里。**新写的逻辑优先放这里**，这样才测得到。
+- `Sources/LiveWallDesktop/`：依赖 AppKit 的桌面层代码 —— 桌面层覆盖窗口、窗口层级探测、遮挡检测。
+- `Sources/LiveWall/`：正式 App。菜单栏常驻，负责编排（清单、调度、失败处理、菜单栏、系统事件）。省电信号的采集在 `PlaybackGovernor.swift`，播放器的暂停与恢复只在 `AppDelegate.applyPlaybackState` 一处发生；全局热键在 `HotKeyManager.swift`，开机自启在 `LaunchAtLogin.swift`。
+- `Tests/LiveWallCoreTests/`：测试用例与自建断言运行器（`Harness.swift`）。
+- `build.sh`：编译并组装 `.app`。`test.sh`：跑测试。`run-livewall.sh`：运行正式 App。
+- `Resources/Info-LiveWall.plist`：App 的 `LSUIElement=true`（菜单栏常驻，不占 Dock）。
+
+### 约定与验证
+
+- 使用 Swift，**只需要 Command Line Tools，不需要 Xcode**，也不依赖 Node/pnpm。本机因此**没有 XCTest**（`unable to resolve module dependency: 'XCTest'`），测试用 `executableTarget` + 自建断言运行器实现，见 `Package.swift` 顶部说明。不要改成 `testTarget`，那会直接编译失败。
+- 构建与运行只走 `livewall/build.sh`、`livewall/test.sh`、`livewall/run-livewall.sh`。**不接入根目录的 `build.sh`、`run.sh`、`deploy.sh`** —— 那些脚本的模型是「Web 产物 → `build/<域名>/` → Nginx」，与本项目无关。
+- 修改纯逻辑后优先运行 `cd livewall && ./test.sh`；修改窗口层级、播放或窗口生命周期逻辑后必须真机跑一次 App 验证（会短暂占用桌面）。
+- **窗口层级值只能由 `CGWindowLevelForKey` 派生**，禁止硬编码魔数；不同 macOS 版本的实际值不同。层级必须落在「系统壁纸之上、桌面图标之下」的开区间内。
+- 识别系统壁纸窗口时**不能用宽松子串匹配**（`contains("wallpaper")` 会把第三方壁纸软件误判成系统壁纸）；系统壁纸进程名会随系统语言本地化，中文系统下是「墙纸」。
+- 必须保留同层竞争检测：第三方壁纸软件可能占用同一层级，同层前后顺序由 WindowServer 决定，不由本程序控制。
+- 壁纸必须静音，且 `preventsDisplaySleepDuringVideoPlayback = false`；覆盖窗口必须 `ignoresMouseEvents = true`，否则桌面右键、框选、拖文件全部失效。
+- **覆盖窗口必须在 `applicationDidFinishLaunching` 里同步创建**，不能推迟到 `asyncAfter`。实测推迟后窗口会被系统加上对称边距（1512×982 的屏幕拿到 `9,5 1494x972`），「覆盖整屏」判定失败并触发无意义的层级降级。
+- **层级判定不能紧跟在建窗口之后**：`orderFrontRegardless()` 是异步的，立刻查窗口列表会查不到自己的窗口。必须等窗口上屏（`ScreenCoordinator.waitForWindowsToAppear`）。
+- 视频源与清单来自同仓库 `wallpapers/` 项目的 `export-livewall` 子命令；`studio/public/data/livewall.json` 与 Application Support 下的 `catalog.json` 都属于生成内容，不提交 Git。清单结构改动需与 `wallpapers/src/wallpapers/export.py` 同步。
+- **失败分类不能靠解析错误文本**。实测 AVFoundation 对 404 的本地化描述是「在此服务器上找不到所请求的URL。」，不含任何数字状态码。`VideoLoader` 必须在播放前做一次 HEAD 探测拿真实状态码，交给 `FailurePolicy.classify(httpStatus:)` 分类。
+- **网络类失败绝不拉黑**。一次断网会把整池好资源丢进黑名单。`FailurePolicy.action` 的判定顺序是硬约束：先看是否已达连续失败阈值 → 再看网络可达性 → 再看是否可重试 → 最后才拉黑。改动顺序会破坏这个保证。
+- **一个视频只建一个 `AVURLAsset`**。每个 asset 都会把整个文件拉一遍，元数据校验与播放各建一个就是双倍流量（实测 6.28MB → 12.55MB）。播放时用 `AVPlayerItem(asset:)` 复用 `VideoLoader` 建好的那个。
+- **不做本地视频缓存**。实测 `AVPlayerLooper` 一次下载后不再产生流量，洗牌模式下每条候选约 9 天才轮到一次，LRU 缓存永远命中不了。断网兜底靠「保持当前画面」而不是靠缓存。
+- **省电判定必须是纯函数**。`PlaybackStateResolver.resolve(_:)` 在 `LiveWallCore`，只吃 `PlaybackSignals` 吐 `PlaybackState`，不做任何系统调用；采集在 `PlaybackGovernor`。判定优先级顺序（手动暂停 > 锁屏 > 息屏 > 遮挡 > 热压力 > 空闲 > 低电量 > 电池）是硬约束，改动前先看代码里的理由注释。
+- **播放器的暂停与恢复只能在一个地方发生**（`AppDelegate.applyPlaybackState`）。系统通知只负责更新 governor 的信号，绝不直接碰播放器 —— 多路信号各改一次会互相打架。
+- **`VideoLoader.load` 是异步的，加载完成后必须重新核对状态**。否则「暂停时正好有加载在飞」会让壁纸在没人看见的时候自己播起来。`advance()` 开头的状态守卫同理，它挡住的是网络恢复之类的旁路触发。
+- **遮挡检测不要退回网格采样或 bbox**。网格采样会漏掉窄缝（20px 的缝比 63px 的网格还窄，实测报告「覆盖 100%」），union + bounding box 会把两个并排的半屏窗口误判成完全遮挡。现行实现是 `CoverageGrid` 的坐标压缩法，算精确面积；`legacyBoundingBoxCovers` 只留给测试做对比证据。
+- **`Preferences` 必须保持逐字段容错解码**。Swift 合成的 `Codable` **不会**回退到属性默认值 —— 缺字段直接抛 `keyNotFound`，会让用户已有的 `config.json` 整体解码失败并静默丢配置。新增字段时同步补 `CodingKeys`、`init(from:)` 与往返测试。
+- **全局热键用 Carbon `RegisterEventHotKey`，不要换成 `NSEvent.addGlobalMonitorForEvents`** —— 后者需要「辅助功能」授权，会弹窗且要重启 App。代价是热键会**抢占**该组合，所以只挑不常用的 `⌥⌘` 组合，并且**注册失败必须显式提示**：重复注册同一组合返回 `eventHotKeyExistsErr`（-9878），据此区分「被占用」与「其它失败」。
+- **菜单项的快捷键提示写进标题，不要设 `keyEquivalent`**。设了会让菜单打开时全局热键与菜单项各触发一次，切换类操作执行两遍等于互相抵消。
+- **`SMAppService.mainApp.status` 在未注册时返回 `notFound` 而不是 `notRegistered`**。曾据此显示「不可用（需在 .app 内运行）」，而 App 不在 `/Applications` 下也能注册成功 —— 一个会让用户放弃使用的假故障。两个「没开启」状态要统一显示为「未开启」。
+- **「仅主屏」用 `NSScreen.screens.first`，不要用 `NSScreen.main`**。后者是「当前键盘焦点所在的屏幕」，会随用户拖窗口漂移，会导致窗口建到副屏上。
+- **等待窗口上屏要等到 bounds 稳定，不能只看「窗口号出现了」**。窗口上屏有一段对称缩放的进入动画，动画期间 WindowServer 报的 bounds 是内缩的（实测 1512×982 被报成 `9,6 1494x970` / `5,3 1502x976`，两次采样值不同），此时 `evaluate` 会得到「未覆盖整屏」并触发无意义的降级。比较时**不能用 `NSWindow.frame`** —— 它用「原点在主屏左下」的坐标系，副屏上会差一个主屏高度（实测同一窗口 `NSWindow.frame.y = -98` 而 `CGWindowBounds.y = 0`）。
+- **内容过滤按作者，不要按标签**。数据源在采集侧没有标签：`desktop + dynamic` 的 2,614 条候选里带 tag 的是 **0 条**，全库 14,449 个 tag 只挂在桌面静态壁纸与手机端壁纸上。`CandidateFilter` 里保留了标签维度，但别在菜单里暴露一个永远为空的选项。
 
 ## 验证与交付
 

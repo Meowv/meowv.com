@@ -90,12 +90,12 @@ PYTHONPATH=src python3 -m wallpapers export-livewall --category 风景
 PYTHONPATH=src python3 -m wallpapers export-livewall --category "" --device mobile --content dynamic
 ```
 
-默认导出「桌面 + 动态 + 美女」分类，输出到 `../livewall/data/catalog.json`。
+默认导出「桌面 + 动态 + 美女」分类，输出到 `../studio/public/data/livewall.json`。
 
 | 参数           | 默认值                             | 说明                                                       |
 | -------------- | ---------------------------------- | ---------------------------------------------------------- |
 | `--db PATH`    | `wallpapers.db`                    | 源 SQLite 数据库路径                                       |
-| `--output PATH`| `../livewall/data/catalog.json`    | 输出 JSON 路径                                             |
+| `--output PATH`| `../studio/public/data/livewall.json` | 输出 JSON 路径                                             |
 | `--device`     | `desktop`                          | `desktop` 或 `mobile`                                      |
 | `--content`    | `dynamic`                          | `static` 或 `dynamic`                                      |
 | `--category`   | `美女`                             | 分类名称，同时匹配分类自身与其父分类；传空字符串表示不过滤 |
@@ -104,7 +104,7 @@ PYTHONPATH=src python3 -m wallpapers export-livewall --category "" --device mobi
 
 清单结构与客户端约定一一对应，改动需两边同步（见 `src/wallpapers/export.py` 与 `livewall/Sources/LiveWallCore/CatalogModel.swift`）。
 
-根目录的 `./build.sh wallpapers` 与 `./build.sh studio --with-wallpapers` 在生成并加密 Studio 壁纸目录后，**会默认顺带执行本子命令**，加 `--no-livewall` 可跳过。手工单独导出时用上面的命令。
+根目录的 `./build.sh wallpapers` 与 `./build.sh studio --with-wallpapers` 在生成并加密 Studio 壁纸目录时，会同时生成 `studio/public/data/livewall.json`。手工单独导出时使用上面的命令。
 
 ## 数据范围
 

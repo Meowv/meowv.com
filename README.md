@@ -1,6 +1,6 @@
 # Meowv Projects
 
-Meowv 的 Web 项目与壁纸数据工具仓库，包含 Blog、Meowv Studio 和 Wallpapers Crawler。各顶层项目彼此独立，不是 npm/pnpm workspace；依赖安装、开发和构建命令都应在对应目录中执行。
+Meowv 的 Web 项目与桌面工具仓库，包含 Blog、Meowv Studio、Wallpapers Crawler 和 livewall。各顶层项目彼此独立，不是 npm/pnpm workspace；依赖安装、开发和构建命令都应在对应目录中执行。前三者构建为静态站点，livewall 是本机使用的 macOS 原生应用，不参与站点构建与部署。
 
 生产构建在本地完成，根目录脚本会把静态产物汇总到 `build/`，再由维护者通过 `deploy.sh` 上传到 Windows Nginx 服务器，也可以手动拷贝。仓库不通过 CI 服务或托管平台构建和发布。
 
@@ -29,6 +29,7 @@ Meowv 的 Web 项目与壁纸数据工具仓库，包含 Blog、Meowv Studio 和
     - [三方组件清单](#三方组件清单)
   - [Zitie](#zitie)
   - [Wallpapers Crawler](#wallpapers-crawler)
+  - [livewall](#livewall)
 - [本地处理与生成内容](#本地处理与生成内容)
 
 ## 项目概览
@@ -38,6 +39,7 @@ Meowv 的 Web 项目与壁纸数据工具仓库，包含 Blog、Meowv Studio 和
 | `blog/`       | 个人博客与 Labs 工具   | Hexo 7、EJS/Stylus/Pug              | [meowv.com](https://meowv.com)               |
 | `studio/`     | Meowv Studio           | Vue 3、React 18、TypeScript、Vite 8 | [studio.meowv.com](https://studio.meowv.com) |
 | `wallpapers/` | 壁纸接口采集与目录发布 | Python 3.12、SQLite、urllib         | 仅供本地数据处理                             |
+| `livewall/`   | macOS 视频动态壁纸     | Swift、AppKit、AVFoundation         | 仅供本机使用                                 |
 
 仓库主要文件：
 
@@ -46,6 +48,7 @@ Meowv 的 Web 项目与壁纸数据工具仓库，包含 Blog、Meowv Studio 和
 ├── blog/       # 博客、文章、独立游戏和 Labs 工具
 ├── studio/     # 浏览器本地工作台
 ├── wallpapers/ # 公开壁纸接口采集器与 Studio 目录发布工具
+├── livewall/   # macOS 视频动态壁纸工具
 ├── run.sh      # 开发环境启动脚本
 ├── build.sh    # 生产构建与产物汇总脚本
 ├── deploy.sh   # 上传已有构建产物到 Windows 服务器
@@ -72,6 +75,14 @@ Wallpapers Crawler 无运行时第三方依赖；运行测试时需要 `pytest`�
 ```bash
 (cd wallpapers && python3 -m pip install -e ".[test]")
 ```
+
+livewall 使用 Swift，只需要 Xcode Command Line Tools，**不需要完整 Xcode**，也不依赖 Node/pnpm。确认工具链可用：
+
+```bash
+swift --version
+```
+
+需要注意：由于本机未安装完整 Xcode，`XCTest` 与 `Swift Testing` 都不可用，livewall 的测试改用自建的断言运行器实现，详见 [`livewall/README.md`](./livewall/README.md)。
 
 ## 根目录脚本
 
@@ -138,6 +149,7 @@ chmod +x run.sh build.sh deploy.sh
 
 - 从 `wallpapers/wallpapers.db` 重新生成并加密 `studio/public/data/`。
 - 如果 `build/studio.meowv.com/` 已存在，同步更新其中的 `data/` 目录，便于直接部署已有产物。
+- 同时生成 livewall 客户端使用的未加密清单 `studio/public/data/livewall.json`。
 - `--with-wallpapers` 只能与 `studio` 一起使用。
 
 产物映射如下：
@@ -431,16 +443,38 @@ PYTHONPATH=src python3 -m wallpapers crawl
 PYTHONPATH=src python3 -m wallpapers stats
 PYTHONPATH=src python3 -m wallpapers check
 PYTHONPATH=src python3 -m wallpapers publish --db wallpapers.db --output-dir ../studio/public/data
+PYTHONPATH=src python3 -m wallpapers export-livewall
 ```
 
-采集器只保存公开接口返回的元数据和 CDN 地址，不下载媒体文件。`crawl` 默认使用 `incremental` 模式；支持 `quick`、`incremental`、`full`，以及 `--device`、`--content`、`--category`、`--keyword`、`--max-pages` 等过滤参数。`publish` 从 SQLite 生成 catalog、bootstrap 和 manifest；部署前由 `./build.sh wallpapers` 或 `./build.sh studio --with-wallpapers` 将 catalog 与 bootstrap 加密为版本化 `.bin`，公开的 `wallpapers.catalog.json` 仅保留 manifest。
+采集器只保存公开接口返回的元数据和 CDN 地址，不下载媒体文件。`crawl` 默认使用 `incremental` 模式；支持 `quick`、`incremental`、`full`，以及 `--device`、`--content`、`--category`、`--keyword`、`--max-pages` 等过滤参数。`publish` 从 SQLite 生成 catalog、bootstrap 和 manifest；部署前由 `./build.sh wallpapers` 或 `./build.sh studio --with-wallpapers` 将 catalog 与 bootstrap 加密为版本化 `.bin`，公开的 `wallpapers.catalog.json` 仅保留 manifest。`export-livewall` 导出供 livewall 客户端使用的明文清单（不加密），默认输出到 `studio/public/data/livewall.json`。它**不在 `run.sh` 的子命令白名单里**，需在 `wallpapers/` 目录下直接调用；`./build.sh wallpapers` 与 `./build.sh studio --with-wallpapers` 也会自动生成同一份清单。
 
 壁纸采集器的完整参数、数据库表结构和发布说明见 [`wallpapers/README.md`](./wallpapers/README.md)。
+
+### livewall
+
+```bash
+cd livewall
+./build.sh        # 编译并组装 .app
+./test.sh         # 运行单元测试
+./run-livewall.sh # 编译、同步清单并启动正式 App（会接管桌面壁纸层）
+```
+
+macOS 没有「设置视频为壁纸」的官方 API。livewall 的做法是创建一个无边框窗口，把窗口层级钉在「系统壁纸之上、桌面图标之下」这一层，在里面用 `AVPlayerLayer` 循环播放 mp4。层级值全部由 `CGWindowLevelForKey` 派生，启动时自检是否真的落在有效区间内，并检测同层竞争。
+
+省电靠一套「信号 → 状态」状态机：遮挡 / 锁屏 / 息屏 / 热压力 / 空闲 / 低电量 / 电池，任一命中即暂停，全部解除才恢复；其中「画面被完全遮挡」用坐标压缩法算精确覆盖率，避免半屏窗口被误判成盖满。开关与空闲阈值可在菜单栏的「省电设置」里实时调整。
+
+三个全局热键（`⌥⌘P` 暂停 / `⌥⌘N` 下一张 / `⌥⌘R` 重载清单）用 Carbon `RegisterEventHotKey` 实现，**不需要辅助功能授权**；开机自启用 `SMAppService`；内容过滤按作者（可多选）。多屏策略支持「全部同片」与「仅主屏」，「每屏独立」尚未实现。
+
+`Sources/LiveWallCore/` 是不依赖 `NSApplication` 的纯逻辑，可脱离 GUI 单测；`Sources/LiveWallDesktop/` 是依赖 AppKit 的桌面层窗口与层级探测。
+
+本项目只在本机构建与运行，**不接入根目录的 `build.sh`、`run.sh`、`deploy.sh`**，也不参与站点部署。
+
+livewall 的定位、构建方式、本机实测层级基线、省电策略与路线图见 [`livewall/README.md`](./livewall/README.md)。
 
 ## 本地处理与生成内容
 
 Studio 和 Zitie 均以浏览器本地处理为核心。用户选择的文件、图片和附件不得上传，也不得把其内容或敏感文件信息写入日志、统计信息、Cookie、URL 或远程数据库，不执行不受信任的主动内容。新增上传、远程转换、遥测、外部服务或权限前，必须先说明影响并取得授权。
 
-依赖安装、开发或构建过程生成的目录与文件（`node_modules/`、`build/`、`blog/public/`、`studio/dist/`、`wallpapers/wallpapers.db` 等）不应手工修改或提交，`.gitignore` 已逐项排除。按项目划分的完整清单见 [AGENTS.md 的安全与清理](./AGENTS.md#安全与清理)。
+依赖安装、开发或构建过程生成的目录与文件（`node_modules/`、`build/`、`blog/public/`、`studio/dist/`、`wallpapers/wallpapers.db`、`livewall/build/`、`livewall/.build/` 等）不应手工修改或提交，`.gitignore` 已逐项排除。按项目划分的完整清单见 [AGENTS.md 的安全与清理](./AGENTS.md#安全与清理)。
 
 生产部署、Nginx 修改、域名切换、`yarn deploy` 和远程资源操作均不属于日常本地开发步骤，需要单独确认。仓库没有统一许可证，除 `blog/` 自带 `LICENSE` 外其余项目未声明授权，使用、分发或二次开发前应分别确认。具体协作与验证规则见 [AGENTS.md](./AGENTS.md)。
