@@ -83,7 +83,15 @@ def _build_json_catalog(
     keyword_columns = {
         row[1] for row in source_db.execute("PRAGMA table_info(wallpaper_keyword)")
     }
-    match_rank = "COALESCE(wk.match_rank, 999999)" if "match_rank" in keyword_columns else "999999"
+    # 注意：不能把缺失的 match_rank 替换成字面量 999999 —— SQLite 会把 ORDER BY 里的
+    # 常量整数当成「第 N 列」的位置引用，值超出结果集列数会直接抛
+    # OperationalError: 2nd ORDER BY term out of range。
+    # 旧版数据库可能没有 match_rank 列，因此按列是否存在拼装整段 ORDER BY。
+    order_by = (
+        "wk.wallpaper_id, COALESCE(wk.match_rank, 999999), k.id"
+        if "match_rank" in keyword_columns
+        else "wk.wallpaper_id, k.id"
+    )
     tags: dict[int, list[str]] = {}
     for wallpaper_id, keyword in source_db.execute(
         f"""
@@ -91,7 +99,7 @@ def _build_json_catalog(
           FROM wallpaper_keyword wk
           JOIN keyword k ON k.id = wk.keyword_id
          WHERE k.keyword_type = 'tag'
-         ORDER BY wk.wallpaper_id, {match_rank}, k.id
+         ORDER BY {order_by}
         """
     ):
         values = tags.setdefault(int(wallpaper_id), [])

@@ -80,6 +80,32 @@ PYTHONPATH=src python3 -m wallpapers --db ./data/wallpapers.db crawl
 PYTHONPATH=src python3 -m wallpapers crawl --db ./data/wallpapers.db
 ```
 
+## 导出 livewall 壁纸清单
+
+`export-livewall` 从 SQLite 导出供 macOS 客户端 [`livewall/`](../livewall/README.md) 使用的**明文 JSON 清单**。与 `publish` 的区别：不加密、不分桶，只导出可直接播放的 `video_preview` 地址。
+
+```bash
+PYTHONPATH=src python3 -m wallpapers export-livewall
+PYTHONPATH=src python3 -m wallpapers export-livewall --category 风景
+PYTHONPATH=src python3 -m wallpapers export-livewall --category "" --device mobile --content dynamic
+```
+
+默认导出「桌面 + 动态 + 美女」分类，输出到 `../livewall/data/catalog.json`。
+
+| 参数           | 默认值                             | 说明                                                       |
+| -------------- | ---------------------------------- | ---------------------------------------------------------- |
+| `--db PATH`    | `wallpapers.db`                    | 源 SQLite 数据库路径                                       |
+| `--output PATH`| `../livewall/data/catalog.json`    | 输出 JSON 路径                                             |
+| `--device`     | `desktop`                          | `desktop` 或 `mobile`                                      |
+| `--content`    | `dynamic`                          | `static` 或 `dynamic`                                      |
+| `--category`   | `美女`                             | 分类名称，同时匹配分类自身与其父分类；传空字符串表示不过滤 |
+
+导出只保留 `status='active'`、`media_role='video_preview'` 且 `accessible=1` 的记录；同一壁纸有多个预览地址时只取第一个。`duration_seconds` 在库里当前全为 NULL，清单里保持 `null`，由客户端在播放时自行探测。
+
+清单结构与客户端约定一一对应，改动需两边同步（见 `src/wallpapers/export.py` 与 `livewall/Sources/LiveWallCore/CatalogModel.swift`）。
+
+根目录的 `./build.sh wallpapers` 与 `./build.sh studio --with-wallpapers` 在生成并加密 Studio 壁纸目录后，**会默认顺带执行本子命令**，加 `--no-livewall` 可跳过。手工单独导出时用上面的命令。
+
 ## 数据范围
 
 采集器区分以下维度：

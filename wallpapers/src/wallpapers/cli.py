@@ -9,6 +9,7 @@ from urllib.request import Request, urlopen
 
 from .config import DEFAULT_PAGE_SIZE
 from .db import Database
+from .export import export_livewall_catalog
 from .pipeline import Crawler
 from .publish import publish_catalog
 
@@ -45,6 +46,23 @@ def build_parser() -> argparse.ArgumentParser:
         default="../studio/public/data",
         help="发布库输出目录，默认 ../studio/public/data",
     )
+
+    export = sub.add_parser(
+        "export-livewall", help="导出供「动态壁纸」客户端使用的明文壁纸清单"
+    )
+    export.add_argument("--db", default=argparse.SUPPRESS, help="源 SQLite 数据库路径")
+    export.add_argument(
+        "--output",
+        default="../livewall/data/catalog.json",
+        help="输出 JSON 路径，默认 ../livewall/data/catalog.json",
+    )
+    export.add_argument("--device", choices=("desktop", "mobile"), default="desktop")
+    export.add_argument("--content", choices=("static", "dynamic"), default="dynamic")
+    export.add_argument(
+        "--category",
+        default="美女",
+        help="分类名称，同时匹配分类自身与其父分类；传空字符串表示不过滤",
+    )
     return parser
 
 
@@ -70,6 +88,24 @@ def _check_assets(db: Database) -> int:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     db_path = Path(args.db)
+
+    # 导出分支放在 Database 上下文之外：Database() 会在文件缺失时创建空库，
+    # 那样导出会静默产出 0 条而不是报错。
+    if args.command == "export-livewall":
+        if not db_path.exists():
+            print(f"错误：数据库不存在：{db_path}", file=sys.stderr)
+            return 2
+        output_path, count = export_livewall_catalog(
+            db_path,
+            args.output,
+            device=args.device,
+            content=args.content,
+            category=args.category or None,
+        )
+        print(f"output={output_path}")
+        print(f"items={count}")
+        return 0
+
     with Database(db_path) as db:
         if args.command == "crawl":
             devices = ("desktop", "mobile") if args.device == "all" else (args.device,)
