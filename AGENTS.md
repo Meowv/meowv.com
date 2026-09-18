@@ -137,7 +137,7 @@ macOS 视频动态壁纸工具。定位是个人自用 / 小范围共享，不�
 ### 代码结构
 
 - `Package.swift`：SwiftPM 清单，声明三个 target：`LiveWallCore`（纯逻辑库）、`LiveWallDesktop`（依赖 AppKit 的桌面层代码）、`LiveWall`（正式 App），外加 `LiveWallCoreTests` 测试运行器。
-- `Sources/LiveWallCore/`：不依赖 `NSApplication` 的纯逻辑，可脱离 GUI 单测。层级预设、清单模型与降级链、候选池、选片顺序、调度策略与切换间隔、时长文案、省电信号与状态判定、遮挡覆盖率、多屏策略、内容过滤、配置模型都在这里。**新写的逻辑优先放这里**，这样才测得到。
+- `Sources/LiveWallCore/`：不依赖 `NSApplication` 的纯逻辑，可脱离 GUI 单测。层级预设、清单模型与降级链、候选池、选片顺序、调度策略与切换间隔、时长文案、日志轮转阈值与判定、省电信号与状态判定、遮挡覆盖率、多屏策略、内容过滤、配置模型都在这里。**新写的逻辑优先放这里**，这样才测得到。
 - `Sources/LiveWallDesktop/`：依赖 AppKit 的桌面层代码 —— 桌面层覆盖窗口、窗口层级探测、遮挡检测。
 - `Sources/LiveWall/`：正式 App。菜单栏常驻，负责编排（清单、调度、失败处理、菜单栏、系统事件）。省电信号的采集在 `PlaybackGovernor.swift`，播放器的暂停与恢复只在 `AppDelegate.applyPlaybackState` 一处发生；全局热键在 `HotKeyManager.swift`，开机自启在 `LaunchAtLogin.swift`。
 - `Tests/LiveWallCoreTests/`：测试用例与自建断言运行器（`Harness.swift`）。

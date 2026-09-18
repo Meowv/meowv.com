@@ -16,5 +16,6 @@ failurePolicyTests()
 powerTests()
 multiScreenPolicyTests()
 filterTests()
+logRotationTests()
 
 exit(TestRunner.shared.report())

@@ -45,6 +45,7 @@ livewall/
 │  │  ├─ CandidatePool.swift    候选队列，一轮内不重复 + 失效黑名单；选片顺序（随机 / 顺序）
 │  │  ├─ SchedulePolicy.swift   切换间隔与抖动；SwitchInterval 提供预设、合法区间与夹紧
 │  │  ├─ DurationText.swift     时长文案（秒 / 分钟 / 小时），空闲阈值与切换间隔共用
+│  │  ├─ LogRotation.swift      日志轮转阈值与判定（清空复用同一文件，不留历史文件）
 │  │  ├─ FailurePolicy.swift    失败分类与处理决策（拉黑 / 重试 / 保持画面 / 停止）
 │  │  ├─ VideoLoadError.swift   加载失败原因（含 HTTP 状态码）
 │  │  ├─ PlaybackState.swift    省电信号、状态与判定纯函数 + 空闲阈值文案
@@ -244,7 +245,7 @@ cd livewall
 ./build.sh                # 只打包，产物 build/LiveWall.app（release）
 
 # 退出：菜单栏图标 → 退出，或 pkill -x LiveWall
-# 日志：~/Library/Logs/com.meowv.livewall/livewall.log
+# 日志：~/Library/Logs/com.meowv.livewall/livewall.log（达 2 MB 自动清空复用，不生成历史文件）
 
 # ── 测试 ────────────────────────────────────────────
 ./test.sh

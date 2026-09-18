@@ -1062,6 +1062,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - 日志
 
+    /// 日志轮转阈值。要调整改这里，单位见各字段注释。
+    private static let logRotation = LogRotationConfig()
+
+    /// 日志文件路径。nil 表示取不到 Logs 目录，此时只输出到 stdout。
+    private static let logFileURL: URL? =
+        FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first?
+            .appendingPathComponent("Logs/com.meowv.livewall", isDirectory: true)
+            .appendingPathComponent("livewall.log")
+
+    /// 日志落盘锁。
+    ///
+    /// `log(_:)` 会被主线程、网络回调、调度定时器等多处调用，而轮转是
+    /// 「读大小 → 清空 → 写说明 → 写正文」的多步操作。整个序列必须与写入处在同一把锁内，
+    /// 否则两个线程同时轮转会写出两条说明，或者把正在写的那条清掉。
+    private let logLock = NSLock()
+
+    /// 距上次文件大小检查后累计写入的条数。
+    private var logWritesSinceCheck = 0
+    /// 上次文件大小检查的时刻。
+    private var logLastCheck = Date()
+
     /// 落盘到 `~/Library/Logs/com.meowv.livewall/livewall.log`，同时输出到 stdout。
     /// 出问题时先看这个文件 —— 壁纸应用是后台进程，没有控制台可看。
     private func log(_ message: String) {
@@ -1069,19 +1090,74 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         print(line)
         fflush(stdout)
 
-        let logs = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first?
-            .appendingPathComponent("Logs/com.meowv.livewall", isDirectory: true)
-        guard let logs else { return }
-        try? FileManager.default.createDirectory(at: logs, withIntermediateDirectories: true)
-        let file = logs.appendingPathComponent("livewall.log")
+        logLock.lock()
+        defer { logLock.unlock() }
+
+        guard let file = Self.logFileURL else { return }
         guard let data = (line + "\n").data(using: .utf8) else { return }
-        if let handle = try? FileHandle(forWritingTo: file) {
+
+        // 先判断要不要轮转，再写当前这条。
+        // 顺序不能反：反过来的话，刚追加的这条会被随后的清空一起抹掉。
+        let now = Date()
+        if Self.logRotation.shouldCheck(
+            writesSinceCheck: logWritesSinceCheck,
+            elapsedSeconds: now.timeIntervalSince(logLastCheck)
+        ) {
+            logWritesSinceCheck = 0
+            logLastCheck = now
+            rotateLogFileIfNeeded(file)
+        } else {
+            logWritesSinceCheck += 1
+        }
+
+        appendToLog(data, to: file)
+    }
+
+    /// 超过上限就清空复用同一个文件。调用方需已持有 `logLock`。
+    ///
+    /// 刻意**不生成** `.1` / `.2` / 日期后缀 / 压缩归档，也不做归档：
+    /// 日志只用于排障，留一堆历史文件只是白占空间。
+    private func rotateLogFileIfNeeded(_ file: URL) {
+        let size = Self.logFileSize(file)
+        guard Self.logRotation.shouldRotate(fileSizeBytes: size) else { return }
+
+        // 截断为 0 字节而不是删文件：删了再建会换 inode，这里要的是「同一个文件复用」。
+        try? "".write(to: file, atomically: false, encoding: .utf8)
+
+        let notice = "[\(Self.timestamp())] "
+            + LogRotationConfig.rotationNoticeText(
+                clearedBytes: size,
+                limitBytes: Self.logRotation.maxFileSizeBytes
+            )
+        if let noticeData = (notice + "\n").data(using: .utf8) {
+            appendToLog(noticeData, to: file)
+        }
+    }
+
+    /// 追加一段内容到日志末尾。调用方需已持有 `logLock`。
+    private func appendToLog(_ data: Data, to file: URL) {
+        if FileManager.default.fileExists(atPath: file.path) {
+            guard let handle = try? FileHandle(forWritingTo: file) else { return }
             handle.seekToEndOfFile()
             handle.write(data)
             try? handle.close()
         } else {
+            // 只有文件还不存在时才走整体写入 —— `write(to:)` 会截断，
+            // 对已存在的文件用它会把已有内容抹掉。
+            try? FileManager.default.createDirectory(
+                at: file.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
             try? data.write(to: file)
         }
+    }
+
+    /// 日志文件当前大小，读不到或为 0 时按 0 处理（文件还不存在）。
+    private static func logFileSize(_ file: URL) -> UInt64 {
+        guard let size = try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize, size > 0 else {
+            return 0
+        }
+        return UInt64(size)
     }
 
     private static func timestamp() -> String {
