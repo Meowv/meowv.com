@@ -134,7 +134,7 @@ func failurePolicyTests() {
             )
             expectEqual(
                 policy.action(for: .transientNetwork("timeout"), networkReachable: true, consecutiveFailures: 2, retriesForItem: 1),
-                .blacklistAndAdvance, "重试额度用尽则拉黑换下一条"
+                .holdCurrent, "重试额度用尽仍保持当前画面，不拉黑"
             )
         }
 
@@ -149,7 +149,7 @@ func failurePolicyTests() {
             )
             expectEqual(
                 policy.action(for: .serverError(status: 503), networkReachable: true, consecutiveFailures: 2, retriesForItem: 1),
-                .blacklistAndAdvance, "5xx 重试用尽则拉黑"
+                .holdCurrent, "5xx 重试用尽仍保持当前画面"
             )
         }
 
@@ -168,11 +168,11 @@ func failurePolicyTests() {
             )
         }
 
-        test("maxRetriesPerItem 为 0 时所有错误都直接拉黑或保持") {
+        test("maxRetriesPerItem 为 0 时资源错误拉黑，网络错误保持") {
             let noRetry = FailurePolicy(maxConsecutiveFailures: 3, maxRetriesPerItem: 0)
             expectEqual(
                 noRetry.action(for: .transientNetwork("t"), networkReachable: true, consecutiveFailures: 1, retriesForItem: 0),
-                .blacklistAndAdvance, "不允许重试时超时也拉黑"
+                .holdCurrent, "不允许重试时超时仍保持当前画面"
             )
             expectEqual(
                 noRetry.action(for: .networkUnreachable, networkReachable: false, consecutiveFailures: 1, retriesForItem: 0),

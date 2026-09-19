@@ -30,7 +30,8 @@ final class LockScreenPreviewer {
     private var lastDisplayIDs: [UInt32] = []
     private var lastWriteAt: Date?
     private var generation = 0
-    private var isWorking = false
+    /// 每次调用 `update` 都递增。下载期间如果用户又换了片，旧操作只能丢弃结果。
+    private var operationGeneration = 0
     /// 失败提示只报一次，避免每换一张片就刷一条警告。
     private var didReportFailure = false
     private var didRecordOriginals = false
@@ -60,6 +61,8 @@ final class LockScreenPreviewer {
             displayIDs: displayIDs,
             coverURL: item.coverUrl
         )
+        operationGeneration += 1
+        let operation = operationGeneration
 
         guard policy.shouldWrite(
             previous: lastSignature,
@@ -69,14 +72,13 @@ final class LockScreenPreviewer {
         ) else {
             return .skipped
         }
-        guard !isWorking else {
-            log?("锁屏预览：上一次更新仍在进行，跳过 \(item.id)")
-            return .skipped
-        }
-        isWorking = true
-        defer { isWorking = false }
 
-        let outcome = await apply(item: item, displayIDs: displayIDs, frameProvider: frameProvider)
+        let outcome = await apply(
+            item: item,
+            displayIDs: displayIDs,
+            frameProvider: frameProvider,
+            operation: operation
+        )
         if outcome == .written {
             lastSignature = signature
             lastWriteAt = Date()
@@ -111,6 +113,7 @@ final class LockScreenPreviewer {
     /// 自己的壁纸被改坏了。**进程被强杀时恢复不了**（只能手动改回来），所以日志里
     /// 会把原图路径打出来。
     func restoreUserWallpaper() {
+        operationGeneration += 1
         guard didRecordOriginals, !originalWallpapers.isEmpty else { return }
         var restored = 0
         for pair in Self.screenPairs() {
@@ -125,6 +128,9 @@ final class LockScreenPreviewer {
         log?("锁屏预览：已恢复原墙纸 \(restored) 块屏")
         lastApplied = nil
         lastSignature = nil
+        lastDisplayIDs.removeAll()
+        didRecordOriginals = false
+        originalWallpapers.removeAll()
     }
 
     // MARK: - 实际写入
@@ -132,8 +138,15 @@ final class LockScreenPreviewer {
     private func apply(
         item: WallpaperItem,
         displayIDs: [UInt32],
-        frameProvider: () -> CGImage?
+        frameProvider: () -> CGImage?,
+        operation: Int
     ) async -> Outcome {
+        guard operation == operationGeneration else { return .skipped }
+
+        // 从「全部屏幕」切到「仅主屏」等策略变化时，先把被移除的屏幕恢复成
+        // 用户原来的墙纸；否则它会一直停留在上一张锁屏预览图。
+        restoreRemovedDisplays(currentDisplayIDs: displayIDs)
+
         var coverFile: URL?
         if let coverURL = item.coverImageURL {
             do {
@@ -144,9 +157,11 @@ final class LockScreenPreviewer {
         } else {
             log?("锁屏预览：清单里没有静态图地址（\(item.id)），改用抓帧")
         }
+        guard operation == operationGeneration else { return .skipped }
 
         // 抓帧是兜底，不是主路径 —— 只有静态图不可用才去抓
         let frame = coverFile == nil ? frameProvider() : nil
+        guard operation == operationGeneration else { return .skipped }
         let source = policy.decide(
             coverDownloadSucceeded: coverFile != nil,
             frameAvailable: frame != nil
@@ -167,6 +182,7 @@ final class LockScreenPreviewer {
             reportFailure("锁屏预览：静态图与抓帧都不可用，保留系统原墙纸")
             return .failed
         }
+        guard operation == operationGeneration else { return .skipped }
 
         recordOriginalsIfNeeded()
 
@@ -178,6 +194,7 @@ final class LockScreenPreviewer {
 
         var applied = 0
         for pair in targets {
+            guard operation == operationGeneration else { return .skipped }
             do {
                 try NSWorkspace.shared.setDesktopImageURL(imageURL, for: pair.screen, options: [:])
                 applied += 1
@@ -195,6 +212,22 @@ final class LockScreenPreviewer {
         let origin = source == .frame ? "抓帧" : "静态图"
         log?("锁屏预览已更新：\(imageURL.lastPathComponent)（\(origin)）→ \(applied) 块屏")
         return .written
+    }
+
+    private func restoreRemovedDisplays(currentDisplayIDs: [UInt32]) {
+        let previous = Set(lastDisplayIDs)
+        let current = Set(currentDisplayIDs)
+        let removed = previous.subtracting(current)
+        guard !removed.isEmpty else { return }
+        for pair in Self.screenPairs() where removed.contains(pair.identity.displayID) {
+            guard let url = originalWallpapers[pair.identity.displayID] else { continue }
+            do {
+                try NSWorkspace.shared.setDesktopImageURL(url, for: pair.screen, options: [:])
+                log?("锁屏预览：策略切换，恢复移除的屏 \(pair.identity.displayID) 原墙纸")
+            } catch {
+                log?("锁屏预览：恢复移除的屏 \(pair.identity.displayID) 原墙纸失败：\(error.localizedDescription)")
+            }
+        }
     }
 
     private func downloadCover(_ url: URL) async throws -> URL {

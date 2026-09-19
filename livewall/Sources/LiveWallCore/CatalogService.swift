@@ -37,11 +37,14 @@ public struct CatalogSliceLoadResult: Sendable {
     public let catalog: WallpaperCatalog?
     public let origin: CatalogOrigin?
     public let warnings: [String]
+    /// 远程成功时返回原始数据，由调用方在请求代次确认后再写入共享副本。
+    public let cacheData: Data?
 
-    public init(catalog: WallpaperCatalog?, origin: CatalogOrigin?, warnings: [String]) {
+    public init(catalog: WallpaperCatalog?, origin: CatalogOrigin?, warnings: [String], cacheData: Data? = nil) {
         self.catalog = catalog
         self.origin = origin
         self.warnings = warnings
+        self.cacheData = cacheData
     }
 }
 
@@ -187,12 +190,12 @@ public struct CatalogService {
             } else if let fileURL = entry.resolvedFileURL(relativeTo: remoteURL) {
                 if let data = tryResult({ try transport.fetch(fileURL) }, into: &warnings, label: "分类切片拉取失败") {
                     if let catalog = tryDecodeSlice(data, matching: entry, into: &warnings, label: "分类切片解析失败") {
-                        do {
-                            try transport.writeFile(data, to: sliceCacheURL)
-                        } catch {
-                            warnings.append("分类切片已使用，但写入本地副本失败：\(error.localizedDescription)")
-                        }
-                        return CatalogSliceLoadResult(catalog: catalog, origin: .remote, warnings: warnings)
+                        return CatalogSliceLoadResult(
+                            catalog: catalog,
+                            origin: .remote,
+                            warnings: warnings,
+                            cacheData: data
+                        )
                     }
                 }
             } else {
@@ -209,6 +212,14 @@ public struct CatalogService {
         }
 
         return CatalogSliceLoadResult(catalog: nil, origin: nil, warnings: warnings)
+    }
+
+    /// 把已经通过请求代次校验的远程切片写入共享副本。
+    public func cacheSlice(
+        _ data: Data,
+        transport: CatalogTransport = DefaultCatalogTransport()
+    ) throws {
+        try transport.writeFile(data, to: sliceCacheURL)
     }
 
     // MARK: - 辅助

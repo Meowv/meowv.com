@@ -387,13 +387,13 @@ func catalogTests() {
             expectEqual(transport.fetchedURLs, [sliceURL], "请求的地址应由索引地址拼出")
         }
 
-        test("远程成功后写入副本") {
+        test("远程成功返回可延迟写入的副本数据") {
             let transport = FakeTransport()
             transport.remote[sliceURL] = sliceJSON()
 
-            _ = makeService().loadSlice(entry(), transport: transport)
+            let result = makeService().loadSlice(entry(), transport: transport)
 
-            expectNotNil(transport.written[testSliceCachePath], "应写入副本")
+            expectNotNil(result.cacheData, "应返回副本数据，调用方确认请求仍有效后再写入")
         }
 
         test("远程失败时回退副本") {

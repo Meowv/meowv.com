@@ -64,7 +64,8 @@ public struct FailurePolicy: Sendable {
     /// 1. 先看是否已经连续失败到阈值 —— 此时无论什么原因都该停下来，避免无限重试；
     /// 2. 再看网络是否可达 —— 不可达时**绝不拉黑**，因为问题不在资源本身；
     /// 3. 临时网络故障优先重试同一条；
-    /// 4. 其余一律拉黑换下一条。
+    /// 4. 临时网络 / 服务端错误即使重试额度用尽也保持当前画面，不能把好资源拉黑；
+    /// 5. 只有明确的资源失效、不可解码或未知错误才拉黑换下一条。
     public func action(
         for kind: PlaybackFailureKind,
         networkReachable: Bool,
@@ -85,6 +86,12 @@ public struct FailurePolicy: Sendable {
         }
         if case .unknown = kind, retriesForItem < maxRetriesPerItem {
             return .retrySame
+        }
+        if case .transientNetwork = kind {
+            return .holdCurrent
+        }
+        if case .serverError = kind {
+            return .holdCurrent
         }
         return .blacklistAndAdvance
     }

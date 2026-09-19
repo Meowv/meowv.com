@@ -63,6 +63,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 分类切片的请求序号。用户可能连点两次，回包时比对，过期结果直接丢弃 ——
     /// 否则会出现「点了 B，画面却停在 A」。
     private var sliceRequestGeneration = 0
+    /// 每个播放槽位的加载代次。旧请求完成后不能覆盖用户已经选中的新内容。
+    private var loadGenerationBySlot: [PlaybackSlotKey: Int] = [:]
 
     /// 待恢复的每屏源（displayID → 条目 id）。见 `ScreenSourceRestore`。
     ///
@@ -181,8 +183,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             log("已清理废弃的清单缓存 \(legacy.lastPathComponent)")
         }
 
-        // 菜单里没有退出项（状态项常驻、不可移除），`pkill` 送的 SIGTERM 是唯一的退出方式 ——
-        // 不接住它，进程会直接死掉而 `applicationWillTerminate` 不跑，系统墙纸就恢复不了。
+        // 菜单退出与 `pkill` 都必须经过同一个 `shutdown()` 清理路径；
+        // SIGTERM 仍需接住，因为 Cocoa 默认不会为它调用 `applicationWillTerminate`。
         installSignalHandlers()
 
         buildStatusItem()
@@ -305,8 +307,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// 接住 SIGTERM / SIGINT 并转成正常退出流程。
     ///
-    /// 菜单里不再有「退出」项，命令行 `pkill -x LiveWall` 就成了唯一出口，而它送的是
-    /// SIGTERM —— Cocoa 默认不处理它，进程直接死掉，`applicationWillTerminate` 不跑。
+    /// 菜单退出项会走 AppKit 的正常终止流程；命令行 `pkill -x LiveWall` 送的是 SIGTERM，
+    /// Cocoa 默认不处理它，仍需由信号源显式转调 `shutdown()`。
     /// 先用 `SIG_IGN` 撤掉默认动作，再让 GCD 的信号源在主线程触发 `shutdown()`。
     ///
     /// 刻意**不拦**系统终止（`applicationShouldTerminate` 一律放行）：
@@ -405,7 +407,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     self.log("丢弃过期的分类切片结果（\(entry.name)，id \(entry.id)）")
                     return
                 }
-                self.applySliceResult(result, entry: entry, isFirstLoad: isFirstLoad)
+                self.applySliceResult(result, entry: entry, service: service, isFirstLoad: isFirstLoad)
             }
         }
     }
@@ -413,6 +415,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func applySliceResult(
         _ result: CatalogSliceLoadResult,
         entry: LivewallCategoryEntry,
+        service: CatalogService,
         isFirstLoad: Bool
     ) {
         guard let slice = result.catalog, let origin = result.origin else {
@@ -431,6 +434,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         for warning in result.warnings { log("  ⚠︎ \(warning)") }
+
+        // 只有通过请求代次校验的结果才能成为离线副本。否则先请求 A、再请求 B，
+        // B 可能先完成而 A 后完成，下一次离线启动就会读到过期分类。
+        if origin == .remote, let data = result.cacheData {
+            do {
+                try service.cacheSlice(data)
+            } catch {
+                log("  ⚠︎ 分类切片已使用，但写入本地副本失败：\(error.localizedDescription)")
+            }
+        }
 
         // 切分类时 `selectCategory` 会写一句「正在加载分类「X」…」。那是**进度提示**，
         // 内容到手就该消失 —— 不能指望 `loadAndPlay` 成功时去清它：
@@ -592,6 +605,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// 加载并播放指定条目。失败时按 `FailurePolicy` 决定重试、拉黑还是保持画面。
     private func loadAndPlay(_ item: WallpaperItem, attempt: Int, on key: PlaybackSlotKey) {
+        let generation = (loadGenerationBySlot[key] ?? 0) + 1
+        loadGenerationBySlot[key] = generation
+
         guard let url = item.remoteURL else {
             log("跳过 URL 非法的条目 \(item.id)（\(key.label)）")
             pool.blacklist(id: item.id)
@@ -606,6 +622,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 // 往一个不存在的槽位里塞内容只会让播放器空转。
                 guard self.engine.slotKeys().contains(key) else {
                     self.log("槽位 \(key.label) 在加载完成前已失效，丢弃 \(item.id)")
+                    return
+                }
+                guard self.loadGenerationBySlot[key] == generation else {
+                    self.log("槽位 \(key.label) 的旧加载结果已过期，丢弃 \(item.id)")
                     return
                 }
                 self.engine.play(item, loaded: loaded, on: key)
@@ -639,6 +659,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     self.persistScreenSources()
                 }
             } catch {
+                guard self.loadGenerationBySlot[key] == generation else {
+                    self.log("槽位 \(key.label) 的旧加载失败结果已过期，忽略 \(item.id)")
+                    return
+                }
                 self.handleLoadFailure(error, item: item, attempt: attempt, on: key)
             }
         }
@@ -690,6 +714,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard allFailed else {
             notice = .warning("\(key.label)连续失败，保持其画面")
             log("\(key.label)连续失败 \(failuresBySlot[key] ?? 0) 次，保持当前画面，其余槽位不受影响")
+            if key == engine.primaryKey {
+                scheduleRecoveryAttempt()
+            }
             refreshStatusItem()
             return
         }
@@ -723,7 +750,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         refreshStatusItem()
     }
 
-    /// 播放中途失败（`AVPlayerItem.status == .failed`）。
+    /// 主槽位失败但副屏仍正常时，保留全局调度，稍后重新尝试取片。
+    private func scheduleRecoveryAttempt() {
+        scheduleTimer?.invalidate()
+        scheduleTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: false) { [weak self] _ in
+            self?.advance()
+        }
+        RunLoop.main.add(scheduleTimer!, forMode: .common)
+    }
+
+    /// 播放中途失败（`AVPlayerLooper` 或实际 `AVPlayerItem` 副本报告失败）。
     private func handlePlaybackFailure(_ key: PlaybackSlotKey, _ error: Error) {
         guard let item = engine.item(on: key) else { return }
         let kind = FailurePolicy.classify(error)
@@ -820,7 +856,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func registerNotifications() {
         let workspace = NSWorkspace.shared.notificationCenter
 
-        workspace.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in
+        NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in
             guard let self else { return }
             self.log("屏幕参数变化 → 重建窗口")
             self.rebuildWindows(reason: "屏幕变化")
@@ -989,7 +1025,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let menu = NSMenu()
 
         // ── 状态区 ───────────────────────────────────────────
-        // 五段结构：状态 → 播放控制 → 设置 → 维护 → 关于。
+        // 六段结构：状态 → 播放控制 → 设置 → 维护 → 关于 → 退出。
         // 菜单从光标位置向下展开，到达成本与行号正相关，所以高频动作贴顶、
         // 低频与破坏性操作置底；同一类别必须连续成块，否则会破坏位置记忆。
         let header = NSMenuItem(title: "动态壁纸", action: nil, keyEquivalent: "")
@@ -1171,14 +1207,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(.separator())
         menu.addItem(buildAboutMenu())
 
-        // 没有「退出」段：状态项常驻，不给退出入口（理由见 `installSignalHandlers` 的注释）。
-        // 退出走 `pkill -x LiveWall` —— SIGTERM 由信号源接住转 `shutdown()`，
-        // 与系统终止共用同一条清理路径（含恢复用户原墙纸）。
+        // 退出放在最底部并单独分隔，避免误触；点击后走 `shutdown()`，
+        // 与系统终止和 SIGTERM 共用同一条清理路径（含恢复用户原墙纸）。
+        menu.addItem(.separator())
+        let quit = NSMenuItem(
+            title: "退出动态壁纸",
+            action: #selector(quitApplication(_:)),
+            keyEquivalent: "q"
+        )
+        quit.target = self
+        menu.addItem(quit)
         //
         // 菜单的采样刷新靠 delegate：`NSMenu.delegate` 是 weak，而 `AppDelegate`
         // 由 `main.swift` 顶层的 `let` 持有到进程结束，所以这里可以直接用 self。
         menu.delegate = self
         return menu
+    }
+
+    /// 菜单退出。先主动执行清理，再交给 AppKit 结束进程；
+    /// `applicationWillTerminate` 可能再次调用 `shutdown()`，由幂等保护挡住重复清理。
+    @objc private func quitApplication(_ sender: Any?) {
+        log("菜单请求退出，开始退出清理")
+        shutdown()
+        NSApp.terminate(sender)
     }
 
     /// 「关于」子菜单：版本、作者、赞助入口。

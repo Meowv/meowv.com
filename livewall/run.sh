@@ -2,8 +2,8 @@
 # 编译并启动「动态壁纸」App（开发运行）。
 #
 # 启动后会真实接管桌面壁纸层。退出方式：
-#   - 菜单栏图标 → 退出
-#   - 或 pkill -x LiveWall
+#   - 菜单栏图标 → 退出动态壁纸
+#   - 或 pkill -x LiveWall（触发正常清理并恢复原墙纸）
 #
 # 日志：~/Library/Logs/com.meowv.livewall/livewall.log
 #
@@ -59,5 +59,5 @@ fi
 echo "[run] 启动 ${APP}（$CONFIGURATION 构建）"
 echo "[run] 清单：https://studio.meowv.com/data/livewall/catalog.json"
 echo "[run] 日志：~/Library/Logs/com.meowv.livewall/livewall.log"
-echo "[run] 退出：菜单栏图标 → 退出，或 pkill -x LiveWall"
+echo "[run] 退出：菜单栏图标 → 退出动态壁纸，或 pkill -x LiveWall"
 exec "$APP/Contents/MacOS/LiveWall"

@@ -42,9 +42,12 @@ final class PlaybackEngine {
     private final class Slot {
         let player = AVQueuePlayer()
         var looper: AVPlayerLooper?
-        var statusObservation: NSKeyValueObservation?
+        var looperStatusObservation: NSKeyValueObservation?
+        var failureObserver: NSObjectProtocol?
         var item: WallpaperItem?
         var duration: Double?
+        var playbackGeneration = 0
+        var didReportFailure = false
 
         init() {
             player.isMuted = true
@@ -54,7 +57,12 @@ final class PlaybackEngine {
         }
 
         func teardown() {
-            statusObservation = nil
+            looperStatusObservation = nil
+            if let failureObserver {
+                NotificationCenter.default.removeObserver(failureObserver)
+                self.failureObserver = nil
+            }
+            playbackGeneration += 1
             looper?.disableLooping()
             looper = nil
             player.removeAllItems()
@@ -125,9 +133,16 @@ final class PlaybackEngine {
         guard let slot = slots[key] else { return }
         slot.item = item
         slot.duration = loaded.durationSeconds
+        slot.playbackGeneration += 1
+        let playbackGeneration = slot.playbackGeneration
+        slot.didReportFailure = false
 
         // 先拆旧的 looper 并清空队列，否则旧内容可能继续播放
-        slot.statusObservation = nil
+        slot.looperStatusObservation = nil
+        if let failureObserver = slot.failureObserver {
+            NotificationCenter.default.removeObserver(failureObserver)
+            slot.failureObserver = nil
+        }
         slot.looper?.disableLooping()
         slot.looper = nil
         slot.player.removeAllItems()
@@ -139,13 +154,54 @@ final class PlaybackEngine {
         // 每屏独立时这份缓冲按槽位数翻倍，是内存占用的主要来源。
         playerItem.preferredForwardBufferDuration = min(loaded.durationSeconds, 30)
 
-        slot.statusObservation = playerItem.observe(\.status, options: [.new]) { [weak self] item, _ in
-            guard item.status == .failed, let error = item.error else { return }
-            DispatchQueue.main.async { self?.onFailure?(key, error) }
-        }
-
+        // AVPlayerLooper 会复制 template item，template 的 KVO 状态不代表实际播放的副本。
+        // 监听 looper 自身状态，并同时接收每个副本的失败通知。
         slot.looper = AVPlayerLooper(player: slot.player, templateItem: playerItem)
+        if let looper = slot.looper {
+            slot.looperStatusObservation = looper.observe(\.status, options: [.new]) { [weak self, weak slot] looper, _ in
+                guard looper.status == .failed else { return }
+                let error = looper.error ?? NSError(
+                    domain: "LiveWall.Playback",
+                    code: -1,
+                    userInfo: [NSLocalizedDescriptionKey: "AVPlayerLooper 播放失败"]
+                )
+                self?.reportFailure(key: key, error: error, slot: slot, generation: playbackGeneration)
+            }
+        }
+        slot.failureObserver = NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemFailedToPlayToEndTime,
+            object: nil,
+            queue: .main
+        ) { [weak self, weak slot] notification in
+            guard let item = notification.object as? AVPlayerItem,
+                  let slot,
+                  slot.playbackGeneration == playbackGeneration,
+                  slot.player.currentItem === item || slot.looper?.loopingPlayerItems.contains(where: { $0 === item }) == true
+            else { return }
+            let error = item.error ?? NSError(
+                domain: "LiveWall.Playback",
+                code: -2,
+                userInfo: [NSLocalizedDescriptionKey: "AVPlayerItem 播放失败"]
+            )
+            self?.reportFailure(key: key, error: error, slot: slot, generation: playbackGeneration)
+        }
         slot.player.play()
+    }
+
+    private func reportFailure(
+        key: PlaybackSlotKey,
+        error: Error,
+        slot: Slot?,
+        generation: Int
+    ) {
+        DispatchQueue.main.async { [weak self, weak slot] in
+            guard let self, let slot,
+                  slot.playbackGeneration == generation,
+                  !slot.didReportFailure
+            else { return }
+            slot.didReportFailure = true
+            self.onFailure?(key, error)
+        }
     }
 
     func pause() {
