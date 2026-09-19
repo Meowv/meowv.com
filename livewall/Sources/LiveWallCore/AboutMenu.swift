@@ -10,6 +10,13 @@ public enum AboutMenu {
     /// 作者名。点击打开 `blogURLString`。
     public static let authorName = "阿星𝑷𝒍𝒖𝒔"
 
+    /// 菜单里作者那一行的完整标题。
+    ///
+    /// 带「作者：」标识 —— 光一个名字看不出这行是人名还是别的什么，
+    /// 而它点开去的是博客（不是开发者官网），用「作者」比「开发者」贴切。
+    /// 名字本身仍在 `authorName` 单独维护，别处要用纯名字时不必拆字符串。
+    public static let authorEntryTitle = "作者：\(authorName)"
+
     /// 作者博客（也是本项目的说明入口）。
     public static let blogURLString = "https://meowv.com"
 
@@ -35,16 +42,25 @@ public enum AboutMenu {
         /// 可点，触发一个行为。
         case link(title: String, action: Action)
         case separator
+        /// **更新段的插入点**：「检查更新」入口或「有新版本」那一行。
+        ///
+        /// 内容由 App 侧按 `UpdateState` 填（`UpdateMenu` 负责文案与动作），
+        /// 这里只占一个位置 —— 顺序仍是纯数据、可单测，但不必把更新行的
+        /// 子菜单结构也搬进 Core。
+        case updateSection
     }
 
     /// 子菜单内容，自上而下。
     ///
-    /// 顺序理由：版本是「我是谁」的补充信息，放最上面；作者与赞助是两个动作，
-    /// 用分隔线隔开，避免误点。
+    /// 顺序理由：版本是「我是谁」的补充信息，放最上面；**更新段紧贴版本** ——
+    /// 它回答的就是「我这个版本是不是最新的」，拆到别处去用户得先找一遍；
+    /// 作者与赞助是两个动作，各用分隔线隔开，避免误点。
     public static func entries(version: String) -> [Entry] {
         [
             .info("当前版本 \(version)"),
-            .link(title: authorName, action: .openBlog),
+            .updateSection,
+            .separator,
+            .link(title: authorEntryTitle, action: .openBlog),
             .separator,
             .link(title: "赞助支持", action: .showDonation),
         ]

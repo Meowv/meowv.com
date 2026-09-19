@@ -8,18 +8,20 @@ import LiveWallCore
 func aboutMenuTests() {
     suite("关于菜单") {
 
-        test("条目顺序：版本 → 作者 → 分隔线 → 赞助") {
+        test("条目顺序：版本 → 更新段 → 分隔线 → 作者 → 分隔线 → 赞助") {
             let entries = AboutMenu.entries(version: "1.2.3")
-            expectEqual(entries.count, 4, "条目数")
+            expectEqual(entries.count, 6, "条目数")
             expectEqual(entries[0], AboutMenu.Entry.info("当前版本 1.2.3"), "首行是版本（禁用行）")
-            expectEqual(
-                entries[1],
-                AboutMenu.Entry.link(title: AboutMenu.authorName, action: .openBlog),
-                "第二行是作者，点击打开博客"
-            )
-            expectEqual(entries[2], AboutMenu.Entry.separator, "作者与赞助之间要有分隔线，避免误点")
+            expectEqual(entries[1], AboutMenu.Entry.updateSection, "更新段紧跟版本 —— 它回答的就是「我这个版本是不是最新」")
+            expectEqual(entries[2], AboutMenu.Entry.separator, "更新段与作者之间有分隔线")
             expectEqual(
                 entries[3],
+                AboutMenu.Entry.link(title: AboutMenu.authorEntryTitle, action: .openBlog),
+                "第四行是作者，点击打开博客"
+            )
+            expectEqual(entries[4], AboutMenu.Entry.separator, "作者与赞助之间要有分隔线，避免误点")
+            expectEqual(
+                entries[5],
                 AboutMenu.Entry.link(title: "赞助支持", action: .showDonation),
                 "末行是赞助入口"
             )
@@ -32,6 +34,9 @@ func aboutMenuTests() {
 
         test("作者名与博客地址") {
             expectEqual(AboutMenu.authorName, "阿星𝑷𝒍𝒖𝒔", "作者名")
+            // 光一个名字看不出这行是什么，菜单里必须带「作者：」标识。
+            expect(AboutMenu.authorEntryTitle.hasPrefix("作者："), "作者行要有「作者：」标识")
+            expect(AboutMenu.authorEntryTitle.hasSuffix(AboutMenu.authorName), "标识后面仍是完整作者名")
             let url = URL(string: AboutMenu.blogURLString)
             expectNotNil(url, "博客地址应是合法 URL")
             expectEqual(url?.scheme, "https", "博客地址必须走 https")

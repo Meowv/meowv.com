@@ -250,6 +250,23 @@ func updateTests() {
             expect(!unknown.text.isEmpty, "连原因都没有时也要给一句兜底，不能空着")
             expect(unknown.isWarning, "同样是失败")
         }
+
+        test("回执是一次性的 —— 不能常驻在状态区") {
+            let feed = UpdateFeed(
+                version: "0.2.0", build: 2, notes: "", sizeBytes: nil, sha256: nil,
+                fileURL: URL(string: "https://studio.meowv.com/data/livewall/LiveWall-0.2.0.dmg")!,
+                minOSVersion: nil
+            )
+
+            let latest = UpdateMenu.feedback(.upToDate, warnings: [], currentVersion: "0.1.0")
+            expect(latest.isOneShot, "「已是最新版本」只是那次点击的应答，看完就该走")
+
+            let found = UpdateMenu.feedback(.available(feed), warnings: [], currentVersion: "0.1.0")
+            expect(found.isOneShot, "有新版本由菜单里的更新行长期承载，不靠这行提示")
+
+            let failed = UpdateMenu.feedback(.unusable, warnings: ["HTTP 500"], currentVersion: "0.1.0")
+            expect(failed.isOneShot, "检查失败同理，下次打开菜单应该已经干净")
+        }
     }
 
     // MARK: - 菜单状态

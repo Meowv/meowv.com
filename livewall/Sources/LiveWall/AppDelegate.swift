@@ -97,7 +97,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 状态区附注行（容量、暂停原因、设置回执等）。非 nil 时显示一条。
     ///
     /// 成功加载下一条时清空 —— 它的生命周期是「上一次异常或操作到现在」。
-    private var notice: Notice?
+    private var notice: Notice? {
+        // 换了内容就重新计「是否已展示」：`didSet` 能覆盖全部 20 多处写入点，
+        // 不依赖每个调用点自己记得重置。
+        didSet { noticeShown = false }
+    }
+
+    /// 当前这条附注是否已经进过一次菜单构建。
+    ///
+    /// **一次性回执只在展示过之后才作废**。少了这个判断会吞掉回执：
+    /// 结果回来时菜单可能正开着（那时不能重建菜单，见 `setUpdateState`），
+    /// 用户看到的是上一版菜单里的「正在检查更新…」，而 `notice` 已经被覆盖成
+    /// 最终结果 —— 此时关菜单清掉的正是那条**还没显示过**的回执，等于「点了没反应」。
+    private var noticeShown = false
 
     /// 菜单是否处于展开状态。**采样只在这个窗口期有效** —— 收起之后才回来的
     /// 结果一律丢弃，否则会去更新一个已经不存在的菜单。
@@ -119,8 +131,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 进程占用那一行的标记。`buildMenu` 重建菜单后靠它在 `menuNeedsUpdate` 里
     /// 找到对应行 —— 用标记而不是持有 `NSMenuItem`，就不会出现「引用的是上一个菜单里的行」。
     private static let usageRowID = "usage"
-    /// 更新提示那一行的标记。用途同 `usageRowID`。
-    private static let updateRowID = "update"
     /// 版本检查器。只在被调用时发起请求，没有定时器。
     private let updateChecker = UpdateChecker()
     /// **更新功能在菜单里的唯一状态**。菜单显隐、可点性、文案全部由它派生，
@@ -145,9 +155,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         var level: Level
         var text: String
+        /// 一次性：菜单收起即作废。用于「用户点了某个菜单项」的应答 ——
+        /// 它回答的是那一次点击，看一次就该消失。
+        ///
+        /// 默认 `false`（常驻）：绝大多数这里的行是真异常，用户可能隔很久才打开
+        /// 菜单，一次性的话就把异常漏掉了。
+        var isOneShot = false
 
-        static func info(_ text: String) -> Notice { Notice(level: .info, text: text) }
-        static func warning(_ text: String) -> Notice { Notice(level: .warning, text: text) }
+        static func info(_ text: String, oneShot: Bool = false) -> Notice {
+            Notice(level: .info, text: text, isOneShot: oneShot)
+        }
+
+        static func warning(_ text: String, oneShot: Bool = false) -> Notice {
+            Notice(level: .warning, text: text, isOneShot: oneShot)
+        }
 
         /// 菜单里的显示文案。前缀只在这一处加，避免各调用点各写一遍。
         var display: String {
@@ -1081,6 +1102,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         if let notice {
+            // 进了这一次构建，用户下次展开就能看到它 —— 收起时才可以作废。
+            noticeShown = true
             let noticeItem = NSMenuItem(title: notice.display, action: nil, keyEquivalent: "")
             noticeItem.isEnabled = false
             menu.addItem(noticeItem)
@@ -1222,10 +1245,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(dump)
 #endif
 
-        // 更新段：**两者互斥**，由 `updateState` 一处决定 —— 有新版本时隐藏「检查更新」，
-        // 更新行里自带下一步动作；没有时保留入口供手动触发。
-        // 放在维护段末尾 —— 低频动作，且它不改变任何设置。
-        appendUpdateSection(to: menu)
+        // 更新段**不在这里**：它属于「关于」子菜单，紧贴「当前版本」那一行
+        // （位置由 `AboutMenu.entries` 里的 `.updateSection` 占位决定）。
 
         // ── 关于 ────────────────────────────────────────────
         // 最低频的内容放最末段。
@@ -1257,7 +1278,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.terminate(sender)
     }
 
-    /// 「关于」子菜单：版本、作者、赞助入口。
+    /// 「关于」子菜单：版本、**更新段**、作者、赞助入口。
     ///
     /// 内容（顺序、禁用行、链接）全在 `LiveWallCore/AboutMenu`，这里只负责把数据
     /// 翻译成 `NSMenuItem` —— 与 `buildCategoryMenu` 同一分工，那样才测得到。
@@ -1265,6 +1286,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let submenu = NSMenu()
         for entry in AboutMenu.entries(version: Self.appVersion) {
             switch entry {
+            case .updateSection:
+                // 入口与更新行**互斥**，由 `updateState` 一处决定。
+                appendUpdateSection(to: submenu)
             case .info(let title):
                 let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
                 item.isEnabled = false
@@ -1318,15 +1342,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// 「有新版本」那一行 + 它的子菜单。只在真的检测到新版本时才被加进菜单。
     ///
-    /// 三个动作都不带 `representedObject`：同一时刻只可能有一个待更新版本，
-    /// 各自读 `availableUpdate` 即可 —— 挂上去反而要处理「引用的是上一版」的问题。
+    /// 动作不带 `representedObject`：同一时刻只可能有一个待更新版本，读
+    /// `availableUpdate` 即可 —— 挂上去反而要处理「引用的是上一版」的问题。
     private func buildUpdateItem(_ feed: UpdateFeed) -> NSMenuItem {
         let root = NSMenuItem(
             title: UpdateMenu.rowTitle(version: feed.version, sizeBytes: feed.sizeBytes),
             action: nil,
             keyEquivalent: ""
         )
-        root.representedObject = Self.updateRowID
 
         let submenu = NSMenu()
         for line in UpdateMenu.detailLines(feed: feed) {
@@ -1402,18 +1425,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 或「检查失败：xxx」，用户看到的就是「点了没反应」。
     @objc private func checkForUpdates() {
         guard network.isReachable else {
-            notice = .warning("网络不可达，无法检查更新")
+            notice = .warning("网络不可达，无法检查更新", oneShot: true)
             refreshStatusItem()
             return
         }
         guard updateState != .checking else {
             // 这一项在检查中是禁用的；走到这里多半是键盘等别的途径触发的，
             // 那就只回一句「在查了」，**不再发第二个请求**。
-            notice = .info("正在检查更新…")
+            notice = .info("正在检查更新…", oneShot: true)
             refreshStatusItem()
             return
         }
-        notice = .info("正在检查更新…")
+        notice = .info("正在检查更新…", oneShot: true)
         performUpdateCheck(force: true, manual: true)
     }
 
@@ -1438,7 +1461,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // 回执只给手动检查：自动检查没人在等结果，弹提示是打扰。
         if manual {
             let result = UpdateMenu.feedback(decision, warnings: warnings, currentVersion: Self.appVersion)
-            notice = result.isWarning ? .warning(result.text) : .info(result.text)
+            notice = result.isWarning ? .warning(result.text, oneShot: result.isOneShot) : .info(result.text, oneShot: result.isOneShot)
             log("手动检查回执：\(result.text)")
             guard !isMenuOpen else { return }
             refreshStatusItem()
@@ -1450,21 +1473,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func downloadUpdate() {
         guard let feed = availableUpdate else { return }
         log("开始下载更新：\(feed.fileURL.absoluteString)")
-        Task { [weak self] in
+        // `AppDelegate` 只在主线程用，跨 `Task` 捕获它并不真的跨线程共享，
+        // 但编译器不认识这一点（它不是 `Sendable` 类型）→ `#SendableClosureCaptures`。
+        // `nonisolated(unsafe)` 是「我确认安全」的显式标记；回写 UI 仍在主线程闭包里。
+        //
+        // 这里用强引用而不是 `weak`：`AppDelegate` 与进程同生命周期，而这次 `Task`
+        // 最长不过 dmg 下载超时（60 秒），不存在延长生命周期的问题；
+        // 写 `weak var` 反而会引来「从未被改写，建议改成 let」的下一条警告。
+        nonisolated(unsafe) let delegate = self
+        Task {
             do {
                 let file = try await UpdateInstaller.download(feed)
                 DispatchQueue.main.async {
                     NSWorkspace.shared.activateFileViewerSelecting([file])
-                    self?.notice = .info(UpdateMenu.installHint)
-                    self?.log("更新已下载：\(file.path)")
-                    self?.refreshStatusItem()
+                    delegate.notice = .info(UpdateMenu.installHint)
+                    delegate.log("更新已下载：\(file.path)")
+                    delegate.refreshStatusItem()
                 }
             } catch {
                 let message = error.localizedDescription
                 DispatchQueue.main.async {
-                    self?.notice = .warning("更新下载失败：\(message)")
-                    self?.log("更新下载失败：\(message)")
-                    self?.refreshStatusItem()
+                    delegate.notice = .warning("更新下载失败：\(message)")
+                    delegate.log("更新下载失败：\(message)")
+                    delegate.refreshStatusItem()
                 }
             }
         }
@@ -2124,5 +2155,17 @@ extension AppDelegate: NSMenuDelegate {
         // 采样到此为止：`ProcessMonitor` 会取消后台队列上未执行的任务，
         // 已经跑完的也会因为代号不匹配被丢弃。
         processMonitor.cancel()
+
+        // 一次性回执（手动「检查更新」的应答）**展示过之后**收起即作废。
+        //
+        // **必须重建菜单**：`item.menu` 持有的是上一次构建的 `NSMenu` 对象，
+        // 只把 `notice` 置 nil 的话，下次展开显示的还是旧的那份 —— 回执照样在。
+        // 而重建放在下一个 runloop：本回调还在关闭流程里，此刻换掉 `item.menu`
+        // 有与 AppKit 抢状态的风险。
+        if notice?.isOneShot == true, noticeShown {
+            notice = nil
+            nonisolated(unsafe) let delegate = self
+            DispatchQueue.main.async { delegate.refreshStatusItem() }
+        }
     }
 }

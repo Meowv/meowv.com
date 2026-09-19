@@ -61,21 +61,44 @@ public enum UpdateMenu {
     /// 而启动 / 网络恢复时的自动检查没人在等结果，一律静默。
     ///
     /// - Parameter warnings: 失败原因（`.unusable` 时才有意义），取首条展示。
-    /// - Returns: 文案 + 是否算异常（`true` 时状态区会加「⚠」前缀）。
+    /// - Returns: 文案 + 是否算异常（`true` 时状态区会加「⚠」前缀）+ 是否一次性。
+    ///
+    /// `isOneShot` 恒为 `true`：三种结果都只是「那一次点击的应答」，没有哪一种
+    /// 需要用户记着。真正的待办（有新版本）由菜单里的更新行长期承载，不靠这一行提示。
+    ///
+    /// 为什么不做「几秒后自动消失」：结果回来时菜单往往已经收起，计时从**生成**
+    /// 那一刻开始的话，用户再打开时多半已经过期 —— 等于没给回执。而要在菜单
+    /// 展开期把这一行抽掉，就得重建菜单，那会打断正在进行的点击。
     public static func feedback(
         _ decision: UpdateDecision,
         warnings: [String],
         currentVersion: String
-    ) -> (text: String, isWarning: Bool) {
+    ) -> Receipt {
         switch decision {
         case .available(let feed):
             // 不说「见『检查更新』下方」—— 有新版本时那个入口是**隐藏**的。
-            return ("发现新版本 \(feed.version)，见下方更新项", false)
+            return Receipt(text: "发现新版本 \(feed.version)，见下方更新项", isWarning: false, isOneShot: true)
         case .upToDate:
-            return ("已是最新版本 \(currentVersion)", false)
+            return Receipt(text: "已是最新版本 \(currentVersion)", isWarning: false, isOneShot: true)
         case .unusable:
             let reason = warnings.first ?? "远程版本信息不可用"
-            return ("更新检查失败：\(reason)", true)
+            return Receipt(text: "更新检查失败：\(reason)", isWarning: true, isOneShot: true)
+        }
+    }
+
+    /// 一次手动检查的回执。
+    public struct Receipt: Equatable, Sendable {
+        public let text: String
+        /// `true` 时状态区加「⚠」前缀。
+        public let isWarning: Bool
+        /// **展示过之后**就不必再留（菜单收起即作废）。对照：真异常是常驻的，
+        /// 留到被下一个事件覆盖 —— 用户可能隔很久才打开菜单，一次性的话就漏了。
+        public let isOneShot: Bool
+
+        public init(text: String, isWarning: Bool, isOneShot: Bool) {
+            self.text = text
+            self.isWarning = isWarning
+            self.isOneShot = isOneShot
         }
     }
 

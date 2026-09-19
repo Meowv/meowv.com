@@ -156,7 +156,8 @@ macOS 视频动态壁纸工具。定位是个人自用 / 小范围共享，不�
 - **本目录的 shell 脚本同样适用「变量后紧跟中文一律写 `${VAR}`」**（规则在「根目录脚本约定」里，但**适用于全仓库脚本**）。新写或改动脚本后跑一次技能 `shell-locale-safety` 的扫描器：`livewall/make-dmg.sh` 首次提交时就带了三处致命项（`$DMG_PATH（` 等），只有 `LC_ALL=C` 的沙箱掩盖了它。
 - **构建配置分界：`build.sh` 默认 release（发布版），`run.sh` 默认 debug（开发版，`--release` 可切到发布版）。** 开发者工具用 `#if DEBUG` 隔离，release 构建里不参与编译 —— 目前是菜单里的「打印窗口层级表」，连同 `WindowInspector.printTable` 和它专用的三个文本对齐转发函数。改默认配置或搬动这段代码前，先确认 release 二进制里搜不到该字符串。
 - 修改纯逻辑后优先运行 `cd livewall && ./test.sh`；修改窗口层级、播放或窗口生命周期逻辑后必须真机跑一次 App 验证（会短暂占用桌面）。
-- **菜单里「检查更新 / 有新版本」的显隐只由 `UpdateState` 一处驱动**（`LiveWallCore/UpdateState.swift`），写入口只有 `AppDelegate.setUpdateState`（幂等）。不要再新增 `hasUpdate` / `isCheckingUpdate` 之类的布尔量 —— 两个独立开关能组合出菜单上不存在的状态。状态表与切换条件见 `livewall/README.md` 的「菜单显隐」小节。
+- **菜单里「检查更新 / 有新版本」的显隐只由 `UpdateState` 一处驱动**（`LiveWallCore/UpdateState.swift`），写入口只有 `AppDelegate.setUpdateState`（幂等）。不要再新增 `hasUpdate` / `isCheckingUpdate` 之类的布尔量 —— 两个独立开关能组合出菜单上不存在的状态。状态表与切换条件见 `livewall/README.md` 的「菜单显隐」小节。更新段的**位置**在「关于动态壁纸」子菜单里、紧贴「当前版本」那一行 —— 由 `AboutMenu.Entry.updateSection` 占位决定（顺序可单测，具体内容由 `UpdateState` 决定、由 `AppDelegate` 填），不要挪回主菜单。
+- **状态区附注分两种生命周期（`AppDelegate.Notice.isOneShot`）**：默认常驻（留到被下一个事件覆盖），「用户点了某个菜单项」的应答一律一次性 —— **展示过之后**菜单收起即作废。两个硬约束：①作废时必须重建菜单（`item.menu` 持有的是上次构建的对象，只清字段的话下次展开还是旧的）；②必须是「展示过之后」（`noticeShown`），否则结果在菜单展开期回来时会把还没显示过的最终回执清掉。真异常不能用一次性，否则用户隔很久才打开菜单就整段漏掉。
 - **窗口层级值只能由 `CGWindowLevelForKey` 派生**，禁止硬编码魔数；不同 macOS 版本的实际值不同。层级必须落在「系统壁纸之上、桌面图标之下」的开区间内。
 - 识别系统壁纸窗口时**不能用宽松子串匹配**（`contains("wallpaper")` 会把第三方壁纸软件误判成系统壁纸）；系统壁纸进程名会随系统语言本地化，中文系统下是「墙纸」。
 - 必须保留同层竞争检测：第三方壁纸软件可能占用同一层级，同层前后顺序由 WindowServer 决定，不由本程序控制。

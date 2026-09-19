@@ -108,7 +108,10 @@ final class UpdateChecker {
 
         isChecking = true
 
-        queue.async {
+        // 两层的所有权必须一致：外层 `[weak self]` + `guard` 之后，内层就继承同一个强引用，
+        // 不能再写 `[weak self]` —— 内外不一致会触发 `#ImplicitStrongCapture`。
+        queue.async { [weak self] in
+            guard let self else { return }
             var warnings: [String] = []
             var feed: UpdateFeed?
             do {
@@ -121,8 +124,7 @@ final class UpdateChecker {
 
             let decision = UpdateEvaluator.evaluate(localBuild: localBuild, feed: feed)
 
-            DispatchQueue.main.async { [weak self] in
-                guard let self else { return }
+            DispatchQueue.main.async {
                 self.isChecking = false
                 self.lastCheckAt = Date()
                 self.onResult?(decision, warnings)
