@@ -188,5 +188,48 @@ func preferencesCompatibilityTests() {
             expectEqual(decoded.lockScreenPreview, false, "关闭状态应保持")
             expectEqual(decoded.intervalSeconds, 42, "其它字段应保持")
         }
+
+        test("老配置（没有 remoteUpdateURL）仍能解码，且不丢设置") {
+            let legacy = """
+            {
+              "intervalSeconds": 600,
+              "gravity": "fit",
+              "playbackOrder": "sequential"
+            }
+            """
+            guard let decoded = try? JSONDecoder().decode(Preferences.self, from: Data(legacy.utf8)) else {
+                expect(false, "老配置应当能解码")
+                return
+            }
+            expectEqual(decoded.intervalSeconds, 600, "老配置里的间隔应保留")
+            expectEqual(decoded.gravity, "fit", "老配置里的缩放应保留")
+            expectEqual(decoded.playbackOrder, .sequential, "老配置里的选片顺序应保留")
+            expectEqual(decoded.remoteUpdateURL, Preferences.defaultRemoteUpdateURL, "缺字段应回退到默认更新源")
+        }
+
+        test("配置里残留已删除的 ignoredUpdateBuild 不影响解码") {
+            // 「忽略此版本」已删除，但老配置里可能还留着这个键 —— 未知键必须被跳过，
+            // 而不是让整份配置解码失败。
+            let legacy = """
+            { "intervalSeconds": 900, "ignoredUpdateBuild": "2" }
+            """
+            guard let decoded = try? JSONDecoder().decode(Preferences.self, from: Data(legacy.utf8)) else {
+                expect(false, "带废弃字段的配置整体解码仍应成功")
+                return
+            }
+            expectEqual(decoded.intervalSeconds, 900, "其它字段应保留")
+        }
+
+        test("更新源地址：空串与非 http(s) 一律视为不检查") {
+            var empty = Preferences()
+            empty.remoteUpdateURL = ""
+            expectNil(empty.resolvedUpdateURL, "空串 = 不检查")
+            var bad = Preferences()
+            bad.remoteUpdateURL = "ftp://example.com/version.json"
+            expectNil(bad.resolvedUpdateURL, "非 http(s) 不能用")
+            var local = Preferences()
+            local.remoteUpdateURL = "http://127.0.0.1:8000/version.json"
+            expectNotNil(local.resolvedUpdateURL, "http 留给本地调试用")
+        }
     }
 }

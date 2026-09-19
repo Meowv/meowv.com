@@ -43,7 +43,7 @@ public enum AboutMenu {
     /// 用分隔线隔开，避免误点。
     public static func entries(version: String) -> [Entry] {
         [
-            .info("动态壁纸版本 \(version)"),
+            .info("当前版本 \(version)"),
             .link(title: authorName, action: .openBlog),
             .separator,
             .link(title: "赞助支持", action: .showDonation),

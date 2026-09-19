@@ -11,7 +11,7 @@ func aboutMenuTests() {
         test("条目顺序：版本 → 作者 → 分隔线 → 赞助") {
             let entries = AboutMenu.entries(version: "1.2.3")
             expectEqual(entries.count, 4, "条目数")
-            expectEqual(entries[0], AboutMenu.Entry.info("动态壁纸版本 1.2.3"), "首行是版本（禁用行）")
+            expectEqual(entries[0], AboutMenu.Entry.info("当前版本 1.2.3"), "首行是版本（禁用行）")
             expectEqual(
                 entries[1],
                 AboutMenu.Entry.link(title: AboutMenu.authorName, action: .openBlog),
@@ -27,7 +27,7 @@ func aboutMenuTests() {
 
         test("版本号由调用方传入，不在菜单层硬编码") {
             let entries = AboutMenu.entries(version: "0.0.0-dev")
-            expectEqual(entries[0], AboutMenu.Entry.info("动态壁纸版本 0.0.0-dev"), "版本应原样拼进标题")
+            expectEqual(entries[0], AboutMenu.Entry.info("当前版本 0.0.0-dev"), "版本应原样拼进标题")
         }
 
         test("作者名与博客地址") {

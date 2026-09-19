@@ -23,5 +23,6 @@ lockScreenPreviewTests()
 downloadNamingTests()
 processUsageTests()
 aboutMenuTests()
+updateTests()
 
 exit(TestRunner.shared.report())

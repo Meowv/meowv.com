@@ -349,6 +349,96 @@ xattr -dr com.apple.quarantine /Applications/LiveWall.app
 
 **把 App 拖出 DMG 之后再做这一步** —— 直接在只读卷里清 quarantine 没有意义。
 
+## 版本检查与更新
+
+**只提示、只下载，绝不自动安装。**「立即下载更新」把 dmg 拉到 `~/Downloads` 并在 Finder 里选中，
+剩下的拖装动作交给用户 —— 覆盖一个正在运行的 App 需要另一条 installer 进程，而且本 App 退出时
+要恢复用户原墙纸，被外部替换或强杀时那一步就丢了。
+
+### 远程版本信息
+
+`https://studio.meowv.com/data/livewall/version.json`（可由配置 `remoteUpdateURL` 改，**置空即不检查**）：
+
+| 字段 | 必填 | 说明 |
+| --- | --- | --- |
+| `version` | ✅ | 展示用（`0.2.0`），**不参与比较** |
+| `build` | ✅ | 比对的权威值（`CFBundleVersion`），必须为正整数、发版必须递增 |
+| `fileURL` | ✅ | dmg 地址，**必须是 https** |
+| `notes` | — | 更新说明，菜单里压成一行显示 |
+| `sizeBytes` | — | 包体积，缺失就不显示「大小」行 |
+| `sha256` | — | 给了才在下载后校验，不符则删掉文件 |
+| `minOSVersion` | — | 低于它就不提示（装了也跑不起来） |
+
+比 `CFBundleShortVersionString` 更可靠的是 `build`：语义化比较会踩 `0.10.0 < 0.9.0` 这类坑。
+解析是**防御式**的（`UpdateFeedCoding`）：任一必填字段缺失或类型不对，整体判为不可用并记日志，不留半截数据。
+
+### 菜单显隐：一个状态说了算
+
+菜单里这一段**只有一个状态字段** `UpdateState`（`LiveWallCore/UpdateState.swift`），
+显隐、文案、可点性全部由它派生，改它只走 `AppDelegate.setUpdateState`（幂等：值没变就不重建菜单）。
+
+| 状态 | 菜单长什么样 | 进入条件 | 离开条件 |
+| --- | --- | --- | --- |
+| `idle` 无更新 | 「检查更新」入口可见 | 初始态；检查结果非「有新版本」（含**失败**）；从 `available` 再次检查却没更新了 | 开始检查 |
+| `checking` 检查中 | 「检查更新…」入口**保留但禁用** | 开始一次检查（启动自动 / 手动点击） | 结果回来 |
+| `available(feed)` 有新版本 | **隐藏**「检查更新」，只显示「有新版本 X（大小）」那一行，子菜单里只有「立即下载更新」 | 检查结果 `available` | 再次检查后没有更新了 |
+
+- **两者互斥**：`idle` / `checking` 只有入口，`available` 只有更新行 —— 不允许同时出现。
+- **没有「忽略此版本 / 稍后提醒」**：前者点了就没有恢复入口（配置里躺着 `ignoredUpdateBuild`，
+  界面上再也点不回来），后者点了等于没做。所以更新行要么下载、要么一直挂着，直到装完新版。
+- 迁移是**幂等**的：并发连点两次「检查更新」只会产生一次状态迁移与一次请求。
+
+### 触发与降级
+
+- 启动流程结束后延后 5 秒查一次（不跟清单加载抢网络）；距上次检查不足 12 小时则跳过；
+  菜单里「检查更新」可无视节流手动触发；网络不可达时**不发请求**，恢复后补一次。
+- **自动检查全程静默**：没查到就是没查到，原因只写日志 —— 那时没人在等结果，弹提示是打扰。
+- **请求失败 / 超时 / 数据异常一律按「无更新」处理**：状态回 `idle`，「检查更新」入口原样保留，
+  不影响启动与播放。只有**手动**点的时候才把原因说出来（状态区附注行）：
+
+  | 判定 | 回执 |
+  | --- | --- |
+  | 有新版本 | `发现新版本 0.2.0，见下方更新项` |
+  | 已是最新 | `已是最新版本 0.1.0` |
+  | 判不出来 | `⚠ 更新检查失败：<原因>` —— 含未配置地址、读不到本地 build、拉取/解析失败 |
+
+  ⚠️ 排障先看这一行：**写着「已是最新版本」就等于线上 `build` 没有比本地高**，不是功能坏了。
+  最常见的原因是发版忘了递增 `CFBundleVersion`。
+- **不会并发**：`UpdateChecker` 用 `isChecking` 挡第二次，节流窗口内的自动检查直接丢弃
+  （手动 `force: true` 可无视）。结果本身由状态字段缓存，不必重查。
+
+### 发版步骤
+
+```bash
+# 1. 递增 Resources/Info-LiveWall.plist 的 CFBundleVersion（客户端只认它，忘了加就永远不提示）
+# 2. 根目录一步构建（打 .app + 打 dmg + 把 dmg/version.json 放进 studio 部署目录）
+./build.sh livewall --with-dmg
+# 3. 上传
+./deploy.sh studio --dry-run && ./deploy.sh studio
+```
+
+版本号、dmg 文件名、体积、sha256、`fileURL` 全由 `make-dmg.sh` 从 `Info.plist` 生成，
+根目录 `build.sh` 只把它们搬进 `build/studio.meowv.com/data/livewall/`（先清旧版本残留），
+所以不需要、也不要再手工 `cp`（手工 cp 同样可行：从 `livewall/build/` 取 `LiveWall-<版本>.dmg` 与 `version.json`）。
+
+只跑 `./build.sh studio` 也不会丢分发产物：根目录 `build.sh` 会把已有的 dmg 与 `version.json`
+一起带进新生成的部署目录。部署后对账一次：
+
+```bash
+curl -s https://studio.meowv.com/data/livewall/version.json
+shasum -a 256 livewall/build/LiveWall-<版本>.dmg   # 应与线上 version.json 里的 sha256 一致
+```
+
+### 本地验证（不发真实版本）
+
+```bash
+python3 -m http.server 8000 --directory /tmp/fakeupdate   # 里面放一个 build 更高的 version.json
+```
+
+把 `~/Library/Application Support/com.meowv.livewall/config.json` 里的
+`remoteUpdateURL` 临时改成 `http://127.0.0.1:8000/version.json`（http 是**刻意允许**的，就为本地调试），
+重启 App 即可看到更新入口。
+
 ## 本机实测基线（macOS 27.0 / arm64 / 双屏）
 
 ```

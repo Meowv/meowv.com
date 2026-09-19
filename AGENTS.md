@@ -59,7 +59,10 @@
   **适用范围是仓库内所有 shell 脚本，包括 `livewall/` 等子项目** —— 标题里的「根目录」只是这一节所在的位置，不是适用范围。2026-09-18 新写的 `livewall/make-dmg.sh` 就因为按标题把它理解成「只管根目录」而漏掉这条、重新踩了一次（`$DMG_PATH（` / `$SIZE）` / `$APP_BUNDLE（` 三处）。**新写或改动脚本后跑一遍扫描器与多 locale 运行器**（技能 `shell-locale-safety` 里有：`scan_dollar_nonascii.py <目录>` 与 `run_under_locales.sh <脚本>`）—— `bash -n` 查不出这个问题。
 - `build/`、暂存目录和备份目录均为可替换生成内容，不提交 Git。
 - `build.sh wallpapers` 只生成并加密 Studio 壁纸目录，不构建项目；`./build.sh studio --with-wallpapers` 仅允许与 `studio` 一起使用，并在 Studio 构建前生成目录数据。两者都会同时生成供 livewall 使用的未加密清单目录 `studio/public/data/livewall/`，并同步到 `build/studio.meowv.com/data/livewall/`。
-- `./build.sh livewall --with-dmg`（别名同样支持 `lw`）仅允许与 `livewall` 一起使用：在 `.app` 打完后跑 `livewall/make-dmg.sh --no-build`，把 DMG 与 App **并列**暂存进 `build/livewall/`。⚠️ 该分支里 `destination` 指向的是 **App 包本身**（`…/livewall/LiveWall.app`），要放进汇总目录必须取它的**父目录** —— 第一次实现就是直接 `cp` 到 `$destination/`，结果 DMG 被塞进 `.app` 包里（2026-09-19 实测）。
+- `./build.sh livewall --with-dmg`（别名同样支持 `lw`）仅允许与 `livewall` 一起使用：在 `.app` 打完后跑 `livewall/make-dmg.sh --no-build`。`build/livewall/` **只放 `LiveWall.app`**；DMG 与 `version.json` 由 `install_livewall_update_feed` 在**发布之后**写进 `build/studio.meowv.com/data/livewall/` —— 客户端的 `fileURL` 指向 `https://studio.meowv.com/data/livewall/`，而 `deploy.sh` 只上传 `build/studio.meowv.com/`，放 `build/livewall/` 等于发不出去。
+  - 版本号、文件名、sha256、fileURL 全部由 `make-dmg.sh` 从 `Info.plist` 生成，根目录 `build.sh` 只搬运（清旧 → 拷贝 → 核一遍 `version.json` 的 `fileURL` 与 dmg 文件名一致），**不另生成一份**。
+  - 两条坑：① DMG 必须在 `publish_*` **之后**才装，否则会被整体替换掉的目录覆盖；② 清 `build/studio.meowv.com/data/livewall/` 时只能删 `catalog.json` / `category.*.json`，`version.json` 是分发产物不能跟着删。
+  - 只跑 `./build.sh studio` 也不会丢分发产物：`preserve_livewall_update_feed` 在 studio 产物拷进暂存区**之后**，把现有 `data/livewall/` 里的 dmg 与 `version.json` 一起带过去（顺序反了会被 `cp -R` 覆盖）。带 `--with-dmg` 时不冲突 —— `install_livewall_update_feed` 稍后清掉旧 dmg 再放新的。
 - 修改脚本时，同步检查参数帮助、项目数组、别名、端口、依赖检查、启动或构建分支、源目录和目标目录，避免只更新其中一处。
 
 ## Blog 约定
@@ -139,7 +142,7 @@ macOS 视频动态壁纸工具。定位是个人自用 / 小范围共享，不�
 ### 代码结构
 
 - `Package.swift`：SwiftPM 清单，声明三个 target：`LiveWallCore`（纯逻辑库）、`LiveWallDesktop`（依赖 AppKit 的桌面层代码）、`LiveWall`（正式 App），外加 `LiveWallCoreTests` 测试运行器。
-- `Sources/LiveWallCore/`：不依赖 `NSApplication` 的纯逻辑，可脱离 GUI 单测。层级预设、清单模型与降级链、候选池、选片顺序、调度策略与切换间隔、时长文案、日志轮转阈值与判定、省电信号与状态判定、遮挡覆盖率、多屏策略、内容过滤、配置模型都在这里。**新写的逻辑优先放这里**，这样才测得到。
+- `Sources/LiveWallCore/`：不依赖 `NSApplication` 的纯逻辑，可脱离 GUI 单测。层级预设、清单模型与降级链、候选池、选片顺序、调度策略与切换间隔、时长文案、日志轮转阈值与判定、省电信号与状态判定、遮挡覆盖率、多屏策略、内容过滤、配置模型、版本检查（远程信息解析、三态判定、菜单文案与显隐状态机）都在这里。**新写的逻辑优先放这里**，这样才测得到。
 - `Sources/LiveWallDesktop/`：依赖 AppKit 的桌面层代码 —— 桌面层覆盖窗口、窗口层级探测、遮挡检测。
 - `Sources/LiveWall/`：正式 App。菜单栏常驻，负责编排（清单、调度、失败处理、菜单栏、系统事件）。省电信号的采集在 `PlaybackGovernor.swift`，播放器的暂停与恢复只在 `AppDelegate.applyPlaybackState` 一处发生；全局热键在 `HotKeyManager.swift`，开机自启在 `LaunchAtLogin.swift`。
 - `Tests/LiveWallCoreTests/`：测试用例与自建断言运行器（`Harness.swift`）。
@@ -153,6 +156,7 @@ macOS 视频动态壁纸工具。定位是个人自用 / 小范围共享，不�
 - **本目录的 shell 脚本同样适用「变量后紧跟中文一律写 `${VAR}`」**（规则在「根目录脚本约定」里，但**适用于全仓库脚本**）。新写或改动脚本后跑一次技能 `shell-locale-safety` 的扫描器：`livewall/make-dmg.sh` 首次提交时就带了三处致命项（`$DMG_PATH（` 等），只有 `LC_ALL=C` 的沙箱掩盖了它。
 - **构建配置分界：`build.sh` 默认 release（发布版），`run.sh` 默认 debug（开发版，`--release` 可切到发布版）。** 开发者工具用 `#if DEBUG` 隔离，release 构建里不参与编译 —— 目前是菜单里的「打印窗口层级表」，连同 `WindowInspector.printTable` 和它专用的三个文本对齐转发函数。改默认配置或搬动这段代码前，先确认 release 二进制里搜不到该字符串。
 - 修改纯逻辑后优先运行 `cd livewall && ./test.sh`；修改窗口层级、播放或窗口生命周期逻辑后必须真机跑一次 App 验证（会短暂占用桌面）。
+- **菜单里「检查更新 / 有新版本」的显隐只由 `UpdateState` 一处驱动**（`LiveWallCore/UpdateState.swift`），写入口只有 `AppDelegate.setUpdateState`（幂等）。不要再新增 `hasUpdate` / `isCheckingUpdate` 之类的布尔量 —— 两个独立开关能组合出菜单上不存在的状态。状态表与切换条件见 `livewall/README.md` 的「菜单显隐」小节。
 - **窗口层级值只能由 `CGWindowLevelForKey` 派生**，禁止硬编码魔数；不同 macOS 版本的实际值不同。层级必须落在「系统壁纸之上、桌面图标之下」的开区间内。
 - 识别系统壁纸窗口时**不能用宽松子串匹配**（`contains("wallpaper")` 会把第三方壁纸软件误判成系统壁纸）；系统壁纸进程名会随系统语言本地化，中文系统下是「墙纸」。
 - 必须保留同层竞争检测：第三方壁纸软件可能占用同一层级，同层前后顺序由 WindowServer 决定，不由本程序控制。
@@ -196,6 +200,7 @@ macOS 视频动态壁纸工具。定位是个人自用 / 小范围共享，不�
 - **每屏源的恢复只做一次，且必须过滤掉已不在当前分类切片里的条目**。`perScreenSources` 在**本次启动第一次成功加载清单**时恢复（`AppDelegate.pendingRestore`，由 `advance()` 取出即清空）：手动重载清单（`⌥⌘R`）时各屏已经记着当前条目，再恢复一次等于把同一段视频重新下一遍；而查不到的条目必须**退回正常取片**，不能让那块屏空着。恢复计划由 `ScreenSourceRestore.plan(store:candidateIDs:)` 这个纯函数算（可单测），`CandidatePool.restore(id:)` 负责机械动作 —— 它会同时把条目从待取队列里拿掉，否则同一轮里会再被取一次。
 - **状态项必须常驻，菜单底部提供「退出动态壁纸」项**。`statusItem.behavior = []`（去掉默认的 `.removalAllowed` 与 `.terminationOnRemoval`）：留着前者用户一 ⌘ 拖走图标就没了，留着后者更糟 —— 拖走会直接把 App 终止掉。菜单退出、`pkill -x LiveWall` 和系统终止共用 `shutdown()`；其中 Cocoa 默认不处理 SIGTERM（进程直接死、`applicationWillTerminate` 不跑、系统墙纸恢复不了），所以 `AppDelegate` 仍需用 `DispatchSource` 信号源接住 SIGTERM / SIGINT 并转调 `shutdown()`。不要在多个出口各写一份清理。**仍然不要拦系统终止**（`applicationShouldTerminate` 一律放行）—— 拦住会让关机 / 重启 / 注销卡住。
 - **进程自身占用（CPU / 内存）只在菜单展开时采一次，收起即取消，不得引入定时器或后台轮询**。触发点在 `NSMenuDelegate` 的三个回调：`menuNeedsUpdate`（最早，发起采样）、`menuWillOpen`（置 `isMenuOpen`，**只在前者没被回调时**才兜底发起一次）、`menuDidClose`（`ProcessMonitor.cancel()`）。**每次展开只采一次**（`sampledThisOpen` 锁住）—— 采两次会算出「CPU 134%（自启动 0 秒）」这种纯噪音：第一次的结果回主线程后把基线推进到「刚刚那一刻」，第二次就拿着 ≈0 的区间做除法。区间还必须有下限 `ProcessUsage.minimumWindowSeconds`（0.25 s）：低于它**不给占用率**（显示 `CPU —`）且**不推进基线**，否则下一次查看会退化成「距上一次几乎为 0」的一连串假数据；内存是瞬时量，这种情况照样给值。四点约束：① 采样跑在 utility 队列上，回主线程后**只改占用那一行的 title，不重建菜单**（重建会让正在展开的菜单闪一下并重置已展开的子菜单）；② 收起后回来的结果必须丢弃（用递增代号，光靠 `DispatchWorkItem.cancel()` 挡不住已经在跑的那一个）；③ CPU 是**区间量**，必须两次采样求差，所以行内**必须带区间标注**（`近 3 分钟` / `自启动 1 小时`），否则会被读成瞬时值；基线由启动时的**一次性** `prepareBaseline()` 提供，否则第一次查看永远没有起点；④ 采样失败与「算不出占用率」是两回事，都不能显示成 `0%`（那是假数据）：失败 → 整行 `暂不可用`（`sample` 必须回调 nil，静默返回会让行永远停在「测量中…」），算不出 → 只把 CPU 写成 `—`、内存照常显示。
+- **版本更新只提示、只下载，绝不自动安装**。判定以 `CFBundleVersion`（build）为权威、`CFBundleShortVersionString` 只用于展示（语义化比较会踩 `0.10.0 < 0.9.0`）；发版**必须递增 build**，忘了加就永远不提示，且从外部看不出哪里错了。三处硬约束：① 「立即下载更新」= `UpdateInstaller` 把 dmg 拉到 `~/Downloads` 并在 Finder 选中，**不碰 `/Applications`** —— 覆盖运行中的自己需要另一条 installer 进程，而且本 App 退出时要恢复用户原墙纸，被替换/强杀时那一步会丢；② 更新检查的任何失败（超时/非 2xx/解析失败/字段缺失）都**静默降级**，不提示、不影响播放，只有用户主动点下载后失败才以 `Notice.warning` 出现；③ 远程 `version.json` 是远端数据，`UpdateFeedCoding` 的防御式解析遇到必填字段（`version`/`build`/`fileURL`）缺失或类型不对就整体判不可用，**不留半截数据**。`fileURL` 只认 https（与 `resolvedRemoteURL` 同规则），但配置里的 `resolvedUpdateURL` 刻意允许 http，方便本地起静态服务验证。
 - **取 CPU 时间用 `proc_pid_rusage`，不要用 `task_info(MACH_TASK_BASIC_INFO)`**。后者在本机（macOS 27.0 / arm64）实测 `user_time` / `system_time` **恒为 0**，而同一结构体里的 `virtual_size` / `resident_size` 有值且返回 `KERN_SUCCESS` —— 直接用会得到一个永远 0% 的占用率，而「0%」看起来完全合理，极难发现。用 `proc_pid_rusage` 时还有两件事：它的 `ri_user_time` / `ri_system_time` 单位是 **mach 滴答**不是纳秒（本机 125/3 ≈ 41.67 ns/滴答，必须乘 `mach_timebase_info`；不换算会差 41 倍），以及第三个参数在 Swift 里要 rebind 成 `Optional<rusage_info_t>`，而 `RUSAGE_INFO_V2` 是宏、只能写常量 2。内存用 `ri_phys_footprint`（口径 = 活动监视器「内存」列）。
 - **`Preferences` 里凡是「用户配置项」的字段，改默认值不会迁移老配置**。`remoteCatalogURL` 就是实例：`config.json` 里显式写着地址时，`decodeIfPresent` 会把它读回来，改 `defaultRemoteCatalogURL` 等于没改。改这个默认值时要意识到：**只有配置里没有这个键的人才会用上新地址**。（曾经为此写过一段「按字面量比对旧地址并改写」的迁移，旧地址作废后已删除 —— 现在配置里写什么就用什么。）顺带：启动时 `sanitized() != loaded` 就落盘，写失败要显式告警而不是 `try?` 吞掉。
 

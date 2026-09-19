@@ -16,6 +16,12 @@ public struct Preferences: Codable, Sendable, Equatable {
     /// 条目按 `category.<一级分类 id>.json` 单独拉。切分类因此是「再拉一个文件」。
     public static let defaultRemoteCatalogURL = "https://studio.meowv.com/data/livewall/catalog.json"
 
+    /// 线上版本信息地址（与清单一同部署在 `data/livewall/` 下）。
+    ///
+    /// 与清单地址**分开配置**：两者用途不同（内容 vs 客户端自身），
+    /// 用户可能只想换内容源，不该被顺带改掉更新源。
+    public static let defaultRemoteUpdateURL = "https://studio.meowv.com/data/livewall/version.json"
+
     // 内容源
     /// 远程清单地址。清空则只能用远程副本缓存与内置兜底条目。
     public var remoteCatalogURL: String?
@@ -59,6 +65,10 @@ public struct Preferences: Codable, Sendable, Equatable {
     public var pauseOnBattery: Bool
     public var pauseOnThermalPressure: Bool
 
+    // 更新
+    /// 远程版本信息地址。**清空即不检查更新** —— 离线环境或自建分发时用得上。
+    public var remoteUpdateURL: String?
+
     // 锁屏预览
     /// 把当前壁纸的静态图同步为**系统墙纸**，锁屏时就能看到当前这张。
     ///
@@ -84,7 +94,8 @@ public struct Preferences: Codable, Sendable, Equatable {
         pauseOnLowPowerMode: Bool = true,
         pauseOnBattery: Bool = false,
         pauseOnThermalPressure: Bool = true,
-        lockScreenPreview: Bool = true
+        lockScreenPreview: Bool = true,
+        remoteUpdateURL: String? = Preferences.defaultRemoteUpdateURL
     ) {
         self.remoteCatalogURL = remoteCatalogURL
         self.intervalSeconds = intervalSeconds
@@ -103,6 +114,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         self.pauseOnBattery = pauseOnBattery
         self.pauseOnThermalPressure = pauseOnThermalPressure
         self.lockScreenPreview = lockScreenPreview
+        self.remoteUpdateURL = remoteUpdateURL
     }
 
     public static let `default` = Preferences()
@@ -115,6 +127,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         case pauseWhenCovered, pauseWhenIdle, idleThresholdSeconds
         case pauseOnLowPowerMode, pauseOnBattery, pauseOnThermalPressure
         case lockScreenPreview
+        case remoteUpdateURL
     }
 
     /// 逐字段容错解码：缺字段就用默认值，绝不因为少一个键而整体失败。
@@ -153,6 +166,8 @@ public struct Preferences: Codable, Sendable, Equatable {
         // typeMismatch，后果与缺字段完全一样 —— 整个文件退回默认、静默清零其它设置。
         lockScreenPreview = (try? container.decodeIfPresent(Bool.self, forKey: .lockScreenPreview))
             ?? fallback.lockScreenPreview
+        remoteUpdateURL = try container.decodeIfPresent(String.self, forKey: .remoteUpdateURL)
+            ?? fallback.remoteUpdateURL
     }
 
     /// 校验并转成 URL。空串、非 http(s) 一律视为「未配置」。
@@ -161,6 +176,21 @@ public struct Preferences: Codable, Sendable, Equatable {
             return nil
         }
         guard let url = URL(string: raw), url.scheme?.lowercased() == "https" || url.scheme?.lowercased() == "http" else {
+            return nil
+        }
+        return url
+    }
+
+    /// 更新检查地址。空串、非法 URL、非 http(s) 一律视为「不检查」。
+    ///
+    /// **刻意允许 http**：本地起个静态服务喂 `version.json` 是验证这个功能
+    /// 最省事的办法，禁止 http 等于把这条路堵死。线上地址始终走 https。
+    public var resolvedUpdateURL: URL? {
+        guard let raw = remoteUpdateURL?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else {
+            return nil
+        }
+        guard let url = URL(string: raw),
+              url.scheme?.lowercased() == "https" || url.scheme?.lowercased() == "http" else {
             return nil
         }
         return url

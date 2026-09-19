@@ -68,6 +68,8 @@ fi
 # 版本号从 Info.plist 取，避免脚本里再维护一份
 PLIST="${APP_BUNDLE}/Contents/Info.plist"
 VERSION="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "${PLIST}" 2>/dev/null || echo 0.0.0)"
+# build 号是**版本比对的权威值**（客户端只看它），同样从 plist 读。
+BUILD_NUMBER="$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "${PLIST}" 2>/dev/null || echo 0)"
 DMG_PATH="${ROOT}/build/LiveWall-${VERSION}.dmg"
 
 # 暂存目录：卷根 = App + 指向 /Applications 的符号链接（用户拖过去就等于安装）
@@ -97,6 +99,27 @@ if hdiutil attach "${DMG_PATH}" -nobrowse -mountpoint "${MOUNT_POINT}" >/dev/nul
 fi
 rmdir "${MOUNT_POINT}" 2>/dev/null || true
 
+# 版本信息（version.json）：与 dmg **同一次产出**，避免线上出现
+# 「version.json 说 0.2.0、实际文件还是 0.1.0」这种不一致。
+# 体积与摘要都由脚本算，不手写 —— 手抄一个 64 位 hex 迟早出错。
+FEED_PATH="${ROOT}/build/version.json"
+DMG_NAME="$(basename "${DMG_PATH}")"
+DMG_SIZE="$(stat -f%z "${DMG_PATH}")"
+DMG_SHA="$(shasum -a 256 "${DMG_PATH}" | awk '{print $1}')"
+cat > "${FEED_PATH}" <<JSON
+{
+  "version": "${VERSION}",
+  "build": ${BUILD_NUMBER},
+  "notes": "",
+  "sizeBytes": ${DMG_SIZE},
+  "sha256": "${DMG_SHA}",
+  "fileURL": "https://studio.meowv.com/data/livewall/${DMG_NAME}",
+  "minOSVersion": "13.0"
+}
+JSON
+
 SIZE="$(du -h "${DMG_PATH}" | cut -f1)"
 echo "[dmg] 产物：${DMG_PATH}（${SIZE}）"
+echo "[dmg] 版本信息：${FEED_PATH}（build ${BUILD_NUMBER}）"
+echo "[dmg] 提醒：发版前必须递增 CFBundleVersion —— 客户端只认它，忘了加就永远不提示"
 echo "[dmg] 提示：未公证，别人首次打开需右键「打开」，或在「隐私与安全性」里点「仍要打开」"

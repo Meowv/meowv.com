@@ -119,6 +119,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 进程占用那一行的标记。`buildMenu` 重建菜单后靠它在 `menuNeedsUpdate` 里
     /// 找到对应行 —— 用标记而不是持有 `NSMenuItem`，就不会出现「引用的是上一个菜单里的行」。
     private static let usageRowID = "usage"
+    /// 更新提示那一行的标记。用途同 `usageRowID`。
+    private static let updateRowID = "update"
+    /// 版本检查器。只在被调用时发起请求，没有定时器。
+    private let updateChecker = UpdateChecker()
+    /// **更新功能在菜单里的唯一状态**。菜单显隐、可点性、文案全部由它派生，
+    /// 改它必须走 `setUpdateState`（那里负责幂等与重建菜单）。
+    private var updateState: UpdateState = .idle
+    /// 进行中的这一次检查是不是用户点的。**只有手动检查才给界面回执** ——
+    /// 启动与网络恢复时的自动检查没人在等结果，静默才是对的。
+    private var pendingManualUpdateCheck = false
 
     /// 附注内容与级别。
     ///
@@ -204,6 +214,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.refreshStatusItem()
         }
         downloader.log = { [weak self] message in self?.log(message) }
+        updateChecker.onResult = { [weak self] decision, warnings in
+            self?.applyUpdateResult(decision, warnings: warnings)
+        }
 
         network.onChange = { [weak self] reachable in
             guard let self else { return }
@@ -215,6 +228,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self.advance()
             }
             self.refreshStatusItem()
+            // 断网时那次检查根本没发出去，恢复后补一次（内部有节流，不会重复打）。
+            if reachable { self.performUpdateCheck(force: false) }
         }
         network.start()
 
@@ -283,6 +298,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // 看着像 App 吃满 CPU，其实只是启动那几百毫秒。
             self.processMonitor.prepareBaseline()
             self.loadCatalogAndStart()
+            // 版本检查刻意排在最后并再延后几秒：清单加载与首次取片正在抢网络，
+            // 不该跟着挤。失败一律静默，不影响 App 正常用。
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in
+                self?.performUpdateCheck(force: false)
+            }
         }
     }
 
@@ -1202,6 +1222,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(dump)
 #endif
 
+        // 更新段：**两者互斥**，由 `updateState` 一处决定 —— 有新版本时隐藏「检查更新」，
+        // 更新行里自带下一步动作；没有时保留入口供手动触发。
+        // 放在维护段末尾 —— 低频动作，且它不改变任何设置。
+        appendUpdateSection(to: menu)
+
         // ── 关于 ────────────────────────────────────────────
         // 最低频的内容放最末段。
         menu.addItem(.separator())
@@ -1275,6 +1300,174 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 不经 .app 直接跑 `.build/` 里的可执行文件时读不到，回退成「开发版」。
     private static var appVersion: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "开发版"
+    }
+
+    /// App 的 build 号（`CFBundleVersion`）—— **版本比对的权威值**，发版必须递增。
+    ///
+    /// 读不到（直接跑 `.build/` 里的可执行文件）或不是数字时返回 nil，
+    /// `UpdateEvaluator` 会因此判为「不可用」，绝不会误提示。
+    private static var appBuild: Int? {
+        let raw = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String
+        return raw.flatMap { Int($0) }
+    }
+
+
+
+
+    // MARK: - 版本更新
+
+    /// 「有新版本」那一行 + 它的子菜单。只在真的检测到新版本时才被加进菜单。
+    ///
+    /// 三个动作都不带 `representedObject`：同一时刻只可能有一个待更新版本，
+    /// 各自读 `availableUpdate` 即可 —— 挂上去反而要处理「引用的是上一版」的问题。
+    private func buildUpdateItem(_ feed: UpdateFeed) -> NSMenuItem {
+        let root = NSMenuItem(
+            title: UpdateMenu.rowTitle(version: feed.version, sizeBytes: feed.sizeBytes),
+            action: nil,
+            keyEquivalent: ""
+        )
+        root.representedObject = Self.updateRowID
+
+        let submenu = NSMenu()
+        for line in UpdateMenu.detailLines(feed: feed) {
+            let item = NSMenuItem(title: line, action: nil, keyEquivalent: "")
+            item.isEnabled = false
+            submenu.addItem(item)
+        }
+        submenu.addItem(.separator())
+        for action in [UpdateMenu.Action.updateNow] {
+            let item = NSMenuItem(title: UpdateMenu.actionTitle(action), action: selector(for: action), keyEquivalent: "")
+            item.target = self
+            submenu.addItem(item)
+        }
+        root.submenu = submenu
+        return root
+    }
+
+    private func selector(for action: UpdateMenu.Action) -> Selector {
+        switch action {
+        case .updateNow: return #selector(downloadUpdate)
+        }
+    }
+
+    /// 当前待更新的版本。**只读** —— 状态本身由 `updateState` 持有，
+    /// 三个动作用它拿 feed，不改状态。
+    private var availableUpdate: UpdateFeed? { updateState.feed }
+
+    /// **唯一的写入口**：改状态 + 重建菜单都在这一处。
+    ///
+    /// 幂等：值没变就直接返回，不重建菜单 —— 于是「同一个结果到了两次」
+    /// 「状态没变却重复刷新」都不会让菜单闪一下。
+    private func setUpdateState(_ newState: UpdateState) {
+        guard newState != updateState else { return }
+        let old = updateState
+        updateState = newState
+        log("更新状态：\(old.label) → \(newState.label)")
+        // 菜单展开中**不重建**：重建会闪一下、并重置已展开的子菜单。
+        // 结果留到下次展开生效 —— 检查大多发生在启动时，那时菜单是关着的。
+        guard !isMenuOpen else { return }
+        refreshStatusItem()
+    }
+
+    /// 按状态往菜单里加更新段。**两者互斥**：有新版本时只加更新行（隐藏入口），
+    /// 其余只加「检查更新」入口。
+    private func appendUpdateSection(to menu: NSMenu) {
+        if updateState.showsCheckItem {
+            let item = NSMenuItem(
+                title: updateState.checkItemTitle,
+                action: #selector(checkForUpdates),
+                keyEquivalent: ""
+            )
+            item.target = self
+            item.isEnabled = updateState.checkItemEnabled
+            menu.addItem(item)
+        }
+        if let feed = updateState.feed {
+            menu.addItem(buildUpdateItem(feed))
+        }
+    }
+
+    /// 发起检查。网络不可达时**根本不发请求**（状态区已经有「网络不可达」那一行了）。
+    private func performUpdateCheck(force: Bool, manual: Bool = false) {
+        guard network.isReachable else { return }
+        // 先置位再发起：`check` 在「压根没发请求」时是**同步**回调的。
+        pendingManualUpdateCheck = manual
+        setUpdateState(updateState.afterCheckStarted)
+        updateChecker.check(preferences: preferences, localBuild: Self.appBuild, force: force)
+    }
+
+    /// 手动检查：无视节流，且**必须给回执**。
+    ///
+    /// 点完菜单立刻收起，结果要下次展开才看得见 —— 不给一句「已是最新版本」
+    /// 或「检查失败：xxx」，用户看到的就是「点了没反应」。
+    @objc private func checkForUpdates() {
+        guard network.isReachable else {
+            notice = .warning("网络不可达，无法检查更新")
+            refreshStatusItem()
+            return
+        }
+        guard updateState != .checking else {
+            // 这一项在检查中是禁用的；走到这里多半是键盘等别的途径触发的，
+            // 那就只回一句「在查了」，**不再发第二个请求**。
+            notice = .info("正在检查更新…")
+            refreshStatusItem()
+            return
+        }
+        notice = .info("正在检查更新…")
+        performUpdateCheck(force: true, manual: true)
+    }
+
+    private func applyUpdateResult(_ decision: UpdateDecision, warnings: [String]) {
+        let manual = pendingManualUpdateCheck
+        pendingManualUpdateCheck = false
+        for warning in warnings { log("更新检查：\(warning)") }
+
+        // 状态迁移只有这一行：**非 available 一律回 idle**（失败按无更新处理，
+        // 入口原样保留），可用则隐藏入口、显示更新行。
+        setUpdateState(updateState.afterCheckFinished(decision))
+
+        switch decision {
+        case .available(let feed):
+            log("发现新版本 \(feed.version)（build \(feed.build)）")
+        case .upToDate:
+            log("已是最新版本（本地 build \(Self.appBuild.map(String.init) ?? "?")）")
+        case .unusable:
+            log("更新检查判不出结果（原因见上），按无更新处理")
+        }
+
+        // 回执只给手动检查：自动检查没人在等结果，弹提示是打扰。
+        if manual {
+            let result = UpdateMenu.feedback(decision, warnings: warnings, currentVersion: Self.appVersion)
+            notice = result.isWarning ? .warning(result.text) : .info(result.text)
+            log("手动检查回执：\(result.text)")
+            guard !isMenuOpen else { return }
+            refreshStatusItem()
+        }
+    }
+
+    /// 只下载到 `~/Downloads` 并在 Finder 里选中，**绝不安装**。
+    /// 理由见 `UpdateInstaller` 顶部。
+    @objc private func downloadUpdate() {
+        guard let feed = availableUpdate else { return }
+        log("开始下载更新：\(feed.fileURL.absoluteString)")
+        Task { [weak self] in
+            do {
+                let file = try await UpdateInstaller.download(feed)
+                DispatchQueue.main.async {
+                    NSWorkspace.shared.activateFileViewerSelecting([file])
+                    self?.notice = .info(UpdateMenu.installHint)
+                    self?.log("更新已下载：\(file.path)")
+                    self?.refreshStatusItem()
+                }
+            } catch {
+                let message = error.localizedDescription
+                DispatchQueue.main.async {
+                    self?.notice = .warning("更新下载失败：\(message)")
+                    self?.log("更新下载失败：\(message)")
+                    self?.refreshStatusItem()
+                }
+            }
+        }
     }
 
     @objc private func openAuthorBlog() {

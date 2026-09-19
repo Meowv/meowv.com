@@ -28,7 +28,8 @@ usage() {
 
 选项：
   --with-wallpapers  仅可配合 studio
-  --with-dmg         仅可配合 livewall，额外把 .app 打成 DMG 一起汇总
+  --with-dmg         仅可配合 livewall，额外把 .app 打成 DMG，
+                     DMG 与 version.json 输出到 build/studio.meowv.com/data/livewall/
 EOF
 }
 
@@ -73,7 +74,9 @@ publish_wallpapers_only() {
     rm -f "$build_data_dir"/wallpapers.catalog.*.json
     # 旧版单文件清单已废弃，清掉避免残留；新产物是 livewall/ 整个目录
     rm -f "$build_data_dir/livewall.json"
-    rm -f "$build_data_dir"/livewall/*.json
+    # 只清清单文件：`version.json` 是 --with-dmg 写入的分发产物，不能跟着一起删。
+    rm -f "$build_data_dir"/livewall/catalog.json
+    rm -f "$build_data_dir"/livewall/category.*.json
     mkdir -p "$build_data_dir/livewall"
     cp \
       "$source_dir"/wallpapers.catalog.json \
@@ -208,24 +211,12 @@ stage_output() {
     fi
 
     # 注意：`destination` 在这一支里是 **App 包本身**（…/livewall/LiveWall.app），
-    # DMG 要与它**并列**而不是塞进包里，所以另取它的父目录。
-    local stage_root
-    stage_root="$(dirname "$destination")"
+    # 别把别的产物往它里面塞。
     mkdir -p "$destination"
     cp -R "$source"/. "$destination"/
     echo "[$project] 已暂存到 $(destination_name "$project")/LiveWall.app"
-
-    if [ "$WITH_DMG" -eq 1 ]; then
-      # 版本在文件名里，不写死 —— 直接找 build 目录下那一个 .dmg。
-      local dmg
-      dmg="$(find "$ROOT_DIR/livewall/build" -maxdepth 1 -name '*.dmg' -print -quit 2>/dev/null)"
-      if [ -z "$dmg" ]; then
-        echo "错误：未找到 livewall 的 DMG 产物（make-dmg.sh 已执行）。" >&2
-        exit 1
-      fi
-      cp "$dmg" "$stage_root"/
-      echo "[$project] 已暂存 $(basename "$dmg")"
-    fi
+    # DMG 与 version.json 不在这里暂存：build/livewall/ 不会被 deploy.sh 上传，
+    # 它们由 install_livewall_update_feed 在发布之后装进 studio 的部署目录。
     return
   fi
 
@@ -330,6 +321,69 @@ publish_one() {
   RESTORE_PATH=""
 }
 
+# 清掉 livewall 上一次的分发产物。make-dmg.sh 只删「当前版本那一个」dmg，
+# 旧版本的 dmg 会一直留在 livewall/build/ 里，看着像本次产物。
+clean_livewall_dmg_artifacts() {
+  rm -f "$ROOT_DIR"/livewall/build/*.dmg
+  rm -f "$ROOT_DIR"/livewall/build/version.json
+}
+
+# DMG 与 version.json 必须落在 Studio 的部署目录里：version.json 的 fileURL 写死了
+# https://studio.meowv.com/data/livewall/<dmg 文件名>，而 deploy.sh 只上传
+# build/studio.meowv.com/ —— 放进 build/livewall/ 等于永远发不出去。
+install_livewall_update_feed() {
+  local dmg dmg_name feed_path target_dir
+
+  # dmg 与 version.json 都取自 livewall/make-dmg.sh —— 版本号、文件名、体积、
+  # sha256、fileURL 都在那里按 Info.plist 生成，这里只搬运，不另算一份。
+  dmg="$(find "$ROOT_DIR/livewall/build" -maxdepth 1 -name '*.dmg' -print -quit 2>/dev/null)"
+  feed_path="$ROOT_DIR/livewall/build/version.json"
+  target_dir="$BUILD_DIR/studio.meowv.com/data/livewall"
+
+  if [ -z "$dmg" ] || [ ! -f "$feed_path" ]; then
+    echo "错误：未找到 make-dmg.sh 产出的 dmg / version.json。" >&2
+    exit 1
+  fi
+
+  dmg_name="$(basename "$dmg")"
+  # 两者是同一次产出的，正常必然一致；核一遍挡住手改或半途留下的错配产物。
+  if ! grep -q "/${dmg_name}\"" "$feed_path"; then
+    echo "错误：version.json 的 fileURL 与本次 DMG（${dmg_name}）不一致，已中止。" >&2
+    exit 1
+  fi
+
+  mkdir -p "$target_dir"
+  # 先清旧版本残留，保证目录里只有本次这一个 dmg 和一份 version.json。
+  rm -f "$target_dir"/*.dmg
+  rm -f "$target_dir"/version.json
+
+  cp "$dmg" "$target_dir"/
+  cp "$feed_path" "$target_dir"/version.json
+  echo "[livewall] 分发产物：$target_dir/${dmg_name} + version.json"
+}
+
+# Studio 每次都会整体重建部署目录，而 dmg / version.json 是 livewall 的分发产物，
+# 不在 studio/dist 里。只构建 studio 时把它们接进暂存区一并带过去 —— 否则一次
+# `./build.sh studio` 就会把客户端正在下载的安装包从本地产物里抹掉。
+# 带了 --with-dmg 时也不冲突：install_livewall_update_feed 稍后会清掉旧 dmg 再放新的。
+preserve_livewall_update_feed() {
+  local source_dir="$BUILD_DIR/studio.meowv.com/data/livewall"
+  local target_dir="$STAGING_DIR/studio.meowv.com/data/livewall"
+  local dmg
+
+  [ -d "$source_dir" ] || return 0
+
+  dmg="$(find "$source_dir" -maxdepth 1 -name '*.dmg' -print -quit 2>/dev/null)"
+  [ -n "$dmg" ] || return 0
+
+  mkdir -p "$target_dir"
+  cp "$dmg" "$target_dir"/
+  if [ -f "$source_dir/version.json" ]; then
+    cp "$source_dir/version.json" "$target_dir"/
+  fi
+  echo "[studio] 沿用上次的分发产物 $(basename "$dmg")"
+}
+
 add_project() {
   local project="$1"
   local selected
@@ -423,14 +477,20 @@ for project in "${SELECTED_PROJECTS[@]}"; do
       "$ROOT_DIR/studio/public/data" --key-file "$WALLPAPER_KEY_FILE"
   fi
   build_project "$project"
-  # DMG 必须在 .app 打完之后、暂存之前生成 —— stage_output 要把它一起搬进汇总目录。
+  # DMG 必须在 .app 打完之后生成（make-dmg.sh 打的就是这个包）。
   if [ "$project" = "livewall" ] && [ "$WITH_DMG" -eq 1 ]; then
+    # 先清掉上一次的 dmg / version.json，避免旧版本文件被当成本次产物。
+    clean_livewall_dmg_artifacts
     (
       cd "$ROOT_DIR/livewall"
       ./make-dmg.sh --no-build
     )
   fi
   stage_output "$project"
+  # 分发产物要在 studio 产物拷进暂存区**之后**才补，顺序反了会被覆盖。
+  if [ "$project" = "studio" ]; then
+    preserve_livewall_update_feed
+  fi
 done
 
 if [ "${#SELECTED_PROJECTS[@]}" -eq "${#ALL_PROJECTS[@]}" ]; then
@@ -443,6 +503,11 @@ else
   STAGING_DIR=""
 fi
 
+# 发布之后才装分发产物：publish_all / publish_one 都会整体替换对应目录，装早了会被覆盖。
+if [ "$WITH_DMG" -eq 1 ]; then
+  install_livewall_update_feed
+fi
+
 trap - EXIT INT TERM
 
 echo
@@ -450,3 +515,6 @@ echo "编译完成，发布目录：$BUILD_DIR"
 for project in "${SELECTED_PROJECTS[@]}"; do
   echo "  $(destination_name "$project")/"
 done
+if [ "$WITH_DMG" -eq 1 ]; then
+  echo "  studio.meowv.com/data/livewall/  # LiveWall-<版本>.dmg + version.json"
+fi
