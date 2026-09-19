@@ -59,6 +59,7 @@
   **适用范围是仓库内所有 shell 脚本，包括 `livewall/` 等子项目** —— 标题里的「根目录」只是这一节所在的位置，不是适用范围。2026-09-18 新写的 `livewall/make-dmg.sh` 就因为按标题把它理解成「只管根目录」而漏掉这条、重新踩了一次（`$DMG_PATH（` / `$SIZE）` / `$APP_BUNDLE（` 三处）。**新写或改动脚本后跑一遍扫描器与多 locale 运行器**（技能 `shell-locale-safety` 里有：`scan_dollar_nonascii.py <目录>` 与 `run_under_locales.sh <脚本>`）—— `bash -n` 查不出这个问题。
 - `build/`、暂存目录和备份目录均为可替换生成内容，不提交 Git。
 - `build.sh wallpapers` 只生成并加密 Studio 壁纸目录，不构建项目；`./build.sh studio --with-wallpapers` 仅允许与 `studio` 一起使用，并在 Studio 构建前生成目录数据。两者都会同时生成供 livewall 使用的未加密清单目录 `studio/public/data/livewall/`，并同步到 `build/studio.meowv.com/data/livewall/`。
+- `./build.sh livewall --with-dmg`（别名同样支持 `lw`）仅允许与 `livewall` 一起使用：在 `.app` 打完后跑 `livewall/make-dmg.sh --no-build`，把 DMG 与 App **并列**暂存进 `build/livewall/`。⚠️ 该分支里 `destination` 指向的是 **App 包本身**（`…/livewall/LiveWall.app`），要放进汇总目录必须取它的**父目录** —— 第一次实现就是直接 `cp` 到 `$destination/`，结果 DMG 被塞进 `.app` 包里（2026-09-19 实测）。
 - 修改脚本时，同步检查参数帮助、项目数组、别名、端口、依赖检查、启动或构建分支、源目录和目标目录，避免只更新其中一处。
 
 ## Blog 约定

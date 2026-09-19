@@ -29,7 +29,7 @@ livewall/
 ├─ Package.swift                SwiftPM 清单，三个 target（见下）
 ├─ README.md                    本文件：项目定位、结构、快速开始
 ├─ build.sh                     编译并组装 .app（默认 release = 发布版）
-├─ make-dmg.sh                  把 .app 打成可分发的 DMG（build/动态壁纸-<版本>.dmg）
+├─ make-dmg.sh                  把 .app 打成可分发的 DMG（build/LiveWall-<版本>.dmg）
 ├─ test.sh                      运行 LiveWallCore 单元测试
 ├─ run.sh                       以 debug 配置编译并启动（开发；--release 走发布版）
 ├─ Resources/
@@ -255,7 +255,7 @@ cd livewall
 # 该菜单项由 `#if DEBUG` 隔离，release 构建里不编译、二进制中也没有。
 ./run.sh --release        # 以 release 构建运行，等同发布版行为
 ./build.sh                # 只打包，产物 build/LiveWall.app（release）
-./make-dmg.sh             # 再打成可分发的 DMG：build/动态壁纸-<版本>.dmg
+./make-dmg.sh             # 再打成可分发的 DMG：build/LiveWall-<版本>.dmg
 
 # 退出：菜单栏图标 → 退出动态壁纸，或 pkill -x LiveWall。
 #         两者都走与系统终止同一条清理路径（含恢复用户原墙纸）。
@@ -320,7 +320,7 @@ cd livewall
 ./make-dmg.sh --no-build   # 直接打包现有的 build/LiveWall.app
 ```
 
-产物是 `build/动态壁纸-<CFBundleShortVersionString>.dmg`（实测 3.1 MB），卷名「动态壁纸」，卷里只有两样东西：
+产物是 `build/LiveWall-<CFBundleShortVersionString>.dmg`（实测 3.1 MB），卷名「LiveWall」，卷里只有两样东西：
 
 | 内容                            | 作用                                  |
 | ------------------------------- | ------------------------------------- |

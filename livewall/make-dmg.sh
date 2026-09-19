@@ -9,7 +9,8 @@
 #   ./make-dmg.sh              先按 release 构建，再打包
 #   ./make-dmg.sh --no-build   直接打包现有的 build/LiveWall.app
 #
-# 产物：build/动态壁纸-<版本>.dmg（卷名「动态壁纸」，卷里是 App + 指向 /Applications 的链接）
+# 产物：build/LiveWall-<版本>.dmg（卷名「LiveWall」，卷里是 App + 指向 /Applications 的链接）
+# 注：DMG 用英文名；App 的**显示名**仍是「动态壁纸」（CFBundleDisplayName），两者不是一回事。
 #
 # ⚠️ 本 App 是 ad-hoc 签名、**未做公证**（公证要付费开发者账号，与「个人自用」定位不符）。
 #    别人第一次打开会被 Gatekeeper 拦住，两种放行方式：
@@ -24,7 +25,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_BUNDLE="${ROOT}/build/LiveWall.app"
-VOLUME_NAME="动态壁纸"
+VOLUME_NAME="LiveWall"
 NO_BUILD=0
 
 usage() {
@@ -67,7 +68,7 @@ fi
 # 版本号从 Info.plist 取，避免脚本里再维护一份
 PLIST="${APP_BUNDLE}/Contents/Info.plist"
 VERSION="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "${PLIST}" 2>/dev/null || echo 0.0.0)"
-DMG_PATH="${ROOT}/build/动态壁纸-${VERSION}.dmg"
+DMG_PATH="${ROOT}/build/LiveWall-${VERSION}.dmg"
 
 # 暂存目录：卷根 = App + 指向 /Applications 的符号链接（用户拖过去就等于安装）
 STAGE="$(mktemp -d)"

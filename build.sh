@@ -19,15 +19,22 @@ usage() {
   ./build.sh <project> [...] 编译一个或多个指定项目
   ./build.sh studio --with-wallpapers 构建 Studio，并在构建前生成壁纸目录
   ./build.sh wallpapers      只生成 Studio 壁纸目录，不执行项目构建
+  ./build.sh livewall --with-dmg 构建 livewall，并额外打出可分发的 DMG
 
 可选项目：
   blog, b    -> build/meowv.com
   studio, s  -> build/studio.meowv.com
   livewall, lw -> build/livewall/LiveWall.app
+
+选项：
+  --with-wallpapers  仅可配合 studio
+  --with-dmg         仅可配合 livewall，额外把 .app 打成 DMG 一起汇总
 EOF
 }
 
 WITH_WALLPAPERS=0
+WITH_DMG=0
+
 export_livewall_catalog() {
   local output_dir="$1"
 
@@ -200,9 +207,25 @@ stage_output() {
       exit 1
     fi
 
+    # 注意：`destination` 在这一支里是 **App 包本身**（…/livewall/LiveWall.app），
+    # DMG 要与它**并列**而不是塞进包里，所以另取它的父目录。
+    local stage_root
+    stage_root="$(dirname "$destination")"
     mkdir -p "$destination"
     cp -R "$source"/. "$destination"/
     echo "[$project] 已暂存到 $(destination_name "$project")/LiveWall.app"
+
+    if [ "$WITH_DMG" -eq 1 ]; then
+      # 版本在文件名里，不写死 —— 直接找 build 目录下那一个 .dmg。
+      local dmg
+      dmg="$(find "$ROOT_DIR/livewall/build" -maxdepth 1 -name '*.dmg' -print -quit 2>/dev/null)"
+      if [ -z "$dmg" ]; then
+        echo "错误：未找到 livewall 的 DMG 产物（make-dmg.sh 已执行）。" >&2
+        exit 1
+      fi
+      cp "$dmg" "$stage_root"/
+      echo "[$project] 已暂存 $(basename "$dmg")"
+    fi
     return
   fi
 
@@ -334,6 +357,7 @@ else
   for argument in "$@"; do
     case "$argument" in
       --with-wallpapers) WITH_WALLPAPERS=1 ;;
+      --with-dmg) WITH_DMG=1 ;;
       blog | b) add_project "blog" ;;
       studio | s) add_project "studio" ;;
       livewall | lw) add_project "livewall" ;;
@@ -366,6 +390,17 @@ if [ "$WITH_WALLPAPERS" -eq 1 ]; then
   fi
 fi
 
+if [ "$WITH_DMG" -eq 1 ]; then
+  found_livewall=0
+  for project in "${SELECTED_PROJECTS[@]}"; do
+    [ "$project" = "livewall" ] && found_livewall=1
+  done
+  if [ "$found_livewall" -eq 0 ]; then
+    echo "错误：--with-dmg 只能与 livewall 项目一起使用。" >&2
+    exit 1
+  fi
+fi
+
 if [ -e "$STAGING_DIR" ]; then
   echo "错误：临时目录已存在：$STAGING_DIR" >&2
   exit 1
@@ -388,6 +423,13 @@ for project in "${SELECTED_PROJECTS[@]}"; do
       "$ROOT_DIR/studio/public/data" --key-file "$WALLPAPER_KEY_FILE"
   fi
   build_project "$project"
+  # DMG 必须在 .app 打完之后、暂存之前生成 —— stage_output 要把它一起搬进汇总目录。
+  if [ "$project" = "livewall" ] && [ "$WITH_DMG" -eq 1 ]; then
+    (
+      cd "$ROOT_DIR/livewall"
+      ./make-dmg.sh --no-build
+    )
+  fi
   stage_output "$project"
 done
 

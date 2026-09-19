@@ -154,6 +154,7 @@ chmod +x run.sh build.sh deploy.sh
 - 如果 `build/studio.meowv.com/` 已存在，同步更新其中的 `data/` 目录，便于直接部署已有产物。
 - 同时生成 livewall 客户端使用的未加密清单目录 `studio/public/data/livewall/`（`catalog.json` 索引 + `category.<id>.json` 分类切片）。
 - `--with-wallpapers` 只能与 `studio` 一起使用。
+- `--with-dmg` 只能与 `livewall` 一起使用：在 `.app` 之外额外打出 DMG，与 App **并列**放进 `build/livewall/`。
 
 产物映射如下：
 
@@ -161,7 +162,7 @@ chmod +x run.sh build.sh deploy.sh
 build/
 ├── meowv.com/        # blog/public/
 ├── studio.meowv.com/ # studio/dist，包含 zitie/
-└── livewall/         # livewall/build，包含 LiveWall.app
+└── livewall/         # livewall/build，包含 LiveWall.app（加 --with-dmg 时还有 LiveWall-<版本>.dmg）
 ```
 
 发布策略：
@@ -459,7 +460,9 @@ PYTHONPATH=src python3 -m wallpapers export-livewall
 ```bash
 cd livewall
 ./build.sh        # 编译并组装 .app
-./make-dmg.sh     # 打成可分发的 DMG（build/动态壁纸-<版本>.dmg）
+./make-dmg.sh     # 打成可分发的 DMG（build/LiveWall-<版本>.dmg）
+# 或从仓库根目录一步到位：./build.sh lw --with-dmg
+# （App 与 DMG 并列汇总到 build/livewall/）
 ./test.sh         # 运行单元测试
 ./run.sh          # 编译并启动正式 App（会接管桌面壁纸层）
 ```
