@@ -106,6 +106,7 @@ chmod +x run.sh build.sh deploy.sh
 ```bash
 ./run.sh blog          # 等同于 ./run.sh b
 ./run.sh studio        # 等同于 ./run.sh s，包含 /zitie/
+./run.sh livewall      # 启动 macOS 动态壁纸 App
 ```
 
 壁纸脚本也可以通过 `run.sh` 调用。未指定子命令时默认执行增量抓取，后面的参数会传递给 Wallpapers CLI：
@@ -123,6 +124,7 @@ chmod +x run.sh build.sh deploy.sh
 | ------------------ | ------------------------------------------- |
 | `blog` / `b`       | `http://localhost:4000`                     |
 | `studio` / `s`     | `http://localhost:4001`，Zitie 为 `/zitie/` |
+| `livewall` / `lw`   | 启动 macOS 动态壁纸 App                     |
 | `wallpapers` / `w` | 执行壁纸抓取或数据命令                      |
 
 脚本不会自动安装依赖。启动前会检查固定端口，并停止占用端口的本机进程；运行前请确认这些进程可以结束。并行启动后，按 `Ctrl+C` 会停止本次启动的全部开发服务器。
@@ -136,6 +138,7 @@ chmod +x run.sh build.sh deploy.sh
 ./build.sh all
 ./build.sh blog
 ./build.sh studio
+./build.sh livewall
 ```
 
 只生成壁纸目录时，不需要执行 Studio 构建：
@@ -157,7 +160,8 @@ chmod +x run.sh build.sh deploy.sh
 ```text
 build/
 ├── meowv.com/        # blog/public/
-└── studio.meowv.com/ # studio/dist/，包含 zitie/
+├── studio.meowv.com/ # studio/dist，包含 zitie/
+└── livewall/         # livewall/build，包含 LiveWall.app
 ```
 
 发布策略：
@@ -472,7 +476,9 @@ macOS 没有「设置视频为壁纸」的官方 API。livewall 的做法是创�
 
 `Sources/LiveWallCore/` 是不依赖 `NSApplication` 的纯逻辑，可脱离 GUI 单测；`Sources/LiveWallDesktop/` 是依赖 AppKit 的桌面层窗口与层级探测。
 
-本项目只在本机构建与运行，**不接入根目录的 `build.sh`、`run.sh`、`deploy.sh`**，也不参与站点部署。
+livewall 已接入根目录的 `build.sh` / `run.sh`：`./build.sh livewall` 会把 App 输出到
+`build/livewall/LiveWall.app`，`./run.sh livewall` 会调用 livewall 自己的 debug 启动脚本。
+它仍不参与站点部署，`deploy.sh` 不会上传该目录。
 
 livewall 的定位、构建方式、本机实测层级基线、省电策略与路线图见 [`livewall/README.md`](./livewall/README.md)。
 

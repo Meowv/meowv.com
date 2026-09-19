@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ALL_PROJECTS=(blog studio)
+ALL_PROJECTS=(blog studio livewall)
 SELECTED_PROJECTS=()
 PIDS=()
 PID_PROJECTS=()
@@ -19,6 +19,7 @@ usage() {
 可选项目：
   blog, b    http://localhost:4000
   studio, s  http://localhost:4001
+  livewall, lw  启动 macOS 动态壁纸 App
   wallpapers, w  crawl / publish / stats / check
 EOF
 }
@@ -54,6 +55,7 @@ project_binary() {
   case "$1" in
     blog) echo "$ROOT_DIR/blog/node_modules/.bin/hexo" ;;
     studio) echo "$ROOT_DIR/studio/node_modules/.bin/vite" ;;
+    livewall) echo "$ROOT_DIR/livewall/run.sh" ;;
   esac
 }
 
@@ -61,6 +63,7 @@ install_hint() {
   case "$1" in
     blog) echo "cd blog && yarn install --frozen-lockfile" ;;
     studio) echo "cd studio && pnpm install --frozen-lockfile" ;;
+    livewall) echo "cd livewall && ./run.sh" ;;
   esac
 }
 
@@ -114,6 +117,21 @@ check_project() {
   local binary
   local port
 
+  if [ "$project" = "livewall" ]; then
+    if ! command -v swift >/dev/null 2>&1; then
+      echo "错误：未找到 Swift，无法启动 livewall。" >&2
+      echo "请先安装 Xcode Command Line Tools。" >&2
+      exit 1
+    fi
+    binary="$(project_binary "$project")"
+    if [ ! -x "$binary" ]; then
+      echo "错误：${project} 启动脚本不可用：$binary" >&2
+      echo "请先执行：$(install_hint "$project")" >&2
+      exit 1
+    fi
+    return
+  fi
+
   binary="$(project_binary "$project")"
   port="$(project_port "$project")"
 
@@ -131,16 +149,22 @@ run_project() {
   local port
 
   port="$(project_port "$project")"
-  echo "[$project] 启动中：http://localhost:$port"
 
   case "$project" in
     blog)
+      echo "[$project] 启动中：http://localhost:$port"
       cd "$ROOT_DIR/blog"
       exec ./node_modules/.bin/hexo server --port "$port"
       ;;
     studio)
+      echo "[$project] 启动中：http://localhost:$port"
       cd "$ROOT_DIR/studio"
       exec ./node_modules/.bin/vite --port "$port" --strictPort
+      ;;
+    livewall)
+      echo "[$project] 启动 macOS 动态壁纸 App"
+      cd "$ROOT_DIR/livewall"
+      exec ./run.sh
       ;;
   esac
 }
@@ -192,6 +216,7 @@ else
     case "$argument" in
       blog | b) add_project "blog" ;;
       studio | s) add_project "studio" ;;
+      livewall | lw) add_project "livewall" ;;
       all)
         echo "错误：all 只能单独使用。" >&2
         usage >&2

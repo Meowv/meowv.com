@@ -24,7 +24,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-APP="$ROOT/build/动态壁纸.app"
+APP="$ROOT/build/LiveWall.app"
 
 DO_BUILD=1
 CONFIGURATION="debug"

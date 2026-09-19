@@ -65,7 +65,7 @@ case "$PRODUCT_KEY" in
     # PRODUCT = SwiftPM 产品名，决定 Contents/MacOS 下的二进制文件名，
     # 必须与 Info.plist 的 CFBundleExecutable 一致 —— 改名只改 APP_NAME，不动它。
     PRODUCT="LiveWall"
-    APP_NAME="动态壁纸"
+    APP_NAME="LiveWall"
     PLIST="Resources/Info-LiveWall.plist"
     ;;
   *)

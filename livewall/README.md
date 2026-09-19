@@ -7,7 +7,7 @@ macOS 视频动态壁纸工具。**个人自用 / 小范围共享**定位，不�
 | 项                      | 说明                                                                                                                                                                                                                                               |
 | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 名称                    | `livewall` —— live wallpaper 的缩写。目录、Swift 模块、脚本一律用此名                                                                                                                                                                              |
-| 界面显示名              | 「动态壁纸」—— 菜单栏标题、系统里显示的应用名，也是打包产物的文件名 `build/动态壁纸.app`（`CFBundleName` / `CFBundleDisplayName`）。**只影响用户可见的文案与产物名；Swift 模块名、可执行文件名、bundle id 仍是 `LiveWall` / `com.meowv.livewall`** |
+| 界面显示名              | 「动态壁纸」—— 菜单栏标题、系统设置与登录项里显示的应用名，来自 `CFBundleName` / `CFBundleDisplayName`。**它与产物文件名是两件事**：磁盘上的包叫 `build/LiveWall.app`，Finder 里仍显示「动态壁纸」。Swift 模块名、可执行文件名、bundle id 也仍是 `LiveWall` / `com.meowv.livewall` |
 | 用途                    | 把一段 mp4 放到 macOS 桌面层循环播放，替代静态壁纸                                                                                                                                                                                                 |
 | 平台                    | 仅 macOS（本机实测 macOS 27.0 / arm64，见[本机实测基线](#本机实测基线macos-270--arm64--双屏)）                                                                                                                                                     |
 | 内容                    | 仅视频壁纸（mp4），不做静态图片、不做网页/WebGL 壁纸                                                                                                                                                                                               |
@@ -229,8 +229,8 @@ iconutil -c icns /tmp/AppIcon.iconset -o Resources/AppIcon.icns
 ```bash
 cd livewall
 ./build.sh
-ls build/动态壁纸.app/Contents/Resources/          # 7 个文件：1 个 icns + 6 个 png
-codesign -dv build/动态壁纸.app 2>&1 | grep Sealed   # files=7
+ls build/LiveWall.app/Contents/Resources/          # 7 个文件：1 个 icns + 6 个 png
+codesign -dv build/LiveWall.app 2>&1 | grep Sealed   # files=7
 ```
 
 改完图标后 Finder 可能仍显示旧图标（图标缓存）。`touch` 一下该 `.app` 或重启 Finder 即可刷新。
@@ -254,7 +254,7 @@ cd livewall
 # 版本差异：默认 debug 构建，含开发者工具（菜单里的「打印窗口层级表」）；
 # 该菜单项由 `#if DEBUG` 隔离，release 构建里不编译、二进制中也没有。
 ./run.sh --release        # 以 release 构建运行，等同发布版行为
-./build.sh                # 只打包，产物 build/动态壁纸.app（release）
+./build.sh                # 只打包，产物 build/LiveWall.app（release）
 ./make-dmg.sh             # 再打成可分发的 DMG：build/动态壁纸-<版本>.dmg
 
 # 退出：菜单栏图标 → 退出动态壁纸，或 pkill -x LiveWall。
@@ -313,18 +313,18 @@ cd livewall
 
 ## 打包与分发（DMG）
 
-`./make-dmg.sh` 把 `build/动态壁纸.app` 打成 DMG：
+`./make-dmg.sh` 把 `build/LiveWall.app` 打成 DMG：
 
 ```bash
 ./make-dmg.sh              # 先跑 build.sh（release），再打包
-./make-dmg.sh --no-build   # 直接打包现有的 build/动态壁纸.app
+./make-dmg.sh --no-build   # 直接打包现有的 build/LiveWall.app
 ```
 
 产物是 `build/动态壁纸-<CFBundleShortVersionString>.dmg`（实测 3.1 MB），卷名「动态壁纸」，卷里只有两样东西：
 
 | 内容                            | 作用                                  |
 | ------------------------------- | ------------------------------------- |
-| `动态壁纸.app`                  | App 本体                              |
+| `LiveWall.app`                  | App 本体                              |
 | `Applications -> /Applications` | 符号链接，用户把 App 拖进去就等于安装 |
 
 **为什么用 DMG 而不是直接发 `.app`**：`.app` 是目录，用 Finder 的「压缩」会丢符号链接与权限位、还会带上 `__MACOSX` 垃圾；DMG 保留全部元数据，双击挂载 → 拖走 → 卸载三步完成，是 macOS 的分发惯例。
@@ -334,7 +334,7 @@ cd livewall
 脚本里两个值得留意的实现细节：
 
 - **优先 `diskutil image create from --volumeName … --format UDZO`，`hdiutil create` 兜底。** macOS 27 起 `hdiutil create` 已弃用（会打 deprecation 警告，实测仍有 `WARNING: ... is deprecated`），而新命令在老系统上不存在 —— 两条都留着，脚本按可用性自动选。
-- **打包后自检**：挂载一次，确认卷里有 `动态壁纸.app` 与 `Applications` 链接、`codesign -v` 通过，再卸载。
+- **打包后自检**：挂载一次，确认卷里有 `LiveWall.app` 与 `Applications` 链接、`codesign -v` 通过，再卸载。
 
 ### 别人第一次打开会被 Gatekeeper 拦住
 
@@ -344,7 +344,7 @@ cd livewall
 2. 终端一行（省掉点设置）：
 
 ```bash
-xattr -dr com.apple.quarantine /Applications/动态壁纸.app
+xattr -dr com.apple.quarantine /Applications/LiveWall.app
 ```
 
 **把 App 拖出 DMG 之后再做这一步** —— 直接在只读卷里清 quarantine 没有意义。
@@ -743,7 +743,7 @@ PROBE[静置后] 内存 14 MB · CPU 0.0%（近 3 秒）    ← 基线已推进�
 
 用 `SMAppService.mainApp`（macOS 13+），注册到「系统设置 → 通用 → 登录项」，用户看得见也管得着。刻意不用另外两条路：`LSSharedFileList` 在 macOS 13 起已废弃；往 `~/Library/LaunchAgents` 写 plist 会绕过登录项的用户可见性。
 
-**实测**：App 放在 `~/Coding/.../build/动态壁纸.app`（**不在 `/Applications` 下**）也能注册成功，注册后状态变 `enabled`，注销后回到 `notFound`。
+**实测**：App 放在 `~/Coding/.../build/LiveWall.app`（**不在 `/Applications` 下**）也能注册成功，注册后状态变 `enabled`，注销后回到 `notFound`。
 
 注意 `SMAppService.mainApp.status` 在**未注册**时返回的是 `notFound` 而不是 `notRegistered` —— 别被名字骗了。曾据此在菜单里显示「不可用（需在 .app 内运行）」，而功能其实完全可用，属于会让用户放弃使用的假故障。两个「没开启」状态现在统一显示为「未开启」。
 
@@ -993,4 +993,4 @@ PROBE[静置后] 内存 14 MB · CPU 0.0%（近 3 秒）    ← 基线已推进�
 - 用 SwiftPM 组织代码，编译只需要 Command Line Tools，不需要 Xcode。
 - 不引入第三方依赖。
 - 纯逻辑一律放 `LiveWallCore`，保持可脱离 GUI 单测。
-- 构建与运行只走本目录的 `build.sh` / `test.sh` / `run.sh` / `make-dmg.sh`，**不接入根目录的 `build.sh` / `run.sh` / `deploy.sh`** —— 注意本目录的 `run.sh` 与根目录的 `run.sh` 是同名不同物，前者只管 livewall。
+- 构建与运行可直接走本目录的 `build.sh` / `test.sh` / `run.sh` / `make-dmg.sh`，也可从仓库根目录执行 `./build.sh livewall` / `./run.sh livewall`。根目录脚本会把 App 汇总到 `build/livewall/`，但 `deploy.sh` 不上传该目录。注意本目录的 `run.sh` 与根目录的 `run.sh` 是同名不同物，前者负责 livewall 自己的 debug/release 构建与运行。

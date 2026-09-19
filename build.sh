@@ -4,7 +4,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="$ROOT_DIR/build"
-ALL_PROJECTS=(blog studio)
+ALL_PROJECTS=(blog studio livewall)
 SELECTED_PROJECTS=()
 STAGING_DIR="$ROOT_DIR/.build-staging.$$"
 BACKUP_PATH=""
@@ -23,6 +23,7 @@ usage() {
 可选项目：
   blog, b    -> build/meowv.com
   studio, s  -> build/studio.meowv.com
+  livewall, lw -> build/livewall/LiveWall.app
 EOF
 }
 
@@ -82,6 +83,7 @@ destination_name() {
   case "$1" in
     blog) echo "meowv.com" ;;
     studio) echo "studio.meowv.com" ;;
+    livewall) echo "livewall" ;;
   esac
 }
 
@@ -89,6 +91,7 @@ source_path() {
   case "$1" in
     blog) echo "$ROOT_DIR/blog/public" ;;
     studio) echo "$ROOT_DIR/studio/dist" ;;
+    livewall) echo "$ROOT_DIR/livewall/build/LiveWall.app" ;;
   esac
 }
 
@@ -96,6 +99,7 @@ project_binary() {
   case "$1" in
     blog) echo "$ROOT_DIR/blog/node_modules/.bin/hexo" ;;
     studio) echo "$ROOT_DIR/studio/node_modules/.bin/vite" ;;
+    livewall) echo "$ROOT_DIR/livewall/run.sh" ;;
   esac
 }
 
@@ -103,6 +107,7 @@ install_hint() {
   case "$1" in
     blog) echo "cd blog && yarn install --frozen-lockfile" ;;
     studio) echo "cd studio && pnpm install --frozen-lockfile" ;;
+    livewall) echo "cd livewall && ./build.sh" ;;
   esac
 }
 
@@ -110,6 +115,19 @@ check_project() {
   local project="$1"
   local binary
   local binaries=()
+
+  if [ "$project" = "livewall" ]; then
+    if ! command -v swift >/dev/null 2>&1; then
+      echo "错误：未找到 Swift，无法编译 livewall。" >&2
+      echo "请先安装 Xcode Command Line Tools。" >&2
+      exit 1
+    fi
+    if [ ! -x "$ROOT_DIR/livewall/build.sh" ]; then
+      echo "错误：livewall/build.sh 不存在或不可执行。" >&2
+      exit 1
+    fi
+    return
+  fi
 
   if ! command -v node >/dev/null 2>&1; then
     echo "错误：未找到 Node.js，无法编译 ${project}。" >&2
@@ -158,6 +176,12 @@ build_project() {
         ./node_modules/.bin/vite build
       )
       ;;
+    livewall)
+      (
+        cd "$ROOT_DIR/livewall"
+        ./build.sh
+      )
+      ;;
   esac
 }
 
@@ -166,6 +190,21 @@ stage_output() {
   local source
   local destination
   local first_entry
+
+  if [ "$project" = "livewall" ]; then
+    source="$(source_path "$project")"
+    destination="$STAGING_DIR/$(destination_name "$project")/LiveWall.app"
+
+    if [ ! -d "$source" ]; then
+      echo "错误：$project 编译完成后未找到产物包：$source" >&2
+      exit 1
+    fi
+
+    mkdir -p "$destination"
+    cp -R "$source"/. "$destination"/
+    echo "[$project] 已暂存到 $(destination_name "$project")/LiveWall.app"
+    return
+  fi
 
   source="$(source_path "$project")"
   destination="$STAGING_DIR/$(destination_name "$project")"
@@ -297,6 +336,7 @@ else
       --with-wallpapers) WITH_WALLPAPERS=1 ;;
       blog | b) add_project "blog" ;;
       studio | s) add_project "studio" ;;
+      livewall | lw) add_project "livewall" ;;
       all)
         echo "错误：all 只能单独使用。" >&2
         usage >&2
