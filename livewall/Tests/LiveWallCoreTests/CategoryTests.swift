@@ -1,4 +1,3 @@
-import Foundation
 import LiveWallCore
 
 /// 内容分类：索引里的分类清单、默认分类解析、菜单行的内容。

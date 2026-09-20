@@ -1,5 +1,3 @@
-import Foundation
-
 /// 热压力等级，与 `ProcessInfo.ThermalState` 一一对应。
 /// 单独定义一份是为了让 `LiveWallCore` 不依赖 Foundation 之外的东西，也便于单测穷举。
 public enum ThermalPressure: String, Codable, Sendable, CaseIterable {

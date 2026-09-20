@@ -1,4 +1,3 @@
-import Foundation
 import Network
 
 /// 网络可达性监测。

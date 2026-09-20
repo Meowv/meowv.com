@@ -1,5 +1,4 @@
 import AVFoundation
-import Foundation
 import LiveWallCore
 
 /// 视频准入校验的结果。

@@ -1,5 +1,3 @@
-import Foundation
-
 /// 「关于」子菜单的内容。
 ///
 /// 与 `CategoryMenu` 同一定位：只产出**数据**，不碰 `NSMenu` —— 这样条目顺序、

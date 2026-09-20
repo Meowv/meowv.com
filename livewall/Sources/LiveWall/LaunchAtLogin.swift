@@ -1,4 +1,3 @@
-import Foundation
 import ServiceManagement
 
 /// 开机自启。

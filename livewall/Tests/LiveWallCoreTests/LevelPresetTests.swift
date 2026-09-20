@@ -1,5 +1,4 @@
 import CoreGraphics
-import Foundation
 import LiveWallCore
 
 /// LevelPreset 与 LevelBand 的测试。

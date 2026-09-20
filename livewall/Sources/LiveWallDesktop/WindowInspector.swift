@@ -1,6 +1,4 @@
 import AppKit
-import CoreGraphics
-import Foundation
 import LiveWallCore
 
 /// 一条屏幕窗口记录。只读取不涉及屏幕录制权限的字段（owner / layer / bounds / pid / number），
@@ -120,13 +118,6 @@ public enum WindowInspector {
         print("")
     }
 #endif
-
-    /// 桌面层区间内的窗口，按 layer 从高到低排列。
-    public static func desktopBandRecords() -> [WindowRecord] {
-        snapshot()
-            .filter { $0.layer <= iconLevel && $0.layer >= desktopLevel - 12 }
-            .sorted { $0.layer > $1.layer }
-    }
 
     /// 系统壁纸窗口。
     ///

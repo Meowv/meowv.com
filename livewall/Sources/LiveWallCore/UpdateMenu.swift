@@ -1,5 +1,3 @@
-import Foundation
-
 /// 「有新版本」那一段菜单的**内容**。与 `AboutMenu` 同一定位：只产出数据、不碰 `NSMenu`，
 /// 这样文案与条目顺序能脱离 GUI 单测。
 public enum UpdateMenu {

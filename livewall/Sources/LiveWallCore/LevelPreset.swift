@@ -1,5 +1,4 @@
 import CoreGraphics
-import Foundation
 
 /// 候选窗口层级。数值全部由 `CGWindowLevelForKey` 派生，不硬编码魔数 ——
 /// 不同 macOS 版本的实际值不同，硬编码会在系统升级后静默失效。
@@ -85,6 +84,11 @@ public enum LevelPreset: String, CaseIterable, Codable, Sendable {
 }
 
 /// 层级判定的有效区间。左开右开：必须严格在系统壁纸层之上、图标层之下。
+///
+/// **目前是测试专用**：生产路径没有调用它 —— 桌面层区间的实际判定在
+/// `WindowInspector` 里就地算（`desktopLevel - 12 … desktopLevel + 8`，与这里的
+/// 下界不是同一条线）。它存在的意义是拿本机真实的 `CGWindowLevelForKey`
+/// 校验「各预设确实落在有效区间内」这个前提，别当成死代码删掉。
 public struct LevelBand: Equatable, Sendable {
     public let lowerBoundExclusive: Int
     public let upperBoundExclusive: Int

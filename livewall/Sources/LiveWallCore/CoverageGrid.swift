@@ -1,4 +1,3 @@
-import CoreGraphics
 import Foundation
 
 /// 判断一块矩形是否被若干窗口「完全盖满」，以及被覆盖的比例。
@@ -21,6 +20,11 @@ public enum CoverageGrid {
     public static let defaultThreshold = 0.995
 
     /// 被覆盖的面积比例（0…1），精确值。
+    ///
+    /// 生产路径只走 `isFullyCovered`（达到阈值就提前返回）；这个是**精确值接口**，
+    /// 供测试与调试使用 —— 与 `legacyBoundingBoxCovers` 同理。删掉它，
+    /// 「左右各占 40% 的两个窗口覆盖率是 0.8 而不是 1.0」这类断言就只能退化成
+    /// 布尔判定，验证强度会掉一档。
     public static func coverage(of bounds: CGRect, by rects: [CGRect]) -> Double {
         let total = bounds.width * bounds.height
         guard total > 0 else { return 0 }

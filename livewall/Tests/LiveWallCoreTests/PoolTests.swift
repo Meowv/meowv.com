@@ -1,4 +1,3 @@
-import Foundation
 import LiveWallCore
 
 private func makeItems(_ count: Int) -> [WallpaperItem] {

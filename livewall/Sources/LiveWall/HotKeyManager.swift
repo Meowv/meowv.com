@@ -1,4 +1,3 @@
-import AppKit
 import Carbon.HIToolbox
 
 /// 全局热键。

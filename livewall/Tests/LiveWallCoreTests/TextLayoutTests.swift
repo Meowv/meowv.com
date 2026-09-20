@@ -1,4 +1,3 @@
-import Foundation
 import LiveWallCore
 
 /// TextLayout 的测试。
