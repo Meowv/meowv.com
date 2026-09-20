@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_LIVEWALL_RELEASE, LIVEWALL_CHANNELS } from '../livewall-meta';
-import {
-  detectLivewallPlatform,
-  livewallCtaCopy,
-  resolveLivewallCtaKind,
-} from '../livewall-platform';
+import { detectLivewallPlatform, livewallCtaCopy } from '../livewall-platform';
 
 const MAC_UA =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36';
@@ -26,11 +21,11 @@ describe('detectLivewallPlatform', () => {
     ).toBe('macos');
   });
 
-  it('识别 Windows', () => {
+  it('Windows 桌面 UA 判为 other（当前仅支持 macOS）', () => {
     expect(
       detectLivewallPlatform({ userAgent: WINDOWS_UA, platform: 'Win32', maxTouchPoints: 0 }),
-    ).toBe('windows');
-    expect(detectLivewallPlatform({ platform: 'Win32' })).toBe('windows');
+    ).toBe('other');
+    expect(detectLivewallPlatform({ platform: 'Win32' })).toBe('other');
   });
 
   it('把 iPadOS 伪装的 MacIntel 判为非 Mac（触点数大于 1）', () => {
@@ -54,38 +49,9 @@ describe('detectLivewallPlatform', () => {
   });
 });
 
-describe('resolveLivewallCtaKind', () => {
-  it('有发布通道的平台可下载', () => {
-    expect(resolveLivewallCtaKind('macos')).toBe('download');
-  });
-
-  it('没有发布通道的平台显示开发中', () => {
-    expect(resolveLivewallCtaKind('windows')).toBe('coming-soon');
-    expect(resolveLivewallCtaKind('other')).toBe('coming-soon');
-  });
-
-  it('通道表为空时全部降级为开发中', () => {
-    expect(resolveLivewallCtaKind('macos', {})).toBe('coming-soon');
-    expect(resolveLivewallCtaKind('windows', LIVEWALL_CHANNELS)).toBe('coming-soon');
-  });
-
-  it('Windows 通道补上后即自动变为可下载（无需改判定逻辑）', () => {
-    expect(
-      resolveLivewallCtaKind('windows', {
-        windows: {
-          platform: 'windows',
-          feedPath: 'data/livewall/version.windows.json',
-          release: DEFAULT_LIVEWALL_RELEASE,
-        },
-      }),
-    ).toBe('download');
-  });
-});
-
 describe('livewallCtaCopy', () => {
   it('macOS 提供下载文案，且描述里不重复版本与系统要求（由展示模型单独渲染）', () => {
     const copy = livewallCtaCopy('macos');
-    expect(copy.kind).toBe('download');
     expect(copy.platformLabel).toBe('Mac');
     expect(copy.actionLabel).toBe('免费下载');
     // 只断言不变量，不锁具体措辞 —— 文案会随产品迭代调整。
@@ -96,19 +62,10 @@ describe('livewallCtaCopy', () => {
     expect(copy.description).not.toMatch(/\d+\.\d+/);
   });
 
-  it('Windows 显示开发中，且文案不含"下载"', () => {
-    const copy = livewallCtaCopy('windows');
-    expect(copy.kind).toBe('coming-soon');
-    expect(copy.platformLabel).toBe('Windows');
-    expect(copy.actionLabel).toBe('开发中');
-    expect(copy.actionLabel).not.toContain('下载');
-    expect(copy.description).toContain('开发中');
-  });
-
-  it('未知平台提示暂不支持且不展示平台标签', () => {
+  it('未知平台不展示平台标签，但文案仍完整可用', () => {
     const copy = livewallCtaCopy('other');
     expect(copy.platformLabel).toBeNull();
-    expect(copy.actionLabel).toBe('暂不支持');
-    expect(copy.description).toContain('macOS');
+    expect(copy.actionLabel).toBe('免费下载');
+    expect(copy.description.length).toBeGreaterThan(0);
   });
 });

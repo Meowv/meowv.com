@@ -8,7 +8,7 @@
  * 不留半截数据。
  */
 
-export type LivewallPlatform = 'macos' | 'windows' | 'other';
+export type LivewallPlatform = 'macos' | 'other';
 
 /** 发布信息的来源：远端 `version.json` 或本地兜底常量。 */
 export type LivewallFeedSource = 'remote' | 'fallback';
@@ -26,11 +26,7 @@ export interface LivewallRelease {
 /**
  * 一个平台的发布通道。
  *
- * **新增平台（例如 Windows 版上线）只需在 `LIVEWALL_CHANNELS` 里追加一条记录**，
- * 平台判定、CTA 形态与文案逻辑均无需改动。
- *
- * 这里刻意**不放平台显示名** —— 那个唯一来源是 `livewall-platform.ts` 的 `PLATFORM_LABELS`，
- * 因为「Windows 未发布」时也要能显示 `Windows` 这个标签（此时并没有 channel）。
+ * 这里刻意**不放平台显示名** —— 那个唯一来源是 `livewall-platform.ts` 的 `PLATFORM_LABELS`。
  */
 export interface LivewallChannel {
   platform: LivewallPlatform;
@@ -149,16 +145,7 @@ export function normalizeLivewallRelease(
 }
 
 /**
- * 各平台的发布通道。
- *
- * Windows 版上线时在此追加（平台显示名已在 `PLATFORM_LABELS` 里，这里不用重复）：
- * ```ts
- * windows: {
- *   platform: 'windows',
- *   feedPath: 'data/livewall/version.windows.json',
- *   release: { ... },
- * }
- * ```
+ * 各平台的发布通道。当前仅 macOS 提供安装包。
  */
 export const LIVEWALL_CHANNELS: Partial<Record<LivewallPlatform, LivewallChannel>> = {
   macos: {

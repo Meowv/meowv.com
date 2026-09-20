@@ -7,24 +7,35 @@ import {
 } from '../livewall-promo';
 
 describe('resolveLivewallPromoVisibility', () => {
-  it('电脑视图且未关闭时右下角浮层与灯箱入口都显示', () => {
-    expect(resolveLivewallPromoVisibility({ device: 'desktop', dismissed: false })).toEqual({
+  it('电脑视图且未关闭且 Mac 平台时右下角浮层显示', () => {
+    expect(
+      resolveLivewallPromoVisibility({ device: 'desktop', platform: 'macos', dismissed: false }),
+    ).toEqual({
       popup: true,
-      lightboxCta: true,
     });
   });
 
-  it('关闭只影响右下角浮层，灯箱入口保留', () => {
-    expect(resolveLivewallPromoVisibility({ device: 'desktop', dismissed: true })).toEqual({
+  it('关闭只影响右下角浮层', () => {
+    expect(
+      resolveLivewallPromoVisibility({ device: 'desktop', platform: 'macos', dismissed: true }),
+    ).toEqual({
       popup: false,
-      lightboxCta: true,
     });
   });
 
-  it.each([true, false])('手机视图下两个推广位都不显示（dismissed=%s）', (dismissed) => {
-    expect(resolveLivewallPromoVisibility({ device: 'mobile', dismissed })).toEqual({
+  it.each([true, false])('手机视图下浮层不显示（dismissed=%s）', (dismissed) => {
+    expect(
+      resolveLivewallPromoVisibility({ device: 'mobile', platform: 'macos', dismissed }),
+    ).toEqual({
       popup: false,
-      lightboxCta: false,
+    });
+  });
+
+  it('非 Mac 系统（other）下浮层不显示', () => {
+    expect(
+      resolveLivewallPromoVisibility({ device: 'desktop', platform: 'other', dismissed: false }),
+    ).toEqual({
+      popup: false,
     });
   });
 });

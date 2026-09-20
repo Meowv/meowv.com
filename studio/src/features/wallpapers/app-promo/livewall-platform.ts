@@ -1,18 +1,10 @@
 /**
  * 平台识别与行动号召（CTA）形态。
  *
- * 目标：**不让 Windows / Linux 用户看到"下载 macOS 版"**。
- * 有发布通道的平台 → 下载；没有的 → 「开发中 / 敬请期待」。
+ * 当前仅 macOS 提供安装包，CTA 恒为「下载」形态。
  */
 
-import {
-  LIVEWALL_APP_NAME,
-  LIVEWALL_CHANNELS,
-  type LivewallChannel,
-  type LivewallPlatform,
-} from './livewall-meta';
-
-export type LivewallCtaKind = 'download' | 'coming-soon';
+import { LIVEWALL_APP_NAME, type LivewallPlatform } from './livewall-meta';
 
 export interface LivewallPlatformProbe {
   userAgent?: string | null;
@@ -21,7 +13,6 @@ export interface LivewallPlatformProbe {
 }
 
 export interface LivewallCtaCopy {
-  kind: LivewallCtaKind;
   /** 界面展示的平台名；`other` 为 `null`（不展示平台标签）。 */
   platformLabel: string | null;
   title: string;
@@ -31,14 +22,12 @@ export interface LivewallCtaCopy {
 
 const PLATFORM_LABELS: Record<LivewallPlatform, string | null> = {
   macos: 'Mac',
-  windows: 'Windows',
   other: null,
 };
 
 const MAC_PLATFORM_HINTS = /Mac OS X|Macintosh|macOS/i;
-const WINDOWS_PLATFORM_HINTS = /Windows|Win32|Win64|WinCE/i;
 /** 移动端与 ChromeOS 的明确特征，优先于 Mac 判定。 */
-const NON_DESKTOP_HINTS = /iPhone|iPad|iPod|Android|Windows Phone|CrOS/i;
+const NON_DESKTOP_HINTS = /iPhone|iPad|iPod|Android|CrOS/i;
 const NON_DESKTOP_PLATFORM = /^(iPhone|iPad|iPod|Android)/i;
 
 /**
@@ -66,8 +55,6 @@ export function detectLivewallPlatform(probe: LivewallPlatformProbe): LivewallPl
     MAC_PLATFORM_HINTS.test(userAgent);
   if (looksLikeMac) return maxTouchPoints > 1 ? 'other' : 'macos';
 
-  if (platform.startsWith('Win') || WINDOWS_PLATFORM_HINTS.test(userAgent)) return 'windows';
-
   return 'other';
 }
 
@@ -81,40 +68,11 @@ export function readLivewallPlatformProbe(): LivewallPlatformProbe {
   };
 }
 
-/**
- * 有发布通道即「下载」，否则「开发中 / 暂不支持」。
- *
- * Windows 上线时**本函数无需改动** —— 只要 `LIVEWALL_CHANNELS` 里多一条记录。
- */
-export function resolveLivewallCtaKind(
-  platform: LivewallPlatform,
-  channels: Partial<Record<LivewallPlatform, LivewallChannel>> = LIVEWALL_CHANNELS,
-): LivewallCtaKind {
-  return channels[platform] ? 'download' : 'coming-soon';
-}
-
 export function livewallCtaCopy(platform: LivewallPlatform): LivewallCtaCopy {
-  const kind = resolveLivewallCtaKind(platform);
-  const platformLabel = PLATFORM_LABELS[platform];
-
-  if (kind === 'download') {
-    return {
-      kind,
-      platformLabel,
-      title: LIVEWALL_APP_NAME,
-      description: '将视频设为系统壁纸，支持多屏适配与锁屏预览。',
-      actionLabel: '免费下载',
-    };
-  }
-
-  const isWindows = platform === 'windows';
   return {
-    kind,
-    platformLabel,
+    platformLabel: PLATFORM_LABELS[platform],
     title: LIVEWALL_APP_NAME,
-    description: isWindows
-      ? 'Windows 版正在开发中，敬请期待。'
-      : '当前系统暂不支持，目前提供 macOS 版。',
-    actionLabel: isWindows ? '开发中' : '暂不支持',
+    description: '将视频设为系统壁纸，支持多屏适配与锁屏预览。',
+    actionLabel: '免费下载',
   };
 }

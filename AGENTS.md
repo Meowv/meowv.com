@@ -102,7 +102,7 @@
 - 文件打开、新建、保存和销毁必须经过统一的文件交接入口（`src/composables/useFileLauncher.ts` 与 `src/core/browser/file-handoff.ts`），不要在页面内自行判断格式或跳转。
 - 需要串行化的渲染与保存必须排队执行，不要引入并行：Mermaid 任务统一走 `src/core/mermaid/scheduler.ts` 的 `enqueueMermaidTask`；绘图保存与书籍渲染各自维护 Promise 链。
 - 用户文件、图片和附件不得上传，也不得写入 Cookie、日志或远程数据库。涉及文件系统、导出、Worker 或对象 URL 时，保留现有的授权、取消和资源释放处理。
-- 壁纸页的桌面 App 推广位（`src/features/wallpapers/app-promo/`）在运行时读取同域 `data/livewall/version.json` 获取版本与安装包地址；`livewall-meta.ts` 的 `LIVEWALL_FALLBACK_VERSION` 是拉取失败时的静态兜底，**livewall 发版后必须同步更新**（兜底下载地址由该常量派生，不手写完整 URL，以防版本与地址漂移）。新增平台（如 Windows 端）只需在 `LIVEWALL_CHANNELS` 追加一条记录，平台判定与文案逻辑无需改动。
+- 壁纸页的桌面 App 推广位（`src/features/wallpapers/app-promo/`）在运行时读取同域 `data/livewall/version.json` 获取版本与安装包地址；`livewall-meta.ts` 的 `LIVEWALL_FALLBACK_VERSION` 是拉取失败时的静态兜底，**livewall 发版后必须同步更新**（兜底下载地址由该常量派生，不手写完整 URL，以防版本与地址漂移）。
 
 ### Zitie 约定
 

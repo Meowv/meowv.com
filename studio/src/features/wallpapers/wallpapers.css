@@ -836,10 +836,6 @@
   border-color: color-mix(in srgb, var(--wallpapers-accent) 72%, white);
   background: color-mix(in srgb, var(--wallpapers-accent) 78%, black);
 }
-/* 桌面 App 下载入口：与「设为壁纸」区分开的强调色描边。 */
-.wallpapers-lightbox-download-trigger.is-app {
-  border-color: color-mix(in srgb, var(--wallpapers-accent) 72%, white);
-}
 .wallpapers-action-spinning {
   animation: wallpapers-lightbox-spin 0.8s linear infinite;
 }

@@ -29,7 +29,6 @@ import { useWallpapers } from './composables/useWallpapers';
 import { useLivewallPromo } from './app-promo/useLivewallPromo';
 import { resolveLivewallPromoVisibility } from './app-promo/livewall-promo';
 import LivewallPromoPopup from './app-promo/LivewallPromoPopup.vue';
-import LivewallPromoLightboxCta from './app-promo/LivewallPromoLightboxCta.vue';
 import { useToolsBackground } from '@/features/tools/composables/useToolsBackground';
 import type { WallpaperItem } from './types';
 import './wallpapers.css';
@@ -57,15 +56,17 @@ const {
   errorMessage: backgroundErrorMessage,
 } = useToolsBackground();
 const selected = ref<WallpaperItem | null>(null);
-// 桌面 App 推广位：显隐规则集中在 resolveLivewallPromoVisibility，页面只负责把 device 传进去。
+// 桌面 App 推广位：显隐规则集中在 resolveLivewallPromoVisibility，页面只负责传入筛选设备与识别平台。
 const {
   model: livewallModel,
+  platform: livewallPlatform,
   dismissed: livewallDismissed,
   dismiss: dismissLivewallPromo,
 } = useLivewallPromo();
 const livewallPromoVisibility = computed(() =>
   resolveLivewallPromoVisibility({
     device: filters.value.device,
+    platform: livewallPlatform.value,
     dismissed: livewallDismissed.value,
   }),
 );
@@ -813,10 +814,6 @@ watch(
             <IconPhoto class="wallpapers-download-icon-type" :size="11" />
           </span>
         </button>
-        <LivewallPromoLightboxCta
-          v-if="livewallPromoVisibility.lightboxCta"
-          :model="livewallModel"
-        />
       </div>
       <span
         v-if="backgroundStatusMessage"

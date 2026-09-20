@@ -1,13 +1,13 @@
 /**
  * 把发布信息、平台判定与关闭态接成 Vue 响应式状态。
  *
- * 采用模块级单例（与 `useToolsBackground` 一致）：两个推广位组件共用**一次** `version.json` 请求。
+ * 采用模块级单例（与 `useToolsBackground` 一致）：右下角浮层组件共用**一次** `version.json` 请求。
  * `device` 不在这里处理 —— 页面拿 `dismissed` 配合 `resolveLivewallPromoVisibility` 自行计算，
  * 保持本 composable 与筛选逻辑解耦。
  */
 
 import { computed, ref, type Component, type ComputedRef, type Ref } from 'vue';
-import { IconBrandApple, IconBrandWindows, IconDeviceLaptop } from '@tabler/icons-vue';
+import { IconBrandApple } from '@tabler/icons-vue';
 import {
   DEFAULT_LIVEWALL_RELEASE,
   LIVEWALL_CHANNELS,
@@ -27,19 +27,21 @@ import {
   type LivewallCtaCopy,
 } from './livewall-platform';
 
-/** 三个推广位组件共用的展示模型，组件只负责渲染。 */
+/** 右下角浮层使用的展示模型，组件只负责渲染。 */
 export interface LivewallPromoModel {
   cta: LivewallCtaCopy;
-  /** 平台图标；由 composable 统一决定，避免两个组件各写一份映射。 */
+  /** 平台图标；当前仅 macOS，固定为 Apple 标记。 */
   icon: Component;
-  /** 可下载时为安装包地址，否则为 `null`（按钮转为禁用态）。 */
-  downloadUrl: string | null;
-  versionLabel: string | null;
+  /** 安装包地址；浮层只在 macOS 出现，release 恒为 macOS 安装包。 */
+  downloadUrl: string;
+  versionLabel: string;
   fileSizeLabel: string | null;
 }
 
 export interface UseLivewallPromo {
   model: ComputedRef<LivewallPromoModel>;
+  /** 当前浏览器平台，用于决定推广位是否展示。 */
+  platform: Ref<LivewallPlatform>;
   /** 当前生效的发布信息（远端或兜底）。 */
   release: Ref<LivewallRelease>;
   /** 版本信息来自远端还是静态兜底 —— 兜底常量可能与线上漂移，排查时要看它。 */
@@ -76,12 +78,6 @@ function resolveChannel(value: LivewallPlatform): LivewallChannel | null {
   return LIVEWALL_CHANNELS[value] ?? LIVEWALL_CHANNELS.macos ?? null;
 }
 
-function platformIcon(value: LivewallPlatform): Component {
-  if (value === 'macos') return IconBrandApple;
-  if (value === 'windows') return IconBrandWindows;
-  return IconDeviceLaptop;
-}
-
 function initialize(): void {
   if (initialized) return;
   initialized = true;
@@ -110,22 +106,17 @@ function dismiss(): void {
 }
 
 const cta = computed(() => livewallCtaCopy(platform.value));
-const isDownloadable = computed(() => cta.value.kind === 'download');
 
-const model = computed<LivewallPromoModel>(() => {
-  const downloadable = isDownloadable.value;
-  return {
-    cta: cta.value,
-    icon: platformIcon(platform.value),
-    downloadUrl: downloadable ? release.value.fileURL : null,
-    // 版本与体积只在真有安装包时展示，避免 Windows「开发中」时显示 Mac 安装包的信息。
-    versionLabel: downloadable ? `v${release.value.version}` : null,
-    fileSizeLabel: downloadable ? formatByteSize(release.value.sizeBytes) : null,
-  };
-});
+const model = computed<LivewallPromoModel>(() => ({
+  cta: cta.value,
+  icon: IconBrandApple,
+  downloadUrl: release.value.fileURL,
+  versionLabel: `v${release.value.version}`,
+  fileSizeLabel: formatByteSize(release.value.sizeBytes),
+}));
 
 export function useLivewallPromo(): UseLivewallPromo {
   initialize();
 
-  return { model, release, releaseSource, dismissed, dismiss };
+  return { model, platform, release, releaseSource, dismissed, dismiss };
 }

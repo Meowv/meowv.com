@@ -300,7 +300,7 @@ pnpm preview
 - 功能定位：壁纸浏览与下载页，数据来自 Wallpapers Crawler 生成并加密的目录，页面不请求业务后端。
 - 主要用途：按桌面/手机与静态/动态筛选，按分类和关键词查找，分页浏览、动态预览并下载。
 - 子模块与入口：路由 `/wallpapers`；页面 `WallpapersPage.vue`；数据逻辑在 `composables/useWallpapers.ts` 与 `services/wallpaperRepository.ts`；`workers/wallpapers.worker.ts` 在 Worker 中读取 `public/data/wallpapers.catalog.json`、解密对应的 `.bin` 并写入 IndexedDB `meowv-wallpapers-catalog`；数据结构在 `types.ts`。目录的生成与加密见 [Wallpapers Crawler](#wallpapers-crawler)。
-- 桌面 App 推广：右下角浮层与灯箱右侧下载入口用于推广 livewall 桌面端，两者都只在「电脑」筛选下出现；关闭只在当前标签页会话内有效（记 `sessionStorage`，刷新或新开标签页会重新露出）。Mac 版发布信息运行时读取同域 `data/livewall/version.json`，静态兜底常量在 `app-promo/livewall-meta.ts`；Windows 端未发布时显示「开发中」并隐藏下载地址。实现在 `src/features/wallpapers/app-promo/`。
+- 桌面 App 推广：右下角浮层用于推广 livewall 桌面端，只在「电脑」且 Mac 平台下出现；关闭只在当前标签页会话内有效（记 `sessionStorage`，刷新或新开标签页会重新露出）。Mac 版发布信息运行时读取同域 `data/livewall/version.json`，静态兜底常量在 `app-promo/livewall-meta.ts`。实现在 `src/features/wallpapers/app-promo/`。
 
 ##### Tools
 

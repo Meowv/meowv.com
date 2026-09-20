@@ -51,9 +51,6 @@ const badge = computed(() =>
         <IconDownload :size="15" />
         <span>{{ model.cta.actionLabel }}</span>
       </a>
-      <button v-else class="wallpapers-app-popup__action" type="button" disabled>
-        {{ model.cta.actionLabel }}
-      </button>
     </div>
   </aside>
 </template>
