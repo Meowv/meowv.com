@@ -203,6 +203,12 @@ categories:
         url: https://moovie.c2v2.com/static/img/moovie-app.png
       url: https://moovie.c2v2.com
 
+    - id: dongpian17
+      name: 懂片帝
+      icon:
+        url: https://dongpian17.com/assets/app-icon-64.png
+      url: https://dongpian17.com
+
     - id: 1234yy
       name: FreeOK
       icon:
