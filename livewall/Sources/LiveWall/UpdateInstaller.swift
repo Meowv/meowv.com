@@ -41,19 +41,19 @@ enum UpdateInstaller {
             throw Failure(message: "下载失败：\(error.localizedDescription)")
         }
 
-        // 只在服务端给了 sha256 时才校验 —— 没给就跳过，不假装校验过。
-        if feed.sha256 != nil {
-            let actual: String
-            do {
-                actual = try sha256(of: destination)
-            } catch {
-                try? FileManager.default.removeItem(at: destination)
-                throw Failure(message: "下载完成但无法读取校验：\(error.localizedDescription)")
-            }
-            guard feed.sha256Matches(actual) else {
-                try? FileManager.default.removeItem(at: destination)
-                throw Failure(message: "文件校验不符，已删除下载的文件")
-            }
+        // **无条件校验。** `sha256` 是必填字段（缺了或格式非法在解析阶段就被拒，
+        // 根本走不到这里），所以刻意没有「服务端没给就跳过」这条路 ——
+        // 那种写法会把「服务端漏填」悄悄降级成「不做校验」，正是要避免的。
+        let actual: String
+        do {
+            actual = try sha256(of: destination)
+        } catch {
+            try? FileManager.default.removeItem(at: destination)
+            throw Failure(message: "下载完成但无法读取校验：\(error.localizedDescription)")
+        }
+        guard feed.sha256Matches(actual) else {
+            try? FileManager.default.removeItem(at: destination)
+            throw Failure(message: "文件校验不符，已删除下载的文件")
         }
 
         return destination

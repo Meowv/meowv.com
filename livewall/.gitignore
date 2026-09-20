@@ -7,3 +7,8 @@ build/
 *.dSYM
 
 .DS_Store
+
+# 签名私钥。正常存在 ~/.livewall-signing/（仓库外），这里防的是顺手拷进来。
+# 真提上去 = 更新链的信任根泄漏，且 git 历史里删不干净 —— 只能换密钥 + 重新发版。
+version-key.txt
+*.signing-key

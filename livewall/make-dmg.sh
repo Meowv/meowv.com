@@ -118,8 +118,33 @@ cat > "${FEED_PATH}" <<JSON
 }
 JSON
 
+# 对 version.json 的**原始字节**签名，产出 version.json.sig。
+#
+# 为什么必须在这里做、而且**失败就中断**：客户端只认验签通过的清单。少了 .sig 的表现是
+# 「新版客户端永远看不到更新」—— 与「线上没发新版」的症状一模一样，没有任何别的信号，
+# 排障会往完全错误的方向走。宁可这次打包失败，也不要产出一份发不出去的清单。
+#
+# 私钥在本机离线保存（默认 ~/.livewall-signing/version-key.txt），所以这一步只能在
+# 持有私钥的机器上做；换机器要先拷私钥。详见 README「更新清单签名」。
+#
+# ⚠️ 签名覆盖的是**字节**，所以 version.json 一旦签好就不要再动它 ——
+#    改缩进、调键顺序、加删尾随换行都会让签名失效（客户端那边表现为「签名与版本信息不符」）。
+if [[ ! -x "${ROOT}/tools/sign-version.swift" ]]; then
+  echo "错误：缺少 ${ROOT}/tools/sign-version.swift，或它没有可执行权限" >&2
+  exit 1
+fi
+
+"${ROOT}/tools/sign-version.swift" sign \
+  --json "${FEED_PATH}" \
+  --dmg "${DMG_PATH}" \
+  --pubkey-source "${ROOT}/Sources/LiveWallCore/UpdateSignature.swift"
+
+SIG_PATH="${FEED_PATH}.sig"
+
 SIZE="$(du -h "${DMG_PATH}" | cut -f1)"
 echo "[dmg] 产物：${DMG_PATH}（${SIZE}）"
 echo "[dmg] 版本信息：${FEED_PATH}（build ${BUILD_NUMBER}）"
+echo "[dmg] 签名：${SIG_PATH}"
 echo "[dmg] 提醒：发版前必须递增 CFBundleVersion —— 客户端只认它，忘了加就永远不提示"
+echo "[dmg] 提醒：version.json 与 version.json.sig 必须**同一次**上传，少一个客户端就看不到更新"
 echo "[dmg] 提示：未公证，别人首次打开需右键「打开」，或在「隐私与安全性」里点「仍要打开」"

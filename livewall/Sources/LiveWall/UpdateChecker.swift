@@ -113,14 +113,7 @@ final class UpdateChecker {
         queue.async { [weak self] in
             guard let self else { return }
             var warnings: [String] = []
-            var feed: UpdateFeed?
-            do {
-                let data = try transport.fetch(url)
-                feed = UpdateFeedCoding.decode(data, into: &warnings)
-            } catch {
-                warnings.append("版本信息拉取失败：\(error.localizedDescription)")
-                feed = nil
-            }
+            let feed = self.resolveFeed(url: url, transport: transport, warnings: &warnings)
 
             let decision = UpdateEvaluator.evaluate(localBuild: localBuild, feed: feed)
 
@@ -130,5 +123,49 @@ final class UpdateChecker {
                 self.onResult?(decision, warnings)
             }
         }
+    }
+
+    /// 取回版本信息，**先验签、再解析**，返回可用的 `UpdateFeed`。
+    ///
+    /// 顺序不能反：签名不过的清单属于**不可信数据**，不该进解析、更不该参与更新判定。
+    ///
+    /// 失败一律返回 nil（原因写进 `warnings`），**刻意没有「验不过就退回只看 sha256」
+    /// 这条路** —— 那种降级等于没做签名：攻击者把签名文件删掉即可绕过。
+    /// 与 `sha256` 必填是同一条原则：宁可这次不提示更新，也不认一份来源不明的清单。
+    private func resolveFeed(
+        url: URL,
+        transport: UpdateTransport,
+        warnings: inout [String]
+    ) -> UpdateFeed? {
+        let payload: Data
+        do {
+            payload = try transport.fetch(url)
+        } catch {
+            warnings.append("版本信息拉取失败：\(error.localizedDescription)")
+            return nil
+        }
+
+        guard let signatureURL = UpdateSignature.documentURL(for: url) else {
+            warnings.append("更新信息签名校验失败：更新地址推不出签名文件地址")
+            return nil
+        }
+
+        let document: Data
+        do {
+            document = try transport.fetch(signatureURL)
+        } catch {
+            // 单独说清是**签名文件**的问题。最常见的成因是发版时漏传 `.sig`，
+            // 与「版本信息本身 404」是两个完全不同的排障方向 —— 混在一起会被读成
+            // 「线上没更新」，然后去翻版本号，方向全错。
+            warnings.append("签名文件拉取失败（\(signatureURL.lastPathComponent)）：\(error.localizedDescription)")
+            return nil
+        }
+
+        // 验签与解析的顺序由 `decodeVerified` 内部钉死，这里不自己拼两步。
+        return UpdateFeedCoding.decodeVerified(
+            payload: payload,
+            signatureDocument: document,
+            into: &warnings
+        )
     }
 }

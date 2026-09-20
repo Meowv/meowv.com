@@ -14,13 +14,30 @@ public struct Preferences: Codable, Sendable, Equatable {
     ///
     /// 指向**索引**：它同时带分类清单（`categories`）与每个分类的切片文件名，
     /// 条目按 `category.<一级分类 id>.json` 单独拉。切分类因此是「再拉一个文件」。
-    public static let defaultRemoteCatalogURL = "https://studio.meowv.com/data/livewall/catalog.json"
+    ///
+    /// **地址以混淆形式存储**（见 `Folded`）：明文不落二进制，抬高「改个 URL
+    /// 重新打包」的门槛。改地址时用 `tools/encode-strings.py` 重新生成字节数组，别手算。
+    public static let defaultRemoteCatalogURL = Folded.open([
+        0x32, 0xB7, 0x65, 0x0E, 0xEC, 0x1E, 0x44, 0xFF, 0x4B, 0xD1, 0x39, 0x83,
+        0x6B, 0xD6, 0x79, 0x9C, 0x3F, 0xAC, 0x66, 0x08, 0xB1, 0x47, 0x04, 0xBD,
+        0x17, 0xC1, 0x2D, 0x93, 0x63, 0x96, 0x3B, 0x98, 0x2C, 0xA6, 0x66, 0x1F,
+        0xF3, 0x48, 0x44, 0xB3, 0x59, 0xD1, 0x2D, 0x8B, 0x6D, 0xDE, 0x79, 0x9B,
+        0x29, 0xAC, 0x7F,
+    ])
 
     /// 线上版本信息地址（与清单一同部署在 `data/livewall/` 下）。
     ///
     /// 与清单地址**分开配置**：两者用途不同（内容 vs 客户端自身），
     /// 用户可能只想换内容源，不该被顺带改掉更新源。
-    public static let defaultRemoteUpdateURL = "https://studio.meowv.com/data/livewall/version.json"
+    ///
+    /// 同样以混淆形式存储，见 `Folded` 与 `defaultRemoteCatalogURL` 的说明。
+    public static let defaultRemoteUpdateURL = Folded.open([
+        0x32, 0xB7, 0x65, 0x0E, 0xEC, 0x1E, 0x44, 0xFF, 0x4B, 0xD1, 0x39, 0x83,
+        0x6B, 0xD6, 0x79, 0x9C, 0x3F, 0xAC, 0x66, 0x08, 0xB1, 0x47, 0x04, 0xBD,
+        0x17, 0xC1, 0x2D, 0x93, 0x63, 0x96, 0x3B, 0x98, 0x2C, 0xA6, 0x66, 0x1F,
+        0xF3, 0x48, 0x44, 0xA6, 0x5D, 0xD7, 0x3F, 0x8E, 0x6D, 0xD7, 0x79, 0x9B,
+        0x29, 0xAC, 0x7F,
+    ])
 
     // 内容源
     /// 远程清单地址。清空则只能用远程副本缓存与内置兜底条目。
@@ -52,6 +69,22 @@ public struct Preferences: Codable, Sendable, Equatable {
     /// 记忆值在清单里找不到时回退默认分类并**立刻写回**，否则每次启动都要重复回退一次。
     /// 只在成功取到该分类条目后才写 —— 不把一次失败的选择持久化下来。
     public var selectedCategoryID: Int?
+
+    // 固定为桌面壁纸
+    /// 被固定为桌面壁纸的条目。nil = 正常轮换。
+    ///
+    /// **存整条而不是 id**，这是踩过的一个坑：只存 id 就必须靠「当前分类切片」定位它，
+    /// 而切分类**不解钉**（用户可以在固定之后换分类继续浏览），重启时
+    /// `selectedCategoryID` 已经是另一个分类、切片里找不到这个 id → **固定被丢掉**。
+    /// 而「整个会话都固定着、重启却恢复轮换」是不一致的体验。
+    ///
+    /// 存整条之后：**定位固定项不再依赖任何切片** —— 切分类、重载清单、重启都不会让它
+    /// 「找不到」。失效只剩一种判据：地址非法或加载失败 → 自动解钉（见 `PinnedPlayback`）。
+    ///
+    /// **但「能定位」不等于「一定能开播」**：启动时槽位的铺满发生在 `applySliceResult`
+    /// 里（与轮换共用同一条启动路径），所以索引或切片都取不到时固定项也不会开播 ——
+    /// 那种情况下轮换模式同样播不了任何东西，两者表现一致，不存在「固定特有的黑屏」。
+    public var pinnedItem: WallpaperItem?
 
     // 省电
     /// 画面被不透明窗口完全盖满时暂停。收益最大的一项。
@@ -88,6 +121,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         multiScreenPolicy: MultiScreenPolicy = .mirror,
         perScreenSources: ScreenSourceStore = .empty,
         selectedCategoryID: Int? = nil,
+        pinnedItem: WallpaperItem? = nil,
         pauseWhenCovered: Bool = true,
         pauseWhenIdle: Bool = true,
         idleThresholdSeconds: Double = 300,
@@ -107,6 +141,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         self.multiScreenPolicy = multiScreenPolicy
         self.perScreenSources = perScreenSources
         self.selectedCategoryID = selectedCategoryID
+        self.pinnedItem = pinnedItem
         self.pauseWhenCovered = pauseWhenCovered
         self.pauseWhenIdle = pauseWhenIdle
         self.idleThresholdSeconds = idleThresholdSeconds
@@ -124,6 +159,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         case intervalSeconds, jitterRatio, switchWhenFinished, playbackOrder
         case gravity, levelPreset
         case multiScreenPolicy, perScreenSources, selectedCategoryID
+        case pinnedItem
         case pauseWhenCovered, pauseWhenIdle, idleThresholdSeconds
         case pauseOnLowPowerMode, pauseOnBattery, pauseOnThermalPressure
         case lockScreenPreview
@@ -156,6 +192,10 @@ public struct Preferences: Codable, Sendable, Equatable {
         // 手改配置把这一项写成字符串（`"selectedCategoryID": "美女"`）会抛 typeMismatch，
         // 后果与缺字段完全一样 —— 整个文件退回默认。所以同样用 `try?` 一视同仁。
         selectedCategoryID = (try? container.decodeIfPresent(Int.self, forKey: .selectedCategoryID)) ?? nil
+        // 同理用 `try?`：手改配置把整条写坏（漏了 `url`、把 `id` 写成字符串）会抛错，
+        // 后果与缺字段完全一样 —— 整个文件退回默认、静默清零其它设置。
+        // 解不出来就当没固定，用户重新点一次即可，比丢掉全部设置划算得多。
+        pinnedItem = (try? container.decodeIfPresent(WallpaperItem.self, forKey: .pinnedItem)) ?? nil
         pauseWhenCovered = try container.decodeIfPresent(Bool.self, forKey: .pauseWhenCovered) ?? fallback.pauseWhenCovered
         pauseWhenIdle = try container.decodeIfPresent(Bool.self, forKey: .pauseWhenIdle) ?? fallback.pauseWhenIdle
         idleThresholdSeconds = try container.decodeIfPresent(Double.self, forKey: .idleThresholdSeconds) ?? fallback.idleThresholdSeconds
@@ -250,6 +290,12 @@ public struct Preferences: Codable, Sendable, Equatable {
         // 非正数的分类 id 不可能是合法分类，清掉让它走默认分类
         if let id = copy.selectedCategoryID, id <= 0 {
             copy.selectedCategoryID = nil
+        }
+        // 地址非法的固定项本来也播不了（`remoteURL` 为 nil = 空串或非 http(s)），
+        // 留着只会让启动流程先失败一次再解钉。这里直接清掉，与上面清 `selectedCategoryID`
+        // 是同一类清洗：**能静态判定的非法值不留给运行时去发现**。
+        if let item = copy.pinnedItem, item.remoteURL == nil {
+            copy.pinnedItem = nil
         }
         return copy
     }

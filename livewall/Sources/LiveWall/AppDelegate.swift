@@ -44,11 +44,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var downloader = WallpaperDownloader()
     /// 全局热键。Carbon `RegisterEventHotKey`，不需要辅助功能授权。
     private let hotKeys = HotKeyManager()
+    /// 动态壁纸浏览窗口。**单窗口复用** —— 已有就前置，不重复开。
+    /// 窗口关闭时由 `onClose` 置回 nil。
+    private var browserWindowController: WallpaperBrowserWindowController?
     /// 省电状态机。延迟创建，因为它的求值依赖已加载的 `preferences`。
     private lazy var governor = PlaybackGovernor(resolverProvider: { [weak self] in
         self?.preferences.playbackStateResolver ?? PlaybackStateResolver()
     })
     private var pool = CandidatePool()
+
+    // 固定为桌面壁纸
+    /// 是否处于固定态。
+    ///
+    /// **唯一真源是 `preferences.pinnedItem`**，这里刻意不另存一个 `Bool` ——
+    /// 存了就会出现「配置里有固定项、标志位却是 false」这种不一致，而它一旦出现，
+    /// 每一条分支都得猜该信哪个。写入只走 `setPinned` / `clearPin` 两个函数。
+    private var isPinned: Bool { preferences.pinnedItem != nil }
+
+    /// 铺满固定项的加载是否在飞。防重入：同一条视频被并发拉两遍，流量直接翻倍。
+    private var isPinApplyInFlight = false
+
+    /// 「设为桌面壁纸」这个动作的回执还没给。
+    ///
+    /// 由 `setPinned` 置位、`applyPinToMissingSlots` 成功铺满后消费。**不直接在
+    /// `setPinned` 里写 `notice`**：决策 7 会同步切分类，那条路径要走一遍切片加载，
+    /// 而 `applySliceResult` 里有 `notice = nil` —— 回执还没被看见就被冲掉了。
+    private var pendingPinAnnouncement = false
+
+    /// 解钉提示的「重播」。
+    ///
+    /// `loadAndPlay` 成功时会 `notice = nil`（清掉上一次的异常），那会把刚写下的
+    /// 解钉提示一起冲掉 —— 而用户恰恰需要知道「画面为什么突然换了」。
+    /// 这里留一份，成功加载后写回，写回一次即作废。
+    private var pendingUnpinNotice: String?
 
     // 内容分类
     /// 清单索引。分类清单与默认分类都从这里取 —— **单一来源**，不再各存一份。
@@ -194,6 +222,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - 生命周期
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // 自身完整性自检。**只记日志、不阻断** —— 理由见 `Seal`：
+        // 本 App 是 ad-hoc 签名，重签即可绕过，拿它拦启动只会误伤正常用户。
+        reportSeal()
+
         let loaded = Preferences.load(from: configURL)
         preferences = loaded.sanitized()
         // 修正过（旧版清单地址迁移、超范围值夹紧、非法分类 id 清掉）就立刻落盘 ——
@@ -343,6 +375,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // 静态图」，用户会以为自己的壁纸被改坏了。进程被 SIGKILL 时恢复不了，
         // 原图路径已写在日志里。
         lockScreenPreviewer.restoreUserWallpaper()
+        // 浏览窗口也要关掉：它持有预览播放器与在飞的缩略图请求，
+        // 留着会让进程在「已经退出清理」之后还挂着一个窗口。
+        browserWindowController?.close()
         engine.teardown()
     }
 
@@ -514,7 +549,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // **只在本次启动第一次成功加载清单时做**：手动重载清单（⌥⌘R）时各屏已经记着
         // 当前条目，再恢复一次等于把同一段视频重新下一遍。
         // 计划里只保留**当前分类里确实存在**的条目，其余直接丢弃（见 `ScreenSourceRestore`）。
-        if isFirstLoad {
+        // **固定态不填**：`advance()` 会被固定分支拦截，`pendingRestore` 不会被消费，
+        // 会滞留成一份过期计划，等用户解钉后被突然消费掉 —— 表现成「解钉后莫名
+        // 跳回上次开机时播的那条」。
+        if isFirstLoad && !isPinned {
             pendingRestore = ScreenSourceRestore.plan(
                 store: preferences.perScreenSources,
                 candidateIDs: Set(slice.items.map(\.id))
@@ -534,6 +572,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         refreshStatusItem()
+
+        // 固定态：不轮换，也不因为换了分类而解钉（决策 10 —— 桌面继续播固定项，
+        // 菜单「内容过滤」照实显示新分类）。
+        //
+        // 固定项**自包含**（`pinnedItem` 存的是整条，不是 id），所以不依赖本切片定位，
+        // 这里只做一次「核一遍」：启动时各槽位还是空的，会在这里被铺满。
+        // 铺满是幂等的 —— 已经铺满时就是 no-op，不会因为换个分类重下一遍视频。
+        guard !isPinned else {
+            applyPinToMissingSlots()
+            return
+        }
         advance()
     }
 
@@ -575,6 +624,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // 这样即使下面因暂停/耗尽提前 return，它也不会泄漏到之后某一次定时切换。
         let restorePlan = pendingRestore
         pendingRestore.removeAll()
+
+        // 固定态：**不取新片**。这是「停止轮换」的落点 —— 放在这里而不是每个调用点，
+        // 是因为 `advance()` 是全局切换的唯一入口，同时覆盖：轮换定时器、网络恢复
+        // （`network.onChange`）、`holdCurrent` 的 60 秒重试、`scheduleRecoveryAttempt`、
+        // 「下一张」按钮与 ⌥⌘N 热键。
+        //
+        // 固定态下**不存在定时切换**（`scheduleNext` 已拦截），所以能走到这里的
+        // 只剩恢复类请求。它们要的是「把固定项重新拉一遍」，而不是「什么都不做」——
+        // 槽位里虽然还挂着固定项（`item(on:)` 非空），但那正是加载 / 播放失败的那条。
+        // 所以这里用 `force`：忽略「URL 相同就算已就位」的短路。
+        if isPinned {
+            log("固定模式：不轮换，重新铺满固定项 \(preferences.pinnedItem?.id ?? -1)")
+            applyPinToMissingSlots(force: true)
+            return
+        }
 
         // 暂停期间不加载任何新内容：既省流量，也避免「恢复时发现画面是刚拉的」。
         // 这不只是手动暂停 —— 遮挡、锁屏、息屏等任何暂停原因都算，否则网络恢复
@@ -635,6 +699,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 其它槽位正在正常播放，不该被牵连着一起换片。
     private func advanceOne(_ key: PlaybackSlotKey) {
         guard governor.state.isPlaying else { return }
+        // 固定态：不给这个槽位取新片，改成补固定项。覆盖三条路径 ——
+        // `syncPlaybackSlots` 的新增槽位、拉黑后的补片、以及单槽位的恢复请求。
+        // 放在 `isPlaying` 判断**之后**：暂停期间不加载任何新内容，与 `advance()` 同一条规则
+        // （恢复时 `applyPlaybackState(.playing)` 会兜住这些空槽位）。
+        if isPinned {
+            applyPinToMissingSlots()
+            return
+        }
         guard !pool.isExhausted else {
             notice = .warning("候选池已耗尽")
             refreshStatusItem()
@@ -652,7 +724,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let url = item.remoteURL else {
             log("跳过 URL 非法的条目 \(item.id)（\(key.label)）")
             pool.blacklist(id: item.id)
-            advanceOne(key)
+            // 失效的正是固定项 → 自动解钉（决策 8），然后**全局** `advance()`
+            // 而不是只补这一个槽位：固定是对所有屏生效的，失效也该所有屏一起回轮换。
+            if unpinIfInvalidated(item.id) {
+                advance()
+            } else {
+                advanceOne(key)
+            }
             return
         }
 
@@ -675,7 +753,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self.isHoldingForNetwork = false
                 self.namesBySlot[key] = item.displayName
                 self.refreshCurrentName()
-                self.notice = nil
+                // 成功加载会清掉上一次的异常提示。但**解钉提示要留住** ——
+                // 用户需要知道画面为什么突然换了（固定项失效），而那句话正是在
+                // 本次加载之前写下的，直接 `= nil` 会让它一次都看不见。
+                self.notice = self.pendingUnpinNotice.map { Notice.warning($0) }
+                self.pendingUnpinNotice = nil
                 self.log("播放 \(item.id) \(item.title)(\(loaded.resolutionText)) 时长 "
                     + "\(String(format: "%.2f", loaded.durationSeconds))s 编码 \(loaded.codec)"
                     + " [\(key.label)]")
@@ -738,7 +820,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // 否则一次断网会把整池好资源全丢进黑名单。
             pool.blacklist(id: item.id)
             failuresBySlot[key] = failures
-            advanceOne(key)
+            // 拉黑的如果正是固定项 → 自动解钉（决策 8）。
+            // 注意 `.holdCurrent` / `.retrySame` / `.stopScheduling` 三个分支**保持原样**：
+            // 前两个是网络类问题（不该解钉），第三个是连续失败（画面还在，也没到解钉的程度）。
+            if unpinIfInvalidated(item.id) {
+                advance()
+            } else {
+                advanceOne(key)
+            }
         }
     }
 
@@ -830,13 +919,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .blacklistAndAdvance:
             pool.blacklist(id: item.id)
             failuresBySlot[key] = failures
-            advanceOne(key)
+            if unpinIfInvalidated(item.id) {
+                advance()
+            } else {
+                advanceOne(key)
+            }
         }
     }
 
     private func scheduleNext(after videoDuration: Double?) {
         scheduleTimer?.invalidate()
         scheduleTimer = nil
+
+        // 固定态：**不排下一次切换**。放这里而不是各调用点，是为了同时覆盖
+        // 定时切换、恢复播放、改切换间隔（`rescheduleAfterIntervalChange`）、
+        // 以及「播完即切」（`switchWhenFinished`）四条路径 —— 少覆盖一条就会出现
+        // 「固定了几分钟后自己换了一张」。
+        //
+        // 日志必须写明：否则排障时看到「播完了却没有下一行」会误判成播完即切坏了。
+        guard !isPinned else {
+            log("固定模式：不安排下一次切换（固定项 \(preferences.pinnedItem?.id ?? -1) 一直播）")
+            return
+        }
 
         // 暂停期间不排切换：既看不到画面，也没必要消耗带宽
         guard governor.state.isPlaying else {
@@ -864,6 +968,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .playing:
             log("恢复播放")
             engine.resume()
+            // 固定态：不排下一次切换，但**要把缺片的槽位补齐** ——
+            // 暂停期间新增的槽位（热插拔 / 策略切换）、以及加载失败留下的空槽位，
+            // 都靠这一句收口。幂等，已铺满时是 no-op。
+            if isPinned {
+                applyPinToMissingSlots()
+                break
+            }
             // 暂停期间定时器已被取消，恢复时要重新排一次
             if scheduleTimer == nil || !(scheduleTimer?.isValid ?? false) {
                 if engine.isEmpty {
@@ -998,6 +1109,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 只在每屏独立模式下写 —— 另外两种策略共用一张，没有「每屏」可记。
     private func persistScreenSources() {
         guard preferences.multiScreenPolicy == .perScreen else { return }
+        // 固定态不写：此时每屏播的都是同一条固定项，写进去会**覆盖用户固定前
+        // 「每屏各不相同」的记忆**，解钉后重启就变成「各屏都恢复成固定项」。
+        // 固定项本身另有真源（`pinnedItem`），不需要这里帮忙记。
+        guard !isPinned else { return }
         var store = preferences.perScreenSources
         for key in engine.slotKeys() {
             guard let displayID = key.displayID, let item = engine.item(on: key) else { continue }
@@ -1219,6 +1334,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // ── 维护 ────────────────────────────────────────────
         // 低频一次性动作。放在设置组之后：它们都不改变任何设置，混在配置项中间
         // 既打断位置记忆，也容易被误点。
+        // 「打开动态壁纸」排在这一段最前：它是唯一一个「浏览 + 挑选」性质的入口，
+        // 与后面两个「产出 / 恢复」动作不同类。
+        let browser = NSMenuItem(
+            title: "打开动态壁纸",
+            action: #selector(openWallpaperBrowser),
+            keyEquivalent: ""
+        )
+        browser.target = self
+        menu.addItem(browser)
+
         // 「下载当前壁纸」排在「重新加载清单」之前：前者是主动产出，后者是恢复动作。
         let downloadCurrent = NSMenuItem(
             title: downloader.isDownloading ? "下载中…" : "下载当前壁纸",
@@ -1600,31 +1725,70 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// 选片顺序子菜单：选「随机」还是「顺序」。
+    /// 选片顺序子菜单：**随机 / 顺序 / 固定**三行。
     ///
-    /// 两种模式都会走完一整轮才重排、一轮内不重复，所以这里选的不是「有没有随机」，
+    /// 两种顺序都会走完一整轮才重排、一轮内不重复，所以这里选的不是「有没有随机」，
     /// 而是「这一轮的排列怎么来」。改成子菜单而不是勾选项：勾选项的「未勾」状态
     /// 分不清是「顺序」还是「没设置」。
+    ///
+    /// 行的内容（标题、顺序、置灰、勾选）由 `PlaybackOrderMenu` 算好 —— 那是纯逻辑，
+    /// 可以单测；这里只负责把它贴成 `NSMenu`。
+    ///
+    /// **「固定」是派生显示**：`pinnedItem != nil` 时勾选它，随机/顺序两行都不勾。
+    /// `playbackOrder` 本身仍是两值之一，天然提供「解钉后恢复哪个顺序」。
     private func buildOrderMenu() -> NSMenuItem {
         let submenu = NSMenu()
-        for order in PlaybackOrder.allCases {
-            let entry = NSMenuItem(
-                title: order.menuTitle,
-                action: #selector(switchPlaybackOrder(_:)),
-                keyEquivalent: ""
-            )
-            entry.target = self
-            entry.representedObject = order.rawValue
-            entry.state = preferences.playbackOrder == order ? .on : .off
-            submenu.addItem(entry)
+        // 当前没有正在播的条目时「固定」行置灰 —— 置灰优于点了之后收到一句失败提示。
+        let canPinCurrent = engine.primaryKey.flatMap { engine.item(on: $0) } != nil
+
+        for entry in PlaybackOrderMenu.entries(
+            order: preferences.playbackOrder,
+            isPinned: isPinned,
+            canPinCurrent: canPinCurrent
+        ) {
+            let item: NSMenuItem
+            switch entry.kind {
+            case .order(let order):
+                item = NSMenuItem(
+                    title: entry.title,
+                    action: #selector(switchPlaybackOrder(_:)),
+                    keyEquivalent: ""
+                )
+                item.representedObject = order.rawValue
+            case .pin:
+                // 已固定时仍可点（幂等）：再点一次正是用户确认
+                // 「现在固定的到底是哪条」的自然动作。
+                item = NSMenuItem(
+                    title: entry.title,
+                    action: #selector(pinCurrentItem),
+                    keyEquivalent: ""
+                )
+            }
+            item.target = self
+            item.isEnabled = entry.isEnabled
+            item.state = entry.isSelected ? .on : .off
+            submenu.addItem(item)
         }
+
         let root = NSMenuItem(
-            title: "选片顺序（\(preferences.playbackOrder.label)）",
+            title: PlaybackOrderMenu.rootTitle(order: preferences.playbackOrder, isPinned: isPinned),
             action: nil,
             keyEquivalent: ""
         )
         root.submenu = submenu
         return root
+    }
+
+    /// 菜单「固定」行：把**当前正在播的那条**固定为桌面壁纸（决策 6）。
+    @objc private func pinCurrentItem() {
+        guard let primary = engine.primaryKey, let item = engine.item(on: primary) else {
+            // 菜单里这一行本来就置灰了，走到这里说明是别的途径触发的
+            notice = .warning("当前没有正在播放的壁纸", oneShot: true)
+            refreshStatusItem()
+            return
+        }
+        // 分类传当前值：这条本来就在播，说明当前分类就是对的，没有要切的东西。
+        setPinned(item, categoryID: selectedCategoryID)
     }
 
     /// 切换间隔子菜单。改的是 `intervalSeconds`（单位秒），预设覆盖 30 秒 – 1 小时；
@@ -1840,7 +2004,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         refreshStatusItem()
     }
 
+    /// 「下一张」：**解钉触发点 1**（菜单项与 ⌥⌘N 热键都落到这里，见 `handleHotKey`）。
     @objc private func nextNow() {
+        // 解钉刻意**不给提示**：画面立刻换了就是回执。而且 `loadAndPlay` 成功时会把
+        // `notice` 重写成 nil，那句提示本来也留不住；菜单里「选片顺序」父项同步变回
+        // 「随机 / 顺序」，那是更可靠的指示。
+        if isPinned { clearPin(reason: nil) }
         failuresBySlot.removeAll()
         advance()
     }
@@ -1856,10 +2025,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 切换选片顺序。**刻意不立刻换片** —— 当前这张在新顺序下依然合法，
     /// 换模式只决定「下一张是谁」（顺序模式下就是清单第一条）。
     /// 候选池的待取队列会因 `order` 的 didSet 被清空，等于重新开始一轮。
+    ///
+    /// 固定态下选「随机 / 顺序」＝ **解钉触发点 3**。
     @objc private func switchPlaybackOrder(_ sender: NSMenuItem) {
         guard let raw = sender.representedObject as? String,
               let order = PlaybackOrder(rawValue: raw) else { return }
-        guard order != preferences.playbackOrder else { return }
+
+        let wasPinned = isPinned
+        // `|| wasPinned` 不能省：固定前是「随机」、固定后点「随机」时，
+        // `order` 与配置里的值相同，原 guard 会把这次点击整个吞掉 ——
+        // 于是「点随机解钉」失效，用户只会觉得「固定之后点不回来了」。
+        guard order != preferences.playbackOrder || wasPinned else { return }
+
+        if wasPinned { clearPin(reason: nil) }
 
         preferences.playbackOrder = order
         try? preferences.save(to: configURL)
@@ -1867,6 +2045,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         log("选片顺序改为\(order.label)（\(order.detail)）：候选 \(pool.totalCount) 条，"
             + "下一张起按新顺序，本轮重新开始")
+
+        // 固定期间 `scheduleNext` 被拦截，定时器一直是空的。解钉后必须重排一次，
+        // 否则「恢复轮换」只体现在菜单文案上 —— 画面会一直停在固定项上不动。
+        if wasPinned { rescheduleAfterIntervalChange() }
         refreshStatusItem()
     }
 
@@ -1896,6 +2078,209 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         scheduleNext(after: engine.primaryDuration)
+    }
+
+    // MARK: - 固定为桌面壁纸
+
+    /// 落实固定：把某条设为桌面壁纸，**所有屏幕**都播它、停止轮换（决策 2 / 3）。
+    ///
+    /// UI 的「设为桌面壁纸」与菜单的「固定」行都走这里 —— 只有一条落实路径，
+    /// 两条路径各写一份早晚会分叉（一边记得同步内容过滤、另一边忘了）。
+    ///
+    /// - Parameters:
+    ///   - item: 要固定的条目。
+    ///   - categoryID: 该条所属的一级分类。与当前 `selectedCategoryID` 不同时会
+    ///     **同步切换内容过滤**（决策 7），让「解钉之后的轮换」落在用户刚挑的那个
+    ///     分类里，而不是回到某个不相干的分类。传 nil 表示不改内容过滤。
+    private func setPinned(_ item: WallpaperItem, categoryID: Int?) {
+        guard PinnedPlayback.isPlayable(item) else {
+            notice = .warning("这条壁纸的地址不可用，无法设为桌面壁纸")
+            log("⚠️ 固定失败：条目 \(item.id) 的播放地址非法")
+            refreshStatusItem()
+            return
+        }
+
+        // 1) 单一真源先立即可用。**顺序很重要**：这一写下去 `isPinned` 就为真，
+        //    后面所有分支（`advance` / `advanceOne` / `scheduleNext`）自动进入固定态。
+        //    整个落实流程因此**不依赖切片加载是否成功** —— 这是「存整条而非 id」
+        //    带来的直接好处（只存 id 就得等切片到手才能定位，中间态会悬挂）。
+        preferences.pinnedItem = item
+        pendingUnpinNotice = nil
+
+        // 2) best-effort 让候选池记住它：在池里就设成 `currentID` 并从待取队列移除，
+        //    解钉后不会紧接着又把它取一遍。不在池里（用户固定的是别的分类的条目）
+        //    也无所谓 —— 固定本身不依赖候选池。
+        _ = pool.restore(id: item.id)
+
+        // 3) 决策 7：同步内容过滤。只在真的不同、且索引里确实有该分类时才拉切片 ——
+        //    同分类下重复拉一次 0.6 MB 纯属浪费。
+        if let categoryID, categoryID != selectedCategoryID,
+           categories.contains(where: { $0.id == categoryID }) {
+            preferences.selectedCategoryID = categoryID
+            log("固定项属于分类 \(categoryID)，同步切换内容过滤")
+            loadSlice(for: categoryID, service: makeCatalogService(), isFirstLoad: false)
+        }
+
+        // 4) 固定态下 `advance()` 被拦截、`pendingRestore` 不会被消费，
+        //    留着只会在解钉后突然生效 —— 表现成「解钉后莫名跳回开机时那条」。
+        pendingRestore.removeAll()
+        try? preferences.save(to: configURL)
+
+        pendingPinAnnouncement = true
+        notice = .info("正在设为桌面壁纸…")
+        log("设为桌面壁纸：\(item.id) \(item.title)（\(item.displayName)）")
+        refreshStatusItem()
+
+        // 5) 所有屏铺满。定时器由 `applyPinToMissingSlots` 与 `scheduleNext` 共同保证不排。
+        applyPinToMissingSlots()
+        // 浏览窗口若开着，让它把「当前」徽标与右栏按钮同步过来 ——
+        // 用户可能是从**菜单**固定的，窗口里得跟着变。
+        browserWindowController?.refreshPinState()
+    }
+
+    /// 解除固定，回到轮换。
+    ///
+    /// - Parameter reason: 非 nil 时作为状态区提示。**用户主动解钉传 nil** ——
+    ///   画面立刻变了就是回执，多说一句反而像出了错。
+    private func clearPin(reason: String?) {
+        guard isPinned else { return }
+        preferences.pinnedItem = nil
+        pendingPinAnnouncement = false
+        try? preferences.save(to: configURL)
+        // 固定期间不填、也不消费恢复计划；这里再清一次，防止它跨过固定期生效。
+        pendingRestore.removeAll()
+        if let reason {
+            notice = .warning(reason)
+            // 成功加载下一条时 `loadAndPlay` 会把 `notice` 重写掉，留一份让它写回来 ——
+            // 用户恰恰需要知道「画面为什么突然换了」。
+            pendingUnpinNotice = reason
+        }
+        log("解除固定：\(reason ?? "用户主动恢复轮换")")
+        // 解钉可能是从菜单触发的（下一张 / 选顺序），窗口里要把徽标与按钮撤回原样。
+        browserWindowController?.refreshPinState()
+        refreshStatusItem()
+    }
+
+    /// 某个条目被判失效（拉黑）后的检查：失效的正是固定项就自动解钉（决策 8）。
+    ///
+    /// **只有「资源本身不可用」才算失效** —— 切分类、重载清单、网络断开都不算，
+    /// 而那些路径本来也不会走到这里（它们不拉黑条目）。
+    ///
+    /// - Returns: 是否真的解了钉。为 `true` 时调用方应当走**全局** `advance()`：
+    ///   固定对所有屏生效，失效也该所有屏一起回到轮换，而不是只补一个槽位。
+    @discardableResult
+    private func unpinIfInvalidated(_ itemID: Int) -> Bool {
+        guard preferences.pinnedItem?.id == itemID else { return false }
+        clearPin(reason: "固定项已失效（资源不可用），已恢复轮换")
+        return true
+    }
+
+    /// 把固定项铺到**所有**没在播它的槽位上（决策 3：固定对所有屏生效）。
+    ///
+    /// **幂等**：已经铺满时是 no-op。四种场景共用这一个函数 ——
+    /// 启动首次铺满、新增槽位、空引擎恢复、落实固定。
+    ///
+    /// 之所以要「铺满」而不是「播一条」：多屏策略是「每屏独立」时槽位不止一个，
+    /// 固定语义要求它们**同片**；而 `PlaybackEngine` 没有「一条铺所有槽位」的 API，
+    /// 循环只能写在这里。
+    ///
+    /// - Parameter force: 忽略「URL 相同就算已就位」的短路，所有槽位都重新加载。
+    ///   只给**恢复类**路径用（`advance()` 在固定态下只剩这一种来源）：那时槽位里
+    ///   挂着的固定项正是加载 / 播放失败的那条，不重拉就永远卡在坏状态上。
+    ///   常规路径（新增槽位、切片应用、恢复播放）不要传 —— 那些场景下
+    ///   「已经在播了」是真的不用再拉一遍。
+    private func applyPinToMissingSlots(force: Bool = false) {
+        guard let item = preferences.pinnedItem, PinnedPlayback.isPlayable(item),
+              let url = item.remoteURL else { return }
+
+        let targets = engine.slotKeys().filter { force || engine.item(on: $0)?.url != item.url }
+        guard !targets.isEmpty else {
+            // 已经全部就位（典型场景：从菜单固定「当前正在播的那条」，镜像策略下
+            // 那一个槽位本来就在播它）。这时**也必须把回执发掉** ——
+            // 否则状态区会一直挂着「正在设为桌面壁纸…」。
+            announcePinIfPending()
+            return
+        }
+        // 防重入：这一批还没铺完又来一次请求的话，同一条视频会被并发拉两遍。
+        guard !isPinApplyInFlight else { return }
+        isPinApplyInFlight = true
+
+        // **必须先递增代次**：可能正有一个「旧条目」的加载在飞，它完成后会把画面
+        // 换成旧条目（`loadAndPlay` 里比对的就是这个代次）。递增之后那个结果会被
+        // 判为过期而丢弃 —— 这是整个固定功能里最容易漏、后果最直接的一步。
+        for key in targets { loadGenerationBySlot[key] = (loadGenerationBySlot[key] ?? 0) + 1 }
+        let generations = targets.map { ($0, loadGenerationBySlot[$0] ?? 0) }
+
+        // 固定态不排定时器。这里再保险一次：从「正在轮换」切到固定的那一瞬间，
+        // 可能已经有一个在飞的定时器。
+        scheduleTimer?.invalidate()
+        scheduleTimer = nil
+
+        log("铺满固定项 \(item.id) \(item.title) → \(targets.map(\.label).joined(separator: "、"))")
+
+        Task { @MainActor in
+            do {
+                // **只加载一次**，再把同一个 `LoadedVideo` 给所有槽位 ——
+                // 每个槽位各加载一遍会让同一条视频被拉 N 遍，流量按屏数翻倍。
+                let loaded = try await VideoLoader.load(url)
+                var applied = 0
+                for (key, generation) in generations {
+                    // 加载是异步的，期间槽位可能已经被拆掉（屏拔了 / 策略切了）。
+                    guard engine.slotKeys().contains(key) else {
+                        log("槽位 \(key.label) 在固定项加载完成前已失效，跳过")
+                        continue
+                    }
+                    guard loadGenerationBySlot[key] == generation else {
+                        log("槽位 \(key.label) 的固定项加载结果已过期，跳过")
+                        continue
+                    }
+                    engine.play(item, loaded: loaded, on: key)
+                    namesBySlot[key] = item.displayName
+                    failuresBySlot[key] = 0
+                    retriesBySlot[key] = 0
+                    applied += 1
+                }
+                isHoldingForNetwork = false
+                refreshCurrentName()
+                // 加载期间状态可能已翻成暂停（锁屏 / 遮挡 / 息屏）。播放器必须服从
+                // 当前状态，否则「暂停时正好有加载在飞」会让壁纸在没人看见的时候自己播起来。
+                if !governor.state.isPlaying {
+                    engine.pause()
+                    log("固定项就位时已处于暂停状态，画面就位但不播放")
+                }
+                if preferences.lockScreenPreview, let primary = engine.primaryKey,
+                   engine.item(on: primary)?.id == item.id {
+                    refreshLockScreenPreview(for: item, on: primary)
+                }
+                announcePinIfPending()
+                log("固定项已铺满 \(applied) 个槽位：\(item.id) \(item.title)")
+                refreshStatusItem()
+            } catch {
+                log("⚠️ 固定项加载失败：\(error.localizedDescription)")
+                // 决策 8：固定项连加载都失败 → 解钉回轮换，绝不黑屏。
+                clearPin(reason: "固定项加载失败，已恢复轮换")
+                advance()
+            }
+
+            isPinApplyInFlight = false
+            // 收尾再核一次：加载期间可能新增了槽位（屏幕热插拔 / 策略切换），
+            // 那一批不在本次的 `generations` 里。**放在释放标志之后**，
+            // 否则会被上面的防重入守卫挡掉。
+            // 不会无限递归：铺满后 `targets` 为空直接返回；失败路径已解钉。
+            if isPinned { applyPinToMissingSlots() }
+        }
+    }
+
+    /// 消费「设为桌面壁纸」的回执。
+    ///
+    /// 单独抽出来是因为有**两条**消费路径：真正铺满之后（异步、要等视频加载完），
+    /// 以及「已经全部就位、不需要铺」的短路路径（从菜单固定当前正在播的那条）。
+    /// 少了后者，状态区会一直挂着「正在设为桌面壁纸…」。
+    private func announcePinIfPending() {
+        guard pendingPinAnnouncement, let item = preferences.pinnedItem else { return }
+        notice = .info("已设为桌面壁纸：\(item.displayName)")
+        pendingPinAnnouncement = false
+        refreshStatusItem()
     }
 
     /// 内容过滤子菜单：按一级分类**单选**。
@@ -2001,6 +2386,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         refreshStatusItem()
     }
 
+    /// 打开动态壁纸浏览窗口（维护段）。
+    ///
+    /// **单窗口复用**：已有 controller 就只前置，不重复开 —— 否则点两次会有两个窗口，
+    /// 而它们各自持有一个预览播放器，同一个视频会被下两遍。
+    ///
+    /// 打开窗口**不暂停桌面播放**（决策 12）：浏览窗口是「挑一张」的工具，
+    /// 不该把正在看的壁纸弄停。
+    @objc private func openWallpaperBrowser() {
+        if let existing = browserWindowController {
+            existing.present()
+            return
+        }
+        let controller = WallpaperBrowserWindowController(dataSource: self)
+        controller.log = { [weak self] message in self?.log(message) }
+        controller.onClose = { [weak self] in
+            self?.browserWindowController = nil
+            self?.log("浏览窗口已关闭（桌面播放不受影响）")
+        }
+        browserWindowController = controller
+        log("打开动态壁纸浏览窗口")
+        controller.present()
+    }
+
     @objc private func reloadCatalog() {
         // 刻意**不清空候选池**：重载失败时保持现有内容继续播，
         // 而不是把池子清空、让下一次切换撞上「候选池已耗尽」。
@@ -2015,6 +2423,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         WindowInspector.printTable(highlightPIDs: [Int(ProcessInfo.processInfo.processIdentifier)])
     }
 #endif
+
+    // MARK: - 自身完整性
+
+    /// 启动时校验自身签名，把结论写进日志。
+    ///
+    /// **只写日志**：不弹提示、不阻断启动。ad-hoc 签名下这个检查能被重签绕过，
+    /// 而误判的代价（用户以为 App 被动过手脚）远大于收益。详见 `Seal`。
+    private func reportSeal() {
+        switch Seal.readBundle() {
+        case .trusted:
+            log("自身完整性校验通过")
+        case .modified(let reason):
+            log("⚠️ 自身完整性校验失败：\(reason) —— 本副本可能被改动过且未重新签名")
+        case .undetermined(let reason):
+            log("自身完整性无法判定（不影响运行）：\(reason)")
+        }
+    }
 
     // MARK: - 日志
 
@@ -2120,6 +2545,59 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let formatter = DateFormatter()
         formatter.dateFormat = "MM-dd HH:mm:ss.SSS"
         return formatter.string(from: Date())
+    }
+}
+
+// MARK: - 浏览窗口的数据出口
+
+/// 浏览窗口只通过这五个成员与 App 交互 —— 不把 `AppDelegate` 的四十来个私有成员
+/// 暴露给它，也不给它第二套分类 / 固定状态的读法。
+extension AppDelegate: WallpaperBrowserDataSource {
+
+    var browserCategories: [LivewallCategoryEntry] { categories }
+
+    var browserSelectedCategoryID: Int? { selectedCategoryID }
+
+    /// 固定项的 id。UI 只**标记**它，不提供取消固定的入口（决策 11）。
+    var browserPinnedItemID: Int? { preferences.pinnedItem?.id }
+
+    /// 拉取某个分类的条目给浏览窗口。
+    ///
+    /// **复用 `CatalogService.loadSlice`，但绝不调 `cacheSlice` / `loadIndex`**：
+    /// `sliceCacheURL` 只有一份，是播放的离线兜底。浏览窗口是第一个只读调用方，
+    /// 一旦让它写缓存，离线启动就会读到「用户随手翻过的那个分类」，
+    /// 而不是「上次真正在播的那个」。
+    ///
+    /// 已知限制（写进文档）：离线时 `loadSlice` 会回退读共享切片缓存，而
+    /// `tryDecodeSlice` 的归属校验（`source.categoryIds.contains(entry.id)`）会返回 nil
+    /// —— 于是**离线时只能浏览当前播放分类的条目**，其它分类显示「加载失败」。
+    /// 不会显示错分类。
+    func browserLoadItems(
+        for categoryID: Int,
+        completion: @escaping (Result<[WallpaperItem], BrowserLoadFailure>) -> Void
+    ) {
+        guard let entry = categories.first(where: { $0.id == categoryID }) else {
+            completion(.failure(BrowserLoadFailure(message: "分类不存在（清单可能已经更新）")))
+            return
+        }
+        let service = makeCatalogService()
+        DispatchQueue.global(qos: .userInitiated).async {
+            let result = service.loadSlice(entry)
+            DispatchQueue.main.async {
+                guard let catalog = result.catalog else {
+                    completion(.failure(BrowserLoadFailure(
+                        message: result.warnings.first ?? "远程与本地副本都不可用"
+                    )))
+                    return
+                }
+                completion(.success(catalog.items))
+            }
+        }
+    }
+
+    /// 设为桌面壁纸。与菜单「固定」行走**同一条落实路径**。
+    func browserSetPinned(_ item: WallpaperItem, categoryID: Int) {
+        setPinned(item, categoryID: categoryID)
     }
 }
 

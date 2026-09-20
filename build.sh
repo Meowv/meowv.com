@@ -29,7 +29,8 @@ usage() {
 选项：
   --with-wallpapers  仅可配合 studio
   --with-dmg         仅可配合 livewall，额外把 .app 打成 DMG，
-                     DMG 与 version.json 输出到 build/studio.meowv.com/data/livewall/
+                     DMG、version.json 与它的签名 version.json.sig
+                     输出到 build/studio.meowv.com/data/livewall/
 EOF
 }
 
@@ -326,22 +327,35 @@ publish_one() {
 clean_livewall_dmg_artifacts() {
   rm -f "$ROOT_DIR"/livewall/build/*.dmg
   rm -f "$ROOT_DIR"/livewall/build/version.json
+  # 签名必须跟着清单一起清。留下一份**旧清单的** .sig，新清单就会配着旧签名被打包出去，
+  # 客户端那边表现为「签名与版本信息不符」—— 比「没有签名」更难看出原因。
+  rm -f "$ROOT_DIR"/livewall/build/version.json.sig
 }
 
 # DMG 与 version.json 必须落在 Studio 的部署目录里：version.json 的 fileURL 写死了
 # https://studio.meowv.com/data/livewall/<dmg 文件名>，而 deploy.sh 只上传
 # build/studio.meowv.com/ —— 放进 build/livewall/ 等于永远发不出去。
 install_livewall_update_feed() {
-  local dmg dmg_name feed_path target_dir
+  local dmg dmg_name feed_path sig_path target_dir
 
   # dmg 与 version.json 都取自 livewall/make-dmg.sh —— 版本号、文件名、体积、
   # sha256、fileURL 都在那里按 Info.plist 生成，这里只搬运，不另算一份。
   dmg="$(find "$ROOT_DIR/livewall/build" -maxdepth 1 -name '*.dmg' -print -quit 2>/dev/null)"
   feed_path="$ROOT_DIR/livewall/build/version.json"
+  sig_path="${feed_path}.sig"
   target_dir="$BUILD_DIR/studio.meowv.com/data/livewall"
 
   if [ -z "$dmg" ] || [ ! -f "$feed_path" ]; then
     echo "错误：未找到 make-dmg.sh 产出的 dmg / version.json。" >&2
+    exit 1
+  fi
+
+  # 签名缺了就直接中止，不部署。客户端只认验签通过的清单，少一个 .sig 的表现是
+  # 「新版客户端永远看不到更新」—— 与「线上没发新版」症状完全一样，没有任何别的信号。
+  # 与其把一份发不出去的清单推上线，不如在这里停下。
+  if [ ! -f "$sig_path" ]; then
+    echo "错误：缺少 ${sig_path}，已中止。" >&2
+    echo "      version.json 必须与它的签名一起分发。重跑 ./livewall/make-dmg.sh 生成。" >&2
     exit 1
   fi
 
@@ -353,13 +367,15 @@ install_livewall_update_feed() {
   fi
 
   mkdir -p "$target_dir"
-  # 先清旧版本残留，保证目录里只有本次这一个 dmg 和一份 version.json。
+  # 先清旧版本残留，保证目录里只有本次这一个 dmg、一份 version.json 与它的签名。
   rm -f "$target_dir"/*.dmg
   rm -f "$target_dir"/version.json
+  rm -f "$target_dir"/version.json.sig
 
   cp "$dmg" "$target_dir"/
   cp "$feed_path" "$target_dir"/version.json
-  echo "[livewall] 分发产物：$target_dir/${dmg_name} + version.json"
+  cp "$sig_path" "$target_dir"/version.json.sig
+  echo "[livewall] 分发产物：$target_dir/${dmg_name} + version.json + version.json.sig"
 }
 
 # Studio 每次都会整体重建部署目录，而 dmg / version.json 是 livewall 的分发产物，
@@ -380,6 +396,14 @@ preserve_livewall_update_feed() {
   cp "$dmg" "$target_dir"/
   if [ -f "$source_dir/version.json" ]; then
     cp "$source_dir/version.json" "$target_dir"/
+    # 签名要跟着清单一起搬。只搬清单不搬签名，客户端拿到的就是「有清单、没签名」，
+    # 判为不可用 —— 同样表现为「看不到更新」。
+    if [ -f "$source_dir/version.json.sig" ]; then
+      cp "$source_dir/version.json.sig" "$target_dir"/
+    else
+      echo "[studio] 警告：$source_dir/version.json 没有配套的 .sig，客户端会因验签不过而看不到更新。" >&2
+      echo "[studio]       重跑 ./livewall/make-dmg.sh 可补上（它会在生成清单后立刻签名）。" >&2
+    fi
   fi
   echo "[studio] 沿用上次的分发产物 $(basename "$dmg")"
 }
@@ -516,5 +540,5 @@ for project in "${SELECTED_PROJECTS[@]}"; do
   echo "  $(destination_name "$project")/"
 done
 if [ "$WITH_DMG" -eq 1 ]; then
-  echo "  studio.meowv.com/data/livewall/  # LiveWall-<版本>.dmg + version.json"
+  echo "  studio.meowv.com/data/livewall/  # LiveWall-<版本>.dmg + version.json + version.json.sig"
 fi

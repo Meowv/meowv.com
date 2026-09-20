@@ -16,14 +16,26 @@ public enum AboutMenu {
     public static let authorEntryTitle = "作者：\(authorName)"
 
     /// 作者博客（也是本项目的说明入口）。
-    public static let blogURLString = "https://meowv.com"
+    ///
+    /// **以混淆形式存储**（见 `Folded`）：明文不落二进制。改地址用
+    /// `tools/encode-strings.py` 重新生成字节数组，别手算。
+    public static let blogURLString = Folded.open([
+        0x32, 0xB7, 0x65, 0x0E, 0xEC, 0x1E, 0x44, 0xFF, 0x55, 0xC0, 0x23, 0x90,
+        0x74, 0x97, 0x34, 0x9E, 0x37,
+    ])
 
     /// 赞助入口指向的页面。
     ///
     /// 打开的是 **studio 首页**，不是二维码图片：studio 页脚本身就有「赞助支持」入口
     /// （点开是支付宝 / 微信二维码弹窗），把用户送到那里就够了 —— 客户端不必自己存二维码，
     /// 也不必为它写一个弹窗窗口；二维码换位置或换渠道都不用改客户端。
-    public static let donationURLString = "https://studio.meowv.com#donate"
+    ///
+    /// 同样以混淆形式存储，见 `Folded`。
+    public static let donationURLString = Folded.open([
+        0x32, 0xB7, 0x65, 0x0E, 0xEC, 0x1E, 0x44, 0xFF, 0x4B, 0xD1, 0x39, 0x83,
+        0x6B, 0xD6, 0x79, 0x9C, 0x3F, 0xAC, 0x66, 0x08, 0xB1, 0x47, 0x04, 0xBD,
+        0x1B, 0xC1, 0x23, 0x89, 0x63, 0xCD, 0x32,
+    ])
 
     /// 子菜单里一行的行为。刻意不在这里出现 `Selector` —— 纯逻辑层不该知道 AppKit。
     public enum Action: Equatable, Sendable {

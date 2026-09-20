@@ -117,6 +117,26 @@ mkdir -p "$APP_BUNDLE/Contents/MacOS" "$APP_BUNDLE/Contents/Resources"
 cp "$ROOT/$PLIST" "$APP_BUNDLE/Contents/Info.plist"
 cp "$BINARY" "$APP_BUNDLE/Contents/MacOS/$PRODUCT"
 
+# 符号剥离。SwiftPM 的 release 产物仍带完整符号表（实测 2.2 万条），
+# `nm` 一读就能还原出内部类型与方法名，等于把反编译门槛白送出去。
+# strip -x 只去掉局部符号 —— 实测符号数降到约 1.9 千、体积减约 40%，
+# 而**未定义符号与动态库依赖逐条不变**（已 diff 验证），故不影响加载。
+#
+# ⚠️ 必须在 codesign **之前**：改动二进制会让已有签名失效。
+# ⚠️ strip 抹不掉 Swift 的**类型名** —— 它们在 __swift5_* 元数据段里，不在符号表。
+#    要抹那部分只能改源码里的类型名，不是 strip 能覆盖的。
+# 仅 release 剥离：debug 保留符号，便于崩溃定位。
+if [[ "$CONFIGURATION" == "release" ]]; then
+  APP_BINARY="$APP_BUNDLE/Contents/MacOS/$PRODUCT"
+  SIZE_BEFORE="$(stat -f%z "$APP_BINARY")"
+  if strip -x "$APP_BINARY"; then
+    SIZE_AFTER="$(stat -f%z "$APP_BINARY")"
+    echo "[build] 已剥离符号：$((SIZE_BEFORE / 1024)) KB → $((SIZE_AFTER / 1024)) KB"
+  else
+    echo "[build] 警告：strip 失败，产物仍带完整符号表" >&2
+  fi
+fi
+
 # App 图标。Info.plist 的 CFBundleIconFile 指向 AppIcon（不带扩展名）。
 # 缺失时不阻断构建，只是产物没有自定义图标 —— 图标非必需。
 ICON="$ROOT/Resources/AppIcon.icns"

@@ -5,6 +5,16 @@ import LiveWallCore
 ///
 /// 这三块正好是「改坏了最容易被误判成线上没更新」的地方 ——
 /// 更新提示不出现是**静默失败**，没有任何别的症状，所以必须穷举。
+/// 合法的 64 位十六进制摘要，供构造 `UpdateFeed` 用。
+///
+/// `UpdateFeed.init` **不校验格式**（校验只在解析远程数据的 `UpdateFeedCoding.decode` 里做），
+/// 但测试里仍用真实长度的值，免得读者误以为「短摘要也能用」。
+private let sampleDigest = String(repeating: "0123456789abcdef", count: 4)
+
+/// `version.json` 里 `sha256` 字段的合法片段。负例里用它「只让被测字段出错」——
+/// 否则「缺 sha256」会让**每一个**负例都失败，就分不清到底在测哪条规则了。
+private let digestField = #""sha256":"\#(sampleDigest)""#
+
 func updateTests() {
 
     // MARK: - 解析
@@ -12,7 +22,7 @@ func updateTests() {
     suite("版本信息解析") {
 
         test("完整字段能解出来") {
-            let data = Data(#"{"version":"0.2.0","build":2,"notes":"修了锁屏预览","sizeBytes":3107840,"sha256":"ABC123","fileURL":"https://studio.meowv.com/data/livewall/LiveWall-0.2.0.dmg"}"#.utf8)
+            let data = Data(#"{"version":"0.2.0","build":2,"notes":"修了锁屏预览","sizeBytes":3107840,"sha256":"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef","fileURL":"https://studio.meowv.com/data/livewall/LiveWall-0.2.0.dmg"}"#.utf8)
             var warnings: [String] = []
             let feed = UpdateFeedCoding.decode(data, into: &warnings)
             expectNotNil(feed, "完整字段应当解析成功")
@@ -26,16 +36,16 @@ func updateTests() {
         test("build 写成字符串数字也接受") {
             // 服务端是脚本生成的 JSON，写手常把 build 写成 "2"。
             // 这不是数据错误，不该因此让用户看不到更新。
-            let data = Data(#"{"version":"0.2.0","build":"2","fileURL":"https://a.b/c.dmg"}"#.utf8)
+            let data = Data(#"{"version":"0.2.0","build":"2",\#(digestField),"fileURL":"https://a.b/c.dmg"}"#.utf8)
             var warnings: [String] = []
             expectEqual(UpdateFeedCoding.decode(data, into: &warnings)?.build, 2, "字符串数字应转成 Int")
         }
 
         test("必填字段缺失一律判不可用，不留半截数据") {
             let cases: [(String, String)] = [
-                (#"{"build":2,"fileURL":"https://a.b/c.dmg"}"#, "缺 version"),
-                (#"{"version":"0.2.0","fileURL":"https://a.b/c.dmg"}"#, "缺 build"),
-                (#"{"version":"0.2.0","build":2}"#, "缺 fileURL"),
+                (#"{"build":2,\#(digestField),"fileURL":"https://a.b/c.dmg"}"#, "缺 version"),
+                (#"{"version":"0.2.0",\#(digestField),"fileURL":"https://a.b/c.dmg"}"#, "缺 build"),
+                (#"{"version":"0.2.0","build":2,\#(digestField)}"#, "缺 fileURL"),
             ]
             for (json, label) in cases {
                 var warnings: [String] = []
@@ -45,14 +55,14 @@ func updateTests() {
         }
 
         test("fileURL 不是 https 就拒绝") {
-            let data = Data(#"{"version":"0.2.0","build":2,"fileURL":"http://a.b/c.dmg"}"#.utf8)
+            let data = Data(#"{"version":"0.2.0","build":2,\#(digestField),"fileURL":"http://a.b/c.dmg"}"#.utf8)
             var warnings: [String] = []
             expectNil(UpdateFeedCoding.decode(data, into: &warnings), "http 地址不能作为更新源")
         }
 
         test("build 非法值一律拒绝：0、负数、小数、乱字符串") {
             for raw in ["0", "-1", "2.5", "\"abc\"", "null"] {
-                let data = Data(#"{"version":"0.2.0","build":\#(raw),"fileURL":"https://a.b/c.dmg"}"#.utf8)
+                let data = Data(#"{"version":"0.2.0","build":\#(raw),\#(digestField),"fileURL":"https://a.b/c.dmg"}"#.utf8)
                 var warnings: [String] = []
                 expectNil(UpdateFeedCoding.decode(data, into: &warnings), "build=\(raw) 应判不可用")
             }
@@ -66,25 +76,51 @@ func updateTests() {
         }
 
         test("可选字段缺失不影响主流程") {
-            let data = Data(#"{"version":"0.2.0","build":2,"fileURL":"https://a.b/c.dmg"}"#.utf8)
+            let data = Data(#"{"version":"0.2.0","build":2,"sha256":"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef","fileURL":"https://a.b/c.dmg"}"#.utf8)
             var warnings: [String] = []
             let feed = UpdateFeedCoding.decode(data, into: &warnings)
-            expectNotNil(feed, "只有必填字段也该解析成功")
+            expectNotNil(feed, "必填字段齐了就该解析成功")
             expectNil(feed?.sizeBytes, "体积缺失就是 nil，不补 0")
-            expectNil(feed?.sha256, "校验值缺失就是 nil")
             expectEqual(feed?.notes, "", "更新说明缺失是空串")
-            expect(feed?.sha256Matches("anything") ?? false, "没给校验值时不校验，一律视为通过")
+            expectNil(feed?.minOSVersion, "最低系统版本缺失就是 nil")
+        }
+
+        test("sha256 缺失一律判不可用 —— 没有校验值的更新包不能放行") {
+            let data = Data(#"{"version":"0.2.0","build":2,"fileURL":"https://a.b/c.dmg"}"#.utf8)
+            var warnings: [String] = []
+            expectNil(UpdateFeedCoding.decode(data, into: &warnings), "缺 sha256 应判不可用")
+            expect(!warnings.isEmpty, "必须有 warning 说明原因")
+        }
+
+        test("sha256 格式非法一律判不可用：太短 / 位数不对 / 非十六进制 / 空串") {
+            let bad: [(String, String)] = [
+                ("\"abc\"", "太短"),
+                ("\"" + String(repeating: "0", count: 63) + "\"", "63 位"),
+                ("\"" + String(repeating: "0", count: 65) + "\"", "65 位"),
+                ("\"" + String(repeating: "z", count: 64) + "\"", "64 位但非十六进制"),
+                ("\"\"", "空串"),
+            ]
+            for (fragment, label) in bad {
+                let json = #"{"version":"0.2.0","build":2,"sha256":\#(fragment),"fileURL":"https://a.b/c.dmg"}"#
+                var warnings: [String] = []
+                expectNil(UpdateFeedCoding.decode(Data(json.utf8), into: &warnings), "sha256 \(label) 应判不可用")
+            }
         }
 
         test("SHA-256 比对忽略大小写与首尾空白") {
-            var feed = UpdateFeed(version: "0.2.0", build: 2, sha256: " ABC123 ", fileURL: URL(string: "https://a.b/c.dmg")!)
-            expect(feed.sha256Matches("abc123"), "大小写与空格都不该影响比对")
-            feed.sha256 = "ABC123"
-            expect(!feed.sha256Matches("deadbeef"), "不同的摘要必须判为不符")
+            let upper = String(repeating: "ABCDEF", count: 10) + "ABCD"   // 64 位、全大写
+            var feed = UpdateFeed(
+                version: "0.2.0", build: 2,
+                sha256: " \(upper) ",
+                fileURL: URL(string: "https://a.b/c.dmg")!
+            )
+            expect(feed.sha256Matches(upper.lowercased()), "大小写与空格都不该影响比对")
+            feed.sha256 = upper
+            expect(!feed.sha256Matches(String(repeating: "0", count: 64)), "不同的摘要必须判为不符")
         }
 
         test("落盘文件名带版本号，多次更新不会互相覆盖") {
-            let feed = UpdateFeed(version: "0.2.0", build: 2, fileURL: URL(string: "https://a.b/c.dmg")!)
+            let feed = UpdateFeed(version: "0.2.0", build: 2, sha256: sampleDigest, fileURL: URL(string: "https://a.b/c.dmg")!)
             expectEqual(feed.suggestedFileName, "LiveWall-0.2.0.dmg", "文件名")
         }
     }
@@ -99,6 +135,7 @@ func updateTests() {
             UpdateFeed(
                 version: "0.2.\(build)",
                 build: build,
+                sha256: sampleDigest,
                 fileURL: URL(string: "https://a.b/c.dmg")!,
                 minOSVersion: minOS
             )
@@ -182,6 +219,7 @@ func updateTests() {
         test("详情行：体积缺失少一行，说明缺失整行不出现") {
             let full = UpdateFeed(
                 version: "0.2.0", build: 2, notes: "修了锁屏预览", sizeBytes: 3107840,
+                sha256: sampleDigest,
                 fileURL: URL(string: "https://a.b/c.dmg")!
             )
             expectEqual(
@@ -189,7 +227,7 @@ func updateTests() {
                 ["版本 0.2.0（build 2）", "大小 3.0 MB", "修了锁屏预览"],
                 "三行齐全"
             )
-            let bare = UpdateFeed(version: "0.2.0", build: 2, fileURL: URL(string: "https://a.b/c.dmg")!)
+            let bare = UpdateFeed(version: "0.2.0", build: 2, sha256: sampleDigest, fileURL: URL(string: "https://a.b/c.dmg")!)
             expectEqual(UpdateMenu.detailLines(feed: bare), ["版本 0.2.0（build 2）"], "只剩版本行")
         }
 
@@ -219,7 +257,7 @@ func updateTests() {
 
         test("有新版本的回执不能指向「检查更新」—— 那个入口此时是隐藏的") {
             let feed = UpdateFeed(
-                version: "0.2.0", build: 2, notes: "", sizeBytes: nil, sha256: nil,
+                version: "0.2.0", build: 2, notes: "", sizeBytes: nil, sha256: sampleDigest,
                 fileURL: URL(string: "https://studio.meowv.com/data/livewall/LiveWall-0.2.0.dmg")!,
                 minOSVersion: nil
             )
@@ -229,7 +267,7 @@ func updateTests() {
 
         test("手动检查的三态都有回执 —— 不给就等于「点了没反应」") {
             let feed = UpdateFeed(
-                version: "0.2.0", build: 2, notes: "", sizeBytes: nil, sha256: nil,
+                version: "0.2.0", build: 2, notes: "", sizeBytes: nil, sha256: sampleDigest,
                 fileURL: URL(string: "https://studio.meowv.com/data/livewall/LiveWall-0.2.0.dmg")!,
                 minOSVersion: nil
             )
@@ -253,7 +291,7 @@ func updateTests() {
 
         test("回执是一次性的 —— 不能常驻在状态区") {
             let feed = UpdateFeed(
-                version: "0.2.0", build: 2, notes: "", sizeBytes: nil, sha256: nil,
+                version: "0.2.0", build: 2, notes: "", sizeBytes: nil, sha256: sampleDigest,
                 fileURL: URL(string: "https://studio.meowv.com/data/livewall/LiveWall-0.2.0.dmg")!,
                 minOSVersion: nil
             )
@@ -274,7 +312,7 @@ func updateTests() {
     suite("更新菜单状态") {
 
         let feed = UpdateFeed(
-            version: "0.2.0", build: 2, notes: "", sizeBytes: nil, sha256: nil,
+            version: "0.2.0", build: 2, notes: "", sizeBytes: nil, sha256: sampleDigest,
             fileURL: URL(string: "https://studio.meowv.com/data/livewall/LiveWall-0.2.0.dmg")!,
             minOSVersion: nil
         )

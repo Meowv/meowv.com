@@ -231,5 +231,120 @@ func preferencesCompatibilityTests() {
             local.remoteUpdateURL = "http://127.0.0.1:8000/version.json"
             expectNotNil(local.resolvedUpdateURL, "http 留给本地调试用")
         }
+
+        test("老配置（没有 pinnedItem）回退到未固定，且其它设置不丢") {
+            let legacy = """
+            {
+              "intervalSeconds": 600,
+              "playbackOrder": "sequential",
+              "selectedCategoryID": 4001,
+              "lockScreenPreview": false
+            }
+            """
+            guard let decoded = try? JSONDecoder().decode(Preferences.self, from: Data(legacy.utf8)) else {
+                expect(false, "老配置应当能解码")
+                return
+            }
+            expectNil(decoded.pinnedItem, "缺字段应回退到未固定")
+            expectEqual(decoded.intervalSeconds, 600, "间隔应保留")
+            expectEqual(decoded.playbackOrder, .sequential, "选片顺序应保留")
+            expectEqual(decoded.selectedCategoryID, 4001, "分类应保留")
+            expectEqual(decoded.lockScreenPreview, false, "锁屏预览开关应保留")
+        }
+
+        test("pinnedItem 存在时按原样读回，且与 selectedCategoryID 共存") {
+            // 这一条锁住「存整条而不是 id」的设计：固定项的所属分类可能已经
+            // 与 `selectedCategoryID` 不同（用户固定后又换了分类浏览），
+            // 两者必须都能独立读回，不能互相干扰。
+            let json = """
+            {
+              "selectedCategoryID": 4005,
+              "pinnedItem": {
+                "id": 8899,
+                "title": "雪山",
+                "author": "某人",
+                "url": "https://cdn.test/8899.mp4",
+                "coverUrl": "https://cdn.test/8899.jpg",
+                "tags": [],
+                "categoryIds": [4001]
+              }
+            }
+            """
+            guard let decoded = try? JSONDecoder().decode(Preferences.self, from: Data(json.utf8)) else {
+                expect(false, "含 pinnedItem 的配置应当能解码")
+                return
+            }
+            expectEqual(decoded.selectedCategoryID, 4005, "分类应读回（与固定项所属分类不同）")
+            expectEqual(decoded.pinnedItem?.id, 8899, "固定项 id 应读回")
+            expectEqual(decoded.pinnedItem?.title, "雪山", "固定项标题应读回")
+            expectEqual(decoded.pinnedItem?.url, "https://cdn.test/8899.mp4", "固定项地址应读回")
+            expectEqual(decoded.pinnedItem?.categoryIds ?? [], [4001], "固定项分类应读回")
+        }
+
+        test("pinnedItem 写坏了不影响其它字段") {
+            // 手改配置把整条写坏（漏 url、id 写成字符串）。逐字段容错的意义就是：
+            // 坏一个字段不能把整份配置打回默认 —— 否则用户所有设置一起静默清零。
+            let broken = """
+            {
+              "intervalSeconds": 1200,
+              "selectedCategoryID": 4001,
+              "pinnedItem": {"id": "不是数字", "title": "x"}
+            }
+            """
+            guard let decoded = try? JSONDecoder().decode(Preferences.self, from: Data(broken.utf8)) else {
+                expect(false, "字段损坏时整体解码仍应成功")
+                return
+            }
+            expectEqual(decoded.intervalSeconds, 1200, "其它字段应保留")
+            expectEqual(decoded.selectedCategoryID, 4001, "其它字段应保留")
+            expectNil(decoded.pinnedItem, "损坏的固定项应回退到未固定")
+        }
+
+        test("pinnedItem 地址非法时被 sanitize 清掉") {
+            var preferences = Preferences()
+            preferences.pinnedItem = WallpaperItem(
+                id: 1, title: "T", author: "A",
+                url: "https://cdn.test/1.mp4"
+            )
+            expectNotNil(preferences.sanitized().pinnedItem, "合法地址应保留")
+
+            preferences.pinnedItem = WallpaperItem(id: 2, title: "T", author: "A", url: "")
+            expectNil(preferences.sanitized().pinnedItem, "空串应被清掉")
+
+            preferences.pinnedItem = WallpaperItem(id: 3, title: "T", author: "A", url: "ftp://cdn.test/3.mp4")
+            expectNil(preferences.sanitized().pinnedItem, "非 http(s) 应被清掉")
+        }
+
+        test("pinnedItem 往返编码不丢") {
+            var preferences = Preferences()
+            preferences.pinnedItem = WallpaperItem(
+                id: 42, title: "T", author: "A",
+                url: "https://cdn.test/42.mp4",
+                coverUrl: "https://cdn.test/42.jpg"
+            )
+            preferences.playbackOrder = .sequential
+            guard let data = try? JSONEncoder().encode(preferences),
+                  let decoded = try? JSONDecoder().decode(Preferences.self, from: data) else {
+                expect(false, "往返应能成功")
+                return
+            }
+            expectEqual(decoded.pinnedItem?.id, 42, "固定项 id 应保持")
+            expectEqual(decoded.pinnedItem?.coverUrl, "https://cdn.test/42.jpg", "静态图地址应保持")
+            expectEqual(decoded.playbackOrder, .sequential, "其它字段应保持")
+
+            // 未固定时该键**不出现**在配置里 —— 合成的 `Codable` 对 nil 可选值走
+            // `encodeIfPresent`，与 `selectedCategoryID` 的行为一致。
+            // 刻意不为此手写整个 `encode(to:)`：19 个字段漏一个就会静默丢设置，
+            // 而「配置里少一个 null 键」没有任何实际代价。
+            let empty = Preferences()
+            guard let emptyData = try? JSONEncoder().encode(empty),
+                  let emptyJSON = String(data: emptyData, encoding: .utf8) else {
+                expect(false, "编码应成功")
+                return
+            }
+            expect(!emptyJSON.contains("\"pinnedItem\""), "未固定时不应写出该键（与 selectedCategoryID 同口径）")
+            expect(!emptyJSON.contains("\"selectedCategoryID\""), "对照组：nil 可选字段一律不写出")
+            expect(emptyJSON.contains("\"playbackOrder\""), "非可选字段仍应写出")
+        }
     }
 }
