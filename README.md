@@ -154,7 +154,7 @@ chmod +x run.sh build.sh deploy.sh
 - 如果 `build/studio.meowv.com/` 已存在，同步更新其中的 `data/` 目录，便于直接部署已有产物。
 - 同时生成 livewall 客户端使用的未加密清单目录 `studio/public/data/livewall/`（`catalog.json` 索引 + `category.<id>.json` 分类切片）。
 - `--with-wallpapers` 只能与 `studio` 一起使用。
-- `--with-dmg` 只能与 `livewall` 一起使用：在 `.app` 之外额外打出 DMG，DMG 与 `version.json` 输出到 `build/studio.meowv.com/data/livewall/`（客户端更新接口就指向该目录，可直接部署）。
+- `--with-dmg` 只能与 `livewall` 一起使用：在 `.app` 之外额外打出 DMG，并对 `version.json` 做 Ed25519 签名（产出 `version.json.sig`），三者一起输出到 `build/studio.meowv.com/data/livewall/`（客户端更新接口就指向该目录，可直接部署）。**签名需要本机私钥 `~/.livewall-signing/version-key.txt`，且 `version.json` 与 `version.json.sig` 必须同一次上传** —— 少一个客户端就永远看不到更新，而症状与「线上没发新版」无法区分。细节见 [`livewall/README.md`](./livewall/README.md) 的「更新清单签名」。
 
 产物映射如下：
 
@@ -162,7 +162,7 @@ chmod +x run.sh build.sh deploy.sh
 build/
 ├── meowv.com/        # blog/public/
 ├── studio.meowv.com/ # studio/dist，包含 zitie/
-│   └── data/livewall/  # 壁纸清单 catalog.json + category.<id>.json（加 --with-dmg 时还有 LiveWall-<版本>.dmg + version.json）
+│   └── data/livewall/  # 壁纸清单 catalog.json + category.<id>.json（加 --with-dmg 时还有 LiveWall-<版本>.dmg + version.json + version.json.sig）
 └── livewall/         # livewall/build，只含 LiveWall.app
 ```
 
@@ -300,6 +300,7 @@ pnpm preview
 - 功能定位：壁纸浏览与下载页，数据来自 Wallpapers Crawler 生成并加密的目录，页面不请求业务后端。
 - 主要用途：按桌面/手机与静态/动态筛选，按分类和关键词查找，分页浏览、动态预览并下载。
 - 子模块与入口：路由 `/wallpapers`；页面 `WallpapersPage.vue`；数据逻辑在 `composables/useWallpapers.ts` 与 `services/wallpaperRepository.ts`；`workers/wallpapers.worker.ts` 在 Worker 中读取 `public/data/wallpapers.catalog.json`、解密对应的 `.bin` 并写入 IndexedDB `meowv-wallpapers-catalog`；数据结构在 `types.ts`。目录的生成与加密见 [Wallpapers Crawler](#wallpapers-crawler)。
+- 桌面 App 推广：右下角浮层与灯箱右侧下载入口用于推广 livewall 桌面端，两者都只在「电脑」筛选下出现；关闭只在当前标签页会话内有效（记 `sessionStorage`，刷新或新开标签页会重新露出）。Mac 版发布信息运行时读取同域 `data/livewall/version.json`，静态兜底常量在 `app-promo/livewall-meta.ts`；Windows 端未发布时显示「开发中」并隐藏下载地址。实现在 `src/features/wallpapers/app-promo/`。
 
 ##### Tools
 
@@ -477,6 +478,8 @@ macOS 没有「设置视频为壁纸」的官方 API。livewall 的做法是创�
 三个全局热键（`⌥⌘P` 暂停 / `⌥⌘N` 下一张 / `⌥⌘R` 重载清单）用 Carbon `RegisterEventHotKey` 实现，**不需要辅助功能授权**；开机自启用 `SMAppService`；内容过滤按一级分类（单选，记忆上次选择）。多屏策略支持「全部同片」「仅主屏」「每屏独立」三档，每屏独立时各屏会在启动时恢复上次播放的条目。
 
 **锁屏预览**：锁屏界面由 `loginwindow` 在安全罩层级绘制，第三方窗口盖不上去，所以锁屏能看到的只有系统墙纸本身 —— 客户端把当前这张对应的静态图（清单里的 `coverUrl`）同步成系统墙纸：桌面态被覆盖窗口挡住看不见，锁屏态正好露出来。静态图拿不到就抓当前帧兜底，退出时恢复用户原来的墙纸。维护段另有「下载当前壁纸」（视频 + 静态预览图 → `~/Downloads/livewall/`）。详见 [`livewall/README.md`](./livewall/README.md) 的「锁屏预览」与「下载当前壁纸」两节。
+
+维护段的「打开动态壁纸」是本项目**第一个普通 UI 窗口**：三栏（分类 / 条目网格 / 预览与操作），可按分类翻看、点开预览（默认静态图、点击才播）、一键设为桌面壁纸；配套的**固定**状态（只播这一条、所有屏都不再轮换）进了「选片顺序」子菜单。详见 [`livewall/README.md`](./livewall/README.md) 的「动态壁纸浏览窗口」与「固定：只播当前这一条」两节。
 
 `Sources/LiveWallCore/` 是不依赖 `NSApplication` 的纯逻辑，可脱离 GUI 单测；`Sources/LiveWallDesktop/` 是依赖 AppKit 的桌面层窗口与层级探测。
 
