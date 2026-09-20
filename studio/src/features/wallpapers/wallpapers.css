@@ -71,6 +71,13 @@
   :is(.wallpapers-empty, .wallpapers-end, .wallpapers-error) {
   text-shadow: var(--wallpapers-background-text-shadow);
 }
+/* 视频背景态：浮层必须在动态画面上仍然可读，这里才允许引用背景态变量。 */
+.studio-shell--wallpapers-background:has(> .tools-background--ready) .wallpapers-app-popup {
+  border-color: color-mix(in srgb, var(--wallpapers-accent) 30%, transparent);
+  background: var(--wallpapers-background-surface-raised);
+  text-shadow: var(--wallpapers-background-text-shadow);
+  backdrop-filter: blur(18px) saturate(125%);
+}
 .wallpapers-toolbar {
   display: flex;
   margin-bottom: 12px;
@@ -503,6 +510,145 @@
 .wallpapers-card:active {
   transform: scale(0.99);
 }
+/* ---------- 桌面 App 推广位（右下角浮层） ----------
+   基础规则只引用 --wallpapers-accent 与 --color-surface-solid：
+   --wallpapers-background-* 只在视频背景态作用域内定义，在这里引用会让整条声明失效。 */
+.wallpapers-app-popup {
+  position: fixed;
+  /* 高于页面内容（卡片内最高 2），低于分类下拉(10)、吸顶工具条(20) 与灯箱(30)：
+     视口矮时下拉菜单会伸到浮层所在区域，展开中的菜单必须压过被动推广。 */
+  z-index: 5;
+  right: clamp(12px, 2vw, 22px);
+  bottom: clamp(12px, 2vw, 22px);
+  display: grid;
+  box-sizing: border-box;
+  gap: 8px;
+  width: min(302px, calc(100vw - 24px));
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--wallpapers-accent) 30%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--color-surface-solid) 96%, transparent);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 18%);
+  color: var(--wallpapers-accent);
+  animation: wallpapers-app-popup-in 260ms ease-out 420ms both;
+}
+@keyframes wallpapers-app-popup-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wallpapers-app-popup {
+    animation: none;
+  }
+}
+.wallpapers-app-popup__close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: inline-grid;
+  padding: 4px;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.6;
+}
+@media (hover: hover) {
+  .wallpapers-app-popup__close:hover {
+    opacity: 1;
+  }
+}
+.wallpapers-app-popup__head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  /* 给右上角关闭按钮留位，避免第一行文字被压到按钮下面。 */
+  padding-right: 24px;
+}
+.wallpapers-app-popup__icon {
+  display: inline-grid;
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--wallpapers-accent) 12%, transparent);
+}
+/* 第一行：标题 + 平台版本徽标 + 安装包体积。
+   三者字号不同，用 center 做盒子居中（baseline 会让胶囊徽标相对文字下沉）。 */
+.wallpapers-app-popup__titles {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.wallpapers-app-popup__title {
+  font-size: 14px;
+  line-height: 1.2;
+}
+.wallpapers-app-popup__badge {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  height: 17px;
+  padding: 0 6px;
+  border: 1px solid color-mix(in srgb, var(--wallpapers-accent) 34%, transparent);
+  border-radius: 999px;
+  font-size: 11px;
+  line-height: 1;
+  opacity: 0.85;
+}
+.wallpapers-app-popup__desc {
+  margin: 0;
+  color: color-mix(in srgb, var(--wallpapers-accent) 78%, var(--color-text-muted));
+  font-size: 12px;
+  line-height: 1.45;
+}
+.wallpapers-app-popup__actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.wallpapers-app-popup__action {
+  display: inline-flex;
+  flex: 1 1 auto;
+  gap: 5px;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--wallpapers-accent);
+  color: white;
+  font-size: 13px;
+  line-height: 1.4;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.wallpapers-app-popup__action:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+/* 安装包体积：与标题、平台徽标同处第一行，line-height 与徽标统一以便盒子居中。 */
+.wallpapers-app-popup__size {
+  flex: 0 0 auto;
+  margin-left: 2px;
+  color: color-mix(in srgb, var(--wallpapers-accent) 70%, var(--color-text-muted));
+  font-size: 11px;
+  line-height: 1;
+  white-space: nowrap;
+}
+:root[data-theme='dark'] .wallpapers-app-popup {
+  border-color: color-mix(in srgb, var(--wallpapers-accent) 34%, transparent);
+  background: color-mix(in srgb, var(--wallpapers-accent) 6%, var(--color-surface-solid));
+  box-shadow: 0 10px 30px rgb(0 0 0 / 46%);
+}
 .wallpapers-skeleton {
   aspect-ratio: 16 / 9;
   border-radius: 8px;
@@ -690,6 +836,10 @@
   border-color: color-mix(in srgb, var(--wallpapers-accent) 72%, white);
   background: color-mix(in srgb, var(--wallpapers-accent) 78%, black);
 }
+/* 桌面 App 下载入口：与「设为壁纸」区分开的强调色描边。 */
+.wallpapers-lightbox-download-trigger.is-app {
+  border-color: color-mix(in srgb, var(--wallpapers-accent) 72%, white);
+}
 .wallpapers-action-spinning {
   animation: wallpapers-lightbox-spin 0.8s linear infinite;
 }
@@ -809,6 +959,12 @@
   }
   .wallpapers-more-wrap {
     display: none;
+  }
+  .wallpapers-app-popup {
+    right: 10px;
+    bottom: 10px;
+    gap: 6px;
+    padding: 10px 12px;
   }
 }
 
