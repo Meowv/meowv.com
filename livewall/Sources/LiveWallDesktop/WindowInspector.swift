@@ -272,6 +272,34 @@ public enum WindowInspector {
         return CoverageGrid.isFullyCovered(displayBounds, by: rects, threshold: threshold)
     }
 
+    /// 使用已经取得的窗口快照判断遮挡，避免多屏采样时重复调用
+    /// `CGWindowListCopyWindowInfo`。
+    public static func isScreenFullyCovered(
+        displayBounds: CGRect,
+        snapshot: [WindowRecord],
+        excludingPIDs: Set<Int>,
+        threshold: Double = CoverageGrid.defaultThreshold
+    ) -> Bool {
+        let rects = opaqueCoverRects(
+            within: displayBounds,
+            records: snapshot,
+            excludingPIDs: excludingPIDs
+        )
+        return CoverageGrid.isFullyCovered(displayBounds, by: rects, threshold: threshold)
+    }
+
+    private static func opaqueCoverRects(
+        within displayBounds: CGRect,
+        records: [WindowRecord],
+        excludingPIDs: Set<Int>
+    ) -> [CGRect] {
+        records.compactMap { record in
+            guard !excludingPIDs.contains(record.pid), record.layer >= 0 else { return nil }
+            let clipped = record.bounds.intersection(displayBounds)
+            return clipped.isNull || clipped.isEmpty ? nil : clipped
+        }
+    }
+
     // MARK: - 工具
 
 #if DEBUG

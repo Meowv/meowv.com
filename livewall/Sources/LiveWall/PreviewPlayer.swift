@@ -40,12 +40,13 @@ final class PreviewLayerView: NSView {
 /// 并发约定与项目其它组件一致：**只在主线程使用**。
 final class PreviewPlayer {
 
-    /// 右栏预览区的状态。UI 只读它来决定显示静态图、播放层还是「资源不可用」。
+    /// 浮层预览区的状态。UI 只读它来决定显示播放层还是静态图。
+    ///
+    /// 没有「显示静态图」这一态：打开即播、不可暂停/停止，所以只会在
+    /// `idle`（刚开、还没起播）/ `loading` / `playing` / `failed` 之间流转。
     enum State: Equatable {
-        /// 还没选任何条目。
+        /// 还没有在预览任何条目（浮层刚开或已关闭）。
         case idle
-        /// 选中了条目、显示静态图（**默认状态**）。
-        case cover
         /// 正在做准入校验与建播放器。
         case loading(Int)
         /// 正在循环播放。
@@ -75,28 +76,17 @@ final class PreviewPlayer {
     /// 否则「点了 A 又点 B」会出现 A 的加载完成后把 B 的画面顶掉。
     private var generation = 0
 
-    /// 当前预览的条目 id。`nil` 表示没在预览。
-    var currentItemID: Int? {
-        switch state {
-        case .loading(let id), .playing(let id), .failed(let id, _): return id
-        case .idle, .cover: return nil
-        }
-    }
-
-    var isPlaying: Bool {
-        if case .playing = state { return true }
-        return false
-    }
+    // 刻意**不提供** `isPlaying` / `showCover()` / `stop()` / `currentItemID`：
+    // - `showCover()` 与 `stop()` 的函数体一字不差（都是 `teardownPlayer()` + 置状态）；
+    // - `stop()` 唯一的调用方是「停止预览」按钮，该按钮已按需求移除（打开即播、
+    //   不可暂停/停止），于是 `stop()` 与其要置的 `.cover` 状态都变成死代码；
+    //   `currentItemID` 的最后一个调用方也是那个按钮；
+    // - `isPlaying` 全项目用到的都是 `PlaybackState.isPlaying` / `PlaybackEngine.isPlaying`。
+    // 按项目约定删掉。要看当前态就读 `state`；要结束预览就关弹窗（走 `teardown()`）。
 
     // MARK: - 控制
 
-    /// 选中一个条目：回到静态图状态（**不自动播放**）。
-    func showCover() {
-        teardownPlayer()
-        state = .cover
-    }
-
-    /// 开始预览播放。只有用户点了「预览」才会调到这里。
+    /// 开始预览播放。只有双击卡片（或浮层里的「预览」按钮）才会调到这里。
     func play(_ item: WallpaperItem) {
         teardownPlayer()
         guard let url = item.remoteURL else {
@@ -142,16 +132,9 @@ final class PreviewPlayer {
         }
     }
 
-    /// 停止预览。切条目、关窗口都走这里。
+    /// 彻底释放（关窗口 / 关浮层）。状态回到 `.idle`。
     ///
-    /// 状态回到 `.cover` 而不是 `.idle`：调用方（VC）紧接着会调 `showCover()` 或
-    /// 重新 `play()`，`.cover` 是「还选着这条、只是没在播」的正确语义。
-    func stop() {
-        teardownPlayer()
-        state = .cover
-    }
-
-    /// 彻底释放（关窗口）。与 `stop()` 的区别：状态回到 `.idle`。
+    /// 这是**唯一**的收尾入口 —— 打开即播且不可暂停/停止，所以没有 `stop()`。
     func teardown() {
         teardownPlayer()
         state = .idle

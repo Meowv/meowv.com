@@ -52,6 +52,8 @@ final class ThumbnailLoader {
     private var candidatesByKey: [String: [URL]] = [:]
     /// 已经真正发起 `URLSession` 请求的 URL。
     private var startedKeys: Set<String> = []
+    /// 已发起请求的句柄。`cancelAll()` 必须真正取消网络任务，不能只清状态。
+    private var tasksByKey: [String: URLSessionDataTask] = [:]
     /// 等同一个 URL 结果的回调。`candidatesByKey` 决定「要不要发请求」，
     /// 这里只决定「结果来了通知谁」—— 两者分开，才能让「滚回来」重新登记请求。
     private var waiters: [String: [(NSImage?) -> Void]] = [:]
@@ -113,6 +115,8 @@ final class ThumbnailLoader {
     /// 事实，两者都与窗口开关无关。清掉会让每次重开窗口都把坏地址再试一遍。
     func cancelAll() {
         tracker.cancelAll()
+        for task in tasksByKey.values { task.cancel() }
+        tasksByKey.removeAll()
         startedKeys.removeAll()
         candidatesByKey.removeAll()
         // 等待中的回调一并丢弃：调用方（卡片）此刻已经不在屏幕上了。
@@ -125,7 +129,10 @@ final class ThumbnailLoader {
         if replacingPending {
             // 丢掉「没发出、且这一批不再需要」的候选与其回调。卡片已经滚出屏幕，
             // 回调没人要；留着只会让它们排在可见项前面被发出去。
-            for key in candidatesByKey.keys where !startedKeys.contains(key) && !keeping.contains(key) {
+            let staleKeys = candidatesByKey.keys.filter {
+                !startedKeys.contains($0) && !keeping.contains($0)
+            }
+            for key in staleKeys {
                 candidatesByKey[key] = nil
                 waiters[key] = nil
             }
@@ -152,6 +159,8 @@ final class ThumbnailLoader {
 
     /// 依次尝试候选链：先处理版、再原图。
     private func attempt(key: String, candidates: [URL], index: Int) {
+        // 关窗/切分类后，`cancelAll()` 会清掉登记；旧回调回来时不能再发备用请求。
+        guard candidatesByKey[key] != nil else { return }
         guard index < candidates.count else {
             log?("缩略图两级候选都失败：\(key)")
             finish(key, image: nil)
@@ -163,9 +172,12 @@ final class ThumbnailLoader {
         // 图片是不可变的，走本地 HTTP 缓存没问题。
         request.cachePolicy = .returnCacheDataElseLoad
 
-        session.dataTask(with: request) { [weak self] data, response, error in
+        let task = session.dataTask(with: request) { [weak self] data, response, error in
             DispatchQueue.main.async {
                 guard let self else { return }
+                // 请求可能在回调排队期间被取消；此时整个候选链已经失效。
+                guard self.candidatesByKey[key] != nil else { return }
+                self.tasksByKey[key] = nil
                 guard error == nil,
                       let http = response as? HTTPURLResponse,
                       http.statusCode == 200,
@@ -183,10 +195,13 @@ final class ThumbnailLoader {
                 }
                 self.finish(key, image: image)
             }
-        }.resume()
+        }
+        tasksByKey[key] = task
+        task.resume()
     }
 
     private func finish(_ key: String, image: NSImage?) {
+        tasksByKey[key] = nil
         startedKeys.remove(key)
         candidatesByKey[key] = nil
         let callbacks = waiters.removeValue(forKey: key) ?? []

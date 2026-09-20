@@ -23,6 +23,8 @@ public struct ThumbnailRequestTracker {
     /// 等待队列。用数组保序（可见顺序 = 优先级），另配一个 Set 做 O(1) 去重判断。
     private var pending: [String] = []
     private var pendingSet: Set<String> = []
+    /// 头部游标，避免 `removeFirst()` 每次移动剩余字符串。
+    private var pendingHead = 0
 
     public init(concurrencyLimit: Int = 4) {
         self.concurrencyLimit = max(1, concurrencyLimit)
@@ -31,7 +33,7 @@ public struct ThumbnailRequestTracker {
     // MARK: - 查询
 
     public var inFlightCount: Int { inFlight.count }
-    public var pendingCount: Int { pending.count }
+    public var pendingCount: Int { pending.count - pendingHead }
     public var failedCount: Int { failed.count }
 
     public func isInFlight(_ url: String) -> Bool { inFlight.contains(url) }
@@ -52,6 +54,7 @@ public struct ThumbnailRequestTracker {
         if replacingPending {
             pending.removeAll()
             pendingSet.removeAll()
+            pendingHead = 0
         }
         for url in urls {
             guard !url.isEmpty else { continue }
@@ -82,6 +85,7 @@ public struct ThumbnailRequestTracker {
         inFlight.removeAll()
         pending.removeAll()
         pendingSet.removeAll()
+        pendingHead = 0
     }
 
     /// 清空失败表，并把等待队列里能发的发出去。返回现在就该发的 URL。
@@ -94,14 +98,23 @@ public struct ThumbnailRequestTracker {
 
     private mutating func drain() -> [String] {
         var started: [String] = []
-        while inFlight.count < concurrencyLimit, !pending.isEmpty {
-            let url = pending.removeFirst()
+        while inFlight.count < concurrencyLimit, pendingHead < pending.count {
+            let url = pending[pendingHead]
+            pendingHead += 1
             pendingSet.remove(url)
             // 队列里理论上不会有重复项，也理论上不会撞上已失败的（submit 已拦），
             // 但 `finish` 可能在排队期间把它标成失败 —— 这里再核一次，代价可忽略。
             guard !inFlight.contains(url), !failed.contains(url) else { continue }
             inFlight.insert(url)
             started.append(url)
+        }
+        // 队列完全消费后释放旧字符串；部分消费时保留顺序并避免频繁搬移。
+        if pendingHead == pending.count {
+            pending.removeAll(keepingCapacity: true)
+            pendingHead = 0
+        } else if pendingHead > 64 && pendingHead * 2 >= pending.count {
+            pending.removeFirst(pendingHead)
+            pendingHead = 0
         }
         return started
     }

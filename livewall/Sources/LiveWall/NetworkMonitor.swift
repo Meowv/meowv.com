@@ -17,9 +17,12 @@ final class NetworkMonitor {
         monitor.pathUpdateHandler = { [weak self] path in
             guard let self else { return }
             let reachable = path.status == .satisfied
-            guard reachable != self.isReachable else { return }
-            self.isReachable = reachable
-            DispatchQueue.main.async { self.onChange?(reachable) }
+            // 状态由主线程统一读写；路径监测队列只负责采样，避免与失败策略并发读写。
+            DispatchQueue.main.async {
+                guard reachable != self.isReachable else { return }
+                self.isReachable = reachable
+                self.onChange?(reachable)
+            }
         }
         monitor.start(queue: queue)
     }

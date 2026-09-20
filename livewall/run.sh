@@ -3,7 +3,7 @@
 #
 # 启动后会真实接管桌面壁纸层。退出方式：
 #   - 菜单栏图标 → 退出动态壁纸
-#   - 或 pkill -x LiveWall（触发正常清理并恢复原墙纸）
+#   - 或 pkill -x LiveWall（触发正常清理并把当前这张的静态图留在桌面上）
 #
 # 日志：~/Library/Logs/com.meowv.livewall/livewall.log
 #

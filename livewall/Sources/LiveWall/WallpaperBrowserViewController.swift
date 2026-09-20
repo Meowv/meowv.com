@@ -36,20 +36,100 @@ protocol WallpaperBrowserDataSource: AnyObject {
     func browserSetPinned(_ item: WallpaperItem, categoryID: Int)
 }
 
+/// 浮层的容器与压暗层：**只做视觉，不接事件**。
+///
+/// `hitTest` 命中自己时返回 nil，于是鼠标事件穿到下面的网格上 —— 网格照常
+/// 可点、可滚、**可双击换一条预览**。
+///
+/// ⚠️ **容器和压暗层两个都得是这个类**，只改容器不够：`super.hitTest` 会先命中
+/// 铺满整个区域的压暗层并返回它（不是 self），于是事件照样被吃掉 ——
+/// 实测「面板外的点」仍命中浮层内的视图，网格还是死区。
+/// 两个都穿透之后，面板之外的点才真正落到网格上。
+private final class PassThroughView: NSView {
+
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        let hit = super.hitTest(point)
+        return hit === self ? nil : hit
+    }
+}
+
+/// 只为「双击」存在的网格子类。
+///
+/// `NSCollectionView` **没有** `doubleAction` / `target`（`NSTableView` 才有），
+/// delegate 里也没有双击回调，所以只能自己看 `mouseDown` 的 `clickCount`。
+/// 别换成手势识别器：那要额外处理「与选中手势谁先拿事件」，
+/// 而这里只需要一次 `clickCount` 判断。
+private final class BrowserGridView: NSCollectionView {
+
+    /// 命中的条目下标。**只在真的双击到某张卡片时**回调。
+    var onDoubleClick: ((IndexPath) -> Void)?
+
+    /// 网格的**真实可用宽度**（clip view 的宽度）在每次布局后回调。
+    ///
+    /// 不能只靠 `NSViewController.viewDidLayout` 或 clip view 的 bounds 通知：
+    /// 实测这两者在探针/冷启动路径里都**一次都没触发**，于是首轮按错误宽度
+    /// （984，滚动条尚未布局）算出的卡片尺寸再也没被纠正过。
+    /// `layout()` 是每次布局都走的，最可靠。
+    var onWidthChange: ((CGFloat) -> Void)?
+
+    override func layout() {
+        super.layout()
+        if let clip = enclosingScrollView?.contentView {
+            onWidthChange?(clip.bounds.width)
+        }
+    }
+
+    // 宽度是 `autoresizingMask = [.width]` 跟着 clip view 变的，所以 `setFrameSize`
+    // 必然被调用 —— 比 `layout()` 更可靠：clip 缩窄之后 collection view 未必会再排一次。
+    override func setFrameSize(_ newSize: NSSize) {
+        super.setFrameSize(newSize)
+        // 用 clip view 的宽度而不是 newSize：首轮手动设的 frame（984）还没扣滚动条。
+        if let clip = enclosingScrollView?.contentView {
+            onWidthChange?(clip.bounds.width)
+        }
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        // 先交给父类 —— 双击的第一下本来就该先选中那张卡片，
+        // 于是双击之后「选中项」与「浮层里的条目」是一致的。
+        super.mouseDown(with: event)
+        guard event.clickCount == 2 else { return }
+        let point = convert(event.locationInWindow, from: nil)
+        guard let indexPath = indexPathForItem(at: point) else { return }
+        onDoubleClick?(indexPath)
+    }
+}
+
 /// 动态壁纸浏览窗口的内容。
 ///
-/// 三栏布局：左 = 分类，中 = 条目网格，右 = 预览 + 操作；底部一行状态。
+/// **两栏布局**：左 = 分类，右 = 条目网格。预览不再是常驻的一栏 ——
+/// 双击某张卡片时才在网格区上方弹一个预览浮层（见 `openPreview(forItemAt:)`）。
 /// 尺寸与取舍见 `AGENTS.md` 与 `livewall/README.md`。
 final class WallpaperBrowserViewController: NSViewController {
 
     // 布局常量
-    private static let categoryWidth: CGFloat = 138
-    private static let detailWidth: CGFloat = 232
-    private static let footerHeight: CGFloat = 26
+    /// 分类栏宽度。清单里的分类名实测**都是两个字**，138 会留下大片空白，
+    /// 收到 76 之后「两个字 + 内边距」刚好，四个字也还放得下。
+    private static let categoryWidth: CGFloat = 76
+    private static let categoryFontSize: CGFloat = 14
+    private static let categoryRowHeight: CGFloat = 28
+
     private static let gridInset: CGFloat = 12
     private static let cardSpacing: CGFloat = 12
-    /// 预览画面区高度 = 宽 × 9/16。
-    private static let previewStageHeight: CGFloat = (detailWidth - 24) * 9 / 16
+    /// 列数随网格宽度切换（3 / 4 / 5）。阈值按「均分后的卡片宽度落在 180–260pt」
+    /// 定的：太窄看不清缩略图，太宽一屏没几条。
+    private static let columns4From: CGFloat = 880
+    private static let columns5From: CGFloat = 1120
+
+    /// 预览浮层相对网格区的内缩。
+    private static let overlayInset: CGFloat = 32
+    /// 浮层宽度区间：窄窗口跟着网格区收，宽窗口封顶。
+    /// 上限从 560 放大到 760 —— 预览是「看清这条到底长什么样」的地方，
+    /// 760×427 的画面才够判断。
+    private static let overlayMaxWidth: CGFloat = 760
+    private static let overlayMinWidth: CGFloat = 420
+    /// 浮层面板内的横向内边距。
+    private static let panelPadding: CGFloat = 12
 
     private weak var dataSource: WallpaperBrowserDataSource?
 
@@ -57,39 +137,48 @@ final class WallpaperBrowserViewController: NSViewController {
     private let categoryTable = NSTableView()
     private let categoryScroll = NSScrollView()
 
-    // 中栏：条目网格
-    private let collectionView = NSCollectionView()
+    // 右栏：条目网格
+    private let collectionView = BrowserGridView()
     private let gridScroll = NSScrollView()
     private let gridPlaceholder = NSView()
     private let gridPlaceholderLabel = NSTextField(labelWithString: "")
     private let gridSpinner = NSProgressIndicator()
     private let gridRetryButton = NSButton()
 
-    // 右栏：预览 + 操作
-    private let detailPane = NSView()
+    // 预览浮层：双击打开，盖在网格区上
+    private let previewOverlay = PassThroughView()
+    /// 压暗层：只压暗网格（视觉上的「正在看这一条」），**也必须是穿透的** ——
+    /// 它铺满整个网格区，只要它接事件，网格就全变成死区。
+    private let previewBackdrop = PassThroughView()
+    private let previewPanel = NSView()
     private let previewStage = NSView()
     private let previewImageView = NSImageView()
     private let previewPlaceholderLabel = NSTextField(labelWithString: "无预览图")
     private let previewStateContainer = NSView()
     private let previewStateLabel = NSTextField(labelWithString: "")
-    private let detailTitleLabel = NSTextField(labelWithString: "")
-    private let detailSubtitleLabel = NSTextField(wrappingLabelWithString: "")
-    private let previewButton = NSButton()
+    private let previewCloseButton = NSButton()
+    private let previewInfoLabel = NSTextField(labelWithString: "")
+    /// 「设为桌面壁纸」。放在画面**下方信息行的右端**（原来「停止预览」的位置）——
+    /// 叠在画面上会挡住要预览的东西。
     private let pinButton = NSButton()
-    private let pinHintLabel = NSTextField(wrappingLabelWithString: "固定后所有屏幕都播这一条，不再自动轮换。")
-
-    // 底栏
-    private let footerLabel = NSTextField(labelWithString: "")
+    /// 浮层面板的**宽度**。写成常量约束 + 在 `viewDidLayout` 里改 constant，
+    /// 而不是 `panel.width == overlay.width - 80`：见 `viewDidLayout` 里的说明。
+    private var panelWidthConstraint: NSLayoutConstraint!
 
     // 状态
     private var categories: [LivewallCategoryEntry] = []
     private var items: [WallpaperItem] = []
     private var selectedCategoryID: Int?
-    private var selectedItemID: Int?
+    /// 预览浮层当前展示的条目 id（`nil` = 浮层未打开）。
+    ///
+    /// **不与网格选中项挂钩**：浮层只跟着「双击」走。单击别的卡片只移动网格高亮，
+    /// 不该顺手把浮层里正在播的那条换掉 —— 否则「挑一张看看」和「翻着找」会互相打断。
+    private var previewItemID: Int?
+    /// 上次算过的网格宽度，用来判断「要不要让流式布局重算卡片尺寸」。
+    private var lastGridWidth: CGFloat = 0
     /// 分类切片请求序号。**独立于 `AppDelegate.sliceRequestGeneration`** ——
     /// 那个是播放用的，两者混用会让「浏览别的分类」把正在播的加载结果判成过期。
     private var sliceGeneration = 0
-    private var isLoading = false
 
     private let loader = ThumbnailLoader()
     private let previewPlayer = PreviewPlayer()
@@ -120,30 +209,22 @@ final class WallpaperBrowserViewController: NSViewController {
 
         buildCategoryColumn(in: root)
         buildGridColumn(in: root)
-        buildDetailColumn(in: root)
-        buildFooter(in: root)
+        buildPreviewOverlay(in: root)
+        // 没有底栏了：底栏原本显示「分类 · 共 N 条」，而条目数在翻页/筛选之外
+        // 没有额外信息量（网格本身就是全部条目），占着 26pt 不划算。
 
         NSLayoutConstraint.activate([
-            // 底栏横跨整宽，三栏在它上方
-            footerLabel.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 12),
-            footerLabel.topAnchor.constraint(equalTo: root.bottomAnchor, constant: -Self.footerHeight),
-            footerLabel.bottomAnchor.constraint(equalTo: root.bottomAnchor),
-
+            // 两栏：左 = 分类（定宽），右 = 网格（吃掉剩下的全部宽度）
             categoryScroll.leadingAnchor.constraint(equalTo: root.leadingAnchor),
             categoryScroll.topAnchor.constraint(equalTo: root.topAnchor),
-            categoryScroll.bottomAnchor.constraint(equalTo: footerLabel.topAnchor),
+            categoryScroll.bottomAnchor.constraint(equalTo: root.bottomAnchor),
             categoryScroll.widthAnchor.constraint(equalToConstant: Self.categoryWidth),
 
             gridScroll.leadingAnchor.constraint(equalTo: categoryScroll.trailingAnchor),
             gridScroll.topAnchor.constraint(equalTo: root.topAnchor),
-            gridScroll.bottomAnchor.constraint(equalTo: categoryScroll.bottomAnchor),
-            gridScroll.trailingAnchor.constraint(equalTo: detailPane.leadingAnchor),
+            gridScroll.bottomAnchor.constraint(equalTo: root.bottomAnchor),
+            gridScroll.trailingAnchor.constraint(equalTo: root.trailingAnchor),
             gridScroll.widthAnchor.constraint(greaterThanOrEqualToConstant: 460),
-
-            detailPane.trailingAnchor.constraint(equalTo: root.trailingAnchor),
-            detailPane.topAnchor.constraint(equalTo: root.topAnchor),
-            detailPane.bottomAnchor.constraint(equalTo: categoryScroll.bottomAnchor),
-            detailPane.widthAnchor.constraint(equalToConstant: Self.detailWidth),
         ])
     }
 
@@ -152,6 +233,13 @@ final class WallpaperBrowserViewController: NSViewController {
 
         previewPlayer.onStateChange = { [weak self] state in
             self?.applyPreviewState(state)
+        }
+
+        collectionView.onDoubleClick = { [weak self] indexPath in
+            self?.openPreview(forItemAt: indexPath)
+        }
+        collectionView.onWidthChange = { [weak self] width in
+            self?.applyGridWidth(width)
         }
 
         // 滚动停止后才去要缩略图。用 bounds 变化 + debounce 而不是
@@ -177,10 +265,31 @@ final class WallpaperBrowserViewController: NSViewController {
         } else {
             updateGridPlaceholder(message: "清单里没有分类信息", showSpinner: false)
         }
-        updateDetailPane()
         // 初始状态是 `.idle`，不会触发 `onStateChange`（回调只在实际变化时发），
-        // 所以这里显式同步一次，否则右栏的按钮文案要等第一次操作才对。
+        // 所以这里显式同步一次，否则浮层里的按钮文案要等第一次操作才对。
         applyPreviewState(previewPlayer.state)
+    }
+
+    /// 按网格区的实际宽度夹取浮层面板宽度。
+    ///
+    /// **为什么是常量约束 + 改 constant，而不是 `panel.width == overlay.width - 80`**：
+    /// 那种等式两边都能动，Auto Layout 为了满足它会反过来压窄网格区（连带整个窗口），
+    /// 实测把窗口从 1060 压到了 778 —— 比 `minSize` 880 还小。常量约束只会决定面板自己。
+    ///
+    /// 只在真的变了时才写，否则每次 layout 都改 constant 会触发又一轮布局。
+    override func viewDidLayout() {
+        super.viewDidLayout()
+
+        // 窗口拉宽/拉窄之后必须让流式布局重算卡片尺寸，否则列数与卡宽都停在旧值上
+        // （表现是右边多出一条空白，或者卡片被裁）。
+        gridScroll.layoutSubtreeIfNeeded()
+        applyGridWidth(gridScroll.contentView.bounds.width)
+
+        let available = gridScroll.frame.width - 2 * Self.overlayInset
+        let width = min(max(available, Self.overlayMinWidth), Self.overlayMaxWidth)
+        if abs(panelWidthConstraint.constant - width) > 0.5 {
+            panelWidthConstraint.constant = width
+        }
     }
 
     deinit {
@@ -191,20 +300,30 @@ final class WallpaperBrowserViewController: NSViewController {
     ///
     /// **不动桌面播放**（决策 12）—— 浏览窗口只是「挑一张」的工具。
     func teardown() {
+        // 先关浮层（它会释放播放器并清掉静态图），再走一遍播放器释放 ——
+        // 浮层没开时 `dismissPreview` 会直接返回，重复调用无害。
+        dismissPreview(nil)
         previewPlayer.teardown()
         loader.cancelAll()
         thumbnailDebounce?.invalidate()
         thumbnailDebounce = nil
     }
 
-    /// 固定项变了（菜单里固定 / 解钉之后）。只刷新徽标与右栏按钮，不动列表数据。
+    /// 固定项变了（菜单里固定 / 解钉之后）。只刷新徽标与浮层按钮，不动列表数据。
     func refreshPinState() {
         refreshVisibleBadges()
-        updateDetailPane()
+        updatePreviewPanel()
     }
 
-    /// Esc 关窗。`NSViewController` 在响应链上，所以不按任何按钮时也能收到。
+    /// Esc：**先关预览浮层**；浮层没开才关窗口。
+    ///
+    /// 按 Esc 的意图是「退出当前这一层」，直接把整个窗口关掉太狠了 ——
+    /// 而浮层是叠在网格上的一层，理应第一个被 Esc 收掉。
     override func cancelOperation(_ sender: Any?) {
+        guard previewOverlay.isHidden else {
+            dismissPreview(nil)
+            return
+        }
         view.window?.performClose(nil)
     }
 
@@ -213,9 +332,15 @@ final class WallpaperBrowserViewController: NSViewController {
     private func buildCategoryColumn(in root: NSView) {
         let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("Category"))
         column.resizingMask = .autoresizingMask
+        // ⚠️ 列宽必须**显式**设成栏宽：`NSTableColumn` 默认是 100pt，栏宽收到 76 之后
+        // 列不会自动跟着收 —— 实测单元格仍是 100 宽，长分类名被滚动视图硬裁，
+        // 而不是在标签内部截断成「超长分类名…」。
+        column.width = Self.categoryWidth
+        column.minWidth = Self.categoryWidth
+        column.maxWidth = Self.categoryWidth
         categoryTable.addTableColumn(column)
         categoryTable.headerView = nil
-        categoryTable.rowHeight = 24
+        categoryTable.rowHeight = Self.categoryRowHeight
         categoryTable.allowsEmptySelection = false
         categoryTable.allowsMultipleSelection = false
         categoryTable.selectionHighlightStyle = .regular
@@ -225,7 +350,7 @@ final class WallpaperBrowserViewController: NSViewController {
         // 同 collection view：documentView 的尺寸由它自己管，只让宽度跟住滚动视图。
         // 先定 frame 再挂 documentView —— 反过来有些 AppKit 版本会用 clip view 的
         // 初始 bounds（0×0）把 documentView 的尺寸重置掉。
-        categoryTable.frame = NSRect(x: 0, y: 0, width: Self.categoryWidth, height: 620)
+        categoryTable.frame = NSRect(x: 0, y: 0, width: Self.categoryWidth, height: 660)
         categoryTable.autoresizingMask = [.width]
         categoryScroll.documentView = categoryTable
         categoryScroll.hasVerticalScroller = true
@@ -242,11 +367,10 @@ final class WallpaperBrowserViewController: NSViewController {
         }
     }
 
-    // MARK: - 中栏：条目网格
+    // MARK: - 右栏：条目网格
 
     private func buildGridColumn(in root: NSView) {
         let layout = NSCollectionViewFlowLayout()
-        layout.itemSize = BrowserItemView.cardSize
         layout.minimumInteritemSpacing = Self.cardSpacing
         layout.minimumLineSpacing = Self.cardSpacing
         layout.sectionInset = NSEdgeInsets(
@@ -270,8 +394,12 @@ final class WallpaperBrowserViewController: NSViewController {
         // （表现是「只能看到第一行」或「滚不动」）。给一个默认窗口尺寸下的非零初始
         // frame + 宽度自适应，剩下的交给它自己 —— 与 `NSTableView` 当 documentView
         // 是同一套机制。先定 frame 再挂 documentView。
-        collectionView.frame = NSRect(x: 0, y: 0, width: 688, height: 620)
+        // 初始 frame 只用来给布局一个非零起点（宽度随后由 autoresizingMask 跟上）；
+        // 984 = 默认窗口 1060 − 分类栏 76。
+        collectionView.frame = NSRect(x: 0, y: 0, width: 984, height: 660)
         collectionView.autoresizingMask = [.width]
+        // 卡片尺寸要在 frame 定下来之后才算（它取决于网格宽度）。
+        layout.itemSize = gridItemSize()
         gridScroll.documentView = collectionView
         gridScroll.hasVerticalScroller = true
         gridScroll.drawsBackground = false
@@ -320,6 +448,49 @@ final class WallpaperBrowserViewController: NSViewController {
         ])
     }
 
+    /// 按网格宽度决定列数：**3 / 4 / 5**。
+    private static func gridColumns(forWidth width: CGFloat) -> Int {
+        if width < Self.columns4From { return 3 }
+        if width < Self.columns5From { return 4 }
+        return 5
+    }
+
+    /// 当前列宽下的卡片尺寸 —— **卡片撑满所在列**，不再留右侧空白。
+    ///
+    /// 用 `sizeForItemAt` 每次问而不是写死：窗口一拉宽，列数与卡宽都得跟着变。
+    private func gridItemSize() -> NSSize {
+        // ⚠️ 必须用 **clip view** 的宽度，不能用 `collectionView.bounds.width`：
+        // 后者在早期的布局轮次里还是「整个滚动视图」的宽度（984），而真实可用宽度
+        // 要扣掉竖向滚动条（实测 967，差 17）。按 984 算出来的 4 列卡片在 967 里
+        // 只放得下 3 列，右边会空出 226pt —— 正是要消除的那种空白。
+        let total = max(gridScroll.contentView.bounds.width, 1)
+        let columns = Self.gridColumns(forWidth: total)
+        let usable = total - Self.gridInset * 2 - Self.cardSpacing * CGFloat(columns - 1)
+        // ⚠️ 留 1pt 余量：**正好放得下**时流式布局会少放一列（浮点边界）。
+        // 实测 1060 窗口下 4×226.75 + 间距 = 943，可用正好 943 → 只摆了 3 列，
+        // 右边空出 226pt。留 1pt 之后 4 列就能放下，右侧只余 1pt。
+        let width = max((usable - 1) / CGFloat(columns), 80)
+        return BrowserItemView.cardSize(fittingWidth: width)
+    }
+
+    /// 网格宽度变了 → 重算卡片尺寸（列数与卡宽都依赖它）。
+    ///
+    /// 三个入口都调它：`BrowserGridView.layout()`（每次布局都走，最可靠）、
+    /// `viewDidLayout`、`gridBoundsDidChange`。
+    private func applyGridWidth(_ width: CGFloat) {
+        guard width > 1, abs(width - lastGridWidth) > 0.5 else { return }
+        lastGridWidth = width
+        // 显式写回 `itemSize`，不单靠 `sizeForItemAt`：实测只 invalidate 的话
+        // 尺寸查询跑了、卡片 frame 却还是旧的。
+        if let flow = collectionView.collectionViewLayout as? NSCollectionViewFlowLayout {
+            flow.itemSize = gridItemSize()
+        }
+        collectionView.collectionViewLayout?.invalidateLayout()
+        // `invalidateLayout()` 不会把 collection view 标成 needsLayout，
+        // 不标这一行下一次布局会直接跳过。
+        collectionView.needsLayout = true
+    }
+
     private func updateGridPlaceholder(message: String?, showSpinner: Bool, canRetry: Bool = false) {
         if showSpinner { gridSpinner.startAnimation(nil) } else { gridSpinner.stopAnimation(nil) }
         gridPlaceholderLabel.stringValue = message ?? ""
@@ -336,26 +507,49 @@ final class WallpaperBrowserViewController: NSViewController {
         loadVisibleThumbnails(replacingPending: true)
     }
 
-    // MARK: - 右栏：预览与操作
+    // MARK: - 预览浮层（双击打开，盖在网格区上）
 
-    private func buildDetailColumn(in root: NSView) {
-        detailPane.translatesAutoresizingMaskIntoConstraints = false
-        root.addSubview(detailPane)
+    private func buildPreviewOverlay(in root: NSView) {
+        previewOverlay.translatesAutoresizingMaskIntoConstraints = false
+        // 只盖网格区：分类栏留着能点（切分类会顺手关掉浮层）。
+        previewOverlay.isHidden = true
+        root.addSubview(previewOverlay)
+
+        // 压暗层：**不做成可点关闭**。事件穿透之后，「点背景关浮层」会和
+        // 「点网格里的卡片」抢同一个手势；关浮层的出口留 ✕ 与 Esc 两个就够了。
+        previewBackdrop.translatesAutoresizingMaskIntoConstraints = false
+        previewBackdrop.wantsLayer = true
+        previewBackdrop.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.35).cgColor
+        previewOverlay.addSubview(previewBackdrop)
+
+        previewPanel.wantsLayer = true
+        previewPanel.layer?.cornerRadius = 10
+        previewPanel.layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
+        previewPanel.layer?.shadowOpacity = 0.35
+        previewPanel.layer?.shadowRadius = 18
+        previewPanel.layer?.shadowOffset = CGSize(width: 0, height: -4)
+        // **刻意不开 `masksToBounds`**：开了会连阴影一起裁掉（圆角 + 阴影的经典冲突）。
+        // 圆角由画面区自己裁（见下），面板只负责背景与投影。
+        previewPanel.translatesAutoresizingMaskIntoConstraints = false
+        previewOverlay.addSubview(previewPanel)
 
         // ── 16:9 画面区 ───────────────────────────────────
         previewStage.wantsLayer = true
-        previewStage.layer?.cornerRadius = 8
         previewStage.layer?.masksToBounds = true
+        // 画面顶到面板上边缘 → 只裁上面两个角，与面板的圆角对齐；
+        // 下面两个角是方的（紧挨着信息行），裁了反而会露出面板底色。
+        previewStage.layer?.cornerRadius = 10
+        previewStage.layer?.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
         // 画面区固定深底：视频画面本来就该是深底，浅底还会在加载完之前闪一下白。
         previewStage.layer?.backgroundColor = NSColor.black.cgColor
         previewStage.translatesAutoresizingMaskIntoConstraints = false
-        detailPane.addSubview(previewStage)
+        previewPanel.addSubview(previewStage)
 
         previewImageView.imageScaling = .scaleProportionallyUpOrDown
         previewImageView.translatesAutoresizingMaskIntoConstraints = false
         previewStage.addSubview(previewImageView)
 
-        previewPlaceholderLabel.font = .systemFont(ofSize: 11)
+        previewPlaceholderLabel.font = .systemFont(ofSize: 12)
         previewPlaceholderLabel.textColor = .secondaryLabelColor
         previewPlaceholderLabel.alignment = .center
         previewPlaceholderLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -380,42 +574,68 @@ final class WallpaperBrowserViewController: NSViewController {
         previewStateLabel.translatesAutoresizingMaskIntoConstraints = false
         previewStateContainer.addSubview(previewStateLabel)
 
-        // ── 文字与按钮 ────────────────────────────────────
-        detailTitleLabel.font = .systemFont(ofSize: 13, weight: .semibold)
-        detailTitleLabel.lineBreakMode = .byTruncatingTail
-        detailTitleLabel.maximumNumberOfLines = 2
-        detailTitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        detailPane.addSubview(detailTitleLabel)
+        // ── 画面内的两个按钮 ────────────────────────────
+        previewCloseButton.title = "✕"
+        previewCloseButton.bezelStyle = .rounded
+        previewCloseButton.font = .systemFont(ofSize: 12)
+        previewCloseButton.target = self
+        previewCloseButton.action = #selector(dismissPreview(_:))
+        previewCloseButton.translatesAutoresizingMaskIntoConstraints = false
+        previewStage.addSubview(previewCloseButton)
 
-        detailSubtitleLabel.font = .systemFont(ofSize: 11)
-        detailSubtitleLabel.textColor = .secondaryLabelColor
-        detailSubtitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        detailPane.addSubview(detailSubtitleLabel)
-
-        previewButton.title = "预览"
-        previewButton.bezelStyle = .rounded
-        previewButton.target = self
-        previewButton.action = #selector(togglePreview)
-        previewButton.translatesAutoresizingMaskIntoConstraints = false
-        detailPane.addSubview(previewButton)
+        // ── 画面下方：一行信息 + 「设为桌面壁纸」 ──────────
+        previewInfoLabel.font = .systemFont(ofSize: 12)
+        previewInfoLabel.lineBreakMode = .byTruncatingTail
+        previewInfoLabel.maximumNumberOfLines = 1
+        // **让文字先被压缩，而不是按钮**。实测 85 字的标题会把按钮压成 0 宽 ——
+        // 两者默认压缩阻力相同，Auto Layout 就会去压按钮。标题本来就该截尾，
+        // 按钮没了却是功能性的损失。
+        previewInfoLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        previewInfoLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        previewInfoLabel.translatesAutoresizingMaskIntoConstraints = false
+        previewPanel.addSubview(previewInfoLabel)
 
         pinButton.title = "设为桌面壁纸"
         pinButton.bezelStyle = .rounded
         pinButton.target = self
-        pinButton.action = #selector(pinSelectedItem)
+        pinButton.action = #selector(pinPreviewedItem)
+        // 与上面成对：按钮**拒绝**被压缩，宁可让标题截尾。
+        pinButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+        pinButton.setContentHuggingPriority(.required, for: .horizontal)
         pinButton.translatesAutoresizingMaskIntoConstraints = false
-        detailPane.addSubview(pinButton)
+        previewPanel.addSubview(pinButton)
 
-        pinHintLabel.font = .systemFont(ofSize: 10)
-        pinHintLabel.textColor = .tertiaryLabelColor
-        pinHintLabel.translatesAutoresizingMaskIntoConstraints = false
-        detailPane.addSubview(pinHintLabel)
+        // 宽度用**常量**约束（具体值在 `viewDidLayout` 里按网格区宽度夹取）。
+        // 不要写成 `panel.width == overlay.width - 80`：那种等式是双向的，
+        // Auto Layout 会为了满足它反过来把网格区压窄 —— 实测窗口被从 1060 压到 778
+        // （778 = 分类栏 138 + 网格 640，而 640 = 560 + 80），甚至压到了 minSize 880 以下。
+        panelWidthConstraint = previewPanel.widthAnchor.constraint(
+            equalToConstant: Self.overlayMaxWidth
+        )
 
         NSLayoutConstraint.activate([
-            previewStage.topAnchor.constraint(equalTo: detailPane.topAnchor, constant: 12),
-            previewStage.leadingAnchor.constraint(equalTo: detailPane.leadingAnchor, constant: 12),
-            previewStage.trailingAnchor.constraint(equalTo: detailPane.trailingAnchor, constant: -12),
-            previewStage.heightAnchor.constraint(equalToConstant: Self.previewStageHeight),
+            previewOverlay.leadingAnchor.constraint(equalTo: gridScroll.leadingAnchor),
+            previewOverlay.trailingAnchor.constraint(equalTo: gridScroll.trailingAnchor),
+            previewOverlay.topAnchor.constraint(equalTo: gridScroll.topAnchor),
+            previewOverlay.bottomAnchor.constraint(equalTo: gridScroll.bottomAnchor),
+
+            previewBackdrop.leadingAnchor.constraint(equalTo: previewOverlay.leadingAnchor),
+            previewBackdrop.trailingAnchor.constraint(equalTo: previewOverlay.trailingAnchor),
+            previewBackdrop.topAnchor.constraint(equalTo: previewOverlay.topAnchor),
+            previewBackdrop.bottomAnchor.constraint(equalTo: previewOverlay.bottomAnchor),
+
+            previewPanel.centerXAnchor.constraint(equalTo: previewOverlay.centerXAnchor),
+            previewPanel.centerYAnchor.constraint(equalTo: previewOverlay.centerYAnchor),
+            panelWidthConstraint,
+
+            // 画面高度 = 宽 × 9/16（用乘数约束而不是写死常量，窗口缩放时自动跟上）
+            previewStage.topAnchor.constraint(equalTo: previewPanel.topAnchor),
+            previewStage.leadingAnchor.constraint(equalTo: previewPanel.leadingAnchor),
+            previewStage.trailingAnchor.constraint(equalTo: previewPanel.trailingAnchor),
+            previewStage.heightAnchor.constraint(
+                equalTo: previewStage.widthAnchor,
+                multiplier: 9.0 / 16.0
+            ),
 
             previewImageView.topAnchor.constraint(equalTo: previewStage.topAnchor),
             previewImageView.leadingAnchor.constraint(equalTo: previewStage.leadingAnchor),
@@ -430,55 +650,71 @@ final class WallpaperBrowserViewController: NSViewController {
             previewPlaceholderLabel.centerXAnchor.constraint(equalTo: previewStage.centerXAnchor),
             previewPlaceholderLabel.centerYAnchor.constraint(equalTo: previewStage.centerYAnchor),
 
-            previewStateContainer.topAnchor.constraint(equalTo: previewStage.topAnchor, constant: 6),
-            previewStateContainer.leadingAnchor.constraint(equalTo: previewStage.leadingAnchor, constant: 6),
+            previewStateContainer.topAnchor.constraint(equalTo: previewStage.topAnchor, constant: 8),
+            previewStateContainer.leadingAnchor.constraint(equalTo: previewStage.leadingAnchor, constant: 8),
             previewStateLabel.topAnchor.constraint(equalTo: previewStateContainer.topAnchor, constant: 2),
             previewStateLabel.bottomAnchor.constraint(equalTo: previewStateContainer.bottomAnchor, constant: -2),
             previewStateLabel.leadingAnchor.constraint(equalTo: previewStateContainer.leadingAnchor, constant: 5),
             previewStateLabel.trailingAnchor.constraint(equalTo: previewStateContainer.trailingAnchor, constant: -5),
 
-            detailTitleLabel.topAnchor.constraint(equalTo: previewStage.bottomAnchor, constant: 10),
-            detailTitleLabel.leadingAnchor.constraint(equalTo: previewStage.leadingAnchor),
-            detailTitleLabel.trailingAnchor.constraint(equalTo: previewStage.trailingAnchor),
+            previewCloseButton.topAnchor.constraint(equalTo: previewStage.topAnchor, constant: 8),
+            previewCloseButton.trailingAnchor.constraint(equalTo: previewStage.trailingAnchor, constant: -8),
 
-            detailSubtitleLabel.topAnchor.constraint(equalTo: detailTitleLabel.bottomAnchor, constant: 3),
-            detailSubtitleLabel.leadingAnchor.constraint(equalTo: detailTitleLabel.leadingAnchor),
-            detailSubtitleLabel.trailingAnchor.constraint(equalTo: detailTitleLabel.trailingAnchor),
+            previewInfoLabel.topAnchor.constraint(equalTo: previewStage.bottomAnchor, constant: 10),
+            previewInfoLabel.leadingAnchor.constraint(equalTo: previewPanel.leadingAnchor, constant: Self.panelPadding),
+            previewInfoLabel.bottomAnchor.constraint(equalTo: previewPanel.bottomAnchor, constant: -10),
 
-            previewButton.topAnchor.constraint(equalTo: detailSubtitleLabel.bottomAnchor, constant: 12),
-            previewButton.leadingAnchor.constraint(equalTo: detailTitleLabel.leadingAnchor),
-            previewButton.widthAnchor.constraint(equalToConstant: 76),
-
-            pinButton.topAnchor.constraint(equalTo: previewButton.topAnchor),
-            pinButton.leadingAnchor.constraint(equalTo: previewButton.trailingAnchor, constant: 8),
-            pinButton.trailingAnchor.constraint(equalTo: detailTitleLabel.trailingAnchor),
-
-            pinHintLabel.topAnchor.constraint(equalTo: previewButton.bottomAnchor, constant: 8),
-            pinHintLabel.leadingAnchor.constraint(equalTo: detailTitleLabel.leadingAnchor),
-            pinHintLabel.trailingAnchor.constraint(equalTo: detailTitleLabel.trailingAnchor),
+            pinButton.centerYAnchor.constraint(equalTo: previewInfoLabel.centerYAnchor),
+            pinButton.trailingAnchor.constraint(equalTo: previewPanel.trailingAnchor, constant: -Self.panelPadding),
+            pinButton.leadingAnchor.constraint(
+                greaterThanOrEqualTo: previewInfoLabel.trailingAnchor,
+                constant: Self.panelPadding
+            ),
         ])
     }
 
-    private var selectedItem: WallpaperItem? {
-        guard let selectedItemID else { return nil }
-        return items.first { $0.id == selectedItemID }
+    /// 浮层当前展示的条目。
+    private var previewItem: WallpaperItem? {
+        guard let previewItemID else { return nil }
+        return items.first { $0.id == previewItemID }
     }
 
-    private func updateDetailPane() {
-        guard let item = selectedItem else {
-            detailTitleLabel.stringValue = "未选择"
-            detailSubtitleLabel.stringValue = "从中间的网格里挑一条"
-            previewImageView.image = nil
-            previewPlaceholderLabel.isHidden = false
-            setPreviewStateText("")
-            previewButton.isEnabled = false
-            pinButton.isEnabled = false
-            pinButton.title = "设为桌面壁纸"
+    /// 双击打开预览浮层。
+    ///
+    /// 做成 internal 是给探针留的口子：从 shell 里造不出真的 `NSEvent`，
+    /// 「双击那一下」只能人工点，但**打开之后发生了什么**是可以验的。
+    func openPreview(forItemAt indexPath: IndexPath) {
+        guard indexPath.item < items.count else { return }
+        let item = items[indexPath.item]
+        previewItemID = item.id
+        previewOverlay.isHidden = false
+        updatePreviewPanel()
+        // 双击是明确的「我要看这一条」→ 直接开播。这与「选中即自动播」是两回事：
+        // 后者会让方向键连翻几条就把每条视频都拉一遍 —— 决策 4 要防的就是那个。
+        previewPlayer.play(item)
+    }
+
+    /// 关掉浮层并释放播放器。点 ✕ / 点背景 / Esc / 切分类都走这里。
+    @objc func dismissPreview(_ sender: Any?) {
+        guard !previewOverlay.isHidden else { return }
+        previewItemID = nil
+        previewOverlay.isHidden = true
+        // 用 `teardown()` 而不是 `stop()`：浮层都没了，状态该回到 `.idle`
+        // （`stop()` 停在 `.cover`，会留一个不属于任何条目的静态图）。
+        previewPlayer.teardown()
+        previewImageView.image = nil
+        previewPlaceholderLabel.isHidden = false
+        setPreviewStateText("")
+    }
+
+    /// 刷新浮层里的文案与按钮状态。
+    private func updatePreviewPanel() {
+        guard let item = previewItem else {
+            // 条目已经不在列表里了（切分类 / 重载）→ 直接关掉，别留一个空浮层。
+            dismissPreview(nil)
             return
         }
-
-        detailTitleLabel.stringValue = item.title.isEmpty ? "未命名" : item.title
-        detailSubtitleLabel.stringValue = BrowserItemView.subtitle(for: item)
+        previewInfoLabel.stringValue = BrowserItemView.infoLine(for: item)
 
         let isCurrent = item.id == dataSource?.browserPinnedItemID
         // 已固定的那条：按钮变禁用的「当前桌面壁纸」，**不提供取消固定**（决策 11）——
@@ -486,13 +722,12 @@ final class WallpaperBrowserViewController: NSViewController {
         pinButton.isEnabled = !isCurrent
         pinButton.title = isCurrent ? "当前桌面壁纸" : "设为桌面壁纸"
 
-        previewButton.isEnabled = item.remoteURL != nil
         loadPreviewCover(for: item)
     }
 
     private func loadPreviewCover(for item: WallpaperItem) {
         loader.load([item], variant: .preview, replacingPending: false) { [weak self] loaded, image in
-            guard let self, self.selectedItemID == loaded.id else { return }
+            guard let self, self.previewItemID == loaded.id else { return }
             self.previewImageView.image = image
             self.previewPlaceholderLabel.isHidden = image != nil
         }
@@ -503,34 +738,19 @@ final class WallpaperBrowserViewController: NSViewController {
         case .idle:
             previewPlayer.view.isHidden = true
             previewImageView.isHidden = false
+            // 打开即播、且不可暂停/停止 —— 所以「静态图 / 加载中… / 播放中」
+            // 这些状态角标都不再显示（星哥要求移除左上角的状态提示）。
             setPreviewStateText("")
-            previewButton.title = "预览"
-            previewButton.isEnabled = selectedItem?.remoteURL != nil
-        case .cover:
-            previewPlayer.view.isHidden = true
-            previewImageView.isHidden = false
-            setPreviewStateText(selectedItem == nil ? "" : "静态图")
-            previewButton.title = "预览"
-            previewButton.isEnabled = selectedItem?.remoteURL != nil
-        case .loading:
+        case .loading, .playing:
             previewPlayer.view.isHidden = false
             previewImageView.isHidden = true
-            setPreviewStateText("加载中…")
-            previewButton.title = "停止预览"
-            previewButton.isEnabled = true
-        case .playing:
-            previewPlayer.view.isHidden = false
-            previewImageView.isHidden = true
-            setPreviewStateText("播放中")
-            previewButton.title = "停止预览"
-            previewButton.isEnabled = true
+            setPreviewStateText("")
         case .failed(_, let reason):
             previewPlayer.view.isHidden = true
             previewImageView.isHidden = false
+            // **失败仍然提示**：画面会退回静态图，不给原因看起来就是「点了没反应」。
+            // 这条不是「播放中」那类常态提示，是错误反馈，所以留着。
             setPreviewStateText(reason)
-            previewButton.title = "预览"
-            // 地址不可用就不要再让人点第二次 —— 结果只会一样。
-            previewButton.isEnabled = false
         }
     }
 
@@ -539,67 +759,23 @@ final class WallpaperBrowserViewController: NSViewController {
         previewStateContainer.isHidden = text.isEmpty
     }
 
-    @objc private func togglePreview() {
-        guard let item = selectedItem else { return }
-        // 已经在弄这条（加载中或正在播）就停，否则开播。
-        if previewPlayer.currentItemID == item.id {
-            previewPlayer.stop()
-        } else {
-            previewPlayer.play(item)
-        }
-    }
+    // 刻意**不提供**停止/暂停入口：弹窗打开即自动播放，且不可暂停或停止
+    // （星哥要求）。要停下来就关掉弹窗 —— 关窗会走 `teardown()` 释放播放器。
 
-    @objc private func pinSelectedItem() {
-        guard let item = selectedItem, let dataSource else { return }
+    @objc private func pinPreviewedItem() {
+        guard let item = previewItem, let dataSource else { return }
         // 分类传**当前列表所属的分类**：用户是在这个分类里挑的，
         // 解钉之后的轮换该落在它上面（决策 7）。
         dataSource.browserSetPinned(item, categoryID: selectedCategoryID ?? 0)
         // 立刻更新按钮与徽标：落实是同步写配置的（真源马上可用），
         // 只有桌面画面要等视频加载完。
-        updateDetailPane()
+        updatePreviewPanel()
         refreshVisibleBadges()
     }
 
     @objc private func retryLoadItems() {
         guard let selectedCategoryID else { return }
         loadItems(for: selectedCategoryID)
-    }
-
-    // MARK: - 底栏
-
-    private func buildFooter(in root: NSView) {
-        let separator = NSBox()
-        separator.boxType = .separator
-        separator.translatesAutoresizingMaskIntoConstraints = false
-        root.addSubview(separator)
-
-        footerLabel.font = .systemFont(ofSize: 11)
-        footerLabel.textColor = .secondaryLabelColor
-        footerLabel.lineBreakMode = .byTruncatingTail
-        footerLabel.translatesAutoresizingMaskIntoConstraints = false
-        root.addSubview(footerLabel)
-
-        NSLayoutConstraint.activate([
-            separator.leadingAnchor.constraint(equalTo: root.leadingAnchor),
-            separator.trailingAnchor.constraint(equalTo: root.trailingAnchor),
-            separator.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -Self.footerHeight),
-            footerLabel.topAnchor.constraint(equalTo: separator.bottomAnchor),
-            footerLabel.bottomAnchor.constraint(equalTo: root.bottomAnchor),
-            footerLabel.trailingAnchor.constraint(lessThanOrEqualTo: root.trailingAnchor, constant: -12),
-        ])
-    }
-
-    private func updateFooter() {
-        guard let selectedCategoryID else {
-            footerLabel.stringValue = "清单里没有分类信息"
-            return
-        }
-        let name = categories.first { $0.id == selectedCategoryID }?.name ?? "id \(selectedCategoryID)"
-        if isLoading {
-            footerLabel.stringValue = "\(name) · 正在加载…"
-        } else {
-            footerLabel.stringValue = "\(name) · 共 \(items.count) 条"
-        }
     }
 
     // MARK: - 数据
@@ -609,22 +785,18 @@ final class WallpaperBrowserViewController: NSViewController {
         sliceGeneration += 1
         let generation = sliceGeneration
 
-        isLoading = true
         items = []
-        selectedItemID = nil
-        // 切分类时把预览也停掉：旧分类的条目马上就不在列表里了。
-        previewPlayer.teardown()
+        // 切分类时把预览浮层关掉：旧分类的条目马上就不在列表里了，
+        // 留着浮层会变成「显示一条已经不存在的条目」。
+        dismissPreview(nil)
         collectionView.reloadData()
         updateGridPlaceholder(message: "正在加载分类…", showSpinner: true)
-        updateFooter()
-        updateDetailPane()
 
         dataSource.browserLoadItems(for: categoryID) { [weak self] result in
             guard let self, generation == self.sliceGeneration else {
                 self?.log?("丢弃过期的浏览分类结果（id \(categoryID)）")
                 return
             }
-            self.isLoading = false
             switch result {
             case .success(let loaded):
                 self.items = loaded
@@ -640,14 +812,14 @@ final class WallpaperBrowserViewController: NSViewController {
                 self.updateGridPlaceholder(message: failure.message, showSpinner: false, canRetry: true)
                 self.log?("⚠️ 浏览窗口：分类 \(categoryID) 加载失败（\(failure.message)）")
             }
-            self.updateFooter()
-            self.updateDetailPane()
         }
     }
 
     // MARK: - 缩略图
 
     @objc private func gridBoundsDidChange() {
+        applyGridWidth(gridScroll.contentView.bounds.width)
+
         // 滚动中不发请求：每次 bounds 变化都重置这个 120ms 的计时器，
         // 于是只有停下来之后才会真正去要图。快速滚过 3536 条不该产生 3536 个请求。
         thumbnailDebounce?.invalidate()
@@ -711,14 +883,16 @@ extension WallpaperBrowserViewController: NSTableViewDataSource, NSTableViewDele
             cell = NSTableCellView()
             cell.identifier = identifier
             let label = NSTextField(labelWithString: "")
-            label.font = .systemFont(ofSize: 12)
+            label.font = .systemFont(ofSize: Self.categoryFontSize)
             label.lineBreakMode = .byTruncatingTail
             label.translatesAutoresizingMaskIntoConstraints = false
             cell.addSubview(label)
             cell.textField = label
             NSLayoutConstraint.activate([
-                label.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 4),
-                label.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: -4),
+                // 内边距从 4 放到 8：栏宽收窄之后，两个字的名字贴到边缘会显得局促，
+                // 76 − 16 = 60 仍放得下四个字。
+                label.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 8),
+                label.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: -8),
                 label.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
             ])
         }
@@ -747,7 +921,7 @@ extension WallpaperBrowserViewController: NSTableViewDataSource, NSTableViewDele
     }
 }
 
-// MARK: - 中栏数据源
+// MARK: - 右栏数据源
 
 extension WallpaperBrowserViewController: NSCollectionViewDataSource, NSCollectionViewDelegateFlowLayout {
 
@@ -777,29 +951,11 @@ extension WallpaperBrowserViewController: NSCollectionViewDataSource, NSCollecti
         layout collectionViewLayout: NSCollectionViewLayout,
         sizeForItemAt indexPath: IndexPath
     ) -> NSSize {
-        BrowserItemView.cardSize
+        gridItemSize()
     }
 
-    func collectionView(_ collectionView: NSCollectionView, didSelectItemsAt indexPaths: Set<IndexPath>) {
-        guard let indexPath = indexPaths.first, indexPath.item < items.count else { return }
-        selectedItemID = items[indexPath.item].id
-        // 换条目 → 停掉上一个的预览，回到静态图（决策 4：默认静态图）。
-        previewPlayer.stop()
-        updateDetailPane()
-    }
-
-    func collectionView(_ collectionView: NSCollectionView, didDeselectItemsAt indexPaths: Set<IndexPath>) {
-        // 点空白处会取消选中（`allowsEmptySelection` 默认就是 true）。不处理这个回调的话，
-        // 右栏会继续显示上一条、按钮照样可点 —— 网格上没有任何高亮，右栏却说「选中了这条」，
-        // 而 `updateDetailPane()` 的「未选择」分支本来是设计好的，只是选中过一条之后就再也回不去。
-        //
-        // **只在真的变成空选中时才清**：切换选中时 AppKit 会先 deselect 再 select，
-        // 无条件清空会把刚选中的那条擦掉（结果取决于两个回调的先后顺序，不能赌）。
-        guard collectionView.selectionIndexes.isEmpty else { return }
-        selectedItemID = nil
-        // 用 `teardown()` 而不是 `stop()`：没有选中项就没有「静态图」可回，状态该是 `.idle`
-        // （`stop()` 停在 `.cover`，会让右栏留着一个已经不属于任何条目的预览层）。
-        previewPlayer.teardown()
-        updateDetailPane()
-    }
+    // 刻意**不实现** `didSelectItemsAt` / `didDeselectItemsAt`：这两个回调此前存在的
+    // 唯一理由是驱动右栏（选中的条目 → 右栏显示它的预览与按钮）。右栏移除之后
+    // 没有消费者了 —— 网格高亮由 `NSCollectionView` 自己管，预览只认「双击」
+    // （见 `previewItemID`）。留着这两个空回调只会让人以为选中态还有别的副作用。
 }

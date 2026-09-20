@@ -9,6 +9,9 @@ import LiveWallCore
 /// 这既是它能工作的原因，也说明它不会干扰日常桌面观感。
 ///
 /// 来源优先级：清单里的静态图（`coverUrl`）→ 抓当前播放帧 → 放弃（保留系统原墙纸）。
+///
+/// 退出时走 `freezeCurrent`：同步地把**正在播的那条**的静态图留在系统墙纸上
+/// （不是恢复用户原墙纸 —— 详见那里的说明）。
 /// 并发约定与项目其它组件一致：**只在主线程使用**（AppDelegate 在主线程调用，
 /// 内部异步路径也都在 `Task { @MainActor in }` 里 await）。刻意**不**标注 `@MainActor` ——
 /// 标了会让 AppDelegate 里 `lazy var` 的属性初始化变成跨隔离调用，直接编译报错。
@@ -24,6 +27,12 @@ final class LockScreenPreviewer {
 
     private let cacheDirectory: URL
     private let policy: LockScreenPreviewPolicy
+    /// 用户原墙纸的持久化位置（`displayID → 路径`）。
+    ///
+    /// 为什么要落盘：退出时会把当前播放的静态图**留在**系统墙纸上（见 `freezeCurrent`），
+    /// 下次启动再读「原墙纸」读到的就是本 App 自己留下的那张，之后关闭锁屏预览
+    /// 开关会「恢复」到一张 App 的封面。真原墙纸只在第一次运行时才拿得到，必须存下来。
+    private let recordsURL: URL
 
     private var lastSignature: PreviewSignature?
     private var lastApplied: URL?
@@ -34,12 +43,16 @@ final class LockScreenPreviewer {
     private var operationGeneration = 0
     /// 失败提示只报一次，避免每换一张片就刷一条警告。
     private var didReportFailure = false
-    private var didRecordOriginals = false
+    /// 是否已经尝试过从磁盘读回上一轮记录（只读一次，之后不再碰文件）。
+    private var didAttemptLoad = false
     private var originalWallpapers: [UInt32: URL] = [:]
+    /// 「系统墙纸是自家缓存图」这条日志只打一次，否则每换一张片刷一条。
+    private var didReportOwnCache = false
 
     init(cacheDirectory: URL, policy: LockScreenPreviewPolicy = LockScreenPreviewPolicy()) {
         self.cacheDirectory = cacheDirectory
         self.policy = policy
+        self.recordsURL = cacheDirectory.appendingPathComponent("original-wallpapers.json")
     }
 
     // MARK: - 对外接口
@@ -107,14 +120,66 @@ final class LockScreenPreviewer {
         }
     }
 
-    /// 退出时把系统墙纸恢复成用户原来的那张。
+    /// 退出时把「当前正在播的那条」的静态图**固化**成系统墙纸。
     ///
-    /// 不做的话，App 退出后桌面会直接露出一张「最后播放过的静态图」，用户会以为
-    /// 自己的壁纸被改坏了。**进程被强杀时恢复不了**（只能手动改回来），所以日志里
-    /// 会把原图路径打出来。
+    /// 与 `update` 的区别：**这里是同步的** —— 退出流程没有时间窗，不能 await 下载。
+    /// 三条来源按优先级：
+    /// 1. 当前张的静态图已经写过（`lastSignature.itemID == itemID`）→ 再设一遍，
+    ///    顺带兜住 `setDesktopImageURL` 的生效延迟；
+    /// 2. 抓当前帧 —— 必须在 `engine.teardown()` **之前**调用，播放器还在播才取得到帧
+    ///    （暂停态 `hasNewPixelBuffer` 恒为 false，见 `PlaybackEngine.currentFrame`）；
+    /// 3. 都拿不到 → **保持现状不动**（通常是上一张），绝不把墙纸清空。
+    ///
+    /// 顺带作废所有在飞的 `update`：退出清理期间它们若抢先写完，会把固化结果顶掉。
+    @discardableResult
+    func freezeCurrent(
+        itemID: Int,
+        multiScreenPolicy: MultiScreenPolicy,
+        frameProvider: () -> CGImage?
+    ) -> Outcome {
+        operationGeneration += 1
+
+        let pairs = Self.screenPairs()
+        let displayIDs = policy.targetDisplayIDs(policy: multiScreenPolicy, screens: pairs.map(\.identity))
+        let targets = pairs.filter { displayIDs.contains($0.identity.displayID) }
+        guard !targets.isEmpty else {
+            log?("退出固化：目标屏为空，跳过")
+            return .skipped
+        }
+
+        // 1) 当前张已经写过 —— 绝大多数退出走这条，图与正在播的完全一致
+        if let signature = lastSignature, signature.itemID == itemID,
+           let cached = lastApplied, FileManager.default.fileExists(atPath: cached.path) {
+            let applied = setWallpaper(cached, to: targets)
+            log?("退出固化：复用已缓存的 \(cached.lastPathComponent) → \(applied) 块屏")
+            return applied > 0 ? .written : .failed
+        }
+
+        // 2) 刚换片、封面还在下载 → 抓当前帧补上
+        guard let frame = frameProvider() else {
+            log?("退出固化：当前张的静态图还没写好且抓不到当前帧，保留现有墙纸")
+            return .skipped
+        }
+        guard let written = writeFrame(frame, avoiding: lastApplied?.lastPathComponent) else {
+            return .failed
+        }
+        let applied = setWallpaper(written, to: targets)
+        guard applied > 0 else { return .failed }
+        // 记下来，让调用方紧接着的 `reapplyCached()` 有东西可重设。
+        lastApplied = written
+        lastDisplayIDs = displayIDs
+        log?("退出固化：已抓当前帧 \(written.lastPathComponent) → \(applied) 块屏")
+        return .written
+    }
+
+    /// 把系统墙纸恢复成用户原来的那张（**关闭锁屏预览开关**时调用）。
+    ///
+    /// 退出**不**走这里 —— 退出要的是把当前播放的静态图留在桌面上（见 `freezeCurrent`）。
+    /// 关掉开关时必须恢复，否则「关掉」之后锁屏仍是最后一张静态图，用户会以为开关没生效。
+    /// **进程被强杀时恢复不了**（只能手动改回来），所以日志里会把原图路径打出来。
     func restoreUserWallpaper() {
         operationGeneration += 1
-        guard didRecordOriginals, !originalWallpapers.isEmpty else { return }
+        guard !originalWallpapers.isEmpty else { return }
         var restored = 0
         for pair in Self.screenPairs() {
             guard let url = originalWallpapers[pair.identity.displayID] else { continue }
@@ -129,7 +194,8 @@ final class LockScreenPreviewer {
         lastApplied = nil
         lastSignature = nil
         lastDisplayIDs.removeAll()
-        didRecordOriginals = false
+        // 原墙纸已经还回去了，下次开写前要从头记一遍（磁盘那份仍在，允许再读一次）。
+        didAttemptLoad = false
         originalWallpapers.removeAll()
     }
 
@@ -192,16 +258,8 @@ final class LockScreenPreviewer {
             return .skipped
         }
 
-        var applied = 0
-        for pair in targets {
-            guard operation == operationGeneration else { return .skipped }
-            do {
-                try NSWorkspace.shared.setDesktopImageURL(imageURL, for: pair.screen, options: [:])
-                applied += 1
-            } catch {
-                log?("锁屏预览：设置屏 \(pair.identity.displayID) 的墙纸失败：\(error.localizedDescription)")
-            }
-        }
+        guard operation == operationGeneration else { return .skipped }
+        let applied = setWallpaper(imageURL, to: targets)
         guard applied > 0 else {
             reportFailure("锁屏预览：系统拒绝了墙纸设置")
             return .failed
@@ -245,8 +303,22 @@ final class LockScreenPreviewer {
         return destination
     }
 
-    private func writeFrame(_ image: CGImage) -> URL? {
-        let name = policy.cacheFileName(generation: generation, fileExtension: "jpg")
+    /// 把一张图设到目标屏上，返回成功设置的屏数。
+    private func setWallpaper(_ url: URL, to targets: [(screen: NSScreen, identity: ScreenIdentity)]) -> Int {
+        var applied = 0
+        for pair in targets {
+            do {
+                try NSWorkspace.shared.setDesktopImageURL(url, for: pair.screen, options: [:])
+                applied += 1
+            } catch {
+                log?("锁屏预览：设置屏 \(pair.identity.displayID) 的墙纸失败：\(error.localizedDescription)")
+            }
+        }
+        return applied
+    }
+
+    private func writeFrame(_ image: CGImage, avoiding previousName: String? = nil) -> URL? {
+        let name = policy.cacheFileName(generation: generation, fileExtension: "jpg", avoiding: previousName)
         generation += 1
         let destination = cacheDirectory.appendingPathComponent(name)
         let rep = NSBitmapImageRep(cgImage: image)
@@ -275,17 +347,58 @@ final class LockScreenPreviewer {
     // MARK: - 原墙纸记录与恢复
 
     private func recordOriginalsIfNeeded() {
-        guard !didRecordOriginals else { return }
-        didRecordOriginals = true
-        for pair in Self.screenPairs() {
-            if let url = NSWorkspace.shared.desktopImageURL(for: pair.screen) {
-                originalWallpapers[pair.identity.displayID] = url
+        // 记到了就收工。**没记到要允许下次再试** —— 典型场景是启动时系统墙纸还是
+        // 上一轮留下的自家缓存图（认不出来、只能跳过），而用户在本次会话里手动换了
+        // 壁纸：那时再读一次就拿到了。只读一次磁盘，之后靠内存判断。
+        guard originalWallpapers.isEmpty else { return }
+
+        if !didAttemptLoad {
+            didAttemptLoad = true
+            if let saved = loadRecords(), !saved.isEmpty {
+                originalWallpapers = saved
+                log?("锁屏预览：沿用已记录的原墙纸 \(saved.count) 块屏")
+                return
             }
         }
-        if !originalWallpapers.isEmpty {
-            let paths = originalWallpapers.values.map(\.path).joined(separator: "、")
-            log?("锁屏预览：已记录原墙纸（\(paths)），退出时恢复")
+
+        var recorded: [UInt32: URL] = [:]
+        var skippedOwn = 0
+        for pair in Self.screenPairs() {
+            guard let url = NSWorkspace.shared.desktopImageURL(for: pair.screen) else { continue }
+            guard !LockScreenPreviewPolicy.isOwnCacheFile(url, cacheDirectory: cacheDirectory) else {
+                skippedOwn += 1
+                continue
+            }
+            recorded[pair.identity.displayID] = url
         }
+        originalWallpapers = recorded
+        guard !recorded.isEmpty else {
+            guard !didReportOwnCache else { return }
+            didReportOwnCache = true
+            log?("锁屏预览：当前系统墙纸是本 App 上次留下的缓存图（\(skippedOwn) 块屏），没有可记录的原墙纸；用户换壁纸后会自动补记")
+            return
+        }
+        saveRecords(recorded)
+        let paths = recorded.values.map(\.path).joined(separator: "、")
+        log?("锁屏预览：已记录原墙纸（\(paths)），关闭锁屏预览时恢复")
+    }
+
+    private func loadRecords() -> [UInt32: URL]? {
+        guard let data = try? Data(contentsOf: recordsURL),
+              let raw = try? JSONDecoder().decode([String: String].self, from: data) else { return nil }
+        var result: [UInt32: URL] = [:]
+        for (key, path) in raw {
+            guard let displayID = UInt32(key) else { continue }
+            result[displayID] = URL(fileURLWithPath: path)
+        }
+        return result
+    }
+
+    private func saveRecords(_ records: [UInt32: URL]) {
+        let raw = Dictionary(uniqueKeysWithValues: records.map { (String($0.key), $0.value.path) })
+        guard let data = try? JSONEncoder().encode(raw) else { return }
+        try? FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
+        try? data.write(to: recordsURL, options: .atomic)
     }
 
     // MARK: - 屏幕配对

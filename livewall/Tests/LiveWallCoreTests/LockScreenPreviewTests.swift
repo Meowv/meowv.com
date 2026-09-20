@@ -152,6 +152,67 @@ func lockScreenPreviewTests() {
             )
         }
     }
+
+    suite("锁屏预览：退出固化时的文件名避让") {
+
+        test("与上次写入同名时顺延一个槽位") {
+            let policy = LockScreenPreviewPolicy()
+            expectEqual(
+                policy.cacheFileName(generation: 0, fileExtension: "jpg", avoiding: "cover-0.jpg"),
+                "cover-1.jpg",
+                "同路径重复设置不一定触发刷新，必须换一个槽位"
+            )
+        }
+
+        test("不同名时不变") {
+            let policy = LockScreenPreviewPolicy()
+            expectEqual(
+                policy.cacheFileName(generation: 0, fileExtension: "jpg", avoiding: "cover-1.jpg"),
+                "cover-0.jpg",
+                "本来就不冲突就不该顺延"
+            )
+        }
+
+        test("没有上次写入时按原规则") {
+            let policy = LockScreenPreviewPolicy()
+            expectEqual(
+                policy.cacheFileName(generation: 1, fileExtension: "png", avoiding: nil),
+                "cover-1.png",
+                "首次写盘不受影响"
+            )
+        }
+    }
+
+    suite("锁屏预览：识别自家缓存图") {
+
+        let cache = URL(fileURLWithPath: "/Users/me/Library/Application Support/com.meowv.livewall", isDirectory: true)
+
+        test("缓存目录里的图算自家") {
+            expect(
+                LockScreenPreviewPolicy.isOwnCacheFile(
+                    cache.appendingPathComponent("cover-0.jpg"),
+                    cacheDirectory: cache
+                ),
+                "退出留下的封面必须认出来，否则会被当成用户原墙纸"
+            )
+        }
+
+        test("系统默认墙纸不算") {
+            let system = URL(fileURLWithPath: "/System/Library/CoreServices/DefaultDesktop.heic")
+            expect(
+                !LockScreenPreviewPolicy.isOwnCacheFile(system, cacheDirectory: cache),
+                "不能把用户的原墙纸误判成自家缓存"
+            )
+        }
+
+        test("同名前缀的兄弟目录不算") {
+            let sibling = URL(fileURLWithPath: "/Users/me/Library/Application Support/com.meowv.livewall-2/cover-0.jpg")
+            expect(
+                !LockScreenPreviewPolicy.isOwnCacheFile(sibling, cacheDirectory: cache),
+                "按路径分量比较，不能只比字符串前缀"
+            )
+        }
+    }
 }
 
 /// 手动下载的文件名规则。

@@ -93,6 +93,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var sliceRequestGeneration = 0
     /// 每个播放槽位的加载代次。旧请求完成后不能覆盖用户已经选中的新内容。
     private var loadGenerationBySlot: [PlaybackSlotKey: Int] = [:]
+    /// 每个槽位当前的视频加载任务。代次只能丢弃结果，任务本身也要取消，
+    /// 否则旧的 HEAD / AVURLAsset 加载仍会继续占用网络和解码资源。
+    private var loadTasksBySlot: [PlaybackSlotKey: Task<Void, Never>] = [:]
+    /// 同一 URL 的并发准入校验只执行一次。多屏候选不足时，多个槽位会共享同一条视频。
+    /// 这里只做 in-flight 去重，不长期缓存 `AVURLAsset`，避免把大型资源留在内存中。
+    private var sharedVideoLoads: [URL: Task<LoadedVideo, Error>] = [:]
 
     /// 待恢复的每屏源（displayID → 条目 id）。见 `ScreenSourceRestore`。
     ///
@@ -369,16 +375,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         isShuttingDown = true
         processMonitor.cancel()
         scheduleTimer?.invalidate()
+        for task in loadTasksBySlot.values { task.cancel() }
+        loadTasksBySlot.removeAll()
+        for task in sharedVideoLoads.values { task.cancel() }
+        sharedVideoLoads.removeAll()
         network.stop()
         persistScreenSources()
-        // 恢复用户原来的墙纸。不恢复的话，退出后桌面会直接露出一张「最后播放过的
-        // 静态图」，用户会以为自己的壁纸被改坏了。进程被 SIGKILL 时恢复不了，
-        // 原图路径已写在日志里。
-        lockScreenPreviewer.restoreUserWallpaper()
+        // 退出要的是「把当前播放的静态图留在桌面上」，**不是**恢复用户原墙纸 ——
+        // 后者会让桌面跳回一张跟刚才播放内容毫不相干的图。
+        // 必须在 `engine.teardown()` 之前：抓帧兜底要求播放器还在播。
+        freezeCurrentWallpaper()
+        // `setDesktopImageURL` 生效有延迟（见 `reapplyCached` 的说明），而进程马上
+        // 就要退出 —— 给主线程一点时间让它落地，然后再设一次兜底。
+        RunLoop.main.run(until: Date().addingTimeInterval(0.3))
+        lockScreenPreviewer.reapplyCached()
         // 浏览窗口也要关掉：它持有预览播放器与在飞的缩略图请求，
         // 留着会让进程在「已经退出清理」之后还挂着一个窗口。
         browserWindowController?.close()
         engine.teardown()
+    }
+
+    /// 退出前把「当前正在播的那条」的静态图固化成系统墙纸。
+    ///
+    /// 锁屏预览关着时系统墙纸从没被动过，什么都不用做。
+    /// 抓帧兜底要求播放器还在播，所以只能排在 `engine.teardown()` 之前。
+    private func freezeCurrentWallpaper() {
+        guard preferences.lockScreenPreview else { return }
+        guard let primary = engine.primaryKey, let item = engine.item(on: primary) else { return }
+        lockScreenPreviewer.freezeCurrent(
+            itemID: item.id,
+            multiScreenPolicy: screenCoordinator.policy,
+            frameProvider: { self.engine.currentFrame(on: primary) }
+        )
     }
 
     /// 接住 SIGTERM / SIGINT 并转成正常退出流程。
@@ -718,6 +746,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// 加载并播放指定条目。失败时按 `FailurePolicy` 决定重试、拉黑还是保持画面。
     private func loadAndPlay(_ item: WallpaperItem, attempt: Int, on key: PlaybackSlotKey) {
+        loadTasksBySlot[key]?.cancel()
         let generation = (loadGenerationBySlot[key] ?? 0) + 1
         loadGenerationBySlot[key] = generation
 
@@ -734,9 +763,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
-        Task { @MainActor in
+        let task = Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer {
+                // 失败重试可能已经替换了任务；不要误删新任务的句柄。
+                if self.loadGenerationBySlot[key] == generation {
+                    self.loadTasksBySlot[key] = nil
+                }
+            }
             do {
-                let loaded = try await VideoLoader.load(url)
+                let loaded = try await self.loadVideo(url)
+                guard !Task.isCancelled else { return }
                 // 加载是异步的，期间槽位可能已经被拆掉（屏拔了 / 策略切了）。
                 // 往一个不存在的槽位里塞内容只会让播放器空转。
                 guard self.engine.slotKeys().contains(key) else {
@@ -782,6 +819,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     self.persistScreenSources()
                 }
             } catch {
+                guard !Task.isCancelled else { return }
                 guard self.loadGenerationBySlot[key] == generation else {
                     self.log("槽位 \(key.label) 的旧加载失败结果已过期，忽略 \(item.id)")
                     return
@@ -789,6 +827,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self.handleLoadFailure(error, item: item, attempt: attempt, on: key)
             }
         }
+        loadTasksBySlot[key] = task
+    }
+
+    /// 共享同一 URL 的并发准入校验，完成后立即移除任务引用。
+    private func loadVideo(_ url: URL) async throws -> LoadedVideo {
+        if let existing = sharedVideoLoads[url] {
+            return try await existing.value
+        }
+        let task = Task { () throws -> LoadedVideo in
+            try await VideoLoader.load(url)
+        }
+        sharedVideoLoads[url] = task
+        defer { sharedVideoLoads[url] = nil }
+        return try await task.value
     }
 
     /// 加载失败的统一出口。
@@ -1057,6 +1109,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func syncPlaybackSlots() {
         let keys = screenCoordinator.playbackSlotKeys()
         let previous = Set(engine.slotKeys())
+        for key in previous where !keys.contains(key) {
+            loadTasksBySlot[key]?.cancel()
+            loadTasksBySlot[key] = nil
+            loadGenerationBySlot[key] = (loadGenerationBySlot[key] ?? 0) + 1
+        }
         engine.useSlots(keys)
 
         // 重建窗口后必须重新绑定 —— 新窗口没有 playerLayer，不 attach 就是一片黑

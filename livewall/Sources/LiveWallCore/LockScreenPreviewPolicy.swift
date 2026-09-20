@@ -72,6 +72,33 @@ public struct LockScreenPreviewPolicy: Equatable, Sendable {
         return "cover-\(slot).\(ext)"
     }
 
+    /// 同上，但**避开** `previousName`：算出来跟上次写入同名就顺延一个槽位。
+    ///
+    /// 退出固化会用到：那时可能刚换片、当前张的静态图还没写过，只能抓帧补一张，
+    /// 而抓帧恰好轮到与「上一张」相同的文件名 —— 系统按 URL 判断内容是否变化，
+    /// 同路径重复设置不一定触发刷新，于是桌面看不出换过图。
+    public func cacheFileName(
+        generation: Int,
+        fileExtension: String,
+        avoiding previousName: String?
+    ) -> String {
+        let first = cacheFileName(generation: generation, fileExtension: fileExtension)
+        guard let previousName, first == previousName else { return first }
+        return cacheFileName(generation: generation + 1, fileExtension: fileExtension)
+    }
+
+    /// `url` 是不是本 App 自己写进缓存目录的那张图。
+    ///
+    /// 用来分辨「用户真正的原墙纸」和「上一轮退出时留下的封面」—— 后者会被
+    /// `NSWorkspace.desktopImageURL(for:)` 如实读回来，当成原墙纸记下就永远
+    /// 恢复不到真原图了（关闭锁屏预览时尤其明显：恢复完还是 App 留下的那张）。
+    public static func isOwnCacheFile(_ url: URL, cacheDirectory: URL) -> Bool {
+        let path = url.standardizedFileURL.path
+        let directory = cacheDirectory.standardizedFileURL.path
+        let prefix = directory.hasSuffix("/") ? directory : directory + "/"
+        return path.hasPrefix(prefix)
+    }
+
     /// 目标屏。复用多屏策略的语义：镜像与每屏独立都覆盖全部目标屏，
     /// 「仅主屏」只写主屏 —— 否则副屏会顶着一张不属于它的静态图。
     public func targetDisplayIDs(

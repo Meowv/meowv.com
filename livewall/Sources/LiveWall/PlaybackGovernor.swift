@@ -91,13 +91,19 @@ final class PlaybackGovernor {
     // MARK: - 采集与求值
 
     private func sampleAndResolve() {
-        signals.thermalPressure = Self.currentThermalPressure()
-        signals.lowPowerMode = ProcessInfo.processInfo.isLowPowerModeEnabled
-        signals.idleSeconds = Self.systemIdleSeconds()
-        signals.onBattery = Self.isOnBattery()
-        signals.screenFullyCovered = Self.areAwakeScreensCovered()
+        let resolver = resolverProvider()
+        // 配置关闭时跳过对应的系统调用，尤其是遮挡检测的全局窗口扫描。
+        signals.thermalPressure = resolver.pauseOnThermalPressure ? Self.currentThermalPressure() : .nominal
+        signals.lowPowerMode = resolver.pauseOnLowPowerMode
+            ? ProcessInfo.processInfo.isLowPowerModeEnabled
+            : false
+        signals.idleSeconds = resolver.pauseWhenIdle && resolver.idleThresholdSeconds > 0
+            ? Self.systemIdleSeconds()
+            : 0
+        signals.onBattery = resolver.pauseOnBattery ? Self.isOnBattery() : false
+        signals.screenFullyCovered = resolver.pauseWhenCovered ? Self.areAwakeScreensCovered() : false
 
-        let resolved = resolverProvider().resolve(signals)
+        let resolved = resolver.resolve(signals)
         guard resolved != state else { return }
         state = resolved
         onStateChange?(resolved, signals)
@@ -163,6 +169,9 @@ final class PlaybackGovernor {
     /// 也没有 on-screen 窗口，不跳过的话会永远判成「未遮挡」。
     private static func areAwakeScreensCovered() -> Bool {
         let ourPID = Int(ProcessInfo.processInfo.processIdentifier)
+        // 一次采样只取一份全局窗口快照；逐屏重新调用 CGWindowListCopyWindowInfo
+        // 会重复产生系统 IPC 和窗口字典分配。
+        let snapshot = WindowInspector.snapshot()
         var checked = 0
 
         for screen in NSScreen.screens {
@@ -174,7 +183,11 @@ final class PlaybackGovernor {
 
             checked += 1
             let bounds = CGDisplayBounds(displayID)
-            if !WindowInspector.isScreenFullyCovered(displayBounds: bounds, excludingPIDs: [ourPID]) {
+            if !WindowInspector.isScreenFullyCovered(
+                displayBounds: bounds,
+                snapshot: snapshot,
+                excludingPIDs: [ourPID]
+            ) {
                 return false
             }
         }

@@ -49,6 +49,8 @@ public struct CandidatePool {
     private var source: [WallpaperItem] = []
     /// 待取队列。
     private var queue: [WallpaperItem] = []
+    /// 头部游标，避免每次 `next()` 都移动整个数组。
+    private var queueHead = 0
     /// 失效条目的 id（CDN 404 / 解码失败等）。
     private var blacklist: Set<Int> = []
 
@@ -86,6 +88,7 @@ public struct CandidatePool {
     /// 队列里可能还有已经不在候选集里的条目，不清就会在切换时「漏」出来。
     private mutating func rebuild() {
         queue = []
+        queueHead = 0
     }
 
     public var totalCount: Int { source.count }
@@ -103,6 +106,11 @@ public struct CandidatePool {
     /// 标记某条失效。若它正排在待取队列里，一并移除。
     public mutating func blacklist(id: Int) {
         blacklist.insert(id)
+        // 失败处理是低频路径；先丢掉已经消费的前缀，保持游标与数组索引一致。
+        if queueHead > 0 {
+            queue.removeFirst(queueHead)
+            queueHead = 0
+        }
         queue.removeAll { $0.id == id }
     }
 
@@ -120,6 +128,10 @@ public struct CandidatePool {
     /// 或生成侧重新导出过清单把它去掉了。
     public mutating func restore(id: Int) -> WallpaperItem? {
         guard let item = source.first(where: { $0.id == id }) else { return nil }
+        if queueHead > 0 {
+            queue.removeFirst(queueHead)
+            queueHead = 0
+        }
         queue.removeAll { $0.id == id }
         currentID = item.id
         return item
@@ -132,9 +144,14 @@ public struct CandidatePool {
         if queue.isEmpty {
             refill(using: &generator)
         }
-        guard !queue.isEmpty else { return nil }
-        let item = queue.removeFirst()
+        guard queueHead < queue.count else { return nil }
+        let item = queue[queueHead]
+        queueHead += 1
         currentID = item.id
+        if queueHead == queue.count {
+            queue.removeAll(keepingCapacity: true)
+            queueHead = 0
+        }
         return item
     }
 
@@ -179,6 +196,7 @@ public struct CandidatePool {
             pool.shuffle(using: &generator)
         }
         queue = pool
+        queueHead = 0
     }
 
     public mutating func refill() {
@@ -187,5 +205,5 @@ public struct CandidatePool {
     }
 
     /// 待取队列的剩余长度，用于诊断。
-    public var pendingCount: Int { queue.count }
+    public var pendingCount: Int { queue.count - queueHead }
 }
