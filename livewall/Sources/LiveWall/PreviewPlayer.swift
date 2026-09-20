@@ -86,7 +86,7 @@ final class PreviewPlayer {
 
     // MARK: - 控制
 
-    /// 开始预览播放。只有双击卡片（或浮层里的「预览」按钮）才会调到这里。
+    /// 开始预览播放。由卡片双击或 Hover 预览按钮触发。
     func play(_ item: WallpaperItem) {
         teardownPlayer()
         guard let url = item.remoteURL else {

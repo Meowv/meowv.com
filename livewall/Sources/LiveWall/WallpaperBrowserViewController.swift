@@ -36,20 +36,21 @@ protocol WallpaperBrowserDataSource: AnyObject {
     func browserSetPinned(_ item: WallpaperItem, categoryID: Int)
 }
 
-/// 浮层的容器与压暗层：**只做视觉，不接事件**。
-///
-/// `hitTest` 命中自己时返回 nil，于是鼠标事件穿到下面的网格上 —— 网格照常
-/// 可点、可滚、**可双击换一条预览**。
-///
-/// ⚠️ **容器和压暗层两个都得是这个类**，只改容器不够：`super.hitTest` 会先命中
-/// 铺满整个区域的压暗层并返回它（不是 self），于是事件照样被吃掉 ——
-/// 实测「面板外的点」仍命中浮层内的视图，网格还是死区。
-/// 两个都穿透之后，面板之外的点才真正落到网格上。
+/// 浮层容器本身不抢事件，真正的背景层负责关闭浮层。
 private final class PassThroughView: NSView {
 
     override func hitTest(_ point: NSPoint) -> NSView? {
         let hit = super.hitTest(point)
         return hit === self ? nil : hit
+    }
+}
+
+/// 预览浮层的压暗背景：点击背景关闭，而不是把事件穿透到网格。
+private final class PreviewBackdropView: NSView {
+    var onClick: (() -> Void)?
+
+    override func mouseDown(with event: NSEvent) {
+        onClick?()
     }
 }
 
@@ -108,14 +109,13 @@ private final class BrowserGridView: NSCollectionView {
 final class WallpaperBrowserViewController: NSViewController {
 
     // 布局常量
-    /// 分类栏宽度。清单里的分类名实测**都是两个字**，138 会留下大片空白，
-    /// 收到 76 之后「两个字 + 内边距」刚好，四个字也还放得下。
-    private static let categoryWidth: CGFloat = 76
-    private static let categoryFontSize: CGFloat = 14
-    private static let categoryRowHeight: CGFloat = 28
+    /// 分类栏保留 Source List 的呼吸感，也能容纳分类数量和较长名称。
+    private static let categoryWidth: CGFloat = 128
+    private static let categoryFontSize: CGFloat = 13
+    private static let categoryRowHeight: CGFloat = 32
 
-    private static let gridInset: CGFloat = 12
-    private static let cardSpacing: CGFloat = 12
+    private static let gridInset: CGFloat = 16
+    private static let cardSpacing: CGFloat = 16
     /// 列数随网格宽度切换（3 / 4 / 5）。阈值按「均分后的卡片宽度落在 180–260pt」
     /// 定的：太窄看不清缩略图，太宽一屏没几条。
     private static let columns4From: CGFloat = 880
@@ -145,17 +145,17 @@ final class WallpaperBrowserViewController: NSViewController {
     private let gridSpinner = NSProgressIndicator()
     private let gridRetryButton = NSButton()
 
-    // 预览浮层：双击打开，盖在网格区上
+    // 预览浮层：双击或 Hover 按钮打开，盖在网格区上
     private let previewOverlay = PassThroughView()
-    /// 压暗层：只压暗网格（视觉上的「正在看这一条」），**也必须是穿透的** ——
-    /// 它铺满整个网格区，只要它接事件，网格就全变成死区。
-    private let previewBackdrop = PassThroughView()
+    /// 压暗层：点击背景关闭预览，避免「看起来像模态、实际上能点穿」的混合行为。
+    private let previewBackdrop = PreviewBackdropView()
     private let previewPanel = NSView()
     private let previewStage = NSView()
     private let previewImageView = NSImageView()
     private let previewPlaceholderLabel = NSTextField(labelWithString: "无预览图")
     private let previewStateContainer = NSView()
     private let previewStateLabel = NSTextField(labelWithString: "")
+    private let previewRetryButton = NSButton()
     private let previewCloseButton = NSButton()
     private let previewInfoLabel = NSTextField(labelWithString: "")
     /// 「设为桌面壁纸」。放在画面**下方信息行的右端**（原来「停止预览」的位置）——
@@ -205,6 +205,7 @@ final class WallpaperBrowserViewController: NSViewController {
     override func loadView() {
         let root = NSView(frame: NSRect(x: 0, y: 0, width: 1060, height: 660))
         root.wantsLayer = true
+        root.layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
         view = root
 
         buildCategoryColumn(in: root)
@@ -332,7 +333,7 @@ final class WallpaperBrowserViewController: NSViewController {
     private func buildCategoryColumn(in root: NSView) {
         let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("Category"))
         column.resizingMask = .autoresizingMask
-        // ⚠️ 列宽必须**显式**设成栏宽：`NSTableColumn` 默认是 100pt，栏宽收到 76 之后
+        // ⚠️ 列宽必须**显式**设成栏宽：`NSTableColumn` 默认是 100pt，栏宽变化后
         // 列不会自动跟着收 —— 实测单元格仍是 100 宽，长分类名被滚动视图硬裁，
         // 而不是在标签内部截断成「超长分类名…」。
         column.width = Self.categoryWidth
@@ -340,10 +341,11 @@ final class WallpaperBrowserViewController: NSViewController {
         column.maxWidth = Self.categoryWidth
         categoryTable.addTableColumn(column)
         categoryTable.headerView = nil
+        categoryTable.setAccessibilityLabel("壁纸分类")
         categoryTable.rowHeight = Self.categoryRowHeight
         categoryTable.allowsEmptySelection = false
         categoryTable.allowsMultipleSelection = false
-        categoryTable.selectionHighlightStyle = .regular
+        categoryTable.style = .sourceList
         categoryTable.dataSource = self
         categoryTable.delegate = self
 
@@ -354,6 +356,8 @@ final class WallpaperBrowserViewController: NSViewController {
         categoryTable.autoresizingMask = [.width]
         categoryScroll.documentView = categoryTable
         categoryScroll.hasVerticalScroller = true
+        categoryScroll.scrollerStyle = .overlay
+        categoryScroll.autohidesScrollers = true
         categoryScroll.drawsBackground = false
         categoryScroll.borderType = .noBorder
         categoryScroll.translatesAutoresizingMaskIntoConstraints = false
@@ -386,6 +390,7 @@ final class WallpaperBrowserViewController: NSViewController {
         collectionView.isSelectable = true
         collectionView.allowsEmptySelection = true
         collectionView.allowsMultipleSelection = false
+        collectionView.setAccessibilityLabel("动态壁纸")
         collectionView.backgroundColors = [.clear]
         collectionView.register(BrowserItemView.self, forItemWithIdentifier: BrowserItemView.identifier)
 
@@ -395,13 +400,15 @@ final class WallpaperBrowserViewController: NSViewController {
         // frame + 宽度自适应，剩下的交给它自己 —— 与 `NSTableView` 当 documentView
         // 是同一套机制。先定 frame 再挂 documentView。
         // 初始 frame 只用来给布局一个非零起点（宽度随后由 autoresizingMask 跟上）；
-        // 984 = 默认窗口 1060 − 分类栏 76。
-        collectionView.frame = NSRect(x: 0, y: 0, width: 984, height: 660)
+        // 932 = 默认窗口 1060 − 分类栏 128。
+        collectionView.frame = NSRect(x: 0, y: 0, width: 932, height: 660)
         collectionView.autoresizingMask = [.width]
         // 卡片尺寸要在 frame 定下来之后才算（它取决于网格宽度）。
         layout.itemSize = gridItemSize()
         gridScroll.documentView = collectionView
         gridScroll.hasVerticalScroller = true
+        gridScroll.scrollerStyle = .overlay
+        gridScroll.autohidesScrollers = true
         gridScroll.drawsBackground = false
         gridScroll.borderType = .noBorder
         gridScroll.translatesAutoresizingMaskIntoConstraints = false
@@ -520,6 +527,9 @@ final class WallpaperBrowserViewController: NSViewController {
         previewBackdrop.translatesAutoresizingMaskIntoConstraints = false
         previewBackdrop.wantsLayer = true
         previewBackdrop.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.35).cgColor
+        previewBackdrop.onClick = { [weak self] in
+            self?.dismissPreview(nil)
+        }
         previewOverlay.addSubview(previewBackdrop)
 
         previewPanel.wantsLayer = true
@@ -559,7 +569,7 @@ final class WallpaperBrowserViewController: NSViewController {
         previewPlayer.view.isHidden = true
         previewStage.addSubview(previewPlayer.view)
 
-        // 状态角标（静态图 / 播放中 / 加载中… / 资源不可用）。用容器而不是直接给
+        // 状态提示（加载中 / 资源不可用）。用容器而不是直接给
         // NSTextField 设 layer 背景 —— 文本字段自己会画背景，两者会打架。
         previewStateContainer.wantsLayer = true
         previewStateContainer.layer?.cornerRadius = 3
@@ -574,14 +584,28 @@ final class WallpaperBrowserViewController: NSViewController {
         previewStateLabel.translatesAutoresizingMaskIntoConstraints = false
         previewStateContainer.addSubview(previewStateLabel)
 
-        // ── 画面内的两个按钮 ────────────────────────────
-        previewCloseButton.title = "✕"
+        // ── 画面内的关闭按钮 ────────────────────────────
+        previewCloseButton.title = ""
+        previewCloseButton.image = NSImage(
+            systemSymbolName: "xmark",
+            accessibilityDescription: "关闭预览"
+        )
         previewCloseButton.bezelStyle = .rounded
         previewCloseButton.font = .systemFont(ofSize: 12)
+        previewCloseButton.toolTip = "关闭预览"
+        previewCloseButton.setAccessibilityLabel("关闭预览")
         previewCloseButton.target = self
         previewCloseButton.action = #selector(dismissPreview(_:))
         previewCloseButton.translatesAutoresizingMaskIntoConstraints = false
         previewStage.addSubview(previewCloseButton)
+
+        previewRetryButton.title = "重试"
+        previewRetryButton.bezelStyle = .rounded
+        previewRetryButton.isHidden = true
+        previewRetryButton.target = self
+        previewRetryButton.action = #selector(retryPreview)
+        previewRetryButton.translatesAutoresizingMaskIntoConstraints = false
+        previewStage.addSubview(previewRetryButton)
 
         // ── 画面下方：一行信息 + 「设为桌面壁纸」 ──────────
         previewInfoLabel.font = .systemFont(ofSize: 12)
@@ -608,7 +632,7 @@ final class WallpaperBrowserViewController: NSViewController {
         // 宽度用**常量**约束（具体值在 `viewDidLayout` 里按网格区宽度夹取）。
         // 不要写成 `panel.width == overlay.width - 80`：那种等式是双向的，
         // Auto Layout 会为了满足它反过来把网格区压窄 —— 实测窗口被从 1060 压到 778
-        // （778 = 分类栏 138 + 网格 640，而 640 = 560 + 80），甚至压到了 minSize 880 以下。
+        // （778 = 旧分类栏 138 + 网格 640，而 640 = 560 + 80），甚至压到了 minSize 880 以下。
         panelWidthConstraint = previewPanel.widthAnchor.constraint(
             equalToConstant: Self.overlayMaxWidth
         )
@@ -650,8 +674,8 @@ final class WallpaperBrowserViewController: NSViewController {
             previewPlaceholderLabel.centerXAnchor.constraint(equalTo: previewStage.centerXAnchor),
             previewPlaceholderLabel.centerYAnchor.constraint(equalTo: previewStage.centerYAnchor),
 
-            previewStateContainer.topAnchor.constraint(equalTo: previewStage.topAnchor, constant: 8),
-            previewStateContainer.leadingAnchor.constraint(equalTo: previewStage.leadingAnchor, constant: 8),
+            previewStateContainer.centerXAnchor.constraint(equalTo: previewStage.centerXAnchor),
+            previewStateContainer.centerYAnchor.constraint(equalTo: previewStage.centerYAnchor, constant: -18),
             previewStateLabel.topAnchor.constraint(equalTo: previewStateContainer.topAnchor, constant: 2),
             previewStateLabel.bottomAnchor.constraint(equalTo: previewStateContainer.bottomAnchor, constant: -2),
             previewStateLabel.leadingAnchor.constraint(equalTo: previewStateContainer.leadingAnchor, constant: 5),
@@ -659,6 +683,11 @@ final class WallpaperBrowserViewController: NSViewController {
 
             previewCloseButton.topAnchor.constraint(equalTo: previewStage.topAnchor, constant: 8),
             previewCloseButton.trailingAnchor.constraint(equalTo: previewStage.trailingAnchor, constant: -8),
+            previewCloseButton.widthAnchor.constraint(equalToConstant: 28),
+            previewCloseButton.heightAnchor.constraint(equalToConstant: 28),
+
+            previewRetryButton.topAnchor.constraint(equalTo: previewStateContainer.bottomAnchor, constant: 8),
+            previewRetryButton.centerXAnchor.constraint(equalTo: previewStage.centerXAnchor),
 
             previewInfoLabel.topAnchor.constraint(equalTo: previewStage.bottomAnchor, constant: 10),
             previewInfoLabel.leadingAnchor.constraint(equalTo: previewPanel.leadingAnchor, constant: Self.panelPadding),
@@ -685,7 +714,11 @@ final class WallpaperBrowserViewController: NSViewController {
     /// 「双击那一下」只能人工点，但**打开之后发生了什么**是可以验的。
     func openPreview(forItemAt indexPath: IndexPath) {
         guard indexPath.item < items.count else { return }
-        let item = items[indexPath.item]
+        openPreview(forItem: items[indexPath.item])
+    }
+
+    /// Hover 按钮与双击共用的预览入口。
+    private func openPreview(forItem item: WallpaperItem) {
         previewItemID = item.id
         previewOverlay.isHidden = false
         updatePreviewPanel()
@@ -738,25 +771,36 @@ final class WallpaperBrowserViewController: NSViewController {
         case .idle:
             previewPlayer.view.isHidden = true
             previewImageView.isHidden = false
-            // 打开即播、且不可暂停/停止 —— 所以「静态图 / 加载中… / 播放中」
-            // 这些状态角标都不再显示（星哥要求移除左上角的状态提示）。
             setPreviewStateText("")
-        case .loading, .playing:
+            previewRetryButton.isHidden = true
+        case .loading:
+            // 起播期间保留静态封面，避免网络慢时只看到黑屏。
+            previewPlayer.view.isHidden = true
+            previewImageView.isHidden = false
+            setPreviewStateText("正在加载动态预览…")
+            previewRetryButton.isHidden = true
+        case .playing:
             previewPlayer.view.isHidden = false
             previewImageView.isHidden = true
             setPreviewStateText("")
+            previewRetryButton.isHidden = true
         case .failed(_, let reason):
             previewPlayer.view.isHidden = true
             previewImageView.isHidden = false
-            // **失败仍然提示**：画面会退回静态图，不给原因看起来就是「点了没反应」。
-            // 这条不是「播放中」那类常态提示，是错误反馈，所以留着。
-            setPreviewStateText(reason)
+            setPreviewStateText("动态预览不可用：\(reason)")
+            previewRetryButton.isHidden = false
         }
     }
 
     private func setPreviewStateText(_ text: String) {
         previewStateLabel.stringValue = text
         previewStateContainer.isHidden = text.isEmpty
+    }
+
+    @objc private func retryPreview() {
+        guard let item = previewItem else { return }
+        loadPreviewCover(for: item)
+        previewPlayer.play(item)
     }
 
     // 刻意**不提供**停止/暂停入口：弹窗打开即自动播放，且不可暂停或停止
@@ -889,10 +933,8 @@ extension WallpaperBrowserViewController: NSTableViewDataSource, NSTableViewDele
             cell.addSubview(label)
             cell.textField = label
             NSLayoutConstraint.activate([
-                // 内边距从 4 放到 8：栏宽收窄之后，两个字的名字贴到边缘会显得局促，
-                // 76 − 16 = 60 仍放得下四个字。
-                label.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 8),
-                label.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: -8),
+                label.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 12),
+                label.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: -12),
                 label.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
             ])
         }
@@ -943,6 +985,9 @@ extension WallpaperBrowserViewController: NSCollectionViewDataSource, NSCollecti
             isCurrent: item.id == dataSource?.browserPinnedItemID,
             thumbnail: nil
         )
+        card.onPreviewRequested = { [weak self] item in
+            self?.openPreview(forItem: item)
+        }
         return card
     }
 
