@@ -22,6 +22,7 @@ import {
   disposeCanvas,
 } from '../rendered-page';
 import { neutralizeNegativeVerticalMargins } from './margin-normalize';
+import { findSectionIndex } from './page-lookup';
 import { SectionRefCounter, ViewportPool } from './viewport-pool';
 
 export interface HtmlBookSection {
@@ -240,22 +241,26 @@ const IMAGE_WAIT_TIMEOUT_MS = 400;
  * 插图是否已经全部就位。加载失败的图片 `complete` 同样为 true，
  * 因此这里不会把坏图误判成「永久未就绪」。
  */
+function intersectsViewport(element: HTMLElement, bounds: DOMRect): boolean {
+  const elementBounds = element.getBoundingClientRect();
+  return (
+    elementBounds.right > bounds.left &&
+    elementBounds.left < bounds.right &&
+    elementBounds.bottom > bounds.top &&
+    elementBounds.top < bounds.bottom
+  );
+}
+
 function visibleImages(root: HTMLElement, viewport: HTMLElement): HTMLImageElement[] {
   const bounds = viewport.getBoundingClientRect();
-  return [...root.querySelectorAll('img')].filter((image) => {
-    const imageBounds = image.getBoundingClientRect();
-    return (
-      imageBounds.right > bounds.left &&
-      imageBounds.left < bounds.right &&
-      imageBounds.bottom > bounds.top &&
-      imageBounds.top < bounds.bottom
-    );
-  });
+  return [...root.querySelectorAll('img')].filter((image) => intersectsViewport(image, bounds));
 }
 
 function imagesReady(root: HTMLElement, viewport: HTMLElement): boolean {
-  for (const image of visibleImages(root, viewport)) {
-    if (!image.complete) return false;
+  const bounds = viewport.getBoundingClientRect();
+  for (const image of root.querySelectorAll('img')) {
+    if (image.complete) continue;
+    if (intersectsViewport(image, bounds)) return false;
   }
   return true;
 }
@@ -265,9 +270,7 @@ function waitForVisibleImages(
   viewport: HTMLElement,
   signal?: AbortSignal,
 ): Promise<void> {
-  const images = visibleImages(root, viewport);
-  if (!images.length) return Promise.resolve();
-  return waitForImages(images, signal);
+  return waitForImages(visibleImages(root, viewport), signal);
 }
 
 function waitForImages(images: readonly HTMLImageElement[], signal?: AbortSignal): Promise<void> {
@@ -766,9 +769,7 @@ export class HtmlPageProvider implements PageProvider {
 
   #resolvePage(pageNumber: number): { sectionIndex: number; pageIndex: number } {
     this.#assertPage(pageNumber);
-    const sectionIndex = this.#pagination.findIndex(
-      ({ startPage, pageCount }) => pageNumber >= startPage && pageNumber < startPage + pageCount,
-    );
+    const sectionIndex = findSectionIndex(this.#pagination, pageNumber);
     if (sectionIndex < 0) {
       // 分页索引过期时兜底到最后一章末页，避免越界导致整书渲染失败。
       const last = this.#pagination.length - 1;
@@ -837,6 +838,7 @@ export class HtmlPageProvider implements PageProvider {
         assertNotAborted(options.signal);
         // 截图时若还有插图没解码，这一版就是临时位图：照常交付展示，但不该被长期缓存，
         // 否则「缺图」会以缓存的形式固定下来，用户要等换主题或改窗口尺寸才会恢复。
+        // 已完整图片不再做第二次几何判断，只检查截图后仍未完成且位于当前视口的图片。
         const provisional = !imagesReady(slot.content, slot.viewport);
         const targetHeight = Math.max(
           1,

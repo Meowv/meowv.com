@@ -61,9 +61,11 @@ export class PageSurfaceCache {
 
   prune(): void {
     while (this.#byteSize > this.maxBytes) {
-      const candidate = [...this.#byTexture.values()]
-        .filter((entry) => entry.references === 0)
-        .sort((left, right) => left.lastUsed - right.lastUsed)[0];
+      let candidate: SurfaceEntry | null = null;
+      for (const entry of this.#byTexture.values()) {
+        if (entry.references > 0) continue;
+        if (!candidate || entry.lastUsed < candidate.lastUsed) candidate = entry;
+      }
       if (!candidate) return;
       this.#delete(candidate);
     }

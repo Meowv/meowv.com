@@ -106,6 +106,8 @@ export interface BookEngineDiagnostics {
 const LONG_FRAME_MS = 24;
 const FRAME_IDLE_GAP_MS = 250;
 const FRAME_TIME_SMOOTHING = 0.2;
+const READING_WIDTH_BUCKETS = [640, 896, 1280, 1536, 2048] as const;
+const PREVIEW_WIDTH_BUCKETS = [320, 512, 768, 1024] as const;
 
 interface DragSession extends DragVelocityState {
   pointerId: number;
@@ -213,6 +215,9 @@ export class BookEngine {
   #deskMaterial: MeshStandardMaterial | null = null;
   #theme: BookTheme = 'dark';
   #pageAspect = 0.72;
+  #hostWidth = 1;
+  #hostHeight = 1;
+  #pixelRatio = 1;
   #spreadIndex = 0;
   #currentPage = 1;
   #displayMode: BookDisplayMode = 'spread';
@@ -284,7 +289,8 @@ export class BookEngine {
     this.#renderer.shadowMap.enabled = true;
     this.#renderer.shadowMap.type = PCFShadowMap;
     this.#renderer.shadowMap.autoUpdate = false;
-    this.#renderer.setPixelRatio(Math.min(2, globalThis.devicePixelRatio || 1));
+    this.#pixelRatio = Math.min(2, globalThis.devicePixelRatio || 1);
+    this.#renderer.setPixelRatio(this.#pixelRatio);
     this.#renderer.domElement.tabIndex = 0;
     this.#renderer.domElement.setAttribute('aria-label', '可翻动的仿真书');
     host.append(this.#renderer.domElement);
@@ -595,7 +601,13 @@ export class BookEngine {
     if (this.#disposed) return;
     const width = Math.max(1, this.#host.clientWidth);
     const height = Math.max(1, this.#host.clientHeight);
-    this.#renderer.setPixelRatio(Math.min(2, globalThis.devicePixelRatio || 1));
+    this.#hostWidth = width;
+    this.#hostHeight = height;
+    const pixelRatio = Math.min(2, globalThis.devicePixelRatio || 1);
+    if (pixelRatio !== this.#pixelRatio) {
+      this.#pixelRatio = pixelRatio;
+      this.#renderer.setPixelRatio(pixelRatio);
+    }
     this.#renderer.setSize(width, height, false);
     this.#camera.aspect = width / height;
     const nextMode: BookDisplayMode = width <= 760 && height > width ? 'focused' : 'spread';
@@ -1271,8 +1283,8 @@ export class BookEngine {
   }
 
   #targetTextureWidth(quality: PageRenderQuality): number {
-    const width = Math.max(320, this.#host.clientWidth);
-    const height = Math.max(260, this.#host.clientHeight);
+    const width = Math.max(320, this.#hostWidth);
+    const height = Math.max(260, this.#hostHeight);
     const cssWidth = Math.min(width * 0.42, height * 0.61 * this.#pageAspect);
     const ratio = quality === 'reading' ? 1 : this.#memoryLimited ? 0.52 : 0.7;
     const edgeLimit =
@@ -1281,21 +1293,22 @@ export class BookEngine {
       quality === 'reading' ? 640 : 320,
       Math.min(
         edgeLimit * Math.min(1, this.#pageAspect),
-        Math.round(cssWidth * Math.min(2, globalThis.devicePixelRatio || 1) * ratio * this.#zoom),
+        Math.round(cssWidth * this.#pixelRatio * ratio * this.#zoom),
       ),
     );
-    const buckets = quality === 'reading' ? [640, 896, 1280, 1536, 2048] : [320, 512, 768, 1024];
+    const buckets = quality === 'reading' ? READING_WIDTH_BUCKETS : PREVIEW_WIDTH_BUCKETS;
     const maximumWidth = Math.max(
       quality === 'reading' ? 640 : 320,
       edgeLimit * Math.min(1, this.#pageAspect),
     );
     const cappedWidth = Math.min(rawWidth, maximumWidth);
-    const eligibleBuckets = buckets.filter((bucket) => bucket <= maximumWidth + 0.5);
-    return (
-      eligibleBuckets.find((bucket) => bucket >= cappedWidth) ??
-      eligibleBuckets.at(-1) ??
-      Math.round(maximumWidth)
-    );
+    let fallbackWidth: number | null = null;
+    for (const bucket of buckets) {
+      if (bucket > maximumWidth + 0.5) break;
+      fallbackWidth = bucket;
+      if (bucket >= cappedWidth) return bucket;
+    }
+    return fallbackWidth ?? Math.round(maximumWidth);
   }
 
   #blankPage(): RenderedPage {
@@ -1960,7 +1973,7 @@ export class BookEngine {
     if (this.#stateMachine.state !== 'OPEN') return;
     this.#resetCornerPreview();
     event.preventDefault();
-    const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? this.#host.clientHeight : 1;
+    const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? this.#hostHeight : 1;
     const delta = clamp(event.deltaY * unit, -240, 240);
     const focus = this.#localBookPoint(event);
     this.#setZoom(this.#zoom * Math.exp(-delta * 0.0018), focus);
