@@ -1517,9 +1517,19 @@ key window 事件循环，这个结论不可靠 —— 要确认得真机按一�
 
 关闭窗口会先关掉预览浮层（里面会释放预览播放器），再取消在飞的缩略图请求。**桌面播放不动、不暂停** —— 浏览窗口是「挑一张」的工具，不该把正在看的壁纸弄停。窗口 `isReleasedWhenClosed = false`（controller 持有它，否则关闭后再 `showWindow` 会崩），关闭时 `AppDelegate` 把引用置空，下次打开重新建。
 
-### `.accessory` 下开窗口要自己激活
+### `.accessory` 下靠 `orderFrontRegardless` 上屏，不靠激活
 
-App 是 `LSUIElement`（不占 Dock），窗口默认会开在别的 App 后面，用户以为点了没反应。所以 `present()` 里**先 `makeKeyAndOrderFront` 再 `NSApp.activate`** —— 顺序反了激活请求会作用在一个还没上屏的窗口上。窗口用**默认 level**（远高于桌面覆盖窗口那一层，不跟壁纸抢层级），也刻意**不切 `.regular` 激活策略**（那会闪出一个 Dock 图标，而窗口里只有列表和按钮、没有文本输入）。
+App 是 `LSUIElement`（不占 Dock），窗口默认会开在别的 App 后面，用户以为点了没反应。
+
+P10 时这里的做法是「先 `makeKeyAndOrderFront` 再 `NSApp.activate`」，**2026-09-21 真机复现说明它不够**：修复前窗口在窗口列表里排第 5 位、当前最前的 App（文本编辑）排第 4 位 —— 窗口确实开在了别的 App 后面。根因是**激活这条路在 macOS 14 起已经不成立**：
+
+- `NSApp.activate()` 是**协作式**请求，头文件写明「不保证会被激活」，系统可以直接拒绝；
+- `activate(ignoringOtherApps:)` 的 `ignoringOtherApps` 自 macOS 14 起**完全无效**（编译器直接告警「will have no effect」，本机 macOS 27 上实测与 `activate()` 等价）；
+- `makeKeyAndOrderFront` 只把窗口排到**本 App** 窗口列表的最前，提不到当前活跃 App 的窗口之上。
+
+真正提得上来的是 **`window.orderFrontRegardless()`**：它不看激活状态，直接把窗口提到本层最前。现在的 `present()` 是 `makeKeyAndOrderFront` → `orderFrontRegardless` → 请求一次激活（被拒只损失键盘焦点，点一下窗口就有）→ **下一个 runloop 再 `orderFrontRegardless` 一次**（本方法是从状态栏菜单项里调进来的，菜单收起那一拍可能把窗口再压回去；重提幂等，不引入定时器）。
+
+实测（同一台机器、同一条菜单路径，开窗后 0.15 s 采样）：修复前窗口在活跃 App 窗口**之下**；修复后窗口在最前、活跃 App 的窗口退到第 2 位。之后用户切到别的 App 时窗口被压下去，那是系统的正常行为，不是回归。窗口仍是**默认 level**（远高于桌面覆盖窗口那一层，不跟壁纸抢层级），也刻意**不切 `.regular` 激活策略**（那会闪出一个 Dock 图标，而窗口里只有列表和按钮、没有文本输入）。
 
 ### 已知限制
 
@@ -1956,7 +1966,7 @@ App 是 `LSUIElement`（不占 Dock），窗口默认会开在别的 App 后面�
 
 **P10 的实际能力**：**动态壁纸浏览窗口** —— 维护段的「打开动态壁纸」打开一个**两栏**窗口（分类 / 条目网格），可按分类翻看、**双击打开视频预览浮层**（「设为桌面壁纸」按钮叠在预览画面里）、一键设为桌面壁纸，详见[动态壁纸浏览窗口](#动态壁纸浏览窗口)。配套的**固定**状态进了「选片顺序」子菜单（三行：随机 / 顺序 / 固定），语义是「只播这一条、所有屏都不再轮换」，落点是 `config.json` 的 `pinnedItem`（存整条而非 id），解钉只有三个触发点，详见[固定：只播当前这一条](#固定只播当前这一条)。
 
-**这一版明确打破了「不做 App 内普通 UI 窗口」的既有取舍。** 那条取舍从 P1 起就在，理由（要在 `LSUIElement` 下自己处理激活、焦点与关闭行为）在 P10 被正面解决：`present()` 先 `makeKeyAndOrderFront` 再 `NSApp.activate`，窗口用默认 level、不切 `.regular`、关窗不退出。[`AGENTS.md`](./AGENTS.md) 里那条「赞助不做 App 内弹窗」的结论保留，但理由换成了维护面（二维码是运营素材，内置就得发版才能改）。
+**这一版明确打破了「不做 App 内普通 UI 窗口」的既有取舍。** 那条取舍从 P1 起就在，理由（要在 `LSUIElement` 下自己处理激活、焦点与关闭行为）在 P10 被正面解决：`present()` 把窗口提到最前，窗口用默认 level、不切 `.regular`、关窗不退出（**提法在 2026-09-21 改过**：原先的「先 `makeKeyAndOrderFront` 再 `NSApp.activate`」实测会把窗口开在别的 App 后面，现在走 `orderFrontRegardless`，见[动态壁纸浏览窗口](#动态壁纸浏览窗口)的「`.accessory` 下靠 `orderFrontRegardless` 上屏」）。[`AGENTS.md`](./AGENTS.md) 里那条「赞助不做 App 内弹窗」的结论保留，但理由换成了维护面（二维码是运营素材，内置就得发版才能改）。
 
 **顺带修掉一个隐患**：`notice`（状态区附注）会被 `advance()` / `loadAndPlay` 冲掉。固定态下 `advance()` 被拦截所以不执行清空，但解钉提示需要「画面已经换了」之后仍然可见 —— 于是加了 `pendingUnpinNotice` 在 `loadAndPlay` 成功时写回。落实回执同理用 `pendingPinAnnouncement` 延迟到铺满成功后发，否则会被 `applySliceResult` 里的 `notice = nil` 冲掉，状态区会永远挂着「正在设为桌面壁纸…」。
 

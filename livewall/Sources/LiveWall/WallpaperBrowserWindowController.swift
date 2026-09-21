@@ -31,8 +31,8 @@ final class BrowserWindow: NSWindow {
 ///
 /// 1. **单窗口复用**：`AppDelegate` 只持有一个 controller，已存在就 `present()` 前置，
 ///    不重复开；
-/// 2. **`.accessory` 下激活**：先 `makeKeyAndOrderFront` 再 `NSApp.activate`，
-///    顺序反了窗口会开在别的 App 后面（`.accessory` 进程默认不抢前台）；
+/// 2. **`.accessory` 下靠 `orderFrontRegardless` 上屏**：`NSApp.activate` 是**协作式**请求，
+///    系统可以直接拒绝，只写激活会出现「窗口开在别的 App 后面」（见 `present()`）；
 /// 3. **关窗不退出**：`isReleasedWhenClosed = false`（controller 持有窗口，
 ///    否则关闭后再 `showWindow` 会崩），关闭时停预览播放器、取消在飞缩略图请求，
 ///    但**不调 `NSApp.terminate`** —— 菜单栏图标才是这个 App 的主体。
@@ -87,13 +87,25 @@ final class WallpaperBrowserWindowController: NSWindowController {
     /// 把窗口带到前台。
     func present() {
         guard let window else { return }
-        // **先上屏、再请求激活**：`.accessory` 进程的窗口默认开在别的 App 后面，
-        // 反过来的话激活请求会作用在一个还没上屏的窗口上。
+        // `.accessory` 进程**不能靠激活把窗口提上来**：
+        //  - `NSApp.activate()` 是协作式请求（macOS 14 起），系统可以直接拒绝；
+        //  - `activate(ignoringOtherApps:)` 的 `ignoringOtherApps` 自 macOS 14 起
+        //    **完全无效**（编译器明确告警「will have no effect」），那条分支只是给旧系统留的；
+        //  - `makeKeyAndOrderFront` 只把窗口排到**本 App** 窗口列表的最前，提不到别的 App 之上。
+        // 三者叠一起的实测后果：窗口开在别的 App 后面（2026-09-21 真机复现，见 README）。
+        // `orderFrontRegardless()` 不看激活状态，直接把窗口提到本层最前 —— 这才是可靠的那一步。
         window.makeKeyAndOrderFront(nil)
+        window.orderFrontRegardless()
+        // 激活仍然要请求：被拒时只损失键盘焦点（点一下窗口就有），成功时 Esc / ⌘W 立刻可用。
         if #available(macOS 14.0, *) {
             NSApp.activate()
         } else {
             NSApp.activate(ignoringOtherApps: true)
+        }
+        // 本方法是从**状态栏菜单项**里调进来的，动作执行时菜单还在收；菜单收起那一拍可能再把
+        // 窗口压回去。下一个 runloop 再提一次（幂等，不引入定时器）。
+        DispatchQueue.main.async { [weak window] in
+            window?.orderFrontRegardless()
         }
     }
 
