@@ -113,4 +113,20 @@ public struct LockScreenPreviewPolicy: Equatable, Sendable {
         if coverDownloadSucceeded { return .remote }
         return frameAvailable ? .frame : .none
     }
+
+    /// 从「上一次写入的目标屏」到「这一次的目标屏」，**哪些屏被移除了**。
+    ///
+    /// 抽成纯函数是为了能单测：这一段原先长在 `LockScreenPreviewer.restoreRemovedDisplays`
+    /// 里，而那个类型在 App target（测试 target 只依赖 `LiveWallCore`）——
+    /// 于是「多屏策略从全部屏幕切到仅主屏时，副屏该不该恢复成用户原墙纸」
+    /// 这条路径**一个断言都没有**。
+    ///
+    /// ⚠️ 被移除的屏要恢复成原墙纸，否则它会一直顶着一张不属于它的锁屏预览图。
+    ///
+    /// 边界：`lastDisplayIDs` 只在**写入成功后**更新，所以「第一次写入就失败」时它是空的，
+    /// 那时不会有任何屏被判定为「被移除」→ 不恢复。这是既有行为、不是这里漏了：
+    /// 没成功写过，就不存在「我们改过那块屏」这个前提。
+    public static func removedDisplayIDs(previous: [UInt32], current: [UInt32]) -> Set<UInt32> {
+        Set(previous).subtracting(current)
+    }
 }

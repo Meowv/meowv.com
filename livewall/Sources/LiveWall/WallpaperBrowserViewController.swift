@@ -197,8 +197,12 @@ final class WallpaperBrowserViewController: NSViewController {
         super.init(nibName: nil, bundle: nil)
     }
 
+    /// ⚠️ 显式传 `file: ""` / `line: 0`：`fatalError` 的 `file:` 默认值是 `#file`，
+    /// 会把**源文件名作为字符串常量**嵌进二进制（`strip` 管不到字符串字面量，
+    /// 实测 release 二进制里因此残留 3 个源文件名）。这条路径永不执行，
+    /// 丢掉崩溃定位信息零代价。
     @available(*, unavailable)
-    required init?(coder: NSCoder) { fatalError("不支持从 nib 加载") }
+    required init?(coder: NSCoder) { fatalError("不支持从 nib 加载", file: "", line: 0) }
 
     // MARK: - 生命周期
 
@@ -570,7 +574,16 @@ final class WallpaperBrowserViewController: NSViewController {
         previewPanel.translatesAutoresizingMaskIntoConstraints = false
         previewOverlay.addSubview(previewPanel)
 
-        // ── 16:9 画面区 ───────────────────────────────────
+        buildPreviewStage()
+        buildPreviewFooter()
+        activatePreviewOverlayConstraints()
+    }
+
+    /// 16:9 画面区：画面层、静态图、占位文案、预览播放器、状态层，以及画面内的关闭 / 重试按钮。
+    ///
+    /// 从 `buildPreviewOverlay` 里拆出来**纯粹是为了可读**（那个方法原本 185 行）：
+    /// 三个构建方法各自只碰自己那几个子视图，约束集中在 `activatePreviewOverlayConstraints`。
+    private func buildPreviewStage() {
         previewStage.wantsLayer = true
         previewStage.layer?.masksToBounds = true
         // 画面顶到面板上边缘 → 只裁上面两个角，与面板的圆角对齐；
@@ -634,7 +647,10 @@ final class WallpaperBrowserViewController: NSViewController {
         previewRetryButton.translatesAutoresizingMaskIntoConstraints = false
         previewStage.addSubview(previewRetryButton)
 
-        // ── 画面下方：一行信息 + 「设为桌面壁纸」 ──────────
+    }
+
+    /// 画面下方：一行信息 + 「设为桌面壁纸」按钮。
+    private func buildPreviewFooter() {
         previewInfoLabel.font = .systemFont(ofSize: 12)
         previewInfoLabel.lineBreakMode = .byTruncatingTail
         previewInfoLabel.maximumNumberOfLines = 1
@@ -656,6 +672,13 @@ final class WallpaperBrowserViewController: NSViewController {
         pinButton.translatesAutoresizingMaskIntoConstraints = false
         previewPanel.addSubview(pinButton)
 
+    }
+
+    /// 浮层的全部约束。
+    ///
+    /// **集中在一处**而不是各构建方法里就近写：这些视图由三个方法分别创建，而约束互相引用
+    /// （面板宽度、画面区的 9:16、信息行与按钮的相对位置），拆开写就看不出整体的布局意图了。
+    private func activatePreviewOverlayConstraints() {
         // 宽度用**常量**约束（具体值在 `viewDidLayout` 里按网格区宽度夹取）。
         // 不要写成 `panel.width == overlay.width - 80`：那种等式是双向的，
         // Auto Layout 会为了满足它反过来把网格区压窄 —— 实测窗口被从 1060 压到 778
@@ -846,6 +869,11 @@ final class WallpaperBrowserViewController: NSViewController {
 
     @objc private func retryLoadItems() {
         guard let selectedCategoryID else { return }
+        // **必须先清失败表**：缩略图加载器把「两级候选都失败」的地址记进失败表并
+        // 永久跳过（那是防坏地址占并发位，是对的），但瞬时故障（一次超时 / DNS 抖动）
+        // 也会被同样记住。不清的话这次重试只会重新请求「没失败过」的那些，
+        // 用户点完「重试」发现那批卡片还是「无预览图」。
+        loader.retryFailed()
         loadItems(for: selectedCategoryID)
     }
 

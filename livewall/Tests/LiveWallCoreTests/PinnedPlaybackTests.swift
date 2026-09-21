@@ -9,7 +9,13 @@ private func pinnedItem(id: Int = 1, url: String = "https://cdn.test/1.mp4") -> 
 /// 这组测试的意义在于把**输入空间穷举**掉：`PinDriveEvent.allCases` 有 8 项，
 /// 乘上「固定 / 未固定」两种状态共 16 组，全部断言。
 /// 这样以后往 `PinDriveEvent` 里加 case 时，如果忘了在判定表里给它一个裁决，
-/// 这里的穷举会立刻失败 —— 而不是等用户在真机上发现画面被悄悄换走。
+/// 这里的穷举会立刻失败。
+///
+/// ⚠️ **但这组断言目前证明不了生产行为**：`PinnedPlayback.resolve` 没有生产调用点，
+/// 而且判定表与 `AppDelegate` 里的实际分支已经分叉两处（`.scheduledAdvance` 与
+/// `.slotRecovery`）—— 详见 `PinnedPlayback` 文件顶部「当前状态」一节。
+/// 换句话说：这组测试全绿**不代表**固定态在真机上是对的。
+/// 它锁住的是「判定表自身自洽且穷举」，接线之前不要把它当成回归保护。
 func pinnedPlaybackTests() {
     suite("固定状态机：驱动事件裁决") {
 

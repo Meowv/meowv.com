@@ -44,6 +44,7 @@ livewall/
 │  │  ├─ TextLayout.swift       终端显示宽度对齐（中文占两列）
 │  │  ├─ CatalogModel.swift     索引与切片的 Codable 结构 + 解析/清洗 + 切片地址安全解析
 │  │  ├─ CatalogService.swift   索引与切片**各自**的降级链（远程 → 本地副本）
+│  │  ├─ SynchronousFetch.swift 同步取数（锁保护结果 + 超时必取消 + 会话可注入，供上面两者共用）
 │  │  ├─ CategoryMenu.swift     内容过滤子菜单的行（名字/置灰/勾选），纯逻辑可单测
 │  │  ├─ WallpaperSourceMenu.swift 「壁纸来源」子菜单的行（线上 / 本地），纯逻辑可单测
 │  │  ├─ LocalVideoSource.swift 本地文件夹 → 条目（递归收 mp4、路径稳定哈希 id）
@@ -72,6 +73,10 @@ livewall/
 │  │  ├─ SingleInstance.swift   单实例：身份判定、flock 取锁、被挡掉时的回执
 │  │  ├─ PackedText.swift       混淆字符串的运行时还原（类型名刻意叫 Folded，见「反编译门槛」）
 │  │  ├─ IntegrityCheck.swift   自身代码签名自校验（类型名刻意叫 Seal，只报告不阻断）
+│  │  ├─ UpdateState.swift      更新功能在菜单里的**唯一状态**（显隐 / 可点性 / 文案全由它派生）
+│  │  ├─ UpdateDecision.swift   版本判定（三态，可穷举）+ 最低系统版本比较
+│  │  ├─ UpdateFeed.swift       version.json 的解析与清洗（sha256 必填；落盘文件名走 DownloadNaming）
+│  │  ├─ UpdateMenu.swift       「有新版本」那一段的文案与动作（纯数据，可单测）
 │  │  ├─ UpdateSignature.swift  version.json 的 Ed25519 验签（公钥内嵌客户端，私钥本机离线）
 │  │  └─ SeededGenerator.swift  可复现随机源（供测试确定性验证）
 │  ├─ LiveWallDesktop/  依赖 AppKit 的桌面层代码
@@ -95,7 +100,9 @@ livewall/
 │     ├─ FileDownloader.swift   通用下载到指定路径（锁屏预览与手动下载共用）
 │     ├─ VideoLoader.swift      HEAD 探测 + AVAsset 准入校验与时长探测
 │     ├─ NetworkMonitor.swift   NWPathMonitor 网络可达性
-│     └─ ProcessMonitor.swift   进程自身的 CPU / 内存采样（惰性：展开菜单时采一次）
+│     ├─ ProcessMonitor.swift   进程自身的 CPU / 内存采样（惰性：展开菜单时采一次）
+│     ├─ UpdateChecker.swift    版本检查（**先验签再解析**；无定时器、失败静默）
+│     └─ UpdateInstaller.swift  下载 dmg 并校验（只下载不安装；分块算 sha256）
 ├─ Tests/LiveWallCoreTests/     单元测试 + 自建断言运行器（本机无 XCTest，见下）
 └─ build/                       组装产物（.gitignore）
 ```
@@ -283,6 +290,7 @@ cd livewall
 #         两者都走与系统终止同一条清理路径（含把当前这张的静态图留在桌面上）。
 #         用 kill -9（SIGKILL）强杀时清理不了，桌面会停在上一张静态图。
 # 日志：~/Library/Logs/com.meowv.livewall/livewall.log（达 2 MB 自动清空复用，不生成历史文件）
+#      ⚠️ 日志里含本机绝对路径（包路径、本地壁纸文件夹、用户原墙纸路径）—— 贴出来求助前先看一眼
 
 # ── 测试 ────────────────────────────────────────────
 ./test.sh
@@ -457,25 +465,46 @@ xattr -dr com.apple.quarantine /Applications/LiveWall.app
 - **改地址时**：用 `tools/encode-strings.py "新地址"` 重新生成字节数组，别手算。脚本里的
   `KEY` 必须与 `PackedText.swift` 的 `key` 一致；不一致会还原成乱码，但**不会静默** ——
   `LiveWallCoreTests` 断言了还原后的 URL，会立刻失败。
-- `reveal` 上的 `@inline(never)` **不能去掉**：否则 `-O` 可能把常量折叠回明文，混淆白做。
+- `open` 上的 `@inline(never)` **不能去掉**：否则 `-O` 可能把常量折叠回明文，混淆白做。
 
 ### 发布版剥离符号（`build.sh`）
 
-`swift build -c release` 的产物**带完整符号表与调试信息**，`build.sh` 在**签名之前**对二进制
-跑 `strip -x`。这一条最容易被低估 —— 实测未剥离的二进制里泄漏了两类东西：
+`swift build -c release` 的产物带完整符号表，`build.sh` 在**签名之前**对二进制跑 `strip -x`。
 
-| 未剥离时泄漏的                     | 实测                                     | 剥离后 |
-| ---------------------------------- | ---------------------------------------- | ------ |
-| **本地构建路径**（含用户名、项目目录） | `/Users/qix/...` 出现 **109 次**          | 0      |
-| **全部源码文件路径**（等于模块地图） | `Sources/LiveWallCore/*.swift`、`*.o`     | 0      |
-| 符号表（`nm` 可读的内部类型与方法名） | 22,547 条                                | 1,883 条 |
+> ⚠️ **2026-09-21 更正了本节此前的归因。** 原先写「未剥离的二进制泄漏 `/Users/qix` 109 次、
+> 全部源码文件路径」—— 用同一批命令复测，**二进制本体里 `/Users/` 是 0 处**；
+> 那些路径的实际载体是**同目录的 `.dSYM`**（实测 `/Users/` **306** 处、`.swift` 283 处）。
+> 而 `build.sh` 只 `cp` `Contents/MacOS/LiveWall`、**不拷 `.dSYM`**，
+> 所以这些路径本来就不会随 `.app` 分发出去 —— 拿它当 `strip` 的理由是错的。
+> 真正要盯的是：**哪天打包流程开始拷 `.dSYM`**（例如为崩溃符号化一并分发），那才是真泄漏；
+> 而那时 `strip` 帮不上忙，要改的是打包流程。
 
-- 二进制体积 1.58 MB → 0.93 MB。
+实测（SwiftPM release / macOS 27 / arm64）：
+
+| 泄漏项                                       | 未剥离         | `strip -x` 后        |
+| -------------------------------------------- | -------------- | -------------------- |
+| **符号表**（`nm` 可读的内部类型与方法名）    | **25,399 条**  | **2,122 条**         |
+| 体积                                         | 1.81 MB        | 1.08 MB              |
+| 二进制本体里的 `/Users/`                     | **0 处**       | 0 处                 |
+| 二进制本体里的 `LiveWallCore/*.swift`        | **0 处**       | 0 处                 |
+| 二进制本体里的 `LiveWall/*.swift`            | 3 处           | **0 处**（已修，见下） |
+| 同目录 `.dSYM` 里的 `/Users/`                | 306 处         | 不受影响（独立文件） |
+| **Swift 类型名**（`__swift5_*` 段）          | 有             | **仍有**             |
+
+**所以 `strip -x` 的价值在符号表** —— 2.5 万条内部类型与方法名，`nm` 一读就能还原出模块结构。
+
 - **不影响加载**：`strip -x` 只去局部符号，未定义符号与动态库依赖逐条不变（已 diff 验证），
   剥离后仍能正常 ad-hoc 签名并通过 `codesign -v`。
 - **必须在 codesign 之前** —— 改二进制会让已有签名失效；**只对 release 剥离**，debug 保留符号便于定位。
-- **strip 抹不掉 Swift 的类型名**：它们在 `__swift5_*` 元数据段里，不在符号表。要抹那部分
-  只能改源码里的类型名（见上节，已对两个安全相关类型做了）。
+- **`strip` 抹不掉三类东西**，前两类都要改源码：
+  1. **Swift 类型名** —— 在 `__swift5_*` 元数据段里，不在符号表（见上节，已对两个安全相关类型做了）。
+  2. **`fatalError` / `#file` 带进来的源文件名字符串常量**。实测剥离后仍残留 3 处
+     `LiveWall/*.swift`，逐一对应三处 `required init?(coder:) { fatalError("不支持从 nib 加载") }`
+     —— `fatalError` 的 `file:` 默认值是 `#file`，把文件名当**普通字符串常量**嵌了进去，
+     而 `strip` 管的是符号表、管不到字符串字面量。已改成
+     `fatalError(..., file: "", line: 0)`（这三条路径永不执行，丢掉崩溃定位信息零代价），
+     复测残留 **0 处**，只剩系统框架的 `*.swiftinterface`。
+  3. 系统框架的 `*.swiftinterface` 路径 —— 与我们无关，不用管。
 
 ### 启动自校验（`IntegrityCheck.swift` / 类型 `Seal`）
 
@@ -795,6 +824,21 @@ CGWindowLevelForKey(.desktopWindow)     = -2147483623
 CGWindowLevelForKey(.desktopIconWindow) = -2147483603
 系统壁纸进程「墙纸」实际占用             = -2147483625
 ```
+
+工具链（`swift --version`，2026-09-21）：
+
+```
+swift-driver version: 1.168.6  Apple Swift version 6.4 (swiftlang-6.4.0.34.1 clang-2100.3.34.1)
+Target: arm64-apple-macosx27.0.0
+```
+
+> ⚠️ **编译器是 6.4，但 `Package.swift` 声明的是 `swift-tools-version: 5.9`** ——
+> 语言模式因此停在 **Swift 5**，严格并发检查不生效。这正是历史上那两处数据竞争
+> （`sharedVideoLoads` 的并发写、同步取数的超时竞态）能编译通过的原因。
+> **升到 6.0 的规模已实测**（临时改 tools-version 后编译，未提交）：至少 2 处 error
+> （`ScreenCoordinator` 对 `@MainActor` 属性取 key path、`NetworkMonitor` 捕获非 Sendable
+> 的 `self`）与十余条 warning（AppKit 调用缺 `@MainActor` 标注、非 Sendable 捕获），
+> 且编译会在第一个失败文件处停止，**完整清单还没测全**。属于要单独立项的一批工作。
 
 有效层级区间（左开右开）：**(-2147483625, -2147483603)**，共 21 层可选。
 
@@ -1338,7 +1382,9 @@ App 是 `LSUIElement`（不占 Dock），窗口默认会开在别的 App 后面�
 - **响应式列数**：1060 → **4 列**、1400 → **5 列**、最小 880 → **3 列**；每次「卡片宽 × 列数 + 间距 + 内缩」与网格宽的差都是 **1 pt**（撑满）。
 - **浮层开着时拉伸窗口**：1060 / 1400 → 面板 760（封顶），880 → 740；三档下面板都仍在网格区内、水平居中、画面保持 16:9，且浮层**不会被拉伸关掉**。
 
-另跑了 Core 测试套件 **1148 项全绿**（这轮只动 `Sources/LiveWall/`，确认没碰坏基线）。
+另跑了 Core 测试套件全绿（这轮只动 `Sources/LiveWall/`，确认没碰坏基线）。
+**项数不写死在这里** —— 会随每次改动漂移；跑 `./test.sh` 看实际值（该脚本同时会做
+「测试函数是否都在 `main.swift` 里登记」的自检，漏登记直接失败）。
 
 **死代码扫描**（项目约定）：这轮删掉 `subtitle(for:)` / `didSelectItemsAt` / `didDeselectItemsAt` / `selectedItemID` / `isLoading` 之后，对涉及的文件重扫了一遍 —— 候选只有四个 **AppKit 回调**（`cancelOperation`、`numberOfRows`、`tableViewSelectionDidChange`、`windowWillClose`），不是死代码。顺带清掉两个**自己先前写的**死符号：`PreviewPlayer.showCover()`（函数体与 `stop()` 一字不差、无调用方）与 `PreviewPlayer.isPlaying`（全项目用到的都是 `PlaybackState.isPlaying` / `PlaybackEngine.isPlaying`）。
 

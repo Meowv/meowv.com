@@ -24,6 +24,10 @@
     <string>1</string>
     <key>LSMinimumSystemVersion</key>
     <string>13.0</string>
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.utilities</string>
+    <key>NSHumanReadableCopyright</key>
+    <string>© 2026 阿星𝑷𝒍𝒖𝒔</string>
     <key>LSUIElement</key>
     <true/>
     <key>NSHighResolutionCapable</key>

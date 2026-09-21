@@ -19,24 +19,45 @@ enum UpdateInstaller {
         var errorDescription: String? { message }
     }
 
+    /// 下载结果。
+    struct Outcome {
+        /// 落盘路径。
+        let file: URL
+        /// 实际字节数 —— 供调用方与清单里的 `sizeBytes` 对账（对不上只记日志，不阻断）。
+        let byteCount: Int64
+    }
+
     /// dmg 比视频大、也不该被 20 秒卡住，单独放宽。
     static let downloadTimeout: TimeInterval = 60
+
+    /// dmg 的**单独**体积上限。
+    ///
+    /// 与 `FileDownloader.defaultMaxBytes`（64 MB，服务静态图与视频）分开：dmg 会随
+    /// 资源增长，长到 64 MB 以上是完全正常的，而共用一个上限会让它变成一次
+    /// 莫名其妙的「文件过大」失败。
+    static let downloadMaxBytes: Int64 = 512 * 1024 * 1024
 
     static func downloadsDirectory() -> URL? {
         FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first
     }
 
-    /// 下载并校验，返回落盘路径。校验不符会**把文件删掉再抛错** ——
+    /// 下载并校验，返回落盘路径与实际大小。校验不符会**把文件删掉再抛错** ——
     /// 留一个坏文件在下载目录里比没有更糟：用户会拿它去装。
     @discardableResult
-    static func download(_ feed: UpdateFeed) async throws -> URL {
+    static func download(_ feed: UpdateFeed) async throws -> Outcome {
         guard let directory = downloadsDirectory() else {
             throw Failure(message: "找不到下载目录")
         }
         let destination = directory.appendingPathComponent(feed.suggestedFileName)
 
+        let byteCount: Int64
         do {
-            try await FileDownloader.download(feed.fileURL, to: destination, timeout: downloadTimeout)
+            byteCount = try await FileDownloader.download(
+                feed.fileURL,
+                to: destination,
+                timeout: downloadTimeout,
+                maxBytes: downloadMaxBytes
+            )
         } catch {
             throw Failure(message: "下载失败：\(error.localizedDescription)")
         }
@@ -56,11 +77,21 @@ enum UpdateInstaller {
             throw Failure(message: "文件校验不符，已删除下载的文件")
         }
 
-        return destination
+        return Outcome(file: destination, byteCount: byteCount)
     }
 
+    /// 分块计算 SHA-256。
+    ///
+    /// **不一次性 `Data(contentsOf:)`**：dmg 可能几十 MB，而上限是 512 MB ——
+    /// 为了一个摘要把整包读进常驻内存，对一个「常驻菜单栏、在意自身占用」的 App 是反讽。
+    /// 分块后内存占用降到 1 MB 级别。
     private static func sha256(of url: URL) throws -> String {
-        let data = try Data(contentsOf: url)
-        return SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+        let handle = try FileHandle(forReadingFrom: url)
+        defer { try? handle.close() }
+        var hasher = SHA256()
+        while let chunk = try handle.read(upToCount: 1 << 20), !chunk.isEmpty {
+            hasher.update(data: chunk)
+        }
+        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
     }
 }

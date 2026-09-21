@@ -273,9 +273,9 @@ final class LockScreenPreviewer {
     }
 
     private func restoreRemovedDisplays(currentDisplayIDs: [UInt32]) {
-        let previous = Set(lastDisplayIDs)
-        let current = Set(currentDisplayIDs)
-        let removed = previous.subtracting(current)
+        // 判定本身是纯函数（`LockScreenPreviewPolicy.removedDisplayIDs`），可单测。
+        let removed = LockScreenPreviewPolicy.removedDisplayIDs(
+            previous: lastDisplayIDs, current: currentDisplayIDs)
         guard !removed.isEmpty else { return }
         for pair in Self.screenPairs() where removed.contains(pair.identity.displayID) {
             guard let url = originalWallpapers[pair.identity.displayID] else { continue }

@@ -1,10 +1,34 @@
 import Foundation
 
+// MARK: - 「测试专用」的生产 API 清单
+//
+// 下面这些符号**只在测试里有调用点**（生产路径不读它们）。它们不是死代码，
+// 但此前每一处都单独写着「别当死代码删掉」—— 那种逐点打补丁的保护，
+// 下一轮死代码审计还得重新判一遍。集中登记在这里，扫描时整份跳过。
+//
+// | 符号 | 为什么留着 |
+// | --- | --- |
+// | `LevelPreset.LevelBand` | 拿本机真实的 `CGWindowLevelForKey` 校验「各预设确实落在有效区间内」这个前提 |
+// | `CoverageGrid.coverage(of:by:)` | 精确覆盖率。删掉它，「左右各占 40% 的两个窗口覆盖率是 0.8 而不是 1.0」只能退化成布尔判定 |
+// | `CoverageGrid.legacyBoundingBoxCovers` | 旧实现的等价物 —— 「为什么必须换掉 bbox 判定」的可执行证据 |
+// | `MultiScreenPolicy.slotCount(screenCount:)` | 未加上限的理论槽位数，作为 `slotPlan(from:)` 的对照 |
+// | `CandidatePool.blacklistResetCount` | 黑名单自动重置次数（生产只写不读），用于断言「全失效时确实重试了一轮」 |
+// | `ThumbnailRequestTracker` 的查询属性（`inFlightCount` / `pendingCount` / `failedCount` / `isInFlight` / `isPending`） | 并发与去重状态机的可观测面 |
+//
+// ⚠️ `ThumbnailRequestTracker.resetFailures` **不在此列** —— 它已经接进了生产
+// （`ThumbnailLoader.retryFailed()` ← 浏览窗口的「重试」按钮）。
+//
+// 新增同类符号时**加一行到这里**，不要再在符号旁边写第二遍说明。
+
 /// 极简测试运行器。
 ///
 /// 为什么不用 XCTest：本机只装了 Command Line Tools，没有 Xcode，
 /// XCTest 与 Swift Testing 都不可用（`unable to resolve module dependency: 'XCTest'`）。
 /// 这个运行器只依赖 Foundation，功能上够用；代价是没有 IDE 集成、没有测试筛选与并行。
+///
+/// `@unchecked Sendable` 是显式断言：测试**串行执行**（`main.swift` 里逐个调用），
+/// 全部状态只被主线程读写。标它是为了让 `swift-tools-version` 升到 6.0 时
+/// `static let shared` 不再被 Swift 6 语言模式报错。
 ///
 /// 用法（写在 `main.swift` 里）：
 /// ```swift
@@ -15,7 +39,7 @@ import Foundation
 /// }
 /// exit(TestRunner.shared.report())
 /// ```
-final class TestRunner {
+final class TestRunner: @unchecked Sendable {
     static let shared = TestRunner()
 
     private var suites: [String] = []

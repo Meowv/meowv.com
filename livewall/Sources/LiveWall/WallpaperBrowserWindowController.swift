@@ -77,8 +77,12 @@ final class WallpaperBrowserWindowController: NSWindowController {
         window.delegate = self
     }
 
+    /// ⚠️ 显式传 `file: ""` / `line: 0`：`fatalError` 的 `file:` 默认值是 `#file`，
+    /// 会把**源文件名作为字符串常量**嵌进二进制（`strip` 管不到字符串字面量，
+    /// 实测 release 二进制里因此残留 3 个源文件名）。这条路径永不执行，
+    /// 丢掉崩溃定位信息零代价。
     @available(*, unavailable)
-    required init?(coder: NSCoder) { fatalError("不支持从 nib 加载") }
+    required init?(coder: NSCoder) { fatalError("不支持从 nib 加载", file: "", line: 0) }
 
     /// 把窗口带到前台。
     func present() {

@@ -177,9 +177,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 最终结果 —— 此时关菜单清掉的正是那条**还没显示过**的回执，等于「点了没反应」。
     private var noticeShown = false
 
+    /// 上一次**配置写失败**的说明。**刻意独立于 `notice`**。
+    ///
+    /// 为什么不能塞进 `notice`：`notice` 会被后续的成功路径清成 nil
+    /// （`applySliceResult`、`loadAndPlay` 成功时都会），而「设置没存上」这件事
+    /// 恰恰发生在一次成功操作之后 —— 写进 `notice` 会被那次成功静默吞掉，
+    /// 于是「改完当场生效、重启回退」又一次变成没有痕迹的怪事。
+    /// 这里单独留一格，**由下一次成功的写入清掉**，菜单里单独占一行。
+    private var persistenceFailure: String?
+
     /// 菜单是否处于展开状态。**采样只在这个窗口期有效** —— 收起之后才回来的
     /// 结果一律丢弃，否则会去更新一个已经不存在的菜单。
     private var isMenuOpen = false
+
+    /// 展开期间收到过刷新请求，收起后要**补一次**菜单重建。
+    ///
+    /// 与 `isMenuOpen` 配套：展开期不换 `item.menu`（会闪一下、并重置已展开的子菜单），
+    /// 但也不能把这次刷新丢掉 —— 状态是变了才来刷新的，丢掉就等于「点了没反应」。
+    private var isMenuRebuildPending = false
     /// 本次展开是否已经发起过采样。**每次展开只采一次**是硬要求 ——
     /// 采两次的话，第一次的结果回到主线程后会把基线推进到「刚刚那一刻」，
     /// 第二次就拿着一个≈0 的区间去除，实测算出「CPU 134%（自启动 0 秒）」这种纯噪音；
@@ -192,6 +207,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var usageFailed = false
     /// 退出清理只做一次（`applicationWillTerminate` 与信号源可能都触发）。
     private var isShuttingDown = false
+
+    /// 是否正在重建窗口。见 `rebuildWindows` 的说明。
+    private var isRebuilding = false
+    /// 重建期间又收到的重建请求（原因）。重建结束后**合并执行一次**，不丢。
+    private var pendingRebuildReason: String?
     /// SIGTERM / SIGINT 的信号源。必须持有 —— 释放了就收不到信号。
     private var signalSources: [DispatchSourceSignal] = []
     /// 进程占用那一行的标记。`buildMenu` 重建菜单后靠它在 `menuNeedsUpdate` 里
@@ -451,6 +471,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // 留着会让进程在「已经退出清理」之后还挂着一个窗口。
         browserWindowController?.close()
         engine.teardown()
+    }
+
+    // MARK: - 配置落盘
+
+    /// 写回配置。**失败必须说出来**。
+    ///
+    /// 此前 13 个调用点清一色写 `try? preferences.save(to: configURL)`：磁盘满、
+    /// 目录权限异常、配置被改成只读时，用户改的间隔 / 顺序 / 固定项 / 省电开关全部
+    /// 「当场生效、重启回退」，而日志里没有任何痕迹。同一个文件在启动路径
+    /// （`applicationDidFinishLaunching`）里专门写了「写失败必须显式说出来」——
+    /// 规则是对的，只是没被执行到每一个调用点。
+    ///
+    /// 失败信息进 `persistenceFailure` 而不是 `notice`，理由见那个属性的说明。
+    ///
+    /// - Parameter context: 出问题时能定位是哪个动作触发的写入，例如「切换间隔」。
+    private func persistPreferences(_ context: String) {
+        do {
+            try preferences.save(to: configURL)
+            // 写成功了：上一次的失败说明已经不成立，清掉。
+            if persistenceFailure != nil {
+                persistenceFailure = nil
+                refreshStatusItem()
+            }
+        } catch {
+            let message = "设置未能保存（\(context)）：\(error.localizedDescription)"
+            log("⚠️ \(message)")
+            persistenceFailure = message
+            refreshStatusItem()
+        }
     }
 
     /// 退出前把「当前正在播的那条」的静态图固化成系统墙纸。
@@ -727,7 +776,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // 首次启动，或记忆值已经不在索引里（分类被删/改名）：立刻写回，
             // 否则每次启动都要重复回退一次，菜单里的勾选也不稳定。
             preferences.selectedCategoryID = entry.id
-            try? preferences.save(to: configURL)
+            persistPreferences("分类记忆")
         }
 
         pool.order = preferences.playbackOrder
@@ -1310,12 +1359,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// 重建窗口并把播放端对齐到新的屏幕/策略。
+    ///
+    /// ## 为什么需要重入守卫
+    ///
+    /// `screenCoordinator.rebuild()` 内部会自旋 run loop 等窗口上屏（上限 1 秒），
+    /// 而自旋期间**主队列上的其它 block 会照常执行** —— 包括再来一条屏幕参数变化 /
+    /// 系统唤醒通知。没有守卫时那会嵌套进第二次 `rebuildWindows`，而 `createWindows()`
+    /// 的第一步就是 `close()` 现有窗口 —— 于是「重建中重建」，外层拿到的是半成品状态。
+    ///
+    /// 后到的请求**合并成一次尾部重建**而不是丢弃：屏幕确实变了，不重建就是错的。
     private func rebuildWindows(reason: String) {
+        guard !isRebuilding else {
+            pendingRebuildReason = reason
+            log("\(reason)：正在重建中，合并为一次尾部重建")
+            return
+        }
+        isRebuilding = true
+
         let verdict = screenCoordinator.rebuild()
         syncPlaybackSlots()
         log("\(reason)后重建 \(screenCoordinator.windows.count) 个窗口：\(verdict.summary)")
         refreshStatusItem()
         persistScreenSources()
+
+        // **先释放守卫再执行尾部重建**：不释放的话那次调用会立刻撞上守卫、
+        // 把原因又记一遍而什么都不做 —— 表现为「屏幕变了但窗口一直不重建」。
+        isRebuilding = false
+        if let pending = pendingRebuildReason {
+            pendingRebuildReason = nil
+            rebuildWindows(reason: pending)
+        }
     }
 
     /// 让播放端的槽位集合与当前屏幕/策略对齐，并重新绑定窗口。
@@ -1396,7 +1469,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let removed = store.prune(keeping: screenCoordinator.displayIDs)
         guard store != preferences.perScreenSources || removed > 0 else { return }
         preferences.perScreenSources = store
-        try? preferences.save(to: configURL)
+        persistPreferences("每屏源记忆")
         if removed > 0 {
             log("清理 \(removed) 条已拔掉屏幕的源记录")
         }
@@ -1449,6 +1522,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             item.button?.title = engine.isPlaying ? "◉" : "◐"
         }
 
+        // 菜单展开期间**不重建**：换掉 `item.menu` 会让菜单闪一下、并重置已展开的子菜单
+        // 与高亮项。但这次刷新不能丢（状态是变了才来刷的），所以记一个待办，
+        // 由 `menuDidClose` 在收起后补一次。
+        //
+        // 此前这条约束只在 `setUpdateState` 一处被遵守，其余二十来个调用点
+        // （网络变化、状态翻转、每次成功加载）都在展开期无条件重建 —— 行为自相矛盾。
+        guard !isMenuOpen else {
+            isMenuRebuildPending = true
+            return
+        }
         item.menu = buildMenu()
     }
 
@@ -1497,6 +1580,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let noticeItem = NSMenuItem(title: notice.display, action: nil, keyEquivalent: "")
             noticeItem.isEnabled = false
             menu.addItem(noticeItem)
+        }
+
+        // 配置写失败单独占一行，**不受 `notice` 的生命周期影响** ——
+        // 它由下一次成功的写入清掉（见 `persistenceFailure` 的说明）。
+        // 放进 `notice` 会被随后的成功路径清成 nil，「设置没存上」就又一次没有痕迹。
+        if let persistenceFailure {
+            let saveFailure = NSMenuItem(
+                title: "⚠ \(persistenceFailure)", action: nil, keyEquivalent: "")
+            saveFailure.isEnabled = false
+            menu.addItem(saveFailure)
         }
 
         // 热键冲突行只在真出问题时出现。三项热键的组合提示已经写在各自菜单项的
@@ -1802,9 +1895,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let old = updateState
         updateState = newState
         log("更新状态：\(old.label) → \(newState.label)")
-        // 菜单展开中**不重建**：重建会闪一下、并重置已展开的子菜单。
-        // 结果留到下次展开生效 —— 检查大多发生在启动时，那时菜单是关着的。
-        guard !isMenuOpen else { return }
+        // 「展开中不重建」现在由 `refreshStatusItem` 统一处理（展开期记待办、收起后补一次）。
+        // 这里不再自己判一次 —— 同一条约束写两处迟早会分叉，而它此前确实只在这一处分叉着。
         refreshStatusItem()
     }
 
@@ -1883,7 +1975,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 ? .warning(result.text, oneShot: result.isOneShot)
                 : .info(result.text, oneShot: result.isOneShot)
             log("手动检查回执：\(result.text)")
-            guard !isMenuOpen else { return }
             refreshStatusItem()
         }
     }
@@ -1903,11 +1994,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         nonisolated(unsafe) let delegate = self
         Task {
             do {
-                let file = try await UpdateInstaller.download(feed)
+                let outcome = try await UpdateInstaller.download(feed)
                 DispatchQueue.main.async {
-                    NSWorkspace.shared.activateFileViewerSelecting([file])
+                    NSWorkspace.shared.activateFileViewerSelecting([outcome.file])
                     delegate.notice = .info(UpdateMenu.installHint)
-                    delegate.log("更新已下载：\(file.path)")
+                    delegate.log("更新已下载：\(outcome.file.path)（\(outcome.byteCount) 字节）")
+                    // 清单里的 `sizeBytes` 只用于菜单显示，**摘要才是权威**。
+                    // 对不上时只记日志、不阻断 —— 用户拿到的是校验通过的文件，
+                    // 该修的是发布流程里那个数字。
+                    if let declared = feed.sizeBytes, declared > 0, declared != outcome.byteCount {
+                        delegate.log(
+                            "⚠️ 清单里的 sizeBytes（\(declared)）与实际下载大小"
+                                + "（\(outcome.byteCount)）不符")
+                    }
                     delegate.refreshStatusItem()
                 }
             } catch {
@@ -2228,7 +2327,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let option = PowerOption(rawValue: raw)
         else { return }
         setOption(option, enabled: sender.state != .on)
-        try? preferences.save(to: configURL)
+        persistPreferences("省电设置")
         log("省电设置：\(option.label)暂停 → \(isOptionEnabled(option) ? "开" : "关")")
         // 立刻重算，否则要等下一次 2 秒轮询才生效，用户会以为没点上
         governor.refresh()
@@ -2241,7 +2340,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 一张静态图，用户会以为开关没生效。
     @objc private func toggleLockScreenPreview() {
         preferences.lockScreenPreview.toggle()
-        try? preferences.save(to: configURL)
+        persistPreferences("锁屏预览开关")
         log("锁屏预览 → \(preferences.lockScreenPreview ? "开" : "关")")
         if preferences.lockScreenPreview {
             notice = .info("锁屏预览已开启")
@@ -2315,7 +2414,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func setIdleThreshold(_ sender: NSMenuItem) {
         guard let seconds = sender.representedObject as? Double else { return }
         preferences.idleThresholdSeconds = seconds
-        try? preferences.save(to: configURL)
+        persistPreferences("空闲阈值")
         log("空闲阈值改为 \(IdleThreshold.label(seconds))")
         governor.refresh()
         refreshStatusItem()
@@ -2358,7 +2457,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if wasPinned { clearPin(reason: nil) }
 
         preferences.playbackOrder = order
-        try? preferences.save(to: configURL)
+        persistPreferences("选片顺序")
         pool.order = order
 
         log(
@@ -2375,7 +2474,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func setSwitchInterval(_ sender: NSMenuItem) {
         guard let seconds = sender.representedObject as? Double else { return }
         preferences.intervalSeconds = seconds
-        try? preferences.save(to: configURL)
+        persistPreferences("切换间隔")
         log("切换间隔改为 \(SwitchInterval.label(seconds))")
 
         // 不重新计时的话，改完要等旧定时器到期才生效 —— 用户改完盯着看却毫无变化，
@@ -2448,7 +2547,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // 4) 固定态下 `advance()` 被拦截、`pendingRestore` 不会被消费，
         //    留着只会在解钉后突然生效 —— 表现成「解钉后莫名跳回开机时那条」。
         pendingRestore.removeAll()
-        try? preferences.save(to: configURL)
+        persistPreferences("固定为桌面壁纸")
 
         pendingPinAnnouncement = true
         notice = .info("正在设为桌面壁纸…")
@@ -2470,7 +2569,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard isPinned else { return }
         preferences.pinnedItem = nil
         pendingPinAnnouncement = false
-        try? preferences.save(to: configURL)
+        persistPreferences("解除固定")
         // 固定期间不填、也不消费恢复计划；这里再清一次，防止它跨过固定期生效。
         pendingRestore.removeAll()
         if let reason {
@@ -2711,7 +2810,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard preferences.resolvedLocalFolderURL != nil else { return }
             isLocalSource = false
             preferences.localFolderPath = nil
-            try? preferences.save(to: configURL)
+            persistPreferences("壁纸来源：线上清单")
             log("壁纸来源改为线上清单")
             notice = .info("壁纸来源：线上清单")
             refreshStatusItem()
@@ -2733,7 +2832,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
 
             preferences.localFolderPath = folder.path
-            try? preferences.save(to: configURL)
+            persistPreferences("壁纸来源：本地文件夹")
             log("壁纸来源改为本地文件夹：\(folder.path)")
             // 换文件夹后候选集整体换了，「这块屏上次播的那条」不再适用。
             pendingRestore.removeAll()
@@ -2796,7 +2895,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         else { return }
 
         preferences.multiScreenPolicy = policy
-        try? preferences.save(to: configURL)
+        persistPreferences("多屏策略")
 
         let verdict = screenCoordinator.apply(policy: policy)
         // 槽位集合随策略变化（镜像 1 个 / 每屏独立 N 个），必须重新对齐并绑定窗口。
@@ -2824,7 +2923,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         else { return }
         let verdict = screenCoordinator.apply(level: preset.level)
         preferences.levelPreset = preset
-        try? preferences.save(to: configURL)
+        persistPreferences("窗口层级")
         notice = .info("窗口层级：\(verdict.summary)")
         log("切换到层级 \(preset.shortLabel)（\(preset.level)）：\(verdict.summary)")
         refreshStatusItem()
@@ -3142,6 +3241,15 @@ extension AppDelegate: NSMenuDelegate {
         // 有与 AppKit 抢状态的风险。
         if notice?.isOneShot == true, noticeShown {
             notice = nil
+            nonisolated(unsafe) let delegate = self
+            DispatchQueue.main.async { delegate.refreshStatusItem() }
+        }
+
+        // 展开期间被推迟的菜单重建在这里补上。
+        // 同样放到下一个 runloop：本回调还在关闭流程里，此刻换掉 `item.menu`
+        // 有与 AppKit 抢状态的风险。
+        if isMenuRebuildPending {
+            isMenuRebuildPending = false
             nonisolated(unsafe) let delegate = self
             DispatchQueue.main.async { delegate.refreshStatusItem() }
         }

@@ -58,8 +58,18 @@ public struct UpdateFeed: Equatable, Sendable {
 
     /// 建议的落盘文件名。带版本号，避免多次更新后互相覆盖、
     /// 也避免名字里出现版本之外的东西让人分不清下的是哪一版。
+    ///
+    /// ⚠️ `version` 是**远端字段**，必须清洗后再拼进文件名：`appendingPathComponent`
+    /// 不会解析 `..`，所以 `"version": "../../../../tmp/x"` 会写到下载目录之外。
+    /// 实际风险很低（`version.json` 有 Ed25519 签名，只有持私钥的人能构造），
+    /// 但「签名保护的是来源，不保护字段语义」这条缝不值得留着 ——
+    /// 何况 `DownloadNaming.sanitize` 已经在同一个仓库里解决过完全相同的问题。
+    ///
+    /// 清洗后可能为空（版本号全是非法字符）：那时退回 `build` 号，
+    /// 绝不用空串拼出一个以 `-` 结尾的怪名字。
     public var suggestedFileName: String {
-        "LiveWall-\(version).dmg"
+        let cleaned = DownloadNaming.sanitize(version)
+        return "LiveWall-\(cleaned.isEmpty ? String(build) : cleaned).dmg"
     }
 }
 

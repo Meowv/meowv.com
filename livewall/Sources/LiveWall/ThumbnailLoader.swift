@@ -78,7 +78,10 @@ final class ThumbnailLoader {
         replacingPending: Bool,
         completion: @escaping (WallpaperItem, NSImage?) -> Void
     ) {
-        var fresh: Set<String> = []
+        /// 按**传入顺序**保序（`items` 是调用方按可见序号排好的），
+        /// 后面 `pump` 用它决定先发哪几个 —— 并发位（上限 4）必须优先给屏幕顶部的卡片。
+        var fresh: [String] = []
+        var seenFresh: Set<String> = []
 
         for item in items {
             guard let key = variant.candidates(for: item).first?.absoluteString else {
@@ -92,6 +95,7 @@ final class ThumbnailLoader {
             }
             if tracker.isFailed(key) {
                 // 两级都试过了。**不重复请求** —— 坏地址反复重试只会占着并发位。
+                // 要重试就显式调 `retryFailed()`（「重试」按钮走这条路）。
                 completion(item, nil)
                 continue
             }
@@ -102,11 +106,29 @@ final class ThumbnailLoader {
             }
             waiters[key] = [{ image in completion(item, image) }]
             candidatesByKey[key] = variant.candidates(for: item)
-            fresh.insert(key)
+            if seenFresh.insert(key).inserted { fresh.append(key) }
         }
 
         guard !fresh.isEmpty else { return }
         pump(replacingPending: replacingPending, keeping: fresh)
+    }
+
+    /// 清空缩略图的**失败表**，让这些地址可以被重新请求（浏览窗口的「重试」按钮）。
+    ///
+    /// ## 为什么必须单独开这个口子
+    ///
+    /// `ThumbnailRequestTracker` 的设计是「失败即终止」：失败地址被记进 `failed`，
+    /// 之后 `submit` 不会再自动带上它 —— 这是对的（坏地址反复重试只会占着并发位）。
+    /// 但**瞬时故障**（一次超时、一次 DNS 抖动）也会被同样记住，而它并不是「地址坏了」。
+    /// 没有这个入口时那批卡片会**永久**停在「无预览图」，用户点「重试」也没用：
+    /// `finish` 已经把它们的登记项移除了，重试只会重新请求「没失败过」的那些。
+    ///
+    /// ## 调用约定
+    ///
+    /// **必须紧接着重新 `load` 一遍可见项** —— 这里只清失败表，
+    /// 不会自动重发（`candidatesByKey` 里已经没有它们的登记项了）。
+    func retryFailed() {
+        _ = tracker.resetFailures()
     }
 
     /// 放弃所有在飞与等待中的请求（关窗、切分类）。
@@ -125,12 +147,13 @@ final class ThumbnailLoader {
 
     // MARK: - 内部
 
-    private func pump(replacingPending: Bool, keeping: Set<String>) {
+    private func pump(replacingPending: Bool, keeping: [String]) {
+        let keepingSet = Set(keeping)
         if replacingPending {
             // 丢掉「没发出、且这一批不再需要」的候选与其回调。卡片已经滚出屏幕，
             // 回调没人要；留着只会让它们排在可见项前面被发出去。
             let staleKeys = candidatesByKey.keys.filter {
-                !startedKeys.contains($0) && !keeping.contains($0)
+                !startedKeys.contains($0) && !keepingSet.contains($0)
             }
             for key in staleKeys {
                 candidatesByKey[key] = nil
@@ -139,11 +162,22 @@ final class ThumbnailLoader {
             _ = tracker.submit([], replacingPending: true)
         }
 
-        let ready = candidatesByKey.keys.filter { !startedKeys.contains($0) }
+        // ⚠️ **必须显式排序**：`candidatesByKey.keys` 是 `Dictionary` 的键，迭代顺序不确定，
+        // 而 `tracker.submit` 的契约是「返回现在就该发的 URL（按传入顺序）」、
+        // 「数组保序（可见顺序 = 优先级）」。不排序的话，4 个并发位可能先喂给屏幕底部的
+        // 卡片，顶部卡片反而排队 —— 用户看到的就是「上面的图半天不出来」。
+        // 排序键用 `(可见序号, key)`：不在本批里的（早先排队的）排在后面，同序号按 key 稳定。
+        let order = Dictionary(
+            keeping.enumerated().map { ($0.element, $0.offset) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        let ready = candidatesByKey.keys
+            .filter { !startedKeys.contains($0) }
+            .sorted { (order[$0] ?? Int.max, $0) < (order[$1] ?? Int.max, $1) }
         guard !ready.isEmpty else { return }
         // `tracker.submit` 按并发上限决定现在发哪几个，其余排队；
         // 它自己会排掉已在飞 / 已失败的，所以这里直接拿返回值当「新发起的」。
-        for key in tracker.submit(Array(ready)) {
+        for key in tracker.submit(ready) {
             startedKeys.insert(key)
             startRequest(key)
         }

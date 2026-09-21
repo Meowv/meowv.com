@@ -70,6 +70,36 @@ PLIST="${APP_BUNDLE}/Contents/Info.plist"
 VERSION="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "${PLIST}" 2>/dev/null || echo 0.0.0)"
 # build 号是**版本比对的权威值**（客户端只看它），同样从 plist 读。
 BUILD_NUMBER="$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "${PLIST}" 2>/dev/null || echo 0)"
+
+# ── build 号必须递增 ────────────────────────────────────
+# 客户端**只认 `CFBundleVersion`**（`UpdateEvaluator` 判 `feed.build > localBuild`）。
+# 忘了递增的后果是「发出去的包用户永远看不到更新提示」—— 而症状与「线上没发新版」
+# 完全一样，排障会往完全错误的方向走。此前这里只有一句 echo 提醒，改成硬校验。
+#
+# 与「签名失败就中断」同一类保护：宁可这次打包失败，也不要产出一份发不出去的清单。
+# 参照物优先取「上次已装进 studio 部署目录的那一份」（最接近线上），其次取本地产物。
+PREVIOUS_FEED="${ROOT}/build/studio.meowv.com/data/livewall/version.json"
+[[ -f "${PREVIOUS_FEED}" ]] || PREVIOUS_FEED="${ROOT}/build/version.json"
+PREVIOUS_BUILD=""
+if [[ -f "${PREVIOUS_FEED}" ]]; then
+  # 用 CLT 自带的 python3 读 JSON（项目本来就要 CLT）。取不到就当没有参照物。
+  PREVIOUS_BUILD="$(/usr/bin/python3 -c \
+    'import json,sys; print(json.load(open(sys.argv[1])).get("build",""))' \
+    "${PREVIOUS_FEED}" 2>/dev/null || echo "")"
+fi
+
+if [[ "${PREVIOUS_BUILD}" =~ ^[0-9]+$ ]] && [[ "${BUILD_NUMBER}" =~ ^[0-9]+$ ]]; then
+  if (( BUILD_NUMBER <= PREVIOUS_BUILD )); then
+    echo "错误：CFBundleVersion 没有递增（本次 ${BUILD_NUMBER} ≤ 上次 ${PREVIOUS_BUILD}，来源 ${PREVIOUS_FEED}）。" >&2
+    echo "      客户端只认它：不递增的话用户**永远看不到更新提示**，症状与「线上没发新版」一模一样。" >&2
+    echo "      先改 Resources/Info-LiveWall.plist 的 CFBundleVersion，再重新打包。" >&2
+    exit 1
+  fi
+  echo "[dmg] build 号递增检查通过：${PREVIOUS_BUILD} → ${BUILD_NUMBER}"
+else
+  echo "[dmg] 跳过 build 号递增检查（找不到上次的 version.json，或其中的 build 不是数字）"
+fi
+
 DMG_PATH="${ROOT}/build/LiveWall-${VERSION}.dmg"
 
 # 暂存目录：卷根 = App + 指向 /Applications 的符号链接（用户拖过去就等于安装）
@@ -145,6 +175,6 @@ SIZE="$(du -h "${DMG_PATH}" | cut -f1)"
 echo "[dmg] 产物：${DMG_PATH}（${SIZE}）"
 echo "[dmg] 版本信息：${FEED_PATH}（build ${BUILD_NUMBER}）"
 echo "[dmg] 签名：${SIG_PATH}"
-echo "[dmg] 提醒：发版前必须递增 CFBundleVersion —— 客户端只认它，忘了加就永远不提示"
+echo "[dmg] 已校验：CFBundleVersion 相对上次产物已递增（客户端只认它）"
 echo "[dmg] 提醒：version.json 与 version.json.sig 必须**同一次**上传，少一个客户端就看不到更新"
 echo "[dmg] 提示：未公证，别人首次打开需右键「打开」，或在「隐私与安全性」里点「仍要打开」"

@@ -6,9 +6,13 @@ import Foundation
 /// 视频约 6 MB，避免把整个内容一次性放进内存，也能在超过上限时中途终止。
 enum FileDownloader {
 
-    /// 单次下载上限。静态图实测最大 4 MB、视频约 6 MB，留足余量后卡在 64 MB ——
+    /// 单次下载的**默认**上限。静态图实测最大 4 MB、视频约 6 MB，留足余量后卡在 64 MB ——
     /// 挡住「清单里混进一个超大文件」把磁盘写满。
-    static let maxBytes: Int64 = 64 * 1024 * 1024
+    ///
+    /// dmg 走单独的上限（见 `UpdateInstaller.downloadMaxBytes`）：三类内容的合理上限
+    /// 差两个数量级，共用一个常量会让「dmg 长到 64 MB 以上」变成一次莫名其妙的
+    /// 「文件过大：超过 67108864 字节」失败，排障时不容易联想到是共用上限。
+    static let defaultMaxBytes: Int64 = 64 * 1024 * 1024
 
     struct Failure: LocalizedError {
         let message: String
@@ -17,15 +21,20 @@ enum FileDownloader {
 
     /// 下载到 `destination`（覆盖已存在的文件）。目标目录不存在会自动创建。
     ///
-    /// - Parameter expectedContentTypePrefix: 例如 `"image/"`；给了就校验 MIME，
-    ///   挡住「CDN 把错误页当图片返回」这种会把坏内容写成墙纸的情况。
+    /// - Parameters:
+    ///   - expectedContentTypePrefix: 例如 `"image/"`；给了就校验 MIME，
+    ///     挡住「CDN 把错误页当图片返回」这种会把坏内容写成墙纸的情况。
+    ///   - maxBytes: 字节上限，**边下边判**，超过即中止并抛错。
+    ///     这里刻意保留「流式截断」能力：换成 `download(for:)` 会先把整包写盘、
+    ///     只能事后检查大小，上限就退化成一个事后告警。
     /// - Returns: 落盘字节数。
     @discardableResult
     static func download(
         _ url: URL,
         to destination: URL,
         timeout: TimeInterval = 20,
-        expectedContentTypePrefix: String? = nil
+        expectedContentTypePrefix: String? = nil,
+        maxBytes: Int64 = FileDownloader.defaultMaxBytes
     ) async throws -> Int64 {
         var request = URLRequest(url: url)
         request.timeoutInterval = timeout

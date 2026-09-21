@@ -59,10 +59,19 @@ public protocol CatalogTransport {
     func fetch(_ url: URL) throws -> Data
 }
 
-/// 生产实现。`fetch` 是同步的（内部用信号量等待 URLSession），
+/// 生产实现。`fetch` 是同步的（内部用 `SynchronousFetch` 等待 URLSession），
 /// 调用方应在后台队列执行，避免阻塞主线程。
 public struct DefaultCatalogTransport: CatalogTransport {
-    public init() {}
+
+    /// 注入点。生产用 `.shared`；测试可注入带 `URLProtocol` 桩的会话。
+    ///
+    /// 没有它，「超时竞态」这类缺陷**结构上不可测**（造不出「先超时、后回调」的时序），
+    /// 修完也无法用回归测试锁住 —— 见 `SynchronousFetch` 的说明。
+    private let session: URLSession
+
+    public init(session: URLSession = .shared) {
+        self.session = session
+    }
 
     public func readFile(at url: URL) throws -> Data {
         try Data(contentsOf: url)
@@ -77,35 +86,7 @@ public struct DefaultCatalogTransport: CatalogTransport {
     }
 
     public func fetch(_ url: URL) throws -> Data {
-        var request = URLRequest(url: url)
-        request.timeoutInterval = 15
-        request.cachePolicy = .reloadRevalidatingCacheData
-
-        let semaphore = DispatchSemaphore(value: 0)
-        var outcome: Result<Data, Error> = .failure(CatalogError.decodeFailed("请求未执行"))
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
-            defer { semaphore.signal() }
-            if let error {
-                outcome = .failure(error)
-                return
-            }
-            guard let http = response as? HTTPURLResponse else {
-                outcome = .failure(CatalogError.decodeFailed("响应不是 HTTP"))
-                return
-            }
-            guard (200..<300).contains(http.statusCode) else {
-                outcome = .failure(CatalogError.decodeFailed("HTTP \(http.statusCode)"))
-                return
-            }
-            guard let data, !data.isEmpty else {
-                outcome = .failure(CatalogError.decodeFailed("响应为空"))
-                return
-            }
-            outcome = .success(data)
-        }
-        task.resume()
-        _ = semaphore.wait(timeout: .now() + 20)
-        return try outcome.get()
+        try SynchronousFetch.data(from: url, timeout: 15, session: session)
     }
 }
 

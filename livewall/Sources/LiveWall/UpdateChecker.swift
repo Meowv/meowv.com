@@ -3,55 +3,25 @@ import LiveWallCore
 
 /// 把「拉远程版本信息」抽象出来，让检查逻辑可以脱离网络单测。
 ///
-/// 与 `CatalogTransport` 同一套路（那里已经踩过一遍坑）：生产实现是同步的
-/// （内部用信号量等 URLSession），调用方必须在后台队列调。
+/// 与 `CatalogTransport` 同一套路：生产实现是**同步**的
+/// （内部走 `LiveWallCore.SynchronousFetch`），调用方必须在后台队列调。
 protocol UpdateTransport {
     func fetch(_ url: URL) throws -> Data
 }
 
-enum UpdateCheckError: LocalizedError {
-    case requestFailed(String)
-
-    var errorDescription: String? {
-        switch self {
-        case .requestFailed(let message): return message
-        }
-    }
-}
-
 struct DefaultUpdateTransport: UpdateTransport {
 
-    func fetch(_ url: URL) throws -> Data {
-        var request = URLRequest(url: url)
-        request.timeoutInterval = 15
-        request.cachePolicy = .reloadRevalidatingCacheData
+    /// 注入点。生产用 `.shared`；测试可注入带 `URLProtocol` 桩的会话 ——
+    /// 与 `DefaultCatalogTransport` 同一理由（见 `SynchronousFetch` 的说明）：
+    /// 把 `URLSession.shared` 写死在函数体里，会让「超时竞态」结构上不可测。
+    let session: URLSession
 
-        let semaphore = DispatchSemaphore(value: 0)
-        var outcome: Result<Data, Error> = .failure(UpdateCheckError.requestFailed("请求未执行"))
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
-            defer { semaphore.signal() }
-            if let error {
-                outcome = .failure(error)
-                return
-            }
-            guard let http = response as? HTTPURLResponse else {
-                outcome = .failure(UpdateCheckError.requestFailed("响应不是 HTTP"))
-                return
-            }
-            guard (200..<300).contains(http.statusCode) else {
-                outcome = .failure(UpdateCheckError.requestFailed("HTTP \(http.statusCode)"))
-                return
-            }
-            guard let data, !data.isEmpty else {
-                outcome = .failure(UpdateCheckError.requestFailed("响应为空"))
-                return
-            }
-            outcome = .success(data)
-        }
-        task.resume()
-        // 比 timeoutInterval 多留 5 秒：信号量卡住也必须能返回，否则整个后台队列被占住。
-        _ = semaphore.wait(timeout: .now() + 20)
-        return try outcome.get()
+    init(session: URLSession = .shared) {
+        self.session = session
+    }
+
+    func fetch(_ url: URL) throws -> Data {
+        try SynchronousFetch.data(from: url, timeout: 15, session: session)
     }
 }
 

@@ -213,94 +213,62 @@ func lockScreenPreviewTests() {
             )
         }
     }
-}
 
-/// 手动下载的文件名规则。
-func downloadNamingTests() {
-    suite("下载命名") {
+    suite("锁屏预览：策略变化后该恢复哪些屏") {
 
-        test("替换非法字符") {
+        test("全部屏幕收窄到仅主屏 → 被移除的屏要恢复原墙纸") {
+            // 场景：用户把多屏策略从「全部同片」切到「仅主屏」。副屏上还顶着上一张
+            // 锁屏预览图，必须恢复成用户原墙纸，否则它会一直留着。
             expectEqual(
-                DownloadNaming.sanitize("a/b:c\\d*e?f\"g<h>i|j"),
-                "a_b_c_d_e_f_g_h_i_j",
-                "文件名非法字符应替换成下划线"
+                LockScreenPreviewPolicy.removedDisplayIDs(previous: [10, 20], current: [10]),
+                [20],
+                "副屏应被判定为「被移除」"
             )
         }
 
-        test("换行与制表符也替换") {
-            expectEqual(DownloadNaming.sanitize("第一行\n第二行\t结尾"), "第一行_第二行_结尾", "换行与制表符应替换")
-        }
-
-        test("压缩连续空白") {
-            expectEqual(DownloadNaming.sanitize("a    b"), "a b", "连续空格压成一个")
-        }
-
-        test("去掉首尾空白与点") {
-            expectEqual(DownloadNaming.sanitize("  ..标题..  "), "标题", "首尾的点与空白都要去掉")
-        }
-
-        test("截断到 60 字符") {
-            let long = String(repeating: "字", count: 80)
-            expectEqual(DownloadNaming.sanitize(long).count, 60, "超长标题应截断")
-        }
-
-        test("保留中文与空格") {
-            expectEqual(DownloadNaming.sanitize("蒙眼天使 4K"), "蒙眼天使 4K", "中文与空格照常保留")
-        }
-
-        test("扩展名从 URL 取") {
+        test("目标屏没变 → 一个都不用恢复") {
             expectEqual(
-                DownloadNaming.fileExtension(for: URL(string: "https://cdn.test/a.jpg"), fallback: "jpg"),
-                "jpg",
-                "jpg"
-            )
-            expectEqual(
-                DownloadNaming.fileExtension(for: URL(string: "https://cdn.test/a.png"), fallback: "jpg"),
-                "png",
-                "静态图实测有 png，不能硬编码"
-            )
-            expectEqual(
-                DownloadNaming.fileExtension(for: URL(string: "https://cdn.test/a_size_bit_pattern.mp4"), fallback: "mp4"),
-                "mp4",
-                "带下划线的文件名"
+                LockScreenPreviewPolicy.removedDisplayIDs(previous: [10, 20], current: [10, 20]),
+                [],
+                "没变化就不该动任何屏"
             )
         }
 
-        test("扩展名取不到时用兜底") {
+        test("新增屏幕不算被移除") {
             expectEqual(
-                DownloadNaming.fileExtension(for: URL(string: "https://cdn.test/noext"), fallback: "mp4"),
-                "mp4",
-                "没有扩展名时用兜底"
-            )
-            expectEqual(DownloadNaming.fileExtension(for: nil, fallback: "jpg"), "jpg", "URL 为 nil 时用兜底")
-        }
-
-        test("文件名带 id 前缀") {
-            expectEqual(
-                DownloadNaming.fileName(id: 162264, title: "蒙眼天使", fileExtension: "mp4"),
-                "162264-蒙眼天使.mp4",
-                "id 前缀保证不同条目不会互相覆盖"
+                LockScreenPreviewPolicy.removedDisplayIDs(previous: [10], current: [10, 20]),
+                [],
+                "新插的屏上没有「我们的静态图」要撤，动它等于误改用户墙纸"
             )
         }
 
-        test("标题清洗后为空时只用 id") {
+        test("第一次写入就失败（lastDisplayIDs 为空）→ 不恢复任何屏") {
+            // 既有行为：`lastDisplayIDs` 只在**写入成功后**更新，所以「从没成功写过」时
+            // 不存在「我们改过那块屏」这个前提。写下来是为了让它成为**有意为之**，
+            // 而不是某天被当成漏判给「修」掉。
             expectEqual(
-                DownloadNaming.fileName(id: 7, title: "///", fileExtension: "mp4"),
-                "7-___.mp4",
-                "全是非法字符时仍以 id 开头，且不为空"
-            )
-            expectEqual(
-                DownloadNaming.fileName(id: 7, title: "   ", fileExtension: "mp4"),
-                "7.mp4",
-                "纯空白标题退化成只用 id"
+                LockScreenPreviewPolicy.removedDisplayIDs(previous: [], current: [10]),
+                [],
+                "没有成功写入的历史就不该恢复"
             )
         }
 
-        test("视频与静态图同基名成对") {
-            let video = DownloadNaming.fileName(id: 1, title: "标题", fileExtension: "mp4")
-            let cover = DownloadNaming.fileName(id: 1, title: "标题", fileExtension: "jpg")
-            expectEqual(video, "1-标题.mp4", "视频名")
-            expectEqual(cover, "1-标题.jpg", "静态图名")
+        test("全部屏都被移除") {
+            expectEqual(
+                LockScreenPreviewPolicy.removedDisplayIDs(previous: [10, 20], current: []),
+                [10, 20],
+                "切到无目标屏时两块屏都该恢复"
+            )
+        }
+
+        test("顺序不同不影响判定（比较的是集合）") {
+            expectEqual(
+                LockScreenPreviewPolicy.removedDisplayIDs(previous: [20, 10], current: [10]),
+                [20],
+                "顺序抖动不该改变结论"
+            )
         }
     }
 }
+// 手动下载的文件名规则已迁到 `DownloadNamingTests.swift`（2026-09-21 审查：
+// 本文件此前同时装着两个无关 suite，而 `main.swift` 按函数名登记、对此无感）。

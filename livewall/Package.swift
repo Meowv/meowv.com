@@ -24,6 +24,14 @@ let package = Package(
         .target(name: "LiveWallCore"),
 
         // 桌面层窗口与窗口层级探测：依赖 AppKit
+        //
+        // **为什么单独一个 target**（而不是并进 `LiveWall`）：它是「Core 可单测 /
+        // Desktop 只碰 AppKit / App 只做编排」这条三层叙事里的一层，README 的目录结构与
+        // `AGENTS.md` 都按它写。合并能少一个 target，但会让「哪些代码不该有 GUI 依赖」
+        // 失去一个物理边界 —— 而那正是当初把 `CoverageGrid` 从 AppKit 里拆出来的理由。
+        //
+        // ⚠️ 它**不可单测**（测试 target 只依赖 `LiveWallCore`），所以需要断言的纯逻辑
+        // 都已经搬回 Core。这里只留薄薄的 AppKit 包装。
         .target(name: "LiveWallDesktop", dependencies: ["LiveWallCore"]),
 
         // 正式 App

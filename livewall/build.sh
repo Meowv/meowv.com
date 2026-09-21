@@ -84,14 +84,35 @@ if [[ ! -f "$ROOT/$PLIST" ]]; then
   exit 1
 fi
 
+# Info.plist 的 CFBundleExecutable 必须与实际拷进 Contents/MacOS 的文件名一致 ——
+# 不一致时 App 双击后立刻退出（系统找不到可执行文件），而构建本身是「成功」的。
+# 这个约定此前只写在注释里靠人遵守，这里加一道硬校验。
+PLIST_EXECUTABLE="$(/usr/libexec/PlistBuddy -c "Print :CFBundleExecutable" "$ROOT/$PLIST" 2>/dev/null || echo "")"
+if [[ "$PLIST_EXECUTABLE" != "$PRODUCT" ]]; then
+  echo "错误：Info.plist 的 CFBundleExecutable 是「${PLIST_EXECUTABLE}」，与产品名「${PRODUCT}」不一致。" >&2
+  echo "      两者必须相同，否则 App 双击后会被系统判为「找不到可执行文件」而立即退出。" >&2
+  exit 1
+fi
+
 echo "[build] swift build -c $CONFIGURATION --product $PRODUCT"
 cd "$ROOT"
 
 # 用临时文件而不是管道：`swift build | grep ... || true` 会把编译失败一起吞掉，
 # 而 .build/ 里可能残留上次的产物，导致静默使用过期二进制。
+#
+# 受限环境（某些沙箱 / CI）里 SwiftPM 自己的 `sandbox-exec` 会嵌套失败，
+# 报 `sandbox_apply: Operation not permitted`。那时这样绕过：
+#   SWIFT_BUILD_FLAGS="--disable-sandbox --manifest-cache none" ./build.sh
+# 默认**不**加这些旗标 —— 正常环境该保留沙箱保护。
 BUILD_LOG="$(mktemp)"
 set +e
-swift build -c "$CONFIGURATION" --product "$PRODUCT" >"$BUILD_LOG" 2>&1
+if [[ -n "${SWIFT_BUILD_FLAGS:-}" ]]; then
+  # 故意不加引号：这里就是要让 shell 按空白拆成多个旗标。
+  # shellcheck disable=SC2086
+  swift build -c "$CONFIGURATION" --product "$PRODUCT" ${SWIFT_BUILD_FLAGS} >"$BUILD_LOG" 2>&1
+else
+  swift build -c "$CONFIGURATION" --product "$PRODUCT" >"$BUILD_LOG" 2>&1
+fi
 BUILD_STATUS=$?
 set -e
 

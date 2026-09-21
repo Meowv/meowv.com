@@ -13,9 +13,31 @@
 ///
 /// ## 这个文件的职责
 ///
-/// 把「哪个驱动事件 + 当前是否固定」映射成「该做什么」。`PinDriveEvent` 是**穷举**的 ——
-/// 以后新增旁路驱动点必须来这里加 case，这样「漏了一个旁路」会变成编译错误或测试失败，
-/// 而不是画面被悄悄换走（那是这类 bug 最典型的形态）。
+/// 把「哪个驱动事件 + 当前是否固定」映射成「该做什么」。`PinDriveEvent` 是**穷举**的。
+///
+/// ## ⚠️ 当前状态：判定表**尚未接进生产代码**，且已与生产分叉
+///
+/// 生产里的固定分支是 `AppDelegate` 中若干处各自独立的 `if isPinned` / `guard !isPinned`，
+/// **不调用 `resolve`**。所以「漏一个旁路会编译报错」这个保证**目前不成立** ——
+/// 新增旁路而忘了加分支，编译通过、测试全绿，只有画面被悄悄换走。
+///
+/// 更要紧的是两处**已经对不上**（2026-09-21 审查发现）：
+///
+/// | 事件 | 本表 | 生产实际 |
+/// | --- | --- | --- |
+/// | `.scheduledAdvance`（`advance()`） | `.hold` | `applyPinToMissingSlots(force: true)` |
+/// | `.slotRecovery`（`advanceOne()`） | `.hold` | `applyPinToMissingSlots()` |
+///
+/// 根因：`advance()` 被重载成了两个语义 —— 既是「定时 / 用户请求换片」，
+/// 也是「网络恢复 / `holdCurrent` 重试 / `scheduleRecoveryAttempt` 的恢复入口」。
+/// 后者要的是**把固定项重拉一遍**（槽位里挂着的正是加载失败的那条），
+/// 而 `scheduleNext` 已经拦掉了固定态下的定时切换 ——
+/// 于是「`.scheduledAdvance` 一律 `.hold`」在生产里根本没有落点。
+///
+/// 因此**不要直接把生产改成调用本表**：那会改掉「恢复类请求要重拉固定项」这条行为。
+/// 真要接线，得先把 `advance()` 拆成 `advance(reason:)` 让调用方声明事件类型，
+/// 而那需要 App 层集成测试兜底（目前 App 层零测试）。在那之前，
+/// 本表的定位是「对『是否取新片』这一维度的穷举描述」，**不是生产决策的真源**。
 public enum PinDriveEvent: Equatable, Sendable, CaseIterable {
     /// 轮换定时器到点，或全局切换请求。`advance()` 的主要入口，
     /// 同时覆盖「网络恢复」「holdCurrent 重试」「scheduleRecoveryAttempt」等旁路。
@@ -50,6 +72,9 @@ public enum PinResolution: Equatable, Sendable {
 public enum PinnedPlayback {
 
     /// 裁决一个驱动事件。
+    ///
+    /// ⚠️ **本函数当前没有生产调用点**（只有测试），且判定表与生产已分叉 ——
+    /// 见文件顶部「当前状态」一节。改这里之前先读那一节。
     ///
     /// 判定表（`pinnedItem == nil` 时**一律** `.unpinAndAdvance`）：
     ///
