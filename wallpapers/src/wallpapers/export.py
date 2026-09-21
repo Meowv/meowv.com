@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import sqlite3
 from datetime import datetime, timezone
@@ -31,6 +32,13 @@ LIVEWALL_DIR_NAME = "livewall"
 CATALOG_FILE_NAME = "catalog.json"
 CATEGORY_FILE_PREFIX = "category."
 
+# 索引的签名文件后缀（`catalog.json` → `catalog.json.sig`）。
+# **这个值在三处必须一致**：这里、`livewall/Sources/LiveWallCore/UpdateSignature.swift`
+# 的 `documentExtension`、根 `build.sh` 里调用签名工具的那一段。
+# 本模块**不产出**它（要用本机离线私钥签），只负责在重写索引时把上一轮留下的旧签名
+# 删掉 —— 见 `export_livewall_catalog` 结尾的说明。
+CATALOG_SIGNATURE_SUFFIX = ".sig"
+
 # 默认分类。与旧版 `export-livewall --category 美女` 的默认值保持一致 ——
 # 该分类是当前唯一抓满内容的分类。
 DEFAULT_CATEGORY_NAME = "美女"
@@ -40,6 +48,16 @@ def category_file_name(category_id: int) -> str:
     """分类文件名。用**数字 id** 而不是分类名：中文名进 URL 会触发百分号编码，
     CDN / nginx 侧行为不可控。"""
     return f"{CATEGORY_FILE_PREFIX}{category_id}.json"
+
+
+def _sha256_hex(data: bytes) -> str:
+    """切片文件的 sha256（小写十六进制），与客户端 `SHA256Hex` 同一口径。
+
+    摘要算在**即将写盘的那串字节**上（含尾随换行），不是算在「JSON 对象」上 ——
+    客户端校验的是收到的原始字节，两边必须逐字节一致。所以这里先 `encode` 再同时
+    用于写盘与算摘要，避免「写盘时被编码器改一下」这种缝。
+    """
+    return hashlib.sha256(data).hexdigest()
 
 
 def _fetch_items(
@@ -263,9 +281,15 @@ def export_livewall_catalog(
 
     - `catalog.json` —— **纯索引**：分类清单（含条目数为 0 的分类）与默认分类。
       **不含任何条目** —— 它是启动时唯一必拉的文件，因此必须很小（几百字节）。
-      客户端拿到它就有菜单了。
+      客户端拿到它就有菜单了。每个有内容的分类条目带一个 `sha256`（**该分类切片
+      文件的字节摘要**），客户端据此校验切片完整性。
     - `category.<一级分类 id>.json` —— 每个**有内容**的分类一份，结构沿用旧版
       `livewall.json`。客户端按选中分类单独拉取，并各自缓存。
+    - `catalog.json.sig` —— **不在这里产出**。它要用本机离线私钥签，由根
+      `build.sh` 在导出之后调用 `livewall/tools/sign-version.swift` 生成。
+
+    签的是索引的**原始字节**，所以切片摘要必须与写盘字节逐字节对应（见
+    `_sha256_hex` 的说明）。
 
     与 `publish_catalog` 的区别：这里**不做加密**，输出是明文 JSON，
     直接给本机客户端读取。返回 (索引路径, {分类名: 分类文件路径})。
@@ -307,6 +331,7 @@ def export_livewall_catalog(
         if not bucket_items:
             # 空分类只登记不落文件：客户端拿到 items 为空的清单会判定为「解析失败」
             # 并触发降级，写出来反而是个陷阱。file 为 null 表示「没有可拉取的分类文件」。
+            # 没有文件就没有 sha256 —— 客户端只在 file 非 null 时才要求摘要。
             category_entries.append(
                 {"id": category_id, "name": name, "file": None, "itemCount": 0}
             )
@@ -315,7 +340,10 @@ def export_livewall_catalog(
         file_name = category_file_name(category_id)
         category_path = target_dir / file_name
         subtree_ids = sorted(cid for cid, root_id in tree.items() if root_id == category_id)
-        category_path.write_text(
+        # 先拼成 bytes 再写盘：**写出去的那串字节与算摘要的那串必须是同一个对象**，
+        # 否则「摘要对得上、文件却不一样」这种缝迟早会出现（例如某天给 write_text
+        # 加了别的编码参数）。
+        payload = (
             json.dumps(
                 {
                     "schemaVersion": SCHEMA_VERSION,
@@ -332,15 +360,32 @@ def export_livewall_catalog(
                 ensure_ascii=False,
                 separators=(",", ":"),
             )
-            + "\n",
-            encoding="utf-8",
-        )
+            + "\n"
+        ).encode("utf-8")
+        category_path.write_bytes(payload)
         category_entries.append(
-            {"id": category_id, "name": name, "file": file_name, "itemCount": len(bucket_items)}
+            {
+                "id": category_id,
+                "name": name,
+                "file": file_name,
+                "itemCount": len(bucket_items),
+                # **切片摘要写进索引**：客户端因此只需验一次索引的签名（多一个
+                # `catalog.json.sig` 请求），各切片的完整性由「签名索引里的摘要」
+                # 传递性地保证 —— 不必给每个切片各配一个签名文件、多打十次请求。
+                "sha256": _sha256_hex(payload),
+            }
         )
         category_paths[name] = category_path
 
+    # 索引自身的完整性由**外部签名**保证（`catalog.json.sig`，由根 `build.sh` 调
+    # `livewall/tools/sign-version.swift` 用本机离线私钥签）—— 所以这里刻意**不写**
+    # 自指的 sha256 字段：签名覆盖的已经是这个文件的原始字节，再写一个自己的摘要是多余的。
     catalog_path = target_dir / CATALOG_FILE_NAME
+    # **先删掉上一轮的签名**：签名覆盖的是索引的原始字节，索引一重写它就必然失效。
+    # 留着它的后果比「没有签名」糟得多 —— 新索引配旧签名，客户端报「签名与清单不符」，
+    # 而人只会去怀疑密钥或密码学；删掉之后最坏是「缺签名」，症状直指发布流程漏了一步。
+    # 新签名由根 `build.sh` 在导出之后立刻签出（见 `livewall/tools/sign-version.swift`）。
+    (target_dir / (CATALOG_FILE_NAME + CATALOG_SIGNATURE_SUFFIX)).unlink(missing_ok=True)
     catalog_path.write_text(
         json.dumps(
             {
@@ -363,5 +408,24 @@ def export_livewall_catalog(
     for previous in target_dir.glob(f"{CATEGORY_FILE_PREFIX}*.json"):
         if previous.name not in keep:
             previous.unlink(missing_ok=True)
+
+    # 对账：把刚写出的**文件字节**重新读回来再算一遍，与写进索引的摘要逐条比对。
+    # 摘要是「写盘前那块 buffer」算的、客户端校验的是「收到的字节」，两者一旦分家
+    # （改编码、加尾随换行、加一层压缩/格式化），表现是**客户端所有切片都判完整性失败** ——
+    # 症状离原因很远，会先去怀疑网络或 CDN。所以这里在写盘后立刻回读一次，
+    # 把这类错误挡在签名与发布之前。
+    mismatched: list[str] = []
+    for entry in category_entries:
+        file_name = entry.get("file")
+        if file_name is None:
+            continue
+        actual = _sha256_hex((target_dir / str(file_name)).read_bytes())
+        if actual != entry["sha256"]:
+            mismatched.append(f"{file_name}：索引记 {entry['sha256']}，文件实际 {actual}")
+    if mismatched:
+        raise RuntimeError(
+            "索引里的切片摘要与写出的文件不一致，已中止"
+            "（否则会产出一份客户端必然判失败的清单）：\n  " + "\n  ".join(mismatched)
+        )
 
     return catalog_path, category_paths

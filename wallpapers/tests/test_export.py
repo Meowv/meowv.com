@@ -600,3 +600,148 @@ def test_cover_url_does_not_leak_between_wallpapers(tmp_path):
 
     assert scenery[3]["coverUrl"] == "https://cdn.test/c.jpg"
     assert beauty[1]["coverUrl"] is None
+
+
+# ── 切片摘要与索引签名（内容清单的完整性）─────────────────────────
+#
+# 索引里为每个**有内容的**分类记了它那份切片的 sha256，客户端据此校验收到的切片。
+# 索引自身的完整性由外部签名（`catalog.json.sig`，本机离线私钥）保证 ——
+# 所以这里只负责「摘要写对、且与写盘字节逐字节对应」。
+
+
+def _sha256(data: bytes) -> str:
+    import hashlib
+
+    return hashlib.sha256(data).hexdigest()
+
+
+def test_category_entries_carry_sha256_of_slice_bytes(tmp_path):
+    """每条有内容的分类都带摘要，且等于**切片文件的实际字节**摘要。
+
+    这条是整条链的地基：客户端的校验就是「收到的字节重算 sha256，
+    与索引里记的比」。两边口径一旦分家（改编码、加尾随换行），
+    表现是**所有切片都判完整性失败** —— 症状离原因很远，会先怀疑网络或 CDN。
+    """
+    source = _make_db(tmp_path, BASE_ROWS)
+    output_dir = tmp_path / "data"
+
+    catalog_path, category_paths = export_livewall_catalog(source, output_dir)
+    entries = {entry["name"]: entry for entry in _read(catalog_path)["categories"]}
+
+    for name, path in category_paths.items():
+        declared = entries[name]["sha256"]
+        assert len(declared) == 64, f"{name} 的摘要不是 64 位"
+        assert declared == declared.lower(), f"{name} 的摘要应是小写十六进制"
+        assert declared == _sha256(path.read_bytes()), f"{name} 的摘要与文件字节不符"
+
+
+def test_empty_category_entry_has_no_sha256(tmp_path):
+    """空分类不落文件，因此也不该有摘要 —— 客户端只在有 `file` 时才要求它。"""
+    source = _make_db(
+        tmp_path,
+        BASE_ROWS
+        + """
+        INSERT INTO category VALUES (6000, '分区', NULL, 'desktop', 'dynamic', 1, 2);
+        """,
+    )
+
+    catalog_path, _ = export_livewall_catalog(source, tmp_path / "data")
+    entries = {entry["name"]: entry for entry in _read(catalog_path)["categories"]}
+
+    assert entries["分区"]["file"] is None
+    assert "sha256" not in entries["分区"]
+
+
+def test_index_has_no_self_digest(tmp_path):
+    """索引**不写自己的摘要** —— 它由外部签名覆盖，自指摘要只会是第二套真相。
+
+    索引的完整性走 `catalog.json.sig`（Ed25519，本机离线私钥）。若这里再写一个
+    自己的 sha256，客户端就得决定「信哪个」，而两个值不同步时无从判断谁对。
+    """
+    source = _make_db(tmp_path, BASE_ROWS)
+
+    catalog_path, _ = export_livewall_catalog(source, tmp_path / "data")
+    catalog = _read(catalog_path)
+
+    assert "sha256" not in catalog
+    assert "sha256" not in catalog["source"]
+
+
+def test_digest_is_recomputed_on_each_export(tmp_path):
+    """重复导出时摘要跟着内容重算，不是上一轮留下的常量。
+
+    `generatedAt` 每次都变，所以切片的字节也每次都变 —— 摘要若不变，
+    说明它是缓存来的，而缓存来的摘要迟早会与文件分家。
+    """
+    source = _make_db(tmp_path, BASE_ROWS)
+    output_dir = tmp_path / "data"
+
+    catalog_path, _ = export_livewall_catalog(source, output_dir)
+    first = {e["name"]: e["sha256"] for e in _read(catalog_path)["categories"]}
+
+    catalog_path, category_paths = export_livewall_catalog(source, output_dir)
+    second = {e["name"]: e["sha256"] for e in _read(catalog_path)["categories"]}
+
+    assert first != second, "两次导出的摘要完全相同，说明没有按实际内容算"
+    # 关键：第二轮之后，每条摘要仍与磁盘上的文件一致
+    for name, path in category_paths.items():
+        assert second[name] == _sha256(path.read_bytes())
+
+
+def test_removes_stale_signature(tmp_path):
+    """索引一重写，上一轮的签名就必然失效 —— 导出必须把它删掉。
+
+    留着它的后果**比「没有签名」糟得多**：新索引配旧签名，客户端报「签名与清单不符」，
+    而人只会去怀疑密钥或密码学，排查方向完全错。删掉之后最坏是「缺签名」，
+    症状直指「发布流程漏了一步」。
+    """
+    source = _make_db(tmp_path, BASE_ROWS)
+    output_dir = tmp_path / "data"
+    livewall_dir = output_dir / "livewall"
+    livewall_dir.mkdir(parents=True)
+    stale = livewall_dir / "catalog.json.sig"
+    stale.write_text('{"alg":"ed25519","signature":"AAAA"}', encoding="utf-8")
+
+    export_livewall_catalog(source, output_dir)
+
+    assert not stale.exists()
+
+
+def test_export_does_not_sign(tmp_path):
+    """导出**不产出**签名文件：签名要用本机离线私钥，只有发布链路上那一步能做。
+
+    这条锁住职责边界 —— 采集器跑在什么机器上都可能，私钥只在持有它的机器上。
+    """
+    source = _make_db(tmp_path, BASE_ROWS)
+    output_dir = tmp_path / "data"
+
+    export_livewall_catalog(source, output_dir)
+
+    assert not (output_dir / "livewall" / "catalog.json.sig").exists()
+    assert sorted(p.name for p in (output_dir / "livewall").iterdir()) == [
+        "catalog.json",
+        "category.4001.json",
+        "category.5000.json",
+    ]
+
+
+def test_digest_mismatch_aborts_export(tmp_path, monkeypatch):
+    """写盘后回读对账：摘要与文件不一致就**抛错中止**，不产出这份清单。
+
+    用桩把摘要函数改成「每次调用返回不同值」，于是写盘时记下的摘要在回读时必然对不上 ——
+    这模拟的是「写出去的字节与算摘要的字节分了家」（改编码、加一层格式化、被压缩）。
+    不拦住的后果是客户端**每个切片都判完整性失败**，而那看起来像 CDN 的问题。
+    """
+    from wallpapers import export as export_module
+
+    counter = {"n": 0}
+
+    def drifting_digest(data: bytes) -> str:
+        counter["n"] += 1
+        return f"{counter['n']:064x}"
+
+    monkeypatch.setattr(export_module, "_sha256_hex", drifting_digest)
+
+    source = _make_db(tmp_path, BASE_ROWS)
+    with pytest.raises(RuntimeError, match="摘要与写出的文件不一致"):
+        export_livewall_catalog(source, tmp_path / "data")

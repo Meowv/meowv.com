@@ -119,8 +119,11 @@ PYTHONPATH=src python3 -m wallpapers export-livewall --default-category 风景
 
 | 文件 | 说明 |
 | --- | --- |
-| `catalog.json` | **纯索引**。分类清单（含条目数为 0 的分类）+ 默认分类，**不含任何条目** —— 它是客户端启动时唯一必拉的文件，因此必须很小（当前 901 字节） |
+| `catalog.json` | **纯索引**。分类清单（含条目数为 0 的分类）+ 默认分类 + **每个切片的 `sha256`**，**不含任何条目** —— 它是客户端启动时唯一必拉的文件，因此必须很小（当前 1661 字节） |
 | `category.<一级分类 id>.json` | 每个**有内容**的一级分类一份，结构沿用旧版单文件清单。客户端按选中分类单独拉取 |
+| `catalog.json.sig` | 索引的 Ed25519 签名，由 `../livewall/tools/sign-version.swift` 产出（见下节） |
+
+**索引里的 `sha256` 是每个切片的字节摘要**（对切片文件**原始字节**算，64 位小写十六进制）。它同时服务两件事：让客户端能验「这个切片确实属于这份索引」、以及让签名只需覆盖索引一个文件 —— 否则 11 个切片要签 11 次、客户端启动也多 10 次请求。条目数为 0 的分类**没有** `sha256` 字段（它没有切片文件，给个摘要反而是个陷阱）。
 
 文件名用数字 id 而不是分类名：中文名进 URL 会触发百分号编码，CDN / nginx 侧行为不可控。放在 `livewall/` 子目录里是为了与 Studio 的 `wallpapers.catalog.*` 分开 —— `encrypt-wallpaper.mjs` 要求同目录下「恰好 5 个」`wallpapers.catalog.*.json`，混在一起会让它直接报错。
 
@@ -148,11 +151,33 @@ PYTHONPATH=src python3 -m wallpapers export-livewall --default-category 风景
 
 索引与分类文件**同批生成、共用同一个 `generatedAt`**，客户端据此判断两份产物是否一致。清单结构与客户端约定一一对应，改动需两边同步（见 `src/wallpapers/export.py` 与 `livewall/Sources/LiveWallCore/CatalogModel.swift`）。
 
-**新增条目字段一律不升 `schemaVersion`**：客户端解码用 `decodeIfPresent` 容错，老客户端忽略未知键即可；升版本会让它撞上 `unsupportedSchema` 直接拒绝加载整份清单（`coverUrl` 就是这么加的）。另外**索引刻意不含 `items`**，条目只写在分类切片里 —— 所以新增条目字段只影响切片体积，索引仍是 901 字节。
+**新增条目字段一律不升 `schemaVersion`**：客户端解码用 `decodeIfPresent` 容错，老客户端忽略未知键即可；升版本会让它撞上 `unsupportedSchema` 直接拒绝加载整份清单（`coverUrl` 就是这么加的）。另外**索引刻意不含 `items`**，条目只写在分类切片里 —— 所以新增条目字段只影响切片体积，索引只随分类数增长。
 
 根目录的 `./build.sh wallpapers` 与 `./build.sh studio --with-wallpapers` 在生成并加密 Studio 壁纸目录时，会同时生成 `studio/public/data/livewall/` 并同步到 `build/studio.meowv.com/data/livewall/`。手工单独导出时使用上面的命令。
 
 > 旧版的单文件清单 `studio/public/data/livewall.json` 已废弃并删除。
+
+## 索引签名
+
+索引是客户端唯一无条件信任的输入（它决定了菜单里显示什么、以及每个切片该长什么样）。裸 https 只保护传输，**保护不了「服务端被改」** —— 静态站被入侵、发布脚本被改、CDN 缓存被投毒，都能改出一个合法但有害的 `catalog.json`。因此索引与 `livewall` 的 `version.json` 走同一套 Ed25519 签名：私钥在本机离线（`~/.livewall-signing/`，仓库外），公钥内嵌客户端。
+
+签名覆盖索引的**原始字节**，产出 `catalog.json.sig`。发布链路上由 `./build.sh wallpapers` 自动调用 `livewall/tools/sign-version.swift sign --catalog`：
+
+```bash
+# 手工签（等价于 build.sh 里那一步；在 livewall/ 目录下执行）
+../livewall/tools/sign-version.swift sign \
+  --json ../studio/public/data/livewall/catalog.json --catalog
+
+# 回验（用客户端内嵌公钥，不是签名方自己的公钥）
+../livewall/tools/sign-version.swift verify \
+  --json ../studio/public/data/livewall/catalog.json
+```
+
+`--catalog` 模式在签名前会先做一次**摘要对账**：逐个读索引里登记的切片文件、算 sha256、与索引声明的值比对。任何一处不符（切片被改、文件缺失、索引里没有 `categories`）都直接中止，**不会签出一份指向坏产物的索引**。
+
+签名只覆盖索引，切片的完整性靠索引里的 `sha256` —— 客户端的校验顺序是「先验索引签名 → 再用索引里的摘要校验切片」，所以**给切片重新签名是无效的**（摘要对不上就拒收）。
+
+> ⚠️ `catalog.json` 与 `catalog.json.sig` **必须同一次发布**。只传索引不传 `.sig` 的表现是客户端**完全用不了清单**（签名缺失即不可用，没有「验不过就退回只看摘要」的降级路），且症状与「线上没发新版」无法区分。落地新客户端前必须**先部署 `.sig`**，否则升级即「无可用清单」。
 
 ## 数据范围
 
