@@ -92,7 +92,20 @@ livewall/
 │  │  └─ WindowInspector.swift      层级快照、壁纸/图标层识别、遮挡检测
 │  └─ LiveWall/         正式 App
 │     ├─ main.swift             入口（菜单栏常驻）
-│     ├─ AppDelegate.swift      编排：清单、调度、失败处理、菜单栏、系统事件
+│     ├─ AppDelegate.swift      编排核心：**全部存储属性** + 生命周期 + 配置落盘
+│     ├─ AppDelegate+Catalog.swift        壁纸来源与清单（本地文件夹 / 索引 / 切片 / 分类）
+│     ├─ AppDelegate+Scheduling.swift     调度与省电（轮换、加载编排、共享加载表、失败处理）
+│     ├─ AppDelegate+SystemEvents.swift   系统事件登记 + 窗口重建后的各路同步
+│     ├─ AppDelegate+MenuBar.swift        状态项图标 + 主菜单 + 关于子菜单
+│     ├─ AppDelegate+Update.swift         版本检查、状态机与下载引导
+│     ├─ AppDelegate+MenuOptions.swift    展开期惰性采样 + 热键 + 选项子菜单
+│     ├─ AppDelegate+MenuActions.swift    播放 / 下载 / 间隔 / 暂停等菜单动作
+│     ├─ AppDelegate+Pinning.swift        「固定为桌面壁纸」
+│     ├─ AppDelegate+SourceMenu.swift     来源与分类子菜单 + 相关动作
+│     ├─ AppDelegate+Logging.swift        自身完整性自检 + 日志（含 2 MB 轮转）
+│     ├─ AppDelegate+MenuValidation.swift 菜单项实际可用性（`NSMenuItemValidation`）
+│     ├─ AppDelegate+Browser.swift        浏览窗口数据出口（`WallpaperBrowserDataSource`）
+│     ├─ AppDelegate+MenuDelegate.swift   展开期采样与收起后补建（`NSMenuDelegate`）
 │     ├─ ScreenCoordinator.swift 多屏窗口管理 + 层级自检与降级 + bounds 稳定等待
 │     ├─ PlaybackGovernor.swift 省电信号采集（通知 + 2 秒轮询）并驱动状态机
 │     ├─ HotKeyManager.swift    全局热键（Carbon，零权限）+ 占用检测

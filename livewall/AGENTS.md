@@ -20,6 +20,10 @@ macOS 视频动态壁纸工具。定位是**个人自用 / 小范围共享**，�
 - `Sources/LiveWallCore/`：不依赖 `NSApplication` 的纯逻辑，可脱离 GUI 单测。层级预设、清单模型与降级链、同步取数、候选池、选片顺序、调度策略与切换间隔、时长文案、日志轮转阈值与判定、省电信号与状态判定、遮挡覆盖率、多屏策略、内容过滤、配置模型、版本检查都在这里；P10 之后另有「固定」状态机（`PinnedPlayback`）、选片顺序子菜单的行（`PlaybackOrderMenu`）、缩略图地址拼装与请求去重（`ThumbnailURL` / `ThumbnailRequestTracker`）。**新写的逻辑优先放这里**，这样才测得到。
 - `Sources/LiveWallDesktop/`：依赖 AppKit 的桌面层代码 —— 桌面层覆盖窗口、窗口层级探测、遮挡检测。
 - `Sources/LiveWall/`：正式 App。菜单栏常驻，负责编排（清单、调度、失败处理、菜单栏、系统事件）。省电信号的采集在 `PlaybackGovernor.swift`，播放器的暂停与恢复只在 `AppDelegate.applyPlaybackState` 一处发生；全局热键在 `HotKeyManager.swift`，开机自启在 `LaunchAtLogin.swift`。动态壁纸浏览窗口在 `WallpaperBrowserWindowController.swift` / `WallpaperBrowserViewController.swift`（配套 `BrowserItemView.swift` / `ThumbnailLoader.swift` / `PreviewPlayer.swift`）—— 这是本项目**唯一**允许的普通 UI 窗口。
+- **`AppDelegate` 已按职责拆成 14 个文件**（2026-09-21）：主文件只留**全部存储属性** + 生命周期 + 配置落盘，方法按职责分到 `AppDelegate+Catalog/Scheduling/SystemEvents/MenuBar/Update/MenuOptions/MenuActions/Pinning/SourceMenu/Logging.swift`，三个协议一致性（`NSMenuItemValidation` / `WallpaperBrowserDataSource` / `NSMenuDelegate`）各占一个文件。見 [`README.md`](./README.md) 的目录结构。
+  - 硬约束：**Swift 的 extension 不能放实例存储属性**。新增状态一律加进 `AppDelegate.swift` 的属性区，不要图省事放进 `AppDelegate+Xxx.swift`（编译期就会拦下）。`static` 存储属性例外，可以留在 extension。
+  - 已知代价：跨文件访问的成员从 `private` 降为 **`internal`**（Swift 没有「同模块但跨文件可见」这一档）。这是这次拆分的对价，不要为了「看起来封装好」把方法搬回主文件。
+  - 下一步若要做「抽内聚类型」（`MenuBuilder` / `CatalogCoordinator` 等），前提是**先有 App 层测试** —— 现在 App 层零自动化测试，抽类型无法自动验证。
 - `Tests/LiveWallCoreTests/`：测试用例与自建断言运行器（`Harness.swift`）。
 - `build.sh` 编译并组装 `.app`，`test.sh` 跑测试，`run.sh` 运行正式 App，`make-dmg.sh` 打包并签名 DMG。
 - `Resources/Info-LiveWall.plist`：App 的 `LSUIElement=true`（菜单栏常驻，不占 Dock）。
