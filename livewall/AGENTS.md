@@ -20,7 +20,7 @@ macOS 视频动态壁纸工具。定位是**个人自用 / 小范围共享**，�
 - `Sources/LiveWallCore/`：不依赖 `NSApplication` 的纯逻辑，可脱离 GUI 单测。层级预设、清单模型与降级链、同步取数、候选池、选片顺序、调度策略与切换间隔、时长文案、日志轮转阈值与判定、省电信号与状态判定、遮挡覆盖率、多屏策略、内容过滤、配置模型、版本检查都在这里；P10 之后另有「固定」状态机（`PinnedPlayback`）、选片顺序子菜单的行（`PlaybackOrderMenu`）、缩略图地址拼装与请求去重（`ThumbnailURL` / `ThumbnailRequestTracker`）。**新写的逻辑优先放这里**，这样才测得到。
 - `Sources/LiveWallDesktop/`：依赖 AppKit 的桌面层代码 —— 桌面层覆盖窗口、窗口层级探测、遮挡检测。
 - `Sources/LiveWall/`：正式 App。菜单栏常驻，负责编排（清单、调度、失败处理、菜单栏、系统事件）。省电信号的采集在 `PlaybackGovernor.swift`，播放器的暂停与恢复只在 `AppDelegate.applyPlaybackState` 一处发生；全局热键在 `HotKeyManager.swift`，开机自启在 `LaunchAtLogin.swift`。动态壁纸浏览窗口在 `WallpaperBrowserWindowController.swift` / `WallpaperBrowserViewController.swift`（配套 `BrowserItemView.swift` / `ThumbnailLoader.swift` / `PreviewPlayer.swift`）—— 这是本项目**唯一**允许的普通 UI 窗口。
-- **`AppDelegate` 已按职责拆成 14 个文件**（2026-09-21）：主文件只留**全部存储属性** + 生命周期 + 配置落盘，方法按职责分到 `AppDelegate+Catalog/Scheduling/SystemEvents/MenuBar/Update/MenuOptions/MenuActions/Pinning/SourceMenu/Logging.swift`，三个协议一致性（`NSMenuItemValidation` / `WallpaperBrowserDataSource` / `NSMenuDelegate`）各占一个文件。見 [`README.md`](./README.md) 的目录结构。
+- **`AppDelegate` 按职责拆分**：主文件只留**全部存储属性**、生命周期和配置落盘；方法按职责分到 `AppDelegate+Catalog/Scheduling/SystemEvents/MenuBar/Update/MenuOptions/MenuActions/Pinning/SourceMenu/Logging.swift`，三个协议一致性（`NSMenuItemValidation` / `WallpaperBrowserDataSource` / `NSMenuDelegate`）各占一个文件。新增职责时先更新目录结构，再决定是否需要拆分。
   - 硬约束：**Swift 的 extension 不能放实例存储属性**。新增状态一律加进 `AppDelegate.swift` 的属性区，不要图省事放进 `AppDelegate+Xxx.swift`（编译期就会拦下）。`static` 存储属性例外，可以留在 extension。
   - 已知代价：跨文件访问的成员从 `private` 降为 **`internal`**（Swift 没有「同模块但跨文件可见」这一档）。这是这次拆分的对价，不要为了「看起来封装好」把方法搬回主文件。
   - 下一步若要做「抽内聚类型」（`MenuBuilder` / `CatalogCoordinator` 等），前提是**先有 App 层测试** —— 现在 App 层零自动化测试，抽类型无法自动验证。
@@ -41,7 +41,7 @@ macOS 视频动态壁纸工具。定位是**个人自用 / 小范围共享**，�
 
 - 修改纯逻辑后优先运行 `./test.sh`；修改窗口层级、播放或窗口生命周期逻辑后必须真机跑一次 App 验证（会短暂占用桌面）。**修改浏览窗口（`WallpaperBrowser*`）后必须人工点一次** —— 探针能验数据与布局、连「双击」都能造 `NSEvent` 验，但验不了真机点击的手感、预览播放的实际观感，以及「关窗不影响桌面播放」。
 - **新增测试文件必须同时在 `Tests/LiveWallCoreTests/main.swift` 里加一行调用**：运行器是按**函数名**手工登记的，漏登记时编译通过、测试全绿，而那个文件一行都不跑。`./test.sh` 现在会做这个自检并直接失败（按函数名比对，所以一个文件里定义两个测试函数是允许的）。**测试项数不要写进文档** —— 会漂移，跑 `./test.sh` 看实际值。
-- **本目录的 shell 脚本同样适用「变量后紧跟中文一律写 `${VAR}`」**（规则在根 `AGENTS.md` 的「根目录脚本约定」里，但**适用于全仓库脚本**）。新写或改动脚本后跑一次技能 `shell-locale-safety` 的扫描器：`livewall/make-dmg.sh` 首次提交时就带了三处致命项（`$DMG_PATH（` 等），只有 `LC_ALL=C` 的沙箱掩盖了它。
+- **本目录的 shell 脚本同样适用「变量后紧跟中文一律写 `${VAR}`」**（规则在根 `AGENTS.md` 的「根目录脚本约定」里，但**适用于全仓库脚本**）。新写或改动脚本后执行 `bash -n`，并在非 `C` locale 下跑一次实际帮助或 dry-run 路径；`LC_ALL=C` 的沙箱可能掩盖这类问题。
 
 ## 更新链与发版
 
@@ -93,7 +93,7 @@ macOS 视频动态壁纸工具。定位是**个人自用 / 小范围共享**，�
 
 - 视频源与清单都来自同仓库 `wallpapers/` 项目的 `export-livewall` 子命令。**清单没有本地一层**：输出目录是 `studio/public/data/livewall/`，里面是**索引 + 签名 + 按分类切片**三个角色 —— `catalog.json`（**纯索引**：分类清单 + 默认分类 + 各切片的 `sha256`，**不含条目**）、`catalog.json.sig`（索引的 Ed25519 签名）、`category.<一级分类 id>.json`。随 Studio 一起部署，客户端在运行时从 `https://studio.meowv.com/data/livewall/` 下按需拉取，断网时各自回退本地副本（Application Support 下 `catalog.remote-cache.index.json`、`catalog.remote-cache.index.json.sig`、`catalog.remote-cache.slice.json` —— **索引与它的签名副本必须同存同弃**，只留索引的话断网时读回来的那份过不了验签）。仓库内不保存清单副本，也不要再往 `livewall/data/` 写。清单结构改动需与 `wallpapers/src/wallpapers/export.py` 同步。
 - **索引与其签名的两道闸都不可绕过，也不要加「验不过就跳过」的开关**：① 索引整体验签（含「摘要齐全性」检查，有切片的分类缺 `sha256` 就整份拒掉 —— 那是生产侧 bug，客户端不能靠少校验一层掩盖）；② 切片字节摘要与索引里记的一致 + 切片归属校验。**缺摘要不能当作通过**，否则攻击者把摘要字段删掉即可绕过。细节与实测见 [`README.md`](./README.md) 的「内容清单与签名」。
-- **索引必须保持「不含条目」**。`catalog.json` 是启动时唯一必拉的文件，量级是 KB（当前 10 个分类 → 1661 字节；会随分类数线性增长，每个分类多 64 字符的 `sha256`）；条目一律按分类单独拉。谁把 `items` 加回索引，启动就会退回「一次下全量」（实测 4.9 MB），这个改造就白做了。
+- **索引必须保持「不含条目」**。`catalog.json` 是启动时唯一必拉的文件，大小随分类数线性增长；每个有内容的分类登记一个 `sha256`，条目一律按分类单独拉。谁把 `items` 加回索引，启动就会退回「一次下全量」，这个改造就白做了。
 - **条目字段新增一律不升 `schemaVersion`**：客户端用 `decodeIfPresent` 容错，升版本会让老客户端撞上 `unsupportedSchema` 直接拒绝加载整份清单 —— `coverUrl`（静态图地址，供锁屏预览与「下载当前壁纸」用）就是这么加的。
 - **切分类是异步拉一个文件**，因此有两件必须处理的事：① 递增的请求序号，回包时比对丢弃过期结果（否则「点了 B，画面却停在 A」）；② 失败时保持当前画面**与当前勾选** —— 选中项只在拉取成功后才写回配置。`selectedCategoryID` 的语义是「池子里装的是哪个分类」，不是「用户点了哪个」。
 - **分类文件名来自远端，不能照着它发请求**。`LivewallCategoryEntry.resolvedFileURL(relativeTo:)` 只接受纯文件名（不含 `/`、`\`、`:`，不是 `.`/`..`，以 `.json` 结尾）并校验 host/scheme 与索引一致 —— 否则远端改一个字段就能把客户端请求指到任意地址。
@@ -145,7 +145,7 @@ macOS 视频动态壁纸工具。定位是**个人自用 / 小范围共享**，�
 ### 锁屏预览与下载
 
 - **锁屏预览只能是静态图**。锁屏界面由 `loginwindow` 在安全罩层级绘制，第三方窗口提不到它之上（能提上去就等于能伪造登录框）。可行路径只有「把当前壁纸的静态图设成系统墙纸」—— 覆盖窗口在系统墙纸之上，桌面态被挡住、锁屏态露出来。**不要试图提高窗口层级去覆盖锁屏**；也不要为了「锁屏也播视频」引入 Apple 私有 `WallpaperExtensionKit`（要完整 Xcode + 签名 + 私有框架 `dlopen`，与「只用 Command Line Tools、零依赖」的定位冲突）。
-- **静态图地址只能来自清单的 `coverUrl`，不许用 URL 规律推导**。实测（2026-09-18 快照，全量 20,703 条）里有 256 条与视频不同源 id（含 `.png`、日期段不同），按「换域名 + 去掉 `_10s_for_html` + 改成 `.jpg`」推会推错。另：`coverUrl` 的 `accessible` **不是真实探测结果**（`pipeline` 从不做 HEAD，走默认值 1），所以客户端**必须有抓帧兜底**，且抓帧也失败时保留系统原墙纸、不要清空。
+- **静态图地址只能来自清单的 `coverUrl`，不许用 URL 规律推导**。视频与静态图可能使用不同资源 id、扩展名或日期段；另：`coverUrl` 的 `accessible` **不是真实探测结果**（`pipeline` 从不做 HEAD，走默认值 1），所以客户端**必须有抓帧兜底**，且抓帧也失败时保留系统原墙纸、不要清空。
 - **抓帧使用 `AVAssetImageGenerator` 异步生成，禁止在主 actor 用 `RunLoop` 自旋等待 `AVPlayerItemVideoOutput`**。播放开始后异步缓存一帧；锁屏预览需要时优先用缓存，退出路径只复用已缓存文件，不在主线程现抓帧。抓帧复用同一 asset，**不产生额外流量**。历史上的 `AVPlayerItemVideoOutput` 探针只用于证明「不能挂 template item」，不再是现行实现。
 - **退出 = 固化「当前正在播」已经缓存好的静态图**，不是恢复原墙纸。`shutdown()` → `freezeCurrent` 只复用 `lastApplied`；还没写好就保持现状不动，绝不为了补图在主线程重编码。随后给 0.3 s 生效窗口并 `reapplyCached`。真原墙纸只在首次运行时拿得到，因此持久化到 `original-wallpapers.json`，并用 `LockScreenPreviewPolicy.isOwnCacheFile` 排除自家缓存；`restoreUserWallpaper` 只服务「关闭锁屏预览开关」。
 - **`LockScreenPreviewer` / `WallpaperDownloader` 标 `@MainActor` 管状态，重活留在 nonisolated async 路径**：下载走分块 delegate，帧编码走 ImageIO + `Task.detached`，不能把大图 JPEG 编码或同步文件 IO 放回主线程。

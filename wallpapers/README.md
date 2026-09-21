@@ -8,6 +8,18 @@
 - 修改边界、约定与验证要求 → [`AGENTS.md`](./AGENTS.md)
 - 仓库级概览与根目录脚本 → [`../README.md`](../README.md)、[`../AGENTS.md`](../AGENTS.md)
 
+## 文档导航
+
+- [快速开始](#快速开始)
+- [生成 Studio 发布目录](#生成-studio-发布目录)
+- [导出 livewall 壁纸清单](#导出-livewall-壁纸清单)
+- [索引签名](#索引签名)
+- [数据库表结构](#数据库表结构)
+- [`crawl` 抓取命令](#crawl-抓取命令)
+- [站点规划查询 SQL](#站点规划查询-sql)
+- [`stats` / `check` 命令](#stats-统计命令)
+- [验证](#验证)
+
 ## 目录结构
 
 ```text
@@ -119,11 +131,11 @@ PYTHONPATH=src python3 -m wallpapers export-livewall --default-category 风景
 
 | 文件 | 说明 |
 | --- | --- |
-| `catalog.json` | **纯索引**。分类清单（含条目数为 0 的分类）+ 默认分类 + **每个切片的 `sha256`**，**不含任何条目** —— 它是客户端启动时唯一必拉的文件，因此必须很小（当前 1661 字节） |
+| `catalog.json` | **纯索引**。分类清单（含条目数为 0 的分类）+ 默认分类 + **每个切片的 `sha256`**，**不含任何条目** —— 它是客户端启动时唯一必拉的文件，大小随分类数量线性增长 |
 | `category.<一级分类 id>.json` | 每个**有内容**的一级分类一份，结构沿用旧版单文件清单。客户端按选中分类单独拉取 |
 | `catalog.json.sig` | 索引的 Ed25519 签名，由 `../livewall/tools/sign-version.swift` 产出（见下节） |
 
-**索引里的 `sha256` 是每个切片的字节摘要**（对切片文件**原始字节**算，64 位小写十六进制）。它同时服务两件事：让客户端能验「这个切片确实属于这份索引」、以及让签名只需覆盖索引一个文件 —— 否则 11 个切片要签 11 次、客户端启动也多 10 次请求。条目数为 0 的分类**没有** `sha256` 字段（它没有切片文件，给个摘要反而是个陷阱）。
+**索引里的 `sha256` 是每个切片的字节摘要**（对切片文件**原始字节**算，64 位小写十六进制）。它同时服务两件事：让客户端能验「这个切片确实属于这份索引」、以及让签名只需覆盖索引一个文件 —— 不需要为每个分类分别签名或在启动时额外拉取多份签名。条目数为 0 的分类**没有** `sha256` 字段（它没有切片文件，给个摘要反而是个陷阱）。
 
 文件名用数字 id 而不是分类名：中文名进 URL 会触发百分号编码，CDN / nginx 侧行为不可控。放在 `livewall/` 子目录里是为了与 Studio 的 `wallpapers.catalog.*` 分开 —— `encrypt-wallpaper.mjs` 要求同目录下「恰好 5 个」`wallpapers.catalog.*.json`，混在一起会让它直接报错。
 
@@ -135,9 +147,9 @@ PYTHONPATH=src python3 -m wallpapers export-livewall --default-category 风景
 | `--content`          | `dynamic`               | `static` 或 `dynamic`                                            |
 | `--default-category` | `美女`                  | 默认分类，可填分类名或分类 id；该分类会被排在 `categories` 首位  |
 
-导出只保留 `status='active'`、`media_role IN ('video_preview','image')` 且 `accessible=1` 的记录；同一壁纸有多个同类地址时，按 `wallpaper_asset` 的 `is_primary` / `sort_order` / `asset.id` 取第一个。**只有 `image`、没有 `video_preview` 的壁纸不进清单** —— 它没有可播放地址。`duration_seconds` 在库里当前全为 NULL，清单里保持 `null`，由客户端在播放时自行探测。
+导出只保留 `status='active'`、`media_role IN ('video_preview','image')` 且 `accessible=1` 的记录；同一壁纸有多个同类地址时，按 `wallpaper_asset` 的 `is_primary` / `sort_order` / `asset.id` 取第一个。**只有 `image`、没有 `video_preview` 的壁纸不进清单** —— 它没有可播放地址。`duration_seconds` 允许为空；导出保留原值，客户端在需要时自行探测。
 
-`coverUrl` 的实测情况（2026-09-18，全量 **20,703** 条）：**100% 有值**，域名全部是 `cdn-ali-img-livebz.shanhutech.cn`；其中 **20,447 条与视频同资源 id，256 条不同**（一部分是 `.png`，一部分日期段不同）。所以**不要用「换域名 + 去掉 `_10s_for_html` + 改成 `.jpg`」去推导静态图地址** —— 那 256 条会推错，必须直接读清单字段。抽样 19 条 HEAD 全部 200，`Content-Type` 为 `image/jpeg` 或 `image/png`，体积 46 KB – 4 MB（PNG 偏大）。
+`coverUrl` 必须直接取数据库导出的 `image` 资源地址，不能根据视频 URL 的命名规律推导。静态图可能与视频使用不同的资源 id、扩展名或日期段；客户端因此保留抓帧回退。`asset.accessible` 对静态图也不是实时探测结果，不能把它当成线上可用性证明。
 
 注意 `asset.accessible` 对静态图**不是真实探测结果**：`pipeline` 从不做 HEAD（走列默认值 1），只有独立的 `wallpapers check` 子命令才会探测，而 `build.sh` 不调用它。所以 `coverUrl` 仍可能 404，客户端必须能降级。
 
@@ -145,7 +157,7 @@ PYTHONPATH=src python3 -m wallpapers export-livewall --default-category 风景
 
 - **一级分类**（`parent_id IS NULL`）是切分单位，一棵子树进同一份文件。子树匹配用递归 CTE —— 旧实现只比较「自身或直接父级」，三级及更深的分类会漏掉。
 - **分类清单包含 0 条的分类**（`file` 为 `null`），客户端菜单需要显示全部；但不为它们落文件 —— 客户端拿到 `items` 为空的清单会判定为「解析失败」并触发降级，写出来是个陷阱。
-- **一张壁纸可以出现在多份分类文件里**（`wallpaper_category` 是多对多）。索引里没有条目，所以**不属于任何分类的壁纸哪儿都到不了** —— 实测线上数据里没有这种条目（每张壁纸都挂了一个一级分类）。
+- **一张壁纸可以出现在多份分类文件里**（`wallpaper_category` 是多对多）。索引里没有条目，所以**不属于任何分类的壁纸哪儿都到不了**；导出前应通过数据库检查发现这类异常，而不是在客户端猜测归属。
 
 导出**不做分类过滤**：数据库只扫一遍，切分在 Python 侧做，所以分类数量不影响耗时。每次导出会清理上一轮遗留的 `category.*.json`（分类被删或改名后会留下孤儿文件）。
 

@@ -19,6 +19,12 @@ Meowv 的 Web 项目与桌面工具仓库，包含 Blog、Meowv Studio、Wallpap
 
 **同一事实只在一处维护**：项目自身的用途、结构与命令写在各自的 `README.md`，修改边界与验证要求写在各自的 `AGENTS.md`，本文件只保留跨项目的概览与根目录脚本。
 
+## 推荐阅读顺序
+
+1. 先看本文件的「环境与依赖」和「根目录脚本」，确认从哪个目录、用哪个包管理器执行命令。
+2. 修改单个项目时，再读该项目的 `README.md` 和 `AGENTS.md`；前者回答“怎么运行”，后者回答“哪些地方不能动、怎么验证”。
+3. 如果文档与脚本、`package.json`、`pyproject.toml` 或 SwiftPM 配置不一致，以可执行配置为准，并在本次改动范围内同步文档。
+
 ## 项目概览
 
 | 目录          | 项目                   | 技术栈                              | 线上地址                                     |
@@ -48,7 +54,7 @@ Meowv 的 Web 项目与桌面工具仓库，包含 Blog、Meowv Studio、Wallpap
 
 ## 环境与依赖
 
-建议使用 Node.js `>= 22.12.0`、Python `>= 3.12`。Node 版本下限取自 `studio/package.json` 的 `engines`，Blog 未声明 `engines`。首次运行前分别安装依赖：
+建议使用 Node.js `>= 22.12.0`、Python `>= 3.12`。Node 版本下限取自 `studio/package.json` 的 `engines`，Blog 未声明 `engines`；如果只运行 Blog，仍应使用当前 LTS Node。首次运行前分别安装依赖：
 
 ```bash
 (cd blog && yarn install --frozen-lockfile)

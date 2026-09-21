@@ -21,6 +21,7 @@
 - **实际脚本、`package.json`、锁文件与源码配置是可执行行为的最终依据**；发现文档不一致时，应在任务范围内同步修正。
 - **清单类内容不凭记忆抄写**。工具清单、路由表、分类数这类会漂移的事实，文档里只写「去哪读」，不复制具体条目；确需写数字时先回到源码核对。
 - 涉及命令、端口、产物路径时以对应项目文档为准。
+- README 可以保留带日期的探针或真机验证记录，但必须明确标为历史快照；分类数量、文件大小、依赖版本和测试项数等运行时事实不要写成永久承诺。
 
 四个目录是同一 Git 仓库中的独立项目，不是统一 workspace。执行命令前先进入目标目录，并使用该项目现有的包管理器、运行时和代码风格。`blog/`、`studio/` 是 Web 项目（Node），`wallpapers/` 是 Python 项目，`livewall/` 是原生 Swift 项目，运行时互不相干。
 
@@ -71,8 +72,7 @@
 - `build.sh` 按参数顺序构建。全量构建必须全部成功后再替换 `build/`；指定项目构建只替换对应域名目录。
 - 汇总目录固定为 `build/meowv.com/`、`build/studio.meowv.com/`、`build/livewall/`。Studio 产物包含 `dist/zitie/`；livewall 产物为 `build/livewall/LiveWall.app/`。
 - 保持 macOS Bash 3.2 兼容性，不使用 `mapfile`、关联数组等 4.0+ 特性。Bash 3.2 在 `set -u` 下展开空数组会报 `unbound variable`，遍历前先使用 `${SELECTED_PROJECTS[*]:-}` 防护。
-- 所有 shell 脚本中，变量后紧跟中文或全角字符时一律写成 `${VAR}`。非 `C` locale 下 bash 会把紧随其后的多字节字符首字节并入变量名（`$APP（` 被解析为变量名 `APP\xef`），`set -u` 下直接报 `unbound variable` 并使脚本中断。`LC_ALL=C` 的环境（例如某些沙箱）测不出这个问题，本地跑通不代表对用户的终端成立。
-  **适用范围是仓库内所有 shell 脚本，包括各子项目目录** —— 这一节标题里的「根目录」只是它的所在位置，不是适用范围。2026-09-18 新写的 `livewall/make-dmg.sh` 就因为按标题把它理解成「只管根目录」而漏掉这条、重新踩了一次（`$DMG_PATH（` / `$SIZE）` / `$APP_BUNDLE（` 三处）。**新写或改动脚本后跑一遍扫描器与多 locale 运行器**（技能 `shell-locale-safety` 里有：`scan_dollar_nonascii.py <目录>` 与 `run_under_locales.sh <脚本>`）—— `bash -n` 查不出这个问题。
+- 所有 shell 脚本中，变量后紧跟中文或全角字符时一律写成 `${VAR}`。非 `C` locale 下 bash 会把紧随其后的多字节字符首字节并入变量名（`$APP（` 可能被解析成错误的变量名），`set -u` 下会直接报 `unbound variable` 并使脚本中断。`LC_ALL=C` 的环境（例如某些沙箱）测不出这个问题，本地跑通不代表对用户的终端成立。**适用范围是仓库内所有 shell 脚本，包括各子项目目录**；新写或改动脚本后至少执行 `bash -n <脚本>`，并在非 `C` locale 下跑一次实际帮助或 dry-run 路径。`bash -n` 不能替代运行时检查。
 - `build/`、暂存目录和备份目录均为可替换生成内容，不提交 Git。
 - `build.sh wallpapers` 只生成并加密 Studio 壁纸目录，不构建项目；`./build.sh studio --with-wallpapers` 仅允许与 `studio` 一起使用，并在 Studio 构建前生成目录数据。两者都会同时生成供 livewall 使用的未加密清单目录 `studio/public/data/livewall/`，并同步到 `build/studio.meowv.com/data/livewall/`。清单索引在导出后**立即由 `sign_livewall_catalog` 签名**（需本机私钥，失败即中止构建），所以 `catalog.json` 与 `catalog.json.sig` 是同一次产出的，不能只留其一。
 - `./build.sh livewall --with-dmg`（别名同样支持 `lw`）仅允许与 `livewall` 一起使用：在 `.app` 打完后跑 `livewall/make-dmg.sh --no-build`。`build/livewall/` **只放 `LiveWall.app`**；DMG 与 `version.json` 由 `install_livewall_update_feed` 在**发布之后**写进 `build/studio.meowv.com/data/livewall/` —— 客户端的 `fileURL` 指向 `https://studio.meowv.com/data/livewall/`，而 `deploy.sh` 只上传 `build/studio.meowv.com/`，放 `build/livewall/` 等于发不出去。

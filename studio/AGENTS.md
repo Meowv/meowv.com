@@ -8,7 +8,7 @@
 - 只改本目录内的文件。`../blog/`、`../wallpapers/`、`../livewall/` 是同一 Git 仓库中的独立项目，不在此处顺手处理。
 - 线上地址固定为 `https://studio.meowv.com`，Zitie 为 `https://studio.meowv.com/zitie/`。改链接、Canonical、分享信息或跨站导航时保持这两个地址。
 - 包管理器固定 **pnpm**（`packageManager: pnpm@11.9.0`，锁文件 `pnpm-lock.yaml`）。不要混用 npm / yarn，也不要在仓库根目录统一安装依赖。
-- 不手工修改 `dist/`、`public/data/wallpapers.catalog.*`、`public/data/livewall/` 与 `public/zitie/hanzi-data/` —— 都是生成内容，`.gitignore` 已逐项排除。
+- 不手工修改 `dist/`、`public/data/wallpapers.catalog.*` 与 `public/data/livewall/` —— 都是生成内容，`.gitignore` 已逐项排除。Zitie 的笔顺数据只在构建阶段写入 `dist/zitie/hanzi-data/`，不存在需要维护的 `public/zitie/hanzi-data/` 源目录。
 - 新增生产依赖、外部服务、上传能力、远程转换或遥测前，先说明必要性和影响并取得同意。
 
 ## 代码结构

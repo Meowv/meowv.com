@@ -14,7 +14,7 @@
 
 ## 代码结构
 
-- `source/_posts/`：文章，按主题分子目录（`database/`、`dotnet/`、`git/`、`other/`、`python/`、`summary/`、`web/`）。
+- `source/_posts/`：文章，按主题分子目录；具体分类以当前目录实际内容为准，不在协作规则中维护固定清单。
 - `source/_data/`：站点共享数据（`friends.json`、`answer-book.json`）。
 - `source/games/`：跳过 Hexo 渲染的独立静态应用（`plonky`、`ztype`）。
 - `source/about/`、`source/contact/`、`source/friends/`、`source/categories/`、`source/tags/`、`404.md`、`robots.txt`：固定页面。

@@ -26,9 +26,9 @@ yarn build    # 生成静态站点到 public/
 新建内容用 Hexo 自带的脚手架（模板在 `scaffolds/`）：
 
 ```bash
-npx hexo new post "文章标题"
-npx hexo new page "页面标题"
-npx hexo new draft "草稿标题"
+yarn hexo new post "文章标题"
+yarn hexo new page "页面标题"
+yarn hexo new draft "草稿标题"
 ```
 
 ## 目录结构

@@ -44,9 +44,7 @@
 
 ## 验证
 
-- 改采集、数据库、导出或发布逻辑：`cd wallpapers && pytest`（轻量、必跑）。跑法：用仓库外的隔离 venv（`pytest` 不在系统 Python 里），例如
-  `/Users/qix/.workbuddy-ai/binaries/python/envs/default/bin/python -m pytest`（该 venv 已装 pytest），
-  并带 `PYTHONPATH=src`。
+- 改采集、数据库、导出或发布逻辑：先安装测试 extra，再在 `wallpapers/` 目录运行 `PYTHONPATH=src python3 -m pytest`（轻量、必跑）。如果不希望改动系统 Python，可使用任意仓库外的虚拟环境；文档不依赖某台机器的绝对路径。
 - **改动导出后额外做一次真实链路核对**：跑一遍仓库根 `./build.sh wallpapers`，确认它输出「摘要对账通过：N 个分类切片的 sha256 与索引一致」并以 0 退出 —— 那一步同时验证了「摘要算在写盘字节上」与「签名工具的对账逻辑」，是单测之外唯一能同时盖住两端的检查。
 - 改加密脚本：至少 `node --check ../studio/scripts/encrypt-wallpaper.mjs`，并检查 manifest、旧版本文件清理和 `.bin` 输出。
 - 快速语法自检：`PYTHONPATH=src python3 -m compileall -q src`。
