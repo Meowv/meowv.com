@@ -74,10 +74,10 @@
 - 所有 shell 脚本中，变量后紧跟中文或全角字符时一律写成 `${VAR}`。非 `C` locale 下 bash 会把紧随其后的多字节字符首字节并入变量名（`$APP（` 被解析为变量名 `APP\xef`），`set -u` 下直接报 `unbound variable` 并使脚本中断。`LC_ALL=C` 的环境（例如某些沙箱）测不出这个问题，本地跑通不代表对用户的终端成立。
   **适用范围是仓库内所有 shell 脚本，包括各子项目目录** —— 这一节标题里的「根目录」只是它的所在位置，不是适用范围。2026-09-18 新写的 `livewall/make-dmg.sh` 就因为按标题把它理解成「只管根目录」而漏掉这条、重新踩了一次（`$DMG_PATH（` / `$SIZE）` / `$APP_BUNDLE（` 三处）。**新写或改动脚本后跑一遍扫描器与多 locale 运行器**（技能 `shell-locale-safety` 里有：`scan_dollar_nonascii.py <目录>` 与 `run_under_locales.sh <脚本>`）—— `bash -n` 查不出这个问题。
 - `build/`、暂存目录和备份目录均为可替换生成内容，不提交 Git。
-- `build.sh wallpapers` 只生成并加密 Studio 壁纸目录，不构建项目；`./build.sh studio --with-wallpapers` 仅允许与 `studio` 一起使用，并在 Studio 构建前生成目录数据。两者都会同时生成供 livewall 使用的未加密清单目录 `studio/public/data/livewall/`，并同步到 `build/studio.meowv.com/data/livewall/`。
+- `build.sh wallpapers` 只生成并加密 Studio 壁纸目录，不构建项目；`./build.sh studio --with-wallpapers` 仅允许与 `studio` 一起使用，并在 Studio 构建前生成目录数据。两者都会同时生成供 livewall 使用的未加密清单目录 `studio/public/data/livewall/`，并同步到 `build/studio.meowv.com/data/livewall/`。清单索引在导出后**立即由 `sign_livewall_catalog` 签名**（需本机私钥，失败即中止构建），所以 `catalog.json` 与 `catalog.json.sig` 是同一次产出的，不能只留其一。
 - `./build.sh livewall --with-dmg`（别名同样支持 `lw`）仅允许与 `livewall` 一起使用：在 `.app` 打完后跑 `livewall/make-dmg.sh --no-build`。`build/livewall/` **只放 `LiveWall.app`**；DMG 与 `version.json` 由 `install_livewall_update_feed` 在**发布之后**写进 `build/studio.meowv.com/data/livewall/` —— 客户端的 `fileURL` 指向 `https://studio.meowv.com/data/livewall/`，而 `deploy.sh` 只上传 `build/studio.meowv.com/`，放 `build/livewall/` 等于发不出去。
   - 版本号、文件名、sha256、fileURL 全部由 `make-dmg.sh` 从 `Info.plist` 生成，根目录 `build.sh` 只搬运（清旧 → 拷贝 → 核一遍 `version.json` 的 `fileURL` 与 dmg 文件名一致），**不另生成一份**。
-  - 两条坑：① DMG 必须在 `publish_*` **之后**才装，否则会被整体替换掉的目录覆盖；② 清 `build/studio.meowv.com/data/livewall/` 时只能删 `catalog.json` / `category.*.json`，`version.json` 是分发产物不能跟着删。
+  - 两条坑：① DMG 必须在 `publish_*` **之后**才装，否则会被整体替换掉的目录覆盖；② 清 `build/studio.meowv.com/data/livewall/` 时只能删 `catalog.json` / `catalog.json.sig` / `category.*.json`，`version.json` 与 `version.json.sig` 是分发产物不能跟着删。**两份签名必须各自跟着自己的清单一起走**：`catalog.json.sig` 与新清单同批（旧索引配旧签名 = 客户端报「签名与清单不符」，人只会去怀疑密钥），`version.json.sig` 与 `version.json` 同批（这条见下一条）。
   - 只跑 `./build.sh studio` 也不会丢分发产物：`preserve_livewall_update_feed` 在 studio 产物拷进暂存区**之后**，把现有 `data/livewall/` 里的 dmg 与 `version.json` 一起带过去（顺序反了会被 `cp -R` 覆盖）。带 `--with-dmg` 时不冲突 —— `install_livewall_update_feed` 稍后清掉旧 dmg 再放新的。
 - 修改脚本时，同步检查参数帮助、项目数组、别名、端口、依赖检查、启动或构建分支、源目录和目标目录，避免只更新其中一处。
 

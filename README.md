@@ -133,7 +133,7 @@ chmod +x run.sh build.sh deploy.sh
 
 - 从 `wallpapers/wallpapers.db` 重新生成并加密 `studio/public/data/`。
 - 如果 `build/studio.meowv.com/` 已存在，同步更新其中的 `data/` 目录，便于直接部署已有产物。
-- 同时生成 livewall 客户端使用的未加密清单目录 `studio/public/data/livewall/`（`catalog.json` 索引 + `category.<id>.json` 分类切片）。
+- 同时生成 livewall 客户端使用的未加密清单目录 `studio/public/data/livewall/`（`catalog.json` 索引 + `category.<id>.json` 分类切片），并用本机私钥给索引签名（产出 `catalog.json.sig`）。**签名失败会中止构建** —— 私钥不在本机时这一步过不去。细节见 [`livewall/README.md`](./livewall/README.md) 的「内容清单与签名」。
 
 两个开关只能与指定项目搭配使用：
 
@@ -146,7 +146,7 @@ chmod +x run.sh build.sh deploy.sh
 build/
 ├── meowv.com/        # blog/public/
 ├── studio.meowv.com/ # studio/dist，包含 zitie/
-│   └── data/livewall/  # 壁纸清单 catalog.json + category.<id>.json
+│   └── data/livewall/  # 壁纸清单 catalog.json + catalog.json.sig + category.<id>.json
 │                       # （加 --with-dmg 时还有 LiveWall-<版本>.dmg + version.json + version.json.sig）
 └── livewall/         # livewall/build，只含 LiveWall.app
 ```
