@@ -191,6 +191,12 @@ categories:
         url: https://best.i8k.tv/favicon.ico
       url: https://i8k.tv
 
+    - id: zoo
+      name: 聚合全网优质修改版软件资源
+      icon:
+        url: https://zoo.ink/wp-content/themes/zoo/assets/img/favicon.png
+      url: https://zoo.ink
+
     - id: ppnix
       name: PPnix - 在线看电影看电视
       icon:
