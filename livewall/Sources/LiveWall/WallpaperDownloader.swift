@@ -7,8 +7,18 @@ import LiveWallCore
 /// 文件名 `<id>-<清洗后的标题>.<ext>`，视频与预览图**同基名成对**便于识别。
 /// 命名规则全部走 `DownloadNaming`，这里不手写第二套。
 ///
-/// 并发约定与项目其它组件一致：**只在主线程使用**，刻意不标注 `@MainActor`
-/// （标了会让 AppDelegate 里 `lazy var` 的属性初始化变成跨隔离调用而编译失败）。
+/// 并发约定与项目其它组件一致：**只在主线程使用**。这条约定现在由 `@MainActor` 强制
+/// （Swift 6 迁移时补上）。
+///
+/// 注：这里此前有一条「刻意不标 `@MainActor`，标了会让 AppDelegate 里 `lazy var`
+/// 的属性初始化变成跨隔离调用」的说明。那个约束只在 `AppDelegate` **没有**隔离标注时
+/// 成立；`AppDelegate` 本身标了 `@MainActor` 之后它就消失了 —— 引用它的地方全在主
+/// actor 上，`lazy var` 的首次求值也在主 actor 上。
+///
+/// 真正的重活在 `FileDownloader.download`（非隔离 async）里，所以标了
+/// `@MainActor` 之后 `download` 仍是「进主线程登记状态、await 时离开主线程」，
+/// 不会把逐字节下载搬到主线程上跑。
+@MainActor
 final class WallpaperDownloader {
 
     /// 下载结果，供调用方拼提示。

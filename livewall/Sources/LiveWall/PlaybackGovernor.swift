@@ -3,6 +3,37 @@ import IOKit.ps
 import LiveWallCore
 import LiveWallDesktop
 
+/// `PlaybackGovernor` 里「要在析构时清理的句柄」盒。
+///
+/// ## 为什么值得单独一个类型
+///
+/// `PlaybackGovernor` 是 `@MainActor` 的，而 Swift 6 里 **`deinit` 是非隔离的** ——
+/// 不允许在其中访问「主 actor 隔离、且类型不是 `Sendable`」的存储属性，
+/// `Timer` 与 `NSObjectProtocol` 都不是 `Sendable`，所以把清理直接写在外层的
+/// `deinit` 里会被判错（`cannot access property 'timer' with a non-Sendable type
+/// 'Timer?' from nonisolated deinit`）。
+///
+/// 把句柄收进一个**普通 class**，清理就交给它自己的 `deinit`：外层类不再需要
+/// `deinit`，也就不必用 `nonisolated(unsafe)` 去永久放宽那两个属性的访问检查
+/// （那会让「从后台线程误改定时器」这类错误彻底静默）。
+///
+/// ## 为什么不用加锁
+///
+/// 写入只发生在主 actor 上；而这个 `deinit` 能跑到，就说明此刻已经没有其它引用了。
+/// 之所以非要自动清理、而不是只在 `stop()` 里清：`stop()` 目前**没有生产调用点**
+/// （`AppDelegate` 只调 `start()`），析构是唯一的兜底路径。
+private final class CleanupBox {
+    var timer: Timer?
+    var observers: [NSObjectProtocol] = []
+
+    deinit {
+        timer?.invalidate()
+        for observer in observers {
+            NotificationCenter.default.removeObserver(observer)
+        }
+    }
+}
+
 /// 采集系统信号，驱动 `PlaybackStateResolver` 求值，并在状态翻转时通知外部。
 ///
 /// 设计上刻意把「采集」和「判定」分开：判定是 `LiveWallCore` 里的纯函数，可以穷举验证；
@@ -13,14 +44,22 @@ import LiveWallDesktop
 ///  - **轮询**（遮挡、空闲、电池、低电量）：每 2 秒采一次。遮挡判定要遍历窗口列表，
 ///    挂在通知上没有对应事件；低电量模式的常量在 macOS SDK 里不存在，也只能轮询。
 ///    2 秒的延迟对「暂停壁纸」这个用途完全够用。
+///
+/// **`@MainActor`**：定时器挂在 `RunLoop.main`、通知回调在主队列、
+/// 遮挡判定要读 `NSScreen.screens` —— 三者都要求主线程。
+///
+/// ⚠️ 标了 `@MainActor` 之后，`Timer` 与通知观察者的闭包**必须显式回跳主 actor**
+/// （`Task { @MainActor in }`）。`RunLoop.main` 与 `queue: .main` 只管「投递到主
+/// 线程」，不改变闭包本身的隔离 —— 闭包类型是 `@Sendable`，直接调隔离方法会被判错。
+@MainActor
 final class PlaybackGovernor {
 
     /// 轮询间隔。遮挡与空闲都靠它。
     private let sampleInterval: TimeInterval = 2
 
     private let resolverProvider: () -> PlaybackStateResolver
-    private var observers: [NSObjectProtocol] = []
-    private var timer: Timer?
+    /// 定时器与观察者句柄。装进引用类型是为了给**析构清理**一个落点（见 `CleanupBox`）。
+    private let cleanup = CleanupBox()
 
     private(set) var signals: PlaybackSignals
     private(set) var state: PlaybackState = .playing
@@ -33,33 +72,32 @@ final class PlaybackGovernor {
         self.signals = PlaybackSignals(userPaused: userPaused)
     }
 
-    deinit {
-        stop()
-    }
-
     // MARK: - 生命周期
 
     func start() {
-        guard timer == nil else { return }
+        guard cleanup.timer == nil else { return }
         observeSystemNotifications()
 
         let timer = Timer(timeInterval: sampleInterval, repeats: true) { [weak self] _ in
-            self?.sampleAndResolve()
+            // `Timer` 的 block 是 `@Sendable`（非隔离），而 `sampleAndResolve` 是
+            // 主线程隔离的 —— 必须显式回跳，不能直接调。定时器本来就挂在
+            // `RunLoop.main` 上，所以这次回跳只是把「编译器需要的那次声明」补上。
+            Task { @MainActor [weak self] in self?.sampleAndResolve() }
         }
         // .common 模式：菜单打开时也要继续采样
         RunLoop.main.add(timer, forMode: .common)
-        self.timer = timer
+        cleanup.timer = timer
 
         sampleAndResolve()
     }
 
     func stop() {
-        timer?.invalidate()
-        timer = nil
-        for observer in observers {
+        cleanup.timer?.invalidate()
+        cleanup.timer = nil
+        for observer in cleanup.observers {
             NotificationCenter.default.removeObserver(observer)
         }
-        observers.removeAll()
+        cleanup.observers.removeAll()
     }
 
     // MARK: - 外部设置的信号
@@ -111,12 +149,16 @@ final class PlaybackGovernor {
 
     private func observeSystemNotifications() {
         let center = NotificationCenter.default
-        observers.append(
+        cleanup.observers.append(
             center.addObserver(
                 forName: ProcessInfo.thermalStateDidChangeNotification,
                 object: nil,
                 queue: .main
-            ) { [weak self] _ in self?.sampleAndResolve() }
+            ) { [weak self] _ in
+                // 与定时器同理：`queue: .main` 只保证投递到主队列，
+                // 不改变闭包本身的隔离 —— 仍要显式回跳。
+                Task { @MainActor [weak self] in self?.sampleAndResolve() }
+            }
         )
         // 低电量模式没有可用通知：`NSProcessInfoPowerStateDidChange` 只在 iOS 声明，
         // macOS SDK 里查不到，`ProcessInfo` 也没有对应静态成员。改由 2 秒轮询兜住

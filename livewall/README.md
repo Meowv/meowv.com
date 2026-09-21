@@ -955,13 +955,14 @@ swift-driver version: 1.168.6  Apple Swift version 6.4 (swiftlang-6.4.0.34.1 cla
 Target: arm64-apple-macosx27.0.0
 ```
 
-> ⚠️ **编译器是 6.4，但 `Package.swift` 声明的是 `swift-tools-version: 5.9`** ——
-> 语言模式因此停在 **Swift 5**，严格并发检查不生效。这正是历史上那两处数据竞争
-> （`sharedVideoLoads` 的并发写、同步取数的超时竞态）能编译通过的原因。
-> **升到 6.0 的规模已实测**（临时改 tools-version 后编译，未提交）：至少 2 处 error
-> （`ScreenCoordinator` 对 `@MainActor` 属性取 key path、`NetworkMonitor` 捕获非 Sendable
-> 的 `self`）与十余条 warning（AppKit 调用缺 `@MainActor` 标注、非 Sendable 捕获），
-> 且编译会在第一个失败文件处停止，**完整清单还没测全**。属于要单独立项的一批工作。
+`Package.swift` 声明的是 **`swift-tools-version: 6.0`** —— 语言模式是 **Swift 6**，
+严格并发检查生效（2026-09-21 迁移完成，改前是 5.9 / Swift 5）。
+
+> 迁移前语言模式停在 Swift 5，严格并发检查不生效 —— 这正是历史上那两处数据竞争
+> （`sharedVideoLoads` 的并发写、同步取数的超时竞态）能编译通过的原因。迁移的实测
+> 规模：103 条并发诊断（0 error + 103 warning），根因集中在「App 层类型碰 AppKit
+> 但没标 `@MainActor`」；落地后 **0 error / 0 warning**，测试 1350 项全绿。
+> 详见「并发约定」一节与 `.workbuddy-ai/reports/livewall-swift6-2026-09-21.md`。
 
 有效层级区间（左开右开）：**(-2147483625, -2147483603)**，共 21 层可选。
 
@@ -1932,3 +1933,69 @@ App 是 `LSUIElement`（不占 Dock），窗口默认会开在别的 App 后面�
 - 不引入第三方依赖。
 - 纯逻辑一律放 `LiveWallCore`，保持可脱离 GUI 单测。
 - 构建与运行可直接走本目录的 `build.sh` / `test.sh` / `run.sh` / `make-dmg.sh`，也可从仓库根目录执行 `./build.sh livewall` / `./run.sh livewall`。根目录脚本会把 App 汇总到 `build/livewall/`，但 `deploy.sh` 不上传该目录。注意本目录的 `run.sh` 与根目录的 `run.sh` 是同名不同物，前者负责 livewall 自己的 debug/release 构建与运行。
+
+## 并发约定（Swift 6）
+
+`Package.swift` 是 `swift-tools-version: 6.0`，语言模式 = **Swift 6**，严格并发检查生效
+（2026-09-21 从 5.9 迁移完成）。项目里「只在主线程使用」这句注释此前到处都有，但
+**注释不会被检查** —— 迁移把这批约定交给了编译器。
+
+### 五条实测过的规则
+
+| # | 规则 | 实测结论 |
+| - | ---- | -------- |
+| 1 | `DispatchQueue.main.async` 的闭包 | **会**被推断为主 actor 隔离，可以直接碰隔离状态 |
+| 2 | `Timer` 块、`NotificationCenter.addObserver(queue: .main)`、KVO 闭包、`NWPathMonitor` 回调 | **不会**。`queue: .main` / `RunLoop.main` 只决定「投递到哪个队列」，**不参与隔离推断** → 必须 `Task { @MainActor in }` 回跳 |
+| 3 | 嵌套类型 | **不继承**外层的全局 actor 隔离，要单独标（如 `PlaybackEngine.Slot`） |
+| 4 | `@MainActor` 类的 `deinit` | 是**非隔离**的：不能调隔离方法，也读不了非 `Sendable` 的存储属性（`Timer`、`NSObjectProtocol` 都不是）。解法是引用类型句柄盒（`PlaybackGovernor.CleanupBox`），不要用 `nonisolated(unsafe)` 放宽 |
+| 5 | `Task { }` 写在 `@MainActor` 上下文里 | **会**继承主 actor；但 `await` 一个 **nonisolated async** 函数会 hop 到全局执行器（SE-0338）。所以「主线程上 `Task` 起手、重活仍在后台」这一条**没有被迁移改变**（逐字节下载、HEAD 探测都还在后台） |
+
+另外两条容易踩的：
+
+- **`NSApplicationDelegate` 在 AppKit 的 `.apinotes` 里没有 `@MainActor` 标注** ——
+  `AppDelegate` 必须**显式**标，不能指望从协议推断（实测：只写
+  `final class D: NSObject, NSApplicationDelegate {}` 不会产生任何隔离推断）。
+  显式标之后与协议的普通一致性检查干净通过，**不需要** `@preconcurrency`
+  （加上反而无效）。
+- **非 `Sendable` 的对象不能跨 actor 递**：`AVPlayerLooper` / `AVPlayerItem` /
+  `Notification` 都不是 `Sendable`。KVO 与通知闭包里只递 `ObjectIdentifier`
+  这类 `Sendable` 的值，「状态是什么、归属谁」回到主 actor 再读
+  （见 `PlaybackEngine`）。
+
+### 怎么一次拿到全量诊断
+
+`swift build` 会在**第一个失败文件处停止**，拿不到完整清单；`-typecheck` 又会
+**漏掉 SIL 阶段**的 region isolation（`sending` 那条，本次迁移最后 3 处就是它）。
+用这条（`-sdk` 与 `-target` 都要带，少了 `-target` 会产出一批 macOS 27 的
+弃用警告**假阳性**）：
+
+```bash
+rm -rf /tmp/silout && mkdir -p /tmp/silout && cd /tmp/silout
+swiftc -swift-version 6 -emit-sil -Onone \
+  -sdk "$(xcrun --show-sdk-path)" -target arm64-apple-macos13.0 \
+  -module-name LiveWall -I <项目>/.build/debug \
+  <项目>/Sources/LiveWall/*.swift
+```
+
+想在**不改仓库**的前提下先摸清规模，也可以在 Swift 5 语言模式下加
+`-Xswiftc -strict-concurrency=complete`（只产生 warning、不阻断编译）——
+本次就是这么拿到最初那份 103 条清单的。
+
+### 迁移的一个副作用（已核实，不处理）
+
+Swift 6 会为 `@MainActor` 的类型生成**动态 actor 隔离检查**
+（`_checkExpectedExecutor`），它带着 `#file` —— 于是 **10 个源文件名（相对路径）
+进了 release 二进制**（迁移前是 0 处）。
+
+已核实这是**零信息增益**：这些文件名的词干全部已在类型元数据段里
+（`_TtC8LiveWall11AppDelegate` 这种 mangling，类名本来就在），
+`strip` 也抹不掉那一段。要消掉可以加
+`-Xfrontend -disable-dynamic-actor-isolation`（实测残留归零、体积 −2%），
+但那会**丢掉「错线程调 `@MainActor` 就当场 trap」这道运行时兜底** —— 不值得，
+所以**不加**。顺带一提 `-disable-actor-data-race-checks` 对这条**无效**（实测残留不变）。
+
+### 回滚成本
+
+只需改两处：`Package.swift` 第一行改回 `5.9`，以及 `main.swift` 把顶层逻辑包进
+`MainActor.assumeIsolated`。**顶层代码在 Swift 6 下才是 main-actor 隔离的** ——
+这也正是 Swift 5 模式下 `main.swift:44` 那条 error 的由来（反向印证迁移是对的）。

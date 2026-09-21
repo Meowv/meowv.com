@@ -12,9 +12,20 @@ import LiveWallCore
 ///
 /// 退出时走 `freezeCurrent`：同步地把**正在播的那条**的静态图留在系统墙纸上
 /// （不是恢复用户原墙纸 —— 详见那里的说明）。
-/// 并发约定与项目其它组件一致：**只在主线程使用**（AppDelegate 在主线程调用，
-/// 内部异步路径也都在 `Task { @MainActor in }` 里 await）。刻意**不**标注 `@MainActor` ——
-/// 标了会让 AppDelegate 里 `lazy var` 的属性初始化变成跨隔离调用，直接编译报错。
+/// 并发约定与项目其它组件一致：**只在主线程使用**。这条约定现在由 `@MainActor` 强制
+/// （Swift 6 迁移时补上）。
+///
+/// 注：这里此前有一条「刻意不标 `@MainActor`，标了会让 AppDelegate 里 `lazy var`
+/// 的属性初始化变成跨隔离调用」的说明。那个约束只在 `AppDelegate` **没有**隔离标注时
+/// 成立；`AppDelegate` 本身标了 `@MainActor` 之后它就消失了。
+///
+/// 标了之后有一处**必须留意**：`update` 收到的 `frameProvider` 由原来的非隔离闭包
+/// 变成主 actor 闭包。这正好是事实 —— 它要读的是 `PlaybackEngine.currentFrame`
+/// （主 actor 隔离），本来也只能在主线程调。
+///
+/// 真正的重活在 `FileDownloader.download`（非隔离 async）里，所以 `update` 仍是
+/// 「进主线程登记状态、await 时离开主线程」，不会把几百 KB 的下载搬到主线程上跑。
+@MainActor
 final class LockScreenPreviewer {
 
     /// 写入结果，供日志与调用方观察。

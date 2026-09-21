@@ -72,7 +72,7 @@ macOS 视频动态壁纸工具。定位是**个人自用 / 小范围共享**，�
 - **只有主槽位排调度定时器**。多个槽位各排一个会互相覆盖 `scheduleTimer`，切换节奏会变成「最后一个加载完的说了算」。
 - **遍历字典时不要改字典**。`PlaybackEngine.useSlots` 里删槽位、`AppDelegate` 里清 `namesBySlot` 都要先 `filter` 出数组再删 —— Swift 在 `Dictionary was mutated while being iterated` 上是直接崩，不是警告。
 - **遮挡检测不要退回网格采样或 bbox**。网格采样会漏掉窄缝（20px 的缝比 63px 的网格还窄，实测报告「覆盖 100%」），union + bounding box 会把两个并排的半屏窗口误判成完全遮挡。现行实现是 `CoverageGrid` 的坐标压缩法，算精确面积；`legacyBoundingBoxCovers` 只留给测试做对比证据。
-- **非隔离 `async` 函数里不要直接碰共享的可变集合**（2026-09-21 真机崩溃后定位）。`AppDelegate.loadVideo` 没有 `@MainActor` 标注，它的函数体跑在**协作线程池**上（既不是主线程，也不是调用方所在的 actor）；而「每屏独立」模式下两个槽位会同时取片 —— 对 `sharedVideoLoads` 这张 `Dictionary` 的并发读写会写坏它的存储指针并**直接崩**，症状是 `Dictionary._Variant.setValue` 里 `-[NSTaggedPointerString count]: unrecognized selector sent to instance 0x8000…`，**完全不像竞态**（栈顶只有 `libswiftCore` 的集合帧）。现在这张表的读 / 写 / 清空一律走 `takeSharedLoad` / `releaseSharedLoad` / `drainSharedLoads` 三个辅助函数：**检查与插入必须在同一把锁里**（分开做会让两个槽位同时未命中、同一条视频被并发拉两遍，等于去重失效），**取消任务要放在锁外**。以后在这个文件里新增 `async` 函数时，先问一句「函数体会在哪个线程上跑、它碰的集合还有谁在碰」。
+- **非隔离 `async` 函数里不要直接碰共享的可变集合**（2026-09-21 真机崩溃后定位；**Swift 6 迁移后这条的成因已被编译器接住，但锁本身仍要留着**）。当时 `AppDelegate.loadVideo` 没有 `@MainActor` 标注，函数体跑在**协作线程池**上（既不是主线程，也不是调用方所在的 actor）；而「每屏独立」模式下两个槽位会同时取片 —— 对 `sharedVideoLoads` 这张 `Dictionary` 的并发读写会写坏它的存储指针并**直接崩**，症状是 `Dictionary._Variant.setValue` 里 `-[NSTaggedPointerString count]: unrecognized selector sent to instance 0x8000…`，**完全不像竞态**（栈顶只有 `libswiftCore` 的集合帧）。迁移后 `AppDelegate` 是 `@MainActor` 的，函数体确实回到主线程，**但那三个辅助函数的锁不能拆**：`VideoLoader.load` / `FileDownloader.download` 是 **nonisolated async**，`await` 它们会 hop 到全局执行器（SE-0338），回调路径仍在别的线程上。现在这张表的读 / 写 / 清空一律走 `takeSharedLoad` / `releaseSharedLoad` / `drainSharedLoads` 三个辅助函数：**检查与插入必须在同一把锁里**（分开做会让两个槽位同时未命中、同一条视频被并发拉两遍，等于去重失效），**取消任务要放在锁外**。以后在这个文件里新增 `async` 函数时，先问一句「函数体会在哪个线程上跑、它碰的集合还有谁在碰」。
 - **一个视频只建一个 `AVURLAsset`**。每个 asset 都会把整个文件拉一遍，元数据校验与播放各建一个就是双倍流量（实测 6.28MB → 12.55MB）。播放时用 `AVPlayerItem(asset:)` 复用 `VideoLoader` 建好的那个。
 - **不做本地视频缓存**。实测 `AVPlayerLooper` 一次下载后不再产生流量，洗牌模式下每条候选约 9 天才轮到一次，LRU 缓存永远命中不了。断网兜底靠「保持当前画面」而不是靠缓存。
 - **`Preferences` 必须保持逐字段容错解码**。Swift 合成的 `Codable` **不会**回退到属性默认值 —— 缺字段直接抛 `keyNotFound`，会让用户已有的 `config.json` 整体解码失败并静默丢配置。新增字段时同步补 `CodingKeys`、`init(from:)` 与往返测试。**枚举字段还要额外用 `try?` 包一层**：键在但取值非法（手改配置写错，如 `"playbackOrder": "random"`）会抛 `dataCorrupted`，后果与缺字段完全一样 —— 整个文件退回默认，用户的其它设置一起被静默清零。
@@ -172,6 +172,28 @@ macOS 视频动态壁纸工具。定位是**个人自用 / 小范围共享**，�
 - `PackedText` / `IntegrityCheck` 的文件名仍是描述性的，但**类型名刻意叫 `Folded` / `Seal`**，**不要改回来**。
 - 自校验只能「只记日志」——重签即可绕过，不要做成阻断式。
 - **`strings` 默认只输出 ASCII**，中文串查不到，需要时做字节级搜索。
+
+### 并发（Swift 6）
+
+`Package.swift` 是 `swift-tools-version: 6.0`，语言模式 = Swift 6（2026-09-21 从 5.9 迁移）。
+**改任何 App 层代码前先看这六条**，它们都是实测过的，不是推断：
+
+1. **`Timer` 块、`NotificationCenter.addObserver(queue: .main)`、KVO 闭包、`NWPathMonitor` 回调都不会被推断为主 actor 隔离** —— `queue: .main` / `RunLoop.main` 只决定「投递到哪个队列」，不参与隔离推断。必须 `Task { @MainActor in }` 回跳。
+   对照：**`DispatchQueue.main.async` 的闭包会被推断**为主 actor 隔离，可以直接碰隔离状态。两者容易混，别凭感觉套。
+2. **嵌套类型不继承外层的全局 actor 隔离**，要单独标（如 `PlaybackEngine.Slot`）。
+3. **`@MainActor` 类的 `deinit` 是非隔离的**：不能调隔离方法，也读不了非 `Sendable` 的存储属性（`Timer`、`NSObjectProtocol` 都不是）。解法是**引用类型句柄盒**（`PlaybackGovernor.CleanupBox`），**不要用 `nonisolated(unsafe)` 放宽** —— 那会让「从后台线程误改定时器」这类错误彻底静默。
+4. **`Task { }` 写在 `@MainActor` 上下文里会继承主 actor**；但 `await` 一个 **nonisolated async** 函数会 hop 到全局执行器（SE-0338）。所以重活（逐字节下载、HEAD 探测）仍在后台，把类标成 `@MainActor` **不会**把它们搬到主线程。
+5. **`NSApplicationDelegate` 没有 `@MainActor` 标注**，`AppDelegate` 必须显式标，且**不需要** `@preconcurrency`（加了反而无效）。不要指望从协议推断。
+6. **非 `Sendable` 的对象不能跨 actor 递**（`AVPlayerLooper` / `AVPlayerItem` / `Notification` 都不是）：只递 `ObjectIdentifier` 这类 `Sendable` 值，「状态是什么、归属谁」回到主 actor 再读。
+
+**纪律：只用 `@MainActor` 标注 + 引用类型状态盒消错，禁止 actor 化消错** —— 后者会改语义。
+新增代码若需要放宽检查，先确认那是真实契约（如 `URLProtocol` 的实例只由 URLSession 单线程驱动），
+并把理由写进注释，不要裸写 `nonisolated(unsafe)` / `@unchecked Sendable`。
+
+**拿全量诊断的命令**与「迁移副作用（10 个源文件名进二进制，已核实零信息增益）」见
+[`README.md`](./README.md) 的「并发约定（Swift 6）」。要点：`swift build` 会在首个失败文件处停止，
+`-typecheck` 会漏掉 SIL 阶段的 region isolation，只有 `-emit-sil` 能一次拿全量 ——
+且必须带 `-sdk` **与** `-target`，少了 `-target` 会产出一批弃用警告假阳性。
 
 ## 验证与交付
 

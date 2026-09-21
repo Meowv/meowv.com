@@ -13,6 +13,11 @@ import LiveWallCore
 ///
 /// 主线程不会被阻塞：采样跑在 utility 队列上，结果回主线程；
 /// 菜单已经收起时回调直接丢弃（见 `AppDelegate.applyUsageReport`）。
+///
+/// **`@MainActor`**：`baseline` / `lastReport` / `peakBytes` / `generation` 都按
+/// 「只在主线程读写」使用（旧版本的注释就是这么写的）。采样本身仍跑在后台队列上，
+/// 只有结果回主 actor —— 那几个 `nonisolated` 的静态方法就是为此存在的。
+@MainActor
 final class ProcessMonitor {
 
     /// 一次采样的结果（已算好，可直接进菜单）。
@@ -76,7 +81,7 @@ final class ProcessMonitor {
         let work = DispatchWorkItem { [weak self] in
             // 显式写类型名而不是 `Self`：闭包里用 `Self` 会连带强捕获 self。
             guard let latest = ProcessMonitor.currentSample() else {
-                DispatchQueue.main.async { [weak self] in
+                Task { @MainActor [weak self] in
                     guard let self, token == self.generation else { return }
                     completion(nil)
                 }
@@ -87,7 +92,7 @@ final class ProcessMonitor {
             let percent = base.flatMap { ProcessUsage.cpuPercent(from: $0, to: latest) }
             let canReportCPU = percent != nil && window.map(ProcessUsage.isWindowUsable) ?? false
 
-            DispatchQueue.main.async { [weak self] in
+            Task { @MainActor [weak self] in
                 guard let self, token == self.generation else { return }
                 self.peakBytes = peak
                 guard canReportCPU, let window else {
@@ -147,7 +152,7 @@ final class ProcessMonitor {
     ///
     /// 只跑一次系统调用（几十微秒级），仍然放到后台队列上执行 —— 它落在「菜单正在展开」
     /// 这条路径上，那段时间主线程在跑菜单的 tracking run loop，任何同步等待都会表现为菜单卡顿。
-    private static func currentSample() -> ProcessUsageSample? {
+    nonisolated private static func currentSample() -> ProcessUsageSample? {
         var usage = rusage_info_v2()
         let buffer = withUnsafeMutablePointer(to: &usage) { UnsafeMutableRawPointer($0) }
         // 第三个参数在 C 里是 `rusage_info_t *`（`rusage_info_t` 本身是指针类型），
@@ -165,7 +170,7 @@ final class ProcessMonitor {
     }
 
     /// `RUSAGE_INFO_V2` 是 C 宏（值 2），Swift 导入不了，只能写常量。
-    private static let rusageInfoV2: Int32 = 2
+    nonisolated private static let rusageInfoV2: Int32 = 2
 
     /// 每个 mach 滴答多少纳秒。取一次就够 —— 运行期不会变。
     ///
@@ -173,13 +178,13 @@ final class ProcessMonitor {
     /// 本机时间基 125/3（≈41.67 ns/滴答）。实测对照（烧 1.0 秒 CPU）：
     /// 原始值 23,596,390 → 换算 0.983 秒，与 `clock()` 的 0.983 秒一致；
     /// 不换算会得到 0.024 秒，差 41 倍。**别忘了换算。**
-    private static let nanosPerTick: Double = {
+    nonisolated private static let nanosPerTick: Double = {
         var info = mach_timebase_info_data_t()
         guard mach_timebase_info(&info) == KERN_SUCCESS, info.denom > 0 else { return 1 }
         return Double(info.numer) / Double(info.denom)
     }()
 
-    private static func nanos(ticks: UInt64) -> UInt64 {
+    nonisolated private static func nanos(ticks: UInt64) -> UInt64 {
         UInt64((Double(ticks) * nanosPerTick).rounded())
     }
 }

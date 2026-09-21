@@ -35,9 +35,18 @@ enum PlaybackSlotKey: Hashable, Sendable {
 /// 所有窗口挂同一个 player —— 多屏同时解码同一段视频，共享一个播放器最省资源。
 /// 每屏独立时按屏幕各开一个槽位，代价是解码路数与流量按屏数翻倍
 /// （上限见 `MultiScreenPolicy.maxIndependentScreens`）。
+///
+/// **`@MainActor`**：`currentFrame` 会跑 `RunLoop.main` 自旋取帧，
+/// KVO 与失败通知也都在主队列上处理。标注把这件既成事实交给编译器执行。
+@MainActor
 final class PlaybackEngine {
 
     /// 一个播放槽位：一个独立的播放器 + 循环器 + 当前条目。
+    ///
+    /// 单独标 `@MainActor`：**嵌套类型不继承外层类型的全局 actor 隔离**
+    /// （已实测确认），而它要被主 actor 上的 `@Sendable` 闭包捕获，
+    /// 不标的话编译器会认为它可能被跨线程访问。
+    @MainActor
     private final class Slot {
         let player = AVQueuePlayer()
         var looper: AVPlayerLooper?
@@ -157,14 +166,25 @@ final class PlaybackEngine {
         // 监听 looper 自身状态，并同时接收每个副本的失败通知。
         slot.looper = AVPlayerLooper(player: slot.player, templateItem: playerItem)
         if let looper = slot.looper {
-            slot.looperStatusObservation = looper.observe(\.status, options: [.new]) { [weak self, weak slot] looper, _ in
-                guard looper.status == .failed else { return }
-                let error = looper.error ?? NSError(
-                    domain: "LiveWall.Playback",
-                    code: -1,
-                    userInfo: [NSLocalizedDescriptionKey: "AVPlayerLooper 播放失败"]
-                )
-                self?.reportFailure(key: key, error: error, slot: slot, generation: playbackGeneration)
+            slot.looperStatusObservation = looper.observe(\.status, options: [.new]) { [weak self, weak slot] observed, _ in
+                // KVO 闭包是**非隔离**的，而 `AVPlayerLooper` 不是 Sendable ——
+                // 直接把它或它的 `status` 递过去都是跨线程读同一个对象。
+                // 所以这里只递一个 `ObjectIdentifier`（Sendable 的值），
+                // 「状态是不是 failed、错在哪」全部回主 actor 再读。
+                let observedID = ObjectIdentifier(observed)
+                Task { @MainActor [weak self, weak slot] in
+                    guard let self, let slot,
+                          let live = slot.looper,
+                          ObjectIdentifier(live) == observedID,
+                          live.status == .failed
+                    else { return }
+                    let error = live.error ?? NSError(
+                        domain: "LiveWall.Playback",
+                        code: -1,
+                        userInfo: [NSLocalizedDescriptionKey: "AVPlayerLooper 播放失败"]
+                    )
+                    self.reportFailure(key: key, error: error, slot: slot, generation: playbackGeneration)
+                }
             }
         }
         slot.failureObserver = NotificationCenter.default.addObserver(
@@ -172,35 +192,46 @@ final class PlaybackEngine {
             object: nil,
             queue: .main
         ) { [weak self, weak slot] notification in
-            guard let item = notification.object as? AVPlayerItem,
-                  let slot,
-                  slot.playbackGeneration == playbackGeneration,
-                  slot.player.currentItem === item || slot.looper?.loopingPlayerItems.contains(where: { $0 === item }) == true
-            else { return }
-            let error = item.error ?? NSError(
-                domain: "LiveWall.Playback",
-                code: -2,
-                userInfo: [NSLocalizedDescriptionKey: "AVPlayerItem 播放失败"]
-            )
-            self?.reportFailure(key: key, error: error, slot: slot, generation: playbackGeneration)
+            // 同上：`Notification` 与 `AVPlayerItem` 都不是 Sendable。
+            // 只把失败项的 `ObjectIdentifier` 递过去，主 actor 上再用它去认领
+            // —— 归属判定与错误内容都在那边读。
+            guard let failed = notification.object as? AVPlayerItem else { return }
+            let failedID = ObjectIdentifier(failed)
+            Task { @MainActor [weak self, weak slot] in
+                guard let self, let slot, slot.playbackGeneration == playbackGeneration else { return }
+                let owner = [slot.player.currentItem]
+                    .compactMap { $0 }
+                    .first { ObjectIdentifier($0) == failedID }
+                    ?? slot.looper?.loopingPlayerItems.first { ObjectIdentifier($0) == failedID }
+                guard let item = owner else { return }
+                let error = item.error ?? NSError(
+                    domain: "LiveWall.Playback",
+                    code: -2,
+                    userInfo: [NSLocalizedDescriptionKey: "AVPlayerItem 播放失败"]
+                )
+                self.reportFailure(key: key, error: error, slot: slot, generation: playbackGeneration)
+            }
         }
         slot.player.play()
     }
 
+    /// 上报一次槽位播放失败。**调用方必须已经在主 actor 上**。
+    ///
+    /// 这里刻意**不再自己 hop 回主线程**（旧实现用 `DispatchQueue.main.async`）：
+    /// 两个调用方（KVO 与失败通知）现在都是先回主 actor 再调进来，
+    /// 再 hop 一次只会让「这次失败已经报过」的判定时刻与调用时刻错开。
     private func reportFailure(
         key: PlaybackSlotKey,
         error: Error,
         slot: Slot?,
         generation: Int
     ) {
-        DispatchQueue.main.async { [weak self, weak slot] in
-            guard let self, let slot,
-                  slot.playbackGeneration == generation,
-                  !slot.didReportFailure
-            else { return }
-            slot.didReportFailure = true
-            self.onFailure?(key, error)
-        }
+        guard let slot,
+              slot.playbackGeneration == generation,
+              !slot.didReportFailure
+        else { return }
+        slot.didReportFailure = true
+        onFailure?(key, error)
     }
 
     func pause() {

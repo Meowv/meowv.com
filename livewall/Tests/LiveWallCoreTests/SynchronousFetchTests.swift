@@ -6,7 +6,13 @@ import LiveWallCore
 /// 这是 `SynchronousFetch` 存在的第二个理由的兑现 —— 原实现把 `URLSession.shared`
 /// 写死在函数体里，于是「超时竞态 + 任务不取消」这条缺陷**结构上不可测**。
 /// 有了会话注入点，下面这些断言才写得出来。
-final class StubProtocol: URLProtocol {
+///
+/// **`@unchecked Sendable` 是刻意的**：`URLProtocol` 本身不是 `Sendable`，
+/// 而我们的 `DispatchQueue.asyncAfter` 闭包是 `@Sendable` —— 不声明就被 Swift 6 判为
+/// 「捕获非 Sendable 的 self」。声明成立的前提是 `URLProtocol` 的既定契约：
+/// 它的实例只由 URLSession 在「这个请求自己的加载线程」上驱动，同一实例不会被并发访问。
+/// 这里接受的是 Foundation 的那份契约，不是「并发安全无所谓」。
+final class StubProtocol: URLProtocol, @unchecked Sendable {
 
     struct Behavior {
         var statusCode: Int = 200

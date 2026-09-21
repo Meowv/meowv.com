@@ -15,6 +15,12 @@ struct BrowserLoadFailure: LocalizedError {
 /// 抽成协议是为了让 VC 不直接依赖 `AppDelegate`（也就不会把 `AppDelegate` 的
 /// 四十来个私有成员暴露给它）。**刻意只抽这一个** —— 不为「可测试」把 AppKit 代码
 /// 做成层层抽象：这个 VC 的正确性本来就只能人工验（`AGENTS.md` 的既有结论）。
+///
+/// **`@MainActor` 是语义的一部分，不是为消错加的**：实现方是 `AppDelegate`（主 actor），
+/// 使用方是 `NSViewController` 子类（AppKit 已隐式主 actor），`completion` 也约定在主线程回调。
+/// 不标的话 Swift 6 会判「一致性跨进主 actor 隔离」（实测 1 error），
+/// 而唯一能绕过它的写法（把协议标成 `nonisolated`）等于**抹掉**这个真实约定。
+@MainActor
 protocol WallpaperBrowserDataSource: AnyObject {
     /// 索引里的分类清单（含条目数为 0 的）。左栏数据源。
     var browserCategories: [LivewallCategoryEntry] { get }
@@ -27,9 +33,20 @@ protocol WallpaperBrowserDataSource: AnyObject {
     ///
     /// **绝不写共享切片缓存** —— `sliceCacheURL` 只有一份，是播放的离线兜底；
     /// 浏览窗口是只读调用方。失败时 `message` 直接给用户看。
+    ///
+    /// ## 回调上的两个标注都是契约，不是消错
+    ///
+    /// 取数在后台队列上跑，`completion` 在**主 actor** 上回调（VC 要直接改 UI）。
+    /// 两个标注缺一不可：
+    ///  - `@MainActor` 说明「回调时你在主线程」，调用方因此可以直写 UI；
+    ///  - `@Sendable` 说明「这个闭包会被送到别的隔离域再送回来」，所以实现方
+    ///    才能在后台队列闭包里持有它。少了它，Swift 6 会判
+    ///    「捕获非 Sendable 的 completion」（实测 1 条 warning）。
+    /// 调用方无需额外标注：闭包字面量会按这个类型自动推断出两个属性。
     func browserLoadItems(
         for categoryID: Int,
-        completion: @escaping (Result<[WallpaperItem], BrowserLoadFailure>) -> Void
+        completion: @escaping @MainActor @Sendable (Result<[WallpaperItem], BrowserLoadFailure>) ->
+            Void
     )
 
     /// 设为桌面壁纸。落实路径在 `AppDelegate.setPinned`。
@@ -923,7 +940,10 @@ final class WallpaperBrowserViewController: NSViewController {
         // 于是只有停下来之后才会真正去要图。快速滚过 3536 条不该产生 3536 个请求。
         thumbnailDebounce?.invalidate()
         thumbnailDebounce = Timer.scheduledTimer(withTimeInterval: 0.12, repeats: false) { [weak self] _ in
-            self?.loadVisibleThumbnails(replacingPending: true)
+            // 定时器块的类型是 `@Sendable`（`RunLoop.main` 上的定时器并不参与隔离推断），
+            // 回跳一层把「这段确实在主 actor 上」写给编译器看。防抖的 120ms 之外
+            // 多一个 runloop 的延迟，对「停下来才去要图」这个用途没有影响。
+            Task { @MainActor in self?.loadVisibleThumbnails(replacingPending: true) }
         }
     }
 

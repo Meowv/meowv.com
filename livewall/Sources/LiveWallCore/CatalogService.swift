@@ -126,7 +126,12 @@ public struct DefaultCatalogTransport: CatalogTransport {
 /// `selectedCategoryID` 就是「上次成功加载的那个分类」，所以启动时读回来的
 /// 那一份必然对得上。缓存里带了 `source.categoryIds`，加载时会校验它确实属于
 /// 被请求的分类 —— 换过分类之后离线启动不会把别的分类的内容当成目标分类。
-public struct CatalogService {
+/// **`Sendable` 是它的真实性质，不是为消警加的**：成员全是 `let` 的 `URL`，
+/// 没有任何共享可变状态 —— 这正是它能在后台队列上安全调用的原因
+/// （`loadIndex` / `loadSlice` 都是同步的，由调用方决定跑在哪个线程）。
+/// 不标的话，App 层把它捕获进 `DispatchQueue.global().async` 闭包时会被判为
+/// 「捕获非 Sendable 值」（实测 3 条 warning）。
+public struct CatalogService: Sendable {
 
     public let remoteIndexURL: URL?
     public let indexCacheURL: URL

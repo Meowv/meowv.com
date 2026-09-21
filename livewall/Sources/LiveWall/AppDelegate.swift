@@ -7,6 +7,14 @@ import LiveWallDesktop
 ///
 /// 职责边界：这里只做编排（加载配置与清单、建窗口、跑调度、更新菜单栏），
 /// 具体逻辑都在 `LiveWallCore`（可单测）与 `LiveWallDesktop`（窗口层）里。
+///
+/// **`@MainActor` 必须显式写，不能指望从协议推断。** `NSApplicationDelegate` 在
+/// AppKit 的 `.apinotes` 里**没有** `@MainActor` 标注（实测：`final class D: NSObject,
+/// NSApplicationDelegate {}` 在 Swift 6 模式下不产生任何隔离推断）—— 不写这一行，
+/// 整个类就是非隔离的，于是持有的每个主 actor 隔离的协作者、每次 AppKit 调用
+/// 都会报错（实测 123 条）。显式标上之后，与协议的普通一致性检查干净通过，
+/// 不需要 `@preconcurrency`。
+@MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // 配置
@@ -285,10 +293,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            guard let self else { return }
-            self.notice = .info("已阻止重复启动（新实例已退出）")
-            self.log("收到重复启动通知：已挡掉的新实例退出，本实例继续运行")
-            self.refreshStatusItem()
+            // 观察者闭包是 `@Sendable` 的 —— `queue: .main` 只决定「在哪个队列上执行」，
+            // **不参与隔离推断**，所以哪怕队列明确是主队列，也不能直接碰主 actor 状态。
+            // 必须显式回跳。（对照：`DispatchQueue.main.async` 的闭包会被推断为主 actor
+            // 隔离，不需要这一步 —— 两者容易混，实测过。）
+            Task { @MainActor in
+                guard let self else { return }
+                self.notice = .info("已阻止重复启动（新实例已退出）")
+                self.log("收到重复启动通知：已挡掉的新实例退出，本实例继续运行")
+                self.refreshStatusItem()
+            }
         }
 
         // 自身完整性自检。**只记日志、不阻断** —— 理由见 `Seal`：
@@ -1171,9 +1185,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         scheduleTimer?.invalidate()
         scheduleTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: false) {
             [weak self] _ in
-            guard let self else { return }
-            self.failuresBySlot.removeAll()
-            self.advance()
+            Task { @MainActor in
+                guard let self else { return }
+                self.failuresBySlot.removeAll()
+                self.advance()
+            }
         }
         RunLoop.main.add(scheduleTimer!, forMode: .common)
     }
@@ -1191,7 +1207,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         scheduleTimer?.invalidate()
         scheduleTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: false) {
             [weak self] _ in
-            self?.advance()
+            Task { @MainActor in self?.advance() }
         }
         RunLoop.main.add(scheduleTimer!, forMode: .common)
     }
@@ -1264,7 +1280,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         scheduleTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) {
             [weak self] _ in
-            self?.advance()
+            // 与其它定时器 / 观察者闭包同一处理：块的类型是 `@Sendable`，
+            // 回跳一层让编译器看见「这一定在主 actor 上」（定时器挂在 `RunLoop.main`）。
+            Task { @MainActor in self?.advance() }
         }
         RunLoop.main.add(scheduleTimer!, forMode: .common)
     }
@@ -1315,29 +1333,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - 系统事件
 
+    /// ## 为什么每个闭包都包了一层 `Task { @MainActor }`
+    ///
+    /// 这些观察者闭包都是 `@Sendable` 的，而 `queue: .main` **不参与隔离推断** ——
+    /// 直接在主 actor 隔离的方法体内写逻辑会被判「在非隔离上下文里调用主 actor 方法」。
+    /// 包一层回跳是唯一不改语义的写法：`queue: .main` 保证闭包在主线队列上执行，
+    /// 回跳只是让编译器看得见这件事（实测：这些闭包确实在主线程，回跳不会换线程）。
     private func registerNotifications() {
         let workspace = NSWorkspace.shared.notificationCenter
 
         NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main
         ) { [weak self] _ in
-            guard let self else { return }
-            self.log("屏幕参数变化 → 重建窗口")
-            self.rebuildWindows(reason: "屏幕变化")
+            Task { @MainActor in
+                guard let self else { return }
+                self.log("屏幕参数变化 → 重建窗口")
+                self.rebuildWindows(reason: "屏幕变化")
+            }
         }
         workspace.addObserver(
             forName: NSWorkspace.screensDidSleepNotification, object: nil, queue: .main
         ) { [weak self] _ in
-            self?.governor.setDisplaySleeping(true)
+            Task { @MainActor in self?.governor.setDisplaySleeping(true) }
         }
         workspace.addObserver(
             forName: NSWorkspace.screensDidWakeNotification, object: nil, queue: .main
         ) { [weak self] _ in
-            self?.governor.setDisplaySleeping(false)
+            Task { @MainActor in self?.governor.setDisplaySleeping(false) }
         }
         workspace.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) {
             [weak self] _ in
-            self?.rebuildWindows(reason: "系统唤醒")
+            Task { @MainActor in self?.rebuildWindows(reason: "系统唤醒") }
         }
 
         // 锁屏 / 解锁同样只更新信号，不直接碰播放器 ——
@@ -1345,16 +1371,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         DistributedNotificationCenter.default().addObserver(
             forName: NSNotification.Name("com.apple.screenIsLocked"), object: nil, queue: .main
         ) { [weak self] _ in
-            self?.governor.setSessionLocked(true)
-            // 把最近一次成功的静态图**再设一遍**：`setDesktopImageURL` 生效有延迟，
-            // 而锁屏正是「用户马上要看」的时刻。这里刻意不抓帧 —— 播放器已被
-            // governor 暂停，取不到新帧（见 `PlaybackEngine.currentFrame` 的说明）。
-            self?.lockScreenPreviewer.reapplyCached()
+            Task { @MainActor in
+                self?.governor.setSessionLocked(true)
+                // 把最近一次成功的静态图**再设一遍**：`setDesktopImageURL` 生效有延迟，
+                // 而锁屏正是「用户马上要看」的时刻。这里刻意不抓帧 —— 播放器已被
+                // governor 暂停，取不到新帧（见 `PlaybackEngine.currentFrame` 的说明）。
+                self?.lockScreenPreviewer.reapplyCached()
+            }
         }
         DistributedNotificationCenter.default().addObserver(
             forName: NSNotification.Name("com.apple.screenIsUnlocked"), object: nil, queue: .main
         ) { [weak self] _ in
-            self?.governor.setSessionLocked(false)
+            Task { @MainActor in self?.governor.setSessionLocked(false) }
         }
     }
 
@@ -1984,38 +2012,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func downloadUpdate() {
         guard let feed = availableUpdate else { return }
         log("开始下载更新：\(feed.fileURL.absoluteString)")
-        // `AppDelegate` 只在主线程用，跨 `Task` 捕获它并不真的跨线程共享，
-        // 但编译器不认识这一点（它不是 `Sendable` 类型）→ `#SendableClosureCaptures`。
-        // `nonisolated(unsafe)` 是「我确认安全」的显式标记；回写 UI 仍在主线程闭包里。
+        // `Task { }` 写在 `@MainActor` 方法里会**继承主 actor**，闭包体（含 `self` 的读写）
+        // 就在主线程上，`AppDelegate` 本身也已隐式 `Sendable` —— 因此不需要
+        // `nonisolated(unsafe) let delegate = self` 那种「我确认安全」的手工标记。
         //
-        // 这里用强引用而不是 `weak`：`AppDelegate` 与进程同生命周期，而这次 `Task`
-        // 最长不过 dmg 下载超时（60 秒），不存在延长生命周期的问题；
-        // 写 `weak var` 反而会引来「从未被改写，建议改成 let」的下一条警告。
-        nonisolated(unsafe) let delegate = self
-        Task {
+        // 真正的重活不在主线程：`UpdateInstaller.download` 是 **nonisolated async**，
+        // 按 SE-0338 会 hop 到全局执行器（逐字节下载循环因此不占主线程）。
+        Task { @MainActor [weak self] in
             do {
                 let outcome = try await UpdateInstaller.download(feed)
-                DispatchQueue.main.async {
-                    NSWorkspace.shared.activateFileViewerSelecting([outcome.file])
-                    delegate.notice = .info(UpdateMenu.installHint)
-                    delegate.log("更新已下载：\(outcome.file.path)（\(outcome.byteCount) 字节）")
-                    // 清单里的 `sizeBytes` 只用于菜单显示，**摘要才是权威**。
-                    // 对不上时只记日志、不阻断 —— 用户拿到的是校验通过的文件，
-                    // 该修的是发布流程里那个数字。
-                    if let declared = feed.sizeBytes, declared > 0, declared != outcome.byteCount {
-                        delegate.log(
-                            "⚠️ 清单里的 sizeBytes（\(declared)）与实际下载大小"
-                                + "（\(outcome.byteCount)）不符")
-                    }
-                    delegate.refreshStatusItem()
+                guard let self else { return }
+                NSWorkspace.shared.activateFileViewerSelecting([outcome.file])
+                notice = .info(UpdateMenu.installHint)
+                log("更新已下载：\(outcome.file.path)（\(outcome.byteCount) 字节）")
+                // 清单里的 `sizeBytes` 只用于菜单显示，**摘要才是权威**。
+                // 对不上时只记日志、不阻断 —— 用户拿到的是校验通过的文件，
+                // 该修的是发布流程里那个数字。
+                if let declared = feed.sizeBytes, declared > 0, declared != outcome.byteCount {
+                    log(
+                        "⚠️ 清单里的 sizeBytes（\(declared)）与实际下载大小"
+                            + "（\(outcome.byteCount)）不符")
                 }
+                refreshStatusItem()
             } catch {
                 let message = error.localizedDescription
-                DispatchQueue.main.async {
-                    delegate.notice = .warning("更新下载失败：\(message)")
-                    delegate.log("更新下载失败：\(message)")
-                    delegate.refreshStatusItem()
-                }
+                guard let self else { return }
+                notice = .warning("更新下载失败：\(message)")
+                log("更新下载失败：\(message)")
+                refreshStatusItem()
             }
         }
     }
@@ -3171,7 +3195,8 @@ extension AppDelegate: WallpaperBrowserDataSource {
     /// 不会显示错分类。
     func browserLoadItems(
         for categoryID: Int,
-        completion: @escaping (Result<[WallpaperItem], BrowserLoadFailure>) -> Void
+        completion: @escaping @MainActor @Sendable (Result<[WallpaperItem], BrowserLoadFailure>) ->
+            Void
     ) {
         guard let entry = categories.first(where: { $0.id == categoryID }) else {
             completion(.failure(BrowserLoadFailure(message: "分类不存在（清单可能已经更新）")))
@@ -3180,7 +3205,10 @@ extension AppDelegate: WallpaperBrowserDataSource {
         let service = makeCatalogService()
         DispatchQueue.global(qos: .userInitiated).async {
             let result = service.loadSlice(entry)
-            DispatchQueue.main.async {
+            // 回跳用 `Task { @MainActor }` 而不是 `DispatchQueue.main.async`：
+            // 后者在 Swift 6 下也能推断出主 actor 隔离，但 `Task` 是项目里统一的回跳写法，
+            // 且不会与「主队列是否被 run loop 抽干」这类隐式前提纠缠。
+            Task { @MainActor in
                 guard let catalog = result.catalog else {
                     completion(
                         .failure(
@@ -3241,8 +3269,7 @@ extension AppDelegate: NSMenuDelegate {
         // 有与 AppKit 抢状态的风险。
         if notice?.isOneShot == true, noticeShown {
             notice = nil
-            nonisolated(unsafe) let delegate = self
-            DispatchQueue.main.async { delegate.refreshStatusItem() }
+            DispatchQueue.main.async { [weak self] in self?.refreshStatusItem() }
         }
 
         // 展开期间被推迟的菜单重建在这里补上。
@@ -3250,8 +3277,7 @@ extension AppDelegate: NSMenuDelegate {
         // 有与 AppKit 抢状态的风险。
         if isMenuRebuildPending {
             isMenuRebuildPending = false
-            nonisolated(unsafe) let delegate = self
-            DispatchQueue.main.async { delegate.refreshStatusItem() }
+            DispatchQueue.main.async { [weak self] in self?.refreshStatusItem() }
         }
     }
 }

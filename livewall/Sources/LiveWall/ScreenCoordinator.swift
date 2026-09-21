@@ -13,6 +13,11 @@ struct CalibrationResult {
 ///
 /// 层级是这套方案唯一的脆弱点：它依赖 WindowServer 的实际排序，
 /// 只能真机验证。所以每次重建窗口后都要跑一次判定，不合格就换下一个候选层级。
+///
+/// **`@MainActor` 是必须的、不是修饰**：它持有 `NSWindow` 并会在
+/// `waitForWindowsToAppear` 里跑 `RunLoop.main` 自旋等上屏 —— 两件事都只能在主线程做。
+/// Swift 6 之前这一点只写在注释里，编译器管不到。
+@MainActor
 final class ScreenCoordinator {
 
     private(set) var windows: [DesktopOverlayWindow] = []
