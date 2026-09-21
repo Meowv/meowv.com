@@ -129,7 +129,7 @@ error: unable to resolve module dependency: 'XCTest'
 
 ## 图标
 
-两处图标互相独立，用途与生成方式都不同。
+两处图标用途不同，App 图标复用菜单栏播放态的四色风车。
 
 |          | App 图标                           | 菜单栏状态项图标                      |
 | -------- | ---------------------------------- | ------------------------------------- |
@@ -137,7 +137,7 @@ error: unable to resolve module dependency: 'XCTest'
 | 可见位置 | Finder / 访达信息面板              | 菜单栏（日常唯一可见处）              |
 | 声明方式 | `Info.plist` 的 `CFBundleIconFile` | 无声明，代码按文件名加载              |
 | 分辨率   | icns 内含 10 档（16→1024）         | 18pt 逻辑尺寸，1x/2x/3x 三档          |
-| 状态区分 | 无                                 | 播放态四色风车 / 暂停态同形状统一中灰 |
+| 状态区分 | 四色风车                           | 播放态四色风车 / 暂停态同形状统一中灰 |
 
 两者都由 `build.sh` 拷进 `Contents/Resources/`，并在 ad-hoc 签名时封存（`codesign -dv` 的
 `Sealed Resources files=` 计数应等于拷贝的文件数）。**图标缺失不会中断构建**，
@@ -158,10 +158,11 @@ error: unable to resolve module dependency: 'XCTest'
   只把四片改填统一中灰（明度 112）—— 该值在浅色栏（背景约 242）与深色栏（约 30）
   上同时有足够对比，是唯一的约束条件，也是它不能更浅或更深的原因。
 
-### 菜单栏风车图的生成
+### 风车图标的生成
 
-图形由 `Resources/` 下的 PNG 直接决定，没有中间格式。造型与配色都写在下面的脚本里，
-改完重跑即可。几何在设计空间 240×240 里定义，中心 `(120, 120)`：
+菜单栏图形由 `Resources/` 下的 PNG 直接决定，App 图标则由同一图形生成 icns。
+造型与配色都写在下面的脚本里，改完重跑即可。几何在设计空间 240×240 里定义，
+中心 `(120, 120)`：
 
 - **四条臂**：圆头粗笔画，厚 20，圆头圆心距中心 90（尖端落在 19.5 / 219.5）。
 - **每片刀刃**：由内外两条三次贝塞尔围成的闭合形状 —— 外边界从臂端弧出去，落到相邻横杠的上沿；
@@ -177,6 +178,9 @@ error: unable to resolve module dependency: 'XCTest'
 ```bash
 cd livewall
 /usr/bin/python3 - <<'PY'
+import os
+import subprocess
+
 import numpy as np
 from PIL import Image, ImageDraw
 
@@ -221,6 +225,16 @@ for scale in (1, 2, 3):
     dpi = (72 * scale, 72 * scale)
     windmill(18 * scale, COLORS).save(f'Resources/MenuBarIcon{sfx}.png', dpi=dpi)
     windmill(18 * scale, [PAUSED] * 4).save(f'Resources/MenuBarIconPaused{sfx}.png', dpi=dpi)
+
+# App 图标同样直接按目标像素渲染，避免从 18/36/54px 菜单图标放大。
+ICONSET = '/tmp/LiveWall.AppIcon.iconset'
+os.makedirs(ICONSET, exist_ok=True)
+for px, name in [(16, '16x16'), (32, '16x16@2x'), (32, '32x32'), (64, '32x32@2x'),
+                 (128, '128x128'), (256, '128x128@2x'), (256, '256x256'),
+                 (512, '256x256@2x'), (512, '512x512'), (1024, '512x512@2x')]:
+    windmill(px, COLORS).save(f'{ICONSET}/icon_{name}.png')
+subprocess.run(['iconutil', '--convert', 'icns',
+                '--output', 'Resources/AppIcon.icns', ICONSET], check=True)
 PY
 
 ./build.sh   # 重新组装 .app
@@ -230,9 +244,9 @@ PY
 
 ### 替换方法
 
-App 图标**已定稿**，`Resources/AppIcon.icns` 就是成品。生成它的源图属于外部设计资产，
-**不随仓库分发**（仓库里只有 icns）。想换成自己的图案时，自备一张**正方形 PNG**（尺寸不限，
-原源图是 1080×1080；下面会统一重采样到 1024），再走两步生成 icns：
+App 图标默认与菜单栏播放态共用上面的风车。`Resources/AppIcon-source.png` 已被有意删除，
+仓库只保留成品 icns。想换成自己的图案时，自备一张**正方形 PNG**（尺寸不限，下面会统一
+重采样到 1024），再走两步生成 icns：
 
 ```bash
 cd livewall
