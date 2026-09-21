@@ -11,6 +11,7 @@ import Foundation
 levelPresetTests()
 textLayoutTests()
 catalogTests()
+catalogSignatureTests()
 categoryTests()
 poolTests()
 failurePolicyTests()

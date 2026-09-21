@@ -12,12 +12,22 @@ public struct LivewallCategoryEntry: Codable, Sendable, Equatable {
     public let file: String?
     /// 该分类（含其子树）下的条目数。**只用于把空分类置灰，不在菜单里显示。**
     public let itemCount: Int
+    /// 该分类**切片文件的字节 sha256**（小写十六进制，64 字符）。
+    ///
+    /// 它写在**已验签的索引**里，客户端据此校验切片完整性 —— 于是一个
+    /// `catalog.json.sig` 就传递性地保护了全部切片，不必给每个切片各配一个签名文件
+    /// （那会让启动多打十来次请求）。见 `CatalogSignature`。
+    ///
+    /// `file` 为 nil（空分类）时**没有**这个字段：没有文件就没有摘要可言。
+    /// 有文件却没有合法摘要的索引会被判**不可用**（见 `CatalogSignature.digestProblem`）。
+    public let sha256: String?
 
-    public init(id: Int, name: String, file: String?, itemCount: Int) {
+    public init(id: Int, name: String, file: String?, itemCount: Int, sha256: String? = nil) {
         self.id = id
         self.name = name
         self.file = file
         self.itemCount = itemCount
+        self.sha256 = sha256
     }
 
     /// 把索引里的相对文件名解析成与索引**同源**的 URL。

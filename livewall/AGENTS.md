@@ -45,6 +45,10 @@ macOS 视频动态壁纸工具。定位是**个人自用 / 小范围共享**，�
 - 私钥在 `~/.livewall-signing/version-key.txt`（仓库外，权限 600）。**换密钥等于所有已发布客户端都验不过新签名，必须重新发版。**
 - 签名覆盖的是清单的**原始字节**，所以发布时不要重新格式化 `version.json`（改缩进、调键顺序、加删尾随换行都会让签名失效）。细节与发版对账命令见 [`README.md`](./README.md) 的「更新清单签名」。
 - **`make-dmg.sh` 会在打包前校验 `CFBundleVersion` 相对上次产物已递增，不递增直接中止** —— 客户端只认它，忘了加就永远不提示，而症状与「线上没发新版」无法区分。
+- **内容清单也走同一把密钥签名，但签的是「索引」**：`catalog.json.sig` 与 `catalog.json` 必须成对部署。索引里为每个有内容的分类记了切片的 `sha256`，切片的完整性由「已验签的索引」传递性地保证 —— 所以**不需要**、也不要给每个切片各配一份签名（那是 N 次额外请求）。
+- **导出与签名是两步，中间不能省**：`wallpapers/src/wallpapers/export.py` 只写索引与切片（并删掉上一轮的旧签名），签名由**根 `build.sh` 的 `sign_livewall_catalog`** 调 `livewall/tools/sign-version.swift sign --catalog` 完成，失败即中止构建。单独跑 `python3 -m wallpapers export-livewall` 会产出一份**没有签名**的清单，新版客户端一律拒用。
+- **首次上线的发布顺序是硬约束**：`.sig` 必须先于新版客户端部署出去（新版没有「验不过就用」的降级路，先发客户端 = 那批用户启动即无清单）。老客户端只拉 `catalog.json`，因此这一步对线上无影响。
+- **绝不手工改 `catalog.json` / `catalog.json.sig`**：签名覆盖原始字节，改一个字节（哪怕只是格式化）就会失效；而「新索引配旧签名」比「没有签名」更难排障 —— 症状指向密钥或密码学，实际原因只是漏了一步签名。
 
 ## 硬约束
 
@@ -83,8 +87,9 @@ macOS 视频动态壁纸工具。定位是**个人自用 / 小范围共享**，�
 
 ### 清单、网络与失败分类
 
-- 视频源与清单都来自同仓库 `wallpapers/` 项目的 `export-livewall` 子命令。**清单没有本地一层**：输出目录是 `studio/public/data/livewall/`，里面是**索引 + 按分类切片**两个角色 —— `catalog.json`（**纯索引**：分类清单 + 默认分类，**不含条目**，901 字节）与 `category.<一级分类 id>.json`。随 Studio 一起部署，客户端在运行时从 `https://studio.meowv.com/data/livewall/` 下按需拉取，断网时各自回退本地副本（Application Support 下 `catalog.remote-cache.index.json` / `catalog.remote-cache.slice.json`）。仓库内不保存清单副本，也不要再往 `livewall/data/` 写。清单结构改动需与 `wallpapers/src/wallpapers/export.py` 同步。
-- **索引必须保持「不含条目」**。`catalog.json` 是启动时唯一必拉的文件，只有几百字节；条目一律按分类单独拉。谁把 `items` 加回索引，启动就会退回「一次下全量」（实测 4.9 MB），这个改造就白做了。
+- 视频源与清单都来自同仓库 `wallpapers/` 项目的 `export-livewall` 子命令。**清单没有本地一层**：输出目录是 `studio/public/data/livewall/`，里面是**索引 + 签名 + 按分类切片**三个角色 —— `catalog.json`（**纯索引**：分类清单 + 默认分类 + 各切片的 `sha256`，**不含条目**）、`catalog.json.sig`（索引的 Ed25519 签名）、`category.<一级分类 id>.json`。随 Studio 一起部署，客户端在运行时从 `https://studio.meowv.com/data/livewall/` 下按需拉取，断网时各自回退本地副本（Application Support 下 `catalog.remote-cache.index.json`、`catalog.remote-cache.index.json.sig`、`catalog.remote-cache.slice.json` —— **索引与它的签名副本必须同存同弃**，只留索引的话断网时读回来的那份过不了验签）。仓库内不保存清单副本，也不要再往 `livewall/data/` 写。清单结构改动需与 `wallpapers/src/wallpapers/export.py` 同步。
+- **索引与其签名的两道闸都不可绕过，也不要加「验不过就跳过」的开关**：① 索引整体验签（含「摘要齐全性」检查，有切片的分类缺 `sha256` 就整份拒掉 —— 那是生产侧 bug，客户端不能靠少校验一层掩盖）；② 切片字节摘要与索引里记的一致 + 切片归属校验。**缺摘要不能当作通过**，否则攻击者把摘要字段删掉即可绕过。细节与实测见 [`README.md`](./README.md) 的「内容清单与签名」。
+- **索引必须保持「不含条目」**。`catalog.json` 是启动时唯一必拉的文件，量级是 KB（当前 10 个分类 → 1661 字节；会随分类数线性增长，每个分类多 64 字符的 `sha256`）；条目一律按分类单独拉。谁把 `items` 加回索引，启动就会退回「一次下全量」（实测 4.9 MB），这个改造就白做了。
 - **条目字段新增一律不升 `schemaVersion`**：客户端用 `decodeIfPresent` 容错，升版本会让老客户端撞上 `unsupportedSchema` 直接拒绝加载整份清单 —— `coverUrl`（静态图地址，供锁屏预览与「下载当前壁纸」用）就是这么加的。
 - **切分类是异步拉一个文件**，因此有两件必须处理的事：① 递增的请求序号，回包时比对丢弃过期结果（否则「点了 B，画面却停在 A」）；② 失败时保持当前画面**与当前勾选** —— 选中项只在拉取成功后才写回配置。`selectedCategoryID` 的语义是「池子里装的是哪个分类」，不是「用户点了哪个」。
 - **分类文件名来自远端，不能照着它发请求**。`LivewallCategoryEntry.resolvedFileURL(relativeTo:)` 只接受纯文件名（不含 `/`、`\`、`:`，不是 `.`/`..`，以 `.json` 结尾）并校验 host/scheme 与索引一致 —— 否则远端改一个字段就能把客户端请求指到任意地址。

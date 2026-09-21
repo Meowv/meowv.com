@@ -2,7 +2,10 @@
 import CryptoKit
 import Foundation
 
-// LiveWall 更新清单（version.json）的**本机离线签名**工具。
+// LiveWall 清单的**本机离线签名**工具。两类清单共用同一把密钥与同一套签名格式：
+//
+//   1. 更新清单 `version.json`（应用自身的版本与安装包）
+//   2. 内容清单 `catalog.json`（壁纸清单索引；切片摘要写在索引里，见 `--catalog`）
 //
 // 为什么不用 openssl：本机是 LibreSSL 3.3.6，`genpkey -algorithm ED25519`
 // 直接报 `Algorithm ED25519 not found` —— 它不支持 Ed25519。
@@ -11,8 +14,9 @@ import Foundation
 //
 // 用法（在 livewall/ 目录下执行）：
 //
-//     ./tools/sign-version.swift keygen                 # 生成私钥（只做一次）
+//     ./tools/sign-version.swift keygen                     # 生成私钥（只做一次）
 //     ./tools/sign-version.swift sign --json <清单> --dmg <dmg>
+//     ./tools/sign-version.swift sign --json <catalog.json> --catalog
 //     ./tools/sign-version.swift verify --json <清单>
 //
 // 完整的发版流程见 livewall/README.md「版本检查与更新 → 发版步骤」。
@@ -251,8 +255,98 @@ func commandPubkey(keyPath: String) {
     print(key.publicKey.rawRepresentation.base64EncodedString())
 }
 
-func commandSign(jsonPath: String, dmgPath: String?, keyPath: String, outPath: String?, publicKeySourcePath: String?) {
-    let payload = readFile(jsonPath, "版本信息文件")
+/// 目录清单（`catalog.json`）的摘要对账。
+///
+/// 索引里为每个**有内容的**分类记了它那份切片的 sha256。这里逐个回读切片文件、重算摘要比对 ——
+/// 与 `--dmg` 那一步是同一个目的：**签名保护的是「这份清单是作者发的」，
+/// 不保护「清单里写的摘要是对的」**。少了这道对账，一次「导出到一半被打断」、
+/// 一次「手工替换了某个切片」就会签出一份**签名完全有效、但客户端逐个切片判完整性失败**的索引，
+/// 而症状会先被归到 CDN 或网络上去。
+func reconcileCatalog(payload: Data, jsonPath: String) {
+    guard let any = try? JSONSerialization.jsonObject(with: payload),
+          let object = any as? [String: Any] else {
+        fail("\(jsonPath) 不是合法的 JSON，无法做目录清单对账。")
+    }
+    guard let categories = object["categories"] as? [[String: Any]] else {
+        fail("""
+        \(jsonPath) 里没有 categories 数组 —— 它看起来不是目录清单索引。
+            若这是 version.json，请不要加 --catalog。
+        """)
+    }
+    // 空索引是**不可用**产物：客户端的 `tryDecodeIndex` 判它解析失败并继续降级。
+    // 签了也发不出去，不如在签名这一步就拦住。
+    guard !categories.isEmpty else {
+        fail("\(jsonPath) 的 categories 为空 —— 客户端会把空索引判为解析失败，这份清单签了也没有人能加载。")
+    }
+
+    let directory = (jsonPath as NSString).deletingLastPathComponent
+    var checked = 0
+    var problems: [String] = []
+
+    for (offset, category) in categories.enumerated() {
+        let id = (category["id"] as? Int).map(String.init) ?? "?"
+        let name = (category["name"] as? String) ?? "?"
+        let label = "第 \(offset + 1) 个分类（id=\(id)「\(name)」）"
+        let file = (category["file"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let declared = (category["sha256"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard let file, !file.isEmpty else {
+            // 条目数为 0 的分类不落文件（客户端拿到空 items 会判解析失败），因此也不该有摘要。
+            if let declared, !declared.isEmpty {
+                problems.append("\(label)：没有 file，却带着 sha256 —— 客户端根本不会校验它，摘要成了摆设")
+            }
+            continue
+        }
+        // 这个文件名既用来拼 URL（客户端侧）、也用来拼本地路径（这一步）。
+        // 带分隔符或 scheme 的值会让两边都跑到不该去的地方。
+        guard !file.contains("/"), !file.contains("\\"), !file.contains(":") else {
+            problems.append("\(label)：file 不合法（含路径分隔符或 scheme）：\(file)")
+            continue
+        }
+        guard let declared, declared.count == 64,
+              declared.allSatisfy({ $0.isHexDigit }) else {
+            problems.append("\(label)：有 file（\(file)）却没有 64 位十六进制的 sha256 —— 客户端不会加载这份切片")
+            continue
+        }
+
+        let path = directory + "/" + file
+        guard FileManager.default.fileExists(atPath: path) else {
+            problems.append("\(label)：索引指向的切片不存在：\(path)")
+            continue
+        }
+        let actual = sha256Hex(readFile(path, "分类切片"))
+        guard declared.caseInsensitiveCompare(actual) == .orderedSame else {
+            problems.append("\(label)：摘要不符\n        索引：\(declared)\n        实际：\(actual)")
+            continue
+        }
+        checked += 1
+    }
+
+    guard problems.isEmpty else {
+        fail("""
+        索引里的切片摘要与实际文件不符，拒绝签名：
+          \(problems.joined(separator: "\n  "))
+        先重新导出一次（根目录 `./build.sh wallpapers`），再来签 ——
+        否则会签出一份签名有效、但客户端逐个切片判完整性失败的清单。
+        """)
+    }
+
+    print("✓ 摘要对账通过：\(checked) 个分类切片的 sha256 与索引一致")
+}
+
+func commandSign(
+    jsonPath: String,
+    dmgPath: String?,
+    catalogMode: Bool,
+    keyPath: String,
+    outPath: String?,
+    publicKeySourcePath: String?
+) {
+    if dmgPath != nil && catalogMode {
+        fail("--dmg 与 --catalog 只能给一个：前者对账安装包，后者对账分类切片。")
+    }
+
+    let payload = readFile(jsonPath, "清单文件")
 
     // 1) 摘要对账。不做这一步，最容易发生的错误是「签了一份指向旧 dmg 的清单」——
     //    签名完全有效、客户端也验得过，但下载下来的包校验不符。
@@ -279,8 +373,10 @@ func commandSign(jsonPath: String, dmgPath: String?, keyPath: String, outPath: S
             """)
         }
         print("✓ 摘要对账通过：清单里的 sha256 与 \((dmgPath as NSString).lastPathComponent) 一致")
+    } else if catalogMode {
+        reconcileCatalog(payload: payload, jsonPath: jsonPath)
     } else {
-        warn("没给 --dmg，跳过摘要对账。清单里的 sha256 是否正确没有被检查。")
+        warn("没给 --dmg（也没给 --catalog），跳过摘要对账。清单里的 sha256 是否正确没有被检查。")
     }
 
     // 2) 签名。
@@ -329,13 +425,19 @@ func commandSign(jsonPath: String, dmgPath: String?, keyPath: String, outPath: S
         """)
     }
 
+    // 收尾提示按模式分开写。两者的「少传一个」症状完全不同，用同一句话会把人带到错的方向：
+    // 更新清单少签名 = 看不到新版本；内容清单少签名 = 客户端拿不到任何清单（连菜单都没有）。
+    let hint =
+        catalogMode
+        ? "只传一个的表现是「客户端拉不到清单，只剩内建兜底」—— 菜单里可能什么都没有。"
+        : "只传一个的表现是「客户端永远不提示更新」。"
     print("""
     ✓ 已签名：\(target)
       ✓ 自检通过（回读后验签通过）
       ✓ 端到端通过（客户端内嵌公钥验得过）
 
     别忘了把 \(target) 与 \(jsonPath) **一起**上传 —— 两个文件必须同一次发布，
-    只传一个的表现是「客户端永远不提示更新」。
+    \(hint)
     """)
 }
 
@@ -398,8 +500,10 @@ func usage() -> Never {
         --key PATH                      私钥路径
 
       sign                            对清单的**原始字节**签名，写出 <清单>.sig
-        --json PATH                     要签的 version.json（必填）
+        --json PATH                     要签的清单（必填）
         --dmg PATH                      dmg 文件；给了就先校验清单里的 sha256 与它一致
+        --catalog                       把 --json 当作目录清单**索引**：逐个校验它记的
+                                        分类切片 sha256 与同目录下的实际文件是否一致
         --key PATH                      私钥路径
         --out PATH                      签名文件路径（默认 <清单>.sig）
         --pubkey-source PATH            客户端源码路径（默认自动定位）
@@ -415,6 +519,7 @@ func usage() -> Never {
       \(toolName) keygen
       \(toolName) sign --json build/studio.meowv.com/data/livewall/version.json \\
                         --dmg build/LiveWall-0.2.0.dmg
+      \(toolName) sign --json studio/public/data/livewall/catalog.json --catalog
       \(toolName) verify --json build/studio.meowv.com/data/livewall/version.json
     """)
     exit(0)
@@ -455,6 +560,7 @@ case "sign":
     commandSign(
         jsonPath: json,
         dmgPath: options["dmg"],
+        catalogMode: flags.contains("catalog"),
         keyPath: options["key"] ?? defaultKeyPath(),
         outPath: options["out"],
         publicKeySourcePath: options["pubkey-source"]

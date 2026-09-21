@@ -3,6 +3,10 @@ import Foundation
 
 /// 更新信息的**独立密钥签名**（Ed25519）—— 更新链上最后一道闸。
 ///
+/// 它同时是**内容清单签名**的基座：`catalog.json` 走的也是这一套（密钥、签名文件格式、
+/// 信任锚、失败语义全部共用，见 `CatalogSignature`）。两条链共用一个实现是刻意的 ——
+/// 各自实现一遍验签，两边的严格程度迟早会分叉，而分叉的方向通常是「其中一边松了」。
+///
 /// ## 为什么有了 `sha256` 还要签名
 ///
 /// `sha256` 字段本身写在 `version.json` 里。能改 `version.json` 的人（静态站被入侵、
@@ -143,18 +147,19 @@ public enum UpdateSignature {
 
     // MARK: - 地址推导
 
-    /// 由版本信息的地址推出签名文件的地址（`…/version.json` → `…/version.json.sig`）。
+    /// 由**被签文件**的地址推出签名文件的地址（`…/version.json` → `…/version.json.sig`，
+    /// `…/catalog.json` → `…/catalog.json.sig`）。
     ///
     /// 路径为空或以 `/` 结尾（即给的是一个目录）时推不出来，返回 nil ——
     /// 调用方据此判不可用。**不猜**一个「大概是这样」的地址：
     /// 猜错的表现是「拉到一个不存在的位置」，比直接说「地址不像文件」更难排障。
     ///
     /// 查询串与片段会原样保留（`version.json?v=2` → `version.json.sig?v=2`）。
-    public static func documentURL(for feedURL: URL) -> URL? {
-        guard let components = URLComponents(url: feedURL, resolvingAgainstBaseURL: false) else {
+    public static func documentURL(for sourceURL: URL) -> URL? {
+        guard let components = URLComponents(url: sourceURL, resolvingAgainstBaseURL: false) else {
             return nil
         }
         guard !components.path.isEmpty, !components.path.hasSuffix("/") else { return nil }
-        return feedURL.appendingPathExtension(documentExtension)
+        return sourceURL.appendingPathExtension(documentExtension)
     }
 }
