@@ -11,6 +11,10 @@ BACKUP_PATH=""
 RESTORE_PATH=""
 WALLPAPER_KEY_FILE="$ROOT_DIR/.wallpaper-key"
 
+# 内容清单索引的文件名。客户端在 `LivewallCatalog` 里也硬编码了同一个名字
+# （它拼的是 `<清单目录>/catalog.json`），改这里必须同时改客户端。
+LIVEWALL_CATALOG_NAME="catalog.json"
+
 usage() {
   cat <<'EOF'
 用法：
@@ -50,7 +54,46 @@ export_livewall_catalog() {
       --db "$ROOT_DIR/wallpapers/wallpapers.db" \
       --output-dir "$output_dir"
   )
+  sign_livewall_catalog "$output_dir/livewall/$LIVEWALL_CATALOG_NAME"
   echo "[livewall] 清单：${output_dir}/livewall"
+}
+
+# 对内容清单索引（`catalog.json`）签名，产出 `catalog.json.sig`。
+#
+# 与 `version.json` 同用一把密钥、同一套签名格式，区别只在**对账对象**：
+# 更新清单对账 dmg 的摘要，内容清单对账各分类切片的摘要（切片摘要写在索引里，
+# 签名工具用 `--catalog` 走这条路）。
+#
+# 为什么 **失败就中断、不产出半成品**：客户端只认验签通过的清单 ——
+# 少一个 `.sig` 的表现是「客户端拉不到清单、只剩内建兜底」，而这个症状与
+# 「线上根本没部署」一模一样，排障会先往 CDN / 网络方向走。宁可这次构建失败。
+#
+# 顺序约束（只在**首次上线**这次成立）：`.sig` 必须**先于**新客户端被部署出去。
+# 新版客户端没有「验不过就用」的降级路，所以先发客户端 = 那批用户启动即无清单。
+# 详见 livewall/README.md 的「内容清单签名」。
+sign_livewall_catalog() {
+  local catalog_path="$1"
+  local signer="$ROOT_DIR/livewall/tools/sign-version.swift"
+  local pubkey_source="$ROOT_DIR/livewall/Sources/LiveWallCore/UpdateSignature.swift"
+
+  if [ ! -f "$catalog_path" ]; then
+    echo "错误：找不到刚导出的内容清单：${catalog_path}" >&2
+    exit 1
+  fi
+  # 逐项前置检查，别让「缺工具」表现得像「签名算法有问题」。
+  if [ ! -x "$signer" ]; then
+    echo "错误：${signer} 不存在或不可执行。" >&2
+    exit 1
+  fi
+  if [ ! -f "$pubkey_source" ]; then
+    echo "错误：找不到客户端公钥源文件：${pubkey_source}" >&2
+    exit 1
+  fi
+
+  echo "[livewall] 给内容清单签名..."
+  # 这一步内部会做两件事：① 逐个校验索引里记的分类切片摘要与磁盘文件一致
+  # （挡住「签了一份指向旧/坏切片的索引」）② 签完用**客户端内嵌公钥**回验。
+  "$signer" sign --json "$catalog_path" --catalog --pubkey-source "$pubkey_source"
 }
 
 publish_wallpapers_only() {
@@ -77,6 +120,9 @@ publish_wallpapers_only() {
     rm -f "$build_data_dir/livewall.json"
     # 只清清单文件：`version.json` 是 --with-dmg 写入的分发产物，不能跟着一起删。
     rm -f "$build_data_dir"/livewall/catalog.json
+    # 签名必须**跟着清单一起清**。留着一份旧清单的 .sig，新清单就会配着旧签名被部署出去，
+    # 客户端一律判「签名与清单不符」—— 比「没有签名」更难看出原因。
+    rm -f "$build_data_dir"/livewall/catalog.json.sig
     rm -f "$build_data_dir"/livewall/category.*.json
     mkdir -p "$build_data_dir/livewall"
     cp \
@@ -84,6 +130,15 @@ publish_wallpapers_only() {
       "$source_dir"/wallpapers.catalog.*.bin \
       "$build_data_dir"/
     cp "$source_dir"/livewall/*.json "$build_data_dir/livewall"/
+    # `*.json` **匹配不到** `.json.sig`，签名要单独拷。漏了它的表现是
+    # 「部署出去的清单客户端一律拒用」，而本地 studio/public/data 下看着是齐的 ——
+    # 所以这里缺文件就报错，不静默跳过。
+    if [ ! -f "$source_dir/livewall/${LIVEWALL_CATALOG_NAME}.sig" ]; then
+      echo "错误：${source_dir}/livewall/${LIVEWALL_CATALOG_NAME}.sig 不存在，内容清单没有签名。" >&2
+      echo "      它由 export_livewall_catalog 调 livewall/tools/sign-version.swift 产出。" >&2
+      exit 1
+    fi
+    cp "$source_dir"/livewall/*.json.sig "$build_data_dir/livewall"/
     echo "[wallpapers] 加密目录数据已同步到 $build_data_dir"
   fi
 
