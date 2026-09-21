@@ -11,17 +11,17 @@ import LiveWallCore
 /// 这里没有定时器、没有后台轮询：菜单收起期间进程不会被唤醒去刷新数字，
 /// 于是「实时」这个要求在物理上不成立，代价是零常驻开销。
 ///
-/// 主线程不会被阻塞：采样跑在 utility 队列上，结果回主线程；
+/// 主线程不会被阻塞：采样跑在 `Task.detached(priority: .utility)` 上，结果回主 actor；
 /// 菜单已经收起时回调直接丢弃（见 `AppDelegate.applyUsageReport`）。
 ///
 /// **`@MainActor`**：`baseline` / `lastReport` / `peakBytes` / `generation` 都按
-/// 「只在主线程读写」使用（旧版本的注释就是这么写的）。采样本身仍跑在后台队列上，
+/// 「只在主 actor 读写」使用。采样本身仍跑在后台任务上，
 /// 只有结果回主 actor —— 那几个 `nonisolated` 的静态方法就是为此存在的。
 @MainActor
 final class ProcessMonitor {
 
     /// 一次采样的结果（已算好，可直接进菜单）。
-    struct Report: Equatable {
+    struct Report: Equatable, Sendable {
         /// nil = 这一次的占用率算不出来（没有基线、墙钟没走，或区间太短）。
         /// 与整个 `Report` 为 nil 不是一回事：后者是**采样本身失败**，连内存都没有。
         var cpuPercent: Double?
@@ -34,14 +34,13 @@ final class ProcessMonitor {
         var sinceLaunch: Bool
     }
 
-    private let queue = DispatchQueue(label: "com.meowv.livewall.process-monitor", qos: .utility)
-    private var pending: DispatchWorkItem?
-    /// 采样代号。取消时递增，回主线程的旧结果据此丢弃 ——
-    /// `DispatchWorkItem.cancel()` 挡不住「已经在跑」的那一个。
+    private var pending: Task<Void, Never>?
+    /// 采样代号。取消时递增，回主 actor 的旧结果据此丢弃 ——
+    /// `Task.cancel()` 挡不住「已经在跑」的那一个。
     private var generation = 0
 
-    /// 上次采样的原始值。**只在主线程读写**：交给后台时按值拷贝，
-    /// 结果回到主线程后才更新 —— 因此不需要锁。
+    /// 上次采样的原始值。**只在主 actor 读写**：交给后台时按值拷贝，
+    /// 结果回到主 actor 后才更新 —— 因此不需要锁。
     private var baseline: ProcessUsageSample?
     /// 上一次成功给出的结果。区间太短时原样交回，免得把噪音显示成读数。
     private var lastReport: Report?
@@ -60,14 +59,14 @@ final class ProcessMonitor {
         baselineIsLaunch = true
     }
 
-    /// 采一次，结果回主线程。**nil 表示采样失败**（mach 调用没拿到数据）。
+    /// 采一次，结果回主 actor。**nil 表示采样失败**（mach 调用没拿到数据）。
     ///
     /// 失败也必须回调：不回调的话调用方那两行会永远停在「测量中…」，
     /// 而用户没有任何办法知道真相是「取不到」。
     ///
     /// 重复调用会取消上一次未完成的采样 —— 菜单可能被连点，而两次采样之间
     /// 只差几毫秒，留着两个只会让回调互相覆盖。
-    func sample(completion: @escaping (Report?) -> Void) {
+    func sample(completion: @escaping @MainActor (Report?) -> Void) {
         pending?.cancel()
         generation += 1
 
@@ -76,15 +75,12 @@ final class ProcessMonitor {
         let sinceLaunch = baselineIsLaunch
         let peakBefore = peakBytes
 
-        // 两层都是 `[weak self]`：这个任务在菜单收起后仍可能短暂存活，
-        // 没必要让它把 monitor 一直留住。
-        let work = DispatchWorkItem { [weak self] in
-            // 显式写类型名而不是 `Self`：闭包里用 `Self` 会连带强捕获 self。
+        // 必须用 `Task.detached`：`DispatchWorkItem` 在 actor 隔离方法里会被推断成
+        // `@MainActor`，投到 utility 队列后触发 Swift 6 数据竞争运行时告警。
+        let work = Task.detached(priority: .utility) { [weak self] in
+            guard !Task.isCancelled else { return }
             guard let latest = ProcessMonitor.currentSample() else {
-                Task { @MainActor [weak self] in
-                    guard let self, token == self.generation else { return }
-                    completion(nil)
-                }
+                await self?.deliverSampleFailure(token: token, completion: completion)
                 return
             }
             let window = base.map { Double(latest.wallNanos - $0.wallNanos) / 1_000_000_000 }
@@ -92,42 +88,73 @@ final class ProcessMonitor {
             let percent = base.flatMap { ProcessUsage.cpuPercent(from: $0, to: latest) }
             let canReportCPU = percent != nil && window.map(ProcessUsage.isWindowUsable) ?? false
 
-            Task { @MainActor [weak self] in
-                guard let self, token == self.generation else { return }
-                self.peakBytes = peak
-                guard canReportCPU, let window else {
-                    // 没有基线，或区间太短 —— **都不推进基线**：推进了的话，下一次查看
-                    // 也会退化成「距上一次几乎为 0」，一连串假数据（实测 0.0005 秒的区间
-                    // 算出 134%）。只有「压根没有基线」时才顺手补一个，否则永远算不出来。
-                    if base == nil { self.baseline = latest }
-                    completion(
-                        self.lastReport
-                            ?? Report(
-                                cpuPercent: nil,
-                                memoryBytes: latest.memoryBytes,
-                                peakBytes: peak,
-                                windowSeconds: nil,
-                                sinceLaunch: sinceLaunch
-                            )
-                    )
-                    return
-                }
-                // 基线在这里才推进：它只在主线程被写，后台拿到的永远是拷贝。
-                self.baseline = latest
-                self.baselineIsLaunch = false
-                let report = Report(
-                    cpuPercent: percent,
-                    memoryBytes: latest.memoryBytes,
-                    peakBytes: peak,
-                    windowSeconds: window,
-                    sinceLaunch: sinceLaunch
-                )
-                self.lastReport = report
-                completion(report)
-            }
+            await self?.deliverSample(
+                latest: latest,
+                base: base,
+                window: window,
+                peak: peak,
+                percent: percent,
+                canReportCPU: canReportCPU,
+                sinceLaunch: sinceLaunch,
+                token: token,
+                completion: completion
+            )
         }
         pending = work
-        queue.async(execute: work)
+    }
+
+    @MainActor
+    private func deliverSampleFailure(
+        token: Int,
+        completion: @escaping @MainActor (Report?) -> Void
+    ) {
+        guard token == generation else { return }
+        completion(nil)
+    }
+
+    @MainActor
+    private func deliverSample(
+        latest: ProcessUsageSample,
+        base: ProcessUsageSample?,
+        window: Double?,
+        peak: UInt64,
+        percent: Double?,
+        canReportCPU: Bool,
+        sinceLaunch: Bool,
+        token: Int,
+        completion: @escaping @MainActor (Report?) -> Void
+    ) {
+        guard token == generation else { return }
+        peakBytes = peak
+        guard canReportCPU, let window else {
+            // 没有基线，或区间太短 —— **都不推进基线**：推进了的话，下一次查看
+            // 也会退化成「距上一次几乎为 0」，一连串假数据（实测 0.0005 秒的区间
+            // 算出 134%）。只有「压根没有基线」时才顺手补一个，否则永远算不出来。
+            if base == nil { baseline = latest }
+            completion(
+                lastReport
+                    ?? Report(
+                        cpuPercent: nil,
+                        memoryBytes: latest.memoryBytes,
+                        peakBytes: peak,
+                        windowSeconds: nil,
+                        sinceLaunch: sinceLaunch
+                    )
+            )
+            return
+        }
+        // 基线在这里才推进：它只在主线程被写，后台拿到的永远是拷贝。
+        baseline = latest
+        baselineIsLaunch = false
+        let report = Report(
+            cpuPercent: percent,
+            memoryBytes: latest.memoryBytes,
+            peakBytes: peak,
+            windowSeconds: window,
+            sinceLaunch: sinceLaunch
+        )
+        lastReport = report
+        completion(report)
     }
 
     /// 菜单收起时调用：取消未完成的采样并释放它。
@@ -150,7 +177,7 @@ final class ProcessMonitor {
     /// （返回 KERN_SUCCESS），就是这两个字段没填。直接用它会得到一个永远 0% 的占用率，
     /// 而「0%」看起来完全合理，极难发现。别改回那种写法。
     ///
-    /// 只跑一次系统调用（几十微秒级），仍然放到后台队列上执行 —— 它落在「菜单正在展开」
+    /// 只跑一次系统调用（几十微秒级），仍然放到后台任务上执行 —— 它落在「菜单正在展开」
     /// 这条路径上，那段时间主线程在跑菜单的 tracking run loop，任何同步等待都会表现为菜单卡顿。
     nonisolated private static func currentSample() -> ProcessUsageSample? {
         var usage = rusage_info_v2()

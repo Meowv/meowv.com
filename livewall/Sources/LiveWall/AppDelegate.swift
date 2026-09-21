@@ -123,6 +123,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 分类切片的请求序号。用户可能连点两次，回包时比对，过期结果直接丢弃 ——
     /// 否则会出现「点了 B，画面却停在 A」。
     var sliceRequestGeneration = 0
+    /// 本地文件夹扫描序号。扫描离开主线程后，用户可能再次换文件夹或重载来源；
+    /// 旧结果回主 actor 时必须丢弃。
+    var localScanGeneration = 0
     /// 每个播放槽位的加载代次。旧请求完成后不能覆盖用户已经选中的新内容。
     var loadGenerationBySlot: [PlaybackSlotKey: Int] = [:]
     /// 每个槽位当前的视频加载任务。代次只能丢弃结果，任务本身也要取消，
@@ -519,14 +522,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 退出前把「当前正在播的那条」的静态图固化成系统墙纸。
     ///
     /// 锁屏预览关着时系统墙纸从没被动过，什么都不用做。
-    /// 抓帧兜底要求播放器还在播，所以只能排在 `engine.teardown()` 之前。
+    /// 只复用 `LockScreenPreviewer` 已缓存的静态图，不在这里现抓帧或编码 ——
+    /// 退出路径不能因为一张 4K 帧的 JPEG 编码卡在主线程。
     func freezeCurrentWallpaper() {
         guard preferences.lockScreenPreview else { return }
         guard let primary = engine.primaryKey, let item = engine.item(on: primary) else { return }
         lockScreenPreviewer.freezeCurrent(
             itemID: item.id,
-            multiScreenPolicy: screenCoordinator.policy,
-            frameProvider: { self.engine.currentFrame(on: primary) }
+            multiScreenPolicy: screenCoordinator.policy
         )
     }
 

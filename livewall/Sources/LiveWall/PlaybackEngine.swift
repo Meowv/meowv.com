@@ -1,5 +1,4 @@
 import AVFoundation
-import CoreImage
 import LiveWallCore
 import LiveWallDesktop
 
@@ -36,8 +35,8 @@ enum PlaybackSlotKey: Hashable, Sendable {
 /// 每屏独立时按屏幕各开一个槽位，代价是解码路数与流量按屏数翻倍
 /// （上限见 `MultiScreenPolicy.maxIndependentScreens`）。
 ///
-/// **`@MainActor`**：`currentFrame` 会跑 `RunLoop.main` 自旋取帧，
-/// KVO 与失败通知也都在主队列上处理。标注把这件既成事实交给编译器执行。
+/// **`@MainActor`**：槽位状态、KVO 与失败通知都在主 actor 上处理；
+/// 取帧通过 `AVAssetImageGenerator` 异步完成，不会自旋主 run loop。
 @MainActor
 final class PlaybackEngine {
 
@@ -53,9 +52,12 @@ final class PlaybackEngine {
         var looperStatusObservation: NSKeyValueObservation?
         var failureObserver: NSObjectProtocol?
         var item: WallpaperItem?
+        var loadedVideo: LoadedVideo?
         var duration: Double?
         var playbackGeneration = 0
         var didReportFailure = false
+        var cachedStillFrame: CGImage?
+        var frameTask: Task<Void, Never>?
 
         init() {
             player.isMuted = true
@@ -65,6 +67,10 @@ final class PlaybackEngine {
         }
 
         func teardown() {
+            frameTask?.cancel()
+            frameTask = nil
+            cachedStillFrame = nil
+            loadedVideo = nil
             looperStatusObservation = nil
             if let failureObserver {
                 NotificationCenter.default.removeObserver(failureObserver)
@@ -112,6 +118,7 @@ final class PlaybackEngine {
     var primaryKey: PlaybackSlotKey? { keyOrder.first }
 
     func item(on key: PlaybackSlotKey) -> WallpaperItem? { slots[key]?.item }
+    func loadedVideo(on key: PlaybackSlotKey) -> LoadedVideo? { slots[key]?.loadedVideo }
 
     /// 主槽位的时长 —— 调度下一次切换用。
     ///
@@ -137,13 +144,22 @@ final class PlaybackEngine {
     // MARK: - 播放
 
     /// 切换到指定条目。调用方应已完成准入校验（`VideoLoader.load`）。
-    func play(_ item: WallpaperItem, loaded: LoadedVideo, on key: PlaybackSlotKey) {
+    func play(
+        _ item: WallpaperItem,
+        loaded: LoadedVideo,
+        on key: PlaybackSlotKey,
+        captureStillFrame: Bool = false
+    ) {
         guard let slot = slots[key] else { return }
         slot.item = item
+        slot.loadedVideo = loaded
         slot.duration = loaded.durationSeconds
         slot.playbackGeneration += 1
         let playbackGeneration = slot.playbackGeneration
         slot.didReportFailure = false
+        slot.cachedStillFrame = nil
+        slot.frameTask?.cancel()
+        slot.frameTask = nil
 
         // 先拆旧的 looper 并清空队列，否则旧内容可能继续播放
         slot.looperStatusObservation = nil
@@ -213,6 +229,9 @@ final class PlaybackEngine {
             }
         }
         slot.player.play()
+        if captureStillFrame {
+            scheduleStillFrameCapture(for: slot, key: key, generation: playbackGeneration)
+        }
     }
 
     /// 上报一次槽位播放失败。**调用方必须已经在主 actor 上**。
@@ -246,45 +265,71 @@ final class PlaybackEngine {
 
     // MARK: - 取帧
 
-    /// 复用同一个 `CIContext`：新建的代价不小，而抓帧是低频动作。
-    private static let ciContext = CIContext()
-
     /// 取指定槽位**当前显示帧**。取不到返回 nil —— 调用方保留旧图，绝不清空墙纸。
     ///
-    /// 三条都经真机探针验证（见 `livewall/README.md` 的「关键发现」）：
-    /// - output 必须挂在 **`player.currentItem`** 上。挂在 `AVPlayerLooper` 的 template item
-    ///   上**取不到帧**（实测 24 秒 0 帧；改挂 currentItem 后 0.20 秒拿到首帧）——
-    ///   looper 复制 template item 时不会把 output 一起带上。
-    /// - 抓帧**不产生额外流量**（实测抓帧期间新增传输 0 字节）：解码数据已在缓冲里。
-    /// - 取到即把 output 摘掉：常挂会有每帧回调的开销，而抓帧是低频一次性动作。
-    func currentFrame(on key: PlaybackSlotKey) -> CGImage? {
-        guard let slot = slots[key], let item = slot.player.currentItem else { return nil }
+    /// 播放开始后会自动异步缓存一帧；这里优先返回缓存。缓存缺失时才用
+    /// `AVAssetImageGenerator` 补抓。生成器复用播放器已建好的 asset，
+    /// 实测不会产生额外流量，也不会阻塞主 run loop。
+    /// 异步生成槽位当前帧。生成器自身异步执行，不占用主线程；结果只回主 actor 缓存。
+    func currentFrame(on key: PlaybackSlotKey) async -> CGImage? {
+        guard let slot = slots[key] else { return nil }
+        if let cached = slot.cachedStillFrame { return cached }
 
-        let output = AVPlayerItemVideoOutput(pixelBufferAttributes: [
-            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
-        ])
-        item.add(output)
-        defer { item.remove(output) }
+        let generation = slot.playbackGeneration
+        guard let item = slot.player.currentItem else { return nil }
+        let currentTime = item.currentTime()
+        let frame = await Self.generateFrame(
+            asset: item.asset,
+            at: currentTime.isValid ? currentTime : .zero
+        )
+        guard slot.playbackGeneration == generation else { return nil }
+        slot.cachedStillFrame = frame
+        return frame
+    }
 
-        // 30fps 下相邻两帧相隔 33ms，0.4 秒的窗口足够（实测首帧 0.20 秒内拿到）。
-        let deadline = Date().addingTimeInterval(0.4)
-        while Date() < deadline {
-            let itemTime = output.itemTime(forHostTime: CACurrentMediaTime())
-            if itemTime.isValid,
-               output.hasNewPixelBuffer(forItemTime: itemTime),
-               let buffer = output.copyPixelBuffer(forItemTime: itemTime, itemTimeForDisplay: nil) {
-                let image = CIImage(cvPixelBuffer: buffer)
-                return Self.ciContext.createCGImage(image, from: image.extent)
-            }
-            // 让 AVFoundation 有机会投递新帧
-            RunLoop.current.run(until: Date().addingTimeInterval(0.02))
+    private func scheduleStillFrameCapture(
+        for slot: Slot,
+        key: PlaybackSlotKey,
+        generation: Int
+    ) {
+        slot.frameTask = Task { @MainActor [weak self, weak slot] in
+            // 给播放器一点时间拿到首批可显示帧，同时完全不阻塞主 actor。
+            try? await Task.sleep(for: .milliseconds(250))
+            guard !Task.isCancelled, let self, let slot else { return }
+            guard slot.playbackGeneration == generation else { return }
+            _ = await self.currentFrame(on: key)
         }
-        return nil
+    }
+
+    private static func generateFrame(asset: AVAsset, at time: CMTime) async -> CGImage? {
+        await withCheckedContinuation { continuation in
+            let generator = AVAssetImageGenerator(asset: asset)
+            let generatorBox = ImageGeneratorBox(generator)
+            generator.appliesPreferredTrackTransform = true
+            generator.requestedTimeToleranceBefore = CMTime(seconds: 0.1, preferredTimescale: 600)
+            generator.requestedTimeToleranceAfter = CMTime(seconds: 0.1, preferredTimescale: 600)
+            generator.generateCGImagesAsynchronously(forTimes: [NSValue(time: time)]) {
+                [generatorBox] _, image, _, result, _ in
+                // 明确捕获 generator，保证异步生成期间不会被提前释放。
+                _ = generatorBox.generator
+                continuation.resume(returning: result == .succeeded ? image : nil)
+            }
+        }
     }
 
     func teardown() {
         for slot in slots.values { slot.teardown() }
         slots.removeAll()
         keyOrder.removeAll()
+    }
+}
+
+/// 只用于延长 `AVAssetImageGenerator` 的生命周期。生成器自身的异步回调线程安全由
+/// AVFoundation 负责；这里不会跨线程调用生成器方法，只是持有引用。
+private final class ImageGeneratorBox: @unchecked Sendable {
+    let generator: AVAssetImageGenerator
+
+    init(_ generator: AVAssetImageGenerator) {
+        self.generator = generator
     }
 }

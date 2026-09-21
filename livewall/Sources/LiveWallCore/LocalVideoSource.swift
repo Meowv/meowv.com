@@ -16,7 +16,7 @@ import Foundation
 public enum LocalVideoSource {
 
     /// 扫描失败的原因。文案直接给用户看，所以写中文。
-    public enum SourceError: Error, LocalizedError, Equatable {
+    public enum SourceError: Error, LocalizedError, Equatable, Sendable {
         /// 路径不存在，或存在但不是文件夹。
         case notDirectory(String)
         /// 目录枚举失败（权限、IO 等）。

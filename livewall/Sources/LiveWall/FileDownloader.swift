@@ -40,65 +40,223 @@ enum FileDownloader {
         request.timeoutInterval = timeout
         request.cachePolicy = .reloadRevalidatingCacheData
 
-        let (bytes, response) = try await URLSession.shared.bytes(for: request)
+        return try await ChunkedDownload(
+            request: request,
+            destination: destination,
+            expectedContentTypePrefix: expectedContentTypePrefix,
+            maxBytes: maxBytes
+        ).run()
+    }
+}
 
+/// 一次分块下载。`URLSessionDataDelegate` 直接交付 `Data`，避免
+/// `AsyncBytes` 的逐字节 Swift 迭代；同时在响应头和每个分块处检查大小上限。
+private final class ChunkedDownload: NSObject, URLSessionDataDelegate, @unchecked Sendable {
+
+    private let request: URLRequest
+    private let destination: URL
+    private let expectedContentTypePrefix: String?
+    private let maxBytes: Int64
+
+    private let lock = NSLock()
+    private var continuation: CheckedContinuation<Int64, Error>?
+    private var session: URLSession?
+    private var task: URLSessionDataTask?
+    private var temporaryURL: URL?
+    private var fileHandle: FileHandle?
+    private var receivedBytes: Int64 = 0
+    private var settled = false
+    private var cancelRequested = false
+
+    init(
+        request: URLRequest,
+        destination: URL,
+        expectedContentTypePrefix: String?,
+        maxBytes: Int64
+    ) {
+        self.request = request
+        self.destination = destination
+        self.expectedContentTypePrefix = expectedContentTypePrefix
+        self.maxBytes = maxBytes
+    }
+
+    func run() async throws -> Int64 {
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                let temporaryURL = FileManager.default.temporaryDirectory
+                    .appendingPathComponent("livewall-download-\(UUID().uuidString)")
+                guard FileManager.default.createFile(atPath: temporaryURL.path, contents: nil) else {
+                    continuation.resume(throwing: FileDownloader.Failure(message: "无法创建临时文件"))
+                    return
+                }
+
+                lock.lock()
+                if cancelRequested {
+                    lock.unlock()
+                    try? FileManager.default.removeItem(at: temporaryURL)
+                    continuation.resume(throwing: CancellationError())
+                    return
+                }
+                self.continuation = continuation
+                self.temporaryURL = temporaryURL
+
+                let configuration = URLSessionConfiguration.default
+                let session = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
+                let task = session.dataTask(with: request)
+                self.session = session
+                self.task = task
+                lock.unlock()
+
+                task.resume()
+            }
+        } onCancel: {
+            cancel()
+        }
+    }
+
+    private func cancel() {
+        lock.lock()
+        cancelRequested = true
+        let task = self.task
+        lock.unlock()
+        task?.cancel()
+    }
+
+    func urlSession(
+        _ session: URLSession,
+        dataTask: URLSessionDataTask,
+        didReceive response: URLResponse,
+        completionHandler: @escaping (URLSession.ResponseDisposition) -> Void
+    ) {
+        guard !isSettled else {
+            completionHandler(.cancel)
+            return
+        }
         guard let http = response as? HTTPURLResponse else {
-            throw Failure(message: "响应不是 HTTP")
+            finish(.failure(FileDownloader.Failure(message: "响应不是 HTTP")))
+            completionHandler(.cancel)
+            return
         }
         guard (200..<300).contains(http.statusCode) else {
-            throw Failure(message: "HTTP \(http.statusCode)")
+            finish(.failure(FileDownloader.Failure(message: "HTTP \(http.statusCode)")))
+            completionHandler(.cancel)
+            return
         }
         if let expectedContentTypePrefix,
            let mime = http.mimeType,
-           !mime.lowercased().hasPrefix(expectedContentTypePrefix.lowercased()) {
-            throw Failure(message: "内容类型不符：\(mime)")
+           !mime.lowercased().hasPrefix(expectedContentTypePrefix.lowercased())
+        {
+            finish(.failure(FileDownloader.Failure(message: "内容类型不符：\(mime)")))
+            completionHandler(.cancel)
+            return
+        }
+        if response.expectedContentLength > 0, response.expectedContentLength > maxBytes {
+            finish(.failure(FileDownloader.Failure(message: "文件过大：超过 \(maxBytes) 字节")))
+            completionHandler(.cancel)
+            return
         }
 
-        let temporaryURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("livewall-download-\(UUID().uuidString)")
-        guard FileManager.default.createFile(atPath: temporaryURL.path, contents: nil) else {
-            throw Failure(message: "无法创建临时文件")
-        }
-
-        var file: FileHandle?
         do {
-            file = try FileHandle(forWritingTo: temporaryURL)
-            var buffer = Data()
-            buffer.reserveCapacity(64 * 1024)
-            var size: Int64 = 0
-            for try await byte in bytes {
-                size += 1
-                guard size <= maxBytes else {
-                    throw Failure(message: "文件过大：超过 \(maxBytes) 字节")
-                }
-                buffer.append(byte)
-                if buffer.count >= 64 * 1024 {
-                    try file?.write(contentsOf: buffer)
-                    buffer.removeAll(keepingCapacity: true)
-                }
-            }
-            if !buffer.isEmpty {
-                try file?.write(contentsOf: buffer)
-            }
-            file?.closeFile()
-            file = nil
-            guard size > 0 else { throw Failure(message: "响应为空") }
-
             try FileManager.default.createDirectory(
                 at: destination.deletingLastPathComponent(),
                 withIntermediateDirectories: true
             )
-            // 覆盖式落盘：先删旧文件再移动（同一卷内 moveItem 是原子的）
-            try? FileManager.default.removeItem(at: destination)
-            try FileManager.default.moveItem(at: temporaryURL, to: destination)
-            return size
-        } catch {
-            file?.closeFile()
-            try? FileManager.default.removeItem(at: temporaryURL)
-            if let failure = error as? Failure {
-                throw failure
+            guard let temporaryURL else {
+                throw FileDownloader.Failure(message: "下载临时文件已丢失")
             }
-            throw Failure(message: "写入失败：\(error.localizedDescription)")
+            fileHandle = try FileHandle(forWritingTo: temporaryURL)
+            completionHandler(.allow)
+        } catch {
+            finish(.failure(normalized(error)))
+            completionHandler(.cancel)
         }
+    }
+
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
+        guard !isSettled else { return }
+        receivedBytes += Int64(data.count)
+        guard receivedBytes <= maxBytes else {
+            finish(.failure(FileDownloader.Failure(message: "文件过大：超过 \(maxBytes) 字节")))
+            dataTask.cancel()
+            return
+        }
+        do {
+            try fileHandle?.write(contentsOf: data)
+        } catch {
+            finish(.failure(normalized(error)))
+            dataTask.cancel()
+        }
+    }
+
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        if let error {
+            finish(.failure(normalized(error)))
+            return
+        }
+        guard receivedBytes > 0 else {
+            finish(.failure(FileDownloader.Failure(message: "响应为空")))
+            return
+        }
+        finish(.success(receivedBytes))
+    }
+
+    private var isSettled: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return settled
+    }
+
+    private func finish(_ result: Result<Int64, Error>) {
+        lock.lock()
+        guard !settled else {
+            lock.unlock()
+            return
+        }
+        settled = true
+        let continuation = self.continuation
+        self.continuation = nil
+        let session = self.session
+        self.session = nil
+        let temporaryURL = self.temporaryURL
+        self.temporaryURL = nil
+        let handle = fileHandle
+        fileHandle = nil
+        lock.unlock()
+
+        try? handle?.close()
+        session?.finishTasksAndInvalidate()
+
+        let finalResult: Result<Int64, Error>
+        switch result {
+        case .success(let size):
+            do {
+                guard let temporaryURL else {
+                    throw FileDownloader.Failure(message: "下载临时文件已丢失")
+                }
+                // 覆盖式落盘：先删旧文件再移动（同一卷内 moveItem 是原子的）
+                try? FileManager.default.removeItem(at: destination)
+                try FileManager.default.moveItem(at: temporaryURL, to: destination)
+                finalResult = .success(size)
+            } catch {
+                if let temporaryURL {
+                    try? FileManager.default.removeItem(at: temporaryURL)
+                }
+                finalResult = .failure(normalized(error))
+            }
+        case .failure(let error):
+            if let temporaryURL {
+                try? FileManager.default.removeItem(at: temporaryURL)
+            }
+            finalResult = .failure(error)
+        }
+
+        continuation?.resume(with: finalResult)
+    }
+
+    private func normalized(_ error: Error) -> Error {
+        if error is CancellationError || (error as? URLError)?.code == .cancelled {
+            return CancellationError()
+        }
+        return error
     }
 }

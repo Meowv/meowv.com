@@ -9,33 +9,71 @@ extension AppDelegate {
 
     /// 扫描本地文件夹并切换过去。失败时**保留配置里的路径**并回退线上清单。
     ///
-    /// 与线上路径的对应关系：`loadCatalogAndStart` + `applySliceResult` 两步在这里合成
-    /// 一步 —— 本地没有索引与切片之分，扫描是同步的（一个几千文件的目录也在毫秒级），
-    /// 为它引入异步只会多出一层「结果回来时状态已变」的核对。
+    /// 目录遍历放到后台；主 actor 只接收结果。外接盘、网络卷或大目录下，
+    /// 同步扫描会直接卡住菜单与启动路径。
     ///
     /// - Parameter isFirstLoad: 是否算「本次启动的第一次加载」。只有它为真时才恢复
     ///   每屏源记忆（与线上路径同一条规则：手动重载时各屏已经记着当前条目，
     ///   再恢复一次等于把同一段视频重新拉一遍）。
     func startLocalSource(_ folder: URL, isFirstLoad: Bool) {
-        let items: [WallpaperItem]
-        do {
-            items = try LocalVideoSource.items(in: folder)
-        } catch {
-            let reason =
-                (error as? LocalVideoSource.SourceError)?.errorDescription
-                ?? error.localizedDescription
-            log("⚠️ 本地文件夹不可用：\(reason)")
-            // 配置里的路径**保留**（外接盘插回来、或 ⌥⌘R 重扫即可恢复），
-            // 但生效来源翻回线上 —— 菜单必须如实显示。
-            isLocalSource = false
-            let message = "本地文件夹不可用（\(reason)），已回到线上清单"
-            pendingSourceNotice = message
-            notice = .warning(message)
-            refreshStatusItem()
-            loadCatalogAndStart()
-            return
+        scanLocalFolder(folder, isFirstLoad: isFirstLoad, persistFolderPath: false)
+    }
+
+    /// 后台扫描一个本地文件夹，成功后回到主 actor 应用。
+    ///
+    /// - Parameter persistFolderPath: 用户刚选中的文件夹为 true，只有扫描成功才写入配置；
+    ///   启动时从配置恢复的扫描为 false，失败后保留原路径并回退线上。
+    func scanLocalFolder(_ folder: URL, isFirstLoad: Bool, persistFolderPath: Bool) {
+        localScanGeneration += 1
+        let generation = localScanGeneration
+        notice = .info("正在扫描本地文件夹…")
+        refreshStatusItem()
+
+        Task { @MainActor [weak self] in
+            let result: Result<[WallpaperItem], LocalVideoSource.SourceError> = await Task.detached(
+                priority: .userInitiated
+            ) {
+                do {
+                    return .success(try LocalVideoSource.items(in: folder))
+                } catch let error as LocalVideoSource.SourceError {
+                    return .failure(error)
+                } catch {
+                    return .failure(.unreadable(error.localizedDescription))
+                }
+            }.value
+
+            guard let self, generation == self.localScanGeneration else {
+                self?.log("丢弃过期的本地文件夹扫描结果：\(folder.path)")
+                return
+            }
+
+            switch result {
+            case .success(let items):
+                if persistFolderPath {
+                    self.preferences.localFolderPath = folder.path
+                    self.persistPreferences("壁纸来源：本地文件夹")
+                    self.pendingRestore.removeAll()
+                }
+                self.applyLocalItems(items, folder: folder, isFirstLoad: isFirstLoad)
+
+            case .failure(let error):
+                let reason = error.errorDescription ?? error.localizedDescription
+                self.log("⚠️ 本地文件夹不可用：\(reason)")
+                if persistFolderPath {
+                    self.notice = .warning("这个文件夹不能用（\(reason)），仍用当前来源")
+                    self.refreshStatusItem()
+                    return
+                }
+                // 配置里的路径**保留**（外接盘插回来、或 ⌥⌘R 重扫即可恢复），
+                // 但生效来源翻回线上 —— 菜单必须如实显示。
+                self.isLocalSource = false
+                let message = "本地文件夹不可用（\(reason)），已回到线上清单"
+                self.pendingSourceNotice = message
+                self.notice = .warning(message)
+                self.refreshStatusItem()
+                self.loadCatalogAndStart()
+            }
         }
-        applyLocalItems(items, folder: folder, isFirstLoad: isFirstLoad)
     }
 
     /// 把已经扫到的本地条目灌进候选池并开播。

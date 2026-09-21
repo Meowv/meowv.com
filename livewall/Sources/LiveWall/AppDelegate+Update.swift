@@ -149,7 +149,7 @@ extension AppDelegate {
         // `nonisolated(unsafe) let delegate = self` 那种「我确认安全」的手工标记。
         //
         // 真正的重活不在主线程：`UpdateInstaller.download` 是 **nonisolated async**，
-        // 按 SE-0338 会 hop 到全局执行器（逐字节下载循环因此不占主线程）。
+        // 按 SE-0338 会 hop 到全局执行器（分块下载因此不占主线程）。
         Task { @MainActor [weak self] in
             do {
                 let outcome = try await UpdateInstaller.download(feed)

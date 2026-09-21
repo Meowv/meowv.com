@@ -60,5 +60,11 @@ extension AppDelegate: WallpaperBrowserDataSource {
     func browserSetPinned(_ item: WallpaperItem, categoryID: Int) {
         setPinned(item, categoryID: categoryID)
     }
-}
 
+    func browserLoadedVideo(for item: WallpaperItem) -> LoadedVideo? {
+        guard let url = item.remoteURL else { return nil }
+        return engine.slotKeys().lazy.compactMap { key in
+            self.engine.loadedVideo(on: key)
+        }.first { $0.url == url }
+    }
+}

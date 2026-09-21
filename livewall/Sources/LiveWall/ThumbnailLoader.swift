@@ -1,4 +1,5 @@
 import AppKit
+import ImageIO
 import LiveWallCore
 
 /// 缩略图异步加载 + 内存缓存。
@@ -25,9 +26,9 @@ import LiveWallCore
 /// 字节数设成本**（不是按条数）—— 360×203 的位图约 292 KB，只按条数算的话
 /// 300 张就是 88 MB，在 8 GB 机器上不算小事。
 ///
-/// 并发约定与项目其它组件一致：**只在主线程使用**。`@MainActor` 把这条约定变成
-/// 编译器约束 —— 登记表、等待表、失败表都是一次性状态，靠「谁在什么时候调」来保证
-/// 安全是脆弱的（历史上这个项目正是在这类地方出过并发写崩溃）。
+/// 并发约定：登记表、等待表、失败表只由主 actor 读写；`@MainActor` 把这条约定变成
+/// 编译器约束。网络回调只做纯函数式的图片解码，再回主 actor 交付结果，
+/// 不直接碰这些状态。
 @MainActor
 final class ThumbnailLoader {
 
@@ -44,6 +45,13 @@ final class ThumbnailLoader {
             case .preview: return ThumbnailURL.previewCandidates(for: item)
             }
         }
+
+        var maxPixelSize: Int {
+            switch self {
+            case .grid: return ThumbnailURL.gridWidth
+            case .preview: return ThumbnailURL.previewWidth
+            }
+        }
     }
 
     var log: ((String) -> Void)?
@@ -53,6 +61,7 @@ final class ThumbnailLoader {
     private var tracker = ThumbnailRequestTracker(concurrencyLimit: 4)
     /// 已登记、还没拿到结果的 URL → 候选链（处理版 → 原图）。
     private var candidatesByKey: [String: [URL]] = [:]
+    private var variantsByKey: [String: Variant] = [:]
     /// 已经真正发起 `URLSession` 请求的 URL。
     private var startedKeys: Set<String> = []
     /// 已发起请求的句柄。`cancelAll()` 必须真正取消网络任务，不能只清状态。
@@ -109,6 +118,7 @@ final class ThumbnailLoader {
             }
             waiters[key] = [{ image in completion(item, image) }]
             candidatesByKey[key] = variant.candidates(for: item)
+            variantsByKey[key] = variant
             if seenFresh.insert(key).inserted { fresh.append(key) }
         }
 
@@ -144,6 +154,7 @@ final class ThumbnailLoader {
         tasksByKey.removeAll()
         startedKeys.removeAll()
         candidatesByKey.removeAll()
+        variantsByKey.removeAll()
         // 等待中的回调一并丢弃：调用方（卡片）此刻已经不在屏幕上了。
         waiters.removeAll()
     }
@@ -160,6 +171,7 @@ final class ThumbnailLoader {
             }
             for key in staleKeys {
                 candidatesByKey[key] = nil
+                variantsByKey[key] = nil
                 waiters[key] = nil
             }
             _ = tracker.submit([], replacingPending: true)
@@ -209,27 +221,36 @@ final class ThumbnailLoader {
         // 图片是不可变的，走本地 HTTP 缓存没问题。
         request.cachePolicy = .returnCacheDataElseLoad
 
+        let maxPixelSize = variantsByKey[key]?.maxPixelSize ?? ThumbnailURL.previewWidth
         let task = session.dataTask(with: request) { [weak self] data, response, error in
+            var decoded: CGImage?
+            if error == nil,
+               let http = response as? HTTPURLResponse,
+               http.statusCode == 200,
+               let data,
+               !data.isEmpty
+            {
+                // 兜底判定的**唯一**依据：返回的必须是图片。
+                // 不看体积 —— PNG 缩略图 115–193 KB，用阈值会把它错判成失败。
+                let contentType = (http.value(forHTTPHeaderField: "Content-Type") ?? "").lowercased()
+                if contentType.hasPrefix("image/") {
+                    decoded = Self.decodeThumbnail(data, maxPixelSize: maxPixelSize)
+                }
+            }
+
             DispatchQueue.main.async {
                 guard let self else { return }
                 // 请求可能在回调排队期间被取消；此时整个候选链已经失效。
                 guard self.candidatesByKey[key] != nil else { return }
                 self.tasksByKey[key] = nil
-                guard error == nil,
-                      let http = response as? HTTPURLResponse,
-                      http.statusCode == 200,
-                      let data, !data.isEmpty
-                else {
+                guard let decoded else {
                     self.attempt(key: key, candidates: candidates, index: index + 1)
                     return
                 }
-                // 兜底判定的**唯一**依据：返回的必须是图片。
-                // 不看体积 —— PNG 缩略图 115–193 KB，用阈值会把它错判成失败。
-                let contentType = (http.value(forHTTPHeaderField: "Content-Type") ?? "").lowercased()
-                guard contentType.hasPrefix("image/"), let image = NSImage(data: data) else {
-                    self.attempt(key: key, candidates: candidates, index: index + 1)
-                    return
-                }
+                let image = NSImage(
+                    cgImage: decoded,
+                    size: NSSize(width: decoded.width, height: decoded.height)
+                )
                 self.finish(key, image: image)
             }
         }
@@ -241,6 +262,7 @@ final class ThumbnailLoader {
         tasksByKey[key] = nil
         startedKeys.remove(key)
         candidatesByKey[key] = nil
+        variantsByKey[key] = nil
         let callbacks = waiters.removeValue(forKey: key) ?? []
         if let image {
             cache.setObject(image, forKey: key as NSString, cost: Self.estimatedBytes(of: image))
@@ -257,5 +279,17 @@ final class ThumbnailLoader {
     private static func estimatedBytes(of image: NSImage) -> Int {
         guard let rep = image.representations.first else { return 256 * 1024 }
         return max(rep.pixelsWide * rep.pixelsHigh * 4, 64 * 1024)
+    }
+
+    /// 在 `URLSession` 回调线程完成解码与降采样，避免主线程承担大图解码。
+    nonisolated private static func decodeThumbnail(_ data: Data, maxPixelSize: Int) -> CGImage? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
+            kCGImageSourceShouldCacheImmediately: true,
+        ]
+        return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
     }
 }

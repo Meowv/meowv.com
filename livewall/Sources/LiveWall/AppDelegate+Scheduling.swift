@@ -152,7 +152,14 @@ extension AppDelegate {
                     self.log("槽位 \(key.label) 的旧加载结果已过期，丢弃 \(item.id)")
                     return
                 }
-                self.engine.play(item, loaded: loaded, on: key)
+                self.engine.play(
+                    item,
+                    loaded: loaded,
+                    on: key,
+                    captureStillFrame: self.preferences.lockScreenPreview
+                        && item.coverImageURL == nil
+                        && key == self.engine.primaryKey
+                )
                 self.failuresBySlot[key] = 0
                 self.retriesBySlot[key] = 0
                 self.isHoldingForNetwork = false

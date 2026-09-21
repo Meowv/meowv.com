@@ -35,8 +35,9 @@ final class PreviewLayerView: NSView {
 ///
 /// ## 与桌面播放器的关系
 ///
-/// **两个完全独立的 `AVPlayer`**，同一个视频会有第二次下载。这是「用户主动点了预览」
-/// 才发生的代价 —— 默认只显示静态图（决策 4），不点就不花这份流量。
+/// **两个独立的 `AVPlayer`**，但同一条正在桌面播放时会复用桌面槽位的 `AVURLAsset`，
+/// 不产生第二次下载；只有预览别的条目才需要另建 asset。默认只显示静态图（决策 4），
+/// 用户不点预览就不会产生预览流量。
 ///
 /// 刻意**不暂停桌面播放**（决策 12）：预览是「挑一张」的辅助动作，
 /// 不该把正在看的壁纸弄停。
@@ -94,7 +95,10 @@ final class PreviewPlayer {
     // MARK: - 控制
 
     /// 开始预览播放。由卡片双击或 Hover 预览按钮触发。
-    func play(_ item: WallpaperItem) {
+    ///
+    /// `loadedVideo` 来自桌面播放槽位；同一条正在播时直接复用它的 asset，
+    /// 不再做 HEAD，也不会把同一段视频重新下载一遍。
+    func play(_ item: WallpaperItem, loadedVideo: LoadedVideo? = nil) {
         teardownPlayer()
         guard let url = item.remoteURL else {
             state = .failed(item.id, "资源不可用")
@@ -106,6 +110,11 @@ final class PreviewPlayer {
         let generation = self.generation
         state = .loading(item.id)
 
+        if let loadedVideo, loadedVideo.url == url {
+            startPlayback(item: item, loaded: loadedVideo)
+            return
+        }
+
         loadTask = Task { @MainActor in
             do {
                 let loaded = try await VideoLoader.load(url)
@@ -113,30 +122,33 @@ final class PreviewPlayer {
                     self.log?("预览 \(item.id) 的加载结果已过期，丢弃")
                     return
                 }
-                let player = AVQueuePlayer()
-                player.isMuted = true
-                // 预览不该阻止显示器休眠 —— 它只是右栏里的一小块画面。
-                player.preventsDisplaySleepDuringVideoPlayback = false
-                player.actionAtItemEnd = .advance
-
-                // 复用 `VideoLoader` 建好的 asset，不再 `AVPlayerItem(url:)` 新建 ——
-                // 那样会把同一个文件拉第二遍。
-                let playerItem = AVPlayerItem(asset: loaded.asset)
-                playerItem.preferredForwardBufferDuration = min(loaded.durationSeconds, 30)
-
-                self.looper = AVPlayerLooper(player: player, templateItem: playerItem)
-                self.queuePlayer = player
-                self.view.player = player
-                player.play()
-                self.state = .playing(item.id)
-                self.log?("预览播放 \(item.id) \(item.title)（\(loaded.resolutionText)，"
-                    + "\(String(format: "%.2f", loaded.durationSeconds))s）")
+                self.startPlayback(item: item, loaded: loaded)
             } catch {
                 guard generation == self.generation else { return }
                 self.state = .failed(item.id, "资源不可用")
                 self.log?("预览失败 \(item.id)：\(error.localizedDescription)")
             }
         }
+    }
+
+    private func startPlayback(item: WallpaperItem, loaded: LoadedVideo) {
+        let player = AVQueuePlayer()
+        player.isMuted = true
+        // 预览不该阻止显示器休眠 —— 它只是右栏里的一小块画面。
+        player.preventsDisplaySleepDuringVideoPlayback = false
+        player.actionAtItemEnd = .advance
+
+        // 复用 `VideoLoader` / 桌面槽位已经建好的 asset，不再 `AVPlayerItem(url:)` 新建。
+        let playerItem = AVPlayerItem(asset: loaded.asset)
+        playerItem.preferredForwardBufferDuration = min(loaded.durationSeconds, 30)
+
+        looper = AVPlayerLooper(player: player, templateItem: playerItem)
+        queuePlayer = player
+        view.player = player
+        player.play()
+        state = .playing(item.id)
+        log?("预览播放 \(item.id) \(item.title)（\(loaded.resolutionText)，"
+            + "\(String(format: "%.2f", loaded.durationSeconds))s）")
     }
 
     /// 彻底释放（关窗口 / 关浮层）。状态回到 `.idle`。

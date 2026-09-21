@@ -165,7 +165,14 @@ extension AppDelegate {
                         log("槽位 \(key.label) 的固定项加载结果已过期，跳过")
                         continue
                     }
-                    engine.play(item, loaded: loaded, on: key)
+                    engine.play(
+                        item,
+                        loaded: loaded,
+                        on: key,
+                        captureStillFrame: preferences.lockScreenPreview
+                            && item.coverImageURL == nil
+                            && key == engine.primaryKey
+                    )
                     namesBySlot[key] = item.displayName
                     failuresBySlot[key] = 0
                     retriesBySlot[key] = 0

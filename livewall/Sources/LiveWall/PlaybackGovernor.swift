@@ -41,9 +41,11 @@ private final class CleanupBox {
 ///
 /// 采集分两类：
 ///  - **事件驱动**（热压力）：系统发通知时立刻重算；
-///  - **轮询**（遮挡、空闲、电池、低电量）：每 2 秒采一次。遮挡判定要遍历窗口列表，
-///    挂在通知上没有对应事件；低电量模式的常量在 macOS SDK 里不存在，也只能轮询。
-///    2 秒的延迟对「暂停壁纸」这个用途完全够用。
+///  - **轮询**（遮挡、空闲、电池、低电量）：只有画面可能可见时才每 2 秒采一次。
+///    遮挡判定要遍历窗口列表，挂在通知上没有对应事件；低电量模式的常量在 macOS SDK
+///    里不存在，也只能轮询。2 秒的延迟对「暂停壁纸」这个用途完全够用。
+///  - **免轮询暂停**（手动暂停、锁屏、息屏）：这三项优先级最高，进入后停掉定时器，
+///    不再读电池、空闲时间或窗口列表；恢复由对应的用户操作 / 系统通知立即触发。
 ///
 /// **`@MainActor`**：定时器挂在 `RunLoop.main`、通知回调在主队列、
 /// 遮挡判定要读 `NSScreen.screens` —— 三者都要求主线程。
@@ -63,6 +65,7 @@ final class PlaybackGovernor {
 
     private(set) var signals: PlaybackSignals
     private(set) var state: PlaybackState = .playing
+    private var isStarted = false
 
     /// 状态翻转时回调（主线程）。只在真的变化时触发，不会每 2 秒刷一次。
     var onStateChange: ((PlaybackState, PlaybackSignals) -> Void)?
@@ -75,23 +78,15 @@ final class PlaybackGovernor {
     // MARK: - 生命周期
 
     func start() {
-        guard cleanup.timer == nil else { return }
+        guard !isStarted else { return }
+        isStarted = true
         observeSystemNotifications()
-
-        let timer = Timer(timeInterval: sampleInterval, repeats: true) { [weak self] _ in
-            // `Timer` 的 block 是 `@Sendable`（非隔离），而 `sampleAndResolve` 是
-            // 主线程隔离的 —— 必须显式回跳，不能直接调。定时器本来就挂在
-            // `RunLoop.main` 上，所以这次回跳只是把「编译器需要的那次声明」补上。
-            Task { @MainActor [weak self] in self?.sampleAndResolve() }
-        }
-        // .common 模式：菜单打开时也要继续采样
-        RunLoop.main.add(timer, forMode: .common)
-        cleanup.timer = timer
-
+        updatePollingTimer()
         sampleAndResolve()
     }
 
     func stop() {
+        isStarted = false
         cleanup.timer?.invalidate()
         cleanup.timer = nil
         for observer in cleanup.observers {
@@ -107,18 +102,21 @@ final class PlaybackGovernor {
         guard signals.userPaused != paused else { return }
         signals.userPaused = paused
         sampleAndResolve()
+        updatePollingTimer()
     }
 
     func setSessionLocked(_ locked: Bool) {
         guard signals.sessionLocked != locked else { return }
         signals.sessionLocked = locked
         sampleAndResolve()
+        updatePollingTimer()
     }
 
     func setDisplaySleeping(_ sleeping: Bool) {
         guard signals.displaySleeping != sleeping else { return }
         signals.displaySleeping = sleeping
         sampleAndResolve()
+        updatePollingTimer()
     }
 
     /// 立即重新采集并求值（例如刚改了配置）。
@@ -130,21 +128,54 @@ final class PlaybackGovernor {
 
     private func sampleAndResolve() {
         let resolver = resolverProvider()
-        // 配置关闭时跳过对应的系统调用，尤其是遮挡检测的全局窗口扫描。
-        signals.thermalPressure = resolver.pauseOnThermalPressure ? Self.currentThermalPressure() : .nominal
-        signals.lowPowerMode = resolver.pauseOnLowPowerMode
-            ? ProcessInfo.processInfo.isLowPowerModeEnabled
-            : false
-        signals.idleSeconds = resolver.pauseWhenIdle && resolver.idleThresholdSeconds > 0
-            ? Self.systemIdleSeconds()
-            : 0
-        signals.onBattery = resolver.pauseOnBattery ? Self.isOnBattery() : false
-        signals.screenFullyCovered = resolver.pauseWhenCovered ? Self.areAwakeScreensCovered() : false
+        if signals.userPaused || signals.sessionLocked || signals.displaySleeping {
+            // 这三项必然暂停，且恢复都有明确的事件入口。继续扫描窗口、电池和空闲时间
+            // 只会制造无意义的常驻唤醒。
+            signals.thermalPressure = .nominal
+            signals.lowPowerMode = false
+            signals.idleSeconds = 0
+            signals.onBattery = false
+            signals.screenFullyCovered = false
+        } else {
+            // 配置关闭时跳过对应的系统调用，尤其是遮挡检测的全局窗口扫描。
+            signals.thermalPressure = resolver.pauseOnThermalPressure ? Self.currentThermalPressure() : .nominal
+            signals.lowPowerMode = resolver.pauseOnLowPowerMode
+                ? ProcessInfo.processInfo.isLowPowerModeEnabled
+                : false
+            signals.idleSeconds = resolver.pauseWhenIdle && resolver.idleThresholdSeconds > 0
+                ? Self.systemIdleSeconds()
+                : 0
+            signals.onBattery = resolver.pauseOnBattery ? Self.isOnBattery() : false
+            signals.screenFullyCovered = resolver.pauseWhenCovered ? Self.areAwakeScreensCovered() : false
+        }
 
         let resolved = resolver.resolve(signals)
         guard resolved != state else { return }
         state = resolved
         onStateChange?(resolved, signals)
+    }
+
+    private func updatePollingTimer() {
+        let shouldPoll = isStarted && !signals.userPaused && !signals.sessionLocked && !signals.displaySleeping
+        if shouldPoll {
+            startPollingTimerIfNeeded()
+        } else {
+            cleanup.timer?.invalidate()
+            cleanup.timer = nil
+        }
+    }
+
+    private func startPollingTimerIfNeeded() {
+        guard cleanup.timer == nil else { return }
+        let timer = Timer(timeInterval: sampleInterval, repeats: true) { [weak self] _ in
+            // `Timer` 的 block 是 `@Sendable`（非隔离），而 `sampleAndResolve` 是
+            // 主线程隔离的 —— 必须显式回跳，不能直接调。定时器本来就挂在
+            // `RunLoop.main` 上，所以这次回跳只是把「编译器需要的那次声明」补上。
+            Task { @MainActor [weak self] in self?.sampleAndResolve() }
+        }
+        // .common 模式：菜单打开时也要继续采样
+        RunLoop.main.add(timer, forMode: .common)
+        cleanup.timer = timer
     }
 
     private func observeSystemNotifications() {

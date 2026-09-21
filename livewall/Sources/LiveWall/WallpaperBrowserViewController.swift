@@ -51,6 +51,10 @@ protocol WallpaperBrowserDataSource: AnyObject {
 
     /// 设为桌面壁纸。落实路径在 `AppDelegate.setPinned`。
     func browserSetPinned(_ item: WallpaperItem, categoryID: Int)
+
+    /// 当前桌面槽位若已经在播同一条，返回它已经建好的 asset，预览即可复用，
+    /// 不再发第二次 HEAD / 视频加载。
+    func browserLoadedVideo(for item: WallpaperItem) -> LoadedVideo?
 }
 
 /// 浮层容器本身不抢事件，真正的背景层负责关闭浮层。
@@ -791,7 +795,7 @@ final class WallpaperBrowserViewController: NSViewController {
         updatePreviewPanel()
         // 双击是明确的「我要看这一条」→ 直接开播。这与「选中即自动播」是两回事：
         // 后者会让方向键连翻几条就把每条视频都拉一遍 —— 决策 4 要防的就是那个。
-        previewPlayer.play(item)
+        previewPlayer.play(item, loadedVideo: dataSource?.browserLoadedVideo(for: item))
     }
 
     /// 关掉浮层并释放播放器。点 ✕ / 点背景 / Esc / 切分类都走这里。
@@ -867,7 +871,7 @@ final class WallpaperBrowserViewController: NSViewController {
     @objc private func retryPreview() {
         guard let item = previewItem else { return }
         loadPreviewCover(for: item)
-        previewPlayer.play(item)
+        previewPlayer.play(item, loadedVideo: dataSource?.browserLoadedVideo(for: item))
     }
 
     // 刻意**不提供**停止/暂停入口：弹窗打开即自动播放，且不可暂停或停止

@@ -17,7 +17,7 @@ import LiveWallCore
 ///
 /// 真正的重活在 `FileDownloader.download`（非隔离 async）里，所以标了
 /// `@MainActor` 之后 `download` 仍是「进主线程登记状态、await 时离开主线程」，
-/// 不会把逐字节下载搬到主线程上跑。
+/// 不会把分块下载搬到主线程上跑。
 @MainActor
 final class WallpaperDownloader {
 

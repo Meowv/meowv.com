@@ -48,8 +48,8 @@ extension AppDelegate {
             Task { @MainActor in
                 self?.governor.setSessionLocked(true)
                 // 把最近一次成功的静态图**再设一遍**：`setDesktopImageURL` 生效有延迟，
-                // 而锁屏正是「用户马上要看」的时刻。这里刻意不抓帧 —— 播放器已被
-                // governor 暂停，取不到新帧（见 `PlaybackEngine.currentFrame` 的说明）。
+                // 而锁屏正是「用户马上要看」的时刻。这里绝不现抓帧 —— 播放器已被
+                // governor 暂停，复用锁屏预览自己缓存的静态图即可。
                 self?.lockScreenPreviewer.reapplyCached()
             }
         }
@@ -140,7 +140,8 @@ extension AppDelegate {
     /// 把某张壁纸的静态图同步成系统墙纸（锁屏预览）。
     ///
     /// 用独立 Task：内部要下载几百 KB（最长 15 秒超时），不能挡住切换排期。
-    /// `frameProvider` 只在静态图不可用时才会被调用，那时播放器仍在播（下载通常几秒内结束）。
+    /// `frameProvider` 只在静态图不可用时才会被调用；它复用播放引擎异步缓存的帧，
+    /// 不会在主线程轮询等待。
     func refreshLockScreenPreview(for item: WallpaperItem, on key: PlaybackSlotKey) {
         let previewer = lockScreenPreviewer
         let policy = screenCoordinator.policy
@@ -148,7 +149,9 @@ extension AppDelegate {
             await previewer.update(
                 for: item,
                 multiScreenPolicy: policy,
-                frameProvider: { self?.engine.currentFrame(on: key) }
+                frameProvider: { [weak self] in
+                    await self?.engine.currentFrame(on: key)
+                }
             )
         }
     }

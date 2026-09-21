@@ -89,7 +89,7 @@ extension AppDelegate {
 
     /// 切换壁纸来源。
     ///
-    /// 选「本地」时先开面板选文件夹、**当场试扫一遍**，扫不出 mp4 就地提示并且
+    /// 选「本地」时先开面板选文件夹、**后台试扫一遍**，扫不出 mp4 就地提示并且
     /// **不写配置** —— 让用户选了「本地」却因为挑了个空文件夹而静默停在旧来源上，
     /// 是最难排查的一种表现（菜单勾选和实际来源对不上）。
     ///
@@ -106,6 +106,8 @@ extension AppDelegate {
             // 但配置里还留着路径 —— 这时点「线上」应该把那份路径清掉（用户明确不要它了），
             // 而不是因为「已经是线上」就静默吞掉这次点击。
             guard preferences.resolvedLocalFolderURL != nil else { return }
+            // 用户明确切回线上：正在后台跑的本目录扫描结果必须作废。
+            localScanGeneration += 1
             isLocalSource = false
             preferences.localFolderPath = nil
             persistPreferences("壁纸来源：线上清单")
@@ -116,25 +118,8 @@ extension AppDelegate {
 
         case .local:
             guard let folder = chooseLocalFolder() else { return }
-            let items: [WallpaperItem]
-            do {
-                items = try LocalVideoSource.items(in: folder)
-            } catch {
-                let reason =
-                    (error as? LocalVideoSource.SourceError)?.errorDescription
-                    ?? error.localizedDescription
-                log("⚠️ 选中的文件夹不能用：\(reason)")
-                notice = .warning("这个文件夹不能用（\(reason)），仍用当前来源")
-                refreshStatusItem()
-                return
-            }
-
-            preferences.localFolderPath = folder.path
-            persistPreferences("壁纸来源：本地文件夹")
-            log("壁纸来源改为本地文件夹：\(folder.path)")
-            // 换文件夹后候选集整体换了，「这块屏上次播的那条」不再适用。
-            pendingRestore.removeAll()
-            applyLocalItems(items, folder: folder, isFirstLoad: false)
+            log("正在扫描本地文件夹：\(folder.path)")
+            scanLocalFolder(folder, isFirstLoad: false, persistFolderPath: true)
         }
     }
 
