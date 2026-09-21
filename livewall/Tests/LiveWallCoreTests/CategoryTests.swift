@@ -173,6 +173,16 @@ func categoryTests() {
             )
         }
 
+        test("本地来源下的根项标题写明原因") {
+            // 本地文件夹没有分类概念，菜单里这一项整项置灰。灰着一行什么都不写，
+            // 用户只会以为功能坏了 —— 所以标题必须说明「为什么不可点」。
+            expectEqual(
+                CategoryMenu.localSourceRootTitle,
+                "内容过滤（本地文件夹）",
+                "本地来源下的标题"
+            )
+        }
+
         test("选中的分类已不在清单里时显示 id，不显示空白") {
             expectEqual(
                 CategoryMenu.rootTitle(categories: categories, selectedID: 7777),

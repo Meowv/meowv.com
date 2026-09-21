@@ -139,6 +139,11 @@ public struct FailurePolicy: Sendable {
                 return .notPlayable(loadError.localizedDescription)
             case .network(let detail):
                 return .transientNetwork(detail)
+            // 本地文件读不到是**资源问题**，不是网络问题：按网络类处理会被
+            // `action(for:...)` 判成 `.holdCurrent`（保持当前画面并反复重试），
+            // 而正确处置是拉黑这一条、换下一条。
+            case .fileUnreadable:
+                return .notPlayable(loadError.localizedDescription)
             }
         }
 

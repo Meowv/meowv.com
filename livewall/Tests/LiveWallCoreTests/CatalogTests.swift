@@ -237,6 +237,19 @@ func catalogTests() {
             expectEqual(clean.items.first?.id, 1, "保留的 id")
         }
 
+        test("playableURL 接受 http(s) 与 file://，其余一律不可播") {
+            // 本地文件夹数据源（`LocalVideoSource`）生成的条目地址是 `file://`。
+            // 播放侧若仍用 `remoteURL` 判定，这些条目会被一律判成非法 ——
+            // 候选池里灌进去了却播不了，本地固定项还会被 `Preferences.sanitized()` 清掉。
+            let remote = WallpaperItem(id: 1, title: "T", author: "", url: "https://cdn.test/a.mp4")
+            expectNotNil(remote.playableURL, "http(s) 可播")
+            let local = WallpaperItem(id: 2, title: "T", author: "", url: "file:///Users/x/Movies/a.mp4")
+            expectEqual(local.playableURL?.path, "/Users/x/Movies/a.mp4", "本地文件可播")
+            expectNil(local.remoteURL, "remoteURL 仍只认 http(s)（远端清洗与下载用它）")
+            expectNil(WallpaperItem(id: 3, title: "T", author: "", url: "").playableURL, "空串不可播")
+            expectNil(WallpaperItem(id: 4, title: "T", author: "", url: "ftp://x/a.mp4").playableURL, "其它 scheme 不可播")
+        }
+
         test("remoteURL 与 displayName") {
             let item = WallpaperItem(id: 1, title: "标题", author: "作者", url: "https://cdn.test/a.mp4")
             expectNotNil(item.remoteURL, "remoteURL")

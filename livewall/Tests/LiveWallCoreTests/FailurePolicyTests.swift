@@ -77,6 +77,21 @@ func failurePolicyTests() {
             }
         }
 
+        test("本地文件不可读归为资源问题，不是网络问题") {
+            // 本地文件夹数据源里文件被删/被移走时走这条路。若归成网络类，
+            // `action(for:...)` 会返回 `.holdCurrent` —— 失效条目留在池子里反复重试；
+            // 正确处置是拉黑这一条、换下一条。
+            expectEqual(
+                FailurePolicy.classify(VideoLoadError.fileUnreadable("/tmp/a.mp4")),
+                .notPlayable("本地文件不可读：/tmp/a.mp4"),
+                "本地文件不可读"
+            )
+            expect(
+                FailurePolicy.classify(VideoLoadError.fileUnreadable("/tmp/a.mp4")).isResourceProblem,
+                "应被判定为资源问题"
+            )
+        }
+
         test("无法归类的错误归为 unknown") {
             if case .unknown = FailurePolicy.classify(httpError("something went wrong")) {
                 expect(true, "未知错误")

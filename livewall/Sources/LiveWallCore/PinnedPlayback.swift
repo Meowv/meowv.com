@@ -75,10 +75,13 @@ public enum PinnedPlayback {
 
     /// 固定项的播放地址是否可用。
     ///
-    /// 判定复用 `WallpaperItem.remoteURL` 的既有校验（空串 / 非 http(s) 一律非法），
-    /// **不另写一套规则** —— 配置里手改过的 `pinnedItem` 与清单里的条目必须同一口径，
-    /// 否则会出现「菜单显示已固定、实际播不出来」。
+    /// 判定复用 `WallpaperItem.playableURL` 的既有校验（空串 / 非 http(s) 或 `file://`
+    /// 一律非法），**不另写一套规则** —— 配置里手改过的 `pinnedItem` 与清单里的条目
+    /// 必须同一口径，否则会出现「菜单显示已固定、实际播不出来」。
+    ///
+    /// 刻意**不**用 `remoteURL`：本地文件夹数据源（`LocalVideoSource`）的条目地址是
+    /// `file://`，用它判定会把「固定一条本地视频」判成非法。
     public static func isPlayable(_ item: WallpaperItem) -> Bool {
-        item.remoteURL != nil
+        item.playableURL != nil
     }
 }

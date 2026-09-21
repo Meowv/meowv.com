@@ -20,6 +20,12 @@ public struct CategoryMenuEntry: Equatable, Sendable {
 /// 内容过滤子菜单的内容。只有纯函数，不碰 `NSMenu`。
 public enum CategoryMenu {
 
+    /// 本地文件夹来源下的根项标题。
+    ///
+    /// 本地文件夹没有分类概念，整项置灰，标题如实说明**为什么**不可点 ——
+    /// 灰着一行什么都不写，用户只会以为功能坏了。
+    public static let localSourceRootTitle = "内容过滤（本地文件夹）"
+
     /// 子菜单的行，顺序沿用索引里 `categories` 的顺序（默认分类在首位）。
     public static func entries(
         categories: [LivewallCategoryEntry],

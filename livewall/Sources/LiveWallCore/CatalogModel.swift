@@ -221,6 +221,21 @@ public struct WallpaperItem: Codable, Sendable, Equatable, Identifiable {
         return url
     }
 
+    /// 解析后的**播放**地址，接受 http(s) 与 `file://` 两种。
+    ///
+    /// 与 `remoteURL` 的分工：`remoteURL` 是「远端清单里的条目」这个概念的一部分
+    /// （`CatalogCoding.sanitize` 与「下载当前壁纸」只认它），而播放侧要的是
+    /// 「这条到底能不能开播」—— 本地文件夹数据源（`LocalVideoSource`）生成的条目
+    /// 地址是 `file://`，用 `remoteURL` 判定会被一律判成非法：
+    /// 候选池里灌进去却播不了、本地固定项还会被 `Preferences.sanitized()` 静默清掉。
+    ///
+    /// 因此**播放路径上的判定一律走这里**，不要再退回 `remoteURL`。
+    public var playableURL: URL? {
+        guard let url = URL(string: url), let scheme = url.scheme?.lowercased() else { return nil }
+        if scheme == "file" { return url.isFileURL ? url : nil }
+        return scheme == "https" || scheme == "http" ? url : nil
+    }
+
     /// 解析后的静态图地址。与 `remoteURL` 同一套校验：空串与非 http(s) 一律视为不可用
     /// （清单来自数据库，不能假定字段内容合法）。
     public var coverImageURL: URL? {

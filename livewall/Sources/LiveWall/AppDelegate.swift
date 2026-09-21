@@ -1,5 +1,5 @@
-import AppKit
 import AVFoundation
+import AppKit
 import LiveWallCore
 import LiveWallDesktop
 
@@ -11,13 +11,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // 配置
     private var preferences = Preferences.default
-    private lazy var configURL: URL = Self.applicationSupportDirectory.appendingPathComponent("config.json")
+    /// 路径统一来自 `LiveWallPaths`（配置 / 缓存 / 日志 / 单实例锁的唯一来源）——
+    /// 启动早期（`main.swift` 取锁、写日志）也要用同一份，不能各写一份。
+    private lazy var configURL: URL = LiveWallPaths.applicationSupportDirectory
+        .appendingPathComponent("config.json")
     /// 索引副本缓存（几百字节）。
-    private lazy var indexCacheURL: URL = Self.applicationSupportDirectory
+    private lazy var indexCacheURL: URL = LiveWallPaths.applicationSupportDirectory
         .appendingPathComponent("catalog.remote-cache.index.json")
     /// 分类切片副本缓存。**只有一份** —— 配置里的 `selectedCategoryID` 就是
     /// 「上次成功加载的那个分类」，所以启动时读回来的必然对得上（另有归属校验兜底）。
-    private lazy var sliceCacheURL: URL = Self.applicationSupportDirectory
+    private lazy var sliceCacheURL: URL = LiveWallPaths.applicationSupportDirectory
         .appendingPathComponent("catalog.remote-cache.slice.json")
     /// 已经废弃的清单缓存，启动时清掉。
     ///
@@ -25,9 +28,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 早已移除，没有任何代码读它）；另外两个分别是 `livewall.json` 时代的单文件缓存
     /// （里面每条候选都没有 `categoryIds`）与上一版含全量 4.9 MB 条目的「总文件」。
     private lazy var legacyCacheURLs: [URL] = [
-        Self.applicationSupportDirectory.appendingPathComponent("catalog.json"),
-        Self.applicationSupportDirectory.appendingPathComponent("catalog.remote-cache.json"),
-        Self.applicationSupportDirectory.appendingPathComponent("catalog.remote-cache.catalog.json"),
+        LiveWallPaths.applicationSupportDirectory.appendingPathComponent("catalog.json"),
+        LiveWallPaths.applicationSupportDirectory.appendingPathComponent(
+            "catalog.remote-cache.json"),
+        LiveWallPaths.applicationSupportDirectory.appendingPathComponent(
+            "catalog.remote-cache.catalog.json"),
     ]
 
     // 组件
@@ -38,7 +43,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let processMonitor = ProcessMonitor()
     /// 锁屏预览：把当前壁纸的静态图同步成系统墙纸（桌面态被覆盖窗口挡住，只在锁屏可见）。
     private lazy var lockScreenPreviewer = LockScreenPreviewer(
-        cacheDirectory: Self.applicationSupportDirectory
+        cacheDirectory: LiveWallPaths.applicationSupportDirectory
     )
     /// 手动下载当前壁纸（视频 + 静态预览图）到 `~/Downloads/livewall/`。
     private lazy var downloader = WallpaperDownloader()
@@ -52,6 +57,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self?.preferences.playbackStateResolver ?? PlaybackStateResolver()
     })
     private var pool = CandidatePool()
+
+    // 壁纸来源
+    /// 本地文件夹**此刻是否生效**（配置里有路径，且最近一次扫描成功）。
+    ///
+    /// 刻意与「配置里是否写了路径」（`preferences.resolvedLocalFolderURL != nil`）分开：
+    /// 外接盘拔掉时配置**保留**路径（插回来、或按 ⌥⌘R 重扫即可恢复），但此刻播的是线上
+    /// 清单。菜单、内容过滤的置灰、下载的置灰都必须按**实际在用的来源**显示 ——
+    /// 否则会出现「菜单写着本地、画面里却是线上片单」这种自相矛盾的状态。
+    ///
+    /// 写入口只有三个：`applyLocalItems`（扫描成功）、`startLocalSource` 的失败回退、
+    /// `selectSource(.remote)`。
+    private var isLocalSource = false
+
+    /// 来源切换的说明还没给出去（见 `consumePendingSourceNotice`）。
+    ///
+    /// 与 `pendingUnpinNotice` 同因同果：本地文件夹失效时会先写一句「已回到线上清单」，
+    /// 紧接着线上加载成功会执行 `notice = nil`（清掉上一次的异常），那句话一次都没
+    /// 显示过就被冲掉 —— 而用户恰恰需要知道画面为什么换了内容。
+    private var pendingSourceNotice: String?
 
     // 固定为桌面壁纸
     /// 是否处于固定态。
@@ -98,7 +122,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var loadTasksBySlot: [PlaybackSlotKey: Task<Void, Never>] = [:]
     /// 同一 URL 的并发准入校验只执行一次。多屏候选不足时，多个槽位会共享同一条视频。
     /// 这里只做 in-flight 去重，不长期缓存 `AVURLAsset`，避免把大型资源留在内存中。
+    ///
+    /// ⚠️ **读写一律经下面三个辅助函数，不要直接下标访问**。`loadVideo` 是**非隔离的
+    /// async 函数**，函数体跑在协作线程池上（不是主线程）；每屏独立模式下两个槽位会同时
+    /// 取片，于是两个线程同时改这张表 —— Swift 的 `Dictionary` 不是线程安全的，实测会
+    /// **损坏存储指针并直接崩**：`Dictionary._Variant.setValue` 里
+    /// `-[NSTaggedPointerString count]: unrecognized selector sent to instance 0x8000…`。
+    /// 已用同构探针稳定复现（不安全版必崩，加锁版 3/3 干净）。
     private var sharedVideoLoads: [URL: Task<LoadedVideo, Error>] = [:]
+    private let sharedVideoLoadsLock = NSLock()
 
     /// 待恢复的每屏源（displayID → 条目 id）。见 `ScreenSourceRestore`。
     ///
@@ -213,12 +245,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 用户手动暂停。真值存在 governor 的信号里，这里只是方便读取。
     private var isUserPaused: Bool { governor.signals.userPaused }
 
-    private static var applicationSupportDirectory: URL {
-        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
-            ?? URL(fileURLWithPath: NSTemporaryDirectory())
-        return base.appendingPathComponent("com.meowv.livewall", isDirectory: true)
-    }
-
     override init() {
         preferences = Preferences.default
         screenCoordinator = ScreenCoordinator(level: Preferences.default.levelPreset.level)
@@ -228,6 +254,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - 生命周期
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // 先写下「本次是哪个进程」：两个实例曾同时跑过（单实例锁就是为此加的），
+        // 排障时必须能从日志分辨哪几条属于哪个副本 —— pid + 包路径是唯一可靠的依据。
+        log("启动实例 pid=\(getpid()) 路径=\(Bundle.main.bundleURL.path)")
+
+        // 单实例锁的持有者通知：新实例被挡掉时会发这个通知，这里给用户一句回执 ——
+        // 否则「第二次点了没反应」会被当成 App 坏了。
+        DistributedNotificationCenter.default().addObserver(
+            forName: SingleInstance.duplicateLaunchNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            self.notice = .info("已阻止重复启动（新实例已退出）")
+            self.log("收到重复启动通知：已挡掉的新实例退出，本实例继续运行")
+            self.refreshStatusItem()
+        }
+
         // 自身完整性自检。**只记日志、不阻断** —— 理由见 `Seal`：
         // 本 App 是 ad-hoc 签名，重签即可绕过，拿它拦启动只会误伤正常用户。
         reportSeal()
@@ -328,24 +371,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
             guard let self else { return }
 
-            let calibration = self.screenCoordinator.calibrate(startingFrom: self.preferences.levelPreset)
+            let calibration = self.screenCoordinator.calibrate(
+                startingFrom: self.preferences.levelPreset)
             self.syncPlaybackSlots()
 
-            self.log("屏幕 \(self.screenCoordinator.screenCount) 块，窗口 \(self.screenCoordinator.windows.count) 个")
+            self.log(
+                "屏幕 \(self.screenCoordinator.screenCount) 块，窗口 \(self.screenCoordinator.windows.count) 个"
+            )
             for attempt in calibration.attempts {
-                self.log("  尝试 \(attempt.preset.shortLabel)(\(attempt.preset.level))：\(attempt.verdict.summary)")
+                self.log(
+                    "  尝试 \(attempt.preset.shortLabel)(\(attempt.preset.level))：\(attempt.verdict.summary)"
+                )
                 for note in attempt.verdict.notes { self.log("    · \(note)") }
             }
             self.log("层级自检：\(calibration.verdict.summary)")
             if calibration.preset != self.preferences.levelPreset {
-                self.log("基线层级 \(self.preferences.levelPreset.shortLabel) 未通过，降级为 \(calibration.preset.shortLabel)")
+                self.log(
+                    "基线层级 \(self.preferences.levelPreset.shortLabel) 未通过，降级为 \(calibration.preset.shortLabel)"
+                )
             }
 
             // 自检未通过时才把窗口实况打出来，便于定位；正常路径不刷日志
             if !calibration.verdict.isHealthy {
                 let numbers = self.screenCoordinator.windowNumbers
-                for record in WindowInspector.snapshot() where numbers.contains(record.windowNumber) {
-                    self.log("  窗口 #\(record.windowNumber) layer=\(record.layer) bounds=\(record.boundsText) 覆盖整屏=\(WindowInspector.coversAnyScreen(record.bounds))")
+                for record in WindowInspector.snapshot() where numbers.contains(record.windowNumber)
+                {
+                    self.log(
+                        "  窗口 #\(record.windowNumber) layer=\(record.layer) bounds=\(record.boundsText) 覆盖整屏=\(WindowInspector.coversAnyScreen(record.bounds))"
+                    )
                 }
             }
 
@@ -356,7 +409,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // 建菜单的一次性开销算进来。实测那样会显示「CPU 85%（自启动 0 秒）」，
             // 看着像 App 吃满 CPU，其实只是启动那几百毫秒。
             self.processMonitor.prepareBaseline()
-            self.loadCatalogAndStart()
+            // 壁纸来源二选一：配置了本地文件夹就直接扫它，**完全不碰远端清单** ——
+            // 本地模式的意义就是离线可用，顺手拉一次索引只会白费流量。
+            if let folder = self.preferences.resolvedLocalFolderURL {
+                self.startLocalSource(folder, isFirstLoad: true)
+            } else {
+                self.loadCatalogAndStart()
+            }
             // 版本检查刻意排在最后并再延后几秒：清单加载与首次取片正在抢网络，
             // 不该跟着挤。失败一律静默，不影响 App 正常用。
             DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in
@@ -377,8 +436,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         scheduleTimer?.invalidate()
         for task in loadTasksBySlot.values { task.cancel() }
         loadTasksBySlot.removeAll()
-        for task in sharedVideoLoads.values { task.cancel() }
-        sharedVideoLoads.removeAll()
+        for task in drainSharedLoads() { task.cancel() }
         network.stop()
         persistScreenSources()
         // 退出要的是「把当前播放的静态图留在桌面上」，**不是**恢复用户原墙纸 ——
@@ -435,6 +493,88 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         preferences.gravity == "fit" ? .resizeAspect : .resizeAspectFill
     }
 
+    // MARK: - 本地文件夹数据源
+
+    /// 扫描本地文件夹并切换过去。失败时**保留配置里的路径**并回退线上清单。
+    ///
+    /// 与线上路径的对应关系：`loadCatalogAndStart` + `applySliceResult` 两步在这里合成
+    /// 一步 —— 本地没有索引与切片之分，扫描是同步的（一个几千文件的目录也在毫秒级），
+    /// 为它引入异步只会多出一层「结果回来时状态已变」的核对。
+    ///
+    /// - Parameter isFirstLoad: 是否算「本次启动的第一次加载」。只有它为真时才恢复
+    ///   每屏源记忆（与线上路径同一条规则：手动重载时各屏已经记着当前条目，
+    ///   再恢复一次等于把同一段视频重新拉一遍）。
+    private func startLocalSource(_ folder: URL, isFirstLoad: Bool) {
+        let items: [WallpaperItem]
+        do {
+            items = try LocalVideoSource.items(in: folder)
+        } catch {
+            let reason =
+                (error as? LocalVideoSource.SourceError)?.errorDescription
+                ?? error.localizedDescription
+            log("⚠️ 本地文件夹不可用：\(reason)")
+            // 配置里的路径**保留**（外接盘插回来、或 ⌥⌘R 重扫即可恢复），
+            // 但生效来源翻回线上 —— 菜单必须如实显示。
+            isLocalSource = false
+            let message = "本地文件夹不可用（\(reason)），已回到线上清单"
+            pendingSourceNotice = message
+            notice = .warning(message)
+            refreshStatusItem()
+            loadCatalogAndStart()
+            return
+        }
+        applyLocalItems(items, folder: folder, isFirstLoad: isFirstLoad)
+    }
+
+    /// 把已经扫到的本地条目灌进候选池并开播。
+    ///
+    /// 单独抽出来是为了让「用户刚选完文件夹」那条路径**只扫一次**：
+    /// 先试扫校验、成功再进来，而不是校验一遍、启用时再扫一遍。
+    private func applyLocalItems(_ items: [WallpaperItem], folder: URL, isFirstLoad: Bool) {
+        isLocalSource = true
+        failuresBySlot.removeAll()
+        retriesBySlot.removeAll()
+        // 换来源等于换了一整片候选集，上一次的异常提示（分类加载失败等）不再成立。
+        notice = nil
+
+        pool.order = preferences.playbackOrder
+        pool.setItems(items)
+        log("壁纸来源：本地文件夹 \(folder.path)，\(items.count) 个 mp4")
+
+        if isFirstLoad && !isPinned {
+            // 本地条目的 id 是路径哈希，跨重启稳定，所以每屏源记忆在本地模式下同样有效。
+            // 从线上切过来时记忆里的 id 一条都匹配不上（plan 会算成空），各屏正常取片。
+            pendingRestore = ScreenSourceRestore.plan(
+                store: preferences.perScreenSources,
+                candidateIDs: Set(items.map(\.id))
+            )
+            if !pendingRestore.isEmpty {
+                let detail = pendingRestore.map { "屏\($0.key)→\($0.value)" }.sorted().joined(
+                    separator: "、")
+                log("待恢复的每屏源 \(pendingRestore.count) 条：\(detail)")
+            }
+        }
+
+        refreshStatusItem()
+
+        // 固定态：不轮换，核一遍固定项即可（与线上路径同一处置）。
+        guard !isPinned else {
+            applyPinToMissingSlots()
+            return
+        }
+        advance()
+    }
+
+    /// 把「来源切换」留下的说明重新挂回状态区。
+    ///
+    /// 线上加载成功会把 `notice` 清成 nil（那是「清掉上一次的异常」的正常行为），
+    /// 而「本地文件夹不可用，已回到线上清单」正是**在它之前**写下的、用户必须看到的一句。
+    private func consumePendingSourceNotice() {
+        guard let message = pendingSourceNotice else { return }
+        pendingSourceNotice = nil
+        notice = .warning(message)
+    }
+
     // MARK: - 清单
 
     /// 清单由两个文件组成，启动时按顺序拉：
@@ -470,6 +610,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         service: CatalogService,
         requested: Int?
     ) {
+        // 与 `applySliceResult` 同一条理由：本地来源生效期间，线上回包（含失败回包）
+        // 一律丢弃 —— 否则会把「没有可用的清单」这类提示写到正在播本地视频的状态区上，
+        // 也会让索引与生效来源对不上。切回线上时会重新加载一次。
+        guard !isLocalSource else {
+            log("本地来源已生效，丢弃线上索引结果")
+            return
+        }
+
         guard let loaded = result.index, let origin = result.origin else {
             // 失败原因必须打出来：DNS / TLS / 超时 / 解析 各对应完全不同的处理
             for warning in result.warnings { log("  ⚠︎ \(warning)") }
@@ -511,7 +659,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     self.log("丢弃过期的分类切片结果（\(entry.name)，id \(entry.id)）")
                     return
                 }
-                self.applySliceResult(result, entry: entry, service: service, isFirstLoad: isFirstLoad)
+                self.applySliceResult(
+                    result, entry: entry, service: service, isFirstLoad: isFirstLoad)
             }
         }
     }
@@ -522,6 +671,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         service: CatalogService,
         isFirstLoad: Bool
     ) {
+        // 本地来源生效期间**丢弃线上结果**：用户可能在启动那一下（索引 / 切片还在路上）
+        // 就切到了本地文件夹，回包若照常灌进候选池，就会出现「来源显示本地、池子里却是
+        // 线上条目」——菜单、置灰、固定时的分类同步全都按「本地」判定，前后自相矛盾。
+        // 请求序号挡不住这种情况：它不是「过期请求」，而是一次**来源已变**的有效回包。
+        guard !isLocalSource else {
+            log("本地来源已生效，丢弃线上切片结果（\(entry.name)）")
+            return
+        }
+
         guard let slice = result.catalog, let origin = result.origin else {
             // 刻意不动播放器：保持当前画面比黑屏好。
             // 首次加载时池子是空的，没有「当前画面」可保持，文案要说实话。
@@ -558,6 +716,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // 成功取到内容后 `loadAndPlay` 会重排定时器，恢复播放时
         // `applyPlaybackState(.playing)` 也会重排。
         notice = nil
+        // 但「本地文件夹失效、已回到线上清单」那句必须留住 —— 它正是在这次加载之前
+        // 写下的，`advance()` 若因暂停/耗尽提前返回，光靠 `loadAndPlay` 兜不住。
+        consumePendingSourceNotice()
 
         // 只有真的拿到内容才更新选中项：拉取失败时保持旧值，
         // 菜单的勾选与池子里的内容才不会打架。
@@ -586,10 +747,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 candidateIDs: Set(slice.items.map(\.id))
             )
             if !pendingRestore.isEmpty {
-                let detail = pendingRestore.map { "屏\($0.key)→\($0.value)" }.sorted().joined(separator: "、")
+                let detail = pendingRestore.map { "屏\($0.key)→\($0.value)" }.sorted().joined(
+                    separator: "、")
                 log("待恢复的每屏源 \(pendingRestore.count) 条：\(detail)")
             } else if preferences.multiScreenPolicy == .perScreen,
-                      preferences.perScreenSources.count > 0 {
+                preferences.perScreenSources.count > 0
+            {
                 log("每屏源记忆里的条目都不在当前分类，本轮各屏重新取片")
             }
         }
@@ -613,8 +776,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         advance()
     }
-
-
 
     // MARK: - 内容分类
 
@@ -696,8 +857,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // 取不到（条目已不属于当前分类 / 已被清单移除）就落下去正常取片 ——
             // 绝不能因为查不到就让这块屏空着。
             if let displayID = key.displayID,
-               let remembered = restorePlan[displayID],
-               let item = pool.restore(id: remembered) {
+                let remembered = restorePlan[displayID],
+                let item = pool.restore(id: remembered)
+            {
                 log("恢复 \(key.label) 上次播放的条目 \(item.id)")
                 picked.append((key, item))
                 continue
@@ -750,7 +912,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let generation = (loadGenerationBySlot[key] ?? 0) + 1
         loadGenerationBySlot[key] = generation
 
-        guard let url = item.remoteURL else {
+        // 播放地址用 `playableURL`（http(s) 或 file://），**不是** `remoteURL` ——
+        // 后者只认 http(s)，本地文件夹数据源的条目会被一律判成非法。
+        guard let url = item.playableURL else {
             log("跳过 URL 非法的条目 \(item.id)（\(key.label)）")
             pool.blacklist(id: item.id)
             // 失效的正是固定项 → 自动解钉（决策 8），然后**全局** `advance()`
@@ -793,11 +957,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 // 成功加载会清掉上一次的异常提示。但**解钉提示要留住** ——
                 // 用户需要知道画面为什么突然换了（固定项失效），而那句话正是在
                 // 本次加载之前写下的，直接 `= nil` 会让它一次都看不见。
-                self.notice = self.pendingUnpinNotice.map { Notice.warning($0) }
-                self.pendingUnpinNotice = nil
-                self.log("播放 \(item.id) \(item.title)(\(loaded.resolutionText)) 时长 "
-                    + "\(String(format: "%.2f", loaded.durationSeconds))s 编码 \(loaded.codec)"
-                    + " [\(key.label)]")
+                // 「来源切换」的说明同理（本地文件夹失效 → 已回到线上清单）。
+                if let unpin = self.pendingUnpinNotice {
+                    self.notice = .warning(unpin)
+                    self.pendingUnpinNotice = nil
+                    self.pendingSourceNotice = nil
+                } else {
+                    self.notice = nil
+                    self.consumePendingSourceNotice()
+                }
+                self.log(
+                    "播放 \(item.id) \(item.title)(\(loaded.resolutionText)) 时长 "
+                        + "\(String(format: "%.2f", loaded.durationSeconds))s 编码 \(loaded.codec)"
+                        + " [\(key.label)]")
                 // 锁屏预览：把这张的静态图同步成系统墙纸。**只跟随主槽位** ——
                 // 系统墙纸全局只有一张，多槽位（每屏独立）时以主槽位为准。
                 // 必须在**播放中**发起：抓帧兜底要求播放器在播，而锁屏通知到达时
@@ -832,19 +1004,49 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// 共享同一 URL 的并发准入校验，完成后立即移除任务引用。
     private func loadVideo(_ url: URL) async throws -> LoadedVideo {
-        if let existing = sharedVideoLoads[url] {
-            return try await existing.value
-        }
+        let (task, isNew) = takeSharedLoad(for: url)
+        // 只有**建表的那一次**负责删表。让复用方也删的话，会把还在被其它槽位等待的
+        // 条目提前摘掉，下一个调用方就会再拉一遍同一条视频（等于去重失效）。
+        defer { if isNew { releaseSharedLoad(for: url) } }
+        return try await task.value
+    }
+
+    /// 取回或创建某个 URL 的共享加载任务。
+    ///
+    /// **检查与插入必须在同一把锁里**：分开做的话两个槽位可能同时未命中，同一条视频
+    /// 被并发拉两遍 —— 而那正是这张表存在的理由（`AGENTS.md`：一个视频只建一个 asset，
+    /// 否则流量翻倍）。
+    private func takeSharedLoad(for url: URL) -> (task: Task<LoadedVideo, Error>, isNew: Bool) {
+        sharedVideoLoadsLock.lock()
+        defer { sharedVideoLoadsLock.unlock() }
+        if let existing = sharedVideoLoads[url] { return (existing, false) }
         let task = Task { () throws -> LoadedVideo in
             try await VideoLoader.load(url)
         }
         sharedVideoLoads[url] = task
-        defer { sharedVideoLoads[url] = nil }
-        return try await task.value
+        return (task, true)
+    }
+
+    private func releaseSharedLoad(for url: URL) {
+        sharedVideoLoadsLock.lock()
+        defer { sharedVideoLoadsLock.unlock() }
+        sharedVideoLoads[url] = nil
+    }
+
+    /// 退出时取出并清空全部在飞的共享加载。**取消动作放在锁外**：`cancel()` 会跑
+    /// 其它线程上的取消处理器，不该在持锁时调用。
+    private func drainSharedLoads() -> [Task<LoadedVideo, Error>] {
+        sharedVideoLoadsLock.lock()
+        defer { sharedVideoLoadsLock.unlock() }
+        let tasks = Array(sharedVideoLoads.values)
+        sharedVideoLoads.removeAll()
+        return tasks
     }
 
     /// 加载失败的统一出口。
-    private func handleLoadFailure(_ error: Error, item: WallpaperItem, attempt: Int, on key: PlaybackSlotKey) {
+    private func handleLoadFailure(
+        _ error: Error, item: WallpaperItem, attempt: Int, on key: PlaybackSlotKey
+    ) {
         let kind = FailurePolicy.classify(error)
         let failures = (failuresBySlot[key] ?? 0) + 1
         let action = failurePolicy.action(
@@ -890,9 +1092,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 全局定时器照常走，下次切换时它会重新取片。
     private func stopSchedulingForFailedSlot(_ key: PlaybackSlotKey) {
         let keys = engine.slotKeys()
-        let allFailed = !keys.isEmpty && keys.allSatisfy {
-            (failuresBySlot[$0] ?? 0) >= failurePolicy.maxConsecutiveFailures
-        }
+        let allFailed =
+            !keys.isEmpty
+            && keys.allSatisfy {
+                (failuresBySlot[$0] ?? 0) >= failurePolicy.maxConsecutiveFailures
+            }
         guard allFailed else {
             notice = .warning("\(key.label)连续失败，保持其画面")
             log("\(key.label)连续失败 \(failuresBySlot[key] ?? 0) 次，保持当前画面，其余槽位不受影响")
@@ -916,7 +1120,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         refreshStatusItem()
 
         scheduleTimer?.invalidate()
-        scheduleTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: false) { [weak self] _ in
+        scheduleTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: false) {
+            [weak self] _ in
             guard let self else { return }
             self.failuresBySlot.removeAll()
             self.advance()
@@ -935,7 +1140,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 主槽位失败但副屏仍正常时，保留全局调度，稍后重新尝试取片。
     private func scheduleRecoveryAttempt() {
         scheduleTimer?.invalidate()
-        scheduleTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: false) { [weak self] _ in
+        scheduleTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: false) {
+            [weak self] _ in
             self?.advance()
         }
         RunLoop.main.add(scheduleTimer!, forMode: .common)
@@ -1003,9 +1209,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let policy = preferences.schedulePolicy
         let delay = policy.nextDelaySeconds(videoDuration: videoDuration)
         // 把生效的间隔设置一起打出来 —— 验证「改了间隔有没有生效」只看这一行就够
-        log("下次切换在 \(String(format: "%.1f", delay)) 秒后"
-            + "（间隔设置 \(SwitchInterval.label(policy.intervalSeconds))，抖动 ±\(Int(policy.jitterRatio * 100))%）")
-        scheduleTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
+        log(
+            "下次切换在 \(String(format: "%.1f", delay)) 秒后"
+                + "（间隔设置 \(SwitchInterval.label(policy.intervalSeconds))，抖动 ±\(Int(policy.jitterRatio * 100))%）"
+        )
+        scheduleTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) {
+            [weak self] _ in
             self?.advance()
         }
         RunLoop.main.add(scheduleTimer!, forMode: .common)
@@ -1060,18 +1269,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func registerNotifications() {
         let workspace = NSWorkspace.shared.notificationCenter
 
-        NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main
+        ) { [weak self] _ in
             guard let self else { return }
             self.log("屏幕参数变化 → 重建窗口")
             self.rebuildWindows(reason: "屏幕变化")
         }
-        workspace.addObserver(forName: NSWorkspace.screensDidSleepNotification, object: nil, queue: .main) { [weak self] _ in
+        workspace.addObserver(
+            forName: NSWorkspace.screensDidSleepNotification, object: nil, queue: .main
+        ) { [weak self] _ in
             self?.governor.setDisplaySleeping(true)
         }
-        workspace.addObserver(forName: NSWorkspace.screensDidWakeNotification, object: nil, queue: .main) { [weak self] _ in
+        workspace.addObserver(
+            forName: NSWorkspace.screensDidWakeNotification, object: nil, queue: .main
+        ) { [weak self] _ in
             self?.governor.setDisplaySleeping(false)
         }
-        workspace.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
+        workspace.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) {
+            [weak self] _ in
             self?.rebuildWindows(reason: "系统唤醒")
         }
 
@@ -1128,7 +1344,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // 策略或屏幕变了，锁屏预览的目标屏也可能变了（例如切到「仅主屏」）——
         // 不刷新的话副屏会一直顶着一张不属于它的静态图。
-        if preferences.lockScreenPreview, let primary = engine.primaryKey, let item = engine.item(on: primary) {
+        if preferences.lockScreenPreview, let primary = engine.primaryKey,
+            let item = engine.item(on: primary)
+        {
             refreshLockScreenPreview(for: item, on: primary)
         }
 
@@ -1336,10 +1554,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         lockPreview.state = preferences.lockScreenPreview ? .on : .off
         menu.addItem(lockPreview)
         menu.addItem(buildCategoryMenu())
+        // 壁纸来源紧跟内容过滤：两者都是「播什么」的选择，且都是低频设置项。
+        menu.addItem(buildSourceMenu())
 
         let policyMenu = NSMenu()
         // 顶部一行说明当前策略的代价（尤其流量），这是选择时唯一要权衡的东西
-        let policyDetail = NSMenuItem(title: screenCoordinator.policy.detail, action: nil, keyEquivalent: "")
+        let policyDetail = NSMenuItem(
+            title: screenCoordinator.policy.detail, action: nil, keyEquivalent: "")
         policyDetail.isEnabled = false
         policyMenu.addItem(policyDetail)
         policyMenu.addItem(.separator())
@@ -1364,13 +1585,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let levelMenu = NSMenu()
         for preset in LevelPreset.allCases {
-            let entry = NSMenuItem(title: preset.label, action: #selector(switchLevel(_:)), keyEquivalent: "")
+            let entry = NSMenuItem(
+                title: preset.label, action: #selector(switchLevel(_:)), keyEquivalent: "")
             entry.target = self
             entry.representedObject = preset.rawValue
             entry.state = preset.level == screenCoordinator.level ? .on : .off
             levelMenu.addItem(entry)
         }
-        let levelRoot = NSMenuItem(title: "窗口层级（\(screenCoordinator.level)）", action: nil, keyEquivalent: "")
+        let levelRoot = NSMenuItem(
+            title: "窗口层级（\(screenCoordinator.level)）", action: nil, keyEquivalent: "")
         levelRoot.submenu = levelMenu
         menu.addItem(levelRoot)
 
@@ -1399,20 +1622,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             keyEquivalent: ""
         )
         browser.target = self
+        // 本地来源下置灰：那个窗口列的是**线上分类的条目**，本地没有可浏览的目录。
+        // 判据与「内容过滤」「下载当前壁纸」共用 `WallpaperSourceMenu.OnlineOnlyEntry`
+        // 一处登记，实际生效在 `validateMenuItem(_:)` —— 带 action 的项写在这里的
+        // `isEnabled` 会被 `NSMenu` 的自动校验覆盖（详见文件末尾的说明）。
         menu.addItem(browser)
 
-        // 「下载当前壁纸」排在「重新加载清单」之前：前者是主动产出，后者是恢复动作。
+        // 「下载当前壁纸」排在「重新加载」之前：前者是主动产出，后者是恢复动作。
         let downloadCurrent = NSMenuItem(
             title: downloader.isDownloading ? "下载中…" : "下载当前壁纸",
             action: #selector(downloadCurrentWallpaper),
             keyEquivalent: ""
         )
         downloadCurrent.target = self
-        downloadCurrent.isEnabled = !downloader.isDownloading && currentDownloadableItem != nil
+        // 可用性（下载中 / 没有可下载条目 / 本地来源）一律在 `validateMenuItem(_:)` 里判 ——
+        // 与「打开动态壁纸」同一个坑：这里写 `isEnabled` 会被自动校验覆盖。
         menu.addItem(downloadCurrent)
 
+        // 标题必须与 `reloadCatalog` 的实际分支一致（都用**配置里有没有本地路径**判定，
+        // 不是用生效态）：本地来源下这一项做的是「重扫文件夹」，其中也包括
+        // 「盘拔了导致回退线上之后，再按一次重试那个文件夹」——菜单里写着「重新加载清单」
+        // 却去扫本地目录，是排障时最费解的一种不一致。
         let reload = NSMenuItem(
-            title: "重新加载清单（\(HotKeyManager.Definition.reloadCatalog.display)）",
+            title: preferences.resolvedLocalFolderURL == nil
+                ? "重新加载清单（\(HotKeyManager.Definition.reloadCatalog.display)）"
+                : "重新扫描本地文件夹（\(HotKeyManager.Definition.reloadCatalog.display)）",
             action: #selector(reloadCatalog),
             keyEquivalent: ""
         )
@@ -1421,11 +1655,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // 开发者工具：只在 debug 构建里存在。日常使用走 `./build.sh`（release），
         // 排障走 `./run.sh`（debug）。整块不参与 release 编译，二进制里也没有相关字符串。
-#if DEBUG
-        let dump = NSMenuItem(title: "打印窗口层级表", action: #selector(dumpWindows), keyEquivalent: "")
-        dump.target = self
-        menu.addItem(dump)
-#endif
+        #if DEBUG
+            let dump = NSMenuItem(
+                title: "打印窗口层级表", action: #selector(dumpWindows), keyEquivalent: "")
+            dump.target = self
+            menu.addItem(dump)
+        #endif
 
         // 更新段**不在这里**：它属于「关于」子菜单，紧贴「当前版本」那一行
         // （位置由 `AboutMenu.entries` 里的 `.updateSection` 占位决定）。
@@ -1517,9 +1752,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return raw.flatMap { Int($0) }
     }
 
-
-
-
     // MARK: - 版本更新
 
     /// 「有新版本」那一行 + 它的子菜单。只在真的检测到新版本时才被加进菜单。
@@ -1541,7 +1773,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         submenu.addItem(.separator())
         for action in [UpdateMenu.Action.updateNow] {
-            let item = NSMenuItem(title: UpdateMenu.actionTitle(action), action: selector(for: action), keyEquivalent: "")
+            let item = NSMenuItem(
+                title: UpdateMenu.actionTitle(action), action: selector(for: action),
+                keyEquivalent: "")
             item.target = self
             submenu.addItem(item)
         }
@@ -1584,7 +1818,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 keyEquivalent: ""
             )
             item.target = self
-            item.isEnabled = updateState.checkItemEnabled
+            // 置灰判据在 `validateMenuItem(_:)`（构建时写 `isEnabled` 会被自动校验覆盖）。
             menu.addItem(item)
         }
         if let feed = updateState.feed {
@@ -1642,8 +1876,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // 回执只给手动检查：自动检查没人在等结果，弹提示是打扰。
         if manual {
-            let result = UpdateMenu.feedback(decision, warnings: warnings, currentVersion: Self.appVersion)
-            notice = result.isWarning ? .warning(result.text, oneShot: result.isOneShot) : .info(result.text, oneShot: result.isOneShot)
+            let result = UpdateMenu.feedback(
+                decision, warnings: warnings, currentVersion: Self.appVersion)
+            notice =
+                result.isWarning
+                ? .warning(result.text, oneShot: result.isOneShot)
+                : .info(result.text, oneShot: result.isOneShot)
             log("手动检查回执：\(result.text)")
             guard !isMenuOpen else { return }
             refreshStatusItem()
@@ -1715,7 +1953,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // 四态的前两态：还没采到（测量中…）/ 采过但失败（暂不可用）。
             // 两者都写成「测量中」会让失败被永远掩盖 —— 用户没有任何办法知道真相。
             // 后两态（有报告但算不出占用率 / 有数据）走下面的 `combinedRow`。
-            let placeholder = usageFailed ? ProcessUsageText.unavailable : ProcessUsageText.measuring
+            let placeholder =
+                usageFailed ? ProcessUsageText.unavailable : ProcessUsageText.measuring
             return "内存 \(placeholder) · CPU \(placeholder)"
         }
         return ProcessUsageText.combinedRow(
@@ -1796,7 +2035,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func buildOrderMenu() -> NSMenuItem {
         let submenu = NSMenu()
         // 当前没有正在播的条目时「固定」行置灰 —— 置灰优于点了之后收到一句失败提示。
-        let canPinCurrent = engine.primaryKey.flatMap { engine.item(on: $0) } != nil
+        // 实际生效的判据在 `validateMenuItem(_:)`（见文件末尾的说明），这里传进去的
+        // `canPinCurrent` 与它同源（都读 `self.canPinCurrent`），不会打架。
+        let canPinCurrent = self.canPinCurrent
 
         for entry in PlaybackOrderMenu.entries(
             order: preferences.playbackOrder,
@@ -1822,13 +2063,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 )
             }
             item.target = self
-            item.isEnabled = entry.isEnabled
+            // 不在这里写 `isEnabled`：带 action 的项由 `validateMenuItem(_:)` 决定可用性
+            // （`NSMenu.autoenablesItems` 默认开启，写了也会被覆盖 —— 见文件末尾的说明）。
             item.state = entry.isSelected ? .on : .off
             submenu.addItem(item)
         }
 
         let root = NSMenuItem(
-            title: PlaybackOrderMenu.rootTitle(order: preferences.playbackOrder, isPinned: isPinned),
+            title: PlaybackOrderMenu.rootTitle(
+                order: preferences.playbackOrder, isPinned: isPinned),
             action: nil,
             keyEquivalent: ""
         )
@@ -1845,7 +2088,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         // 分类传当前值：这条本来就在播，说明当前分类就是对的，没有要切的东西。
-        setPinned(item, categoryID: selectedCategoryID)
+        // 本地来源下传 nil —— 本地条目没有分类，传 `selectedCategoryID`（线上残留值）
+        // 会让 `setPinned` 去拉一个跟画面毫无关系的线上切片。
+        setPinned(item, categoryID: isLocalSource ? nil : selectedCategoryID)
     }
 
     /// 切换间隔子菜单。改的是 `intervalSeconds`（单位秒），预设覆盖 30 秒 – 1 小时；
@@ -1892,7 +2137,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         /// 菜单展示顺序 = 判定优先级顺序，两者不能各排各的。
-        static let all: [PowerOption] = [.covered, .idle, .lowPowerMode, .battery, .thermalPressure]
+        static let all: [PowerOption] = [
+            .covered, .idle, .lowPowerMode, .battery, .thermalPressure,
+        ]
     }
 
     /// 省电设置子菜单。改动直接写回 config.json 并立即重算，不需要重启。
@@ -1921,8 +2168,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     item.target = self
                     item.representedObject = seconds
                     item.state = abs(preferences.idleThresholdSeconds - seconds) < 0.5 ? .on : .off
-                    // 总开关关着时子项没有意义，置灰而不是隐藏（保留可发现性）
-                    item.isEnabled = preferences.pauseWhenIdle
+                    // 总开关关着时子项没有意义，置灰而不是隐藏（保留可发现性）。
+                    // 置灰判据在 `validateMenuItem(_:)`（构建时写 `isEnabled` 会被自动校验覆盖）。
                     thresholds.addItem(item)
                 }
                 let root = NSMenuItem(
@@ -1978,7 +2225,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func togglePowerOption(_ sender: NSMenuItem) {
         guard let raw = sender.representedObject as? String,
-              let option = PowerOption(rawValue: raw) else { return }
+            let option = PowerOption(rawValue: raw)
+        else { return }
         setOption(option, enabled: sender.state != .on)
         try? preferences.save(to: configURL)
         log("省电设置：\(option.label)暂停 → \(isOptionEnabled(option) ? "开" : "关")")
@@ -2010,8 +2258,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 当前可下载的条目（主槽位正在播的那张）。没有就置灰菜单项 ——
     /// 让用户点到一个必然失败的动作比置灰更糟。
     private var currentDownloadableItem: WallpaperItem? {
+        // 本地来源下没有可下载的东西 —— 文件本来就在用户自己的文件夹里，
+        // 「下载」只会把它从自己硬盘拷回自己硬盘。置灰而不是让用户点到必然失败的动作。
+        // 判据与「内容过滤」「打开动态壁纸」共用一处登记（`WallpaperSourceMenu.OnlineOnlyEntry`）。
+        guard WallpaperSourceMenu.isEnabled(.downloadCurrent, isLocalSource: isLocalSource) else { return nil }
         guard let primary = engine.primaryKey else { return nil }
         return engine.item(on: primary)
+    }
+
+    /// 当前是否有正在播放的条目可供「固定」。
+    ///
+    /// 菜单构建（`PlaybackOrderMenu.entries(canPinCurrent:)`）与可用性校验
+    /// （`validateMenuItem(_:)`）共用这一个判据，两处不会打架。
+    private var canPinCurrent: Bool {
+        engine.primaryKey.flatMap { engine.item(on: $0) } != nil
     }
 
     /// 下载当前壁纸（视频 + 静态预览图）到 `~/Downloads/livewall/`。
@@ -2086,7 +2346,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 固定态下选「随机 / 顺序」＝ **解钉触发点 3**。
     @objc private func switchPlaybackOrder(_ sender: NSMenuItem) {
         guard let raw = sender.representedObject as? String,
-              let order = PlaybackOrder(rawValue: raw) else { return }
+            let order = PlaybackOrder(rawValue: raw)
+        else { return }
 
         let wasPinned = isPinned
         // `|| wasPinned` 不能省：固定前是「随机」、固定后点「随机」时，
@@ -2100,8 +2361,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         try? preferences.save(to: configURL)
         pool.order = order
 
-        log("选片顺序改为\(order.label)（\(order.detail)）：候选 \(pool.totalCount) 条，"
-            + "下一张起按新顺序，本轮重新开始")
+        log(
+            "选片顺序改为\(order.label)（\(order.detail)）：候选 \(pool.totalCount) 条，"
+                + "下一张起按新顺序，本轮重新开始")
 
         // 固定期间 `scheduleNext` 被拦截，定时器一直是空的。解钉后必须重排一次，
         // 否则「恢复轮换」只体现在菜单文案上 —— 画面会一直停在固定项上不动。
@@ -2171,8 +2433,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // 3) 决策 7：同步内容过滤。只在真的不同、且索引里确实有该分类时才拉切片 ——
         //    同分类下重复拉一次 0.6 MB 纯属浪费。
-        if let categoryID, categoryID != selectedCategoryID,
-           categories.contains(where: { $0.id == categoryID }) {
+        //    **本地来源下整段跳过**：本地模式没有分类可言，而这条路径会被浏览窗口
+        //    （列的是线上内容）触发 —— 拉一个线上切片灌进池子，会让「来源是本地、
+        //    池子里却是线上条目」，重启后又变回本地，前后不一致。
+        //    固定项本身是自包含的（存整条），不依赖池子，所以跳过它照样能播。
+        if !isLocalSource, let categoryID, categoryID != selectedCategoryID,
+            categories.contains(where: { $0.id == categoryID })
+        {
             preferences.selectedCategoryID = categoryID
             log("固定项属于分类 \(categoryID)，同步切换内容过滤")
             loadSlice(for: categoryID, service: makeCatalogService(), isFirstLoad: false)
@@ -2248,7 +2515,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     ///   「已经在播了」是真的不用再拉一遍。
     private func applyPinToMissingSlots(force: Bool = false) {
         guard let item = preferences.pinnedItem, PinnedPlayback.isPlayable(item),
-              let url = item.remoteURL else { return }
+            let url = item.playableURL
+        else { return }
 
         let targets = engine.slotKeys().filter { force || engine.item(on: $0)?.url != item.url }
         guard !targets.isEmpty else {
@@ -2306,7 +2574,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     log("固定项就位时已处于暂停状态，画面就位但不播放")
                 }
                 if preferences.lockScreenPreview, let primary = engine.primaryKey,
-                   engine.item(on: primary)?.id == item.id {
+                    engine.item(on: primary)?.id == item.id
+                {
                     refreshLockScreenPreview(for: item, on: primary)
                 }
                 announcePinIfPending()
@@ -2346,7 +2615,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 这里只负责把它贴成 `NSMenu`。
     ///
     /// 没有「清除过滤」项：分类恒有选中项，不存在「不限」态。
+    ///
+    /// 本地来源下**整项置灰**：本地文件夹没有分类概念，点任何一行都没有可加载的东西。
+    /// 置灰优于让用户点到必然无反应的动作（`AGENTS.md` 的既有取舍），根标题如实写出原因。
     private func buildCategoryMenu() -> NSMenuItem {
+        // 判据与另外两个线上专属入口共用一处登记（`WallpaperSourceMenu.OnlineOnlyEntry`）。
+        guard WallpaperSourceMenu.isEnabled(.categoryFilter, isLocalSource: isLocalSource) else {
+            let root = NSMenuItem(
+                title: CategoryMenu.localSourceRootTitle, action: nil, keyEquivalent: "")
+            root.isEnabled = false
+            return root
+        }
+
         let submenu = NSMenu()
         let entries = CategoryMenu.entries(categories: categories, selectedID: selectedCategoryID)
 
@@ -2364,7 +2644,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 item.target = self
                 item.representedObject = entry.id
                 item.state = entry.isSelected ? .on : .off
-                item.isEnabled = entry.isEnabled
+                // 条目数为 0 的分类要置灰、本地来源下整项不可用 —— 判据都在
+                // `validateMenuItem(_:)` 里（构建时写 `isEnabled` 会被自动校验覆盖）。
                 submenu.addItem(item)
             }
         }
@@ -2376,6 +2657,107 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         root.submenu = submenu
         return root
+    }
+
+    /// 壁纸来源子菜单：**线上 / 本地**二选一。
+    ///
+    /// 行的内容由 `WallpaperSourceMenu` 算好（纯逻辑，可单测），这里只贴成 `NSMenu`。
+    /// 两行都**永远可点**：本地行同时承担「改选文件夹」——已启用时再点一次就是换一个文件夹，
+    /// 再单独放一行「改选文件夹…」纯属重复。
+    private func buildSourceMenu() -> NSMenuItem {
+        let submenu = NSMenu()
+        for entry in WallpaperSourceMenu.entries(isLocal: isLocalSource) {
+            let item = NSMenuItem(
+                title: entry.title,
+                action: #selector(selectSource(_:)),
+                keyEquivalent: ""
+            )
+            item.target = self
+            item.representedObject = entry.kind.rawValue
+            item.state = entry.isSelected ? .on : .off
+            submenu.addItem(item)
+        }
+
+        let root = NSMenuItem(
+            title: WallpaperSourceMenu.rootTitle(
+                isLocal: isLocalSource,
+                localFolderName: preferences.localFolderName
+            ),
+            action: nil,
+            keyEquivalent: ""
+        )
+        root.submenu = submenu
+        return root
+    }
+
+    /// 切换壁纸来源。
+    ///
+    /// 选「本地」时先开面板选文件夹、**当场试扫一遍**，扫不出 mp4 就地提示并且
+    /// **不写配置** —— 让用户选了「本地」却因为挑了个空文件夹而静默停在旧来源上，
+    /// 是最难排查的一种表现（菜单勾选和实际来源对不上）。
+    ///
+    /// 选「线上」时**不清空候选池**再加载：与 `reloadCatalog` 同一条取舍 ——
+    /// 拉取失败要保持当前画面继续播，而不是先黑一下。
+    @objc private func selectSource(_ sender: NSMenuItem) {
+        guard let raw = sender.representedObject as? String,
+            let kind = WallpaperSourceMenu.Kind(rawValue: raw)
+        else { return }
+
+        switch kind {
+        case .remote:
+            // 判据是**配置**而不是生效态：本地扫描失败回退线上之后，菜单里勾的是线上，
+            // 但配置里还留着路径 —— 这时点「线上」应该把那份路径清掉（用户明确不要它了），
+            // 而不是因为「已经是线上」就静默吞掉这次点击。
+            guard preferences.resolvedLocalFolderURL != nil else { return }
+            isLocalSource = false
+            preferences.localFolderPath = nil
+            try? preferences.save(to: configURL)
+            log("壁纸来源改为线上清单")
+            notice = .info("壁纸来源：线上清单")
+            refreshStatusItem()
+            loadCatalogAndStart()
+
+        case .local:
+            guard let folder = chooseLocalFolder() else { return }
+            let items: [WallpaperItem]
+            do {
+                items = try LocalVideoSource.items(in: folder)
+            } catch {
+                let reason =
+                    (error as? LocalVideoSource.SourceError)?.errorDescription
+                    ?? error.localizedDescription
+                log("⚠️ 选中的文件夹不能用：\(reason)")
+                notice = .warning("这个文件夹不能用（\(reason)），仍用当前来源")
+                refreshStatusItem()
+                return
+            }
+
+            preferences.localFolderPath = folder.path
+            try? preferences.save(to: configURL)
+            log("壁纸来源改为本地文件夹：\(folder.path)")
+            // 换文件夹后候选集整体换了，「这块屏上次播的那条」不再适用。
+            pendingRestore.removeAll()
+            applyLocalItems(items, folder: folder, isFirstLoad: false)
+        }
+    }
+
+    /// 弹出文件夹选择面板。用户取消返回 nil。
+    private func chooseLocalFolder() -> URL? {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        // 不允许选文件、也不允许在面板里新建目录：数据源是一个**已有内容的**文件夹，
+        // 现建一个空目录只会立刻撞上「文件夹里没有 mp4」。
+        panel.canCreateDirectories = false
+        panel.prompt = "选用"
+        panel.message = "选择一个存放 mp4 的文件夹（含子文件夹，其它格式会被忽略）"
+        // 再次选择时从当前文件夹开始，不用一层层点回去。
+        if let current = preferences.resolvedLocalFolderURL {
+            panel.directoryURL = current
+        }
+        guard panel.runModal() == .OK, let url = panel.url else { return nil }
+        return url
     }
 
     /// 切换内容分类。
@@ -2410,7 +2792,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func switchMultiScreenPolicy(_ sender: NSMenuItem) {
         guard let raw = sender.representedObject as? String,
-              let policy = MultiScreenPolicy(rawValue: raw) else { return }
+            let policy = MultiScreenPolicy(rawValue: raw)
+        else { return }
 
         preferences.multiScreenPolicy = policy
         try? preferences.save(to: configURL)
@@ -2423,18 +2806,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         syncPlaybackSlots()
 
         notice = .info("多屏策略：\(policy.label)（\(verdict.summary)）")
-        log("多屏策略切换为 \(policy.label)：窗口 \(screenCoordinator.windows.count) 个 / 屏幕 "
-            + "\(screenCoordinator.screenCount) 块，槽位 \(engine.slotKeys().count) 个 | \(verdict.summary)")
+        log(
+            "多屏策略切换为 \(policy.label)：窗口 \(screenCoordinator.windows.count) 个 / 屏幕 "
+                + "\(screenCoordinator.screenCount) 块，槽位 \(engine.slotKeys().count) 个 | \(verdict.summary)"
+        )
         if policy == .perScreen, screenCoordinator.slotPlan.hasSharedSlot {
-            log("屏幕数超过每屏独立上限 \(MultiScreenPolicy.maxIndependentScreens) 块，"
-                + "超出的屏幕共用最后一路解码")
+            log(
+                "屏幕数超过每屏独立上限 \(MultiScreenPolicy.maxIndependentScreens) 块，"
+                    + "超出的屏幕共用最后一路解码")
         }
         refreshStatusItem()
         persistScreenSources()
     }
 
     @objc private func switchLevel(_ sender: NSMenuItem) {
-        guard let raw = sender.representedObject as? String, let preset = LevelPreset(rawValue: raw) else { return }
+        guard let raw = sender.representedObject as? String, let preset = LevelPreset(rawValue: raw)
+        else { return }
         let verdict = screenCoordinator.apply(level: preset.level)
         preferences.levelPreset = preset
         try? preferences.save(to: configURL)
@@ -2451,6 +2838,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 打开窗口**不暂停桌面播放**（决策 12）：浏览窗口是「挑一张」的工具，
     /// 不该把正在看的壁纸弄停。
     @objc private func openWallpaperBrowser() {
+        // 本地来源下这一项在菜单里已经置灰（`OnlineOnlyEntry.wallpaperBrowser`）。
+        // 这里的守卫是给「别的途径触发」兜底 —— 窗口列的是线上分类的条目，
+        // 本地来源下打开它只会显示一个与当前画面无关的目录。
+        guard WallpaperSourceMenu.isEnabled(.wallpaperBrowser, isLocalSource: isLocalSource) else {
+            notice = .warning("本地文件夹来源下不浏览线上内容")
+            log("本地来源下忽略「打开动态壁纸」")
+            refreshStatusItem()
+            return
+        }
         if let existing = browserWindowController {
             existing.present()
             return
@@ -2472,14 +2868,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // 重载成功时 `handleCatalogResult` 会自己把候选集换成当前分类的那一片。
         failuresBySlot.removeAll()
         retriesBySlot.removeAll()
+        // 本地来源下「重新加载清单」= **重扫文件夹**（⌥⌘R 与菜单项共用这一条路径）。
+        // 往文件夹里加/删 mp4 之后，就是靠它生效的 —— 定时切换刻意不重扫。
+        if let folder = preferences.resolvedLocalFolderURL {
+            log("重新扫描本地文件夹")
+            startLocalSource(folder, isFirstLoad: false)
+            return
+        }
         loadCatalogAndStart()
     }
 
-#if DEBUG
-    @objc private func dumpWindows() {
-        WindowInspector.printTable(highlightPIDs: [Int(ProcessInfo.processInfo.processIdentifier)])
-    }
-#endif
+    #if DEBUG
+        @objc private func dumpWindows() {
+            WindowInspector.printTable(highlightPIDs: [
+                Int(ProcessInfo.processInfo.processIdentifier)
+            ])
+        }
+    #endif
 
     // MARK: - 自身完整性
 
@@ -2503,12 +2908,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 日志轮转阈值。要调整改这里，单位见各字段注释。
     private static let logRotation = LogRotationConfig()
 
-    /// 日志文件路径。nil 表示取不到 Logs 目录，此时只输出到 stdout。
-    private static let logFileURL: URL? =
-        FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first?
-            .appendingPathComponent("Logs/com.meowv.livewall", isDirectory: true)
-            .appendingPathComponent("livewall.log")
-
     /// 日志落盘锁。
     ///
     /// `log(_:)` 会被主线程、网络回调、调度定时器等多处调用，而轮转是
@@ -2523,16 +2922,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// 落盘到 `~/Library/Logs/com.meowv.livewall/livewall.log`，同时输出到 stdout。
     /// 出问题时先看这个文件 —— 壁纸应用是后台进程，没有控制台可看。
+    ///
+    /// 时间戳格式与「追加一行」的落盘逻辑在 `AppLog`（Core）：启动早期
+    /// （`main.swift` 里判单实例、那时 `AppDelegate` 还没建起来）也要写同一个文件，
+    /// 各抄一份迟早会漂移。**轮转仍留在本地**：它是播放期的高频路径。
     private func log(_ message: String) {
-        let line = "[\(Self.timestamp())] \(message)"
+        let line = "[\(AppLog.stamp())] \(message)"
         print(line)
         fflush(stdout)
 
         logLock.lock()
         defer { logLock.unlock() }
 
-        guard let file = Self.logFileURL else { return }
-        guard let data = (line + "\n").data(using: .utf8) else { return }
+        guard let file = LiveWallPaths.logFileURL else { return }
 
         // 先判断要不要轮转，再写当前这条。
         // 顺序不能反：反过来的话，刚追加的这条会被随后的清空一起抹掉。
@@ -2548,7 +2950,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             logWritesSinceCheck += 1
         }
 
-        appendToLog(data, to: file)
+        AppLog.append(line, to: file)
     }
 
     /// 超过上限就清空复用同一个文件。调用方需已持有 `logLock`。
@@ -2562,32 +2964,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // 截断为 0 字节而不是删文件：删了再建会换 inode，这里要的是「同一个文件复用」。
         try? "".write(to: file, atomically: false, encoding: .utf8)
 
-        let notice = "[\(Self.timestamp())] "
+        let notice =
+            "[\(AppLog.stamp())] "
             + LogRotationConfig.rotationNoticeText(
                 clearedBytes: size,
                 limitBytes: Self.logRotation.maxFileSizeBytes
             )
-        if let noticeData = (notice + "\n").data(using: .utf8) {
-            appendToLog(noticeData, to: file)
-        }
-    }
-
-    /// 追加一段内容到日志末尾。调用方需已持有 `logLock`。
-    private func appendToLog(_ data: Data, to file: URL) {
-        if FileManager.default.fileExists(atPath: file.path) {
-            guard let handle = try? FileHandle(forWritingTo: file) else { return }
-            handle.seekToEndOfFile()
-            handle.write(data)
-            try? handle.close()
-        } else {
-            // 只有文件还不存在时才走整体写入 —— `write(to:)` 会截断，
-            // 对已存在的文件用它会把已有内容抹掉。
-            try? FileManager.default.createDirectory(
-                at: file.deletingLastPathComponent(),
-                withIntermediateDirectories: true
-            )
-            try? data.write(to: file)
-        }
+        AppLog.append(notice, to: file)
     }
 
     /// 日志文件当前大小，读不到或为 0 时按 0 处理（文件还不存在）。
@@ -2597,11 +2980,69 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         return UInt64(size)
     }
+}
 
-    private static func timestamp() -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MM-dd HH:mm:ss.SSS"
-        return formatter.string(from: Date())
+// MARK: - 菜单项的实际可用性
+
+/// 菜单项的**实际**可用性由这里决定，而不是 `buildXxxMenu` 里写的 `isEnabled`。
+///
+/// ## 为什么
+///
+/// `NSMenu.autoenablesItems` 默认为 `true`：菜单展开时，**带 target/action 的项**会被
+/// AppKit 重新校验一遍；没实现 `NSMenuItemValidation` 时，判定退化成「target 能不能响应
+/// 这个 action」，于是构建时写的 `isEnabled = false` **被静默覆盖**。
+/// 实测（2026-09-21）：本地来源下「打开动态壁纸」看起来仍可点，点了才被守卫拦下 ——
+/// 用户看到的是「点了没反应」，比一开始就置灰更糟。
+///
+/// 同一个坑此前还悄悄影响另外五处：`下载当前壁纸`（没有可下载条目时）、`固定`（没有正在
+/// 播的条目时）、`内容过滤`（条目数为 0 的分类）、`空闲阈值`（总开关关着时）、
+/// `检查更新`（`updateState` 说不可点时）。它们当时**都没有真正置灰**。
+///
+/// ## 约定
+///
+/// - 带 action 的项：判据写在这里，`buildXxxMenu` 里**不要再写 `isEnabled`**（写了不生效，
+///   只会让人以为改那里就够了）。
+/// - `action: nil` 的说明行（状态区、更新详情、`关于` 里的信息行）不受影响 ——
+///   它们的 target 是 nil，不会被自动校验碰到，仍在构建时置灰。
+extension AppDelegate: NSMenuItemValidation {
+
+    func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+        switch menuItem.action {
+        case #selector(openWallpaperBrowser):
+            // 本地来源下不可用：那个窗口列的是线上分类的条目。
+            return WallpaperSourceMenu.isEnabled(.wallpaperBrowser, isLocalSource: isLocalSource)
+
+        case #selector(downloadCurrentWallpaper):
+            // 本地来源下没有可下载的东西；下载中、或当前没有在播的条目时同样不可点。
+            return WallpaperSourceMenu.isEnabled(.downloadCurrent, isLocalSource: isLocalSource)
+                && !downloader.isDownloading
+                && currentDownloadableItem != nil
+
+        case #selector(selectCategory(_:)):
+            // 本地来源下没有分类；条目数为 0 的分类本来就该置灰（可点会进空池）。
+            // 「0 条置灰」的判据复用 `CategoryMenu.entries` 这个已单测的纯函数，
+            // 不在这里另写一遍 `itemCount > 0`（同一条规则写两处，迟早会漂移）。
+            guard WallpaperSourceMenu.isEnabled(.categoryFilter, isLocalSource: isLocalSource),
+                  let id = menuItem.representedObject as? Int else { return false }
+            return CategoryMenu.entries(categories: categories, selectedID: selectedCategoryID)
+                .first { $0.id == id }?.isEnabled ?? false
+
+        case #selector(pinCurrentItem):
+            // 当前没有正在播的条目时不可固定。已固定时仍可点（幂等）。
+            return canPinCurrent
+
+        case #selector(setIdleThreshold(_:)):
+            // 「无操作时」总开关关着时，子项没有意义（置灰而不是隐藏，保留可发现性）。
+            return preferences.pauseWhenIdle
+
+        case #selector(checkForUpdates):
+            return updateState.checkItemEnabled
+
+        default:
+            // 其余带 action 的项没有额外条件。回落到构建时写的值：`action: nil` 的说明行
+            // 若某天被自动校验碰到，也仍按「构建时置灰」处理，不会被误开。
+            return menuItem.isEnabled
+        }
     }
 }
 
@@ -2642,9 +3083,11 @@ extension AppDelegate: WallpaperBrowserDataSource {
             let result = service.loadSlice(entry)
             DispatchQueue.main.async {
                 guard let catalog = result.catalog else {
-                    completion(.failure(BrowserLoadFailure(
-                        message: result.warnings.first ?? "远程与本地副本都不可用"
-                    )))
+                    completion(
+                        .failure(
+                            BrowserLoadFailure(
+                                message: result.warnings.first ?? "远程与本地副本都不可用"
+                            )))
                     return
                 }
                 completion(.success(catalog.items))

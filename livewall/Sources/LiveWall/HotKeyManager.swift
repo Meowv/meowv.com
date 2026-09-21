@@ -39,7 +39,9 @@ final class HotKeyManager {
             keyCode: UInt32(kVK_ANSI_R),
             modifiers: UInt32(cmdKey | optionKey),
             display: "⌥⌘R",
-            purpose: "重新加载清单"
+            // 用「内容」而不是「清单」：本地文件夹来源下这一键重扫文件夹，
+            // 而「被占用」提示里写着「重新加载清单」会让人以为只跟线上清单有关。
+            purpose: "重新加载内容"
         )
 
         /// 没有 `⌥⌘M 静音`：壁纸被硬性要求静音（`player.isMuted = true`），

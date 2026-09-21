@@ -24,15 +24,24 @@ struct LoadedVideo {
 enum VideoLoader {
 
     static func load(_ url: URL) async throws -> LoadedVideo {
-        // 先做一次 HEAD 探测拿真实 HTTP 状态码。
-        //
-        // 为什么必须单独探测：实测 AVFoundation 对 404 的本地化描述是
-        // 「在此服务器上找不到所请求的URL。」，**不含数字状态码**，
-        // 无法据此区分「资源失效」（该拉黑）和「服务器临时故障」（不该拉黑）。
-        // HEAD 只取响应头不下载正文，代价可忽略。
-        let status = try await probeHTTPStatus(url)
-        guard status == 200 || status == 206 else {
-            throw VideoLoadError.httpStatus(status)
+        if url.isFileURL {
+            // 本地文件夹数据源（`LocalVideoSource`）的条目走这条路：没有 HTTP 状态码
+            // 可探，改成「文件还在不在、读不读得到」。判成 `fileUnreadable` 而不是
+            // `network` —— 文件被删/被移走是资源问题，该拉黑换下一条。
+            guard FileManager.default.isReadableFile(atPath: url.path) else {
+                throw VideoLoadError.fileUnreadable(url.path)
+            }
+        } else {
+            // 先做一次 HEAD 探测拿真实 HTTP 状态码。
+            //
+            // 为什么必须单独探测：实测 AVFoundation 对 404 的本地化描述是
+            // 「在此服务器上找不到所请求的URL。」，**不含数字状态码**，
+            // 无法据此区分「资源失效」（该拉黑）和「服务器临时故障」（不该拉黑）。
+            // HEAD 只取响应头不下载正文，代价可忽略。
+            let status = try await probeHTTPStatus(url)
+            guard status == 200 || status == 206 else {
+                throw VideoLoadError.httpStatus(status)
+            }
         }
 
         let asset = AVURLAsset(url: url, options: [
@@ -43,7 +52,11 @@ enum VideoLoader {
         do {
             isPlayable = try await asset.load(.isPlayable)
         } catch {
-            throw VideoLoadError.network(error.localizedDescription)
+            // 本地文件的加载失败与网络无关（编码不支持、容器损坏）：归成 `notPlayable`，
+            // 否则会被 `FailurePolicy` 当成临时网络故障，一直保持画面并反复重试。
+            throw url.isFileURL
+                ? VideoLoadError.notPlayable
+                : VideoLoadError.network(error.localizedDescription)
         }
         guard isPlayable else { throw VideoLoadError.notPlayable }
 

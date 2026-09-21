@@ -94,6 +94,15 @@ func pinnedPlaybackTests() {
             expect(!PinnedPlayback.isPlayable(pinnedItem(url: "/relative/1.mp4")), "无 scheme 应不可用")
         }
 
+        test("本地文件地址可用（本地文件夹数据源的条目就是 file://）") {
+            // 判定走 `playableURL` 而不是 `remoteURL`：后者只认 http(s)，
+            // 用它判定会让「固定一条本地视频」被判成非法。
+            expect(
+                PinnedPlayback.isPlayable(pinnedItem(url: "file:///Users/someone/Movies/a.mp4")),
+                "file:// 应可用"
+            )
+        }
+
         test("静态图缺失不影响「可播」判定") {
             // 固定只看播放地址。静态图是 UI 的事（网格缩略图由 `ThumbnailURL` 决定
             // 能不能显示），不该让「没有封面图」变成「不能固定」。

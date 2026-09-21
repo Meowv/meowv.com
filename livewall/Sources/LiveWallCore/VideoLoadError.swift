@@ -12,6 +12,12 @@ public enum VideoLoadError: Error, LocalizedError, Equatable {
     case noVideoTrack
     case badDuration
     case network(String)
+    /// 本地文件不存在或不可读（`file://` 专用）。
+    ///
+    /// 单独一个 case 而不是复用 `notPlayable`：它要能落进「资源问题」那一类
+    /// （拉黑换下一条），而**绝不能**被当成网络问题 —— 本地文件读不到与网络无关，
+    /// 按网络处理会让失效条目留在池子里反复重试。
+    case fileUnreadable(String)
 
     public var errorDescription: String? {
         switch self {
@@ -20,6 +26,7 @@ public enum VideoLoadError: Error, LocalizedError, Equatable {
         case .noVideoTrack: return "没有视频轨道"
         case .badDuration: return "时长不可解析"
         case .network(let detail): return "网络错误：\(detail)"
+        case .fileUnreadable(let path): return "本地文件不可读：\(path)"
         }
     }
 }

@@ -43,6 +43,21 @@ public struct Preferences: Codable, Sendable, Equatable {
     /// 远程清单地址。清空则只能用远程副本缓存与内置兜底条目。
     public var remoteCatalogURL: String?
 
+    /// 本地壁纸文件夹。**非 nil 即启用本地数据源**。
+    ///
+    /// 刻意不另存一个 `useLocalSource` 布尔量 —— 与 `pinnedItem` 同一套写法：
+    /// 两个字段能组合出「路径是空的、标志位却是 true」这种菜单上不存在的状态，
+    /// 一旦出现，后面每条分支都得猜该信哪个。
+    ///
+    /// 存的是**绝对路径字符串**，不是 security-scoped bookmark：本 App 是 ad-hoc
+    /// 签名、未开沙盒，没有 bookmark 的用武之地；代价是首次访问
+    /// `~/Desktop` / `~/Documents` / `~/Downloads` 会触发系统 TCC 授权弹窗。
+    ///
+    /// 这里**不判文件夹是否存在**（存在性由运行时判，见 `AppDelegate.startLocalSource`）：
+    /// 外接盘拔掉时应当保留配置、回退线上并提示，插回来即可继续用，
+    /// 而不是把用户的设置清掉。
+    public var localFolderPath: String?
+
     // 节奏
     /// 自动切换间隔，单位秒。合法区间见 `SwitchInterval`（10 秒 – 24 小时），
     /// `sanitized()` 会夹紧。实际等待时长还会叠加 `jitterRatio` 的抖动。
@@ -112,6 +127,7 @@ public struct Preferences: Codable, Sendable, Equatable {
 
     public init(
         remoteCatalogURL: String? = Preferences.defaultRemoteCatalogURL,
+        localFolderPath: String? = nil,
         intervalSeconds: Double = SchedulePolicy.defaultIntervalSeconds,
         jitterRatio: Double = SchedulePolicy.defaultJitterRatio,
         switchWhenFinished: Bool = false,
@@ -132,6 +148,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         remoteUpdateURL: String? = Preferences.defaultRemoteUpdateURL
     ) {
         self.remoteCatalogURL = remoteCatalogURL
+        self.localFolderPath = localFolderPath
         self.intervalSeconds = intervalSeconds
         self.jitterRatio = jitterRatio
         self.switchWhenFinished = switchWhenFinished
@@ -156,6 +173,7 @@ public struct Preferences: Codable, Sendable, Equatable {
 
     enum CodingKeys: String, CodingKey {
         case remoteCatalogURL
+        case localFolderPath
         case intervalSeconds, jitterRatio, switchWhenFinished, playbackOrder
         case gravity, levelPreset
         case multiScreenPolicy, perScreenSources, selectedCategoryID
@@ -178,6 +196,10 @@ public struct Preferences: Codable, Sendable, Equatable {
 
         remoteCatalogURL = try container.decodeIfPresent(String.self, forKey: .remoteCatalogURL)
             ?? fallback.remoteCatalogURL
+        // 与 `pinnedItem` 同理用 `try?`：手改配置把这一项写成数字/对象会抛 typeMismatch，
+        // 后果与缺字段完全一样 —— 整个文件退回默认、静默清零其它设置。
+        // 解不出来就当没配置本地文件夹（回退线上），用户重新选一次即可。
+        localFolderPath = (try? container.decodeIfPresent(String.self, forKey: .localFolderPath)) ?? nil
         intervalSeconds = try container.decodeIfPresent(Double.self, forKey: .intervalSeconds) ?? fallback.intervalSeconds
         jitterRatio = try container.decodeIfPresent(Double.self, forKey: .jitterRatio) ?? fallback.jitterRatio
         switchWhenFinished = try container.decodeIfPresent(Bool.self, forKey: .switchWhenFinished) ?? fallback.switchWhenFinished
@@ -219,6 +241,25 @@ public struct Preferences: Codable, Sendable, Equatable {
             return nil
         }
         return url
+    }
+
+    /// 本地壁纸文件夹。空串、纯空白一律视为「未配置」。
+    ///
+    /// 只做「像不像一条本地路径」的判定，**不碰文件系统** —— 这个属性会在菜单构建
+    /// （每次展开）里被读到，不该带 IO。文件夹在不在由运行时判。
+    public var resolvedLocalFolderURL: URL? {
+        guard let raw = localFolderPath?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !raw.isEmpty else {
+            return nil
+        }
+        return URL(fileURLWithPath: (raw as NSString).expandingTildeInPath)
+    }
+
+    /// 本地文件夹的显示名（菜单父项标题用）。未配置时为 nil。
+    public var localFolderName: String? {
+        guard let url = resolvedLocalFolderURL else { return nil }
+        let name = url.lastPathComponent
+        return name.isEmpty ? url.path : name
     }
 
     /// 更新检查地址。空串、非法 URL、非 http(s) 一律视为「不检查」。
@@ -291,10 +332,17 @@ public struct Preferences: Codable, Sendable, Equatable {
         if let id = copy.selectedCategoryID, id <= 0 {
             copy.selectedCategoryID = nil
         }
-        // 地址非法的固定项本来也播不了（`remoteURL` 为 nil = 空串或非 http(s)），
-        // 留着只会让启动流程先失败一次再解钉。这里直接清掉，与上面清 `selectedCategoryID`
-        // 是同一类清洗：**能静态判定的非法值不留给运行时去发现**。
-        if let item = copy.pinnedItem, item.remoteURL == nil {
+        // 本地文件夹只清洗「空串/纯空白」，**不清洗「文件夹不存在」** ——
+        // 外接盘拔掉时应当保留配置并回退线上，插回来就能继续用。
+        if let raw = copy.localFolderPath,
+           raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            copy.localFolderPath = nil
+        }
+        // 地址非法的固定项本来也播不了（`playableURL` 为 nil = 空串、非 http(s)、
+        // 或不是合法的 file:// ），留着只会让启动流程先失败一次再解钉。这里直接清掉，
+        // 与上面清 `selectedCategoryID` 是同一类清洗：**能静态判定的非法值不留给运行时去发现**。
+        // 用 `playableURL` 而不是 `remoteURL`：固定一条本地视频是合法用法。
+        if let item = copy.pinnedItem, item.playableURL == nil {
             copy.pinnedItem = nil
         }
         return copy

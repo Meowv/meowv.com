@@ -346,5 +346,71 @@ func preferencesCompatibilityTests() {
             expect(!emptyJSON.contains("\"selectedCategoryID\""), "对照组：nil 可选字段一律不写出")
             expect(emptyJSON.contains("\"playbackOrder\""), "非可选字段仍应写出")
         }
+
+        test("老配置（没有 localFolderPath）回退线上，且其它设置不丢") {
+            let legacy = """
+            {
+              "intervalSeconds": 900,
+              "playbackOrder": "sequential"
+            }
+            """
+            guard let decoded = try? JSONDecoder().decode(Preferences.self, from: Data(legacy.utf8)) else {
+                expect(false, "老配置应当能解码")
+                return
+            }
+            expectNil(decoded.localFolderPath, "缺字段应回退到线上")
+            expectNil(decoded.resolvedLocalFolderURL, "回退后没有可用的本地文件夹")
+            expectEqual(decoded.intervalSeconds, 900, "其它字段应保留")
+            expectEqual(decoded.playbackOrder, .sequential, "其它字段应保留")
+        }
+
+        test("localFolderPath 存在时按原样读回，往返不丢") {
+            var preferences = Preferences()
+            preferences.localFolderPath = "/Users/someone/Movies/wallpapers"
+            guard let data = try? JSONEncoder().encode(preferences),
+                  let decoded = try? JSONDecoder().decode(Preferences.self, from: data) else {
+                expect(false, "往返应能成功")
+                return
+            }
+            expectEqual(decoded.localFolderPath, "/Users/someone/Movies/wallpapers", "路径应原样读回")
+            expectEqual(decoded.resolvedLocalFolderURL?.path, "/Users/someone/Movies/wallpapers", "应能解析成 URL")
+            expectEqual(decoded.localFolderName, "wallpapers", "应能取出文件夹名给菜单用")
+        }
+
+        test("localFolderPath 写坏了不影响其它字段") {
+            let broken = """
+            { "localFolderPath": 123, "intervalSeconds": 1500 }
+            """
+            guard let decoded = try? JSONDecoder().decode(Preferences.self, from: Data(broken.utf8)) else {
+                expect(false, "类型不对也不该让整份配置解不出来")
+                return
+            }
+            expectNil(decoded.localFolderPath, "解不出来就当没配置本地文件夹")
+            expectEqual(decoded.intervalSeconds, 1500, "其它字段应保留")
+        }
+
+        test("localFolderPath 空串与纯空白被 sanitize 清掉") {
+            var preferences = Preferences()
+            preferences.localFolderPath = "   "
+            expectNil(preferences.sanitized().localFolderPath, "纯空白应被清掉")
+
+            // **不存在的路径刻意保留**：外接盘拔掉时应当保留配置并回退线上，
+            // 插回来（或按 ⌥⌘R 重扫）即可继续用，而不是把用户的设置清掉。
+            preferences.localFolderPath = "/Volumes/NotMounted/Movies"
+            expectEqual(
+                preferences.sanitized().localFolderPath,
+                "/Volumes/NotMounted/Movies",
+                "文件夹不存在不该被静态清洗掉"
+            )
+        }
+
+        test("本地固定项（file:// 地址）不被 sanitize 清掉") {
+            var preferences = Preferences()
+            preferences.pinnedItem = WallpaperItem(
+                id: 7, title: "本地片", author: "",
+                url: "file:///Users/someone/Movies/a.mp4"
+            )
+            expectNotNil(preferences.sanitized().pinnedItem, "固定一条本地视频是合法用法")
+        }
     }
 }
