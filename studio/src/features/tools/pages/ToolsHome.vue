@@ -24,6 +24,7 @@ const carnivalFxElement = ref<HTMLCanvasElement | null>(null);
 const sidebarHovered = ref(false);
 const navigationTarget = ref<string | null>(null);
 let navigationTargetTimer: ReturnType<typeof setTimeout> | undefined;
+let activeCategoryFrame: number | null = null;
 const SIDEBAR_PIN_KEY = `${STORAGE_POLICY.preferences}:tools-sidebar-pinned`;
 const SIDEBAR_SIDE_KEY = `${STORAGE_POLICY.preferences}:tools-sidebar-side`;
 const sidebarPinned = ref(readSidebarPinned());
@@ -88,6 +89,14 @@ function updateActiveCategory(): void {
       window.history.replaceState(window.history.state, '', nextHash);
     }
   }
+}
+
+function scheduleActiveCategoryUpdate(): void {
+  if (activeCategoryFrame !== null) return;
+  activeCategoryFrame = window.requestAnimationFrame(() => {
+    activeCategoryFrame = null;
+    updateActiveCategory();
+  });
 }
 
 function setNavigationTarget(target: string): void {
@@ -235,7 +244,7 @@ watch(searchVisible, async (visible) => {
 });
 
 onMounted(async () => {
-  catalogElement.value?.addEventListener('scroll', updateActiveCategory, { passive: true });
+  catalogElement.value?.addEventListener('scroll', scheduleActiveCategoryUpdate, { passive: true });
   await refreshLinks();
   const categoryId = route.hash.replace(/^#/, '');
   if (categoryId === 'favorites' && favoriteTools.value.length) {
@@ -253,7 +262,8 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   clearTimeout(navigationTargetTimer);
-  catalogElement.value?.removeEventListener('scroll', updateActiveCategory);
+  if (activeCategoryFrame !== null) window.cancelAnimationFrame(activeCategoryFrame);
+  catalogElement.value?.removeEventListener('scroll', scheduleActiveCategoryUpdate);
 });
 </script>
 

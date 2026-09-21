@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue';
 import { STORAGE_POLICY, storageAvailable } from '@/core/privacy/storage';
-import { WallpaperRepository } from '@/features/wallpapers/services/wallpaperRepository';
+import type { WallpaperRepository } from '@/features/wallpapers/services/wallpaperRepository';
 import type { WallpaperItem } from '@/features/wallpapers/types';
 
 const STORAGE_KEY = `${STORAGE_POLICY.preferences}:tools-background`;
@@ -241,6 +241,8 @@ async function requestRandomVideo(): Promise<boolean> {
   isLoading.value = true;
 
   try {
+    const { WallpaperRepository } =
+      await import('@/features/wallpapers/services/wallpaperRepository');
     wallpaperRepository ??= new WallpaperRepository();
     const item = await wallpaperRepository.randomBackground(activeSource.value?.wallpaperId);
     if (sequence !== requestSequence.value) return false;

@@ -374,7 +374,10 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
         resolvedPath ? assetUrls.value[resolvedPath] : undefined,
     });
   });
-  const previewHtml = computed(() => enforceSafeImages(parsedDocument.value.html));
+  const previewHtml = computed(() => preparePreviewHtml(parsedDocument.value.html));
+  const displayHtml = computed(() =>
+    preparePreviewHtml(parsedDocument.value.html, parsedDocument.value.metadata.title.trim()),
+  );
   const allKnowledgeDocuments = computed(() =>
     [...documents.value.values()].map(createKnowledgeDocument),
   );
@@ -414,7 +417,7 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
     lockedDocumentPaths.value = next;
   }
 
-  function enforceSafeImages(html: string): string {
+  function preparePreviewHtml(html: string, stripTitle = ''): string {
     if (typeof DOMParser === 'undefined') {
       return html;
     }
@@ -460,6 +463,24 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
         ? `图片来源不受支持：${image.getAttribute('alt')}`
         : '图片来源不受支持';
       image.replaceWith(replacement);
+    }
+
+    const normalizedTitle = stripTitle
+      .normalize('NFKC')
+      .replace(/\s+/gu, ' ')
+      .trim()
+      .toLocaleLowerCase();
+    const firstHeading = root.firstElementChild;
+    if (
+      normalizedTitle &&
+      firstHeading?.tagName === 'H1' &&
+      firstHeading.textContent
+        ?.normalize('NFKC')
+        .replace(/\s+/gu, ' ')
+        .trim()
+        .toLocaleLowerCase() === normalizedTitle
+    ) {
+      firstHeading.remove();
     }
 
     return root.innerHTML;
@@ -2205,6 +2226,7 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
     resolvedTheme,
     parsedDocument,
     previewHtml,
+    displayHtml,
     tagCounts,
     activeBacklinks,
     knowledgeGraph,

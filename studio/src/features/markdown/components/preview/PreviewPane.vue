@@ -30,37 +30,19 @@ const exporting = ref<ExportExtension | null>(null);
 let mermaidRenderSequence = 0;
 let syncingScroll = false;
 let mermaidPromise: Promise<(typeof import('mermaid'))['default']> | undefined;
+const mermaidRenderCache = new Map<
+  string,
+  {
+    svg: string;
+    bindFunctions?: (element: Element) => void;
+  }
+>();
+const MERMAID_RENDER_CACHE_LIMIT = 64;
 
 const title = computed(() => store.parsedDocument.metadata.title.trim());
 const previewStyle = computed(() => ({
   fontSize: `${Math.min(18, Math.max(13, store.preferences.editorFontSize + 1))}px`,
 }));
-
-const bodyHtml = computed(() => {
-  const html = store.previewHtml;
-  if (!html || !title.value || typeof DOMParser === 'undefined') {
-    return html;
-  }
-
-  const parsed = new DOMParser().parseFromString(
-    `<main data-preview-body>${html}</main>`,
-    'text/html',
-  );
-  const body = parsed.querySelector<HTMLElement>('[data-preview-body]');
-  const firstHeading = body?.firstElementChild?.tagName === 'H1' ? body.firstElementChild : null;
-  if (
-    firstHeading &&
-    normalizeHeading(firstHeading.textContent) === normalizeHeading(title.value)
-  ) {
-    firstHeading.remove();
-  }
-
-  return body?.innerHTML ?? html;
-});
-
-function normalizeHeading(value: string | null): string {
-  return (value ?? '').normalize('NFKC').replace(/\s+/gu, ' ').trim().toLocaleLowerCase();
-}
 
 function slugifyHeading(value: string): string {
   return value
@@ -166,14 +148,32 @@ async function renderMermaidBlocks(): Promise<void> {
 
         try {
           const source = decodeURIComponent(encodedSource);
+          const theme = store.resolvedTheme === 'dark' ? 'dark' : 'default';
+          const cacheKey = `${theme}\u0000${source}`;
+          const cached = mermaidRenderCache.get(cacheKey);
+          if (cached) {
+            block.className = 'mermaid-block';
+            block.innerHTML = cached.svg;
+            cached.bindFunctions?.(block);
+            continue;
+          }
           const result = await mermaid.render(`markdown-preview-${sequence}-${index}`, source);
           if (sequence !== mermaidRenderSequence || !block.isConnected) {
             return;
           }
 
+          const svg = sanitizeMermaidSvg(result.svg);
           block.className = 'mermaid-block';
-          block.innerHTML = sanitizeMermaidSvg(result.svg);
+          block.innerHTML = svg;
           result.bindFunctions?.(block);
+          if (mermaidRenderCache.size >= MERMAID_RENDER_CACHE_LIMIT) {
+            const oldestKey = mermaidRenderCache.keys().next().value;
+            if (oldestKey !== undefined) mermaidRenderCache.delete(oldestKey);
+          }
+          mermaidRenderCache.set(cacheKey, {
+            svg,
+            ...(result.bindFunctions ? { bindFunctions: result.bindFunctions } : {}),
+          });
         } catch {
           block.className = 'mermaid-block text-sm text-[var(--color-danger)]';
           block.textContent = 'Mermaid 图表渲染失败，请检查图表语法。';
@@ -252,7 +252,7 @@ function handlePreviewScroll(): void {
 }
 
 watch(
-  [bodyHtml, () => store.resolvedTheme],
+  [() => store.displayHtml, () => store.resolvedTheme],
   () => {
     void renderMermaidBlocks();
   },
@@ -400,7 +400,7 @@ onBeforeUnmount(() => {
 
         <!-- 内容已经过 Markdown 服务与 DOMPurify 双重清理。 -->
         <!-- eslint-disable-next-line vue/no-v-html -->
-        <div v-html="bodyHtml" />
+        <div v-html="store.displayHtml" />
 
         <section
           v-if="store.activeBacklinks.length"

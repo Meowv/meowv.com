@@ -10,6 +10,7 @@ import {
   select,
   zoom,
   type D3DragEvent,
+  type ForceCenter,
   type Simulation,
   type SimulationLinkDatum,
   type SimulationNodeDatum,
@@ -34,6 +35,9 @@ const svgElement = ref<SVGSVGElement | null>(null);
 const graphQuery = ref('');
 let simulation: Simulation<GraphNode, GraphLink> | null = null;
 let resizeObserver: ResizeObserver | null = null;
+let renderFrame: number | null = null;
+let viewportFrame: number | null = null;
+let centerForce: ForceCenter<GraphNode> | null = null;
 
 const visibleGraph = computed(() => {
   const query = graphQuery.value.trim().toLocaleLowerCase();
@@ -87,6 +91,36 @@ function nodeColor(node: GraphNode): string {
   return 'var(--color-brand)';
 }
 
+function graphDimensions(element: SVGSVGElement): { width: number; height: number } {
+  return {
+    width: Math.max(element.clientWidth, 240),
+    height: Math.max(element.clientHeight, 360),
+  };
+}
+
+function updateGraphViewport(): void {
+  viewportFrame = null;
+  const element = svgElement.value;
+  if (!element || !simulation) return;
+  const { width, height } = graphDimensions(element);
+  select(element).attr('viewBox', `0 0 ${width} ${height}`);
+  centerForce?.x(width / 2).y(height / 2);
+  simulation.alpha(0.35).restart();
+}
+
+function scheduleGraphViewport(): void {
+  if (viewportFrame !== null) return;
+  viewportFrame = requestAnimationFrame(updateGraphViewport);
+}
+
+function scheduleGraphRender(): void {
+  if (renderFrame !== null) return;
+  renderFrame = requestAnimationFrame(() => {
+    renderFrame = null;
+    renderGraph();
+  });
+}
+
 function renderGraph(): void {
   const element = svgElement.value;
   if (!element) {
@@ -94,8 +128,7 @@ function renderGraph(): void {
   }
 
   simulation?.stop();
-  const width = Math.max(element.clientWidth, 240);
-  const height = Math.max(element.clientHeight, 360);
+  const { width, height } = graphDimensions(element);
   const nodes: GraphNode[] = visibleGraph.value.nodes.map((node) => ({
     ...node,
   }));
@@ -177,6 +210,7 @@ function renderGraph(): void {
     });
   nodeSelection.call(dragBehavior);
 
+  centerForce = forceCenter<GraphNode>(width / 2, height / 2);
   simulation = forceSimulation<GraphNode, GraphLink>(nodes)
     .force(
       'link',
@@ -186,7 +220,7 @@ function renderGraph(): void {
         .strength((link) => (link.type === 'wiki' ? 0.75 : 0.35)),
     )
     .force('charge', forceManyBody().strength(-115))
-    .force('center', forceCenter(width / 2, height / 2))
+    .force('center', centerForce)
     .force(
       'collide',
       forceCollide<GraphNode>().radius((node) => nodeRadius(node) + 12),
@@ -203,24 +237,25 @@ function renderGraph(): void {
 
 watch(
   () => store.knowledgeGraph,
-  () => void nextTick(renderGraph),
-  { deep: true },
+  () => scheduleGraphRender(),
 );
 watch(
   () => store.activePath,
-  () => void nextTick(renderGraph),
+  () => scheduleGraphRender(),
 );
-watch(graphQuery, () => void nextTick(renderGraph));
+watch(graphQuery, () => scheduleGraphRender());
 
 onMounted(() => {
   void nextTick(renderGraph);
   if (svgElement.value) {
-    resizeObserver = new ResizeObserver(renderGraph);
+    resizeObserver = new ResizeObserver(scheduleGraphViewport);
     resizeObserver.observe(svgElement.value);
   }
 });
 
 onBeforeUnmount(() => {
+  if (renderFrame !== null) cancelAnimationFrame(renderFrame);
+  if (viewportFrame !== null) cancelAnimationFrame(viewportFrame);
   resizeObserver?.disconnect();
   simulation?.stop();
 });

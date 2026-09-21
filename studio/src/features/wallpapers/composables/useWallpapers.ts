@@ -52,6 +52,29 @@ export function useWallpapers() {
   const hasMore = ref(true);
   let cursor: WallpaperCursor | null = null;
   let queryToken = 0;
+  let prefetchIdleHandle: number | null = null;
+  let prefetchTimeoutHandle: ReturnType<typeof globalThis.setTimeout> | null = null;
+
+  function cancelCatalogPrefetch(): void {
+    if (prefetchIdleHandle !== null) globalThis.cancelIdleCallback(prefetchIdleHandle);
+    prefetchIdleHandle = null;
+    if (prefetchTimeoutHandle !== null) globalThis.clearTimeout(prefetchTimeoutHandle);
+    prefetchTimeoutHandle = null;
+  }
+
+  function scheduleCatalogPrefetch(): void {
+    cancelCatalogPrefetch();
+    const run = (): void => {
+      prefetchIdleHandle = null;
+      prefetchTimeoutHandle = null;
+      void repository.prefetch().catch(() => undefined);
+    };
+    if ('requestIdleCallback' in globalThis) {
+      prefetchIdleHandle = globalThis.requestIdleCallback(run, { timeout: 4000 });
+    } else {
+      prefetchTimeoutHandle = globalThis.setTimeout(run, 1800);
+    }
+  }
 
   function readCachedPage(value: typeof defaults): WallpaperPageResult | null {
     try {
@@ -188,6 +211,7 @@ export function useWallpapers() {
   async function load(first = true, preserveItems = false): Promise<void> {
     const token = ++queryToken;
     if (first) {
+      cancelCatalogPrefetch();
       if (!preserveItems) items.value = [];
       cursor = null;
       hasMore.value = true;
@@ -232,7 +256,6 @@ export function useWallpapers() {
     loading.value = true;
     categoriesLoading.value = !cachedCategories;
     try {
-      const prefetchPromise = repository.prefetch();
       const useBootstrap =
         !cached &&
         filters.value.device === 'desktop' &&
@@ -252,7 +275,7 @@ export function useWallpapers() {
       }
       await initPromise;
       await load(true, Boolean(cached) || hasBootstrap);
-      void prefetchPromise.catch(() => undefined);
+      scheduleCatalogPrefetch();
     } catch (reason) {
       error.value = reason instanceof Error ? reason.message : '壁纸数据库加载失败。';
       loading.value = false;
@@ -343,7 +366,10 @@ export function useWallpapers() {
     }
   }
 
-  onBeforeUnmount(() => repository.dispose());
+  onBeforeUnmount(() => {
+    cancelCatalogPrefetch();
+    repository.dispose();
+  });
   watch(
     () => route.query,
     () => void syncFromRoute(),

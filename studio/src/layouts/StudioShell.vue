@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import {
   IconBrandOffice,
@@ -17,8 +17,6 @@ import {
 import StudioDonationDialog from '@/components/StudioDonationDialog.vue';
 import StudioFooter from '@/components/StudioFooter.vue';
 import StudioLogo from '@/components/StudioLogo.vue';
-import ToolsBackground from '@/features/tools/components/ToolsBackground.vue';
-import ToolsBackgroundSettings from '@/features/tools/components/ToolsBackgroundSettings.vue';
 import { useToolsBackground } from '@/features/tools/composables/useToolsBackground';
 import { STORAGE_POLICY, storageAvailable } from '@/core/privacy/storage';
 import {
@@ -30,6 +28,13 @@ import {
   workspaceActive,
   workspaceHeaderVisible,
 } from '@/core/shared/route-state';
+
+const ToolsBackground = defineAsyncComponent(
+  () => import('@/features/tools/components/ToolsBackground.vue'),
+);
+const ToolsBackgroundSettings = defineAsyncComponent(
+  () => import('@/features/tools/components/ToolsBackgroundSettings.vue'),
+);
 
 const route = useRoute();
 const isHomePage = computed(() => route.name === 'home');

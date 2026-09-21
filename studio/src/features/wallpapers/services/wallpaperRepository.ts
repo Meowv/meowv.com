@@ -59,7 +59,7 @@ export class WallpaperRepository {
   }
 
   prefetch(): Promise<void> {
-    return this.send('prefetch').then(() => undefined);
+    return this.request('prefetch').then(() => undefined);
   }
 
   bootstrap(): Promise<WallpaperBootstrapResult> {
