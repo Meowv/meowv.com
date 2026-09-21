@@ -1250,7 +1250,7 @@ PROBE[静置后] 内存 14 MB · CPU 0.0%（近 3 秒）    ← 基线已推进�
 
 ### 双击打开预览
 
-双击某张卡片 → 在网格区上方浮出一块 16:9 的画面，**立刻开始播放**。关闭有三个出口：画面右上角的 ✕、Esc、切分类（切分类会自动关掉）。
+双击某张卡片 → 在网格区上方浮出一块 16:9 的画面，**立刻开始播放**。关闭出口：画面右上角的 ✕、`Esc`、`⌘W`、切分类（切分类会自动关掉），见[关闭方式](#关闭方式--esc-w)。
 
 ⚠️ `NSCollectionView` **没有** `doubleAction` / `target`（`NSTableView` 才有），delegate 里也没有双击回调。所以双击是在 `BrowserGridView.mouseDown` 里按 `event.clickCount == 2` 判的，再用 `indexPathForItem(at:)` 反查命中的卡片。**先调 `super.mouseDown`** —— 双击的第一下本来就该先选中那张卡片，于是双击之后「选中项」和「浮层里的条目」是一致的。
 
@@ -1265,6 +1265,28 @@ PROBE[静置后] 内存 14 MB · CPU 0.0%（近 3 秒）    ← 基线已推进�
 播放器现在是**四态**：`idle`（还没起播）/ `loading` / `playing` / `failed`（带原因）。**没有 `cover`**（显示静态图）这一态，也**没有 `stop()`** —— 打开即播、不可暂停/停止，收尾只有 `teardown()` 一个入口（关浮层）。原先的「停止预览 / 预览」开关已移除。
 
 双击是明确的「我要看这一条」所以直接开播 —— 这与「选中即自动播」是两回事：后者会让方向键连翻几条就把每条视频都拉一遍。代价是每次双击都会真拉一次视频流，但那是用户明确要求的。
+
+### 关闭方式：✕ / Esc / ⌘W
+
+三个出口走**同一套层次规则**（`WallpaperBrowserViewController.dismissTopLayer()`）：浮层开着就先收浮层；
+浮层没开时 `Esc` 与 `⌘W` 才关窗口。✕ 与「点压暗背景」只收浮层、不动窗口。
+
+⚠️ **⌘W 只能接在 `NSWindow.performKeyEquivalent(with:)` 上，靠 `keyDown` / `cancelOperation` 收不到。**
+本 App 是 `LSUIElement`（菜单栏常驻、不占 Dock），**没有 main menu** —— `NSApp.mainMenu` 是 nil，
+⌘W 没有菜单项去消费它；而带 Command 的按键事件走的是**快捷键通道**
+（`NSApplication` → `NSWindow.performKeyEquivalent`），没人处理时事件被**直接丢弃**（还会响一声），
+**不会**再作为 `keyDown` 往下传。这正是「Esc 能用、⌘W 不能用」的原因：Esc 不带 Command，走的是
+`cancelOperation`。实现落在 `BrowserWindow`（`NSWindow` 子类，见 `WallpaperBrowserWindowController.swift`），
+它只把事件转给内容视图里那唯一一份层次规则，不自己实现规则。
+
+**只认恰好 ⌘ 的组合**：`⇧⌘W`（macOS 上是「关闭所有窗口」）、`⌥⌘W` 一律交回 AppKit —— 本 App 只有一个
+窗口，这些组合按下去什么都不做，比误关更符合预期。匹配用 `charactersIgnoringModifiers == "w"` 而不是键码：
+菜单快捷键本来就是按**字符**匹配的，非 QWERTY 布局（AZERTY 的 W 在别的位置）也仍然成立。
+
+验证：端到端探针（直接编上述真实源码，不起 App）覆盖 17 条断言 —— ✕ 只收浮层；`Esc` 与 `⌘W` 都是
+「先收浮层、再关窗口」；`⇧⌘W` / `⌥⌘W` / 单独按 `w` 都不消费、不动窗口。
+**未验证**：`⌘.`（macOS 的取消键）在探针的合成派发下没有触发 `cancelOperation`，但探针没有真实的
+key window 事件循环，这个结论不可靠 —— 要确认得真机按一下。
 
 ### 「设为桌面壁纸」与固定
 

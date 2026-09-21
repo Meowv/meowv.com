@@ -316,16 +316,43 @@ final class WallpaperBrowserViewController: NSViewController {
         updatePreviewPanel()
     }
 
+    /// 关掉「最上面那一层」。浮层开着就收浮层并返回 true；否则返回 false（调用方再决定关窗口）。
+    ///
+    /// 抽出来是因为现在有**两个**入口（Esc 与 ⌘W）要走同一套层次规则 ——
+    /// 各写一份的话，「浮层优先」这条迟早会在其中一个入口上漏掉。
+    @discardableResult
+    private func dismissTopLayer() -> Bool {
+        guard !previewOverlay.isHidden else { return false }
+        dismissPreview(nil)
+        return true
+    }
+
     /// Esc：**先关预览浮层**；浮层没开才关窗口。
     ///
     /// 按 Esc 的意图是「退出当前这一层」，直接把整个窗口关掉太狠了 ——
     /// 而浮层是叠在网格上的一层，理应第一个被 Esc 收掉。
     override func cancelOperation(_ sender: Any?) {
-        guard previewOverlay.isHidden else {
-            dismissPreview(nil)
-            return
-        }
+        guard !dismissTopLayer() else { return }
         view.window?.performClose(nil)
+    }
+
+    /// ⌘W：与 Esc 同一套层次规则（先收浮层，再关窗口）。
+    ///
+    /// 由 `BrowserWindow.performKeyEquivalent(with:)` 转过来 —— 带 Command 的按键事件
+    /// 不走 `keyDown` / `cancelOperation`，而本 App 没有 main menu 去提供 ⌘W 菜单项，
+    /// 所以只能在那里接（详见 `BrowserWindow` 的注释）。
+    ///
+    /// **只认恰好 ⌘ 的组合**：`⇧⌘W` 在 macOS 上是「关闭所有窗口」、`⌥⌘W` 是别的语义，
+    /// 本 App 只有一个窗口，这些组合按下去什么都不做比误关更符合预期。
+    /// 用 `charactersIgnoringModifiers` 而不是键码：菜单快捷键本来就是按**字符**匹配的，
+    /// 换成非 QWERTY 布局（AZERTY 的 W 在别的位置）也仍然成立。
+    func handleWindowKeyEquivalent(_ event: NSEvent) -> Bool {
+        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        guard flags == .command,
+              event.charactersIgnoringModifiers?.lowercased() == "w" else { return false }
+        guard !dismissTopLayer() else { return true }
+        view.window?.performClose(nil)
+        return true
     }
 
     // MARK: - 左栏：分类

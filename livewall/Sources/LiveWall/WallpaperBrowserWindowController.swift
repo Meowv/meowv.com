@@ -1,5 +1,29 @@
 import AppKit
 
+/// 浏览窗口。存在的唯一理由是**接住 ⌘W 这类带 Command 的快捷键**。
+///
+/// ## 为什么必须在窗口这一层接
+///
+/// 本 App 是 `LSUIElement`（菜单栏常驻、不占 Dock），**没有 main menu** ——
+/// `NSApp.mainMenu` 是 nil，所以 ⌘W 没有菜单项去消费它。而带 Command 的按键事件走的是
+/// **快捷键通道**：`NSApplication` → `NSWindow.performKeyEquivalent(with:)`；
+/// 没人处理时事件被直接丢弃（还会响一声），**不会**再作为 `keyDown` 往下传。
+/// 因此视图 / 控制器里的 `keyDown`、`cancelOperation` 永远收不到 ⌘W ——
+/// 这正是「Esc 能用、⌘W 不能用」的原因：Esc 不带 Command，走的是 `cancelOperation`。
+///
+/// 「先收浮层、再关窗口」的规则只该有一份，所以这里不实现规则，只把事件转给内容视图
+/// （`WallpaperBrowserViewController.handleWindowKeyEquivalent(_:)`）。
+final class BrowserWindow: NSWindow {
+
+    /// 快捷键处理器：返回 true 表示已消费，不再往下传（`super` 会继续找别的处理器）。
+    var handleKeyEquivalent: ((NSEvent) -> Bool)?
+
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        if handleKeyEquivalent?(event) == true { return true }
+        return super.performKeyEquivalent(with: event)
+    }
+}
+
 /// 动态壁纸浏览窗口的持有者。
 ///
 /// 这是本项目**第一个普通 UI 窗口** —— 此前刻意不做 App 内窗口（见 `AGENTS.md`）。
@@ -28,7 +52,7 @@ final class WallpaperBrowserWindowController: NSWindowController {
     init(dataSource: WallpaperBrowserDataSource) {
         browserViewController = WallpaperBrowserViewController(dataSource: dataSource)
 
-        let window = NSWindow(
+        let window = BrowserWindow(
             contentRect: NSRect(x: 0, y: 0, width: 1060, height: 660),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
@@ -36,6 +60,12 @@ final class WallpaperBrowserWindowController: NSWindowController {
         )
         window.title = "动态壁纸"
         window.contentViewController = browserViewController
+        // ⌘W 等带 Command 的快捷键只有窗口这一层收得到（App 没有 main menu，见 `BrowserWindow`），
+        // 接上内容视图里那套「先收浮层、再关窗口」的规则。弱引用避免窗口 → 闭包 → 控制器成环。
+        let viewController = browserViewController
+        window.handleKeyEquivalent = { [weak viewController] event in
+            viewController?.handleWindowKeyEquivalent(event) ?? false
+        }
         window.minSize = NSSize(width: 880, height: 560)
         window.isReleasedWhenClosed = false
         // 刻意用**默认 level**：它远高于桌面覆盖窗口那一层，不会跟壁纸抢层级；
