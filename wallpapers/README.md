@@ -1,6 +1,31 @@
 # Wallpapers Crawler
 
-公开壁纸接口采集器。项目使用 Python 3.12 和 SQLite，默认只保存壁纸元数据以及图片、封面、视频预览的 CDN 地址，不下载媒体文件。
+公开壁纸接口采集器。使用 Python 3.12 与 SQLite，默认只保存壁纸元数据以及图片、封面、视频预览的 CDN 地址，不下载媒体文件。
+
+它是仓库里另外两个项目的**数据上游**，但三者不共享代码：`publish` 生成的目录供 [Meowv Studio](../studio/README.md) 的壁纸页使用（加密后部署），`export-livewall` 生成的清单供 [livewall](../livewall/README.md) 桌面客户端使用（明文，随 Studio 一起部署）。采集器本身不构建也不发布站点。
+
+- 用途、CLI 参数、数据库表结构与发布说明 → 本文件
+- 修改边界、约定与验证要求 → [`AGENTS.md`](./AGENTS.md)
+- 仓库级概览与根目录脚本 → [`../README.md`](../README.md)、[`../AGENTS.md`](../AGENTS.md)
+
+## 目录结构
+
+```text
+wallpapers/
+├─ pyproject.toml          项目元数据、[test] extra 与 wallpapers 命令入口
+├─ src/wallpapers/
+│  ├─ cli.py               CLI 参数与命令分发
+│  ├─ config.py            数据源配置与运行常量
+│  ├─ models.py            领域模型：CategoryData / AssetData / WallpaperData
+│  ├─ normalize.py         接口返回值规范化（URL、尺寸、标签）
+│  ├─ pipeline.py          抓取、增量游标与资源校验流程
+│  ├─ db.py                SQLite 初始化、兼容迁移与查询
+│  ├─ publish.py           生成 Studio catalog / bootstrap / manifest
+│  ├─ export.py            导出 livewall 用的明文清单目录（索引 + 分类切片）
+│  └─ sources/             接口适配器：base.py / desktop.py / mobile.py / manifest.py
+├─ tests/                  数据库、规范化、抓取流程、接口适配与发布逻辑测试
+└─ wallpapers.db           默认数据库（本地数据，不提交）
+```
 
 ## 快速开始
 
@@ -705,3 +730,5 @@ python3 -m pip install -e '.[test]'
 ```
 
 项目默认不执行整站线上抓取。需要运行完整任务时，请确认接口访问频率和资源使用符合站点规则。
+
+改动前先读 [`AGENTS.md`](./AGENTS.md)：那里写明了 `export-livewall` 产物与 livewall 客户端的契约（索引不含条目、新增字段不升 `schemaVersion`、递归 CTE 分类匹配等），以及加密、密钥与生成物方面的边界。
