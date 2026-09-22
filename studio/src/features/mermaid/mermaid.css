@@ -26,9 +26,6 @@
 .studio-shell--mermaid:not(.studio-shell--mermaid-header) .mermaid-toolbar {
   display: none;
 }
-.nav-mermaid svg {
-  color: var(--nav-accent);
-}
 .mermaid-workbench {
   display: flex;
   min-width: 0;

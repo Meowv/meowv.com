@@ -1,22 +1,38 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, watch, type ComponentPublicInstance } from 'vue';
-import * as monaco from 'monaco-editor';
-import EditorWorker from 'monaco-editor/editor/editor.worker.js?worker';
-import JsonWorker from 'monaco-editor/language/json/json.worker.js?worker';
-import 'monaco-editor/language/json/monaco.contribution.js';
+import type { editor as MonacoEditor, IDisposable as MonacoDisposable } from 'monaco-editor';
 import { toolsBackgroundPreviewActive } from '@/core/shared/route-state';
+
+type MonacoRuntime = typeof import('monaco-editor');
 
 interface MonacoWorkerEnvironment {
   getWorker(moduleId: string, label: string): Worker;
 }
 
-const monacoGlobal = globalThis as typeof globalThis & {
-  MonacoEnvironment?: MonacoWorkerEnvironment;
-};
+// monaco 本体、它的 worker 与语言贡献加起来是 MB 级产物，静态 import 会把它们钉进工具 chunk 的
+// 首屏关键路径。改成挂载前 await 一次：只有真正要建编辑器时才下载。
+let monaco!: MonacoRuntime;
+let monacoLoading: Promise<MonacoRuntime> | null = null;
 
-monacoGlobal.MonacoEnvironment ??= {
-  getWorker: (_moduleId, label) => (label === 'json' ? new JsonWorker() : new EditorWorker()),
-};
+function loadMonaco(): Promise<MonacoRuntime> {
+  monacoLoading ??= (async () => {
+    const [runtime, { default: EditorWorker }, { default: JsonWorker }] = await Promise.all([
+      import('monaco-editor'),
+      import('monaco-editor/editor/editor.worker.js?worker'),
+      import('monaco-editor/language/json/json.worker.js?worker'),
+      import('monaco-editor/language/json/monaco.contribution.js'),
+    ]);
+    const monacoGlobal = globalThis as typeof globalThis & {
+      MonacoEnvironment?: MonacoWorkerEnvironment;
+    };
+    monacoGlobal.MonacoEnvironment ??= {
+      getWorker: (_moduleId, label) => (label === 'json' ? new JsonWorker() : new EditorWorker()),
+    };
+    monaco = runtime;
+    return runtime;
+  })();
+  return monacoLoading;
+}
 
 const model = defineModel<string>({ required: true });
 const emit = defineEmits<{
@@ -45,8 +61,8 @@ const props = withDefaults(
 );
 
 let mountElement: HTMLDivElement | null = null;
-let editor: monaco.editor.IStandaloneCodeEditor | null = null;
-let contentDisposable: monaco.IDisposable | null = null;
+let editor: MonacoEditor.IStandaloneCodeEditor | null = null;
+let contentDisposable: MonacoDisposable | null = null;
 let themeObserver: MutationObserver | null = null;
 let syncing = false;
 
@@ -137,7 +153,10 @@ function handlePaste(event: ClipboardEvent): void {
 
 defineExpose({ foldAll, unfoldAll, focus });
 
-onMounted(() => {
+onMounted(async () => {
+  if (!mountElement) return;
+  await loadMonaco();
+  // 加载期间组件可能已卸载，此时模板 ref 已被置空，不能往脱离文档的节点上建编辑器。
   if (!mountElement) return;
   registerThemes();
   editor = monaco.editor.create(mountElement, {
@@ -181,7 +200,9 @@ onMounted(() => {
   });
 });
 
-watch(toolsBackgroundPreviewActive, () => monaco.editor.setTheme(resolveTheme()));
+watch(toolsBackgroundPreviewActive, () => {
+  if (monaco) monaco.editor.setTheme(resolveTheme());
+});
 
 watch(model, (value) => {
   if (!editor || editor.getValue() === value) return;

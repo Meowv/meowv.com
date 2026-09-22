@@ -30,10 +30,10 @@ import {
   IconX,
 } from '@tabler/icons-vue';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import * as monaco from 'monaco-editor/editor/editor.api.js';
-import EditorWorker from 'monaco-editor/editor/editor.worker.js?worker';
+import type { editor as MonacoEditor } from 'monaco-editor/editor/editor.api.js';
 import { useRouter } from 'vue-router';
 import { useTheme } from '@/composables/useTheme';
+import '@/features/mermaid/mermaid.css';
 import { STORAGE_POLICY, storageAvailable } from '@/core/privacy/storage';
 import StudioLogo from '@/components/StudioLogo.vue';
 import { sanitizeMermaidSvg } from '@/features/markdown/services/mermaid-security';
@@ -84,10 +84,29 @@ interface MonacoWorkerEnvironment {
   getWorker(moduleId: string, label: string): Worker;
 }
 type MermaidExportFormat = 'svg' | 'png' | 'jpg' | 'webp' | 'pdf' | 'mmd' | 'markdown' | 'json';
-const monacoGlobal = globalThis as typeof globalThis & {
-  MonacoEnvironment?: MonacoWorkerEnvironment;
-};
-monacoGlobal.MonacoEnvironment ??= { getWorker: () => new EditorWorker() };
+
+type MonacoRuntime = typeof import('monaco-editor/editor/editor.api.js');
+
+// monaco 本体与它的 worker 是 MB 级产物，静态 import 会把它们钉进 /mermaid 的首屏关键路径。
+// 改成挂载前 await 一次：只有真正要建源码编辑器时才下载。
+let monaco!: MonacoRuntime;
+let monacoLoading: Promise<MonacoRuntime> | null = null;
+
+function loadMonaco(): Promise<MonacoRuntime> {
+  monacoLoading ??= (async () => {
+    const [runtime, { default: EditorWorker }] = await Promise.all([
+      import('monaco-editor/editor/editor.api.js'),
+      import('monaco-editor/editor/editor.worker.js?worker'),
+    ]);
+    const monacoGlobal = globalThis as typeof globalThis & {
+      MonacoEnvironment?: MonacoWorkerEnvironment;
+    };
+    monacoGlobal.MonacoEnvironment ??= { getWorker: () => new EditorWorker() };
+    monaco = runtime;
+    return runtime;
+  })();
+  return monacoLoading;
+}
 
 const router = useRouter();
 const { resolved: resolvedTheme, toggle: toggleTheme } = useTheme();
@@ -124,8 +143,8 @@ const saveMessage = ref('');
 const shareMessage = ref('');
 const conflictDocument = ref<MermaidDocument | null>(null);
 const isFullscreen = ref(false);
-let sourceEditor: monaco.editor.IStandaloneCodeEditor | null = null;
-let sourceModel: monaco.editor.ITextModel | null = null;
+let sourceEditor: MonacoEditor.IStandaloneCodeEditor | null = null;
+let sourceModel: MonacoEditor.ITextModel | null = null;
 let saveTimer: number | undefined;
 let saveQueue = Promise.resolve();
 let editingSession: MermaidEditingSession | null = null;
@@ -300,7 +319,7 @@ function editorTheme(): string {
   }
   return resolvedTheme.value === 'dark' ? 'mermaid-dark' : 'mermaid-light';
 }
-function editorOptions(): monaco.editor.IStandaloneEditorConstructionOptions {
+function editorOptions(): MonacoEditor.IStandaloneEditorConstructionOptions {
   return {
     language: 'mermaid',
     automaticLayout: true,
@@ -322,7 +341,10 @@ function editorOptions(): monaco.editor.IStandaloneEditorConstructionOptions {
     readOnly: false,
   };
 }
-function mountEditors(): void {
+async function mountEditors(): Promise<void> {
+  if (!sourceEditorMount.value) return;
+  await loadMonaco();
+  // 加载期间组件可能已卸载，此时模板 ref 已被置空，不能往脱离文档的节点上建编辑器。
   if (!sourceEditorMount.value) return;
   registerMermaidLanguage();
   registerThemes();
@@ -1219,7 +1241,7 @@ onMounted(async () => {
   }
   await loadInitial();
   await nextTick();
-  mountEditors();
+  await mountEditors();
   initialLoadComplete = true;
   await mountVisualSession();
 });

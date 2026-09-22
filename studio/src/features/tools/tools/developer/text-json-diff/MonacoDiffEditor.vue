@@ -1,29 +1,50 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, watch, type ComponentPublicInstance } from 'vue';
-import * as monaco from 'monaco-editor';
-import EditorWorker from 'monaco-editor/editor/editor.worker.js?worker';
-import JsonWorker from 'monaco-editor/language/json/json.worker.js?worker';
-import 'monaco-editor/language/json/monaco.contribution.js';
+import type {
+  editor as MonacoEditor,
+  IDisposable as MonacoDisposable,
+  Range as MonacoRange,
+} from 'monaco-editor';
 import { toolsBackgroundPreviewActive } from '@/core/shared/route-state';
+
+type MonacoRuntime = typeof import('monaco-editor');
 
 interface MonacoWorkerEnvironment {
   getWorker?(moduleId: string, label: string): Worker | Promise<Worker>;
 }
 
-const monacoGlobal = globalThis as typeof globalThis & {
-  MonacoEnvironment?: MonacoWorkerEnvironment;
-};
+// 见 ToolCodeEditor 的说明：monaco 本体、worker 与语言贡献都是 MB 级产物，
+// 静态 import 会把它钉进工具 chunk 的首屏关键路径，改成挂载前 await 一次。
+let monaco!: MonacoRuntime;
+let monacoLoading: Promise<MonacoRuntime> | null = null;
 
-const existingWorkerEnvironment = monacoGlobal.MonacoEnvironment;
-const existingGetWorker = existingWorkerEnvironment?.getWorker?.bind(existingWorkerEnvironment);
+function loadMonaco(): Promise<MonacoRuntime> {
+  monacoLoading ??= (async () => {
+    const [runtime, { default: EditorWorker }, { default: JsonWorker }] = await Promise.all([
+      import('monaco-editor'),
+      import('monaco-editor/editor/editor.worker.js?worker'),
+      import('monaco-editor/language/json/json.worker.js?worker'),
+      import('monaco-editor/language/json/monaco.contribution.js'),
+    ]);
+    const monacoGlobal = globalThis as typeof globalThis & {
+      MonacoEnvironment?: MonacoWorkerEnvironment;
+    };
+    // 保持原来的语义：本组件要 json worker，但要把别人已经装好的 worker 工厂链下去。
+    const existingWorkerEnvironment = monacoGlobal.MonacoEnvironment;
+    const existingGetWorker = existingWorkerEnvironment?.getWorker?.bind(existingWorkerEnvironment);
 
-monacoGlobal.MonacoEnvironment = {
-  ...existingWorkerEnvironment,
-  getWorker: (moduleId, label) => {
-    if (label === 'json') return new JsonWorker();
-    return existingGetWorker?.(moduleId, label) ?? new EditorWorker();
-  },
-};
+    monacoGlobal.MonacoEnvironment = {
+      ...existingWorkerEnvironment,
+      getWorker: (moduleId, label) => {
+        if (label === 'json') return new JsonWorker();
+        return existingGetWorker?.(moduleId, label) ?? new EditorWorker();
+      },
+    };
+    monaco = runtime;
+    return runtime;
+  })();
+  return monacoLoading;
+}
 
 const original = defineModel<string>('original', { required: true });
 const modified = defineModel<string>('modified', { required: true });
@@ -49,16 +70,16 @@ const props = withDefaults(
 );
 
 let mountElement: HTMLDivElement | null = null;
-let editor: monaco.editor.IStandaloneDiffEditor | null = null;
-let originalModel: monaco.editor.ITextModel | null = null;
-let modifiedModel: monaco.editor.ITextModel | null = null;
-let originalDisposable: monaco.IDisposable | null = null;
-let modifiedDisposable: monaco.IDisposable | null = null;
+let editor: MonacoEditor.IStandaloneDiffEditor | null = null;
+let originalModel: MonacoEditor.ITextModel | null = null;
+let modifiedModel: MonacoEditor.ITextModel | null = null;
+let originalDisposable: MonacoDisposable | null = null;
+let modifiedDisposable: MonacoDisposable | null = null;
 let themeObserver: MutationObserver | null = null;
 let syncing = false;
-let originalDecorations: monaco.editor.IEditorDecorationsCollection | null = null;
-let modifiedDecorations: monaco.editor.IEditorDecorationsCollection | null = null;
-let customDifferences: Array<{ original: monaco.Range; modified: monaco.Range }> = [];
+let originalDecorations: MonacoEditor.IEditorDecorationsCollection | null = null;
+let modifiedDecorations: MonacoEditor.IEditorDecorationsCollection | null = null;
+let customDifferences: Array<{ original: MonacoRange; modified: MonacoRange }> = [];
 let customDifferenceIndex = -1;
 let decorationTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -110,17 +131,13 @@ function visualTokens(
   return result;
 }
 
-function rangeFromOffsets(
-  model: monaco.editor.ITextModel,
-  start: number,
-  end: number,
-): monaco.Range {
+function rangeFromOffsets(model: MonacoEditor.ITextModel, start: number, end: number): MonacoRange {
   const from = model.getPositionAt(start);
   const to = model.getPositionAt(Math.max(start, end));
   return new monaco.Range(from.lineNumber, from.column, to.lineNumber, to.column);
 }
 
-function wholeLineRange(model: monaco.editor.ITextModel, start: number, end: number): monaco.Range {
+function wholeLineRange(model: MonacoEditor.ITextModel, start: number, end: number): MonacoRange {
   const startLine = model.getPositionAt(start).lineNumber;
   const endLine = model.getPositionAt(Math.max(start, end - 1)).lineNumber;
   return new monaco.Range(startLine, 1, endLine, model.getLineMaxColumn(endLine));
@@ -129,9 +146,9 @@ function wholeLineRange(model: monaco.editor.ITextModel, start: number, end: num
 function windowedLineDifferences(
   left: VisualToken[],
   right: VisualToken[],
-): Array<{ original: monaco.Range; modified: monaco.Range }> {
+): Array<{ original: MonacoRange; modified: MonacoRange }> {
   if (!originalModel || !modifiedModel) return [];
-  const result: Array<{ original: monaco.Range; modified: monaco.Range }> = [];
+  const result: Array<{ original: MonacoRange; modified: MonacoRange }> = [];
   let i = 0;
   let j = 0;
   while (i < left.length || j < right.length) {
@@ -175,7 +192,7 @@ function windowedLineDifferences(
   return result;
 }
 
-function visualDifferences(): Array<{ original: monaco.Range; modified: monaco.Range }> {
+function visualDifferences(): Array<{ original: MonacoRange; modified: MonacoRange }> {
   if (!originalModel || !modifiedModel || props.language !== 'plaintext') return [];
   const left = visualTokens(originalModel.getValue());
   const right = visualTokens(modifiedModel.getValue());
@@ -196,7 +213,7 @@ function visualDifferences(): Array<{ original: monaco.Range; modified: monaco.R
           : Math.max(table[(i + 1) * columns + j]!, table[i * columns + j + 1]!);
     }
   }
-  const result: Array<{ original: monaco.Range; modified: monaco.Range }> = [];
+  const result: Array<{ original: MonacoRange; modified: MonacoRange }> = [];
   let i = 0;
   let j = 0;
   while (i < left.length || j < right.length) {
@@ -351,6 +368,7 @@ function registerThemes(): void {
 }
 
 function refreshTheme(): void {
+  if (!monaco) return;
   const dark = document.documentElement.dataset.theme === 'dark';
   const backgroundPreview = toolsBackgroundPreviewActive.value;
   monaco.editor.defineTheme('studio-diff-custom-light', {
@@ -425,7 +443,10 @@ function goToDiff(direction: 'next' | 'previous'): void {
 
 defineExpose({ reveal, goToDiff });
 
-onMounted(() => {
+onMounted(async () => {
+  if (!mountElement) return;
+  await loadMonaco();
+  // 加载期间组件可能已卸载，此时模板 ref 已被置空，不能往脱离文档的节点上建编辑器。
   if (!mountElement) return;
   registerThemes();
   originalModel = monaco.editor.createModel(original.value, props.language);

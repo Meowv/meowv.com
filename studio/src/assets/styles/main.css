@@ -1,7 +1,10 @@
 @import 'tailwindcss';
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
 @import './tokens.css';
-@import '../../features/mermaid/mermaid.css';
+/*
+ * Mermaid 的样式不在这里引：它是页面专属的（1181 行），放进主 CSS 会让每个页面都多下载一份
+ * 渲染阻塞样式。改由 MermaidPage.vue 引，随 /mermaid 的路由 CSS 一起加载。
+ */
 
 *,
 *::before,

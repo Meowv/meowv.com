@@ -1,5 +1,10 @@
 /// <reference types="vite/client" />
 
+// monaco 的语言贡献模块只有副作用、包内不带 .d.ts。静态副作用导入不需要声明，
+// 但改成动态 import() 后 TS 会按模块解析并报 TS7016，这里补上显式声明。
+declare module 'monaco-editor/language/json/monaco.contribution.js';
+declare module 'monaco-editor/basic-languages/monaco.contribution.js';
+
 interface FileSystemFileHandle {
   getFile(): Promise<File>;
 }

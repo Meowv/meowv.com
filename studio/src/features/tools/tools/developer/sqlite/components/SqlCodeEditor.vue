@@ -1,24 +1,43 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, watch, type ComponentPublicInstance } from 'vue';
-import * as monaco from 'monaco-editor';
-import EditorWorker from 'monaco-editor/editor/editor.worker.js?worker';
-import 'monaco-editor/basic-languages/monaco.contribution.js';
+import type { editor as MonacoEditor, IDisposable as MonacoDisposable } from 'monaco-editor';
 import { toolsBackgroundPreviewActive } from '@/core/shared/route-state';
+
+type MonacoRuntime = typeof import('monaco-editor');
 
 interface MonacoWorkerEnvironment {
   getWorker(moduleId: string, label: string): Worker;
 }
 
+// 见 ToolCodeEditor 的说明：monaco 本体、worker 与语言贡献都是 MB 级产物，
+// 静态 import 会把它钉进工具 chunk 的首屏关键路径，改成挂载前 await 一次。
+let monaco!: MonacoRuntime;
+let monacoLoading: Promise<MonacoRuntime> | null = null;
+
+function loadMonaco(): Promise<MonacoRuntime> {
+  monacoLoading ??= (async () => {
+    const [runtime, { default: EditorWorker }] = await Promise.all([
+      import('monaco-editor'),
+      import('monaco-editor/editor/editor.worker.js?worker'),
+      import('monaco-editor/basic-languages/monaco.contribution.js'),
+    ]);
+    const monacoGlobal = globalThis as typeof globalThis & {
+      MonacoEnvironment?: MonacoWorkerEnvironment;
+    };
+    monacoGlobal.MonacoEnvironment ??= { getWorker: () => new EditorWorker() };
+    monaco = runtime;
+    return runtime;
+  })();
+  return monacoLoading;
+}
+
 const model = defineModel<string>({ required: true });
 const emit = defineEmits<{ run: [] }>();
 const props = withDefaults(defineProps<{ label?: string }>(), { label: 'SQL 编辑器' });
-const monacoGlobal = globalThis as typeof globalThis & {
-  MonacoEnvironment?: MonacoWorkerEnvironment;
-};
 
 let mountElement: HTMLDivElement | null = null;
-let editor: monaco.editor.IStandaloneCodeEditor | null = null;
-let contentDisposable: monaco.IDisposable | null = null;
+let editor: MonacoEditor.IStandaloneCodeEditor | null = null;
+let contentDisposable: MonacoDisposable | null = null;
 let observer: MutationObserver | null = null;
 let syncing = false;
 
@@ -76,9 +95,11 @@ function run(): void {
 
 defineExpose({ focus: () => editor?.focus(), run });
 
-onMounted(() => {
+onMounted(async () => {
   if (!mountElement) return;
-  monacoGlobal.MonacoEnvironment ??= { getWorker: () => new EditorWorker() };
+  await loadMonaco();
+  // 加载期间组件可能已卸载，此时模板 ref 已被置空，不能往脱离文档的节点上建编辑器。
+  if (!mountElement) return;
   registerThemes();
   editor = monaco.editor.create(mountElement, {
     ariaLabel: props.label,
@@ -105,7 +126,9 @@ onMounted(() => {
   observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 });
 
-watch(toolsBackgroundPreviewActive, () => monaco.editor.setTheme(theme()));
+watch(toolsBackgroundPreviewActive, () => {
+  if (monaco) monaco.editor.setTheme(theme());
+});
 
 watch(model, (value) => {
   if (!editor || editor.getValue() === value) return;

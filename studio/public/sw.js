@@ -1,6 +1,14 @@
 /* global self, caches, fetch, URL */
 
-const CACHE_VERSION = 'v1';
+// 构建期注入，不要写死。
+//
+// `sw.js` 是原样拷贝到 dist 的，内容不参与构建哈希 —— 写死一个常量（这里曾经是 'v1'）会让
+// 浏览器逐字节比对后发现「SW 没变」，于是永远不触发更新，下面的 activate 清理也就永远不执行，
+// 历史版本的资源在 Cache Storage 里无限累积。
+//
+// 注入逻辑见 vite/serviceWorkerPlugin.ts；取值是本次全部产物文件名 + 本文件的摘要，
+// 所以任何内容变化都会换版本，内容没变则版本不变。
+const CACHE_VERSION = '__STUDIO_CACHE_VERSION__';
 const CACHE_PREFIX = 'meowv-studio-';
 const SHELL_CACHE = `${CACHE_PREFIX}shell-${CACHE_VERSION}`;
 const ASSET_CACHE = `${CACHE_PREFIX}assets-${CACHE_VERSION}`;

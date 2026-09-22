@@ -18,7 +18,7 @@
 - `src/components/`、`src/composables/`：共享组件与组合式逻辑。
 - `src/core/`：浏览器、本地隐私与通用基础能力（`browser/`、`mermaid/`、`privacy/`、`shared/`、`components/`）。
 - `src/assets/`、`public/`：样式与静态资源。
-- `vite/`：自定义 Vite 插件与构建配置（`buildConfig.ts`、`zitiePlugin.ts`、`builtinBooksDevPlugin.ts`、`cubingWorkerPreloadPlugin.ts`、`wallpaperConfig.ts`、`wallpaperDownloadProxyPlugin.ts`）。
+- `vite/`：自定义 Vite 插件与构建配置（`buildConfig.ts`、`zitiePlugin.ts`、`builtinBooksDevPlugin.ts`、`cubingWorkerPreloadPlugin.ts`、`serviceWorkerPlugin.ts`、`wallpaperConfig.ts`、`wallpaperDownloadProxyPlugin.ts`）。
 - `scripts/encrypt-wallpaper.mjs`：部署前把壁纸 catalog 与 bootstrap 加密为版本化 `.bin` 的唯一入口。
 - `patches/`：pnpm patch 的补丁（`@excalidraw/excalidraw@0.18.1`、`jsoncrack-react@1.0.3`），升级对应依赖时要一并处理。
 - `src/features/zitie/`：独立 React 字帖应用的组件、配置、Canvas、字体与导出逻辑。
@@ -31,6 +31,9 @@
 - 首页不得预加载重型编辑器或 WASM；其余菜单各自独立路由并按需加载。
 - 文件打开、新建、保存和销毁必须经过统一的文件交接入口（`src/composables/useFileLauncher.ts` 与 `src/core/browser/file-handoff.ts`），不要在页面内自行判断格式或跳转。
 - 需要串行化的渲染与保存必须排队执行，不要引入并行：Mermaid 任务统一走 `src/core/mermaid/scheduler.ts` 的 `enqueueMermaidTask`；绘图保存与书籍渲染各自维护 Promise 链。
+- **缓存失效有两条不能动的约定**，改动前先读注释：
+  - `public/sw.js` 的 `CACHE_VERSION` 是构建期注入的占位符（`vite/serviceWorkerPlugin.ts` 在 `closeBundle` 里替换成产物摘要），**不要写死成常量** —— 写死会让浏览器逐字节比对后认为 SW 永远没变，`activate` 的旧缓存清理就永远不执行，Cache Storage 会跨发版无限累积。
+  - pdfjs 运行时资源（`jbig2.wasm`、`openjpeg.wasm`、`qcms_bg.wasm` 及 no-wasm 回退）**不能加文件名哈希** —— pdfjs 按固定文件名从 `wasmUrl` 指向的目录里取。它们的失效靠 `buildConfig.ts` 里带 pdfjs 版本的**目录名**（`assets/pdfjs-<版本>/`）。
 - **用户文件、图片和附件不得上传**，也不得写入 Cookie、日志或远程数据库。涉及文件系统、导出、Worker 或对象 URL 时，保留现有的授权、取消和资源释放处理。
 - 壁纸页的桌面 App 推广位（`src/features/wallpapers/app-promo/`）在运行时读取同域 `data/livewall/version.json` 获取版本与安装包地址；`livewall-meta.ts` 的 `LIVEWALL_FALLBACK_VERSION` 是拉取失败时的静态兜底，**livewall 发版后必须同步更新**（兜底下载地址由该常量派生，不手写完整 URL，以防版本与地址漂移）。
 

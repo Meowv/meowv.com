@@ -19,27 +19,10 @@ import {
   Undo2,
 } from '@/features/markdown/icons';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import * as monaco from 'monaco-editor/editor/editor.api.js';
-import EditorWorker from 'monaco-editor/editor/editor.worker.js?worker';
-import 'monaco-editor/languages/definitions/cpp/register.js';
-import 'monaco-editor/languages/definitions/csharp/register.js';
-import 'monaco-editor/languages/definitions/css/register.js';
-import 'monaco-editor/languages/definitions/dockerfile/register.js';
-import 'monaco-editor/languages/definitions/go/register.js';
-import 'monaco-editor/languages/definitions/html/register.js';
-import 'monaco-editor/languages/definitions/ini/register.js';
-import 'monaco-editor/languages/definitions/java/register.js';
-import 'monaco-editor/languages/definitions/javascript/register.js';
-import 'monaco-editor/languages/definitions/less/register.js';
-import 'monaco-editor/languages/definitions/markdown/register.js';
-import 'monaco-editor/languages/definitions/python/register.js';
-import 'monaco-editor/languages/definitions/rust/register.js';
-import 'monaco-editor/languages/definitions/scss/register.js';
-import 'monaco-editor/languages/definitions/shell/register.js';
-import 'monaco-editor/languages/definitions/sql/register.js';
-import 'monaco-editor/languages/definitions/typescript/register.js';
-import 'monaco-editor/languages/definitions/xml/register.js';
-import 'monaco-editor/languages/definitions/yaml/register.js';
+import type {
+  editor as MonacoEditor,
+  Range as MonacoRange,
+} from 'monaco-editor/editor/editor.api.js';
 import {
   markdownBackgroundPreviewActive,
   markdownFullscreenActive,
@@ -56,13 +39,49 @@ interface TextReplacement {
   selectionEnd?: number;
 }
 
-const monacoGlobal = globalThis as typeof globalThis & {
-  MonacoEnvironment?: MonacoWorkerEnvironment;
-};
+type MonacoRuntime = typeof import('monaco-editor/editor/editor.api.js');
 
-monacoGlobal.MonacoEnvironment ??= {
-  getWorker: () => new EditorWorker(),
-};
+// monaco 本体、它的 worker 以及 19 个语言定义加起来是 MB 级产物，静态 import 会把它们钉进
+// /markdown 的首屏关键路径。改成挂载前 await 一次：只有真正要建编辑器时才下载。
+let monaco!: MonacoRuntime;
+let monacoLoading: Promise<MonacoRuntime> | null = null;
+
+function loadMonaco(): Promise<MonacoRuntime> {
+  monacoLoading ??= (async () => {
+    const [runtime, { default: EditorWorker }] = await Promise.all([
+      import('monaco-editor/editor/editor.api.js'),
+      import('monaco-editor/editor/editor.worker.js?worker'),
+      import('monaco-editor/languages/definitions/cpp/register.js'),
+      import('monaco-editor/languages/definitions/csharp/register.js'),
+      import('monaco-editor/languages/definitions/css/register.js'),
+      import('monaco-editor/languages/definitions/dockerfile/register.js'),
+      import('monaco-editor/languages/definitions/go/register.js'),
+      import('monaco-editor/languages/definitions/html/register.js'),
+      import('monaco-editor/languages/definitions/ini/register.js'),
+      import('monaco-editor/languages/definitions/java/register.js'),
+      import('monaco-editor/languages/definitions/javascript/register.js'),
+      import('monaco-editor/languages/definitions/less/register.js'),
+      import('monaco-editor/languages/definitions/markdown/register.js'),
+      import('monaco-editor/languages/definitions/python/register.js'),
+      import('monaco-editor/languages/definitions/rust/register.js'),
+      import('monaco-editor/languages/definitions/scss/register.js'),
+      import('monaco-editor/languages/definitions/shell/register.js'),
+      import('monaco-editor/languages/definitions/sql/register.js'),
+      import('monaco-editor/languages/definitions/typescript/register.js'),
+      import('monaco-editor/languages/definitions/xml/register.js'),
+      import('monaco-editor/languages/definitions/yaml/register.js'),
+    ]);
+    const monacoGlobal = globalThis as typeof globalThis & {
+      MonacoEnvironment?: MonacoWorkerEnvironment;
+    };
+    monacoGlobal.MonacoEnvironment ??= {
+      getWorker: () => new EditorWorker(),
+    };
+    monaco = runtime;
+    return runtime;
+  })();
+  return monacoLoading;
+}
 
 const store = useWorkspaceStore();
 const editorMount = ref<HTMLDivElement | null>(null);
@@ -117,7 +136,7 @@ function toggleFullscreen(): void {
   }
 }
 
-let editorInstance: monaco.editor.IStandaloneCodeEditor | null = null;
+let editorInstance: MonacoEditor.IStandaloneCodeEditor | null = null;
 let syncingFromStore = false;
 let syncingFromEditor = false;
 let syncingScroll = false;
@@ -264,7 +283,7 @@ function registerEditorThemes(): void {
   });
 }
 
-function editorOptions(): monaco.editor.IStandaloneEditorConstructionOptions {
+function editorOptions(): MonacoEditor.IStandaloneEditorConstructionOptions {
   return {
     ariaLabel: store.isPlainTextDocument ? '文本编辑器' : 'Markdown 编辑器',
     automaticLayout: true,
@@ -371,9 +390,9 @@ function wrapSelection(before: string, after: string, placeholder: string): void
 }
 
 function selectedLineRange(
-  editor: monaco.editor.IStandaloneCodeEditor,
-  model: monaco.editor.ITextModel,
-): monaco.Range | null {
+  editor: MonacoEditor.IStandaloneCodeEditor,
+  model: MonacoEditor.ITextModel,
+): MonacoRange | null {
   const selection = editor.getSelection();
   if (!selection) {
     return null;
@@ -756,11 +775,16 @@ async function saveUntitledDraft(): Promise<void> {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   if (!editorMount.value) {
     return;
   }
 
+  await loadMonaco();
+  // 加载期间组件可能已卸载，此时模板 ref 已被置空，不能往脱离文档的节点上建编辑器。
+  if (!editorMount.value) {
+    return;
+  }
   registerEditorThemes();
   registerGenericTextLanguage();
   editorInstance = monaco.editor.create(editorMount.value, editorOptions());
@@ -833,6 +857,7 @@ watch(
 );
 
 watch([() => store.resolvedTheme, backgroundPreviewActive], ([theme, backgroundPreview]) => {
+  if (!monaco) return;
   monaco.editor.setTheme(editorThemeName(theme, backgroundPreview));
 });
 
