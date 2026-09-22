@@ -245,7 +245,9 @@ build_project() {
     livewall)
       (
         cd "$ROOT_DIR/livewall"
-        ./build.sh
+        # --bump-build：这里才是发布路径，只有它会递增 CFBundleVersion。
+        # 本地运行（`./run.sh lw` → `livewall/run.sh`）不传这个旗标，build 号不动。
+        ./build.sh --bump-build
       )
       ;;
   esac

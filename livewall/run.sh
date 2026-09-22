@@ -10,6 +10,9 @@
 # 构建配置：默认 **debug**。开发者工具（菜单里的「打印窗口层级表」）用
 # `#if DEBUG` 隔离，只在 debug 构建里存在 —— 想验发布版行为用 ./build.sh（release）。
 #
+# 本脚本（连同它调的 `build.sh`）**不会**递增 CFBundleVersion：递增只属于发布路径
+# （根 `build.sh`、`make-dmg.sh` 会传 `--bump-build`），本地运行不碰源 Info.plist。
+#
 # 清单由 App 自己从线上拉取（https://studio.meowv.com/data/livewall/catalog.json），
 # 断网时用上次成功拉取的本地副本兜底 —— 这里不再同步任何清单文件。
 #

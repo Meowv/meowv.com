@@ -6,7 +6,7 @@
 #   DMG 保留全部元数据，双击挂载后把 App 拖进「应用程序」即可 —— 这是 macOS 的分发惯例。
 #
 # 用法：
-#   ./make-dmg.sh              先按 release 构建，再打包
+#   ./make-dmg.sh              先按 release 构建（含 build 号递增），再打包
 #   ./make-dmg.sh --no-build   直接打包现有的 build/LiveWall.app
 #
 # 产物：build/LiveWall-<版本>.dmg（卷名「LiveWall」，卷里是 App + 指向 /Applications 的链接）
@@ -36,7 +36,7 @@ usage() {
 用法：./make-dmg.sh [选项]
 
 选项：
-  --no-build   直接打包现有的 build/LiveWall.app（默认会先跑 ./build.sh）
+  --no-build   直接打包现有的 build/LiveWall.app（默认会先跑 ./build.sh --bump-build）
   -h, --help   显示本帮助
 EOF
 }
@@ -60,7 +60,9 @@ while [[ ${#} -gt 0 ]]; do
 done
 
 if [[ "${NO_BUILD}" -eq 0 ]]; then
-  "${ROOT}/build.sh"
+  # --bump-build：打 DMG 就是发布，递增由 build.sh 在组装 App 与 codesign 之前完成。
+  # 不传的话这里会撞上下面的递增校验（plist 里还是上一次的号）。
+  "${ROOT}/build.sh" --bump-build
 fi
 
 if [[ ! -d "${APP_BUNDLE}" ]]; then
@@ -75,12 +77,14 @@ VERSION="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "${PLI
 BUILD_NUMBER="$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "${PLIST}" 2>/dev/null || echo 0)"
 
 # ── build 号递增校验（兜底）────────────────────────────
-# 递增本身由 livewall/build.sh 自动完成 —— 它必须在组装 App 与 codesign **之前**
-# 写回源 plist，包内的 Info.plist 一旦改过签名就失效了。
+# 递增本身由 `livewall/build.sh --bump-build` 完成 —— 它必须在组装 App 与 codesign
+# **之前**写回源 plist，包内的 Info.plist 一旦改过签名就失效了。
+# 这个旗标只有发布路径会传（根 `build.sh`、本脚本），本地运行 `./run.sh` 不传，
+# 所以开发运行既不动 build 号，也不会走到这里。
 # 这里只做**兜底校验**：拦「用 `--no-build` 打一个**旧的** .app」这种情况 ——
 # 那时包内 build 号已经定死（改它会破坏签名），只能拦下来。
-# （根 `build.sh` 也是用 `--no-build` 调本脚本的，但那时 .app 刚被 `livewall/build.sh`
-#   递增过，所以正常路径撞不到这条。）
+# （根 `build.sh` 也是用 `--no-build` 调本脚本的，但那时 .app 刚被
+#   `livewall/build.sh --bump-build` 递增过，所以正常路径撞不到这条。）
 #
 # 为什么值得拦：客户端**只认 `CFBundleVersion`**（`UpdateEvaluator` 判
 # `feed.build > localBuild`）。不递增的话用户**永远看不到更新提示**，
@@ -103,8 +107,11 @@ if [[ "${PREVIOUS_BUILD}" =~ ^[0-9]+$ ]] && [[ "${BUILD_NUMBER}" =~ ^[0-9]+$ ]];
   if (( BUILD_NUMBER <= PREVIOUS_BUILD )); then
     echo "错误：CFBundleVersion 没有递增（本次 ${BUILD_NUMBER} ≤ 上次 ${PREVIOUS_BUILD}，来源 ${PREVIOUS_FEED}）。" >&2
     echo "      客户端只认它：不递增的话用户**永远看不到更新提示**，症状与「线上没发新版」一模一样。" >&2
-    echo "      正常路径不会走到这里 —— livewall/build.sh 会在组装 App 前自动递增。" >&2
-    echo "      撞到它说明这次用的是 --no-build 且手上的 .app 是旧的：重跑一次完整构建即可。" >&2
+    echo "      正常路径不会走到这里 —— livewall/build.sh --bump-build 会在组装 App 前自动递增。" >&2
+    echo "      撞到它说明这次用的是 --no-build 且手上的 .app 是旧的。两种解法：" >&2
+    echo "        · 去掉 --no-build 重跑 ./make-dmg.sh（它会自己递增）" >&2
+    echo "        · 或先 ./build.sh --bump-build 重新组装 App，再回来 --no-build 打包" >&2
+    echo "      ⚠️ 裸跑 ./build.sh 不递增（那是本地打包，不是发布路径），别指望它。" >&2
     exit 1
   fi
   echo "[dmg] build 号递增检查通过：${PREVIOUS_BUILD} → ${BUILD_NUMBER}"

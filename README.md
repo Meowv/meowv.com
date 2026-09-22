@@ -145,6 +145,7 @@ chmod +x run.sh build.sh deploy.sh
 
 - `--with-wallpapers` 只能与 `studio` 一起使用。
 - `--with-dmg` 只能与 `livewall` 一起使用：在 `.app` 之外额外打出 DMG，并对 `version.json` 做 Ed25519 签名（产出 `version.json.sig`），三者一起输出到 `build/studio.meowv.com/data/livewall/`（客户端更新接口就指向该目录，可直接部署）。**签名需要本机私钥 `~/.livewall-signing/version-key.txt`，且 `version.json` 与 `version.json.sig` 必须同一次上传** —— 少一个客户端就永远看不到更新，而症状与「线上没发新版」无法区分。细节见 [`livewall/README.md`](./livewall/README.md) 的「更新清单签名」。
+- `./build.sh livewall` 会顺带递增 livewall 的 `CFBundleVersion`（内部调 `livewall/build.sh --bump-build`）。**这是发布路径专有的行为**：本地 `./run.sh lw` 走的是 `livewall/run.sh`，不传该旗标，因此不会改到源 `Info.plist`。细节见 [`livewall/README.md`](./livewall/README.md) 的「发版步骤」。
 
 产物映射如下：
 

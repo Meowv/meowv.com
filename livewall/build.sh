@@ -12,6 +12,7 @@
 #   ./build.sh                       构建正式 App（默认）
 #   ./build.sh --product livewall  同上
 #   ./build.sh --debug               用 debug 配置
+#   ./build.sh --bump-build          发布构建：必要时递增 CFBundleVersion
 #   ./build.sh --clean               先清理产物
 
 set -euo pipefail
@@ -21,6 +22,11 @@ BUILD_DIR="$ROOT/build"
 CONFIGURATION="release"
 PRODUCT_KEY="livewall"
 CLEAN=0
+# build 号递增**只在发布构建里做**，默认关。本地开发运行（`./run.sh` / `./run.sh lw`）
+# 不该动源 plist —— 那会让「跑一次看看」也烧掉一个 build 号，还会把一次无关的
+# plist 改动留在工作区里。只有真正产出可分发包的路径（根 `build.sh`、`make-dmg.sh`）
+# 才传 --bump-build。
+BUMP_BUILD=0
 
 usage() {
   cat <<'EOF'
@@ -29,6 +35,8 @@ usage() {
 选项：
   --product livewall  构建正式 App（默认，也是唯一产品）
   --debug                     使用 debug 配置（编译更快，运行更慢）
+  --bump-build                发布构建：把 CFBundleVersion 递增到「上次产物 +1」
+                              （只有发布路径会传它；本地 ./run.sh 不传，build 号不动）
   --clean                     先删除 build/ 与 .build/
   -h, --help                  显示本帮助
 EOF
@@ -42,6 +50,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --debug)
       CONFIGURATION="debug"
+      shift
+      ;;
+    --bump-build)
+      BUMP_BUILD=1
       shift
       ;;
     --clean)
@@ -59,6 +71,13 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+# 递增只属于发布构建：debug 产物永远不会被分发，递增等于白烧一个 build 号。
+# 显式拦下来，免得「顺手加个 --debug 调试」把版本号带跑。
+if [[ "$BUMP_BUILD" -eq 1 ]] && [[ "$CONFIGURATION" == "debug" ]]; then
+  echo "错误：--bump-build 不能与 --debug 一起用（debug 产物不发布，递增没有意义）。" >&2
+  exit 2
+fi
 
 case "$PRODUCT_KEY" in
   livewall)
@@ -94,14 +113,19 @@ if [[ "$PLIST_EXECUTABLE" != "$PRODUCT" ]]; then
   exit 1
 fi
 
-# ── build 号自动递增 ────────────────────────────────────
+# ── build 号自动递增（**仅发布构建**，需 --bump-build）────
 # 客户端**只认 `CFBundleVersion`**（`UpdateEvaluator` 判 `feed.build > localBuild`）。
 # 忘了递增的后果是「发出去的包用户永远看不到更新提示」，而症状与「线上没发新版」
 # 完全一样，排障会往完全错误的方向走 —— 2026-09-22 就漏过一次。
 #
 # 但这个值**不需要人决定**：上次的 build 号就在参照物里，加一即可。手改是纯粹的重复
-# 劳动，而且手改本身就是出错来源。所以这里自动递增并写回源 plist。
+# 劳动，而且手改本身就是出错来源。所以发布构建时自动递增并写回源 plist。
 # 想手动指定更大跨度（比如直接跳到 10）时把 plist 改大即可 —— 只要大于参照物就不动它。
+#
+# ⚠️ 必须**只在发布路径**触发（`BUMP_BUILD=1`）。本地运行（`./run.sh`、`./run.sh lw`）
+#    不递增：跑一次看看不该烧掉一个 build 号，也不该在工作区里留一次与本次无关的 plist
+#    改动。判断依据是「这次是否产出可分发包」，不是「是否 release 配置」——
+#    `./run.sh --release` 也是本地运行，同样不递增。
 #
 # ⚠️ 必须在组装 .app 与 codesign **之前**做：包内的 Info.plist 一旦改过，已有签名即失效。
 # 参照物优先取「上次已装进 studio 部署目录的那一份」（最接近线上），其次取本地产物。
@@ -117,7 +141,7 @@ if [[ -f "${PREVIOUS_FEED}" ]]; then
     "${PREVIOUS_FEED}" 2>/dev/null || echo "")"
 fi
 
-if [[ "${PREVIOUS_BUILD}" =~ ^[0-9]+$ ]] && [[ "${CURRENT_BUILD}" =~ ^[0-9]+$ ]]; then
+if [[ "${BUMP_BUILD}" -eq 1 ]] && [[ "${PREVIOUS_BUILD}" =~ ^[0-9]+$ ]] && [[ "${CURRENT_BUILD}" =~ ^[0-9]+$ ]]; then
   if (( CURRENT_BUILD <= PREVIOUS_BUILD )); then
     NEW_BUILD=$((PREVIOUS_BUILD + 1))
     # ⚠️ 定点改一行，**不要用 `PlistBuddy -c Set`** —— 它会重写整个文件：缩进从 4 空格
@@ -142,8 +166,12 @@ PY
     echo "[build] CFBundleVersion：${CURRENT_BUILD}（高于上次产物的 ${PREVIOUS_BUILD}，保持不动）"
   fi
 else
-  # 两种原因分开报 —— 混成一句「找不到或不可用」会让人去翻路径，而实际可能只是值不对。
-  if [[ -f "${PREVIOUS_FEED}" ]]; then
+  # 三种原因分开报 —— 混成一句「找不到或不可用」会让人去翻路径，而实际可能只是值不对。
+  if [[ "${BUMP_BUILD}" -eq 0 ]]; then
+    # 本地运行：不碰 build 号，也**不输出任何东西**。否则每次 ./run.sh 都会多出一句
+    # 与本次改动无关的版本号噪音，看起来像「它动了什么」。这里就是要什么都不做。
+    :
+  elif [[ -f "${PREVIOUS_FEED}" ]]; then
     echo "[build] 参照物存在但其中的 build 不是数字（${PREVIOUS_FEED}），CFBundleVersion 保持 ${CURRENT_BUILD}"
   else
     echo "[build] 参照物不存在（两条候选都没有），CFBundleVersion 保持 ${CURRENT_BUILD}"
