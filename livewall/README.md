@@ -883,7 +883,8 @@ CryptoKit 的 Ed25519 **不是确定性签名**：同一把私钥、同一段字
   那会打断正在进行的点击。收起时作废是唯一既不漏看、也不残留的时机。
 
   ⚠️ 排障先看这一行：**写着「已是最新版本」就等于线上 `build` 没有比本地高**，不是功能坏了。
-  最常见的原因是发版忘了递增 `CFBundleVersion`。
+  通常是线上还没发新版、或发出去的就是同一份。`CFBundleVersion` 现在由 `build.sh` 自动递增
+  （见「发版步骤」），所以「忘了递增」已经不再是常见原因。
 - **不会并发**：`UpdateChecker` 用 `isChecking` 挡第二次，节流窗口内的自动检查直接丢弃
   （手动 `force: true` 可无视）。结果本身由状态字段缓存，不必重查。
 
@@ -908,12 +909,16 @@ fetch(version.json) → fetch(version.json.sig) → 验签 → 解析 → 判定
 ### 发版步骤
 
 ```bash
-# 1. 递增 Resources/Info-LiveWall.plist 的 CFBundleVersion（客户端只认它，忘了加就永远不提示）
-# 2. 根目录一步构建（打 .app + 打 dmg + 签名 version.json + 放进 studio 部署目录）
+# 1. 根目录一步构建（自动递增 CFBundleVersion + 打 .app + 打 dmg + 签名 version.json）
 ./build.sh livewall --with-dmg
-# 3. 上传
+# 2. 上传
 ./deploy.sh studio --dry-run && ./deploy.sh studio
 ```
+
+**`CFBundleVersion` 不需要手改**：`livewall/build.sh` 读上次产物的 `build`，若源 plist 的值不
+大于它就自动 `+1` 并写回 plist（客户端只认它，不递增就永远不提示）。提交时把它一起带上即可。
+想手动指定更大跨度（如直接跳到 10）时把 plist 改大 —— 脚本不会动它。
+`CFBundleShortVersionString` 仍需人工决定：它只进 dmg 文件名与展示，不参与更新判定。
 
 版本号、dmg 文件名、体积、sha256、`fileURL` 全由 `make-dmg.sh` 从 `Info.plist` 生成，
 并在同一步**对清单签名**（产出 `version.json.sig`）。根目录 `build.sh` 只把它们搬进

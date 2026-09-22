@@ -24,6 +24,9 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# 仓库根。studio 的部署目录（build/studio.meowv.com/）在根下，不在 livewall/ 下 ——
+# 少了这一层 `../` 会一直找不到 build 号参照物，递增校验静默失效（每次只打印「跳过」）。
+REPO_ROOT="$(cd "${ROOT}/.." && pwd)"
 APP_BUNDLE="${ROOT}/build/LiveWall.app"
 VOLUME_NAME="LiveWall"
 NO_BUILD=0
@@ -71,15 +74,23 @@ VERSION="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "${PLI
 # build 号是**版本比对的权威值**（客户端只看它），同样从 plist 读。
 BUILD_NUMBER="$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "${PLIST}" 2>/dev/null || echo 0)"
 
-# ── build 号必须递增 ────────────────────────────────────
-# 客户端**只认 `CFBundleVersion`**（`UpdateEvaluator` 判 `feed.build > localBuild`）。
-# 忘了递增的后果是「发出去的包用户永远看不到更新提示」—— 而症状与「线上没发新版」
-# 完全一样，排障会往完全错误的方向走。此前这里只有一句 echo 提醒，改成硬校验。
+# ── build 号递增校验（兜底）────────────────────────────
+# 递增本身由 livewall/build.sh 自动完成 —— 它必须在组装 App 与 codesign **之前**
+# 写回源 plist，包内的 Info.plist 一旦改过签名就失效了。
+# 这里只做**兜底校验**：拦「用 `--no-build` 打一个**旧的** .app」这种情况 ——
+# 那时包内 build 号已经定死（改它会破坏签名），只能拦下来。
+# （根 `build.sh` 也是用 `--no-build` 调本脚本的，但那时 .app 刚被 `livewall/build.sh`
+#   递增过，所以正常路径撞不到这条。）
 #
-# 与「签名失败就中断」同一类保护：宁可这次打包失败，也不要产出一份发不出去的清单。
+# 为什么值得拦：客户端**只认 `CFBundleVersion`**（`UpdateEvaluator` 判
+# `feed.build > localBuild`）。不递增的话用户**永远看不到更新提示**，
+# 而症状与「线上没发新版」完全一样，排障会往完全错误的方向走。
+#
 # 参照物优先取「上次已装进 studio 部署目录的那一份」（最接近线上），其次取本地产物。
-PREVIOUS_FEED="${ROOT}/build/studio.meowv.com/data/livewall/version.json"
-[[ -f "${PREVIOUS_FEED}" ]] || PREVIOUS_FEED="${ROOT}/build/version.json"
+FEED_IN_DEPLOY="${REPO_ROOT}/build/studio.meowv.com/data/livewall/version.json"
+FEED_IN_LIVEWALL="${ROOT}/build/version.json"
+PREVIOUS_FEED="${FEED_IN_DEPLOY}"
+[[ -f "${PREVIOUS_FEED}" ]] || PREVIOUS_FEED="${FEED_IN_LIVEWALL}"
 PREVIOUS_BUILD=""
 if [[ -f "${PREVIOUS_FEED}" ]]; then
   # 用 CLT 自带的 python3 读 JSON（项目本来就要 CLT）。取不到就当没有参照物。
@@ -92,19 +103,33 @@ if [[ "${PREVIOUS_BUILD}" =~ ^[0-9]+$ ]] && [[ "${BUILD_NUMBER}" =~ ^[0-9]+$ ]];
   if (( BUILD_NUMBER <= PREVIOUS_BUILD )); then
     echo "错误：CFBundleVersion 没有递增（本次 ${BUILD_NUMBER} ≤ 上次 ${PREVIOUS_BUILD}，来源 ${PREVIOUS_FEED}）。" >&2
     echo "      客户端只认它：不递增的话用户**永远看不到更新提示**，症状与「线上没发新版」一模一样。" >&2
-    echo "      先改 Resources/Info-LiveWall.plist 的 CFBundleVersion，再重新打包。" >&2
+    echo "      正常路径不会走到这里 —— livewall/build.sh 会在组装 App 前自动递增。" >&2
+    echo "      撞到它说明这次用的是 --no-build 且手上的 .app 是旧的：重跑一次完整构建即可。" >&2
     exit 1
   fi
   echo "[dmg] build 号递增检查通过：${PREVIOUS_BUILD} → ${BUILD_NUMBER}"
 else
-  echo "[dmg] 跳过 build 号递增检查（找不到上次的 version.json，或其中的 build 不是数字）"
+  # 跳过有两种原因，混在一句话里会让排障往错方向走（曾因此误判成「首次发版」）。
+  # 分开展示，并列出**两条**候选路径的存在性与读数 —— 一眼看出断在哪一环。
+  echo "[dmg] 跳过 build 号递增检查"
+  for candidate in "${FEED_IN_DEPLOY}" "${FEED_IN_LIVEWALL}"; do
+    if [[ ! -f "${candidate}" ]]; then
+      echo "[dmg]   参照物不存在：${candidate}"
+    else
+      echo "[dmg]   参照物存在但 build 不是数字：${candidate}"
+    fi
+  done
+  echo "[dmg]   首次发版（本机从未产出过 version.json）属正常；"
+  echo "[dmg]   否则说明参照物路径不对，递增校验**没有生效** —— 检查上面两条路径。"
 fi
 
 DMG_PATH="${ROOT}/build/LiveWall-${VERSION}.dmg"
 
 # 暂存目录：卷根 = App + 指向 /Applications 的符号链接（用户拖过去就等于安装）
 STAGE="$(mktemp -d)"
-trap 'rm -rf "${STAGE}"' EXIT
+# 挂载点也放进 trap：下面自检失败时会 exit 1，那时还没走到手动清理。
+MOUNT_POINT="$(mktemp -d)"
+trap 'rm -rf "${STAGE}" "${MOUNT_POINT}"' EXIT
 cp -R "${APP_BUNDLE}" "${STAGE}/"
 ln -s /Applications "${STAGE}/Applications"
 
@@ -119,15 +144,36 @@ else
   hdiutil create -volname "${VOLUME_NAME}" -srcfolder "${STAGE}" -ov -format UDZO "${DMG_PATH}" >/dev/null
 fi
 
-# 自检：能挂载、卷里两样东西都在、App 的签名完好
-MOUNT_POINT="$(mktemp -d)"
-if hdiutil attach "${DMG_PATH}" -nobrowse -mountpoint "${MOUNT_POINT}" >/dev/null 2>&1; then
-  [[ -d "${MOUNT_POINT}/LiveWall.app" ]] || echo "[dmg] 警告：卷里没有 LiveWall.app" >&2
-  [[ -L "${MOUNT_POINT}/Applications" ]] || echo "[dmg] 警告：卷里没有 Applications 链接" >&2
-  codesign -v "${MOUNT_POINT}/LiveWall.app" 2>/dev/null || echo "[dmg] 警告：App 签名校验未通过" >&2
-  hdiutil detach "${MOUNT_POINT}" >/dev/null 2>&1 || true
+# 自检：能挂载、卷里两样东西都在、App 的签名完好。
+#
+# ⚠️ 与「签名失败就中断」同一严格度。这三项任意一项不过，发出去的 dmg 用户就是打不开
+# （挂不上 / 少了 App / 签名坏了），而症状与「包本身有问题」无法区分。
+# 此前这里只打印警告、不中断，且 `attach` 失败时**整个自检被静默跳过** ——
+# 等于没有自检；加上通过时不输出任何东西，日志里根本看不出自检跑没跑。
+if ! hdiutil attach "${DMG_PATH}" -nobrowse -mountpoint "${MOUNT_POINT}" >/dev/null 2>&1; then
+  echo "错误：DMG 无法挂载，产物已损坏：${DMG_PATH}" >&2
+  exit 1
 fi
-rmdir "${MOUNT_POINT}" 2>/dev/null || true
+
+SELF_CHECK_FAILED=0
+if [[ ! -d "${MOUNT_POINT}/LiveWall.app" ]]; then
+  echo "错误：卷里没有 LiveWall.app" >&2
+  SELF_CHECK_FAILED=1
+fi
+if [[ ! -L "${MOUNT_POINT}/Applications" ]]; then
+  echo "错误：卷里没有 Applications 链接（用户无法拖拽安装）" >&2
+  SELF_CHECK_FAILED=1
+fi
+if ! codesign -v "${MOUNT_POINT}/LiveWall.app" 2>/dev/null; then
+  echo "错误：卷内 App 的签名校验未通过" >&2
+  SELF_CHECK_FAILED=1
+fi
+hdiutil detach "${MOUNT_POINT}" >/dev/null 2>&1 || true
+
+if [[ "${SELF_CHECK_FAILED}" -ne 0 ]]; then
+  exit 1
+fi
+echo "[dmg] 自检通过：可挂载、卷内含 App 与 Applications 链接、签名完好"
 
 # 版本信息（version.json）：与 dmg **同一次产出**，避免线上出现
 # 「version.json 说 0.2.0、实际文件还是 0.1.0」这种不一致。
@@ -175,6 +221,7 @@ SIZE="$(du -h "${DMG_PATH}" | cut -f1)"
 echo "[dmg] 产物：${DMG_PATH}（${SIZE}）"
 echo "[dmg] 版本信息：${FEED_PATH}（build ${BUILD_NUMBER}）"
 echo "[dmg] 签名：${SIG_PATH}"
-echo "[dmg] 已校验：CFBundleVersion 相对上次产物已递增（客户端只认它）"
+# 这里**不要**再补一句「已校验 CFBundleVersion 已递增」—— 那行此前是无条件打印的，
+# 走了「跳过」分支时也照打，等于把失效伪装成通过。校验结论只由上面那段输出一次。
 echo "[dmg] 提醒：version.json 与 version.json.sig 必须**同一次**上传，少一个客户端就看不到更新"
 echo "[dmg] 提示：未公证，别人首次打开需右键「打开」，或在「隐私与安全性」里点「仍要打开」"

@@ -94,6 +94,62 @@ if [[ "$PLIST_EXECUTABLE" != "$PRODUCT" ]]; then
   exit 1
 fi
 
+# ── build 号自动递增 ────────────────────────────────────
+# 客户端**只认 `CFBundleVersion`**（`UpdateEvaluator` 判 `feed.build > localBuild`）。
+# 忘了递增的后果是「发出去的包用户永远看不到更新提示」，而症状与「线上没发新版」
+# 完全一样，排障会往完全错误的方向走 —— 2026-09-22 就漏过一次。
+#
+# 但这个值**不需要人决定**：上次的 build 号就在参照物里，加一即可。手改是纯粹的重复
+# 劳动，而且手改本身就是出错来源。所以这里自动递增并写回源 plist。
+# 想手动指定更大跨度（比如直接跳到 10）时把 plist 改大即可 —— 只要大于参照物就不动它。
+#
+# ⚠️ 必须在组装 .app 与 codesign **之前**做：包内的 Info.plist 一旦改过，已有签名即失效。
+# 参照物优先取「上次已装进 studio 部署目录的那一份」（最接近线上），其次取本地产物。
+REPO_ROOT="$(cd "${ROOT}/.." && pwd)"
+PLIST_PATH="${ROOT}/${PLIST}"
+CURRENT_BUILD="$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "${PLIST_PATH}" 2>/dev/null || echo "")"
+PREVIOUS_FEED="${REPO_ROOT}/build/studio.meowv.com/data/livewall/version.json"
+[[ -f "${PREVIOUS_FEED}" ]] || PREVIOUS_FEED="${ROOT}/build/version.json"
+PREVIOUS_BUILD=""
+if [[ -f "${PREVIOUS_FEED}" ]]; then
+  PREVIOUS_BUILD="$(/usr/bin/python3 -c \
+    'import json,sys; print(json.load(open(sys.argv[1])).get("build",""))' \
+    "${PREVIOUS_FEED}" 2>/dev/null || echo "")"
+fi
+
+if [[ "${PREVIOUS_BUILD}" =~ ^[0-9]+$ ]] && [[ "${CURRENT_BUILD}" =~ ^[0-9]+$ ]]; then
+  if (( CURRENT_BUILD <= PREVIOUS_BUILD )); then
+    NEW_BUILD=$((PREVIOUS_BUILD + 1))
+    # ⚠️ 定点改一行，**不要用 `PlistBuddy -c Set`** —— 它会重写整个文件：缩进从 4 空格
+    #    变成 Tab、键按字母序重排，于是 diff 变成整片重写，与本次改动无关的噪音全进来了
+    #    （2026-09-22 实测踩到）。读值用 PlistBuddy 没问题，写值不要用。
+    /usr/bin/python3 - "${PLIST_PATH}" "${NEW_BUILD}" <<'PY'
+import pathlib, re, sys
+path, new_build = pathlib.Path(sys.argv[1]), sys.argv[2]
+text = path.read_text(encoding="utf-8")
+updated, count = re.subn(
+    r"(<key>CFBundleVersion</key>\s*<string>)\d+(</string>)",
+    lambda m: m.group(1) + new_build + m.group(2),
+    text,
+)
+if count != 1:
+    sys.exit(f"错误：{path} 里匹配到 {count} 处 CFBundleVersion（预期恰好 1 处）")
+path.write_text(updated, encoding="utf-8")
+PY
+    echo "[build] CFBundleVersion 自动递增：${CURRENT_BUILD} → ${NEW_BUILD}（上次产物是 ${PREVIOUS_BUILD}）"
+    echo "[build] 已写回 ${PLIST}，随本次改动一起提交即可"
+  else
+    echo "[build] CFBundleVersion：${CURRENT_BUILD}（高于上次产物的 ${PREVIOUS_BUILD}，保持不动）"
+  fi
+else
+  # 两种原因分开报 —— 混成一句「找不到或不可用」会让人去翻路径，而实际可能只是值不对。
+  if [[ -f "${PREVIOUS_FEED}" ]]; then
+    echo "[build] 参照物存在但其中的 build 不是数字（${PREVIOUS_FEED}），CFBundleVersion 保持 ${CURRENT_BUILD}"
+  else
+    echo "[build] 参照物不存在（两条候选都没有），CFBundleVersion 保持 ${CURRENT_BUILD}"
+  fi
+fi
+
 echo "[build] swift build -c $CONFIGURATION --product $PRODUCT"
 cd "$ROOT"
 

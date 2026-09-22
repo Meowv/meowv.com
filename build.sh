@@ -381,10 +381,14 @@ publish_one() {
 # 旧版本的 dmg 会一直留在 livewall/build/ 里，看着像本次产物。
 clean_livewall_dmg_artifacts() {
   rm -f "$ROOT_DIR"/livewall/build/*.dmg
-  rm -f "$ROOT_DIR"/livewall/build/version.json
   # 签名必须跟着清单一起清。留下一份**旧清单的** .sig，新清单就会配着旧签名被打包出去，
   # 客户端那边表现为「签名与版本信息不符」—— 比「没有签名」更难看出原因。
   rm -f "$ROOT_DIR"/livewall/build/version.json.sig
+  # ⚠️ 故意**不删** version.json：它是 make-dmg.sh 递增校验的**兜底参照物**
+  # （首选是 studio 部署目录里那一份）。在这里删掉，等于让校验在 studio 部署目录
+  # 缺失时静默退化成「跳过」，而症状只表现为一行提示，很难联想到是本行删的。
+  # 不删也不会把旧清单当成本次产物：dmg 已被上面清掉，install_livewall_update_feed
+  # 找不到 dmg 就会中止，且它还会核对 version.json 的 fileURL 与 dmg 文件名是否一致。
 }
 
 # DMG 与 version.json 必须落在 Studio 的部署目录里：version.json 的 fileURL 写死了
