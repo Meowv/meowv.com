@@ -194,31 +194,33 @@ extension AppDelegate {
         NSWorkspace.shared.open(url)
     }
 
-    /// 状态区里的一行占用数据。标记用于 `menuNeedsUpdate` 里定位它。
-    func usageRow(id: String, text: String) -> NSMenuItem {
-        let item = NSMenuItem(title: text, action: nil, keyEquivalent: "")
-        item.isEnabled = false
-        item.representedObject = id
-        return item
-    }
-
-    /// 状态区那一行占用数据：**内存在前、CPU 在后**（两行并一行，省菜单高度）。
-    var usageText: String {
-        guard let report = usageReport else {
-            // 四态的前两态：还没采到（测量中…）/ 采过但失败（暂不可用）。
-            // 两者都写成「测量中」会让失败被永远掩盖 —— 用户没有任何办法知道真相。
-            // 后两态（有报告但算不出占用率 / 有数据）走下面的 `combinedRow`。
-            let placeholder =
-                usageFailed ? ProcessUsageText.unavailable : ProcessUsageText.measuring
-            return "内存 \(placeholder) · CPU \(placeholder)"
+    #if DEBUG
+        /// 状态区里的一行占用数据。标记用于 `menuNeedsUpdate` 里定位它。
+        func usageRow(id: String, text: String) -> NSMenuItem {
+            let item = NSMenuItem(title: text, action: nil, keyEquivalent: "")
+            item.isEnabled = false
+            item.representedObject = id
+            return item
         }
-        return ProcessUsageText.combinedRow(
-            percent: report.cpuPercent,
-            windowSeconds: report.windowSeconds,
-            sinceLaunch: report.sinceLaunch,
-            bytes: report.memoryBytes,
-            peakBytes: report.peakBytes
-        )
-    }
+
+        /// 状态区那一行占用数据：**内存在前、CPU 在后**（两行并一行，省菜单高度）。
+        var usageText: String {
+            guard let report = usageReport else {
+                // 四态的前两态：还没采到（测量中…）/ 采过但失败（暂不可用）。
+                // 两者都写成「测量中」会让失败被永远掩盖 —— 用户没有任何办法知道真相。
+                // 后两态（有报告但算不出占用率 / 有数据）走下面的 `combinedRow`。
+                let placeholder =
+                    usageFailed ? ProcessUsageText.unavailable : ProcessUsageText.measuring
+                return "内存 \(placeholder) · CPU \(placeholder)"
+            }
+            return ProcessUsageText.combinedRow(
+                percent: report.cpuPercent,
+                windowSeconds: report.windowSeconds,
+                sinceLaunch: report.sinceLaunch,
+                bytes: report.memoryBytes,
+                peakBytes: report.peakBytes
+            )
+        }
+    #endif
 
 }

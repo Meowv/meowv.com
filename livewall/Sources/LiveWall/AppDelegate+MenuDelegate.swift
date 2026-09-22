@@ -6,6 +6,7 @@ import LiveWallDesktop
 // MARK: - 菜单展开期的惰性采样
 
 /// 进程自身的占用**只在菜单展开时采一次**，收起即停 —— 没有后台轮询、没有常驻定时器。
+/// 整条链**只在 debug 构建里存在**（release 下状态区不显示那一行）。
 ///
 /// 三个回调的分工：
 ///  - `menuNeedsUpdate`：菜单显示前，AppKit 来要内容 —— 这是**最早**的时机，在这里
@@ -15,26 +16,32 @@ import LiveWallDesktop
 ///  - `menuDidClose`：收起 —— 立刻取消未完成的采样并释放它。
 extension AppDelegate: NSMenuDelegate {
 
-    func menuNeedsUpdate(_ menu: NSMenu) {
-        guard menu === statusItem?.menu else { return }
-        sampledThisOpen = true
-        requestUsageSample()
-    }
+    #if DEBUG
+        func menuNeedsUpdate(_ menu: NSMenu) {
+            guard menu === statusItem?.menu else { return }
+            sampledThisOpen = true
+            requestUsageSample()
+        }
+    #endif
 
     func menuWillOpen(_ menu: NSMenu) {
         guard menu === statusItem?.menu else { return }
         isMenuOpen = true
-        // 只在 `menuNeedsUpdate` 没被回调时兜底 —— 正常路径上它一定会先于本回调触发。
-        if !sampledThisOpen { requestUsageSample() }
+        #if DEBUG
+            // 只在 `menuNeedsUpdate` 没被回调时兜底 —— 正常路径上它一定会先于本回调触发。
+            if !sampledThisOpen { requestUsageSample() }
+        #endif
     }
 
     func menuDidClose(_ menu: NSMenu) {
         guard menu === statusItem?.menu else { return }
         isMenuOpen = false
-        sampledThisOpen = false
-        // 采样到此为止：`ProcessMonitor` 会取消后台队列上未执行的任务，
-        // 已经跑完的也会因为代号不匹配被丢弃。
-        processMonitor.cancel()
+        #if DEBUG
+            sampledThisOpen = false
+            // 采样到此为止：`ProcessMonitor` 会取消后台队列上未执行的任务，
+            // 已经跑完的也会因为代号不匹配被丢弃。
+            processMonitor.cancel()
+        #endif
 
         // 一次性回执（手动「检查更新」的应答）**展示过之后**收起即作废。
         //

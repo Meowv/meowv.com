@@ -1,6 +1,12 @@
 import Foundation
 import LiveWallCore
 
+// 整个采样器**只在 debug 构建里编译**：唯一消费者是状态区那一行
+// （见 `AppDelegate+MenuBar` 里那段 `#if DEBUG`），release 下没有调用者。
+// 包住整个文件而不是逐成员标注 —— 这样 release 二进制里连类型名与
+// `proc_pid_rusage` 相关的字符串都不会留下。
+#if DEBUG
+
 /// 采集**本进程**的 CPU 与内存占用。
 ///
 /// 只回答「我自己用了多少」：数值全部取自本进程的 `proc_pid_rusage(getpid(), …)`，
@@ -215,3 +221,5 @@ final class ProcessMonitor {
         UInt64((Double(ticks) * nanosPerTick).rounded())
     }
 }
+
+#endif

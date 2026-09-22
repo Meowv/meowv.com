@@ -47,8 +47,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let screenCoordinator: ScreenCoordinator
     let engine = PlaybackEngine()
     let network = NetworkMonitor()
-    /// 进程自身的 CPU / 内存采样。**只在菜单展开时采一次**，收起即取消（无定时器）。
-    let processMonitor = ProcessMonitor()
+    // 进程占用的整条链**只在 debug 构建里存在**（与菜单里的「打印窗口层级表」同一约定）：
+    // release 下状态区不显示那一行，采样器与相关状态属性也就不必编译进来。
+    #if DEBUG
+        /// 进程自身的 CPU / 内存采样。**只在菜单展开时采一次**，收起即取消（无定时器）。
+        let processMonitor = ProcessMonitor()
+    #endif
     /// 锁屏预览：把当前壁纸的静态图同步成系统墙纸（桌面态被覆盖窗口挡住，只在锁屏可见）。
     lazy var lockScreenPreviewer = LockScreenPreviewer(
         cacheDirectory: LiveWallPaths.applicationSupportDirectory
@@ -206,16 +210,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 与 `isMenuOpen` 配套：展开期不换 `item.menu`（会闪一下、并重置已展开的子菜单），
     /// 但也不能把这次刷新丢掉 —— 状态是变了才来刷新的，丢掉就等于「点了没反应」。
     var isMenuRebuildPending = false
-    /// 本次展开是否已经发起过采样。**每次展开只采一次**是硬要求 ——
-    /// 采两次的话，第一次的结果回到主线程后会把基线推进到「刚刚那一刻」，
-    /// 第二次就拿着一个≈0 的区间去除，实测算出「CPU 134%（自启动 0 秒）」这种纯噪音；
-    /// 而它还会因为代号更新把第一次的结果直接丢掉。
-    var sampledThisOpen = false
-    /// 最近一次进程自身占用采样。菜单重建时用它填内容，避免每次都从占位文案开始闪。
-    var usageReport: ProcessMonitor.Report?
-    /// 上一次采样是否失败。用来把状态区从「测量中…」切到「暂不可用」——
-    /// 一直停在「测量中」会让用户以为程序卡住了，而真相是取不到数据。
-    var usageFailed = false
+    #if DEBUG
+        /// 本次展开是否已经发起过采样。**每次展开只采一次**是硬要求 ——
+        /// 采两次的话，第一次的结果回到主线程后会把基线推进到「刚刚那一刻」，
+        /// 第二次就拿着一个≈0 的区间去除，实测算出「CPU 134%（自启动 0 秒）」这种纯噪音；
+        /// 而它还会因为代号更新把第一次的结果直接丢掉。
+        var sampledThisOpen = false
+        /// 最近一次进程自身占用采样。菜单重建时用它填内容，避免每次都从占位文案开始闪。
+        var usageReport: ProcessMonitor.Report?
+        /// 上一次采样是否失败。用来把状态区从「测量中…」切到「暂不可用」——
+        /// 一直停在「测量中」会让用户以为程序卡住了，而真相是取不到数据。
+        var usageFailed = false
+    #endif
     /// 退出清理只做一次（`applicationWillTerminate` 与信号源可能都触发）。
     var isShuttingDown = false
 
@@ -225,9 +231,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var pendingRebuildReason: String?
     /// SIGTERM / SIGINT 的信号源。必须持有 —— 释放了就收不到信号。
     var signalSources: [DispatchSourceSignal] = []
-    /// 进程占用那一行的标记。`buildMenu` 重建菜单后靠它在 `menuNeedsUpdate` 里
-    /// 找到对应行 —— 用标记而不是持有 `NSMenuItem`，就不会出现「引用的是上一个菜单里的行」。
-    static let usageRowID = "usage"
+    #if DEBUG
+        /// 进程占用那一行的标记。`buildMenu` 重建菜单后靠它在 `menuNeedsUpdate` 里
+        /// 找到对应行 —— 用标记而不是持有 `NSMenuItem`，就不会出现「引用的是上一个菜单里的行」。
+        static let usageRowID = "usage"
+    #endif
     /// 版本检查器。只在被调用时发起请求，没有定时器。
     let updateChecker = UpdateChecker()
     /// **更新功能在菜单里的唯一状态**。菜单显隐、可点性、文案全部由它派生，
@@ -439,13 +447,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
 
-            // 进程占用的**启动基线**放在启动流程的最后：一次性采样（不是定时器），
-            // 让第一次展开菜单就有可比较的起点。
-            //
-            // 刻意排在窗口与菜单都建好之后 —— 否则首屏那个「自启动 0 秒」会把建窗口 +
-            // 建菜单的一次性开销算进来。实测那样会显示「CPU 85%（自启动 0 秒）」，
-            // 看着像 App 吃满 CPU，其实只是启动那几百毫秒。
-            self.processMonitor.prepareBaseline()
+            #if DEBUG
+                // 进程占用的**启动基线**放在启动流程的最后：一次性采样（不是定时器），
+                // 让第一次展开菜单就有可比较的起点。
+                //
+                // 刻意排在窗口与菜单都建好之后 —— 否则首屏那个「自启动 0 秒」会把建窗口 +
+                // 建菜单的一次性开销算进来。实测那样会显示「CPU 85%（自启动 0 秒）」，
+                // 看着像 App 吃满 CPU，其实只是启动那几百毫秒。
+                self.processMonitor.prepareBaseline()
+            #endif
             // 壁纸来源二选一：配置了本地文件夹就直接扫它，**完全不碰远端清单** ——
             // 本地模式的意义就是离线可用，顺手拉一次索引只会白费流量。
             if let folder = self.preferences.resolvedLocalFolderURL {
@@ -469,7 +479,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func shutdown() {
         guard !isShuttingDown else { return }
         isShuttingDown = true
-        processMonitor.cancel()
+        #if DEBUG
+            processMonitor.cancel()
+        #endif
         scheduleTimer?.invalidate()
         for task in loadTasksBySlot.values { task.cancel() }
         loadTasksBySlot.removeAll()

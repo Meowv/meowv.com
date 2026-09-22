@@ -80,11 +80,14 @@ extension AppDelegate {
         current.isEnabled = false
         menu.addItem(current)
 
-        // 进程自身占用。**常驻**（不是 debug 工具、也不是异常时才出现）—— 这是
-        // 「一个一直挂在后台的东西到底吃多少资源」的唯一可见处。
-        // 内容只在菜单展开时刷新（见 `NSMenuDelegate` 扩展），所以这两行在菜单收起
+        // 进程自身占用。**仅 debug 构建**（与下面「打印窗口层级表」同一约定）——
+        // 它是开发期的观测手段（「一个一直挂在后台的东西到底吃多少资源」），
+        // release 下不显示，省掉一行菜单高度。
+        // 内容只在菜单展开时刷新（见 `NSMenuDelegate` 扩展），所以这一行在菜单收起
         // 期间显示的是上一次的值；CPU 那行自带区间标注，不会被读成瞬时值。
-        menu.addItem(usageRow(id: Self.usageRowID, text: usageText))
+        #if DEBUG
+            menu.addItem(usageRow(id: Self.usageRowID, text: usageText))
+        #endif
 
         // 暂停原因由 governor 的状态直接推导，不另存一份 —— 存一份就要在每个
         // 恢复路径上记得清掉，漏一处就会残留一句「已手动暂停」。
