@@ -89,19 +89,25 @@ extension AppDelegate {
 
     /// 手动检查：无视节流，且**必须给回执**。
     ///
-    /// 点完菜单立刻收起，结果要下次展开才看得见 —— 不给一句「已是最新版本」
+    /// 点完菜单立刻收起，异步结果不能只写回菜单 —— 不给一句「已是最新版本」
     /// 或「检查失败：xxx」，用户看到的就是「点了没反应」。
     @objc func checkForUpdates() {
         guard network.isReachable else {
-            notice = .warning("网络不可达，无法检查更新", oneShot: true)
+            let result = UpdateMenu.Receipt(
+                text: "网络不可达，无法检查更新", isWarning: true, isOneShot: true)
+            notice = .warning(result.text, oneShot: result.isOneShot)
             refreshStatusItem()
+            presentUpdateFeedback(result)
             return
         }
         guard updateState != .checking else {
             // 这一项在检查中是禁用的；走到这里多半是键盘等别的途径触发的，
             // 那就只回一句「在查了」，**不再发第二个请求**。
-            notice = .info("正在检查更新…", oneShot: true)
+            let result = UpdateMenu.Receipt(
+                text: "正在检查更新…", isWarning: false, isOneShot: true)
+            notice = .info(result.text, oneShot: result.isOneShot)
             refreshStatusItem()
+            presentUpdateFeedback(result)
             return
         }
         notice = .info("正在检查更新…", oneShot: true)
@@ -136,6 +142,36 @@ extension AppDelegate {
                 : .info(result.text, oneShot: result.isOneShot)
             log("手动检查回执：\(result.text)")
             refreshStatusItem()
+            presentUpdateFeedback(result, canDownload: decision.showsUpdateRow)
+        }
+    }
+
+    /// 手动检查完成后的即时回执。
+    ///
+    /// 菜单项的 action 执行后菜单会立即收起，而网络检查是异步的；只更新菜单里的
+    /// `notice` 会把结果藏到下一次展开，用户感知就是「点了没反应」。原生 `NSAlert`
+    /// 是菜单栏 App 不需要额外窗口生命周期管理的即时反馈；发现新版本时再提供
+    /// 「立即下载更新」，复用现有下载与校验流程。菜单里的回执仍保留到下一次展开，
+    /// 方便用户回看；自动检查不调用这里，避免后台行为打扰用户。
+    func presentUpdateFeedback(_ result: UpdateMenu.Receipt, canDownload: Bool = false) {
+        guard !isMenuOpen else {
+            pendingUpdateFeedback = (result, canDownload)
+            return
+        }
+
+        let alert = NSAlert()
+        alert.messageText = result.isWarning ? "检查更新失败" : "检查更新"
+        alert.informativeText = result.text
+        alert.alertStyle = result.isWarning ? .warning : .informational
+        if canDownload {
+            alert.addButton(withTitle: "立即下载更新")
+            alert.addButton(withTitle: "稍后")
+            if alert.runModal() == .alertFirstButtonReturn {
+                downloadUpdate()
+            }
+        } else {
+            alert.addButton(withTitle: "好")
+            alert.runModal()
         }
     }
 

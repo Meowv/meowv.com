@@ -61,5 +61,15 @@ extension AppDelegate: NSMenuDelegate {
             isMenuRebuildPending = false
             DispatchQueue.main.async { [weak self] in self?.refreshStatusItem() }
         }
+
+        // 检查结果若在菜单展开期间返回，等菜单真正收起后再给即时回执；否则
+        // NSAlert 会和 AppKit 的菜单追踪互相抢焦点，表现为提示不出现或菜单卡住。
+        if let feedback = pendingUpdateFeedback {
+            pendingUpdateFeedback = nil
+            DispatchQueue.main.async { [weak self] in
+                self?.presentUpdateFeedback(
+                    feedback.receipt, canDownload: feedback.canDownload)
+            }
+        }
     }
 }

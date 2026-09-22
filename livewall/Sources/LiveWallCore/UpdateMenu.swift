@@ -43,7 +43,8 @@ public enum UpdateMenu {
     ///
     /// 换行与续行空白先规整成单个空格 —— 服务端为了可读性多半写成多行。
     public static func truncatedNotes(_ notes: String, maxLength: Int = 40) -> String? {
-        let flat = notes
+        let flat =
+            notes
             .components(separatedBy: .newlines)
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
@@ -55,7 +56,7 @@ public enum UpdateMenu {
     }
 
     /// 手动点「检查更新」之后的回执。**只对手动检查显示** ——
-    /// 点完菜单就收起了，结果要到下次展开才看得见，不给这一句等于「点了没反应」；
+    /// 结果会先通过即时提示送达，菜单里也短暂保留同一条文案，方便用户稍后回看；
     /// 而启动 / 网络恢复时的自动检查没人在等结果，一律静默。
     ///
     /// - Parameter warnings: 失败原因（`.unusable` 时才有意义），取首条展示。
@@ -64,9 +65,8 @@ public enum UpdateMenu {
     /// `isOneShot` 恒为 `true`：三种结果都只是「那一次点击的应答」，没有哪一种
     /// 需要用户记着。真正的待办（有新版本）由菜单里的更新行长期承载，不靠这一行提示。
     ///
-    /// 为什么不做「几秒后自动消失」：结果回来时菜单往往已经收起，计时从**生成**
-    /// 那一刻开始的话，用户再打开时多半已经过期 —— 等于没给回执。而要在菜单
-    /// 展开期把这一行抽掉，就得重建菜单，那会打断正在进行的点击。
+    /// 为什么不做「几秒后自动消失」：即时提示关闭后，用户仍可能需要重新打开菜单
+    /// 确认更新行；保留到菜单收起再清掉，既不打断当前点击，也不会让结果悄悄消失。
     public static func feedback(
         _ decision: UpdateDecision,
         warnings: [String],
@@ -75,7 +75,7 @@ public enum UpdateMenu {
         switch decision {
         case .available(let feed):
             // 不说「见『检查更新』下方」—— 有新版本时那个入口是**隐藏**的。
-            return Receipt(text: "发现新版本 \(feed.version)，见下方更新项", isWarning: false, isOneShot: true)
+            return Receipt(text: "发现新版本 \(feed.version)，点击更新", isWarning: false, isOneShot: true)
         case .upToDate:
             return Receipt(text: "已是最新版本 \(currentVersion)", isWarning: false, isOneShot: true)
         case .unusable:
@@ -89,8 +89,8 @@ public enum UpdateMenu {
         public let text: String
         /// `true` 时状态区加「⚠」前缀。
         public let isWarning: Bool
-        /// **展示过之后**就不必再留（菜单收起即作废）。对照：真异常是常驻的，
-        /// 留到被下一个事件覆盖 —— 用户可能隔很久才打开菜单，一次性的话就漏了。
+        /// **菜单展示过之后**就不必再留（菜单收起即作废）。即时提示已经给过回执，
+        /// 这里仅作为菜单内的短暂回看；对照：真异常是常驻的，留到被下一个事件覆盖。
         public let isOneShot: Bool
 
         public init(text: String, isWarning: Bool, isOneShot: Bool) {

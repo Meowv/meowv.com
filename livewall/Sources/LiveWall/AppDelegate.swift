@@ -246,6 +246,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 进行中的这一次检查是不是用户点的。**只有手动检查才给界面回执** ——
     /// 启动与网络恢复时的自动检查没人在等结果，静默才是对的。
     var pendingManualUpdateCheck = false
+    /// 手动检查的原生提示暂存。检查结果可能在菜单仍处于展开期返回；这时不能
+    /// 直接弹出模态窗口，否则会和 AppKit 的菜单追踪竞争。等菜单收起后再展示。
+    var pendingUpdateFeedback: (receipt: UpdateMenu.Receipt, canDownload: Bool)?
 
     /// 附注内容与级别。
     ///
