@@ -32,7 +32,6 @@
     <script>
       window.EXCALIDRAW_ASSET_PATH = '/excalidraw-assets/';
     </script>
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-EPJQW4WXS0"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag() {
@@ -40,6 +39,20 @@
       }
       gtag('js', new Date());
       gtag('config', 'G-EPJQW4WXS0');
+
+      window.addEventListener('load', function () {
+        var loadAnalytics = function () {
+          var script = document.createElement('script');
+          script.async = true;
+          script.src = 'https://www.googletagmanager.com/gtag/js?id=G-EPJQW4WXS0';
+          document.head.appendChild(script);
+        };
+        if ('requestIdleCallback' in window) {
+          window.requestIdleCallback(loadAnalytics, { timeout: 2000 });
+        } else {
+          window.setTimeout(loadAnalytics, 0);
+        }
+      });
     </script>
   </head>
   <body>

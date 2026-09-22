@@ -1,6 +1,6 @@
 @font-face {
   font-family: 'Studio Noto Sans SC';
-  src: url('/fonts/studio-noto-sans-sc-vf.ttf') format('truetype');
+  src: url('/fonts/studio-noto-sans-sc-subset.woff2') format('woff2');
   font-style: normal;
   font-weight: 100 900;
   font-display: swap;
