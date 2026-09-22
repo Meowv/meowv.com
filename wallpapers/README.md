@@ -69,6 +69,15 @@ wallpapers crawl
 wallpapers stats
 ```
 
+只做语法检查或运行测试时不需要安装为命令；在项目目录使用 `PYTHONPATH=src` 即可。测试依赖单独安装：
+
+```bash
+python3 -m pip install -e "[test]"
+PYTHONPATH=src python3 -m pytest
+```
+
+`pip install -e .` 和 `pip install -e "[test]"` 会把项目以 editable 方式注册到当前 Python 环境，不会生成发布目录；如果不希望污染系统 Python，请先创建仓库外的虚拟环境。
+
 ## 生成 Studio 发布目录
 
 `publish` 会从 `wallpapers/wallpapers.db` 生成供 Studio 前端使用的临时发布目录：

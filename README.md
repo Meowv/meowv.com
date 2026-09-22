@@ -2,9 +2,9 @@
 
 Meowv 的 Web 项目与桌面工具仓库，包含 Blog、Meowv Studio、Wallpapers Crawler 和 livewall。
 
-四个顶层项目彼此独立，**不是 npm/pnpm workspace**：依赖安装、开发和构建命令都应在对应目录中执行。前三者构建为静态站点，livewall 是本机使用的 macOS 原生应用，不参与站点构建与部署。
+四个顶层项目彼此独立，**不是 npm/pnpm workspace**：依赖安装、开发和构建命令都应在对应目录中执行。Blog 和 Studio 构建为静态站点，Wallpapers 负责采集并生成站点数据，livewall 是本机使用的 macOS 原生应用。
 
-生产构建在本地完成，根目录脚本把静态产物汇总到 `build/`，再由维护者通过 `deploy.sh` 上传到 Windows Nginx 服务器，也可以手动拷贝。仓库不通过 CI 服务或托管平台构建和发布。
+生产构建在本地完成，根目录脚本把 Blog、Studio 的静态产物及 livewall 的 App 汇总到 `build/`，再由维护者通过 `deploy.sh` 上传站点目录到 Windows Nginx 服务器，也可以手动拷贝。仓库不通过 CI 服务或托管平台构建和发布。
 
 ## 文档索引
 
@@ -24,6 +24,16 @@ Meowv 的 Web 项目与桌面工具仓库，包含 Blog、Meowv Studio、Wallpap
 1. 先看本文件的「环境与依赖」和「根目录脚本」，确认从哪个目录、用哪个包管理器执行命令。
 2. 修改单个项目时，再读该项目的 `README.md` 和 `AGENTS.md`；前者回答“怎么运行”，后者回答“哪些地方不能动、怎么验证”。
 3. 如果文档与脚本、`package.json`、`pyproject.toml` 或 SwiftPM 配置不一致，以可执行配置为准，并在本次改动范围内同步文档。
+
+## 按任务查找
+
+| 目标 | 从这里开始 | 说明 |
+| ---- | ---------- | ---- |
+| 启动 Blog / Studio / livewall | [`run.sh`](./run.sh) 或本文件「根目录脚本」 | 根脚本默认启动 Blog、Studio、livewall；Wallpapers 通过显式参数执行命令，不参与并行启动 |
+| 抓取或发布壁纸数据 | [`wallpapers/README.md`](./wallpapers/README.md) | 先看数据范围，再选择 `crawl`、`publish` 或 `export-livewall` |
+| 修改 Studio 功能 | [`studio/README.md`](./studio/README.md) → [`studio/AGENTS.md`](./studio/AGENTS.md) | README 说明模块与命令，AGENTS 说明边界与验证 |
+| 打包或分发 livewall | [`livewall/README.md`](./livewall/README.md) | 清单签名、DMG 和版本号必须按文档顺序处理 |
+| 上传线上站点 | 本文件「上传到 Windows Nginx」 | `deploy.sh` 只上传已有产物，不负责构建 |
 
 ## 项目概览
 
@@ -54,11 +64,17 @@ Meowv 的 Web 项目与桌面工具仓库，包含 Blog、Meowv Studio、Wallpap
 
 ## 环境与依赖
 
-建议使用 Node.js `>= 22.12.0`、Python `>= 3.12`。Node 版本下限取自 `studio/package.json` 的 `engines`，Blog 未声明 `engines`；如果只运行 Blog，仍应使用当前 LTS Node。首次运行前分别安装依赖：
+建议使用 Node.js `>= 22.12.0`、Python `>= 3.12`。Node 版本下限取自 `studio/package.json` 的 `engines`，Blog 未声明 `engines`；如果只运行 Blog，仍应使用当前 LTS Node。首次运行前按需安装对应项目依赖：
 
 ```bash
 (cd blog && yarn install --frozen-lockfile)
 (cd studio && pnpm install --frozen-lockfile)
+```
+
+Wallpapers 仅使用 Python 标准库；需要使用 `wallpapers` 命令时，可直接通过 `PYTHONPATH=src` 运行，或安装为当前 Python 环境的本地命令：
+
+```bash
+(cd wallpapers && python3 -m pip install -e .)
 ```
 
 Studio 固定使用 pnpm `11.9.0`，锁文件为 `studio/pnpm-lock.yaml`；Blog 使用 yarn，锁文件为 `blog/yarn.lock`。两者各自维护锁文件，**不要在仓库根目录统一安装依赖或混用包管理器**。
