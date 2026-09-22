@@ -5,7 +5,7 @@ import LiveWallDesktop
 
 // MARK: - 浏览窗口的数据出口
 
-/// 浏览窗口只通过这五个成员与 App 交互 —— 不把 `AppDelegate` 的四十来个私有成员
+/// 浏览窗口只通过这些成员与 App 交互 —— 不把 `AppDelegate` 的四十来个私有成员
 /// 暴露给它，也不给它第二套分类 / 固定状态的读法。
 extension AppDelegate: WallpaperBrowserDataSource {
 
@@ -36,6 +36,14 @@ extension AppDelegate: WallpaperBrowserDataSource {
             completion(.failure(BrowserLoadFailure(message: "分类不存在（清单可能已经更新）")))
             return
         }
+
+        // 播放端已经持有当前分类的完整条目。浏览窗口是只读调用方，直接返回写时复制
+        // 的快照即可，避免打开窗口时再次下载、验签和 JSON 解码同一份切片。
+        if !isLocalSource, categoryID == selectedCategoryID, pool.totalCount > 0 {
+            completion(.success(pool.itemsSnapshot))
+            return
+        }
+
         let service = makeCatalogService()
         DispatchQueue.global(qos: .userInitiated).async {
             let result = service.loadSlice(entry)
@@ -66,5 +74,17 @@ extension AppDelegate: WallpaperBrowserDataSource {
         return engine.slotKeys().lazy.compactMap { key in
             self.engine.loadedVideo(on: key)
         }.first { $0.url == url }
+    }
+
+    func browserPlayer(for item: WallpaperItem) -> AVPlayer? {
+        guard let url = item.remoteURL else { return nil }
+        for key in engine.slotKeys() {
+            guard engine.item(on: key)?.id == item.id,
+                  let loaded = engine.loadedVideo(on: key), loaded.url == url,
+                  let player = engine.player(on: key), player.rate > 0
+            else { continue }
+            return player
+        }
+        return nil
     }
 }

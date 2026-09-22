@@ -1,4 +1,5 @@
 import AVFoundation
+import AppKit
 import LiveWallCore
 import LiveWallDesktop
 
@@ -26,6 +27,15 @@ enum PlaybackSlotKey: Hashable, Sendable {
         guard case .display(let id) = self else { return nil }
         return id
     }
+}
+
+/// 播放缓冲与抓帧的资源上限。
+///
+/// 这些值不是播放协议的一部分，只用于避免常驻菜单栏应用在多槽位 / 锁屏预览时
+/// 无界地放大解码缓冲与静态帧。10 秒覆盖当前素材的常见时长，AVFoundation 仍会
+/// 根据实际网络状况自行调整。
+enum PlaybackTuning {
+    static let forwardBufferCap: TimeInterval = 10
 }
 
 /// 播放引擎：持有若干**播放槽位**，每个槽位一个 `AVQueuePlayer`。
@@ -119,6 +129,7 @@ final class PlaybackEngine {
 
     func item(on key: PlaybackSlotKey) -> WallpaperItem? { slots[key]?.item }
     func loadedVideo(on key: PlaybackSlotKey) -> LoadedVideo? { slots[key]?.loadedVideo }
+    func player(on key: PlaybackSlotKey) -> AVPlayer? { slots[key]?.player }
 
     /// 主槽位的时长 —— 调度下一次切换用。
     ///
@@ -174,9 +185,12 @@ final class PlaybackEngine {
         // 复用 VideoLoader 已经建好的 asset，不要再 AVPlayerItem(url:) 新建一个 ——
         // 那样会把同一个文件拉第二遍（实测 6.28MB 的视频变成 12.55MB 流量）。
         let playerItem = AVPlayerItem(asset: loaded.asset)
-        // 让播放器尽量整段缓冲：10 秒的片段可以整段驻留，循环才稳。
-        // 每屏独立时这份缓冲按槽位数翻倍，是内存占用的主要来源。
-        playerItem.preferredForwardBufferDuration = min(loaded.durationSeconds, 30)
+        // 给循环播放留出一段缓冲，但不再按 30 秒上限无条件放大常驻内存。
+        // 每屏独立时这份缓冲仍按槽位数增加，因此上限集中在 PlaybackTuning 管理。
+        playerItem.preferredForwardBufferDuration = min(
+            loaded.durationSeconds,
+            PlaybackTuning.forwardBufferCap
+        )
 
         // AVPlayerLooper 会复制 template item，template 的 KVO 状态不代表实际播放的副本。
         // 监听 looper 自身状态，并同时接收每个副本的失败通知。
@@ -280,7 +294,8 @@ final class PlaybackEngine {
         let currentTime = item.currentTime()
         let frame = await Self.generateFrame(
             asset: item.asset,
-            at: currentTime.isValid ? currentTime : .zero
+            at: currentTime.isValid ? currentTime : .zero,
+            maximumSize: Self.maximumStillFrameSize()
         )
         guard slot.playbackGeneration == generation else { return nil }
         slot.cachedStillFrame = frame
@@ -301,11 +316,16 @@ final class PlaybackEngine {
         }
     }
 
-    private static func generateFrame(asset: AVAsset, at time: CMTime) async -> CGImage? {
+    private static func generateFrame(
+        asset: AVAsset,
+        at time: CMTime,
+        maximumSize: CGSize
+    ) async -> CGImage? {
         await withCheckedContinuation { continuation in
             let generator = AVAssetImageGenerator(asset: asset)
             let generatorBox = ImageGeneratorBox(generator)
             generator.appliesPreferredTrackTransform = true
+            generator.maximumSize = maximumSize
             generator.requestedTimeToleranceBefore = CMTime(seconds: 0.1, preferredTimescale: 600)
             generator.requestedTimeToleranceAfter = CMTime(seconds: 0.1, preferredTimescale: 600)
             generator.generateCGImagesAsynchronously(forTimes: [NSValue(time: time)]) {
@@ -315,6 +335,21 @@ final class PlaybackEngine {
                 continuation.resume(returning: result == .succeeded ? image : nil)
             }
         }
+    }
+
+    /// 把抓帧限制在当前显示器能展示的像素范围内。
+    ///
+    /// 不直接写死 4K：Retina 5K 屏仍应保留足够清晰度，而 8K 素材不应把完整 8K
+    /// `CGImage` 常驻内存。锁屏预览只需要覆盖当前显示器的最大像素边长。
+    private static func maximumStillFrameSize() -> CGSize {
+        let maximumPixels = NSScreen.screens.map { screen in
+            max(
+                Int((screen.frame.width * screen.backingScaleFactor).rounded()),
+                Int((screen.frame.height * screen.backingScaleFactor).rounded())
+            )
+        }.max() ?? 3840
+        let edge = CGFloat(max(1, maximumPixels))
+        return CGSize(width: edge, height: edge)
     }
 
     func teardown() {

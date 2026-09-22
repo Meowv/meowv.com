@@ -1,4 +1,5 @@
 import AppKit
+import AVFoundation
 import LiveWallCore
 
 /// 浏览窗口加载失败的展示用错误。
@@ -55,6 +56,10 @@ protocol WallpaperBrowserDataSource: AnyObject {
     /// 当前桌面槽位若已经在播同一条，返回它已经建好的 asset，预览即可复用，
     /// 不再发第二次 HEAD / 视频加载。
     func browserLoadedVideo(for item: WallpaperItem) -> LoadedVideo?
+
+    /// 当前桌面槽位若已经在播同一条，返回已有播放器。
+    /// 预览可以只增加一个 `AVPlayerLayer`，避免复制解码器与缓冲。
+    func browserPlayer(for item: WallpaperItem) -> AVPlayer?
 }
 
 /// 浮层容器本身不抢事件，真正的背景层负责关闭浮层。
@@ -795,7 +800,11 @@ final class WallpaperBrowserViewController: NSViewController {
         updatePreviewPanel()
         // 双击是明确的「我要看这一条」→ 直接开播。这与「选中即自动播」是两回事：
         // 后者会让方向键连翻几条就把每条视频都拉一遍 —— 决策 4 要防的就是那个。
-        previewPlayer.play(item, loadedVideo: dataSource?.browserLoadedVideo(for: item))
+        previewPlayer.play(
+            item,
+            loadedVideo: dataSource?.browserLoadedVideo(for: item),
+            sharedPlayer: dataSource?.browserPlayer(for: item)
+        )
     }
 
     /// 关掉浮层并释放播放器。点 ✕ / 点背景 / Esc / 切分类都走这里。
@@ -871,7 +880,11 @@ final class WallpaperBrowserViewController: NSViewController {
     @objc private func retryPreview() {
         guard let item = previewItem else { return }
         loadPreviewCover(for: item)
-        previewPlayer.play(item, loadedVideo: dataSource?.browserLoadedVideo(for: item))
+        previewPlayer.play(
+            item,
+            loadedVideo: dataSource?.browserLoadedVideo(for: item),
+            sharedPlayer: dataSource?.browserPlayer(for: item)
+        )
     }
 
     // 刻意**不提供**停止/暂停入口：弹窗打开即自动播放，且不可暂停或停止

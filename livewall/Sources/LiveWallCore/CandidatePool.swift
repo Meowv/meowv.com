@@ -93,6 +93,12 @@ public struct CandidatePool {
 
     public var totalCount: Int { source.count }
 
+    /// 当前候选集的只读快照。
+    ///
+    /// 浏览窗口查看正在播放的分类时可以直接复用这份数据，避免再次下载并解码同一
+    /// 个切片。数组采用写时复制，调用方不会与候选池共享可变存储。
+    public var itemsSnapshot: [WallpaperItem] { source }
+
     public var availableCount: Int {
         source.filter { !blacklist.contains($0.id) }.count
     }

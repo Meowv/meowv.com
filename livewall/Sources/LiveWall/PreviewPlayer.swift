@@ -35,9 +35,9 @@ final class PreviewLayerView: NSView {
 ///
 /// ## 与桌面播放器的关系
 ///
-/// **两个独立的 `AVPlayer`**，但同一条正在桌面播放时会复用桌面槽位的 `AVURLAsset`，
-/// 不产生第二次下载；只有预览别的条目才需要另建 asset。默认只显示静态图（决策 4），
-/// 用户不点预览就不会产生预览流量。
+/// 当前条目若正在桌面播放，预览只复用桌面 `AVPlayer` 并增加一个图层；预览其他条目时
+/// 才创建独立的 `AVPlayer`。两条路径都复用已有 `AVURLAsset`，不产生第二次下载。默认只
+/// 显示静态图（决策 4），用户不点预览就不会产生预览流量。
 ///
 /// 刻意**不暂停桌面播放**（决策 12）：预览是「挑一张」的辅助动作，
 /// 不该把正在看的壁纸弄停。
@@ -79,6 +79,8 @@ final class PreviewPlayer {
 
     private var queuePlayer: AVQueuePlayer?
     private var looper: AVPlayerLooper?
+    /// 当前条目若已由桌面槽位播放，预览只挂一个额外的 layer，不再复制解码器。
+    private var sharedPlayer: AVPlayer?
     private var loadTask: Task<Void, Never>?
     /// 代次：切条目 / 停预览 / 关窗口都会递增，让在飞的加载结果作废 ——
     /// 否则「点了 A 又点 B」会出现 A 的加载完成后把 B 的画面顶掉。
@@ -98,7 +100,11 @@ final class PreviewPlayer {
     ///
     /// `loadedVideo` 来自桌面播放槽位；同一条正在播时直接复用它的 asset，
     /// 不再做 HEAD，也不会把同一段视频重新下载一遍。
-    func play(_ item: WallpaperItem, loadedVideo: LoadedVideo? = nil) {
+    func play(
+        _ item: WallpaperItem,
+        loadedVideo: LoadedVideo? = nil,
+        sharedPlayer: AVPlayer? = nil
+    ) {
         teardownPlayer()
         guard let url = item.remoteURL else {
             state = .failed(item.id, "资源不可用")
@@ -111,7 +117,7 @@ final class PreviewPlayer {
         state = .loading(item.id)
 
         if let loadedVideo, loadedVideo.url == url {
-            startPlayback(item: item, loaded: loadedVideo)
+            startPlayback(item: item, loaded: loadedVideo, sharedPlayer: sharedPlayer)
             return
         }
 
@@ -131,7 +137,21 @@ final class PreviewPlayer {
         }
     }
 
-    private func startPlayback(item: WallpaperItem, loaded: LoadedVideo) {
+    private func startPlayback(
+        item: WallpaperItem,
+        loaded: LoadedVideo,
+        sharedPlayer: AVPlayer? = nil
+    ) {
+        if let sharedPlayer {
+            // AVPlayer 可以同时驱动多个 AVPlayerLayer。当前条目已经在桌面播放时，
+            // 预览只增加一层合成，不再创建第二个 queue/looper/解码缓冲。
+            self.sharedPlayer = sharedPlayer
+            view.player = sharedPlayer
+            state = .playing(item.id)
+            log?("预览复用桌面播放器 \(item.id) \(item.title)")
+            return
+        }
+
         let player = AVQueuePlayer()
         player.isMuted = true
         // 预览不该阻止显示器休眠 —— 它只是右栏里的一小块画面。
@@ -140,7 +160,10 @@ final class PreviewPlayer {
 
         // 复用 `VideoLoader` / 桌面槽位已经建好的 asset，不再 `AVPlayerItem(url:)` 新建。
         let playerItem = AVPlayerItem(asset: loaded.asset)
-        playerItem.preferredForwardBufferDuration = min(loaded.durationSeconds, 30)
+        playerItem.preferredForwardBufferDuration = min(
+            loaded.durationSeconds,
+            PlaybackTuning.forwardBufferCap
+        )
 
         looper = AVPlayerLooper(player: player, templateItem: playerItem)
         queuePlayer = player
@@ -163,6 +186,7 @@ final class PreviewPlayer {
         generation += 1
         loadTask?.cancel()
         loadTask = nil
+        sharedPlayer = nil
         looper?.disableLooping()
         looper = nil
         queuePlayer?.removeAllItems()
