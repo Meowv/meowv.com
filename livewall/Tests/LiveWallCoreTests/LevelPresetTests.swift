@@ -50,6 +50,19 @@ func levelPresetTests() {
             expect(!LevelPreset.iconMinus2.coversDesktopIcons, "icon-2 不应覆盖图标")
         }
 
+        test("技术层级应映射到用户可理解的显示位置") {
+            expectEqual(LevelPreset.desktopWindow.placement, .standard, "desktopWindow 应为标准桌面")
+            expectEqual(LevelPreset.iconMinus1.placement, .standard, "icon-1 应为标准桌面")
+            expectEqual(LevelPreset.iconAboveGap1.placement, .immersive, "icon+1 应为沉浸模式")
+            expectEqual(LevelPreset.iconAboveGap2.placement, .immersive, "icon+2 应为沉浸模式")
+        }
+
+        test("实际层级映射使用系统图标层边界") {
+            let icon = Int(CGWindowLevelForKey(.desktopIconWindow))
+            expectEqual(LevelPreset.placement(for: icon - 1), .standard, "图标层下方应为标准桌面")
+            expectEqual(LevelPreset.placement(for: icon), .immersive, "图标层及以上应为沉浸模式")
+        }
+
         test("降级候选顺序里推荐基线排在第一位") {
             expectEqual(LevelPreset.fallbackOrder.first, LevelPreset.recommended, "fallbackOrder 首位")
             expect(!LevelPreset.fallbackOrder.isEmpty, "fallbackOrder 不应为空")

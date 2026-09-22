@@ -167,7 +167,7 @@ extension AppDelegate {
 
         // ── 设置 ────────────────────────────────────────────
         // 组内按「用户调整它的频率」降序：切换间隔与内容过滤是会用几次就调的，
-        // 开机自启与窗口层级装完基本不动。
+        // 开机自启与壁纸显示位置装完基本不动。
         menu.addItem(buildIntervalMenu())
         menu.addItem(buildPowerMenu())
         // 锁屏预览紧跟省电设置：同属「画面行为」的开关，且都是开一次就不常动。
@@ -210,16 +210,41 @@ extension AppDelegate {
         menu.addItem(policyRoot)
 
         let levelMenu = NSMenu()
-        for preset in LevelPreset.allCases {
+        let currentPlacement = LevelPreset.placement(for: screenCoordinator.level)
+        for placement in WindowPlacement.allCases {
             let entry = NSMenuItem(
-                title: preset.label, action: #selector(switchLevel(_:)), keyEquivalent: "")
+                title: placement.label,
+                action: #selector(switchWindowPlacement(_:)),
+                keyEquivalent: "")
             entry.target = self
-            entry.representedObject = preset.rawValue
-            entry.state = preset.level == screenCoordinator.level ? .on : .off
+            entry.representedObject = placement.rawValue
+            entry.state = placement == currentPlacement ? .on : .off
             levelMenu.addItem(entry)
+
+            let detail = NSMenuItem(title: placement.detail, action: nil, keyEquivalent: "")
+            detail.isEnabled = false
+            // 说明行缩进到对应选项下方，让用户先看到意图，再看到后果。
+            detail.indentationLevel = 1
+            levelMenu.addItem(detail)
         }
+        levelMenu.addItem(.separator())
+        let redetect = NSMenuItem(
+            title: "重新检测显示位置",
+            action: #selector(redetectWindowPlacement),
+            keyEquivalent: "")
+        redetect.target = self
+        levelMenu.addItem(redetect)
+        let diagnostics = NSMenuItem(
+            title: "查看层级诊断…",
+            action: #selector(showLevelDiagnostics),
+            keyEquivalent: "")
+        diagnostics.target = self
+        levelMenu.addItem(diagnostics)
+
         let levelRoot = NSMenuItem(
-            title: "窗口层级（\(screenCoordinator.level)）", action: nil, keyEquivalent: "")
+            title: "壁纸显示位置（\(currentPlacement == .immersive ? "沉浸模式" : "标准桌面")）",
+            action: nil,
+            keyEquivalent: "")
         levelRoot.submenu = levelMenu
         menu.addItem(levelRoot)
 

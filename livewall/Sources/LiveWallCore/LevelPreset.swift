@@ -1,5 +1,29 @@
 import CoreGraphics
 
+/// 用户真正需要选择的是壁纸与桌面图标的关系，而不是 WindowServer 的整数层级。
+///
+/// 具体层级仍由 `LevelPreset` 与运行时校准负责；这个类型只用于产品界面与配置语义。
+public enum WindowPlacement: String, CaseIterable, Codable, Sendable {
+    /// 壁纸位于桌面图标下方，保留右键、拖放与桌面操作。
+    case standard
+    /// 壁纸覆盖桌面图标，适合纯展示场景。
+    case immersive
+
+    public var label: String {
+        switch self {
+        case .standard: return "标准桌面（推荐）"
+        case .immersive: return "沉浸模式"
+        }
+    }
+
+    public var detail: String {
+        switch self {
+        case .standard: return "壁纸位于桌面图标下方，桌面操作正常"
+        case .immersive: return "壁纸覆盖桌面图标，适合纯展示场景"
+        }
+    }
+}
+
 /// 候选窗口层级。数值全部由 `CGWindowLevelForKey` 派生，不硬编码魔数 ——
 /// 不同 macOS 版本的实际值不同，硬编码会在系统升级后静默失效。
 ///
@@ -66,6 +90,17 @@ public enum LevelPreset: String, CaseIterable, Codable, Sendable {
     /// 该预设是否会盖住桌面图标（用于「专注模式」这类功能）。
     public var coversDesktopIcons: Bool {
         self == .iconAboveGap1 || self == .iconAboveGap2
+    }
+
+    /// 把技术层级折叠成用户可理解的显示位置。
+    public var placement: WindowPlacement {
+        coversDesktopIcons ? .immersive : .standard
+    }
+
+    /// 根据当前实际层级判断用户看到的是哪种显示位置。
+    /// 不使用硬编码魔数，图标层值始终由系统 API 派生。
+    public static func placement(for level: Int) -> WindowPlacement {
+        level >= Int(CGWindowLevelForKey(.desktopIconWindow)) ? .immersive : .standard
     }
 
     public var level: Int {

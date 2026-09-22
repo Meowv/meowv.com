@@ -45,6 +45,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // 组件
     let screenCoordinator: ScreenCoordinator
+    /// 最近一次层级检测结果。普通菜单只显示语义状态，详细结果放在诊断入口里。
+    var lastLayerVerdict: LayerVerdict?
     let engine = PlaybackEngine()
     let network = NetworkMonitor()
     // 进程占用的整条链**只在 debug 构建里存在**（与菜单里的「打印窗口层级表」同一约定）：
@@ -416,8 +418,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
             guard let self else { return }
 
-            let calibration = self.screenCoordinator.calibrate(
-                startingFrom: self.preferences.levelPreset)
+            // 标准桌面需要在一组兼容候选中自动校准；沉浸模式则保留用户明确选择的
+            // 「覆盖图标」意图，不能因为标准模式的判定条件而被自动降级。
+            let calibration: CalibrationResult
+            if self.preferences.levelPreset.placement == .immersive {
+                let preset = self.preferences.levelPreset
+                let verdict = self.screenCoordinator.apply(level: preset.level)
+                calibration = CalibrationResult(
+                    preset: preset, verdict: verdict, attempts: [(preset: preset, verdict: verdict)])
+            } else {
+                calibration = self.screenCoordinator.calibrate(
+                    startingFrom: self.preferences.levelPreset)
+            }
+            self.lastLayerVerdict = calibration.verdict
             self.syncPlaybackSlots()
 
             self.log(
@@ -434,6 +447,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self.log(
                     "基线层级 \(self.preferences.levelPreset.shortLabel) 未通过，降级为 \(calibration.preset.shortLabel)"
                 )
+                self.preferences.levelPreset = calibration.preset
+                self.persistPreferences("窗口层级自动校准")
             }
 
             // 自检未通过时才把窗口实况打出来，便于定位；正常路径不刷日志

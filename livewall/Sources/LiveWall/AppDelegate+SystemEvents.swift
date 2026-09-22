@@ -79,6 +79,7 @@ extension AppDelegate {
         isRebuilding = true
 
         let verdict = screenCoordinator.rebuild()
+        lastLayerVerdict = verdict
         syncPlaybackSlots()
         log("\(reason)后重建 \(screenCoordinator.windows.count) 个窗口：\(verdict.summary)")
         refreshStatusItem()

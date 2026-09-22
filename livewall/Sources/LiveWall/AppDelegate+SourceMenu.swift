@@ -181,6 +181,7 @@ extension AppDelegate {
         persistPreferences("多屏策略")
 
         let verdict = screenCoordinator.apply(policy: policy)
+        lastLayerVerdict = verdict
         // 槽位集合随策略变化（镜像 1 个 / 每屏独立 N 个），必须重新对齐并绑定窗口。
         // 失败计数也要清：旧槽位的失败次数跟新槽位没有关系。
         failuresBySlot.removeAll()
@@ -201,10 +202,109 @@ extension AppDelegate {
         persistScreenSources()
     }
 
+    /// 切换用户可理解的显示位置。具体 WindowServer 层级由这里统一映射与校准。
+    @objc func switchWindowPlacement(_ sender: NSMenuItem) {
+        guard let raw = sender.representedObject as? String,
+            let placement = WindowPlacement(rawValue: raw)
+        else { return }
+
+        switch placement {
+        case .standard:
+            applyStandardWindowPlacement(noticeText: "已切换到标准桌面：壁纸位于桌面图标下方")
+        case .immersive:
+            let alert = NSAlert()
+            alert.messageText = "启用沉浸模式？"
+            alert.informativeText = "壁纸会覆盖桌面图标，适合纯展示场景。桌面图标仍在系统中，但暂时不会显示。"
+            alert.addButton(withTitle: "启用沉浸模式")
+            alert.addButton(withTitle: "取消")
+            guard alert.runModal() == .alertFirstButtonReturn else { return }
+
+            let preset = LevelPreset.iconAboveGap1
+            let verdict = screenCoordinator.apply(level: preset.level)
+            lastLayerVerdict = verdict
+            preferences.levelPreset = preset
+            persistPreferences("窗口层级")
+            notice = verdict.isHealthy
+                ? .info("已启用沉浸模式：桌面图标已被壁纸覆盖")
+                : .warning("沉浸模式已启用，但层级检测发现异常：\(verdict.summary)")
+            refreshStatusItem()
+        }
+    }
+
+    /// 标准桌面模式始终从推荐候选开始，由运行时自动选择可用层级。
+    func applyStandardWindowPlacement(noticeText: String) {
+        let calibration = screenCoordinator.calibrate(startingFrom: .recommended)
+        lastLayerVerdict = calibration.verdict
+        preferences.levelPreset = calibration.preset
+        persistPreferences("窗口层级")
+        notice = calibration.verdict.isHealthy
+            ? .info(noticeText)
+            : .warning("标准桌面检测未完成：\(calibration.verdict.summary)")
+        refreshStatusItem()
+    }
+
+    /// 重新检测当前显示位置：标准桌面重新校准，沉浸模式重新验证当前层级。
+    @objc func redetectWindowPlacement() {
+        if LevelPreset.placement(for: screenCoordinator.level) == .immersive {
+            let verdict = screenCoordinator.apply(level: screenCoordinator.level)
+            lastLayerVerdict = verdict
+            notice = verdict.isHealthy
+                ? .info("显示位置检测完成：沉浸模式正常")
+                : .warning("显示位置检测发现异常：\(verdict.summary)")
+            refreshStatusItem()
+        } else {
+            applyStandardWindowPlacement(noticeText: "显示位置检测完成：壁纸位于桌面图标下方")
+        }
+    }
+
+    /// 将工程诊断保留在按需打开的详情里，不污染日常菜单文案。
+    @objc func showLevelDiagnostics() {
+        let alert = NSAlert()
+        alert.messageText = "窗口层级诊断"
+
+        guard let verdict = lastLayerVerdict else {
+            alert.informativeText = "尚未完成显示位置检测。"
+            alert.addButton(withTitle: "好")
+            alert.runModal()
+            return
+        }
+
+        let placement = LevelPreset.placement(for: screenCoordinator.level)
+        let iconRelation: String
+        switch verdict.isBelowIcons {
+        case .some(true): iconRelation = "是"
+        case .some(false): iconRelation = "否（已覆盖）"
+        case .none: iconRelation = "未知"
+        }
+        let wallpaperRelation: String
+        switch verdict.isAboveWallpaper {
+        case .some(true): wallpaperRelation = "是"
+        case .some(false): wallpaperRelation = "否"
+        case .none: wallpaperRelation = "未知"
+        }
+        var lines = [
+            "显示模式：\(placement == .immersive ? "沉浸模式" : "标准桌面")",
+            "系统墙纸之上：\(wallpaperRelation)",
+            "桌面图标之下：\(iconRelation)",
+            "覆盖整屏：\(verdict.coversScreen ? "是" : "否")",
+            "同层竞争：\(verdict.competingWindows.isEmpty ? "无" : verdict.competingWindows.map(\.ownerName).joined(separator: "、"))",
+            "实际层级：\(verdict.ourLevel)",
+        ]
+        if !verdict.notes.isEmpty {
+            lines.append("")
+            lines.append(contentsOf: verdict.notes)
+        }
+        alert.informativeText = lines.joined(separator: "\n")
+        alert.addButton(withTitle: "好")
+        alert.runModal()
+    }
+
+    /// 保留旧入口供已有调用方与旧配置兼容；普通菜单不再暴露技术层级。
     @objc func switchLevel(_ sender: NSMenuItem) {
         guard let raw = sender.representedObject as? String, let preset = LevelPreset(rawValue: raw)
         else { return }
         let verdict = screenCoordinator.apply(level: preset.level)
+        lastLayerVerdict = verdict
         preferences.levelPreset = preset
         persistPreferences("窗口层级")
         notice = .info("窗口层级：\(verdict.summary)")
