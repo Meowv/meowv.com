@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /office-assets/
+Disallow: /data/
+Disallow: /zitie/hanzi-data/
+
+Sitemap: https://studio.meowv.com/sitemap.xml

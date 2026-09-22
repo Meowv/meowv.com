@@ -1,132 +1,79 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router';
 import { routeLoading } from '@/core/shared/route-state';
+import { STUDIO_DEFAULT_SEO, STUDIO_ROUTE_SEO, studioCanonicalUrl } from './seo';
 
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
     name: 'home',
     component: () => import('@/pages/HomePage.vue'),
-    meta: {
-      title: 'Meowv Studio · 本地文件工作台',
-      description:
-        'Meowv Studio 是无需上传文件的浏览器本地工作台，支持图片、PDF、Markdown、Office、白板、思维导图、便签等工具，内容始终留在你的设备上。',
-    },
+    meta: STUDIO_ROUTE_SEO.home,
   },
   {
     path: '/markdown',
     name: 'markdown',
     component: () => import('@/features/markdown/MarkdownStudioPage.vue'),
-    meta: {
-      title: 'Markdown · Meowv Studio',
-      description:
-        '在浏览器本地打开、编辑和预览 Markdown，支持文件夹工作空间、全文搜索及 HTML、PDF、Word 等格式导出，文档无需上传。',
-      feature: 'markdown',
-    },
+    meta: { ...STUDIO_ROUTE_SEO.markdown, feature: 'markdown' },
   },
   {
     path: '/mermaid',
     name: 'mermaid',
     component: () => import('@/features/mermaid/MermaidPage.vue'),
-    meta: {
-      title: 'Mermaid · Meowv Studio',
-      description: '在浏览器本地编辑、预览、导出和分享 Mermaid 图表，内容始终留在你的设备上。',
-      feature: 'mermaid',
-    },
+    meta: { ...STUDIO_ROUTE_SEO.mermaid, feature: 'mermaid' },
   },
   {
     path: '/office/:format(doc|xls|ppt|csv)?',
     name: 'office',
     component: () => import('@/features/office/OfficeStudioPage.vue'),
-    meta: {
-      title: 'Office · Meowv Studio',
-      description:
-        '在浏览器本地打开、创建、编辑并保存 Word、Excel、PowerPoint 和 CSV 文件，无需上传文档，兼顾常用 Office 编辑体验与数据隐私。',
-      feature: 'office',
-    },
+    meta: { ...STUDIO_ROUTE_SEO.office, feature: 'office' },
   },
   {
     path: '/books',
     name: 'books',
     component: () => import('@/features/books/BooksPage.vue'),
-    meta: {
-      title: '仿真书 · Meowv Studio',
-      description:
-        '在浏览器本地打开 PDF，以仿真书的方式阅读和翻页，文件无需上传，阅读内容始终留在你的设备上。',
-      feature: 'books',
-    },
+    meta: { ...STUDIO_ROUTE_SEO.books, feature: 'books' },
   },
   {
     path: '/draw',
     name: 'draw',
     component: () => import('@/features/draw/DrawPage.vue'),
-    meta: {
-      title: '白板 · Meowv Studio',
-      description:
-        '基于 Excalidraw 的浏览器本地白板，可绘制草图、流程图和架构图，支持自动保存及 PNG、SVG、Excalidraw 文件导出。',
-      feature: 'draw',
-    },
+    meta: { ...STUDIO_ROUTE_SEO.draw, feature: 'draw' },
   },
   {
     path: '/mind',
     name: 'mind',
     component: () => import('@/features/mind/MindPage.vue'),
-    meta: {
-      title: '思维导图 · Meowv Studio',
-      description:
-        '在浏览器本地创建和整理思维导图与 Markdown 脑图，支持自动保存，并可导出 Markdown、PNG、SVG、JSON 等格式。',
-      feature: 'mind',
-    },
+    meta: { ...STUDIO_ROUTE_SEO.mind, feature: 'mind' },
   },
   {
     path: '/notes',
     name: 'notes',
     component: () => import('@/features/notes/NotesPage.vue'),
-    meta: {
-      title: '便签 · Meowv Studio',
-      description:
-        '在浏览器本地创建和整理彩色便签，支持自由布局、置顶、折叠与自动保存，灵感和待办内容无需上传。',
-      feature: 'notes',
-    },
+    meta: { ...STUDIO_ROUTE_SEO.notes, feature: 'notes' },
   },
   {
     path: '/wallpapers',
     name: 'wallpapers',
     component: () => import('@/features/wallpapers/WallpapersPage.vue'),
-    meta: {
-      title: '壁纸 · Meowv Studio',
-      description: '电脑和手机壁纸，支持动态预览、分类筛选壁纸下载。',
-      feature: 'wallpapers',
-    },
+    meta: { ...STUDIO_ROUTE_SEO.wallpapers, feature: 'wallpapers' },
   },
   {
     path: '/tools',
     name: 'tools',
     component: () => import('@/features/tools/pages/ToolsHome.vue'),
-    meta: {
-      title: '工具 · Meowv Studio',
-      description:
-        '汇集图片、PDF、文本、编码、数据与设计等实用在线工具，分类清晰、搜索便捷，打开浏览器即可使用。',
-      feature: 'tools',
-    },
+    meta: { ...STUDIO_ROUTE_SEO.tools, feature: 'tools' },
   },
   {
     path: '/tools/:toolId',
     name: 'tool-detail',
     component: () => import('@/features/tools/pages/ToolDetail.vue'),
-    meta: {
-      title: '工具 · Meowv Studio',
-      description: '使用 Meowv Studio 在线工具处理文件、文本与数据，打开浏览器即可使用。',
-      feature: 'tools',
-    },
+    meta: { ...STUDIO_ROUTE_SEO.toolDetail, feature: 'tools' },
   },
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
     component: () => import('@/pages/NotFoundPage.vue'),
-    meta: {
-      title: '页面未找到 · Meowv Studio',
-      description: '你访问的页面不存在或已被移动，请返回 Meowv Studio 首页继续使用本地文件工作台。',
-    },
+    meta: STUDIO_ROUTE_SEO.notFound,
   },
 ];
 
@@ -142,11 +89,41 @@ router.beforeEach((to, from) => {
 
 router.afterEach((to) => {
   routeLoading.value = false;
-  document.title = typeof to.meta.title === 'string' ? to.meta.title : 'Meowv Studio';
-  const description = document.querySelector<HTMLMetaElement>('meta[name="description"]');
-  if (description && typeof to.meta.description === 'string') {
-    description.content = to.meta.description;
+  const title = typeof to.meta.title === 'string' ? to.meta.title : STUDIO_DEFAULT_SEO.title;
+  const descriptionText =
+    typeof to.meta.description === 'string' ? to.meta.description : STUDIO_DEFAULT_SEO.description;
+  const canonical = studioCanonicalUrl(to.path);
+  const noindex = to.meta.noindex === true;
+
+  document.title = title;
+  const setMeta = (selector: string, attributes: Record<string, string>, content: string) => {
+    let element = document.head.querySelector<HTMLMetaElement>(selector);
+    if (!element) {
+      element = document.createElement('meta');
+      Object.entries(attributes).forEach(([key, value]) => element!.setAttribute(key, value));
+      document.head.append(element);
+    }
+    element.content = content;
+  };
+  setMeta('meta[name="description"]', { name: 'description' }, descriptionText);
+  setMeta('meta[name="robots"]', { name: 'robots' }, noindex ? 'noindex, follow' : 'index, follow');
+  setMeta('meta[property="og:type"]', { property: 'og:type' }, 'website');
+  setMeta('meta[property="og:locale"]', { property: 'og:locale' }, 'zh_CN');
+  setMeta('meta[property="og:site_name"]', { property: 'og:site_name' }, 'Meowv Studio');
+  setMeta('meta[property="og:url"]', { property: 'og:url' }, canonical);
+  setMeta('meta[property="og:title"]', { property: 'og:title' }, title);
+  setMeta('meta[property="og:description"]', { property: 'og:description' }, descriptionText);
+  setMeta('meta[name="twitter:card"]', { name: 'twitter:card' }, 'summary');
+  setMeta('meta[name="twitter:title"]', { name: 'twitter:title' }, title);
+  setMeta('meta[name="twitter:description"]', { name: 'twitter:description' }, descriptionText);
+
+  let canonicalElement = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+  if (!canonicalElement) {
+    canonicalElement = document.createElement('link');
+    canonicalElement.rel = 'canonical';
+    document.head.append(canonicalElement);
   }
+  canonicalElement.href = canonical;
 });
 
 router.onError(() => {

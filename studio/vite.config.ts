@@ -8,6 +8,7 @@ import { builtinBooksDevPlugin } from './vite/builtinBooksDevPlugin.ts';
 import { studioBuildConfig } from './vite/buildConfig.ts';
 import { cubingWorkerPreloadPlugin } from './vite/cubingWorkerPreloadPlugin.ts';
 import { serviceWorkerPlugin } from './vite/serviceWorkerPlugin.ts';
+import { studioSeoPlugin } from './vite/studioSeoPlugin.ts';
 import { wallpaperDefine } from './vite/wallpaperConfig.ts';
 import { wallpaperDownloadProxyPlugin } from './vite/wallpaperDownloadProxyPlugin.ts';
 import { zitiePlugin } from './vite/zitiePlugin.ts';
@@ -20,6 +21,7 @@ export default defineConfig({
     serviceWorkerPlugin(),
     builtinBooksDevPlugin(),
     zitiePlugin(),
+    studioSeoPlugin(),
     react({ include: /src\/features\/zitie\/.*\.[jt]sx$/ }),
     vue({
       template: {
