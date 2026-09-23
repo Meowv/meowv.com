@@ -281,9 +281,24 @@ export async function getDrawSettings(): Promise<DrawSettingsRecord> {
 export async function updateDrawSettings(
   changes: Partial<Omit<DrawSettingsRecord, 'id'>>,
 ): Promise<DrawSettingsRecord> {
-  const record: DrawSettingsRecord = { ...(await getDrawSettings()), ...changes, id: 'global' };
-  await putRecord(SETTINGS_STORE, record);
-  return record;
+  return useStore(SETTINGS_STORE, 'readwrite', async (store) => {
+    const stored = (await requestAsPromise(
+      store.get('global'),
+    )) as DrawSettingsRecord | undefined;
+    const record: DrawSettingsRecord = {
+      ...(stored ?? {
+        id: 'global',
+        activeDocumentId: null,
+        headerCollapsed: false,
+        storagePersistRequested: false,
+        localStorageNoticeShown: false,
+      }),
+      ...changes,
+      id: 'global',
+    };
+    await requestAsPromise(store.put(record));
+    return record;
+  });
 }
 
 export async function getDrawLibrary<T>(): Promise<DrawLibraryRecord<T> | null> {

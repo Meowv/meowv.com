@@ -485,9 +485,12 @@ function DrawEditor({
     );
   }, []);
 
-  const enqueueSaveOperation = useCallback((operation: () => Promise<void>): Promise<void> => {
+  const enqueueSaveOperation = useCallback(<T,>(operation: () => Promise<T>): Promise<T> => {
     const queued = saveQueueRef.current.then(operation, operation);
-    saveQueueRef.current = queued.catch(() => undefined);
+    saveQueueRef.current = queued.then(
+      () => undefined,
+      () => undefined,
+    );
     return queued;
   }, []);
 
@@ -517,12 +520,12 @@ function DrawEditor({
     };
   }, []);
 
-  const saveCurrentScene = useCallback((): Promise<void> => {
+  const saveCurrentScene = useCallback((): Promise<boolean> => {
     if (saveTimerRef.current !== null) {
       window.clearTimeout(saveTimerRef.current);
       saveTimerRef.current = null;
     }
-    if (!dirtyRef.current) return Promise.resolve();
+    if (!dirtyRef.current) return Promise.resolve(true);
 
     let snapshot: DrawSceneSaveSnapshot | null;
     try {
@@ -530,9 +533,9 @@ function DrawEditor({
     } catch (error) {
       setSaveState('failed');
       setNotice(error instanceof Error ? error.message : '无法生成白板保存内容。');
-      return Promise.resolve();
+      return Promise.resolve(false);
     }
-    if (!snapshot) return Promise.resolve();
+    if (!snapshot) return Promise.resolve(!dirtyRef.current);
 
     const fileSyncPending = Boolean(
       snapshot.document.fileHandle && snapshot.document.fileSyncPending,
@@ -542,22 +545,29 @@ function DrawEditor({
       setSaveState(
         storageEnabledRef.current || snapshot.document.fileHandle ? 'saved' : 'unavailable',
       );
-      return Promise.resolve();
+      return Promise.resolve(true);
     }
 
     const canSaveToBrowser = storageEnabledRef.current;
     const canSaveToFile = Boolean(snapshot.document.fileHandle);
     if (!canSaveToBrowser && !canSaveToFile) {
       setSaveState('unavailable');
-      return Promise.resolve();
+      setNotice('当前浏览器无法保存此画板，未保存的更改仍保留在当前画板中。');
+      return Promise.resolve(false);
     }
 
     return enqueueSaveOperation(async () => {
+      const fileHandle = snapshot.document.fileHandle;
+      let browserSaved = false;
+      let browserSaveError: unknown;
+      let fileSaved = !fileHandle;
+      let fileSaveError: unknown;
+      let shouldNotifyFileFailure = false;
+      let sceneIsCurrent = true;
       try {
         const isActive = activeDocumentRef.current?.id === snapshot.document.id;
         if (isActive) setSaveState('saving');
 
-        const fileHandle = snapshot.document.fileHandle;
         let savedDocument: DrawDocumentRecord = {
           ...snapshot.document,
           sceneJson: snapshot.sceneJson,
@@ -566,8 +576,6 @@ function DrawEditor({
           size: new Blob([snapshot.sceneJson]).size,
           updatedAt: Date.now(),
         };
-        let browserSaved = false;
-        let browserSaveError: unknown;
         if (canSaveToBrowser) {
           try {
             savedDocument = await saveDrawDocument(
@@ -583,9 +591,6 @@ function DrawEditor({
           }
         }
 
-        let fileSaved = !fileHandle;
-        let fileSaveError: unknown;
-        let shouldNotifyFileFailure = false;
         if (fileHandle) {
           const writeBlocked = fileWriteBlockedRef.current.has(snapshot.document.id);
           if (writeBlocked) {
@@ -617,26 +622,31 @@ function DrawEditor({
           }
         }
 
-        replaceDocument(savedDocument);
+        const durableSaved = browserSaved || Boolean(fileHandle && fileSaved);
+        if (durableSaved) replaceDocument(savedDocument);
         if (activeDocumentRef.current?.id === savedDocument.id) {
-          activeDocumentRef.current = savedDocument;
-          setActiveDocument(savedDocument);
-          const primarySaved = fileHandle ? fileSaved : browserSaved;
-          let sceneIsCurrent = false;
+          if (durableSaved) {
+            activeDocumentRef.current = savedDocument;
+            setActiveDocument(savedDocument);
+          }
+          sceneIsCurrent = false;
           try {
             sceneIsCurrent = captureCurrentScene()?.signature === snapshot.signature;
           } catch {
             // 下一次场景变更会重新安排保存。
           }
-          if (primarySaved && sceneIsCurrent) {
-            dirtyRef.current = false;
-            setSaveState('saved');
-          } else if (primarySaved) {
-            dirtyRef.current = true;
-            setSaveState('dirty');
-          } else if (!primarySaved) {
+          if (!durableSaved) {
             dirtyRef.current = true;
             setSaveState('failed');
+          } else if (!sceneIsCurrent) {
+            dirtyRef.current = true;
+            setSaveState('dirty');
+          } else if (fileHandle && !fileSaved) {
+            dirtyRef.current = true;
+            setSaveState('failed');
+          } else {
+            dirtyRef.current = false;
+            setSaveState('saved');
           }
         }
 
@@ -655,12 +665,15 @@ function DrawEditor({
               : `${message} 请立即保存源文件备份。`,
           );
         }
+
+        return durableSaved && sceneIsCurrent;
       } catch (error) {
         if (activeDocumentRef.current?.id === snapshot.document.id) {
           dirtyRef.current = true;
           setSaveState('failed');
         }
         setNotice(error instanceof Error ? error.message : '本地保存失败。');
+        return false;
       }
     });
   }, [captureCurrentScene, enqueueSaveOperation, replaceDocument]);
@@ -694,7 +707,7 @@ function DrawEditor({
 
   const setActive = useCallback(
     async (nextDocument: DrawDocumentRecord, skipSave = false): Promise<void> => {
-      if (!skipSave) await saveCurrentScene();
+      if (!skipSave && !(await saveCurrentScene())) return;
       let nextScene: ExcalidrawInitialDataState;
       try {
         nextScene = parseScene(nextDocument.sceneJson);
@@ -745,8 +758,8 @@ function DrawEditor({
       title = '未命名画板',
       sceneJson = EMPTY_DRAW_SCENE,
       fileHandle?: FileSystemFileHandle,
-    ): Promise<DrawDocumentRecord> => {
-      await saveCurrentScene();
+    ): Promise<DrawDocumentRecord | null> => {
+      if (!(await saveCurrentScene())) return null;
       const document = storageEnabledRef.current
         ? await createDrawDocument(title, sceneJson, fileHandle)
         : createTemporaryDocument(title, sceneJson, fileHandle);
@@ -956,9 +969,22 @@ function DrawEditor({
     if (!storageEnabledRef.current) return;
     if (librarySaveTimerRef.current !== null) window.clearTimeout(librarySaveTimerRef.current);
     librarySaveTimerRef.current = window.setTimeout(() => {
-      void saveDrawLibrary(items).catch(() => setNotice('素材库本地保存失败。'));
+      librarySaveTimerRef.current = null;
+      void saveDrawLibrary(libraryRef.current).catch(() => setNotice('素材库本地保存失败。'));
     }, 500);
-  }, []);
+  }, [setNotice]);
+
+  useEffect(
+    () => () => {
+      if (librarySaveTimerRef.current === null) return;
+      window.clearTimeout(librarySaveTimerRef.current);
+      librarySaveTimerRef.current = null;
+      if (storageEnabledRef.current) {
+        void saveDrawLibrary(libraryRef.current).catch(() => setNotice('素材库本地保存失败。'));
+      }
+    },
+    [setNotice],
+  );
 
   const openExcalidrawFile = useCallback(
     async (file: File, fileHandle?: FileSystemFileHandle): Promise<boolean> => {
@@ -990,6 +1016,7 @@ function DrawEditor({
           }
         }
         const document = await createDocument(title, sceneJson, fileHandle);
+        if (!document) return false;
         if (fileHandle) {
           if (writable) fileWriteBlockedRef.current.delete(document.id);
           else fileWriteBlockedRef.current.add(document.id);
@@ -1071,7 +1098,7 @@ function DrawEditor({
         else fileWriteBlockedRef.current.add(document.id);
       }
       await setActive(document);
-      if (document.fileHandle && !writable) {
+      if (activeDocumentRef.current?.id === document.id && document.fileHandle && !writable) {
         setNotice('已打开浏览器内画板；点击保存按钮可重新授权写回原文件。');
       }
     },
@@ -1080,7 +1107,12 @@ function DrawEditor({
 
   const deleteDocument = useCallback(
     async (document: DrawDocumentRecord) => {
-      if (document.id === activeDocumentRef.current?.id) await saveCurrentScene();
+      if (
+        document.id === activeDocumentRef.current?.id &&
+        !(await saveCurrentScene())
+      ) {
+        return;
+      }
       if (storageEnabledRef.current) await deleteDrawDocument(document.id);
       setDocuments((current) => current.filter((item) => item.id !== document.id));
       if (document.id === activeDocumentRef.current?.id) {
@@ -1095,7 +1127,7 @@ function DrawEditor({
   );
 
   const clearDocuments = useCallback(async () => {
-    await saveCurrentScene();
+    if (!(await saveCurrentScene())) return;
     if (storageEnabledRef.current) await clearDrawDocuments();
     const nextDocument = storageEnabledRef.current
       ? await createDrawDocument()
@@ -1106,7 +1138,7 @@ function DrawEditor({
 
   const duplicateDocument = useCallback(
     async (document: DrawDocumentRecord) => {
-      await saveCurrentScene();
+      if (!(await saveCurrentScene())) return;
       const duplicate = storageEnabledRef.current
         ? await duplicateDrawDocument(document.id)
         : createTemporaryDocument(`${document.title} 副本`, document.sceneJson);
@@ -1362,7 +1394,6 @@ function DrawEditor({
       document.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('beforeunload', handleBeforeUnload);
       if (saveTimerRef.current !== null) window.clearTimeout(saveTimerRef.current);
-      if (librarySaveTimerRef.current !== null) window.clearTimeout(librarySaveTimerRef.current);
       void saveCurrentScene();
     };
   }, [
