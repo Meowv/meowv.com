@@ -50,7 +50,17 @@ extension AppDelegate {
             }
         } else {
             notice = .info("锁屏预览已关闭，系统墙纸已恢复")
+            let restoreAerialSelection = aerialLockScreenManager.isActive
             lockScreenPreviewer.restoreUserWallpaper()
+            Task { @MainActor in
+                do {
+                    try await aerialLockScreenManager.restore(
+                        restoreOriginalSelection: restoreAerialSelection
+                    )
+                } catch {
+                    log("⚠️ 关闭动态锁屏后恢复 Aerial 失败：\(error.localizedDescription)")
+                }
+            }
         }
         refreshStatusItem()
     }

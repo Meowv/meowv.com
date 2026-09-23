@@ -46,17 +46,31 @@ extension AppDelegate {
             forName: NSNotification.Name("com.apple.screenIsLocked"), object: nil, queue: .main
         ) { [weak self] _ in
             Task { @MainActor in
-                self?.governor.setSessionLocked(true)
+                guard let self else { return }
+                self.governor.setSessionLocked(true)
+                let lockItem: WallpaperItem?
+                if self.preferences.lockScreenPreview,
+                   let primary = self.engine.primaryKey {
+                    lockItem = self.engine.item(on: primary)
+                } else {
+                    lockItem = nil
+                }
+                self.aerialLockScreenManager.screenDidLock(for: lockItem)
                 // 把最近一次成功的静态图**再设一遍**：`setDesktopImageURL` 生效有延迟，
                 // 而锁屏正是「用户马上要看」的时刻。这里绝不现抓帧 —— 播放器已被
                 // governor 暂停，复用锁屏预览自己缓存的静态图即可。
-                self?.lockScreenPreviewer.reapplyCached()
+                if !self.aerialLockScreenManager.isActive {
+                    self.lockScreenPreviewer.reapplyCached()
+                }
             }
         }
         DistributedNotificationCenter.default().addObserver(
             forName: NSNotification.Name("com.apple.screenIsUnlocked"), object: nil, queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in self?.governor.setSessionLocked(false) }
+            Task { @MainActor in
+                self?.governor.setSessionLocked(false)
+                self?.aerialLockScreenManager.screenDidUnlock()
+            }
         }
     }
 
@@ -138,7 +152,7 @@ extension AppDelegate {
         currentName = names.isEmpty ? "启动中" : names.joined(separator: " · ")
     }
 
-    /// 把某张壁纸的静态图同步成系统墙纸（锁屏预览）。
+    /// 更新静态锁屏回退图。动态 Aerial 仅在锁屏事件到来时准备，避免轮换每张都下载转码。
     ///
     /// 用独立 Task：内部要下载几百 KB（最长 15 秒超时），不能挡住切换排期。
     /// `frameProvider` 只在静态图不可用时才会被调用；它复用播放引擎异步缓存的帧，
@@ -147,6 +161,7 @@ extension AppDelegate {
         let previewer = lockScreenPreviewer
         let policy = screenCoordinator.policy
         Task { @MainActor [weak self] in
+            guard let self, self.preferences.lockScreenPreview else { return }
             await previewer.update(
                 for: item,
                 multiScreenPolicy: policy,

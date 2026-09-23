@@ -1324,7 +1324,7 @@ PROBE[静置后] 内存 14 MB · CPU 0.0%（近 3 秒）    ← 基线已推进�
 锁屏态：覆盖窗口被安全罩挡住 → 露出的正是这张静态图
 ```
 
-真要走「锁屏也播视频」，只有 Apple 的私有 `WallpaperExtensionKit`（在 `WallpaperAgent` 里挂 `.appex`，Phosphene 那套）一条路：需要完整 Xcode + 签名 + 私有框架 `dlopen`，系统大版本升级就可能失效 —— 与本项目「只用 Command Line Tools、零依赖」的定位冲突，不做。
+macOS 没有公开 API 可把第三方视频设为锁屏动态墙纸。macOS 27 上，「锁屏预览」开启时 LiveWall 在锁屏事件后才下载并转换当前视频，编码为带 HEVC temporal scalability（`tscl` / `tsas`）样本组的约一分钟 MOV，再备份后替换用户已下载的一个 Apple Aerial 视频槽位，并把 `Index.plist` 设为 `Type=linked` 动态选择。普通桌面轮换不触发视频下载或转码；锁屏事件后到转换完成前，系统可能短暂显示静态回退图。高于 30 fps 的源视频在转码时降采样到 30 fps；当前编码目标约 0.8 bit/pixel（1080p 约 1.66 Mbps），一分钟产物预计约 12 MiB。关闭开关时恢复原 Apple 视频与原 Index；编码或系统选择失败时继续使用现有静态锁屏图。Aerial 若不循环短素材，锁屏超过一分钟后可能停在末帧；该槽位也会影响 Apple 屏保，macOS 更新或重新下载 Aerial 可能覆盖它。原 MOV 与 Index.plist 备份保存在 `~/Library/Application Support/com.meowv.livewall/aerial-lock-screen/`。其他 macOS 版本暂用静态锁屏预览。
 
 ### 来源与回退链
 

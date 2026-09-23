@@ -59,6 +59,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     lazy var lockScreenPreviewer = LockScreenPreviewer(
         cacheDirectory: LiveWallPaths.applicationSupportDirectory
     )
+    lazy var aerialLockScreenManager = AerialLockScreenManager()
     /// 手动下载当前壁纸（视频 + 静态预览图）到 `~/Downloads/livewall/`。
     lazy var downloader = WallpaperDownloader()
     /// 全局热键。Carbon `RegisterEventHotKey`，不需要辅助功能授权。
@@ -365,6 +366,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.notice = isWarning ? .warning(message) : .info(message)
             self.refreshStatusItem()
         }
+        aerialLockScreenManager.log = { [weak self] message in self?.log(message) }
+        aerialLockScreenManager.onNotice = { [weak self] message, isWarning in
+            guard let self else { return }
+            self.notice = isWarning ? .warning(message) : .info(message)
+            self.refreshStatusItem()
+        }
+        if !preferences.lockScreenPreview {
+            aerialLockScreenManager.restoreIfDisabled()
+        }
         downloader.log = { [weak self] message in self?.log(message) }
         updateChecker.onResult = { [weak self] decision, warnings in
             self?.applyUpdateResult(decision, warnings: warnings)
@@ -513,7 +523,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // `setDesktopImageURL` 生效有延迟（见 `reapplyCached` 的说明），而进程马上
         // 就要退出 —— 给主线程一点时间让它落地，然后再设一次兜底。
         RunLoop.main.run(until: Date().addingTimeInterval(0.3))
-        lockScreenPreviewer.reapplyCached()
+        if !aerialLockScreenManager.isActive {
+            lockScreenPreviewer.reapplyCached()
+        }
         // 浏览窗口也要关掉：它持有预览播放器与在飞的缩略图请求，
         // 留着会让进程在「已经退出清理」之后还挂着一个窗口。
         browserWindowController?.close()
@@ -556,6 +568,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 退出路径不能因为一张 4K 帧的 JPEG 编码卡在主线程。
     func freezeCurrentWallpaper() {
         guard preferences.lockScreenPreview else { return }
+        guard !aerialLockScreenManager.isActive else { return }
         guard let primary = engine.primaryKey, let item = engine.item(on: primary) else { return }
         lockScreenPreviewer.freezeCurrent(
             itemID: item.id,
