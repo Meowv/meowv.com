@@ -365,7 +365,6 @@ function togglePinned(): void {
 
 function updateContent(value: string): void {
   emit('update', props.note.id, { content: value });
-  emit('save', props.note.id);
 }
 
 function setCarnivalTransform(x: number, y: number, rotation: number, scale = 1): void {

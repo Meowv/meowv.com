@@ -12,6 +12,7 @@ const textareaRef = ref<HTMLTextAreaElement | null>(null);
 const processing = ref(false);
 const status = ref<{ tone: 'ok' | 'error'; text: string } | null>(null);
 let statusTimer: number | null = null;
+const imagePasteQueue: Blob[] = [];
 
 function showStatus(tone: 'ok' | 'error', text: string): void {
   if (statusTimer !== null) window.clearTimeout(statusTimer);
@@ -48,26 +49,39 @@ function onKeydown(event: KeyboardEvent): void {
   applyAction(action);
 }
 
-async function onPaste(event: ClipboardEvent): Promise<void> {
+function onPaste(event: ClipboardEvent): void {
   const items = Array.from(event.clipboardData?.items ?? []);
   const imageItem = items.find((item) => item.kind === 'file' && item.type.startsWith('image/'));
   if (!imageItem) return;
   event.preventDefault();
-  if (processing.value) return;
 
   const imageBlob = imageItem.getAsFile();
   if (!imageBlob) return;
+  imagePasteQueue.push(imageBlob);
+  void processImagePasteQueue();
+}
+
+async function processImagePasteQueue(): Promise<void> {
+  if (processing.value) return;
   processing.value = true;
-  showStatus('ok', '正在插入图片…');
-  try {
-    const compressed = await compressPastedImage(imageBlob);
-    insertImage(compressed.dataUrl);
-    showStatus('ok', `已插入图片（${formatNoteBytes(compressed.bytes)}）`);
-  } catch (error) {
-    showStatus('error', error instanceof Error ? error.message : '图片插入失败。');
-  } finally {
-    processing.value = false;
+  while (imagePasteQueue.length > 0) {
+    const imageBlob = imagePasteQueue.shift();
+    if (!imageBlob) continue;
+    showStatus(
+      'ok',
+      imagePasteQueue.length > 0
+        ? `正在插入图片（队列中还有 ${imagePasteQueue.length} 张）…`
+        : '正在插入图片…',
+    );
+    try {
+      const compressed = await compressPastedImage(imageBlob);
+      insertImage(compressed.dataUrl);
+      showStatus('ok', `已插入图片（${formatNoteBytes(compressed.bytes)}）`);
+    } catch (error) {
+      showStatus('error', error instanceof Error ? error.message : '图片插入失败。');
+    }
   }
+  processing.value = false;
 }
 
 function insertImage(dataUrl: string): void {

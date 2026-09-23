@@ -313,9 +313,11 @@ function patchNote(id: string, patch: Partial<NoteSticky>): void {
     }
   }
   const now = Date.now();
-  if (patch.content !== undefined && patch.content !== note.content) note.lastEditedAt = now;
+  const contentChanged = patch.content !== undefined && patch.content !== note.content;
+  if (contentChanged) note.lastEditedAt = now;
   if (patch.collapsed !== undefined) note.layoutMode = undefined;
   Object.assign(note, patch, { updatedAt: now });
+  if (contentChanged) scheduleSave(note);
 }
 
 function saveNote(id: string): void {
@@ -853,7 +855,7 @@ async function deleteNote(id: string): Promise<void> {
     spawnParticles(16, note.x + note.width / 2, note.y + note.height / 2);
   }
   try {
-    await deleteNoteSticky(id);
+    await enqueueSave(() => deleteNoteSticky(id));
   } catch (error) {
     console.error('删除便签失败：', error);
   }
@@ -871,7 +873,11 @@ async function clearAll(): Promise<void> {
   particles.length = 0;
   fxContext?.clearRect(0, 0, fxWidth, fxHeight);
   stopCollapseCycle();
-  await clearNoteStickies().catch((error: unknown) => {
+  if (saveTimer !== null) {
+    window.clearTimeout(saveTimer);
+    saveTimer = null;
+  }
+  await enqueueSave(() => clearNoteStickies()).catch((error: unknown) => {
     console.error('清空便签失败：', error);
   });
 }
