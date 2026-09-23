@@ -177,15 +177,16 @@ func updateTests() {
         }
 
         test("系统低于最低要求 → 不提示；满足或没要求 → 正常提示") {
-            let old = OperatingSystemVersion(majorVersion: 13, minorVersion: 0, patchVersion: 0)
+            let old = OperatingSystemVersion(majorVersion: 25, minorVersion: 0, patchVersion: 0)
             expectEqual(
                 UpdateEvaluator.evaluate(localBuild: 1, feed: feed(build: 2, minOS: "26.0"), currentOS: old),
                 .unusable,
                 "装了也跑不起来，不提示"
             )
-            let same = feed(build: 2, minOS: "13.0")
+            let same = feed(build: 2, minOS: "26.0")
+            let supported = OperatingSystemVersion(majorVersion: 26, minorVersion: 0, patchVersion: 0)
             expectEqual(
-                UpdateEvaluator.evaluate(localBuild: 1, feed: same, currentOS: old),
+                UpdateEvaluator.evaluate(localBuild: 1, feed: same, currentOS: supported),
                 .available(same),
                 "正好等于最低版本算满足"
             )

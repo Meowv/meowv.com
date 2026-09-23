@@ -197,7 +197,7 @@ cat > "${FEED_PATH}" <<JSON
   "sizeBytes": ${DMG_SIZE},
   "sha256": "${DMG_SHA}",
   "fileURL": "https://studio.meowv.com/data/livewall/${DMG_NAME}",
-  "minOSVersion": "13.0"
+  "minOSVersion": "26.0"
 }
 JSON
 

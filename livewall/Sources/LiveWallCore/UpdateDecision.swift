@@ -48,7 +48,7 @@ public enum UpdateEvaluator {
 
     /// 当前系统是否满足最低要求。`minOSVersion` 为 nil 时一律满足。
     ///
-    /// 逐段比较（`13.0` → 13.0.0），缺段补 0。解析不出来时**当作满足** ——
+    /// 逐段比较（`26.0` → 26.0.0），缺段补 0。解析不出来时**当作满足** ——
     /// 服务端填了个看不懂的值，不该让用户因此看不到更新（最坏情况是装完跑不起来，
     /// 而那是发布流程该拦的事，不是客户端该猜的事）。
     public static func isOSAtLeast(_ required: String?, current: OperatingSystemVersion) -> Bool {

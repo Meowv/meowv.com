@@ -18,7 +18,7 @@ import PackageDescription
 
 let package = Package(
     name: "LiveWall",
-    platforms: [.macOS(.v13)],
+    platforms: [.macOS("26.0")],
     targets: [
         // 纯逻辑：不依赖 NSApplication，可单测
         .target(name: "LiveWallCore"),

@@ -31,7 +31,7 @@ macOS 视频动态壁纸工具。**个人自用 / 小范围共享**定位，不�
 | 名称                    | `livewall` —— live wallpaper 的缩写。目录、Swift 模块、脚本一律用此名                                                                                                                                                                              |
 | 界面显示名              | 「动态壁纸」—— 菜单栏标题、系统设置与登录项里显示的应用名，来自 `CFBundleName` / `CFBundleDisplayName`。**它与产物文件名是两件事**：磁盘上的包叫 `build/LiveWall.app`，Finder 里仍显示「动态壁纸」。Swift 模块名、可执行文件名、bundle id 也仍是 `LiveWall` / `com.meowv.livewall` |
 | 用途                    | 把一段 mp4 放到 macOS 桌面层循环播放，替代静态壁纸                                                                                                                                                                                                 |
-| 平台                    | 仅 macOS（本机实测 macOS 27.0 / arm64，见[本机实测基线](#本机实测基线macos-270--arm64--双屏)）                                                                                                                                                     |
+| 平台                    | macOS 26.0 及以上（本机实测 macOS 27.0 / arm64，见[本机实测基线](#本机实测基线macos-270--arm64--双屏)）                                                                                                                                               |
 | 内容                    | 仅视频壁纸（mp4），不做静态图片、不做网页/WebGL 壁纸                                                                                                                                                                                               |
 | 数据源                  | 二选一：**线上**（默认，CDN 上的 https 直链 + JSON 清单）或**本地文件夹**（只播该文件夹里的 mp4，见[壁纸来源](#壁纸来源线上--本地文件夹)）。两种情况都不建视频库 |
 | 与 `wallpapers/` 的区别 | `wallpapers/` 是 Python 采集器（抓元数据进 SQLite）；`livewall` 是客户端播放器。两者无代码依赖                                                                                                                                                     |
@@ -708,7 +708,7 @@ curl -sI https://studio.meowv.com/data/livewall/catalog.json.sig   # 期望 200
 | `notes` | — | 更新说明，菜单里压成一行显示 |
 | `sizeBytes` | — | 包体积，缺失就不显示「大小」行 |
 | `sha256` | ✅ | dmg 的 SHA-256（64 位十六进制）。**缺失或格式非法即整体判不可用** |
-| `minOSVersion` | — | 低于它就不提示（装了也跑不起来） |
+| `minOSVersion` | — | 当前发行值为 `26.0`；低于它就不提示（装了也跑不起来） |
 
 比 `CFBundleShortVersionString` 更可靠的是 `build`：语义化比较会踩 `0.10.0 < 0.9.0` 这类坑。
 解析是**防御式**的（`UpdateFeedCoding`）：任一必填字段缺失或类型不对，整体判为不可用并记日志，不留半截数据。
@@ -2058,7 +2058,7 @@ P10 时这里的做法是「先 `makeKeyAndOrderFront` 再 `NSApp.activate`」�
 ```bash
 rm -rf /tmp/silout && mkdir -p /tmp/silout && cd /tmp/silout
 swiftc -swift-version 6 -emit-sil -Onone \
-  -sdk "$(xcrun --show-sdk-path)" -target arm64-apple-macos13.0 \
+  -sdk "$(xcrun --show-sdk-path)" -target arm64-apple-macos26.0 \
   -module-name LiveWall -I <项目>/.build/debug \
   <项目>/Sources/LiveWall/*.swift
 ```

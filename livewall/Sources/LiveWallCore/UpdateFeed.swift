@@ -25,7 +25,7 @@ public struct UpdateFeed: Equatable, Sendable {
     public var sha256: String
     /// dmg 下载地址。解析成功时**必然是 https**（http 一律拒绝）。
     public var fileURL: URL
-    /// 最低系统版本（`13.0`）。可选；给了就与当前系统比对。
+    /// 最低系统版本（当前发行版为 `26.0`）。可选；给了就与当前系统比对。
     public var minOSVersion: String?
 
     public init(

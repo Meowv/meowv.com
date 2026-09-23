@@ -157,16 +157,28 @@ enum AerialVideoEncoder {
                 start: .zero,
                 duration: CMTime(seconds: loopDuration, preferredTimescale: 60_000)
             )
-            let videoComposition = AVMutableVideoComposition()
-            videoComposition.frameDuration = frameInterval
-            videoComposition.renderSize = CGSize(width: width, height: height)
-            let instruction = AVMutableVideoCompositionInstruction()
-            instruction.timeRange = reader.timeRange
-            let layerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: track)
+            var layerConfiguration = AVVideoCompositionLayerInstruction.Configuration(
+                assetTrack: track
+            )
             // 保留原始像素方向；最终旋转仍由写入器的 preferredTransform 元数据完成。
-            layerInstruction.setTransform(.identity, at: .zero)
-            instruction.layerInstructions = [layerInstruction]
-            videoComposition.instructions = [instruction]
+            layerConfiguration.setTransform(.identity, at: .zero)
+            let layerInstruction = AVVideoCompositionLayerInstruction(
+                configuration: layerConfiguration
+            )
+            let instructionConfiguration = AVVideoCompositionInstruction.Configuration(
+                backgroundColor: nil,
+                enablePostProcessing: false,
+                layerInstructions: [layerInstruction],
+                requiredSourceSampleDataTrackIDs: [],
+                timeRange: reader.timeRange
+            )
+            let instruction = AVVideoCompositionInstruction(configuration: instructionConfiguration)
+            let compositionConfiguration = AVVideoComposition.Configuration(
+                frameDuration: frameInterval,
+                instructions: [instruction],
+                renderSize: CGSize(width: width, height: height)
+            )
+            let videoComposition = AVVideoComposition(configuration: compositionConfiguration)
 
             let output = AVAssetReaderVideoCompositionOutput(
                 videoTracks: [track],
