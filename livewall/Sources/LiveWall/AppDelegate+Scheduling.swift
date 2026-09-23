@@ -213,45 +213,16 @@ extension AppDelegate {
         loadTasksBySlot[key] = task
     }
 
-    /// 共享同一 URL 的并发准入校验，完成后立即移除任务引用。
+    /// 共享同一 URL 的并发准入校验。最后一个调用方取消或完成后，释放任务并取消无人等待的加载。
     func loadVideo(_ url: URL) async throws -> LoadedVideo {
-        let (task, isNew) = takeSharedLoad(for: url)
-        // 只有**建表的那一次**负责删表。让复用方也删的话，会把还在被其它槽位等待的
-        // 条目提前摘掉，下一个调用方就会再拉一遍同一条视频（等于去重失效）。
-        defer { if isNew { releaseSharedLoad(for: url) } }
-        return try await task.value
-    }
-
-    /// 取回或创建某个 URL 的共享加载任务。
-    ///
-    /// **检查与插入必须在同一把锁里**：分开做的话两个槽位可能同时未命中，同一条视频
-    /// 被并发拉两遍 —— 而那正是这张表存在的理由（`AGENTS.md`：一个视频只建一个 asset，
-    /// 否则流量翻倍）。
-    func takeSharedLoad(for url: URL) -> (task: Task<LoadedVideo, Error>, isNew: Bool) {
-        sharedVideoLoadsLock.lock()
-        defer { sharedVideoLoadsLock.unlock() }
-        if let existing = sharedVideoLoads[url] { return (existing, false) }
-        let task = Task { () throws -> LoadedVideo in
-            try await VideoLoader.load(url)
+        let lease = sharedVideoLoadStore.acquire(for: url)
+        return try await withTaskCancellationHandler {
+            defer { sharedVideoLoadStore.release(lease) }
+            return try await lease.task.value
+        } onCancel: {
+            // 取消回调可能与 await 并发；租约释放是幂等且由锁保护的。
+            sharedVideoLoadStore.release(lease)
         }
-        sharedVideoLoads[url] = task
-        return (task, true)
-    }
-
-    func releaseSharedLoad(for url: URL) {
-        sharedVideoLoadsLock.lock()
-        defer { sharedVideoLoadsLock.unlock() }
-        sharedVideoLoads[url] = nil
-    }
-
-    /// 退出时取出并清空全部在飞的共享加载。**取消动作放在锁外**：`cancel()` 会跑
-    /// 其它线程上的取消处理器，不该在持锁时调用。
-    func drainSharedLoads() -> [Task<LoadedVideo, Error>] {
-        sharedVideoLoadsLock.lock()
-        defer { sharedVideoLoadsLock.unlock() }
-        let tasks = Array(sharedVideoLoads.values)
-        sharedVideoLoads.removeAll()
-        return tasks
     }
 
     /// 加载失败的统一出口。

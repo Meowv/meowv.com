@@ -198,6 +198,10 @@ final class AerialLockScreenManager {
             let (hasGroups, digest) = try await Task.detached(priority: .utility) {
                 (Self.hasTemporalGroups(in: temporaryURL), try Self.sha256(of: temporaryURL))
             }.value
+            // 摘要扫描期间仍可能解锁或开始更新另一条；后台任务不继承调用方取消，
+            // 因此恢复主 actor 后必须重新校验，不能让过期结果改写系统 Aerial 资源。
+            try Task.checkCancellation()
+            guard operation == operationGeneration else { return .superseded }
             guard hasGroups else { throw ManagerError.temporalMetadataMissing }
             state.pendingDigest = digest
             try saveState(state)

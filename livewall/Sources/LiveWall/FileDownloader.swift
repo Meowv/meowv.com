@@ -83,10 +83,20 @@ private final class ChunkedDownload: NSObject, URLSessionDataDelegate, @unchecke
     func run() async throws -> Int64 {
         try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { continuation in
-                let temporaryURL = FileManager.default.temporaryDirectory
-                    .appendingPathComponent("livewall-download-\(UUID().uuidString)")
-                guard FileManager.default.createFile(atPath: temporaryURL.path, contents: nil) else {
-                    continuation.resume(throwing: FileDownloader.Failure(message: "无法创建临时文件"))
+                let directory = destination.deletingLastPathComponent()
+                let temporaryURL = directory.appendingPathComponent(
+                    ".livewall-download-\(UUID().uuidString).part"
+                )
+                do {
+                    try FileManager.default.createDirectory(
+                        at: directory,
+                        withIntermediateDirectories: true
+                    )
+                    guard FileManager.default.createFile(atPath: temporaryURL.path, contents: nil) else {
+                        throw FileDownloader.Failure(message: "无法创建临时文件")
+                    }
+                } catch {
+                    continuation.resume(throwing: normalized(error))
                     return
                 }
 
@@ -157,10 +167,6 @@ private final class ChunkedDownload: NSObject, URLSessionDataDelegate, @unchecke
         }
 
         do {
-            try FileManager.default.createDirectory(
-                at: destination.deletingLastPathComponent(),
-                withIntermediateDirectories: true
-            )
             guard let temporaryURL else {
                 throw FileDownloader.Failure(message: "下载临时文件已丢失")
             }
@@ -233,9 +239,12 @@ private final class ChunkedDownload: NSObject, URLSessionDataDelegate, @unchecke
                 guard let temporaryURL else {
                     throw FileDownloader.Failure(message: "下载临时文件已丢失")
                 }
-                // 覆盖式落盘：先删旧文件再移动（同一卷内 moveItem 是原子的）
-                try? FileManager.default.removeItem(at: destination)
-                try FileManager.default.moveItem(at: temporaryURL, to: destination)
+                // 临时文件与目标同目录，使用文件系统替换保留旧文件直到新文件就位。
+                if FileManager.default.fileExists(atPath: destination.path) {
+                    _ = try FileManager.default.replaceItemAt(destination, withItemAt: temporaryURL)
+                } else {
+                    try FileManager.default.moveItem(at: temporaryURL, to: destination)
+                }
                 finalResult = .success(size)
             } catch {
                 if let temporaryURL {

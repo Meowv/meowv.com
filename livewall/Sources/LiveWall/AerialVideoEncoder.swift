@@ -235,6 +235,8 @@ enum AerialVideoEncoder {
 private final class AerialStreamWriter: @unchecked Sendable {
     private let destination: URL
     private let transform: CGAffineTransform
+    /// 串行化压缩回调，但不与 `recordError` 共用：写入器背压期间不能挡住错误上报。
+    private let appendLock = NSLock()
     private let lock = NSLock()
     private var writer: AVAssetWriter?
     private var input: AVAssetWriterInput?
@@ -249,18 +251,26 @@ private final class AerialStreamWriter: @unchecked Sendable {
 
     func recordError(_ status: OSStatus) {
         lock.lock()
-        failure = AerialVideoEncoder.EncodeError.compression(status)
+        if failure == nil {
+            failure = AerialVideoEncoder.EncodeError.compression(status)
+        }
         lock.unlock()
     }
 
     func append(_ sampleBuffer: CMSampleBuffer) {
+        appendLock.lock()
+        defer { appendLock.unlock() }
+
         lock.lock()
-        defer { lock.unlock() }
-        guard failure == nil, CMSampleBufferDataIsReady(sampleBuffer) else { return }
+        guard failure == nil, CMSampleBufferDataIsReady(sampleBuffer) else {
+            lock.unlock()
+            return
+        }
 
         if !started {
             guard let format = CMSampleBufferGetFormatDescription(sampleBuffer) else {
                 failure = AerialVideoEncoder.EncodeError.writer("编码器没有输出格式信息")
+                lock.unlock()
                 return
             }
             do {
@@ -274,6 +284,7 @@ private final class AerialStreamWriter: @unchecked Sendable {
                 newInput.transform = transform
                 guard newWriter.canAdd(newInput) else {
                     failure = AerialVideoEncoder.EncodeError.writer("无法添加视频轨道")
+                    lock.unlock()
                     return
                 }
                 newWriter.add(newInput)
@@ -281,6 +292,7 @@ private final class AerialStreamWriter: @unchecked Sendable {
                     failure = AerialVideoEncoder.EncodeError.writer(
                         newWriter.error?.localizedDescription ?? "无法启动 MOV 写入"
                     )
+                    lock.unlock()
                     return
                 }
                 newWriter.startSession(atSourceTime: CMSampleBufferGetPresentationTimeStamp(sampleBuffer))
@@ -289,21 +301,54 @@ private final class AerialStreamWriter: @unchecked Sendable {
                 started = true
             } catch {
                 failure = error
+                lock.unlock()
                 return
             }
         }
 
-        guard let input else { return }
-        // 写入器背压时降低轮询频率，避免编码回调线程持续高频唤醒。
-        while !input.isReadyForMoreMediaData, failure == nil { usleep(5_000) }
-        guard failure == nil else { return }
-        guard input.append(sampleBuffer) else {
-            failure = AerialVideoEncoder.EncodeError.writer(
-                writer?.error?.localizedDescription ?? "追加视频帧失败"
-            )
+        guard let input, let writer else {
+            lock.unlock()
             return
         }
+        lock.unlock()
+
+        // 不持状态锁等待背压；每轮同时检查异步错误与 writer 状态，避免 writer 失败后
+        // `isReadyForMoreMediaData` 一直为 false 而无限等待。
+        while !input.isReadyForMoreMediaData {
+            guard currentFailure() == nil else { return }
+            guard writer.status == .writing else {
+                recordWriterFailure(writer.error?.localizedDescription ?? "MOV 写入器已停止")
+                return
+            }
+            usleep(5_000)
+        }
+        guard currentFailure() == nil else { return }
+        guard writer.status == .writing else {
+            recordWriterFailure(writer.error?.localizedDescription ?? "MOV 写入器已停止")
+            return
+        }
+        guard input.append(sampleBuffer) else {
+            recordWriterFailure(writer.error?.localizedDescription ?? "追加视频帧失败")
+            return
+        }
+
+        lock.lock()
         appendedFrames += 1
+        lock.unlock()
+    }
+
+    private func currentFailure() -> Error? {
+        lock.lock()
+        defer { lock.unlock() }
+        return failure
+    }
+
+    private func recordWriterFailure(_ message: String) {
+        lock.lock()
+        if failure == nil {
+            failure = AerialVideoEncoder.EncodeError.writer(message)
+        }
+        lock.unlock()
     }
 
     func finish() throws {

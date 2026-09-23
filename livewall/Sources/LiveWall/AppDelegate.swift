@@ -3,6 +3,69 @@ import AppKit
 import LiveWallCore
 import LiveWallDesktop
 
+/// 同一 URL 的共享准入任务租约。取消调用方时，仅在最后一个等待者离开后取消底层任务。
+struct SharedVideoLoadLease: Sendable {
+    let url: URL
+    let waiterID: UUID
+    let task: Task<LoadedVideo, Error>
+}
+
+/// 线程安全地合并同 URL 的视频准入请求，并在无人等待时取消后台加载。
+/// `@unchecked Sendable` 的边界由 `lock` 保证：entries 的每次读写都在锁内，锁外只返回任务句柄。
+final class SharedVideoLoadStore: @unchecked Sendable {
+    private struct Entry {
+        let task: Task<LoadedVideo, Error>
+        var waiters: Set<UUID>
+    }
+
+    private let lock = NSLock()
+    private var entries: [URL: Entry] = [:]
+
+    func acquire(for url: URL) -> SharedVideoLoadLease {
+        let waiterID = UUID()
+        lock.lock()
+        if var entry = entries[url] {
+            entry.waiters.insert(waiterID)
+            entries[url] = entry
+            lock.unlock()
+            return SharedVideoLoadLease(url: url, waiterID: waiterID, task: entry.task)
+        }
+
+        let task = Task { try await VideoLoader.load(url) }
+        entries[url] = Entry(task: task, waiters: [waiterID])
+        lock.unlock()
+        return SharedVideoLoadLease(url: url, waiterID: waiterID, task: task)
+    }
+
+    /// 幂等释放租约；只有最后一个等待者离开时才取消共享任务。
+    func release(_ lease: SharedVideoLoadLease) {
+        lock.lock()
+        guard var entry = entries[lease.url], entry.waiters.remove(lease.waiterID) != nil else {
+            lock.unlock()
+            return
+        }
+        let taskToCancel: Task<LoadedVideo, Error>?
+        if entry.waiters.isEmpty {
+            entries[lease.url] = nil
+            taskToCancel = entry.task
+        } else {
+            entries[lease.url] = entry
+            taskToCancel = nil
+        }
+        lock.unlock()
+        taskToCancel?.cancel()
+    }
+
+    /// 退出时取出全部任务，调用方在锁外取消。
+    func drain() -> [Task<LoadedVideo, Error>] {
+        lock.lock()
+        let tasks = entries.values.map(\.task)
+        entries.removeAll()
+        lock.unlock()
+        return tasks
+    }
+}
+
 /// 正式 App 的主控制器。
 ///
 /// 职责边界：这里只做编排（加载配置与清单、建窗口、跑调度、更新菜单栏），
@@ -126,17 +189,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 每个槽位当前的视频加载任务。代次只能丢弃结果，任务本身也要取消，
     /// 否则旧的 HEAD / AVURLAsset 加载仍会继续占用网络和解码资源。
     var loadTasksBySlot: [PlaybackSlotKey: Task<Void, Never>] = [:]
-    /// 同一 URL 的并发准入校验只执行一次。多屏候选不足时，多个槽位会共享同一条视频。
-    /// 这里只做 in-flight 去重，不长期缓存 `AVURLAsset`，避免把大型资源留在内存中。
-    ///
-    /// ⚠️ **读写一律经下面三个辅助函数，不要直接下标访问**。`loadVideo` 是**非隔离的
-    /// async 函数**，函数体跑在协作线程池上（不是主线程）；每屏独立模式下两个槽位会同时
-    /// 取片，于是两个线程同时改这张表 —— Swift 的 `Dictionary` 不是线程安全的，实测会
-    /// **损坏存储指针并直接崩**：`Dictionary._Variant.setValue` 里
-    /// `-[NSTaggedPointerString count]: unrecognized selector sent to instance 0x8000…`。
-    /// 已用同构探针稳定复现（不安全版必崩，加锁版 3/3 干净）。
-    var sharedVideoLoads: [URL: Task<LoadedVideo, Error>] = [:]
-    let sharedVideoLoadsLock = NSLock()
+    /// 同 URL 的准入请求合并；所有等待者退出后会取消底层加载，不长期缓存 AVURLAsset。
+    let sharedVideoLoadStore = SharedVideoLoadStore()
 
     /// 待恢复的每屏源（displayID → 条目 id）。见 `ScreenSourceRestore`。
     ///
@@ -495,7 +549,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         scheduleTimer?.invalidate()
         for task in loadTasksBySlot.values { task.cancel() }
         loadTasksBySlot.removeAll()
-        for task in drainSharedLoads() { task.cancel() }
+        for task in sharedVideoLoadStore.drain() { task.cancel() }
         network.stop()
         persistScreenSources()
         // 退出要的是「把当前播放的静态图留在桌面上」，**不是**恢复用户原墙纸 ——
