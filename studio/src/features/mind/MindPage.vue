@@ -27,7 +27,7 @@ import {
   IconZoomIn,
   IconZoomOut,
 } from '@tabler/icons-vue';
-import type { MindElixirData, Theme } from 'mind-elixir';
+import type { MindElixirData, NodeObj, Theme } from 'mind-elixir';
 import StudioLogo from '@/components/StudioLogo.vue';
 import { useTheme } from '@/composables/useTheme';
 import { receiveWindowFileHandoff, useFileHandoff } from '@/core/browser/file-handoff';
@@ -35,6 +35,7 @@ import { STORAGE_POLICY, storageAvailable } from '@/core/privacy/storage';
 import { downloadBlob } from '@/core/browser/download';
 import { MarkmapAdapter } from './adapters/MarkmapAdapter';
 import { VisualMindEditorAdapter } from './adapters/VisualMindEditorAdapter';
+import { sanitizeMindHtml, sanitizeMindLink } from './security';
 import { markdownToMind, mindToMarkdown, textOutlineToMind } from './conversion';
 import {
   createMindDocument,
@@ -371,14 +372,20 @@ function handleMarkdownWheel(event: WheelEvent): void {
 
 function scheduleSave(delay = 700): void {
   if (!activeDocument.value || loadingDocument) return;
-  if (saveTimer) window.clearTimeout(saveTimer);
+  if (saveTimer !== null) window.clearTimeout(saveTimer);
   savingState.value = 'saving';
   saveTimer = window.setTimeout(() => void persistActive(), delay);
 }
 
-async function persistActive(): Promise<void> {
-  if (!activeDocument.value) return;
-  if (saveTimer) {
+async function persistActive(): Promise<boolean> {
+  if (!activeDocument.value) return true;
+  if (
+    savingState.value === 'saved' &&
+    saveTimer === null &&
+    markdownTimer.value === null
+  )
+    return true;
+  if (saveTimer !== null) {
     window.clearTimeout(saveTimer);
     saveTimer = null;
   }
@@ -392,27 +399,50 @@ async function persistActive(): Promise<void> {
         }
       : { markdown: source.markdown ?? '', title: titleDraft.value, settings: source.settings };
   savingState.value = 'saving';
+  let persisted = false;
   saveQueue = saveQueue
     .then(async () => {
       const saved = await saveMindDocument(source, update);
+      persisted = true;
       if (activeDocument.value?.id === saved.id) activeDocument.value = saved;
       const index = documents.value.findIndex((document) => document.id === saved.id);
       if (index >= 0) documents.value.splice(index, 1, saved);
-      savingState.value = 'saved';
-      saveError.value = '';
+      if (activeDocument.value?.id === saved.id) {
+        savingState.value = 'saved';
+        saveError.value = '';
+      }
     })
     .catch((error: unknown) => {
-      savingState.value = 'failed';
-      saveError.value = error instanceof Error ? error.message : '无法写入本地思维导图。';
+      if (activeDocument.value?.id === source.id) {
+        savingState.value = 'failed';
+        saveError.value = error instanceof Error ? error.message : '无法写入本地思维导图。';
+      }
     });
   await saveQueue;
+  return persisted && activeDocument.value?.id === source.id;
 }
 
 async function mountDocument(document: MindDocument): Promise<void> {
   loadingDocument = true;
   editor.dispose();
   markmap.dispose();
-  activeDocument.value = await touchMindDocument(toRaw(document));
+  const touched = await touchMindDocument(toRaw(document));
+  let sanitizedStoredData = false;
+  if (touched.type === 'visual') {
+    const originalData = touched.visualData;
+    const safeData = getMindElixirData(originalData);
+    if (!safeData) {
+      loadingDocument = false;
+      throw new Error('思维导图数据无效，已阻止打开。');
+    }
+    try {
+      sanitizedStoredData = JSON.stringify(originalData) !== JSON.stringify(safeData);
+    } catch {
+      sanitizedStoredData = true;
+    }
+    touched.visualData = safeData;
+  }
+  activeDocument.value = touched;
   titleDraft.value = activeDocument.value.title;
   const index = documents.value.findIndex((item) => item.id === document.id);
   if (index >= 0) documents.value.splice(index, 1, activeDocument.value);
@@ -442,13 +472,14 @@ async function mountDocument(document: MindDocument): Promise<void> {
   }
   loadingDocument = false;
   savingState.value = 'saved';
+  if (sanitizedStoredData) scheduleSave(0);
 }
 
 async function openDocument(document: MindDocument): Promise<void> {
   if (switchingDocument.value || document.id === activeDocument.value?.id) return;
   switchingDocument.value = true;
   try {
-    await persistActive();
+    if (!(await persistActive())) return;
     await mountDocument(document);
     documentsOpen.value = false;
   } finally {
@@ -461,7 +492,7 @@ async function createDocument(type: MindDocumentType): Promise<void> {
   creatingDocument.value = true;
   closeMenus();
   try {
-    await persistActive();
+    if (!(await persistActive())) return;
     const document = await createMindDocument(type);
     documents.value.unshift(document);
     await mountDocument(document);
@@ -480,7 +511,7 @@ async function duplicateDocument(document: MindDocument): Promise<void> {
   if (creatingDocument.value) return;
   creatingDocument.value = true;
   try {
-    await persistActive();
+    if (!(await persistActive())) return;
     const copy = await duplicateMindDocument(toRaw(document));
     documents.value.unshift(copy);
     await mountDocument(copy);
@@ -492,6 +523,7 @@ async function duplicateDocument(document: MindDocument): Promise<void> {
 
 async function removeDocument(document: MindDocument): Promise<void> {
   if (!window.confirm(`删除“${document.title}”？本地文档将无法恢复。`)) return;
+  if (activeDocument.value?.id === document.id && !(await persistActive())) return;
   await deleteMindDocument(document.id);
   documents.value = documents.value.filter((item) => item.id !== document.id);
   if (activeDocument.value?.id !== document.id) return;
@@ -574,21 +606,298 @@ function safeFileName(name: string): string {
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+const MIND_NODE_ID_PATTERN = /^[a-z\d_-]{1,64}$/i;
+const MAX_IMPORTED_NODES = 20_000;
+const MAX_IMPORTED_DEPTH = 200;
+type MindArrow = NonNullable<MindElixirData['arrows']>[number];
+type MindSummary = NonNullable<MindElixirData['summaries']>[number];
+const SAFE_COLOR_NAMES = new Set([
+  'black',
+  'blue',
+  'currentcolor',
+  'gray',
+  'grey',
+  'green',
+  'orange',
+  'purple',
+  'red',
+  'transparent',
+  'white',
+  'yellow',
+]);
+
+function isSafeColor(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  const color = value.trim();
+  return (
+    /^#(?:[\da-f]{3}|[\da-f]{4}|[\da-f]{6}|[\da-f]{8})$/i.test(color) ||
+    /^(?:rgba?|hsla?)\([\d.%\s,+/-]+\)$/i.test(color) ||
+    SAFE_COLOR_NAMES.has(color.toLowerCase())
+  );
+}
+
+function sanitizeNodeStyle(value: unknown): NodeObj['style'] | undefined {
+  if (!isRecord(value)) return undefined;
+  const result: NonNullable<NodeObj['style']> = {};
+  if (
+    typeof value.fontSize === 'string' &&
+    /^\d{1,4}(?:\.\d{1,2})?(?:px|pt|em|rem|%)$/i.test(value.fontSize.trim())
+  ) {
+    result.fontSize = value.fontSize.trim();
+  }
+  if (typeof value.fontFamily === 'string' && /^[\w\s,'-]{1,80}$/.test(value.fontFamily.trim())) {
+    result.fontFamily = value.fontFamily.trim();
+  }
+  if (isSafeColor(value.color)) result.color = value.color.trim();
+  if (isSafeColor(value.background)) result.background = value.background.trim();
+  if (
+    typeof value.fontWeight === 'string' &&
+    /^(?:normal|bold|bolder|lighter|[1-9]00)$/i.test(value.fontWeight.trim())
+  ) {
+    result.fontWeight = value.fontWeight.trim();
+  }
+  if (
+    typeof value.width === 'string' &&
+    /^\d{1,4}(?:\.\d{1,2})?(?:px|pt|em|rem|%)$/i.test(value.width.trim())
+  ) {
+    result.width = value.width.trim();
+  }
+  if (
+    typeof value.border === 'string' &&
+    /^\d{1,3}(?:\.\d{1,2})?px\s+(?:none|solid|dashed|dotted|double)\s+(?:#[\da-f]{3,8}|[a-z]{1,24})$/i.test(
+      value.border.trim(),
+    )
+  ) {
+    result.border = value.border.trim();
+  }
+  if (
+    typeof value.textDecoration === 'string' &&
+    /^(?:none|underline|line-through|overline|underline\s+line-through)$/i.test(
+      value.textDecoration.trim(),
+    )
+  ) {
+    result.textDecoration = value.textDecoration.trim();
+  }
+  return Object.keys(result).length ? result : undefined;
+}
+
+function sanitizeNode(
+  value: unknown,
+  depth: number,
+  seen: WeakSet<object>,
+  ids: Set<string>,
+): NodeObj | null {
+  if (!isRecord(value) || depth > MAX_IMPORTED_DEPTH || seen.has(value)) return null;
+  seen.add(value);
+  const id = value.id;
+  const topic = value.topic;
+  if (
+    typeof id !== 'string' ||
+    !MIND_NODE_ID_PATTERN.test(id) ||
+    ids.has(id) ||
+    typeof topic !== 'string' ||
+    topic.length > 20_000 ||
+    (value.children !== undefined && !Array.isArray(value.children))
+  ) {
+    return null;
+  }
+  ids.add(id);
+  const children = (value.children ?? []) as unknown[];
+  if (children.length > MAX_IMPORTED_NODES) return null;
+  const safeChildren: NodeObj[] = [];
+  for (const child of children) {
+    if (ids.size >= MAX_IMPORTED_NODES) return null;
+    const safeChild = sanitizeNode(child, depth + 1, seen, ids);
+    if (!safeChild) return null;
+    safeChildren.push(safeChild);
+  }
+
+  const node: NodeObj = { id, topic, children: safeChildren };
+  const style = sanitizeNodeStyle(value.style);
+  if (style) node.style = style;
+  if (typeof value.expanded === 'boolean') node.expanded = value.expanded;
+  if (value.direction === 0 || value.direction === 1) node.direction = value.direction;
+  if (isSafeColor(value.branchColor)) node.branchColor = value.branchColor.trim();
+  if (typeof value.hyperLink === 'string') {
+    const hyperLink = sanitizeMindLink(value.hyperLink);
+    if (hyperLink) node.hyperLink = hyperLink;
+  }
+  if (typeof value.note === 'string' && value.note.length <= 5_000) node.note = value.note;
+  if (Array.isArray(value.tags)) {
+    const tags: NonNullable<NodeObj['tags']> = [];
+    for (const tag of value.tags.slice(0, 50)) {
+      if (typeof tag === 'string' && tag.length <= 1_000) {
+        tags.push(tag);
+      } else if (isRecord(tag) && typeof tag.text === 'string' && tag.text.length <= 1_000) {
+        tags.push({ text: tag.text });
+      }
+    }
+    if (tags.length) node.tags = tags;
+  }
+  return node;
+}
+
+function sanitizeDelta(value: unknown): { x: number; y: number } | undefined {
+  if (
+    !isRecord(value) ||
+    typeof value.x !== 'number' ||
+    !Number.isFinite(value.x) ||
+    Math.abs(value.x) > 10_000 ||
+    typeof value.y !== 'number' ||
+    !Number.isFinite(value.y) ||
+    Math.abs(value.y) > 10_000
+  ) {
+    return undefined;
+  }
+  return { x: value.x, y: value.y };
+}
+
+function sanitizeArrow(value: unknown, nodeIds: Set<string>): MindArrow | null {
+  if (!isRecord(value)) return null;
+  const { id, from, to, label } = value;
+  if (
+    typeof id !== 'string' ||
+    !MIND_NODE_ID_PATTERN.test(id) ||
+    typeof from !== 'string' ||
+    !nodeIds.has(from) ||
+    typeof to !== 'string' ||
+    !nodeIds.has(to) ||
+    typeof label !== 'string' ||
+    label.length > 5_000
+  ) {
+    return null;
+  }
+  const arrow: MindArrow = { id, from, to, label: sanitizeMindHtml(label) };
+  if (typeof value.bidirectional === 'boolean') arrow.bidirectional = value.bidirectional;
+  const delta1 = sanitizeDelta(value.delta1);
+  const delta2 = sanitizeDelta(value.delta2);
+  if (delta1) arrow.delta1 = delta1;
+  if (delta2) arrow.delta2 = delta2;
+  if (isRecord(value.style)) {
+    const style: NonNullable<MindArrow['style']> = {};
+    if (isSafeColor(value.style.stroke)) style.stroke = value.style.stroke.trim();
+    if (isSafeColor(value.style.labelColor)) style.labelColor = value.style.labelColor.trim();
+    const strokeWidth = Number(value.style.strokeWidth);
+    if (Number.isFinite(strokeWidth) && strokeWidth > 0 && strokeWidth <= 20) {
+      style.strokeWidth = strokeWidth;
+    }
+    if (
+      typeof value.style.strokeDasharray === 'string' &&
+      /^[\d\s,.]{1,80}$/.test(value.style.strokeDasharray)
+    ) {
+      style.strokeDasharray = value.style.strokeDasharray;
+    }
+    const opacity = Number(value.style.opacity);
+    if (Number.isFinite(opacity) && opacity >= 0 && opacity <= 1) style.opacity = opacity;
+    if (Object.keys(style).length) arrow.style = style;
+  }
+  return arrow;
+}
+
+function sanitizeSummary(value: unknown, nodes: Map<string, NodeObj>): MindSummary | null {
+  if (!isRecord(value)) return null;
+  const { id, label, parent, start, end } = value;
+  const parentNode = typeof parent === 'string' ? nodes.get(parent) : undefined;
+  const childCount = parentNode?.children?.length ?? 0;
+  if (
+    typeof id !== 'string' ||
+    !MIND_NODE_ID_PATTERN.test(id) ||
+    typeof label !== 'string' ||
+    label.length > 5_000 ||
+    typeof parent !== 'string' ||
+    !parentNode ||
+    typeof start !== 'number' ||
+    !Number.isInteger(start) ||
+    typeof end !== 'number' ||
+    !Number.isInteger(end) ||
+    start < 0 ||
+    end < start ||
+    end >= childCount
+  ) {
+    return null;
+  }
+  const summary: MindSummary = { id, label: sanitizeMindHtml(label), parent, start, end };
+  if (isRecord(value.style)) {
+    const style: NonNullable<MindSummary['style']> = {};
+    if (isSafeColor(value.style.stroke)) style.stroke = value.style.stroke.trim();
+    if (isSafeColor(value.style.labelColor)) style.labelColor = value.style.labelColor.trim();
+    if (Object.keys(style).length) summary.style = style;
+  }
+  return summary;
 }
 
 function getMindElixirData(value: unknown): MindElixirData | null {
   const candidate = isRecord(value) && isRecord(value.visualData) ? value.visualData : value;
   if (!isRecord(candidate) || !isRecord(candidate.nodeData)) return null;
-  if (typeof candidate.nodeData.id !== 'string') return null;
-  return candidate as MindElixirData;
+
+  const nodeIds = new Set<string>();
+  const nodeData = sanitizeNode(candidate.nodeData, 0, new WeakSet(), nodeIds);
+  if (!nodeData) return null;
+  if (
+    (candidate.arrows !== undefined && !Array.isArray(candidate.arrows)) ||
+    (candidate.summaries !== undefined && !Array.isArray(candidate.summaries)) ||
+    (Array.isArray(candidate.arrows) && candidate.arrows.length > MAX_IMPORTED_NODES) ||
+    (Array.isArray(candidate.summaries) && candidate.summaries.length > MAX_IMPORTED_NODES)
+  ) {
+    return null;
+  }
+
+  const nodes = new Map<string, NodeObj>();
+  const collectNodes = (node: NodeObj) => {
+    nodes.set(node.id, node);
+    node.children?.forEach(collectNodes);
+  };
+  collectNodes(nodeData);
+  const data: MindElixirData = { nodeData };
+  if (
+    candidate.direction === 0 ||
+    candidate.direction === 1 ||
+    candidate.direction === 2 ||
+    candidate.direction === 3
+  ) {
+    data.direction = candidate.direction;
+  }
+  if (typeof candidate.compact === 'boolean') data.compact = candidate.compact;
+  if (Array.isArray(candidate.arrows)) {
+    data.arrows = candidate.arrows.flatMap((arrow) => {
+      const safeArrow = sanitizeArrow(arrow, nodeIds);
+      return safeArrow ? [safeArrow] : [];
+    });
+  }
+  if (Array.isArray(candidate.summaries)) {
+    data.summaries = candidate.summaries.flatMap((summary) => {
+      const safeSummary = sanitizeSummary(summary, nodes);
+      return safeSummary ? [safeSummary] : [];
+    });
+  }
+  return data;
+}
+
+async function persistBeforeImport(): Promise<boolean> {
+  if (markdownTimer.value !== null) {
+    window.clearTimeout(markdownTimer.value);
+    markdownTimer.value = null;
+  }
+  const activeId = activeDocument.value?.id;
+  if (!activeId) return true;
+  return (await persistActive()) && activeDocument.value?.id === activeId;
 }
 
 async function exportActive(format: ExportFormat): Promise<void> {
   closeMenus();
   if (!activeDocument.value) return;
   await persistActive();
-  const source = toRaw(activeDocument.value);
+  const active = toRaw(activeDocument.value);
+  const source = {
+    ...active,
+    title: titleDraft.value.trim().slice(0, 120) || active.title,
+    ...(active.type === 'visual'
+      ? { visualData: editor.getData() ?? active.visualData }
+      : { markdown: active.markdown ?? '' }),
+  };
   const name = safeFileName(source.title);
   if (format === 'json') {
     downloadBlob(
@@ -643,10 +952,12 @@ async function importMindFile(file: File): Promise<void> {
     if (file.size > 50 * 1024 * 1024) throw new Error('导入文件不能超过 50 MB。');
     const extension = file.name.split('.').pop()?.toLowerCase();
     if (extension === 'md') {
+      const markdown = await file.text();
+      if (!(await persistBeforeImport())) return;
       const document = await createMindDocument(
         'markdown',
         file.name.replace(/\.md$/i, ''),
-        await file.text(),
+        markdown,
       );
       documents.value.unshift(document);
       await mountDocument(document);
@@ -654,11 +965,9 @@ async function importMindFile(file: File): Promise<void> {
     }
     if (extension === 'txt') {
       const title = file.name.replace(/\.txt$/i, '');
-      const document = await createMindDocument(
-        'visual',
-        title,
-        textOutlineToMind(await file.text(), title),
-      );
+      const outline = textOutlineToMind(await file.text(), title);
+      if (!(await persistBeforeImport())) return;
+      const document = await createMindDocument('visual', title, outline);
       documents.value.unshift(document);
       await mountDocument(document);
       return;
@@ -667,6 +976,7 @@ async function importMindFile(file: File): Promise<void> {
       const parsed = JSON.parse(await file.text()) as unknown;
       const fallbackTitle = file.name.replace(/\.json$/i, '');
       if (isRecord(parsed) && parsed.type === 'markdown' && typeof parsed.markdown === 'string') {
+        if (!(await persistBeforeImport())) return;
         const document = await createMindDocument(
           'markdown',
           typeof parsed.title === 'string' ? parsed.title : fallbackTitle,
@@ -678,6 +988,7 @@ async function importMindFile(file: File): Promise<void> {
       }
       const data = getMindElixirData(parsed);
       if (!data) throw new Error('这不是有效的 JSON 文件。');
+      if (!(await persistBeforeImport())) return;
       const document = await createMindDocument(
         'visual',
         isRecord(parsed) && typeof parsed.title === 'string' ? parsed.title : fallbackTitle,
@@ -702,10 +1013,20 @@ async function importMindFile(file: File): Promise<void> {
       const content = manifest.contentFile && archive.file(manifest.contentFile);
       if (!content || (type !== 'visual' && type !== 'markdown'))
         throw new Error('备份文件缺少可识别的文档内容。');
+      const importedContent = await content.async('text');
+      let payload: MindElixirData | string;
+      if (type === 'visual') {
+        const visualData = getMindElixirData(JSON.parse(importedContent));
+        if (!visualData) throw new Error('备份中的思维导图数据无效。');
+        payload = visualData;
+      } else {
+        payload = importedContent;
+      }
+      if (!(await persistBeforeImport())) return;
       const document = await createMindDocument(
         type,
         manifest.title ?? file.name.replace(/\.mind$/i, ''),
-        type === 'visual' ? JSON.parse(await content.async('text')) : await content.async('text'),
+        payload,
       );
       documents.value.unshift(document);
       await mountDocument(document);

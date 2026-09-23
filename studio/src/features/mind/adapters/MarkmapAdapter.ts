@@ -1,4 +1,16 @@
 import type { Markmap } from 'markmap-view';
+import { sanitizeMindHtml } from '../security';
+
+interface MarkmapNode {
+  content: string;
+  children: MarkmapNode[];
+}
+
+function sanitizeTree(node: MarkmapNode): MarkmapNode {
+  node.content = sanitizeMindHtml(node.content);
+  node.children.forEach(sanitizeTree);
+  return node;
+}
 
 export class MarkmapAdapter {
   private instance: Markmap | null = null;
@@ -28,7 +40,7 @@ export class MarkmapAdapter {
         maxWidth: 240,
         color: () => this.color,
       },
-      root,
+      sanitizeTree(root),
     );
   }
 
@@ -36,7 +48,7 @@ export class MarkmapAdapter {
     if (!this.instance) return;
     const { Transformer } = await import('markmap-lib');
     const { root } = new Transformer().transform(markdown);
-    await this.instance.setData(root);
+    await this.instance.setData(sanitizeTree(root));
   }
 
   fit(): Promise<void> | undefined {
