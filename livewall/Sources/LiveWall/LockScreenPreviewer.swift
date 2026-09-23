@@ -39,6 +39,7 @@ final class LockScreenPreviewer {
     var onNotice: ((String, Bool) -> Void)?
 
     private let cacheDirectory: URL
+    private let recordsDirectory: URL
     private let policy: LockScreenPreviewPolicy
     /// 用户原墙纸的持久化位置（`displayID → 路径`）。
     ///
@@ -62,10 +63,15 @@ final class LockScreenPreviewer {
     /// 「系统墙纸是自家缓存图」这条日志只打一次，否则每换一张片刷一条。
     private var didReportOwnCache = false
 
-    init(cacheDirectory: URL, policy: LockScreenPreviewPolicy = LockScreenPreviewPolicy()) {
+    init(
+        cacheDirectory: URL,
+        recordsDirectory: URL,
+        policy: LockScreenPreviewPolicy = LockScreenPreviewPolicy()
+    ) {
         self.cacheDirectory = cacheDirectory
+        self.recordsDirectory = recordsDirectory
         self.policy = policy
-        self.recordsURL = cacheDirectory.appendingPathComponent("original-wallpapers.json")
+        self.recordsURL = recordsDirectory.appendingPathComponent("original-wallpapers.json")
     }
 
     // MARK: - 对外接口
@@ -293,12 +299,14 @@ final class LockScreenPreviewer {
         let name = policy.cacheFileName(generation: generation, fileExtension: ext)
         generation += 1
         let destination = cacheDirectory.appendingPathComponent(name)
+        try PrivateFileAccess.secureDirectory(at: cacheDirectory)
         let bytes = try await FileDownloader.download(
             url,
             to: destination,
             timeout: 15,
             expectedContentTypePrefix: "image/"
         )
+        try PrivateFileAccess.secureFile(at: destination)
         log?("锁屏预览：静态图已缓存 \(name)（\(bytes) 字节）")
         return destination
     }
@@ -330,11 +338,9 @@ final class LockScreenPreviewer {
         let cacheDirectory = self.cacheDirectory
         do {
             try await Task.detached(priority: .utility) {
-                try FileManager.default.createDirectory(
-                    at: cacheDirectory,
-                    withIntermediateDirectories: true
-                )
+                try PrivateFileAccess.secureDirectory(at: cacheDirectory)
                 try data.write(to: destination, options: .atomic)
+                try PrivateFileAccess.secureFile(at: destination)
             }.value
             log?("锁屏预览：已抓当前帧 \(image.width)x\(image.height) → \(name)（\(data.count) 字节）")
             return destination
@@ -392,7 +398,10 @@ final class LockScreenPreviewer {
         var skippedOwn = 0
         for pair in Self.screenPairs() {
             guard let url = NSWorkspace.shared.desktopImageURL(for: pair.screen) else { continue }
-            guard !LockScreenPreviewPolicy.isOwnCacheFile(url, cacheDirectory: cacheDirectory) else {
+            guard !LockScreenPreviewPolicy.isOwnCacheFile(
+                url,
+                cacheDirectories: [cacheDirectory, LiveWallPaths.applicationSupportDirectory]
+            ) else {
                 skippedOwn += 1
                 continue
             }
@@ -424,8 +433,13 @@ final class LockScreenPreviewer {
     private func saveRecords(_ records: [UInt32: URL]) {
         let raw = Dictionary(uniqueKeysWithValues: records.map { (String($0.key), $0.value.path) })
         guard let data = try? JSONEncoder().encode(raw) else { return }
-        try? FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
-        try? data.write(to: recordsURL, options: .atomic)
+        do {
+            try PrivateFileAccess.secureDirectory(at: recordsDirectory)
+            try data.write(to: recordsURL, options: .atomic)
+            try PrivateFileAccess.secureFile(at: recordsURL)
+        } catch {
+            log?("锁屏预览：原墙纸记录写入失败：\(error.localizedDescription)")
+        }
     }
 
     // MARK: - 屏幕配对

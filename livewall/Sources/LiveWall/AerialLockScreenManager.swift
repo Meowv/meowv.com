@@ -306,16 +306,18 @@ final class AerialLockScreenManager {
             throw ManagerError.missingManifestAsset(assetID)
         }
 
-        try fileManager.createDirectory(at: backupDirectory, withIntermediateDirectories: true)
+        try PrivateFileAccess.secureDirectory(at: backupDirectory)
         let originalVideo = backupDirectory.appendingPathComponent("\(assetID).original.mov")
         if !fileManager.fileExists(atPath: originalVideo.path) {
             try await Task.detached(priority: .utility) {
                 try FileManager.default.copyItem(at: slot, to: originalVideo)
             }.value
+            try PrivateFileAccess.secureFile(at: originalVideo)
             log?("动态锁屏：已备份 Apple Aerial 原视频（\(slot.lastPathComponent)）")
         }
         if !fileManager.fileExists(atPath: indexBackupURL.path) {
             try fileManager.copyItem(at: indexURL, to: indexBackupURL)
+            try PrivateFileAccess.secureFile(at: indexBackupURL)
             log?("动态锁屏：已备份系统 Index.plist")
         }
         let state = State(assetID: assetID, sourceItemID: nil, installedDigest: nil, pendingDigest: nil)
@@ -329,9 +331,10 @@ final class AerialLockScreenManager {
     }
 
     private func saveState(_ state: State) throws {
-        try fileManager.createDirectory(at: backupDirectory, withIntermediateDirectories: true)
+        try PrivateFileAccess.secureDirectory(at: backupDirectory)
         let data = try JSONEncoder().encode(state)
         try data.write(to: stateURL, options: .atomic)
+        try PrivateFileAccess.secureFile(at: stateURL)
     }
 
     private func loadIndex(at url: URL? = nil) -> [String: Any]? {
@@ -351,8 +354,9 @@ final class AerialLockScreenManager {
     private func updateLinkedSelection(assetID: String) throws {
         guard var index = loadIndex() else { throw ManagerError.invalidIndex }
         if !fileManager.fileExists(atPath: indexBackupURL.path) {
-            try fileManager.createDirectory(at: backupDirectory, withIntermediateDirectories: true)
+            try PrivateFileAccess.secureDirectory(at: backupDirectory)
             try fileManager.copyItem(at: indexURL, to: indexBackupURL)
+            try PrivateFileAccess.secureFile(at: indexBackupURL)
         }
         let config = try PropertyListSerialization.data(
             fromPropertyList: ["assetID": assetID], format: .binary, options: 0

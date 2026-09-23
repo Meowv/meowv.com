@@ -12,18 +12,37 @@ import Foundation
 /// 共用是有意的，不该发生的是「同时跑两个」—— 那由 `SingleInstance` 挡。
 public enum LiveWallPaths {
 
-    /// 配置、清单副本缓存、锁屏预览缓存、单实例锁的落点。
+    /// 配置、锁屏恢复数据与单实例锁的私有落点。
     public static let applicationSupportDirectory: URL = {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
             ?? URL(fileURLWithPath: NSTemporaryDirectory())
         return base.appendingPathComponent("com.meowv.livewall", isDirectory: true)
     }()
 
+    /// 可再生成的远端清单与锁屏封面缓存；与配置和系统恢复备份分开。
+    public static let dataCacheDirectory = applicationSupportDirectory
+        .appendingPathComponent("DataCache", isDirectory: true)
+
     /// 日志文件。nil 表示取不到 Logs 目录，此时只输出到 stdout。
     public static let logFileURL: URL? =
         FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first?
             .appendingPathComponent("Logs/com.meowv.livewall", isDirectory: true)
             .appendingPathComponent("livewall.log")
+
+    /// 在日志与单实例锁开始写入前清理旧缓存并收紧已有权限。
+    public static func preparePrivateStorage() throws -> [String] {
+        try PrivateFileAccess.secureDirectory(at: applicationSupportDirectory)
+        if let logDirectory = logFileURL?.deletingLastPathComponent() {
+            try PrivateFileAccess.secureDirectory(at: logDirectory)
+        }
+        try PrivateFileAccess.secureDirectory(at: dataCacheDirectory)
+        let removed = try PrivateFileAccess.removeLegacyDataCache(from: applicationSupportDirectory)
+        try PrivateFileAccess.secureTree(at: applicationSupportDirectory)
+        if let logFileURL, FileManager.default.fileExists(atPath: logFileURL.path) {
+            try PrivateFileAccess.secureFile(at: logFileURL)
+        }
+        return removed
+    }
 
     /// 单实例锁文件。按身份分文件，见 `SingleInstance.lockFileURL`。
     public static func instanceLockURL(identity: String) -> URL {

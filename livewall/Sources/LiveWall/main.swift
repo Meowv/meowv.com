@@ -14,6 +14,17 @@ import LiveWallCore
 //
 // 返回值必须**持有到进程结束**：`InstanceLock` 一旦被释放就等于放锁，
 // 所以这里用顶层 `let`（会变成全局变量，活到进程退出）。豁免启动时它是 nil。
+do {
+    let removed = try LiveWallPaths.preparePrivateStorage()
+    if !removed.isEmpty {
+        AppLog.appendStamped("已清理 \(removed.count) 个旧版缓存文件")
+    }
+} catch {
+    let message = "LiveWall 无法保护本地数据目录，启动已中止：\(error.localizedDescription)\n"
+    FileHandle.standardError.write(Data(message.utf8))
+    exit(EXIT_FAILURE)
+}
+
 let instanceLock: InstanceLock? = {
     if SingleInstance.allowsMultiple(environment: ProcessInfo.processInfo.environment) {
         AppLog.appendStamped("⚠️ 已按 \(SingleInstance.allowMultipleEnvKey) 允许重复启动（开发用途）")

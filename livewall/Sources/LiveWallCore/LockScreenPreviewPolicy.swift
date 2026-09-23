@@ -93,10 +93,16 @@ public struct LockScreenPreviewPolicy: Equatable, Sendable {
     /// `NSWorkspace.desktopImageURL(for:)` 如实读回来，当成原墙纸记下就永远
     /// 恢复不到真原图了（关闭锁屏预览时尤其明显：恢复完还是 App 留下的那张）。
     public static func isOwnCacheFile(_ url: URL, cacheDirectory: URL) -> Bool {
+        isOwnCacheFile(url, cacheDirectories: [cacheDirectory])
+    }
+
+    public static func isOwnCacheFile(_ url: URL, cacheDirectories: [URL]) -> Bool {
         let path = url.standardizedFileURL.path
-        let directory = cacheDirectory.standardizedFileURL.path
-        let prefix = directory.hasSuffix("/") ? directory : directory + "/"
-        return path.hasPrefix(prefix)
+        return cacheDirectories.contains { directory in
+            let directory = directory.standardizedFileURL.path
+            let prefix = directory.hasSuffix("/") ? directory : directory + "/"
+            return path.hasPrefix(prefix)
+        }
     }
 
     /// 目标屏。复用多屏策略的语义：镜像与每屏独立都覆盖全部目标屏，

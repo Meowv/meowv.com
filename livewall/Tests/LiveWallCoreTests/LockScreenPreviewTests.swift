@@ -197,6 +197,17 @@ func lockScreenPreviewTests() {
             )
         }
 
+        test("新旧缓存目录中的封面都算自家") {
+            let newCache = cache.appendingPathComponent("DataCache", isDirectory: true)
+            expect(
+                LockScreenPreviewPolicy.isOwnCacheFile(
+                    newCache.appendingPathComponent("cover-1.jpg"),
+                    cacheDirectories: [newCache, cache]
+                ),
+                "新旧位置残留的系统封面都不能被记成用户原墙纸"
+            )
+        }
+
         test("系统默认墙纸不算") {
             let system = URL(fileURLWithPath: "/System/Library/CoreServices/DefaultDesktop.heic")
             expect(

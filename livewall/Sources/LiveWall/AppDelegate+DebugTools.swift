@@ -29,7 +29,7 @@ extension AppDelegate {
             url = downloader.destinationDirectory
             createIfMissing = true
         case .remoteDataCache:
-            url = LiveWallPaths.applicationSupportDirectory
+            url = LiveWallPaths.dataCacheDirectory
             createIfMissing = true
         case .aerialLockScreen:
             url = aerialLockScreenManager.debugVideosDirectory
@@ -38,10 +38,11 @@ extension AppDelegate {
 
         if createIfMissing {
             do {
-                try FileManager.default.createDirectory(
-                    at: url,
-                    withIntermediateDirectories: true
-                )
+                if directory == .remoteDataCache || directory == .logs {
+                    try PrivateFileAccess.secureDirectory(at: url)
+                } else {
+                    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+                }
             } catch {
                 showDebugDirectoryFailure("无法创建目录：\(error.localizedDescription)")
                 return

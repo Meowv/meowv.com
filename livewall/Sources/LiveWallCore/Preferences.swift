@@ -303,13 +303,11 @@ public struct Preferences: Codable, Sendable, Equatable {
     }
 
     public func save(to url: URL) throws {
-        try FileManager.default.createDirectory(
-            at: url.deletingLastPathComponent(),
-            withIntermediateDirectories: true
-        )
+        try PrivateFileAccess.secureDirectory(at: url.deletingLastPathComponent())
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
         try encoder.encode(self).write(to: url, options: .atomic)
+        try PrivateFileAccess.secureFile(at: url)
     }
 
     /// 修正非法值。配置可能被手工编辑过，不能假定它自洽。

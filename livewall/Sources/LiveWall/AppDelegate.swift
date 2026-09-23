@@ -24,25 +24,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     lazy var configURL: URL = LiveWallPaths.applicationSupportDirectory
         .appendingPathComponent("config.json")
     /// 索引副本缓存（几百字节）。
-    lazy var indexCacheURL: URL = LiveWallPaths.applicationSupportDirectory
+    lazy var indexCacheURL: URL = LiveWallPaths.dataCacheDirectory
         .appendingPathComponent("catalog.remote-cache.index.json")
     /// 内容切片副本缓存。**只有一份** ——「全部」状态存全部切片，否则存当前分类切片；
     /// 筛选状态与缓存内容在成功加载时同步更新（另有摘要与归属校验兜底）。
-    lazy var sliceCacheURL: URL = LiveWallPaths.applicationSupportDirectory
+    lazy var sliceCacheURL: URL = LiveWallPaths.dataCacheDirectory
         .appendingPathComponent("catalog.remote-cache.slice.json")
-    /// 已经废弃的清单缓存，启动时清掉。
-    ///
-    /// 三个都不能再读：`catalog.json` 是最早那版「本地清单」的残留（`catalogPath` 配置项
-    /// 早已移除，没有任何代码读它）；另外两个分别是 `livewall.json` 时代的单文件缓存
-    /// （里面每条候选都没有 `categoryIds`）与上一版含全量 4.9 MB 条目的「总文件」。
-    lazy var legacyCacheURLs: [URL] = [
-        LiveWallPaths.applicationSupportDirectory.appendingPathComponent("catalog.json"),
-        LiveWallPaths.applicationSupportDirectory.appendingPathComponent(
-            "catalog.remote-cache.json"),
-        LiveWallPaths.applicationSupportDirectory.appendingPathComponent(
-            "catalog.remote-cache.catalog.json"),
-    ]
-
     // 组件
     let screenCoordinator: ScreenCoordinator
     /// 最近一次层级检测结果。普通菜单只显示语义状态，详细结果放在诊断入口里。
@@ -57,7 +44,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     #endif
     /// 锁屏预览：把当前壁纸的静态图同步成系统墙纸（桌面态被覆盖窗口挡住，只在锁屏可见）。
     lazy var lockScreenPreviewer = LockScreenPreviewer(
-        cacheDirectory: LiveWallPaths.applicationSupportDirectory
+        cacheDirectory: LiveWallPaths.dataCacheDirectory,
+        recordsDirectory: LiveWallPaths.applicationSupportDirectory
     )
     lazy var aerialLockScreenManager = AerialLockScreenManager()
     /// 手动下载当前壁纸（视频 + 静态预览图）到 `~/Downloads/livewall/`。
@@ -338,12 +326,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             } catch {
                 log("⚠️ 配置已修正但写回失败（本次仍按修正后的值运行）：\(error.localizedDescription)")
             }
-        }
-
-        // 已废弃的清单缓存不再被读取，只剩占位，清掉。
-        for legacy in legacyCacheURLs where FileManager.default.fileExists(atPath: legacy.path) {
-            try? FileManager.default.removeItem(at: legacy)
-            log("已清理废弃的清单缓存 \(legacy.lastPathComponent)")
         }
 
         // 菜单退出与 `pkill` 都必须经过同一个 `shutdown()` 清理路径；

@@ -33,14 +33,14 @@ public enum AppLog {
             handle.seekToEndOfFile()
             handle.write(data)
             try? handle.close()
+            try? PrivateFileAccess.secureFile(at: file)
         } else {
             // 只有文件还不存在时才走整体写入 —— `write(to:)` 会截断，
             // 对已存在的文件用它会把已有内容抹掉。
-            try? FileManager.default.createDirectory(
-                at: file.deletingLastPathComponent(),
-                withIntermediateDirectories: true
-            )
-            try? data.write(to: file)
+            try? PrivateFileAccess.secureDirectory(at: file.deletingLastPathComponent())
+            if (try? data.write(to: file)) != nil {
+                try? PrivateFileAccess.secureFile(at: file)
+            }
         }
     }
 

@@ -78,11 +78,9 @@ public struct DefaultCatalogTransport: CatalogTransport {
     }
 
     public func writeFile(_ data: Data, to url: URL) throws {
-        try FileManager.default.createDirectory(
-            at: url.deletingLastPathComponent(),
-            withIntermediateDirectories: true
-        )
+        try PrivateFileAccess.secureDirectory(at: url.deletingLastPathComponent())
         try data.write(to: url, options: .atomic)
+        try PrivateFileAccess.secureFile(at: url)
     }
 
     public func fetch(_ url: URL) throws -> Data {

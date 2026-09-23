@@ -136,12 +136,12 @@ public final class InstanceLock {
             at: url.deletingLastPathComponent(),
             withIntermediateDirectories: true
         )
-        // O_CREAT：不存在就建。0644：同用户可读写、其它用户只读 ——
-        // 文件里只有 pid 与路径，不含敏感信息。
-        let fd = open(url.path, O_CREAT | O_RDWR, 0o644)
+        // O_CREAT：不存在就建。锁文件收紧为仅当前用户可读写。
+        let fd = open(url.path, O_CREAT | O_RDWR, mode_t(PrivateFileAccess.filePermissions))
         guard fd >= 0 else {
             throw AcquireError.unavailable("无法打开 \(url.path)（errno \(errno)）")
         }
+        _ = fchmod(fd, mode_t(PrivateFileAccess.filePermissions))
         // LOCK_NB：拿不到立刻返回，**绝不阻塞启动**。
         if flock(fd, LOCK_EX | LOCK_NB) == 0 {
             writeHolderInfo(to: fd)
