@@ -27,6 +27,7 @@ import {
   markdownBackgroundPreviewActive,
   markdownFullscreenActive,
 } from '@/core/shared/route-state';
+import { formatMarkdownImageReference } from '@/features/markdown/services/markdown';
 import { useWorkspaceStore } from '@/features/markdown/stores/workspace';
 
 interface MonacoWorkerEnvironment {
@@ -588,21 +589,12 @@ function insertRemoteImage(): void {
     return;
   }
 
-  insertImageReferences([`![在线图片](${markdownImagePath(url.href)})`]);
+  insertImageReferences([formatMarkdownImageReference('在线图片', url.href)]);
   closeRemoteImageDialog();
 }
 
 function imageAltText(file: File): string {
-  return (
-    file.name
-      .replace(/\.[^.]+$/u, '')
-      .replace(/([\\\]])/gu, '\\$1')
-      .trim() || '图片'
-  );
-}
-
-function markdownImagePath(path: string): string {
-  return path.replace(/([\\()])/gu, '\\$1');
+  return file.name.replace(/\.[^.]+$/u, '').trim() || '图片';
 }
 
 function insertImageReferences(references: string[]): void {
@@ -647,9 +639,9 @@ async function importImages(files: readonly File[]): Promise<void> {
   const references: string[] = [];
   try {
     for (const file of files) {
-      const relativePath = await store.saveImageAsset(file);
-      if (relativePath) {
-        references.push(`![${imageAltText(file)}](${markdownImagePath(relativePath)})`);
+      const imageSource = await store.saveImageAsset(file);
+      if (imageSource) {
+        references.push(formatMarkdownImageReference(imageAltText(file), imageSource));
       }
     }
   } finally {

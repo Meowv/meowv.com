@@ -906,6 +906,109 @@ function createPdfRenderContainer(html: string, backgroundColor: string): HTMLDi
   return container;
 }
 
+interface PdfPageSlice {
+  readonly y: number;
+  readonly height: number;
+}
+
+function createPdfPageSlices(
+  canvas: HTMLCanvasElement,
+  container: HTMLElement,
+  article: HTMLElement,
+  contentHeight: number,
+  contentWidth: number,
+): PdfPageSlice[] {
+  const containerBounds = container.getBoundingClientRect();
+  const articleBounds = article.getBoundingClientRect();
+  const cssWidth = containerBounds.width || container.offsetWidth;
+  const pixelsPerCssPixel = canvas.width / cssWidth;
+  const documentBottom = Math.min(
+    canvas.height,
+    Math.ceil((articleBounds.bottom - containerBounds.top) * pixelsPerCssPixel),
+  );
+  const pageHeight = (contentHeight * canvas.width) / contentWidth;
+  const blockBreakPoints = new Set<number>();
+  const lineBreakPoints = new Set<number>();
+  const avoidedBlockBounds: Array<{ top: number; bottom: number }> = [];
+
+  const toCanvasY = (viewportY: number): number =>
+    Math.round((viewportY - containerBounds.top) * pixelsPerCssPixel);
+  const addBreakPoint = (target: Set<number>, viewportY: number): void => {
+    const y = toCanvasY(viewportY);
+    if (y > 0 && y < documentBottom) {
+      target.add(y);
+    }
+  };
+
+  for (const element of article.querySelectorAll<HTMLElement>(
+    'h1, h2, h3, h4, h5, h6, p, blockquote, pre, table, tr, li, hr, img, .mermaid-export',
+  )) {
+    const bounds = element.getBoundingClientRect();
+    addBreakPoint(blockBreakPoints, bounds.top);
+    addBreakPoint(blockBreakPoints, bounds.bottom);
+
+    if (element.matches('blockquote, pre, table, tr, img, .mermaid-export')) {
+      avoidedBlockBounds.push({
+        top: toCanvasY(bounds.top),
+        bottom: toCanvasY(bounds.bottom),
+      });
+    }
+  }
+
+  const textWalker = document.createTreeWalker(article, NodeFilter.SHOW_TEXT);
+  let textNode = textWalker.nextNode();
+  while (textNode) {
+    if (textNode.textContent?.trim()) {
+      const range = document.createRange();
+      range.selectNodeContents(textNode);
+      for (const bounds of range.getClientRects()) {
+        addBreakPoint(lineBreakPoints, bounds.top);
+        addBreakPoint(lineBreakPoints, bounds.bottom);
+      }
+      range.detach();
+    }
+    textNode = textWalker.nextNode();
+  }
+
+  const sortedBlockBreakPoints = [...blockBreakPoints].sort((left, right) => left - right);
+  const sortedLineBreakPoints = [...lineBreakPoints].sort((left, right) => left - right);
+  const slices: PdfPageSlice[] = [];
+  let y = 0;
+
+  while (y < documentBottom) {
+    const target = Math.min(documentBottom, y + pageHeight);
+    let end = target;
+    if (target < documentBottom) {
+      const earliestBreak = y + pageHeight * 0.75;
+      const lastAtOrBefore = (breakPoints: number[]): number | undefined =>
+        breakPoints.filter((point) => point >= earliestBreak && point <= target).at(-1);
+      const blockBreak = lastAtOrBefore(sortedBlockBreakPoints);
+      const lineBreak = lastAtOrBefore(sortedLineBreakPoints);
+      end = blockBreak ?? lineBreak ?? target;
+
+      const crossingBlockStart = avoidedBlockBounds
+        .filter(
+          (bounds) =>
+            bounds.top >= y &&
+            bounds.top < target &&
+            bounds.bottom > target &&
+            bounds.bottom - bounds.top <= pageHeight,
+        )
+        .map((bounds) => bounds.top)
+        .sort((left, right) => right - left)[0];
+      if (crossingBlockStart !== undefined && crossingBlockStart > y) {
+        end = Math.min(end, crossingBlockStart);
+      }
+    }
+
+    const nextY = Math.max(y + 1, Math.min(end, documentBottom));
+    slices.push({ y, height: nextY - y });
+    y = nextY;
+  }
+
+  return slices;
+}
+
 function positiveNumber(
   value: number | undefined,
   fallback: number,
@@ -1016,6 +1119,9 @@ export async function createPdfExport(
   );
   const margin = positiveNumber(options.margin, 32, 0, 96);
   const container = createPdfRenderContainer(prepared.html, backgroundColor);
+  for (const image of container.querySelectorAll<HTMLElement>('article img')) {
+    image.style.maxHeight = '900px';
+  }
   const warnings = [...prepared.warnings];
 
   try {
@@ -1046,29 +1152,49 @@ export async function createPdfExport(
     const pageHeight = pdf.internal.pageSize.getHeight();
     const contentWidth = pageWidth - margin * 2;
     const contentHeight = pageHeight - margin * 2;
+    const article = container.querySelector<HTMLElement>('article');
 
-    if (contentWidth <= 0 || contentHeight <= 0) {
+    if (contentWidth <= 0 || contentHeight <= 0 || !article) {
       throw new ExportError('INVALID_CONTENT', 'PDF 页边距过大，无法放置文档内容。');
     }
 
-    const imageHeight = (canvas.height * contentWidth) / canvas.width;
-    const imageData = canvas.toDataURL('image/png', 1);
-    const pageCount = Math.max(1, Math.ceil(imageHeight / contentHeight));
+    const pageSlices = createPdfPageSlices(canvas, container, article, contentHeight, contentWidth);
 
-    for (let page = 0; page < pageCount; page += 1) {
+    for (const [page, slice] of pageSlices.entries()) {
       if (page > 0) {
         pdf.addPage();
       }
+
+      const pageCanvas = document.createElement('canvas');
+      pageCanvas.width = canvas.width;
+      pageCanvas.height = slice.height;
+      const context = pageCanvas.getContext('2d');
+      if (!context) {
+        throw new ExportError('RENDER_FAILED', '无法创建 PDF 分页画布。');
+      }
+      context.drawImage(
+        canvas,
+        0,
+        slice.y,
+        canvas.width,
+        slice.height,
+        0,
+        0,
+        canvas.width,
+        slice.height,
+      );
       pdf.addImage(
-        imageData,
+        pageCanvas.toDataURL('image/png', 1),
         'PNG',
         margin,
-        margin - page * contentHeight,
+        margin,
         contentWidth,
-        imageHeight,
+        (slice.height * contentWidth) / canvas.width,
         undefined,
         'FAST',
       );
+      pageCanvas.width = 0;
+      pageCanvas.height = 0;
     }
 
     const blob = pdf.output('blob');

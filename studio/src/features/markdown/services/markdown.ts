@@ -78,7 +78,7 @@ const FRONT_MATTER_PATTERN =
 const REMOTE_OR_ABSOLUTE_URL_PATTERN = /^(?:[a-z][a-z\d+.-]*:|\/\/|\/|#)/i;
 const MARKDOWN_EXTENSION_PATTERN = /\.(?:md|markdown)$/i;
 const SAFE_URI_PATTERN =
-  /^(?:(?:(?:f|ht)tps?|mailto|tel):|blob:|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i;
+  /^(?:data:image\/(?:png|jpe?g|gif|webp);base64,[a-z0-9+/=\s]+|(?:(?:(?:f|ht)tps?|mailto|tel):|blob:|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$)))/i;
 
 const markdown = createMarkdownRenderer();
 
@@ -343,6 +343,25 @@ export function resolveRelativeAssetPath(documentPath: string, assetPath: string
   }
 
   return resolved.join('/');
+}
+
+export function formatMarkdownImageReference(altText: string, source: string): string {
+  const alt = altText.replace(/[\r\n]+/gu, ' ').replace(/[\\[\]]/gu, '\\$&');
+  const destination = /^data:/i.test(source)
+    ? source
+    : /^(?:https?:|blob:)/i.test(source)
+      ? source.replace(/[\\()]/gu, '\\$&')
+      : source
+          .split('/')
+          .map((segment) =>
+            encodeURIComponent(segment).replace(
+              /[!'()*]/gu,
+              (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`,
+            ),
+          )
+          .join('/');
+
+  return `![${alt}](${destination})`;
 }
 
 export function extractWikiLinks(source: string): WikiLink[] {

@@ -38,6 +38,7 @@ import {
   type KnowledgeDocument,
 } from '@/features/markdown/services/knowledge';
 import {
+  formatMarkdownImageReference,
   parseMarkdownDocument,
   resolveRelativeAssetPath,
   type ParsedMarkdownDocument,
@@ -80,6 +81,7 @@ import {
 } from '@/features/markdown/types/workspace';
 import {
   createImagePreviewBlob,
+  detectImageMime,
   disposeImagePreviewDecoder,
 } from '@/features/markdown/services/image-preview';
 
@@ -244,6 +246,70 @@ function safeAssetName(name: string): string {
     .replace(/-+/gu, '-')
     .replace(/^[-.]+|[-.]+$/gu, '');
   return normalized || `image-${Date.now()}.png`;
+}
+
+const EMBEDDABLE_MARKDOWN_IMAGE_TYPES = new Set([
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/webp',
+]);
+
+async function rasterizeMarkdownImage(blob: Blob): Promise<Blob> {
+  if (typeof createImageBitmap !== 'function') {
+    throw new Error('当前浏览器无法将此图片格式转换为 PNG。');
+  }
+
+  const bitmap = await createImageBitmap(blob);
+  const canvas = document.createElement('canvas');
+  try {
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const context = canvas.getContext('2d');
+    if (!context) {
+      throw new Error('无法创建图片绘制上下文。');
+    }
+    context.drawImage(bitmap, 0, 0);
+
+    return await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((png) => {
+        if (png) {
+          resolve(png);
+        } else {
+          reject(new Error('图片转换失败。'));
+        }
+      }, 'image/png');
+    });
+  } finally {
+    bitmap.close();
+    canvas.width = 0;
+    canvas.height = 0;
+  }
+}
+
+async function createMarkdownImageDataUrl(blob: Blob): Promise<string> {
+  const detectedMime = await detectImageMime(blob);
+  if (!detectedMime) {
+    throw new Error('无法识别图片格式。');
+  }
+
+  const normalizedBlob = new Blob([blob], { type: detectedMime });
+  const embeddableBlob = EMBEDDABLE_MARKDOWN_IMAGE_TYPES.has(detectedMime)
+    ? normalizedBlob
+    : await rasterizeMarkdownImage(normalizedBlob);
+
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+      } else {
+        reject(new Error('图片数据读取失败。'));
+      }
+    };
+    reader.onerror = () => reject(reader.error ?? new Error('图片数据读取失败。'));
+    reader.readAsDataURL(embeddableBlob);
+  });
 }
 
 function relativePathBetween(fromFilePath: string, targetPath: string): string {
@@ -2019,13 +2085,17 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
     }
 
     const initialName = safeAssetName(file.name);
-    if (isDemo.value) {
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result));
-        reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(preparedPreview);
-      });
+    if (isStandaloneFile.value || isDemo.value) {
+      let dataUrl: string;
+      try {
+        dataUrl = await createMarkdownImageDataUrl(preparedPreview);
+      } catch (error) {
+        notify('error', '图片无法嵌入 Markdown', toMessage(error));
+        return null;
+      }
+      if (isStandaloneFile.value) {
+        return dataUrl;
+      }
       const path = `assets/${initialName}`;
       assets.value = [
         ...assets.value,
@@ -2066,7 +2136,7 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
   function assetMarkdownReference(asset: WorkspaceAsset): string {
     const relative = relativePathBetween(activePath.value, asset.path);
     const alt = asset.name.replace(/\.[^.]+$/u, '');
-    return `![${alt}](${relative})`;
+    return formatMarkdownImageReference(alt, relative);
   }
 
   async function copyAssetReference(asset: WorkspaceAsset): Promise<void> {
