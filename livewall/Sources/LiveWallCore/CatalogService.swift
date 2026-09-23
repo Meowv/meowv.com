@@ -90,7 +90,7 @@ public struct DefaultCatalogTransport: CatalogTransport {
     }
 }
 
-/// 清单加载。数据源是线上**1 + N + 1 个文件**，各自有独立的降级链：
+/// 清单加载。数据源是线上**索引 + 签名 + 多份切片**，各自有独立的降级链：
 ///
 /// ```
 /// 索引 livewall/catalog.json（几百字节，必拉）+ livewall/catalog.json.sig
@@ -104,14 +104,14 @@ public struct DefaultCatalogTransport: CatalogTransport {
 ///   读索引副本 + 签名副本 → **同样验签** → 成功则使用
 ///     失败 → 返回 nil（调用方提示「无可用清单」）
 ///
-/// 分类切片 livewall/category.<id>.json（只拉当前选中的那一个）
-///   地址由「索引地址 + 索引里的相对文件名」拼出，**同源校验**在
-///   `LivewallCategoryEntry.resolvedFileURL` 里做
+/// 内容切片 livewall/all.json 或 livewall/category.<id>.json（只拉当前筛选对应的一份）
+///   地址由「索引地址 + 索引里的相对文件名」拼出，并在对应 entry 的
+///   `resolvedFileURL` 里做**同源校验**
 ///   远程 → 成功 → **比对字节摘要与索引里记的那个**（见 `CatalogSignature`）
 ///     ├─ 相符 → 使用并写副本
 ///     └─ 不符 → 判不可用，记 warning，继续往下
 ///     失败 → 读副本（同样要过摘要这一关）
-///       副本还要校验分类归属（见 `tryDecodeSlice`），不符则返回 nil
+///       分类副本校验归属；全部副本校验摘要、条目数与分类集合，不符则返回 nil
 /// ```
 ///
 /// **每个「继续往下」都只降级到「另一份同样验过签/对过摘要的数据」**，
@@ -119,13 +119,12 @@ public struct DefaultCatalogTransport: CatalogTransport {
 /// 代价是发布顺序有硬约束：**先部署 `.sig`，再发新版客户端**（老客户端只拉
 /// `catalog.json`，不受影响）。
 ///
-/// 切分类因此是「再拉一个文件」，不是「在本地全量里筛」—— 换来的是启动流量
-/// 从 4.9 MB 降到约 0.6 MB（索引 901 B + 当前分类）。
+/// 选择「全部」或切换分类都只拉当前筛选的一份切片；首次默认「全部」会拉完整去重清单，
+/// 后续重启可用单份缓存离线启动。
 ///
-/// **切片缓存只有一份**（`sliceCacheURL`），不是每个分类一份：配置里记的
-/// `selectedCategoryID` 就是「上次成功加载的那个分类」，所以启动时读回来的
-/// 那一份必然对得上。缓存里带了 `source.categoryIds`，加载时会校验它确实属于
-/// 被请求的分类 —— 换过分类之后离线启动不会把别的分类的内容当成目标分类。
+/// **切片缓存只有一份**（`sliceCacheURL`），不是每个筛选一份：分类切片按归属校验，
+/// 全部切片按已验签索引中的摘要、条目数和分类清单校验。切换筛选成功后再覆盖缓存，
+/// 离线启动不会把上一个筛选的内容当成目标内容。
 /// **`Sendable` 是它的真实性质，不是为消警加的**：成员全是 `let` 的 `URL`，
 /// 没有任何共享可变状态 —— 这正是它能在后台队列上安全调用的原因
 /// （`loadIndex` / `loadSlice` 都是同步的，由调用方决定跑在哪个线程）。
@@ -203,6 +202,44 @@ public struct CatalogService: Sendable {
         if let data = tryResult({ try transport.readFile(at: sliceCacheURL) }, into: &warnings, label: "分类切片副本读取失败"),
            digestAccepted(data, for: entry, into: &warnings, label: "分类切片副本完整性校验失败"),
            let catalog = tryDecodeSlice(data, matching: entry, into: &warnings, label: "分类切片副本解析失败") {
+            return CatalogSliceLoadResult(catalog: catalog, origin: .cachedRemote, warnings: warnings)
+        }
+
+        return CatalogSliceLoadResult(catalog: nil, origin: nil, warnings: warnings)
+    }
+
+    /// 加载「全部」候选集。它使用同一份切片缓存，因此重启离线时缓存内容仍与当前筛选吻合。
+    public func loadAll(
+        _ entry: LivewallAllEntry,
+        categoryIDs: Set<Int>,
+        transport: CatalogTransport = DefaultCatalogTransport()
+    ) -> CatalogSliceLoadResult {
+        var warnings: [String] = []
+
+        if let remoteURL = remoteIndexURL {
+            if let fileURL = entry.resolvedFileURL(relativeTo: remoteURL),
+               let data = tryResult({ try transport.fetch(fileURL) }, into: &warnings, label: "全部切片拉取失败"),
+               digestAccepted(data, sha256: entry.sha256, into: &warnings, label: "全部切片完整性校验失败"),
+               let catalog = tryDecodeAllSlice(
+                   data, itemCount: entry.itemCount, categoryIDs: categoryIDs,
+                   into: &warnings, label: "全部切片解析失败"
+               )
+            {
+                return CatalogSliceLoadResult(
+                    catalog: catalog, origin: .remote, warnings: warnings, cacheData: data)
+            }
+            if entry.resolvedFileURL(relativeTo: remoteURL) == nil {
+                warnings.append("索引里的全部切片文件名不合法，拒绝请求：\(entry.file)")
+            }
+        }
+
+        if let data = tryResult({ try transport.readFile(at: sliceCacheURL) }, into: &warnings, label: "全部切片副本读取失败"),
+           digestAccepted(data, sha256: entry.sha256, into: &warnings, label: "全部切片副本完整性校验失败"),
+           let catalog = tryDecodeAllSlice(
+               data, itemCount: entry.itemCount, categoryIDs: categoryIDs,
+               into: &warnings, label: "全部切片副本解析失败"
+           )
+        {
             return CatalogSliceLoadResult(catalog: catalog, origin: .cachedRemote, warnings: warnings)
         }
 
@@ -365,11 +402,24 @@ public struct CatalogService: Sendable {
         into warnings: inout [String],
         label: String
     ) -> Bool {
-        guard let expected = entry.sha256, ContentDigest.isValid(expected) else {
+        guard let expected = entry.sha256 else {
             // 正常情况下到不了这里：`CatalogSignature.digestProblem` 已经把「有切片却没摘要」
             // 的索引整份拒掉了。这条守卫是给「绕过索引校验、自己构造 entry」的调用点兜底的。
             // **缺摘要不能当作通过** —— 那等于给攻击者留一条「把摘要字段删掉」的路。
             warnings.append("\(label)：索引里没有该分类切片的摘要，拒绝使用")
+            return false
+        }
+        return digestAccepted(data, sha256: expected, into: &warnings, label: label)
+    }
+
+    private func digestAccepted(
+        _ data: Data,
+        sha256 expected: String,
+        into warnings: inout [String],
+        label: String
+    ) -> Bool {
+        guard ContentDigest.isValid(expected) else {
+            warnings.append("\(label)：索引里的 sha256 格式无效，拒绝使用")
             return false
         }
         guard ContentDigest.matches(data, hex: expected) else {
@@ -380,6 +430,37 @@ public struct CatalogService: Sendable {
             return false
         }
         return true
+    }
+
+    private func tryDecodeAllSlice(
+        _ data: Data,
+        itemCount: Int,
+        categoryIDs: Set<Int>,
+        into warnings: inout [String],
+        label: String
+    ) -> WallpaperCatalog? {
+        do {
+            let catalog = CatalogCoding.sanitize(try CatalogCoding.decode(data))
+            guard catalog.items.count == itemCount, !catalog.items.isEmpty else {
+                warnings.append("\(label)：条目数与索引不符（索引记 \(itemCount)，实际 \(catalog.items.count)）")
+                return nil
+            }
+            guard Set(catalog.source.categoryIds) == categoryIDs else {
+                warnings.append("\(label)：分类清单与已验签索引不符")
+                return nil
+            }
+            let itemIDs = catalog.items.map(\.id)
+            guard Set(itemIDs).count == itemIDs.count,
+                  catalog.items.allSatisfy({ !$0.categoryIds.isEmpty && Set($0.categoryIds).isSubset(of: categoryIDs) })
+            else {
+                warnings.append("\(label)：条目分类无效或存在重复条目")
+                return nil
+            }
+            return catalog
+        } catch {
+            warnings.append("\(label)：\(error.localizedDescription)")
+            return nil
+        }
     }
 
     private func tryDecodeSlice(

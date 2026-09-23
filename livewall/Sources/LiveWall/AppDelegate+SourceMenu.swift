@@ -6,12 +6,9 @@ import LiveWallDesktop
 extension AppDelegate {
 
 
-    /// 内容过滤子菜单：按一级分类**单选**。
+    /// 内容过滤子菜单：全部或一级分类**单选**。
     ///
-    /// 行的内容（标题、置灰、勾选）由 `CategoryMenu` 算好 —— 那是纯逻辑，可以单测；
-    /// 这里只负责把它贴成 `NSMenu`。
-    ///
-    /// 没有「清除过滤」项：分类恒有选中项，不存在「不限」态。
+    /// 分类行的内容由 `CategoryMenu` 算好；「全部」固定为第一行。这里只负责贴成 `NSMenu`。
     ///
     /// 本地来源下**整项置灰**：本地文件夹没有分类概念，点任何一行都没有可加载的东西。
     /// 置灰优于让用户点到必然无反应的动作（`AGENTS.md` 的既有取舍），根标题如实写出原因。
@@ -25,26 +22,29 @@ extension AppDelegate {
         }
 
         let submenu = NSMenu()
-        let entries = CategoryMenu.entries(categories: categories, selectedID: selectedCategoryID)
+        let entries = CategoryMenu.entries(
+            categories: categories,
+            selectedID: selectedCategoryID,
+            allEnabled: (index?.allSlice?.itemCount ?? 0) > 0
+        )
 
-        if entries.isEmpty {
+        for entry in entries {
+            let item = NSMenuItem(
+                title: entry.title,
+                action: #selector(selectCategory(_:)),
+                keyEquivalent: ""
+            )
+            item.target = self
+            item.representedObject = entry.id
+            item.state = entry.isSelected ? .on : .off
+            // 条目数为 0 的分类要置灰、本地来源下整项不可用 —— 判据都在
+            // `validateMenuItem(_:)` 里（构建时写 `isEnabled` 会被自动校验覆盖）。
+            submenu.addItem(item)
+        }
+        if categories.isEmpty {
             let empty = NSMenuItem(title: "清单里没有分类信息", action: nil, keyEquivalent: "")
             empty.isEnabled = false
             submenu.addItem(empty)
-        } else {
-            for entry in entries {
-                let item = NSMenuItem(
-                    title: entry.title,
-                    action: #selector(selectCategory(_:)),
-                    keyEquivalent: ""
-                )
-                item.target = self
-                item.representedObject = entry.id
-                item.state = entry.isSelected ? .on : .off
-                // 条目数为 0 的分类要置灰、本地来源下整项不可用 —— 判据都在
-                // `validateMenuItem(_:)` 里（构建时写 `isEnabled` 会被自动校验覆盖）。
-                submenu.addItem(item)
-            }
         }
 
         let root = NSMenuItem(
@@ -142,7 +142,7 @@ extension AppDelegate {
         return url
     }
 
-    /// 切换内容分类。
+    /// 切换「全部」或某个内容分类。
     ///
     /// 索引里没有条目，所以这一步是**真的去拉一个文件**（`category.<id>.json`，约 0.6 MB）——
     /// 换来的好处是启动时不必下全量。因为是异步的，要处理两件事：
@@ -152,7 +152,23 @@ extension AppDelegate {
     ///
     /// 选中项**只在拉取成功后写回**配置，否则菜单的勾选会和池子里的内容打架。
     @objc func selectCategory(_ sender: NSMenuItem) {
-        guard let id = sender.representedObject as? Int else { return }
+        guard let id = sender.representedObject as? Int else {
+            guard selectedCategoryID != nil else { return }
+            guard let allSlice = index?.allSlice else {
+                notice = .warning("当前清单不支持全部筛选，请先更新清单")
+                refreshStatusItem()
+                return
+            }
+            failuresBySlot.removeAll()
+            notice = .info("正在加载全部内容…")
+            refreshStatusItem()
+            loadAllSlice(
+                allSlice,
+                service: makeCatalogService(),
+                isFirstLoad: pool.totalCount == 0
+            )
+            return
+        }
         guard id != selectedCategoryID else { return }
         guard let entry = categories.first(where: { $0.id == id }) else { return }
         guard entry.itemCount > 0 else {

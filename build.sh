@@ -124,6 +124,7 @@ publish_wallpapers_only() {
     # 客户端一律判「签名与清单不符」—— 比「没有签名」更难看出原因。
     rm -f "$build_data_dir"/livewall/catalog.json.sig
     rm -f "$build_data_dir"/livewall/category.*.json
+    rm -f "$build_data_dir"/livewall/all.json
     mkdir -p "$build_data_dir/livewall"
     cp \
       "$source_dir"/wallpapers.catalog.json \

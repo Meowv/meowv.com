@@ -24,6 +24,7 @@ MAX_TAGS = 4
 
 # 供 livewall 客户端使用的清单目录。索引与各分类文件都放在这个子目录下：
 #   <output_dir>/livewall/catalog.json                索引（分类清单 + 默认分类，不含条目）
+#   <output_dir>/livewall/all.json                   去重后的全部条目
 #   <output_dir>/livewall/category.<一级分类 id>.json  各分类的条目切片
 # 放子目录有两个原因：一是与 Studio 的 wallpapers.catalog.* 分开 ——
 # encrypt-wallpaper.mjs 要求该目录下「恰好 5 个」wallpapers.catalog.*.json，
@@ -31,6 +32,7 @@ MAX_TAGS = 4
 LIVEWALL_DIR_NAME = "livewall"
 CATALOG_FILE_NAME = "catalog.json"
 CATEGORY_FILE_PREFIX = "category."
+ALL_FILE_NAME = "all.json"
 
 # 索引的签名文件后缀（`catalog.json` → `catalog.json.sig`）。
 # **这个值在三处必须一致**：这里、`livewall/Sources/LiveWallCore/UpdateSignature.swift`
@@ -277,14 +279,15 @@ def export_livewall_catalog(
 ) -> tuple[Path, dict[str, Path]]:
     """导出供「动态壁纸」客户端使用的壁纸清单。
 
-    产物是「1 + N」两层，全部落在 `<output_dir>/livewall/` 下：
+    产物是「索引 + 全部切片 + N 个分类切片」，全部落在 `<output_dir>/livewall/` 下：
 
-    - `catalog.json` —— **纯索引**：分类清单（含条目数为 0 的分类）与默认分类。
+    - `catalog.json` —— **纯索引**：分类清单（含条目数为 0 的分类）、默认分类与全部切片摘要。
       **不含任何条目** —— 它是启动时唯一必拉的文件，因此必须很小（几百字节）。
       客户端拿到它就有菜单了。每个有内容的分类条目带一个 `sha256`（**该分类切片
       文件的字节摘要**），客户端据此校验切片完整性。
+    - `all.json` —— 全部条目按壁纸 id 去重，按全局顺序写入；
     - `category.<一级分类 id>.json` —— 每个**有内容**的分类一份，结构沿用旧版
-      `livewall.json`。客户端按选中分类单独拉取，并各自缓存。
+      `livewall.json`。客户端只拉当前筛选的一份切片。
     - `catalog.json.sig` —— **不在这里产出**。它要用本机离线私钥签，由根
       `build.sh` 在导出之后调用 `livewall/tools/sign-version.swift` 生成。
 
@@ -308,6 +311,7 @@ def export_livewall_catalog(
     # 哪儿都到不了 —— 实测线上数据里没有这种条目（每张壁纸都挂了一个一级分类）。
     for item in items:
         item["categoryIds"] = roots_by_wallpaper.get(int(item["id"]), [])
+    all_items = [item for item in items if item["categoryIds"]]
 
     # 分桶。条目顺序沿用全局 ORDER BY（创建时间倒序），与旧版单文件一致。
     buckets: dict[int, list[dict[str, object]]] = {category_id: [] for category_id, _ in categories}
@@ -377,6 +381,37 @@ def export_livewall_catalog(
         )
         category_paths[name] = category_path
 
+    # 「全部」保留全局条目顺序，每个壁纸 id 只出现一次（分类之间可能共享壁纸）。
+    all_entry: dict[str, object] | None = None
+    all_path = target_dir / ALL_FILE_NAME
+    if all_items:
+        all_payload = (
+            json.dumps(
+                {
+                    "schemaVersion": SCHEMA_VERSION,
+                    "generatedAt": generated_at,
+                    "source": {
+                        "deviceType": device,
+                        "contentType": content,
+                        "categoryName": "全部",
+                        "categoryIds": [category_id for category_id, _ in ordered],
+                    },
+                    "items": all_items,
+                },
+                ensure_ascii=False,
+                separators=(",", ":"),
+            )
+            + "\n"
+        ).encode("utf-8")
+        all_path.write_bytes(all_payload)
+        all_entry = {
+            "file": ALL_FILE_NAME,
+            "itemCount": len(all_items),
+            "sha256": _sha256_hex(all_payload),
+        }
+    else:
+        all_path.unlink(missing_ok=True)
+
     # 索引自身的完整性由**外部签名**保证（`catalog.json.sig`，由根 `build.sh` 调
     # `livewall/tools/sign-version.swift` 用本机离线私钥签）—— 所以这里刻意**不写**
     # 自指的 sha256 字段：签名覆盖的已经是这个文件的原始字节，再写一个自己的摘要是多余的。
@@ -393,6 +428,7 @@ def export_livewall_catalog(
                 "generatedAt": generated_at,
                 "source": {"deviceType": device, "contentType": content},
                 "defaultCategoryId": default_id,
+                "allSlice": all_entry,
                 "categories": category_entries,
             },
             ensure_ascii=False,
@@ -405,6 +441,8 @@ def export_livewall_catalog(
     # 清理上一轮遗留的分类文件（分类被删或改名后会留下孤儿文件）
     keep = {path.name for path in category_paths.values()}
     keep.add(CATALOG_FILE_NAME)
+    if all_entry is not None:
+        keep.add(ALL_FILE_NAME)
     for previous in target_dir.glob(f"{CATEGORY_FILE_PREFIX}*.json"):
         if previous.name not in keep:
             previous.unlink(missing_ok=True)
@@ -422,6 +460,10 @@ def export_livewall_catalog(
         actual = _sha256_hex((target_dir / str(file_name)).read_bytes())
         if actual != entry["sha256"]:
             mismatched.append(f"{file_name}：索引记 {entry['sha256']}，文件实际 {actual}")
+    if all_entry is not None:
+        actual = _sha256_hex(all_path.read_bytes())
+        if actual != all_entry["sha256"]:
+            mismatched.append(f"{ALL_FILE_NAME}：索引记 {all_entry['sha256']}，文件实际 {actual}")
     if mismatched:
         raise RuntimeError(
             "索引里的切片摘要与写出的文件不一致，已中止"

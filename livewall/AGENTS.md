@@ -50,9 +50,9 @@ macOS 视频动态壁纸工具。定位是**个人自用 / 小范围共享**，�
 - 签名覆盖的是清单的**原始字节**，所以发布时不要重新格式化 `version.json`（改缩进、调键顺序、加删尾随换行都会让签名失效）。细节与发版对账命令见 [`README.md`](./README.md) 的「更新清单签名」。
 - **`CFBundleVersion` 由发布路径的 `build.sh --bump-build` 自动递增，不要手改** —— 它读「上次已装进 studio 部署目录的那一份 `version.json`」（次选本地产物）的 `build`，若源 plist 的值不大于它就 `+1` 写回 plist。递增必须在组装 `.app` 与 `codesign` **之前**完成，否则改包内 `Info.plist` 会让签名失效，所以这一步在 `build.sh` 而不是 `make-dmg.sh`。想手动指定更大跨度（如直接跳到 10）时把 plist 改大即可，脚本不会动它。`make-dmg.sh` 只保留**兜底校验**（拦「用 `--no-build` 拿旧 .app 直接打包」）。客户端只认它，不递增就永远不提示，而症状与「线上没发新版」无法区分。
 - **递增只在发布路径发生，`--bump-build` 是显式开关（默认关）**。只有根 `build.sh` 与 `make-dmg.sh` 会传它；**本地运行（`./run.sh`、`./run.sh lw`、`./run.sh --release`）一律不传** —— 判据是「这次是否产出可分发包」，不是「是否 release 配置」。跑一次看看不该烧掉一个 build 号，也不该在工作区里留一次与本次改动无关的 plist 改动。`--bump-build` 与 `--debug` 同用会被直接拒绝。不递增时脚本**完全不输出**版本号相关的行（否则每次 `./run.sh` 都多一句噪音，看起来像「它动了什么」）。改这段后**别拿真实 plist 试**：把 `build.sh` 与 plist 副本放进 `/tmp` 的假工程（`../build/studio.meowv.com/data/livewall/version.json` 造参照物、`swift` 换成 `exit 0` 的桩、`.build/<cfg>/LiveWall` 放个可执行占位），逐例比对 plist 里的 `CFBundleVersion` 有没有被动 —— 真实验证过 9 个用例（不传旗标 3 例、发布路径 3 例、参数互斥与未知参数各 1 例、整条 `run.sh` 链 1 例）。
-- **内容清单也走同一把密钥签名，但签的是「索引」**：`catalog.json.sig` 与 `catalog.json` 必须成对部署。索引里为每个有内容的分类记了切片的 `sha256`，切片的完整性由「已验签的索引」传递性地保证 —— 所以**不需要**、也不要给每个切片各配一份签名（那是 N 次额外请求）。
+- **内容清单也走同一把密钥签名，但签的是「索引」**：`catalog.json.sig` 与 `catalog.json` 必须成对部署。索引里为全部切片和每个有内容的分类记了 `sha256`，切片的完整性由「已验签的索引」传递性地保证 —— 所以不需要给每个切片单独签名。
 - **导出与签名是两步，中间不能省**：`wallpapers/src/wallpapers/export.py` 只写索引与切片（并删掉上一轮的旧签名），签名由**根 `build.sh` 的 `sign_livewall_catalog`** 调 `livewall/tools/sign-version.swift sign --catalog` 完成，失败即中止构建。单独跑 `python3 -m wallpapers export-livewall` 会产出一份**没有签名**的清单，新版客户端一律拒用。
-- **首次上线的发布顺序是硬约束**：`.sig` 必须先于新版客户端部署出去（新版没有「验不过就用」的降级路，先发客户端 = 那批用户启动即无清单）。老客户端只拉 `catalog.json`，因此这一步对线上无影响。
+- **首次上线的发布顺序是硬约束**：包含 `allSlice` 的新索引、`all.json` 与 `.sig` 必须先于新版客户端部署。新版没有「验不过就用」的降级路；老客户端会忽略未知的 `allSlice` 字段。
 - **绝不手工改 `catalog.json` / `catalog.json.sig`**：签名覆盖原始字节，改一个字节（哪怕只是格式化）就会失效；而「新索引配旧签名」比「没有签名」更难排障 —— 症状指向密钥或密码学，实际原因只是漏了一步签名。
 
 ## 硬约束
@@ -92,9 +92,9 @@ macOS 视频动态壁纸工具。定位是**个人自用 / 小范围共享**，�
 
 ### 清单、网络与失败分类
 
-- 视频源与清单都来自同仓库 `wallpapers/` 项目的 `export-livewall` 子命令。**清单没有本地一层**：输出目录是 `studio/public/data/livewall/`，里面是**索引 + 签名 + 按分类切片**三个角色 —— `catalog.json`（**纯索引**：分类清单 + 默认分类 + 各切片的 `sha256`，**不含条目**）、`catalog.json.sig`（索引的 Ed25519 签名）、`category.<一级分类 id>.json`。随 Studio 一起部署，客户端在运行时从 `https://studio.meowv.com/data/livewall/` 下按需拉取，断网时各自回退本地副本（Application Support 下 `catalog.remote-cache.index.json`、`catalog.remote-cache.index.json.sig`、`catalog.remote-cache.slice.json` —— **索引与它的签名副本必须同存同弃**，只留索引的话断网时读回来的那份过不了验签）。仓库内不保存清单副本，也不要再往 `livewall/data/` 写。清单结构改动需与 `wallpapers/src/wallpapers/export.py` 同步。
+- 视频源与清单都来自同仓库 `wallpapers/` 项目的 `export-livewall` 子命令。输出目录 `studio/public/data/livewall/` 包含签名索引 `catalog.json` / `catalog.json.sig`、去重的 `all.json` 与 `category.<一级分类 id>.json` 切片；索引不含条目，记录全部及各分类切片摘要。客户端按当前筛选拉一份切片，断网时回退 Application Support 下的索引、签名与单份切片缓存。清单结构改动需与 `wallpapers/src/wallpapers/export.py` 同步。
 - **索引与其签名的两道闸都不可绕过，也不要加「验不过就跳过」的开关**：① 索引整体验签（含「摘要齐全性」检查，有切片的分类缺 `sha256` 就整份拒掉 —— 那是生产侧 bug，客户端不能靠少校验一层掩盖）；② 切片字节摘要与索引里记的一致 + 切片归属校验。**缺摘要不能当作通过**，否则攻击者把摘要字段删掉即可绕过。细节与实测见 [`README.md`](./README.md) 的「内容清单与签名」。
-- **索引必须保持「不含条目」**。`catalog.json` 是启动时唯一必拉的文件，大小随分类数线性增长；每个有内容的分类登记一个 `sha256`，条目一律按分类单独拉。谁把 `items` 加回索引，启动就会退回「一次下全量」，这个改造就白做了。
+- **索引必须保持「不含条目」**。`catalog.json` 是启动时唯一必拉的文件，大小随分类数线性增长；全部切片和每个有内容的分类各自登记 `sha256`，条目放在独立切片中。
 - **条目字段新增一律不升 `schemaVersion`**：客户端用 `decodeIfPresent` 容错，升版本会让老客户端撞上 `unsupportedSchema` 直接拒绝加载整份清单 —— `coverUrl`（静态图地址，供锁屏预览与「下载当前壁纸」用）就是这么加的。
 - **切分类是异步拉一个文件**，因此有两件必须处理的事：① 递增的请求序号，回包时比对丢弃过期结果（否则「点了 B，画面却停在 A」）；② 失败时保持当前画面**与当前勾选** —— 选中项只在拉取成功后才写回配置。`selectedCategoryID` 的语义是「池子里装的是哪个分类」，不是「用户点了哪个」。
 - **分类文件名来自远端，不能照着它发请求**。`LivewallCategoryEntry.resolvedFileURL(relativeTo:)` 只接受纯文件名（不含 `/`、`\`、`:`，不是 `.`/`..`，以 `.json` 结尾）并校验 host/scheme 与索引一致 —— 否则远端改一个字段就能把客户端请求指到任意地址。
@@ -115,7 +115,7 @@ macOS 视频动态壁纸工具。定位是**个人自用 / 小范围共享**，�
 
 ### 单实例
 
-- **同一个程序只允许跑一个实例，判据是 `flock` 而不是 PID 文件**（2026-09-21 加，起因是发现打包版与 `./run.sh` 的开发版同时在跑）。`run.sh` 是 `exec` 可执行文件，**绕过 LaunchServices 的「同 bundle id 复用已有实例」**（那条只对 Finder 双击 / `open -a` 生效），而两者身份完全相同（bundle id 都是 `com.meowv.livewall`）→ 会互相覆盖 `config.json`、改写**唯一一份**分类切片缓存（离线兜底语义直接失效）、互相抹掉日志（轮转是截断为 0 字节）、抢同一窗口层级与同一组全局热键（Carbon 进程独占，后启动的**静默失效**）。实现要点：
+- **同一个程序只允许跑一个实例，判据是 `flock` 而不是 PID 文件**（2026-09-21 加，起因是发现打包版与 `./run.sh` 的开发版同时在跑）。`run.sh` 是 `exec` 可执行文件，**绕过 LaunchServices 的「同 bundle id 复用已有实例」**（那条只对 Finder 双击 / `open -a` 生效），而两者身份完全相同（bundle id 都是 `com.meowv.livewall`）→ 会互相覆盖 `config.json`、改写**唯一一份**内容切片缓存（离线兜底语义直接失效）、互相抹掉日志（轮转是截断为 0 字节）、抢同一窗口层级与同一组全局热键（Carbon 进程独占，后启动的**静默失效**）。实现要点：
   - 身份 = `bundle id ?? exe-<可执行文件名>`，锁文件 `instance-<身份>.lock`；
   - 取锁必须在 **`main.swift` 里 `NSApplication` 之前**（建窗口 / 注册热键 / 写配置都有副作用）；
   - **锁不可用时照常启动**（只记一行「本次不设防」）—— 锁是防误操作，不该让 App 起不来；
@@ -135,8 +135,8 @@ macOS 视频动态壁纸工具。定位是**个人自用 / 小范围共享**，�
 - **全局热键用 Carbon `RegisterEventHotKey`，不要换成 `NSEvent.addGlobalMonitorForEvents`** —— 后者需要「辅助功能」授权，会弹窗且要重启 App。代价是热键会**抢占**该组合，所以只挑不常用的 `⌥⌘` 组合，并且**注册失败必须显式提示**：重复注册同一组合返回 `eventHotKeyExistsErr`（-9878），据此区分「被占用」与「其它失败」。
 - **菜单栏 App 没有 main menu，⌘ 开头的快捷键一律要自己接在 `NSWindow.performKeyEquivalent(with:)` 上**（2026-09-21 加，起因是「浏览窗口里 ⌘W 没反应」）。`LSUIElement` 进程的 `NSApp.mainMenu` 是 nil，⌘W 这类组合没有菜单项去消费它；而带 Command 的按键事件走**快捷键通道**（`NSApplication` → `NSWindow.performKeyEquivalent`），没人处理时事件被**直接丢弃**，**不会**再作为 `keyDown` 往下传 —— 所以视图/控制器里的 `keyDown`、`cancelOperation` 永远收不到它（Esc 能用是因为它不带 Command、走 `cancelOperation`）。做法：`BrowserWindow`（`NSWindow` 子类）重写 `performKeyEquivalent`，把事件转给内容视图里**唯一一份**层次规则（`dismissTopLayer()`：浮层优先、否则关窗口），自己不做判断；只认**恰好 ⌘** 的组合（`⇧⌘W` / `⌥⌘W` 交回 AppKit），匹配用 `charactersIgnoringModifiers` 而不是键码（菜单快捷键按字符匹配，非 QWERTY 布局才成立）。
 - **作者信息与赞助入口只在 `LiveWallCore/AboutMenu` 维护一份**（作者名、博客地址、赞助入口 URL、条目顺序与禁用行），`AppDelegate.buildAboutMenu()` 只负责把数据翻译成 `NSMenuItem` —— 与 `buildCategoryMenu` 同一分工，那样才测得到。**赞助指向 studio 首页**（`https://studio.meowv.com`），二维码在那边页脚的弹窗里；客户端不存二维码、也不做 App 内二维码弹窗。**理由在 P10 换了**：原先写的是「那会是本项目第一个普通 UI 窗口」—— 这套成本**已经在浏览窗口上付过了**，所以它不再是拦路虎；现在不做的理由是**维护面**：二维码是运营素材（可能换渠道、换图、换尺寸），内置进客户端就得发版才能改，而 `AboutMenu` 里只维护一个 URL 就永远不用改。**不要再拿「那是第一个 UI 窗口」当理由**。
-- **内容过滤按一级分类，不要退回按作者或按标签**。分类是数据源里唯一「既有一级结构、又 100% 非空」的维度（分类清单与各分类条目数以线上 `catalog.json` 的 `categories` 为准，**不要在本文件写死条数** —— 每次 crawl 都会变）；标签在采集侧根本没有（`desktop + dynamic` 的候选里带 tag 的实测 0 条）；作者虽然非空、有数百个却是平铺的一层，用户无法判断该选谁。分类清单来自索引的 `categories`，**条目数为 0 的分类也要显示并置灰**（可点会进空池，表现成「点了没反应」，置灰能一眼看出是数据没抓全）。菜单是**单选**，没有「清除过滤」项 —— 分类恒有选中项，不存在「不限」态。选中的分类存 `Preferences.selectedCategoryID`（存 id 不存名字，分类可能被改名），记忆值不在清单里时回退默认分类并**立刻写回**。
-- **菜单的行内容（只显示名字、0 条置灰、单选勾选、根项标题）必须走 `LiveWallCore/CategoryMenu` 的纯函数**，不要在 `AppDelegate` 里另写一套 —— 那里没有测试，而这几条规则正是用户唯一看得见的正确性。**条目数只参与置灰，不显示**（星哥明确要求过）。**这条现在管全局**：浏览窗口左栏同样只显示分类名（0 条用 35% 透明度 + `shouldSelectRow` 返回 false 双重置灰）。
+- **内容过滤按一级分类或全部，保持单选**。分类清单来自索引的 `categories`，条目数为 0 的分类也显示并置灰；首项「全部」读取 `allSlice`，导出端按壁纸 id 去重，候选池随后跨分类随机轮换。选中的分类存 `Preferences.selectedCategoryID`；`nil` 表示全部，显式分类按 id 记忆。找不到已记忆分类时回退清单默认分类并立刻写回。
+- **菜单的行内容（「全部」首项、分类名、0 条置灰、单选勾选、根项标题）必须走 `LiveWallCore/CategoryMenu` 的纯函数**，不要在 `AppDelegate` 里另写一套 —— 那里没有测试，而这几条规则正是用户唯一看得见的正确性。**条目数只参与置灰，不显示**（星哥明确要求过）。**这条现在管全局**：浏览窗口左栏同样只显示分类名（0 条用 35% 透明度 + `shouldSelectRow` 返回 false 双重置灰）。
 
 ### 进程自身占用（CPU / 内存）
 

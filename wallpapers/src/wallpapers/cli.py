@@ -48,7 +48,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     export = sub.add_parser(
-        "export-livewall", help="导出供「动态壁纸」客户端使用的明文清单目录（索引 + 分类切片）"
+        "export-livewall", help="导出供「动态壁纸」客户端使用的明文清单目录（索引 + 全部 / 分类切片）"
     )
     export.add_argument("--db", default=argparse.SUPPRESS, help="源 SQLite 数据库路径")
     export.add_argument(
@@ -106,11 +106,13 @@ def main(argv: list[str] | None = None) -> int:
             default_category=args.default_category,
         )
         print(f"catalog={catalog_path}")
+        all_path = Path(args.output_dir).resolve() / "livewall" / "all.json"
+        if all_path.exists():
+            print(f"all={all_path}")
         for name, path in category_paths.items():
             print(f"category={name}:{path}")
-        # 刻意不叫 `categories=` —— 索引里的分类总数可能多于这里（0 条的分类只登记不落文件），
-        # 这个名字要说清它数的是「写了几个切片文件」。
-        print(f"slices={len(category_paths)}")
+        # 索引里的分类总数可能多于文件数（0 条分类不落片）；all.json 单独计入 slices。
+        print(f"slices={len(category_paths) + int(all_path.exists())}")
         return 0
 
     with Database(db_path) as db:

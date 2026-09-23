@@ -20,7 +20,7 @@
 - `src/wallpapers/pipeline.py`：公开接口抓取、增量游标和资源校验流程。
 - `src/wallpapers/db.py`：SQLite 初始化、兼容迁移和查询。
 - `src/wallpapers/publish.py`：从 SQLite 生成 Studio catalog、bootstrap 和 manifest。
-- `src/wallpapers/export.py`：从 SQLite 导出供 `../livewall/` 使用的明文壁纸清单目录（不加密）—— `catalog.json` 索引（分类清单 + 默认分类 + 各切片的 `sha256`，**不含条目**）+ 按一级分类拆分的 `category.<id>.json` 切片。**不产出签名**（见「约定」）。
+- `src/wallpapers/export.py`：从 SQLite 导出供 `../livewall/` 使用的明文壁纸清单目录（不加密）—— `catalog.json` 索引（分类清单 + 默认分类 + 各切片的 `sha256`，**不含条目**）+ 去重的 `all.json` 与按一级分类拆分的 `category.<id>.json` 切片。**不产出签名**（见「约定」）。
 - `src/wallpapers/sources/`：各公开接口适配器（`base.py` 提供 `HttpClient` 与 `SourceError`，另有 `desktop.py`、`mobile.py`、`manifest.py`）。
 - `tests/`：数据库、规范化、抓取流程、接口适配和发布逻辑测试。
 
@@ -35,7 +35,7 @@
   - 分类清单要包含 0 条的分类（`file` 为 `null`），但不为它们落文件 —— 客户端拿到 `items` 为空的清单会判定为解析失败并触发降级。
   - 一级分类（`parent_id IS NULL`）是切分单位，子树匹配必须用递归 CTE；旧实现只比较「自身或直接父级」，三级及更深的分类会漏掉。
   - 索引与切片**同批生成、共用同一个 `generatedAt`**。
-  - **每个有内容的分类必须在索引里记一份切片的 `sha256`**（64 位小写十六进制，算在**写盘的那串字节**上，含尾随换行）；0 条的分类不落文件，因此也**不能**带 `sha256`。索引**不写自己的摘要** —— 它的完整性由外部签名覆盖。
+  - **全部切片与每个有内容的分类都必须在索引里记一份切片的 `sha256`**（64 位小写十六进制，算在**写盘的那串字节**上，含尾随换行）；0 条的分类不落文件，因此也**不能**带 `sha256`。索引**不写自己的摘要** —— 它的完整性由外部签名覆盖。
   - **导出后要回读对账**：把刚写出的文件重新读回来再算一遍摘要，与写进索引的逐条比对，不符就抛错中止。摘要与「客户端收到的字节」一旦分家（改编码、加格式化、加压缩），表现是**客户端所有切片都判完整性失败**，症状离原因很远。
   - **重写索引时必须删掉上一轮的 `catalog.json.sig`**。留着它的后果比「没有签名」糟得多：新索引配旧签名，客户端报「签名与清单不符」，人只会去怀疑密钥或密码学。
 - **签名不在本项目做。** 索引的 Ed25519 签名由仓库根 `build.sh` 的 `sign_livewall_catalog` 调 `../livewall/tools/sign-version.swift sign --catalog` 产出（私钥在仓库外，只有持有它的机器能签）。所以单独跑 `export-livewall` 得到的是一份**没有签名**的清单，新版客户端会整份拒用 —— 手工导出之后必须补签。
@@ -45,7 +45,7 @@
 ## 验证
 
 - 改采集、数据库、导出或发布逻辑：先安装测试 extra，再在 `wallpapers/` 目录运行 `PYTHONPATH=src python3 -m pytest`（轻量、必跑）。如果不希望改动系统 Python，可使用任意仓库外的虚拟环境；文档不依赖某台机器的绝对路径。
-- **改动导出后额外做一次真实链路核对**：跑一遍仓库根 `./build.sh wallpapers`，确认它输出「摘要对账通过：N 个分类切片的 sha256 与索引一致」并以 0 退出 —— 那一步同时验证了「摘要算在写盘字节上」与「签名工具的对账逻辑」，是单测之外唯一能同时盖住两端的检查。
+- **改动导出后额外做一次真实链路核对**：跑一遍仓库根 `./build.sh wallpapers`，确认它输出「摘要对账通过：N 个切片的 sha256 与索引一致」并以 0 退出 —— 那一步同时验证了「摘要算在写盘字节上」与「签名工具的对账逻辑」，是单测之外唯一能同时盖住两端的检查。
 - 改加密脚本：至少 `node --check ../studio/scripts/encrypt-wallpaper.mjs`，并检查 manifest、旧版本文件清理和 `.bin` 输出。
 - 快速语法自检：`PYTHONPATH=src python3 -m compileall -q src`。
 - **默认不执行整站线上抓取**。需要跑 `crawl` 时先确认接口访问频率和资源使用符合站点规则，并优先用 `--max-pages` 限制范围。

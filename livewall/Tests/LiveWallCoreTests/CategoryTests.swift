@@ -131,13 +131,13 @@ func categoryTests() {
 
         test("标题只有分类名，不带条目数") {
             let entries = CategoryMenu.entries(categories: categories, selectedID: 4001)
-            expectEqual(entries.map(\.title), ["美女", "风景", "空分类"], "标题与顺序")
+            expectEqual(entries.map(\.title), ["全部", "美女", "风景", "空分类"], "标题与顺序")
         }
 
         test("单选：只有当前分类被勾上") {
             let entries = CategoryMenu.entries(categories: categories, selectedID: 6000)
-            expectEqual(entries.filter(\.isSelected).map(\.id), [6000], "应只勾一个")
-            expectEqual(entries.count, 3, "不能因为勾选而少一行")
+            expectEqual(entries.filter(\.isSelected).compactMap(\.id), [6000], "应只勾一个分类")
+            expectEqual(entries.count, 4, "全部项与分类行都应显示")
         }
 
         test("条目数为 0 的分类置灰，但仍出现在菜单里") {
@@ -145,7 +145,8 @@ func categoryTests() {
             let empty = entries.first { $0.id == 9000 }
             expectNotNil(empty, "空分类必须保留在菜单里 —— 置灰能一眼看出数据没抓全")
             expectEqual(empty?.isEnabled, false, "空分类应置灰不可点")
-            expect(entries.filter { $0.id != 9000 }.allSatisfy(\.isEnabled), "其余分类可点")
+            expect(entries.first { $0.id == nil }?.isEnabled == true, "全部项可点")
+            expect(entries.first { $0.id == 4001 }?.isEnabled == true, "有内容的分类可点")
         }
 
         test("条目数不显示，但确实参与置灰判定") {
@@ -153,11 +154,13 @@ func categoryTests() {
             let entries = CategoryMenu.entries(categories: categories, selectedID: nil)
             expect(!entries.contains { $0.title.contains("2614") }, "标题里不该出现条目数")
             expectEqual(entries.first { $0.id == 9000 }?.isEnabled, false, "0 条仍要置灰")
+            expectEqual(entries.first { $0.id == nil }?.isSelected, true, "nil 应选中全部")
         }
 
-        test("清单里没有分类信息时给出空行列表") {
-            let entries = CategoryMenu.entries(categories: [], selectedID: nil)
-            expect(entries.isEmpty, "应返回空列表，由调用方贴一行禁用说明")
+        test("全部项置灰时仍保留在列表首位") {
+            let entries = CategoryMenu.entries(categories: [], selectedID: nil, allEnabled: false)
+            expectEqual(entries.map(\.title), ["全部"], "全部项仍应存在")
+            expectEqual(entries.first?.isEnabled, false, "清单未提供全部切片时应置灰")
         }
 
         test("根项标题显示当前分类") {
@@ -168,8 +171,8 @@ func categoryTests() {
             )
             expectEqual(
                 CategoryMenu.rootTitle(categories: [], selectedID: nil),
-                "内容过滤（不限）",
-                "没有分类信息时显示不限"
+                "内容过滤（全部）",
+                "nil 表示全部筛选"
             )
         }
 

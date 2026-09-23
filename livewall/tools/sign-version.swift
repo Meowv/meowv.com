@@ -322,6 +322,32 @@ func reconcileCatalog(payload: Data, jsonPath: String) {
         checked += 1
     }
 
+    if let allSlice = object["allSlice"] as? [String: Any] {
+        let file = (allSlice["file"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let declared = (allSlice["sha256"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let file, !file.isEmpty,
+              !file.contains("/"), !file.contains("\\"), !file.contains(":"),
+              file.hasSuffix(".json"), file != ".", file != ".." else {
+            fail("\(jsonPath) 的全部切片 file 缺失或不合法，拒绝签名。")
+        }
+        guard (allSlice["itemCount"] as? Int ?? 0) > 0 else {
+            fail("\(jsonPath) 的全部切片 itemCount 必须大于 0，拒绝签名。")
+        }
+        guard let declared, declared.count == 64,
+              declared.allSatisfy({ $0.isHexDigit }) else {
+            fail("\(jsonPath) 的全部切片缺少合法的 64 位 sha256，拒绝签名。")
+        }
+        let path = directory + "/" + file
+        guard FileManager.default.fileExists(atPath: path) else {
+            fail("\(jsonPath) 的全部切片文件不存在：\(path)")
+        }
+        let actual = sha256Hex(readFile(path, "全部切片"))
+        guard declared.caseInsensitiveCompare(actual) == .orderedSame else {
+            fail("\(jsonPath) 的全部切片摘要不符\n        索引：\(declared)\n        实际：\(actual)")
+        }
+        checked += 1
+    }
+
     guard problems.isEmpty else {
         fail("""
         索引里的切片摘要与实际文件不符，拒绝签名：
@@ -331,7 +357,7 @@ func reconcileCatalog(payload: Data, jsonPath: String) {
         """)
     }
 
-    print("✓ 摘要对账通过：\(checked) 个分类切片的 sha256 与索引一致")
+    print("✓ 摘要对账通过：\(checked) 个切片的 sha256 与索引一致")
 }
 
 func commandSign(

@@ -43,10 +43,14 @@ extension AppDelegate: NSMenuItemValidation {
             // 本地来源下没有分类；条目数为 0 的分类本来就该置灰（可点会进空池）。
             // 「0 条置灰」的判据复用 `CategoryMenu.entries` 这个已单测的纯函数，
             // 不在这里另写一遍 `itemCount > 0`（同一条规则写两处，迟早会漂移）。
-            guard WallpaperSourceMenu.isEnabled(.categoryFilter, isLocalSource: isLocalSource),
-                  let id = menuItem.representedObject as? Int else { return false }
-            return CategoryMenu.entries(categories: categories, selectedID: selectedCategoryID)
-                .first { $0.id == id }?.isEnabled ?? false
+            guard WallpaperSourceMenu.isEnabled(.categoryFilter, isLocalSource: isLocalSource)
+            else { return false }
+            let id = menuItem.representedObject as? Int
+            return CategoryMenu.entries(
+                categories: categories,
+                selectedID: selectedCategoryID,
+                allEnabled: (index?.allSlice?.itemCount ?? 0) > 0
+            ).first { $0.id == id }?.isEnabled ?? false
 
         case #selector(pinCurrentItem):
             // 当前没有正在播的条目时不可固定。已固定时仍可点（幂等）。

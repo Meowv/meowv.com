@@ -26,8 +26,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 索引副本缓存（几百字节）。
     lazy var indexCacheURL: URL = LiveWallPaths.applicationSupportDirectory
         .appendingPathComponent("catalog.remote-cache.index.json")
-    /// 分类切片副本缓存。**只有一份** —— 配置里的 `selectedCategoryID` 就是
-    /// 「上次成功加载的那个分类」，所以启动时读回来的必然对得上（另有归属校验兜底）。
+    /// 内容切片副本缓存。**只有一份** ——「全部」状态存全部切片，否则存当前分类切片；
+    /// 筛选状态与缓存内容在成功加载时同步更新（另有摘要与归属校验兜底）。
     lazy var sliceCacheURL: URL = LiveWallPaths.applicationSupportDirectory
         .appendingPathComponent("catalog.remote-cache.slice.json")
     /// 已经废弃的清单缓存，启动时清掉。
@@ -121,7 +121,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var index: LivewallCatalogIndex?
     /// 索引里的分类清单（含条目数为 0 的）。菜单的数据源。
     var categories: [LivewallCategoryEntry] { index?.categories ?? [] }
-    /// 当前**已经加载好**的一级分类 id。nil = 还没有任何内容。
+    /// 当前已加载的筛选。非 nil 为一级分类 id；nil 为「全部」或尚未加载。
     ///
     /// 注意它表示「池子里装的是哪个分类」，不是「用户点了哪个」——
     /// 切分类是异步的，只有拉取成功才会更新它（失败时保持旧值，画面与菜单才不会打架）。

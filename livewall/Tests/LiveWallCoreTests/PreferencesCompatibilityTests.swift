@@ -30,7 +30,7 @@ func preferencesCompatibilityTests() {
             expectEqual(decoded.gravity, "fit", "老配置里的缩放应保留")
             expectEqual(decoded.multiScreenPolicy, .mirror, "老配置里的多屏策略应保留")
             expectEqual(decoded.perScreenSources, ScreenSourceStore.empty, "缺字段应回退到空表")
-            expectNil(decoded.selectedCategoryID, "缺字段应回退到 nil（用清单默认分类）")
+            expectNil(decoded.selectedCategoryID, "缺字段表示默认全部分类")
         }
 
         test("带 authorFilter 的配置仍能解码，该字段被忽略") {
@@ -47,7 +47,7 @@ func preferencesCompatibilityTests() {
                 return
             }
             expectEqual(decoded.intervalSeconds, 900, "其它字段应保留")
-            expectNil(decoded.selectedCategoryID, "应回退到清单默认分类")
+            expectNil(decoded.selectedCategoryID, "缺字段表示默认全部分类")
         }
 
         test("selectedCategoryID 存在时按原样读回") {

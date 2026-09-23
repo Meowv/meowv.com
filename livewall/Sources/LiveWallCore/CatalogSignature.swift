@@ -94,7 +94,7 @@ public enum CatalogSignature {
         UpdateSignature.verify(payload: payload, document: document)
     }
 
-    /// 已验签的索引里，是否**每条可拉取的切片都带合法摘要**。
+    /// 已验签的索引里，是否**全部及每条可拉取的分类切片都带合法摘要**。
     ///
     /// 通过时返回 nil，否则返回一句可直接进 warning 的原因。
     ///
@@ -103,6 +103,17 @@ public enum CatalogSignature {
     /// 而「验不过就退回不校验」正是本类型明确拒绝的降级。
     /// 空分类（`file == nil`）没有文件，也就不需要摘要。
     public static func digestProblem(in index: LivewallCatalogIndex) -> String? {
+        if let allSlice = index.allSlice {
+            guard LivewallCategoryEntry.isSafeRelativeFileName(allSlice.file) else {
+                return "全部切片文件名不合法"
+            }
+            guard allSlice.itemCount > 0 else {
+                return "全部切片条目数必须大于 0"
+            }
+            guard ContentDigest.isValid(allSlice.sha256) else {
+                return "全部切片 sha256 格式无效"
+            }
+        }
         var offenders: [String] = []
         for entry in index.categories {
             guard entry.file != nil else { continue }

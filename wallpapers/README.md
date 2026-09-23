@@ -33,7 +33,7 @@ wallpapers/
 │  ├─ pipeline.py          抓取、增量游标与资源校验流程
 │  ├─ db.py                SQLite 初始化、兼容迁移与查询
 │  ├─ publish.py           生成 Studio catalog / bootstrap / manifest
-│  ├─ export.py            导出 livewall 用的明文清单目录（索引 + 分类切片）
+│  ├─ export.py            导出 livewall 用的明文清单目录（索引 + 全部 / 分类切片）
 │  └─ sources/             接口适配器：base.py / desktop.py / mobile.py / manifest.py
 ├─ tests/                  数据库、规范化、抓取流程、接口适配与发布逻辑测试
 └─ wallpapers.db           默认数据库（本地数据，不提交）
@@ -140,11 +140,12 @@ PYTHONPATH=src python3 -m wallpapers export-livewall --default-category 风景
 
 | 文件 | 说明 |
 | --- | --- |
-| `catalog.json` | **纯索引**。分类清单（含条目数为 0 的分类）+ 默认分类 + **每个切片的 `sha256`**，**不含任何条目** —— 它是客户端启动时唯一必拉的文件，大小随分类数量线性增长 |
-| `category.<一级分类 id>.json` | 每个**有内容**的一级分类一份，结构沿用旧版单文件清单。客户端按选中分类单独拉取 |
+| `catalog.json` | **纯索引**。分类清单（含条目数为 0 的分类）+ 默认分类 + 全部和分类切片的 `sha256`，**不含任何条目** |
+| `all.json` | 所有壁纸按 id 去重的一份切片，客户端「全部」筛选使用 |
+| `category.<一级分类 id>.json` | 每个**有内容**的一级分类一份，客户端按选中分类拉取 |
 | `catalog.json.sig` | 索引的 Ed25519 签名，由 `../livewall/tools/sign-version.swift` 产出（见下节） |
 
-**索引里的 `sha256` 是每个切片的字节摘要**（对切片文件**原始字节**算，64 位小写十六进制）。它同时服务两件事：让客户端能验「这个切片确实属于这份索引」、以及让签名只需覆盖索引一个文件 —— 不需要为每个分类分别签名或在启动时额外拉取多份签名。条目数为 0 的分类**没有** `sha256` 字段（它没有切片文件，给个摘要反而是个陷阱）。
+**索引里的 `sha256` 是每个切片的字节摘要**（对切片文件**原始字节**算，64 位小写十六进制）。它同时服务两件事：让客户端能验「这个切片确实属于这份索引」、以及让签名只需覆盖索引一个文件 —— 不需要为每个切片分别签名或在启动时额外拉取多份签名。条目数为 0 的分类**没有** `sha256` 字段（它没有切片文件，给个摘要反而是个陷阱）。
 
 文件名用数字 id 而不是分类名：中文名进 URL 会触发百分号编码，CDN / nginx 侧行为不可控。放在 `livewall/` 子目录里是为了与 Studio 的 `wallpapers.catalog.*` 分开 —— `encrypt-wallpaper.mjs` 要求同目录下「恰好 5 个」`wallpapers.catalog.*.json`，混在一起会让它直接报错。
 
@@ -168,11 +169,11 @@ PYTHONPATH=src python3 -m wallpapers export-livewall --default-category 风景
 - **分类清单包含 0 条的分类**（`file` 为 `null`），客户端菜单需要显示全部；但不为它们落文件 —— 客户端拿到 `items` 为空的清单会判定为「解析失败」并触发降级，写出来是个陷阱。
 - **一张壁纸可以出现在多份分类文件里**（`wallpaper_category` 是多对多）。索引里没有条目，所以**不属于任何分类的壁纸哪儿都到不了**；导出前应通过数据库检查发现这类异常，而不是在客户端猜测归属。
 
-导出**不做分类过滤**：数据库只扫一遍，切分在 Python 侧做，所以分类数量不影响耗时。每次导出会清理上一轮遗留的 `category.*.json`（分类被删或改名后会留下孤儿文件）。
+导出**不做分类过滤**：数据库只扫一遍，切分在 Python 侧做，所以分类数量不影响耗时。每次导出会清理上一轮遗留的 `category.*.json` 与无内容时的 `all.json`。
 
-索引与分类文件**同批生成、共用同一个 `generatedAt`**，客户端据此判断两份产物是否一致。清单结构与客户端约定一一对应，改动需两边同步（见 `src/wallpapers/export.py` 与 `livewall/Sources/LiveWallCore/CatalogModel.swift`）。
+索引、全部切片与分类文件**同批生成、共用同一个 `generatedAt`**，客户端据此判断两份产物是否一致。清单结构与客户端约定一一对应，改动需两边同步（见 `src/wallpapers/export.py` 与 `livewall/Sources/LiveWallCore/CatalogModel.swift`）。
 
-**新增条目字段一律不升 `schemaVersion`**：客户端解码用 `decodeIfPresent` 容错，老客户端忽略未知键即可；升版本会让它撞上 `unsupportedSchema` 直接拒绝加载整份清单（`coverUrl` 就是这么加的）。另外**索引刻意不含 `items`**，条目只写在分类切片里 —— 所以新增条目字段只影响切片体积，索引只随分类数增长。
+**新增条目字段一律不升 `schemaVersion`**：客户端解码用 `decodeIfPresent` 容错，老客户端忽略未知键即可；升版本会让它撞上 `unsupportedSchema` 直接拒绝加载整份清单（`coverUrl` 就是这么加的）。另外**索引刻意不含 `items`**，条目只写在全部 / 分类切片里 —— 所以新增条目字段只影响切片体积，索引只随分类数增长。
 
 根目录的 `./build.sh wallpapers` 与 `./build.sh studio --with-wallpapers` 在生成并加密 Studio 壁纸目录时，会同时生成 `studio/public/data/livewall/` 并同步到 `build/studio.meowv.com/data/livewall/`。手工单独导出时使用上面的命令。
 

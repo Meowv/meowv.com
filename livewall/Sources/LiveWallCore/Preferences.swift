@@ -78,10 +78,10 @@ public struct Preferences: Codable, Sendable, Equatable {
     /// **老配置里没有这个字段**，容错解码会回退到 `.empty`（各屏重新取片），
     /// 不影响其它任何设置 —— 这是加字段时不丢用户设置的唯一办法。
     public var perScreenSources: ScreenSourceStore
-    /// 内容过滤选中的一级分类 id。nil = 用清单里的默认分类。
+    /// 内容过滤选中的一级分类 id。nil = 全部分类。
     ///
     /// **存 id 不存分类名**：分类可能被改名或删库，id 是稳定键，name 只用于显示。
-    /// 记忆值在清单里找不到时回退默认分类并**立刻写回**，否则每次启动都要重复回退一次。
+    /// 记忆值在清单里找不到时回退清单默认分类并**立刻写回**，否则每次启动都要重复回退一次。
     /// 只在成功取到该分类条目后才写 —— 不把一次失败的选择持久化下来。
     public var selectedCategoryID: Int?
 
@@ -328,7 +328,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         if !copy.idleThresholdSeconds.isFinite {
             copy.idleThresholdSeconds = Preferences.default.idleThresholdSeconds
         }
-        // 非正数的分类 id 不可能是合法分类，清掉让它走默认分类
+        // 非正数的分类 id 不可能是合法分类，清掉后回到「全部」默认筛选。
         if let id = copy.selectedCategoryID, id <= 0 {
             copy.selectedCategoryID = nil
         }

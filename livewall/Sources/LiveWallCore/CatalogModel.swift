@@ -53,10 +53,32 @@ public struct LivewallCategoryEntry: Codable, Sendable, Equatable {
     }
 }
 
+/// 索引里的「全部」切片。它把所有壁纸按 id 去重后放在一份文件中。
+public struct LivewallAllEntry: Codable, Sendable, Equatable {
+    public let file: String
+    public let itemCount: Int
+    public let sha256: String
+
+    public init(file: String, itemCount: Int, sha256: String) {
+        self.file = file
+        self.itemCount = itemCount
+        self.sha256 = sha256
+    }
+
+    public func resolvedFileURL(relativeTo indexURL: URL) -> URL? {
+        guard LivewallCategoryEntry.isSafeRelativeFileName(file) else { return nil }
+        let resolved = indexURL.deletingLastPathComponent().appendingPathComponent(file)
+        guard resolved.host?.lowercased() == indexURL.host?.lowercased(),
+              resolved.scheme?.lowercased() == indexURL.scheme?.lowercased()
+        else { return nil }
+        return resolved
+    }
+}
+
 /// 清单索引（`livewall/catalog.json`）。
 ///
-/// **刻意不含条目** —— 它是客户端启动时唯一必拉的文件，必须很小
-/// （当前 10 个分类实测 901 字节）。条目按分类单独拉，见 `LivewallCategoryEntry.file`。
+/// **刻意不含条目** —— 它是客户端启动时唯一必拉的文件，体积随分类数量增长。
+/// 条目位于 `allSlice` 或 `LivewallCategoryEntry.file` 指向的独立切片中。
 ///
 /// 这样切分类的代价是「一次请求」（而不是把全量 4.9 MB 一次下完），
 /// 启动流量也从 4.9 MB 降到「索引 + 当前分类」约 0.6 MB。
@@ -66,19 +88,23 @@ public struct LivewallCatalogIndex: Codable, Sendable {
     public let source: CatalogSource
     public let defaultCategoryId: Int?
     public let categories: [LivewallCategoryEntry]
+    /// `nil` 表示旧版索引或没有可播放条目。
+    public let allSlice: LivewallAllEntry?
 
     public init(
         schemaVersion: Int,
         generatedAt: String,
         source: CatalogSource,
         defaultCategoryId: Int? = nil,
-        categories: [LivewallCategoryEntry]
+        categories: [LivewallCategoryEntry],
+        allSlice: LivewallAllEntry? = nil
     ) {
         self.schemaVersion = schemaVersion
         self.generatedAt = generatedAt
         self.source = source
         self.defaultCategoryId = defaultCategoryId
         self.categories = categories
+        self.allSlice = allSlice
     }
 
     /// 清单里的默认分类：优先 `defaultCategoryId`（且必须确实存在于 `categories`），

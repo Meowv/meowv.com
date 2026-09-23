@@ -129,7 +129,7 @@ extension AppDelegate {
 
     /// 清单由两个文件组成，启动时按顺序拉：
     /// 1. **索引** `livewall/catalog.json`（几百字节）—— 拿到分类清单，菜单就能建了；
-    /// 2. **当前分类的切片** `livewall/category.<id>.json`（约 0.6 MB）—— 拿到条目。
+    /// 2. **当前筛选的切片** `livewall/all.json` 或 `livewall/category.<id>.json` —— 拿到条目。
     ///
     /// 切分类是「再拉一个切片」，不是「在本地全量里筛」：索引里**没有条目**，
     /// 那是它保持几百字节的前提。
@@ -180,6 +180,18 @@ extension AppDelegate {
         for warning in result.warnings { log("  ⚠︎ \(warning)") }
         log("索引来源：\(origin.label)，\(categories.count) 个分类")
 
+        if requested == nil, let allSlice = loaded.allSlice {
+            loadAllSlice(
+                allSlice,
+                service: service,
+                isFirstLoad: pool.totalCount == 0
+            )
+            return
+        }
+        if requested == nil {
+            log("当前索引没有全部切片，兼容回退到清单默认分类")
+        }
+
         guard let target = resolveCategoryID(requested: requested) else {
             notice = .warning("没有可用的内容")
             log("索引里没有任何有内容的分类（都是 0 条）")
@@ -189,6 +201,94 @@ extension AppDelegate {
 
         // 判定要在 `setItems` **之前**做 —— 灌进去之后池子就非空了。
         loadSlice(for: target, service: service, isFirstLoad: pool.totalCount == 0)
+    }
+
+    /// 加载「全部」切片。请求序号与分类切片共用，较晚的用户选择会使旧回包失效。
+    func loadAllSlice(
+        _ entry: LivewallAllEntry,
+        service: CatalogService,
+        isFirstLoad: Bool
+    ) {
+        sliceRequestGeneration += 1
+        let generation = sliceRequestGeneration
+        let categoryIDs = Set(categories.map(\.id))
+        log("加载全部内容切片（\(entry.itemCount) 条）…")
+
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let result = service.loadAll(entry, categoryIDs: categoryIDs)
+            DispatchQueue.main.async {
+                guard let self else { return }
+                guard generation == self.sliceRequestGeneration else {
+                    self.log("丢弃过期的全部内容切片结果")
+                    return
+                }
+                self.applyAllSliceResult(result, isFirstLoad: isFirstLoad)
+            }
+        }
+    }
+
+    func applyAllSliceResult(
+        _ result: CatalogSliceLoadResult,
+        isFirstLoad: Bool
+    ) {
+        guard !isLocalSource else {
+            log("本地来源已生效，丢弃线上全部内容切片结果")
+            return
+        }
+        guard let slice = result.catalog, let origin = result.origin else {
+            for warning in result.warnings { log("  ⚠︎ \(warning)") }
+            if pool.totalCount == 0 {
+                notice = .warning("没有可用的全部内容")
+                log("⚠️ 全部内容切片加载失败，且当前没有在播的内容")
+            } else {
+                notice = .warning("全部内容加载失败，保持当前画面")
+                log("⚠️ 全部内容切片加载失败，保持当前画面")
+            }
+            refreshStatusItem()
+            return
+        }
+
+        for warning in result.warnings { log("  ⚠︎ \(warning)") }
+        if origin == .remote, let data = result.cacheData {
+            do {
+                try makeCatalogService().cacheSlice(data)
+            } catch {
+                log("  ⚠︎ 全部内容切片已使用，但写入本地副本失败：\(error.localizedDescription)")
+            }
+        }
+
+        notice = nil
+        consumePendingSourceNotice()
+        selectedCategoryID = nil
+        if preferences.selectedCategoryID != nil {
+            preferences.selectedCategoryID = nil
+            persistPreferences("分类记忆：全部")
+        }
+
+        pool.order = preferences.playbackOrder
+        pool.setItems(slice.items)
+        if isFirstLoad && !isPinned {
+            pendingRestore = ScreenSourceRestore.plan(
+                store: preferences.perScreenSources,
+                candidateIDs: Set(slice.items.map(\.id))
+            )
+            if !pendingRestore.isEmpty {
+                let detail = pendingRestore.map { "屏\($0.key)→\($0.value)" }.sorted().joined(
+                    separator: "、")
+                log("待恢复的每屏源 \(pendingRestore.count) 条：\(detail)")
+            }
+        }
+
+        log("内容：全部（\(pool.totalCount) 条），来源 \(origin.label)")
+        if isFirstLoad {
+            log("选片顺序：\(preferences.playbackOrder.label)（\(preferences.playbackOrder.detail)）")
+        }
+        refreshStatusItem()
+        guard !isPinned else {
+            applyPinToMissingSlots()
+            return
+        }
+        advance()
     }
 
     /// 拉取并应用某个分类的切片。
