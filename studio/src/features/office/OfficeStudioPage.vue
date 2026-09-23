@@ -63,6 +63,8 @@ let menuDrag:
     }
   | undefined;
 let stopWindowFileHandoff: () => void = () => undefined;
+let officeRouteReady = false;
+let officeRouteChangeId = 0;
 
 const MENU_POSITION_STORAGE_KEY = `${STORAGE_POLICY.namespace('office')}:editor-menu-position`;
 
@@ -228,7 +230,46 @@ async function createDocument(format: OfficeFormat, routeFormat: OfficeRouteForm
   );
 }
 
+async function syncOfficeRoute(): Promise<void> {
+  const changeId = ++officeRouteChangeId;
+  const handoff = takeHandoff('office');
+  if (handoff) {
+    await openFile(handoff.file, handoff.handle as RecentDocument['handle']);
+    return;
+  }
+
+  const routeFormat = requestedRouteFormat.value;
+  if (!routeFormat) {
+    if (isWorkspace.value) {
+      disposeOfficeRuntime();
+      isWorkspace.value = false;
+      fileName.value = '';
+      stage.value = '本地编辑器待命';
+    }
+    return;
+  }
+
+  if (isWorkspace.value) {
+    disposeOfficeRuntime();
+    isWorkspace.value = false;
+    fileName.value = '';
+  }
+
+  const activeDocument = await loadActiveOfficeFile(routeFormat);
+  if (changeId !== officeRouteChangeId || requestedRouteFormat.value !== routeFormat) return;
+
+  if (activeDocument) {
+    await openFile(activeDocument.file, activeDocument.handle);
+  } else {
+    await createDocument(officeFormatForRoute(routeFormat), routeFormat);
+  }
+}
+
 async function openFormat(routeFormat: OfficeRouteFormat): Promise<void> {
+  if (requestedRouteFormat.value === routeFormat) {
+    await syncOfficeRoute();
+    return;
+  }
   await router.push(`/office/${routeFormat}`);
 }
 
@@ -496,20 +537,8 @@ onMounted(async () => {
   window.addEventListener('resize', keepMenuInViewport);
   restoreMenuPosition();
   await refreshRecent();
-  const handoff = takeHandoff('office');
-  if (handoff) {
-    await openFile(handoff.file, handoff.handle as RecentDocument['handle']);
-  } else if (requestedRouteFormat.value) {
-    const activeDocument = await loadActiveOfficeFile(requestedRouteFormat.value);
-    if (activeDocument) {
-      await openFile(activeDocument.file, activeDocument.handle);
-    } else {
-      await createDocument(
-        officeFormatForRoute(requestedRouteFormat.value),
-        requestedRouteFormat.value,
-      );
-    }
-  }
+  officeRouteReady = true;
+  await syncOfficeRoute();
   stopWindowFileHandoff = receiveWindowFileHandoff('office', (file, handle) => {
     void openFile(file, handle as RecentDocument['handle']);
   });
@@ -523,9 +552,15 @@ onBeforeRouteLeave(() => {
 });
 
 onBeforeRouteUpdate(() => {
+  if (busy.value) return false;
   if (hasUnsavedOfficeChanges() && !window.confirm('当前文档有未保存修改，确定切换页面吗？'))
     return false;
   return true;
+});
+
+watch(requestedRouteFormat, (format, previousFormat) => {
+  if (!officeRouteReady || format === previousFormat) return;
+  void syncOfficeRoute();
 });
 
 onBeforeUnmount(() => {

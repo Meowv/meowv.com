@@ -5,7 +5,7 @@ import { getOnlyOfficeLang, t } from '@ranuts/shared/i18n';
 import { c_oAscFileType2 } from './file-types';
 import type { BinConversionResult, SaveEvent } from '@ranuts/shared/document-types';
 import { getMimeTypeFromExtension } from '@ranuts/shared/document-utils';
-import { editorSession, setSaveRequestHandler } from './editor-session';
+import { editorSession, setEditorSaveLockHandler, setSaveRequestHandler } from './editor-session';
 
 // Import converter function to avoid circular dependency
 let convertBinToDocumentFn:
@@ -134,44 +134,12 @@ function cleanupEmbeddedSaveRequest(request: EmbeddedSaveRequest): void {
  * Queue editor operations to prevent concurrent editor creation/destruction
  */
 async function queueEditorOperation<T>(operation: () => Promise<T>): Promise<T> {
-  // Wait for previous operations to complete
-  // Add a timeout to prevent infinite waiting
-  try {
-    await Promise.race([
-      editorOperationQueue,
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Editor operation queue timeout')), 30000),
-      ),
-    ]);
-  } catch (error) {
-    // If timeout, log warning but continue (previous operation may have failed)
-    if (error instanceof Error && error.message === 'Editor operation queue timeout') {
-      console.warn('Editor operation queue timeout, proceeding anyway');
-    } else {
-      // Re-throw other errors
-      throw error;
-    }
-  }
-
-  // Create a new promise for this operation
-  let resolveOperation: () => void;
-  let rejectOperation: (error: any) => void;
-  const operationPromise = new Promise<void>((resolve, reject) => {
-    resolveOperation = resolve;
-    rejectOperation = reject;
-  });
-
-  // Update the queue
-  editorOperationQueue = operationPromise;
-
-  try {
-    const result = await operation();
-    resolveOperation!();
-    return result;
-  } catch (error) {
-    rejectOperation!(error);
-    throw error;
-  }
+  const operationPromise = editorOperationQueue.then(operation, operation);
+  editorOperationQueue = operationPromise.then(
+    () => undefined,
+    () => undefined,
+  );
+  return operationPromise;
 }
 
 /**
@@ -254,6 +222,7 @@ async function handleWriteFile(event: any) {
 
 async function handleSaveDocument(event: SaveEvent) {
   const requestedFromWorkspace = Boolean(embeddedSaveRequest);
+  const saveRevision = editorSession.getRevision();
   if (event.data && event.data.data) {
     const { data, option } = event.data;
     const { fileName } = getDocmentObj() || {};
@@ -309,7 +278,7 @@ async function handleSaveDocument(event: SaveEvent) {
       const file = new File([bytes as BlobPart], result.fileName, {
         type: getSavedFileMimeType(result.fileName),
       });
-      await editorSession.saveFromEditor(file);
+      await editorSession.saveFromEditor(file, saveRevision);
     } else if (convertBinToDocumentAndDownloadFn) {
       await convertBinToDocumentAndDownloadFn(data.data, fileName, targetFormat);
     } else {
@@ -322,7 +291,7 @@ async function handleSaveDocument(event: SaveEvent) {
     command: 'asc_onSaveCallback',
     data: { err_code: 0 },
   });
-  if (!requestedFromWorkspace) editorSession.markSaved();
+  if (!requestedFromWorkspace) editorSession.markSaved(false, saveRevision);
 }
 
 async function handleDownloadAs(event: {
@@ -585,6 +554,26 @@ export function requestSaveDocument(
 }
 
 setSaveRequestHandler((targetExt) => requestSaveDocument(targetExt));
+setEditorSaveLockHandler(() => {
+  const editor = window.editor;
+  if (!editor || isReadonlyMode) return () => undefined;
+
+  editor.sendCommand({
+    command: 'processRightsChange',
+    data: { enabled: false, message: '' },
+  });
+
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    if (window.editor !== editor || isReadonlyMode) return;
+    editor.sendCommand({
+      command: 'processRightsChange',
+      data: { enabled: true, message: '' },
+    });
+  };
+});
 
 export function loadEditorApi(): Promise<void> {
   return new Promise((resolve, reject) => {

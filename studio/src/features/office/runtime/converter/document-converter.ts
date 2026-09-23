@@ -141,8 +141,12 @@ export class X2TConverter {
       return this.initPromise;
     }
 
-    this.initPromise = this.doInitialize();
-    return this.initPromise;
+    const initialization = this.doInitialize();
+    this.initPromise = initialization;
+    void initialization.catch(() => {
+      if (this.initPromise === initialization) this.initPromise = null;
+    });
+    return initialization;
   }
 
   private async doInitialize(): Promise<EmscriptenModule> {

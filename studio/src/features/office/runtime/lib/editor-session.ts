@@ -94,6 +94,7 @@ async function saveFileLocally(
 
 class EditorSession {
   private dirty = false;
+  private revision = 0;
   private readonlyMode = false;
   private objectUrls = new Set<string>();
   private fileHandle: StoredFileHandle | undefined;
@@ -122,6 +123,7 @@ class EditorSession {
     this.releaseObjectUrls();
     if (objectUrl) this.objectUrls.add(String(objectUrl));
     this.dirty = false;
+    this.revision += 1;
     this.readonlyMode = readonly;
     this.fileHandle = fileHandle;
     this.recentDocumentId = recentDocumentId;
@@ -140,6 +142,7 @@ class EditorSession {
 
   markDirty(): void {
     if (this.readonlyMode) return;
+    this.revision += 1;
     this.dirty = true;
     this.updateStatus(
       (this.fileHandle?.createWritable || this.activeRouteFormat) && !this.autosaveDisabled
@@ -157,15 +160,18 @@ class EditorSession {
     this.updateStatus('正在保存…');
   }
 
-  markSaved(isAutomatic = false): void {
-    this.dirty = false;
-    this.updateStatus(
-      this.fileHandle?.createWritable
-        ? '已保存到原文件'
-        : isAutomatic && this.activeRouteFormat
-          ? '已自动保存到浏览器'
-          : '已导出到本地',
-    );
+  getRevision(): number {
+    return this.revision;
+  }
+
+  markSaved(isAutomatic = false, savedRevision = this.revision): void {
+    if (savedRevision === this.revision) this.dirty = false;
+    const savedStatus = this.fileHandle?.createWritable
+      ? '已保存到原文件'
+      : isAutomatic && this.activeRouteFormat
+        ? '已自动保存到浏览器'
+        : '已导出到本地';
+    this.updateStatus(this.dirty ? '未保存' : savedStatus);
   }
 
   markSaveFailed(): void {
@@ -264,14 +270,18 @@ class EditorSession {
     await updateActiveOfficeSnapshot(this.activeRouteFormat, file);
   }
 
-  async saveFromEditor(file: File): Promise<void> {
+  async saveFromEditor(file: File, savedRevision = this.revision): Promise<void> {
+    let releaseSaveLock: () => void = () => undefined;
     this.markSaving();
     try {
+      releaseSaveLock = acquireEditorSaveLock?.() ?? releaseSaveLock;
       await this.saveExportedFile(file);
-      this.markSaved();
+      this.markSaved(false, savedRevision);
     } catch (error) {
       this.markSaveFailed();
       throw error;
+    } finally {
+      releaseSaveLock();
     }
   }
 }
@@ -279,23 +289,31 @@ class EditorSession {
 export const editorSession = new EditorSession();
 
 let requestSave: ((targetExt: string) => Promise<File>) | null = null;
+let acquireEditorSaveLock: (() => () => void) | null = null;
 
 export function setSaveRequestHandler(handler: (targetExt: string) => Promise<File>): void {
   requestSave = handler;
+}
+
+export function setEditorSaveLockHandler(handler: () => () => void): void {
+  acquireEditorSaveLock = handler;
 }
 
 export async function saveCurrentDocument(isAutomatic = false): Promise<void> {
   const documentState = getDocmentObj();
   if (!documentState.fileName || !window.editor) return;
 
+  const saveRevision = editorSession.getRevision();
+  let releaseSaveLock: () => void = () => undefined;
   editorSession.markSaving();
   try {
+    releaseSaveLock = acquireEditorSaveLock?.() ?? releaseSaveLock;
     if (!requestSave) throw new Error('保存组件尚未就绪');
     const saved = await requestSave(getFileExtension(documentState.fileName));
     const renamed = new File([saved], safeFileName(documentState.fileName), { type: saved.type });
     if (isAutomatic) await editorSession.saveAutomaticFile(renamed);
     else await editorSession.saveExportedFile(renamed);
-    editorSession.markSaved(isAutomatic);
+    editorSession.markSaved(isAutomatic, saveRevision);
   } catch (error) {
     if ((error as Error).name !== 'AbortError') {
       console.error('保存失败：', error);
@@ -304,5 +322,7 @@ export async function saveCurrentDocument(isAutomatic = false): Promise<void> {
       }
     }
     editorSession.markSaveFailed();
+  } finally {
+    releaseSaveLock();
   }
 }
