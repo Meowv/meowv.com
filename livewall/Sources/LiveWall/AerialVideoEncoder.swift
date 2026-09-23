@@ -157,14 +157,25 @@ enum AerialVideoEncoder {
                 start: .zero,
                 duration: CMTime(seconds: loopDuration, preferredTimescale: 60_000)
             )
-            let output = AVAssetReaderTrackOutput(
-                track: track,
-                outputSettings: [
+            let videoComposition = AVMutableVideoComposition()
+            videoComposition.frameDuration = frameInterval
+            videoComposition.renderSize = CGSize(width: width, height: height)
+            let instruction = AVMutableVideoCompositionInstruction()
+            instruction.timeRange = reader.timeRange
+            let layerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: track)
+            // 保留原始像素方向；最终旋转仍由写入器的 preferredTransform 元数据完成。
+            layerInstruction.setTransform(.identity, at: .zero)
+            instruction.layerInstructions = [layerInstruction]
+            videoComposition.instructions = [instruction]
+
+            let output = AVAssetReaderVideoCompositionOutput(
+                videoTracks: [track],
+                videoSettings: [
                     kCVPixelBufferPixelFormatTypeKey as String:
                         kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange,
                 ]
             )
-            output.alwaysCopiesSampleData = false
+            output.videoComposition = videoComposition
             guard reader.canAdd(output) else { throw EncodeError.reader("无法创建视频读取器") }
             reader.add(output)
             guard reader.startReading() else {
@@ -271,7 +282,8 @@ private final class AerialStreamWriter: @unchecked Sendable {
         }
 
         guard let input else { return }
-        while !input.isReadyForMoreMediaData, failure == nil { usleep(500) }
+        // 写入器背压时降低轮询频率，避免编码回调线程持续高频唤醒。
+        while !input.isReadyForMoreMediaData, failure == nil { usleep(5_000) }
         guard failure == nil else { return }
         guard input.append(sampleBuffer) else {
             failure = AerialVideoEncoder.EncodeError.writer(
