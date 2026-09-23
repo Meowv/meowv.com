@@ -3,6 +3,50 @@ import type { Connect, Plugin } from 'vite';
 
 const WALLPAPER_DOWNLOAD_PATH = '/__wallpaper-download';
 const ALLOWED_WALLPAPER_HOSTS = ['shanhutech.cn', '25pan.com'];
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
+const MAX_REDIRECTS = 5;
+
+function isAllowedWallpaperHost(url: URL): boolean {
+  return ALLOWED_WALLPAPER_HOSTS.some(
+    (host) => url.hostname === host || url.hostname.endsWith(`.${host}`),
+  );
+}
+
+function isAllowedWallpaperUrl(url: URL): boolean {
+  return (url.protocol === 'https:' || url.protocol === 'http:') && isAllowedWallpaperHost(url);
+}
+
+async function fetchWallpaper(url: URL): Promise<Response> {
+  let currentUrl = url;
+  let redirects = 0;
+
+  while (true) {
+    const upstream = await fetch(currentUrl, { credentials: 'omit', redirect: 'manual' });
+    const location = upstream.headers.get('location');
+    if (!REDIRECT_STATUSES.has(upstream.status) || !location) return upstream;
+
+    if (redirects >= MAX_REDIRECTS) {
+      await upstream.body?.cancel();
+      throw new Error('Too many wallpaper redirects');
+    }
+
+    let nextUrl: URL;
+    try {
+      nextUrl = new URL(location, currentUrl);
+    } catch {
+      await upstream.body?.cancel();
+      throw new Error('Invalid wallpaper redirect');
+    }
+    if (!isAllowedWallpaperUrl(nextUrl)) {
+      await upstream.body?.cancel();
+      throw new Error('Wallpaper redirect host is not allowed');
+    }
+
+    await upstream.body?.cancel();
+    currentUrl = nextUrl;
+    redirects += 1;
+  }
+}
 
 function safeFilename(value: string | null): string {
   const fallback = 'wallpaper.jpg';
@@ -36,18 +80,14 @@ async function proxyWallpaperDownload(
     response.end('Unsupported wallpaper URL');
     return;
   }
-  if (
-    !ALLOWED_WALLPAPER_HOSTS.some(
-      (host) => targetUrl.hostname === host || targetUrl.hostname.endsWith(`.${host}`),
-    )
-  ) {
+  if (!isAllowedWallpaperHost(targetUrl)) {
     response.statusCode = 403;
     response.end('Wallpaper host is not allowed');
     return;
   }
 
   try {
-    const upstream = await fetch(targetUrl, { credentials: 'omit', redirect: 'follow' });
+    const upstream = await fetchWallpaper(targetUrl);
     response.statusCode = upstream.status;
     if (!upstream.ok) {
       response.end();

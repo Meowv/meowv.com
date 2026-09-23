@@ -285,8 +285,10 @@ export function useWallpapers() {
   }
 
   async function setFilters(next: Partial<typeof defaults>): Promise<void> {
+    const deviceChanged = next.device !== undefined && next.device !== filters.value.device;
+    const contentChanged = next.content !== undefined && next.content !== filters.value.content;
     filters.value = { ...filters.value, ...next };
-    if (next.device || next.content) filters.value.categoryId = null;
+    if (deviceChanged || contentChanged) filters.value.categoryId = null;
     persistAndSync();
     const cached = readCachedPage(filters.value);
     if (cached) {
@@ -301,7 +303,7 @@ export function useWallpapers() {
     loadingMore.value = false;
     error.value = null;
     try {
-      if (next.device || next.content) {
+      if (deviceChanged || contentChanged) {
         const nextCategories = await repository.categories(
           filters.value.device,
           filters.value.content,

@@ -56,6 +56,8 @@ const {
   errorMessage: backgroundErrorMessage,
 } = useToolsBackground();
 const selected = ref<WallpaperItem | null>(null);
+const lightboxCloseButton = ref<HTMLButtonElement | null>(null);
+let lightboxReturnFocus: HTMLElement | null = null;
 // 桌面 App 推广位：显隐规则集中在 resolveLivewallPromoVisibility，页面只负责传入筛选设备与识别平台。
 const {
   model: livewallModel,
@@ -243,10 +245,19 @@ function handleMediaInteraction(event: Event): void {
 }
 
 function open(item: WallpaperItem): void {
+  if (!selected.value) {
+    lightboxReturnFocus =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  }
   selected.value = item;
 }
 function close(): void {
   selected.value = null;
+  const returnFocus = lightboxReturnFocus;
+  lightboxReturnFocus = null;
+  void nextTick(() => {
+    if (returnFocus?.isConnected) returnFocus.focus();
+  });
 }
 async function setSelectedAsBackground(): Promise<void> {
   const item = selected.value;
@@ -487,6 +498,26 @@ function handleDocumentPointerDown(event: PointerEvent): void {
     searchExpanded.value = false;
   }
 }
+function handleLightboxKeydown(event: KeyboardEvent): void {
+  if (event.key !== 'Tab' || !(event.currentTarget instanceof HTMLElement)) return;
+  const dialog = event.currentTarget;
+  const focusable = [...dialog.querySelectorAll<HTMLElement>('button:not(:disabled), a[href]')];
+  const first = focusable[0];
+  const last = focusable.at(-1);
+  if (!first || !last) {
+    event.preventDefault();
+    return;
+  }
+
+  const active = document.activeElement;
+  if (event.shiftKey && (active === first || !dialog.contains(active))) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && (active === last || !dialog.contains(active))) {
+    event.preventDefault();
+    first.focus();
+  }
+}
 onMounted(() => {
   window.addEventListener('keydown', onKeydown);
   window.addEventListener('scroll', handleScroll, { passive: true });
@@ -521,13 +552,15 @@ watch(
   { deep: true },
 );
 watch(searchExpanded, () => void nextTick(recomputeCategoryCapacity));
-watch(selected, (item) => {
+watch(selected, (item, previousItem) => {
   mediaLoading.value = Boolean(item?.coverUrl || item?.previewVideoUrl);
   mediaLoadFailed.value = false;
   backgroundStatusMessage.value = '';
   clearTimeout(backgroundStatusTimer);
-  if (item) lockPageScroll();
-  else unlockPageScroll();
+  if (item) {
+    lockPageScroll();
+    if (!previousItem) void nextTick(() => lightboxCloseButton.value?.focus());
+  } else unlockPageScroll();
 });
 watch(
   () => [items.value.length, loading.value, loadingMore.value, hasMore.value],
@@ -691,7 +724,12 @@ watch(
         :key="item.id"
         :ref="(element) => observeCard(element, item)"
         class="wallpapers-card"
+        role="button"
+        tabindex="0"
+        :aria-label="'打开' + (item.title || '壁纸') + '预览'"
         @click="open(item)"
+        @keydown.enter.prevent="open(item)"
+        @keydown.space.prevent="open(item)"
       >
         <img
           v-if="item.coverUrl && lazyCardIds.has(item.id)"
@@ -730,10 +768,18 @@ watch(
       class="wallpapers-lightbox"
       role="dialog"
       aria-modal="true"
+      :aria-label="selected.title ? selected.title + '壁纸预览' : '壁纸预览'"
       @wheel.stop.prevent
       @touchmove.stop.prevent
+      @keydown="handleLightboxKeydown"
     >
-      <button class="wallpapers-lightbox-close" title="关闭" @click="close">
+      <button
+        ref="lightboxCloseButton"
+        class="wallpapers-lightbox-close"
+        title="关闭"
+        aria-label="关闭壁纸预览"
+        @click="close"
+      >
         <IconX :size="18" />
       </button>
       <button
