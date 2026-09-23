@@ -501,14 +501,18 @@ function startConflictChannel(): void {
   mermaidChannel.addEventListener('message', (event: MessageEvent<unknown>) => {
     const payload = event.data as { type?: unknown; document?: unknown } | null;
     const incoming = normalizeMermaidDocument(payload?.document);
+    const current = currentDocumentSnapshot();
     if (
       payload?.type !== 'mermaid-document-saved' ||
       !incoming ||
       incoming.id !== documentId.value ||
-      incoming.updatedAt <= updatedAt.value ||
-      (incoming.source === source.value && incoming.configText === configText.value)
+      incoming.updatedAt < updatedAt.value ||
+      (incoming.source === current.source &&
+        incoming.configText === current.configText &&
+        incoming.title === current.title)
     )
       return;
+    if (conflictDocument.value && incoming.updatedAt <= conflictDocument.value.updatedAt) return;
     conflictDocument.value = incoming;
     historyOpen.value = true;
   });
@@ -516,13 +520,13 @@ function startConflictChannel(): void {
 function acceptConflictDocument(): void {
   const incoming = conflictDocument.value;
   if (!incoming) return;
-  loadDocument(incoming);
+  loadDocument(incoming, false);
   conflictDocument.value = null;
-  shareMessage.value = '已载入其他标签页的较新版本。';
+  shareMessage.value = '已载入其他标签页的版本。';
 }
 function keepLocalDocument(): void {
   conflictDocument.value = null;
-  void saveDocument(false);
+  void saveDocument(false, true);
 }
 function currentRenderConfig() {
   return renderConfigForTheme(parsedConfig.value.value, resolvedTheme.value);
@@ -601,15 +605,33 @@ async function render(): Promise<void> {
   }
   await editingSession.render();
 }
-async function saveDocument(isAuto = false): Promise<void> {
+function isCurrentDocumentSnapshot(document: MermaidDocument): boolean {
+  const current = currentDocumentSnapshot();
+  return (
+    document.id === current.id &&
+    document.title === current.title &&
+    document.source === current.source &&
+    document.configText === current.configText &&
+    document.createdAt === current.createdAt &&
+    document.updatedAt === current.updatedAt
+  );
+}
+async function saveDocument(isAuto = false, forceLocal = false): Promise<void> {
+  if (conflictDocument.value && !forceLocal) return;
   const document = currentDocumentSnapshot();
-  const saveVersion = document.updatedAt;
-  const saveId = document.id;
   saveState.value = 'saving';
   saveMessage.value = '';
   const operation = saveQueue
     .catch(() => undefined)
     .then(async () => {
+      if (conflictDocument.value) {
+        if (isCurrentDocumentSnapshot(document)) {
+          saveState.value = 'idle';
+          saveMessage.value = '';
+        }
+        return;
+      }
+      if (!isCurrentDocumentSnapshot(document)) return;
       let ok = false;
       try {
         ok = await saveMermaidDocument(document);
@@ -617,10 +639,10 @@ async function saveDocument(isAuto = false): Promise<void> {
         ok = false;
       }
       // 队列按提交顺序写入，且只有仍对应当前文档的快照才能更新界面状态。
-      if (saveId !== documentId.value || saveVersion !== updatedAt.value) return;
+      if (!isCurrentDocumentSnapshot(document)) return;
       if (ok) {
-        persistedDocumentId = saveId;
-        persistedDocumentUpdatedAt = saveVersion;
+        persistedDocumentId = document.id;
+        persistedDocumentUpdatedAt = document.updatedAt;
         saveMermaidHistory(document);
         saveActiveMermaidId(document.id);
         saveState.value = 'saved';
@@ -657,13 +679,14 @@ function newDocument(): void {
   saveMessage.value = '';
   void rebuildVisualSession();
 }
-function loadDocument(document: MermaidDocument): void {
+function loadDocument(document: MermaidDocument, persistCurrent = true): void {
   conflictDocument.value = null;
   if (shareSnapshotActive) {
     shareSnapshotActive = false;
     void router.replace({ hash: '' });
   }
-  persistBeforeDocumentSwitch();
+  if (persistCurrent) persistBeforeDocumentSwitch();
+  else cancelPendingSaveTimer();
   documentId.value = document.id;
   title.value = document.title;
   source.value = document.source;
@@ -1420,8 +1443,8 @@ onBeforeUnmount(() => {
               </button>
             </div>
             <div v-if="conflictDocument" class="mermaid-history__conflict" role="alert">
-              <span>其他标签页有较新版本</span>
-              <button type="button" title="载入较新版本" @click="acceptConflictDocument">
+              <span>其他标签页有不同版本</span>
+              <button type="button" title="载入其他标签页的版本" @click="acceptConflictDocument">
                 载入
               </button>
               <button type="button" title="保留当前版本" @click="keepLocalDocument">

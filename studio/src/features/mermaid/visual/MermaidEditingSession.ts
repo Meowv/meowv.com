@@ -151,6 +151,7 @@ export class MermaidEditingSession {
     const accentColor = getComputedStyle(this.options.container)
       .getPropertyValue('--mermaid-accent')
       .trim();
+    let readOnly = visualReadOnly(engine.result);
     const keepSelectionForStudioChrome = (event: PointerEvent) => {
       const target = event.target;
       if (!(target instanceof Element)) return;
@@ -176,7 +177,7 @@ export class MermaidEditingSession {
       mermaid,
       mermaidConfig: this.config as Record<string, unknown>,
       panZoom: true,
-      readOnly: visualReadOnly(engine.result),
+      readOnly,
       accentColor: accentColor || undefined,
       hooks: {
         onEntityClick: (entityId, event) => this.handleEntityClick(entityId, event),
@@ -194,6 +195,11 @@ export class MermaidEditingSession {
     this.disposers = [
       () => document.removeEventListener('pointerdown', keepSelectionForStudioChrome, true),
       engine.on('change', ({ code: nextCode }) => {
+        const nextReadOnly = visualReadOnly(engine.result);
+        if (nextReadOnly !== readOnly) {
+          readOnly = nextReadOnly;
+          view.setReadOnly(nextReadOnly);
+        }
         this.options.onCodeChange(nextCode);
       }),
       view.on('render', ({ ok, error }) => {
