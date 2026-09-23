@@ -307,6 +307,23 @@ extension AppDelegate {
         // 开发者工具：只在 debug 构建里存在。日常使用走 `./build.sh`（release），
         // 排障走 `./run.sh`（debug）。整块不参与 release 编译，二进制里也没有相关字符串。
         #if DEBUG
+            menu.addItem(.separator())
+            for (title, directory) in [
+                ("打开日志目录", DebugDirectory.logs),
+                ("打开下载壁纸目录", DebugDirectory.downloadedWallpapers),
+                ("打开数据缓存目录", DebugDirectory.remoteDataCache),
+                ("打开锁屏素材目录", DebugDirectory.aerialLockScreen),
+            ] {
+                let item = NSMenuItem(
+                    title: title,
+                    action: #selector(openDebugDirectory(_:)),
+                    keyEquivalent: ""
+                )
+                item.target = self
+                item.representedObject = directory.rawValue
+                menu.addItem(item)
+            }
+
             let dump = NSMenuItem(
                 title: "打印窗口层级表", action: #selector(dumpWindows), keyEquivalent: "")
             dump.target = self
