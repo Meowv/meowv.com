@@ -93,9 +93,35 @@ async function serveBookFile(
   response: ServerResponse,
   fileName: string,
 ): Promise<void> {
-  const filePath = path.join(BOOKS_DIR, fileName);
+  let filePath: string;
   let stat: Awaited<ReturnType<typeof fs.stat>>;
   try {
+    const booksRoot = await fs.realpath(BOOKS_DIR);
+    const candidatePath = path.resolve(booksRoot, fileName);
+    const candidateRelative = path.relative(booksRoot, candidatePath);
+    if (
+      !candidateRelative ||
+      candidateRelative === '..' ||
+      candidateRelative.startsWith(`..${path.sep}`) ||
+      path.isAbsolute(candidateRelative)
+    ) {
+      response.statusCode = 404;
+      response.end();
+      return;
+    }
+    // realpath 也检查符号链接，避免书库内的链接指向目录外文件。
+    filePath = await fs.realpath(candidatePath);
+    const resolvedRelative = path.relative(booksRoot, filePath);
+    if (
+      !resolvedRelative ||
+      resolvedRelative === '..' ||
+      resolvedRelative.startsWith(`..${path.sep}`) ||
+      path.isAbsolute(resolvedRelative)
+    ) {
+      response.statusCode = 404;
+      response.end();
+      return;
+    }
     stat = await fs.stat(filePath);
   } catch {
     response.statusCode = 404;
@@ -162,8 +188,16 @@ function booksMiddleware(
     void listBooksDirectory(request, response);
     return;
   }
-  const safeName = path.posix.basename(relative);
-  if (!safeName || safeName !== relative) {
+  // 书库只暴露直接子文件。显式拒绝两种分隔符，防止 Windows 反斜杠绕过
+  // POSIX basename 检查后被 path.resolve 当作目录跳转。
+  const safeName = path.basename(relative);
+  if (
+    !safeName ||
+    safeName !== relative ||
+    relative.includes('/') ||
+    relative.includes('\\') ||
+    path.isAbsolute(relative)
+  ) {
     response.statusCode = 404;
     response.end();
     return;

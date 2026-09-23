@@ -1,6 +1,6 @@
 import type { BookshelfEntry, BookshelfRepository } from '../persistence/BookshelfRepository';
 import { drawCoverThumbnail, drawPlaceholderCover } from '../persistence/coverThumbnail';
-import { getRemovedSlugs, listBuiltinBooks } from './BuiltinShelf';
+import { builtinBookKey, getRemovedSlugs, listBuiltinBooks } from './BuiltinShelf';
 import { probeBookMetadata } from './metadata';
 
 const CONCURRENCY = 6;
@@ -37,16 +37,17 @@ export async function probeBuiltinBooks(
 ): Promise<void> {
   const defs = await listBuiltinBooks();
   const removed = getRemovedSlugs();
-  const storedBySlug = new Map<string, BookshelfEntry>(
+  const storedByKey = new Map<string, BookshelfEntry>(
     stored
-      .filter((entry) => entry.builtinSlug)
-      .map((entry) => [entry.builtinSlug as string, entry]),
+      .filter((entry) => entry.builtIn && entry.builtinSlug)
+      .map((entry) => [builtinBookKey(entry.builtinSlug as string, entry.format), entry]),
   );
   const pending = defs.filter((def) => {
-    if (probing.has(def.slug)) return false;
+    const key = builtinBookKey(def.slug, def.format);
+    if (probing.has(key)) return false;
     // 用户已移出的内置书不再重新探测，避免删除后又写回书架。
-    if (removed.has(def.slug) || removed.has(def.slug.trim())) return false;
-    const storedEntry = storedBySlug.get(def.slug);
+    if (removed.has(key) || removed.has(def.slug) || removed.has(def.slug.trim())) return false;
+    const storedEntry = storedByKey.get(key);
     if (!storedEntry) return true;
     return !storedEntry.coverThumbnail;
   });
@@ -57,7 +58,8 @@ export async function probeBuiltinBooks(
     while (index < pending.length) {
       const def = pending[index];
       index += 1;
-      probing.add(def.slug);
+      const key = builtinBookKey(def.slug, def.format);
+      probing.add(key);
       try {
         const result = await probeBookMetadata(def);
         if (!result) continue;
@@ -97,9 +99,15 @@ export async function probeBuiltinBooks(
         };
         // 探测期间用户可能已移出该书，写回前再次确认。
         const currentRemoved = getRemovedSlugs();
-        if (currentRemoved.has(def.slug) || currentRemoved.has(def.slug.trim())) continue;
+        if (
+          currentRemoved.has(key) ||
+          currentRemoved.has(def.slug) ||
+          currentRemoved.has(def.slug.trim())
+        ) {
+          continue;
+        }
         await bookshelf.upsert(entry);
-        probing.delete(def.slug);
+        probing.delete(key);
         onUpdated?.();
       } catch {
         // 探测失败保留文件名兜底，不再重试；打开书籍时由内容元数据纠正。

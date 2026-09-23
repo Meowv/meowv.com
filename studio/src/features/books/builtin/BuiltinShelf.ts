@@ -18,8 +18,12 @@ function builtinFileUrl(fileName: string): string {
   return builtinDirectoryUrl() + encodeURIComponent(fileName);
 }
 
-export function builtinVirtualId(slug: string): string {
-  return `${BUILTIN_ID_PREFIX}${slug}`;
+export function builtinBookKey(slug: string, format: BookshelfEntry['format']): string {
+  return `${slug}.${format}`;
+}
+
+export function builtinVirtualId(slug: string, format: BookshelfEntry['format']): string {
+  return `${BUILTIN_ID_PREFIX}${builtinBookKey(slug, format)}`;
 }
 
 export function isBuiltinEntry(entry: BookshelfEntry): boolean {
@@ -113,14 +117,26 @@ export async function mergeBuiltinEntries(stored: BookshelfEntry[]): Promise<Boo
     if (!exact || exact === entry.builtinSlug) return entry;
     return { ...entry, builtinSlug: exact };
   });
-  const openedSlugs = new Set(
-    entries.filter((entry) => entry.builtinSlug).map((entry) => entry.builtinSlug as string),
+  const openedBuiltinKeys = new Set(
+    entries
+      .filter((entry) => entry.builtIn && entry.builtinSlug)
+      .map((entry) => builtinBookKey(entry.builtinSlug as string, entry.format)),
   );
   for (const def of defs) {
     const removedKey = def.slug.trim();
-    if (removed.has(def.slug) || removed.has(removedKey) || openedSlugs.has(def.slug)) continue;
+    const key = builtinBookKey(def.slug, def.format);
+    // 裸 slug 是旧版本保存的移出标记；继续兼容已有记录。新标记使用完整文件名，
+    // 同名但格式不同的内置书互不影响。
+    if (
+      removed.has(key) ||
+      removed.has(def.slug) ||
+      removed.has(removedKey) ||
+      openedBuiltinKeys.has(key)
+    ) {
+      continue;
+    }
     entries.push({
-      id: builtinVirtualId(def.slug),
+      id: builtinVirtualId(def.slug, def.format),
       format: def.format,
       metadata: { title: def.title, authors: [] },
       availability: 'available',
@@ -135,7 +151,7 @@ export async function mergeBuiltinEntries(stored: BookshelfEntry[]): Promise<Boo
 
 /** 获取内置书籍文件；lastModified 固定为 0，保证指纹与进度跨会话稳定。 */
 export function fetchBuiltinFile(def: BuiltinBookDef): Promise<File> {
-  const cached = fileCache.get(def.slug);
+  const cached = fileCache.get(def.url);
   if (cached) return cached;
   const task = (async () => {
     const response = await fetch(def.url, { cache: 'no-cache' });
@@ -144,8 +160,8 @@ export function fetchBuiltinFile(def: BuiltinBookDef): Promise<File> {
       lastModified: 0,
     });
   })();
-  fileCache.set(def.slug, task);
-  task.catch(() => fileCache.delete(def.slug));
+  fileCache.set(def.url, task);
+  task.catch(() => fileCache.delete(def.url));
   return task;
 }
 
@@ -160,9 +176,9 @@ export function getRemovedSlugs(): Set<string> {
   }
 }
 
-export function markBuiltinRemoved(slug: string): void {
+export function markBuiltinRemoved(slug: string, format: BookshelfEntry['format']): void {
   const removed = getRemovedSlugs();
-  removed.add(slug);
+  removed.add(builtinBookKey(slug, format));
   try {
     localStorage.setItem(REMOVED_KEY, JSON.stringify([...removed]));
   } catch {
@@ -170,9 +186,9 @@ export function markBuiltinRemoved(slug: string): void {
   }
 }
 
-export function restoreBuiltin(slug: string): void {
+export function restoreBuiltin(slug: string, format: BookshelfEntry['format']): void {
   const removed = getRemovedSlugs();
-  if (!removed.delete(slug)) return;
+  if (!removed.delete(builtinBookKey(slug, format))) return;
   try {
     localStorage.setItem(REMOVED_KEY, JSON.stringify([...removed]));
   } catch {

@@ -725,6 +725,8 @@ async function openFile(
     }
     if (options.autoOpen) {
       await instance.open();
+      // 自动恢复、从书架打开和重新排版也可能将阅读位置设到非首页。
+      progressSave.schedule();
       await progressSave.flush();
     }
   } catch (reason) {
@@ -777,6 +779,8 @@ async function chooseFile(): Promise<void> {
 }
 
 async function openShelfEntry(entry: BookshelfEntry): Promise<void> {
+  // 书架点击是用户的明确选择，立即让启动时的自动恢复失效。
+  restoreId += 1;
   hideError();
   const file = await resolveBookshelfFile(entry, true);
   if (!file) {
@@ -852,12 +856,13 @@ async function relinkShelfEntry(entry: BookshelfEntry): Promise<void> {
 }
 
 async function removeShelfEntry(entry: BookshelfEntry, removeProgress: boolean): Promise<void> {
+  restoreId += 1;
   const hint = entry.builtIn
     ? '内置书籍将从书架隐藏，阅读进度会保留。'
     : '只会从书架移除，不会删除电脑上的原文件。';
   if (!window.confirm(`将“${entry.metadata.title}”移出书架？${hint}`)) return;
   // 内置书籍删除即移出书架：记录移出状态并移除持久化条目，阅读进度保留。
-  if (entry.builtIn && entry.builtinSlug) markBuiltinRemoved(entry.builtinSlug);
+  if (entry.builtIn && entry.builtinSlug) markBuiltinRemoved(entry.builtinSlug, entry.format);
   await bookshelf.remove(entry.id, { removeProgress });
   await refreshShelf();
 }
@@ -972,6 +977,7 @@ async function navigateTo(locator: BookLocator): Promise<void> {
     if (engine.snapshot.state === 'OPEN') await engine.close();
     await engine.goToPage(pageProvider.pageForLocator(locator));
     await engine.open();
+    progressSave.schedule();
     await progressSave.flush();
   } catch (reason) {
     await returnToShelf(bookErrorMessage(reason));
@@ -1090,15 +1096,17 @@ function onKeyup(event: KeyboardEvent): void {
   if (direction) releaseHeldTurnDirection(direction);
 }
 
-async function restoreLastBook(): Promise<void> {
+async function restoreLastBook(restoreOperation: number): Promise<void> {
+  if (restoreOperation !== restoreId) return;
   await refreshShelf();
-  if (returnedToShelf()) return;
+  if (restoreOperation !== restoreId || returnedToShelf()) return;
   const candidate = [...shelfEntries.value].sort(
     (left, right) => right.lastOpenedAt - left.lastOpenedAt,
   )[0];
   if (!candidate) return;
   if (candidate.builtIn && candidate.id.startsWith(BUILTIN_ID_PREFIX)) return;
   const file = await resolveBookshelfFile(candidate, false);
+  if (restoreOperation !== restoreId || handoffArrived) return;
   if (!file) {
     if (candidate.builtIn) return;
     if (candidate.availability === 'available') {
@@ -1107,13 +1115,13 @@ async function restoreLastBook(): Promise<void> {
     }
     return;
   }
-  if (handoffArrived) return;
-  if ((await createBookFingerprint(file)) !== candidate.id) {
+  const fingerprint = await createBookFingerprint(file);
+  if (restoreOperation !== restoreId || handoffArrived) return;
+  if (fingerprint !== candidate.id) {
     await bookshelf.upsert({ ...candidate, availability: 'missing' });
     await refreshShelf();
     return;
   }
-  if (handoffArrived) return;
   await openFile(file, candidate.handle, { autoOpen: true, existingEntry: candidate });
 }
 
@@ -1132,11 +1140,7 @@ onMounted(() => {
     restoreId += 1;
     void openFile(handoff.file, handoff.handle, { autoOpen: true });
   }
-  void restoreLastBook()
-    .catch(() => undefined)
-    .finally(() => {
-      if (restoreOperation !== restoreId) return;
-    });
+  void restoreLastBook(restoreOperation).catch(() => undefined);
   stopWindowFileHandoff = receiveWindowFileHandoff('book', (file, handle) => {
     handoffArrived = true;
     restoreId += 1;
