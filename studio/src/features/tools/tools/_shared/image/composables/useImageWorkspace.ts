@@ -128,13 +128,23 @@ export function useImageWorkspace() {
     await runPool(queuedTasks, async (task) => {
       try {
         const dimensions = await readImageDimensions(task.file);
+        if (!tasks.value.some((current) => current.id === task.id)) {
+          return;
+        }
         const preview = await createImagePreviewBlob(task.file, 'thumbnail');
+        const previewUrl = createPreviewUrl(preview);
+        if (!tasks.value.some((current) => current.id === task.id)) {
+          revokePreviewUrl(previewUrl);
+          return;
+        }
         task.width = dimensions.width;
         task.height = dimensions.height;
-        task.previewUrl = createPreviewUrl(preview);
+        task.previewUrl = previewUrl;
       } catch (error) {
-        task.status = 'failed';
-        task.error = errorMessage(error);
+        if (tasks.value.some((current) => current.id === task.id)) {
+          task.status = 'failed';
+          task.error = errorMessage(error);
+        }
       }
     });
 
