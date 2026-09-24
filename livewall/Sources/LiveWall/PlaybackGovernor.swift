@@ -119,6 +119,13 @@ final class PlaybackGovernor {
         updatePollingTimer()
     }
 
+    /// 休息提醒显示期间继续播放壁纸，即使用户没有操作输入；其它暂停原因仍然有效。
+    func setResting(_ resting: Bool) {
+        guard signals.resting != resting else { return }
+        signals.resting = resting
+        sampleAndResolve()
+    }
+
     /// 立即重新采集并求值（例如刚改了配置）。
     func refresh() {
         sampleAndResolve()

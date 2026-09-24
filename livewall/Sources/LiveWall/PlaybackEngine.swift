@@ -101,6 +101,8 @@ final class PlaybackEngine {
     /// 播放失败时回调。**带上槽位**：每屏独立时一次失败只影响一个槽位，
     /// 不能因为副屏挂了就把主屏也停掉。
     var onFailure: ((PlaybackSlotKey, Error) -> Void)?
+    /// 任一槽位的播放器更换视频后通知观察者（休息层复用同一个 AVPlayer）。
+    var onPlaybackChange: (() -> Void)?
 
     // MARK: - 槽位管理
 
@@ -246,6 +248,7 @@ final class PlaybackEngine {
         if captureStillFrame {
             scheduleStillFrameCapture(for: slot, key: key, generation: playbackGeneration)
         }
+        onPlaybackChange?()
     }
 
     /// 上报一次槽位播放失败。**调用方必须已经在主 actor 上**。

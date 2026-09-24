@@ -70,6 +70,26 @@ func powerTests() {
             expectEqual(r.resolve(PlaybackSignals(idleSeconds: 90.1)), .paused(.idle), "超过阈值应暂停")
         }
 
+        test("休息期间只忽略空闲暂停，仍遵循其它省电信号") {
+            let signals = PlaybackSignals(idleSeconds: 9999, resting: true)
+            expectEqual(resolver.resolve(signals), .playing, "休息期间不因无操作暂停")
+            expectEqual(
+                resolver.resolve(PlaybackSignals(screenFullyCovered: true, idleSeconds: 9999, resting: true)),
+                .paused(.screenCovered),
+                "休息期间遮挡规则仍生效"
+            )
+            expectEqual(
+                resolver.resolve(PlaybackSignals(userPaused: true, idleSeconds: 9999, resting: true)),
+                .paused(.userRequested),
+                "休息期间手动暂停仍生效"
+            )
+            expectEqual(
+                resolver.resolve(PlaybackSignals(sessionLocked: true, idleSeconds: 9999, resting: true)),
+                .paused(.sessionLocked),
+                "休息期间锁屏规则仍生效"
+            )
+        }
+
         test("空闲阈值非正数时视为关闭检测") {
             // 防御配置写错：阈值为 0 不该让程序一启动就暂停
             let r = PlaybackStateResolver(pauseWhenIdle: true, idleThresholdSeconds: 0)

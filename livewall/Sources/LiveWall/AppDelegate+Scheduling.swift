@@ -415,6 +415,7 @@ extension AppDelegate {
         case .playing:
             log("恢复播放")
             engine.resume()
+            tryStartDueRestReminder()
             // 固定态：不排下一次切换，但**要把缺片的槽位补齐** ——
             // 暂停期间新增的槽位（热插拔 / 策略切换）、以及加载失败留下的空槽位，
             // 都靠这一句收口。幂等，已铺满时是 no-op。

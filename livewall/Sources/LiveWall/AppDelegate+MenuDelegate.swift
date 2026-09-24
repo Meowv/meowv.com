@@ -27,6 +27,7 @@ extension AppDelegate: NSMenuDelegate {
     func menuWillOpen(_ menu: NSMenu) {
         guard menu === statusItem?.menu else { return }
         isMenuOpen = true
+        recordRestReminderActivity()
         #if DEBUG
             // 只在 `menuNeedsUpdate` 没被回调时兜底 —— 正常路径上它一定会先于本回调触发。
             if !sampledThisOpen { requestUsageSample() }

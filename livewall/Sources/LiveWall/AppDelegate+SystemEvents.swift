@@ -28,12 +28,18 @@ extension AppDelegate {
         workspace.addObserver(
             forName: NSWorkspace.screensDidSleepNotification, object: nil, queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in self?.governor.setDisplaySleeping(true) }
+            Task { @MainActor in
+                self?.governor.setDisplaySleeping(true)
+                self?.syncRestReminderInterruptionState()
+            }
         }
         workspace.addObserver(
             forName: NSWorkspace.screensDidWakeNotification, object: nil, queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in self?.governor.setDisplaySleeping(false) }
+            Task { @MainActor in
+                self?.governor.setDisplaySleeping(false)
+                self?.syncRestReminderInterruptionState()
+            }
         }
         workspace.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) {
             [weak self] _ in
@@ -48,6 +54,7 @@ extension AppDelegate {
             Task { @MainActor in
                 guard let self else { return }
                 self.governor.setSessionLocked(true)
+                self.syncRestReminderInterruptionState()
                 let lockItem: WallpaperItem?
                 if self.preferences.lockScreenPreview,
                    let primary = self.engine.primaryKey {
@@ -69,6 +76,7 @@ extension AppDelegate {
         ) { [weak self] _ in
             Task { @MainActor in
                 self?.governor.setSessionLocked(false)
+                self?.syncRestReminderInterruptionState()
                 self?.aerialLockScreenManager.screenDidUnlock()
             }
         }
@@ -139,6 +147,8 @@ extension AppDelegate {
         {
             refreshLockScreenPreview(for: item, on: primary)
         }
+
+        refreshRestReminderPlayers()
 
         let added = keys.filter { !previous.contains($0) }
         guard !added.isEmpty else { return }

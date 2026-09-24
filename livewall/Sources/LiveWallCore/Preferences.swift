@@ -67,6 +67,14 @@ public struct Preferences: Codable, Sendable, Equatable {
     /// 选片顺序（随机 / 顺序）。见 `PlaybackOrder`。
     public var playbackOrder: PlaybackOrder
 
+    // 休息提醒
+    /// 是否启用休息提醒。默认关闭，升级后不改变用户现有行为。
+    public var restReminderEnabled: Bool
+    /// 活跃时间累计到此值后触发休息，单位秒。
+    public var restIntervalSeconds: Double
+    /// 休息覆盖层显示时长，单位秒。
+    public var restDurationSeconds: Double
+
     // 显示
     /// `fill` 裁切铺满 / `fit` 留黑边。
     public var gravity: String
@@ -132,6 +140,9 @@ public struct Preferences: Codable, Sendable, Equatable {
         jitterRatio: Double = SchedulePolicy.defaultJitterRatio,
         switchWhenFinished: Bool = false,
         playbackOrder: PlaybackOrder = .shuffle,
+        restReminderEnabled: Bool = false,
+        restIntervalSeconds: Double = RestReminderInterval.defaultSeconds,
+        restDurationSeconds: Double = RestReminderDuration.defaultSeconds,
         gravity: String = "fill",
         levelPreset: LevelPreset = .recommended,
         multiScreenPolicy: MultiScreenPolicy = .mirror,
@@ -153,6 +164,9 @@ public struct Preferences: Codable, Sendable, Equatable {
         self.jitterRatio = jitterRatio
         self.switchWhenFinished = switchWhenFinished
         self.playbackOrder = playbackOrder
+        self.restReminderEnabled = restReminderEnabled
+        self.restIntervalSeconds = restIntervalSeconds
+        self.restDurationSeconds = restDurationSeconds
         self.gravity = gravity
         self.levelPreset = levelPreset
         self.multiScreenPolicy = multiScreenPolicy
@@ -175,6 +189,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         case remoteCatalogURL
         case localFolderPath
         case intervalSeconds, jitterRatio, switchWhenFinished, playbackOrder
+        case restReminderEnabled, restIntervalSeconds, restDurationSeconds
         case gravity, levelPreset
         case multiScreenPolicy, perScreenSources, selectedCategoryID
         case pinnedItem
@@ -205,6 +220,12 @@ public struct Preferences: Codable, Sendable, Equatable {
         switchWhenFinished = try container.decodeIfPresent(Bool.self, forKey: .switchWhenFinished) ?? fallback.switchWhenFinished
         playbackOrder = (try? container.decodeIfPresent(PlaybackOrder.self, forKey: .playbackOrder))
             ?? fallback.playbackOrder
+        restReminderEnabled = (try? container.decodeIfPresent(Bool.self, forKey: .restReminderEnabled))
+            ?? fallback.restReminderEnabled
+        restIntervalSeconds = (try? container.decodeIfPresent(Double.self, forKey: .restIntervalSeconds))
+            ?? fallback.restIntervalSeconds
+        restDurationSeconds = (try? container.decodeIfPresent(Double.self, forKey: .restDurationSeconds))
+            ?? fallback.restDurationSeconds
         gravity = try container.decodeIfPresent(String.self, forKey: .gravity) ?? fallback.gravity
         levelPreset = (try? container.decodeIfPresent(LevelPreset.self, forKey: .levelPreset)) ?? fallback.levelPreset
         multiScreenPolicy = (try? container.decodeIfPresent(MultiScreenPolicy.self, forKey: .multiScreenPolicy))
@@ -316,6 +337,8 @@ public struct Preferences: Codable, Sendable, Equatable {
         // 超范围一律夹紧而不是退回默认：手改配置的人多半只是「填得太短/太长」，
         // 夹到最近的合法值更接近他的本意。非有限值夹不了，`SwitchInterval.clamp` 里退回默认。
         copy.intervalSeconds = SwitchInterval.clamp(copy.intervalSeconds)
+        copy.restIntervalSeconds = RestReminderInterval.clamp(copy.restIntervalSeconds)
+        copy.restDurationSeconds = RestReminderDuration.clamp(copy.restDurationSeconds)
         if !(copy.jitterRatio >= 0) || !copy.jitterRatio.isFinite {
             copy.jitterRatio = SchedulePolicy.defaultJitterRatio
         }

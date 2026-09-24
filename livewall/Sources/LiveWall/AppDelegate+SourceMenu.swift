@@ -336,6 +336,7 @@ extension AppDelegate {
     /// 打开窗口**不暂停桌面播放**（决策 12）：浏览窗口是「挑一张」的工具，
     /// 不该把正在看的壁纸弄停。
     @objc func openWallpaperBrowser() {
+        recordRestReminderActivity()
         // 本地来源下这一项在菜单里已经置灰（`OnlineOnlyEntry.wallpaperBrowser`）。
         // 这里的守卫是给「别的途径触发」兜底 —— 窗口列的是线上分类的条目，
         // 本地来源下打开它只会显示一个与当前画面无关的目录。

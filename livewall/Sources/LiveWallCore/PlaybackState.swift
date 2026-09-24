@@ -34,6 +34,8 @@ public struct PlaybackSignals: Equatable, Sendable {
     public var lowPowerMode: Bool
     /// 使用电池供电（未接电源）。
     public var onBattery: Bool
+    /// 休息提醒正在显示。休息期间不因无操作暂停壁纸，但保留其它省电规则。
+    public var resting: Bool
 
     public init(
         userPaused: Bool = false,
@@ -43,7 +45,8 @@ public struct PlaybackSignals: Equatable, Sendable {
         thermalPressure: ThermalPressure = .nominal,
         idleSeconds: Double = 0,
         lowPowerMode: Bool = false,
-        onBattery: Bool = false
+        onBattery: Bool = false,
+        resting: Bool = false
     ) {
         self.userPaused = userPaused
         self.displaySleeping = displaySleeping
@@ -53,6 +56,7 @@ public struct PlaybackSignals: Equatable, Sendable {
         self.idleSeconds = idleSeconds
         self.lowPowerMode = lowPowerMode
         self.onBattery = onBattery
+        self.resting = resting
     }
 }
 
@@ -178,7 +182,7 @@ public struct PlaybackStateResolver: Equatable, Sendable {
             return .paused(.thermalPressure)
         }
         // 阈值非正数视为关闭空闲检测，避免配置写错导致刚启动就暂停
-        if pauseWhenIdle, idleThresholdSeconds > 0, signals.idleSeconds >= idleThresholdSeconds {
+        if !signals.resting, pauseWhenIdle, idleThresholdSeconds > 0, signals.idleSeconds >= idleThresholdSeconds {
             return .paused(.idle)
         }
         if pauseOnLowPowerMode, signals.lowPowerMode {
@@ -206,4 +210,3 @@ public enum IdleThreshold {
         DurationText.concise(seconds, fallback: "关闭")
     }
 }
-

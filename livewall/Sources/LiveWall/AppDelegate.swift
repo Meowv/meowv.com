@@ -99,6 +99,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var lastLayerVerdict: LayerVerdict?
     let engine = PlaybackEngine()
     let network = NetworkMonitor()
+    /// 全屏休息提醒层与倒计时，独立于桌面壁纸窗口和切换定时器。
+    let restReminderCoordinator = RestReminderCoordinator()
+    /// 累计「活跃使用时间」的纯逻辑状态。
+    var restReminderClock = RestReminderClock()
+    var restReminderTimer: Timer?
+    var restReminderLastTickUptime = ProcessInfo.processInfo.systemUptime
+    var restReminderActivityUntilUptime = ProcessInfo.processInfo.systemUptime
     // 进程占用的整条链**只在 debug 构建里存在**（与菜单里的「打印窗口层级表」同一约定）：
     // release 下状态区不显示那一行，采样器与相关状态属性也就不必编译进来。
     #if DEBUG
@@ -393,6 +400,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         engine.onFailure = { [weak self] key, error in
             self?.handlePlaybackFailure(key, error)
         }
+        engine.onPlaybackChange = { [weak self] in
+            self?.refreshRestReminderPlayers()
+        }
+        restReminderCoordinator.onEnd = { [weak self] reason in
+            self?.completeRestReminder(reason: reason)
+        }
 
         // 锁屏预览的日志与提示出口。提示只在真失败时给一次（见 `LockScreenPreviewer`），
         // 免得每换一张片就刷一条警告。
@@ -434,6 +447,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.applyPlaybackState(state, signals: signals)
         }
         governor.start()
+        startRestReminderClock()
 
         // 全局热键。注册失败必须显式告知 —— 组合被别的程序占用时静默失效，
         // 用户只会以为「这个功能坏了」，而原因（换个组合就行）其实很好解决。
@@ -543,6 +557,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         #if DEBUG
             processMonitor.cancel()
         #endif
+        restReminderTimer?.invalidate()
+        restReminderTimer = nil
+        restReminderCoordinator.stopImmediately()
+        restReminderClock.reset()
         scheduleTimer?.invalidate()
         for task in loadTasksBySlot.values { task.cancel() }
         loadTasksBySlot.removeAll()

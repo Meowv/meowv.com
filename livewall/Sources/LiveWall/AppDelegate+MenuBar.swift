@@ -170,6 +170,7 @@ extension AppDelegate {
         // 开机自启与壁纸显示位置装完基本不动。
         menu.addItem(buildIntervalMenu())
         menu.addItem(buildPowerMenu())
+        menu.addItem(buildRestReminderMenu())
         // 锁屏预览紧跟省电设置：同属「画面行为」的开关，且都是开一次就不常动。
         let lockPreview = NSMenuItem(
             title: "锁屏预览（\(preferences.lockScreenPreview ? "开" : "关")）",
@@ -328,6 +329,14 @@ extension AppDelegate {
                 title: "打印窗口层级表", action: #selector(dumpWindows), keyEquivalent: "")
             dump.target = self
             menu.addItem(dump)
+
+            let testRest = NSMenuItem(
+                title: "立即开始休息",
+                action: #selector(debugStartRestReminder),
+                keyEquivalent: ""
+            )
+            testRest.target = self
+            menu.addItem(testRest)
         #endif
 
         // 更新段**不在这里**：它属于「关于」子菜单，紧贴「当前版本」那一行

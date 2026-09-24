@@ -15,6 +15,7 @@ macOS 视频动态壁纸工具。**个人自用 / 小范围共享**定位，不�
 - [内容清单与签名](#内容清单与签名)
 - [版本检查与更新](#版本检查与更新)
 - [省电策略](#省电策略)
+- [休息提醒](#休息提醒)
 - [锁屏预览](#锁屏预览)
 - [下载当前壁纸](#下载当前壁纸)
 - [动态壁纸浏览窗口](#动态壁纸浏览窗口)
@@ -48,8 +49,15 @@ LiveWall 在桌面循环播放视频壁纸，支持线上清单或本地文件�
 - **壁纸浏览**：按分类查看条目，双击预览视频，也可将条目设为桌面壁纸。详见[动态壁纸浏览窗口](#动态壁纸浏览窗口)。
 - **下载当前壁纸**：保存视频和静态预览图到 `~/Downloads/livewall/`。详见[下载当前壁纸](#下载当前壁纸)。
 - **多屏播放**：支持全部屏幕同片、仅主屏和每屏独立；每屏独立模式会恢复各屏上次播放的条目。
+- **休息提醒**：按活跃使用时间提醒休息；休息层覆盖所有屏幕并复用各屏当前视频，倒计时结束或任一屏点击按钮后恢复桌面。
 
-当前限制：热键组合与下载目录不可配置；动态锁屏使用非公开 Aerial 资源格式，会影响被替换的 Apple 槽位及系统屏保，系统更新或重新下载 Aerial 可能覆盖它；`kill -9` 无法执行正常退出清理。浏览窗口交互尚未人工验收，离线时只显示已加载的分类内容。详见[锁屏预览](#锁屏预览)、[动态壁纸浏览窗口](#动态壁纸浏览窗口)和[`AGENTS.md`](./AGENTS.md)。
+当前限制：热键组合与下载目录不可配置；动态锁屏使用非公开 Aerial 资源格式，会影响被替换的 Apple 槽位及系统屏保，系统更新或重新下载 Aerial 可能覆盖它；`kill -9` 无法执行正常退出清理。浏览窗口交互尚待人工验收，离线时只显示已加载的分类内容。详见[休息提醒](#休息提醒)、[锁屏预览](#锁屏预览)、[动态壁纸浏览窗口](#动态壁纸浏览窗口)和[`AGENTS.md`](./AGENTS.md)。
+
+## 休息提醒
+
+菜单栏「休息提醒」子菜单可以独立启停提醒、设置间隔与休息时长。首次升级默认关闭；间隔预设为 30 分钟、1 小时、2 小时、4 小时，休息时长预设为 1、2、3、5、10 分钟。配置保存在 `config.json`；活跃时间不落盘，重启 App 后从新会话重新累计。
+
+App 启动后开始累计。主菜单和壁纸浏览窗口的操作会被视为活跃操作；系统连续 5 分钟无输入、锁屏或显示器休眠时暂停累计。休息期间不累计，任意一屏点击底部「结束休息」按钮或倒计时归零都会结束所有屏幕的休息层。休息层跟随各屏当前播放槽位，壁纸仍按原调度切换；锁屏或休眠会隐藏休息层并冻结剩余倒计时，恢复后继续。
 
 ## 目录结构
 
@@ -97,6 +105,7 @@ livewall/
 │  │  ├─ DownloadNaming.swift   手动下载的文件名规则（清洗 / 截断 / 扩展名推导）
 │  │  ├─ ThumbnailURL.swift     由 coverUrl 拼缩略图地址（OSS 处理参数 + 「处理版 → 原图」候选链）
 │  │  ├─ ThumbnailRequestTracker.swift 缩略图请求的去重、限并发与失败记录（失败不自动重试）
+│  │  ├─ RestReminderPolicy.swift 休息提醒预设、范围、文案与活跃时间计时状态机
 │  │  ├─ AboutMenu.swift        「关于」子菜单的内容：作者、博客、赞助渠道（文案只在这里维护一份）
 │  │  ├─ ProcessUsage.swift     进程自身 CPU / 内存的采样值、占用率与菜单文案（纯逻辑）
 │  │  ├─ Preferences.swift      配置模型与读写（逐字段容错解码）
@@ -125,6 +134,7 @@ livewall/
 │     ├─ AppDelegate+Update.swift         版本检查、状态机与下载引导
 │     ├─ AppDelegate+MenuOptions.swift    展开期惰性采样 + 热键 + 选项子菜单
 │     ├─ AppDelegate+MenuActions.swift    播放 / 下载 / 间隔 / 暂停等菜单动作
+│     ├─ AppDelegate+RestReminder.swift   休息提醒累计、窗口调度与菜单配置
 │     ├─ AppDelegate+Pinning.swift        「固定为桌面壁纸」
 │     ├─ AppDelegate+SourceMenu.swift     来源与分类子菜单 + 相关动作
 │     ├─ AppDelegate+Logging.swift        自身完整性自检 + 日志（含 2 MB 轮转）
@@ -136,6 +146,7 @@ livewall/
 │     ├─ HotKeyManager.swift    全局热键（Carbon，零权限）+ 占用检测
 │     ├─ LaunchAtLogin.swift    开机自启（SMAppService）
 │     ├─ PlaybackEngine.swift   多槽位 AVQueuePlayer + AVPlayerLooper，并提供「取当前帧」
+│     ├─ RestReminderWindow.swift 每屏全屏休息窗口、播放器图层、结束按钮与倒计时
 │     ├─ WallpaperBrowserWindowController.swift 浏览窗口的持有者（单窗口复用、.accessory 下激活）
 │     ├─ WallpaperBrowserViewController.swift 浏览窗口内容：分类栏 + 条目网格 + 双击预览浮层
 │     ├─ BrowserItemView.swift  网格里的卡片（缩略图 + 一行信息 + 「当前」徽标）
