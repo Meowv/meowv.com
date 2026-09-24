@@ -146,7 +146,7 @@ macOS 视频动态壁纸工具。定位是**个人自用 / 小范围共享**，�
 
 ### 锁屏预览与下载
 
-- **锁屏预览优先使用系统真实动态播放**。公开 `NSWorkspace.setDesktopImageURL` 只设置图片；macOS 27 动态路径复用用户已下载的 Apple Aerial 槽位，并把 `Index.plist` 写为 `Type=linked` 动态选择。下载与转换只在锁屏事件后执行；普通桌面轮换只更新静态回退图。用户已授权占用 Apple 资源，因此必须备份原 MOV 与 `Index.plist`，关闭「锁屏预览」时恢复；失败或版本未验证时回退静态图。锁屏事件后才开始处理，完成前可能短暂显示静态图。转换与校验不得阻塞桌面轮换或主线程。此方式会同时替换该槽位的 Apple 屏保视频，且系统更新可能重置内容。
+- **锁屏预览优先使用系统真实动态播放**。公开 `NSWorkspace.setDesktopImageURL` 只设置图片；macOS 27 动态路径复用用户已下载的 Apple Aerial 槽位，并把 `Index.plist` 写为 `Type=linked` 动态选择。下载与转换只在锁屏事件后执行；普通桌面轮换只更新静态回退图。**不再创建专用本地备份目录**：关闭「锁屏预览」时取消后续准备，但保留已经安装的 LiveWall 动态视频与 linked 选择，重新开启时复用现有槽位。失败或版本未验证时回退静态图。锁屏事件后才开始处理，完成前可能短暂显示静态图。转换与校验不得阻塞桌面轮换或主线程。此方式会同时替换该槽位的 Apple 屏保视频，且系统更新可能重置内容。
 - **静态图地址只能来自清单的 `coverUrl`，不许用 URL 规律推导**。视频与静态图可能使用不同资源 id、扩展名或日期段；另：`coverUrl` 的 `accessible` **不是真实探测结果**（`pipeline` 从不做 HEAD，走默认值 1），所以客户端**必须有抓帧兜底**，且抓帧也失败时保留系统原墙纸、不要清空。
 - **抓帧使用 `AVAssetImageGenerator` 异步生成，禁止在主 actor 用 `RunLoop` 自旋等待 `AVPlayerItemVideoOutput`**。播放开始后异步缓存一帧；锁屏预览需要时优先用缓存，退出路径只复用已缓存文件，不在主线程现抓帧。抓帧复用同一 asset，**不产生额外流量**。历史上的 `AVPlayerItemVideoOutput` 探针只用于证明「不能挂 template item」，不再是现行实现。
 - **退出 = 固化「当前正在播」已经缓存好的静态图**，不是恢复原墙纸。`shutdown()` → `freezeCurrent` 只复用 `lastApplied`；还没写好就保持现状不动，绝不为了补图在主线程重编码。随后给 0.3 s 生效窗口并 `reapplyCached`。真原墙纸只在首次运行时拿得到，因此持久化到 `original-wallpapers.json`，并用 `LockScreenPreviewPolicy.isOwnCacheFile` 排除自家缓存；`restoreUserWallpaper` 只服务「关闭锁屏预览开关」。

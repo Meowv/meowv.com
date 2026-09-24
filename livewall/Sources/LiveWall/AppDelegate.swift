@@ -408,9 +408,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.notice = isWarning ? .warning(message) : .info(message)
             self.refreshStatusItem()
         }
-        if !preferences.lockScreenPreview {
-            aerialLockScreenManager.restoreIfDisabled()
-        }
         downloader.log = { [weak self] message in self?.log(message) }
         updateChecker.onResult = { [weak self] decision, warnings in
             self?.applyUpdateResult(decision, warnings: warnings)

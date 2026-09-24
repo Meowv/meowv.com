@@ -1,10 +1,9 @@
 import AppKit
-import CryptoKit
 import Foundation
 import LiveWallCore
 
 /// 把当前视频安装到 Aerial 槽位，并配置为系统 linked 动态墙纸。
-/// 这是用户级的非公开系统集成；Apple 原视频与原 Index.plist 都会备份。
+/// 这是用户级的非公开系统集成。不保存原视频备份，关闭时保留已经安装的动态视频。
 @MainActor
 final class AerialLockScreenManager {
 
@@ -21,7 +20,6 @@ final class AerialLockScreenManager {
         case missingManifestAsset(String)
         case missingIndex
         case invalidIndex
-        case missingBackup
         case temporalMetadataMissing
 
         var errorDescription: String? {
@@ -32,17 +30,14 @@ final class AerialLockScreenManager {
             case .missingManifestAsset(let id): return "Aerial 槽位 \(id) 不在系统清单中"
             case .missingIndex: return "找不到 macOS 墙纸选择记录"
             case .invalidIndex: return "无法读取 macOS 墙纸选择记录"
-            case .missingBackup: return "Apple Aerial 原视频备份不存在，已停止恢复操作"
             case .temporalMetadataMissing: return "编码结果缺少 macOS 27 锁屏需要的 HEVC temporal 元数据"
             }
         }
     }
 
-    private struct State: Codable {
+    private struct State {
         var assetID: String
         var sourceItemID: Int?
-        var installedDigest: String?
-        var pendingDigest: String?
     }
 
     private struct IdleSelection: Equatable {
@@ -53,7 +48,6 @@ final class AerialLockScreenManager {
     private let fileManager = FileManager.default
     private let root = FileManager.default.homeDirectoryForCurrentUser
         .appendingPathComponent("Library/Application Support/com.apple.wallpaper", isDirectory: true)
-    private let appSupport = LiveWallPaths.applicationSupportDirectory
     private var aerialDirectory: URL { root.appendingPathComponent("aerials", isDirectory: true) }
     private var videosDirectory: URL { aerialDirectory.appendingPathComponent("videos", isDirectory: true) }
     #if DEBUG
@@ -61,29 +55,25 @@ final class AerialLockScreenManager {
     #endif
     private var manifestURL: URL { aerialDirectory.appendingPathComponent("manifest/entries.json") }
     private var indexURL: URL { root.appendingPathComponent("Store/Index.plist") }
-    private var backupDirectory: URL { appSupport.appendingPathComponent("aerial-lock-screen", isDirectory: true) }
-    private var stateURL: URL { backupDirectory.appendingPathComponent("state.json") }
-    private var indexBackupURL: URL { backupDirectory.appendingPathComponent("Index.original.plist") }
 
     var log: ((String) -> Void)?
     var onNotice: ((String, Bool) -> Void)?
 
-    private var isLocked = false
-    private var deferredReload = false
     private var operationGeneration = 0
     private var stateCreationTask: Task<State, Error>?
+    /// 动态预览只在当前进程内维护状态，不再写入专用备份目录。
+    private var state: State?
     private var lockUpdateTask: Task<Void, Never>?
     private var lockUpdateItemID: Int?
     private var lockUpdateGeneration = 0
 
     var isActive: Bool {
-        guard let state = loadState(),
+        guard let state,
               let index = loadIndex() else { return false }
         return linkedAssetIDs(in: index).contains(state.assetID)
     }
 
     func screenDidLock(for item: WallpaperItem?) {
-        isLocked = true
         if let item {
             if lockUpdateItemID != item.id || lockUpdateTask == nil {
                 lockUpdateTask?.cancel()
@@ -109,27 +99,14 @@ final class AerialLockScreenManager {
     }
 
     func screenDidUnlock() {
-        isLocked = false
         // 用户已回到桌面时丢弃在途准备，避免解锁后再下载、编码或改写系统墙纸。
         operationGeneration += 1
         lockUpdateTask?.cancel()
         lockUpdateGeneration += 1
         lockUpdateTask = nil
         lockUpdateItemID = nil
-        if deferredReload {
-            deferredReload = false
-            restartWallpaperRenderer()
-        }
         // macOS 27 的 Aerial renderer 偶发在解锁过渡后卡住；解锁后仅重启 renderer。
         if isActive { terminateProcess(named: "WallpaperAerialsExtension") }
-    }
-
-    func restoreIfDisabled() {
-        guard loadState() != nil else { return }
-        Task { @MainActor in
-            do { try await restore(reason: "启动时动态锁屏已关闭") }
-            catch { report(error, context: "启动恢复") }
-        }
     }
 
     /// 准备动态资源。失败时不改动当前选择，调用方继续走已有静态锁屏图回退。
@@ -195,21 +172,17 @@ final class AerialLockScreenManager {
             log?(String(format: "动态锁屏：视频编码完成（%.1f 秒）", ProcessInfo.processInfo.systemUptime - encodingStartedAt))
             try Task.checkCancellation()
             guard operation == operationGeneration else { return .superseded }
-            let (hasGroups, digest) = try await Task.detached(priority: .utility) {
-                (Self.hasTemporalGroups(in: temporaryURL), try Self.sha256(of: temporaryURL))
+            let hasGroups = await Task.detached(priority: .utility) {
+                Self.hasTemporalGroups(in: temporaryURL)
             }.value
             // 摘要扫描期间仍可能解锁或开始更新另一条；后台任务不继承调用方取消，
             // 因此恢复主 actor 后必须重新校验，不能让过期结果改写系统 Aerial 资源。
             try Task.checkCancellation()
             guard operation == operationGeneration else { return .superseded }
             guard hasGroups else { throw ManagerError.temporalMetadataMissing }
-            state.pendingDigest = digest
-            try saveState(state)
             try replaceFile(at: slotURL, with: temporaryURL)
             state.sourceItemID = item.id
-            state.installedDigest = digest
-            state.pendingDigest = nil
-            try saveState(state)
+            saveState(state)
 
             try updateLinkedSelection(assetID: state.assetID)
             // 锁屏事件触发的准备会在画面已出现后完成；立即重载 renderer，
@@ -225,54 +198,23 @@ final class AerialLockScreenManager {
         }
     }
 
-    /// 只在 linked 仍选中 LiveWall 使用的 Aerial 时恢复 Index；Apple 原视频始终尽力恢复。
-    func restore(reason: String = "用户关闭锁屏预览", restoreOriginalSelection: Bool? = nil) async throws {
+    /// 停止后续动态准备，但保留当前已经安装的 LiveWall 视频与 linked 选择。
+    /// 这样关闭后无需重新下载 Apple 原片，重新开启时也能复用当前槽位。
+    func stopPreparation(reason: String = "用户关闭锁屏预览") {
         operationGeneration += 1
+        stateCreationTask?.cancel()
+        stateCreationTask = nil
         lockUpdateTask?.cancel()
         lockUpdateGeneration += 1
         lockUpdateTask = nil
         lockUpdateItemID = nil
-        guard var state = loadState() else { return }
-        let slotURL = videosDirectory.appendingPathComponent("\(state.assetID).mov")
-        let originalURL = backupDirectory.appendingPathComponent("\(state.assetID).original.mov")
-
-        if fileManager.fileExists(atPath: originalURL.path), fileManager.fileExists(atPath: slotURL.path) {
-            let (currentDigest, originalDigest) = try await Task.detached(priority: .utility) {
-                (try Self.sha256(of: slotURL), try Self.sha256(of: originalURL))
-            }.value
-            let ownsCurrentVideo = currentDigest == state.installedDigest
-                || currentDigest == state.pendingDigest
-            if ownsCurrentVideo, currentDigest != originalDigest {
-                let temporaryURL = videosDirectory.appendingPathComponent(".livewall-restore-\(UUID().uuidString).mov")
-                defer { try? fileManager.removeItem(at: temporaryURL) }
-                try await Task.detached(priority: .utility) {
-                    try FileManager.default.copyItem(at: originalURL, to: temporaryURL)
-                }.value
-                try replaceFile(at: slotURL, with: temporaryURL)
-                log?("动态锁屏：已恢复 Apple Aerial 原视频 \(state.assetID)")
-            }
-        } else if state.installedDigest != nil || state.pendingDigest != nil {
-            throw ManagerError.missingBackup
-        }
-
-        let shouldRestoreSelection = restoreOriginalSelection ?? isActive
-        if shouldRestoreSelection, linkedAssetIDs(in: loadIndex() ?? [:]).contains(state.assetID),
-           fileManager.fileExists(atPath: indexBackupURL.path),
-           let originalIndex = loadIndex(at: indexBackupURL) {
-            try writeIndex(originalIndex)
-        }
-        state.sourceItemID = nil
-        state.installedDigest = nil
-        state.pendingDigest = nil
-        try saveState(state)
-        if isLocked { deferredReload = true } else { restartWallpaperRenderer() }
-        log?("动态锁屏：\(reason)；恢复 Apple 槽位与原锁屏选择")
+        log?("动态锁屏：\(reason)；保留当前已安装的视频与 Aerial 选择")
     }
 
     // MARK: - 资源与状态
 
     private func loadOrCreateState() async throws -> State {
-        if let state = loadState() { return state }
+        if let state { return state }
         if let stateCreationTask { return try await stateCreationTask.value }
         let task = Task { @MainActor in try await createInitialState() }
         stateCreationTask = task
@@ -281,7 +223,7 @@ final class AerialLockScreenManager {
     }
 
     private func createInitialState() async throws -> State {
-        if let state = loadState() { return state }
+        if let state { return state }
         guard fileManager.fileExists(atPath: indexURL.path) else { throw ManagerError.missingIndex }
         guard let index = loadIndex() else { throw ManagerError.invalidIndex }
         guard fileManager.fileExists(atPath: manifestURL.path) else { throw ManagerError.malformedManifest }
@@ -292,7 +234,7 @@ final class AerialLockScreenManager {
 
         let selectedAerialID = idleSelections(in: index).first {
             $0.provider == "com.apple.wallpaper.choice.aerials"
-        }?.assetID
+        }?.assetID ?? linkedAssetIDs(in: index).sorted().first
         let availableURLs = try fileManager.contentsOfDirectory(
             at: videosDirectory,
             includingPropertiesForKeys: [.isRegularFileKey],
@@ -310,39 +252,17 @@ final class AerialLockScreenManager {
             throw ManagerError.missingManifestAsset(assetID)
         }
 
-        try PrivateFileAccess.secureDirectory(at: backupDirectory)
-        let originalVideo = backupDirectory.appendingPathComponent("\(assetID).original.mov")
-        if !fileManager.fileExists(atPath: originalVideo.path) {
-            try await Task.detached(priority: .utility) {
-                try FileManager.default.copyItem(at: slot, to: originalVideo)
-            }.value
-            try PrivateFileAccess.secureFile(at: originalVideo)
-            log?("动态锁屏：已备份 Apple Aerial 原视频（\(slot.lastPathComponent)）")
-        }
-        if !fileManager.fileExists(atPath: indexBackupURL.path) {
-            try fileManager.copyItem(at: indexURL, to: indexBackupURL)
-            try PrivateFileAccess.secureFile(at: indexBackupURL)
-            log?("动态锁屏：已备份系统 Index.plist")
-        }
-        let state = State(assetID: assetID, sourceItemID: nil, installedDigest: nil, pendingDigest: nil)
-        try saveState(state)
+        let state = State(assetID: assetID, sourceItemID: nil)
+        saveState(state)
         return state
     }
 
-    private func loadState() -> State? {
-        guard let data = try? Data(contentsOf: stateURL) else { return nil }
-        return try? JSONDecoder().decode(State.self, from: data)
+    private func saveState(_ state: State) {
+        self.state = state
     }
 
-    private func saveState(_ state: State) throws {
-        try PrivateFileAccess.secureDirectory(at: backupDirectory)
-        let data = try JSONEncoder().encode(state)
-        try data.write(to: stateURL, options: .atomic)
-        try PrivateFileAccess.secureFile(at: stateURL)
-    }
-
-    private func loadIndex(at url: URL? = nil) -> [String: Any]? {
-        guard let data = try? Data(contentsOf: url ?? indexURL),
+    private func loadIndex() -> [String: Any]? {
+        guard let data = try? Data(contentsOf: indexURL),
               let plist = try? PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any]
         else { return nil }
         return plist
@@ -357,11 +277,6 @@ final class AerialLockScreenManager {
 
     private func updateLinkedSelection(assetID: String) throws {
         guard var index = loadIndex() else { throw ManagerError.invalidIndex }
-        if !fileManager.fileExists(atPath: indexBackupURL.path) {
-            try PrivateFileAccess.secureDirectory(at: backupDirectory)
-            try fileManager.copyItem(at: indexURL, to: indexBackupURL)
-            try PrivateFileAccess.secureFile(at: indexBackupURL)
-        }
         let config = try PropertyListSerialization.data(
             fromPropertyList: ["assetID": assetID], format: .binary, options: 0
         )
@@ -446,16 +361,6 @@ final class AerialLockScreenManager {
 
     private func replaceFile(at target: URL, with staged: URL) throws {
         _ = try fileManager.replaceItemAt(target, withItemAt: staged)
-    }
-
-    nonisolated private static func sha256(of url: URL) throws -> String {
-        let handle = try FileHandle(forReadingFrom: url)
-        defer { try? handle.close() }
-        var hasher = SHA256()
-        while let chunk = try handle.read(upToCount: 1024 * 1024), !chunk.isEmpty {
-            hasher.update(data: chunk)
-        }
-        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
     }
 
     /// 流式查找 MOV 中的 HEVC temporal sample group 标记，避免把数百 MB 视频读入内存。

@@ -367,14 +367,13 @@ cd livewall
 | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | `config.json` | 配置。不存在时用默认值；坏了也不影响启动（回退默认） |
 | `original-wallpapers.json` | 用户原墙纸恢复记录 |
-| `aerial-lock-screen/` | Aerial 恢复状态与原始资源备份 |
 | `instance-*.lock` | 单实例锁 |
 | `DataCache/catalog.remote-cache.index.json` | 索引副本，断网时兜底 |
 | `DataCache/catalog.remote-cache.index.json.sig` | 索引的**签名副本**。必须与索引同存同弃 |
 | `DataCache/catalog.remote-cache.slice.json` | **一份**当前筛选切片副本，断网时兜底 |
 | `DataCache/cover-0.jpg` / `cover-1.jpg` | 锁屏预览静态图缓存，两个槽位交替 |
 
-启动时会删除旧位置中的清单与封面缓存，不迁移历史缓存；配置、原墙纸记录和 Aerial 恢复备份会保留。Debug 菜单的「打开数据缓存目录」只打开 `DataCache/`。其中 JSON 是公开壁纸目录的本地副本，目前未加密；目录权限可阻止其他普通账户直接读取，但不能防止当前登录用户或以该用户身份运行的程序访问。设备离线丢失时应使用 macOS FileVault 保护整盘数据。
+启动时会删除旧位置中的清单与封面缓存，不迁移历史缓存；配置与原墙纸记录会保留。动态锁屏不在这里保存 Apple 原视频或 `Index.plist` 备份。Debug 菜单的「打开数据缓存目录」只打开 `DataCache/`。其中 JSON 是公开壁纸目录的本地副本，目前未加密；目录权限可阻止其他普通账户直接读取，但不能防止当前登录用户或以该用户身份运行的程序访问。设备离线丢失时应使用 macOS FileVault 保护整盘数据。
 
 `config.json` 的字段（全部可省略；**缺字段用默认值，不会因为少一个键而整体解码失败**）：
 
@@ -1335,9 +1334,9 @@ PROBE[静置后] 内存 14 MB · CPU 0.0%（近 3 秒）    ← 基线已推进�
 锁屏态：覆盖窗口被安全罩挡住 → 露出的正是这张静态图
 ```
 
-macOS 没有公开 API 可把第三方视频设为锁屏动态墙纸。LiveWall 在已验证的 macOS 27 上复用 Aerial 播放引擎：锁屏事件触发当前视频的下载与转换，生成与源视频等长、带 HEVC temporal scalability（`tscl` / `tsas`）样本组的 MOV，再备份并替换一个 Apple Aerial 视频槽位，将 `Index.plist` 设为 `Type=linked` 动态选择。普通桌面轮换不会触发下载或转码；动态素材准备完成前显示静态回退图。其他 macOS 版本只使用静态回退。
+macOS 没有公开 API 可把第三方视频设为锁屏动态墙纸。LiveWall 在已验证的 macOS 27 上复用 Aerial 播放引擎：锁屏事件触发当前视频的下载与转换，生成与源视频等长、带 HEVC temporal scalability（`tscl` / `tsas`）样本组的 MOV，直接替换一个 Apple Aerial 视频槽位，将 `Index.plist` 设为 `Type=linked` 动态选择。普通桌面轮换不会触发下载或转码；动态素材准备完成前显示静态回退图。其他 macOS 版本只使用静态回退。
 
-当前编码把高于 30 fps 的源视频降到 30 fps，目标约 0.8 bit/pixel（1080p 约 1.66 Mbps；10 秒源片约 2 MiB，属编码参数估算）。锁屏端实测播完会自动重播，因此不再延长时长：编码耗时与产物体积都只跟源片长度成正比。该实现属于非公开系统集成，会影响被替换的 Aerial 槽位及 Apple 屏保；系统更新或重新下载 Aerial 可能覆盖改动。关闭「锁屏预览」时，LiveWall 尝试恢复原视频与 Index。备份位于 `~/Library/Application Support/com.meowv.livewall/aerial-lock-screen/`。
+当前编码把高于 30 fps 的源视频降到 30 fps，目标约 0.8 bit/pixel（1080p 约 1.66 Mbps；10 秒源片约 2 MiB，属编码参数估算）。锁屏端实测播完会自动重播，因此不再延长时长：编码耗时与产物体积都只跟源片长度成正比。该实现属于非公开系统集成，会影响被替换的 Aerial 槽位及 Apple 屏保；系统更新或重新下载 Aerial 可能覆盖改动。关闭「锁屏预览」时只停止后续准备并保留已经安装的动态视频，重新开启时复用该槽位，不再下载或保存 Apple 原片备份。
 
 ### 来源与回退链
 
@@ -1977,7 +1976,7 @@ P10 时这里的做法是「先 `makeKeyAndOrderFront` 再 `NSApp.activate`」�
 
 **P6 的实际能力**：`perScreenSources` 从「只写不读」补成真的读回 —— 每屏独立模式下，本次启动第一次成功加载清单时各屏接着播上次那一条（`ScreenSourceRestore.plan` 过滤掉已不在当前分类切片里的记录，查不到就退回正常取片）。顺带给 `CandidatePool` 加了 `restore(id:)`：直接点名取回一条，并把它从待取队列里拿掉，避免同一轮里再被取一次。详见[各屏的源怎么保存与恢复](#各屏的源怎么保存与恢复)。
 
-**P8（首版静态锁屏预览）的实际能力**：把当前壁纸的静态图同步成系统墙纸，并在退出时固化已缓存图。之后新增的 macOS 27 Aerial 动态路径与当前回退行为见[锁屏预览](#锁屏预览)。配套改动包括清单新增 `coverUrl`、抓帧兜底和**下载当前壁纸**（视频 + 静态预览图 → `~/Downloads/livewall/`）。
+**P8（首版静态锁屏预览）的实际能力**：把当前壁纸的静态图同步成系统墙纸，并在退出时固化已缓存图。之后新增的 macOS 27 Aerial 动态路径与当前回退行为见[锁屏预览](#锁屏预览)；动态路径不保存 Apple 原片备份，关闭后复用已经安装的 LiveWall 视频。配套改动包括清单新增 `coverUrl`、抓帧兜底和**下载当前壁纸**（视频 + 静态预览图 → `~/Downloads/livewall/`）。
 
 **P8 当时记录的待验收项（历史快照）**：
 
