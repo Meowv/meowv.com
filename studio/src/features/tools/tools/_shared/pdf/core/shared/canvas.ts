@@ -1,3 +1,5 @@
+import { readImageDimensions } from '@/features/tools/tools/_shared/image/core/image/dimensions';
+
 export interface CanvasTextAsset {
   bytes: Uint8Array;
   width: number;
@@ -9,6 +11,20 @@ export interface DecodedImage {
   width: number;
   height: number;
   close: () => void;
+}
+
+export const MAX_WATERMARK_IMAGE_BYTES = 50 * 1024 * 1024;
+
+export async function validateWatermarkImage(file: File): Promise<void> {
+  if (file.size === 0) {
+    throw new RangeError('WATERMARK_IMAGE_EMPTY');
+  }
+  if (file.size > MAX_WATERMARK_IMAGE_BYTES) {
+    throw new RangeError('WATERMARK_IMAGE_TOO_LARGE');
+  }
+
+  // readImageDimensions 在解码前读取文件头，并复用统一的最长边和像素上限。
+  await readImageDimensions(file);
 }
 
 export async function decodeImageFile(file: File): Promise<DecodedImage> {
@@ -119,6 +135,7 @@ export async function normalizeImageForPdf(file: File): Promise<{
   width: number;
   height: number;
 }> {
+  await validateWatermarkImage(file);
   const decoded = await decodeImageFile(file);
   try {
     if (file.type === 'image/png' || file.type === 'image/jpeg') {

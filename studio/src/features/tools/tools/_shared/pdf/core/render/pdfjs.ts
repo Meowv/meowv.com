@@ -91,34 +91,39 @@ export async function renderPdfPage(
   options: { maxWidth?: number; scale?: number; rotation?: number } = {},
 ): Promise<PDFPageProxy> {
   const page = await document.getPage(pageNumber);
-  const baseViewport = page.getViewport({
-    scale: 1,
-    rotation: (page.rotate + (options.rotation ?? 0)) % 360,
-  });
-  const requestedScale = options.scale ?? 1;
-  const widthScale = options.maxWidth ? options.maxWidth / baseViewport.width : requestedScale;
-  const scale = Math.min(requestedScale, widthScale);
-  const deviceScale = Math.min(window.devicePixelRatio || 1, 2);
-  const viewport = page.getViewport({
-    scale: scale * deviceScale,
-    rotation: (page.rotate + (options.rotation ?? 0)) % 360,
-  });
+  try {
+    const baseViewport = page.getViewport({
+      scale: 1,
+      rotation: (page.rotate + (options.rotation ?? 0)) % 360,
+    });
+    const requestedScale = options.scale ?? 1;
+    const widthScale = options.maxWidth ? options.maxWidth / baseViewport.width : requestedScale;
+    const scale = Math.min(requestedScale, widthScale);
+    const deviceScale = Math.min(window.devicePixelRatio || 1, 2);
+    const viewport = page.getViewport({
+      scale: scale * deviceScale,
+      rotation: (page.rotate + (options.rotation ?? 0)) % 360,
+    });
 
-  canvas.width = Math.max(1, Math.floor(viewport.width));
-  canvas.height = Math.max(1, Math.floor(viewport.height));
-  canvas.style.width = `${Math.round(viewport.width / deviceScale)}px`;
-  canvas.style.height = `${Math.round(viewport.height / deviceScale)}px`;
-  const context = canvas.getContext('2d', { alpha: false });
-  if (!context) {
-    throw new PdfProcessingError('RENDER_FAILED', '浏览器无法创建页面画布。');
+    canvas.width = Math.max(1, Math.floor(viewport.width));
+    canvas.height = Math.max(1, Math.floor(viewport.height));
+    canvas.style.width = `${Math.round(viewport.width / deviceScale)}px`;
+    canvas.style.height = `${Math.round(viewport.height / deviceScale)}px`;
+    const context = canvas.getContext('2d', { alpha: false });
+    if (!context) {
+      throw new PdfProcessingError('RENDER_FAILED', '浏览器无法创建页面画布。');
+    }
+
+    await page.render({
+      canvas,
+      canvasContext: context,
+      viewport,
+    }).promise;
+    return page;
+  } catch (error) {
+    page.cleanup();
+    throw error;
   }
-
-  await page.render({
-    canvas,
-    canvasContext: context,
-    viewport,
-  }).promise;
-  return page;
 }
 
 function canvasToBlob(

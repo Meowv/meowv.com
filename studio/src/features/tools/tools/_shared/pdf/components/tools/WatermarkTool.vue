@@ -245,7 +245,9 @@ function resetAll(): void {
           accept="image/png,image/jpeg,image/webp"
           @change="setWatermarkImage(($event.target as HTMLInputElement).files)"
         />
-        <small>支持 PNG、JPG 和 WebP，自动保持比例。</small>
+        <small
+          >支持 PNG、JPG 和 WebP，单个不超过 50 MB，最长边限 32768 px、总像素限 5000 万。</small
+        >
       </label>
 
       <div v-if="type === 'text'" class="field-grid">

@@ -162,13 +162,17 @@ async function render(version: number): Promise<void> {
       fit.value === 'width'
         ? Math.max(280, viewport.value.clientWidth - 32)
         : Math.max(280, Math.min(760, viewport.value.clientWidth - 32));
-    await renderPdfPage(activeDocument, pageNumber.value, canvas.value, {
+    const renderedPage = await renderPdfPage(activeDocument, pageNumber.value, canvas.value, {
       maxWidth,
       scale: fit.value === 'width' ? 4 : zoom.value,
       rotation: previewRotation.value,
     });
-    if (version === renderVersion) {
-      renderError.value = '';
+    try {
+      if (version === renderVersion) {
+        renderError.value = '';
+      }
+    } finally {
+      renderedPage.cleanup();
     }
   } catch (error) {
     if (version === renderVersion) {

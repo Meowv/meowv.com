@@ -1,7 +1,7 @@
 import { degrees, PDFArray, PDFDocument } from 'pdf-lib';
 import type { PdfOperationResult } from '../types';
-import { normalizeImageForPdf, renderTextToPng } from '../shared/canvas';
-import { mapPdfError } from '../shared/errors';
+import { MAX_WATERMARK_IMAGE_BYTES, normalizeImageForPdf, renderTextToPng } from '../shared/canvas';
+import { PdfProcessingError, mapPdfError } from '../shared/errors';
 import { sanitizeFileName, stripFileExtension } from '../shared/naming';
 import { createGeneratedFile, createOperationResult } from '../shared/result';
 
@@ -168,6 +168,23 @@ export async function addWatermark(
     const name = sanitizeFileName(stripFileExtension(options.outputName), 'pdf', 'watermarked');
     return createOperationResult([createGeneratedFile(name, bytes)], startedAt);
   } catch (error) {
+    if (error instanceof RangeError && error.message === 'WATERMARK_IMAGE_EMPTY') {
+      throw new PdfProcessingError('INVALID_FILE', '水印图片没有内容，请选择有效图片。', error);
+    }
+    if (error instanceof RangeError && error.message === 'WATERMARK_IMAGE_TOO_LARGE') {
+      throw new PdfProcessingError(
+        'INVALID_FILE',
+        `水印图片不能超过 ${Math.round(MAX_WATERMARK_IMAGE_BYTES / 1024 / 1024)} MB。`,
+        error,
+      );
+    }
+    if (error instanceof RangeError && error.message === 'IMAGE_TOO_LARGE') {
+      throw new PdfProcessingError(
+        'INVALID_FILE',
+        '水印图片尺寸过大（最长边限 32768 px、总像素限 5000 万）。',
+        error,
+      );
+    }
     throw mapPdfError(error);
   }
 }
