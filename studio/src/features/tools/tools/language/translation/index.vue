@@ -17,6 +17,7 @@ const processing = ref(false);
 const error = ref('');
 const copied = ref(false);
 let requestController: AbortController | null = null;
+let requestGeneration = 0;
 let copiedTimer: number | null = null;
 
 const sourceLanguage = computed(() => (direction.value === 'zh2en' ? '中文' : 'English'));
@@ -71,9 +72,13 @@ async function requestFallbackTranslation(
   return result;
 }
 
-async function requestTranslation(text: string, signal: AbortSignal): Promise<string> {
-  const from = direction.value === 'zh2en' ? 'zh-CN' : 'en';
-  const to = direction.value === 'zh2en' ? 'en' : 'zh-CN';
+async function requestTranslation(
+  text: string,
+  translationDirection: TranslationDirection,
+  signal: AbortSignal,
+): Promise<string> {
+  const from = translationDirection === 'zh2en' ? 'zh-CN' : 'en';
+  const to = translationDirection === 'zh2en' ? 'en' : 'zh-CN';
 
   try {
     return await requestPrimaryTranslation(text, from, to, signal);
@@ -90,25 +95,37 @@ async function translate(): Promise<void> {
   requestController?.abort();
   requestController = new AbortController();
   const activeController = requestController;
+  const generation = ++requestGeneration;
+  const activeDirection = direction.value;
   const timeout = window.setTimeout(() => activeController.abort('timeout'), 15_000);
 
   processing.value = true;
   error.value = '';
   try {
-    targetText.value = await requestTranslation(text, activeController.signal);
+    const result = await requestTranslation(text, activeDirection, activeController.signal);
+    if (generation === requestGeneration && requestController === activeController) {
+      targetText.value = result;
+    }
   } catch (cause) {
+    if (generation !== requestGeneration) return;
     if (activeController.signal.aborted) error.value = '翻译超时，请稍后重试。';
     else
       error.value =
         cause instanceof Error ? `翻译失败：${cause.message}` : '翻译失败，请稍后重试。';
   } finally {
     window.clearTimeout(timeout);
-    if (requestController === activeController) requestController = null;
-    processing.value = false;
+    if (generation === requestGeneration && requestController === activeController) {
+      requestController = null;
+      processing.value = false;
+    }
   }
 }
 
 function swapDirection(): void {
+  requestGeneration += 1;
+  requestController?.abort();
+  requestController = null;
+  processing.value = false;
   direction.value = direction.value === 'zh2en' ? 'en2zh' : 'zh2en';
   if (targetText.value) {
     sourceText.value = targetText.value;
@@ -150,7 +167,13 @@ onBeforeUnmount(() => {
     <div class="tool-section__body translation-tool">
       <div class="translation-tool__direction" aria-label="翻译方向">
         <strong>{{ sourceLanguage }}</strong>
-        <button type="button" title="交换语言" aria-label="交换翻译语言" @click="swapDirection">
+        <button
+          type="button"
+          title="交换语言"
+          aria-label="交换翻译语言"
+          :disabled="processing"
+          @click="swapDirection"
+        >
           <IconArrowsExchange :size="19" aria-hidden="true" />
         </button>
         <strong>{{ targetLanguage }}</strong>
