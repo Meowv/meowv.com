@@ -14,6 +14,7 @@ import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, r
 import { receiveWindowFileHandoff, useFileHandoff } from '@/core/browser/file-handoff';
 import JsonVisualizationLoading from './JsonVisualizationLoading.vue';
 import ToolCodeEditor from './ToolCodeEditor.vue';
+import { evaluateJsonFilter } from './filter';
 
 interface JsonEditorHandle {
   foldAll(): Promise<void>;
@@ -164,19 +165,7 @@ const filterOutput = computed(() => {
   if (!expression) return '';
 
   try {
-    const suffix = expression.startsWith('this') ? expression.slice(4) : expression;
-    if (!suffix || !/^[.[]/.test(suffix)) {
-      throw new Error('过滤表达式应以 “.” 或 “[” 开头');
-    }
-    if (suffix.endsWith('.') || suffix.endsWith('[') || suffix.endsWith('(')) {
-      throw new Error('Unexpected end of input');
-    }
-
-    // JS 过滤只在当前浏览器标签页执行，不读取或发送编辑器之外的数据。
-    const evaluate = new Function(`"use strict"; return this${suffix};`) as (
-      this: unknown,
-    ) => unknown;
-    const result = evaluate.call(parseJson());
+    const result = evaluateJsonFilter(expression, parseJson());
     if (result === undefined) return '// undefined';
     return JSON.stringify(result, null, 2) ?? `// ${String(result)}`;
   } catch (error) {
@@ -456,13 +445,13 @@ onBeforeUnmount(() => {
         </p>
 
         <footer class="json-editor__footer">
-          <div class="json-editor__filter" aria-label="JS 过滤">
+          <div class="json-editor__filter" aria-label="JSON 路径过滤">
             <span aria-hidden="true">this</span>
             <input
               v-model="filterExpression"
               type="text"
-              aria-label="JS 过滤表达式"
-              placeholder='JS 过滤：示例 ".key.subkey"、"[0][1]"、".map(x=>x.val)"'
+              aria-label="JSON 路径表达式"
+              placeholder='路径过滤：示例 ".key.subkey"、"[0][1]"、["key"]'
               autocomplete="off"
               spellcheck="false"
             />
