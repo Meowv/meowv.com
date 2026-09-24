@@ -1242,6 +1242,16 @@
 }
 
 @media (max-width: 760px) {
+  .tools-home > .tools-sidebar-dock {
+    display: none;
+  }
+
+  .tools-home--sidebar-pinned,
+  .tools-home--sidebar-pinned.tools-home--sidebar-right {
+    padding-right: 0 !important;
+    padding-left: 0 !important;
+  }
+
   .tools-page:not(.tools-home) {
     width: min(calc(100% - 32px), 680px);
     padding-top: 42px;
@@ -1315,14 +1325,12 @@
   transition: padding 180ms ease;
 }
 
-.tool-detail-shell--sidebar-pinned,
-.tool-detail-shell--sidebar-open {
+.tool-detail-shell--sidebar-pinned {
   padding-left: 132px !important;
   padding-right: 0 !important;
 }
 
-.tool-detail-shell--sidebar-pinned.tool-detail-shell--sidebar-right,
-.tool-detail-shell--sidebar-open.tool-detail-shell--sidebar-right {
+.tool-detail-shell--sidebar-pinned.tool-detail-shell--sidebar-right {
   padding-left: 0 !important;
   padding-right: 132px !important;
 }
@@ -1357,19 +1365,6 @@
 
 .tool-detail-breadcrumb a:hover {
   color: var(--tools-accent);
-}
-
-.tool-detail-breadcrumb__menu {
-  display: none;
-  min-height: 34px;
-  padding: 0 9px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  align-items: center;
-  gap: 6px;
-  background: var(--color-surface-solid);
-  color: var(--color-text-muted);
-  font-size: 11px;
 }
 
 .tools-detail-route .tools-page-header {
@@ -1526,10 +1521,6 @@
   -webkit-line-clamp: 2;
 }
 
-.tool-detail-sidebar-backdrop {
-  display: none;
-}
-
 @media (max-width: 1199px) and (min-width: 761px) {
   .tools-detail__related-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1548,21 +1539,14 @@
 }
 
 @media (max-width: 760px) {
-  .tool-detail-shell--sidebar-open,
-  .tool-detail-shell--sidebar-open.tool-detail-shell--sidebar-right {
-    padding-left: 0 !important;
-    padding-right: 0 !important;
+  .tool-detail-shell .tools-sidebar-dock {
+    display: none;
   }
 
-  .tool-detail-sidebar-backdrop {
-    position: fixed;
-    z-index: 45;
-    inset: 0;
-    display: block;
-    padding: 0;
-    border: 0;
-    background: rgb(16 24 40 / 38%);
-    backdrop-filter: blur(2px);
+  .tool-detail-shell--sidebar-pinned,
+  .tool-detail-shell--sidebar-pinned.tool-detail-shell--sidebar-right {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
   }
 
   .tool-detail-main {
@@ -1573,11 +1557,6 @@
     gap: 6px;
     overflow: hidden;
     white-space: nowrap;
-  }
-
-  .tool-detail-breadcrumb__menu {
-    display: inline-flex;
-    flex: 0 0 auto;
   }
 
   .tool-detail-breadcrumb > a,
