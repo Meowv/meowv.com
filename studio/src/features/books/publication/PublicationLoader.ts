@@ -1,8 +1,4 @@
 import type { Publication, PublicationProgress } from '../types/reader';
-import { CbzPublication } from './cbz/CbzPublication';
-import { FoliatePublication } from './foliate/FoliatePublication';
-import { PdfPublication } from './pdf/PdfPublication';
-import { TxtPublication } from './txt/TxtPublication';
 import { detectBookFormat } from './format-detection';
 
 export const BOOK_FILE_ACCEPT =
@@ -19,10 +15,18 @@ export class PublicationLoader {
     const format = await detectBookFormat(file, options.signal);
     options.onProgress?.({ stage: 'parsing', value: 0.12, message: '正在解析章节…' });
     if (format === 'pdf') {
+      const { PdfPublication } = await import('./pdf/PdfPublication');
       return PdfPublication.open(file, { signal: options.signal });
     }
-    if (format === 'cbz') return CbzPublication.open(file, options.signal);
-    if (format === 'txt') return TxtPublication.open(file, options.signal);
+    if (format === 'cbz') {
+      const { CbzPublication } = await import('./cbz/CbzPublication');
+      return CbzPublication.open(file, options.signal);
+    }
+    if (format === 'txt') {
+      const { TxtPublication } = await import('./txt/TxtPublication');
+      return TxtPublication.open(file, options.signal);
+    }
+    const { FoliatePublication } = await import('./foliate/FoliatePublication');
     return FoliatePublication.open(file, { format, signal: options.signal });
   }
 }

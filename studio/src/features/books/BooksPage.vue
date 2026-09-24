@@ -7,7 +7,7 @@ import BookWelcome from './components/BookWelcome.vue';
 import LoadingBook from './components/LoadingBook.vue';
 import ReaderControls from './components/ReaderControls.vue';
 import ReaderPanel from './components/ReaderPanel.vue';
-import { BookEngine } from './engine/BookEngine';
+import type { BookEngine } from './engine/BookEngine';
 import { BookStateMachine } from './engine/BookStateMachine';
 import { getSpreadIndexForPage } from './engine/spreads';
 import { BUILTIN_ID_PREFIX, markBuiltinRemoved, mergeBuiltinEntries } from './builtin/BuiltinShelf';
@@ -576,7 +576,9 @@ async function openFile(
   let orphanPublication: Publication | null = null;
   let instance: BookEngine | null = null;
   try {
-    instance = new BookEngine(host, {
+    const { BookEngine: BookEngineRuntime } = await import('./engine/BookEngine');
+    if (controller.signal.aborted || currentOperation !== operationId) return;
+    instance = new BookEngineRuntime(host, {
       stateMachine: pageStateMachine,
       theme: 'dark',
       onError: (error) => {

@@ -38,7 +38,7 @@ async function getPdfJs(): Promise<PdfJsRuntime> {
   if (!pdfJsPromise) {
     pdfJsPromise = Promise.all([
       import('pdfjs-dist'),
-      import('pdfjs-dist/build/pdf.worker.min.mjs?worker&url'),
+      import('pdfjs-dist/build/pdf.worker.min.mjs?url'),
       import('pdfjs-dist/wasm/jbig2.wasm?url'),
       import('pdfjs-dist/wasm/jbig2_nowasm_fallback.js?url'),
       import('pdfjs-dist/wasm/openjpeg.wasm?url'),
