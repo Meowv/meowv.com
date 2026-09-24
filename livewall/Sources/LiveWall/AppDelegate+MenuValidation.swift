@@ -60,6 +60,9 @@ extension AppDelegate: NSMenuItemValidation {
             // 「无操作时」总开关关着时，子项没有意义（置灰而不是隐藏，保留可发现性）。
             return preferences.pauseWhenIdle
 
+        case #selector(startRestReminderNow):
+            return canStartRestReminderNow
+
         case #selector(checkForUpdates):
             return updateState.checkItemEnabled
 

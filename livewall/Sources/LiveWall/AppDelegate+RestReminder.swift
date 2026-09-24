@@ -249,14 +249,21 @@ extension AppDelegate {
         refreshStatusItem()
     }
 
-    #if DEBUG
-        @objc func debugStartRestReminder() {
-            guard !restReminderCoordinator.isActive else { return }
-            restReminderClock = RestReminderClock(isDue: true)
-            tryStartDueRestReminder(force: true)
-            if !restReminderCoordinator.isActive {
-                log("调试休息提醒未启动：当前没有正在播放的视频")
-            }
+    var canStartRestReminderNow: Bool {
+        guard !restReminderCoordinator.isActive,
+              governor.state.isPlaying,
+              let primary = engine.primaryKey,
+              let player = engine.player(on: primary)
+        else { return false }
+        return player.rate > 0
+    }
+
+    @objc func startRestReminderNow() {
+        guard canStartRestReminderNow else { return }
+        restReminderClock = RestReminderClock(isDue: true)
+        tryStartDueRestReminder(force: true)
+        if !restReminderCoordinator.isActive {
+            log("立即开始休息未能启动：当前没有正在播放的视频")
         }
-    #endif
+    }
 }

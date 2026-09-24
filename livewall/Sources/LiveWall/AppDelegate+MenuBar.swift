@@ -305,6 +305,14 @@ extension AppDelegate {
         reload.target = self
         menu.addItem(reload)
 
+        let restNow = NSMenuItem(
+            title: "立即开始休息",
+            action: #selector(startRestReminderNow),
+            keyEquivalent: ""
+        )
+        restNow.target = self
+        menu.addItem(restNow)
+
         // 开发者工具：只在 debug 构建里存在。日常使用走 `./build.sh`（release），
         // 排障走 `./run.sh`（debug）。整块不参与 release 编译，二进制里也没有相关字符串。
         #if DEBUG
@@ -330,13 +338,6 @@ extension AppDelegate {
             dump.target = self
             menu.addItem(dump)
 
-            let testRest = NSMenuItem(
-                title: "立即开始休息",
-                action: #selector(debugStartRestReminder),
-                keyEquivalent: ""
-            )
-            testRest.target = self
-            menu.addItem(testRest)
         #endif
 
         // 更新段**不在这里**：它属于「关于」子菜单，紧贴「当前版本」那一行
