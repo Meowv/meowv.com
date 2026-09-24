@@ -13,13 +13,15 @@ import type {
   WorkerRequest,
   WorkerResponse,
 } from '../types';
+import {
+  identityExpression,
+  quoteIdentifier,
+  sameColumns,
+  SQLITE_ROWID_ALIAS,
+} from './sqlite.helpers';
 
 let SQL: SqlJsStatic | null = null;
 let database: Database | null = null;
-
-function quoteIdentifier(value: string): string {
-  return `"${value.replaceAll('"', '""')}"`;
-}
 
 function getDatabase(): Database {
   if (!database) throw new Error('请先打开或新建一个 SQLite 数据库。');
@@ -104,8 +106,8 @@ function tablePage(query: TableQuery): TablePage {
   if (schema.type === 'table' && identityColumns.length === 0) {
     try {
       getDatabase().exec(`SELECT rowid FROM ${quoteIdentifier(query.tableName)} LIMIT 1`);
-      selectPrefix = 'rowid AS "__studio_rowid__", ';
-      identityColumns = ['__studio_rowid__'];
+      selectPrefix = `rowid AS ${quoteIdentifier(SQLITE_ROWID_ALIAS)}, `;
+      identityColumns = [SQLITE_ROWID_ALIAS];
     } catch {
       identityColumns = [];
     }
@@ -154,6 +156,10 @@ function executeSql(sql: string): QueryResult {
         didMutate = true;
       }
       if (names.length) {
+        if (columns.length && !sameColumns(columns, names)) {
+          rows.splice(0, rows.length);
+          truncated = false;
+        }
         columns.splice(0, columns.length, ...names);
         while (statement.step()) {
           if (rows.length >= 5000) {
@@ -192,11 +198,12 @@ function transaction(run: () => void): void {
   }
 }
 
-function assertEditable(tableName: string, identity?: RowIdentity): void {
+function assertEditable(tableName: string, identity?: RowIdentity): TableSchema {
   const schema = tableSchema(tableName);
   if (!schema.editable || (identity && identity.columns.length === 0)) {
     throw new Error('该对象没有可用于唯一定位记录的主键或 rowid，当前仅支持只读浏览。');
   }
+  return schema;
 }
 
 function insertRow(payload: { tableName: string; values: Record<string, SqlValue> }): number {
@@ -220,12 +227,13 @@ function updateRow(payload: {
   values: Record<string, SqlValue>;
   identity: RowIdentity;
 }): number {
-  assertEditable(payload.tableName, payload.identity);
+  const schema = assertEditable(payload.tableName, payload.identity);
   const entries = Object.entries(payload.values);
   if (entries.length === 0) return 0;
+  const realColumns = new Set(schema.columns.map((column) => column.name));
   transaction(() => {
     getDatabase().run(
-      `UPDATE ${quoteIdentifier(payload.tableName)} SET ${entries.map(([key]) => `${quoteIdentifier(key)} = ?`).join(', ')} WHERE ${payload.identity.columns.map((key) => `${quoteIdentifier(key)} IS ?`).join(' AND ')}`,
+      `UPDATE ${quoteIdentifier(payload.tableName)} SET ${entries.map(([key]) => `${quoteIdentifier(key)} = ?`).join(', ')} WHERE ${payload.identity.columns.map((key) => `${identityExpression(key, realColumns)} IS ?`).join(' AND ')}`,
       [...entries.map(([, value]) => value), ...payload.identity.values],
     );
   });
@@ -233,10 +241,11 @@ function updateRow(payload: {
 }
 
 function deleteRow(payload: { tableName: string; identity: RowIdentity }): number {
-  assertEditable(payload.tableName, payload.identity);
+  const schema = assertEditable(payload.tableName, payload.identity);
+  const realColumns = new Set(schema.columns.map((column) => column.name));
   transaction(() => {
     getDatabase().run(
-      `DELETE FROM ${quoteIdentifier(payload.tableName)} WHERE ${payload.identity.columns.map((key) => `${quoteIdentifier(key)} IS ?`).join(' AND ')}`,
+      `DELETE FROM ${quoteIdentifier(payload.tableName)} WHERE ${payload.identity.columns.map((key) => `${identityExpression(key, realColumns)} IS ?`).join(' AND ')}`,
       payload.identity.values,
     );
   });

@@ -2890,7 +2890,8 @@
     .keyboard-visualizer__stage,
     .answer-book-stage,
     .answer-book-share__preview,
-    .emoji-match__game
+    .emoji-match__game,
+    .sqlite-row-editor
   ) {
   --color-surface: var(--tools-background-content-solid);
   --color-surface-solid: var(--tools-background-content-solid);
@@ -2917,4 +2918,10 @@
   .tools-detail__content
   :is(.json-visualization__canvas) {
   background: var(--tools-background-content-solid) !important;
+}
+
+.studio-shell--tools-background:has(> .tools-background--ready) .sqlite-tool {
+  --tools-text: var(--color-text);
+  --tools-text-muted: var(--color-text-muted);
+  --tools-border: var(--color-border);
 }
