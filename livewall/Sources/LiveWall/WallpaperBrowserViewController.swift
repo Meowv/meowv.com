@@ -62,31 +62,24 @@ protocol WallpaperBrowserDataSource: AnyObject {
     func browserPlayer(for item: WallpaperItem) -> AVPlayer?
 }
 
-/// 浮层容器本身不抢事件，真正的背景层负责关闭浮层。
-private final class PassThroughView: NSView {
+/// 确保遮罩范围内总有命中视图，空白区也不会把事件交给后方网格。
+private final class ModalPreviewOverlayView: NSView {
 
     override func hitTest(_ point: NSPoint) -> NSView? {
-        let hit = super.hitTest(point)
-        return hit === self ? nil : hit
+        super.hitTest(point) ?? self
     }
 }
 
-/// 预览浮层的压暗背景：点击背景关闭，而不是把事件穿透到网格。
-private final class PreviewBackdropView: NSView {
-    var onClick: (() -> Void)?
-
-    override func mouseDown(with event: NSEvent) {
-        onClick?()
-    }
-}
-
-/// 只为「双击」存在的网格子类。
+/// 处理卡片双击预览，并在预览打开期间屏蔽网格鼠标操作。
 ///
 /// `NSCollectionView` **没有** `doubleAction` / `target`（`NSTableView` 才有），
 /// delegate 里也没有双击回调，所以只能自己看 `mouseDown` 的 `clickCount`。
 /// 别换成手势识别器：那要额外处理「与选中手势谁先拿事件」，
 /// 而这里只需要一次 `clickCount` 判断。
 private final class BrowserGridView: NSCollectionView {
+
+    /// 预览浮层打开时拦截卡片鼠标操作，遮罩关闭后恢复。
+    var isInteractionBlocked = false
 
     /// 命中的条目下标。**只在真的双击到某张卡片时**回调。
     var onDoubleClick: ((IndexPath) -> Void)?
@@ -117,6 +110,7 @@ private final class BrowserGridView: NSCollectionView {
     }
 
     override func mouseDown(with event: NSEvent) {
+        guard !isInteractionBlocked else { return }
         // 先交给父类 —— 双击的第一下本来就该先选中那张卡片，
         // 于是双击之后「选中项」与「浮层里的条目」是一致的。
         super.mouseDown(with: event)
@@ -147,13 +141,8 @@ final class WallpaperBrowserViewController: NSViewController {
     private static let columns4From: CGFloat = 880
     private static let columns5From: CGFloat = 1120
 
-    /// 预览浮层相对网格区的内缩。
-    private static let overlayInset: CGFloat = 32
-    /// 浮层宽度区间：窄窗口跟着网格区收，宽窗口封顶。
-    /// 上限从 560 放大到 760 —— 预览是「看清这条到底长什么样」的地方，
-    /// 760×427 的画面才够判断。
-    private static let overlayMaxWidth: CGFloat = 760
-    private static let overlayMinWidth: CGFloat = 420
+    /// 预览浮层相对网格区保留的边距。
+    private static let overlayInset: CGFloat = 16
     /// 浮层面板内的横向内边距。
     private static let panelPadding: CGFloat = 12
 
@@ -172,9 +161,9 @@ final class WallpaperBrowserViewController: NSViewController {
     private let gridRetryButton = NSButton()
 
     // 预览浮层：双击或 Hover 按钮打开，盖在网格区上
-    private let previewOverlay = PassThroughView()
-    /// 压暗层：点击背景关闭预览，避免「看起来像模态、实际上能点穿」的混合行为。
-    private let previewBackdrop = PreviewBackdropView()
+    /// 预览期间遮挡整个网格并接收点击；关闭浮层后才恢复网格交互。
+    private let previewOverlay = ModalPreviewOverlayView()
+    private let previewBackdrop = NSView()
     private let previewPanel = NSView()
     private let previewStage = NSView()
     private let previewImageView = NSImageView()
@@ -182,7 +171,7 @@ final class WallpaperBrowserViewController: NSViewController {
     private let previewStateContainer = NSView()
     private let previewStateLabel = NSTextField(labelWithString: "")
     private let previewRetryButton = NSButton()
-    private let previewCloseButton = NSButton()
+    private let previewDismissButton = NSButton()
     private let previewInfoLabel = NSTextField(labelWithString: "")
     /// 「设为桌面壁纸」。放在画面**下方信息行的右端**（原来「停止预览」的位置）——
     /// 叠在画面上会挡住要预览的东西。
@@ -301,13 +290,14 @@ final class WallpaperBrowserViewController: NSViewController {
         applyPreviewState(previewPlayer.state)
     }
 
-    /// 按网格区的实际宽度夹取浮层面板宽度。
+    /// 按网格区的宽高计算浮层面板宽度，尽量放大预览画面并保持 16:9。
     ///
     /// **为什么是常量约束 + 改 constant，而不是 `panel.width == overlay.width - 80`**：
     /// 那种等式两边都能动，Auto Layout 为了满足它会反过来压窄网格区（连带整个窗口），
     /// 实测把窗口从 1060 压到了 778 —— 比 `minSize` 880 还小。常量约束只会决定面板自己。
     ///
-    /// 只在真的变了时才写，否则每次 layout 都改 constant 会触发又一轮布局。
+    /// 高度预算会为底栏按钮与上下留白保留空间。只在尺寸真的变了时才写，
+    /// 否则每次 layout 都改 constant 会触发又一轮布局。
     override func viewDidLayout() {
         super.viewDidLayout()
 
@@ -316,8 +306,18 @@ final class WallpaperBrowserViewController: NSViewController {
         gridScroll.layoutSubtreeIfNeeded()
         applyGridWidth(gridScroll.contentView.bounds.width)
 
-        let available = gridScroll.frame.width - 2 * Self.overlayInset
-        let width = min(max(available, Self.overlayMinWidth), Self.overlayMaxWidth)
+        let availableWidth = previewOverlay.bounds.width - 2 * Self.overlayInset
+        let footerContentHeight = max(
+            previewInfoLabel.fittingSize.height,
+            max(previewDismissButton.fittingSize.height, pinButton.fittingSize.height)
+        )
+        let availableStageHeight = previewOverlay.bounds.height
+            - 2 * Self.overlayInset
+            - footerContentHeight
+            - 20 // 底栏上下各 10 pt 留白
+        guard availableWidth > 0, availableStageHeight > 0 else { return }
+
+        let width = min(availableWidth, availableStageHeight * 16.0 / 9.0)
         if abs(panelWidthConstraint.constant - width) > 0.5 {
             panelWidthConstraint.constant = width
         }
@@ -579,14 +579,10 @@ final class WallpaperBrowserViewController: NSViewController {
         previewOverlay.isHidden = true
         root.addSubview(previewOverlay)
 
-        // 压暗层：**不做成可点关闭**。事件穿透之后，「点背景关浮层」会和
-        // 「点网格里的卡片」抢同一个手势；关浮层的出口留 ✕ 与 Esc 两个就够了。
+        // 压暗层拦截网格区域的点击但不关闭预览，避免浮层看起来模态却能点到后面的卡片。
         previewBackdrop.translatesAutoresizingMaskIntoConstraints = false
         previewBackdrop.wantsLayer = true
         previewBackdrop.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.35).cgColor
-        previewBackdrop.onClick = { [weak self] in
-            self?.dismissPreview(nil)
-        }
         previewOverlay.addSubview(previewBackdrop)
 
         previewPanel.wantsLayer = true
@@ -605,7 +601,7 @@ final class WallpaperBrowserViewController: NSViewController {
         activatePreviewOverlayConstraints()
     }
 
-    /// 16:9 画面区：画面层、静态图、占位文案、预览播放器、状态层，以及画面内的关闭 / 重试按钮。
+    /// 16:9 画面区：画面层、静态图、占位文案、预览播放器、状态层与重试按钮。
     ///
     /// 从 `buildPreviewOverlay` 里拆出来**纯粹是为了可读**（那个方法原本 185 行）：
     /// 三个构建方法各自只碰自己那几个子视图，约束集中在 `activatePreviewOverlayConstraints`。
@@ -650,21 +646,6 @@ final class WallpaperBrowserViewController: NSViewController {
         previewStateLabel.translatesAutoresizingMaskIntoConstraints = false
         previewStateContainer.addSubview(previewStateLabel)
 
-        // ── 画面内的关闭按钮 ────────────────────────────
-        previewCloseButton.title = ""
-        previewCloseButton.image = NSImage(
-            systemSymbolName: "xmark",
-            accessibilityDescription: "关闭预览"
-        )
-        previewCloseButton.bezelStyle = .rounded
-        previewCloseButton.font = .systemFont(ofSize: 12)
-        previewCloseButton.toolTip = "关闭预览"
-        previewCloseButton.setAccessibilityLabel("关闭预览")
-        previewCloseButton.target = self
-        previewCloseButton.action = #selector(dismissPreview(_:))
-        previewCloseButton.translatesAutoresizingMaskIntoConstraints = false
-        previewStage.addSubview(previewCloseButton)
-
         previewRetryButton.title = "重试"
         previewRetryButton.bezelStyle = .rounded
         previewRetryButton.isHidden = true
@@ -675,7 +656,7 @@ final class WallpaperBrowserViewController: NSViewController {
 
     }
 
-    /// 画面下方：一行信息 + 「设为桌面壁纸」按钮。
+    /// 画面下方：一行信息 + 「关闭预览」与「设为桌面壁纸」按钮。
     private func buildPreviewFooter() {
         previewInfoLabel.font = .systemFont(ofSize: 12)
         previewInfoLabel.lineBreakMode = .byTruncatingTail
@@ -687,6 +668,16 @@ final class WallpaperBrowserViewController: NSViewController {
         previewInfoLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
         previewInfoLabel.translatesAutoresizingMaskIntoConstraints = false
         previewPanel.addSubview(previewInfoLabel)
+
+        previewDismissButton.title = "关闭预览"
+        previewDismissButton.bezelStyle = .rounded
+        previewDismissButton.target = self
+        previewDismissButton.action = #selector(dismissPreview(_:))
+        previewDismissButton.setAccessibilityLabel("关闭预览")
+        previewDismissButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+        previewDismissButton.setContentHuggingPriority(.required, for: .horizontal)
+        previewDismissButton.translatesAutoresizingMaskIntoConstraints = false
+        previewPanel.addSubview(previewDismissButton)
 
         pinButton.title = "设为桌面壁纸"
         pinButton.bezelStyle = .rounded
@@ -705,12 +696,17 @@ final class WallpaperBrowserViewController: NSViewController {
     /// **集中在一处**而不是各构建方法里就近写：这些视图由三个方法分别创建，而约束互相引用
     /// （面板宽度、画面区的 9:16、信息行与按钮的相对位置），拆开写就看不出整体的布局意图了。
     private func activatePreviewOverlayConstraints() {
-        // 宽度用**常量**约束（具体值在 `viewDidLayout` 里按网格区宽度夹取）。
+        // 宽度用**常量**约束（具体值在 `viewDidLayout` 里按网格区宽高计算）。
         // 不要写成 `panel.width == overlay.width - 80`：那种等式是双向的，
         // Auto Layout 会为了满足它反过来把网格区压窄 —— 实测窗口被从 1060 压到 778
         // （778 = 旧分类栏 138 + 网格 640，而 640 = 560 + 80），甚至压到了 minSize 880 以下。
+        // 首次布局前先给底栏按钮留出宽度，随后会在 `viewDidLayout` 里按可用区域调整。
+        let initialWidth = Self.panelPadding * 2
+            + pinButton.fittingSize.width
+            + previewDismissButton.fittingSize.width
+            + 8
         panelWidthConstraint = previewPanel.widthAnchor.constraint(
-            equalToConstant: Self.overlayMaxWidth
+            equalToConstant: max(initialWidth, 1)
         )
 
         NSLayoutConstraint.activate([
@@ -757,11 +753,6 @@ final class WallpaperBrowserViewController: NSViewController {
             previewStateLabel.leadingAnchor.constraint(equalTo: previewStateContainer.leadingAnchor, constant: 5),
             previewStateLabel.trailingAnchor.constraint(equalTo: previewStateContainer.trailingAnchor, constant: -5),
 
-            previewCloseButton.topAnchor.constraint(equalTo: previewStage.topAnchor, constant: 8),
-            previewCloseButton.trailingAnchor.constraint(equalTo: previewStage.trailingAnchor, constant: -8),
-            previewCloseButton.widthAnchor.constraint(equalToConstant: 28),
-            previewCloseButton.heightAnchor.constraint(equalToConstant: 28),
-
             previewRetryButton.topAnchor.constraint(equalTo: previewStateContainer.bottomAnchor, constant: 8),
             previewRetryButton.centerXAnchor.constraint(equalTo: previewStage.centerXAnchor),
 
@@ -771,9 +762,14 @@ final class WallpaperBrowserViewController: NSViewController {
 
             pinButton.centerYAnchor.constraint(equalTo: previewInfoLabel.centerYAnchor),
             pinButton.trailingAnchor.constraint(equalTo: previewPanel.trailingAnchor, constant: -Self.panelPadding),
-            pinButton.leadingAnchor.constraint(
-                greaterThanOrEqualTo: previewInfoLabel.trailingAnchor,
-                constant: Self.panelPadding
+            previewDismissButton.trailingAnchor.constraint(
+                equalTo: pinButton.leadingAnchor,
+                constant: -8
+            ),
+            previewDismissButton.centerYAnchor.constraint(equalTo: previewInfoLabel.centerYAnchor),
+            previewInfoLabel.trailingAnchor.constraint(
+                lessThanOrEqualTo: previewDismissButton.leadingAnchor,
+                constant: -Self.panelPadding
             ),
         ])
     }
@@ -795,6 +791,16 @@ final class WallpaperBrowserViewController: NSViewController {
 
     /// Hover 按钮与双击共用的预览入口。
     private func openPreview(forItem item: WallpaperItem) {
+        guard !collectionView.isInteractionBlocked else { return }
+        collectionView.isInteractionBlocked = true
+        collectionView.isSelectable = false
+        if let parent = previewOverlay.superview {
+            parent.addSubview(
+                previewOverlay,
+                positioned: .above,
+                relativeTo: gridPlaceholder
+            )
+        }
         previewItemID = item.id
         previewOverlay.isHidden = false
         updatePreviewPanel()
@@ -807,11 +813,13 @@ final class WallpaperBrowserViewController: NSViewController {
         )
     }
 
-    /// 关掉浮层并释放播放器。点 ✕ / 点背景 / Esc / 切分类都走这里。
+    /// 关掉浮层并释放播放器。底栏「关闭预览」、Esc、⌘W 与切分类都走这里。
     @objc func dismissPreview(_ sender: Any?) {
         guard !previewOverlay.isHidden else { return }
         previewItemID = nil
         previewOverlay.isHidden = true
+        collectionView.isInteractionBlocked = false
+        collectionView.isSelectable = true
         // 用 `teardown()` 而不是 `stop()`：浮层都没了，状态该回到 `.idle`
         // （`stop()` 停在 `.cover`，会留一个不属于任何条目的静态图）。
         previewPlayer.teardown()

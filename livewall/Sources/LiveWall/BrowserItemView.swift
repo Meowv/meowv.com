@@ -4,8 +4,7 @@ import LiveWallCore
 /// 网格里的一张卡片：缩略图 + **一行**信息（`标题 · 作者 · 时长 · 分辨率`），
 /// 右上角可带「当前」徽标。
 ///
-/// **卡片内不放按钮** —— 网格里每格塞按钮既挤又容易点错，操作集中在双击打开的
-/// 预览浮层里（`AGENTS.md` 里对「置灰 / 集中入口」的既有取舍）。
+/// 不显示常驻播放标记；只在悬停图片时提供一个居中的预览按钮，双击图片也能预览。
 ///
 /// 卡片是**被复用**的：同一个 view 会先后显示不同的条目。所以异步结果回来时必须
 /// 比对 key（见 `setThumbnail(_:key:)`），否则会闪出上一条的图。
@@ -39,8 +38,6 @@ final class BrowserItemView: NSCollectionViewItem {
     private let placeholderLabel = NSTextField(labelWithString: "无预览图")
     private let hoverOverlay = NSView()
     private let previewButton = NSButton()
-    private let liveIndicator = NSView()
-    private let liveIconView = NSImageView()
     private let badgeContainer = NSView()
     private let badgeLabel = NSTextField(labelWithString: "当前")
     /// 单行信息：`标题 · 作者 · 时长 · 分辨率`。
@@ -108,22 +105,6 @@ final class BrowserItemView: NSCollectionViewItem {
         previewButton.translatesAutoresizingMaskIntoConstraints = false
         hoverOverlay.addSubview(previewButton)
 
-        // 所有条目都是动态壁纸，左上角用 SF Symbol 做一个轻量动态标识。
-        liveIndicator.wantsLayer = true
-        liveIndicator.layer?.cornerRadius = 4
-        liveIndicator.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.52).cgColor
-        liveIndicator.translatesAutoresizingMaskIntoConstraints = false
-        thumbnailContainer.addSubview(liveIndicator)
-
-        liveIconView.image = NSImage(
-            systemSymbolName: "play.fill",
-            accessibilityDescription: "动态视频"
-        )
-        liveIconView.contentTintColor = .white
-        liveIconView.imageScaling = .scaleProportionallyDown
-        liveIconView.translatesAutoresizingMaskIntoConstraints = false
-        liveIndicator.addSubview(liveIconView)
-
         // ── 「当前」徽标 ──────────────────────────────────
         badgeContainer.wantsLayer = true
         badgeContainer.layer?.cornerRadius = 4
@@ -173,15 +154,6 @@ final class BrowserItemView: NSCollectionViewItem {
             previewButton.centerYAnchor.constraint(equalTo: hoverOverlay.centerYAnchor),
             previewButton.widthAnchor.constraint(equalToConstant: 32),
             previewButton.heightAnchor.constraint(equalToConstant: 32),
-
-            liveIndicator.topAnchor.constraint(equalTo: thumbnailContainer.topAnchor, constant: 6),
-            liveIndicator.leadingAnchor.constraint(equalTo: thumbnailContainer.leadingAnchor, constant: 6),
-            liveIndicator.widthAnchor.constraint(equalToConstant: 22),
-            liveIndicator.heightAnchor.constraint(equalToConstant: 22),
-            liveIconView.centerXAnchor.constraint(equalTo: liveIndicator.centerXAnchor),
-            liveIconView.centerYAnchor.constraint(equalTo: liveIndicator.centerYAnchor),
-            liveIconView.widthAnchor.constraint(equalToConstant: 11),
-            liveIconView.heightAnchor.constraint(equalToConstant: 11),
 
             badgeContainer.topAnchor.constraint(equalTo: view.topAnchor, constant: 6),
             badgeContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -6),
