@@ -7,8 +7,7 @@ import VideoToolbox
 /// macOS 27 解锁过渡会读取 `tscl` / `tsas`，普通转码缺少它们时会黑屏。
 enum AerialVideoEncoder {
 
-    /// 一分钟优先缩短锁屏后的等待；高帧率源统一降到 30 fps。
-    private static let targetDurationSeconds = 60.0
+    /// 高帧率源统一降到 30 fps。锁屏实测会自行重复播放，因此不延长时长。
     private static let maximumFrameRate: Float = 30
 
     private struct EncodingInput: @unchecked Sendable {
@@ -41,7 +40,7 @@ enum AerialVideoEncoder {
         }
     }
 
-    /// 重活全部放在非主执行器；输出至少约一分钟、无音轨的 HEVC Main 10 MOV。
+    /// 重活全部放在非主执行器；输出与源视频等长、无音轨的 HEVC Main 10 MOV。
     static func encode(source: URL, destination: URL) async throws {
         let asset = AVURLAsset(url: source)
         guard let track = try await asset.loadTracks(withMediaType: .video).first else {
@@ -82,10 +81,9 @@ enum AerialVideoEncoder {
         guard seconds.isFinite, seconds > 0.1 else { throw EncodeError.noFrames }
         let fps = max(1, min(input.fps > 1 ? input.fps : 24, maximumFrameRate))
         let frameInterval = CMTime(seconds: 1 / Double(fps), preferredTimescale: 60_000)
-        let loops = max(1, Int(ceil(targetDurationSeconds / seconds)))
-        // 桌面素材本身通常只有数 MB；Aerial 的长循环才是输出体积主因。
-        // 以约 0.8 bit/pixel 控制 HEVC Main 10 码率，1080p 约 1.66 Mbps，
-        // 保留约一分钟播放时长，降低锁屏时的转码等待。
+        // 实测 Aerial 播完会自行重播，产物与源时长一致即可：
+        // 编码耗时和体积都只跟源片长度成正比。
+        // 以约 0.8 bit/pixel 控制 HEVC Main 10 码率，1080p 约 1.66 Mbps。
         let bitrate = Int64(max(1_500_000, min(8_000_000, Double(width * height) * 0.8)))
 
         try? FileManager.default.removeItem(at: destination)
@@ -147,79 +145,68 @@ enum AerialVideoEncoder {
         let prepareStatus = VTCompressionSessionPrepareToEncodeFrames(compressionSession)
         guard prepareStatus == noErr else { throw EncodeError.compression(prepareStatus) }
 
+        try Task.checkCancellation()
+        let reader = try AVAssetReader(asset: asset)
+        reader.timeRange = CMTimeRange(start: .zero, duration: duration)
+        var layerConfiguration = AVVideoCompositionLayerInstruction.Configuration(assetTrack: track)
+        // 保留原始像素方向；最终旋转仍由写入器的 preferredTransform 元数据完成。
+        layerConfiguration.setTransform(.identity, at: .zero)
+        let layerInstruction = AVVideoCompositionLayerInstruction(
+            configuration: layerConfiguration
+        )
+        let instructionConfiguration = AVVideoCompositionInstruction.Configuration(
+            backgroundColor: nil,
+            enablePostProcessing: false,
+            layerInstructions: [layerInstruction],
+            requiredSourceSampleDataTrackIDs: [],
+            timeRange: reader.timeRange
+        )
+        let instruction = AVVideoCompositionInstruction(configuration: instructionConfiguration)
+        let compositionConfiguration = AVVideoComposition.Configuration(
+            frameDuration: frameInterval,
+            instructions: [instruction],
+            renderSize: CGSize(width: width, height: height)
+        )
+        let videoComposition = AVVideoComposition(configuration: compositionConfiguration)
+
+        let output = AVAssetReaderVideoCompositionOutput(
+            videoTracks: [track],
+            videoSettings: [
+                kCVPixelBufferPixelFormatTypeKey as String:
+                    kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange,
+            ]
+        )
+        output.videoComposition = videoComposition
+        guard reader.canAdd(output) else { throw EncodeError.reader("无法创建视频读取器") }
+        reader.add(output)
+        guard reader.startReading() else {
+            throw EncodeError.reader(reader.error?.localizedDescription ?? "无法启动视频读取器")
+        }
+
         var submittedFrames = 0
-        for loopIndex in 0..<loops {
+        var nextFrameTime = CMTime.invalid
+        while let sampleBuffer = output.copyNextSampleBuffer() {
             try Task.checkCancellation()
-            let remainingSeconds = targetDurationSeconds - Double(loopIndex) * seconds
-            let loopDuration = min(seconds, remainingSeconds)
-            let reader = try AVAssetReader(asset: asset)
-            reader.timeRange = CMTimeRange(
-                start: .zero,
-                duration: CMTime(seconds: loopDuration, preferredTimescale: 60_000)
-            )
-            var layerConfiguration = AVVideoCompositionLayerInstruction.Configuration(
-                assetTrack: track
-            )
-            // 保留原始像素方向；最终旋转仍由写入器的 preferredTransform 元数据完成。
-            layerConfiguration.setTransform(.identity, at: .zero)
-            let layerInstruction = AVVideoCompositionLayerInstruction(
-                configuration: layerConfiguration
-            )
-            let instructionConfiguration = AVVideoCompositionInstruction.Configuration(
-                backgroundColor: nil,
-                enablePostProcessing: false,
-                layerInstructions: [layerInstruction],
-                requiredSourceSampleDataTrackIDs: [],
-                timeRange: reader.timeRange
-            )
-            let instruction = AVVideoCompositionInstruction(configuration: instructionConfiguration)
-            let compositionConfiguration = AVVideoComposition.Configuration(
-                frameDuration: frameInterval,
-                instructions: [instruction],
-                renderSize: CGSize(width: width, height: height)
-            )
-            let videoComposition = AVVideoComposition(configuration: compositionConfiguration)
-
-            let output = AVAssetReaderVideoCompositionOutput(
-                videoTracks: [track],
-                videoSettings: [
-                    kCVPixelBufferPixelFormatTypeKey as String:
-                        kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange,
-                ]
-            )
-            output.videoComposition = videoComposition
-            guard reader.canAdd(output) else { throw EncodeError.reader("无法创建视频读取器") }
-            reader.add(output)
-            guard reader.startReading() else {
-                throw EncodeError.reader(reader.error?.localizedDescription ?? "无法启动视频读取器")
+            guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { continue }
+            let presentation = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+            guard !nextFrameTime.isValid || CMTimeCompare(presentation, nextFrameTime) >= 0 else {
+                continue
             }
-
-            let loopOffset = CMTimeMultiply(duration, multiplier: Int32(loopIndex))
-            var nextFrameTime = CMTime.invalid
-            while let sampleBuffer = output.copyNextSampleBuffer() {
-                try Task.checkCancellation()
-                guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { continue }
-                let sourcePresentation = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
-                guard !nextFrameTime.isValid || CMTimeCompare(sourcePresentation, nextFrameTime) >= 0 else {
-                    continue
-                }
-                let presentation = CMTimeAdd(sourcePresentation, loopOffset)
-                nextFrameTime = CMTimeAdd(sourcePresentation, frameInterval)
-                let status = VTCompressionSessionEncodeFrame(
-                    compressionSession,
-                    imageBuffer: imageBuffer,
-                    presentationTimeStamp: presentation,
-                    duration: frameInterval,
-                    frameProperties: nil,
-                    sourceFrameRefcon: nil,
-                    infoFlagsOut: nil
-                )
-                guard status == noErr else { throw EncodeError.compression(status) }
-                submittedFrames += 1
-            }
-            if reader.status == .failed {
-                throw EncodeError.reader(reader.error?.localizedDescription ?? "读取失败")
-            }
+            nextFrameTime = CMTimeAdd(presentation, frameInterval)
+            let status = VTCompressionSessionEncodeFrame(
+                compressionSession,
+                imageBuffer: imageBuffer,
+                presentationTimeStamp: presentation,
+                duration: frameInterval,
+                frameProperties: nil,
+                sourceFrameRefcon: nil,
+                infoFlagsOut: nil
+            )
+            guard status == noErr else { throw EncodeError.compression(status) }
+            submittedFrames += 1
+        }
+        if reader.status == .failed {
+            throw EncodeError.reader(reader.error?.localizedDescription ?? "读取失败")
         }
         guard submittedFrames > 0 else { throw EncodeError.noFrames }
 

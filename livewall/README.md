@@ -1335,9 +1335,9 @@ PROBE[静置后] 内存 14 MB · CPU 0.0%（近 3 秒）    ← 基线已推进�
 锁屏态：覆盖窗口被安全罩挡住 → 露出的正是这张静态图
 ```
 
-macOS 没有公开 API 可把第三方视频设为锁屏动态墙纸。LiveWall 在已验证的 macOS 27 上复用 Aerial 播放引擎：锁屏事件触发当前视频的下载与转换，生成约一分钟、带 HEVC temporal scalability（`tscl` / `tsas`）样本组的 MOV，再备份并替换一个 Apple Aerial 视频槽位，将 `Index.plist` 设为 `Type=linked` 动态选择。普通桌面轮换不会触发下载或转码；动态素材准备完成前显示静态回退图。其他 macOS 版本只使用静态回退。
+macOS 没有公开 API 可把第三方视频设为锁屏动态墙纸。LiveWall 在已验证的 macOS 27 上复用 Aerial 播放引擎：锁屏事件触发当前视频的下载与转换，生成与源视频等长、带 HEVC temporal scalability（`tscl` / `tsas`）样本组的 MOV，再备份并替换一个 Apple Aerial 视频槽位，将 `Index.plist` 设为 `Type=linked` 动态选择。普通桌面轮换不会触发下载或转码；动态素材准备完成前显示静态回退图。其他 macOS 版本只使用静态回退。
 
-当前编码把高于 30 fps 的源视频降到 30 fps，目标约 0.8 bit/pixel（1080p 约 1.66 Mbps；一分钟产物约 12 MiB，属编码参数估算）。素材播放超过时长后是否循环取决于 Aerial 播放行为，可能停在末帧。该实现属于非公开系统集成，会影响被替换的 Aerial 槽位及 Apple 屏保；系统更新或重新下载 Aerial 可能覆盖改动。关闭「锁屏预览」时，LiveWall 尝试恢复原视频与 Index。备份位于 `~/Library/Application Support/com.meowv.livewall/aerial-lock-screen/`。
+当前编码把高于 30 fps 的源视频降到 30 fps，目标约 0.8 bit/pixel（1080p 约 1.66 Mbps；10 秒源片约 2 MiB，属编码参数估算）。锁屏端实测播完会自动重播，因此不再延长时长：编码耗时与产物体积都只跟源片长度成正比。该实现属于非公开系统集成，会影响被替换的 Aerial 槽位及 Apple 屏保；系统更新或重新下载 Aerial 可能覆盖改动。关闭「锁屏预览」时，LiveWall 尝试恢复原视频与 Index。备份位于 `~/Library/Application Support/com.meowv.livewall/aerial-lock-screen/`。
 
 ### 来源与回退链
 
