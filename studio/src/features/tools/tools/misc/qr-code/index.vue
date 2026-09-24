@@ -67,6 +67,8 @@ const readerDragging = ref(false);
 const readerCopied = ref(false);
 let readerRequestId = 0;
 let readerCopiedTimer: number | null = null;
+const MAX_READER_FILE_BYTES = 50 * 1024 * 1024;
+const MAX_READER_PIXELS = 50_000_000;
 
 function revokeReaderPreview(): void {
   if (readerPreviewUrl.value) URL.revokeObjectURL(readerPreviewUrl.value);
@@ -79,8 +81,14 @@ async function scanQrCode(file: File, requestId: number): Promise<void> {
   readerOutput.value = '';
 
   try {
+    if (file.size > MAX_READER_FILE_BYTES) {
+      throw new Error('图片文件过大，请选择 50 MB 以内的图片。');
+    }
     const bitmap = await createImageBitmap(file);
     try {
+      if (bitmap.width * bitmap.height > MAX_READER_PIXELS) {
+        throw new Error('图片像素尺寸过大，请选择较小的图片。');
+      }
       const maxEdge = 2048;
       const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
       const canvas = document.createElement('canvas');
