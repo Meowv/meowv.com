@@ -212,9 +212,14 @@ function cmykToRgb(cyan: number, magenta: number, yellow: number, black: number)
 }
 
 function parseNumbers(source: string): number[] | null {
-  const matches = source.match(/[\d.]+/g);
+  const matches = source.match(/[-+]?(?:\d+(?:\.\d+)?|\.\d+)/g);
   if (!matches) return null;
-  return matches.map(Number);
+  const values = matches.map(Number);
+  return values.every(Number.isFinite) ? values : null;
+}
+
+function isInRange(value: number, minimum: number, maximum: number): boolean {
+  return Number.isFinite(value) && value >= minimum && value <= maximum;
 }
 
 function percent(value: number): string {
@@ -245,28 +250,55 @@ function updateFromHex(source: string): void {
 function updateFromRgb(source: string, field: 'rgb' | 'rgba'): void {
   fields[field] = source;
   const values = parseNumbers(source);
-  if (!values || values.length < 3 || values[0] > 255 || values[1] > 255 || values[2] > 255) return;
+  const expectedLength = field === 'rgba' ? 4 : 3;
+  if (
+    !values ||
+    values.length !== expectedLength ||
+    !values.slice(0, 3).every((value) => isInRange(value, 0, 255)) ||
+    (field === 'rgba' && !isInRange(values[3]!, 0, 1))
+  ) {
+    return;
+  }
   syncFromRgb({ r: values[0], g: values[1], b: values[2] }, values[3] ?? 1);
 }
 
 function updateFromHsl(source: string, field: 'hsl' | 'hsla'): void {
   fields[field] = source;
   const values = parseNumbers(source);
-  if (!values || values.length < 3 || values[1] > 100 || values[2] > 100) return;
+  const expectedLength = field === 'hsla' ? 4 : 3;
+  if (
+    !values ||
+    values.length !== expectedLength ||
+    !isInRange(values[1]!, 0, 100) ||
+    !isInRange(values[2]!, 0, 100) ||
+    (field === 'hsla' && !isInRange(values[3]!, 0, 1))
+  ) {
+    return;
+  }
   syncFromRgb(hslToRgb(values[0], values[1], values[2]), values[3] ?? 1);
 }
 
 function updateFromHsv(source: string): void {
   fields.hsv = source;
   const values = parseNumbers(source);
-  if (!values || values.length < 3 || values[1] > 100 || values[2] > 100) return;
+  if (
+    !values ||
+    values.length !== 3 ||
+    !isInRange(values[0]!, 0, 360) ||
+    !isInRange(values[1]!, 0, 100) ||
+    !isInRange(values[2]!, 0, 100)
+  ) {
+    return;
+  }
   syncFromRgb(hsvToRgb(values[0], values[1], values[2]));
 }
 
 function updateFromCmyk(source: string): void {
   fields.cmyk = source;
   const values = parseNumbers(source);
-  if (!values || values.length < 4) return;
+  if (!values || values.length !== 4 || !values.every((value) => isInRange(value, 0, 100))) {
+    return;
+  }
   syncFromRgb(cmykToRgb(values[0], values[1], values[2], values[3]));
 }
 
