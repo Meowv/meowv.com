@@ -242,7 +242,7 @@ extension AppDelegate {
         levelMenu.addItem(diagnostics)
 
         let levelRoot = NSMenuItem(
-            title: "壁纸显示位置（\(currentPlacement == .immersive ? "沉浸模式" : "标准桌面")）",
+            title: "壁纸位置（\(currentPlacement == .immersive ? "沉浸模式" : "标准桌面")）",
             action: nil,
             keyEquivalent: "")
         levelRoot.submenu = levelMenu
