@@ -76,7 +76,7 @@ const errorMessage = ref('');
 const errorVisible = ref(false);
 let errorHideTimer: number | null = null;
 
-/** 回到书架标记：手动返回书架后，刷新页面不再自动恢复上次打开的书籍，直到再次打开任意书籍。 */
+/** 页面刷新后是否恢复最近打开的书；用户回到书架时立即写入，避免异步保存造成状态竞争。 */
 const SHELF_RETURN_KEY = 'meowv-studio:books:returned-to-shelf:v1';
 
 function markReturnedToShelf(): void {
@@ -132,6 +132,7 @@ const canGoForward = ref(false);
 const canGoBack = ref(false);
 const showReaderTip = ref(false);
 const pagePreparing = ref(false);
+const shelfReady = ref(false);
 const shelfEntries = ref<BookshelfEntry[]>([]);
 const persistentShelf = ref(bookshelf.persistentHandles);
 const readerPanel = ref<'toc' | 'settings' | null>(null);
@@ -170,9 +171,8 @@ let hideAt = 0;
 let shelfActive = false;
 let stopWindowFileHandoff: (() => void) | null = null;
 let builtinProbeTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
-/** 收到外部文件交接后，阻止自动恢复上次阅读的书籍覆盖新打开的书。 */
+/** 收到外部文件交接后，阻止启动时恢复的书籍覆盖新打开的文件。 */
 let handoffArrived = false;
-
 /** 指针是否悬停在阅读进度条（底部控制条）上；悬停期间不自动隐藏。 */
 function pointerOverControls(): boolean {
   return document.querySelector('.books-reader-controls__bottom')?.matches(':hover') ?? false;
@@ -409,12 +409,12 @@ function resetReaderView(): void {
 }
 
 async function returnToShelf(message = ''): Promise<void> {
+  markReturnedToShelf();
   const currentOperation = ++operationId;
   await progressSave.flush();
   if (engine?.snapshot.state === 'OPEN') await engine.close().catch(() => undefined);
   await disposeReader();
   if (currentOperation !== operationId) return;
-  markReturnedToShelf();
   resetReaderView();
   showError(message);
   await refreshShelf();
@@ -573,6 +573,7 @@ async function openFile(
   handle?: FileSystemFileHandle,
   options: OpenBookOptions = {},
 ): Promise<void> {
+  clearReturnedToShelf();
   cancelBuiltinProbe();
   pendingTurn = null;
   restoreId += 1;
@@ -731,7 +732,6 @@ async function openFile(
     };
     if (!currentEntry.builtIn) rememberBookshelfSessionFile(fingerprint, file);
     await bookshelf.upsert(currentEntry);
-    clearReturnedToShelf();
 
     // 占位空白页要与阅读主题一致。载入时的封面采样对深色主题无效（亮度下限会拒绝），
     // 所以这里先按主题设定，采样只当浅色主题下的精修。固定版式没有 setAppearance，
@@ -809,7 +809,6 @@ async function chooseFile(): Promise<void> {
 }
 
 async function openShelfEntry(entry: BookshelfEntry): Promise<void> {
-  // 书架点击是用户的明确选择，立即让启动时的自动恢复失效。
   restoreId += 1;
   cancelBuiltinProbe();
   hideError();
@@ -1126,31 +1125,39 @@ function onKeyup(event: KeyboardEvent): void {
 }
 
 async function restoreLastBook(restoreOperation: number): Promise<void> {
-  if (restoreOperation !== restoreId) return;
   await refreshShelf();
-  if (restoreOperation !== restoreId || returnedToShelf()) return;
+  shelfReady.value = true;
+  if (restoreOperation !== restoreId || handoffArrived || returnedToShelf()) return;
+
   const candidate = [...shelfEntries.value].sort(
     (left, right) => right.lastOpenedAt - left.lastOpenedAt,
   )[0];
   if (!candidate) return;
-  if (candidate.builtIn && candidate.id.startsWith(BUILTIN_ID_PREFIX)) return;
+  if (candidate.builtIn && candidate.id.startsWith(BUILTIN_ID_PREFIX)) {
+    markReturnedToShelf();
+    return;
+  }
+
   const file = await resolveBookshelfFile(candidate, false);
   if (restoreOperation !== restoreId || handoffArrived) return;
   if (!file) {
-    if (candidate.builtIn) return;
-    if (candidate.availability === 'available') {
+    if (!candidate.builtIn && candidate.availability === 'available') {
       await bookshelf.upsert({ ...candidate, availability: 'permission-required' });
       await refreshShelf();
     }
+    markReturnedToShelf();
     return;
   }
+
   const fingerprint = await createBookFingerprint(file);
   if (restoreOperation !== restoreId || handoffArrived) return;
   if (fingerprint !== candidate.id) {
     await bookshelf.upsert({ ...candidate, availability: 'missing' });
     await refreshShelf();
+    markReturnedToShelf();
     return;
   }
+
   await openFile(file, candidate.handle, { autoOpen: true, existingEntry: candidate });
 }
 
@@ -1169,7 +1176,9 @@ onMounted(() => {
     restoreId += 1;
     void openFile(handoff.file, handoff.handle, { autoOpen: true });
   }
-  void restoreLastBook(restoreOperation).catch(() => undefined);
+  void restoreLastBook(restoreOperation).catch(() => {
+    shelfReady.value = true;
+  });
   stopWindowFileHandoff = receiveWindowFileHandoff('book', (file, handle) => {
     handoffArrived = true;
     restoreId += 1;
@@ -1226,12 +1235,12 @@ onBeforeUnmount(() => {
     />
 
     <BookWelcome
-      v-if="!readerMounted && !shelfEntries.length"
+      v-if="shelfReady && !readerMounted && !shelfEntries.length"
       :dragging="dragging"
       @pick="chooseFile"
     />
     <BookshelfView
-      v-else-if="!readerMounted"
+      v-else-if="shelfReady && !readerMounted"
       :entries="sortedShelfEntries"
       :persistent="persistentShelf"
       @pick="chooseFile"
