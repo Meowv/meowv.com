@@ -92,8 +92,8 @@ final class ThumbnailLoader {
     ) {
         /// 按**传入顺序**保序（`items` 是调用方按可见序号排好的），
         /// 后面 `pump` 用它决定先发哪几个 —— 并发位（上限 4）必须优先给屏幕顶部的卡片。
-        var fresh: [String] = []
-        var seenFresh: Set<String> = []
+        var visibleKeys: [String] = []
+        var seenVisible: Set<String> = []
 
         for item in items {
             guard let key = variant.candidates(for: item).first?.absoluteString else {
@@ -111,19 +111,22 @@ final class ThumbnailLoader {
                 completion(item, nil)
                 continue
             }
+            if seenVisible.insert(key).inserted { visibleKeys.append(key) }
             if candidatesByKey[key] != nil {
                 // 已登记（在飞或排队）：挂上去等同一个结果，不再发第二个请求。
+                // 可见的旧排队项也必须进入本批队列，滚动时才能保留并重新排序。
                 waiters[key, default: []].append { image in completion(item, image) }
                 continue
             }
             waiters[key] = [{ image in completion(item, image) }]
             candidatesByKey[key] = variant.candidates(for: item)
             variantsByKey[key] = variant
-            if seenFresh.insert(key).inserted { fresh.append(key) }
         }
 
-        guard !fresh.isEmpty else { return }
-        pump(replacingPending: replacingPending, keeping: fresh)
+        // 即使没有新项，滚动后的完整可见集合仍须用来清掉过期排队项。
+        if replacingPending || !visibleKeys.isEmpty {
+            pump(replacingPending: replacingPending, keeping: visibleKeys)
+        }
     }
 
     /// 清空缩略图的**失败表**，让这些地址可以被重新请求（浏览窗口的「重试」按钮）。
