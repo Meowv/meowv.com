@@ -14,10 +14,11 @@ import {
   type PdfDocumentLoadOptions,
 } from './PdfDocumentLoader';
 import { PdfPageProvider } from './PdfPageProvider';
+import { cleanPdfMetadataText } from './pdf-metadata';
 
 function authorNames(value: unknown): string[] {
   if (typeof value !== 'string') return [];
-  return value
+  return cleanPdfMetadataText(value)
     .split(/[,;、，]/)
     .map((item) => item.trim())
     .filter(Boolean);
@@ -46,7 +47,7 @@ async function normalizeOutline(
       const locator: BookLocator = { kind: 'fixed', pageNumber };
       const children = await normalizeOutline(document, item.items);
       return {
-        label: item.title || `第 ${pageNumber} 页`,
+        label: cleanPdfMetadataText(item.title) || `第 ${pageNumber} 页`,
         locator,
         ...(children.length ? { children } : {}),
       };
@@ -79,8 +80,7 @@ export class PdfPublication implements Publication {
       ]);
       assertNotAborted(options.signal);
       const info = rawMetadata?.info as Record<string, unknown> | undefined;
-      const title =
-        (typeof info?.Title === 'string' && info.Title.trim()) || file.name.replace(/\.pdf$/i, '');
+      const title = cleanPdfMetadataText(info?.Title) || file.name.replace(/\.pdf$/i, '');
       const metadata: PublicationMetadata = {
         title,
         authors: authorNames(info?.Author),

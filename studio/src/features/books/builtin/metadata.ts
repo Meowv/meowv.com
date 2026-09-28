@@ -2,6 +2,7 @@ import { inflateSync } from 'fflate';
 import { createBookFingerprintFromParts } from '../persistence/BookFingerprint';
 import type { PublicationMetadata } from '../types/reader';
 import type { BuiltinBookDef } from './types';
+import { cleanPdfMetadataText } from '../publication/pdf/pdf-metadata';
 
 const SAMPLE_BYTES = 64 * 1024;
 
@@ -453,10 +454,10 @@ async function probePdfMetadata(
   if (!info) return null;
   const dictText = await resolveObjectText(info);
   if (!dictText) return null;
-  const title = extractPdfString(dictText, 'Title');
-  const author = extractPdfString(dictText, 'Author');
+  const title = cleanPdfMetadataText(extractPdfString(dictText, 'Title'));
+  const author = cleanPdfMetadataText(extractPdfString(dictText, 'Author'));
   if (!title && !author) return null;
-  return { title: title ?? '', authors: author ? [author] : [] };
+  return { title, authors: author ? [author] : [] };
 }
 
 /**

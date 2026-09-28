@@ -1,16 +1,39 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import {
   IconArrowsMaximize,
   IconCircleChevronUp,
   IconCircleChevronDown,
   IconConfetti,
+  IconDots,
   IconFilePlus,
   IconMoon,
   IconSun,
   IconTrash,
 } from '@tabler/icons-vue';
 import StudioLogo from '@/components/StudioLogo.vue';
+
+const dataMenu = ref<HTMLDetailsElement | null>(null);
+
+function closeDataMenu(): void {
+  if (dataMenu.value) dataMenu.value.open = false;
+}
+
+function requestExport(): void {
+  closeDataMenu();
+  emit('export-backup');
+}
+
+function requestImport(): void {
+  closeDataMenu();
+  emit('import-backup');
+}
+
+function requestClear(): void {
+  closeDataMenu();
+  emit('clear');
+}
 
 defineProps<{
   headerVisible: boolean;
@@ -25,6 +48,8 @@ const emit = defineEmits<{
   (e: 'toggle-all'): void;
   (e: 'arrange'): void;
   (e: 'carnival'): void;
+  (e: 'export-backup'): void;
+  (e: 'import-backup'): void;
   (e: 'clear'): void;
   (e: 'toggle-theme'): void;
 }>();
@@ -79,15 +104,18 @@ const emit = defineEmits<{
         <IconConfetti :key="carnivalLevel" :size="18" />
       </button>
       <span class="notes-editor__separator" aria-hidden="true"></span>
-      <button
-        class="note-action note-action--danger"
-        type="button"
-        aria-label="清空全部便签"
-        data-tooltip="清空全部便签"
-        @click="emit('clear')"
-      >
-        <IconTrash :size="18" />
-      </button>
+      <details ref="dataMenu" class="notes-editor__data-menu" @keydown.esc="closeDataMenu">
+        <summary class="note-action" aria-label="备份与清理" data-tooltip="备份与清理">
+          <IconDots :size="18" />
+        </summary>
+        <div class="notes-editor__data-actions">
+          <button type="button" @click="requestExport">导出备份</button>
+          <button type="button" @click="requestImport">导入备份（合并）</button>
+          <button class="note-action--danger" type="button" @click="requestClear">
+            <IconTrash :size="16" />清空全部便签
+          </button>
+        </div>
+      </details>
       <button
         class="note-action"
         type="button"

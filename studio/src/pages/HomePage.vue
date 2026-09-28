@@ -12,7 +12,11 @@ import {
   IconApps,
   IconWallpaper,
 } from '@tabler/icons-vue';
-import { STUDIO_FILE_ACCEPT, useFileLauncher } from '@/composables/useFileLauncher';
+import {
+  STUDIO_FILE_ACCEPT,
+  STUDIO_FILE_PICKER_TYPES,
+  useFileLauncher,
+} from '@/composables/useFileLauncher';
 import { useImagePaste } from '@/features/tools/tools/_shared/image/composables/useImagePaste';
 import ToolsBackgroundShortcut from '@/features/tools/components/ToolsBackgroundShortcut.vue';
 import fileOrbitUrl from '@/assets/images/file-orbit.png';
@@ -86,35 +90,6 @@ const quickRoutes = [
     to: '/tools',
     icon: IconApps,
     tone: 'tools',
-  },
-];
-
-const STUDIO_FILE_PICKER_TYPES = [
-  {
-    description: 'Studio 支持的文件',
-    accept: {
-      'image/avif': ['.avif'],
-      'image/bmp': ['.bmp'],
-      'image/gif': ['.gif'],
-      'image/heic': ['.heic', '.heif'],
-      'image/jpeg': ['.jpeg', '.jpg'],
-      'image/png': ['.png'],
-      'image/vnd.adobe.photoshop': ['.psd'],
-      'image/svg+xml': ['.svg'],
-      'image/tiff': ['.tif', '.tiff'],
-      'image/webp': ['.webp'],
-      'text/markdown': ['.md', '.markdown'],
-      'text/plain': ['.txt'],
-      'text/x-mermaid': ['.mmd', '.mermaid'],
-      'application/json': ['.mermaid.json'],
-      'application/pdf': ['.pdf'],
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
-      'application/vnd.openxmlformats-officedocument.presentationml.presentation': ['.pptx'],
-      'text/csv': ['.csv'],
-      'application/vnd.excalidraw+json': ['.excalidraw'],
-      'application/x-meowv-mind': ['.mind'],
-    },
   },
 ];
 

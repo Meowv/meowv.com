@@ -4,6 +4,7 @@ import { useTheme } from '@/composables/useTheme';
 import { STORAGE_POLICY, storageAvailable } from '@/core/privacy/storage';
 import NoteCard from '@/features/notes/components/NoteCard.vue';
 import NotesHeader from '@/features/notes/components/NotesHeader.vue';
+import { mergeNotesBackup, parseNotesBackup, serializeNotesBackup } from './backup';
 import {
   clearNoteStickies,
   createNoteSticky,
@@ -246,6 +247,9 @@ const carnivalPhysics = new Map<string, CarnivalPhysics>();
 const carnivalTrails = new Map<string, { x: number; y: number; color: string }[]>();
 const particles: Particle[] = [];
 const fxCanvasRef = ref<HTMLCanvasElement | null>(null);
+const backupInput = ref<HTMLInputElement | null>(null);
+const backupNotice = ref('');
+const backupNoticeError = ref(false);
 
 let saveTimer: number | null = null;
 let saveQueue = Promise.resolve();
@@ -259,6 +263,9 @@ let fxContext: CanvasRenderingContext2D | null = null;
 let fxWidth = 0;
 let fxHeight = 0;
 let toastTimer: number | null = null;
+let backupNoticeTimer: number | null = null;
+let backupDownloadTimer: number | null = null;
+let backupDownloadUrl: string | null = null;
 let collapseCycleTimer: number | null = null;
 let collapseCycleInfinite = false;
 let carnivalAudioSource: AudioBufferSourceNode | null = null;
@@ -838,6 +845,75 @@ function createNote(): void {
   }
 }
 
+function showBackupNotice(message: string, error = false): void {
+  backupNotice.value = message;
+  backupNoticeError.value = error;
+  if (backupNoticeTimer !== null) window.clearTimeout(backupNoticeTimer);
+  backupNoticeTimer = window.setTimeout(() => {
+    backupNotice.value = '';
+    backupNoticeTimer = null;
+  }, 5000);
+}
+
+async function exportBackup(): Promise<void> {
+  try {
+    flushSaves();
+    await saveQueue;
+    const blob = new Blob([serializeNotesBackup(notes.value)], { type: 'application/json' });
+    if (backupDownloadTimer !== null) window.clearTimeout(backupDownloadTimer);
+    if (backupDownloadUrl) URL.revokeObjectURL(backupDownloadUrl);
+    backupDownloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = backupDownloadUrl;
+    link.download = `meowv-notes-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    backupDownloadTimer = window.setTimeout(() => {
+      if (backupDownloadUrl) URL.revokeObjectURL(backupDownloadUrl);
+      backupDownloadUrl = null;
+      backupDownloadTimer = null;
+    }, 1000);
+    showBackupNotice(`已导出 ${notes.value.length} 张便签。`);
+  } catch (error) {
+    showBackupNotice(error instanceof Error ? error.message : '导出备份失败。', true);
+  }
+}
+
+function chooseBackup(): void {
+  if (!backupInput.value) return;
+  backupInput.value.value = '';
+  backupInput.value.click();
+}
+
+async function importBackup(event: Event): Promise<void> {
+  const input = event.currentTarget as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = '';
+  if (!file) return;
+  if (file.size > 20 * 1024 * 1024) {
+    showBackupNotice('备份文件超过 20 MB，无法导入。', true);
+    return;
+  }
+  try {
+    const imported = parseNotesBackup(await file.text());
+    flushSaves();
+    await saveQueue;
+    const added = mergeNotesBackup(notes.value, imported, () => createNoteSticky('', 0, 0, 0).id);
+    if (added.length === 0) {
+      showBackupNotice('备份中的便签已存在，无需重复导入。');
+      return;
+    }
+    await enqueueSave(() => saveNotesBatch(added));
+    notes.value.push(...added);
+    topZ.value = Math.max(
+      topZ.value,
+      ...added.filter((note) => !note.pinned).map((note) => note.zIndex),
+    );
+    showBackupNotice(`已导入 ${added.length} 张便签，原有便签已保留。`);
+  } catch (error) {
+    showBackupNotice(error instanceof Error ? error.message : '导入备份失败。', true);
+  }
+}
+
 async function deleteNote(id: string): Promise<void> {
   const note = notes.value.find((item) => item.id === id);
   if (!note) return;
@@ -1399,6 +1475,9 @@ onBeforeUnmount(() => {
   particles.length = 0;
   carnivalCenter = null;
   if (toastTimer !== null) window.clearTimeout(toastTimer);
+  if (backupNoticeTimer !== null) window.clearTimeout(backupNoticeTimer);
+  if (backupDownloadTimer !== null) window.clearTimeout(backupDownloadTimer);
+  if (backupDownloadUrl) URL.revokeObjectURL(backupDownloadUrl);
   stopCollapseCycle();
   disposeCarnivalAudio();
   document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -1412,6 +1491,14 @@ onBeforeUnmount(() => {
     :class="{ 'notes-editor--carnival': isCarnival }"
     aria-label="便签画布"
   >
+    <input
+      ref="backupInput"
+      class="visually-hidden"
+      type="file"
+      accept=".json,application/json"
+      aria-label="选择便签备份文件"
+      @change="importBackup"
+    />
     <NotesHeader
       :header-visible="headerVisible"
       :all-collapsed="allCollapsed"
@@ -1422,6 +1509,8 @@ onBeforeUnmount(() => {
       @toggle-all="toggleAll"
       @arrange="arrangeCanvas"
       @carnival="startCarnival"
+      @export-backup="exportBackup"
+      @import-backup="chooseBackup"
       @clear="clearAll"
       @toggle-theme="toggleTheme"
     />
@@ -1450,5 +1539,13 @@ onBeforeUnmount(() => {
     <div v-if="carnivalToast" class="notes-editor__toast" role="status" aria-live="polite">
       🎉 你发现了便签宇宙。
     </div>
+    <p
+      v-if="backupNotice"
+      class="notes-editor__backup-notice"
+      :class="{ 'notes-editor__backup-notice--error': backupNoticeError }"
+      :role="backupNoticeError ? 'alert' : 'status'"
+    >
+      {{ backupNotice }}
+    </p>
   </section>
 </template>
