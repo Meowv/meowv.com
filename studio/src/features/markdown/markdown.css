@@ -2789,6 +2789,20 @@ body.tree-dragging--invalid .markdown-studio * {
   cursor: pointer;
 }
 
+.markdown-studio .graph-node:focus {
+  outline: none;
+}
+
+.markdown-studio .graph-node:focus-visible circle {
+  stroke: var(--color-brand-hover);
+  stroke-width: 3;
+}
+
+.markdown-studio .graph-node:focus-visible text {
+  fill: var(--color-brand-hover);
+  font-weight: 600;
+}
+
 .markdown-studio .graph-node text {
   fill: var(--color-text);
   font-family: var(--font-ui);
