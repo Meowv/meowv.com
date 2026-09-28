@@ -1096,6 +1096,11 @@
 
 .books-reader-panel__settings label b {
   float: right;
+  padding: 3px 7px;
+  border: 1px solid rgb(215 181 135 / 24%);
+  border-radius: 999px;
+  color: #f4d7ac;
+  background: rgb(132 87 58 / 18%);
   font-weight: 500;
 }
 
@@ -1106,10 +1111,31 @@
 
 .books-reader-panel__settings input[type='range'] {
   width: 100%;
+  height: 18px;
+  margin: 0;
   accent-color: #c6a370;
+  cursor: pointer;
 }
 
-.books-reader-panel__settings fieldset {
+.books-reader-panel__settings input[type='range']:focus-visible {
+  outline: 2px solid #d7b587;
+  outline-offset: 3px;
+}
+
+.books-reader-panel__settings .books-reader-panel__range-label {
+  gap: 6px;
+}
+
+.books-reader-panel__range-hint {
+  display: flex;
+  margin-top: -4px;
+  color: rgb(247 237 224 / 34%);
+  justify-content: space-between;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.books-reader-panel__settings .books-reader-panel__choices {
   display: grid;
   margin: 0;
   padding: 0;
@@ -1118,23 +1144,52 @@
   gap: 7px;
 }
 
-.books-reader-panel__settings legend {
+.books-reader-panel__settings .books-reader-panel__choices legend {
   margin-bottom: 8px;
 }
 
-.books-reader-panel__settings fieldset button {
+.books-reader-panel__settings .books-reader-panel__choices button {
+  display: flex;
   min-height: 34px;
+  padding: 7px 5px;
   border: 1px solid rgb(240 222 198 / 12%);
   border-radius: 8px;
   color: rgb(247 237 224 / 60%);
   background: rgb(255 255 255 / 3%);
   cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 3px;
 }
 
-.books-reader-panel__settings fieldset button.is-active {
+.books-reader-panel__settings .books-reader-panel__choices button strong {
+  font-size: 11px;
+  font-weight: 550;
+}
+
+.books-reader-panel__settings .books-reader-panel__choices button small {
+  color: rgb(247 237 224 / 38%);
+  font-size: 9px;
+}
+
+.books-reader-panel__settings .books-reader-panel__choices--font button {
+  min-height: 52px;
+}
+
+.books-reader-panel__settings .books-reader-panel__choices button:hover {
+  border-color: rgb(215 181 135 / 36%);
+  color: #fff6e9;
+}
+
+.books-reader-panel__settings .books-reader-panel__choices button.is-active {
   border-color: rgb(215 181 135 / 48%);
   color: #fff6e9;
   background: rgb(132 87 58 / 35%);
+}
+
+.books-reader-panel__settings .books-reader-panel__choices button.is-active small {
+  color: rgb(255 246 233 / 62%);
 }
 
 @keyframes books-welcome-breathe {

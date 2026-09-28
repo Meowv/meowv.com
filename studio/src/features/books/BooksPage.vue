@@ -1033,13 +1033,11 @@ async function applyReaderProfile(profile: ReaderLayoutProfile): Promise<void> {
     await pageProvider.setAppearance?.(readerProfile.value.theme);
     engine.setBlankPageColor(themeColors(readerProfile.value.theme).background);
     await engine.refreshPages();
-    readerPanel.value = null;
     return;
   }
   const locator = pageProvider.locatorForPage(Math.max(1, currentPage.value));
   readerProfile.value = normalizeReaderLayout(profile);
   persistReaderLayout(readerProfile.value);
-  readerPanel.value = null;
   await openFile(file, handle, {
     autoOpen: true,
     locator,
