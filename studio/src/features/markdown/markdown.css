@@ -1510,6 +1510,7 @@ body.workspace-resizing * {
 }
 
 .markdown-studio .statusbar {
+  position: relative;
   z-index: 28;
   display: flex;
   min-width: 0;
@@ -1551,6 +1552,69 @@ body.workspace-resizing * {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.markdown-studio .statusbar__workspace-tip {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 20px;
+  z-index: 90;
+  width: min(300px, calc(100vw - 24px));
+  padding: 12px;
+  border: 1px solid var(--color-brand-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-popover);
+  color: var(--color-text);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.markdown-studio .statusbar__workspace-tip::after {
+  position: absolute;
+  bottom: -6px;
+  left: 14px;
+  width: 10px;
+  height: 10px;
+  border-right: 1px solid var(--color-brand-border);
+  border-bottom: 1px solid var(--color-brand-border);
+  background: var(--color-surface);
+  content: '';
+  transform: rotate(45deg);
+}
+
+.markdown-studio .statusbar__workspace-tip p {
+  margin: 0 0 10px;
+}
+
+.markdown-studio .statusbar__workspace-tip-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.markdown-studio .statusbar__workspace-tip-actions button {
+  min-height: 30px;
+  padding: 5px 9px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.markdown-studio .statusbar__workspace-tip-actions button:first-child {
+  background: var(--color-brand);
+  color: #fff;
+}
+
+.markdown-studio .statusbar__workspace-tip-actions button:last-child {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.markdown-studio .statusbar__workspace-tip-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .markdown-studio .statusbar__group--controls {
@@ -2983,6 +3047,10 @@ body.tree-dragging--invalid .markdown-studio * {
 
   .markdown-studio .statusbar__workspace-name {
     display: none;
+  }
+
+  .markdown-studio .statusbar__workspace-tip {
+    left: 10px;
   }
 
   .markdown-studio .statusbar__group:first-child {

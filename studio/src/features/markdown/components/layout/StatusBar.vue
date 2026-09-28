@@ -10,10 +10,30 @@ import {
 } from '@/features/markdown/icons';
 import { useWorkspaceStore } from '@/features/markdown/stores/workspace';
 import type { AutoSaveDelay, WorkspacePreferences } from '@/features/markdown/types/workspace';
+import { STORAGE_POLICY } from '@/core/privacy/storage';
 
 type BooleanPreferenceKey = 'autoSaveEnabled' | 'wordWrap' | 'lineNumbers' | 'syncScroll';
 
 const store = useWorkspaceStore();
+const workspaceTipStorageKey = `${STORAGE_POLICY.namespace('markdown')}:workspace-tip-seen`;
+const workspaceTipSeen = ref(true);
+const showWorkspaceTip = computed(
+  () => store.isDemo && !workspaceTipSeen.value && !store.fullscreenPane,
+);
+
+function dismissWorkspaceTip(): void {
+  workspaceTipSeen.value = true;
+  try {
+    globalThis.localStorage.setItem(workspaceTipStorageKey, '1');
+  } catch {
+    // 本地存储不可用时，本次页面仍可关闭提示。
+  }
+}
+
+function openLocalWorkspace(): void {
+  dismissWorkspaceTip();
+  void store.openLocalWorkspace();
+}
 
 const characterCount = ref(0);
 let characterCountTimer: ReturnType<typeof setTimeout> | undefined;
@@ -125,6 +145,11 @@ function openHistoryWorkspace(id: string): void {
 }
 
 onMounted(() => {
+  try {
+    workspaceTipSeen.value = globalThis.localStorage.getItem(workspaceTipStorageKey) === '1';
+  } catch {
+    workspaceTipSeen.value = false;
+  }
   document.addEventListener('click', onDocumentClick);
   document.addEventListener('keydown', onDocumentKeydown);
 });
@@ -136,9 +161,11 @@ onMounted(() => {
       <button
         class="statusbar__workspace"
         type="button"
-        title="切换工作空间"
+        title="切换工作空间：打开本地文件夹"
+        aria-label="切换工作空间：打开本地文件夹"
+        :aria-describedby="showWorkspaceTip ? 'workspace-tip' : undefined"
         :disabled="store.busy"
-        @click="store.openLocalWorkspace()"
+        @click="openLocalWorkspace"
       >
         <FolderInput :size="14" aria-hidden="true" />
         <span class="statusbar__workspace-name">{{ store.workspaceName }}</span>
@@ -203,6 +230,16 @@ onMounted(() => {
           </span>
         </span>
       </span>
+    </div>
+
+    <div v-if="showWorkspaceTip" class="statusbar__workspace-tip">
+      <p id="workspace-tip">当前正在体验示例工作空间。点击左下角可打开你的本地文件夹。</p>
+      <div class="statusbar__workspace-tip-actions">
+        <button type="button" :disabled="store.busy" @click="openLocalWorkspace">
+          打开本地文件夹
+        </button>
+        <button type="button" @click="dismissWorkspaceTip">继续体验示例</button>
+      </div>
     </div>
 
     <div class="statusbar__group statusbar__group--controls">
