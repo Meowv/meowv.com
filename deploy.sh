@@ -14,8 +14,8 @@ usage() {
 用法：
   ./deploy.sh [all | blog/b studio/s ...] [--dry-run]
 
-无项目参数时上传全部项目；只上传 build/ 中已有产物，不执行构建。
---dry-run  连接服务器并预览需要上传的文件，不实际上传
+无项目参数时部署全部项目；只使用 build/ 中已有产物，不执行构建。
+--dry-run  连接服务器并预览需要上传和删除的文件，不实际修改远端
 EOF
 }
 
@@ -127,40 +127,58 @@ for project in "${PROJECTS[@]}"; do
   state_file="$CACHE_DIR/$site.sha256"
   current_file="$CACHE_DIR/.$site.current.$$"
   changed_file="$CACHE_DIR/.$site.changed.$$"
-  TEMP_FILES+=("$current_file" "$changed_file")
+  deleted_file="$CACHE_DIR/.$site.deleted.$$"
+  TEMP_FILES+=("$current_file" "$changed_file" "$deleted_file")
 
-  rclone hashsum SHA256 "$source_dir" --config /dev/null --output-file "$current_file"
+  skip_prefix=""
+  if [ "$project" = studio ]; then
+    skip_prefix="data/books/"
+    rclone hashsum SHA256 "$source_dir" --config /dev/null --output-file "$current_file" --exclude '/data/books/**'
+  else
+    rclone hashsum SHA256 "$source_dir" --config /dev/null --output-file "$current_file"
+  fi
   if [ -f "$state_file" ]; then
     awk '
       NR == FNR { previous[substr($0, 67)] = substr($0, 1, 64); next }
       { path = substr($0, 67); if (!(path in previous) || previous[path] != substr($0, 1, 64)) print path }
     ' "$state_file" "$current_file" > "$changed_file"
+    awk -v skip_prefix="$skip_prefix" '
+      NR == FNR { current[substr($0, 67)] = 1; next }
+      { path = substr($0, 67); if (skip_prefix != "" && index(path, skip_prefix) == 1) next; if (!(path in current)) print path }
+    ' "$current_file" "$state_file" > "$deleted_file"
   else
     awk '{ print substr($0, 67) }' "$current_file" > "$changed_file"
+    : > "$deleted_file"
   fi
 
-  if [ ! -s "$changed_file" ]; then
-    echo "[$project] 没有变化，跳过上传。"
+  if [ ! -s "$changed_file" ] && [ ! -s "$deleted_file" ]; then
+    echo "[$project] 没有变化，跳过部署。"
     if [ "$DRY_RUN" -eq 0 ]; then
       mv "$current_file" "$state_file"
     fi
     continue
   fi
 
-  file_count="$(wc -l < "$changed_file" | tr -d ' ')"
+  upload_count="$(wc -l < "$changed_file" | tr -d ' ')"
+  delete_count="$(wc -l < "$deleted_file" | tr -d ' ')"
   if [ "$DRY_RUN" -eq 1 ]; then
-    echo "[$project] 预览 $file_count 个变化文件..."
+    echo "[$project] 预览上传 $upload_count 个文件、删除 $delete_count 个旧文件..."
   else
-    echo "[$project] 上传 $file_count 个变化文件..."
+    echo "[$project] 上传 $upload_count 个文件、删除 $delete_count 个旧文件..."
   fi
-  rclone copy "$source_dir" ":sftp:/C:/_qix/$site" --config /dev/null --files-from-raw "$changed_file" "${RCLONE_OPTIONS[@]}"
+  if [ -s "$changed_file" ]; then
+    rclone copy "$source_dir" ":sftp:/C:/_qix/$site" --config /dev/null --files-from-raw "$changed_file" "${RCLONE_OPTIONS[@]}"
+  fi
+  if [ -s "$deleted_file" ]; then
+    rclone delete ":sftp:/C:/_qix/$site" --config /dev/null --files-from-raw "$deleted_file" "${RCLONE_OPTIONS[@]}"
+  fi
   if [ "$DRY_RUN" -eq 0 ]; then
     mv "$current_file" "$state_file"
   fi
 done
 
 if [ "$DRY_RUN" -eq 1 ]; then
-  echo "预览完成，未上传。"
+  echo "预览完成，未修改远端。"
 else
-  echo "上传完成。"
+  echo "部署完成。"
 fi

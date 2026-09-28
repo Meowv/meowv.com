@@ -74,10 +74,10 @@ DEPLOY_PASSWORD='' # 可选：rclone obscure 的密文；留空则交互输入
 将文件权限设为 `600`；环境变量可以覆盖同名配置。部署目标由脚本固定为 `C:\_qix\meowv.com` 和 `C:\_qix\studio.meowv.com`，执行前需与实际服务器配置核对。
 
 ```bash
-./deploy.sh studio --dry-run  # 连接并预览变化文件，不上传
+./deploy.sh studio --dry-run  # 连接并预览上传、删除清单，不修改远端
 ./deploy.sh studio            # 上传 Studio（包括 /zitie/）
 ./deploy.sh blog              # 上传 Blog
 ./deploy.sh all               # 上传两个站点；无参数也表示全部
 ```
 
-脚本按本地 SHA-256 记录增量上传，使用 `rclone copy`，不会删除远端旧文件，也不负责备份、回滚或 Nginx 重启。上传后仍需检查线上页面和更新清单。修改生产环境前先阅读[仓库协作指南](./AGENTS.md)。
+脚本按本地 SHA-256 记录增量上传，并在上传成功后删除上次部署记录中已从本次构建消失的文件；首次部署没有旧记录，不会删除远端文件。Studio 的 `data/books/` 始终跳过，不上传也不删除，即使旧部署记录中包含书籍。远端手动放置或旧记录之外的文件不会被清理。脚本不负责备份、回滚或 Nginx 重启。上传后仍需检查线上页面和更新清单。修改生产环境前先阅读[仓库协作指南](./AGENTS.md)。
