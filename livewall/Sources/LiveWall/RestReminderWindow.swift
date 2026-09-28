@@ -11,6 +11,9 @@ enum RestReminderEndReason {
 @MainActor
 final class RestReminderWindow: NSWindow {
 
+    /// 休息层进出场使用同一时长，避免结束操作看起来像突然消失。
+    static let transitionDuration: TimeInterval = 1.2
+
     private let videoLayer: AVPlayerLayer
     private let buttonMaterial: NSVisualEffectView
     private let endButton: NSButton
@@ -65,8 +68,8 @@ final class RestReminderWindow: NSWindow {
         endButton.target = self
         endButton.action = #selector(endRest(_:))
         endButton.isBordered = false
-        // 保留按下时的背景反馈，但不高亮/压暗按钮内容，避免倒计时文字变得难读。
-        (endButton.cell as? NSButtonCell)?.highlightsBy = [.changeBackgroundCellMask]
+        // 点击时不改变按钮内容颜色，避免「结束休息」文字被系统置灰后难以辨认。
+        (endButton.cell as? NSButtonCell)?.highlightsBy = []
         endButton.contentTintColor = .white
         endButton.translatesAutoresizingMaskIntoConstraints = false
         buttonMaterial.addSubview(endButton)
@@ -109,7 +112,7 @@ final class RestReminderWindow: NSWindow {
     func fadeIn() {
         orderFrontRegardless()
         NSAnimationContext.runAnimationGroup { context in
-            context.duration = 1.0
+            context.duration = Self.transitionDuration
             context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
             animator().alphaValue = 1
         }
@@ -117,7 +120,8 @@ final class RestReminderWindow: NSWindow {
 
     func fadeOut() {
         NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.25
+            context.duration = Self.transitionDuration
+            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
             animator().alphaValue = 0
         }
     }
@@ -226,7 +230,7 @@ final class RestReminderCoordinator {
         }
         for window in windows { window.fadeOut() }
         Task { @MainActor [weak self] in
-            try? await Task.sleep(for: .milliseconds(300))
+            try? await Task.sleep(for: .milliseconds(Int(RestReminderWindow.transitionDuration * 1_000)))
             for window in windows {
                 window.orderOut(nil)
                 window.close()
