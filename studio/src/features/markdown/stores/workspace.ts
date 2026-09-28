@@ -132,7 +132,7 @@ interface WorkspaceMove {
   destinationParentPath: string;
 }
 
-const DEFAULT_DEMO_PATH = '技术/.NET/EFCore性能优化.md';
+const DEFAULT_DEMO_PATH = 'README.md';
 const ALLOWED_IMAGE_TYPES = new Set([
   'image/avif',
   'image/bmp',

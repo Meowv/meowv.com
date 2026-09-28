@@ -34,40 +34,38 @@ category: 后端
 
 # EF Core 性能优化实践
 
-在业务系统中，EF Core 是非常高效的 ORM 框架，但如果使用不当，也可能引入隐藏的性能问题。本文总结常见问题与优化方式。
+优化查询前，先查看生成的 SQL 和实际执行计划，确认瓶颈在数据库、网络还是对象装配。下面是三个常见的检查点。
 
-## 1. 减少不必要的跟踪
+## 只读查询关闭跟踪
 
-对于只读查询，使用 \`AsNoTracking()\` 可以显著减少内存占用和变更跟踪开销。
+不需要更新实体时，使用 \`AsNoTracking()\`，避免为每个结果维护变更跟踪状态。
 
-## 2. 合理使用 Include
+## 只取页面需要的字段
 
-避免过度使用 \`Include\` 导致笛卡尔积，必要时使用拆分查询。
-
-## 3. 查询投影
-
-- 使用 \`Select\` 只读取需要的字段
-- 避免加载整个实体
-- 为高频条件建立数据库索引
+用 \`Select\` 投影列表数据，减少传输和内存占用；筛选条件与排序字段仍需结合查询计划检查索引。
 
 \`\`\`csharp
-var list = await _dbContext.Orders
+var orders = await dbContext.Orders
     .AsNoTracking()
-    .Where(o => o.IsPaid && o.CreateTime >= start)
-    .Select(o => new OrderDto
+    .Where(order => order.IsPaid && order.CreateTime >= start)
+    .Select(order => new OrderDto
     {
-        Id = o.Id,
-        Amount = o.Amount,
-        CreateTime = o.CreateTime
+        Id = order.Id,
+        Amount = order.Amount,
+        CreateTime = order.CreateTime
     })
     .ToListAsync();
 \`\`\`
 
-![EF Core 查询性能对比](../../assets/efcore-performance-chart.png)
+## 谨慎加载关联数据
 
-## 4. 继续阅读
+多个集合同时使用 \`Include\` 可能放大结果集。先确认页面是否需要完整实体，再考虑投影或拆分查询，并比较实际 SQL。
 
-相关内容：[[Redis缓存实践]]、[[Vue 组合式 API]]。
+![示例图：查询性能对比](../../assets/efcore-performance-chart.png)
+
+图片是示例资源；优化效果应以自己的数据和查询为准。
+
+继续阅读：[[Redis缓存实践]]、[[Vue 组合式 API]]。
 `,
   },
   {
@@ -81,15 +79,19 @@ category: 后端
 
 # Redis 缓存实践
 
-缓存不是银弹。优先明确数据一致性、过期策略与降级路径，再决定是否引入 Redis。
+缓存适合重复读取、允许短暂过期的数据。接入前先写清楚：数据何时失效、更新后如何刷新，以及 Redis 不可用时页面如何退化。
 
-## 缓存键
+## 设计缓存键
 
-使用可读、可追踪并带版本的缓存键。
+键名包含业务对象、标识和版本，例如 \`article:summary:v1:42\`。版本变更时可以逐步迁移，避免不同结构共用旧值。
 
-## 关联阅读
+## 处理过期与回源
 
-当查询压力较大时，可结合 [[EF Core 性能优化实践]] 中的投影与只读查询策略。
+- 按数据更新频率设置 TTL，避免所有键同时过期。
+- 高并发热点可限制回源请求，避免缓存失效瞬间压垮数据库。
+- 监控命中率和回源耗时，确认缓存确实改善了体验。
+
+如果查询本身过重，先检查 [[EF Core 性能优化实践]] 中的投影与关联加载。
 `,
   },
   {
@@ -103,16 +105,21 @@ category: 前端
 
 # Vue 组合式 API
 
-将同一业务关注点的状态、计算属性与副作用组织在一起，可以让复杂组件更容易维护。
-
-## 推荐结构
+组合式 API 可以把一项功能的状态与派生结果放在一起。例如搜索列表时，输入是状态，过滤后的列表是计算结果。
 
 \`\`\`ts
-const keyword = ref("")
-const results = computed(() => search(keyword.value))
+import { computed, ref } from 'vue';
+
+const keyword = ref('');
+const articles = ref(['EF Core 性能优化实践', 'Redis 缓存实践']);
+const results = computed(() =>
+  articles.value.filter((title) => title.includes(keyword.value.trim())),
+);
 \`\`\`
 
-后端查询可参考 [[EF Core 性能优化实践]]。
+当逻辑被多个组件复用时，再提取成 composable；只用一次的简单状态留在组件内更容易阅读。
+
+示例中的文章可通过 [[EF Core 性能优化实践]] 与 [[Redis缓存实践|Redis 缓存实践]] 继续浏览。
 `,
   },
   {
@@ -126,22 +133,49 @@ category: 生活
 
 # 七月随记
 
-把复杂的事情拆成可验证的小步骤，往往比等待完美时机更有效。
+今天把散落在不同文件里的想法重新归到一个目录。写下标题、加上标签，再用链接连到相关笔记，过几天回来也能找到思路。
 
-> 写作也是一种整理思考的方式。
+> 先记下能说清的一小段，再慢慢整理成文章。
+
+这篇随记展示了引用块与 Front Matter 标签；也可以试试左侧的标签和知识图谱。
 `,
   },
   {
     path: 'README.md',
-    content: `# Blog
+    content: `# Markdown 工作区使用指南
 
-这是一个完全保存在本地文件夹中的 Markdown 工作空间。
+欢迎来到示例 Blog。你可以在左侧打开文章、编辑正文，并在右侧实时预览。示例中的修改只保留在当前页面；要编辑自己的文件，请点击左下角打开本地文件夹。
 
-- 技术笔记
-- 前端实践
-- 生活随记
+## 从这里开始
 
-从 [[EF Core 性能优化实践]] 开始阅读。
+- **资源管理器**：浏览文件和图片；在自己的文件夹中可以新建、重命名、移动文件。
+- **编辑与预览**：编写 Markdown，查看分级标题、代码高亮、图片和 Mermaid 图。
+- **查找与关联**：使用左侧的全文搜索、标签和知识图谱寻找笔记；\`[[文章标题]]\` 可以连接相关文章。
+- **导出**：在预览区右上角将当前文档导出为 Markdown、HTML、PDF 或 PNG。
+
+## 这里展示的 Markdown
+
+| 写法 | 在示例中的用途 |
+| --- | --- |
+| \`# 标题\`、列表、引用块 | 组织文章结构 |
+| 代码围栏与语言名 | 代码块与语法高亮 |
+| \`[[文章标题]]\` | 文档互链与知识图谱 |
+| \`![说明](相对路径)\` | 引用工作区中的图片 |
+| 文件开头的 YAML Front Matter | 标题、日期、标签与分类 |
+
+点击 [[EF Core 性能优化实践]] 查看代码块和相对路径图片；点击 [[Redis缓存实践|Redis 缓存实践]] 查看标签与文档互链；还可以阅读 [[Vue 组合式 API]] 和 [[七月随记]]。
+
+## Mermaid 图表
+
+在代码块的语言名处写 \`mermaid\`，预览区会渲染图表：
+
+\`\`\`mermaid
+graph LR
+    A[写下笔记] --> B[添加标签]
+    B --> C[连接相关文章]
+\`\`\`
+
+打开本地文件夹后，工作区会读取你选择的文件；写入操作以你的文件夹授权为准。
 `,
   },
 ];
