@@ -156,12 +156,16 @@ export function fetchBuiltinFile(def: BuiltinBookDef): Promise<File> {
   const task = (async () => {
     const response = await fetch(def.url, { cache: 'no-cache' });
     if (!response.ok) throw new Error(`内置书籍加载失败：${def.url}`);
-    return new File([await response.arrayBuffer()], def.title + `.${def.format}`, {
+    return new File([await response.blob()], def.title + `.${def.format}`, {
       lastModified: 0,
     });
   })();
   fileCache.set(def.url, task);
-  task.catch(() => fileCache.delete(def.url));
+  // 只合并进行中的下载；已打开文件由阅读器持有，避免整本书永久驻留。
+  void task.then(
+    () => fileCache.delete(def.url),
+    () => fileCache.delete(def.url),
+  );
   return task;
 }
 

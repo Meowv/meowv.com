@@ -21,6 +21,13 @@ import {
   createRenderedPage,
   disposeCanvas,
 } from '../rendered-page';
+import {
+  ChapterSnapshotCache,
+  createChapterSnapshot,
+  renderChapterSnapshot,
+  snapshotHasImages,
+  SNAPSHOT_CONTENT_ATTRIBUTE,
+} from './chapter-snapshot';
 import { neutralizeNegativeVerticalMargins } from './margin-normalize';
 import { findSectionIndex } from './page-lookup';
 import { SectionRefCounter, ViewportPool } from './viewport-pool';
@@ -46,6 +53,7 @@ interface ViewportSlot {
   sectionIndex: number;
   /** 最近一次应用排版时的外观版本，用于判断是否需要重排。 */
   appearanceRevision: number;
+  fixedSourceSize: PageSize;
 }
 
 function fixedViewport(source: string): PageSize {
@@ -323,9 +331,19 @@ export class HtmlPageProvider implements PageProvider {
   readonly #linkedStylesCache = new Map<string, string | null>();
   readonly #sectionHtmlCache = new Map<number, string>();
   #pageSize: PageSize = REFLOWABLE_PAGE_SIZE;
-  #fixedSourceSize: PageSize = REFLOWABLE_PAGE_SIZE;
   #pageCount = 0;
   #disposed = false;
+  #disposePromise: Promise<void> | null = null;
+  readonly #activeRenders = new Set<Promise<RenderedPage>>();
+  readonly #sectionLoads = new Map<number, Promise<string>>();
+  readonly #snapshots: ChapterSnapshotCache;
+  #canReuseSnapshots: boolean;
+  #snapshotHits = 0;
+  #snapshotRevision = 0;
+  readonly #invalidateSnapshots = (): void => {
+    this.#snapshotRevision += 1;
+    this.#snapshots.clear();
+  };
   #appearanceRevision = 0;
   #captureChain: Promise<void> = Promise.resolve();
   #captureMs = 0;
@@ -338,12 +356,18 @@ export class HtmlPageProvider implements PageProvider {
 
   private constructor(options: HtmlPageProviderOptions) {
     this.#sections = options.sections;
-    this.#profile = options.profile;
+    this.#profile = { ...options.profile };
     this.#fixedLayout = Boolean(options.fixedLayout);
     this.#onDispose = options.onDispose;
     const deviceMemory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8;
     this.#sanitizedBudget =
       deviceMemory < 4 ? SANITIZED_CACHE_BYTES_LOW_MEMORY : SANITIZED_CACHE_BYTES;
+    this.#snapshots = new ChapterSnapshotCache((deviceMemory < 4 ? 3 : 8) * 1024 * 1024);
+    // WebKit 需要 snapdom 的字体/阴影光栅化修正，继续使用其原始导出路径。
+    const webKit =
+      /AppleWebKit/.test(navigator.userAgent) && !/Chrome|Chromium/.test(navigator.userAgent);
+    this.#canReuseSnapshots = !this.#fixedLayout && !webKit;
+    document.fonts?.addEventListener('loadingdone', this.#invalidateSnapshots);
     this.#pool = new ViewportPool<ViewportSlot>({
       // 一次 renderPage 会一直持有槽位直到截图完成。实测再多的槽位也不会更快：
       // snapdom 主体工作在主线程，4 路并行的加速比只有 0.91（反而更慢），
@@ -384,11 +408,19 @@ export class HtmlPageProvider implements PageProvider {
       overflow: 'hidden',
     });
     const content = document.createElement('article');
+    content.setAttribute(SNAPSHOT_CONTENT_ATTRIBUTE, '');
     this.#applyViewportSize(host, viewport);
     viewport.append(content);
     host.append(viewport);
     document.body.append(host);
-    return { host, viewport, content, sectionIndex: -1, appearanceRevision: 0 };
+    return {
+      host,
+      viewport,
+      content,
+      sectionIndex: -1,
+      appearanceRevision: 0,
+      fixedSourceSize: REFLOWABLE_PAGE_SIZE,
+    };
   }
 
   static async create(options: HtmlPageProviderOptions): Promise<HtmlPageProvider> {
@@ -409,19 +441,25 @@ export class HtmlPageProvider implements PageProvider {
 
   /**
    * 单页渲染耗时的指数移动平均（毫秒），仅用于开发期定位主线程阻塞点。
-   * `captureMs` 覆盖 snapdom 截图与 toCanvas 的完整区间，`imageWaitMs` 覆盖 waitForImages。
+   * `captureMs` 覆盖快照创建或复用及光栅化的完整区间，`imageWaitMs` 覆盖图片等待。
    */
   get renderMetrics(): Readonly<{
     captureMs: number;
     imageWaitMs: number;
     captureSamples: number;
     imageWaitSamples: number;
+    snapshotHits: number;
+    snapshotBytes: number;
+    snapshotEntries: number;
   }> {
     return {
       captureMs: this.#captureMs,
       imageWaitMs: this.#imageWaitMs,
       captureSamples: this.#captureSamples,
       imageWaitSamples: this.#imageWaitSamples,
+      snapshotHits: this.#snapshotHits,
+      snapshotBytes: this.#snapshots.byteSize,
+      snapshotEntries: this.#snapshots.size,
     };
   }
 
@@ -431,6 +469,7 @@ export class HtmlPageProvider implements PageProvider {
     // 离屏槽位没人看，不必同步改 DOM；只提升外观版本，各槽位在下次截图前自行重排，
     // 避免与正在进行的截图撞车。
     this.#appearanceRevision += 1;
+    this.#invalidateSnapshots();
   }
 
   async #paginate(options: PublicationPaginateOptions = {}): Promise<void> {
@@ -438,7 +477,18 @@ export class HtmlPageProvider implements PageProvider {
     try {
       if (this.#fixedLayout) {
         // 固定版式以首个正文页面确定实体书比例，后续异尺寸页面在该比例内等比留白。
-        await this.#mountSection(slot, 0, options.signal, false);
+        await this.#mountSection(slot, 0, options.signal);
+        // 每章恒为一页，只加载首页确定比例，其他章节到翻页时再解压、净化和挂载。
+        for (let index = 0; index < this.#sections.length; index += 1) {
+          this.#pagination.push({ startPage: index + 1, pageCount: 1 });
+        }
+        this.#pageCount = this.#sections.length;
+        options.onProgress?.({
+          stage: 'paginating',
+          value: 0.76,
+          message: '正在准备固定版式书页…',
+        });
+        return;
       }
       const cachedCounts = options.paginationKey
         ? await loadPaginationIndex(options.paginationKey, this.#sections.length)
@@ -460,15 +510,13 @@ export class HtmlPageProvider implements PageProvider {
       }
       for (let index = 0; index < this.#sections.length; index += 1) {
         assertNotAborted(options.signal);
-        await this.#mountSection(slot, index, options.signal, false);
-        const count = this.#fixedLayout
-          ? 1
-          : Math.max(
-              1,
-              Math.ceil(
-                (slot.content.scrollWidth + this.#pageMarginPixels() * 2) / this.#pageSize.width,
-              ),
-            );
+        await this.#mountSection(slot, index, options.signal);
+        const count = Math.max(
+          1,
+          Math.ceil(
+            (slot.content.scrollWidth + this.#pageMarginPixels() * 2) / this.#pageSize.width,
+          ),
+        );
         this.#pagination.push({ startPage: this.#pageCount + 1, pageCount: count });
         this.#pageCount += count;
         options.onProgress?.({
@@ -501,10 +549,8 @@ export class HtmlPageProvider implements PageProvider {
     cachedCounts: number[],
     signal?: AbortSignal,
   ): Promise<boolean> {
-    // 固定版式每章恒为一页，无需抽查。
-    if (this.#fixedLayout) return true;
     try {
-      await this.#mountSection(slot, 0, signal, false);
+      await this.#mountSection(slot, 0, signal);
       const actual = Math.max(
         1,
         Math.ceil((slot.content.scrollWidth + this.#pageMarginPixels() * 2) / this.#pageSize.width),
@@ -539,20 +585,20 @@ export class HtmlPageProvider implements PageProvider {
     });
     const fixedScale = this.#fixedLayout
       ? Math.min(
-          this.#pageSize.width / this.#fixedSourceSize.width,
-          this.#pageSize.height / this.#fixedSourceSize.height,
+          this.#pageSize.width / slot.fixedSourceSize.width,
+          this.#pageSize.height / slot.fixedSourceSize.height,
         )
       : 1;
     Object.assign(slot.content.style, {
       position: 'absolute',
       top: this.#fixedLayout
-        ? `${(this.#pageSize.height - this.#fixedSourceSize.height * fixedScale) / 2}px`
+        ? `${(this.#pageSize.height - slot.fixedSourceSize.height * fixedScale) / 2}px`
         : `${margin}px`,
       left: this.#fixedLayout
-        ? `${(this.#pageSize.width - this.#fixedSourceSize.width * fixedScale) / 2}px`
+        ? `${(this.#pageSize.width - slot.fixedSourceSize.width * fixedScale) / 2}px`
         : `${margin}px`,
-      width: `${this.#fixedLayout ? this.#fixedSourceSize.width : this.#pageSize.width - margin * 2}px`,
-      height: `${this.#fixedLayout ? this.#fixedSourceSize.height : this.#pageSize.height - margin * 2}px`,
+      width: `${this.#fixedLayout ? slot.fixedSourceSize.width : this.#pageSize.width - margin * 2}px`,
+      height: `${this.#fixedLayout ? slot.fixedSourceSize.height : this.#pageSize.height - margin * 2}px`,
       margin: '0',
       padding: '0',
       boxSizing: 'border-box',
@@ -589,12 +635,7 @@ export class HtmlPageProvider implements PageProvider {
    * 把章节挂到指定槽位。章节内容只在需要时重新加载；同一章节被多个槽位引用时
    * 共享同一份 HTML（含 blob URL），卸载交给 SectionRefCounter 决定。
    */
-  async #mountSection(
-    slot: ViewportSlot,
-    index: number,
-    signal?: AbortSignal,
-    waitForContent = true,
-  ): Promise<void> {
+  async #mountSection(slot: ViewportSlot, index: number, signal?: AbortSignal): Promise<void> {
     if (this.#disposed) throw abortError('电子书页面提供器已释放。');
     if (slot.sectionIndex === index) {
       // 章节未变，但外观可能已经改变，需要重排后再截图。
@@ -603,59 +644,65 @@ export class HtmlPageProvider implements PageProvider {
     }
     this.#releaseSlotSection(slot);
     assertNotAborted(signal);
-    const html = await this.#loadSectionHtml(index, signal);
-    if (this.#disposed) throw abortError('电子书页面提供器已释放。');
-    if (this.#fixedLayout) {
-      this.#fixedSourceSize = fixedViewport(html);
-      if (index === 0) {
-        const aspect = Math.min(
-          1.65,
-          Math.max(0.38, this.#fixedSourceSize.width / this.#fixedSourceSize.height),
-        );
-        this.#pageSize = { width: Math.round(1000 * aspect), height: 1000 };
-        this.#syncViewportSize();
-      }
-    }
-    slot.content.innerHTML = await this.#sanitizeSection(index, html, signal);
-    // 离屏槽位里的 lazy 图片可能一直不触发加载，`complete` 会恒为 false，
-    // 该页就会被永久判定为「素材未完备」而一直不进缓存。这里统一改为立即加载。
-    for (const image of slot.content.querySelectorAll('img')) {
-      if (image.loading === 'lazy') image.loading = 'eager';
-    }
-    this.#applyLayout(slot);
+    // 加载和净化期间也持有引用，避免另一槽位先离开章节时撤销共享资源。
     slot.sectionIndex = index;
     this.#sectionRefs.retain(index);
-    if (waitForContent) {
-      const startedAt = performance.now();
-      try {
-        await waitForImages([...slot.content.querySelectorAll('img')], signal);
-      } finally {
-        this.#imageWaitSamples += 1;
-        this.#imageWaitMs = smoothMetric(
-          this.#imageWaitMs,
-          this.#imageWaitSamples,
-          performance.now() - startedAt,
-        );
+    try {
+      const html = await this.#loadSectionHtml(index, signal);
+      if (this.#disposed) throw abortError('电子书页面提供器已释放。');
+      if (this.#fixedLayout) {
+        slot.fixedSourceSize = fixedViewport(html);
+        if (index === 0) {
+          const aspect = Math.min(
+            1.65,
+            Math.max(0.38, slot.fixedSourceSize.width / slot.fixedSourceSize.height),
+          );
+          this.#pageSize = { width: Math.round(1000 * aspect), height: 1000 };
+          this.#syncViewportSize();
+        }
       }
+      const sanitized = await this.#sanitizeSection(index, html);
+      assertNotAborted(signal);
+      if (this.#disposed) throw abortError();
+      slot.content.innerHTML = sanitized;
+      // 离屏槽位里的 lazy 图片可能一直不触发加载，`complete` 会恒为 false，
+      // 该页就会被永久判定为「素材未完备」而一直不进缓存。这里统一改为立即加载。
+      for (const image of slot.content.querySelectorAll('img')) {
+        if (image.loading === 'lazy') image.loading = 'eager';
+      }
+      this.#applyLayout(slot);
+    } catch (error) {
+      this.#releaseSlotSection(slot);
+      throw error;
     }
   }
 
   async #loadSectionHtml(index: number, signal?: AbortSignal): Promise<string> {
     const cached = this.#sectionHtmlCache.get(index);
     if (cached !== undefined) return cached;
-    const source = await this.#sections[index].load();
-    assertNotAborted(signal);
-    const html = /^(?:blob:|data:)/i.test(source)
-      ? await fetch(source).then((response) => response.text())
-      : source;
-    assertNotAborted(signal);
-    // 缓存结果里可能含 blob URL；它们在章节引用归零被 unload() 时一并失效，
-    // 因此这里同步丢弃缓存项（见 #releaseSlotSection），不会留悬挂引用。
-    if (!this.#disposed) {
-      this.#sectionHtmlCache.set(index, html);
-      this.#evictSectionHtmlCache();
+    let task = this.#sectionLoads.get(index);
+    if (!task) {
+      // 不绑定某个消费者的 signal：同章的另一槽位仍可能需要这次加载。
+      task = (async () => {
+        const source = await this.#sections[index].load();
+        const html = /^(?:blob:|data:)/i.test(source)
+          ? await fetch(source).then((response) => response.text())
+          : source;
+        if (!this.#disposed) {
+          this.#sectionHtmlCache.set(index, html);
+          this.#evictSectionHtmlCache();
+        }
+        return html;
+      })();
+      this.#sectionLoads.set(index, task);
     }
-    return html;
+    try {
+      const html = await task;
+      assertNotAborted(signal);
+      return html;
+    } finally {
+      if (this.#sectionLoads.get(index) === task) this.#sectionLoads.delete(index);
+    }
   }
 
   #evictSectionHtmlCache(): void {
@@ -672,14 +719,17 @@ export class HtmlPageProvider implements PageProvider {
     }
   }
 
-  async #sanitizeSection(index: number, html: string, signal?: AbortSignal): Promise<string> {
+  async #sanitizeSection(index: number, html: string): Promise<string> {
     const cached = this.#sanitizedCache.get(index);
-    if (cached) return cached;
+    if (cached) {
+      this.#sanitizedCache.delete(index);
+      this.#sanitizedCache.set(index, cached);
+      return cached;
+    }
     const inflight = this.#sanitizeInflight.get(index);
     if (inflight) return inflight;
     const task = (async (): Promise<string> => {
-      assertNotAborted(signal);
-      const sanitized = sanitizeHtml(await this.#inlineLinkedStyles(html, signal));
+      const sanitized = sanitizeHtml(await this.#inlineLinkedStyles(html));
       if (!this.#disposed && !/\bblob:/i.test(html)) this.#cacheSanitized(index, sanitized);
       return sanitized;
     })();
@@ -724,15 +774,15 @@ export class HtmlPageProvider implements PageProvider {
 
   /** 写入净化缓存并维持字节预算。单条就超预算的章节不缓存，避免把整池挤空。 */
   #cacheSanitized(index: number, html: string): void {
-    if (html.length > this.#sanitizedBudget) return;
+    if (html.length * 2 > this.#sanitizedBudget) return;
     const existing = this.#sanitizedCache.get(index);
     if (existing !== undefined) {
       // Map.set 覆盖已存在的键不会更新插入顺序，先删再写才能让 LRU 生效。
       this.#sanitizedCache.delete(index);
-      this.#sanitizedBytes -= existing.length;
+      this.#sanitizedBytes -= existing.length * 2;
     }
     this.#sanitizedCache.set(index, html);
-    this.#sanitizedBytes += html.length;
+    this.#sanitizedBytes += html.length * 2;
     this.#evictSanitizedCache();
   }
 
@@ -742,7 +792,7 @@ export class HtmlPageProvider implements PageProvider {
       if (oldest === undefined) return;
       const removed = this.#sanitizedCache.get(oldest);
       this.#sanitizedCache.delete(oldest);
-      if (removed !== undefined) this.#sanitizedBytes -= removed.length;
+      if (removed !== undefined) this.#sanitizedBytes -= removed.length * 2;
     }
   }
 
@@ -821,16 +871,26 @@ export class HtmlPageProvider implements PageProvider {
       const { sectionIndex, pageIndex } = this.#resolvePage(pageNumber);
       const slot = await this.#pool.acquire(options.signal);
       try {
-        // 章节首页等图，同章节后续页不等（图片通常已 complete，会立即 resolve）。
-        await this.#mountSection(slot, sectionIndex, options.signal, pageIndex === 0);
+        await this.#mountSection(slot, sectionIndex, options.signal);
         if (!this.#fixedLayout) {
           slot.content.style.transform = `translateX(${-pageIndex * this.#pageSize.width}px)`;
         }
         // 每一页都只等待当前视口内的图片，避免章节后面的未加载图片阻塞或污染本页结果。
-        await waitForVisibleImages(slot.content, slot.viewport, options.signal);
+        const waitStartedAt = performance.now();
+        try {
+          await waitForVisibleImages(slot.content, slot.viewport, options.signal);
+        } finally {
+          this.#imageWaitSamples += 1;
+          this.#imageWaitMs = smoothMetric(
+            this.#imageWaitMs,
+            this.#imageWaitSamples,
+            performance.now() - waitStartedAt,
+          );
+        }
+        const pendingImages = !imagesReady(slot.content, slot.viewport);
         const colors = themeColors(this.#profile.theme);
         const targetWidth = Math.max(1, Math.round(options.targetWidth));
-        const captured = await this.#capture(slot, colors, targetWidth);
+        const captured = await this.#capture(slot, colors, targetWidth, pageIndex, options.signal);
         if (this.#disposed || options.signal?.aborted) {
           disposeCanvas(captured);
           throw abortError();
@@ -838,8 +898,8 @@ export class HtmlPageProvider implements PageProvider {
         assertNotAborted(options.signal);
         // 截图时若还有插图没解码，这一版就是临时位图：照常交付展示，但不该被长期缓存，
         // 否则「缺图」会以缓存的形式固定下来，用户要等换主题或改窗口尺寸才会恢复。
-        // 已完整图片不再做第二次几何判断，只检查截图后仍未完成且位于当前视口的图片。
-        const provisional = !imagesReady(slot.content, slot.viewport);
+        // 截图开始时未就绪的图片，即使截图结束时已完成，也不能证明已经进入本次位图。
+        const provisional = pendingImages || !imagesReady(slot.content, slot.viewport);
         const targetHeight = Math.max(
           1,
           Math.round(targetWidth / (this.#pageSize.width / this.#pageSize.height)),
@@ -871,42 +931,79 @@ export class HtmlPageProvider implements PageProvider {
         this.#pool.release(slot);
       }
     };
-    return execute();
+    const task = execute();
+    this.#activeRenders.add(task);
+    const release = (): void => {
+      this.#activeRenders.delete(task);
+    };
+    void task.then(release, release);
+    return task;
   }
 
-  /**
-   * 截图与画布转换。串行执行：snapdom 主体工作在主线程，并行没有收益
-   * （实测 4 路并发加速比 0.91，且要多养 4 份大章节 DOM），
-   * 能重叠的「章节加载 / 等图」已经由槽位池并行了。
-   *
-   * 试过但**没用**的两个方向，别再重复：
-   * - `PARALLEL_CAPTURE`：主线程 CPU 密集，4 路并发加速比 0.91。
-   * - snapdom 的 `clip`（只截当前列）：输出像素完全一致，但耗时只降约 5%。
-   *   它省的是「样式内联」，而 `Ni()` 仍会为每个框外节点建占位克隆，
-   *   节点总数不变 → SVG 序列化与光栅化成本不变。要真正降下来只能减少节点数
-   *   （按页切片），不是靠 clip。
-   */
+  /** 串行创建章节快照；同章后续页只更新位移并光栅化，不再逐节点提取样式。 */
   #capture(
     slot: ViewportSlot,
     colors: { background: string; foreground: string },
     targetWidth: number,
+    pageIndex: number,
+    signal?: AbortSignal,
   ): Promise<HTMLCanvasElement> {
     const run = async (): Promise<HTMLCanvasElement> => {
+      assertNotAborted(signal);
+      if (this.#disposed) throw abortError();
       const captureStartedAt = performance.now();
-      // 只截当前这一列。多列布局把整章都排在同一个容器里，而 snapdom 默认会把整棵子树
-      // 内联样式再序列化 —— 大章节 1,869 个节点里当页只用 20~40 个。
-      // `clip` 在克隆阶段就把框外的子树换成「保留尺寸的 visibility:hidden 占位」，
-      // 布局与输出不变，但跳过它们的样式提取 / 字体解析 / 图片内联。
-      const capture = await snapdom(slot.viewport, {
-        backgroundColor: colors.background,
-        scale: targetWidth / this.#pageSize.width,
-        dpr: 1,
-        // 系统字体无需逐页扫描和内嵌；出版方字体模式才保留书内字体资源。
-        embedFonts: this.#profile.fontFamily === 'publisher',
-        burst: true,
-        invalidate: true,
-      });
-      const captured = await capture.toCanvas();
+      const revision = this.#snapshotRevision;
+      const key = `${slot.sectionIndex}:${revision}:${targetWidth}`;
+      const textKey = `${slot.sectionIndex}:${revision}:text`;
+      const resourcesReady = (): boolean =>
+        document.fonts?.status !== 'loading' &&
+        [...slot.content.querySelectorAll('img')].every((image) => image.complete);
+      const reusable = this.#canReuseSnapshots && resourcesReady();
+      const snapshot = reusable
+        ? (this.#snapshots.get(key) ?? this.#snapshots.get(textKey))
+        : undefined;
+      let captured: HTMLCanvasElement | undefined;
+      if (snapshot) {
+        try {
+          captured = await renderChapterSnapshot(
+            snapshot,
+            -pageIndex * this.#pageSize.width,
+            this.#pageSize,
+            targetWidth,
+            colors.background,
+            signal,
+          );
+          this.#snapshotHits += 1;
+        } catch (error) {
+          assertNotAborted(signal);
+          if (this.#disposed) throw error;
+          // 浏览器不支持快照光栅化时，回退原始导出，不影响阅读。
+          this.#canReuseSnapshots = false;
+          this.#invalidateSnapshots();
+        }
+      }
+      if (!captured) {
+        const capture = await snapdom(slot.viewport, {
+          backgroundColor: colors.background,
+          scale: targetWidth / this.#pageSize.width,
+          dpr: 1,
+          embedFonts: this.#profile.fontFamily === 'publisher',
+          burst: true,
+          invalidate: true,
+        });
+        captured = await capture.toCanvas();
+        if (
+          this.#canReuseSnapshots &&
+          reusable &&
+          resourcesReady() &&
+          revision === this.#snapshotRevision &&
+          !this.#disposed &&
+          !signal?.aborted
+        ) {
+          const created = createChapterSnapshot(capture.toRaw(), this.#snapshots.maxBytes);
+          if (created) this.#snapshots.set(snapshotHasImages(created) ? key : textKey, created);
+        }
+      }
       this.#captureSamples += 1;
       this.#captureMs = smoothMetric(
         this.#captureMs,
@@ -923,18 +1020,27 @@ export class HtmlPageProvider implements PageProvider {
     return result;
   }
 
-  async dispose(): Promise<void> {
-    if (this.#disposed) return;
+  dispose(): Promise<void> {
+    if (this.#disposePromise) return this.#disposePromise;
     this.#disposed = true;
-    this.#sanitizedCache.clear();
-    this.#sanitizedBytes = 0;
-    this.#sanitizeInflight.clear();
-    this.#linkedStylesCache.clear();
-    for (const slot of this.#slots) this.#releaseSlotSection(slot);
-    this.#sectionHtmlCache.clear();
-    this.#sectionRefs.clear();
-    this.#pool.dispose();
-    this.#slots.length = 0;
-    await this.#onDispose?.();
+    document.fonts?.removeEventListener('loadingdone', this.#invalidateSnapshots);
+    this.#invalidateSnapshots();
+    this.#disposePromise = (async () => {
+      // snapdom 无法中途取消；等正在使用 DOM 的任务退出后再撤销资源、移除槽位。
+      // 排队截图会在真正执行前检查 disposed，不再浪费一次完整截图。
+      await Promise.allSettled([...this.#activeRenders]);
+      this.#sanitizedCache.clear();
+      this.#sanitizedBytes = 0;
+      this.#sanitizeInflight.clear();
+      this.#linkedStylesCache.clear();
+      this.#sectionLoads.clear();
+      for (const slot of this.#slots) this.#releaseSlotSection(slot);
+      this.#sectionHtmlCache.clear();
+      this.#sectionRefs.clear();
+      this.#pool.dispose();
+      this.#slots.length = 0;
+      await this.#onDispose?.();
+    })();
+    return this.#disposePromise;
   }
 }

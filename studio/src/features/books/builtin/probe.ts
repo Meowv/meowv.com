@@ -3,7 +3,7 @@ import { drawCoverThumbnail, drawPlaceholderCover } from '../persistence/coverTh
 import { builtinBookKey, getRemovedSlugs, listBuiltinBooks } from './BuiltinShelf';
 import { probeBookMetadata } from './metadata';
 
-const CONCURRENCY = 6;
+const CONCURRENCY = 2;
 
 /** 正在探测的内置书；失败后保留标记，本会话内不再重试，由打开书籍时纠正。 */
 const probing = new Set<string>();
@@ -34,8 +34,10 @@ export async function probeBuiltinBooks(
   bookshelf: BookshelfRepository,
   stored: BookshelfEntry[],
   onUpdated?: () => void,
+  signal?: AbortSignal,
 ): Promise<void> {
   const defs = await listBuiltinBooks();
+  if (signal?.aborted) return;
   const removed = getRemovedSlugs();
   const storedByKey = new Map<string, BookshelfEntry>(
     stored
@@ -55,15 +57,17 @@ export async function probeBuiltinBooks(
 
   let index = 0;
   const workers = Array.from({ length: Math.min(CONCURRENCY, pending.length) }, async () => {
-    while (index < pending.length) {
+    while (!signal?.aborted && index < pending.length) {
       const def = pending[index];
       index += 1;
       const key = builtinBookKey(def.slug, def.format);
       probing.add(key);
       try {
-        const result = await probeBookMetadata(def);
+        const result = await probeBookMetadata(def, signal);
+        if (signal?.aborted) return;
         if (!result) continue;
         const existing = await bookshelf.get(result.id);
+        if (signal?.aborted) return;
         let coverThumbnail = existing?.coverThumbnail;
         let coverThumbnailPlaceholder = existing?.coverThumbnailPlaceholder;
         if (result.cover) {
@@ -106,11 +110,15 @@ export async function probeBuiltinBooks(
         ) {
           continue;
         }
+        if (signal?.aborted) return;
         await bookshelf.upsert(entry);
         probing.delete(key);
         onUpdated?.();
       } catch {
         // 探测失败保留文件名兜底，不再重试；打开书籍时由内容元数据纠正。
+      } finally {
+        // 用户进入阅读导致的取消可在回到书架后重试。
+        if (signal?.aborted) probing.delete(key);
       }
     }
   });

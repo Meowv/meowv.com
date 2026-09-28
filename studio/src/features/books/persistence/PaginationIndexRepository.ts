@@ -36,12 +36,12 @@ async function requestResult<T>(
       transaction.onabort = () => reject(transaction.error ?? new Error('分页索引事务已中止。'));
       transaction.onerror = () => reject(transaction.error ?? new Error('分页索引事务失败。'));
     });
-    const operation = request(transaction.objectStore(STORE_NAME));
-    const value = await new Promise<T>((resolve, reject) => {
+    const resultRequest = new Promise<T>((resolve, reject) => {
+      const operation = request(transaction.objectStore(STORE_NAME));
       operation.onsuccess = () => resolve(operation.result);
       operation.onerror = () => reject(operation.error ?? new Error('分页索引操作失败。'));
     });
-    await completed;
+    const [value] = await Promise.all([resultRequest, completed]);
     return value;
   } finally {
     database.close();

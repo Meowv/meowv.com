@@ -43,28 +43,69 @@ function readUint32(bytes: Uint8Array, offset: number): number {
   );
 }
 
-async function readRange(url: string, start: number, end: number): Promise<Uint8Array> {
+async function readRange(
+  url: string,
+  start: number,
+  end: number,
+  signal?: AbortSignal,
+): Promise<Uint8Array> {
   if (end < start) return new Uint8Array(0);
   const response = await fetch(url, {
+    signal,
     headers: { Range: `bytes=${start}-${end}` },
     cache: 'no-cache',
   });
-  if (!response.ok) throw new Error(`书籍分段读取失败：${response.status}`);
-  return new Uint8Array(await response.arrayBuffer());
+  const range = await requirePartialResponse(response);
+  if (range.start !== start || range.end !== Math.min(end, range.size - 1)) {
+    await response.body?.cancel();
+    throw new Error('书籍分段响应范围不匹配。');
+  }
+  return readPartialBytes(response, range);
 }
 
-async function readSuffix(url: string, byteCount: number): Promise<SuffixData> {
+async function readSuffix(
+  url: string,
+  byteCount: number,
+  signal?: AbortSignal,
+): Promise<SuffixData> {
   const response = await fetch(url, {
+    signal,
     headers: { Range: `bytes=-${byteCount}` },
     cache: 'no-cache',
   });
-  if (!response.ok) throw new Error(`书籍尾部读取失败：${response.status}`);
+  const range = await requirePartialResponse(response);
+  if (range.start !== Math.max(0, range.size - byteCount) || range.end !== range.size - 1) {
+    await response.body?.cancel();
+    throw new Error('书籍尾部响应范围不匹配。');
+  }
+  return { size: range.size, start: range.start, bytes: await readPartialBytes(response, range) };
+}
+
+interface PartialRange {
+  start: number;
+  end: number;
+  size: number;
+}
+
+async function requirePartialResponse(response: Response): Promise<PartialRange> {
+  const match = /^bytes\s+(\d+)-(\d+)\/(\d+)$/.exec(response.headers.get('Content-Range') ?? '');
+  if (response.status !== 206 || !match) {
+    // 后台探测不能因服务器忽略 Range 而读取整本书。
+    await response.body?.cancel();
+    throw new Error('书库不支持分段读取。');
+  }
+  const [start, end, size] = match.slice(1).map(Number);
+  if (![start, end, size].every(Number.isSafeInteger) || start > end || end >= size) {
+    await response.body?.cancel();
+    throw new Error('书籍分段响应无效。');
+  }
+  return { start, end, size };
+}
+
+async function readPartialBytes(response: Response, range: PartialRange): Promise<Uint8Array> {
   const bytes = new Uint8Array(await response.arrayBuffer());
-  const contentRange = response.headers.get('Content-Range');
-  const match = /^bytes\s+(\d+)-(\d+)\/(\d+)$/.exec(contentRange ?? '');
-  if (!match)
-    return { size: bytes.byteLength, start: Math.max(0, bytes.byteLength - byteCount), bytes };
-  return { size: Number(match[3]), start: Number(match[1]), bytes };
+  if (bytes.length !== range.end - range.start + 1) throw new Error('书籍分段响应长度不匹配。');
+  return bytes;
 }
 
 function findEocd(bytes: Uint8Array): number {
@@ -95,14 +136,23 @@ function parseCentralDirectory(bytes: Uint8Array): CentralEntry[] {
   return entries;
 }
 
-async function readZipEntryData(url: string, entry: CentralEntry): Promise<Uint8Array> {
+async function readZipEntryData(
+  url: string,
+  entry: CentralEntry,
+  signal?: AbortSignal,
+): Promise<Uint8Array> {
   if (entry.compressedSize <= 0) return new Uint8Array(0);
-  const header = await readRange(url, entry.localHeaderOffset, entry.localHeaderOffset + 29);
+  const header = await readRange(
+    url,
+    entry.localHeaderOffset,
+    entry.localHeaderOffset + 29,
+    signal,
+  );
   if (header.byteLength < 30) return new Uint8Array(0);
   const nameLength = readUint16(header, 26);
   const extraLength = readUint16(header, 28);
   const dataStart = entry.localHeaderOffset + 30 + nameLength + extraLength;
-  const raw = await readRange(url, dataStart, dataStart + entry.compressedSize - 1);
+  const raw = await readRange(url, dataStart, dataStart + entry.compressedSize - 1, signal);
   if (entry.method === ZIP_METHOD_STORED) return raw;
   if (entry.method === ZIP_METHOD_DEFLATE) return inflateSync(raw);
   return new Uint8Array(0);
@@ -191,6 +241,7 @@ async function probeEpubCover(
   normalizeName: (name: string) => string,
   opfPath: string,
   opfXml: string,
+  signal?: AbortSignal,
 ): Promise<Blob | null> {
   const coverPath = opfCoverPath(opfXml);
   if (!coverPath) return null;
@@ -202,7 +253,7 @@ async function probeEpubCover(
     );
   }
   if (!entry || entry.compressedSize <= 0 || entry.compressedSize > MAX_COVER_BYTES) return null;
-  const data = await readZipEntryData(url, entry);
+  const data = await readZipEntryData(url, entry, signal);
   if (!data.byteLength) return null;
   const mediaType = coverPath.split('?')[0].split('.').pop()?.toLowerCase();
   const type =
@@ -215,6 +266,7 @@ async function probeEpubCover(
 async function probeEpubMetadata(
   url: string,
   suffix: SuffixData,
+  signal?: AbortSignal,
 ): Promise<{ metadata: PublicationMetadata | null; cover: Blob | null }> {
   const eocdAt = findEocd(suffix.bytes);
   if (eocdAt < 0) return { metadata: null, cover: null };
@@ -225,7 +277,7 @@ async function probeEpubMetadata(
     if (cdOffset >= suffix.start && cdStart + cdSize <= suffix.bytes.byteLength) {
       return suffix.bytes.subarray(cdStart, cdStart + cdSize);
     }
-    return readRange(url, cdOffset, cdOffset + cdSize - 1);
+    return readRange(url, cdOffset, cdOffset + cdSize - 1, signal);
   })();
   const entries = parseCentralDirectory(cd);
   const normalizeName = (name: string): string => name.replace(/\\/g, '/').replace(/^\.\//, '');
@@ -233,15 +285,15 @@ async function probeEpubMetadata(
     (entry) => normalizeName(entry.name).toLowerCase() === 'meta-inf/container.xml',
   );
   if (!container) return { metadata: null, cover: null };
-  const containerXml = new TextDecoder().decode(await readZipEntryData(url, container));
+  const containerXml = new TextDecoder().decode(await readZipEntryData(url, container, signal));
   const opfPath = containerOpfPath(containerXml);
   if (!opfPath) return { metadata: null, cover: null };
   const opfEntry = entries.find((entry) => normalizeName(entry.name) === normalizeName(opfPath));
   if (!opfEntry) return { metadata: null, cover: null };
-  const opfXml = new TextDecoder().decode(await readZipEntryData(url, opfEntry));
+  const opfXml = new TextDecoder().decode(await readZipEntryData(url, opfEntry, signal));
   let cover: Blob | null = null;
   try {
-    cover = await probeEpubCover(url, entries, normalizeName, opfPath, opfXml);
+    cover = await probeEpubCover(url, entries, normalizeName, opfPath, opfXml, signal);
   } catch {
     // 封面提取失败不影响元数据解析
   }
@@ -362,6 +414,7 @@ function extractPdfString(dictText: string, key: string): string | null {
 async function probePdfMetadata(
   url: string,
   suffix: SuffixData,
+  signal?: AbortSignal,
 ): Promise<PublicationMetadata | null> {
   const tailText = new TextDecoder('latin1').decode(suffix.bytes);
   const findInfoObject = (text: string): { number: number; generation: number } | null => {
@@ -383,12 +436,12 @@ async function probePdfMetadata(
     if (!xrefMatch) return null;
     const xrefOffset = Number(xrefMatch[1]);
     const xrefText = new TextDecoder('latin1').decode(
-      await readRange(url, xrefOffset, xrefOffset + 32767),
+      await readRange(url, xrefOffset, xrefOffset + 32767, signal),
     );
     const objectOffset = parseXrefOffsets(xrefText).get(object.number);
     if (objectOffset == null) return null;
     const objectText = new TextDecoder('latin1').decode(
-      await readRange(url, objectOffset, objectOffset + 16383),
+      await readRange(url, objectOffset, objectOffset + 16383, signal),
     );
     const matched = new RegExp(
       `${object.number}\\s+${object.generation}\\s+obj([\\s\\S]*?)endobj`,
@@ -410,19 +463,28 @@ async function probePdfMetadata(
  * 通过 HTTP Range 轻量探测内置书籍：仅读取头尾采样与元数据，不下载整本文件。
  * 返回指纹 id（与打开后一致）与内容元数据；解析失败时 metadata 为 null，由文件名兜底。
  */
-export async function probeBookMetadata(def: BuiltinBookDef): Promise<BookProbeResult | null> {
-  const suffix = await readSuffix(def.url, SAMPLE_BYTES);
+export async function probeBookMetadata(
+  def: BuiltinBookDef,
+  signal?: AbortSignal,
+): Promise<BookProbeResult | null> {
+  const suffix = await readSuffix(def.url, SAMPLE_BYTES, signal);
   const headEnd = Math.min(suffix.size, SAMPLE_BYTES);
-  const head = await readRange(def.url, 0, headEnd - 1);
-  const id = await createBookFingerprintFromParts(suffix.size, 0, head, suffix.bytes);
+  const head =
+    suffix.start === 0
+      ? suffix.bytes.subarray(0, headEnd)
+      : await readRange(def.url, 0, headEnd - 1, signal);
+  // 与本地指纹一致：小文件的头尾采样不能重叠。
+  const tailStart = Math.max(headEnd, suffix.size - SAMPLE_BYTES);
+  const tail = suffix.bytes.subarray(tailStart - suffix.start);
+  const id = await createBookFingerprintFromParts(suffix.size, 0, head, tail);
   let metadata: PublicationMetadata | null = null;
   let cover: Blob | null = null;
   if (def.format === 'epub') {
-    const result = await probeEpubMetadata(def.url, suffix);
+    const result = await probeEpubMetadata(def.url, suffix, signal);
     metadata = result.metadata;
     cover = result.cover;
   } else if (def.format === 'pdf') {
-    metadata = await probePdfMetadata(def.url, suffix);
+    metadata = await probePdfMetadata(def.url, suffix, signal);
   }
   return { id, metadata, ...(cover ? { cover } : {}) };
 }

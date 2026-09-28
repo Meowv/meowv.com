@@ -91,11 +91,11 @@ async function withStore<T>(
       transaction.onabort = () => reject(transaction.error ?? new Error('书架事务已中止。'));
       transaction.onerror = () => reject(transaction.error ?? new Error('书架事务失败。'));
     });
-    const result = await requestResult(
-      operation(transaction.objectStore(STORE_NAME)),
-      '书架操作失败。',
+    // 同时接住请求与事务的失败，避免请求先失败后留下未处理的事务 rejection。
+    const resultRequest = Promise.resolve().then(() =>
+      requestResult(operation(transaction.objectStore(STORE_NAME)), '书架操作失败。'),
     );
-    await completed;
+    const [result] = await Promise.all([resultRequest, completed]);
     return result;
   } finally {
     database.close();
@@ -130,13 +130,9 @@ export class BookshelfRepository {
     if (!this.persistent) return [...sessionEntries.values()].map(cloneEntry);
     try {
       const stored = await withStore('readonly', (store) => store.getAll());
-      const entries = stored as BookshelfEntry[];
-      for (const entry of sessionEntries.values()) {
-        const index = entries.findIndex((candidate) => candidate.id === entry.id);
-        if (index >= 0) entries[index] = entry;
-        else entries.push(entry);
-      }
-      return entries.map(runtimeAvailability).map(cloneEntry);
+      const entries = new Map((stored as BookshelfEntry[]).map((entry) => [entry.id, entry]));
+      for (const entry of sessionEntries.values()) entries.set(entry.id, entry);
+      return [...entries.values()].map(runtimeAvailability).map(cloneEntry);
     } catch {
       return [...sessionEntries.values()].map(cloneEntry);
     }
@@ -180,6 +176,7 @@ export class BookshelfRepository {
 
   async remove(id: string, options: { removeProgress?: boolean } = {}): Promise<void> {
     sessionEntries.delete(id);
+    sessionFiles.delete(id);
     if (this.persistent) {
       await withStore('readwrite', (store) => store.delete(id)).catch(() => undefined);
     }

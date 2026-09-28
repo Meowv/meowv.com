@@ -266,7 +266,11 @@ function syncEngineSnapshot(): void {
   canGoBack.value = engine.canGoBackward;
 }
 
+let builtinProbeController: AbortController | null = null;
+
 function cancelBuiltinProbe(): void {
+  builtinProbeController?.abort();
+  builtinProbeController = null;
   if (builtinProbeTimer === null) return;
   globalThis.clearTimeout(builtinProbeTimer);
   builtinProbeTimer = null;
@@ -278,15 +282,39 @@ function scheduleBuiltinProbe(stored: BookshelfEntry[]): void {
   builtinProbeTimer = globalThis.setTimeout(() => {
     builtinProbeTimer = null;
     if (!shelfActive || readerMounted.value || loadController) return;
-    void probeBuiltinBooks(bookshelf, stored, () => void refreshShelf()).catch(() => undefined);
+    const controller = new AbortController();
+    builtinProbeController = controller;
+    let refreshTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
+    const clearRefresh = (): void => {
+      if (refreshTimer !== null) globalThis.clearTimeout(refreshTimer);
+      refreshTimer = null;
+    };
+    const onUpdated = (): void => {
+      if (refreshTimer !== null || controller.signal.aborted) return;
+      refreshTimer = globalThis.setTimeout(() => {
+        refreshTimer = null;
+        if (!controller.signal.aborted) void refreshShelf(false);
+      }, 250);
+    };
+    controller.signal.addEventListener('abort', clearRefresh, { once: true });
+    void probeBuiltinBooks(bookshelf, stored, onUpdated, controller.signal)
+      .then(() => {
+        clearRefresh();
+        if (!controller.signal.aborted) return refreshShelf(false);
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        clearRefresh();
+        controller.signal.removeEventListener('abort', clearRefresh);
+      });
   }, 8000);
 }
 
-async function refreshShelf(): Promise<void> {
+async function refreshShelf(probe = true): Promise<void> {
   const stored = await bookshelf.list();
   shelfEntries.value = await mergeBuiltinEntries(stored);
   persistentShelf.value = bookshelf.persistentHandles;
-  if (shelfActive && !readerMounted.value && !loadController) scheduleBuiltinProbe(stored);
+  if (probe && shelfActive && !readerMounted.value && !loadController) scheduleBuiltinProbe(stored);
 }
 
 function newestProgress(
@@ -701,7 +729,7 @@ async function openFile(
       addedAt: previous?.addedAt ?? now,
       lastOpenedAt: now,
     };
-    rememberBookshelfSessionFile(fingerprint, file);
+    if (!currentEntry.builtIn) rememberBookshelfSessionFile(fingerprint, file);
     await bookshelf.upsert(currentEntry);
     clearReturnedToShelf();
 
@@ -783,6 +811,7 @@ async function chooseFile(): Promise<void> {
 async function openShelfEntry(entry: BookshelfEntry): Promise<void> {
   // 书架点击是用户的明确选择，立即让启动时的自动恢复失效。
   restoreId += 1;
+  cancelBuiltinProbe();
   hideError();
   const file = await resolveBookshelfFile(entry, true);
   if (!file) {
