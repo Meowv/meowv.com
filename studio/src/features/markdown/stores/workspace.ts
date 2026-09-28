@@ -63,14 +63,7 @@ import {
   setDocumentLocked,
   type WorkspaceHistoryEntry,
 } from '@/features/markdown/services/storage';
-import {
-  downloadDocx,
-  downloadHtml,
-  downloadImage,
-  downloadMarkdown,
-  downloadPdf,
-  type ExportExtension,
-} from '@/features/markdown/services/export';
+import type { ExportExtension } from '@/features/markdown/services/export';
 import {
   DEFAULT_WORKSPACE_PREFERENCES,
   WorkspaceError,
@@ -1361,6 +1354,7 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
           }
 
           if (isStandaloneFile.value) {
+            const { downloadMarkdown } = await import('@/features/markdown/services/export');
             downloadMarkdown(contentToSave, {
               filename: activeName.value.replace(/\.(?:md|markdown)$/i, ''),
               title: parsedDocument.value.metadata.title || activeName.value,
@@ -2154,6 +2148,8 @@ export const useWorkspaceStore = defineStore('studio-markdown-workspace', () => 
     }
     try {
       await flushPreview();
+      const { downloadDocx, downloadHtml, downloadImage, downloadMarkdown, downloadPdf } =
+        await import('@/features/markdown/services/export');
       const title =
         parsedDocument.value.metadata.title || activeName.value.replace(/\.(?:md|markdown)$/i, '');
       let warnings: readonly string[] = [];

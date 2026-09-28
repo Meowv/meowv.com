@@ -254,11 +254,6 @@ function loadPdfRenderer(): Promise<{
   return pdfRendererPromise;
 }
 
-/** 在浏览器空闲后预加载 PDF 依赖，减少首次点击导出的等待。 */
-export function preloadPdfExporter(): void {
-  void loadPdfRenderer().catch(() => undefined);
-}
-
 function ensureString(value: unknown, label: string): asserts value is string {
   if (typeof value !== 'string') {
     throw new ExportError('INVALID_CONTENT', `${label}无效，导出内容必须是字符串。`);

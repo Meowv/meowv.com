@@ -15,7 +15,7 @@ import {
   Tags,
 } from '@/features/markdown/icons';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { preloadPdfExporter, type ExportExtension } from '@/features/markdown/services/export';
+import type { ExportExtension } from '@/features/markdown/services/export';
 import { sanitizeMermaidSvg } from '@/features/markdown/services/mermaid-security';
 import { useWorkspaceStore } from '@/features/markdown/stores/workspace';
 import { enqueueMermaidTask } from '@/core/mermaid/scheduler';
@@ -264,7 +264,6 @@ onMounted(() => {
   document.addEventListener('keydown', handleEscape);
   globalThis.addEventListener('markdown-editor-scroll', handleEditorScroll);
   void renderMermaidBlocks();
-  globalThis.setTimeout(() => preloadPdfExporter(), 700);
 });
 
 onBeforeUnmount(() => {
