@@ -23,6 +23,7 @@ interface TurningSheetOptions {
     BookConfig,
     | 'coverOversize'
     | 'coverThickness'
+    | 'paperThickness'
     | 'widthSegments'
     | 'heightSegments'
     | 'gutterDepth'
@@ -37,13 +38,9 @@ interface TurningSheetOptions {
   releaseTexture(texture: CanvasTexture | null | undefined): void;
 }
 
-const SHEET_HALF_THICKNESS = 0.0012;
 export const FRONT_COVER_CLEARANCE = 0.006;
 export const STATIC_PAGE_SURFACE_Z = 0.002;
-const TURNING_PAGE_CLEARANCE = 0.0008;
-export const TURNING_PAGE_READY_LIFT = SHEET_HALF_THICKNESS * 2 + TURNING_PAGE_CLEARANCE;
-const TURNING_PAGE_SURFACE_Z =
-  STATIC_PAGE_SURFACE_Z + SHEET_HALF_THICKNESS + TURNING_PAGE_CLEARANCE;
+export const TURNING_PAGE_CLEARANCE = 0.0008;
 const COVER_INSET_OFFSET = 0.0008;
 const PAPER_EDGE_COLOR = 0xd8d0c2;
 const COVER_EDGE_COLOR = 0x5d3327;
@@ -70,6 +67,7 @@ export class TurningSheet {
   readonly #paperIndexCount: number;
   readonly #pageWidth: number;
   readonly #pageHeight: number;
+  readonly #paperHalfThickness: number;
   readonly #totalThickness: number;
   readonly #config: TurningSheetOptions['config'];
   readonly #acquireTexture: TurningSheetOptions['acquireTexture'];
@@ -84,6 +82,7 @@ export class TurningSheet {
   constructor(options: TurningSheetOptions) {
     this.#pageWidth = options.pageWidth;
     this.#pageHeight = options.pageHeight;
+    this.#paperHalfThickness = options.config.paperThickness / 2;
     this.#totalThickness = options.totalThickness;
     this.#config = options.config;
     this.#acquireTexture = options.acquireTexture;
@@ -200,7 +199,8 @@ export class TurningSheet {
       const openCenter = -this.#totalThickness - coverHalfThickness;
       this.mesh.position.z = closedCenter + (openCenter - closedCenter) * coverOpenProgress;
     } else {
-      this.mesh.position.z = TURNING_PAGE_SURFACE_Z;
+      this.mesh.position.z =
+        STATIC_PAGE_SURFACE_Z + this.#paperHalfThickness + TURNING_PAGE_CLEARANCE;
     }
     const coverWidth = this.#pageWidth * this.#config.coverOversize;
     for (let index = 0; index < vertexCount; index += 1) {
@@ -364,6 +364,7 @@ function createTurningSheetGeometry({ pageWidth, pageHeight, config }: TurningSh
   boardVertexCount: number;
   paperIndexCount: number;
 } {
+  const paperHalfThickness = config.paperThickness / 2;
   const columns = config.widthSegments + 1;
   const rows = config.heightSegments + 1;
   const positions: number[] = [];
@@ -383,7 +384,7 @@ function createTurningSheetGeometry({ pageWidth, pageHeight, config }: TurningSh
         positions.push(
           u * pageWidth,
           (v - 0.5) * pageHeight,
-          side === 0 ? SHEET_HALF_THICKNESS : -SHEET_HALF_THICKNESS,
+          side === 0 ? paperHalfThickness : -paperHalfThickness,
         );
         uvs.push(side === 0 ? u : 1 - u, v);
         vertexKinds.push(BOARD_VERTEX);
@@ -410,7 +411,7 @@ function createTurningSheetGeometry({ pageWidth, pageHeight, config }: TurningSh
     for (let index = 0; index < points.length; index += 1) {
       const [x, y] = points[index];
       const u = index / last;
-      positions.push(x, y, SHEET_HALF_THICKNESS, x, y, -SHEET_HALF_THICKNESS);
+      positions.push(x, y, paperHalfThickness, x, y, -paperHalfThickness);
       uvs.push(u, 1, u, 0);
       vertexKinds.push(BOARD_VERTEX, BOARD_VERTEX);
     }
@@ -458,7 +459,7 @@ function createTurningSheetGeometry({ pageWidth, pageHeight, config }: TurningSh
         positions.push(
           u * pageWidth,
           (v - 0.5) * pageHeight,
-          side === 'front' ? SHEET_HALF_THICKNESS : -SHEET_HALF_THICKNESS,
+          side === 'front' ? paperHalfThickness : -paperHalfThickness,
         );
         uvs.push(side === 'front' ? u : 1 - u, v);
         vertexKinds.push(side === 'front' ? FRONT_INSET_VERTEX : BACK_INSET_VERTEX);

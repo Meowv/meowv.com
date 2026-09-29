@@ -44,6 +44,10 @@ export function insertRenderJob<T extends PrioritizedJob>(queue: T[], job: T): n
 export const SHADOW_PROGRESS_STEP = 0.08;
 
 /** 传负数表示强制刷新并重置节奏；否则只有进度推进足够多时才重绘阴影。 */
-export function shouldRefreshShadow(progress: number, lastProgress: number): boolean {
-  return lastProgress < 0 || Math.abs(progress - lastProgress) >= SHADOW_PROGRESS_STEP;
+export function shouldRefreshShadow(
+  progress: number,
+  lastProgress: number,
+  step = SHADOW_PROGRESS_STEP,
+): boolean {
+  return lastProgress < 0 || Math.abs(progress - lastProgress) >= step;
 }

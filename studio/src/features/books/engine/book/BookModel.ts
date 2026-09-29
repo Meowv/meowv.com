@@ -16,7 +16,7 @@ import {
   FRONT_COVER_CLEARANCE,
   getFrontCoverSpineBend,
   STATIC_PAGE_SURFACE_Z,
-  TURNING_PAGE_READY_LIFT,
+  TURNING_PAGE_CLEARANCE,
   TurningSheet,
 } from './TurningSheet';
 
@@ -313,10 +313,11 @@ export class BookModel {
   }
 
   #setStaticPageSurfacePositions(): void {
+    const readyLift = this.#config.paperThickness + TURNING_PAGE_CLEARANCE;
     this.#leftPage.position.z =
-      STATIC_PAGE_SURFACE_Z + (this.#turnPreparationPage === 'left' ? TURNING_PAGE_READY_LIFT : 0);
+      STATIC_PAGE_SURFACE_Z + (this.#turnPreparationPage === 'left' ? readyLift : 0);
     this.#rightPage.position.z =
-      STATIC_PAGE_SURFACE_Z + (this.#turnPreparationPage === 'right' ? TURNING_PAGE_READY_LIFT : 0);
+      STATIC_PAGE_SURFACE_Z + (this.#turnPreparationPage === 'right' ? readyLift : 0);
   }
 
   #setStack(stack: Mesh<BoxGeometry>, thickness: number, side: -1 | 1): void {

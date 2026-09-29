@@ -51,15 +51,17 @@ const smoothstep = (minimum: number, maximum: number, value: number): number => 
   return unit * unit * (3 - 2 * unit);
 };
 
-const cornerPickupEnvelope = (progress: number): number =>
-  smoothstep(0, 0.12, progress) * (1 - smoothstep(0.18, 0.52, progress));
+const cornerPickupEnvelope = (progress: number): number => 1 - smoothstep(0.12, 0.42, progress);
+
+const INTEGRATION_STEPS = 12;
 
 interface CurlProfile {
-  distanceFromSpine: number;
   u: number;
-  v: number;
   baseAngle: number;
-  angleAtEdge: number;
+  bendAngle: number;
+  bendSign: number;
+  creaseStart: number;
+  creaseEnd: number;
   sag: number;
   twist: number;
   cornerPickup: number;
@@ -79,27 +81,34 @@ function getCurlProfile(
   sagStrength: number,
   cornerPickupStrength: number,
 ): CurlProfile {
-  const turnProgress = smoothstep(0.045, 0.96, progress);
+  const turnProgress = smoothstep(0.015, 0.985, progress);
   const distanceFromSpine = clamp(Math.abs(x), 0, pageWidth);
   const u = clamp(distanceFromSpine / Math.max(pageWidth, Number.EPSILON), 0, 1);
   const v = clamp(y / Math.max(pageHeight, Number.EPSILON) + 0.5, 0, 1);
-  const phaseSine = Math.sin(Math.PI * progress);
-  const phase = phaseSine * phaseSine;
+  const phase = Math.sin(Math.PI * progress);
   const edgeProfile = smoothstep(0.56, 1, u);
-  const profile = Math.sin(Math.PI * u) * 0.72 + edgeProfile * 0.28;
-  const cornerInfluence = 1 - smoothstep(0.15, 0.9, Math.abs(v - pointerV));
-  const requestedCurl = curlStrength * phase * profile * (0.7 + cornerInfluence * 0.3);
-  const baseAngle = direction === 'forward' ? Math.PI * turnProgress : Math.PI * (1 - turnProgress);
-  const curlLimit = direction === 'forward' ? Math.PI - baseAngle : baseAngle;
-  const curlAngle = Math.min(requestedCurl, curlLimit * 0.72);
-  const curlSign = direction === 'forward' ? 1 : -1;
-  const angleAtEdge = clamp(baseAngle + curlAngle * curlSign, 0, Math.PI);
-  const twist = clamp(verticalDrag, -1, 1) * twistStrength * profile * phase;
-  const sag = sagStrength * profile * phase;
+  const cornerInfluence = 1 - smoothstep(0.16, 0.7, Math.abs(v - pointerV));
+  const rotation = Math.PI * turnProgress;
+  const bendAngle = Math.min(
+    curlStrength * 1.8 * phase * (0.8 + cornerInfluence * 0.2),
+    Math.min(rotation, Math.PI - rotation) * 1.72,
+  );
+  const forwardBaseAngle = rotation - bendAngle * 0.45;
+  const baseAngle = direction === 'forward' ? forwardBaseAngle : Math.PI - forwardBaseAngle;
+  const bendSign = direction === 'forward' ? 1 : -1;
+  const creaseCenter = 0.82 - turnProgress * 0.58;
+  const creaseWidth = 0.28 + phase * 0.1;
+  const twist =
+    clamp(verticalDrag, -1, 1) *
+    twistStrength *
+    smoothstep(0, 1, u) *
+    (0.3 + phase * 0.7) *
+    (1 - smoothstep(0.9, 1, progress));
+  const gravityStage = 0.45 + smoothstep(0.25, 0.82, progress) * 0.55;
+  const sag = sagStrength * phase * gravityStage * u ** 1.5 * (1 - cornerInfluence * 0.65);
   const pickup = cornerPickupEnvelope(progress);
   const cornerPickup =
-    pageWidth *
-    0.022 *
+    0.032 *
     edgeProfile *
     edgeProfile *
     cornerInfluence *
@@ -108,36 +117,57 @@ function getCurlProfile(
     cornerPickupStrength;
 
   return {
-    distanceFromSpine,
     u,
-    v,
     baseAngle,
-    angleAtEdge,
+    bendAngle,
+    bendSign,
+    creaseStart: creaseCenter - creaseWidth / 2,
+    creaseEnd: creaseCenter + creaseWidth / 2,
     sag,
     twist,
     cornerPickup,
   };
 }
 
-function developablePoint(
-  distanceFromSpine: number,
-  baseAngle: number,
-  angleAtEdge: number,
-  pageWidth: number,
-): { x: number; z: number } {
-  const curvature = (angleAtEdge - baseAngle) / Math.max(pageWidth, Number.EPSILON);
-  if (Math.abs(curvature) < 1e-5) {
-    return {
-      x: distanceFromSpine * Math.cos(baseAngle),
-      z: distanceFromSpine * Math.sin(baseAngle),
-    };
-  }
+function angleAt(profile: CurlProfile, u: number): number {
+  return (
+    profile.baseAngle +
+    profile.bendSign * profile.bendAngle * smoothstep(profile.creaseStart, profile.creaseEnd, u)
+  );
+}
 
-  const angle = baseAngle + curvature * distanceFromSpine;
+function bentPoint(profile: CurlProfile, pageWidth: number): { x: number; z: number } {
+  if (profile.u === 0) return { x: 0, z: 0 };
+  const step = profile.u / INTEGRATION_STEPS;
+  let x = 0;
+  let z = 0;
+  for (let index = 0; index <= INTEGRATION_STEPS; index += 1) {
+    const angle = angleAt(profile, step * index);
+    const weight = index === 0 || index === INTEGRATION_STEPS ? 1 : index % 2 === 0 ? 2 : 4;
+    x += Math.cos(angle) * weight;
+    z += Math.sin(angle) * weight;
+  }
+  const scale = (pageWidth * step) / 3;
+  return { x: x * scale, z: z * scale };
+}
+
+function sweptPoint(point: { x: number; z: number }, y: number, twist: number): PageCurlPoint {
+  const radius = Math.hypot(point.x, point.z);
+  if (radius < Number.EPSILON || Math.abs(twist) < Number.EPSILON) {
+    return { x: point.x, y, z: point.z };
+  }
+  const sweptRadius = radius * Math.cos(twist) - y * Math.sin(twist);
+  const scale = sweptRadius / radius;
   return {
-    x: (Math.sin(angle) - Math.sin(baseAngle)) / curvature,
-    z: (-Math.cos(angle) + Math.cos(baseAngle)) / curvature,
+    x: point.x * scale,
+    y: radius * Math.sin(twist) + y * Math.cos(twist),
+    z: point.z * scale,
   };
+}
+
+function contactHeight(height: number, pageWidth: number): number {
+  const lifted = Math.max(0, height);
+  return (lifted * lifted) / (lifted + pageWidth * 0.004);
 }
 
 export function easeInOutCubic(value: number): number {
@@ -172,17 +202,13 @@ export function computePageCurlPoint(input: PageCurlInput): PageCurlPoint {
     sagStrength,
     cornerPickupStrength,
   );
-  const point = developablePoint(
-    profile.distanceFromSpine,
-    profile.baseAngle,
-    profile.angleAtEdge,
-    pageWidth,
-  );
+  const point = bentPoint(profile, pageWidth);
+  const swept = sweptPoint(point, input.y, profile.twist);
 
   return {
-    x: point.x,
-    y: input.y + profile.twist * (profile.v - 0.5) * 2,
-    z: Math.max(0, point.z - profile.sag) + profile.twist * 0.24 + profile.cornerPickup,
+    x: swept.x,
+    y: swept.y,
+    z: contactHeight(swept.z - profile.sag + profile.cornerPickup, pageWidth),
   };
 }
 
@@ -209,22 +235,13 @@ export function writePageCurlPoint(
     frame.sagStrength,
     frame.cornerPickupStrength,
   );
-  const point = developablePoint(
-    profile.distanceFromSpine,
-    profile.baseAngle,
-    profile.angleAtEdge,
-    frame.pageWidth,
-  );
-  const normalAngle =
-    profile.baseAngle +
-    ((profile.angleAtEdge - profile.baseAngle) * profile.distanceFromSpine) /
-      Math.max(frame.pageWidth, Number.EPSILON);
-  target[offset] = point.x - surfaceOffset * Math.sin(normalAngle);
-  target[offset + 1] = y + profile.twist * (profile.v - 0.5) * 2;
+  const point = bentPoint(profile, frame.pageWidth);
+  const swept = sweptPoint(point, y, profile.twist);
+  const normalAngle = angleAt(profile, profile.u);
+  target[offset] = swept.x - surfaceOffset * Math.sin(normalAngle);
+  target[offset + 1] = swept.y;
   target[offset + 2] =
-    Math.max(0, point.z - profile.sag) +
-    profile.twist * 0.24 +
-    profile.cornerPickup +
+    contactHeight(swept.z - profile.sag + profile.cornerPickup, frame.pageWidth) +
     surfaceOffset * Math.cos(normalAngle);
 }
 
@@ -251,6 +268,54 @@ export function progressFromDrag(
 ): number {
   const signedDistance = direction === 'forward' ? startX - currentX : currentX - startX;
   return clamp(signedDistance / Math.max(effectiveTurnDistance, Number.EPSILON), 0, 1);
+}
+
+export function progressFromGrabTarget(
+  start: number,
+  end: number,
+  target: number,
+  projectAtProgress: (progress: number) => number,
+  previousProgress = 0,
+): number {
+  const sampleCount = 24;
+  let closestProgress = 0;
+  let closestError = Math.abs(start - target);
+  let nearestCrossing = Infinity;
+  let lower = -1;
+  let upper = -1;
+  let lowerValue = start;
+  let previousValue = start;
+  for (let index = 1; index <= sampleCount; index += 1) {
+    const progress = index / sampleCount;
+    const projected = index === sampleCount ? end : projectAtProgress(progress);
+    const error = Math.abs(projected - target);
+    if (error < closestError) {
+      closestError = error;
+      closestProgress = progress;
+    }
+    if (
+      (previousValue - target) * (projected - target) <= 0 &&
+      Math.abs((index - 0.5) / sampleCount - previousProgress) < nearestCrossing
+    ) {
+      nearestCrossing = Math.abs((index - 0.5) / sampleCount - previousProgress);
+      lower = (index - 1) / sampleCount;
+      upper = progress;
+      lowerValue = previousValue;
+    }
+    previousValue = projected;
+  }
+  if (lower < 0) return closestProgress;
+
+  for (let index = 0; index < 9; index += 1) {
+    const middle = (lower + upper) / 2;
+    const projected = projectAtProgress(middle);
+    if ((lowerValue - target) * (projected - target) <= 0) upper = middle;
+    else {
+      lower = middle;
+      lowerValue = projected;
+    }
+  }
+  return (lower + upper) / 2;
 }
 
 export function shouldCommitTurn({

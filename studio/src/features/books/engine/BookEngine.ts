@@ -52,7 +52,14 @@ import {
   getSpreadIndexForPage,
 } from './spreads';
 import { disposeObject } from './three-utils';
-import { progressFromDrag, shouldCommitTurn } from './turn/PageCurl';
+import {
+  computePageCurlPoint,
+  getGutterEdgeInfluence,
+  getGutterOffset,
+  progressFromDrag,
+  progressFromGrabTarget,
+  shouldCommitTurn,
+} from './turn/PageCurl';
 import { Spring } from './turn/Spring';
 
 export type BookTheme = 'light' | 'dark';
@@ -194,11 +201,12 @@ export class BookEngine {
   readonly #stateMachine: BookStateMachine;
   readonly #memoryLimited: boolean;
   readonly #scene = new Scene();
-  readonly #camera = new PerspectiveCamera(34, 1, 0.05, 80);
+  readonly #camera = new PerspectiveCamera(18, 1, 0.05, 80);
   readonly #renderer: WebGLRenderer;
   readonly #raycaster = new Raycaster();
   readonly #pointerNdc = new Vector2();
   readonly #intersection = new Vector3();
+  readonly #projectedGrab = new Vector3();
   readonly #bookPlane = new Plane(new Vector3(0, 0, 1), 0);
   readonly #pageCache: PageCache;
   readonly #resizeObserver: ResizeObserver;
@@ -212,6 +220,7 @@ export class BookEngine {
   #contactShadow: Mesh<PlaneGeometry, MeshBasicMaterial> | null = null;
   #ambientLight: AmbientLight | null = null;
   #keyLight: DirectionalLight | null = null;
+  #fillLight: DirectionalLight | null = null;
   #deskMaterial: MeshStandardMaterial | null = null;
   #theme: BookTheme = 'dark';
   #pageAspect = 0.72;
@@ -666,9 +675,9 @@ export class BookEngine {
     const pageWidth = this.#config.pageHeight * this.#pageAspect;
     const bookWidth = this.#displayMode === 'focused' ? pageWidth * 1.16 : pageWidth * 2.16;
     const bookHeight = this.#config.pageHeight * 1.18;
-    const verticalFov = (this.#cameraFov() * Math.PI) / 180;
+    const verticalFov = (this.#camera.fov * Math.PI) / 180;
     const safeFrame =
-      this.#displayMode === 'focused' ? 1.08 : this.#camera.aspect < 0.9 ? 0.84 : 1.08;
+      this.#displayMode === 'focused' ? 1.04 : this.#camera.aspect < 0.9 ? 0.84 : 1.02;
     const fitHeightDistance = bookHeight / (2 * Math.tan(verticalFov / 2) * safeFrame);
     const fitWidthDistance =
       bookWidth / (2 * Math.tan(verticalFov / 2) * this.#camera.aspect * safeFrame);
@@ -710,11 +719,16 @@ export class BookEngine {
   }
 
   #applyCamera(): void {
-    const distance = this.#cameraDistance / this.#zoom;
-    this.#camera.position.set(this.#focusX, this.#focusY - distance * 0.3, distance);
-    this.#camera.lookAt(this.#focusX, this.#focusY, -0.03);
+    this.#positionCamera();
     this.#camera.updateProjectionMatrix();
     this.invalidate();
+  }
+
+  #positionCamera(): void {
+    const distance = this.#cameraDistance / this.#zoom;
+    this.#camera.position.set(this.#focusX, this.#focusY - distance * 0.06, distance);
+    this.#camera.lookAt(this.#focusX, this.#focusY, -0.03);
+    this.#camera.updateMatrixWorld();
   }
 
   invalidate(): void {
@@ -787,14 +801,10 @@ export class BookEngine {
     await provider?.dispose().catch(() => undefined);
   }
 
-  #cameraFov(): number {
-    return 34;
-  }
-
   #createEnvironment(): void {
     const ambient = new AmbientLight(0xe4d5c4, 1.24);
     const keyLight = new DirectionalLight(0xffddb3, 1.62);
-    keyLight.position.set(-2.8, -2.2, 5.4);
+    keyLight.position.set(-1.8, -1.6, 6.8);
     keyLight.castShadow = true;
     keyLight.shadow.mapSize.width = 1024;
     keyLight.shadow.mapSize.height = 1024;
@@ -807,6 +817,9 @@ export class BookEngine {
     keyLight.shadow.bias = -0.00025;
     keyLight.shadow.normalBias = 0.012;
     keyLight.shadow.radius = 3;
+    keyLight.shadow.intensity = 0.68;
+    const fillLight = new DirectionalLight(0xfff4e1, 0.66);
+    fillLight.position.set(2.6, 1.4, 3.4);
 
     const deskMaterial = new MeshStandardMaterial({
       color: 0x2a211c,
@@ -832,8 +845,9 @@ export class BookEngine {
     this.#contactShadow = contact;
     this.#ambientLight = ambient;
     this.#keyLight = keyLight;
+    this.#fillLight = fillLight;
     this.#deskMaterial = deskMaterial;
-    this.#scene.add(ambient, keyLight, desk, contact);
+    this.#scene.add(ambient, keyLight, fillLight, desk, contact);
     this.#applyTheme();
   }
 
@@ -841,20 +855,25 @@ export class BookEngine {
   #applyTheme(): void {
     const ambient = this.#ambientLight;
     const key = this.#keyLight;
+    const fill = this.#fillLight;
     const deskMaterial = this.#deskMaterial;
     if (this.#theme === 'light') {
       this.#scene.background = new Color(0xe4e2dd);
       ambient?.color.setHex(0xf3f2ee);
       if (ambient) ambient.intensity = 1.1;
       key?.color.setHex(0xffffff);
-      if (key) key.intensity = 1.1;
+      if (key) key.intensity = 0.9;
+      fill?.color.setHex(0xffffff);
+      if (fill) fill.intensity = 0.58;
       deskMaterial?.color.setHex(0xd4d3cf);
     } else {
       this.#scene.background = new Color(0x18191c);
       ambient?.color.setHex(0xe2e3e5);
       if (ambient) ambient.intensity = 1.24;
       key?.color.setHex(0xfff8eb);
-      if (key) key.intensity = 1.46;
+      if (key) key.intensity = 1.2;
+      fill?.color.setHex(0xfff4e1);
+      if (fill) fill.intensity = 0.66;
       deskMaterial?.color.setHex(0x292a2d);
     }
   }
@@ -1081,6 +1100,7 @@ export class BookEngine {
   ): void {
     this.#markInteractionVisible();
     this.#book?.turningSheet.update(progress, direction, pointerV, verticalDrag);
+    this.#setPaperShadow(progress, direction, pointerV, verticalDrag);
     const fractionalSpread = this.#spreadIndex + (direction === 'forward' ? progress : -progress);
     this.#book?.setProgress(this.#readingProgress(fractionalSpread));
     this.#markAnimatedShadow(progress);
@@ -1097,6 +1117,7 @@ export class BookEngine {
     sheetProgress = progress,
   ): void {
     this.#markInteractionVisible();
+    this.#resetPaperShadow();
     const direction: TurnDirection =
       edge === 'front' ? (opening ? 'forward' : 'backward') : opening ? 'backward' : 'forward';
     this.#book?.turningSheet.update(sheetProgress, direction, pointerV, verticalDrag);
@@ -1145,6 +1166,7 @@ export class BookEngine {
     }
     this.#touchStaticPages();
     this.#book?.turningSheet.hide();
+    this.#resetPaperShadow();
     this.#book?.setProgress(this.#readingProgress(targetIndex));
     this.#renderer.shadowMap.needsUpdate = true;
     // 落地静态页和动态纸张在同一绘制提交中交接，避免中间帧同时显示两张纸面。
@@ -1164,6 +1186,7 @@ export class BookEngine {
     await this.#showSpreadForInteraction(this.#spreadIndex, this.#loadController?.signal);
     this.#touchStaticPages();
     this.#book?.turningSheet.hide();
+    this.#resetPaperShadow();
     this.#book?.setProgress(this.#readingProgress(this.#spreadIndex));
     this.#renderer.shadowMap.needsUpdate = true;
     this.invalidate();
@@ -1739,12 +1762,48 @@ export class BookEngine {
     this.#lastShadowProgress = -1;
   }
 
+  #setPaperShadow(
+    progress: number,
+    direction: TurnDirection,
+    pointerV: number,
+    verticalDrag: number,
+  ): void {
+    const key = this.#keyLight;
+    if (!key) return;
+    const pageWidth = this.#config.pageHeight * this.#pageAspect;
+    const height = computePageCurlPoint({
+      x: pageWidth * 0.88,
+      y: (pointerV - 0.5) * this.#config.pageHeight,
+      pageWidth,
+      pageHeight: this.#config.pageHeight,
+      progress,
+      direction,
+      pointerV,
+      verticalDrag,
+      curlStrength: this.#config.curlStrength,
+      twistStrength: this.#config.twistStrength,
+      sagStrength: this.#config.sagStrength,
+    }).z;
+    const lift = clamp(height / pageWidth, 0, 1);
+    key.shadow.radius = 1.2 + lift * 3.8;
+    key.shadow.intensity = 0.62 - lift * 0.24;
+  }
+
+  #resetPaperShadow(): void {
+    if (!this.#keyLight) return;
+    this.#keyLight.shadow.radius = 3;
+    this.#keyLight.shadow.intensity = 0.68;
+  }
+
   /**
    * 请求重绘阴影贴图。传入动画进度时按 SHADOW_PROGRESS_STEP 节流：一次 720ms 翻页原本要
    * 重绘 43 次 1024² 阴影，节流后约 13 次。传 undefined 表示强制重绘并重置节奏。
    */
   #markAnimatedShadow(progress?: number): void {
-    if (progress !== undefined && !shouldRefreshShadow(progress, this.#lastShadowProgress)) return;
+    const step = this.#drag ? 0.04 : undefined;
+    if (progress !== undefined && !shouldRefreshShadow(progress, this.#lastShadowProgress, step)) {
+      return;
+    }
     this.#lastShadowProgress = progress ?? -1;
     this.#shadowUpdates += 1;
     this.#renderer.shadowMap.needsUpdate = true;
@@ -1917,7 +1976,11 @@ export class BookEngine {
     event.preventDefault();
     const pageWidth = this.#config.pageHeight * this.#pageAspect;
     const pageHeight = this.#config.pageHeight;
-    const progress = progressFromDrag(drag.start.x, point.x, pageWidth * 1.55, drag.direction);
+    drag.verticalDrag = clamp((point.y - drag.start.y) / pageHeight, -1, 1);
+    const progress =
+      drag.ready && !drag.focusOnly && !drag.boundaryClose
+        ? this.#progressForGrab(drag, event.clientX, event.clientY)
+        : progressFromDrag(drag.start.x, point.x, pageWidth * 1.55, drag.direction);
     const now = performance.now();
     drag.maxDistancePx = Math.max(
       drag.maxDistancePx,
@@ -1925,11 +1988,92 @@ export class BookEngine {
     );
     sampleDragVelocity(drag, progress, now);
     drag.progress = progress;
-    drag.pointerV = clamp(point.y / pageHeight + 0.5, 0, 1);
-    drag.verticalDrag = clamp((point.y - drag.start.y) / pageHeight, -1, 1);
     // 视觉更新交给 rAF 合并；采样语义（速度窗口、最大位移）保持原样。
     this.#requestDragVisual();
   };
+
+  #progressForGrab(drag: DragSession, clientX: number, clientY: number): number {
+    const rect = this.#renderer.domElement.getBoundingClientRect();
+    if (!rect.width || !rect.height || !this.#book) return drag.progress;
+    this.#book.turningSheet.mesh.updateWorldMatrix(true, false);
+    this.#camera.updateMatrixWorld();
+    const targetX =
+      this.#projectGrabCoordinate(drag, 0, 0, 'x') +
+      ((clientX - drag.startClientX) / rect.width) * 2;
+    const targetY =
+      this.#projectGrabCoordinate(drag, 0, 0, 'y') -
+      ((clientY - drag.startClientY) / rect.height) * 2;
+    let progress = drag.progress;
+    let verticalDrag = drag.verticalDrag;
+    for (let iteration = 0; iteration < 2; iteration += 1) {
+      verticalDrag = this.#verticalForGrab(drag, progress, targetY);
+      progress = this.#horizontalForGrab(drag, verticalDrag, targetX);
+    }
+    drag.verticalDrag = this.#verticalForGrab(drag, progress, targetY);
+    progress = this.#horizontalForGrab(drag, drag.verticalDrag, targetX);
+    return progress;
+  }
+
+  #horizontalForGrab(drag: DragSession, verticalDrag: number, targetX: number): number {
+    const start = this.#projectGrabCoordinate(drag, 0, verticalDrag, 'x');
+    const end = this.#projectGrabCoordinate(drag, 1, verticalDrag, 'x');
+    return progressFromGrabTarget(
+      start,
+      end,
+      targetX,
+      (progress) => this.#projectGrabCoordinate(drag, progress, verticalDrag, 'x'),
+      drag.progress,
+    );
+  }
+
+  #verticalForGrab(drag: DragSession, progress: number, targetY: number): number {
+    const lower = this.#projectGrabCoordinate(drag, progress, -1, 'y');
+    const upper = this.#projectGrabCoordinate(drag, progress, 1, 'y');
+    if (Math.abs(upper - lower) < 1e-5) return 0;
+    return (
+      progressFromGrabTarget(
+        lower,
+        upper,
+        targetY,
+        (value) => this.#projectGrabCoordinate(drag, progress, value * 2 - 1, 'y'),
+        (drag.verticalDrag + 1) / 2,
+      ) *
+        2 -
+      1
+    );
+  }
+
+  #projectGrabCoordinate(
+    drag: DragSession,
+    progress: number,
+    verticalDrag: number,
+    axis: 'x' | 'y',
+  ): number {
+    const book = this.#book;
+    if (!book) return 0;
+    const pageWidth = this.#config.pageHeight * this.#pageAspect;
+    const pageHeight = this.#config.pageHeight;
+    const x = Math.min(pageWidth, Math.abs(drag.start.x));
+    const y = clamp(drag.start.y, -pageHeight / 2, pageHeight / 2);
+    const point = computePageCurlPoint({
+      x,
+      y,
+      pageWidth,
+      pageHeight,
+      progress,
+      direction: drag.direction,
+      pointerV: drag.pointerV,
+      verticalDrag,
+      curlStrength: this.#config.curlStrength,
+      twistStrength: this.#config.twistStrength,
+      sagStrength: this.#config.sagStrength,
+    });
+    const gutter = getGutterOffset(x, this.#config, getGutterEdgeInfluence(y, pageHeight));
+    const sheet = book.turningSheet.mesh;
+    this.#projectedGrab.set(point.x, point.y, point.z + gutter);
+    sheet.localToWorld(this.#projectedGrab);
+    return this.#projectedGrab.project(this.#camera)[axis];
+  }
 
   #onPointerUp = (event: PointerEvent): void => {
     this.#activePointers.delete(event.pointerId);
