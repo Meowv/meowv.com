@@ -76,6 +76,14 @@ App 从 `https://studio.meowv.com/data/livewall/version.json` 检查更新，以
 
 `version.json.sig` 必须与 `version.json` 同批提供。客户端先用内嵌公钥验签，再解析版本信息；下载的 DMG 还会按清单中的必填 `sha256` 校验。内容索引和更新清单由同一工具 `tools/sign-version.swift` 签名，密钥保存在本机的 `~/.livewall-signing/version-key.txt`，不进入仓库。更换密钥需要更新客户端内嵌公钥并重新发版；缺签名或验签失败不会降级为未签名更新。
 
+### 安装窗口版式
+
+DMG 挂载后的窗口使用定制背景图（安装提示和箭头）、固定的 App 与「应用程序」图标坐标，以及卷图标。`make-dmg.sh` 先创建可读写镜像，让 Finder 写入窗口布局，再转换为压缩镜像。
+
+背景图由 `tools/make-dmg-background.swift` 在打包时生成，配色取自 App 图标；Finder 图标坐标在 `make-dmg.sh` 中设置。
+
+打包需要 Finder 的「自动化」权限（系统设置 → 隐私与安全性 → 自动化，允许终端控制「访达」）、Command Line Tools 提供的 `tiffutil`、`SetFile` 和 `GetFileInfo`，以及 `swift`；缺少时会中断。布局使用默认挂载点 `/Volumes/LiveWall`，同名卷已挂载时需先手动推出。卷名须保持 `LiveWall`，因为 `.DS_Store` 中的背景图引用包含该路径。调整图标坐标时，需同步修改 `make-dmg.sh` 的 `APP_ITEM_POS` / `DROP_ITEM_POS` 和背景图生成器中的对应位置。
+
 ### 发版步骤
 
 本目录 `./build.sh` 只组装 `build/LiveWall.app`；`./make-dmg.sh` 会先以 `--bump-build` 构建，再生成 `build/LiveWall-<版本>.dmg`、`version.json` 和 `version.json.sig`。在仓库根目录构建完整发布产物：
