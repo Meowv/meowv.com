@@ -66,7 +66,10 @@ protocol WallpaperBrowserDataSource: AnyObject {
 private final class ModalPreviewOverlayView: NSView {
 
     override func hitTest(_ point: NSPoint) -> NSView? {
-        super.hitTest(point) ?? self
+        // `super` 在隐藏或点到遮罩范围外时会返回 nil，不能再兜底成 self，
+        // 否则分类栏的点击也会被这个最后添加的视图截走。
+        guard !isHiddenOrHasHiddenAncestor, frame.contains(point) else { return nil }
+        return super.hitTest(point) ?? self
     }
 }
 
