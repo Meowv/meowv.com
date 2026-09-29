@@ -3,7 +3,7 @@ export const STUDIO_SITE_URL = 'https://studio.meowv.com';
 export const STUDIO_DEFAULT_SEO = {
   title: 'Meowv Studio｜本地文件工作台',
   description:
-    '无需上传文件的本地工作台：在浏览器中打开、编辑、转换和导出图片、PDF、Markdown、Office 文档及更多内容。',
+    'Meowv Studio 提供浏览器本地文件工作台，可打开、编辑、转换和导出 Markdown、Office 文档、PDF 与图片；本地文件无需上传。',
 };
 
 export type StudioSeoMeta = {
@@ -16,56 +16,56 @@ export type StudioSeoMeta = {
 export const STUDIO_ROUTE_SEO = {
   home: STUDIO_DEFAULT_SEO,
   markdown: {
-    title: 'Markdown 在线编辑器｜Meowv Studio',
+    title: 'Markdown｜Meowv Studio',
     description:
-      '浏览器本地 Markdown 编辑器：打开文件夹、编辑与预览文档，支持全文搜索，并导出 HTML、PDF、Word 等格式。',
+      '在浏览器中编辑 Markdown 文档，打开本地文件夹并实时预览、全文搜索；支持导出 HTML、PDF 和 PNG 图片。',
   },
   mermaid: {
-    title: 'Mermaid 在线编辑器｜Meowv Studio',
+    title: 'Mermaid｜Meowv Studio',
     description:
-      '在线编辑 Mermaid 流程图、时序图和架构图，在浏览器本地预览、导出与分享，图表内容无需上传。',
+      '在线编辑 Mermaid 流程图、时序图和架构图，实时预览并导出 SVG、PNG、PDF 等格式，还可生成分享链接。',
   },
   office: {
-    title: 'Word、Excel、PPT 在线编辑｜Meowv Studio',
+    title: 'Office｜Meowv Studio',
     description:
-      '浏览器本地 Office 编辑器，支持 Word、Excel、PowerPoint 和 CSV 文件的打开、创建、编辑与保存，无需上传文档。',
+      '在浏览器中打开、创建和编辑 Word 文档、Excel 表格、PPT 演示文稿及 CSV 文件，支持保存到本地。',
   },
   books: {
-    title: 'PDF 仿真书阅读器｜Meowv Studio',
+    title: '仿真书｜Meowv Studio',
     description:
-      '在浏览器本地打开 PDF，以仿真书方式翻页阅读，支持阅读进度和分页索引，文件内容始终留在设备内。',
+      '浏览器本地仿真书阅读器，支持 PDF、EPUB、TXT 等电子书翻页阅读，保留阅读进度，并可通过进度条跳页。',
   },
   draw: {
-    title: '在线白板与流程图工具｜Meowv Studio',
+    title: '白板｜Meowv Studio',
     description:
-      '浏览器本地在线白板，支持草图、流程图和无限画布，自动保存并导出 PNG、SVG 或 Excalidraw 文件。',
+      '使用浏览器白板自由绘图、制作流程图并在无限画布上整理想法；自动保存，支持导出图片和 Excalidraw 文件。',
   },
   mind: {
-    title: '在线思维导图工具｜Meowv Studio',
+    title: '思维导图｜Meowv Studio',
     description:
-      '在浏览器本地创建和整理思维导图，支持 Markdown 大纲、主题设置及 Markdown、PNG、SVG、JSON 导出。',
+      '在线制作思维导图，支持可视化编辑、Markdown 大纲和主题切换，可导出 Markdown、PNG、SVG 或 JSON。',
   },
   notes: {
-    title: '在线便签与灵感记录工具｜Meowv Studio',
+    title: '便签｜Meowv Studio',
     description:
-      '浏览器本地便签工具，支持自由布局、颜色、置顶、折叠和自动保存，适合记录灵感、待办与临时信息。',
+      '在浏览器中创建和整理本地便签，自由摆放、设置颜色、置顶或折叠，自动保存灵感、待办和临时记录。',
   },
   wallpapers: {
-    title: '电脑与手机壁纸｜Meowv Studio',
-    description: '精选电脑和手机壁纸，支持静态与动态壁纸预览、分类筛选和下载，直接在浏览器中浏览。',
+    title: '壁纸｜Meowv Studio',
+    description: '浏览电脑和手机壁纸，按静态、动态类型筛选或搜索，在线预览并下载喜欢的壁纸。',
   },
   tools: {
-    title: '在线工具箱｜图片、PDF、文本与开发工具｜Meowv Studio',
+    title: '工具｜Meowv Studio',
     description:
-      '实用在线工具箱，汇集图片、PDF、文本、编码、数据和设计工具，支持搜索与收藏，打开浏览器即可使用。',
+      'Meowv Studio 在线工具箱汇集图片处理、PDF 编辑、文本与编码转换等实用工具，支持分类浏览、搜索和收藏。',
   },
   toolDetail: {
-    title: '在线工具｜Meowv Studio',
-    description: '使用 Meowv Studio 在线工具处理文件、文本与数据，内容在浏览器本地处理，无需上传。',
+    title: '工具｜Meowv Studio',
+    description: '在 Meowv Studio 中使用图片、PDF、文本和开发工具，按需处理文件与数据，快速完成常见任务。',
   },
   notFound: {
     title: '页面未找到｜Meowv Studio',
-    description: '你访问的页面不存在或已被移动，请返回 Meowv Studio 首页继续使用本地文件工作台。',
+    description: '页面未找到：当前地址可能有误，或页面已被移动。返回 Meowv Studio 首页，继续使用浏览器文件工作台。',
     noindex: true,
   },
 } satisfies Record<string, StudioSeoMeta>;
