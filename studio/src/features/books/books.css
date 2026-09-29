@@ -582,7 +582,7 @@
   background: rgb(25 20 17 / 76%);
   box-shadow: 0 5px 14px rgb(0 0 0 / 20%);
   gap: 4px;
-  opacity: 0.86;
+  opacity: 0;
   transform: translateX(-50%);
   backdrop-filter: none;
   transition:
@@ -598,7 +598,7 @@
 }
 
 .books-reader-controls__bottom:hover,
-.books-reader-controls__bottom:focus-within {
+.books-reader-controls__bottom:has(:focus-visible) {
   opacity: 1;
   background: rgb(25 20 17 / 92%);
   backdrop-filter: blur(12px);
@@ -711,7 +711,7 @@
   appearance: none;
 }
 
-/* 阅读页码始终可见；隐藏时仅收起顶部工具，画布仍可接收翻页手势。 */
+/* 底部进度条由悬停或聚焦显示；隐藏顶部工具时画布仍可接收翻页手势。 */
 .books-page--ui-hidden .books-reader-controls__top {
   opacity: 0;
   pointer-events: none;
@@ -1375,8 +1375,11 @@
 }
 
 @media (hover: none) {
-  .books-reader-controls__bottom {
-    opacity: 0.94;
+  .books-reader-controls__bottom:focus-within,
+  .books-reader-controls__bottom:active {
+    opacity: 1;
+    background: rgb(25 20 17 / 92%);
+    backdrop-filter: blur(12px);
   }
 }
 
