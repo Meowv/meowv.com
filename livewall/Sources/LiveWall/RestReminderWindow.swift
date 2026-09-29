@@ -7,6 +7,22 @@ enum RestReminderEndReason {
     case countdown
 }
 
+/// 「结束休息」按钮。
+///
+/// 系统高亮会把按钮文字置灰，所以这里关掉它，只把按压状态上报给窗口，
+/// 由窗口在文字下方叠一层浅色反馈。
+private final class RestEndButton: NSButton {
+
+    var onPressChange: ((Bool) -> Void)?
+
+    override func mouseDown(with event: NSEvent) {
+        onPressChange?(true)
+        // `super` 会一直跟踪到本次按压结束（松开或移出按钮）才返回。
+        super.mouseDown(with: event)
+        onPressChange?(false)
+    }
+}
+
 /// 全屏休息层。它接收屏幕上的点击，只有底部的结束按钮会执行动作。
 @MainActor
 final class RestReminderWindow: NSWindow {
@@ -14,9 +30,17 @@ final class RestReminderWindow: NSWindow {
     /// 休息层进出场使用同一时长，避免结束操作看起来像突然消失。
     static let transitionDuration: TimeInterval = 1.2
 
+    /// 按压反馈色：很浅的白色。透明度刻意压得很低，叠加后只让底板略微提亮，
+    /// 不会盖住文字，也不会让白色文字失去对比。
+    private static let pressFeedbackColor = NSColor.white.withAlphaComponent(0.18)
+    /// 松开后反馈淡出的时长，让点击有「按下再抬起」的层次。
+    private static let pressFeedbackReleaseDuration: TimeInterval = 0.22
+
     private let videoLayer: AVPlayerLayer
     private let buttonMaterial: NSVisualEffectView
-    private let endButton: NSButton
+    private let endButton: RestEndButton
+    /// 按压反馈层：位于按钮文字下方，出现时不会遮挡文字。
+    private let pressFeedback: NSView
     var onEnd: (() -> Void)?
 
     init(screen: NSScreen, player: AVPlayer?, onEnd: @escaping () -> Void) {
@@ -28,7 +52,8 @@ final class RestReminderWindow: NSWindow {
         videoLayer.videoGravity = .resizeAspectFill
 
         buttonMaterial = NSVisualEffectView()
-        endButton = NSButton(title: "结束休息(60s)", target: nil, action: nil)
+        endButton = RestEndButton(title: "结束休息(60s)", target: nil, action: nil)
+        pressFeedback = NSView()
 
         super.init(
             contentRect: screen.frame,
@@ -68,12 +93,24 @@ final class RestReminderWindow: NSWindow {
         endButton.target = self
         endButton.action = #selector(endRest(_:))
         endButton.isBordered = false
-        // 点击时不改变按钮内容颜色，避免「结束休息」文字被系统置灰后难以辨认。
+        // 点击时不改变按钮内容颜色，避免「结束休息」文字被系统置灰后难以辨认；
+        // 点击反馈改由下方 pressFeedback 承担。
         (endButton.cell as? NSButtonCell)?.highlightsBy = []
         endButton.contentTintColor = .white
         endButton.translatesAutoresizingMaskIntoConstraints = false
         buttonMaterial.addSubview(endButton)
         endButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+
+        pressFeedback.wantsLayer = true
+        pressFeedback.layer?.backgroundColor = Self.pressFeedbackColor.cgColor
+        pressFeedback.alphaValue = 0
+        pressFeedback.translatesAutoresizingMaskIntoConstraints = false
+        // 插到按钮下方：反馈只提亮底板，永远不会盖住文字。
+        buttonMaterial.addSubview(pressFeedback, positioned: .below, relativeTo: endButton)
+        endButton.onPressChange = { [weak self] isPressed in
+            self?.setPressFeedback(visible: isPressed)
+        }
+
         updateEndButton(remainingSeconds: 60)
         NSLayoutConstraint.activate([
             buttonMaterial.centerXAnchor.constraint(equalTo: content.centerXAnchor),
@@ -84,6 +121,10 @@ final class RestReminderWindow: NSWindow {
             endButton.trailingAnchor.constraint(equalTo: buttonMaterial.trailingAnchor, constant: -6),
             endButton.topAnchor.constraint(equalTo: buttonMaterial.topAnchor),
             endButton.bottomAnchor.constraint(equalTo: buttonMaterial.bottomAnchor),
+            pressFeedback.leadingAnchor.constraint(equalTo: buttonMaterial.leadingAnchor),
+            pressFeedback.trailingAnchor.constraint(equalTo: buttonMaterial.trailingAnchor),
+            pressFeedback.topAnchor.constraint(equalTo: buttonMaterial.topAnchor),
+            pressFeedback.bottomAnchor.constraint(equalTo: buttonMaterial.bottomAnchor),
         ])
     }
 
@@ -96,6 +137,15 @@ final class RestReminderWindow: NSWindow {
     func update(player: AVPlayer?, remainingSeconds: Int) {
         videoLayer.player = player
         updateEndButton(remainingSeconds: remainingSeconds)
+    }
+
+    /// 按下瞬间出现，松开后淡出。反馈只改变底板明度，不触碰文字颜色。
+    private func setPressFeedback(visible: Bool) {
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = visible ? 0 : Self.pressFeedbackReleaseDuration
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            pressFeedback.animator().alphaValue = visible ? 1 : 0
+        }
     }
 
     private func updateEndButton(remainingSeconds: Int) {
