@@ -61,6 +61,7 @@ interface OpenBookOptions {
 
 const READER_TIP_KEY = 'meowv-studio:books:reader-tip:v2';
 const READER_LAYOUT_KEY = 'meowv-studio:books:layout:v2';
+const touchOnly = globalThis.matchMedia?.('(hover: none)').matches ?? false;
 const bookshelf = new BookshelfRepository();
 const root = ref<HTMLElement | null>(null);
 const canvasHost = ref<HTMLElement | null>(null);
@@ -217,6 +218,7 @@ function clearHideTimer(): void {
 }
 
 function scheduleUiHide(): void {
+  if (touchOnly) return;
   if ((state.value !== 'OPEN' && state.value !== 'CLOSED') || readerPanel.value) return;
   hideAt = performance.now() + 2600;
   if (hideTimer) return;
@@ -1003,14 +1005,29 @@ async function turn(direction: TurnDirection): Promise<void> {
 async function navigateTo(locator: BookLocator): Promise<void> {
   if (!engine || !pageProvider || !readerReady.value) return;
   readerPanel.value = null;
+  pendingTurn = null;
   try {
-    if (engine.snapshot.state === 'OPEN') await engine.close();
-    await engine.goToPage(pageProvider.pageForLocator(locator));
-    await engine.open();
+    const page = pageProvider.pageForLocator(locator);
+    if (engine.snapshot.state === 'OPEN') await engine.jumpToPage(page);
+    else if (engine.snapshot.state === 'CLOSED') {
+      await engine.goToPage(page);
+      await engine.open();
+    }
     progressSave.schedule();
     await progressSave.flush();
   } catch (reason) {
-    await returnToShelf(bookErrorMessage(reason));
+    showError(bookErrorMessage(reason));
+  }
+}
+
+async function jumpToPage(page: number): Promise<void> {
+  if (!engine || state.value !== 'OPEN') return;
+  pendingTurn = null;
+  revealUi();
+  try {
+    await engine.jumpToPage(page);
+  } catch (reason) {
+    showError(bookErrorMessage(reason));
   }
 }
 
@@ -1104,8 +1121,16 @@ function onKeydown(event: KeyboardEvent): void {
     !readerReady.value
   )
     return;
+  if (readerPanel.value) {
+    if (event.key === 'Escape') {
+      readerPanel.value = null;
+      uiHidden.value = false;
+    }
+    return;
+  }
   const direction = turnDirectionForKey(event.key);
   if (direction) {
+    if (state.value !== 'OPEN' && state.value !== 'TURNING') return;
     event.preventDefault();
     rememberHeldTurnDirection(direction);
     void turn(direction);
@@ -1275,7 +1300,7 @@ onBeforeUnmount(() => {
         @click="onCanvasClick"
       ></div>
       <p v-if="readerReady && showReaderTip" class="books-reader__hint">
-        点击封面打开；滚轮缩放页面；拖动纸张外侧或使用方向键翻页
+        拖动书页外侧翻页；进度条可跳页；滚轮或双指可缩放
       </p>
       <div
         v-if="readerReady && pagePreparing"
@@ -1299,6 +1324,7 @@ onBeforeUnmount(() => {
         :can-configure="currentLayout === 'reflowable'"
         @previous="turn('backward')"
         @next="turn('forward')"
+        @jump="jumpToPage"
         @replace="chooseFile"
         @open="openBook"
         @close="closeBook"

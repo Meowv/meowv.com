@@ -517,11 +517,12 @@
   background: linear-gradient(180deg, rgb(10 9 8 / 46%), transparent);
   align-items: flex-start;
   justify-content: space-between;
+  transition: opacity 240ms ease;
 }
 
 .books-reader-controls__identity {
   display: inline-flex;
-  min-height: 40px;
+  min-height: 44px;
   color: rgb(247 237 223 / 70%);
   align-items: center;
   gap: 8px;
@@ -572,22 +573,21 @@
 
 .books-reader-controls__bottom {
   position: absolute;
-  bottom: 4px;
+  bottom: 8px;
   left: 50%;
-  min-height: 28px;
-  padding: 1px 2px;
-  border: 1px solid rgb(244 229 207 / 7%);
+  min-height: 40px;
+  padding: 2px 4px;
+  border: 1px solid rgb(244 229 207 / 18%);
   border-radius: 999px;
-  background: rgb(25 20 17 / 36%);
-  box-shadow: 0 5px 14px rgb(0 0 0 / 12%);
-  gap: 1px;
-  opacity: 0;
-  transform: translate(-50%, 5px);
-  /* 未悬停时不可见，不需要模糊；否则每帧仍会被合成器重算。 */
+  background: rgb(25 20 17 / 76%);
+  box-shadow: 0 5px 14px rgb(0 0 0 / 20%);
+  gap: 4px;
+  opacity: 0.86;
+  transform: translateX(-50%);
   backdrop-filter: none;
   transition:
     opacity 180ms ease,
-    transform 180ms ease;
+    background 180ms ease;
 }
 
 .books-reader-controls__bottom::before {
@@ -599,71 +599,138 @@
 
 .books-reader-controls__bottom:hover,
 .books-reader-controls__bottom:focus-within {
-  opacity: 0.78;
-  transform: translate(-50%, 0);
+  opacity: 1;
+  background: rgb(25 20 17 / 92%);
   backdrop-filter: blur(12px);
 }
 
 .books-reader-controls__bottom button {
-  width: 26px;
-  height: 26px;
+  width: 40px;
+  height: 40px;
   border-color: transparent;
   background: transparent;
 }
 
 .books-progress {
   display: grid;
-  width: min(20vw, 170px);
-  min-width: 96px;
-  padding: 0 3px;
-  grid-template-columns: minmax(48px, 1fr) auto;
+  width: min(28vw, 240px);
+  min-width: 140px;
+  padding: 0 6px;
+  grid-template-columns: minmax(80px, 1fr) auto;
   align-items: center;
   gap: 5px;
 }
 
 .books-progress__track {
-  position: relative;
   display: block;
-  height: 2px;
-  overflow: hidden;
+  width: 100%;
+  height: 24px;
+  margin: 0;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.books-progress__track::-webkit-slider-runnable-track {
+  height: 4px;
   border-radius: 999px;
-  background: rgb(244 230 210 / 18%);
+  background: linear-gradient(
+    to right,
+    #d6b789 var(--books-progress),
+    rgb(244 230 210 / 24%) var(--books-progress)
+  );
 }
 
-.books-progress__track i {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  border-radius: inherit;
+.books-progress__track::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: rgb(244 230 210 / 24%);
+}
+
+.books-progress__track::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
   background: #d6b789;
-  box-shadow: 0 0 12px rgb(214 183 137 / 42%);
-  transition: width 420ms ease;
 }
 
-.books-progress__label {
-  min-width: 42px;
-  color: rgb(247 237 223 / 54%);
+.books-progress__track::-webkit-slider-thumb {
+  width: 12px;
+  height: 12px;
+  margin-top: -4px;
+  appearance: none;
+  border: 2px solid #2d241c;
+  border-radius: 50%;
+  background: #e8c99b;
+}
+
+.books-progress__track::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border: 2px solid #2d241c;
+  border-radius: 50%;
+  background: #e8c99b;
+}
+
+.books-progress__track:focus-visible {
+  outline: 2px solid #e8c99b;
+  outline-offset: 2px;
+}
+
+.books-reader-controls .books-progress__label,
+.books-progress__page-input {
+  width: auto;
+  height: 28px;
+  min-width: 52px;
+  padding: 0 2px;
+  border: 0;
+  border-radius: 4px;
+  color: rgb(247 237 223 / 86%);
+  background: transparent;
   font-variant-numeric: tabular-nums;
-  font-size: 9px;
+  font-size: 11px;
   text-align: right;
 }
 
-/* 注意：这里不能再设 pointer-events: auto。本层是 inset: 0 的全屏覆盖层，与 3D 画布是
-   兄弟节点，一旦可命中就会吞掉隐藏期间画布上的第一次 pointerdown。基类已是 none，
-   子元素（__actions / __bottom）自带 auto，:hover 会沿祖先链传播，悬停唤出照常可用。 */
-.books-page--ui-hidden .books-reader-controls {
-  opacity: 0;
+.books-reader-controls .books-progress__label:hover,
+.books-reader-controls .books-progress__label:focus-visible {
+  color: #fffaf2;
+  background: rgb(255 255 255 / 10%);
 }
-.books-page--ui-hidden .books-reader-controls:hover,
-.books-page--ui-hidden .books-reader-controls:focus-within {
+
+.books-progress__page-input {
+  width: 52px;
+  outline: 1px solid #d6b789;
+  text-align: center;
+  appearance: textfield;
+}
+
+.books-progress__page-input::-webkit-inner-spin-button,
+.books-progress__page-input::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
+}
+
+/* 阅读页码始终可见；隐藏时仅收起顶部工具，画布仍可接收翻页手势。 */
+.books-page--ui-hidden .books-reader-controls__top {
+  opacity: 0;
+  pointer-events: none;
+}
+.books-page--ui-hidden .books-reader-controls__top .books-reader-controls__actions {
+  pointer-events: none;
+}
+.books-page--ui-hidden .books-reader-controls__top:focus-within {
   opacity: 1;
+  pointer-events: auto;
+}
+.books-page--ui-hidden .books-reader-controls__top:focus-within .books-reader-controls__actions {
+  pointer-events: auto;
 }
 /* 隐藏态且未悬停时不需要模糊：不可见的模糊层仍会被合成器每帧重算。 */
 .books-page--ui-hidden .books-reader-controls:not(:hover):not(:focus-within) button,
 .books-page--ui-hidden
   .books-reader-controls:not(:hover):not(:focus-within)
-  .books-reader-controls__bottom {
+  .books-reader-controls__top {
   backdrop-filter: none;
 }
 
@@ -1289,28 +1356,27 @@
   }
 
   .books-reader-controls button {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     flex: 0 0 auto;
   }
 
   .books-reader-controls__bottom {
     right: auto;
-    bottom: 4px;
+    bottom: 8px;
     left: 50%;
     justify-content: center;
   }
 
   .books-progress {
-    width: min(42vw, 160px);
-    min-width: 0;
+    width: min(45vw, 200px);
+    min-width: 120px;
   }
 }
 
 @media (hover: none) {
   .books-reader-controls__bottom {
-    opacity: 0.62;
-    transform: translate(-50%, 0);
+    opacity: 0.94;
   }
 }
 
@@ -1335,8 +1401,9 @@
 
   .books-reader,
   .books-reader-controls,
+  .books-reader-controls__top,
   .books-reader__hint,
-  .books-progress__track i {
+  .books-reader-controls__bottom {
     transition-duration: 0.01ms;
   }
 

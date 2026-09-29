@@ -11,6 +11,7 @@ import {
   IconFolderOpen,
   IconTypography,
 } from '@tabler/icons-vue';
+import { computed, nextTick, ref, watch } from 'vue';
 
 const props = defineProps<{
   bookClosed: boolean;
@@ -24,9 +25,10 @@ const props = defineProps<{
   canConfigure: boolean;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   previous: [];
   next: [];
+  jump: [page: number];
   replace: [];
   open: [];
   close: [];
@@ -35,6 +37,53 @@ defineEmits<{
   toc: [];
   settings: [];
 }>();
+
+const previewPage = ref<number | null>(null);
+const editingPage = ref(false);
+const pageInput = ref<HTMLInputElement | null>(null);
+const draftPage = ref(1);
+const displayedPage = computed(() => previewPage.value ?? props.currentPage);
+const progressPercent = computed(() =>
+  props.pageCount > 1 ? ((displayedPage.value - 1) / (props.pageCount - 1)) * 100 : 0,
+);
+
+watch(
+  () => props.currentPage,
+  () => (previewPage.value = null),
+);
+
+function previewProgress(event: Event): void {
+  previewPage.value = Number((event.target as HTMLInputElement).value);
+}
+
+function commitProgress(event: Event): void {
+  const page = Number((event.target as HTMLInputElement).value);
+  if (page !== props.currentPage) emit('jump', page);
+  else previewPage.value = null;
+}
+
+async function beginPageEdit(): Promise<void> {
+  draftPage.value = displayedPage.value;
+  editingPage.value = true;
+  await nextTick();
+  pageInput.value?.focus();
+  pageInput.value?.select();
+}
+
+function cancelPageEdit(): void {
+  editingPage.value = false;
+}
+
+function commitPageEdit(): void {
+  if (!editingPage.value) return;
+  editingPage.value = false;
+  if (!Number.isFinite(draftPage.value)) return;
+  const page = Math.min(props.pageCount, Math.max(1, Math.trunc(draftPage.value)));
+  if (page !== props.currentPage) {
+    previewPage.value = page;
+    emit('jump', page);
+  } else previewPage.value = null;
+}
 
 const actionTitle = (action: string, shortcut: string): string => `${action}（${shortcut}）`;
 const previousAction = (): string => (props.currentPage <= 1 ? '合上书' : '上一页');
@@ -109,19 +158,41 @@ const nextAction = (): string =>
         <IconArrowLeft :size="14" aria-hidden="true" />
       </button>
       <div class="books-progress">
-        <span
+        <input
           class="books-progress__track"
-          role="progressbar"
-          :aria-valuenow="currentPage"
-          aria-valuemin="1"
-          :aria-valuemax="pageCount"
-          :aria-label="`阅读进度，第 ${currentPage} 页，共 ${pageCount} 页`"
+          type="range"
+          min="1"
+          :max="pageCount"
+          step="1"
+          :value="displayedPage"
+          :style="{ '--books-progress': `${progressPercent}%` }"
+          :aria-label="`跳转页码，当前第 ${displayedPage} 页，共 ${pageCount} 页`"
+          @input="previewProgress"
+          @change="commitProgress"
+        />
+        <input
+          v-if="editingPage"
+          ref="pageInput"
+          v-model.number="draftPage"
+          class="books-progress__page-input"
+          type="number"
+          :min="1"
+          :max="pageCount"
+          aria-label="输入要跳转的页码"
+          @keydown.enter.prevent="commitPageEdit"
+          @keydown.esc.prevent="cancelPageEdit"
+          @blur="commitPageEdit"
+        />
+        <button
+          v-else
+          type="button"
+          class="books-progress__label"
+          :aria-label="`第 ${displayedPage} 页，共 ${pageCount} 页，点击输入页码`"
+          title="输入页码跳转"
+          @click="beginPageEdit"
         >
-          <i
-            :style="{ width: `${Math.max(0, Math.min(100, (currentPage / pageCount) * 100))}%` }"
-          ></i>
-        </span>
-        <span class="books-progress__label">{{ currentPage }} / {{ pageCount }}</span>
+          {{ displayedPage }} / {{ pageCount }}
+        </button>
       </div>
       <button
         type="button"

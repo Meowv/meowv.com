@@ -480,7 +480,7 @@ export class BookEngine {
     this.#stateMachine.transition('OPENING');
     await this.#prepareBoundaryTurn(this.#closedEdge, 0);
     this.#updateBoundaryTurn(0, this.#closedEdge, true, pointerV, 0, false);
-    await this.#animate(0, 1, this.#config.clickTurnDuration, (progress) => {
+    await this.#animate(0, 1, this.#config.openDuration, (progress) => {
       this.#updateBoundaryTurn(progress, this.#closedEdge, true, pointerV, 0, false);
     });
     this.#settleBoundaryTurn(this.#closedEdge, true);
@@ -498,7 +498,7 @@ export class BookEngine {
     this.#stateMachine.transition('CLOSING');
     await this.#prepareBoundaryTurn(closedEdge, 1);
     this.#updateBoundaryTurn(0, closedEdge, false, 0.82, 0, false);
-    await this.#animate(0, 1, this.#config.clickTurnDuration, (progress) => {
+    await this.#animate(0, 1, this.#config.closeDuration, (progress) => {
       // 合书时让封面进度提前收敛：前段快速平铺盖住书芯，后段只做书本合拢，
       // 避免动画大部分时间书芯白纸裸露、封面边缘翘起造成的"合上错位"观感。
       const sheetProgress = Math.min(1, progress * 2.2);
@@ -538,6 +538,52 @@ export class BookEngine {
     this.invalidate();
     this.#schedulePrefetch(this.#generation);
     this.#scheduleReadingUpgrade(this.#generation);
+  }
+
+  /** 目录和进度定位直接更新书页，避免合书再开书打断阅读。 */
+  async jumpToPage(pageNumber: number): Promise<void> {
+    if (!this.#book || this.#stateMachine.state !== 'OPEN') return;
+    const targetPage = clamp(Math.trunc(pageNumber), 1, this.pageCount);
+    if (targetPage === this.#currentPage) return;
+    const targetIndex = getSpreadIndexForPage(targetPage, this.pageCount);
+    const previousIndex = this.#spreadIndex;
+    this.#resetCornerPreview();
+    this.#pauseBackgroundWork();
+    this.#stateMachine.transition('TURNING', {
+      turnDirection: targetPage > this.#currentPage ? 'forward' : 'backward',
+    });
+    try {
+      if (targetIndex !== previousIndex) {
+        await this.#withPreparationFeedback(() =>
+          this.#showSpreadForInteraction(targetIndex, this.#loadController?.signal),
+        );
+      }
+      if (this.#disposed) return;
+      this.#spreadIndex = targetIndex;
+      this.#currentPage = targetPage;
+      this.#spreadRevision += 1;
+      this.#book.setProgress(this.#readingProgress(targetIndex));
+      if (this.#displayMode === 'focused') {
+        this.#focusX = this.#focusXForPage(targetPage);
+        this.#focusY = 0;
+        this.#applyCamera();
+      }
+      this.#renderer.shadowMap.needsUpdate = true;
+      this.#renderAnimationFrame();
+      this.#stateMachine.transition('OPEN', {
+        spreadIndex: targetIndex,
+        currentPage: targetPage,
+        displayMode: this.#displayMode,
+      });
+      this.#schedulePrefetch(this.#generation, true);
+      this.#scheduleReadingUpgrade(this.#generation);
+    } catch (reason) {
+      if (!this.#disposed) {
+        this.#stateMachine.transition('OPEN');
+        this.#schedulePrefetch(this.#generation, true);
+      }
+      throw reason;
+    }
   }
 
   #setZoom(zoom: number, focus?: Vector3 | null): void {
@@ -894,6 +940,10 @@ export class BookEngine {
   }
 
   async #prepareTurnWithFeedback(direction: TurnDirection): Promise<void> {
+    await this.#withPreparationFeedback(() => this.#prepareTurn(direction));
+  }
+
+  async #withPreparationFeedback(task: () => Promise<void>): Promise<void> {
     this.#hidePreparationNotice();
     // 提示只在准备确实偏慢时出现；正常翻页（含预热命中）应完全看不到它。
     this.#preparationNoticeTimer = globalThis.setTimeout(() => {
@@ -902,7 +952,7 @@ export class BookEngine {
       this.#options.onPagePreparationChange?.(true);
     }, 250);
     try {
-      await this.#prepareTurn(direction);
+      await task();
     } finally {
       this.#hidePreparationNotice();
     }
@@ -1053,6 +1103,11 @@ export class BookEngine {
     const openProgress = opening ? progress : 1 - progress;
     this.#book?.setBoundaryOpenProgress(openProgress, edge);
     this.#setContactOpenProgress(openProgress);
+    if (this.#displayMode === 'focused' && this.#zoom <= 1.05) {
+      this.#focusX = this.#focusXForPage(this.#currentPage) * openProgress;
+      this.#focusY = 0;
+      this.#applyCamera();
+    }
     this.#markAnimatedShadow(sheetProgress);
     if (scheduleRender) this.invalidate();
   }
@@ -1601,6 +1656,11 @@ export class BookEngine {
   ): Promise<void> {
     this.#cancelAnimation(new DOMException('动画已被新操作替换。', 'AbortError'));
     this.#resetFrameWindow();
+    if (globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      update(target);
+      this.#renderAnimationFrame();
+      return Promise.resolve();
+    }
     const maximumInitialVelocity = Math.min(MAX_DRAG_VELOCITY, Math.abs(target - from) * 8);
     const spring = new Spring({
       initialPosition: from,
@@ -2100,7 +2160,7 @@ export class BookEngine {
             await this.#animate(
               drag.progress,
               1,
-              this.#config.clickTurnDuration * (1 - drag.progress),
+              this.#config.closeDuration * (1 - drag.progress),
               (progress) =>
                 this.#updateBoundaryTurn(
                   progress,
