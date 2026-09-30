@@ -220,6 +220,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // 状态
     var statusItem: NSStatusItem?
     var scheduleTimer: Timer?
+    /// 菜单栏图标的旋转动画。**存储属性必须留在本文件** ——
+    /// Swift 的 extension 放不了存储属性（与本类其它状态字段同一条约束）。
+    ///
+    /// 延迟创建：动画与启动顺序无关，第一次刷状态项时才真正需要它。
+    lazy var menuBarIconAnimator = MenuBarIconAnimator()
     /// 状态区第二行：当前（或最后一次成功播放的）条目名。
     ///
     /// 刻意与 `notice` 分开。以前两者共用一个字段，结果是失败时名称行被
@@ -393,6 +398,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // SIGTERM 仍需接住，因为 Cocoa 默认不会为它调用 `applicationWillTerminate`。
         installSignalHandlers()
 
+        // **必须在 `buildStatusItem()` 之前**：建状态项时会立刻刷一次图标，
+        // 那一刻动画器若还没接上 `onFrame`，它会判定「图标归我管」却没人去写图，
+        // 结果是菜单栏上出现一个空白项。
+        configureMenuBarIconAnimator()
+
         buildStatusItem()
 
         registerNotifications()
@@ -422,6 +432,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.refreshStatusItem()
         }
         downloader.log = { [weak self] message in self?.log(message) }
+        // 下载开始 / 结束时各刷一次图标。**必需**：`downloadCurrentWallpaper` 里那次
+        // `refreshStatusItem()` 发生在 `isDownloading` 变 true **之前**，不靠这个钩子，
+        // 「下载中」这个信号对图标完全失效。
+        downloader.onActivityChange = { [weak self] in self?.updateMenuBarIconAnimation() }
         updateChecker.onResult = { [weak self] decision, warnings in
             self?.applyUpdateResult(decision, warnings: warnings)
         }
@@ -562,6 +576,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         restReminderCoordinator.stopImmediately()
         restReminderClock.reset()
         scheduleTimer?.invalidate()
+        // 旋转动画的定时器也要停：退出路径末尾还有一段 `RunLoop.main.run(until:)`，
+        // 留着它会在「已经退出清理」之后继续触发。
+        menuBarIconAnimator.stop()
         for task in loadTasksBySlot.values { task.cancel() }
         loadTasksBySlot.removeAll()
         for task in sharedVideoLoadStore.drain() { task.cancel() }

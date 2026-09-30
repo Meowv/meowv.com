@@ -27,6 +27,8 @@ extension AppDelegate: NSMenuDelegate {
     func menuWillOpen(_ menu: NSMenu) {
         guard menu === statusItem?.menu else { return }
         isMenuOpen = true
+        // 展开即冻结旋转：图标停在当前角度，不会跳回 0°（`freeze()` 会保留那一帧）。
+        updateMenuBarIconAnimation()
         recordRestReminderActivity()
         #if DEBUG
             // 只在 `menuNeedsUpdate` 没被回调时兜底 —— 正常路径上它一定会先于本回调触发。
@@ -37,6 +39,9 @@ extension AppDelegate: NSMenuDelegate {
     func menuDidClose(_ menu: NSMenu) {
         guard menu === statusItem?.menu else { return }
         isMenuOpen = false
+        // 收起即恢复。**必须无条件调** —— 下面几处 `refreshStatusItem()` 都是条件式的
+        // （只有存在一次性回执或待补重建时才走），靠它们恢复会在多数情况下漏掉。
+        updateMenuBarIconAnimation()
         #if DEBUG
             sampledThisOpen = false
             // 采样到此为止：`ProcessMonitor` 会取消后台队列上未执行的任务，

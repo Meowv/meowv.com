@@ -133,6 +133,16 @@ public struct Preferences: Codable, Sendable, Equatable {
     /// 默认开启；关掉即完全停用（不下载、不设墙纸）。
     public var lockScreenPreview: Bool
 
+    // 菜单栏
+    /// 菜单栏图标旋转。
+    ///
+    /// 打开后：正在播放时持续旋转（暂停时静止），另外在**进行中的动作**期间也旋转
+    /// （下载当前壁纸、检查更新、切换壁纸的视频加载、铺满固定项）；菜单展开期间不动画。
+    ///
+    /// **默认关闭** —— 纯观感偏好，升级不该改变老用户的行为（与 `restReminderEnabled`
+    /// 同一条约定）。打开后的行为由 `MenuBarIconActivity.shouldRotate` 一处判定。
+    public var animateMenuBarIcon: Bool
+
     public init(
         remoteCatalogURL: String? = Preferences.defaultRemoteCatalogURL,
         localFolderPath: String? = nil,
@@ -156,6 +166,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         pauseOnBattery: Bool = false,
         pauseOnThermalPressure: Bool = true,
         lockScreenPreview: Bool = true,
+        animateMenuBarIcon: Bool = false,
         remoteUpdateURL: String? = Preferences.defaultRemoteUpdateURL
     ) {
         self.remoteCatalogURL = remoteCatalogURL
@@ -180,6 +191,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         self.pauseOnBattery = pauseOnBattery
         self.pauseOnThermalPressure = pauseOnThermalPressure
         self.lockScreenPreview = lockScreenPreview
+        self.animateMenuBarIcon = animateMenuBarIcon
         self.remoteUpdateURL = remoteUpdateURL
     }
 
@@ -196,6 +208,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         case pauseWhenCovered, pauseWhenIdle, idleThresholdSeconds
         case pauseOnLowPowerMode, pauseOnBattery, pauseOnThermalPressure
         case lockScreenPreview
+        case animateMenuBarIcon
         case remoteUpdateURL
     }
 
@@ -249,6 +262,10 @@ public struct Preferences: Codable, Sendable, Equatable {
         // typeMismatch，后果与缺字段完全一样 —— 整个文件退回默认、静默清零其它设置。
         lockScreenPreview = (try? container.decodeIfPresent(Bool.self, forKey: .lockScreenPreview))
             ?? fallback.lockScreenPreview
+        // 同上用 `try?`：写成 `"yes"` 这类非布尔值会抛 typeMismatch，
+        // 后果与缺字段完全一样 —— 整个文件退回默认、静默清零其它设置。
+        animateMenuBarIcon = (try? container.decodeIfPresent(Bool.self, forKey: .animateMenuBarIcon))
+            ?? fallback.animateMenuBarIcon
         remoteUpdateURL = try container.decodeIfPresent(String.self, forKey: .remoteUpdateURL)
             ?? fallback.remoteUpdateURL
     }

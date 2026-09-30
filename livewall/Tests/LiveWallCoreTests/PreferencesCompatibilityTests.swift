@@ -189,6 +189,58 @@ func preferencesCompatibilityTests() {
             expectEqual(decoded.intervalSeconds, 42, "其它字段应保持")
         }
 
+        test("老配置（没有 animateMenuBarIcon）默认关闭，且其它设置不丢") {
+            let legacy = """
+            {
+              "intervalSeconds": 1200,
+              "lockScreenPreview": false
+            }
+            """
+            guard let decoded = try? JSONDecoder().decode(Preferences.self, from: Data(legacy.utf8)) else {
+                expect(false, "老配置应当能解码")
+                return
+            }
+            expectEqual(decoded.animateMenuBarIcon, false, "缺字段应回退到默认关闭")
+            expectEqual(decoded.intervalSeconds, 1200, "其它字段应保留")
+            expectEqual(decoded.lockScreenPreview, false, "其它字段应保留")
+        }
+
+        test("animateMenuBarIcon 打开后能读回，写坏了也不影响其它字段") {
+            let on = """
+            { "intervalSeconds": 300, "animateMenuBarIcon": true }
+            """
+            guard let decoded = try? JSONDecoder().decode(Preferences.self, from: Data(on.utf8)) else {
+                expect(false, "应能解码")
+                return
+            }
+            expectEqual(decoded.animateMenuBarIcon, true, "开启状态应读回")
+            expectEqual(decoded.intervalSeconds, 300, "其它字段应保留")
+
+            // 手改成字符串：坏一个字段不能把整份配置打回默认
+            let broken = """
+            { "intervalSeconds": 900, "animateMenuBarIcon": "yes" }
+            """
+            guard let decodedBroken = try? JSONDecoder().decode(Preferences.self, from: Data(broken.utf8)) else {
+                expect(false, "字段损坏时整体解码仍应成功")
+                return
+            }
+            expectEqual(decodedBroken.animateMenuBarIcon, false, "损坏的字段应回退到默认值")
+            expectEqual(decodedBroken.intervalSeconds, 900, "其它字段应保留")
+        }
+
+        test("animateMenuBarIcon 往返编码不丢") {
+            var preferences = Preferences()
+            preferences.animateMenuBarIcon = true
+            preferences.intervalSeconds = 77
+            guard let data = try? JSONEncoder().encode(preferences),
+                  let decoded = try? JSONDecoder().decode(Preferences.self, from: data) else {
+                expect(false, "往返应能成功")
+                return
+            }
+            expectEqual(decoded.animateMenuBarIcon, true, "开启状态应保持")
+            expectEqual(decoded.intervalSeconds, 77, "其它字段应保持")
+        }
+
         test("老配置（没有 remoteUpdateURL）仍能解码，且不丢设置") {
             let legacy = """
             {

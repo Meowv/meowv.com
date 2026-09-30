@@ -43,14 +43,9 @@ extension AppDelegate {
     func refreshStatusItem() {
         guard let item = statusItem else { return }
 
-        if let icon = engine.isPlaying ? Self.playingIcon : Self.pausedIcon {
-            item.button?.image = icon
-            item.button?.title = ""
-        } else {
-            // 图标资源缺失时的兜底（例如不经 .app 直接跑 .build 里的可执行文件）
-            item.button?.image = nil
-            item.button?.title = engine.isPlaying ? "◉" : "◐"
-        }
+        // 图标该是什么样（静态 / 旋转 / 冻结在当前帧）统一由动画层决定 ——
+        // 这里不再直接写 `item.button.image`，否则会把动画推到的那一帧顶掉。
+        updateMenuBarIconAnimation()
 
         // 菜单展开期间**不重建**：换掉 `item.menu` 会让菜单闪一下、并重置已展开的子菜单
         // 与高亮项。但这次刷新不能丢（状态是变了才来刷的），所以记一个待办，
@@ -180,6 +175,18 @@ extension AppDelegate {
         lockPreview.target = self
         lockPreview.state = preferences.lockScreenPreview ? .on : .off
         menu.addItem(lockPreview)
+
+        // 图标旋转紧跟锁屏预览：同属「画面 / 图标行为」的观感开关，且都是开一次就不常动。
+        // 默认关闭 —— 打开后播放期间会一直转，属于个人偏好而非默认观感。
+        let iconRotation = NSMenuItem(
+            title: "图标旋转（\(preferences.animateMenuBarIcon ? "开" : "关")）",
+            action: #selector(toggleMenuBarIconRotation),
+            keyEquivalent: ""
+        )
+        iconRotation.target = self
+        iconRotation.state = preferences.animateMenuBarIcon ? .on : .off
+        menu.addItem(iconRotation)
+
         menu.addItem(buildCategoryMenu())
         // 壁纸来源紧跟内容过滤：两者都是「播什么」的选择，且都是低频设置项。
         menu.addItem(buildSourceMenu())

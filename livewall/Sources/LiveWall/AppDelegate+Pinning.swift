@@ -135,6 +135,9 @@ extension AppDelegate {
         // 防重入：这一批还没铺完又来一次请求的话，同一条视频会被并发拉两遍。
         guard !isPinApplyInFlight else { return }
         isPinApplyInFlight = true
+        // 铺满期间图标也转（②）。这里必须显式刷一次：铺满走的是独立 Task，
+        // 不经过 `loadTasksBySlot`，没有别的路径会把它算进「进行中」。
+        updateMenuBarIconAnimation()
 
         // **必须先递增代次**：可能正有一个「旧条目」的加载在飞，它完成后会把画面
         // 换成旧条目（`loadAndPlay` 里比对的就是这个代次）。递增之后那个结果会被
@@ -202,6 +205,8 @@ extension AppDelegate {
             }
 
             isPinApplyInFlight = false
+            // 铺满结束（成功 / 失败）后立刻重算，让旋转当场停下，不必等下一帧。
+            updateMenuBarIconAnimation()
             // 收尾再核一次：加载期间可能新增了槽位（屏幕热插拔 / 策略切换），
             // 那一批不在本次的 `generations` 里。**放在释放标志之后**，
             // 否则会被上面的防重入守卫挡掉。

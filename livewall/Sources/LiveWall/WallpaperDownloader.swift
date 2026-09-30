@@ -35,6 +35,13 @@ final class WallpaperDownloader {
 
     var log: ((String) -> Void)?
 
+    /// 「是否正在下载」发生变化时的回调。
+    ///
+    /// 下载期间**没有**别的路径会刷新菜单栏图标：`downloadCurrentWallpaper` 里那次
+    /// `refreshStatusItem()` 发生在 `isDownloading` 变 true **之前**。所以图标旋转
+    /// 要靠它启停，否则「下载中」这个信号对图标完全失效。
+    var onActivityChange: (() -> Void)?
+
     private var isWorking = false
     private let directory: URL
 
@@ -64,7 +71,11 @@ final class WallpaperDownloader {
             throw Failure(message: "播放地址不可用")
         }
         isWorking = true
-        defer { isWorking = false }
+        onActivityChange?()
+        defer {
+            isWorking = false
+            onActivityChange?()
+        }
 
         var files: [URL] = []
         let videoExtension = DownloadNaming.fileExtension(for: videoSource, fallback: "mp4")

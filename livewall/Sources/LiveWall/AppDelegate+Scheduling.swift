@@ -138,6 +138,9 @@ extension AppDelegate {
                 if self.loadGenerationBySlot[key] == generation {
                     self.loadTasksBySlot[key] = nil
                 }
+                // 加载结束（成功 / 失败 / 被丢弃）后立刻重算一次，让旋转当场停下 ——
+                // 不靠它也行（定时器每帧会重判），但那样停止最多滞后一帧。
+                self.updateMenuBarIconAnimation()
             }
             do {
                 let loaded = try await self.loadVideo(url)
@@ -211,6 +214,9 @@ extension AppDelegate {
             }
         }
         loadTasksBySlot[key] = task
+        // 切壁纸的加载是②里最频繁的一种：图标当场转起来，用户才知道
+        // 「按了下一张之后现在在加载」而不是「按了没反应」。
+        updateMenuBarIconAnimation()
     }
 
     /// 共享同一 URL 的并发准入校验。最后一个调用方取消或完成后，释放任务并取消无人等待的加载。
