@@ -35,6 +35,8 @@ final class MenuBarIconAnimator {
     private let logicalSize = NSSize(width: 18, height: 18)
 
     private var timer: Timer?
+    /// 区分重启前后的定时器；已排队的旧帧任务不能影响新一轮动画。
+    private var timerGeneration = 0
     private var frames: [NSImage] = []
     /// 生成 `frames` 用的基础图。**身份比较** —— 播放↔暂停切换时基图换了才重建。
     private var cachedBase: NSImage?
@@ -119,18 +121,23 @@ final class MenuBarIconAnimator {
 
     private func startTimerIfNeeded() {
         guard timer == nil else { return }
+        timerGeneration += 1
+        let generation = timerGeneration
         let timer = Timer(timeInterval: frameInterval, repeats: true) { [weak self] _ in
             // `Timer` 的 block 是 `@Sendable`（非隔离），而 `tick()` 是主 actor 隔离的 ——
             // 必须显式回跳，不能直接调。定时器本来就挂在 `RunLoop.main` 上，
             // 这次回跳只是把「编译器需要的那次声明」补上。
-            Task { @MainActor [weak self] in self?.tick() }
+            Task { @MainActor [weak self] in self?.tick(generation: generation) }
         }
         // .common 模式：菜单打开时也要继续走（不过展开期已被 `freeze()` 停表）。
         RunLoop.main.add(timer, forMode: .common)
         self.timer = timer
     }
 
-    private func tick() {
+    private func tick(generation: Int) {
+        // invalidate 不会撤销已经排队的 Task。冻结或停用后不能再触发 onStop，
+        // 重启后旧任务也不能推进新定时器的帧。
+        guard timer != nil, generation == timerGeneration else { return }
         // 停止条件在这里**统一兜住**：不在每个动作的结束处补钩子 ——
         // 少一处钩子就少一个「图标永远转下去」的机会。代价是停止最多滞后一帧（50ms）。
         guard shouldContinue?() ?? false, !frames.isEmpty else {
