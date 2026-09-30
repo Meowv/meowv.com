@@ -113,12 +113,20 @@ export async function renderChapterSnapshot(
   assertNotAborted(signal);
   const image = new Image();
   const canvas = document.createElement('canvas');
-  const abort = (): void => image.removeAttribute('src');
-  signal?.addEventListener('abort', abort, { once: true });
+  let abort: (() => void) | undefined;
   try {
     image.decoding = 'sync';
     image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(snapshotSvg(snapshot, offset))}`;
-    await image.decode();
+    await new Promise<void>((resolve, reject) => {
+      // Edge 移除 src 后 decode() 可能始终不结束，必须主动退出等待以释放截图队列。
+      abort = (): void => {
+        image.removeAttribute('src');
+        reject(abortError());
+      };
+      signal?.addEventListener('abort', abort, { once: true });
+      if (signal?.aborted) abort();
+      else void image.decode().then(resolve, reject);
+    });
     assertNotAborted(signal);
     const scale = targetWidth / pageSize.width;
     const width = pageSize.width * scale;
@@ -138,7 +146,7 @@ export async function renderChapterSnapshot(
     if (signal?.aborted) throw abortError();
     throw error;
   } finally {
-    signal?.removeEventListener('abort', abort);
+    if (abort) signal?.removeEventListener('abort', abort);
     image.removeAttribute('src');
   }
 }

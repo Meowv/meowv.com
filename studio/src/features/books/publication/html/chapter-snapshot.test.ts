@@ -1,12 +1,94 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   ChapterSnapshotCache,
   createChapterSnapshot,
   snapshotSvg,
   snapshotHasImages,
+  renderChapterSnapshot,
 } from './chapter-snapshot';
 
 const snapshot = (size: number) => ({ prefix: 'x'.repeat(size), suffix: '' });
+
+afterEach(() => vi.unstubAllGlobals());
+
+describe('章节快照解码取消', () => {
+  function setup(decode: () => Promise<void>) {
+    const drawImage = vi.fn();
+    const canvases: Array<{ width: number; height: number; getContext: () => object }> = [];
+    const images: Array<{ removeAttribute: ReturnType<typeof vi.fn> }> = [];
+    vi.stubGlobal(
+      'Image',
+      class {
+        decoding = '';
+        src = '';
+        removeAttribute = vi.fn();
+        decode = decode;
+        constructor() {
+          images.push(this);
+        }
+      },
+    );
+    vi.stubGlobal('document', {
+      createElement: () => {
+        const canvas = {
+          width: 300,
+          height: 150,
+          getContext: () => ({ fillRect: vi.fn(), drawImage }),
+        };
+        canvases.push(canvas);
+        return canvas;
+      },
+    });
+    const render = (signal?: AbortSignal) =>
+      renderChapterSnapshot(snapshot(1), 0, { width: 700, height: 1000 }, 700, '#fff', signal);
+    return { render, canvases, images, drawImage };
+  }
+
+  it('移除 src 后解码始终不结束时，取消仍释放画布并让串行下一页继续', async () => {
+    const decode = vi
+      .fn<() => Promise<void>>()
+      .mockImplementationOnce(() => new Promise(() => undefined))
+      .mockResolvedValue(undefined);
+    const { render, canvases, images, drawImage } = setup(decode);
+    const controller = new AbortController();
+    const removeListener = vi.spyOn(controller.signal, 'removeEventListener');
+    const first = render(controller.signal);
+    const next = first.catch(() => undefined).then(() => render());
+    controller.abort();
+    await expect(first).rejects.toMatchObject({ name: 'AbortError' });
+    await expect(next).resolves.toMatchObject({ width: 700, height: 1000 });
+    expect(canvases[0]).toMatchObject({ width: 0, height: 0 });
+    expect(images[0].removeAttribute).toHaveBeenCalledWith('src');
+    expect(removeListener).toHaveBeenCalledWith('abort', expect.any(Function));
+    expect(drawImage).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['resolve', 'reject'] as const)(
+    '取消后解码迟到 %s 不再绘制或影响下一页',
+    async (result) => {
+      let resolveDecode!: () => void;
+      let rejectDecode!: (error: Error) => void;
+      const decode = vi.fn<() => Promise<void>>().mockImplementationOnce(
+        () =>
+          new Promise((resolve, reject) => {
+            resolveDecode = resolve;
+            rejectDecode = reject;
+          }),
+      );
+      decode.mockResolvedValue(undefined);
+      const { render, canvases, drawImage } = setup(decode);
+      const controller = new AbortController();
+      const pending = render(controller.signal);
+      controller.abort();
+      await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+      if (result === 'resolve') resolveDecode();
+      else rejectDecode(new Error('迟到的解码错误'));
+      await render();
+      expect(canvases[0]).toMatchObject({ width: 0, height: 0 });
+      expect(drawImage).toHaveBeenCalledTimes(1);
+    },
+  );
+});
 
 describe('ChapterSnapshotCache', () => {
   it('按 UTF-16 字节限制总量，并淘汰最久未使用的章节', () => {

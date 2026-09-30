@@ -158,6 +158,7 @@ interface PageRenderJob {
 interface PendingPage {
   promise: Promise<RenderedPage>;
   priority: number;
+  signal?: AbortSignal;
   waiters: number;
   settled: boolean;
   owner: PageLease | null;
@@ -274,6 +275,7 @@ export class BookEngine {
   #pinch: PinchSession | null = null;
   #loadController: AbortController | null = null;
   #turnPreparationController: AbortController | null = null;
+  #boundaryTurn: { edge: 'front' | 'back'; controller: AbortController } | null = null;
   #readingUpgradeController: AbortController | null = null;
   #prefetchController: AbortController | null = null;
   // 后台工作持有两个信号：渲染信号负责取消页面渲染，调度信号负责停止补队。
@@ -534,13 +536,25 @@ export class BookEngine {
     this.#resetCornerPreview();
     this.#pauseBackgroundWork();
     this.#stateMachine.transition('OPENING');
-    await this.#prepareBoundaryTurn(this.#closedEdge, 0);
-    this.#updateBoundaryTurn(0, this.#closedEdge, true, pointerV, 0, false);
-    await this.#animate(0, 1, this.#config.openDuration, (progress) => {
-      this.#updateBoundaryTurn(progress, this.#closedEdge, true, pointerV, 0, false);
-    });
-    this.#settleBoundaryTurn(this.#closedEdge, true);
-    this.#stateMachine.transition('OPEN');
+    try {
+      const signal = await this.#prepareBoundaryTurn(this.#closedEdge, 0);
+      assertNotAborted(signal);
+      this.#updateBoundaryTurn(0, this.#closedEdge, true, pointerV, 0, false);
+      await this.#animate(0, 1, this.#config.openDuration, (progress) => {
+        this.#updateBoundaryTurn(progress, this.#closedEdge, true, pointerV, 0, false);
+      });
+      this.#settleBoundaryTurn(this.#closedEdge, true);
+      this.#stateMachine.transition('OPEN');
+    } catch (reason) {
+      // 上下文恢复已完成开书时视为成功，避免自动开书的宿主误退回书架。
+      if (
+        this.#disposed ||
+        this.snapshot.state !== 'OPEN' ||
+        !(reason instanceof DOMException && reason.name === 'AbortError')
+      ) {
+        throw reason;
+      }
+    }
     this.invalidate();
     this.#schedulePrefetch(this.#generation);
     this.#scheduleReadingUpgrade(this.#generation);
@@ -552,7 +566,8 @@ export class BookEngine {
     this.#resetCornerPreview();
     this.#pauseBackgroundWork();
     this.#stateMachine.transition('CLOSING');
-    await this.#prepareBoundaryTurn(closedEdge, 1);
+    const signal = await this.#prepareBoundaryTurn(closedEdge, 1);
+    assertNotAborted(signal);
     this.#updateBoundaryTurn(0, closedEdge, false, 0.82, 0, false);
     await this.#animate(0, 1, this.#config.closeDuration, (progress) => {
       // 合书时让封面进度提前收敛：前段快速平铺盖住书芯，后段只做书本合拢，
@@ -821,6 +836,8 @@ export class BookEngine {
     this.#loadController = null;
     this.#turnPreparationController?.abort();
     this.#turnPreparationController = null;
+    this.#boundaryTurn?.controller.abort();
+    this.#boundaryTurn = null;
     this.#readingUpgradeController?.abort();
     this.#readingUpgradeController = null;
     this.#prefetchController?.abort();
@@ -1014,6 +1031,8 @@ export class BookEngine {
   /** 准备失败或超时时保留当前跨页，清理动态纸张并恢复可交互状态。 */
   #recoverTurnAfterPreparationFailure(): void {
     if (this.#disposed) return;
+    const boundaryTurn = this.#boundaryTurn;
+    boundaryTurn?.controller.abort();
     this.#preparedTurnSpread = null;
     this.#turnPreviewActive = false;
     this.#cancelAnimation(abortError());
@@ -1035,7 +1054,14 @@ export class BookEngine {
       this.#stateMachine.transition('SNAPPING_BACK');
     }
     const state = this.#stateMachine.state;
-    if (state === 'TURNING' || state === 'SNAPPING_BACK') {
+    if (boundaryTurn) {
+      const open = state !== 'CLOSING';
+      this.#settleBoundaryTurn(boundaryTurn.edge, open);
+      if (!open) this.#closedEdge = boundaryTurn.edge;
+    }
+    if (state === 'CLOSING') {
+      this.#stateMachine.transition('CLOSED');
+    } else if (state === 'OPENING' || state === 'TURNING' || state === 'SNAPPING_BACK') {
       this.#stateMachine.transition('OPEN', {
         spreadIndex: this.#spreadIndex,
         currentPage: this.#currentPage,
@@ -1351,9 +1377,15 @@ export class BookEngine {
     }
   }
 
-  async #prepareBoundaryTurn(edge: 'front' | 'back', initialOpenProgress: 0 | 1): Promise<void> {
+  async #prepareBoundaryTurn(
+    edge: 'front' | 'back',
+    initialOpenProgress: 0 | 1,
+  ): Promise<AbortSignal> {
     const book = this.#book;
     if (!book) throw new Error('仿真书尚未准备完成。');
+    this.#boundaryTurn?.controller.abort();
+    const controller = new AbortController();
+    this.#boundaryTurn = { edge, controller };
     const spread = getSpread(this.#spreadIndex, this.pageCount);
     const movingPageNumber = edge === 'front' ? spread.leftPage : spread.rightPage;
     const visible = this.#visiblePageLeases;
@@ -1361,13 +1393,14 @@ export class BookEngine {
     const movingPage = movingPageNumber
       ? visiblePage?.page.pageNumber === movingPageNumber
         ? this.#pageCache.acquire(visiblePage.page)
-        : await this.#getInteractionPage(movingPageNumber, this.#loadController?.signal)
+        : await this.#getInteractionPage(movingPageNumber, controller.signal)
       : this.#blankPageLease();
     const coverPage =
       edge === 'front'
         ? (this.#publicationCoverCanvas ?? this.#blankPage().canvas)
         : this.#backCoverPage().canvas;
     try {
+      assertNotAborted(controller.signal);
       if (edge === 'front') book.turningSheet.setPages(coverPage, movingPage.page.canvas);
       else book.turningSheet.setPages(movingPage.page.canvas, coverPage);
     } catch (reason) {
@@ -1379,6 +1412,7 @@ export class BookEngine {
     book.beginBoundaryTurn(edge, initialOpenProgress);
     book.pruneSurfaces();
     this.invalidate();
+    return controller.signal;
   }
 
   #updateTurn(
@@ -1429,6 +1463,13 @@ export class BookEngine {
     this.#clearTurningPageLeases();
     book.pruneSurfaces();
     book.settleBoundaryTurn(edge, open);
+    this.#boundaryTurn = null;
+    this.#setContactOpenProgress(open ? 1 : 0);
+    if (this.#displayMode === 'focused' && this.#zoom <= 1.05) {
+      this.#focusX = open ? this.#focusXForPage(this.#currentPage) : 0;
+      this.#focusY = 0;
+      this.#applyCamera();
+    }
     this.#renderer.shadowMap.needsUpdate = true;
     // 边界开合会同时切换动态纸张、封面和页束。连续提交两次且不让出绘制时机，
     // 避免浏览器把首个阴影/可见性预热帧呈现给用户。
@@ -1511,8 +1552,8 @@ export class BookEngine {
       return this.#pageCache.acquire(cached);
     }
     const pending = this.#pendingPages.get(key);
-    // 交互渲染不能盲等低优先级的预热或清晰度升级任务。
-    if (pending && pending.priority <= priority) {
+    // 已取消但底层尚未退出的任务不能被重试复用；原任务仍负责释放迟到结果。
+    if (pending && !pending.signal?.aborted && pending.priority <= priority) {
       this.#pendingPageJoins += 1;
       try {
         return await this.#joinPendingPage(pending, signal);
@@ -1527,6 +1568,7 @@ export class BookEngine {
     const nextPending: PendingPage = {
       promise: null as unknown as Promise<RenderedPage>,
       priority,
+      signal,
       waiters: 0,
       settled: false,
       owner: null,
@@ -2215,7 +2257,10 @@ export class BookEngine {
       ? Promise.resolve(true)
       : boundaryClose
         ? this.#prepareBoundaryTurn(boundaryEdge, 1)
-            .then(() => true)
+            .then((signal) => {
+              assertNotAborted(signal);
+              return true;
+            })
             .catch((reason: unknown) => {
               this.#handlePagePreparationFailure(reason);
               return false;

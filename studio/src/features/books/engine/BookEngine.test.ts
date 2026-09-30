@@ -3,6 +3,7 @@ import type { PageProvider, PageRenderOptions, RenderedPage } from '../types/rea
 import type { BookConfig } from './BookConfig';
 
 const rendererCanvases: TestCanvas[] = [];
+const boundarySettlements: Array<{ edge: 'front' | 'back'; open: boolean }> = [];
 let latestBookPages: { left: HTMLCanvasElement | null; right: HTMLCanvasElement | null } | null =
   null;
 
@@ -104,7 +105,9 @@ vi.mock('./book/BookModel', async () => {
       pruneSurfaces(): void {}
       beginBoundaryTurn(): void {}
       setBoundaryOpenProgress(): void {}
-      settleBoundaryTurn(): void {}
+      settleBoundaryTurn(edge: 'front' | 'back', open: boolean): void {
+        boundarySettlements.push({ edge, open });
+      }
       clearCornerLift(): void {}
       refreshSurfaceTextures(): void {}
       dispose(): void {}
@@ -184,6 +187,7 @@ async function createEngine(
 
 beforeEach(() => {
   rendererCanvases.length = 0;
+  boundarySettlements.length = 0;
   latestBookPages = null;
   vi.useFakeTimers();
   vi.stubGlobal('document', { createElement: () => new TestCanvas() });
@@ -249,6 +253,41 @@ describe('BookEngine 翻页失败恢复', () => {
     await vi.advanceTimersByTimeAsync(32);
     await retry;
     expect(engine.snapshot.state).toBe('OPEN');
+    expect(engine.currentPage).toBe(4);
+    await engine.dispose();
+  });
+
+  it('超时重试跳过未退出的旧任务，迟到结果仍被释放', async () => {
+    let releaseOld!: () => void;
+    const oldRender = new Promise<void>((resolve) => {
+      releaseOld = resolve;
+    });
+    let attempts = 0;
+    const latePages: RenderedPage[] = [];
+    const { engine, onPagePreparationTimeout } = await createEngine(async (number, options) => {
+      if (number === 4 && ++attempts === 1) {
+        await oldRender;
+        const page = renderedPage(number, options);
+        latePages.push(page);
+        return page;
+      }
+      return renderedPage(number, options);
+    });
+    const first = engine.turn('forward');
+    await vi.advanceTimersByTimeAsync(8001);
+    await first;
+    const retry = engine.turn('forward');
+    await vi.advanceTimersByTimeAsync(32);
+    expect(engine.currentPage).toBe(4);
+    await retry;
+    expect(attempts).toBe(2);
+    expect(onPagePreparationTimeout).toHaveBeenCalledTimes(1);
+
+    const visible = latestBookPages;
+    releaseOld();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(latePages[0]?.canvas.width).toBe(0);
+    expect(latestBookPages).toBe(visible);
     expect(engine.currentPage).toBe(4);
     await engine.dispose();
   });
@@ -392,6 +431,49 @@ describe('BookEngine 翻页失败恢复', () => {
     expect(onRenderingUnavailableChange).toHaveBeenLastCalledWith(true);
     engine.retryRenderer();
     expect(onRenderingUnavailableChange).toHaveBeenLastCalledWith(false);
+    expect(onError).not.toHaveBeenCalled();
+    await engine.dispose();
+  });
+
+  it.each(
+    (['front', 'back'] as const).flatMap((edge) =>
+      [true, false].flatMap((opening) => [0, 32].map((elapsed) => ({ edge, opening, elapsed }))),
+    ),
+  )('WebGL 恢复开合姿态并可继续阅读：%j', async ({ edge, opening, elapsed }) => {
+    const { engine, onError, onRenderingUnavailableChange } = await createEngine(
+      async (number, options) => renderedPage(number, options),
+    );
+    if (opening) {
+      const closing = engine.close(edge);
+      await vi.advanceTimersByTimeAsync(32);
+      await closing;
+    }
+    vi.stubGlobal('matchMedia', () => ({ matches: false }));
+    const operation = (opening ? engine.open() : engine.close(edge)).catch(
+      (reason: unknown) => reason,
+    );
+    if (elapsed) await vi.advanceTimersByTimeAsync(elapsed);
+    expect(engine.snapshot.state).toBe(opening ? 'OPENING' : 'CLOSING');
+    rendererCanvases.at(-1)!.dispatchEvent(new Event('webglcontextlost', { cancelable: true }));
+    engine.retryRenderer();
+    if (opening) expect(await operation).toBeUndefined();
+    else expect(await operation).toMatchObject({ name: 'AbortError' });
+    expect(engine.snapshot.state).toBe(opening ? 'OPEN' : 'CLOSED');
+    expect(boundarySettlements.at(-1)).toEqual({ edge, open: opening });
+    expect(onRenderingUnavailableChange.mock.calls).toEqual([[true], [false]]);
+
+    vi.stubGlobal('matchMedia', () => ({ matches: true }));
+    if (!opening) {
+      const reopen = engine.open();
+      await vi.advanceTimersByTimeAsync(32);
+      await reopen;
+      expect(boundarySettlements.at(-1)).toEqual({ edge, open: true });
+    }
+    const turn = engine.turn('forward');
+    await vi.advanceTimersByTimeAsync(32);
+    await turn;
+    expect(engine.currentPage).toBe(4);
+    expect(engine.snapshot.state).toBe('OPEN');
     expect(onError).not.toHaveBeenCalled();
     await engine.dispose();
   });
