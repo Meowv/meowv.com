@@ -128,10 +128,9 @@ extension AppDelegate {
             refreshStatusItem()
             return
         }
-        // 分类传当前值：这条本来就在播，说明当前分类就是对的，没有要切的东西。
-        // 本地来源下传 nil —— 本地条目没有分类，传 `selectedCategoryID`（线上残留值）
-        // 会让 `setPinned` 去拉一个跟画面毫无关系的线上切片。
-        setPinned(item, categoryID: isLocalSource ? nil : selectedCategoryID)
+        // 固定当前条目只改变播放模式，始终保留当前内容过滤。
+        // 收藏模式下 selectedCategoryID 仅是普通分类回退记忆，不能传入并触发切片加载。
+        setPinned(item, categoryID: nil)
     }
 
     /// 切换间隔子菜单。改的是 `intervalSeconds`（单位秒），预设覆盖 30 秒 – 1 小时；

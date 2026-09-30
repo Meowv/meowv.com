@@ -109,6 +109,12 @@ public struct Preferences: Codable, Sendable, Equatable {
     /// 那种情况下轮换模式同样播不了任何东西，两者表现一致，不存在「固定特有的黑屏」。
     public var pinnedItem: WallpaperItem?
 
+    /// 收藏与播放分类、固定状态独立，保存完整条目以便跨分类和重启恢复。
+    public var favoriteItems: [WallpaperItem]
+
+    /// 线上内容过滤使用收藏；selectedCategoryID 保留上次普通分类，收藏清空时恢复它。
+    public var playFavorites: Bool
+
     // 省电
     /// 画面被不透明窗口完全盖满时暂停。收益最大的一项。
     public var pauseWhenCovered: Bool
@@ -159,6 +165,8 @@ public struct Preferences: Codable, Sendable, Equatable {
         perScreenSources: ScreenSourceStore = .empty,
         selectedCategoryID: Int? = nil,
         pinnedItem: WallpaperItem? = nil,
+        favoriteItems: [WallpaperItem] = [],
+        playFavorites: Bool = false,
         pauseWhenCovered: Bool = true,
         pauseWhenIdle: Bool = true,
         idleThresholdSeconds: Double = 300,
@@ -184,6 +192,8 @@ public struct Preferences: Codable, Sendable, Equatable {
         self.perScreenSources = perScreenSources
         self.selectedCategoryID = selectedCategoryID
         self.pinnedItem = pinnedItem
+        self.favoriteItems = favoriteItems
+        self.playFavorites = playFavorites
         self.pauseWhenCovered = pauseWhenCovered
         self.pauseWhenIdle = pauseWhenIdle
         self.idleThresholdSeconds = idleThresholdSeconds
@@ -205,6 +215,8 @@ public struct Preferences: Codable, Sendable, Equatable {
         case gravity, levelPreset
         case multiScreenPolicy, perScreenSources, selectedCategoryID
         case pinnedItem
+        case favoriteItems
+        case playFavorites
         case pauseWhenCovered, pauseWhenIdle, idleThresholdSeconds
         case pauseOnLowPowerMode, pauseOnBattery, pauseOnThermalPressure
         case lockScreenPreview
@@ -252,6 +264,11 @@ public struct Preferences: Codable, Sendable, Equatable {
         // 后果与缺字段完全一样 —— 整个文件退回默认、静默清零其它设置。
         // 解不出来就当没固定，用户重新点一次即可，比丢掉全部设置划算得多。
         pinnedItem = (try? container.decodeIfPresent(WallpaperItem.self, forKey: .pinnedItem)) ?? nil
+        // 单条损坏只丢弃该条，不牵连其它收藏与旧设置。
+        let favorites = (try? container.decodeIfPresent([FavoriteEntry].self, forKey: .favoriteItems)) ?? []
+        favoriteItems = FavoriteCollection.sanitized(favorites.compactMap(\.item))
+        playFavorites = ((try? container.decodeIfPresent(Bool.self, forKey: .playFavorites)) ?? false)
+            && !favoriteItems.isEmpty
         pauseWhenCovered = try container.decodeIfPresent(Bool.self, forKey: .pauseWhenCovered) ?? fallback.pauseWhenCovered
         pauseWhenIdle = try container.decodeIfPresent(Bool.self, forKey: .pauseWhenIdle) ?? fallback.pauseWhenIdle
         idleThresholdSeconds = try container.decodeIfPresent(Double.self, forKey: .idleThresholdSeconds) ?? fallback.idleThresholdSeconds
@@ -351,6 +368,8 @@ public struct Preferences: Codable, Sendable, Equatable {
     /// 修正非法值。配置可能被手工编辑过，不能假定它自洽。
     public func sanitized() -> Preferences {
         var copy = self
+        copy.favoriteItems = FavoriteCollection.sanitized(copy.favoriteItems)
+        if copy.favoriteItems.isEmpty { copy.playFavorites = false }
         // 超范围一律夹紧而不是退回默认：手改配置的人多半只是「填得太短/太长」，
         // 夹到最近的合法值更接近他的本意。非有限值夹不了，`SwitchInterval.clamp` 里退回默认。
         copy.intervalSeconds = SwitchInterval.clamp(copy.intervalSeconds)
@@ -384,5 +403,13 @@ public struct Preferences: Codable, Sendable, Equatable {
             copy.pinnedItem = nil
         }
         return copy
+    }
+}
+
+private struct FavoriteEntry: Decodable {
+    let item: WallpaperItem?
+
+    init(from decoder: Decoder) throws {
+        item = try? WallpaperItem(from: decoder)
     }
 }

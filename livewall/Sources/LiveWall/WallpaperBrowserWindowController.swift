@@ -60,6 +60,7 @@ final class WallpaperBrowserWindowController: NSWindowController {
         )
         window.title = "动态壁纸"
         window.contentViewController = browserViewController
+        window.autorecalculatesKeyViewLoop = true
         // ⌘W 等带 Command 的快捷键只有窗口这一层收得到（App 没有 main menu，见 `BrowserWindow`），
         // 接上内容视图里那套「先收浮层、再关窗口」的规则。弱引用避免窗口 → 闭包 → 控制器成环。
         let viewController = browserViewController
@@ -69,8 +70,7 @@ final class WallpaperBrowserWindowController: NSWindowController {
         window.minSize = NSSize(width: 880, height: 560)
         window.isReleasedWhenClosed = false
         // 刻意用**默认 level**：它远高于桌面覆盖窗口那一层，不会跟壁纸抢层级；
-        // 也刻意不切 `.regular` 激活策略 —— 那会闪出一个 Dock 图标，
-        // 而窗口里只有列表与按钮、没有文本输入，`.accessory` + `NSApp.activate` 够用。
+        // 保持菜单栏 App 的 accessory 策略，搜索框的键盘焦点由窗口响应链处理。
         window.center()
 
         super.init(window: window)

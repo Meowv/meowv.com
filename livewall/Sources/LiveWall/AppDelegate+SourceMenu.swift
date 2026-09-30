@@ -6,7 +6,7 @@ import LiveWallDesktop
 extension AppDelegate {
 
 
-    /// 内容过滤子菜单：全部或一级分类**单选**。
+    /// 内容过滤子菜单：全部、收藏或一级分类单选。
     ///
     /// 分类行的内容由 `CategoryMenu` 算好；「全部」固定为第一行。这里只负责贴成 `NSMenu`。
     ///
@@ -25,13 +25,15 @@ extension AppDelegate {
         let entries = CategoryMenu.entries(
             categories: categories,
             selectedID: selectedCategoryID,
-            allEnabled: (index?.allSlice?.itemCount ?? 0) > 0
+            allEnabled: (index?.allSlice?.itemCount ?? 0) > 0,
+            favoriteCount: preferences.favoriteItems.count,
+            favoritesSelected: isFavoritesFilter
         )
 
         for entry in entries {
             let item = NSMenuItem(
                 title: entry.title,
-                action: #selector(selectCategory(_:)),
+                action: entry.isFavorites ? #selector(selectFavorites) : #selector(selectCategory(_:)),
                 keyEquivalent: ""
             )
             item.target = self
@@ -48,7 +50,10 @@ extension AppDelegate {
         }
 
         let root = NSMenuItem(
-            title: CategoryMenu.rootTitle(categories: categories, selectedID: selectedCategoryID),
+            title: CategoryMenu.rootTitle(
+                categories: categories, selectedID: selectedCategoryID,
+                favoritesSelected: isFavoritesFilter
+            ),
             action: nil,
             keyEquivalent: ""
         )
@@ -153,7 +158,7 @@ extension AppDelegate {
     /// 选中项**只在拉取成功后写回**配置，否则菜单的勾选会和池子里的内容打架。
     @objc func selectCategory(_ sender: NSMenuItem) {
         guard let id = sender.representedObject as? Int else {
-            guard selectedCategoryID != nil else { return }
+            guard selectedCategoryID != nil || isFavoritesFilter else { return }
             guard let allSlice = index?.allSlice else {
                 notice = .warning("当前清单不支持全部筛选，请先更新清单")
                 refreshStatusItem()
@@ -169,7 +174,7 @@ extension AppDelegate {
             )
             return
         }
-        guard id != selectedCategoryID else { return }
+        guard id != selectedCategoryID || isFavoritesFilter else { return }
         guard let entry = categories.first(where: { $0.id == id }) else { return }
         guard entry.itemCount > 0 else {
             // 菜单里这种项本来就置灰了，走到这里说明是别的途径触发的

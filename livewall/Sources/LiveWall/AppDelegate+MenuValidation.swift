@@ -39,6 +39,9 @@ extension AppDelegate: NSMenuItemValidation {
                 && !downloader.isDownloading
                 && currentDownloadableItem != nil
 
+        case #selector(selectFavorites):
+            return !isLocalSource && !preferences.favoriteItems.isEmpty
+
         case #selector(selectCategory(_:)):
             // 本地来源下没有分类；条目数为 0 的分类本来就该置灰（可点会进空池）。
             // 「0 条置灰」的判据复用 `CategoryMenu.entries` 这个已单测的纯函数，

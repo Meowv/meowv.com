@@ -1,6 +1,21 @@
 import AppKit
 import LiveWallCore
 
+/// 收藏入口始终可通过键盘聚焦，不依赖系统的全键盘控制开关。
+final class BrowserFavoriteButton: NSButton {
+    override var acceptsFirstResponder: Bool { isEnabled }
+    override var canBecomeKeyView: Bool { isEnabled && !isHiddenOrHasHiddenAncestor }
+
+    override func keyDown(with event: NSEvent) {
+        let modifiers = event.modifierFlags.intersection([.command, .option, .control, .shift])
+        if event.charactersIgnoringModifiers == " ", modifiers.isEmpty {
+            if isEnabled, !event.isARepeat { performClick(nil) }
+            return
+        }
+        super.keyDown(with: event)
+    }
+}
+
 /// 网格里的一张卡片：缩略图 + **一行**信息（`标题 · 作者 · 时长 · 分辨率`），
 /// 右上角可带「当前」徽标。
 ///
@@ -38,6 +53,7 @@ final class BrowserItemView: NSCollectionViewItem {
     private let placeholderLabel = NSTextField(labelWithString: "无预览图")
     private let hoverOverlay = NSView()
     private let previewButton = NSButton()
+    private let favoriteButton = BrowserFavoriteButton()
     private let badgeContainer = NSView()
     private let badgeLabel = NSTextField(labelWithString: "当前")
     /// 单行信息：`标题 · 作者 · 时长 · 分辨率`。
@@ -49,6 +65,7 @@ final class BrowserItemView: NSCollectionViewItem {
 
     /// Hover 预览入口。双击仍然由网格处理，但不再是唯一的可发现入口。
     var onPreviewRequested: ((WallpaperItem) -> Void)?
+    var onFavoriteRequested: ((WallpaperItem) -> Void)?
 
     override func loadView() {
         view = NSView()
@@ -177,6 +194,25 @@ final class BrowserItemView: NSCollectionViewItem {
             userInfo: nil
         )
         if let trackingArea { view.addTrackingArea(trackingArea) }
+
+        // 放在悬停遮罩之上，星标始终可点，且与右侧的「当前」徽标分开。
+        favoriteButton.title = ""
+        favoriteButton.imagePosition = .imageOnly
+        favoriteButton.isBordered = false
+        favoriteButton.wantsLayer = true
+        favoriteButton.layer?.cornerRadius = 6
+        favoriteButton.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.6).cgColor
+        favoriteButton.target = self
+        favoriteButton.action = #selector(requestFavorite)
+        favoriteButton.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(favoriteButton)
+        NSLayoutConstraint.activate([
+            favoriteButton.topAnchor.constraint(equalTo: view.topAnchor, constant: 6),
+            favoriteButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 6),
+            favoriteButton.widthAnchor.constraint(equalToConstant: 28),
+            favoriteButton.heightAnchor.constraint(equalToConstant: 28),
+        ])
+        updateFavoriteState(false)
     }
 
     override var isSelected: Bool {
@@ -193,17 +229,20 @@ final class BrowserItemView: NSCollectionViewItem {
         placeholderLabel.isHidden = false
         hoverOverlay.isHidden = true
         onPreviewRequested = nil
+        onFavoriteRequested = nil
+        updateFavoriteState(false)
     }
 
     /// 绑定一个条目。
     ///
     /// - Parameter thumbnail: 已经在缓存里的缩略图。缓存未命中时传 nil，
     ///   由调用方随后走异步加载再调 `setThumbnail(_:key:)`。
-    func configure(with item: WallpaperItem, isCurrent: Bool, thumbnail: NSImage?) {
+    func configure(with item: WallpaperItem, isCurrent: Bool, isFavorite: Bool, thumbnail: NSImage?) {
         self.item = item
         self.thumbnailKey = ThumbnailURL.grid(for: item)?.absoluteString
         infoLabel.stringValue = Self.infoLine(for: item)
         badgeContainer.isHidden = !isCurrent
+        updateFavoriteState(isFavorite)
         setThumbnail(thumbnail)
         updateSelectionAppearance()
     }
@@ -223,6 +262,27 @@ final class BrowserItemView: NSCollectionViewItem {
     @objc private func requestPreview() {
         guard let item else { return }
         onPreviewRequested?(item)
+    }
+
+    @objc private func requestFavorite() {
+        guard let item else { return }
+        onFavoriteRequested?(item)
+    }
+
+    func updateFavoriteState(_ isFavorite: Bool) {
+        let action = isFavorite ? "取消收藏" : "收藏"
+        favoriteButton.image = NSImage(
+            systemSymbolName: isFavorite ? "star.fill" : "star",
+            accessibilityDescription: action
+        )
+        favoriteButton.contentTintColor = isFavorite ? .systemYellow : .white
+        favoriteButton.toolTip = action
+        favoriteButton.setAccessibilityLabel("\(action)：\(item?.title ?? "壁纸")")
+    }
+
+    func setInteractionEnabled(_ enabled: Bool) {
+        favoriteButton.isEnabled = enabled
+        previewButton.isEnabled = enabled
     }
 
     /// 异步缩略图结果。**必须带 key** —— 卡片可能已经被复用去显示别的条目了。

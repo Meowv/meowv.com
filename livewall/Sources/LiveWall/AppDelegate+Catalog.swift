@@ -82,6 +82,7 @@ extension AppDelegate {
     /// 先试扫校验、成功再进来，而不是校验一遍、启用时再扫一遍。
     func applyLocalItems(_ items: [WallpaperItem], folder: URL, isFirstLoad: Bool) {
         isLocalSource = true
+        isFavoritesFilter = false
         failuresBySlot.removeAll()
         retriesBySlot.removeAll()
         // 换来源等于换了一整片候选集，上一次的异常提示（分类加载失败等）不再成立。
@@ -134,6 +135,14 @@ extension AppDelegate {
     /// 切分类是「再拉一个切片」，不是「在本地全量里筛」：索引里**没有条目**，
     /// 那是它保持几百字节的前提。
     func loadCatalogAndStart() {
+        // 收藏从配置直接开播；索引只补充普通分类菜单，不阻塞收藏播放。
+        sliceRequestGeneration += 1
+        if preferences.playFavorites && !preferences.favoriteItems.isEmpty {
+            applyFavoriteItems(isFirstLoad: pool.totalCount == 0)
+        }
+        let generation = sliceRequestGeneration
+        indexRequestGeneration += 1
+        let indexGeneration = indexRequestGeneration
         let service = makeCatalogService()
         log("加载清单索引：远程=\(service.remoteIndexURL?.absoluteString ?? "未配置")")
         let requested = preferences.selectedCategoryID
@@ -142,7 +151,14 @@ extension AppDelegate {
             let result = service.loadIndex()
             DispatchQueue.main.async {
                 guard let self else { return }
-                self.handleIndexResult(result, service: service, requested: requested)
+                guard indexGeneration == self.indexRequestGeneration else {
+                    self.log("丢弃过期的清单索引结果")
+                    return
+                }
+                self.handleIndexResult(
+                    result, service: service, requested: requested,
+                    allowPlayback: generation == self.sliceRequestGeneration
+                )
             }
         }
     }
@@ -158,7 +174,8 @@ extension AppDelegate {
     func handleIndexResult(
         _ result: CatalogIndexLoadResult,
         service: CatalogService,
-        requested: Int?
+        requested: Int?,
+        allowPlayback: Bool = true
     ) {
         // 与 `applySliceResult` 同一条理由：本地来源生效期间，线上回包（含失败回包）
         // 一律丢弃 —— 否则会把「没有可用的清单」这类提示写到正在播本地视频的状态区上，
@@ -171,6 +188,12 @@ extension AppDelegate {
         guard let loaded = result.index, let origin = result.origin else {
             // 失败原因必须打出来：DNS / TLS / 超时 / 解析 各对应完全不同的处理
             for warning in result.warnings { log("  ⚠︎ \(warning)") }
+            guard allowPlayback else { return }
+            if isFavoritesFilter {
+                log("清单索引不可用，继续使用已保存的收藏")
+                refreshStatusItem()
+                return
+            }
             notice = .warning("没有可用的清单")
             log("清单索引加载失败：远程与本地副本都不可用")
             refreshStatusItem()
@@ -180,7 +203,16 @@ extension AppDelegate {
         for warning in result.warnings { log("  ⚠︎ \(warning)") }
         log("索引来源：\(origin.label)，\(categories.count) 个分类")
 
-        if requested == nil, let allSlice = loaded.allSlice {
+        if isFavoritesFilter || !allowPlayback {
+            refreshStatusItem()
+            return
+        }
+        loadSelectedCatalogItems(service: service, requested: requested)
+    }
+
+    /// 加载记忆的普通过滤；收藏清空时也走这里，复用已持有的索引。
+    func loadSelectedCatalogItems(service: CatalogService, requested: Int?) {
+        if requested == nil, let allSlice = index?.allSlice {
             loadAllSlice(
                 allSlice,
                 service: service,
@@ -260,8 +292,10 @@ extension AppDelegate {
         notice = nil
         consumePendingSourceNotice()
         selectedCategoryID = nil
-        if preferences.selectedCategoryID != nil {
+        isFavoritesFilter = false
+        if preferences.selectedCategoryID != nil || preferences.playFavorites {
             preferences.selectedCategoryID = nil
+            preferences.playFavorites = false
             persistPreferences("分类记忆：全部")
         }
 
@@ -373,10 +407,12 @@ extension AppDelegate {
         // 只有真的拿到内容才更新选中项：拉取失败时保持旧值，
         // 菜单的勾选与池子里的内容才不会打架。
         selectedCategoryID = entry.id
-        if preferences.selectedCategoryID != entry.id {
+        isFavoritesFilter = false
+        if preferences.selectedCategoryID != entry.id || preferences.playFavorites {
             // 首次启动，或记忆值已经不在索引里（分类被删/改名）：立刻写回，
             // 否则每次启动都要重复回退一次，菜单里的勾选也不稳定。
             preferences.selectedCategoryID = entry.id
+            preferences.playFavorites = false
             persistPreferences("分类记忆")
         }
 

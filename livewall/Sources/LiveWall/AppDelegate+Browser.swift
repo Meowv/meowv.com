@@ -16,6 +16,22 @@ extension AppDelegate: WallpaperBrowserDataSource {
     /// 固定项的 id。UI 只**标记**它，不提供取消固定的入口（决策 11）。
     var browserPinnedItemID: Int? { preferences.pinnedItem?.id }
 
+    var browserFavoriteItems: [WallpaperItem] { preferences.favoriteItems }
+
+    func browserToggleFavorite(_ item: WallpaperItem) -> String? {
+        guard item.remoteURL != nil else { return "这条壁纸的线上地址不可用" }
+        preferences.favoriteItems = FavoriteCollection.toggling(item, in: preferences.favoriteItems)
+        // 先同步播放候选和过滤记忆，再原子保存这一份配置。
+        let restoreCategory = updateFavoritePlaybackItems()
+        let saved = persistPreferences("收藏壁纸")
+        refreshStatusItem()
+        if restoreCategory { restoreFilterAfterEmptyFavorites() }
+        guard saved else {
+            return persistenceFailure ?? "收藏更改未保存"
+        }
+        return nil
+    }
+
     /// 拉取某个分类的条目给浏览窗口。
     ///
     /// **复用 `CatalogService.loadSlice`，但绝不调 `cacheSlice` / `loadIndex`**：
@@ -39,7 +55,7 @@ extension AppDelegate: WallpaperBrowserDataSource {
 
         // 播放端已经持有当前分类的完整条目。浏览窗口是只读调用方，直接返回写时复制
         // 的快照即可，避免打开窗口时再次下载、验签和 JSON 解码同一份切片。
-        if !isLocalSource, categoryID == selectedCategoryID, pool.totalCount > 0 {
+        if !isLocalSource, !isFavoritesFilter, categoryID == selectedCategoryID, pool.totalCount > 0 {
             completion(.success(pool.itemsSnapshot))
             return
         }
@@ -65,7 +81,7 @@ extension AppDelegate: WallpaperBrowserDataSource {
     }
 
     /// 设为桌面壁纸。与菜单「固定」行走**同一条落实路径**。
-    func browserSetPinned(_ item: WallpaperItem, categoryID: Int) {
+    func browserSetPinned(_ item: WallpaperItem, categoryID: Int?) {
         setPinned(item, categoryID: categoryID)
     }
 

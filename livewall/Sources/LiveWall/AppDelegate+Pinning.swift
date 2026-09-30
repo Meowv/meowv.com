@@ -43,7 +43,7 @@ extension AppDelegate {
         //    （列的是线上内容）触发 —— 拉一个线上切片灌进池子，会让「来源是本地、
         //    池子里却是线上条目」，重启后又变回本地，前后不一致。
         //    固定项本身是自包含的（存整条），不依赖池子，所以跳过它照样能播。
-        if !isLocalSource, let categoryID, categoryID != selectedCategoryID,
+        if !isLocalSource, let categoryID, isFavoritesFilter || categoryID != selectedCategoryID,
             categories.contains(where: { $0.id == categoryID })
         {
             preferences.selectedCategoryID = categoryID

@@ -29,6 +29,9 @@ protocol WallpaperBrowserDataSource: AnyObject {
     var browserSelectedCategoryID: Int? { get }
     /// 当前固定项的 id。UI **只标记**它，不提供取消固定的入口（决策 11）。
     var browserPinnedItemID: Int? { get }
+    var browserFavoriteItems: [WallpaperItem] { get }
+    /// nil 表示保存成功；失败文案由浏览窗口和菜单共同呈现。
+    func browserToggleFavorite(_ item: WallpaperItem) -> String?
 
     /// 拉取某个分类的条目。
     ///
@@ -51,7 +54,7 @@ protocol WallpaperBrowserDataSource: AnyObject {
     )
 
     /// 设为桌面壁纸。落实路径在 `AppDelegate.setPinned`。
-    func browserSetPinned(_ item: WallpaperItem, categoryID: Int)
+    func browserSetPinned(_ item: WallpaperItem, categoryID: Int?)
 
     /// 当前桌面槽位若已经在播同一条，返回它已经建好的 asset，预览即可复用，
     /// 不再发第二次 HEAD / 视频加载。
@@ -114,11 +117,16 @@ private final class BrowserGridView: NSCollectionView {
 
     override func mouseDown(with event: NSEvent) {
         guard !isInteractionBlocked else { return }
+        let point = convert(event.locationInWindow, from: nil)
+        var hit = hitTest(point)
+        while let current = hit, current !== self {
+            if current is NSButton { return }
+            hit = current.superview
+        }
         // 先交给父类 —— 双击的第一下本来就该先选中那张卡片，
         // 于是双击之后「选中项」与「浮层里的条目」是一致的。
         super.mouseDown(with: event)
         guard event.clickCount == 2 else { return }
-        let point = convert(event.locationInWindow, from: nil)
         guard let indexPath = indexPathForItem(at: point) else { return }
         onDoubleClick?(indexPath)
     }
@@ -130,6 +138,16 @@ private final class BrowserGridView: NSCollectionView {
 /// 双击某张卡片时才在网格区上方弹一个预览浮层（见 `openPreview(forItemAt:)`）。
 /// 尺寸与取舍见 `AGENTS.md` 与 `livewall/README.md`。
 final class WallpaperBrowserViewController: NSViewController {
+
+    private enum BrowserSection: Equatable {
+        case favorites
+        case category(Int)
+
+        var categoryID: Int? {
+            if case .category(let id) = self { return id }
+            return nil
+        }
+    }
 
     // 布局常量
     /// 分类栏保留 Source List 的呼吸感，也能容纳分类数量和较长名称。
@@ -162,6 +180,7 @@ final class WallpaperBrowserViewController: NSViewController {
     private let gridPlaceholderLabel = NSTextField(labelWithString: "")
     private let gridSpinner = NSProgressIndicator()
     private let gridRetryButton = NSButton()
+    private let searchField = NSSearchField()
 
     // 预览浮层：双击或 Hover 按钮打开，盖在网格区上
     /// 预览期间遮挡整个网格并接收点击；关闭浮层后才恢复网格交互。
@@ -179,19 +198,20 @@ final class WallpaperBrowserViewController: NSViewController {
     /// 「设为桌面壁纸」。放在画面**下方信息行的右端**（原来「停止预览」的位置）——
     /// 叠在画面上会挡住要预览的东西。
     private let pinButton = NSButton()
+    private let favoriteButton = BrowserFavoriteButton()
     /// 浮层面板的**宽度**。写成常量约束 + 在 `viewDidLayout` 里改 constant，
     /// 而不是 `panel.width == overlay.width - 80`：见 `viewDidLayout` 里的说明。
     private var panelWidthConstraint: NSLayoutConstraint!
 
     // 状态
     private var categories: [LivewallCategoryEntry] = []
+    private var allItems: [WallpaperItem] = []
     private var items: [WallpaperItem] = []
-    private var selectedCategoryID: Int?
-    /// 预览浮层当前展示的条目 id（`nil` = 浮层未打开）。
-    ///
-    /// **不与网格选中项挂钩**：浮层只跟着「双击」走。单击别的卡片只移动网格高亮，
-    /// 不该顺手把浮层里正在播的那条换掉 —— 否则「挑一张看看」和「翻着找」会互相打断。
-    private var previewItemID: Int?
+    private var selectedSection: BrowserSection = .favorites
+    private var isLoadingItems = false
+    private var listFailure: String?
+    /// 预览独立持有条目；取消收藏导致卡片消失时仍可继续预览。
+    private var previewItem: WallpaperItem?
     /// 上次算过的网格宽度，用来判断「要不要让流式布局重算卡片尺寸」。
     private var lastGridWidth: CGFloat = 0
     /// 分类切片请求序号。**独立于 `AppDelegate.sliceRequestGeneration`** ——
@@ -232,6 +252,7 @@ final class WallpaperBrowserViewController: NSViewController {
 
         buildCategoryColumn(in: root)
         buildGridColumn(in: root)
+        buildSearchField(in: root)
         buildPreviewOverlay(in: root)
         // 没有底栏了：底栏原本显示「分类 · 共 N 条」，而条目数在翻页/筛选之外
         // 没有额外信息量（网格本身就是全部条目），占着 26pt 不划算。
@@ -244,7 +265,7 @@ final class WallpaperBrowserViewController: NSViewController {
             categoryScroll.widthAnchor.constraint(equalToConstant: Self.categoryWidth),
 
             gridScroll.leadingAnchor.constraint(equalTo: categoryScroll.trailingAnchor),
-            gridScroll.topAnchor.constraint(equalTo: root.topAnchor),
+            gridScroll.topAnchor.constraint(equalTo: searchField.bottomAnchor, constant: 8),
             gridScroll.bottomAnchor.constraint(equalTo: root.bottomAnchor),
             gridScroll.trailingAnchor.constraint(equalTo: root.trailingAnchor),
             gridScroll.widthAnchor.constraint(greaterThanOrEqualToConstant: 460),
@@ -279,14 +300,16 @@ final class WallpaperBrowserViewController: NSViewController {
         categories = dataSource?.browserCategories ?? []
         // 默认选中当前正在播的分类；记忆值不在索引里（或没配）时退回第一个**有内容**的
         // 分类 —— 选中一个 0 条的分类会立刻撞上「加载失败」。
-        selectedCategoryID = dataSource?.browserSelectedCategoryID
-            ?? categories.first(where: { $0.itemCount > 0 })?.id
+        let initialCategory = categories.first(where: {
+            $0.id == dataSource?.browserSelectedCategoryID && $0.itemCount > 0
+        }) ?? categories.first(where: { $0.itemCount > 0 })
+        selectedSection = initialCategory.map { .category($0.id) } ?? .favorites
         reloadCategoryTable()
 
-        if let selectedCategoryID {
-            loadItems(for: selectedCategoryID)
+        if let categoryID = selectedSection.categoryID {
+            loadItems(for: categoryID)
         } else {
-            updateGridPlaceholder(message: "清单里没有分类信息", showSpinner: false)
+            showFavorites()
         }
         // 初始状态是 `.idle`，不会触发 `onStateChange`（回调只在实际变化时发），
         // 所以这里显式同步一次，否则浮层里的按钮文案要等第一次操作才对。
@@ -360,12 +383,14 @@ final class WallpaperBrowserViewController: NSViewController {
         return true
     }
 
-    /// Esc：**先关预览浮层**；浮层没开才关窗口。
-    ///
-    /// 按 Esc 的意图是「退出当前这一层」，直接把整个窗口关掉太狠了 ——
-    /// 而浮层是叠在网格上的一层，理应第一个被 Esc 收掉。
+    /// Esc 先关预览，再清除正在编辑的搜索，最后关窗口。
     override func cancelOperation(_ sender: Any?) {
         guard !dismissTopLayer() else { return }
+        if searchField.currentEditor() != nil, !searchField.stringValue.isEmpty {
+            searchField.stringValue = ""
+            applySearchFilter()
+            return
+        }
         view.window?.performClose(nil)
     }
 
@@ -381,8 +406,13 @@ final class WallpaperBrowserViewController: NSViewController {
     /// 换成非 QWERTY 布局（AZERTY 的 W 在别的位置）也仍然成立。
     func handleWindowKeyEquivalent(_ event: NSEvent) -> Bool {
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-        guard flags == .command,
-              event.charactersIgnoringModifiers?.lowercased() == "w" else { return false }
+        guard flags == .command else { return false }
+        if event.charactersIgnoringModifiers?.lowercased() == "f" {
+            dismissPreview(nil)
+            view.window?.makeFirstResponder(searchField)
+            return true
+        }
+        guard event.charactersIgnoringModifiers?.lowercased() == "w" else { return false }
         guard !dismissTopLayer() else { return true }
         view.window?.performClose(nil)
         return true
@@ -426,9 +456,80 @@ final class WallpaperBrowserViewController: NSViewController {
 
     private func reloadCategoryTable() {
         categoryTable.reloadData()
-        if let selectedCategoryID, let row = categories.firstIndex(where: { $0.id == selectedCategoryID }) {
-            categoryTable.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
+        let row = selectedSection.categoryID.flatMap { id in
+            categories.firstIndex(where: { $0.id == id }).map { $0 + 1 }
+        } ?? 0
+        categoryTable.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
+    }
+
+    private func buildSearchField(in root: NSView) {
+        searchField.placeholderString = "搜索当前壁纸列表"
+        searchField.setAccessibilityLabel("搜索当前壁纸列表")
+        searchField.delegate = self
+        searchField.sendsSearchStringImmediately = true
+        searchField.target = self
+        searchField.action = #selector(searchChanged(_:))
+        searchField.translatesAutoresizingMaskIntoConstraints = false
+        root.addSubview(searchField)
+        NSLayoutConstraint.activate([
+            searchField.topAnchor.constraint(equalTo: root.topAnchor, constant: 12),
+            searchField.leadingAnchor.constraint(equalTo: categoryScroll.trailingAnchor, constant: 16),
+            searchField.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -16),
+        ])
+    }
+
+    private func applySearchFilter() {
+        thumbnailDebounce?.invalidate()
+        collectionView.selectionIndexPaths = []
+        items = WallpaperSearch.filter(allItems, query: searchField.stringValue)
+        reloadGrid()
+        let message: String?
+        if isLoadingItems {
+            message = "正在加载分类…"
+        } else if let listFailure {
+            message = listFailure
+        } else if allItems.isEmpty {
+            message = selectedSection == .favorites ? "还没有收藏，点击壁纸上的星标添加" : "该分类暂无内容"
+        } else {
+            message = items.isEmpty ? "没有匹配结果" : nil
         }
+        updateGridPlaceholder(message: message, showSpinner: isLoadingItems, canRetry: listFailure != nil)
+    }
+
+    private func showFavorites() {
+        sliceGeneration += 1
+        dismissPreview(nil)
+        isLoadingItems = false
+        listFailure = nil
+        allItems = dataSource?.browserFavoriteItems ?? []
+        applySearchFilter()
+    }
+
+    @objc private func searchChanged(_ sender: NSSearchField) {
+        dismissPreview(nil)
+        applySearchFilter()
+    }
+
+    private func toggleFavorite(_ item: WallpaperItem) {
+        guard let dataSource else { return }
+        let failure = dataSource.browserToggleFavorite(item)
+        if selectedSection == .favorites {
+            allItems = dataSource.browserFavoriteItems
+            applySearchFilter()
+        }
+        refreshVisibleBadges()
+        updatePreviewPanel()
+        if let failure {
+            let alert = NSAlert()
+            alert.messageText = "收藏更改未保存"
+            alert.informativeText = "本次更改暂时保留在当前会话，重启后可能丢失。\n\(failure)"
+            if let window = view.window { alert.beginSheetModal(for: window) }
+        }
+    }
+
+    @objc private func togglePreviewFavorite() {
+        guard let previewItem else { return }
+        toggleFavorite(previewItem)
     }
 
     // MARK: - 右栏：条目网格
@@ -571,6 +672,7 @@ final class WallpaperBrowserViewController: NSViewController {
         // 让 `NSCollectionView` 立刻建出可见的卡片 —— 否则
         // `indexPathsForVisibleItems()` 还是空的，第一屏的缩略图要等下一次滚动才加载。
         view.layoutSubtreeIfNeeded()
+        view.window?.recalculateKeyViewLoop()
         loadVisibleThumbnails(replacingPending: true)
     }
 
@@ -692,6 +794,15 @@ final class WallpaperBrowserViewController: NSViewController {
         pinButton.translatesAutoresizingMaskIntoConstraints = false
         previewPanel.addSubview(pinButton)
 
+        favoriteButton.title = "收藏"
+        favoriteButton.bezelStyle = .rounded
+        favoriteButton.target = self
+        favoriteButton.action = #selector(togglePreviewFavorite)
+        favoriteButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+        favoriteButton.setContentHuggingPriority(.required, for: .horizontal)
+        favoriteButton.translatesAutoresizingMaskIntoConstraints = false
+        previewPanel.addSubview(favoriteButton)
+
     }
 
     /// 浮层的全部约束。
@@ -707,7 +818,8 @@ final class WallpaperBrowserViewController: NSViewController {
         let initialWidth = Self.panelPadding * 2
             + pinButton.fittingSize.width
             + previewDismissButton.fittingSize.width
-            + 8
+            + favoriteButton.fittingSize.width
+            + 16
         panelWidthConstraint = previewPanel.widthAnchor.constraint(
             equalToConstant: max(initialWidth, 1)
         )
@@ -770,17 +882,13 @@ final class WallpaperBrowserViewController: NSViewController {
                 constant: -8
             ),
             previewDismissButton.centerYAnchor.constraint(equalTo: previewInfoLabel.centerYAnchor),
+            favoriteButton.trailingAnchor.constraint(equalTo: previewDismissButton.leadingAnchor, constant: -8),
+            favoriteButton.centerYAnchor.constraint(equalTo: previewInfoLabel.centerYAnchor),
             previewInfoLabel.trailingAnchor.constraint(
-                lessThanOrEqualTo: previewDismissButton.leadingAnchor,
+                lessThanOrEqualTo: favoriteButton.leadingAnchor,
                 constant: -Self.panelPadding
             ),
         ])
-    }
-
-    /// 浮层当前展示的条目。
-    private var previewItem: WallpaperItem? {
-        guard let previewItemID else { return nil }
-        return items.first { $0.id == previewItemID }
     }
 
     /// 双击打开预览浮层。
@@ -804,8 +912,9 @@ final class WallpaperBrowserViewController: NSViewController {
                 relativeTo: gridPlaceholder
             )
         }
-        previewItemID = item.id
+        previewItem = item
         previewOverlay.isHidden = false
+        refreshVisibleBadges()
         updatePreviewPanel()
         // 双击是明确的「我要看这一条」→ 直接开播。这与「选中即自动播」是两回事：
         // 后者会让方向键连翻几条就把每条视频都拉一遍 —— 决策 4 要防的就是那个。
@@ -819,10 +928,11 @@ final class WallpaperBrowserViewController: NSViewController {
     /// 关掉浮层并释放播放器。底栏「关闭预览」、Esc、⌘W 与切分类都走这里。
     @objc func dismissPreview(_ sender: Any?) {
         guard !previewOverlay.isHidden else { return }
-        previewItemID = nil
+        previewItem = nil
         previewOverlay.isHidden = true
         collectionView.isInteractionBlocked = false
         collectionView.isSelectable = true
+        refreshVisibleBadges()
         // 用 `teardown()` 而不是 `stop()`：浮层都没了，状态该回到 `.idle`
         // （`stop()` 停在 `.cover`，会留一个不属于任何条目的静态图）。
         previewPlayer.teardown()
@@ -846,12 +956,16 @@ final class WallpaperBrowserViewController: NSViewController {
         pinButton.isEnabled = !isCurrent
         pinButton.title = isCurrent ? "当前桌面壁纸" : "设为桌面壁纸"
 
+        favoriteButton.title = isFavorite(item) ? "取消收藏" : "收藏"
+        favoriteButton.toolTip = favoriteButton.title
+        favoriteButton.setAccessibilityLabel("\(favoriteButton.title)：\(item.title)")
+
         loadPreviewCover(for: item)
     }
 
     private func loadPreviewCover(for item: WallpaperItem) {
         loader.load([item], variant: .preview, replacingPending: false) { [weak self] loaded, image in
-            guard let self, self.previewItemID == loaded.id else { return }
+            guard let self, self.previewItem?.id == loaded.id else { return }
             self.previewImageView.image = image
             self.previewPlaceholderLabel.isHidden = image != nil
         }
@@ -903,9 +1017,8 @@ final class WallpaperBrowserViewController: NSViewController {
 
     @objc private func pinPreviewedItem() {
         guard let item = previewItem, let dataSource else { return }
-        // 分类传**当前列表所属的分类**：用户是在这个分类里挑的，
-        // 解钉之后的轮换该落在它上面（决策 7）。
-        dataSource.browserSetPinned(item, categoryID: selectedCategoryID ?? 0)
+        // 分类选片同步内容过滤；收藏列表传 nil，解钉后继续原播放分类。
+        dataSource.browserSetPinned(item, categoryID: selectedSection.categoryID)
         // 立刻更新按钮与徽标：落实是同步写配置的（真源马上可用），
         // 只有桌面画面要等视频加载完。
         updatePreviewPanel()
@@ -913,13 +1026,13 @@ final class WallpaperBrowserViewController: NSViewController {
     }
 
     @objc private func retryLoadItems() {
-        guard let selectedCategoryID else { return }
+        guard let categoryID = selectedSection.categoryID else { return }
         // **必须先清失败表**：缩略图加载器把「两级候选都失败」的地址记进失败表并
         // 永久跳过（那是防坏地址占并发位，是对的），但瞬时故障（一次超时 / DNS 抖动）
         // 也会被同样记住。不清的话这次重试只会重新请求「没失败过」的那些，
         // 用户点完「重试」发现那批卡片还是「无预览图」。
         loader.retryFailed()
-        loadItems(for: selectedCategoryID)
+        loadItems(for: categoryID)
     }
 
     // MARK: - 数据
@@ -929,12 +1042,13 @@ final class WallpaperBrowserViewController: NSViewController {
         sliceGeneration += 1
         let generation = sliceGeneration
 
-        items = []
+        allItems = []
+        isLoadingItems = true
+        listFailure = nil
         // 切分类时把预览浮层关掉：旧分类的条目马上就不在列表里了，
         // 留着浮层会变成「显示一条已经不存在的条目」。
         dismissPreview(nil)
-        collectionView.reloadData()
-        updateGridPlaceholder(message: "正在加载分类…", showSpinner: true)
+        applySearchFilter()
 
         dataSource.browserLoadItems(for: categoryID) { [weak self] result in
             guard let self, generation == self.sliceGeneration else {
@@ -943,17 +1057,15 @@ final class WallpaperBrowserViewController: NSViewController {
             }
             switch result {
             case .success(let loaded):
-                self.items = loaded
-                self.reloadGrid()
-                self.updateGridPlaceholder(
-                    message: loaded.isEmpty ? "该分类暂无内容" : nil,
-                    showSpinner: false
-                )
+                self.allItems = loaded
+                self.isLoadingItems = false
+                self.applySearchFilter()
                 self.log?("浏览窗口：分类 \(categoryID) 载入 \(loaded.count) 条")
             case .failure(let failure):
-                self.items = []
-                self.collectionView.reloadData()
-                self.updateGridPlaceholder(message: failure.message, showSpinner: false, canRetry: true)
+                self.allItems = []
+                self.isLoadingItems = false
+                self.listFailure = failure.message
+                self.applySearchFilter()
                 self.log?("⚠️ 浏览窗口：分类 \(categoryID) 加载失败（\(failure.message)）")
             }
         }
@@ -976,12 +1088,9 @@ final class WallpaperBrowserViewController: NSViewController {
     }
 
     private func loadVisibleThumbnails(replacingPending: Bool) {
-        guard !items.isEmpty else { return }
         let targets = collectionView.indexPathsForVisibleItems()
             .sorted()
             .compactMap { $0.item < items.count ? items[$0.item] : nil }
-        guard !targets.isEmpty else { return }
-
         loader.load(targets, variant: .grid, replacingPending: replacingPending) { [weak self] item, image in
             guard let key = ThumbnailURL.grid(for: item)?.absoluteString else { return }
             self?.applyThumbnail(image, key: key)
@@ -1010,7 +1119,21 @@ final class WallpaperBrowserViewController: NSViewController {
                   let card = collectionView.item(at: indexPath) as? BrowserItemView
             else { continue }
             card.updateCurrentBadge(items[indexPath.item].id == pinnedID)
+            card.updateFavoriteState(isFavorite(items[indexPath.item]))
+            card.setInteractionEnabled(previewOverlay.isHidden)
         }
+    }
+
+    private func isFavorite(_ item: WallpaperItem) -> Bool {
+        dataSource?.browserFavoriteItems.contains(where: { $0.id == item.id }) == true
+    }
+}
+
+extension WallpaperBrowserViewController: NSSearchFieldDelegate {
+    func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+        guard commandSelector == #selector(cancelOperation(_:)) else { return false }
+        cancelOperation(control)
+        return true
     }
 }
 
@@ -1018,10 +1141,10 @@ final class WallpaperBrowserViewController: NSViewController {
 
 extension WallpaperBrowserViewController: NSTableViewDataSource, NSTableViewDelegate {
 
-    func numberOfRows(in tableView: NSTableView) -> Int { categories.count }
+    func numberOfRows(in tableView: NSTableView) -> Int { categories.count + 1 }
 
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
-        guard row < categories.count else { return nil }
+        guard row >= 0, row <= categories.count else { return nil }
         let identifier = NSUserInterfaceItemIdentifier("CategoryCell")
         let cell: NSTableCellView
         if let reused = tableView.makeView(withIdentifier: identifier, owner: self) as? NSTableCellView {
@@ -1041,7 +1164,12 @@ extension WallpaperBrowserViewController: NSTableViewDataSource, NSTableViewDele
                 label.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
             ])
         }
-        let entry = categories[row]
+        if row == 0 {
+            cell.textField?.stringValue = "我的收藏"
+            cell.alphaValue = 1
+            return cell
+        }
+        let entry = categories[row - 1]
         cell.textField?.stringValue = entry.name
         // 条目数为 0 的分类照样列出、但**置灰不可点** —— 与菜单同一套规则
         // （`CategoryMenu.entries` 的 `isEnabled`）。
@@ -1050,19 +1178,19 @@ extension WallpaperBrowserViewController: NSTableViewDataSource, NSTableViewDele
     }
 
     func tableView(_ tableView: NSTableView, shouldSelectRow row: Int) -> Bool {
-        guard row < categories.count else { return false }
-        return categories[row].itemCount > 0
+        guard row >= 0, row <= categories.count else { return false }
+        return row == 0 || categories[row - 1].itemCount > 0
     }
 
     func tableViewSelectionDidChange(_ notification: Notification) {
         let row = categoryTable.selectedRow
-        guard row >= 0, row < categories.count else { return }
-        let id = categories[row].id
-        guard id != selectedCategoryID else { return }
+        guard row >= 0, row <= categories.count else { return }
+        let section: BrowserSection = row == 0 ? .favorites : .category(categories[row - 1].id)
+        guard section != selectedSection else { return }
         // UI 内切分类**只换列表数据，不写配置** —— 只有「设为桌面壁纸」才写（决策 7）。
         // 于是「在窗口里翻了一圈别的分类」不会改变桌面正在播什么。
-        selectedCategoryID = id
-        loadItems(for: id)
+        selectedSection = section
+        if let id = section.categoryID { loadItems(for: id) } else { showFavorites() }
     }
 }
 
@@ -1086,11 +1214,16 @@ extension WallpaperBrowserViewController: NSCollectionViewDataSource, NSCollecti
         card.configure(
             with: item,
             isCurrent: item.id == dataSource?.browserPinnedItemID,
+            isFavorite: isFavorite(item),
             thumbnail: nil
         )
         card.onPreviewRequested = { [weak self] item in
             self?.openPreview(forItem: item)
         }
+        card.onFavoriteRequested = { [weak self] item in
+            self?.toggleFavorite(item)
+        }
+        card.setInteractionEnabled(previewOverlay.isHidden)
         return card
     }
 
@@ -1105,5 +1238,5 @@ extension WallpaperBrowserViewController: NSCollectionViewDataSource, NSCollecti
     // 刻意**不实现** `didSelectItemsAt` / `didDeselectItemsAt`：这两个回调此前存在的
     // 唯一理由是驱动右栏（选中的条目 → 右栏显示它的预览与按钮）。右栏移除之后
     // 没有消费者了 —— 网格高亮由 `NSCollectionView` 自己管，预览只认「双击」
-    // （见 `previewItemID`）。留着这两个空回调只会让人以为选中态还有别的副作用。
+    // （见 `previewItem`）。留着这两个空回调只会让人以为选中态还有别的副作用。
 }

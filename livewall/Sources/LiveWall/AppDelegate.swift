@@ -185,6 +185,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 注意它表示「池子里装的是哪个分类」，不是「用户点了哪个」——
     /// 切分类是异步的，只有拉取成功才会更新它（失败时保持旧值，画面与菜单才不会打架）。
     var selectedCategoryID: Int?
+    /// 当前候选池使用收藏；普通分类记忆独立保留，切片成功后才退出收藏过滤。
+    var isFavoritesFilter = false
+    /// 索引元数据的代次与播放选择分开，选择收藏后仍可补齐普通分类菜单。
+    var indexRequestGeneration = 0
     /// 分类切片的请求序号。用户可能连点两次，回包时比对，过期结果直接丢弃 ——
     /// 否则会出现「点了 B，画面却停在 A」。
     var sliceRequestGeneration = 0
@@ -613,7 +617,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 失败信息进 `persistenceFailure` 而不是 `notice`，理由见那个属性的说明。
     ///
     /// - Parameter context: 出问题时能定位是哪个动作触发的写入，例如「切换间隔」。
-    func persistPreferences(_ context: String) {
+    @discardableResult
+    func persistPreferences(_ context: String) -> Bool {
         do {
             try preferences.save(to: configURL)
             // 写成功了：上一次的失败说明已经不成立，清掉。
@@ -621,11 +626,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 persistenceFailure = nil
                 refreshStatusItem()
             }
+            return true
         } catch {
             let message = "设置未能保存（\(context)）：\(error.localizedDescription)"
             log("⚠️ \(message)")
             persistenceFailure = message
             refreshStatusItem()
+            return false
         }
     }
 
