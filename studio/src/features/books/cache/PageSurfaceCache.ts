@@ -60,6 +60,11 @@ export class PageSurfaceCache {
   }
 
   prune(): void {
+    for (const entry of [...this.#byTexture.values()]) {
+      if (entry.references === 0 && (entry.source.width < 1 || entry.source.height < 1)) {
+        this.#delete(entry);
+      }
+    }
     while (this.#byteSize > this.maxBytes) {
       let candidate: SurfaceEntry | null = null;
       for (const entry of this.#byTexture.values()) {
@@ -78,7 +83,18 @@ export class PageSurfaceCache {
     this.#byteSize = 0;
   }
 
+  refresh(): void {
+    for (const entry of [...this.#byTexture.values()]) {
+      if (entry.source.width < 1 || entry.source.height < 1) {
+        if (entry.references === 0) this.#delete(entry);
+        continue;
+      }
+      entry.texture.needsUpdate = true;
+    }
+  }
+
   #getOrCreate(source: CanvasSurface): SurfaceEntry {
+    if (source.width < 1 || source.height < 1) throw new Error('书页纹理来源已失效。');
     const cached = this.#bySource.get(source);
     if (cached) return cached;
 

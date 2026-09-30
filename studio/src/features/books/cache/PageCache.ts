@@ -10,6 +10,16 @@ interface CacheEntry {
   byteSize: number;
 }
 
+interface PageRecord {
+  references: number;
+  cached: boolean;
+}
+
+export interface PageLease {
+  readonly page: RenderedPage;
+  release(): void;
+}
+
 export const DEFAULT_PAGE_CACHE_BYTES = 96 * 1024 * 1024;
 
 function positiveInteger(value: number | undefined, fallback: number, name: string): number {
@@ -42,6 +52,7 @@ export function appearanceRevisionFromKey(key: string): number {
 
 export class PageCache {
   readonly #entries = new Map<string, CacheEntry>();
+  readonly #records = new Map<RenderedPage, PageRecord>();
   readonly maxBytes: number;
   readonly maxEntries: number;
   #byteSize = 0;
@@ -63,7 +74,7 @@ export class PageCache {
     return this.#entries.has(key);
   }
 
-  // 触碰缓存项以更新 LRU 顺序而不改变内容，用于保护正在展示的页面。
+  // 触碰缓存项以更新 LRU 顺序而不改变内容。
   touch(key: string): boolean {
     const entry = this.#entries.get(key);
     if (!entry) {
@@ -117,25 +128,51 @@ export class PageCache {
     return undefined;
   }
 
-  set(key: string, page: RenderedPage): void {
+  acquire(page: RenderedPage): PageLease {
+    let record = this.#records.get(page);
+    if (!record) {
+      record = { references: 0, cached: false };
+      this.#records.set(page, record);
+    }
+    record.references += 1;
+    let released = false;
+    return {
+      page,
+      release: () => {
+        if (released) return;
+        released = true;
+        record.references -= 1;
+        if (!record.cached && record.references === 0) this.#dispose(page);
+      },
+    };
+  }
+
+  /** 未进入缓存的渲染结果也通过这里释放，避免误清仍被书面引用的画布。 */
+  discard(page: RenderedPage): void {
+    this.#retire(page);
+  }
+
+  /** 返回是否入缓存；超预算时由调用方继续持有并负责释放。 */
+  set(key: string, page: RenderedPage): boolean {
     const existing = this.#entries.get(key);
     if (existing) {
       this.#entries.delete(key);
       this.#byteSize -= existing.byteSize;
-      if (existing.page !== page) {
-        existing.page.dispose();
-      }
+      if (existing.page !== page) this.#retire(existing.page);
     }
 
     const byteSize = pageByteSize(page);
     if (byteSize > this.maxBytes) {
-      page.dispose();
-      return;
+      return false;
     }
 
+    const record = this.#records.get(page) ?? { references: 0, cached: false };
+    record.cached = true;
+    this.#records.set(page, record);
     this.#entries.set(key, { page, byteSize });
     this.#byteSize += byteSize;
     this.#evictToBudget();
+    return this.#entries.has(key);
   }
 
   delete(key: string): boolean {
@@ -145,13 +182,13 @@ export class PageCache {
     }
     this.#entries.delete(key);
     this.#byteSize -= entry.byteSize;
-    entry.page.dispose();
+    this.#retire(entry.page);
     return true;
   }
 
   clear(): void {
     for (const entry of this.#entries.values()) {
-      entry.page.dispose();
+      this.#retire(entry.page);
     }
     this.#entries.clear();
     this.#byteSize = 0;
@@ -165,5 +202,20 @@ export class PageCache {
       }
       this.delete(oldestKey);
     }
+  }
+
+  #retire(page: RenderedPage): void {
+    const record = this.#records.get(page);
+    if (!record) {
+      page.dispose();
+      return;
+    }
+    record.cached = false;
+    if (record.references === 0) this.#dispose(page);
+  }
+
+  #dispose(page: RenderedPage): void {
+    this.#records.delete(page);
+    page.dispose();
   }
 }

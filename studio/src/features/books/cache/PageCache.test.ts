@@ -95,3 +95,64 @@ describe('PageCache.getBest', () => {
     expect(cache.has(createPageCacheKey(2, 640, 'reading'))).toBe(false);
   });
 });
+
+describe('PageCache 页面持有', () => {
+  function disposablePage(pageNumber: number): RenderedPage {
+    const page = makePage(pageNumber, 10, 'reading', 10);
+    page.dispose = () => {
+      page.canvas.width = 0;
+      page.canvas.height = 0;
+    };
+    return page;
+  }
+
+  it('淘汰和同键替换时保留仍在展示的 Canvas，最后释放持有时才销毁', () => {
+    const cache = new PageCache({ maxBytes: 400, maxEntries: 1 });
+    const first = disposablePage(1);
+    cache.set('page', first);
+    const visible = cache.acquire(first);
+    const second = disposablePage(2);
+    cache.set('page', second);
+
+    expect(cache.get('page')).toBe(second);
+    expect(first.canvas.width).toBe(10);
+    visible.release();
+    visible.release();
+    expect(first.canvas.width).toBe(0);
+    expect(second.canvas.width).toBe(10);
+  });
+
+  it('超过预算的页面仍能交给当前画面使用，释放后销毁', () => {
+    const cache = new PageCache({ maxBytes: 100 });
+    const page = disposablePage(1);
+    const visible = cache.acquire(page);
+    expect(cache.set('large', page)).toBe(false);
+    expect(page.canvas.width).toBe(10);
+    expect(cache.has('large')).toBe(false);
+    visible.release();
+    expect(page.canvas.width).toBe(0);
+  });
+
+  it('清空缓存时延迟销毁被翻页纸张持有的页面', () => {
+    const cache = new PageCache({ maxBytes: 400 });
+    const page = disposablePage(1);
+    cache.set('page', page);
+    const turning = cache.acquire(page);
+    cache.clear();
+    expect(page.canvas.width).toBe(10);
+    turning.release();
+    expect(page.canvas.width).toBe(0);
+  });
+
+  it('容量淘汰不能清空仍被静态书页使用的画布', () => {
+    const cache = new PageCache({ maxBytes: 400, maxEntries: 1 });
+    const current = disposablePage(1);
+    cache.set('current', current);
+    const visible = cache.acquire(current);
+    cache.set('next', disposablePage(2));
+    expect(cache.has('current')).toBe(false);
+    expect(current.canvas.width).toBe(10);
+    visible.release();
+    expect(current.canvas.width).toBe(0);
+  });
+});

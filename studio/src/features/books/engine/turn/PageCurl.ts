@@ -132,7 +132,9 @@ function getCurlProfile(
 function angleAt(profile: CurlProfile, u: number): number {
   return (
     profile.baseAngle +
-    profile.bendSign * profile.bendAngle * smoothstep(profile.creaseStart, profile.creaseEnd, u)
+    profile.bendSign *
+      profile.bendAngle *
+      (0.28 * smoothstep(0, 0.24, u) + 0.72 * smoothstep(profile.creaseStart, profile.creaseEnd, u))
   );
 }
 

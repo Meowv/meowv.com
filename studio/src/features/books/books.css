@@ -498,6 +498,31 @@
   animation: books-preparing-spin 700ms linear infinite;
 }
 
+.books-reader__render-retry {
+  position: absolute;
+  z-index: 10;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  padding: 14px 18px;
+  border: 1px solid rgb(244 229 207 / 18%);
+  border-radius: 12px;
+  color: #fffaf2;
+  background: rgb(25 20 17 / 88%);
+  transform: translate(-50%, -50%);
+  align-items: center;
+  gap: 12px;
+}
+
+.books-reader__render-retry button {
+  padding: 6px 10px;
+  border: 1px solid rgb(244 229 207 / 35%);
+  border-radius: 7px;
+  color: inherit;
+  background: rgb(244 229 207 / 12%);
+  cursor: pointer;
+}
+
 .books-reader-controls {
   position: absolute;
   z-index: 8;

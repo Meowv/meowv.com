@@ -38,4 +38,25 @@ describe('PageSurfaceCache', () => {
     cache.release(protectedTexture);
     cache.clear();
   });
+
+  it('上下文恢复时重新标记现存纹理上传', () => {
+    const cache = new PageSurfaceCache(800, 1);
+    const texture = cache.acquire(surface());
+    const before = texture.version;
+    cache.refresh();
+    expect(texture.version).toBe(before + 1);
+    cache.release(texture);
+    cache.clear();
+  });
+
+  it('拒绝已经被释放的画布，并清除无引用的旧纹理', () => {
+    const cache = new PageSurfaceCache(800, 1);
+    const source = surface();
+    const texture = cache.acquire(source);
+    cache.release(texture);
+    source.width = 0;
+    cache.refresh();
+    expect(cache.size).toBe(0);
+    expect(() => cache.acquire(source)).toThrow('书页纹理来源已失效');
+  });
 });

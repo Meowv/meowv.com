@@ -121,6 +121,10 @@ function showError(message: string): void {
   }, 4000);
 }
 
+function retryRenderer(): void {
+  engine?.retryRenderer();
+}
+
 function hideError(): void {
   showError('');
 }
@@ -133,6 +137,7 @@ const canGoForward = ref(false);
 const canGoBack = ref(false);
 const showReaderTip = ref(false);
 const pagePreparing = ref(false);
+const renderingUnavailable = ref(false);
 const shelfReady = ref(false);
 const shelfEntries = ref<BookshelfEntry[]>([]);
 const persistentShelf = ref(bookshelf.persistentHandles);
@@ -404,6 +409,7 @@ function resetReaderView(): void {
   canGoBack.value = false;
   showReaderTip.value = false;
   pagePreparing.value = false;
+  renderingUnavailable.value = false;
   pendingThumbnail = null;
   pendingTurn = null;
   readerPanel.value = null;
@@ -618,6 +624,23 @@ async function openFile(
       onPagePreparationChange: (preparing) => {
         if (currentOperation === operationId && engine === instance)
           pagePreparing.value = preparing;
+      },
+      onPagePreparationTimeout: () => {
+        if (currentOperation === operationId && engine === instance) {
+          clearHeldTurnDirections();
+          showError('书页准备超时，已恢复当前页面，请稍后重试。');
+        }
+      },
+      onPagePreparationFailure: () => {
+        if (currentOperation === operationId && engine === instance) {
+          clearHeldTurnDirections();
+          showError('书页准备失败，已恢复当前页面，请重试。');
+        }
+      },
+      onRenderingUnavailableChange: (unavailable) => {
+        if (currentOperation === operationId && engine === instance) {
+          renderingUnavailable.value = unavailable;
+        }
       },
     });
   } catch (error) {
@@ -1309,6 +1332,14 @@ onBeforeUnmount(() => {
         aria-live="polite"
       >
         <span aria-hidden="true"></span>正在整理书页…
+      </div>
+      <div
+        v-if="readerReady && renderingUnavailable"
+        class="books-reader__render-retry"
+        role="alert"
+      >
+        <span>画布暂时不可用</span>
+        <button type="button" @click="retryRenderer">重试显示</button>
       </div>
       <p class="books-orientation-hint">横屏阅读会更舒展</p>
       <ReaderControls

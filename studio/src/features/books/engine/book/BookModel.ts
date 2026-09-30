@@ -9,7 +9,12 @@ import {
   RepeatWrapping,
 } from 'three';
 import { PageSurfaceCache } from '../../cache/PageSurfaceCache';
-import { getGutterEdgeInfluence, getGutterOffset } from '../turn/PageCurl';
+import {
+  computePageCurlPoint,
+  getGutterEdgeInfluence,
+  getGutterOffset,
+  type TurnDirection,
+} from '../turn/PageCurl';
 import { getStackThicknesses, getTotalPaperThickness, type BookConfig } from '../BookConfig';
 import { createPaperNoiseCanvas, disposeObject } from '../three-utils';
 import {
@@ -55,11 +60,18 @@ export class BookModel {
   readonly #rightStack: Mesh<BoxGeometry>;
   readonly #leftPageEdges = new Group();
   readonly #rightPageEdges = new Group();
-  readonly #gutterShadow: Mesh<PlaneGeometry, MeshBasicMaterial>;
+  readonly #gutterShadow = new Group();
+  readonly #leftGutterShadow: Mesh<PlaneGeometry, MeshBasicMaterial>;
+  readonly #rightGutterShadow: Mesh<PlaneGeometry, MeshBasicMaterial>;
+  readonly #leftGutterShadowBasePositions: Float32Array;
+  readonly #rightGutterShadowBasePositions: Float32Array;
+  readonly #edgeContactShadow: Mesh<PlaneGeometry, MeshBasicMaterial>;
+  readonly #edgeContactShadowBasePositions: Float32Array;
   readonly #openingLeaves: Group[] = [];
   readonly #backOpeningLeaves: Group[] = [];
   readonly #spine: Mesh<BoxGeometry>;
   readonly #pageWidth: number;
+  readonly #pageHeight: number;
   readonly #pageCount: number;
   readonly #totalThickness: number;
   readonly #config: Readonly<BookConfig>;
@@ -69,9 +81,11 @@ export class BookModel {
   #coverTexture: CanvasTexture | null = null;
   #cornerLift: { target: BookCornerTarget; corner: BookCorner } | null = null;
   #turnPreparationPage: PageSide | null = null;
+  #turnGutterPhase = 0;
 
   constructor(options: BookModelOptions) {
     this.#pageWidth = options.pageWidth;
+    this.#pageHeight = options.pageHeight;
     this.#pageCount = options.pageCount;
     this.#config = options.config;
     this.#surfaceCache = new PageSurfaceCache(options.gpuTextureBudgetBytes, options.maxAnisotropy);
@@ -218,17 +232,48 @@ export class BookModel {
     this.#spine.position.z = -totalThickness * 0.8;
     this.#spine.castShadow = true;
 
-    const gutterTexture = new CanvasTexture(createGutterShadowCanvas());
-    gutterTexture.needsUpdate = true;
-    this.#gutterShadow = new Mesh(
-      createGutterShadowGeometry(options),
+    const gutterShadow = (side: PageSide) => {
+      const texture = new CanvasTexture(createGutterShadowCanvas(side));
+      texture.needsUpdate = true;
+      const mesh = new Mesh(
+        createGutterShadowGeometry(options, side),
+        new MeshBasicMaterial({
+          map: texture,
+          opacity: 0.4,
+          transparent: true,
+          depthWrite: false,
+        }),
+      );
+      mesh.renderOrder = 2;
+      return mesh;
+    };
+    this.#leftGutterShadow = gutterShadow('left');
+    this.#rightGutterShadow = gutterShadow('right');
+    this.#leftGutterShadowBasePositions = Float32Array.from(
+      this.#leftGutterShadow.geometry.attributes.position.array,
+    );
+    this.#rightGutterShadowBasePositions = Float32Array.from(
+      this.#rightGutterShadow.geometry.attributes.position.array,
+    );
+    this.#gutterShadow.add(this.#leftGutterShadow, this.#rightGutterShadow);
+    this.#gutterShadow.renderOrder = 2;
+
+    const contactTexture = new CanvasTexture(createEdgeContactShadowCanvas());
+    contactTexture.needsUpdate = true;
+    this.#edgeContactShadow = new Mesh(
+      new PlaneGeometry(options.pageWidth * 0.08, options.pageHeight * 0.99, 2, 12),
       new MeshBasicMaterial({
-        map: gutterTexture,
+        map: contactTexture,
+        opacity: 0,
         transparent: true,
         depthWrite: false,
       }),
     );
-    this.#gutterShadow.renderOrder = 2;
+    this.#edgeContactShadowBasePositions = Float32Array.from(
+      this.#edgeContactShadow.geometry.attributes.position.array,
+    );
+    this.#edgeContactShadow.visible = false;
+    this.#edgeContactShadow.renderOrder = 2;
 
     this.leftHalf.add(this.#leftStack, this.#leftPage, this.#leftPageEdges);
     this.rightHalf.add(this.#rightStack, this.#rightPage, this.#rightPageEdges);
@@ -241,6 +286,7 @@ export class BookModel {
       this.#frontCoverPivot,
       this.#spine,
       this.#gutterShadow,
+      this.#edgeContactShadow,
     );
     addVisiblePageEdges(this.#leftPageEdges, this.#rightPageEdges, options, totalThickness);
 
@@ -268,10 +314,18 @@ export class BookModel {
   }
 
   setStaticPages(left: HTMLCanvasElement | null, right: HTMLCanvasElement | null): void {
+    const nextLeft = left ? this.#surfaceCache.acquire(left) : null;
+    let nextRight: CanvasTexture | null;
+    try {
+      nextRight = right ? this.#surfaceCache.acquire(right) : null;
+    } catch (reason) {
+      this.#surfaceCache.release(nextLeft);
+      throw reason;
+    }
     const previousLeft = this.#leftTexture;
     const previousRight = this.#rightTexture;
-    this.#leftTexture = left ? this.#surfaceCache.acquire(left) : null;
-    this.#rightTexture = right ? this.#surfaceCache.acquire(right) : null;
+    this.#leftTexture = nextLeft;
+    this.#rightTexture = nextRight;
     this.#surfaceCache.release(previousLeft);
     this.#surfaceCache.release(previousRight);
     setMaterialMap(this.#leftPageMaterial, this.#leftTexture);
@@ -312,6 +366,146 @@ export class BookModel {
     this.#setStaticPageSurfacePositions();
   }
 
+  setTurnDeformation(
+    progress: number,
+    direction: TurnDirection,
+    pointerV = 0.82,
+    verticalDrag = 0,
+  ): void {
+    const phase = Math.sin(Math.PI * Math.min(1, Math.max(0, progress)));
+    if (phase < 0.0001 && this.#turnGutterPhase < 0.0001) return;
+    this.#turnGutterPhase = phase;
+    const source = direction === 'forward' ? 'right' : 'left';
+    this.#deformGutter(this.#leftPage.geometry, this.#leftPageBasePositions, 'left', source, phase);
+    this.#deformGutter(
+      this.#rightPage.geometry,
+      this.#rightPageBasePositions,
+      'right',
+      source,
+      phase,
+    );
+    this.#deformGutter(
+      this.#leftGutterShadow.geometry,
+      this.#leftGutterShadowBasePositions,
+      'left',
+      source,
+      phase,
+    );
+    this.#deformGutter(
+      this.#rightGutterShadow.geometry,
+      this.#rightGutterShadowBasePositions,
+      'right',
+      source,
+      phase,
+    );
+    this.#leftGutterShadow.material.opacity =
+      source === 'left' ? 0.4 + phase * 0.22 : 0.4 - phase * 0.08;
+    this.#rightGutterShadow.material.opacity =
+      source === 'right' ? 0.4 + phase * 0.22 : 0.4 - phase * 0.08;
+    this.#updateEdgeContactShadow(progress, direction, pointerV, verticalDrag);
+  }
+
+  resetTurnDeformation(): void {
+    if (this.#turnGutterPhase < 0.0001) return;
+    this.#deformGutter(this.#leftPage.geometry, this.#leftPageBasePositions, 'left', 'right', 0);
+    this.#deformGutter(this.#rightPage.geometry, this.#rightPageBasePositions, 'right', 'right', 0);
+    this.#deformGutter(
+      this.#leftGutterShadow.geometry,
+      this.#leftGutterShadowBasePositions,
+      'left',
+      'right',
+      0,
+    );
+    this.#deformGutter(
+      this.#rightGutterShadow.geometry,
+      this.#rightGutterShadowBasePositions,
+      'right',
+      'right',
+      0,
+    );
+    this.#leftGutterShadow.material.opacity = 0.4;
+    this.#rightGutterShadow.material.opacity = 0.4;
+    this.#edgeContactShadow.visible = false;
+    this.#edgeContactShadow.material.opacity = 0;
+    this.#turnGutterPhase = 0;
+  }
+
+  #deformGutter(
+    geometry: PlaneGeometry,
+    basePositions: Float32Array,
+    side: PageSide,
+    source: PageSide,
+    phase: number,
+  ): void {
+    const positions = geometry.attributes.position;
+    const array = positions.array as Float32Array;
+    const sourceWeight = side === source ? 1 : 0.55;
+    const lean = source === 'right' ? 1 : -1;
+    for (let offset = 0; offset < basePositions.length; offset += 3) {
+      const x = basePositions[offset];
+      const y = basePositions[offset + 1];
+      const distance = Math.abs(x);
+      const falloff = 1 - smoothstep(0, this.#pageWidth * 0.2, distance);
+      const edge = 0.65 + 0.35 * getGutterEdgeInfluence(y, this.#pageHeight);
+      const response = phase * falloff * falloff * edge * sourceWeight;
+      array[offset] = x + lean * 0.003 * response * smoothstep(0, 0.012, distance);
+      array[offset + 1] = y;
+      array[offset + 2] = basePositions[offset + 2] - 0.0028 * response;
+    }
+    positions.needsUpdate = true;
+    geometry.computeVertexNormals();
+  }
+
+  #updateEdgeContactShadow(
+    progress: number,
+    direction: TurnDirection,
+    pointerV: number,
+    verticalDrag: number,
+  ): void {
+    const pointAt = (y: number) =>
+      computePageCurlPoint({
+        x: this.#pageWidth,
+        y,
+        pageWidth: this.#pageWidth,
+        pageHeight: this.#pageHeight,
+        progress,
+        direction,
+        pointerV,
+        verticalDrag,
+        curlStrength: this.#config.curlStrength,
+        twistStrength: this.#config.twistStrength,
+        sagStrength: this.#config.sagStrength,
+      });
+    const center = pointAt(0);
+    const lift = center.z / this.#pageWidth;
+    const endpoint = Math.min(progress, 1 - progress);
+    const opacity = 0.24 * (1 - smoothstep(0.025, 0.17, lift)) * smoothstep(0, 0.045, endpoint);
+    this.#edgeContactShadow.visible = opacity > 0.002;
+    if (!this.#edgeContactShadow.visible) return;
+    this.#edgeContactShadow.material.opacity = opacity;
+    const positions = this.#edgeContactShadow.geometry.attributes.position;
+    const array = positions.array as Float32Array;
+    for (let offset = 0; offset < array.length; offset += 3) {
+      const baseX = this.#edgeContactShadowBasePositions[offset];
+      const point = pointAt(this.#edgeContactShadowBasePositions[offset + 1]);
+      const shadowX = point.x + (point.z * 1.8) / 6.8;
+      const shadowY = point.y + (point.z * 1.6) / 6.8;
+      const width = this.#pageWidth * (0.04 + lift * 0.12);
+      array[offset] = shadowX + (baseX / (this.#pageWidth * 0.08)) * width;
+      array[offset + 1] = shadowY;
+      array[offset + 2] =
+        STATIC_PAGE_SURFACE_Z +
+        getGutterOffset(
+          Math.abs(shadowX),
+          this.#config,
+          getGutterEdgeInfluence(shadowY, this.#pageHeight),
+        ) +
+        0.00055;
+    }
+    positions.needsUpdate = true;
+    this.#edgeContactShadow.geometry.computeVertexNormals();
+  }
+
   #setStaticPageSurfacePositions(): void {
     const readyLift = this.#config.paperThickness + TURNING_PAGE_CLEARANCE;
     this.#leftPage.position.z =
@@ -327,6 +521,7 @@ export class BookModel {
   }
 
   setOpenProgress(progress: number): void {
+    this.resetTurnDeformation();
     const coverProgress = phaseProgress(progress, 0, 0.78);
     const pageProgress = phaseProgress(progress, 0.12, 1);
     const centeringProgress = phaseProgress(progress, 0.06, 0.92);
@@ -343,6 +538,7 @@ export class BookModel {
   }
 
   setBackOpenProgress(progress: number): void {
+    this.resetTurnDeformation();
     const coverProgress = phaseProgress(progress, 0, 0.78);
     const pageProgress = phaseProgress(progress, 0.12, 1);
     const centeringProgress = phaseProgress(progress, 0.06, 0.92);
@@ -358,6 +554,7 @@ export class BookModel {
   }
 
   beginBoundaryTurn(edge: 'front' | 'back', initialOpenProgress: 0 | 1): void {
+    this.resetTurnDeformation();
     this.#frontCoverPivot.visible = edge !== 'front';
     this.#backCoverPivot.visible = edge !== 'back';
     this.leftHalf.rotation.y = 0;
@@ -428,9 +625,11 @@ export class BookModel {
   }
 
   prewarmSurfaces(canvases: readonly HTMLCanvasElement[]): CanvasTexture[] {
-    const textures = canvases.map((canvas) => this.#surfaceCache.warm(canvas));
-    this.#pruneSurfaces();
-    return textures;
+    return canvases.map((canvas) => this.#surfaceCache.warm(canvas));
+  }
+
+  refreshSurfaceTextures(): void {
+    this.#surfaceCache.refresh();
   }
 
   get surfaceMetrics(): Readonly<{ entries: number; byteSize: number; maxBytes: number }> {
@@ -590,13 +789,14 @@ function createStaticPage(
   return mesh;
 }
 
-function createGutterShadowGeometry(options: BookModelOptions): PlaneGeometry {
+function createGutterShadowGeometry(options: BookModelOptions, side: PageSide): PlaneGeometry {
   const geometry = new PlaneGeometry(
-    options.pageWidth * 0.09,
+    options.pageWidth * 0.045,
     options.pageHeight * 0.982,
-    8,
+    4,
     options.config.heightSegments,
   );
+  geometry.translate((side === 'left' ? -1 : 1) * options.pageWidth * 0.0225, 0, 0);
   const positions = geometry.attributes.position;
   for (let index = 0; index < positions.count; index += 1) {
     const x = positions.getX(index);
@@ -649,18 +849,42 @@ function addVisiblePageEdges(
   }
 }
 
-function createGutterShadowCanvas(): HTMLCanvasElement {
+function createGutterShadowCanvas(side: PageSide): HTMLCanvasElement {
   const canvas = document.createElement('canvas');
-  canvas.width = 96;
+  canvas.width = 48;
   canvas.height = 8;
   const context = canvas.getContext('2d');
   if (!context) return canvas;
   const gradient = context.createLinearGradient(0, 0, canvas.width, 0);
-  gradient.addColorStop(0, 'rgba(65, 43, 29, 0)');
-  gradient.addColorStop(0.32, 'rgba(65, 43, 29, 0.035)');
-  gradient.addColorStop(0.5, 'rgba(48, 29, 20, 0.15)');
-  gradient.addColorStop(0.68, 'rgba(65, 43, 29, 0.035)');
-  gradient.addColorStop(1, 'rgba(65, 43, 29, 0)');
+  const stops = [
+    [0, 0],
+    [0.35, 0.025],
+    [0.72, 0.08],
+    [1, 0.18],
+  ] as const;
+  for (const [position, opacity] of side === 'left' ? stops : [...stops].reverse()) {
+    gradient.addColorStop(
+      side === 'left' ? position : 1 - position,
+      `rgba(48, 29, 20, ${opacity})`,
+    );
+  }
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+
+function createEdgeContactShadowCanvas(): HTMLCanvasElement {
+  const canvas = document.createElement('canvas');
+  canvas.width = 64;
+  canvas.height = 8;
+  const context = canvas.getContext('2d');
+  if (!context) return canvas;
+  const gradient = context.createLinearGradient(0, 0, canvas.width, 0);
+  gradient.addColorStop(0, 'rgba(38, 31, 25, 0)');
+  gradient.addColorStop(0.3, 'rgba(38, 31, 25, 0.18)');
+  gradient.addColorStop(0.5, 'rgba(38, 31, 25, 0.4)');
+  gradient.addColorStop(0.7, 'rgba(38, 31, 25, 0.18)');
+  gradient.addColorStop(1, 'rgba(38, 31, 25, 0)');
   context.fillStyle = gradient;
   context.fillRect(0, 0, canvas.width, canvas.height);
   return canvas;

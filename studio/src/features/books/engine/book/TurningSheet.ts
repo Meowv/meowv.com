@@ -149,10 +149,18 @@ export class TurningSheet {
   }
 
   setPages(front: HTMLCanvasElement, back: HTMLCanvasElement): void {
+    const nextFront = this.#acquireTexture(front);
+    let nextBack: CanvasTexture;
+    try {
+      nextBack = this.#acquireTexture(back);
+    } catch (reason) {
+      this.#releaseTexture(nextFront);
+      throw reason;
+    }
     const previousFront = this.#frontTexture;
     const previousBack = this.#backTexture;
-    this.#frontTexture = this.#acquireTexture(front);
-    this.#backTexture = this.#acquireTexture(back);
+    this.#frontTexture = nextFront;
+    this.#backTexture = nextBack;
     this.#releaseTexture(previousFront);
     this.#releaseTexture(previousBack);
     this.#applyMaterialMode();
@@ -172,14 +180,14 @@ export class TurningSheet {
     const coverTurn = this.#edgeKind === 'cover';
     const vertexCount = coverTurn ? this.#basePositions.length / 3 : this.#boardVertexCount;
     const safeProgress = Math.min(1, Math.max(0, progress));
-    // 纸面平铺贴合（就绪/趋平）时看不到纸页厚度与投影，
-    // 只在中段竖起时显示纸边和投影，避免"页面浮起一层纸"的错觉。
+    // 纸边只在明显抬起时出现；投影稍早出现、稍晚消失以保持接触过程连续。
     const settled = Math.min(safeProgress, 1 - safeProgress);
     const paperEdgeVisible = coverTurn || settled > 0.08;
+    const paperShadowVisible = coverTurn || settled > 0.025;
     if (this.#edgeMaterial.visible !== paperEdgeVisible) {
       this.#edgeMaterial.visible = paperEdgeVisible;
-      this.mesh.castShadow = paperEdgeVisible;
     }
+    this.mesh.castShadow = paperShadowVisible;
     this.#curlFrame.progress = safeProgress;
     this.#curlFrame.direction = direction;
     this.#curlFrame.pointerV = pointerV;
@@ -260,6 +268,13 @@ export class TurningSheet {
 
   hide(): void {
     this.mesh.visible = false;
+    const front = this.#frontTexture;
+    const back = this.#backTexture;
+    this.#frontTexture = null;
+    this.#backTexture = null;
+    this.#applyMaterialMode();
+    this.#releaseTexture(front);
+    this.#releaseTexture(back);
   }
 
   get textures(): readonly CanvasTexture[] {
