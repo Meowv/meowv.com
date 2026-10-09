@@ -329,7 +329,7 @@ button {
   padding-right: 5px;
   padding-left: 5px;
   gap: 5px;
-  font-size: 14px;
+  font-size: 15px;
 }
 
 .studio-shell--home .studio-nav a svg {
@@ -350,6 +350,12 @@ button {
 
   .studio-shell--home .studio-nav a:last-child {
     padding-right: 0;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 1220px) {
+  .studio-shell--home .studio-nav a span {
+    display: none;
   }
 }
 

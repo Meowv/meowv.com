@@ -9,7 +9,9 @@ import './assets/styles/main.css';
 initializeTheme();
 registerStudioHeaderToggle();
 
-createApp(App).use(createPinia()).use(router).mount('#app');
+const app = createApp(App).use(createPinia()).use(router);
+
+void router.isReady().then(() => app.mount('#app'));
 
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
