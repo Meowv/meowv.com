@@ -144,9 +144,6 @@
   width: 34px;
   height: 34px;
 }
-.fp-header .studio-logo__leaf {
-  display: none;
-}
 .fp-header-divider {
   width: 1px;
   height: 19px;
@@ -957,7 +954,8 @@
   .fp-theme-button {
     display: none !important;
   }
-  .fp-header .studio-logo__wordmark {
+  .fp-header .studio-logo__wordmark,
+  .fp-header .studio-logo__leaf {
     display: none;
   }
   .fp-header h1 {
