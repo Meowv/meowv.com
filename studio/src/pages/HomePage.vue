@@ -5,6 +5,7 @@ import {
   IconBrandOffice,
   IconBook,
   IconChalkboard,
+  IconLayout2,
   IconMarkdown,
   IconChartDots3,
   IconSitemap,
@@ -55,6 +56,13 @@ const quickRoutes = [
     to: '/draw',
     icon: IconChalkboard,
     tone: 'draw',
+  },
+  {
+    label: 'Floor Plan',
+    description: '户型设计、家具布置、3D 漫游',
+    to: '/floorplan',
+    icon: IconLayout2,
+    tone: 'floorplan',
   },
   {
     label: 'Mermaid',

@@ -6,6 +6,7 @@ import {
   IconApps,
   IconBook,
   IconChalkboard,
+  IconLayout2,
   IconChartDots3,
   IconMarkdown,
   IconMenu2,
@@ -41,6 +42,7 @@ const isHomePage = computed(() => route.name === 'home');
 const isMarkdownPage = computed(() => route.meta.feature === 'markdown');
 const isMermaidPage = computed(() => route.meta.feature === 'mermaid');
 const isDrawPage = computed(() => route.meta.feature === 'draw');
+const isFloorplanPage = computed(() => route.meta.feature === 'floorplan');
 const isMindPage = computed(() => route.meta.feature === 'mind');
 const isNotesPage = computed(() => route.meta.feature === 'notes');
 const isToolsPage = computed(() => route.meta.feature === 'tools');
@@ -154,6 +156,7 @@ const isImmersive = computed(
     isMermaidPage.value ||
     isBooksPage.value ||
     isDrawPage.value ||
+    isFloorplanPage.value ||
     isMindPage.value ||
     isNotesPage.value ||
     isToolsHomePage.value ||
@@ -177,7 +180,11 @@ const TOOLS_HEADER_PREFERENCE_KEY = `${STORAGE_POLICY.preferences}:tools-header-
 const MERMAID_HEADER_PREFERENCE_KEY = `${STORAGE_POLICY.preferences}:mermaid-header-collapsed`;
 const WALLPAPERS_HEADER_PREFERENCE_KEY = `${STORAGE_POLICY.preferences}:wallpapers-header-collapsed`;
 const showHeader = computed(() =>
-  isDrawPage.value || isMindPage.value || isNotesPage.value || isMermaidPage.value
+  isDrawPage.value ||
+  isFloorplanPage.value ||
+  isMindPage.value ||
+  isNotesPage.value ||
+  isMermaidPage.value
     ? false
     : isMarkdownPage.value
       ? markdownHeaderVisible.value
@@ -432,6 +439,7 @@ const primaryRoutes = [
   { label: 'Office', to: '/office', icon: IconBrandOffice, className: 'nav-office' },
   { label: 'Books', to: '/books', icon: IconBook, className: 'nav-books' },
   { label: 'Whiteboard', to: '/draw', icon: IconChalkboard, className: 'nav-draw' },
+  { label: 'Floor Plan', to: '/floorplan', icon: IconLayout2, className: 'nav-floorplan' },
   { label: 'Mermaid', to: '/mermaid', icon: IconChartDots3, className: 'nav-mermaid' },
   { label: 'Mind', to: '/mind', icon: IconSitemap, className: 'nav-mind' },
   { label: 'Notes', to: '/notes', icon: IconNotes, className: 'nav-notes' },
@@ -453,6 +461,7 @@ function isRouteActive(to: string): boolean {
       'studio-shell--mermaid': isMermaidPage,
       'studio-shell--mermaid-header': isMermaidPage && mermaidHeaderVisible,
       'studio-shell--draw': isDrawPage,
+      'studio-shell--floorplan': isFloorplanPage,
       'studio-shell--mind': isMindPage,
       'studio-shell--notes': isNotesPage,
       'studio-shell--tools': isToolsPage,

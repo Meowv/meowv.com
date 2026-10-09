@@ -24,7 +24,7 @@ export const STUDIO_FILE_PICKER_TYPES = [
       'text/markdown': ['.md', '.markdown', '.mdown', '.mkd'],
       'text/plain': ['.txt'],
       'text/x-mermaid': ['.mmd', '.mermaid'],
-      'application/json': ['.mermaid.json'],
+      'application/json': ['.mermaid.json', '.floorplan.json'],
       'application/pdf': ['.pdf'],
       'application/epub+zip': ['.epub'],
       'application/x-fictionbook+xml': ['.fb2'],

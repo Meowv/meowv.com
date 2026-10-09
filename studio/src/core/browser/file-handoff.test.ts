@@ -58,6 +58,11 @@ describe('featureForFile', () => {
     expect(featureForFile(fileOf('A.Md'))).toBe('markdown');
   });
 
+  it('仅专用后缀进入户型设计', () => {
+    expect(featureForFile(fileOf('A.FLOORPLAN.JSON'))).toBe('floorplan');
+    expect(featureForFile(fileOf('a.floorplan.json.backup'))).toBeNull();
+  });
+
   it('JSON 与未收录的扩展名返回 null', () => {
     expect(featureForFile(fileOf('a.json'))).toBeNull();
     expect(featureForFile(fileOf('a.xyz'))).toBeNull();
@@ -79,6 +84,7 @@ describe('routeForFeature', () => {
       pdf: '/tools/merge-pdf',
       office: '/office',
       draw: '/draw',
+      floorplan: '/floorplan',
       mind: '/mind',
       notes: '/notes',
       book: '/books',

@@ -338,6 +338,10 @@ button {
 .nav-draw {
   --nav-accent: var(--menu-draw-foreground);
 }
+.studio-shell--floorplan,
+.nav-floorplan {
+  --nav-accent: var(--menu-floorplan-foreground);
+}
 .nav-mind {
   --nav-accent: var(--menu-mind-foreground);
 }
@@ -361,6 +365,7 @@ button {
 .nav-office svg,
 .nav-books svg,
 .nav-draw svg,
+.nav-floorplan svg,
 .nav-mind svg,
 .nav-notes svg,
 .nav-tools svg,
@@ -867,6 +872,11 @@ body.has-dialog-open {
 .home-shortcuts__item--draw {
   --shortcut-accent: var(--menu-draw-foreground);
   --shortcut-solid: var(--menu-draw);
+}
+
+.home-shortcuts__item--floorplan {
+  --shortcut-accent: var(--menu-floorplan-foreground);
+  --shortcut-solid: var(--menu-floorplan);
 }
 
 .home-shortcuts__item--mind {

@@ -40,6 +40,11 @@ export const STUDIO_ROUTE_SEO = {
     description:
       '使用浏览器白板自由绘图、制作流程图并在无限画布上整理想法；自动保存，支持导出图片和 Excalidraw 文件。',
   },
+  floorplan: {
+    title: '户型设计｜Meowv Studio',
+    description:
+      '在浏览器中布置户型和家具，调整地面材质、测量尺寸，使用 3D 视图和漫游预览设计；方案保存在本地，可导入导出。',
+  },
   mind: {
     title: '思维导图｜Meowv Studio',
     description:
@@ -61,11 +66,13 @@ export const STUDIO_ROUTE_SEO = {
   },
   toolDetail: {
     title: '工具｜Meowv Studio',
-    description: '在 Meowv Studio 中使用图片、PDF、文本和开发工具，按需处理文件与数据，快速完成常见任务。',
+    description:
+      '在 Meowv Studio 中使用图片、PDF、文本和开发工具，按需处理文件与数据，快速完成常见任务。',
   },
   notFound: {
     title: '页面未找到｜Meowv Studio',
-    description: '页面未找到：当前地址可能有误，或页面已被移动。返回 Meowv Studio 首页，继续使用浏览器文件工作台。',
+    description:
+      '页面未找到：当前地址可能有误，或页面已被移动。返回 Meowv Studio 首页，继续使用浏览器文件工作台。',
     noindex: true,
   },
 } satisfies Record<string, StudioSeoMeta>;

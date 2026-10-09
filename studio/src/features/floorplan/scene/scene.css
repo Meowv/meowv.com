@@ -1,0 +1,109 @@
+.floorplan-scene-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  outline: none;
+}
+.floorplan-scene-labels {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.floorplan-room-label {
+  padding: 6px 10px;
+  border-radius: 7px;
+  background: rgb(255 252 246 / 94%);
+  box-shadow: 0 2px 8px #30271d20;
+  color: #443a32;
+  text-align: center;
+  font:
+    600 12px/1.5 system-ui,
+    sans-serif;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.floorplan-room-label small {
+  display: block;
+  color: #756b61;
+  font-size: 10px;
+  font-weight: 400;
+}
+.floorplan-walk-start {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  background: #171b2280;
+  color: white;
+  border: 0;
+  font:
+    500 15px/2 system-ui,
+    sans-serif;
+  cursor: pointer;
+  text-align: center;
+}
+.floorplan-walk-joystick {
+  position: absolute;
+  z-index: 5;
+  left: 30px;
+  bottom: 44px;
+  width: 110px;
+  height: 110px;
+  border: 2px solid #fff8;
+  border-radius: 50%;
+  background: #191b2359;
+  touch-action: none;
+}
+.floorplan-walk-joystick i {
+  position: absolute;
+  left: 35px;
+  top: 35px;
+  width: 36px;
+  height: 36px;
+  border: 2px solid #fff9;
+  border-radius: 50%;
+  background: #e8a87cc9;
+  pointer-events: none;
+}
+.floorplan-walk-exit {
+  position: absolute;
+  z-index: 6;
+  right: 16px;
+  bottom: 38px;
+  padding: 9px 14px;
+  border: 1px solid #ffffff75;
+  border-radius: 8px;
+  background: #171b22c9;
+  color: #fff;
+  font:
+    500 13px system-ui,
+    sans-serif;
+  cursor: pointer;
+}
+.floorplan-walk-cross {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  text-shadow: 0 1px 3px #000;
+  font-size: 23px;
+  pointer-events: none;
+}
+.floorplan-walk-start[hidden],
+.floorplan-walk-joystick[hidden],
+.floorplan-walk-exit[hidden],
+.floorplan-walk-cross[hidden] {
+  display: none;
+}
+.floorplan-walk-start:focus-visible,
+.floorplan-walk-exit:focus-visible {
+  outline: 3px solid #e8a87c;
+  outline-offset: -4px;
+}

@@ -31,6 +31,11 @@
   --menu-office: #4d7c0f;
   --menu-books: #8b5a42;
   --menu-draw: #6965db;
+  --menu-floorplan: #a6532b;
+  --menu-floorplan-foreground: #a6532b;
+  --floorplan-accent: #a6532b;
+  --floorplan-accent-soft: #f6e8df;
+  --floorplan-accent-text: #ffffff;
   --menu-mind: #2563a8;
   --menu-notes: #d97706;
   --menu-tools: #7c3aed;
@@ -49,14 +54,15 @@
   --studio-menu-gradient: linear-gradient(
     90deg in oklch,
     var(--menu-markdown-foreground) 0%,
-    var(--menu-office-foreground) 11.11%,
-    var(--menu-books-foreground) 22.22%,
-    var(--menu-draw-foreground) 33.33%,
-    var(--menu-mermaid-foreground) 44.44%,
-    var(--menu-mind-foreground) 55.56%,
-    var(--menu-notes-foreground) 66.67%,
-    var(--menu-wallpapers-foreground) 77.78%,
-    var(--menu-tools-foreground) 88.89%,
+    var(--menu-office-foreground) 10%,
+    var(--menu-books-foreground) 20%,
+    var(--menu-draw-foreground) 30%,
+    var(--menu-floorplan-foreground) 40%,
+    var(--menu-mermaid-foreground) 50%,
+    var(--menu-mind-foreground) 60%,
+    var(--menu-notes-foreground) 70%,
+    var(--menu-wallpapers-foreground) 80%,
+    var(--menu-tools-foreground) 90%,
     var(--menu-markdown-foreground) 100%
   );
   --shadow-soft: 0 18px 55px rgba(62, 82, 51, 0.1);
@@ -92,6 +98,10 @@
   --menu-office-foreground: #a3d65c;
   --menu-books-foreground: #d6b789;
   --menu-draw-foreground: #9b97f2;
+  --menu-floorplan-foreground: #e8a87c;
+  --floorplan-accent: #e8a87c;
+  --floorplan-accent-soft: #34251f;
+  --floorplan-accent-text: #241810;
   --menu-mind-foreground: #93c5fd;
   --menu-notes-foreground: #fbbf24;
   --menu-tools-foreground: #c4b5fd;

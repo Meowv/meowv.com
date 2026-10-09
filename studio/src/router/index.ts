@@ -40,6 +40,12 @@ const routes: RouteRecordRaw[] = [
     meta: { ...STUDIO_ROUTE_SEO.draw, feature: 'draw' },
   },
   {
+    path: '/floorplan',
+    name: 'floorplan',
+    component: () => import('@/features/floorplan/FloorplanPage.vue'),
+    meta: { ...STUDIO_ROUTE_SEO.floorplan, feature: 'floorplan' },
+  },
+  {
     path: '/mind',
     name: 'mind',
     component: () => import('@/features/mind/MindPage.vue'),

@@ -14,6 +14,7 @@ const staticPages = [
   ['/office', STUDIO_ROUTE_SEO.office],
   ['/books', STUDIO_ROUTE_SEO.books],
   ['/draw', STUDIO_ROUTE_SEO.draw],
+  ['/floorplan', STUDIO_ROUTE_SEO.floorplan],
   ['/mind', STUDIO_ROUTE_SEO.mind],
   ['/notes', STUDIO_ROUTE_SEO.notes],
   ['/wallpapers', STUDIO_ROUTE_SEO.wallpapers],

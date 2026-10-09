@@ -9,6 +9,7 @@ export type StudioFeature =
   | 'pdf'
   | 'office'
   | 'draw'
+  | 'floorplan'
   | 'mind'
   | 'notes'
   | 'book'
@@ -57,6 +58,7 @@ const extensionGroups: Record<StudioFeature, Set<string>> = {
   pdf: new Set(['pdf']),
   office: new Set(['csv', 'docx', 'pptx', 'xlsx']),
   draw: new Set(['excalidraw']),
+  floorplan: new Set(['floorplan.json']),
   mind: new Set(['mind']),
   notes: new Set<string>([]),
   book: new Set(['azw3', 'cbz', 'epub', 'fb2', 'mobi']),
@@ -65,9 +67,11 @@ const extensionGroups: Record<StudioFeature, Set<string>> = {
 
 export function featureForFile(file: File): StudioFeature | null {
   const normalizedName = file.name.toLowerCase();
-  const extension = normalizedName.endsWith('.mermaid.json')
-    ? 'mermaid.json'
-    : (normalizedName.split('.').pop() ?? '');
+  const extension = normalizedName.endsWith('.floorplan.json')
+    ? 'floorplan.json'
+    : normalizedName.endsWith('.mermaid.json')
+      ? 'mermaid.json'
+      : (normalizedName.split('.').pop() ?? '');
   return (
     (Object.entries(extensionGroups) as Array<[StudioFeature, Set<string>]>).find(
       ([, extensions]) => extensions.has(extension),
@@ -85,6 +89,7 @@ export function routeForFeature(feature: StudioFeature, file?: File): string {
     pdf: '/tools/merge-pdf',
     office: '/office',
     draw: '/draw',
+    floorplan: '/floorplan',
     mind: '/mind',
     notes: '/notes',
     book: '/books',
