@@ -456,6 +456,7 @@ function isRouteActive(to: string): boolean {
   <div
     class="studio-shell"
     :class="{
+      'studio-shell--home': isHomePage,
       'studio-shell--immersive': isImmersive,
       'studio-shell--markdown': isMarkdownPage,
       'studio-shell--mermaid': isMermaidPage,

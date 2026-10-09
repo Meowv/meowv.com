@@ -317,6 +317,66 @@ button {
   background: var(--nav-accent, var(--color-brand));
 }
 
+.studio-shell--home .studio-logo {
+  font-size: 18px;
+}
+
+.studio-shell--home .studio-nav {
+  gap: 3px;
+}
+
+.studio-shell--home .studio-nav a {
+  padding-right: 5px;
+  padding-left: 5px;
+  gap: 5px;
+  font-size: 14px;
+}
+
+.studio-shell--home .studio-nav a svg {
+  width: 19px;
+  height: 19px;
+}
+
+@media (min-width: 761px) {
+  .studio-shell--home {
+    --home-inline-gutter: max(24px, calc((100vw - 1320px) / 2));
+  }
+
+  .studio-shell--home .studio-header {
+    padding-right: var(--home-inline-gutter);
+    padding-left: var(--home-inline-gutter);
+    gap: 20px;
+  }
+
+  .studio-shell--home .studio-nav a:last-child {
+    padding-right: 0;
+  }
+}
+
+@media (min-width: 1101px) and (max-width: 1180px) {
+  .studio-shell--home {
+    --home-inline-gutter: 16px;
+  }
+
+  .studio-shell--home .studio-header {
+    gap: 12px;
+  }
+
+  .studio-shell--home .studio-nav {
+    gap: 2px;
+  }
+
+  .studio-shell--home .studio-nav a {
+    padding-right: 3px;
+    padding-left: 3px;
+  }
+
+  .studio-shell--home .studio-nav a svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
 .nav-image {
   --nav-accent: var(--menu-image-foreground);
 }
@@ -629,20 +689,44 @@ body.has-dialog-open {
   }
 }
 
-@media (min-width: 1181px) {
+@media (min-width: 981px) {
   .studio-shell--with-footer .studio-home {
     --home-panel-height: 470px;
 
+    width: 100%;
     min-height: calc(100dvh - var(--header-height) - var(--studio-footer-height));
     padding-top: 20px;
+    padding-right: var(--home-inline-gutter);
     padding-bottom: 20px;
-    grid-template-rows: 1fr;
+    padding-left: var(--home-inline-gutter);
+    grid-template-rows: auto auto;
+    align-content: center;
     row-gap: 0;
   }
 
-  .studio-shell--with-footer .studio-home .home-copy,
+  .studio-shell--with-footer .studio-home > .tools-background-shortcut {
+    right: 20px;
+  }
+
+  .studio-shell--with-footer .studio-home .home-copy {
+    display: grid;
+    grid-row: 1 / span 2;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: subgrid;
+    align-self: stretch;
+  }
+
+  .studio-shell--with-footer .studio-home .home-copy__main {
+    display: flex;
+    min-height: var(--home-panel-height);
+    flex-direction: column;
+    justify-content: center;
+  }
+
   .studio-shell--with-footer .studio-home .file-portal {
-    align-self: center;
+    grid-column: 2;
+    grid-row: 1;
+    align-self: end;
   }
 }
 
@@ -667,10 +751,10 @@ body.has-dialog-open {
   min-height: calc(100vh - var(--header-height));
   margin: 0 auto;
   padding: clamp(62px, 8vh, 112px) 8px 52px;
-  grid-template-columns: minmax(500px, 0.98fr) minmax(500px, 1.02fr);
+  grid-template-columns: minmax(0, 0.98fr) minmax(0, 1.02fr);
   grid-template-rows: 1fr auto;
   align-items: center;
-  gap: 54px;
+  gap: clamp(24px, 4vw, 54px);
 }
 
 .studio-home > .tools-background-shortcut {
@@ -683,6 +767,10 @@ body.has-dialog-open {
   align-self: start;
   flex-direction: column;
   justify-content: center;
+}
+
+.home-copy__main {
+  display: contents;
 }
 
 .eyebrow {
@@ -773,17 +861,17 @@ body.has-dialog-open {
 .home-shortcuts {
   display: grid;
   max-width: 720px;
-  margin-top: 34px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  margin-top: 24px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .home-shortcuts__item {
   --shortcut-accent: var(--color-brand);
   --shortcut-solid: var(--color-brand);
   display: flex;
-  min-height: 84px;
-  padding: 14px 16px;
+  min-height: 64px;
+  padding: 10px 14px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   color: var(--shortcut-accent);
@@ -1622,7 +1710,7 @@ body.has-dialog-open {
   }
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 980px) {
   .studio-home {
     grid-template-columns: 1fr;
     padding-top: 68px;
@@ -1835,8 +1923,8 @@ body.has-dialog-open {
   }
 
   .home-shortcuts__item {
-    min-height: 74px;
-    padding: 12px 10px;
+    min-height: 64px;
+    padding: 10px;
     gap: 8px;
   }
 

@@ -163,36 +163,40 @@ const onDrop = async (event: DragEvent) => {
       @change="onFileSelected"
     />
     <div class="home-copy">
-      <p class="eyebrow">YOUR FILES. YOUR BROWSER.</p>
-      <h1 id="studio-home-title" class="home-copy__product home-copy__product--animated">
-        Meowv Studio
-      </h1>
-      <p class="home-copy__summary">
-        本地处理，无需上传文件，直接在浏览器中<strong>打开、编辑、转换和导出。</strong>
-      </p>
-      <nav class="home-shortcuts" aria-label="快捷工作台">
-        <RouterLink
-          v-for="shortcut in quickRoutes"
-          :key="shortcut.to"
-          class="home-shortcuts__item"
-          :class="`home-shortcuts__item--${shortcut.tone}`"
-          :to="shortcut.to"
-        >
-          <span class="home-shortcuts__icon" aria-hidden="true">
-            <component :is="shortcut.icon" :size="21" stroke-width="1.9" />
-          </span>
-          <span>
-            <strong>{{ shortcut.label }}</strong>
-            <small>{{ shortcut.description }}</small>
-          </span>
-        </RouterLink>
-      </nav>
-      <ul class="home-trust" aria-label="本地处理承诺">
-        <li>不保留云端副本</li>
-        <li>浏览器本地处理</li>
-        <li>无需登录账号</li>
-      </ul>
-      <p v-if="error" class="home-error" role="alert">{{ error }}</p>
+      <div class="home-copy__main">
+        <p class="eyebrow">YOUR FILES. YOUR BROWSER.</p>
+        <h1 id="studio-home-title" class="home-copy__product home-copy__product--animated">
+          Meowv Studio
+        </h1>
+        <p class="home-copy__summary">
+          本地处理，无需上传文件，直接在浏览器中<strong>打开、编辑、转换和导出。</strong>
+        </p>
+        <nav class="home-shortcuts" aria-label="快捷工作台">
+          <RouterLink
+            v-for="shortcut in quickRoutes"
+            :key="shortcut.to"
+            class="home-shortcuts__item"
+            :class="`home-shortcuts__item--${shortcut.tone}`"
+            :to="shortcut.to"
+          >
+            <span class="home-shortcuts__icon" aria-hidden="true">
+              <component :is="shortcut.icon" :size="21" stroke-width="1.9" />
+            </span>
+            <span>
+              <strong>{{ shortcut.label }}</strong>
+              <small>{{ shortcut.description }}</small>
+            </span>
+          </RouterLink>
+        </nav>
+      </div>
+      <div class="home-status">
+        <ul class="home-trust" aria-label="本地处理承诺">
+          <li>不保留云端副本</li>
+          <li>浏览器本地处理</li>
+          <li>无需登录账号</li>
+        </ul>
+        <p v-if="error" class="home-error" role="alert">{{ error }}</p>
+      </div>
     </div>
 
     <div
