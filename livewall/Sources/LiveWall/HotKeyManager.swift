@@ -43,10 +43,17 @@ final class HotKeyManager {
             // 而「被占用」提示里写着「重新加载清单」会让人以为只跟线上清单有关。
             purpose: "重新加载内容"
         )
+        static let toggleCurrentFavorite = Definition(
+            id: 4,
+            keyCode: UInt32(kVK_ANSI_F),
+            modifiers: UInt32(cmdKey | optionKey),
+            display: "⌥⌘F",
+            purpose: "收藏 / 取消收藏当前壁纸"
+        )
 
         /// 没有 `⌥⌘M 静音`：壁纸被硬性要求静音（`player.isMuted = true`），
         /// 一个永远无效的开关比没有开关更糟。
-        static let all: [Definition] = [.togglePause, .nextItem, .reloadCatalog]
+        static let all: [Definition] = [.togglePause, .nextItem, .reloadCatalog, .toggleCurrentFavorite]
     }
 
     /// 单个热键的注册结果。

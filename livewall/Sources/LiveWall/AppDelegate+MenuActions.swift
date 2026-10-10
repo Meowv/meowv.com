@@ -67,6 +67,14 @@ extension AppDelegate {
         return engine.item(on: primary)
     }
 
+    /// 当前可收藏的线上条目。收藏不支持本地视频，判据与实际收藏操作保持一致。
+    var currentFavoriteableItem: WallpaperItem? {
+        guard !isLocalSource, let primary = engine.primaryKey,
+              let item = engine.item(on: primary), item.remoteURL != nil
+        else { return nil }
+        return item
+    }
+
     /// 当前是否有正在播放的条目可供「固定」。
     ///
     /// 菜单构建（`PlaybackOrderMenu.entries(canPinCurrent:)`）与可用性校验
@@ -137,6 +145,24 @@ extension AppDelegate {
         // 这里也不改状态区文案：暂停原因由菜单里的状态行直接读 governor 显示，
         // 写入一个「已手动暂停」反而会在恢复后残留。
         governor.setUserPaused(!isUserPaused)
+        refreshStatusItem()
+    }
+
+    /// 收藏或取消收藏当前主屏壁纸。菜单与全局热键都落到这里，避免两套状态更新路径。
+    @objc func toggleCurrentFavorite() {
+        guard let item = currentFavoriteableItem else {
+            notice = .warning("当前没有可收藏的线上壁纸", oneShot: true)
+            refreshStatusItem()
+            return
+        }
+        let wasFavorite = preferences.favoriteItems.contains(where: { $0.id == item.id })
+        if let message = toggleFavorite(item) {
+            notice = .warning(message)
+            refreshStatusItem()
+            return
+        }
+        notice = .info(wasFavorite ? "已取消收藏：\(item.displayName)" : "已收藏：\(item.displayName)")
+        log("\(wasFavorite ? "取消收藏" : "收藏")当前壁纸：\(item.displayName)")
         refreshStatusItem()
     }
 

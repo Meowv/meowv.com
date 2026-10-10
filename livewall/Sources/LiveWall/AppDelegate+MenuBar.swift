@@ -120,7 +120,7 @@ extension AppDelegate {
             menu.addItem(saveFailure)
         }
 
-        // 热键冲突行只在真出问题时出现。三项热键的组合提示已经写在各自菜单项的
+        // 热键冲突行只在真出问题时出现。各项热键的组合提示已经写在对应菜单项的
         // 标题里，再常驻一行纯属重复；而「被别的程序抢了」只有这里能发现。
         let hotKeyFailures = hotKeys.failures
         if !hotKeyFailures.isEmpty {
@@ -155,6 +155,16 @@ extension AppDelegate {
         )
         toggle.target = self
         menu.addItem(toggle)
+
+        let favorite = NSMenuItem(
+            title: (currentFavoriteableItem.map { item in
+                preferences.favoriteItems.contains(where: { $0.id == item.id }) ? "取消收藏当前壁纸" : "收藏当前壁纸"
+            } ?? "收藏当前壁纸") + "（\(HotKeyManager.Definition.toggleCurrentFavorite.display)）",
+            action: #selector(toggleCurrentFavorite),
+            keyEquivalent: ""
+        )
+        favorite.target = self
+        menu.addItem(favorite)
 
         menu.addItem(buildOrderMenu())
 

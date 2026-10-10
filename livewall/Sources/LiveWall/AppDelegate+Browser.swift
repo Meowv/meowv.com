@@ -19,17 +19,7 @@ extension AppDelegate: WallpaperBrowserDataSource {
     var browserFavoriteItems: [WallpaperItem] { preferences.favoriteItems }
 
     func browserToggleFavorite(_ item: WallpaperItem) -> String? {
-        guard item.remoteURL != nil else { return "这条壁纸的线上地址不可用" }
-        preferences.favoriteItems = FavoriteCollection.toggling(item, in: preferences.favoriteItems)
-        // 先同步播放候选和过滤记忆，再原子保存这一份配置。
-        let restoreCategory = updateFavoritePlaybackItems()
-        let saved = persistPreferences("收藏壁纸")
-        refreshStatusItem()
-        if restoreCategory { restoreFilterAfterEmptyFavorites() }
-        guard saved else {
-            return persistenceFailure ?? "收藏更改未保存"
-        }
-        return nil
+        toggleFavorite(item)
     }
 
     /// 拉取某个分类的条目给浏览窗口。

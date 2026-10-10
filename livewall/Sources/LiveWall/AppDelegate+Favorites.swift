@@ -2,6 +2,22 @@ import AppKit
 import LiveWallCore
 
 extension AppDelegate {
+    /// 收藏或取消收藏一条线上壁纸。浏览窗口和快捷入口共用这条路径，确保播放候选、
+    /// 收藏过滤和持久化始终同步。
+    func toggleFavorite(_ item: WallpaperItem) -> String? {
+        guard item.remoteURL != nil else { return "这条壁纸的线上地址不可用" }
+        preferences.favoriteItems = FavoriteCollection.toggling(item, in: preferences.favoriteItems)
+        // 先同步播放候选和过滤记忆，再原子保存这一份配置。
+        let restoreCategory = updateFavoritePlaybackItems()
+        let saved = persistPreferences("收藏壁纸")
+        refreshStatusItem()
+        if restoreCategory { restoreFilterAfterEmptyFavorites() }
+        guard saved else {
+            return persistenceFailure ?? "收藏更改未保存"
+        }
+        return nil
+    }
+
     @objc func selectFavorites() {
         guard !isLocalSource, !preferences.favoriteItems.isEmpty else { return }
         if isFavoritesFilter {

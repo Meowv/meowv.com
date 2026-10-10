@@ -57,6 +57,8 @@ extension AppDelegate {
             nextNow()
         case HotKeyManager.Definition.reloadCatalog.id:
             reloadCatalog()
+        case HotKeyManager.Definition.toggleCurrentFavorite.id:
+            toggleCurrentFavorite()
         default:
             log("未知热键 id \(id)")
         }

@@ -39,6 +39,9 @@ extension AppDelegate: NSMenuItemValidation {
                 && !downloader.isDownloading
                 && currentDownloadableItem != nil
 
+        case #selector(toggleCurrentFavorite):
+            return currentFavoriteableItem != nil
+
         case #selector(selectFavorites):
             return !isLocalSource && !preferences.favoriteItems.isEmpty
 
