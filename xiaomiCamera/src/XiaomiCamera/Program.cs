@@ -227,7 +227,8 @@ app.MapGet("/api/playback-sessions/{ticket}/index.m3u8", async (HttpContext cont
     // HLS 客户端无法可靠地附加 Bearer 头；此处只接受绑定设备的短期票据。
     if (!tickets.TryGetDeviceFingerprint(ticket, out var fingerprint))
     {
-        return Results.NotFound();
+        // 分片不存在同样会返回 404；用 410 让浏览器端能准确区分票据失效。
+        return Results.StatusCode(StatusCodes.Status410Gone);
     }
 
     context.Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
@@ -251,7 +252,7 @@ app.MapGet("/api/playback-sessions/{ticket}/{name}", (HttpContext context, strin
     // 分片沿用清单路径中的票据，长期授权码绝不进入媒体 URL。
     if (!tickets.TryGetDeviceFingerprint(ticket, out var fingerprint))
     {
-        return Results.NotFound();
+        return Results.StatusCode(StatusCodes.Status410Gone);
     }
 
     context.Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";

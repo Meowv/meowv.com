@@ -283,7 +283,7 @@ public sealed class XiaomiHlsService(XiaomiLiveStreamService streams, XiaomiFfmp
             info.ArgumentList.Add("-hls_time");
             info.ArgumentList.Add("2");
             info.ArgumentList.Add("-hls_list_size");
-            info.ArgumentList.Add("4");
+            info.ArgumentList.Add("12");
             info.ArgumentList.Add("-hls_flags");
             info.ArgumentList.Add("delete_segments+append_list+independent_segments");
             info.ArgumentList.Add("-hls_segment_filename");
