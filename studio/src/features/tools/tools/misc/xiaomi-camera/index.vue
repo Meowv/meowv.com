@@ -74,7 +74,7 @@ const viewerMessage = computed(() => {
   if (!hasConnection.value) return '连接摄像头服务以开始预览';
   if (!cameras.value.length) return '服务中没有可用的摄像头';
   if (!selectedCamera.value?.isOnline) return '请选择一台在线摄像头';
-  return '准备好后开始预览';
+  return '';
 });
 const viewerActionLabel = computed(() =>
   hasConnection.value && !connectionError.value ? '开始预览' : '配置服务',
@@ -569,7 +569,11 @@ onBeforeUnmount(() => {
         >
           <IconCamera v-if="!starting" :size="48" stroke-width="1.3" aria-hidden="true" />
           <IconRefresh v-else class="is-spinning" :size="38" aria-hidden="true" />
-          <p :class="{ 'is-error': connectionError || playbackError }" role="status">
+          <p
+            v-if="viewerMessage"
+            :class="{ 'is-error': connectionError || playbackError }"
+            role="status"
+          >
             {{ viewerMessage }}
           </p>
           <button
