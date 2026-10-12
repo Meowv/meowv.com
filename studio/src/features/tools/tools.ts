@@ -325,6 +325,12 @@ const toolCategorySeeds = {
         description: '本地录入三阶魔方，校验状态并通过 3D 动画逐步完成还原。',
         icon: 'cube',
       },
+      {
+        id: 'xiaomi-camera',
+        name: '小米摄像头',
+        description: '连接受保护的 XiaomiCamera 服务，查看摄像头实时画面。',
+        icon: 'camera',
+      },
     ],
   },
   games: {
