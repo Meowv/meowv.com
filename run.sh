@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ALL_PROJECTS=(blog studio livewall)
+ALL_PROJECTS=(blog studio livewall xiaomiCamera)
 SELECTED_PROJECTS=()
 PIDS=()
 PID_PROJECTS=()
@@ -20,6 +20,7 @@ usage() {
   blog, b    http://localhost:4000
   studio, s  http://localhost:4001
   livewall, lw  启动 macOS 动态壁纸 App
+  xiaomiCamera, xc  http://localhost:5189
   wallpapers, w  crawl / publish / stats / check
 EOF
 }
@@ -48,6 +49,7 @@ project_port() {
   case "$1" in
     blog) echo "4000" ;;
     studio) echo "4001" ;;
+    xiaomiCamera) echo "5189" ;;
   esac
 }
 
@@ -56,6 +58,7 @@ project_binary() {
     blog) echo "$ROOT_DIR/blog/node_modules/.bin/hexo" ;;
     studio) echo "$ROOT_DIR/studio/node_modules/.bin/vite" ;;
     livewall) echo "$ROOT_DIR/livewall/run.sh" ;;
+    xiaomiCamera) echo "dotnet" ;;
   esac
 }
 
@@ -64,6 +67,7 @@ install_hint() {
     blog) echo "cd blog && yarn install --frozen-lockfile" ;;
     studio) echo "cd studio && pnpm install --frozen-lockfile" ;;
     livewall) echo "cd livewall && ./run.sh" ;;
+    xiaomiCamera) echo "dotnet run --project xiaomiCamera/src/XiaomiCamera" ;;
   esac
 }
 
@@ -132,6 +136,19 @@ check_project() {
     return
   fi
 
+  if [ "$project" = "xiaomiCamera" ]; then
+    if ! command -v dotnet >/dev/null 2>&1; then
+      echo "错误：未找到 .NET SDK，无法启动 xiaomiCamera。" >&2
+      exit 1
+    fi
+    if [ ! -f "$ROOT_DIR/xiaomiCamera/src/XiaomiCamera/XiaomiCamera.csproj" ]; then
+      echo "错误：未找到 xiaomiCamera 项目文件。" >&2
+      exit 1
+    fi
+    free_port "$project" "$port"
+    return
+  fi
+
   binary="$(project_binary "$project")"
   port="$(project_port "$project")"
 
@@ -165,6 +182,11 @@ run_project() {
       echo "[$project] 启动 macOS 动态壁纸 App"
       cd "$ROOT_DIR/livewall"
       exec ./run.sh
+      ;;
+    xiaomiCamera)
+      echo "[$project] 启动中：http://localhost:$port"
+      cd "$ROOT_DIR/xiaomiCamera"
+      exec dotnet run --project src/XiaomiCamera --urls "http://127.0.0.1:$port"
       ;;
   esac
 }
@@ -217,6 +239,7 @@ else
       blog | b) add_project "blog" ;;
       studio | s) add_project "studio" ;;
       livewall | lw) add_project "livewall" ;;
+      xiaomiCamera | xiaomi-camera | xc) add_project "xiaomiCamera" ;;
       all)
         echo "错误：all 只能单独使用。" >&2
         usage >&2

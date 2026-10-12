@@ -4,7 +4,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="$ROOT_DIR/build"
-ALL_PROJECTS=(blog studio livewall)
+ALL_PROJECTS=(blog studio livewall xiaomiCamera)
 SELECTED_PROJECTS=()
 STAGING_DIR="$ROOT_DIR/.build-staging.$$"
 BACKUP_PATH=""
@@ -24,22 +24,28 @@ usage() {
   ./build.sh studio --with-wallpapers 构建 Studio，并在构建前生成壁纸目录
   ./build.sh wallpapers      只生成 Studio 壁纸目录，不执行项目构建
   ./build.sh livewall --with-dmg 构建 livewall，并额外打出可分发的 DMG
+  ./build.sh xiaomiCamera [--rid <RID>] 构建小米摄像头服务，默认 win-x64
 
 可选项目：
   blog, b    -> build/meowv.com
   studio, s  -> build/studio.meowv.com
   livewall, lw -> build/livewall/LiveWall.app
+  xiaomiCamera, xc -> build/studio.meowv.com/xiaomiCamera/<RID>/ + tools/
 
 选项：
   --with-wallpapers  仅可配合 studio
   --with-dmg         仅可配合 livewall，额外把 .app 打成 DMG，
                      DMG、version.json 与它的签名 version.json.sig
                      输出到 build/studio.meowv.com/data/livewall/
+  --rid <RID>        仅可配合 xiaomiCamera，默认 win-x64
 EOF
 }
 
 WITH_WALLPAPERS=0
 WITH_DMG=0
+XIAOMI_CAMERA_RID="win-x64"
+HAS_STUDIO=0
+HAS_XIAOMI_CAMERA=0
 
 export_livewall_catalog() {
   local output_dir="$1"
@@ -151,6 +157,7 @@ destination_name() {
     blog) echo "meowv.com" ;;
     studio) echo "studio.meowv.com" ;;
     livewall) echo "livewall" ;;
+    xiaomiCamera) echo "studio.meowv.com/xiaomiCamera" ;;
   esac
 }
 
@@ -159,6 +166,7 @@ source_path() {
     blog) echo "$ROOT_DIR/blog/public" ;;
     studio) echo "$ROOT_DIR/studio/dist" ;;
     livewall) echo "$ROOT_DIR/livewall/build/LiveWall.app" ;;
+    xiaomiCamera) echo "$ROOT_DIR/xiaomiCamera/build/$XIAOMI_CAMERA_RID" ;;
   esac
 }
 
@@ -167,6 +175,7 @@ project_binary() {
     blog) echo "$ROOT_DIR/blog/node_modules/.bin/hexo" ;;
     studio) echo "$ROOT_DIR/studio/node_modules/.bin/vite" ;;
     livewall) echo "$ROOT_DIR/livewall/run.sh" ;;
+    xiaomiCamera) echo "$ROOT_DIR/xiaomiCamera/scripts/publish.sh" ;;
   esac
 }
 
@@ -175,6 +184,7 @@ install_hint() {
     blog) echo "cd blog && yarn install --frozen-lockfile" ;;
     studio) echo "cd studio && pnpm install --frozen-lockfile" ;;
     livewall) echo "cd livewall && ./build.sh" ;;
+    xiaomiCamera) echo "cd xiaomiCamera && dotnet restore" ;;
   esac
 }
 
@@ -191,6 +201,18 @@ check_project() {
     fi
     if [ ! -x "$ROOT_DIR/livewall/build.sh" ]; then
       echo "错误：livewall/build.sh 不存在或不可执行。" >&2
+      exit 1
+    fi
+    return
+  fi
+
+  if [ "$project" = "xiaomiCamera" ]; then
+    if ! command -v dotnet >/dev/null 2>&1; then
+      echo "错误：未找到 .NET SDK，无法编译 xiaomiCamera。" >&2
+      exit 1
+    fi
+    if [ ! -f "$ROOT_DIR/xiaomiCamera/scripts/publish.sh" ]; then
+      echo "错误：xiaomiCamera 发布脚本不存在。" >&2
       exit 1
     fi
     return
@@ -251,6 +273,12 @@ build_project() {
         ./build.sh --bump-build
       )
       ;;
+    xiaomiCamera)
+      (
+        cd "$ROOT_DIR/xiaomiCamera"
+        bash ./scripts/publish.sh --rid "$XIAOMI_CAMERA_RID"
+      )
+      ;;
   esac
 }
 
@@ -259,6 +287,28 @@ stage_output() {
   local source
   local destination
   local first_entry
+  local tools_source
+
+  if [ "$project" = "xiaomiCamera" ]; then
+    source="$(source_path "$project")"
+    destination="$STAGING_DIR/$(destination_name "$project")"
+    tools_source="$ROOT_DIR/xiaomiCamera/build/tools/ffmpeg/$XIAOMI_CAMERA_RID"
+
+    if [ ! -d "$source" ] || [ ! -d "$tools_source" ]; then
+      echo "错误：xiaomiCamera 编译完成后未找到 $XIAOMI_CAMERA_RID 产物或 FFmpeg 工具缓存。" >&2
+      exit 1
+    fi
+
+    mkdir -p "$destination/$XIAOMI_CAMERA_RID"
+    cp -R "$source"/. "$destination/$XIAOMI_CAMERA_RID"/
+    # 历史发布目录可能有残留 data/；运行时配置和数据库只能留在服务端持久化目录，
+    # 绝不能随着 Studio 静态部署目录上传。
+    rm -rf "$destination/$XIAOMI_CAMERA_RID/data"
+    mkdir -p "$destination/tools/ffmpeg"
+    cp -R "$tools_source" "$destination/tools/ffmpeg/$XIAOMI_CAMERA_RID"
+    echo "[$project] 已暂存到 $(destination_name "$project")/$XIAOMI_CAMERA_RID/ + tools/"
+    return
+  fi
 
   if [ "$project" = "livewall" ]; then
     source="$(source_path "$project")"
@@ -349,9 +399,11 @@ publish_one() {
   local project="$1"
   local folder
   local destination
+  local backup_name
 
   folder="$(destination_name "$project")"
   destination="$BUILD_DIR/$folder"
+  backup_name="${folder//\//-}"
 
   if [ -L "$BUILD_DIR" ]; then
     echo "错误：build 是符号链接，为避免覆盖外部目录，已停止发布。" >&2
@@ -364,9 +416,10 @@ publish_one() {
   fi
 
   mkdir -p "$BUILD_DIR"
+  mkdir -p "$(dirname "$destination")"
 
   if [ -e "$destination" ] || [ -L "$destination" ]; then
-    BACKUP_PATH="$ROOT_DIR/.build-backup.$folder.$$"
+    BACKUP_PATH="$ROOT_DIR/.build-backup.$backup_name.$$"
     RESTORE_PATH="$destination"
     mv "$destination" "$BACKUP_PATH"
   fi
@@ -470,6 +523,18 @@ preserve_livewall_update_feed() {
   echo "[studio] 沿用上次的分发产物 $(basename "$dmg")"
 }
 
+# 摄像头服务与 Studio 静态页面共享同一部署根目录。单独构建 Studio 时保留已发布的
+# 服务文件，避免下一次 deploy.sh studio 将后端目录误判为应删除的旧文件。
+preserve_xiaomi_camera_deployment() {
+  local source_dir="$BUILD_DIR/studio.meowv.com/xiaomiCamera"
+  local target_dir="$STAGING_DIR/studio.meowv.com/xiaomiCamera"
+
+  [ -d "$source_dir" ] || return 0
+  mkdir -p "$target_dir"
+  cp -R "$source_dir"/. "$target_dir"/
+  echo "[studio] 沿用上次的小米摄像头服务产物"
+}
+
 add_project() {
   local project="$1"
   local selected
@@ -484,6 +549,30 @@ add_project() {
 
   SELECTED_PROJECTS+=("$project")
 }
+
+BUILD_ARGUMENTS=()
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --rid)
+      if [ "$#" -lt 2 ] || [ -z "$2" ]; then
+        echo "错误：--rid 必须指定 RID。" >&2
+        usage >&2
+        exit 1
+      fi
+      XIAOMI_CAMERA_RID="$2"
+      shift 2
+      ;;
+    *)
+      BUILD_ARGUMENTS+=("$1")
+      shift
+      ;;
+  esac
+done
+if [ "${#BUILD_ARGUMENTS[@]}" -gt 0 ]; then
+  set -- "${BUILD_ARGUMENTS[@]}"
+else
+  set --
+fi
 
 if [ "$#" -eq 0 ] || { [ "$#" -eq 1 ] && [ "$1" = "all" ]; }; then
   SELECTED_PROJECTS=("${ALL_PROJECTS[@]}")
@@ -501,6 +590,7 @@ else
       blog | b) add_project "blog" ;;
       studio | s) add_project "studio" ;;
       livewall | lw) add_project "livewall" ;;
+      xiaomiCamera | xiaomi-camera | xc) add_project "xiaomiCamera" ;;
       all)
         echo "错误：all 只能单独使用。" >&2
         usage >&2
@@ -513,6 +603,16 @@ else
         ;;
     esac
   done
+fi
+
+for project in "${SELECTED_PROJECTS[@]}"; do
+  [ "$project" = "studio" ] && HAS_STUDIO=1
+  [ "$project" = "xiaomiCamera" ] && HAS_XIAOMI_CAMERA=1
+done
+
+if [ "$XIAOMI_CAMERA_RID" != "win-x64" ] && [ "$HAS_XIAOMI_CAMERA" -eq 0 ]; then
+  echo "错误：--rid 只能与 xiaomiCamera 项目一起使用。" >&2
+  exit 1
 fi
 
 for project in "${SELECTED_PROJECTS[@]}"; do
@@ -576,6 +676,9 @@ for project in "${SELECTED_PROJECTS[@]}"; do
   # 分发产物要在 studio 产物拷进暂存区**之后**才补，顺序反了会被覆盖。
   if [ "$project" = "studio" ]; then
     preserve_livewall_update_feed
+    if [ "$HAS_XIAOMI_CAMERA" -eq 0 ]; then
+      preserve_xiaomi_camera_deployment
+    fi
   fi
 done
 
@@ -583,9 +686,19 @@ if [ "${#SELECTED_PROJECTS[@]}" -eq "${#ALL_PROJECTS[@]}" ]; then
   publish_all
 else
   for project in "${SELECTED_PROJECTS[@]}"; do
+    # 两者同批构建时，xiaomiCamera 已在 Studio 暂存目录内，由 Studio 一次性替换。
+    if [ "$project" = "xiaomiCamera" ] && [ "$HAS_STUDIO" -eq 1 ]; then
+      continue
+    fi
     publish_one "$project"
   done
-  rmdir "$STAGING_DIR"
+  # xiaomiCamera 是 Studio 子目录；移动它后可能留下空的 studio.meowv.com 父目录。
+  # 仅删除空目录，若仍有内容则让 cleanup 恢复/清理暂存目录而不是静默丢弃文件。
+  find "$STAGING_DIR" -depth -type d -empty -exec rmdir {} \;
+  if [ -d "$STAGING_DIR" ]; then
+    echo "错误：发布后临时目录仍有未处理内容：$STAGING_DIR" >&2
+    exit 1
+  fi
   STAGING_DIR=""
 fi
 
@@ -603,4 +716,7 @@ for project in "${SELECTED_PROJECTS[@]}"; do
 done
 if [ "$WITH_DMG" -eq 1 ]; then
   echo "  studio.meowv.com/data/livewall/  # LiveWall-<版本>.dmg + version.json + version.json.sig"
+fi
+if [ "$HAS_XIAOMI_CAMERA" -eq 1 ]; then
+  echo "  studio.meowv.com/xiaomiCamera/$XIAOMI_CAMERA_RID/ + tools/"
 fi
