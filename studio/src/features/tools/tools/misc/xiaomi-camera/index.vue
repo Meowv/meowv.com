@@ -36,11 +36,12 @@ class PlaybackTicketExpiredError extends Error {}
 
 const SERVICE_URL_KEY = `${STORAGE_POLICY.preferences}:xiaomi-camera-service-url`;
 const ACCESS_CODE_KEY = `${STORAGE_POLICY.preferences}:xiaomi-camera-access-code`;
+const DEFAULT_SERVICE_URL = 'https://studio.meowv.com';
 
 const cameras = ref<CameraDevice[]>([]);
 const selectedFingerprint = ref<string>();
 const connection = ref<CameraConnection>();
-const draftServiceUrl = ref(readStoredValue(SERVICE_URL_KEY));
+const draftServiceUrl = ref(readStoredValue(SERVICE_URL_KEY) || DEFAULT_SERVICE_URL);
 const draftAccessCode = ref(readStoredValue(ACCESS_CODE_KEY));
 const rememberAccessCode = ref(Boolean(draftAccessCode.value));
 const connectionDialogOpen = ref(false);
