@@ -365,7 +365,7 @@ function reportPlaybackFailure(message: string): void {
 
 async function requestPlaybackRecovery(): Promise<void> {
   if (recoveryAttempted) {
-    reportPlaybackFailure('播放连接已失效，请重新开始预览。');
+    reportPlaybackFailure('视频流已中断，请重新开始预览。');
     return;
   }
   recoveryAttempted = true;
@@ -407,7 +407,7 @@ async function attachHls(
     const handleError = (_event: Events.ERROR, data: ErrorData) => {
       if (!data.fatal || instance !== hls) return;
       const responseCode = data.response?.code;
-      if (responseCode === 401 || responseCode === 403 || responseCode === 404) {
+      if (responseCode === 410) {
         signal.removeEventListener('abort', cancel);
         reject(new PlaybackTicketExpiredError());
         return;
