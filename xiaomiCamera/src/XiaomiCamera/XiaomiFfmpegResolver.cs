@@ -84,13 +84,19 @@ public sealed class XiaomiFfmpegResolver
         {
             using var process = Process.Start(startInfo)
                                 ?? throw new InvalidOperationException("无法启动 FFmpeg。");
+            // -encoders 的输出足以填满 Windows 管道缓冲区；必须在等待退出前开始排空两条流。
+            var standardOutput = process.StandardOutput.ReadToEndAsync();
+            var standardError = process.StandardError.ReadToEndAsync();
             if (!process.WaitForExit((int)ValidationTimeout.TotalMilliseconds))
             {
                 process.Kill(entireProcessTree: true);
+                process.WaitForExit();
+                _ = standardOutput.GetAwaiter().GetResult();
+                _ = standardError.GetAwaiter().GetResult();
                 throw new InvalidOperationException("FFmpeg 启动预检超时。");
             }
 
-            var output = process.StandardOutput.ReadToEnd() + process.StandardError.ReadToEnd();
+            var output = standardOutput.GetAwaiter().GetResult() + standardError.GetAwaiter().GetResult();
             if (process.ExitCode != 0)
             {
                 throw new InvalidOperationException("FFmpeg 启动预检失败。");
