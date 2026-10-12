@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 
 namespace XiaomiCamera;
@@ -18,6 +19,8 @@ public sealed class XiaomiCameraOptions : IDisposable
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         WriteIndented = true,
+        // 配置文件由部署者复制密钥使用；避免将 + 等字符写成 \uXXXX，造成复制后与真实密钥不一致。
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
     private XiaomiCameraOptions(string configPath, string dataPath, byte[] dataKey, string bootstrapToken, string[] allowedOrigins, string? ffmpegPath, bool wasCreated)

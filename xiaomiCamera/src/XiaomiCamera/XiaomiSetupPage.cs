@@ -51,7 +51,7 @@ internal static class XiaomiSetupPage
                                      const login=document.querySelector('#login'),verify=document.querySelector('#verify'),message=document.querySelector('#message'),reset=document.querySelector('#reset-session');
                                      const rotate=document.querySelector('#rotate-access-code'),accessCodeSection=document.querySelector('#access-code-section'),accessCode=document.querySelector('#access-code'),copy=document.querySelector('#copy-access-code');
                                      let attemptId='';
-                                     const request=(url,init={})=>fetch(url,{...init,headers:{'X-Xiaomi-Bootstrap-Token':bootstrapToken.value,...(init.headers||{})}});
+                                     const request=(url,init={})=>fetch(url,{...init,headers:{'X-Xiaomi-Bootstrap-Token':bootstrapToken.value.trim(),...(init.headers||{})}});
                                      const showLogin=text=>{message.textContent=text;login.hidden=false;verify.hidden=true;reset.hidden=true;rotate.hidden=true;};
                                      const showSaved=()=>{message.textContent='已保存可用的小米登录会话。';login.hidden=true;verify.hidden=true;reset.hidden=false;rotate.hidden=false;};
                                      const showAccessCode=code=>{if(!code)return;accessCode.value=code;accessCodeSection.hidden=false;};
