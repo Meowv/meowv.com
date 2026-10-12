@@ -82,7 +82,7 @@ Content-Type: application/json
 
 ### 多平台发布
 
-发布脚本会生成自包含 .NET 包。首次为某个 RID 发布时，脚本下载 FFmpeg 到构建根目录的共享缓存，并校验 Release 提供的 SHA-256 清单；之后使用相同 Release 时会校验本地二进制摘要并直接复用，不再发起下载请求。默认使用脚本内固定的不可变 Release `v9.0.2`；需要升级时可以显式指定另一个不可变 tag，不能使用 `latest`：
+发布脚本会生成自包含 .NET 包。首次为某个 RID 发布时，脚本下载 FFmpeg 到构建根目录的共享缓存，并校验 Release 提供的 SHA-256 清单；之后使用相同 Release 时会校验本地二进制摘要并直接复用，不再发起下载请求。Windows 默认使用脚本内固定的 BtbN GPL 快照，以提供 H.264 转码所需的 `libx264`；macOS/Linux 继续使用固定的 `v9.0.2`。需要升级时可显式指定对应来源的另一个不可变 tag，不能使用 `latest`：
 
 ```bash
 scripts/publish.sh --rid osx-arm64
@@ -93,8 +93,13 @@ scripts/publish.sh --rid linux-x64
 scripts/publish.sh --rid linux-arm64
 ```
 
-例如升级 FFmpeg 时：`scripts/publish.sh --rid win-x64 --ffmpeg-release v9.0.2`。
+例如升级 FFmpeg 时，Windows 传 BtbN 的固定 `autobuild-...` tag，macOS/Linux 传 binmgr 的固定版本 tag：
 
-构建根目录默认为 `build/`：应用产物位于 `build/<RID>/`，共享 FFmpeg 缓存位于 `build/tools/ffmpeg/<RID>/`，不再重复放入每个 RID 目录。运行时须保留这一层级关系。`--output <DIR>` 可更换整个构建根目录。`scripts/fetch-ffmpeg.sh` 默认从 `binmgr/ffmpeg` Release 获取构建，也可通过 `--source-base` 切换至经审核的镜像源。
+```bash
+scripts/publish.sh --rid win-x64 --ffmpeg-release autobuild-2026-10-11-13-04
+scripts/publish.sh --rid osx-arm64 --ffmpeg-release v9.0.2
+```
 
-当前转码使用 `libx264`。发布前应按所选 FFmpeg 构建的许可证要求，随发布包提供相应的许可证、来源说明及必要的合规材料。摄像头视频会在内存与会话临时目录中转为 H.264 HLS，30 秒无访问后自动停止上游会话并清理临时分片。
+构建根目录默认为 `build/`：应用产物位于 `build/<RID>/`，共享 FFmpeg 缓存位于 `build/tools/ffmpeg/<RID>/`，不再重复放入每个 RID 目录。运行时须保留这一层级关系。`--output <DIR>` 可更换整个构建根目录。Windows 默认从 BtbN 的 GPL 构建快照获取 FFmpeg；其他平台默认从 `binmgr/ffmpeg` Release 获取。`SOURCE.txt` 会记录资源、来源、摘要与许可证信息；`--source-base` 只应切换到提供相同文件名和校验清单格式的经审核镜像源。
+
+当前转码使用 `libx264`。Windows 发布包包含 GPL FFmpeg 二进制；发布、再分发或向第三方交付前，必须按 GPL-3.0-or-later、FFmpeg 与 x264 的适用许可证提供完整的许可证、来源说明与其他必要合规材料。服务启动会预检 `libx264`，缺失时拒绝启动，避免播放时才出现不透明的转码失败。摄像头视频会在内存与会话临时目录中转为 H.264 HLS，30 秒无访问后自动停止上游会话并清理临时分片。

@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using System.Threading.RateLimiting;
 using XiaomiCamera;
 using XiaomiCamera.Cloud;
@@ -12,6 +10,7 @@ builder.Services.AddSingleton<XiaomiBootstrapAuthorization>();
 builder.Services.AddSingleton<XiaomiAccessCodeAuthorization>();
 builder.Services.AddSingleton<XiaomiAccountLoginFlow>();
 builder.Services.AddSingleton<XiaomiCredentialCache>();
+builder.Services.AddSingleton<XiaomiCameraDirectoryService>();
 builder.Services.AddSingleton<XiaomiPlaybackTicketService>();
 builder.Services.AddSingleton<XiaomiLiveStreamService>();
 builder.Services.AddSingleton<XiaomiFfmpegResolver>();
@@ -58,7 +57,7 @@ app.MapGet("/api/setup/xiaomi/session", (HttpContext context, XiaomiBootstrapAut
     return Results.Ok(XiaomiSetupResponse.Completed(usedCachedSession: true, accessCode: cache.CreateAccessCodeIfMissing()));
 }).RequireRateLimiting("bootstrap");
 
-app.MapDelete("/api/setup/xiaomi/session", (HttpContext context, XiaomiBootstrapAuthorization bootstrap, XiaomiCredentialCache cache) =>
+app.MapDelete("/api/setup/xiaomi/session", (HttpContext context, XiaomiBootstrapAuthorization bootstrap, XiaomiCredentialCache cache, XiaomiCameraDirectoryService directory) =>
 {
     if (!bootstrap.IsAuthorized(context.Request))
     {
@@ -66,6 +65,7 @@ app.MapDelete("/api/setup/xiaomi/session", (HttpContext context, XiaomiBootstrap
     }
 
     cache.Clear();
+    directory.Invalidate();
     return Results.NoContent();
 }).RequireRateLimiting("bootstrap");
 
@@ -129,7 +129,7 @@ app.MapPost("/api/setup/xiaomi/{attemptId:guid}/verify", async (HttpContext cont
     }
 }).RequireRateLimiting("bootstrap");
 
-app.MapGet("/api/cameras", async (HttpContext context, XiaomiAccessCodeAuthorization accessCodeAuthorization, XiaomiCredentialCache cache, IHttpClientFactory httpClients, CancellationToken cancellationToken) =>
+app.MapGet("/api/cameras", async (HttpContext context, XiaomiAccessCodeAuthorization accessCodeAuthorization, XiaomiCredentialCache cache, XiaomiCameraDirectoryService directory, CancellationToken cancellationToken) =>
 {
     if (!accessCodeAuthorization.IsAuthorized(context.Request))
     {
@@ -144,21 +144,20 @@ app.MapGet("/api/cameras", async (HttpContext context, XiaomiAccessCodeAuthoriza
 
     try
     {
-        var catalog = new XiaomiCloudCameraCatalog(httpClients.CreateClient("xiaomi-cloud"), credentials);
-        var cameras = await catalog.DiscoverAsync(cancellationToken);
+        var cameras = await directory.GetAsync(credentials, cancellationToken);
         var result = new List<XiaomiPlaybackCamera>();
         foreach (var camera in cameras)
         {
-            if (!(await catalog.ProbeAsync(camera, cancellationToken)).IsCs2Compatible)
+            if (!camera.Probe.IsCs2Compatible)
             {
                 continue;
             }
 
             result.Add(new XiaomiPlaybackCamera(
-                DeviceFingerprint(camera.Id),
-                camera.Model,
-                camera.DisplayName,
-                camera.IsOnline));
+                XiaomiCameraDirectoryService.DeviceFingerprint(camera.Camera.Id),
+                camera.Camera.Model,
+                camera.Camera.DisplayName,
+                camera.Camera.IsOnline));
         }
 
         return Results.Ok(result);
@@ -166,6 +165,7 @@ app.MapGet("/api/cameras", async (HttpContext context, XiaomiAccessCodeAuthoriza
     catch (XiaomiCloudSessionExpiredException)
     {
         cache.Clear();
+        directory.Invalidate();
         return XiaomiSessionExpired();
     }
     catch (XiaomiCloudException)
@@ -174,7 +174,7 @@ app.MapGet("/api/cameras", async (HttpContext context, XiaomiAccessCodeAuthoriza
     }
 }).RequireRateLimiting("access-code");
 
-app.MapPost("/api/playback-sessions", async (HttpContext context, XiaomiAccessCodeAuthorization accessCodeAuthorization, XiaomiCredentialCache cache, IHttpClientFactory httpClients, XiaomiPlaybackTicketService tickets, XiaomiHlsService hls, XiaomiPlaybackSessionRequest input, CancellationToken cancellationToken) =>
+app.MapPost("/api/playback-sessions", async (HttpContext context, XiaomiAccessCodeAuthorization accessCodeAuthorization, XiaomiCredentialCache cache, XiaomiCameraDirectoryService directory, XiaomiPlaybackTicketService tickets, XiaomiHlsService hls, XiaomiPlaybackSessionRequest input, CancellationToken cancellationToken) =>
 {
     if (!accessCodeAuthorization.IsAuthorized(context.Request))
     {
@@ -194,15 +194,13 @@ app.MapPost("/api/playback-sessions", async (HttpContext context, XiaomiAccessCo
 
     try
     {
-        var catalog = new XiaomiCloudCameraCatalog(httpClients.CreateClient("xiaomi-cloud"), credentials);
-        var camera = (await catalog.DiscoverAsync(cancellationToken)).SingleOrDefault(item =>
-            string.Equals(DeviceFingerprint(item.Id), input.DeviceFingerprint, StringComparison.Ordinal));
-        if (camera is null || !camera.IsOnline)
+        var camera = await directory.FindAsync(credentials, input.DeviceFingerprint, cancellationToken);
+        if (camera is null || !camera.Camera.IsOnline)
         {
             return Results.BadRequest(new XiaomiSetupError("camera_unavailable", "目标摄像机不存在或当前离线。"));
         }
 
-        if (!(await catalog.ProbeAsync(camera, cancellationToken)).IsCs2Compatible)
+        if (!camera.Probe.IsCs2Compatible)
         {
             return Results.BadRequest(new XiaomiSetupError("camera_unsupported", "目标摄像机不支持 CS2 视频播放。"));
         }
@@ -214,6 +212,7 @@ app.MapPost("/api/playback-sessions", async (HttpContext context, XiaomiAccessCo
     catch (XiaomiCloudSessionExpiredException)
     {
         cache.Clear();
+        directory.Invalidate();
         return XiaomiSessionExpired();
     }
     catch (XiaomiCloudException)
@@ -276,8 +275,6 @@ static RateLimitPartition<string> CreateFailedRequestLimiter(HttpContext context
     QueueLimit = 0,
     AutoReplenishment = true,
 });
-
-static string DeviceFingerprint(string did) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(did))).ToLowerInvariant()[..12];
 
 public sealed record GatewayHealthResponse(string Status);
 

@@ -77,7 +77,8 @@ public sealed class XiaomiFfmpegResolver
             RedirectStandardError = true,
             CreateNoWindow = true,
         };
-        startInfo.ArgumentList.Add("-version");
+        startInfo.ArgumentList.Add("-hide_banner");
+        startInfo.ArgumentList.Add("-encoders");
 
         try
         {
@@ -89,11 +90,16 @@ public sealed class XiaomiFfmpegResolver
                 throw new InvalidOperationException("FFmpeg 启动预检超时。");
             }
 
-            _ = process.StandardOutput.ReadToEnd();
-            _ = process.StandardError.ReadToEnd();
+            var output = process.StandardOutput.ReadToEnd() + process.StandardError.ReadToEnd();
             if (process.ExitCode != 0)
             {
                 throw new InvalidOperationException("FFmpeg 启动预检失败。");
+            }
+
+            // HLS 转码固定使用 libx264；启动时失败比创建播放会话后才失败更容易定位发布包问题。
+            if (!output.Contains("libx264", StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException("当前 FFmpeg 不包含必需的 libx264 编码器。请使用发布包提供的 GPL FFmpeg，或通过 XIAOMI_FFMPEG_PATH 配置含 libx264 的 FFmpeg。");
             }
         }
         catch (Win32Exception exception)

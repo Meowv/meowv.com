@@ -5,20 +5,20 @@ using XiaomiCamera.Protocol;
 namespace XiaomiCamera;
 
 /// <summary>打开一次临时直播会话；媒体、密钥和连接材料仅在内存中存活。</summary>
-public sealed class XiaomiLiveStreamService(XiaomiCredentialCache credentialCache, IHttpClientFactory httpClients)
+public sealed class XiaomiLiveStreamService(XiaomiCredentialCache credentialCache, XiaomiCameraDirectoryService directory, IHttpClientFactory httpClients)
 {
     public async Task<XiaomiLiveStream> OpenAsync(string fingerprint, CancellationToken cancellationToken)
     {
         var credentials = credentialCache.TryLoad() ?? throw new XiaomiLiveStreamException("没有可用的小米登录会话，请先在初始化页登录。", false);
-        var catalog = new XiaomiCloudCameraCatalog(httpClients.CreateClient("xiaomi-cloud"), credentials);
-        var camera = (await catalog.DiscoverAsync(cancellationToken)).SingleOrDefault(item => string.Equals(DeviceFingerprint(item.Id), fingerprint, StringComparison.Ordinal));
-        if (camera is null || !camera.IsOnline)
+        var camera = await directory.FindAsync(credentials, fingerprint, cancellationToken);
+        if (camera is null || !camera.Camera.IsOnline)
         {
             throw new XiaomiLiveStreamException("目标摄像机不存在或当前离线。", false);
         }
 
         using var keyPair = Cs2KeyPair.Create();
-        var provisioning = await catalog.ProvisionCs2Async(camera, keyPair, cancellationToken);
+        var catalog = new XiaomiCloudCameraCatalog(httpClients.CreateClient("xiaomi-cloud"), credentials);
+        var provisioning = await catalog.ProvisionCs2Async(camera.Camera, keyPair, cancellationToken);
         var relay = new Cs2RelaySession(provisioning);
         try
         {
@@ -47,8 +47,6 @@ public sealed class XiaomiLiveStreamService(XiaomiCredentialCache credentialCach
             throw;
         }
     }
-
-    private static string DeviceFingerprint(string did) => Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(did))).ToLowerInvariant()[..12];
 }
 
 public sealed class XiaomiLiveStream : IAsyncDisposable
