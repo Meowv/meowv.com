@@ -3,6 +3,8 @@ set -euo pipefail
 
 # 发布为自包含 .NET 包。FFmpeg 缓存在构建根目录下，供同一 RID 的后续发布复用。
 default_ffmpeg_release='v9.0.2'
+# Windows 使用包含 libx264 的 GPL 构建；该 tag 是 BtbN 发布的不可变快照。
+default_windows_ffmpeg_release='autobuild-2026-10-11-13-04'
 
 usage() {
   cat <<'EOF'
@@ -10,7 +12,7 @@ usage() {
 
 --output 指定构建根目录，默认是项目中的 build/。应用产物位于 <DIR>/<RID>/，
 FFmpeg 缓存位于 <DIR>/tools/ffmpeg/<RID>/，不属于任何单个平台目录。
-未传 --ffmpeg-release 时使用固定版本 v9.0.2。
+未传 --ffmpeg-release 时，Windows 使用固定的 BtbN GPL 快照，其他平台使用固定版本 v9.0.2。
 
 示例：scripts/publish.sh --rid osx-arm64
 EOF
@@ -34,7 +36,7 @@ done
 
 case "$release" in
   latest|YOUR_*|*PINNED_RELEASE*)
-    echo '必须传入实际且不可变的 FFmpeg Release tag，例如 v9.0.2。' >&2
+    echo '必须传入实际且不可变的 FFmpeg Release tag，例如 v9.0.2 或 autobuild-2026-10-11-13-04。' >&2
     usage >&2
     exit 2
     ;;
@@ -45,7 +47,10 @@ if [ -z "$rid" ]; then
   exit 2
 fi
 
-release=${release:-$default_ffmpeg_release}
+case "$rid" in
+  win-*) release=${release:-$default_windows_ffmpeg_release} ;;
+  *) release=${release:-$default_ffmpeg_release} ;;
+esac
 
 script_dir=$(cd "$(dirname "$0")" && pwd)
 project_dir=$(cd "$script_dir/.." && pwd)
