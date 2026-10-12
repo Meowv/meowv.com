@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
+    <ProjectReference Include="../XiaomiCamera.Cloud/XiaomiCamera.Cloud.csproj" />
+    <ProjectReference Include="../XiaomiCamera.Protocol/XiaomiCamera.Protocol.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Remove="data/**" />
+    <None Remove="data/**" />
+  </ItemGroup>
+</Project>

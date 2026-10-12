@@ -1,0 +1,102 @@
+using System.Text;
+using System.Text.Json;
+
+namespace XiaomiCamera.Protocol;
+
+/// <summary>MISS 的明文鉴权阶段；媒体与后续加密命令由下一里程碑实现。</summary>
+public sealed class Cs2MissClient(Cs2PpppConnection connection)
+{
+    public const int AuthenticateRequest = 0x100;
+    public const int AuthenticateResponse = 0x101;
+    public const int StartVideoRequest = 0x102;
+    public const int StopVideoRequest = 0x103;
+    public const int EncryptedCommand = 0x1001;
+
+    public async Task AuthenticateAsync(Cs2Provisioning provisioning, TimeSpan timeout, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(provisioning);
+        if (timeout <= TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(timeout));
+        }
+
+        var authentication = JsonSerializer.Serialize(new
+        {
+            public_key = provisioning.ClientPublicKey,
+            sign = provisioning.Sign,
+            uuid = Guid.NewGuid(),
+            support_encrypt = 15,
+        });
+        var body = Encoding.UTF8.GetBytes(authentication);
+        var deadline = DateTimeOffset.UtcNow + timeout;
+        var attempts = 0;
+        while (DateTimeOffset.UtcNow < deadline)
+        {
+            attempts++;
+            await connection.SendCommandAsync(AuthenticateRequest, body, cancellationToken);
+            var remaining = deadline - DateTimeOffset.UtcNow;
+            var response = await connection.ReadCommandAsync(
+                remaining < TimeSpan.FromSeconds(2) ? remaining : TimeSpan.FromSeconds(2),
+                cancellationToken);
+            if (response is null || response.Command != AuthenticateResponse)
+            {
+                continue;
+            }
+
+            if (IsSuccess(response.Body))
+            {
+                return;
+            }
+
+            throw new Cs2MissException("摄像机拒绝了 MISS 鉴权。");
+        }
+
+        throw new Cs2MissException($"未收到 MISS 鉴权响应（已尝试 {attempts} 次）。");
+    }
+
+    private static bool IsSuccess(byte[] body)
+    {
+        try
+        {
+            using var response = JsonDocument.Parse(body);
+            return response.RootElement.TryGetProperty("result", out var result) &&
+                   string.Equals(result.GetString(), "success", StringComparison.Ordinal);
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
+
+    public async Task StartVideoAsync(byte[] sessionKey, int quality, CancellationToken cancellationToken)
+    {
+        if (quality is < 0 or > 3)
+        {
+            throw new ArgumentOutOfRangeException(nameof(quality));
+        }
+
+        var body = Encoding.UTF8.GetBytes($"{{\"videoquality\":{quality},\"enableaudio\":0}}");
+        await SendEncryptedAsync(sessionKey, StartVideoRequest, body, cancellationToken);
+    }
+
+    public Task StopVideoAsync(byte[] sessionKey, CancellationToken cancellationToken) => SendEncryptedAsync(sessionKey, StopVideoRequest, ReadOnlyMemory<byte>.Empty, cancellationToken);
+
+    private async Task SendEncryptedAsync(byte[] sessionKey, int command, ReadOnlyMemory<byte> body, CancellationToken cancellationToken)
+    {
+        var inner = new byte[sizeof(int) + body.Length];
+        System.Buffers.Binary.BinaryPrimitives.WriteInt32BigEndian(inner, command);
+        body.CopyTo(inner.AsMemory(sizeof(int)));
+        var encrypted = Cs2MissCrypto.Encrypt(sessionKey, inner);
+        try
+        {
+            await connection.SendCommandAsync(EncryptedCommand, encrypted, cancellationToken);
+        }
+        finally
+        {
+            System.Security.Cryptography.CryptographicOperations.ZeroMemory(inner);
+            System.Security.Cryptography.CryptographicOperations.ZeroMemory(encrypted);
+        }
+    }
+}
+
+public sealed class Cs2MissException(string message) : Exception(message);

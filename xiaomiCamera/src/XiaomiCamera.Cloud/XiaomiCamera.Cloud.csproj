@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../XiaomiCamera.Core/XiaomiCamera.Core.csproj" />
+    <ProjectReference Include="../XiaomiCamera.Protocol/XiaomiCamera.Protocol.csproj" />
+  </ItemGroup>
+</Project>

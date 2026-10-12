@@ -1,0 +1,106 @@
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+
+namespace XiaomiCamera;
+
+/// <summary>
+/// 解析并预检媒体转码器。发布根目录共享同 RID 的二进制，开发环境可回退到系统 PATH。
+/// </summary>
+public sealed class XiaomiFfmpegResolver
+{
+    private const string OverridePathVariable = "XIAOMI_FFMPEG_PATH";
+    private static readonly TimeSpan ValidationTimeout = TimeSpan.FromSeconds(10);
+
+    public XiaomiFfmpegResolver(XiaomiCameraOptions options)
+    {
+        (ExecutablePath, Source) = Resolve(options.FfmpegPath);
+        Validate(ExecutablePath);
+    }
+
+    public string ExecutablePath { get; }
+
+    /// <summary>仅用于安全诊断，不包含覆盖路径或任何环境变量内容。</summary>
+    public string Source { get; }
+
+    private static (string ExecutablePath, string Source) Resolve(string? configuredPath)
+    {
+        var environmentPath = Environment.GetEnvironmentVariable(OverridePathVariable);
+        if (!string.IsNullOrWhiteSpace(environmentPath))
+        {
+            return ResolveConfiguredPath(environmentPath, $"{OverridePathVariable} 指向的 FFmpeg 文件不存在。", "环境变量覆盖");
+        }
+
+        if (!string.IsNullOrWhiteSpace(configuredPath))
+        {
+            return ResolveConfiguredPath(configuredPath, "配置文件中的 ffmpegPath 指向的 FFmpeg 文件不存在。", "配置文件覆盖");
+        }
+
+        // 发布产物为 build/&lt;RID&gt;，工具缓存位于同级 build/tools，避免为每个 RID 重复下载。
+        var bundledPath = Path.GetFullPath(Path.Combine(
+            AppContext.BaseDirectory,
+            "..",
+            "tools",
+            "ffmpeg",
+            GetRuntimeIdentifier(),
+            OperatingSystem.IsWindows() ? "ffmpeg.exe" : "ffmpeg"));
+        return File.Exists(bundledPath) ? (bundledPath, "发布包内置文件") : (OperatingSystem.IsWindows() ? "ffmpeg.exe" : "ffmpeg", "系统 PATH");
+    }
+
+    private static (string ExecutablePath, string Source) ResolveConfiguredPath(string path, string missingMessage, string source)
+    {
+        var fullPath = Path.GetFullPath(path);
+        return !File.Exists(fullPath) ? throw new InvalidOperationException(missingMessage) : (fullPath, source);
+    }
+
+    private static string GetRuntimeIdentifier()
+    {
+        var operatingSystem = OperatingSystem.IsWindows() ? "win"
+            : OperatingSystem.IsLinux() ? "linux"
+            : OperatingSystem.IsMacOS() ? "osx"
+            : throw new PlatformNotSupportedException("当前操作系统不支持内置 FFmpeg 解析。");
+        var architecture = RuntimeInformation.ProcessArchitecture switch
+        {
+            Architecture.X64 => "x64",
+            Architecture.Arm64 => "arm64",
+            _ => throw new PlatformNotSupportedException("当前 CPU 架构不支持内置 FFmpeg 解析。"),
+        };
+        return $"{operatingSystem}-{architecture}";
+    }
+
+    private static void Validate(string executablePath)
+    {
+        var startInfo = new ProcessStartInfo(executablePath)
+        {
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true,
+        };
+        startInfo.ArgumentList.Add("-version");
+
+        try
+        {
+            using var process = Process.Start(startInfo)
+                                ?? throw new InvalidOperationException("无法启动 FFmpeg。");
+            if (!process.WaitForExit((int)ValidationTimeout.TotalMilliseconds))
+            {
+                process.Kill(entireProcessTree: true);
+                throw new InvalidOperationException("FFmpeg 启动预检超时。");
+            }
+
+            _ = process.StandardOutput.ReadToEnd();
+            _ = process.StandardError.ReadToEnd();
+            if (process.ExitCode != 0)
+            {
+                throw new InvalidOperationException("FFmpeg 启动预检失败。");
+            }
+        }
+        catch (Win32Exception exception)
+        {
+            throw new InvalidOperationException(
+                "未找到可用的 FFmpeg。请使用发布包内置文件、配置 XIAOMI_FFMPEG_PATH，或在系统 PATH 中安装 FFmpeg。",
+                exception);
+        }
+    }
+}
