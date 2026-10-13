@@ -19,9 +19,16 @@ type CameraConnection = {
 
 type PlaybackSession = {
   playlistUrl: string;
+  status: 'preparing' | 'ready' | 'failed' | 'stopped';
+  statusUrl?: string;
 };
 
-type PlaybackSessionPayload = { playlistUrl?: unknown; hlsUrl?: unknown };
+type PlaybackSessionPayload = {
+  playlistUrl?: unknown;
+  hlsUrl?: unknown;
+  status?: unknown;
+  statusUrl?: unknown;
+};
 
 class CameraServiceError extends Error {
   constructor(
@@ -33,6 +40,8 @@ class CameraServiceError extends Error {
 }
 
 class PlaybackTicketExpiredError extends Error {}
+
+class PlaybackFrameTimeoutError extends Error {}
 
 const SERVICE_URL_KEY = `${STORAGE_POLICY.preferences}:xiaomi-camera-service-url`;
 const ACCESS_CODE_KEY = `${STORAGE_POLICY.preferences}:xiaomi-camera-access-code`;
@@ -47,6 +56,7 @@ const rememberAccessCode = ref(Boolean(draftAccessCode.value));
 const connectionDialogOpen = ref(false);
 const connectionError = ref('');
 const playbackError = ref('');
+const preparationMessage = ref('');
 const loadingDevices = ref(false);
 const savingConnection = ref(false);
 const starting = ref(false);
@@ -60,6 +70,9 @@ let deviceController: AbortController | undefined;
 let hls: Hls | undefined;
 let playbackAbort: AbortController | undefined;
 let recoveryAttempted = false;
+let recoveryPromise: Promise<void> | undefined;
+let lastRecoveryAt = 0;
+let stabilityTimer: number | undefined;
 let lastActiveElement: HTMLElement | null = null;
 let dialogOriginalServiceUrl = draftServiceUrl.value;
 
@@ -70,6 +83,7 @@ const hasConnection = computed(() => Boolean(connection.value));
 const viewerMessage = computed(() => {
   if (connectionError.value) return connectionError.value;
   if (playbackError.value) return playbackError.value;
+  if (starting.value) return preparationMessage.value || '正在准备视频流…';
   if (loadingDevices.value) return '正在读取设备…';
   if (!hasConnection.value) return '连接摄像头服务以开始预览';
   if (!cameras.value.length) return '服务中没有可用的摄像头';
@@ -207,11 +221,159 @@ async function createPlaybackSession(
     throw new CameraServiceError('摄像头服务未返回播放地址。');
   }
 
+  let resolvedPlaylistUrl: string;
   try {
-    return { playlistUrl: new URL(playlistUrl, `${activeConnection.serviceUrl}/`).toString() };
+    resolvedPlaylistUrl = new URL(playlistUrl, `${activeConnection.serviceUrl}/`).toString();
   } catch {
     throw new CameraServiceError('摄像头服务返回了无效的播放地址。');
   }
+
+  if (typeof payload.statusUrl !== 'string' || !payload.statusUrl) {
+    // 兼容尚未升级的服务端：旧接口只有清单地址，由 HLS 请求自行等待首片。
+    return { playlistUrl: resolvedPlaylistUrl, status: 'ready' };
+  }
+
+  if (!['preparing', 'ready', 'failed', 'stopped'].includes(String(payload.status))) {
+    throw new CameraServiceError('摄像头服务返回了无效的播放准备状态。');
+  }
+  try {
+    return {
+      playlistUrl: resolvedPlaylistUrl,
+      status: payload.status as PlaybackSession['status'],
+      statusUrl: new URL(payload.statusUrl, `${activeConnection.serviceUrl}/`).toString(),
+    };
+  } catch {
+    throw new CameraServiceError('摄像头服务返回了无效的播放状态地址。');
+  }
+}
+
+function waitForPlaybackPoll(signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    let timer: number | undefined;
+    const cancel = () => {
+      if (timer !== undefined) window.clearTimeout(timer);
+      reject(new DOMException('播放已停止。', 'AbortError'));
+    };
+    if (signal.aborted) {
+      cancel();
+      return;
+    }
+    timer = window.setTimeout(() => {
+      signal.removeEventListener('abort', cancel);
+      resolve();
+    }, 1000);
+    signal.addEventListener('abort', cancel, { once: true });
+  });
+}
+
+async function waitForPlaybackReady(session: PlaybackSession, signal: AbortSignal): Promise<void> {
+  if (!session.statusUrl || session.status === 'ready') return;
+  const deadline = Date.now() + 95_000;
+  preparationMessage.value = '正在连接摄像头并准备首段视频…';
+
+  while (Date.now() < deadline) {
+    if (signal.aborted) throw new DOMException('播放已停止。', 'AbortError');
+    await waitForPlaybackPoll(signal);
+    let response: Response;
+    try {
+      // 状态端点以短期票据授权，不把长期授权码放入清单或媒体请求。
+      response = await fetch(session.statusUrl, {
+        headers: { Accept: 'application/json' },
+        signal,
+      });
+    } catch (error) {
+      if (signal.aborted) throw error;
+      throw new CameraServiceError('查询视频准备状态失败，请检查服务连接后重试。');
+    }
+
+    if (response.status === 404 || response.status === 410) {
+      throw new PlaybackTicketExpiredError();
+    }
+    if (!response.ok) {
+      throw new CameraServiceError('摄像头服务无法返回视频准备状态。');
+    }
+
+    const payload = (await response.json().catch(() => undefined)) as
+      { status?: unknown; error?: unknown } | undefined;
+    if (payload?.status === 'ready') return;
+    if (payload?.status === 'failed') {
+      throw new CameraServiceError(
+        typeof payload.error === 'string' && payload.error
+          ? payload.error
+          : '视频流准备失败，请检查服务端日志。',
+      );
+    }
+    if (payload?.status === 'stopped') {
+      throw new CameraServiceError('视频准备已停止，请重新开始预览。');
+    }
+    if (payload?.status !== 'preparing') {
+      throw new CameraServiceError('摄像头服务返回了未知的视频准备状态。');
+    }
+  }
+
+  throw new CameraServiceError('等待视频流准备超过 90 秒，请查看服务端诊断日志后重试。');
+}
+
+async function waitForVideoFrame(player: HTMLVideoElement, signal: AbortSignal): Promise<void> {
+  if (player.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && player.videoWidth > 0) return;
+
+  await new Promise<void>((resolve, reject) => {
+    let settled = false;
+    let timeout: number | undefined;
+    let frameCallback: number | undefined;
+
+    const cleanup = () => {
+      if (timeout !== undefined) window.clearTimeout(timeout);
+      if (frameCallback !== undefined && player.cancelVideoFrameCallback) {
+        player.cancelVideoFrameCallback(frameCallback);
+      }
+      player.removeEventListener('loadeddata', checkReady);
+      player.removeEventListener('playing', checkReady);
+      signal.removeEventListener('abort', abort);
+    };
+    const finish = (error?: Error) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      if (error) reject(error);
+      else resolve();
+    };
+    const checkReady = () => {
+      if (player.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && player.videoWidth > 0)
+        finish();
+    };
+    const abort = () => finish(new DOMException('播放已停止。', 'AbortError'));
+
+    timeout = window.setTimeout(
+      () => finish(new PlaybackFrameTimeoutError('视频流已就绪，但 15 秒内没有解码出画面。')),
+      15_000,
+    );
+    player.addEventListener('loadeddata', checkReady);
+    player.addEventListener('playing', checkReady);
+    signal.addEventListener('abort', abort, { once: true });
+    if (signal.aborted) {
+      abort();
+      return;
+    }
+
+    if (player.requestVideoFrameCallback) {
+      frameCallback = player.requestVideoFrameCallback(() => {
+        frameCallback = undefined;
+        if (player.videoWidth > 0) finish();
+        else if (!settled) frameCallback = player.requestVideoFrameCallback(checkFrame);
+      });
+    }
+
+    function checkFrame(): void {
+      frameCallback = undefined;
+      if (player.videoWidth > 0) finish();
+      else if (!settled && player.requestVideoFrameCallback) {
+        frameCallback = player.requestVideoFrameCallback(checkFrame);
+      }
+    }
+
+    checkReady();
+  });
 }
 
 function selectInitialCamera(devices: CameraDevice[], preferredFingerprint?: string): void {
@@ -339,6 +501,10 @@ function forgetAuthorization(): void {
 }
 
 function detachPlayback(): void {
+  if (stabilityTimer !== undefined) {
+    window.clearTimeout(stabilityTimer);
+    stabilityTimer = undefined;
+  }
   playbackAbort?.abort();
   playbackAbort = undefined;
   hls?.destroy();
@@ -353,8 +519,11 @@ function detachPlayback(): void {
 
 function stopPlayback(): void {
   recoveryAttempted = false;
+  recoveryPromise = undefined;
+  lastRecoveryAt = 0;
   starting.value = false;
   playbackError.value = '';
+  preparationMessage.value = '';
   detachPlayback();
 }
 
@@ -365,12 +534,45 @@ function reportPlaybackFailure(message: string): void {
 }
 
 async function requestPlaybackRecovery(): Promise<void> {
+  // video.error 与 hls.js fatal error 可能描述同一次中断；合并并发信号，避免互相销毁恢复中的播放器。
+  if (recoveryPromise) {
+    await recoveryPromise;
+    return;
+  }
   if (recoveryAttempted) {
+    if (Date.now() - lastRecoveryAt < 3000) return;
     reportPlaybackFailure('视频流已中断，请重新开始预览。');
     return;
   }
   recoveryAttempted = true;
-  await startPlayback(true);
+  lastRecoveryAt = Date.now();
+  const recovery = startPlayback(true);
+  recoveryPromise = recovery;
+  try {
+    await recovery;
+  } finally {
+    if (recoveryPromise === recovery) recoveryPromise = undefined;
+  }
+}
+
+function handleVideoPlaying(): void {
+  if (stabilityTimer !== undefined) window.clearTimeout(stabilityTimer);
+  const activePlayback = playbackAbort;
+  if (!activePlayback) return;
+  stabilityTimer = window.setTimeout(() => {
+    stabilityTimer = undefined;
+    if (playbackAbort === activePlayback && video.value && !video.value.paused) {
+      recoveryAttempted = false;
+      lastRecoveryAt = 0;
+    }
+  }, 60_000);
+}
+
+function handleVideoWaiting(): void {
+  if (stabilityTimer !== undefined) {
+    window.clearTimeout(stabilityTimer);
+    stabilityTimer = undefined;
+  }
 }
 
 async function attachHls(
@@ -443,9 +645,13 @@ async function startPlayback(isRecovery = false): Promise<void> {
   }
   if (!camera?.isOnline || !player) return;
 
-  if (!isRecovery) recoveryAttempted = false;
+  if (!isRecovery) {
+    recoveryAttempted = false;
+    lastRecoveryAt = 0;
+  }
   detachPlayback();
   starting.value = true;
+  preparationMessage.value = '正在创建播放会话…';
   playbackError.value = '';
   hasPlaybackSource.value = true;
   const attempt = new AbortController();
@@ -457,9 +663,13 @@ async function startPlayback(isRecovery = false): Promise<void> {
       attempt.signal,
     );
     if (attempt.signal.aborted) return;
+    await waitForPlaybackReady(session, attempt.signal);
+    if (attempt.signal.aborted) return;
+    preparationMessage.value = '视频已就绪，正在启动播放器…';
     await attachHls(player, session.playlistUrl, attempt.signal);
     if (attempt.signal.aborted) return;
     await player.play();
+    await waitForVideoFrame(player, attempt.signal);
   } catch (error) {
     if (attempt.signal.aborted) return;
     if (error instanceof CameraServiceError && error.authorizationFailed) {
@@ -467,6 +677,18 @@ async function startPlayback(isRecovery = false): Promise<void> {
       return;
     }
     if (error instanceof PlaybackTicketExpiredError) {
+      if (isRecovery) {
+        reportPlaybackFailure('刷新播放会话后仍无法读取视频流，请检查服务端日志。');
+        return;
+      }
+      await requestPlaybackRecovery();
+      return;
+    }
+    if (error instanceof PlaybackFrameTimeoutError) {
+      if (isRecovery) {
+        reportPlaybackFailure(error.message);
+        return;
+      }
       await requestPlaybackRecovery();
       return;
     }
@@ -562,6 +784,8 @@ onBeforeUnmount(() => {
           muted
           playsinline
           @error="handleVideoError"
+          @playing="handleVideoPlaying"
+          @waiting="handleVideoWaiting"
         />
         <div
           v-if="!hasPlaybackSource || starting || connectionError || playbackError"
@@ -576,6 +800,15 @@ onBeforeUnmount(() => {
           >
             {{ viewerMessage }}
           </p>
+          <button
+            v-if="starting"
+            class="camera-tool__primary-button"
+            type="button"
+            @click="stopPlayback"
+          >
+            <IconX :size="18" aria-hidden="true" />
+            取消等待
+          </button>
           <button
             v-if="!starting"
             class="camera-tool__primary-button"

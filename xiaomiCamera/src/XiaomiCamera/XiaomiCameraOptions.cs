@@ -19,11 +19,10 @@ public sealed class XiaomiCameraOptions : IDisposable
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         WriteIndented = true,
-        // 配置文件由部署者复制密钥使用；避免将 + 等字符写成 \uXXXX，造成复制后与真实密钥不一致。
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
-    private XiaomiCameraOptions(string configPath, string dataPath, byte[] dataKey, string bootstrapToken, string[] allowedOrigins, string? ffmpegPath, bool wasCreated)
+    private XiaomiCameraOptions(string configPath, string dataPath, byte[] dataKey, string bootstrapToken, string[] allowedOrigins, string? ffmpegPath, XiaomiMediaProfile mediaProfile, bool wasCreated)
     {
         ConfigPath = configPath;
         DataPath = dataPath;
@@ -31,6 +30,7 @@ public sealed class XiaomiCameraOptions : IDisposable
         BootstrapToken = bootstrapToken;
         AllowedOrigins = allowedOrigins;
         FfmpegPath = ffmpegPath;
+        MediaProfile = mediaProfile;
         WasCreated = wasCreated;
     }
 
@@ -50,6 +50,9 @@ public sealed class XiaomiCameraOptions : IDisposable
 
     /// <summary>配置文件中指定的 FFmpeg 路径；环境变量可在运行时优先覆盖它。</summary>
     public string? FfmpegPath { get; }
+
+    /// <summary>显式选择的媒体档位；旧配置默认使用服务器档位。</summary>
+    public XiaomiMediaProfile MediaProfile { get; }
 
     /// <summary>本次进程是否首次写入配置文件。</summary>
     public bool WasCreated { get; }
@@ -75,6 +78,7 @@ public sealed class XiaomiCameraOptions : IDisposable
                 ? ParseAllowedOrigins(environment.AllowedOrigins)
                 : ParseAllowedOrigins(file.AllowedOrigins);
             var ffmpegPath = ResolveConfiguredOptionalPath(file.FfmpegPath, configPath);
+            var mediaProfile = XiaomiMediaProfile.Resolve(file.Media?.Profile);
             return new XiaomiCameraOptions(
                 configPath,
                 dataPath,
@@ -82,6 +86,7 @@ public sealed class XiaomiCameraOptions : IDisposable
                 bootstrapToken,
                 allowedOrigins,
                 ffmpegPath,
+                mediaProfile,
                 wasCreated);
         }
         catch
@@ -115,7 +120,8 @@ public sealed class XiaomiCameraOptions : IDisposable
             environment.DataKey ?? GenerateBase64(32),
             environment.BootstrapToken ?? GenerateBase64(48),
             !string.IsNullOrWhiteSpace(environment.AllowedOrigins) ? ParseAllowedOrigins(environment.AllowedOrigins) : DefaultAllowedOrigins,
-            null);
+            null,
+            new MediaConfiguration("server"));
 
         try
         {
@@ -281,7 +287,9 @@ public sealed class XiaomiCameraOptions : IDisposable
         "http://localhost:4001",
     ];
 
-    private sealed record CameraServiceConfiguration(string? DataPath, string? DataKey, string? BootstrapToken, string[]? AllowedOrigins, string? FfmpegPath);
+    private sealed record CameraServiceConfiguration(string? DataPath, string? DataKey, string? BootstrapToken, string[]? AllowedOrigins, string? FfmpegPath, MediaConfiguration? Media);
+
+    private sealed record MediaConfiguration(string? Profile);
 
     private sealed record EnvironmentOverrides(string? ConfigPath, string? DataPath, string? DataKey, string? BootstrapToken, string? AllowedOrigins)
     {

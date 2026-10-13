@@ -18,15 +18,14 @@ public sealed class Cs2PpppConnection(Cs2RelaySession relaySession, Cs2RelayEsta
 
     private readonly Channel<byte[]> commands = Channel.CreateUnbounded<byte[]>();
 
-    // 转码落后于网络时优先保留最新帧，限制内存并避免旧视频持续堆积导致延迟扩大。
+    // 有界排队；满载时中止并重建媒体会话，不能静默丢弃压缩帧后继续解码。
     private readonly Channel<byte[]> media = Channel.CreateBounded<byte[]>(
         new BoundedChannelOptions(128)
         {
-            FullMode = BoundedChannelFullMode.DropOldest,
+            FullMode = BoundedChannelFullMode.Wait,
             SingleReader = true,
             SingleWriter = true,
-        },
-        static message => CryptographicOperations.ZeroMemory(message));
+        });
 
     private readonly TaskCompletionSource linked = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly CancellationTokenSource stopping = new();
@@ -184,7 +183,12 @@ public sealed class Cs2PpppConnection(Cs2RelaySession relaySession, Cs2RelayEsta
             {
                 while (target.TryRead(out var message) && message is not null)
                 {
-                    await media.Writer.WriteAsync(message, cancellationToken);
+                    if (!media.Writer.TryWrite(message))
+                    {
+                        CryptographicOperations.ZeroMemory(message);
+                        var queuedFrames = media.Reader.CanCount ? media.Reader.Count : -1;
+                        throw new Cs2ProtocolException($"媒体转码队列已满（{queuedFrames}/128），已中止会话以避免压缩帧丢失。");
+                    }
                 }
 
                 break;

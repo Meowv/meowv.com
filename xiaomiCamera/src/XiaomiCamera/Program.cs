@@ -35,6 +35,15 @@ if (cameraOptions.WasCreated)
 _ = app.Services.GetRequiredService<XiaomiCredentialCache>();
 var ffmpeg = app.Services.GetRequiredService<XiaomiFfmpegResolver>();
 app.Logger.LogInformation("FFmpeg 启动预检通过，来源：{Source}", ffmpeg.Source);
+app.Logger.LogInformation(
+    "媒体档位配置：{Profile}，最大画幅 {MaximumWidth}x{MaximumHeight}，帧率目标上限 {MaximumFps} fps，目标/峰值码率 {TargetBitrate}/{PeakBitrate} kbps，编码预设 {Preset}",
+    cameraOptions.MediaProfile.Name,
+    cameraOptions.MediaProfile.MaximumWidth,
+    cameraOptions.MediaProfile.MaximumHeight,
+    cameraOptions.MediaProfile.MaximumFramesPerSecond,
+    cameraOptions.MediaProfile.TargetBitrateKbps,
+    cameraOptions.MediaProfile.PeakBitrateKbps,
+    cameraOptions.MediaProfile.EncoderPreset);
 app.UseCors("studio");
 app.UseRateLimiter();
 
@@ -207,7 +216,12 @@ app.MapPost("/api/playback-sessions", async (HttpContext context, XiaomiAccessCo
 
         hls.Start(input.DeviceFingerprint);
         var ticket = tickets.Create(input.DeviceFingerprint);
-        return Results.Ok(new XiaomiPlaybackSessionResponse($"/api/playback-sessions/{ticket}/index.m3u8"));
+        var sessionUrl = $"/api/playback-sessions/{ticket}";
+        var preparation = hls.GetPreparation(input.DeviceFingerprint);
+        return Results.Ok(new XiaomiPlaybackSessionResponse(
+            $"{sessionUrl}/index.m3u8",
+            preparation.Status,
+            $"{sessionUrl}/status"));
     }
     catch (XiaomiCloudSessionExpiredException)
     {
@@ -220,6 +234,17 @@ app.MapPost("/api/playback-sessions", async (HttpContext context, XiaomiAccessCo
         return Results.Problem("无法创建摄像头播放会话。", statusCode: StatusCodes.Status503ServiceUnavailable);
     }
 }).RequireRateLimiting("playback-session");
+
+app.MapGet("/api/playback-sessions/{ticket}/status", (string ticket, XiaomiPlaybackTicketService tickets, XiaomiHlsService hls) =>
+{
+    // 状态轮询使用短期播放票据，不需要发送长期应用授权码。
+    if (!tickets.TryGetDeviceFingerprint(ticket, out var fingerprint))
+    {
+        return Results.NotFound();
+    }
+
+    return Results.Ok(hls.GetPreparation(fingerprint));
+});
 
 app.MapGet("/api/playback-sessions/{ticket}/index.m3u8", async (HttpContext context, string ticket, XiaomiPlaybackTicketService tickets, XiaomiHlsService hls) =>
 {
@@ -290,7 +315,7 @@ public sealed record XiaomiPlaybackCamera(string DeviceFingerprint, string Model
 
 public sealed record XiaomiPlaybackSessionRequest(string DeviceFingerprint);
 
-public sealed record XiaomiPlaybackSessionResponse(string PlaylistUrl);
+public sealed record XiaomiPlaybackSessionResponse(string PlaylistUrl, string Status, string StatusUrl);
 
 public sealed record XiaomiSetupResponse(string Status, Guid? AttemptId, string? VerificationKind, string? VerificationDestination, bool? UsedCachedSession, string? AccessCode)
 {
