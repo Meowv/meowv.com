@@ -146,7 +146,7 @@ app.MapGet("/api/cameras", async (HttpContext context, XiaomiAccessCodeAuthoriza
         return AccessCodeUnauthorized();
     }
 
-    var credentials = cache.TryLoad();
+    var credentials = cache.TryLoad(out var sessionVersion);
     if (credentials is null)
     {
         return XiaomiSessionExpired();
@@ -174,8 +174,7 @@ app.MapGet("/api/cameras", async (HttpContext context, XiaomiAccessCodeAuthoriza
     }
     catch (XiaomiCloudSessionExpiredException)
     {
-        cache.Clear();
-        directory.Invalidate();
+        if (cache.Clear(sessionVersion)) directory.Invalidate();
         return XiaomiSessionExpired();
     }
     catch (XiaomiCloudException)
@@ -186,12 +185,12 @@ app.MapGet("/api/cameras", async (HttpContext context, XiaomiAccessCodeAuthoriza
 
 app.MapPost("/api/playback-sessions", async (HttpContext context, XiaomiAccessCodeAuthorization accessCodeAuthorization, XiaomiCredentialCache cache, XiaomiCameraDirectoryService directory, XiaomiPlaybackTicketService tickets, XiaomiHlsService hls, XiaomiPlaybackSessionRequest input, CancellationToken cancellationToken) =>
 {
-    if (!accessCodeAuthorization.IsAuthorized(context.Request))
+    if (!accessCodeAuthorization.IsAuthorized(context.Request, out var accessCodeVersion))
     {
         return AccessCodeUnauthorized();
     }
 
-    var credentials = cache.TryLoad();
+    var credentials = cache.TryLoad(out var sessionVersion);
     if (credentials is null)
     {
         return XiaomiSessionExpired();
@@ -215,10 +214,17 @@ app.MapPost("/api/playback-sessions", async (HttpContext context, XiaomiAccessCo
             return Results.BadRequest(new XiaomiSetupError("camera_unsupported", "目标摄像机不支持 CS2 视频播放。"));
         }
 
-        hls.Start(input.DeviceFingerprint);
-        var ticket = tickets.Create(input.DeviceFingerprint);
+        if (accessCodeVersion != cache.GetAccessCodeVersion()) return AccessCodeUnauthorized();
+        var target = hls.Start(input.DeviceFingerprint, sessionVersion);
+        if (target is null) return XiaomiSessionExpired();
+        var ticket = tickets.Create(target.Value, accessCodeVersion);
+        if (ticket is null)
+        {
+            return accessCodeVersion != cache.GetAccessCodeVersion() ? AccessCodeUnauthorized() : XiaomiSessionExpired();
+        }
+
         var sessionUrl = $"/api/playback-sessions/{ticket}";
-        var preparation = hls.GetPreparation(input.DeviceFingerprint);
+        var preparation = hls.GetPreparation(target.Value);
         return Results.Ok(new XiaomiPlaybackSessionResponse(
             $"{sessionUrl}/index.m3u8",
             preparation.Status,
@@ -227,8 +233,7 @@ app.MapPost("/api/playback-sessions", async (HttpContext context, XiaomiAccessCo
     }
     catch (XiaomiCloudSessionExpiredException)
     {
-        cache.Clear();
-        directory.Invalidate();
+        if (cache.Clear(sessionVersion)) directory.Invalidate();
         return XiaomiSessionExpired();
     }
     catch (XiaomiCloudException)
@@ -278,18 +283,18 @@ app.MapPost("/api/cameras/{fingerprint}/ptz", async (HttpContext context, string
 app.MapGet("/api/playback-sessions/{ticket}/status", (string ticket, XiaomiPlaybackTicketService tickets, XiaomiHlsService hls) =>
 {
     // 状态轮询使用短期播放票据，不需要发送长期应用授权码。
-    if (!tickets.TryGetDeviceFingerprint(ticket, out var fingerprint))
+    if (!tickets.TryGetPlayback(ticket, out var target) || !hls.IsCurrent(target))
     {
         return Results.NotFound();
     }
 
-    return Results.Ok(hls.GetPreparation(fingerprint));
+    return Results.Ok(hls.GetPreparation(target));
 });
 
 app.MapGet("/api/playback-sessions/{ticket}/index.m3u8", async (HttpContext context, string ticket, XiaomiPlaybackTicketService tickets, XiaomiHlsService hls) =>
 {
     // HLS 客户端无法可靠地附加 Bearer 头；此处只接受绑定设备的短期票据。
-    if (!tickets.TryGetDeviceFingerprint(ticket, out var fingerprint))
+    if (!tickets.TryGetPlayback(ticket, out var target) || !hls.IsCurrent(target))
     {
         // 分片不存在同样会返回 404；用 410 让浏览器端能准确区分票据失效。
         return Results.StatusCode(StatusCodes.Status410Gone);
@@ -299,7 +304,7 @@ app.MapGet("/api/playback-sessions/{ticket}/index.m3u8", async (HttpContext cont
     context.Response.Headers.Pragma = "no-cache";
     try
     {
-        var playlist = await hls.WaitForPlaylistAsync(fingerprint, context.RequestAborted);
+        var playlist = await hls.WaitForPlaylistAsync(target, context.RequestAborted);
         return Results.File(playlist, "application/vnd.apple.mpegurl", enableRangeProcessing: false);
     }
     catch (XiaomiPlaybackException exception) when (!context.RequestAborted.IsCancellationRequested)
@@ -314,13 +319,13 @@ app.MapGet("/api/playback-sessions/{ticket}/index.m3u8", async (HttpContext cont
 app.MapGet("/api/playback-sessions/{ticket}/{name}", (HttpContext context, string ticket, string name, XiaomiPlaybackTicketService tickets, XiaomiHlsService hls) =>
 {
     // 分片沿用清单路径中的票据，长期授权码绝不进入媒体 URL。
-    if (!tickets.TryGetDeviceFingerprint(ticket, out var fingerprint))
+    if (!tickets.TryGetPlayback(ticket, out var target) || !hls.IsCurrent(target))
     {
         return Results.StatusCode(StatusCodes.Status410Gone);
     }
 
     context.Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
-    var segment = hls.SegmentPath(fingerprint, name);
+    var segment = hls.SegmentPath(target, name);
     return segment is null ? Results.NotFound() : Results.File(segment, "video/mp2t", enableRangeProcessing: false);
 });
 

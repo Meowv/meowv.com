@@ -17,6 +17,15 @@ public sealed class XiaomiCredentialCache : IDisposable
     private const int AccessCodeSaltLength = 16;
     private const int AccessCodeHashLength = 32;
     private const int AccessCodeIterations = 600_000;
+
+    private readonly Lock sessionGate = new();
+
+    // 播放票据和媒体流只驻留本进程，会话代次无需写入持久化配置。
+    private long sessionVersion;
+    public event Action<long>? SessionChanged;
+
+    public long GetSessionVersion() => Volatile.Read(ref sessionVersion);
+
     private readonly byte[] dataKey;
     private readonly string connectionString;
 
@@ -40,29 +49,40 @@ public sealed class XiaomiCredentialCache : IDisposable
         Initialize();
     }
 
-    public XiaomiCloudCredentials? TryLoad()
+    public XiaomiCloudCredentials? TryLoad() => TryLoad(out _);
+
+    public XiaomiCloudCredentials? TryLoad(out long version)
     {
-        using var connection = OpenConnection();
-        using var command = connection.CreateCommand();
-        command.CommandText = """
-                              SELECT credentials_nonce, credentials_tag, credentials_ciphertext
-                              FROM service_state
-                              WHERE id = 1;
-                              """;
-        using var reader = command.ExecuteReader();
-        if (!reader.Read() || reader.IsDBNull(0) || reader.IsDBNull(1) || reader.IsDBNull(2))
+        byte[] nonce;
+        byte[] tag;
+        byte[] ciphertext;
+        lock (sessionGate)
         {
-            return null;
+            version = sessionVersion;
+            using var connection = OpenConnection();
+            using var command = connection.CreateCommand();
+            command.CommandText = """
+                                  SELECT credentials_nonce, credentials_tag, credentials_ciphertext
+                                  FROM service_state
+                                  WHERE id = 1;
+                                  """;
+            using var reader = command.ExecuteReader();
+            if (!reader.Read() || reader.IsDBNull(0) || reader.IsDBNull(1) || reader.IsDBNull(2))
+            {
+                return null;
+            }
+
+            nonce = (byte[])reader.GetValue(0);
+            tag = (byte[])reader.GetValue(1);
+            ciphertext = (byte[])reader.GetValue(2);
         }
 
-        var nonce = (byte[])reader.GetValue(0);
-        var tag = (byte[])reader.GetValue(1);
-        var ciphertext = (byte[])reader.GetValue(2);
+        // 读取连接已释放，清理无效会话时不会与自身的 SQLite 读锁互相等待。
         try
         {
             if (nonce.Length != NonceLength || tag.Length != TagLength || ciphertext.Length == 0)
             {
-                Clear();
+                Clear(version);
                 return null;
             }
 
@@ -73,12 +93,12 @@ public sealed class XiaomiCredentialCache : IDisposable
                 cipher.Decrypt(nonce, ciphertext, tag, plaintext);
                 var credentials = JsonSerializer.Deserialize<XiaomiCloudCredentials>(plaintext);
                 if (IsValid(credentials)) return credentials;
-                Clear();
+                Clear(version);
                 return null;
             }
             catch (Exception exception) when (exception is CryptographicException or JsonException or InvalidOperationException or FormatException)
             {
-                Clear();
+                Clear(version);
                 return null;
             }
             finally
@@ -113,25 +133,32 @@ public sealed class XiaomiCredentialCache : IDisposable
                 cipher.Encrypt(nonce, plaintext, ciphertext, tag);
             }
 
-            using var connection = OpenConnection();
-            using var command = connection.CreateCommand();
-            command.CommandText = """
-                                  INSERT INTO service_state (
-                                      id, credentials_nonce, credentials_tag, credentials_ciphertext, created_at, updated_at
-                                  ) VALUES (
-                                      1, $nonce, $tag, $ciphertext, $now, $now
-                                  )
-                                  ON CONFLICT(id) DO UPDATE SET
-                                      credentials_nonce = excluded.credentials_nonce,
-                                      credentials_tag = excluded.credentials_tag,
-                                      credentials_ciphertext = excluded.credentials_ciphertext,
-                                      updated_at = excluded.updated_at;
-                                  """;
-            command.Parameters.AddWithValue("$nonce", nonce);
-            command.Parameters.AddWithValue("$tag", tag);
-            command.Parameters.AddWithValue("$ciphertext", ciphertext);
-            command.Parameters.AddWithValue("$now", DateTimeOffset.UtcNow.ToString("O"));
-            _ = command.ExecuteNonQuery();
+            long changedVersion;
+            lock (sessionGate)
+            {
+                using var connection = OpenConnection();
+                using var command = connection.CreateCommand();
+                command.CommandText = """
+                                      INSERT INTO service_state (
+                                          id, credentials_nonce, credentials_tag, credentials_ciphertext, created_at, updated_at
+                                      ) VALUES (
+                                          1, $nonce, $tag, $ciphertext, $now, $now
+                                      )
+                                      ON CONFLICT(id) DO UPDATE SET
+                                          credentials_nonce = excluded.credentials_nonce,
+                                          credentials_tag = excluded.credentials_tag,
+                                          credentials_ciphertext = excluded.credentials_ciphertext,
+                                          updated_at = excluded.updated_at;
+                                      """;
+                command.Parameters.AddWithValue("$nonce", nonce);
+                command.Parameters.AddWithValue("$tag", tag);
+                command.Parameters.AddWithValue("$ciphertext", ciphertext);
+                command.Parameters.AddWithValue("$now", DateTimeOffset.UtcNow.ToString("O"));
+                _ = command.ExecuteNonQuery();
+                changedVersion = Interlocked.Increment(ref sessionVersion);
+            }
+
+            SessionChanged?.Invoke(changedVersion);
         }
         finally
         {
@@ -142,20 +169,30 @@ public sealed class XiaomiCredentialCache : IDisposable
         }
     }
 
-    public void Clear()
+    public bool Clear(long? expectedVersion = null)
     {
-        using var connection = OpenConnection();
-        using var command = connection.CreateCommand();
-        command.CommandText = """
-                              UPDATE service_state
-                              SET credentials_nonce = NULL,
-                                  credentials_tag = NULL,
-                                  credentials_ciphertext = NULL,
-                                  updated_at = $now
-                              WHERE id = 1;
-                              """;
-        command.Parameters.AddWithValue("$now", DateTimeOffset.UtcNow.ToString("O"));
-        _ = command.ExecuteNonQuery();
+        long changedVersion;
+        lock (sessionGate)
+        {
+            // 旧请求的失败只能清除自己使用的会话，不能覆盖稍后保存的新登录。
+            if (expectedVersion is { } expected && expected != sessionVersion) return false;
+            using var connection = OpenConnection();
+            using var command = connection.CreateCommand();
+            command.CommandText = """
+                                  UPDATE service_state
+                                  SET credentials_nonce = NULL,
+                                      credentials_tag = NULL,
+                                      credentials_ciphertext = NULL,
+                                      updated_at = $now
+                                  WHERE id = 1;
+                                  """;
+            command.Parameters.AddWithValue("$now", DateTimeOffset.UtcNow.ToString("O"));
+            _ = command.ExecuteNonQuery();
+            changedVersion = Interlocked.Increment(ref sessionVersion);
+        }
+
+        SessionChanged?.Invoke(changedVersion);
+        return true;
     }
 
     /// <summary>仅在尚未生成过授权码时返回新值；已存在时绝不再返回原值。</summary>
@@ -187,8 +224,11 @@ public sealed class XiaomiCredentialCache : IDisposable
         return accessCode;
     }
 
-    public bool VerifyAccessCode(string? accessCode)
+    public bool VerifyAccessCode(string? accessCode) => VerifyAccessCode(accessCode, out _);
+
+    public bool VerifyAccessCode(string? accessCode, out int version)
     {
+        version = 0;
         if (string.IsNullOrWhiteSpace(accessCode))
         {
             return false;
@@ -197,7 +237,7 @@ public sealed class XiaomiCredentialCache : IDisposable
         using var connection = OpenConnection();
         using var command = connection.CreateCommand();
         command.CommandText = """
-                              SELECT access_code_salt, access_code_hash
+                              SELECT access_code_salt, access_code_hash, access_code_version
                               FROM service_state
                               WHERE id = 1;
                               """;
@@ -209,6 +249,7 @@ public sealed class XiaomiCredentialCache : IDisposable
 
         var salt = (byte[])reader.GetValue(0);
         var expectedHash = (byte[])reader.GetValue(1);
+        var verifiedVersion = reader.GetInt32(2);
         var suppliedBytes = Encoding.UTF8.GetBytes(accessCode);
         try
         {
@@ -225,7 +266,9 @@ public sealed class XiaomiCredentialCache : IDisposable
                 AccessCodeHashLength);
             try
             {
-                return CryptographicOperations.FixedTimeEquals(derivedHash, expectedHash);
+                if (!CryptographicOperations.FixedTimeEquals(derivedHash, expectedHash)) return false;
+                version = verifiedVersion;
+                return true;
             }
             finally
             {

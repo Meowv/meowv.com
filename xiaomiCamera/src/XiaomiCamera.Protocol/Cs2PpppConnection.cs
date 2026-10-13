@@ -127,6 +127,7 @@ public sealed class Cs2PpppConnection(Cs2RelaySession relaySession, Cs2RelayEsta
                     continue;
                 }
 
+                if (!received.Value.Sender.Equals(relay.Relay)) continue;
                 await DispatchAsync(received.Value.Frame, stopping.Token);
             }
         }
@@ -175,22 +176,18 @@ public sealed class Cs2PpppConnection(Cs2RelaySession relaySession, Cs2RelayEsta
 
         var channel = payload[1];
         var sequence = BinaryPrimitives.ReadUInt16BigEndian(payload.AsSpan(2));
-        var acknowledgement = new byte[] { 0xD1, channel, 0, 1, payload[2], payload[3] };
-        await relaySession.SendFrameAsync(relay.Relay,
-            new Cs2Frame(Cs2MessageType.DrwAcknowledged, acknowledgement), cancellationToken);
-
         var target = channel switch
         {
             CommandChannel => commandChannel,
             MediaChannel => mediaChannel,
             _ => null,
         };
-        if (target is null)
-        {
-            return;
-        }
+        if (target is not null && !target.Push(sequence, payload.AsSpan(4))) return;
 
-        target.Push(sequence, payload.AsSpan(4));
+        var acknowledgement = new byte[] { 0xD1, channel, 0, 1, payload[2], payload[3] };
+        await relaySession.SendFrameAsync(relay.Relay,
+            new Cs2Frame(Cs2MessageType.DrwAcknowledged, acknowledgement), cancellationToken);
+        if (target is null) return;
         switch (channel)
         {
             case CommandChannel:

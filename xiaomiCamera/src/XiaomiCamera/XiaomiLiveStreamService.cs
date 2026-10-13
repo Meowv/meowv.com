@@ -8,10 +8,16 @@ namespace XiaomiCamera;
 /// <summary>打开一次临时直播会话；媒体、密钥和连接材料仅在内存中存活。</summary>
 public sealed class XiaomiLiveStreamService(XiaomiCredentialCache credentialCache, XiaomiCameraDirectoryService directory, IHttpClientFactory httpClients, ILogger<XiaomiLiveStreamService> logger)
 {
-    public async Task<XiaomiLiveStream> OpenAsync(string fingerprint, CancellationToken cancellationToken)
+    public async Task<XiaomiLiveStream> OpenAsync(string fingerprint, long expectedSessionVersion, CancellationToken cancellationToken)
     {
         var total = Stopwatch.StartNew();
-        var credentials = credentialCache.TryLoad() ?? throw new XiaomiLiveStreamException("没有可用的小米登录会话，请先在初始化页登录。", false);
+        var credentials = credentialCache.TryLoad(out var sessionVersion) ?? throw new XiaomiLiveStreamException("没有可用的小米登录会话，请先在初始化页登录。", false);
+        if (sessionVersion != expectedSessionVersion)
+        {
+            throw new XiaomiLiveStreamException("小米登录会话已变更，请重新创建播放会话。", false);
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
         var stage = Stopwatch.StartNew();
         var camera = await directory.FindAsync(credentials, fingerprint, cancellationToken);
         LogStage("设备目录查询", stage, total);

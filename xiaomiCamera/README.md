@@ -77,7 +77,7 @@ Content-Type: application/json
 { "deviceFingerprint": "YOUR_CAMERA_FINGERPRINT" }
 ```
 
-响应包含 `playlistUrl`、`statusUrl`、`status` 和 `audioAvailable`。客户端可每秒查询状态，进入 `ready` 后再加载 HLS。准备阶段最长等待 90 秒；服务在至少 3 个完整分片、约 6 秒初始缓冲就绪后报告 `ready`。状态查询无需长期授权码。
+响应包含 `playlistUrl`、`statusUrl`、`status` 和 `audioAvailable`。客户端可每秒查询状态，进入 `ready` 后再加载 HLS。准备阶段最长等待 90 秒；服务在至少 3 个完整分片、约 6 秒初始缓冲就绪后报告 `ready`。状态查询无需长期授权码。票据绑定本次媒体会话；流失败或停止后，客户端应重新创建播放会话，旧票据不会自动切换到重建后的媒体流。
 
 云台仅接受 `left`、`right`、`up`、`down`，同一设备两次指令至少间隔 1 秒，目前不支持长按：
 
@@ -91,7 +91,7 @@ Content-Type: application/json
 
 `status: sent` 表示指令已发送，不表示机身已完成移动。Studio 的 HLS 画面有缓冲，画面变化可能晚于机身动作；不能据此衡量指令耗时。当前仅对 `chuangmi.camera.079ac1` 开放此接口。
 
-缺少或错误的应用授权码返回 `401 access_code_unauthorized`；小米云会话失效返回 `409 xiaomi_session_expired`，需要重新初始化。播放票据绑定单台设备，连续 10 分钟未访问会失效；失效票据访问清单或分片返回 `410`，暂时缺失的分片返回 `404`。停止状态查询和媒体请求约 30 秒后，服务回收上游连接、FFmpeg 进程和临时分片。
+缺少或错误的应用授权码返回 `401 access_code_unauthorized`；小米云会话失效返回 `409 xiaomi_session_expired`，需要重新初始化。播放票据绑定单台设备，连续 10 分钟未访问会失效；删除登录会话、切换账号或重新登录会撤销已有播放票据并停止旧媒体流；失效票据访问清单或分片返回 `410`，暂时缺失的分片返回 `404`。停止状态查询和媒体请求约 30 秒后，服务回收上游连接、FFmpeg 进程和临时分片。
 
 ## 媒体处理
 

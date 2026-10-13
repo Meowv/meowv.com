@@ -11,62 +11,87 @@ namespace XiaomiCamera;
 /// 将小米私有媒体帧转成浏览器通用的 H.264 HLS。
 /// 摄像头上游会话与 FFmpeg 进程按设备共享；HLS 分片只存在于临时目录。
 /// </summary>
-public sealed class XiaomiHlsService(XiaomiLiveStreamService streams, XiaomiFfmpegResolver ffmpeg, XiaomiCameraOptions options, ILogger<XiaomiHlsService> logger)
+public sealed class XiaomiHlsService : IDisposable
 {
     private static readonly TimeSpan PreparationTimeout = TimeSpan.FromSeconds(90);
     private const double InitialPlaylistBufferSeconds = 6;
     private const int MinimumInitialSegments = 3;
     private readonly ConcurrentDictionary<string, HlsState> states = new(StringComparer.Ordinal);
 
-    public void Start(string fingerprint)
+    private readonly Lock lifecycleGate = new();
+    private readonly XiaomiLiveStreamService streams;
+    private readonly XiaomiFfmpegResolver ffmpeg;
+    private readonly XiaomiCameraOptions options;
+    private readonly ILogger<XiaomiHlsService> logger;
+    private readonly XiaomiCredentialCache credentialCache;
+    private bool disposed;
+
+    public XiaomiHlsService(XiaomiLiveStreamService streams, XiaomiFfmpegResolver ffmpeg, XiaomiCameraOptions options, ILogger<XiaomiHlsService> logger, XiaomiCredentialCache credentialCache)
     {
-        while (true)
+        this.streams = streams;
+        this.ffmpeg = ffmpeg;
+        this.options = options;
+        this.logger = logger;
+        this.credentialCache = credentialCache;
+        credentialCache.SessionChanged += StopOlderSessions;
+    }
+
+    public XiaomiPlaybackTarget? Start(string fingerprint, long sessionVersion)
+    {
+        lock (lifecycleGate)
         {
-            var state = states.GetOrAdd(fingerprint, key => new HlsState(key, options.MediaProfile, logger));
-            if (state.CanAcceptRequests)
+            ObjectDisposedException.ThrowIf(disposed, this);
+            if (sessionVersion != credentialCache.GetSessionVersion()) return null;
+            if (!states.TryGetValue(fingerprint, out var state) ||
+                state.Target.SessionVersion != sessionVersion || !state.CanAcceptRequests)
             {
-                state.Touch();
-                state.StartOnce(() => PumpAsync(state));
-                return;
+                state?.Stop();
+                state = new HlsState(new XiaomiPlaybackTarget(fingerprint, sessionVersion, Guid.NewGuid()), options.MediaProfile, logger);
+                states[fingerprint] = state;
             }
 
-            states.TryRemove(new KeyValuePair<string, HlsState>(fingerprint, state));
+            state.Touch();
+            var startedState = state;
+            state.StartOnce(() => PumpAsync(startedState));
+            return state.Target;
         }
     }
 
-    /// <summary>首次返回播放列表前等待 FFmpeg 生成可独立解码的 H.264 分片。</summary>
-    public async Task<string> WaitForPlaylistAsync(string fingerprint, CancellationToken cancellationToken)
+    public bool IsCurrent(XiaomiPlaybackTarget target) => FindState(target) is not null;
+
+    private HlsState? FindState(XiaomiPlaybackTarget target) =>
+        target.SessionVersion == credentialCache.GetSessionVersion() &&
+        states.TryGetValue(target.DeviceFingerprint, out var state) && state.Target == target
+            ? state
+            : null;
+
+    /// <summary>只读取票据绑定的媒体会话，失败后由客户端申请新票据重建。</summary>
+    public Task<string> WaitForPlaylistAsync(XiaomiPlaybackTarget target, CancellationToken cancellationToken)
     {
-        Start(fingerprint);
-        var state = states[fingerprint];
-        return await state.WaitForPlaylistAsync(cancellationToken);
+        var state = FindState(target) ?? throw new XiaomiPlaybackException("播放会话已停止。", false);
+        return state.WaitForPlaylistAsync(cancellationToken);
     }
 
-    public string? SegmentPath(string fingerprint, string name)
+    public string? SegmentPath(XiaomiPlaybackTarget target, string name)
     {
-        if (!states.TryGetValue(fingerprint, out var state))
-        {
-            return null;
-        }
-
+        var state = FindState(target);
+        if (state is null) return null;
         state.Touch();
         return state.GetSegmentPath(name);
     }
 
-    public XiaomiPlaybackPreparation GetPreparation(string fingerprint)
+    public XiaomiPlaybackPreparation GetPreparation(XiaomiPlaybackTarget target)
     {
-        if (!states.TryGetValue(fingerprint, out var state))
-        {
-            return XiaomiPlaybackPreparation.Stopped;
-        }
-
+        var state = FindState(target);
+        if (state is null) return XiaomiPlaybackPreparation.Stopped;
         state.Touch();
         return state.GetPreparation();
     }
 
     public async Task<XiaomiMotorStepResult> MotorStepAsync(string fingerprint, int operation, CancellationToken cancellationToken)
     {
-        if (!states.TryGetValue(fingerprint, out var state))
+        if (!states.TryGetValue(fingerprint, out var state) ||
+            state.Target.SessionVersion != credentialCache.GetSessionVersion())
         {
             return XiaomiMotorStepResult.NoSession;
         }
@@ -74,11 +99,37 @@ public sealed class XiaomiHlsService(XiaomiLiveStreamService streams, XiaomiFfmp
         return await state.MotorStepAsync(operation, cancellationToken);
     }
 
+    private void StopOlderSessions(long version)
+    {
+        lock (lifecycleGate)
+        {
+            foreach (var (fingerprint, state) in states)
+            {
+                // 保存通知可能交错到达，旧通知不能停止更新的登录会话。
+                if (state.Target.SessionVersion >= version) continue;
+                state.Stop();
+                states.TryRemove(new KeyValuePair<string, HlsState>(fingerprint, state));
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        lock (lifecycleGate)
+        {
+            if (disposed) return;
+            disposed = true;
+            credentialCache.SessionChanged -= StopOlderSessions;
+            foreach (var state in states.Values) state.Stop();
+            states.Clear();
+        }
+    }
+
     private async Task PumpAsync(HlsState state)
     {
         try
         {
-            await using var stream = await streams.OpenAsync(state.Fingerprint, state.Stopping.Token);
+            await using var stream = await streams.OpenAsync(state.Fingerprint, state.Target.SessionVersion, state.Stopping.Token);
             state.AttachStream(stream);
             try
             {
@@ -109,11 +160,11 @@ public sealed class XiaomiHlsService(XiaomiLiveStreamService streams, XiaomiFfmp
         }
     }
 
-    private sealed class HlsState(string fingerprint, XiaomiMediaProfile profile, ILogger logger)
+    private sealed class HlsState(XiaomiPlaybackTarget target, XiaomiMediaProfile profile, ILogger logger)
     {
         private static readonly TimeSpan IdleTimeout = TimeSpan.FromSeconds(30);
         private readonly Lock gate = new();
-        private readonly string directory = Path.Combine(Path.GetTempPath(), "xiaomi-camera-gateway-hls", $"{fingerprint}-{Guid.NewGuid():N}");
+        private readonly string directory = Path.Combine(Path.GetTempPath(), "xiaomi-camera-gateway-hls", $"{target.DeviceFingerprint}-{target.StreamId:N}");
         private Task? pump;
         private Process? ffmpeg;
         private XiaomiLiveStream? liveStream;
@@ -125,7 +176,8 @@ public sealed class XiaomiHlsService(XiaomiLiveStreamService streams, XiaomiFfmp
         private bool audioAvailable;
         private readonly Stopwatch sessionClock = Stopwatch.StartNew();
 
-        public string Fingerprint { get; } = fingerprint;
+        public XiaomiPlaybackTarget Target { get; } = target;
+        public string Fingerprint => Target.DeviceFingerprint;
         public CancellationTokenSource Stopping { get; } = new();
         private DateTimeOffset LastAccess { get; set; } = DateTimeOffset.UtcNow;
 
@@ -201,6 +253,16 @@ public sealed class XiaomiHlsService(XiaomiLiveStreamService streams, XiaomiFfmp
             {
                 motorLock.Release();
             }
+        }
+
+        public void Stop()
+        {
+            lock (gate)
+            {
+                status = "stopped";
+            }
+
+            Stopping.Cancel();
         }
 
         public void Touch()
@@ -400,7 +462,8 @@ public sealed class XiaomiHlsService(XiaomiLiveStreamService streams, XiaomiFfmp
 
                         if (audioCodec != 0)
                         {
-                            mediaInput = new XiaomiFfmpegMediaInput(audioCodec, audioSampleRate, startup[0].TimestampMilliseconds);
+                            var timestampOrigin = Math.Min(firstVideoMediaTimestamp!.Value, firstAudioMediaTimestamp!.Value);
+                            mediaInput = new XiaomiFfmpegMediaInput(audioCodec, audioSampleRate, timestampOrigin, firstAudioMediaTimestamp.Value);
                             lock (gate) audioAvailable = true;
                         }
 
@@ -550,6 +613,10 @@ public sealed class XiaomiHlsService(XiaomiLiveStreamService streams, XiaomiFfmp
             info.ArgumentList.Add("+genpts");
             if (mediaInput is not null)
             {
+                // 视频按接收时钟计时，音频按采样数计时；显式平移到同一相对时间轴。
+                info.ArgumentList.Add("-copyts");
+                info.ArgumentList.Add("-itsoffset");
+                info.ArgumentList.Add((-DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000d).ToString("F3", CultureInfo.InvariantCulture));
                 info.ArgumentList.Add("-thread_queue_size");
                 info.ArgumentList.Add("512");
                 info.ArgumentList.Add("-use_wallclock_as_timestamps");
@@ -564,8 +631,6 @@ public sealed class XiaomiHlsService(XiaomiLiveStreamService streams, XiaomiFfmp
             {
                 info.ArgumentList.Add("-thread_queue_size");
                 info.ArgumentList.Add("512");
-                info.ArgumentList.Add("-use_wallclock_as_timestamps");
-                info.ArgumentList.Add("1");
                 info.ArgumentList.Add("-f");
                 info.ArgumentList.Add(mediaInput.AudioFormat);
                 if (mediaInput.AudioCodec != 1032)
@@ -582,6 +647,8 @@ public sealed class XiaomiHlsService(XiaomiLiveStreamService streams, XiaomiFfmp
                 info.ArgumentList.Add("0:v:0");
                 info.ArgumentList.Add("-map");
                 info.ArgumentList.Add("1:a:0");
+                info.ArgumentList.Add("-af");
+                info.ArgumentList.Add($"asetpts=N/SR/TB+{mediaInput.AudioOffsetSeconds.ToString("F3", CultureInfo.InvariantCulture)}/TB,aresample=async=1:first_pts=0");
                 info.ArgumentList.Add("-c:a");
                 info.ArgumentList.Add("aac");
                 info.ArgumentList.Add("-b:a");

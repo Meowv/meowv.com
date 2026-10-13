@@ -23,7 +23,7 @@ internal sealed class XiaomiFfmpegMediaInput : IAsyncDisposable
     private Task? audioWriter;
     private bool disposed;
 
-    public XiaomiFfmpegMediaInput(int audioCodec, int audioSampleRate, long timestampOrigin)
+    public XiaomiFfmpegMediaInput(int audioCodec, int audioSampleRate, long timestampOrigin, long firstAudioTimestamp)
     {
         if (audioCodec is not (1024 or 1026 or 1027 or 1032))
         {
@@ -33,6 +33,7 @@ internal sealed class XiaomiFfmpegMediaInput : IAsyncDisposable
         this.audioCodec = audioCodec;
         this.audioSampleRate = audioSampleRate;
         this.timestampOrigin = timestampOrigin;
+        AudioOffsetSeconds = Math.Max(0, firstAudioTimestamp - timestampOrigin) / 1000d;
         videoListener.Start(1);
         audioListener.Start(1);
     }
@@ -49,6 +50,7 @@ internal sealed class XiaomiFfmpegMediaInput : IAsyncDisposable
         _ => throw new InvalidOperationException(),
     };
 
+    public double AudioOffsetSeconds { get; }
     public int AudioCodec => audioCodec;
     public int AudioSampleRate => audioSampleRate;
 
@@ -104,11 +106,7 @@ internal sealed class XiaomiFfmpegMediaInput : IAsyncDisposable
             try
             {
                 var offset = Math.Max(0, packet.TimestampMilliseconds - timestampOrigin);
-                if (isAudio && offset < clock.ElapsedMilliseconds - 500)
-                {
-                    continue;
-                }
-
+                // 音频由采样数计时；保留 FFmpeg 探测期间排队的帧，避免压缩时间轴。
                 var delay = offset - clock.ElapsedMilliseconds;
                 if (delay is > 0 and < 2000)
                 {

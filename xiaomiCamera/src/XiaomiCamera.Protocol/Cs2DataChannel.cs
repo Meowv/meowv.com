@@ -13,22 +13,20 @@ public sealed class Cs2DataChannel
     private readonly Queue<byte[]> messages = [];
     private ushort expectedSequence;
 
-    public void Push(ushort sequence, ReadOnlySpan<byte> data)
+    /// <summary>只有已处理或成功缓存的分片才能被确认；窗口满时等待发送端重传。</summary>
+    public bool Push(ushort sequence, ReadOnlySpan<byte> data)
     {
         if (IsBefore(sequence, expectedSequence))
         {
-            return;
+            return true;
         }
 
         if (sequence != expectedSequence)
         {
-            // UDP 缺片时只保留有限的乱序窗口，避免异常来源无限占用内存。
-            if (pending.Count < MaximumPendingFragments || pending.ContainsKey(sequence))
-            {
-                pending.TryAdd(sequence, data.ToArray());
-            }
-
-            return;
+            if (pending.ContainsKey(sequence)) return true;
+            if (pending.Count >= MaximumPendingFragments) return false;
+            pending.Add(sequence, data.ToArray());
+            return true;
         }
 
         Append(data);
@@ -40,6 +38,7 @@ public sealed class Cs2DataChannel
         }
 
         ExtractMessages();
+        return true;
     }
 
     public bool TryRead(out byte[]? message) => messages.TryDequeue(out message);

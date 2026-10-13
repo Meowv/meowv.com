@@ -19,41 +19,43 @@ public sealed class XiaomiPlaybackTicketService : IDisposable
         cleanupTimer = new Timer(_ => PruneExpired(), null, CleanupInterval, CleanupInterval);
     }
 
-    public string Create(string deviceFingerprint)
+    public string? Create(XiaomiPlaybackTarget target, int accessCodeVersion)
     {
-        var accessCodeVersion = credentialCache.GetAccessCodeVersion();
-        if (accessCodeVersion <= 0)
+        if (accessCodeVersion <= 0 || accessCodeVersion != credentialCache.GetAccessCodeVersion() ||
+            target.SessionVersion != credentialCache.GetSessionVersion())
         {
-            throw new InvalidOperationException("当前没有可用的应用授权码。");
+            return null;
         }
 
         Prune(accessCodeVersion);
         while (true)
         {
             var ticket = GenerateTicket();
-            if (tickets.TryAdd(ticket, new PlaybackTicket(deviceFingerprint, accessCodeVersion)))
+            if (tickets.TryAdd(ticket, new PlaybackTicket(target, accessCodeVersion)))
             {
                 return ticket;
             }
         }
     }
 
-    public bool TryGetDeviceFingerprint(string ticket, out string deviceFingerprint)
+    public bool TryGetPlayback(string ticket, out XiaomiPlaybackTarget target)
     {
-        deviceFingerprint = string.Empty;
+        target = default;
         if (string.IsNullOrWhiteSpace(ticket) || !tickets.TryGetValue(ticket, out var playbackTicket))
         {
             return false;
         }
 
         var currentVersion = credentialCache.GetAccessCodeVersion();
-        if (currentVersion != playbackTicket.AccessCodeVersion || !playbackTicket.TryTouch(IdleLifetime))
+        if (currentVersion != playbackTicket.AccessCodeVersion ||
+            playbackTicket.Target.SessionVersion != credentialCache.GetSessionVersion() ||
+            !playbackTicket.TryTouch(IdleLifetime))
         {
             tickets.TryRemove(new KeyValuePair<string, PlaybackTicket>(ticket, playbackTicket));
             return false;
         }
 
-        deviceFingerprint = playbackTicket.DeviceFingerprint;
+        target = playbackTicket.Target;
         return true;
     }
 
@@ -61,7 +63,10 @@ public sealed class XiaomiPlaybackTicketService : IDisposable
     {
         foreach (var (ticket, playbackTicket) in tickets)
         {
-            if (playbackTicket.AccessCodeVersion != currentVersion || playbackTicket.IsExpired(IdleLifetime))
+            // 轮换前开始的清理不能删除轮换后签发的新票据。
+            if (playbackTicket.AccessCodeVersion < currentVersion ||
+                playbackTicket.Target.SessionVersion != credentialCache.GetSessionVersion() ||
+                playbackTicket.IsExpired(IdleLifetime))
             {
                 tickets.TryRemove(new KeyValuePair<string, PlaybackTicket>(ticket, playbackTicket));
             }
@@ -95,12 +100,12 @@ public sealed class XiaomiPlaybackTicketService : IDisposable
         }
     }
 
-    private sealed class PlaybackTicket(string deviceFingerprint, int accessCodeVersion)
+    private sealed class PlaybackTicket(XiaomiPlaybackTarget target, int accessCodeVersion)
     {
         private readonly Lock gate = new();
         private DateTimeOffset lastAccess = DateTimeOffset.UtcNow;
 
-        public string DeviceFingerprint { get; } = deviceFingerprint;
+        public XiaomiPlaybackTarget Target { get; } = target;
         public int AccessCodeVersion { get; } = accessCodeVersion;
 
         public bool TryTouch(TimeSpan idleLifetime)
@@ -126,3 +131,5 @@ public sealed class XiaomiPlaybackTicketService : IDisposable
         }
     }
 }
+
+public readonly record struct XiaomiPlaybackTarget(string DeviceFingerprint, long SessionVersion, Guid StreamId);
