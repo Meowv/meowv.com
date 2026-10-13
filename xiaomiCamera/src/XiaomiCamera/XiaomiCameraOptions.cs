@@ -1,13 +1,14 @@
 using System.Security.Cryptography;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace XiaomiCamera;
 
 /// <summary>
 /// 服务启动配置。首次启动会在数据目录生成配置文件；环境变量仅用于容器化部署或一次性迁移覆盖。
 /// </summary>
-public sealed class XiaomiCameraOptions : IDisposable
+public sealed partial class XiaomiCameraOptions : IDisposable
 {
     private const string ConfigPathVariable = "XIAOMI_CAMERA_CONFIG_PATH";
     private const string DataPathVariable = "XIAOMI_CAMERA_DATA_PATH";
@@ -21,6 +22,8 @@ public sealed class XiaomiCameraOptions : IDisposable
         WriteIndented = true,
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
+
+    private static readonly ConfigurationJsonContext ConfigurationJson = new(JsonOptions);
 
     private XiaomiCameraOptions(string configPath, string dataPath, byte[] dataKey, string bootstrapToken, string[] allowedOrigins, string? ffmpegPath, XiaomiMediaProfile mediaProfile, bool wasCreated)
     {
@@ -140,7 +143,7 @@ public sealed class XiaomiCameraOptions : IDisposable
         {
             RestrictConfigurationPermissions(configPath);
             var json = File.ReadAllText(configPath);
-            return JsonSerializer.Deserialize<CameraServiceConfiguration>(json, JsonOptions) ?? throw new InvalidOperationException("配置文件内容为空。");
+            return JsonSerializer.Deserialize(json, ConfigurationJson.CameraServiceConfiguration) ?? throw new InvalidOperationException("配置文件内容为空。");
         }
         catch (JsonException exception)
         {
@@ -153,7 +156,7 @@ public sealed class XiaomiCameraOptions : IDisposable
         var directory = Path.GetDirectoryName(configPath) ?? throw new InvalidOperationException("配置文件路径必须包含目录。");
         Directory.CreateDirectory(directory);
 
-        var json = JsonSerializer.Serialize(configuration, JsonOptions);
+        var json = JsonSerializer.Serialize(configuration, ConfigurationJson.CameraServiceConfiguration);
         using (var stream = new FileStream(configPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
         using (var writer = new StreamWriter(stream))
         {
@@ -290,6 +293,9 @@ public sealed class XiaomiCameraOptions : IDisposable
     private sealed record CameraServiceConfiguration(string? DataPath, string? DataKey, string? BootstrapToken, string[]? AllowedOrigins, string? FfmpegPath, MediaConfiguration? Media);
 
     private sealed record MediaConfiguration(string? Profile);
+
+    [JsonSerializable(typeof(CameraServiceConfiguration))]
+    private partial class ConfigurationJsonContext : JsonSerializerContext;
 
     private sealed record EnvironmentOverrides(string? ConfigPath, string? DataPath, string? DataKey, string? BootstrapToken, string? AllowedOrigins)
     {

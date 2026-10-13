@@ -114,7 +114,9 @@ Content-Type: application/json
 scripts/publish.sh --rid win-x64
 ```
 
-支持 `win-x64`、`win-arm64`、`linux-x64`、`linux-arm64`、`osx-x64`、`osx-arm64`。脚本执行自包含单文件 .NET 发布：主程序为 `XiaomiCamera`（Windows 为 `XiaomiCamera.exe`），包含 .NET 运行时、托管依赖、SQLite 等原生库及内嵌调试信息，部署机器无需安装 .NET。原生库会在启动时由 .NET 释放到运行账户的缓存目录。
+支持 `win-x64`、`win-arm64`、`linux-x64`、`linux-arm64`、`osx-x64`、`osx-arm64`。脚本执行自包含单文件 .NET 发布，默认启用完整代码裁剪和程序集压缩：主程序为 `XiaomiCamera`（Windows 为 `XiaomiCamera.exe`），包含裁剪后的 .NET 运行时、托管依赖、SQLite 等原生库及内嵌调试信息，部署机器无需安装 .NET。压缩会增加启动时的解压工作；原生库会在启动时由 .NET 释放到运行账户的缓存目录。
+
+HTTP 接口、配置文件、云会话和协议请求使用 JSON 源生成，保留原有字段名和数据格式。开发运行也关闭反射式 JSON 序列化；新增相关类型时，需同步补充对应的 `JsonSerializerContext`。当前服务不使用静态资源映射，发布时关闭静态资源清单和 IIS `web.config` 生成。
 
 默认主程序位于 `build/<RID>/`，FFmpeg 仍是独立二进制，由脚本下载、校验或复用，位于同一构建根目录的 `build/tools/ffmpeg/<RID>/`；部署时须保留这层目录关系。配置、SQLite 数据库及媒体文件在运行时生成，不打入主程序。发布到已有目录时可能保留旧版本的 DLL、PDB 或 `web.config`；只需分发新的主程序和 FFmpeg 工具目录。仓库根 `build.sh xiaomiCamera` 只搬运单文件主程序和工具目录，不带入这些残留文件或 `data/`。
 

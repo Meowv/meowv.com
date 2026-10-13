@@ -22,14 +22,9 @@ public sealed class Cs2MissClient(Cs2PpppConnection connection)
             throw new ArgumentOutOfRangeException(nameof(timeout));
         }
 
-        var authentication = JsonSerializer.Serialize(new
-        {
-            public_key = provisioning.ClientPublicKey,
-            sign = provisioning.Sign,
-            uuid = Guid.NewGuid(),
-            support_encrypt = 15,
-        });
-        var body = Encoding.UTF8.GetBytes(authentication);
+        var body = JsonSerializer.SerializeToUtf8Bytes(
+            new Cs2MissAuthenticationRequest(provisioning.ClientPublicKey, provisioning.Sign, Guid.NewGuid(), 15),
+            Cs2MissJsonContext.Default.Cs2MissAuthenticationRequest);
         var deadline = DateTimeOffset.UtcNow + timeout;
         var attempts = 0;
         while (DateTimeOffset.UtcNow < deadline)

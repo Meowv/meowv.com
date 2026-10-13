@@ -5,6 +5,8 @@ using XiaomiCamera.Cloud;
 var builder = WebApplication.CreateBuilder(args);
 var cameraOptions = XiaomiCameraOptions.Load();
 
+builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.TypeInfoResolverChain.Insert(0, XiaomiHttpJsonContext.Default));
+
 builder.Services.AddSingleton(cameraOptions);
 builder.Services.AddSingleton<XiaomiBootstrapAuthorization>();
 builder.Services.AddSingleton<XiaomiAccessCodeAuthorization>();
@@ -15,8 +17,11 @@ builder.Services.AddSingleton<XiaomiPlaybackTicketService>();
 builder.Services.AddSingleton<XiaomiLiveStreamService>();
 builder.Services.AddSingleton<XiaomiFfmpegResolver>();
 builder.Services.AddSingleton<XiaomiHlsService>();
+
 builder.Services.AddHttpClient("xiaomi-cloud", client => client.Timeout = TimeSpan.FromSeconds(20));
+
 builder.Services.AddCors(options => options.AddPolicy("studio", policy => policy.WithOrigins([.. cameraOptions.AllowedOrigins]).AllowAnyHeader().AllowAnyMethod()));
+
 builder.Services.AddRateLimiter(options =>
 {
     options.AddPolicy("bootstrap", context => CreateFailedRequestLimiter(context, permitLimit: 10));
@@ -34,6 +39,7 @@ if (cameraOptions.WasCreated)
 
 // 提前打开数据库，避免首个 API 请求承担建表与连接初始化延迟。
 _ = app.Services.GetRequiredService<XiaomiCredentialCache>();
+
 var ffmpeg = app.Services.GetRequiredService<XiaomiFfmpegResolver>();
 app.Logger.LogInformation("FFmpeg 启动预检通过，来源：{Source}", ffmpeg.Source);
 app.Logger.LogInformation(
@@ -45,6 +51,7 @@ app.Logger.LogInformation(
     cameraOptions.MediaProfile.TargetBitrateKbps,
     cameraOptions.MediaProfile.PeakBitrateKbps,
     cameraOptions.MediaProfile.EncoderPreset);
+
 app.UseCors("studio");
 app.UseRateLimiter();
 
@@ -264,7 +271,7 @@ app.MapPost("/api/cameras/{fingerprint}/ptz", async (HttpContext context, string
 
     try
     {
-        IResult result = (await hls.MotorStepAsync(fingerprint, operation, cancellationToken)) switch
+        var result = await hls.MotorStepAsync(fingerprint, operation, cancellationToken) switch
         {
             XiaomiMotorStepResult.Sent => Results.Ok(new XiaomiMotorStepResponse("sent")),
             XiaomiMotorStepResult.NoSession => Results.Conflict(new XiaomiSetupError("camera_session_unavailable", "请先启动该摄像头的预览。")),
@@ -312,7 +319,7 @@ app.MapGet("/api/playback-sessions/{ticket}/index.m3u8", async (HttpContext cont
         context.Response.StatusCode = exception.Retryable
             ? StatusCodes.Status503ServiceUnavailable
             : StatusCodes.Status400BadRequest;
-        return Results.Json(new XiaomiSetupError("xiaomi_playback_failed", exception.Message));
+        return Results.Json(new XiaomiSetupError("xiaomi_playback_failed", exception.Message), XiaomiHttpJsonContext.Default.XiaomiSetupError);
     }
 });
 
@@ -332,11 +339,11 @@ app.MapGet("/api/playback-sessions/{ticket}/{name}", (HttpContext context, strin
 app.Run();
 return;
 
-static IResult BootstrapUnauthorized() => Results.Json(new XiaomiSetupError("bootstrap_unauthorized", "部署密钥无效。"), statusCode: StatusCodes.Status401Unauthorized);
+static IResult BootstrapUnauthorized() => Results.Json(new XiaomiSetupError("bootstrap_unauthorized", "部署密钥无效。"), XiaomiHttpJsonContext.Default.XiaomiSetupError, statusCode: StatusCodes.Status401Unauthorized);
 
-static IResult AccessCodeUnauthorized() => Results.Json(new XiaomiSetupError("access_code_unauthorized", "授权码无效。"), statusCode: StatusCodes.Status401Unauthorized);
+static IResult AccessCodeUnauthorized() => Results.Json(new XiaomiSetupError("access_code_unauthorized", "授权码无效。"), XiaomiHttpJsonContext.Default.XiaomiSetupError, statusCode: StatusCodes.Status401Unauthorized);
 
-static IResult XiaomiSessionExpired() => Results.Json(new XiaomiSetupError("xiaomi_session_expired", "小米登录会话已失效，请使用部署密钥重新初始化。"), statusCode: StatusCodes.Status409Conflict);
+static IResult XiaomiSessionExpired() => Results.Json(new XiaomiSetupError("xiaomi_session_expired", "小米登录会话已失效，请使用部署密钥重新初始化。"), XiaomiHttpJsonContext.Default.XiaomiSetupError, statusCode: StatusCodes.Status409Conflict);
 
 static RateLimitPartition<string> CreateFailedRequestLimiter(HttpContext context, int permitLimit) => RateLimitPartition.GetFixedWindowLimiter(context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
 {

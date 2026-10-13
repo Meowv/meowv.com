@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <PackageReference Include="NSec.Cryptography" Version="26.4.0" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="NSec.Cryptography" Version="26.4.0" />
+    </ItemGroup>
 </Project>

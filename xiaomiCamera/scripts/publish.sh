@@ -12,6 +12,7 @@ usage() {
 
 --output 指定构建根目录，默认是项目中的 build/。应用产物位于 <DIR>/<RID>/，
 主程序为 XiaomiCamera（Windows 为 XiaomiCamera.exe），无需单独分发 .NET DLL。
+默认启用代码裁剪和单文件压缩。
 FFmpeg 缓存位于 <DIR>/tools/ffmpeg/<RID>/，不属于任何单个平台目录。
 未传 --ffmpeg-release 时，Windows 使用固定的 BtbN GPL 快照，其他平台使用固定版本 v9.0.2。
 
@@ -68,6 +69,9 @@ dotnet publish "$project_dir/src/XiaomiCamera/XiaomiCamera.csproj" \
   --runtime "$rid" \
   --self-contained true \
   -p:PublishSingleFile=true \
+  -p:PublishTrimmed=true \
+  -p:TrimMode=full \
+  -p:EnableCompressionInSingleFile=true \
   -p:IncludeNativeLibrariesForSelfExtract=true \
   -p:DebugType=embedded \
   -p:IsTransformWebConfigDisabled=true \

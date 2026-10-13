@@ -91,7 +91,7 @@ public sealed class XiaomiCredentialCache : IDisposable
             {
                 using var cipher = new AesGcm(dataKey, TagLength);
                 cipher.Decrypt(nonce, ciphertext, tag, plaintext);
-                var credentials = JsonSerializer.Deserialize<XiaomiCloudCredentials>(plaintext);
+                var credentials = JsonSerializer.Deserialize(plaintext, XiaomiStorageJsonContext.Default.XiaomiCloudCredentials);
                 if (IsValid(credentials)) return credentials;
                 Clear(version);
                 return null;
@@ -122,7 +122,7 @@ public sealed class XiaomiCredentialCache : IDisposable
             throw new InvalidOperationException("小米云会话字段无效。");
         }
 
-        var plaintext = JsonSerializer.SerializeToUtf8Bytes(credentials);
+        var plaintext = JsonSerializer.SerializeToUtf8Bytes(credentials, XiaomiStorageJsonContext.Default.XiaomiCloudCredentials);
         var nonce = RandomNumberGenerator.GetBytes(NonceLength);
         var tag = new byte[TagLength];
         var ciphertext = new byte[plaintext.Length];

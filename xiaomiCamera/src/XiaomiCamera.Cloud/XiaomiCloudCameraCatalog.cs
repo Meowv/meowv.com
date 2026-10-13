@@ -89,12 +89,9 @@ public sealed class XiaomiCloudCameraCatalog(HttpClient httpClient, XiaomiCloudC
 
     private Task<JsonDocument> PostVendorAsync(CameraDescriptor camera, string appPublicKey, CancellationToken cancellationToken)
     {
-        var request = JsonSerializer.Serialize(new
-        {
-            app_pubkey = appPublicKey,
-            did = camera.Id,
-            support_vendors = "TUTK_CS2_MTP",
-        });
+        var request = JsonSerializer.Serialize(
+            new XiaomiTransportVendorRequest(appPublicKey, camera.Id, "TUTK_CS2_MTP"),
+            XiaomiCloudJsonContext.Default.XiaomiTransportVendorRequest);
 
         return PostResultAsync(VendorPath, request, cancellationToken);
     }
