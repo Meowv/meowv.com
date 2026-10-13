@@ -288,22 +288,25 @@ stage_output() {
   local destination
   local first_entry
   local tools_source
+  local camera_executable
 
   if [ "$project" = "xiaomiCamera" ]; then
     source="$(source_path "$project")"
     destination="$STAGING_DIR/$(destination_name "$project")"
     tools_source="$ROOT_DIR/xiaomiCamera/build/tools/ffmpeg/$XIAOMI_CAMERA_RID"
+    camera_executable='XiaomiCamera'
+    case "$XIAOMI_CAMERA_RID" in
+      win-*) camera_executable='XiaomiCamera.exe' ;;
+    esac
 
-    if [ ! -d "$source" ] || [ ! -d "$tools_source" ]; then
+    if [ ! -f "$source/$camera_executable" ] || [ ! -d "$tools_source" ]; then
       echo "错误：xiaomiCamera 编译完成后未找到 $XIAOMI_CAMERA_RID 产物或 FFmpeg 工具缓存。" >&2
       exit 1
     fi
 
     mkdir -p "$destination/$XIAOMI_CAMERA_RID"
-    cp -R "$source"/. "$destination/$XIAOMI_CAMERA_RID"/
-    # 历史发布目录可能有残留 data/；运行时配置和数据库只能留在服务端持久化目录，
-    # 绝不能随着 Studio 静态部署目录上传。
-    rm -rf "$destination/$XIAOMI_CAMERA_RID/data"
+    # 只分发单文件主程序，避免复制旧构建依赖及运行时配置、数据库。
+    cp "$source/$camera_executable" "$destination/$XIAOMI_CAMERA_RID/"
     mkdir -p "$destination/tools/ffmpeg"
     cp -R "$tools_source" "$destination/tools/ffmpeg/$XIAOMI_CAMERA_RID"
     echo "[$project] 已暂存到 $(destination_name "$project")/$XIAOMI_CAMERA_RID/ + tools/"

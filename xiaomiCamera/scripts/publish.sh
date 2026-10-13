@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# 发布为自包含 .NET 包。FFmpeg 缓存在构建根目录下，供同一 RID 的后续发布复用。
+# 发布为自包含单文件主程序。FFmpeg 缓存在构建根目录下，供同一 RID 的后续发布复用。
 default_ffmpeg_release='v9.0.2'
 # Windows 使用包含 libx264 的 GPL 构建；该 tag 是 BtbN 发布的不可变快照。
 default_windows_ffmpeg_release='autobuild-2026-10-11-13-04'
@@ -11,6 +11,7 @@ usage() {
 用法：scripts/publish.sh --rid <RID> [--ffmpeg-release <TAG>] [--output <DIR>] [--source-base <URL>]
 
 --output 指定构建根目录，默认是项目中的 build/。应用产物位于 <DIR>/<RID>/，
+主程序为 XiaomiCamera（Windows 为 XiaomiCamera.exe），无需单独分发 .NET DLL。
 FFmpeg 缓存位于 <DIR>/tools/ffmpeg/<RID>/，不属于任何单个平台目录。
 未传 --ffmpeg-release 时，Windows 使用固定的 BtbN GPL 快照，其他平台使用固定版本 v9.0.2。
 
@@ -66,7 +67,10 @@ dotnet publish "$project_dir/src/XiaomiCamera/XiaomiCamera.csproj" \
   --configuration Release \
   --runtime "$rid" \
   --self-contained true \
-  -p:PublishSingleFile=false \
+  -p:PublishSingleFile=true \
+  -p:IncludeNativeLibrariesForSelfExtract=true \
+  -p:DebugType=embedded \
+  -p:IsTransformWebConfigDisabled=true \
   --output "$publish_dir"
 
 sha256() {

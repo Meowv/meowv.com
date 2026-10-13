@@ -114,6 +114,10 @@ Content-Type: application/json
 scripts/publish.sh --rid win-x64
 ```
 
-支持 `win-x64`、`win-arm64`、`linux-x64`、`linux-arm64`、`osx-x64`、`osx-arm64`。脚本执行自包含 .NET 发布，并下载、校验或复用目标平台的 FFmpeg。默认产物位于 `build/<RID>/`，FFmpeg 位于同一构建根目录的 `build/tools/ffmpeg/<RID>/`；部署时须保留这层目录关系。可用 `--output <DIR>` 更换构建根目录，用 `--ffmpeg-release <TAG>` 指定不可变 Release tag。下载来源和许可证信息记录在 FFmpeg 缓存目录的 `SOURCE.txt`；具体默认来源、参数及校验规则以 [`scripts/publish.sh`](scripts/publish.sh) 和 [`scripts/fetch-ffmpeg.sh`](scripts/fetch-ffmpeg.sh) 为准。
+支持 `win-x64`、`win-arm64`、`linux-x64`、`linux-arm64`、`osx-x64`、`osx-arm64`。脚本执行自包含单文件 .NET 发布：主程序为 `XiaomiCamera`（Windows 为 `XiaomiCamera.exe`），包含 .NET 运行时、托管依赖、SQLite 等原生库及内嵌调试信息，部署机器无需安装 .NET。原生库会在启动时由 .NET 释放到运行账户的缓存目录。
+
+默认主程序位于 `build/<RID>/`，FFmpeg 仍是独立二进制，由脚本下载、校验或复用，位于同一构建根目录的 `build/tools/ffmpeg/<RID>/`；部署时须保留这层目录关系。配置、SQLite 数据库及媒体文件在运行时生成，不打入主程序。发布到已有目录时可能保留旧版本的 DLL、PDB 或 `web.config`；只需分发新的主程序和 FFmpeg 工具目录。仓库根 `build.sh xiaomiCamera` 只搬运单文件主程序和工具目录，不带入这些残留文件或 `data/`。
+
+可用 `--output <DIR>` 更换构建根目录，用 `--ffmpeg-release <TAG>` 指定不可变 Release tag。下载来源和许可证信息记录在 FFmpeg 缓存目录的 `SOURCE.txt`；具体默认来源、参数及校验规则以 [`scripts/publish.sh`](scripts/publish.sh) 和 [`scripts/fetch-ffmpeg.sh`](scripts/fetch-ffmpeg.sh) 为准。
 
 转码使用 `libx264`，Windows 默认发布包包含 GPL FFmpeg 二进制。再分发或交付发布包前，需核对 FFmpeg、x264 及相应二进制的许可证和来源材料。
