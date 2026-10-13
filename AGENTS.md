@@ -1,6 +1,6 @@
 # 仓库协作指南
 
-适用于仓库根目录及 `blog/`、`studio/`、`wallpapers/`、`livewall/`。项目用途、结构和命令写在各项目 `README.md`；项目修改边界和验证写在各项目 `AGENTS.md`。本文件只保留跨项目规则、根脚本约定和共享安全边界。
+适用于仓库根目录及 `blog/`、`studio/`、`wallpapers/`、`livewall/`、`xiaomiCamera/`。项目用途、结构和命令写在各项目 `README.md`；项目修改边界和验证写在各项目 `AGENTS.md`。本文件只保留跨项目规则、根脚本约定和共享安全边界。
 
 ## 通用规则
 
@@ -30,9 +30,9 @@
 
 根目录 `run.sh`、`build.sh`、`deploy.sh` 面向 macOS Bash；子项目脚本由对应项目文档负责。
 
-- `run.sh` / `build.sh` 支持无参数、独占 `all`、一个或多个项目参数，以及 `blog`/`b`、`studio`/`s`、`livewall`/`lw` 简写。`run.sh wallpapers`/`w` 默认执行 `crawl`，并支持 `crawl`、`publish`、`stats`、`check`。
-- Blog 端口为 `4000`，Studio 端口为 `4001`；Zitie 由 Studio 的 `/zitie/` 提供。端口清理只能影响对应监听进程。
-- `build.sh` 按参数顺序构建；全量构建成功后才替换 `build/`，指定项目只替换对应目录。固定产物目录为 `build/meowv.com/`、`build/studio.meowv.com/` 和 `build/livewall/LiveWall.app/`。
+- `run.sh` / `build.sh` 支持无参数、独占 `all`、一个或多个项目参数，以及 `blog`/`b`、`studio`/`s`、`livewall`/`lw`、`xiaomiCamera`/`xc` 简写。`run.sh wallpapers`/`w` 默认执行 `crawl`，并支持 `crawl`、`publish`、`stats`、`check`。
+- Blog 端口为 `4000`，Studio 端口为 `4001`，XiaomiCamera 端口为 `5189`；Zitie 由 Studio 的 `/zitie/` 提供。端口清理只能影响对应监听进程。
+- `build.sh` 按参数顺序构建；全量构建成功后才替换 `build/`，指定项目只替换对应目录。固定产物目录为 `build/meowv.com/`、`build/studio.meowv.com/`、`build/studio.meowv.com/xiaomiCamera/` 和 `build/livewall/LiveWall.app/`。
 - `--with-wallpapers` 只能与 `studio` 使用；`--with-dmg` 只能与 `livewall` 使用。前者生成并签名 livewall 内容清单，后者把 DMG、`version.json` 和 `version.json.sig` 放入 Studio 部署目录。
 - `catalog.json` 与 `catalog.json.sig` 必须同批生成；`version.json` 与 `version.json.sig` 也必须同批。清理内容清单时不能误删版本更新文件。Studio 单独构建时要保留已有 livewall 更新产物。
 - 发布构建才传 `livewall/build.sh --bump-build`；本地运行路径不得递增 `CFBundleVersion`。DMG 文件名、摘要和 `fileURL` 由 `livewall/make-dmg.sh` 生成，根脚本只搬运和核对。

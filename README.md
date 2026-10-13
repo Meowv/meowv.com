@@ -1,6 +1,6 @@
 # Meowv Projects
 
-Blog、Studio、Wallpapers 和 livewall 位于同一仓库，但各自独立，不是统一 workspace。Blog 与 Studio 是静态站点；Wallpapers 生成站点和 livewall 使用的数据；livewall 是 macOS 原生视频壁纸 App。构建在本机完成，根脚本将产物汇总到 `build/`。
+Blog、Studio、Wallpapers、livewall 和 XiaomiCamera 位于同一仓库，但各自独立，不是统一 workspace。Blog 与 Studio 是静态站点；Wallpapers 生成站点和 livewall 使用的数据；livewall 是 macOS 原生视频壁纸 App；XiaomiCamera 是摄像头服务。构建在本机完成，根脚本将产物汇总到 `build/`。
 
 ## 项目概览
 
@@ -10,7 +10,7 @@ Blog、Studio、Wallpapers 和 livewall 位于同一仓库，但各自独立，�
 | `studio/` | 浏览器本地工具，包含 Zitie：[README](./studio/README.md) · [协作约定](./studio/AGENTS.md) | [studio.meowv.com](https://studio.meowv.com)，Zitie 为 [/zitie/](https://studio.meowv.com/zitie/) |
 | `wallpapers/` | Python 壁纸采集与目录导出：[README](./wallpapers/README.md) · [协作约定](./wallpapers/AGENTS.md) | 仅本地处理 |
 | `livewall/` | Swift 视频动态壁纸：[README](./livewall/README.md) · [协作约定](./livewall/AGENTS.md) | 本机 App |
-| `xiaomiCamera/` | 小米摄像头服务：[README](./xiaomiCamera/README.md) | 随 Studio 部署目录上传 |
+| `xiaomiCamera/` | 小米摄像头服务：[README](./xiaomiCamera/README.md) · [协作约定](./xiaomiCamera/AGENTS.md) | 构建产物位于 Studio 部署目录 |
 
 跨项目修改边界见[仓库协作指南](./AGENTS.md)。根目录的 `run.sh`、`build.sh` 和 `deploy.sh` 分别负责启动、构建汇总与上传；各子项目的独立命令以其 README 为准。
 
@@ -22,6 +22,7 @@ Blog、Studio、Wallpapers 和 livewall 位于同一仓库，但各自独立，�
 | Studio | Node.js `>=22.12.0`、`studio/package.json` 指定版本的 pnpm | `cd studio && pnpm install --frozen-lockfile` |
 | Wallpapers | Python `>=3.12`；运行时只用标准库 | 无需安装；测试依赖见[项目 README](./wallpapers/README.md) |
 | livewall | macOS、Xcode Command Line Tools | `swift --version` 检查工具链；无需完整 Xcode |
+| XiaomiCamera | .NET 10 SDK；本地运行需有包含 `libx264` 的 FFmpeg | 运行与发布方式见[项目 README](./xiaomiCamera/README.md) |
 
 请在目标项目目录安装依赖，不在仓库根目录安装或混用包管理器。依赖版本、脚本和测试命令以各项目清单及 README 为准。
 
@@ -32,19 +33,19 @@ Blog、Studio、Wallpapers 和 livewall 位于同一仓库，但各自独立，�
 ### 启动
 
 ```bash
-./run.sh                 # 并行启动 Blog、Studio、livewall
+./run.sh                 # 并行启动 Blog、Studio、livewall、XiaomiCamera
 ./run.sh b s             # 只启动 Blog 与 Studio
 ./run.sh w               # Wallpapers，默认执行 crawl
 ./run.sh w stats         # 也支持 crawl、publish、check 及其 CLI 参数
 ./run.sh xiaomiCamera    # 启动摄像头服务：http://localhost:5189
 ```
 
-Blog 固定使用 `http://localhost:4000`，Studio 固定使用 `http://localhost:4001`，Zitie 在 Studio 的 `/zitie/`。启动前脚本会结束占用这两个端口的监听进程；并行运行时按 `Ctrl+C` 停止本次启动的项目。脚本不会自动安装依赖。
+Blog 固定使用 `http://localhost:4000`，Studio 固定使用 `http://localhost:4001`，XiaomiCamera 使用 `http://127.0.0.1:5189`；Zitie 在 Studio 的 `/zitie/`。启动前脚本会结束占用所启动项目对应端口的监听进程；并行运行时按 `Ctrl+C` 停止本次启动的项目。脚本不会自动安装依赖。
 
 ### 构建
 
 ```bash
-./build.sh                         # 构建 Blog、Studio、livewall
+./build.sh                         # 构建 Blog、Studio、livewall、XiaomiCamera
 ./build.sh blog studio             # 按参数顺序构建指定项目
 ./build.sh wallpapers             # 只生成壁纸目录，不构建项目
 ./build.sh studio --with-wallpapers
@@ -76,7 +77,7 @@ DEPLOY_PORT=22
 DEPLOY_PASSWORD='' # 可选：rclone obscure 的密文；留空则交互输入
 ```
 
-将文件权限设为 `600`；环境变量可以覆盖同名配置。部署目标由脚本固定为 `C:\_qix\meowv.com` 和 `C:\_qix\studio.meowv.com`。摄像头服务产物会随 `studio` 同步至 `C:\_qix\studio.meowv.com\xiaomiCamera\`；执行前需与实际服务器配置核对。
+将文件权限设为 `600`；环境变量可以覆盖同名配置。部署目标由脚本固定为 `C:\_qix\meowv.com` 和 `C:\_qix\studio.meowv.com`。摄像头服务产物会随 `studio` 同步至 `C:\_qix\studio.meowv.com\xiaomiCamera\`；执行前需与实际服务器配置核对。若该目录可通过站点访问，启动服务前须把 XiaomiCamera 配置文件和数据库放在站点目录之外，设置方式见[项目 README](./xiaomiCamera/README.md)。
 
 ```bash
 ./deploy.sh studio --dry-run  # 连接并预览上传、删除清单，不修改远端
