@@ -44,9 +44,9 @@ public sealed class XiaomiLiveStreamService(XiaomiCredentialCache credentialCach
             try
             {
                 stage.Restart();
-                await miss.StartVideoAsync(sessionKey, quality: 2, cancellationToken);
-                LogStage("视频请求启动", stage, total);
-                return new XiaomiLiveStream(relay, pppp, miss, sessionKey);
+                await miss.StartVideoAsync(sessionKey, quality: 2, enableAudio: true, cancellationToken: cancellationToken);
+                LogStage("音视频请求启动", stage, total);
+                return new XiaomiLiveStream(relay, pppp, miss, sessionKey, camera.Camera.Model, logger);
             }
             catch
             {
@@ -72,14 +72,42 @@ public sealed class XiaomiLiveStream : IAsyncDisposable
     private readonly Cs2PpppConnection pppp;
     private readonly Cs2MissClient miss;
     private readonly byte[] sessionKey;
+    private readonly ILogger logger;
+    private readonly CancellationTokenSource lifetime = new();
+    private readonly SemaphoreSlim commandLock = new(1, 1);
+    private readonly Task commandReader;
+    private readonly Stopwatch audioWait = Stopwatch.StartNew();
+    private bool audioSeen;
+    private bool audioAsked;
+    private readonly HashSet<int> unknownCodecs = [];
     private bool disposed;
 
-    internal XiaomiLiveStream(Cs2RelaySession relay, Cs2PpppConnection pppp, Cs2MissClient miss, byte[] sessionKey)
+    internal XiaomiLiveStream(Cs2RelaySession relay, Cs2PpppConnection pppp, Cs2MissClient miss, byte[] sessionKey, string model, ILogger logger)
     {
         this.relay = relay;
         this.pppp = pppp;
         this.miss = miss;
         this.sessionKey = sessionKey;
+        this.logger = logger;
+        Model = model;
+        commandReader = Task.Run(DrainCommandsAsync);
+    }
+
+    public string Model { get; }
+
+    public async Task MotorStepAsync(int operation, CancellationToken cancellationToken)
+    {
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, lifetime.Token);
+        await commandLock.WaitAsync(linked.Token);
+        try
+        {
+            ObjectDisposedException.ThrowIf(disposed, this);
+            await miss.MotorStepAsync(sessionKey, operation, linked.Token);
+        }
+        finally
+        {
+            commandLock.Release();
+        }
     }
 
     public async IAsyncEnumerable<Cs2MediaPacket> ReadMediaFramesAsync([System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
@@ -94,12 +122,85 @@ public sealed class XiaomiLiveStream : IAsyncDisposable
 
             try
             {
-                yield return Cs2MediaPacket.Parse(message, sessionKey);
+                var packet = Cs2MediaPacket.Parse(message, sessionKey);
+                if (packet.IsAudio && !audioSeen)
+                {
+                    audioSeen = true;
+                    logger.LogInformation("收到摄像头音频帧，编码 {Codec}，采样率标志 {SampleRate} Hz，时间戳 {TimestampMs} ms", packet.CodecName, packet.AudioSampleRate, packet.TimestampMilliseconds);
+                }
+
+                if (!packet.IsVideo && !packet.IsAudio && unknownCodecs.Count < 16 && unknownCodecs.Add(packet.CodecId))
+                {
+                    logger.LogInformation("收到尚未识别的摄像头媒体编码 ID {CodecId}，标志 {Flags}", packet.CodecId, packet.Flags);
+                }
+
+                if (!audioSeen && !audioAsked && audioWait.Elapsed >= TimeSpan.FromSeconds(3))
+                {
+                    audioAsked = true;
+                    try
+                    {
+                        await miss.StartAudioAsync(sessionKey, cancellationToken);
+                    }
+                    catch
+                    {
+                        CryptographicOperations.ZeroMemory(packet.Payload);
+                        throw;
+                    }
+
+                    logger.LogInformation("未收到音频帧，已补发 MISS 音频请求");
+                }
+
+                yield return packet;
             }
             finally
             {
                 CryptographicOperations.ZeroMemory(message);
             }
+        }
+    }
+
+    private async Task DrainCommandsAsync()
+    {
+        try
+        {
+            while (!lifetime.IsCancellationRequested)
+            {
+                var reply = await pppp.ReadCommandAsync(TimeSpan.FromSeconds(2), lifetime.Token);
+                if (reply is null)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    if (reply.Command == Cs2MissClient.EncryptedCommand)
+                    {
+                        try
+                        {
+                            var plaintext = Cs2MissCrypto.Decrypt(sessionKey, reply.Body);
+                            CryptographicOperations.ZeroMemory(plaintext);
+                        }
+                        catch (Cs2ProtocolException)
+                        {
+                            // 单条异常响应不应停止命令通道的持续消费。
+                        }
+                    }
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(reply.Body);
+                }
+            }
+        }
+        catch (OperationCanceledException) when (lifetime.IsCancellationRequested)
+        {
+        }
+        catch (System.Threading.Channels.ChannelClosedException)
+        {
+        }
+        catch (Exception exception)
+        {
+            logger.LogWarning("摄像头命令接收已停止：{ExceptionType}", exception.GetType().Name);
         }
     }
 
@@ -111,6 +212,9 @@ public sealed class XiaomiLiveStream : IAsyncDisposable
         }
 
         disposed = true;
+        await lifetime.CancelAsync();
+        await commandReader;
+        await commandLock.WaitAsync();
         try
         {
             await miss.StopVideoAsync(sessionKey, CancellationToken.None);
@@ -120,9 +224,18 @@ public sealed class XiaomiLiveStream : IAsyncDisposable
             // 断开 UDP 会话仍会停止设备端推送。
         }
 
-        CryptographicOperations.ZeroMemory(sessionKey);
-        await pppp.DisposeAsync();
-        relay.Dispose();
+        try
+        {
+            CryptographicOperations.ZeroMemory(sessionKey);
+            await pppp.DisposeAsync();
+        }
+        finally
+        {
+            relay.Dispose();
+            commandLock.Release();
+            commandLock.Dispose();
+            lifetime.Dispose();
+        }
     }
 }
 

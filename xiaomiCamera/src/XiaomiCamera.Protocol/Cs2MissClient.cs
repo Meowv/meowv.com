@@ -3,13 +3,15 @@ using System.Text.Json;
 
 namespace XiaomiCamera.Protocol;
 
-/// <summary>MISS 的明文鉴权阶段；媒体与后续加密命令由下一里程碑实现。</summary>
+/// <summary>MISS 明文鉴权及会话建立后的加密播放与控制命令。</summary>
 public sealed class Cs2MissClient(Cs2PpppConnection connection)
 {
     public const int AuthenticateRequest = 0x100;
     public const int AuthenticateResponse = 0x101;
     public const int StartVideoRequest = 0x102;
     public const int StopVideoRequest = 0x103;
+    public const int StartAudioRequest = 0x104;
+    public const int MotorRequest = 0x112;
     public const int EncryptedCommand = 0x1001;
 
     public async Task AuthenticateAsync(Cs2Provisioning provisioning, TimeSpan timeout, CancellationToken cancellationToken)
@@ -68,15 +70,28 @@ public sealed class Cs2MissClient(Cs2PpppConnection connection)
         }
     }
 
-    public async Task StartVideoAsync(byte[] sessionKey, int quality, CancellationToken cancellationToken)
+    public async Task StartVideoAsync(byte[] sessionKey, int quality, bool enableAudio, CancellationToken cancellationToken)
     {
         if (quality is < 0 or > 3)
         {
             throw new ArgumentOutOfRangeException(nameof(quality));
         }
 
-        var body = Encoding.UTF8.GetBytes($"{{\"videoquality\":{quality},\"enableaudio\":0}}");
+        var body = Encoding.UTF8.GetBytes($"{{\"videoquality\":{quality},\"enableaudio\":{(enableAudio ? 1 : 0)}}}");
         await SendEncryptedAsync(sessionKey, StartVideoRequest, body, cancellationToken);
+    }
+
+    public Task StartAudioAsync(byte[] sessionKey, CancellationToken cancellationToken) =>
+        SendEncryptedAsync(sessionKey, StartAudioRequest, ReadOnlyMemory<byte>.Empty, cancellationToken);
+
+    public Task MotorStepAsync(byte[] sessionKey, int operation, CancellationToken cancellationToken)
+    {
+        if (operation is < 1 or > 4)
+        {
+            throw new ArgumentOutOfRangeException(nameof(operation));
+        }
+
+        return SendEncryptedAsync(sessionKey, MotorRequest, Encoding.UTF8.GetBytes($"{{\"operation\":{operation}}}"), cancellationToken);
     }
 
     public Task StopVideoAsync(byte[] sessionKey, CancellationToken cancellationToken) => SendEncryptedAsync(sessionKey, StopVideoRequest, ReadOnlyMemory<byte>.Empty, cancellationToken);

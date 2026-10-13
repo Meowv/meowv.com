@@ -8,6 +8,8 @@ public sealed record Cs2MediaPacket(int CodecId, uint Sequence, uint Flags, long
     public const int HeaderLength = 32;
     public bool IsKeyFrame => (Flags & 1) != 0;
     public bool IsVideo => CodecId is 4 or 5;
+    public bool IsAudio => CodecId is 1024 or 1026 or 1027 or 1032;
+    public int AudioSampleRate => ((Flags >> 3) & 15) == 0 ? 8000 : 16000;
 
     public string CodecName => CodecId switch
     {
@@ -15,6 +17,8 @@ public sealed record Cs2MediaPacket(int CodecId, uint Sequence, uint Flags, long
         5 => "H265",
         1027 => "PCMA",
         1032 => "OPUS",
+        1026 => "PCMU",
+        1024 => "PCM",
         _ => $"codec-{CodecId}",
     };
 

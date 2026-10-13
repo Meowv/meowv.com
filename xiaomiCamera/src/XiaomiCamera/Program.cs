@@ -22,6 +22,7 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy("bootstrap", context => CreateFailedRequestLimiter(context, permitLimit: 10));
     options.AddPolicy("access-code", context => CreateFailedRequestLimiter(context, permitLimit: 30));
     options.AddPolicy("playback-session", context => CreateFailedRequestLimiter(context, permitLimit: 20));
+    options.AddPolicy("motor", context => CreateFailedRequestLimiter(context, permitLimit: 20));
 });
 
 var app = builder.Build();
@@ -221,7 +222,8 @@ app.MapPost("/api/playback-sessions", async (HttpContext context, XiaomiAccessCo
         return Results.Ok(new XiaomiPlaybackSessionResponse(
             $"{sessionUrl}/index.m3u8",
             preparation.Status,
-            $"{sessionUrl}/status"));
+            $"{sessionUrl}/status",
+            preparation.AudioAvailable));
     }
     catch (XiaomiCloudSessionExpiredException)
     {
@@ -234,6 +236,44 @@ app.MapPost("/api/playback-sessions", async (HttpContext context, XiaomiAccessCo
         return Results.Problem("无法创建摄像头播放会话。", statusCode: StatusCodes.Status503ServiceUnavailable);
     }
 }).RequireRateLimiting("playback-session");
+
+app.MapPost("/api/cameras/{fingerprint}/ptz", async (HttpContext context, string fingerprint, XiaomiMotorStepRequest input, XiaomiAccessCodeAuthorization authorization, XiaomiHlsService hls, CancellationToken cancellationToken) =>
+{
+    if (!authorization.IsAuthorized(context.Request))
+    {
+        return AccessCodeUnauthorized();
+    }
+
+    var operation = input.Direction?.ToLowerInvariant() switch
+    {
+        "left" => 1,
+        "right" => 2,
+        "up" => 3,
+        "down" => 4,
+        _ => 0,
+    };
+    if (operation == 0)
+    {
+        return Results.BadRequest(new XiaomiSetupError("invalid_direction", "方向仅支持 left、right、up、down。"));
+    }
+
+    try
+    {
+        IResult result = (await hls.MotorStepAsync(fingerprint, operation, cancellationToken)) switch
+        {
+            XiaomiMotorStepResult.Sent => Results.Ok(new XiaomiMotorStepResponse("sent")),
+            XiaomiMotorStepResult.NoSession => Results.Conflict(new XiaomiSetupError("camera_session_unavailable", "请先启动该摄像头的预览。")),
+            XiaomiMotorStepResult.TooFrequent => Results.StatusCode(StatusCodes.Status429TooManyRequests),
+            XiaomiMotorStepResult.UnsupportedModel => Results.BadRequest(new XiaomiSetupError("ptz_model_unverified", "该型号尚未验证云台指令。")),
+            _ => Results.StatusCode(StatusCodes.Status503ServiceUnavailable),
+        };
+        return result;
+    }
+    catch (Exception) when (!cancellationToken.IsCancellationRequested)
+    {
+        return Results.Problem("云台指令发送失败。", statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+}).RequireRateLimiting("motor");
 
 app.MapGet("/api/playback-sessions/{ticket}/status", (string ticket, XiaomiPlaybackTicketService tickets, XiaomiHlsService hls) =>
 {
@@ -315,7 +355,11 @@ public sealed record XiaomiPlaybackCamera(string DeviceFingerprint, string Model
 
 public sealed record XiaomiPlaybackSessionRequest(string DeviceFingerprint);
 
-public sealed record XiaomiPlaybackSessionResponse(string PlaylistUrl, string Status, string StatusUrl);
+public sealed record XiaomiMotorStepRequest(string? Direction);
+
+public sealed record XiaomiMotorStepResponse(string Status);
+
+public sealed record XiaomiPlaybackSessionResponse(string PlaylistUrl, string Status, string StatusUrl, bool AudioAvailable);
 
 public sealed record XiaomiSetupResponse(string Status, Guid? AttemptId, string? VerificationKind, string? VerificationDestination, bool? UsedCachedSession, string? AccessCode)
 {

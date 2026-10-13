@@ -16,7 +16,15 @@ public sealed class Cs2PpppConnection(Cs2RelaySession relaySession, Cs2RelayEsta
     private readonly Cs2DataChannel commandChannel = new();
     private readonly Cs2DataChannel mediaChannel = new();
 
-    private readonly Channel<byte[]> commands = Channel.CreateUnbounded<byte[]>();
+    private readonly Channel<byte[]> commands = Channel.CreateBounded<byte[]>(
+        new BoundedChannelOptions(64)
+        {
+            FullMode = BoundedChannelFullMode.Wait,
+            SingleReader = true,
+            SingleWriter = true,
+        });
+
+    private readonly SemaphoreSlim commandSendLock = new(1, 1);
 
     // 有界排队；满载时中止并重建媒体会话，不能静默丢弃压缩帧后继续解码。
     private readonly Channel<byte[]> media = Channel.CreateBounded<byte[]>(
@@ -48,17 +56,25 @@ public sealed class Cs2PpppConnection(Cs2RelaySession relaySession, Cs2RelayEsta
     public async Task SendCommandAsync(int command, ReadOnlyMemory<byte> body, CancellationToken cancellationToken)
     {
         ThrowIfDisposed();
-        var message = new byte[8 + body.Length];
-        BinaryPrimitives.WriteInt32BigEndian(message, 4 + body.Length);
-        BinaryPrimitives.WriteInt32BigEndian(message.AsSpan(4), command);
-        body.CopyTo(message.AsMemory(8));
+        await commandSendLock.WaitAsync(cancellationToken);
+        try
+        {
+            var message = new byte[8 + body.Length];
+            BinaryPrimitives.WriteInt32BigEndian(message, 4 + body.Length);
+            BinaryPrimitives.WriteInt32BigEndian(message.AsSpan(4), command);
+            body.CopyTo(message.AsMemory(8));
 
-        var payload = new byte[4 + message.Length];
-        payload[0] = 0xD1;
-        payload[1] = CommandChannel;
-        BinaryPrimitives.WriteUInt16BigEndian(payload.AsSpan(2), commandSequence++);
-        message.CopyTo(payload, 4);
-        await relaySession.SendFrameAsync(relay.Relay, new Cs2Frame(Cs2MessageType.Drw, payload), cancellationToken);
+            var payload = new byte[4 + message.Length];
+            payload[0] = 0xD1;
+            payload[1] = CommandChannel;
+            BinaryPrimitives.WriteUInt16BigEndian(payload.AsSpan(2), commandSequence++);
+            message.CopyTo(payload, 4);
+            await relaySession.SendFrameAsync(relay.Relay, new Cs2Frame(Cs2MessageType.Drw, payload), cancellationToken);
+        }
+        finally
+        {
+            commandSendLock.Release();
+        }
     }
 
     public async Task<Cs2CommandMessage?> ReadCommandAsync(TimeSpan timeout, CancellationToken cancellationToken)
@@ -69,7 +85,14 @@ public sealed class Cs2PpppConnection(Cs2RelaySession relaySession, Cs2RelayEsta
         try
         {
             var message = await commands.Reader.ReadAsync(wait.Token);
-            return message.Length < sizeof(int) ? null : new Cs2CommandMessage(BinaryPrimitives.ReadInt32BigEndian(message), message[sizeof(int)..]);
+            try
+            {
+                return message.Length < sizeof(int) ? null : new Cs2CommandMessage(BinaryPrimitives.ReadInt32BigEndian(message), message[sizeof(int)..]);
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(message);
+            }
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
@@ -174,7 +197,11 @@ public sealed class Cs2PpppConnection(Cs2RelaySession relaySession, Cs2RelayEsta
             {
                 while (target.TryRead(out var message) && message is not null)
                 {
-                    await commands.Writer.WriteAsync(message, cancellationToken);
+                    if (!commands.Writer.TryWrite(message))
+                    {
+                        CryptographicOperations.ZeroMemory(message);
+                        throw new Cs2ProtocolException("命令响应队列已满，已中止会话。");
+                    }
                 }
 
                 break;
@@ -233,7 +260,13 @@ public sealed class Cs2PpppConnection(Cs2RelaySession relaySession, Cs2RelayEsta
             CryptographicOperations.ZeroMemory(message);
         }
 
+        while (commands.Reader.TryRead(out var command))
+        {
+            CryptographicOperations.ZeroMemory(command);
+        }
+
         stopping.Dispose();
+        commandSendLock.Dispose();
     }
 }
 

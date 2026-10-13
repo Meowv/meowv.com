@@ -64,12 +64,30 @@ public sealed class XiaomiHlsService(XiaomiLiveStreamService streams, XiaomiFfmp
         return state.GetPreparation();
     }
 
+    public async Task<XiaomiMotorStepResult> MotorStepAsync(string fingerprint, int operation, CancellationToken cancellationToken)
+    {
+        if (!states.TryGetValue(fingerprint, out var state))
+        {
+            return XiaomiMotorStepResult.NoSession;
+        }
+
+        return await state.MotorStepAsync(operation, cancellationToken);
+    }
+
     private async Task PumpAsync(HlsState state)
     {
         try
         {
             await using var stream = await streams.OpenAsync(state.Fingerprint, state.Stopping.Token);
-            await state.TranscodeAsync(stream, ffmpeg.ExecutablePath, state.Stopping.Token);
+            state.AttachStream(stream);
+            try
+            {
+                await state.TranscodeAsync(stream, ffmpeg.ExecutablePath, state.Stopping.Token);
+            }
+            finally
+            {
+                state.DetachStream(stream);
+            }
         }
         catch (OperationCanceledException) when (state.Stopping.IsCancellationRequested)
         {
@@ -98,9 +116,13 @@ public sealed class XiaomiHlsService(XiaomiLiveStreamService streams, XiaomiFfmp
         private readonly string directory = Path.Combine(Path.GetTempPath(), "xiaomi-camera-gateway-hls", $"{fingerprint}-{Guid.NewGuid():N}");
         private Task? pump;
         private Process? ffmpeg;
+        private XiaomiLiveStream? liveStream;
+        private DateTimeOffset lastMotorStep = DateTimeOffset.MinValue;
+        private readonly SemaphoreSlim motorLock = new(1, 1);
         private bool finished;
         private string status = "preparing";
         private string? failure;
+        private bool audioAvailable;
         private readonly Stopwatch sessionClock = Stopwatch.StartNew();
 
         public string Fingerprint { get; } = fingerprint;
@@ -118,6 +140,69 @@ public sealed class XiaomiHlsService(XiaomiLiveStreamService streams, XiaomiFfmp
             }
         }
 
+        public void AttachStream(XiaomiLiveStream stream)
+        {
+            lock (gate)
+            {
+                liveStream = stream;
+            }
+        }
+
+        public void DetachStream(XiaomiLiveStream stream)
+        {
+            lock (gate)
+            {
+                if (ReferenceEquals(liveStream, stream)) liveStream = null;
+            }
+        }
+
+        public async Task<XiaomiMotorStepResult> MotorStepAsync(int operation, CancellationToken cancellationToken)
+        {
+            if (!await motorLock.WaitAsync(0, cancellationToken))
+            {
+                return XiaomiMotorStepResult.TooFrequent;
+            }
+
+            try
+            {
+                XiaomiLiveStream? stream;
+                lock (gate)
+                {
+                    stream = status == "ready" && !Stopping.IsCancellationRequested ? liveStream : null;
+                    if (stream is null) return XiaomiMotorStepResult.NoSession;
+                    if (DateTimeOffset.UtcNow - lastMotorStep < TimeSpan.FromSeconds(1))
+                    {
+                        return XiaomiMotorStepResult.TooFrequent;
+                    }
+                }
+
+                if (!string.Equals(stream.Model, "chuangmi.camera.079ac1", StringComparison.Ordinal))
+                {
+                    return XiaomiMotorStepResult.UnsupportedModel;
+                }
+
+                try
+                {
+                    await stream.MotorStepAsync(operation, cancellationToken);
+                }
+                catch (OperationCanceledException) when (Stopping.IsCancellationRequested)
+                {
+                    return XiaomiMotorStepResult.NoSession;
+                }
+
+                lock (gate)
+                {
+                    lastMotorStep = DateTimeOffset.UtcNow;
+                }
+
+                return XiaomiMotorStepResult.Sent;
+            }
+            finally
+            {
+                motorLock.Release();
+            }
+        }
+
         public void Touch()
         {
             lock (gate)
@@ -130,7 +215,7 @@ public sealed class XiaomiHlsService(XiaomiLiveStreamService streams, XiaomiFfmp
         {
             lock (gate)
             {
-                return new XiaomiPlaybackPreparation(status, failure);
+                return new XiaomiPlaybackPreparation(status, failure, audioAvailable);
             }
         }
 
@@ -200,7 +285,18 @@ public sealed class XiaomiHlsService(XiaomiLiveStreamService streams, XiaomiFfmp
             CancellationToken cancellationToken)
         {
             Process? process = null;
+            XiaomiFfmpegMediaInput? mediaInput = null;
             Task? outputMonitor = null;
+            var startup = new List<Cs2MediaPacket>();
+            var startupClock = new Stopwatch();
+            var startupBytes = 0;
+            var videoCodec = 0;
+            var audioCodec = 0;
+            var audioSampleRate = 0;
+            var firstVideoLogged = false;
+            long? firstVideoMediaTimestamp = null;
+            long? firstAudioMediaTimestamp = null;
+            var initialOffsetLogged = false;
             var timelineSample = Stopwatch.StartNew();
             uint? previousSequence = null;
             long? firstTimestamp = null;
@@ -212,13 +308,16 @@ public sealed class XiaomiHlsService(XiaomiLiveStreamService streams, XiaomiFfmp
             {
                 await foreach (var frame in stream.ReadMediaFramesAsync(cancellationToken))
                 {
-                    try
+                    if (frame.Payload.Length == 0 || (!frame.IsVideo && !frame.IsAudio))
                     {
-                        if (!frame.IsVideo || frame.Payload.Length == 0)
-                        {
-                            continue;
-                        }
+                        CryptographicOperations.ZeroMemory(frame.Payload);
+                        continue;
+                    }
 
+                    if (frame.IsVideo)
+                    {
+                        videoCodec = videoCodec == 0 ? frame.CodecId : videoCodec;
+                        firstVideoMediaTimestamp ??= frame.TimestampMilliseconds;
                         videoPackets++;
                         firstTimestamp ??= frame.TimestampMilliseconds;
                         if (previousSequence is { } sequence && frame.Sequence != unchecked(sequence + 1))
@@ -234,8 +333,9 @@ public sealed class XiaomiHlsService(XiaomiLiveStreamService streams, XiaomiFfmp
                         previousSequence = frame.Sequence;
                         previousTimestamp = frame.TimestampMilliseconds;
 
-                        if (process is null)
+                        if (!firstVideoLogged)
                         {
+                            firstVideoLogged = true;
                             logger.LogInformation(
                                 "收到首个视频帧，档位 {Profile}，输入编码 {Codec}，CS2 时间戳 {TimestampMs} ms，连接至首帧 {ElapsedMs} ms；画幅上限 {MaximumWidth}x{MaximumHeight}，帧率上限 {MaximumFps} fps，目标/峰值码率 {TargetBitrate}/{PeakBitrate} kbps，编码预设 {Preset}",
                                 profile.Name,
@@ -248,19 +348,7 @@ public sealed class XiaomiHlsService(XiaomiLiveStreamService streams, XiaomiFfmp
                                 profile.TargetBitrateKbps,
                                 profile.PeakBitrateKbps,
                                 profile.EncoderPreset);
-                            process = StartFfmpeg(ffmpegExecutable, frame.CodecId);
-                            lock (gate)
-                            {
-                                ffmpeg = process;
-                            }
-
-                            _ = ReadFfmpegDiagnosticsAsync(process);
-                            _ = ReadFfmpegProgressAsync(process, cancellationToken);
-                            outputMonitor = WatchForPlaylistAsync(process, cancellationToken);
                         }
-
-                        await process.StandardInput.BaseStream.WriteAsync(frame.Payload, cancellationToken);
-                        await process.StandardInput.BaseStream.FlushAsync(cancellationToken);
 
                         if (timelineSample.Elapsed >= TimeSpan.FromSeconds(30))
                         {
@@ -282,20 +370,73 @@ public sealed class XiaomiHlsService(XiaomiLiveStreamService streams, XiaomiFfmp
                             timestampRegressions = 0;
                         }
                     }
-                    finally
+                    else if (frame.IsAudio && audioCodec == 0)
                     {
-                        CryptographicOperations.ZeroMemory(frame.Payload);
+                        audioCodec = frame.CodecId;
+                        audioSampleRate = frame.AudioSampleRate;
+                        firstAudioMediaTimestamp = frame.TimestampMilliseconds;
+                    }
+
+                    if (!initialOffsetLogged && firstVideoMediaTimestamp is { } videoStart && firstAudioMediaTimestamp is { } audioStart)
+                    {
+                        initialOffsetLogged = true;
+                        logger.LogInformation("CS2 首帧音视频时间戳差 {AudioMinusVideoMs} ms", audioStart - videoStart);
+                    }
+
+                    if (process is null)
+                    {
+                        startup.Add(frame);
+                        startupBytes += frame.Payload.Length;
+                        startupClock.Start();
+                        if (videoCodec == 0 && (startupClock.Elapsed >= TimeSpan.FromSeconds(10) || startupBytes >= 8 * 1024 * 1024))
+                        {
+                            throw new XiaomiPlaybackException("收到媒体数据，但未找到可播放的视频帧。", true);
+                        }
+
+                        if (videoCodec == 0 || (audioCodec == 0 && startupClock.Elapsed < TimeSpan.FromSeconds(6) && startupBytes < 8 * 1024 * 1024))
+                        {
+                            continue;
+                        }
+
+                        if (audioCodec != 0)
+                        {
+                            mediaInput = new XiaomiFfmpegMediaInput(audioCodec, audioSampleRate, startup[0].TimestampMilliseconds);
+                            lock (gate) audioAvailable = true;
+                        }
+
+                        process = StartFfmpeg(ffmpegExecutable, videoCodec, mediaInput);
+                        mediaInput?.Start();
+                        lock (gate)
+                        {
+                            ffmpeg = process;
+                        }
+
+                        _ = ReadFfmpegDiagnosticsAsync(process);
+                        _ = ReadFfmpegProgressAsync(process, cancellationToken);
+                        outputMonitor = WatchForPlaylistAsync(process, cancellationToken);
+                        while (startup.Count > 0)
+                        {
+                            var pending = startup[0];
+                            startup.RemoveAt(0);
+                            await FeedAsync(process, mediaInput, pending, cancellationToken);
+                        }
+                    }
+                    else
+                    {
+                        await FeedAsync(process, mediaInput, frame, cancellationToken);
                     }
                 }
             }
             finally
             {
+                foreach (var pending in startup) CryptographicOperations.ZeroMemory(pending.Payload);
+                if (mediaInput is not null) await mediaInput.DisposeAsync();
                 if (process is not null)
                 {
                     try
                     {
-                        process.StandardInput.Close();
-                        await process.WaitForExitAsync(CancellationToken.None);
+                        if (mediaInput is null) process.StandardInput.Close();
+                        await process.WaitForExitAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(5));
                     }
                     catch
                     {
@@ -314,6 +455,28 @@ public sealed class XiaomiHlsService(XiaomiLiveStreamService streams, XiaomiFfmp
                 {
                     await IgnoreCancellationAsync(outputMonitor);
                 }
+            }
+        }
+
+        private static async Task FeedAsync(Process process, XiaomiFfmpegMediaInput? mediaInput, Cs2MediaPacket frame, CancellationToken cancellationToken)
+        {
+            if (mediaInput is not null)
+            {
+                mediaInput.Enqueue(frame);
+                return;
+            }
+
+            try
+            {
+                if (frame.IsVideo)
+                {
+                    await process.StandardInput.BaseStream.WriteAsync(frame.Payload, cancellationToken);
+                    await process.StandardInput.BaseStream.FlushAsync(cancellationToken);
+                }
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(frame.Payload);
             }
         }
 
@@ -360,7 +523,7 @@ public sealed class XiaomiHlsService(XiaomiLiveStreamService streams, XiaomiFfmp
             }
         }
 
-        private Process StartFfmpeg(string executable, int codecId)
+        private Process StartFfmpeg(string executable, int codecId, XiaomiFfmpegMediaInput? mediaInput)
         {
             var inputFormat = codecId switch
             {
@@ -371,7 +534,7 @@ public sealed class XiaomiHlsService(XiaomiLiveStreamService streams, XiaomiFfmp
             var info = new ProcessStartInfo(executable)
             {
                 UseShellExecute = false,
-                RedirectStandardInput = true,
+                RedirectStandardInput = mediaInput is null,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 CreateNoWindow = true,
@@ -385,11 +548,54 @@ public sealed class XiaomiHlsService(XiaomiLiveStreamService streams, XiaomiFfmp
             info.ArgumentList.Add("pipe:1");
             info.ArgumentList.Add("-fflags");
             info.ArgumentList.Add("+genpts");
+            if (mediaInput is not null)
+            {
+                info.ArgumentList.Add("-thread_queue_size");
+                info.ArgumentList.Add("512");
+                info.ArgumentList.Add("-use_wallclock_as_timestamps");
+                info.ArgumentList.Add("1");
+            }
+
             info.ArgumentList.Add("-f");
             info.ArgumentList.Add(inputFormat);
             info.ArgumentList.Add("-i");
-            info.ArgumentList.Add("pipe:0");
-            info.ArgumentList.Add("-an");
+            info.ArgumentList.Add(mediaInput?.VideoUrl ?? "pipe:0");
+            if (mediaInput is not null)
+            {
+                info.ArgumentList.Add("-thread_queue_size");
+                info.ArgumentList.Add("512");
+                info.ArgumentList.Add("-use_wallclock_as_timestamps");
+                info.ArgumentList.Add("1");
+                info.ArgumentList.Add("-f");
+                info.ArgumentList.Add(mediaInput.AudioFormat);
+                if (mediaInput.AudioCodec != 1032)
+                {
+                    info.ArgumentList.Add("-ar");
+                    info.ArgumentList.Add(mediaInput.AudioSampleRate.ToString(CultureInfo.InvariantCulture));
+                    info.ArgumentList.Add("-ac");
+                    info.ArgumentList.Add("1");
+                }
+
+                info.ArgumentList.Add("-i");
+                info.ArgumentList.Add(mediaInput.AudioUrl);
+                info.ArgumentList.Add("-map");
+                info.ArgumentList.Add("0:v:0");
+                info.ArgumentList.Add("-map");
+                info.ArgumentList.Add("1:a:0");
+                info.ArgumentList.Add("-c:a");
+                info.ArgumentList.Add("aac");
+                info.ArgumentList.Add("-b:a");
+                info.ArgumentList.Add("64k");
+                info.ArgumentList.Add("-ar");
+                info.ArgumentList.Add("48000");
+                info.ArgumentList.Add("-ac");
+                info.ArgumentList.Add("1");
+            }
+            else
+            {
+                info.ArgumentList.Add("-an");
+            }
+
             info.ArgumentList.Add("-c:v");
             info.ArgumentList.Add("libx264");
             info.ArgumentList.Add("-preset");
@@ -702,9 +908,17 @@ public sealed class XiaomiHlsService(XiaomiLiveStreamService streams, XiaomiFfmp
     }
 }
 
-public sealed record XiaomiPlaybackPreparation(string Status, string? Error)
+public sealed record XiaomiPlaybackPreparation(string Status, string? Error, bool AudioAvailable)
 {
-    public static XiaomiPlaybackPreparation Stopped { get; } = new("stopped", null);
+    public static XiaomiPlaybackPreparation Stopped { get; } = new("stopped", null, false);
+}
+
+public enum XiaomiMotorStepResult
+{
+    Sent,
+    NoSession,
+    TooFrequent,
+    UnsupportedModel,
 }
 
 public sealed class XiaomiPlaybackException(string message, bool retryable) : Exception(message)
