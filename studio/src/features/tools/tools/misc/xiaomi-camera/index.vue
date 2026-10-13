@@ -2,7 +2,19 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type Hls from 'hls.js';
 import type { ErrorData, Events } from 'hls.js';
-import { IconCamera, IconPlayerPlay, IconRefresh, IconSettings, IconX } from '@tabler/icons-vue';
+import {
+  IconArrowDown,
+  IconArrowLeft,
+  IconArrowRight,
+  IconArrowUp,
+  IconCamera,
+  IconPlayerPlay,
+  IconRefresh,
+  IconSettings,
+  IconVolume,
+  IconVolumeOff,
+  IconX,
+} from '@tabler/icons-vue';
 import { STORAGE_POLICY, storageAvailable } from '@/core/privacy/storage';
 
 type CameraDevice = {
@@ -21,6 +33,7 @@ type PlaybackSession = {
   playlistUrl: string;
   status: 'preparing' | 'ready' | 'failed' | 'stopped';
   statusUrl?: string;
+  audioAvailable?: boolean;
 };
 
 type PlaybackSessionPayload = {
@@ -28,6 +41,7 @@ type PlaybackSessionPayload = {
   hlsUrl?: unknown;
   status?: unknown;
   statusUrl?: unknown;
+  audioAvailable?: unknown;
 };
 
 class CameraServiceError extends Error {
@@ -61,6 +75,11 @@ const loadingDevices = ref(false);
 const savingConnection = ref(false);
 const starting = ref(false);
 const hasPlaybackSource = ref(false);
+const playbackReady = ref(false);
+const motorBusy = ref(false);
+const motorMessage = ref('');
+const audioEnabled = ref(false);
+const audioAvailable = ref(false);
 const video = ref<HTMLVideoElement>();
 const closeConnectionButton = ref<HTMLButtonElement>();
 const accessCodeInput = ref<HTMLInputElement>();
@@ -73,8 +92,14 @@ let recoveryAttempted = false;
 let recoveryPromise: Promise<void> | undefined;
 let lastRecoveryAt = 0;
 let stabilityTimer: number | undefined;
+let stallTimer: number | undefined;
+let stallSeekAttempted = false;
+let playbackMonitor: number | undefined;
+let lastObservedPlaybackTime = 0;
+let lastPlaybackProgressAt = 0;
 let lastActiveElement: HTMLElement | null = null;
 let dialogOriginalServiceUrl = draftServiceUrl.value;
+let lastMotorStepAt = 0;
 
 const selectedCamera = computed(() =>
   cameras.value.find((camera) => camera.deviceFingerprint === selectedFingerprint.value),
@@ -169,6 +194,12 @@ async function authorizedRequest(
     if (payload?.code === 'xiaomi_session_expired') {
       throw new CameraServiceError('小米登录会话已失效，请在服务初始化页重新登录。');
     }
+    if (payload?.code === 'camera_session_unavailable') {
+      throw new CameraServiceError('预览会话已结束，请重新开始预览。');
+    }
+  }
+  if (response.status === 429) {
+    throw new CameraServiceError('操作过于频繁，请稍后再试。');
   }
   if (!response.ok) {
     throw new CameraServiceError('摄像头服务暂时无法处理请求。');
@@ -230,7 +261,11 @@ async function createPlaybackSession(
 
   if (typeof payload.statusUrl !== 'string' || !payload.statusUrl) {
     // 兼容尚未升级的服务端：旧接口只有清单地址，由 HLS 请求自行等待首片。
-    return { playlistUrl: resolvedPlaylistUrl, status: 'ready' };
+    return {
+      playlistUrl: resolvedPlaylistUrl,
+      status: 'ready',
+      audioAvailable: payload.audioAvailable === true,
+    };
   }
 
   if (!['preparing', 'ready', 'failed', 'stopped'].includes(String(payload.status))) {
@@ -241,6 +276,7 @@ async function createPlaybackSession(
       playlistUrl: resolvedPlaylistUrl,
       status: payload.status as PlaybackSession['status'],
       statusUrl: new URL(payload.statusUrl, `${activeConnection.serviceUrl}/`).toString(),
+      audioAvailable: payload.audioAvailable === true,
     };
   } catch {
     throw new CameraServiceError('摄像头服务返回了无效的播放状态地址。');
@@ -266,8 +302,11 @@ function waitForPlaybackPoll(signal: AbortSignal): Promise<void> {
   });
 }
 
-async function waitForPlaybackReady(session: PlaybackSession, signal: AbortSignal): Promise<void> {
-  if (!session.statusUrl || session.status === 'ready') return;
+async function waitForPlaybackReady(
+  session: PlaybackSession,
+  signal: AbortSignal,
+): Promise<boolean> {
+  if (!session.statusUrl || session.status === 'ready') return session.audioAvailable === true;
   const deadline = Date.now() + 95_000;
   preparationMessage.value = '正在连接摄像头并准备首段视频…';
 
@@ -294,8 +333,8 @@ async function waitForPlaybackReady(session: PlaybackSession, signal: AbortSigna
     }
 
     const payload = (await response.json().catch(() => undefined)) as
-      { status?: unknown; error?: unknown } | undefined;
-    if (payload?.status === 'ready') return;
+      { status?: unknown; error?: unknown; audioAvailable?: unknown } | undefined;
+    if (payload?.status === 'ready') return payload.audioAvailable === true;
     if (payload?.status === 'failed') {
       throw new CameraServiceError(
         typeof payload.error === 'string' && payload.error
@@ -501,20 +540,44 @@ function forgetAuthorization(): void {
 }
 
 function detachPlayback(): void {
+  playbackReady.value = false;
+  motorMessage.value = '';
+  audioEnabled.value = false;
+  audioAvailable.value = false;
   if (stabilityTimer !== undefined) {
     window.clearTimeout(stabilityTimer);
     stabilityTimer = undefined;
   }
+  if (stallTimer !== undefined) {
+    window.clearTimeout(stallTimer);
+    stallTimer = undefined;
+  }
+  if (playbackMonitor !== undefined) {
+    window.clearInterval(playbackMonitor);
+    playbackMonitor = undefined;
+  }
+  stallSeekAttempted = false;
   playbackAbort?.abort();
   playbackAbort = undefined;
   hls?.destroy();
   hls = undefined;
   hasPlaybackSource.value = false;
   if (video.value) {
+    video.value.muted = true;
     video.value.pause();
     video.value.removeAttribute('src');
     video.value.load();
   }
+}
+
+function toggleAudio(): void {
+  if (!playbackReady.value || !audioAvailable.value || !video.value) return;
+  audioEnabled.value = !audioEnabled.value;
+  video.value.muted = !audioEnabled.value;
+}
+
+function handleVideoVolumeChange(): void {
+  audioEnabled.value = Boolean(video.value && !video.value.muted && video.value.volume > 0);
 }
 
 function stopPlayback(): void {
@@ -556,7 +619,13 @@ async function requestPlaybackRecovery(): Promise<void> {
 }
 
 function handleVideoPlaying(): void {
+  if (stallTimer !== undefined) {
+    window.clearTimeout(stallTimer);
+    stallTimer = undefined;
+  }
   if (stabilityTimer !== undefined) window.clearTimeout(stabilityTimer);
+  lastObservedPlaybackTime = video.value?.currentTime ?? 0;
+  lastPlaybackProgressAt = performance.now();
   const activePlayback = playbackAbort;
   if (!activePlayback) return;
   stabilityTimer = window.setTimeout(() => {
@@ -564,6 +633,7 @@ function handleVideoPlaying(): void {
     if (playbackAbort === activePlayback && video.value && !video.value.paused) {
       recoveryAttempted = false;
       lastRecoveryAt = 0;
+      stallSeekAttempted = false;
     }
   }, 60_000);
 }
@@ -573,6 +643,60 @@ function handleVideoWaiting(): void {
     window.clearTimeout(stabilityTimer);
     stabilityTimer = undefined;
   }
+  const activePlayback = playbackAbort;
+  if (
+    !playbackReady.value ||
+    !activePlayback ||
+    !video.value ||
+    video.value.paused ||
+    stallTimer !== undefined
+  )
+    return;
+  stallTimer = window.setTimeout(() => {
+    stallTimer = undefined;
+    const player = video.value;
+    if (playbackAbort !== activePlayback || !playbackReady.value || !player || player.paused)
+      return;
+
+    const syncPosition = hls?.liveSyncPosition;
+    const seekableEnd = player.seekable.length
+      ? player.seekable.end(player.seekable.length - 1)
+      : undefined;
+    const target =
+      syncPosition !== null && syncPosition !== undefined && seekableEnd !== undefined
+        ? Math.min(syncPosition, seekableEnd)
+        : undefined;
+    if (!stallSeekAttempted && target !== undefined && target > player.currentTime + 3) {
+      stallSeekAttempted = true;
+      player.currentTime = target;
+      handleVideoWaiting();
+      return;
+    }
+
+    void requestPlaybackRecovery();
+  }, 8_000);
+}
+
+function monitorPlayback(player: HTMLVideoElement, activePlayback: AbortController): void {
+  lastObservedPlaybackTime = player.currentTime;
+  lastPlaybackProgressAt = performance.now();
+  playbackMonitor = window.setInterval(() => {
+    if (playbackAbort !== activePlayback || !playbackReady.value) return;
+    if (player.paused || document.hidden) {
+      lastObservedPlaybackTime = player.currentTime;
+      lastPlaybackProgressAt = performance.now();
+      return;
+    }
+    if (
+      player.currentTime > lastObservedPlaybackTime + 0.2 ||
+      player.currentTime < lastObservedPlaybackTime - 0.5
+    ) {
+      lastObservedPlaybackTime = player.currentTime;
+      lastPlaybackProgressAt = performance.now();
+      return;
+    }
+    if (performance.now() - lastPlaybackProgressAt >= 6_000) handleVideoWaiting();
+  }, 2_000);
 }
 
 async function attachHls(
@@ -587,6 +711,7 @@ async function attachHls(
   }
 
   const { default: HlsPlayer } = await import('hls.js');
+  if (signal.aborted) throw new DOMException('播放已停止。', 'AbortError');
   if (!HlsPlayer.isSupported()) {
     throw new CameraServiceError('当前浏览器不支持 HLS 播放。');
   }
@@ -602,32 +727,55 @@ async function attachHls(
   });
   hls = instance;
   await new Promise<void>((resolve, reject) => {
-    const cancel = () => reject(new DOMException('播放已停止。', 'AbortError'));
+    let manifestParsed = false;
+    let fatalRetries = 0;
+    const timeout = window.setTimeout(
+      () => reject(new CameraServiceError('HLS 播放列表已返回，但播放器 15 秒内未能解析。')),
+      15_000,
+    );
+    const cancel = () => {
+      window.clearTimeout(timeout);
+      reject(new DOMException('播放已停止。', 'AbortError'));
+    };
     const manifestReady = () => {
+      manifestParsed = true;
+      window.clearTimeout(timeout);
       signal.removeEventListener('abort', cancel);
       resolve();
     };
     const handleError = (_event: Events.ERROR, data: ErrorData) => {
       if (!data.fatal || instance !== hls) return;
       const responseCode = data.response?.code;
+      if (manifestParsed) {
+        queueMicrotask(() => {
+          if (instance === hls && !signal.aborted) void requestPlaybackRecovery();
+        });
+        return;
+      }
       if (responseCode === 410) {
+        window.clearTimeout(timeout);
         signal.removeEventListener('abort', cancel);
         reject(new PlaybackTicketExpiredError());
         return;
       }
-      if (data.type === HlsPlayer.ErrorTypes.MEDIA_ERROR) {
+      if (fatalRetries++ === 0 && data.type === HlsPlayer.ErrorTypes.MEDIA_ERROR) {
         instance.recoverMediaError();
         return;
       }
-      if (data.type === HlsPlayer.ErrorTypes.NETWORK_ERROR) {
+      if (fatalRetries === 1 && data.type === HlsPlayer.ErrorTypes.NETWORK_ERROR) {
         instance.startLoad();
         return;
       }
+      window.clearTimeout(timeout);
       signal.removeEventListener('abort', cancel);
       reject(new CameraServiceError('HLS 播放器无法初始化。'));
     };
 
     signal.addEventListener('abort', cancel, { once: true });
+    if (signal.aborted) {
+      cancel();
+      return;
+    }
     instance.once(HlsPlayer.Events.MANIFEST_PARSED, manifestReady);
     instance.on(HlsPlayer.Events.ERROR, handleError);
     instance.loadSource(source);
@@ -663,13 +811,19 @@ async function startPlayback(isRecovery = false): Promise<void> {
       attempt.signal,
     );
     if (attempt.signal.aborted) return;
-    await waitForPlaybackReady(session, attempt.signal);
+    audioAvailable.value = await waitForPlaybackReady(session, attempt.signal);
     if (attempt.signal.aborted) return;
     preparationMessage.value = '视频已就绪，正在启动播放器…';
     await attachHls(player, session.playlistUrl, attempt.signal);
     if (attempt.signal.aborted) return;
     await player.play();
     await waitForVideoFrame(player, attempt.signal);
+    if (!attempt.signal.aborted) {
+      playbackReady.value = true;
+      monitorPlayback(player, attempt);
+      if (!player.paused && player.readyState < HTMLMediaElement.HAVE_FUTURE_DATA)
+        handleVideoWaiting();
+    }
   } catch (error) {
     if (attempt.signal.aborted) return;
     if (error instanceof CameraServiceError && error.authorizationFailed) {
@@ -695,6 +849,36 @@ async function startPlayback(isRecovery = false): Promise<void> {
     reportPlaybackFailure(error instanceof Error ? error.message : '无法开始视频预览。');
   } finally {
     if (playbackAbort === attempt) starting.value = false;
+  }
+}
+
+async function motorStep(direction: 'left' | 'right' | 'up' | 'down'): Promise<void> {
+  const activeConnection = connection.value;
+  const fingerprint = selectedCamera.value?.deviceFingerprint;
+  if (!activeConnection || !fingerprint || !playbackReady.value || motorBusy.value) return;
+  if (Date.now() - lastMotorStepAt < 1000) return;
+
+  motorBusy.value = true;
+  motorMessage.value = '';
+  try {
+    await authorizedRequest(
+      activeConnection,
+      `/api/cameras/${encodeURIComponent(fingerprint)}/ptz`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ direction }),
+      },
+    );
+    lastMotorStepAt = Date.now();
+  } catch (error) {
+    if (error instanceof CameraServiceError && error.authorizationFailed) {
+      invalidateConnection(error.message);
+      return;
+    }
+    motorMessage.value = error instanceof Error ? error.message : '无法发送云台指令。';
+  } finally {
+    motorBusy.value = false;
   }
 }
 
@@ -752,7 +936,62 @@ onBeforeUnmount(() => {
         <span class="camera-tool__selected-name">{{
           selectedCamera?.displayName ?? '小米摄像头'
         }}</span>
+        <div
+          v-if="selectedCamera?.model === 'chuangmi.camera.079ac1'"
+          class="camera-tool__motor-pad"
+          role="group"
+          aria-label="云台方向"
+          title="直播画面有数秒延迟，请等待移动结果再继续操作"
+        >
+          <button
+            type="button"
+            aria-label="云台向左"
+            title="向左"
+            :disabled="!playbackReady || motorBusy"
+            @click="motorStep('left')"
+          >
+            <IconArrowLeft :size="18" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            aria-label="云台向上"
+            title="向上"
+            :disabled="!playbackReady || motorBusy"
+            @click="motorStep('up')"
+          >
+            <IconArrowUp :size="18" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            aria-label="云台向下"
+            title="向下"
+            :disabled="!playbackReady || motorBusy"
+            @click="motorStep('down')"
+          >
+            <IconArrowDown :size="18" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            aria-label="云台向右"
+            title="向右"
+            :disabled="!playbackReady || motorBusy"
+            @click="motorStep('right')"
+          >
+            <IconArrowRight :size="18" aria-hidden="true" />
+          </button>
+        </div>
         <div class="camera-tool__toolbar-actions">
+          <button
+            class="camera-tool__icon-button"
+            type="button"
+            :disabled="!playbackReady || !audioAvailable"
+            :aria-label="audioEnabled ? '关闭声音' : '开启声音'"
+            :title="audioEnabled ? '关闭声音' : '开启声音'"
+            @click="toggleAudio"
+          >
+            <IconVolume v-if="audioEnabled" :size="18" aria-hidden="true" />
+            <IconVolumeOff v-else :size="18" aria-hidden="true" />
+          </button>
           <button
             class="camera-tool__icon-button"
             type="button"
@@ -786,7 +1025,11 @@ onBeforeUnmount(() => {
           @error="handleVideoError"
           @playing="handleVideoPlaying"
           @waiting="handleVideoWaiting"
+          @volumechange="handleVideoVolumeChange"
         />
+        <span v-if="motorMessage" class="camera-tool__motor-error" role="status">{{
+          motorMessage
+        }}</span>
         <div
           v-if="!hasPlaybackSource || starting || connectionError || playbackError"
           class="camera-tool__placeholder"
@@ -927,15 +1170,14 @@ onBeforeUnmount(() => {
 <style scoped>
 .camera-tool {
   --camera-tool-accent: var(--tools-accent, #7c3aed);
-  min-height: min(70vh, 52rem);
+  min-width: 0;
   color: var(--color-text, #172033);
 }
 
 .camera-tool__viewer {
   display: grid;
-  min-height: min(70vh, 52rem);
   overflow: hidden;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
   border: 1px solid color-mix(in srgb, var(--color-border, #d6dbe8) 84%, transparent);
   border-radius: 1.1rem;
   background: var(--color-surface-solid, #fff);
@@ -943,29 +1185,28 @@ onBeforeUnmount(() => {
 }
 
 .camera-tool__viewer-toolbar {
-  display: flex;
-  min-height: 3.75rem;
-  padding: 0.65rem 0.75rem;
+  display: grid;
+  min-height: 3.9rem;
+  padding: 0.55rem 0.9rem;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border, #d6dbe8) 84%, transparent);
 }
 
 .camera-tool__selected-name {
+  min-width: 0;
   overflow: hidden;
-  font-size: 0.84rem;
+  font-size: 0.88rem;
   font-weight: 750;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.camera-tool__viewer-toolbar {
-  justify-content: space-between;
-  border-bottom: 1px solid color-mix(in srgb, var(--color-border, #d6dbe8) 84%, transparent);
-}
-
 .camera-tool__toolbar-actions {
   display: flex;
-  margin-left: auto;
+  grid-column: 3;
+  justify-self: end;
   gap: 0.35rem;
 }
 
@@ -1013,6 +1254,55 @@ onBeforeUnmount(() => {
   height: 100%;
   background: #090e1b;
   object-fit: contain;
+}
+
+.camera-tool__motor-pad {
+  display: flex;
+  padding: 0.2rem;
+  grid-column: 2;
+  gap: 0.15rem;
+  border: 1px solid color-mix(in srgb, var(--color-border, #d6dbe8) 80%, transparent);
+  border-radius: 0.75rem;
+  background: var(--color-surface-soft, #f7f8fc);
+}
+.camera-tool__motor-pad button {
+  display: grid;
+  width: 2.2rem;
+  height: 2.2rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0.52rem;
+  place-items: center;
+  background: transparent;
+  color: var(--color-text-muted, #687894);
+  cursor: pointer;
+}
+.camera-tool__motor-pad button:hover:not(:disabled),
+.camera-tool__motor-pad button:focus-visible:not(:disabled) {
+  background: color-mix(in srgb, var(--camera-tool-accent) 12%, transparent);
+  color: var(--camera-tool-accent);
+}
+.camera-tool__motor-pad button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.camera-tool__motor-pad button:focus-visible {
+  outline: 2px solid var(--camera-tool-accent);
+  outline-offset: 2px;
+}
+.camera-tool__motor-error {
+  position: absolute;
+  z-index: 3;
+  top: 0.75rem;
+  left: 50%;
+  max-width: calc(100% - 1.5rem);
+  padding: 0.45rem 0.7rem;
+  border-radius: 0.55rem;
+  background: rgb(30 14 20 / 88%);
+  color: #ffd7de;
+  font-size: 0.76rem;
+  text-align: center;
+  transform: translateX(-50%);
 }
 
 .camera-tool__placeholder {
@@ -1234,28 +1524,45 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 760px) {
-  .camera-tool,
-  .camera-tool__viewer {
-    min-height: min(68vh, 38rem);
+  .camera-tool__motor-pad {
+    display: none;
   }
 
-  .camera-tool__video-frame {
-    min-height: 15rem;
+  .camera-tool__viewer-toolbar {
+    min-height: 3.4rem;
+    padding: 0.45rem 0.55rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.3rem;
   }
 
-  .camera-tool__selected-name {
-    max-width: 12rem;
+  .camera-tool__toolbar-actions {
+    grid-column: 2;
+    gap: 0.1rem;
+  }
+
+  .camera-tool__icon-button {
+    width: 2.2rem;
+    height: 2.2rem;
+  }
+
+  .camera-tool__placeholder {
+    padding: 0.75rem;
+    gap: 0.55rem;
+  }
+
+  .camera-tool__placeholder > svg {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .camera-tool__placeholder p {
+    font-size: 0.78rem;
   }
 }
 
 @media (max-width: 440px) {
-  .camera-tool__viewer-toolbar {
-    padding-right: 0.55rem;
-    padding-left: 0.55rem;
-  }
-
-  .camera-tool__selected-name {
-    max-width: 7rem;
+  .camera-tool__viewer {
+    border-radius: 0.85rem;
   }
 
   .camera-tool-dialog {
