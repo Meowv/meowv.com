@@ -64,6 +64,13 @@ categories:
         url: https://leon-made-this.work/museum/favicon.svg
       url: https://leon-made-this.work/museum
 
+    - id: webscreen
+      name: WebScreen
+      description: 超级在线网页屏保
+      icon:
+        url: https://webscreen.net/favicon.ico
+      url: https://webscreen.net
+
   bookmarks:
     - id: zitie
       name: 字帖生成
