@@ -4,12 +4,59 @@
   <url><loc>https://studio.meowv.com/markdown</loc></url>
   <url><loc>https://studio.meowv.com/mermaid</loc></url>
   <url><loc>https://studio.meowv.com/office</loc></url>
+  <url><loc>https://studio.meowv.com/office/doc</loc></url>
+  <url><loc>https://studio.meowv.com/office/xls</loc></url>
+  <url><loc>https://studio.meowv.com/office/ppt</loc></url>
+  <url><loc>https://studio.meowv.com/office/csv</loc></url>
   <url><loc>https://studio.meowv.com/books</loc></url>
   <url><loc>https://studio.meowv.com/draw</loc></url>
+  <url><loc>https://studio.meowv.com/floorplan</loc></url>
   <url><loc>https://studio.meowv.com/mind</loc></url>
   <url><loc>https://studio.meowv.com/notes</loc></url>
   <url><loc>https://studio.meowv.com/wallpapers</loc></url>
   <url><loc>https://studio.meowv.com/tools</loc></url>
+  <url><loc>https://studio.meowv.com/tools/json</loc></url>
+  <url><loc>https://studio.meowv.com/tools/text-json-diff</loc></url>
+  <url><loc>https://studio.meowv.com/tools/sqlite</loc></url>
+  <url><loc>https://studio.meowv.com/tools/encoding-converter</loc></url>
+  <url><loc>https://studio.meowv.com/tools/translation</loc></url>
+  <url><loc>https://studio.meowv.com/tools/simplified-traditional-converter</loc></url>
+  <url><loc>https://studio.meowv.com/tools/chinese-pronunciation</loc></url>
+  <url><loc>https://studio.meowv.com/tools/chinese-stroke-order</loc></url>
+  <url><loc>https://studio.meowv.com/tools/image-compress</loc></url>
+  <url><loc>https://studio.meowv.com/tools/image-convert</loc></url>
+  <url><loc>https://studio.meowv.com/tools/image-resize</loc></url>
+  <url><loc>https://studio.meowv.com/tools/image-crop</loc></url>
+  <url><loc>https://studio.meowv.com/tools/image-merge</loc></url>
+  <url><loc>https://studio.meowv.com/tools/images-to-pdf</loc></url>
+  <url><loc>https://studio.meowv.com/tools/image-watermark</loc></url>
+  <url><loc>https://studio.meowv.com/tools/merge-gif</loc></url>
+  <url><loc>https://studio.meowv.com/tools/video-to-gif</loc></url>
+  <url><loc>https://studio.meowv.com/tools/psd-viewer</loc></url>
+  <url><loc>https://studio.meowv.com/tools/image-rounded-corners</loc></url>
+  <url><loc>https://studio.meowv.com/tools/image-padding</loc></url>
+  <url><loc>https://studio.meowv.com/tools/image-color</loc></url>
+  <url><loc>https://studio.meowv.com/tools/merge-pdf</loc></url>
+  <url><loc>https://studio.meowv.com/tools/split-pdf</loc></url>
+  <url><loc>https://studio.meowv.com/tools/organize-pdf</loc></url>
+  <url><loc>https://studio.meowv.com/tools/pdf-to-images</loc></url>
+  <url><loc>https://studio.meowv.com/tools/watermark-pdf</loc></url>
+  <url><loc>https://studio.meowv.com/tools/add-pdf-page-numbers</loc></url>
+  <url><loc>https://studio.meowv.com/tools/delete-pdf-pages</loc></url>
+  <url><loc>https://studio.meowv.com/tools/extract-pdf-pages</loc></url>
+  <url><loc>https://studio.meowv.com/tools/rotate-pdf</loc></url>
+  <url><loc>https://studio.meowv.com/tools/pdf-metadata</loc></url>
+  <url><loc>https://studio.meowv.com/tools/calendar</loc></url>
+  <url><loc>https://studio.meowv.com/tools/color-picker</loc></url>
+  <url><loc>https://studio.meowv.com/tools/qr-code</loc></url>
+  <url><loc>https://studio.meowv.com/tools/special-symbols</loc></url>
+  <url><loc>https://studio.meowv.com/tools/keyboard-visualizer</loc></url>
+  <url><loc>https://studio.meowv.com/tools/calculation-paper</loc></url>
+  <url><loc>https://studio.meowv.com/tools/periodic-table</loc></url>
+  <url><loc>https://studio.meowv.com/tools/answer-book</loc></url>
+  <url><loc>https://studio.meowv.com/tools/cube-solver</loc></url>
+  <url><loc>https://studio.meowv.com/tools/xiaomi-camera</loc></url>
+  <url><loc>https://studio.meowv.com/tools/emoji-match</loc></url>
   <url><loc>https://studio.meowv.com/zitie/</loc></url>
   <url><loc>https://studio.meowv.com/zitie/hanzi/</loc></url>
   <url><loc>https://studio.meowv.com/zitie/cizu/</loc></url>
@@ -21,4 +68,5 @@
   <url><loc>https://studio.meowv.com/zitie/number/</loc></url>
   <url><loc>https://studio.meowv.com/zitie/pinyin/</loc></url>
   <url><loc>https://studio.meowv.com/zitie/pen-control/</loc></url>
+  <url><loc>https://studio.meowv.com/zitie/donate/</loc></url>
 </urlset>
