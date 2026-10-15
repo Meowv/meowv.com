@@ -27,6 +27,9 @@ protocol WallpaperBrowserDataSource: AnyObject {
     var browserCategories: [LivewallCategoryEntry] { get }
     /// 当前正在播的分类。窗口打开时默认选中它。
     var browserSelectedCategoryID: Int? { get }
+    /// 主槽位实际显示的条目；可能与当前过滤不同（例如固定了其它分类的壁纸）。
+    var browserCurrentItem: WallpaperItem? { get }
+    var browserPlayingFavorites: Bool { get }
     /// 当前固定项的 id。UI **只标记**它，不提供取消固定的入口（决策 11）。
     var browserPinnedItemID: Int? { get }
     var browserFavoriteItems: [WallpaperItem] { get }
@@ -212,6 +215,11 @@ final class WallpaperBrowserViewController: NSViewController {
     private var allItems: [WallpaperItem] = []
     private var items: [WallpaperItem] = []
     private var selectedSection: BrowserSection = .favorites
+    /// 只在首次载入列表时定位；之后搜索和切分类保留用户自己的位置。
+    private var initialLocateItemID: Int?
+    private var didLogInitialLocation = false
+    private var isSelectingCategoryProgrammatically = false
+    private var hasListResult = false
     private var isLoadingItems = false
     private var listFailure: String?
     /// 预览独立持有条目；取消收藏导致卡片消失时仍可继续预览。
@@ -302,12 +310,29 @@ final class WallpaperBrowserViewController: NSViewController {
         )
 
         categories = dataSource?.browserCategories ?? []
-        // 默认选中当前正在播的分类；记忆值不在索引里（或没配）时退回第一个**有内容**的
-        // 分类 —— 选中一个 0 条的分类会立刻撞上「加载失败」。
-        let initialCategory = categories.first(where: {
+        let activeCategory = categories.first(where: {
             $0.id == dataSource?.browserSelectedCategoryID && $0.itemCount > 0
-        }) ?? categories.first(where: { $0.itemCount > 0 })
-        selectedSection = initialCategory.map { .category($0.id) } ?? .favorites
+        })
+        let currentItem = dataSource?.browserCurrentItem
+        let matchingCategory = currentItem.flatMap { item in
+            (activeCategory.map { [$0] } ?? []).first(where: { item.categoryIds.contains($0.id) })
+                ?? categories.first(where: { $0.itemCount > 0 && item.categoryIds.contains($0.id) })
+        }
+        let isFavorite = currentItem.map { item in
+            dataSource?.browserFavoriteItems.contains(where: { $0.id == item.id }) == true
+        } ?? false
+        initialLocateItemID = currentItem?.id
+        if isFavorite && dataSource?.browserPlayingFavorites == true {
+            selectedSection = .favorites
+        } else if let matchingCategory {
+            selectedSection = .category(matchingCategory.id)
+        } else if isFavorite {
+            selectedSection = .favorites
+        } else {
+            // 没有当前条目或它已不在清单里时沿用原来的分类回退。
+            let fallback = activeCategory ?? categories.first(where: { $0.itemCount > 0 })
+            selectedSection = fallback.map { .category($0.id) } ?? .favorites
+        }
         reloadCategoryTable()
 
         if let categoryID = selectedSection.categoryID {
@@ -337,6 +362,7 @@ final class WallpaperBrowserViewController: NSViewController {
         // （表现是右边多出一条空白，或者卡片被裁）。
         gridScroll.layoutSubtreeIfNeeded()
         applyGridWidth(gridScroll.contentView.bounds.width)
+        locateInitialItemIfReady()
 
         let availableWidth = previewOverlay.bounds.width - 2 * Self.overlayInset
         let footerContentHeight = max(
@@ -353,6 +379,23 @@ final class WallpaperBrowserViewController: NSViewController {
         if abs(panelWidthConstraint.constant - width) > 0.5 {
             panelWidthConstraint.constant = width
         }
+    }
+
+    override func viewDidAppear() {
+        super.viewDidAppear()
+        browserDidPresent()
+    }
+
+    func browserDidPresent() {
+        if !didLogInitialLocation {
+            didLogInitialLocation = true
+            log?(
+                "浏览窗口：打开定位 主槽位=\(dataSource?.browserCurrentItem?.id ?? -1)，"
+                    + "待定位=\(initialLocateItemID ?? -1)，分类=\(selectedSection.categoryID ?? -1)"
+            )
+        }
+        reloadCategoryTable()
+        locateInitialItemIfReady()
     }
 
     deinit {
@@ -473,6 +516,8 @@ final class WallpaperBrowserViewController: NSViewController {
     }
 
     private func reloadCategoryTable() {
+        isSelectingCategoryProgrammatically = true
+        defer { isSelectingCategoryProgrammatically = false }
         categoryTable.reloadData()
         let row: Int
         switch selectedSection {
@@ -520,12 +565,29 @@ final class WallpaperBrowserViewController: NSViewController {
             message = items.isEmpty ? "没有匹配结果" : nil
         }
         updateGridPlaceholder(message: message, showSpinner: isLoadingItems, canRetry: listFailure != nil)
+        locateInitialItemIfReady()
+    }
+
+    private func locateInitialItemIfReady() {
+        guard hasListResult, !isLoadingItems, let targetID = initialLocateItemID,
+              view.window?.isVisible == true, gridScroll.contentView.bounds.width > 1
+        else { return }
+        initialLocateItemID = nil
+        guard let index = items.firstIndex(where: { $0.id == targetID }) else {
+            log?("浏览窗口：当前条目 \(targetID) 不在本次列表中，保持原位置")
+            return
+        }
+        view.layoutSubtreeIfNeeded()
+        let path = IndexPath(item: index, section: 0)
+        collectionView.selectItems(at: [path], scrollPosition: .centeredVertically)
+        log?("浏览窗口：定位当前条目 \(targetID) 到列表第 \(index + 1) 项")
     }
 
     private func showFavorites() {
         sliceGeneration += 1
         dismissPreview(nil)
         isLoadingItems = false
+        hasListResult = true
         listFailure = nil
         allItems = dataSource?.browserFavoriteItems ?? []
         applySearchFilter()
@@ -535,12 +597,14 @@ final class WallpaperBrowserViewController: NSViewController {
         sliceGeneration += 1
         dismissPreview(nil)
         isLoadingItems = false
+        hasListResult = true
         listFailure = nil
         allItems = dataSource?.browserDisabledItems ?? []
         applySearchFilter()
     }
 
     @objc private func searchChanged(_ sender: NSSearchField) {
+        initialLocateItemID = nil
         dismissPreview(nil)
         applySearchFilter()
     }
@@ -1109,6 +1173,7 @@ final class WallpaperBrowserViewController: NSViewController {
 
         allItems = []
         isLoadingItems = true
+        hasListResult = false
         listFailure = nil
         // 切分类时把预览浮层关掉：旧分类的条目马上就不在列表里了，
         // 留着浮层会变成「显示一条已经不存在的条目」。
@@ -1124,11 +1189,13 @@ final class WallpaperBrowserViewController: NSViewController {
             case .success(let loaded):
                 self.allItems = loaded
                 self.isLoadingItems = false
+                self.hasListResult = true
                 self.applySearchFilter()
                 self.log?("浏览窗口：分类 \(categoryID) 载入 \(loaded.count) 条")
             case .failure(let failure):
                 self.allItems = []
                 self.isLoadingItems = false
+                self.hasListResult = true
                 self.listFailure = failure.message
                 self.applySearchFilter()
                 self.log?("⚠️ 浏览窗口：分类 \(categoryID) 加载失败（\(failure.message)）")
@@ -1258,11 +1325,13 @@ extension WallpaperBrowserViewController: NSTableViewDataSource, NSTableViewDele
     }
 
     func tableViewSelectionDidChange(_ notification: Notification) {
+        guard !isSelectingCategoryProgrammatically else { return }
         let row = categoryTable.selectedRow
         guard row >= 0, row < categories.count + 2 else { return }
         let section: BrowserSection = row == 0 ? .favorites
             : row == 1 ? .disabled : .category(categories[row - 2].id)
         guard section != selectedSection else { return }
+        initialLocateItemID = nil
         // UI 内切分类**只换列表数据，不写配置** —— 只有「设为桌面壁纸」才写（决策 7）。
         // 于是「在窗口里翻了一圈别的分类」不会改变桌面正在播什么。
         selectedSection = section

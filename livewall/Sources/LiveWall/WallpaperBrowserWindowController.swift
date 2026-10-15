@@ -104,8 +104,9 @@ final class WallpaperBrowserWindowController: NSWindowController {
         }
         // 本方法是从**状态栏菜单项**里调进来的，动作执行时菜单还在收；菜单收起那一拍可能再把
         // 窗口压回去。下一个 runloop 再提一次（幂等，不引入定时器）。
-        DispatchQueue.main.async { [weak window] in
+        DispatchQueue.main.async { [weak self, weak window] in
             window?.orderFrontRegardless()
+            self?.browserViewController.browserDidPresent()
         }
     }
 

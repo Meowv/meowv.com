@@ -13,6 +13,12 @@ extension AppDelegate: WallpaperBrowserDataSource {
 
     var browserSelectedCategoryID: Int? { selectedCategoryID }
 
+    var browserCurrentItem: WallpaperItem? {
+        engine.primaryKey.flatMap { engine.item(on: $0) }
+    }
+
+    var browserPlayingFavorites: Bool { isFavoritesFilter }
+
     /// 固定项的 id。UI 只**标记**它，不提供取消固定的入口（决策 11）。
     var browserPinnedItemID: Int? { preferences.pinnedItem?.id }
 
