@@ -18,6 +18,11 @@ extension AppDelegate {
     ///     **同步切换内容过滤**（决策 7），让「解钉之后的轮换」落在用户刚挑的那个
     ///     分类里，而不是回到某个不相干的分类。传 nil 表示不改内容过滤。
     func setPinned(_ item: WallpaperItem, categoryID: Int?) {
+        guard !preferences.disabledItems.contains(where: { $0.id == item.id }) else {
+            notice = .warning("请先恢复这条已禁用的壁纸")
+            refreshStatusItem()
+            return
+        }
         guard PinnedPlayback.isPlayable(item) else {
             notice = .warning("这条壁纸的地址不可用，无法设为桌面壁纸")
             log("⚠️ 固定失败：条目 \(item.id) 的播放地址非法")
@@ -72,11 +77,11 @@ extension AppDelegate {
     ///
     /// - Parameter reason: 非 nil 时作为状态区提示。**用户主动解钉传 nil** ——
     ///   画面立刻变了就是回执，多说一句反而像出了错。
-    func clearPin(reason: String?) {
+    func clearPin(reason: String?, persist: Bool = true) {
         guard isPinned else { return }
         preferences.pinnedItem = nil
         pendingPinAnnouncement = false
-        persistPreferences("解除固定")
+        if persist { persistPreferences("解除固定") }
         // 固定期间不填、也不消费恢复计划；这里再清一次，防止它跨过固定期生效。
         pendingRestore.removeAll()
         if let reason {
@@ -142,7 +147,12 @@ extension AppDelegate {
         // **必须先递增代次**：可能正有一个「旧条目」的加载在飞，它完成后会把画面
         // 换成旧条目（`loadAndPlay` 里比对的就是这个代次）。递增之后那个结果会被
         // 判为过期而丢弃 —— 这是整个固定功能里最容易漏、后果最直接的一步。
-        for key in targets { loadGenerationBySlot[key] = (loadGenerationBySlot[key] ?? 0) + 1 }
+        for key in targets {
+            loadTasksBySlot[key]?.cancel()
+            loadTasksBySlot[key] = nil
+            loadingItemIDsBySlot[key] = nil
+            loadGenerationBySlot[key] = (loadGenerationBySlot[key] ?? 0) + 1
+        }
         let generations = targets.map { ($0, loadGenerationBySlot[$0] ?? 0) }
 
         // 固定态不排定时器。这里再保险一次：从「正在轮换」切到固定的那一瞬间，
@@ -168,6 +178,7 @@ extension AppDelegate {
                         log("槽位 \(key.label) 的固定项加载结果已过期，跳过")
                         continue
                     }
+                    guard !preferences.disabledItems.contains(where: { $0.id == item.id }) else { continue }
                     engine.play(
                         item,
                         loaded: loaded,
@@ -198,6 +209,12 @@ extension AppDelegate {
                 log("固定项已铺满 \(applied) 个槽位：\(item.id) \(item.title)")
                 refreshStatusItem()
             } catch {
+                guard preferences.pinnedItem?.id == item.id else {
+                    isPinApplyInFlight = false
+                    updateMenuBarIconAnimation()
+                    if isPinned { applyPinToMissingSlots() }
+                    return
+                }
                 log("⚠️ 固定项加载失败：\(error.localizedDescription)")
                 // 决策 8：固定项连加载都失败 → 解钉回轮换，绝不黑屏。
                 clearPin(reason: "固定项加载失败，已恢复轮换")

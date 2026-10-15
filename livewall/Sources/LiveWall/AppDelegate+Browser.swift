@@ -18,8 +18,14 @@ extension AppDelegate: WallpaperBrowserDataSource {
 
     var browserFavoriteItems: [WallpaperItem] { preferences.favoriteItems }
 
+    var browserDisabledItems: [WallpaperItem] { preferences.disabledItems }
+
     func browserToggleFavorite(_ item: WallpaperItem) -> String? {
         toggleFavorite(item)
+    }
+
+    func browserToggleDisabled(_ item: WallpaperItem) -> String? {
+        toggleDisabled(item)
     }
 
     /// 拉取某个分类的条目给浏览窗口。

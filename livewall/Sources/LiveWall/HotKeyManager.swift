@@ -50,10 +50,19 @@ final class HotKeyManager {
             display: "⌥⌘F",
             purpose: "收藏 / 取消收藏当前壁纸"
         )
+        static let toggleCurrentDisabled = Definition(
+            id: 5,
+            keyCode: UInt32(kVK_ANSI_X),
+            modifiers: UInt32(cmdKey | optionKey),
+            display: "⌥⌘X",
+            purpose: "禁用 / 恢复当前壁纸"
+        )
 
         /// 没有 `⌥⌘M 静音`：壁纸被硬性要求静音（`player.isMuted = true`），
         /// 一个永远无效的开关比没有开关更糟。
-        static let all: [Definition] = [.togglePause, .nextItem, .reloadCatalog, .toggleCurrentFavorite]
+        static let all: [Definition] = [
+            .togglePause, .nextItem, .reloadCatalog, .toggleCurrentFavorite, .toggleCurrentDisabled,
+        ]
     }
 
     /// 单个热键的注册结果。

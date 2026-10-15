@@ -166,6 +166,23 @@ extension AppDelegate {
         refreshStatusItem()
     }
 
+    @objc func toggleCurrentDisabled() {
+        guard let item = currentFavoriteableItem else {
+            notice = .warning("当前没有可禁用的线上壁纸", oneShot: true)
+            refreshStatusItem()
+            return
+        }
+        let wasDisabled = pool.excludedIDs.contains(item.id)
+        if let message = toggleDisabled(item) {
+            notice = .warning(message)
+        } else if !wasDisabled && pool.isExhausted {
+            notice = .warning("已禁用：\(item.displayName)；当前过滤下没有可播放的壁纸")
+        } else {
+            notice = .info(wasDisabled ? "已取消禁用：\(item.displayName)" : "已禁用：\(item.displayName)")
+        }
+        refreshStatusItem()
+    }
+
     /// 切换选片顺序。**刻意不立刻换片** —— 当前这张在新顺序下依然合法，
     /// 换模式只决定「下一张是谁」（顺序模式下就是清单第一条）。
     /// 候选池的待取队列会因 `order` 的 didSet 被清空，等于重新开始一轮。

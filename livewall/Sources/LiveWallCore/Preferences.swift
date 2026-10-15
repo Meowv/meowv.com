@@ -112,6 +112,9 @@ public struct Preferences: Codable, Sendable, Equatable {
     /// 收藏与播放分类、固定状态独立，保存完整条目以便跨分类和重启恢复。
     public var favoriteItems: [WallpaperItem]
 
+    /// 禁用的线上条目；不参与自动轮换，与收藏按 ID 互斥。
+    public var disabledItems: [WallpaperItem]
+
     /// 线上内容过滤使用收藏；selectedCategoryID 保留上次普通分类，收藏清空时恢复它。
     public var playFavorites: Bool
 
@@ -166,6 +169,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         selectedCategoryID: Int? = nil,
         pinnedItem: WallpaperItem? = nil,
         favoriteItems: [WallpaperItem] = [],
+        disabledItems: [WallpaperItem] = [],
         playFavorites: Bool = false,
         pauseWhenCovered: Bool = true,
         pauseWhenIdle: Bool = true,
@@ -193,6 +197,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         self.selectedCategoryID = selectedCategoryID
         self.pinnedItem = pinnedItem
         self.favoriteItems = favoriteItems
+        self.disabledItems = disabledItems
         self.playFavorites = playFavorites
         self.pauseWhenCovered = pauseWhenCovered
         self.pauseWhenIdle = pauseWhenIdle
@@ -216,6 +221,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         case multiScreenPolicy, perScreenSources, selectedCategoryID
         case pinnedItem
         case favoriteItems
+        case disabledItems
         case playFavorites
         case pauseWhenCovered, pauseWhenIdle, idleThresholdSeconds
         case pauseOnLowPowerMode, pauseOnBattery, pauseOnThermalPressure
@@ -267,6 +273,10 @@ public struct Preferences: Codable, Sendable, Equatable {
         // 单条损坏只丢弃该条，不牵连其它收藏与旧设置。
         let favorites = (try? container.decodeIfPresent([FavoriteEntry].self, forKey: .favoriteItems)) ?? []
         favoriteItems = FavoriteCollection.sanitized(favorites.compactMap(\.item))
+        let disabled = (try? container.decodeIfPresent([FavoriteEntry].self, forKey: .disabledItems)) ?? []
+        disabledItems = DisabledCollection.sanitized(disabled.compactMap(\.item))
+        let disabledIDs = Set(disabledItems.map(\.id))
+        favoriteItems.removeAll { disabledIDs.contains($0.id) }
         playFavorites = ((try? container.decodeIfPresent(Bool.self, forKey: .playFavorites)) ?? false)
             && !favoriteItems.isEmpty
         pauseWhenCovered = try container.decodeIfPresent(Bool.self, forKey: .pauseWhenCovered) ?? fallback.pauseWhenCovered
@@ -341,6 +351,21 @@ public struct Preferences: Codable, Sendable, Equatable {
         )
     }
 
+    /// 两种标记互斥；重复点击已有标记时只移除该标记。
+    public mutating func toggleFavorite(_ item: WallpaperItem) {
+        guard item.remoteURL != nil else { return }
+        let wasFavorite = favoriteItems.contains { $0.id == item.id }
+        favoriteItems = FavoriteCollection.toggling(item, in: favoriteItems)
+        if !wasFavorite { disabledItems.removeAll { $0.id == item.id } }
+    }
+
+    public mutating func toggleDisabled(_ item: WallpaperItem) {
+        guard item.remoteURL != nil else { return }
+        let wasDisabled = disabledItems.contains { $0.id == item.id }
+        disabledItems = DisabledCollection.toggling(item, in: disabledItems)
+        if !wasDisabled { favoriteItems.removeAll { $0.id == item.id } }
+    }
+
     /// 由配置派生的省电策略。
     public var playbackStateResolver: PlaybackStateResolver {
         PlaybackStateResolver(preferences: self)
@@ -369,6 +394,9 @@ public struct Preferences: Codable, Sendable, Equatable {
     public func sanitized() -> Preferences {
         var copy = self
         copy.favoriteItems = FavoriteCollection.sanitized(copy.favoriteItems)
+        copy.disabledItems = DisabledCollection.sanitized(copy.disabledItems)
+        let disabledIDs = Set(copy.disabledItems.map(\.id))
+        copy.favoriteItems.removeAll { disabledIDs.contains($0.id) }
         if copy.favoriteItems.isEmpty { copy.playFavorites = false }
         // 超范围一律夹紧而不是退回默认：手改配置的人多半只是「填得太短/太长」，
         // 夹到最近的合法值更接近他的本意。非有限值夹不了，`SwitchInterval.clamp` 里退回默认。

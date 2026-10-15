@@ -274,8 +274,16 @@ final class PlaybackEngine {
         for slot in slots.values { slot.player.pause() }
     }
 
-    func resume() {
-        for slot in slots.values { slot.player.play() }
+    func pause(on key: PlaybackSlotKey) {
+        slots[key]?.player.pause()
+    }
+
+    func resume(excluding excludedIDs: Set<Int> = []) {
+        for slot in slots.values where slot.item.map({
+            $0.remoteURL == nil || !excludedIDs.contains($0.id)
+        }) == true {
+            slot.player.play()
+        }
     }
 
     var isPlaying: Bool { slots.values.contains { $0.player.rate > 0 } }

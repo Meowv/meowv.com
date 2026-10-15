@@ -200,6 +200,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 每个槽位当前的视频加载任务。代次只能丢弃结果，任务本身也要取消，
     /// 否则旧的 HEAD / AVURLAsset 加载仍会继续占用网络和解码资源。
     var loadTasksBySlot: [PlaybackSlotKey: Task<Void, Never>] = [:]
+    /// 识别用户禁用时尚在加载的条目，及时取消而不等网络请求结束。
+    var loadingItemIDsBySlot: [PlaybackSlotKey: Int] = [:]
     /// 同 URL 的准入请求合并；所有等待者退出后会取消底层加载，不长期缓存 AVURLAsset。
     let sharedVideoLoadStore = SharedVideoLoadStore()
 
@@ -386,6 +388,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let loaded = Preferences.load(from: configURL)
         preferences = loaded.sanitized()
+        pool.excludedIDs = Set(preferences.disabledItems.map(\.id))
         // 修正过（旧版清单地址迁移、超范围值夹紧、非法分类 id 清掉）就立刻落盘 ——
         // 否则每次启动都要重算一遍，而且配置里留着的东西和实际生效的不一致。
         // 写失败必须显式说出来：`try?` 会让「修正了但没存上」看起来像成功。
@@ -585,6 +588,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menuBarIconAnimator.stop()
         for task in loadTasksBySlot.values { task.cancel() }
         loadTasksBySlot.removeAll()
+        loadingItemIDsBySlot.removeAll()
         for task in sharedVideoLoadStore.drain() { task.cancel() }
         network.stop()
         persistScreenSources()

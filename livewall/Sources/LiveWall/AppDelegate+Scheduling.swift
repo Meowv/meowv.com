@@ -137,6 +137,7 @@ extension AppDelegate {
                 // 失败重试可能已经替换了任务；不要误删新任务的句柄。
                 if self.loadGenerationBySlot[key] == generation {
                     self.loadTasksBySlot[key] = nil
+                    self.loadingItemIDsBySlot[key] = nil
                 }
                 // 加载结束（成功 / 失败 / 被丢弃）后立刻重算一次，让旋转当场停下 ——
                 // 不靠它也行（定时器每帧会重判），但那样停止最多滞后一帧。
@@ -153,6 +154,11 @@ extension AppDelegate {
                 }
                 guard self.loadGenerationBySlot[key] == generation else {
                     self.log("槽位 \(key.label) 的旧加载结果已过期，丢弃 \(item.id)")
+                    return
+                }
+                guard item.remoteURL == nil || !self.disabledItemIDs.contains(item.id) else {
+                    self.log("槽位 \(key.label) 的条目已禁用，丢弃 \(item.id)")
+                    self.advanceOne(key)
                     return
                 }
                 self.engine.play(
@@ -213,6 +219,7 @@ extension AppDelegate {
                 self.handleLoadFailure(error, item: item, attempt: attempt, on: key)
             }
         }
+        loadingItemIDsBySlot[key] = item.id
         loadTasksBySlot[key] = task
         // 切壁纸的加载是②里最频繁的一种：图标当场转起来，用户才知道
         // 「按了下一张之后现在在加载」而不是「按了没反应」。
@@ -395,6 +402,7 @@ extension AppDelegate {
             log("当前处于暂停状态，暂不安排下一次切换")
             return
         }
+        guard !pool.isExhausted else { return }
 
         let policy = preferences.schedulePolicy
         let delay = policy.nextDelaySeconds(videoDuration: videoDuration)
@@ -420,7 +428,7 @@ extension AppDelegate {
         switch state {
         case .playing:
             log("恢复播放")
-            engine.resume()
+            engine.resume(excluding: disabledItemIDs)
             tryStartDueRestReminder()
             // 固定态：不排下一次切换，但**要把缺片的槽位补齐** ——
             // 暂停期间新增的槽位（热插拔 / 策略切换）、以及加载失败留下的空槽位，
@@ -429,6 +437,7 @@ extension AppDelegate {
                 applyPinToMissingSlots()
                 break
             }
+            if replaceDisabledSlots() { break }
             // 暂停期间定时器已被取消，恢复时要重新排一次
             if scheduleTimer == nil || !(scheduleTimer?.isValid ?? false) {
                 if engine.isEmpty {

@@ -42,6 +42,9 @@ extension AppDelegate: NSMenuItemValidation {
         case #selector(toggleCurrentFavorite):
             return currentFavoriteableItem != nil
 
+        case #selector(toggleCurrentDisabled):
+            return currentFavoriteableItem != nil
+
         case #selector(selectFavorites):
             return !isLocalSource && !preferences.favoriteItems.isEmpty
 
@@ -60,7 +63,8 @@ extension AppDelegate: NSMenuItemValidation {
 
         case #selector(pinCurrentItem):
             // 当前没有正在播的条目时不可固定。已固定时仍可点（幂等）。
-            return canPinCurrent
+            return canPinCurrent && !(engine.primaryKey.flatMap { engine.item(on: $0) }
+                .map { pool.excludedIDs.contains($0.id) } ?? false)
 
         case #selector(setIdleThreshold(_:)):
             // 「无操作时」总开关关着时，子项没有意义（置灰而不是隐藏，保留可发现性）。

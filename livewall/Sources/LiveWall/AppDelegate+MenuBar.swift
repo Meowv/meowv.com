@@ -166,6 +166,17 @@ extension AppDelegate {
         favorite.target = self
         menu.addItem(favorite)
 
+        let disabled = NSMenuItem(
+            title: (currentFavoriteableItem.map { item in
+                preferences.disabledItems.contains(where: { $0.id == item.id })
+                    ? "取消禁用当前壁纸" : "禁用当前壁纸"
+            } ?? "禁用当前壁纸") + "（\(HotKeyManager.Definition.toggleCurrentDisabled.display)）",
+            action: #selector(toggleCurrentDisabled),
+            keyEquivalent: ""
+        )
+        disabled.target = self
+        menu.addItem(disabled)
+
         menu.addItem(buildOrderMenu())
 
         menu.addItem(.separator())

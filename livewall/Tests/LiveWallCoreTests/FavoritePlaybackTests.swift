@@ -78,5 +78,31 @@ func favoritePlaybackTests() {
             expectEqual(singleton.next(), first, "一个收藏可播放")
             expectEqual(singleton.next(), first, "一个收藏继续循环")
         }
+        test("禁用在轮换、恢复与故障黑名单重置中始终排除") {
+            var pool = CandidatePool(items: [first, second, third], order: .sequential)
+            pool.excludedIDs = [second.id]
+            expectEqual(pool.itemsSnapshot, [first, second, third], "浏览列表保留原始条目")
+            expectEqual(pool.restore(id: second.id), nil, "每屏恢复不能取禁用项")
+            expectEqual((0..<2).compactMap { _ in pool.next()?.id }, [first.id, third.id], "顺序轮换跳过禁用项")
+            pool.blacklist(id: first.id)
+            pool.blacklist(id: third.id)
+            pool.refill()
+            expectEqual(pool.next()?.id, first.id, "资源黑名单可重置")
+            expectEqual(pool.next()?.id, third.id, "重置后仍跳过禁用项")
+            pool.excludedIDs = [first.id, second.id, third.id]
+            expect(pool.isExhausted, "全部禁用时无候选")
+            let resetCount = pool.blacklistResetCount
+            expectEqual(pool.next(), nil, "全部禁用不能自动重试")
+            expectEqual(pool.blacklistResetCount, resetCount, "不因禁用触发黑名单重置")
+        }
+        test("收藏被禁用清空后恢复原分类记忆") {
+            let restored = Preferences(
+                selectedCategoryID: 10, favoriteItems: [first],
+                disabledItems: [first], playFavorites: true
+            ).sanitized()
+            expectEqual(restored.favoriteItems, [], "冲突项从收藏移除")
+            expectEqual(restored.playFavorites, false, "空收藏退出收藏过滤")
+            expectEqual(restored.selectedCategoryID, 10, "原分类记忆保留")
+        }
     }
 }

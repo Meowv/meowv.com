@@ -30,8 +30,10 @@ protocol WallpaperBrowserDataSource: AnyObject {
     /// 当前固定项的 id。UI **只标记**它，不提供取消固定的入口（决策 11）。
     var browserPinnedItemID: Int? { get }
     var browserFavoriteItems: [WallpaperItem] { get }
+    var browserDisabledItems: [WallpaperItem] { get }
     /// nil 表示保存成功；失败文案由浏览窗口和菜单共同呈现。
     func browserToggleFavorite(_ item: WallpaperItem) -> String?
+    func browserToggleDisabled(_ item: WallpaperItem) -> String?
 
     /// 拉取某个分类的条目。
     ///
@@ -141,6 +143,7 @@ final class WallpaperBrowserViewController: NSViewController {
 
     private enum BrowserSection: Equatable {
         case favorites
+        case disabled
         case category(Int)
 
         var categoryID: Int? {
@@ -199,6 +202,7 @@ final class WallpaperBrowserViewController: NSViewController {
     /// 叠在画面上会挡住要预览的东西。
     private let pinButton = NSButton()
     private let favoriteButton = BrowserFavoriteButton()
+    private let disabledButton = BrowserFavoriteButton()
     /// 浮层面板的**宽度**。写成常量约束 + 在 `viewDidLayout` 里改 constant，
     /// 而不是 `panel.width == overlay.width - 80`：见 `viewDidLayout` 里的说明。
     private var panelWidthConstraint: NSLayoutConstraint!
@@ -308,6 +312,8 @@ final class WallpaperBrowserViewController: NSViewController {
 
         if let categoryID = selectedSection.categoryID {
             loadItems(for: categoryID)
+        } else if selectedSection == .disabled {
+            showDisabled()
         } else {
             showFavorites()
         }
@@ -370,6 +376,18 @@ final class WallpaperBrowserViewController: NSViewController {
     func refreshPinState() {
         refreshVisibleBadges()
         updatePreviewPanel()
+    }
+
+    func refreshDisabledState() {
+        if selectedSection == .disabled {
+            allItems = dataSource?.browserDisabledItems ?? []
+            applySearchFilter()
+        } else if selectedSection == .favorites {
+            allItems = dataSource?.browserFavoriteItems ?? []
+            applySearchFilter()
+        }
+        refreshVisibleBadges()
+        if previewItem != nil { updatePreviewPanel() }
     }
 
     /// 关掉「最上面那一层」。浮层开着就收浮层并返回 true；否则返回 false（调用方再决定关窗口）。
@@ -456,9 +474,13 @@ final class WallpaperBrowserViewController: NSViewController {
 
     private func reloadCategoryTable() {
         categoryTable.reloadData()
-        let row = selectedSection.categoryID.flatMap { id in
-            categories.firstIndex(where: { $0.id == id }).map { $0 + 1 }
-        } ?? 0
+        let row: Int
+        switch selectedSection {
+        case .favorites: row = 0
+        case .disabled: row = 1
+        case .category(let id):
+            row = categories.firstIndex(where: { $0.id == id }).map { $0 + 2 } ?? 0
+        }
         categoryTable.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
     }
 
@@ -489,7 +511,11 @@ final class WallpaperBrowserViewController: NSViewController {
         } else if let listFailure {
             message = listFailure
         } else if allItems.isEmpty {
-            message = selectedSection == .favorites ? "还没有收藏，点击壁纸上的星标添加" : "该分类暂无内容"
+            switch selectedSection {
+            case .favorites: message = "还没有收藏，点击壁纸上的星标添加"
+            case .disabled: message = "还没有禁用的壁纸"
+            case .category: message = "该分类暂无内容"
+            }
         } else {
             message = items.isEmpty ? "没有匹配结果" : nil
         }
@@ -505,6 +531,15 @@ final class WallpaperBrowserViewController: NSViewController {
         applySearchFilter()
     }
 
+    private func showDisabled() {
+        sliceGeneration += 1
+        dismissPreview(nil)
+        isLoadingItems = false
+        listFailure = nil
+        allItems = dataSource?.browserDisabledItems ?? []
+        applySearchFilter()
+    }
+
     @objc private func searchChanged(_ sender: NSSearchField) {
         dismissPreview(nil)
         applySearchFilter()
@@ -513,12 +548,7 @@ final class WallpaperBrowserViewController: NSViewController {
     private func toggleFavorite(_ item: WallpaperItem) {
         guard let dataSource else { return }
         let failure = dataSource.browserToggleFavorite(item)
-        if selectedSection == .favorites {
-            allItems = dataSource.browserFavoriteItems
-            applySearchFilter()
-        }
-        refreshVisibleBadges()
-        updatePreviewPanel()
+        refreshDisabledState()
         if let failure {
             let alert = NSAlert()
             alert.messageText = "收藏更改未保存"
@@ -530,6 +560,23 @@ final class WallpaperBrowserViewController: NSViewController {
     @objc private func togglePreviewFavorite() {
         guard let previewItem else { return }
         toggleFavorite(previewItem)
+    }
+
+    private func toggleDisabled(_ item: WallpaperItem) {
+        guard let dataSource else { return }
+        let failure = dataSource.browserToggleDisabled(item)
+        refreshDisabledState()
+        if let failure {
+            let alert = NSAlert()
+            alert.messageText = "禁用更改未保存"
+            alert.informativeText = "本次更改暂时保留在当前会话，重启后可能丢失。\n\(failure)"
+            if let window = view.window { alert.beginSheetModal(for: window) }
+        }
+    }
+
+    @objc private func togglePreviewDisabled() {
+        guard let previewItem else { return }
+        toggleDisabled(previewItem)
     }
 
     // MARK: - 右栏：条目网格
@@ -803,6 +850,15 @@ final class WallpaperBrowserViewController: NSViewController {
         favoriteButton.translatesAutoresizingMaskIntoConstraints = false
         previewPanel.addSubview(favoriteButton)
 
+        disabledButton.title = "禁用"
+        disabledButton.bezelStyle = .rounded
+        disabledButton.target = self
+        disabledButton.action = #selector(togglePreviewDisabled)
+        disabledButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+        disabledButton.setContentHuggingPriority(.required, for: .horizontal)
+        disabledButton.translatesAutoresizingMaskIntoConstraints = false
+        previewPanel.addSubview(disabledButton)
+
     }
 
     /// 浮层的全部约束。
@@ -819,7 +875,8 @@ final class WallpaperBrowserViewController: NSViewController {
             + pinButton.fittingSize.width
             + previewDismissButton.fittingSize.width
             + favoriteButton.fittingSize.width
-            + 16
+            + disabledButton.fittingSize.width
+            + 24
         panelWidthConstraint = previewPanel.widthAnchor.constraint(
             equalToConstant: max(initialWidth, 1)
         )
@@ -884,8 +941,10 @@ final class WallpaperBrowserViewController: NSViewController {
             previewDismissButton.centerYAnchor.constraint(equalTo: previewInfoLabel.centerYAnchor),
             favoriteButton.trailingAnchor.constraint(equalTo: previewDismissButton.leadingAnchor, constant: -8),
             favoriteButton.centerYAnchor.constraint(equalTo: previewInfoLabel.centerYAnchor),
+            disabledButton.trailingAnchor.constraint(equalTo: favoriteButton.leadingAnchor, constant: -8),
+            disabledButton.centerYAnchor.constraint(equalTo: previewInfoLabel.centerYAnchor),
             previewInfoLabel.trailingAnchor.constraint(
-                lessThanOrEqualTo: favoriteButton.leadingAnchor,
+                lessThanOrEqualTo: disabledButton.leadingAnchor,
                 constant: -Self.panelPadding
             ),
         ])
@@ -953,12 +1012,17 @@ final class WallpaperBrowserViewController: NSViewController {
         let isCurrent = item.id == dataSource?.browserPinnedItemID
         // 已固定的那条：按钮变禁用的「当前桌面壁纸」，**不提供取消固定**（决策 11）——
         // 解钉出口只留菜单里的三处。
-        pinButton.isEnabled = !isCurrent
+        pinButton.isEnabled = !isCurrent && !isDisabled(item)
         pinButton.title = isCurrent ? "当前桌面壁纸" : "设为桌面壁纸"
+        pinButton.toolTip = isDisabled(item) ? "请先恢复已禁用的壁纸" : pinButton.title
 
         favoriteButton.title = isFavorite(item) ? "取消收藏" : "收藏"
         favoriteButton.toolTip = favoriteButton.title
         favoriteButton.setAccessibilityLabel("\(favoriteButton.title)：\(item.title)")
+
+        disabledButton.title = isDisabled(item) ? "恢复" : "禁用"
+        disabledButton.toolTip = disabledButton.title
+        disabledButton.setAccessibilityLabel("\(disabledButton.title)：\(item.title)")
 
         loadPreviewCover(for: item)
     }
@@ -1017,6 +1081,7 @@ final class WallpaperBrowserViewController: NSViewController {
 
     @objc private func pinPreviewedItem() {
         guard let item = previewItem, let dataSource else { return }
+        guard !isDisabled(item) else { return }
         // 分类选片同步内容过滤；收藏列表传 nil，解钉后继续原播放分类。
         dataSource.browserSetPinned(item, categoryID: selectedSection.categoryID)
         // 立刻更新按钮与徽标：落实是同步写配置的（真源马上可用），
@@ -1120,12 +1185,17 @@ final class WallpaperBrowserViewController: NSViewController {
             else { continue }
             card.updateCurrentBadge(items[indexPath.item].id == pinnedID)
             card.updateFavoriteState(isFavorite(items[indexPath.item]))
+            card.updateDisabledState(isDisabled(items[indexPath.item]))
             card.setInteractionEnabled(previewOverlay.isHidden)
         }
     }
 
     private func isFavorite(_ item: WallpaperItem) -> Bool {
         dataSource?.browserFavoriteItems.contains(where: { $0.id == item.id }) == true
+    }
+
+    private func isDisabled(_ item: WallpaperItem) -> Bool {
+        dataSource?.browserDisabledItems.contains(where: { $0.id == item.id }) == true
     }
 }
 
@@ -1141,10 +1211,10 @@ extension WallpaperBrowserViewController: NSSearchFieldDelegate {
 
 extension WallpaperBrowserViewController: NSTableViewDataSource, NSTableViewDelegate {
 
-    func numberOfRows(in tableView: NSTableView) -> Int { categories.count + 1 }
+    func numberOfRows(in tableView: NSTableView) -> Int { categories.count + 2 }
 
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
-        guard row >= 0, row <= categories.count else { return nil }
+        guard row >= 0, row < categories.count + 2 else { return nil }
         let identifier = NSUserInterfaceItemIdentifier("CategoryCell")
         let cell: NSTableCellView
         if let reused = tableView.makeView(withIdentifier: identifier, owner: self) as? NSTableCellView {
@@ -1169,7 +1239,12 @@ extension WallpaperBrowserViewController: NSTableViewDataSource, NSTableViewDele
             cell.alphaValue = 1
             return cell
         }
-        let entry = categories[row - 1]
+        if row == 1 {
+            cell.textField?.stringValue = "已禁用"
+            cell.alphaValue = 1
+            return cell
+        }
+        let entry = categories[row - 2]
         cell.textField?.stringValue = entry.name
         // 条目数为 0 的分类照样列出、但**置灰不可点** —— 与菜单同一套规则
         // （`CategoryMenu.entries` 的 `isEnabled`）。
@@ -1178,19 +1253,22 @@ extension WallpaperBrowserViewController: NSTableViewDataSource, NSTableViewDele
     }
 
     func tableView(_ tableView: NSTableView, shouldSelectRow row: Int) -> Bool {
-        guard row >= 0, row <= categories.count else { return false }
-        return row == 0 || categories[row - 1].itemCount > 0
+        guard row >= 0, row < categories.count + 2 else { return false }
+        return row < 2 || categories[row - 2].itemCount > 0
     }
 
     func tableViewSelectionDidChange(_ notification: Notification) {
         let row = categoryTable.selectedRow
-        guard row >= 0, row <= categories.count else { return }
-        let section: BrowserSection = row == 0 ? .favorites : .category(categories[row - 1].id)
+        guard row >= 0, row < categories.count + 2 else { return }
+        let section: BrowserSection = row == 0 ? .favorites
+            : row == 1 ? .disabled : .category(categories[row - 2].id)
         guard section != selectedSection else { return }
         // UI 内切分类**只换列表数据，不写配置** —— 只有「设为桌面壁纸」才写（决策 7）。
         // 于是「在窗口里翻了一圈别的分类」不会改变桌面正在播什么。
         selectedSection = section
-        if let id = section.categoryID { loadItems(for: id) } else { showFavorites() }
+        if let id = section.categoryID { loadItems(for: id) }
+        else if section == .disabled { showDisabled() }
+        else { showFavorites() }
     }
 }
 
@@ -1215,6 +1293,7 @@ extension WallpaperBrowserViewController: NSCollectionViewDataSource, NSCollecti
             with: item,
             isCurrent: item.id == dataSource?.browserPinnedItemID,
             isFavorite: isFavorite(item),
+            isDisabled: isDisabled(item),
             thumbnail: nil
         )
         card.onPreviewRequested = { [weak self] item in
@@ -1222,6 +1301,9 @@ extension WallpaperBrowserViewController: NSCollectionViewDataSource, NSCollecti
         }
         card.onFavoriteRequested = { [weak self] item in
             self?.toggleFavorite(item)
+        }
+        card.onDisabledRequested = { [weak self] item in
+            self?.toggleDisabled(item)
         }
         card.setInteractionEnabled(previewOverlay.isHidden)
         return card

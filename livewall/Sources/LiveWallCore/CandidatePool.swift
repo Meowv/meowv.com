@@ -54,6 +54,11 @@ public struct CandidatePool {
     /// 失效条目的 id（CDN 404 / 解码失败等）。
     private var blacklist: Set<Int> = []
 
+    /// 用户禁用与资源故障黑名单不同：重试黑名单时也不能重新放入候选。
+    public var excludedIDs: Set<Int> = [] {
+        didSet { if excludedIDs != oldValue { rebuild() } }
+    }
+
     /// 选片顺序。改动会清空待取队列 —— **换模式等于重新开始一轮**，
     /// 不然「本轮已经播过哪些」会在两种顺序之间串味。
     public var order: PlaybackOrder = .shuffle {
@@ -100,7 +105,7 @@ public struct CandidatePool {
     public var itemsSnapshot: [WallpaperItem] { source }
 
     public var availableCount: Int {
-        source.filter { !blacklist.contains($0.id) }.count
+        source.filter { !excludedIDs.contains($0.id) && !blacklist.contains($0.id) }.count
     }
 
     public var blacklistedCount: Int { blacklist.count }
@@ -133,6 +138,7 @@ public struct CandidatePool {
     /// 查不到就返回 nil（调用方退回 `next()`）：条目可能属于别的分类，
     /// 或生成侧重新导出过清单把它去掉了。
     public mutating func restore(id: Int) -> WallpaperItem? {
+        guard !excludedIDs.contains(id) else { return nil }
         guard let item = source.first(where: { $0.id == id }) else { return nil }
         if queueHead > 0 {
             queue.removeFirst(queueHead)
@@ -175,14 +181,15 @@ public struct CandidatePool {
     ///   绕回开头时上一条本来就是清单最后一条，不会紧挨着重复 —— 除非只剩一条，
     ///   那种情况下面已有守卫。
     public mutating func refill<G: RandomNumberGenerator>(using generator: inout G) {
-        var pool = source.filter { !blacklist.contains($0.id) }
+        let eligible = source.filter { !excludedIDs.contains($0.id) }
+        var pool = eligible.filter { !blacklist.contains($0.id) }
 
         // 黑名单覆盖了全部候选 —— 说明清单整体失效（例如 CDN 换域名），
         // 清空黑名单重试一轮，总好过彻底停摆。
-        if pool.isEmpty && !blacklist.isEmpty {
+        if pool.isEmpty && !eligible.isEmpty && !blacklist.isEmpty {
             blacklist.removeAll()
             blacklistResetCount += 1
-            pool = source
+            pool = eligible
         }
 
         // 顺序模式：一轮的第一条正好是当前正在播的那条（典型场景是刚换了分类、

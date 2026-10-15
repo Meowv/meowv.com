@@ -126,6 +126,7 @@ extension AppDelegate {
         for key in previous where !keys.contains(key) {
             loadTasksBySlot[key]?.cancel()
             loadTasksBySlot[key] = nil
+            loadingItemIDsBySlot[key] = nil
             loadGenerationBySlot[key] = (loadGenerationBySlot[key] ?? 0) + 1
         }
         engine.useSlots(keys)

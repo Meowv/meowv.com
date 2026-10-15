@@ -6,12 +6,20 @@ extension AppDelegate {
     /// 收藏过滤和持久化始终同步。
     func toggleFavorite(_ item: WallpaperItem) -> String? {
         guard item.remoteURL != nil else { return "这条壁纸的线上地址不可用" }
-        preferences.favoriteItems = FavoriteCollection.toggling(item, in: preferences.favoriteItems)
+        let wasFavorite = preferences.favoriteItems.contains { $0.id == item.id }
+        preferences.toggleFavorite(item)
+        if !wasFavorite {
+            pool.excludedIDs = isLocalSource ? [] : disabledItemIDs
+        }
         // 先同步播放候选和过滤记忆，再原子保存这一份配置。
         let restoreCategory = updateFavoritePlaybackItems()
         let saved = persistPreferences("收藏壁纸")
         refreshStatusItem()
         if restoreCategory { restoreFilterAfterEmptyFavorites() }
+        if !wasFavorite {
+            resumeAfterDisabledChange()
+            browserWindowController?.refreshDisabledState()
+        }
         guard saved else {
             return persistenceFailure ?? "收藏更改未保存"
         }
@@ -46,6 +54,7 @@ extension AppDelegate {
         notice = nil
         consumePendingSourceNotice()
         pool.order = preferences.playbackOrder
+        pool.excludedIDs = disabledItemIDs
         pool.setItems(preferences.favoriteItems)
 
         if isFirstLoad && !isPinned {
@@ -109,6 +118,7 @@ extension AppDelegate {
             loadGenerationBySlot[key] = (loadGenerationBySlot[key] ?? 0) + 1
         }
         loadTasksBySlot.removeAll()
+        loadingItemIDsBySlot.removeAll()
         updateMenuBarIconAnimation()
     }
 }

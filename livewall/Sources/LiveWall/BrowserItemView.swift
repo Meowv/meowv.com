@@ -54,8 +54,10 @@ final class BrowserItemView: NSCollectionViewItem {
     private let hoverOverlay = NSView()
     private let previewButton = NSButton()
     private let favoriteButton = BrowserFavoriteButton()
+    private let disabledButton = BrowserFavoriteButton()
     private let badgeContainer = NSView()
     private let badgeLabel = NSTextField(labelWithString: "当前")
+    private let disabledBadge = NSTextField(labelWithString: "禁用")
     /// 单行信息：`标题 · 作者 · 时长 · 分辨率`。
     ///
     /// 刻意**只有一行**（标题与作者不再分两行）：分两行会挤掉缩略图的高度，
@@ -66,6 +68,7 @@ final class BrowserItemView: NSCollectionViewItem {
     /// Hover 预览入口。双击仍然由网格处理，但不再是唯一的可发现入口。
     var onPreviewRequested: ((WallpaperItem) -> Void)?
     var onFavoriteRequested: ((WallpaperItem) -> Void)?
+    var onDisabledRequested: ((WallpaperItem) -> Void)?
 
     override func loadView() {
         view = NSView()
@@ -135,6 +138,15 @@ final class BrowserItemView: NSCollectionViewItem {
         badgeLabel.translatesAutoresizingMaskIntoConstraints = false
         badgeContainer.addSubview(badgeLabel)
 
+        disabledBadge.font = .systemFont(ofSize: 10, weight: .semibold)
+        disabledBadge.textColor = .white
+        disabledBadge.wantsLayer = true
+        disabledBadge.layer?.cornerRadius = 4
+        disabledBadge.layer?.backgroundColor = NSColor.systemRed.cgColor
+        disabledBadge.isHidden = true
+        disabledBadge.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(disabledBadge)
+
         // ── 一行信息 ──────────────────────────────────────
         infoLabel.font = .systemFont(ofSize: 12)
         infoLabel.textColor = .labelColor
@@ -178,6 +190,8 @@ final class BrowserItemView: NSCollectionViewItem {
             badgeLabel.bottomAnchor.constraint(equalTo: badgeContainer.bottomAnchor, constant: -1),
             badgeLabel.leadingAnchor.constraint(equalTo: badgeContainer.leadingAnchor, constant: 5),
             badgeLabel.trailingAnchor.constraint(equalTo: badgeContainer.trailingAnchor, constant: -5),
+            disabledBadge.topAnchor.constraint(equalTo: view.topAnchor, constant: 6),
+            disabledBadge.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -6),
 
             // 固定 15pt 而不是让它自己撑：卡片总高是按「一行」算好的，
             // 一旦折行就会顶出卡片边界。
@@ -212,7 +226,24 @@ final class BrowserItemView: NSCollectionViewItem {
             favoriteButton.widthAnchor.constraint(equalToConstant: 28),
             favoriteButton.heightAnchor.constraint(equalToConstant: 28),
         ])
+        disabledButton.title = ""
+        disabledButton.imagePosition = .imageOnly
+        disabledButton.isBordered = false
+        disabledButton.wantsLayer = true
+        disabledButton.layer?.cornerRadius = 6
+        disabledButton.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.6).cgColor
+        disabledButton.target = self
+        disabledButton.action = #selector(requestDisabled)
+        disabledButton.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(disabledButton)
+        NSLayoutConstraint.activate([
+            disabledButton.topAnchor.constraint(equalTo: view.topAnchor, constant: 6),
+            disabledButton.leadingAnchor.constraint(equalTo: favoriteButton.trailingAnchor, constant: 4),
+            disabledButton.widthAnchor.constraint(equalToConstant: 28),
+            disabledButton.heightAnchor.constraint(equalToConstant: 28),
+        ])
         updateFavoriteState(false)
+        updateDisabledState(false)
     }
 
     override var isSelected: Bool {
@@ -230,19 +261,25 @@ final class BrowserItemView: NSCollectionViewItem {
         hoverOverlay.isHidden = true
         onPreviewRequested = nil
         onFavoriteRequested = nil
+        onDisabledRequested = nil
         updateFavoriteState(false)
+        updateDisabledState(false)
     }
 
     /// 绑定一个条目。
     ///
     /// - Parameter thumbnail: 已经在缓存里的缩略图。缓存未命中时传 nil，
     ///   由调用方随后走异步加载再调 `setThumbnail(_:key:)`。
-    func configure(with item: WallpaperItem, isCurrent: Bool, isFavorite: Bool, thumbnail: NSImage?) {
+    func configure(
+        with item: WallpaperItem, isCurrent: Bool, isFavorite: Bool,
+        isDisabled: Bool, thumbnail: NSImage?
+    ) {
         self.item = item
         self.thumbnailKey = ThumbnailURL.grid(for: item)?.absoluteString
         infoLabel.stringValue = Self.infoLine(for: item)
         badgeContainer.isHidden = !isCurrent
         updateFavoriteState(isFavorite)
+        updateDisabledState(isDisabled)
         setThumbnail(thumbnail)
         updateSelectionAppearance()
     }
@@ -269,6 +306,11 @@ final class BrowserItemView: NSCollectionViewItem {
         onFavoriteRequested?(item)
     }
 
+    @objc private func requestDisabled() {
+        guard let item else { return }
+        onDisabledRequested?(item)
+    }
+
     func updateFavoriteState(_ isFavorite: Bool) {
         let action = isFavorite ? "取消收藏" : "收藏"
         favoriteButton.image = NSImage(
@@ -280,8 +322,21 @@ final class BrowserItemView: NSCollectionViewItem {
         favoriteButton.setAccessibilityLabel("\(action)：\(item?.title ?? "壁纸")")
     }
 
+    func updateDisabledState(_ isDisabled: Bool) {
+        let action = isDisabled ? "恢复壁纸" : "禁用壁纸"
+        disabledButton.image = NSImage(
+            systemSymbolName: isDisabled ? "nosign" : "circle.slash",
+            accessibilityDescription: action
+        )
+        disabledButton.contentTintColor = isDisabled ? .systemRed : .white
+        disabledButton.toolTip = action
+        disabledButton.setAccessibilityLabel("\(action)：\(item?.title ?? "壁纸")")
+        disabledBadge.isHidden = !isDisabled
+    }
+
     func setInteractionEnabled(_ enabled: Bool) {
         favoriteButton.isEnabled = enabled
+        disabledButton.isEnabled = enabled
         previewButton.isEnabled = enabled
     }
 

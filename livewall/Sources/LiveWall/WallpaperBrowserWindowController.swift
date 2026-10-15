@@ -113,6 +113,10 @@ final class WallpaperBrowserWindowController: NSWindowController {
     func refreshPinState() {
         browserViewController.refreshPinState()
     }
+
+    func refreshDisabledState() {
+        browserViewController.refreshDisabledState()
+    }
 }
 
 extension WallpaperBrowserWindowController: NSWindowDelegate {

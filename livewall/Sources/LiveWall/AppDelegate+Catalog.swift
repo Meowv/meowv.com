@@ -89,6 +89,7 @@ extension AppDelegate {
         notice = nil
 
         pool.order = preferences.playbackOrder
+        pool.excludedIDs = []
         pool.setItems(items)
         log("壁纸来源：本地文件夹 \(folder.path)，\(items.count) 个 mp4")
 
@@ -300,6 +301,7 @@ extension AppDelegate {
         }
 
         pool.order = preferences.playbackOrder
+        pool.excludedIDs = disabledItemIDs
         pool.setItems(slice.items)
         if isFirstLoad && !isPinned {
             pendingRestore = ScreenSourceRestore.plan(
@@ -417,6 +419,7 @@ extension AppDelegate {
         }
 
         pool.order = preferences.playbackOrder
+        pool.excludedIDs = disabledItemIDs
         pool.setItems(slice.items)
 
         // 每屏独立模式下，各屏上次播的是哪一条记在 `perScreenSources` 里，这里恢复它。

@@ -92,3 +92,65 @@ func favoriteCollectionTests() {
         }
     }
 }
+
+func disabledCollectionTests() {
+    suite("禁用集合与收藏互斥") {
+        let first = libraryItem(1)
+        let second = libraryItem(2)
+        let local = WallpaperItem(id: 3, title: "本地", author: "", url: "file:///tmp/video.mp4")
+        test("最近禁用在前，按 ID 恢复且拒绝本地") {
+            let disabled = DisabledCollection.toggling(second, in: [first])
+            expectEqual(disabled, [second, first], "新禁用排在最前")
+            expectEqual(DisabledCollection.toggling(libraryItem(1, title: "已改名"), in: disabled), [second], "按 ID 恢复")
+            expectEqual(DisabledCollection.sanitized([second, second, local]), [second], "去重且只保留线上")
+        }
+        test("旧配置、损坏条目与手改冲突") {
+            let old = try? JSONDecoder().decode(Preferences.self, from: Data("{\"intervalSeconds\":900}".utf8))
+            expectEqual(old?.disabledItems, [], "旧配置默认不禁用")
+            for raw in ["42", "null"] {
+                let config = "{\"intervalSeconds\":900,\"disabledItems\":\(raw)}"
+                let loaded = try? JSONDecoder().decode(Preferences.self, from: Data(config.utf8))
+                expectEqual(loaded?.intervalSeconds, 900, "坏字段不影响旧设置")
+                expectEqual(loaded?.disabledItems, [], "坏字段回退为空")
+            }
+            do {
+                let object = String(data: try JSONEncoder().encode(first), encoding: .utf8)!
+                let json = "{\"favoriteItems\":[\(object)],\"disabledItems\":[null,42,\(object),\(object)]}"
+                let loaded = try JSONDecoder().decode(Preferences.self, from: Data(json.utf8))
+                expectEqual(loaded.disabledItems, [first], "坏条目跳过且去重")
+                expectEqual(loaded.favoriteItems, [], "同时出现时禁用优先")
+            } catch { expect(false, "配置解码失败：\(error)") }
+        }
+        test("禁用条目持久化及清洗互斥") {
+            let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+            defer { try? FileManager.default.removeItem(at: directory) }
+            do {
+                let url = directory.appendingPathComponent("config.json")
+                let preferences = Preferences(
+                    selectedCategoryID: 10, favoriteItems: [first, second],
+                    disabledItems: [first], playFavorites: true
+                ).sanitized()
+                expectEqual(preferences.favoriteItems, [second], "禁用优先于收藏")
+                try preferences.save(to: url)
+                expectEqual(Preferences.load(from: url), preferences, "条目及筛选设置往返")
+            } catch { expect(false, "禁用保存失败：\(error)") }
+        }
+        test("收藏与禁用双向切换") {
+            var preferences = Preferences()
+            preferences.toggleFavorite(first)
+            preferences.toggleDisabled(first)
+            expectEqual(preferences.favoriteItems, [], "禁用移除原收藏")
+            expectEqual(preferences.disabledItems, [first], "禁用生效")
+            preferences.toggleFavorite(first)
+            expectEqual(preferences.disabledItems, [], "收藏恢复原禁用")
+            expectEqual(preferences.favoriteItems, [first], "收藏生效")
+            preferences.toggleFavorite(first)
+            expectEqual(preferences.favoriteItems, [], "重复点击取消收藏")
+            preferences.toggleDisabled(first)
+            preferences.toggleDisabled(first)
+            expectEqual(preferences.disabledItems, [], "重复点击取消禁用")
+            preferences.toggleDisabled(local)
+            expectEqual(preferences.disabledItems, [], "本地视频不能禁用")
+        }
+    }
+}
