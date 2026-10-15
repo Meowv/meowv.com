@@ -118,6 +118,9 @@ public struct Preferences: Codable, Sendable, Equatable {
     /// 线上内容过滤使用收藏；selectedCategoryID 保留上次普通分类，收藏清空时恢复它。
     public var playFavorites: Bool
 
+    /// 只记录与内置默认不同的热键；键为稳定的动作名称。
+    public var hotKeyOverrides: [String: HotKeyBinding]
+
     // 省电
     /// 画面被不透明窗口完全盖满时暂停。收益最大的一项。
     public var pauseWhenCovered: Bool
@@ -171,6 +174,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         favoriteItems: [WallpaperItem] = [],
         disabledItems: [WallpaperItem] = [],
         playFavorites: Bool = false,
+        hotKeyOverrides: [String: HotKeyBinding] = [:],
         pauseWhenCovered: Bool = true,
         pauseWhenIdle: Bool = true,
         idleThresholdSeconds: Double = 300,
@@ -199,6 +203,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         self.favoriteItems = favoriteItems
         self.disabledItems = disabledItems
         self.playFavorites = playFavorites
+        self.hotKeyOverrides = hotKeyOverrides
         self.pauseWhenCovered = pauseWhenCovered
         self.pauseWhenIdle = pauseWhenIdle
         self.idleThresholdSeconds = idleThresholdSeconds
@@ -223,6 +228,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         case favoriteItems
         case disabledItems
         case playFavorites
+        case hotKeyOverrides
         case pauseWhenCovered, pauseWhenIdle, idleThresholdSeconds
         case pauseOnLowPowerMode, pauseOnBattery, pauseOnThermalPressure
         case lockScreenPreview
@@ -279,6 +285,9 @@ public struct Preferences: Codable, Sendable, Equatable {
         favoriteItems.removeAll { disabledIDs.contains($0.id) }
         playFavorites = ((try? container.decodeIfPresent(Bool.self, forKey: .playFavorites)) ?? false)
             && !favoriteItems.isEmpty
+        let bindings = (try? container.decodeIfPresent([String: FailableHotKeyBinding].self, forKey: .hotKeyOverrides)) ?? [:]
+        hotKeyOverrides = bindings.compactMapValues(\.binding)
+            .filter { $0.value.isValid }
         pauseWhenCovered = try container.decodeIfPresent(Bool.self, forKey: .pauseWhenCovered) ?? fallback.pauseWhenCovered
         pauseWhenIdle = try container.decodeIfPresent(Bool.self, forKey: .pauseWhenIdle) ?? fallback.pauseWhenIdle
         idleThresholdSeconds = try container.decodeIfPresent(Double.self, forKey: .idleThresholdSeconds) ?? fallback.idleThresholdSeconds
@@ -398,6 +407,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         let disabledIDs = Set(copy.disabledItems.map(\.id))
         copy.favoriteItems.removeAll { disabledIDs.contains($0.id) }
         if copy.favoriteItems.isEmpty { copy.playFavorites = false }
+        copy.hotKeyOverrides = copy.hotKeyOverrides.filter { $0.value.isValid }
         // 超范围一律夹紧而不是退回默认：手改配置的人多半只是「填得太短/太长」，
         // 夹到最近的合法值更接近他的本意。非有限值夹不了，`SwitchInterval.clamp` 里退回默认。
         copy.intervalSeconds = SwitchInterval.clamp(copy.intervalSeconds)
@@ -439,5 +449,13 @@ private struct FavoriteEntry: Decodable {
 
     init(from decoder: Decoder) throws {
         item = try? WallpaperItem(from: decoder)
+    }
+}
+
+private struct FailableHotKeyBinding: Decodable {
+    let binding: HotKeyBinding?
+
+    init(from decoder: Decoder) throws {
+        binding = try? HotKeyBinding(from: decoder)
     }
 }

@@ -122,6 +122,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     lazy var downloader = WallpaperDownloader()
     /// 全局热键。Carbon `RegisterEventHotKey`，不需要辅助功能授权。
     let hotKeys = HotKeyManager()
+    var hotKeySettingsWindowController: HotKeySettingsWindowController?
     /// 动态壁纸浏览窗口。**单窗口复用** —— 已有就前置，不重复开。
     /// 窗口关闭时由 `onClose` 置回 nil。
     var browserWindowController: WallpaperBrowserWindowController?
@@ -475,13 +476,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         hotKeys.onTrigger = { [weak self] id in
             self?.handleHotKey(id)
         }
-        let hotKeyOutcomes = hotKeys.registerDefaults()
+        let hotKeyOutcomes = hotKeys.register(overrides: preferences.hotKeyOverrides)
         let conflicts = hotKeyOutcomes.filter { !$0.isRegistered }
         if conflicts.isEmpty {
             log("全局热键已注册：" + hotKeyOutcomes.map(\.summary).joined(separator: "、"))
         } else {
             log("⚠️ 全局热键不可用：" + conflicts.map(\.summary).joined(separator: "、"))
         }
+        refreshStatusItem()
 
         // 窗口必须在 applicationDidFinishLaunching 里**同步**创建。
         //
@@ -605,6 +607,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // 浏览窗口也要关掉：它持有预览播放器与在飞的缩略图请求，
         // 留着会让进程在「已经退出清理」之后还挂着一个窗口。
         browserWindowController?.close()
+        hotKeySettingsWindowController?.close()
         engine.teardown()
     }
 

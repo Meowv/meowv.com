@@ -1,4 +1,6 @@
 import Carbon.HIToolbox
+import AppKit
+import LiveWallCore
 
 /// 全局热键。
 ///
@@ -6,55 +8,53 @@ import Carbon.HIToolbox
 /// —— 后者需要「辅助功能」授权（会弹窗、还要重启 App 才生效），前者零权限。
 /// Carbon 在 macOS 上早已标注废弃但从未移除，它目前仍是唯一免授权的全局热键方案。
 ///
-/// 代价是全局热键会**抢占**该组合：注册成功后其它 App 收不到这个按键。
+/// 非独占注册允许其它 App 同时接收相同组合，不能据成功注册断言没有外部冲突。
 /// 所以默认只挑不常用的 `⌥⌘` 组合，并且注册失败必须显式告知用户。
 final class HotKeyManager {
 
-    /// 一个热键定义。`keyCode` / `modifiers` 直接用 Carbon 常量。
+    /// 动作身份稳定；绑定可以从配置覆盖。
     struct Definition: Equatable {
         let id: UInt32
-        let keyCode: UInt32
-        let modifiers: UInt32
-        /// 菜单与日志里的展示形式，例如 `⌥⌘P`。
-        let display: String
-        /// 用途说明，用在「被占用」提示里 —— 只说组合名用户不知道冲突的是哪个功能。
+        let key: String
+        let binding: HotKeyBinding
         let purpose: String
+
+        var display: String { binding.display }
+
+        func with(binding: HotKeyBinding) -> Definition {
+            Definition(id: id, key: key, binding: binding, purpose: purpose)
+        }
 
         static let togglePause = Definition(
             id: 1,
-            keyCode: UInt32(kVK_ANSI_P),
-            modifiers: UInt32(cmdKey | optionKey),
-            display: "⌥⌘P",
+            key: "togglePause",
+            binding: HotKeyBinding(key: "P", modifiers: HotKeyBinding.command | HotKeyBinding.option),
             purpose: "暂停 / 继续"
         )
         static let nextItem = Definition(
             id: 2,
-            keyCode: UInt32(kVK_ANSI_N),
-            modifiers: UInt32(cmdKey | optionKey),
-            display: "⌥⌘N",
+            key: "nextItem",
+            binding: HotKeyBinding(key: "N", modifiers: HotKeyBinding.command | HotKeyBinding.option),
             purpose: "下一张"
         )
         static let reloadCatalog = Definition(
             id: 3,
-            keyCode: UInt32(kVK_ANSI_R),
-            modifiers: UInt32(cmdKey | optionKey),
-            display: "⌥⌘R",
+            key: "reloadCatalog",
+            binding: HotKeyBinding(key: "R", modifiers: HotKeyBinding.command | HotKeyBinding.option),
             // 用「内容」而不是「清单」：本地文件夹来源下这一键重扫文件夹，
             // 而「被占用」提示里写着「重新加载清单」会让人以为只跟线上清单有关。
             purpose: "重新加载内容"
         )
         static let toggleCurrentFavorite = Definition(
             id: 4,
-            keyCode: UInt32(kVK_ANSI_F),
-            modifiers: UInt32(cmdKey | optionKey),
-            display: "⌥⌘F",
+            key: "toggleCurrentFavorite",
+            binding: HotKeyBinding(key: "F", modifiers: HotKeyBinding.command | HotKeyBinding.option),
             purpose: "收藏 / 取消收藏当前壁纸"
         )
         static let toggleCurrentDisabled = Definition(
             id: 5,
-            keyCode: UInt32(kVK_ANSI_X),
-            modifiers: UInt32(cmdKey | optionKey),
-            display: "⌥⌘X",
+            key: "toggleCurrentDisabled",
+            binding: HotKeyBinding(key: "X", modifiers: HotKeyBinding.command | HotKeyBinding.option),
             purpose: "禁用 / 恢复当前壁纸"
         )
 
@@ -68,7 +68,7 @@ final class HotKeyManager {
     /// 单个热键的注册结果。
     enum Outcome: Equatable {
         case registered(Definition)
-        /// 已被其它程序占用 —— 用户能自己解决（换个组合，或退掉冲突的程序）。
+        /// 与本程序的其它动作重复。
         case occupied(Definition, OSStatus)
         /// 其它错误 —— 用户解决不了，只能报告。
         case failed(Definition, OSStatus)
@@ -93,15 +93,14 @@ final class HotKeyManager {
             case .registered(let definition):
                 return "\(definition.display) \(definition.purpose)"
             case .occupied(let definition, _):
-                return "\(definition.display) \(definition.purpose) · 被占用"
+                return "\(definition.display) \(definition.purpose) · 重复"
             case .failed(let definition, let status):
                 return "\(definition.display) \(definition.purpose) · 失败 \(status)"
             }
         }
     }
 
-    /// `eventHotKeyExistsErr`。已实测：重复注册同一组合会拿到这个值（-9878），
-    /// 因此它就是「该组合已被占用」的可靠判据。
+    /// 注册失败不能证明其它应用占用：非独占模式允许多个应用监听同一组合。
     private static let hotKeyExistsErr: OSStatus = -9878
 
     /// 四字符签名，避免与其它程序的热键 id 撞车。
@@ -111,6 +110,7 @@ final class HotKeyManager {
     private var references: [UInt32: EventHotKeyRef] = [:]
 
     private(set) var outcomes: [Outcome] = []
+    private var definitions = Definition.all
 
     /// 热键触发回调（主线程）。参数是 `Definition.id`。
     var onTrigger: ((UInt32) -> Void)?
@@ -121,31 +121,117 @@ final class HotKeyManager {
 
     // MARK: - 生命周期
 
-    /// 注册全部默认热键。重复调用会先清理旧的，因此可安全用于「重试」。
+    static let keyCodes: [String: UInt32] = [
+        "A": UInt32(kVK_ANSI_A), "B": UInt32(kVK_ANSI_B), "C": UInt32(kVK_ANSI_C),
+        "D": UInt32(kVK_ANSI_D), "E": UInt32(kVK_ANSI_E), "F": UInt32(kVK_ANSI_F),
+        "G": UInt32(kVK_ANSI_G), "H": UInt32(kVK_ANSI_H), "I": UInt32(kVK_ANSI_I),
+        "J": UInt32(kVK_ANSI_J), "K": UInt32(kVK_ANSI_K), "L": UInt32(kVK_ANSI_L),
+        "M": UInt32(kVK_ANSI_M), "N": UInt32(kVK_ANSI_N), "O": UInt32(kVK_ANSI_O),
+        "P": UInt32(kVK_ANSI_P), "Q": UInt32(kVK_ANSI_Q), "R": UInt32(kVK_ANSI_R),
+        "S": UInt32(kVK_ANSI_S), "T": UInt32(kVK_ANSI_T), "U": UInt32(kVK_ANSI_U),
+        "V": UInt32(kVK_ANSI_V), "W": UInt32(kVK_ANSI_W), "X": UInt32(kVK_ANSI_X),
+        "Y": UInt32(kVK_ANSI_Y), "Z": UInt32(kVK_ANSI_Z),
+        "0": UInt32(kVK_ANSI_0), "1": UInt32(kVK_ANSI_1), "2": UInt32(kVK_ANSI_2),
+        "3": UInt32(kVK_ANSI_3), "4": UInt32(kVK_ANSI_4), "5": UInt32(kVK_ANSI_5),
+        "6": UInt32(kVK_ANSI_6), "7": UInt32(kVK_ANSI_7), "8": UInt32(kVK_ANSI_8),
+        "9": UInt32(kVK_ANSI_9),
+    ]
+
+    static func binding(for event: NSEvent) -> HotKeyBinding? {
+        guard let key = keyCodes.first(where: { $0.value == UInt32(event.keyCode) })?.key else { return nil }
+        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        var modifiers: UInt8 = 0
+        if flags.contains(.command) { modifiers |= HotKeyBinding.command }
+        if flags.contains(.option) { modifiers |= HotKeyBinding.option }
+        if flags.contains(.control) { modifiers |= HotKeyBinding.control }
+        if flags.contains(.shift) { modifiers |= HotKeyBinding.shift }
+        let binding = HotKeyBinding(key: key, modifiers: modifiers)
+        return binding.isValid ? binding : nil
+    }
+
+    func display(for definition: Definition) -> String {
+        definitions.first { $0.id == definition.id }?.display ?? definition.display
+    }
+
+    /// 启动时按配置注册；坏组合退回默认，重复组合仅使后一个动作不可用。
     @discardableResult
-    func registerDefaults() -> [Outcome] {
+    func register(overrides: [String: HotKeyBinding]) -> [Outcome] {
         unregisterAll()
         installHandler()
+        definitions = Definition.all.map { definition in
+            let binding = overrides[definition.key].flatMap { $0.isValid ? $0 : nil } ?? definition.binding
+            return definition.with(binding: binding)
+        }
 
-        outcomes = Definition.all.map { definition in
+        var seen = Set<HotKeyBinding>()
+        outcomes = definitions.map { definition in
+            guard seen.insert(definition.binding).inserted else {
+                return .occupied(definition, Self.hotKeyExistsErr)
+            }
             var ref: EventHotKeyRef?
             let status = RegisterEventHotKey(
-                definition.keyCode,
-                definition.modifiers,
+                Self.keyCodes[definition.binding.key]!,
+                Self.carbonModifiers(definition.binding.modifiers),
                 EventHotKeyID(signature: Self.signature, id: definition.id),
                 GetApplicationEventTarget(),
                 0,
                 &ref
             )
             guard status == noErr, let ref else {
-                return status == Self.hotKeyExistsErr
-                    ? .occupied(definition, status)
-                    : .failed(definition, status)
+                return .failed(definition, status)
             }
             references[definition.id] = ref
             return .registered(definition)
         }
         return outcomes
+    }
+
+    /// 新组合先注册、持久化成功后再释放旧组合；失败时旧组合保持可用。
+    func rebind(
+        _ original: Definition,
+        to binding: HotKeyBinding,
+        persist: () -> Bool
+    ) -> String? {
+        guard binding.isValid, let code = Self.keyCodes[binding.key],
+              let index = definitions.firstIndex(where: { $0.id == original.id })
+        else { return "不支持这个快捷键组合" }
+        guard !definitions.contains(where: { $0.id != original.id && $0.binding == binding }) else {
+            return "该组合已分配给其它操作"
+        }
+        let old = definitions[index]
+        let oldRef = references[original.id]
+        if old.binding == binding, oldRef != nil {
+            return persist() ? nil : "快捷键未能保存，原组合保持不变"
+        }
+
+        var newRef: EventHotKeyRef?
+        let status = RegisterEventHotKey(
+            code, Self.carbonModifiers(binding.modifiers),
+            EventHotKeyID(signature: Self.signature, id: original.id),
+            GetApplicationEventTarget(), 0, &newRef
+        )
+        guard status == noErr, let newRef else {
+            return "系统无法注册 \(binding.display)（\(status)），原组合保持不变"
+        }
+        guard persist() else {
+            UnregisterEventHotKey(newRef)
+            return "快捷键未能保存，原组合保持不变"
+        }
+        if let oldRef { UnregisterEventHotKey(oldRef) }
+        let updated = original.with(binding: binding)
+        references[original.id] = newRef
+        definitions[index] = updated
+        outcomes[index] = .registered(updated)
+        return nil
+    }
+
+    private static func carbonModifiers(_ modifiers: UInt8) -> UInt32 {
+        var result: UInt32 = 0
+        if modifiers & HotKeyBinding.command != 0 { result |= UInt32(cmdKey) }
+        if modifiers & HotKeyBinding.option != 0 { result |= UInt32(optionKey) }
+        if modifiers & HotKeyBinding.control != 0 { result |= UInt32(controlKey) }
+        if modifiers & HotKeyBinding.shift != 0 { result |= UInt32(shiftKey) }
+        return result
     }
 
     func unregisterAll() {

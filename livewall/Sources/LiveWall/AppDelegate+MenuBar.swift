@@ -120,13 +120,11 @@ extension AppDelegate {
             menu.addItem(saveFailure)
         }
 
-        // 热键冲突行只在真出问题时出现。各项热键的组合提示已经写在对应菜单项的
-        // 标题里，再常驻一行纯属重复；而「被别的程序抢了」只有这里能发现。
+        // 注册失败行只在真出问题时出现；非独占注册不能据此判断外部冲突。
         let hotKeyFailures = hotKeys.failures
         if !hotKeyFailures.isEmpty {
             let conflict = NSMenuItem(
-                title: "⚠ 热键冲突：" + hotKeyFailures.map(\.definition.display).joined(separator: "、")
-                    + "（组合被其它程序占用）",
+                title: "⚠ 热键注册失败：" + hotKeyFailures.map(\.summary).joined(separator: "、"),
                 action: nil,
                 keyEquivalent: ""
             )
@@ -140,7 +138,7 @@ extension AppDelegate {
         // 标题里写组合提示，但**不要**设 `keyEquivalent` —— 菜单打开时全局热键与
         // 菜单项会各触发一次，切换类操作执行两遍等于互相抵消。
         let next = NSMenuItem(
-            title: "下一张（\(HotKeyManager.Definition.nextItem.display)）",
+            title: "下一张（\(hotKeys.display(for: .nextItem))）",
             action: #selector(nextNow),
             keyEquivalent: ""
         )
@@ -149,7 +147,7 @@ extension AppDelegate {
 
         let toggle = NSMenuItem(
             title: (isUserPaused ? "继续播放" : "暂停播放")
-                + "（\(HotKeyManager.Definition.togglePause.display)）",
+                + "（\(hotKeys.display(for: .togglePause))）",
             action: #selector(togglePause),
             keyEquivalent: ""
         )
@@ -159,7 +157,7 @@ extension AppDelegate {
         let favorite = NSMenuItem(
             title: (currentFavoriteableItem.map { item in
                 preferences.favoriteItems.contains(where: { $0.id == item.id }) ? "取消收藏当前壁纸" : "收藏当前壁纸"
-            } ?? "收藏当前壁纸") + "（\(HotKeyManager.Definition.toggleCurrentFavorite.display)）",
+            } ?? "收藏当前壁纸") + "（\(hotKeys.display(for: .toggleCurrentFavorite))）",
             action: #selector(toggleCurrentFavorite),
             keyEquivalent: ""
         )
@@ -170,7 +168,7 @@ extension AppDelegate {
             title: (currentFavoriteableItem.map { item in
                 preferences.disabledItems.contains(where: { $0.id == item.id })
                     ? "取消禁用当前壁纸" : "禁用当前壁纸"
-            } ?? "禁用当前壁纸") + "（\(HotKeyManager.Definition.toggleCurrentDisabled.display)）",
+            } ?? "禁用当前壁纸") + "（\(hotKeys.display(for: .toggleCurrentDisabled))）",
             action: #selector(toggleCurrentDisabled),
             keyEquivalent: ""
         )
@@ -187,6 +185,13 @@ extension AppDelegate {
         menu.addItem(buildIntervalMenu())
         menu.addItem(buildPowerMenu())
         menu.addItem(buildRestReminderMenu())
+        let shortcuts = NSMenuItem(
+            title: "快捷键设置…",
+            action: #selector(openHotKeySettings),
+            keyEquivalent: ""
+        )
+        shortcuts.target = self
+        menu.addItem(shortcuts)
         // 锁屏预览紧跟省电设置：同属「画面行为」的开关，且都是开一次就不常动。
         let lockPreview = NSMenuItem(
             title: "锁屏预览（\(preferences.lockScreenPreview ? "开" : "关")）",
@@ -325,8 +330,8 @@ extension AppDelegate {
         // 却去扫本地目录，是排障时最费解的一种不一致。
         let reload = NSMenuItem(
             title: preferences.resolvedLocalFolderURL == nil
-                ? "重新加载清单（\(HotKeyManager.Definition.reloadCatalog.display)）"
-                : "重新扫描本地文件夹（\(HotKeyManager.Definition.reloadCatalog.display)）",
+                ? "重新加载清单（\(hotKeys.display(for: .reloadCatalog))）"
+                : "重新扫描本地文件夹（\(hotKeys.display(for: .reloadCatalog))）",
             action: #selector(reloadCatalog),
             keyEquivalent: ""
         )
