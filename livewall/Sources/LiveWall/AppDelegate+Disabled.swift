@@ -44,6 +44,7 @@ extension AppDelegate {
     }
 
     /// 暂留已禁用条目的最后一帧；有候选时只替换受影响的屏幕。
+    /// 返回 true 表示主槽位等待补片，或候选已耗尽，无需立即重排全局定时器。
     @discardableResult
     func replaceDisabledSlots() -> Bool {
         let affected = engine.slotKeys().filter {
@@ -60,7 +61,7 @@ extension AppDelegate {
         }
         guard governor.state.isPlaying else { return true }
         for key in affected where loadTasksBySlot[key] == nil { advanceOne(key) }
-        return true
+        return affected.contains { $0 == engine.primaryKey }
     }
 
     func resumeAfterDisabledChange() {
