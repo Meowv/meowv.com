@@ -1,6 +1,6 @@
 import { createDecipheriv, createHash, createPublicKey, verify } from 'node:crypto';
 import { gunzipSync } from 'node:zlib';
-import { existsSync, lstatSync, readFileSync, readdirSync, renameSync, rmSync, mkdirSync } from 'node:fs';
+import { existsSync, lstatSync, readFileSync, readdirSync, renameSync, rmSync, mkdirSync, writeFileSync, linkSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { keyID, readKeyFile } from '../livewall/tools/encrypt-catalog.mjs';
@@ -66,10 +66,75 @@ export function checkCatalog(directory, keyFile, apps = [], publicKeySource = re
   }
 }
 
-// 所有产物核对完成后统一晋升；任一重命名失败时按逆序恢复旧产物与旧密钥。
-export function promote(pairs, move = renameSync) {
-  const changes = [];
+function restoreChanges(changes) {
+  const errors = [];
+  for (const change of [...changes].reverse()) {
+    try {
+      if (change.previous && existsSync(change.backup)) {
+        rmSync(change.target, { recursive: true, force: true });
+        renameSync(change.backup, change.target);
+      } else if (!change.previous && change.source && !existsSync(change.source)) {
+        rmSync(change.target, { recursive: true, force: true });
+      }
+    } catch (error) { errors.push(error); }
+  }
+  if (errors.length) throw new AggregateError(errors, '旧产物恢复未完成，保留事务记录与备份以便重试。');
+}
+
+function cleanBackups(changes) {
+  for (const change of changes) {
+    if (change.previous) rmSync(change.backup, { recursive: true, force: true });
+  }
+}
+
+function writeJournal(path, record, initial = false) {
+  const temporary = `${path}.tmp.${process.pid}`;
   try {
+    writeFileSync(temporary, JSON.stringify(record), { mode: 0o600, flag: 'wx' });
+    if (initial) linkSync(temporary, path);
+    else renameSync(temporary, path);
+  } finally {
+    rmSync(temporary, { force: true });
+  }
+}
+
+// 事务记录只含路径；恢复可重复执行，已经恢复的目标不会再次删除。
+export function recoverPromotion(journalPath) {
+  if (!existsSync(journalPath)) return false;
+  if (lstatSync(journalPath).isSymbolicLink()) throw new Error('晋升事务记录不能是符号链接。');
+  const record = JSON.parse(readFileSync(journalPath, 'utf8'));
+  if (record.version !== 1 || !['pending', 'committed'].includes(record.state) ||
+      !Array.isArray(record.changes) || record.changes.some(change =>
+        typeof change.target !== 'string' || typeof change.previous !== 'boolean' ||
+        !(change.source === null || typeof change.source === 'string') ||
+        typeof change.backup !== 'string' || !change.backup.startsWith(`${change.target}.livewall-backup.`))) {
+    throw new Error('晋升事务记录无效，已停止自动恢复。');
+  }
+  if (record.state === 'pending') restoreChanges(record.changes);
+  else cleanBackups(record.changes);
+  rmSync(journalPath);
+  return true;
+}
+
+// 在每次移动后处理信号；回滚完成前保留信号处理器和外层构建锁。
+export async function promote(pairs, move = renameSync, journalPath = null) {
+  let changes = [];
+  let started = false;
+  let interrupted = null;
+  const onInterrupt = signal => { interrupted ??= signal; };
+  const onInt = () => onInterrupt('SIGINT');
+  const onTerm = () => onInterrupt('SIGTERM');
+  process.on('SIGINT', onInt);
+  process.on('SIGTERM', onTerm);
+  const checkpoint = async () => {
+    await new Promise(resolve => setImmediate(resolve));
+    if (interrupted) throw Object.assign(new Error(`晋升收到 ${interrupted}，已取消。`), {
+      exitCode: interrupted === 'SIGINT' ? 130 : 143,
+    });
+  };
+  try {
+    if (journalPath && existsSync(journalPath)) throw new Error('存在未完成的晋升事务，请先恢复。');
+    const prepared = [];
     for (const [source, target] of pairs) {
       if (source && (!existsSync(source) || lstatSync(source).isSymbolicLink())) throw new Error('晋升源缺失或为符号链接。');
       let parent = resolve(target);
@@ -78,34 +143,45 @@ export function promote(pairs, move = renameSync) {
         if (dirname(parent) === parent) break;
         parent = dirname(parent);
       }
+      const backup = `${target}.livewall-backup.${process.pid}`;
+      if (existsSync(backup)) throw new Error('晋升备份路径已存在。');
+      prepared.push({ source, target, backup, previous: existsSync(target) });
     }
-    for (const [source, target] of pairs) {
+    changes = prepared;
+    if (journalPath) writeJournal(journalPath, { version: 1, state: 'pending', changes }, true);
+    started = true;
+    await checkpoint();
+    for (const { source, target, backup, previous } of changes) {
       if ((source && !existsSync(source)) || (existsSync(target) && lstatSync(target).isSymbolicLink())) {
         throw new Error('晋升源缺失或目标为符号链接。');
       }
       mkdirSync(dirname(target), { recursive: true });
-      const backup = `${target}.livewall-backup.${process.pid}`;
-      if (existsSync(backup)) throw new Error('晋升备份路径已存在。');
-      const change = { target, backup, previous: existsSync(target), installed: false };
-      if (change.previous) move(target, backup);
-      changes.push(change);
+      if (previous) {
+        move(target, backup);
+        await checkpoint();
+      }
       if (source) {
         move(source, target);
-        change.installed = true;
+        await checkpoint();
       }
     }
+    await checkpoint();
+    if (journalPath) writeJournal(journalPath, { version: 1, state: 'committed', changes });
   } catch (error) {
-    for (const change of changes.reverse()) {
-      if (change.installed) rmSync(change.target, { recursive: true, force: true });
-      if (change.previous) renameSync(change.backup, change.target);
+    if (started) {
+      restoreChanges(changes);
+      if (journalPath) rmSync(journalPath);
     }
     throw error;
+  } finally {
+    process.removeListener('SIGINT', onInt);
+    process.removeListener('SIGTERM', onTerm);
   }
-  for (const change of changes) {
-    if (change.previous) {
-      try { rmSync(change.backup, { recursive: true, force: true }); }
-      catch { console.error('[livewall] 新产物已晋升，旧产物备份未能清理。'); }
-    }
+  try {
+    cleanBackups(changes);
+    if (journalPath) rmSync(journalPath);
+  } catch {
+    console.error('[livewall] 新产物已晋升，旧产物备份未能清理；下次构建会重试清理。');
   }
 }
 
@@ -114,11 +190,15 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   try {
     if (command === 'check-key') checkAppKey(args[0], args.slice(1));
     else if (command === 'check') checkCatalog(args[0], args[1], args.slice(2));
-    else if (command === 'promote' && args.length > 0 && args.length % 2 === 0) {
-      promote(Array.from({ length: args.length / 2 }, (_, i) => [args[i * 2] === '-' ? null : args[i * 2], args[i * 2 + 1]]));
+    else if (command === 'recover' && args.length === 1) recoverPromotion(args[0]);
+    else if (command === 'promote' && args[0] === '--journal' && args.length > 2 && args.length % 2 === 0) {
+      await promote(Array.from({ length: (args.length - 2) / 2 }, (_, i) =>
+        [args[i * 2 + 2] === '-' ? null : args[i * 2 + 2], args[i * 2 + 3]]), renameSync, args[1]);
+    } else if (command === 'promote' && args.length > 0 && args.length % 2 === 0) {
+      await promote(Array.from({ length: args.length / 2 }, (_, i) => [args[i * 2] === '-' ? null : args[i * 2], args[i * 2 + 1]]));
     } else throw new Error('未知操作或参数缺失。');
   } catch (error) {
     console.error(`[livewall] ${error.message}`);
-    process.exit(1);
+    process.exitCode = error.exitCode ?? 1;
   }
 }

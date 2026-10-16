@@ -6,6 +6,7 @@
 /.wallpaper-key
 /.livewall-key
 /.livewall-build.lock
+/.livewall-promotion.json*
 /.livewall-staging.*/
 /.livewall-key.*.tmp
 /.deploy.env

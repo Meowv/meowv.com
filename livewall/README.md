@@ -98,7 +98,7 @@ DMG 挂载后的窗口使用定制背景图（安装提示和箭头）、固定�
 
 ### 发版步骤
 
-本目录 `./build.sh`（含直接调用的 `--bump-build`）与 `./make-dmg.sh` 统一进入根脚本发布流程，每次生成新的清单加密密钥。App、`.bin`、索引及签名先暂存，核对签名、密文摘要、解密和 App 的 `keyID` 后一起晋升；构建或晋升失败时保留旧密钥与旧产物。共享目录的构建使用同一把本机锁，避免并发生成时交叉晋升。`run.sh`、`build.sh --debug` 和 `build.sh --development` 属于开发构建，不轮换、不递增 build 号；`make-dmg.sh --no-build` 仅供发布流程内部使用。在仓库根目录构建完整发布产物：
+本目录 `./build.sh`（含直接调用的 `--bump-build`）与 `./make-dmg.sh` 统一进入根脚本发布流程，每次生成新的清单加密密钥。App、`.bin`、索引及签名先暂存，核对签名、密文摘要、解密和 App 的 `keyID` 后一起晋升；构建或晋升失败时保留旧密钥与旧产物。发布构建使用同一把本机锁，避免并发生成时交叉晋升。晋升收到 `SIGINT` / `SIGTERM` 时先回滚再释放锁；若进程被强制终止，下次根构建取得锁后，会根据只记录路径的 `.livewall-promotion.json` 恢复未提交事务，或清理已提交事务的旧备份。`run.sh`、`build.sh --debug` 和 `build.sh --development` 属于开发构建，不轮换、不递增 build 号；`make-dmg.sh --no-build` 仅供发布流程内部使用。在仓库根目录构建完整发布产物：
 
 ```bash
 ./build.sh livewall --with-dmg
@@ -108,6 +108,6 @@ DMG 挂载后的窗口使用定制背景图（安装提示和箭头）、固定�
 
 换钥后新版 App 必须先联网获取对应目录，无法使用旧密钥缓存。加密只用于避免直接阅读，不作为访问控制。单独构建 App 而不带 `--with-dmg` 时，会从新部署产物中移除使用旧密钥的安装包和更新清单；需要分发时使用同批 `--with-dmg`。
 
-根脚本会递增必要的 `CFBundleVersion`，并将 DMG 与版本清单及其签名放入 `build/studio.meowv.com/data/livewall/`。`CFBundleShortVersionString` 仍需人工决定；只构建 Studio 时，根脚本会保留已有更新产物。部署后应核对线上 `version.json`、`version.json.sig` 和 DMG 属于同次构建。部署前先读[根目录的发布说明](../README.md)。
+根脚本按旧 App 与更新清单中的最大 build 递增必要的 `CFBundleVersion`，无 DMG 的连续发布也会递增；DMG 与版本清单及其签名放入 `build/studio.meowv.com/data/livewall/`。`CFBundleShortVersionString` 仍需人工决定；只构建 Studio 时，根脚本会保留已有更新产物。部署后应核对线上 `version.json`、`version.json.sig` 和 DMG 属于同次构建。部署前先读[根目录的发布说明](../README.md)。
 
 发布版使用 ad-hoc 签名，未公证；其他 Mac 首次打开时可能需要在「系统设置 → 隐私与安全性」中允许该 App。

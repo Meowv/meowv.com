@@ -151,7 +151,7 @@ fi
 #    `./run.sh --release` 也是本地运行，同样不递增。
 #
 # ⚠️ 必须在组装 .app 与 codesign **之前**做：包内的 Info.plist 一旦改过，已有签名即失效。
-# 参照物优先取「上次已装进 studio 部署目录的那一份」（最接近线上），其次取本地产物。
+# 比较旧 App 和两处更新清单的最大 build，避免无 DMG 发布后丢失递增依据。
 REPO_ROOT="$(cd "${ROOT}/.." && pwd)"
 PLIST_PATH="${ROOT}/${PLIST}"
 if [[ "$DEVELOPMENT" -eq 0 ]]; then
@@ -159,51 +159,12 @@ if [[ "$DEVELOPMENT" -eq 0 ]]; then
   cp "$PLIST_PATH" "$BUILD_DIR/Info-LiveWall.plist"
   PLIST_PATH="$BUILD_DIR/Info-LiveWall.plist"
 fi
-CURRENT_BUILD="$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "${PLIST_PATH}" 2>/dev/null || echo "")"
-PREVIOUS_FEED="${REPO_ROOT}/build/studio.meowv.com/data/livewall/version.json"
-[[ -f "${PREVIOUS_FEED}" ]] || PREVIOUS_FEED="${ROOT}/build/version.json"
-PREVIOUS_BUILD=""
-if [[ -f "${PREVIOUS_FEED}" ]]; then
-  PREVIOUS_BUILD="$(/usr/bin/python3 -c \
-    'import json,sys; print(json.load(open(sys.argv[1])).get("build",""))' \
-    "${PREVIOUS_FEED}" 2>/dev/null || echo "")"
-fi
-
-if [[ "${BUMP_BUILD}" -eq 1 ]] && [[ "${PREVIOUS_BUILD}" =~ ^[0-9]+$ ]] && [[ "${CURRENT_BUILD}" =~ ^[0-9]+$ ]]; then
-  if (( CURRENT_BUILD <= PREVIOUS_BUILD )); then
-    NEW_BUILD=$((PREVIOUS_BUILD + 1))
-    # ⚠️ 定点改一行，**不要用 `PlistBuddy -c Set`** —— 它会重写整个文件：缩进从 4 空格
-    #    变成 Tab、键按字母序重排，于是 diff 变成整片重写，与本次改动无关的噪音全进来了
-    #    （2026-09-22 实测踩到）。读值用 PlistBuddy 没问题，写值不要用。
-    /usr/bin/python3 - "${PLIST_PATH}" "${NEW_BUILD}" <<'PY'
-import pathlib, re, sys
-path, new_build = pathlib.Path(sys.argv[1]), sys.argv[2]
-text = path.read_text(encoding="utf-8")
-updated, count = re.subn(
-    r"(<key>CFBundleVersion</key>\s*<string>)\d+(</string>)",
-    lambda m: m.group(1) + new_build + m.group(2),
-    text,
-)
-if count != 1:
-    sys.exit(f"错误：{path} 里匹配到 {count} 处 CFBundleVersion（预期恰好 1 处）")
-path.write_text(updated, encoding="utf-8")
-PY
-    echo "[build] CFBundleVersion 自动递增：${CURRENT_BUILD} → ${NEW_BUILD}（上次产物是 ${PREVIOUS_BUILD}）"
-    echo "[build] 已写回 ${PLIST}，随本次改动一起提交即可"
-  else
-    echo "[build] CFBundleVersion：${CURRENT_BUILD}（高于上次产物的 ${PREVIOUS_BUILD}，保持不动）"
-  fi
-else
-  # 三种原因分开报 —— 混成一句「找不到或不可用」会让人去翻路径，而实际可能只是值不对。
-  if [[ "${BUMP_BUILD}" -eq 0 ]]; then
-    # 本地运行：不碰 build 号，也**不输出任何东西**。否则每次 ./run.sh 都会多出一句
-    # 与本次改动无关的版本号噪音，看起来像「它动了什么」。这里就是要什么都不做。
-    :
-  elif [[ -f "${PREVIOUS_FEED}" ]]; then
-    echo "[build] 参照物存在但其中的 build 不是数字（${PREVIOUS_FEED}），CFBundleVersion 保持 ${CURRENT_BUILD}"
-  else
-    echo "[build] 参照物不存在（两条候选都没有），CFBundleVersion 保持 ${CURRENT_BUILD}"
-  fi
+if [[ "$BUMP_BUILD" -eq 1 ]]; then
+  /usr/bin/python3 "$ROOT/tools/prepare-build-version.py" --plist "$PLIST_PATH" \
+    --previous-app "$REPO_ROOT/build/livewall/LiveWall.app" \
+    --previous-app "$ROOT/build/LiveWall.app" \
+    --previous-feed "$REPO_ROOT/build/studio.meowv.com/data/livewall/version.json" \
+    --previous-feed "$ROOT/build/version.json"
 fi
 
 echo "[build] swift build -c $CONFIGURATION --product $PRODUCT"

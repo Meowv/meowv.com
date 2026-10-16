@@ -16,6 +16,7 @@ WALLPAPER_KEY_FILE="$ROOT_DIR/.wallpaper-key"
 CURRENT_LIVEWALL_KEY_FILE="$ROOT_DIR/.livewall-key"
 LIVEWALL_KEY_TEMP=""
 LIVEWALL_STAGE_DIR="$ROOT_DIR/.livewall-staging.$$"
+LIVEWALL_PROMOTION_JOURNAL="$ROOT_DIR/.livewall-promotion.json"
 
 # 内容清单索引的文件名。客户端在 `LivewallCatalog` 里也硬编码了同一个名字
 # （它拼的是 `<清单目录>/catalog.json`），改这里必须同时改客户端。
@@ -59,6 +60,18 @@ lock_livewall_build() {
   if [ "${LIVEWALL_BUILD_LOCK_HELD:-}" != "$ROOT_DIR" ]; then
     exec /usr/bin/python3 "$ROOT_DIR/tools/with-livewall-build-lock.py" "$ROOT_DIR" \
       "$ROOT_DIR/build.sh" ${ORIGINAL_ARGUMENTS[@]+"${ORIGINAL_ARGUMENTS[@]}"}
+  fi
+  node "$ROOT_DIR/tools/livewall-artifacts.mjs" recover "$LIVEWALL_PROMOTION_JOURNAL"
+}
+
+check_existing_livewall_catalog() {
+  local data_dir="$1"
+  if [ -e "$data_dir/livewall.json" ]; then
+    echo "错误：仍有旧版明文 livewall.json，请先运行 ./build.sh wallpapers 生成加密目录。" >&2
+    exit 1
+  fi
+  if [ -e "$data_dir/livewall" ] || [ -L "$data_dir/livewall" ]; then
+    node "$ROOT_DIR/tools/livewall-artifacts.mjs" check "$data_dir/livewall" "$CURRENT_LIVEWALL_KEY_FILE"
   fi
 }
 
@@ -106,7 +119,7 @@ publish_wallpapers_only() {
     stage_livewall_catalog "$build_data_dir/livewall" "$LIVEWALL_STAGE_DIR/deploy-catalog" 0
     promotion+=("$LIVEWALL_STAGE_DIR/deploy-catalog" "$build_data_dir/livewall" "-" "$build_data_dir/livewall.json")
   fi
-  node "$ROOT_DIR/tools/livewall-artifacts.mjs" promote "${promotion[@]}"
+  node "$ROOT_DIR/tools/livewall-artifacts.mjs" promote --journal "$LIVEWALL_PROMOTION_JOURNAL" "${promotion[@]}"
   echo "[wallpapers] 加密 LiveWall 数据源目录：$source_dir/livewall"
 }
 
@@ -238,12 +251,7 @@ build_project() {
       ;;
     studio)
       if [ "$LIVEWALL_CATALOG_READY" -eq 0 ]; then
-        node "$ROOT_DIR/tools/livewall-artifacts.mjs" check \
-          "$ROOT_DIR/studio/public/data/livewall" "$CURRENT_LIVEWALL_KEY_FILE"
-        if [ -f "$ROOT_DIR/studio/public/data/livewall.json" ]; then
-          echo "错误：仍有旧版明文 livewall.json，请先运行 ./build.sh wallpapers 生成加密目录。" >&2
-          exit 1
-        fi
+        check_existing_livewall_catalog "$ROOT_DIR/studio/public/data"
       fi
       (
         cd "$ROOT_DIR/studio"
@@ -666,8 +674,7 @@ for project in "${SELECTED_PROJECTS[@]}"; do
   if [ "$project" = "studio" ]; then
     preserve_livewall_update_feed
     if [ "$LIVEWALL_CATALOG_READY" -eq 0 ]; then
-      node "$ROOT_DIR/tools/livewall-artifacts.mjs" check \
-        "$STAGING_DIR/studio.meowv.com/data/livewall" "$CURRENT_LIVEWALL_KEY_FILE"
+      check_existing_livewall_catalog "$STAGING_DIR/studio.meowv.com/data"
     fi
     if [ "$HAS_XIAOMI_CAMERA" -eq 0 ]; then
       preserve_xiaomi_camera_deployment
@@ -723,7 +730,7 @@ if [ "$HAS_LIVEWALL" -eq 1 ]; then
     "$LIVEWALL_KEY_TEMP" "$CURRENT_LIVEWALL_KEY_FILE")
 fi
 if [ "$LIVEWALL_CATALOG_READY" -eq 1 ]; then
-  node "$ROOT_DIR/tools/livewall-artifacts.mjs" promote "${PROMOTION[@]}"
+  node "$ROOT_DIR/tools/livewall-artifacts.mjs" promote --journal "$LIVEWALL_PROMOTION_JOURNAL" "${PROMOTION[@]}"
 else
   # 无 LiveWall 清单改动的项目沿用原发布逻辑及依赖。
   if [ "${#SELECTED_PROJECTS[@]}" -eq "${#ALL_PROJECTS[@]}" ]; then
