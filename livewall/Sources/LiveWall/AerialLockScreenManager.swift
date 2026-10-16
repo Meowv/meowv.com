@@ -50,9 +50,7 @@ final class AerialLockScreenManager {
         .appendingPathComponent("Library/Application Support/com.apple.wallpaper", isDirectory: true)
     private var aerialDirectory: URL { root.appendingPathComponent("aerials", isDirectory: true) }
     private var videosDirectory: URL { aerialDirectory.appendingPathComponent("videos", isDirectory: true) }
-    #if DEBUG
-        var debugVideosDirectory: URL { videosDirectory }
-    #endif
+    var debugVideosDirectory: URL { videosDirectory }
     private var manifestURL: URL { aerialDirectory.appendingPathComponent("manifest/entries.json") }
     private var indexURL: URL { root.appendingPathComponent("Store/Index.plist") }
 

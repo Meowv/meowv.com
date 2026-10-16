@@ -382,12 +382,11 @@ extension AppDelegate {
         loadCatalogAndStart()
     }
 
-    #if DEBUG
-        @objc func dumpWindows() {
-            WindowInspector.printTable(highlightPIDs: [
-                Int(ProcessInfo.processInfo.processIdentifier)
-            ])
-        }
-    #endif
+    @objc func dumpWindows() {
+        guard preferences.developerToolsEnabled else { return }
+        WindowInspector.printTable(highlightPIDs: [
+            Int(ProcessInfo.processInfo.processIdentifier)
+        ])
+    }
 
 }

@@ -154,6 +154,8 @@ public struct Preferences: Codable, Sendable, Equatable {
     /// **默认关闭** —— 纯观感偏好，升级不该改变老用户的行为（与 `restReminderEnabled`
     /// 同一条约定）。打开后的行为由 `MenuBarIconActivity.shouldRotate` 一处判定。
     public var animateMenuBarIcon: Bool
+    /// 显示开发者菜单和进程占用信息，所有构建配置均默认关闭。
+    public var developerToolsEnabled: Bool
 
     public init(
         remoteCatalogURL: String? = Preferences.defaultRemoteCatalogURL,
@@ -183,6 +185,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         pauseOnThermalPressure: Bool = true,
         lockScreenPreview: Bool = true,
         animateMenuBarIcon: Bool = false,
+        developerToolsEnabled: Bool = false,
         remoteUpdateURL: String? = Preferences.defaultRemoteUpdateURL
     ) {
         self.remoteCatalogURL = remoteCatalogURL
@@ -212,6 +215,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         self.pauseOnThermalPressure = pauseOnThermalPressure
         self.lockScreenPreview = lockScreenPreview
         self.animateMenuBarIcon = animateMenuBarIcon
+        self.developerToolsEnabled = developerToolsEnabled
         self.remoteUpdateURL = remoteUpdateURL
     }
 
@@ -233,6 +237,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         case pauseOnLowPowerMode, pauseOnBattery, pauseOnThermalPressure
         case lockScreenPreview
         case animateMenuBarIcon
+        case developerToolsEnabled
         case remoteUpdateURL
     }
 
@@ -302,6 +307,8 @@ public struct Preferences: Codable, Sendable, Equatable {
         // 后果与缺字段完全一样 —— 整个文件退回默认、静默清零其它设置。
         animateMenuBarIcon = (try? container.decodeIfPresent(Bool.self, forKey: .animateMenuBarIcon))
             ?? fallback.animateMenuBarIcon
+        developerToolsEnabled = (try? container.decodeIfPresent(Bool.self, forKey: .developerToolsEnabled))
+            ?? fallback.developerToolsEnabled
         remoteUpdateURL = try container.decodeIfPresent(String.self, forKey: .remoteUpdateURL)
             ?? fallback.remoteUpdateURL
     }

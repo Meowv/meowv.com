@@ -1,4 +1,3 @@
-#if DEBUG
 import AppKit
 import LiveWallCore
 
@@ -11,8 +10,31 @@ enum DebugDirectory: String {
 
 extension AppDelegate {
 
+    @objc func toggleDeveloperTools() {
+        preferences.developerToolsEnabled.toggle()
+        persistPreferences("开发者工具开关")
+        configureDeveloperTools()
+        let state = preferences.developerToolsEnabled ? "开启" : "关闭"
+        notice = .info("开发者工具已\(state)", oneShot: true)
+        log("开发者工具 → \(state)")
+        refreshStatusItem()
+    }
+
+    func configureDeveloperTools(sinceLaunch: Bool = false) {
+        processMonitor?.cancel()
+        processMonitor = nil
+        sampledThisOpen = false
+        usageReport = nil
+        usageFailed = false
+        guard preferences.developerToolsEnabled else { return }
+        let monitor = ProcessMonitor()
+        monitor.prepareBaseline(sinceLaunch: sinceLaunch)
+        processMonitor = monitor
+    }
+
     @objc func openDebugDirectory(_ sender: NSMenuItem) {
-        guard let rawValue = sender.representedObject as? String,
+        guard preferences.developerToolsEnabled,
+              let rawValue = sender.representedObject as? String,
               let directory = DebugDirectory(rawValue: rawValue) else { return }
 
         let url: URL
@@ -65,4 +87,3 @@ extension AppDelegate {
         refreshStatusItem()
     }
 }
-#endif

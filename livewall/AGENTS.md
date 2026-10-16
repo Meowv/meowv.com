@@ -38,7 +38,7 @@
 
 - 项目使用 Swift 6 严格并发。`AppDelegate` 的隔离需显式标注；`Timer`、通知、KVO 和网络回调即使投递到主队列，也不会自动获得主 actor 隔离，修改 UI 或共享状态前须回到 `@MainActor`。非 `Sendable` 对象不要跨 actor 传递；放宽检查前先证明线程契约并说明理由。
 - `SharedVideoLoadStore` 的查找与插入必须在同一把锁内完成，取消任务放在锁外。`nonisolated async` 的下载与加载会离开主 actor，不可据调用点在主线程就移除共享状态保护。
-- 开发运行不递增 `CFBundleVersion`；发布构建的 `--bump-build` 要在组装及签名 App 前执行，不能与 debug 合用。`#if DEBUG` 里的诊断代码不能进入 release；调整隔离边界时分别验证两种配置。
+- 开发运行不递增 `CFBundleVersion`；发布构建的 `--bump-build` 要在组装及签名 App 前执行，不能与 debug 合用。开发者工具由 `Preferences.developerToolsEnabled` 控制，默认关闭，菜单可即时切换并保存；关闭时取消采样并释放监控器。调整隔离边界时分别验证 debug 与 release 配置。
 - 更新清单 `version.json` 与 `version.json.sig` 必须同批发布。两类签名都覆盖清单原始字节，不能手工格式化或改写已签文件，也不能加入验签失败后只信任 `sha256` 的退路。内容清单由导出脚本生成，再由根 `build.sh` 签名；单独导出不能当作可发布产物。发版路径与产物位置以根脚本和 [`README.md`](./README.md) 为准。
 
 ## 验证

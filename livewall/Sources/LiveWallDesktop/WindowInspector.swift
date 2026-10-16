@@ -94,9 +94,8 @@ public enum WindowInspector {
 
     /// 打印完整层级表。层级顺序只能真机实测，读代码看不出来 —— 这是排障的第一手材料。
     ///
-    /// 只在 debug 构建里编译：它是开发者工具，release（发布）二进制里不保留。
+    /// 由开发者工具菜单按需调用。
     /// 输出走 stdout，**不落盘** —— 需要从终端启动（`./run.sh`）才能看到。
-#if DEBUG
     public static func printTable(highlightPIDs: Set<Int> = []) {
         let records = snapshot()
         print("")
@@ -117,7 +116,6 @@ public enum WindowInspector {
         }
         print("")
     }
-#endif
 
     /// 系统壁纸窗口。
     ///
@@ -304,7 +302,7 @@ public enum WindowInspector {
 
 #if DEBUG
     // 文本对齐实现已迁到 LiveWallCore.TextLayout（纯逻辑，可单测）。这里保留转发，
-    // 避免调用点全部改写。目前只服务上面的 printTable，因此与它一同只在 debug 编译。
+    // 避免旧调试调用点全部改写；正式的层级表直接使用 TextLayout。
     public static func displayWidth(_ value: String) -> Int { TextLayout.displayWidth(value) }
     public static func pad(_ value: String, _ width: Int) -> String { TextLayout.pad(value, width) }
     public static func padLeft(_ value: String, _ width: Int) -> String { TextLayout.padLeft(value, width) }

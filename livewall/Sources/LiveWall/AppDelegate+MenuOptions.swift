@@ -5,48 +5,51 @@ import LiveWallDesktop
 
 extension AppDelegate {
 
-    // MARK: - 菜单展开期的惰性采样（仅 debug 构建）
+    // MARK: - 菜单展开期的惰性采样
 
-    #if DEBUG
-        /// 发起一次采样。**每次展开只调一次**（由 `sampledThisOpen` 保证）——
-        /// 同一次展开采两次会把基线推到「刚刚那一刻」，第二次的区间≈0，算出纯噪音。
-        func requestUsageSample() {
-            processMonitor.sample { [weak self] report in
-                guard let self else { return }
-                // `nil` = 采样失败（mach 调用没拿到数据）。失败也要让用户看见 ——
-                // 不处理的话状态区会一直停在「测量中…」，看起来像卡住了。
-                if let report {
-                    self.applyUsageReport(report)
-                } else {
-                    self.applyUsageFailure()
-                }
+    /// 发起一次采样。**每次展开只调一次**（由 `sampledThisOpen` 保证）——
+    /// 同一次展开采两次会把基线推到「刚刚那一刻」，第二次的区间≈0，算出纯噪音。
+    func requestUsageSample() {
+        guard preferences.developerToolsEnabled else { return }
+        if processMonitor == nil { configureDeveloperTools() }
+        sampledThisOpen = true
+        processMonitor?.sample { [weak self] report in
+            guard let self, self.preferences.developerToolsEnabled else { return }
+            // `nil` = 采样失败（mach 调用没拿到数据）。失败也要让用户看见 ——
+            // 不处理的话状态区会一直停在「测量中…」，看起来像卡住了。
+            if let report {
+                self.applyUsageReport(report)
+            } else {
+                self.applyUsageFailure()
             }
         }
+    }
 
-        /// 采样失败：只改文案，不重建菜单（同 `updateUsageRows` 的理由）。
-        func applyUsageFailure() {
-            usageFailed = true
-            guard isMenuOpen, let menu = statusItem?.menu else { return }
-            updateUsageRows(in: menu)
-        }
+    /// 采样失败：只改文案，不重建菜单（同 `updateUsageRows` 的理由）。
+    func applyUsageFailure() {
+        guard preferences.developerToolsEnabled else { return }
+        usageFailed = true
+        guard isMenuOpen, let menu = statusItem?.menu else { return }
+        updateUsageRows(in: menu)
+    }
 
-        /// 采样回到主线程。菜单已经收起就直接丢弃 —— 那时行已经不在屏幕上，
-        /// 而 `statusItem.menu` 可能已经被 `refreshStatusItem` 换掉了。
-        func applyUsageReport(_ report: ProcessMonitor.Report) {
-            usageReport = report
-            usageFailed = false
-            guard isMenuOpen, let menu = statusItem?.menu else { return }
-            updateUsageRows(in: menu)
-        }
+    /// 采样回到主线程。菜单已经收起就直接丢弃 —— 那时行已经不在屏幕上，
+    /// 而 `statusItem.menu` 可能已经被 `refreshStatusItem` 换掉了。
+    func applyUsageReport(_ report: ProcessMonitor.Report) {
+        guard preferences.developerToolsEnabled else { return }
+        usageReport = report
+        usageFailed = false
+        guard isMenuOpen, let menu = statusItem?.menu else { return }
+        updateUsageRows(in: menu)
+    }
 
-        /// 只改这一行的 title，**不重建菜单** —— 重建会让正在展开的菜单闪一下、
-        /// 并把已经展开的子菜单与高亮项重置掉。
-        func updateUsageRows(in menu: NSMenu) {
-            for item in menu.items where (item.representedObject as? String) == Self.usageRowID {
-                item.title = usageText
-            }
+    /// 只改这一行的 title，**不重建菜单** —— 重建会让正在展开的菜单闪一下、
+    /// 并把已经展开的子菜单与高亮项重置掉。
+    func updateUsageRows(in menu: NSMenu) {
+        for item in menu.items where (item.representedObject as? String) == Self.usageRowID {
+            item.title = usageText
         }
-    #endif
+    }
 
     /// 全局热键触发。按 id 分派 —— 走的是和菜单完全相同的入口，不另开一条路径。
     func handleHotKey(_ id: UInt32) {

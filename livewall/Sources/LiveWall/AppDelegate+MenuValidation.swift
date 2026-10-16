@@ -29,6 +29,9 @@ extension AppDelegate: NSMenuItemValidation {
 
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         switch menuItem.action {
+        case #selector(openDebugDirectory(_:)), #selector(dumpWindows):
+            return preferences.developerToolsEnabled
+
         case #selector(openWallpaperBrowser):
             // 本地来源下不可用：那个窗口列的是线上分类的条目。
             return WallpaperSourceMenu.isEnabled(.wallpaperBrowser, isLocalSource: isLocalSource)

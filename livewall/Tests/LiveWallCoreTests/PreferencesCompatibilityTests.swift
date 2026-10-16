@@ -9,6 +9,40 @@ import LiveWallCore
 func preferencesCompatibilityTests() {
     suite("Preferences 向后兼容") {
 
+        test("开发者工具默认关闭，缺键或损坏不丢失其它设置") {
+            expectEqual(Preferences.default.developerToolsEnabled, false, "默认不启用开发者工具")
+            for value in ["", ",\"developerToolsEnabled\":null", ",\"developerToolsEnabled\":\"yes\""] {
+                let data = Data("{\"intervalSeconds\":1200,\"playbackOrder\":\"sequential\"\(value)}".utf8)
+                guard let decoded = try? JSONDecoder().decode(Preferences.self, from: data) else {
+                    expect(false, "开发者开关损坏不能导致整份配置失效")
+                    continue
+                }
+                expectEqual(decoded.developerToolsEnabled, false, "缺键或非法值回退关闭")
+                expectEqual(decoded.intervalSeconds, 1200, "其它间隔保持")
+                expectEqual(decoded.playbackOrder, .sequential, "其它顺序保持")
+            }
+        }
+
+        test("开发者工具开关往返并落盘后保持选择") {
+            let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+            let file = directory.appendingPathComponent("config.json")
+            defer { try? FileManager.default.removeItem(at: directory) }
+            for enabled in [true, false] {
+                let preferences = Preferences(intervalSeconds: 1200, developerToolsEnabled: enabled)
+                do {
+                    let encoded = try JSONEncoder().encode(preferences)
+                    let decoded = try JSONDecoder().decode(Preferences.self, from: encoded)
+                    expectEqual(decoded.developerToolsEnabled, enabled, "开关往返保持")
+                    try preferences.save(to: file)
+                    let loaded = Preferences.load(from: file)
+                    expectEqual(loaded.developerToolsEnabled, enabled, "重启读回开关")
+                    expectEqual(loaded.intervalSeconds, 1200, "其它设置保持")
+                } catch {
+                    expect(false, "配置往返或落盘失败：\(error)")
+                }
+            }
+        }
+
         test("老配置（没有 perScreenSources）仍能解码，且其它设置不丢") {
             let legacy = """
             {

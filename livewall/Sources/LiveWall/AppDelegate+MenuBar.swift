@@ -75,14 +75,10 @@ extension AppDelegate {
         current.isEnabled = false
         menu.addItem(current)
 
-        // 进程自身占用。**仅 debug 构建**（与下面「打印窗口层级表」同一约定）——
-        // 它是开发期的观测手段（「一个一直挂在后台的东西到底吃多少资源」），
-        // release 下不显示，省掉一行菜单高度。
-        // 内容只在菜单展开时刷新（见 `NSMenuDelegate` 扩展），所以这一行在菜单收起
-        // 期间显示的是上一次的值；CPU 那行自带区间标注，不会被读成瞬时值。
-        #if DEBUG
+        // 开发者工具开启时，展开菜单才刷新进程占用。
+        if preferences.developerToolsEnabled {
             menu.addItem(usageRow(id: Self.usageRowID, text: usageText))
-        #endif
+        }
 
         // 暂停原因由 governor 的状态直接推导，不另存一份 —— 存一份就要在每个
         // 恢复路径上记得清掉，漏一处就会残留一句「已手动暂停」。
@@ -346,10 +342,15 @@ extension AppDelegate {
         restNow.target = self
         menu.addItem(restNow)
 
-        // 开发者工具：只在 debug 构建里存在。日常使用走 `./build.sh`（release），
-        // 排障走 `./run.sh`（debug）。整块不参与 release 编译，二进制里也没有相关字符串。
-        #if DEBUG
-            menu.addItem(.separator())
+        menu.addItem(.separator())
+        let developerTools = NSMenuItem(
+            title: "开发者工具（\(preferences.developerToolsEnabled ? "开" : "关")）",
+            action: #selector(toggleDeveloperTools), keyEquivalent: "")
+        developerTools.target = self
+        developerTools.state = preferences.developerToolsEnabled ? .on : .off
+        menu.addItem(developerTools)
+
+        if preferences.developerToolsEnabled {
             for (title, directory) in [
                 ("打开日志目录", DebugDirectory.logs),
                 ("打开下载壁纸目录", DebugDirectory.downloadedWallpapers),
@@ -365,13 +366,11 @@ extension AppDelegate {
                 item.representedObject = directory.rawValue
                 menu.addItem(item)
             }
-
             let dump = NSMenuItem(
                 title: "打印窗口层级表", action: #selector(dumpWindows), keyEquivalent: "")
             dump.target = self
             menu.addItem(dump)
-
-        #endif
+        }
 
         // 更新段**不在这里**：它属于「关于」子菜单，紧贴「当前版本」那一行
         // （位置由 `AboutMenu.entries` 里的 `.updateSection` 占位决定）。
