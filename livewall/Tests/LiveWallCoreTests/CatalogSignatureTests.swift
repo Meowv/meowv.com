@@ -175,11 +175,11 @@ func catalogSignatureTests() {
         /// 有人手抖改了字面量里的一个字符时，先在这里报「长度变了」，
         /// 而不是让 verify 报「签名不符」把人引到密钥或密码学上去。
         let vectors: [(Int, String, String, String)] = [
-            (282, "正常（远程）", SignedIndex.remotePayload, SignedIndex.remoteSignature),
-            (282, "正常（副本）", SignedIndex.cachePayload, SignedIndex.cacheSignature),
-            (282, "正常（副本二）", SignedIndex.cacheAltPayload, SignedIndex.cacheAltSignature),
-            (155, "负例：空分类", SignedIndex.emptyCategoriesPayload, SignedIndex.emptyCategoriesSignature),
-            (224, "负例：缺摘要", SignedIndex.missingDigestPayload, SignedIndex.missingDigestSignature),
+            (378, "正常（远程）", SignedIndex.remotePayload, SignedIndex.remoteSignature),
+            (378, "正常（副本）", SignedIndex.cachePayload, SignedIndex.cacheSignature),
+            (378, "正常（副本二）", SignedIndex.cacheAltPayload, SignedIndex.cacheAltSignature),
+            (252, "负例：空分类", SignedIndex.emptyCategoriesPayload, SignedIndex.emptyCategoriesSignature),
+            (320, "负例：缺摘要", SignedIndex.missingDigestPayload, SignedIndex.missingDigestSignature),
             (15, "负例：非 JSON", SignedIndex.badJSONPayload, SignedIndex.badJSONSignature),
         ]
 

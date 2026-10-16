@@ -393,21 +393,6 @@ public struct Preferences: Codable, Sendable, Equatable {
         )
     }
 
-    /// 两种标记互斥；重复点击已有标记时只移除该标记。
-    public mutating func toggleFavorite(_ item: WallpaperItem) {
-        guard item.remoteURL != nil else { return }
-        let wasFavorite = favoriteItems.contains { $0.id == item.id }
-        favoriteItems = FavoriteCollection.toggling(item, in: favoriteItems)
-        if !wasFavorite { disabledItems.removeAll { $0.id == item.id } }
-    }
-
-    public mutating func toggleDisabled(_ item: WallpaperItem) {
-        guard item.remoteURL != nil else { return }
-        let wasDisabled = disabledItems.contains { $0.id == item.id }
-        disabledItems = DisabledCollection.toggling(item, in: disabledItems)
-        if !wasDisabled { favoriteItems.removeAll { $0.id == item.id } }
-    }
-
     /// 由配置派生的省电策略。
     public var playbackStateResolver: PlaybackStateResolver {
         PlaybackStateResolver(preferences: self)
@@ -423,15 +408,6 @@ public struct Preferences: Codable, Sendable, Equatable {
         let decoder = JSONDecoder()
         decoder.userInfo[settingsOnlyKey] = true
         return (try? decoder.decode(Preferences.self, from: data)) ?? .default
-    }
-
-    /// 旧配置完整解码，仅供迁移和兼容检查；解析失败返回默认值。
-    public static func load(from url: URL) -> Preferences {
-        guard let data = try? Data(contentsOf: url) else { return .default }
-        guard let decoded = try? JSONDecoder().decode(Preferences.self, from: data) else {
-            return .default
-        }
-        return decoded
     }
 
     public func save(to url: URL) throws {

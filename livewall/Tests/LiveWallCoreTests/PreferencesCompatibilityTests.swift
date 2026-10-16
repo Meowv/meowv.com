@@ -34,7 +34,7 @@ func preferencesCompatibilityTests() {
                     let decoded = try JSONDecoder().decode(Preferences.self, from: encoded)
                     expectEqual(decoded.developerToolsEnabled, enabled, "开关往返保持")
                     try preferences.save(to: file)
-                    let loaded = Preferences.load(from: file)
+                    let loaded = Preferences.loadSettings(from: file)
                     expectEqual(loaded.developerToolsEnabled, enabled, "重启读回开关")
                     expectEqual(loaded.intervalSeconds, 1200, "其它设置保持")
                 } catch {

@@ -38,17 +38,24 @@ func favoriteCollectionTests() {
         let first = libraryItem(1)
         let second = libraryItem(2)
         test("最近收藏在前，取消后再次添加排到最前") {
-            let added = FavoriteCollection.toggling(second, in: [first])
-            expectEqual(added, [second, first], "新收藏插入头部")
-            expectEqual(FavoriteCollection.toggling(first, in: added), [second], "按 ID 取消收藏")
-            expectEqual(FavoriteCollection.toggling(first, in: [second]), [first, second], "再次添加排最前")
-            expectEqual(FavoriteCollection.toggling(libraryItem(1, title: "改名"), in: [first]), [], "标题变化不改变收藏身份")
+            runLibraryTest {
+                let f = LibraryFixture(); defer { f.clean() }
+                let store = try f.store(); try await store.load()
+                _ = try await store.setFavorite(first, enabled: true)
+                _ = try await store.setFavorite(second, enabled: true)
+                expectEqual(try await store.page(kind: .favorites).items, [second, first], "新收藏插入头部")
+                _ = try await store.setFavorite(first, enabled: false)
+                expectEqual(try await store.page(kind: .favorites).items, [second], "按 ID 取消收藏")
+                _ = try await store.setFavorite(first, enabled: true)
+                expectEqual(try await store.page(kind: .favorites).items, [first, second], "再次添加排最前")
+                _ = try await store.setFavorite(libraryItem(1, title: "改名"), enabled: false)
+                expectEqual(try await store.page(kind: .favorites).items, [second], "标题变化不改变收藏身份")
+            }
         }
         test("去重与非法地址清洗") {
             let local = WallpaperItem(id: 3, title: "本地", author: "", url: "file:///tmp/video.mp4")
             let invalid = WallpaperItem(id: 4, title: "坏地址", author: "", url: "ftp://example.com/a.mp4")
             expectEqual(FavoriteCollection.sanitized([second, first, second, local, invalid]), [second, first], "去重保序且只收线上条目")
-            expectEqual(FavoriteCollection.toggling(local, in: [first]), [first], "本地视频不加入收藏")
             var preferences = Preferences(favoriteItems: [second, first, second, invalid])
             preferences.pinnedItem = first
             expectEqual(preferences.sanitized().favoriteItems, [second, first], "配置清洗收藏")
@@ -95,7 +102,7 @@ func favoriteCollectionTests() {
                 let restored = try await reopened.page(kind: .favorites)
                 expectEqual(restored.items, [second], "取消收藏重启恢复")
                 expectEqual(await reopened.index().pinned, first, "取消收藏仍保留固定项")
-                expectEqual(Preferences.load(from: url).selectedCategoryID, 10, "取消收藏不改变播放分类")
+                expectEqual(Preferences.loadSettings(from: url).selectedCategoryID, 10, "取消收藏不改变播放分类")
             }
         }
     }
@@ -107,10 +114,16 @@ func disabledCollectionTests() {
         let second = libraryItem(2)
         let local = WallpaperItem(id: 3, title: "本地", author: "", url: "file:///tmp/video.mp4")
         test("最近禁用在前，按 ID 恢复且拒绝本地") {
-            let disabled = DisabledCollection.toggling(second, in: [first])
-            expectEqual(disabled, [second, first], "新禁用排在最前")
-            expectEqual(DisabledCollection.toggling(libraryItem(1, title: "已改名"), in: disabled), [second], "按 ID 恢复")
             expectEqual(DisabledCollection.sanitized([second, second, local]), [second], "去重且只保留线上")
+            runLibraryTest {
+                let f = LibraryFixture(); defer { f.clean() }
+                let store = try f.store(); try await store.load()
+                _ = try await store.setDisabled(first, enabled: true)
+                _ = try await store.setDisabled(second, enabled: true)
+                expectEqual(try await store.page(kind: .disabled).items, [second, first], "新禁用排在最前")
+                _ = try await store.setDisabled(libraryItem(1, title: "已改名"), enabled: false)
+                expectEqual(try await store.page(kind: .disabled).items, [second], "按 ID 恢复")
+            }
         }
         test("旧配置、损坏条目与手改冲突") {
             let old = try? JSONDecoder().decode(Preferences.self, from: Data("{\"intervalSeconds\":900}".utf8))
@@ -141,25 +154,36 @@ func disabledCollectionTests() {
                 _ = try await store.prepareMigration(configURL: url)
                 let page = try await store.page(kind: .disabled)
                 expectEqual(page.items, [second, first], "禁用条目全部字段及顺序恢复")
-                expectEqual(Preferences.load(from: url).disabledItems, [], "普通配置不保留禁用快照")
+                let config = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as! [String: Any]
+                expect(config["disabledItems"] == nil, "普通配置不保留禁用快照")
             }
         }
         test("收藏与禁用双向切换") {
-            var preferences = Preferences()
-            preferences.toggleFavorite(first)
-            preferences.toggleDisabled(first)
-            expectEqual(preferences.favoriteItems, [], "禁用移除原收藏")
-            expectEqual(preferences.disabledItems, [first], "禁用生效")
-            preferences.toggleFavorite(first)
-            expectEqual(preferences.disabledItems, [], "收藏恢复原禁用")
-            expectEqual(preferences.favoriteItems, [first], "收藏生效")
-            preferences.toggleFavorite(first)
-            expectEqual(preferences.favoriteItems, [], "重复点击取消收藏")
-            preferences.toggleDisabled(first)
-            preferences.toggleDisabled(first)
-            expectEqual(preferences.disabledItems, [], "重复点击取消禁用")
-            preferences.toggleDisabled(local)
-            expectEqual(preferences.disabledItems, [], "本地视频不能禁用")
+            runLibraryTest {
+                let f = LibraryFixture(); defer { f.clean() }
+                let store = try f.store(); try await store.load()
+                _ = try await store.setFavorite(first, enabled: true)
+                _ = try await store.setDisabled(first, enabled: true)
+                expectEqual(await store.index().favoriteIDs, [], "禁用移除原收藏")
+                expectEqual(await store.index().disabledIDs, [first.id], "禁用生效")
+                _ = try await store.setFavorite(first, enabled: true)
+                expectEqual(await store.index().disabledIDs, [], "收藏恢复原禁用")
+                expectEqual(await store.index().favoriteIDs, [first.id], "收藏生效")
+                _ = try await store.setFavorite(first, enabled: false)
+                expectEqual(await store.index().favoriteIDs, [], "取消收藏")
+                _ = try await store.setDisabled(first, enabled: true)
+                _ = try await store.setDisabled(first, enabled: false)
+                expectEqual(await store.index().disabledIDs, [], "取消禁用")
+                for kind in [WallpaperLibraryStore.Kind.favorites, .disabled] {
+                    do {
+                        if kind == .favorites { _ = try await store.setFavorite(local, enabled: true) }
+                        else { _ = try await store.setDisabled(local, enabled: true) }
+                        expect(false, "本地视频不能加入线上条目列表")
+                    } catch WallpaperLibraryStore.StoreError.malformedRecord { }
+                }
+                expectEqual(await store.index().favoriteIDs, [], "本地视频未加入收藏")
+                expectEqual(await store.index().disabledIDs, [], "本地视频未加入禁用")
+            }
         }
     }
 }

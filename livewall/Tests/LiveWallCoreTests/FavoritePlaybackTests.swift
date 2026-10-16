@@ -58,7 +58,7 @@ func favoritePlaybackTests() {
                         _ = try await store.prepareMigration(configURL: url)
                         let reopened = try WallpaperLibraryStore(databaseURL: database, keyURL: key)
                         try await reopened.load()
-                        let restored = Preferences.load(from: url)
+                        let restored = Preferences.loadSettings(from: url)
                         expect(restored.playFavorites, "普通配置重启恢复收藏过滤")
                         expectEqual(restored.playbackOrder, order, "恢复选片顺序")
                         expectEqual(restored.multiScreenPolicy, .perScreen, "恢复多屏配置")

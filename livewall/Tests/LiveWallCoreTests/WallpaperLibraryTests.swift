@@ -27,7 +27,7 @@ func legacyConfigData(_ preferences: Preferences) throws -> Data {
     return try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])
 }
 
-private struct LibraryFixture: Sendable {
+struct LibraryFixture: Sendable {
     let directory = FileManager.default.temporaryDirectory.appendingPathComponent("livewall-library-test-" + UUID().uuidString)
     var database: URL { directory.appendingPathComponent("user-library.sqlite3") }
     var key: URL { directory.appendingPathComponent(".user-library-key") }
@@ -70,11 +70,12 @@ func wallpaperLibraryTests() {
                 expectEqual(index.pinned, second, "独立恢复固定快照")
                 let page = try await store.page(kind: .favorites)
                 expectEqual(page.items, [second, first], "全部字段及最近在前的顺序保留")
-                let settings = Preferences.load(from: f.config)
+                let settings = Preferences.loadSettings(from: f.config)
                 expectEqual(settings.intervalSeconds, 900, "原设置保留")
                 expect(settings.playFavorites, "新版配置重启保留收藏过滤")
                 expectEqual(settings.userLibraryVersion, 1, "配置记录用户库版本")
-                expectEqual(settings.favoriteItems, [], "新版配置不含收藏条目")
+                let config = try JSONSerialization.jsonObject(with: Data(contentsOf: f.config)) as! [String: Any]
+                expect(config["favoriteItems"] == nil, "新版配置不含收藏条目")
                 for url in try FileManager.default.contentsOfDirectory(at: f.directory, includingPropertiesForKeys: nil) {
                     let bytes = try Data(contentsOf: url)
                     expect(bytes.range(of: Data("https://cdn.test".utf8)) == nil, "私有文件 \(url.lastPathComponent) 不含明文地址")

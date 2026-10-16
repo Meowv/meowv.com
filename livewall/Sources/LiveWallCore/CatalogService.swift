@@ -141,7 +141,6 @@ public struct CatalogService: Sendable {
     public let indexCacheURL: URL
     public let sliceCacheURL: URL
     public let catalogKey: CatalogKeyMaterial?
-    private let requireEncryption: Bool
 
     public init(
         remoteIndexURL: URL?,
@@ -149,24 +148,10 @@ public struct CatalogService: Sendable {
         sliceCacheURL: URL,
         catalogKey: CatalogKeyMaterial? = CatalogReleaseKey.load()
     ) {
-        self.init(remoteIndexURL: remoteIndexURL, indexCacheURL: indexCacheURL,
-                  sliceCacheURL: sliceCacheURL, catalogKey: catalogKey, requireEncryption: true)
-    }
-
-    /// 仅供旧签名固定向量的逻辑测试；生产入口始终要求加密协议。
-    @_spi(Testing)
-    public init(
-        remoteIndexURL: URL?,
-        indexCacheURL: URL,
-        sliceCacheURL: URL,
-        catalogKey: CatalogKeyMaterial?,
-        requireEncryption: Bool
-    ) {
         self.remoteIndexURL = remoteIndexURL
         self.indexCacheURL = indexCacheURL
         self.sliceCacheURL = sliceCacheURL
         self.catalogKey = catalogKey
-        self.requireEncryption = requireEncryption
     }
 
     /// 索引**签名文件**的本地副本路径，由索引副本路径推导（`…/index.bin` → `…/index.bin.sig`）。
@@ -357,18 +342,16 @@ public struct CatalogService: Sendable {
 
         guard let index = tryDecodeIndex(payload, into: &warnings, label: "索引解析失败") else { return nil }
 
-        if requireEncryption {
-            guard index.schemaVersion == 2,
-                  index.encryption == CatalogCryptoEncryption.name,
-                  index.encryptionVersion == CatalogCryptoEncryption.version,
-                  index.compression == CatalogCryptoEncryption.compression,
-                  let keyID = index.keyID,
-                  let catalogKey,
-                  keyID == catalogKey.keyID
-            else {
-                warnings.append("索引加密格式或密钥不匹配，拒绝使用")
-                return nil
-            }
+        guard index.schemaVersion == 2,
+              index.encryption == CatalogCryptoEncryption.name,
+              index.encryptionVersion == CatalogCryptoEncryption.version,
+              index.compression == CatalogCryptoEncryption.compression,
+              let keyID = index.keyID,
+              let catalogKey,
+              keyID == catalogKey.keyID
+        else {
+            warnings.append("索引加密格式或密钥不匹配，拒绝使用")
+            return nil
         }
 
         if let problem = CatalogSignature.digestProblem(in: index) {
@@ -490,7 +473,6 @@ public struct CatalogService: Sendable {
         into warnings: inout [String],
         label: String
     ) -> Data? {
-        guard requireEncryption else { return data }
         guard let catalogKey else {
             warnings.append("\(label)：App 没有内嵌清单密钥")
             return nil

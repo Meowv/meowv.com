@@ -145,7 +145,7 @@ if (process.argv[1] && basename(process.argv[1]) === basename(import.meta.url)) 
   const keyFlag = process.argv.indexOf('--key-file');
   const keyFile = keyFlag >= 0 ? process.argv[keyFlag + 1] : undefined;
   const rotateKey = process.argv.includes('--rotate-key');
-  if (!directory || !keyFile || (rotateKey && !keyFile)) {
+  if (!directory || !keyFile) {
     usage();
     process.exit(2);
   }

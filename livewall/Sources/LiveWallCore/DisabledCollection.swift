@@ -5,8 +5,4 @@ public enum DisabledCollection {
     public static func sanitized(_ items: [WallpaperItem]) -> [WallpaperItem] {
         FavoriteCollection.sanitized(items)
     }
-
-    public static func toggling(_ item: WallpaperItem, in items: [WallpaperItem]) -> [WallpaperItem] {
-        FavoriteCollection.toggling(item, in: items)
-    }
 }

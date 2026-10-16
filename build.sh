@@ -18,10 +18,6 @@ LIVEWALL_KEY_TEMP=""
 LIVEWALL_STAGE_DIR="$ROOT_DIR/.livewall-staging.$$"
 LIVEWALL_PROMOTION_JOURNAL="$ROOT_DIR/.livewall-promotion.json"
 
-# 内容清单索引的文件名。客户端在 `LivewallCatalog` 里也硬编码了同一个名字
-# （它拼的是 `<清单目录>/catalog.json`），改这里必须同时改客户端。
-LIVEWALL_CATALOG_NAME="catalog.json"
-
 usage() {
   cat <<'EOF'
 用法：

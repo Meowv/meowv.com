@@ -1,5 +1,5 @@
 import Foundation
-@_spi(Testing) import LiveWallCore
+import LiveWallCore
 
 // MARK: - 测试替身
 
@@ -101,9 +101,13 @@ func makeService(remote: URL? = URL(string: testIndexURL)) -> CatalogService {
         remoteIndexURL: remote,
         indexCacheURL: URL(fileURLWithPath: testIndexCachePath),
         sliceCacheURL: URL(fileURLWithPath: testSliceCachePath),
-        catalogKey: testCatalogKey,
-        requireEncryption: false
+        catalogKey: testCatalogKey
     )
+}
+
+/// 传输层和离线副本均使用真实密文，摘要也对同一份密文字节计算。
+private func encryptedSlice(_ plaintext: Data) -> Data {
+    try! CatalogCrypto.encrypt(plaintext, context: "category:4001", using: testCatalogKey)
 }
 
 func entry(
@@ -151,26 +155,30 @@ func entry(_ id: Int = 4001, name: String = "美女", digestOf data: Data, itemC
 /// ⚠️ 改动这些 JSON 的**任何一个字节**（哪怕只挪一个缩进）都必须重新签：
 ///    签的是原始字节。重新生成的命令见 `livewall/README.md`「内容清单签名」。
 enum SignedIndex {
+    /// 旧协议即使签名有效也必须拒绝，不能退回明文切片。
+    static let legacyPayload = #"{"schemaVersion":1,"generatedAt":"2026-09-18T00:00:00Z","source":{"deviceType":"desktop","contentType":"dynamic"},"defaultCategoryId":7,"categories":[{"id":7,"name":"远程","file":"c.json","itemCount":1,"sha256":"a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1"}]}"#
+    static let legacySignature = "bW2ycbZCuo0VvOEHwq26nmLotN7+jpg8ll1W/X6C9VJSmTPLdCVF3F8BcD4itRwZEe76l+SRer9g0THYIcFvDg=="
+
 
     /// 正常：一个分类，条目摘要合法（`a1a1…`）。
-    static let remotePayload = #"{"schemaVersion":1,"generatedAt":"2026-09-18T00:00:00Z","source":{"deviceType":"desktop","contentType":"dynamic"},"defaultCategoryId":7,"categories":[{"id":7,"name":"远程","file":"c.json","itemCount":1,"sha256":"a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1"}]}"#
-    static let remoteSignature = "bW2ycbZCuo0VvOEHwq26nmLotN7+jpg8ll1W/X6C9VJSmTPLdCVF3F8BcD4itRwZEe76l+SRer9g0THYIcFvDg=="
+    static let remotePayload = #"{"schemaVersion":2,"generatedAt":"2026-09-18T00:00:00Z","source":{"deviceType":"desktop","contentType":"dynamic"},"defaultCategoryId":7,"categories":[{"id":7,"name":"远程","file":"c.bin","itemCount":1,"sha256":"a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1"}],"encryption":"aes-256-gcm","encryptionVersion":1,"compression":"gzip","keyID":"22a48051594c1949"}"#
+    static let remoteSignature = "VpxP4i1R8bVEM+tDk1SwsnqFqTmzNn7iZyy1ZQqP0njQWT0kNnNqXxvYUGEbsdNBkwR4ie4+o12NTPpPpwW4AQ=="
 
     /// 正常：另一个分类（用来区分「用的是哪一份」）。
-    static let cachePayload = #"{"schemaVersion":1,"generatedAt":"2026-09-18T00:00:00Z","source":{"deviceType":"desktop","contentType":"dynamic"},"defaultCategoryId":8,"categories":[{"id":8,"name":"本地","file":"l.json","itemCount":1,"sha256":"b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2"}]}"#
-    static let cacheSignature = "rxdHjNw0HIvwQjUePbHr8SjrX5572BjlBzPgV7yqtB0oNbdElborxQasGFVNZsEbKMTgVEe1fI+aD9sG5lq1Bg=="
+    static let cachePayload = #"{"schemaVersion":2,"generatedAt":"2026-09-18T00:00:00Z","source":{"deviceType":"desktop","contentType":"dynamic"},"defaultCategoryId":8,"categories":[{"id":8,"name":"本地","file":"l.bin","itemCount":1,"sha256":"b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2"}],"encryption":"aes-256-gcm","encryptionVersion":1,"compression":"gzip","keyID":"22a48051594c1949"}"#
+    static let cacheSignature = "TpnQjyL920ro1yS7cYaN+6WUopP+dk3qhJ18mPHdhab7UQtiaimzZ/Q1dHbia7+FgLqcAEfO/cjrdDonECGsCg=="
 
     /// 正常：第三个分类（副本专用）。
-    static let cacheAltPayload = #"{"schemaVersion":1,"generatedAt":"2026-09-18T00:00:00Z","source":{"deviceType":"desktop","contentType":"dynamic"},"defaultCategoryId":9,"categories":[{"id":9,"name":"副本","file":"c.json","itemCount":1,"sha256":"c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3"}]}"#
-    static let cacheAltSignature = "/smGKtmoBM6MPRl45jLHS2PXW6g9iMeKhivranemYAPhg7ZULRfXY4d/mA8vq0UbOdSxYvDFlc/DohVwhZPUCA=="
+    static let cacheAltPayload = #"{"schemaVersion":2,"generatedAt":"2026-09-18T00:00:00Z","source":{"deviceType":"desktop","contentType":"dynamic"},"defaultCategoryId":9,"categories":[{"id":9,"name":"副本","file":"c.bin","itemCount":1,"sha256":"c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3"}],"encryption":"aes-256-gcm","encryptionVersion":1,"compression":"gzip","keyID":"22a48051594c1949"}"#
+    static let cacheAltSignature = "N5mMLPqEalJYFQPH1WXFKbeG2OTd2aD61LhCryhFzA72g4W1PgBfhb+dsB+HZPi7mvzndtsl/jE5dtJZdzwaCg=="
 
     /// 负例：**签名有效**、但分类为空 —— 失败必须发生在「解析」那一步。
-    static let emptyCategoriesPayload = #"{"schemaVersion":1,"generatedAt":"2026-09-18T00:00:00Z","source":{"deviceType":"desktop","contentType":"dynamic"},"defaultCategoryId":4001,"categories":[]}"#
-    static let emptyCategoriesSignature = "Ni/Bv0JM4WXDn6YzW2nhbKjuU3mgx6HETkb9u5M9zhZIo4qsvKtaYws+8RcDdIcxdYgXeheKNBE55a9RmQMTBQ=="
+    static let emptyCategoriesPayload = #"{"schemaVersion":2,"generatedAt":"2026-09-18T00:00:00Z","source":{"deviceType":"desktop","contentType":"dynamic"},"defaultCategoryId":4001,"categories":[],"encryption":"aes-256-gcm","encryptionVersion":1,"compression":"gzip","keyID":"22a48051594c1949"}"#
+    static let emptyCategoriesSignature = "MU+UuQ8x+lj3IXnp+LCd3C33UGXIAKJ5olM2KJ2GxUFOU7FnZhCuTJNm8rshKxPR+Y8UjBR/zQskN0VSC1eaDg=="
 
     /// 负例：**签名有效**、但某个有切片的分类没有摘要。
-    static let missingDigestPayload = #"{"schemaVersion":1,"generatedAt":"2026-09-18T00:00:00Z","source":{"deviceType":"desktop","contentType":"dynamic"},"defaultCategoryId":4001,"categories":[{"id":4001,"name":"美女","file":"category.4001.json","itemCount":2}]}"#
-    static let missingDigestSignature = "ux8iFWL6QkB1/XG4wlFbSl8a6TBriFAlk3/rNOZ1LBdQLH40/3Wxomtz4XbLzZgMTEfv3BdgHO/ftjqXeUKuBQ=="
+    static let missingDigestPayload = #"{"schemaVersion":2,"generatedAt":"2026-09-18T00:00:00Z","source":{"deviceType":"desktop","contentType":"dynamic"},"defaultCategoryId":4001,"categories":[{"id":4001,"name":"美女","file":"category.4001.bin","itemCount":2}],"encryption":"aes-256-gcm","encryptionVersion":1,"compression":"gzip","keyID":"22a48051594c1949"}"#
+    static let missingDigestSignature = "Rrg2jKI0BQzaTpC/t4Qg/g+i3pjGWVma6A3o0Z82L2y6dC72o2ROvOk29LU80DuOUwbBqbcoC5O+LhbSD1VHCw=="
 
     /// 负例：**签名有效**、但根本不是 JSON。
     static let badJSONPayload = "not json at all"
@@ -399,6 +407,30 @@ func catalogTests() {
 
     suite("CatalogService 索引降级链") {
 
+        test("旧协议签名有效也拒绝，不能关闭加密校验") {
+            let transport = FakeTransport()
+            serve(transport, payload: SignedIndex.legacyPayload, signature: SignedIndex.legacySignature)
+            expectEqual(CatalogSignature.verify(payload: Data(SignedIndex.legacyPayload.utf8),
+                document: signatureFile(SignedIndex.legacySignature)), .trusted, "旧向量签名本身有效")
+            let result = makeService().loadIndex(transport: transport)
+            expectNil(result.index, "新版拒绝旧协议")
+            expect(result.warnings.contains { $0.contains("索引加密格式或密钥不匹配") }, "失败发生在加密协议校验")
+        }
+
+        test("同一签名索引与旧密钥不匹配时拒绝远程和离线缓存") {
+            let transport = FakeTransport()
+            serve(transport, payload: SignedIndex.remotePayload, signature: SignedIndex.remoteSignature)
+            cache(transport, payload: SignedIndex.cachePayload, signature: SignedIndex.cacheSignature)
+            let wrongKey = CatalogKeyMaterial(masterKey: Data(repeating: 0x42, count: 32))
+            let service = CatalogService(remoteIndexURL: URL(string: testIndexURL),
+                indexCacheURL: URL(fileURLWithPath: testIndexCachePath),
+                sliceCacheURL: URL(fileURLWithPath: testSliceCachePath), catalogKey: wrongKey)
+            let result = service.loadIndex(transport: transport)
+            expectNil(result.index, "错钥不接受远程索引和旧缓存")
+            expect(result.warnings.contains { $0.contains("索引加密格式或密钥不匹配") }, "远程核对密钥标识")
+            expect(result.warnings.contains { $0.contains("索引副本解密失败") }, "离线缓存必须使用同批密钥")
+        }
+
         test("配置了远程地址时优先拉远程") {
             let transport = FakeTransport()
             serve(transport, payload: SignedIndex.remotePayload, signature: SignedIndex.remoteSignature)
@@ -607,7 +639,7 @@ func catalogTests() {
         let sliceURL = "https://cdn.test/livewall/category.4001.bin"
 
         test("按索引里的相对名拼出远程地址并优先拉远程") {
-            let remoteSlice = sliceJSON(items: [(7, "https://cdn.test/r.mp4", "远程")])
+            let remoteSlice = encryptedSlice(sliceJSON(items: [(7, "https://cdn.test/r.mp4", "远程")]))
             let transport = FakeTransport()
             transport.remote[sliceURL] = remoteSlice
 
@@ -618,8 +650,18 @@ func catalogTests() {
             expectEqual(transport.fetchedURLs, [sliceURL], "请求的地址应由索引地址拼出")
         }
 
+        test("摘要正确的明文切片也必须拒绝") {
+            let plaintext = sliceJSON()
+            let transport = FakeTransport()
+            transport.remote[sliceURL] = plaintext
+            transport.files[testSliceCachePath] = plaintext
+            let result = makeService().loadSlice(entry(digestOf: plaintext), transport: transport)
+            expectNil(result.catalog, "远程和缓存都没有明文回退")
+            expect(result.warnings.contains { $0.contains("解密失败") }, "摘要校验通过后仍必须解密")
+        }
+
         test("远程成功返回可延迟写入的副本数据") {
-            let remoteSlice = sliceJSON()
+            let remoteSlice = encryptedSlice(sliceJSON())
             let transport = FakeTransport()
             transport.remote[sliceURL] = remoteSlice
 
@@ -632,8 +674,8 @@ func catalogTests() {
             // 索引已经验过签，所以索引里的摘要是可信的；切片对不上就说明**内容被换过**
             // （或者生产侧有 bug）。切片的 url / coverUrl 直接决定「播什么视频」与
             // 「往系统墙纸上写哪张图」，没有可以「先用着」的部分。
-            let tampered = sliceJSON(items: [(7, "https://evil.test/x.mp4", "被换过")])
-            let good = sliceJSON(items: [(9, "https://cdn.test/c.mp4", "副本")])
+            let tampered = encryptedSlice(sliceJSON(items: [(7, "https://evil.test/x.mp4", "被换过")]))
+            let good = encryptedSlice(sliceJSON(items: [(9, "https://cdn.test/c.mp4", "副本")]))
             let transport = FakeTransport()
             transport.remote[sliceURL] = tampered
             transport.files[testSliceCachePath] = good
@@ -648,8 +690,8 @@ func catalogTests() {
         }
 
         test("副本的摘要与索引不符 → 拒绝") {
-            let expected = sliceJSON()
-            let stale = sliceJSON(items: [(9, "https://cdn.test/c.mp4", "旧副本")])
+            let expected = encryptedSlice(sliceJSON())
+            let stale = encryptedSlice(sliceJSON(items: [(9, "https://cdn.test/c.mp4", "旧副本")]))
             let transport = FakeTransport()
             transport.remoteError = StubError(message: "断网")
             transport.files[testSliceCachePath] = stale
@@ -664,7 +706,7 @@ func catalogTests() {
         }
 
         test("远程失败时回退副本（副本必须与索引里的摘要一致）") {
-            let cached = sliceJSON(items: [(9, "https://cdn.test/c.mp4", "副本")])
+            let cached = encryptedSlice(sliceJSON(items: [(9, "https://cdn.test/c.mp4", "副本")]))
             let transport = FakeTransport()
             transport.remoteError = StubError(message: "断网")
             transport.files[testSliceCachePath] = cached
@@ -678,11 +720,11 @@ func catalogTests() {
         test("副本的分类归属不符时拒绝 —— 换过分类后离线启动就是这种情况") {
             // 缓存只有一份（「最后一份成功的切片」）。不校验归属的话，
             // 换了分类再离线启动，会把上一个分类的内容当成目标分类。
-            let cached = sliceJSON(
+            let cached = encryptedSlice(sliceJSON(
                 categoryName: "风景",
                 categoryIds: [6000],
                 items: [(9, "https://cdn.test/c.mp4", "别的分类")]
-            )
+            ))
             let transport = FakeTransport()
             transport.remoteError = StubError(message: "断网")
             transport.files[testSliceCachePath] = cached
@@ -697,7 +739,7 @@ func catalogTests() {
         }
 
         test("副本归属相符时可用（含子树 id）") {
-            let cached = sliceJSON(categoryIds: [4001, 64578])
+            let cached = encryptedSlice(sliceJSON(categoryIds: [4001, 64578]))
             let transport = FakeTransport()
             transport.remoteError = StubError(message: "断网")
             // 一级分类的 categoryIds 是整棵子树，含自身
@@ -720,7 +762,7 @@ func catalogTests() {
         test("索引里没有该切片的摘要 → 拒绝使用（不能降级成「不校验」）") {
             // 正常路径上到不了这里（缺摘要的索引在 loadIndex 就被整份拒了），
             // 这条守的是「绕过索引校验、自己构造 entry」的调用点。
-            let data = sliceJSON()
+            let data = encryptedSlice(sliceJSON())
             let transport = FakeTransport()
             transport.remote[sliceURL] = data
 
@@ -737,8 +779,8 @@ func catalogTests() {
             // 生成侧不会产出空切片，所以这条是「万一」。注意降级语义与没有摘要机制时**不同**：
             // 副本必须与索引里的摘要逐字节一致才可能被接受，对不上就不该拿来兜底 ——
             // 那等于用一份来路不明的数据掩盖一次真实故障。
-            let empty = sliceJSON(items: [])
-            let cached = sliceJSON(items: [(9, "https://cdn.test/c.mp4", "副本")])
+            let empty = encryptedSlice(sliceJSON(items: []))
+            let cached = encryptedSlice(sliceJSON(items: [(9, "https://cdn.test/c.mp4", "副本")]))
             let transport = FakeTransport()
             transport.remote[sliceURL] = empty
             transport.files[testSliceCachePath] = cached
@@ -757,7 +799,7 @@ func catalogTests() {
         }
 
         test("未配置远程地址时不发请求，直接用副本") {
-            let cached = sliceJSON()
+            let cached = encryptedSlice(sliceJSON())
             let transport = FakeTransport()
             transport.files[testSliceCachePath] = cached
 
@@ -779,7 +821,7 @@ func catalogTests() {
         }
 
         test("远程返回的条目全是非法 URL 时判失败") {
-            let bad = sliceJSON(items: [(1, "bad-url", "坏")])
+            let bad = encryptedSlice(sliceJSON(items: [(1, "bad-url", "坏")]))
             let transport = FakeTransport()
             transport.remote[sliceURL] = bad
 
