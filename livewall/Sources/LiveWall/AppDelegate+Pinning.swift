@@ -18,7 +18,37 @@ extension AppDelegate {
     ///     **同步切换内容过滤**（决策 7），让「解钉之后的轮换」落在用户刚挑的那个
     ///     分类里，而不是回到某个不相干的分类。传 nil 表示不改内容过滤。
     func setPinned(_ item: WallpaperItem, categoryID: Int?) {
-        guard !preferences.disabledItems.contains(where: { $0.id == item.id }) else {
+        guard item.remoteURL == nil || !disabledItemIDs.contains(item.id) else {
+            notice = .warning("请先恢复这条已禁用的壁纸")
+            refreshStatusItem()
+            return
+        }
+        guard PinnedPlayback.isPlayable(item) else {
+            notice = .warning("这条壁纸的地址不可用，无法设为桌面壁纸")
+            refreshStatusItem()
+            return
+        }
+        guard let wallpaperLibrary else {
+            librarySaveFailure("固定壁纸", error: WallpaperLibraryStore.StoreError.database("条目库尚未准备好"))
+            return
+        }
+        guard beginLibraryMutation() else { return }
+        notice = .info("正在保存固定项…", oneShot: true)
+        refreshStatusItem()
+        libraryMutationTask = Task { @MainActor in
+            defer { finishLibraryMutation() }
+            do {
+                let change = try await wallpaperLibrary.setPinned(item)
+                applyLibraryChange(change)
+                commitPinned(item, categoryID: categoryID)
+            } catch {
+                librarySaveFailure("固定壁纸", error: error)
+            }
+        }
+    }
+
+    private func commitPinned(_ item: WallpaperItem, categoryID: Int?) {
+        guard item.remoteURL == nil || !disabledItemIDs.contains(item.id) else {
             notice = .warning("请先恢复这条已禁用的壁纸")
             refreshStatusItem()
             return
@@ -34,9 +64,8 @@ extension AppDelegate {
         //    后面所有分支（`advance` / `advanceOne` / `scheduleNext`）自动进入固定态。
         //    整个落实流程因此**不依赖切片加载是否成功** —— 这是「存整条而非 id」
         //    带来的直接好处（只存 id 就得等切片到手才能定位，中间态会悬挂）。
-        preferences.pinnedItem = item
+        pinnedLibraryItem = item
         pendingUnpinNotice = nil
-
         // 2) best-effort 让候选池记住它：在池里就设成 `currentID` 并从待取队列移除，
         //    解钉后不会紧接着又把它取一遍。不在池里（用户固定的是别的分类的条目）
         //    也无所谓 —— 固定本身不依赖候选池。
@@ -77,11 +106,28 @@ extension AppDelegate {
     ///
     /// - Parameter reason: 非 nil 时作为状态区提示。**用户主动解钉传 nil** ——
     ///   画面立刻变了就是回执，多说一句反而像出了错。
-    func clearPin(reason: String?, persist: Bool = true) {
-        guard isPinned else { return }
-        preferences.pinnedItem = nil
+    func clearPin(reason: String?, afterCommit: @escaping @MainActor () -> Void = {}) {
+        guard isPinned else { afterCommit(); return }
+        guard let wallpaperLibrary, beginLibraryMutation() else { return }
+        libraryMutationTask = Task { @MainActor in
+            defer { finishLibraryMutation() }
+            do {
+                let change = try await wallpaperLibrary.setPinned(nil)
+                applyLibraryChange(change)
+                if let reason { notice = .warning(reason); pendingUnpinNotice = reason }
+                afterCommit()
+            } catch { librarySaveFailure("解除固定", error: error) }
+        }
+    }
+
+    func didClearPin(reason: String?) {
         pendingPinAnnouncement = false
-        if persist { persistPreferences("解除固定") }
+        for key in engine.slotKeys() {
+            loadGenerationBySlot[key] = (loadGenerationBySlot[key] ?? 0) + 1
+            loadTasksBySlot[key]?.cancel()
+        }
+        loadTasksBySlot.removeAll()
+        loadingItemIDsBySlot.removeAll()
         // 固定期间不填、也不消费恢复计划；这里再清一次，防止它跨过固定期生效。
         pendingRestore.removeAll()
         if let reason {
@@ -101,13 +147,20 @@ extension AppDelegate {
     /// **只有「资源本身不可用」才算失效** —— 切分类、重载清单、网络断开都不算，
     /// 而那些路径本来也不会走到这里（它们不拉黑条目）。
     ///
-    /// - Returns: 是否真的解了钉。为 `true` 时调用方应当走**全局** `advance()`：
-    ///   固定对所有屏生效，失效也该所有屏一起回到轮换，而不是只补一个槽位。
+    /// 返回 true 表示已接管恢复；等待提交成功后统一调用 advance()，失败保留固定状态。
     @discardableResult
-    func unpinIfInvalidated(_ itemID: Int) -> Bool {
-        guard preferences.pinnedItem?.id == itemID else { return false }
-        clearPin(reason: "固定项已失效（资源不可用），已恢复轮换")
+    func unpinIfInvalidated(_ failedItem: WallpaperItem) -> Bool {
+        guard let item = pinnedLibraryItem, item.id == failedItem.id, item.url == failedItem.url else { return false }
+        requestUnpin(item, reason: "固定项已失效（资源不可用），已恢复轮换")
         return true
+    }
+
+    private func requestUnpin(_ item: WallpaperItem, reason: String) {
+        Task { @MainActor in
+            while let pending = libraryMutationTask, !isShuttingDown { await pending.value }
+            guard !isShuttingDown, pinnedLibraryItem == item else { return }
+            clearPin(reason: reason) { self.advance() }
+        }
     }
 
     /// 把固定项铺到**所有**没在播它的槽位上（决策 3：固定对所有屏生效）。
@@ -125,7 +178,8 @@ extension AppDelegate {
     ///   常规路径（新增槽位、切片应用、恢复播放）不要传 —— 那些场景下
     ///   「已经在播了」是真的不用再拉一遍。
     func applyPinToMissingSlots(force: Bool = false) {
-        guard let item = preferences.pinnedItem, PinnedPlayback.isPlayable(item),
+        guard libraryReady, !isShuttingDown else { return }
+        guard let item = pinnedLibraryItem, PinnedPlayback.isPlayable(item),
             let url = item.playableURL
         else { return }
 
@@ -162,11 +216,25 @@ extension AppDelegate {
 
         log("铺满固定项 \(item.id) \(item.title) → \(targets.map(\.label).joined(separator: "、"))")
 
-        Task { @MainActor in
+        let pinGeneration = pinApplyGeneration
+        pinApplyTask = Task { @MainActor in
+            var shouldFillRemainingSlots = true
+            defer {
+                if pinGeneration == pinApplyGeneration {
+                    isPinApplyInFlight = false
+                    pinApplyTask = nil
+                    updateMenuBarIconAnimation()
+                    if shouldFillRemainingSlots && isPinned && !libraryMutationPending && !isShuttingDown {
+                        applyPinToMissingSlots()
+                    }
+                }
+            }
             do {
                 // **只加载一次**，再把同一个 `LoadedVideo` 给所有槽位 ——
                 // 每个槽位各加载一遍会让同一条视频被拉 N 遍，流量按屏数翻倍。
                 let loaded = try await VideoLoader.load(url)
+                guard !Task.isCancelled, !isShuttingDown, pinGeneration == pinApplyGeneration,
+                      pinnedLibraryItem == item else { return }
                 var applied = 0
                 for (key, generation) in generations {
                     // 加载是异步的，期间槽位可能已经被拆掉（屏拔了 / 策略切了）。
@@ -178,7 +246,7 @@ extension AppDelegate {
                         log("槽位 \(key.label) 的固定项加载结果已过期，跳过")
                         continue
                     }
-                    guard !preferences.disabledItems.contains(where: { $0.id == item.id }) else { continue }
+                    guard item.remoteURL == nil || !disabledItemIDs.contains(item.id) else { continue }
                     engine.play(
                         item,
                         loaded: loaded,
@@ -209,26 +277,14 @@ extension AppDelegate {
                 log("固定项已铺满 \(applied) 个槽位：\(item.id) \(item.title)")
                 refreshStatusItem()
             } catch {
-                guard preferences.pinnedItem?.id == item.id else {
-                    isPinApplyInFlight = false
-                    updateMenuBarIconAnimation()
-                    if isPinned { applyPinToMissingSlots() }
-                    return
-                }
+                guard !Task.isCancelled, !isShuttingDown, pinGeneration == pinApplyGeneration,
+                      pinnedLibraryItem == item else { return }
                 log("⚠️ 固定项加载失败：\(error.localizedDescription)")
                 // 决策 8：固定项连加载都失败 → 解钉回轮换，绝不黑屏。
-                clearPin(reason: "固定项加载失败，已恢复轮换")
-                advance()
+                shouldFillRemainingSlots = false
+                requestUnpin(item, reason: "固定项加载失败，已恢复轮换")
             }
 
-            isPinApplyInFlight = false
-            // 铺满结束（成功 / 失败）后立刻重算，让旋转当场停下，不必等下一帧。
-            updateMenuBarIconAnimation()
-            // 收尾再核一次：加载期间可能新增了槽位（屏幕热插拔 / 策略切换），
-            // 那一批不在本次的 `generations` 里。**放在释放标志之后**，
-            // 否则会被上面的防重入守卫挡掉。
-            // 不会无限递归：铺满后 `targets` 为空直接返回；失败路径已解钉。
-            if isPinned { applyPinToMissingSlots() }
         }
     }
 
@@ -238,7 +294,7 @@ extension AppDelegate {
     /// 以及「已经全部就位、不需要铺」的短路路径（从菜单固定当前正在播的那条）。
     /// 少了后者，状态区会一直挂着「正在设为桌面壁纸…」。
     func announcePinIfPending() {
-        guard pendingPinAnnouncement, let item = preferences.pinnedItem else { return }
+        guard pendingPinAnnouncement, let item = pinnedLibraryItem else { return }
         notice = .info("已设为桌面壁纸：\(item.displayName)")
         pendingPinAnnouncement = false
         refreshStatusItem()

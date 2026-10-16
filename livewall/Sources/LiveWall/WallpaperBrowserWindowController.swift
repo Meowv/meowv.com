@@ -115,6 +115,14 @@ final class WallpaperBrowserWindowController: NSWindowController {
         browserViewController.refreshPinState()
     }
 
+    func showLibraryFailure(_ message: String) {
+        guard let window, window.isVisible else { return }
+        let alert = NSAlert()
+        alert.messageText = "壁纸数据未能保存"
+        alert.informativeText = "原状态已保留。\n" + message
+        alert.beginSheetModal(for: window)
+    }
+
     func refreshDisabledState() {
         browserViewController.refreshDisabledState()
     }

@@ -47,16 +47,30 @@ public struct CandidatePool {
 
     /// 当前候选集（未经排序）。
     private var source: [WallpaperItem] = []
+    private var sourceIDs: [Int] = []
+    private var sourceIDSet: Set<Int> = []
+    private var itemsByID: [Int: WallpaperItem] = [:]
+    private var excluded: Set<Int> = []
+    public private(set) var availableCount = 0
     /// 待取队列。
-    private var queue: [WallpaperItem] = []
+    private var queue: [Int] = []
     /// 头部游标，避免每次 `next()` 都移动整个数组。
     private var queueHead = 0
     /// 失效条目的 id（CDN 404 / 解码失败等）。
     private var blacklist: Set<Int> = []
 
     /// 用户禁用与资源故障黑名单不同：重试黑名单时也不能重新放入候选。
-    public var excludedIDs: Set<Int> = [] {
-        didSet { if excludedIDs != oldValue { rebuild() } }
+    public var excludedIDs: Set<Int> {
+        get { excluded }
+        set { excluded = newValue; recount(); rebuild() }
+    }
+
+    public mutating func setExcluded(id: Int, excluded value: Bool) {
+        let wasExcluded = excluded.contains(id)
+        guard wasExcluded != value else { return }
+        if value { excluded.insert(id) } else { excluded.remove(id) }
+        if sourceIDSet.contains(id), !blacklist.contains(id) { availableCount += value ? -1 : 1 }
+        rebuild()
     }
 
     /// 选片顺序。改动会清空待取队列 —— **换模式等于重新开始一轮**，
@@ -85,7 +99,30 @@ public struct CandidatePool {
     /// 黑名单是「资源失效」的记录，与用户选了哪个分类无关。
     public mutating func setItems(_ items: [WallpaperItem]) {
         source = items
+        itemsByID = Dictionary(items.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        sourceIDs = items.map(\.id)
+        sourceIDSet = Set(sourceIDs)
+        recount()
         rebuild()
+    }
+
+    /// 收藏候选只保留 ID，取片后由加密库按需解密。
+    public mutating func setIDs(_ ids: [Int]) {
+        source = []; itemsByID = [:]
+        sourceIDs = ids; sourceIDSet = Set(ids)
+        recount(); rebuild()
+    }
+
+    public mutating func updateID(_ id: Int, present: Bool) {
+        guard sourceIDSet.contains(id) != present else { return }
+        if present { sourceIDs.insert(id, at: 0); sourceIDSet.insert(id) }
+        else { sourceIDs.removeAll { $0 == id }; sourceIDSet.remove(id) }
+        if !excluded.contains(id), !blacklist.contains(id) { availableCount += present ? 1 : -1 }
+        rebuild()
+    }
+
+    private mutating func recount() {
+        availableCount = sourceIDs.reduce(0) { $0 + (!excluded.contains($1) && !blacklist.contains($1) ? 1 : 0) }
     }
 
     /// 候选集变了，本轮作废：下一次 `next()` 会重新排一轮。
@@ -96,7 +133,7 @@ public struct CandidatePool {
         queueHead = 0
     }
 
-    public var totalCount: Int { source.count }
+    public var totalCount: Int { sourceIDs.count }
 
     /// 当前候选集的只读快照。
     ///
@@ -104,25 +141,21 @@ public struct CandidatePool {
     /// 个切片。数组采用写时复制，调用方不会与候选池共享可变存储。
     public var itemsSnapshot: [WallpaperItem] { source }
 
-    public var availableCount: Int {
-        source.filter { !excludedIDs.contains($0.id) && !blacklist.contains($0.id) }.count
-    }
-
     public var blacklistedCount: Int { blacklist.count }
 
     public var isExhausted: Bool {
-        source.isEmpty || availableCount == 0
+        sourceIDs.isEmpty || availableCount == 0
     }
 
     /// 标记某条失效。若它正排在待取队列里，一并移除。
     public mutating func blacklist(id: Int) {
-        blacklist.insert(id)
+        if blacklist.insert(id).inserted, sourceIDSet.contains(id), !excluded.contains(id) { availableCount -= 1 }
         // 失败处理是低频路径；先丢掉已经消费的前缀，保持游标与数组索引一致。
         if queueHead > 0 {
             queue.removeFirst(queueHead)
             queueHead = 0
         }
-        queue.removeAll { $0.id == id }
+        queue.removeAll { $0 == id }
     }
 
     /// 取回**指定**条目（用于「恢复各屏上次播的内容」）。条目不在候选集里时返回 nil。
@@ -138,38 +171,43 @@ public struct CandidatePool {
     /// 查不到就返回 nil（调用方退回 `next()`）：条目可能属于别的分类，
     /// 或生成侧重新导出过清单把它去掉了。
     public mutating func restore(id: Int) -> WallpaperItem? {
-        guard !excludedIDs.contains(id) else { return nil }
-        guard let item = source.first(where: { $0.id == id }) else { return nil }
-        if queueHead > 0 {
-            queue.removeFirst(queueHead)
-            queueHead = 0
-        }
-        queue.removeAll { $0.id == id }
-        currentID = item.id
-        return item
+        guard itemsByID[id] != nil, restoreID(id) else { return nil }
+        return itemsByID[id]
+    }
+
+    public mutating func restoreID(_ id: Int) -> Bool {
+        guard !excluded.contains(id), sourceIDSet.contains(id) else { return false }
+        if queueHead > 0 { queue.removeFirst(queueHead); queueHead = 0 }
+        queue.removeAll { $0 == id }
+        currentID = id
+        return true
     }
 
     /// 取下一个候选。队列空时自动重排。
     ///
     /// 返回 nil 只有一种情况：候选集本身为空。
     public mutating func next<G: RandomNumberGenerator>(using generator: inout G) -> WallpaperItem? {
-        if queue.isEmpty {
-            refill(using: &generator)
-        }
-        guard queueHead < queue.count else { return nil }
-        let item = queue[queueHead]
-        queueHead += 1
-        currentID = item.id
-        if queueHead == queue.count {
-            queue.removeAll(keepingCapacity: true)
-            queueHead = 0
-        }
-        return item
+        guard let id = nextID(using: &generator) else { return nil }
+        return itemsByID[id]
     }
 
     public mutating func next() -> WallpaperItem? {
         var generator = SystemRandomNumberGenerator()
         return next(using: &generator)
+    }
+
+    public mutating func nextID<G: RandomNumberGenerator>(using generator: inout G) -> Int? {
+        if queue.isEmpty { refill(using: &generator) }
+        guard queueHead < queue.count else { return nil }
+        let id = queue[queueHead]
+        queueHead += 1; currentID = id
+        if queueHead == queue.count { queue.removeAll(keepingCapacity: true); queueHead = 0 }
+        return id
+    }
+
+    public mutating func nextID() -> Int? {
+        var generator = SystemRandomNumberGenerator()
+        return nextID(using: &generator)
     }
 
     /// 重排待取队列。两种顺序**都不会紧接着重复上一条**，但做法不同：
@@ -181,13 +219,14 @@ public struct CandidatePool {
     ///   绕回开头时上一条本来就是清单最后一条，不会紧挨着重复 —— 除非只剩一条，
     ///   那种情况下面已有守卫。
     public mutating func refill<G: RandomNumberGenerator>(using generator: inout G) {
-        let eligible = source.filter { !excludedIDs.contains($0.id) }
-        var pool = eligible.filter { !blacklist.contains($0.id) }
+        let eligible = sourceIDs.filter { !excluded.contains($0) }
+        var pool = eligible.filter { !blacklist.contains($0) }
 
         // 黑名单覆盖了全部候选 —— 说明清单整体失效（例如 CDN 换域名），
         // 清空黑名单重试一轮，总好过彻底停摆。
         if pool.isEmpty && !eligible.isEmpty && !blacklist.isEmpty {
             blacklist.removeAll()
+            recount()
             blacklistResetCount += 1
             pool = eligible
         }
@@ -196,13 +235,13 @@ public struct CandidatePool {
         // 改了顺序或重载了清单，队列被清空重建）时向后让一位 —— 否则用户会以为没生效。
         // 这只在「新一轮的第一条 == 当前项」时触发：自然轮边界上当前项是上一轮的
         // 最后一条，两者不相等，不会误让。
-        if order == .sequential, pool.count > 1, let currentID, pool.first?.id == currentID {
+        if order == .sequential, pool.count > 1, let currentID, pool.first == currentID {
             pool.append(pool.removeFirst())
         }
 
         // 只剩一条时不能把它排除掉，否则永远取不出东西
         if order == .shuffle, pool.count > 1, let currentID {
-            pool.removeAll { $0.id == currentID }
+            pool.removeAll { $0 == currentID }
         }
 
         if order == .shuffle {

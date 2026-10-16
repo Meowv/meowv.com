@@ -401,7 +401,7 @@ func preferencesCompatibilityTests() {
             expectNil(preferences.sanitized().pinnedItem, "非 http(s) 应被清掉")
         }
 
-        test("pinnedItem 往返编码不丢") {
+        test("普通配置编码不再保存固定快照") {
             var preferences = Preferences()
             preferences.pinnedItem = WallpaperItem(
                 id: 42, title: "T", author: "A",
@@ -414,14 +414,11 @@ func preferencesCompatibilityTests() {
                 expect(false, "往返应能成功")
                 return
             }
-            expectEqual(decoded.pinnedItem?.id, 42, "固定项 id 应保持")
-            expectEqual(decoded.pinnedItem?.coverUrl, "https://cdn.test/42.jpg", "静态图地址应保持")
+            expectNil(decoded.pinnedItem, "固定快照由加密库保存")
+            expect(data.range(of: Data("https://cdn.test/42".utf8)) == nil, "编码不包含播放或静态图地址")
             expectEqual(decoded.playbackOrder, .sequential, "其它字段应保持")
 
-            // 未固定时该键**不出现**在配置里 —— 合成的 `Codable` 对 nil 可选值走
-            // `encodeIfPresent`，与 `selectedCategoryID` 的行为一致。
-            // 刻意不为此手写整个 `encode(to:)`：19 个字段漏一个就会静默丢设置，
-            // 而「配置里少一个 null 键」没有任何实际代价。
+            // 无论是否固定，普通设置编码都不输出条目。
             let empty = Preferences()
             guard let emptyData = try? JSONEncoder().encode(empty),
                   let emptyJSON = String(data: emptyData, encoding: .utf8) else {

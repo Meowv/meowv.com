@@ -27,7 +27,8 @@ import Foundation
 /// 这个运行器只依赖 Foundation，功能上够用；代价是没有 IDE 集成、没有测试筛选与并行。
 ///
 /// `@unchecked Sendable` 是显式断言：测试**串行执行**（`main.swift` 里逐个调用），
-/// 全部状态只被主线程读写。标它是为了让 `swift-tools-version` 升到 6.0 时
+/// 断言保持串行：异步库测试只在主测试线程等待信号量时写入，返回前建立同步屏障。
+/// 禁止并行运行测试。标它是为了让 `swift-tools-version` 升到 6.0 时
 /// `static let shared` 不再被 Swift 6 语言模式报错。
 ///
 /// 用法（写在 `main.swift` 里）：

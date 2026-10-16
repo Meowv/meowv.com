@@ -1,6 +1,6 @@
 import Foundation
 
-/// 客户端配置。存成 JSON 而不是 UserDefaults，便于手动编辑与备份。
+/// 客户端普通配置。存成 JSON 而不是 UserDefaults，便于手动编辑与备份。
 ///
 /// 刻意保持扁平：嵌套结构对「改一个值要翻三层」的场景不友好。
 ///
@@ -93,26 +93,16 @@ public struct Preferences: Codable, Sendable, Equatable {
     /// 只在成功取到该分类条目后才写 —— 不把一次失败的选择持久化下来。
     public var selectedCategoryID: Int?
 
-    // 固定为桌面壁纸
-    /// 被固定为桌面壁纸的条目。nil = 正常轮换。
-    ///
-    /// **存整条而不是 id**，这是踩过的一个坑：只存 id 就必须靠「当前分类切片」定位它，
-    /// 而切分类**不解钉**（用户可以在固定之后换分类继续浏览），重启时
-    /// `selectedCategoryID` 已经是另一个分类、切片里找不到这个 id → **固定被丢掉**。
-    /// 而「整个会话都固定着、重启却恢复轮换」是不一致的体验。
-    ///
-    /// 存整条之后：**定位固定项不再依赖任何切片** —— 切分类、重载清单、重启都不会让它
-    /// 「找不到」。失效只剩一种判据：地址非法或加载失败 → 自动解钉（见 `PinnedPlayback`）。
-    ///
-    /// **但「能定位」不等于「一定能开播」**：启动时槽位的铺满发生在 `applySliceResult`
-    /// 里（与轮换共用同一条启动路径），所以索引或切片都取不到时固定项也不会开播 ——
-    /// 那种情况下轮换模式同样播不了任何东西，两者表现一致，不存在「固定特有的黑屏」。
+    /// 普通配置只记录库格式；内容保存在独立的加密数据库。
+    public var userLibraryVersion: Int = 1
+
+    /// 仅供旧配置导入，支持完整的本地或线上固定快照；普通编码不写出。
     public var pinnedItem: WallpaperItem?
 
-    /// 收藏与播放分类、固定状态独立，保存完整条目以便跨分类和重启恢复。
+    /// 仅供旧配置导入；普通编码不写出，App 不持有这份全量列表。
     public var favoriteItems: [WallpaperItem]
 
-    /// 禁用的线上条目；不参与自动轮换，与收藏按 ID 互斥。
+    /// 仅供旧配置导入；普通编码不写出，App 不持有这份全量列表。
     public var disabledItems: [WallpaperItem]
 
     /// 线上内容过滤使用收藏；selectedCategoryID 保留上次普通分类，收藏清空时恢复它。
@@ -228,6 +218,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         case restReminderEnabled, restIntervalSeconds, restDurationSeconds
         case gravity, levelPreset
         case multiScreenPolicy, perScreenSources, selectedCategoryID
+        case userLibraryVersion
         case pinnedItem
         case favoriteItems
         case disabledItems
@@ -239,6 +230,38 @@ public struct Preferences: Codable, Sendable, Equatable {
         case animateMenuBarIcon
         case developerToolsEnabled
         case remoteUpdateURL
+    }
+
+    /// 普通编码始终省略旧版条目字段。
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(remoteCatalogURL, forKey: .remoteCatalogURL)
+        try container.encodeIfPresent(localFolderPath, forKey: .localFolderPath)
+        try container.encode(intervalSeconds, forKey: .intervalSeconds)
+        try container.encode(jitterRatio, forKey: .jitterRatio)
+        try container.encode(switchWhenFinished, forKey: .switchWhenFinished)
+        try container.encode(playbackOrder, forKey: .playbackOrder)
+        try container.encode(restReminderEnabled, forKey: .restReminderEnabled)
+        try container.encode(restIntervalSeconds, forKey: .restIntervalSeconds)
+        try container.encode(restDurationSeconds, forKey: .restDurationSeconds)
+        try container.encode(gravity, forKey: .gravity)
+        try container.encode(levelPreset, forKey: .levelPreset)
+        try container.encode(multiScreenPolicy, forKey: .multiScreenPolicy)
+        try container.encode(perScreenSources, forKey: .perScreenSources)
+        try container.encodeIfPresent(selectedCategoryID, forKey: .selectedCategoryID)
+        try container.encode(playFavorites, forKey: .playFavorites)
+        try container.encode(hotKeyOverrides, forKey: .hotKeyOverrides)
+        try container.encode(pauseWhenCovered, forKey: .pauseWhenCovered)
+        try container.encode(pauseWhenIdle, forKey: .pauseWhenIdle)
+        try container.encode(idleThresholdSeconds, forKey: .idleThresholdSeconds)
+        try container.encode(pauseOnLowPowerMode, forKey: .pauseOnLowPowerMode)
+        try container.encode(pauseOnBattery, forKey: .pauseOnBattery)
+        try container.encode(pauseOnThermalPressure, forKey: .pauseOnThermalPressure)
+        try container.encode(lockScreenPreview, forKey: .lockScreenPreview)
+        try container.encode(animateMenuBarIcon, forKey: .animateMenuBarIcon)
+        try container.encode(developerToolsEnabled, forKey: .developerToolsEnabled)
+        try container.encodeIfPresent(remoteUpdateURL, forKey: .remoteUpdateURL)
+        try container.encode(1, forKey: .userLibraryVersion)
     }
 
     /// 逐字段容错解码：缺字段就用默认值，绝不因为少一个键而整体失败。
@@ -280,17 +303,20 @@ public struct Preferences: Codable, Sendable, Equatable {
         // 同理用 `try?`：手改配置把整条写坏（漏了 `url`、把 `id` 写成字符串）会抛错，
         // 后果与缺字段完全一样 —— 整个文件退回默认、静默清零其它设置。
         // 解不出来就当没固定，用户重新点一次即可，比丢掉全部设置划算得多。
-        pinnedItem = (try? container.decodeIfPresent(WallpaperItem.self, forKey: .pinnedItem)) ?? nil
+        userLibraryVersion = (try? container.decode(Int.self, forKey: .userLibraryVersion)) ?? 0
+        let settingsOnly = decoder.userInfo[Self.settingsOnlyKey] as? Bool == true
+        pinnedItem = settingsOnly ? nil : ((try? container.decodeIfPresent(WallpaperItem.self, forKey: .pinnedItem)) ?? nil)
         // 单条损坏只丢弃该条，不牵连其它收藏与旧设置。
-        let favorites = (try? container.decodeIfPresent([FavoriteEntry].self, forKey: .favoriteItems)) ?? []
+        let favorites = settingsOnly ? [] : ((try? container.decodeIfPresent([FavoriteEntry].self, forKey: .favoriteItems)) ?? [])
         favoriteItems = FavoriteCollection.sanitized(favorites.compactMap(\.item))
-        let disabled = (try? container.decodeIfPresent([FavoriteEntry].self, forKey: .disabledItems)) ?? []
+        let disabled = settingsOnly ? [] : ((try? container.decodeIfPresent([FavoriteEntry].self, forKey: .disabledItems)) ?? [])
         disabledItems = DisabledCollection.sanitized(disabled.compactMap(\.item))
         let disabledIDs = Set(disabledItems.map(\.id))
         favoriteItems.removeAll { disabledIDs.contains($0.id) }
         playFavorites = ((try? container.decodeIfPresent(Bool.self, forKey: .playFavorites)) ?? false)
-            && !favoriteItems.isEmpty
+            && (settingsOnly || userLibraryVersion > 0 || !favoriteItems.isEmpty)
         let bindings = (try? container.decodeIfPresent([String: FailableHotKeyBinding].self, forKey: .hotKeyOverrides)) ?? [:]
+        if settingsOnly { userLibraryVersion = 1 }
         hotKeyOverrides = bindings.compactMapValues(\.binding)
             .filter { $0.value.isValid }
         pauseWhenCovered = try container.decodeIfPresent(Bool.self, forKey: .pauseWhenCovered) ?? fallback.pauseWhenCovered
@@ -389,7 +415,17 @@ public struct Preferences: Codable, Sendable, Equatable {
 
     // MARK: - 读写
 
-    /// 读取配置。文件不存在或解析失败时返回默认值 —— 配置坏了不该让 App 起不来。
+    private static let settingsOnlyKey = CodingUserInfoKey(rawValue: "LiveWall.settingsOnly")!
+
+    /// 启动只解码普通设置；原始配置由加密库独立核对、备份和迁移。
+    public static func loadSettings(from url: URL) -> Preferences {
+        guard let data = try? Data(contentsOf: url) else { return .default }
+        let decoder = JSONDecoder()
+        decoder.userInfo[settingsOnlyKey] = true
+        return (try? decoder.decode(Preferences.self, from: data)) ?? .default
+    }
+
+    /// 旧配置完整解码，仅供迁移和兼容检查；解析失败返回默认值。
     public static func load(from url: URL) -> Preferences {
         guard let data = try? Data(contentsOf: url) else { return .default }
         guard let decoded = try? JSONDecoder().decode(Preferences.self, from: data) else {
@@ -413,7 +449,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         copy.disabledItems = DisabledCollection.sanitized(copy.disabledItems)
         let disabledIDs = Set(copy.disabledItems.map(\.id))
         copy.favoriteItems.removeAll { disabledIDs.contains($0.id) }
-        if copy.favoriteItems.isEmpty { copy.playFavorites = false }
+        if copy.userLibraryVersion == 0 && copy.favoriteItems.isEmpty { copy.playFavorites = false }
         copy.hotKeyOverrides = copy.hotKeyOverrides.filter { $0.value.isValid }
         // 超范围一律夹紧而不是退回默认：手改配置的人多半只是「填得太短/太长」，
         // 夹到最近的合法值更接近他的本意。非有限值夹不了，`SwitchInterval.clamp` 里退回默认。

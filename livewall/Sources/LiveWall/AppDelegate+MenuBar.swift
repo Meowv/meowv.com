@@ -152,7 +152,7 @@ extension AppDelegate {
 
         let favorite = NSMenuItem(
             title: (currentFavoriteableItem.map { item in
-                preferences.favoriteItems.contains(where: { $0.id == item.id }) ? "取消收藏当前壁纸" : "收藏当前壁纸"
+                favoriteItemIDs.contains(item.id) ? "取消收藏当前壁纸" : "收藏当前壁纸"
             } ?? "收藏当前壁纸") + "（\(hotKeys.display(for: .toggleCurrentFavorite))）",
             action: #selector(toggleCurrentFavorite),
             keyEquivalent: ""
@@ -162,7 +162,7 @@ extension AppDelegate {
 
         let disabled = NSMenuItem(
             title: (currentFavoriteableItem.map { item in
-                preferences.disabledItems.contains(where: { $0.id == item.id })
+                disabledItemIDs.contains(item.id)
                     ? "取消禁用当前壁纸" : "禁用当前壁纸"
             } ?? "禁用当前壁纸") + "（\(hotKeys.display(for: .toggleCurrentDisabled))）",
             action: #selector(toggleCurrentDisabled),
@@ -353,6 +353,7 @@ extension AppDelegate {
         if preferences.developerToolsEnabled {
             for (title, directory) in [
                 ("打开配置文件目录", DebugDirectory.configuration),
+                ("打开用户数据目录", DebugDirectory.userData),
                 ("打开日志目录", DebugDirectory.logs),
                 ("打开下载壁纸目录", DebugDirectory.downloadedWallpapers),
                 ("打开更新包目录", DebugDirectory.updatePackages),

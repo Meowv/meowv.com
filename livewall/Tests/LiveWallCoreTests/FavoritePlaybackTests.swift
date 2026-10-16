@@ -35,36 +35,41 @@ func favoritePlaybackTests() {
                 expectEqual(preferences?.playFavorites, false, "缺失、错误或空收藏均不用收藏过滤")
             }
             let empty = Preferences(selectedCategoryID: 10, playFavorites: true).sanitized()
-            expectEqual(empty.playFavorites, false, "清洗空收藏过滤")
+            expectEqual(empty.playFavorites, true, "新版设置在库索引就绪前保留收藏过滤")
             expectEqual(empty.selectedCategoryID, 10, "保留回退分类")
         }
-        test("重启恢复收藏过滤与原有播放配置") {
-            let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-            defer { try? FileManager.default.removeItem(at: directory) }
-            do {
-                let url = directory.appendingPathComponent("config.json")
-                for order in PlaybackOrder.allCases {
-                    for pinnedItem: WallpaperItem? in [nil, third] {
-                        let preferences = Preferences(
-                            intervalSeconds: 120, jitterRatio: 0, switchWhenFinished: true,
-                            playbackOrder: order, multiScreenPolicy: .perScreen,
-                            selectedCategoryID: 10, pinnedItem: pinnedItem,
-                            favoriteItems: [second, first], playFavorites: true
-                        )
-                        try preferences.save(to: url)
+        test("重启恢复收藏过滤与独立固定快照") {
+            for order in PlaybackOrder.allCases {
+                for pinnedItem: WallpaperItem? in [nil, third] {
+                    runLibraryTest {
+                        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+                        defer { try? FileManager.default.removeItem(at: directory) }
+                        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+                        let url = directory.appendingPathComponent("config.json")
+                        let preferences = Preferences(intervalSeconds: 120, jitterRatio: 0, switchWhenFinished: true,
+                                                      playbackOrder: order, multiScreenPolicy: .perScreen,
+                                                      selectedCategoryID: 10, pinnedItem: pinnedItem,
+                                                      favoriteItems: [second, first], playFavorites: true)
+                        try legacyConfigData(preferences).write(to: url)
+                        let database = directory.appendingPathComponent("library.sqlite3")
+                        let key = directory.appendingPathComponent(".key")
+                        let store = try WallpaperLibraryStore(databaseURL: database, keyURL: key)
+                        try await store.load()
+                        _ = try await store.prepareMigration(configURL: url)
+                        let reopened = try WallpaperLibraryStore(databaseURL: database, keyURL: key)
+                        try await reopened.load()
                         let restored = Preferences.load(from: url)
-                        expectEqual(restored, preferences, "收藏过滤恢复原播放配置，含不在收藏中的固定项")
-                        let menu = PlaybackOrderMenu.entries(
-                            order: restored.playbackOrder, isPinned: restored.pinnedItem != nil,
-                            canPinCurrent: true
-                        )
-                        expectEqual(menu.map(\.kind), [.order(.shuffle), .order(.sequential), .pin], "收藏支持随机、顺序、固定三种模式")
-                        expect(menu.allSatisfy(\.isEnabled), "收藏中的三种模式均可选")
-                        let selected: PlaybackOrderMenu.Kind = pinnedItem == nil ? .order(order) : .pin
-                        expectEqual(menu.filter(\.isSelected).map(\.kind), [selected], "原模式的菜单勾选保持不变")
+                        expect(restored.playFavorites, "普通配置重启恢复收藏过滤")
+                        expectEqual(restored.playbackOrder, order, "恢复选片顺序")
+                        expectEqual(restored.multiScreenPolicy, .perScreen, "恢复多屏配置")
+                        let index = await reopened.index()
+                        expectEqual(index.pinned, pinnedItem, "固定快照独立恢复")
+                        var pool = CandidatePool(order: order)
+                        pool.setIDs(try await reopened.orderedIDs(kind: .favorites))
+                        expectEqual(Set((0..<2).compactMap { _ in pool.nextID() }), [first.id, second.id], "收藏播放仅使用 ID 且一轮不重复")
                     }
                 }
-            } catch { expect(false, "收藏过滤存储失败：\(error)") }
+            }
         }
         test("收藏候选复用顺序与随机规则，增删后不残留旧队列") {
             let items = [third, second, first]
@@ -95,13 +100,29 @@ func favoritePlaybackTests() {
             expectEqual(pool.next(), nil, "全部禁用不能自动重试")
             expectEqual(pool.blacklistResetCount, resetCount, "不因禁用触发黑名单重置")
         }
+        test("ID 候选增删与禁用增量维护可用数量") {
+            var pool = CandidatePool(order: .sequential)
+            pool.setIDs([first.id, second.id, third.id])
+            expectEqual(pool.itemsSnapshot, [], "ID 候选不保留完整条目")
+            expectEqual(pool.nextID(), first.id, "按 ID 顺序选片")
+            pool.setExcluded(id: second.id, excluded: true)
+            expectEqual(pool.availableCount, 2, "禁用增量扣除候选")
+            expectEqual(pool.nextID(), third.id, "重排不立即重复当前项")
+            pool.blacklist(id: third.id)
+            pool.updateID(first.id, present: false)
+            expect(pool.isExhausted, "移除与黑名单共同耗尽候选")
+            expect(!pool.restoreID(second.id), "恢复计划不得取禁用项")
+            pool.setExcluded(id: second.id, excluded: false)
+            expectEqual(pool.availableCount, 1, "解除禁用增量恢复数量")
+            expectEqual(pool.nextID(), second.id, "下次只选恢复的可用项")
+        }
         test("收藏被禁用清空后恢复原分类记忆") {
             let restored = Preferences(
                 selectedCategoryID: 10, favoriteItems: [first],
                 disabledItems: [first], playFavorites: true
             ).sanitized()
             expectEqual(restored.favoriteItems, [], "冲突项从收藏移除")
-            expectEqual(restored.playFavorites, false, "空收藏退出收藏过滤")
+            expectEqual(restored.playFavorites, true, "新版普通设置由库索引就绪后决定回退")
             expectEqual(restored.selectedCategoryID, 10, "原分类记忆保留")
         }
     }

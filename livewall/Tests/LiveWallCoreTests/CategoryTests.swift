@@ -15,7 +15,7 @@ func categoryTests() {
             expectEqual(index?.categories.count, 2, "分类数")
             expectEqual(index?.categories.first?.id, 4001, "首个分类 id")
             expectEqual(index?.categories.first?.name, "美女", "首个分类名")
-            expectEqual(index?.categories.first?.file, "category.4001.json", "切片文件名")
+            expectEqual(index?.categories.first?.file, "category.4001.bin", "切片文件名")
             expectEqual(index?.defaultCategoryId, 4001, "默认分类 id")
         }
 

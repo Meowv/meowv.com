@@ -6,31 +6,37 @@ extension AppDelegate {
     /// 收藏过滤和持久化始终同步。
     func toggleFavorite(_ item: WallpaperItem) -> String? {
         guard item.remoteURL != nil else { return "这条壁纸的线上地址不可用" }
-        let wasFavorite = preferences.favoriteItems.contains { $0.id == item.id }
-        preferences.toggleFavorite(item)
-        if !wasFavorite {
-            pool.excludedIDs = isLocalSource ? [] : disabledItemIDs
-        }
-        // 先同步播放候选和过滤记忆，再原子保存这一份配置。
-        let restoreCategory = updateFavoritePlaybackItems()
-        let saved = persistPreferences("收藏壁纸")
+        guard let wallpaperLibrary else { return "壁纸条目库尚未准备好" }
+        guard beginLibraryMutation() else { return "条目库正在保存，请稍后重试" }
+        let wasFavorite = favoriteItemIDs.contains(item.id)
+        notice = .info("正在保存收藏更改…", oneShot: true)
         refreshStatusItem()
-        if restoreCategory { restoreFilterAfterEmptyFavorites() }
-        if !wasFavorite {
-            resumeAfterDisabledChange()
-            browserWindowController?.refreshDisabledState()
-        }
-        guard saved else {
-            return persistenceFailure ?? "收藏更改未保存"
+        libraryMutationTask = Task { @MainActor in
+            defer { finishLibraryMutation() }
+            do {
+                let change = try await wallpaperLibrary.setFavorite(item, enabled: !wasFavorite)
+                applyLibraryChange(change)
+                log("\(wasFavorite ? "取消收藏" : "收藏")壁纸：\(item.id)")
+                let restoreCategory = updateFavoritePlaybackItems()
+                if restoreCategory { restoreFilterAfterEmptyFavorites() }
+                if !wasFavorite { resumeAfterDisabledChange() }
+                notice = .info(wasFavorite ? "已取消收藏" : "已收藏", oneShot: true)
+                refreshStatusItem()
+            } catch {
+                librarySaveFailure("收藏更改", error: error)
+            }
         }
         return nil
     }
 
     @objc func selectFavorites() {
-        guard !isLocalSource, !preferences.favoriteItems.isEmpty else { return }
+        guard !isLocalSource, !favoriteItemIDs.isEmpty else { return }
         if isFavoritesFilter {
             // 再次点回收藏也要取消正在加载的普通分类，最后一次选择才生效。
             sliceRequestGeneration += 1
+            let hadPendingLoads = !loadTasksBySlot.isEmpty
+            cancelFavoriteRotationLoads()
+            if hadPendingLoads || engine.isEmpty { advance() }
             notice = nil
             refreshStatusItem()
             return
@@ -40,8 +46,26 @@ extension AppDelegate {
 
     /// 收藏与普通分类共用候选池、暂停规则、切换间隔和多屏调度。
     func applyFavoriteItems(isFirstLoad: Bool) {
-        guard !isLocalSource, !preferences.favoriteItems.isEmpty else { return }
+        guard !isLocalSource, !favoriteItemIDs.isEmpty else { return }
+        guard let wallpaperLibrary else { return }
         sliceRequestGeneration += 1
+        let generation = sliceRequestGeneration
+        let libraryGeneration = librarySourceGeneration
+        Task { @MainActor in
+            do {
+                let ids = try await wallpaperLibrary.orderedIDs(kind: .favorites)
+                guard generation == sliceRequestGeneration, !isLocalSource, !isShuttingDown else { return }
+                guard libraryGeneration == librarySourceGeneration else {
+                    applyFavoriteItems(isFirstLoad: isFirstLoad)
+                    return
+                }
+                commitFavoriteSource(ids, isFirstLoad: isFirstLoad)
+            } catch { librarySaveFailure("加载收藏", error: error) }
+        }
+    }
+
+    private func commitFavoriteSource(_ ids: [Int], isFirstLoad: Bool) {
+        guard !ids.isEmpty else { return }
         isFavoritesFilter = true
         selectedCategoryID = preferences.selectedCategoryID
         if !preferences.playFavorites {
@@ -55,12 +79,12 @@ extension AppDelegate {
         consumePendingSourceNotice()
         pool.order = preferences.playbackOrder
         pool.excludedIDs = disabledItemIDs
-        pool.setItems(preferences.favoriteItems)
+        pool.setIDs(ids)
 
         if isFirstLoad && !isPinned {
             pendingRestore = ScreenSourceRestore.plan(
                 store: preferences.perScreenSources,
-                candidateIDs: Set(preferences.favoriteItems.map(\.id))
+                candidateIDs: favoriteItemIDs
             )
         }
         let mode = isPinned ? "固定" : preferences.playbackOrder.label
@@ -80,13 +104,13 @@ extension AppDelegate {
     /// 返回 true 表示收藏已清空，需要恢复普通分类。
     func updateFavoritePlaybackItems() -> Bool {
         guard isFavoritesFilter, !isLocalSource else { return false }
-        pool.setItems(preferences.favoriteItems)
         pendingRestore.removeAll()
         let hadPendingLoads = !loadTasksBySlot.isEmpty
         if !isPinned { cancelFavoriteRotationLoads() }
-        guard !preferences.favoriteItems.isEmpty else {
+        guard !favoriteItemIDs.isEmpty else {
             sliceRequestGeneration += 1
             preferences.playFavorites = false
+            persistPreferences("收藏清空")
             isFavoritesFilter = false
             if !isPinned {
                 scheduleTimer?.invalidate()

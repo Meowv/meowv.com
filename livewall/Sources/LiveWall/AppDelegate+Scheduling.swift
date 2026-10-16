@@ -13,6 +13,7 @@ extension AppDelegate {
     /// 不能「加载完一个再挑下一个」—— 两次 `pool.next()` 之间隔着一个网络往返，
     /// 期间屏幕可能已经变化，槽位集合也就变了。
     func advance() {
+        guard libraryReady, !isShuttingDown else { return }
         // 恢复计划只对「紧接着加载完清单的那一次」有效：**先取出再清空**，
         // 这样即使下面因暂停/耗尽提前 return，它也不会泄漏到之后某一次定时切换。
         let restorePlan = pendingRestore
@@ -28,7 +29,7 @@ extension AppDelegate {
         // 槽位里虽然还挂着固定项（`item(on:)` 非空），但那正是加载 / 播放失败的那条。
         // 所以这里用 `force`：忽略「URL 相同就算已就位」的短路。
         if isPinned {
-            log("固定模式：不轮换，重新铺满固定项 \(preferences.pinnedItem?.id ?? -1)")
+            log("固定模式：不轮换，重新铺满固定项 \(pinnedLibraryItem?.id ?? -1)")
             applyPinToMissingSlots(force: true)
             return
         }
@@ -52,6 +53,17 @@ extension AppDelegate {
         let keys = engine.slotKeys()
         guard !keys.isEmpty else {
             log("没有可播放的槽位，跳过切换")
+            return
+        }
+
+        if isFavoritesFilter, !isLocalSource {
+            var picked: [(PlaybackSlotKey, Int)] = []
+            for key in keys {
+                if let displayID = key.displayID, let id = restorePlan[displayID], pool.restoreID(id) {
+                    picked.append((key, id))
+                } else if let id = pool.nextID() { picked.append((key, id)) }
+            }
+            for (key, id) in picked { loadLibraryItem(id, on: key) }
             return
         }
 
@@ -92,6 +104,7 @@ extension AppDelegate {
     /// 与 `advance()` 的区别：那个是全局切换，这个是某槽位自己的条目失败后的补救 ——
     /// 其它槽位正在正常播放，不该被牵连着一起换片。
     func advanceOne(_ key: PlaybackSlotKey) {
+        guard libraryReady, !isShuttingDown else { return }
         guard governor.state.isPlaying else { return }
         // 固定态：不给这个槽位取新片，改成补固定项。覆盖三条路径 ——
         // `syncPlaybackSlots` 的新增槽位、拉黑后的补片、以及单槽位的恢复请求。
@@ -106,12 +119,46 @@ extension AppDelegate {
             refreshStatusItem()
             return
         }
-        guard let item = pool.next() else { return }
-        loadAndPlay(item, attempt: 0, on: key)
+        if isFavoritesFilter, !isLocalSource {
+            if let id = pool.nextID() { loadLibraryItem(id, on: key) }
+        } else if let item = pool.next() {
+            loadAndPlay(item, attempt: 0, on: key)
+        }
+    }
+
+    /// ID 在主 actor 上先分配，解密完成后重查槽位代次与来源，迟到结果不得开播。
+    private func loadLibraryItem(_ id: Int, on key: PlaybackSlotKey) {
+        guard let wallpaperLibrary else { return }
+        loadTasksBySlot[key]?.cancel()
+        let generation = (loadGenerationBySlot[key] ?? 0) + 1
+        let sourceGeneration = sliceRequestGeneration
+        loadGenerationBySlot[key] = generation
+        loadingItemIDsBySlot[key] = id
+        loadTasksBySlot[key] = Task { @MainActor in
+            defer {
+                if loadGenerationBySlot[key] == generation {
+                    loadTasksBySlot[key] = nil
+                    loadingItemIDsBySlot[key] = nil
+                }
+                updateMenuBarIconAnimation()
+            }
+            do {
+                let item = try await wallpaperLibrary.item(id: id)
+                guard !Task.isCancelled, !isShuttingDown, governor.state.isPlaying,
+                      generation == loadGenerationBySlot[key], sourceGeneration == sliceRequestGeneration,
+                      isFavoritesFilter, !isLocalSource, !isPinned, favoriteItemIDs.contains(id),
+                      !disabledItemIDs.contains(id), engine.slotKeys().contains(key) else { return }
+                guard let item else { throw WallpaperLibraryStore.StoreError.malformedRecord }
+                loadTasksBySlot[key] = nil
+                loadAndPlay(item, attempt: 0, on: key)
+            } catch { librarySaveFailure("加载收藏条目", error: error) }
+        }
+        updateMenuBarIconAnimation()
     }
 
     /// 加载并播放指定条目。失败时按 `FailurePolicy` 决定重试、拉黑还是保持画面。
     func loadAndPlay(_ item: WallpaperItem, attempt: Int, on key: PlaybackSlotKey) {
+        guard libraryReady, !isShuttingDown else { return }
         loadTasksBySlot[key]?.cancel()
         let generation = (loadGenerationBySlot[key] ?? 0) + 1
         loadGenerationBySlot[key] = generation
@@ -123,9 +170,7 @@ extension AppDelegate {
             pool.blacklist(id: item.id)
             // 失效的正是固定项 → 自动解钉（决策 8），然后**全局** `advance()`
             // 而不是只补这一个槽位：固定是对所有屏生效的，失效也该所有屏一起回轮换。
-            if unpinIfInvalidated(item.id) {
-                advance()
-            } else {
+            if !unpinIfInvalidated(item) {
                 advanceOne(key)
             }
             return
@@ -272,9 +317,7 @@ extension AppDelegate {
             // 拉黑的如果正是固定项 → 自动解钉（决策 8）。
             // 注意 `.holdCurrent` / `.retrySame` / `.stopScheduling` 三个分支**保持原样**：
             // 前两个是网络类问题（不该解钉），第三个是连续失败（画面还在，也没到解钉的程度）。
-            if unpinIfInvalidated(item.id) {
-                advance()
-            } else {
+            if !unpinIfInvalidated(item) {
                 advanceOne(key)
             }
         }
@@ -374,9 +417,7 @@ extension AppDelegate {
         case .blacklistAndAdvance:
             pool.blacklist(id: item.id)
             failuresBySlot[key] = failures
-            if unpinIfInvalidated(item.id) {
-                advance()
-            } else {
+            if !unpinIfInvalidated(item) {
                 advanceOne(key)
             }
         }
@@ -393,7 +434,7 @@ extension AppDelegate {
         //
         // 日志必须写明：否则排障时看到「播完了却没有下一行」会误判成播完即切坏了。
         guard !isPinned else {
-            log("固定模式：不安排下一次切换（固定项 \(preferences.pinnedItem?.id ?? -1) 一直播）")
+            log("固定模式：不安排下一次切换（固定项 \(pinnedLibraryItem?.id ?? -1) 一直播）")
             return
         }
 

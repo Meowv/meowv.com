@@ -32,9 +32,12 @@ protocol WallpaperBrowserDataSource: AnyObject {
     var browserPlayingFavorites: Bool { get }
     /// 当前固定项的 id。UI **只标记**它，不提供取消固定的入口（决策 11）。
     var browserPinnedItemID: Int? { get }
-    var browserFavoriteItems: [WallpaperItem] { get }
-    var browserDisabledItems: [WallpaperItem] { get }
-    /// nil 表示保存成功；失败文案由浏览窗口和菜单共同呈现。
+    var browserLibraryBusy: Bool { get }
+    func browserIsFavorite(_ id: Int) -> Bool
+    func browserIsDisabled(_ id: Int) -> Bool
+    func browserLibraryPage(kind: WallpaperLibraryStore.Kind, offset: Int, query: String,
+                            revision: UInt64?, locateID: Int?) async throws -> WallpaperLibraryStore.Page
+    /// nil 表示已提交保存请求；最终状态由提交回执刷新。
     func browserToggleFavorite(_ item: WallpaperItem) -> String?
     func browserToggleDisabled(_ item: WallpaperItem) -> String?
 
@@ -187,6 +190,16 @@ final class WallpaperBrowserViewController: NSViewController {
     private let gridSpinner = NSProgressIndicator()
     private let gridRetryButton = NSButton()
     private let searchField = NSSearchField()
+    private let pageControls = NSStackView()
+    private let previousPageButton = NSButton(title: "上一页", target: nil, action: nil)
+    private let nextPageButton = NSButton(title: "下一页", target: nil, action: nil)
+    private let pageLabel = NSTextField(labelWithString: "")
+    private var gridBottomConstraint: NSLayoutConstraint!
+    private var libraryPageTask: Task<Void, Never>?
+    private var searchTask: Task<Void, Never>?
+    private var pageOffset = 0
+    private var nextPageOffset: Int?
+    private var pageRevision: UInt64?
 
     // 预览浮层：双击或 Hover 按钮打开，盖在网格区上
     /// 预览期间遮挡整个网格并接收点击；关闭浮层后才恢复网格交互。
@@ -266,8 +279,9 @@ final class WallpaperBrowserViewController: NSViewController {
         buildGridColumn(in: root)
         buildSearchField(in: root)
         buildPreviewOverlay(in: root)
-        // 没有底栏了：底栏原本显示「分类 · 共 N 条」，而条目数在翻页/筛选之外
-        // 没有额外信息量（网格本身就是全部条目），占着 26pt 不划算。
+        buildPageControls(in: root)
+        gridBottomConstraint = gridScroll.bottomAnchor.constraint(equalTo: root.bottomAnchor)
+        // 收藏与禁用使用固定页大小；普通分类保留原来的连续网格。
 
         NSLayoutConstraint.activate([
             // 两栏：左 = 分类（定宽），右 = 网格（吃掉剩下的全部宽度）
@@ -278,7 +292,7 @@ final class WallpaperBrowserViewController: NSViewController {
 
             gridScroll.leadingAnchor.constraint(equalTo: categoryScroll.trailingAnchor),
             gridScroll.topAnchor.constraint(equalTo: searchField.bottomAnchor, constant: 8),
-            gridScroll.bottomAnchor.constraint(equalTo: root.bottomAnchor),
+            gridBottomConstraint,
             gridScroll.trailingAnchor.constraint(equalTo: root.trailingAnchor),
             gridScroll.widthAnchor.constraint(greaterThanOrEqualToConstant: 460),
         ])
@@ -319,7 +333,7 @@ final class WallpaperBrowserViewController: NSViewController {
                 ?? categories.first(where: { $0.itemCount > 0 && item.categoryIds.contains($0.id) })
         }
         let isFavorite = currentItem.map { item in
-            dataSource?.browserFavoriteItems.contains(where: { $0.id == item.id }) == true
+            dataSource?.browserIsFavorite(item.id) == true
         } ?? false
         initialLocateItemID = currentItem?.id
         if isFavorite && dataSource?.browserPlayingFavorites == true {
@@ -410,6 +424,9 @@ final class WallpaperBrowserViewController: NSViewController {
         // 浮层没开时 `dismissPreview` 会直接返回，重复调用无害。
         dismissPreview(nil)
         previewPlayer.teardown()
+        libraryPageTask?.cancel()
+        searchTask?.cancel()
+        sliceGeneration += 1
         loader.cancelAll()
         thumbnailDebounce?.invalidate()
         thumbnailDebounce = nil
@@ -422,13 +439,7 @@ final class WallpaperBrowserViewController: NSViewController {
     }
 
     func refreshDisabledState() {
-        if selectedSection == .disabled {
-            allItems = dataSource?.browserDisabledItems ?? []
-            applySearchFilter()
-        } else if selectedSection == .favorites {
-            allItems = dataSource?.browserFavoriteItems ?? []
-            applySearchFilter()
-        }
+        if selectedSection.categoryID == nil { loadLibraryPage(offset: pageOffset) }
         refreshVisibleBadges()
         if previewItem != nil { updatePreviewPanel() }
     }
@@ -449,7 +460,7 @@ final class WallpaperBrowserViewController: NSViewController {
         guard !dismissTopLayer() else { return }
         if searchField.currentEditor() != nil, !searchField.stringValue.isEmpty {
             searchField.stringValue = ""
-            applySearchFilter()
+            searchChanged(searchField)
             return
         }
         view.window?.performClose(nil)
@@ -548,13 +559,16 @@ final class WallpaperBrowserViewController: NSViewController {
     private func applySearchFilter() {
         thumbnailDebounce?.invalidate()
         collectionView.selectionIndexPaths = []
-        items = WallpaperSearch.filter(allItems, query: searchField.stringValue)
+        items = selectedSection.categoryID == nil ? allItems : WallpaperSearch.filter(allItems, query: searchField.stringValue)
         reloadGrid()
         let message: String?
         if isLoadingItems {
-            message = "正在加载分类…"
+            message = "正在加载壁纸…"
         } else if let listFailure {
             message = listFailure
+        } else if selectedSection.categoryID == nil, allItems.isEmpty,
+                  !searchField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            message = "没有匹配结果"
         } else if allItems.isEmpty {
             switch selectedSection {
             case .favorites: message = "还没有收藏，点击壁纸上的星标添加"
@@ -583,40 +597,116 @@ final class WallpaperBrowserViewController: NSViewController {
         log?("浏览窗口：定位当前条目 \(targetID) 到列表第 \(index + 1) 项")
     }
 
-    private func showFavorites() {
-        sliceGeneration += 1
+    private func showFavorites() { showLibrary() }
+    private func showDisabled() { showLibrary() }
+
+    private func showLibrary() {
+        searchTask?.cancel()
         dismissPreview(nil)
-        isLoadingItems = false
-        hasListResult = true
-        listFailure = nil
-        allItems = dataSource?.browserFavoriteItems ?? []
-        applySearchFilter()
+        pageOffset = 0; pageRevision = nil
+        loadLibraryPage(offset: 0)
     }
 
-    private func showDisabled() {
-        sliceGeneration += 1
+    private func buildPageControls(in root: NSView) {
+        previousPageButton.target = self
+        previousPageButton.action = #selector(previousLibraryPage)
+        nextPageButton.target = self
+        nextPageButton.action = #selector(nextLibraryPage)
+        pageControls.orientation = .horizontal
+        pageControls.spacing = 12
+        [previousPageButton, pageLabel, nextPageButton].forEach { pageControls.addArrangedSubview($0) }
+        pageControls.translatesAutoresizingMaskIntoConstraints = false
+        root.addSubview(pageControls)
+        NSLayoutConstraint.activate([
+            pageControls.centerXAnchor.constraint(equalTo: gridScroll.centerXAnchor),
+            pageControls.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -6),
+        ])
+        pageControls.isHidden = true
+    }
+
+    @objc private func previousLibraryPage() {
         dismissPreview(nil)
-        isLoadingItems = false
-        hasListResult = true
-        listFailure = nil
-        allItems = dataSource?.browserDisabledItems ?? []
+        initialLocateItemID = nil
+        loadLibraryPage(offset: max(0, pageOffset - 200), expectedRevision: pageRevision)
+    }
+
+    @objc private func nextLibraryPage() {
+        guard let nextPageOffset else { return }
+        dismissPreview(nil)
+        initialLocateItemID = nil
+        loadLibraryPage(offset: nextPageOffset, expectedRevision: pageRevision)
+    }
+
+    private func loadLibraryPage(offset: Int, expectedRevision: UInt64? = nil) {
+        guard selectedSection.categoryID == nil, let dataSource else { return }
+        libraryPageTask?.cancel()
+        sliceGeneration += 1
+        let generation = sliceGeneration
+        let kind: WallpaperLibraryStore.Kind = selectedSection == .disabled ? .disabled : .favorites
+        let query = searchField.stringValue
+        let locateID = initialLocateItemID
+        isLoadingItems = true; listFailure = nil; hasListResult = false
+        previousPageButton.isEnabled = false; nextPageButton.isEnabled = false
+        allItems = []
+        pageControls.isHidden = false
+        gridBottomConstraint.constant = -38
         applySearchFilter()
+        libraryPageTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                let page = try await dataSource.browserLibraryPage(kind: kind, offset: offset, query: query,
+                                                                   revision: expectedRevision, locateID: locateID)
+                guard !Task.isCancelled, generation == sliceGeneration else { return }
+                if page.items.isEmpty, page.total > 0, page.offset > 0 {
+                    loadLibraryPage(offset: max(0, (page.total - 1) / 200 * 200))
+                    return
+                }
+                allItems = page.items; pageOffset = page.offset
+                nextPageOffset = page.nextOffset; pageRevision = page.revision
+                previousPageButton.isEnabled = page.offset > 0
+                nextPageButton.isEnabled = page.nextOffset != nil
+                pageLabel.stringValue = "第 \(page.offset / 200 + 1) 页 · 共 \(page.total) 条"
+                isLoadingItems = false; hasListResult = true
+                applySearchFilter()
+                if locateID == nil {
+                    gridScroll.contentView.scroll(to: .zero)
+                    gridScroll.reflectScrolledClipView(gridScroll.contentView)
+                }
+            } catch is CancellationError {
+            } catch WallpaperLibraryStore.StoreError.queryChanged {
+                guard !Task.isCancelled, generation == sliceGeneration else { return }
+                loadLibraryPage(offset: 0)
+            } catch {
+                guard !Task.isCancelled, generation == sliceGeneration else { return }
+                isLoadingItems = false; hasListResult = true
+                listFailure = AppLog.sanitize(error.localizedDescription)
+                pageLabel.stringValue = "加载失败"
+                applySearchFilter()
+            }
+        }
     }
 
     @objc private func searchChanged(_ sender: NSSearchField) {
         initialLocateItemID = nil
         dismissPreview(nil)
-        applySearchFilter()
+        searchTask?.cancel()
+        libraryPageTask?.cancel()
+        sliceGeneration += 1
+        searchTask = Task { @MainActor [weak self] in
+            do { try await Task.sleep(for: .milliseconds(150)) } catch { return }
+            guard let self else { return }
+            if selectedSection.categoryID == nil { loadLibraryPage(offset: 0) }
+            else { applySearchFilter() }
+        }
     }
 
     private func toggleFavorite(_ item: WallpaperItem) {
         guard let dataSource else { return }
         let failure = dataSource.browserToggleFavorite(item)
-        refreshDisabledState()
         if let failure {
             let alert = NSAlert()
             alert.messageText = "收藏更改未保存"
-            alert.informativeText = "本次更改暂时保留在当前会话，重启后可能丢失。\n\(failure)"
+            alert.informativeText = "本次更改未生效，原状态已保留。\n\(failure)"
             if let window = view.window { alert.beginSheetModal(for: window) }
         }
     }
@@ -629,11 +719,10 @@ final class WallpaperBrowserViewController: NSViewController {
     private func toggleDisabled(_ item: WallpaperItem) {
         guard let dataSource else { return }
         let failure = dataSource.browserToggleDisabled(item)
-        refreshDisabledState()
         if let failure {
             let alert = NSAlert()
             alert.messageText = "禁用更改未保存"
-            alert.informativeText = "本次更改暂时保留在当前会话，重启后可能丢失。\n\(failure)"
+            alert.informativeText = "本次更改未生效，原状态已保留。\n\(failure)"
             if let window = view.window { alert.beginSheetModal(for: window) }
         }
     }
@@ -1076,10 +1165,12 @@ final class WallpaperBrowserViewController: NSViewController {
         let isCurrent = item.id == dataSource?.browserPinnedItemID
         // 已固定的那条：按钮变禁用的「当前桌面壁纸」，**不提供取消固定**（决策 11）——
         // 解钉出口只留菜单里的三处。
-        pinButton.isEnabled = !isCurrent && !isDisabled(item)
+        pinButton.isEnabled = !isCurrent && !isDisabled(item) && dataSource?.browserLibraryBusy != true
         pinButton.title = isCurrent ? "当前桌面壁纸" : "设为桌面壁纸"
         pinButton.toolTip = isDisabled(item) ? "请先恢复已禁用的壁纸" : pinButton.title
 
+        favoriteButton.isEnabled = dataSource?.browserLibraryBusy != true
+        disabledButton.isEnabled = dataSource?.browserLibraryBusy != true
         favoriteButton.title = isFavorite(item) ? "取消收藏" : "收藏"
         favoriteButton.toolTip = favoriteButton.title
         favoriteButton.setAccessibilityLabel("\(favoriteButton.title)：\(item.title)")
@@ -1155,6 +1246,7 @@ final class WallpaperBrowserViewController: NSViewController {
     }
 
     @objc private func retryLoadItems() {
+        if selectedSection.categoryID == nil { loadLibraryPage(offset: pageOffset); return }
         guard let categoryID = selectedSection.categoryID else { return }
         // **必须先清失败表**：缩略图加载器把「两级候选都失败」的地址记进失败表并
         // 永久跳过（那是防坏地址占并发位，是对的），但瞬时故障（一次超时 / DNS 抖动）
@@ -1168,6 +1260,10 @@ final class WallpaperBrowserViewController: NSViewController {
 
     private func loadItems(for categoryID: Int) {
         guard let dataSource else { return }
+        libraryPageTask?.cancel()
+        searchTask?.cancel()
+        pageControls.isHidden = true
+        gridBottomConstraint.constant = 0
         sliceGeneration += 1
         let generation = sliceGeneration
 
@@ -1253,16 +1349,16 @@ final class WallpaperBrowserViewController: NSViewController {
             card.updateCurrentBadge(items[indexPath.item].id == pinnedID)
             card.updateFavoriteState(isFavorite(items[indexPath.item]))
             card.updateDisabledState(isDisabled(items[indexPath.item]))
-            card.setInteractionEnabled(previewOverlay.isHidden)
+            card.setInteractionEnabled(previewOverlay.isHidden && dataSource?.browserLibraryBusy != true)
         }
     }
 
     private func isFavorite(_ item: WallpaperItem) -> Bool {
-        dataSource?.browserFavoriteItems.contains(where: { $0.id == item.id }) == true
+        dataSource?.browserIsFavorite(item.id) == true
     }
 
     private func isDisabled(_ item: WallpaperItem) -> Bool {
-        dataSource?.browserDisabledItems.contains(where: { $0.id == item.id }) == true
+        dataSource?.browserIsDisabled(item.id) == true
     }
 }
 
@@ -1374,7 +1470,7 @@ extension WallpaperBrowserViewController: NSCollectionViewDataSource, NSCollecti
         card.onDisabledRequested = { [weak self] item in
             self?.toggleDisabled(item)
         }
-        card.setInteractionEnabled(previewOverlay.isHidden)
+        card.setInteractionEnabled(previewOverlay.isHidden && dataSource?.browserLibraryBusy != true)
         return card
     }
 

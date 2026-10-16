@@ -34,7 +34,7 @@ extension AppDelegate: NSMenuItemValidation {
 
         case #selector(openWallpaperBrowser):
             // 本地来源下不可用：那个窗口列的是线上分类的条目。
-            return WallpaperSourceMenu.isEnabled(.wallpaperBrowser, isLocalSource: isLocalSource)
+            return libraryReady && WallpaperSourceMenu.isEnabled(.wallpaperBrowser, isLocalSource: isLocalSource)
 
         case #selector(downloadCurrentWallpaper):
             // 本地来源下没有可下载的东西；下载中、或当前没有在播的条目时同样不可点。
@@ -43,13 +43,16 @@ extension AppDelegate: NSMenuItemValidation {
                 && currentDownloadableItem != nil
 
         case #selector(toggleCurrentFavorite):
-            return currentFavoriteableItem != nil
+            return libraryReady && !libraryMutationPending && currentFavoriteableItem != nil
 
         case #selector(toggleCurrentDisabled):
-            return currentFavoriteableItem != nil
+            return libraryReady && !libraryMutationPending && currentFavoriteableItem != nil
+
+        case #selector(nextNow), #selector(switchPlaybackOrder(_:)):
+            return libraryReady && !libraryMutationPending
 
         case #selector(selectFavorites):
-            return !isLocalSource && !preferences.favoriteItems.isEmpty
+            return !isLocalSource && !favoriteItemIDs.isEmpty
 
         case #selector(selectCategory(_:)):
             // 本地来源下没有分类；条目数为 0 的分类本来就该置灰（可点会进空池）。
@@ -66,7 +69,7 @@ extension AppDelegate: NSMenuItemValidation {
 
         case #selector(pinCurrentItem):
             // 当前没有正在播的条目时不可固定。已固定时仍可点（幂等）。
-            return canPinCurrent && !(engine.primaryKey.flatMap { engine.item(on: $0) }
+            return libraryReady && !libraryMutationPending && canPinCurrent && !(engine.primaryKey.flatMap { engine.item(on: $0) }
                 .map { pool.excludedIDs.contains($0.id) } ?? false)
 
         case #selector(setIdleThreshold(_:)):

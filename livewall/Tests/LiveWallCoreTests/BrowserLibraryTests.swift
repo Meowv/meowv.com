@@ -74,21 +74,29 @@ func favoriteCollectionTests() {
                 expectEqual(decoded.favoriteItems, [first], "坏条目跳过且重复 ID 去重")
             } catch { expect(false, "配置解码失败：\(error)") }
         }
-        test("完整条目落盘与重启恢复，收藏取消不改变播放设置") {
-            let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-            defer { try? FileManager.default.removeItem(at: directory) }
-            do {
-                var preferences = Preferences(selectedCategoryID: 10, pinnedItem: first, favoriteItems: [second, first])
+        test("迁移后完整条目恢复，取消收藏不改变播放设置与固定快照") {
+            runLibraryTest {
+                let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+                defer { try? FileManager.default.removeItem(at: directory) }
+                try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
                 let url = directory.appendingPathComponent("config.json")
-                try preferences.save(to: url)
-                expectEqual(Preferences.load(from: url), preferences, "所有条目字段及顺序恢复")
-                preferences.favoriteItems = FavoriteCollection.toggling(first, in: preferences.favoriteItems)
-                try preferences.save(to: url)
-                let restored = Preferences.load(from: url)
-                expectEqual(restored.favoriteItems, [second], "取消收藏落盘恢复")
-                expectEqual(restored.pinnedItem, first, "取消收藏仍保留固定项")
-                expectEqual(restored.selectedCategoryID, 10, "取消收藏不改变播放分类")
-            } catch { expect(false, "收藏保存失败：\(error)") }
+                let preferences = Preferences(selectedCategoryID: 10, pinnedItem: first, favoriteItems: [second, first])
+                try legacyConfigData(preferences).write(to: url)
+                let database = directory.appendingPathComponent("library.sqlite3")
+                let key = directory.appendingPathComponent(".key")
+                let store = try WallpaperLibraryStore(databaseURL: database, keyURL: key)
+                try await store.load()
+                _ = try await store.prepareMigration(configURL: url)
+                let migrated = try await store.page(kind: .favorites)
+                expectEqual(migrated.items, [second, first], "所有条目字段及顺序恢复")
+                _ = try await store.setFavorite(first, enabled: false)
+                let reopened = try WallpaperLibraryStore(databaseURL: database, keyURL: key)
+                try await reopened.load()
+                let restored = try await reopened.page(kind: .favorites)
+                expectEqual(restored.items, [second], "取消收藏重启恢复")
+                expectEqual(await reopened.index().pinned, first, "取消收藏仍保留固定项")
+                expectEqual(Preferences.load(from: url).selectedCategoryID, 10, "取消收藏不改变播放分类")
+            }
         }
     }
 }
@@ -121,19 +129,20 @@ func disabledCollectionTests() {
                 expectEqual(loaded.favoriteItems, [], "同时出现时禁用优先")
             } catch { expect(false, "配置解码失败：\(error)") }
         }
-        test("禁用条目持久化及清洗互斥") {
-            let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-            defer { try? FileManager.default.removeItem(at: directory) }
-            do {
+        test("禁用条目经加密库迁移往返，配置仅保留设置") {
+            runLibraryTest {
+                let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+                defer { try? FileManager.default.removeItem(at: directory) }
+                try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
                 let url = directory.appendingPathComponent("config.json")
-                let preferences = Preferences(
-                    selectedCategoryID: 10, favoriteItems: [first, second],
-                    disabledItems: [first], playFavorites: true
-                ).sanitized()
-                expectEqual(preferences.favoriteItems, [second], "禁用优先于收藏")
-                try preferences.save(to: url)
-                expectEqual(Preferences.load(from: url), preferences, "条目及筛选设置往返")
-            } catch { expect(false, "禁用保存失败：\(error)") }
+                try legacyConfigData(Preferences(disabledItems: [second, first])).write(to: url)
+                let store = try WallpaperLibraryStore(databaseURL: directory.appendingPathComponent("library.sqlite3"), keyURL: directory.appendingPathComponent(".key"))
+                try await store.load()
+                _ = try await store.prepareMigration(configURL: url)
+                let page = try await store.page(kind: .disabled)
+                expectEqual(page.items, [second, first], "禁用条目全部字段及顺序恢复")
+                expectEqual(Preferences.load(from: url).disabledItems, [], "普通配置不保留禁用快照")
+            }
         }
         test("收藏与禁用双向切换") {
             var preferences = Preferences()

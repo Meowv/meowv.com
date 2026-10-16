@@ -3,6 +3,7 @@ import LiveWallCore
 
 enum DebugDirectory: String {
     case configuration
+    case userData
     case logs
     case downloadedWallpapers
     case updatePackages
@@ -45,6 +46,9 @@ extension AppDelegate {
         case .configuration:
             url = configURL.deletingLastPathComponent()
             createIfMissing = true
+        case .userData:
+            url = LiveWallPaths.applicationSupportDirectory
+            createIfMissing = true
         case .logs:
             guard let logFileURL = LiveWallPaths.logFileURL else {
                 showDebugDirectoryFailure("无法定位日志目录")
@@ -72,7 +76,7 @@ extension AppDelegate {
 
         if createIfMissing {
             do {
-                if directory == .configuration || directory == .remoteDataCache || directory == .logs {
+                if directory == .configuration || directory == .userData || directory == .remoteDataCache || directory == .logs {
                     try PrivateFileAccess.secureDirectory(at: url)
                 } else {
                     try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)

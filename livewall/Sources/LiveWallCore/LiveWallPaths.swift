@@ -23,6 +23,12 @@ public enum LiveWallPaths {
     public static let dataCacheDirectory = applicationSupportDirectory
         .appendingPathComponent("DataCache", isDirectory: true)
 
+    /// 用户收藏、禁用与固定条目的加密增量库及其长期密钥。
+    public static let wallpaperLibraryDatabaseURL = applicationSupportDirectory
+        .appendingPathComponent("user-library.sqlite3")
+    public static let wallpaperLibraryKeyURL = applicationSupportDirectory
+        .appendingPathComponent(".user-library-key")
+
     /// 日志文件。nil 表示取不到 Logs 目录，此时只输出到 stdout。
     public static let logFileURL: URL? =
         FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first?

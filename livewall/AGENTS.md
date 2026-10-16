@@ -18,7 +18,7 @@
 - 省电状态仍由 `LiveWallCore/PlaybackStateResolver` 纯函数判定；系统事件只更新信号，播放器暂停与恢复集中在 `AppDelegate.applyPlaybackState`。异步加载完成后重查状态，避免暂停期间的在途加载自行开播。
 - 每屏的失败与重试按槽位分开，全部槽位失败后才停止调度；只有主槽位安排切换定时器。遮挡面积继续用 `CoverageGrid` 精确计算，不退回采样网格或 bounding box。
 - 同一视频复用 `VideoLoader` 创建的 `AVURLAsset`，避免校验与播放重复下载。不添加本地视频缓存；断网时保持当前画面，网络错误不得拉黑可用条目。
-- `CandidatePool` 的随机与顺序模式都要走完一轮才重排。固定播放是候选池之上的独立状态，不是第三种 `PlaybackOrder`；固定项在 `Preferences.pinnedItem` 保存完整条目，以便切分类后仍可恢复。
+- `CandidatePool` 的随机与顺序模式都要走完一轮才重排。固定播放是候选池之上的独立状态，不是第三种 `PlaybackOrder`；固定项在加密用户库中独立保存完整快照，以便切分类后仍可恢复；不可写回普通配置。
 
 ### 清单、来源与配置
 

@@ -35,7 +35,7 @@ extension AppDelegate {
     /// （`main.swift` 里判单实例、那时 `AppDelegate` 还没建起来）也要写同一个文件，
     /// 各抄一份迟早会漂移。**轮转仍留在本地**：它是播放期的高频路径。
     func log(_ message: String) {
-        let line = "[\(AppLog.stamp())] \(message)"
+        let line = "[\(AppLog.stamp())] \(AppLog.sanitize(message))"
         print(line)
         fflush(stdout)
 
@@ -46,6 +46,7 @@ extension AppDelegate {
 
         // 先判断要不要轮转，再写当前这条。
         // 顺序不能反：反过来的话，刚追加的这条会被随后的清空一起抹掉。
+        var rotationLimit: UInt64?
         let now = Date()
         if Self.logRotation.shouldCheck(
             writesSinceCheck: logWritesSinceCheck,
@@ -53,39 +54,12 @@ extension AppDelegate {
         ) {
             logWritesSinceCheck = 0
             logLastCheck = now
-            rotateLogFileIfNeeded(file)
+            rotationLimit = Self.logRotation.maxFileSizeBytes
         } else {
             logWritesSinceCheck += 1
         }
 
-        AppLog.append(line, to: file)
+        AppLog.append(line, to: file, rotationLimit: rotationLimit)
     }
 
-    /// 超过上限就清空复用同一个文件。调用方需已持有 `logLock`。
-    ///
-    /// 刻意**不生成** `.1` / `.2` / 日期后缀 / 压缩归档，也不做归档：
-    /// 日志只用于排障，留一堆历史文件只是白占空间。
-    func rotateLogFileIfNeeded(_ file: URL) {
-        let size = Self.logFileSize(file)
-        guard Self.logRotation.shouldRotate(fileSizeBytes: size) else { return }
-
-        // 截断为 0 字节而不是删文件：删了再建会换 inode，这里要的是「同一个文件复用」。
-        try? "".write(to: file, atomically: false, encoding: .utf8)
-
-        let notice =
-            "[\(AppLog.stamp())] "
-            + LogRotationConfig.rotationNoticeText(
-                clearedBytes: size,
-                limitBytes: Self.logRotation.maxFileSizeBytes
-            )
-        AppLog.append(notice, to: file)
-    }
-
-    /// 日志文件当前大小，读不到或为 0 时按 0 处理（文件还不存在）。
-    static func logFileSize(_ file: URL) -> UInt64 {
-        guard let size = try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize, size > 0 else {
-            return 0
-        }
-        return UInt64(size)
-    }
 }

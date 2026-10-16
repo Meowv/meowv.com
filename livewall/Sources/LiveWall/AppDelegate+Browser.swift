@@ -20,11 +20,18 @@ extension AppDelegate: WallpaperBrowserDataSource {
     var browserPlayingFavorites: Bool { isFavoritesFilter }
 
     /// 固定项的 id。UI 只**标记**它，不提供取消固定的入口（决策 11）。
-    var browserPinnedItemID: Int? { preferences.pinnedItem?.id }
+    var browserPinnedItemID: Int? { pinnedLibraryItem?.id }
 
-    var browserFavoriteItems: [WallpaperItem] { preferences.favoriteItems }
+    var browserLibraryBusy: Bool { !libraryReady || libraryMutationPending }
 
-    var browserDisabledItems: [WallpaperItem] { preferences.disabledItems }
+    func browserIsFavorite(_ id: Int) -> Bool { favoriteItemIDs.contains(id) }
+    func browserIsDisabled(_ id: Int) -> Bool { disabledItemIDs.contains(id) }
+
+    func browserLibraryPage(kind: WallpaperLibraryStore.Kind, offset: Int, query: String,
+                            revision: UInt64?, locateID: Int?) async throws -> WallpaperLibraryStore.Page {
+        guard let wallpaperLibrary else { throw BrowserLoadFailure(message: "壁纸条目库尚未准备好") }
+        return try await wallpaperLibrary.page(kind: kind, offset: offset, query: query, expectedRevision: revision, locateID: locateID)
+    }
 
     func browserToggleFavorite(_ item: WallpaperItem) -> String? {
         toggleFavorite(item)

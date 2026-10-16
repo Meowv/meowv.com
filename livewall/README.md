@@ -12,7 +12,7 @@ macOS 26.0+ 菜单栏视频壁纸 App，使用 Swift、AppKit 和 AVFoundation�
 - 根据手动暂停、锁屏、息屏、遮挡、空闲、低电量和热状态暂停播放；菜单栏可调整相应设置，另有热键和开机自启。默认 `⌥⌘F` 收藏或取消收藏当前线上壁纸，`⌥⌘X` 禁用或恢复当前线上壁纸；组合可在菜单中修改。
 - 浏览窗口按分类展示线上壁纸，支持当前列表搜索、收藏、禁用、预览和设为桌面壁纸。菜单可下载当前视频及其静态预览图到 `~/Downloads/livewall/`。
 - 休息提醒按活跃使用时间计时，休息层覆盖所有屏幕；锁屏或息屏时暂停倒计时。
-- 菜单中的「开发者工具」默认关闭，开关即时生效并保存在 `config.json` 的 `developerToolsEnabled`。开启后显示配置文件、日志、壁纸下载、更新包、数据缓存、锁屏素材目录入口、窗口层级打印和 CPU / 内存信息；关闭时取消采样并释放监控器。Debug 和 Release 使用相同配置规则。
+- 菜单中的「开发者工具」默认关闭，开关即时生效并保存在 `config.json` 的 `developerToolsEnabled`。开启后显示配置文件、用户数据、日志、壁纸下载、更新包、数据缓存、锁屏素材目录入口、窗口层级打印和 CPU / 内存信息；关闭时取消采样并释放监控器。Debug 和 Release 使用相同配置规则。备份收藏、禁用和固定数据时，先退出 LiveWall，再完整复制用户数据目录（包含隐藏的 `.user-library-key` 及可能存在的 SQLite WAL/SHM 文件）；恢复时也须退出 App 并整目录配对恢复。
 - 锁屏预览保留当前壁纸的静态图；macOS 27 上还会尝试通过 Aerial 播放动态预览。退出时保留当前壁纸的静态图，关闭锁屏预览开关时才恢复记录的原墙纸。
 
 动态锁屏依赖非公开的 Aerial 资源格式，会影响被替换的 Apple 槽位和系统屏保；系统更新或重新下载 Aerial 可能覆盖它。其他系统版本或动态准备失败时使用静态图。浏览窗口在离线时只可查看已有的当前分类缓存；热键组合与下载目录暂不可配置。
@@ -46,7 +46,11 @@ bash tools/test-catalog.sh  # 只编译清单相关 Core，测试缓存、跨语
 
 通过菜单栏「退出动态壁纸」正常退出；`pkill -x LiveWall` 也会触发清理。App 默认只允许一个实例；开发时可用 `./run.sh --allow-multiple` 显式放开。`./run.sh` 不递增 `CFBundleVersion`。
 
-日志在 `~/Library/Logs/com.meowv.livewall/livewall.log`，配置与缓存位于 `~/Library/Application Support/com.meowv.livewall/`。默认线上内容由 App 自行拉取，无需在本目录准备清单；`DataCache/` 仅以密文保存最近成功加载的索引 `catalog.remote-cache.index.bin` 和一份切片 `catalog.remote-cache.slice.bin`，索引原始字节的签名保存在 `.index.bin.sig`。启动会删除两个旧目录中的清单 JSON 缓存；网络层使用无磁盘缓存的临时会话，不提供明文回退。配置 `config.json` 仍以 JSON 保存用户设置和收藏、固定、禁用条目；原墙纸恢复记录 `original-wallpapers.json`、系统 Aerial 清单和运行日志保留原格式，它们不属于目录缓存。
+日志在 `~/Library/Logs/com.meowv.livewall/livewall.log`，配置与缓存位于 `~/Library/Application Support/com.meowv.livewall/`。默认线上内容由 App 自行拉取，无需在本目录准备清单；`DataCache/` 仅以密文保存最近成功加载的索引 `catalog.remote-cache.index.bin` 和一份切片 `catalog.remote-cache.slice.bin`，索引原始字节的签名保存在 `.index.bin.sig`。启动会删除两个旧目录中的清单 JSON 缓存；网络层使用无磁盘缓存的临时会话，不提供明文回退。
+
+`config.json` 只保存普通设置；收藏、固定、禁用条目在 `user-library.sqlite3` 中逐条加密，密钥为同目录的 `.user-library-key`。首次迁移会在数据库内保留旧配置的加密备份，核对导入内容后才原子清理 JSON。已有数据库缺少密钥、认证失败或迁移冲突时停止选片并显示错误，不会新建密钥覆盖旧库。收藏与禁用列表每页 200 条，搜索在后台建立内存索引，完整条目仅缓存最近 512 条。
+
+原墙纸恢复记录 `original-wallpapers.json` 和系统 Aerial 清单保留原格式。运行日志仍为文本，历史日志与新日志统一移除完整资源地址；上述文件不属于条目库。
 
 ## 浏览窗口
 

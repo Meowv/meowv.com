@@ -24,6 +24,7 @@ extension AppDelegate {
     /// - Parameter persistFolderPath: 用户刚选中的文件夹为 true，只有扫描成功才写入配置；
     ///   启动时从配置恢复的扫描为 false，失败后保留原路径并回退线上。
     func scanLocalFolder(_ folder: URL, isFirstLoad: Bool, persistFolderPath: Bool) {
+        guard libraryReady, !isShuttingDown else { return }
         localScanGeneration += 1
         let generation = localScanGeneration
         notice = .info("正在扫描本地文件夹…")
@@ -136,9 +137,10 @@ extension AppDelegate {
     /// 切分类是「再拉一个切片」，不是「在本地全量里筛」：索引里**没有条目**，
     /// 那是它保持几百字节的前提。
     func loadCatalogAndStart() {
-        // 收藏从配置直接开播；索引只补充普通分类菜单，不阻塞收藏播放。
+        guard libraryReady, !isShuttingDown else { return }
+        // 收藏从加密库按需解密开播；索引只补充普通分类菜单，不阻塞收藏播放。
         sliceRequestGeneration += 1
-        if preferences.playFavorites && !preferences.favoriteItems.isEmpty {
+        if preferences.playFavorites && !favoriteItemIDs.isEmpty {
             applyFavoriteItems(isFirstLoad: pool.totalCount == 0)
         }
         let generation = sliceRequestGeneration
@@ -204,7 +206,7 @@ extension AppDelegate {
         for warning in result.warnings { log("  ⚠︎ \(warning)") }
         log("索引来源：\(origin.label)，\(categories.count) 个分类")
 
-        if isFavoritesFilter || !allowPlayback {
+        if isFavoritesFilter || (preferences.playFavorites && !favoriteItemIDs.isEmpty) || !allowPlayback {
             refreshStatusItem()
             return
         }

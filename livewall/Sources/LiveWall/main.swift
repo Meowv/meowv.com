@@ -51,6 +51,13 @@ let instanceLock: InstanceLock? = {
     }
 }()
 
+do {
+    if let log = LiveWallPaths.logFileURL { _ = try AppLog.sanitizeFile(at: log) }
+} catch {
+    FileHandle.standardError.write(Data("LiveWall 历史日志脱敏失败：\(AppLog.sanitize(error.localizedDescription))\n".utf8))
+    exit(EXIT_FAILURE)
+}
+
 let application = NSApplication.shared
 let delegate = AppDelegate()
 application.delegate = delegate

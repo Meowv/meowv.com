@@ -26,7 +26,7 @@ extension AppDelegate {
             categories: categories,
             selectedID: selectedCategoryID,
             allEnabled: (index?.allSlice?.itemCount ?? 0) > 0,
-            favoriteCount: preferences.favoriteItems.count,
+                favoriteCount: favoriteItemIDs.count,
             favoritesSelected: isFavoritesFilter
         )
 
@@ -101,6 +101,7 @@ extension AppDelegate {
     /// 选「线上」时**不清空候选池**再加载：与 `reloadCatalog` 同一条取舍 ——
     /// 拉取失败要保持当前画面继续播，而不是先黑一下。
     @objc func selectSource(_ sender: NSMenuItem) {
+        guard libraryReady else { return }
         guard let raw = sender.representedObject as? String,
             let kind = WallpaperSourceMenu.Kind(rawValue: raw)
         else { return }

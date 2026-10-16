@@ -82,6 +82,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // 配置
     var preferences = Preferences.default
+    var preferencesNeedWriteback = false
+    /// 收藏、禁用与固定条目的加密增量库。
+    var libraryReady = false
+    var libraryMutationPending = false
+    var libraryMutationTask: Task<Void, Never>?
+    var librarySourceGeneration: UInt64 = 0
+    var pinnedLibraryItem: WallpaperItem?
+    var pinApplyTask: Task<Void, Never>?
+    var pinApplyGeneration: UInt64 = 0
+    var wallpaperLibrary: WallpaperLibraryStore?
+    var favoriteItemIDs: Set<Int> = []
+    var disabledItemIDsCache: Set<Int> = []
     /// 路径统一来自 `LiveWallPaths`（配置 / 缓存 / 日志 / 单实例锁的唯一来源）——
     /// 启动早期（`main.swift` 取锁、写日志）也要用同一份，不能各写一份。
     lazy var configURL: URL = LiveWallPaths.applicationSupportDirectory
@@ -151,10 +163,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // 固定为桌面壁纸
     /// 是否处于固定态。
     ///
-    /// **唯一真源是 `preferences.pinnedItem`**，这里刻意不另存一个 `Bool` ——
+    /// **唯一真源是 `pinnedLibraryItem`**，这里刻意不另存一个 `Bool` ——
     /// 存了就会出现「配置里有固定项、标志位却是 false」这种不一致，而它一旦出现，
     /// 每一条分支都得猜该信哪个。写入只走 `setPinned` / `clearPin` 两个函数。
-    var isPinned: Bool { preferences.pinnedItem != nil }
+    var isPinned: Bool { pinnedLibraryItem != nil }
 
     /// 铺满固定项的加载是否在飞。防重入：同一条视频被并发拉两遍，流量直接翻倍。
     var isPinApplyInFlight = false
@@ -380,20 +392,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // 本 App 是 ad-hoc 签名，重签即可绕过，拿它拦启动只会误伤正常用户。
         reportSeal()
 
-        let loaded = Preferences.load(from: configURL)
+        let loaded = Preferences.loadSettings(from: configURL)
         preferences = loaded.sanitized()
-        pool.excludedIDs = Set(preferences.disabledItems.map(\.id))
+        preferences.favoriteItems = []
+        preferences.disabledItems = []
+        preferences.pinnedItem = nil
+        pool.excludedIDs = []
         // 修正过（旧版清单地址迁移、超范围值夹紧、非法分类 id 清掉）就立刻落盘 ——
         // 否则每次启动都要重算一遍，而且配置里留着的东西和实际生效的不一致。
         // 写失败必须显式说出来：`try?` 会让「修正了但没存上」看起来像成功。
-        if preferences != loaded {
-            do {
-                try preferences.save(to: configURL)
-                log("配置已修正并写回：\(configURL.lastPathComponent)")
-            } catch {
-                log("⚠️ 配置已修正但写回失败（本次仍按修正后的值运行）：\(error.localizedDescription)")
-            }
-        }
+        preferencesNeedWriteback = preferences != loaded
 
         // 菜单退出与 `pkill` 都必须经过同一个 `shutdown()` 清理路径；
         // SIGTERM 仍需接住，因为 Cocoa 默认不会为它调用 `applicationWillTerminate`。
@@ -547,18 +555,57 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if self.processMonitor == nil {
                 self.configureDeveloperTools(sinceLaunch: true)
             }
-            // 壁纸来源二选一：配置了本地文件夹就直接扫它，**完全不碰远端清单** ——
-            // 本地模式的意义就是离线可用，顺手拉一次索引只会白费流量。
-            if let folder = self.preferences.resolvedLocalFolderURL {
-                self.startLocalSource(folder, isFirstLoad: true)
-            } else {
-                self.loadCatalogAndStart()
+            Task { @MainActor in
+                await self.prepareWallpaperLibraryAndStart()
             }
-            // 版本检查刻意排在最后并再延后几秒：清单加载与首次取片正在抢网络，
-            // 不该跟着挤。失败一律静默，不影响 App 正常用。
-            DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in
-                self?.performUpdateCheck(force: false)
+        }
+    }
+
+    /// 在后台完成用户条目库初始化与一次性迁移后，才开始加载壁纸来源。
+    func prepareWallpaperLibraryAndStart() async {
+        do {
+            let store = try WallpaperLibraryStore(
+                databaseURL: LiveWallPaths.wallpaperLibraryDatabaseURL,
+                keyURL: LiveWallPaths.wallpaperLibraryKeyURL
+            )
+            let snapshot = try await store.prepare(configURL: configURL)
+            guard !isShuttingDown else { return }
+            wallpaperLibrary = store
+            favoriteItemIDs = snapshot.favoriteIDs
+            disabledItemIDsCache = snapshot.disabledIDs
+            pinnedLibraryItem = snapshot.pinned
+            pool.excludedIDs = snapshot.disabledIDs
+            preferences.favoriteItems = []
+            preferences.disabledItems = []
+            preferences.pinnedItem = nil
+            preferences.userLibraryVersion = 1
+            if favoriteItemIDs.isEmpty, preferences.playFavorites {
+                preferences.playFavorites = false
+                preferencesNeedWriteback = true
             }
+            libraryReady = true
+            if preferencesNeedWriteback {
+                _ = persistPreferences("修正配置")
+                preferencesNeedWriteback = false
+            }
+            log("壁纸条目库已就绪：收藏 \(favoriteItemIDs.count) 条，禁用 \(disabledItemIDsCache.count) 条")
+        } catch {
+            let message = "壁纸条目库初始化失败：\(error.localizedDescription)"
+            log("⚠️ \(message)")
+            notice = .warning(message)
+            persistenceFailure = message
+            refreshStatusItem()
+            return
+        }
+
+        // 壁纸来源二选一：配置了本地文件夹就直接扫它，完全不碰远端清单。
+        if let folder = preferences.resolvedLocalFolderURL {
+            startLocalSource(folder, isFirstLoad: true)
+        } else {
+            loadCatalogAndStart()
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in
+            self?.performUpdateCheck(force: false)
         }
     }
 
@@ -577,6 +624,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         restReminderCoordinator.stopImmediately()
         restReminderClock.reset()
         scheduleTimer?.invalidate()
+        pinApplyTask?.cancel()
+        pinApplyTask = nil
+        pinApplyGeneration &+= 1
         // 旋转动画的定时器也要停：退出路径末尾还有一段 `RunLoop.main.run(until:)`，
         // 留着它会在「已经退出清理」之后继续触发。
         menuBarIconAnimator.stop()
@@ -618,6 +668,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// - Parameter context: 出问题时能定位是哪个动作触发的写入，例如「切换间隔」。
     @discardableResult
     func persistPreferences(_ context: String) -> Bool {
+        guard libraryReady else {
+            preferencesNeedWriteback = true
+            return false
+        }
         do {
             try preferences.save(to: configURL)
             // 写成功了：上一次的失败说明已经不成立，清掉。

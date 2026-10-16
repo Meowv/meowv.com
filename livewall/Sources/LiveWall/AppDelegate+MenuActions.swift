@@ -135,9 +135,10 @@ extension AppDelegate {
         // 解钉刻意**不给提示**：画面立刻换了就是回执。而且 `loadAndPlay` 成功时会把
         // `notice` 重写成 nil，那句提示本来也留不住；菜单里「选片顺序」父项同步变回
         // 「随机 / 顺序」，那是更可靠的指示。
-        if isPinned { clearPin(reason: nil) }
-        failuresBySlot.removeAll()
-        advance()
+        guard libraryReady, !libraryMutationPending else { return }
+        let proceed: @MainActor () -> Void = { self.failuresBySlot.removeAll(); self.advance() }
+        if isPinned { clearPin(reason: nil, afterCommit: proceed) }
+        else { proceed() }
     }
 
     @objc func togglePause() {
@@ -155,32 +156,18 @@ extension AppDelegate {
             refreshStatusItem()
             return
         }
-        let wasFavorite = preferences.favoriteItems.contains(where: { $0.id == item.id })
         if let message = toggleFavorite(item) {
             notice = .warning(message)
             refreshStatusItem()
-            return
         }
-        notice = .info(wasFavorite ? "已取消收藏：\(item.displayName)" : "已收藏：\(item.displayName)")
-        log("\(wasFavorite ? "取消收藏" : "收藏")当前壁纸：\(item.displayName)")
-        refreshStatusItem()
     }
 
     @objc func toggleCurrentDisabled() {
-        guard let item = currentFavoriteableItem else {
-            notice = .warning("当前没有可禁用的线上壁纸", oneShot: true)
-            refreshStatusItem()
-            return
-        }
-        let wasDisabled = pool.excludedIDs.contains(item.id)
+        guard let item = currentFavoriteableItem else { return }
         if let message = toggleDisabled(item) {
             notice = .warning(message)
-        } else if !wasDisabled && pool.isExhausted {
-            notice = .warning("已禁用：\(item.displayName)；当前过滤下没有可播放的壁纸")
-        } else {
-            notice = .info(wasDisabled ? "已取消禁用：\(item.displayName)" : "已禁用：\(item.displayName)")
+            refreshStatusItem()
         }
-        refreshStatusItem()
     }
 
     /// 切换选片顺序。**刻意不立刻换片** —— 当前这张在新顺序下依然合法，
@@ -199,8 +186,13 @@ extension AppDelegate {
         // 于是「点随机解钉」失效，用户只会觉得「固定之后点不回来了」。
         guard order != preferences.playbackOrder || wasPinned else { return }
 
-        if wasPinned { clearPin(reason: nil) }
+        guard libraryReady, !libraryMutationPending else { return }
+        if wasPinned {
+            clearPin(reason: nil) { self.commitPlaybackOrder(order, wasPinned: true) }
+        } else { commitPlaybackOrder(order, wasPinned: false) }
+    }
 
+    private func commitPlaybackOrder(_ order: PlaybackOrder, wasPinned: Bool) {
         preferences.playbackOrder = order
         persistPreferences("选片顺序")
         pool.order = order
