@@ -267,6 +267,14 @@ func reconcileCatalog(payload: Data, jsonPath: String) {
           let object = any as? [String: Any] else {
         fail("\(jsonPath) 不是合法的 JSON，无法做目录清单对账。")
     }
+    guard object["schemaVersion"] as? Int == 2,
+          object["encryption"] as? String == "aes-256-gcm",
+          object["encryptionVersion"] as? Int == 1,
+          object["compression"] as? String == "gzip",
+          let keyID = object["keyID"] as? String, keyID.count == 16,
+          keyID.allSatisfy({ $0.isASCII && $0.isHexDigit }) else {
+        fail("目录清单必须使用加密 schema v2 并包含合法的密钥标识。")
+    }
     guard let categories = object["categories"] as? [[String: Any]] else {
         fail("""
         \(jsonPath) 里没有 categories 数组 —— 它看起来不是目录清单索引。
@@ -299,7 +307,7 @@ func reconcileCatalog(payload: Data, jsonPath: String) {
         }
         // 这个文件名既用来拼 URL（客户端侧）、也用来拼本地路径（这一步）。
         // 带分隔符或 scheme 的值会让两边都跑到不该去的地方。
-        guard !file.contains("/"), !file.contains("\\"), !file.contains(":") else {
+        guard file.hasSuffix(".bin"), !file.contains("/"), !file.contains("\\"), !file.contains(":") else {
             problems.append("\(label)：file 不合法（含路径分隔符或 scheme）：\(file)")
             continue
         }
@@ -327,7 +335,8 @@ func reconcileCatalog(payload: Data, jsonPath: String) {
         let declared = (allSlice["sha256"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let file, !file.isEmpty,
               !file.contains("/"), !file.contains("\\"), !file.contains(":"),
-              file.hasSuffix(".json"), file != ".", file != ".." else {
+              file.hasSuffix(".bin"),
+              file != ".", file != ".." else {
             fail("\(jsonPath) 的全部切片 file 缺失或不合法，拒绝签名。")
         }
         guard (allSlice["itemCount"] as? Int ?? 0) > 0 else {

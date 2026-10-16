@@ -67,6 +67,23 @@ public enum PrivateFileAccess {
         return removed
     }
 
+    /// DataCache 只删除旧清单，不清理仍在使用的封面。
+    @discardableResult
+    public static func removeLegacyCatalogCache(from directory: URL) throws -> [String] {
+        var removed: [String] = []
+        for name in ["catalog.remote-cache.index.json", "catalog.remote-cache.index.json.sig",
+                     "catalog.remote-cache.slice.json", "catalog.json",
+                     "catalog.remote-cache.json", "catalog.remote-cache.catalog.json"] {
+            let file = directory.appendingPathComponent(name)
+            guard FileManager.default.fileExists(atPath: file.path) else { continue }
+            let values = try file.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey])
+            guard values.isRegularFile == true, values.isSymbolicLink != true else { continue }
+            try FileManager.default.removeItem(at: file)
+            removed.append(name)
+        }
+        return removed
+    }
+
     private static func isLegacyDataCacheFile(_ name: String) -> Bool {
         switch name {
         case "catalog.remote-cache.index.json",

@@ -59,7 +59,7 @@ if [[ "$DO_BUILD" -eq 1 ]]; then
   if [[ "$CONFIGURATION" == "debug" ]]; then
     "$ROOT/build.sh" --product livewall --debug
   else
-    "$ROOT/build.sh" --product livewall
+    "$ROOT/build.sh" --product livewall --development
   fi
 fi
 

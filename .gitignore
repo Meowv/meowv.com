@@ -4,5 +4,9 @@
 /.build-staging.*/
 /.build-backup.*/
 /.wallpaper-key
+/.livewall-key
+/.livewall-build.lock
+/.livewall-staging.*/
+/.livewall-key.*.tmp
 /.deploy.env
 /.deploy-cache/

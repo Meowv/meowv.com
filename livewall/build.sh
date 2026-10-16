@@ -18,7 +18,8 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BUILD_DIR="$ROOT/build"
+REPO_ROOT="$(cd "${ROOT}/.." && pwd)"
+BUILD_DIR="${LIVEWALL_RELEASE_BUILD_DIR:-$ROOT/build}"
 CONFIGURATION="release"
 PRODUCT_KEY="livewall"
 CLEAN=0
@@ -27,13 +28,15 @@ CLEAN=0
 # plist 改动留在工作区里。只有真正产出可分发包的路径（根 `build.sh`、`make-dmg.sh`）
 # 才传 --bump-build。
 BUMP_BUILD=0
-
+DEVELOPMENT=0
+CATALOG_KEY_FILE="${LIVEWALL_CATALOG_KEY_FILE:-$REPO_ROOT/.livewall-key}"
 usage() {
   cat <<'EOF'
 用法：./build.sh [选项]
 
 选项：
   --product livewall  构建正式 App（默认，也是唯一产品）
+  --development               本地开发 release 构建，不轮换密钥或递增 build 号
   --debug                     使用 debug 配置（编译更快，运行更慢）
   --bump-build                发布构建：把 CFBundleVersion 递增到「上次产物 +1」
                               （只有发布路径会传它；本地 ./run.sh 不传，build 号不动）
@@ -48,7 +51,12 @@ while [[ $# -gt 0 ]]; do
       PRODUCT_KEY="${2:-}"
       shift 2
       ;;
+    --development)
+      DEVELOPMENT=1
+      shift
+      ;;
     --debug)
+      DEVELOPMENT=1
       CONFIGURATION="debug"
       shift
       ;;
@@ -74,10 +82,25 @@ done
 
 # 递增只属于发布构建：debug 产物永远不会被分发，递增等于白烧一个 build 号。
 # 显式拦下来，免得「顺手加个 --debug 调试」把版本号带跑。
-if [[ "$BUMP_BUILD" -eq 1 ]] && [[ "$CONFIGURATION" == "debug" ]]; then
-  echo "错误：--bump-build 不能与 --debug 一起用（debug 产物不发布，递增没有意义）。" >&2
+if [[ "$BUMP_BUILD" -eq 1 ]] && [[ "$DEVELOPMENT" -eq 1 ]]; then
+  echo "错误：--bump-build 不能与 --debug 或 --development 一起用。" >&2
   exit 2
 fi
+
+# 所有直接发布入口都进入根脚本的同批暂存、核对与晋升流程。
+if [[ "$DEVELOPMENT" -eq 0 && -z "${LIVEWALL_RELEASE_BUILD_DIR:-}" ]]; then
+  if [[ "$CLEAN" -eq 1 ]]; then
+    echo "错误：正式发布不支持 --clean；旧产物必须保留到新产物核对成功。" >&2
+    exit 2
+  fi
+  [[ "$PRODUCT_KEY" == "livewall" ]] || { echo "错误：未知产品。" >&2; exit 2; }
+  exec "$REPO_ROOT/build.sh" livewall
+fi
+if [[ "$DEVELOPMENT" -eq 0 && ! -f "$CATALOG_KEY_FILE" ]]; then
+  echo "错误：正式 App 构建缺少暂存的 LiveWall 清单密钥。" >&2
+  exit 1
+fi
+export LIVEWALL_CATALOG_KEY_FILE="$CATALOG_KEY_FILE"
 
 case "$PRODUCT_KEY" in
   livewall)
@@ -131,6 +154,11 @@ fi
 # 参照物优先取「上次已装进 studio 部署目录的那一份」（最接近线上），其次取本地产物。
 REPO_ROOT="$(cd "${ROOT}/.." && pwd)"
 PLIST_PATH="${ROOT}/${PLIST}"
+if [[ "$DEVELOPMENT" -eq 0 ]]; then
+  mkdir -p "$BUILD_DIR"
+  cp "$PLIST_PATH" "$BUILD_DIR/Info-LiveWall.plist"
+  PLIST_PATH="$BUILD_DIR/Info-LiveWall.plist"
+fi
 CURRENT_BUILD="$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "${PLIST_PATH}" 2>/dev/null || echo "")"
 PREVIOUS_FEED="${REPO_ROOT}/build/studio.meowv.com/data/livewall/version.json"
 [[ -f "${PREVIOUS_FEED}" ]] || PREVIOUS_FEED="${ROOT}/build/version.json"
@@ -219,8 +247,12 @@ APP_BUNDLE="$BUILD_DIR/$APP_NAME.app"
 rm -rf "$APP_BUNDLE"
 mkdir -p "$APP_BUNDLE/Contents/MacOS" "$APP_BUNDLE/Contents/Resources"
 
-cp "$ROOT/$PLIST" "$APP_BUNDLE/Contents/Info.plist"
+cp "$PLIST_PATH" "$APP_BUNDLE/Contents/Info.plist"
 cp "$BINARY" "$APP_BUNDLE/Contents/MacOS/$PRODUCT"
+
+if [[ -f "$CATALOG_KEY_FILE" ]]; then
+  cp "$CATALOG_KEY_FILE" "$APP_BUNDLE/Contents/Resources/livewall-catalog-key.txt"
+fi
 
 # 符号剥离。SwiftPM 的 release 产物仍带完整符号表（实测 2.2 万条），
 # `nm` 一读就能还原出内部类型与方法名，等于把反编译门槛白送出去。
@@ -265,8 +297,16 @@ if [[ "$ICON_COUNT" -eq 0 ]]; then
 fi
 
 # 本地自用：ad-hoc 签名，避免每次都被 Gatekeeper 拦
-codesign --force --sign - "$APP_BUNDLE" >/dev/null 2>&1 \
-  || echo "[build] 跳过签名（不影响本地运行）"
+if ! codesign --force --sign - "$APP_BUNDLE" >/dev/null 2>&1; then
+  if [[ "$DEVELOPMENT" -eq 0 ]]; then
+    echo "错误：正式 App 签名失败。" >&2
+    exit 1
+  fi
+  echo "[build] 跳过签名（不影响本地运行）"
+fi
+if [[ "$DEVELOPMENT" -eq 0 ]]; then
+  codesign --verify --strict "$APP_BUNDLE"
+fi
 
 # 图标必须被封进签名才会生效（Sealed Resources 的 files 计数应 > 0）
 if [[ -f "$ICON" ]] && ! codesign -dv "$APP_BUNDLE" 2>&1 | grep -q 'files=[1-9]'; then

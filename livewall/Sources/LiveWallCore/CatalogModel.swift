@@ -7,7 +7,7 @@ import Foundation
 public struct LivewallCategoryEntry: Codable, Sendable, Equatable {
     public let id: Int
     public let name: String
-    /// 分类切片的**相对文件名**（如 `category.4001.json`）。
+    /// 分类切片的**相对文件名**（如 `category.4001.bin`）。
     /// nil 表示条目数为 0，没有可拉取的切片。
     public let file: String?
     /// 该分类（含其子树）下的条目数。**只用于把空分类置灰，不在菜单里显示。**
@@ -46,7 +46,7 @@ public struct LivewallCategoryEntry: Codable, Sendable, Equatable {
 
     /// 是否是一个「安全的纯文件名」。见 `resolvedFileURL(relativeTo:)`。
     public static func isSafeRelativeFileName(_ name: String) -> Bool {
-        guard !name.isEmpty, name.hasSuffix(".json") else { return false }
+        guard !name.isEmpty, name.hasSuffix(".bin") else { return false }
         guard !name.contains("/"), !name.contains("\\"), !name.contains(":") else { return false }
         guard name != ".", name != ".." else { return false }
         return true
@@ -90,6 +90,10 @@ public struct LivewallCatalogIndex: Codable, Sendable {
     public let categories: [LivewallCategoryEntry]
     /// `nil` 表示旧版索引或没有可播放条目。
     public let allSlice: LivewallAllEntry?
+    public let encryption: String?
+    public let encryptionVersion: Int?
+    public let compression: String?
+    public let keyID: String?
 
     public init(
         schemaVersion: Int,
@@ -97,7 +101,11 @@ public struct LivewallCatalogIndex: Codable, Sendable {
         source: CatalogSource,
         defaultCategoryId: Int? = nil,
         categories: [LivewallCategoryEntry],
-        allSlice: LivewallAllEntry? = nil
+        allSlice: LivewallAllEntry? = nil,
+        encryption: String? = nil,
+        encryptionVersion: Int? = nil,
+        compression: String? = nil,
+        keyID: String? = nil
     ) {
         self.schemaVersion = schemaVersion
         self.generatedAt = generatedAt
@@ -105,6 +113,10 @@ public struct LivewallCatalogIndex: Codable, Sendable {
         self.defaultCategoryId = defaultCategoryId
         self.categories = categories
         self.allSlice = allSlice
+        self.encryption = encryption
+        self.encryptionVersion = encryptionVersion
+        self.compression = compression
+        self.keyID = keyID
     }
 
     /// 清单里的默认分类：优先 `defaultCategoryId`（且必须确实存在于 `categories`），
@@ -144,7 +156,7 @@ public struct LivewallCatalogIndex: Codable, Sendable {
     }
 }
 
-/// 分类切片（`livewall/category.<一级分类 id>.json`）。
+/// 分类切片（`livewall/category.<一级分类 id>.bin` 解密后的 JSON）。
 ///
 /// 结构沿用最早的 `livewall.json`：字段与 `wallpapers/src/wallpapers/export.py`
 /// 一一对应，改动需两边同步。
@@ -311,7 +323,7 @@ public enum CatalogCoding {
 
     /// 当前支持的清单版本。客户端遇到更高版本时拒绝加载而不是猜着解析。
     /// 索引与切片**各自独立判定**，共用这一个版本号。
-    public static let supportedSchemaVersion = 1
+    public static let supportedSchemaVersion = 2
 
     /// 解析索引（`catalog.json`）。索引不含条目，因此**不检查 items**。
     public static func decodeIndex(_ data: Data) throws -> LivewallCatalogIndex {

@@ -63,14 +63,22 @@ public protocol CatalogTransport {
 /// 调用方应在后台队列执行，避免阻塞主线程。
 public struct DefaultCatalogTransport: CatalogTransport {
 
-    /// 注入点。生产用 `.shared`；测试可注入带 `URLProtocol` 桩的会话。
+    /// 清单仅使用显式的加密缓存，避免 URLSession 另存远程明文索引。
+    private static let catalogSession: URLSession = {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.urlCache = nil
+        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
+        return URLSession(configuration: configuration)
+    }()
+
+    /// 注入点。测试可注入带 `URLProtocol` 桩的会话。
     ///
     /// 没有它，「超时竞态」这类缺陷**结构上不可测**（造不出「先超时、后回调」的时序），
     /// 修完也无法用回归测试锁住 —— 见 `SynchronousFetch` 的说明。
     private let session: URLSession
 
-    public init(session: URLSession = .shared) {
-        self.session = session
+    public init(session: URLSession? = nil) {
+        self.session = session ?? Self.catalogSession
     }
 
     public func readFile(at url: URL) throws -> Data {
@@ -84,7 +92,7 @@ public struct DefaultCatalogTransport: CatalogTransport {
     }
 
     public func fetch(_ url: URL) throws -> Data {
-        try SynchronousFetch.data(from: url, timeout: 15, session: session)
+        try SynchronousFetch.data(from: url, timeout: 15, cachePolicy: .reloadIgnoringLocalCacheData, session: session)
     }
 }
 
@@ -102,7 +110,7 @@ public struct DefaultCatalogTransport: CatalogTransport {
 ///   读索引副本 + 签名副本 → **同样验签** → 成功则使用
 ///     失败 → 返回 nil（调用方提示「无可用清单」）
 ///
-/// 内容切片 livewall/all.json 或 livewall/category.<id>.json（只拉当前筛选对应的一份）
+/// 内容切片 livewall/all.bin 或 livewall/category.<id>.bin（只拉当前筛选对应的一份）
 ///   地址由「索引地址 + 索引里的相对文件名」拼出，并在对应 entry 的
 ///   `resolvedFileURL` 里做**同源校验**
 ///   远程 → 成功 → **比对字节摘要与索引里记的那个**（见 `CatalogSignature`）
@@ -114,8 +122,7 @@ public struct DefaultCatalogTransport: CatalogTransport {
 ///
 /// **每个「继续往下」都只降级到「另一份同样验过签/对过摘要的数据」**，
 /// 不存在「验不过就退回不校验」那条路 —— 见 `CatalogSignature` 的说明。
-/// 代价是发布顺序有硬约束：**先部署 `.sig`，再发新版客户端**（老客户端只拉
-/// `catalog.json`，不受影响）。
+/// App、加密切片、索引与签名必须同批发布；换钥后拒绝旧缓存。
 ///
 /// 选择「全部」或切换分类都只拉当前筛选的一份切片；首次默认「全部」会拉完整去重清单，
 /// 后续重启可用单份缓存离线启动。
@@ -133,14 +140,36 @@ public struct CatalogService: Sendable {
     public let remoteIndexURL: URL?
     public let indexCacheURL: URL
     public let sliceCacheURL: URL
+    public let catalogKey: CatalogKeyMaterial?
+    private let requireEncryption: Bool
 
-    public init(remoteIndexURL: URL?, indexCacheURL: URL, sliceCacheURL: URL) {
+    public init(
+        remoteIndexURL: URL?,
+        indexCacheURL: URL,
+        sliceCacheURL: URL,
+        catalogKey: CatalogKeyMaterial? = CatalogReleaseKey.load()
+    ) {
+        self.init(remoteIndexURL: remoteIndexURL, indexCacheURL: indexCacheURL,
+                  sliceCacheURL: sliceCacheURL, catalogKey: catalogKey, requireEncryption: true)
+    }
+
+    /// 仅供旧签名固定向量的逻辑测试；生产入口始终要求加密协议。
+    @_spi(Testing)
+    public init(
+        remoteIndexURL: URL?,
+        indexCacheURL: URL,
+        sliceCacheURL: URL,
+        catalogKey: CatalogKeyMaterial?,
+        requireEncryption: Bool
+    ) {
         self.remoteIndexURL = remoteIndexURL
         self.indexCacheURL = indexCacheURL
         self.sliceCacheURL = sliceCacheURL
+        self.catalogKey = catalogKey
+        self.requireEncryption = requireEncryption
     }
 
-    /// 索引**签名文件**的本地副本路径，由索引副本路径推导（`…/index.json` → `…/index.json.sig`）。
+    /// 索引**签名文件**的本地副本路径，由索引副本路径推导（`…/index.bin` → `…/index.bin.sig`）。
     ///
     /// 刻意**不新增初始化参数**：签名与索引是一对，跟着索引走才不会被某个调用点漏配。
     /// 少了它，断网时读回来的副本就是一串无法判来源的字节，只能整份丢弃。
@@ -182,7 +211,13 @@ public struct CatalogService: Sendable {
             } else if let fileURL = entry.resolvedFileURL(relativeTo: remoteURL) {
                 if let data = tryResult({ try transport.fetch(fileURL) }, into: &warnings, label: "分类切片拉取失败"),
                    digestAccepted(data, for: entry, into: &warnings, label: "分类切片完整性校验失败"),
-                   let catalog = tryDecodeSlice(data, matching: entry, into: &warnings, label: "分类切片解析失败") {
+                   let plain = decryptSlice(
+                       data,
+                       context: "category:\(entry.id)",
+                       into: &warnings,
+                       label: "分类切片解密失败"
+                   ),
+                   let catalog = tryDecodeSlice(plain, matching: entry, into: &warnings, label: "分类切片解析失败") {
                     return CatalogSliceLoadResult(
                         catalog: catalog,
                         origin: .remote,
@@ -191,7 +226,7 @@ public struct CatalogService: Sendable {
                     )
                 }
             } else {
-                // 索引里的文件名不合法（含路径分隔符 / scheme / 不是 .json）。
+                // 索引里的文件名不合法（含路径分隔符 / scheme / 不是 .bin）。
                 // 这是远端数据，宁可不加载也不能照着它发请求。
                 warnings.append("索引里的分类文件名不合法，拒绝请求：\(entry.file ?? "nil")")
             }
@@ -199,7 +234,13 @@ public struct CatalogService: Sendable {
 
         if let data = tryResult({ try transport.readFile(at: sliceCacheURL) }, into: &warnings, label: "分类切片副本读取失败"),
            digestAccepted(data, for: entry, into: &warnings, label: "分类切片副本完整性校验失败"),
-           let catalog = tryDecodeSlice(data, matching: entry, into: &warnings, label: "分类切片副本解析失败") {
+           let plain = decryptSlice(
+               data,
+               context: "category:\(entry.id)",
+               into: &warnings,
+               label: "分类切片副本解密失败"
+           ),
+           let catalog = tryDecodeSlice(plain, matching: entry, into: &warnings, label: "分类切片副本解析失败") {
             return CatalogSliceLoadResult(catalog: catalog, origin: .cachedRemote, warnings: warnings)
         }
 
@@ -218,8 +259,14 @@ public struct CatalogService: Sendable {
             if let fileURL = entry.resolvedFileURL(relativeTo: remoteURL),
                let data = tryResult({ try transport.fetch(fileURL) }, into: &warnings, label: "全部切片拉取失败"),
                digestAccepted(data, sha256: entry.sha256, into: &warnings, label: "全部切片完整性校验失败"),
+               let plain = decryptSlice(
+                   data,
+                   context: "all",
+                   into: &warnings,
+                   label: "全部切片解密失败"
+               ),
                let catalog = tryDecodeAllSlice(
-                   data, itemCount: entry.itemCount, categoryIDs: categoryIDs,
+                   plain, itemCount: entry.itemCount, categoryIDs: categoryIDs,
                    into: &warnings, label: "全部切片解析失败"
                )
             {
@@ -233,8 +280,14 @@ public struct CatalogService: Sendable {
 
         if let data = tryResult({ try transport.readFile(at: sliceCacheURL) }, into: &warnings, label: "全部切片副本读取失败"),
            digestAccepted(data, sha256: entry.sha256, into: &warnings, label: "全部切片副本完整性校验失败"),
+           let plain = decryptSlice(
+               data,
+               context: "all",
+               into: &warnings,
+               label: "全部切片副本解密失败"
+           ),
            let catalog = tryDecodeAllSlice(
-               data, itemCount: entry.itemCount, categoryIDs: categoryIDs,
+               plain, itemCount: entry.itemCount, categoryIDs: categoryIDs,
                into: &warnings, label: "全部切片副本解析失败"
            )
         {
@@ -304,6 +357,20 @@ public struct CatalogService: Sendable {
 
         guard let index = tryDecodeIndex(payload, into: &warnings, label: "索引解析失败") else { return nil }
 
+        if requireEncryption {
+            guard index.schemaVersion == 2,
+                  index.encryption == CatalogCryptoEncryption.name,
+                  index.encryptionVersion == CatalogCryptoEncryption.version,
+                  index.compression == CatalogCryptoEncryption.compression,
+                  let keyID = index.keyID,
+                  let catalogKey,
+                  keyID == catalogKey.keyID
+            else {
+                warnings.append("索引加密格式或密钥不匹配，拒绝使用")
+                return nil
+            }
+        }
+
         if let problem = CatalogSignature.digestProblem(in: index) {
             // 验签通过、但内容不合约定：这是**生产侧**的 bug（摘要没写全），
             // 客户端不能靠「那就少校验一层」把它掩盖过去。
@@ -325,7 +392,9 @@ public struct CatalogService: Sendable {
         into warnings: inout [String]
     ) {
         do {
-            try transport.writeFile(verified.payload, to: indexCacheURL)
+            guard let catalogKey else { throw CatalogCryptoError.authenticationFailed }
+            let encrypted = try CatalogCrypto.encrypt(verified.payload, context: "index-cache", using: catalogKey)
+            try transport.writeFile(encrypted, to: indexCacheURL)
         } catch {
             warnings.append("索引已使用，但写入本地副本失败：\(error.localizedDescription)")
         }
@@ -359,7 +428,12 @@ public struct CatalogService: Sendable {
             )
         else { return nil }
 
-        return verifiedIndex(payload: payload, document: document, into: &warnings, label: "索引副本验签失败")?.index
+        guard let catalogKey,
+              let plain = tryResult(
+                  { try CatalogCrypto.decrypt(payload, context: "index-cache", using: catalogKey) },
+                  into: &warnings, label: "索引副本解密失败"
+              ) else { return nil }
+        return verifiedIndex(payload: plain, document: document, into: &warnings, label: "索引副本验签失败")?.index
     }
 
     // MARK: - 辅助
@@ -408,6 +482,25 @@ public struct CatalogService: Sendable {
             return false
         }
         return digestAccepted(data, sha256: expected, into: &warnings, label: label)
+    }
+
+    private func decryptSlice(
+        _ data: Data,
+        context: String,
+        into warnings: inout [String],
+        label: String
+    ) -> Data? {
+        guard requireEncryption else { return data }
+        guard let catalogKey else {
+            warnings.append("\(label)：App 没有内嵌清单密钥")
+            return nil
+        }
+        do {
+            return try CatalogCrypto.decrypt(data, context: context, using: catalogKey)
+        } catch {
+            warnings.append("\(label)：\(error.localizedDescription)")
+            return nil
+        }
     }
 
     private func digestAccepted(

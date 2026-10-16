@@ -21,10 +21,10 @@ Blog、Studio、Wallpapers、livewall 和 XiaomiCamera 位于同一仓库，但�
 | Blog | Node.js、Yarn | `cd blog && yarn install --frozen-lockfile` |
 | Studio | Node.js `>=22.12.0`、`studio/package.json` 指定版本的 pnpm | `cd studio && pnpm install --frozen-lockfile` |
 | Wallpapers | Python `>=3.12`；运行时只用标准库 | 无需安装；测试依赖见[项目 README](./wallpapers/README.md) |
-| livewall | macOS、Xcode Command Line Tools | `swift --version` 检查工具链；无需完整 Xcode |
+| livewall | macOS、Xcode Command Line Tools；正式发布还需 Node.js、Python 和本地壁纸数据库 | `swift --version` 检查工具链；无需完整 Xcode |
 | XiaomiCamera | .NET 10 SDK；本地运行需有包含 `libx264` 的 FFmpeg | 运行与发布方式见[项目 README](./xiaomiCamera/README.md) |
 
-请在目标项目目录安装依赖，不在仓库根目录安装或混用包管理器。依赖版本、脚本和测试命令以各项目清单及 README 为准。
+正式壁纸构建会选择已有的 Python `>=3.12`，也可通过 `WALLPAPERS_PYTHON` 指定解释器。请在目标项目目录安装依赖，不在仓库根目录安装或混用包管理器。依赖版本、脚本和测试命令以各项目清单及 README 为准。
 
 ## 根目录脚本
 
@@ -54,7 +54,7 @@ Blog 固定使用 `http://localhost:4000`，Studio 固定使用 `http://localhos
 ./build.sh xiaomiCamera --rid linux-x64  # 构建指定 RID
 ```
 
-`--with-wallpapers` 只用于 Studio：构建前生成加密壁纸目录及 livewall 未加密清单。`build.sh wallpapers` 做同样的数据生成和签名；若已有 `build/studio.meowv.com/`，还会同步到该目录。内容索引与 `catalog.json.sig` 必须同批生成，签名需要本机私钥。
+`--with-wallpapers` 只用于 Studio：构建前生成 Studio 壁纸目录及 LiveWall 加密切片和签名索引。`build.sh wallpapers` 做同样的数据生成和签名；若已有 `build/studio.meowv.com/`，还会同步到该目录。内容索引与 `catalog.json.sig` 必须同批生成，签名需要本机私钥。LiveWall 目录更新沿用现有加密密钥并核对当前 App；正式 App 构建则轮换并同步暂存、核对与晋升 App、切片、索引及密钥，具体规则见 [LiveWall README](./livewall/README.md#内容清单与签名)。
 
 `--with-dmg` 只用于 livewall：额外生成 DMG、`version.json` 及其签名。根脚本的 livewall 构建会递增 `CFBundleVersion`；本地 `run.sh` 不递增。打包和签名细节见 [livewall README](./livewall/README.md)。
 
@@ -65,7 +65,7 @@ Blog 固定使用 `http://localhost:4000`，Studio 固定使用 `http://localhos
 | `build/studio.meowv.com/xiaomiCamera/` | 小米摄像头服务：`<RID>/` 应用产物与共享 `tools/` FFmpeg 缓存 |
 | `build/livewall/LiveWall.app/` | livewall App；此目录不由 `deploy.sh` 上传 |
 
-全量构建在各项目都成功后才替换整个 `build/`；指定项目构建只替换对应目录。Studio 的既有 livewall 更新文件会在单独重建 Studio 时保留。`build/` 是生成目录，不提交 Git。
+全量构建在各项目都成功后才替换整个 `build/`；指定项目构建只替换对应目录；LiveWall 发布还会同步替换配套内容目录。Studio 的既有 livewall 更新文件会在单独重建 Studio 时保留。`build/` 是生成目录，不提交 Git。
 
 ### 上传到 Windows Nginx
 

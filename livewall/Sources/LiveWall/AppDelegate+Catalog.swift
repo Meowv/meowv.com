@@ -131,7 +131,7 @@ extension AppDelegate {
 
     /// 清单由两个文件组成，启动时按顺序拉：
     /// 1. **索引** `livewall/catalog.json`（几百字节）—— 拿到分类清单，菜单就能建了；
-    /// 2. **当前筛选的切片** `livewall/all.json` 或 `livewall/category.<id>.json` —— 拿到条目。
+    /// 2. **当前筛选的切片** `livewall/all.bin` 或 `livewall/category.<id>.bin` —— 解密后拿到条目。
     ///
     /// 切分类是「再拉一个切片」，不是「在本地全量里筛」：索引里**没有条目**，
     /// 那是它保持几百字节的前提。

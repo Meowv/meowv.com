@@ -41,7 +41,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # 仓库根。studio 的部署目录（build/studio.meowv.com/）在根下，不在 livewall/ 下 ——
 # 少了这一层 `../` 会一直找不到 build 号参照物，递增校验静默失效（每次只打印「跳过」）。
 REPO_ROOT="$(cd "${ROOT}/.." && pwd)"
-APP_BUNDLE="${ROOT}/build/LiveWall.app"
+BUILD_DIR="${LIVEWALL_RELEASE_BUILD_DIR:-${ROOT}/build}"
+APP_BUNDLE="${BUILD_DIR}/LiveWall.app"
 VOLUME_NAME="LiveWall"
 NO_BUILD=0
 
@@ -50,7 +51,7 @@ usage() {
 用法：./make-dmg.sh [选项]
 
 选项：
-  --no-build   直接打包现有的 build/LiveWall.app（默认会先跑 ./build.sh --bump-build）
+  --no-build   仅供同批发布流程内部打包暂存 App（不能单独使用）
   -h, --help   显示本帮助
 EOF
 }
@@ -73,10 +74,12 @@ while [[ ${#} -gt 0 ]]; do
   esac
 done
 
-if [[ "${NO_BUILD}" -eq 0 ]]; then
-  # --bump-build：打 DMG 就是发布，递增由 build.sh 在组装 App 与 codesign 之前完成。
-  # 不传的话这里会撞上下面的递增校验（plist 里还是上一次的号）。
-  "${ROOT}/build.sh" --bump-build
+if [[ -z "${LIVEWALL_RELEASE_BUILD_DIR:-}" ]]; then
+  if [[ "${NO_BUILD}" -eq 0 ]]; then
+    exec "${REPO_ROOT}/build.sh" livewall --with-dmg
+  fi
+  echo "错误：--no-build 仅供同批发布流程内部使用；请运行 ./make-dmg.sh。" >&2
+  exit 2
 fi
 
 if [[ ! -d "${APP_BUNDLE}" ]]; then
@@ -144,7 +147,7 @@ else
   echo "[dmg]   否则说明参照物路径不对，递增校验**没有生效** —— 检查上面两条路径。"
 fi
 
-DMG_PATH="${ROOT}/build/LiveWall-${VERSION}.dmg"
+DMG_PATH="${BUILD_DIR}/LiveWall-${VERSION}.dmg"
 
 # ── 安装窗口的版式 ────────────────────────────────────
 # 背景图由 tools/make-dmg-background.swift 在打包时生成。图标坐标与生成器里的 appIconCenter /
@@ -362,7 +365,7 @@ echo "[dmg] 自检通过：可挂载、App 与 Applications 链接齐全、签�
 # 版本信息（version.json）：与 dmg **同一次产出**，避免线上出现
 # 「version.json 说 0.2.0、实际文件还是 0.1.0」这种不一致。
 # 体积与摘要都由脚本算，不手写 —— 手抄一个 64 位 hex 迟早出错。
-FEED_PATH="${ROOT}/build/version.json"
+FEED_PATH="${BUILD_DIR}/version.json"
 DMG_NAME="$(basename "${DMG_PATH}")"
 DMG_SIZE="$(stat -f%z "${DMG_PATH}")"
 DMG_SHA="$(shasum -a 256 "${DMG_PATH}" | awk '{print $1}')"

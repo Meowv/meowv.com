@@ -107,6 +107,9 @@ public enum CatalogSignature {
             guard LivewallCategoryEntry.isSafeRelativeFileName(allSlice.file) else {
                 return "全部切片文件名不合法"
             }
+            if index.schemaVersion >= 2, !allSlice.file.hasSuffix(".bin") {
+                return "全部切片必须使用 .bin 文件"
+            }
             guard allSlice.itemCount > 0 else {
                 return "全部切片条目数必须大于 0"
             }
@@ -117,6 +120,10 @@ public enum CatalogSignature {
         var offenders: [String] = []
         for entry in index.categories {
             guard entry.file != nil else { continue }
+            if index.schemaVersion >= 2, !(entry.file?.hasSuffix(".bin") ?? false) {
+                offenders.append("\(entry.name)(\(entry.id))")
+                continue
+            }
             if !ContentDigest.isValid(entry.sha256) {
                 offenders.append("\(entry.name)(\(entry.id))")
             }

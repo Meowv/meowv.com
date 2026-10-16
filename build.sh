@@ -2,7 +2,10 @@
 
 set -euo pipefail
 
+ORIGINAL_ARGUMENTS=("$@")
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$ROOT_DIR/tools/wallpapers-python.sh"
 BUILD_DIR="$ROOT_DIR/build"
 ALL_PROJECTS=(blog studio livewall xiaomiCamera)
 SELECTED_PROJECTS=()
@@ -10,6 +13,9 @@ STAGING_DIR="$ROOT_DIR/.build-staging.$$"
 BACKUP_PATH=""
 RESTORE_PATH=""
 WALLPAPER_KEY_FILE="$ROOT_DIR/.wallpaper-key"
+CURRENT_LIVEWALL_KEY_FILE="$ROOT_DIR/.livewall-key"
+LIVEWALL_KEY_TEMP=""
+LIVEWALL_STAGE_DIR="$ROOT_DIR/.livewall-staging.$$"
 
 # 内容清单索引的文件名。客户端在 `LivewallCatalog` 里也硬编码了同一个名字
 # （它拼的是 `<清单目录>/catalog.json`），改这里必须同时改客户端。
@@ -46,74 +52,43 @@ WITH_DMG=0
 XIAOMI_CAMERA_RID="win-x64"
 HAS_STUDIO=0
 HAS_XIAOMI_CAMERA=0
+HAS_LIVEWALL=0
+LIVEWALL_CATALOG_READY=0
 
-export_livewall_catalog() {
-  local output_dir="$1"
-
-  echo "[livewall] 导出壁纸清单..."
-  # 旧版单文件清单已废弃，先清掉残留 —— 否则它会随 Studio 一起部署到 CDN，
-  # 让还在跑旧版的客户端一直读到过期数据。
-  rm -f "$output_dir/livewall.json"
-  (
-    cd "$ROOT_DIR/wallpapers"
-    PYTHONPATH=src python3 -m wallpapers export-livewall \
-      --db "$ROOT_DIR/wallpapers/wallpapers.db" \
-      --output-dir "$output_dir"
-  )
-  sign_livewall_catalog "$output_dir/livewall/$LIVEWALL_CATALOG_NAME"
-  echo "[livewall] 清单：${output_dir}/livewall"
+lock_livewall_build() {
+  if [ "${LIVEWALL_BUILD_LOCK_HELD:-}" != "$ROOT_DIR" ]; then
+    exec /usr/bin/python3 "$ROOT_DIR/tools/with-livewall-build-lock.py" "$ROOT_DIR" \
+      "$ROOT_DIR/build.sh" ${ORIGINAL_ARGUMENTS[@]+"${ORIGINAL_ARGUMENTS[@]}"}
+  fi
 }
 
-# 对内容清单索引（`catalog.json`）签名，产出 `catalog.json.sig`。
-#
-# 与 `version.json` 同用一把密钥、同一套签名格式，区别只在**对账对象**：
-# 更新清单对账 dmg 的摘要，内容清单对账各分类切片的摘要（切片摘要写在索引里，
-# 签名工具用 `--catalog` 走这条路）。
-#
-# 为什么 **失败就中断、不产出半成品**：客户端只认验签通过的清单 ——
-# 少一个 `.sig` 的表现是「客户端拉不到清单、只剩内建兜底」，而这个症状与
-# 「线上根本没部署」一模一样，排障会先往 CDN / 网络方向走。宁可这次构建失败。
-#
-# 顺序约束（只在**首次上线**这次成立）：`.sig` 必须**先于**新客户端被部署出去。
-# 新版客户端没有「验不过就用」的降级路，所以先发客户端 = 那批用户启动即无清单。
-# 详见 livewall/README.md 的「内容清单签名」。
-sign_livewall_catalog() {
-  local catalog_path="$1"
-  local signer="$ROOT_DIR/livewall/tools/sign-version.swift"
-  local pubkey_source="$ROOT_DIR/livewall/Sources/LiveWallCore/UpdateSignature.swift"
-
-  if [ ! -f "$catalog_path" ]; then
-    echo "错误：找不到刚导出的内容清单：${catalog_path}" >&2
-    exit 1
-  fi
-  # 逐项前置检查，别让「缺工具」表现得像「签名算法有问题」。
-  if [ ! -x "$signer" ]; then
-    echo "错误：${signer} 不存在或不可执行。" >&2
-    exit 1
-  fi
-  if [ ! -f "$pubkey_source" ]; then
-    echo "错误：找不到客户端公钥源文件：${pubkey_source}" >&2
-    exit 1
-  fi
-
-  echo "[livewall] 给内容清单签名..."
-  # 这一步内部会做两件事：① 逐个校验索引里记的分类切片摘要与磁盘文件一致
-  # （挡住「签了一份指向旧/坏切片的索引」）② 签完用**客户端内嵌公钥**回验。
-  "$signer" sign --json "$catalog_path" --catalog --pubkey-source "$pubkey_source"
+prepare_livewall_catalog() {
+  resolve_wallpapers_python
+  local key_file="$1"
+  local rotate="$2"
+  local args=("$ROOT_DIR/tools/prepare-livewall-catalog.sh" --key-file "$key_file" --output-dir "$LIVEWALL_STAGE_DIR/catalog")
+  [ "$rotate" -eq 1 ] && args+=(--rotate-key)
+  "${args[@]}"
+  LIVEWALL_CATALOG_READY=1
 }
 
 publish_wallpapers_only() {
   local source_dir="$ROOT_DIR/studio/public/data"
   local build_data_dir="$BUILD_DIR/studio.meowv.com/data"
 
-  echo "[wallpapers] 生成 Studio 壁纸目录数据..."
+  [ ! -e "$LIVEWALL_STAGE_DIR" ] && [ ! -e "$STAGING_DIR" ] || { echo "错误：暂存目录已存在。" >&2; exit 1; }
+  trap cleanup EXIT
+  trap 'exit 130' INT
+  trap 'exit 143' TERM
+  mkdir "$LIVEWALL_STAGE_DIR"
+  echo "[wallpapers] 生成并加密 LiveWall 壁纸目录数据..."
+  prepare_livewall_catalog "$CURRENT_LIVEWALL_KEY_FILE" 0
   (
     cd "$ROOT_DIR/wallpapers"
-    PYTHONPATH=src python3 -m wallpapers publish \
+    PYTHONPATH=src "$WALLPAPERS_PYTHON" -m wallpapers publish \
       --db "$ROOT_DIR/wallpapers/wallpapers.db" \
       --output-dir "$source_dir"
   )
-  export_livewall_catalog "$source_dir"
   node "$ROOT_DIR/studio/scripts/encrypt-wallpaper.mjs" "$source_dir" \
     --key-file "$WALLPAPER_KEY_FILE" --reuse-key
 
@@ -122,34 +97,29 @@ publish_wallpapers_only() {
     mkdir -p "$build_data_dir"
     rm -f "$build_data_dir"/wallpapers.catalog.*.bin
     rm -f "$build_data_dir"/wallpapers.catalog.*.json
-    # 旧版单文件清单已废弃，清掉避免残留；新产物是 livewall/ 整个目录
-    rm -f "$build_data_dir/livewall.json"
-    # 只清清单文件：`version.json` 是 --with-dmg 写入的分发产物，不能跟着一起删。
-    rm -f "$build_data_dir"/livewall/catalog.json
-    # 签名必须**跟着清单一起清**。留着一份旧清单的 .sig，新清单就会配着旧签名被部署出去，
-    # 客户端一律判「签名与清单不符」—— 比「没有签名」更难看出原因。
-    rm -f "$build_data_dir"/livewall/catalog.json.sig
-    rm -f "$build_data_dir"/livewall/category.*.json
-    rm -f "$build_data_dir"/livewall/all.json
-    mkdir -p "$build_data_dir/livewall"
-    cp \
-      "$source_dir"/wallpapers.catalog.json \
-      "$source_dir"/wallpapers.catalog.*.bin \
-      "$build_data_dir"/
-    cp "$source_dir"/livewall/*.json "$build_data_dir/livewall"/
-    # `*.json` **匹配不到** `.json.sig`，签名要单独拷。漏了它的表现是
-    # 「部署出去的清单客户端一律拒用」，而本地 studio/public/data 下看着是齐的 ——
-    # 所以这里缺文件就报错，不静默跳过。
-    if [ ! -f "$source_dir/livewall/${LIVEWALL_CATALOG_NAME}.sig" ]; then
-      echo "错误：${source_dir}/livewall/${LIVEWALL_CATALOG_NAME}.sig 不存在，内容清单没有签名。" >&2
-      echo "      它由 export_livewall_catalog 调 livewall/tools/sign-version.swift 产出。" >&2
-      exit 1
-    fi
-    cp "$source_dir"/livewall/*.json.sig "$build_data_dir/livewall"/
+    cp "$source_dir"/wallpapers.catalog.json "$source_dir"/wallpapers.catalog.*.bin "$build_data_dir"/
     echo "[wallpapers] 加密目录数据已同步到 $build_data_dir"
   fi
 
-  echo "[wallpapers] JSON 数据源目录：$source_dir"
+  local promotion=("$LIVEWALL_STAGE_DIR/catalog/livewall" "$source_dir/livewall" "-" "$source_dir/livewall.json")
+  if [ -d "$BUILD_DIR/studio.meowv.com" ]; then
+    stage_livewall_catalog "$build_data_dir/livewall" "$LIVEWALL_STAGE_DIR/deploy-catalog" 0
+    promotion+=("$LIVEWALL_STAGE_DIR/deploy-catalog" "$build_data_dir/livewall" "-" "$build_data_dir/livewall.json")
+  fi
+  node "$ROOT_DIR/tools/livewall-artifacts.mjs" promote "${promotion[@]}"
+  echo "[wallpapers] 加密 LiveWall 数据源目录：$source_dir/livewall"
+}
+
+stage_livewall_catalog() {
+  local previous="$1" destination="$2" rotating="$3"
+  mkdir -p "$destination"
+  if [ -d "$previous" ]; then cp -R "$previous"/. "$destination"/; fi
+  rm -f "$destination"/catalog.json "$destination"/catalog.json.sig \
+    "$destination"/category.*.json "$destination"/category.*.bin "$destination"/all.*
+  if [ "$rotating" -eq 1 ]; then
+    rm -f "$destination"/*.dmg "$destination"/version.json "$destination"/version.json.sig
+  fi
+  cp "$LIVEWALL_STAGE_DIR/catalog/livewall/"* "$destination/"
 }
 
 destination_name() {
@@ -197,6 +167,14 @@ check_project() {
     if ! command -v swift >/dev/null 2>&1; then
       echo "错误：未找到 Swift，无法编译 livewall。" >&2
       echo "请先安装 Xcode Command Line Tools。" >&2
+      exit 1
+    fi
+    if ! command -v node >/dev/null 2>&1 || ! command -v python3 >/dev/null 2>&1; then
+      echo "错误：正式 LiveWall 构建还需要 Node.js 与 Python 3 生成加密清单。" >&2
+      exit 1
+    fi
+    if [ ! -x "$ROOT_DIR/tools/prepare-livewall-catalog.sh" ]; then
+      echo "错误：LiveWall 清单准备脚本不存在或不可执行。" >&2
       exit 1
     fi
     if [ ! -x "$ROOT_DIR/livewall/build.sh" ]; then
@@ -259,6 +237,14 @@ build_project() {
       )
       ;;
     studio)
+      if [ "$LIVEWALL_CATALOG_READY" -eq 0 ]; then
+        node "$ROOT_DIR/tools/livewall-artifacts.mjs" check \
+          "$ROOT_DIR/studio/public/data/livewall" "$CURRENT_LIVEWALL_KEY_FILE"
+        if [ -f "$ROOT_DIR/studio/public/data/livewall.json" ]; then
+          echo "错误：仍有旧版明文 livewall.json，请先运行 ./build.sh wallpapers 生成加密目录。" >&2
+          exit 1
+        fi
+      fi
       (
         cd "$ROOT_DIR/studio"
         ./node_modules/.bin/vue-tsc --noEmit
@@ -314,7 +300,7 @@ stage_output() {
   fi
 
   if [ "$project" = "livewall" ]; then
-    source="$(source_path "$project")"
+    source="$LIVEWALL_RELEASE_BUILD_DIR/LiveWall.app"
     destination="$STAGING_DIR/$(destination_name "$project")/LiveWall.app"
 
     if [ ! -d "$source" ]; then
@@ -328,7 +314,7 @@ stage_output() {
     cp -R "$source"/. "$destination"/
     echo "[$project] 已暂存到 $(destination_name "$project")/LiveWall.app"
     # DMG 与 version.json 不在这里暂存：build/livewall/ 不会被 deploy.sh 上传，
-    # 它们由 install_livewall_update_feed 在发布之后装进 studio 的部署目录。
+    # 它们由 install_livewall_update_feed 装进 Studio 暂存目录，一起晋升。
     return
   fi
 
@@ -367,6 +353,8 @@ cleanup() {
   if [ -n "$STAGING_DIR" ] && [ -d "$STAGING_DIR" ]; then
     rm -rf "$STAGING_DIR"
   fi
+
+  if [ -d "$LIVEWALL_STAGE_DIR" ]; then rm -rf "$LIVEWALL_STAGE_DIR"; fi
 
   exit "$exit_code"
 }
@@ -436,21 +424,6 @@ publish_one() {
   RESTORE_PATH=""
 }
 
-# 清掉 livewall 上一次的分发产物。make-dmg.sh 只删「当前版本那一个」dmg，
-# 旧版本的 dmg 会一直留在 livewall/build/ 里，看着像本次产物。
-clean_livewall_dmg_artifacts() {
-  rm -f "$ROOT_DIR"/livewall/build/*.dmg
-  # 签名必须跟着清单一起清。留下一份**旧清单的** .sig，新清单就会配着旧签名被打包出去，
-  # 客户端那边表现为「签名与版本信息不符」—— 比「没有签名」更难看出原因。
-  rm -f "$ROOT_DIR"/livewall/build/version.json.sig
-  # ⚠️ 故意**不删** version.json：它是 make-dmg.sh 递增校验的**兜底参照物**
-  # （首选是 studio 部署目录里那一份）。在这里删掉，等于让校验在 studio 部署目录
-  # 缺失时静默退化成「跳过」，而症状只表现为一行提示，很难联想到是本行删的。
-  # 不删也不会把旧清单当成本次产物：dmg 已被上面清掉，install_livewall_update_feed
-  # 找不到 dmg 就会中止，且它还会核对 version.json 的 fileURL 与 dmg 文件名是否一致。
-}
-
-# DMG 与 version.json 必须落在 Studio 的部署目录里：version.json 的 fileURL 写死了
 # https://studio.meowv.com/data/livewall/<dmg 文件名>，而 deploy.sh 只上传
 # build/studio.meowv.com/ —— 放进 build/livewall/ 等于永远发不出去。
 install_livewall_update_feed() {
@@ -458,10 +431,10 @@ install_livewall_update_feed() {
 
   # dmg 与 version.json 都取自 livewall/make-dmg.sh —— 版本号、文件名、体积、
   # sha256、fileURL 都在那里按 Info.plist 生成，这里只搬运，不另算一份。
-  dmg="$(find "$ROOT_DIR/livewall/build" -maxdepth 1 -name '*.dmg' -print -quit 2>/dev/null)"
-  feed_path="$ROOT_DIR/livewall/build/version.json"
+  dmg="$(find "$LIVEWALL_RELEASE_BUILD_DIR" -maxdepth 1 -name '*.dmg' -print -quit 2>/dev/null)"
+  feed_path="$LIVEWALL_RELEASE_BUILD_DIR/version.json"
   sig_path="${feed_path}.sig"
-  target_dir="$BUILD_DIR/studio.meowv.com/data/livewall"
+  target_dir="$STAGING_DIR/studio.meowv.com/data/livewall"
 
   if [ -z "$dmg" ] || [ ! -f "$feed_path" ]; then
     echo "错误：未找到 make-dmg.sh 产出的 dmg / version.json。" >&2
@@ -583,6 +556,7 @@ elif [ "$#" -eq 1 ] && { [ "$1" = "-h" ] || [ "$1" = "--help" ]; }; then
   usage
   exit 0
 elif [ "$#" -eq 1 ] && { [ "$1" = "wallpapers" ] || [ "$1" = "w" ]; }; then
+  lock_livewall_build
   publish_wallpapers_only
   exit 0
 else
@@ -611,7 +585,10 @@ fi
 for project in "${SELECTED_PROJECTS[@]}"; do
   [ "$project" = "studio" ] && HAS_STUDIO=1
   [ "$project" = "xiaomiCamera" ] && HAS_XIAOMI_CAMERA=1
+  [ "$project" = "livewall" ] && HAS_LIVEWALL=1
 done
+
+if [ "$HAS_LIVEWALL" -eq 1 ] || [ "$HAS_STUDIO" -eq 1 ]; then lock_livewall_build; fi
 
 if [ "$XIAOMI_CAMERA_RID" != "win-x64" ] && [ "$HAS_XIAOMI_CAMERA" -eq 0 ]; then
   echo "错误：--rid 只能与 xiaomiCamera 项目一起使用。" >&2
@@ -644,8 +621,8 @@ if [ "$WITH_DMG" -eq 1 ]; then
   fi
 fi
 
-if [ -e "$STAGING_DIR" ]; then
-  echo "错误：临时目录已存在：$STAGING_DIR" >&2
+if [ -e "$STAGING_DIR" ] || [ -e "$LIVEWALL_STAGE_DIR" ]; then
+  echo "错误：临时目录已存在。" >&2
   exit 1
 fi
 
@@ -655,21 +632,30 @@ trap 'exit 143' TERM
 
 mkdir "$STAGING_DIR"
 
+if [ "$HAS_LIVEWALL" -eq 1 ] || [ "$WITH_WALLPAPERS" -eq 1 ]; then
+  mkdir "$LIVEWALL_STAGE_DIR"
+  if [ "$HAS_LIVEWALL" -eq 1 ]; then
+    LIVEWALL_KEY_TEMP="$LIVEWALL_STAGE_DIR/key"
+    prepare_livewall_catalog "$LIVEWALL_KEY_TEMP" 1
+    export LIVEWALL_CATALOG_KEY_FILE="$LIVEWALL_KEY_TEMP"
+    export LIVEWALL_RELEASE_BUILD_DIR="$LIVEWALL_STAGE_DIR/app-build"
+  else
+    prepare_livewall_catalog "$CURRENT_LIVEWALL_KEY_FILE" 0
+  fi
+fi
+
 for project in "${SELECTED_PROJECTS[@]}"; do
   if [ "$project" = "studio" ] && [ "$WITH_WALLPAPERS" -eq 1 ]; then
     (
       cd "$ROOT_DIR/wallpapers"
-      PYTHONPATH=src python3 -m wallpapers publish --db "$ROOT_DIR/wallpapers/wallpapers.db" --output-dir "$ROOT_DIR/studio/public/data"
+      PYTHONPATH=src "$WALLPAPERS_PYTHON" -m wallpapers publish --db "$ROOT_DIR/wallpapers/wallpapers.db" --output-dir "$ROOT_DIR/studio/public/data"
     )
-    export_livewall_catalog "$ROOT_DIR/studio/public/data"
     node "$ROOT_DIR/studio/scripts/encrypt-wallpaper.mjs" \
       "$ROOT_DIR/studio/public/data" --key-file "$WALLPAPER_KEY_FILE"
   fi
   build_project "$project"
   # DMG 必须在 .app 打完之后生成（make-dmg.sh 打的就是这个包）。
   if [ "$project" = "livewall" ] && [ "$WITH_DMG" -eq 1 ]; then
-    # 先清掉上一次的 dmg / version.json，避免旧版本文件被当成本次产物。
-    clean_livewall_dmg_artifacts
     (
       cd "$ROOT_DIR/livewall"
       ./make-dmg.sh --no-build
@@ -679,36 +665,86 @@ for project in "${SELECTED_PROJECTS[@]}"; do
   # 分发产物要在 studio 产物拷进暂存区**之后**才补，顺序反了会被覆盖。
   if [ "$project" = "studio" ]; then
     preserve_livewall_update_feed
+    if [ "$LIVEWALL_CATALOG_READY" -eq 0 ]; then
+      node "$ROOT_DIR/tools/livewall-artifacts.mjs" check \
+        "$STAGING_DIR/studio.meowv.com/data/livewall" "$CURRENT_LIVEWALL_KEY_FILE"
+    fi
     if [ "$HAS_XIAOMI_CAMERA" -eq 0 ]; then
       preserve_xiaomi_camera_deployment
     fi
   fi
 done
 
-if [ "${#SELECTED_PROJECTS[@]}" -eq "${#ALL_PROJECTS[@]}" ]; then
-  publish_all
-else
-  for project in "${SELECTED_PROJECTS[@]}"; do
-    # 两者同批构建时，xiaomiCamera 已在 Studio 暂存目录内，由 Studio 一次性替换。
-    if [ "$project" = "xiaomiCamera" ] && [ "$HAS_STUDIO" -eq 1 ]; then
-      continue
+# 构建顺序可以是 studio/livewall 任意排列，最后统一覆盖清单并核对 App。
+if [ "$LIVEWALL_CATALOG_READY" -eq 1 ]; then
+  catalog_target="$STAGING_DIR/studio.meowv.com/data/livewall"
+  if [ "$HAS_STUDIO" -eq 1 ]; then
+    # 先移走 Vite 拷出的旧目录，避免把旧明文切片带进新产物。
+    if [ -d "$catalog_target" ]; then
+      mv "$catalog_target" "$LIVEWALL_STAGE_DIR/vite-catalog"
     fi
-    publish_one "$project"
-  done
-  # xiaomiCamera 是 Studio 子目录；移动它后可能留下空的 studio.meowv.com 父目录。
-  # 仅删除空目录，若仍有内容则让 cleanup 恢复/清理暂存目录而不是静默丢弃文件。
-  find "$STAGING_DIR" -depth -type d -empty -exec rmdir {} \;
-  if [ -d "$STAGING_DIR" ]; then
-    echo "错误：发布后临时目录仍有未处理内容：$STAGING_DIR" >&2
-    exit 1
+    previous_catalog="$LIVEWALL_STAGE_DIR/vite-catalog"
+  else
+    previous_catalog="$BUILD_DIR/studio.meowv.com/data/livewall"
   fi
-  STAGING_DIR=""
+  stage_livewall_catalog "$previous_catalog" "$catalog_target" "$HAS_LIVEWALL"
+  rm -f "$STAGING_DIR/studio.meowv.com/data/livewall.json"
+fi
+if [ "$WITH_DMG" -eq 1 ]; then install_livewall_update_feed; fi
+if [ "$LIVEWALL_CATALOG_READY" -eq 1 ]; then
+  node "$ROOT_DIR/tools/livewall-artifacts.mjs" check "$catalog_target" \
+    "${LIVEWALL_KEY_TEMP:-$CURRENT_LIVEWALL_KEY_FILE}"
 fi
 
-# 发布之后才装分发产物：publish_all / publish_one 都会整体替换对应目录，装早了会被覆盖。
-if [ "$WITH_DMG" -eq 1 ]; then
-  install_livewall_update_feed
+PROMOTION=()
+if [ "${#SELECTED_PROJECTS[@]}" -eq "${#ALL_PROJECTS[@]}" ]; then
+  PROMOTION+=("$STAGING_DIR" "$BUILD_DIR")
+else
+  for project in "${SELECTED_PROJECTS[@]}"; do
+    if [ "$project" = "xiaomiCamera" ] && [ "$HAS_STUDIO" -eq 1 ]; then continue; fi
+    folder="$(destination_name "$project")"
+    PROMOTION+=("$STAGING_DIR/$folder" "$BUILD_DIR/$folder")
+  done
+  if [ "$HAS_LIVEWALL" -eq 1 ] && [ "$HAS_STUDIO" -eq 0 ]; then
+    PROMOTION+=("$STAGING_DIR/studio.meowv.com/data/livewall" "$BUILD_DIR/studio.meowv.com/data/livewall"
+      "-" "$BUILD_DIR/studio.meowv.com/data/livewall.json")
+  fi
 fi
+if [ "$LIVEWALL_CATALOG_READY" -eq 1 ]; then
+  PROMOTION+=("$LIVEWALL_STAGE_DIR/catalog/livewall" "$ROOT_DIR/studio/public/data/livewall"
+    "-" "$ROOT_DIR/studio/public/data/livewall.json")
+fi
+if [ "$HAS_LIVEWALL" -eq 1 ]; then
+  node "$ROOT_DIR/tools/livewall-artifacts.mjs" check "$LIVEWALL_STAGE_DIR/catalog/livewall" \
+    "$LIVEWALL_KEY_TEMP" "$LIVEWALL_RELEASE_BUILD_DIR/LiveWall.app" "$STAGING_DIR/livewall/LiveWall.app"
+  cp "$LIVEWALL_RELEASE_BUILD_DIR/Info-LiveWall.plist" "$LIVEWALL_STAGE_DIR/Info-LiveWall.plist"
+  PROMOTION+=("$LIVEWALL_RELEASE_BUILD_DIR" "$ROOT_DIR/livewall/build"
+    "$LIVEWALL_STAGE_DIR/Info-LiveWall.plist" "$ROOT_DIR/livewall/Resources/Info-LiveWall.plist"
+    "$LIVEWALL_KEY_TEMP" "$CURRENT_LIVEWALL_KEY_FILE")
+fi
+if [ "$LIVEWALL_CATALOG_READY" -eq 1 ]; then
+  node "$ROOT_DIR/tools/livewall-artifacts.mjs" promote "${PROMOTION[@]}"
+else
+  # 无 LiveWall 清单改动的项目沿用原发布逻辑及依赖。
+  if [ "${#SELECTED_PROJECTS[@]}" -eq "${#ALL_PROJECTS[@]}" ]; then
+    publish_all
+  else
+    for project in "${SELECTED_PROJECTS[@]}"; do
+      if [ "$project" = "xiaomiCamera" ] && [ "$HAS_STUDIO" -eq 1 ]; then continue; fi
+      publish_one "$project"
+    done
+    find "$STAGING_DIR" -depth -type d -empty -exec rmdir {} \;
+    if [ -d "$STAGING_DIR" ]; then
+      echo "错误：发布后临时目录仍有未处理内容：$STAGING_DIR" >&2
+      exit 1
+    fi
+    STAGING_DIR=""
+  fi
+fi
+
+# 所有晋升成功后才清理暂存；失败由工具恢复旧产物，EXIT 清理剩余暂存。
+if [ -d "$STAGING_DIR" ]; then rm -rf "$STAGING_DIR"; fi
+if [ -d "$LIVEWALL_STAGE_DIR" ]; then rm -rf "$LIVEWALL_STAGE_DIR"; fi
 
 trap - EXIT INT TERM
 

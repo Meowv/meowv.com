@@ -22,7 +22,7 @@
 ## 安全与生成物
 
 - 不输出或提交 API key、令牌、密码、私钥、证书或个人文件内容。示例使用占位符或环境变量。
-- 本机敏感配置：`.deploy.env`、`.wallpaper-key`、`~/.livewall-signing/version-key.txt`。不要读取后复制到源码、日志或文档。
+- 本机敏感配置：`.deploy.env`、`.wallpaper-key`、`.livewall-key`、`~/.livewall-signing/version-key.txt`。不要读取后复制到源码、日志或文档。
 - 不提交 `node_modules/`、`build/`、`.build/`、`dist/`、`public/`、`wallpapers.db`、Python 缓存、`.venv/`、测试报告、覆盖率和 `.DS_Store`。各项目生成物以其 `AGENTS.md` 为准。
 - 批量删除、覆盖重要文件、改写 Git 历史、生产部署、远程删除或其他不可逆外部操作，执行前必须说明范围、影响和恢复方式并取得确认。
 

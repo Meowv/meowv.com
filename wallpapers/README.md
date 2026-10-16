@@ -68,7 +68,7 @@ PYTHONPATH=src python3 -m wallpapers publish --db wallpapers.db --output-dir ../
 `export-livewall` 默认从数据库导出「桌面 + 动态」的明文清单到 `../studio/public/data/livewall/`：
 
 ```bash
-PYTHONPATH=src python3 -m wallpapers export-livewall
+PYTHONPATH=src python3 -m wallpapers export-livewall --output-dir /tmp/livewall-export
 PYTHONPATH=src python3 -m wallpapers export-livewall --device mobile --content dynamic --default-category 风景
 ```
 
@@ -81,14 +81,7 @@ PYTHONPATH=src python3 -m wallpapers export-livewall --device mobile --content d
 
 导出只保留活动记录和可用的 `video_preview` 播放地址；静态图地址从 `image` 资源读取，写为 `coverUrl`。同一壁纸可属于多个分类。`--output-dir` 指定的是 `livewall/` 的**父目录**；`--device`、`--content` 和 `--default-category` 可调整范围与默认分类。字段契约见 [`export.py`](src/wallpapers/export.py) 和 [客户端模型](../livewall/Sources/LiveWallCore/CatalogModel.swift)。
 
-单独运行 `export-livewall` **不会签名**，而且会移除旧签名。客户端先校验 `catalog.json.sig`，再用签名索引中的摘要校验切片；索引和签名必须同批发布。手工导出后，可在 `wallpapers/` 目录签名并回验：
-
-```bash
-../livewall/tools/sign-version.swift sign --json ../studio/public/data/livewall/catalog.json --catalog
-../livewall/tools/sign-version.swift verify --json ../studio/public/data/livewall/catalog.json
-```
-
-正常发布使用根 `build.sh`，它会完成切片摘要对账与签名。私钥位于仓库外，不写入源码或文档。
+单独运行 `export-livewall` 只生成中间 JSON，**不会加密或签名**，重写索引时会移除旧签名。应导出到临时目录，不能作为部署产物。根 `build.sh` 在暂存目录完成加密、密文摘要对账与签名后才晋升产物；签名工具的 `--catalog` 只接受已加密的 schema v2 索引。加密格式、密钥复用与轮换、客户端缓存和正式发布规则统一见 [LiveWall README](../livewall/README.md#内容清单与签名)。
 
 ## 验证
 

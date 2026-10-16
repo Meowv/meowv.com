@@ -36,7 +36,9 @@ public enum LiveWallPaths {
             try PrivateFileAccess.secureDirectory(at: logDirectory)
         }
         try PrivateFileAccess.secureDirectory(at: dataCacheDirectory)
-        let removed = try PrivateFileAccess.removeLegacyDataCache(from: applicationSupportDirectory)
+        var removed = try PrivateFileAccess.removeLegacyDataCache(from: applicationSupportDirectory)
+        removed += try PrivateFileAccess.removeLegacyCatalogCache(from: dataCacheDirectory)
+            .map { "DataCache/" + $0 }
         try PrivateFileAccess.secureTree(at: applicationSupportDirectory)
         if let logFileURL, FileManager.default.fileExists(atPath: logFileURL.path) {
             try PrivateFileAccess.secureFile(at: logFileURL)

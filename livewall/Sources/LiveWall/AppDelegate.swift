@@ -88,11 +88,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         .appendingPathComponent("config.json")
     /// 索引副本缓存（几百字节）。
     lazy var indexCacheURL: URL = LiveWallPaths.dataCacheDirectory
-        .appendingPathComponent("catalog.remote-cache.index.json")
+        .appendingPathComponent("catalog.remote-cache.index.bin")
     /// 内容切片副本缓存。**只有一份** ——「全部」状态存全部切片，否则存当前分类切片；
     /// 筛选状态与缓存内容在成功加载时同步更新（另有摘要与归属校验兜底）。
     lazy var sliceCacheURL: URL = LiveWallPaths.dataCacheDirectory
-        .appendingPathComponent("catalog.remote-cache.slice.json")
+        .appendingPathComponent("catalog.remote-cache.slice.bin")
     // 组件
     let screenCoordinator: ScreenCoordinator
     /// 最近一次层级检测结果。普通菜单只显示语义状态，详细结果放在诊断入口里。

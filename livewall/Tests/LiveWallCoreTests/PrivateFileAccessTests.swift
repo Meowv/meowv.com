@@ -60,5 +60,20 @@ func privateFileAccessTests() {
                 expect(false, "缓存冲突检查失败：\(error)")
             }
         }
+        test("新缓存目录清掉旧 JSON 清单并保留密文及封面") {
+            do {
+                for name in ["catalog.remote-cache.index.json", "catalog.remote-cache.index.json.sig",
+                             "catalog.remote-cache.slice.json", "catalog.remote-cache.index.bin",
+                             "catalog.remote-cache.index.bin.sig", "catalog.remote-cache.slice.bin", "cover-2.jpg"] {
+                    try Data(name.utf8).write(to: cache.appendingPathComponent(name))
+                }
+                let removed = try PrivateFileAccess.removeLegacyCatalogCache(from: cache)
+                expectEqual(removed.count, 3, "清理三份旧明文缓存")
+                for name in ["catalog.remote-cache.index.bin", "catalog.remote-cache.index.bin.sig",
+                             "catalog.remote-cache.slice.bin", "cover-2.jpg"] {
+                    expect(FileManager.default.fileExists(atPath: cache.appendingPathComponent(name).path), "保留 \(name)")
+                }
+            } catch { expect(false, "旧缓存迁移失败：\(error)") }
+        }
     }
 }

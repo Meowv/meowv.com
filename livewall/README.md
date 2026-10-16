@@ -40,11 +40,12 @@ cd livewall
 ./run.sh             # debug 构建并运行，会接管桌面壁纸层
 ./run.sh --release   # 以 release 构建运行
 ./test.sh            # Core 测试
+bash tools/test-catalog.sh  # 只编译清单相关 Core，测试缓存、跨语言加解密和模拟发布
 ```
 
 通过菜单栏「退出动态壁纸」正常退出；`pkill -x LiveWall` 也会触发清理。App 默认只允许一个实例；开发时可用 `./run.sh --allow-multiple` 显式放开。`./run.sh` 不递增 `CFBundleVersion`。
 
-日志在 `~/Library/Logs/com.meowv.livewall/livewall.log`，配置与缓存位于 `~/Library/Application Support/com.meowv.livewall/`。默认线上内容由 App 自行拉取，无需在本目录准备清单；数据目录中仅保留最近成功加载的索引和一份当前分类切片供离线使用。
+日志在 `~/Library/Logs/com.meowv.livewall/livewall.log`，配置与缓存位于 `~/Library/Application Support/com.meowv.livewall/`。默认线上内容由 App 自行拉取，无需在本目录准备清单；`DataCache/` 仅以密文保存最近成功加载的索引 `catalog.remote-cache.index.bin` 和一份切片 `catalog.remote-cache.slice.bin`，索引原始字节的签名保存在 `.index.bin.sig`。启动会删除两个旧目录中的清单 JSON 缓存；网络层使用无磁盘缓存的临时会话，不提供明文回退。配置 `config.json` 仍以 JSON 保存用户设置和收藏、固定、禁用条目；原墙纸恢复记录 `original-wallpapers.json`、系统 Aerial 清单和运行日志保留原格式，它们不属于目录缓存。
 
 ## 浏览窗口
 
@@ -71,13 +72,13 @@ cd livewall
 | --- | --- |
 | `catalog.json` | 分类索引和各切片的 SHA-256 摘要，不包含壁纸条目 |
 | `catalog.json.sig` | 索引原始字节的 Ed25519 签名 |
-| `all.json`、`category.<id>.json` | 全部条目或单个分类的切片，按需下载 |
+| `all.<摘要>.bin`、`category.<id>.<摘要>.bin` | gzip + AES-GCM 加密的全部条目或分类切片，按需下载 |
 
-客户端先验索引签名，再按索引摘要和分类归属校验切片；失败时只回退到同样通过校验的本地副本。单独运行 `wallpapers export-livewall` 只导出清单，**不会签名**。仓库根目录的 `./build.sh wallpapers` 会生成并签名清单，已有 Studio 构建产物时也会同步进去；`./build.sh studio --with-wallpapers` 则连同 Studio 一起构建。`catalog.json` 与 `catalog.json.sig` 必须一起更新。生产链路见[根 README](../README.md)和[wallpapers/README.md](../wallpapers/README.md)。
+索引使用 schema v2，记录加密格式、压缩方式和 `keyID`。客户端先验索引签名及密钥标识，再按索引摘要校验密文，解密后由系统 zlib 校验 gzip 并限制解压到 16 MiB，最后解析及检查分类归属；失败时只回退到同样通过校验的本地密文副本。单独运行 `wallpapers export-livewall` 只导出中间 JSON，**不会加密或签名**。仓库根目录的 `./build.sh wallpapers` 会沿用 `.livewall-key` 生成并签名 `.bin`；正式 LiveWall App 构建会生成新密钥，并把同一密钥嵌入 App、同步生成 `.bin`。`catalog.json` 与 `catalog.json.sig` 必须一起更新。生产链路见[根 README](../README.md)和[wallpapers/README.md](../wallpapers/README.md)。
 
 ### 内容清单签名
 
-更换密钥后，`CatalogTests.swift` 和 `UpdateSignatureTests.swift` 的固定签名向量也要重签：用 `printf '%s'` 将测试中的原始 JSON 写入临时文件，不加换行；在本目录执行 `./tools/sign-version.swift sign --json <临时文件>`，再把生成的 `.sig` 中的 `signature` 写回测试。测试向量含占位摘要，因此不传 `--catalog` 或 `--dmg`；正式产物仍由构建脚本带摘要对账参数签名。
+更换 Ed25519 签名密钥后（区别于每次 App 发布轮换的清单加密密钥），`CatalogTests.swift`、`CatalogCryptoTests.swift` 和 `UpdateSignatureTests.swift` 的固定签名向量也要重签：用 `printf '%s'` 将测试中的原始 JSON 写入临时文件，不加换行；在本目录执行 `./tools/sign-version.swift sign --json <临时文件>`，再把生成的 `.sig` 中的 `signature` 写回测试。测试向量含占位摘要，因此不传 `--catalog` 或 `--dmg`；正式产物仍由构建脚本带摘要对账参数签名。
 
 ## 版本检查与更新
 
@@ -97,13 +98,15 @@ DMG 挂载后的窗口使用定制背景图（安装提示和箭头）、固定�
 
 ### 发版步骤
 
-本目录 `./build.sh` 只组装 `build/LiveWall.app`；`./make-dmg.sh` 会先以 `--bump-build` 构建，再生成 `build/LiveWall-<版本>.dmg`、`version.json` 和 `version.json.sig`。在仓库根目录构建完整发布产物：
+本目录 `./build.sh`（含直接调用的 `--bump-build`）与 `./make-dmg.sh` 统一进入根脚本发布流程，每次生成新的清单加密密钥。App、`.bin`、索引及签名先暂存，核对签名、密文摘要、解密和 App 的 `keyID` 后一起晋升；构建或晋升失败时保留旧密钥与旧产物。共享目录的构建使用同一把本机锁，避免并发生成时交叉晋升。`run.sh`、`build.sh --debug` 和 `build.sh --development` 属于开发构建，不轮换、不递增 build 号；`make-dmg.sh --no-build` 仅供发布流程内部使用。在仓库根目录构建完整发布产物：
 
 ```bash
 ./build.sh livewall --with-dmg
 ./deploy.sh studio --dry-run
 ./deploy.sh studio
 ```
+
+换钥后新版 App 必须先联网获取对应目录，无法使用旧密钥缓存。加密只用于避免直接阅读，不作为访问控制。单独构建 App 而不带 `--with-dmg` 时，会从新部署产物中移除使用旧密钥的安装包和更新清单；需要分发时使用同批 `--with-dmg`。
 
 根脚本会递增必要的 `CFBundleVersion`，并将 DMG 与版本清单及其签名放入 `build/studio.meowv.com/data/livewall/`。`CFBundleShortVersionString` 仍需人工决定；只构建 Studio 时，根脚本会保留已有更新产物。部署后应核对线上 `version.json`、`version.json.sig` 和 DMG 属于同次构建。部署前先读[根目录的发布说明](../README.md)。
 

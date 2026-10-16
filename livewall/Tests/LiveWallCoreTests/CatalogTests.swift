@@ -1,5 +1,5 @@
 import Foundation
-import LiveWallCore
+@_spi(Testing) import LiveWallCore
 
 // MARK: - 测试替身
 
@@ -47,7 +47,7 @@ struct StubError: Error, LocalizedError {
 /// 索引（`livewall/catalog.json`）的形状。**刻意不含 items**。
 func indexJSON(
     categories: [(id: Int, name: String, file: String?, itemCount: Int)] = [
-        (4001, "美女", "category.4001.json", 2),
+        (4001, "美女", "category.4001.bin", 2),
         (6000, "风景", "category.6000.json", 1),
     ],
     defaultCategoryId: Int? = 4001,
@@ -87,25 +87,29 @@ func sliceJSON(
 }
 
 let testIndexURL = "https://cdn.test/livewall/catalog.json"
-let testIndexCachePath = "/tmp/livewall-test/cache/index.json"
-let testSliceCachePath = "/tmp/livewall-test/cache/slice.json"
+let testIndexCachePath = "/tmp/livewall-test/cache/index.bin"
+let testSliceCachePath = "/tmp/livewall-test/cache/slice.bin"
 
 /// 签名文件的地址/路径。由被签文件的地址**加 `.sig`** 推导（`CatalogSignature.documentURL`）。
 let testIndexSignatureURL = testIndexURL + ".sig"
 let testIndexSignatureCachePath = testIndexCachePath + ".sig"
 
+let testCatalogKey = CatalogKeyMaterial(masterKey: Data(repeating: 0x41, count: 32))
+
 func makeService(remote: URL? = URL(string: testIndexURL)) -> CatalogService {
     CatalogService(
         remoteIndexURL: remote,
         indexCacheURL: URL(fileURLWithPath: testIndexCachePath),
-        sliceCacheURL: URL(fileURLWithPath: testSliceCachePath)
+        sliceCacheURL: URL(fileURLWithPath: testSliceCachePath),
+        catalogKey: testCatalogKey,
+        requireEncryption: false
     )
 }
 
 func entry(
     _ id: Int = 4001,
     name: String = "美女",
-    file: String? = "category.4001.json",
+    file: String? = "category.4001.bin",
     itemCount: Int = 2,
     sha256: String? = nil
 ) -> LivewallCategoryEntry {
@@ -123,7 +127,7 @@ func entry(_ id: Int = 4001, name: String = "美女", digestOf data: Data, itemC
     LivewallCategoryEntry(
         id: id,
         name: name,
-        file: "category.\(id).json",
+        file: "category.\(id).bin",
         itemCount: itemCount,
         sha256: ContentDigest.sha256Hex(data)
     )
@@ -196,7 +200,7 @@ private func serve(
 
 /// 在本地副本路径上放「清单 + 它的签名」这一对。
 private func cache(_ transport: FakeTransport, payload: String, signature: String) {
-    transport.files[testIndexCachePath] = Data(payload.utf8)
+    transport.files[testIndexCachePath] = try! CatalogCrypto.encrypt(Data(payload.utf8), context: "index-cache", using: testCatalogKey)
     transport.files[testIndexSignatureCachePath] = signatureFile(signature)
 }
 
@@ -360,8 +364,8 @@ func catalogTests() {
         let indexURL = URL(string: "https://cdn.test/livewall/catalog.json")!
 
         test("正常相对文件名解析到同目录") {
-            let url = entry(file: "category.4001.json").resolvedFileURL(relativeTo: indexURL)
-            expectEqual(url?.absoluteString, "https://cdn.test/livewall/category.4001.json", "应拼到索引同目录")
+            let url = entry(file: "category.4001.bin").resolvedFileURL(relativeTo: indexURL)
+            expectEqual(url?.absoluteString, "https://cdn.test/livewall/category.4001.bin", "应拼到索引同目录")
         }
 
         test("条目数为 0 的分类没有文件名") {
@@ -370,7 +374,7 @@ func catalogTests() {
 
         test("拒绝带路径分隔符的名字") {
             // 索引是远端数据，不能让它把请求指到别的路径去
-            for name in ["../secret.json", "sub/category.json", "/etc/passwd.json", "a\\b.json"] {
+            for name in ["../secret.bin", "sub/category.bin", "/etc/passwd.bin", "a\\b.bin"] {
                 expectNil(
                     entry(file: name).resolvedFileURL(relativeTo: indexURL),
                     "应拒绝 \(name)"
@@ -379,7 +383,7 @@ func catalogTests() {
         }
 
         test("拒绝带 scheme 的名字") {
-            for name in ["https://evil.test/x.json", "file:///etc/x.json"] {
+            for name in ["https://evil.test/x.bin", "file:///etc/x.bin"] {
                 expectNil(entry(file: name).resolvedFileURL(relativeTo: indexURL), "应拒绝 \(name)")
             }
         }
@@ -387,7 +391,8 @@ func catalogTests() {
         test("拒绝点目录与非 json") {
             expectNil(entry(file: ".").resolvedFileURL(relativeTo: indexURL), "应拒绝 .")
             expectNil(entry(file: "..").resolvedFileURL(relativeTo: indexURL), "应拒绝 ..")
-            expectNil(entry(file: "category.4001").resolvedFileURL(relativeTo: indexURL), "应拒绝非 .json")
+            expectNil(entry(file: "category.4001").resolvedFileURL(relativeTo: indexURL), "应拒绝非 .bin")
+            expectNil(entry(file: "category.4001.json").resolvedFileURL(relativeTo: indexURL), "应拒绝明文切片")
             expectNil(entry(file: "").resolvedFileURL(relativeTo: indexURL), "应拒绝空名")
         }
     }
@@ -416,7 +421,10 @@ func catalogTests() {
 
             _ = makeService().loadIndex(transport: transport)
 
-            expectEqual(transport.written[testIndexCachePath], Data(SignedIndex.remotePayload.utf8), "索引副本")
+            let encrypted = transport.written[testIndexCachePath]!
+            expect(encrypted != Data(SignedIndex.remotePayload.utf8), "索引不得明文落盘")
+            expectEqual(try? CatalogCrypto.decrypt(encrypted, context: "index-cache", using: testCatalogKey),
+                        Data(SignedIndex.remotePayload.utf8), "索引原始字节不变")
             // 只写索引不写签名，断网时读回来的副本过不了验签 —— 等于没有缓存。
             expectEqual(
                 transport.written[testIndexSignatureCachePath],
@@ -596,7 +604,7 @@ func catalogTests() {
 
     suite("CatalogService 切片降级链") {
 
-        let sliceURL = "https://cdn.test/livewall/category.4001.json"
+        let sliceURL = "https://cdn.test/livewall/category.4001.bin"
 
         test("按索引里的相对名拼出远程地址并优先拉远程") {
             let remoteSlice = sliceJSON(items: [(7, "https://cdn.test/r.mp4", "远程")])
@@ -703,7 +711,7 @@ func catalogTests() {
         test("索引里的文件名不合法时拒绝发请求，只记 warning") {
             let transport = FakeTransport()
 
-            let result = makeService().loadSlice(entry(file: "../../etc/passwd.json"), transport: transport)
+            let result = makeService().loadSlice(entry(file: "../../etc/passwd.bin"), transport: transport)
 
             expectNil(result.catalog, "非法文件名应拒绝")
             expectEqual(transport.fetchedURLs.count, 0, "不应发出任何请求")
