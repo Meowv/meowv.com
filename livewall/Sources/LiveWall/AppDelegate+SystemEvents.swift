@@ -163,21 +163,39 @@ extension AppDelegate {
         currentName = names.isEmpty ? "启动中" : names.joined(separator: " · ")
     }
 
+    /// 播放前准备当前条目的静态图，失败时异步从新视频取帧，绝不抓旧槽位。
+    func prepareLockScreenPreview(for item: WallpaperItem, loaded: LoadedVideo,
+                                  on key: PlaybackSlotKey) async -> LockScreenPreviewer.PreparedPreview? {
+        guard preferences.lockScreenPreview, key == engine.primaryKey else { return nil }
+        return await lockScreenPreviewer.prepare(for: item) {
+            await PlaybackEngine.initialFrame(for: loaded)
+        }
+    }
+
     /// 更新静态锁屏回退图。动态 Aerial 仅在锁屏事件到来时准备，避免轮换每张都下载转码。
     ///
     /// 用独立 Task：内部要下载几百 KB（最长 15 秒超时），不能挡住切换排期。
     /// `frameProvider` 只在静态图不可用时才会被调用；它复用播放引擎异步缓存的帧，
     /// 不会在主线程轮询等待。
-    func refreshLockScreenPreview(for item: WallpaperItem, on key: PlaybackSlotKey) {
+    func refreshLockScreenPreview(for item: WallpaperItem, on key: PlaybackSlotKey,
+                                  prepared: LockScreenPreviewer.PreparedPreview? = nil) {
+        guard !isShuttingDown, preferences.lockScreenPreview,
+              key == engine.primaryKey, engine.item(on: key)?.id == item.id else { return }
         let previewer = lockScreenPreviewer
         let policy = screenCoordinator.policy
+        if let prepared {
+            previewer.applyPrepared(prepared, for: item, multiScreenPolicy: policy)
+            return
+        }
         Task { @MainActor [weak self] in
-            guard let self, self.preferences.lockScreenPreview else { return }
+            guard let self, !self.isShuttingDown, self.preferences.lockScreenPreview,
+                  key == self.engine.primaryKey, self.engine.item(on: key)?.id == item.id else { return }
             await previewer.update(
                 for: item,
                 multiScreenPolicy: policy,
                 frameProvider: { [weak self] in
-                    await self?.engine.currentFrame(on: key)
+                    guard self?.engine.item(on: key)?.id == item.id else { return nil }
+                    return await self?.engine.currentFrame(on: key)
                 }
             )
         }

@@ -31,8 +31,7 @@ final class BrowserWindow: NSWindow {
 ///
 /// 1. **单窗口复用**：`AppDelegate` 只持有一个 controller，已存在就 `present()` 前置，
 ///    不重复开；
-/// 2. **`.accessory` 下靠 `orderFrontRegardless` 上屏**：`NSApp.activate` 是**协作式**请求，
-///    系统可以直接拒绝，只写激活会出现「窗口开在别的 App 后面」（见 `present()`）；
+/// 2. 浏览器作为台前调度的主窗口参与分组，打开时请求激活并前置；
 /// 3. **关窗不退出**：`isReleasedWhenClosed = false`（controller 持有窗口，
 ///    否则关闭后再 `showWindow` 会崩），关闭时停预览播放器、取消在飞缩略图请求，
 ///    但**不调 `NSApp.terminate`** —— 菜单栏图标才是这个 App 的主体。
@@ -48,6 +47,7 @@ final class WallpaperBrowserWindowController: NSWindowController {
     }
 
     private let browserViewController: WallpaperBrowserViewController
+    private var previousActivationPolicy: NSApplication.ActivationPolicy?
 
     init(dataSource: WallpaperBrowserDataSource) {
         browserViewController = WallpaperBrowserViewController(dataSource: dataSource)
@@ -69,8 +69,10 @@ final class WallpaperBrowserWindowController: NSWindowController {
         }
         window.minSize = NSSize(width: 880, height: 560)
         window.isReleasedWhenClosed = false
+        // 菜单栏 App 的浏览器仍是普通主窗口，交由台前调度收纳，不能跟随其他 App 留在台前。
+        window.collectionBehavior = [.managed, .primary]
         // 刻意用**默认 level**：它远高于桌面覆盖窗口那一层，不会跟壁纸抢层级；
-        // 保持菜单栏 App 的 accessory 策略，搜索框的键盘焦点由窗口响应链处理。
+        // 普通应用模式只在浏览窗口打开期间生效，关闭后恢复菜单栏模式。
         window.center()
 
         super.init(window: window)
@@ -87,25 +89,26 @@ final class WallpaperBrowserWindowController: NSWindowController {
     /// 把窗口带到前台。
     func present() {
         guard let window else { return }
-        // `.accessory` 进程**不能靠激活把窗口提上来**：
-        //  - `NSApp.activate()` 是协作式请求（macOS 14 起），系统可以直接拒绝；
-        //  - `activate(ignoringOtherApps:)` 的 `ignoringOtherApps` 自 macOS 14 起
-        //    **完全无效**（编译器明确告警「will have no effect」），那条分支只是给旧系统留的；
-        //  - `makeKeyAndOrderFront` 只把窗口排到**本 App** 窗口列表的最前，提不到别的 App 之上。
-        // 三者叠一起的实测后果：窗口开在别的 App 后面（2026-09-21 真机复现，见 README）。
-        // `orderFrontRegardless()` 不看激活状态，直接把窗口提到本层最前 —— 这才是可靠的那一步。
+        // accessory 即使声明 primary，在台前调度点击桌面时仍可能不被收纳。
+        // 浏览期间临时成为普通应用，让系统负责激活、窗口分组与收纳。
+        if NSApp.activationPolicy() != .regular {
+            let previous = NSApp.activationPolicy()
+            guard NSApp.setActivationPolicy(.regular) else {
+                log?("浏览窗口：无法切换普通应用模式")
+                return
+            }
+            previousActivationPolicy = previous
+        }
+        if window.isMiniaturized { window.deminiaturize(nil) }
         window.makeKeyAndOrderFront(nil)
-        window.orderFrontRegardless()
-        // 激活仍然要请求：被拒时只损失键盘焦点（点一下窗口就有），成功时 Esc / ⌘W 立刻可用。
         if #available(macOS 14.0, *) {
             NSApp.activate()
         } else {
             NSApp.activate(ignoringOtherApps: true)
         }
-        // 本方法是从**状态栏菜单项**里调进来的，动作执行时菜单还在收；菜单收起那一拍可能再把
-        // 窗口压回去。下一个 runloop 再提一次（幂等，不引入定时器）。
+        // 等菜单收起后设置初始焦点；不再次强行前置，避免覆盖用户已经切换的台前分组。
         DispatchQueue.main.async { [weak self, weak window] in
-            window?.orderFrontRegardless()
+            guard window?.isVisible == true else { return }
             self?.browserViewController.browserDidPresent()
         }
     }
@@ -133,6 +136,12 @@ extension WallpaperBrowserWindowController: NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
         // 释放预览播放器与在飞的缩略图请求。桌面播放**不动**（决策 12）。
         browserViewController.teardown()
+        if let policy = previousActivationPolicy {
+            if !NSApp.setActivationPolicy(policy) {
+                log?("浏览窗口：恢复菜单栏模式失败")
+            }
+            previousActivationPolicy = nil
+        }
         onClose?()
     }
 }

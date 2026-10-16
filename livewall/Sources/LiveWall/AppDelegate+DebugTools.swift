@@ -2,12 +2,10 @@ import AppKit
 import LiveWallCore
 
 enum DebugDirectory: String {
-    case configuration
     case userData
     case logs
     case downloadedWallpapers
     case updatePackages
-    case remoteDataCache
     case aerialLockScreen
 }
 
@@ -43,9 +41,6 @@ extension AppDelegate {
         let url: URL
         let createIfMissing: Bool
         switch directory {
-        case .configuration:
-            url = configURL.deletingLastPathComponent()
-            createIfMissing = true
         case .userData:
             url = LiveWallPaths.applicationSupportDirectory
             createIfMissing = true
@@ -66,9 +61,6 @@ extension AppDelegate {
             }
             url = downloads
             createIfMissing = true
-        case .remoteDataCache:
-            url = LiveWallPaths.dataCacheDirectory
-            createIfMissing = true
         case .aerialLockScreen:
             url = aerialLockScreenManager.debugVideosDirectory
             createIfMissing = false
@@ -76,7 +68,7 @@ extension AppDelegate {
 
         if createIfMissing {
             do {
-                if directory == .configuration || directory == .userData || directory == .remoteDataCache || directory == .logs {
+                if directory == .userData || directory == .logs {
                     try PrivateFileAccess.secureDirectory(at: url)
                 } else {
                     try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)

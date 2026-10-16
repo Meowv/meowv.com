@@ -1,7 +1,7 @@
 import Foundation
 import LiveWallCore
 
-/// 锁屏预览的纯逻辑：写入节流、缓存文件名槽位、目标屏、来源决策。
+/// 锁屏预览的纯逻辑：写入节流、缓存文件名、目标屏、来源决策。
 ///
 /// 这些判定决定了「什么时候写、写哪张、写到哪些屏」，全部可以脱离 GUI 验证 ——
 /// 真正的系统调用（下载、抓帧、设墙纸）在 `LiveWall/LockScreenPreviewer.swift` 里。
@@ -74,23 +74,16 @@ func lockScreenPreviewTests() {
         }
     }
 
-    suite("锁屏预览：缓存文件名槽位") {
-
-        test("两个槽位交替") {
-            let policy = LockScreenPreviewPolicy()
-            let names = (0..<4).map { policy.cacheFileName(generation: $0, fileExtension: "jpg") }
-            expectEqual(names, ["cover-0.jpg", "cover-1.jpg", "cover-0.jpg", "cover-1.jpg"], "应交替使用两个槽位")
+    suite("锁屏预览：不可变缓存路径") {
+        let policy = LockScreenPreviewPolicy()
+        test("连续切换与重启不复用路径") {
+            let names = (0..<128).map { _ in policy.cacheFileName(identifier: UUID(), fileExtension: "jpg") }
+            expectEqual(Set(names).count, 128, "缓存 URL 不再每隔两张重复，避免系统复用旧图")
         }
-
-        test("扩展名跟随来源（静态图可能是 png）") {
-            let policy = LockScreenPreviewPolicy()
-            expectEqual(policy.cacheFileName(generation: 0, fileExtension: "png"), "cover-0.png", "png 槽位 0")
-            expectEqual(policy.cacheFileName(generation: 1, fileExtension: "jpg"), "cover-1.jpg", "jpg 槽位 1")
-        }
-
-        test("空扩展名回退到 jpg") {
-            let policy = LockScreenPreviewPolicy()
-            expectEqual(policy.cacheFileName(generation: 0, fileExtension: ""), "cover-0.jpg", "空扩展名应回退")
+        test("扩展名跟随来源，缺失时回退") {
+            let id = UUID()
+            expect(policy.cacheFileName(identifier: id, fileExtension: "png").hasSuffix(".png"), "支持 PNG")
+            expect(policy.cacheFileName(identifier: id, fileExtension: "").hasSuffix(".jpg"), "空扩展名回退 JPEG")
         }
     }
 
@@ -149,36 +142,6 @@ func lockScreenPreviewTests() {
                 policy.decide(coverDownloadSucceeded: false, frameAvailable: false),
                 .none,
                 "两者都不可用时不写（保持系统原墙纸）"
-            )
-        }
-    }
-
-    suite("锁屏预览：退出固化时的文件名避让") {
-
-        test("与上次写入同名时顺延一个槽位") {
-            let policy = LockScreenPreviewPolicy()
-            expectEqual(
-                policy.cacheFileName(generation: 0, fileExtension: "jpg", avoiding: "cover-0.jpg"),
-                "cover-1.jpg",
-                "同路径重复设置不一定触发刷新，必须换一个槽位"
-            )
-        }
-
-        test("不同名时不变") {
-            let policy = LockScreenPreviewPolicy()
-            expectEqual(
-                policy.cacheFileName(generation: 0, fileExtension: "jpg", avoiding: "cover-1.jpg"),
-                "cover-0.jpg",
-                "本来就不冲突就不该顺延"
-            )
-        }
-
-        test("没有上次写入时按原规则") {
-            let policy = LockScreenPreviewPolicy()
-            expectEqual(
-                policy.cacheFileName(generation: 1, fileExtension: "png", avoiding: nil),
-                "cover-1.png",
-                "首次写盘不受影响"
             )
         }
     }

@@ -235,6 +235,15 @@ extension AppDelegate {
                 let loaded = try await VideoLoader.load(url)
                 guard !Task.isCancelled, !isShuttingDown, pinGeneration == pinApplyGeneration,
                       pinnedLibraryItem == item else { return }
+                let prepared: LockScreenPreviewer.PreparedPreview?
+                if let primary = engine.primaryKey, targets.contains(primary) {
+                    prepared = await prepareLockScreenPreview(for: item, loaded: loaded, on: primary)
+                } else {
+                    prepared = nil
+                }
+                defer { lockScreenPreviewer.discard(prepared) }
+                guard !Task.isCancelled, !isShuttingDown, pinGeneration == pinApplyGeneration,
+                      pinnedLibraryItem == item else { return }
                 var applied = 0
                 for (key, generation) in generations {
                     // 加载是异步的，期间槽位可能已经被拆掉（屏拔了 / 策略切了）。
@@ -252,6 +261,7 @@ extension AppDelegate {
                         loaded: loaded,
                         on: key,
                         captureStillFrame: preferences.lockScreenPreview
+                            && prepared == nil
                             && item.coverImageURL == nil
                             && key == engine.primaryKey
                     )
@@ -271,7 +281,7 @@ extension AppDelegate {
                 if preferences.lockScreenPreview, let primary = engine.primaryKey,
                     engine.item(on: primary)?.id == item.id
                 {
-                    refreshLockScreenPreview(for: item, on: primary)
+                    refreshLockScreenPreview(for: item, on: primary, prepared: prepared)
                 }
                 announcePinIfPending()
                 log("固定项已铺满 \(applied) 个槽位：\(item.id) \(item.title)")

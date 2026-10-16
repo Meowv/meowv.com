@@ -28,15 +28,11 @@ public enum CoverSource: Equatable, Sendable {
     case none
 }
 
-/// 锁屏预览的纯逻辑：写入节流、缓存文件名槽位、目标屏、来源决策。
+/// 锁屏预览的纯逻辑：写入节流、缓存文件名、目标屏、来源决策。
 ///
 /// 所有系统调用（下载、抓帧、设墙纸）都在 `LiveWall` 那一侧，这里只做判定 ——
 /// 这样「什么时候写、写哪张、写到哪些屏」可以脱离 GUI 穷举验证。
 public struct LockScreenPreviewPolicy: Equatable, Sendable {
-
-    /// 缓存文件名的槽位数。**两个槽位交替**：同一路径重复设置系统墙纸不一定触发刷新
-    /// （系统按 URL 判断内容是否变化），换个文件名最省事。
-    public static let slotCount = 2
 
     /// 签名**没变**时的最小重写间隔。
     ///
@@ -61,30 +57,10 @@ public struct LockScreenPreviewPolicy: Equatable, Sendable {
         return now.timeIntervalSince(lastWriteAt) >= minimumInterval
     }
 
-    /// 缓存文件名，形如 `cover-0.jpg` / `cover-1.png`。
-    ///
-    /// 扩展名由调用方给出而**不在这里硬编码**：静态图实测有 `.jpg` 也有 `.png`，
-    /// 抓帧则统一是 JPEG。
-    public func cacheFileName(generation: Int, fileExtension: String) -> String {
-        let count = Self.slotCount
-        let slot = ((generation % count) + count) % count
+    /// 每次准备使用不可变的新路径，避免系统墙纸服务按旧 URL 复用图像。
+    public func cacheFileName(identifier: UUID, fileExtension: String) -> String {
         let ext = fileExtension.isEmpty ? "jpg" : fileExtension
-        return "cover-\(slot).\(ext)"
-    }
-
-    /// 同上，但**避开** `previousName`：算出来跟上次写入同名就顺延一个槽位。
-    ///
-    /// 退出固化会用到：那时可能刚换片、当前张的静态图还没写过，只能抓帧补一张，
-    /// 而抓帧恰好轮到与「上一张」相同的文件名 —— 系统按 URL 判断内容是否变化，
-    /// 同路径重复设置不一定触发刷新，于是桌面看不出换过图。
-    public func cacheFileName(
-        generation: Int,
-        fileExtension: String,
-        avoiding previousName: String?
-    ) -> String {
-        let first = cacheFileName(generation: generation, fileExtension: fileExtension)
-        guard let previousName, first == previousName else { return first }
-        return cacheFileName(generation: generation + 1, fileExtension: fileExtension)
+        return "cover-\(identifier.uuidString.lowercased()).\(ext)"
     }
 
     /// `url` 是不是本 App 自己写进缓存目录的那张图。

@@ -190,7 +190,10 @@ extension AppDelegate {
             }
             do {
                 let loaded = try await self.loadVideo(url)
-                guard !Task.isCancelled else { return }
+                guard !Task.isCancelled, !self.isShuttingDown else { return }
+                let prepared = await self.prepareLockScreenPreview(for: item, loaded: loaded, on: key)
+                defer { self.lockScreenPreviewer.discard(prepared) }
+                guard !Task.isCancelled, !self.isShuttingDown else { return }
                 // 加载是异步的，期间槽位可能已经被拆掉（屏拔了 / 策略切了）。
                 // 往一个不存在的槽位里塞内容只会让播放器空转。
                 guard self.engine.slotKeys().contains(key) else {
@@ -211,6 +214,7 @@ extension AppDelegate {
                     loaded: loaded,
                     on: key,
                     captureStillFrame: self.preferences.lockScreenPreview
+                        && prepared == nil
                         && item.coverImageURL == nil
                         && key == self.engine.primaryKey
                 )
@@ -237,10 +241,9 @@ extension AppDelegate {
                         + " [\(key.label)]")
                 // 锁屏预览：把这张的静态图同步成系统墙纸。**只跟随主槽位** ——
                 // 系统墙纸全局只有一张，多槽位（每屏独立）时以主槽位为准。
-                // 必须在**播放中**发起：抓帧兜底要求播放器在播，而锁屏通知到达时
-                // governor 已经把播放器暂停了，那一刻只复用已缓存的图。
+                // 静态图已在切换前异步准备，这里同轮提交；准备失败才走播放中的兜底。
                 if self.preferences.lockScreenPreview, key == self.engine.primaryKey {
-                    self.refreshLockScreenPreview(for: item, on: key)
+                    self.refreshLockScreenPreview(for: item, on: key, prepared: prepared)
                 }
                 self.refreshStatusItem()
                 // 加载是异步的，期间状态可能已翻成暂停。播放器必须服从当前状态，

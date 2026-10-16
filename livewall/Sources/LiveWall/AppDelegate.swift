@@ -638,7 +638,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         persistScreenSources()
         // 退出要的是「把当前播放的静态图留在桌面上」，**不是**恢复用户原墙纸 ——
         // 后者会让桌面跳回一张跟刚才播放内容毫不相干的图。
-        // 必须在 `engine.teardown()` 之前：抓帧兜底要求播放器还在播。
+        // 必须在 `engine.teardown()` 之前读取当前条目；静态图已在播放切换前准备。
         freezeCurrentWallpaper()
         // `setDesktopImageURL` 生效有延迟（见 `reapplyCached` 的说明），而进程马上
         // 就要退出 —— 给主线程一点时间让它落地，然后再设一次兜底。

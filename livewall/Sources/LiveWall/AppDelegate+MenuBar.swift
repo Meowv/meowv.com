@@ -351,14 +351,13 @@ extension AppDelegate {
         menu.addItem(developerTools)
 
         if preferences.developerToolsEnabled {
+            let directories = NSMenu()
             for (title, directory) in [
-                ("打开配置文件目录", DebugDirectory.configuration),
-                ("打开用户数据目录", DebugDirectory.userData),
-                ("打开日志目录", DebugDirectory.logs),
-                ("打开下载壁纸目录", DebugDirectory.downloadedWallpapers),
-                ("打开更新包目录", DebugDirectory.updatePackages),
-                ("打开数据缓存目录", DebugDirectory.remoteDataCache),
-                ("打开锁屏素材目录", DebugDirectory.aerialLockScreen),
+                ("配置与用户数据", DebugDirectory.userData),
+                ("日志", DebugDirectory.logs),
+                ("下载的壁纸", DebugDirectory.downloadedWallpapers),
+                ("更新包", DebugDirectory.updatePackages),
+                ("系统锁屏素材", DebugDirectory.aerialLockScreen),
             ] {
                 let item = NSMenuItem(
                     title: title,
@@ -367,8 +366,11 @@ extension AppDelegate {
                 )
                 item.target = self
                 item.representedObject = directory.rawValue
-                menu.addItem(item)
+                directories.addItem(item)
             }
+            let openDirectories = NSMenuItem(title: "打开目录", action: nil, keyEquivalent: "")
+            openDirectories.submenu = directories
+            menu.addItem(openDirectories)
             let dump = NSMenuItem(
                 title: "打印窗口层级表", action: #selector(dumpWindows), keyEquivalent: "")
             dump.target = self

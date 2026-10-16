@@ -33,6 +33,13 @@ final class LockScreenPreviewer {
     /// 写入结果，供日志与调用方观察。
     enum Outcome: Equatable { case written, skipped, failed }
 
+    struct PreparedPreview {
+        let itemID: Int
+        let coverURL: String?
+        let imageURL: URL
+        let source: CoverSource
+    }
+
     /// 日志出口，由 AppDelegate 注入（这里不自己开文件）。
     var log: ((String) -> Void)?
     /// 需要提示用户时的出口：`(文本, 是否警告)`。
@@ -41,6 +48,7 @@ final class LockScreenPreviewer {
     private let cacheDirectory: URL
     private let recordsDirectory: URL
     private let policy: LockScreenPreviewPolicy
+    private let setDesktopImage: (URL, NSScreen) throws -> Void
     /// 用户原墙纸的持久化位置（`displayID → 路径`）。
     ///
     /// 为什么要落盘：退出时会把当前播放的静态图**留在**系统墙纸上（见 `freezeCurrent`），
@@ -52,7 +60,8 @@ final class LockScreenPreviewer {
     private var lastApplied: URL?
     private var lastDisplayIDs: [UInt32] = []
     private var lastWriteAt: Date?
-    private var generation = 0
+    private var preparedFiles: Set<URL> = []
+    private var retainedFiles: [URL] = []
     /// 每次调用 `update` 都递增。下载期间如果用户又换了片，旧操作只能丢弃结果。
     private var operationGeneration = 0
     /// 失败提示只报一次，避免每换一张片就刷一条警告。
@@ -66,20 +75,89 @@ final class LockScreenPreviewer {
     init(
         cacheDirectory: URL,
         recordsDirectory: URL,
-        policy: LockScreenPreviewPolicy = LockScreenPreviewPolicy()
+        policy: LockScreenPreviewPolicy = LockScreenPreviewPolicy(),
+        setDesktopImage: @escaping (URL, NSScreen) throws -> Void = { url, screen in
+            try NSWorkspace.shared.setDesktopImageURL(url, for: screen, options: [:])
+        }
     ) {
         self.cacheDirectory = cacheDirectory
         self.recordsDirectory = recordsDirectory
         self.policy = policy
+        self.setDesktopImage = setDesktopImage
         self.recordsURL = recordsDirectory.appendingPathComponent("original-wallpapers.json")
     }
 
     // MARK: - 对外接口
 
+    /// 播放前完成下载或异步取帧与编码，此时不更改系统墙纸。
+    func prepare(
+        for item: WallpaperItem,
+        frameProvider: () async -> CGImage?
+    ) async -> PreparedPreview? {
+        var imageURL: URL?
+        if let coverURL = item.coverImageURL {
+            do { imageURL = try await downloadCover(coverURL) }
+            catch { log?("锁屏预览：静态图下载失败（\(item.id)），改用抓帧") }
+        }
+        let coverSucceeded = imageURL != nil
+        if imageURL == nil, !Task.isCancelled {
+            if let frame = await frameProvider() { imageURL = await writeFrame(frame) }
+        }
+        guard let imageURL else { return nil }
+        let source = policy.decide(coverDownloadSucceeded: coverSucceeded, frameAvailable: true)
+        let result = PreparedPreview(itemID: item.id, coverURL: item.coverUrl, imageURL: imageURL, source: source)
+        guard !Task.isCancelled else {
+            discard(result)
+            return nil
+        }
+        return result
+    }
+
+    /// 加载被取消、过期或预备图已提交后，释放预备文件的所有权。
+    func discard(_ prepared: PreparedPreview?) {
+        guard let prepared else { return }
+        preparedFiles.remove(prepared.imageURL)
+        guard !retainedFiles.contains(prepared.imageURL) else { return }
+        Self.removeFiles([prepared.imageURL])
+    }
+
+    /// 与 engine.play 在同一轮主 actor 内提交，退出时不会仍指向上一张封面。
+    @discardableResult
+    func applyPrepared(_ prepared: PreparedPreview, for item: WallpaperItem,
+                       multiScreenPolicy: MultiScreenPolicy) -> Outcome {
+        guard prepared.itemID == item.id, prepared.coverURL == item.coverUrl else { return .skipped }
+        operationGeneration += 1
+        let displayIDs = policy.targetDisplayIDs(policy: multiScreenPolicy, screens: Self.screenPairs().map(\.identity))
+        return applyPrepared(prepared, for: item, displayIDs: displayIDs)
+    }
+
+    private func applyPrepared(_ prepared: PreparedPreview, for item: WallpaperItem,
+                               displayIDs: [UInt32]) -> Outcome {
+        restoreRemovedDisplays(currentDisplayIDs: displayIDs)
+        recordOriginalsIfNeeded()
+        let targets = Self.screenPairs().filter { displayIDs.contains($0.identity.displayID) }
+        guard !targets.isEmpty else { return .skipped }
+        let applied = setWallpaper(prepared.imageURL, to: targets)
+        guard applied > 0 else {
+            reportFailure("锁屏预览：系统拒绝了墙纸设置")
+            return .failed
+        }
+        lastApplied = prepared.imageURL
+        lastDisplayIDs = displayIDs
+        lastSignature = PreviewSignature(itemID: item.id, displayIDs: displayIDs, coverURL: item.coverUrl)
+        lastWriteAt = Date()
+        didReportFailure = false
+        retainedFiles.append(prepared.imageURL)
+        retainedFiles = Array(retainedFiles.suffix(2))
+        pruneCaches()
+        let origin = prepared.source == .frame ? "抓帧" : "静态图"
+        log?("锁屏预览已更新：\(prepared.imageURL.lastPathComponent)（\(origin)）→ \(applied) 块屏")
+        return .written
+    }
+
     /// 换片后调用。`frameProvider` 用于静态图缺失/下载失败时抓当前帧。
     ///
-    /// 注意调用时机：**抓帧必须在播放中进行**。锁屏通知到达时 governor 已经把播放器
-    /// 暂停了，那时 `hasNewPixelBuffer` 恒为 false，只能复用已缓存的图。
+    /// 用于策略变化与开关切换；正常换片走 prepare + applyPrepared，在播放前准备完图。
     @discardableResult
     func update(
         for item: WallpaperItem,
@@ -111,11 +189,6 @@ final class LockScreenPreviewer {
             frameProvider: frameProvider,
             operation: operation
         )
-        if outcome == .written {
-            lastSignature = signature
-            lastWriteAt = Date()
-            didReportFailure = false
-        }
         return outcome
     }
 
@@ -128,7 +201,7 @@ final class LockScreenPreviewer {
         var applied = 0
         for pair in targets {
             do {
-                try NSWorkspace.shared.setDesktopImageURL(lastApplied, for: pair.screen, options: [:])
+                try setDesktopImage(lastApplied, pair.screen)
                 applied += 1
             } catch {
                 log?("锁屏预览：锁屏时重设屏 \(pair.identity.displayID) 失败：\(error.localizedDescription)")
@@ -147,8 +220,7 @@ final class LockScreenPreviewer {
     ///    顺带兜住 `setDesktopImageURL` 的生效延迟；
     /// 2. 都拿不到 → **保持现状不动**（通常是上一张），绝不把墙纸清空。
     ///
-    /// 退出路径刻意不再现抓帧或编码：那会把大图 JPEG 编码压回主线程。正常切换时
-    /// `update` 已异步写好自己的来源；若刚换片还没写完，退出保留上一张比卡住退出更稳。
+    /// 播放切换前已完成静态图准备；退出路径不再下载、抓帧或编码。
     ///
     /// 顺带作废所有在飞的 `update`：退出清理期间它们若抢先写完，会把固化结果顶掉。
     @discardableResult
@@ -190,7 +262,7 @@ final class LockScreenPreviewer {
         for pair in Self.screenPairs() {
             guard let url = originalWallpapers[pair.identity.displayID] else { continue }
             do {
-                try NSWorkspace.shared.setDesktopImageURL(url, for: pair.screen, options: [:])
+                try setDesktopImage(url, pair.screen)
                 restored += 1
             } catch {
                 log?("锁屏预览：恢复屏 \(pair.identity.displayID) 的原墙纸失败：\(error.localizedDescription)")
@@ -215,67 +287,14 @@ final class LockScreenPreviewer {
     ) async -> Outcome {
         guard operation == operationGeneration else { return .skipped }
 
-        // 从「全部屏幕」切到「仅主屏」等策略变化时，先把被移除的屏幕恢复成
-        // 用户原来的墙纸；否则它会一直停留在上一张锁屏预览图。
-        restoreRemovedDisplays(currentDisplayIDs: displayIDs)
-
-        var coverFile: URL?
-        if let coverURL = item.coverImageURL {
-            do {
-                coverFile = try await downloadCover(coverURL)
-            } catch {
-                log?("锁屏预览：静态图下载失败（\(item.id)：\(error.localizedDescription)），改用抓帧")
-            }
-        } else {
-            log?("锁屏预览：清单里没有静态图地址（\(item.id)），改用抓帧")
-        }
-        guard operation == operationGeneration else { return .skipped }
-
-        // 抓帧是兜底，不是主路径 —— 只有静态图不可用才去抓
-        let frame = coverFile == nil ? await frameProvider() : nil
-        guard operation == operationGeneration else { return .skipped }
-        let source = policy.decide(
-            coverDownloadSucceeded: coverFile != nil,
-            frameAvailable: frame != nil
-        )
-
-        let imageURL: URL
-        switch source {
-        case .remote:
-            guard let coverFile else { return .failed }
-            imageURL = coverFile
-        case .frame:
-            guard let frame, let written = await writeFrame(frame) else {
-                reportFailure("锁屏预览：静态图与抓帧都不可用，保留系统原墙纸")
-                return .failed
-            }
-            imageURL = written
-        case .none:
-            reportFailure("锁屏预览：静态图与抓帧都不可用，保留系统原墙纸")
+        guard let prepared = await prepare(for: item, frameProvider: frameProvider) else {
+            guard operation == operationGeneration, !Task.isCancelled else { return .skipped }
+            reportFailure("锁屏预览：静态图与抓帧都不可用，保留现有墙纸")
             return .failed
         }
-        guard operation == operationGeneration else { return .skipped }
-
-        recordOriginalsIfNeeded()
-
-        let targets = Self.screenPairs().filter { displayIDs.contains($0.identity.displayID) }
-        guard !targets.isEmpty else {
-            log?("锁屏预览：目标屏为空，跳过 \(item.id)")
-            return .skipped
-        }
-
-        guard operation == operationGeneration else { return .skipped }
-        let applied = setWallpaper(imageURL, to: targets)
-        guard applied > 0 else {
-            reportFailure("锁屏预览：系统拒绝了墙纸设置")
-            return .failed
-        }
-
-        lastApplied = imageURL
-        lastDisplayIDs = displayIDs
-        let origin = source == .frame ? "抓帧" : "静态图"
-        log?("锁屏预览已更新：\(imageURL.lastPathComponent)（\(origin)）→ \(applied) 块屏")
-        return .written
+        defer { discard(prepared) }
+        guard operation == operationGeneration, !Task.isCancelled else { return .skipped }
+        return applyPrepared(prepared, for: item, displayIDs: displayIDs)
     }
 
     private func restoreRemovedDisplays(currentDisplayIDs: [UInt32]) {
@@ -286,7 +305,7 @@ final class LockScreenPreviewer {
         for pair in Self.screenPairs() where removed.contains(pair.identity.displayID) {
             guard let url = originalWallpapers[pair.identity.displayID] else { continue }
             do {
-                try NSWorkspace.shared.setDesktopImageURL(url, for: pair.screen, options: [:])
+                try setDesktopImage(url, pair.screen)
                 log?("锁屏预览：策略切换，恢复移除的屏 \(pair.identity.displayID) 原墙纸")
             } catch {
                 log?("锁屏预览：恢复移除的屏 \(pair.identity.displayID) 原墙纸失败：\(error.localizedDescription)")
@@ -296,9 +315,16 @@ final class LockScreenPreviewer {
 
     private func downloadCover(_ url: URL) async throws -> URL {
         let ext = url.pathExtension.isEmpty ? "jpg" : url.pathExtension.lowercased()
-        let name = policy.cacheFileName(generation: generation, fileExtension: ext)
-        generation += 1
+        let name = policy.cacheFileName(identifier: UUID(), fileExtension: ext)
         let destination = cacheDirectory.appendingPathComponent(name)
+        preparedFiles.insert(destination)
+        var completed = false
+        defer {
+            if !completed {
+                preparedFiles.remove(destination)
+                Self.removeFiles([destination])
+            }
+        }
         try PrivateFileAccess.secureDirectory(at: cacheDirectory)
         let bytes = try await FileDownloader.download(
             url,
@@ -307,6 +333,7 @@ final class LockScreenPreviewer {
             expectedContentTypePrefix: "image/"
         )
         try PrivateFileAccess.secureFile(at: destination)
+        completed = true
         log?("锁屏预览：静态图已缓存 \(name)（\(bytes) 字节）")
         return destination
     }
@@ -316,7 +343,7 @@ final class LockScreenPreviewer {
         var applied = 0
         for pair in targets {
             do {
-                try NSWorkspace.shared.setDesktopImageURL(url, for: pair.screen, options: [:])
+                try setDesktopImage(url, pair.screen)
                 applied += 1
             } catch {
                 log?("锁屏预览：设置屏 \(pair.identity.displayID) 的墙纸失败：\(error.localizedDescription)")
@@ -325,10 +352,17 @@ final class LockScreenPreviewer {
         return applied
     }
 
-    private func writeFrame(_ image: CGImage, avoiding previousName: String? = nil) async -> URL? {
-        let name = policy.cacheFileName(generation: generation, fileExtension: "jpg", avoiding: previousName)
-        generation += 1
+    private func writeFrame(_ image: CGImage) async -> URL? {
+        let name = policy.cacheFileName(identifier: UUID(), fileExtension: "jpg")
         let destination = cacheDirectory.appendingPathComponent(name)
+        preparedFiles.insert(destination)
+        var completed = false
+        defer {
+            if !completed {
+                preparedFiles.remove(destination)
+                Self.removeFiles([destination])
+            }
+        }
         guard let data = await Task.detached(priority: .utility, operation: {
             Self.encodeJPEG(image)
         }).value else {
@@ -342,11 +376,37 @@ final class LockScreenPreviewer {
                 try data.write(to: destination, options: .atomic)
                 try PrivateFileAccess.secureFile(at: destination)
             }.value
+            completed = true
             log?("锁屏预览：已抓当前帧 \(image.width)x\(image.height) → \(name)（\(data.count) 字节）")
             return destination
         } catch {
             log?("锁屏预览：帧写入失败：\(error.localizedDescription)")
             return nil
+        }
+    }
+
+    private func pruneCaches() {
+        let directory = cacheDirectory
+        Task { @MainActor [weak self] in
+            let files = await Task.detached(priority: .utility) {
+                (try? FileManager.default.contentsOfDirectory(at: directory,
+                    includingPropertiesForKeys: nil))?.filter {
+                    $0.lastPathComponent.hasPrefix("cover-")
+                        && ["jpg", "jpeg", "png", "heic"].contains($0.pathExtension.lowercased())
+                } ?? []
+            }.value
+            guard let self else { return }
+            // 枚举返回的 URL 与 appendingPathComponent 产生的 URL 可能有不同的 base URL。
+            // 同一缓存目录按唯一文件名比较，避免 URL 表示差异误删当前图或在飞预备图。
+            let keep = Set(preparedFiles.map(\.lastPathComponent))
+                .union(retainedFiles.map(\.lastPathComponent))
+            Self.removeFiles(files.filter { !keep.contains($0.lastPathComponent) })
+        }
+    }
+
+    private static func removeFiles(_ files: [URL]) {
+        Task.detached(priority: .utility) {
+            for file in files { try? FileManager.default.removeItem(at: file) }
         }
     }
 

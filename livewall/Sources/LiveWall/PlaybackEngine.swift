@@ -290,6 +290,11 @@ final class PlaybackEngine {
 
     // MARK: - 取帧
 
+    /// 切换前从已经准入的视频准备兜底静态图，不依赖当前还在播放的旧槽位。
+    static func initialFrame(for loaded: LoadedVideo) async -> CGImage? {
+        await generateFrame(asset: loaded.asset, at: .zero, maximumSize: maximumStillFrameSize())
+    }
+
     /// 取指定槽位**当前显示帧**。取不到返回 nil —— 调用方保留旧图，绝不清空墙纸。
     ///
     /// 播放开始后会自动异步缓存一帧；这里优先返回缓存。缓存缺失时才用
