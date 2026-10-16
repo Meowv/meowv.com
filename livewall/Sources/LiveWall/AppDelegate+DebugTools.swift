@@ -2,8 +2,10 @@ import AppKit
 import LiveWallCore
 
 enum DebugDirectory: String {
+    case configuration
     case logs
     case downloadedWallpapers
+    case updatePackages
     case remoteDataCache
     case aerialLockScreen
 }
@@ -40,6 +42,9 @@ extension AppDelegate {
         let url: URL
         let createIfMissing: Bool
         switch directory {
+        case .configuration:
+            url = configURL.deletingLastPathComponent()
+            createIfMissing = true
         case .logs:
             guard let logFileURL = LiveWallPaths.logFileURL else {
                 showDebugDirectoryFailure("无法定位日志目录")
@@ -49,6 +54,13 @@ extension AppDelegate {
             createIfMissing = true
         case .downloadedWallpapers:
             url = downloader.destinationDirectory
+            createIfMissing = true
+        case .updatePackages:
+            guard let downloads = UpdateInstaller.downloadsDirectory() else {
+                showDebugDirectoryFailure("无法定位更新包下载目录")
+                return
+            }
+            url = downloads
             createIfMissing = true
         case .remoteDataCache:
             url = LiveWallPaths.dataCacheDirectory
@@ -60,7 +72,7 @@ extension AppDelegate {
 
         if createIfMissing {
             do {
-                if directory == .remoteDataCache || directory == .logs {
+                if directory == .configuration || directory == .remoteDataCache || directory == .logs {
                     try PrivateFileAccess.secureDirectory(at: url)
                 } else {
                     try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)

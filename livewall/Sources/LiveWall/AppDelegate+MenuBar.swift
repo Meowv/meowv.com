@@ -352,8 +352,10 @@ extension AppDelegate {
 
         if preferences.developerToolsEnabled {
             for (title, directory) in [
+                ("打开配置文件目录", DebugDirectory.configuration),
                 ("打开日志目录", DebugDirectory.logs),
                 ("打开下载壁纸目录", DebugDirectory.downloadedWallpapers),
+                ("打开更新包目录", DebugDirectory.updatePackages),
                 ("打开数据缓存目录", DebugDirectory.remoteDataCache),
                 ("打开锁屏素材目录", DebugDirectory.aerialLockScreen),
             ] {
