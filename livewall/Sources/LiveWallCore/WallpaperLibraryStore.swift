@@ -66,6 +66,7 @@ public actor WallpaperLibraryStore {
     private var cacheHead = 0
     public var decryptedCacheCount: Int { cache.count }
     private var searchText: [Int: String] = [:]
+    // 建索引后，set() 仍同步维护增删项的 searchText，不能只在这里一次性填充。
     private var searchIndexReady = false
 
     /// 初始化不触碰文件系统；所有 I/O 从 load() 开始在 actor 上执行。
@@ -159,7 +160,7 @@ public actor WallpaperLibraryStore {
 
     public func orderedIDs(kind: Kind) throws -> [Int] {
         var ids: [Int] = []
-        try rows("SELECT id FROM library_records WHERE kind=\(kind.rawValue) ORDER BY sort_order DESC,id") {
+        try rows("SELECT id FROM library_records WHERE kind=? ORDER BY sort_order DESC,id", bindings: [.integer(Int64(kind.rawValue))]) {
             ids.append(Int(sqlite3_column_int64($0, 0)))
         }
         return ids
@@ -169,7 +170,7 @@ public actor WallpaperLibraryStore {
         guard let kind = kinds[id] else { return nil }
         if let hit = cache[id] { remember(hit.item); return hit.item }
         var item: WallpaperItem?
-        try rows("SELECT payload FROM library_records WHERE id=\(id)") {
+        try rows("SELECT payload FROM library_records WHERE id=?", bindings: [.integer(Int64(id))]) {
             item = try decode(Self.blob($0, 0), id: id, domain: "item:\(kind.rawValue):\(id)")
         }
         if let item { remember(item) }
@@ -190,9 +191,10 @@ public actor WallpaperLibraryStore {
         let ids: [Int]
         let total: Int
         if terms.isEmpty {
-            total = Int(try scalar("SELECT count(*) FROM library_records WHERE kind=\(kind.rawValue)"))
+            total = Int(try scalar("SELECT count(*) FROM library_records WHERE kind=?", bindings: [.integer(Int64(kind.rawValue))]))
             var selected: [Int] = []
-            try rows("SELECT id FROM library_records WHERE kind=\(kind.rawValue) ORDER BY sort_order DESC,id LIMIT \(count) OFFSET \(start)") {
+            try rows("SELECT id FROM library_records WHERE kind=? ORDER BY sort_order DESC,id LIMIT ? OFFSET ?",
+                     bindings: [.integer(Int64(kind.rawValue)), .integer(Int64(count)), .integer(Int64(start))]) {
                 selected.append(Int(sqlite3_column_int64($0, 0)))
             }
             ids = selected
@@ -315,7 +317,7 @@ public actor WallpaperLibraryStore {
         let order = sequence + 1
         try transaction {
             if enabled { try write(item, kind: kind, order: order) }
-            else { try exec("DELETE FROM library_records WHERE id=\(item.id)") }
+            else { try execute("DELETE FROM library_records WHERE id=?", bindings: [.integer(Int64(item.id))]) }
             if removePin { try writePin(nil) }
         }
         // 只有 COMMIT 成功后才能改变缓存、索引和 UI 可见状态。
@@ -368,6 +370,10 @@ public actor WallpaperLibraryStore {
 
     // MARK: - SQL
 
+    private enum SQLValue {
+        case integer(Int64), text(String), blob(Data)
+    }
+
     private var db: OpaquePointer {
         get throws {
             guard let connection else { throw StoreError.database("数据库已关闭") }
@@ -379,21 +385,47 @@ public actor WallpaperLibraryStore {
         guard sqlite3_exec(try db, sql, nil, nil, nil) == SQLITE_OK else { throw StoreError.database("SQL 执行失败") }
     }
 
-    private func rows(_ sql: String, _ body: (OpaquePointer) throws -> Void) throws {
+    private func withStatement<T>(_ sql: String, bindings: [SQLValue], _ body: (OpaquePointer) throws -> T) throws -> T {
         var pointer: OpaquePointer?
-        guard sqlite3_prepare_v2(try db, sql, -1, &pointer, nil) == SQLITE_OK, let pointer else { throw StoreError.database("SQL 准备失败") }
         defer { sqlite3_finalize(pointer) }
-        while true {
-            let result = sqlite3_step(pointer)
-            if result == SQLITE_DONE { return }
-            guard result == SQLITE_ROW else { throw StoreError.database("SQL 读取失败") }
-            try body(pointer)
+        guard sqlite3_prepare_v2(try db, sql, -1, &pointer, nil) == SQLITE_OK, let pointer else { throw StoreError.database("SQL 准备失败") }
+        guard Int(sqlite3_bind_parameter_count(pointer)) == bindings.count else { throw StoreError.database("SQL 参数数量不匹配") }
+        for (offset, value) in bindings.enumerated() {
+            let index = Int32(offset + 1)
+            let result: Int32
+            switch value {
+            case .integer(let number):
+                result = sqlite3_bind_int64(pointer, index, number)
+            case .text(let text):
+                result = text.withCString { sqlite3_bind_text(pointer, index, $0, Int32(text.utf8.count), Self.transient) }
+            case .blob(let data):
+                result = data.withUnsafeBytes { sqlite3_bind_blob(pointer, index, $0.baseAddress, Int32(data.count), Self.transient) }
+            }
+            guard result == SQLITE_OK else { throw StoreError.database("SQL 参数绑定失败") }
+        }
+        return try body(pointer)
+    }
+
+    private func rows(_ sql: String, bindings: [SQLValue] = [], _ body: (OpaquePointer) throws -> Void) throws {
+        try withStatement(sql, bindings: bindings) { pointer in
+            while true {
+                let result = sqlite3_step(pointer)
+                if result == SQLITE_DONE { return }
+                guard result == SQLITE_ROW else { throw StoreError.database("SQL 读取失败") }
+                try body(pointer)
+            }
         }
     }
 
-    private func scalar(_ sql: String) throws -> Int64 {
+    private func execute(_ sql: String, bindings: [SQLValue]) throws {
+        try withStatement(sql, bindings: bindings) { pointer in
+            guard sqlite3_step(pointer) == SQLITE_DONE else { throw StoreError.database("SQL 写入失败") }
+        }
+    }
+
+    private func scalar(_ sql: String, bindings: [SQLValue] = []) throws -> Int64 {
         var value: Int64 = 0
-        try rows(sql) { value = sqlite3_column_int64($0, 0) }
+        try rows(sql, bindings: bindings) { value = sqlite3_column_int64($0, 0) }
         return value
     }
 
@@ -405,31 +437,25 @@ public actor WallpaperLibraryStore {
 
     private func metadata(_ name: String) throws -> Data? {
         var value: Data?
-        try rows("SELECT value FROM library_metadata WHERE key='\(name)'") { value = try Self.blob($0, 0) }
+        try rows("SELECT value FROM library_metadata WHERE key=?", bindings: [.text(name)]) { value = try Self.blob($0, 0) }
         return value
     }
 
     private func putMetadata(_ name: String, _ value: Data) throws {
-        try bindBlob("INSERT OR REPLACE INTO library_metadata(key,value) VALUES('\(name)',?)", value)
-    }
-
-    private func bindBlob(_ sql: String, _ value: Data) throws {
-        var pointer: OpaquePointer?
-        guard sqlite3_prepare_v2(try db, sql, -1, &pointer, nil) == SQLITE_OK, let pointer else { throw StoreError.database("SQL 准备失败") }
-        defer { sqlite3_finalize(pointer) }
-        guard value.withUnsafeBytes({ sqlite3_bind_blob(pointer, 1, $0.baseAddress, Int32(value.count), Self.transient) }) == SQLITE_OK,
-              sqlite3_step(pointer) == SQLITE_DONE else { throw StoreError.database("SQL 写入失败") }
+        try execute("INSERT OR REPLACE INTO library_metadata(key,value) VALUES(?,?)", bindings: [.text(name), .blob(value)])
     }
 
     private func write(_ item: WallpaperItem, kind: Kind, order: Int64) throws {
         let payload = try seal(JSONEncoder().encode(item), domain: "item:\(kind.rawValue):\(item.id)")
-        try bindBlob("INSERT OR REPLACE INTO library_records(id,kind,sort_order,payload) VALUES(\(item.id),\(kind.rawValue),\(order),?)", payload)
+        try execute("INSERT OR REPLACE INTO library_records(id,kind,sort_order,payload) VALUES(?,?,?,?)",
+                    bindings: [.integer(Int64(item.id)), .integer(Int64(kind.rawValue)), .integer(order), .blob(payload)])
     }
 
     private func writePin(_ item: WallpaperItem?) throws {
         try exec("DELETE FROM library_pin")
         if let item {
-            try bindBlob("INSERT INTO library_pin(singleton,id,payload) VALUES(1,\(item.id),?)", seal(JSONEncoder().encode(item), domain: "pin:\(item.id)"))
+            try execute("INSERT INTO library_pin(singleton,id,payload) VALUES(1,?,?)",
+                        bindings: [.integer(Int64(item.id)), .blob(try seal(JSONEncoder().encode(item), domain: "pin:\(item.id)"))])
         }
     }
 
@@ -444,7 +470,7 @@ public actor WallpaperLibraryStore {
 
     private func readAll(kind: Kind) throws -> [WallpaperItem] {
         var result: [WallpaperItem] = []
-        try rows("SELECT id,payload FROM library_records WHERE kind=\(kind.rawValue) ORDER BY sort_order DESC,id") {
+        try rows("SELECT id,payload FROM library_records WHERE kind=? ORDER BY sort_order DESC,id", bindings: [.integer(Int64(kind.rawValue))]) {
             let id = Int(sqlite3_column_int64($0, 0))
             result.append(try decode(Self.blob($0, 1), id: id, domain: "item:\(kind.rawValue):\(id)"))
         }

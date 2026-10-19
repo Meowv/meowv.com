@@ -21,10 +21,17 @@ public enum AppLog {
 
     public static let timeFormat = "MM-dd HH:mm:ss.SSS"
 
-    public static func stamp(for date: Date = Date()) -> String {
+    // 目标 SDK 已将 DateFormatter 标为 Sendable；配置完成后只共享格式化调用。
+    private static let timestampFormatter: DateFormatter = {
         let formatter = DateFormatter()
+        formatter.locale = .autoupdatingCurrent
+        formatter.timeZone = .autoupdatingCurrent
         formatter.dateFormat = timeFormat
-        return formatter.string(from: date)
+        return formatter
+    }()
+
+    public static func stamp(for date: Date = Date()) -> String {
+        timestampFormatter.string(from: date)
     }
 
     /// 原子替换历史日志与追加共用跨进程锁；新写入也统一脱敏。

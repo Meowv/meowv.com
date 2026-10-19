@@ -114,6 +114,38 @@ func wallpaperLibraryTests() {
                 expectNil(await store.index().pinned, "解除固定提交并持久化")
             }
         }
+        test("SQL 绑定保留 64 位 ID、文本内容与分页边界") {
+            runLibraryTest {
+                let f = LibraryFixture(); defer { f.clean() }
+                let store = try f.store(); try await store.load()
+                let large = WallpaperItem(id: Int.max, title: "雪山 O'Brien ? 中文", author: "Alice",
+                                          url: "https://cdn.test/large.mp4", tags: ["自然"])
+                let other = storedItem(1)
+                _ = try await store.setFavorite(large, enabled: true)
+                _ = try await store.setFavorite(other, enabled: true)
+                _ = try await store.setPinned(large)
+                let reopened = try f.store(); try await reopened.load()
+                expectEqual(await reopened.index().pinned, large, "固定项的 64 位 ID 与密文完整恢复")
+                expectEqual(try await reopened.item(id: Int.max), large, "按 64 位 ID 读取完整内容")
+                let page = try await reopened.page(kind: .favorites, offset: 1, limit: 1)
+                expectEqual(page.items, [large], "LIMIT 与 OFFSET 绑定后保留顺序")
+                expectEqual(page.total, 2, "计数查询绑定正确")
+                let searched = try await reopened.page(kind: .favorites, query: "O'Brien ? 中文")
+                expectEqual(searched.items, [large], "特殊字符作为文本搜索")
+                let injection = try await reopened.page(kind: .favorites, query: "' OR 1=1 --")
+                expectEqual(injection.total, 0, "SQL 片段不会扩大搜索结果")
+                _ = try await reopened.setFavorite(large, enabled: false)
+                expectNil(try await reopened.item(id: Int.max), "删除绑定不会截断 64 位 ID")
+                expectEqual(try await reopened.orderedIDs(kind: .favorites), [other.id], "删除不影响其它记录")
+                _ = try await reopened.setFavorite(large, enabled: true)
+                let updated = try await reopened.page(kind: .favorites, query: "O'Brien")
+                expectEqual(updated.items, [large], "索引建好后增删条目仍可搜索")
+                let local = WallpaperItem(id: Int.min, title: "本地", author: "", url: "file:///tmp/local.mp4")
+                _ = try await reopened.setPinned(local)
+                let restored = try f.store(); try await restored.load()
+                expectEqual(await restored.index().pinned, local, "本地固定项保留负的 64 位 ID")
+            }
+        }
         test("SQL 失败回滚，缓存与磁盘均保留旧状态") {
             runLibraryTest {
                 let f = LibraryFixture(); defer { f.clean() }

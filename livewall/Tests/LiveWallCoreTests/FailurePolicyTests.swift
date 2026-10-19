@@ -22,6 +22,12 @@ func failurePolicyTests() {
             } else {
                 expect(false, "超时 → 临时网络故障")
             }
+            let timeout = FailurePolicy.classify(URLError(.timedOut))
+            let policy = FailurePolicy()
+            expectEqual(policy.action(for: timeout, networkReachable: true, consecutiveFailures: 1, retriesForItem: 0),
+                        .retrySame, "HEAD 超时后先重试同一资源")
+            expectEqual(policy.action(for: timeout, networkReachable: true, consecutiveFailures: 2, retriesForItem: 1),
+                        .holdCurrent, "超时重试耗尽仍保持画面，不拉黑资源")
             if case .transientNetwork = FailurePolicy.classify(URLError(.cannotFindHost)) {
                 expect(true, "DNS 失败 → 临时网络故障")
             } else {

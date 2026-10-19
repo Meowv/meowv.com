@@ -96,7 +96,8 @@ enum VideoLoader {
     private static func probeHTTPStatus(_ url: URL) async throws -> Int {
         var request = URLRequest(url: url)
         request.httpMethod = "HEAD"
-        request.timeoutInterval = 10
+        // 超时仍保留 URLError，交给失败策略重试或保持画面，不作为资源失效信号。
+        request.timeoutInterval = 6
         request.cachePolicy = .reloadIgnoringLocalCacheData
 
         let (_, response) = try await URLSession.shared.data(for: request)

@@ -137,8 +137,10 @@ final class HotKeyManager {
         "9": UInt32(kVK_ANSI_9),
     ]
 
+    private static let keysByCode = Dictionary(uniqueKeysWithValues: keyCodes.map { ($0.value, $0.key) })
+
     static func binding(for event: NSEvent) -> HotKeyBinding? {
-        guard let key = keyCodes.first(where: { $0.value == UInt32(event.keyCode) })?.key else { return nil }
+        guard let key = keysByCode[UInt32(event.keyCode)] else { return nil }
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         var modifiers: UInt8 = 0
         if flags.contains(.command) { modifiers |= HotKeyBinding.command }

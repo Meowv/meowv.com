@@ -96,7 +96,8 @@ final class ThumbnailLoader {
         var seenVisible: Set<String> = []
 
         for item in items {
-            guard let key = variant.candidates(for: item).first?.absoluteString else {
+            let candidates = variant.candidates(for: item)
+            guard let key = candidates.first?.absoluteString else {
                 // 没有可用的封面地址。**不伪造地址**，直接让卡片显示占位图。
                 completion(item, nil)
                 continue
@@ -119,7 +120,7 @@ final class ThumbnailLoader {
                 continue
             }
             waiters[key] = [{ image in completion(item, image) }]
-            candidatesByKey[key] = variant.candidates(for: item)
+            candidatesByKey[key] = candidates
             variantsByKey[key] = variant
         }
 
