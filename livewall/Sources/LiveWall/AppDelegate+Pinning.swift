@@ -157,10 +157,13 @@ extension AppDelegate {
 
     private func requestUnpin(_ item: WallpaperItem, reason: String) {
         Task { @MainActor in
-            while let pending = libraryMutationTask, !isShuttingDown { await pending.value }
-            if let pending = backupTask, !isShuttingDown { await pending.value }
-            guard !isShuttingDown, pinnedLibraryItem == item else { return }
-            clearPin(reason: reason) { self.advance() }
+            while !isShuttingDown, pinnedLibraryItem == item {
+                // 每次等待后重新检查两类任务，避免期间开始的新操作再次拒绝解钉。
+                if let pending = libraryMutationTask { await pending.value; continue }
+                if let pending = backupTask { await pending.value; continue }
+                clearPin(reason: reason) { self.advance() }
+                return
+            }
         }
     }
 

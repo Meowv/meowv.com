@@ -41,17 +41,22 @@ extension AppDelegate {
 
     @objc func createBackup() {
         guard libraryReady, beginBackupOperation() else { return }
-        NSApp.activate(ignoringOtherApps: true)
-        let panel = NSSavePanel()
-        panel.title = "创建 LiveWall 备份"
-        panel.message = "备份包含设置、收藏、禁用与固定壁纸，不包含视频。持有备份文件即可恢复。"
-        panel.allowedContentTypes = [Self.backupContentType]
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyyMMdd-HHmmss"
-        panel.nameFieldStringValue = "LiveWall-\(formatter.string(from: Date())).\(BackupArchive.fileExtension)"
-        guard panel.runModal() == .OK, let url = panel.url else { finishBackupOperation(); return }
+        // 在显示面板前登记任务，自动解钉也需等待面板取消或后续文件操作结束。
         backupTask = Task { @MainActor in
             defer { finishBackupOperation() }
+            guard !Task.isCancelled, !isShuttingDown else { return }
+            NSApp.activate(ignoringOtherApps: true)
+            let panel = NSSavePanel()
+            panel.title = "创建 LiveWall 备份"
+            panel.message = "备份包含设置、收藏、禁用与固定壁纸，不包含视频。持有备份文件即可恢复。"
+            panel.allowedContentTypes = [Self.backupContentType]
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyyMMdd-HHmmss"
+            panel.nameFieldStringValue = "LiveWall-\(formatter.string(from: Date())).\(BackupArchive.fileExtension)"
+            let response: NSApplication.ModalResponse = await withCheckedContinuation { continuation in
+                panel.begin { continuation.resume(returning: $0) }
+            }
+            guard response == .OK, let url = panel.url else { return }
             do {
                 if let pending = libraryMutationTask { await pending.value }
                 try Task.checkCancellation()
@@ -83,15 +88,19 @@ extension AppDelegate {
 
     @objc func restoreBackup() {
         guard beginBackupOperation() else { return }
-        NSApp.activate(ignoringOtherApps: true)
-        let panel = NSOpenPanel()
-        panel.title = "从 LiveWall 备份恢复"
-        panel.allowedContentTypes = [Self.backupContentType]
-        panel.allowsMultipleSelection = false
-        panel.canChooseDirectories = false
-        guard panel.runModal() == .OK, let url = panel.url else { finishBackupOperation(); return }
         backupTask = Task { @MainActor in
             defer { finishBackupOperation() }
+            guard !Task.isCancelled, !isShuttingDown else { return }
+            NSApp.activate(ignoringOtherApps: true)
+            let panel = NSOpenPanel()
+            panel.title = "从 LiveWall 备份恢复"
+            panel.allowedContentTypes = [Self.backupContentType]
+            panel.allowsMultipleSelection = false
+            panel.canChooseDirectories = false
+            let response: NSApplication.ModalResponse = await withCheckedContinuation { continuation in
+                panel.begin { continuation.resume(returning: $0) }
+            }
+            guard response == .OK, let url = panel.url else { return }
             do {
                 if let pending = libraryMutationTask { await pending.value }
                 try Task.checkCancellation()
