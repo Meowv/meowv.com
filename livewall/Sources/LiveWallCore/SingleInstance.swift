@@ -137,7 +137,7 @@ public final class InstanceLock {
             withIntermediateDirectories: true
         )
         // O_CREAT：不存在就建。锁文件收紧为仅当前用户可读写。
-        let fd = open(url.path, O_CREAT | O_RDWR, mode_t(PrivateFileAccess.filePermissions))
+        let fd = open(url.path, O_CREAT | O_RDWR | O_CLOEXEC, mode_t(PrivateFileAccess.filePermissions))
         guard fd >= 0 else {
             throw AcquireError.unavailable("无法打开 \(url.path)（errno \(errno)）")
         }

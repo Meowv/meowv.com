@@ -85,6 +85,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var preferencesNeedWriteback = false
     /// 收藏、禁用与固定条目的加密增量库。
     var libraryReady = false
+    var hasExclusiveInstanceLock = false
+    var backupOperationPending = false
+    var backupTask: Task<Void, Never>?
+    var startupRestoreOutcome: BackupRestoreService.Outcome?
     var libraryMutationPending = false
     var libraryMutationTask: Task<Void, Never>?
     var librarySourceGeneration: UInt64 = 0
@@ -440,6 +444,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.notice = isWarning ? .warning(message) : .info(message)
             self.refreshStatusItem()
         }
+        if let outcome = startupRestoreOutcome {
+            if outcome.restored, !preferences.lockScreenPreview {
+                lockScreenPreviewer.restoreRecordedUserWallpaper()
+                aerialLockScreenManager.stopPreparation()
+            }
+            DispatchQueue.main.async { [weak self] in self?.showRestoreOutcome(outcome) }
+        }
         downloader.log = { [weak self] message in self?.log(message) }
         // 下载开始 / 结束时各刷一次图标。**必需**：`downloadCurrentWallpaper` 里那次
         // `refreshStatusItem()` 发生在 `isDownloading` 变 true **之前**，不靠这个钩子，
@@ -617,6 +628,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func shutdown() {
         guard !isShuttingDown else { return }
         isShuttingDown = true
+        backupTask?.cancel()
         processMonitor?.cancel()
         processMonitor = nil
         restReminderTimer?.invalidate()

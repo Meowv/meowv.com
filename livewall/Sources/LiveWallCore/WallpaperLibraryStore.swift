@@ -158,6 +158,91 @@ public actor WallpaperLibraryStore {
               disabledIDs: Set(kinds.compactMap { $0.value == .disabled ? $0.key : nil }), pinned: pinned)
     }
 
+    public struct Snapshot: Sendable {
+        public let database: Data
+        public let key: Data
+
+        public init(database: Data, key: Data) {
+            self.database = database
+            self.key = key
+        }
+    }
+
+    /// 在所属 actor 上复制已提交的 SQLite 状态，包含尚未检查点的 WAL。
+    public func exportSnapshot() throws -> Snapshot {
+        try validateContents()
+        guard let key else { throw StoreError.invalidKey }
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("livewall-snapshot-" + UUID().uuidString)
+        try PrivateFileAccess.secureDirectory(at: directory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let url = directory.appendingPathComponent("snapshot.sqlite3")
+        try BackupFileIO.write(Data(), to: url)
+        var destination: OpaquePointer?
+        guard sqlite3_open_v2(url.path, &destination, SQLITE_OPEN_READWRITE, nil) == SQLITE_OK,
+              let destination else {
+            if let destination { sqlite3_close(destination) }
+            throw StoreError.database("无法创建备份快照")
+        }
+        do {
+            guard let backup = sqlite3_backup_init(destination, "main", try db, "main") else {
+                throw StoreError.database("无法开始数据库快照")
+            }
+            let result = sqlite3_backup_step(backup, -1)
+            let finished = sqlite3_backup_finish(backup)
+            guard result == SQLITE_DONE, finished == SQLITE_OK,
+                  sqlite3_exec(destination, "PRAGMA journal_mode=DELETE", nil, nil, nil) == SQLITE_OK else {
+                throw StoreError.database("数据库快照未能完成")
+            }
+        } catch {
+            sqlite3_close(destination)
+            throw error
+        }
+        guard sqlite3_close(destination) == SQLITE_OK else { throw StoreError.database("无法关闭数据库快照") }
+        return Snapshot(database: try Data(contentsOf: url), key: key.withUnsafeBytes { Data($0) })
+    }
+
+    /// 逐条验证，避免启动时的按需解密漏过损坏记录；不填充条目缓存。
+    public func validateContents() throws {
+        var checks: [String] = []
+        try rows("PRAGMA integrity_check") { statement in
+            guard let value = sqlite3_column_text(statement, 0) else { throw StoreError.malformedRecord }
+            checks.append(String(cString: value))
+        }
+        guard checks == ["ok"] else { throw StoreError.malformedRecord }
+        var seenIDs: Set<Int> = []
+        try rows("SELECT id,kind,payload FROM library_records") { statement in
+            let id = Int(sqlite3_column_int64(statement, 0))
+            guard id > 0, seenIDs.insert(id).inserted,
+                  let kind = Kind(rawValue: Int(sqlite3_column_int(statement, 1))) else {
+                throw StoreError.malformedRecord
+            }
+            let item = try decode(Self.blob(statement, 2), id: id, domain: "item:\(kind.rawValue):\(id)")
+            guard item.remoteURL != nil else { throw StoreError.malformedRecord }
+        }
+        guard try scalar("SELECT count(*) FROM library_pin") <= 1,
+              try scalar("SELECT count(*) FROM library_pin WHERE singleton != 1") == 0 else { throw StoreError.malformedRecord }
+        if let pin = try readPin(), pin.remoteURL != nil, kinds[pin.id] == .disabled {
+            throw StoreError.malformedRecord
+        }
+        if let legacy = try metadata("migration_backup") {
+            _ = try JSONDecoder().decode(Preferences.self, from: open(legacy, domain: "legacy-config"))
+        }
+    }
+
+    public func close() {
+        connection = nil
+        key = nil
+        kinds.removeAll()
+        pinned = nil
+        cache.removeAll()
+        cacheAccesses.removeAll()
+        cacheHead = 0
+        searchText.removeAll()
+        searchIndexReady = false
+        sequence = 0
+        revision &+= 1
+    }
+
     public func orderedIDs(kind: Kind) throws -> [Int] {
         var ids: [Int] = []
         try rows("SELECT id FROM library_records WHERE kind=? ORDER BY sort_order DESC,id", bindings: [.integer(Int64(kind.rawValue))]) {

@@ -8,7 +8,7 @@ extension AppDelegate {
             refreshStatusItem()
             return false
         }
-        guard !libraryMutationPending else { return false }
+        guard !libraryMutationPending, !backupOperationPending else { return false }
         libraryMutationPending = true
         browserWindowController?.refreshPinState()
         refreshStatusItem()

@@ -3,6 +3,7 @@ import LiveWallCore
 
 extension AppDelegate {
     @objc func openHotKeySettings() {
+        guard !backupOperationPending, !isShuttingDown else { return }
         if let existing = hotKeySettingsWindowController {
             existing.present()
             return
@@ -19,6 +20,7 @@ extension AppDelegate {
     }
 
     func changeHotKey(_ definition: HotKeyManager.Definition, to binding: HotKeyBinding) -> String? {
+        guard !backupOperationPending, !isShuttingDown else { return "正在备份或恢复，请稍后重试" }
         let failure = hotKeys.rebind(definition, to: binding) {
             let previous = preferences.hotKeyOverrides
             if binding == definition.binding {

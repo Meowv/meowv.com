@@ -28,7 +28,15 @@ import LiveWallDesktop
 extension AppDelegate: NSMenuItemValidation {
 
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+        if isShuttingDown { return false }
+        if backupOperationPending { return menuItem.action == #selector(quitApplication(_:)) }
         switch menuItem.action {
+        case #selector(createBackup):
+            return hasExclusiveInstanceLock && libraryReady && !backupRestoreService.hasPendingRestore
+
+        case #selector(restoreBackup):
+            return hasExclusiveInstanceLock && !backupRestoreService.hasPendingRestore
+
         case #selector(openDebugDirectory(_:)), #selector(dumpWindows):
             return preferences.developerToolsEnabled
 

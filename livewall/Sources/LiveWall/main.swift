@@ -51,6 +51,41 @@ let instanceLock: InstanceLock? = {
     }
 }()
 
+// 启动边界等待后台恢复，期间尚未创建 App、加载设置或打开条目库。
+// semaphore 建立结果的写入/读取屏障；box 不在等待期间由主线程访问。
+private final class RestoreBootstrapBox: @unchecked Sendable {
+    var result: Result<BackupRestoreService.Outcome?, Error>?
+}
+
+let restoreService = BackupRestoreService(directory: LiveWallPaths.applicationSupportDirectory)
+var startupRestoreOutcome: BackupRestoreService.Outcome?
+if restoreService.hasPendingRestore {
+    guard instanceLock != nil else {
+        let alert = NSAlert()
+        alert.messageText = "无法完成待处理的恢复"
+        alert.informativeText = "恢复需要独占实例锁。请关闭其他 LiveWall 实例，并取消多实例开发豁免后重新打开。"
+        alert.runModal()
+        exit(EXIT_FAILURE)
+    }
+    let box = RestoreBootstrapBox()
+    let semaphore = DispatchSemaphore(value: 0)
+    Task.detached {
+        do { box.result = .success(try await restoreService.applyPending()) }
+        catch { box.result = .failure(error) }
+        semaphore.signal()
+    }
+    semaphore.wait()
+    switch box.result! {
+    case .success(let outcome): startupRestoreOutcome = outcome
+    case .failure(let error):
+        let alert = NSAlert()
+        alert.messageText = "恢复尚未完成，启动已停止"
+        alert.informativeText = "恢复材料已保留：\(AppLog.sanitize(error.localizedDescription))\n请检查磁盘空间、文件完整性和用户数据目录权限，再重新打开 LiveWall 继续。\n\(LiveWallPaths.applicationSupportDirectory.path)"
+        alert.runModal()
+        exit(EXIT_FAILURE)
+    }
+}
+
 do {
     if let log = LiveWallPaths.logFileURL { _ = try AppLog.sanitizeFile(at: log) }
 } catch {
@@ -60,6 +95,8 @@ do {
 
 let application = NSApplication.shared
 let delegate = AppDelegate()
+delegate.hasExclusiveInstanceLock = instanceLock != nil
+delegate.startupRestoreOutcome = startupRestoreOutcome
 application.delegate = delegate
 application.setActivationPolicy(.accessory)
 application.run()

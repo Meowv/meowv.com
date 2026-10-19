@@ -158,6 +158,7 @@ extension AppDelegate {
     private func requestUnpin(_ item: WallpaperItem, reason: String) {
         Task { @MainActor in
             while let pending = libraryMutationTask, !isShuttingDown { await pending.value }
+            if let pending = backupTask, !isShuttingDown { await pending.value }
             guard !isShuttingDown, pinnedLibraryItem == item else { return }
             clearPin(reason: reason) { self.advance() }
         }

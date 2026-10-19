@@ -22,7 +22,7 @@ extension AppDelegate: WallpaperBrowserDataSource {
     /// 固定项的 id。UI 只**标记**它，不提供取消固定的入口（决策 11）。
     var browserPinnedItemID: Int? { pinnedLibraryItem?.id }
 
-    var browserLibraryBusy: Bool { !libraryReady || libraryMutationPending }
+    var browserLibraryBusy: Bool { !libraryReady || libraryMutationPending || backupOperationPending || isShuttingDown }
 
     func browserIsFavorite(_ id: Int) -> Bool { favoriteItemIDs.contains(id) }
     func browserIsDisabled(_ id: Int) -> Bool { disabledItemIDs.contains(id) }

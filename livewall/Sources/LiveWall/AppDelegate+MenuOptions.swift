@@ -53,6 +53,7 @@ extension AppDelegate {
 
     /// 全局热键触发。按 id 分派 —— 走的是和菜单完全相同的入口，不另开一条路径。
     func handleHotKey(_ id: UInt32) {
+        guard !backupOperationPending, !isShuttingDown else { return }
         switch id {
         case HotKeyManager.Definition.togglePause.id:
             togglePause()

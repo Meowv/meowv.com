@@ -277,6 +277,12 @@ final class LockScreenPreviewer {
         originalWallpapers.removeAll()
     }
 
+    /// 导入关闭预览的设置时，尚未播放过任何内容，需先读取本机恢复记录。
+    func restoreRecordedUserWallpaper() {
+        if originalWallpapers.isEmpty, let saved = loadRecords() { originalWallpapers = saved }
+        restoreUserWallpaper()
+    }
+
     // MARK: - 实际写入
 
     private func apply(
