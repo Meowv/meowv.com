@@ -33,6 +33,8 @@ protocol WallpaperBrowserDataSource: AnyObject {
     /// 当前固定项的 id。UI **只标记**它，不提供取消固定的入口（决策 11）。
     var browserPinnedItemID: Int? { get }
     var browserLibraryBusy: Bool { get }
+    var browserFavoriteCount: Int { get }
+    var browserDisabledCount: Int { get }
     func browserIsFavorite(_ id: Int) -> Bool
     func browserIsDisabled(_ id: Int) -> Bool
     func browserLibraryPage(kind: WallpaperLibraryStore.Kind, offset: Int, query: String,
@@ -181,6 +183,7 @@ final class WallpaperBrowserViewController: NSViewController {
     // 左栏：分类
     private let categoryTable = NSTableView()
     private let categoryScroll = NSScrollView()
+    private let itemCountLabel = NSTextField(labelWithString: "")
 
     // 右栏：条目网格
     private let collectionView = BrowserGridView()
@@ -190,6 +193,9 @@ final class WallpaperBrowserViewController: NSViewController {
     private let gridSpinner = NSProgressIndicator()
     private let gridRetryButton = NSButton()
     private let searchField = NSSearchField()
+    private let categoryFilterControls = NSStackView()
+    private let hideDisabledButton = NSButton(checkboxWithTitle: "过滤已禁用", target: nil, action: nil)
+    private let hideFavoritesButton = NSButton(checkboxWithTitle: "过滤已收藏", target: nil, action: nil)
     private let pageControls = NSStackView()
     private let previousPageButton = NSButton(title: "上一页", target: nil, action: nil)
     private let nextPageButton = NSButton(title: "下一页", target: nil, action: nil)
@@ -200,6 +206,7 @@ final class WallpaperBrowserViewController: NSViewController {
     private var pageOffset = 0
     private var nextPageOffset: Int?
     private var pageRevision: UInt64?
+    private var libraryMatchCount: Int?
 
     // 预览浮层：双击或 Hover 按钮打开，盖在网格区上
     /// 预览期间遮挡整个网格并接收点击；关闭浮层后才恢复网格交互。
@@ -287,7 +294,7 @@ final class WallpaperBrowserViewController: NSViewController {
             // 两栏：左 = 分类（定宽），右 = 网格（吃掉剩下的全部宽度）
             categoryScroll.leadingAnchor.constraint(equalTo: root.leadingAnchor),
             categoryScroll.topAnchor.constraint(equalTo: root.topAnchor),
-            categoryScroll.bottomAnchor.constraint(equalTo: root.bottomAnchor),
+            categoryScroll.bottomAnchor.constraint(equalTo: itemCountLabel.topAnchor, constant: -12),
             categoryScroll.widthAnchor.constraint(equalToConstant: Self.categoryWidth),
 
             gridScroll.leadingAnchor.constraint(equalTo: categoryScroll.trailingAnchor),
@@ -440,6 +447,7 @@ final class WallpaperBrowserViewController: NSViewController {
 
     func refreshDisabledState() {
         if selectedSection.categoryID == nil { loadLibraryPage(offset: pageOffset) }
+        else { applySearchFilter() }
         refreshVisibleBadges()
         if previewItem != nil { updatePreviewPanel() }
     }
@@ -524,6 +532,18 @@ final class WallpaperBrowserViewController: NSViewController {
         categoryScroll.borderType = .noBorder
         categoryScroll.translatesAutoresizingMaskIntoConstraints = false
         root.addSubview(categoryScroll)
+
+        itemCountLabel.font = .systemFont(ofSize: 11)
+        itemCountLabel.textColor = .secondaryLabelColor
+        itemCountLabel.maximumNumberOfLines = 2
+        itemCountLabel.lineBreakMode = .byWordWrapping
+        itemCountLabel.translatesAutoresizingMaskIntoConstraints = false
+        root.addSubview(itemCountLabel)
+        NSLayoutConstraint.activate([
+            itemCountLabel.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 12),
+            itemCountLabel.trailingAnchor.constraint(equalTo: categoryScroll.trailingAnchor, constant: -12),
+            itemCountLabel.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -12),
+        ])
     }
 
     private func reloadCategoryTable() {
@@ -547,19 +567,51 @@ final class WallpaperBrowserViewController: NSViewController {
         searchField.sendsSearchStringImmediately = true
         searchField.target = self
         searchField.action = #selector(searchChanged(_:))
-        searchField.translatesAutoresizingMaskIntoConstraints = false
-        root.addSubview(searchField)
+        categoryFilterControls.orientation = .horizontal
+        categoryFilterControls.spacing = 12
+        for button in [hideDisabledButton, hideFavoritesButton] {
+            button.target = self
+            button.action = #selector(categoryFilterChanged)
+            button.controlSize = .small
+            button.font = .systemFont(ofSize: 12)
+            button.setContentHuggingPriority(.required, for: .horizontal)
+            button.setContentCompressionResistancePriority(.required, for: .horizontal)
+            categoryFilterControls.addArrangedSubview(button)
+        }
+        let searchControls = NSStackView(views: [searchField, categoryFilterControls])
+        searchControls.orientation = .horizontal
+        searchControls.alignment = .centerY
+        searchControls.spacing = 12
+        searchControls.translatesAutoresizingMaskIntoConstraints = false
+        root.addSubview(searchControls)
         NSLayoutConstraint.activate([
-            searchField.topAnchor.constraint(equalTo: root.topAnchor, constant: 12),
-            searchField.leadingAnchor.constraint(equalTo: categoryScroll.trailingAnchor, constant: 16),
-            searchField.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -16),
+            searchControls.topAnchor.constraint(equalTo: root.topAnchor, constant: 12),
+            searchControls.leadingAnchor.constraint(equalTo: categoryScroll.trailingAnchor, constant: 16),
+            searchControls.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -16),
         ])
+    }
+
+    @objc private func categoryFilterChanged() {
+        initialLocateItemID = nil
+        dismissPreview(nil)
+        applySearchFilter()
+        gridScroll.contentView.scroll(to: .zero)
+        gridScroll.reflectScrolledClipView(gridScroll.contentView)
     }
 
     private func applySearchFilter() {
         thumbnailDebounce?.invalidate()
         collectionView.selectionIndexPaths = []
-        items = selectedSection.categoryID == nil ? allItems : WallpaperSearch.filter(allItems, query: searchField.stringValue)
+        categoryFilterControls.isHidden = selectedSection.categoryID == nil
+        if selectedSection.categoryID == nil {
+            items = allItems
+        } else {
+            items = WallpaperSearch.filter(allItems, query: searchField.stringValue).filter { item in
+                (hideDisabledButton.state != .on || !isDisabled(item))
+                    && (hideFavoritesButton.state != .on || !isFavorite(item))
+            }
+        }
+        updateItemCount()
         reloadGrid()
         let message: String?
         if isLoadingItems {
@@ -580,6 +632,24 @@ final class WallpaperBrowserViewController: NSViewController {
         }
         updateGridPlaceholder(message: message, showSpinner: isLoadingItems, canRetry: listFailure != nil)
         locateInitialItemIfReady()
+    }
+
+    private func updateItemCount() {
+        let total: Int
+        switch selectedSection {
+        case .favorites: total = dataSource?.browserFavoriteCount ?? 0
+        case .disabled: total = dataSource?.browserDisabledCount ?? 0
+        case .category(let id):
+            total = hasListResult && listFailure == nil
+                ? allItems.count : categories.first(where: { $0.id == id })?.itemCount ?? 0
+        }
+        var text = "共 \(total) 张"
+        if hasListResult, !isLoadingItems, listFailure == nil {
+            let matched = selectedSection.categoryID == nil ? libraryMatchCount ?? total : items.count
+            if matched != total { text += "\n匹配 \(matched) 张" }
+        }
+        itemCountLabel.stringValue = text
+        itemCountLabel.setAccessibilityLabel(text.replacingOccurrences(of: "\n", with: "，"))
     }
 
     private func locateInitialItemIfReady() {
@@ -648,6 +718,7 @@ final class WallpaperBrowserViewController: NSViewController {
         isLoadingItems = true; listFailure = nil; hasListResult = false
         previousPageButton.isEnabled = false; nextPageButton.isEnabled = false
         allItems = []
+        libraryMatchCount = nil
         pageControls.isHidden = false
         gridBottomConstraint.constant = -38
         applySearchFilter()
@@ -662,6 +733,7 @@ final class WallpaperBrowserViewController: NSViewController {
                     return
                 }
                 allItems = page.items; pageOffset = page.offset
+                libraryMatchCount = page.total
                 nextPageOffset = page.nextOffset; pageRevision = page.revision
                 previousPageButton.isEnabled = page.offset > 0
                 nextPageButton.isEnabled = page.nextOffset != nil

@@ -23,6 +23,8 @@ extension AppDelegate: WallpaperBrowserDataSource {
     var browserPinnedItemID: Int? { pinnedLibraryItem?.id }
 
     var browserLibraryBusy: Bool { !libraryReady || libraryMutationPending || backupOperationPending || isShuttingDown }
+    var browserFavoriteCount: Int { favoriteItemIDs.count }
+    var browserDisabledCount: Int { disabledItemIDs.count }
 
     func browserIsFavorite(_ id: Int) -> Bool { favoriteItemIDs.contains(id) }
     func browserIsDisabled(_ id: Int) -> Bool { disabledItemIDs.contains(id) }
