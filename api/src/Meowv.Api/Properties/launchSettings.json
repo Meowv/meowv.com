@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Meowv.Api": {
+      "commandName": "Project",
+      "commandLineArgs": "--contentRoot .",
+      "applicationUrl": "http://localhost:5000",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

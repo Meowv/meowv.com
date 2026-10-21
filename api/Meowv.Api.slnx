@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="src/Meowv.Api.Core/Meowv.Api.Core.csproj" />
+  <Project Path="src/Meowv.Api/Meowv.Api.csproj" />
+</Solution>

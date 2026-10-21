@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+    <PropertyGroup>
+        <EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator>
+        <StaticWebAssetsEnabled>false</StaticWebAssetsEnabled>
+        <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
+        <PackageReference Include="NSec.Cryptography" Version="26.4.0" />
+        <ProjectReference Include="../Meowv.Api.Core/Meowv.Api.Core.csproj" />
+    </ItemGroup>
+    <ItemGroup>
+        <Content Remove="data/**" />
+        <None Remove="data/**" />
+        <Content Remove="**/*.db;**/*.db-*;**/*.sqlite;**/*.sqlite-*;tools/**" />
+        <None Remove="**/*.db;**/*.db-*;**/*.sqlite;**/*.sqlite-*;tools/**" />
+        <Content Update="appsettings.Development.json" CopyToOutputDirectory="Never" CopyToPublishDirectory="Never" />
+        <Content Update="appsettings.json" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    </ItemGroup>
+</Project>

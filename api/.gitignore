@@ -1,0 +1,12 @@
+/.idea/
+**/bin/
+**/obj/
+**/data/
+/build/
+**/appsettings.Development.json
+**/*.db
+**/*.db-*
+**/*.sqlite
+**/*.sqlite-*
+**/tools/ffmpeg/
+**/__pycache__/
