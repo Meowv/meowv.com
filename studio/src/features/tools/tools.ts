@@ -328,7 +328,7 @@ const toolCategorySeeds = {
       {
         id: 'xiaomi-camera',
         name: '小米摄像头',
-        description: '连接受保护的 XiaomiCamera 服务，查看摄像头实时画面。',
+        description: '连接受保护的摄像头服务，查看摄像头实时画面。',
         icon: 'camera',
       },
     ],

@@ -199,6 +199,11 @@ async function authorizedRequest(
     }
   }
   if (response.status === 429) {
+    const payload = (await response.json().catch(() => undefined)) as
+      { code?: unknown } | undefined;
+    if (payload?.code === 'camera_capacity_exceeded') {
+      throw new CameraServiceError('同时播放的设备已达上限。');
+    }
     throw new CameraServiceError('操作过于频繁，请稍后再试。');
   }
   if (!response.ok) {
@@ -222,7 +227,9 @@ async function fetchCameras(
   activeConnection: CameraConnection,
   signal?: AbortSignal,
 ): Promise<CameraDevice[]> {
-  const response = await authorizedRequest(activeConnection, '/api/cameras', { signal });
+  const response = await authorizedRequest(activeConnection, '/api/xiaomi-camera/cameras', {
+    signal,
+  });
   const payload: unknown = await response.json();
   const source = Array.isArray(payload)
     ? payload
@@ -240,12 +247,16 @@ async function createPlaybackSession(
   fingerprint: string,
   signal: AbortSignal,
 ): Promise<PlaybackSession> {
-  const response = await authorizedRequest(activeConnection, '/api/playback-sessions', {
-    method: 'POST',
-    signal,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ deviceFingerprint: fingerprint }),
-  });
+  const response = await authorizedRequest(
+    activeConnection,
+    '/api/xiaomi-camera/playback-sessions',
+    {
+      method: 'POST',
+      signal,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deviceFingerprint: fingerprint }),
+    },
+  );
   const payload = (await response.json()) as PlaybackSessionPayload;
   const playlistUrl = payload.playlistUrl ?? payload.hlsUrl;
   if (typeof playlistUrl !== 'string' || !playlistUrl) {
@@ -863,7 +874,7 @@ async function motorStep(direction: 'left' | 'right' | 'up' | 'down'): Promise<v
   try {
     await authorizedRequest(
       activeConnection,
-      `/api/cameras/${encodeURIComponent(fingerprint)}/ptz`,
+      `/api/xiaomi-camera/cameras/${encodeURIComponent(fingerprint)}/ptz`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1094,7 +1105,7 @@ onBeforeUnmount(() => {
             <form class="camera-tool-dialog__form" @submit.prevent="submitConnection">
               <div class="camera-tool-dialog__heading">
                 <IconCamera :size="22" aria-hidden="true" />
-                <h2 id="xiaomi-camera-connection-title">连接 XiaomiCamera 服务</h2>
+                <h2 id="xiaomi-camera-connection-title">连接摄像头服务</h2>
               </div>
               <label>
                 <span>服务地址</span>
@@ -1114,7 +1125,7 @@ onBeforeUnmount(() => {
                   v-model="draftAccessCode"
                   type="password"
                   autocomplete="current-password"
-                  placeholder="输入服务端生成的授权码"
+                  placeholder="输入授权码"
                 />
               </label>
               <label class="camera-tool-dialog__remember">
