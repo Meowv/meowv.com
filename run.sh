@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ALL_PROJECTS=(blog studio livewall xiaomiCamera)
+ALL_PROJECTS=(blog studio livewall api)
 SELECTED_PROJECTS=()
 PIDS=()
 PID_PROJECTS=()
@@ -20,7 +20,7 @@ usage() {
   blog, b    http://localhost:4000
   studio, s  http://localhost:4001
   livewall, lw  启动 macOS 动态壁纸 App
-  xiaomiCamera, xc  http://localhost:5189
+  api, a  http://localhost:5000
   wallpapers, w  crawl / publish / stats / check
 EOF
 }
@@ -49,7 +49,7 @@ project_port() {
   case "$1" in
     blog) echo "4000" ;;
     studio) echo "4001" ;;
-    xiaomiCamera) echo "5189" ;;
+    api) echo "5000" ;;
   esac
 }
 
@@ -58,7 +58,7 @@ project_binary() {
     blog) echo "$ROOT_DIR/blog/node_modules/.bin/hexo" ;;
     studio) echo "$ROOT_DIR/studio/node_modules/.bin/vite" ;;
     livewall) echo "$ROOT_DIR/livewall/run.sh" ;;
-    xiaomiCamera) echo "dotnet" ;;
+    api) echo "dotnet" ;;
   esac
 }
 
@@ -67,7 +67,7 @@ install_hint() {
     blog) echo "cd blog && yarn install --frozen-lockfile" ;;
     studio) echo "cd studio && pnpm install --frozen-lockfile" ;;
     livewall) echo "cd livewall && ./run.sh" ;;
-    xiaomiCamera) echo "dotnet run --project xiaomiCamera/src/XiaomiCamera" ;;
+    api) echo "dotnet run --project api/src/Meowv.Api" ;;
   esac
 }
 
@@ -136,15 +136,16 @@ check_project() {
     return
   fi
 
-  if [ "$project" = "xiaomiCamera" ]; then
+  if [ "$project" = "api" ]; then
     if ! command -v dotnet >/dev/null 2>&1; then
-      echo "错误：未找到 .NET SDK，无法启动 xiaomiCamera。" >&2
+      echo "错误：未找到 .NET SDK，无法启动 api。" >&2
       exit 1
     fi
-    if [ ! -f "$ROOT_DIR/xiaomiCamera/src/XiaomiCamera/XiaomiCamera.csproj" ]; then
-      echo "错误：未找到 xiaomiCamera 项目文件。" >&2
+    if [ ! -f "$ROOT_DIR/api/src/Meowv.Api/Meowv.Api.csproj" ]; then
+      echo "错误：未找到 api 项目文件。" >&2
       exit 1
     fi
+    port="$(project_port "$project")"
     free_port "$project" "$port"
     return
   fi
@@ -183,10 +184,10 @@ run_project() {
       cd "$ROOT_DIR/livewall"
       exec ./run.sh
       ;;
-    xiaomiCamera)
+    api)
       echo "[$project] 启动中：http://localhost:$port"
-      cd "$ROOT_DIR/xiaomiCamera"
-      exec dotnet run --project src/XiaomiCamera --urls "http://127.0.0.1:$port"
+      cd "$ROOT_DIR/api"
+      exec dotnet run --project src/Meowv.Api --urls "http://localhost:$port" --contentRoot "$ROOT_DIR/api/src/Meowv.Api"
       ;;
   esac
 }
@@ -239,7 +240,7 @@ else
       blog | b) add_project "blog" ;;
       studio | s) add_project "studio" ;;
       livewall | lw) add_project "livewall" ;;
-      xiaomiCamera | xiaomi-camera | xc) add_project "xiaomiCamera" ;;
+      api | a) add_project "api" ;;
       all)
         echo "错误：all 只能单独使用。" >&2
         usage >&2

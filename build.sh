@@ -7,7 +7,7 @@ ORIGINAL_ARGUMENTS=("$@")
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$ROOT_DIR/tools/wallpapers-python.sh"
 BUILD_DIR="$ROOT_DIR/build"
-ALL_PROJECTS=(blog studio livewall xiaomiCamera)
+ALL_PROJECTS=(blog studio livewall api)
 SELECTED_PROJECTS=()
 STAGING_DIR="$ROOT_DIR/.build-staging.$$"
 BACKUP_PATH=""
@@ -27,28 +27,29 @@ usage() {
   ./build.sh studio --with-wallpapers 构建 Studio，并在构建前生成壁纸目录
   ./build.sh wallpapers      只生成 Studio 壁纸目录，不执行项目构建
   ./build.sh livewall --with-dmg 构建 livewall，并额外打出可分发的 DMG
-  ./build.sh xiaomiCamera [--rid <RID>] 构建小米摄像头服务，默认 win-x64
+  ./build.sh api [--rid <RID>] 构建统一 API 服务，默认 win-x64
 
 可选项目：
   blog, b    -> build/meowv.com
   studio, s  -> build/studio.meowv.com
   livewall, lw -> build/livewall/LiveWall.app
-  xiaomiCamera, xc -> build/studio.meowv.com/xiaomiCamera/<RID>/ + tools/
+  api, a -> build/studio.meowv.com/api/<RID>/ + tools/
 
 选项：
   --with-wallpapers  仅可配合 studio
   --with-dmg         仅可配合 livewall，额外把 .app 打成 DMG，
                      DMG、version.json 与它的签名 version.json.sig
                      输出到 build/studio.meowv.com/data/livewall/
-  --rid <RID>        仅可配合 xiaomiCamera，默认 win-x64
+  --rid <RID>        仅可配合 api，默认 win-x64
 EOF
 }
 
 WITH_WALLPAPERS=0
 WITH_DMG=0
-XIAOMI_CAMERA_RID="win-x64"
+API_RID="win-x64"
+API_RID_SPECIFIED=0
 HAS_STUDIO=0
-HAS_XIAOMI_CAMERA=0
+HAS_API=0
 HAS_LIVEWALL=0
 LIVEWALL_CATALOG_READY=0
 
@@ -136,7 +137,7 @@ destination_name() {
     blog) echo "meowv.com" ;;
     studio) echo "studio.meowv.com" ;;
     livewall) echo "livewall" ;;
-    xiaomiCamera) echo "studio.meowv.com/xiaomiCamera" ;;
+    api) echo "studio.meowv.com/api" ;;
   esac
 }
 
@@ -145,7 +146,7 @@ source_path() {
     blog) echo "$ROOT_DIR/blog/public" ;;
     studio) echo "$ROOT_DIR/studio/dist" ;;
     livewall) echo "$ROOT_DIR/livewall/build/LiveWall.app" ;;
-    xiaomiCamera) echo "$ROOT_DIR/xiaomiCamera/build/$XIAOMI_CAMERA_RID" ;;
+    api) echo "$ROOT_DIR/api/build/$API_RID" ;;
   esac
 }
 
@@ -154,7 +155,7 @@ project_binary() {
     blog) echo "$ROOT_DIR/blog/node_modules/.bin/hexo" ;;
     studio) echo "$ROOT_DIR/studio/node_modules/.bin/vite" ;;
     livewall) echo "$ROOT_DIR/livewall/run.sh" ;;
-    xiaomiCamera) echo "$ROOT_DIR/xiaomiCamera/scripts/publish.sh" ;;
+    api) echo "$ROOT_DIR/api/scripts/publish.sh" ;;
   esac
 }
 
@@ -163,7 +164,7 @@ install_hint() {
     blog) echo "cd blog && yarn install --frozen-lockfile" ;;
     studio) echo "cd studio && pnpm install --frozen-lockfile" ;;
     livewall) echo "cd livewall && ./build.sh" ;;
-    xiaomiCamera) echo "cd xiaomiCamera && dotnet restore" ;;
+    api) echo "cd api && dotnet restore" ;;
   esac
 }
 
@@ -193,13 +194,13 @@ check_project() {
     return
   fi
 
-  if [ "$project" = "xiaomiCamera" ]; then
+  if [ "$project" = "api" ]; then
     if ! command -v dotnet >/dev/null 2>&1; then
-      echo "错误：未找到 .NET SDK，无法编译 xiaomiCamera。" >&2
+      echo "错误：未找到 .NET SDK，无法编译 api。" >&2
       exit 1
     fi
-    if [ ! -f "$ROOT_DIR/xiaomiCamera/scripts/publish.sh" ]; then
-      echo "错误：xiaomiCamera 发布脚本不存在。" >&2
+    if [ ! -f "$ROOT_DIR/api/scripts/publish.sh" ]; then
+      echo "错误：api 发布脚本不存在。" >&2
       exit 1
     fi
     return
@@ -263,10 +264,10 @@ build_project() {
         ./build.sh --bump-build
       )
       ;;
-    xiaomiCamera)
+    api)
       (
-        cd "$ROOT_DIR/xiaomiCamera"
-        bash ./scripts/publish.sh --rid "$XIAOMI_CAMERA_RID"
+        cd "$ROOT_DIR/api"
+        bash ./scripts/publish.sh --rid "$API_RID"
       )
       ;;
   esac
@@ -278,28 +279,29 @@ stage_output() {
   local destination
   local first_entry
   local tools_source
-  local camera_executable
+  local api_executable
 
-  if [ "$project" = "xiaomiCamera" ]; then
+  if [ "$project" = "api" ]; then
     source="$(source_path "$project")"
     destination="$STAGING_DIR/$(destination_name "$project")"
-    tools_source="$ROOT_DIR/xiaomiCamera/build/tools/ffmpeg/$XIAOMI_CAMERA_RID"
-    camera_executable='XiaomiCamera'
-    case "$XIAOMI_CAMERA_RID" in
-      win-*) camera_executable='XiaomiCamera.exe' ;;
+    tools_source="$ROOT_DIR/api/build/tools/ffmpeg/$API_RID"
+    api_executable='Meowv.Api'
+    case "$API_RID" in
+      win-*) api_executable='Meowv.Api.exe' ;;
     esac
 
-    if [ ! -f "$source/$camera_executable" ] || [ ! -d "$tools_source" ]; then
-      echo "错误：xiaomiCamera 编译完成后未找到 $XIAOMI_CAMERA_RID 产物或 FFmpeg 工具缓存。" >&2
+    if [ ! -f "$source/$api_executable" ] || [ ! -f "$source/appsettings.json" ] || [ ! -d "$tools_source" ]; then
+      echo "错误：api 编译完成后未找到 $API_RID 主程序、公共配置或 FFmpeg 工具缓存。" >&2
       exit 1
     fi
 
-    mkdir -p "$destination/$XIAOMI_CAMERA_RID"
-    # 只分发单文件主程序，避免复制旧构建依赖及运行时配置、数据库。
-    cp "$source/$camera_executable" "$destination/$XIAOMI_CAMERA_RID/"
+    mkdir -p "$destination/$API_RID"
+    # 只分发主程序和公共配置，排除开发密钥、运行数据库及旧构建依赖。
+    cp "$source/$api_executable" "$destination/$API_RID/"
+    cp "$source/appsettings.json" "$destination/$API_RID/"
     mkdir -p "$destination/tools/ffmpeg"
-    cp -R "$tools_source" "$destination/tools/ffmpeg/$XIAOMI_CAMERA_RID"
-    echo "[$project] 已暂存到 $(destination_name "$project")/$XIAOMI_CAMERA_RID/ + tools/"
+    cp -R "$tools_source" "$destination/tools/ffmpeg/$API_RID"
+    echo "[$project] 已暂存到 $(destination_name "$project")/$API_RID/ + tools/"
     return
   fi
 
@@ -503,16 +505,20 @@ preserve_livewall_update_feed() {
   echo "[studio] 沿用上次的分发产物 $(basename "$dmg")"
 }
 
-# 摄像头服务与 Studio 静态页面共享同一部署根目录。单独构建 Studio 时保留已发布的
-# 服务文件，避免下一次 deploy.sh studio 将后端目录误判为应删除的旧文件。
-preserve_xiaomi_camera_deployment() {
-  local source_dir="$BUILD_DIR/studio.meowv.com/xiaomiCamera"
-  local target_dir="$STAGING_DIR/studio.meowv.com/xiaomiCamera"
-
-  [ -d "$source_dir" ] || return 0
-  mkdir -p "$target_dir"
-  cp -R "$source_dir"/. "$target_dir"/
-  echo "[studio] 沿用上次的小米摄像头服务产物"
+# 后端与 Studio 共享部署根目录。保留未重建的 API 和旧摄像头产物，便于迁移与回滚。
+preserve_api_deployment() {
+  local folder
+  local source_dir
+  local target_dir
+  for folder in api xiaomiCamera; do
+    if [ "$folder" = "api" ] && [ "$HAS_API" -eq 1 ]; then continue; fi
+    source_dir="$BUILD_DIR/studio.meowv.com/$folder"
+    target_dir="$STAGING_DIR/studio.meowv.com/$folder"
+    [ -d "$source_dir" ] || continue
+    mkdir -p "$target_dir"
+    cp -R "$source_dir"/. "$target_dir"/
+    echo "[studio] 沿用上次的 ${folder} 服务产物"
+  done
 }
 
 add_project() {
@@ -539,7 +545,8 @@ while [ "$#" -gt 0 ]; do
         usage >&2
         exit 1
       fi
-      XIAOMI_CAMERA_RID="$2"
+      API_RID="$2"
+      API_RID_SPECIFIED=1
       shift 2
       ;;
     *)
@@ -571,7 +578,7 @@ else
       blog | b) add_project "blog" ;;
       studio | s) add_project "studio" ;;
       livewall | lw) add_project "livewall" ;;
-      xiaomiCamera | xiaomi-camera | xc) add_project "xiaomiCamera" ;;
+      api | a) add_project "api" ;;
       all)
         echo "错误：all 只能单独使用。" >&2
         usage >&2
@@ -588,14 +595,14 @@ fi
 
 for project in "${SELECTED_PROJECTS[@]}"; do
   [ "$project" = "studio" ] && HAS_STUDIO=1
-  [ "$project" = "xiaomiCamera" ] && HAS_XIAOMI_CAMERA=1
+  [ "$project" = "api" ] && HAS_API=1
   [ "$project" = "livewall" ] && HAS_LIVEWALL=1
 done
 
 if [ "$HAS_LIVEWALL" -eq 1 ] || [ "$HAS_STUDIO" -eq 1 ]; then lock_livewall_build; fi
 
-if [ "$XIAOMI_CAMERA_RID" != "win-x64" ] && [ "$HAS_XIAOMI_CAMERA" -eq 0 ]; then
-  echo "错误：--rid 只能与 xiaomiCamera 项目一起使用。" >&2
+if [ "$API_RID_SPECIFIED" -eq 1 ] && [ "$HAS_API" -eq 0 ]; then
+  echo "错误：--rid 只能与 api 项目一起使用。" >&2
   exit 1
 fi
 
@@ -672,9 +679,7 @@ for project in "${SELECTED_PROJECTS[@]}"; do
     if [ "$LIVEWALL_CATALOG_READY" -eq 0 ]; then
       check_existing_livewall_catalog "$STAGING_DIR/studio.meowv.com/data"
     fi
-    if [ "$HAS_XIAOMI_CAMERA" -eq 0 ]; then
-      preserve_xiaomi_camera_deployment
-    fi
+    preserve_api_deployment
   fi
 done
 
@@ -704,7 +709,7 @@ if [ "${#SELECTED_PROJECTS[@]}" -eq "${#ALL_PROJECTS[@]}" ]; then
   PROMOTION+=("$STAGING_DIR" "$BUILD_DIR")
 else
   for project in "${SELECTED_PROJECTS[@]}"; do
-    if [ "$project" = "xiaomiCamera" ] && [ "$HAS_STUDIO" -eq 1 ]; then continue; fi
+    if [ "$project" = "api" ] && [ "$HAS_STUDIO" -eq 1 ]; then continue; fi
     folder="$(destination_name "$project")"
     PROMOTION+=("$STAGING_DIR/$folder" "$BUILD_DIR/$folder")
   done
@@ -733,7 +738,7 @@ else
     publish_all
   else
     for project in "${SELECTED_PROJECTS[@]}"; do
-      if [ "$project" = "xiaomiCamera" ] && [ "$HAS_STUDIO" -eq 1 ]; then continue; fi
+      if [ "$project" = "api" ] && [ "$HAS_STUDIO" -eq 1 ]; then continue; fi
       publish_one "$project"
     done
     find "$STAGING_DIR" -depth -type d -empty -exec rmdir {} \;
@@ -759,6 +764,6 @@ done
 if [ "$WITH_DMG" -eq 1 ]; then
   echo "  studio.meowv.com/data/livewall/  # LiveWall-<版本>.dmg + version.json + version.json.sig"
 fi
-if [ "$HAS_XIAOMI_CAMERA" -eq 1 ]; then
-  echo "  studio.meowv.com/xiaomiCamera/$XIAOMI_CAMERA_RID/ + tools/"
+if [ "$HAS_API" -eq 1 ]; then
+  echo "  studio.meowv.com/api/$API_RID/ + tools/"
 fi
