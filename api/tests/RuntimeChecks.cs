@@ -23,18 +23,20 @@ try
 {
     const string management = "YOUR_SYNTHETIC_MANAGEMENT_TOKEN_FOR_TESTS_ONLY";
     File.WriteAllText(Path.Combine(root, "appsettings.json"), """
-        {"ConnectionStrings":{"DefaultConnection":"Data Source=state folder/api.db"},
-         "Security":{"BootstrapToken":""},"Modules":{"XiaomiCamera":{"Enabled":false}},
-         "Tools":{"FFmpeg":{"Path":"public"}},"Cors":{"AllowedOrigins":["http://localhost:4001"]}}
-        """);
+                                                              {"ConnectionStrings":{"DefaultConnection":"Data Source=state folder/api.db"},
+                                                               "Security":{"BootstrapToken":""},"Modules":{"XiaomiCamera":{"Enabled":false}},
+                                                               "Tools":{"FFmpeg":{"Path":"public"}},"Cors":{"AllowedOrigins":["http://localhost:4001"]}}
+                                                              """);
     File.WriteAllText(Path.Combine(root, "appsettings.Development.json"), """
-        {"Security":{"BootstrapToken":"__management__"},"Tools":{"FFmpeg":{"Path":"development"}},
-         "Modules":{"XiaomiCamera":{"Media":{"Profile":"development"}}}}
-        """.Replace("__management__", management));
+                                                                          {"Security":{"BootstrapToken":"__management__"},"Tools":{"FFmpeg":{"Path":"development"}},
+                                                                           "Modules":{"XiaomiCamera":{"Media":{"Profile":"development"}}}}
+                                                                          """.Replace("__management__", management));
+
     void Check(bool condition, string description)
     {
         if (!condition) throw new Exception(description);
     }
+
     Environment.SetEnvironmentVariable("DOTNET_ENVIRONMENT", "Development");
     Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
     Environment.CurrentDirectory = Path.GetTempPath();
@@ -52,6 +54,7 @@ try
     Check(production.Configuration["Security:BootstrapToken"] == "", "Production must ignore dev secrets");
     Environment.SetEnvironmentVariable("DOTNET_ENVIRONMENT", "Development");
     Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
+    FfmpegPathChecks.Run(root);
     await ModuleInitializationChecks.RunAsync(root);
     var builder = ApiConfiguration.CreateBuilder(["--contentRoot", root]);
     builder.Logging.ClearProviders();
@@ -83,6 +86,7 @@ try
         module.ConfigureMiddleware(app);
         module.MapEndpoints(app.MapGroup("").WithMetadata(new EndpointModuleMetadata(module.Name)));
     }
+
     app.MapGet("/api/proxy/{kind}", (HttpContext context) => $"{context.Connection.RemoteIpAddress}|{context.Request.Scheme}");
     using var startupTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
     await app.StartAsync(startupTimeout.Token);
@@ -94,8 +98,10 @@ try
             "Module endpoint catalog must be available without stale caching");
         using var catalog = JsonDocument.Parse(await catalogResponse.Content.ReadAsStringAsync());
         var modules = catalog.RootElement.EnumerateArray().ToArray();
+
         JsonElement FindRoute(string module, string path) => modules.Single(item => item.GetProperty("name").GetString() == module)
             .GetProperty("endpoints").EnumerateArray().Single(item => item.GetProperty("path").GetString() == path);
+
         Check(!modules.Any(module => module.GetProperty("name").GetString() == "xiaomi-camera"), "Disabled module is absent from catalog");
         Check(FindRoute("health", "/api/health").GetProperty("authorization").GetString() == "匿名", "Anonymous catalog entry");
         Check(FindRoute("auth", "/api/auth/access-code").GetProperty("authorization").GetString() == "管理密钥", "Inherited management policy entry");
@@ -106,6 +112,7 @@ try
         Check(FindRoute("second", "/api/second/probe").GetProperty("methods")[0].GetString() == "POST", "Catalog contains HTTP methods");
         Check(FindRoute("diagnostics", "/api/docs").GetProperty("methods")[0].GetString() == "GET", "Catalog includes its own page");
     }
+
     using (var docs = await client.GetAsync("/api/docs"))
         Check(docs.StatusCode == HttpStatusCode.OK && (await docs.Content.ReadAsStringAsync()).Contains("筛选模块"), "Browser-readable endpoint catalog");
     using (var setupPage = await client.GetAsync("/setup"))
@@ -114,6 +121,7 @@ try
             "Unified setup page must be available without caching");
         Check((await setupPage.Content.ReadAsStringAsync()).Contains("接入摄像头"), "Unified setup includes camera initialization");
     }
+
     async Task<string> ForwardedIdentity(string kind, string forwardedFor)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, "/api/proxy/" + kind);
@@ -122,10 +130,12 @@ try
         using var response = await client.SendAsync(request);
         return await response.Content.ReadAsStringAsync();
     }
+
     Check(await ForwardedIdentity("trusted", "192.0.2.1") == "192.0.2.1|https", "Loopback proxy identity");
     Check(await ForwardedIdentity("trusted", "192.0.2.2") == "192.0.2.2|https", "Distinct forwarded clients");
     Check(await ForwardedIdentity("trusted", "198.51.100.1, 192.0.2.3") == "192.0.2.3|https", "Only the nearest forwarded hop is trusted");
     Check(await ForwardedIdentity("untrusted", "192.0.2.1") == "203.0.113.9|http", "Untrusted peer cannot spoof forwarded identity");
+
     async Task<HttpStatusCode> AttemptManagement(string forwardedFor)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/access-code");
@@ -133,6 +143,7 @@ try
         using var response = await client.SendAsync(request);
         return response.StatusCode;
     }
+
     for (var i = 0; i < 10; i++)
         Check(await AttemptManagement("192.0.2.10") == HttpStatusCode.Unauthorized, "Requests below per-client limit reach authentication");
     Check(await AttemptManagement("192.0.2.10") == HttpStatusCode.TooManyRequests, "Rate limiting returns 429");
@@ -146,6 +157,7 @@ try
         command.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE name = 'xiaomi_camera_state';";
         Check((long)command.ExecuteScalar()! == 0, "Authentication does not create camera storage");
     }
+
     var unauthorized = await client.GetAsync("/api/first/probe");
     Check(unauthorized.StatusCode == HttpStatusCode.Unauthorized && unauthorized.Headers.WwwAuthenticate.Any(), "Missing code challenge");
     Check((await client.PostAsync("/api/second/probe", new StringContent("invalid JSON", Encoding.UTF8, "application/json"))).StatusCode == HttpStatusCode.Unauthorized,
@@ -153,6 +165,7 @@ try
     using var invalidAdmin = new HttpRequestMessage(HttpMethod.Post, "/api/auth/access-code");
     invalidAdmin.Headers.Add("X-Api-Bootstrap-Token", "YOUR_SYNTHETIC_INVALID_MANAGEMENT_TOKEN");
     Check((await client.SendAsync(invalidAdmin)).StatusCode == HttpStatusCode.Unauthorized, "Invalid management key rejected");
+
     async Task<string?> Manage(string suffix)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/access-code" + suffix);
@@ -163,6 +176,7 @@ try
         using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         return document.RootElement.GetProperty("accessCode").GetString();
     }
+
     var code = await Manage("");
     Check(!string.IsNullOrWhiteSpace(code) && await Manage("") is null, "One-time code display");
     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", code);
@@ -187,7 +201,10 @@ try
         _ = new XiaomiFfmpegResolver(options, paths, app.Environment);
         throw new Exception("Explicit missing FFmpeg must not fall back");
     }
-    catch (InvalidOperationException) { }
+    catch (InvalidOperationException)
+    {
+    }
+
     var cache = new XiaomiCredentialCache(database);
     var credentials = new XiaomiCloudCredentials("synthetic-user", "synthetic-cuser", Convert.ToBase64String([1, 2, 3]), "SYNTHETIC_SERVICE_TOKEN", "cn");
     cache.Save(credentials);
@@ -216,6 +233,7 @@ try
         command.CommandText = "UPDATE xiaomi_camera_state SET credentials_json = 'invalid JSON' WHERE id = 1;";
         command.ExecuteNonQuery();
     }
+
     Check(cache.TryLoad() is null, "Invalid stored cloud session is cleared");
     await app.StopAsync();
     Console.WriteLine("PASS: configuration, module failure isolation, runtime endpoint catalog and authorization labels, trusted proxy identity, per-client rate limits, HTTP authorization, persistence, global rotation, cloud storage and ticket revocation. No full API build or camera calls.");
@@ -229,6 +247,7 @@ finally
 }
 
 public sealed record ProbeRequest(string Value);
+
 [JsonSerializable(typeof(ProbeRequest))]
 internal partial class ProbeJsonContext : JsonSerializerContext;
 
@@ -236,6 +255,7 @@ internal sealed class FirstProbeModule : IEndpointModule
 {
     public string Name => "first";
     public string Description => "First test module";
+
     public void MapEndpoints(IEndpointRouteBuilder endpoints)
     {
         endpoints.MapGet("/api/first/probe", () => "first").RequireAuthorization();
@@ -248,6 +268,7 @@ internal sealed class SecondProbeModule : IEndpointModule
 {
     public string Name => "second";
     public string Description => "Second test module";
+
     public void MapEndpoints(IEndpointRouteBuilder endpoints)
     {
         endpoints.MapPost("/api/second/probe", (ProbeRequest input) => input.Value).RequireAuthorization();

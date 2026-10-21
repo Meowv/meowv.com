@@ -62,7 +62,7 @@ Blog 固定使用 `http://localhost:4000`，Studio 固定使用 `http://localhos
 | --- | --- |
 | `build/meowv.com/` | Blog 静态站点 |
 | `build/studio.meowv.com/` | Studio，包含 `zitie/`；按构建选项包含壁纸清单和 livewall 更新文件 |
-| `build/studio.meowv.com/api/` | 统一 API 服务：`<RID>/` 应用产物与共享 `tools/` FFmpeg 缓存 |
+| `build/studio.meowv.com/api/` | 统一 API 服务：每个 `<RID>/` 包含主程序、公共配置、FFmpeg 与来源校验记录 |
 | `build/livewall/LiveWall.app/` | livewall App；此目录不由 `deploy.sh` 上传 |
 
 全量构建在各项目都成功后才替换整个 `build/`；指定项目构建只替换对应目录；LiveWall 发布还会同步替换配套内容目录。Studio 的既有 livewall 更新文件与 API 产物会在单独重建 Studio 时保留；旧 xiaomiCamera 部署目录也会保留，供人工切换与回滚。`build/` 是生成目录，不提交 Git。

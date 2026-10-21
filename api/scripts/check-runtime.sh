@@ -27,6 +27,7 @@ cat >"$work_dir/Checks.csproj" <<EOF
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
     <Compile Include="$project_dir/tests/RuntimeChecks.cs" />
     <Compile Include="$project_dir/tests/ModuleInitializationChecks.cs" />
+    <Compile Include="$project_dir/tests/FfmpegPathChecks.cs" />
     <Compile Include="$project_dir/src/Meowv.Api.Core/*.cs" />
     <Compile Include="$project_dir/src/Meowv.Api/Infrastructure/*.cs" />
     <Compile Include="$project_dir/src/Meowv.Api/Security/*.cs" />

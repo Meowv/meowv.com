@@ -33,7 +33,7 @@ usage() {
   blog, b    -> build/meowv.com
   studio, s  -> build/studio.meowv.com
   livewall, lw -> build/livewall/LiveWall.app
-  api, a -> build/studio.meowv.com/api/<RID>/ + tools/
+  api, a -> build/studio.meowv.com/api/<RID>/（含 FFmpeg）
 
 选项：
   --with-wallpapers  仅可配合 studio
@@ -278,30 +278,29 @@ stage_output() {
   local source
   local destination
   local first_entry
-  local tools_source
   local api_executable
+  local ffmpeg_executable
 
   if [ "$project" = "api" ]; then
     source="$(source_path "$project")"
     destination="$STAGING_DIR/$(destination_name "$project")"
-    tools_source="$ROOT_DIR/api/build/tools/ffmpeg/$API_RID"
     api_executable='Meowv.Api'
+    ffmpeg_executable='ffmpeg'
     case "$API_RID" in
-      win-*) api_executable='Meowv.Api.exe' ;;
+      win-*) api_executable='Meowv.Api.exe'; ffmpeg_executable='ffmpeg.exe' ;;
     esac
 
-    if [ ! -f "$source/$api_executable" ] || [ ! -f "$source/appsettings.json" ] || [ ! -d "$tools_source" ]; then
-      echo "错误：api 编译完成后未找到 $API_RID 主程序、公共配置或 FFmpeg 工具缓存。" >&2
+    if [ ! -f "$source/$api_executable" ] || [ ! -f "$source/appsettings.json" ] || [ ! -f "$source/$ffmpeg_executable" ] || [ ! -f "$source/SOURCE.txt" ]; then
+      echo "错误：api 编译完成后未找到 $API_RID 主程序、公共配置、FFmpeg 或来源校验记录。" >&2
       exit 1
     fi
 
     mkdir -p "$destination/$API_RID"
-    # 只分发主程序和公共配置，排除开发密钥、运行数据库及旧构建依赖。
+    # 按白名单分发应用、公共配置和 FFmpeg，排除开发密钥、运行数据库及旧构建依赖。
     cp "$source/$api_executable" "$destination/$API_RID/"
     cp "$source/appsettings.json" "$destination/$API_RID/"
-    mkdir -p "$destination/tools/ffmpeg"
-    cp -R "$tools_source" "$destination/tools/ffmpeg/$API_RID"
-    echo "[$project] 已暂存到 $(destination_name "$project")/$API_RID/ + tools/"
+    cp "$source/$ffmpeg_executable" "$source/SOURCE.txt" "$destination/$API_RID/"
+    echo "[$project] 已暂存到 $(destination_name "$project")/$API_RID/"
     return
   fi
 
@@ -765,5 +764,5 @@ if [ "$WITH_DMG" -eq 1 ]; then
   echo "  studio.meowv.com/data/livewall/  # LiveWall-<版本>.dmg + version.json + version.json.sig"
 fi
 if [ "$HAS_API" -eq 1 ]; then
-  echo "  studio.meowv.com/api/$API_RID/ + tools/"
+  echo "  studio.meowv.com/api/$API_RID/（含 FFmpeg）"
 fi

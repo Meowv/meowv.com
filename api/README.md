@@ -95,7 +95,17 @@ bash scripts/publish.sh --rid osx-arm64
 bash scripts/publish.sh --rid linux-x64 --without-ffmpeg
 ```
 
-主程序保持自包含、完整裁剪和压缩单文件，旁置无密钥的 `appsettings.json`；FFmpeg 位于发布根目录共享的 `tools/ffmpeg/<RID>/`。`appsettings.Development.json`、数据库及其附属文件不进入应用发布或根脚本暂存包。`--without-ffmpeg` 只跳过工具准备，不自动禁用摄像头。
+每个 `<RID>/` 是独立发布目录，主程序保持自包含、完整裁剪和压缩单文件；无密钥的 `appsettings.json`、FFmpeg 和来源校验记录 `SOURCE.txt` 均放在主程序旁，不再生成共享 `tools/` 目录。例如 Windows x64：
+
+```text
+win-x64/
+├── Meowv.Api.exe
+├── appsettings.json
+├── ffmpeg.exe
+└── SOURCE.txt
+```
+
+其他平台使用对应 RID；Linux 和 macOS 的主程序和 FFmpeg 不带 `.exe` 后缀。FFmpeg 显式路径优先，否则查找内容根目录旁置文件；开发环境还会查找 `api/build/<当前 RID>/`，最后回退到系统 `PATH`。重复发布仍校验并复用相同版本的 FFmpeg。`appsettings.Development.json`、数据库及其附属文件不进入应用发布或根脚本暂存包。`--without-ffmpeg` 只跳过工具准备，不清理已有 FFmpeg，也不自动禁用摄像头。
 
 发布环境可将数据库路径指向站点目录之外，升级程序不能覆盖数据库或部署密钥。产物映射及上传约定见[根 README](../README.md)，发布脚本不注册或重启服务。
 
@@ -104,6 +114,7 @@ bash scripts/publish.sh --rid linux-x64 --without-ffmpeg
 ```bash
 bash api/scripts/check-runtime.sh
 node --test api/tests/setup-page.test.mjs
+node --test api/tests/publish-layout.test.mjs
 ```
 
 检查仅用本机包缓存建立临时测试宿主，覆盖配置、模块初始化故障隔离、可信代理与按客户端限流、公共授权、云会话存储及票据。模块隔离检查使用真实注册与初始化代码，登录和媒体依赖使用测试占位类型，不构建完整 API、不调用摄像头。完整构建、真实设备、目标平台发布和生产切换需分别验证，不能用这些定向检查代替。

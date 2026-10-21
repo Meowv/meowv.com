@@ -6,7 +6,7 @@ using Meowv.Api.Infrastructure;
 namespace Meowv.Api.Modules.XiaomiCamera;
 
 /// <summary>
-/// 解析并预检媒体转码器。发布与开发均使用 API 自己的工具缓存，也可回退到系统 PATH。
+/// 解析并预检媒体转码器。优先读取发布目录或开发产物，也可回退到系统 PATH。
 /// </summary>
 public sealed class XiaomiFfmpegResolver
 {
@@ -30,25 +30,18 @@ public sealed class XiaomiFfmpegResolver
             return ResolveConfiguredPath(configuredPath, "配置文件中的 Tools:FFmpeg:Path 指向的 FFmpeg 文件不存在。", "配置文件覆盖");
         }
 
-        // 发布产物为 build/&lt;RID&gt;，工具缓存位于同级 build/tools，避免为每个 RID 重复下载。
-        var bundledPath = Path.GetFullPath(Path.Combine(
-            paths.Root,
-            "..",
-            "tools",
-            "ffmpeg",
-            GetRuntimeIdentifier(),
-            OperatingSystem.IsWindows() ? "ffmpeg.exe" : "ffmpeg"));
+        var executable = OperatingSystem.IsWindows() ? "ffmpeg.exe" : "ffmpeg";
+        var bundledPath = Path.Combine(paths.Root, executable);
         if (File.Exists(bundledPath)) return (bundledPath, "发布包内置文件");
 
         if (environment.IsDevelopment())
         {
             var cachedPath = Path.GetFullPath(Path.Combine(
-                paths.Root, "..", "..", "build", "tools", "ffmpeg",
-                GetRuntimeIdentifier(), OperatingSystem.IsWindows() ? "ffmpeg.exe" : "ffmpeg"));
+                paths.Root, "..", "..", "build", GetRuntimeIdentifier(), executable));
             if (File.Exists(cachedPath)) return (cachedPath, "API 开发缓存");
         }
 
-        return (OperatingSystem.IsWindows() ? "ffmpeg.exe" : "ffmpeg", "系统 PATH");
+        return (executable, "系统 PATH");
     }
 
     private static (string ExecutablePath, string Source) ResolveConfiguredPath(string path, string missingMessage, string source)

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# 发布为自包含单文件主程序。FFmpeg 缓存在构建根目录下，供同一 RID 的后续发布复用。
+# 发布为自包含单文件主程序，FFmpeg 与主程序放在同一 RID 目录并复用校验结果。
 default_ffmpeg_release='v9.0.2'
 # Windows 使用包含 libx264 的 GPL 构建；该 tag 是 BtbN 发布的不可变快照。
 default_windows_ffmpeg_release='autobuild-2026-10-11-13-04'
@@ -14,7 +14,7 @@ usage() {
 主程序为 Meowv.Api（Windows 为 Meowv.Api.exe），无需单独分发 .NET DLL。
 appsettings.json 作为公共配置放在主程序旁，开发配置和数据库不发布。
 默认启用代码裁剪和单文件压缩。仅部署非摄像头模块时可用 --without-ffmpeg 跳过工具准备。
-FFmpeg 缓存位于 <DIR>/tools/ffmpeg/<RID>/，不属于任何单个平台目录。
+FFmpeg 和来源校验记录 SOURCE.txt 直接放在 <DIR>/<RID>/，整个目录即可独立分发。
 未传 --ffmpeg-release 时，Windows 使用固定的 BtbN GPL 快照，其他平台使用固定版本 v9.0.2。
 
 示例：scripts/publish.sh --rid osx-arm64
@@ -66,7 +66,6 @@ script_dir=$(cd "$(dirname "$0")" && pwd)
 project_dir=$(cd "$script_dir/.." && pwd)
 build_dir=${output:-"$project_dir/build"}
 publish_dir="$build_dir/$rid"
-ffmpeg_cache_dir="$build_dir/tools/ffmpeg/$rid"
 executable='ffmpeg'
 case "$rid" in
   win-*) executable='ffmpeg.exe' ;;
@@ -98,8 +97,8 @@ sha256() {
   fi
 }
 
-cached_binary="$ffmpeg_cache_dir/$executable"
-cached_source="$ffmpeg_cache_dir/SOURCE.txt"
+cached_binary="$publish_dir/$executable"
+cached_source="$publish_dir/SOURCE.txt"
 cached_release=''
 cached_hash=''
 if [ -f "$cached_source" ]; then
@@ -118,4 +117,4 @@ else
 fi
 
 echo "发布完成：$publish_dir"
-echo "FFmpeg 缓存：$ffmpeg_cache_dir"
+echo "FFmpeg：$cached_binary"
