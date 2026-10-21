@@ -1,6 +1,0 @@
-<Solution>
-  <Project Path="src/XiaomiCamera.Cloud/XiaomiCamera.Cloud.csproj" />
-  <Project Path="src/XiaomiCamera.Core/XiaomiCamera.Core.csproj" />
-  <Project Path="src/XiaomiCamera.Protocol/XiaomiCamera.Protocol.csproj" />
-  <Project Path="src/XiaomiCamera/XiaomiCamera.csproj" />
-</Solution>
