@@ -10,7 +10,7 @@ Blog、Studio、Wallpapers、livewall 和 API 位于同一仓库，但各自独�
 | `studio/` | 浏览器本地工具，包含 Zitie：[README](./studio/README.md) · [协作约定](./studio/AGENTS.md) | [studio.meowv.com](https://studio.meowv.com)，Zitie 为 [/zitie/](https://studio.meowv.com/zitie/) |
 | `wallpapers/` | Python 壁纸采集与目录导出：[README](./wallpapers/README.md) · [协作约定](./wallpapers/AGENTS.md) | 仅本地处理 |
 | `livewall/` | Swift 视频动态壁纸：[README](./livewall/README.md) · [协作约定](./livewall/AGENTS.md) | 本机 App |
-| `api/` | 统一后端：[README](./api/README.md) · [协作约定](./api/AGENTS.md) | 构建产物位于 Studio 部署目录 |
+| `api/` | 统一后端：[README](./api/README.md) · [协作约定](./api/AGENTS.md) | Studio 同域的 `/api/` 与 `/setup` |
 
 跨项目修改边界见[仓库协作指南](./AGENTS.md)。根目录的 `run.sh`、`build.sh` 和 `deploy.sh` 分别负责启动、构建汇总与上传；各子项目的独立命令以其 README 为准。
 
@@ -65,7 +65,7 @@ Blog 固定使用 `http://localhost:4000`，Studio 固定使用 `http://localhos
 | `build/studio.meowv.com/api/` | 统一 API 服务：每个 `<RID>/` 包含主程序、公共配置、FFmpeg 与来源校验记录 |
 | `build/livewall/LiveWall.app/` | livewall App；此目录不由 `deploy.sh` 上传 |
 
-全量构建在各项目都成功后才替换整个 `build/`；指定项目构建只替换对应目录；LiveWall 发布还会同步替换配套内容目录。Studio 的既有 livewall 更新文件与 API 产物会在单独重建 Studio 时保留；旧 xiaomiCamera 部署目录也会保留，供人工切换与回滚。`build/` 是生成目录，不提交 Git。
+全量构建在各项目都成功后才替换整个 `build/`；指定项目构建只替换对应目录；LiveWall 发布还会同步替换配套内容目录。Studio 的既有 livewall 更新文件与 API 产物会在单独重建 Studio 时保留。`build/` 是生成目录，不提交 Git。
 
 ### 上传到 Windows Nginx
 
@@ -77,7 +77,7 @@ DEPLOY_PORT=22
 DEPLOY_PASSWORD='' # 可选：rclone obscure 的密文；留空则交互输入
 ```
 
-将文件权限设为 `600`；环境变量可以覆盖同名配置。部署目标由脚本固定为 `C:\_qix\meowv.com` 和 `C:\_qix\studio.meowv.com`。API 服务产物会随 `studio` 同步至 `C:\_qix\studio.meowv.com\api\`；执行前需与实际服务器配置核对。发布包包含单文件主程序与无密钥的 appsettings.json；开发配置及运行数据库不上传。生产通过环境变量提供密钥，并可配置数据库和 FFmpeg 路径；根目录或数据库应放在静态站点之外，设置方式见[API 文档](./api/README.md)。
+将文件权限设为 `600`；环境变量可以覆盖同名配置。部署目标由脚本固定为 `C:\_qix\meowv.com` 和 `C:\_qix\studio.meowv.com`。API 服务产物会随 `studio` 同步至 `C:\_qix\studio.meowv.com\api\`；执行前需与实际服务器配置核对。每个 API 平台目录可独立部署，内容及配置方式见[API 发布说明](./api/README.md#发布)。根脚本打包排除开发配置及运行数据库；生产密钥和运行数据由服务器管理，升级时保留。Windows 服务注册方式见 [NSSM 命令](./api/README.md#windows-nssm-服务)。
 
 ```bash
 ./deploy.sh studio --dry-run  # 连接并预览上传、删除清单，不修改远端

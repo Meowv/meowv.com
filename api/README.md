@@ -1,10 +1,19 @@
 # Meowv.Api
 
-统一的 .NET 10 / ASP.NET Core 后端。解决方案只有 `Meowv.Api` 和 `Meowv.Api.Core` 两个项目：前者包含宿主、公共配置/存储/认证及业务模块，后者保存模块与公共授权契约。所有业务模块位于宿主 `Modules/`，不新增模块类库。
+基于 .NET 10 / ASP.NET Core 的统一后端，提供公共授权、健康检查、接口目录及小米摄像头模块。Studio 通过 API 访问设备目录、实时预览和云台控制。
+
+| 目录 | 职责 |
+| --- | --- |
+| `src/Meowv.Api/` | HTTP 宿主、配置、SQLite、认证与 `Modules/` 业务模块 |
+| `src/Meowv.Api.Core/` | 公共模块与授权契约 |
+| `scripts/` | 发布、FFmpeg 准备与运行时定向检查 |
+| `tests/` | 使用合成数据和临时目录的定向检查 |
+
+模块开发与修改边界见[协作指南](AGENTS.md)。
 
 ## 根目录与配置
 
-开发根目录为 `src/Meowv.Api/`；发布后默认使用可执行文件所在目录。根目录直接存放 `appsettings.json`、本机 `appsettings.Development.json` 和 `api.db`，不再创建 `data/`。可用 `--contentRoot <绝对目录>` 或标准宿主环境变量指定其他根目录。数据库和 FFmpeg 的相对路径都以该根目录为基准，不受进程工作目录影响。
+开发根目录为 `src/Meowv.Api/`；发布后默认使用可执行文件所在目录。根目录直接存放 `appsettings.json`、本机 `appsettings.Development.json` 和 `api.db`。可用 `--contentRoot <绝对目录>` 或标准宿主环境变量指定其他根目录。数据库和 FFmpeg 的相对路径都以该根目录为基准，不受进程工作目录影响。
 
 配置按下列顺序覆盖，修改后重启生效：
 
@@ -13,7 +22,7 @@
 3. 环境变量，分区用 `__` 表示。
 4. 命令行参数。
 
-按标准环境名加载配置，不额外加载 User Secrets。生产不加载 `appsettings.Development.json`，密钥通过环境变量提供。首次运行不会自动生成或覆盖密钥；缺少公共管理密钥时启动校验失败，只提示配置项名称。新版按全新安装初始化，不导入旧版配置、授权码或登录状态；首次部署重新登录小米账号。
+按标准环境名加载配置，不额外加载 User Secrets。生产不加载 `appsettings.Development.json`，密钥通过环境变量提供。公共管理密钥需预先配置；缺少时启动校验失败，只提示配置项名称。应用授权码在初始化向导中生成，两者用途不同。
 
 | 配置项 | 默认值 / 含义 |
 | --- | --- |
@@ -23,7 +32,7 @@
 | `Tools:FFmpeg:Path` | 可选 FFmpeg 路径；显式配置无效时不回退 |
 | `Modules:XiaomiCamera:Enabled` | 默认 `true`；禁用时不初始化摄像头服务、创建摄像头表或检查 FFmpeg |
 | `Modules:XiaomiCamera:MaxConcurrentStreams` | 默认 `2`，包括回收中的设备媒体流；同一设备共享容量 |
-| `Modules:XiaomiCamera:Media:Profile` | 默认 `server`，也可选择 `development` |
+| `Modules:XiaomiCamera:Media:Profile` | 默认 `server`：最高 720p / 15 fps；`development`：最高 1080p / 25 fps；不会放大低分辨率视频 |
 
 新安装可手动创建本机 `appsettings.Development.json`。下面均为占位符，须替换成独立生成的随机值；也可先禁用摄像头，仅使用公共功能：
 
@@ -35,6 +44,8 @@
 }
 ```
 
+需要摄像头时将 `Enabled` 改为 `true`，并准备包含 `libx264` 的 FFmpeg；查找顺序见[发布说明](#发布)。`Cors:AllowedOrigins` 只填写实际使用的前端 Origin，同域访问不需要跨域配置。
+
 生产示例配置项名：`Security__BootstrapToken`、`ConnectionStrings__DefaultConnection`、`Tools__FFmpeg__Path`。Origin 数组使用 `Cors__AllowedOrigins__0` 等索引。不要通过命令行传递真实密钥，也不要打印配置转储。
 
 ## 启动与授权
@@ -45,7 +56,7 @@
 dotnet run --project api/src/Meowv.Api -- --contentRoot /YOUR_CHECKOUT/api/src/Meowv.Api
 ```
 
-根脚本使用 `api` 或简写 `a`，重复参数会去重。仓库不再包含旧项目源码；API 的运行与发布独立于旧目录。根构建脚本仍保留既有旧部署产物，供人工回滚。
+默认地址为 `http://localhost:5000`，启动参数可通过标准 `--urls` 覆盖。
 
 打开 `http://localhost:5000/setup`，在统一初始化向导中输入一次公共管理密钥：首次使用自动生成服务级授权码，然后检查摄像头模块并引导账号登录或验证码验证；已有授权码和保存的云会话自动保留。摄像头未启用或初始化失败时，系统授权仍可使用，页面显示模块状态并提供重新检查。
 
@@ -62,30 +73,17 @@ dotnet run --project api/src/Meowv.Api -- --contentRoot /YOUR_CHECKOUT/api/src/M
 | `/api/xiaomi-camera/setup/...` | 同样使用 `X-Api-Bootstrap-Token`；小米账号登录、验证码验证和会话重置 |
 | `GET /api/xiaomi-camera/health` | 摄像头就绪状态；未就绪 `503`，禁用时不注册 |
 
-公共管理接口有限流，超过额度统一返回 `429`，授权码响应及初始化页面禁止缓存。宿主在限流前处理转发头，只信任本机 IPv4 / IPv6 回环代理的一跳 `X-Forwarded-For` 和 `X-Forwarded-Proto`；适用于仓库 Nginx 转发到 `127.0.0.1:5000` 的布局，其他来源的转发头不生效。普通业务通过标准认证 Scheme 校验 Bearer 授权码，缺失或错误返回 `401 access_code_unauthorized`，在业务参数绑定前拦截；管理密钥不代替应用授权码。摄像头管理只保留 `/api/xiaomi-camera/setup/...`，不提供独立初始化页面或旧初始化 API 兼容入口；公共授权码只由 `/api/auth/...` 管理。
+公共管理接口有限流，超过额度统一返回 `429`，授权码响应及初始化页面禁止缓存。宿主在限流前处理转发头，只信任本机 IPv4 / IPv6 回环代理的一跳 `X-Forwarded-For` 和 `X-Forwarded-Proto`；适用于仓库 Nginx 转发到 `127.0.0.1:5000` 的布局，其他来源的转发头不生效。普通业务通过标准认证 Scheme 校验 Bearer 授权码，缺失或错误返回 `401 access_code_unauthorized`，在业务参数绑定前拦截；管理密钥不代替应用授权码。摄像头管理接口位于 `/api/xiaomi-camera/setup/...`，公共授权码由 `/api/auth/...` 管理。
 
 ## 接口目录
 
 打开 `http://localhost:5000/api/docs`，按模块查看当前注册的接口；可搜索模块名、路径、请求方式和认证要求。目录只展示清单，不提供接口调用或调试功能。需要程序读取时，使用 `GET /api/modules`：每个模块包含 `name`、`description`、`endpoints`，接口包含 `path`、`methods`、`authorization`。
 
-目录沿用原模块清单的匿名访问方式，只返回路由元数据。内容从运行时路由自动收集，包含已注册但暂不可用的模块，不包含已禁用模块；接口是否可用仍以模块健康接口和实际响应为准。认证要求区分匿名、通用授权码、管理密钥及模块自行校验的播放票据。
+目录与模块清单允许匿名访问，只返回路由元数据。内容从运行时路由自动收集，包含已注册但暂不可用的模块，不包含已禁用模块；接口是否可用仍以模块健康接口和实际响应为准。认证要求区分匿名、通用授权码、管理密钥及模块自行校验的播放票据。
 
-## 模块与存储约定
+## 发布
 
-- 实现 `IEndpointModule`，在 `ModuleCatalog.Registrations` 显式登记泛型 DI 注册，不使用反射扫描。
-- 宿主通过空路径分组为模块路由统一附加 `EndpointModuleMetadata`，目录按该元数据归属接口，不依赖路径前缀推断。模块自行校验的票据接口添加 `EndpointAccessMetadata`，避免被误标为匿名。
-- 新端点使用 `/api/<module>/...`；需公共授权的路由或分组调用 `.RequireAuthorization()`。健康和其他公共接口保持匿名；特殊票据由模块单独校验。
-- 模块初始化、重绑和其他管理操作统一使用 `ApiAuthorization.ManagementPolicy` 与公共管理密钥，不单独实现模块管理认证。
-- 业务入口保持无状态，请求所需服务通过端点参数注入；可选模块不可用拦截发生在依赖绑定前。
-- 摄像头配置在模块初始化时校验；无效并发数或开关格式使模块就绪检查及业务接口返回 `503`，公共授权与宿主健康检查继续工作。明确设置 `Enabled: false` 时不注册模块，也不校验其他摄像头配置。
-- 共用 `ApiDatabase` 的连接工厂与 `schema_migrations` 版本记录，模块维护自己的表。`xiaomi_camera_state` 直接保存云会话 JSON，不再使用 `DataKey` 或应用层加密，不保存小米账号密码、验证码；不预建通用仓储或事件总线。
-- 配置绑定使用源生成，HTTP 与存储 DTO 维护 JSON 源生成元数据；开发也关闭反射式 JSON 序列化。公共授权接口使用 `IAccessCodeService`，媒体票据读取公共授权版本及模块会话版本。
-
-## 发布与验证
-
-新版发布不包含任何旧数据迁移入口，也不读取此前加密保存的云会话。部署时使用新配置和新的数据库路径，重新生成公共授权码并登录小米账号；已有本机数据和旧部署产物不会自动删除。
-
-模块初始化日志标明失败阶段；摄像头就绪接口也会返回受控的错误说明。若提示数据库当前版本 `1`、程序要求版本 `2`，说明仍在使用之前的加密会话结构：先备份数据库，再人工重建摄像头表并重新登录，或配置全新的数据库路径；程序不会自动删除或迁移旧数据。
+仓库根目录执行 `build.sh` 时，应用先发布到 `api/build/<RID>/`，再汇总到 `build/studio.meowv.com/api/<RID>/`。单独运行 `publish.sh` 只生成项目发布目录，也可用 `--output <目录>` 指定发布根目录。
 
 ```bash
 ./build.sh api                       # 默认 win-x64
@@ -95,7 +93,7 @@ bash scripts/publish.sh --rid osx-arm64
 bash scripts/publish.sh --rid linux-x64 --without-ffmpeg
 ```
 
-每个 `<RID>/` 是独立发布目录，主程序保持自包含、完整裁剪和压缩单文件；无密钥的 `appsettings.json`、FFmpeg 和来源校验记录 `SOURCE.txt` 均放在主程序旁，不再生成共享 `tools/` 目录。例如 Windows x64：
+每个 `<RID>/` 是独立发布目录，主程序保持自包含、完整裁剪和压缩单文件；无密钥的 `appsettings.json`、FFmpeg 和来源校验记录 `SOURCE.txt` 均放在主程序旁。例如 Windows x64：
 
 ```text
 win-x64/
@@ -107,9 +105,33 @@ win-x64/
 
 其他平台使用对应 RID；Linux 和 macOS 的主程序和 FFmpeg 不带 `.exe` 后缀。FFmpeg 显式路径优先，否则查找内容根目录旁置文件；开发环境还会查找 `api/build/<当前 RID>/`，最后回退到系统 `PATH`。重复发布仍校验并复用相同版本的 FFmpeg。`appsettings.Development.json`、数据库及其附属文件不进入应用发布或根脚本暂存包。`--without-ffmpeg` 只跳过工具准备，不清理已有 FFmpeg，也不自动禁用摄像头。
 
-发布环境可将数据库路径指向站点目录之外，升级程序不能覆盖数据库或部署密钥。产物映射及上传约定见[根 README](../README.md)，发布脚本不注册或重启服务。
+首次部署先配置公共管理密钥，启动后通过 `/setup` 生成授权码并登录小米账号。后续升级保留数据库与生产配置；可用 `ConnectionStrings__DefaultConnection` 将数据库放到静态站点和发布目录之外。上传流程见[根 README](../README.md#上传到-windows-nginx)，发布和上传脚本均不注册或重启服务。
 
-定向检查：
+宿主存活检查为 `/api/health`，摄像头就绪检查为 `/api/xiaomi-camera/health`。模块初始化失败时查看模块健康响应和服务日志中的失败阶段，核对配置、数据库及 FFmpeg；宿主存活不表示摄像头已就绪。
+
+## Windows NSSM 服务
+
+将独立的 Windows 平台目录上传到服务器，在管理员终端执行以下命令；路径按实际发布位置调整，NSSM 需已加入 `PATH`：
+
+```powershell
+nssm install Meowv.Api "C:\_qix\studio.meowv.com\api\win-x64\Meowv.Api.exe"
+nssm set Meowv.Api AppDirectory "C:\_qix\studio.meowv.com\api\win-x64"
+nssm set Meowv.Api AppEnvironmentExtra "DOTNET_ENVIRONMENT=Production" "ASPNETCORE_ENVIRONMENT=Production" "ASPNETCORE_URLS=http://localhost:5000"
+nssm set Meowv.Api Start SERVICE_AUTO_START
+nssm edit Meowv.Api
+```
+
+在 Environment 中保留已有行，添加 `Security__BootstrapToken=YOUR_RANDOM_MANAGEMENT_TOKEN_AT_LEAST_32_CHARACTERS`，按需配置数据库路径和跨域 Origin。不要勾选 Replace default environment；真实密钥只填入服务器配置，不写入脚本或命令行。保存后执行 `nssm start Meowv.Api`。升级前停止服务，完成程序替换后再启动；创建服务后保持 NSSM 程序路径不变。
+
+## 脚本与验证
+
+| 脚本 | 作用 |
+| --- | --- |
+| `scripts/publish.sh` | 自包含单文件发布；准备或复用校验通过的 FFmpeg |
+| `scripts/fetch-ffmpeg.sh` | 下载固定版本的校验清单与 FFmpeg 压缩包，校验后提取并记录来源 |
+| `scripts/check-runtime.sh` | 使用本机包缓存建立临时测试宿主，执行运行时定向检查 |
+
+以下命令从仓库根目录执行：
 
 ```bash
 bash api/scripts/check-runtime.sh
@@ -117,6 +139,8 @@ node --test api/tests/setup-page.test.mjs
 node --test api/tests/publish-layout.test.mjs
 ```
 
-检查仅用本机包缓存建立临时测试宿主，覆盖配置、模块初始化故障隔离、可信代理与按客户端限流、公共授权、云会话存储及票据。模块隔离检查使用真实注册与初始化代码，登录和媒体依赖使用测试占位类型，不构建完整 API、不调用摄像头。完整构建、真实设备、目标平台发布和生产切换需分别验证，不能用这些定向检查代替。
+`RuntimeChecks.cs` 检查配置优先级、接口目录、公共授权、持久化、可信代理、限流及票据撤销；`ModuleInitializationChecks.cs` 检查模块故障隔离，登录和媒体依赖使用占位类型；`FfmpegPathChecks.cs` 在 Unix 上用合成可执行文件检查 FFmpeg 路径解析。它们由 `check-runtime.sh` 统一运行。
 
-页面状态测试使用 Node.js 内存 DOM 和合成响应，覆盖首次初始化、已有状态、验证码流程、模块故障、轮换确认及退出清理，不使用真实凭据。
+`setup-page.test.mjs` 使用内存 DOM 和合成响应检查初始化、验证码、模块故障、授权码轮换及退出清理；`publish-layout.test.mjs` 使用发布和下载替身检查各 RID 的目录布局、缓存校验和打包白名单。
+
+这些检查不构建完整 API，不连接真实账号或摄像头，也不执行真实发布。完整构建、目标平台启动、真实设备预览及生产验证需分别确认。
