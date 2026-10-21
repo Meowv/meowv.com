@@ -442,6 +442,12 @@ test('独立 Studio 构建不需要 LiveWall 密钥，携带清单时仍严格�
   assert.equal(result.status, 0, result.stdout + result.stderr);
   assert.ok(existsSync(join(repo, 'build/studio.meowv.com/index.html')));
   assert.ok(!existsSync(join(repo, '.livewall-key')));
+  put('build/studio.meowv.com/api/win-x64/marker', 'existing-api');
+  put('build/studio.meowv.com/xiaomiCamera/marker', 'retired-camera');
+  result = run();
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.equal(readFileSync(join(repo, 'build/studio.meowv.com/api/win-x64/marker'), 'utf8'), 'existing-api');
+  assert.ok(!existsSync(join(repo, 'build/studio.meowv.com/xiaomiCamera')), '不再复制已移除项目的产物');
   put('studio/public/data/livewall.json', '{}');
   assert.notEqual(run().status, 0, '旧明文不能随网站构建发布');
   rmSync(join(repo, 'studio/public/data/livewall.json'));

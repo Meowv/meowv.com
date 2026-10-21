@@ -504,20 +504,15 @@ preserve_livewall_update_feed() {
   echo "[studio] 沿用上次的分发产物 $(basename "$dmg")"
 }
 
-# 后端与 Studio 共享部署根目录。保留未重建的 API 和旧摄像头产物，便于迁移与回滚。
+# 后端与 Studio 共享部署根目录；仅在本次未构建 API 时沿用其产物。
 preserve_api_deployment() {
-  local folder
-  local source_dir
-  local target_dir
-  for folder in api xiaomiCamera; do
-    if [ "$folder" = "api" ] && [ "$HAS_API" -eq 1 ]; then continue; fi
-    source_dir="$BUILD_DIR/studio.meowv.com/$folder"
-    target_dir="$STAGING_DIR/studio.meowv.com/$folder"
-    [ -d "$source_dir" ] || continue
-    mkdir -p "$target_dir"
-    cp -R "$source_dir"/. "$target_dir"/
-    echo "[studio] 沿用上次的 ${folder} 服务产物"
-  done
+  [ "$HAS_API" -eq 0 ] || return 0
+  local source_dir="$BUILD_DIR/studio.meowv.com/api"
+  local target_dir="$STAGING_DIR/studio.meowv.com/api"
+  [ -d "$source_dir" ] || return 0
+  mkdir -p "$target_dir"
+  cp -R "$source_dir"/. "$target_dir"/
+  echo "[studio] 沿用上次的 API 服务产物"
 }
 
 add_project() {
