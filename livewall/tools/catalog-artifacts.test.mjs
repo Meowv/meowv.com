@@ -292,7 +292,7 @@ writeFileSync(dir+'/LiveWall-1.0.0.dmg',bytes);
 writeFileSync(dir+'/version.json',JSON.stringify({build:2,fileURL:'https://example.test/LiveWall-1.0.0.dmg',sha256:createHash('sha256').update(bytes).digest('hex')}));`);
   put('blog/node_modules/.bin/hexo', '#!/bin/bash\nmkdir -p public\necho fixture > public/index.html\n', true);
   put('bin/dotnet', '#!/bin/bash\nexit 0\n', true);
-  put('xiaomiCamera/scripts/publish.sh', '#!/bin/bash\nmkdir -p build/win-x64 build/tools/ffmpeg/win-x64\necho fixture > build/win-x64/XiaomiCamera.exe\necho fixture > build/tools/ffmpeg/win-x64/fixture\n', true);
+  put('api/scripts/publish.sh', '#!/bin/bash\nmkdir -p build/win-x64 build/tools/ffmpeg/win-x64\necho fixture > build/win-x64/Meowv.Api.exe\necho "{}" > build/win-x64/appsettings.json\necho fixture > build/tools/ffmpeg/win-x64/fixture\n', true);
   const signing = generateKeyPairSync('ed25519');
   put('livewall/Sources/LiveWallCore/UpdateSignature.swift', `public static let publicKeyBase64 = "${signing.publicKey.export({ format: 'der', type: 'spki' }).subarray(-32).toString('base64')}"`);
   const env = { ...process.env, PATH: `${repo}/bin:${process.env.PATH}`, FIXTURE_REPO: repo, FIXTURE_NODE: process.execPath,
