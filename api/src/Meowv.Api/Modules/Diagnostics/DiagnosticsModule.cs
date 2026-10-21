@@ -20,14 +20,15 @@ public sealed class DiagnosticsModule : IEndpointModule
             context.Response.Headers.CacheControl = "no-store";
             var routes = source.Endpoints.OfType<RouteEndpoint>().ToArray();
             var catalog = modules.Select(module => new ModuleDescriptor(module.Name, module.Description,
-                    routes.Where(route => route.Metadata.GetMetadata<EndpointModuleMetadata>()?.Name == module.Name)
+                [
+                    .. routes.Where(route => route.Metadata.GetMetadata<EndpointModuleMetadata>()?.Name == module.Name)
                         .Select(route => new EndpointDescriptor(
                             route.RoutePattern.RawText ?? route.RoutePattern.ToString() ?? "/",
                             route.Metadata.GetMetadata<IHttpMethodMetadata>()?.HttpMethods.Order(StringComparer.Ordinal).ToArray() ?? ["ANY"],
                             DescribeAuthorization(route)))
                         .OrderBy(route => route.Path, StringComparer.Ordinal)
                         .ThenBy(route => string.Join(',', route.Methods), StringComparer.Ordinal)
-                        .ToArray()))
+                ]))
                 .ToArray();
             return Results.Json(catalog, ApiJsonContext.Default.ModuleDescriptorArray);
         }).AllowAnonymous();
@@ -43,9 +44,9 @@ public sealed class DiagnosticsModule : IEndpointModule
     {
         var requirements = new List<string>();
         var allowAnonymous = endpoint.Metadata.GetMetadata<IAllowAnonymous>() is not null;
-        IReadOnlyList<IAuthorizeData> authorization = allowAnonymous ? [] : endpoint.Metadata.GetOrderedMetadata<IAuthorizeData>();
+        var authorization = allowAnonymous ? [] : endpoint.Metadata.GetOrderedMetadata<IAuthorizeData>();
         if (authorization.Any(data => data.Policy == ApiAuthorization.ManagementPolicy ||
-                data.AuthenticationSchemes?.Split(',').Any(scheme => scheme.Trim() == ApiAuthorization.ManagementScheme) == true))
+                                      data.AuthenticationSchemes?.Split(',').Any(scheme => scheme.Trim() == ApiAuthorization.ManagementScheme) == true))
             requirements.Add("管理密钥");
         else if (authorization.Any(data => string.IsNullOrEmpty(data.Policy) && string.IsNullOrEmpty(data.AuthenticationSchemes)))
             requirements.Add("通用授权码");
@@ -58,6 +59,7 @@ public sealed class DiagnosticsModule : IEndpointModule
                 requirements.Add("认证：" + data.AuthenticationSchemes);
             if (!string.IsNullOrEmpty(data.Roles)) requirements.Add("角色：" + data.Roles);
         }
+
         foreach (var access in endpoint.Metadata.GetOrderedMetadata<EndpointAccessMetadata>())
             requirements.Add(access.Requirement);
         if (!allowAnonymous && endpoint.Metadata.GetOrderedMetadata<AuthorizationPolicy>().Count > 0)

@@ -69,6 +69,7 @@ public sealed class XiaomiHlsService : IDisposable, IAsyncDisposable
                 state.Stop();
                 throw;
             }
+
             return state.Target;
         }
     }
@@ -149,6 +150,7 @@ public sealed class XiaomiHlsService : IDisposable, IAsyncDisposable
             Dispose();
             completions = _activeStates.Select(state => state.Completion).ToArray();
         }
+
         await Task.WhenAll(completions).WaitAsync(cancellationToken);
     }
 
@@ -217,6 +219,7 @@ public sealed class XiaomiHlsService : IDisposable, IAsyncDisposable
         public XiaomiPlaybackTarget Target { get; } = target;
         public string Fingerprint => Target.DeviceFingerprint;
         public CancellationTokenSource Stopping { get; } = new();
+
         public Task Completion
         {
             get
@@ -224,6 +227,7 @@ public sealed class XiaomiHlsService : IDisposable, IAsyncDisposable
                 lock (_gate) return Task.WhenAll(_pump ?? Task.CompletedTask, _idleCleanup ?? Task.CompletedTask);
             }
         }
+
         private DateTimeOffset LastAccess { get; set; } = DateTimeOffset.UtcNow;
 
         public bool CanAcceptRequests

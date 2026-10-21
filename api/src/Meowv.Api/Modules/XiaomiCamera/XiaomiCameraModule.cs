@@ -54,9 +54,9 @@ public sealed class XiaomiCameraModule : IEndpointModule
                 if (!attempt.IsAuthenticated)
                 {
                     return Results.Json(XiaomiSetupResponse.NeedsVerification(
-                        attempt.AttemptId!.Value,
-                        attempt.VerificationKind!,
-                        attempt.VerificationDestination), XiaomiHttpJsonContext.Default.XiaomiSetupResponse,
+                            attempt.AttemptId!.Value,
+                            attempt.VerificationKind!,
+                            attempt.VerificationDestination), XiaomiHttpJsonContext.Default.XiaomiSetupResponse,
                         statusCode: StatusCodes.Status202Accepted);
                 }
 

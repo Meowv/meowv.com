@@ -125,13 +125,13 @@ public sealed class XiaomiCredentialCache
     }
 
     private void Initialize() => _database.EnsureSchema("xiaomi-camera", 2, """
-        CREATE TABLE IF NOT EXISTS xiaomi_camera_state (
-            id INTEGER PRIMARY KEY CHECK(id = 1),
-            credentials_json TEXT NULL,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
-        );
-        """);
+                                                                            CREATE TABLE IF NOT EXISTS xiaomi_camera_state (
+                                                                                id INTEGER PRIMARY KEY CHECK(id = 1),
+                                                                                credentials_json TEXT NULL,
+                                                                                created_at TEXT NOT NULL,
+                                                                                updated_at TEXT NOT NULL
+                                                                            );
+                                                                            """);
 
     private SqliteConnection OpenConnection() => _database.OpenConnection();
 
