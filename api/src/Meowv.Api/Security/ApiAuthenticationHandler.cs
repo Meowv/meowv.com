@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using Meowv.Api.Core;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 
 namespace Meowv.Api.Security;
@@ -23,6 +24,10 @@ public sealed class ApiAuthenticationHandler(
 {
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
+        // 匿名覆盖授权策略时，策略仍可能调用认证；这里提前跳过。
+        if (Context.GetEndpoint()?.Metadata.GetMetadata<IAllowAnonymous>() is not null)
+            return Task.FromResult(AuthenticateResult.NoResult());
+
         var version = 0;
         if (Scheme.Name == ApiAuthorization.ManagementScheme)
         {

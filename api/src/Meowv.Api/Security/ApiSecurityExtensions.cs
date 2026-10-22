@@ -3,6 +3,7 @@ using System.Net;
 using Meowv.Api.Core;
 using Meowv.Api.Infrastructure;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
 
 namespace Meowv.Api.Security;
@@ -37,11 +38,17 @@ public static class ApiSecurityExtensions
         });
         services.AddSingleton<IAccessCodeService, AccessCodeService>();
         services.AddHostedService<AuthInitializationService>();
-        services.AddAuthentication(ApiAuthorization.AccessCodeScheme)
+        // 由授权策略按需触发认证，避免匿名和票据接口校验额外的 Bearer 头。
+        services.AddAuthentication()
             .AddScheme<AuthenticationSchemeOptions, ApiAuthenticationHandler>(ApiAuthorization.AccessCodeScheme, _ => { })
             .AddScheme<AuthenticationSchemeOptions, ApiAuthenticationHandler>(ApiAuthorization.ManagementScheme, _ => { });
-        services.AddAuthorization(options => options.AddPolicy(ApiAuthorization.ManagementPolicy,
-            policy => policy.AddAuthenticationSchemes(ApiAuthorization.ManagementScheme).RequireAuthenticatedUser()));
+        services.AddAuthorization(options =>
+        {
+            options.DefaultPolicy = new AuthorizationPolicyBuilder(ApiAuthorization.AccessCodeScheme)
+                .RequireAuthenticatedUser().Build();
+            options.AddPolicy(ApiAuthorization.ManagementPolicy,
+                policy => policy.AddAuthenticationSchemes(ApiAuthorization.ManagementScheme).RequireAuthenticatedUser());
+        });
         services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;

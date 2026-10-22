@@ -59,6 +59,8 @@ try
     var builder = ApiConfiguration.CreateBuilder(["--contentRoot", root]);
     builder.Logging.ClearProviders();
     builder.Services.AddApiServices(builder.Configuration);
+    builder.Services.AddSingleton<CountingAccessCodeService>();
+    builder.Services.AddSingleton<IAccessCodeService>(provider => provider.GetRequiredService<CountingAccessCodeService>());
     builder.Services.AddXiaomiCameraModule(builder.Configuration);
     builder.Services.AddSingleton<IEndpointModule, AuthModule>();
     builder.Services.AddSingleton<IEndpointModule, DiagnosticsModule>();
@@ -179,10 +181,54 @@ try
 
     var code = await Manage("");
     Check(!string.IsNullOrWhiteSpace(code) && await Manage("") is null, "One-time code display");
+    var codeChecks = app.Services.GetRequiredService<CountingAccessCodeService>();
+    async Task CheckNoAccessCodeVerification(HttpRequestMessage request, HttpStatusCode expected, string description)
+    {
+        using (request)
+        {
+            var before = codeChecks.VerificationCount;
+            using var response = await client.SendAsync(request);
+            Check(response.StatusCode == expected, description + ": status");
+            Check(codeChecks.VerificationCount == before, description + ": must not verify access codes");
+        }
+    }
+
+    // 已有授权码时，匿名、票据和管理接口仍不能因额外 Bearer 头触发慢哈希。
+    foreach (var bearer in new[] { code!, "YOUR_SYNTHETIC_INVALID_ACCESS_CODE" })
+    {
+        foreach (var path in new[] { "/api/health", "/api/modules", "/api/docs", "/setup", "/api/first/public", "/api/second/media/synthetic-ticket", "/missing" })
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, path);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearer);
+            await CheckNoAccessCodeVerification(request, path == "/missing" ? HttpStatusCode.NotFound : HttpStatusCode.OK,
+                "Unprotected request " + path);
+        }
+
+        var managementRequest = new HttpRequestMessage(HttpMethod.Post, "/api/auth/access-code");
+        managementRequest.Headers.Add("X-Api-Bootstrap-Token", management);
+        managementRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearer);
+        await CheckNoAccessCodeVerification(managementRequest, HttpStatusCode.OK, "Management scheme ignores extra Bearer");
+    }
+
+    // 限流在真实认证之前拒绝超额请求，拒绝后不再进行昂贵的校验。
+    for (var i = 0; i < 11; i++)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/first/limited");
+        request.Headers.Add("X-Forwarded-For", "192.0.2.12");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "YOUR_SYNTHETIC_INVALID_ACCESS_CODE");
+        var before = codeChecks.VerificationCount;
+        using var response = await client.SendAsync(request);
+        Check(response.StatusCode == (i < 10 ? HttpStatusCode.Unauthorized : HttpStatusCode.TooManyRequests),
+            "Protected requests are rate limited before authentication");
+        Check(codeChecks.VerificationCount == before + (i < 10 ? 1 : 0), "Only admitted protected requests verify access codes");
+    }
+
     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", code);
-    Check((await client.PostAsync("/api/auth/access-code", null)).StatusCode == HttpStatusCode.Unauthorized,
+    await CheckNoAccessCodeVerification(new HttpRequestMessage(HttpMethod.Post, "/api/auth/access-code"), HttpStatusCode.Unauthorized,
         "Application code cannot replace the management key");
+    var beforeAuthorized = codeChecks.VerificationCount;
     Check((await client.GetAsync("/api/first/probe")).StatusCode == HttpStatusCode.OK, "First module authorization");
+    Check(codeChecks.VerificationCount == beforeAuthorized + 1, "Protected endpoint verifies the application code");
     Check((await client.PostAsync("/api/second/probe", new StringContent("{\"value\":\"ok\"}", Encoding.UTF8, "application/json"))).StatusCode == HttpStatusCode.OK,
         "Same code authorizes second module");
     Check(codes.Verify(code, out var version), "Stored code verification");
@@ -236,7 +282,7 @@ try
 
     Check(cache.TryLoad() is null, "Invalid stored cloud session is cleared");
     await app.StopAsync();
-    Console.WriteLine("PASS: configuration, module failure isolation, runtime endpoint catalog and authorization labels, trusted proxy identity, per-client rate limits, HTTP authorization, persistence, global rotation, cloud storage and ticket revocation. No full API build or camera calls.");
+    Console.WriteLine("PASS: configuration, module failure isolation, runtime endpoint catalog and authorization labels, trusted proxy identity, per-client rate limits, endpoint-scoped authentication and pre-authentication rate limiting, HTTP authorization, persistence, global rotation, cloud storage and ticket revocation. No full API build or camera calls.");
 }
 finally
 {
@@ -251,6 +297,21 @@ public sealed record ProbeRequest(string Value);
 [JsonSerializable(typeof(ProbeRequest))]
 internal partial class ProbeJsonContext : JsonSerializerContext;
 
+internal sealed class CountingAccessCodeService(ApiDatabase database) : IAccessCodeService
+{
+    private readonly AccessCodeService _inner = new(database);
+    private int _verificationCount;
+    public int VerificationCount => Volatile.Read(ref _verificationCount);
+    public string? CreateIfMissing() => _inner.CreateIfMissing();
+    public string Rotate() => _inner.Rotate();
+    public int GetVersion() => _inner.GetVersion();
+    public bool Verify(string? code, out int version)
+    {
+        Interlocked.Increment(ref _verificationCount);
+        return _inner.Verify(code, out version);
+    }
+}
+
 internal sealed class FirstProbeModule : IEndpointModule
 {
     public string Name => "first";
@@ -259,6 +320,7 @@ internal sealed class FirstProbeModule : IEndpointModule
     public void MapEndpoints(IEndpointRouteBuilder endpoints)
     {
         endpoints.MapGet("/api/first/probe", () => "first").RequireAuthorization();
+        endpoints.MapGet("/api/first/limited", () => "limited").RequireAuthorization().RequireRateLimiting("api-auth");
         endpoints.MapGet("/api/first/public", () => "public").RequireAuthorization().AllowAnonymous();
         endpoints.MapGet("/api/compat/probe", () => "alias").RequireAuthorization();
     }
