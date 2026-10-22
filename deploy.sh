@@ -15,6 +15,7 @@ usage() {
   ./deploy.sh [all | blog/b studio/s ...] [--dry-run]
 
 无项目参数时部署全部项目；只使用 build/ 中已有产物，不执行构建。
+Studio 的书库、API 配置与数据库文件不上传也不删除。
 --dry-run  连接服务器并预览需要上传和删除的文件，不实际修改远端
 EOF
 }
@@ -131,9 +132,16 @@ for project in "${PROJECTS[@]}"; do
   TEMP_FILES+=("$current_file" "$changed_file" "$deleted_file")
 
   skip_prefix=""
+  skip_api_data=0
   if [ "$project" = studio ]; then
     skip_prefix="data/books/"
-    rclone hashsum SHA256 "$source_dir" --config /dev/null --output-file "$current_file" --exclude '/data/books/**'
+    skip_api_data=1
+    rclone hashsum SHA256 "$source_dir" --config /dev/null --output-file "$current_file" --ignore-case \
+      --exclude '/data/books/**' \
+      --exclude '/api/{,**/}appsettings*.json' --exclude '/api/{,**/}*.config' \
+      --exclude '/api/{,**/}*.db' --exclude '/api/{,**/}*.db-*' \
+      --exclude '/api/{,**/}*.sqlite' --exclude '/api/{,**/}*.sqlite-*' \
+      --exclude '/api/{,**/}*.sqlite3' --exclude '/api/{,**/}*.sqlite3-*'
   else
     rclone hashsum SHA256 "$source_dir" --config /dev/null --output-file "$current_file"
   fi
@@ -142,9 +150,20 @@ for project in "${PROJECTS[@]}"; do
       NR == FNR { previous[substr($0, 67)] = substr($0, 1, 64); next }
       { path = substr($0, 67); if (!(path in previous) || previous[path] != substr($0, 1, 64)) print path }
     ' "$state_file" "$current_file" > "$changed_file"
-    awk -v skip_prefix="$skip_prefix" '
+    # --files-from-raw 不应用排除规则；删除清单也要过滤旧记录中的受保护文件。
+    awk -v skip_prefix="$skip_prefix" -v skip_api_data="$skip_api_data" '
       NR == FNR { current[substr($0, 67)] = 1; next }
-      { path = substr($0, 67); if (skip_prefix != "" && index(path, skip_prefix) == 1) next; if (!(path in current)) print path }
+      {
+        path = substr($0, 67)
+        normalized = tolower(path)
+        if (skip_prefix != "" && index(normalized, skip_prefix) == 1) next
+        if (skip_api_data && normalized ~ /^api\//) {
+          name = normalized
+          sub(/^.*\//, "", name)
+          if (name ~ /^appsettings.*\.json$/ || name ~ /\.config$/ || name ~ /\.(db|sqlite|sqlite3)(-.*)?$/) next
+        }
+        if (!(path in current)) print path
+      }
     ' "$current_file" "$state_file" > "$deleted_file"
   else
     awk '{ print substr($0, 67) }' "$current_file" > "$changed_file"
