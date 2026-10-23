@@ -1,5 +1,6 @@
 using Meowv.Api.Core;
 using Meowv.Api.Modules.Diagnostics;
+using Meowv.Api.Modules.Chat;
 using Meowv.Api.Modules.Health;
 using Meowv.Api.Modules.Auth;
 using Meowv.Api.Modules.XiaomiCamera;
@@ -14,5 +15,6 @@ public static class ModuleCatalog
         (services, _) => services.AddSingleton<IEndpointModule, DiagnosticsModule>(),
         (services, _) => services.AddSingleton<IEndpointModule, AuthModule>(),
         (services, configuration) => services.AddXiaomiCameraModule(configuration),
+        (services, configuration) => services.AddChatModule(configuration),
     ];
 }

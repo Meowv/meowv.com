@@ -1,6 +1,6 @@
 # Meowv.Api
 
-基于 .NET 10 / ASP.NET Core 的统一后端，提供公共授权、健康检查、接口目录及小米摄像头模块。Studio 通过 API 访问设备目录、实时预览和云台控制。
+基于 .NET 10 / ASP.NET Core 的统一后端，提供公共授权、健康检查、接口目录、小米摄像头模块和匿名公共聊天室。Studio 通过 API 访问设备目录、实时预览和云台控制。
 
 | 目录 | 职责 |
 | --- | --- |
@@ -79,7 +79,7 @@ dotnet run --project api/src/Meowv.Api -- --contentRoot /YOUR_CHECKOUT/api/src/M
 
 打开 `http://localhost:5000/api/docs`，按模块查看当前注册的接口；可搜索模块名、路径、请求方式和认证要求。目录只展示清单，不提供接口调用或调试功能。需要程序读取时，使用 `GET /api/modules`：每个模块包含 `name`、`description`、`endpoints`，接口包含 `path`、`methods`、`authorization`。
 
-目录与模块清单允许匿名访问，只返回路由元数据。内容从运行时路由自动收集，包含已注册但暂不可用的模块，不包含已禁用模块；接口是否可用仍以模块健康接口和实际响应为准。认证要求区分匿名、通用授权码、管理密钥及模块自行校验的播放票据。
+目录与模块清单允许匿名访问，只返回路由元数据。内容从运行时路由自动收集，包含已注册但暂不可用的模块，已禁用的摄像头模块不进入目录，Chat 禁用时只保留健康探针；接口是否可用仍以模块健康接口和实际响应为准。认证要求区分匿名、通用授权码、管理密钥及模块自行校验的播放票据。
 
 ## 发布
 
@@ -144,3 +144,54 @@ node --test api/tests/publish-layout.test.mjs
 `setup-page.test.mjs` 使用内存 DOM 和合成响应检查初始化、验证码、模块故障、授权码轮换及退出清理；`publish-layout.test.mjs` 使用发布和下载替身检查各 RID 的目录布局、缓存校验和打包白名单。
 
 这些检查不构建完整 API，不连接真实账号或摄像头，也不执行真实发布。完整构建、目标平台启动、真实设备预览及生产验证需分别确认。
+
+## Chat 公共聊天室
+
+Chat 挂载在 `/api/chat`，复用当前 SQLite、宿主和管理认证。默认 `Modules:Chat:Enabled=false`，不注册聊天 Hub 和写接口，也不创建 Chat 表。前端入口为 Studio 菜单 `/chat`，首页正文不展示 Chat。
+
+启用前通过环境变量设置 `Modules__Chat__Enabled=true`，并在**现有** `Cors:AllowedOrigins` 中列出 Studio 的精确 Origin，例如生产的 `https://studio.meowv.com` 或开发的 `http://localhost:4001`。Chat 不维护第二份来源白名单；写接口与所有 Hub 传输均用这份配置校验 Origin，来源未配置时模块保持不可用。Chat 管理使用 `/setup` 生成的通用授权码，不使用 `Security:BootstrapToken`。模块状态为 `GET /api/chat/health`，初始化或 SQLite 故障只影响 Chat。
+
+完整 Chat 配置列在 [`appsettings.json`](src/Meowv.Api/appsettings.json) 中，默认值定义在 [`ChatOptions.cs`](src/Meowv.Api/Modules/Chat/ChatOptions.cs)，可用 `Modules:Chat:<名称>` 覆盖：
+
+| 配置 | 默认值 | 作用 |
+| --- | --- | --- |
+| `Enabled` | `false` | 启用 Chat 模块 |
+| `MessageCleanupEnabled` | `false` | 启用历史消息过期过滤和自动清理；关闭时不按时间过滤或删除消息 |
+| `RetentionDays` | `7` | 开启消息清理后保留最近多少天的消息（1–365） |
+| `SessionDays` | `7` | 固定匿名会话有效期 |
+| `AuditRetentionDays` | `30` | 管理操作审计保留期 |
+| `HistoryPageSize` / `MaxHistoryPageSize` | `30` / `100` | 历史分页默认值与单次最大数量（最多 100） |
+| `MaxMessageChars` / `MaxMessageBytes` | `500` / `2048` | NFC 规范化后的用户可见字符和 UTF-8 字节上限 |
+| `SendCooldownMs` / `MessagesPerMinute` | `2000` / `20` | 单访客发送间隔和每分钟配额 |
+| `IpMessagesPerMinute` | `100` | 单 IP 每分钟消息配额 |
+| `SessionsPerWindow` / `SessionWindowMinutes` | `5` / `10` | 单 IP 会话创建配额与窗口 |
+| `MaxConnectionsPerGuest` / `MaxConnections` | `5` / `100` | 单访客、单实例连接上限；非压测容量承诺 |
+| `CleanupMinutes` / `CleanupBatchSize` | `60` / `500` | 每轮分表分批清理；积压时缩短间隔继续处理 |
+| `BlockedNicknameTerms` | `[]` | 禁用昵称包含词，大小写不敏感 |
+
+消息清理默认关闭。设定 `Modules:Chat:MessageCleanupEnabled=true` 后，历史接口立即排除超过 `RetentionDays` 的消息，后台按 `CleanupMinutes` 分批物理删除。关闭消息清理不影响过期会话和管理审计的清理。页面从状态接口读取开关，仅在开启时显示消息保留天数。配置修改后重启 API 生效。
+
+会话 Cookie 为 `meowv_chat_session`，`HttpOnly`、`SameSite=Strict`、路径 `/api/chat`；生产必须 HTTPS，并设置 `Secure`。令牌只以 SHA-256 哈希保存在 `chat_guest_sessions`。消息和管理审计使用 `chat_messages`、`chat_moderation_logs`，均在共享数据库内，升级时保留数据库。匿名访客可主动发送的公开聊天文本属于联网数据，不涉及本地文件上传。
+
+| 路径 | 用途 |
+| --- | --- |
+| `POST /api/chat/session` | `{ "nickname": "访客" }` 创建或复用匿名会话 |
+| `GET` / `DELETE /api/chat/session` | 查询、撤销会话；退出立即断开该访客所有连接 |
+| `GET /api/chat/messages` | `beforeId` 或 `afterId` 分页，默认 30，最多 100；ID 为十进制字符串 |
+| `GET /api/chat/messages/{id}/context` | 按消息 ID 加载原消息及附近消息，提供向前/向后分页状态 |
+| `GET /api/chat/participants` | 提及候选名单：在线访客和最近 200 条可见消息的作者，按访客 ID 去重，最多 200 人 |
+| `GET /api/chat/status` | 去重在线人数、服务时间、当前消息限制及保留天数 |
+| `/api/chat/hub` | SignalR：`SendMessage(clientMessageId, content, replyToId, mentions)`；推送 `message.created`、`message.deleted`、`message.restored`、`presence.changed` |
+| `POST /api/chat/admin/messages/{id}/restore` | 恢复已标记删除的消息及原文，广播恢复事件；物理删除的消息无法恢复 |
+| `GET /api/chat/admin/session` | 验证通用授权码，成功返回 204；独立限制验证频率 |
+| `DELETE /api/chat/admin/messages/{id}?permanent=false` | 标记删除，保留数据库原文但不返回正文；`permanent=true` 物理删除；广播事件并记录审计 |
+
+除会话创建、退出外，业务接口要求匿名 Cookie；Chat 管理接口使用现有通用授权码 `Authorization: Bearer YOUR_ACCESS_CODE`。浏览器写接口要求白名单 `Origin` 和 `X-Chat-Request: 1`，Hub 使用 Origin 校验。命令行管理工具也需提供同样的 Origin 和写请求头。默认标记删除并保留数据库正文，接口隐藏原文；传入 `permanent=true` 则物理删除整条消息。删除和恢复均记录审计并实时通知访客，已标记消息可恢复或永久删除；管理入口位于 Chat 页右上角，输入通用授权码验证后可在消息旁选择标记删除、恢复或永久删除；授权码仅保留在当前页面内存，退出管理模式或刷新后清除，不写入浏览器持久化存储。没有独立管理页面。
+
+消息引用仅保存原消息 ID（`chat_message_replies`），昵称和最多 120 个可见字符的摘要由后端关联原消息生成，不保存正文副本。标记删除时隐藏摘要，恢复后重现；物理删除或过期后显示原消息不可用，回复本身保留。鼠标移入他人消息正文显示回复，自己消息不显示回复；授权后的管理操作仍可使用，键盘聚焦同样可用，触屏直接显示操作入口；点击引用定位原消息，尚未加载时展示附近消息，可继续加载更早/较新消息或回到最新。
+
+提及通过访客 ID 与正文中的 UTF-16 起始位置、长度关联，每条消息最多 10 次；后端核对访客身份和 `@昵称` 文本，不按昵称猜测身份。正文与提及元数据在同一事务保存（`chat_message_mentions`），幂等重试保留原目标；标记删除时接口隐藏正文及提及，恢复后重现，物理删除同时移除关系。候选名单需要匿名会话，只有公开昵称、头像种子、访客 ID 和在线状态，不返回会话凭据或 IP。只有从候选列表选择或点击昵称插入的提及会产生提醒，普通 `@文字` 不会。
+
+仓库 `nginx.conf` 已准备 `/api/chat/` 的 WebSocket Upgrade 代理和同域 WSS CSP；它们需要部署后才生效。本地开发可通过 `STUDIO_CHAT_API_TARGET=http://127.0.0.1:15000 pnpm dev` 指定开发代理目标（默认 `http://127.0.0.1:5000`），避免占用已有服务端口。
+
+定向检查：`bash scripts/check-chat.sh`，只使用本机已有 NuGet 缓存、临时项目、合成凭据和临时数据库，验证 REST、真实 WebSocket 协议、源生成 JSON、幂等、限流、管理、清理和故障隔离；临时产物保留在系统临时目录便于诊断。它不构建完整 API，也不等同于完整裁剪的发布检查、Windows/Nginx 验证、移动端实机验证或并发压测。
