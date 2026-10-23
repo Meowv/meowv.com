@@ -98,16 +98,31 @@ final class MenuBarIconAnimator {
         return true
     }
 
-    /// 冻结：停表但**把当前帧留在屏幕上**（菜单展开期间用）。
+    /// 冻结：停表并保留当前角度，基图变化时仍更新颜色（菜单展开期间用）。
     ///
     /// 比「切回静态图」好：展开菜单时图标不会从当前角度跳回 0°。
     ///
     /// - Returns: `true` 表示图标仍由动画占据，调用方什么都不用做。
     @discardableResult
-    func freeze() -> Bool {
+    func freeze(base: NSImage?) -> Bool {
         guard ownsIcon else { return false }
         timer?.invalidate()
         timer = nil
+
+        guard let base else {
+            stop()
+            return false
+        }
+        if cachedBase !== base {
+            cachedBase = base
+            frames = Self.rotatedFrames(of: base, count: frameCount, size: logicalSize)
+            guard !frames.isEmpty else {
+                stop()
+                return false
+            }
+            // 两种基图使用相同帧数，保留下标即可在原角度切换播放 / 暂停颜色。
+            emit()
+        }
         return true
     }
 

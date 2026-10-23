@@ -41,7 +41,7 @@ extension AppDelegate {
 
     /// 菜单栏图标的**唯一写入口**。`refreshStatusItem()` 与菜单开合都走这里。
     ///
-    /// 三种结果：动画接管 / 冻结在当前帧 / 回写静态图。三者互斥，顺序不能换 ——
+    /// 三种结果：动画接管 / 冻结当前角度 / 回写静态图。三者互斥，顺序不能换 ——
     /// 菜单展开期必须**先**尝试冻结，否则下面的 `update` 会按「不该转」把图标
     /// 顶回静态图，展开菜单时图标就会从当前角度跳回 0°。
     func updateMenuBarIconAnimation() {
@@ -50,11 +50,11 @@ extension AppDelegate {
         // （下载完成、菜单收起补刷）回调进来。那时不该再把动画定时器拉起来。
         guard !isShuttingDown else { return }
 
-        if isMenuOpen, menuBarIconAnimator.freeze() { return }
-
         // 暂停态用另一张统一中灰的图（见 `menuBarIcon(named:)` 的说明）：
-        // 「转」只表示正在播放，暂停必须一眼看得出来。
+        // 颜色区分播放与暂停，旋转另表示正在播放或有活动进行中。
         let base = engine.isPlaying ? Self.playingIcon : Self.pausedIcon
+        if isMenuOpen, menuBarIconAnimator.freeze(base: base) { return }
+
         if menuBarIconAnimator.update(isActive: shouldRotateMenuBarIcon, base: base) { return }
 
         if let base {
