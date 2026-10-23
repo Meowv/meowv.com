@@ -16,6 +16,7 @@ usage() {
 
 无项目参数时部署全部项目；只使用 build/ 中已有产物，不执行构建。
 Studio 的书库、API 配置与数据库文件不上传也不删除。
+macOS 生成的 .DS_Store 不参与上传和删除。
 --dry-run  连接服务器并预览需要上传和删除的文件，不实际修改远端
 EOF
 }
@@ -138,12 +139,14 @@ for project in "${PROJECTS[@]}"; do
     skip_api_data=1
     rclone hashsum SHA256 "$source_dir" --config /dev/null --output-file "$current_file" --ignore-case \
       --exclude '/data/books/**' \
+      --exclude '/{,**/}.DS_Store' \
       --exclude '/api/{,**/}appsettings*.json' --exclude '/api/{,**/}*.config' \
       --exclude '/api/{,**/}*.db' --exclude '/api/{,**/}*.db-*' \
       --exclude '/api/{,**/}*.sqlite' --exclude '/api/{,**/}*.sqlite-*' \
       --exclude '/api/{,**/}*.sqlite3' --exclude '/api/{,**/}*.sqlite3-*'
   else
-    rclone hashsum SHA256 "$source_dir" --config /dev/null --output-file "$current_file"
+    rclone hashsum SHA256 "$source_dir" --config /dev/null --output-file "$current_file" \
+      --exclude '/{,**/}.DS_Store'
   fi
   if [ -f "$state_file" ]; then
     awk '
@@ -156,10 +159,12 @@ for project in "${PROJECTS[@]}"; do
       {
         path = substr($0, 67)
         normalized = tolower(path)
+        name = normalized
+        sub(/^.*\//, "", name)
+        # 旧清单里可能残留 .DS_Store，忽略它以免顺带删除远端文件。
+        if (name == ".ds_store") next
         if (skip_prefix != "" && index(normalized, skip_prefix) == 1) next
         if (skip_api_data && normalized ~ /^api\//) {
-          name = normalized
-          sub(/^.*\//, "", name)
           if (name ~ /^appsettings.*\.json$/ || name ~ /\.config$/ || name ~ /\.(db|sqlite|sqlite3)(-.*)?$/) next
         }
         if (!(path in current)) print path
