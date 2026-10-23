@@ -76,6 +76,12 @@ const routes: RouteRecordRaw[] = [
     meta: { ...STUDIO_ROUTE_SEO.toolDetail, feature: 'tools' },
   },
   {
+    path: '/chat',
+    name: 'chat',
+    component: () => import('@/features/chat/ChatPage.vue'),
+    meta: { ...STUDIO_ROUTE_SEO.chat, feature: 'chat' },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
     component: () => import('@/pages/NotFoundPage.vue'),

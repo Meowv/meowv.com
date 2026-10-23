@@ -19,6 +19,7 @@ const staticPages = [
   ['/notes', STUDIO_ROUTE_SEO.notes],
   ['/wallpapers', STUDIO_ROUTE_SEO.wallpapers],
   ['/tools', STUDIO_ROUTE_SEO.tools],
+  ['/chat', STUDIO_ROUTE_SEO.chat],
 ] as const satisfies readonly (readonly [string, StudioSeoMeta])[];
 
 function escapeHtml(value: string): string {

@@ -69,6 +69,10 @@ export const STUDIO_ROUTE_SEO = {
     description:
       '在 Meowv Studio 中使用图片、PDF、文本和开发工具，按需处理文件与数据，快速完成常见任务。',
   },
+  chat: {
+    title: 'Chat｜Meowv Studio',
+    description: '无需注册，使用匿名昵称加入 Meowv Chat 匿名聊天室，即刻与在线访客实时交流。',
+  },
   notFound: {
     title: '页面未找到｜Meowv Studio',
     description:

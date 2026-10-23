@@ -75,6 +75,12 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 4001,
+    proxy: {
+      '/api/chat': {
+        target: process.env.STUDIO_CHAT_API_TARGET || 'http://127.0.0.1:5000',
+        ws: true,
+      },
+    },
     strictPort: true,
     allowedHosts: ['terminal.local'],
   },

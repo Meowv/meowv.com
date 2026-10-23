@@ -398,6 +398,10 @@ button {
 .nav-office {
   --nav-accent: var(--menu-office-foreground);
 }
+.studio-shell--chat,
+.nav-chat {
+  --nav-accent: var(--menu-chat-foreground);
+}
 .nav-books {
   --nav-accent: var(--menu-books-foreground);
 }
@@ -429,6 +433,7 @@ button {
 .nav-mermaid svg,
 .nav-pdf svg,
 .nav-office svg,
+.nav-chat svg,
 .nav-books svg,
 .nav-draw svg,
 .nav-floorplan svg,

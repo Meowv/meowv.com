@@ -29,6 +29,12 @@
   --menu-markdown: #2563eb;
   --menu-mermaid: #c20041;
   --menu-office: #4d7c0f;
+  --menu-chat: #0e7490;
+  --menu-chat-foreground: var(--menu-chat);
+  --chat-accent: #0e7490;
+  --chat-accent-soft: #ecfeff;
+  --chat-button-bg: #0e7490;
+  --chat-button-text: #ffffff;
   --menu-books: #8b5a42;
   --menu-draw: #6965db;
   --menu-floorplan: #a6532b;
@@ -96,6 +102,9 @@
   --menu-markdown-foreground: #60a5fa;
   --menu-mermaid-foreground: #e0004b;
   --menu-office-foreground: #a3d65c;
+  --menu-chat-foreground: #67e8f9;
+  --chat-accent: #67e8f9;
+  --chat-accent-soft: #12313c;
   --menu-books-foreground: #d6b789;
   --menu-draw-foreground: #9b97f2;
   --menu-floorplan-foreground: #e8a87c;

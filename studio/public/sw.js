@@ -66,6 +66,7 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
 
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
+  if (url.pathname === '/api/chat' || url.pathname.startsWith('/api/chat/')) return;
   if (url.pathname === '/sw.js' || url.pathname === '/manifest.webmanifest') return;
 
   if (request.mode === 'navigate') {

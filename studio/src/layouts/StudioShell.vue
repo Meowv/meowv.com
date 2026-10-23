@@ -10,6 +10,7 @@ import {
   IconChartDots3,
   IconMarkdown,
   IconMenu2,
+  IconMessageCircle,
   IconSitemap,
   IconNotes,
   IconWallpaper,
@@ -50,6 +51,7 @@ const isToolsHomePage = computed(() => route.name === 'tools');
 const isToolDetailPage = computed(() => route.name === 'tool-detail');
 const isOfficePage = computed(() => route.meta.feature === 'office');
 const isBooksPage = computed(() => route.meta.feature === 'books');
+const isChatPage = computed(() => route.meta.feature === 'chat');
 const isWallpapersPage = computed(() => route.meta.feature === 'wallpapers');
 const {
   enabled: toolsBackgroundEnabled,
@@ -159,12 +161,14 @@ const isImmersive = computed(
     isFloorplanPage.value ||
     isMindPage.value ||
     isNotesPage.value ||
+    isChatPage.value ||
     isToolsHomePage.value ||
     workspaceActive.value,
 );
 const markdownHeaderVisible = ref(true);
 const mermaidHeaderVisible = ref(true);
 const booksHeaderVisible = ref(true);
+const chatHeaderVisible = ref(true);
 const toolsHeaderVisible = ref(true);
 const wallpapersHeaderVisible = ref(true);
 const wallpapersHeaderAutoHidden = ref(false);
@@ -176,6 +180,7 @@ function isDesktopViewport(): boolean {
 }
 const MARKDOWN_HEADER_PREFERENCE_KEY = `${STORAGE_POLICY.namespace('markdown')}:header-collapsed`;
 const BOOKS_HEADER_PREFERENCE_KEY = `${STORAGE_POLICY.namespace('books')}:header-collapsed`;
+const CHAT_HEADER_PREFERENCE_KEY = `${STORAGE_POLICY.preferences}:chat-header-collapsed`;
 const TOOLS_HEADER_PREFERENCE_KEY = `${STORAGE_POLICY.preferences}:tools-header-collapsed`;
 const MERMAID_HEADER_PREFERENCE_KEY = `${STORAGE_POLICY.preferences}:mermaid-header-collapsed`;
 const WALLPAPERS_HEADER_PREFERENCE_KEY = `${STORAGE_POLICY.preferences}:wallpapers-header-collapsed`;
@@ -194,7 +199,9 @@ const showHeader = computed(() =>
           ? toolsHeaderVisible.value
           : isWallpapersPage.value
             ? wallpapersHeaderShown.value
-            : !workspaceActive.value || workspaceHeaderVisible.value,
+            : isChatPage.value
+              ? chatHeaderVisible.value
+              : !workspaceActive.value || workspaceHeaderVisible.value,
 );
 const showFooter = computed(
   () => ['home', 'office', 'not-found'].includes(String(route.name)) && !workspaceActive.value,
@@ -288,6 +295,23 @@ watch(
 );
 
 watch(
+  isChatPage,
+  (active) => {
+    if (!active) {
+      chatHeaderVisible.value = true;
+      return;
+    }
+    if (!storageAvailable()) return;
+    try {
+      chatHeaderVisible.value = localStorage.getItem(CHAT_HEADER_PREFERENCE_KEY) !== 'true';
+    } catch {
+      // 本地偏好不可用时保留默认展开状态。
+    }
+  },
+  { immediate: true },
+);
+
+watch(
   isToolsPage,
   (active) => {
     if (!active) {
@@ -354,6 +378,18 @@ function toggleBooksHeader(): void {
   try {
     if (booksHeaderVisible.value) localStorage.removeItem(BOOKS_HEADER_PREFERENCE_KEY);
     else localStorage.setItem(BOOKS_HEADER_PREFERENCE_KEY, 'true');
+  } catch {
+    // 本地偏好不可用不影响当前页面切换。
+  }
+}
+
+function toggleChatHeader(): void {
+  chatHeaderVisible.value = !chatHeaderVisible.value;
+  closeMobileNavigation();
+  if (!storageAvailable()) return;
+  try {
+    if (chatHeaderVisible.value) localStorage.removeItem(CHAT_HEADER_PREFERENCE_KEY);
+    else localStorage.setItem(CHAT_HEADER_PREFERENCE_KEY, 'true');
   } catch {
     // 本地偏好不可用不影响当前页面切换。
   }
@@ -445,6 +481,7 @@ const primaryRoutes = [
   { label: 'Notes', to: '/notes', icon: IconNotes, className: 'nav-notes' },
   { label: 'Wallpapers', to: '/wallpapers', icon: IconWallpaper, className: 'nav-wallpapers' },
   { label: 'Tools', to: '/tools', icon: IconApps, className: 'nav-tools' },
+  { label: 'Chat', to: '/chat', icon: IconMessageCircle, className: 'nav-chat' },
 ];
 
 function isRouteActive(to: string): boolean {
@@ -480,6 +517,8 @@ function isRouteActive(to: string): boolean {
       'studio-shell--tool-detail': isToolDetailPage,
       'studio-shell--office': isOfficePage,
       'studio-shell--books': isBooksPage,
+      'studio-shell--chat': isChatPage,
+      'studio-shell--chat-header': isChatPage && chatHeaderVisible,
       'studio-shell--books-header': isBooksPage && booksHeaderVisible,
       'studio-shell--wallpapers': isWallpapersPage,
       'studio-shell--wallpapers-header': isWallpapersPage && wallpapersHeaderShown,
@@ -555,6 +594,11 @@ function isRouteActive(to: string): boolean {
       v-if="isBooksPage"
       :visible="booksHeaderVisible"
       @click="toggleBooksHeader"
+    />
+    <studio-header-toggle
+      v-if="isChatPage"
+      :visible="chatHeaderVisible"
+      @click="toggleChatHeader"
     />
     <studio-header-toggle
       v-if="isToolsPage"
