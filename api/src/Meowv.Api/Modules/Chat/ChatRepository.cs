@@ -83,9 +83,7 @@ public sealed class ChatRepository(ApiDatabase database, ChatOptions options)
         if (reader.IsDBNull(10) || (options.MessageCleanupEnabled && Parse(reader.GetString(13)) < DateTimeOffset.UtcNow.AddDays(-options.RetentionDays)))
             return new ChatReply(id, "", "", false, true, 0);
         var deleted = !reader.IsDBNull(12);
-        var content = deleted ? "" : reader.GetString(11);
-        var indexes = StringInfo.ParseCombiningCharacters(content);
-        if (indexes.Length > 120) content = content[..indexes[120]] + "…";
+        var content = deleted ? "" : ChatMarkdown.Summary(reader.GetString(11));
         return new ChatReply(id, reader.GetString(10), content, deleted, false, reader.GetInt32(14));
     }
 

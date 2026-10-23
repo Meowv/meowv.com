@@ -414,3 +414,11 @@ foreach (var mode in new[] { "disabled", "invalid", "schema" })
     await app.StopAsync();
 }
 Console.WriteLine("Chat targeted checks passed; no production data accessed.");
+
+Check(ChatMarkdown.Summary("# 标题\n\n**粗体** *斜体* [链接](https://example.com)").Contains("粗体 斜体 链接"), "Markdown quote removes formatting before truncation");
+Check(ChatMarkdown.Summary("**" + new string('猫', 130) + "**") == new string('猫', 120) + "…", "Markdown quote truncates visible graphemes");
+Check(ChatMarkdown.Summary("```\n**代码**\n```") == "**代码**", "Markdown quote preserves code text");
+
+Check(ChatMarkdown.Summary("[链接](<https://example.com>)") == "链接", "Markdown quote accepts editor-serialized links");
+
+Check(ChatMarkdown.Summary("**跨行\n粗体**") == "跨行\n粗体", "Markdown quote supports multiline inline marks");
