@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, ref } from 'vue';
-import { IconShieldLock, IconX } from '@tabler/icons-vue';
+import { IconX } from '@tabler/icons-vue';
 import type { ChatMessage } from './chat-types';
 import type { useChatAdmin } from './useChatAdmin';
 
@@ -29,6 +29,18 @@ function cancelLogin() {
   keyInput.value = '';
   props.admin.clear();
   loginDialog.value?.close();
+}
+function backdrop(event: MouseEvent, close: () => void) {
+  const dialog = event.currentTarget as HTMLDialogElement | null;
+  if (!dialog) return;
+  const rect = dialog.getBoundingClientRect();
+  if (
+    event.clientX < rect.left ||
+    event.clientX > rect.right ||
+    event.clientY < rect.top ||
+    event.clientY > rect.bottom
+  )
+    close();
 }
 async function verify() {
   if (!keyInput.value || busy.value) return;
@@ -90,28 +102,19 @@ defineExpose({ openLogin, openDelete, openRestore });
   <dialog
     ref="loginDialog"
     class="chat-dialog chat-admin-dialog"
-    aria-labelledby="chat-admin-title"
+    aria-label="管理员验证"
     @cancel.prevent="cancelLogin"
+    @click="backdrop($event, cancelLogin)"
   >
     <form @submit.prevent="verify">
-      <div class="chat-admin-dialog-heading">
-        <h2 id="chat-admin-title"><IconShieldLock :size="22" />管理员验证</h2>
-        <button
-          class="chat-icon-button"
-          type="button"
-          aria-label="关闭管理员验证"
-          @click="cancelLogin"
-        >
-          <IconX :size="19" />
-        </button>
-      </div>
-      <label for="chat-admin-key">授权码</label>
       <input
         id="chat-admin-key"
         ref="keyElement"
         v-model="keyInput"
         type="password"
         autocomplete="off"
+        placeholder="授权码"
+        aria-label="授权码"
         :disabled="busy"
         maxlength="1024"
       />
@@ -126,6 +129,7 @@ defineExpose({ openLogin, openDelete, openRestore });
     class="chat-dialog chat-admin-dialog"
     aria-labelledby="chat-moderation-title"
     @cancel="cancelAction"
+    @click="backdrop($event, () => cancelAction())"
   >
     <form @submit.prevent="confirmAction">
       <div class="chat-admin-dialog-heading">

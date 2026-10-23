@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import { markdownSummary } from './chat-markdown';
 import type { ChatMessage, ChatReply, ChatSession, ConnectionStatus } from './chat-types';
 
 export function compareMessageIds(a: string, b: string): number {
@@ -38,18 +39,10 @@ export function mergeMessages(
   return [...merged.values()].sort((a, b) => compareMessageIds(a.id, b.id));
 }
 export function quoteMessage(message: ChatMessage): ChatReply {
-  const parts = [
-    ...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(message.content),
-  ];
   return {
     id: message.id,
     nickname: message.nickname,
-    content: message.deleted
-      ? ''
-      : parts
-          .slice(0, 120)
-          .map((part) => part.segment)
-          .join('') + (parts.length > 120 ? '…' : ''),
+    content: message.deleted ? '' : markdownSummary(message.content),
     deleted: message.deleted,
     unavailable: false,
     revision: message.revision,

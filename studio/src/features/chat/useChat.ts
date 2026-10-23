@@ -1,3 +1,4 @@
+import { renderedChat } from './chat-markdown';
 import { onBeforeUnmount, ref } from 'vue';
 import {
   HubConnectionBuilder,
@@ -44,7 +45,9 @@ export function useChat() {
       guestId &&
       message.guestId !== guestId &&
       !message.deleted &&
-      message.mentions?.some((mention) => mention.guestId === guestId) &&
+      renderedChat(message.content, message.mentions).mentions.some(
+        (mention) => mention.guestId === guestId,
+      ) &&
       !notifiedMentions.has(message.id) &&
       !mentionIds.value.includes(message.id)
     ) {

@@ -3,6 +3,7 @@ import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch 
 import { useRoute } from 'vue-router';
 import {
   IconBrandOffice,
+  IconBrandWechat,
   IconApps,
   IconBook,
   IconChalkboard,
@@ -10,7 +11,6 @@ import {
   IconChartDots3,
   IconMarkdown,
   IconMenu2,
-  IconMessageCircle,
   IconSitemap,
   IconNotes,
   IconWallpaper,
@@ -481,7 +481,7 @@ const primaryRoutes = [
   { label: 'Notes', to: '/notes', icon: IconNotes, className: 'nav-notes' },
   { label: 'Wallpapers', to: '/wallpapers', icon: IconWallpaper, className: 'nav-wallpapers' },
   { label: 'Tools', to: '/tools', icon: IconApps, className: 'nav-tools' },
-  { label: 'Chat', to: '/chat', icon: IconMessageCircle, className: 'nav-chat' },
+  { label: 'Chat', to: '/chat', icon: IconBrandWechat, className: 'nav-chat' },
 ];
 
 function isRouteActive(to: string): boolean {

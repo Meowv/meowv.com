@@ -4,7 +4,7 @@ import {
   IconArrowDown,
   IconArrowUp,
   IconLogout,
-  IconMessageCircle,
+  IconBrandWechat,
   IconRefresh,
   IconSend,
   IconShieldLock,
@@ -14,15 +14,11 @@ import {
   IconTrashX,
   IconAt,
 } from '@tabler/icons-vue';
-import {
-  characterCount,
-  quoteMessage,
-  limitChatInput,
-  validContent,
-  validNickname,
-} from './chat-state';
+import { characterCount, quoteMessage, validContent, validNickname } from './chat-state';
 import { useChat } from './useChat';
-import { mentionParts, mentionQuery, prepareMentions, rebaseMentions } from './chat-mentions';
+import ChatMarkdownInput from './ChatMarkdownInput.vue';
+import type { ChatDraft } from './chat-markdown-input';
+import { renderedChat } from './chat-markdown';
 import { generateChatNickname } from './chat-nickname';
 import ThemeToggle from '@/components/ThemeToggle.vue';
 import ChatAdminDialogs from './ChatAdminDialogs.vue';
@@ -110,25 +106,13 @@ const quoteLabel = (reply: ChatReply) =>
   reply.unavailable ? '原消息已不可用' : reply.deleted ? '此消息已被移除' : reply.content;
 const nickname = ref(generateChatNickname());
 const draft = ref('');
+const draftVersion = ref(0);
 const list = ref<HTMLElement | null>(null);
-const composer = ref<HTMLTextAreaElement | null>(null);
+const composer = ref<InstanceType<typeof ChatMarkdownInput> | null>(null);
 const draftMentions = ref<ChatMention[]>([]);
-const mentionCaret = ref(0);
-const mentionActive = ref(0);
-const mentionDismissed = ref(false);
-const mentionComposing = ref(false);
-const mentionFeedback = ref('');
-const mentionTrigger = computed(() =>
-  mentionComposing.value
-    ? null
-    : mentionQuery(draft.value, mentionCaret.value, draftMentions.value),
-);
-const mentionOpen = computed(
-  () => !!mentionTrigger.value && !mentionDismissed.value && !sending.value,
-);
-const mentionCandidates = computed(() => {
+const participants = computed(() => {
   const guests = new Map<string, ChatParticipant>();
-  for (const participant of chat.participants.value) guests.set(participant.id, participant);
+  for (const guest of chat.participants.value) guests.set(guest.id, guest);
   for (const message of [...store.messages].reverse())
     if (!message.deleted && !guests.has(message.guestId))
       guests.set(message.guestId, {
@@ -137,92 +121,31 @@ const mentionCandidates = computed(() => {
         avatarSeed: message.avatarSeed,
         online: false,
       });
-  const query = (mentionTrigger.value?.query ?? '').toLocaleLowerCase();
-  return [...guests.values()]
-    .filter(
-      (guest) =>
-        guest.id !== store.session?.guest.id && guest.nickname.toLocaleLowerCase().includes(query),
-    )
-    .slice(0, 8);
+  return [...guests.values()];
 });
-watch([mentionOpen, () => mentionTrigger.value?.query], () => {
-  mentionActive.value = 0;
-  if (mentionOpen.value) void chat.loadParticipants();
-});
-watch(mentionCandidates, (candidates) => {
-  mentionActive.value = Math.min(mentionActive.value, Math.max(0, candidates.length - 1));
-});
-watch(mentionActive, async (index) => {
-  await nextTick();
-  document.getElementById(`chat-mention-option-${index}`)?.scrollIntoView({ block: 'nearest' });
-});
-function blurMentionPicker(event: FocusEvent) {
-  if (
-    !(event.relatedTarget instanceof Element) ||
-    !event.relatedTarget.closest('.chat-mention-picker')
-  )
-    mentionDismissed.value = true;
+function updateDraft(value: ChatDraft) {
+  draftVersion.value++;
+  draft.value = value.content;
+  draftMentions.value = value.mentions;
 }
 function setDraft(value: string) {
-  draftMentions.value = rebaseMentions(draft.value, value, draftMentions.value);
+  if (!value) composer.value?.clear();
   draft.value = value;
-  mentionDismissed.value = false;
-  mentionFeedback.value = '';
+  if (!value) draftMentions.value = [];
 }
-function syncMentionCaret() {
-  mentionCaret.value = composer.value?.selectionStart ?? 0;
+function insertMention(participant: ChatParticipant) {
+  composer.value?.insertMention(participant);
 }
-async function insertMention(participant: ChatParticipant) {
-  if (participant.id === store.session?.guest.id || !composer.value) return;
-  const element = composer.value;
-  const trigger = mentionTrigger.value;
-  const start = trigger?.start ?? element.selectionStart;
-  const end = trigger ? mentionCaret.value : element.selectionEnd;
-  const before = draft.value.slice(0, start);
-  const separator = before && !/\s$/.test(before) ? ' ' : '';
-  const token = '@' + participant.nickname;
-  const inserted = separator + token + ' ';
-  const value = before + inserted + draft.value.slice(end);
-  if (
-    rebaseMentions(draft.value, value, draftMentions.value).length >= 10 ||
-    limitDraft(value) !== value
-  ) {
-    mentionFeedback.value = '剩余字数不足或提及已达 10 次。';
-    return;
-  }
-  setDraft(value);
-  draftMentions.value.push({
-    guestId: participant.id,
-    nickname: participant.nickname,
-    start: start + separator.length,
-    length: token.length,
-  });
-  mentionDismissed.value = true;
-  await nextTick();
-  element.focus();
-  element.setSelectionRange(start + inserted.length, start + inserted.length);
-  syncMentionCaret();
-}
-async function insertAt() {
-  const element = composer.value;
-  if (!element) return;
-  const start = element.selectionStart;
-  const before = draft.value.slice(0, start);
-  const inserted = before && !/\s$/.test(before) ? ' @' : '@';
-  const value = before + inserted + draft.value.slice(element.selectionEnd);
-  if (limitDraft(value) !== value) return;
-  setDraft(value);
-  await nextTick();
-  element.focus();
-  element.setSelectionRange(start + inserted.length, start + inserted.length);
-  syncMentionCaret();
+function insertAt() {
+  composer.value?.insertAt();
 }
 const isMentioned = (message: ChatMessage) =>
   !message.deleted &&
   message.guestId !== store.session?.guest.id &&
-  message.mentions?.some((mention) => mention.guestId === store.session?.guest.id);
-const messageParts = (message: ChatMessage) =>
-  mentionParts(message.content, message.mentions ?? []);
+  renderedChat(message.content, message.mentions).mentions.some(
+    (mention) => mention.guestId === store.session?.guest.id,
+  );
+
 function acknowledgeMentions() {
   if (document.visibilityState !== 'visible' || !list.value) return;
   const area = list.value.getBoundingClientRect();
@@ -272,8 +195,6 @@ const statusText = computed(
     })[store.connectionStatus],
 );
 const count = computed(() => characterCount(draft.value.normalize('NFC')));
-let composing = false;
-let compositionSelection = { before: '', after: '' };
 const contentValid = computed(() =>
   validContent(draft.value, store.maxMessageChars, store.maxMessageBytes),
 );
@@ -366,124 +287,16 @@ async function send() {
   if (!canSend.value) return;
   const content = draft.value;
   const reply = selectedReply.value;
-  const mentionSnapshot = JSON.stringify(draftMentions.value);
-  const prepared = prepareMentions(content, draftMentions.value);
+  const version = draftVersion.value;
+  const prepared = {
+    content,
+    mentions: draftMentions.value.map(({ guestId, start, length }) => ({ guestId, start, length })),
+  };
   if (await chat.send(prepared.content, reply?.id ?? null, prepared.mentions)) {
     if (selectedReply.value === reply) selectedReply.value = null;
-    if (draft.value === content && JSON.stringify(draftMentions.value) === mentionSnapshot)
-      setDraft('');
+    if (draftVersion.value === version) setDraft('');
     await bottom();
     composer.value?.focus();
-  }
-}
-function limitDraft(value: string): string {
-  return limitChatInput(value, store.maxMessageChars, store.maxMessageBytes);
-}
-function updateDraft(element: HTMLTextAreaElement) {
-  const position = element.selectionStart;
-  const limited = limitDraft(element.value);
-  if (element.value !== limited) {
-    const caret = limitDraft(element.value.slice(0, position)).length;
-    element.value = limited;
-    element.setSelectionRange(caret, caret);
-  }
-  setDraft(limited);
-  mentionCaret.value = element.selectionStart;
-}
-function input(event: Event) {
-  if (!composing && !(event as InputEvent).isComposing)
-    updateDraft(event.target as HTMLTextAreaElement);
-}
-function compositionStart(event: CompositionEvent) {
-  composing = true;
-  mentionComposing.value = true;
-  const element = event.target as HTMLTextAreaElement;
-  compositionSelection = {
-    before: element.value.slice(0, element.selectionStart),
-    after: element.value.slice(element.selectionEnd),
-  };
-}
-function compositionEnd(event: CompositionEvent) {
-  composing = false;
-  mentionComposing.value = false;
-  const element = event.target as HTMLTextAreaElement;
-  if (event.data) {
-    insertDraft(element, compositionSelection.before, event.data, compositionSelection.after);
-  } else updateDraft(element);
-}
-function beforeInput(event: InputEvent) {
-  if (composing || event.isComposing || !event.inputType.startsWith('insert')) return;
-  const element = event.target as HTMLTextAreaElement;
-  const inserted = event.data ?? (event.inputType === 'insertLineBreak' ? '\n' : null);
-  if (inserted === null) return;
-  const value =
-    element.value.slice(0, element.selectionStart) +
-    inserted +
-    element.value.slice(element.selectionEnd);
-  if (limitDraft(value) !== value.replaceAll('\r\n', '\n').normalize('NFC')) event.preventDefault();
-}
-function paste(event: ClipboardEvent) {
-  if (!event.clipboardData || composing) return;
-  const text = event.clipboardData.getData('text/plain');
-  if (!text) return;
-  event.preventDefault();
-  const element = event.target as HTMLTextAreaElement;
-  insertDraft(
-    element,
-    element.value.slice(0, element.selectionStart),
-    text,
-    element.value.slice(element.selectionEnd),
-  );
-}
-function insertDraft(element: HTMLTextAreaElement, before: string, text: string, after: string) {
-  let inserted = '';
-  for (const { segment } of new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(
-    text.replaceAll('\r\n', '\n').normalize('NFC'),
-  )) {
-    const candidate = (before + inserted + segment + after).normalize('NFC');
-    if (limitDraft(candidate) !== candidate) break;
-    inserted += segment;
-  }
-  element.value = (before + inserted + after).normalize('NFC');
-  setDraft(element.value);
-  const caret = (before + inserted).normalize('NFC').length;
-  element.setSelectionRange(caret, caret);
-  syncMentionCaret();
-}
-function keydown(event: KeyboardEvent) {
-  if (composing || event.isComposing || event.keyCode === 229) return;
-  if (mentionOpen.value) {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      mentionDismissed.value = true;
-      return;
-    }
-    if (mentionCandidates.value.length && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
-      event.preventDefault();
-      const length = mentionCandidates.value.length;
-      mentionActive.value =
-        (mentionActive.value + (event.key === 'ArrowDown' ? 1 : length - 1)) % length;
-      return;
-    }
-    if (
-      mentionCandidates.value.length &&
-      !event.shiftKey &&
-      (event.key === 'Enter' || event.key === 'Tab')
-    ) {
-      event.preventDefault();
-      void insertMention(mentionCandidates.value[mentionActive.value]!);
-      return;
-    }
-  }
-  if (
-    event.key === 'Enter' &&
-    !event.shiftKey &&
-    !composing &&
-    !event.isComposing &&
-    event.keyCode !== 229
-  ) {
-    event.preventDefault();
-    void send();
   }
 }
 async function logout() {
@@ -529,7 +342,7 @@ onBeforeUnmount(() => {
   >
     <div class="chat-room">
       <header class="chat-header">
-        <span class="chat-room-icon"><IconMessageCircle :size="24" /></span>
+        <span class="chat-room-icon"><IconBrandWechat :size="24" /></span>
         <div class="chat-heading">
           <h1>Meowv Chat</h1>
           <p>偶然相遇，随心聊聊。</p>
@@ -590,7 +403,7 @@ onBeforeUnmount(() => {
           @scroll.passive="scroll"
         >
           <div v-if="initializing" class="chat-empty" role="status">
-            <IconMessageCircle :size="36" />
+            <IconBrandWechat :size="36" />
             <p>正在打开匿名聊天室…</p>
           </div>
           <template v-else-if="store.session">
@@ -610,7 +423,7 @@ onBeforeUnmount(() => {
               >
             </div>
             <div v-if="!store.messages.length" class="chat-empty">
-              <IconMessageCircle :size="40" />
+              <IconBrandWechat :size="40" />
               <h2>从一句「你好」开始</h2>
               <p>这里还很安静，来开启今天的对话吧。</p>
             </div>
@@ -690,20 +503,17 @@ onBeforeUnmount(() => {
                       }}</strong>
                       <span>{{ quoteLabel(message.reply) }}</span>
                     </button>
-                    <p :class="{ 'chat-deleted': message.deleted }">
-                      <template v-if="message.deleted">此消息已被移除</template>
-                      <template v-else
-                        ><span
-                          v-for="(part, partIndex) in messageParts(message)"
-                          :key="partIndex"
-                          :class="{
-                            'chat-mention-token': !!part.mention,
-                            'is-self': part.mention?.guestId === store.session.guest.id,
-                          }"
-                          >{{ part.text }}</span
-                        ></template
-                      >
-                    </p>
+                    <p v-if="message.deleted" class="chat-deleted">此消息已被移除</p>
+                    <!-- Chat 专用解析器禁用 HTML，并经过 DOMPurify 清理。 -->
+                    <!-- eslint-disable vue/no-v-html -->
+                    <div
+                      v-else
+                      class="chat-markdown"
+                      v-html="
+                        renderedChat(message.content, message.mentions, store.session.guest.id).html
+                      "
+                    ></div>
+                    <!-- eslint-enable vue/no-v-html -->
                     <div
                       v-if="
                         (!message.deleted && message.guestId !== store.session.guest.id) ||
@@ -752,7 +562,7 @@ onBeforeUnmount(() => {
             </button>
           </template>
           <div v-else class="chat-empty">
-            <IconMessageCircle :size="40" />
+            <IconBrandWechat :size="40" />
             <h2>{{ unavailable ? '聊天室暂不可用' : '一个自由交流的角落' }}</h2>
             <p>
               {{
@@ -818,90 +628,26 @@ onBeforeUnmount(() => {
             <IconX :size="16" />
           </button>
         </div>
-        <div v-if="mentionOpen" class="chat-mention-picker">
-          <div class="chat-mention-heading">选择要提及的访客<span>↑↓ 选择 · Enter 确认</span></div>
-          <div id="chat-mention-options" role="listbox" aria-label="提及访客">
-            <button
-              v-for="(participant, index) in mentionCandidates"
-              :id="`chat-mention-option-${index}`"
-              :key="participant.id"
-              type="button"
-              role="option"
-              :aria-selected="index === mentionActive"
-              :class="{ 'is-active': index === mentionActive }"
-              @pointerdown.prevent
-              @click="insertMention(participant)"
-            >
-              <span
-                class="chat-mention-avatar"
-                :style="{ backgroundColor: avatarColor(participant.avatarSeed) }"
-                >{{ [...participant.nickname][0] }}</span
-              >
-              <span class="chat-mention-name"
-                >{{ participant.nickname
-                }}<small
-                  v-if="
-                    mentionCandidates.filter((item) => item.nickname === participant.nickname)
-                      .length > 1
-                  "
-                  >{{ participant.id.slice(0, 6) }}</small
-                ></span
-              >
-              <span class="chat-mention-presence">{{
-                participant.online ? '在线' : '近期发言'
-              }}</span>
-            </button>
-          </div>
-          <p v-if="!mentionCandidates.length">
-            {{ chat.participantsLoading.value ? '正在获取访客…' : '没有匹配的访客' }}
-          </p>
-          <button
-            v-if="chat.participantsError.value"
-            class="chat-mention-retry"
-            type="button"
-            @click="chat.loadParticipants(true)"
-          >
-            {{ chat.participantsError.value }} 点击重试
-          </button>
-        </div>
-        <span v-if="mentionFeedback" class="chat-mention-feedback" role="status">{{
-          mentionFeedback
-        }}</span>
-        <label class="chat-sr-only" for="chat-message-input">消息正文</label>
-        <textarea
-          id="chat-message-input"
+        <ChatMarkdownInput
           ref="composer"
-          :value="draft"
-          rows="2"
           :disabled="!store.session"
-          placeholder="说点什么吧..."
-          :aria-invalid="!!draft && !contentValid"
-          aria-describedby="chat-input-help"
-          :aria-expanded="mentionOpen"
-          :aria-controls="mentionOpen ? 'chat-mention-options' : undefined"
-          :aria-activedescendant="
-            mentionOpen && mentionCandidates.length
-              ? `chat-mention-option-${mentionActive}`
-              : undefined
-          "
-          @beforeinput="beforeInput"
-          @input="input"
-          @paste="paste"
-          @compositionstart="compositionStart"
-          @compositionend="compositionEnd"
-          @keydown="keydown"
-          @click="syncMentionCaret"
-          @keyup="syncMentionCaret"
-          @select="syncMentionCaret"
-          @blur="blurMentionPicker"
-        ></textarea>
+          :self-id="store.session?.guest.id"
+          :max-chars="store.maxMessageChars"
+          :max-bytes="store.maxMessageBytes"
+          :participants="participants"
+          :participants-loading="chat.participantsLoading.value"
+          :participants-error="chat.participantsError.value"
+          @change="updateDraft"
+          @send="send"
+          @participants="chat.loadParticipants(true)"
+        />
         <div class="chat-composer-bottom">
           <span id="chat-input-help">{{
             failed
               ? '发送未确认，草稿已保留，请稍后重试。'
               : sending
                 ? '正在发送…'
-                : 'Enter 发送 · Shift + Enter 换行'
+                : 'Enter 发送 · Shift+Enter 换行'
           }}</span
           ><button
             type="button"
@@ -923,7 +669,7 @@ onBeforeUnmount(() => {
     <dialog ref="joinDialog" class="chat-dialog" aria-labelledby="chat-join-title" @cancel.prevent>
       <form @submit.prevent="join">
         <div class="chat-join-heading">
-          <span class="chat-room-icon"><IconMessageCircle :size="24" /></span>
+          <span class="chat-room-icon"><IconBrandWechat :size="24" /></span>
           <div class="chat-heading">
             <h2 id="chat-join-title">Meowv Chat</h2>
             <p>偶然相遇，随心聊聊。</p>
