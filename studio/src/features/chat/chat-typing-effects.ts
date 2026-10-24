@@ -58,6 +58,7 @@ export class ChatTypingEffects {
   private reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
   private context: CanvasRenderingContext2D | null;
   private disposed = false;
+  private content = '';
   constructor(
     private canvas: HTMLCanvasElement,
     private caret: () => { x: number; y: number } | null,
@@ -72,6 +73,11 @@ export class ChatTypingEffects {
     this.mode = mode;
     this.clear();
   }
+  contentChanged = (content: string) => {
+    if (content === this.content) return;
+    this.content = content;
+    this.burst();
+  };
   burst = () => {
     if (
       this.disposed ||

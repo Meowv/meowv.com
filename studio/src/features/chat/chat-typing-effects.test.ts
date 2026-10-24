@@ -72,3 +72,26 @@ it('runs one animation loop, stops for reduced motion/background and releases li
   effects.destroy();
   expect(remove).toHaveBeenCalledTimes(2);
 });
+
+it('triggers for deletion, paste, history and intermediate composition text, but deduplicates unchanged content', () => {
+  const motion = Object.assign(new EventTarget(), { matches: false });
+  const doc = Object.assign(new EventTarget(), { hidden: false });
+  const win = Object.assign(new EventTarget(), { matchMedia: () => motion });
+  vi.stubGlobal('window', win);
+  vi.stubGlobal('document', doc);
+  vi.stubGlobal('cancelAnimationFrame', vi.fn());
+  const canvas = { getContext: () => null } as unknown as HTMLCanvasElement;
+  const effects = new ChatTypingEffects(canvas, () => ({ x: 1, y: 1 }));
+  const burst = vi.spyOn(effects, 'burst').mockImplementation(() => {});
+  effects.contentChanged('');
+  effects.contentChanged('abc');
+  effects.contentChanged('ab');
+  effects.contentChanged('abn');
+  effects.contentChanged('abni');
+  effects.contentChanged('ab你');
+  effects.contentChanged('ab你');
+  effects.contentChanged('ab你 粘贴');
+  effects.contentChanged('ab你');
+  expect(burst).toHaveBeenCalledTimes(7);
+  effects.destroy();
+});

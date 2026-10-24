@@ -42,6 +42,7 @@ const feedback = ref('');
 const active = ref(0);
 const dismissed = ref(false);
 const composing = ref(false);
+const focused = ref(false);
 const effectMode = ref<TypingEffectMode>('stars');
 const reducedMotion = ref(false);
 const EFFECT_KEY = `${STORAGE_POLICY.preferences}:chat-typing-effect`;
@@ -50,6 +51,7 @@ let motionQuery: MediaQueryList | undefined;
 let mirror: HTMLDivElement | undefined;
 let compositionBefore: MarkdownSelection | undefined;
 let compositionTimer: ReturnType<typeof setTimeout> | undefined;
+let compositionFrame = 0;
 let beforeInputValue: MarkdownSelection | undefined;
 let alive = true;
 const past: MarkdownSelection[] = [];
@@ -103,9 +105,33 @@ function fits(value: MarkdownSelection) {
   );
 }
 function resize() {
-  if (!input.value) return;
-  input.value.style.height = 'auto';
-  input.value.style.height = `${Math.min(input.value.scrollHeight, Math.min(window.innerWidth <= 640 ? 180 : 240, window.innerHeight * 0.4))}px`;
+  const element = input.value;
+  if (!element) return;
+  const style = getComputedStyle(element);
+  const minimum = Number.parseFloat(
+    style.getPropertyValue(
+      focused.value ? '--chat-input-focus-height' : '--chat-input-rest-height',
+    ),
+  );
+  const maximum = Math.min(window.innerWidth <= 640 ? 180 : 240, window.innerHeight * 0.4);
+  const height = element.getBoundingClientRect().height;
+  const transition = element.style.transition;
+  // 测量正文高度后恢复当前高度，再过渡到目标高度，避免 auto 高度造成跳动。
+  element.style.transition = 'none';
+  element.style.height = '0px';
+  const contentHeight =
+    element.scrollHeight +
+    Number.parseFloat(style.borderTopWidth) +
+    Number.parseFloat(style.borderBottomWidth);
+  const target = Math.max(36, Math.min(maximum, Math.max(minimum, contentHeight)));
+  element.style.height = `${height}px`;
+  element.getBoundingClientRect();
+  element.style.transition = transition;
+  element.style.height = `${target}px`;
+}
+function focusInput() {
+  focused.value = true;
+  resize();
 }
 function record(before: MarkdownSelection, after: MarkdownSelection, kind: string) {
   const now = performance.now();
@@ -124,6 +150,17 @@ function record(before: MarkdownSelection, after: MarkdownSelection, kind: strin
   historyKind = kind;
   historyAt = now;
   lastAfter = after;
+}
+function triggerContentEffect() {
+  if (input.value) effects?.contentChanged(input.value.value);
+}
+function compositionUpdate() {
+  // 部分浏览器先触发 compositionupdate，下一帧再读取实际 DOM 内容。
+  if (compositionFrame) return;
+  compositionFrame = requestAnimationFrame(() => {
+    compositionFrame = 0;
+    if (alive) triggerContentEffect();
+  });
 }
 function commit(
   value: MarkdownSelection,
@@ -153,6 +190,7 @@ function commit(
   feedback.value = '';
   restoreInput(normalized, focus);
   emit('change', current());
+  triggerContentEffect();
   void nextTick(resize);
   return true;
 }
@@ -171,7 +209,10 @@ function kindOf(event: Event) {
   return (event as InputEvent).inputType?.startsWith('delete') ? 'delete' : 'typing';
 }
 function updateInput(event: Event) {
-  if (composing.value || (event as InputEvent).isComposing) return;
+  if (composing.value || (event as InputEvent).isComposing) {
+    triggerContentEffect();
+    return;
+  }
   const element = event.target as HTMLTextAreaElement;
   const before = beforeInputValue ?? {
     content: source.value,
@@ -212,11 +253,9 @@ function updateInput(event: Event) {
     end: position,
   };
   const kind = (event as InputEvent).inputType?.startsWith('delete') ? 'delete' : 'typing';
-  const typed = (event as InputEvent).inputType === 'insertText' && !!(event as InputEvent).data;
   commit(next, before, kind, true, false);
   beforeInputValue = undefined;
   if (raw !== limited) feedback.value = '已达到消息长度限制。';
-  if (typed && raw === limited) effects?.burst();
 }
 function undo(redo = false) {
   const stack = redo ? future : past;
@@ -225,7 +264,6 @@ function undo(redo = false) {
   (redo ? past : future).push(snapshot());
   historyKind = '';
   lastAfter = undefined;
-  effects?.clear();
   commit(value, snapshot(), 'history', false);
 }
 function beforeInput(event: InputEvent) {
@@ -242,7 +280,7 @@ function beforeInput(event: InputEvent) {
   if (typing) {
     event.preventDefault();
     beforeInputValue = undefined;
-    if (commit(typing, before)) effects?.burst();
+    commit(typing, before);
     return;
   }
   const next = editMarkdown(
@@ -292,7 +330,6 @@ function paste(event: ClipboardEvent) {
 function compositionStart() {
   composing.value = true;
   compositionBefore = snapshot();
-  effects?.clear();
 }
 function compositionEnd(event: CompositionEvent) {
   const text = event.data;
@@ -301,7 +338,7 @@ function compositionEnd(event: CompositionEvent) {
     if (!alive) return;
     composing.value = false;
     if (compositionBefore && text) {
-      if (insertText(text, compositionBefore, 'composition', true)) effects?.burst();
+      insertText(text, compositionBefore, 'composition', true);
     } else if (input.value) updateInput({ target: input.value } as unknown as Event);
     compositionBefore = undefined;
     beforeInputValue = undefined;
@@ -428,19 +465,15 @@ function outside(event: PointerEvent) {
   if (!root.value?.contains(target)) dismissed.value = true;
 }
 function blur(event: FocusEvent) {
+  focused.value = false;
+  resize();
   effects?.clear();
   if (!(event.relatedTarget instanceof Node) || !root.value?.contains(event.relatedTarget))
     dismissed.value = true;
 }
 function measureCaret() {
   const element = input.value;
-  if (
-    !element ||
-    !mirror ||
-    document.activeElement !== element ||
-    element.selectionStart !== element.selectionEnd
-  )
-    return null;
+  if (!element || !mirror || document.activeElement !== element) return null;
   const style = getComputedStyle(element);
   const rect = element.getBoundingClientRect();
   for (const name of [
@@ -467,7 +500,7 @@ function measureCaret() {
   ])
     mirror.style.setProperty(name, style.getPropertyValue(name));
   mirror.style.width = `${rect.width}px`;
-  mirror.textContent = source.value.slice(0, element.selectionStart);
+  mirror.textContent = element.value.slice(0, element.selectionEnd);
   const marker = document.createElement('span');
   marker.textContent = '\u200b';
   mirror.append(marker);
@@ -519,6 +552,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   alive = false;
   clearTimeout(compositionTimer);
+  cancelAnimationFrame(compositionFrame);
   effects?.destroy();
   motionQuery?.removeEventListener('change', syncMotion);
   mirror?.remove();
@@ -536,9 +570,9 @@ function clear() {
   lastAfter = undefined;
   feedback.value = '';
   dismissed.value = true;
-  effects?.clear();
   restoreInput({ content: '', mentions: [], start: 0, end: 0 });
   emit('change', current());
+  triggerContentEffect();
   void nextTick(resize);
 }
 defineExpose({ focus, clear, insertMention: selectMention, insertAt, current });
@@ -546,86 +580,89 @@ defineExpose({ focus, clear, insertMention: selectMention, insertAt, current });
 <template>
   <div ref="root" class="chat-markdown-input">
     <canvas ref="canvas" class="chat-typing-canvas" aria-hidden="true"></canvas>
-    <div v-if="pickerOpen" class="chat-mention-picker" @pointerdown.prevent>
-      <div class="chat-mention-heading">选择要提及的访客<span>↑↓ 选择 · Enter 确认</span></div>
-      <div id="chat-mention-options" role="listbox" aria-label="提及访客">
+    <details
+      ref="effectsMenu"
+      class="chat-effects-settings"
+      @keydown.esc.prevent.stop="closeEffects"
+    >
+      <summary aria-label="打字特效设置" title="打字特效"><IconSparkles :size="15" /></summary>
+      <div class="chat-effects-panel">
+        <label
+          >打字特效<select v-model="effectMode" aria-label="打字特效" @change="changeEffect">
+            <option value="off">关闭</option>
+            <option value="stars">彩虹星光</option>
+            <option value="rainbow">彩虹粒子</option>
+            <option value="fireworks">烟花</option>
+          </select></label
+        ><small v-if="reducedMotion">系统已减少动态效果，特效已暂停。</small>
+      </div>
+    </details>
+    <div class="chat-input-field">
+      <div v-if="pickerOpen" class="chat-mention-picker" @pointerdown.prevent>
+        <div class="chat-mention-heading">选择要提及的访客<span>↑↓ 选择 · Enter 确认</span></div>
+        <div id="chat-mention-options" role="listbox" aria-label="提及访客">
+          <button
+            v-for="(guest, index) in candidates"
+            :id="`chat-mention-option-${index}`"
+            :key="guest.id"
+            type="button"
+            role="option"
+            :aria-selected="active === index"
+            :class="{ 'is-active': active === index }"
+            @click="selectMention(guest)"
+          >
+            <IconAt :size="16" /><span class="chat-mention-name"
+              >{{ guest.nickname
+              }}<small
+                v-if="candidates.filter((item) => item.nickname === guest.nickname).length > 1"
+              >
+                · {{ guest.id.slice(0, 6) }}</small
+              ></span
+            ><span class="chat-mention-presence">{{ guest.online ? '在线' : '近期发言' }}</span>
+          </button>
+        </div>
+        <p v-if="!candidates.length">
+          {{ participantsLoading ? '正在获取访客…' : '没有匹配的访客' }}
+        </p>
         <button
-          v-for="(guest, index) in candidates"
-          :id="`chat-mention-option-${index}`"
-          :key="guest.id"
+          v-if="participantsError"
           type="button"
-          role="option"
-          :aria-selected="active === index"
-          :class="{ 'is-active': active === index }"
-          @click="selectMention(guest)"
+          class="chat-mention-retry"
+          @click="emit('participants')"
         >
-          <IconAt :size="16" /><span class="chat-mention-name"
-            >{{ guest.nickname
-            }}<small
-              v-if="candidates.filter((item) => item.nickname === guest.nickname).length > 1"
-            >
-              · {{ guest.id.slice(0, 6) }}</small
-            ></span
-          ><span class="chat-mention-presence">{{ guest.online ? '在线' : '近期发言' }}</span>
+          {{ participantsError }} 点击重试
         </button>
       </div>
-      <p v-if="!candidates.length">
-        {{ participantsLoading ? '正在获取访客…' : '没有匹配的访客' }}
-      </p>
-      <button
-        v-if="participantsError"
-        type="button"
-        class="chat-mention-retry"
-        @click="emit('participants')"
-      >
-        {{ participantsError }} 点击重试
-      </button>
-    </div>
-    <textarea
-      id="chat-message-input"
-      ref="input"
-      :value="source"
-      :disabled="disabled"
-      rows="3"
-      aria-label="消息正文"
-      placeholder="说点什么吧..."
-      aria-describedby="chat-input-help"
-      :aria-expanded="pickerOpen"
-      :aria-controls="pickerOpen ? 'chat-mention-options' : undefined"
-      :aria-activedescendant="
-        pickerOpen && candidates.length
-          ? `chat-mention-option-${Math.min(active, candidates.length - 1)}`
-          : undefined
-      "
-      @beforeinput="beforeInput"
-      @input="updateInput"
-      @paste="paste"
-      @compositionstart="compositionStart"
-      @compositionend="compositionEnd"
-      @keydown="keydown"
-      @click="syncSelection"
-      @keyup="syncSelection"
-      @select="syncSelection"
-      @blur="blur"
-    ></textarea>
-    <div class="chat-markdown-foot">
-      <details
-        ref="effectsMenu"
-        class="chat-effects-settings"
-        @keydown.esc.prevent.stop="closeEffects"
-      >
-        <summary aria-label="打字特效设置" title="打字特效"><IconSparkles :size="15" /></summary>
-        <div class="chat-effects-panel">
-          <label
-            >打字特效<select v-model="effectMode" aria-label="打字特效" @change="changeEffect">
-              <option value="off">关闭</option>
-              <option value="stars">彩虹星光</option>
-              <option value="rainbow">彩虹粒子</option>
-              <option value="fireworks">烟花</option>
-            </select></label
-          ><small v-if="reducedMotion">系统已减少动态效果，特效已暂停。</small>
-        </div>
-      </details>
+
+      <textarea
+        id="chat-message-input"
+        ref="input"
+        :value="source"
+        :disabled="disabled"
+        rows="1"
+        aria-label="消息正文"
+        placeholder="说点什么吧..."
+        aria-describedby="chat-input-help"
+        :aria-expanded="pickerOpen"
+        :aria-controls="pickerOpen ? 'chat-mention-options' : undefined"
+        :aria-activedescendant="
+          pickerOpen && candidates.length
+            ? `chat-mention-option-${Math.min(active, candidates.length - 1)}`
+            : undefined
+        "
+        @beforeinput="beforeInput"
+        @input="updateInput"
+        @paste="paste"
+        @compositionstart="compositionStart"
+        @compositionupdate="compositionUpdate"
+        @compositionend="compositionEnd"
+        @keydown="keydown"
+        @focus="focusInput"
+        @click="syncSelection"
+        @keyup="syncSelection"
+        @select="syncSelection"
+        @blur="blur"
+      ></textarea>
     </div>
     <p v-if="feedback" class="chat-editor-feedback" role="status">{{ feedback }}</p>
   </div>
