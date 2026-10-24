@@ -1192,3 +1192,30 @@
     top: 10px;
   }
 }
+
+.studio-shell--chat-background {
+  position: relative;
+  isolation: isolate;
+  background: transparent;
+}
+.studio-shell--chat-background > .studio-main {
+  position: relative;
+  z-index: 1;
+}
+.studio-shell--chat-background:has(> .tools-background--ready) :is(.chat-room, .studio-header) {
+  background: color-mix(
+    in srgb,
+    var(--color-surface-solid) var(--chat-background-surface-opacity, 18%),
+    transparent
+  );
+  backdrop-filter: blur(18px) saturate(125%);
+}
+.chat-header-actions .chat-background-shortcut {
+  position: static;
+  width: 33px;
+  height: 33px;
+  background: transparent;
+}
+.chat-header-actions .chat-background-shortcut:hover {
+  background: var(--color-surface-soft);
+}

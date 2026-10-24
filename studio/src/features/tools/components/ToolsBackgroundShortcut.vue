@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import { IconWindmill } from '@tabler/icons-vue';
 import { useToolsBackground } from '@/features/tools/composables/useToolsBackground';
 
 const {
   randomShortcutEnabled,
+  applyToOtherPages,
   isLoading: backgroundLoading,
   requestSequence: backgroundRequestSequence,
   requestRandomVideo,
@@ -15,7 +17,10 @@ let windmillMinimumElapsed = true;
 let windmillRequestPending = false;
 const WINDMILL_MINIMUM_ROTATION_MS = 720;
 
-const visible = computed(() => randomShortcutEnabled.value);
+const route = useRoute();
+const visible = computed(
+  () => randomShortcutEnabled.value && (route.meta.feature === 'tools' || applyToOtherPages.value),
+);
 
 function stopWindmillWhenReady(): void {
   if (windmillMinimumElapsed && !windmillRequestPending && !backgroundLoading.value) {

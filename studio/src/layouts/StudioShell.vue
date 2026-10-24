@@ -123,6 +123,9 @@ const wallpapersBackgroundEnabled = computed(
     toolsBackgroundEnabled.value &&
     toolsBackgroundApplyToOtherPages.value,
 );
+const chatBackgroundEnabled = computed(
+  () => isChatPage.value && toolsBackgroundEnabled.value && toolsBackgroundApplyToOtherPages.value,
+);
 const supportsToolsBackground = computed(
   () =>
     isToolsPage.value ||
@@ -134,7 +137,8 @@ const supportsToolsBackground = computed(
     drawBackgroundEnabled.value ||
     mindBackgroundEnabled.value ||
     notesBackgroundEnabled.value ||
-    wallpapersBackgroundEnabled.value,
+    wallpapersBackgroundEnabled.value ||
+    chatBackgroundEnabled.value,
 );
 const toolsBackgroundStyle = computed<Record<string, string>>(() => {
   const surfaceOpacity = toolsBackgroundSurfaceOpacity.value;
@@ -149,6 +153,7 @@ const toolsBackgroundStyle = computed<Record<string, string>>(() => {
     '--mind-background-surface-opacity': `${Math.round(Math.max(0.18, surfaceOpacity) * 100)}%`,
     '--notes-background-surface-opacity': `${Math.round(Math.max(0.18, surfaceOpacity) * 100)}%`,
     '--wallpapers-background-surface-opacity': `${Math.round(Math.max(0.18, surfaceOpacity) * 100)}%`,
+    '--chat-background-surface-opacity': `${Math.round(Math.max(0.18, surfaceOpacity) * 100)}%`,
     '--tools-background-text-halo-opacity': textHaloOpacity.toFixed(2),
   };
 });
@@ -518,6 +523,7 @@ function isRouteActive(to: string): boolean {
       'studio-shell--office': isOfficePage,
       'studio-shell--books': isBooksPage,
       'studio-shell--chat': isChatPage,
+      'studio-shell--chat-background': chatBackgroundEnabled,
       'studio-shell--chat-header': isChatPage && chatHeaderVisible,
       'studio-shell--books-header': isBooksPage && booksHeaderVisible,
       'studio-shell--wallpapers': isWallpapersPage,

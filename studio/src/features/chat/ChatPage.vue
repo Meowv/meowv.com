@@ -21,6 +21,7 @@ import type { ChatDraft } from './chat-markdown-input';
 import { renderedChat } from './chat-markdown';
 import { generateChatNickname } from './chat-nickname';
 import ThemeToggle from '@/components/ThemeToggle.vue';
+import ToolsBackgroundShortcut from '@/features/tools/components/ToolsBackgroundShortcut.vue';
 import ChatAdminDialogs from './ChatAdminDialogs.vue';
 import { useChatAdmin } from './useChatAdmin';
 import type { ChatMessage, ChatReply, ChatMention, ChatParticipant } from './chat-types';
@@ -358,7 +359,6 @@ onBeforeUnmount(() => {
           ><strong>{{ store.onlineUsers }}</strong> 人在线
         </div>
         <div class="chat-header-actions">
-          <ThemeToggle class="chat-icon-button" />
           <button
             class="chat-icon-button"
             :class="{ 'is-admin': adminActive }"
@@ -370,6 +370,8 @@ onBeforeUnmount(() => {
           >
             <IconShieldLock :size="19" />
           </button>
+          <ThemeToggle class="chat-icon-button" />
+          <ToolsBackgroundShortcut class="chat-background-shortcut" />
         </div>
       </header>
 
