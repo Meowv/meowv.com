@@ -1208,7 +1208,6 @@
     var(--color-surface-solid) var(--chat-background-surface-opacity, 18%),
     transparent
   );
-  backdrop-filter: blur(18px) saturate(125%);
 }
 .chat-header-actions .chat-background-shortcut {
   position: static;
