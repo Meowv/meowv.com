@@ -11,3 +11,4 @@
 /.livewall-key.*.tmp
 /.deploy.env
 /.deploy-cache/
+/.codegraph/
