@@ -18,9 +18,9 @@ public sealed class ChatRuntime(ChatRepository repository, ChatOptions options, 
             repository.Initialize();
             Ready = true;
         }
-        catch (Exception)
+        catch (Exception error)
         {
-            logger.LogError("Chat 模块初始化失败，请检查模块配置及数据库结构与可用性。");
+            ChatDiagnostics.Failure(logger, error, "initialize", ChatDiagnostics.CorrelationId);
             return;
         }
 
@@ -39,9 +39,9 @@ public sealed class ChatRuntime(ChatRepository repository, ChatOptions options, 
                     logger.LogInformation("Chat 已清理 {Count} 条过期记录。", count);
                     nextCleanup = DateTimeOffset.UtcNow.AddMinutes(count >= options.CleanupBatchSize ? 1 : options.CleanupMinutes);
                 }
-                catch (Exception)
+                catch (Exception error)
                 {
-                    logger.LogWarning("Chat 过期清理未完成，将在下一轮重试。");
+                    ChatDiagnostics.Failure(logger, error, "cleanup", ChatDiagnostics.CorrelationId);
                 }
             } while (await timer.WaitForNextTickAsync(stoppingToken));
         }

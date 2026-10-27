@@ -422,3 +422,78 @@ Check(ChatMarkdown.Summary("```\n**代码**\n```") == "**代码**", "Markdown qu
 Check(ChatMarkdown.Summary("[链接](<https://example.com>)") == "链接", "Markdown quote accepts editor-serialized links");
 
 Check(ChatMarkdown.Summary("**跨行\n粗体**") == "跨行\n粗体", "Markdown quote supports multiline inline marks");
+
+// 独立传输替身复现广播故障和忽略取消的慢客户端，不依赖真实网络缓冲区大小。
+foreach (var failure in new[] { "throw", "slow" })
+{
+    var transport = new BroadcastProbe(failure);
+    var presence = new ChatPresenceService(new ChatOptions());
+    var disconnected = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    presence.Add("probe", new ChatSession("synthetic", new ChatGuest("guest", "访客", "seed"), DateTimeOffset.UtcNow.AddHours(1), null), () => disconnected.TrySetResult());
+    using var queue = new ChatBroadcastQueue(transport, presence, Microsoft.Extensions.Logging.Abstractions.NullLogger<ChatBroadcastQueue>.Instance) { SendTimeout = TimeSpan.FromMilliseconds(60) };
+    await queue.StartAsync(CancellationToken.None);
+    using (var slot = queue.Reserve()) slot.Publish("message.created", new ChatPresence(1));
+    await transport.Entered.Task.WaitAsync(TimeSpan.FromSeconds(2));
+    // 第一次发送仍阻塞时，业务提交和后续事件入队必须立即完成。
+    using (var slot = queue.Reserve()) slot.Publish("message.deleted", new ChatPresence(2));
+    using (var slot = queue.Reserve()) slot.Publish("message.restored", new ChatPresence(3));
+    await disconnected.Task.WaitAsync(TimeSpan.FromSeconds(2));
+    await transport.Completed.Task.WaitAsync(TimeSpan.FromSeconds(2));
+    Check(transport.Events.SequenceEqual(new[] { "message.created", "message.deleted", "message.restored" }), failure + " broadcast preserves event order and compensates by disconnecting");
+    using var stopTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+    await queue.StopAsync(stopTimeout.Token);
+    transport.Release.TrySetException(new InvalidOperationException("synthetic late failure"));
+}
+{
+    var transport = new BroadcastProbe("slow");
+    using var queue = new ChatBroadcastQueue(transport, new ChatPresenceService(new ChatOptions()), Microsoft.Extensions.Logging.Abstractions.NullLogger<ChatBroadcastQueue>.Instance);
+    var slots = await Task.WhenAll(Enumerable.Range(0, 128).Select(_ => Task.Run(() => queue.Reserve())));
+    try { queue.Reserve(); throw new Exception("Unbounded queue"); }
+    catch (ChatException error) { Check(error.Status == 503, "Concurrent reservations enforce bounded capacity before mutation"); }
+    foreach (var slot in slots) slot.Dispose();
+    using var released = queue.Reserve();
+    Check(true, "Uncommitted reservation releases capacity");
+}
+
+{
+    var transport = new BroadcastProbe("slow");
+    using var queue = new ChatBroadcastQueue(transport, new ChatPresenceService(new ChatOptions()), Microsoft.Extensions.Logging.Abstractions.NullLogger<ChatBroadcastQueue>.Instance);
+    await queue.StartAsync(CancellationToken.None);
+    using (var slot = queue.Reserve()) slot.Publish("message.created", new ChatPresence(1));
+    await transport.Entered.Task.WaitAsync(TimeSpan.FromSeconds(2));
+    await queue.StopAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(1));
+    transport.Release.TrySetResult();
+    Check(true, "Shutdown cancels an in-flight stalled broadcast without waiting for timeout");
+    try { queue.Reserve(); throw new Exception("Stopped queue accepted work"); }
+    catch (ChatException error) { Check(error.Status == 503, "Stopped queue rejects mutations before commit"); }
+}
+
+sealed class BroadcastProbe(string failure) : Microsoft.AspNetCore.SignalR.IHubContext<ChatHub>, Microsoft.AspNetCore.SignalR.IHubClients, Microsoft.AspNetCore.SignalR.IClientProxy
+{
+    public readonly TaskCompletionSource Entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    public readonly TaskCompletionSource Completed = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    public readonly TaskCompletionSource Release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    public readonly List<string> Events = [];
+    public Microsoft.AspNetCore.SignalR.IHubClients Clients => this;
+    public Microsoft.AspNetCore.SignalR.IGroupManager Groups => throw new NotSupportedException();
+    public Microsoft.AspNetCore.SignalR.IClientProxy All => this;
+    public Task SendCoreAsync(string method, object?[] args, CancellationToken cancellationToken = default)
+    {
+        Events.Add(method);
+        if (Events.Count == 1)
+        {
+            Entered.TrySetResult();
+            return failure == "throw" ? Task.FromException(new InvalidOperationException("synthetic transport failure")) : Release.Task;
+        }
+        if (Events.Count == 3) Completed.TrySetResult();
+        return Task.CompletedTask;
+    }
+    public Microsoft.AspNetCore.SignalR.IClientProxy AllExcept(IReadOnlyList<string> ids) => this;
+    public Microsoft.AspNetCore.SignalR.IClientProxy Client(string id) => this;
+    Microsoft.AspNetCore.SignalR.IClientProxy Microsoft.AspNetCore.SignalR.IHubClients<Microsoft.AspNetCore.SignalR.IClientProxy>.Clients(IReadOnlyList<string> ids) => this;
+    public Microsoft.AspNetCore.SignalR.IClientProxy Group(string id) => this;
+    Microsoft.AspNetCore.SignalR.IClientProxy Microsoft.AspNetCore.SignalR.IHubClients<Microsoft.AspNetCore.SignalR.IClientProxy>.Groups(IReadOnlyList<string> ids) => this;
+    public Microsoft.AspNetCore.SignalR.IClientProxy GroupExcept(string id, IReadOnlyList<string> ids) => this;
+    public Microsoft.AspNetCore.SignalR.IClientProxy User(string id) => this;
+    public Microsoft.AspNetCore.SignalR.IClientProxy Users(IReadOnlyList<string> ids) => this;
+}

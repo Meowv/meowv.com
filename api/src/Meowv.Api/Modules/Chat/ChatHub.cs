@@ -34,7 +34,7 @@ public sealed class ChatHub(ChatSessionService sessions, ChatPresenceService pre
     {
         try
         {
-            return await service.SendAsync(Context.User!, Context.GetHttpContext()?.Connection.RemoteIpAddress?.ToString() ?? "unknown", clientMessageId, content, replyToId, mentions);
+            return await service.SendAsync(Context.User!, Context.GetHttpContext()?.Connection.RemoteIpAddress?.ToString() ?? "unknown", clientMessageId, content, replyToId, mentions, Context.ConnectionAborted);
         }
         catch (ChatException error)
         {

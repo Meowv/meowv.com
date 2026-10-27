@@ -1,6 +1,5 @@
 using System.Security.Cryptography;
 using System.Security.Claims;
-using Microsoft.AspNetCore.SignalR;
 
 namespace Meowv.Api.Modules.Chat;
 
@@ -101,6 +100,13 @@ public sealed class ChatPresenceService(ChatOptions options)
         foreach (var action in actions) action();
     }
 
+    internal void DisconnectAll()
+    {
+        string[] guests;
+        lock (_gate) guests = [.. _connections.Values.Select(connection => connection.Guest.Id).Distinct()];
+        foreach (var guest in guests) Disconnect(guest);
+    }
+
     public void Expire()
     {
         string[] guests;
@@ -141,9 +147,9 @@ public sealed class ChatSendLimiter(ChatOptions options)
     }
 }
 
-public sealed class ChatService(ChatSessionService sessions, ChatRepository repository, ChatOptions options, ChatSendLimiter limiter, ChatPresenceService presence, IHubContext<ChatHub> hub, ILogger<ChatService> logger)
+public sealed class ChatService(ChatSessionService sessions, ChatRepository repository, ChatOptions options, ChatSendLimiter limiter, ChatPresenceService presence, ChatBroadcastQueue broadcasts, ILogger<ChatService> logger)
 {
-    // 单实例串行处理落库和广播，确保重试不会重复广播，确认顺序与 ID 顺序一致。
+    // 只串行落库与入队；网络发送不能占用业务锁，事件按提交顺序消费。
     internal SemaphoreSlim Gate { get; } = new(1, 1);
 
     private ChatMention[] ResolveMentions(string senderId, string content, ChatMentionRequest[]? requests)
@@ -163,16 +169,16 @@ public sealed class ChatService(ChatSessionService sessions, ChatRepository repo
             var token = "@" + guest.Nickname;
             if (request.Start < end || request.Start < 0 || request.Length != token.Length || request.Start > content.Length - request.Length || !content.AsSpan(request.Start, request.Length).SequenceEqual(token.AsSpan()))
                 throw new ChatException("invalid_mention", "提及内容已改变，请重新选择访客。");
-            mentions.Add(new(guest.Id, guest.Nickname, request.Start, request.Length));
+            mentions.Add(new ChatMention(guest.Id, guest.Nickname, request.Start, request.Length));
             end = request.Start + request.Length;
         }
 
         return [.. mentions];
     }
 
-    internal async Task<ChatAck> SendAsync(ClaimsPrincipal user, string ip, string clientMessageId, string content, string? replyToId = null, ChatMentionRequest[]? mentions = null)
+    internal async Task<ChatAck> SendAsync(ClaimsPrincipal user, string ip, string clientMessageId, string content, string? replyToId = null, ChatMentionRequest[]? mentions = null, CancellationToken cancellationToken = default)
     {
-        await Gate.WaitAsync();
+        await Gate.WaitAsync(cancellationToken);
         try
         {
             var session = sessions.Require(user);
@@ -192,18 +198,18 @@ public sealed class ChatService(ChatSessionService sessions, ChatRepository repo
             }
 
             var resolvedMentions = ResolveMentions(session.Guest.Id, validated, mentions);
+            using var reservation = broadcasts.Reserve();
+            cancellationToken.ThrowIfCancellationRequested();
             limiter.Check(session.Guest.Id, ip);
             var message = repository.Insert(session, id, validated, replyToId, resolvedMentions);
-            try
-            {
-                await hub.Clients.All.SendAsync("message.created", message);
-            }
-            catch (Exception)
-            {
-                logger.LogWarning("Chat 消息已保存，实时广播未完成。");
-            }
+            reservation.Publish("message.created", message);
 
             return new ChatAck(message.Id, message.ClientMessageId, message.CreatedAt, message.Reply, message.Mentions ?? []);
+        }
+        catch (Exception error) when (error is not ChatException and not OperationCanceledException)
+        {
+            ChatDiagnostics.Failure(logger, error, "save", ChatDiagnostics.CorrelationId);
+            throw;
         }
         finally
         {

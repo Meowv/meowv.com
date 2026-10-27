@@ -3,7 +3,6 @@ using System.Threading.RateLimiting;
 using Meowv.Api.Core;
 using Meowv.Api.Infrastructure;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.SignalR;
 
 namespace Meowv.Api.Modules.Chat;
 
@@ -28,6 +27,8 @@ public static class ChatRegistration
         services.AddSingleton<ChatSessionService>();
         services.AddSingleton<ChatPresenceService>();
         services.AddSingleton<ChatSendLimiter>();
+        services.AddSingleton<ChatBroadcastQueue>();
+        services.AddHostedService(provider => provider.GetRequiredService<ChatBroadcastQueue>());
         services.AddSingleton<ChatService>();
         services.AddSingleton<ChatRuntime>();
         services.AddHostedService(provider => provider.GetRequiredService<ChatRuntime>());
@@ -124,14 +125,16 @@ public sealed class ChatModule : IEndpointModule
 
         admin.MapGet("/session", Results.NoContent).RequireRateLimiting("chat-admin-auth");
 
-        admin.MapDelete("/messages/{id}", async (string id, bool? permanent, ChatService service, ChatRepository repository, IHubContext<ChatHub> hub) =>
+        admin.MapDelete("/messages/{id}", async (string id, bool? permanent, ChatService service, ChatRepository repository, ChatBroadcastQueue broadcasts, HttpContext context) =>
         {
             var target = Cursor(id)!.Value.ToString(CultureInfo.InvariantCulture);
-            await service.Gate.WaitAsync();
+            await service.Gate.WaitAsync(context.RequestAborted);
             try
             {
+                using var reservation = broadcasts.Reserve();
+                context.RequestAborted.ThrowIfCancellationRequested();
                 if (!repository.DeleteMessage(target, permanent == true)) return Results.NotFound();
-                await hub.Clients.All.SendAsync("message.deleted", new ChatDeleted(target, DateTimeOffset.UtcNow, permanent == true, repository.Message(target)?.Revision ?? 0));
+                reservation.Publish("message.deleted", new ChatDeleted(target, DateTimeOffset.UtcNow, permanent == true, repository.Message(target)?.Revision ?? 0));
                 return Results.NoContent();
             }
             finally
@@ -139,15 +142,17 @@ public sealed class ChatModule : IEndpointModule
                 service.Gate.Release();
             }
         });
-        admin.MapPost("/messages/{id}/restore", async (string id, ChatService service, ChatRepository repository, IHubContext<ChatHub> hub) =>
+        admin.MapPost("/messages/{id}/restore", async (string id, ChatService service, ChatRepository repository, ChatBroadcastQueue broadcasts, HttpContext context) =>
         {
             var target = Cursor(id)!.Value.ToString(CultureInfo.InvariantCulture);
-            await service.Gate.WaitAsync();
+            await service.Gate.WaitAsync(context.RequestAborted);
             try
             {
+                using var reservation = broadcasts.Reserve();
+                context.RequestAborted.ThrowIfCancellationRequested();
                 var message = repository.RestoreMessage(target);
                 if (message is null) return Results.NotFound();
-                await hub.Clients.All.SendAsync("message.restored", message);
+                reservation.Publish("message.restored", message);
                 return Results.Ok(message);
             }
             finally
