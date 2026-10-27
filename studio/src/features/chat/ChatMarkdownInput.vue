@@ -440,7 +440,10 @@ function keydown(event: KeyboardEvent) {
     return;
   }
   const before = snapshot();
-  const next = markdownEnter(before, event.shiftKey);
+  const next = markdownEnter(
+    before,
+    event.shiftKey || window.matchMedia('(hover: none) and (pointer: coarse)').matches,
+  );
   if (next) commit(next, before);
   else emit('send');
 }

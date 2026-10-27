@@ -70,27 +70,32 @@ function replyTo(message: ChatMessage) {
   composer.value?.focus();
 }
 async function locateReply(reply: ChatReply) {
-  if (reply.unavailable || store.loadingHistory) return;
+  if (reply.unavailable || store.loadingHistory) return false;
   restoringScroll = true;
   try {
-    if (!(await chat.focus(reply.id))) return;
+    if (!(await chat.focus(reply.id))) return false;
     await nextTick();
     const element = list.value?.querySelector<HTMLElement>(`[data-message-id="${reply.id}"]`);
-    element?.scrollIntoView({ block: 'center', behavior: 'instant' });
+    if (!element) return false;
+    element.scrollIntoView({ block: 'center', behavior: 'instant' });
     highlightedId.value = reply.id;
     nearBottom.value = false;
     clearTimeout(highlightTimer);
     highlightTimer = setTimeout(() => {
       highlightedId.value = null;
     }, 2000);
+    return true;
   } finally {
     restoringScroll = false;
   }
 }
 async function loadNewer() {
+  const anchor = captureScrollAnchor();
   restoringScroll = true;
   try {
     await chat.newer();
+    await nextTick();
+    if (mounted) restoreScrollAnchor(anchor);
   } finally {
     restoringScroll = false;
   }
@@ -167,7 +172,7 @@ watch(
 async function jumpToMention() {
   const id = chat.mentionIds.value[0];
   if (!id) return;
-  await locateReply({
+  const located = await locateReply({
     id,
     nickname: '',
     content: '',
@@ -175,8 +180,7 @@ async function jumpToMention() {
     unavailable: false,
     revision: 0,
   });
-  acknowledgeMentions();
-  chat.mentionIds.value = chat.mentionIds.value.filter((item) => item !== id);
+  if (located) acknowledgeMentions();
 }
 const joinDialog = ref<HTMLDialogElement | null>(null);
 const nicknameInput = ref<HTMLInputElement | null>(null);
@@ -231,15 +235,42 @@ async function loadOlder() {
   if (!element || store.loadingHistory || !store.hasMoreHistory) return;
   const height = element.scrollHeight;
   const top = element.scrollTop;
+  const anchor = captureScrollAnchor();
   restoringScroll = true;
   try {
     await chat.older();
     await nextTick();
-    if (mounted && list.value === element) element.scrollTop = top + element.scrollHeight - height;
+    if (mounted && list.value === element && !restoreScrollAnchor(anchor))
+      element.scrollTop = top + element.scrollHeight - height;
   } finally {
     restoringScroll = false;
   }
 }
+function captureScrollAnchor() {
+  const area = list.value?.getBoundingClientRect();
+  const element = [...(list.value?.querySelectorAll<HTMLElement>('[data-message-id]') ?? [])].find(
+    (item) => area && item.getBoundingClientRect().bottom > area.top,
+  );
+  return element && area
+    ? { id: element.dataset.messageId!, offset: element.getBoundingClientRect().top - area.top }
+    : null;
+}
+function restoreScrollAnchor(anchor: ReturnType<typeof captureScrollAnchor>) {
+  if (!anchor || !list.value) return false;
+  const element = list.value.querySelector<HTMLElement>(`[data-message-id="${anchor.id}"]`);
+  if (!element) return false;
+  list.value.scrollTop +=
+    element.getBoundingClientRect().top - list.value.getBoundingClientRect().top - anchor.offset;
+  return true;
+}
+watch(
+  () => store.messages[0]?.id,
+  () => {
+    if (nearBottom.value || restoringScroll) return;
+    const anchor = captureScrollAnchor();
+    void nextTick(() => restoreScrollAnchor(anchor));
+  },
+);
 function scroll() {
   const element = list.value;
   if (!element || restoringScroll) return;
@@ -355,8 +386,11 @@ onBeforeUnmount(() => {
             :aria-label="statusText"
             :title="statusText"
             :class="{ 'is-online': store.connectionStatus === 'connected' }"
-          ></span
-          ><strong>{{ store.onlineUsers }}</strong> 人在线
+          ></span>
+          <span class="chat-connection-label" role="status">{{ statusText }}</span>
+          <span
+            ><strong>{{ store.onlineUsers }}</strong> 人在线</span
+          >
         </div>
         <div class="chat-header-actions">
           <button
@@ -378,12 +412,7 @@ onBeforeUnmount(() => {
       <div v-if="store.error" class="chat-banner chat-error" role="alert">
         <span>{{ store.error }}</span
         ><button
-          v-if="store.session && store.connectionStatus === 'disconnected'"
-          @click="chat.connect"
-        >
-          <IconRefresh :size="15" />重新连接</button
-        ><button
-          v-else-if="unavailable"
+          v-if="unavailable"
           @click="
             store.error = '';
             chat.initialize();
@@ -391,6 +420,14 @@ onBeforeUnmount(() => {
         >
           <IconRefresh :size="15" />重试
         </button>
+      </div>
+      <div
+        v-if="store.session && store.connectionStatus === 'disconnected'"
+        class="chat-banner"
+        role="status"
+      >
+        <span>连接已断开，消息和草稿已保留。</span>
+        <button type="button" @click="chat.connect"><IconRefresh :size="15" />重新连接</button>
       </div>
       <div v-if="store.connectionStatus === 'reconnecting'" class="chat-banner" role="status">
         连接暂时中断，正在重新连接。消息和草稿已保留。
@@ -644,13 +681,14 @@ onBeforeUnmount(() => {
           @participants="chat.loadParticipants(true)"
         />
         <div class="chat-composer-bottom">
-          <span id="chat-input-help">{{
-            failed
-              ? '发送未确认，草稿已保留，请稍后重试。'
-              : sending
-                ? '正在发送…'
-                : 'Enter 发送 · Shift+Enter 换行'
-          }}</span
+          <span id="chat-input-help"
+            ><span v-if="failed || sending">{{
+              failed ? '发送未确认，草稿已保留，请稍后重试。' : sending ? '正在发送…' : ''
+            }}</span
+            ><template v-else
+              ><span class="chat-keyboard-help">Enter 发送 · Shift+Enter 换行</span
+              ><span class="chat-touch-help">点击发送 · 回车换行</span></template
+            ></span
           ><button
             type="button"
             class="chat-icon-button chat-insert-at"

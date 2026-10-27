@@ -94,3 +94,26 @@ describe('Chat reply previews', () => {
     expect(store.messages[0]!.reply).toMatchObject({ unavailable: true, content: '' });
   });
 });
+
+describe('Chat window retention', () => {
+  beforeEach(() => setActivePinia(createPinia()));
+  it('bounds live messages and keeps earlier history reachable', () => {
+    const store = useChatStore();
+    store.merge(Array.from({ length: 501 }, (_, i) => message(String(i + 1))));
+    expect(store.messages).toHaveLength(500);
+    expect(store.messages[0]!.id).toBe('2');
+    expect(store.historyCursor).toBe('2');
+    expect(store.hasMoreHistory).toBe(true);
+  });
+  it('preserves untouched references and cached quote summaries', () => {
+    const first = message('1');
+    const second = message('2');
+    expect(mergeMessages([first], [second])[0]).toBe(first);
+    expect(quoteMessage(first)).toBe(quoteMessage(first));
+    const store = useChatStore();
+    store.merge([first, { ...second, reply: quoteMessage(first) }]);
+    const saved = store.messages[1];
+    store.merge([message('3')]);
+    expect(store.messages[1]).toBe(saved);
+  });
+});

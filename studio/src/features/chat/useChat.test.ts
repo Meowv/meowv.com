@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   unmount: [] as Array<() => void>,
   hubs: [] as Array<{
     handlers: Record<string, (...args: never[]) => void>;
+    closed: () => Promise<void>;
     reconnecting: () => void;
     reconnected: () => Promise<void>;
     invoke: ReturnType<typeof vi.fn>;
@@ -45,7 +46,10 @@ vi.mock('@microsoft/signalr', () => ({
       onreconnected: (callback: () => Promise<void>) => {
         this.hub.reconnected = callback;
       },
-      onclose: vi.fn(),
+      closed: async () => {},
+      onclose: (callback: () => Promise<void>) => {
+        this.hub.closed = callback;
+      },
       start: vi.fn().mockResolvedValue(undefined),
       stop: vi.fn().mockResolvedValue(undefined),
       invoke: vi.fn(),
@@ -66,6 +70,7 @@ vi.mock('@microsoft/signalr', () => ({
   },
 }));
 import { useChat } from './useChat';
+import { ChatApiError } from './chat-api';
 const session = {
   guest: { id: 'guest', nickname: '访客', avatarSeed: 'seed' },
   expiresAt: '2099-01-01',
@@ -343,5 +348,255 @@ describe('Chat connection lifecycle', () => {
     await chat.connect();
     expect(mocks.history.mock.calls[1]![1]).toBeUndefined();
     expect(chat.store.messages.map((item) => item.id)).toEqual(['1', '2', '3', '4', '5']);
+  });
+});
+
+describe('Chat bounded history and recovery', () => {
+  const range = (first: number, count: number) =>
+    Array.from({ length: count }, (_, i) => message(String(first + i)));
+  it('keeps disconnected status after close while REST still succeeds', async () => {
+    const chat = useChat();
+    await chat.initialize();
+    await mocks.hubs[0]!.closed();
+    expect(chat.store.connectionStatus).toBe('disconnected');
+    expect(chat.store.session).toEqual(session);
+    expect(chat.store.error).toBe('');
+  });
+  it.each([500, 502, 503, 504])('marks initial HTTP %i as unavailable', async (status) => {
+    mocks.session.mockRejectedValueOnce(new ChatApiError(status, 'unavailable', 'unavailable'));
+    const chat = useChat();
+    await chat.initialize();
+    expect(chat.store.unavailable).toBe(true);
+  });
+  it('keeps retry initialization pending until service availability is known', async () => {
+    mocks.session.mockRejectedValueOnce(new ChatApiError(502, 'unavailable', 'unavailable'));
+    const chat = useChat();
+    await chat.initialize();
+    let reject!: (error: Error) => void;
+    mocks.session.mockReturnValueOnce(new Promise((_, fail) => (reject = fail)));
+    const retry = chat.initialize();
+    expect(chat.initializing.value).toBe(true);
+    reject(new ChatApiError(503, 'unavailable', 'unavailable'));
+    await retry;
+    expect(chat.initializing.value).toBe(false);
+    expect(chat.store.unavailable).toBe(true);
+  });
+  it('clears a mention target only on 404 and preserves transient failures', async () => {
+    const chat = useChat();
+    await chat.initialize();
+    chat.mentionIds.value = ['100', '101'];
+    mocks.context.mockRejectedValueOnce(new ChatApiError(502, 'unavailable', 'retry'));
+    expect(await chat.focus('100')).toBe(false);
+    expect(chat.mentionIds.value).toEqual(['100', '101']);
+    mocks.context.mockRejectedValueOnce(new ChatApiError(404, 'not_found', 'missing'));
+    expect(await chat.focus('100')).toBe(false);
+    expect(chat.mentionIds.value).toEqual(['101']);
+  });
+  it('pages backward and forward through a bounded continuous window', async () => {
+    const chat = useChat();
+    await chat.initialize();
+    chat.store.messages = range(101, 500);
+    chat.store.hasMoreHistory = true;
+    chat.store.historyCursor = '101';
+    mocks.history.mockResolvedValueOnce({ items: range(1, 100), hasMore: false, nextCursor: '1' });
+    await chat.older();
+    expect(chat.store.messages.map((item) => item.id)).toEqual(
+      range(1, 500).map((item) => item.id),
+    );
+    expect(chat.store.hasNewerHistory).toBe(true);
+    mocks.history.mockResolvedValueOnce({
+      items: range(501, 100),
+      hasMore: false,
+      nextCursor: '600',
+    });
+    await chat.newer();
+    expect(chat.store.messages.map((item) => item.id)).toEqual(
+      range(101, 500).map((item) => item.id),
+    );
+    expect(chat.store.hasMoreHistory).toBe(true);
+    expect(chat.store.historyCursor).toBe('101');
+    expect(chat.store.hasNewerHistory).toBe(false);
+  });
+  it('recovers overflowing deferred broadcasts through every server page', async () => {
+    const chat = useChat();
+    await chat.initialize();
+    chat.store.hasNewerHistory = true;
+    const created = mocks.hubs[0]!.handlers['message.created'] as unknown as (
+      item: ChatMessage,
+    ) => void;
+    for (const item of range(2, 700)) created(item);
+    mocks.history.mockResolvedValueOnce({ items: [message('2')], hasMore: false, nextCursor: '2' });
+    mocks.history.mockResolvedValueOnce({ items: range(3, 400), hasMore: true, nextCursor: '402' });
+    mocks.history.mockResolvedValueOnce({
+      items: range(403, 299),
+      hasMore: false,
+      nextCursor: '701',
+    });
+    await chat.newer();
+    expect(mocks.history.mock.calls.slice(-2).map((call) => call[1])).toEqual([
+      { afterId: '2' },
+      { afterId: '402' },
+    ]);
+    expect(chat.store.messages.map((item) => item.id)).toEqual(
+      range(202, 500).map((item) => item.id),
+    );
+  });
+  it('deduplicates deferred IDs and preserves the focused target', async () => {
+    const chat = useChat();
+    await chat.initialize();
+    chat.store.hasNewerHistory = true;
+    const created = mocks.hubs[0]!.handlers['message.created'] as unknown as (
+      item: ChatMessage,
+    ) => void;
+    for (let i = 0; i < 800; i++) created(message('999'));
+    mocks.context.mockResolvedValueOnce({
+      items: [message('10')],
+      hasMoreBefore: true,
+      hasMoreAfter: false,
+    });
+    expect(await chat.focus('10')).toBe(true);
+    expect(chat.store.messages.map((item) => item.id)).toEqual(['10']);
+    expect(chat.store.hasNewerHistory).toBe(true);
+    mocks.history.mockResolvedValueOnce({
+      items: [message('998')],
+      hasMore: false,
+      nextCursor: '998',
+    });
+    await chat.newer();
+    expect(chat.store.messages.map((item) => item.id)).toEqual(['10', '998', '999']);
+    expect(mocks.history).toHaveBeenCalledTimes(2);
+  });
+  it('retains pagination after a failed older request', async () => {
+    const chat = useChat();
+    await chat.initialize();
+    chat.store.hasMoreHistory = true;
+    chat.store.historyCursor = '1';
+    mocks.history.mockRejectedValueOnce(new Error('offline'));
+    await chat.older();
+    expect(chat.store.messages.map((item) => item.id)).toEqual(['1']);
+    expect(chat.store.historyCursor).toBe('1');
+    expect(chat.store.hasMoreHistory).toBe(true);
+    expect(chat.store.loadingHistory).toBe(false);
+  });
+});
+
+describe('Chat pagination races', () => {
+  it('defers live messages during older pagination without opening a gap or duplicating the tail', async () => {
+    const chat = useChat();
+    await chat.initialize();
+    chat.store.messages = Array.from({ length: 500 }, (_, i) => message(String(i + 101)));
+    chat.store.hasMoreHistory = true;
+    chat.store.historyCursor = '101';
+    let complete!: (value: unknown) => void;
+    mocks.history.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          complete = resolve;
+        }),
+    );
+    const loading = chat.older();
+    const created = mocks.hubs[0]!.handlers['message.created'] as unknown as (
+      item: ChatMessage,
+    ) => void;
+    created(message('601'));
+    expect(chat.store.messages[0]!.id).toBe('101');
+    expect(chat.store.messages.at(-1)!.id).toBe('600');
+    complete({
+      items: Array.from({ length: 100 }, (_, i) => message(String(i + 1))),
+      hasMore: false,
+      nextCursor: '1',
+    });
+    await loading;
+    expect(chat.store.messages.map((item) => item.id)).toEqual(
+      Array.from({ length: 500 }, (_, i) => String(i + 1)),
+    );
+    expect(chat.store.hasNewerHistory).toBe(true);
+    mocks.history.mockResolvedValueOnce({
+      items: Array.from({ length: 101 }, (_, i) => message(String(i + 501))),
+      hasMore: false,
+      nextCursor: '601',
+    });
+    await chat.newer();
+    expect(chat.store.messages.map((item) => item.id)).toEqual(
+      Array.from({ length: 500 }, (_, i) => String(i + 102)),
+    );
+  });
+});
+
+describe('Chat deferred recovery cancellation', () => {
+  async function overflowingChat() {
+    const chat = useChat();
+    await chat.initialize();
+    chat.store.hasNewerHistory = true;
+    const created = mocks.hubs[0]!.handlers['message.created'] as unknown as (
+      item: ChatMessage,
+    ) => void;
+    for (let i = 2; i <= 502; i++) created(message(String(i)));
+    return chat;
+  }
+  it('stops recovering when the server no longer contains the highest broadcast ID', async () => {
+    const chat = await overflowingChat();
+    mocks.history.mockResolvedValue({ items: [], hasMore: false, nextCursor: null });
+    await chat.newer();
+    expect(mocks.history).toHaveBeenCalledTimes(3);
+    expect(chat.store.hasNewerHistory).toBe(false);
+  });
+  it('does not restore a history flag or error after logout during overflow recovery', async () => {
+    const chat = await overflowingChat();
+    mocks.history.mockResolvedValueOnce({ items: [], hasMore: false, nextCursor: null });
+    let fail!: (error: Error) => void;
+    mocks.history.mockImplementationOnce(
+      () =>
+        new Promise((_, reject) => {
+          fail = reject;
+        }),
+    );
+    const loading = chat.newer();
+    await vi.waitFor(() => expect(fail).toBeDefined());
+    mocks.logout.mockResolvedValueOnce(undefined);
+    await chat.logout();
+    fail(new Error('late failure'));
+    await loading;
+    expect(chat.store.session).toBeNull();
+    expect(chat.store.hasNewerHistory).toBe(false);
+    expect(chat.store.error).toBe('');
+  });
+  it('ignores a recovery failure superseded by a newer latest view', async () => {
+    const chat = await overflowingChat();
+    mocks.history.mockResolvedValueOnce({ items: [], hasMore: false, nextCursor: null });
+    let fail!: (error: Error) => void;
+    mocks.history.mockImplementationOnce(
+      () =>
+        new Promise((_, reject) => {
+          fail = reject;
+        }),
+    );
+    const loading = chat.newer();
+    await vi.waitFor(() => expect(fail).toBeDefined());
+    mocks.history.mockResolvedValue({
+      items: [message('1000')],
+      hasMore: false,
+      nextCursor: '1000',
+    });
+    expect(await chat.latest()).toBe(true);
+    fail(new Error('old view failure'));
+    await loading;
+    expect(chat.store.messages.map((item) => item.id)).toEqual(['1000']);
+    expect(chat.store.hasNewerHistory).toBe(false);
+    expect(chat.store.error).toBe('');
+  });
+});
+
+describe('Chat busy feedback', () => {
+  it('preserves the server busy message for a rejected send', async () => {
+    const chat = useChat();
+    await chat.initialize();
+    mocks.hubs[0]!.invoke.mockRejectedValueOnce(
+      new Error(
+        'An unexpected error occurred invoking SendMessage. HubException: chat_busy: 聊天室繁忙，请稍后重试。',
+      ),
+    );
+    expect(await chat.send('hello')).toBe(false);
+    expect(chat.store.error).toBe('聊天室繁忙，请稍后重试。');
   });
 });

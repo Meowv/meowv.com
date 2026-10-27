@@ -12,10 +12,14 @@ export function mergeMessages(
   incoming: ChatMessage[],
   deletedIds: Record<string, number> = {},
 ): ChatMessage[] {
-  const merged = new Map(current.map((message) => [message.id, message]));
+  const merged = new Map<string, ChatMessage>();
+  const existing = new Map(current.map((message) => [message.id, message]));
   for (const message of incoming) {
-    const previous = merged.get(message.id);
-    if (previous && previous.revision > message.revision) continue;
+    const previous = merged.get(message.id) ?? existing.get(message.id);
+    if (previous && previous.revision > message.revision) {
+      merged.set(message.id, previous);
+      continue;
+    }
     const deleted =
       (deletedIds[message.id] ?? -1) >= message.revision ||
       (previous?.revision === message.revision && previous.deleted) ||
@@ -36,10 +40,26 @@ export function mergeMessages(
       reply: deleted ? null : reply,
     });
   }
-  return [...merged.values()].sort((a, b) => compareMessageIds(a.id, b.id));
+  const batch = [...merged.values()].sort((a, b) => compareMessageIds(a.id, b.id));
+  const result: ChatMessage[] = [];
+  let left = 0;
+  let right = 0;
+  while (left < current.length && right < batch.length) {
+    const comparison = compareMessageIds(current[left]!.id, batch[right]!.id);
+    if (comparison < 0) result.push(current[left++]!);
+    else {
+      result.push(batch[right++]!);
+      if (comparison === 0) left++;
+    }
+  }
+  return result.concat(current.slice(left), batch.slice(right));
 }
+const quoteCache = new WeakMap<ChatMessage, ChatReply>();
+export const CHAT_WINDOW_LIMIT = 500;
 export function quoteMessage(message: ChatMessage): ChatReply {
-  return {
+  const cached = quoteCache.get(message);
+  if (cached) return cached;
+  const reply: ChatReply = {
     id: message.id,
     nickname: message.nickname,
     content: message.deleted ? '' : markdownSummary(message.content),
@@ -47,6 +67,8 @@ export function quoteMessage(message: ChatMessage): ChatReply {
     unavailable: false,
     revision: message.revision,
   };
+  quoteCache.set(message, reply);
+  return reply;
 }
 export function characterCount(value: string): number {
   return [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(value)].length;
@@ -109,19 +131,29 @@ export const useChatStore = defineStore('chat', {
     unavailable: false,
   }),
   actions: {
-    merge(messages: ChatMessage[]) {
+    merge(messages: ChatMessage[], direction: 'older' | 'newer' = 'newer') {
       this.messages = mergeMessages(
         this.messages,
         messages.filter((message) => !this.purgedIds[message.id]),
         this.deletedIds,
       );
+      if (this.messages.length > CHAT_WINDOW_LIMIT) {
+        if (direction === 'older') {
+          this.messages = this.messages.slice(0, CHAT_WINDOW_LIMIT);
+          this.hasNewerHistory = true;
+        } else {
+          this.messages = this.messages.slice(-CHAT_WINDOW_LIMIT);
+          this.hasMoreHistory = true;
+          this.historyCursor = this.messages[0]!.id;
+        }
+      }
       this.syncReplies();
     },
     syncReplies() {
       const byId = new Map(this.messages.map((message) => [message.id, message]));
       this.messages = this.messages.map((message) => {
         if (!message.reply || message.deleted)
-          return message.deleted ? { ...message, reply: null } : message;
+          return message.deleted && message.reply ? { ...message, reply: null } : message;
         let reply = message.reply;
         const original = byId.get(reply.id);
         if (this.purgedIds[reply.id])
@@ -129,6 +161,15 @@ export const useChatStore = defineStore('chat', {
         else if ((this.deletedIds[reply.id] ?? -1) > reply.revision)
           reply = { ...reply, content: '', deleted: true, revision: this.deletedIds[reply.id]! };
         else if (original && original.revision >= reply.revision) reply = quoteMessage(original);
+        if (
+          reply.id === message.reply.id &&
+          reply.content === message.reply.content &&
+          reply.nickname === message.reply.nickname &&
+          reply.deleted === message.reply.deleted &&
+          reply.unavailable === message.reply.unavailable &&
+          reply.revision === message.reply.revision
+        )
+          return message;
         return { ...message, reply };
       });
     },

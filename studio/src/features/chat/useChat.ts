@@ -7,7 +7,7 @@ import {
   type HubConnection,
 } from '@microsoft/signalr';
 import { ChatApiError, chatApi } from './chat-api';
-import { useChatStore } from './chat-state';
+import { CHAT_WINDOW_LIMIT, useChatStore } from './chat-state';
 import type { ChatAck, ChatMessage, ChatMentionRequest, ChatParticipant } from './chat-types';
 
 export function useChat() {
@@ -28,7 +28,47 @@ export function useChat() {
   let generation = 0;
   let disposed = false;
   let historyView = 0;
-  let deferredMessages: ChatMessage[] = [];
+  const deferredMessages = new Map<string, ChatMessage>();
+  let deferredOverflow = false;
+  let deferredHighWater: string | undefined;
+  function deferMessage(message: ChatMessage) {
+    if (!deferredHighWater || BigInt(message.id) > BigInt(deferredHighWater))
+      deferredHighWater = message.id;
+    if (deferredOverflow) return;
+    const previous = deferredMessages.get(message.id);
+    if (!previous || previous.revision <= message.revision)
+      deferredMessages.set(message.id, message);
+    if (deferredMessages.size > CHAT_WINDOW_LIMIT) {
+      deferredMessages.clear();
+      deferredOverflow = true;
+    }
+  }
+  async function flushDeferred(id: number, cursor?: string) {
+    const view = historyView;
+    if (deferredOverflow && cursor) {
+      // 缓存溢出后按服务端游标完整补齐，避免缓存尾部与旧窗口之间出现缺口。
+      try {
+        do {
+          const previousCursor: string | undefined = cursor;
+          await synchronize(id, cursor);
+          if (!current(id) || view !== historyView) return;
+          cursor = store.messages.at(-1)?.id;
+          if (cursor === previousCursor) break;
+        } while (
+          current(id) &&
+          cursor &&
+          deferredHighWater &&
+          BigInt(cursor) < BigInt(deferredHighWater)
+        );
+      } catch (error) {
+        if (current(id) && view === historyView) store.hasNewerHistory = true;
+        throw error;
+      }
+    } else store.merge([...deferredMessages.values()]);
+    deferredMessages.clear();
+    deferredOverflow = false;
+    deferredHighWater = undefined;
+  }
   let historyInitialized = false;
   let connectingGeneration: number | null = null;
   let pending: {
@@ -76,14 +116,13 @@ export function useChat() {
   }
   async function failure(error: unknown, id: number) {
     if (!current(id) || (error instanceof DOMException && error.name === 'AbortError')) return;
-    store.unavailable =
-      !store.session && (!(error instanceof ChatApiError) || error.status === 503);
+    store.unavailable = !store.session && (!(error instanceof ChatApiError) || error.status >= 500);
     const detail = error instanceof Error ? error.message : '';
     store.error =
       error instanceof ChatApiError
         ? error.message
         : (detail.match(
-            /(?:session_expired|rate_limited|invalid_reply|invalid_mention|invalid_message(?:_id)?|chat_unavailable):\s*(.+)$/s,
+            /(?:session_expired|rate_limited|invalid_reply|invalid_mention|invalid_message(?:_id)?|chat_unavailable|chat_busy):\s*(.+)$/s,
           )?.[1] ?? '连接失败，请稍后重试。');
     if (error instanceof ChatApiError && error.status === 401) {
       store.session = null;
@@ -126,7 +165,7 @@ export function useChat() {
       historyInitialized = true;
     }
     const status = await chatApi.status(controller.signal);
-    if (current(id)) Object.assign(store, status);
+    if (current(id) && view === historyView) Object.assign(store, status);
   }
   async function refreshVisible(id: number) {
     const view = historyView;
@@ -189,8 +228,8 @@ export function useChat() {
     hub.on('message.created', (message: ChatMessage) => {
       if (!active()) return;
       notifyMention(message);
-      if (store.hasNewerHistory || store.loadingHistory) deferredMessages.push(message);
-      if (!store.hasNewerHistory) store.merge([message]);
+      if (store.hasNewerHistory || store.loadingHistory) deferMessage(message);
+      else store.merge([message]);
     });
     hub.on(
       'message.deleted',
@@ -268,6 +307,7 @@ export function useChat() {
   }
   async function initialize() {
     const id = generation;
+    initializing.value = true;
     store.unavailable = false;
     try {
       const session = await chatApi.session(controller.signal);
@@ -312,7 +352,9 @@ export function useChat() {
       connection = null;
       await previous?.stop();
       pending = null;
-      deferredMessages = [];
+      deferredMessages.clear();
+      deferredOverflow = false;
+      deferredHighWater = undefined;
       participants.value = [];
       participantsLoading.value = false;
       participantsError.value = '';
@@ -400,14 +442,20 @@ export function useChat() {
     try {
       const page = await chatApi.history(controller.signal, { beforeId: store.historyCursor });
       if (current(id) && view === historyView) {
-        store.merge(page.items);
+        store.merge(page.items, 'older');
         store.hasMoreHistory = page.hasMore;
         store.historyCursor = page.nextCursor;
+        if (!store.hasNewerHistory) await flushDeferred(id, store.messages.at(-1)?.id);
       }
     } catch (error) {
-      await failure(error, id);
+      if (current(id) && view === historyView) {
+        if (deferredMessages.size || deferredOverflow) store.hasNewerHistory = true;
+        await failure(error, id);
+      }
     } finally {
-      if (current(id) && view === historyView) store.loadingHistory = false;
+      if (current(id) && view === historyView) {
+        store.loadingHistory = false;
+      }
     }
   }
   async function focus(messageId: string): Promise<boolean> {
@@ -423,23 +471,27 @@ export function useChat() {
       store.merge(context.items);
       store.hasMoreHistory = context.hasMoreBefore;
       store.hasNewerHistory = context.hasMoreAfter;
-      if (!store.hasNewerHistory) {
-        store.merge(
-          deferredMessages.filter((message) => BigInt(message.id) >= BigInt(context.items[0]!.id)),
-        );
-        deferredMessages = [];
+      if (!store.hasNewerHistory && (deferredOverflow || deferredMessages.size)) {
+        // 保留定位目标所在窗口，后续消息通过向后分页加载。
+        store.hasNewerHistory = true;
       }
       store.historyCursor = store.messages[0]?.id ?? null;
       return store.messages.some((message) => message.id === messageId);
     } catch (error) {
-      if (current(id))
+      if (current(id) && view === historyView) {
+        if (deferredMessages.size || deferredOverflow) store.hasNewerHistory = true;
+        if (error instanceof ChatApiError && error.status === 404)
+          mentionIds.value = mentionIds.value.filter((id) => id !== messageId);
         store.error =
           error instanceof ChatApiError && error.status === 404
             ? '原消息已不可用。'
             : '定位消息失败，请稍后重试。';
+      }
       return false;
     } finally {
-      if (current(id) && view === historyView) store.loadingHistory = false;
+      if (current(id) && view === historyView) {
+        store.loadingHistory = false;
+      }
     }
   }
   async function newer() {
@@ -454,13 +506,17 @@ export function useChat() {
       store.merge(page.items);
       store.hasNewerHistory = page.hasMore;
       if (!store.hasNewerHistory) {
-        store.merge(deferredMessages);
-        deferredMessages = [];
+        await flushDeferred(id, store.messages.at(-1)?.id);
       }
     } catch (error) {
-      await failure(error, id);
+      if (current(id) && view === historyView) {
+        if (deferredMessages.size || deferredOverflow) store.hasNewerHistory = true;
+        await failure(error, id);
+      }
     } finally {
-      if (current(id) && view === historyView) store.loadingHistory = false;
+      if (current(id) && view === historyView) {
+        store.loadingHistory = false;
+      }
     }
   }
   async function latest(): Promise<boolean> {
@@ -476,16 +532,20 @@ export function useChat() {
       store.historyCursor = page.nextCursor;
       store.hasNewerHistory = false;
       const first = page.items[0]?.id;
-      store.merge(
-        deferredMessages.filter((message) => !first || BigInt(message.id) >= BigInt(first)),
-      );
-      deferredMessages = [];
-      return true;
+      for (const [messageId] of deferredMessages)
+        if (first && BigInt(messageId) < BigInt(first)) deferredMessages.delete(messageId);
+      await flushDeferred(id, store.messages.at(-1)?.id);
+      return current(id) && view === historyView;
     } catch (error) {
-      await failure(error, id);
+      if (current(id) && view === historyView) {
+        if (deferredMessages.size || deferredOverflow) store.hasNewerHistory = true;
+        await failure(error, id);
+      }
       return false;
     } finally {
-      if (current(id) && view === historyView) store.loadingHistory = false;
+      if (current(id) && view === historyView) {
+        store.loadingHistory = false;
+      }
     }
   }
   onBeforeUnmount(() => {

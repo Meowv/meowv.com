@@ -84,6 +84,12 @@
   color: var(--color-text);
   font-variant-numeric: tabular-nums;
 }
+.chat-connection-label {
+  margin-right: 8px;
+}
+.chat-touch-help {
+  display: none;
+}
 .chat-status-dot,
 .chat-mini-dot {
   display: inline-block;
@@ -839,6 +845,8 @@
     border: 0;
     background: transparent;
     box-shadow: none;
+    visibility: visible;
+    opacity: 1;
   }
   .chat-message.is-own .chat-hover-actions {
     margin: 5px 0 0;
@@ -846,6 +854,38 @@
 
   .chat-hover-actions::after {
     display: none;
+  }
+}
+@media (max-width: 640px) {
+  .chat-presence {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 3px;
+  }
+  .chat-connection-label {
+    margin-right: 0;
+  }
+}
+@media (hover: none) and (pointer: coarse) {
+  .chat-keyboard-help {
+    display: none;
+  }
+  .chat-touch-help {
+    display: inline;
+  }
+  .chat-header-actions .chat-icon-button,
+  .chat-header-actions .chat-background-shortcut,
+  .chat-insert-at,
+  .chat-effects-settings summary {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .chat-effects-settings {
+    top: 0;
+    right: 4px;
+  }
+  .chat-markdown-input textarea {
+    padding-right: 44px;
   }
 }
 @media (hover: none) {

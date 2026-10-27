@@ -58,4 +58,6 @@ Chat 是主动联网的公开交流功能，昵称和消息经服务端转发、
 
 开发时 `/api/chat` 的 HTTP 与 WebSocket 默认代理至 `http://127.0.0.1:5000`，可用 `STUDIO_CHAT_API_TARGET` 覆盖。后端默认关闭 Chat，需按 [API 的 Chat 配置说明](../api/README.md#chat-公共聊天室) 开启并配置现有 `Cors:AllowedOrigins`。后端未运行或功能关闭时，页面显示不可用状态。
 
-定向验证：`pnpm exec vitest run src/features/chat`，另执行 `pnpm typecheck` 和改动文件的 ESLint / Prettier 检查。实际部署仍需单独验证裁剪发布、Windows/Nginx、移动端软键盘与目标容量。
+消息列表使用有界窗口，移出窗口的消息可通过前后分页重新加载；连接断开时保留草稿并提供手动重连。触屏输入使用回车换行、点击按钮发送。
+
+定向验证：`pnpm exec vitest run src/features/chat`，另执行 `pnpm typecheck` 和改动文件的 ESLint / Prettier 检查。开发服务运行后打开 `/tests/chat-browser-check.html`，检查真实 DOM 的 Markdown 清理、外链属性和桌面/触屏回车行为。实际部署仍需单独验证裁剪发布、Windows/Nginx、移动端软键盘与目标容量。
