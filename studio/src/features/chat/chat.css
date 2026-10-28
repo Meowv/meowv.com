@@ -80,13 +80,6 @@
   font-size: 12px;
   color: var(--color-text-muted);
 }
-.chat-presence strong {
-  color: var(--color-text);
-  font-variant-numeric: tabular-nums;
-}
-.chat-connection-label {
-  margin-right: 8px;
-}
 .chat-touch-help {
   display: none;
 }
@@ -861,9 +854,6 @@
     flex-wrap: wrap;
     justify-content: flex-end;
     gap: 3px;
-  }
-  .chat-connection-label {
-    margin-right: 0;
   }
 }
 @media (hover: none) and (pointer: coarse) {

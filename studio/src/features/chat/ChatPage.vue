@@ -388,9 +388,6 @@ onBeforeUnmount(() => {
             :class="{ 'is-online': store.connectionStatus === 'connected' }"
           ></span>
           <span class="chat-connection-label" role="status">{{ statusText }}</span>
-          <span
-            ><strong>{{ store.onlineUsers }}</strong> 人在线</span
-          >
         </div>
         <div class="chat-header-actions">
           <button
