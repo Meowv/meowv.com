@@ -12,3 +12,4 @@
 /.deploy.env
 /.deploy-cache/
 /.codegraph/
+/nginx.conf
