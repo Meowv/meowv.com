@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { IconHeartFilled, IconStarFilled } from '@tabler/icons-vue';
+import { IconBrandGithubFilled, IconHeartFilled, IconStarFilled } from '@tabler/icons-vue';
 import ThemeToggle from '@/components/ThemeToggle.vue';
 
 const emit = defineEmits<{ support: [] }>();
@@ -25,6 +25,15 @@ const emit = defineEmits<{ support: [] }>();
           <IconHeartFilled :size="18" stroke-width="1.9" aria-hidden="true" />
           赞助支持
         </button>
+        <a
+          href="https://github.com/Meowv/meowv.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="GitHub 开源仓库"
+          title="GitHub 开源仓库"
+        >
+          <IconBrandGithubFilled :size="20" aria-hidden="true" />
+        </a>
         <ThemeToggle />
       </nav>
     </div>
