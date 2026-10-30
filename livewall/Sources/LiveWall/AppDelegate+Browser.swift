@@ -96,6 +96,10 @@ extension AppDelegate: WallpaperBrowserDataSource {
         setPinned(item, categoryID: categoryID)
     }
 
+    func browserLoadVideo(_ url: URL) async throws -> LoadedVideo {
+        try await loadVideo(url)
+    }
+
     func browserLoadedVideo(for item: WallpaperItem) -> LoadedVideo? {
         guard let url = item.remoteURL else { return nil }
         return engine.slotKeys().lazy.compactMap { key in

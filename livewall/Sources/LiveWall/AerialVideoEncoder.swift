@@ -59,17 +59,19 @@ enum AerialVideoEncoder {
             fps: nominalFrameRate,
             transform: preferredTransform
         )
+        let writer = AerialStreamWriter(destination: destination, transform: input.transform)
         let encodingTask = Task.detached(priority: .utility) {
-            try encodeSynchronously(input: input, destination: destination)
+            try encodeSynchronously(input: input, destination: destination, writer: writer)
         }
         try await withTaskCancellationHandler {
             try await encodingTask.value
         } onCancel: {
             encodingTask.cancel()
+            writer.cancel()
         }
     }
 
-    private static func encodeSynchronously(input: EncodingInput, destination: URL) throws {
+    private static func encodeSynchronously(input: EncodingInput, destination: URL, writer: AerialStreamWriter) throws {
         let asset = input.asset
         let track = input.track
         let width = input.width
@@ -88,7 +90,6 @@ enum AerialVideoEncoder {
 
         try? FileManager.default.removeItem(at: destination)
 
-        let writer = AerialStreamWriter(destination: destination, transform: input.transform)
         let callback: VTCompressionOutputCallback = { refcon, _, status, _, sampleBuffer in
             guard status == noErr, let sampleBuffer, let refcon else {
                 if let refcon {
@@ -147,6 +148,7 @@ enum AerialVideoEncoder {
 
         try Task.checkCancellation()
         let reader = try AVAssetReader(asset: asset)
+        defer { reader.cancelReading() }
         reader.timeRange = CMTimeRange(start: .zero, duration: duration)
         var layerConfiguration = AVVideoCompositionLayerInstruction.Configuration(assetTrack: track)
         // 保留原始像素方向；最终旋转仍由写入器的 preferredTransform 元数据完成。
@@ -204,6 +206,12 @@ enum AerialVideoEncoder {
             )
             guard status == noErr else { throw EncodeError.compression(status) }
             submittedFrames += 1
+            // 分批排空编码器，限制尚未输出的帧，避免长视频持续积压。
+            if submittedFrames.isMultiple(of: 8) {
+                let status = VTCompressionSessionCompleteFrames(compressionSession, untilPresentationTimeStamp: .invalid)
+                guard status == noErr else { throw EncodeError.compression(status) }
+                try Task.checkCancellation()
+            }
         }
         if reader.status == .failed {
             throw EncodeError.reader(reader.error?.localizedDescription ?? "读取失败")
@@ -234,6 +242,14 @@ private final class AerialStreamWriter: @unchecked Sendable {
     init(destination: URL, transform: CGAffineTransform) {
         self.destination = destination
         self.transform = transform
+    }
+
+    func cancel() {
+        lock.lock()
+        if failure == nil { failure = CancellationError() }
+        let active = writer
+        lock.unlock()
+        active?.cancelWriting()
     }
 
     func recordError(_ status: OSStatus) {
@@ -301,7 +317,13 @@ private final class AerialStreamWriter: @unchecked Sendable {
 
         // 不持状态锁等待背压；每轮同时检查异步错误与 writer 状态，避免 writer 失败后
         // `isReadyForMoreMediaData` 一直为 false 而无限等待。
+        let deadline = ProcessInfo.processInfo.systemUptime + 30
         while !input.isReadyForMoreMediaData {
+            guard ProcessInfo.processInfo.systemUptime < deadline else {
+                recordWriterFailure("等待视频写入超时")
+                writer.cancelWriting()
+                return
+            }
             guard currentFailure() == nil else { return }
             guard writer.status == .writing else {
                 recordWriterFailure(writer.error?.localizedDescription ?? "MOV 写入器已停止")
@@ -353,7 +375,14 @@ private final class AerialStreamWriter: @unchecked Sendable {
         currentInput.markAsFinished()
         let semaphore = DispatchSemaphore(value: 0)
         currentWriter.finishWriting { semaphore.signal() }
-        semaphore.wait()
+        let deadline = ProcessInfo.processInfo.systemUptime + 30
+        while semaphore.wait(timeout: .now() + 0.1) == .timedOut {
+            if let error = self.currentFailure() { currentWriter.cancelWriting(); throw error }
+            if ProcessInfo.processInfo.systemUptime >= deadline {
+                currentWriter.cancelWriting()
+                throw AerialVideoEncoder.EncodeError.writer("等待视频完成写入超时")
+            }
+        }
         guard currentWriter.status == .completed else {
             throw AerialVideoEncoder.EncodeError.writer(
                 currentWriter.error?.localizedDescription ?? "MOV 写入没有完成"

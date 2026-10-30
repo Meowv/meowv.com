@@ -10,10 +10,8 @@ import Foundation
 /// 网格还窄，没有任何采样点落进去，于是报告「覆盖 100%」。这是系统性盲区，
 /// 不是提高分辨率就能根治的（分辨率越高越慢，且总有更窄的缝）。
 ///
-/// **实际采用坐标压缩法**：把屏幕按所有矩形的 x/y 边界切成若干小块，
-/// 每块的边界都与矩形边界对齐，所以每块**要么整块在内、要么整块在外**，
-/// 用块中心判定即可，结果是**精确面积**而不是近似值。
-/// 矩形数通常不到 20，切分后的小块数在千级，每 2 秒算一次毫无压力。
+/// 按矩形 x 边界扫描，在每个条带内合并 y 区间，计算精确覆盖面积。
+/// 最坏时间复杂度 O(N² log N)，不再对每个坐标小块遍历所有矩形。
 public enum CoverageGrid {
 
     /// 允许 0.5% 的未覆盖面积 —— 窗口边缘的亚像素误差不该导致判定翻转。
@@ -77,34 +75,34 @@ public enum CoverageGrid {
         }
     }
 
-    /// 坐标压缩后逐块累加被覆盖的面积。`stopAt > 0` 时达到目标即返回。
+    /// 扫描线逐条带累加被覆盖的面积。`stopAt > 0` 时达到目标即返回。
     private static func coveredArea(of bounds: CGRect, by clipped: [CGRect], stopAt: CGFloat) -> CGFloat {
-        var xEdges: Set<CGFloat> = [bounds.minX, bounds.maxX]
-        var yEdges: Set<CGFloat> = [bounds.minY, bounds.maxY]
-        for rect in clipped {
-            xEdges.insert(rect.minX)
-            xEdges.insert(rect.maxX)
-            yEdges.insert(rect.minY)
-            yEdges.insert(rect.maxY)
-        }
-        let columns = xEdges.sorted()
-        let rows = yEdges.sorted()
-
+        // 按 x 边界扫描，每条带内合并 y 区间；保持精确面积，避免逐格遍历全部矩形。
+        let columns = Set(clipped.flatMap { [$0.minX, $0.maxX] }).sorted()
         var covered: CGFloat = 0
         for column in 0..<max(0, columns.count - 1) {
             let x0 = columns[column]
             let x1 = columns[column + 1]
-            guard x1 > x0 else { continue }
-            for row in 0..<max(0, rows.count - 1) {
-                let y0 = rows[row]
-                let y1 = rows[row + 1]
-                guard y1 > y0 else { continue }
-                // 块的边界与所有矩形边界对齐，所以块中心在内即代表整块在内
-                let center = CGPoint(x: (x0 + x1) / 2, y: (y0 + y1) / 2)
-                guard clipped.contains(where: { $0.contains(center) }) else { continue }
-                covered += (x1 - x0) * (y1 - y0)
-                if stopAt > 0, covered >= stopAt { return covered }
+            let intervals = clipped.filter { $0.minX < x1 && $0.maxX > x0 }
+                .sorted { $0.minY < $1.minY }
+            var start: CGFloat?
+            var end: CGFloat = 0
+            var height: CGFloat = 0
+            for rect in intervals {
+                if let previous = start {
+                    if rect.minY > end {
+                        height += end - previous
+                        start = rect.minY
+                    }
+                    end = max(end, rect.maxY)
+                } else {
+                    start = rect.minY
+                    end = rect.maxY
+                }
             }
+            if let start { height += end - start }
+            covered += (x1 - x0) * height
+            if stopAt > 0, covered >= stopAt { return covered }
         }
         return covered
     }

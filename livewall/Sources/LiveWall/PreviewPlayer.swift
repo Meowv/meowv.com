@@ -73,6 +73,7 @@ final class PreviewPlayer {
     /// 状态变化回调（主线程）。
     var onStateChange: ((State) -> Void)?
     var log: ((String) -> Void)?
+    var loadVideo: ((URL) async throws -> LoadedVideo)?
 
     /// 画面视图。由 `WallpaperBrowserViewController` 放进右栏，与静态图叠放。
     let view = PreviewLayerView()
@@ -123,7 +124,9 @@ final class PreviewPlayer {
 
         loadTask = Task { @MainActor in
             do {
-                let loaded = try await VideoLoader.load(url)
+                let loaded: LoadedVideo
+                if let loadVideo = self.loadVideo { loaded = try await loadVideo(url) }
+                else { loaded = try await VideoLoader.load(url) }
                 guard generation == self.generation else {
                     self.log?("预览 \(item.id) 的加载结果已过期，丢弃")
                     return

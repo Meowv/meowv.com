@@ -190,6 +190,28 @@ func powerTests() {
 
     suite("CoverageGrid") {
 
+        test("扫描线与整数像素参考面积一致") {
+            var generator = SeededGenerator(seed: 37)
+            let bounds = CGRect(x: 0, y: 0, width: 20, height: 20)
+            for _ in 0..<100 {
+                let rects = (0..<10).map { _ in
+                    CGRect(x: Int.random(in: -5...20, using: &generator),
+                           y: Int.random(in: -5...20, using: &generator),
+                           width: Int.random(in: 0...15, using: &generator),
+                           height: Int.random(in: 0...15, using: &generator))
+                }
+                var pixels = 0
+                for x in 0..<20 {
+                    for y in 0..<20 {
+                        let center = CGPoint(x: Double(x) + 0.5, y: Double(y) + 0.5)
+                        if rects.contains(where: { $0.contains(center) }) { pixels += 1 }
+                    }
+                }
+                expect(abs(CoverageGrid.coverage(of: bounds, by: rects) - Double(pixels) / 400) < 1e-9,
+                       "扫描线应保留精确面积")
+            }
+        }
+
         test("单个全屏窗口算完全覆盖") {
             let full = CGRect(x: 0, y: 0, width: 1512, height: 982)
             expect(CoverageGrid.isFullyCovered(screen, by: [full]), "全屏窗口应判定为盖满")

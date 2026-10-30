@@ -241,6 +241,7 @@ extension AppDelegate {
                     on: key,
                     captureStillFrame: self.preferences.lockScreenPreview
                         && prepared == nil
+                        && self.previewPreparationItemID != item.id
                         && item.coverImageURL == nil
                         && key == self.engine.primaryKey
                 )

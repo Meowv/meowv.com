@@ -167,8 +167,42 @@ extension AppDelegate {
     func prepareLockScreenPreview(for item: WallpaperItem, loaded: LoadedVideo,
                                   on key: PlaybackSlotKey) async -> LockScreenPreviewer.PreparedPreview? {
         guard preferences.lockScreenPreview, key == engine.primaryKey else { return nil }
-        return await lockScreenPreviewer.prepare(for: item) {
-            await PlaybackEngine.initialFrame(for: loaded)
+        previewPreparationTask?.cancel()
+        let token = UUID()
+        previewPreparationID = token
+        previewPreparationItemID = item.id
+        let previewer = lockScreenPreviewer
+        return await withCheckedContinuation { continuation in
+            let delivery = PreviewPreparationDelivery(continuation)
+            let timeout = Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(300))
+                if !Task.isCancelled { _ = delivery.finish(nil) }
+            }
+            previewPreparationTask = Task { @MainActor [weak self] in
+                defer {
+                    if self?.previewPreparationID == token {
+                        self?.previewPreparationTask = nil
+                        self?.previewPreparationItemID = nil
+                    }
+                }
+                let prepared = await previewer.prepare(for: item) {
+                    await PlaybackEngine.initialFrame(for: loaded)
+                }
+                timeout.cancel()
+                guard let self, !Task.isCancelled, self.previewPreparationID == token,
+                      !self.isShuttingDown, self.preferences.lockScreenPreview else {
+                    previewer.discard(prepared)
+                    _ = delivery.finish(nil)
+                    return
+                }
+                self.previewPreparationTask = nil
+                self.previewPreparationItemID = nil
+                if !delivery.finish(prepared), let prepared {
+                    defer { previewer.discard(prepared) }
+                    guard self.engine.item(on: key)?.id == item.id else { return }
+                    previewer.applyPrepared(prepared, for: item, multiScreenPolicy: self.screenCoordinator.policy)
+                }
+            }
         }
     }
 
@@ -181,6 +215,7 @@ extension AppDelegate {
                                   prepared: LockScreenPreviewer.PreparedPreview? = nil) {
         guard !isShuttingDown, preferences.lockScreenPreview,
               key == engine.primaryKey, engine.item(on: key)?.id == item.id else { return }
+        if prepared == nil, previewPreparationItemID == item.id { return }
         let previewer = lockScreenPreviewer
         let policy = screenCoordinator.policy
         if let prepared {
@@ -225,4 +260,19 @@ extension AppDelegate {
         }
     }
 
+}
+
+/// 主 actor 上协调预算到期与准备完成，确保调用方只恢复一次。
+@MainActor
+private final class PreviewPreparationDelivery {
+    private var continuation: CheckedContinuation<LockScreenPreviewer.PreparedPreview?, Never>?
+    init(_ continuation: CheckedContinuation<LockScreenPreviewer.PreparedPreview?, Never>) {
+        self.continuation = continuation
+    }
+    func finish(_ result: LockScreenPreviewer.PreparedPreview?) -> Bool {
+        guard let continuation else { return false }
+        self.continuation = nil
+        continuation.resume(returning: result)
+        return true
+    }
 }

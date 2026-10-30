@@ -93,6 +93,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var libraryMutationTask: Task<Void, Never>?
     var librarySourceGeneration: UInt64 = 0
     var pinnedLibraryItem: WallpaperItem?
+    var previewPreparationTask: Task<Void, Never>?
+    var previewPreparationID: UUID?
+    var previewPreparationItemID: Int?
     var pinApplyTask: Task<Void, Never>?
     var pinApplyGeneration: UInt64 = 0
     var wallpaperLibrary: WallpaperLibraryStore?
@@ -628,6 +631,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func shutdown() {
         guard !isShuttingDown else { return }
         isShuttingDown = true
+        previewPreparationTask?.cancel()
+        previewPreparationTask = nil
         backupTask?.cancel()
         processMonitor?.cancel()
         processMonitor = nil

@@ -68,6 +68,7 @@ final class PlaybackEngine {
         var didReportFailure = false
         var cachedStillFrame: CGImage?
         var frameTask: Task<Void, Never>?
+        var captureTask: Task<CGImage?, Never>?
 
         init() {
             player.isMuted = true
@@ -77,6 +78,8 @@ final class PlaybackEngine {
         }
 
         func teardown() {
+            captureTask?.cancel()
+            captureTask = nil
             frameTask?.cancel()
             frameTask = nil
             cachedStillFrame = nil
@@ -171,6 +174,8 @@ final class PlaybackEngine {
         let playbackGeneration = slot.playbackGeneration
         slot.didReportFailure = false
         slot.cachedStillFrame = nil
+        slot.captureTask?.cancel()
+        slot.captureTask = nil
         slot.frameTask?.cancel()
         slot.frameTask = nil
 
@@ -305,15 +310,19 @@ final class PlaybackEngine {
         guard let slot = slots[key] else { return nil }
         if let cached = slot.cachedStillFrame { return cached }
 
+        if let task = slot.captureTask { return await task.value }
         let generation = slot.playbackGeneration
         guard let item = slot.player.currentItem else { return nil }
         let currentTime = item.currentTime()
-        let frame = await Self.generateFrame(
-            asset: item.asset,
-            at: currentTime.isValid ? currentTime : .zero,
-            maximumSize: Self.maximumStillFrameSize()
-        )
+        let task = Task { @MainActor in
+            await Self.generateFrame(asset: item.asset,
+                                     at: currentTime.isValid ? currentTime : .zero,
+                                     maximumSize: Self.maximumStillFrameSize())
+        }
+        slot.captureTask = task
+        let frame = await task.value
         guard slot.playbackGeneration == generation else { return nil }
+        slot.captureTask = nil
         slot.cachedStillFrame = frame
         return frame
     }
@@ -337,19 +346,16 @@ final class PlaybackEngine {
         at time: CMTime,
         maximumSize: CGSize
     ) async -> CGImage? {
-        await withCheckedContinuation { continuation in
-            let generator = AVAssetImageGenerator(asset: asset)
-            let generatorBox = ImageGeneratorBox(generator)
-            generator.appliesPreferredTrackTransform = true
-            generator.maximumSize = maximumSize
-            generator.requestedTimeToleranceBefore = CMTime(seconds: 0.1, preferredTimescale: 600)
-            generator.requestedTimeToleranceAfter = CMTime(seconds: 0.1, preferredTimescale: 600)
-            generator.generateCGImagesAsynchronously(forTimes: [NSValue(time: time)]) {
-                [generatorBox] _, image, _, result, _ in
-                // 明确捕获 generator，保证异步生成期间不会被提前释放。
-                _ = generatorBox.generator
-                continuation.resume(returning: result == .succeeded ? image : nil)
-            }
+        let generator = AVAssetImageGenerator(asset: asset)
+        generator.appliesPreferredTrackTransform = true
+        generator.maximumSize = maximumSize
+        generator.requestedTimeToleranceBefore = CMTime(seconds: 0.1, preferredTimescale: 600)
+        generator.requestedTimeToleranceAfter = CMTime(seconds: 0.1, preferredTimescale: 600)
+        let request = ImageGeneratorBox(generator)
+        return await withTaskCancellationHandler {
+            await withCheckedContinuation { request.start(at: time, continuation: $0) }
+        } onCancel: {
+            request.cancel()
         }
     }
 
@@ -375,12 +381,36 @@ final class PlaybackEngine {
     }
 }
 
-/// 只用于延长 `AVAssetImageGenerator` 的生命周期。生成器自身的异步回调线程安全由
-/// AVFoundation 负责；这里不会跨线程调用生成器方法，只是持有引用。
+/// 生成与取消在同一串行队列执行；回调只投递结果，continuation 至多完成一次。
 private final class ImageGeneratorBox: @unchecked Sendable {
-    let generator: AVAssetImageGenerator
+    private let generator: AVAssetImageGenerator
+    private let queue = DispatchQueue(label: "LiveWall.frame-generation")
+    private var cancelled = false
+    private var continuation: CheckedContinuation<CGImage?, Never>?
 
-    init(_ generator: AVAssetImageGenerator) {
-        self.generator = generator
+    init(_ generator: AVAssetImageGenerator) { self.generator = generator }
+
+    func start(at time: CMTime, continuation: CheckedContinuation<CGImage?, Never>) {
+        queue.async {
+            guard !self.cancelled else { continuation.resume(returning: nil); return }
+            self.continuation = continuation
+            self.generator.generateCGImagesAsynchronously(forTimes: [NSValue(time: time)]) { [self] _, image, _, result, _ in
+                queue.async { self.finish(result == .succeeded ? image : nil) }
+            }
+        }
+    }
+
+    func cancel() {
+        queue.async {
+            self.cancelled = true
+            self.generator.cancelAllCGImageGeneration()
+            self.finish(nil)
+        }
+    }
+
+    private func finish(_ image: CGImage?) {
+        let pending = continuation
+        continuation = nil
+        pending?.resume(returning: image)
     }
 }

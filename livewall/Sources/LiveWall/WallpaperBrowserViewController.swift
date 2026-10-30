@@ -68,6 +68,7 @@ protocol WallpaperBrowserDataSource: AnyObject {
 
     /// 当前桌面槽位若已经在播同一条，返回它已经建好的 asset，预览即可复用，
     /// 不再发第二次 HEAD / 视频加载。
+    func browserLoadVideo(_ url: URL) async throws -> LoadedVideo
     func browserLoadedVideo(for item: WallpaperItem) -> LoadedVideo?
 
     /// 当前桌面槽位若已经在播同一条，返回已有播放器。
@@ -308,6 +309,10 @@ final class WallpaperBrowserViewController: NSViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
+        previewPlayer.loadVideo = { [weak self] url in
+            guard let source = self?.dataSource else { throw CancellationError() }
+            return try await source.browserLoadVideo(url)
+        }
         previewPlayer.onStateChange = { [weak self] state in
             self?.applyPreviewState(state)
         }
@@ -435,6 +440,7 @@ final class WallpaperBrowserViewController: NSViewController {
         searchTask?.cancel()
         sliceGeneration += 1
         loader.cancelAll()
+        loader.clearCache()
         thumbnailDebounce?.invalidate()
         thumbnailDebounce = nil
     }

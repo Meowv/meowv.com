@@ -64,11 +64,12 @@ final class ThumbnailLoader {
     private var variantsByKey: [String: Variant] = [:]
     /// 已经真正发起 `URLSession` 请求的 URL。
     private var startedKeys: Set<String> = []
+    private var requestTokens: [String: UUID] = [:]
     /// 已发起请求的句柄。`cancelAll()` 必须真正取消网络任务，不能只清状态。
     private var tasksByKey: [String: URLSessionDataTask] = [:]
     /// 等同一个 URL 结果的回调。`candidatesByKey` 决定「要不要发请求」，
     /// 这里只决定「结果来了通知谁」—— 两者分开，才能让「滚回来」重新登记请求。
-    private var waiters: [String: [(NSImage?) -> Void]] = [:]
+    private var waiters: [String: [Int: (NSImage?) -> Void]] = [:]
     private let session: URLSession
 
     init(session: URLSession = .shared) {
@@ -116,10 +117,10 @@ final class ThumbnailLoader {
             if candidatesByKey[key] != nil {
                 // 已登记（在飞或排队）：挂上去等同一个结果，不再发第二个请求。
                 // 可见的旧排队项也必须进入本批队列，滚动时才能保留并重新排序。
-                waiters[key, default: []].append { image in completion(item, image) }
+                waiters[key, default: [:]][item.id] = { image in completion(item, image) }
                 continue
             }
-            waiters[key] = [{ image in completion(item, image) }]
+            waiters[key] = [item.id: { image in completion(item, image) }]
             candidatesByKey[key] = candidates
             variantsByKey[key] = variant
         }
@@ -153,6 +154,7 @@ final class ThumbnailLoader {
     /// **不清缓存，也不清失败表** —— 缓存是钱买来的流量，失败是「这个地址坏了」的
     /// 事实，两者都与窗口开关无关。清掉会让每次重开窗口都把坏地址再试一遍。
     func cancelAll() {
+        requestTokens.removeAll()
         tracker.cancelAll()
         for task in tasksByKey.values { task.cancel() }
         tasksByKey.removeAll()
@@ -162,6 +164,8 @@ final class ThumbnailLoader {
         // 等待中的回调一并丢弃：调用方（卡片）此刻已经不在屏幕上了。
         waiters.removeAll()
     }
+
+    func clearCache() { cache.removeAllObjects() }
 
     // MARK: - 内部
 
@@ -225,6 +229,8 @@ final class ThumbnailLoader {
         // 图片是不可变的，走本地 HTTP 缓存没问题。
         request.cachePolicy = .returnCacheDataElseLoad
 
+        let token = UUID()
+        requestTokens[key] = token
         let maxPixelSize = variantsByKey[key]?.maxPixelSize ?? ThumbnailURL.previewWidth
         let task = session.dataTask(with: request) { [weak self] data, response, error in
             var decoded: CGImage?
@@ -245,7 +251,7 @@ final class ThumbnailLoader {
             DispatchQueue.main.async {
                 guard let self else { return }
                 // 请求可能在回调排队期间被取消；此时整个候选链已经失效。
-                guard self.candidatesByKey[key] != nil else { return }
+                guard self.requestTokens[key] == token else { return }
                 self.tasksByKey[key] = nil
                 guard let decoded else {
                     self.attempt(key: key, candidates: candidates, index: index + 1)
@@ -267,11 +273,12 @@ final class ThumbnailLoader {
         startedKeys.remove(key)
         candidatesByKey[key] = nil
         variantsByKey[key] = nil
-        let callbacks = waiters.removeValue(forKey: key) ?? []
+        requestTokens[key] = nil
+        let callbacks = waiters.removeValue(forKey: key) ?? [:]
         if let image {
             cache.setObject(image, forKey: key as NSString, cost: Self.estimatedBytes(of: image))
         }
-        for callback in callbacks { callback(image) }
+        for callback in callbacks.values { callback(image) }
         // 空出一个并发位，接着发排队中的下一个。
         for next in tracker.finish(key, succeeded: image != nil) where !startedKeys.contains(next) {
             startedKeys.insert(next)
