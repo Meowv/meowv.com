@@ -4,20 +4,52 @@
 <h1>Meowv</h1>
 <h3>从一篇博客，到一间装满工具的工作室。</h3>
 <p><strong>A little corner of the web, built with curiosity.</strong></p>
-<p>记录技术、创造工具、折腾有趣的想法。<br />
-这里既有持续更新的个人博客，也有打开浏览器就能使用的创作工作台，还有原生 macOS 应用与支撑它们的工程实践。</p>
 <p>
-  <a href="https://meowv.com">🌐 访问博客</a> ·
-  <a href="https://studio.meowv.com">🚀 体验 Studio</a> ·
-  <a href="https://studio.meowv.com/zitie/">✍️ 打开字帖</a> ·
+  记录技术、创造工具、折腾有趣的想法。
+  <br />
+  这里既有持续更新的个人博客，也有打开浏览器就能使用的创作工作台，还有原生 macOS
+  应用与支撑它们的工程实践。
+</p>
+<p>
+  <a href="https://meowv.com">🌐 访问博客</a>
+  ·
+  <a href="https://studio.meowv.com">🚀 体验 Studio</a>
+  ·
+  <a href="https://studio.meowv.com/zitie/">✍️ 打开字帖</a>
+  ·
   <a href="https://studio.meowv.com/chat">💬 加入 Chat</a>
 </p>
 <p>
-  <a href="https://github.com/Meowv/meowv.com/stargazers"><img src="https://img.shields.io/github/stars/Meowv/meowv.com?style=flat-square&amp;logo=github&amp;label=Stars" alt="GitHub stars" /></a>
-  <a href="https://github.com/Meowv/meowv.com/commits/main"><img src="https://img.shields.io/github/last-commit/Meowv/meowv.com?style=flat-square&amp;label=Last%20commit" alt="GitHub last commit" /></a>
-  <a href="./studio/"><img src="https://img.shields.io/badge/Vue-3-42b883?style=flat-square&amp;logo=vuedotjs&amp;logoColor=white" alt="Vue 3" /></a>
-  <a href="./api/"><img src="https://img.shields.io/badge/.NET-10-512bd4?style=flat-square&amp;logo=dotnet&amp;logoColor=white" alt=".NET 10" /></a>
-  <a href="./livewall/"><img src="https://img.shields.io/badge/Swift-macOS-f05138?style=flat-square&amp;logo=swift&amp;logoColor=white" alt="Swift" /></a>
+  <a href="https://github.com/Meowv/meowv.com/stargazers">
+    <img
+      src="https://img.shields.io/github/stars/Meowv/meowv.com?style=flat-square&amp;logo=github&amp;label=Stars"
+      alt="GitHub stars"
+    />
+  </a>
+  <a href="https://github.com/Meowv/meowv.com/commits/main">
+    <img
+      src="https://img.shields.io/github/last-commit/Meowv/meowv.com?style=flat-square&amp;label=Last%20commit"
+      alt="GitHub last commit"
+    />
+  </a>
+  <a href="./studio/">
+    <img
+      src="https://img.shields.io/badge/Vue-3-42b883?style=flat-square&amp;logo=vuedotjs&amp;logoColor=white"
+      alt="Vue 3"
+    />
+  </a>
+  <a href="./api/">
+    <img
+      src="https://img.shields.io/badge/.NET-10-512bd4?style=flat-square&amp;logo=dotnet&amp;logoColor=white"
+      alt=".NET 10"
+    />
+  </a>
+  <a href="./livewall/">
+    <img
+      src="https://img.shields.io/badge/Swift-macOS-f05138?style=flat-square&amp;logo=swift&amp;logoColor=white"
+      alt="Swift"
+    />
+  </a>
 </p>
 
 </div>
@@ -34,14 +66,14 @@
 
 ## 🚀 从这里开始探索
 
-| 项目 | 一句话介绍 | 立即体验 | 源码与文档 |
-| --- | --- | --- | --- |
-| **Meowv Studio** | 浏览器里的创作空间：写作、编辑、绘图、阅读与实用工具 | [打开工作台](https://studio.meowv.com) | [`studio/`](./studio/) |
-| **Meowv Blog** | 技术文章、工程实践，以及一路上的想法与记录 | [阅读博客](https://meowv.com) | [`blog/`](./blog/) |
-| **Zitie 字帖** | 在线练字、汉字书写与字帖体验 | [开始练字](https://studio.meowv.com/zitie/) | [`studio/src/features/zitie/`](./studio/src/features/zitie/) |
-| **LiveWall** | 使用 Swift 构建的 macOS 原生视频动态壁纸应用 | [了解应用](./livewall/README.md) | [`livewall/`](./livewall/) |
-| **Wallpapers** | 壁纸元数据采集、整理与目录导出，默认不下载图片或视频 | [浏览壁纸](https://studio.meowv.com/wallpapers) | [`wallpapers/`](./wallpapers/) |
-| **Meowv API** | 基于 ASP.NET Core 的模块化后端，为需要联网的功能提供支持 | [阅读接口说明](./api/README.md) | [`api/`](./api/) |
+| 项目             | 一句话介绍                                               | 立即体验                                        | 源码与文档                                                   |
+| ---------------- | -------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------ |
+| **Meowv Studio** | 浏览器里的创作空间：写作、编辑、绘图、阅读与实用工具     | [打开工作台](https://studio.meowv.com)          | [`studio/`](./studio/)                                       |
+| **Meowv Blog**   | 技术文章、工程实践，以及一路上的想法与记录               | [阅读博客](https://meowv.com)                   | [`blog/`](./blog/)                                           |
+| **Zitie 字帖**   | 在线练字、汉字书写与字帖体验                             | [开始练字](https://studio.meowv.com/zitie/)     | [`studio/src/features/zitie/`](./studio/src/features/zitie/) |
+| **LiveWall**     | 使用 Swift 构建的 macOS 原生视频动态壁纸应用             | [了解应用](./livewall/README.md)                | [`livewall/`](./livewall/)                                   |
+| **Wallpapers**   | 壁纸元数据采集、整理与目录导出，默认不下载图片或视频     | [浏览壁纸](https://studio.meowv.com/wallpapers) | [`wallpapers/`](./wallpapers/)                               |
+| **Meowv API**    | 基于 ASP.NET Core 的模块化后端，为需要联网的功能提供支持 | [阅读接口说明](./api/README.md)                 | [`api/`](./api/)                                             |
 
 > **想先看效果？** 推荐从 [Meowv Studio](https://studio.meowv.com) 开始。无需安装桌面客户端，打开网页即可探索大部分功能。
 
@@ -49,26 +81,26 @@
 
 Studio 是仓库中最大的前端应用集合。它将不同的创作与文件工具放到同一个入口，让常见任务尽量在浏览器内完成。
 
-| 应用 | 可以做什么 | 在线入口 |
-| --- | --- | --- |
-| 📝 **Markdown** | 本地文件夹工作区、实时预览、全文检索，以及 HTML、PDF、图片导出 | [体验](https://studio.meowv.com/markdown) |
-| 📄 **Office** | 编辑 Word 文档、Excel 表格、PPT 演示文稿与 CSV | [体验](https://studio.meowv.com/office) |
-| 📚 **Books** | 阅读 EPUB、PDF、TXT，体验仿真翻页 | [体验](https://studio.meowv.com/books) |
-| 🎨 **Whiteboard** | 自由绘图、流程图与无限画布 | [体验](https://studio.meowv.com/draw) |
-| 🏠 **Floor Plan** | 户型设计、家具布置与 3D 漫游 | [体验](https://studio.meowv.com/floorplan) |
-| 📊 **Mermaid** | 用文本定义图表，实时预览与编辑 | [体验](https://studio.meowv.com/mermaid) |
-| 🧠 **Mind** | 绘制思维导图、整理知识与灵感 | [体验](https://studio.meowv.com/mind) |
-| 🗒️ **Notes** | 记录灵感，整理本地便签 | [体验](https://studio.meowv.com/notes) |
-| 🖼️ **Wallpapers** | 浏览、预览和下载静态与动态壁纸 | [体验](https://studio.meowv.com/wallpapers) |
-| 🧰 **Tools** | PDF、图片、JSON、SQLite、编码转换与趣味工具 | [体验](https://studio.meowv.com/tools) |
-| 💬 **Chat** | 匿名公共聊天室，支持 Markdown、引用与提及 | [体验](https://studio.meowv.com/chat) |
+| 应用              | 可以做什么                                                     | 在线入口                                    |
+| ----------------- | -------------------------------------------------------------- | ------------------------------------------- |
+| 📝 **Markdown**   | 本地文件夹工作区、实时预览、全文检索，以及 HTML、PDF、图片导出 | [体验](https://studio.meowv.com/markdown)   |
+| 📄 **Office**     | 编辑 Word 文档、Excel 表格、PPT 演示文稿与 CSV                 | [体验](https://studio.meowv.com/office)     |
+| 📚 **Books**      | 阅读 EPUB、PDF、TXT，体验仿真翻页                              | [体验](https://studio.meowv.com/books)      |
+| 🎨 **Whiteboard** | 自由绘图、流程图与无限画布                                     | [体验](https://studio.meowv.com/draw)       |
+| 🏠 **Floor Plan** | 户型设计、家具布置与 3D 漫游                                   | [体验](https://studio.meowv.com/floorplan)  |
+| 📊 **Mermaid**    | 用文本定义图表，实时预览与编辑                                 | [体验](https://studio.meowv.com/mermaid)    |
+| 🧠 **Mind**       | 绘制思维导图、整理知识与灵感                                   | [体验](https://studio.meowv.com/mind)       |
+| 🗒️ **Notes**      | 记录灵感，整理本地便签                                         | [体验](https://studio.meowv.com/notes)      |
+| 🖼️ **Wallpapers** | 浏览、预览和下载静态与动态壁纸                                 | [体验](https://studio.meowv.com/wallpapers) |
+| 🧰 **Tools**      | 提示词增强、PDF、图片、JSON、SQLite、编码转换与趣味工具        | [体验](https://studio.meowv.com/tools)      |
+| 💬 **Chat**       | 匿名公共聊天室，支持 Markdown、引用与提及                      | [体验](https://studio.meowv.com/chat)       |
 
 还有独立入口的 [**Zitie 在线字帖**](https://studio.meowv.com/zitie/)。
 
 <details>
 <summary><strong>看看 Tools 里还藏着什么</strong></summary>
 
-- **开发工具**：JSON 编辑器、文本 / JSON 对比、SQLite Online、编码转换
+- **开发工具**：增强提示词、JSON 编辑器、文本 / JSON 对比、SQLite Online、编码转换
 - **文档处理**：PDF 合并、拆分、页面整理、旋转、提取与水印
 - **图片处理**：压缩、格式转换、尺寸调整、裁剪、拼图、GIF、PSD 预览等
 - **语言工具**：中英翻译、繁简转换、汉字发音与笔顺
@@ -86,7 +118,7 @@ Studio 的设计倾向于 **Local-first（本地优先）**：
 - 打开 Studio 不要求先注册账号；本地文件工具不需要将文件交给 Studio 后端。
 - 尽可能让应用直接可用，而不是先经历复杂的安装和配置。
 
-**并非所有功能都完全离线或纯前端。** 在线翻译会发送提交的文本，Chat 会通过后端传输和保存公开消息，摄像头功能依赖受保护的后端服务；壁纸、节假日等部分功能也会请求远程数据。具体行为请参阅 [Studio README](./studio/README.md)。
+**并非所有功能都完全离线或纯前端。** 在线翻译会发送提交的文本；增强提示词由浏览器直连用户配置的模型 API，发送当前对话上下文，历史与配置仅保存在本地；Chat 会通过后端传输和保存公开消息，摄像头功能依赖受保护的后端服务；壁纸、节假日等部分功能也会请求远程数据。具体行为请参阅 [Studio README](./studio/README.md)。
 
 ## ✍️ Zitie：把喜欢的文字，变成一页练习
 
@@ -122,14 +154,14 @@ LiveWall 使用 Swift、AppKit 和 AVFoundation 构建，常驻 macOS 菜单栏�
 
 这些项目共享代码仓库，但拥有各自独立的构建流程、运行环境和职责边界。
 
-| 目录 | 主要技术 | 职责 |
-| --- | --- | --- |
-| [`blog/`](./blog/) | Hexo 7、Matery、Node.js | 个人博客与技术内容 |
-| [`studio/`](./studio/) | Vue 3、TypeScript、Vite、React（Zitie） | 浏览器工作台及字帖 |
-| [`wallpapers/`](./wallpapers/) | Python 3.12+、SQLite | 壁纸采集、索引与数据导出 |
-| [`livewall/`](./livewall/) | Swift 6、AppKit、AVFoundation | macOS 原生动态壁纸 |
-| [`api/`](./api/) | .NET 10、ASP.NET Core、SQLite、SignalR | 公共授权、接口目录、聊天室与小米摄像头等模块化 API |
-| [`tools/`](./tools/) | Shell、JavaScript、Python | 跨项目构建辅助工具 |
+| 目录                           | 主要技术                                | 职责                                               |
+| ------------------------------ | --------------------------------------- | -------------------------------------------------- |
+| [`blog/`](./blog/)             | Hexo 7、Matery、Node.js                 | 个人博客与技术内容                                 |
+| [`studio/`](./studio/)         | Vue 3、TypeScript、Vite、React（Zitie） | 浏览器工作台及字帖                                 |
+| [`wallpapers/`](./wallpapers/) | Python 3.12+、SQLite                    | 壁纸采集、索引与数据导出                           |
+| [`livewall/`](./livewall/)     | Swift 6、AppKit、AVFoundation           | macOS 原生动态壁纸                                 |
+| [`api/`](./api/)               | .NET 10、ASP.NET Core、SQLite、SignalR  | 公共授权、接口目录、聊天室与小米摄像头等模块化 API |
+| [`tools/`](./tools/)           | Shell、JavaScript、Python               | 跨项目构建辅助工具                                 |
 
 ```mermaid
 flowchart LR
@@ -175,11 +207,11 @@ yarn server
 
 ### 运行其他项目
 
-| 项目 | 最简入口 | 详细说明 |
-| --- | --- | --- |
-| LiveWall | `cd livewall && ./run.sh`（macOS 26.0+） | [运行及系统要求](./livewall/README.md#快速开始) |
-| Wallpapers | `cd wallpapers && PYTHONPATH=src python3 -m wallpapers stats` | [命令与数据流程](./wallpapers/README.md) |
-| API | `./run.sh api`（在仓库根目录执行） | [配置、授权与启动](./api/README.md#启动与授权) |
+| 项目       | 最简入口                                                      | 详细说明                                        |
+| ---------- | ------------------------------------------------------------- | ----------------------------------------------- |
+| LiveWall   | `cd livewall && ./run.sh`（macOS 26.0+）                      | [运行及系统要求](./livewall/README.md#快速开始) |
+| Wallpapers | `cd wallpapers && PYTHONPATH=src python3 -m wallpapers stats` | [命令与数据流程](./wallpapers/README.md)        |
+| API        | `./run.sh api`（在仓库根目录执行）                            | [配置、授权与启动](./api/README.md#启动与授权)  |
 
 > API 需要事先准备本地管理密钥等配置；摄像头功能另需相应环境与依赖。不要把真实密钥提交到仓库。
 
@@ -190,13 +222,13 @@ yarn server
 <details>
 <summary><strong>环境要求与依赖准备</strong></summary>
 
-| 项目 | 环境 | 首次准备 |
-| --- | --- | --- |
-| Blog | Node.js、Yarn | 见上方“启动 Blog” |
-| Studio | Node.js `>=22.12.0`、[`package.json`](./studio/package.json) 指定版本的 pnpm | 见上方“启动 Studio” |
-| Wallpapers | Python `>=3.12`；运行时只用标准库 | 无需安装运行依赖；测试依赖见[项目 README](./wallpapers/README.md) |
-| LiveWall | macOS、Xcode Command Line Tools；正式发布还需 Node.js、Python 和本地壁纸数据库 | 用 `swift --version` 检查工具链，开发运行无需完整 Xcode |
-| API | .NET 10 SDK；启用摄像头模块时还需包含 `libx264` 的 FFmpeg | 按[项目 README](./api/README.md) 准备本地配置 |
+| 项目       | 环境                                                                           | 首次准备                                                          |
+| ---------- | ------------------------------------------------------------------------------ | ----------------------------------------------------------------- |
+| Blog       | Node.js、Yarn                                                                  | 见上方“启动 Blog”                                                 |
+| Studio     | Node.js `>=22.12.0`、[`package.json`](./studio/package.json) 指定版本的 pnpm   | 见上方“启动 Studio”                                               |
+| Wallpapers | Python `>=3.12`；运行时只用标准库                                              | 无需安装运行依赖；测试依赖见[项目 README](./wallpapers/README.md) |
+| LiveWall   | macOS、Xcode Command Line Tools；正式发布还需 Node.js、Python 和本地壁纸数据库 | 用 `swift --version` 检查工具链，开发运行无需完整 Xcode           |
+| API        | .NET 10 SDK；启用摄像头模块时还需包含 `libx264` 的 FFmpeg                      | 按[项目 README](./api/README.md) 准备本地配置                     |
 
 正式壁纸构建会选择已有的 Python `>=3.12`，也可通过 `WALLPAPERS_PYTHON` 指定解释器。请在目标项目目录安装依赖，不在仓库根目录安装或混用包管理器；依赖版本、脚本和测试命令以各项目清单及 README 为准。
 
@@ -242,12 +274,12 @@ Wallpapers 支持 `crawl`、`publish`、`stats`、`check` 及各命令的 CLI �
 
 构建结果汇总至 `build/`：
 
-| 产物目录 | 内容 |
-| --- | --- |
-| `build/meowv.com/` | Blog 静态站点 |
-| `build/studio.meowv.com/` | Studio，包含 `zitie/`；按构建选项包含壁纸清单和 LiveWall 更新文件 |
+| 产物目录                            | 内容                                                                    |
+| ----------------------------------- | ----------------------------------------------------------------------- |
+| `build/meowv.com/`                  | Blog 静态站点                                                           |
+| `build/studio.meowv.com/`           | Studio，包含 `zitie/`；按构建选项包含壁纸清单和 LiveWall 更新文件       |
 | `build/studio.meowv.com/api/<RID>/` | API 对应运行平台的发布产物，包含主程序、公共配置、FFmpeg 与来源校验记录 |
-| `build/livewall/LiveWall.app/` | macOS 应用，不由根部署脚本上传 |
+| `build/livewall/LiveWall.app/`      | macOS 应用，不由根部署脚本上传                                          |
 
 `build.sh` 按参数顺序构建。全量构建会在所有项目成功后才替换整个 `build/`；指定项目只替换对应目录，LiveWall 发布还会同步替换配套内容目录。单独重建 Studio 时，会保留已有的 LiveWall 更新文件与 API 产物。`build/` 是生成目录，不提交 Git。
 
@@ -323,6 +355,12 @@ Studio 的 `data/books/`，以及 `api/` 下各级目录中的 `appsettings*.jso
 
 <p><strong>保持好奇，持续创造。</strong></p>
 <p>如果这些文章、工具或代码对你有帮助，欢迎为项目点亮一颗 ⭐ Star。</p>
-<p><a href="#meowv">返回顶部</a> · <a href="https://studio.meowv.com">体验 Studio</a> · <a href="https://meowv.com">访问博客</a></p>
+<p>
+  <a href="#meowv">返回顶部</a>
+  ·
+  <a href="https://studio.meowv.com">体验 Studio</a>
+  ·
+  <a href="https://meowv.com">访问博客</a>
+</p>
 
 </div>
