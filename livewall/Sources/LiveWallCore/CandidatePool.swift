@@ -70,7 +70,7 @@ public struct CandidatePool {
         guard wasExcluded != value else { return }
         if value { excluded.insert(id) } else { excluded.remove(id) }
         if sourceIDSet.contains(id), !blacklist.contains(id) { availableCount += value ? -1 : 1 }
-        rebuild()
+        pruneQueue()
     }
 
     /// 选片顺序。改动会清空待取队列 —— **换模式等于重新开始一轮**，
@@ -82,7 +82,7 @@ public struct CandidatePool {
         }
     }
 
-    /// 当前正在播放的条目 id，重排时会被排除，避免刚切走又切回来。
+    /// 最近选中的条目 ID（不代表加载成功）；用于避免轮边界重复。
     public private(set) var currentID: Int?
     /// 黑名单重置次数。> 0 说明出现过「全部候选都失效」并已自动重试一轮。
     public private(set) var blacklistResetCount = 0
@@ -98,9 +98,10 @@ public struct CandidatePool {
     /// 替换候选集（换分类、或重新加载清单）。会清空待取队列，但**保留黑名单**与当前播放项 ——
     /// 黑名单是「资源失效」的记录，与用户选了哪个分类无关。
     public mutating func setItems(_ items: [WallpaperItem]) {
+        var seen = Set<Int>()
         source = items
         itemsByID = Dictionary(items.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        sourceIDs = items.map(\.id)
+        sourceIDs = items.map(\.id).filter { id in seen.insert(id).inserted }
         sourceIDSet = Set(sourceIDs)
         recount()
         rebuild()
@@ -109,7 +110,8 @@ public struct CandidatePool {
     /// 收藏候选只保留 ID，取片后由加密库按需解密。
     public mutating func setIDs(_ ids: [Int]) {
         source = []; itemsByID = [:]
-        sourceIDs = ids; sourceIDSet = Set(ids)
+        var seen = Set<Int>()
+        sourceIDs = ids.filter { seen.insert($0).inserted }; sourceIDSet = Set(ids)
         recount(); rebuild()
     }
 
@@ -118,7 +120,12 @@ public struct CandidatePool {
         if present { sourceIDs.insert(id, at: 0); sourceIDSet.insert(id) }
         else { sourceIDs.removeAll { $0 == id }; sourceIDSet.remove(id) }
         if !excluded.contains(id), !blacklist.contains(id) { availableCount += present ? 1 : -1 }
-        rebuild()
+        pruneQueue()
+    }
+
+    private mutating func pruneQueue() {
+        queue = Array(queue.dropFirst(queueHead)).filter { sourceIDSet.contains($0) && !excluded.contains($0) && !blacklist.contains($0) }
+        queueHead = 0
     }
 
     private mutating func recount() {
@@ -143,6 +150,19 @@ public struct CandidatePool {
 
     public var blacklistedCount: Int { blacklist.count }
 
+    /// 全部资源失败最多自动恢复一次；用户禁用不参与恢复。
+    public var canRetryExhausted: Bool {
+        availableCount == 0 && blacklistResetCount == 0 && sourceIDs.contains { !excluded.contains($0) }
+    }
+
+    public mutating func retryExhausted() {
+        guard canRetryExhausted else { return }
+        blacklist.removeAll()
+        blacklistResetCount += 1
+        recount()
+        rebuild()
+    }
+
     public var isExhausted: Bool {
         sourceIDs.isEmpty || availableCount == 0
     }
@@ -163,10 +183,7 @@ public struct CandidatePool {
     /// 与 `next()` 的区别：不按顺序排队、直接点名。但**同样要把它从待取队列里拿掉**，
     /// 并把 `currentID` 指过去 —— 否则它会在同一轮里再被取一次。
     ///
-    /// 「下一轮」的语义按 `order` 分，这一点容易误读：随机模式重排时会排除 `currentID`，
-    /// 顺序模式则**刻意不排除**（排除会让每轮短一条，见 `refill` 的注释）。
-    /// 因此**队列还空着时恢复**（启动时的真实场景）在顺序模式下，被恢复的条目仍留在本轮里，
-    /// 只是不会紧接着重复 —— 这是既有设计，不是这里漏了。
+    /// 队列为空时重新生成完整一轮，并避免首项紧接着重复恢复项。
     ///
     /// 查不到就返回 nil（调用方退回 `next()`）：条目可能属于别的分类，
     /// 或生成侧重新导出过清单把它去掉了。
@@ -176,7 +193,7 @@ public struct CandidatePool {
     }
 
     public mutating func restoreID(_ id: Int) -> Bool {
-        guard !excluded.contains(id), sourceIDSet.contains(id) else { return false }
+        guard !blacklist.contains(id), !excluded.contains(id), sourceIDSet.contains(id) else { return false }
         if queueHead > 0 { queue.removeFirst(queueHead); queueHead = 0 }
         queue.removeAll { $0 == id }
         currentID = id
@@ -210,9 +227,23 @@ public struct CandidatePool {
         return nextID(using: &generator)
     }
 
+    /// 批量分配时优先选择本批尚未使用的项，不丢弃被让位的候选。
+    public mutating func nextID(avoiding ids: Set<Int>) -> Int? {
+        if queue.isEmpty { refill() }
+        if let index = queue.indices.dropFirst(queueHead).first(where: { !ids.contains(queue[$0]) }) {
+            queue.swapAt(queueHead, index)
+        }
+        return nextID()
+    }
+
+    public mutating func next(avoiding ids: Set<Int>) -> WallpaperItem? {
+        guard let id = nextID(avoiding: ids) else { return nil }
+        return itemsByID[id]
+    }
+
     /// 重排待取队列。两种顺序**都不会紧接着重复上一条**，但做法不同：
     ///
-    /// - 随机：把当前这条排除掉再洗牌。一轮因此少一条，但下一轮的起点完全随机。
+    /// - 随机：完整洗牌后若首项等于当前项，与后续随机一项交换。
     /// - 顺序：整段原序照排，只在新一轮的第一条**恰好是当前这条**时向后让一位。
     ///   不能沿用「排除当前项」：那样每轮都会少一条尾巴，实际播放序列会变成
     ///   `A…Z → A…Y → A…X`（第二轮不是从清单开头重新开始，看起来像漏播）。
@@ -224,7 +255,7 @@ public struct CandidatePool {
 
         // 黑名单覆盖了全部候选 —— 说明清单整体失效（例如 CDN 换域名），
         // 清空黑名单重试一轮，总好过彻底停摆。
-        if pool.isEmpty && !eligible.isEmpty && !blacklist.isEmpty {
+        if pool.isEmpty && canRetryExhausted {
             blacklist.removeAll()
             recount()
             blacklistResetCount += 1
@@ -239,13 +270,11 @@ public struct CandidatePool {
             pool.append(pool.removeFirst())
         }
 
-        // 只剩一条时不能把它排除掉，否则永远取不出东西
-        if order == .shuffle, pool.count > 1, let currentID {
-            pool.removeAll { $0 == currentID }
-        }
-
         if order == .shuffle {
             pool.shuffle(using: &generator)
+            if pool.count > 1, pool.first == currentID {
+                pool.swapAt(0, Int.random(in: 1..<pool.count, using: &generator))
+            }
         }
         queue = pool
         queueHead = 0

@@ -14,6 +14,29 @@ private func makeItems(_ count: Int) -> [WallpaperItem] {
 func poolTests() {
     suite("CandidatePool") {
 
+        test("候选去重与局部删除保序") {
+            var pool = CandidatePool(order: .sequential)
+            pool.setIDs([1, 1, 2, 3, 4])
+            expectEqual(pool.totalCount, 4, "ID 去重")
+            expectEqual(pool.nextID(), 1, "首项")
+            pool.setExcluded(id: 4, excluded: true)
+            expectEqual(pool.nextID(), 2, "禁用不重开一轮")
+            pool.updateID(2, present: false)
+            expectEqual(pool.nextID(), 3, "删除保留剩余队列")
+        }
+
+        test("耗尽只允许一次恢复且恢复不能绕过黑名单") {
+            var pool = CandidatePool(items: makeItems(1))
+            pool.blacklist(id: 1)
+            expect(!pool.restoreID(1), "恢复不能绕过黑名单")
+            expect(pool.canRetryExhausted, "首次耗尽允许重试")
+            pool.retryExhausted()
+            expectEqual(pool.nextID(), 1, "重试恢复候选")
+            pool.blacklist(id: 1)
+            expect(!pool.canRetryExhausted, "再次耗尽停止自动重试")
+            expectNil(pool.nextID(), "不能隐式无限重试")
+        }
+
         test("一轮之内不重复") {
             let pool = CandidatePool(items: makeItems(10))
             var generator = SeededGenerator(seed: 42)
@@ -180,13 +203,13 @@ func poolTests() {
             expect(rest.first != 3, "不应紧接着重复刚恢复的那条")
         }
 
-        test("随机模式下被恢复的条目会被排除在本轮之外") {
+        test("随机模式恢复后完整覆盖且首项不重复") {
             var pool = CandidatePool(items: makeItems(4), order: .shuffle)
             expectEqual(pool.restore(id: 3)?.id, 3, "先恢复 3")
             var generator = SeededGenerator(seed: 49)
-            let picked = (0..<3).map { _ in pool.next(using: &generator)?.id ?? -1 }
-            expect(!picked.contains(3), "随机模式应排除当前项，实际 \(picked)")
-            expectEqual(Set(picked), [1, 2, 4], "其余三条都该取到")
+            let picked = (0..<4).map { _ in pool.next(using: &generator)?.id ?? -1 }
+            expect(picked.first != 3, "首项不应重复恢复项")
+            expectEqual(Set(picked), [1, 2, 3, 4], "完整覆盖所有候选")
         }
 
         test("候选集被替换后，旧的恢复目标不再命中") {

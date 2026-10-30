@@ -44,6 +44,7 @@ extension AppDelegate {
             return
         }
         guard !pool.isExhausted else {
+            if pool.canRetryExhausted { scheduleExhaustedRecovery() }
             notice = .warning("候选池已耗尽")
             log("候选池耗尽，停止调度")
             refreshStatusItem()
@@ -61,7 +62,15 @@ extension AppDelegate {
             for key in keys {
                 if let displayID = key.displayID, let id = restorePlan[displayID], pool.restoreID(id) {
                     picked.append((key, id))
-                } else if let id = pool.nextID() { picked.append((key, id)) }
+                } else if let id = pool.nextID(avoiding: Set(picked.map { $0.1 })) { picked.append((key, id)) }
+            }
+            if restorePlan.isEmpty, picked.count > 1 {
+                let ids = picked.map { $0.1 }
+                let offset = (0..<ids.count).min { a, b in
+                    picked.indices.filter { engine.item(on: picked[$0].0)?.id == ids[($0 + a) % ids.count] }.count <
+                    picked.indices.filter { engine.item(on: picked[$0].0)?.id == ids[($0 + b) % ids.count] }.count
+                } ?? 0
+                for i in picked.indices { picked[i].1 = ids[(i + offset) % ids.count] }
             }
             for (key, id) in picked { loadLibraryItem(id, on: key) }
             return
@@ -80,7 +89,7 @@ extension AppDelegate {
                 picked.append((key, item))
                 continue
             }
-            guard let item = pool.next() else { break }
+            guard let item = pool.next(avoiding: Set(picked.map { $0.item.id })) else { break }
             picked.append((key, item))
         }
         guard let fallback = picked.first else {
@@ -94,6 +103,16 @@ extension AppDelegate {
             picked.append((key, fallback.item))
         }
 
+        // 保持本轮选片集合，仅轮换屏幕分配，尽量避免各屏原地重复。
+        if restorePlan.isEmpty, picked.count > 1 {
+            let items = picked.map(\.item)
+            let offset = (0..<items.count).min { a, b in
+                let aMatches = picked.indices.filter { engine.item(on: picked[$0].key)?.id == items[($0 + a) % items.count].id }.count
+                let bMatches = picked.indices.filter { engine.item(on: picked[$0].key)?.id == items[($0 + b) % items.count].id }.count
+                return aMatches < bMatches
+            } ?? 0
+            for i in picked.indices { picked[i].item = items[(i + offset) % items.count] }
+        }
         for pair in picked {
             loadAndPlay(pair.item, attempt: 0, on: pair.key)
         }
@@ -115,6 +134,7 @@ extension AppDelegate {
             return
         }
         guard !pool.isExhausted else {
+            if pool.canRetryExhausted { scheduleExhaustedRecovery() }
             notice = .warning("候选池已耗尽")
             refreshStatusItem()
             return
@@ -151,7 +171,13 @@ extension AppDelegate {
                 guard let item else { throw WallpaperLibraryStore.StoreError.malformedRecord }
                 loadTasksBySlot[key] = nil
                 loadAndPlay(item, attempt: 0, on: key)
-            } catch { librarySaveFailure("加载收藏条目", error: error) }
+            } catch {
+                guard !Task.isCancelled, generation == loadGenerationBySlot[key],
+                      sourceGeneration == sliceRequestGeneration else { return }
+                librarySaveFailure("加载收藏条目", error: error)
+                pool.blacklist(id: id)
+                advanceOne(key)
+            }
         }
         updateMenuBarIconAnimation()
     }
@@ -378,6 +404,18 @@ extension AppDelegate {
         notice = .warning("\(reason)，已暂停调度")
         log("停止调度（\(reason)）—— 保留当前画面，不黑屏")
         refreshStatusItem()
+    }
+
+    /// 资源耗尽后延迟恢复，避免立即重试形成失败循环。
+    func scheduleExhaustedRecovery() {
+        guard scheduleTimer == nil || !(scheduleTimer?.isValid ?? false) else { return }
+        scheduleTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: false) { [weak self] _ in
+            Task { @MainActor in
+                guard let self else { return }
+                self.pool.retryExhausted()
+                self.advance()
+            }
+        }
     }
 
     /// 主槽位失败但副屏仍正常时，保留全局调度，稍后重新尝试取片。
