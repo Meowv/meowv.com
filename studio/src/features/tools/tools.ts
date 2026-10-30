@@ -53,6 +53,12 @@ const toolCategorySeeds = {
     color: 'var(--tools-category-developer)',
     tools: [
       {
+        id: 'prompt-enhancer',
+        name: '增强提示词',
+        description: '在发送之前，把想法变成更清晰、更完整、可执行的提示词。',
+        icon: 'prompt',
+      },
+      {
         id: 'json',
         name: 'JSON 编辑器',
         description:

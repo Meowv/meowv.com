@@ -2,7 +2,7 @@
 
 [Meowv Studio](https://studio.meowv.com) 是浏览器内的文件与创作工作台；独立的字帖应用 [Zitie](https://studio.meowv.com/zitie/) 与它共用 Vite 工程。
 
-本地文件、图片和附件在浏览器内处理，不上传到 Studio 后端。翻译工具会向在线服务发送用户提交的文本；壁纸、节假日、版本信息等功能会读取远程数据，外链由浏览器直接访问。
+本地文件、图片和附件在浏览器内处理，不上传到 Studio 后端。翻译工具会向在线服务发送用户提交的文本；增强提示词工具会将当前对话上下文发送给用户配置的模型服务；壁纸、节假日、版本信息等功能会读取远程数据，外链由浏览器直接访问。
 
 修改边界和验证要求见 [`AGENTS.md`](./AGENTS.md)；仓库脚本与产物映射见 [`../README.md`](../README.md)。
 
@@ -45,6 +45,16 @@ pnpm build          # 产物写入 dist/
 - Zitie 共用 `zitie.html` 源模板；开发时访问 `/zitie/`，构建时生成目录式页面，并将笔顺数据复制到 `dist/zitie/hanzi-data/`。
 - 壁纸目录由 [`../wallpapers/`](../wallpapers/README.md) 生成，再由 `scripts/encrypt-wallpaper.mjs` 加密。根目录的 `./build.sh wallpapers` 只生成目录；`./build.sh studio --with-wallpapers` 在构建前生成目录。`public/data/wallpapers.catalog.*` 是生成内容。
 - `pnpm build` 输出 `dist/`；根目录 `./build.sh studio` 汇总到 `build/studio.meowv.com/`。发布流程见 [`../README.md`](../README.md)。
+
+## 增强提示词
+
+开发工具首位的 `/tools/prompt-enhancer` 提供聊天式提示词增强，支持新建会话、继续调整和复制结果。通过设置弹框配置 OpenAI 兼容 Chat Completions 或 Anthropic Messages 的 HTTPS API 地址、API Key 和模型名；浏览器直接调用该服务，不经过 Studio 后端。服务须支持浏览器跨域访问；连接测试也会产生 API 用量。
+
+会话、消息和草稿保存在独立 IndexedDB 中，不自动过期，可确认后逐个删除。API 配置（包含 Key）记忆在工具专属 `localStorage`，未加密，不是安全凭据库。历史和配置仅限当前浏览器；清除站点数据、隐私模式或浏览器回收存储可能导致数据丢失。支持时会申请持久存储。多个标签页同时打开时，支持 Web Locks 的浏览器仅允许一个页面操作本地记录。
+
+每次请求携带当前会话的完整有效历史，结果完整返回后保存。请求 60 秒超时，可取消，不自动重发；失败或中断后可手动重试最后一条未完成消息。超出模型上下文限制时需缩短输入或新建会话。请求中的历史不会随切换会话改变，也不会写入其他会话。消息支持安全 Markdown，不执行原始 HTML 或加载图片。
+
+定向验证：`pnpm exec vitest run src/features/tools/tools/developer/prompt-enhancer`，并执行类型检查及改动文件的 ESLint / Prettier 检查。模拟测试不读取真实 Key、不调用模型服务；真实服务兼容性需使用自己的配置手动验证。
 
 ## Chat
 
