@@ -17,7 +17,6 @@ export default defineConfig({
   define: wallpaperDefine(),
   plugins: [
     wallpaperDownloadProxyPlugin(),
-    // 放在 zitiePlugin 之前：closeBundle 按注册顺序执行，SW 版本注入不该受别的插件影响。
     serviceWorkerPlugin(),
     builtinBooksDevPlugin(),
     zitiePlugin(),
