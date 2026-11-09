@@ -515,6 +515,18 @@ preserve_api_deployment() {
   echo "[studio] 沿用上次的 API 服务产物"
 }
 
+# 版本清单与安装包由 tune 仓库的 ./build.sh release 直接写进部署目录，
+# 不在 studio/dist 里。只构建 studio 时整目录带过去，否则一次
+# `./build.sh studio` 就会把待发布的版本包从本地产物里抹掉。
+preserve_meowvtune_manifest() {
+  local source_dir="$BUILD_DIR/studio.meowv.com/data/meowvtune"
+  local target_dir="$STAGING_DIR/studio.meowv.com/data/meowvtune"
+  [ -d "$source_dir" ] || return 0
+  mkdir -p "$target_dir"
+  cp -R "$source_dir"/. "$target_dir"/
+  echo "[studio] 沿用已有的版本清单产物 data/meowvtune"
+}
+
 add_project() {
   local project="$1"
   local selected
@@ -674,6 +686,7 @@ for project in "${SELECTED_PROJECTS[@]}"; do
       check_existing_livewall_catalog "$STAGING_DIR/studio.meowv.com/data"
     fi
     preserve_api_deployment
+    preserve_meowvtune_manifest
   fi
 done
 
