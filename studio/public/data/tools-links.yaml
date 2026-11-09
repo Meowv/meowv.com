@@ -43,6 +43,13 @@ categories:
         url: https://cdn.vietdp.com/file/vietdp-games/games/t52025/plonky/icons/icon-32.png
       url: https://cdn.vietdp.com/file/vietdp-games/games/t52025/plonky/index.html
 
+    - id: dongdongpark
+      name: 动动乐园
+      description: 用摄像头玩的儿童体感游戏
+      icon:
+        url: https://dongdongpark.com/favicon.svg
+      url: https://dongdongpark.com
+
     - id: imsai
       name: 竹知了
       description: 传统竹蝉玩具的网页模拟版：按住画圈甩起来，转得越快叫得越响
