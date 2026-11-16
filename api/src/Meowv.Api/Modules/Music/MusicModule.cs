@@ -22,6 +22,7 @@ public static class MusicRegistration
 
         services.AddSingleton(options);
         services.TryAddSingleton(TimeProvider.System);
+        services.AddSingleton<MusicDemoMedia>();
         services.AddSingleton<MusicRuntime>();
         services.AddSingleton<MusicDeviceStore>();
         services.AddSingleton<FakeMusicProvider>();
@@ -79,6 +80,9 @@ public sealed class MusicModule : IEndpointModule
         var secured = music.MapGroup("").RequireAuthorization(MusicAccessHandler.SchemeName)
             .WithMetadata(new MusicProtectedEndpoint(), new EndpointAccessMetadata("音乐专用设备令牌"))
             .RequireRateLimiting("music");
+        if (endpoints.ServiceProvider.GetRequiredService<MusicDemoMedia>().Configured)
+            secured.MapMethods("/demo-audio/{name}", ["GET", "HEAD"], (string name, MusicDemoMedia media) =>
+                media.PathFor(name) is { } path ? Results.File(path, "audio/mpeg", enableRangeProcessing: true) : Results.NotFound());
         secured.MapGet("/providers", (MusicRuntime runtime) => Results.Json(new MusicProviders(
                 [new MusicProvider(FakeMusicProvider.Id, "原创测试音频", runtime.Status == "ready" ? "healthy" : "degraded", ["search", "resolve", "recommendations"], false)]),
             MusicJsonContext.Default.MusicProviders));

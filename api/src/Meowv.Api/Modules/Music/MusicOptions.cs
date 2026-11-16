@@ -8,12 +8,14 @@ public sealed class MusicOptions
     public string TestAccessToken { get; set; } = "";
     public int RequestsPerMinute { get; set; } = 60;
     public int MaxConcurrentRequests { get; set; } = 4;
+    public string DemoMediaDirectory { get; set; } = "";
+    public string DemoMediaBaseUrl { get; set; } = "";
     public string[] DemoAudioUrls { get; set; } = [];
     public string[] AllowedMediaHosts { get; set; } = [];
     internal bool BindingFailed { get; set; }
 }
 
-public sealed class MusicRuntime(MusicOptions options, IHostEnvironment environment, TimeProvider clock)
+public sealed class MusicRuntime(MusicOptions options, IHostEnvironment environment, TimeProvider clock, MusicDemoMedia media)
 {
     private readonly object _gate = new();
     private DateTimeOffset _window = clock.GetUtcNow();
@@ -25,11 +27,11 @@ public sealed class MusicRuntime(MusicOptions options, IHostEnvironment environm
                              (options.DeviceCredentialsEnabled || (options.TestAccessToken.Length is >= 32 and <= 1024 && !options.TestAccessToken.Any(char.IsWhiteSpace) && !options.TestAccessToken.Any(char.IsControl))) &&
                              options.RequestsPerMinute is >= 1 and <= 1000 && options.MaxConcurrentRequests is >= 1 and <= 16 &&
                              options.DemoAudioUrls.Length <= 2 && options.AllowedMediaHosts.Length <= 16 &&
-                             options.DemoAudioUrls.All(IsAllowedAudio);
+                             options.DemoAudioUrls.All(IsAllowedAudio) && (!media.Configured || media.Valid);
 
     public string Status => !options.Enabled ? "disabled" :
         !Available ? "unavailable" :
-        options.DemoAudioUrls.Length == 0 ? "degraded" : "ready";
+        options.DemoAudioUrls.Length == 0 && !media.Valid ? "degraded" : "ready";
 
     public bool IsAllowedAudio(string value) => Uri.TryCreate(value, UriKind.Absolute, out var uri) &&
                                                 uri is { Scheme: "https", Port: 443, UserInfo.Length: 0, Query.Length: 0, Fragment.Length: 0, HostNameType: UriHostNameType.Dns, IsLoopback: false } && uri.Host.Contains('.') &&

@@ -172,6 +172,32 @@ internal static class MusicChecks
             await Error(failed, 503, "source_unavailable");
             await CommonHealthy(client);
         }, change: new("DeviceCredentialsEnabled", "true"));
+        await Case(root, true, async (client, _) =>
+        {
+            using var denied = await client.GetAsync("/api/music/demo-audio/original-001.mp3");
+            await Error(denied, 401, "unauthorized");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+            using var resolved = await client.PostAsync("/api/music/resolve", Json("{\"trackId\":\"original-001\"}"));
+            using var document = JsonDocument.Parse(await resolved.Content.ReadAsStringAsync());
+            Check(document.RootElement.GetProperty("audio").GetProperty("url").GetString() == "http://10.0.2.2:5000/api/music/demo-audio/original-001.mp3", "Local media URL stays on configured endpoint");
+            using var request = new HttpRequestMessage(HttpMethod.Get, "/api/music/demo-audio/original-001.mp3");
+            request.Headers.Range = new RangeHeaderValue(0, 127);
+            using var range = await client.SendAsync(request);
+            Check(range.StatusCode == HttpStatusCode.PartialContent && (await range.Content.ReadAsByteArrayAsync()).Length == 128 && range.Content.Headers.ContentType?.MediaType == "audio/mpeg", "Authorized local Range and MIME");
+            using var unknown = await client.GetAsync("/api/music/demo-audio/private.db");
+            Check(unknown.StatusCode == HttpStatusCode.NotFound, "Never expose arbitrary local files");
+        }, localMedia: true);
+        await Case(root, true, async (client, _) =>
+        {
+            using var response = await client.GetAsync("/api/music/health");
+            Check(response.StatusCode == HttpStatusCode.ServiceUnavailable, "Local demo media never enables Production");
+        }, localMedia: true, production: true);
+        await Case(root, true, async (client, _) =>
+        {
+            using var response = await client.GetAsync("/api/music/health");
+            Check(response.StatusCode == HttpStatusCode.ServiceUnavailable, "Invalid local media path is isolated");
+            await CommonHealthy(client);
+        }, localMedia: true, change: new("DemoMediaDirectory", "\0invalid"));
         Console.WriteLine("PASS: Music Fake HTTP contracts, Unicode/cursors, pre-binding authentication, scoped access, configuration isolation, JSON source generation, bounded concurrency and 429. No external provider/media request.");
     }
 
@@ -193,7 +219,7 @@ internal static class MusicChecks
     private static void Check(bool condition, string description) { if (!condition) throw new Exception(description); }
 
     private static async Task Case(string root, bool enabled, Func<HttpClient, WebApplication, Task> run,
-        bool noAudio = false, KeyValuePair<string, string>? change = null, bool production = false)
+        bool noAudio = false, KeyValuePair<string, string>? change = null, bool production = false, bool localMedia = false)
     {
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions { ContentRootPath = root, EnvironmentName = production ? "Production" : "Testing" });
         builder.Configuration.Sources.Clear();
@@ -209,6 +235,14 @@ internal static class MusicChecks
         {
             values["Modules:Music:DemoAudioUrls:0"] = "https://media.example.org/original-001.mp3";
             values["Modules:Music:DemoAudioUrls:1"] = "https://media.example.org/original-002.mp3";
+        }
+        if (localMedia)
+        {
+            var directory = Path.Combine(root, "music-demo-fixtures");
+            Directory.CreateDirectory(directory);
+            foreach (var name in new[] { "original-001.mp3", "original-002.mp3" }) File.WriteAllBytes(Path.Combine(directory, name), Enumerable.Range(0, 512).Select(i => (byte)i).ToArray());
+            values["Modules:Music:DemoMediaDirectory"] = directory;
+            values["Modules:Music:DemoMediaBaseUrl"] = "http://10.0.2.2:5000/api/music/";
         }
         if (change.HasValue) values["Modules:Music:" + change.Value.Key] = change.Value.Value;
         builder.Configuration.AddInMemoryCollection(values);

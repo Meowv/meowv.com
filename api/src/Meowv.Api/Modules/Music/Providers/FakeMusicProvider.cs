@@ -21,7 +21,7 @@ public interface ITrackResolver
     MusicResolvedTrack Resolve(MusicResolveRequest request);
 }
 
-public sealed class FakeMusicProvider(MusicOptions options, MusicRuntime runtime, TimeProvider clock) : IMusicSearcher, IRecommendationSource, ITrackResolver
+public sealed class FakeMusicProvider(MusicOptions options, MusicRuntime runtime, TimeProvider clock, MusicDemoMedia media) : IMusicSearcher, IRecommendationSource, ITrackResolver
 {
     public const string Id = "original-demo";
     public const string ConfigVersion = "fake-v1";
@@ -57,6 +57,9 @@ public sealed class FakeMusicProvider(MusicOptions options, MusicRuntime runtime
             throw new MusicException("forbidden", "此音乐源未启用。", 403);
         var index = Array.FindIndex(Tracks, track => track.Id == request.TrackId);
         if (index < 0) throw new MusicException("track_not_found", "歌曲不存在。", 404);
+        if (media.Valid)
+            return new MusicResolvedTrack(Tracks[index].Id, Id, Tracks[index].Sources[0].SourceTrackId, 1,
+                new MusicAudio(media.Url(index), "audio/mpeg", Tracks[index].DurationMs, null, true));
         if (index >= options.DemoAudioUrls.Length)
             throw new MusicException("source_unavailable", "测试音频地址尚未配置。", 503);
         var url = options.DemoAudioUrls[index];
