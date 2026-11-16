@@ -56,6 +56,7 @@ try
     Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
     FfmpegPathChecks.Run(root);
     await ModuleInitializationChecks.RunAsync(root);
+    await MusicChecks.RunAsync(root);
     var builder = ApiConfiguration.CreateBuilder(["--contentRoot", root]);
     builder.Logging.ClearProviders();
     builder.Services.AddApiServices(builder.Configuration);

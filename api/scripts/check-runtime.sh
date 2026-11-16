@@ -26,6 +26,10 @@ cat >"$work_dir/Checks.csproj" <<EOF
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
     <Compile Include="$project_dir/tests/RuntimeChecks.cs" />
+    <Compile Include="$project_dir/tests/MusicChecks.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api/Modules/Music/**/*.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api/Modules/Chat/*.cs" />
+    <Content Include="$project_dir/tests/fixtures/music-v1.json" Link="music-v1.json" CopyToOutputDirectory="PreserveNewest" />
     <Compile Include="$project_dir/tests/ModuleInitializationChecks.cs" />
     <Compile Include="$project_dir/tests/FfmpegPathChecks.cs" />
     <Compile Include="$project_dir/src/Meowv.Api.Core/*.cs" />

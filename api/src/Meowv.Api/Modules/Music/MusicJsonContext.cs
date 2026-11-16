@@ -1,0 +1,14 @@
+using System.Text.Json.Serialization;
+using Meowv.Api.Modules.Music.Contracts;
+
+namespace Meowv.Api.Modules.Music;
+
+[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[JsonSerializable(typeof(MusicHealth))]
+[JsonSerializable(typeof(MusicProviders))]
+[JsonSerializable(typeof(MusicSearchPage))]
+[JsonSerializable(typeof(MusicRecommendationPage))]
+[JsonSerializable(typeof(MusicResolveRequest))]
+[JsonSerializable(typeof(MusicResolvedTrack))]
+[JsonSerializable(typeof(MusicErrorResponse))]
+public partial class MusicJsonContext : JsonSerializerContext;

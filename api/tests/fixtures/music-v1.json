@@ -1,0 +1,49 @@
+{
+  "search": {
+    "items": [
+      {
+        "id": "original-001",
+        "title": "睡醒就好了（测试片段）",
+        "artists": [
+          "qix"
+        ],
+        "album": "今天也不错",
+        "durationMs": 12000,
+        "coverUrl": null,
+        "isrc": null,
+        "availability": "candidate",
+        "sources": [
+          {
+            "providerId": "original-demo",
+            "sourceTrackId": "001"
+          }
+        ]
+      }
+    ],
+    "nextCursor": null,
+    "partial": false,
+    "warnings": []
+  },
+  "resolved": {
+    "trackId": "original-001",
+    "providerId": "original-demo",
+    "sourceTrackId": "001",
+    "confidence": 1.0,
+    "audio": {
+      "url": "https://media.example.org/original-001.mp3",
+      "mimeType": "audio/mpeg",
+      "durationMs": 12000,
+      "expiresAt": null,
+      "seekable": true
+    }
+  },
+  "error": {
+    "error": {
+      "code": "rate_limited",
+      "message": "音乐请求过于频繁。",
+      "retryable": true,
+      "retryAfterSeconds": 30,
+      "requestId": "fixture-request"
+    }
+  }
+}
