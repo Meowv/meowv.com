@@ -34,7 +34,7 @@ internal static class MusicErrors
 }
 
 public sealed class MusicAccessHandler(IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger,
-    UrlEncoder encoder, MusicOptions music, MusicRuntime runtime) : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
+    UrlEncoder encoder, MusicOptions music, MusicRuntime runtime, MusicDeviceStore devices) : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
 {
     public const string SchemeName = "MusicDevice";
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -44,14 +44,24 @@ public sealed class MusicAccessHandler(IOptionsMonitor<AuthenticationSchemeOptio
         var value = header.ToString();
         if (!value.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) || value.Length is < 39 or > 1031)
             return Task.FromResult(AuthenticateResult.NoResult());
+        var raw = value[7..];
+        string? deviceId;
+        try { deviceId = music.DeviceCredentialsEnabled ? devices.Verify(raw) : null; }
+        catch (Exception error) when (error is Microsoft.Data.Sqlite.SqliteException or Meowv.Api.Infrastructure.ApiDatabaseSchemaException)
+        {
+            Context.Items["MusicCredentialStoreUnavailable"] = true;
+            return Task.FromResult(AuthenticateResult.Fail("音乐凭据存储暂不可用。"));
+        }
         var provided = SHA256.HashData(Encoding.UTF8.GetBytes(value[7..]));
         var expected = SHA256.HashData(Encoding.UTF8.GetBytes(music.TestAccessToken));
-        if (!CryptographicOperations.FixedTimeEquals(provided, expected)) return Task.FromResult(AuthenticateResult.Fail("音乐访问凭据无效。"));
-        var identity = new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "music-test-device")], SchemeName);
+        if (deviceId is null && (music.TestAccessToken.Length < 32 || !CryptographicOperations.FixedTimeEquals(provided, expected))) return Task.FromResult(AuthenticateResult.Fail("音乐访问凭据无效。"));
+        var identity = new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, deviceId ?? "music-test-device")], SchemeName);
         return Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(identity), SchemeName)));
     }
     protected override Task HandleChallengeAsync(AuthenticationProperties properties)
     {
+        if (Context.Items.ContainsKey("MusicCredentialStoreUnavailable"))
+            return MusicErrors.Write(Context, 503, "source_unavailable", "音乐凭据存储暂不可用。");
         Response.Headers.WWWAuthenticate = "Bearer";
         return MusicErrors.Write(Context, 401, "unauthorized", "请配置有效的音乐专用访问凭据。");
     }
@@ -101,6 +111,8 @@ public sealed class MusicMiddleware(RequestDelegate next)
             catch (Exception error) when (error is BadHttpRequestException or System.Text.Json.JsonException && !context.Response.HasStarted)
             { await MusicErrors.Write(context, 400, "invalid_request", "音乐请求格式无效。"); }
             catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested) { }
+            catch (Exception error) when (error is Microsoft.Data.Sqlite.SqliteException or Meowv.Api.Infrastructure.ApiDatabaseSchemaException && !context.Response.HasStarted)
+            { await MusicErrors.Write(context, 503, "source_unavailable", "音乐凭据存储暂不可用。"); }
             catch (Exception) when (!context.Response.HasStarted)
             {
                 logger.LogWarning("Music 请求失败，requestId={RequestId}。", context.TraceIdentifier);

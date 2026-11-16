@@ -3,6 +3,7 @@ namespace Meowv.Api.Modules.Music;
 public sealed class MusicOptions
 {
     public bool Enabled { get; set; }
+    public bool DeviceCredentialsEnabled { get; set; }
     public bool DemoMode { get; set; }
     public string TestAccessToken { get; set; } = "";
     public int RequestsPerMinute { get; set; } = 60;
@@ -21,7 +22,7 @@ public sealed class MusicRuntime(MusicOptions options, IHostEnvironment environm
 
     public bool Available => options.Enabled && !options.BindingFailed && options.DemoMode &&
         (environment.IsDevelopment() || environment.IsEnvironment("Testing")) &&
-        options.TestAccessToken.Length is >= 32 and <= 1024 && !options.TestAccessToken.Any(char.IsWhiteSpace) && !options.TestAccessToken.Any(char.IsControl) &&
+        (options.DeviceCredentialsEnabled || (options.TestAccessToken.Length is >= 32 and <= 1024 && !options.TestAccessToken.Any(char.IsWhiteSpace) && !options.TestAccessToken.Any(char.IsControl))) &&
         options.RequestsPerMinute is >= 1 and <= 1000 && options.MaxConcurrentRequests is >= 1 and <= 16 &&
         options.DemoAudioUrls.Length <= 2 && options.AllowedMediaHosts.Length <= 16 &&
         options.DemoAudioUrls.All(IsAllowedAudio);

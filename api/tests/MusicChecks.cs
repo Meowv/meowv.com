@@ -122,6 +122,56 @@ internal static class MusicChecks
             await Error(limited, 429, "rate_limited");
             Check(limited.Headers.RetryAfter?.Delta > TimeSpan.Zero, "429 Retry-After header");
         }, change: new("RequestsPerMinute", "1"));
+        await Case(root, true, async (client, app) =>
+        {
+            app.Services.GetRequiredService<MusicOptions>().TestAccessToken = "";
+            using var denied = await client.PostAsync("/api/music/setup/devices", Json("{broken"));
+            Check(denied.StatusCode == HttpStatusCode.Unauthorized, "Management auth precedes body parsing");
+            client.DefaultRequestHeaders.Add("X-Api-Bootstrap-Token", "YOUR_SYNTHETIC_MANAGEMENT_TOKEN_FOR_TESTS_ONLY");
+            using var issued = await client.PostAsync("/api/music/setup/devices", Json("{\"alias\":\"Test car\"}"));
+            Check(issued.StatusCode == HttpStatusCode.Created && issued.Headers.CacheControl?.NoStore == true, "Issue scoped credential without caching");
+            using var document = JsonDocument.Parse(await issued.Content.ReadAsStringAsync());
+            var id = document.RootElement.GetProperty("id").GetString()!;
+            var token = document.RootElement.GetProperty("token").GetString()!;
+            var database = app.Services.GetRequiredService<ApiDatabase>();
+            var reopened = new MusicDeviceStore(database, TimeProvider.System);
+            Check(reopened.Verify(token) == id, "Credential persists across store reconstruction");
+            using (var connection = database.OpenConnection())
+            using (var query = connection.CreateCommand())
+            {
+                query.CommandText = "SELECT token_hash FROM music_device_tokens WHERE id=$id;";
+                query.Parameters.AddWithValue("$id", id);
+                var hash = (string)query.ExecuteScalar()!;
+                Check(hash.Length == 64 && hash != token, "Store only digest");
+            }
+            using var listing = await client.GetAsync("/api/music/setup/devices");
+            var text = await listing.Content.ReadAsStringAsync();
+            Check(!text.Contains(token) && !text.Contains("tokenHash"), "Listing never exposes credentials");
+            client.DefaultRequestHeaders.Remove("X-Api-Bootstrap-Token");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            using var allowed = await client.GetAsync("/api/music/providers");
+            Check(allowed.IsSuccessStatusCode, "Issued device credential authenticates");
+            using var common = await client.GetAsync("/probe/common");
+            Check(common.StatusCode == HttpStatusCode.Unauthorized, "Device credential is music-only");
+            using var manage = await client.GetAsync("/api/music/setup/devices");
+            Check(manage.StatusCode == HttpStatusCode.Unauthorized, "Device cannot manage credentials");
+            client.DefaultRequestHeaders.Add("X-Api-Bootstrap-Token", "YOUR_SYNTHETIC_MANAGEMENT_TOKEN_FOR_TESTS_ONLY");
+            using var revoked = await client.DeleteAsync("/api/music/setup/devices/" + id);
+            Check(revoked.StatusCode == HttpStatusCode.NoContent, "Management revokes device");
+            Check(reopened.Verify(token) is null, "Revocation survives reconstruction");
+            using var expired = await client.GetAsync("/api/music/providers");
+            await Error(expired, 401, "unauthorized");
+            await CommonHealthy(client);
+        }, change: new("DeviceCredentialsEnabled", "true"));
+        await Case(root, true, async (client, app) =>
+        {
+            var db = app.Services.GetRequiredService<ApiDatabase>();
+            db.EnsureSchema("music-devices", 99, "CREATE TABLE music_preserved_marker(id INTEGER);");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "mvm_" + new string('A', 43));
+            using var failed = await client.GetAsync("/api/music/providers");
+            await Error(failed, 503, "source_unavailable");
+            await CommonHealthy(client);
+        }, change: new("DeviceCredentialsEnabled", "true"));
         Console.WriteLine("PASS: Music Fake HTTP contracts, Unicode/cursors, pre-binding authentication, scoped access, configuration isolation, JSON source generation, bounded concurrency and 429. No external provider/media request.");
     }
 
