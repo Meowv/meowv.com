@@ -11,8 +11,15 @@ public static class MusicRegistration
     public static IServiceCollection AddMusicModule(this IServiceCollection services, IConfiguration configuration)
     {
         var options = new MusicOptions();
-        try { configuration.GetSection("Modules:Music").Bind(options); }
-        catch (InvalidOperationException) { options.BindingFailed = true; }
+        try
+        {
+            configuration.GetSection("Modules:Music").Bind(options);
+        }
+        catch (InvalidOperationException)
+        {
+            options.BindingFailed = true;
+        }
+
         services.AddSingleton(options);
         services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<MusicRuntime>();
@@ -36,6 +43,7 @@ public sealed class MusicModule : IEndpointModule
     public string Name => "music";
     public string Description => "音乐候选与解析（开发测试来源）。";
     public void ConfigureMiddleware(IApplicationBuilder application) => application.UseMiddleware<MusicMiddleware>();
+
     public void MapEndpoints(IEndpointRouteBuilder endpoints)
     {
         var music = endpoints.MapGroup("/api/music");
@@ -59,6 +67,7 @@ public sealed class MusicModule : IEndpointModule
                     if (read == 0) break;
                     length += read;
                 }
+
                 if (length > 4096) throw MusicException.Invalid();
                 var input = System.Text.Json.JsonSerializer.Deserialize(bytes.AsSpan(0, length), MusicJsonContext.Default.MusicDeviceRequest);
                 if (input is null) throw MusicException.Invalid();
@@ -66,11 +75,12 @@ public sealed class MusicModule : IEndpointModule
             });
             setup.MapDelete("/{id}", (string id, MusicDeviceStore devices) => devices.Revoke(id) ? Results.NoContent() : Results.NotFound());
         }
+
         var secured = music.MapGroup("").RequireAuthorization(MusicAccessHandler.SchemeName)
             .WithMetadata(new MusicProtectedEndpoint(), new EndpointAccessMetadata("音乐专用设备令牌"))
             .RequireRateLimiting("music");
         secured.MapGet("/providers", (MusicRuntime runtime) => Results.Json(new MusicProviders(
-            [new(FakeMusicProvider.Id, "原创测试音频", runtime.Status == "ready" ? "healthy" : "degraded", ["search", "resolve", "recommendations"], false)]),
+                [new MusicProvider(FakeMusicProvider.Id, "原创测试音频", runtime.Status == "ready" ? "healthy" : "degraded", ["search", "resolve", "recommendations"], false)]),
             MusicJsonContext.Default.MusicProviders));
         secured.MapGet("/search", (HttpContext context, IMusicSearcher provider) => Results.Json(
             provider.Search(One(context, "q"), Limit(context), One(context, "cursor")), MusicJsonContext.Default.MusicSearchPage));
@@ -87,6 +97,7 @@ public sealed class MusicModule : IEndpointModule
                 if (read == 0) break;
                 length += read;
             }
+
             if (length > 4096) throw MusicException.Invalid();
             var input = System.Text.Json.JsonSerializer.Deserialize(bytes.AsSpan(0, length), MusicJsonContext.Default.MusicResolveRequest);
             if (input is null) throw MusicException.Invalid();
@@ -100,11 +111,11 @@ public sealed class MusicModule : IEndpointModule
         if (values.Count > 1) throw MusicException.Invalid();
         return values.Count == 0 ? null : values[0];
     }
+
     private static int? Limit(HttpContext context)
     {
         var text = One(context, "limit");
         if (text is null) return null;
-        if (!int.TryParse(text, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var limit)) throw MusicException.Invalid();
-        return limit;
+        return !int.TryParse(text, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var limit) ? throw MusicException.Invalid() : limit;
     }
 }

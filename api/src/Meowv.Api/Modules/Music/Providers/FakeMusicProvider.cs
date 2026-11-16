@@ -21,11 +21,11 @@ public interface ITrackResolver
     MusicResolvedTrack Resolve(MusicResolveRequest request);
 }
 
-public sealed class FakeMusicProvider(MusicOptions options, MusicRuntime runtime, TimeProvider clock)
-    : IMusicSearcher, IRecommendationSource, ITrackResolver
+public sealed class FakeMusicProvider(MusicOptions options, MusicRuntime runtime, TimeProvider clock) : IMusicSearcher, IRecommendationSource, ITrackResolver
 {
     public const string Id = "original-demo";
     public const string ConfigVersion = "fake-v1";
+
     private static readonly MusicTrack[] Tracks =
     [
         new("original-001", "睡醒就好了（测试片段）", ["qix"], "今天也不错", 12000, null, null, "candidate", [new(Id, "001")]),
@@ -40,13 +40,13 @@ public sealed class FakeMusicProvider(MusicOptions options, MusicRuntime runtime
         var items = Tracks.Where(track => (track.Title + " " + string.Join(' ', track.Artists) + " " + track.Album)
             .Normalize(NormalizationForm.FormKC).ToUpperInvariant().Contains(normalized, StringComparison.Ordinal)).ToArray();
         var (page, next) = Page(items, limit, cursor, "search:" + normalized);
-        return new(page, next, false, []);
+        return new MusicSearchPage(page, next, false, []);
     }
 
     public MusicRecommendationPage Recommend(int? limit, string? cursor)
     {
         var (items, next) = Page(Tracks, limit, cursor, "recommendations");
-        return new(items, next, "demo_catalog", clock.GetUtcNow().UtcDateTime);
+        return new MusicRecommendationPage(items, next, "demo_catalog", clock.GetUtcNow().UtcDateTime);
     }
 
     public MusicResolvedTrack Resolve(MusicResolveRequest request)
@@ -60,9 +60,10 @@ public sealed class FakeMusicProvider(MusicOptions options, MusicRuntime runtime
         if (index >= options.DemoAudioUrls.Length)
             throw new MusicException("source_unavailable", "测试音频地址尚未配置。", 503);
         var url = options.DemoAudioUrls[index];
-        if (!runtime.IsAllowedAudio(url)) throw new MusicException("source_unavailable", "测试音频地址不可用。", 503);
-        return new(Tracks[index].Id, Id, Tracks[index].Sources[0].SourceTrackId, 1,
-            new(url, "audio/mpeg", Tracks[index].DurationMs, null, true));
+        if (!runtime.IsAllowedAudio(url))
+            throw new MusicException("source_unavailable", "测试音频地址不可用。", 503);
+
+        return new MusicResolvedTrack(Tracks[index].Id, Id, Tracks[index].Sources[0].SourceTrackId, 1, new MusicAudio(url, "audio/mpeg", Tracks[index].DurationMs, null, true));
     }
 
     private static (MusicTrack[] Items, string? Next) Page(MusicTrack[] items, int? limit, string? cursor, string scope)
@@ -76,16 +77,25 @@ public sealed class FakeMusicProvider(MusicOptions options, MusicRuntime runtime
         {
             if (cursor.Length is < 1 or > 128) throw MusicException.Invalid();
             string decoded;
-            try { decoded = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(cursor)); }
-            catch (FormatException) { throw MusicException.Invalid(); }
+            try
+            {
+                decoded = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(cursor));
+            }
+            catch (FormatException)
+            {
+                throw MusicException.Invalid();
+            }
+
             if (!decoded.StartsWith(prefix, StringComparison.Ordinal) ||
                 !int.TryParse(decoded[prefix.Length..], NumberStyles.None, CultureInfo.InvariantCulture, out offset) ||
                 offset < 1 || offset >= items.Length)
                 throw MusicException.Invalid();
         }
+
         var page = items.Skip(offset).Take(count).ToArray();
         var nextOffset = offset + page.Length;
         return (page, nextOffset < items.Length
-            ? WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(prefix + nextOffset.ToString(CultureInfo.InvariantCulture))) : null);
+            ? WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(prefix + nextOffset.ToString(CultureInfo.InvariantCulture)))
+            : null);
     }
 }
