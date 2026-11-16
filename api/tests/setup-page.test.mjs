@@ -15,7 +15,7 @@ function createPage(respond) {
   for (const tag of source.matchAll(/<[^>]+\bid="([^"]+)"[^>]*>/g)) {
     elements.set(tag[1], {
       hidden: /\bhidden\b/.test(tag[0]), value: '', textContent: '', innerHTML: '', disabled: false,
-      dataset: {}, style: {}, querySelector() { return this.number ??= { textContent: '' }; },
+      children: [], replaceChildren() { this.children = []; this.value = ''; }, appendChild(node) { this.children.push(node); if (!this.value && !node.disabled) this.value = node.value; }, dataset: {}, style: {}, querySelector() { return this.number ??= { textContent: '' }; },
       focus() {}, select() {}, reset() {
         const children = { 'auth-form': ['token'], 'login-form': ['username', 'password'], 'verify-form': ['verification-code'] };
         for (const id of children[tag[1]] ?? []) elements.get(id).value = '';
@@ -28,6 +28,7 @@ function createPage(respond) {
   const context = vm.createContext({
     document: {
       getElementById: id => elements.get(id),
+      createElement: () => ({ value: '', textContent: '', disabled: false }),
       querySelectorAll: () => ['rotate', 'retry-camera', 'reset-session', 'exit', 'restart-login'].map(id => elements.get(id)),
     },
     location: { pathname: '/nested/setup/' },
@@ -189,4 +190,53 @@ test('removed camera setup page and compatibility initialization routes stay abs
   assert.doesNotMatch(module, /setup\/xiaomi|XiaomiSetupPage|setup\.MapPost\("\/access-code/);
   assert.equal(existsSync(new URL('../src/Meowv.Api/Modules/XiaomiCamera/XiaomiSetupPage.cs', import.meta.url)), false);
   assert.doesNotMatch(source, /setup\/xiaomi|localStorage|sessionStorage/);
+});
+
+test('music credentials are scoped, shown once, revoked explicitly and cleared on exit', async () => {
+  let revoked = false;
+  const musicToken = 'YOUR_SYNTHETIC_MUSIC_TOKEN_FOR_UI_TESTS';
+  const page = createPage(request => {
+    if (request.path === '/api/music/setup/devices') {
+      if (request.method === 'POST') {
+        assert.deepEqual(JSON.parse(request.body), { alias: 'Test car' });
+        return { status: 201, body: { id: 'device-1', token: musicToken } };
+      }
+      return { body: [{ id: 'device-1', alias: '<img onerror=unsafe>', revokedAt: revoked ? '2026-11-16T00:00:00Z' : null }] };
+    }
+    if (request.path === '/api/music/setup/devices/device-1') { revoked = true; return { status: 204 }; }
+    return standardResponse(request);
+  });
+  await page.authenticate();
+  page.element('music-alias').value = 'Test car';
+  await page.trigger('music-issue');
+  assert.equal(page.element('music-token').value, musicToken);
+  await page.trigger('music-copy');
+  assert.equal(page.copied.at(-1), musicToken);
+  await page.trigger('music-load');
+  assert.equal(page.element('music-devices').children[0].textContent, '<img onerror=unsafe>');
+  page.setConfirmation(false);
+  await page.trigger('music-revoke');
+  assert.equal(revoked, false);
+  page.setConfirmation(true);
+  await page.trigger('music-revoke');
+  assert.equal(revoked, true);
+  assert.equal(page.element('music-token').value, '');
+  await page.trigger('music-issue');
+  await page.trigger('exit');
+  assert.equal(page.element('music-token').value, '');
+  assert.equal(page.element('music-result').hidden, true);
+});
+
+test('late music issuance cannot restore a credential after management exit', async () => {
+  let finish;
+  const page = createPage(request => request.path === '/api/music/setup/devices'
+    ? new Promise(resolve => { finish = resolve; }) : standardResponse(request));
+  await page.authenticate();
+  page.element('music-alias').value = 'Test car';
+  const issuing = page.trigger('music-issue');
+  await page.trigger('exit');
+  finish({ status: 201, body: { id: 'late', token: 'YOUR_LATE_SYNTHETIC_TOKEN_FOR_TESTS' } });
+  await issuing;
+  assert.equal(page.element('music-token').value, '');
+  assert.equal(page.element('workspace').hidden, true);
 });

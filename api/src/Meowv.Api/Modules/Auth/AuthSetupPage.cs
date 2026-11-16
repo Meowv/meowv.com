@@ -820,6 +820,28 @@ internal static class AuthSetupPage
                         </button>
                       </div>
                     </section>
+                    <section class="card" aria-labelledby="music-title">
+                      <h2 id="music-title">音乐设备凭据</h2>
+                      <p class="description">为手机或车机单独签发，仅授权音乐。撤销后该设备的新请求立即失效。</p>
+                      <div class="form-stack">
+                        <label>设备别名<input id="music-alias" maxlength="80" autocomplete="off" placeholder="例如：我的车机" /></label>
+                        <div class="actions">
+                          <button id="music-issue" class="primary" data-private type="button">签发凭据</button>
+                          <button id="music-load" class="secondary" data-private type="button">刷新设备列表</button>
+                        </div>
+                        <div id="music-result" class="code-box" hidden>
+                          <label>新设备凭据（仅本次可见）<input id="music-token" readonly autocomplete="off" spellcheck="false" /></label>
+                          <p class="hint">请立即复制到音乐客户端；离开或隐藏后无法再次查看。</p>
+                          <div class="actions">
+                            <button id="music-copy" class="secondary" data-private type="button">复制音乐凭据</button>
+                            <button id="music-hide" class="text-button" type="button">隐藏凭据</button>
+                          </div>
+                        </div>
+                        <label>已签发设备<select id="music-devices" aria-label="已签发音乐设备"></select></label>
+                        <p id="music-status" class="hint">点击刷新查看已签发设备；模块需启用设备凭据管理。</p>
+                        <button id="music-revoke" class="text-button danger" data-private type="button">撤销选中设备</button>
+                      </div>
+                    </section>
                     <div class="workspace-toolbar">
                       <button id="exit" class="text-button" data-private type="button">
                         退出管理
@@ -832,6 +854,7 @@ internal static class AuthSetupPage
             <script>
               const $ = (id) => document.getElementById(id);
               const apiRoot = location.pathname.replace(/\/setup\/?$/, "");
+              let managementEpoch = 0;
               let managementToken = "",
                 authenticated = false,
                 busy = false,
@@ -892,6 +915,8 @@ internal static class AuthSetupPage
                   : '验证并初始化 <span aria-hidden="true">→</span>';
               };
               const request = async (path, init = {}) => {
+                const epoch = managementEpoch;
+                if (!managementToken) throw new Error("管理会话已结束，请重新验证。");
                 let response;
                 try {
                   response = await fetch(apiRoot + path, {
@@ -905,20 +930,31 @@ internal static class AuthSetupPage
                 } catch {
                   throw new Error("无法连接服务，请检查网络后重试。");
                 }
+                if (epoch !== managementEpoch) throw new Error("管理会话已结束，请重新验证。");
                 if (response.status === 204) return null;
                 const data = await response.json().catch(() => null);
+                if (epoch !== managementEpoch) throw new Error("管理会话已结束，请重新验证。");
                 if (!response.ok) {
                   if (response.status === 401) {
+                    managementEpoch++;
                     authenticated = false;
+                    managementToken = "";
+                    clearMusicSecret();
+                    $("access-code").value = "";
+                    $("code-result").hidden = true;
+                    $("workspace").hidden = true;
                     $("gate").hidden = false;
                     step("step-auth", "current");
                     updateOverall();
+                    setBusy(false);
+                    notify("管理密钥无效或已变更，请重新验证。", "error");
                     throw new Error("管理密钥无效或已变更，请重新验证。");
                   }
                   if (response.status === 429)
                     throw new Error("操作过于频繁，请稍后重试。");
                   throw new Error(
-                    data?.message ||
+                    data?.error?.message || data?.message ||
+                      (path.startsWith("/api/music/") ? "音乐凭据管理不可用，请检查模块配置。" : "") ||
                       (response.status === 503
                         ? "摄像头模块尚未就绪，请检查服务配置与 FFmpeg 后重启服务。"
                         : "操作失败，请稍后重试。"),
@@ -931,12 +967,15 @@ internal static class AuthSetupPage
                 if (busy) return;
                 setBusy(true);
                 notify("");
+                let epoch = managementEpoch;
                 try {
-                  await action();
+                  const work = action();
+                  epoch = managementEpoch;
+                  await work;
                 } catch (error) {
-                  notify(error.message || "操作失败，请重试。", "error");
+                  if (epoch === managementEpoch) notify(error.message || "操作失败，请重试。", "error");
                 } finally {
-                  setBusy(false);
+                  if (epoch === managementEpoch) setBusy(false);
                 }
               };
               const showCode = (value, rotated = false) => {
@@ -1041,6 +1080,7 @@ internal static class AuthSetupPage
               $("auth-form").onsubmit = (event) => {
                 event.preventDefault();
                 run(async () => {
+                  managementEpoch++;
                   managementToken = $("token").value.trim();
                   if (!managementToken) return;
                   const data = await request("/api/auth/access-code", {
@@ -1144,7 +1184,57 @@ internal static class AuthSetupPage
                   $("username").focus();
                 });
               };
+              const clearMusicSecret = () => {
+                $("music-token").value = "";
+                $("music-result").hidden = true;
+              };
+              const loadMusicDevices = async () => {
+                const devices = await request("/api/music/setup/devices");
+                if (!Array.isArray(devices)) throw new Error("设备列表格式无效。");
+                $("music-devices").replaceChildren();
+                devices.forEach((device) => {
+                  const option = document.createElement("option");
+                  option.value = device.id;
+                  option.textContent = device.alias + (device.revokedAt ? "（已撤销）" : "");
+                  option.disabled = !!device.revokedAt;
+                  $("music-devices").appendChild(option);
+                });
+                $("music-status").textContent = devices.length ? "请选择要管理的设备。" : "尚未签发设备凭据。";
+              };
+              $("music-load").onclick = () => run(loadMusicDevices);
+              $("music-issue").onclick = () => run(async () => {
+                const alias = $("music-alias").value.trim();
+                if (!alias || alias.length > 80 || /[\x00-\x1f\x7f]/.test(alias)) throw new Error("请输入有效设备别名（1–80字符）。");
+                if ($("music-token").value && !confirm("新签发将隐藏当前凭据，请确认已保存。")) return;
+                clearMusicSecret();
+                const device = await request("/api/music/setup/devices", {
+                  method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ alias }),
+                });
+                if (typeof device.token !== "string" || !device.token) throw new Error("未收到设备凭据，请刷新列表核对。");
+                $("music-token").value = device.token;
+                $("music-result").hidden = false;
+                $("music-status").textContent = "签发成功，请保存凭据后刷新设备列表。";
+              });
+              $("music-copy").onclick = async () => {
+                if (!authenticated || !$("music-token").value) return;
+                try { await navigator.clipboard.writeText($("music-token").value); }
+                catch { $("music-token").focus(); $("music-token").select(); }
+              };
+              $("music-hide").onclick = clearMusicSecret;
+              $("music-revoke").onclick = () => {
+                const id = $("music-devices").value;
+                if (!id || !confirm("撤销后该设备将无法继续请求音乐服务，确定撤销？")) return;
+                run(async () => {
+                  await request("/api/music/setup/devices/" + encodeURIComponent(id), { method: "DELETE" });
+                  clearMusicSecret();
+                  await loadMusicDevices();
+                });
+              };
               $("exit").onclick = () => {
+                managementEpoch++;
+                clearMusicSecret();
+                $("music-alias").value = "";
+                $("music-devices").replaceChildren();
                 managementToken = "";
                 authenticated = false;
                 attemptId = "";
@@ -1164,6 +1254,7 @@ internal static class AuthSetupPage
                 updateOverall();
                 $("token").focus();
               };
+              globalThis.addEventListener?.("pagehide", () => $("exit").onclick());
               setBusy(false);
             </script>
           </body>
