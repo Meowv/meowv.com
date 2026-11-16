@@ -46,7 +46,7 @@ public sealed class FakeMusicProvider(MusicOptions options, MusicRuntime runtime
     public MusicRecommendationPage Recommend(int? limit, string? cursor)
     {
         var (items, next) = Page(Tracks, limit, cursor, "recommendations");
-        return new(items, next, "demo_catalog", clock.GetUtcNow());
+        return new(items, next, "demo_catalog", clock.GetUtcNow().UtcDateTime);
     }
 
     public MusicResolvedTrack Resolve(MusicResolveRequest request)

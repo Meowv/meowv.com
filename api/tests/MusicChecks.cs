@@ -38,6 +38,7 @@ internal static class MusicChecks
             Check(JsonElement.DeepEquals(searchJson.RootElement, fixture.RootElement.GetProperty("search")), "HTTP matches golden wire fixture");
             using var first = await client.GetAsync("/api/music/recommendations?limit=1");
             using var firstJson = JsonDocument.Parse(await first.Content.ReadAsStringAsync());
+            Check(firstJson.RootElement.GetProperty("generatedAt").GetString()!.EndsWith("Z", StringComparison.Ordinal), "UTC wire timestamps use Z");
             var cursor = firstJson.RootElement.GetProperty("nextCursor").GetString()!;
             using var second = await client.GetAsync("/api/music/recommendations?limit=1&cursor=" + Uri.EscapeDataString(cursor));
             using var secondJson = JsonDocument.Parse(await second.Content.ReadAsStringAsync());
