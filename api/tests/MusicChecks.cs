@@ -18,6 +18,7 @@ internal static class MusicChecks
 
     public static async Task RunAsync(string root)
     {
+        await NeteaseSourceChecks.RunAsync();
         Check(!JsonSerializer.IsReflectionEnabledByDefault, "JSON reflection must stay disabled");
         using var fixture = JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "music-v1.json")));
         var page = JsonSerializer.Deserialize(fixture.RootElement.GetProperty("search"), MusicJsonContext.Default.MusicSearchPage)!;

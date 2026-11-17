@@ -26,6 +26,15 @@ public static class MusicRegistration
         services.AddSingleton<MusicRuntime>();
         services.AddSingleton<MusicDeviceStore>();
         services.AddSingleton<FakeMusicProvider>();
+        services.AddHttpClient("MusicNetease", client => client.Timeout = TimeSpan.FromSeconds(6))
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+            {
+                AllowAutoRedirect = false, UseCookies = false, ConnectTimeout = TimeSpan.FromSeconds(3),
+                PooledConnectionLifetime = TimeSpan.FromMinutes(5)
+            });
+        services.AddSingleton<NeteaseMusicProvider>(provider => new NeteaseMusicProvider(
+            provider.GetRequiredService<IHttpClientFactory>().CreateClient("MusicNetease"), provider.GetRequiredService<TimeProvider>()));
+        services.AddSingleton<MusicCatalog>();
         services.AddSingleton<IMusicSearcher>(provider => provider.GetRequiredService<FakeMusicProvider>());
         services.AddSingleton<IRecommendationSource>(provider => provider.GetRequiredService<FakeMusicProvider>());
         services.AddSingleton<ITrackResolver>(provider => provider.GetRequiredService<FakeMusicProvider>());
@@ -48,8 +57,8 @@ public sealed class MusicModule : IEndpointModule
     public void MapEndpoints(IEndpointRouteBuilder endpoints)
     {
         var music = endpoints.MapGroup("/api/music");
-        music.MapGet("/health", (MusicRuntime runtime) => Results.Json(
-            new MusicHealth(runtime.Status, runtime.Available ? 1 : 0, FakeMusicProvider.ConfigVersion),
+        music.MapGet("/health", (MusicRuntime runtime, MusicCatalog catalog) => Results.Json(
+            new MusicHealth(runtime.Status, runtime.Available ? 1 : 0, catalog.Version),
             MusicJsonContext.Default.MusicHealth, statusCode: runtime.Status is "disabled" or "unavailable" ? 503 : 200));
         if (!endpoints.ServiceProvider.GetRequiredService<MusicOptions>().Enabled) return;
         if (endpoints.ServiceProvider.GetRequiredService<MusicOptions>().DeviceCredentialsEnabled)
@@ -80,17 +89,17 @@ public sealed class MusicModule : IEndpointModule
         var secured = music.MapGroup("").RequireAuthorization(MusicAccessHandler.SchemeName)
             .WithMetadata(new MusicProtectedEndpoint(), new EndpointAccessMetadata("音乐专用设备令牌"))
             .RequireRateLimiting("music");
-        if (endpoints.ServiceProvider.GetRequiredService<MusicDemoMedia>().Configured)
+        if (endpoints.ServiceProvider.GetRequiredService<MusicOptions>().DemoMode && endpoints.ServiceProvider.GetRequiredService<MusicDemoMedia>().Configured)
             secured.MapMethods("/demo-audio/{name}", ["GET", "HEAD"], (string name, MusicDemoMedia media) =>
                 media.PathFor(name) is { } path ? Results.File(path, "audio/mpeg", enableRangeProcessing: true) : Results.NotFound());
-        secured.MapGet("/providers", (MusicRuntime runtime) => Results.Json(new MusicProviders(
-                [new MusicProvider(FakeMusicProvider.Id, "原创测试音频", runtime.Status == "ready" ? "healthy" : "degraded", ["search", "resolve", "recommendations"], false)]),
+        secured.MapGet("/providers", (MusicRuntime runtime, MusicCatalog catalog) => Results.Json(new MusicProviders(
+                [catalog.Provider(runtime.Status)]),
             MusicJsonContext.Default.MusicProviders));
-        secured.MapGet("/search", (HttpContext context, IMusicSearcher provider) => Results.Json(
-            provider.Search(One(context, "q"), Limit(context), One(context, "cursor")), MusicJsonContext.Default.MusicSearchPage));
-        secured.MapGet("/recommendations", (HttpContext context, IRecommendationSource provider) => Results.Json(
-            provider.Recommend(Limit(context), One(context, "cursor")), MusicJsonContext.Default.MusicRecommendationPage));
-        secured.MapPost("/resolve", async (HttpContext context, ITrackResolver provider) =>
+        secured.MapGet("/search", async (HttpContext context, MusicCatalog catalog) => Results.Json(
+            await catalog.SearchAsync(One(context, "q"), Limit(context), One(context, "cursor"), context.RequestAborted), MusicJsonContext.Default.MusicSearchPage));
+        secured.MapGet("/recommendations", async (HttpContext context, MusicCatalog catalog) => Results.Json(
+            await catalog.RecommendAsync(Limit(context), One(context, "cursor"), context.RequestAborted), MusicJsonContext.Default.MusicRecommendationPage));
+        secured.MapPost("/resolve", async (HttpContext context, MusicCatalog catalog) =>
         {
             if (!context.Request.HasJsonContentType()) throw MusicException.Invalid();
             var bytes = new byte[4097];
@@ -105,7 +114,7 @@ public sealed class MusicModule : IEndpointModule
             if (length > 4096) throw MusicException.Invalid();
             var input = System.Text.Json.JsonSerializer.Deserialize(bytes.AsSpan(0, length), MusicJsonContext.Default.MusicResolveRequest);
             if (input is null) throw MusicException.Invalid();
-            return Results.Json(provider.Resolve(input), MusicJsonContext.Default.MusicResolvedTrack);
+            return Results.Json(await catalog.ResolveAsync(input, context.RequestAborted), MusicJsonContext.Default.MusicResolvedTrack);
         });
     }
 

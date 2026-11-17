@@ -5,6 +5,8 @@ public sealed class MusicOptions
     public bool Enabled { get; set; }
     public bool DeviceCredentialsEnabled { get; set; }
     public bool DemoMode { get; set; }
+    public bool NeteaseEnabled { get; set; }
+    public string NeteaseRecommendationQuery { get; set; } = "纯音乐";
     public string TestAccessToken { get; set; } = "";
     public int RequestsPerMinute { get; set; } = 60;
     public int MaxConcurrentRequests { get; set; } = 4;
@@ -22,16 +24,18 @@ public sealed class MusicRuntime(MusicOptions options, IHostEnvironment environm
     private int _requests;
     private int _active;
 
-    public bool Available => options.Enabled && options is { BindingFailed: false, DemoMode: true } &&
+    public bool Available => options.Enabled && !options.BindingFailed && options.DemoMode != options.NeteaseEnabled &&
                              (environment.IsDevelopment() || environment.IsEnvironment("Testing")) &&
                              (options.DeviceCredentialsEnabled || (options.TestAccessToken.Length is >= 32 and <= 1024 && !options.TestAccessToken.Any(char.IsWhiteSpace) && !options.TestAccessToken.Any(char.IsControl))) &&
                              options.RequestsPerMinute is >= 1 and <= 1000 && options.MaxConcurrentRequests is >= 1 and <= 16 &&
-                             options.DemoAudioUrls.Length <= 2 && options.AllowedMediaHosts.Length <= 16 &&
-                             options.DemoAudioUrls.All(IsAllowedAudio) && (!media.Configured || media.Valid);
+                             (options.NeteaseEnabled
+                                 ? !string.IsNullOrWhiteSpace(options.NeteaseRecommendationQuery) && options.NeteaseRecommendationQuery.Trim().Length is >= 1 and <= 100 && !options.NeteaseRecommendationQuery.Any(char.IsControl)
+                                 : options.DemoAudioUrls.Length <= 2 && options.AllowedMediaHosts.Length <= 16 &&
+                                   options.DemoAudioUrls.All(IsAllowedAudio) && (!media.Configured || media.Valid));
 
     public string Status => !options.Enabled ? "disabled" :
         !Available ? "unavailable" :
-        options.DemoAudioUrls.Length == 0 && !media.Valid ? "degraded" : "ready";
+        !options.NeteaseEnabled && options.DemoAudioUrls.Length == 0 && !media.Valid ? "degraded" : "ready";
 
     public bool IsAllowedAudio(string value) => Uri.TryCreate(value, UriKind.Absolute, out var uri) &&
                                                 uri is { Scheme: "https", Port: 443, UserInfo.Length: 0, Query.Length: 0, Fragment.Length: 0, HostNameType: UriHostNameType.Dns, IsLoopback: false } && uri.Host.Contains('.') &&

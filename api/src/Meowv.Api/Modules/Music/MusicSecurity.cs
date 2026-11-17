@@ -11,10 +11,11 @@ using Microsoft.Extensions.Options;
 
 namespace Meowv.Api.Modules.Music;
 
-public sealed class MusicException(string code, string message, int status = 400) : Exception(message)
+public sealed class MusicException(string code, string message, int status = 400, int? retryAfterSeconds = null) : Exception(message)
 {
     public string Code { get; } = code;
     public int Status { get; } = status;
+    public int? RetryAfterSeconds { get; } = retryAfterSeconds;
     public static MusicException Invalid() => new("invalid_request", "音乐请求参数无效。");
 }
 
@@ -136,7 +137,7 @@ public sealed class MusicMiddleware(RequestDelegate next)
             }
             catch (MusicException error) when (!context.Response.HasStarted)
             {
-                await MusicErrors.Write(context, error.Status, error.Code, error.Message);
+                await MusicErrors.Write(context, error.Status, error.Code, error.Message, error.RetryAfterSeconds);
             }
             catch (Exception error) when (error is BadHttpRequestException or System.Text.Json.JsonException && !context.Response.HasStarted)
             {
