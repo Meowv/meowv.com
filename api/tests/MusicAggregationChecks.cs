@@ -9,6 +9,7 @@ internal static class MusicAggregationChecks
 {
     public static async Task RunAsync()
     {
+        await EarlyReturnChecks();
         var original = Track("nt-one", "Song", "Artist");
         foreach (var title in new[] { "Ｓｏｎｇ", "so\u200Bng", " SONG! " })
             Check(MusicCandidateMatcher.Compare(original, Track("other", title, "ARTIST")).Equivalent, "Unicode, zero-width and case normalization");
@@ -78,6 +79,67 @@ internal static class MusicAggregationChecks
         Console.WriteLine("PASS: source registry, capability isolation, partial failures, pagination and conservative matching");
     }
 
+    private static async Task EarlyReturnChecks()
+    {
+        var native = new FullSource([Track("nt-fast", "Fast", "Artist")]);
+        var metadata = new Source([Track("kw-slow", "Slow", "Other", "kuwo-search")]) { Block = new(), Started = new(), Cancelled = new() };
+        var (catalog, _, _) = Catalog(native, metadata);
+        var pending = catalog.SearchAsync("early", 20, null, default);
+        await metadata.Started.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        var result = await pending.WaitAsync(TimeSpan.FromSeconds(2));
+        Check(result.Items.Single().Id == "nt-fast" && result.Partial && result.NextCursor is not null &&
+            result.Warnings.Contains("kuwo-search:deferred", StringComparer.Ordinal), "Fast source returns before slow source and retains continuation");
+        await metadata.Cancelled.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        metadata.Block.SetResult();
+        result = await catalog.SearchAsync("early", 20, result.NextCursor, default);
+        Check(result.Items.Single().Id == "kw-slow" && result.NextCursor is null && native.Calls == 1 && metadata.Calls == 2,
+            "Next page resumes deferred source without repeating the fast source");
+
+        native = new FullSource([Track("nt-only", "Only", "Artist")]);
+        metadata = new Source([Track("kw-rate", "Rate", "Other", "kuwo-search")]) { Block = new(), Started = new() };
+        (catalog, _, _) = Catalog(native, metadata);
+        result = await catalog.SearchAsync("isolated rate", 20, null, default).WaitAsync(TimeSpan.FromSeconds(2));
+        metadata.Failure = new MusicException("rate_limited", "private detail", 429, 60);
+        metadata.Block.SetResult();
+        result = await catalog.SearchAsync("isolated rate", 20, result.NextCursor, default);
+        Check(result.Items.Length == 0 && result.Partial && result.NextCursor is null, "Deferred metadata rate limit does not turn a healthy playback source into a global error");
+        await catalog.ResolveAsync(new("nt-only"), default);
+        Check(native.Resolves == 1, "Playback source remains usable after metadata continuation failure");
+
+        native = new FullSource([Track("nt-fast", "Fast", "Artist")]);
+        metadata = new Source([Track("kw-late", "Late", "Other", "kuwo-search")]) { Block = new(), Started = new(), IgnoreCancellation = true };
+        (catalog, _, _) = Catalog(native, metadata);
+        result = await catalog.SearchAsync("late", 20, null, default).WaitAsync(TimeSpan.FromSeconds(2));
+        var cursor = result.NextCursor!;
+        Check(result.Items.Single().Id == "nt-fast", "Uncancellable slow result does not delay response");
+        metadata.Block.SetResult();
+        await Task.Delay(20);
+        result = await catalog.SearchAsync("late", 20, cursor, default);
+        Check(result.Items.Single().Id == "kw-late" && native.Calls == 1, "Late task cannot consume continuation or duplicate results");
+
+        native = new FullSource([Track("nt-cancel", "Cancel", "Artist")]) { Block = new(), Started = new(), Cancelled = new() };
+        metadata = new Source([Track("kw-cancel", "Cancel", "Artist", "kuwo-search")]) { Block = new(), Started = new(), Cancelled = new() };
+        (catalog, _, _) = Catalog(native, metadata);
+        using var cancellation = new CancellationTokenSource();
+        pending = catalog.SearchAsync("cancel all", 20, null, cancellation.Token);
+        await Task.WhenAll(native.Started.Task, metadata.Started.Task);
+        cancellation.Cancel();
+        try { await pending; throw new InvalidOperationException("Expected caller cancellation"); }
+        catch (OperationCanceledException) { }
+        await Task.WhenAll(native.Cancelled.Task, metadata.Cancelled.Task).WaitAsync(TimeSpan.FromSeconds(1));
+        Check(native.Calls == 1 && metadata.Calls == 1, "Caller cancellation reaches every source without retry");
+
+        native = new FullSource([Track("nt-promoted", "Same", "Artist")]) { Block = new(), Started = new(), Cancelled = new() };
+        metadata = new Source([Track("kw-first", "Same", "Artist", "kuwo-search")]);
+        (catalog, _, _) = Catalog(native, metadata);
+        result = await catalog.SearchAsync("promote", 20, null, default).WaitAsync(TimeSpan.FromSeconds(2));
+        Check(result.Items.Single().Availability == "metadata_only", "Fast metadata can be returned while resolver is slow");
+        native.Block.SetResult();
+        result = await catalog.SearchAsync("promote", 20, result.NextCursor, default);
+        Check(result.Items.Single().Availability == "candidate" && result.Items.Single().Sources.Length == 2,
+            "Deferred playable match can upgrade an earlier metadata result");
+    }
+
     private static MusicTrack Track(string id, string title, string artist, string provider = "netease") =>
         new(id, title, [artist], null, 200000, null, null, provider == "netease" ? "candidate" : "metadata_only", [new(provider, id)]);
     private static (MusicCatalog, MusicProviderRegistry, IConfigurationRoot) Catalog(FullSource native, Source metadata)
@@ -102,15 +164,25 @@ internal static class MusicAggregationChecks
         public string Status => Failure is null ? "healthy" : "offline";
         public MusicException? Failure;
         public int Calls;
+        public TaskCompletionSource? Block;
+        public TaskCompletionSource? Started;
+        public TaskCompletionSource? Cancelled;
+        public bool IgnoreCancellation;
         public MusicTrack? FindTrack(string id) => tracks.FirstOrDefault(x => x.Id == id);
-        public Task<MusicSearchPage> SearchAsync(string? query, int? limit, string? cursor, CancellationToken ct)
+        public async Task<MusicSearchPage> SearchAsync(string? query, int? limit, string? cursor, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested(); Calls++;
+            Started?.TrySetResult();
+            if (Block is not null)
+            {
+                try { if (IgnoreCancellation) await Block.Task; else await Block.Task.WaitAsync(ct); }
+                catch (OperationCanceledException) { Cancelled?.TrySetResult(); throw; }
+            }
             if (Failure is not null) throw Failure;
             var count = limit ?? 20;
             var offset = cursor is null ? 0 : int.TryParse(cursor, out var parsed) ? parsed : throw MusicException.Invalid();
             var items = tracks.Skip(offset).Take(count).ToArray();
-            return Task.FromResult(new MusicSearchPage(items, offset + items.Length < tracks.Length ? (offset + items.Length).ToString() : null, false, []));
+            return new MusicSearchPage(items, offset + items.Length < tracks.Length ? (offset + items.Length).ToString() : null, false, []);
         }
     }
     private sealed class FullSource(MusicTrack[] tracks) : Source(tracks), IMusicResolverProvider

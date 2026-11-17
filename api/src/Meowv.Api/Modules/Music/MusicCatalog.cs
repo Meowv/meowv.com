@@ -14,9 +14,9 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
     private readonly Dictionary<string, string> _aliases = new(StringComparer.Ordinal);
     private long _used;
 
-    private sealed record Continuation(string Signature, Dictionary<string, string?> Cursors, MusicTrack[] Buffered, HashSet<string> Seen, DateTimeOffset Until);
+    private sealed record Continuation(string Signature, Dictionary<string, string?> Cursors, MusicTrack[] Buffered, HashSet<string> Seen, DateTimeOffset Until, string[] Deferred);
 
-    private sealed record SourcePage(IMusicSearchProvider Source, MusicSearchPage? Page, MusicException? Failure);
+    private sealed record SourcePage(IMusicSearchProvider Source, MusicSearchPage? Page, MusicException? Failure, bool Deferred = false);
 
     public string Version => registry.Version;
     public int EnabledCount => registry.Enabled.Length;
@@ -60,32 +60,77 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
         var buffered = previous?.Buffered.ToList() ?? [];
         var failures = new List<MusicException>();
         var warnings = new List<string>();
-        if (buffered.Count < count)
+        var deferred = new HashSet<string>(previous?.Deferred ?? [], StringComparer.Ordinal);
+        warnings.AddRange(deferred.Select(x => x + ":deferred"));
+        using var budget = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        budget.CancelAfter(TimeSpan.FromSeconds(6));
+        try
         {
-            var jobs = sources.Where(x => cursors.ContainsKey(x.ProviderId))
-                .Select(x => Load(x, query, count, cursors[x.ProviderId], ct));
-            var results = await Task.WhenAll(jobs);
-            ct.ThrowIfCancellationRequested();
-            foreach (var result in results.OrderBy(x => x.Source is IMusicResolverProvider ? 0 : 1))
+            if (buffered.Count < count)
             {
+                var due = sources.Where(x => cursors.ContainsKey(x.ProviderId)).ToArray();
+                var postponed = previous?.Deferred ?? [];
+                var priority = due.Where(x => postponed.Contains(x.ProviderId, StringComparer.Ordinal)).ToArray();
+                var results = new List<SourcePage>();
+                if (priority.Length > 0)
+                {
+                    results.AddRange(await Collect(priority, query, count, cursors, budget.Token, ct, TimeSpan.FromSeconds(2)));
+                    Apply(results);
+                    var ready = buffered.Select(x => Canonical(x.Id)).Where(x => !seen.Contains(x)).Distinct().Count();
+                    if (ready < count)
+                    {
+                        var others = due.Where(x => !priority.Contains(x)).ToArray();
+                        var fallback = await Collect(others, query, count, cursors, budget.Token, ct, null);
+                        results.AddRange(fallback); Apply(fallback);
+                    }
+                }
+                else
+                {
+                    results.AddRange(await Collect(due, query, count, cursors, budget.Token, ct, null));
+                    Apply(results);
+                }
+                ct.ThrowIfCancellationRequested();
+                if (buffered.Count == 0 && results.Count > 0 && results.All(x => x.Failure is not null || x.Deferred) &&
+                    !sources.Any(source => source.Status == "healthy" && results.All(result => result.Source.ProviderId != source.ProviderId)))
+                {
+                    if (failures.Count > 0) throw failures.OrderByDescending(x => x.Status == 429).ThenByDescending(x => x.RetryAfterSeconds ?? 0).First();
+                    throw new MusicException("source_timeout", "搜索响应超时，请稍后重试。", 504, 15);
+                }
+            }
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            ct.ThrowIfCancellationRequested();
+            if (buffered.Count == 0) throw new MusicException("source_timeout", "搜索响应超时，请稍后重试。", 504, 15);
+            warnings.Add("search:source_timeout");
+        }
+
+        void Apply(IEnumerable<SourcePage> pages)
+        {
+            foreach (var result in pages.OrderBy(x => x.Source is IMusicResolverProvider ? 0 : 1))
+            {
+                if (result.Deferred)
+                {
+                    deferred.Add(result.Source.ProviderId);
+                    if (!warnings.Contains(result.Source.ProviderId + ":deferred", StringComparer.Ordinal)) warnings.Add(result.Source.ProviderId + ":deferred");
+                    continue;
+                }
+                deferred.Remove(result.Source.ProviderId);
+                warnings.RemoveAll(x => x == result.Source.ProviderId + ":deferred");
                 if (result.Failure is { } error)
                 {
                     failures.Add(error);
                     warnings.Add(result.Source.ProviderId + ":" + error.Code);
                     continue;
                 }
-
                 var page = result.Page!;
                 if (page.NextCursor is { } next && next != cursors[result.Source.ProviderId]) cursors[result.Source.ProviderId] = next;
                 else cursors.Remove(result.Source.ProviderId);
                 foreach (var item in page.Items) buffered.Add(Merge(item, sources));
             }
-
-            if (failures.Count == results.Length && buffered.Count == 0)
-                throw failures.OrderByDescending(x => x.Status == 429).ThenByDescending(x => x.RetryAfterSeconds ?? 0).First();
         }
 
-        var candidates = buffered.Where(x => !seen.Contains(x.Id)).GroupBy(x => x.Id, StringComparer.Ordinal)
+        var candidates = buffered.Select(x => Latest(Canonical(x.Id), x)).Where(x => !seen.Contains(x.Id)).GroupBy(x => x.Id, StringComparer.Ordinal)
             .Select(group => Latest(group.Key, group.Last())).ToArray();
         var items = candidates.Take(count).ToArray();
         foreach (var item in items) seen.Add(item.Id);
@@ -100,7 +145,7 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
                 {
                     foreach (var old in _pages.Where(x => x.Value.Until <= clock.GetUtcNow()).Select(x => x.Key).ToArray()) _pages.Remove(old);
                     if (_pages.Count >= 128) _pages.Remove(_pages.MinBy(x => x.Value.Until).Key);
-                    _pages[nextCursor] = new Continuation(signature, cursors, buffered.ToArray(), seen, clock.GetUtcNow().AddMinutes(5));
+                    _pages[nextCursor] = new Continuation(signature, cursors, buffered.ToArray(), seen, clock.GetUtcNow().AddMinutes(5), deferred.ToArray());
                 }
 
                 break;
@@ -133,7 +178,7 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
         MusicTrack? known;
         lock (_gate)
         {
-            var canonical = _aliases.GetValueOrDefault(request.TrackId, request.TrackId);
+            var canonical = Canonical(request.TrackId);
             known = _known.TryGetValue(canonical, out var value) && value.Until > clock.GetUtcNow() ? value.Track : null;
         }
 
@@ -148,6 +193,72 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
         if (known is not null || sources.Any(x => x.FindTrack(request.TrackId) is not null))
             throw new MusicException("no_playable_match", "此结果仅提供元数据，暂无完整播放来源。", 422);
         throw new MusicException("track_not_found", "歌曲记录已失效，请重新搜索。", 404);
+    }
+
+    private async Task<SourcePage[]> Collect(IMusicSearchProvider[] sources, string query, int count,
+        Dictionary<string, string?> cursors, CancellationToken budget, CancellationToken caller, TimeSpan? maximum)
+    {
+        if (sources.Length == 0) return [];
+        using var stage = CancellationTokenSource.CreateLinkedTokenSource(budget);
+        if (maximum is { } limit) stage.CancelAfter(limit);
+        var pending = sources.ToDictionary(x => Load(x, query, count, cursors[x.ProviderId], stage.Token), x => x);
+        var results = new List<SourcePage>();
+        Task? grace = null;
+        try
+        {
+            while (pending.Count > 0)
+            {
+                var choice = grace is null ? await Task.WhenAny(pending.Keys) : await Task.WhenAny(pending.Keys.Cast<Task>().Append(grace));
+                caller.ThrowIfCancellationRequested();
+                if (choice == grace) break;
+                var task = (Task<SourcePage>)choice;
+                var provider = pending[task]; pending.Remove(task);
+                SourcePage result;
+                try { result = await task; }
+                catch (OperationCanceledException) when (!caller.IsCancellationRequested)
+                {
+                    results.Add(new SourcePage(provider, null, null, true));
+                    break;
+                }
+                results.Add(result);
+                if (grace is null && results.Any(x => x.Page?.Items.Length > 0))
+                {
+                    var playable = results.Any(x => x.Source is IMusicResolverProvider && x.Page?.Items.Any(t => t.Availability == "candidate") == true);
+                    grace = Task.Delay(playable ? 150 : 750, stage.Token);
+                }
+            }
+        }
+        finally
+        {
+            // 完成响应前取消并观察所有慢源，不让未拥有的聚合任务继续改写结果。
+            stage.Cancel();
+            foreach (var pair in pending)
+            {
+                if (pair.Key.IsCompletedSuccessfully) results.Add(pair.Key.Result);
+                else
+                {
+                    try { results.Add(await pair.Key); }
+                    catch (OperationCanceledException) { results.Add(new SourcePage(pair.Value, null, null, true)); }
+                }
+            }
+        }
+        caller.ThrowIfCancellationRequested();
+        return results.ToArray();
+    }
+
+    private string Canonical(string id)
+    {
+        lock (_gate)
+        {
+            var current = id;
+            for (var i = 0; i < 3; i++)
+            {
+                var next = _aliases.GetValueOrDefault(current, current);
+                if (next == current) break;
+                current = next;
+            }
+            return current;
+        }
     }
 
     private async Task<SourcePage> Load(IMusicSearchProvider source, string query, int count, string? cursor, CancellationToken ct)
