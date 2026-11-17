@@ -28,6 +28,7 @@ cat >"$work_dir/Checks.csproj" <<EOF
     <Compile Include="$project_dir/tests/RuntimeChecks.cs" />
     <Compile Include="$project_dir/tests/MusicChecks.cs" />
     <Compile Include="$project_dir/tests/NeteaseSourceChecks.cs" />
+    <Compile Include="$project_dir/tests/MusicUpstreamFixture.cs" />
     <Compile Include="$project_dir/src/Meowv.Api/Modules/Music/**/*.cs" />
     <Compile Include="$project_dir/src/Meowv.Api/Modules/Chat/*.cs" />
     <Content Include="$project_dir/tests/fixtures/music-v1.json" Link="music-v1.json" CopyToOutputDirectory="PreserveNewest" />

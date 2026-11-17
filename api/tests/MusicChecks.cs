@@ -9,6 +9,7 @@ using Meowv.Api.Modules.Auth;
 using Meowv.Api.Modules.Chat;
 using Meowv.Api.Modules.Music;
 using Meowv.Api.Modules.Music.Contracts;
+using Meowv.Api.Modules.Music.Providers;
 using Meowv.Api.Security;
 using Meowv.Api.Infrastructure;
 
@@ -27,31 +28,34 @@ internal static class MusicChecks
         await Case(root, true, async (client, app) =>
         {
             using var health = await client.GetAsync("/api/music/health");
-            Check(health.StatusCode == HttpStatusCode.OK && (await health.Content.ReadAsStringAsync()).Contains("ready"), "Ready demo health");
+            Check(health.StatusCode == HttpStatusCode.OK && (await health.Content.ReadAsStringAsync()).Contains("ready"), "Ready source health");
             using var unauthorized = await client.PostAsync("/api/music/resolve", new StringContent("{broken", Encoding.UTF8, "application/json"));
             await Error(unauthorized, 401, "unauthorized");
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
             using var providers = await client.GetAsync("/api/music/providers");
-            Check(providers.IsSuccessStatusCode && !(await providers.Content.ReadAsStringAsync()).Contains("true"), "Fake does not claim full tracks");
+            Check(providers.IsSuccessStatusCode && (await providers.Content.ReadAsStringAsync()).Contains("netease"), "Only real source is registered");
+            using var retired = await client.GetAsync("/api/music/demo-audio/original-001.mp3");
+            Check(retired.StatusCode == HttpStatusCode.NotFound, "Retired demo audio route is absent");
             using var search = await client.GetAsync("/api/music/search?q=%E7%9D%A1%E9%86%92&limit=1");
             using var searchJson = JsonDocument.Parse(await search.Content.ReadAsStringAsync());
-            Check(search.StatusCode == HttpStatusCode.OK && searchJson.RootElement.GetProperty("items")[0].GetProperty("id").GetString() == "original-001", "Unicode search");
-            Check(JsonElement.DeepEquals(searchJson.RootElement, fixture.RootElement.GetProperty("search")), "HTTP matches golden wire fixture");
+            var trackId = searchJson.RootElement.GetProperty("items")[0].GetProperty("id").GetString()!;
+            Check(search.StatusCode == HttpStatusCode.OK && trackId.StartsWith("nt-", StringComparison.Ordinal) &&
+                searchJson.RootElement.GetProperty("items")[0].GetProperty("title").GetString() == "睡醒就好了", "Unicode search through native source and HTTP fixture");
             using var first = await client.GetAsync("/api/music/recommendations?limit=1");
             using var firstJson = JsonDocument.Parse(await first.Content.ReadAsStringAsync());
             Check(firstJson.RootElement.GetProperty("generatedAt").GetString()!.EndsWith("Z", StringComparison.Ordinal), "UTC wire timestamps use Z");
             var cursor = firstJson.RootElement.GetProperty("nextCursor").GetString()!;
             using var second = await client.GetAsync("/api/music/recommendations?limit=1&cursor=" + Uri.EscapeDataString(cursor));
             using var secondJson = JsonDocument.Parse(await second.Content.ReadAsStringAsync());
-            Check(secondJson.RootElement.GetProperty("items")[0].GetProperty("id").GetString() == "original-002" && secondJson.RootElement.GetProperty("nextCursor").ValueKind == JsonValueKind.Null, "Finite catalog cursor exhaustion");
+            Check(secondJson.RootElement.GetProperty("items")[0].GetProperty("id").GetString() != trackId && secondJson.RootElement.GetProperty("nextCursor").ValueKind == JsonValueKind.Null, "Finite catalog cursor exhaustion");
             foreach (var query in new[] { "q=", "q=%00", "q=qix&limit=0", "q=qix&limit=51", "q=qix&limit=bad", "q=qix&limit=1&limit=2", "q=qix&cursor=bad", "q=qix&cursor=" + cursor, "q=" + new string('a', 101) })
             {
                 using var bad = await client.GetAsync("/api/music/search?" + query);
                 await Error(bad, 400, "invalid_request");
             }
-            using var resolve = await client.PostAsync("/api/music/resolve", Json("{\"trackId\":\"original-001\",\"newField\":true}"));
+            using var resolve = await client.PostAsync("/api/music/resolve", Json("{\"trackId\":\"" + trackId + "\",\"newField\":true}"));
             var resolved = JsonSerializer.Deserialize(await resolve.Content.ReadAsStringAsync(), MusicJsonContext.Default.MusicResolvedTrack)!;
-            Check(resolve.IsSuccessStatusCode && resolved.Audio.Seekable && resolved.Audio.DurationMs == 12000 && resolved.Confidence == 1, "Resolve safe fixture");
+            Check(resolve.IsSuccessStatusCode && resolved.Audio.Seekable && resolved.Audio.DurationMs == 100000 && resolved.Confidence == 1, "Native resolve uses isolated upstream HTTP fixture");
             using var missing = await client.PostAsync("/api/music/resolve", Json("{\"trackId\":\"https://127.0.0.1/private\"}"));
             await Error(missing, 404, "track_not_found");
             foreach (var body in new[] { "{}", "null", "{broken", "{\"trackId\":2}", "{\"trackId\":\"original-001\",\"quality\":\"lossless\"}", "{\"trackId\":\"" + new string('a', 5000) + "\"}" })
@@ -87,18 +91,23 @@ internal static class MusicChecks
             Check(route.StatusCode == HttpStatusCode.NotFound, "Disabled business endpoints absent");
             await CommonHealthy(client);
         });
-        await Case(root, true, async (client, _) =>
+        await Case(root, true, async (client, app) =>
         {
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+            using var failed = await client.GetAsync("/api/music/search?q=outage");
+            await Error(failed, 503, "source_unavailable");
+            Check(failed.Headers.RetryAfter?.Delta > TimeSpan.Zero, "Source outage carries Retry-After");
             using var health = await client.GetAsync("/api/music/health");
-            Check((await health.Content.ReadAsStringAsync()).Contains("degraded"), "No media is degraded");
-            using var resolve = await client.PostAsync("/api/music/resolve", Json("{\"trackId\":\"original-001\"}"));
-            await Error(resolve, 503, "source_unavailable");
-        }, noAudio: true);
+            Check((await health.Content.ReadAsStringAsync()).Contains("degraded"), "Source outage degrades health");
+            using var repeated = await client.GetAsync("/api/music/search?q=another");
+            await Error(repeated, 503, "source_unavailable");
+            Check(app.Services.GetRequiredService<MusicUpstreamFixture>().Count == 1, "Host backoff is shared across requests");
+            await CommonHealthy(client);
+        }, upstreamUnavailable: true);
         foreach (var invalid in new Dictionary<string, string>
         {
-            ["DemoMode"] = "false", ["TestAccessToken"] = "", ["MaxConcurrentRequests"] = "0", ["RequestsPerMinute"] = "invalid",
-            ["DemoAudioUrls:0"] = "http://127.0.0.1/private", ["AllowedMediaHosts:0"] = "untrusted.example.org",
+            ["NeteaseEnabled"] = "false", ["TestAccessToken"] = "", ["MaxConcurrentRequests"] = "0", ["RequestsPerMinute"] = "invalid",
+            ["NeteaseRecommendationQuery"] = "\0invalid",
         })
         {
             await Case(root, true, async (client, _) =>
@@ -111,7 +120,7 @@ internal static class MusicChecks
         await Case(root, true, async (client, _) =>
         {
             using var health = await client.GetAsync("/api/music/health");
-            Check((int)health.StatusCode == 503, "Production must reject Demo");
+            Check((int)health.StatusCode == 503, "Production must reject development source");
         }, production: true);
         await Case(root, true, async (client, _) =>
         {
@@ -173,33 +182,7 @@ internal static class MusicChecks
             await Error(failed, 503, "source_unavailable");
             await CommonHealthy(client);
         }, change: new("DeviceCredentialsEnabled", "true"));
-        await Case(root, true, async (client, _) =>
-        {
-            using var denied = await client.GetAsync("/api/music/demo-audio/original-001.mp3");
-            await Error(denied, 401, "unauthorized");
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
-            using var resolved = await client.PostAsync("/api/music/resolve", Json("{\"trackId\":\"original-001\"}"));
-            using var document = JsonDocument.Parse(await resolved.Content.ReadAsStringAsync());
-            Check(document.RootElement.GetProperty("audio").GetProperty("url").GetString() == "http://10.0.2.2:5000/api/music/demo-audio/original-001.mp3", "Local media URL stays on configured endpoint");
-            using var request = new HttpRequestMessage(HttpMethod.Get, "/api/music/demo-audio/original-001.mp3");
-            request.Headers.Range = new RangeHeaderValue(0, 127);
-            using var range = await client.SendAsync(request);
-            Check(range.StatusCode == HttpStatusCode.PartialContent && (await range.Content.ReadAsByteArrayAsync()).Length == 128 && range.Content.Headers.ContentType?.MediaType == "audio/mpeg", "Authorized local Range and MIME");
-            using var unknown = await client.GetAsync("/api/music/demo-audio/private.db");
-            Check(unknown.StatusCode == HttpStatusCode.NotFound, "Never expose arbitrary local files");
-        }, localMedia: true);
-        await Case(root, true, async (client, _) =>
-        {
-            using var response = await client.GetAsync("/api/music/health");
-            Check(response.StatusCode == HttpStatusCode.ServiceUnavailable, "Local demo media never enables Production");
-        }, localMedia: true, production: true);
-        await Case(root, true, async (client, _) =>
-        {
-            using var response = await client.GetAsync("/api/music/health");
-            Check(response.StatusCode == HttpStatusCode.ServiceUnavailable, "Invalid local media path is isolated");
-            await CommonHealthy(client);
-        }, localMedia: true, change: new("DemoMediaDirectory", "\0invalid"));
-        Console.WriteLine("PASS: Music Fake HTTP contracts, Unicode/cursors, pre-binding authentication, scoped access, configuration isolation, JSON source generation, bounded concurrency and 429. No external provider/media request.");
+        Console.WriteLine("PASS: Music native-source HTTP fixture contracts, Unicode/cursors, pre-binding authentication, scoped access, configuration isolation, JSON source generation, bounded concurrency and 429. No external provider/media request.");
     }
 
     private static async Task CommonHealthy(HttpClient client)
@@ -220,7 +203,7 @@ internal static class MusicChecks
     private static void Check(bool condition, string description) { if (!condition) throw new Exception(description); }
 
     private static async Task Case(string root, bool enabled, Func<HttpClient, WebApplication, Task> run,
-        bool noAudio = false, KeyValuePair<string, string>? change = null, bool production = false, bool localMedia = false)
+        bool upstreamUnavailable = false, KeyValuePair<string, string>? change = null, bool production = false)
     {
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions { ContentRootPath = root, EnvironmentName = production ? "Production" : "Testing" });
         builder.Configuration.Sources.Clear();
@@ -229,27 +212,17 @@ internal static class MusicChecks
             ["ConnectionStrings:DefaultConnection"] = "Data Source=" + Guid.NewGuid().ToString("N") + ".db",
             ["Security:BootstrapToken"] = "YOUR_SYNTHETIC_MANAGEMENT_TOKEN_FOR_TESTS_ONLY",
             ["Modules:Chat:Enabled"] = "true", ["Cors:AllowedOrigins:0"] = "http://localhost:4001",
-            ["Modules:Music:Enabled"] = enabled.ToString(), ["Modules:Music:DemoMode"] = "true",
-            ["Modules:Music:TestAccessToken"] = Token, ["Modules:Music:AllowedMediaHosts:0"] = "media.example.org",
+            ["Modules:Music:Enabled"] = enabled.ToString(), ["Modules:Music:NeteaseEnabled"] = "true",
+            ["Modules:Music:TestAccessToken"] = Token,
         };
-        if (!noAudio)
-        {
-            values["Modules:Music:DemoAudioUrls:0"] = "https://media.example.org/original-001.mp3";
-            values["Modules:Music:DemoAudioUrls:1"] = "https://media.example.org/original-002.mp3";
-        }
-        if (localMedia)
-        {
-            var directory = Path.Combine(root, "music-demo-fixtures");
-            Directory.CreateDirectory(directory);
-            foreach (var name in new[] { "original-001.mp3", "original-002.mp3" }) File.WriteAllBytes(Path.Combine(directory, name), Enumerable.Range(0, 512).Select(i => (byte)i).ToArray());
-            values["Modules:Music:DemoMediaDirectory"] = directory;
-            values["Modules:Music:DemoMediaBaseUrl"] = "http://10.0.2.2:5000/api/music/";
-        }
         if (change.HasValue) values["Modules:Music:" + change.Value.Key] = change.Value.Value;
         builder.Configuration.AddInMemoryCollection(values);
         builder.Logging.ClearProviders();
         builder.Services.AddApiServices(builder.Configuration);
         builder.Services.AddMusicModule(builder.Configuration);
+        builder.Services.AddSingleton(new MusicUpstreamFixture { Status = upstreamUnavailable ? HttpStatusCode.ServiceUnavailable : HttpStatusCode.OK });
+        builder.Services.AddSingleton<NeteaseMusicProvider>(services => new NeteaseMusicProvider(
+            new HttpClient(services.GetRequiredService<MusicUpstreamFixture>()), services.GetRequiredService<TimeProvider>()));
         builder.Services.AddChatModule(builder.Configuration);
         builder.Services.AddSingleton<IEndpointModule, HealthModule>();
         builder.Services.AddSingleton<IEndpointModule, AuthModule>();

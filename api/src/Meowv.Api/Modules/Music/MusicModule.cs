@@ -22,10 +22,8 @@ public static class MusicRegistration
 
         services.AddSingleton(options);
         services.TryAddSingleton(TimeProvider.System);
-        services.AddSingleton<MusicDemoMedia>();
         services.AddSingleton<MusicRuntime>();
         services.AddSingleton<MusicDeviceStore>();
-        services.AddSingleton<FakeMusicProvider>();
         services.AddHttpClient("MusicNetease", client => client.Timeout = TimeSpan.FromSeconds(6))
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
             {
@@ -35,9 +33,6 @@ public static class MusicRegistration
         services.AddSingleton<NeteaseMusicProvider>(provider => new NeteaseMusicProvider(
             provider.GetRequiredService<IHttpClientFactory>().CreateClient("MusicNetease"), provider.GetRequiredService<TimeProvider>()));
         services.AddSingleton<MusicCatalog>();
-        services.AddSingleton<IMusicSearcher>(provider => provider.GetRequiredService<FakeMusicProvider>());
-        services.AddSingleton<IRecommendationSource>(provider => provider.GetRequiredService<FakeMusicProvider>());
-        services.AddSingleton<ITrackResolver>(provider => provider.GetRequiredService<FakeMusicProvider>());
         services.AddSingleton<IEndpointModule, MusicModule>();
         services.ConfigureHttpJsonOptions(json => json.SerializerOptions.TypeInfoResolverChain.Add(MusicJsonContext.Default));
         services.AddAuthentication().AddScheme<AuthenticationSchemeOptions, MusicAccessHandler>(MusicAccessHandler.SchemeName, _ => { });
@@ -51,14 +46,14 @@ public static class MusicRegistration
 public sealed class MusicModule : IEndpointModule
 {
     public string Name => "music";
-    public string Description => "音乐候选与解析（开发测试来源）。";
+    public string Description => "音乐搜索、候选与播放资源解析。";
     public void ConfigureMiddleware(IApplicationBuilder application) => application.UseMiddleware<MusicMiddleware>();
 
     public void MapEndpoints(IEndpointRouteBuilder endpoints)
     {
         var music = endpoints.MapGroup("/api/music");
         music.MapGet("/health", (MusicRuntime runtime, MusicCatalog catalog) => Results.Json(
-            new MusicHealth(runtime.Status, runtime.Available ? 1 : 0, catalog.Version),
+            new MusicHealth(catalog.Status(runtime.Status), runtime.Available ? 1 : 0, catalog.Version),
             MusicJsonContext.Default.MusicHealth, statusCode: runtime.Status is "disabled" or "unavailable" ? 503 : 200));
         if (!endpoints.ServiceProvider.GetRequiredService<MusicOptions>().Enabled) return;
         if (endpoints.ServiceProvider.GetRequiredService<MusicOptions>().DeviceCredentialsEnabled)
@@ -89,9 +84,6 @@ public sealed class MusicModule : IEndpointModule
         var secured = music.MapGroup("").RequireAuthorization(MusicAccessHandler.SchemeName)
             .WithMetadata(new MusicProtectedEndpoint(), new EndpointAccessMetadata("音乐专用设备令牌"))
             .RequireRateLimiting("music");
-        if (endpoints.ServiceProvider.GetRequiredService<MusicOptions>().DemoMode && endpoints.ServiceProvider.GetRequiredService<MusicDemoMedia>().Configured)
-            secured.MapMethods("/demo-audio/{name}", ["GET", "HEAD"], (string name, MusicDemoMedia media) =>
-                media.PathFor(name) is { } path ? Results.File(path, "audio/mpeg", enableRangeProcessing: true) : Results.NotFound());
         secured.MapGet("/providers", (MusicRuntime runtime, MusicCatalog catalog) => Results.Json(new MusicProviders(
                 [catalog.Provider(runtime.Status)]),
             MusicJsonContext.Default.MusicProviders));
