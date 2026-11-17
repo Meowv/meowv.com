@@ -15,11 +15,13 @@ public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : 
     public string ProviderId => Id;
     public string DisplayName => "网易云音乐";
     public string Version => ConfigVersion;
+
     public MusicTrack? FindTrack(string id)
     {
         lock (_gate) return _tracks.TryGetValue(id, out var entry) && entry.Until > clock.GetUtcNow() ? entry.Track : null;
     }
-    private readonly object _gate = new();
+
+    private readonly Lock _gate = new();
     private readonly SemaphoreSlim _concurrency = new(2);
     private readonly SemaphoreSlim _search = new(1);
     private readonly Dictionary<string, CachedPage> _pages = new(StringComparer.Ordinal);
@@ -31,7 +33,9 @@ public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : 
     private long _entrySequence;
     private DateTimeOffset _failedUntil;
     private int _failedStatus;
+
     private sealed record Entry(string SourceId, MusicTrack Track, DateTimeOffset Until, DateTimeOffset UnplayableUntil = default, long Used = 0);
+
     private sealed record CachedPage(MusicSearchPage Page, Entry[] Entries, DateTimeOffset Until, long Used);
 
     public string Status
@@ -76,11 +80,21 @@ public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : 
                 if (_pages.Count >= 32) _pages.Remove(_pages.MinBy(x => x.Value.Used).Key);
                 _pages[key] = new CachedPage(page, entries, clock.GetUtcNow().AddSeconds(page.Items.Length == 0 ? 30 : 300), ++_pageSequence);
             }
+
             return page with { Items = (MusicTrack[])page.Items.Clone() };
         }
-        catch (OperationCanceledException) when (!ct.IsCancellationRequested) { throw BlockFailure(504, 15); }
-        catch (MusicException error) when (error.Status is 503 or 504 && error.RetryAfterSeconds is null) { throw BlockFailure(error.Status, 15); }
-        finally { if (entered) _search.Release(); }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            throw BlockFailure(504, 15);
+        }
+        catch (MusicException error) when (error.Status is 503 or 504 && error.RetryAfterSeconds is null)
+        {
+            throw BlockFailure(error.Status, 15);
+        }
+        finally
+        {
+            if (entered) _search.Release();
+        }
     }
 
     private async Task<MusicSearchPage> LoadSearchAsync(string normalized, int count, int offset, string scope, CancellationToken ct)
@@ -101,7 +115,8 @@ public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : 
             var duration = Number(song, "duration");
             if (sourceId <= 0 || title.Length is < 1 or > 500 || duration is < 1 or > 86400000) continue;
             var artists = song.TryGetProperty("artists", out var names) && names.ValueKind == JsonValueKind.Array
-                ? names.EnumerateArray().Take(20).Select(x => Text(x, "name")).Where(x => x.Length is > 0 and <= 200).ToArray() : [];
+                ? names.EnumerateArray().Take(20).Select(x => Text(x, "name")).Where(x => x.Length is > 0 and <= 200).ToArray()
+                : [];
             if (artists.Length == 0) continue;
             var album = song.TryGetProperty("album", out var a) ? Text(a, "name") : "";
             if (album.Length > 500) throw Unavailable();
@@ -111,16 +126,21 @@ public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : 
                 restricted ? "unavailable" : "candidate", [new MusicSource(Id, sourceId.ToString(CultureInfo.InvariantCulture))]);
             tracks.Add(track);
         }
+
         var total = Number(result, "songCount");
         var next = songs.GetArrayLength() >= count && offset + count < 1000 && (total <= 0 || offset + count < total)
-            ? WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(scope + (offset + count).ToString(CultureInfo.InvariantCulture))) : null;
+            ? WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(scope + (offset + count).ToString(CultureInfo.InvariantCulture)))
+            : null;
         return new MusicSearchPage(tracks.DistinctBy(x => x.Id).ToArray(), next, false, []);
     }
 
     public async Task<MusicResolvedTrack> ResolveAsync(MusicResolveRequest request, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
-        try { return await LoadAudioAsync(request, ct); }
+        try
+        {
+            return await LoadAudioAsync(request, ct);
+        }
         catch (MusicException error) when (error.Status == 422)
         {
             lock (_gate)
@@ -129,7 +149,10 @@ public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : 
                         _tracks[id] = entry with { UnplayableUntil = clock.GetUtcNow().AddSeconds(30) };
             throw;
         }
-        catch (MusicException error) when (error.Status is 503 or 504 && error.RetryAfterSeconds is null) { throw BlockFailure(error.Status, 15); }
+        catch (MusicException error) when (error.Status is 503 or 504 && error.RetryAfterSeconds is null)
+        {
+            throw BlockFailure(error.Status, 15);
+        }
     }
 
     private async Task<MusicResolvedTrack> LoadAudioAsync(MusicResolveRequest request, CancellationToken ct)
@@ -143,6 +166,7 @@ public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : 
             _tracks.TryGetValue(request.TrackId, out entry);
             if (entry is not null) _tracks[request.TrackId] = entry with { Used = ++_entrySequence };
         }
+
         if (entry is null || entry.Until <= clock.GetUtcNow()) throw new MusicException("track_not_found", "歌曲记录已失效，请重新搜索。", 404);
         if (entry.Track.Availability == "unavailable" || entry.UnplayableUntil > clock.GetUtcNow()) throw NoMatch();
         var json = "{\"ids\":[\"" + entry.SourceId + "\"],\"br\":128000,\"csrf_token\":\"\"}";
@@ -180,14 +204,21 @@ public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : 
             lock (_gate)
             {
                 var now = clock.GetUtcNow();
-                if (now >= _window.AddMinutes(1)) { _window = now; _requests = 0; }
+                if (now >= _window.AddMinutes(1))
+                {
+                    _window = now;
+                    _requests = 0;
+                }
+
                 var until = _blockedUntil;
                 if (_requests >= 40 && _window.AddMinutes(1) > until) until = _window.AddMinutes(1);
-                if (until > now) throw new MusicException("rate_limited", "音乐源请求较多，请稍后重试。", 429,
-                    Math.Max(1, (int)Math.Ceiling((until - now).TotalSeconds)));
+                if (until > now)
+                    throw new MusicException("rate_limited", "音乐源请求较多，请稍后重试。", 429,
+                        Math.Max(1, (int)Math.Ceiling((until - now).TotalSeconds)));
                 if (_failedUntil > now) throw Failure(_failedStatus, (int)Math.Ceiling((_failedUntil - now).TotalSeconds));
                 _requests++;
             }
+
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
             timeout.CancelAfter(TimeSpan.FromSeconds(6));
             var token = timeout.Token;
@@ -196,15 +227,23 @@ public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : 
             {
                 await _concurrency.WaitAsync(token);
                 entered = true;
-                using var request = new HttpRequestMessage(HttpMethod.Post, "https://music.163.com" + path) { Content = content };
+                using var request = new HttpRequestMessage(HttpMethod.Post, "https://music.163.com" + path);
+                request.Content = content;
                 request.Headers.Referrer = new Uri("https://music.163.com/");
                 using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token);
-                if (response.StatusCode == HttpStatusCode.TooManyRequests) throw BlockRate(RetrySeconds(response, 60));
-                if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden) throw BlockFailure(403, 60);
-                if (response.StatusCode is HttpStatusCode.GatewayTimeout or HttpStatusCode.RequestTimeout) throw BlockFailure(504, RetrySeconds(response, 15));
+                switch (response.StatusCode)
+                {
+                    case HttpStatusCode.TooManyRequests:
+                        throw BlockRate(RetrySeconds(response, 60));
+                    case HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden:
+                        throw BlockFailure(403, 60);
+                    case HttpStatusCode.GatewayTimeout or HttpStatusCode.RequestTimeout:
+                        throw BlockFailure(504, RetrySeconds(response, 15));
+                }
+
                 if (!response.IsSuccessStatusCode) throw BlockFailure(503, RetrySeconds(response, 15));
                 if (response.Content.Headers.ContentLength > 512 * 1024) throw Unavailable();
-                using var stream = await response.Content.ReadAsStreamAsync(token);
+                await using var stream = await response.Content.ReadAsStreamAsync(token);
                 using var bytes = new MemoryStream();
                 var buffer = new byte[8192];
                 int read;
@@ -213,31 +252,49 @@ public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : 
                     if (bytes.Length + read > 512 * 1024) throw Unavailable();
                     bytes.Write(buffer, 0, read);
                 }
+
                 var document = JsonDocument.Parse(bytes.ToArray());
                 var code = Number(document.RootElement, "code");
                 if (code != 200)
                 {
                     var retry = RetrySeconds(response, Number(document.RootElement, "retryAfterSeconds") is > 0 and var delay ? delay : 60);
                     document.Dispose();
-                    if (code == 429) throw BlockRate(retry);
-                    if (code is 301 or 401 or 403) throw BlockFailure(403, 60);
-                    throw Unavailable();
+                    throw code switch
+                    {
+                        429 => BlockRate(retry),
+                        301 or 401 or 403 => BlockFailure(403, 60),
+                        _ => Unavailable()
+                    };
                 }
+
                 return document;
             }
-            catch (OperationCanceledException) when (!ct.IsCancellationRequested) { throw BlockFailure(504, 15); }
-            catch (Exception error) when (error is HttpRequestException or JsonException or IOException) { throw BlockFailure(503, 15); }
-            finally { if (entered) _concurrency.Release(); }
+            catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+            {
+                throw BlockFailure(504, 15);
+            }
+            catch (Exception error) when (error is HttpRequestException or JsonException or IOException)
+            {
+                throw BlockFailure(503, 15);
+            }
+            finally
+            {
+                if (entered) _concurrency.Release();
+            }
         }
     }
 
-    // 只缓存元数据页与失败类别；不保存查询原文、播放直链或音频。
     private MusicSearchPage? Cached(string key)
     {
         lock (_gate)
         {
             if (!_pages.TryGetValue(key, out var value)) return null;
-            if (value.Until <= clock.GetUtcNow()) { _pages.Remove(key); return null; }
+            if (value.Until <= clock.GetUtcNow())
+            {
+                _pages.Remove(key);
+                return null;
+            }
+
             _pages[key] = value with { Used = ++_pageSequence };
             Remember(value.Entries);
             return value.Page with { Items = (MusicTrack[])value.Page.Items.Clone() };
@@ -250,7 +307,8 @@ public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : 
         foreach (var entry in entries)
         {
             var value = _tracks.TryGetValue(entry.Track.Id, out var previous)
-                ? entry with { UnplayableUntil = previous.UnplayableUntil } : entry;
+                ? entry with { UnplayableUntil = previous.UnplayableUntil }
+                : entry;
             if (_tracks.Count >= 1000 && !_tracks.ContainsKey(entry.Track.Id)) _tracks.Remove(_tracks.MinBy(x => x.Value.Used).Key);
             _tracks[entry.Track.Id] = value with { Used = ++_entrySequence };
         }
@@ -272,7 +330,12 @@ public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : 
         lock (_gate)
         {
             var until = clock.GetUtcNow().AddSeconds(seconds);
-            if (until > _failedUntil) { _failedUntil = until; _failedStatus = status; }
+            if (until > _failedUntil)
+            {
+                _failedUntil = until;
+                _failedStatus = status;
+            }
+
             return Failure(_failedStatus, Math.Max(1, (int)Math.Ceiling((_failedUntil - clock.GetUtcNow()).TotalSeconds)));
         }
     }
@@ -299,7 +362,10 @@ public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : 
                     CultureInfo.InvariantCulture, out var offset) || offset is < 1 or >= 1000) throw MusicException.Invalid();
             return offset;
         }
-        catch (FormatException) { throw MusicException.Invalid(); }
+        catch (FormatException)
+        {
+            throw MusicException.Invalid();
+        }
     }
 
     private static long Number(JsonElement value, string key) => value.ValueKind == JsonValueKind.Object && value.TryGetProperty(key, out var x) && x.ValueKind == JsonValueKind.Number && x.TryGetInt64(out var number) ? number : 0;

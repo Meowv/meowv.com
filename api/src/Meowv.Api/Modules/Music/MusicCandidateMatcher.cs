@@ -14,13 +14,11 @@ public static partial class MusicCandidateMatcher
     {
         var (leftTitle, leftEdition) = Title(expected.Title);
         var (rightTitle, rightEdition) = Title(candidate.Title);
-        if (leftEdition != rightEdition) return new(0, false, rightEdition);
-        if (leftEdition != "studio" && Normalize(expected.Title) != Normalize(candidate.Title)) return new(0, false, rightEdition);
+        if (leftEdition != rightEdition || leftEdition != "studio" && Normalize(expected.Title) != Normalize(candidate.Title)) return new(0, false, rightEdition);
         var leftArtists = expected.Artists.Select(Normalize).Where(x => x.Length > 0).ToHashSet(StringComparer.Ordinal);
         var rightArtists = candidate.Artists.Select(Normalize).Where(x => x.Length > 0).ToHashSet(StringComparer.Ordinal);
         var title = Similarity(leftTitle, rightTitle);
-        var artist = leftArtists.Count == 0 || rightArtists.Count == 0 ? 0 :
-            (double)leftArtists.Intersect(rightArtists).Count() / leftArtists.Union(rightArtists).Count();
+        var artist = leftArtists.Count == 0 || rightArtists.Count == 0 ? 0 : (double)leftArtists.Intersect(rightArtists).Count() / leftArtists.Union(rightArtists).Count();
         var durations = expected.DurationMs is > 0 && candidate.DurationMs is > 0;
         var difference = durations ? Math.Abs(expected.DurationMs!.Value - candidate.DurationMs!.Value) : long.MaxValue;
         var tolerance = durations ? Math.Max(2000, expected.DurationMs!.Value * .02) : 0;
@@ -31,8 +29,8 @@ public static partial class MusicCandidateMatcher
         var score = .55 * title + .30 * artist + .15 * duration;
         if (leftIsrc is not null && leftIsrc == rightIsrc) score = Math.Min(1, score + .02);
         var equivalent = title == 1 && artist == 1 && duration == 1 && score >= .96 &&
-            expected.Availability != "preview" && candidate.Availability != "preview";
-        return new(Math.Round(score, 4), equivalent, rightEdition);
+                         expected.Availability != "preview" && candidate.Availability != "preview";
+        return new MusicMatch(Math.Round(score, 4), equivalent, rightEdition);
     }
 
     private static (string Title, string Edition) Title(string title)
@@ -42,12 +40,19 @@ public static partial class MusicCandidateMatcher
         {
             var kind = Edition(match.Groups[1].Value);
             if (kind.Length == 0) return match.Value;
-            edition.UnionWith(kind.Split('+')); return " ";
+            edition.UnionWith(kind.Split('+'));
+            return " ";
         });
         var suffix = Suffix().Match(basic);
-        if (suffix.Success) { edition.Add(Edition(suffix.Groups[1].Value)); basic = basic[..suffix.Index]; }
+        if (suffix.Success)
+        {
+            edition.Add(Edition(suffix.Groups[1].Value));
+            basic = basic[..suffix.Index];
+        }
+
         return (Normalize(basic), edition.Count == 0 ? "studio" : string.Join('+', edition));
     }
+
     private static string Edition(string text)
     {
         var value = text.ToLowerInvariant();
@@ -59,35 +64,44 @@ public static partial class MusicCandidateMatcher
         kinds.Sort(StringComparer.Ordinal);
         return string.Join('+', kinds);
     }
+
     private static string Normalize(string value) => string.Concat(value.Normalize(NormalizationForm.FormKC)
         .ToLowerInvariant().Where(char.IsLetterOrDigit));
+
     private static string? Isrc(string? value)
     {
         if (value is null) return null;
         var normalized = string.Concat(value.ToUpperInvariant().Where(char.IsLetterOrDigit));
         return ValidIsrc().IsMatch(normalized) ? normalized : null;
     }
+
     private static double Similarity(string left, string right)
     {
         if (left.Length == 0 || right.Length == 0) return 0;
         if (left == right) return 1;
-        // 比较只用于评分，自动合并仍要求严格标题/歌手与时长门槛。
         var previous = Enumerable.Range(0, right.Length + 1).ToArray();
         for (var i = 1; i <= left.Length; i++)
         {
-            var current = new int[right.Length + 1]; current[0] = i;
-            for (var j = 1; j <= right.Length; j++) current[j] = Math.Min(Math.Min(current[j - 1] + 1, previous[j] + 1),
-                previous[j - 1] + (left[i - 1] == right[j - 1] ? 0 : 1));
+            var current = new int[right.Length + 1];
+            current[0] = i;
+            for (var j = 1; j <= right.Length; j++)
+                current[j] = Math.Min(Math.Min(current[j - 1] + 1, previous[j] + 1),
+                    previous[j - 1] + (left[i - 1] == right[j - 1] ? 0 : 1));
             previous = current;
         }
+
         return 1d - (double)previous[right.Length] / Math.Max(left.Length, right.Length);
     }
+
     [GeneratedRegex(@"[\(\[（【]([^\)\]）】]+)[\)\]）】]", RegexOptions.CultureInvariant)]
     private static partial Regex Annotation();
+
     [GeneratedRegex(@"\s[-–—]\s*(live|remix|cover|instrumental|现场版|伴奏版|翻唱版)\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex Suffix();
+
     [GeneratedRegex(@"\b(live|cover|remix|instrumental)\b", RegexOptions.CultureInvariant)]
     private static partial Regex VersionWord();
+
     [GeneratedRegex(@"^[A-Z]{2}[A-Z0-9]{3}[0-9]{7}$", RegexOptions.CultureInvariant)]
     private static partial Regex ValidIsrc();
 }

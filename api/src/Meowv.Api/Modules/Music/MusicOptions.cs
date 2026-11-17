@@ -20,7 +20,7 @@ public sealed class MusicRuntime(MusicOptions options, IHostEnvironment environm
     private int _requests;
     private int _active;
 
-    public bool Available => options.Enabled && !options.BindingFailed &&
+    public bool Available => options is { Enabled: true, BindingFailed: false } &&
                              (environment.IsDevelopment() || environment.IsEnvironment("Testing")) &&
                              (options.DeviceCredentialsEnabled || (options.TestAccessToken.Length is >= 32 and <= 1024 && !options.TestAccessToken.Any(char.IsWhiteSpace) && !options.TestAccessToken.Any(char.IsControl))) &&
                              options.RequestsPerMinute is >= 1 and <= 1000 && options.MaxConcurrentRequests is >= 1 and <= 16 &&
@@ -63,9 +63,9 @@ public sealed class MusicRuntime(MusicOptions options, IHostEnvironment environm
 
         public void Dispose()
         {
-            if (Interlocked.Exchange(ref _disposed, 1) == 0)
-                lock (owner._gate)
-                    owner._active--;
+            if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+            lock (owner._gate)
+                owner._active--;
         }
     }
 }
