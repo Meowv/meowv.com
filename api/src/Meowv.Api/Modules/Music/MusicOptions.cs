@@ -5,6 +5,7 @@ public sealed class MusicOptions
     public bool Enabled { get; set; }
     public bool DeviceCredentialsEnabled { get; set; }
     public bool NeteaseEnabled { get; set; }
+    public bool KuwoSearchEnabled { get; set; }
     public string NeteaseRecommendationQuery { get; set; } = "纯音乐";
     public string TestAccessToken { get; set; } = "";
     public int RequestsPerMinute { get; set; } = 60;
@@ -19,7 +20,7 @@ public sealed class MusicRuntime(MusicOptions options, IHostEnvironment environm
     private int _requests;
     private int _active;
 
-    public bool Available => options.Enabled && !options.BindingFailed && options.NeteaseEnabled &&
+    public bool Available => options.Enabled && !options.BindingFailed &&
                              (environment.IsDevelopment() || environment.IsEnvironment("Testing")) &&
                              (options.DeviceCredentialsEnabled || (options.TestAccessToken.Length is >= 32 and <= 1024 && !options.TestAccessToken.Any(char.IsWhiteSpace) && !options.TestAccessToken.Any(char.IsControl))) &&
                              options.RequestsPerMinute is >= 1 and <= 1000 && options.MaxConcurrentRequests is >= 1 and <= 16 &&

@@ -13,7 +13,9 @@ internal sealed class MusicUpstreamFixture : HttpMessageHandler
     {
         Interlocked.Increment(ref Count);
         string body;
-        if (request.RequestUri!.AbsolutePath == "/api/search/get/web")
+        if (request.RequestUri!.Host == "www.kuwo.cn")
+            body = "{\"TOTAL\":\"1\",\"abslist\":[{\"MUSICRID\":\"MUSIC_12\",\"SONGNAME\":\"睡醒就好了\",\"ARTIST\":\"qix\",\"ALBUM\":\"Fixture\",\"DURATION\":\"100\"}]}";
+        else if (request.RequestUri.AbsolutePath == "/api/search/get/web")
         {
             var form = QueryHelpers.ParseQuery("?" + await request.Content!.ReadAsStringAsync(ct));
             var offset = int.Parse(form["offset"].ToString(), CultureInfo.InvariantCulture);

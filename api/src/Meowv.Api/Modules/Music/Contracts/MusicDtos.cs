@@ -6,7 +6,7 @@ public sealed record MusicProvider(string Id, string DisplayName, string Status,
 
 public sealed record MusicProviders(MusicProvider[] Providers);
 
-public sealed record MusicSource(string ProviderId, string SourceTrackId);
+public sealed record MusicSource(string ProviderId, string SourceTrackId, double? Confidence = null, string? Edition = null);
 
 public sealed record MusicTrack(
     string Id,

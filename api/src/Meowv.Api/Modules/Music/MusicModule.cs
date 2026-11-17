@@ -32,6 +32,18 @@ public static class MusicRegistration
             });
         services.AddSingleton<NeteaseMusicProvider>(provider => new NeteaseMusicProvider(
             provider.GetRequiredService<IHttpClientFactory>().CreateClient("MusicNetease"), provider.GetRequiredService<TimeProvider>()));
+        services.AddHttpClient("MusicKuwo", client => client.Timeout = TimeSpan.FromSeconds(6))
+            .RemoveAllLoggers()
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+            {
+                AllowAutoRedirect = false, UseCookies = false, ConnectTimeout = TimeSpan.FromSeconds(3),
+                PooledConnectionLifetime = TimeSpan.FromMinutes(5)
+            });
+        services.AddSingleton<KuwoSearchProvider>(provider => new KuwoSearchProvider(
+            provider.GetRequiredService<IHttpClientFactory>().CreateClient("MusicKuwo"), provider.GetRequiredService<TimeProvider>()));
+        services.AddSingleton<IMusicSearchProvider>(provider => provider.GetRequiredService<NeteaseMusicProvider>());
+        services.AddSingleton<IMusicSearchProvider>(provider => provider.GetRequiredService<KuwoSearchProvider>());
+        services.AddSingleton<MusicProviderRegistry>();
         services.AddSingleton<MusicCatalog>();
         services.AddSingleton<IEndpointModule, MusicModule>();
         services.ConfigureHttpJsonOptions(json => json.SerializerOptions.TypeInfoResolverChain.Add(MusicJsonContext.Default));
@@ -53,7 +65,7 @@ public sealed class MusicModule : IEndpointModule
     {
         var music = endpoints.MapGroup("/api/music");
         music.MapGet("/health", (MusicRuntime runtime, MusicCatalog catalog) => Results.Json(
-            new MusicHealth(catalog.Status(runtime.Status), runtime.Available ? 1 : 0, catalog.Version),
+            new MusicHealth(catalog.Status(runtime.Status), runtime.Available ? catalog.EnabledCount : 0, catalog.Version),
             MusicJsonContext.Default.MusicHealth, statusCode: runtime.Status is "disabled" or "unavailable" ? 503 : 200));
         if (!endpoints.ServiceProvider.GetRequiredService<MusicOptions>().Enabled) return;
         if (endpoints.ServiceProvider.GetRequiredService<MusicOptions>().DeviceCredentialsEnabled)
@@ -84,8 +96,8 @@ public sealed class MusicModule : IEndpointModule
         var secured = music.MapGroup("").RequireAuthorization(MusicAccessHandler.SchemeName)
             .WithMetadata(new MusicProtectedEndpoint(), new EndpointAccessMetadata("音乐专用设备令牌"))
             .RequireRateLimiting("music");
-        secured.MapGet("/providers", (MusicRuntime runtime, MusicCatalog catalog) => Results.Json(new MusicProviders(
-                [catalog.Provider(runtime.Status)]),
+        secured.MapGet("/providers", (MusicCatalog catalog) => Results.Json(new MusicProviders(
+                catalog.Providers()),
             MusicJsonContext.Default.MusicProviders));
         secured.MapGet("/search", async (HttpContext context, MusicCatalog catalog) => Results.Json(
             await catalog.SearchAsync(One(context, "q"), Limit(context), One(context, "cursor"), context.RequestAborted), MusicJsonContext.Default.MusicSearchPage));

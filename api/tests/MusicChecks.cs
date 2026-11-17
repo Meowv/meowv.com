@@ -20,6 +20,7 @@ internal static class MusicChecks
     public static async Task RunAsync(string root)
     {
         await NeteaseSourceChecks.RunAsync();
+        await MusicAggregationChecks.RunAsync();
         Check(!JsonSerializer.IsReflectionEnabledByDefault, "JSON reflection must stay disabled");
         using var fixture = JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "music-v1.json")));
         var page = JsonSerializer.Deserialize(fixture.RootElement.GetProperty("search"), MusicJsonContext.Default.MusicSearchPage)!;
@@ -94,6 +95,23 @@ internal static class MusicChecks
         await Case(root, true, async (client, app) =>
         {
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+            using var response = await client.GetAsync("/api/music/search?q=merged&limit=1");
+            using var data = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            var item = data.RootElement.GetProperty("items")[0];
+            Check(item.GetProperty("sources").GetArrayLength() == 2 && item.GetProperty("availability").GetString() == "candidate", "HTTP multi-source merge retains playable source");
+            Check(item.GetProperty("sources")[1].GetProperty("confidence").GetDouble() >= .96, "Generated JSON includes match confidence");
+            app.Services.GetRequiredService<IConfiguration>()["Modules:Music:NeteaseEnabled"] = "false";
+            using var metadata = await client.GetAsync("/api/music/search?q=metadata");
+            using var metadataJson = JsonDocument.Parse(await metadata.Content.ReadAsStringAsync());
+            var trackId = metadataJson.RootElement.GetProperty("items")[0].GetProperty("id").GetString();
+            Check(metadataJson.RootElement.GetProperty("items")[0].GetProperty("availability").GetString() == "metadata_only", "Only metadata capability remains after switch");
+            using var unsupported = await client.PostAsync("/api/music/resolve", Json("{\"trackId\":\"" + trackId + "\"}"));
+            await Error(unsupported, 422, "no_playable_match");
+            await CommonHealthy(client);
+        }, change: new("KuwoSearchEnabled", "true"));
+        await Case(root, true, async (client, app) =>
+        {
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
             using var failed = await client.GetAsync("/api/music/search?q=outage");
             await Error(failed, 503, "source_unavailable");
             Check(failed.Headers.RetryAfter?.Delta > TimeSpan.Zero, "Source outage carries Retry-After");
@@ -106,7 +124,7 @@ internal static class MusicChecks
         }, upstreamUnavailable: true);
         foreach (var invalid in new Dictionary<string, string>
         {
-            ["NeteaseEnabled"] = "false", ["TestAccessToken"] = "", ["MaxConcurrentRequests"] = "0", ["RequestsPerMinute"] = "invalid",
+            ["TestAccessToken"] = "", ["MaxConcurrentRequests"] = "0", ["RequestsPerMinute"] = "invalid",
             ["NeteaseRecommendationQuery"] = "\0invalid",
         })
         {
@@ -117,6 +135,15 @@ internal static class MusicChecks
                 await CommonHealthy(client);
             }, change: invalid);
         }
+        await Case(root, true, async (client, _) =>
+        {
+            using var health = await client.GetAsync("/api/music/health");
+            Check(health.IsSuccessStatusCode && (await health.Content.ReadAsStringAsync()).Contains("degraded"), "No enabled sources degrade without breaking host");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+            using var search = await client.GetAsync("/api/music/search?q=test");
+            await Error(search, 503, "source_unavailable");
+            await CommonHealthy(client);
+        }, change: new("NeteaseEnabled", "false"));
         await Case(root, true, async (client, _) =>
         {
             using var health = await client.GetAsync("/api/music/health");
@@ -222,6 +249,8 @@ internal static class MusicChecks
         builder.Services.AddMusicModule(builder.Configuration);
         builder.Services.AddSingleton(new MusicUpstreamFixture { Status = upstreamUnavailable ? HttpStatusCode.ServiceUnavailable : HttpStatusCode.OK });
         builder.Services.AddSingleton<NeteaseMusicProvider>(services => new NeteaseMusicProvider(
+            new HttpClient(services.GetRequiredService<MusicUpstreamFixture>()), services.GetRequiredService<TimeProvider>()));
+        builder.Services.AddSingleton<KuwoSearchProvider>(services => new KuwoSearchProvider(
             new HttpClient(services.GetRequiredService<MusicUpstreamFixture>()), services.GetRequiredService<TimeProvider>()));
         builder.Services.AddChatModule(builder.Configuration);
         builder.Services.AddSingleton<IEndpointModule, HealthModule>();

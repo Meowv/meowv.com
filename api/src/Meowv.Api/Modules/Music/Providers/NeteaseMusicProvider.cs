@@ -8,10 +8,17 @@ using Microsoft.AspNetCore.WebUtilities;
 
 namespace Meowv.Api.Modules.Music.Providers;
 
-public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock)
+public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : IMusicSearchProvider, IMusicResolverProvider
 {
     public const string Id = "netease";
     public const string ConfigVersion = "netease-v1";
+    public string ProviderId => Id;
+    public string DisplayName => "网易云音乐";
+    public string Version => ConfigVersion;
+    public MusicTrack? FindTrack(string id)
+    {
+        lock (_gate) return _tracks.TryGetValue(id, out var entry) && entry.Until > clock.GetUtcNow() ? entry.Track : null;
+    }
     private readonly object _gate = new();
     private readonly SemaphoreSlim _concurrency = new(2);
     private readonly SemaphoreSlim _search = new(1);
