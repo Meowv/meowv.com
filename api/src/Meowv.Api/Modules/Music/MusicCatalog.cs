@@ -2,7 +2,6 @@ using System.Security.Cryptography;
 using System.Text;
 using Meowv.Api.Modules.Music.Contracts;
 using Meowv.Api.Modules.Music.Providers;
-using Meowv.Api.Modules.Music.Storage;
 using Microsoft.AspNetCore.WebUtilities;
 
 namespace Meowv.Api.Modules.Music;
@@ -203,6 +202,7 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
                 // 歌词短暂不可用时，允许尝试已经匹配的其他音源。
             }
         }
+
         return new MusicLyrics(id, null, null);
     }
 
@@ -248,7 +248,7 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
                 return audio with { TrackId = request.TrackId };
             }
             catch (MusicException error) when (requested is null && excluded is null && firstFailure is null && source.ProviderId == primary &&
-                                               error.Code == "no_playable_match" && error.RetryAfterSeconds is null)
+                                               error is { Code: "no_playable_match", RetryAfterSeconds: null })
             {
                 firstFailure = error;
             }
@@ -273,7 +273,7 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
         {
             while (pending.Count > 0)
             {
-                var choice = grace is null ? await Task.WhenAny(pending.Keys) : await Task.WhenAny(pending.Keys.Cast<Task>().Append(grace));
+                var choice = grace is null ? await Task.WhenAny(pending.Keys) : await Task.WhenAny(pending.Keys.Append(grace));
                 caller.ThrowIfCancellationRequested();
                 if (choice == grace) break;
                 var task = (Task<SourcePage>)choice;

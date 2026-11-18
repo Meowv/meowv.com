@@ -1,38 +1,8 @@
 using System.Globalization;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using Meowv.Api.Infrastructure;
 
 namespace Meowv.Api.Modules.Music.Storage;
-
-internal sealed record MusicChartEntry(
-    int Rank,
-    string TrackKey,
-    string Title,
-    string[] Artists,
-    long? DurationMs = null,
-    string? Isrc = null,
-    string? Album = null,
-    string? CoverUrl = null,
-    string? TrackId = null,
-    string? Availability = null,
-    string? MediaId = null,
-    long MediaSize = 0);
-
-internal sealed record MusicChartSnapshot(
-    string ChartKey,
-    string Source,
-    DateOnly BusinessDate,
-    DateTimeOffset CapturedAt,
-    DateTimeOffset SourceUpdatedAt,
-    DateTimeOffset WindowStart,
-    DateTimeOffset WindowEnd,
-    MusicChartEntry[] Entries);
-
-[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
-[JsonSerializable(typeof(MusicChartEntry[]))]
-[JsonSerializable(typeof(MusicDailyPage))]
-internal partial class MusicChartJsonContext : JsonSerializerContext;
 
 internal sealed class MusicChartStore(ApiDatabase database)
 {

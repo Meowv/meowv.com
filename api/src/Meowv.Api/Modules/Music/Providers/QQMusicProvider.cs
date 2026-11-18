@@ -24,6 +24,7 @@ public sealed class QQMusicProvider(HttpClient http, TimeProvider clock) : IMusi
     public string ProviderId => Id;
     public string DisplayName => "QQ 音乐";
     public string Version => "qqmusic-v1";
+
     public string Status
     {
         get
@@ -33,7 +34,8 @@ public sealed class QQMusicProvider(HttpClient http, TimeProvider clock) : IMusi
     }
 
     public MusicTrack? FindTrack(string id) => _tracks.TryGetValue(id, out var entry) && entry.Deadline > clock.GetUtcNow()
-        ? entry.Track : null;
+        ? entry.Track
+        : null;
 
     internal void Remember(IEnumerable<Entry> entries)
     {
@@ -63,7 +65,8 @@ public sealed class QQMusicProvider(HttpClient http, TimeProvider clock) : IMusi
         Remember(entries);
         var total = Number(song, "totalnum");
         var next = rows.GetArrayLength() >= count && page < 50 && (total == 0 || count * page < total)
-            ? (page + 1).ToString(CultureInfo.InvariantCulture) : null;
+            ? (page + 1).ToString(CultureInfo.InvariantCulture)
+            : null;
         return new MusicSearchPage(entries.Select(x => x.Track).ToArray(), next, false, []);
     }
 
@@ -88,6 +91,7 @@ public sealed class QQMusicProvider(HttpClient http, TimeProvider clock) : IMusi
                 if (rank is < 1 or > 30 || !byId.TryGetValue(Number(row, "songId"), out var detail)) throw Failure(503);
                 if (ParseEntry(detail) is { } parsed) songs.Add(parsed with { Rank = (int)rank });
             }
+
             var midnight = date.ToDateTime(TimeOnly.MinValue);
             return (songs.OrderBy(x => x.Rank).DistinctBy(x => x.Track.Id).ToArray(),
                 new DateTimeOffset(midnight, BusinessZone.GetUtcOffset(midnight)));
@@ -173,6 +177,7 @@ public sealed class QQMusicProvider(HttpClient http, TimeProvider clock) : IMusi
                     var seconds = (int)Math.Ceiling((_retryAt - clock.GetUtcNow()).TotalSeconds);
                     if (seconds > 0) throw Failure(_failureStatus, seconds);
                 }
+
                 using var request = new HttpRequestMessage(HttpMethod.Get, url);
                 request.Headers.Referrer = new Uri(Referer);
                 request.Headers.UserAgent.ParseAdd("Mozilla/5.0");
@@ -190,8 +195,10 @@ public sealed class QQMusicProvider(HttpClient http, TimeProvider clock) : IMusi
                         _retryAt = now.AddSeconds(seconds);
                         _failureStatus = status;
                     }
+
                     throw Failure(status, seconds);
                 }
+
                 const int max = 1024 * 1024;
                 if (response.Content.Headers.ContentLength > max) throw Failure(503);
                 await using var stream = await response.Content.ReadAsStreamAsync(token);
@@ -255,7 +262,7 @@ public sealed class QQMusicProvider(HttpClient http, TimeProvider clock) : IMusi
         var size = Number(file, "size_128mp3");
         var pay = At(song, "pay", "pay_play");
         var playable = pay.ValueKind == JsonValueKind.Number && pay.TryGetInt64(out var cost) && cost == 0 &&
-            ValidId(mediaId) && size >= interval * 15000 && size <= interval * 17500;
+                       ValidId(mediaId) && size >= interval * 15000 && size <= interval * 17500;
         var track = new MusicTrack("qq-" + mid, title, artists, ValidText(albumName) ? albumName : null, interval * 1000,
             cover, null, playable ? "candidate" : "unavailable", [new MusicSource(Id, mid)]);
         return new Entry(track, playable ? mediaId : null, playable ? size : 0, default);
@@ -264,20 +271,24 @@ public sealed class QQMusicProvider(HttpClient http, TimeProvider clock) : IMusi
     private static bool ValidText(string text) => text.Length is > 0 and <= 180 && !text.Any(char.IsControl);
     private static bool ValidId(string value) => value.Length is >= 8 and <= 24 && value.All(char.IsAsciiLetterOrDigit);
     private static JsonElement Data(JsonDocument json) => At(json.RootElement, "req", "data");
+
     private static JsonElement At(JsonElement value, params string[] path)
     {
         foreach (var name in path)
-            if (value.ValueKind != JsonValueKind.Object || !value.TryGetProperty(name, out value)) return default;
+            if (value.ValueKind != JsonValueKind.Object || !value.TryGetProperty(name, out value))
+                return default;
         return value;
     }
+
     private static string Text(JsonElement value, string name) => At(value, name) is { ValueKind: JsonValueKind.String } text ? text.GetString() ?? "" : "";
     private static long Number(JsonElement value, string name) => At(value, name) is { ValueKind: JsonValueKind.Number } number && number.TryGetInt64(out var result) ? result : 0;
     private static MusicException NoMatch() => new("no_playable_match", "QQ 音乐未提供可用的完整音频。", 422);
+
     private static MusicException Failure(int status, int? retry = null) => status switch
     {
-        403 => new("forbidden", "QQ 音乐拒绝了此请求。", status, retry),
-        429 => new("rate_limited", "QQ 音乐请求较多，请稍后重试。", status, retry),
-        504 => new("source_timeout", "QQ 音乐请求超时。", status, retry),
-        _ => new("source_unavailable", "QQ 音乐暂时不可用。", 503, retry)
+        403 => new MusicException("forbidden", "QQ 音乐拒绝了此请求。", status, retry),
+        429 => new MusicException("rate_limited", "QQ 音乐请求较多，请稍后重试。", status, retry),
+        504 => new MusicException("source_timeout", "QQ 音乐请求超时。", status, retry),
+        _ => new MusicException("source_unavailable", "QQ 音乐暂时不可用。", 503, retry)
     };
 }

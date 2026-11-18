@@ -29,6 +29,7 @@ public sealed class MusicProviderRegistry(MusicOptions options, IEnumerable<IMus
             !IsEnabled(x) ? "disabled" : x.Status,
             Capabilities(x), x is IMusicResolverProvider))
     ];
+
     private static string[] Capabilities(IMusicSearchProvider source)
     {
         var capabilities = new List<string> { "search" };

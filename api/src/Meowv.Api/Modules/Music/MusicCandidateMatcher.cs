@@ -4,8 +4,6 @@ using Meowv.Api.Modules.Music.Contracts;
 
 namespace Meowv.Api.Modules.Music;
 
-public sealed record MusicMatch(double Confidence, bool Equivalent, string Edition);
-
 public static partial class MusicCandidateMatcher
 {
     public static bool CanMerge(MusicTrack left, MusicTrack right) => Title(left.Title) == Title(right.Title) && Compare(left, right).Equivalent;
@@ -14,7 +12,7 @@ public static partial class MusicCandidateMatcher
     {
         var (leftTitle, leftEdition) = Title(expected.Title);
         var (rightTitle, rightEdition) = Title(candidate.Title);
-        if (leftEdition != rightEdition || leftEdition != "studio" && Normalize(expected.Title) != Normalize(candidate.Title)) return new(0, false, rightEdition);
+        if (leftEdition != rightEdition || leftEdition != "studio" && Normalize(expected.Title) != Normalize(candidate.Title)) return new MusicMatch(0, false, rightEdition);
         var leftArtists = expected.Artists.Select(Normalize).Where(x => x.Length > 0).ToHashSet(StringComparer.Ordinal);
         var rightArtists = candidate.Artists.Select(Normalize).Where(x => x.Length > 0).ToHashSet(StringComparer.Ordinal);
         var title = Similarity(leftTitle, rightTitle);

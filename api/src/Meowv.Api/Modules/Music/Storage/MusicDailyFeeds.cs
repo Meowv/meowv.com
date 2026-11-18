@@ -9,16 +9,16 @@ using Microsoft.Data.Sqlite;
 
 namespace Meowv.Api.Modules.Music.Storage;
 
-internal sealed record MusicDailyRank(string Source, int Rank);
-internal sealed record MusicDailyItem(MusicTrack Track, MusicDailyRank[] Ranks);
-internal sealed record MusicDailySource(string Source, DateTimeOffset CapturedAt, DateTimeOffset SourceUpdatedAt, bool Stale);
-internal sealed record MusicDailyPage(string Chart, DateOnly Period, MusicDailySource[] Sources, MusicDailyItem[] Items, bool Partial, string[] Warnings);
-
 internal sealed class MusicDailyFeeds(
-    MusicChartStore store, MusicProviderRegistry registry, MusicCatalog catalog,
-    NeteaseMusicProvider netease, QQMusicProvider qq, TimeProvider clock)
+    MusicChartStore store,
+    MusicProviderRegistry registry,
+    MusicCatalog catalog,
+    NeteaseMusicProvider netease,
+    QQMusicProvider qq,
+    TimeProvider clock)
 {
     private static readonly TimeZoneInfo BusinessZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Shanghai");
+
     private readonly Dictionary<(string Feed, string Provider), RefreshState> _states = new()
     {
         [("rising", NeteaseMusicProvider.Id)] = new(),
@@ -26,6 +26,7 @@ internal sealed class MusicDailyFeeds(
         [("new-songs", NeteaseMusicProvider.Id)] = new(),
         [("new-songs", QQMusicProvider.Id)] = new()
     };
+
     private sealed class RefreshState
     {
         public readonly SemaphoreSlim Gate = new(1);
@@ -89,6 +90,7 @@ internal sealed class MusicDailyFeeds(
             if (!cursor.StartsWith(version, StringComparison.Ordinal)) offset = 0;
             else if (offset >= tracks.Length) throw MusicException.Invalid();
         }
+
         var items = tracks.Skip(offset).Take(limit ?? 20).ToArray();
         var next = offset + items.Length;
         return new MusicRecommendationPage(items, next < tracks.Length ? version + next.ToString(CultureInfo.InvariantCulture) : null,
@@ -170,6 +172,7 @@ internal sealed class MusicDailyFeeds(
             rows = upstream.Tracks.Select((entry, i) => ToEntry(entry.Rank ?? i + 1, entry.Track, entry.MediaId, entry.Size)).ToArray();
             updated = upstream.Updated;
         }
+
         var now = clock.GetUtcNow();
         var date = updated is { } published ? LocalDate(published) : LocalDate(now);
         if (date > LocalDate(now) || date < LocalDate(now).AddDays(-1)) throw Unavailable();
@@ -180,11 +183,13 @@ internal sealed class MusicDailyFeeds(
         new(rank, track.Sources[0].SourceTrackId, track.Title, track.Artists, track.DurationMs,
             track.Isrc, track.Album, track.CoverUrl, track.Id, track.Availability, mediaId, size);
 
-    private static MusicTrack? ToTrack(string provider, MusicChartEntry entry) => entry.TrackId is { } id ?
-        new MusicTrack(id, entry.Title, entry.Artists, entry.Album, entry.DurationMs, entry.CoverUrl, entry.Isrc,
-            entry.Availability ?? "unavailable", [new MusicSource(provider, entry.TrackKey)]) : null;
+    private static MusicTrack? ToTrack(string provider, MusicChartEntry entry) => entry.TrackId is { } id
+        ? new MusicTrack(id, entry.Title, entry.Artists, entry.Album, entry.DurationMs, entry.CoverUrl, entry.Isrc,
+            entry.Availability ?? "unavailable", [new MusicSource(provider, entry.TrackKey)])
+        : null;
 
     private static DateOnly LocalDate(DateTimeOffset value) => DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(value, BusinessZone).Date);
+
     private static DateTimeOffset Midnight(DateOnly date)
     {
         var time = date.ToDateTime(TimeOnly.MinValue);
