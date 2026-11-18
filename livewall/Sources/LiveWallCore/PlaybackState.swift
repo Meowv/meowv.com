@@ -36,6 +36,8 @@ public struct PlaybackSignals: Equatable, Sendable {
     public var onBattery: Bool
     /// 休息提醒正在显示。休息期间不因无操作暂停壁纸，但保留其它省电规则。
     public var resting: Bool
+    /// 软件内「一键锁屏」正在覆盖屏幕。此时桌面壁纸完全不可见，解码没有必要继续。
+    public var inAppLocked: Bool
 
     public init(
         userPaused: Bool = false,
@@ -46,7 +48,8 @@ public struct PlaybackSignals: Equatable, Sendable {
         idleSeconds: Double = 0,
         lowPowerMode: Bool = false,
         onBattery: Bool = false,
-        resting: Bool = false
+        resting: Bool = false,
+        inAppLocked: Bool = false
     ) {
         self.userPaused = userPaused
         self.displaySleeping = displaySleeping
@@ -57,6 +60,7 @@ public struct PlaybackSignals: Equatable, Sendable {
         self.lowPowerMode = lowPowerMode
         self.onBattery = onBattery
         self.resting = resting
+        self.inAppLocked = inAppLocked
     }
 }
 
@@ -65,6 +69,7 @@ public struct PlaybackSignals: Equatable, Sendable {
 public enum PlaybackPauseReason: String, Equatable, Sendable, CaseIterable {
     case userRequested
     case sessionLocked
+    case inAppLocked
     case displaySleeping
     case screenCovered
     case thermalPressure
@@ -76,6 +81,7 @@ public enum PlaybackPauseReason: String, Equatable, Sendable, CaseIterable {
         switch self {
         case .userRequested: return "手动暂停"
         case .sessionLocked: return "屏幕已锁定"
+        case .inAppLocked: return "软件锁屏中"
         case .displaySleeping: return "显示器已休眠"
         case .screenCovered: return "画面被完全遮挡"
         case .thermalPressure: return "系统温度偏高"
@@ -159,7 +165,7 @@ public struct PlaybackStateResolver: Equatable, Sendable {
     ///
     /// 顺序不能随意调换：
     /// 1. **用户手动暂停最优先**，且不被任何其他信号撤销 —— 用户说停就停；
-    /// 2. 锁屏与息屏排在一起：此时画面不可见，必须停；
+    /// 2. 系统锁屏、软件内锁屏与息屏排在一起：此时画面不可见，必须停；
     /// 3. 遮挡次之：画面可见但被盖住，同样看不到，且是收益最大的一项；
     /// 4. 热压力：系统已经在挣扎，主动让出解码资源；
     /// 5. 空闲：用户离开键盘，大概率不在看；
@@ -171,6 +177,9 @@ public struct PlaybackStateResolver: Equatable, Sendable {
         }
         if signals.sessionLocked {
             return .paused(.sessionLocked)
+        }
+        if signals.inAppLocked {
+            return .paused(.inAppLocked)
         }
         if signals.displaySleeping {
             return .paused(.displaySleeping)

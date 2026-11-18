@@ -198,6 +198,10 @@ extension AppDelegate {
         lockPreview.state = preferences.lockScreenPreview ? .on : .off
         menu.addItem(lockPreview)
 
+        // 「一键锁屏壁纸」紧跟系统锁屏预览：两者都叫「锁屏」，但一个是 macOS 系统锁屏的
+        // 静态图、一个是 App 自己的全屏锁定层。放在一起，名字里带「一键锁屏」以示区分。
+        menu.addItem(buildInAppLockWallpaperMenu())
+
         // 图标旋转紧跟锁屏预览：同属「画面 / 图标行为」的观感开关，且都是开一次就不常动。
         // 默认关闭 —— 打开后播放期间会一直转，属于个人偏好而非默认观感。
         let iconRotation = NSMenuItem(
@@ -342,6 +346,16 @@ extension AppDelegate {
         )
         restNow.target = self
         menu.addItem(restNow)
+
+        // 与「立即开始休息」相邻：同样是「立刻进入一个全屏状态」，但语义不同 ——
+        // 一键锁屏没有倒计时、不会自动结束，只能按空格或 ⌘W 退出。
+        let lockNow = NSMenuItem(
+            title: "一键锁屏（\(InAppLockInputPolicy.unlockHint) 解锁）",
+            action: #selector(startInAppLock),
+            keyEquivalent: ""
+        )
+        lockNow.target = self
+        menu.addItem(lockNow)
 
         menu.addItem(.separator())
         let developerTools = NSMenuItem(

@@ -120,6 +120,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let network = NetworkMonitor()
     /// 全屏休息提醒层与倒计时，独立于桌面壁纸窗口和切换定时器。
     let restReminderCoordinator = RestReminderCoordinator()
+    /// 软件内「一键锁屏」：全屏覆盖、独立壁纸与严格输入拦截。
+    /// 与系统锁屏预览（`lockScreenPreviewer`）是两件事。
+    let inAppLockCoordinator = InAppLockCoordinator()
+    /// 已确认「在缺少辅助功能权限的情况下照常锁屏」，本次运行不再重复询问。
+    var didAcknowledgeDegradedInAppLock = false
     /// 累计「活跃使用时间」的纯逻辑状态。
     var restReminderClock = RestReminderClock()
     var restReminderTimer: Timer?
@@ -433,6 +438,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.completeRestReminder(reason: reason)
         }
 
+        // 一键锁屏的出口只有空格与 ⌘W，两条路径都汇到 `endInAppLock`。
+        inAppLockCoordinator.onUnlockRequest = { [weak self] in
+            self?.endInAppLock(reason: "空格 / ⌘W")
+        }
+        inAppLockCoordinator.log = { [weak self] message in self?.log(message) }
+        inAppLockCoordinator.onNotice = { [weak self] message in
+            guard let self else { return }
+            self.notice = .warning(message)
+            self.refreshStatusItem()
+        }
+
         // 锁屏预览的日志与提示出口。提示只在真失败时给一次（见 `LockScreenPreviewer`），
         // 免得每换一张片就刷一条警告。
         lockScreenPreviewer.log = { [weak self] message in self?.log(message) }
@@ -639,6 +655,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         restReminderTimer?.invalidate()
         restReminderTimer = nil
         restReminderCoordinator.stopImmediately()
+        // 锁屏层要先拆：它会还原 `NSApp.presentationOptions` 并撤掉事件 tap，
+        // 留着会让退出后的前台应用收不到键鼠输入。
+        inAppLockCoordinator.end()
         restReminderClock.reset()
         scheduleTimer?.invalidate()
         pinApplyTask?.cancel()

@@ -23,6 +23,8 @@ extension AppDelegate {
                 guard let self else { return }
                 self.log("屏幕参数变化 → 重建窗口")
                 self.rebuildWindows(reason: "屏幕变化")
+                // 锁屏层也要跟着重建：新接入的屏幕同样必须被盖住。
+                self.inAppLockCoordinator.refreshWindows()
             }
         }
         workspace.addObserver(
@@ -39,11 +41,21 @@ extension AppDelegate {
             Task { @MainActor in
                 self?.governor.setDisplaySleeping(false)
                 self?.syncRestReminderInterruptionState()
+                // 显示器休眠可能让覆盖层被系统挪走；醒来后重新顶到最前。
+                // 系统锁屏仍生效时不抢前台 —— loginwindow 正在等密码输入。
+                self?.inAppLockCoordinator.bringToFront(
+                    activate: !(self?.governor.signals.sessionLocked ?? false)
+                )
             }
         }
         workspace.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) {
             [weak self] _ in
-            Task { @MainActor in self?.rebuildWindows(reason: "系统唤醒") }
+            Task { @MainActor in
+                self?.rebuildWindows(reason: "系统唤醒")
+                self?.inAppLockCoordinator.bringToFront(
+                    activate: !(self?.governor.signals.sessionLocked ?? false)
+                )
+            }
         }
 
         // 锁屏 / 解锁同样只更新信号，不直接碰播放器 ——
@@ -78,6 +90,9 @@ extension AppDelegate {
                 self?.governor.setSessionLocked(false)
                 self?.syncRestReminderInterruptionState()
                 self?.aerialLockScreenManager.screenDidUnlock()
+                // 系统锁屏期间本 App 会失活；解锁后把软件锁屏层重新顶回前台，
+                // 否则用户会看到一个「已经解锁但什么都没有」的桌面。
+                self?.inAppLockCoordinator.bringToFront(activate: true)
             }
         }
     }

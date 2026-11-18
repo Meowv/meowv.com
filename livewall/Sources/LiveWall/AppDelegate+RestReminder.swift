@@ -67,6 +67,9 @@ extension AppDelegate {
         guard (force || preferences.restReminderEnabled),
               restReminderClock.isDue,
               !restReminderCoordinator.isActive,
+              // 软件锁屏期间不弹休息层：两个全屏层叠在一起只会互相遮挡，
+              // 而且用户已经不在看屏幕了。
+              !isInAppLocked,
               !governor.signals.sessionLocked,
               !governor.signals.displaySleeping,
               governor.state.isPlaying,

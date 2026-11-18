@@ -54,6 +54,9 @@ extension AppDelegate {
     /// 全局热键触发。按 id 分派 —— 走的是和菜单完全相同的入口，不另开一条路径。
     func handleHotKey(_ id: UInt32) {
         guard !backupOperationPending, !isShuttingDown else { return }
+        // 软件锁屏期间一律忽略。事件 tap 正常工作时这些热键根本到不了这里；
+        // 这里是 tap 降级（无辅助功能权限）时的兜底，避免锁屏画面背后换片。
+        guard !isInAppLocked else { return }
         switch id {
         case HotKeyManager.Definition.togglePause.id:
             togglePause()

@@ -119,6 +119,14 @@ final class PlaybackGovernor {
         updatePollingTimer()
     }
 
+    /// 软件内「一键锁屏」期间桌面壁纸被完全盖住，暂停解码；解锁后按其它信号恢复。
+    func setInAppLocked(_ locked: Bool) {
+        guard signals.inAppLocked != locked else { return }
+        signals.inAppLocked = locked
+        sampleAndResolve()
+        updatePollingTimer()
+    }
+
     /// 休息提醒显示期间继续播放壁纸，即使用户没有操作输入；其它暂停原因仍然有效。
     func setResting(_ resting: Bool) {
         guard signals.resting != resting else { return }
@@ -135,8 +143,8 @@ final class PlaybackGovernor {
 
     private func sampleAndResolve() {
         let resolver = resolverProvider()
-        if signals.userPaused || signals.sessionLocked || signals.displaySleeping {
-            // 这三项必然暂停，且恢复都有明确的事件入口。继续扫描窗口、电池和空闲时间
+        if signals.userPaused || signals.sessionLocked || signals.displaySleeping || signals.inAppLocked {
+            // 这几项必然暂停，且恢复都有明确的事件入口。继续扫描窗口、电池和空闲时间
             // 只会制造无意义的常驻唤醒。
             signals.thermalPressure = .nominal
             signals.lowPowerMode = false
@@ -163,7 +171,8 @@ final class PlaybackGovernor {
     }
 
     private func updatePollingTimer() {
-        let shouldPoll = isStarted && !signals.userPaused && !signals.sessionLocked && !signals.displaySleeping
+        let shouldPoll = isStarted && !signals.userPaused && !signals.sessionLocked
+            && !signals.displaySleeping && !signals.inAppLocked
         if shouldPoll {
             startPollingTimerIfNeeded()
         } else {

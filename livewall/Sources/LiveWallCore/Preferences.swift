@@ -135,6 +135,17 @@ public struct Preferences: Codable, Sendable, Equatable {
     /// 默认开启；关掉即完全停用（不下载、不设墙纸）。
     public var lockScreenPreview: Bool
 
+    // 一键锁屏（软件内锁屏）
+    /// 「一键锁屏」时播放的独立视频。**nil 即纯黑屏**。
+    ///
+    /// 与 `lockScreenPreview`（系统锁屏的静态图）是两件事：这里锁的是 App 自己的
+    /// 全屏覆盖层，与 macOS 锁屏无关。刻意**不**复用当前桌面壁纸 —— 用户要的是
+    /// 「锁上之后看不到正在放的那张」。
+    ///
+    /// 与 `localFolderPath` 同一套写法：存绝对路径，不判存在性（外接盘拔掉时保留配置，
+    /// 插回来即可继续用），空串与纯空白在 `sanitized()` 里清掉。
+    public var inAppLockVideoPath: String?
+
     // 菜单栏
     /// 菜单栏图标旋转。
     ///
@@ -174,6 +185,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         pauseOnBattery: Bool = false,
         pauseOnThermalPressure: Bool = true,
         lockScreenPreview: Bool = true,
+        inAppLockVideoPath: String? = nil,
         animateMenuBarIcon: Bool = false,
         developerToolsEnabled: Bool = false,
         remoteUpdateURL: String? = Preferences.defaultRemoteUpdateURL
@@ -204,6 +216,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         self.pauseOnBattery = pauseOnBattery
         self.pauseOnThermalPressure = pauseOnThermalPressure
         self.lockScreenPreview = lockScreenPreview
+        self.inAppLockVideoPath = inAppLockVideoPath
         self.animateMenuBarIcon = animateMenuBarIcon
         self.developerToolsEnabled = developerToolsEnabled
         self.remoteUpdateURL = remoteUpdateURL
@@ -227,6 +240,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         case pauseWhenCovered, pauseWhenIdle, idleThresholdSeconds
         case pauseOnLowPowerMode, pauseOnBattery, pauseOnThermalPressure
         case lockScreenPreview
+        case inAppLockVideoPath
         case animateMenuBarIcon
         case developerToolsEnabled
         case remoteUpdateURL
@@ -258,6 +272,7 @@ public struct Preferences: Codable, Sendable, Equatable {
         try container.encode(pauseOnBattery, forKey: .pauseOnBattery)
         try container.encode(pauseOnThermalPressure, forKey: .pauseOnThermalPressure)
         try container.encode(lockScreenPreview, forKey: .lockScreenPreview)
+        try container.encodeIfPresent(inAppLockVideoPath, forKey: .inAppLockVideoPath)
         try container.encode(animateMenuBarIcon, forKey: .animateMenuBarIcon)
         try container.encode(developerToolsEnabled, forKey: .developerToolsEnabled)
         try container.encodeIfPresent(remoteUpdateURL, forKey: .remoteUpdateURL)
@@ -329,6 +344,10 @@ public struct Preferences: Codable, Sendable, Equatable {
         // typeMismatch，后果与缺字段完全一样 —— 整个文件退回默认、静默清零其它设置。
         lockScreenPreview = (try? container.decodeIfPresent(Bool.self, forKey: .lockScreenPreview))
             ?? fallback.lockScreenPreview
+        // 与 `localFolderPath` 同理用 `try?`：手改配置把这一项写成数字/对象会抛 typeMismatch，
+        // 后果与缺字段完全一样 —— 整个文件退回默认、静默清零其它设置。
+        // 解不出来就当没配置，锁屏回退纯黑屏，用户重新选一次即可。
+        inAppLockVideoPath = (try? container.decodeIfPresent(String.self, forKey: .inAppLockVideoPath)) ?? nil
         // 同上用 `try?`：写成 `"yes"` 这类非布尔值会抛 typeMismatch，
         // 后果与缺字段完全一样 —— 整个文件退回默认、静默清零其它设置。
         animateMenuBarIcon = (try? container.decodeIfPresent(Bool.self, forKey: .animateMenuBarIcon))
@@ -365,6 +384,25 @@ public struct Preferences: Codable, Sendable, Equatable {
     /// 本地文件夹的显示名（菜单父项标题用）。未配置时为 nil。
     public var localFolderName: String? {
         guard let url = resolvedLocalFolderURL else { return nil }
+        let name = url.lastPathComponent
+        return name.isEmpty ? url.path : name
+    }
+
+    /// 「一键锁屏」独立壁纸。空串、纯空白一律视为「未配置」= 纯黑屏。
+    ///
+    /// 与 `resolvedLocalFolderURL` 同一口径：只做路径解析，**不碰文件系统** ——
+    /// 这个属性会在菜单构建（每次展开）里被读到，不该带 IO。
+    public var resolvedInAppLockVideoURL: URL? {
+        guard let raw = inAppLockVideoPath?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !raw.isEmpty else {
+            return nil
+        }
+        return URL(fileURLWithPath: (raw as NSString).expandingTildeInPath)
+    }
+
+    /// 锁屏壁纸的显示名（菜单用）。未配置时为 nil。
+    public var inAppLockVideoName: String? {
+        guard let url = resolvedInAppLockVideoURL else { return nil }
         let name = url.lastPathComponent
         return name.isEmpty ? url.path : name
     }
@@ -451,6 +489,12 @@ public struct Preferences: Codable, Sendable, Equatable {
         if let raw = copy.localFolderPath,
            raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             copy.localFolderPath = nil
+        }
+        // 锁屏壁纸同理：只清空串，**不清洗「文件不存在」** —— 外接盘拔掉时保留配置，
+        // 插回来即可继续用；锁屏时加载失败会停在纯黑屏，不会回退到当前桌面壁纸。
+        if let raw = copy.inAppLockVideoPath,
+           raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            copy.inAppLockVideoPath = nil
         }
         // 地址非法的固定项本来也播不了（`playableURL` 为 nil = 空串、非 http(s)、
         // 或不是合法的 file:// ），留着只会让启动流程先失败一次再解钉。这里直接清掉，

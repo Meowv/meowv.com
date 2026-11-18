@@ -142,7 +142,7 @@ func powerTests() {
         test("穷举：返回的原因必须是命中信号里优先级最高的") {
             // 优先级顺序，从高到低
             let order: [PlaybackPauseReason] = [
-                .userRequested, .sessionLocked, .displaySleeping,
+                .userRequested, .sessionLocked, .inAppLocked, .displaySleeping,
                 .screenCovered, .thermalPressure, .idle, .lowPowerMode, .onBattery,
             ]
             var seen = Set<PlaybackPauseReason>()
@@ -161,6 +161,7 @@ func powerTests() {
                     switch reason {
                     case .userRequested: return signals.userPaused
                     case .sessionLocked: return signals.sessionLocked
+                    case .inAppLocked: return signals.inAppLocked
                     case .displaySleeping: return signals.displaySleeping
                     case .screenCovered: return signals.screenFullyCovered
                     case .thermalPressure: return signals.thermalPressure.isConstrained
