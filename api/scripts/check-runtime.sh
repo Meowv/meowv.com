@@ -42,10 +42,17 @@ cat >"$work_dir/Checks.csproj" <<EOF
     <Compile Include="$project_dir/src/Meowv.Api/Modules/Diagnostics/*.cs" />
     <Compile Include="$project_dir/src/Meowv.Api/Modules/Health/*.cs" />
     <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/XiaomiCameraOptions.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/XiaomiModuleOptions.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/XiaomiMediaOptions.cs" />
     <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/XiaomiCameraServiceCollectionExtensions.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/XiaomiPlaybackLimits.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/XiaomiPlaybackCapacityException.cs" />
     <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/XiaomiModuleRuntime.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/XiaomiEndpointMetadata.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/XiaomiModuleAvailabilityMiddleware.cs" />
     <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/XiaomiCredentialCache.cs" />
     <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/XiaomiPlaybackTicketService.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/XiaomiPlaybackTarget.cs" />
     <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/XiaomiFfmpegResolver.cs" />
     <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/XiaomiMediaProfile.cs" />
     <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/XiaomiStorageJsonContext.cs" />
