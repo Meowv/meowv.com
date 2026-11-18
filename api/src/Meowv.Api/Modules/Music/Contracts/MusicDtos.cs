@@ -21,7 +21,8 @@ public sealed record MusicTrack(
 
 public sealed record MusicSearchPage(MusicTrack[] Items, string? NextCursor, bool Partial, string[] Warnings);
 
-public sealed record MusicRecommendationPage(MusicTrack[] Items, string? NextCursor, string Strategy, DateTime GeneratedAt);
+public sealed record MusicRecommendationPage(MusicTrack[] Items, string? NextCursor, string Strategy, DateTime GeneratedAt,
+    bool Partial = false, string[]? Warnings = null);
 
 public sealed record MusicResolveRequest(
     string? TrackId,
@@ -36,3 +37,5 @@ public sealed record MusicResolvedTrack(string TrackId, string ProviderId, strin
 public sealed record MusicError(string Code, string Message, bool Retryable, int? RetryAfterSeconds, string RequestId);
 
 public sealed record MusicErrorResponse(MusicError Error);
+
+public sealed record MusicLyrics(string TrackId, string? ProviderId, string? Lrc);

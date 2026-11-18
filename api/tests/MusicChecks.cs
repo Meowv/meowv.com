@@ -39,12 +39,10 @@ internal static class MusicChecks
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
             using var providers = await client.GetAsync("/api/music/providers");
             var registered = JsonSerializer.Deserialize(await providers.Content.ReadAsStringAsync(), MusicJsonContext.Default.MusicProviders)!;
-            Check(providers.IsSuccessStatusCode && registered.Providers.Select(x => x.Id).SequenceEqual(["netease", "kuwo-search"]),
-                "Only the current playback and metadata sources are registered");
+            Check(providers.IsSuccessStatusCode && registered.Providers.Select(x => x.Id).SequenceEqual(["netease", "qqmusic"]),
+                "Only NetEase and QQ Music are registered");
             using var retired = await client.GetAsync("/api/music/demo-audio/original-001.mp3");
             Check(retired.StatusCode == HttpStatusCode.NotFound, "Retired demo audio route is absent");
-            using var noChart = await client.GetAsync("/api/music/charts/daily");
-            Check(noChart.StatusCode == HttpStatusCode.NotFound, "QQ chart is disabled by default");
             using var search = await client.GetAsync("/api/music/search?q=%E7%9D%A1%E9%86%92&limit=1");
             using var searchJson = JsonDocument.Parse(await search.Content.ReadAsStringAsync());
             var trackId = searchJson.RootElement.GetProperty("items")[0].GetProperty("id").GetString()!;
@@ -103,26 +101,6 @@ internal static class MusicChecks
         await Case(root, true, async (client, app) =>
         {
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
-            using var response = await client.GetAsync("/api/music/search?q=merged&limit=1");
-            using var data = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-            var item = data.RootElement.GetProperty("items")[0];
-            Check(item.GetProperty("sources").GetArrayLength() == 2 && item.GetProperty("availability").GetString() == "candidate", "HTTP multi-source merge retains playable source");
-            Check(item.GetProperty("sources")[1].GetProperty("confidence").GetDouble() >= .96, "Generated JSON includes match confidence");
-            using var noAlternate = await client.PostAsync("/api/music/resolve",
-                Json("{\"trackId\":\"" + item.GetProperty("id").GetString() + "\",\"excludedProviderId\":\"netease\"}"));
-            await Error(noAlternate, 422, "no_playable_match");
-            app.Services.GetRequiredService<IConfiguration>()["Modules:Music:NeteaseEnabled"] = "false";
-            using var metadata = await client.GetAsync("/api/music/search?q=metadata");
-            using var metadataJson = JsonDocument.Parse(await metadata.Content.ReadAsStringAsync());
-            var trackId = metadataJson.RootElement.GetProperty("items")[0].GetProperty("id").GetString();
-            Check(metadataJson.RootElement.GetProperty("items")[0].GetProperty("availability").GetString() == "metadata_only", "Only metadata capability remains after switch");
-            using var unsupported = await client.PostAsync("/api/music/resolve", Json("{\"trackId\":\"" + trackId + "\"}"));
-            await Error(unsupported, 422, "no_playable_match");
-            await CommonHealthy(client);
-        }, change: new("KuwoSearchEnabled", "true"));
-        await Case(root, true, async (client, app) =>
-        {
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
             using var failed = await client.GetAsync("/api/music/search?q=outage");
             await Error(failed, 503, "source_unavailable");
             Check(failed.Headers.RetryAfter?.Delta > TimeSpan.Zero, "Source outage carries Retry-After");
@@ -149,10 +127,11 @@ internal static class MusicChecks
         await Case(root, true, async (client, _) =>
         {
             using var health = await client.GetAsync("/api/music/health");
-            Check(health.IsSuccessStatusCode && (await health.Content.ReadAsStringAsync()).Contains("degraded"), "No enabled sources degrade without breaking host");
+            var readiness = JsonSerializer.Deserialize(await health.Content.ReadAsStringAsync(), MusicJsonContext.Default.MusicHealth)!;
+            Check(health.IsSuccessStatusCode && readiness.EnabledProviderCount == 1, "QQ remains available with NetEase disabled");
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
             using var search = await client.GetAsync("/api/music/search?q=test");
-            await Error(search, 503, "source_unavailable");
+            Check(search.IsSuccessStatusCode, "QQ search serves requests with NetEase disabled");
             await CommonHealthy(client);
         }, change: new("NeteaseEnabled", "false"));
         await Case(root, true, async (client, _) =>
@@ -220,117 +199,61 @@ internal static class MusicChecks
             await Error(failed, 503, "source_unavailable");
             await CommonHealthy(client);
         }, change: new("DeviceCredentialsEnabled", "true"));
-        var chartFixture = new QQChartFixture { PersistSnapshots = true };
+        var dailyClock = new TestClock();
+        var qq = new MusicUpstreamFixture { IncludeQqTracks = true, Clock = dailyClock };
         await Case(root, true, async (client, app) =>
         {
             using var anonymous = await client.GetAsync("/api/music/charts/daily");
             await Error(anonymous, 401, "unauthorized");
-            Check(chartFixture.Calls == 0, "Anonymous chart request does not contact QQ");
+            Check(qq.Count == 0, "Unauthorized requests do not refresh the chart");
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
-            using var first = await client.GetAsync("/api/music/charts/daily");
-            using var page = JsonDocument.Parse(await first.Content.ReadAsStringAsync());
-            var result = page.RootElement;
-            var entry = result.GetProperty("entries").EnumerateArray().Single();
-            Check(first.IsSuccessStatusCode && result.GetProperty("period").GetString() == "2026-11-18" &&
-                !result.GetProperty("stale").GetBoolean() && entry.GetProperty("durationMs").GetInt64() == 120000 &&
-                entry.GetProperty("trackKey").GetString() == "qq-fixture" && chartFixture.Calls == 1, "QQ metadata and source period are returned");
+            using var chart = await client.GetAsync("/api/music/charts/daily");
+            var page = JsonSerializer.Deserialize(await chart.Content.ReadAsStringAsync(), MusicChartJsonContext.Default.MusicDailyPage)!;
+            Check(chart.IsSuccessStatusCode && !page.Partial && page.Sources.Length == 2 &&
+                  page.Items.Single().Ranks.Length == 2, "Daily chart combines both sources and keeps both ranks");
             using var denied = await client.PostAsync("/api/music/admin/charts/refresh", null);
-            Check(denied.StatusCode == HttpStatusCode.Unauthorized && chartFixture.Calls == 1, "Music device cannot force chart refresh");
+            Check(denied.StatusCode == HttpStatusCode.Unauthorized, "Music device cannot force chart refresh");
             using var cached = await client.GetAsync("/api/music/charts/daily");
-            using var cachedPage = JsonDocument.Parse(await cached.Content.ReadAsStringAsync());
-            Check(cached.IsSuccessStatusCode && chartFixture.Calls == 1 &&
-                cachedPage.RootElement.GetProperty("capturedAt").GetString() == result.GetProperty("capturedAt").GetString(),
-                "Fresh snapshots keep the same persisted fetch time and avoid another upstream request");
-            Check(app.Services.GetRequiredService<MusicChartStore>().Latest("rising", "qqmusic")?
-                .Entries.Single().TrackKey == "qq-fixture", "Explicit opt-in persists the chart");
+            var reread = JsonSerializer.Deserialize(await cached.Content.ReadAsStringAsync(), MusicChartJsonContext.Default.MusicDailyPage)!;
+            Check(cached.IsSuccessStatusCode && qq.Count == 1 && page.Sources.SequenceEqual(reread.Sources),
+                "Fresh snapshot does not refetch QQ and first read agrees with SQLite precision");
+            var store = app.Services.GetRequiredService<MusicChartStore>();
+            Check(store.Latest("rising", "qqmusic")?.Entries.Single().TrackKey == "QQfixture00001" &&
+                  store.Latest("rising", "netease") is not null, "Both chart snapshots are written to SQLite");
 
-            chartFixture.Clock.Now = chartFixture.Clock.Now.AddMinutes(31);
-            chartFixture.Status = HttpStatusCode.TooManyRequests;
-            chartFixture.RetryAfter = TimeSpan.FromHours(2);
-            client.DefaultRequestHeaders.Add("X-Api-Bootstrap-Token", "YOUR_SYNTHETIC_MANAGEMENT_TOKEN_FOR_TESTS_ONLY");
-            using var stale = await client.PostAsync("/api/music/admin/charts/refresh", null);
-            using var stalePage = JsonDocument.Parse(await stale.Content.ReadAsStringAsync());
-            Check(stale.IsSuccessStatusCode && stalePage.RootElement.GetProperty("stale").GetBoolean() && chartFixture.Calls == 2,
-                "Failed admin refresh keeps the previous snapshot marked stale");
-            chartFixture.Clock.Now = chartFixture.Clock.Now.AddMinutes(31);
-            using var coolingDown = await client.PostAsync("/api/music/admin/charts/refresh", null);
-            Check(coolingDown.IsSuccessStatusCode && chartFixture.Calls == 2, "Upstream Retry-After applies to manual refresh too");
+            using var recommendations = await client.GetAsync("/api/music/recommendations");
+            var recommended = JsonSerializer.Deserialize(await recommendations.Content.ReadAsStringAsync(), MusicJsonContext.Default.MusicRecommendationPage)!;
+            Check(recommendations.IsSuccessStatusCode && recommended.Items.Length == 2 &&
+                  recommended.Items[0].Sources.Length == 2 && recommended.Items[1].Sources.Single().ProviderId == "qqmusic" &&
+                  store.Latest("new-songs", "netease") is not null && store.Latest("new-songs", "qqmusic") is not null,
+                "Daily recommendations are persisted, combined, and deduplicated");
+            var trackId = recommended.Items[0].Id;
+            using var lyrics = await client.GetAsync("/api/music/lyrics?trackId=" + trackId + "&providerId=qqmusic");
+            var lyric = JsonSerializer.Deserialize(await lyrics.Content.ReadAsStringAsync(), MusicJsonContext.Default.MusicLyrics)!;
+            Check(lyrics.IsSuccessStatusCode && lyric.ProviderId == "qqmusic" && lyric.Lrc == "[00:01.00]QQ fixture", "Lyrics follow the specified playback provider");
 
-            chartFixture.Clock.Now = chartFixture.Clock.Now.AddHours(24);
-            chartFixture.Status = HttpStatusCode.OK;
-            chartFixture.Body = """{"code":0,"req":{"code":0,"data":{}}}""";
-            using var malformed = await client.GetAsync("/api/music/charts/daily");
-            using var malformedPage = JsonDocument.Parse(await malformed.Content.ReadAsStringAsync());
-            Check(malformed.IsSuccessStatusCode && malformedPage.RootElement.GetProperty("stale").GetBoolean() && chartFixture.Calls == 3,
-                "Malformed new chart cannot erase yesterday's snapshot");
-        }, change: new("QQChartEnabled", "true"), chart: chartFixture);
-        var rankingFixture = new QQChartFixture
-        {
-            Gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously),
-            Body = """
-                {"code":0,"req":{"code":0,"data":{
-                  "data":{"topId":62,"period":"2026-11-18","updateTime":"2026-11-18","totalNum":3,
-                    "song":[{"rank":1,"songId":41},{"rank":2,"songId":42},{"rank":3,"songId":43}]},
-                  "songInfoList":[
-                    {"id":41,"mid":"wrong-artist","title":"睡醒就好了","interval":100,"singer":[{"name":"Other artist"}]},
-                    {"id":42,"mid":"verified-track","title":"睡醒就好了","interval":100,"singer":[{"name":"qix"}]},
-                    {"id":43,"mid":"unavailable-track","title":"今天也不错","interval":100,"singer":[{"name":"qix"}]}
-                  ]
-                }}}
-                """
-        };
-        await Case(root, true, async (client, app) =>
-        {
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
-            async Task<MusicRecommendationPage> Recommend() =>
-                JsonSerializer.Deserialize(await client.GetStringAsync("/api/music/recommendations?limit=1"),
-                    MusicJsonContext.Default.MusicRecommendationPage)!;
-            var ordinary = await Recommend();
-            Check(ordinary.Strategy == "netease_search_candidates", "Ordinary recommendation does not wait for QQ");
-            rankingFixture.Gate.SetResult();
-            MusicRecommendationPage ranked = ordinary;
-            using var budget = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-            while (!ranked.Strategy.StartsWith("qq_rising_verified_", StringComparison.Ordinal))
-            {
-                await Task.Delay(25, budget.Token);
-                ranked = await Recommend();
-            }
-            Check(ranked.Items.Length == 1 && ranked.Items[0].Id == ordinary.Items[0].Id &&
-                ranked.Items[0].Title == "睡醒就好了" && ranked.NextCursor == ordinary.NextCursor && rankingFixture.Calls == 1,
-                "Verified provider track is recommended, replaces its duplicate, and preserves the ordinary continuation");
-            var next = JsonSerializer.Deserialize(await client.GetStringAsync("/api/music/recommendations?limit=1&cursor=" +
-                Uri.EscapeDataString(ranked.NextCursor!)), MusicJsonContext.Default.MusicRecommendationPage)!;
-            Check(next.Strategy == "netease_search_candidates" && next.Items.Single().Id != ranked.Items[0].Id,
-                "Follow-up uses the original recommendation cursor");
-            // 以较大的首页验证解析失败的同名项没有被标记为榜单候选添加到原结果之外。
-            var mixed = JsonSerializer.Deserialize(await client.GetStringAsync("/api/music/recommendations?limit=2"),
-                MusicJsonContext.Default.MusicRecommendationPage)!;
-            Check(mixed.Items.Select(x => x.Id).Distinct().Count() == 2, "The ranked track does not duplicate an ordinary item");
-            var snapshot = await app.Services.GetRequiredService<QQMusicChart>().GetAsync(false, budget.Token);
-            var catalog = app.Services.GetRequiredService<MusicCatalog>();
-            Check(await catalog.MatchChartEntryAsync(snapshot.Entries[0], budget.Token) is null &&
-                  await catalog.MatchChartEntryAsync(snapshot.Entries[2], budget.Token) is null,
-                "A different artist or a failed full-audio resolution excludes the entry from ranked recommendations");
-            using (var db = app.Services.GetRequiredService<ApiDatabase>().OpenConnection())
-            using (var command = db.CreateCommand())
-            {
-                command.CommandText = "SELECT COUNT(*) FROM sqlite_schema WHERE name='music_chart_snapshots';";
-                Check((long)command.ExecuteScalar()! == 0, "Default QQ chart mode does not initialize chart storage");
-            }
-            using var unavailable = new HttpClient(new QQChartFixture { Status = HttpStatusCode.ServiceUnavailable });
-            var restartedChart = new QQMusicChart(unavailable, null, rankingFixture.Clock);
-            try
-            {
-                _ = await restartedChart.GetAsync(false, budget.Token);
-                throw new Exception("A new in-memory chart instance must not recover an old offline snapshot");
-            }
-            catch (MusicException error) when (error.Status == 503) { }
+            using var resolve = await client.PostAsync("/api/music/resolve", Json(
+                $$"""{"trackId":"{{trackId}}","preferredProviderId":"qqmusic"}"""));
+            var audio = JsonSerializer.Deserialize(await resolve.Content.ReadAsStringAsync(), MusicJsonContext.Default.MusicResolvedTrack)!;
+            Check(resolve.IsSuccessStatusCode && audio.Audio.Seekable && audio.ProviderId == "qqmusic", "QQ resolves a full-size, range-capable track");
+            qq.RangeLength = 480000;
+            using var preview = await client.PostAsync("/api/music/resolve", Json(
+                $$"""{"trackId":"{{trackId}}","preferredProviderId":"qqmusic"}"""));
+            await Error(preview, 422, "no_playable_match");
 
-            rankingFixture.Clock.Now = rankingFixture.Clock.Now.AddDays(1);
-            var afterMidnight = await Recommend();
-            Check(afterMidnight.Strategy == "netease_search_candidates", "Expired chart is ignored immediately across Shanghai midnight");
-        }, change: new("QQChartEnabled", "true"), chart: rankingFixture);
-        Console.WriteLine("PASS: Music native-source HTTP fixture contracts, QQ chart refresh and stale fallback, scoped access, configuration isolation, bounded concurrency and 429. No external provider/media request.");
+            dailyClock.Now = dailyClock.Now.AddDays(1);
+            qq.Status = HttpStatusCode.TooManyRequests;
+            qq.RetryAfter = TimeSpan.FromHours(2);
+            using var stale = await client.GetAsync("/api/music/charts/daily");
+            var partial = JsonSerializer.Deserialize(await stale.Content.ReadAsStringAsync(), MusicChartJsonContext.Default.MusicDailyPage)!;
+            Check(stale.IsSuccessStatusCode && partial.Partial && partial.Sources.Single(x => x.Source == "qqmusic").Stale,
+                "After midnight an unavailable source falls back to yesterday and is marked stale");
+            var calls = qq.Count;
+            dailyClock.Now = dailyClock.Now.AddMinutes(31);
+            using var coolingDown = await client.GetAsync("/api/music/charts/daily");
+            Check(coolingDown.IsSuccessStatusCode && qq.Count == calls, "The source Retry-After is respected");
+        }, qq: qq, clock: dailyClock);
+        Console.WriteLine("PASS: Music native-source HTTP contracts, daily SQLite feeds, lyrics, range validation, stale fallback, and scoped access");
     }
 
     private static async Task CommonHealthy(HttpClient client)
@@ -403,7 +326,7 @@ internal static class MusicChecks
         using (var command = connection.CreateCommand())
         {
             command.CommandText = "SELECT COUNT(*) FROM music_chart_snapshots WHERE source_name='fixture';";
-            Check((long)command.ExecuteScalar()! == 30, "Storage retains the latest 30 snapshots for that series");
+            Check((long)command.ExecuteScalar()! == 1, "Storage retains the latest snapshot for that series");
             command.CommandText = """
                 CREATE TRIGGER music_fixture_prune_failure BEFORE DELETE ON music_chart_snapshots
                   WHEN OLD.source_name='fixture' BEGIN SELECT RAISE(ABORT,'fixture prune failure'); END;
@@ -472,7 +395,7 @@ internal static class MusicChecks
 
     private static async Task Case(string root, bool enabled, Func<HttpClient, WebApplication, Task> run,
         bool upstreamUnavailable = false, KeyValuePair<string, string>? change = null, bool production = false,
-        QQChartFixture? chart = null)
+        MusicUpstreamFixture? qq = null, TestClock? clock = null)
     {
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions { ContentRootPath = root, EnvironmentName = production ? "Production" : "Testing" });
         builder.Configuration.Sources.Clear();
@@ -485,20 +408,21 @@ internal static class MusicChecks
             ["Modules:Music:TestAccessToken"] = Token,
         };
         if (change.HasValue) values["Modules:Music:" + change.Value.Key] = change.Value.Value;
-        if (chart?.PersistSnapshots == true) values["Modules:Music:QQChartPersistSnapshots"] = "true";
         builder.Configuration.AddInMemoryCollection(values);
         builder.Logging.ClearProviders();
         builder.Services.AddApiServices(builder.Configuration);
         builder.Services.AddMusicModule(builder.Configuration);
-        if (chart is not null)
-            builder.Services.AddSingleton<QQMusicChart>(services =>
-                new QQMusicChart(new HttpClient(chart), services.GetRequiredService<MusicOptions>().QQChartPersistSnapshots
-                    ? services.GetRequiredService<MusicChartStore>() : null, chart.Clock));
-        builder.Services.AddSingleton(new MusicUpstreamFixture { Status = upstreamUnavailable ? HttpStatusCode.ServiceUnavailable : HttpStatusCode.OK });
+        if (clock is not null) builder.Services.AddSingleton<TimeProvider>(clock);
+        var upstream = new MusicUpstreamFixture
+        {
+            Status = upstreamUnavailable ? HttpStatusCode.ServiceUnavailable : HttpStatusCode.OK,
+            Clock = clock ?? TimeProvider.System
+        };
+        builder.Services.AddSingleton(upstream);
         builder.Services.AddSingleton<NeteaseMusicProvider>(services => new NeteaseMusicProvider(
-            new HttpClient(services.GetRequiredService<MusicUpstreamFixture>()), services.GetRequiredService<TimeProvider>()));
-        builder.Services.AddSingleton<KuwoSearchProvider>(services => new KuwoSearchProvider(
-            new HttpClient(services.GetRequiredService<MusicUpstreamFixture>()), services.GetRequiredService<TimeProvider>()));
+            new HttpClient(upstream), services.GetRequiredService<TimeProvider>()));
+        builder.Services.AddSingleton<QQMusicProvider>(services => new QQMusicProvider(
+            new HttpClient(qq ?? new MusicUpstreamFixture { Status = upstream.Status }), services.GetRequiredService<TimeProvider>()));
         builder.Services.AddChatModule(builder.Configuration);
         builder.Services.AddSingleton<IEndpointModule, HealthModule>();
         builder.Services.AddSingleton<IEndpointModule, AuthModule>();
@@ -528,31 +452,4 @@ internal static class MusicChecks
         public override DateTimeOffset GetUtcNow() => Now;
     }
 
-    private sealed class QQChartFixture : HttpMessageHandler
-    {
-        public TestClock Clock { get; } = new();
-        public HttpStatusCode Status = HttpStatusCode.OK;
-        public TimeSpan? RetryAfter;
-        public int Calls;
-        public bool PersistSnapshots;
-        public TaskCompletionSource? Gate;
-        public string Body = """
-            {"code":0,"req":{"code":0,"data":{
-              "data":{"topId":62,"period":"2026-11-18","updateTime":"2026-11-18","totalNum":1,"song":[{"rank":1,"songId":42}]},
-              "songInfoList":[{"id":42,"mid":"qq-fixture","title":"Fixture","interval":120,"singer":[{"name":"Artist"}]}]
-            }}}
-            """;
-
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            Check(request.Method == HttpMethod.Get && request.RequestUri is { Scheme: "https", Host: "u.y.qq.com" } &&
-                !request.Headers.Contains("Authorization") && !request.Headers.Contains("Cookie"),
-                "Chart requests use the fixed public QQ host without session credentials");
-            Calls++;
-            if (Gate is not null) await Gate.Task.WaitAsync(cancellationToken);
-            var response = new HttpResponseMessage(Status) { Content = Json(Body) };
-            if (RetryAfter is { } delay) response.Headers.RetryAfter = new RetryConditionHeaderValue(delay);
-            return response;
-        }
-    }
 }

@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.WebUtilities;
 
 namespace Meowv.Api.Modules.Music.Providers;
 
-public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : IMusicSearchProvider, IMusicResolverProvider
+public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : IMusicSearchProvider, IMusicResolverProvider, IMusicLyricsProvider
 {
     public const string Id = "netease";
     public const string ConfigVersion = "netease-v1";
@@ -99,7 +99,7 @@ public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : 
 
     private async Task<MusicSearchPage> LoadSearchAsync(string normalized, int count, int offset, string scope, CancellationToken ct)
     {
-        using var body = await SendAsync("/api/search/get/web", new FormUrlEncodedContent(new Dictionary<string, string>
+        using var body = await SendAsync("/api/cloudsearch/pc", new FormUrlEncodedContent(new Dictionary<string, string>
         {
             ["s"] = normalized, ["type"] = "1", ["limit"] = count.ToString(CultureInfo.InvariantCulture),
             ["offset"] = offset.ToString(CultureInfo.InvariantCulture)
@@ -107,31 +107,64 @@ public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : 
         if (!body.RootElement.TryGetProperty("result", out var result) || result.ValueKind != JsonValueKind.Object) throw Unavailable();
         if (!result.TryGetProperty("songs", out var songs)) return new MusicSearchPage([], null, false, []);
         if (songs.ValueKind != JsonValueKind.Array || songs.GetArrayLength() > 100) throw Unavailable();
-        var tracks = new List<MusicTrack>();
-        foreach (var song in songs.EnumerateArray().Take(count))
-        {
-            var sourceId = Number(song, "id");
-            var title = Text(song, "name");
-            var duration = Number(song, "duration");
-            if (sourceId <= 0 || title.Length is < 1 or > 500 || duration is < 1 or > 86400000) continue;
-            var artists = song.TryGetProperty("artists", out var names) && names.ValueKind == JsonValueKind.Array
-                ? names.EnumerateArray().Take(20).Select(x => Text(x, "name")).Where(x => x.Length is > 0 and <= 200).ToArray()
-                : [];
-            if (artists.Length == 0) continue;
-            var album = song.TryGetProperty("album", out var a) ? Text(a, "name") : "";
-            if (album.Length > 500) throw Unavailable();
-            var id = "nt-" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(sourceId.ToString(CultureInfo.InvariantCulture))))[..32].ToLowerInvariant();
-            var restricted = Number(song, "fee") is 1 or 4;
-            var track = new MusicTrack(id, title, artists, album, duration, null, null,
-                restricted ? "unavailable" : "candidate", [new MusicSource(Id, sourceId.ToString(CultureInfo.InvariantCulture))]);
-            tracks.Add(track);
-        }
-
+        var tracks = songs.EnumerateArray().Take(count).Select(ParseTrack).OfType<MusicTrack>();
         var total = Number(result, "songCount");
         var next = songs.GetArrayLength() >= count && offset + count < 1000 && (total <= 0 || offset + count < total)
             ? WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(scope + (offset + count).ToString(CultureInfo.InvariantCulture)))
             : null;
         return new MusicSearchPage(tracks.DistinctBy(x => x.Id).ToArray(), next, false, []);
+    }
+
+    internal static MusicTrack? ParseTrack(JsonElement song)
+    {
+        if (song.ValueKind != JsonValueKind.Object) return null;
+        var id = Number(song, "id");
+        var title = Text(song, "name");
+        var duration = Math.Max(Number(song, "duration"), Number(song, "dt"));
+        if (id <= 0 || title.Length is < 1 or > 180 || title.Any(char.IsControl) || duration is < 1 or > 86400000) return null;
+        var hasArtists = song.TryGetProperty("ar", out var names) || song.TryGetProperty("artists", out names);
+        var artists = hasArtists && names.ValueKind == JsonValueKind.Array
+            ? names.EnumerateArray().Take(8).Select(x => Text(x, "name"))
+                .Where(x => x.Length is > 0 and <= 180 && !x.Any(char.IsControl)).ToArray()
+            : [];
+        if (artists.Length == 0) return null;
+        if (!song.TryGetProperty("al", out var album)) song.TryGetProperty("album", out album);
+        var albumName = Text(album, "name");
+        var cover = SafeAudioUrl(Text(album, "picUrl"));
+
+        var sourceId = id.ToString(CultureInfo.InvariantCulture);
+        var trackId = "nt-" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(sourceId)))[..32].ToLowerInvariant();
+        return new MusicTrack(trackId, title, artists, albumName.Length <= 180 ? albumName : null, duration, cover, null,
+            Number(song, "fee") is 1 or 4 ? "unavailable" : "candidate", [new MusicSource(Id, sourceId)]);
+    }
+
+    internal void RememberDaily(IEnumerable<MusicTrack> tracks)
+    {
+        var entries = tracks.Select(track => new Entry(track.Sources[0].SourceTrackId, track, clock.GetUtcNow().AddHours(24))).ToArray();
+        lock (_gate) Remember(entries);
+    }
+
+    internal async Task<(MusicTrack[] Tracks, DateTimeOffset? Updated)> DailyAsync(string feed, CancellationToken ct)
+    {
+        if (feed == "rising")
+        {
+            using var document = await SendAsync("/api/playlist/detail?id=19723756", null, ct);
+            var result = document.RootElement.GetProperty("result");
+            var updated = Number(result, "updateTime");
+            return (result.GetProperty("tracks").EnumerateArray().Take(30).Select(ParseTrack).OfType<MusicTrack>().ToArray(),
+                updated > 0 ? DateTimeOffset.FromUnixTimeMilliseconds(updated) : null);
+        }
+
+        using var recommendations = await SendAsync("/api/personalized/newsong", null, ct);
+        return (recommendations.RootElement.GetProperty("result").EnumerateArray().Take(30)
+            .Select(x => ParseTrack(x.GetProperty("song"))).OfType<MusicTrack>().ToArray(), null);
+    }
+
+    public async Task<string?> LyricsAsync(string sourceId, CancellationToken ct)
+    {
+        if (!long.TryParse(sourceId, NumberStyles.None, CultureInfo.InvariantCulture, out var song) || song <= 0) return null;
+        using var document = await SendAsync($"/api/song/lyric?id={song}&lv=1&kv=0&tv=0", null, ct);
+        return document.RootElement.TryGetProperty("lrc", out var lyrics) ? Text(lyrics, "lyric") : null;
     }
 
     public async Task<MusicResolvedTrack> ResolveAsync(MusicResolveRequest request, CancellationToken ct)
@@ -199,7 +232,7 @@ public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : 
         return new UriBuilder(uri) { Scheme = "https", Port = -1 }.Uri.AbsoluteUri;
     }
 
-    private async Task<JsonDocument> SendAsync(string path, HttpContent content, CancellationToken ct)
+    private async Task<JsonDocument> SendAsync(string path, HttpContent? content, CancellationToken ct)
     {
         using (content)
         {
@@ -229,7 +262,7 @@ public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : 
             {
                 await _concurrency.WaitAsync(token);
                 entered = true;
-                using var request = new HttpRequestMessage(HttpMethod.Post, "https://music.163.com" + path);
+                using var request = new HttpRequestMessage(content is null ? HttpMethod.Get : HttpMethod.Post, "https://music.163.com" + path);
                 request.Content = content;
                 request.Headers.Referrer = new Uri("https://music.163.com/");
                 using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token);

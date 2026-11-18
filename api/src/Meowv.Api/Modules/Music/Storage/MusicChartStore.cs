@@ -11,7 +11,13 @@ internal sealed record MusicChartEntry(
     string Title,
     string[] Artists,
     long? DurationMs = null,
-    string? Isrc = null);
+    string? Isrc = null,
+    string? Album = null,
+    string? CoverUrl = null,
+    string? TrackId = null,
+    string? Availability = null,
+    string? MediaId = null,
+    long MediaSize = 0);
 
 internal sealed record MusicChartSnapshot(
     string ChartKey,
@@ -25,12 +31,12 @@ internal sealed record MusicChartSnapshot(
 
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(MusicChartEntry[]))]
-[JsonSerializable(typeof(MusicChartPage))]
+[JsonSerializable(typeof(MusicDailyPage))]
 internal partial class MusicChartJsonContext : JsonSerializerContext;
 
 internal sealed class MusicChartStore(ApiDatabase database)
 {
-    private const int RetainedSnapshots = 30;
+    private const int RetainedSnapshots = 1;
     private const int MaxPayloadLength = 512 * 1024;
     private readonly Lock _gate = new();
     private bool _initialized;
@@ -83,7 +89,9 @@ internal sealed class MusicChartStore(ApiDatabase database)
                               SELECT $chart, $source, $date, $captured, $updated, $start, $end, $entries
                               WHERE NOT EXISTS (
                                   SELECT 1 FROM music_chart_snapshots WHERE chart_key=$chart AND source_name=$source
-                                      AND (source_updated_at >= $updated OR business_date > $date)
+                                      AND (source_updated_at > $updated OR business_date > $date OR
+                                           (source_updated_at = $updated AND
+                                               (business_date <> $date OR captured_at >= $captured OR entries_json = $entries)))
                               )
                               ON CONFLICT(chart_key, source_name, business_date) DO UPDATE SET
                                   captured_at=excluded.captured_at, source_updated_at=excluded.source_updated_at,

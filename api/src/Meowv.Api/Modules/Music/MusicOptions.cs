@@ -5,9 +5,6 @@ public sealed class MusicOptions
     public bool Enabled { get; set; }
     public bool DeviceCredentialsEnabled { get; set; }
     public bool NeteaseEnabled { get; set; }
-    public bool KuwoSearchEnabled { get; set; }
-    public bool QQChartEnabled { get; set; }
-    public bool QQChartPersistSnapshots { get; set; }
     public string NeteaseRecommendationQuery { get; set; } = "华语流行";
     public string TestAccessToken { get; set; } = "";
     public int RequestsPerMinute { get; set; } = 60;

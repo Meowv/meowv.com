@@ -14,4 +14,6 @@ namespace Meowv.Api.Modules.Music;
 [JsonSerializable(typeof(MusicResolveRequest))]
 [JsonSerializable(typeof(MusicResolvedTrack))]
 [JsonSerializable(typeof(MusicErrorResponse))]
+[JsonSerializable(typeof(MusicLyrics))]
+[JsonSerializable(typeof(string))]
 public partial class MusicJsonContext : JsonSerializerContext;

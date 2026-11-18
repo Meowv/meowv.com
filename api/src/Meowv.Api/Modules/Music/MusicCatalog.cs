@@ -174,34 +174,41 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
             page.NextCursor, source.ProviderId + "_search_candidates", clock.GetUtcNow().UtcDateTime);
     }
 
-    internal async Task<MusicTrack?> MatchChartEntryAsync(MusicChartEntry entry, CancellationToken ct)
+    internal MusicTrack[] MergeDaily(IEnumerable<MusicTrack> tracks)
     {
-        if (entry.DurationMs is not > 0 || entry.Title.Length > 100) return null;
-        var reference = new MusicTrack(entry.TrackKey, entry.Title, entry.Artists, null, entry.DurationMs, null,
-            entry.Isrc, "candidate", []);
-        var query = $"{entry.Title} {entry.Artists[0]}";
-        if (query.Length > 100) query = entry.Title;
-        foreach (var source in registry.Enabled.Where(x => x is IMusicResolverProvider && x.Status == "healthy"))
+        var enabled = registry.Enabled;
+        lock (_gate)
         {
-            ct.ThrowIfCancellationRequested();
-            var page = await Load(source, query, 8, null, ct);
-            var matches = page.Page?.Items.Where(x => x.Availability == "candidate" &&
-                                                      MusicCandidateMatcher.CanMerge(reference, x)).DistinctBy(x => x.Id).Take(2).ToArray();
-            // 同一来源出现多个相同标题、歌手和时长的录音时，不能确定榜单版本。
-            if (matches is not [var candidate]) continue;
+            var merged = tracks.Select(track => Merge(track, enabled)).ToArray();
+            return merged.Select(track => Latest(Canonical(track.Id), track)).DistinctBy(x => x.Id).ToArray();
+        }
+    }
+
+    public async Task<MusicLyrics> LyricsAsync(string? id, string? preferred, CancellationToken ct)
+    {
+        if (id is not { Length: >= 1 and <= 128 } || id.Any(char.IsControl) || preferred is { Length: > 64 })
+            throw MusicException.Invalid();
+        string canonical;
+        lock (_gate) canonical = Canonical(id);
+        var sources = registry.Enabled.Where(x => x is IMusicLyricsProvider).ToArray();
+        KnownTrack? known;
+        lock (_gate) known = _known.GetValueOrDefault(canonical);
+        foreach (var provider in sources.OrderByDescending(x => x.ProviderId == preferred))
+        {
+            var providerId = known?.ProviderTrackIds.GetValueOrDefault(provider.ProviderId) ?? id;
+            var sourceId = provider.FindTrack(providerId)?.Sources.FirstOrDefault()?.SourceTrackId;
+            if (sourceId is null) continue;
             try
             {
-                var checkedAudio = await ResolveAsync(new MusicResolveRequest(candidate.Id, source.ProviderId), ct);
-                if (checkedAudio.Audio.DurationMs is > 0 &&
-                    MusicCandidateMatcher.CanMerge(reference, candidate with { DurationMs = checkedAudio.Audio.DurationMs }))
-                    return candidate;
+                var lrc = await ((IMusicLyricsProvider)provider).LyricsAsync(sourceId, ct);
+                if (lrc is { Length: > 0 and <= 48 * 1024 }) return new MusicLyrics(id, provider.ProviderId, lrc);
             }
             catch (MusicException)
             {
+                // 歌词短暂不可用时，允许尝试已经匹配的其他音源。
             }
         }
-
-        return null;
+        return new MusicLyrics(id, null, null);
     }
 
     public async Task<MusicResolvedTrack> ResolveAsync(MusicResolveRequest request, CancellationToken ct)
@@ -371,7 +378,10 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
         lock (_gate)
         {
             foreach (var old in _known.Where(x => x.Value.Until <= clock.GetUtcNow()).Select(x => x.Key).ToArray()) _known.Remove(old);
-            var previous = _known.Values.FirstOrDefault(x => x.Track.Id == incoming.Id || !x.Track.Sources.Any(a => incoming.Sources.Any(b => a.ProviderId == b.ProviderId)) && MusicCandidateMatcher.CanMerge(x.Track, incoming));
+            var canonical = Canonical(incoming.Id);
+            var previous = _known.GetValueOrDefault(canonical) ?? _known.Values.FirstOrDefault(x =>
+                !x.Track.Sources.Any(a => incoming.Sources.Any(b => a.ProviderId == b.ProviderId)) &&
+                MusicCandidateMatcher.CanMerge(x.Track, incoming));
             var existing = previous?.Track;
             var baseline = existing is null || existing.Id == incoming.Id || incoming.Availability == "candidate" && existing.Availability != "candidate" ? incoming : existing;
             var matches = (existing?.Sources ?? []).Concat(incoming.Sources).Where(x => enabled.Any(p => p.ProviderId == x.ProviderId))
@@ -382,7 +392,7 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
                         Confidence = Math.Min(.99, existing is null ? 1 : MusicCandidateMatcher.Compare(existing, incoming).Confidence),
                         Edition = MusicCandidateMatcher.Compare(baseline, incoming).Edition
                     }).ToArray();
-            var result = baseline with { Sources = matches };
+            var result = baseline with { Sources = matches, CoverUrl = baseline.CoverUrl ?? incoming.CoverUrl ?? existing?.CoverUrl };
             if (existing is not null && existing.Id != result.Id) _known.Remove(existing.Id);
             if (_known.Count >= 1000 && !_known.ContainsKey(result.Id)) _known.Remove(_known.MinBy(x => x.Value.Used).Key);
             var providerTrackIds = new Dictionary<string, string>(StringComparer.Ordinal);

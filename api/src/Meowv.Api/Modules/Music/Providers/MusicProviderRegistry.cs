@@ -11,15 +11,10 @@ public sealed class MusicProviderRegistry(MusicOptions options, IConfiguration c
 
     public bool IsEnabled(IMusicSearchProvider source)
     {
-        var (key, defaultEnabled) = source.ProviderId switch
-        {
-            NeteaseMusicProvider.Id => (nameof(MusicOptions.NeteaseEnabled), options.NeteaseEnabled),
-            KuwoSearchProvider.Id => (nameof(MusicOptions.KuwoSearchEnabled), options.KuwoSearchEnabled),
-            _ => ("", false)
-        };
-        if (key.Length == 0) return false;
-        var value = configuration["Modules:Music:" + key];
-        return value is not null ? bool.TryParse(value, out var enabled) && enabled : defaultEnabled;
+        if (source.ProviderId == QQMusicProvider.Id) return options.Enabled;
+        if (source.ProviderId != NeteaseMusicProvider.Id) return false;
+        var value = configuration["Modules:Music:" + nameof(MusicOptions.NeteaseEnabled)];
+        return value is not null ? bool.TryParse(value, out var enabled) && enabled : options.NeteaseEnabled;
     }
 
     public string Version
@@ -37,6 +32,14 @@ public sealed class MusicProviderRegistry(MusicOptions options, IConfiguration c
     [
         .. _sources.Select(x => new MusicProvider(x.ProviderId, x.DisplayName,
             !IsEnabled(x) ? "disabled" : x.Status,
-            x is IMusicResolverProvider ? ["search", "resolve", "recommendations"] : ["search"], x is IMusicResolverProvider))
+            Capabilities(x), x is IMusicResolverProvider))
     ];
+    private static string[] Capabilities(IMusicSearchProvider source)
+    {
+        var capabilities = new List<string> { "search" };
+        if (source is IMusicResolverProvider) capabilities.Add("resolve");
+        if (source is IMusicLyricsProvider) capabilities.Add("lyrics");
+        if (source is NeteaseMusicProvider or QQMusicProvider) capabilities.AddRange(["charts", "recommendations"]);
+        return capabilities.ToArray();
+    }
 }

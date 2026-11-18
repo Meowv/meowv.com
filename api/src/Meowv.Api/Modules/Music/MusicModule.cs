@@ -26,22 +26,7 @@ public static class MusicRegistration
         services.AddSingleton<MusicRuntime>();
         services.AddSingleton<MusicDeviceStore>();
         services.AddSingleton<MusicChartStore>();
-        services.AddHttpClient("MusicQQChart", client => client.Timeout = TimeSpan.FromSeconds(6))
-            .RemoveAllLoggers()
-            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
-            {
-                AllowAutoRedirect = false, UseCookies = false, ConnectTimeout = TimeSpan.FromSeconds(3)
-            });
-        services.AddSingleton<QQMusicChart>(provider => new QQMusicChart(
-            provider.GetRequiredService<IHttpClientFactory>().CreateClient("MusicQQChart"),
-            options.QQChartPersistSnapshots ? provider.GetRequiredService<MusicChartStore>() : null,
-            provider.GetRequiredService<TimeProvider>()));
-        if (options is { Enabled: true, QQChartEnabled: true })
-        {
-            services.AddSingleton<MusicChartRecommendations>();
-            services.AddHostedService(provider => provider.GetRequiredService<MusicChartRecommendations>());
-        }
-
+        services.AddSingleton<MusicDailyFeeds>();
         services.AddHttpClient("MusicNetease", client => client.Timeout = TimeSpan.FromSeconds(6))
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
             {
@@ -50,17 +35,17 @@ public static class MusicRegistration
             });
         services.AddSingleton<NeteaseMusicProvider>(provider => new NeteaseMusicProvider(
             provider.GetRequiredService<IHttpClientFactory>().CreateClient("MusicNetease"), provider.GetRequiredService<TimeProvider>()));
-        services.AddHttpClient("MusicKuwo", client => client.Timeout = TimeSpan.FromSeconds(6))
+        services.AddHttpClient("MusicQQ", client => client.Timeout = TimeSpan.FromSeconds(6))
             .RemoveAllLoggers()
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
             {
                 AllowAutoRedirect = false, UseCookies = false, ConnectTimeout = TimeSpan.FromSeconds(3),
                 PooledConnectionLifetime = TimeSpan.FromMinutes(5)
             });
-        services.AddSingleton<KuwoSearchProvider>(provider => new KuwoSearchProvider(
-            provider.GetRequiredService<IHttpClientFactory>().CreateClient("MusicKuwo"), provider.GetRequiredService<TimeProvider>()));
+        services.AddSingleton<QQMusicProvider>(provider => new QQMusicProvider(
+            provider.GetRequiredService<IHttpClientFactory>().CreateClient("MusicQQ"), provider.GetRequiredService<TimeProvider>()));
         services.AddSingleton<IMusicSearchProvider>(provider => provider.GetRequiredService<NeteaseMusicProvider>());
-        services.AddSingleton<IMusicSearchProvider>(provider => provider.GetRequiredService<KuwoSearchProvider>());
+        services.AddSingleton<IMusicSearchProvider>(provider => provider.GetRequiredService<QQMusicProvider>());
         services.AddSingleton<MusicProviderRegistry>();
         services.AddSingleton<MusicCatalog>();
         services.AddSingleton<IEndpointModule, MusicModule>();
@@ -114,27 +99,24 @@ public sealed class MusicModule : IEndpointModule
         var secured = music.MapGroup("").RequireAuthorization(MusicAccessHandler.SchemeName)
             .WithMetadata(new MusicProtectedEndpoint(), new EndpointAccessMetadata("音乐专用设备令牌"))
             .RequireRateLimiting("music");
-        if (endpoints.ServiceProvider.GetRequiredService<MusicOptions>().QQChartEnabled)
-        {
-            secured.MapGet("/charts/daily", async (QQMusicChart chart, CancellationToken ct) =>
-                Results.Json(await chart.GetAsync(false, ct), MusicChartJsonContext.Default.MusicChartPage));
-            music.MapPost("/admin/charts/refresh", async (MusicRuntime runtime, QQMusicChart chart, CancellationToken ct) => !runtime.Available ? throw new MusicException("source_unavailable", "音乐服务尚未就绪。", 503) : Results.Json(await chart.GetAsync(true, ct), MusicChartJsonContext.Default.MusicChartPage)).RequireAuthorization(ApiAuthorization.ManagementPolicy).RequireRateLimiting("api-auth");
-        }
+        secured.MapGet("/charts/daily", async (MusicDailyFeeds feeds, CancellationToken ct) =>
+            Results.Json(await feeds.GetAsync("rising", false, ct), MusicChartJsonContext.Default.MusicDailyPage));
+        music.MapPost("/admin/charts/refresh", async (MusicRuntime runtime, MusicDailyFeeds feeds, CancellationToken ct) =>
+                !runtime.Available ? throw new MusicException("source_unavailable", "音乐服务尚未就绪。", 503)
+                : Results.Json(await feeds.GetAsync("rising", true, ct), MusicChartJsonContext.Default.MusicDailyPage))
+            .RequireAuthorization(ApiAuthorization.ManagementPolicy).RequireRateLimiting("api-auth");
 
         secured.MapGet("/providers", (MusicCatalog catalog) => Results.Json(new MusicProviders(
                 catalog.Providers()),
             MusicJsonContext.Default.MusicProviders));
         secured.MapGet("/search", async (HttpContext context, MusicCatalog catalog) => Results.Json(
             await catalog.SearchAsync(One(context, "q"), Limit(context), One(context, "cursor"), context.RequestAborted), MusicJsonContext.Default.MusicSearchPage));
-        secured.MapGet("/recommendations", async (HttpContext context, MusicCatalog catalog) =>
-        {
-            var limit = Limit(context);
-            var cursor = One(context, "cursor");
-            var page = await catalog.RecommendAsync(limit, cursor, context.RequestAborted);
-            if (cursor is null && context.RequestServices.GetService<MusicChartRecommendations>() is { } chart)
-                page = chart.Mix(page, limit ?? 20);
-            return Results.Json(page, MusicJsonContext.Default.MusicRecommendationPage);
-        });
+        secured.MapGet("/recommendations", async (HttpContext context, MusicDailyFeeds feeds) =>
+            Results.Json(await feeds.RecommendAsync(Limit(context), One(context, "cursor"), context.RequestAborted),
+                MusicJsonContext.Default.MusicRecommendationPage));
+        secured.MapGet("/lyrics", async (HttpContext context, MusicCatalog catalog) => Results.Json(
+            await catalog.LyricsAsync(One(context, "trackId"), One(context, "providerId"), context.RequestAborted),
+            MusicJsonContext.Default.MusicLyrics));
         secured.MapPost("/resolve", async (HttpContext context, MusicCatalog catalog) =>
         {
             if (!context.Request.HasJsonContentType()) throw MusicException.Invalid();
