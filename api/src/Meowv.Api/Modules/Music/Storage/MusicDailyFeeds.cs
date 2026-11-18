@@ -21,10 +21,10 @@ internal sealed class MusicDailyFeeds(
 
     private readonly Dictionary<(string Feed, string Provider), RefreshState> _states = new()
     {
-        [("rising", NeteaseMusicProvider.Id)] = new(),
-        [("rising", QQMusicProvider.Id)] = new(),
-        [("new-songs", NeteaseMusicProvider.Id)] = new(),
-        [("new-songs", QQMusicProvider.Id)] = new()
+        [("rising", NeteaseMusicProvider.Id)] = new RefreshState(),
+        [("rising", QQMusicProvider.Id)] = new RefreshState(),
+        [("new-songs", NeteaseMusicProvider.Id)] = new RefreshState(),
+        [("new-songs", QQMusicProvider.Id)] = new RefreshState()
     };
 
     private sealed class RefreshState
@@ -36,27 +36,35 @@ internal sealed class MusicDailyFeeds(
 
     private sealed record SourceResult(string Provider, MusicChartSnapshot? Snapshot, bool Stale);
 
-    public async Task<MusicDailyPage> GetAsync(string feed, bool force, CancellationToken ct)
+    public Task<MusicDailyPage> GetAsync(string feed, bool force, CancellationToken ct) =>
+        GetAsync([feed], feed, force, ct);
+
+    private async Task<MusicDailyPage> GetAsync(string[] feeds, string name, bool force, CancellationToken ct)
     {
         var providers = registry.Enabled.Where(x => x is NeteaseMusicProvider or QQMusicProvider).Select(x => x.ProviderId).ToArray();
         if (providers.Length == 0) throw Unavailable();
-        var results = await Task.WhenAll(providers.Select(provider => ReadAsync(feed, provider, force, ct)));
+        var results = await Task.WhenAll(feeds.SelectMany(feed => providers.Select(provider => ReadAsync(feed, provider, force, ct))));
         var available = results.Where(x => x.Snapshot is not null).ToArray();
         if (available.Length == 0) throw Unavailable();
 
         var ordered = available.SelectMany(source => source.Snapshot!.Entries.Select(entry => (source.Provider, Entry: entry)))
             .OrderBy(x => x.Entry.Rank).ToArray();
         var summaries = available.Select(x => new MusicDailySource(x.Provider, x.Snapshot!.CapturedAt, x.Snapshot.SourceUpdatedAt, x.Stale)).ToArray();
-        var ranks = ordered.ToDictionary(x => (x.Provider, x.Entry.TrackKey), x => x.Entry.Rank);
-        var entries = ordered.Select(x => (x.Provider, x.Entry, Track: ToTrack(x.Provider, x.Entry))).Where(x => x.Track is not null).ToArray();
+        var ranks = ordered.DistinctBy(x => (x.Provider, x.Entry.TrackKey))
+            .ToDictionary(x => (x.Provider, x.Entry.TrackKey), x => x.Entry.Rank);
+        var entries = ordered.GroupBy(x => (x.Provider, x.Entry.TrackKey))
+            .Select(group => group.OrderByDescending(x => x.Entry.Availability == "candidate").First())
+            .Select(x => (x.Provider, x.Entry, Track: ToTrack(x.Provider, x.Entry))).Where(x => x.Track is not null).ToArray();
         netease.RememberDaily(entries.Where(x => x.Provider == NeteaseMusicProvider.Id).Select(x => x.Track!));
         qq.Remember(entries.Where(x => x.Provider == QQMusicProvider.Id)
             .Select(x => new QQMusicProvider.Entry(x.Track!, x.Entry.MediaId, x.Entry.MediaSize, default)));
         var items = catalog.MergeDaily(entries.Select(x => x.Track!)).Select(track => new MusicDailyItem(track,
-            track.Sources.Where(x => ranks.ContainsKey((x.ProviderId, x.SourceTrackId)))
-                .Select(x => new MusicDailyRank(x.ProviderId, ranks[(x.ProviderId, x.SourceTrackId)])).ToArray())).ToArray();
-        var warnings = results.Where(x => x.Stale).Select(x => x.Provider + (x.Snapshot is null ? ":source_unavailable" : ":stale")).ToArray();
-        return new MusicDailyPage(feed, LocalDate(clock.GetUtcNow()), summaries, items, warnings.Length > 0, warnings);
+        [
+            .. track.Sources.Where(x => ranks.ContainsKey((x.ProviderId, x.SourceTrackId)))
+                .Select(x => new MusicDailyRank(x.ProviderId, ranks[(x.ProviderId, x.SourceTrackId)]))
+        ])).ToArray();
+        var warnings = results.Where(x => x.Stale).Select(x => x.Provider + (x.Snapshot is null ? ":source_unavailable" : ":stale")).Distinct().ToArray();
+        return new MusicDailyPage(name, LocalDate(clock.GetUtcNow()), summaries, items, warnings.Length > 0, warnings);
     }
 
     public async Task<MusicRecommendationPage> RecommendAsync(int? limit, string? cursor, CancellationToken ct)
@@ -67,7 +75,7 @@ internal sealed class MusicDailyFeeds(
         MusicDailyPage page;
         try
         {
-            page = await GetAsync("new-songs", false, ct);
+            page = await GetAsync(["new-songs", "rising"], "daily", false, ct);
         }
         catch (MusicException error) when (error.Status == 503 && cursor is null)
         {
@@ -85,7 +93,7 @@ internal sealed class MusicDailyFeeds(
             if (cursor.Length <= version.Length || cursor[version.Length - 1] != '-' ||
                 !cursor[..(version.Length - 1)].All(char.IsAsciiHexDigit) ||
                 !int.TryParse(cursor.AsSpan(version.Length), NumberStyles.None, CultureInfo.InvariantCulture, out offset) ||
-                offset <= 0 || offset >= 60) throw MusicException.Invalid();
+                offset <= 0 || offset >= 120) throw MusicException.Invalid();
             // 午夜或来源恢复后快照变化，客户端从新一期第一页继续，并按曲目 ID 去重。
             if (!cursor.StartsWith(version, StringComparison.Ordinal)) offset = 0;
             else if (offset >= tracks.Length) throw MusicException.Invalid();
@@ -94,7 +102,7 @@ internal sealed class MusicDailyFeeds(
         var items = tracks.Skip(offset).Take(limit ?? 20).ToArray();
         var next = offset + items.Length;
         return new MusicRecommendationPage(items, next < tracks.Length ? version + next.ToString(CultureInfo.InvariantCulture) : null,
-            "public_daily_new_songs", page.Sources.Max(x => x.CapturedAt.UtcDateTime), page.Partial, page.Warnings);
+            "public_daily_music", page.Sources.Max(x => x.CapturedAt.UtcDateTime), page.Partial, page.Warnings);
     }
 
     private async Task<MusicRecommendationPage> FallbackAsync(int? limit, string? cursor, CancellationToken ct)
@@ -169,7 +177,7 @@ internal sealed class MusicDailyFeeds(
         else
         {
             var upstream = await qq.DailyAsync(feed, ct);
-            rows = upstream.Tracks.Select((entry, i) => ToEntry(entry.Rank ?? i + 1, entry.Track, entry.MediaId, entry.Size)).ToArray();
+            rows = [.. upstream.Tracks.Select((entry, i) => ToEntry(entry.Rank ?? i + 1, entry.Track, entry.MediaId, entry.Size))];
             updated = upstream.Updated;
         }
 

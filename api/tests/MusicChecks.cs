@@ -215,7 +215,7 @@ internal static class MusicChecks
             using var chart = await client.GetAsync("/api/music/charts/daily");
             var page = JsonSerializer.Deserialize(await chart.Content.ReadAsStringAsync(), MusicChartJsonContext.Default.MusicDailyPage)!;
             Check(chart.IsSuccessStatusCode && !page.Partial && page.Sources.Length == 2 &&
-                  page.Items.Single().Ranks.Length == 2, "Daily chart combines both sources and keeps both ranks");
+                  page.Items.Count(x => x.Ranks.Length == 2) == 1, "Daily chart combines both sources and keeps both ranks");
             using var denied = await client.PostAsync("/api/music/admin/charts/refresh", null);
             Check(denied.StatusCode == HttpStatusCode.Unauthorized, "Music device cannot force chart refresh");
             using var cached = await client.GetAsync("/api/music/charts/daily");
@@ -228,8 +228,9 @@ internal static class MusicChecks
 
             using var recommendations = await client.GetAsync("/api/music/recommendations");
             var recommended = JsonSerializer.Deserialize(await recommendations.Content.ReadAsStringAsync(), MusicJsonContext.Default.MusicRecommendationPage)!;
-            Check(recommendations.IsSuccessStatusCode && recommended.Items.Length == 2 &&
-                  recommended.Items[0].Sources.Length == 2 && recommended.Items[1].Sources.Single().ProviderId == "qqmusic" &&
+            Check(recommendations.IsSuccessStatusCode && recommended.Items.Length == 3 && recommended.Strategy == "public_daily_music" &&
+                  recommended.Items.Any(x => x.Title == "今天也不错") &&
+                  recommended.Items[0].Sources.Length == 2 && recommended.Items.Any(x => x.Sources is [{ ProviderId: "qqmusic" }]) &&
                   store.Latest("new-songs", "netease") is not null && store.Latest("new-songs", "qqmusic") is not null,
                 "Daily recommendations are persisted, combined, and deduplicated");
             var trackId = recommended.Items[0].Id;

@@ -53,6 +53,7 @@ internal sealed class MusicUpstreamFixture : HttpMessageHandler
             var date = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(Clock.GetUtcNow(), "Asia/Shanghai").ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             var data = method switch
             {
+                "GetDetail" when EmptyRecommendations => """{}""",
                 "GetDetail" => "{\"data\":{\"topId\":62,\"updateTime\":\"" + date + "\",\"song\":[{\"rank\":1,\"songId\":42}]},\"songInfoList\":[" + QqFirst + "]}",
                 "GetNewSong" when EmptyRecommendations => """{"song_list":[]}""",
                 "GetNewSong" => "{\"song_list\":[" + QqFirst + "," + QqSecond + "]}",
@@ -76,7 +77,8 @@ internal sealed class MusicUpstreamFixture : HttpMessageHandler
         }
         else if (uri.AbsolutePath == "/api/playlist/detail")
         {
-            body = "{\"code\":200,\"result\":{\"updateTime\":" + Clock.GetUtcNow().ToUnixTimeMilliseconds() + ",\"tracks\":[" + First + "]}}";
+            body = "{\"code\":200,\"result\":{\"updateTime\":" + Clock.GetUtcNow().ToUnixTimeMilliseconds() + ",\"tracks\":[" + (EmptyRecommendations ? "" :
+                Clock == TimeProvider.System ? First : First + "," + Second) + "]}}";
         }
         else if (uri.AbsolutePath == "/api/personalized/newsong")
         {
