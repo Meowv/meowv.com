@@ -4,18 +4,13 @@ using Meowv.Api.Modules.Music.Contracts;
 
 namespace Meowv.Api.Modules.Music.Providers;
 
-public sealed class MusicProviderRegistry(MusicOptions options, IConfiguration configuration, IEnumerable<IMusicSearchProvider> sources)
+public sealed class MusicProviderRegistry(MusicOptions options, IEnumerable<IMusicSearchProvider> sources)
 {
     private readonly IMusicSearchProvider[] _sources = [.. sources];
     public IMusicSearchProvider[] Enabled => [.. _sources.Where(IsEnabled)];
 
-    public bool IsEnabled(IMusicSearchProvider source)
-    {
-        if (source.ProviderId == QQMusicProvider.Id) return options.Enabled;
-        if (source.ProviderId != NeteaseMusicProvider.Id) return false;
-        var value = configuration["Modules:Music:" + nameof(MusicOptions.NeteaseEnabled)];
-        return value is not null ? bool.TryParse(value, out var enabled) && enabled : options.NeteaseEnabled;
-    }
+    public bool IsEnabled(IMusicSearchProvider source) =>
+        options.Enabled && _sources.Contains(source);
 
     public string Version
     {

@@ -113,8 +113,8 @@ internal static class MusicChecks
         }, upstreamUnavailable: true);
         foreach (var invalid in new Dictionary<string, string>
         {
-            ["TestAccessToken"] = "", ["MaxConcurrentRequests"] = "0", ["RequestsPerMinute"] = "invalid",
-            ["NeteaseRecommendationQuery"] = "\0invalid",
+            ["MaxConcurrentRequests"] = "0", ["RequestsPerMinute"] = "invalid",
+            ["RecommendationFallbackQuery"] = "\0invalid",
         })
         {
             await Case(root, true, async (client, _) =>
@@ -127,17 +127,9 @@ internal static class MusicChecks
         await Case(root, true, async (client, _) =>
         {
             using var health = await client.GetAsync("/api/music/health");
-            var readiness = JsonSerializer.Deserialize(await health.Content.ReadAsStringAsync(), MusicJsonContext.Default.MusicHealth)!;
-            Check(health.IsSuccessStatusCode && readiness.EnabledProviderCount == 1, "QQ remains available with NetEase disabled");
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
-            using var search = await client.GetAsync("/api/music/search?q=test");
-            Check(search.IsSuccessStatusCode, "QQ search serves requests with NetEase disabled");
-            await CommonHealthy(client);
-        }, change: new("NeteaseEnabled", "false"));
-        await Case(root, true, async (client, _) =>
-        {
-            using var health = await client.GetAsync("/api/music/health");
             Check((int)health.StatusCode == 503, "Production must reject development source");
+            using var setup = await client.GetAsync("/api/music/setup/devices");
+            Check(setup.StatusCode == HttpStatusCode.NotFound, "Device management is not exposed in production");
         }, production: true);
         await Case(root, true, async (client, _) =>
         {
@@ -151,7 +143,6 @@ internal static class MusicChecks
         }, change: new("RequestsPerMinute", "1"));
         await Case(root, true, async (client, app) =>
         {
-            app.Services.GetRequiredService<MusicOptions>().TestAccessToken = "";
             using var denied = await client.PostAsync("/api/music/setup/devices", Json("{broken"));
             Check(denied.StatusCode == HttpStatusCode.Unauthorized, "Management auth precedes body parsing");
             client.DefaultRequestHeaders.Add("X-Api-Bootstrap-Token", "YOUR_SYNTHETIC_MANAGEMENT_TOKEN_FOR_TESTS_ONLY");
@@ -189,7 +180,7 @@ internal static class MusicChecks
             using var expired = await client.GetAsync("/api/music/providers");
             await Error(expired, 401, "unauthorized");
             await CommonHealthy(client);
-        }, change: new("DeviceCredentialsEnabled", "true"));
+        }, change: new("TestAccessToken", ""));
         await Case(root, true, async (client, app) =>
         {
             var db = app.Services.GetRequiredService<ApiDatabase>();
@@ -198,7 +189,21 @@ internal static class MusicChecks
             using var failed = await client.GetAsync("/api/music/providers");
             await Error(failed, 503, "source_unavailable");
             await CommonHealthy(client);
-        }, change: new("DeviceCredentialsEnabled", "true"));
+        });
+        var qqFallback = new MusicUpstreamFixture { IncludeQqTracks = true, EmptyRecommendations = true };
+        await Case(root, true, async (client, app) =>
+        {
+            var netease = app.Services.GetRequiredService<MusicUpstreamFixture>();
+            netease.EmptyRecommendations = true;
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+            var page = JsonSerializer.Deserialize(await client.GetStringAsync("/api/music/recommendations"),
+                MusicJsonContext.Default.MusicRecommendationPage)!;
+            Check(netease.LastSearch == "中文经典" && qqFallback.LastSearch == "中文经典",
+                "Configured fallback query reaches both search providers");
+            Check(page.Strategy == "search_candidates" && page.Partial && page.Items.Length == 3 &&
+                  page.Items.Any(x => x.Sources.Length == 2) && page.Items.Any(x => x.Sources is [{ ProviderId: "qqmusic" }]),
+                "Fallback recommendation merges both sources, deduplicates recordings, and includes QQ-only tracks");
+        }, change: new("RecommendationFallbackQuery", "中文经典"), qq: qqFallback);
         var dailyClock = new TestClock();
         var qq = new MusicUpstreamFixture { IncludeQqTracks = true, Clock = dailyClock };
         await Case(root, true, async (client, app) =>
@@ -404,7 +409,7 @@ internal static class MusicChecks
             ["ConnectionStrings:DefaultConnection"] = "Data Source=" + Guid.NewGuid().ToString("N") + ".db",
             ["Security:BootstrapToken"] = "YOUR_SYNTHETIC_MANAGEMENT_TOKEN_FOR_TESTS_ONLY",
             ["Modules:Chat:Enabled"] = "true", ["Cors:AllowedOrigins:0"] = "http://localhost:4001",
-            ["Modules:Music:Enabled"] = enabled.ToString(), ["Modules:Music:NeteaseEnabled"] = "true",
+            ["Modules:Music:Enabled"] = enabled.ToString(),
             ["Modules:Music:TestAccessToken"] = Token,
         };
         if (change.HasValue) values["Modules:Music:" + change.Value.Key] = change.Value.Value;

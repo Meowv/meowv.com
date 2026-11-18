@@ -102,7 +102,7 @@ internal sealed class MusicDailyFeeds(
         {
             NextCursor = page.NextCursor is null ? null : "search:" + page.NextCursor,
             Partial = true,
-            Warnings = ["daily_recommendations:source_unavailable"]
+            Warnings = ["daily_recommendations:source_unavailable", .. page.Warnings ?? []]
         };
     }
 

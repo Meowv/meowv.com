@@ -3,7 +3,6 @@ using System.Text;
 using Meowv.Api.Modules.Music;
 using Meowv.Api.Modules.Music.Contracts;
 using Meowv.Api.Modules.Music.Providers;
-using Microsoft.Extensions.Configuration;
 
 internal static class MusicAggregationChecks
 {
@@ -28,7 +27,7 @@ internal static class MusicAggregationChecks
 
         var native = new FullSource([original]);
         var metadata = new Source([Track("kw-one", "Ｓｏｎｇ", "artist", "qqmusic")]);
-        var (catalog, registry, config) = Catalog(native, metadata);
+        var (catalog, registry) = Catalog(native, metadata);
         var result = await catalog.SearchAsync("query", 20, null, default);
         Check(result.Items.Length == 1 && result.Items[0].Id == original.Id && result.Items[0].Title == original.Title && result.Items[0].Sources.Length == 2, "Cross-source match preserves original display and playback identity");
         Check(result.Items[0].Sources[1].Confidence >= .96 && result.Items[0].Availability == "candidate", "Metadata match does not remove native playback");
@@ -36,15 +35,10 @@ internal static class MusicAggregationChecks
         var resolved = await catalog.ResolveAsync(new(original.Id), default);
         Check(resolved.ProviderId == NeteaseMusicProvider.Id && native.Resolves == 1, "Only resolver-capable source handles audio");
         await Error(() => catalog.ResolveAsync(new(original.Id, QQMusicProvider.Id), default), 403);
-        config["Modules:Music:NeteaseEnabled"] = "false";
-        var nativeCalls = native.Calls;
-        result = await catalog.SearchAsync("query", 20, null, default);
-        Check(native.Calls == nativeCalls && result.Items.Single().Availability == "metadata_only" && catalog.EnabledCount == 1 && catalog.Status("ready") == "degraded", "Source switch affects next request and does not invent playback");
-        await Error(() => catalog.ResolveAsync(new(original.Id, NeteaseMusicProvider.Id), default), 403);
-        await Error(() => catalog.ResolveAsync(new("kw-one"), default), 422);
+        Check(catalog.EnabledCount == 2 && catalog.Status("ready") == "ready", "Both registered providers are enabled by default");
 
         native = new FullSource([original]); metadata = new Source([Track("kw-other", "Other", "Other", "qqmusic")]);
-        (catalog, registry, config) = Catalog(native, metadata);
+        (catalog, registry) = Catalog(native, metadata);
         metadata.Failure = new MusicException("source_unavailable", "private upstream detail", 503, 15);
         result = await catalog.SearchAsync("partial", 20, null, default);
         Check(result.Partial && result.Items.Single().Id == original.Id && result.Warnings.SequenceEqual(["qqmusic:source_unavailable"]), "Failed metadata source is isolated and sanitized");
@@ -58,7 +52,7 @@ internal static class MusicAggregationChecks
 
         native = new FullSource([Track("nt-1", "N1", "A"), Track("nt-2", "N2", "A"), Track("nt-3", "N3", "A")]);
         metadata = new Source([Track("kw-1", "K1", "B", "qqmusic"), Track("kw-2", "K2", "B", "qqmusic"), Track("kw-3", "K3", "B", "qqmusic")]);
-        (catalog, registry, config) = Catalog(native, metadata);
+        (catalog, registry) = Catalog(native, metadata);
         var ids = new List<string>();
         result = await catalog.SearchAsync("pages", 2, null, default); ids.AddRange(result.Items.Select(x => x.Id));
         var firstCursor = result.NextCursor!;
@@ -67,8 +61,6 @@ internal static class MusicAggregationChecks
         result = await catalog.SearchAsync("pages", 2, result.NextCursor, default); ids.AddRange(result.Items.Select(x => x.Id));
         Check(result.NextCursor is null && ids.Count == 6 && ids.Distinct().Count() == 6, "Bounded multi-source pagination loses no items");
         await Error(() => catalog.SearchAsync("different", 2, firstCursor, default), 400);
-        config["Modules:Music:NeteaseEnabled"] = "false";
-        await Error(() => catalog.SearchAsync("pages", 2, firstCursor, default), 400);
 
         Console.WriteLine("PASS: source registry, capability isolation, partial failures, pagination and conservative matching");
     }
@@ -77,7 +69,7 @@ internal static class MusicAggregationChecks
     {
         var native = new FullSource([Track("nt-fast", "Fast", "Artist")]);
         var metadata = new Source([Track("kw-slow", "Slow", "Other", "qqmusic")]) { Block = new(), Started = new(), Cancelled = new() };
-        var (catalog, _, _) = Catalog(native, metadata);
+        var (catalog, _) = Catalog(native, metadata);
         var pending = catalog.SearchAsync("early", 20, null, default);
         await metadata.Started.Task.WaitAsync(TimeSpan.FromSeconds(1));
         var result = await pending.WaitAsync(TimeSpan.FromSeconds(2));
@@ -91,7 +83,7 @@ internal static class MusicAggregationChecks
 
         native = new FullSource([Track("nt-only", "Only", "Artist")]);
         metadata = new Source([Track("kw-rate", "Rate", "Other", "qqmusic")]) { Block = new(), Started = new() };
-        (catalog, _, _) = Catalog(native, metadata);
+        (catalog, _) = Catalog(native, metadata);
         result = await catalog.SearchAsync("isolated rate", 20, null, default).WaitAsync(TimeSpan.FromSeconds(2));
         metadata.Failure = new MusicException("rate_limited", "private detail", 429, 60);
         metadata.Block.SetResult();
@@ -102,7 +94,7 @@ internal static class MusicAggregationChecks
 
         native = new FullSource([Track("nt-fast", "Fast", "Artist")]);
         metadata = new Source([Track("kw-late", "Late", "Other", "qqmusic")]) { Block = new(), Started = new(), IgnoreCancellation = true };
-        (catalog, _, _) = Catalog(native, metadata);
+        (catalog, _) = Catalog(native, metadata);
         result = await catalog.SearchAsync("late", 20, null, default).WaitAsync(TimeSpan.FromSeconds(2));
         var cursor = result.NextCursor!;
         Check(result.Items.Single().Id == "nt-fast", "Uncancellable slow result does not delay response");
@@ -113,7 +105,7 @@ internal static class MusicAggregationChecks
 
         native = new FullSource([Track("nt-cancel", "Cancel", "Artist")]) { Block = new(), Started = new(), Cancelled = new() };
         metadata = new Source([Track("kw-cancel", "Cancel", "Artist", "qqmusic")]) { Block = new(), Started = new(), Cancelled = new() };
-        (catalog, _, _) = Catalog(native, metadata);
+        (catalog, _) = Catalog(native, metadata);
         using var cancellation = new CancellationTokenSource();
         pending = catalog.SearchAsync("cancel all", 20, null, cancellation.Token);
         await Task.WhenAll(native.Started.Task, metadata.Started.Task);
@@ -125,7 +117,7 @@ internal static class MusicAggregationChecks
 
         native = new FullSource([Track("nt-promoted", "Same", "Artist")]) { Block = new(), Started = new(), Cancelled = new() };
         metadata = new Source([Track("kw-first", "Same", "Artist", "qqmusic")]);
-        (catalog, _, _) = Catalog(native, metadata);
+        (catalog, _) = Catalog(native, metadata);
         result = await catalog.SearchAsync("promote", 20, null, default).WaitAsync(TimeSpan.FromSeconds(2));
         Check(result.Items.Single().Availability == "metadata_only", "Fast metadata can be returned while resolver is slow");
         native.Block.SetResult();
@@ -140,7 +132,7 @@ internal static class MusicAggregationChecks
         var primary = new FullSource([track]);
         var alternateTrack = Track("alt-track", "Song", "Artist", QQMusicProvider.Id) with { Availability = "candidate" };
         var alternate = new FullSource([alternateTrack], QQMusicProvider.Id);
-        var (catalog, _, config) = Catalog(primary, alternate);
+        var (catalog, _) = Catalog(primary, alternate);
         await catalog.SearchAsync("fallback", 20, null, default);
         primary.ResolveFailure = new MusicException("no_playable_match", "fixture", 422);
         var audio = await catalog.ResolveAsync(new(track.Id), default);
@@ -166,13 +158,11 @@ internal static class MusicAggregationChecks
 
     private static MusicTrack Track(string id, string title, string artist, string provider = "netease") =>
         new(id, title, [artist], null, 200000, null, null, provider == "netease" ? "candidate" : "metadata_only", [new(provider, id)]);
-    private static (MusicCatalog, MusicProviderRegistry, IConfigurationRoot) Catalog(FullSource native, Source metadata)
+    private static (MusicCatalog, MusicProviderRegistry) Catalog(FullSource native, Source metadata)
     {
-        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> {
-            ["Modules:Music:NeteaseEnabled"] = "true" }).Build();
-        var options = new MusicOptions { Enabled = true, NeteaseEnabled = true };
-        var registry = new MusicProviderRegistry(options, config, [native, metadata]);
-        return (new MusicCatalog(options, registry, TimeProvider.System), registry, config);
+        var options = new MusicOptions { Enabled = true };
+        var registry = new MusicProviderRegistry(options, [native, metadata]);
+        return (new MusicCatalog(options, registry, TimeProvider.System), registry);
     }
     private static async Task Error<T>(Func<Task<T>> call, int status)
     {

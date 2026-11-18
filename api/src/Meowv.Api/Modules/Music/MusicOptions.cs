@@ -3,9 +3,7 @@ namespace Meowv.Api.Modules.Music;
 public sealed class MusicOptions
 {
     public bool Enabled { get; set; }
-    public bool DeviceCredentialsEnabled { get; set; }
-    public bool NeteaseEnabled { get; set; }
-    public string NeteaseRecommendationQuery { get; set; } = "华语流行";
+    public string RecommendationFallbackQuery { get; set; } = "华语流行";
     public string TestAccessToken { get; set; } = "";
     public int RequestsPerMinute { get; set; } = 60;
     public int MaxConcurrentRequests { get; set; } = 4;
@@ -21,11 +19,10 @@ public sealed class MusicRuntime(MusicOptions options, IHostEnvironment environm
 
     public bool Available => options is { Enabled: true, BindingFailed: false } &&
                              (environment.IsDevelopment() || environment.IsEnvironment("Testing")) &&
-                             (options.DeviceCredentialsEnabled || (options.TestAccessToken.Length is >= 32 and <= 1024 && !options.TestAccessToken.Any(char.IsWhiteSpace) && !options.TestAccessToken.Any(char.IsControl))) &&
                              options.RequestsPerMinute is >= 1 and <= 1000 && options.MaxConcurrentRequests is >= 1 and <= 16 &&
-                             !string.IsNullOrWhiteSpace(options.NeteaseRecommendationQuery) &&
-                             options.NeteaseRecommendationQuery.Trim().Length is >= 1 and <= 100 &&
-                             !options.NeteaseRecommendationQuery.Any(char.IsControl);
+                             !string.IsNullOrWhiteSpace(options.RecommendationFallbackQuery) &&
+                             options.RecommendationFallbackQuery.Trim().Length is >= 1 and <= 100 &&
+                             !options.RecommendationFallbackQuery.Any(char.IsControl);
 
     public string Status => !options.Enabled ? "disabled" : !Available ? "unavailable" : "ready";
 

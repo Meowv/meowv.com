@@ -164,14 +164,9 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
 
     public async Task<MusicRecommendationPage> RecommendAsync(int? limit, string? cursor, CancellationToken ct)
     {
-        if (limit is < 1 or > 50) throw MusicException.Invalid();
-        var source = registry.Enabled.FirstOrDefault(x => x is IMusicResolverProvider)
-                     ?? throw new MusicException("source_unavailable", "当前没有可播放的音乐来源。", 503, 15);
-        var result = await Load(source, options.NeteaseRecommendationQuery, limit ?? 20, cursor, ct);
-        if (result.Failure is { } error) throw error;
-        var page = result.Page!;
+        var page = await SearchAsync(options.RecommendationFallbackQuery, limit, cursor, ct);
         return new MusicRecommendationPage(page.Items.Where(x => x.Availability == "candidate").ToArray(),
-            page.NextCursor, source.ProviderId + "_search_candidates", clock.GetUtcNow().UtcDateTime);
+            page.NextCursor, "search_candidates", clock.GetUtcNow().UtcDateTime, page.Partial, page.Warnings);
     }
 
     internal MusicTrack[] MergeDaily(IEnumerable<MusicTrack> tracks)

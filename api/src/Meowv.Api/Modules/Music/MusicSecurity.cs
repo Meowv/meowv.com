@@ -55,7 +55,7 @@ public sealed class MusicAccessHandler(
         string? deviceId;
         try
         {
-            deviceId = music.DeviceCredentialsEnabled ? devices.Verify(raw) : null;
+            deviceId = devices.Verify(raw);
         }
         catch (Exception error) when (error is Microsoft.Data.Sqlite.SqliteException or Infrastructure.ApiDatabaseSchemaException)
         {

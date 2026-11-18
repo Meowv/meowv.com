@@ -11,6 +11,8 @@ internal sealed class MusicUpstreamFixture : HttpMessageHandler
     internal HttpStatusCode Status = HttpStatusCode.OK;
     internal int Count;
     internal bool IncludeQqTracks;
+    internal bool EmptyRecommendations;
+    internal string? LastSearch;
     internal long RangeLength = 1600000;
     internal TimeSpan? RetryAfter;
     internal TimeProvider Clock = TimeProvider.System;
@@ -40,15 +42,21 @@ internal sealed class MusicUpstreamFixture : HttpMessageHandler
             if (request.Headers.Contains("Cookie") || request.Headers.Contains("Authorization"))
                 throw new InvalidOperationException("Anonymous QQ requests must not carry credentials");
             using var json = JsonDocument.Parse(QueryHelpers.ParseQuery(uri.Query)["data"].ToString());
-            var method = json.RootElement.GetProperty("req").GetProperty("method").GetString();
-            if (method == "DoSearchForQQMusicDesktop" && json.RootElement.TryGetProperty("comm", out _))
-                throw new InvalidOperationException("The public QQ search must not send the chart request context");
+            var call = json.RootElement.GetProperty("req");
+            var method = call.GetProperty("method").GetString();
+            if (method == "DoSearchForQQMusicDesktop")
+            {
+                if (json.RootElement.TryGetProperty("comm", out _))
+                    throw new InvalidOperationException("The public QQ search must not send the chart request context");
+                LastSearch = call.GetProperty("param").GetProperty("query").GetString();
+            }
             var date = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(Clock.GetUtcNow(), "Asia/Shanghai").ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             var data = method switch
             {
                 "GetDetail" => "{\"data\":{\"topId\":62,\"updateTime\":\"" + date + "\",\"song\":[{\"rank\":1,\"songId\":42}]},\"songInfoList\":[" + QqFirst + "]}",
+                "GetNewSong" when EmptyRecommendations => """{"song_list":[]}""",
                 "GetNewSong" => "{\"song_list\":[" + QqFirst + "," + QqSecond + "]}",
-                "DoSearchForQQMusicDesktop" => "{\"body\":{\"song\":{\"list\":[" + (IncludeQqTracks ? QqFirst : "") + "]}}}",
+                "DoSearchForQQMusicDesktop" => "{\"body\":{\"song\":{\"list\":[" + (IncludeQqTracks ? QqFirst + "," + QqSecond : "") + "]}}}",
                 "CgiGetVkey" =>
                     """{"midurlinfo":[{"songmid":"QQfixture00001","result":0,"purl":"M500QQfixture00001.mp3?fixture=1"}],"sip":["https://aqqmusic.tc.qq.com/"]}""",
                 _ => throw new InvalidOperationException("Unexpected QQ method")
@@ -60,6 +68,7 @@ internal sealed class MusicUpstreamFixture : HttpMessageHandler
         if (uri.AbsolutePath == "/api/cloudsearch/pc")
         {
             var form = QueryHelpers.ParseQuery("?" + await request.Content!.ReadAsStringAsync(ct));
+            LastSearch = form["s"].ToString();
             var offset = int.Parse(form["offset"].ToString(), CultureInfo.InvariantCulture);
             var limit = int.Parse(form["limit"].ToString(), CultureInfo.InvariantCulture);
             var songs = new[] { First, Second };
@@ -71,7 +80,7 @@ internal sealed class MusicUpstreamFixture : HttpMessageHandler
         }
         else if (uri.AbsolutePath == "/api/personalized/newsong")
         {
-            body = "{\"code\":200,\"result\":[{\"song\":" + First + "}" + (Clock == TimeProvider.System ? ",{\"song\":" + Second + "}" : "") + "]}";
+            body = EmptyRecommendations ? """{"code":200,"result":[]}""" : "{\"code\":200,\"result\":[{\"song\":" + First + "}" + (Clock == TimeProvider.System ? ",{\"song\":" + Second + "}" : "") + "]}";
         }
         else
             body = """{"code":200,"data":[{"id":1,"code":200,"url":"https://m7.music.126.net/fixture.mp3","type":"mp3","time":100000,"expi":1200,"freeTrialInfo":null}]}""";

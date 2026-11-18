@@ -71,7 +71,7 @@ public sealed class MusicModule : IEndpointModule
             new MusicHealth(catalog.Status(runtime.Status), runtime.Available ? catalog.EnabledCount : 0, catalog.Version),
             MusicJsonContext.Default.MusicHealth, statusCode: runtime.Status is "disabled" or "unavailable" ? 503 : 200));
         if (!endpoints.ServiceProvider.GetRequiredService<MusicOptions>().Enabled) return;
-        if (endpoints.ServiceProvider.GetRequiredService<MusicOptions>().DeviceCredentialsEnabled)
+        if (endpoints.ServiceProvider.GetRequiredService<MusicRuntime>().Available)
         {
             var setup = music.MapGroup("/setup/devices").RequireAuthorization(ApiAuthorization.ManagementPolicy)
                 .RequireRateLimiting("api-auth");
