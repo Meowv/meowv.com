@@ -20,6 +20,14 @@ internal sealed class QQMusicChart(HttpClient http, MusicChartStore store, TimeP
     private readonly SemaphoreSlim _refresh = new(1, 1);
     private DateTimeOffset _retryAt;
     private bool _lastRefreshFailed;
+    private MusicChartPage? _current;
+
+    public bool IsCurrent(MusicChartPage snapshot)
+    {
+        var current = Volatile.Read(ref _current);
+        return current is { Stale: false } && current.CapturedAt == snapshot.CapturedAt &&
+            current.Period == snapshot.Period && current.Period == LocalDate(clock.GetUtcNow());
+    }
 
     public async Task<MusicChartPage> GetAsync(bool forceRefresh, CancellationToken ct)
     {
@@ -54,11 +62,14 @@ internal sealed class QQMusicChart(HttpClient http, MusicChartStore store, TimeP
             if (latest is null)
                 throw new MusicException("source_unavailable", "QQ 音乐榜单暂不可用。", 503,
                     (int)Math.Clamp(Math.Ceiling((_retryAt - clock.GetUtcNow()).TotalSeconds), 1, int.MaxValue));
-            return new MusicChartPage(Source, Chart, latest.BusinessDate, LocalDate(latest.SourceUpdatedAt),
+            var result = new MusicChartPage(Source, Chart, latest.BusinessDate, LocalDate(latest.SourceUpdatedAt),
                 latest.CapturedAt, _lastRefreshFailed || latest.BusinessDate < today, latest.Entries);
+            Volatile.Write(ref _current, result);
+            return result;
         }
         catch (Exception error) when (error is SqliteException or ApiDatabaseSchemaException or IOException or InvalidDataException or JsonException)
         {
+            Volatile.Write(ref _current, null);
             throw new MusicException("source_unavailable", "音乐榜单快照暂不可用。", 503, 30);
         }
         finally { _refresh.Release(); }

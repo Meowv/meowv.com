@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Meowv.Api.Modules.Music.Contracts;
 using Meowv.Api.Modules.Music.Providers;
+using Meowv.Api.Modules.Music.Storage;
 using Microsoft.AspNetCore.WebUtilities;
 
 namespace Meowv.Api.Modules.Music;
@@ -167,6 +168,33 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
         var page = result.Page!;
         return new MusicRecommendationPage(page.Items.Where(x => x.Availability == "candidate").ToArray(),
             page.NextCursor, source.ProviderId + "_search_candidates", clock.GetUtcNow().UtcDateTime);
+    }
+
+    internal async Task<MusicTrack?> MatchChartEntryAsync(MusicChartEntry entry, CancellationToken ct)
+    {
+        if (entry.DurationMs is not > 0 || entry.Title.Length > 100) return null;
+        var reference = new MusicTrack(entry.TrackKey, entry.Title, entry.Artists, null, entry.DurationMs, null,
+            entry.Isrc, "candidate", []);
+        var query = $"{entry.Title} {entry.Artists[0]}";
+        if (query.Length > 100) query = entry.Title;
+        foreach (var source in registry.Enabled.Where(x => x is IMusicResolverProvider && x.Status == "healthy"))
+        {
+            ct.ThrowIfCancellationRequested();
+            var page = await Load(source, query, 8, null, ct);
+            var matches = page.Page?.Items.Where(x => x.Availability == "candidate" &&
+                MusicCandidateMatcher.CanMerge(reference, x)).DistinctBy(x => x.Id).Take(2).ToArray();
+            // 同一来源出现多个相同标题、歌手和时长的录音时，不能确定榜单版本。
+            if (matches is not [var candidate]) continue;
+            try
+            {
+                var checkedAudio = await ResolveAsync(new MusicResolveRequest(candidate.Id, source.ProviderId), ct);
+                if (checkedAudio.Audio.DurationMs is > 0 &&
+                    MusicCandidateMatcher.CanMerge(reference, candidate with { DurationMs = checkedAudio.Audio.DurationMs }))
+                    return candidate;
+            }
+            catch (MusicException) { }
+        }
+        return null;
     }
 
     public async Task<MusicResolvedTrack> ResolveAsync(MusicResolveRequest request, CancellationToken ct)

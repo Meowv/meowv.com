@@ -277,6 +277,58 @@ internal static class MusicChecks
             Check(malformed.IsSuccessStatusCode && malformedPage.RootElement.GetProperty("stale").GetBoolean() && chartFixture.Calls == 3,
                 "Malformed new chart cannot erase yesterday's snapshot");
         }, change: new("QQChartEnabled", "true"), chart: chartFixture);
+        var rankingFixture = new QQChartFixture
+        {
+            Gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously),
+            Body = """
+                {"code":0,"req":{"code":0,"data":{
+                  "data":{"topId":62,"period":"2026-11-18","updateTime":"2026-11-18","totalNum":3,
+                    "song":[{"rank":1,"songId":41},{"rank":2,"songId":42},{"rank":3,"songId":43}]},
+                  "songInfoList":[
+                    {"id":41,"mid":"wrong-artist","title":"睡醒就好了","interval":100,"singer":[{"name":"Other artist"}]},
+                    {"id":42,"mid":"verified-track","title":"睡醒就好了","interval":100,"singer":[{"name":"qix"}]},
+                    {"id":43,"mid":"unavailable-track","title":"今天也不错","interval":100,"singer":[{"name":"qix"}]}
+                  ]
+                }}}
+                """
+        };
+        await Case(root, true, async (client, app) =>
+        {
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+            async Task<MusicRecommendationPage> Recommend() =>
+                JsonSerializer.Deserialize(await client.GetStringAsync("/api/music/recommendations?limit=1"),
+                    MusicJsonContext.Default.MusicRecommendationPage)!;
+            var ordinary = await Recommend();
+            Check(ordinary.Strategy == "netease_search_candidates", "Ordinary recommendation does not wait for QQ");
+            rankingFixture.Gate.SetResult();
+            MusicRecommendationPage ranked = ordinary;
+            using var budget = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+            while (!ranked.Strategy.StartsWith("qq_rising_verified_", StringComparison.Ordinal))
+            {
+                await Task.Delay(25, budget.Token);
+                ranked = await Recommend();
+            }
+            Check(ranked.Items.Length == 1 && ranked.Items[0].Id == ordinary.Items[0].Id &&
+                ranked.Items[0].Title == "睡醒就好了" && ranked.NextCursor == ordinary.NextCursor && rankingFixture.Calls == 1,
+                "Verified provider track is recommended, replaces its duplicate, and preserves the ordinary continuation");
+            var next = JsonSerializer.Deserialize(await client.GetStringAsync("/api/music/recommendations?limit=1&cursor=" +
+                Uri.EscapeDataString(ranked.NextCursor!)), MusicJsonContext.Default.MusicRecommendationPage)!;
+            Check(next.Strategy == "netease_search_candidates" && next.Items.Single().Id != ranked.Items[0].Id,
+                "Follow-up uses the original recommendation cursor");
+            // 以较大的首页验证解析失败的同名项没有被标记为榜单候选添加到原结果之外。
+            var mixed = JsonSerializer.Deserialize(await client.GetStringAsync("/api/music/recommendations?limit=2"),
+                MusicJsonContext.Default.MusicRecommendationPage)!;
+            Check(mixed.Items.Select(x => x.Id).Distinct().Count() == 2, "The ranked track does not duplicate an ordinary item");
+            var snapshot = await app.Services.GetRequiredService<QQMusicChart>().GetAsync(false, budget.Token);
+            var catalog = app.Services.GetRequiredService<MusicCatalog>();
+            Check(await catalog.MatchChartEntryAsync(snapshot.Entries[0], budget.Token) is null &&
+                  await catalog.MatchChartEntryAsync(snapshot.Entries[2], budget.Token) is null,
+                "A different artist or a failed full-audio resolution excludes the entry from ranked recommendations");
+
+            rankingFixture.Clock.Now = rankingFixture.Clock.Now.AddDays(1);
+            var afterMidnight = await Recommend();
+            Check(afterMidnight.Strategy == "netease_search_candidates", "Expired chart is ignored immediately across Shanghai midnight");
+        }, change: new("QQChartEnabled", "true"), chart: rankingFixture);
         Console.WriteLine("PASS: Music native-source HTTP fixture contracts, QQ chart refresh and stale fallback, scoped access, configuration isolation, bounded concurrency and 429. No external provider/media request.");
     }
 
@@ -479,6 +531,7 @@ internal static class MusicChecks
         public HttpStatusCode Status = HttpStatusCode.OK;
         public TimeSpan? RetryAfter;
         public int Calls;
+        public TaskCompletionSource? Gate;
         public string Body = """
             {"code":0,"req":{"code":0,"data":{
               "data":{"topId":62,"period":"2026-11-18","updateTime":"2026-11-18","totalNum":1,"song":[{"rank":1,"songId":42}]},
@@ -486,15 +539,16 @@ internal static class MusicChecks
             }}}
             """;
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             Check(request.Method == HttpMethod.Get && request.RequestUri is { Scheme: "https", Host: "u.y.qq.com" } &&
                 !request.Headers.Contains("Authorization") && !request.Headers.Contains("Cookie"),
                 "Chart requests use the fixed public QQ host without session credentials");
             Calls++;
+            if (Gate is not null) await Gate.Task.WaitAsync(cancellationToken);
             var response = new HttpResponseMessage(Status) { Content = Json(Body) };
             if (RetryAfter is { } delay) response.Headers.RetryAfter = new RetryConditionHeaderValue(delay);
-            return Task.FromResult(response);
+            return response;
         }
     }
 }

@@ -35,6 +35,11 @@ public static class MusicRegistration
         services.AddSingleton<QQMusicChart>(provider => new QQMusicChart(
             provider.GetRequiredService<IHttpClientFactory>().CreateClient("MusicQQChart"),
             provider.GetRequiredService<MusicChartStore>(), provider.GetRequiredService<TimeProvider>()));
+        if (options is { Enabled: true, QQChartEnabled: true })
+        {
+            services.AddSingleton<MusicChartRecommendations>();
+            services.AddHostedService(provider => provider.GetRequiredService<MusicChartRecommendations>());
+        }
         services.AddHttpClient("MusicNetease", client => client.Timeout = TimeSpan.FromSeconds(6))
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
             {
@@ -123,8 +128,15 @@ public sealed class MusicModule : IEndpointModule
             MusicJsonContext.Default.MusicProviders));
         secured.MapGet("/search", async (HttpContext context, MusicCatalog catalog) => Results.Json(
             await catalog.SearchAsync(One(context, "q"), Limit(context), One(context, "cursor"), context.RequestAborted), MusicJsonContext.Default.MusicSearchPage));
-        secured.MapGet("/recommendations", async (HttpContext context, MusicCatalog catalog) => Results.Json(
-            await catalog.RecommendAsync(Limit(context), One(context, "cursor"), context.RequestAborted), MusicJsonContext.Default.MusicRecommendationPage));
+        secured.MapGet("/recommendations", async (HttpContext context, MusicCatalog catalog) =>
+        {
+            var limit = Limit(context);
+            var cursor = One(context, "cursor");
+            var page = await catalog.RecommendAsync(limit, cursor, context.RequestAborted);
+            if (cursor is null && context.RequestServices.GetService<MusicChartRecommendations>() is { } chart)
+                page = chart.Mix(page, limit ?? 20);
+            return Results.Json(page, MusicJsonContext.Default.MusicRecommendationPage);
+        });
         secured.MapPost("/resolve", async (HttpContext context, MusicCatalog catalog) =>
         {
             if (!context.Request.HasJsonContentType()) throw MusicException.Invalid();
