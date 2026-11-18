@@ -164,6 +164,15 @@ internal static class MusicAggregationChecks
         config["Modules:Music:KuwoSearchEnabled"] = "false";
         await Error(() => catalog.ResolveAsync(new(track.Id), default), 422);
         Check(alternate.Resolves == 1, "Explicit source, permission, rate limits and disabled sources do not fall back");
+        await Error(() => catalog.ResolveAsync(new(track.Id, ExcludedProviderId: primary.ProviderId), default), 422);
+        config["Modules:Music:KuwoSearchEnabled"] = "true";
+        var primaryCalls = primary.Resolves;
+        var recovered = await catalog.ResolveAsync(new(track.Id, ExcludedProviderId: primary.ProviderId), default);
+        Check(recovered.ProviderId == alternate.ProviderId && recovered.TrackId == track.Id &&
+            primary.Resolves == primaryCalls && alternate.Resolves == 2, "Media fallback never resolves the excluded source");
+        await Error(() => catalog.ResolveAsync(new(track.Id, primary.ProviderId, ExcludedProviderId: alternate.ProviderId), default), 400);
+        await Error(() => catalog.ResolveAsync(new("unknown-track", ExcludedProviderId: primary.ProviderId), default), 422);
+        Check(alternate.Resolves == 2, "Media fallback requires a current catalog match");
     }
 
     private static MusicTrack Track(string id, string title, string artist, string provider = "netease") =>

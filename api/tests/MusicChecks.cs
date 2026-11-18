@@ -100,6 +100,9 @@ internal static class MusicChecks
             var item = data.RootElement.GetProperty("items")[0];
             Check(item.GetProperty("sources").GetArrayLength() == 2 && item.GetProperty("availability").GetString() == "candidate", "HTTP multi-source merge retains playable source");
             Check(item.GetProperty("sources")[1].GetProperty("confidence").GetDouble() >= .96, "Generated JSON includes match confidence");
+            using var noAlternate = await client.PostAsync("/api/music/resolve",
+                Json("{\"trackId\":\"" + item.GetProperty("id").GetString() + "\",\"excludedProviderId\":\"netease\"}"));
+            await Error(noAlternate, 422, "no_playable_match");
             app.Services.GetRequiredService<IConfiguration>()["Modules:Music:NeteaseEnabled"] = "false";
             using var metadata = await client.GetAsync("/api/music/search?q=metadata");
             using var metadataJson = JsonDocument.Parse(await metadata.Content.ReadAsStringAsync());

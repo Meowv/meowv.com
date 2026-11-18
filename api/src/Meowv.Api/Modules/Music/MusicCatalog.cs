@@ -175,6 +175,8 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
         if (string.IsNullOrWhiteSpace(request.TrackId) || request.TrackId.Length > 128 || request.Quality != "auto") throw MusicException.Invalid();
         var sources = registry.Enabled;
         var requested = request.PreferredProviderId;
+        var excluded = request.ExcludedProviderId;
+        if (excluded is not null && (requested is not null || excluded.Length is < 1 or > 64)) throw MusicException.Invalid();
         if (requested is not null && !sources.Any(x => x.ProviderId == requested && x is IMusicResolverProvider))
             throw new MusicException("forbidden", "此来源未启用或不支持完整播放。", 403);
         KnownTrack? known;
@@ -184,9 +186,14 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
             known = _known.TryGetValue(canonical, out var value) && value.Until > clock.GetUtcNow() ? value : null;
         }
 
+        if (excluded is not null && (known?.ProviderTrackIds.ContainsKey(excluded) != true ||
+            !sources.Any(x => x.ProviderId == excluded && x is IMusicResolverProvider)))
+            throw new MusicException("no_playable_match", "当前歌曲没有其他可用来源。", 422);
+
         var primary = known?.Track.Sources.FirstOrDefault()?.ProviderId;
         MusicException? firstFailure = null;
-        foreach (var source in sources.Where(x => x is IMusicResolverProvider && (requested is null || x.ProviderId == requested))
+        foreach (var source in sources.Where(x => x is IMusicResolverProvider && x.ProviderId != excluded &&
+                     (requested is null || x.ProviderId == requested))
                      .OrderByDescending(x => x.ProviderId == primary))
         {
             ct.ThrowIfCancellationRequested();
@@ -194,7 +201,8 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
             var id = known is null ? request.TrackId : known.ProviderTrackIds.GetValueOrDefault(source.ProviderId);
             if (id is null) continue;
             if (source.FindTrack(id) is not { Availability: "candidate" } track) continue;
-            if (known is not null && source.ProviderId != primary && !MusicCandidateMatcher.CanMerge(known.Track, track)) continue;
+            if (known is not null && (excluded is not null || source.ProviderId != primary) &&
+                !MusicCandidateMatcher.CanMerge(known.Track, track)) continue;
 
             try
             {
@@ -202,7 +210,7 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
                 ct.ThrowIfCancellationRequested();
                 return audio with { TrackId = request.TrackId };
             }
-            catch (MusicException error) when (requested is null && firstFailure is null && source.ProviderId == primary &&
+            catch (MusicException error) when (requested is null && excluded is null && firstFailure is null && source.ProviderId == primary &&
                 error.Code == "no_playable_match" && error.RetryAfterSeconds is null)
             {
                 firstFailure = error;
