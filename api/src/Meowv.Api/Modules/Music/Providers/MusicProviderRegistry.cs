@@ -11,11 +11,16 @@ public sealed class MusicProviderRegistry(MusicOptions options, IConfiguration c
 
     public bool IsEnabled(IMusicSearchProvider source)
     {
-        var key = source.ProviderId switch { NeteaseMusicProvider.Id => "NeteaseEnabled", KuwoSearchProvider.Id => "KuwoSearchEnabled", _ => "" };
+        var (key, defaultEnabled) = source.ProviderId switch
+        {
+            NeteaseMusicProvider.Id => (nameof(MusicOptions.NeteaseEnabled), options.NeteaseEnabled),
+            KuwoSearchProvider.Id => (nameof(MusicOptions.KuwoSearchEnabled), options.KuwoSearchEnabled),
+            IncompetechMusicProvider.Id => (nameof(MusicOptions.IncompetechEnabled), options.IncompetechEnabled),
+            _ => ("", false)
+        };
         if (key.Length == 0) return false;
         var value = configuration["Modules:Music:" + key];
-        return value is not null ? bool.TryParse(value, out var enabled) && enabled :
-            source.ProviderId == NeteaseMusicProvider.Id ? options.NeteaseEnabled : options.KuwoSearchEnabled;
+        return value is not null ? bool.TryParse(value, out var enabled) && enabled : defaultEnabled;
     }
 
     public string Version

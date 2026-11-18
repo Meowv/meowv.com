@@ -95,6 +95,23 @@ internal static class MusicChecks
         await Case(root, true, async (client, app) =>
         {
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+            using var search = await client.GetAsync("/api/music/search?q=Monkeys+Spinning+Monkeys");
+            using var json = JsonDocument.Parse(await search.Content.ReadAsStringAsync());
+            var item = json.RootElement.GetProperty("items").EnumerateArray().Single(x => x.GetProperty("isrc").GetString() == "USUAN1400011");
+            var id = item.GetProperty("id").GetString();
+            using var resolved = await client.PostAsync("/api/music/resolve", Json($$"""{"trackId":"{{id}}","preferredProviderId":"incompetech"}"""));
+            using var audio = JsonDocument.Parse(await resolved.Content.ReadAsStringAsync());
+            Check(resolved.IsSuccessStatusCode && audio.RootElement.GetProperty("providerId").GetString() == "incompetech" &&
+                  audio.RootElement.GetProperty("audio").GetProperty("url").GetString() ==
+                  "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Monkeys%20Spinning%20Monkeys.mp3",
+                  "Open recording resolves only to the fixed author host");
+            app.Services.GetRequiredService<IConfiguration>()["Modules:Music:IncompetechEnabled"] = "false";
+            using var disabled = await client.PostAsync("/api/music/resolve", Json($$"""{"trackId":"{{id}}","preferredProviderId":"incompetech"}"""));
+            await Error(disabled, 403, "forbidden");
+        }, change: new("IncompetechEnabled", "true"));
+        await Case(root, true, async (client, app) =>
+        {
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
             using var response = await client.GetAsync("/api/music/search?q=merged&limit=1");
             using var data = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
             var item = data.RootElement.GetProperty("items")[0];

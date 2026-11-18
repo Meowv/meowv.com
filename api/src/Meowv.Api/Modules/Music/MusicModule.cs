@@ -43,6 +43,7 @@ public static class MusicRegistration
             provider.GetRequiredService<IHttpClientFactory>().CreateClient("MusicKuwo"), provider.GetRequiredService<TimeProvider>()));
         services.AddSingleton<IMusicSearchProvider>(provider => provider.GetRequiredService<NeteaseMusicProvider>());
         services.AddSingleton<IMusicSearchProvider>(provider => provider.GetRequiredService<KuwoSearchProvider>());
+        services.AddSingleton<IMusicSearchProvider, IncompetechMusicProvider>();
         services.AddSingleton<MusicProviderRegistry>();
         services.AddSingleton<MusicCatalog>();
         services.AddSingleton<IEndpointModule, MusicModule>();
