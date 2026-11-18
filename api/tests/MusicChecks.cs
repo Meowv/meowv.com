@@ -10,6 +10,7 @@ using Meowv.Api.Modules.Chat;
 using Meowv.Api.Modules.Music;
 using Meowv.Api.Modules.Music.Contracts;
 using Meowv.Api.Modules.Music.Providers;
+using Meowv.Api.Modules.XiaomiCamera;
 using Meowv.Api.Security;
 using Meowv.Api.Infrastructure;
 
@@ -21,6 +22,7 @@ internal static class MusicChecks
     {
         await NeteaseSourceChecks.RunAsync();
         await MusicAggregationChecks.RunAsync();
+        CheckExistingDatabase(root);
         Check(!JsonSerializer.IsReflectionEnabledByDefault, "JSON reflection must stay disabled");
         using var fixture = JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "music-v1.json")));
         var page = JsonSerializer.Deserialize(fixture.RootElement.GetProperty("search"), MusicJsonContext.Default.MusicSearchPage)!;
@@ -236,6 +238,62 @@ internal static class MusicChecks
     {
         foreach (var path in new[] { "/api/health", "/api/modules", "/api/docs", "/api/chat/health" })
         { using var response = await client.GetAsync(path); Check(response.IsSuccessStatusCode, "Common route " + path); }
+    }
+
+    private static void CheckExistingDatabase(string root)
+    {
+        var path = Path.Combine(root, "music-existing-" + Guid.NewGuid().ToString("N") + ".db");
+        var database = new ApiDatabase("Data Source=" + path);
+        new ChatRepository(database, new ChatOptions()).Initialize();
+        _ = new AccessCodeService(database);
+        _ = new XiaomiCredentialCache(database);
+        using (var connection = database.OpenConnection())
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = """
+                INSERT INTO chat_messages(guest_id,client_message_id,nickname_snapshot,avatar_seed_snapshot,content,created_at)
+                VALUES ('guest','message','fixture','avatar','before music','2026-01-01');
+                INSERT INTO auth_state VALUES (1,zeroblob(16),zeroblob(32),7,'2026-01-01');
+                INSERT INTO xiaomi_camera_state VALUES (1,'{"fixture":true}','2026-01-01','2026-01-01');
+                """;
+            command.ExecuteNonQuery();
+        }
+
+        var before = ExistingState(database);
+        var store = new MusicDeviceStore(database, TimeProvider.System);
+        var issued = store.Issue("Database isolation fixture");
+        var reopened = new MusicDeviceStore(database, TimeProvider.System);
+        Check(reopened.Verify(issued.Token) == issued.Id && reopened.Revoke(issued.Id) &&
+              new MusicDeviceStore(database, TimeProvider.System).Verify(issued.Token) is null,
+              "Music schema opens idempotently and revocation persists");
+        Check(before.SequenceEqual(ExistingState(database)), "Music credential writes preserve existing Chat, Camera and Auth data and schema");
+        Console.WriteLine("PASS: Existing Chat, Camera and Auth database data and schema survive music initialization and credential writes");
+    }
+
+    private static string[] ExistingState(ApiDatabase database)
+    {
+        using var connection = database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT json_array(name, sql) FROM sqlite_schema
+                WHERE tbl_name LIKE 'chat_%' OR tbl_name IN ('auth_state','xiaomi_camera_state')
+            UNION ALL
+            SELECT json_array(owner, version, applied_at) FROM schema_migrations
+                WHERE owner IN ('chat','auth','xiaomi-camera')
+            UNION ALL
+            SELECT json_array(id,guest_id,client_message_id,nickname_snapshot,avatar_seed_snapshot,content,created_at,deleted_at,revision)
+                FROM chat_messages
+            UNION ALL
+            SELECT json_array(id,hex(access_code_salt),hex(access_code_hash),access_code_version,access_code_updated_at)
+                FROM auth_state
+            UNION ALL
+            SELECT json_array(id,credentials_json,created_at,updated_at) FROM xiaomi_camera_state
+            ORDER BY 1;
+            """;
+        using var reader = command.ExecuteReader();
+        var rows = new List<string>();
+        while (reader.Read()) rows.Add(reader.GetString(0));
+        return rows.ToArray();
     }
 
     private static StringContent Json(string body) => new(body, Encoding.UTF8, "application/json");
