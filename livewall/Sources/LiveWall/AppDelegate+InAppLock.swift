@@ -107,12 +107,27 @@ extension AppDelegate {
         refreshStatusItem()
     }
 
-    /// 设置区的「一键锁屏壁纸」子菜单。
+    /// 「一键锁屏」菜单：动作与锁屏壁纸合在一处，不再拆成两行。
     ///
-    /// 与「锁屏预览」并列但互不相干：那个是 macOS 系统锁屏的静态图，
-    /// 这个是 App 自己的锁屏层。两个选项互斥，勾选即生效。
-    func buildInAppLockWallpaperMenu() -> NSMenuItem {
+    /// 与「锁屏预览」互不相干：那个是 macOS 系统锁屏的静态图，
+    /// 这个是 App 自己的锁屏层。壁纸选项互斥，勾选即生效。
+    func buildInAppLockMenu() -> NSMenuItem {
         let submenu = NSMenu()
+
+        let lockNow = NSMenuItem(
+            title: "立即锁屏（\(InAppLockInputPolicy.unlockHint) 解锁）",
+            action: #selector(startInAppLock),
+            keyEquivalent: ""
+        )
+        lockNow.target = self
+        submenu.addItem(lockNow)
+        submenu.addItem(.separator())
+
+        // 说明行 + 两个互斥选项。没有它，「使用当前壁纸」在「一键锁屏」子菜单里
+        // 看不出是在说锁屏画面。
+        let wallpaperHeader = NSMenuItem(title: "锁屏壁纸", action: nil, keyEquivalent: "")
+        wallpaperHeader.isEnabled = false
+        submenu.addItem(wallpaperHeader)
 
         let useCurrent = NSMenuItem(
             title: "使用当前壁纸",
@@ -133,7 +148,7 @@ extension AppDelegate {
         submenu.addItem(black)
 
         let root = NSMenuItem(
-            title: "一键锁屏壁纸（\(preferences.inAppLockUsesCurrentWallpaper ? "当前壁纸" : "纯黑")）",
+            title: "一键锁屏（\(hotKeys.display(for: .inAppLock))）",
             action: nil,
             keyEquivalent: ""
         )
