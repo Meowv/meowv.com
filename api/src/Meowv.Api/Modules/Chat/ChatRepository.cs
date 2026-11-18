@@ -224,8 +224,8 @@ public sealed class ChatRepository(ApiDatabase database, ChatOptions options)
         var seen = new HashSet<string>();
         while (reader.Read())
             if (seen.Add(reader.GetString(0)))
-                guests.Add(new(reader.GetString(0), reader.GetString(1), reader.GetString(2)));
-        return guests.Take(100).ToArray();
+                guests.Add(new ChatGuest(reader.GetString(0), reader.GetString(1), reader.GetString(2)));
+        return [.. guests.Take(100)];
     }
 
     public ChatMessageContext? Context(long id)
