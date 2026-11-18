@@ -44,6 +44,9 @@ internal static class NeteaseSourceChecks
         clock.Now = clock.Now.AddSeconds(31);
         handler.AudioBody = Handler.Audio.Replace("\"time\":100000", "\"time\":0", StringComparison.Ordinal);
         Check((await source.ResolveAsync(new MusicResolveRequest(id), default)).Audio.DurationMs == 100000, "Bounded bitrate and size duration fallback");
+        handler.AudioBody = Handler.Audio.Replace("\"code\":200,\"url\"", "\"code\":403,\"url\"", StringComparison.Ordinal);
+        await Error(() => source.ResolveAsync(new MusicResolveRequest(id), default), 403);
+        clock.Now = clock.Now.AddSeconds(61);
         handler.AudioBody = Handler.Audio;
         handler.SearchBody = Handler.Search.Replace("\"fee\":0", "\"fee\":1", StringComparison.Ordinal);
         page = await source.SearchAsync("paid", 1, null, default);

@@ -173,8 +173,10 @@ public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : 
         using var body = await SendAsync("/weapi/song/enhance/player/url", NeteaseWebProtocol.Encode(json), ct);
         if (!body.RootElement.TryGetProperty("data", out var rows) || rows.ValueKind != JsonValueKind.Array || rows.GetArrayLength() != 1) throw Unavailable();
         var audio = rows[0];
-        if (Number(audio, "code") == 429) throw BlockRate(60);
-        if (Number(audio, "id") != long.Parse(entry.SourceId, CultureInfo.InvariantCulture) || Number(audio, "code") != 200 ||
+        var code = Number(audio, "code");
+        if (code == 429) throw BlockRate(60);
+        if (code is 301 or 401 or 403) throw BlockFailure(403, 60);
+        if (Number(audio, "id") != long.Parse(entry.SourceId, CultureInfo.InvariantCulture) || code != 200 ||
             audio.TryGetProperty("freeTrialInfo", out var trial) && trial.ValueKind != JsonValueKind.Null) throw NoMatch();
         var url = SafeAudioUrl(Text(audio, "url"));
         var duration = Number(audio, "time");

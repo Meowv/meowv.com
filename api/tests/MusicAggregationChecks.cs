@@ -10,6 +10,7 @@ internal static class MusicAggregationChecks
     public static async Task RunAsync()
     {
         await EarlyReturnChecks();
+        await ResolveFallbackChecks();
         var original = Track("nt-one", "Song", "Artist");
         foreach (var title in new[] { "Ｓｏｎｇ", "so\u200Bng", " SONG! " })
             Check(MusicCandidateMatcher.Compare(original, Track("other", title, "ARTIST")).Equivalent, "Unicode, zero-width and case normalization");
@@ -140,6 +141,31 @@ internal static class MusicAggregationChecks
             "Deferred playable match can upgrade an earlier metadata result");
     }
 
+    private static async Task ResolveFallbackChecks()
+    {
+        var track = Track("nt-primary", "Song", "Artist");
+        var primary = new FullSource([track]);
+        var alternateTrack = Track("alt-track", "Song", "Artist", KuwoSearchProvider.Id) with { Availability = "candidate" };
+        var alternate = new FullSource([alternateTrack], KuwoSearchProvider.Id);
+        var (catalog, _, config) = Catalog(primary, alternate);
+        await catalog.SearchAsync("fallback", 20, null, default);
+        primary.ResolveFailure = new MusicException("no_playable_match", "fixture", 422);
+        var audio = await catalog.ResolveAsync(new(track.Id), default);
+        Check(audio.TrackId == track.Id && audio.ProviderId == alternate.ProviderId &&
+            audio.SourceTrackId == alternateTrack.Id && primary.Resolves == 1 && alternate.Resolves == 1,
+            "A matching enabled resolver uses its own ID and preserves the requested catalog ID");
+        await Error(() => catalog.ResolveAsync(new(track.Id, primary.ProviderId), default), 422);
+        foreach (var (code, status) in new[] { ("unauthorized", 401), ("forbidden", 403), ("rate_limited", 429), ("source_timeout", 504) })
+        {
+            primary.ResolveFailure = new MusicException(code, "fixture", status, status >= 429 ? 15 : null);
+            await Error(() => catalog.ResolveAsync(new(track.Id), default), status);
+        }
+        primary.ResolveFailure = new MusicException("no_playable_match", "fixture", 422);
+        config["Modules:Music:KuwoSearchEnabled"] = "false";
+        await Error(() => catalog.ResolveAsync(new(track.Id), default), 422);
+        Check(alternate.Resolves == 1, "Explicit source, permission, rate limits and disabled sources do not fall back");
+    }
+
     private static MusicTrack Track(string id, string title, string artist, string provider = "netease") =>
         new(id, title, [artist], null, 200000, null, null, provider == "netease" ? "candidate" : "metadata_only", [new(provider, id)]);
     private static (MusicCatalog, MusicProviderRegistry, IConfigurationRoot) Catalog(FullSource native, Source metadata)
@@ -185,13 +211,15 @@ internal static class MusicAggregationChecks
             return new MusicSearchPage(items, offset + items.Length < tracks.Length ? (offset + items.Length).ToString() : null, false, []);
         }
     }
-    private sealed class FullSource(MusicTrack[] tracks) : Source(tracks), IMusicResolverProvider
+    private sealed class FullSource(MusicTrack[] tracks, string provider = NeteaseMusicProvider.Id) : Source(tracks), IMusicResolverProvider
     {
-        public override string ProviderId => NeteaseMusicProvider.Id;
+        public override string ProviderId => provider;
         public int Resolves;
+        public MusicException? ResolveFailure;
         public Task<MusicResolvedTrack> ResolveAsync(MusicResolveRequest request, CancellationToken ct)
         {
             Resolves++;
+            if (ResolveFailure is not null) throw ResolveFailure;
             return Task.FromResult(new MusicResolvedTrack(request.TrackId!, ProviderId, request.TrackId!, 1,
                 new MusicAudio("https://m7.music.126.net/fixture.mp3", "audio/mpeg", 200000, null, true)));
         }

@@ -10,9 +10,11 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
 {
     private readonly Lock _gate = new();
     private readonly Dictionary<string, Continuation> _pages = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, (MusicTrack Track, DateTimeOffset Until, long Used)> _known = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, KnownTrack> _known = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _aliases = new(StringComparer.Ordinal);
     private long _used;
+
+    private sealed record KnownTrack(MusicTrack Track, Dictionary<string, string> ProviderTrackIds, DateTimeOffset Until, long Used);
 
     private sealed record Continuation(string Signature, Dictionary<string, string?> Cursors, MusicTrack[] Buffered, HashSet<string> Seen, DateTimeOffset Until, string[] Deferred);
 
@@ -175,21 +177,39 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
         var requested = request.PreferredProviderId;
         if (requested is not null && !sources.Any(x => x.ProviderId == requested && x is IMusicResolverProvider))
             throw new MusicException("forbidden", "此来源未启用或不支持完整播放。", 403);
-        MusicTrack? known;
+        KnownTrack? known;
         lock (_gate)
         {
             var canonical = Canonical(request.TrackId);
-            known = _known.TryGetValue(canonical, out var value) && value.Until > clock.GetUtcNow() ? value.Track : null;
+            known = _known.TryGetValue(canonical, out var value) && value.Until > clock.GetUtcNow() ? value : null;
         }
 
-        foreach (var source in sources.Where(x => x is IMusicResolverProvider && (requested is null || x.ProviderId == requested)))
+        var primary = known?.Track.Sources.FirstOrDefault()?.ProviderId;
+        MusicException? firstFailure = null;
+        foreach (var source in sources.Where(x => x is IMusicResolverProvider && (requested is null || x.ProviderId == requested))
+                     .OrderByDescending(x => x.ProviderId == primary))
         {
-            var id = known?.Sources.Any(x => x.ProviderId == source.ProviderId) == true ? known.Id : request.TrackId;
-            if (source.FindTrack(id) is null) continue;
-            var audio = await ((IMusicResolverProvider)source).ResolveAsync(new MusicResolveRequest(id, source.ProviderId, request.Quality), ct);
-            return audio with { TrackId = request.TrackId };
+            ct.ThrowIfCancellationRequested();
+            if (!registry.IsEnabled(source)) continue;
+            var id = known is null ? request.TrackId : known.ProviderTrackIds.GetValueOrDefault(source.ProviderId);
+            if (id is null) continue;
+            if (source.FindTrack(id) is not { Availability: "candidate" } track) continue;
+            if (known is not null && source.ProviderId != primary && !MusicCandidateMatcher.CanMerge(known.Track, track)) continue;
+
+            try
+            {
+                var audio = await ((IMusicResolverProvider)source).ResolveAsync(new MusicResolveRequest(id, source.ProviderId, request.Quality), ct);
+                ct.ThrowIfCancellationRequested();
+                return audio with { TrackId = request.TrackId };
+            }
+            catch (MusicException error) when (requested is null && firstFailure is null && source.ProviderId == primary &&
+                error.Code == "no_playable_match" && error.RetryAfterSeconds is null)
+            {
+                firstFailure = error;
+            }
         }
 
+        if (firstFailure is not null) throw firstFailure;
         if (known is not null || sources.Any(x => x.FindTrack(request.TrackId) is not null))
             throw new MusicException("no_playable_match", "此结果仅提供元数据，暂无完整播放来源。", 422);
         throw new MusicException("track_not_found", "歌曲记录已失效，请重新搜索。", 404);
@@ -295,7 +315,8 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
         lock (_gate)
         {
             foreach (var old in _known.Where(x => x.Value.Until <= clock.GetUtcNow()).Select(x => x.Key).ToArray()) _known.Remove(old);
-            var existing = _known.Values.Select(x => x.Track).FirstOrDefault(x => x.Id == incoming.Id || !x.Sources.Any(a => incoming.Sources.Any(b => a.ProviderId == b.ProviderId)) && MusicCandidateMatcher.CanMerge(x, incoming));
+            var previous = _known.Values.FirstOrDefault(x => x.Track.Id == incoming.Id || !x.Track.Sources.Any(a => incoming.Sources.Any(b => a.ProviderId == b.ProviderId)) && MusicCandidateMatcher.CanMerge(x.Track, incoming));
+            var existing = previous?.Track;
             var baseline = existing is null || existing.Id == incoming.Id || incoming.Availability == "candidate" && existing.Availability != "candidate" ? incoming : existing;
             var matches = (existing?.Sources ?? []).Concat(incoming.Sources).Where(x => enabled.Any(p => p.ProviderId == x.ProviderId))
                 .DistinctBy(x => (x.ProviderId, x.SourceTrackId)).OrderBy(x => x.ProviderId == baseline.Sources[0].ProviderId ? 0 : 1).Select(x => x.ProviderId == baseline.Sources[0].ProviderId
@@ -308,7 +329,13 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
             var result = baseline with { Sources = matches };
             if (existing is not null && existing.Id != result.Id) _known.Remove(existing.Id);
             if (_known.Count >= 1000 && !_known.ContainsKey(result.Id)) _known.Remove(_known.MinBy(x => x.Value.Used).Key);
-            _known[result.Id] = (result, clock.GetUtcNow().AddHours(24), ++_used);
+            var providerTrackIds = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var source in matches)
+            {
+                var id = source.ProviderId == incoming.Sources[0].ProviderId ? incoming.Id : previous?.ProviderTrackIds.GetValueOrDefault(source.ProviderId);
+                if (id is not null) providerTrackIds[source.ProviderId] = id;
+            }
+            _known[result.Id] = new KnownTrack(result, providerTrackIds, clock.GetUtcNow().AddHours(24), ++_used);
             foreach (var id in new[] { incoming.Id, existing?.Id }.OfType<string>())
             {
                 if (_aliases.Count >= 2000 && !_aliases.ContainsKey(id)) _aliases.Remove(_aliases.Keys.First());
