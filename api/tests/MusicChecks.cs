@@ -235,8 +235,8 @@ internal static class MusicChecks
             await Error(failed, 503, "source_unavailable");
             await CommonHealthy(client);
         }, change: new("DeviceCredentialsEnabled", "true"));
-        var chartFixture = new QQChartFixture();
-        await Case(root, true, async (client, _) =>
+        var chartFixture = new QQChartFixture { PersistSnapshots = true };
+        await Case(root, true, async (client, app) =>
         {
             using var anonymous = await client.GetAsync("/api/music/charts/daily");
             await Error(anonymous, 401, "unauthorized");
@@ -256,6 +256,8 @@ internal static class MusicChecks
             Check(cached.IsSuccessStatusCode && chartFixture.Calls == 1 &&
                 cachedPage.RootElement.GetProperty("capturedAt").GetString() == result.GetProperty("capturedAt").GetString(),
                 "Fresh snapshots keep the same persisted fetch time and avoid another upstream request");
+            Check(app.Services.GetRequiredService<MusicChartStore>().Latest("rising", "qqmusic")?
+                .Entries.Single().TrackKey == "qq-fixture", "Explicit opt-in persists the chart");
 
             chartFixture.Clock.Now = chartFixture.Clock.Now.AddMinutes(31);
             chartFixture.Status = HttpStatusCode.TooManyRequests;
@@ -324,6 +326,20 @@ internal static class MusicChecks
             Check(await catalog.MatchChartEntryAsync(snapshot.Entries[0], budget.Token) is null &&
                   await catalog.MatchChartEntryAsync(snapshot.Entries[2], budget.Token) is null,
                 "A different artist or a failed full-audio resolution excludes the entry from ranked recommendations");
+            using (var db = app.Services.GetRequiredService<ApiDatabase>().OpenConnection())
+            using (var command = db.CreateCommand())
+            {
+                command.CommandText = "SELECT COUNT(*) FROM sqlite_schema WHERE name='music_chart_snapshots';";
+                Check((long)command.ExecuteScalar()! == 0, "Default QQ chart mode does not initialize chart storage");
+            }
+            using var unavailable = new HttpClient(new QQChartFixture { Status = HttpStatusCode.ServiceUnavailable });
+            var restartedChart = new QQMusicChart(unavailable, null, rankingFixture.Clock);
+            try
+            {
+                _ = await restartedChart.GetAsync(false, budget.Token);
+                throw new Exception("A new in-memory chart instance must not recover an old offline snapshot");
+            }
+            catch (MusicException error) when (error.Status == 503) { }
 
             rankingFixture.Clock.Now = rankingFixture.Clock.Now.AddDays(1);
             var afterMidnight = await Recommend();
@@ -484,13 +500,15 @@ internal static class MusicChecks
             ["Modules:Music:TestAccessToken"] = Token,
         };
         if (change.HasValue) values["Modules:Music:" + change.Value.Key] = change.Value.Value;
+        if (chart?.PersistSnapshots == true) values["Modules:Music:QQChartPersistSnapshots"] = "true";
         builder.Configuration.AddInMemoryCollection(values);
         builder.Logging.ClearProviders();
         builder.Services.AddApiServices(builder.Configuration);
         builder.Services.AddMusicModule(builder.Configuration);
         if (chart is not null)
             builder.Services.AddSingleton<QQMusicChart>(services =>
-                new QQMusicChart(new HttpClient(chart), services.GetRequiredService<MusicChartStore>(), chart.Clock));
+                new QQMusicChart(new HttpClient(chart), services.GetRequiredService<MusicOptions>().QQChartPersistSnapshots
+                    ? services.GetRequiredService<MusicChartStore>() : null, chart.Clock));
         builder.Services.AddSingleton(new MusicUpstreamFixture { Status = upstreamUnavailable ? HttpStatusCode.ServiceUnavailable : HttpStatusCode.OK });
         builder.Services.AddSingleton<NeteaseMusicProvider>(services => new NeteaseMusicProvider(
             new HttpClient(services.GetRequiredService<MusicUpstreamFixture>()), services.GetRequiredService<TimeProvider>()));
@@ -531,6 +549,7 @@ internal static class MusicChecks
         public HttpStatusCode Status = HttpStatusCode.OK;
         public TimeSpan? RetryAfter;
         public int Calls;
+        public bool PersistSnapshots;
         public TaskCompletionSource? Gate;
         public string Body = """
             {"code":0,"req":{"code":0,"data":{

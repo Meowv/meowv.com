@@ -34,7 +34,8 @@ public static class MusicRegistration
             });
         services.AddSingleton<QQMusicChart>(provider => new QQMusicChart(
             provider.GetRequiredService<IHttpClientFactory>().CreateClient("MusicQQChart"),
-            provider.GetRequiredService<MusicChartStore>(), provider.GetRequiredService<TimeProvider>()));
+            options.QQChartPersistSnapshots ? provider.GetRequiredService<MusicChartStore>() : null,
+            provider.GetRequiredService<TimeProvider>()));
         if (options is { Enabled: true, QQChartEnabled: true })
         {
             services.AddSingleton<MusicChartRecommendations>();

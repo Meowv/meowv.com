@@ -8,7 +8,7 @@ namespace Meowv.Api.Modules.Music.Storage;
 internal sealed record MusicChartPage(string Source, string Chart, DateOnly Period, DateOnly SourceUpdatedDate,
     DateTimeOffset CapturedAt, bool Stale, MusicChartEntry[] Entries);
 
-internal sealed class QQMusicChart(HttpClient http, MusicChartStore store, TimeProvider clock)
+internal sealed class QQMusicChart(HttpClient http, MusicChartStore? store, TimeProvider clock)
 {
     private const string Source = "qqmusic";
     private const string Chart = "rising";
@@ -21,6 +21,7 @@ internal sealed class QQMusicChart(HttpClient http, MusicChartStore store, TimeP
     private DateTimeOffset _retryAt;
     private bool _lastRefreshFailed;
     private MusicChartPage? _current;
+    private MusicChartSnapshot? _recentSnapshot;
 
     public bool IsCurrent(MusicChartPage snapshot)
     {
@@ -36,7 +37,7 @@ internal sealed class QQMusicChart(HttpClient http, MusicChartStore store, TimeP
         {
             var now = clock.GetUtcNow();
             var today = LocalDate(now);
-            var latest = store.Latest(Chart, Source);
+            var latest = store is null ? _recentSnapshot : store.Latest(Chart, Source);
             if (_retryAt <= now && (forceRefresh || _lastRefreshFailed || latest?.BusinessDate != today))
             {
                 // 新榜单发布前以及故障时最多半小时探测一次，多个调用共享同一个刷新入口。
@@ -45,7 +46,17 @@ internal sealed class QQMusicChart(HttpClient http, MusicChartStore store, TimeP
                 {
                     var snapshot = await FetchAsync(ct);
                     ct.ThrowIfCancellationRequested();
-                    if (store.Save(snapshot)) latest = store.Latest(Chart, Source);
+                    if (store is not null)
+                    {
+                        if (store.Save(snapshot)) latest = store.Latest(Chart, Source);
+                    }
+                    else
+                    {
+                        MusicChartStore.Validate(snapshot);
+                        if (latest is null || (snapshot.BusinessDate >= latest.BusinessDate &&
+                                               snapshot.SourceUpdatedAt > latest.SourceUpdatedAt))
+                            latest = _recentSnapshot = snapshot;
+                    }
                     _lastRefreshFailed = false;
                 }
                 catch (OperationCanceledException) when (ct.IsCancellationRequested)

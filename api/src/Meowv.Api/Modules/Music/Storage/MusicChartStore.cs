@@ -45,13 +45,17 @@ internal sealed class MusicChartStore(ApiDatabase database)
         }
     }
 
-    public bool Save(MusicChartSnapshot snapshot)
+    internal static void Validate(MusicChartSnapshot snapshot)
     {
         if (snapshot.WindowStart >= snapshot.WindowEnd || snapshot.SourceUpdatedAt < snapshot.WindowStart ||
             snapshot.SourceUpdatedAt > snapshot.CapturedAt ||
             !ValidKey(snapshot.ChartKey) || !ValidKey(snapshot.Source) || !ValidEntries(snapshot.Entries))
             throw new ArgumentException("榜单快照的元数据无效。", nameof(snapshot));
+    }
 
+    public bool Save(MusicChartSnapshot snapshot)
+    {
+        Validate(snapshot);
         var entries = snapshot.Entries.OrderBy(x => x.Rank).ToArray();
         var payload = JsonSerializer.Serialize(entries, MusicChartJsonContext.Default.MusicChartEntryArray);
         if (payload.Length > MaxPayloadLength) throw new ArgumentException("榜单快照过大。", nameof(snapshot));
