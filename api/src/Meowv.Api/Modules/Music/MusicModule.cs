@@ -43,7 +43,7 @@ public sealed class MusicModule : IEndpointModule
         }
 
         var secured = music.MapGroup("").RequireAuthorization(MusicAccessHandler.SchemeName)
-            .WithMetadata(new MusicProtectedEndpoint(), new EndpointAccessMetadata("音乐专用设备令牌"))
+            .WithMetadata(new MusicProtectedEndpoint(), new EndpointAccessMetadata("音乐专用设备令牌（Authorization 或 access_token）"))
             .RequireRateLimiting("music");
         secured.MapGet("/charts/daily", async (MusicDailyFeeds feeds, CancellationToken ct) =>
             Results.Json(await feeds.GetAsync("rising", false, ct), MusicChartJsonContext.Default.MusicDailyPage));

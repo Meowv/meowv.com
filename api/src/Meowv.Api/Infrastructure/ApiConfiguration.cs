@@ -22,24 +22,3 @@ public static class ApiConfiguration
         return builder;
     }
 }
-
-public sealed class ApiPaths(IHostEnvironment environment)
-{
-    public string Root { get; } = environment.ContentRootPath;
-    public string Resolve(string path) => Path.GetFullPath(path, Root);
-}
-
-public sealed class ApiCorsOptions
-{
-    public string[] AllowedOrigins { get; set; } = [];
-
-    public static bool IsValid(ApiCorsOptions options) => options.AllowedOrigins.All(value =>
-        Uri.TryCreate(value, UriKind.Absolute, out var uri) &&
-        uri.Scheme is "http" or "https" &&
-        string.Equals(value.TrimEnd('/'), uri.GetLeftPart(UriPartial.Authority), StringComparison.Ordinal));
-}
-
-public sealed class FfmpegOptions
-{
-    public string? Path { get; set; }
-}

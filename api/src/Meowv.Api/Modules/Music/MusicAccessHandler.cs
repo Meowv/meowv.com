@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Encodings.Web;
+using Meowv.Api.Core;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 
@@ -19,12 +20,17 @@ public sealed class MusicAccessHandler(
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        var header = Request.Headers.Authorization;
-        if (!runtime.Available || header.Count != 1) return Task.FromResult(AuthenticateResult.NoResult());
-        var value = header.ToString();
-        if (!value.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) || value.Length is < 39 or > 1031)
+        var credential = ApiCredentials.ReadAccessCode(Request);
+        if (!runtime.Available || !credential.Present) return Task.FromResult(AuthenticateResult.NoResult());
+        if (credential.State != ApiCredentialState.Valid || credential.Value is not { Length: >= 32 and <= 1024 } raw)
             return Task.FromResult(AuthenticateResult.NoResult());
-        var raw = value[7..];
+        if (credential.FromQuery)
+        {
+            // 凭据出现在 URL 中，禁止缓存并阻断 Referer 外泄。
+            Response.Headers.CacheControl = "no-store";
+            Response.Headers["Referrer-Policy"] = "no-referrer";
+        }
+
         string? deviceId;
         try
         {
@@ -36,7 +42,7 @@ public sealed class MusicAccessHandler(
             return Task.FromResult(AuthenticateResult.Fail("音乐凭据存储暂不可用。"));
         }
 
-        var provided = SHA256.HashData(Encoding.UTF8.GetBytes(value[7..]));
+        var provided = SHA256.HashData(Encoding.UTF8.GetBytes(raw));
         var expected = SHA256.HashData(Encoding.UTF8.GetBytes(music.TestAccessToken));
         if (deviceId is null && (music.TestAccessToken.Length < 32 || !CryptographicOperations.FixedTimeEquals(provided, expected))) return Task.FromResult(AuthenticateResult.Fail("音乐访问凭据无效。"));
         var identity = new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, deviceId ?? "music-test-device")], SchemeName);
