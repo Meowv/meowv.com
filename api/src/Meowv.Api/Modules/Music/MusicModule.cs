@@ -1,6 +1,7 @@
 using Meowv.Api.Core;
 using Meowv.Api.Modules.Music.Contracts;
 using Meowv.Api.Modules.Music.Providers;
+using Meowv.Api.Modules.Music.Storage;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -24,6 +25,7 @@ public static class MusicRegistration
         services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<MusicRuntime>();
         services.AddSingleton<MusicDeviceStore>();
+        services.AddSingleton<MusicChartStore>();
         services.AddHttpClient("MusicNetease", client => client.Timeout = TimeSpan.FromSeconds(6))
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
             {

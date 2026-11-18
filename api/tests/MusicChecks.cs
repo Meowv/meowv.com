@@ -10,9 +10,11 @@ using Meowv.Api.Modules.Chat;
 using Meowv.Api.Modules.Music;
 using Meowv.Api.Modules.Music.Contracts;
 using Meowv.Api.Modules.Music.Providers;
+using Meowv.Api.Modules.Music.Storage;
 using Meowv.Api.Modules.XiaomiCamera;
 using Meowv.Api.Security;
 using Meowv.Api.Infrastructure;
+using Microsoft.Data.Sqlite;
 
 internal static class MusicChecks
 {
@@ -266,8 +268,72 @@ internal static class MusicChecks
         Check(reopened.Verify(issued.Token) == issued.Id && reopened.Revoke(issued.Id) &&
               new MusicDeviceStore(database, TimeProvider.System).Verify(issued.Token) is null,
               "Music schema opens idempotently and revocation persists");
-        Check(before.SequenceEqual(ExistingState(database)), "Music credential writes preserve existing Chat, Camera and Auth data and schema");
-        Console.WriteLine("PASS: Existing Chat, Camera and Auth database data and schema survive music initialization and credential writes");
+        CheckChartSnapshots(database, path + ".backup");
+        Check(before.SequenceEqual(ExistingState(database)), "Music writes preserve existing Chat, Camera and Auth data and schema");
+        Console.WriteLine("PASS: Existing Chat, Camera and Auth database data and schema survive music writes");
+    }
+
+    private static void CheckChartSnapshots(ApiDatabase database, string backupPath)
+    {
+        var now = new DateTimeOffset(2026, 11, 18, 1, 0, 0, TimeSpan.Zero);
+        var date = new DateOnly(2026, 11, 18);
+        var entries = new[]
+        {
+            new MusicChartEntry(2, "second", "第二首", ["测试歌手"]),
+            new MusicChartEntry(1, "first", "第一首", ["测试歌手"], 125000)
+        };
+        var seed = new MusicChartSnapshot("weekly", "fixture", date, now, now.AddMinutes(-10),
+            now.AddDays(-7), now.AddDays(-1), entries);
+        var charts = new MusicChartStore(database);
+        Check(charts.Latest("weekly", "fixture") is null && charts.Save(seed), "Empty chart initializes and accepts one snapshot");
+        Check(!charts.Save(seed with { BusinessDate = date.AddDays(1), CapturedAt = now.AddDays(1) }),
+            "Repeated upstream version does not create another dated snapshot");
+        Check(charts.Save(seed with { SourceUpdatedAt = now.AddMinutes(-5), Entries = [entries[0]] }),
+            "Newer same-day snapshot replaces every entry");
+        Check(!charts.Save(seed with { BusinessDate = date.AddDays(1), CapturedAt = now.AddDays(1) }),
+            "An older upstream response cannot replace the chart");
+        var latest = new MusicChartStore(database).Latest("weekly", "fixture");
+        Check(latest is { Entries.Length: 1 } && latest.Entries[0].Title == "第二首" &&
+              latest.CapturedAt == now && latest.SourceUpdatedAt == now.AddMinutes(-5), "Read round-trips metadata and separate timestamps");
+        for (var day = 1; day <= 30; day++)
+            Check(charts.Save(seed with
+            {
+                BusinessDate = date.AddDays(day), CapturedAt = now.AddDays(day), SourceUpdatedAt = now.AddDays(day).AddMinutes(-1)
+            }), "New daily snapshot can be stored");
+        Check(charts.Save(seed with { Source = "other" }), "Retention is isolated by source");
+
+        using (var connection = database.OpenConnection())
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = "SELECT COUNT(*) FROM music_chart_snapshots WHERE source_name='fixture';";
+            Check((long)command.ExecuteScalar()! == 30, "Storage retains the latest 30 snapshots for that series");
+            command.CommandText = """
+                CREATE TRIGGER music_fixture_prune_failure BEFORE DELETE ON music_chart_snapshots
+                  WHEN OLD.source_name='fixture' BEGIN SELECT RAISE(ABORT,'fixture prune failure'); END;
+                """;
+            command.ExecuteNonQuery();
+            var failed = false;
+            try
+            {
+                charts.Save(seed with
+                {
+                    BusinessDate = date.AddDays(31), CapturedAt = now.AddDays(31), SourceUpdatedAt = now.AddDays(31)
+                });
+            }
+            catch (SqliteException error) when (error.SqliteErrorCode == 19) { failed = true; }
+            Check(failed && charts.Latest("weekly", "fixture")?.BusinessDate == date.AddDays(30),
+                "Failure after insertion rolls back to the preceding snapshot");
+            command.CommandText = "DROP TRIGGER music_fixture_prune_failure;";
+            command.ExecuteNonQuery();
+            using var backup = new ApiDatabase("Data Source=" + backupPath).OpenConnection();
+            connection.BackupDatabase(backup);
+        }
+
+        var restored = new ApiDatabase("Data Source=" + backupPath);
+        var restoredChart = new MusicChartStore(restored).Latest("weekly", "fixture");
+        Check(restoredChart?.BusinessDate == date.AddDays(30) && restoredChart.Entries.Select(x => x.Rank).SequenceEqual([1, 2]) &&
+              ExistingState(database).SequenceEqual(ExistingState(restored)), "SQLite backup reopens the chart and preserves the other modules");
+        Console.WriteLine("PASS: Music chart snapshots are idempotent, bounded, atomic on failure and recoverable from SQLite backup");
     }
 
     private static string[] ExistingState(ApiDatabase database)
