@@ -4,9 +4,6 @@ using System.Security.Cryptography;
 
 namespace Meowv.Api.Modules.XiaomiCamera.Protocol;
 
-/// <summary>CS2 中继协商成功后可用于后续 MISS 会话的 UDP 连接材料。</summary>
-public sealed record Cs2RelayEstablished(IPEndPoint Relay);
-
 /// <summary>
 /// 使用同一个 UDP 本地端口完成 CS2 中继发现、注册和设备加入。
 /// 成功后调用方必须保留此实例，供后续的 MISS 会话继续使用该 NAT 映射。
@@ -352,5 +349,3 @@ public sealed class Cs2RelaySession(Cs2Provisioning provisioning) : IDisposable
         }
     }
 }
-
-public sealed class Cs2RelayException(string message) : Exception(message);

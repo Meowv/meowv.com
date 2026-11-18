@@ -134,5 +134,3 @@ public sealed class XiaomiPlaybackTicketService : IDisposable
         }
     }
 }
-
-public readonly record struct XiaomiPlaybackTarget(string DeviceFingerprint, long SessionVersion, Guid StreamId);

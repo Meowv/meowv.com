@@ -211,7 +211,3 @@ public sealed class XiaomiCloudCameraCatalog(HttpClient httpClient, XiaomiCloudC
         _ => false,
     };
 }
-
-public class XiaomiCloudException(string message, Exception? innerException = null) : Exception(message, innerException);
-
-public sealed class XiaomiCloudSessionExpiredException() : XiaomiCloudException("已保存的小米登录会话已失效，请重新登录。");

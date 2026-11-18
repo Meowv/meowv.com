@@ -266,5 +266,3 @@ public sealed class Cs2PpppConnection(Cs2RelaySession relaySession, Cs2RelayEsta
         _commandSendLock.Dispose();
     }
 }
-
-public sealed record Cs2CommandMessage(int Command, byte[] Body);

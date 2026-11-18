@@ -1031,21 +1031,3 @@ public sealed class XiaomiHlsService : IDisposable, IAsyncDisposable
         }
     }
 }
-
-public sealed record XiaomiPlaybackPreparation(string Status, string? Error, bool AudioAvailable)
-{
-    public static XiaomiPlaybackPreparation Stopped { get; } = new("stopped", null, false);
-}
-
-public enum XiaomiMotorStepResult
-{
-    Sent,
-    NoSession,
-    TooFrequent,
-    UnsupportedModel,
-}
-
-public sealed class XiaomiPlaybackException(string message, bool retryable) : Exception(message)
-{
-    public bool Retryable { get; } = retryable;
-}

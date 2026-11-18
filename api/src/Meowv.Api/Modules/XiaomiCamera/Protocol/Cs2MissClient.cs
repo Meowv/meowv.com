@@ -108,5 +108,3 @@ public sealed class Cs2MissClient(Cs2PpppConnection connection)
         }
     }
 }
-
-public sealed class Cs2MissException(string message) : Exception(message);

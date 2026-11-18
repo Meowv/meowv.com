@@ -76,5 +76,3 @@ public sealed class Cs2DataChannel
         }
     }
 }
-
-public sealed class Cs2ProtocolException(string message) : Exception(message);

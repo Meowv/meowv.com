@@ -47,7 +47,3 @@ public static class XiaomiCameraServiceCollectionExtensions
             AutoReplenishment = true,
         });
 }
-
-public sealed record XiaomiPlaybackLimits(int MaxConcurrentStreams);
-
-public sealed class XiaomiPlaybackCapacityException : Exception;

@@ -1,7 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
 using Meowv.Api.Modules.XiaomiCamera.Cloud;
-using Meowv.Api.Modules.XiaomiCamera.Contracts;
 
 namespace Meowv.Api.Modules.XiaomiCamera;
 
@@ -108,5 +107,3 @@ public sealed class XiaomiCameraDirectoryService(IHttpClientFactory httpClients)
 
     private sealed record CachedDirectory(string SessionId, DateTimeOffset ExpiresAt, IReadOnlyList<XiaomiCameraDirectoryEntry> Entries);
 }
-
-public sealed record XiaomiCameraDirectoryEntry(CameraDescriptor Camera, CameraTransportProbeResult Probe);

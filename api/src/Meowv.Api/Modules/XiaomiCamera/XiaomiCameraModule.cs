@@ -273,33 +273,3 @@ public sealed class XiaomiCameraModule : IEndpointModule
 
     static IResult XiaomiSessionExpired() => Results.Json(new XiaomiSetupError("xiaomi_session_expired", "小米登录会话已失效，请使用 API 管理密钥重新初始化。"), XiaomiHttpJsonContext.Default.XiaomiSetupError, statusCode: StatusCodes.Status409Conflict);
 }
-
-public sealed record XiaomiModuleHealthResponse(string Status, string? Message);
-
-public sealed record XiaomiSetupLoginRequest(string Username, string Password, string? Region);
-
-public sealed record XiaomiSetupVerificationRequest(string Code);
-
-public sealed record XiaomiSetupError(string Code, string Message);
-
-public sealed record XiaomiPlaybackCamera(string DeviceFingerprint, string Model, string DisplayName, bool IsOnline);
-
-public sealed record XiaomiPlaybackSessionRequest(string DeviceFingerprint);
-
-public sealed record XiaomiMotorStepRequest(string? Direction);
-
-public sealed record XiaomiMotorStepResponse(string Status);
-
-public sealed record XiaomiPlaybackSessionResponse(string PlaylistUrl, string Status, string StatusUrl, bool AudioAvailable);
-
-public sealed record XiaomiSetupResponse(string Status, Guid? AttemptId, string? VerificationKind, string? VerificationDestination, bool? UsedCachedSession)
-{
-    public static XiaomiSetupResponse NeedsVerification(Guid attemptId, string kind, string? destination) =>
-        new("verification_required", attemptId, kind, destination, null);
-
-    public static XiaomiSetupResponse Completed(bool usedCachedSession) =>
-        new("completed", null, null, null, usedCachedSession);
-
-    public static XiaomiSetupResponse LoginRequired() =>
-        new("login_required", null, null, null, false);
-}
