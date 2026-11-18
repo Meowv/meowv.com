@@ -84,7 +84,8 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
                     {
                         var others = due.Where(x => !priority.Contains(x)).ToArray();
                         var fallback = await Collect(others, query, count, cursors, budget.Token, ct, null);
-                        results.AddRange(fallback); Apply(fallback);
+                        results.AddRange(fallback);
+                        Apply(fallback);
                     }
                 }
                 else
@@ -92,6 +93,7 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
                     results.AddRange(await Collect(due, query, count, cursors, budget.Token, ct, null));
                     Apply(results);
                 }
+
                 ct.ThrowIfCancellationRequested();
                 if (buffered.Count == 0 && results.Count > 0 && results.All(x => x.Failure is not null || x.Deferred) &&
                     !sources.Any(source => source.Status == "healthy" && results.All(result => result.Source.ProviderId != source.ProviderId)))
@@ -118,6 +120,7 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
                     if (!warnings.Contains(result.Source.ProviderId + ":deferred", StringComparer.Ordinal)) warnings.Add(result.Source.ProviderId + ":deferred");
                     continue;
                 }
+
                 deferred.Remove(result.Source.ProviderId);
                 warnings.RemoveAll(x => x == result.Source.ProviderId + ":deferred");
                 if (result.Failure is { } error)
@@ -126,6 +129,7 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
                     warnings.Add(result.Source.ProviderId + ":" + error.Code);
                     continue;
                 }
+
                 var page = result.Page!;
                 if (page.NextCursor is { } next && next != cursors[result.Source.ProviderId]) cursors[result.Source.ProviderId] = next;
                 else cursors.Remove(result.Source.ProviderId);
@@ -182,7 +186,7 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
             ct.ThrowIfCancellationRequested();
             var page = await Load(source, query, 8, null, ct);
             var matches = page.Page?.Items.Where(x => x.Availability == "candidate" &&
-                MusicCandidateMatcher.CanMerge(reference, x)).DistinctBy(x => x.Id).Take(2).ToArray();
+                                                      MusicCandidateMatcher.CanMerge(reference, x)).DistinctBy(x => x.Id).Take(2).ToArray();
             // 同一来源出现多个相同标题、歌手和时长的录音时，不能确定榜单版本。
             if (matches is not [var candidate]) continue;
             try
@@ -192,8 +196,11 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
                     MusicCandidateMatcher.CanMerge(reference, candidate with { DurationMs = checkedAudio.Audio.DurationMs }))
                     return candidate;
             }
-            catch (MusicException) { }
+            catch (MusicException)
+            {
+            }
         }
+
         return null;
     }
 
@@ -215,13 +222,13 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
         }
 
         if (excluded is not null && (known?.ProviderTrackIds.ContainsKey(excluded) != true ||
-            !sources.Any(x => x.ProviderId == excluded && x is IMusicResolverProvider)))
+                                     !sources.Any(x => x.ProviderId == excluded && x is IMusicResolverProvider)))
             throw new MusicException("no_playable_match", "当前歌曲没有其他可用来源。", 422);
 
         var primary = known?.Track.Sources.FirstOrDefault()?.ProviderId;
         MusicException? firstFailure = null;
         foreach (var source in sources.Where(x => x is IMusicResolverProvider && x.ProviderId != excluded &&
-                     (requested is null || x.ProviderId == requested))
+                                                  (requested is null || x.ProviderId == requested))
                      .OrderByDescending(x => x.ProviderId == primary))
         {
             ct.ThrowIfCancellationRequested();
@@ -239,7 +246,7 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
                 return audio with { TrackId = request.TrackId };
             }
             catch (MusicException error) when (requested is null && excluded is null && firstFailure is null && source.ProviderId == primary &&
-                error.Code == "no_playable_match" && error.RetryAfterSeconds is null)
+                                               error.Code == "no_playable_match" && error.RetryAfterSeconds is null)
             {
                 firstFailure = error;
             }
@@ -268,14 +275,19 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
                 caller.ThrowIfCancellationRequested();
                 if (choice == grace) break;
                 var task = (Task<SourcePage>)choice;
-                var provider = pending[task]; pending.Remove(task);
+                var provider = pending[task];
+                pending.Remove(task);
                 SourcePage result;
-                try { result = await task; }
+                try
+                {
+                    result = await task;
+                }
                 catch (OperationCanceledException) when (!caller.IsCancellationRequested)
                 {
                     results.Add(new SourcePage(provider, null, null, true));
                     break;
                 }
+
                 results.Add(result);
                 if (grace is null && results.Any(x => x.Page?.Items.Length > 0))
                 {
@@ -287,17 +299,24 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
         finally
         {
             // 完成响应前取消并观察所有慢源，不让未拥有的聚合任务继续改写结果。
-            stage.Cancel();
+            await stage.CancelAsync();
             foreach (var pair in pending)
             {
                 if (pair.Key.IsCompletedSuccessfully) results.Add(pair.Key.Result);
                 else
                 {
-                    try { results.Add(await pair.Key); }
-                    catch (OperationCanceledException) { results.Add(new SourcePage(pair.Value, null, null, true)); }
+                    try
+                    {
+                        results.Add(await pair.Key);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        results.Add(new SourcePage(pair.Value, null, null, true));
+                    }
                 }
             }
         }
+
         caller.ThrowIfCancellationRequested();
         return results.ToArray();
     }
@@ -313,6 +332,7 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
                 if (next == current) break;
                 current = next;
             }
+
             return current;
         }
     }
@@ -371,6 +391,7 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
                 var id = source.ProviderId == incoming.Sources[0].ProviderId ? incoming.Id : previous?.ProviderTrackIds.GetValueOrDefault(source.ProviderId);
                 if (id is not null) providerTrackIds[source.ProviderId] = id;
             }
+
             _known[result.Id] = new KnownTrack(result, providerTrackIds, clock.GetUtcNow().AddHours(24), ++_used);
             foreach (var id in new[] { incoming.Id, existing?.Id }.OfType<string>())
             {

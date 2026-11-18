@@ -3,16 +3,24 @@ using Meowv.Api.Modules.Music.Contracts;
 
 namespace Meowv.Api.Modules.Music.Storage;
 
-internal sealed class MusicChartRecommendations(QQMusicChart chart, MusicCatalog catalog, TimeProvider clock,
+internal sealed class MusicChartRecommendations(
+    QQMusicChart chart,
+    MusicCatalog catalog,
+    TimeProvider clock,
     ILogger<MusicChartRecommendations> logger) : BackgroundService
 {
-    private sealed record MatchedChart(MusicChartPage Page, string ProviderVersion, DateTimeOffset ExpiresAt,
+    private sealed record MatchedChart(
+        MusicChartPage Page,
+        string ProviderVersion,
+        DateTimeOffset ExpiresAt,
         MusicTrack[] Items);
+
     private readonly Channel<bool> _requests = Channel.CreateBounded<bool>(new BoundedChannelOptions(1)
     {
         SingleReader = true,
         FullMode = BoundedChannelFullMode.DropWrite
     });
+
     private MatchedChart? _matches;
 
     public MusicRecommendationPage Mix(MusicRecommendationPage page, int limit)
@@ -22,8 +30,7 @@ internal sealed class MusicChartRecommendations(QQMusicChart chart, MusicCatalog
         if (!Usable(matches, clock.GetUtcNow())) return page;
 
         var ranked = matches!.Items.Take(limit).ToArray();
-        var items = ranked.Concat(page.Items.Where(candidate => !ranked.Any(entry => entry.Id == candidate.Id ||
-            MusicCandidateMatcher.CanMerge(entry, candidate)))).Take(limit).ToArray();
+        var items = ranked.Concat(page.Items.Where(candidate => !ranked.Any(entry => entry.Id == candidate.Id || MusicCandidateMatcher.CanMerge(entry, candidate)))).Take(limit).ToArray();
         return page with { Items = items, Strategy = "qq_rising_verified_and_" + page.Strategy };
     }
 
@@ -56,10 +63,12 @@ internal sealed class MusicChartRecommendations(QQMusicChart chart, MusicCatalog
                         if (items.Count == 2) break;
                     }
                 }
-                catch (OperationCanceledException) when (!stoppingToken.IsCancellationRequested) { }
+                catch (OperationCanceledException) when (!stoppingToken.IsCancellationRequested)
+                {
+                }
 
                 if (items.Count > 0 && chart.IsCurrent(snapshot))
-                    Volatile.Write(ref _matches, new MatchedChart(snapshot, version, clock.GetUtcNow().AddMinutes(20), items.ToArray()));
+                    Volatile.Write(ref _matches, new MatchedChart(snapshot, version, clock.GetUtcNow().AddMinutes(20), [.. items]));
             }
             catch (MusicException)
             {
@@ -72,6 +81,5 @@ internal sealed class MusicChartRecommendations(QQMusicChart chart, MusicCatalog
         }
     }
 
-    private bool Usable(MatchedChart? value, DateTimeOffset now) => value is not null && value.ExpiresAt > now &&
-        value.ProviderVersion == catalog.Version && chart.IsCurrent(value.Page);
+    private bool Usable(MatchedChart? value, DateTimeOffset now) => value is not null && value.ExpiresAt > now && value.ProviderVersion == catalog.Version && chart.IsCurrent(value.Page);
 }

@@ -5,8 +5,14 @@ using Microsoft.Data.Sqlite;
 
 namespace Meowv.Api.Modules.Music.Storage;
 
-internal sealed record MusicChartPage(string Source, string Chart, DateOnly Period, DateOnly SourceUpdatedDate,
-    DateTimeOffset CapturedAt, bool Stale, MusicChartEntry[] Entries);
+internal sealed record MusicChartPage(
+    string Source,
+    string Chart,
+    DateOnly Period,
+    DateOnly SourceUpdatedDate,
+    DateTimeOffset CapturedAt,
+    bool Stale,
+    MusicChartEntry[] Entries);
 
 internal sealed class QQMusicChart(HttpClient http, MusicChartStore? store, TimeProvider clock)
 {
@@ -15,8 +21,10 @@ internal sealed class QQMusicChart(HttpClient http, MusicChartStore? store, Time
     private const int Count = 20;
     private const int MaxBytes = 384 * 1024;
     private static readonly TimeZoneInfo BusinessZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Shanghai");
+
     private static readonly string RequestUrl = "https://u.y.qq.com/cgi-bin/musicu.fcg?data=" + Uri.EscapeDataString(
         """{"req":{"module":"musicToplist.ToplistInfoServer","method":"GetDetail","param":{"topid":62,"offset":0,"num":20}}}""");
+
     private readonly SemaphoreSlim _refresh = new(1, 1);
     private DateTimeOffset _retryAt;
     private bool _lastRefreshFailed;
@@ -27,7 +35,7 @@ internal sealed class QQMusicChart(HttpClient http, MusicChartStore? store, Time
     {
         var current = Volatile.Read(ref _current);
         return current is { Stale: false } && current.CapturedAt == snapshot.CapturedAt &&
-            current.Period == snapshot.Period && current.Period == LocalDate(clock.GetUtcNow());
+               current.Period == snapshot.Period && current.Period == LocalDate(clock.GetUtcNow());
     }
 
     public async Task<MusicChartPage> GetAsync(bool forceRefresh, CancellationToken ct)
@@ -57,6 +65,7 @@ internal sealed class QQMusicChart(HttpClient http, MusicChartStore? store, Time
                                                snapshot.SourceUpdatedAt > latest.SourceUpdatedAt))
                             latest = _recentSnapshot = snapshot;
                     }
+
                     _lastRefreshFailed = false;
                 }
                 catch (OperationCanceledException) when (ct.IsCancellationRequested)
@@ -65,11 +74,12 @@ internal sealed class QQMusicChart(HttpClient http, MusicChartStore? store, Time
                     throw;
                 }
                 catch (Exception error) when (error is HttpRequestException or IOException or InvalidDataException or JsonException or
-                    OperationCanceledException or ArgumentException or SqliteException)
+                                                  OperationCanceledException or ArgumentException or SqliteException)
                 {
                     _lastRefreshFailed = true;
                 }
             }
+
             if (latest is null)
                 throw new MusicException("source_unavailable", "QQ 音乐榜单暂不可用。", 503,
                     (int)Math.Clamp(Math.Ceiling((_retryAt - clock.GetUtcNow()).TotalSeconds), 1, int.MaxValue));
@@ -83,7 +93,10 @@ internal sealed class QQMusicChart(HttpClient http, MusicChartStore? store, Time
             Volatile.Write(ref _current, null);
             throw new MusicException("source_unavailable", "音乐榜单快照暂不可用。", 503, 30);
         }
-        finally { _refresh.Release(); }
+        finally
+        {
+            _refresh.Release();
+        }
     }
 
     private async Task<MusicChartSnapshot> FetchAsync(CancellationToken ct)
@@ -97,6 +110,7 @@ internal sealed class QQMusicChart(HttpClient http, MusicChartStore? store, Time
             var next = header.Date ?? now + (header.Delta ?? TimeSpan.Zero);
             if (next > _retryAt) _retryAt = next;
         }
+
         response.EnsureSuccessStatusCode();
         if (response.Content.Headers.ContentLength > MaxBytes) throw InvalidChart();
         using var stream = await response.Content.ReadAsStreamAsync(timeout.Token);
@@ -143,13 +157,17 @@ internal sealed class QQMusicChart(HttpClient http, MusicChartStore? store, Time
     }
 
     private static string Text(JsonElement element, string field) => element.GetProperty(field).GetString() ?? throw InvalidChart();
+
     private static DateOnly Date(JsonElement element, string field) =>
         DateOnly.ParseExact(Text(element, field), "yyyy-MM-dd", CultureInfo.InvariantCulture);
+
     private static DateOnly LocalDate(DateTimeOffset time) => DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(time, BusinessZone).DateTime);
+
     private static DateTimeOffset Midnight(DateOnly date)
     {
         var local = date.ToDateTime(TimeOnly.MinValue);
         return new DateTimeOffset(local, BusinessZone.GetUtcOffset(local)).ToUniversalTime();
     }
+
     private static InvalidDataException InvalidChart() => new("QQ 音乐榜单响应无效。");
 }

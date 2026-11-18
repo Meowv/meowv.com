@@ -23,7 +23,10 @@ public sealed record MusicSearchPage(MusicTrack[] Items, string? NextCursor, boo
 
 public sealed record MusicRecommendationPage(MusicTrack[] Items, string? NextCursor, string Strategy, DateTime GeneratedAt);
 
-public sealed record MusicResolveRequest(string? TrackId, string? PreferredProviderId = null, string Quality = "auto",
+public sealed record MusicResolveRequest(
+    string? TrackId,
+    string? PreferredProviderId = null,
+    string Quality = "auto",
     string? ExcludedProviderId = null);
 
 public sealed record MusicAudio(string Url, string? MimeType, long? DurationMs, DateTime? ExpiresAt, bool Seekable);

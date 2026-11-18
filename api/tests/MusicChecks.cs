@@ -38,7 +38,9 @@ internal static class MusicChecks
             await Error(unauthorized, 401, "unauthorized");
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
             using var providers = await client.GetAsync("/api/music/providers");
-            Check(providers.IsSuccessStatusCode && (await providers.Content.ReadAsStringAsync()).Contains("netease"), "Only real source is registered");
+            var registered = JsonSerializer.Deserialize(await providers.Content.ReadAsStringAsync(), MusicJsonContext.Default.MusicProviders)!;
+            Check(providers.IsSuccessStatusCode && registered.Providers.Select(x => x.Id).SequenceEqual(["netease", "kuwo-search"]),
+                "Only the current playback and metadata sources are registered");
             using var retired = await client.GetAsync("/api/music/demo-audio/original-001.mp3");
             Check(retired.StatusCode == HttpStatusCode.NotFound, "Retired demo audio route is absent");
             using var noChart = await client.GetAsync("/api/music/charts/daily");
@@ -98,23 +100,6 @@ internal static class MusicChecks
             Check(route.StatusCode == HttpStatusCode.NotFound, "Disabled business endpoints absent");
             await CommonHealthy(client);
         });
-        await Case(root, true, async (client, app) =>
-        {
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
-            using var search = await client.GetAsync("/api/music/search?q=Monkeys+Spinning+Monkeys");
-            using var json = JsonDocument.Parse(await search.Content.ReadAsStringAsync());
-            var item = json.RootElement.GetProperty("items").EnumerateArray().Single(x => x.GetProperty("isrc").GetString() == "USUAN1400011");
-            var id = item.GetProperty("id").GetString();
-            using var resolved = await client.PostAsync("/api/music/resolve", Json($$"""{"trackId":"{{id}}","preferredProviderId":"incompetech"}"""));
-            using var audio = JsonDocument.Parse(await resolved.Content.ReadAsStringAsync());
-            Check(resolved.IsSuccessStatusCode && audio.RootElement.GetProperty("providerId").GetString() == "incompetech" &&
-                  audio.RootElement.GetProperty("audio").GetProperty("url").GetString() ==
-                  "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Monkeys%20Spinning%20Monkeys.mp3",
-                  "Open recording resolves only to the fixed author host");
-            app.Services.GetRequiredService<IConfiguration>()["Modules:Music:IncompetechEnabled"] = "false";
-            using var disabled = await client.PostAsync("/api/music/resolve", Json($$"""{"trackId":"{{id}}","preferredProviderId":"incompetech"}"""));
-            await Error(disabled, 403, "forbidden");
-        }, change: new("IncompetechEnabled", "true"));
         await Case(root, true, async (client, app) =>
         {
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);

@@ -15,7 +15,6 @@ public sealed class MusicProviderRegistry(MusicOptions options, IConfiguration c
         {
             NeteaseMusicProvider.Id => (nameof(MusicOptions.NeteaseEnabled), options.NeteaseEnabled),
             KuwoSearchProvider.Id => (nameof(MusicOptions.KuwoSearchEnabled), options.KuwoSearchEnabled),
-            IncompetechMusicProvider.Id => (nameof(MusicOptions.IncompetechEnabled), options.IncompetechEnabled),
             _ => ("", false)
         };
         if (key.Length == 0) return false;

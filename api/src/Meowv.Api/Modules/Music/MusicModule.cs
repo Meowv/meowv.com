@@ -41,6 +41,7 @@ public static class MusicRegistration
             services.AddSingleton<MusicChartRecommendations>();
             services.AddHostedService(provider => provider.GetRequiredService<MusicChartRecommendations>());
         }
+
         services.AddHttpClient("MusicNetease", client => client.Timeout = TimeSpan.FromSeconds(6))
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
             {
@@ -60,7 +61,6 @@ public static class MusicRegistration
             provider.GetRequiredService<IHttpClientFactory>().CreateClient("MusicKuwo"), provider.GetRequiredService<TimeProvider>()));
         services.AddSingleton<IMusicSearchProvider>(provider => provider.GetRequiredService<NeteaseMusicProvider>());
         services.AddSingleton<IMusicSearchProvider>(provider => provider.GetRequiredService<KuwoSearchProvider>());
-        services.AddSingleton<IMusicSearchProvider, IncompetechMusicProvider>();
         services.AddSingleton<MusicProviderRegistry>();
         services.AddSingleton<MusicCatalog>();
         services.AddSingleton<IEndpointModule, MusicModule>();
@@ -118,12 +118,9 @@ public sealed class MusicModule : IEndpointModule
         {
             secured.MapGet("/charts/daily", async (QQMusicChart chart, CancellationToken ct) =>
                 Results.Json(await chart.GetAsync(false, ct), MusicChartJsonContext.Default.MusicChartPage));
-            music.MapPost("/admin/charts/refresh", async (MusicRuntime runtime, QQMusicChart chart, CancellationToken ct) =>
-            {
-                if (!runtime.Available) throw new MusicException("source_unavailable", "音乐服务尚未就绪。", 503);
-                return Results.Json(await chart.GetAsync(true, ct), MusicChartJsonContext.Default.MusicChartPage);
-            }).RequireAuthorization(ApiAuthorization.ManagementPolicy).RequireRateLimiting("api-auth");
+            music.MapPost("/admin/charts/refresh", async (MusicRuntime runtime, QQMusicChart chart, CancellationToken ct) => !runtime.Available ? throw new MusicException("source_unavailable", "音乐服务尚未就绪。", 503) : Results.Json(await chart.GetAsync(true, ct), MusicChartJsonContext.Default.MusicChartPage)).RequireAuthorization(ApiAuthorization.ManagementPolicy).RequireRateLimiting("api-auth");
         }
+
         secured.MapGet("/providers", (MusicCatalog catalog) => Results.Json(new MusicProviders(
                 catalog.Providers()),
             MusicJsonContext.Default.MusicProviders));
