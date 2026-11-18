@@ -7,6 +7,7 @@ public sealed class MusicOptions
     public bool NeteaseEnabled { get; set; }
     public bool KuwoSearchEnabled { get; set; }
     public bool IncompetechEnabled { get; set; }
+    public bool QQChartEnabled { get; set; }
     public string NeteaseRecommendationQuery { get; set; } = "纯音乐";
     public string TestAccessToken { get; set; } = "";
     public int RequestsPerMinute { get; set; } = 60;

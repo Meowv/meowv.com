@@ -26,6 +26,15 @@ public static class MusicRegistration
         services.AddSingleton<MusicRuntime>();
         services.AddSingleton<MusicDeviceStore>();
         services.AddSingleton<MusicChartStore>();
+        services.AddHttpClient("MusicQQChart", client => client.Timeout = TimeSpan.FromSeconds(6))
+            .RemoveAllLoggers()
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+            {
+                AllowAutoRedirect = false, UseCookies = false, ConnectTimeout = TimeSpan.FromSeconds(3)
+            });
+        services.AddSingleton<QQMusicChart>(provider => new QQMusicChart(
+            provider.GetRequiredService<IHttpClientFactory>().CreateClient("MusicQQChart"),
+            provider.GetRequiredService<MusicChartStore>(), provider.GetRequiredService<TimeProvider>()));
         services.AddHttpClient("MusicNetease", client => client.Timeout = TimeSpan.FromSeconds(6))
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
             {
@@ -99,6 +108,16 @@ public sealed class MusicModule : IEndpointModule
         var secured = music.MapGroup("").RequireAuthorization(MusicAccessHandler.SchemeName)
             .WithMetadata(new MusicProtectedEndpoint(), new EndpointAccessMetadata("音乐专用设备令牌"))
             .RequireRateLimiting("music");
+        if (endpoints.ServiceProvider.GetRequiredService<MusicOptions>().QQChartEnabled)
+        {
+            secured.MapGet("/charts/daily", async (QQMusicChart chart, CancellationToken ct) =>
+                Results.Json(await chart.GetAsync(false, ct), MusicChartJsonContext.Default.MusicChartPage));
+            music.MapPost("/admin/charts/refresh", async (MusicRuntime runtime, QQMusicChart chart, CancellationToken ct) =>
+            {
+                if (!runtime.Available) throw new MusicException("source_unavailable", "音乐服务尚未就绪。", 503);
+                return Results.Json(await chart.GetAsync(true, ct), MusicChartJsonContext.Default.MusicChartPage);
+            }).RequireAuthorization(ApiAuthorization.ManagementPolicy).RequireRateLimiting("api-auth");
+        }
         secured.MapGet("/providers", (MusicCatalog catalog) => Results.Json(new MusicProviders(
                 catalog.Providers()),
             MusicJsonContext.Default.MusicProviders));

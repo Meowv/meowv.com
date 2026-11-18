@@ -13,6 +13,7 @@ internal sealed record MusicChartSnapshot(string ChartKey, string Source, DateOn
 
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(MusicChartEntry[]))]
+[JsonSerializable(typeof(MusicChartPage))]
 internal partial class MusicChartJsonContext : JsonSerializerContext;
 
 internal sealed class MusicChartStore(ApiDatabase database)
