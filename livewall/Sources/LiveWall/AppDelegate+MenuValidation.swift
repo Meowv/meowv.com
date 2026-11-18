@@ -87,13 +87,11 @@ extension AppDelegate: NSMenuItemValidation {
         case #selector(startRestReminderNow):
             return canStartRestReminderNow
 
-        case #selector(startInAppLock), #selector(chooseInAppLockVideo):
+        case #selector(startInAppLock), #selector(useCurrentWallpaperForInAppLock),
+             #selector(useBlackInAppLockWallpaper):
             // 锁屏期间菜单栏本身是隐藏的，这里再挡一次是为了防止降级路径下的意外触发。
+            // 两个壁纸选项保持可点：勾选状态已经说明当前选择，重复点同项是幂等的。
             return !isInAppLocked
-
-        case #selector(useBlackInAppLockWallpaper):
-            // 没配置锁屏壁纸时「使用纯黑屏」没有意义，置灰而不是让用户点到空操作。
-            return !isInAppLocked && preferences.inAppLockVideoPath != nil
 
         case #selector(checkForUpdates):
             return updateState.checkItemEnabled

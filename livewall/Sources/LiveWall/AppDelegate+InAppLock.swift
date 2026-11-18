@@ -1,6 +1,5 @@
 import AppKit
 import LiveWallCore
-import UniformTypeIdentifiers
 
 extension AppDelegate {
 
@@ -24,11 +23,20 @@ extension AppDelegate {
             restReminderCoordinator.end(reason: .user)
         }
 
-        let videoURL = preferences.resolvedInAppLockVideoURL
-        guard inAppLockCoordinator.start(videoURL: videoURL) else { return }
+        // 默认沿用「锁屏这一刻正在播的壁纸」：同一个条目 + 已加载的 asset，
+        // 不重新下载。没在播（或用户选了纯黑）就是 nil → 纯黑屏。
+        let primary = engine.primaryKey
+        let item = preferences.inAppLockUsesCurrentWallpaper
+            ? primary.flatMap { engine.item(on: $0) }
+            : nil
+        let preloaded = preferences.inAppLockUsesCurrentWallpaper
+            ? primary.flatMap { engine.loadedVideo(on: $0) }
+            : nil
+
+        guard inAppLockCoordinator.start(item: item, preloaded: preloaded) else { return }
         governor.setInAppLocked(true)
         log(
-            "一键锁屏开始：\(videoURL?.lastPathComponent ?? "纯黑屏")，"
+            "一键锁屏开始：\(item?.displayName ?? "纯黑屏")，"
                 + "输入拦截\(inAppLockCoordinator.isInputShieldActive ? "已启用" : "降级（缺少辅助功能权限）")"
         )
         refreshStatusItem()
@@ -80,77 +88,52 @@ extension AppDelegate {
 
     // MARK: - 锁屏壁纸
 
-    /// 选择「一键锁屏」专用视频。与桌面壁纸来源完全独立。
-    @objc func chooseInAppLockVideo() {
-        guard !isInAppLocked, !isShuttingDown else { return }
-        let panel = NSOpenPanel()
-        panel.canChooseFiles = true
-        panel.canChooseDirectories = false
-        panel.allowsMultipleSelection = false
-        panel.allowedContentTypes = [.mpeg4Movie, .quickTimeMovie, .movie]
-        panel.prompt = "选用"
-        panel.message = "选择一键锁屏时播放的视频（未配置时使用纯黑屏）"
-        if let current = preferences.resolvedInAppLockVideoURL {
-            panel.directoryURL = current.deletingLastPathComponent()
-        }
-        NSApp.activate()
-        let response = panel.runModal()
-        // 面板关闭后本 App 没有窗口，继续占着激活状态会让键盘输入无处可去。
-        NSApp.deactivate()
-        guard response == .OK, let url = panel.url else { return }
-
-        preferences.inAppLockVideoPath = url.path
-        guard persistPreferences("一键锁屏壁纸") else { return }
-        log("一键锁屏壁纸改为 \(url.path)")
-        notice = .info("一键锁屏壁纸已设为 \(url.lastPathComponent)")
-        refreshStatusItem()
+    @objc func useCurrentWallpaperForInAppLock() {
+        setInAppLockUsesCurrentWallpaper(true)
     }
 
-    /// 清除锁屏壁纸，回到纯黑屏。
     @objc func useBlackInAppLockWallpaper() {
-        guard preferences.inAppLockVideoPath != nil, !isInAppLocked else { return }
-        preferences.inAppLockVideoPath = nil
+        setInAppLockUsesCurrentWallpaper(false)
+    }
+
+    private func setInAppLockUsesCurrentWallpaper(_ usesCurrent: Bool) {
+        guard preferences.inAppLockUsesCurrentWallpaper != usesCurrent, !isInAppLocked else {
+            return
+        }
+        preferences.inAppLockUsesCurrentWallpaper = usesCurrent
         guard persistPreferences("一键锁屏壁纸") else { return }
-        log("一键锁屏壁纸已清除，锁屏使用纯黑屏")
-        notice = .info("一键锁屏将使用纯黑屏")
+        log("一键锁屏壁纸改为\(usesCurrent ? "当前播放的壁纸" : "纯黑屏")")
+        notice = .info(usesCurrent ? "一键锁屏将沿用当前壁纸" : "一键锁屏将使用纯黑屏")
         refreshStatusItem()
     }
 
     /// 设置区的「一键锁屏壁纸」子菜单。
     ///
     /// 与「锁屏预览」并列但互不相干：那个是 macOS 系统锁屏的静态图，
-    /// 这个是 App 自己的锁屏层。标题里带上当前状态，省得点进子菜单才知道。
+    /// 这个是 App 自己的锁屏层。两个选项互斥，勾选即生效。
     func buildInAppLockWallpaperMenu() -> NSMenuItem {
         let submenu = NSMenu()
 
-        let info = NSMenuItem(
-            title: "当前：\(preferences.inAppLockVideoName ?? "纯黑屏")",
-            action: nil,
+        let useCurrent = NSMenuItem(
+            title: "使用当前壁纸",
+            action: #selector(useCurrentWallpaperForInAppLock),
             keyEquivalent: ""
         )
-        info.isEnabled = false
-        submenu.addItem(info)
-        submenu.addItem(.separator())
+        useCurrent.target = self
+        useCurrent.state = preferences.inAppLockUsesCurrentWallpaper ? .on : .off
+        submenu.addItem(useCurrent)
 
-        let choose = NSMenuItem(
-            title: "选择视频…",
-            action: #selector(chooseInAppLockVideo),
-            keyEquivalent: ""
-        )
-        choose.target = self
-        submenu.addItem(choose)
-
-        // 可用性在 `validateMenuItem(_:)` 里判：没配置时置灰，避免点到一个必然无效的动作。
         let black = NSMenuItem(
             title: "使用纯黑屏",
             action: #selector(useBlackInAppLockWallpaper),
             keyEquivalent: ""
         )
         black.target = self
+        black.state = preferences.inAppLockUsesCurrentWallpaper ? .off : .on
         submenu.addItem(black)
 
         let root = NSMenuItem(
-            title: "一键锁屏壁纸（\(preferences.inAppLockVideoName == nil ? "纯黑" : "动态")）",
+            title: "一键锁屏壁纸（\(preferences.inAppLockUsesCurrentWallpaper ? "当前壁纸" : "纯黑")）",
             action: nil,
             keyEquivalent: ""
         )

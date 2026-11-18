@@ -349,12 +349,14 @@ extension AppDelegate {
 
         // 与「立即开始休息」相邻：同样是「立刻进入一个全屏状态」，但语义不同 ——
         // 一键锁屏没有倒计时、不会自动结束，只能按空格或 ⌘W 退出。
+        // 组合只写进标题，不设 `keyEquivalent`（全局热键已负责触发，设了会执行两遍）。
         let lockNow = NSMenuItem(
-            title: "一键锁屏（\(InAppLockInputPolicy.unlockHint) 解锁）",
+            title: "一键锁屏（\(hotKeys.display(for: .inAppLock))）",
             action: #selector(startInAppLock),
             keyEquivalent: ""
         )
         lockNow.target = self
+        lockNow.toolTip = "锁屏后按\(InAppLockInputPolicy.unlockHint)解锁"
         menu.addItem(lockNow)
 
         menu.addItem(.separator())

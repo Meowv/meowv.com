@@ -57,11 +57,18 @@ final class HotKeyManager {
             binding: HotKeyBinding(key: "X", modifiers: HotKeyBinding.command | HotKeyBinding.option),
             purpose: "禁用 / 恢复当前壁纸"
         )
+        static let inAppLock = Definition(
+            id: 6,
+            key: "inAppLock",
+            binding: HotKeyBinding(key: "L", modifiers: HotKeyBinding.command | HotKeyBinding.option),
+            purpose: "一键锁屏"
+        )
 
         /// 没有 `⌥⌘M 静音`：壁纸被硬性要求静音（`player.isMuted = true`），
         /// 一个永远无效的开关比没有开关更糟。
         static let all: [Definition] = [
             .togglePause, .nextItem, .reloadCatalog, .toggleCurrentFavorite, .toggleCurrentDisabled,
+            .inAppLock,
         ]
     }
 

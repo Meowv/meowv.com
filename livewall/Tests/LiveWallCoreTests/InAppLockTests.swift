@@ -1,7 +1,7 @@
 import Foundation
 import LiveWallCore
 
-/// 软件内「一键锁屏」的纯逻辑：解锁按键、独立壁纸配置与桌面播放暂停。
+/// 软件内「一键锁屏」的纯逻辑：解锁按键、壁纸模式配置与桌面播放暂停。
 func inAppLockTests() {
     suite("InAppLockInputPolicy") {
 
@@ -90,7 +90,7 @@ func inAppLockTests() {
 
     suite("InAppLockPreferences") {
 
-        test("老配置缺字段回退纯黑，且其它设置不丢") {
+        test("老配置缺字段默认沿用当前壁纸，且其它设置不丢") {
             let legacy = """
             {
               "intervalSeconds": 900,
@@ -103,83 +103,49 @@ func inAppLockTests() {
                 expect(false, "老配置应当能解码")
                 return
             }
-            expectNil(decoded.inAppLockVideoPath, "缺字段表示纯黑屏")
-            expectNil(decoded.resolvedInAppLockVideoURL, "纯黑屏没有可播放地址")
-            expectNil(decoded.inAppLockVideoName, "纯黑屏没有显示名")
+            expect(decoded.inAppLockUsesCurrentWallpaper, "缺字段默认沿用当前壁纸")
             expectEqual(decoded.intervalSeconds, 900, "其它字段应保留")
             expectEqual(decoded.playbackOrder, .sequential, "其它字段应保留")
             expectEqual(decoded.lockScreenPreview, false, "其它字段应保留")
         }
 
-        test("锁屏壁纸路径写坏了不影响其它字段") {
-            // 手改配置把这一项写成数字：坏一个字段不能把整份配置打回默认。
-            let broken = """
-            { "intervalSeconds": 1500, "inAppLockVideoPath": 123 }
+        test("纯黑屏选项能读回，写坏了回退默认") {
+            let black = """
+            { "intervalSeconds": 600, "inAppLockUsesCurrentWallpaper": false }
             """
-            guard let decoded = try? JSONDecoder().decode(Preferences.self, from: Data(broken.utf8))
+            guard let decoded = try? JSONDecoder().decode(Preferences.self, from: Data(black.utf8))
             else {
+                expect(false, "应能解码")
+                return
+            }
+            expect(!decoded.inAppLockUsesCurrentWallpaper, "纯黑屏状态应读回")
+            expectEqual(decoded.intervalSeconds, 600, "其它字段应保留")
+
+            // 手改成字符串：坏一个字段不能把整份配置打回默认
+            let broken = """
+            { "intervalSeconds": 1500, "inAppLockUsesCurrentWallpaper": "yes" }
+            """
+            guard let decodedBroken = try? JSONDecoder().decode(
+                Preferences.self, from: Data(broken.utf8)
+            ) else {
                 expect(false, "字段损坏时整体解码仍应成功")
                 return
             }
-            expectNil(decoded.inAppLockVideoPath, "损坏的路径应回退到纯黑屏")
-            expectEqual(decoded.intervalSeconds, 1500, "其它字段应保留")
+            expect(decodedBroken.inAppLockUsesCurrentWallpaper, "损坏的字段应回退到默认（当前壁纸）")
+            expectEqual(decodedBroken.intervalSeconds, 1500, "其它字段应保留")
         }
 
-        test("锁屏壁纸路径往返并解析成 URL") {
+        test("纯黑屏选项往返编码不丢") {
             var preferences = Preferences()
-            preferences.inAppLockVideoPath = "/Users/someone/Movies/lock.mp4"
+            preferences.inAppLockUsesCurrentWallpaper = false
+            preferences.intervalSeconds = 77
             guard let data = try? JSONEncoder().encode(preferences),
                   let decoded = try? JSONDecoder().decode(Preferences.self, from: data) else {
                 expect(false, "往返应能成功")
                 return
             }
-            expectEqual(
-                decoded.inAppLockVideoPath,
-                "/Users/someone/Movies/lock.mp4",
-                "路径应原样读回"
-            )
-            expectEqual(
-                decoded.resolvedInAppLockVideoURL?.path,
-                "/Users/someone/Movies/lock.mp4",
-                "应能解析成 URL"
-            )
-            expectEqual(decoded.inAppLockVideoName, "lock.mp4", "应能取出文件名给菜单用")
-        }
-
-        test("波浪号路径按用户主目录展开") {
-            var preferences = Preferences()
-            preferences.inAppLockVideoPath = "~/Movies/lock.mp4"
-            expectEqual(
-                preferences.resolvedInAppLockVideoURL?.path,
-                NSHomeDirectory() + "/Movies/lock.mp4",
-                "~ 应展开成主目录"
-            )
-        }
-
-        test("空串与纯空白被清掉，不存在的路径保留") {
-            var blank = Preferences()
-            blank.inAppLockVideoPath = "   "
-            expectNil(blank.sanitized().inAppLockVideoPath, "纯空白应被清掉")
-
-            // **不存在的路径刻意保留**：外接盘拔掉时应当保留配置，插回来即可继续用；
-            // 锁屏时加载失败会停在纯黑屏，不会回退当前桌面壁纸。
-            var missing = Preferences()
-            missing.inAppLockVideoPath = "/Volumes/NotMounted/lock.mp4"
-            expectEqual(
-                missing.sanitized().inAppLockVideoPath,
-                "/Volumes/NotMounted/lock.mp4",
-                "文件不存在不该被静态清洗掉"
-            )
-        }
-
-        test("未配置时不写出该键") {
-            let preferences = Preferences()
-            guard let data = try? JSONEncoder().encode(preferences),
-                  let json = String(data: data, encoding: .utf8) else {
-                expect(false, "编码应成功")
-                return
-            }
-            expect(!json.contains("\"inAppLockVideoPath\""), "nil 可选字段一律不写出")
+            expect(!decoded.inAppLockUsesCurrentWallpaper, "纯黑屏状态应保持")
+            expectEqual(decoded.intervalSeconds, 77, "其它字段应保持")
         }
     }
 

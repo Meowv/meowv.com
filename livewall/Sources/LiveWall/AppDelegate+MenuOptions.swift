@@ -68,6 +68,8 @@ extension AppDelegate {
             toggleCurrentFavorite()
         case HotKeyManager.Definition.toggleCurrentDisabled.id:
             toggleCurrentDisabled()
+        case HotKeyManager.Definition.inAppLock.id:
+            startInAppLock()
         default:
             log("未知热键 id \(id)")
         }

@@ -8,8 +8,9 @@ import LiveWallCore
 /// 参考 `RestReminderCoordinator`，但**没有倒计时、不会自动结束** ——
 /// 只能由空格或 ⌘W 退出。
 ///
-/// 壁纸来源与桌面播放完全分开：没配置就纯黑，加载失败也停在纯黑，
-/// 不会把正在播放的桌面壁纸带进锁屏画面。
+/// 默认沿用「锁屏那一刻正在播放的壁纸」，直接复用同一个 `LoadedVideo`，不重新下载；
+/// 用户把配置改成纯黑、或当时没有在播的条目时，画面是纯黑 —— 加载失败也停在纯黑，
+/// 不会回退到桌面正在播放的画面。
 @MainActor
 final class InAppLockCoordinator {
 
@@ -38,9 +39,12 @@ final class InAppLockCoordinator {
         player.actionAtItemEnd = .advance
     }
 
-    /// 进入锁屏。`videoURL` 为 nil 时使用纯黑屏。
+    /// 进入锁屏。`item` 为 nil（或没有可播放地址）时使用纯黑屏。
+    ///
+    /// - Parameter preloaded: 该条目若正是桌面正在播的那条，可直接复用已加载的
+    ///   `LoadedVideo`，省掉一次 HEAD 与整段视频下载。
     @discardableResult
-    func start(videoURL: URL?) -> Bool {
+    func start(item: WallpaperItem?, preloaded: LoadedVideo? = nil) -> Bool {
         guard !isActive else { return false }
         isActive = true
 
@@ -61,10 +65,15 @@ final class InAppLockCoordinator {
             log?("⚠️ 一键锁屏的全局输入拦截未启用（缺少辅助功能权限），仅由窗口层拦截")
         }
 
-        if let videoURL {
-            loadVideo(videoURL)
+        if let item, let url = item.playableURL {
+            if let preloaded, preloaded.url == url {
+                attach(preloaded)
+                log?("一键锁屏壁纸：\(item.displayName)（复用桌面已加载的视频）")
+            } else {
+                loadVideo(url, title: item.displayName)
+            }
         } else {
-            log?("一键锁屏：未配置锁屏壁纸，使用纯黑屏")
+            log?("一键锁屏：本次使用纯黑屏（纯黑模式或当前没有在播的条目）")
         }
         return true
     }
@@ -171,7 +180,7 @@ final class InAppLockCoordinator {
 
     // MARK: - 壁纸
 
-    private func loadVideo(_ url: URL) {
+    private func loadVideo(_ url: URL, title: String) {
         loadTask?.cancel()
         loadTask = Task { @MainActor [weak self] in
             do {
@@ -179,7 +188,7 @@ final class InAppLockCoordinator {
                 guard let self, self.isActive, !Task.isCancelled else { return }
                 self.attach(loaded)
                 self.log?(
-                    "一键锁屏壁纸已就绪：\(url.lastPathComponent)（\(loaded.resolutionText)，"
+                    "一键锁屏壁纸已就绪：\(title)（\(loaded.resolutionText)，"
                         + "\(String(format: "%.2f", loaded.durationSeconds))s）"
                 )
             } catch {
