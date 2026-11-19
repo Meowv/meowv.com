@@ -15,13 +15,13 @@ public sealed class MusicAccessHandler(IOptionsMonitor<AuthenticationSchemeOptio
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         var credential = ApiCredentials.ReadAccessCode(Request);
-        if (!runtime.Available || !credential.Present || credential.State != ApiCredentialState.Valid || credential.Value is not { Length: >= 32 and <= 1024 } raw) return Task.FromResult(AuthenticateResult.NoResult());
         if (credential.FromQuery)
         {
-            // 凭据出现在 URL 中，禁止缓存并阻断 Referer 外泄。
             Response.Headers.CacheControl = "no-store";
             Response.Headers["Referrer-Policy"] = "no-referrer";
         }
+
+        if (!runtime.Available || !credential.Present || credential.State != ApiCredentialState.Valid || credential.Value is not { Length: >= 32 and <= 1024 } raw) return Task.FromResult(AuthenticateResult.NoResult());
 
         string? deviceId;
         try

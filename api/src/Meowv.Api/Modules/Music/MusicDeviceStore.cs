@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using Meowv.Api.Infrastructure;
@@ -7,6 +8,7 @@ namespace Meowv.Api.Modules.Music;
 public sealed class MusicDeviceStore(ApiDatabase database, TimeProvider clock)
 {
     private readonly Lock _gate = new();
+    private readonly ConcurrentDictionary<string, DateTimeOffset> _lastUsedWrites = new(StringComparer.Ordinal);
     private bool _initialized;
 
     private void Initialize()
@@ -33,7 +35,7 @@ public sealed class MusicDeviceStore(ApiDatabase database, TimeProvider clock)
         using var transaction = connection.BeginTransaction(deferred: false);
         using var command = connection.CreateCommand();
         command.Transaction = transaction;
-        command.CommandText = "SELECT COUNT(*) FROM music_device_tokens;";
+        command.CommandText = "SELECT COUNT(*) FROM music_device_tokens WHERE revoked_at IS NULL;";
         if ((long)command.ExecuteScalar()! >= 256) throw new MusicException("invalid_request", "设备凭据数量已达上限。");
         var id = Guid.NewGuid().ToString("N");
         var bytes = RandomNumberGenerator.GetBytes(32);
@@ -62,12 +64,22 @@ public sealed class MusicDeviceStore(ApiDatabase database, TimeProvider clock)
         if (token.Length != 47 || !token.StartsWith("mvm_", StringComparison.Ordinal) ||
             token[4..].Any(c => !char.IsAsciiLetterOrDigit(c) && c is not '-' and not '_')) return null;
         Initialize();
+        var now = clock.GetUtcNow();
+        var hash = Hash(token);
         using var connection = database.OpenConnection();
         using var command = connection.CreateCommand();
+        command.CommandText = "SELECT id FROM music_device_tokens WHERE token_hash=$hash AND revoked_at IS NULL;";
+        command.Parameters.AddWithValue("$hash", hash);
+        if (command.ExecuteScalar() as string is not { } id) return null;
+        if (_lastUsedWrites.TryGetValue(id, out var lastWrite) && now - lastWrite < TimeSpan.FromMinutes(1)) return id;
+
+        command.Parameters.Clear();
         command.CommandText = "UPDATE music_device_tokens SET last_used_at=$now WHERE token_hash=$hash AND revoked_at IS NULL RETURNING id;";
-        command.Parameters.AddWithValue("$hash", Hash(token));
-        command.Parameters.AddWithValue("$now", clock.GetUtcNow().UtcDateTime.ToString("O"));
-        return command.ExecuteScalar() as string;
+        command.Parameters.AddWithValue("$hash", hash);
+        command.Parameters.AddWithValue("$now", now.UtcDateTime.ToString("O"));
+        var updated = command.ExecuteScalar() as string;
+        if (updated is not null) _lastUsedWrites[updated] = now;
+        return updated;
     }
 
     public MusicDevice[] List()
@@ -90,7 +102,7 @@ public sealed class MusicDeviceStore(ApiDatabase database, TimeProvider clock)
         Initialize();
         using var connection = database.OpenConnection();
         using var command = connection.CreateCommand();
-        command.CommandText = "UPDATE music_device_tokens SET revoked_at=COALESCE(revoked_at,$now) WHERE id=$id;";
+        command.CommandText = "UPDATE music_device_tokens SET revoked_at=$now WHERE id=$id AND revoked_at IS NULL;";
         command.Parameters.AddWithValue("$now", clock.GetUtcNow().UtcDateTime.ToString("O"));
         command.Parameters.AddWithValue("$id", id);
         return command.ExecuteNonQuery() > 0;

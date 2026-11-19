@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Meowv.Api.Core;
 using Microsoft.AspNetCore.Authentication;
 
@@ -24,13 +25,15 @@ public sealed class MusicMiddleware(RequestDelegate next)
                 return;
             }
 
-            if (!(await context.AuthenticateAsync(MusicAccessHandler.SchemeName)).Succeeded)
+            var authentication = await context.AuthenticateAsync(MusicAccessHandler.SchemeName);
+            if (!authentication.Succeeded)
             {
                 await context.ChallengeAsync(MusicAccessHandler.SchemeName);
                 return;
             }
 
-            if (!runtime.TryEnter(out lease, out var wait))
+            var partition = authentication.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "unknown";
+            if (!runtime.TryEnter(partition, out lease, out var wait))
             {
                 await MusicErrors.Write(context, 429, "rate_limited", "音乐请求过于频繁。", wait);
                 return;

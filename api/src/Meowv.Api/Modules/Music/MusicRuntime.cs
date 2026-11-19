@@ -1,39 +1,49 @@
 namespace Meowv.Api.Modules.Music;
 
-public sealed class MusicRuntime(MusicOptions options, IHostEnvironment environment, TimeProvider clock)
+public sealed class MusicRuntime(MusicOptions options, TimeProvider clock)
 {
     private readonly object _gate = new();
-    private DateTimeOffset _window = clock.GetUtcNow();
-    private int _requests;
+    private readonly Dictionary<string, Window> _windows = new(StringComparer.Ordinal);
     private int _active;
 
+    private sealed class Window
+    {
+        public DateTimeOffset Started { get; init; }
+        public int Requests { get; set; }
+    }
+
     public bool Available => options is { Enabled: true, BindingFailed: false } &&
-                             (environment.IsDevelopment() || environment.IsEnvironment("Testing")) &&
                              options.RequestsPerMinute is >= 1 and <= 1000 && options.MaxConcurrentRequests is >= 1 and <= 16;
 
     public string Status => !options.Enabled ? "disabled" : !Available ? "unavailable" : "ready";
 
-    public bool TryEnter(out IDisposable? lease, out int retryAfter)
+    public bool TryEnter(string partition, out IDisposable? lease, out int retryAfter)
     {
         lock (_gate)
         {
             var now = clock.GetUtcNow();
-            if (now - _window >= TimeSpan.FromMinutes(1))
+            if (_windows.Count > 512)
             {
-                _window = now;
-                _requests = 0;
+                foreach (var old in _windows.Where(x => now - x.Value.Started >= TimeSpan.FromMinutes(1)).Select(x => x.Key).ToArray())
+                    _windows.Remove(old);
             }
 
-            retryAfter = Math.Max(1, (int)Math.Ceiling((_window.AddMinutes(1) - now).TotalSeconds));
+            if (!_windows.TryGetValue(partition, out var window) || now - window.Started >= TimeSpan.FromMinutes(1))
+            {
+                window = new Window { Started = now };
+                _windows[partition] = window;
+            }
+
+            retryAfter = Math.Max(1, (int)Math.Ceiling((window.Started.AddMinutes(1) - now).TotalSeconds));
             lease = null;
-            if (_requests >= options.RequestsPerMinute) return false;
+            if (window.Requests >= options.RequestsPerMinute) return false;
             if (_active >= options.MaxConcurrentRequests)
             {
                 retryAfter = 1;
                 return false;
             }
 
-            _requests++;
+            window.Requests++;
             _active++;
             lease = new RequestLease(this);
             return true;

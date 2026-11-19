@@ -113,7 +113,7 @@ internal sealed class MusicDailyFeeds(
             var today = LocalDate(now);
             var previous = store.Latest(feed.Id, provider);
             var old = feed.HasUpstreamDate && previous is not null && LocalDate(previous.SourceUpdatedAt) < today;
-            if (now >= state.RetryAt && (force || previous?.BusinessDate != today || previous.Entries.Any(x => x.TrackId is null) || state.Failed || old))
+            if (force || (now >= state.RetryAt && (previous?.BusinessDate != today || previous.Entries.Any(x => x.TrackId is null) || state.Failed || old)))
             {
                 try
                 {
@@ -169,9 +169,11 @@ internal sealed class MusicDailyFeeds(
         }
 
         var now = clock.GetUtcNow();
-        var date = updated is { } published ? LocalDate(published) : LocalDate(now);
+        // 上游时间存在正向时钟偏差时钳制到本地当前时间，避免有效榜单被判为未来数据。
+        var normalizedUpdated = updated is { } published && published > now ? now : updated;
+        var date = normalizedUpdated is { } value ? LocalDate(value) : LocalDate(now);
         if (date > LocalDate(now) || date < LocalDate(now).AddDays(-1)) throw Unavailable();
-        return new MusicChartSnapshot(feed.Id, provider, date, now, updated ?? now, Midnight(date), Midnight(date.AddDays(1)), rows);
+        return new MusicChartSnapshot(feed.Id, provider, date, now, normalizedUpdated ?? now, Midnight(date), Midnight(date.AddDays(1)), rows);
     }
 
     private static MusicChartEntry ToEntry(int rank, MusicTrack track, string? mediaId, long size) =>

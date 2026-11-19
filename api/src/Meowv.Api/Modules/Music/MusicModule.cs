@@ -14,8 +14,9 @@ public sealed class MusicModule : IEndpointModule
     {
         var music = endpoints.MapGroup("/api/music");
         music.MapGet("/health", (MusicRuntime runtime, MusicCatalog catalog) => Results.Json(
-            new MusicHealth(catalog.Status(runtime.Status), runtime.Available ? catalog.EnabledCount : 0, catalog.Version),
-            MusicJsonContext.Default.MusicHealth, statusCode: runtime.Status is "disabled" or "unavailable" ? 503 : 200));
+                new MusicHealth(catalog.Status(runtime.Status), runtime.Available ? catalog.EnabledCount : 0, catalog.Version),
+                MusicJsonContext.Default.MusicHealth, statusCode: runtime.Status is "disabled" or "unavailable" ? 503 : 200))
+            .AllowAnonymous();
         if (!endpoints.ServiceProvider.GetRequiredService<MusicOptions>().Enabled) return;
         if (endpoints.ServiceProvider.GetRequiredService<MusicRuntime>().Available)
         {
