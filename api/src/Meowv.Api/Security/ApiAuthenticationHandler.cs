@@ -27,18 +27,18 @@ public sealed class ApiAuthenticationHandler(
         if (Scheme.Name == ApiAuthorization.ManagementScheme)
         {
             var token = ApiCredentials.ReadManagementToken(Request);
+            MarkQueryCredential(token);
             if (!token.Present) return Task.FromResult(AuthenticateResult.NoResult());
             if (token.State != ApiCredentialState.Valid || !VerifyManagementToken(token.Value!))
                 return Task.FromResult(AuthenticateResult.Fail("管理密钥无效。"));
-            MarkQueryCredential(token);
         }
         else
         {
             var credential = ApiCredentials.ReadAccessCode(Request);
+            MarkQueryCredential(credential);
             if (!credential.Present) return Task.FromResult(AuthenticateResult.NoResult());
             if (credential.State != ApiCredentialState.Valid || !codes.Verify(credential.Value, out version))
                 return Task.FromResult(AuthenticateResult.Fail("授权码无效。"));
-            MarkQueryCredential(credential);
         }
 
         var identity = new ClaimsIdentity(Scheme.Name);
