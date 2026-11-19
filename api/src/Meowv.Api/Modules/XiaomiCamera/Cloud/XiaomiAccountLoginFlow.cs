@@ -240,7 +240,16 @@ public sealed class XiaomiAccountLoginFlow : IDisposable
         }
 
         const string prefix = "&&&START&&&";
-        return !content.StartsWith(prefix, StringComparison.Ordinal) ? throw new XiaomiCloudException("小米账号服务返回了无法识别的响应。") : JsonDocument.Parse(content[prefix.Length..]);
+        if (!content.StartsWith(prefix, StringComparison.Ordinal))
+            throw new XiaomiCloudException("小米账号服务返回了无法识别的响应。");
+        try
+        {
+            return JsonDocument.Parse(content[prefix.Length..]);
+        }
+        catch (JsonException exception)
+        {
+            throw new XiaomiCloudException("小米账号服务返回了无效 JSON。", exception);
+        }
     }
 
     private static string GetRequiredString(JsonElement element, string property) => GetOptionalString(element, property) ?? throw new XiaomiCloudException($"登录响应缺少 {property}。");

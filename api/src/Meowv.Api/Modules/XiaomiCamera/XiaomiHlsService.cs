@@ -76,6 +76,17 @@ public sealed class XiaomiHlsService : IDisposable, IAsyncDisposable
 
     public bool IsCurrent(XiaomiPlaybackTarget target) => FindState(target) is not null;
 
+    public void Stop(XiaomiPlaybackTarget target)
+    {
+        lock (_lifecycleGate)
+        {
+            var state = FindState(target);
+            if (state is null) return;
+            state.Stop();
+            _states.TryRemove(new KeyValuePair<string, HlsState>(state.Target.DeviceFingerprint, state));
+        }
+    }
+
     private HlsState? FindState(XiaomiPlaybackTarget target) =>
         target.SessionVersion == _credentialCache.GetSessionVersion() &&
         _states.TryGetValue(target.DeviceFingerprint, out var state) && state.Target == target
@@ -177,7 +188,12 @@ public sealed class XiaomiHlsService : IDisposable, IAsyncDisposable
         }
         catch (XiaomiLiveStreamException exception)
         {
-            state.Fail(exception.Message);
+            state.Fail(exception.Message, exception.Retryable);
+        }
+        catch (Exception exception) when (exception is Cs2RelayException or Cs2MissException or Cs2ProtocolException)
+        {
+            _logger.LogWarning("摄像头协议会话失败，类型 {ExceptionType}", exception.GetType().Name);
+            state.Fail("摄像头连接中断，请重新创建播放会话。", true);
         }
         catch (Exception exception)
         {
@@ -213,6 +229,7 @@ public sealed class XiaomiHlsService : IDisposable, IAsyncDisposable
         private bool _finished;
         private string _status = "preparing";
         private string? _failure;
+        private bool _failureRetryable;
         private bool _audioAvailable;
         private readonly Stopwatch _sessionClock = Stopwatch.StartNew();
 
@@ -368,7 +385,9 @@ public sealed class XiaomiHlsService : IDisposable, IAsyncDisposable
 
                 if (preparation.Status == "failed")
                 {
-                    throw new XiaomiPlaybackException(preparation.Error ?? "H.264 播放流准备失败。", false);
+                    bool retryable;
+                    lock (_gate) retryable = _failureRetryable;
+                    throw new XiaomiPlaybackException(preparation.Error ?? "H.264 播放流准备失败。", retryable);
                 }
 
                 if (preparation.Status == "stopped")
@@ -600,7 +619,7 @@ public sealed class XiaomiHlsService : IDisposable, IAsyncDisposable
             }
         }
 
-        public void Fail(string message)
+        public void Fail(string message, bool retryable = false)
         {
             lock (_gate)
             {
@@ -611,6 +630,7 @@ public sealed class XiaomiHlsService : IDisposable, IAsyncDisposable
 
                 _status = "failed";
                 _failure = message;
+                _failureRetryable = retryable;
             }
         }
 

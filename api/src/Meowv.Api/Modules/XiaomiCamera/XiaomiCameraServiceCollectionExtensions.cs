@@ -25,9 +25,8 @@ public static class XiaomiCameraServiceCollectionExtensions
         services.AddSingleton<XiaomiHlsService>();
         services.AddSingleton<XiaomiModuleRuntime>();
         services.AddHostedService(provider => provider.GetRequiredService<XiaomiModuleRuntime>());
-        services.AddHttpClient("xiaomi-cloud", client => client.Timeout = TimeSpan.FromSeconds(20));
-        services.ConfigureHttpJsonOptions(options =>
-            options.SerializerOptions.TypeInfoResolverChain.Add(XiaomiHttpJsonContext.Default));
+        services.AddHttpClient("xiaomi-cloud", client => client.Timeout = TimeSpan.FromSeconds(20)).RemoveAllLoggers();
+        services.ConfigureHttpJsonOptions(options => options.SerializerOptions.TypeInfoResolverChain.Add(XiaomiHttpJsonContext.Default));
         services.AddRateLimiter(options =>
         {
             options.AddPolicy("xiaomi-bootstrap", context => CreateLimiter(context, 10));

@@ -32,12 +32,15 @@ public sealed class XiaomiLiveStreamService(XiaomiCredentialCache credentialCach
         var provisioning = await catalog.ProvisionCs2Async(camera.Camera, keyPair, cancellationToken);
         LogStage("CS2 会话准备", stage, total);
         var relay = new Cs2RelaySession(provisioning);
+        Cs2PpppConnection? pppp = null;
+        byte[]? sessionKey = null;
+        var transferred = false;
         try
         {
             stage.Restart();
             var established = await relay.ConnectAsync(TimeSpan.FromSeconds(40), cancellationToken);
             LogStage("CS2 中继连接", stage, total);
-            var pppp = new Cs2PpppConnection(relay, established);
+            pppp = new Cs2PpppConnection(relay, established);
             pppp.Start();
             stage.Restart();
             await pppp.WaitForLinkAsync(TimeSpan.FromSeconds(12), cancellationToken);
@@ -46,25 +49,39 @@ public sealed class XiaomiLiveStreamService(XiaomiCredentialCache credentialCach
             stage.Restart();
             await miss.AuthenticateAsync(provisioning, TimeSpan.FromSeconds(20), cancellationToken);
             LogStage("MISS 鉴权", stage, total);
-            var sessionKey = Cs2MissCrypto.DeriveSessionKey(keyPair, provisioning.DevicePublicKey);
-            try
-            {
-                stage.Restart();
-                await miss.StartVideoAsync(sessionKey, quality: 2, enableAudio: true, cancellationToken: cancellationToken);
-                LogStage("音视频请求启动", stage, total);
-                return new XiaomiLiveStream(relay, pppp, miss, sessionKey, camera.Camera.Model, logger);
-            }
-            catch
-            {
-                CryptographicOperations.ZeroMemory(sessionKey);
-                await pppp.DisposeAsync();
-                throw;
-            }
+            sessionKey = Cs2MissCrypto.DeriveSessionKey(keyPair, provisioning.DevicePublicKey);
+            stage.Restart();
+            await miss.StartVideoAsync(sessionKey, quality: 2, enableAudio: true, cancellationToken: cancellationToken);
+            LogStage("音视频请求启动", stage, total);
+            var stream = new XiaomiLiveStream(relay, pppp, miss, sessionKey, camera.Camera.Model, logger);
+            transferred = true;
+            sessionKey = null;
+            pppp = null;
+            return stream;
         }
         catch
         {
-            relay.Dispose();
+            if (sessionKey is not null) CryptographicOperations.ZeroMemory(sessionKey);
             throw;
+        }
+        finally
+        {
+            if (!transferred)
+            {
+                if (pppp is not null)
+                {
+                    try
+                    {
+                        await pppp.DisposeAsync();
+                    }
+                    catch
+                    {
+                        /* 建链失败时资源清理不应覆盖原始错误。 */
+                    }
+                }
+
+                relay.Dispose();
+            }
         }
     }
 

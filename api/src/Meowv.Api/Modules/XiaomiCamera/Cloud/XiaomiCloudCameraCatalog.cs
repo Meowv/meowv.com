@@ -75,7 +75,7 @@ public sealed class XiaomiCloudCameraCatalog(HttpClient httpClient, XiaomiCloudC
             var servers = Cs2InitString.DecodeServers(initString);
             return servers.Count == 0 ? throw new FormatException("未包含 rendezvous 地址。") : new Cs2Provisioning(Cs2Uid.Parse(p2PId), servers, keyPair.PublicKeyHex, devicePublicKey, sign);
         }
-        catch (FormatException exception)
+        catch (Exception exception) when (exception is FormatException or ArgumentException)
         {
             throw new XiaomiCloudException("CS2 provisioning 参数格式无效。", exception);
         }
@@ -129,7 +129,7 @@ public sealed class XiaomiCloudCameraCatalog(HttpClient httpClient, XiaomiCloudC
                 try
                 {
                     using var envelope = JsonDocument.Parse(Encoding.UTF8.GetString(plaintext));
-                    if (!envelope.RootElement.TryGetProperty("code", out var code) || code.GetInt32() != 0)
+                    if (!envelope.RootElement.TryGetProperty("code", out var code) || !code.TryGetInt32(out var codeValue) || codeValue != 0)
                     {
                         var message = GetOptionalString(envelope.RootElement, "message") ?? "未知错误";
                         throw new XiaomiCloudException($"小米云返回错误：{message}");
@@ -152,7 +152,7 @@ public sealed class XiaomiCloudCameraCatalog(HttpClient httpClient, XiaomiCloudC
                 CryptographicOperations.ZeroMemory(encrypted);
             }
         }
-        catch (Exception exception) when (exception is FormatException or JsonException or CryptographicException)
+        catch (Exception exception) when (exception is FormatException or JsonException or CryptographicException or InvalidOperationException)
         {
             throw new XiaomiCloudException("小米云响应无法解密或解析；请检查区域和会话是否仍有效。", exception);
         }
@@ -183,14 +183,14 @@ public sealed class XiaomiCloudCameraCatalog(HttpClient httpClient, XiaomiCloudC
     {
         if (root.TryGetProperty("vendor", out var vendor))
         {
-            if (vendor.ValueKind == JsonValueKind.Number)
+            if (vendor.ValueKind == JsonValueKind.Number && vendor.TryGetInt32(out var vendorId))
             {
-                return vendor.GetInt32();
+                return vendorId;
             }
 
-            if (vendor.ValueKind == JsonValueKind.Object && vendor.TryGetProperty("vendor", out var id))
+            if (vendor.ValueKind == JsonValueKind.Object && vendor.TryGetProperty("vendor", out var id) && id.TryGetInt32(out var nestedVendorId))
             {
-                return id.GetInt32();
+                return nestedVendorId;
             }
         }
 
