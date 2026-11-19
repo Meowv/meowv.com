@@ -33,9 +33,12 @@ public sealed class QQMusicProvider(HttpClient http, TimeProvider clock) : IMusi
         }
     }
 
-    public MusicTrack? FindTrack(string id) => _tracks.TryGetValue(id, out var entry) && entry.Deadline > clock.GetUtcNow()
-        ? entry.Track
-        : null;
+    public MusicTrack? FindTrack(string id)
+    {
+        var now = clock.GetUtcNow();
+        if (!_tracks.TryGetValue(id, out var entry) || entry.Deadline <= now) return null;
+        return entry.UnplayableUntil > now ? entry.Track with { Availability = "unavailable" } : entry.Track;
+    }
 
     internal void Remember(IEnumerable<Entry> entries)
     {

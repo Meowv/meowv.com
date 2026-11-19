@@ -24,6 +24,15 @@ internal static class MusicChecks
     {
         await NeteaseSourceChecks.RunAsync();
         await MusicAggregationChecks.RunAsync();
+        string[] styles = ["华语流行", "摇滚", "民谣", "电子", "说唱", "轻音乐", "ACG", "爵士"];
+        for (var hour = 0; hour < 24; hour++)
+        {
+            var boundary = new DateTimeOffset(2026, 11, 19, hour, 0, 0, TimeSpan.FromHours(8));
+            Check(MusicCatalog.FallbackQuery(boundary) == styles[hour % 8] &&
+                  MusicCatalog.FallbackQuery(boundary.AddSeconds(-1)) == styles[(hour + 7) % 8],
+                "Fallback style follows Shanghai hour boundaries");
+        }
+        Check(MusicCatalog.FallbackQuery(DateTimeOffset.FromUnixTimeSeconds(-1)) == styles[^1], "Negative epoch is floored");
         await SkillChecks(root);
         CheckExistingDatabase(root);
         Check(!JsonSerializer.IsReflectionEnabledByDefault, "JSON reflection must stay disabled");
@@ -116,7 +125,6 @@ internal static class MusicChecks
         foreach (var invalid in new Dictionary<string, string>
         {
             ["MaxConcurrentRequests"] = "0", ["RequestsPerMinute"] = "invalid",
-            ["RecommendationFallbackQuery"] = "\0invalid",
         })
         {
             await Case(root, true, async (client, _) =>
@@ -200,24 +208,26 @@ internal static class MusicChecks
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
             var page = JsonSerializer.Deserialize(await client.GetStringAsync("/api/music/recommendations"),
                 MusicJsonContext.Default.MusicRecommendationPage)!;
-            Check(netease.LastSearch == "中文经典" && qqFallback.LastSearch == "中文经典",
-                "Configured fallback query reaches both search providers");
+            Check(netease.LastSearch == "电子" && qqFallback.LastSearch == "电子",
+                "Hourly fallback query reaches both search providers");
             Check(page.Strategy == "search_candidates" && page.Partial && page.Items.Length == 3 &&
                   page.Items.Any(x => x.Sources.Length == 2) && page.Items.Any(x => x.Sources is [{ ProviderId: "qqmusic" }]),
                 "Fallback recommendation merges both sources, deduplicates recordings, and includes QQ-only tracks");
-        }, change: new("RecommendationFallbackQuery", "中文经典"), qq: qqFallback);
+        }, qq: qqFallback, clock: new TestClock());
         var dailyClock = new TestClock();
         var qq = new MusicUpstreamFixture { IncludeQqTracks = true, Clock = dailyClock };
         await Case(root, true, async (client, app) =>
         {
-            using var removed = await client.GetAsync("/api/music/charts/daily");
-            Check(removed.StatusCode == HttpStatusCode.NotFound, "Retired daily chart route is absent");
-            Check(qq.Count == 0, "No requests refresh the chart");
+            using var anonymous = await client.GetAsync("/api/music/charts/daily");
+            await Error(anonymous, 401, "unauthorized");
+            Check(qq.Count == 0, "Anonymous requests do not refresh the chart");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+            using var chart = await client.GetAsync("/api/music/charts/daily");
+            var page = JsonSerializer.Deserialize(await chart.Content.ReadAsStringAsync(), MusicChartJsonContext.Default.MusicDailyPage)!;
             var feeds = app.Services.GetRequiredService<MusicDailyFeeds>();
-            var page = await feeds.GetDailyAsync(false, CancellationToken.None);
-            Check(!page.Partial && page.Sources.Length == 6 &&
+            Check(chart.IsSuccessStatusCode && page.Chart == "daily" && !page.Partial && page.Sources.Length == 7 &&
                   page.Items.Count(x => x.Ranks.Length == 2) == 1,
-                $"Default feeds combine both sources and keep both ranks (sources={page.Sources.Length}, ranked={page.Items.Count(x => x.Ranks.Length == 2)})");
+                "Daily chart combines seven sources and keeps both ranks");
             using var denied = await client.PostAsync("/api/music/admin/charts/refresh", null);
             Check(denied.StatusCode == HttpStatusCode.Unauthorized, "Music device cannot force chart refresh");
             var reread = await feeds.GetDailyAsync(false, CancellationToken.None);
@@ -226,6 +236,7 @@ internal static class MusicChecks
             var store = app.Services.GetRequiredService<MusicChartStore>();
             Check(store.Latest("rising", "qqmusic")?.Entries.Single().TrackKey == "QQfixture00001" &&
                   store.Latest("rising", "netease") is not null &&
+                  store.Latest("netease-hot", "netease")?.Entries.Single().Title == "网易热歌" &&
                   store.Latest("qq-hot", "qqmusic")?.Entries.Single().Title == "QQ热歌" &&
                   store.Latest("qq-new", "qqmusic")?.Entries.Single().Title == "QQ新歌",
                 "All default feeds are written to SQLite under isolated chart keys");
@@ -233,15 +244,15 @@ internal static class MusicChecks
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
             using var recommendations = await client.GetAsync("/api/music/recommendations");
             var recommended = JsonSerializer.Deserialize(await recommendations.Content.ReadAsStringAsync(), MusicJsonContext.Default.MusicRecommendationPage)!;
-            Check(recommendations.IsSuccessStatusCode && recommended.Items.Length == 5 && recommended.Strategy == "public_daily_music" &&
+            Check(recommendations.IsSuccessStatusCode && recommended.Items.Length == 6 && recommended.Strategy == "public_daily_music" &&
                   recommended.Items.Any(x => x.Title == "今天也不错") &&
                   recommended.Items.Any(x => x.Title == "QQ热歌") &&
                   recommended.Items.Any(x => x.Title == "QQ新歌") &&
-                  recommended.Items[0].Sources.Length == 2 && recommended.Items.Any(x => x.Sources is [{ ProviderId: "qqmusic" }]) &&
+                  recommended.Items.Any(x => x.Sources.Length == 2) && recommended.Items.Any(x => x.Sources is [{ ProviderId: "qqmusic" }]) &&
                   recommended.Items.All(x => x.Availability == "candidate") &&
                   store.Latest("new-songs", "netease") is not null && store.Latest("new-songs", "qqmusic") is not null,
                 "Daily recommendations include all default feeds, stay playable, and are deduplicated");
-            var trackId = recommended.Items[0].Id;
+            var trackId = recommended.Items.Single(x => x.Sources.Length == 2).Id;
             using var lyrics = await client.GetAsync("/api/music/lyrics?trackId=" + trackId + "&providerId=qqmusic");
             var lyric = JsonSerializer.Deserialize(await lyrics.Content.ReadAsStringAsync(), MusicJsonContext.Default.MusicLyrics)!;
             Check(lyrics.IsSuccessStatusCode && lyric.ProviderId == "qqmusic" && lyric.Lrc == "[00:01.00]QQ fixture", "Lyrics follow the specified playback provider");
@@ -473,7 +484,7 @@ internal static class MusicChecks
         using var skillHttp = new HttpClient(gateway);
         using var qqHttp = new HttpClient(new MusicUpstreamFixture { IncludeQqTracks = true });
         var qq = new QQMusicProvider(qqHttp, clock);
-        var catalog = new MusicCatalog(options, new MusicProviderRegistry(options, [qq]), clock);
+        var catalog = new MusicCatalog(new MusicProviderRegistry(options, [qq]), clock);
         var database = new ApiDatabase("Data Source=" + Path.Combine(root, Guid.NewGuid().ToString("N") + ".db"));
         var store = new MusicChartStore(database);
         var skill = new QQMusicSkill(skillHttp, options, clock, store);
@@ -496,15 +507,30 @@ internal static class MusicChecks
         clock.Now = clock.Now.AddDays(1);
         await restarted.PersonalizeAsync(publicItems, qq, catalog, default);
         Check(gateway.Calls == 3, "Shanghai date rollover requests a new daily recommendation");
+        gateway.LimitRadio = true;
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            try
+            {
+                await restarted.RadioAsync(qq, default);
+                throw new InvalidOperationException("Expected QQ radio rate limit");
+            }
+            catch (MusicException error)
+            {
+                Check(error.Status == 429 && error.RetryAfterSeconds == 27, "Radio propagates HTTP 429 and cached Retry-After");
+            }
+        }
+        Check(gateway.Calls == 4, "Radio cooldown avoids another upstream request");
         options.QQMusicSkillApiKey = "";
         Check((await skill.PersonalizeAsync(publicItems, qq, catalog, default)).SequenceEqual(publicItems) &&
-              gateway.Calls == 3, "Missing key preserves public feed without contacting the official gateway");
+              gateway.Calls == 4, "Missing key preserves public feed without contacting the official gateway");
     }
 
     private sealed class SkillFixture : HttpMessageHandler
     {
         private int _calls;
         public int Calls => _calls;
+        public bool LimitRadio { get; set; }
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
@@ -515,6 +541,12 @@ internal static class MusicChecks
             using var json = JsonDocument.Parse(await request.Content!.ReadAsStringAsync(ct));
             Check(json.RootElement.GetProperty("comm").GetProperty("skill_version").GetString() == "0.0.3",
                 "Official skill includes its protocol version");
+            if (LimitRadio && request.RequestUri!.AbsolutePath == "/discover/radio")
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.TooManyRequests);
+                response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(27));
+                return response;
+            }
             var body = request.RequestUri!.AbsolutePath switch
             {
                 "/discover/daily-mix" => """{"ret":0,"songlist":[{"songMid":"QQfixture00002","songName":"第二首","singerName":"歌手"}]}""",

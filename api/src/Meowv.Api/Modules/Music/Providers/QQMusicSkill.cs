@@ -20,6 +20,7 @@ internal sealed class QQMusicSkill(HttpClient http, MusicOptions options, TimePr
     private DateOnly _extraDate;
     private string? _extraSource;
     private MusicTrack[] _radio = [];
+    private MusicException? _radioFailure;
     private MusicTrack[] _extra = [];
 
     private string? Key
@@ -100,16 +101,35 @@ internal sealed class QQMusicSkill(HttpClient http, MusicOptions options, TimePr
             try
             {
                 var now = clock.GetUtcNow();
-                if (_radioRetryAt > now) return _radio;
-                _radioRetryAt = now.AddSeconds(15);
-                var songs = await ReadAsync("radio", key, token);
-                _radio = await ResolveCandidatesAsync(songs, [], qq, token);
-                return _radio;
+                if (_radioRetryAt > now)
+                {
+                    if (_radioFailure is { } cached)
+                    {
+                        var retry = cached.RetryAfterSeconds is not null
+                            ? (int?)Math.Ceiling((_radioRetryAt - now).TotalSeconds) : null;
+                        throw new MusicException(cached.Code, cached.Message, cached.Status, retry);
+                    }
+                    return _radio;
+                }
+                _radioFailure = null;
+                try
+                {
+                    var songs = await ReadAsync("radio", key, token);
+                    _radio = await ResolveCandidatesAsync(songs, [], qq, token);
+                    _radioRetryAt = now.AddSeconds(15);
+                    return _radio;
+                }
+                catch (MusicException error)
+                {
+                    _radioFailure = error;
+                    _radioRetryAt = clock.GetUtcNow().AddSeconds(Math.Max(15, error.RetryAfterSeconds ?? 0));
+                    throw;
+                }
             }
             finally { _gate.Release(); }
         }
-        catch (OperationCanceledException) when (!ct.IsCancellationRequested) { return []; }
-        catch (MusicException) { return []; }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        { throw new MusicException("source_timeout", "QQ 音乐猜你喜欢请求超时。", 504); }
     }
 
     private static async Task<MusicTrack[]> ResolveCandidatesAsync(Song[] songs, MusicTrack[] known, QQMusicProvider qq, CancellationToken ct)
@@ -141,17 +161,30 @@ internal sealed class QQMusicSkill(HttpClient http, MusicOptions options, TimePr
         try
         {
             using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
-            if (!response.IsSuccessStatusCode) return [];
+            if (!response.IsSuccessStatusCode)
+            {
+                if (endpoint != "radio") return [];
+                if ((int)response.StatusCode == 429)
+                {
+                    var seconds = response.Headers.RetryAfter?.Delta?.TotalSeconds ??
+                        (response.Headers.RetryAfter?.Date - clock.GetUtcNow())?.TotalSeconds ?? 60;
+                    throw new MusicException("rate_limited", "QQ 音乐猜你喜欢请求较多，请稍后重试。", 429,
+                        (int)Math.Clamp(Math.Ceiling(seconds), 1, 86400));
+                }
+                if ((int)response.StatusCode is 401 or 403)
+                    throw new MusicException("forbidden", "QQ 音乐猜你喜欢拒绝了请求。", 403);
+                throw new MusicException("source_unavailable", "QQ 音乐猜你喜欢暂不可用。", 503);
+            }
             await using var stream = await response.Content.ReadAsStreamAsync(ct);
             var buffer = new byte[64 * 1024 + 1];
             var length = await stream.ReadAtLeastAsync(buffer, buffer.Length, false, ct);
-            if (length == buffer.Length) return [];
+            if (length == buffer.Length) throw new JsonException();
             using var json = JsonDocument.Parse(buffer.AsMemory(0, length));
             var root = json.RootElement;
             if (root.ValueKind != JsonValueKind.Object ||
                 new[] { "ret", "sub_ret" }.Any(code => root.TryGetProperty(code, out var value) &&
                     value.ValueKind != JsonValueKind.Null && (value.ValueKind != JsonValueKind.Number || value.GetRawText() != "0")) ||
-                !root.TryGetProperty("songlist", out var rows) || rows.ValueKind != JsonValueKind.Array) return [];
+                !root.TryGetProperty("songlist", out var rows) || rows.ValueKind != JsonValueKind.Array) throw new JsonException();
             return rows.EnumerateArray().Take(30).Select(row =>
             {
                 var mid = Text(row, "songMid");
@@ -162,7 +195,12 @@ internal sealed class QQMusicSkill(HttpClient http, MusicOptions options, TimePr
                     !title.Any(char.IsControl) && !artist.Any(char.IsControl) ? new Song(mid, title, artist) : null;
             }).OfType<Song>().DistinctBy(x => x.Mid).ToArray();
         }
-        catch (Exception error) when (error is HttpRequestException or IOException or JsonException) { return []; }
+        catch (Exception error) when (error is HttpRequestException or IOException or JsonException)
+        {
+            if (endpoint == "radio")
+                throw new MusicException("source_unavailable", "QQ 音乐猜你喜欢暂不可用。", 503);
+            return [];
+        }
     }
 
     private static string Text(JsonElement row, string key) =>

@@ -85,7 +85,11 @@ dotnet run --project api/src/Meowv.Api -- --contentRoot /YOUR_CHECKOUT/api/src/M
 
 通过后端环境变量 `Modules__Music__QQMusicSkillApiKey` 配置 QQ 音乐 Skill 的账号密钥。推荐接口在北京时间当日首次成功读取「每日 30 首」时，将曲目元数据按顺序写入 `music_chart_snapshots`，快照类型为 `qq-skill-daily-mix`。同日重用已保存结果，次日首次读取时更新，每个凭据分区保留最近一期。
 
-普通播放队列耗尽后，Tune 才调用 `GET /api/music/recommendations/radio` 请求「猜你喜欢」。补歌不写表，由客户端排除当前会话已遇到的曲目。QQ 音乐 H5 链接不用于音频播放，补歌继续使用现有整曲解析链路。无密钥时仍可使用公开音乐列表。
+普通队列剩余 1–2 首或已经耗尽时，Tune 通过 `GET /api/music/recommendations/radio` 取「猜你喜欢」，同时用 `GET /api/music/search` 小批量补充候选。补歌不写表。限流响应带冷却信息，同一曲目的失败由既有解析链路处理。
+
+公开曲目内置七项来源。网易云飙升榜 19723756、热歌榜 3778678、公开新歌，QQ 飙升榜 62、热歌榜 26、新歌榜 27、公开新歌，每项最多 30 首。`GET /api/music/charts/daily` 提供设备鉴权的公开快照查询，与推荐和管理刷新共用来源。旧 `RecommendationFallbackQuery` 已由双端内置的八词小时轮换接替。
+
+Tune 音乐端直连 `GET /api/music/recommendations`、`GET /api/music/search`、`GET /api/music/recommendations/radio`、`POST /api/music/resolve` 和 `GET /api/music/lyrics`。
 
 ## 发布
 

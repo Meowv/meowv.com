@@ -18,7 +18,12 @@ public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : 
 
     public MusicTrack? FindTrack(string id)
     {
-        lock (_gate) return _tracks.TryGetValue(id, out var entry) && entry.Until > clock.GetUtcNow() ? entry.Track : null;
+        lock (_gate)
+        {
+            var now = clock.GetUtcNow();
+            if (!_tracks.TryGetValue(id, out var entry) || entry.Until <= now) return null;
+            return entry.UnplayableUntil > now ? entry.Track with { Availability = "unavailable" } : entry.Track;
+        }
     }
 
     private readonly Lock _gate = new();

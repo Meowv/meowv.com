@@ -78,8 +78,9 @@ internal sealed class MusicDailyFeeds(
             page = null;
         }
 
-        var tracks = page?.Items.Select(x => x.Track).Where(x => x.Availability == "candidate").ToArray() ?? [];
+        var tracks = catalog.PlayableCandidates(page?.Items.Select(x => x.Track) ?? []);
         if (registry.Enabled.Contains(qq)) tracks = await skill.PersonalizeAsync(tracks, qq, catalog, ct);
+        tracks = catalog.PlayableCandidates(tracks);
         if (tracks.Length == 0) return await FallbackAsync(ct);
         return new MusicRecommendationPage(tracks, null,
             "public_daily_music", page?.Sources.Max(x => x.CapturedAt.UtcDateTime) ?? clock.GetUtcNow().UtcDateTime,
@@ -89,7 +90,7 @@ internal sealed class MusicDailyFeeds(
     public async Task<MusicRecommendationPage> RadioAsync(CancellationToken ct)
     {
         var tracks = registry.Enabled.Contains(qq) ? await skill.RadioAsync(qq, ct) : [];
-        return new MusicRecommendationPage(catalog.MergeDaily(tracks), null, "qq_skill_radio", clock.GetUtcNow().UtcDateTime);
+        return new MusicRecommendationPage(catalog.PlayableCandidates(catalog.MergeDaily(tracks)), null, "qq_skill_radio", clock.GetUtcNow().UtcDateTime);
     }
 
     private async Task<MusicRecommendationPage> FallbackAsync(CancellationToken ct)

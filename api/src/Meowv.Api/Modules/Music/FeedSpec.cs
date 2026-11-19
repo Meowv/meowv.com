@@ -9,6 +9,7 @@ internal sealed record FeedSpec(string Id, string ProviderId, string Kind, strin
     internal static FeedSpec[] Defaults =>
     [
         new("rising", NeteaseMusicProvider.Id, "playlist", "19723756"),
+        new("netease-hot", NeteaseMusicProvider.Id, "playlist", "3778678"),
         new("rising", QQMusicProvider.Id, "toplist", "62"),
         new("new-songs", NeteaseMusicProvider.Id, "newsong", "0"),
         new("new-songs", QQMusicProvider.Id, "new", "0"),

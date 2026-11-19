@@ -168,7 +168,7 @@ internal static class MusicAggregationChecks
     {
         var options = new MusicOptions { Enabled = true };
         var registry = new MusicProviderRegistry(options, [native, metadata]);
-        return (new MusicCatalog(options, registry, TimeProvider.System), registry);
+        return (new MusicCatalog(registry, TimeProvider.System), registry);
     }
     private static async Task Error<T>(Func<Task<T>> call, int status)
     {

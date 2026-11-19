@@ -9,10 +9,7 @@ public sealed class MusicRuntime(MusicOptions options, IHostEnvironment environm
 
     public bool Available => options is { Enabled: true, BindingFailed: false } &&
                              (environment.IsDevelopment() || environment.IsEnvironment("Testing")) &&
-                             options.RequestsPerMinute is >= 1 and <= 1000 && options.MaxConcurrentRequests is >= 1 and <= 16 &&
-                             !string.IsNullOrWhiteSpace(options.RecommendationFallbackQuery) &&
-                             options.RecommendationFallbackQuery.Trim().Length is >= 1 and <= 100 &&
-                             !options.RecommendationFallbackQuery.Any(char.IsControl);
+                             options.RequestsPerMinute is >= 1 and <= 1000 && options.MaxConcurrentRequests is >= 1 and <= 16;
 
     public string Status => !options.Enabled ? "disabled" : !Available ? "unavailable" : "ready";
 

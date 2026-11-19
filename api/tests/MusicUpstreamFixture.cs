@@ -19,6 +19,7 @@ internal sealed class MusicUpstreamFixture : HttpMessageHandler
 
     private const string First = """{"id":1,"name":"睡醒就好了","artists":[{"name":"qix"}],"album":{"name":"Fixture"},"duration":100000,"fee":0}""";
     private const string Second = """{"id":2,"name":"今天也不错","artists":[{"name":"qix"}],"album":{"name":"Fixture"},"duration":100000,"fee":0}""";
+    private const string NeteaseHot = """{"id":3,"name":"网易热歌","artists":[{"name":"qix"}],"duration":100000,"fee":0}""";
     private const string QqFirst = """{"id":42,"mid":"QQfixture00001","title":"睡醒就好了","interval":100,"singer":[{"name":"qix"}],"file":{"media_mid":"QQfixture00001","size_128mp3":1600000},"pay":{"pay_play":0}}""";
     private const string QqSecond = """{"mid":"QQfixture00002","title":"不同的歌曲","interval":100,"singer":[{"name":"qix"}],"file":{"media_mid":"QQfixture00002","size_128mp3":1600000},"pay":{"pay_play":0}}""";
     private const string QqHot = """{"id":43,"mid":"QQfixture00003","title":"QQ热歌","interval":100,"singer":[{"name":"qix"}],"file":{"media_mid":"QQfixture00003","size_128mp3":1600000},"pay":{"pay_play":0}}""";
@@ -88,7 +89,7 @@ internal sealed class MusicUpstreamFixture : HttpMessageHandler
         else if (uri.AbsolutePath == "/api/playlist/detail")
         {
             body = "{\"code\":200,\"result\":{\"updateTime\":" + Clock.GetUtcNow().ToUnixTimeMilliseconds() + ",\"tracks\":[" + (EmptyRecommendations ? "" :
-                Clock == TimeProvider.System ? First : First + "," + Second) + "]}}";
+                uri.Query == "?id=3778678" ? NeteaseHot : Clock == TimeProvider.System ? First : First + "," + Second) + "]}}";
         }
         else if (uri.AbsolutePath == "/api/personalized/newsong")
         {

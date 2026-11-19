@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.WebUtilities;
 
 namespace Meowv.Api.Modules.Music;
 
-public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry registry, TimeProvider clock)
+public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider clock)
 {
     private readonly Lock _gate = new();
     private readonly Dictionary<string, Continuation> _pages = new(StringComparer.Ordinal);
@@ -42,7 +42,8 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
             {
                 var single = await Load(sources[0], query, count, cursor, ct);
                 if (single.Failure is { } error) throw error;
-                return single.Page!;
+                var page = single.Page!;
+                return page with { Items = CurrentAvailability(page.Items, sources) };
             }
         }
 
@@ -158,14 +159,48 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
             }
         }
 
-        return new MusicSearchPage(items, nextCursor, warnings.Count > 0, warnings.ToArray());
+        return new MusicSearchPage(CurrentAvailability(items, sources), nextCursor, warnings.Count > 0, warnings.ToArray());
     }
 
     public async Task<MusicRecommendationPage> RecommendAsync(CancellationToken ct)
     {
-        var page = await SearchAsync(options.RecommendationFallbackQuery, 50, null, ct);
-        return new MusicRecommendationPage(page.Items.Where(x => x.Availability == "candidate").ToArray(),
+        var page = await SearchAsync(FallbackQuery(clock.GetUtcNow()), 50, null, ct);
+        return new MusicRecommendationPage(PlayableCandidates(page.Items),
             null, "search_candidates", clock.GetUtcNow().UtcDateTime, page.Partial, page.Warnings);
+    }
+
+    // 与 Tune 的 fallbackQuery 保持顺序和小时桶一致。
+    private static readonly string[] FallbackQueries =
+        ["华语流行", "摇滚", "民谣", "电子", "说唱", "轻音乐", "ACG", "爵士"];
+
+    internal static string FallbackQuery(DateTimeOffset now)
+    {
+        var seconds = now.ToUnixTimeSeconds();
+        var hour = Math.DivRem(seconds, 3600, out var remainder) - (remainder < 0 ? 1 : 0);
+        return FallbackQueries[(hour % FallbackQueries.Length + FallbackQueries.Length) % FallbackQueries.Length];
+    }
+
+    internal MusicTrack[] PlayableCandidates(IEnumerable<MusicTrack> tracks) =>
+        CurrentAvailability(tracks, registry.Enabled).Where(track => track.Availability == "candidate").ToArray();
+
+    private MusicTrack[] CurrentAvailability(IEnumerable<MusicTrack> tracks, IMusicSearchProvider[] sources)
+    {
+        var resolvers = sources.Where(source => source is IMusicResolverProvider).ToArray();
+        lock (_gate)
+        {
+            return tracks.Select(track =>
+            {
+                if (track.Availability != "candidate") return track;
+                var known = _known.GetValueOrDefault(Canonical(track.Id));
+                var canResolve = resolvers.Any(source =>
+                {
+                    var id = known is null ? track.Id : known.ProviderTrackIds.GetValueOrDefault(source.ProviderId);
+                    return id is not null && source.FindTrack(id) is { Availability: "candidate" } current &&
+                        (source.ProviderId == track.Sources.FirstOrDefault()?.ProviderId || MusicCandidateMatcher.CanMerge(track, current));
+                });
+                return canResolve ? track : track with { Availability = "unavailable" };
+            }).ToArray();
+        }
     }
 
     internal MusicTrack[] MergeDaily(IEnumerable<MusicTrack> tracks)
@@ -247,10 +282,10 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
                 ct.ThrowIfCancellationRequested();
                 return audio with { TrackId = request.TrackId };
             }
-            catch (MusicException error) when (requested is null && excluded is null && firstFailure is null && source.ProviderId == primary &&
+            catch (MusicException error) when (requested is null && excluded is null &&
                                                error is { Code: "no_playable_match", RetryAfterSeconds: null })
             {
-                firstFailure = error;
+                firstFailure ??= error;
             }
         }
 
@@ -390,11 +425,15 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
             var result = baseline with { Sources = matches, CoverUrl = baseline.CoverUrl ?? incoming.CoverUrl ?? existing?.CoverUrl };
             if (existing is not null && existing.Id != result.Id) _known.Remove(existing.Id);
             if (_known.Count >= 1000 && !_known.ContainsKey(result.Id)) _known.Remove(_known.MinBy(x => x.Value.Used).Key);
-            var providerTrackIds = new Dictionary<string, string>(StringComparer.Ordinal);
-            foreach (var source in matches)
+            var providerTrackIds = previous is null
+                ? new Dictionary<string, string>(StringComparer.Ordinal)
+                : new Dictionary<string, string>(previous.ProviderTrackIds, StringComparer.Ordinal);
+            var providerId = incoming.Sources[0].ProviderId;
+            if (!providerTrackIds.TryGetValue(providerId, out var retainedId) || retainedId == incoming.Id ||
+                (incoming.Availability == "candidate" && enabled.FirstOrDefault(x => x.ProviderId == providerId)
+                    ?.FindTrack(retainedId)?.Availability != "candidate"))
             {
-                var id = source.ProviderId == incoming.Sources[0].ProviderId ? incoming.Id : previous?.ProviderTrackIds.GetValueOrDefault(source.ProviderId);
-                if (id is not null) providerTrackIds[source.ProviderId] = id;
+                providerTrackIds[providerId] = incoming.Id;
             }
 
             _known[result.Id] = new KnownTrack(result, providerTrackIds, clock.GetUtcNow().AddHours(24), ++_used);
