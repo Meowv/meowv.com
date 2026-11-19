@@ -1,4 +1,5 @@
 using Meowv.Api.Core;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Meowv.Api.Modules.Health;
 
@@ -8,6 +9,5 @@ public sealed class HealthModule : IEndpointModule
 
     public string Description => "服务存活探针。";
 
-    public void MapEndpoints(IEndpointRouteBuilder endpoints) =>
-        endpoints.MapGet("/api/health", () => Results.Json(new HealthResponse("healthy"), HealthJsonContext.Default.HealthResponse));
+    public void MapEndpoints(IEndpointRouteBuilder endpoints) => endpoints.MapGet("/api/health", () => Results.Json(new HealthResponse("healthy"), HealthJsonContext.Default.HealthResponse)).AllowAnonymous();
 }
