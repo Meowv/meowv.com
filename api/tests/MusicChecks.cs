@@ -216,20 +216,18 @@ internal static class MusicChecks
         var qq = new MusicUpstreamFixture { IncludeQqTracks = true, Clock = dailyClock };
         await Case(root, true, async (client, app) =>
         {
-            using var anonymous = await client.GetAsync("/api/music/charts/daily");
-            await Error(anonymous, 401, "unauthorized");
-            Check(qq.Count == 0, "Unauthorized requests do not refresh the chart");
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
-            using var chart = await client.GetAsync("/api/music/charts/daily");
-            var page = JsonSerializer.Deserialize(await chart.Content.ReadAsStringAsync(), MusicChartJsonContext.Default.MusicDailyPage)!;
-            Check(chart.IsSuccessStatusCode && !page.Partial && page.Sources.Length == 6 &&
+            using var removed = await client.GetAsync("/api/music/charts/daily");
+            Check(removed.StatusCode == HttpStatusCode.NotFound, "Retired daily chart route is absent");
+            Check(qq.Count == 0, "No requests refresh the chart");
+            var feeds = app.Services.GetRequiredService<MusicDailyFeeds>();
+            var page = await feeds.GetDailyAsync(false, CancellationToken.None);
+            Check(!page.Partial && page.Sources.Length == 6 &&
                   page.Items.Count(x => x.Ranks.Length == 2) == 1,
                 $"Default feeds combine both sources and keep both ranks (sources={page.Sources.Length}, ranked={page.Items.Count(x => x.Ranks.Length == 2)})");
             using var denied = await client.PostAsync("/api/music/admin/charts/refresh", null);
             Check(denied.StatusCode == HttpStatusCode.Unauthorized, "Music device cannot force chart refresh");
-            using var cached = await client.GetAsync("/api/music/charts/daily");
-            var reread = JsonSerializer.Deserialize(await cached.Content.ReadAsStringAsync(), MusicChartJsonContext.Default.MusicDailyPage)!;
-            Check(cached.IsSuccessStatusCode && qq.Count == 4 && page.Sources.SequenceEqual(reread.Sources),
+            var reread = await feeds.GetDailyAsync(false, CancellationToken.None);
+            Check(qq.Count == 4 && page.Sources.SequenceEqual(reread.Sources),
                 "Fresh snapshots do not refetch QQ and first read agrees with SQLite precision");
             var store = app.Services.GetRequiredService<MusicChartStore>();
             Check(store.Latest("rising", "qqmusic")?.Entries.Single().TrackKey == "QQfixture00001" &&
@@ -238,6 +236,7 @@ internal static class MusicChecks
                   store.Latest("qq-new", "qqmusic")?.Entries.Single().Title == "QQ新歌",
                 "All default feeds are written to SQLite under isolated chart keys");
 
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
             using var recommendations = await client.GetAsync("/api/music/recommendations");
             var recommended = JsonSerializer.Deserialize(await recommendations.Content.ReadAsStringAsync(), MusicJsonContext.Default.MusicRecommendationPage)!;
             Check(recommendations.IsSuccessStatusCode && recommended.Items.Length == 5 && recommended.Strategy == "public_daily_music" &&
@@ -270,15 +269,14 @@ internal static class MusicChecks
             dailyClock.Now = dailyClock.Now.AddDays(1);
             qq.Status = HttpStatusCode.TooManyRequests;
             qq.RetryAfter = TimeSpan.FromHours(2);
-            using var stale = await client.GetAsync("/api/music/charts/daily");
-            var partial = JsonSerializer.Deserialize(await stale.Content.ReadAsStringAsync(), MusicChartJsonContext.Default.MusicDailyPage)!;
-            Check(stale.IsSuccessStatusCode && partial.Partial && partial.Sources.Count(x => x.Source == "qqmusic") == 4 &&
+            var partial = await feeds.GetDailyAsync(false, CancellationToken.None);
+            Check(partial.Partial && partial.Sources.Count(x => x.Source == "qqmusic") == 4 &&
                   partial.Sources.Where(x => x.Source == "qqmusic").All(x => x.Stale),
                 "After midnight unavailable QQ feeds fall back to yesterday and are marked stale");
             var calls = qq.Count;
             dailyClock.Now = dailyClock.Now.AddMinutes(31);
-            using var coolingDown = await client.GetAsync("/api/music/charts/daily");
-            Check(coolingDown.IsSuccessStatusCode && qq.Count == calls, "The source Retry-After is respected");
+            await feeds.GetDailyAsync(false, CancellationToken.None);
+            Check(qq.Count == calls, "The source Retry-After is respected");
         }, qq: qq, clock: dailyClock);
         Console.WriteLine("PASS: Music native-source HTTP contracts, daily SQLite feeds, lyrics, range validation, stale fallback, and scoped access");
     }
