@@ -378,7 +378,7 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
                 !x.Track.Sources.Any(a => incoming.Sources.Any(b => a.ProviderId == b.ProviderId)) &&
                 MusicCandidateMatcher.CanMerge(x.Track, incoming));
             var existing = previous?.Track;
-            var baseline = existing is null || existing.Id == incoming.Id || incoming.Availability == "candidate" && existing.Availability != "candidate" ? incoming : existing;
+            var baseline = existing is null || incoming.Availability == "candidate" && existing.Availability != "candidate" ? incoming : existing;
             var matches = (existing?.Sources ?? []).Concat(incoming.Sources).Where(x => enabled.Any(p => p.ProviderId == x.ProviderId))
                 .DistinctBy(x => (x.ProviderId, x.SourceTrackId)).OrderBy(x => x.ProviderId == baseline.Sources[0].ProviderId ? 0 : 1).Select(x => x.ProviderId == baseline.Sources[0].ProviderId
                     ? x

@@ -21,6 +21,8 @@ internal sealed class MusicUpstreamFixture : HttpMessageHandler
     private const string Second = """{"id":2,"name":"今天也不错","artists":[{"name":"qix"}],"album":{"name":"Fixture"},"duration":100000,"fee":0}""";
     private const string QqFirst = """{"id":42,"mid":"QQfixture00001","title":"睡醒就好了","interval":100,"singer":[{"name":"qix"}],"file":{"media_mid":"QQfixture00001","size_128mp3":1600000},"pay":{"pay_play":0}}""";
     private const string QqSecond = """{"mid":"QQfixture00002","title":"不同的歌曲","interval":100,"singer":[{"name":"qix"}],"file":{"media_mid":"QQfixture00002","size_128mp3":1600000},"pay":{"pay_play":0}}""";
+    private const string QqHot = """{"id":43,"mid":"QQfixture00003","title":"QQ热歌","interval":100,"singer":[{"name":"qix"}],"file":{"media_mid":"QQfixture00003","size_128mp3":1600000},"pay":{"pay_play":0}}""";
+    private const string QqNew = """{"id":44,"mid":"QQfixture00004","title":"QQ新歌","interval":100,"singer":[{"name":"qix"}],"file":{"media_mid":"QQfixture00004","size_128mp3":1600000},"pay":{"pay_play":0}}""";
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
     {
@@ -51,10 +53,18 @@ internal sealed class MusicUpstreamFixture : HttpMessageHandler
                 LastSearch = call.GetProperty("param").GetProperty("query").GetString();
             }
             var date = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(Clock.GetUtcNow(), "Asia/Shanghai").ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            var param = call.GetProperty("param");
+            var topId = param.TryGetProperty("topid", out var top) && top.ValueKind == JsonValueKind.Number && top.TryGetInt64(out var parsed) ? parsed : 0;
             var data = method switch
             {
                 "GetDetail" when EmptyRecommendations => """{}""",
-                "GetDetail" => "{\"data\":{\"topId\":62,\"updateTime\":\"" + date + "\",\"song\":[{\"rank\":1,\"songId\":42}]},\"songInfoList\":[" + QqFirst + "]}",
+                "GetDetail" => topId switch
+                {
+                    62 => "{\"data\":{\"topId\":62,\"updateTime\":\"" + date + "\",\"song\":[{\"rank\":1,\"songId\":42}]},\"songInfoList\":[" + QqFirst + "]}",
+                    26 => "{\"data\":{\"topId\":26,\"updateTime\":\"" + date + "\",\"song\":[{\"rank\":1,\"songId\":43}]},\"songInfoList\":[" + QqHot + "]}",
+                    27 => "{\"data\":{\"topId\":27,\"updateTime\":\"" + date + "\",\"song\":[{\"rank\":1,\"songId\":44}]},\"songInfoList\":[" + QqNew + "]}",
+                    _ => "{}"
+                },
                 "GetNewSong" when EmptyRecommendations => """{"song_list":[]}""",
                 "GetNewSong" => "{\"song_list\":[" + QqFirst + "," + QqSecond + "]}",
                 "DoSearchForQQMusicDesktop" => "{\"body\":{\"song\":{\"list\":[" + (IncludeQqTracks ? QqFirst + "," + QqSecond : "") + "]}}}",

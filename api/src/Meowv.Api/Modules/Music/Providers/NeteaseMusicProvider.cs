@@ -134,8 +134,12 @@ public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : 
 
         var sourceId = id.ToString(CultureInfo.InvariantCulture);
         var trackId = "nt-" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(sourceId)))[..32].ToLowerInvariant();
+        var privilege = song.TryGetProperty("privilege", out var right) ? Number(right, "st") : 0;
+        var copyrighted = song.TryGetProperty("noCopyrightRcmd", out var noCopyright) &&
+                          noCopyright.ValueKind is JsonValueKind.Object && noCopyright.EnumerateObject().Any();
+        var availability = Number(song, "fee") != 0 || privilege > 0 || copyrighted ? "unavailable" : "candidate";
         return new MusicTrack(trackId, title, artists, albumName.Length <= 180 ? albumName : null, duration, cover, null,
-            Number(song, "fee") is 1 or 4 ? "unavailable" : "candidate", [new MusicSource(Id, sourceId)]);
+            availability, [new MusicSource(Id, sourceId)]);
     }
 
     internal void RememberDaily(IEnumerable<MusicTrack> tracks)
@@ -144,19 +148,19 @@ public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : 
         lock (_gate) Remember(entries);
     }
 
-    internal async Task<(MusicTrack[] Tracks, DateTimeOffset? Updated)> DailyAsync(string feed, CancellationToken ct)
+    internal async Task<(MusicTrack[] Tracks, DateTimeOffset? Updated)> DailyAsync(FeedSpec spec, CancellationToken ct)
     {
-        if (feed == "rising")
+        if (spec.Kind == "playlist")
         {
-            using var document = await SendAsync("/api/playlist/detail?id=19723756", null, ct);
+            using var document = await SendAsync("/api/playlist/detail?id=" + spec.UpstreamId, null, ct);
             var result = document.RootElement.GetProperty("result");
             var updated = Number(result, "updateTime");
-            return (result.GetProperty("tracks").EnumerateArray().Take(30).Select(ParseTrack).OfType<MusicTrack>().ToArray(),
+            return (result.GetProperty("tracks").EnumerateArray().Take(spec.Limit).Select(ParseTrack).OfType<MusicTrack>().ToArray(),
                 updated > 0 ? DateTimeOffset.FromUnixTimeMilliseconds(updated) : null);
         }
 
         using var recommendations = await SendAsync("/api/personalized/newsong", null, ct);
-        return (recommendations.RootElement.GetProperty("result").EnumerateArray().Take(30)
+        return (recommendations.RootElement.GetProperty("result").EnumerateArray().Take(spec.Limit)
             .Select(x => ParseTrack(x.GetProperty("song"))).OfType<MusicTrack>().ToArray(), null);
     }
 

@@ -37,6 +37,12 @@ internal static class MusicAggregationChecks
         await Error(() => catalog.ResolveAsync(new(original.Id, QQMusicProvider.Id), default), 403);
         Check(catalog.EnabledCount == 2 && catalog.Status("ready") == "ready", "Both registered providers are enabled by default");
 
+        native = new FullSource([Track("nt-same", "Same", "Artist")]);
+        metadata = new Source([Track("nt-same", "Same", "Artist", QQMusicProvider.Id) with { Availability = "unavailable" }]);
+        (catalog, registry) = Catalog(native, metadata);
+        result = await catalog.SearchAsync("same id", 20, null, default);
+        Check(result.Items.Single().Availability == "candidate", "Same-id unavailable metadata never downgrades a playable track");
+
         native = new FullSource([original]); metadata = new Source([Track("kw-other", "Other", "Other", "qqmusic")]);
         (catalog, registry) = Catalog(native, metadata);
         metadata.Failure = new MusicException("source_unavailable", "private upstream detail", 503, 15);

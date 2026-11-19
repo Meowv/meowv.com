@@ -51,10 +51,18 @@ internal static class MusicChecks
             using var first = await client.GetAsync("/api/music/recommendations?limit=1");
             using var firstJson = JsonDocument.Parse(await first.Content.ReadAsStringAsync());
             Check(firstJson.RootElement.GetProperty("generatedAt").GetString()!.EndsWith("Z", StringComparison.Ordinal), "UTC wire timestamps use Z");
-            var cursor = firstJson.RootElement.GetProperty("nextCursor").GetString()!;
-            using var second = await client.GetAsync("/api/music/recommendations?limit=1&cursor=" + Uri.EscapeDataString(cursor));
-            using var secondJson = JsonDocument.Parse(await second.Content.ReadAsStringAsync());
-            Check(secondJson.RootElement.GetProperty("items")[0].GetProperty("id").GetString() != trackId && secondJson.RootElement.GetProperty("nextCursor").ValueKind == JsonValueKind.Null, "Finite catalog cursor exhaustion");
+            var seen = new HashSet<string> { firstJson.RootElement.GetProperty("items")[0].GetProperty("id").GetString()! };
+            var cursor = firstJson.RootElement.GetProperty("nextCursor").ValueKind == JsonValueKind.Null
+                ? null : firstJson.RootElement.GetProperty("nextCursor").GetString();
+            while (cursor is not null)
+            {
+                using var page = await client.GetAsync("/api/music/recommendations?limit=1&cursor=" + Uri.EscapeDataString(cursor));
+                using var pageJson = JsonDocument.Parse(await page.Content.ReadAsStringAsync());
+                Check(seen.Add(pageJson.RootElement.GetProperty("items")[0].GetProperty("id").GetString()!), "Cursor pagination never repeats a track");
+                cursor = pageJson.RootElement.GetProperty("nextCursor").ValueKind == JsonValueKind.Null
+                    ? null : pageJson.RootElement.GetProperty("nextCursor").GetString();
+            }
+            Check(seen.Count > 1, "Finite catalog cursor exhaustion");
             foreach (var query in new[] { "q=", "q=%00", "q=qix&limit=0", "q=qix&limit=51", "q=qix&limit=bad", "q=qix&limit=1&limit=2", "q=qix&cursor=bad", "q=qix&cursor=" + cursor, "q=" + new string('a', 101) })
             {
                 using var bad = await client.GetAsync("/api/music/search?" + query);
@@ -214,25 +222,32 @@ internal static class MusicChecks
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
             using var chart = await client.GetAsync("/api/music/charts/daily");
             var page = JsonSerializer.Deserialize(await chart.Content.ReadAsStringAsync(), MusicChartJsonContext.Default.MusicDailyPage)!;
-            Check(chart.IsSuccessStatusCode && !page.Partial && page.Sources.Length == 2 &&
-                  page.Items.Count(x => x.Ranks.Length == 2) == 1, "Daily chart combines both sources and keeps both ranks");
+            Check(chart.IsSuccessStatusCode && !page.Partial && page.Sources.Length == 6 &&
+                  page.Items.Count(x => x.Ranks.Length == 2) == 1,
+                $"Default feeds combine both sources and keep both ranks (sources={page.Sources.Length}, ranked={page.Items.Count(x => x.Ranks.Length == 2)})");
             using var denied = await client.PostAsync("/api/music/admin/charts/refresh", null);
             Check(denied.StatusCode == HttpStatusCode.Unauthorized, "Music device cannot force chart refresh");
             using var cached = await client.GetAsync("/api/music/charts/daily");
             var reread = JsonSerializer.Deserialize(await cached.Content.ReadAsStringAsync(), MusicChartJsonContext.Default.MusicDailyPage)!;
-            Check(cached.IsSuccessStatusCode && qq.Count == 1 && page.Sources.SequenceEqual(reread.Sources),
-                "Fresh snapshot does not refetch QQ and first read agrees with SQLite precision");
+            Check(cached.IsSuccessStatusCode && qq.Count == 4 && page.Sources.SequenceEqual(reread.Sources),
+                "Fresh snapshots do not refetch QQ and first read agrees with SQLite precision");
             var store = app.Services.GetRequiredService<MusicChartStore>();
             Check(store.Latest("rising", "qqmusic")?.Entries.Single().TrackKey == "QQfixture00001" &&
-                  store.Latest("rising", "netease") is not null, "Both chart snapshots are written to SQLite");
+                  store.Latest("rising", "netease") is not null &&
+                  store.Latest("qq-hot", "qqmusic")?.Entries.Single().Title == "QQ热歌" &&
+                  store.Latest("qq-new", "qqmusic")?.Entries.Single().Title == "QQ新歌",
+                "All default feeds are written to SQLite under isolated chart keys");
 
             using var recommendations = await client.GetAsync("/api/music/recommendations");
             var recommended = JsonSerializer.Deserialize(await recommendations.Content.ReadAsStringAsync(), MusicJsonContext.Default.MusicRecommendationPage)!;
-            Check(recommendations.IsSuccessStatusCode && recommended.Items.Length == 3 && recommended.Strategy == "public_daily_music" &&
+            Check(recommendations.IsSuccessStatusCode && recommended.Items.Length == 5 && recommended.Strategy == "public_daily_music" &&
                   recommended.Items.Any(x => x.Title == "今天也不错") &&
+                  recommended.Items.Any(x => x.Title == "QQ热歌") &&
+                  recommended.Items.Any(x => x.Title == "QQ新歌") &&
                   recommended.Items[0].Sources.Length == 2 && recommended.Items.Any(x => x.Sources is [{ ProviderId: "qqmusic" }]) &&
+                  recommended.Items.All(x => x.Availability == "candidate") &&
                   store.Latest("new-songs", "netease") is not null && store.Latest("new-songs", "qqmusic") is not null,
-                "Daily recommendations are persisted, combined, and deduplicated");
+                "Daily recommendations include all default feeds, stay playable, and are deduplicated");
             var trackId = recommended.Items[0].Id;
             using var lyrics = await client.GetAsync("/api/music/lyrics?trackId=" + trackId + "&providerId=qqmusic");
             var lyric = JsonSerializer.Deserialize(await lyrics.Content.ReadAsStringAsync(), MusicJsonContext.Default.MusicLyrics)!;
@@ -246,14 +261,20 @@ internal static class MusicChecks
             using var preview = await client.PostAsync("/api/music/resolve", Json(
                 $$"""{"trackId":"{{trackId}}","preferredProviderId":"qqmusic"}"""));
             await Error(preview, 422, "no_playable_match");
+            var probes = qq.Count;
+            using var cachedPreview = await client.PostAsync("/api/music/resolve", Json(
+                $$"""{"trackId":"{{trackId}}","preferredProviderId":"qqmusic"}"""));
+            await Error(cachedPreview, 422, "no_playable_match");
+            Check(qq.Count == probes, "QQ negative cache suppresses repeated upstream probes");
 
             dailyClock.Now = dailyClock.Now.AddDays(1);
             qq.Status = HttpStatusCode.TooManyRequests;
             qq.RetryAfter = TimeSpan.FromHours(2);
             using var stale = await client.GetAsync("/api/music/charts/daily");
             var partial = JsonSerializer.Deserialize(await stale.Content.ReadAsStringAsync(), MusicChartJsonContext.Default.MusicDailyPage)!;
-            Check(stale.IsSuccessStatusCode && partial.Partial && partial.Sources.Single(x => x.Source == "qqmusic").Stale,
-                "After midnight an unavailable source falls back to yesterday and is marked stale");
+            Check(stale.IsSuccessStatusCode && partial.Partial && partial.Sources.Count(x => x.Source == "qqmusic") == 4 &&
+                  partial.Sources.Where(x => x.Source == "qqmusic").All(x => x.Stale),
+                "After midnight unavailable QQ feeds fall back to yesterday and are marked stale");
             var calls = qq.Count;
             dailyClock.Now = dailyClock.Now.AddMinutes(31);
             using var coolingDown = await client.GetAsync("/api/music/charts/daily");

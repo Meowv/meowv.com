@@ -46,11 +46,11 @@ public sealed class MusicModule : IEndpointModule
             .WithMetadata(new MusicProtectedEndpoint(), new EndpointAccessMetadata("音乐专用设备令牌（Authorization 或 access_token）"))
             .RequireRateLimiting("music");
         secured.MapGet("/charts/daily", async (MusicDailyFeeds feeds, CancellationToken ct) =>
-            Results.Json(await feeds.GetAsync("rising", false, ct), MusicChartJsonContext.Default.MusicDailyPage));
+            Results.Json(await feeds.GetDailyAsync(false, ct), MusicChartJsonContext.Default.MusicDailyPage));
         music.MapPost("/admin/charts/refresh", async (MusicRuntime runtime, MusicDailyFeeds feeds, CancellationToken ct) =>
                 !runtime.Available
                     ? throw new MusicException("source_unavailable", "音乐服务尚未就绪。", 503)
-                    : Results.Json(await feeds.GetAsync("rising", true, ct), MusicChartJsonContext.Default.MusicDailyPage))
+                    : Results.Json(await feeds.GetDailyAsync(true, ct), MusicChartJsonContext.Default.MusicDailyPage))
             .RequireAuthorization(ApiAuthorization.ManagementPolicy).RequireRateLimiting("api-auth");
 
         secured.MapGet("/providers", (MusicCatalog catalog) => Results.Json(new MusicProviders(

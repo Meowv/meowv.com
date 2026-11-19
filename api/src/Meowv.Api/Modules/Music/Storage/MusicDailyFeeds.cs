@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
@@ -19,13 +20,12 @@ internal sealed class MusicDailyFeeds(
 {
     private static readonly TimeZoneInfo BusinessZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Shanghai");
 
-    private readonly Dictionary<(string Feed, string Provider), RefreshState> _states = new()
-    {
-        [("rising", NeteaseMusicProvider.Id)] = new RefreshState(),
-        [("rising", QQMusicProvider.Id)] = new RefreshState(),
-        [("new-songs", NeteaseMusicProvider.Id)] = new RefreshState(),
-        [("new-songs", QQMusicProvider.Id)] = new RefreshState()
-    };
+    private readonly FeedSpec[] _feeds = FeedSpec.Defaults;
+
+    private readonly Dictionary<(string Feed, string Provider), FeedSpec> _specs =
+        FeedSpec.Defaults.GroupBy(x => (x.Id, x.ProviderId)).ToDictionary(x => x.Key, x => x.First());
+
+    private readonly ConcurrentDictionary<(string Feed, string Provider), RefreshState> _states = new();
 
     private sealed class RefreshState
     {
@@ -36,14 +36,15 @@ internal sealed class MusicDailyFeeds(
 
     private sealed record SourceResult(string Provider, MusicChartSnapshot? Snapshot, bool Stale);
 
-    public Task<MusicDailyPage> GetAsync(string feed, bool force, CancellationToken ct) =>
-        GetAsync([feed], feed, force, ct);
+    public Task<MusicDailyPage> GetDailyAsync(bool force, CancellationToken ct) =>
+        GetAsync(_feeds, "daily", force, ct);
 
-    private async Task<MusicDailyPage> GetAsync(string[] feeds, string name, bool force, CancellationToken ct)
+    private async Task<MusicDailyPage> GetAsync(FeedSpec[] feeds, string name, bool force, CancellationToken ct)
     {
         var providers = registry.Enabled.Where(x => x is NeteaseMusicProvider or QQMusicProvider).Select(x => x.ProviderId).ToArray();
-        if (providers.Length == 0) throw Unavailable();
-        var results = await Task.WhenAll(feeds.SelectMany(feed => providers.Select(provider => ReadAsync(feed, provider, force, ct))));
+        var tasks = feeds.SelectMany(feed => providers.Where(p => p == feed.ProviderId && _specs.ContainsKey((feed.Id, p)))
+            .Select(p => ReadAsync(feed, p, force, ct))).ToArray();
+        var results = await Task.WhenAll(tasks);
         var available = results.Where(x => x.Snapshot is not null).ToArray();
         if (available.Length == 0) throw Unavailable();
 
@@ -75,7 +76,7 @@ internal sealed class MusicDailyFeeds(
         MusicDailyPage page;
         try
         {
-            page = await GetAsync(["new-songs", "rising"], "daily", false, ct);
+            page = await GetDailyAsync(false, ct);
         }
         catch (MusicException error) when (error.Status == 503 && cursor is null)
         {
@@ -93,7 +94,7 @@ internal sealed class MusicDailyFeeds(
             if (cursor.Length <= version.Length || cursor[version.Length - 1] != '-' ||
                 !cursor[..(version.Length - 1)].All(char.IsAsciiHexDigit) ||
                 !int.TryParse(cursor.AsSpan(version.Length), NumberStyles.None, CultureInfo.InvariantCulture, out offset) ||
-                offset <= 0 || offset >= 120) throw MusicException.Invalid();
+                offset <= 0) throw MusicException.Invalid();
             // 午夜或来源恢复后快照变化，客户端从新一期第一页继续，并按曲目 ID 去重。
             if (!cursor.StartsWith(version, StringComparison.Ordinal)) offset = 0;
             else if (offset >= tracks.Length) throw MusicException.Invalid();
@@ -116,23 +117,23 @@ internal sealed class MusicDailyFeeds(
         };
     }
 
-    private async Task<SourceResult> ReadAsync(string feed, string provider, bool force, CancellationToken ct)
+    private async Task<SourceResult> ReadAsync(FeedSpec feed, string provider, bool force, CancellationToken ct)
     {
-        var state = _states[(feed, provider)];
+        var state = _states.GetOrAdd((feed.Id, provider), _ => new RefreshState());
         await state.Gate.WaitAsync(ct);
         try
         {
             var now = clock.GetUtcNow();
             var today = LocalDate(now);
-            var previous = store.Latest(feed, provider);
-            var old = feed == "rising" && previous is not null && LocalDate(previous.SourceUpdatedAt) < today;
+            var previous = store.Latest(feed.Id, provider);
+            var old = feed.HasUpstreamDate && previous is not null && LocalDate(previous.SourceUpdatedAt) < today;
             if (now >= state.RetryAt && (force || previous?.BusinessDate != today || previous.Entries.Any(x => x.TrackId is null) || state.Failed || old))
             {
                 try
                 {
                     var snapshot = await FetchAsync(feed, provider, ct);
                     ct.ThrowIfCancellationRequested();
-                    if (store.Save(snapshot)) previous = store.Latest(feed, provider);
+                    if (store.Save(snapshot)) previous = store.Latest(feed.Id, provider);
                     // 榜单尚未发布新一期时，下次有请求且已过半小时再查。
                     state.RetryAt = now.AddMinutes(30);
                     state.Failed = false;
@@ -152,7 +153,7 @@ internal sealed class MusicDailyFeeds(
             if (previous is null || previous.BusinessDate < today.AddDays(-1) || previous.Entries.Any(x => x.TrackId is null))
                 return new SourceResult(provider, null, true);
             return new SourceResult(provider, previous,
-                state.Failed || previous.BusinessDate != today || feed == "rising" && LocalDate(previous.SourceUpdatedAt) < today);
+                state.Failed || previous.BusinessDate != today || feed.HasUpstreamDate && LocalDate(previous.SourceUpdatedAt) < today);
         }
         catch (Exception error) when (error is SqliteException or ApiDatabaseSchemaException or IOException or JsonException)
         {
@@ -164,7 +165,7 @@ internal sealed class MusicDailyFeeds(
         }
     }
 
-    private async Task<MusicChartSnapshot> FetchAsync(string feed, string provider, CancellationToken ct)
+    private async Task<MusicChartSnapshot> FetchAsync(FeedSpec feed, string provider, CancellationToken ct)
     {
         MusicChartEntry[] rows;
         DateTimeOffset? updated;
@@ -184,7 +185,7 @@ internal sealed class MusicDailyFeeds(
         var now = clock.GetUtcNow();
         var date = updated is { } published ? LocalDate(published) : LocalDate(now);
         if (date > LocalDate(now) || date < LocalDate(now).AddDays(-1)) throw Unavailable();
-        return new MusicChartSnapshot(feed, provider, date, now, updated ?? now, Midnight(date), Midnight(date.AddDays(1)), rows);
+        return new MusicChartSnapshot(feed.Id, provider, date, now, updated ?? now, Midnight(date), Midnight(date.AddDays(1)), rows);
     }
 
     private static MusicChartEntry ToEntry(int rank, MusicTrack track, string? mediaId, long size) =>

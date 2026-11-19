@@ -54,6 +54,18 @@ internal static class NeteaseSourceChecks
         count = handler.Count;
         await Error(() => source.ResolveAsync(new MusicResolveRequest(id), default), 422);
         Check(handler.Count == count, "Restricted song does not request audio");
+        foreach (var (body, query) in new[]
+        {
+            (Handler.Search.Replace("\"fee\":0", "\"fee\":2", StringComparison.Ordinal), "paid2"),
+            (Handler.Search.Replace("\"fee\":0", "\"fee\":8", StringComparison.Ordinal), "paid8"),
+            (Handler.Search.Replace("\"fee\":0", "\"fee\":0,\"privilege\":{\"st\":1}", StringComparison.Ordinal), "privilege"),
+            (Handler.Search.Replace("\"fee\":0", "\"fee\":0,\"noCopyrightRcmd\":{\"reason\":1}", StringComparison.Ordinal), "nocopy")
+        })
+        {
+            handler.SearchBody = body;
+            page = await source.SearchAsync(query, 1, null, default);
+            Check(page.Items.Single().Availability == "unavailable", "Paid, trial and copyright-restricted metadata is explicit");
+        }
         handler.SearchBody = Handler.Search;
         handler.Status = HttpStatusCode.TooManyRequests;
         var rate = await Error(() => source.SearchAsync("rate", 1, null, default), 429);
