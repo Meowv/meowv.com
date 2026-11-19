@@ -24,6 +24,7 @@ internal static class MusicChecks
     {
         await NeteaseSourceChecks.RunAsync();
         await MusicAggregationChecks.RunAsync();
+        await SkillChecks();
         CheckExistingDatabase(root);
         Check(!JsonSerializer.IsReflectionEnabledByDefault, "JSON reflection must stay disabled");
         using var fixture = JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "music-v1.json")));
@@ -469,6 +470,51 @@ internal static class MusicChecks
             await run(client, app);
         }
         finally { await app.StopAsync(); }
+    }
+
+    private static async Task SkillChecks()
+    {
+        var clock = new TestClock();
+        var options = new MusicOptions { Enabled = true, QQMusicSkillApiKey = "qmk-synthetic-fixture" };
+        var gateway = new SkillFixture();
+        using var skillHttp = new HttpClient(gateway);
+        using var qqHttp = new HttpClient(new MusicUpstreamFixture { IncludeQqTracks = true });
+        var qq = new QQMusicProvider(qqHttp, clock);
+        var catalog = new MusicCatalog(options, new MusicProviderRegistry(options, [qq]), clock);
+        var skill = new QQMusicSkill(skillHttp, options, clock);
+        var publicItems = (await qq.SearchAsync("fixture", 10, null, default)).Items;
+        var page = await skill.PersonalizeAsync(publicItems, qq, catalog, default);
+        Check(page.Length == publicItems.Length && page[0].Sources[0].SourceTrackId == "QQfixture00002",
+            "Official daily and radio results prioritize existing QQ candidates by exact MID");
+        await skill.PersonalizeAsync(publicItems, qq, catalog, default);
+        Check(gateway.Calls == 2, "Official personalization is memory-cached between pages");
+        options.QQMusicSkillApiKey = "";
+        Check((await skill.PersonalizeAsync(publicItems, qq, catalog, default)).SequenceEqual(publicItems) &&
+              gateway.Calls == 2, "Missing key preserves public feed without contacting the official gateway");
+    }
+
+    private sealed class SkillFixture : HttpMessageHandler
+    {
+        private int _calls;
+        public int Calls => _calls;
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            Interlocked.Increment(ref _calls);
+            Check(request.Method == HttpMethod.Post && request.RequestUri?.Host == "a.y.qq.com" &&
+                  request.Headers.Authorization is { Scheme: "Bearer", Parameter: "qmk-synthetic-fixture" },
+                "Official skill uses the configured key on its gateway only");
+            using var json = JsonDocument.Parse(await request.Content!.ReadAsStringAsync(ct));
+            Check(json.RootElement.GetProperty("comm").GetProperty("skill_version").GetString() == "0.0.3",
+                "Official skill includes its protocol version");
+            var body = request.RequestUri!.AbsolutePath switch
+            {
+                "/discover/daily-mix" => """{"ret":0,"songlist":[{"songMid":"QQfixture00002","songName":"第二首","singerName":"歌手"}]}""",
+                "/discover/radio" => """{"ret":0,"songlist":[{"songMid":"QQfixture00001","songName":"第一首","singerName":"歌手"}]}""",
+                _ => throw new InvalidOperationException("Unexpected official endpoint")
+            };
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(body) };
+        }
     }
 
     private sealed class TestClock : TimeProvider

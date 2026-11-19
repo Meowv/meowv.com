@@ -34,6 +34,12 @@ public static class MusicRegistration
             });
         services.AddSingleton<NeteaseMusicProvider>(provider => new NeteaseMusicProvider(
             provider.GetRequiredService<IHttpClientFactory>().CreateClient("MusicNetease"), provider.GetRequiredService<TimeProvider>()));
+        services.AddHttpClient("MusicQQSkill", client => client.Timeout = TimeSpan.FromSeconds(3))
+            .RemoveAllLoggers()
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false, UseCookies = false });
+        services.AddSingleton(provider => new QQMusicSkill(
+            provider.GetRequiredService<IHttpClientFactory>().CreateClient("MusicQQSkill"),
+            options, provider.GetRequiredService<TimeProvider>()));
         services.AddHttpClient("MusicQQ", client => client.Timeout = TimeSpan.FromSeconds(6))
             .RemoveAllLoggers()
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler

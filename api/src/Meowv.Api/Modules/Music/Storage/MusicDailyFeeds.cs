@@ -16,7 +16,8 @@ internal sealed class MusicDailyFeeds(
     MusicCatalog catalog,
     NeteaseMusicProvider netease,
     QQMusicProvider qq,
-    TimeProvider clock)
+    TimeProvider clock,
+    QQMusicSkill skill)
 {
     private static readonly TimeZoneInfo BusinessZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Shanghai");
 
@@ -84,6 +85,7 @@ internal sealed class MusicDailyFeeds(
         }
 
         var tracks = page.Items.Select(x => x.Track).Where(x => x.Availability == "candidate").ToArray();
+        if (registry.Enabled.Contains(qq)) tracks = await skill.PersonalizeAsync(tracks, qq, catalog, ct);
         if (tracks.Length == 0 && cursor is null) return await FallbackAsync(limit, null, ct);
         var key = string.Join('|', page.Sources.Select(x => x.Source + ":" + x.CapturedAt.ToUnixTimeMilliseconds())) +
                   "|" + string.Join(',', tracks.Select(x => x.Id));
