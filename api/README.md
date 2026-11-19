@@ -66,7 +66,7 @@ dotnet run --project api/src/Meowv.Api -- --contentRoot /YOUR_CHECKOUT/api/src/M
 | --- | --- |
 | `GET /api/health` | 宿主匿名存活探针，不检查模块依赖 |
 | `GET /api/modules` | 已装配模块及接口清单，不表示业务就绪 |
-| `GET /api/docs` | 按模块查看接口路径、请求方式和认证要求，支持搜索与筛选 |
+| `GET /api/docs` | 按模块查看接口路径、描述、请求方式和认证要求，支持搜索与筛选 |
 | `GET /setup` | 统一初始化向导：系统授权码和摄像头登录，密钥只保留在页面内存 |
 | `POST /api/auth/access-code` | `X-Api-Bootstrap-Token`；首次返回授权码，已存在时返回 `accessCode: null` |
 | `POST /api/auth/access-code/rotate` | 同上；轮换所有模块共用的授权码 |
@@ -77,7 +77,7 @@ dotnet run --project api/src/Meowv.Api -- --contentRoot /YOUR_CHECKOUT/api/src/M
 
 ## 接口目录
 
-打开 `http://localhost:5000/api/docs`，按模块查看当前注册的接口；可搜索模块名、路径、请求方式和认证要求。目录只展示清单，不提供接口调用或调试功能。需要程序读取时，使用 `GET /api/modules`：每个模块包含 `name`、`description`、`endpoints`，接口包含 `path`、`methods`、`authorization`。
+打开 `http://localhost:5000/api/docs`，按模块查看当前注册的接口；可搜索模块名、路径、接口描述、请求方式和认证要求。目录只展示清单，不提供接口调用或调试功能。需要程序读取时，使用 `GET /api/modules`：每个模块包含 `name`、`description`、`endpoints`，接口包含 `path`、`description`、`methods`、`authorization`。`description` 取自端点注册时的 `.WithSummary(...)`，缺失时为空字符串，页面显示为 `—`；接口目录测试会拒绝未声明摘要的 `/api/` 端点。
 
 目录与模块清单允许匿名访问，只返回路由元数据。内容从运行时路由自动收集，包含已注册但暂不可用的模块，已禁用的摄像头模块不进入目录，Chat 禁用时只保留健康探针；接口是否可用仍以模块健康接口和实际响应为准。认证要求区分匿名、通用授权码、管理密钥及模块自行校验的播放票据。
 

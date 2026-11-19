@@ -139,10 +139,13 @@ internal static class EndpointCatalogPage
                                          line-height: 1.65;
                                        }
                                        th:first-child {
-                                         width: 130px;
+                                         width: 120px;
+                                       }
+                                       th:nth-child(2) {
+                                         width: 34%;
                                        }
                                        th:last-child {
-                                         width: 170px;
+                                         width: 160px;
                                        }
                                        code {
                                          font:
@@ -188,6 +191,13 @@ internal static class EndpointCatalogPage
                                          font-size: 11px;
                                          color: #798196;
                                          overflow-wrap: anywhere;
+                                       }
+                                       .description {
+                                         color: #4d5468;
+                                         overflow-wrap: anywhere;
+                                       }
+                                       .description.placeholder {
+                                         color: #b3b8c6;
                                        }
                                        #message {
                                          padding: 15px;
@@ -261,7 +271,7 @@ internal static class EndpointCatalogPage
                                            id="search"
                                            type="search"
                                            aria-label="搜索接口"
-                                           placeholder="搜索模块、路径、请求方式或认证要求"
+                                           placeholder="搜索模块、路径、接口描述、请求方式或认证要求"
                                            autocomplete="off"
                                          />
                                          <select id="module-filter" aria-label="筛选模块">
@@ -298,6 +308,7 @@ internal static class EndpointCatalogPage
                                                module.name,
                                                module.description,
                                                route.path,
+                                               route.description,
                                                route.methods.join(" "),
                                                route.authorization,
                                              ]
@@ -323,7 +334,7 @@ internal static class EndpointCatalogPage
                                            const table = element("table"),
                                              thead = element("thead"),
                                              header = element("tr");
-                                           for (const text of ["请求方式", "路径", "认证要求"]) {
+                                           for (const text of ["请求方式", "路径", "接口描述", "认证要求"]) {
                                              const cell = element("th", text);
                                              cell.scope = "col";
                                              header.append(cell);
@@ -335,6 +346,13 @@ internal static class EndpointCatalogPage
                                              const row = element("tr"),
                                                method = element("td"),
                                                path = element("td"),
+                                               description = element(
+                                                 "td",
+                                                 route.description || "—",
+                                                 route.description
+                                                   ? "description"
+                                                   : "description placeholder",
+                                               ),
                                                authorization = element(
                                                  "td",
                                                  route.authorization,
@@ -353,7 +371,7 @@ internal static class EndpointCatalogPage
                                                  播放票据: "路径中的 ticket，由播放会话接口签发",
                                                  匿名: "无需访问凭据",
                                                }[route.authorization] || route.authorization;
-                                             row.append(method, path, authorization);
+                                             row.append(method, path, description, authorization);
                                              tbody.append(row);
                                            }
                                            table.append(tbody);

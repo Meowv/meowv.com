@@ -19,6 +19,7 @@ public sealed class XiaomiCameraModule : IEndpointModule
         endpoints.MapGet(ApiPrefix + "/health", (XiaomiModuleRuntime runtime) =>
                 Results.Json(new XiaomiModuleHealthResponse(runtime.Status, runtime.FailureReason), XiaomiHttpJsonContext.Default.XiaomiModuleHealthResponse,
                     statusCode: runtime.IsReady ? StatusCodes.Status200OK : StatusCodes.Status503ServiceUnavailable))
+            .WithSummary("摄像头模块就绪状态。")
             .AllowAnonymous().RequireCors(CorsPolicy);
         MapSetup(endpoints.MapGroup(ApiPrefix + "/setup")
             .WithMetadata(new XiaomiEndpointMetadata()).RequireCors(CorsPolicy)
@@ -37,14 +38,14 @@ public sealed class XiaomiCameraModule : IEndpointModule
             }
 
             return Results.Ok(XiaomiSetupResponse.Completed(usedCachedSession: true));
-        }).RequireRateLimiting("xiaomi-bootstrap");
+        }).WithSummary("读取小米账号登录状态。").RequireRateLimiting("xiaomi-bootstrap");
 
         setup.MapDelete("/session", (XiaomiCredentialCache cache, XiaomiCameraDirectoryService directory) =>
         {
             cache.Clear();
             directory.Invalidate();
             return Results.NoContent();
-        }).RequireRateLimiting("xiaomi-bootstrap");
+        }).WithSummary("清除已保存的小米账号登录。").RequireRateLimiting("xiaomi-bootstrap");
 
         setup.MapPost("/login", async (XiaomiSetupLoginRequest input, XiaomiAccountLoginFlow loginFlow, XiaomiCredentialCache cache, CancellationToken cancellationToken) =>
         {
@@ -69,7 +70,7 @@ public sealed class XiaomiCameraModule : IEndpointModule
             {
                 return Results.BadRequest(new XiaomiSetupError("xiaomi_login_failed", exception.Message));
             }
-        }).RequireRateLimiting("xiaomi-bootstrap");
+        }).WithSummary("使用小米账号密码登录，必要时转入验证码。").RequireRateLimiting("xiaomi-bootstrap");
 
         setup.MapPost("/{attemptId:guid}/verify", async (Guid attemptId, XiaomiSetupVerificationRequest input, XiaomiAccountLoginFlow loginFlow, XiaomiCredentialCache cache, CancellationToken cancellationToken) =>
         {
@@ -85,7 +86,7 @@ public sealed class XiaomiCameraModule : IEndpointModule
             {
                 return Results.BadRequest(new XiaomiSetupError("xiaomi_login_failed", exception.Message));
             }
-        }).RequireRateLimiting("xiaomi-bootstrap");
+        }).WithSummary("提交短信或邮箱验证码完成登录。").RequireRateLimiting("xiaomi-bootstrap");
     }
 
     private static void MapApi(RouteGroupBuilder app, bool legacy)
@@ -128,7 +129,7 @@ public sealed class XiaomiCameraModule : IEndpointModule
             {
                 return Results.Problem("无法读取摄像头目录。", statusCode: StatusCodes.Status503ServiceUnavailable);
             }
-        }).RequireAuthorization().RequireRateLimiting("xiaomi-access-code");
+        }).WithSummary("列出支持 CS2 播放的摄像头。").RequireAuthorization().RequireRateLimiting("xiaomi-access-code");
 
         app.MapPost("/playback-sessions", async (HttpContext context, XiaomiCredentialCache cache, IAccessCodeService accessCodes, XiaomiCameraDirectoryService directory, XiaomiPlaybackTicketService tickets, XiaomiHlsService hls, XiaomiPlaybackSessionRequest input, CancellationToken cancellationToken) =>
         {
@@ -195,7 +196,7 @@ public sealed class XiaomiCameraModule : IEndpointModule
             {
                 return Results.Problem("无法创建摄像头播放会话。", statusCode: StatusCodes.Status503ServiceUnavailable);
             }
-        }).RequireAuthorization().RequireRateLimiting("xiaomi-playback-session");
+        }).WithSummary("为指定摄像头创建播放会话并返回 HLS 地址。").RequireAuthorization().RequireRateLimiting("xiaomi-playback-session");
 
         app.MapPost("/cameras/{fingerprint}/ptz", async (HttpContext _, string fingerprint, XiaomiMotorStepRequest input, XiaomiHlsService hls, CancellationToken cancellationToken) =>
         {
@@ -228,7 +229,7 @@ public sealed class XiaomiCameraModule : IEndpointModule
             {
                 return Results.Problem("云台指令发送失败。", statusCode: StatusCodes.Status503ServiceUnavailable);
             }
-        }).RequireAuthorization().RequireRateLimiting("xiaomi-motor");
+        }).WithSummary("向指定摄像头发送云台方向指令。").RequireAuthorization().RequireRateLimiting("xiaomi-motor");
 
         app.MapGet("/playback-sessions/{ticket}/status", (string ticket, XiaomiPlaybackTicketService tickets, XiaomiHlsService hls) =>
         {
@@ -239,7 +240,7 @@ public sealed class XiaomiCameraModule : IEndpointModule
             }
 
             return Results.Ok(hls.GetPreparation(target));
-        }).AllowAnonymous().WithMetadata(new EndpointAccessMetadata("播放票据"));
+        }).WithSummary("查询播放会话的准备状态。").AllowAnonymous().WithMetadata(new EndpointAccessMetadata("播放票据"));
 
         app.MapGet("/playback-sessions/{ticket}/index.m3u8", async (HttpContext context, string ticket, XiaomiPlaybackTicketService tickets, XiaomiHlsService hls) =>
         {
@@ -264,7 +265,7 @@ public sealed class XiaomiCameraModule : IEndpointModule
                     : StatusCodes.Status400BadRequest;
                 return Results.Json(new XiaomiSetupError("xiaomi_playback_failed", exception.Message), XiaomiHttpJsonContext.Default.XiaomiSetupError);
             }
-        }).AllowAnonymous().WithMetadata(new EndpointAccessMetadata("播放票据"));
+        }).WithSummary("读取 HLS 播放清单。").AllowAnonymous().WithMetadata(new EndpointAccessMetadata("播放票据"));
 
         app.MapGet("/playback-sessions/{ticket}/{name}", (HttpContext context, string ticket, string name, XiaomiPlaybackTicketService tickets, XiaomiHlsService hls) =>
         {
@@ -277,7 +278,7 @@ public sealed class XiaomiCameraModule : IEndpointModule
             context.Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
             var segment = hls.SegmentPath(target, name);
             return segment is null ? Results.NotFound() : Results.File(segment, "video/mp2t", enableRangeProcessing: false);
-        }).AllowAnonymous().WithMetadata(new EndpointAccessMetadata("播放票据"));
+        }).WithSummary("读取 HLS 媒体分片。").AllowAnonymous().WithMetadata(new EndpointAccessMetadata("播放票据"));
     }
 
     private static IResult AccessCodeUnauthorized() => Results.Json(new XiaomiSetupError("access_code_unauthorized", "授权码无效。"), XiaomiHttpJsonContext.Default.XiaomiSetupError, statusCode: StatusCodes.Status401Unauthorized);

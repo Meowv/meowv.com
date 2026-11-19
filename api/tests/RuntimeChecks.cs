@@ -14,6 +14,7 @@ using Microsoft.Extensions.Options;
 using Meowv.Api.Modules.XiaomiCamera;
 using Meowv.Api.Modules.XiaomiCamera.Cloud;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.Metadata;
 
 var root = Path.Combine(Path.GetTempPath(), "meowv-api-check-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(root);
@@ -91,7 +92,8 @@ try
     app.UseAuthentication();
     app.UseAuthorization();
 
-    app.MapGet("/api/proxy/{kind}", (HttpContext context) => $"{context.Connection.RemoteIpAddress}|{context.Request.Scheme}").AllowAnonymous();
+    app.MapGet("/api/proxy/{kind}", (HttpContext context) => $"{context.Connection.RemoteIpAddress}|{context.Request.Scheme}")
+        .WithSummary("Synthetic forwarded-identity probe.").AllowAnonymous();
     using var startupTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
     await app.StartAsync(startupTimeout.Token);
     var apiRoutes = app.Services.GetRequiredService<EndpointDataSource>().Endpoints.OfType<RouteEndpoint>()
@@ -103,6 +105,8 @@ try
                        route.Metadata.GetOrderedMetadata<IAuthorizeData>().Any() ||
                        route.Metadata.GetMetadata<EndpointAccessMetadata>() is not null;
         Check(declared, "API endpoint must declare authorization metadata: " + route.RoutePattern.RawText);
+        Check(!string.IsNullOrWhiteSpace(route.Metadata.GetMetadata<IEndpointSummaryMetadata>()?.Summary),
+            "API endpoint must declare a summary: " + route.RoutePattern.RawText);
     }
     using var client = new HttpClient(new HttpClientHandler { UseProxy = false }) { BaseAddress = new Uri(app.Urls.Single()), Timeout = TimeSpan.FromSeconds(10) };
     Check((await client.GetAsync("/api/health")).StatusCode == HttpStatusCode.OK, "Anonymous health");
@@ -125,10 +129,18 @@ try
         Check(FindRoute("second", "/api/second/media/{ticket}").GetProperty("authorization").GetString() == "播放票据", "Custom media access is not mislabeled anonymous");
         Check(FindRoute("second", "/api/second/probe").GetProperty("methods")[0].GetString() == "POST", "Catalog contains HTTP methods");
         Check(FindRoute("diagnostics", "/api/docs").GetProperty("methods")[0].GetString() == "GET", "Catalog includes its own page");
+        Check(FindRoute("health", "/api/health").GetProperty("description").GetString() is { Length: > 0 },
+            "Catalog exposes a non-empty endpoint description");
+        Check(FindRoute("diagnostics", "/api/docs").GetProperty("description").GetString()!.Contains("接口目录", StringComparison.Ordinal),
+            "Catalog description follows the endpoint, not the module");
     }
 
     using (var docs = await client.GetAsync("/api/docs"))
-        Check(docs.StatusCode == HttpStatusCode.OK && (await docs.Content.ReadAsStringAsync()).Contains("筛选模块"), "Browser-readable endpoint catalog");
+    {
+        var html = await docs.Content.ReadAsStringAsync();
+        Check(docs.StatusCode == HttpStatusCode.OK && html.Contains("筛选模块", StringComparison.Ordinal), "Browser-readable endpoint catalog");
+        Check(html.Contains("接口描述", StringComparison.Ordinal), "Catalog page renders the endpoint description column");
+    }
     using (var setupPage = await client.GetAsync("/setup"))
     {
         Check(setupPage.StatusCode == HttpStatusCode.OK && setupPage.Headers.CacheControl?.NoStore == true,
@@ -331,10 +343,10 @@ internal sealed class FirstProbeModule : IEndpointModule
 
     public void MapEndpoints(IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapGet("/api/first/probe", () => "first").RequireAuthorization();
-        endpoints.MapGet("/api/first/limited", () => "limited").RequireAuthorization().RequireRateLimiting("api-auth");
-        endpoints.MapGet("/api/first/public", () => "public").RequireAuthorization().AllowAnonymous();
-        endpoints.MapGet("/api/compat/probe", () => "alias").RequireAuthorization();
+        endpoints.MapGet("/api/first/probe", () => "first").WithSummary("Synthetic probe.").RequireAuthorization();
+        endpoints.MapGet("/api/first/limited", () => "limited").WithSummary("Synthetic rate-limited probe.").RequireAuthorization().RequireRateLimiting("api-auth");
+        endpoints.MapGet("/api/first/public", () => "public").WithSummary("Synthetic anonymous probe.").RequireAuthorization().AllowAnonymous();
+        endpoints.MapGet("/api/compat/probe", () => "alias").WithSummary("Synthetic alias probe.").RequireAuthorization();
     }
 }
 
@@ -345,8 +357,9 @@ internal sealed class SecondProbeModule : IEndpointModule
 
     public void MapEndpoints(IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapPost("/api/second/probe", (ProbeRequest input) => input.Value).RequireAuthorization();
+        endpoints.MapPost("/api/second/probe", (ProbeRequest input) => input.Value).WithSummary("Synthetic echo probe.").RequireAuthorization();
         endpoints.MapGet("/api/second/media/{ticket}", () => "synthetic")
+            .WithSummary("Synthetic media probe.")
             .WithMetadata(new EndpointAccessMetadata("播放票据"));
     }
 }

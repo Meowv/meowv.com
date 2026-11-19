@@ -14,7 +14,7 @@ public sealed class ChatModule : IEndpointModule
         var chat = endpoints.MapGroup("/api/chat");
 
         chat.MapGet("/health", (ChatRuntime runtime) => Results.Json(new ChatHealth(runtime.Ready ? "ready" : "unavailable"), ChatJsonContext.Default.ChatHealth,
-            statusCode: runtime.Ready ? 200 : 503)).AllowAnonymous();
+            statusCode: runtime.Ready ? 200 : 503)).WithSummary("聊天室模块就绪状态。").AllowAnonymous();
         if (!endpoints.ServiceProvider.GetRequiredService<ChatOptions>().Enabled) return;
 
         chat.MapPost("/session", (ChatSessionRequest input, HttpContext context, ChatSessionService sessions, ChatOptions options) =>
@@ -31,16 +31,17 @@ public sealed class ChatModule : IEndpointModule
 
             var session = sessions.Create(context, nickname);
             return Results.Created("/api/chat/session", session.Response);
-        }).AllowAnonymous().RequireRateLimiting("chat-session");
+        }).WithSummary("创建匿名会话；已有会话时复用，昵称变化时改名。").AllowAnonymous().RequireRateLimiting("chat-session");
 
         chat.MapGet("/session", (HttpContext context, ChatSessionService sessions) => Results.Ok(sessions.Require(context.User).Response))
+            .WithSummary("读取当前匿名会话信息。")
             .RequireAuthorization(ChatGuestAuthenticationHandler.SchemeName).RequireRateLimiting("chat-http");
 
         chat.MapDelete("/session", (HttpContext context, ChatSessionService sessions, ChatPresenceService presence) =>
         {
             sessions.Logout(context, presence);
             return Results.NoContent();
-        }).AllowAnonymous().RequireRateLimiting("chat-http");
+        }).WithSummary("退出并销毁当前匿名会话。").AllowAnonymous().RequireRateLimiting("chat-http");
 
         var guest = chat.MapGroup("").RequireAuthorization(ChatGuestAuthenticationHandler.SchemeName);
 
@@ -49,32 +50,34 @@ public sealed class ChatModule : IEndpointModule
             if (beforeId is not null && afterId is not null) throw new ChatException("invalid_cursor", "不能同时指定 beforeId 和 afterId。");
             if (limit < 1 || limit > options.MaxHistoryPageSize) throw new ChatException("invalid_limit", $"每页数量须为 1–{options.MaxHistoryPageSize}。");
             return Results.Ok(repository.History(Cursor(beforeId), Cursor(afterId), limit ?? options.HistoryPageSize));
-        }).RequireRateLimiting("chat-http");
+        }).WithSummary("按游标分页读取历史消息。").RequireRateLimiting("chat-http");
 
         guest.MapGet("/messages/{id}/context", (string id, ChatRepository repository) =>
         {
             var context = repository.Context(Cursor(id)!.Value);
             return context is null ? Results.NotFound() : Results.Ok(context);
-        }).RequireRateLimiting("chat-http");
+        }).WithSummary("读取指定消息前后的上下文。").RequireRateLimiting("chat-http");
 
         guest.MapGet("/participants", (ChatRepository repository, ChatPresenceService presence) =>
         {
             var online = presence.OnlineGuests;
             return Results.Ok(online.Select(chatGuest => new ChatParticipant(chatGuest.Id, chatGuest.Nickname, chatGuest.AvatarSeed, true))
                 .Concat(repository.RecentGuests().Where(chatGuest => online.All(active => active.Id != chatGuest.Id)).Select(chatGuest => new ChatParticipant(chatGuest.Id, chatGuest.Nickname, chatGuest.AvatarSeed, false))).Take(200).ToArray());
-        }).RequireRateLimiting("chat-http");
+        }).WithSummary("在线与最近出现的参与者列表。").RequireRateLimiting("chat-http");
 
         guest.MapGet("/status", (ChatPresenceService presence, ChatOptions options) => Results.Ok(new ChatStatus(presence.OnlineUsers, DateTimeOffset.UtcNow, options.MessageCleanupEnabled, options.RetentionDays, options.MaxMessageChars, options.MaxMessageBytes)))
+            .WithSummary("在线人数与聊天室限制参数。")
             .RequireRateLimiting("chat-http");
 
         chat.MapHub<ChatHub>("/hub", transport => transport.CloseOnAuthenticationExpiration = true)
+            .WithSummary("SignalR 实时消息通道。")
             .RequireAuthorization(ChatGuestAuthenticationHandler.SchemeName)
             .WithMetadata(new EndpointAccessMetadata("ChatGuest 匿名会话 Cookie + 可信 Origin"))
             .RequireRateLimiting("chat-http");
 
         var admin = chat.MapGroup("/admin").RequireAuthorization().RequireRateLimiting("chat-admin-write");
 
-        admin.MapGet("/session", Results.NoContent).RequireRateLimiting("chat-admin-auth");
+        admin.MapGet("/session", Results.NoContent).WithSummary("校验管理凭据是否有效。").RequireRateLimiting("chat-admin-auth");
 
         admin.MapDelete("/messages/{id}", async (string id, bool? permanent, ChatService service, ChatRepository repository, ChatBroadcastQueue broadcasts, HttpContext context) =>
         {
@@ -96,7 +99,7 @@ public sealed class ChatModule : IEndpointModule
             {
                 service.Gate.Release();
             }
-        });
+        }).WithSummary("删除指定消息，permanent=true 时永久清除。");
         admin.MapPost("/messages/{id}/restore", async (string id, ChatService service, ChatRepository repository, ChatBroadcastQueue broadcasts, HttpContext context) =>
         {
             var target = Cursor(id)!.Value.ToString(CultureInfo.InvariantCulture);
@@ -115,7 +118,7 @@ public sealed class ChatModule : IEndpointModule
             {
                 service.Gate.Release();
             }
-        });
+        }).WithSummary("恢复已删除的指定消息。");
     }
 
     private static long? Cursor(string? value)

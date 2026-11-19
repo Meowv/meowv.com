@@ -16,13 +16,15 @@ public sealed class MusicModule : IEndpointModule
         music.MapGet("/health", (MusicRuntime runtime, MusicCatalog catalog) => Results.Json(
                 new MusicHealth(catalog.Status(runtime.Status), runtime.Available ? catalog.EnabledCount : 0, catalog.Version),
                 MusicJsonContext.Default.MusicHealth, statusCode: runtime.Status is "disabled" or "unavailable" ? 503 : 200))
+            .WithSummary("音乐模块与来源就绪状态。")
             .AllowAnonymous();
         if (!endpoints.ServiceProvider.GetRequiredService<MusicOptions>().Enabled) return;
         if (endpoints.ServiceProvider.GetRequiredService<MusicRuntime>().Available)
         {
             var setup = music.MapGroup("/setup/devices").RequireAuthorization(ApiAuthorization.ManagementPolicy)
                 .RequireRateLimiting("api-auth");
-            setup.MapGet("", (MusicDeviceStore devices) => Results.Json(devices.List(), MusicJsonContext.Default.MusicDeviceArray));
+            setup.MapGet("", (MusicDeviceStore devices) => Results.Json(devices.List(), MusicJsonContext.Default.MusicDeviceArray))
+                .WithSummary("列出已签发的音乐设备令牌。");
             setup.MapPost("", async (HttpContext context, MusicDeviceStore devices) =>
             {
                 if (!context.Request.HasJsonContentType()) throw MusicException.Invalid();
@@ -39,8 +41,9 @@ public sealed class MusicModule : IEndpointModule
                 var input = System.Text.Json.JsonSerializer.Deserialize(bytes.AsSpan(0, length), MusicJsonContext.Default.MusicDeviceRequest);
                 if (input is null) throw MusicException.Invalid();
                 return Results.Json(devices.Issue(input.Alias), MusicJsonContext.Default.MusicDeviceIssued, statusCode: 201);
-            });
-            setup.MapDelete("/{id}", (string id, MusicDeviceStore devices) => devices.Revoke(id) ? Results.NoContent() : Results.NotFound());
+            }).WithSummary("签发新的音乐设备令牌。");
+            setup.MapDelete("/{id}", (string id, MusicDeviceStore devices) => devices.Revoke(id) ? Results.NoContent() : Results.NotFound())
+                .WithSummary("撤销指定的音乐设备令牌。");
         }
 
         var secured = music.MapGroup("").RequireAuthorization(MusicAccessHandler.SchemeName)
@@ -50,23 +53,28 @@ public sealed class MusicModule : IEndpointModule
                 !runtime.Available
                     ? throw new MusicException("source_unavailable", "音乐服务尚未就绪。", 503)
                     : Results.Json(await feeds.GetDailyAsync(true, ct), MusicChartJsonContext.Default.MusicDailyPage))
+            .WithSummary("强制刷新每日榜单快照。")
             .RequireAuthorization(ApiAuthorization.ManagementPolicy).RequireRateLimiting("api-auth");
 
         secured.MapGet("/providers", (MusicCatalog catalog) => Results.Json(new MusicProviders(
                 catalog.Providers()),
-            MusicJsonContext.Default.MusicProviders));
+            MusicJsonContext.Default.MusicProviders)).WithSummary("列出可用的音乐来源。");
         secured.MapGet("/search", async (HttpContext context, MusicCatalog catalog) => Results.Json(
-            await catalog.SearchAsync(One(context, "q"), Limit(context), One(context, "cursor"), context.RequestAborted), MusicJsonContext.Default.MusicSearchPage));
+                await catalog.SearchAsync(One(context, "q"), Limit(context), One(context, "cursor"), context.RequestAborted), MusicJsonContext.Default.MusicSearchPage))
+            .WithSummary("按关键词搜索曲目，支持游标分页。");
         secured.MapGet("/charts/daily", async (MusicDailyFeeds feeds, CancellationToken ct) =>
-            Results.Json(await feeds.GetDailyAsync(false, ct), MusicChartJsonContext.Default.MusicDailyPage));
+                Results.Json(await feeds.GetDailyAsync(false, ct), MusicChartJsonContext.Default.MusicDailyPage))
+            .WithSummary("读取当日榜单快照。");
         secured.MapGet("/recommendations", async (HttpContext context, MusicDailyFeeds feeds) =>
-            Results.Json(await feeds.RecommendAsync(context.RequestAborted),
-                MusicJsonContext.Default.MusicRecommendationPage));
+                Results.Json(await feeds.RecommendAsync(context.RequestAborted),
+                    MusicJsonContext.Default.MusicRecommendationPage))
+            .WithSummary("读取每日推荐曲目。");
         secured.MapGet("/recommendations/radio", async (MusicDailyFeeds feeds, CancellationToken ct) =>
-            Results.Json(await feeds.RadioAsync(ct), MusicJsonContext.Default.MusicRecommendationPage));
+                Results.Json(await feeds.RadioAsync(ct), MusicJsonContext.Default.MusicRecommendationPage))
+            .WithSummary("读取「猜你喜欢」电台候选。");
         secured.MapGet("/lyrics", async (HttpContext context, MusicCatalog catalog) => Results.Json(
             await catalog.LyricsAsync(One(context, "trackId"), One(context, "providerId"), context.RequestAborted),
-            MusicJsonContext.Default.MusicLyrics));
+            MusicJsonContext.Default.MusicLyrics)).WithSummary("读取指定曲目的歌词。");
         secured.MapPost("/resolve", async (HttpContext context, MusicCatalog catalog) =>
         {
             if (!context.Request.HasJsonContentType()) throw MusicException.Invalid();
@@ -83,7 +91,7 @@ public sealed class MusicModule : IEndpointModule
             var input = System.Text.Json.JsonSerializer.Deserialize(bytes.AsSpan(0, length), MusicJsonContext.Default.MusicResolveRequest);
             if (input is null) throw MusicException.Invalid();
             return Results.Json(await catalog.ResolveAsync(input, context.RequestAborted), MusicJsonContext.Default.MusicResolvedTrack);
-        });
+        }).WithSummary("解析曲目的可播放资源地址。");
     }
 
     private static string? One(HttpContext context, string name)

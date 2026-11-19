@@ -15,6 +15,7 @@ public sealed class AuthModule : IEndpointModule
                 context.Response.Headers.CacheControl = "no-store";
                 return Results.Content(AuthSetupPage.Html, "text/html; charset=utf-8");
             })
+            .WithSummary("服务初始化页面，用于写入管理密钥与通用授权码。")
             .AllowAnonymous();
 
         var group = endpoints.MapGroup("/api/auth")
@@ -26,11 +27,11 @@ public sealed class AuthModule : IEndpointModule
         {
             context.Response.Headers.CacheControl = "no-store";
             return Results.Json(new AccessCodeResponse(codes.CreateIfMissing()), AuthJsonContext.Default.AccessCodeResponse);
-        });
+        }).WithSummary("创建或读取当前通用授权码，重复调用返回同一个值。");
         group.MapPost("/access-code/rotate", (HttpContext context, IAccessCodeService codes) =>
         {
             context.Response.Headers.CacheControl = "no-store";
             return Results.Json(new AccessCodeResponse(codes.Rotate()), AuthJsonContext.Default.AccessCodeResponse);
-        });
+        }).WithSummary("轮换通用授权码，旧授权码立即失效。");
     }
 }

@@ -1,5 +1,6 @@
 using Meowv.Api.Core;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.Metadata;
 
 namespace Meowv.Api.Modules.Diagnostics;
 
@@ -24,6 +25,7 @@ public sealed class DiagnosticsModule : IEndpointModule
                     .. routes.Where(route => route.Metadata.GetMetadata<EndpointModuleMetadata>()?.Name == module.Name)
                         .Select(route => new EndpointDescriptor(
                             route.RoutePattern.RawText ?? route.RoutePattern.ToString() ?? "/",
+                            route.Metadata.GetMetadata<IEndpointSummaryMetadata>()?.Summary ?? "",
                             route.Metadata.GetMetadata<IHttpMethodMetadata>()?.HttpMethods.Order(StringComparer.Ordinal).ToArray() ?? ["ANY"],
                             DescribeAuthorization(route)))
                         .OrderBy(route => route.Path, StringComparer.Ordinal)
@@ -31,13 +33,13 @@ public sealed class DiagnosticsModule : IEndpointModule
                 ]))
                 .ToArray();
             return Results.Json(catalog, ApiJsonContext.Default.ModuleDescriptorArray);
-        }).AllowAnonymous();
+        }).WithSummary("以 JSON 返回已加载模块与接口清单，含路径、描述、请求方式与认证要求。").AllowAnonymous();
 
         endpoints.MapGet("/api/docs", (HttpContext context) =>
         {
             context.Response.Headers.CacheControl = "no-store";
             return Results.Content(EndpointCatalogPage.Html, "text/html; charset=utf-8");
-        }).AllowAnonymous();
+        }).WithSummary("浏览器可读的接口目录页面，支持搜索与按模块筛选。").AllowAnonymous();
     }
 
     private static string DescribeAuthorization(RouteEndpoint endpoint)
