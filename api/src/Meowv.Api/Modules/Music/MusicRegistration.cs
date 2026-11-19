@@ -39,7 +39,7 @@ public static class MusicRegistration
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false, UseCookies = false });
         services.AddSingleton(provider => new QQMusicSkill(
             provider.GetRequiredService<IHttpClientFactory>().CreateClient("MusicQQSkill"),
-            options, provider.GetRequiredService<TimeProvider>()));
+            options, provider.GetRequiredService<TimeProvider>(), provider.GetRequiredService<MusicChartStore>()));
         services.AddHttpClient("MusicQQ", client => client.Timeout = TimeSpan.FromSeconds(6))
             .RemoveAllLoggers()
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler

@@ -41,7 +41,7 @@ internal sealed class MusicChartStore(ApiDatabase database)
             throw new ArgumentException("榜单快照的元数据无效。", nameof(snapshot));
     }
 
-    public bool Save(MusicChartSnapshot snapshot)
+    public bool Save(MusicChartSnapshot snapshot, bool keepFirstForDate = false)
     {
         Validate(snapshot);
         var entries = snapshot.Entries.OrderBy(x => x.Rank).ToArray();
@@ -59,7 +59,7 @@ internal sealed class MusicChartStore(ApiDatabase database)
                               SELECT $chart, $source, $date, $captured, $updated, $start, $end, $entries
                               WHERE NOT EXISTS (
                                   SELECT 1 FROM music_chart_snapshots WHERE chart_key=$chart AND source_name=$source
-                                      AND (source_updated_at > $updated OR business_date > $date OR
+                                      AND (($keep_first = 1 AND business_date = $date) OR source_updated_at > $updated OR business_date > $date OR
                                            (source_updated_at = $updated AND
                                                (business_date <> $date OR captured_at >= $captured OR entries_json = $entries)))
                               )
@@ -67,6 +67,7 @@ internal sealed class MusicChartStore(ApiDatabase database)
                                   captured_at=excluded.captured_at, source_updated_at=excluded.source_updated_at,
                                   window_start=excluded.window_start, window_end=excluded.window_end, entries_json=excluded.entries_json;
                               """;
+        command.Parameters.AddWithValue("$keep_first", keepFirstForDate ? 1 : 0);
         command.Parameters.AddWithValue("$chart", snapshot.ChartKey);
         command.Parameters.AddWithValue("$source", snapshot.Source);
         command.Parameters.AddWithValue("$date", snapshot.BusinessDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));

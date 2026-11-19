@@ -74,20 +74,20 @@ internal sealed class MusicDailyFeeds(
         if (limit is < 1 or > 50 || cursor is { Length: > 128 }) throw MusicException.Invalid();
         if (cursor?.StartsWith("search:", StringComparison.Ordinal) == true)
             return await FallbackAsync(limit, cursor[7..], ct);
-        MusicDailyPage page;
+        MusicDailyPage? page;
         try
         {
             page = await GetDailyAsync(false, ct);
         }
         catch (MusicException error) when (error.Status == 503 && cursor is null)
         {
-            return await FallbackAsync(limit, null, ct);
+            page = null;
         }
 
-        var tracks = page.Items.Select(x => x.Track).Where(x => x.Availability == "candidate").ToArray();
+        var tracks = page?.Items.Select(x => x.Track).Where(x => x.Availability == "candidate").ToArray() ?? [];
         if (registry.Enabled.Contains(qq)) tracks = await skill.PersonalizeAsync(tracks, qq, catalog, ct);
         if (tracks.Length == 0 && cursor is null) return await FallbackAsync(limit, null, ct);
-        var key = string.Join('|', page.Sources.Select(x => x.Source + ":" + x.CapturedAt.ToUnixTimeMilliseconds())) +
+        var key = string.Join('|', (page?.Sources ?? []).Select(x => x.Source + ":" + x.CapturedAt.ToUnixTimeMilliseconds())) +
                   "|" + string.Join(',', tracks.Select(x => x.Id));
         var version = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key)))[..16] + "-";
         var offset = 0;
@@ -105,7 +105,14 @@ internal sealed class MusicDailyFeeds(
         var items = tracks.Skip(offset).Take(limit ?? 20).ToArray();
         var next = offset + items.Length;
         return new MusicRecommendationPage(items, next < tracks.Length ? version + next.ToString(CultureInfo.InvariantCulture) : null,
-            "public_daily_music", page.Sources.Max(x => x.CapturedAt.UtcDateTime), page.Partial, page.Warnings);
+            "public_daily_music", page?.Sources.Max(x => x.CapturedAt.UtcDateTime) ?? clock.GetUtcNow().UtcDateTime,
+            page?.Partial ?? true, page?.Warnings ?? ["daily_recommendations:source_unavailable"]);
+    }
+
+    public async Task<MusicRecommendationPage> RadioAsync(CancellationToken ct)
+    {
+        var tracks = registry.Enabled.Contains(qq) ? await skill.RadioAsync(qq, ct) : [];
+        return new MusicRecommendationPage(catalog.MergeDaily(tracks), null, "qq_skill_radio", clock.GetUtcNow().UtcDateTime);
     }
 
     private async Task<MusicRecommendationPage> FallbackAsync(int? limit, string? cursor, CancellationToken ct)

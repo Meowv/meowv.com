@@ -81,6 +81,12 @@ dotnet run --project api/src/Meowv.Api -- --contentRoot /YOUR_CHECKOUT/api/src/M
 
 目录与模块清单允许匿名访问，只返回路由元数据。内容从运行时路由自动收集，包含已注册但暂不可用的模块，已禁用的摄像头模块不进入目录，Chat 禁用时只保留健康探针；接口是否可用仍以模块健康接口和实际响应为准。认证要求区分匿名、通用授权码、管理密钥及模块自行校验的播放票据。
 
+### QQ 音乐个人推荐
+
+通过后端环境变量 `Modules__Music__QQMusicSkillApiKey` 配置 QQ 音乐 Skill 的账号密钥。推荐接口在北京时间当日首次成功读取「每日 30 首」时，将曲目元数据按顺序写入 `music_chart_snapshots`，快照类型为 `qq-skill-daily-mix`。同日重用已保存结果，次日首次读取时更新，每个凭据分区保留最近一期。
+
+普通播放队列耗尽后，Tune 才调用 `GET /api/music/recommendations/radio` 请求「猜你喜欢」。补歌不写表，由客户端排除当前会话已遇到的曲目。QQ 音乐 H5 链接不用于音频播放，补歌继续使用现有整曲解析链路。无密钥时仍可使用公开音乐列表。
+
 ## 发布
 
 仓库根目录执行 `build.sh` 时，应用先发布到 `api/build/<RID>/`，再汇总到 `build/studio.meowv.com/api/<RID>/`。单独运行 `publish.sh` 只生成项目发布目录，也可用 `--output <目录>` 指定发布根目录。

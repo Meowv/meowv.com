@@ -1,24 +1,41 @@
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Security.Cryptography;
+using Meowv.Api.Infrastructure;
+using Meowv.Api.Modules.Music.Storage;
+using Microsoft.Data.Sqlite;
 using Meowv.Api.Modules.Music.Contracts;
 
 namespace Meowv.Api.Modules.Music.Providers;
 
-internal sealed class QQMusicSkill(HttpClient http, MusicOptions options, TimeProvider clock)
+internal sealed class QQMusicSkill(HttpClient http, MusicOptions options, TimeProvider clock, MusicChartStore store)
 {
-    private sealed record Song(string Mid, string Query);
+    private const string DailyFeed = "qq-skill-daily-mix";
+    private static readonly TimeZoneInfo BusinessZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Shanghai");
+    private sealed record Song(string Mid, string Title, string Artist);
     private readonly SemaphoreSlim _gate = new(1);
-    private DateTimeOffset _refreshAt;
-    private Song[] _songs = [];
+    private DateTimeOffset _dailyRetryAt;
+    private DateTimeOffset _radioRetryAt;
+    private DateOnly _extraDate;
+    private string? _extraSource;
+    private MusicTrack[] _radio = [];
     private MusicTrack[] _extra = [];
+
+    private string? Key
+    {
+        get
+        {
+            var key = options.QQMusicSkillApiKey.Trim();
+            return key.StartsWith("qmk-", StringComparison.Ordinal) && key.Length > 4 &&
+                !key.Any(c => char.IsWhiteSpace(c) || char.IsControl(c)) ? key : null;
+        }
+    }
 
     public async Task<MusicTrack[]> PersonalizeAsync(MusicTrack[] tracks, QQMusicProvider qq, MusicCatalog catalog, CancellationToken ct)
     {
-        var key = options.QQMusicSkillApiKey.Trim();
-        if (!key.StartsWith("qmk-", StringComparison.Ordinal) || key.Length <= 4 || key.Any(c => char.IsWhiteSpace(c) || char.IsControl(c)))
-            return tracks;
-
+        if (Key is not { } key) return tracks;
+        var source = "qqskill-" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key))).ToLowerInvariant();
         using var budget = CancellationTokenSource.CreateLinkedTokenSource(ct);
         budget.CancelAfter(TimeSpan.FromSeconds(3));
         var token = budget.Token;
@@ -28,40 +45,90 @@ internal sealed class QQMusicSkill(HttpClient http, MusicOptions options, TimePr
             try
             {
                 var now = clock.GetUtcNow();
-                if (_refreshAt <= now)
+                var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(now, BusinessZone).Date);
+                var snapshot = store.Latest(DailyFeed, source);
+                if (snapshot?.BusinessDate != today && _dailyRetryAt <= now)
                 {
-                    _refreshAt = now.AddMinutes(30);
-                    _songs = (await Task.WhenAll(ReadAsync("daily-mix", key, token), ReadAsync("radio", key, token)))
-                        .SelectMany(x => x).DistinctBy(x => x.Mid).ToArray();
-                    _extra = [];
-                    var known = tracks.SelectMany(x => x.Sources).Where(x => x.ProviderId == QQMusicProvider.Id)
-                        .Select(x => x.SourceTrackId).ToHashSet(StringComparer.Ordinal);
-                    var extra = new List<MusicTrack>();
-                    foreach (var song in _songs.Where(x => !known.Contains(x.Mid)).Take(2))
+                    _dailyRetryAt = now.AddMinutes(10);
+                    var songs = await ReadAsync("daily-mix", key, token);
+                    token.ThrowIfCancellationRequested();
+                    if (songs.Length > 0)
                     {
-                        var page = await qq.SearchAsync(song.Query, 10, null, token);
-                        var exact = page.Items.FirstOrDefault(x => x.Availability == "candidate" &&
-                            x.Sources.Any(s => s.ProviderId == QQMusicProvider.Id && s.SourceTrackId == song.Mid));
-                        if (exact is not null) extra.Add(exact);
+                        var start = today.ToDateTime(TimeOnly.MinValue);
+                        var midnight = new DateTimeOffset(start, BusinessZone.GetUtcOffset(start));
+                        var entries = songs.Select((song, index) => new MusicChartEntry(index + 1, song.Mid, song.Title, [song.Artist])).ToArray();
+                        store.Save(new MusicChartSnapshot(DailyFeed, source, today, now, now, midnight, midnight.AddDays(1), entries),
+                            keepFirstForDate: true);
+                        snapshot = store.Latest(DailyFeed, source);
                     }
-                    _extra = extra.ToArray();
-                    if (_songs.Length > 0) _refreshAt = now.AddHours(1);
                 }
 
-                var rank = _songs.Select((song, index) => (song.Mid, index)).ToDictionary(x => x.Mid, x => x.index);
+                if (snapshot?.BusinessDate != today) return tracks;
+                var daily = snapshot.Entries.Select(x => new Song(x.TrackKey, x.Title, x.Artists[0])).ToArray();
+                if (_extraDate != today || _extraSource != source)
+                {
+                    _extraDate = today;
+                    _extraSource = source;
+                    _extra = [];
+                    _extra = await ResolveCandidatesAsync(daily, tracks, qq, token);
+                }
+                var rank = daily.Select((song, index) => (song.Mid, index)).ToDictionary(x => x.Mid, x => x.index);
                 var merged = _extra.Length == 0 ? tracks : catalog.MergeDaily(tracks.Concat(_extra));
                 return merged.Where(x => x.Availability == "candidate").OrderBy(track => track.Sources
                     .Where(x => x.ProviderId == QQMusicProvider.Id)
                     .Select(x => rank.GetValueOrDefault(x.SourceTrackId, int.MaxValue))
                     .DefaultIfEmpty(int.MaxValue).Min()).ToArray();
             }
-            finally
-            {
-                _gate.Release();
-            }
+            finally { _gate.Release(); }
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested) { return tracks; }
-        catch (MusicException) { return tracks; }
+        catch (Exception error) when (error is MusicException or SqliteException or ApiDatabaseSchemaException or IOException or JsonException or ArgumentException)
+        {
+            return tracks;
+        }
+    }
+
+    public async Task<MusicTrack[]> RadioAsync(QQMusicProvider qq, CancellationToken ct)
+    {
+        if (Key is not { } key) return [];
+        using var budget = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        budget.CancelAfter(TimeSpan.FromSeconds(6));
+        var token = budget.Token;
+        try
+        {
+            await _gate.WaitAsync(token);
+            try
+            {
+                var now = clock.GetUtcNow();
+                if (_radioRetryAt > now) return _radio;
+                _radioRetryAt = now.AddSeconds(15);
+                var songs = await ReadAsync("radio", key, token);
+                _radio = await ResolveCandidatesAsync(songs, [], qq, token);
+                return _radio;
+            }
+            finally { _gate.Release(); }
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested) { return []; }
+        catch (MusicException) { return []; }
+    }
+
+    private static async Task<MusicTrack[]> ResolveCandidatesAsync(Song[] songs, MusicTrack[] known, QQMusicProvider qq, CancellationToken ct)
+    {
+        var existing = known.SelectMany(x => x.Sources).Where(x => x.ProviderId == QQMusicProvider.Id)
+            .Select(x => x.SourceTrackId).ToHashSet(StringComparer.Ordinal);
+        var candidates = songs.Where(song => !existing.Contains(song.Mid)).ToArray();
+        var results = candidates.Select(song => qq.FindTrack("qq-" + song.Mid))
+            .OfType<MusicTrack>().Where(track => track.Availability == "candidate").ToList();
+        var found = results.Select(x => x.Id).ToHashSet(StringComparer.Ordinal);
+        foreach (var song in candidates.Where(x => !found.Contains("qq-" + x.Mid)).Take(4))
+        {
+            var query = (song.Title + " " + song.Artist).Trim();
+            if (query.Length > 100) continue;
+            var page = await qq.SearchAsync(query, 10, null, ct);
+            var exact = page.Items.FirstOrDefault(x => x.Id == "qq-" + song.Mid && x.Availability == "candidate");
+            if (exact is not null) results.Add(exact);
+        }
+        return results.ToArray();
     }
 
     private async Task<Song[]> ReadAsync(string endpoint, string key, CancellationToken ct)
@@ -88,10 +155,12 @@ internal sealed class QQMusicSkill(HttpClient http, MusicOptions options, TimePr
             return rows.EnumerateArray().Take(30).Select(row =>
             {
                 var mid = Text(row, "songMid");
-                var query = (Text(row, "songName") + " " + Text(row, "singerName")).Trim();
+                var title = Text(row, "songName").Trim();
+                var artist = Text(row, "singerName").Trim();
                 return mid.Length is >= 8 and <= 24 && mid.All(char.IsAsciiLetterOrDigit) &&
-                    query.Length is >= 1 and <= 100 && !query.Any(char.IsControl) ? new Song(mid, query) : null;
-            }).OfType<Song>().ToArray();
+                    title.Length is >= 1 and <= 180 && artist.Length is >= 1 and <= 180 &&
+                    !title.Any(char.IsControl) && !artist.Any(char.IsControl) ? new Song(mid, title, artist) : null;
+            }).OfType<Song>().DistinctBy(x => x.Mid).ToArray();
         }
         catch (Exception error) when (error is HttpRequestException or IOException or JsonException) { return []; }
     }

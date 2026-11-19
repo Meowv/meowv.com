@@ -24,7 +24,7 @@ internal static class MusicChecks
     {
         await NeteaseSourceChecks.RunAsync();
         await MusicAggregationChecks.RunAsync();
-        await SkillChecks();
+        await SkillChecks(root);
         CheckExistingDatabase(root);
         Check(!JsonSerializer.IsReflectionEnabledByDefault, "JSON reflection must stay disabled");
         using var fixture = JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "music-v1.json")));
@@ -472,7 +472,7 @@ internal static class MusicChecks
         finally { await app.StopAsync(); }
     }
 
-    private static async Task SkillChecks()
+    private static async Task SkillChecks(string root)
     {
         var clock = new TestClock();
         var options = new MusicOptions { Enabled = true, QQMusicSkillApiKey = "qmk-synthetic-fixture" };
@@ -481,16 +481,31 @@ internal static class MusicChecks
         using var qqHttp = new HttpClient(new MusicUpstreamFixture { IncludeQqTracks = true });
         var qq = new QQMusicProvider(qqHttp, clock);
         var catalog = new MusicCatalog(options, new MusicProviderRegistry(options, [qq]), clock);
-        var skill = new QQMusicSkill(skillHttp, options, clock);
+        var database = new ApiDatabase("Data Source=" + Path.Combine(root, Guid.NewGuid().ToString("N") + ".db"));
+        var store = new MusicChartStore(database);
+        var skill = new QQMusicSkill(skillHttp, options, clock, store);
         var publicItems = (await qq.SearchAsync("fixture", 10, null, default)).Items;
         var page = await skill.PersonalizeAsync(publicItems, qq, catalog, default);
         Check(page.Length == publicItems.Length && page[0].Sources[0].SourceTrackId == "QQfixture00002",
-            "Official daily and radio results prioritize existing QQ candidates by exact MID");
-        await skill.PersonalizeAsync(publicItems, qq, catalog, default);
-        Check(gateway.Calls == 2, "Official personalization is memory-cached between pages");
+            "Official daily results reorder QQ candidates by exact MID");
+        var restarted = new QQMusicSkill(skillHttp, options, clock, new MusicChartStore(database));
+        Check((await restarted.PersonalizeAsync(publicItems, qq, catalog, default)).SequenceEqual(page) &&
+              gateway.Calls == 1, "Daily recommendation is restored from SQLite after restart and never calls radio");
+        var radio = await restarted.RadioAsync(qq, default);
+        Check(radio.Single().Sources[0].SourceTrackId == "QQfixture00001" && gateway.Calls == 2,
+            "Explicit queue fallback requests radio separately");
+        using (var connection = database.OpenConnection())
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = "SELECT COUNT(*) FROM music_chart_snapshots;";
+            Check((long)command.ExecuteScalar()! == 1, "Only the daily recommendation is persisted");
+        }
+        clock.Now = clock.Now.AddDays(1);
+        await restarted.PersonalizeAsync(publicItems, qq, catalog, default);
+        Check(gateway.Calls == 3, "Shanghai date rollover requests a new daily recommendation");
         options.QQMusicSkillApiKey = "";
         Check((await skill.PersonalizeAsync(publicItems, qq, catalog, default)).SequenceEqual(publicItems) &&
-              gateway.Calls == 2, "Missing key preserves public feed without contacting the official gateway");
+              gateway.Calls == 3, "Missing key preserves public feed without contacting the official gateway");
     }
 
     private sealed class SkillFixture : HttpMessageHandler
