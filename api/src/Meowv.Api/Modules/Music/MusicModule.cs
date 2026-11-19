@@ -57,7 +57,7 @@ public sealed class MusicModule : IEndpointModule
         secured.MapGet("/search", async (HttpContext context, MusicCatalog catalog) => Results.Json(
             await catalog.SearchAsync(One(context, "q"), Limit(context), One(context, "cursor"), context.RequestAborted), MusicJsonContext.Default.MusicSearchPage));
         secured.MapGet("/recommendations", async (HttpContext context, MusicDailyFeeds feeds) =>
-            Results.Json(await feeds.RecommendAsync(Limit(context), One(context, "cursor"), context.RequestAborted),
+            Results.Json(await feeds.RecommendAsync(context.RequestAborted),
                 MusicJsonContext.Default.MusicRecommendationPage));
         secured.MapGet("/recommendations/radio", async (MusicDailyFeeds feeds, CancellationToken ct) =>
             Results.Json(await feeds.RadioAsync(ct), MusicJsonContext.Default.MusicRecommendationPage));

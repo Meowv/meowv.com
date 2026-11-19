@@ -1,7 +1,4 @@
 using System.Collections.Concurrent;
-using System.Globalization;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 using Meowv.Api.Infrastructure;
 using Meowv.Api.Modules.Music.Contracts;
@@ -69,42 +66,22 @@ internal sealed class MusicDailyFeeds(
         return new MusicDailyPage(name, LocalDate(clock.GetUtcNow()), summaries, items, warnings.Length > 0, warnings);
     }
 
-    public async Task<MusicRecommendationPage> RecommendAsync(int? limit, string? cursor, CancellationToken ct)
+    public async Task<MusicRecommendationPage> RecommendAsync(CancellationToken ct)
     {
-        if (limit is < 1 or > 50 || cursor is { Length: > 128 }) throw MusicException.Invalid();
-        if (cursor?.StartsWith("search:", StringComparison.Ordinal) == true)
-            return await FallbackAsync(limit, cursor[7..], ct);
         MusicDailyPage? page;
         try
         {
             page = await GetDailyAsync(false, ct);
         }
-        catch (MusicException error) when (error.Status == 503 && cursor is null)
+        catch (MusicException error) when (error.Status == 503)
         {
             page = null;
         }
 
         var tracks = page?.Items.Select(x => x.Track).Where(x => x.Availability == "candidate").ToArray() ?? [];
         if (registry.Enabled.Contains(qq)) tracks = await skill.PersonalizeAsync(tracks, qq, catalog, ct);
-        if (tracks.Length == 0 && cursor is null) return await FallbackAsync(limit, null, ct);
-        var key = string.Join('|', (page?.Sources ?? []).Select(x => x.Source + ":" + x.CapturedAt.ToUnixTimeMilliseconds())) +
-                  "|" + string.Join(',', tracks.Select(x => x.Id));
-        var version = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key)))[..16] + "-";
-        var offset = 0;
-        if (cursor is not null)
-        {
-            if (cursor.Length <= version.Length || cursor[version.Length - 1] != '-' ||
-                !cursor[..(version.Length - 1)].All(char.IsAsciiHexDigit) ||
-                !int.TryParse(cursor.AsSpan(version.Length), NumberStyles.None, CultureInfo.InvariantCulture, out offset) ||
-                offset <= 0) throw MusicException.Invalid();
-            // 午夜或来源恢复后快照变化，客户端从新一期第一页继续，并按曲目 ID 去重。
-            if (!cursor.StartsWith(version, StringComparison.Ordinal)) offset = 0;
-            else if (offset >= tracks.Length) throw MusicException.Invalid();
-        }
-
-        var items = tracks.Skip(offset).Take(limit ?? 20).ToArray();
-        var next = offset + items.Length;
-        return new MusicRecommendationPage(items, next < tracks.Length ? version + next.ToString(CultureInfo.InvariantCulture) : null,
+        if (tracks.Length == 0) return await FallbackAsync(ct);
+        return new MusicRecommendationPage(tracks, null,
             "public_daily_music", page?.Sources.Max(x => x.CapturedAt.UtcDateTime) ?? clock.GetUtcNow().UtcDateTime,
             page?.Partial ?? true, page?.Warnings ?? ["daily_recommendations:source_unavailable"]);
     }
@@ -115,12 +92,11 @@ internal sealed class MusicDailyFeeds(
         return new MusicRecommendationPage(catalog.MergeDaily(tracks), null, "qq_skill_radio", clock.GetUtcNow().UtcDateTime);
     }
 
-    private async Task<MusicRecommendationPage> FallbackAsync(int? limit, string? cursor, CancellationToken ct)
+    private async Task<MusicRecommendationPage> FallbackAsync(CancellationToken ct)
     {
-        var page = await catalog.RecommendAsync(limit, cursor, ct);
+        var page = await catalog.RecommendAsync(ct);
         return page with
         {
-            NextCursor = page.NextCursor is null ? null : "search:" + page.NextCursor,
             Partial = true,
             Warnings = ["daily_recommendations:source_unavailable", .. page.Warnings ?? []]
         };

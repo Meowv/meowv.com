@@ -52,19 +52,12 @@ internal static class MusicChecks
             using var first = await client.GetAsync("/api/music/recommendations?limit=1");
             using var firstJson = JsonDocument.Parse(await first.Content.ReadAsStringAsync());
             Check(firstJson.RootElement.GetProperty("generatedAt").GetString()!.EndsWith("Z", StringComparison.Ordinal), "UTC wire timestamps use Z");
-            var seen = new HashSet<string> { firstJson.RootElement.GetProperty("items")[0].GetProperty("id").GetString()! };
-            var cursor = firstJson.RootElement.GetProperty("nextCursor").ValueKind == JsonValueKind.Null
-                ? null : firstJson.RootElement.GetProperty("nextCursor").GetString();
-            while (cursor is not null)
-            {
-                using var page = await client.GetAsync("/api/music/recommendations?limit=1&cursor=" + Uri.EscapeDataString(cursor));
-                using var pageJson = JsonDocument.Parse(await page.Content.ReadAsStringAsync());
-                Check(seen.Add(pageJson.RootElement.GetProperty("items")[0].GetProperty("id").GetString()!), "Cursor pagination never repeats a track");
-                cursor = pageJson.RootElement.GetProperty("nextCursor").ValueKind == JsonValueKind.Null
-                    ? null : pageJson.RootElement.GetProperty("nextCursor").GetString();
-            }
-            Check(seen.Count > 1, "Finite catalog cursor exhaustion");
-            foreach (var query in new[] { "q=", "q=%00", "q=qix&limit=0", "q=qix&limit=51", "q=qix&limit=bad", "q=qix&limit=1&limit=2", "q=qix&cursor=bad", "q=qix&cursor=" + cursor, "q=" + new string('a', 101) })
+            var ids = firstJson.RootElement.GetProperty("items").EnumerateArray()
+                .Select(x => x.GetProperty("id").GetString()).ToArray();
+            Check(ids.Length > 1 && ids.Distinct().Count() == ids.Length &&
+                  firstJson.RootElement.GetProperty("nextCursor").ValueKind == JsonValueKind.Null,
+                "Recommendations ignore the old page size and return all distinct tracks in one response");
+            foreach (var query in new[] { "q=", "q=%00", "q=qix&limit=0", "q=qix&limit=51", "q=qix&limit=bad", "q=qix&limit=1&limit=2", "q=qix&cursor=bad", "q=" + new string('a', 101) })
             {
                 using var bad = await client.GetAsync("/api/music/search?" + query);
                 await Error(bad, 400, "invalid_request");

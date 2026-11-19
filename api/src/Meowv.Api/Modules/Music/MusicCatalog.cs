@@ -161,11 +161,11 @@ public sealed class MusicCatalog(MusicOptions options, MusicProviderRegistry reg
         return new MusicSearchPage(items, nextCursor, warnings.Count > 0, warnings.ToArray());
     }
 
-    public async Task<MusicRecommendationPage> RecommendAsync(int? limit, string? cursor, CancellationToken ct)
+    public async Task<MusicRecommendationPage> RecommendAsync(CancellationToken ct)
     {
-        var page = await SearchAsync(options.RecommendationFallbackQuery, limit, cursor, ct);
+        var page = await SearchAsync(options.RecommendationFallbackQuery, 50, null, ct);
         return new MusicRecommendationPage(page.Items.Where(x => x.Availability == "candidate").ToArray(),
-            page.NextCursor, "search_candidates", clock.GetUtcNow().UtcDateTime, page.Partial, page.Warnings);
+            null, "search_candidates", clock.GetUtcNow().UtcDateTime, page.Partial, page.Warnings);
     }
 
     internal MusicTrack[] MergeDaily(IEnumerable<MusicTrack> tracks)
