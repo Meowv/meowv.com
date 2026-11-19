@@ -196,7 +196,7 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
                 {
                     var id = known is null ? track.Id : known.ProviderTrackIds.GetValueOrDefault(source.ProviderId);
                     return id is not null && source.FindTrack(id) is { Availability: "candidate" } current &&
-                        (source.ProviderId == track.Sources.FirstOrDefault()?.ProviderId || MusicCandidateMatcher.CanMerge(track, current));
+                           (source.ProviderId == track.Sources.FirstOrDefault()?.ProviderId || MusicCandidateMatcher.CanMerge(track, current));
                 });
                 return canResolve ? track : track with { Availability = "unavailable" };
             }).ToArray();

@@ -8,22 +8,14 @@ using Microsoft.Extensions.Options;
 
 namespace Meowv.Api.Modules.Music;
 
-public sealed class MusicAccessHandler(
-    IOptionsMonitor<AuthenticationSchemeOptions> options,
-    ILoggerFactory logger,
-    UrlEncoder encoder,
-    MusicOptions music,
-    MusicRuntime runtime,
-    MusicDeviceStore devices) : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
+public sealed class MusicAccessHandler(IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder, MusicOptions music, MusicRuntime runtime, MusicDeviceStore devices) : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
 {
     public const string SchemeName = "MusicDevice";
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         var credential = ApiCredentials.ReadAccessCode(Request);
-        if (!runtime.Available || !credential.Present) return Task.FromResult(AuthenticateResult.NoResult());
-        if (credential.State != ApiCredentialState.Valid || credential.Value is not { Length: >= 32 and <= 1024 } raw)
-            return Task.FromResult(AuthenticateResult.NoResult());
+        if (!runtime.Available || !credential.Present || credential.State != ApiCredentialState.Valid || credential.Value is not { Length: >= 32 and <= 1024 } raw) return Task.FromResult(AuthenticateResult.NoResult());
         if (credential.FromQuery)
         {
             // 凭据出现在 URL 中，禁止缓存并阻断 Referer 外泄。
