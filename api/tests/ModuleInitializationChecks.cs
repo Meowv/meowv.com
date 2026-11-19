@@ -46,7 +46,7 @@ internal static class ModuleInitializationChecks
             app.UseAuthentication();
             app.UseAuthorization();
             new Meowv.Api.Modules.Auth.AuthModule().MapEndpoints(app);
-            app.MapGet("/api/health", () => "healthy");
+            app.MapGet("/api/health", () => "healthy").AllowAnonymous();
             app.MapGet("/api/xiaomi-camera/probe", () => "must not run")
                 .WithMetadata(new XiaomiEndpointMetadata());
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));

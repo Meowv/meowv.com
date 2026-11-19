@@ -97,8 +97,8 @@ internal static class MusicChecks
             Check(text.Contains("/api/music/resolve") && text.Contains("MusicDevice"), "Catalog exposes music scope");
             var runtime = app.Services.GetRequiredService<MusicRuntime>();
             var leases = new List<IDisposable>();
-            for (var i = 0; i < 4; i++) { Check(runtime.TryEnter(out var lease, out _), "Concurrent permit"); leases.Add(lease!); }
-            try { Check(!runtime.TryEnter(out _, out var wait) && wait == 1, "Global concurrency bound"); }
+            for (var i = 0; i < 4; i++) { Check(runtime.TryEnter("probe", out var lease, out _), "Concurrent permit"); leases.Add(lease!); }
+            try { Check(!runtime.TryEnter("probe", out _, out var wait) && wait == 1, "Global concurrency bound"); }
             finally { foreach (var lease in leases) lease.Dispose(); }
         });
         await Case(root, false, async (client, _) =>
@@ -137,9 +137,18 @@ internal static class MusicChecks
         await Case(root, true, async (client, _) =>
         {
             using var health = await client.GetAsync("/api/music/health");
-            Check((int)health.StatusCode == 503, "Production must reject development source");
-            using var setup = await client.GetAsync("/api/music/setup/devices");
-            Check(setup.StatusCode == HttpStatusCode.NotFound, "Device management is not exposed in production");
+            Check(health.IsSuccessStatusCode && (await health.Content.ReadAsStringAsync()).Contains("ready"), "Production uses the same Music availability rules");
+            using var anonymousSetup = await client.GetAsync("/api/music/setup/devices");
+            Check(anonymousSetup.StatusCode == HttpStatusCode.Unauthorized, "Production device management stays protected");
+            client.DefaultRequestHeaders.Add("X-Api-Bootstrap-Token", "YOUR_SYNTHETIC_MANAGEMENT_TOKEN_FOR_TESTS_ONLY");
+            using var issued = await client.PostAsync("/api/music/setup/devices", Json("{\"alias\":\"production\"}"));
+            Check(issued.StatusCode == HttpStatusCode.Created, "Production exposes device management");
+            using var issuedJson = JsonDocument.Parse(await issued.Content.ReadAsStringAsync());
+            var deviceToken = issuedJson.RootElement.GetProperty("token").GetString()!;
+            client.DefaultRequestHeaders.Remove("X-Api-Bootstrap-Token");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", deviceToken);
+            using var providers = await client.GetAsync("/api/music/providers");
+            Check(providers.IsSuccessStatusCode, "Production serves Music business endpoints");
         }, production: true);
         await Case(root, true, async (client, _) =>
         {
@@ -233,6 +242,9 @@ internal static class MusicChecks
             var reread = await feeds.GetDailyAsync(false, CancellationToken.None);
             Check(qq.Count == 4 && page.Sources.SequenceEqual(reread.Sources),
                 "Fresh snapshots do not refetch QQ and first read agrees with SQLite precision");
+            var beforeForce = qq.Count;
+            var forced = await feeds.GetDailyAsync(true, CancellationToken.None);
+            Check(qq.Count == beforeForce + 4 && !forced.Partial, "Admin force refresh bypasses the cooldown window");
             var store = app.Services.GetRequiredService<MusicChartStore>();
             Check(store.Latest("rising", "qqmusic")?.Entries.Single().TrackKey == "QQfixture00001" &&
                   store.Latest("rising", "netease") is not null &&
@@ -318,6 +330,8 @@ internal static class MusicChecks
         Check(reopened.Verify(issued.Token) == issued.Id && reopened.Revoke(issued.Id) &&
               new MusicDeviceStore(database, TimeProvider.System).Verify(issued.Token) is null,
               "Music schema opens idempotently and revocation persists");
+        var replacement = new MusicDeviceStore(database, TimeProvider.System).Issue("Database isolation replacement");
+        Check(replacement.Id != issued.Id, "Revoked device does not consume the lifetime issuance quota");
         CheckChartSnapshots(database, path + ".backup");
         Check(before.SequenceEqual(ExistingState(database)), "Music writes preserve existing Chat, Camera and Auth data and schema");
         Console.WriteLine("PASS: Existing Chat, Camera and Auth database data and schema survive music writes");

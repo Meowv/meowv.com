@@ -211,7 +211,8 @@ await using (var app = await Start(configuration))
         Check((long)command.ExecuteScalar()! == 0, "Physical deletion removes database row");
     }
     Check(repository.History(null, null, 30).Items.Length == 0, "Physically deleted message absent from history");
-    Check((await Post(client, $"/api/chat/admin/messages/{messageId}/restore", "{}")).StatusCode == HttpStatusCode.NotFound, "Physically deleted message cannot be restored");
+    var deletedRestore = await Post(client, $"/api/chat/admin/messages/{messageId}/restore", "{}");
+    Check(deletedRestore.StatusCode == HttpStatusCode.NotFound, "Physically deleted message cannot be restored: " + deletedRestore.StatusCode);
     var fixture = repository.CreateSession("synthetic-retention-fixture", "清理测试");
     var fixtureMessage = repository.Insert(fixture, Guid.NewGuid().ToString(), "retention test");
     Check((await client.DeleteAsync($"/api/chat/admin/messages/{fixtureMessage.Id}?permanent=invalid")).StatusCode == HttpStatusCode.BadRequest, "Invalid deletion mode rejected");
@@ -271,6 +272,22 @@ await using (var app = await Start(configuration))
     ipLimiter.Check("one", "ip");
     try { ipLimiter.Check("two", "ip"); Check(false, "IP message quota enforced"); }
     catch (ChatException error) { Check(error.Status == 429, "IP message quota enforced"); }
+    await app.StopAsync();
+}
+
+var noOrigin = new Dictionary<string, string?>(configuration)
+{
+    ["ConnectionStrings:DefaultConnection"] = "Data Source=chat-no-origin.db"
+};
+noOrigin.Remove("Cors:AllowedOrigins:0");
+await using (var app = await Start(noOrigin))
+{
+    var (client, _) = Client(app);
+    using var disposeClient = client;
+    Check((await client.GetAsync("/api/health")).IsSuccessStatusCode, "Host survives empty Chat origins");
+    using var health = await client.GetAsync("/api/chat/health");
+    Check((int)health.StatusCode == 503, "Chat health unavailable with empty origins");
+    Check((await client.GetAsync("/api/chat/messages")).StatusCode == HttpStatusCode.ServiceUnavailable, "Chat business unavailable with empty origins");
     await app.StopAsync();
 }
 
@@ -422,6 +439,29 @@ Check(ChatMarkdown.Summary("```\n**代码**\n```") == "**代码**", "Markdown qu
 Check(ChatMarkdown.Summary("[链接](<https://example.com>)") == "链接", "Markdown quote accepts editor-serialized links");
 
 Check(ChatMarkdown.Summary("**跨行\n粗体**") == "跨行\n粗体", "Markdown quote supports multiline inline marks");
+Check(ChatMarkdown.Summary(new string('*', 2048)).Length <= 121, "Deep markdown nesting stays bounded");
+try
+{
+    ChatValidation.Nickname("访\u202E客", new ChatOptions());
+    throw new Exception("Bidi control character accepted");
+}
+catch (ChatException) { }
+
+var auditDatabase = new ApiDatabase("Data Source=" + Path.Combine(root, "chat-audit-migration.db"));
+auditDatabase.EnsureSchema("chat", 2, """
+    CREATE TABLE chat_moderation_logs(
+        id INTEGER PRIMARY KEY AUTOINCREMENT, action TEXT NOT NULL, target TEXT NOT NULL, created_at TEXT NOT NULL);
+    """);
+new ChatRepository(auditDatabase, new ChatOptions()).Initialize();
+using (var auditConnection = auditDatabase.OpenConnection())
+using (var pragma = auditConnection.CreateCommand())
+{
+    pragma.CommandText = "PRAGMA table_info(chat_moderation_logs);";
+    var columns = new List<string>();
+    using var reader = pragma.ExecuteReader();
+    while (reader.Read()) columns.Add(reader.GetString(1));
+    Check(columns.Contains("actor") && columns.Contains("reason"), "Existing chat audit schema upgrades idempotently");
+}
 
 // 独立传输替身复现广播故障和忽略取消的慢客户端，不依赖真实网络缓冲区大小。
 foreach (var failure in new[] { "throw", "slow" })
@@ -438,8 +478,9 @@ foreach (var failure in new[] { "throw", "slow" })
     using (var slot = queue.Reserve()) slot.Publish("message.deleted", new ChatPresence(2));
     using (var slot = queue.Reserve()) slot.Publish("message.restored", new ChatPresence(3));
     await disconnected.Task.WaitAsync(TimeSpan.FromSeconds(2));
-    await transport.Completed.Task.WaitAsync(TimeSpan.FromSeconds(2));
-    Check(transport.Events.SequenceEqual(new[] { "message.created", "message.deleted", "message.restored" }), failure + " broadcast preserves event order and compensates by disconnecting");
+    Check(presence.Connections.Length == 0, failure + " only the failed connection is aborted");
+    // 失败连接移除后，后续事件没有接收者；队列仍继续消费并释放容量。
+    Check(transport.Events.SequenceEqual(new[] { "message.created" }), failure + " broadcast failure does not block the queue");
     using var stopTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(2));
     await queue.StopAsync(stopTimeout.Token);
     transport.Release.TrySetException(new InvalidOperationException("synthetic late failure"));
@@ -457,7 +498,9 @@ foreach (var failure in new[] { "throw", "slow" })
 
 {
     var transport = new BroadcastProbe("slow");
-    using var queue = new ChatBroadcastQueue(transport, new ChatPresenceService(new ChatOptions()), Microsoft.Extensions.Logging.Abstractions.NullLogger<ChatBroadcastQueue>.Instance);
+    var presence = new ChatPresenceService(new ChatOptions());
+    presence.Add("probe", new ChatSession("synthetic", new ChatGuest("guest", "访客", "seed"), DateTimeOffset.UtcNow.AddHours(1), null), () => { });
+    using var queue = new ChatBroadcastQueue(transport, presence, Microsoft.Extensions.Logging.Abstractions.NullLogger<ChatBroadcastQueue>.Instance);
     await queue.StartAsync(CancellationToken.None);
     using (var slot = queue.Reserve()) slot.Publish("message.created", new ChatPresence(1));
     await transport.Entered.Task.WaitAsync(TimeSpan.FromSeconds(2));

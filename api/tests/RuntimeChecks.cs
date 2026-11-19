@@ -13,6 +13,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Options;
 using Meowv.Api.Modules.XiaomiCamera;
 using Meowv.Api.Modules.XiaomiCamera.Cloud;
+using Microsoft.AspNetCore.Authorization;
 
 var root = Path.Combine(Path.GetTempPath(), "meowv-api-check-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(root);
@@ -82,17 +83,27 @@ try
     app.UseRouting();
     app.UseCors();
     app.UseRateLimiter();
-    app.UseAuthentication();
-    app.UseAuthorization();
     foreach (var module in app.Services.GetRequiredService<IEnumerable<IEndpointModule>>())
     {
         module.ConfigureMiddleware(app);
         module.MapEndpoints(app.MapGroup("").WithMetadata(new EndpointModuleMetadata(module.Name)));
     }
+    app.UseAuthentication();
+    app.UseAuthorization();
 
-    app.MapGet("/api/proxy/{kind}", (HttpContext context) => $"{context.Connection.RemoteIpAddress}|{context.Request.Scheme}");
+    app.MapGet("/api/proxy/{kind}", (HttpContext context) => $"{context.Connection.RemoteIpAddress}|{context.Request.Scheme}").AllowAnonymous();
     using var startupTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
     await app.StartAsync(startupTimeout.Token);
+    var apiRoutes = app.Services.GetRequiredService<EndpointDataSource>().Endpoints.OfType<RouteEndpoint>()
+        .Where(endpoint => endpoint.RoutePattern.RawText?.StartsWith("/api/", StringComparison.Ordinal) == true)
+        .ToArray();
+    foreach (var route in apiRoutes)
+    {
+        var declared = route.Metadata.GetMetadata<IAllowAnonymous>() is not null ||
+                       route.Metadata.GetOrderedMetadata<IAuthorizeData>().Any() ||
+                       route.Metadata.GetMetadata<EndpointAccessMetadata>() is not null;
+        Check(declared, "API endpoint must declare authorization metadata: " + route.RoutePattern.RawText);
+    }
     using var client = new HttpClient(new HttpClientHandler { UseProxy = false }) { BaseAddress = new Uri(app.Urls.Single()), Timeout = TimeSpan.FromSeconds(10) };
     Check((await client.GetAsync("/api/health")).StatusCode == HttpStatusCode.OK, "Anonymous health");
     using (var catalogResponse = await client.GetAsync("/api/modules"))

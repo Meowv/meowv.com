@@ -94,7 +94,9 @@ internal static class MusicAggregationChecks
         metadata.Failure = new MusicException("rate_limited", "private detail", 429, 60);
         metadata.Block.SetResult();
         result = await catalog.SearchAsync("isolated rate", 20, result.NextCursor, default);
-        Check(result.Items.Length == 0 && result.Partial && result.NextCursor is null, "Deferred metadata rate limit does not turn a healthy playback source into a global error");
+        Check(result.Items.Length == 0 && result.Partial && result.NextCursor is null &&
+              result.Warnings.Contains("qqmusic:rate_limited", StringComparer.Ordinal),
+            "Deferred metadata rate limit does not turn a healthy playback source into a global error");
         await catalog.ResolveAsync(new("nt-only"), default);
         Check(native.Resolves == 1, "Playback source remains usable after metadata continuation failure");
 
