@@ -66,11 +66,17 @@ internal static partial class ChatMarkdown
         }
     }
 
-    private static string Inline(string source)
+    private static string Inline(string source, int depth = 0)
     {
         var result = new StringBuilder();
         for (var i = 0; i < source.Length;)
         {
+            if (depth >= 32)
+            {
+                result.Append(source[i..]);
+                break;
+            }
+
             var ch = source[i];
             switch (ch)
             {
@@ -103,7 +109,7 @@ internal static partial class ChatMarkdown
                         var end = Matching(source, close + 1, '(', ')');
                         if (end > close && Uri.TryCreate(source[(close + 2)..end].Split(' ')[0].Trim('<', '>'), UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https")
                         {
-                            result.Append(Inline(source[(i + 1)..close]));
+                            result.Append(Inline(source[(i + 1)..close], depth + 1));
                             i = end + 1;
                             continue;
                         }
@@ -119,7 +125,7 @@ internal static partial class ChatMarkdown
                     var intraword = ch == '_' && i > 0 && char.IsLetterOrDigit(source[i - 1]);
                     if (!intraword && close > i + run && !char.IsWhiteSpace(source[i + run]) && !char.IsWhiteSpace(source[close - 1]))
                     {
-                        result.Append(Inline(source[(i + run)..close]));
+                        result.Append(Inline(source[(i + run)..close], depth + 1));
                         i = close + run;
                         continue;
                     }

@@ -19,6 +19,7 @@ public static class ChatRegistration
             options.Enabled = false;
         }
 
+        // 会话、限流与在线状态均为进程内状态；当前模块按单实例部署设计。
         services.AddSingleton(options);
         services.Configure<ApiCorsOptions>(configuration.GetSection("Cors"));
         services.AddSingleton<IEndpointModule, ChatModule>();
@@ -52,6 +53,8 @@ public static class ChatRegistration
                 { PermitLimit = 180, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
             limits.AddPolicy("chat-admin-auth", context => RateLimitPartition.GetFixedWindowLimiter(Ip(context), _ => new FixedWindowRateLimiterOptions
                 { PermitLimit = 10, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+            limits.AddPolicy("chat-admin-write", context => RateLimitPartition.GetFixedWindowLimiter(Ip(context), _ => new FixedWindowRateLimiterOptions
+                { PermitLimit = 30, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
         });
         return services;
     }

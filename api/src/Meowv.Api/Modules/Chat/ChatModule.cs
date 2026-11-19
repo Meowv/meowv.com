@@ -14,16 +14,24 @@ public sealed class ChatModule : IEndpointModule
         var chat = endpoints.MapGroup("/api/chat");
 
         chat.MapGet("/health", (ChatRuntime runtime) => Results.Json(new ChatHealth(runtime.Ready ? "ready" : "unavailable"), ChatJsonContext.Default.ChatHealth,
-            statusCode: runtime.Ready ? 200 : 503));
+            statusCode: runtime.Ready ? 200 : 503)).AllowAnonymous();
         if (!endpoints.ServiceProvider.GetRequiredService<ChatOptions>().Enabled) return;
 
         chat.MapPost("/session", (ChatSessionRequest input, HttpContext context, ChatSessionService sessions, ChatOptions options) =>
         {
+            var nickname = ChatValidation.Nickname(input.Nickname, options);
             var current = sessions.Current(context);
-            if (current is { Active: true }) return Results.Ok(current.Response);
-            var session = sessions.Create(context, ChatValidation.Nickname(input.Nickname, options));
+            if (current is { Active: true })
+            {
+                if (string.Equals(current.Response.Guest.Nickname, nickname, StringComparison.Ordinal))
+                    return Results.Ok(current.Response);
+                var renamed = sessions.Rename(current, nickname) ?? throw new ChatException("session_expired", "会话已失效，请重新加入。", 401);
+                return Results.Ok(renamed.Response);
+            }
+
+            var session = sessions.Create(context, nickname);
             return Results.Created("/api/chat/session", session.Response);
-        }).RequireRateLimiting("chat-session");
+        }).AllowAnonymous().RequireRateLimiting("chat-session");
 
         chat.MapGet("/session", (HttpContext context, ChatSessionService sessions) => Results.Ok(sessions.Require(context.User).Response))
             .RequireAuthorization(ChatGuestAuthenticationHandler.SchemeName).RequireRateLimiting("chat-http");
@@ -32,7 +40,7 @@ public sealed class ChatModule : IEndpointModule
         {
             sessions.Logout(context, presence);
             return Results.NoContent();
-        }).RequireRateLimiting("chat-http");
+        }).AllowAnonymous().RequireRateLimiting("chat-http");
 
         var guest = chat.MapGroup("").RequireAuthorization(ChatGuestAuthenticationHandler.SchemeName);
 
@@ -64,20 +72,24 @@ public sealed class ChatModule : IEndpointModule
             .WithMetadata(new EndpointAccessMetadata("ChatGuest 匿名会话 Cookie + 可信 Origin"))
             .RequireRateLimiting("chat-http");
 
-        var admin = chat.MapGroup("/admin").RequireAuthorization().RequireRateLimiting("chat-http");
+        var admin = chat.MapGroup("/admin").RequireAuthorization().RequireRateLimiting("chat-admin-write");
 
         admin.MapGet("/session", Results.NoContent).RequireRateLimiting("chat-admin-auth");
 
         admin.MapDelete("/messages/{id}", async (string id, bool? permanent, ChatService service, ChatRepository repository, ChatBroadcastQueue broadcasts, HttpContext context) =>
         {
             var target = Cursor(id)!.Value.ToString(CultureInfo.InvariantCulture);
+            var actor = "access_code_v" + ApiAuthorization.GetVersion(context.User).ToString(CultureInfo.InvariantCulture);
+            var deletedAt = DateTimeOffset.UtcNow;
             await service.Gate.WaitAsync(context.RequestAborted);
             try
             {
                 using var reservation = broadcasts.Reserve();
                 context.RequestAborted.ThrowIfCancellationRequested();
-                if (!repository.DeleteMessage(target, permanent == true)) return Results.NotFound();
-                reservation.Publish("message.deleted", new ChatDeleted(target, DateTimeOffset.UtcNow, permanent == true, repository.Message(target)?.Revision ?? 0));
+                var purge = permanent == true;
+                if (!repository.DeleteMessage(target, purge, deletedAt, actor, purge ? "admin_purge" : "admin_delete", out var revision, out _))
+                    return Results.NotFound();
+                reservation.Publish("message.deleted", new ChatDeleted(target, deletedAt, purge, checked((int)revision)));
                 return Results.NoContent();
             }
             finally
@@ -88,12 +100,13 @@ public sealed class ChatModule : IEndpointModule
         admin.MapPost("/messages/{id}/restore", async (string id, ChatService service, ChatRepository repository, ChatBroadcastQueue broadcasts, HttpContext context) =>
         {
             var target = Cursor(id)!.Value.ToString(CultureInfo.InvariantCulture);
+            var actor = "access_code_v" + ApiAuthorization.GetVersion(context.User).ToString(CultureInfo.InvariantCulture);
             await service.Gate.WaitAsync(context.RequestAborted);
             try
             {
                 using var reservation = broadcasts.Reserve();
                 context.RequestAborted.ThrowIfCancellationRequested();
-                var message = repository.RestoreMessage(target);
+                var message = repository.RestoreMessage(target, actor, "admin_restore");
                 if (message is null) return Results.NotFound();
                 reservation.Publish("message.restored", message);
                 return Results.Ok(message);

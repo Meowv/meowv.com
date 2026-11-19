@@ -14,7 +14,11 @@ public sealed class ChatRuntime(ChatRepository repository, ChatOptions options, 
         {
             options.Validate();
             if (cors.Value.AllowedOrigins.Length == 0 || !ApiCorsOptions.IsValid(cors.Value))
+            {
+                logger.LogWarning("Chat 未就绪：启用 Chat 时必须配置 Cors:AllowedOrigins。");
                 throw new InvalidOperationException("启用 Chat 需要配置 Cors:AllowedOrigins。");
+            }
+
             repository.Initialize();
             Ready = true;
         }

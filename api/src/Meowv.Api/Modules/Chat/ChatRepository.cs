@@ -20,7 +20,7 @@ public sealed class ChatRepository(ApiDatabase database, ChatOptions options)
                                    CREATE INDEX ix_chat_messages_created ON chat_messages(created_at);
                                    CREATE TABLE chat_moderation_logs (
                                        id INTEGER PRIMARY KEY AUTOINCREMENT, action TEXT NOT NULL, target TEXT NOT NULL,
-                                       created_at TEXT NOT NULL);
+                                       actor TEXT, reason TEXT, created_at TEXT NOT NULL);
                                    CREATE INDEX ix_chat_moderation_logs_created ON chat_moderation_logs(created_at);
                                    """;
 
@@ -32,6 +32,31 @@ public sealed class ChatRepository(ApiDatabase database, ChatOptions options)
         command.ExecuteNonQuery();
         command.CommandText = "CREATE TABLE IF NOT EXISTS chat_message_mentions(message_id INTEGER NOT NULL,guest_id TEXT NOT NULL,nickname_snapshot TEXT NOT NULL,start INTEGER NOT NULL,length INTEGER NOT NULL,PRIMARY KEY(message_id,start));";
         command.ExecuteNonQuery();
+        EnsureAuditColumns(connection);
+    }
+
+    private static void EnsureAuditColumns(SqliteConnection connection)
+    {
+        var columns = new HashSet<string>(StringComparer.Ordinal);
+        using (var pragma = connection.CreateCommand())
+        {
+            pragma.CommandText = "PRAGMA table_info(chat_moderation_logs);";
+            using var reader = pragma.ExecuteReader();
+            while (reader.Read()) columns.Add(reader.GetString(1));
+        }
+
+        using var alter = connection.CreateCommand();
+        if (!columns.Contains("actor"))
+        {
+            alter.CommandText = "ALTER TABLE chat_moderation_logs ADD COLUMN actor TEXT;";
+            alter.ExecuteNonQuery();
+        }
+
+        if (!columns.Contains("reason"))
+        {
+            alter.CommandText = "ALTER TABLE chat_moderation_logs ADD COLUMN reason TEXT;";
+            alter.ExecuteNonQuery();
+        }
     }
 
     internal static string Time(DateTimeOffset value) => value.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
@@ -63,6 +88,15 @@ public sealed class ChatRepository(ApiDatabase database, ChatOptions options)
             ("$id", session.Guest.Id), ("$hash", tokenHash), ("$name", nickname), ("$avatar", session.Guest.AvatarSeed), ("$now", Time(now)), ("$expires", Time(session.ExpiresAt)));
         command.ExecuteNonQuery();
         return session;
+    }
+
+    internal ChatSession? RenameSession(string tokenHash, string nickname)
+    {
+        using var connection = database.OpenConnection();
+        using var command = Command(connection,
+            "UPDATE chat_guest_sessions SET nickname=$name WHERE token_hash=$hash AND revoked_at IS NULL AND expires_at > $now;",
+            ("$name", nickname), ("$hash", tokenHash), ("$now", Time(DateTimeOffset.UtcNow)));
+        return command.ExecuteNonQuery() == 0 ? null : FindSession(tokenHash);
     }
 
     internal void Revoke(string hash)
@@ -153,24 +187,40 @@ public sealed class ChatRepository(ApiDatabase database, ChatOptions options)
         return new ChatMessagePage([.. messages], hasMore, messages.Count == 0 ? null : after.HasValue ? messages[^1].Id : messages[0].Id);
     }
 
-    public bool DeleteMessage(string target, bool permanent)
+    public bool DeleteMessage(string target, bool permanent) =>
+        DeleteMessage(target, permanent, DateTimeOffset.UtcNow, null, null, out _, out _);
+
+    public bool DeleteMessage(string target, bool permanent, DateTimeOffset deletedAt, string? actor, string? reason,
+        out long revision, out DateTimeOffset appliedAt)
     {
+        revision = 0;
+        appliedAt = deletedAt;
         using var connection = database.OpenConnection();
         using var transaction = connection.BeginTransaction();
-        using var command = Command(connection, permanent ? "DELETE FROM chat_messages WHERE id=$target" : "UPDATE chat_messages SET deleted_at=$now,revision=revision+1 WHERE id=$target AND deleted_at IS NULL",
-            ("$target", target), ("$now", Time(DateTimeOffset.UtcNow)));
+        using var command = connection.CreateCommand();
         command.Transaction = transaction;
-        if (command.ExecuteNonQuery() == 0) return false;
+        command.Parameters.AddWithValue("$target", target);
+        command.Parameters.AddWithValue("$now", Time(deletedAt));
         if (permanent)
         {
-            command.CommandText = "DELETE FROM chat_message_replies WHERE message_id=$target; DELETE FROM chat_message_mentions WHERE message_id=$target";
+            command.CommandText = "SELECT revision FROM chat_messages WHERE id=$target;";
+            var existing = command.ExecuteScalar();
+            if (existing is null) return false;
+            revision = (long)existing;
+            command.CommandText = "DELETE FROM chat_messages WHERE id=$target;";
+            command.ExecuteNonQuery();
+            command.CommandText = "DELETE FROM chat_message_replies WHERE message_id=$target; DELETE FROM chat_message_mentions WHERE message_id=$target;";
             command.ExecuteNonQuery();
         }
+        else
+        {
+            command.CommandText = "UPDATE chat_messages SET deleted_at=$now,revision=revision+1 WHERE id=$target AND deleted_at IS NULL RETURNING revision;";
+            var result = command.ExecuteScalar();
+            if (result is null) return false;
+            revision = (long)result;
+        }
 
-        command.CommandText = "INSERT INTO chat_moderation_logs(action,target,created_at) VALUES($action,$target,$now)";
-        command.Parameters.AddWithValue("$action", permanent ? "purge" : "delete");
-        command.ExecuteNonQuery();
-
+        WriteAudit(command, permanent ? "purge" : "delete", target, actor, reason, deletedAt);
         transaction.Commit();
         return true;
     }
@@ -183,16 +233,17 @@ public sealed class ChatRepository(ApiDatabase database, ChatOptions options)
         return reader.Read() ? ReadMessage(reader) : null;
     }
 
-    public ChatMessage? RestoreMessage(string target)
+    public ChatMessage? RestoreMessage(string target) => RestoreMessage(target, null, null);
+
+    public ChatMessage? RestoreMessage(string target, string? actor, string? reason)
     {
         using var connection = database.OpenConnection();
         using var transaction = connection.BeginTransaction();
-        using var command = Command(connection, "UPDATE chat_messages SET deleted_at=NULL,revision=revision+1 WHERE id=$target AND deleted_at IS NOT NULL", ("$target", target));
+        using var command = Command(connection, "UPDATE chat_messages SET deleted_at=NULL,revision=revision+1 WHERE id=$target AND deleted_at IS NOT NULL RETURNING revision;", ("$target", target));
         command.Transaction = transaction;
-        if (command.ExecuteNonQuery() == 0) return null;
-        command.CommandText = "INSERT INTO chat_moderation_logs(action,target,created_at) VALUES('restore',$target,$now)";
-        command.Parameters.AddWithValue("$now", Time(DateTimeOffset.UtcNow));
-        command.ExecuteNonQuery();
+        if (command.ExecuteScalar() is null) return null;
+        var now = DateTimeOffset.UtcNow;
+        WriteAudit(command, "restore", target, actor, reason, now);
         command.CommandText = $"SELECT {MessageColumns} FROM {MessageTables} WHERE m.id=$target";
         ChatMessage message;
         using (var reader = command.ExecuteReader())
@@ -203,6 +254,18 @@ public sealed class ChatRepository(ApiDatabase database, ChatOptions options)
 
         transaction.Commit();
         return message;
+    }
+
+    private static void WriteAudit(SqliteCommand command, string action, string target, string? actor, string? reason, DateTimeOffset now)
+    {
+        command.CommandText = "INSERT INTO chat_moderation_logs(action,target,actor,reason,created_at) VALUES($action,$target,$actor,$reason,$now);";
+        command.Parameters.Clear();
+        command.Parameters.AddWithValue("$action", action);
+        command.Parameters.AddWithValue("$target", target);
+        command.Parameters.AddWithValue("$actor", (object?)actor ?? DBNull.Value);
+        command.Parameters.AddWithValue("$reason", (object?)reason ?? DBNull.Value);
+        command.Parameters.AddWithValue("$now", Time(now));
+        command.ExecuteNonQuery();
     }
 
     public ChatGuest? PublicGuest(string guestId)
@@ -232,8 +295,9 @@ public sealed class ChatRepository(ApiDatabase database, ChatOptions options)
     {
         var message = Message(id.ToString(CultureInfo.InvariantCulture));
         if (message is null || (options.MessageCleanupEnabled && message.CreatedAt < DateTimeOffset.UtcNow.AddDays(-options.RetentionDays))) return null;
-        var before = History(id, null, options.HistoryPageSize / 2);
-        var after = History(null, id, options.HistoryPageSize / 2);
+        var neighborhood = Math.Max(1, options.HistoryPageSize / 2);
+        var before = History(id, null, neighborhood);
+        var after = History(null, id, neighborhood);
         return new ChatMessageContext([.. before.Items, message, .. after.Items], before.HasMore, after.HasMore);
     }
 

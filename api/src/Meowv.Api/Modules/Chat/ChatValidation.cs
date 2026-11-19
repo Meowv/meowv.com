@@ -7,7 +7,7 @@ public static class ChatValidation
 {
     public static string Nickname(string? value, ChatOptions options)
     {
-        if (value is null || value.Any(char.IsControl)) throw new ChatException("invalid_nickname", "昵称不能包含换行或控制字符。");
+        if (value is null || value.Any(c => char.IsControl(c) || IsSpoofingFormat(c))) throw new ChatException("invalid_nickname", "昵称不能包含换行或控制字符。");
         string normalized;
         try
         {
@@ -40,8 +40,13 @@ public static class ChatValidation
         }
 
         if (string.IsNullOrWhiteSpace(content) || StringInfo.ParseCombiningCharacters(content).Length > options.MaxMessageChars ||
-            Encoding.UTF8.GetByteCount(content) > options.MaxMessageBytes || content.Any(c => char.IsControl(c) && c is not '\n' and not '\t'))
+            Encoding.UTF8.GetByteCount(content) > options.MaxMessageBytes ||
+            content.Any(c => (char.IsControl(c) && c is not '\n' and not '\t') || IsSpoofingFormat(c)))
             throw new ChatException("invalid_message", $"消息须为 1–{options.MaxMessageChars} 个字符，最多 {options.MaxMessageBytes} 字节。");
         return content;
     }
+
+    // U+202E 双向覆写、零宽空格等属于 Unicode Format 类别；保留 emoji 序列需要的 ZWJ/ZWNJ。
+    private static bool IsSpoofingFormat(char value) =>
+        char.GetUnicodeCategory(value) is UnicodeCategory.Format && value is not ('\u200C' or '\u200D');
 }

@@ -55,6 +55,14 @@ public sealed class ChatMiddleware(RequestDelegate next)
             logger.LogWarning("Chat 数据库操作失败。");
             await Error(context, 503, new ChatError("chat_unavailable", "聊天室暂不可用，请稍后重试。"));
         }
+        catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+        {
+        }
+        catch (Exception error) when (!context.Response.HasStarted)
+        {
+            logger.LogWarning("Chat 请求失败，类型 {ExceptionType}。", error.GetType().Name);
+            await Error(context, 500, new ChatError("internal", "聊天室服务暂时不可用。"));
+        }
     }
 
     private static Task Error(HttpContext context, int status, ChatError error)

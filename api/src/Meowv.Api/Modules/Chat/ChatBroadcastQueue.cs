@@ -45,25 +45,31 @@ public sealed class ChatBroadcastQueue(IHubContext<ChatHub> hub, ChatPresenceSer
             {
                 try
                 {
-                    using var timeout = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
-                    timeout.CancelAfter(SendTimeout);
-                    var sending = hub.Clients.All.SendCoreAsync(item.Event, [item.Payload], timeout.Token);
-                    try
+                    var connections = presence.Connections;
+                    var sends = connections.Select(async connection =>
                     {
-                        await sending.WaitAsync(timeout.Token);
-                    }
-                    catch
-                    {
-                        // 即使传输实现忽略取消，也观察其最终异常，避免后台任务泄漏诊断。
-                        _ = sending.ContinueWith(task => { _ = task.Exception; }, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
-                        throw;
-                    }
+                        // 每个连接独立超时；一个慢客户端不再拖垮整个聊天室。
+                        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+                        timeout.CancelAfter(SendTimeout);
+                        var sending = hub.Clients.Client(connection.Id).SendCoreAsync(item.Event, [item.Payload], timeout.Token);
+                        try
+                        {
+                            await sending.WaitAsync(timeout.Token);
+                        }
+                        catch (Exception error)
+                        {
+                            // 即使传输实现忽略取消，也观察其最终异常，避免后台任务泄漏诊断。
+                            _ = sending.ContinueWith(task => { _ = task.Exception; }, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
+                            if (stoppingToken.IsCancellationRequested) return;
+                            ChatDiagnostics.Failure(logger, error, item.Event, item.CorrelationId);
+                            presence.AbortConnection(connection.Id);
+                        }
+                    });
+                    await Task.WhenAll(sends);
                 }
                 catch (Exception error)
                 {
                     ChatDiagnostics.Failure(logger, error, item.Event, item.CorrelationId);
-                    // 广播可能已部分送达，不能盲目重试；断开会话促使客户端重连并重新拉取权威快照。
-                    presence.DisconnectAll();
                 }
                 finally
                 {

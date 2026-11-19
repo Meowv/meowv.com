@@ -11,7 +11,15 @@ public sealed class ChatPresenceService(ChatOptions options)
     {
         get
         {
-            lock (_gate) return _connections.Values.Select(c => c.Guest.Id).Distinct().Count();
+            lock (_gate) return _connections.Values.Where(c => c.ExpiresAt > DateTimeOffset.UtcNow).Select(c => c.Guest.Id).Distinct().Count();
+        }
+    }
+
+    internal (string Id, Action Abort)[] Connections
+    {
+        get
+        {
+            lock (_gate) return [.. _connections.Select(pair => (pair.Key, pair.Value.Abort))];
         }
     }
 
@@ -36,6 +44,13 @@ public sealed class ChatPresenceService(ChatOptions options)
     public void Remove(string id)
     {
         lock (_gate) _connections.Remove(id);
+    }
+
+    internal void AbortConnection(string id)
+    {
+        Action? abort;
+        lock (_gate) abort = _connections.Remove(id, out var connection) ? connection.Abort : null;
+        abort?.Invoke();
     }
 
     public void Disconnect(string guestId)

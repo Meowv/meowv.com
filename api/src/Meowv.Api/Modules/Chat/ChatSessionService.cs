@@ -29,6 +29,8 @@ public sealed class ChatSessionService(ChatRepository repository)
         return session;
     }
 
+    internal ChatSession? Rename(ChatSession session, string nickname) => repository.RenameSession(session.TokenHash, nickname);
+
     internal void Logout(HttpContext context, ChatPresenceService presence)
     {
         var session = Current(context);
