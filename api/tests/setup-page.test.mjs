@@ -232,6 +232,8 @@ test('music credentials are scoped, shown once, revoked explicitly and cleared o
   assert.equal(page.copied.at(-1), musicToken);
   await page.trigger('music-load');
   assert.equal(page.element('music-devices').children[0].textContent, '<img onerror=unsafe>');
+  assert.match(page.element('music-device-list').innerHTML, /&lt;img onerror=unsafe&gt;/);
+  assert.match(page.element('music-device-list').innerHTML, /有效/);
   page.setConfirmation(false);
   await page.trigger('music-revoke');
   assert.equal(revoked, false);
@@ -300,6 +302,8 @@ test('QQ membership setup keeps the QR in memory and manages grants for existing
   page.element('qq-grant').checked = true;
   await page.trigger('qq-save');
   assert.equal(granted, true);
+  assert.match(page.element('qq-device-list').innerHTML, /测试车机/);
+  assert.match(page.element('qq-device-list').innerHTML, /已授权/);
   await page.trigger('qq-login');
   assert.equal(page.element('qq-qr').src, 'blob:synthetic-qr');
   assert.equal(page.element('qq-qr-box').hidden, false);
