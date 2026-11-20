@@ -427,7 +427,7 @@ internal static class AuthSetupPage
                                                    ><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
                                                      <path d="M9 18V5l11-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="17" cy="16" r="3" /></svg
                                                  ></span>
-                                                 <span><strong>音乐设备</strong><small>签发与撤销凭据</small></span>
+                                                 <span><strong>音乐设备</strong><small>激活与撤销</small></span>
                                                </a>
                                                <a class="quick-card" href="#panel-qq">
                                                  <span class="quick-icon" aria-hidden="true"
@@ -511,30 +511,20 @@ internal static class AuthSetupPage
                                                      ><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
                                                        <path d="M9 18V5l11-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="17" cy="16" r="3" /></svg
                                                    ></span>
-                                                   <div><h2 id="music-title">音乐设备凭据</h2><p class="caption">按设备单独签发，仅授权音乐服务</p></div>
+                                                   <div><h2 id="music-title">音乐设备</h2><p class="caption">按设备激活音乐服务</p></div>
                                                  </div>
                                                </div>
-                                               <p class="description">为手机或车机单独签发，仅授权音乐。撤销后该设备的新请求立即失效。</p>
+                                               <p class="description">在 App 设置中核对设备短码，再激活该设备。QQ 会员播放需单独授权。</p>
                                                <div class="form-stack">
-                                                 <label>设备别名<input id="music-alias" maxlength="80" autocomplete="off" placeholder="例如：我的车机" /></label>
-                                                 <div class="actions">
-                                                   <button id="music-issue" class="primary" data-private type="button">签发凭据</button>
-                                                   <button id="music-load" class="secondary" data-private type="button">刷新设备列表</button>
-                                                 </div>
-                                                 <div id="music-result" class="code-box" hidden>
-                                                   <label>新设备凭据（仅本次可见）<input id="music-token" readonly autocomplete="off" spellcheck="false" /></label>
-                                                   <p class="hint">请立即复制到音乐客户端；离开或隐藏后无法再次查看。</p>
-                                                   <div class="actions">
-                                                     <button id="music-copy" class="secondary" data-private type="button">复制音乐凭据</button>
-                                                     <button id="music-hide" class="text-button" type="button">隐藏凭据</button>
-                                                   </div>
-                                                 </div>
-                                                 <div class="divider"></div>
-                                                 <div class="list-head"><strong>已签发设备</strong><span>状态</span></div>
-                                                 <select id="music-devices" aria-label="已签发音乐设备" hidden></select>
+                                                 <div><button id="music-load" class="secondary" data-private type="button">刷新设备列表</button></div>
+                                                 <div class="list-head"><strong>音乐设备</strong><span>状态</span></div>
+                                                 <select id="music-devices" aria-label="音乐设备" hidden></select>
                                                  <div id="music-device-list" class="device-list"></div>
-                                                 <p id="music-status" class="hint">正在加载设备列表…</p>
-                                                 <div><button id="music-revoke" class="text-button danger" data-private type="button">撤销选中设备</button></div>
+                                                 <p id="music-status" class="hint" aria-live="polite">正在加载设备列表…</p>
+                                                 <div class="actions">
+                                                   <button id="music-activate" class="primary" data-private type="button" hidden>激活选中设备</button>
+                                                   <button id="music-revoke" class="text-button danger" data-private type="button" hidden>撤销选中设备</button>
+                                                 </div>
                                                  <div class="divider"></div>
                                                  <div class="list-head"><strong>每日榜单快照</strong></div>
                                                  <p id="charts-status" class="hint">可手动强制刷新每日榜单快照，生成后各设备立即可用。</p>
@@ -563,7 +553,7 @@ internal static class AuthSetupPage
                                                  <img id="qq-qr" width="224" height="224" alt="QQ 音乐登录二维码" />
                                                </div>
                                                <div id="qq-devices" class="form-stack" hidden>
-                                                 <div class="list-head"><strong>已签发设备</strong><span>会员权限</span></div>
+                                                 <div class="list-head"><strong>已激活设备</strong><span>会员权限</span></div>
                                                  <select id="qq-device" data-private hidden></select>
                                                  <div id="qq-device-list" class="device-list"></div>
                                                  <label class="check-line"><input id="qq-grant" data-private type="checkbox" /> 允许选中设备播放 QQ 音乐会员曲目</label>
@@ -705,7 +695,7 @@ internal static class AuthSetupPage
                                               authenticated = false;
                                               managementToken = "";
                                               clearSavedToken();
-                                              clearMusicSecret();
+                                              resetMusicDevices();
                                              resetQQ();
                                               $("access-code").value = "";
                                               $("code-result").hidden = true;
@@ -960,75 +950,79 @@ internal static class AuthSetupPage
                                        const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) => ({
                                          "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
                                        })[char]);
-                                       const deviceRow = (name, device, selected, state, stateClass, disabled) =>
+                                       const deviceRow = (name, id, label, selected, state, stateClass, disabled) =>
                                          '<label class="device-row' + (disabled ? " is-revoked" : "") + '">' +
-                                           '<input type="radio" name="' + name + '" value="' + escapeHtml(device.id) + '"' +
-                                             (disabled ? " disabled" : "") + (device.id === selected ? " checked" : "") + ' />' +
-                                           '<span class="device-name">' + escapeHtml(device.alias) + '</span>' +
+                                           '<input type="radio" name="' + name + '" value="' + escapeHtml(id) + '"' +
+                                             (disabled ? " disabled" : "") + (id === selected ? " checked" : "") + ' />' +
+                                           '<span class="device-name">' + escapeHtml(label) + '</span>' +
                                            '<span class="device-state ' + stateClass + '">' + state + '</span>' +
                                          '</label>';
                                        $("music-device-list").onchange = (event) => {
                                          if (event.target?.name !== "music-device") return;
                                          $("music-devices").value = event.target.value;
-                                         $("music-status").textContent = "已选择设备，可撤销该设备凭据。";
+                                         syncMusicActions();
                                        };
                                        $("qq-device-list").onchange = (event) => {
                                          if (event.target?.name !== "qq-device") return;
                                          $("qq-device").value = event.target.value;
                                          $("qq-grant").checked = qqEnabled.has(event.target.value);
                                        };
-                                       const clearMusicSecret = () => {
-                                         $("music-token").value = "";
-                                         $("music-result").hidden = true;
+                                       let musicDevices = [];
+                                       const deviceLabel = (device) => [device.shortCode, device.model, "Android " + device.osVersion].join(" · ");
+                                       const selectedMusicDevice = () => musicDevices.find(d => d.deviceId === $("music-devices").value);
+                                       const syncMusicActions = () => {
+                                         const status = selectedMusicDevice()?.status;
+                                         $("music-activate").hidden = status !== "pending";
+                                         $("music-revoke").hidden = status !== "active" && status !== "pending";
+                                       };
+                                       const resetMusicDevices = () => {
+                                         musicDevices = [];
+                                         $("music-devices").replaceChildren();
+                                         syncMusicActions();
                                        };
                                        const loadMusicDevices = async () => {
                                          const devices = await request("/api/music/setup/devices");
                                          if (!Array.isArray(devices)) throw new Error("设备列表格式无效。");
-                                         const selected = devices.some(d => !d.revokedAt && d.id === $("music-devices").value)
+                                         musicDevices = devices;
+                                         const selected = devices.some(d => d.status !== "revoked" && d.deviceId === $("music-devices").value)
                                            ? $("music-devices").value
-                                           : (devices.find(d => !d.revokedAt)?.id || "");
+                                           : (devices.find(d => d.status !== "revoked")?.deviceId || "");
                                          $("music-devices").replaceChildren();
+                                         const labels = { pending: "待激活", active: "已激活", revoked: "已撤销" };
                                          devices.forEach((device) => {
                                            const option = document.createElement("option");
-                                           option.value = device.id;
-                                           option.textContent = device.alias + (device.revokedAt ? "（已撤销）" : "");
-                                           option.disabled = !!device.revokedAt;
+                                           option.value = device.deviceId;
+                                           option.textContent = deviceLabel(device);
+                                           option.disabled = device.status === "revoked";
                                            $("music-devices").appendChild(option);
                                          });
-                                         if (selected) $("music-devices").value = selected;
-                                         $("music-device-list").innerHTML = devices.map((device) =>
-                                           deviceRow("music-device", device, selected, device.revokedAt ? "已撤销" : "有效",
-                                             device.revokedAt ? "" : "on", !!device.revokedAt)
-                                         ).join("") || '<p class="hint">尚未签发设备凭据。</p>';
-                                         $("music-status").textContent = devices.length ? "点击设备选择，可撤销或重新签发。" : "尚未签发设备凭据。";
+                                         $("music-devices").value = selected;
+                                         $("music-device-list").innerHTML = devices.map(device =>
+                                           deviceRow("music-device", device.deviceId, deviceLabel(device), selected,
+                                             labels[device.status] || "未知", device.status === "active" ? "on" : "", device.status === "revoked")
+                                         ).join("") || '<p class="hint">暂无设备登记。</p>';
+                                         $("music-status").textContent = "";
+                                         syncMusicActions();
                                        };
                                        $("music-load").onclick = () => run(loadMusicDevices);
-                                       $("music-issue").onclick = () => run(async () => {
-                                         const alias = $("music-alias").value.trim();
-                                         if (!alias || alias.length > 80 || /[\x00-\x1f\x7f]/.test(alias)) throw new Error("请输入有效设备别名（1–80字符）。");
-                                         if ($("music-token").value && !confirm("新签发将隐藏当前凭据，请确认已保存。")) return;
-                                         clearMusicSecret();
-                                         const device = await request("/api/music/setup/devices", {
-                                           method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ alias }),
-                                         });
-                                         if (typeof device.token !== "string" || !device.token) throw new Error("未收到设备凭据，请刷新列表核对。");
-                                         $("music-token").value = device.token;
-                                         $("music-result").hidden = false;
-                                         $("music-status").textContent = "签发成功，请保存凭据后刷新设备列表。";
-                                       });
-                                       $("music-copy").onclick = async () => {
-                                         if (!authenticated || !$("music-token").value) return;
-                                         try { await navigator.clipboard.writeText($("music-token").value); }
-                                         catch { $("music-token").focus(); $("music-token").select(); }
-                                       };
-                                       $("music-hide").onclick = clearMusicSecret;
-                                       $("music-revoke").onclick = () => {
-                                         const id = $("music-devices").value;
-                                         if (!id || !confirm("撤销后该设备将无法继续请求音乐服务，确定撤销？")) return;
+                                       $("music-activate").onclick = () => {
+                                         const device = selectedMusicDevice();
+                                         if (device?.status !== "pending" || !confirm("确认激活设备 " + device.shortCode + "？")) return;
                                          run(async () => {
-                                           await request("/api/music/setup/devices/" + encodeURIComponent(id), { method: "DELETE" });
-                                           clearMusicSecret();
+                                           await request("/api/music/setup/devices/" + encodeURIComponent(device.deviceId) + "/activate", { method: "POST" });
                                            await loadMusicDevices();
+                                           if (!$("qq-devices").hidden) await loadQQDevices();
+                                           $("music-status").textContent = "设备已激活。";
+                                         });
+                                       };
+                                       $("music-revoke").onclick = () => {
+                                         const device = selectedMusicDevice();
+                                         if (!device || device.status === "revoked" || !confirm("确认撤销设备 " + device.shortCode + "？")) return;
+                                         run(async () => {
+                                           await request("/api/music/setup/devices/" + encodeURIComponent(device.deviceId), { method: "DELETE" });
+                                           await loadMusicDevices();
+                                           if (!$("qq-devices").hidden) await loadQQDevices();
+                                           $("music-status").textContent = "设备已撤销。";
                                          });
                                        };
                                        const qqRoot = "/api/music/setup/qq";
@@ -1044,21 +1038,21 @@ internal static class AuthSetupPage
                                        const loadQQDevices = async () => {
                                          const devices = await request("/api/music/setup/devices");
                                          if (!Array.isArray(devices)) throw new Error("设备列表格式无效。");
-                                         const active = devices.filter(device => !device.revokedAt);
-                                         const selected = active.some(device => device.id === $("qq-device").value)
-                                           ? $("qq-device").value : (active[0]?.id || "");
+                                         const active = devices.filter(device => device.status === "active");
+                                         const selected = active.some(device => device.deviceId === $("qq-device").value)
+                                           ? $("qq-device").value : (active[0]?.deviceId || "");
                                          $("qq-device").replaceChildren();
                                          active.forEach((device) => {
                                            const option = document.createElement("option");
-                                           option.value = device.id;
-                                           option.textContent = device.alias;
+                                           option.value = device.deviceId;
+                                           option.textContent = deviceLabel(device);
                                            $("qq-device").appendChild(option);
                                          });
                                          if (selected) $("qq-device").value = selected;
                                          $("qq-device-list").innerHTML = active.map((device) =>
-                                           deviceRow("qq-device", device, selected, qqEnabled.has(device.id) ? "已授权" : "未授权",
-                                             qqEnabled.has(device.id) ? "on" : "off", false)
-                                         ).join("") || '<p class="hint">尚未签发设备凭据，请先在上方签发。</p>';
+                                           deviceRow("qq-device", device.deviceId, deviceLabel(device), selected, qqEnabled.has(device.deviceId) ? "已授权" : "未授权",
+                                             qqEnabled.has(device.deviceId) ? "on" : "off", false)
+                                         ).join("") || '<p class="hint">暂无已激活的设备。</p>';
                                          $("qq-grant").checked = qqEnabled.has(selected);
                                        };
                                        const loadQQ = async (devices = false) => {
@@ -1124,7 +1118,7 @@ internal static class AuthSetupPage
                                        $("qq-device").onchange = () => { $("qq-grant").checked = qqEnabled.has($("qq-device").value); };
                                        $("qq-save").onclick = () => run(async () => {
                                          const id = $("qq-device").value;
-                                         if (!id) throw new Error("请先签发并选择一个音乐设备。");
+                                         if (!id) throw new Error("请先激活并选择一个音乐设备。");
                                          await request(qqRoot + "/devices/" + encodeURIComponent(id), {
                                            method: "PUT", headers: { "Content-Type": "application/json" },
                                            body: JSON.stringify({ enabled: $("qq-grant").checked }),
@@ -1133,11 +1127,9 @@ internal static class AuthSetupPage
                                        });
                                         $("exit").onclick = () => {
                                           managementEpoch++;
-                                          clearMusicSecret();
+                                          resetMusicDevices();
                                           clearSavedToken();
                                           resetQQ();
-                                          $("music-alias").value = "";
-                                          $("music-devices").replaceChildren();
                                           $("music-device-list").replaceChildren();
                                           $("qq-device-list").replaceChildren();
                                           managementToken = "";

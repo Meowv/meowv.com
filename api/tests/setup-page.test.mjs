@@ -29,7 +29,9 @@ function createPage(respond, storage = new Map()) {
     document: {
       getElementById: id => elements.get(id),
       createElement: () => ({ value: '', textContent: '', disabled: false }),
-      querySelectorAll: () => ['rotate', 'retry-camera', 'reset-session', 'exit', 'restart-login'].map(id => elements.get(id)),
+      querySelectorAll: () => Array.from(source.matchAll(/<[^>]+>/g), ([tag]) => tag)
+        .filter(tag => tag.includes(' data-private'))
+        .map(tag => elements.get(tag.match(/\bid="([^"]+)"/)?.[1])).filter(Boolean),
     },
     location: { pathname: '/nested/setup/' },
     localStorage: {
@@ -210,57 +212,67 @@ test('removed camera setup page and compatibility initialization routes stay abs
   assert.doesNotMatch(source, /setup\/xiaomi/);
 });
 
-test('music credentials are scoped, shown once, revoked explicitly and cleared on exit', async () => {
-  let revoked = false;
-  const musicToken = 'YOUR_SYNTHETIC_MUSIC_TOKEN_FOR_UI_TESTS';
+test('music management activates and revokes the selected short code without showing a token', async () => {
+  let status = 'pending';
+  const deviceId = 'device-1';
   const page = createPage(request => {
     if (request.path === '/api/music/setup/devices') {
-      if (request.method === 'POST') {
-        assert.deepEqual(JSON.parse(request.body), { alias: 'Test car' });
-        return { status: 201, body: { id: 'device-1', token: musicToken } };
-      }
-      return { body: [{ id: 'device-1', alias: '<img onerror=unsafe>', revokedAt: revoked ? '2026-11-16T00:00:00Z' : null }] };
+      return { body: [{ deviceId, installationId: 'installation-1', shortCode: 'BEEF-CAFE', model: '<img onerror=unsafe>', osVersion: '9', status }] };
     }
-    if (request.path === '/api/music/setup/devices/device-1') { revoked = true; return { status: 204 }; }
+    if (request.path === '/api/music/setup/devices/device-1/activate') {
+      assert.equal(request.method, 'POST');
+      status = 'active';
+      return { body: { deviceId, status } };
+    }
+    if (request.path === '/api/music/setup/devices/device-1') {
+      assert.equal(request.method, 'DELETE');
+      status = 'revoked';
+      return { status: 204 };
+    }
     return standardResponse(request);
   });
   await page.authenticate();
-  page.element('music-alias').value = 'Test car';
-  await page.trigger('music-issue');
-  assert.equal(page.element('music-token').value, musicToken);
-  await page.trigger('music-copy');
-  assert.equal(page.copied.at(-1), musicToken);
   await page.trigger('music-load');
-  assert.equal(page.element('music-devices').children[0].textContent, '<img onerror=unsafe>');
   assert.match(page.element('music-device-list').innerHTML, /&lt;img onerror=unsafe&gt;/);
-  assert.match(page.element('music-device-list').innerHTML, /有效/);
+  assert.match(page.element('music-device-list').innerHTML, /待激活/);
+  assert.equal(page.element('music-activate').hidden, false);
+  page.setConfirmation(false);
+  await page.trigger('music-activate');
+  assert.equal(status, 'pending');
+  assert.match(page.prompts.at(-1), /BEEF-CAFE/);
+  page.setConfirmation(true);
+  await page.trigger('music-activate');
+  assert.equal(status, 'active');
+  assert.equal(page.element('music-activate').hidden, true);
   page.setConfirmation(false);
   await page.trigger('music-revoke');
-  assert.equal(revoked, false);
+  assert.equal(status, 'active');
   page.setConfirmation(true);
   await page.trigger('music-revoke');
-  assert.equal(revoked, true);
-  assert.equal(page.element('music-token').value, '');
-  await page.trigger('music-issue');
+  assert.equal(status, 'revoked');
+  assert.equal(page.element('music-revoke').hidden, true);
+  assert.equal(page.element('music-token'), undefined);
   await page.trigger('exit');
-  assert.equal(page.element('music-token').value, '');
-  assert.equal(page.element('music-result').hidden, true);
+  assert.equal(page.element('music-devices').children.length, 0);
 });
 
-test('late music issuance cannot restore a credential after management exit', async () => {
+test('late device activation cannot update the music list after management exit', async () => {
   let finish;
-  const page = createPage(request => request.path === '/api/music/setup/devices'
-    ? new Promise(resolve => { finish = resolve; }) : standardResponse(request));
+  const page = createPage(request => {
+    if (request.path === '/api/music/setup/devices/device-1/activate') return new Promise(resolve => { finish = resolve; });
+    if (request.path === '/api/music/setup/devices')
+      return { body: [{ deviceId: 'device-1', shortCode: 'BEEF-CAFE', model: 'Test car', osVersion: '9', status: 'pending' }] };
+    return standardResponse(request);
+  });
   await page.authenticate();
-  page.element('music-alias').value = 'Test car';
-  const issuing = page.trigger('music-issue');
+  await page.trigger('music-load');
+  const activating = page.trigger('music-activate');
   await page.trigger('exit');
-  finish({ status: 201, body: { id: 'late', token: 'YOUR_LATE_SYNTHETIC_TOKEN_FOR_TESTS' } });
-  await issuing;
-  assert.equal(page.element('music-token').value, '');
+  finish({ body: { deviceId: 'device-1', status: 'active' } });
+  await activating;
+  assert.equal(page.element('music-devices').children.length, 0);
   assert.equal(page.element('workspace').hidden, true);
 });
-
 
 test('QQ membership setup keeps the QR in memory and manages grants for existing devices', async () => {
   const qq = '/api/music/setup/qq';
@@ -273,7 +285,10 @@ test('QQ membership setup keeps the QR in memory and manages grants for existing
       return { body: { status: 'connected', canLogin: true, attempt, devices: granted ? [deviceId] : [] } };
     }
     if (request.path === '/api/music/setup/devices') {
-      return { body: [{ id: deviceId, alias: '测试车机' }] };
+      return { body: [
+        { deviceId: 'pending', shortCode: 'CCCC-DDDD', model: '未激活设备', osVersion: '9', status: 'pending' },
+        { deviceId, shortCode: 'AAAA-BBBB', model: '测试车机', osVersion: '9', status: 'active' },
+      ] };
     }
     if (request.path === qq + '/devices/' + deviceId) {
       assert.equal(request.method, 'PUT');
@@ -297,6 +312,8 @@ test('QQ membership setup keeps the QR in memory and manages grants for existing
   });
   await page.authenticate();
   await page.trigger('qq-load');
+  assert.equal(page.element('qq-device').children.length, 1);
+  assert.equal(page.element('qq-device').value, deviceId);
   assert.equal(page.element('qq-login').textContent, '重新绑定');
   assert.equal(page.element('qq-device').value, deviceId);
   page.element('qq-grant').checked = true;

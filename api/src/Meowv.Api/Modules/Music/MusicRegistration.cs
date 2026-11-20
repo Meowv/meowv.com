@@ -70,12 +70,17 @@ public static class MusicRegistration
         services.AddRateLimiter(limits =>
         {
             limits.AddPolicy("music", new MusicRatePolicy(options));
+            AddIpLimit("music-register", 5);
+            AddIpLimit("music-activation-status", 30);
             // 二维码状态轮询使用独立配额，保留管理写操作的额度。
-            limits.AddPolicy("music-qq-status", context =>
+            AddIpLimit("music-qq-status", 45);
+            return;
+
+            void AddIpLimit(string name, int permits) => limits.AddPolicy(name, context =>
                 RateLimitPartition.GetFixedWindowLimiter(context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
                     _ => new FixedWindowRateLimiterOptions
                     {
-                        PermitLimit = 45, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true
+                        PermitLimit = permits, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true
                     }));
         });
         return services;

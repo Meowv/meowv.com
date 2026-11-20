@@ -106,8 +106,8 @@ internal sealed class QQSessionStore(ApiDatabase database, MusicOptions options)
         using var connection = database.OpenConnection();
         using var command = connection.CreateCommand();
         command.CommandText = """
-                              SELECT g.device_id FROM music_qq_devices g JOIN music_device_tokens d ON d.id = g.device_id
-                              WHERE d.revoked_at IS NULL ORDER BY g.device_id;
+                              SELECT g.device_id FROM music_qq_devices g JOIN music_device_activation d ON d.device_id = g.device_id
+                              WHERE d.status='active' ORDER BY g.device_id;
                               """;
         using var reader = command.ExecuteReader();
         var result = new List<string>();
@@ -122,8 +122,8 @@ internal sealed class QQSessionStore(ApiDatabase database, MusicOptions options)
         using var connection = database.OpenConnection();
         using var command = connection.CreateCommand();
         command.CommandText = """
-                              SELECT 1 FROM music_qq_devices g JOIN music_device_tokens d ON d.id = g.device_id
-                              WHERE d.revoked_at IS NULL AND g.device_id = $id;
+                              SELECT 1 FROM music_qq_devices g JOIN music_device_activation d ON d.device_id = g.device_id
+                              WHERE d.status='active' AND g.device_id = $id;
                               """;
         command.Parameters.AddWithValue("$id", id);
         return command.ExecuteScalar() is long;
@@ -139,7 +139,7 @@ internal sealed class QQSessionStore(ApiDatabase database, MusicOptions options)
         command.CommandText = enabled
             ? """
               INSERT INTO music_qq_devices(device_id)
-              SELECT id FROM music_device_tokens WHERE id = $id AND revoked_at IS NULL
+              SELECT device_id FROM music_device_activation WHERE device_id = $id AND status='active'
               ON CONFLICT(device_id) DO UPDATE SET device_id = excluded.device_id;
               """
             : "DELETE FROM music_qq_devices WHERE device_id = $id;";

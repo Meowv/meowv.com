@@ -1,3 +1,5 @@
+using System.Buffers.Text;
+using System.Security.Cryptography;
 using System.Net;
 using System.Security.Claims;
 using System.Net.Http.Headers;
@@ -20,7 +22,7 @@ using Microsoft.Data.Sqlite;
 
 internal static class MusicChecks
 {
-    private const string Token = "YOUR_SYNTHETIC_MUSIC_DEVICE_TOKEN_FOR_TESTS_ONLY";
+    private const string ManagementToken = "YOUR_SYNTHETIC_MANAGEMENT_TOKEN_FOR_TESTS_ONLY";
 
     public static async Task RunAsync(string root)
     {
@@ -50,7 +52,7 @@ internal static class MusicChecks
             Check(health.StatusCode == HttpStatusCode.OK && (await health.Content.ReadAsStringAsync()).Contains("ready"), "Ready source health");
             using var unauthorized = await client.PostAsync("/api/music/resolve", new StringContent("{broken", Encoding.UTF8, "application/json"));
             await Error(unauthorized, 401, "unauthorized");
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+            UseDevice(client, app);
             using var providers = await client.GetAsync("/api/music/providers");
             var registered = JsonSerializer.Deserialize(await providers.Content.ReadAsStringAsync(), MusicJsonContext.Default.MusicProviders)!;
             Check(providers.IsSuccessStatusCode && registered.Providers.Select(x => x.Id).SequenceEqual(["netease", "qqmusic"]),
@@ -95,7 +97,7 @@ internal static class MusicChecks
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", commonCode);
             using var wrongScope = await client.GetAsync("/api/music/providers");
             await Error(wrongScope, 401, "unauthorized");
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+            UseDevice(client, app);
             using var catalog = await client.GetAsync("/api/modules");
             var text = await catalog.Content.ReadAsStringAsync();
             Check(text.Contains("/api/music/resolve") && text.Contains("MusicDevice"), "Catalog exposes music scope");
@@ -115,7 +117,7 @@ internal static class MusicChecks
         });
         await Case(root, true, async (client, app) =>
         {
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+            UseDevice(client, app);
             using var failed = await client.GetAsync("/api/music/search?q=outage");
             await Error(failed, 503, "source_unavailable");
             Check(failed.Headers.RetryAfter?.Delta > TimeSpan.Zero, "Source outage carries Retry-After");
@@ -138,25 +140,19 @@ internal static class MusicChecks
                 await CommonHealthy(client);
             }, change: invalid);
         }
-        await Case(root, true, async (client, _) =>
+        await Case(root, true, async (client, app) =>
         {
             using var health = await client.GetAsync("/api/music/health");
             Check(health.IsSuccessStatusCode && (await health.Content.ReadAsStringAsync()).Contains("ready"), "Production uses the same Music availability rules");
             using var anonymousSetup = await client.GetAsync("/api/music/setup/devices");
             Check(anonymousSetup.StatusCode == HttpStatusCode.Unauthorized, "Production device management stays protected");
-            client.DefaultRequestHeaders.Add("X-Api-Bootstrap-Token", "YOUR_SYNTHETIC_MANAGEMENT_TOKEN_FOR_TESTS_ONLY");
-            using var issued = await client.PostAsync("/api/music/setup/devices", Json("{\"alias\":\"production\"}"));
-            Check(issued.StatusCode == HttpStatusCode.Created, "Production exposes device management");
-            using var issuedJson = JsonDocument.Parse(await issued.Content.ReadAsStringAsync());
-            var deviceToken = issuedJson.RootElement.GetProperty("token").GetString()!;
-            client.DefaultRequestHeaders.Remove("X-Api-Bootstrap-Token");
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", deviceToken);
+            UseDevice(client, app);
             using var providers = await client.GetAsync("/api/music/providers");
             Check(providers.IsSuccessStatusCode, "Production serves Music business endpoints");
         }, production: true);
-        await Case(root, true, async (client, _) =>
+        await Case(root, true, async (client, app) =>
         {
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+            UseDevice(client, app);
             using var first = await client.GetAsync("/api/music/providers");
             Check(first.IsSuccessStatusCode, "First bounded request");
             client.DefaultRequestHeaders.Add("X-Forwarded-For", "192.0.2.10");
@@ -164,50 +160,13 @@ internal static class MusicChecks
             await Error(limited, 429, "rate_limited");
             Check(limited.Headers.RetryAfter?.Delta > TimeSpan.Zero, "429 Retry-After header");
         }, change: new("RequestsPerMinute", "1"));
-        await Case(root, true, async (client, app) =>
-        {
-            using var denied = await client.PostAsync("/api/music/setup/devices", Json("{broken"));
-            Check(denied.StatusCode == HttpStatusCode.Unauthorized, "Management auth precedes body parsing");
-            client.DefaultRequestHeaders.Add("X-Api-Bootstrap-Token", "YOUR_SYNTHETIC_MANAGEMENT_TOKEN_FOR_TESTS_ONLY");
-            using var issued = await client.PostAsync("/api/music/setup/devices", Json("{\"alias\":\"Test car\"}"));
-            Check(issued.StatusCode == HttpStatusCode.Created && issued.Headers.CacheControl?.NoStore == true, "Issue scoped credential without caching");
-            using var document = JsonDocument.Parse(await issued.Content.ReadAsStringAsync());
-            var id = document.RootElement.GetProperty("id").GetString()!;
-            var token = document.RootElement.GetProperty("token").GetString()!;
-            var database = app.Services.GetRequiredService<ApiDatabase>();
-            var reopened = new MusicDeviceStore(database, TimeProvider.System);
-            Check(reopened.Verify(token) == id, "Credential persists across store reconstruction");
-            using (var connection = database.OpenConnection())
-            using (var query = connection.CreateCommand())
-            {
-                query.CommandText = "SELECT token_hash FROM music_device_tokens WHERE id=$id;";
-                query.Parameters.AddWithValue("$id", id);
-                var hash = (string)query.ExecuteScalar()!;
-                Check(hash.Length == 64 && hash != token, "Store only digest");
-            }
-            using var listing = await client.GetAsync("/api/music/setup/devices");
-            var text = await listing.Content.ReadAsStringAsync();
-            Check(!text.Contains(token) && !text.Contains("tokenHash"), "Listing never exposes credentials");
-            client.DefaultRequestHeaders.Remove("X-Api-Bootstrap-Token");
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            using var allowed = await client.GetAsync("/api/music/providers");
-            Check(allowed.IsSuccessStatusCode, "Issued device credential authenticates");
-            using var common = await client.GetAsync("/probe/common");
-            Check(common.StatusCode == HttpStatusCode.Unauthorized, "Device credential is music-only");
-            using var manage = await client.GetAsync("/api/music/setup/devices");
-            Check(manage.StatusCode == HttpStatusCode.Unauthorized, "Device cannot manage credentials");
-            client.DefaultRequestHeaders.Add("X-Api-Bootstrap-Token", "YOUR_SYNTHETIC_MANAGEMENT_TOKEN_FOR_TESTS_ONLY");
-            using var revoked = await client.DeleteAsync("/api/music/setup/devices/" + id);
-            Check(revoked.StatusCode == HttpStatusCode.NoContent, "Management revokes device");
-            Check(reopened.Verify(token) is null, "Revocation survives reconstruction");
-            using var expired = await client.GetAsync("/api/music/providers");
-            await Error(expired, 401, "unauthorized");
-            await CommonHealthy(client);
-        }, change: new("TestAccessToken", ""));
+        await ActivationChecks(root);
+        await ActivationCapacityCheck(root);
+
         await Case(root, true, async (client, app) =>
         {
             var db = app.Services.GetRequiredService<ApiDatabase>();
-            db.EnsureSchema("music-devices", 99, "CREATE TABLE music_preserved_marker(id INTEGER);");
+            db.EnsureSchema("music-device-activation", 99, "CREATE TABLE music_preserved_marker(id INTEGER);");
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "mvm_" + new string('A', 43));
             using var failed = await client.GetAsync("/api/music/providers");
             await Error(failed, 503, "source_unavailable");
@@ -218,7 +177,7 @@ internal static class MusicChecks
         {
             var netease = app.Services.GetRequiredService<MusicUpstreamFixture>();
             netease.EmptyRecommendations = true;
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+            UseDevice(client, app);
             var page = JsonSerializer.Deserialize(await client.GetStringAsync("/api/music/recommendations"),
                 MusicJsonContext.Default.MusicRecommendationPage)!;
             Check(netease.LastSearch == "电子" && qqFallback.LastSearch == "电子",
@@ -234,7 +193,7 @@ internal static class MusicChecks
             using var anonymous = await client.GetAsync("/api/music/charts/daily");
             await Error(anonymous, 401, "unauthorized");
             Check(qq.Count == 0, "Anonymous requests do not refresh the chart");
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+            UseDevice(client, app);
             using var chart = await client.GetAsync("/api/music/charts/daily");
             var page = JsonSerializer.Deserialize(await chart.Content.ReadAsStringAsync(), MusicChartJsonContext.Default.MusicDailyPage)!;
             var feeds = app.Services.GetRequiredService<MusicDailyFeeds>();
@@ -257,7 +216,7 @@ internal static class MusicChecks
                   store.Latest("qq-new", "qqmusic")?.Entries.Single().Title == "QQ新歌",
                 "All default feeds are written to SQLite under isolated chart keys");
 
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+            UseDevice(client, app);
             using var recommendations = await client.GetAsync("/api/music/recommendations");
             var recommended = JsonSerializer.Deserialize(await recommendations.Content.ReadAsStringAsync(), MusicJsonContext.Default.MusicRecommendationPage)!;
             Check(recommendations.IsSuccessStatusCode && recommended.Items.Length == 6 && recommended.Strategy == "public_daily_music" &&
@@ -308,6 +267,169 @@ internal static class MusicChecks
         { using var response = await client.GetAsync(path); Check(response.IsSuccessStatusCode, "Common route " + path); }
     }
 
+    private static async Task ActivationChecks(string root)
+    {
+        var clock = new TestClock();
+        await Case(root, true, async (client, app) =>
+        {
+            const string devicesPath = "/api/music/devices";
+            const string setupPath = "/api/music/setup/devices";
+            using var key = RSA.Create(2048);
+            using var anotherKey = RSA.Create(2048);
+            var id = Guid.NewGuid().ToString("N");
+            var register = RegisterInput(key, id, "<Test car>");
+            var statusPath = devicesPath + "/status/" + id;
+            using var registered = await client.PostAsync(devicesPath + "/register", Json(Serialize(register)));
+            Check(registered.StatusCode == HttpStatusCode.Accepted && registered.Headers.CacheControl?.NoStore == true,
+                "Registration is public and not cached");
+            var pending = await ReadStatus(registered);
+            Check(pending.Status == "pending" && pending.EncryptedToken is null, "Pending registration has no token");
+            using var pendingResponse = await client.GetAsync(statusPath);
+            Check((await ReadStatus(pendingResponse)) == pending, "Pending status matches registration");
+
+            var store = app.Services.GetRequiredService<MusicDeviceStore>();
+            var deviceId = store.List().Single().DeviceId;
+            var adminPath = setupPath + "/" + deviceId;
+            using var denied = await client.PostAsync(adminPath + "/activate", null);
+            Check(denied.StatusCode == HttpStatusCode.Unauthorized, "Anonymous activation denied");
+            using var deniedDelete = await client.DeleteAsync(adminPath);
+            Check(deniedDelete.StatusCode == HttpStatusCode.Unauthorized, "Anonymous revocation denied");
+            client.DefaultRequestHeaders.Add("X-Api-Bootstrap-Token", ManagementToken);
+            using var active = await client.PostAsync(adminPath + "/activate", null);
+            Check(active.IsSuccessStatusCode && !(await active.Content.ReadAsStringAsync()).Contains("Token"),
+                "Activation never returns a token to management");
+            using var repeated = await client.PostAsync(adminPath + "/activate", null);
+            Check(repeated.IsSuccessStatusCode, "Activation is idempotent");
+            using var listing = await client.GetAsync(setupPath);
+            var text = await listing.Content.ReadAsStringAsync();
+            Check(!text.Contains("encryptedToken") && !text.Contains("tokenHash") && !text.Contains("publicKey"),
+                "Listing never exposes credentials");
+            client.DefaultRequestHeaders.Remove("X-Api-Bootstrap-Token");
+
+            using var claimed = await client.GetAsync(statusPath);
+            var claimedStatus = await ReadStatus(claimed);
+            var token = Decrypt(key, claimedStatus);
+            Check(claimedStatus.Status == "active" && claimed.Headers.CacheControl?.NoStore == true, "Only device key can claim token");
+            using var identical = await client.PostAsync(devicesPath + "/register", Json(Serialize(register)));
+            var identicalStatus = await ReadStatus(identical);
+            Check(identicalStatus.Status == "active" && identicalStatus.EncryptedToken is null, "Active registration retry preserves state");
+            using var conflict = await client.PostAsync(devicesPath + "/register", Json(Serialize(RegisterInput(anotherKey, id, "Other"))));
+            await Error(conflict, 409, "device_key_conflict");
+            using var malformed = await client.PostAsync(devicesPath + "/register", Json(Serialize(register with { PublicKey = "bad" })));
+            await Error(malformed, 400, "invalid_request");
+            using var stillActive = await client.GetAsync(statusPath);
+            Check((await ReadStatus(stillActive)) == claimedStatus, "Registration conflict leaves the credential intact");
+            using var queryToken = await client.GetAsync("/api/music/providers?access_token=" + token);
+            await Error(queryToken, 401, "unauthorized");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            using var allowed = await client.GetAsync("/api/music/providers");
+            Check(allowed.IsSuccessStatusCode, "Claimed device uses protected endpoint");
+            using var common = await client.GetAsync("/probe/common");
+            Check(common.StatusCode == HttpStatusCode.Unauthorized, "Device credential is music-only");
+
+            client.DefaultRequestHeaders.Add("X-Api-Bootstrap-Token", ManagementToken);
+            using var revoked = await client.DeleteAsync(adminPath);
+            using var revokedAgain = await client.DeleteAsync(adminPath);
+            Check(revoked.StatusCode == HttpStatusCode.NoContent && revokedAgain.StatusCode == HttpStatusCode.NoContent,
+                "Revocation is idempotent");
+            using var cannotReactivate = await client.PostAsync(adminPath + "/activate", null);
+            await Error(cannotReactivate, 409, "device_revoked");
+            using var revokedStatus = await client.GetAsync(statusPath);
+            Check((await ReadStatus(revokedStatus)).Status == "revoked" && store.Verify(token) is null,
+                "Revocation clears credential and keeps a terminal status");
+            using var expired = await client.GetAsync("/api/music/providers");
+            await Error(expired, 401, "unauthorized");
+
+            using var registerAgain = await client.PostAsync(devicesPath + "/register", Json(Serialize(register)));
+            Check((await ReadStatus(registerAgain)).Status == "revoked", "Registration cannot undo revocation");
+            using var rateLimited = await client.PostAsync(devicesPath + "/register", Json(Serialize(register)));
+            Check((int)rateLimited.StatusCode == 429, "Anonymous registrations use the dedicated IP quota");
+
+            var unapprovedId = Guid.NewGuid().ToString("N");
+            var input = RegisterInput(anotherKey, unapprovedId, "Pending");
+            store.Register(input);
+            var oldDeviceId = store.List().Single(d => d.InstallationId == unapprovedId).DeviceId;
+            clock.Now = clock.Now.AddHours(24);
+            using var missing = await client.GetAsync(devicesPath + "/status/" + unapprovedId);
+            await Error(missing, 404, "device_not_found");
+            Check(store.Activate(oldDeviceId) is null, "Expired pending devices cannot activate");
+            store.Register(input);
+            Check(store.List().Single(d => d.InstallationId == unapprovedId).DeviceId != oldDeviceId &&
+                  store.Activate(oldDeviceId) is null, "Management cannot activate replacement through an old ID");
+        }, clock: clock);
+        Console.WriteLine("PASS: Music registration, device claims, isolation, expiry and revocation");
+
+        static async Task<MusicDeviceStatus> ReadStatus(HttpResponseMessage response) =>
+            JsonSerializer.Deserialize(await response.Content.ReadAsStringAsync(), MusicJsonContext.Default.MusicDeviceStatus)!;
+        static string Serialize(MusicDeviceRegister input) => JsonSerializer.Serialize(input, MusicJsonContext.Default.MusicDeviceRegister);
+    }
+
+    private static async Task ActivationCapacityCheck(string root)
+    {
+        var database = new ApiDatabase("Data Source=" + Path.Combine(root, Guid.NewGuid().ToString("N") + ".db"));
+        var clock = new TestClock();
+        var devices = new MusicDeviceStore(database, clock);
+        devices.Initialize();
+        using var key = RSA.Create(2048);
+        using var secondKey = RSA.Create(2048);
+        var first = RegisterInput(key, Guid.NewGuid().ToString("N"), "First");
+        var second = RegisterInput(secondKey, Guid.NewGuid().ToString("N"), "Second");
+        devices.Register(first);
+        devices.Register(second);
+        using (var connection = database.OpenConnection())
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = """
+                WITH RECURSIVE records(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM records WHERE n<255)
+                INSERT INTO music_device_activation(installation_id,device_id,short_code,public_key,model,os_version,status,created_at)
+                SELECT lower(hex(randomblob(16))),lower(hex(randomblob(16))),'fixture',X'00','Fixture','9','active',$now FROM records;
+                """;
+            command.Parameters.AddWithValue("$now", clock.Now.UtcDateTime.ToString("O"));
+            command.ExecuteNonQuery();
+        }
+
+        var candidates = devices.List().Where(d => d.Status == "pending").ToArray();
+        var outcomes = await Task.WhenAll(candidates.Select(d => Task.Run(() => TryActivate(d.DeviceId))));
+        Check(outcomes.Count(result => result == "active") == 1 &&
+              outcomes.Count(result => result == "device_limit_reached") == 1,
+            "Concurrent activation cannot exceed 256 active devices");
+        var winner = candidates[Array.IndexOf(outcomes, "active")];
+        var waiting = candidates.Single(d => d.DeviceId != winner.DeviceId);
+        var ciphertext = devices.Status(winner.InstallationId)!.EncryptedToken;
+        Check(TryActivate(winner.DeviceId) == "active" && devices.Status(winner.InstallationId)!.EncryptedToken == ciphertext,
+            "Activation is idempotent at capacity");
+        Check(devices.Revoke(winner.DeviceId) && TryActivate(waiting.DeviceId) == "active",
+            "Revocation makes capacity available");
+
+        string TryActivate(string deviceId)
+        {
+            try { return devices.Activate(deviceId)!.Status; }
+            catch (MusicException error) { return error.Code; }
+        }
+    }
+
+    private static void UseDevice(HttpClient client, WebApplication app)
+    {
+        var issued = IssueDevice(app.Services.GetRequiredService<MusicDeviceStore>(), "Test device");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", issued.Token);
+    }
+
+    private static (string Id, string Token) IssueDevice(MusicDeviceStore store, string model)
+    {
+        using var key = RSA.Create(2048);
+        var id = Guid.NewGuid().ToString("N");
+        store.Register(RegisterInput(key, id, model));
+        var device = store.List().Single(d => d.InstallationId == id);
+        var active = store.Activate(device.DeviceId)!;
+        return (active.DeviceId, Decrypt(key, store.Status(id)!));
+    }
+
+    private static MusicDeviceRegister RegisterInput(RSA key, string id, string model) =>
+        new(id, Base64Url.EncodeToString(key.ExportSubjectPublicKeyInfo()), model, "9");
+
+    private static string Decrypt(RSA key, MusicDeviceStatus status) =>
+        Encoding.ASCII.GetString(key.Decrypt(Base64Url.DecodeFromChars(status.EncryptedToken!), RSAEncryptionPadding.OaepSHA1));
+
     private static void CheckExistingDatabase(string root)
     {
         var path = Path.Combine(root, "music-existing-" + Guid.NewGuid().ToString("N") + ".db");
@@ -327,15 +449,47 @@ internal static class MusicChecks
             command.ExecuteNonQuery();
         }
 
+        var oldToken = "mvm_" + Base64Url.EncodeToString(RandomNumberGenerator.GetBytes(32));
+        var oldId = Guid.NewGuid().ToString("N");
+        using (var connection = database.OpenConnection())
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = """
+                CREATE TABLE music_device_tokens(id TEXT PRIMARY KEY, token_hash TEXT NOT NULL);
+                INSERT INTO music_device_tokens(id,token_hash) VALUES($id,$hash);
+                """;
+            command.Parameters.AddWithValue("$id", oldId);
+            command.Parameters.AddWithValue("$hash", Convert.ToHexString(SHA256.HashData(Encoding.ASCII.GetBytes(oldToken))));
+            command.ExecuteNonQuery();
+        }
         var before = ExistingState(database);
         var store = new MusicDeviceStore(database, TimeProvider.System);
-        var issued = store.Issue("Database isolation fixture");
+        var issued = IssueDevice(store, "Database isolation fixture");
         var reopened = new MusicDeviceStore(database, TimeProvider.System);
         Check(reopened.Verify(issued.Token) == issued.Id && reopened.Revoke(issued.Id) &&
               new MusicDeviceStore(database, TimeProvider.System).Verify(issued.Token) is null,
               "Music schema opens idempotently and revocation persists");
-        var replacement = new MusicDeviceStore(database, TimeProvider.System).Issue("Database isolation replacement");
-        Check(replacement.Id != issued.Id, "Revoked device does not consume the lifetime issuance quota");
+        var replacement = IssueDevice(new MusicDeviceStore(database, TimeProvider.System), "Database isolation replacement");
+        Check(replacement.Id != issued.Id && reopened.Verify(oldToken) is null,
+            "New registrations do not accept legacy tokens");
+        var oldGrants = new QQSessionStore(database, new MusicOptions());
+        _ = oldGrants.Devices();
+        using (var connection = database.OpenConnection())
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = "INSERT INTO music_qq_devices(device_id) VALUES($id);";
+            command.Parameters.AddWithValue("$id", oldId);
+            command.ExecuteNonQuery();
+        }
+        Check(oldGrants.Devices().Length == 0 && !oldGrants.Allowed(oldId) && !oldGrants.SetDevice(oldId, true),
+            "Legacy device grants are isolated from current QQ membership");
+        using (var connection = database.OpenConnection())
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = "SELECT COUNT(*) FROM music_device_tokens WHERE id=$id;";
+            command.Parameters.AddWithValue("$id", oldId);
+            Check(command.ExecuteScalar() is 1L, "Legacy records remain intact");
+        }
         CheckChartSnapshots(database, path + ".backup");
         Check(before.SequenceEqual(ExistingState(database)), "Music writes preserve existing Chat, Camera and Auth data and schema");
         Console.WriteLine("PASS: Existing Chat, Camera and Auth database data and schema survive music writes");
@@ -450,10 +604,9 @@ internal static class MusicChecks
         var values = new Dictionary<string, string?>
         {
             ["ConnectionStrings:DefaultConnection"] = "Data Source=" + Guid.NewGuid().ToString("N") + ".db",
-            ["Security:BootstrapToken"] = "YOUR_SYNTHETIC_MANAGEMENT_TOKEN_FOR_TESTS_ONLY",
+            ["Security:BootstrapToken"] = ManagementToken,
             ["Modules:Chat:Enabled"] = "true", ["Cors:AllowedOrigins:0"] = "http://localhost:4001",
             ["Modules:Music:Enabled"] = enabled.ToString(),
-            ["Modules:Music:TestAccessToken"] = Token,
         };
         if (change.HasValue) values["Modules:Music:" + change.Value.Key] = change.Value.Value;
         builder.Configuration.AddInMemoryCollection(values);
@@ -502,7 +655,7 @@ internal static class MusicChecks
         {
             const string path = "/api/music/recommendations/candidates";
             using (var unauthorized = await client.GetAsync(path)) await Error(unauthorized, 401, "unauthorized");
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+            UseDevice(client, app);
             var pool = app.Services.GetRequiredService<MusicCandidatePool>();
             var store = app.Services.GetRequiredService<MusicCandidateStore>();
             var configured = app.Services.GetRequiredService<MusicOptions>();
@@ -593,14 +746,18 @@ internal static class MusicChecks
         // 固定合成值用于验证密文格式与跨实例恢复。
         var options = new MusicOptions { QQMusicMemberEnabled = true, QQMusicSessionKey = Convert.ToBase64String(new byte[32]) };
         var devices = new MusicDeviceStore(database, clock);
-        var owner = devices.Issue("测试车机");
-        var other = devices.Issue("未授权设备");
+        using var pendingKey = RSA.Create(2048);
+        devices.Register(RegisterInput(pendingKey, Guid.NewGuid().ToString("N"), "待审批"));
+        var pendingId = devices.List().Single(d => d.Status == "pending").DeviceId;
+        var owner = IssueDevice(devices, "测试车机");
+        var other = IssueDevice(devices, "未授权设备");
         var store = new QQSessionStore(database, options);
         var fixture = new QQMemberFixture();
         using var http = new HttpClient(fixture);
         var client = new QQAccountClient(http, clock);
         var session = new QQAccountClient.Credential(123, "SYNTHETIC_QQ_SESSION", 2, clock.Now.AddHours(2));
         store.Save(session);
+        Check(!store.SetDevice(pendingId, true) && !store.Allowed(other.Id), "Only active devices can be explicitly granted");
         Check(store.SetDevice(owner.Id, true), "Device is explicitly granted");
         using (var connection = database.OpenConnection())
         using (var command = connection.CreateCommand())

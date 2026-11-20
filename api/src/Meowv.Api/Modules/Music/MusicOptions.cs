@@ -7,7 +7,6 @@ public sealed class MusicOptions
     public bool RollingRecommendationsEnabled { get; set; }
     public bool QQMusicMemberEnabled { get; set; }
     public string QQMusicSessionKey { get; set; } = "";
-    public string TestAccessToken { get; set; } = "";
     public int RequestsPerMinute { get; set; } = 60;
     public int MaxConcurrentRequests { get; set; } = 4;
     internal bool BindingFailed { get; set; }

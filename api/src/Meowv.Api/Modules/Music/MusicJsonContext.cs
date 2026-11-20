@@ -4,8 +4,9 @@ using Meowv.Api.Modules.Music.Contracts;
 namespace Meowv.Api.Modules.Music;
 
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
-[JsonSerializable(typeof(MusicDeviceRequest))]
-[JsonSerializable(typeof(MusicDeviceIssued))]
+[JsonSerializable(typeof(MusicDeviceRegister))]
+[JsonSerializable(typeof(MusicDeviceActivation))]
+[JsonSerializable(typeof(MusicDeviceStatus))]
 [JsonSerializable(typeof(MusicDevice[]))]
 [JsonSerializable(typeof(MusicHealth))]
 [JsonSerializable(typeof(MusicProviders))]

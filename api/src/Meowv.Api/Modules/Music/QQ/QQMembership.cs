@@ -44,7 +44,7 @@ internal sealed class QQMembership(
             ReadSession();
             try
             {
-                _ = devices.List();
+                devices.Initialize();
                 return new(_status, _attempt?.Snapshot(), store.Devices(), true);
             }
             catch (Exception error) when (StorageError(error))
@@ -107,7 +107,7 @@ internal sealed class QQMembership(
         RequireConfigured();
         try
         {
-            _ = devices.List();
+            devices.Initialize();
             return store.SetDevice(id, enabled);
         }
         catch (Exception error) when (StorageError(error))

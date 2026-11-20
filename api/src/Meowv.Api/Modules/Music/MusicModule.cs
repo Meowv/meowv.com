@@ -22,36 +22,32 @@ public sealed class MusicModule : IEndpointModule
         if (!endpoints.ServiceProvider.GetRequiredService<MusicOptions>().Enabled) return;
         if (endpoints.ServiceProvider.GetRequiredService<MusicRuntime>().Available)
         {
+            music.MapPost("/devices/register", async (HttpContext context, MusicDeviceStore devices) =>
+                    Results.Json(devices.Register(await ReadBody(context, MusicJsonContext.Default.MusicDeviceRegister)),
+                        MusicJsonContext.Default.MusicDeviceStatus, statusCode: 202))
+                .WithSummary("登记待审批音乐设备。").AllowAnonymous().RequireRateLimiting("music-register");
+            music.MapGet("/devices/status/{installationId}", (string installationId, MusicDeviceStore devices) =>
+                    devices.Status(installationId) is { } status
+                        ? Results.Json(status, MusicJsonContext.Default.MusicDeviceStatus)
+                        : throw new MusicException("device_not_found", "设备登记不存在或已过期。", 404))
+                .WithSummary("查询安装激活状态及设备加密令牌。").AllowAnonymous().RequireRateLimiting("music-activation-status");
+
             var setup = music.MapGroup("/setup/devices").RequireAuthorization(ApiAuthorization.ManagementPolicy);
             setup.MapGet("", (MusicDeviceStore devices) => Results.Json(devices.List(), MusicJsonContext.Default.MusicDeviceArray))
-                .WithSummary("列出已签发的音乐设备令牌。")
-                .RequireRateLimiting("setup-ui");
-            setup.MapPost("", async (HttpContext context, MusicDeviceStore devices) =>
-                {
-                    if (!context.Request.HasJsonContentType()) throw MusicException.Invalid();
-                    var bytes = new byte[4097];
-                    var length = 0;
-                    while (length < bytes.Length)
-                    {
-                        var read = await context.Request.Body.ReadAsync(bytes.AsMemory(length), context.RequestAborted);
-                        if (read == 0) break;
-                        length += read;
-                    }
-
-                    if (length > 4096) throw MusicException.Invalid();
-                    var input = System.Text.Json.JsonSerializer.Deserialize(bytes.AsSpan(0, length), MusicJsonContext.Default.MusicDeviceRequest);
-                    if (input is null) throw MusicException.Invalid();
-                    return Results.Json(devices.Issue(input.Alias), MusicJsonContext.Default.MusicDeviceIssued, statusCode: 201);
-                }).WithSummary("签发新的音乐设备令牌。")
-                .RequireRateLimiting("api-auth");
-            setup.MapDelete("/{id}", (string id, MusicDeviceStore devices) => devices.Revoke(id) ? Results.NoContent() : Results.NotFound())
-                .WithSummary("撤销指定的音乐设备令牌。")
-                .RequireRateLimiting("api-auth");
+                .WithSummary("列出音乐设备及激活状态。").RequireRateLimiting("setup-ui");
+            setup.MapPost("/{deviceId}/activate", (string deviceId, MusicDeviceStore devices) =>
+                    devices.Activate(deviceId) is { } active
+                        ? Results.Json(active, MusicJsonContext.Default.MusicDeviceActivation)
+                        : Results.NotFound())
+                .WithSummary("激活待审批音乐设备。").RequireRateLimiting("api-auth");
+            setup.MapDelete("/{deviceId}", (string deviceId, MusicDeviceStore devices) =>
+                    devices.Revoke(deviceId) ? Results.NoContent() : Results.NotFound())
+                .WithSummary("撤销指定音乐设备。").RequireRateLimiting("api-auth");
             QQSetupEndpoints.Map(music);
         }
 
         var secured = music.MapGroup("").RequireAuthorization(MusicAccessHandler.SchemeName)
-            .WithMetadata(new MusicProtectedEndpoint(), new EndpointAccessMetadata("音乐专用设备令牌（Authorization 或 access_token）"))
+            .WithMetadata(new MusicProtectedEndpoint(), new EndpointAccessMetadata("音乐专用 Bearer 设备令牌"))
             .RequireRateLimiting("music");
         music.MapPost("/admin/charts/refresh", async (MusicRuntime runtime, MusicDailyFeeds feeds, CancellationToken ct) =>
                 !runtime.Available
@@ -86,22 +82,27 @@ public sealed class MusicModule : IEndpointModule
             MusicJsonContext.Default.MusicLyrics)).WithSummary("读取指定曲目的歌词。");
         secured.MapPost("/resolve", async (HttpContext context, MusicCatalog catalog, QQMembership member, MusicCandidatePool pool) =>
         {
-            if (!context.Request.HasJsonContentType()) throw MusicException.Invalid();
-            var bytes = new byte[4097];
-            var length = 0;
-            while (length < bytes.Length)
-            {
-                var read = await context.Request.Body.ReadAsync(bytes.AsMemory(length), context.RequestAborted);
-                if (read == 0) break;
-                length += read;
-            }
-
-            if (length > 4096) throw MusicException.Invalid();
-            var input = System.Text.Json.JsonSerializer.Deserialize(bytes.AsSpan(0, length), MusicJsonContext.Default.MusicResolveRequest);
-            if (input is null) throw MusicException.Invalid();
+            var input = await ReadBody(context, MusicJsonContext.Default.MusicResolveRequest);
             if (input.TrackId is { Length: >= 1 and <= 128 } id && !catalog.HasTrack(id)) pool.Restore(id);
             return Results.Json(await catalog.ResolveAsync(input, context.RequestAborted, member.ForDevice(context)), MusicJsonContext.Default.MusicResolvedTrack);
         }).WithSummary("解析曲目的可播放资源地址。");
+    }
+
+    private static async Task<T> ReadBody<T>(HttpContext context, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> type)
+        where T : class
+    {
+        if (!context.Request.HasJsonContentType()) throw MusicException.Invalid();
+        var bytes = new byte[4097];
+        var length = 0;
+        while (length < bytes.Length)
+        {
+            var read = await context.Request.Body.ReadAsync(bytes.AsMemory(length), context.RequestAborted);
+            if (read == 0) break;
+            length += read;
+        }
+
+        if (length > 4096) throw MusicException.Invalid();
+        return System.Text.Json.JsonSerializer.Deserialize(bytes.AsSpan(0, length), type) ?? throw MusicException.Invalid();
     }
 
     private static string? One(HttpContext context, string name)
