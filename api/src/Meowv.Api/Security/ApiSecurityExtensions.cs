@@ -57,6 +57,12 @@ public static class ApiSecurityExtensions
                 {
                     PermitLimit = 10, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true,
                 }));
+            // /setup 的自动加载会在每次进入时重复读取授权码与设备列表，与普通管理写操作分开计数。
+            options.AddPolicy("setup-ui", context =>
+                RateLimitPartition.GetFixedWindowLimiter(context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 60, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true,
+                }));
         });
         return services;
     }

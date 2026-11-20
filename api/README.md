@@ -73,7 +73,7 @@ dotnet run --project api/src/Meowv.Api -- --contentRoot /YOUR_CHECKOUT/api/src/M
 | `/api/xiaomi-camera/setup/...` | 同样使用 `X-Api-Bootstrap-Token`；小米账号登录、验证码验证和会话重置 |
 | `GET /api/xiaomi-camera/health` | 摄像头就绪状态；未就绪 `503`，禁用时不注册 |
 
-公共管理接口有限流，超过额度统一返回 `429`，授权码响应及初始化页面禁止缓存。宿主在限流前处理转发头，只信任本机 IPv4 / IPv6 回环代理的一跳 `X-Forwarded-For` 和 `X-Forwarded-Proto`；适用于仓库 Nginx 转发到 `127.0.0.1:5000` 的布局，其他来源的转发头不生效。普通业务通过标准认证 Scheme 校验 Bearer 授权码，缺失或错误返回 `401 access_code_unauthorized`，在业务参数绑定前拦截；管理密钥不代替应用授权码。三类凭据（通用授权码、公共管理密钥、Music 设备令牌）都支持请求头与 `?access_token=` 两种载体，同一请求同时使用两种载体、URL 凭据用于写操作或参数重复出现时按无效凭据处理。摄像头管理接口位于 `/api/xiaomi-camera/setup/...`，公共授权码由 `/api/auth/...` 管理。
+公共管理接口有限流，超过额度统一返回 `429`，授权码响应及初始化页面禁止缓存。`/setup` 自动加载使用的读取接口（读取授权码、设备列表、小米登录状态）使用独立的 `setup-ui` 配额：每客户端 IP 每分钟 60 次；轮换授权码、签发/撤销设备、摄像头登录与 QQ 扫码等写操作仍走原有 10 次/分钟的严格配额。宿主在限流前处理转发头，只信任本机 IPv4 / IPv6 回环代理的一跳 `X-Forwarded-For` 和 `X-Forwarded-Proto`；适用于仓库 Nginx 转发到 `127.0.0.1:5000` 的布局，其他来源的转发头不生效。普通业务通过标准认证 Scheme 校验 Bearer 授权码，缺失或错误返回 `401 access_code_unauthorized`，在业务参数绑定前拦截；管理密钥不代替应用授权码。三类凭据（通用授权码、公共管理密钥、Music 设备令牌）都支持请求头与 `?access_token=` 两种载体，同一请求同时使用两种载体、URL 凭据用于写操作或参数重复出现时按无效凭据处理。摄像头管理接口位于 `/api/xiaomi-camera/setup/...`，公共授权码由 `/api/auth/...` 管理。
 
 ## 接口目录
 

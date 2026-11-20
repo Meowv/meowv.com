@@ -38,7 +38,7 @@ public sealed class XiaomiCameraModule : IEndpointModule
             }
 
             return Results.Ok(XiaomiSetupResponse.Completed(usedCachedSession: true));
-        }).WithSummary("读取小米账号登录状态。").RequireRateLimiting("xiaomi-bootstrap");
+        }).WithSummary("读取小米账号登录状态。").RequireRateLimiting("setup-ui");
 
         setup.MapDelete("/session", (XiaomiCredentialCache cache, XiaomiCameraDirectoryService directory) =>
         {

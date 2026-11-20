@@ -170,10 +170,22 @@ try
         return response.StatusCode;
     }
 
-    for (var i = 0; i < 10; i++)
-        Check(await AttemptManagement("192.0.2.10") == HttpStatusCode.Unauthorized, "Requests below per-client limit reach authentication");
-    Check(await AttemptManagement("192.0.2.10") == HttpStatusCode.TooManyRequests, "Rate limiting returns 429");
+    for (var i = 0; i < 60; i++)
+        Check(await AttemptManagement("192.0.2.10") == HttpStatusCode.Unauthorized, "Requests below /setup read quota reach authentication");
+    Check(await AttemptManagement("192.0.2.10") == HttpStatusCode.TooManyRequests, "Setup read quota returns 429");
     Check(await AttemptManagement("192.0.2.11") == HttpStatusCode.Unauthorized, "Another forwarded client retains its own quota");
+
+    async Task<HttpStatusCode> AttemptRotate(string forwardedFor)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/access-code/rotate");
+        request.Headers.Add("X-Forwarded-For", forwardedFor);
+        using var response = await client.SendAsync(request);
+        return response.StatusCode;
+    }
+
+    for (var i = 0; i < 10; i++)
+        Check(await AttemptRotate("192.0.2.20") == HttpStatusCode.Unauthorized, "Management writes below strict quota reach authentication");
+    Check(await AttemptRotate("192.0.2.20") == HttpStatusCode.TooManyRequests, "Management writes keep the strict quota");
     var codes = app.Services.GetRequiredService<IAccessCodeService>();
     var database = app.Services.GetRequiredService<ApiDatabase>();
     Check(codes.GetVersion() == 0, "Fresh install must not import an old code");
