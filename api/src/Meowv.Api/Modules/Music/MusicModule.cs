@@ -1,6 +1,7 @@
 using Meowv.Api.Core;
 using Meowv.Api.Modules.Music.Contracts;
 using Meowv.Api.Modules.Music.Storage;
+using Meowv.Api.Modules.Music.QQ;
 
 namespace Meowv.Api.Modules.Music;
 
@@ -44,6 +45,7 @@ public sealed class MusicModule : IEndpointModule
             }).WithSummary("签发新的音乐设备令牌。");
             setup.MapDelete("/{id}", (string id, MusicDeviceStore devices) => devices.Revoke(id) ? Results.NoContent() : Results.NotFound())
                 .WithSummary("撤销指定的音乐设备令牌。");
+            QQSetupEndpoints.Map(music);
         }
 
         var secured = music.MapGroup("").RequireAuthorization(MusicAccessHandler.SchemeName)
@@ -59,23 +61,23 @@ public sealed class MusicModule : IEndpointModule
         secured.MapGet("/providers", (MusicCatalog catalog) => Results.Json(new MusicProviders(
                 catalog.Providers()),
             MusicJsonContext.Default.MusicProviders)).WithSummary("列出可用的音乐来源。");
-        secured.MapGet("/search", async (HttpContext context, MusicCatalog catalog) => Results.Json(
-                await catalog.SearchAsync(One(context, "q"), Limit(context), One(context, "cursor"), context.RequestAborted), MusicJsonContext.Default.MusicSearchPage))
+        secured.MapGet("/search", async (HttpContext context, MusicCatalog catalog, QQMembership member) => Results.Json(
+                await catalog.SearchAsync(One(context, "q"), Limit(context), One(context, "cursor"), context.RequestAborted, member.ForDevice(context)), MusicJsonContext.Default.MusicSearchPage))
             .WithSummary("按关键词搜索曲目，支持游标分页。");
-        secured.MapGet("/charts/daily", async (MusicDailyFeeds feeds, CancellationToken ct) =>
-                Results.Json(await feeds.GetDailyAsync(false, ct), MusicChartJsonContext.Default.MusicDailyPage))
+        secured.MapGet("/charts/daily", async (HttpContext context, MusicDailyFeeds feeds, QQMembership member, CancellationToken ct) =>
+                Results.Json(await feeds.GetDailyAsync(false, ct, member.ForDevice(context)), MusicChartJsonContext.Default.MusicDailyPage))
             .WithSummary("读取当日榜单快照。");
-        secured.MapGet("/recommendations", async (HttpContext context, MusicDailyFeeds feeds) =>
-                Results.Json(await feeds.RecommendAsync(context.RequestAborted),
+        secured.MapGet("/recommendations", async (HttpContext context, MusicDailyFeeds feeds, QQMembership member) =>
+                Results.Json(await feeds.RecommendAsync(context.RequestAborted, member.ForDevice(context)),
                     MusicJsonContext.Default.MusicRecommendationPage))
             .WithSummary("读取每日推荐曲目。");
-        secured.MapGet("/recommendations/radio", async (MusicDailyFeeds feeds, CancellationToken ct) =>
-                Results.Json(await feeds.RadioAsync(ct), MusicJsonContext.Default.MusicRecommendationPage))
+        secured.MapGet("/recommendations/radio", async (HttpContext context, MusicDailyFeeds feeds, QQMembership member, CancellationToken ct) =>
+                Results.Json(await feeds.RadioAsync(ct, member.ForDevice(context)), MusicJsonContext.Default.MusicRecommendationPage))
             .WithSummary("读取「猜你喜欢」电台候选。");
         secured.MapGet("/lyrics", async (HttpContext context, MusicCatalog catalog) => Results.Json(
             await catalog.LyricsAsync(One(context, "trackId"), One(context, "providerId"), context.RequestAborted),
             MusicJsonContext.Default.MusicLyrics)).WithSummary("读取指定曲目的歌词。");
-        secured.MapPost("/resolve", async (HttpContext context, MusicCatalog catalog) =>
+        secured.MapPost("/resolve", async (HttpContext context, MusicCatalog catalog, QQMembership member) =>
         {
             if (!context.Request.HasJsonContentType()) throw MusicException.Invalid();
             var bytes = new byte[4097];
@@ -90,7 +92,7 @@ public sealed class MusicModule : IEndpointModule
             if (length > 4096) throw MusicException.Invalid();
             var input = System.Text.Json.JsonSerializer.Deserialize(bytes.AsSpan(0, length), MusicJsonContext.Default.MusicResolveRequest);
             if (input is null) throw MusicException.Invalid();
-            return Results.Json(await catalog.ResolveAsync(input, context.RequestAborted), MusicJsonContext.Default.MusicResolvedTrack);
+            return Results.Json(await catalog.ResolveAsync(input, context.RequestAborted, member.ForDevice(context)), MusicJsonContext.Default.MusicResolvedTrack);
         }).WithSummary("解析曲目的可播放资源地址。");
     }
 

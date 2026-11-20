@@ -16,7 +16,7 @@ function createPage(respond) {
     elements.set(tag[1], {
       hidden: /\bhidden\b/.test(tag[0]), value: '', textContent: '', innerHTML: '', disabled: false,
       children: [], replaceChildren() { this.children = []; this.value = ''; }, appendChild(node) { this.children.push(node); if (!this.value && !node.disabled) this.value = node.value; }, dataset: {}, style: {}, querySelector() { return this.number ??= { textContent: '' }; },
-      focus() {}, select() {}, reset() {
+      focus() {}, select() {}, removeAttribute(key) { delete this[key]; }, reset() {
         const children = { 'auth-form': ['token'], 'login-form': ['username', 'password'], 'verify-form': ['verification-code'] };
         for (const id of children[tag[1]] ?? []) elements.get(id).value = '';
       },
@@ -32,6 +32,9 @@ function createPage(respond) {
       querySelectorAll: () => ['rotate', 'retry-camera', 'reset-session', 'exit', 'restart-login'].map(id => elements.get(id)),
     },
     location: { pathname: '/nested/setup/' },
+    URL: { createObjectURL: () => 'blob:synthetic-qr', revokeObjectURL() {} },
+    setTimeout: () => 1,
+    clearTimeout() {},
     navigator: { clipboard: { async writeText(value) { copied.push(value); } } },
     confirm(message) { prompts.push(message); return confirmation; },
     async fetch(url, init) {
@@ -39,8 +42,11 @@ function createPage(respond) {
       requests.push(request);
       assert.equal(request.headers['X-Api-Bootstrap-Token'], management);
       assert.equal(init.cache, 'no-store');
-      const { status = 200, body } = await respond(request);
-      return { status, ok: status >= 200 && status < 300, async json() { return body; } };
+      const { status = 200, body, type } = await respond(request);
+      return {
+        status, ok: status >= 200 && status < 300, headers: { get: () => type },
+        async json() { return body; }, async blob() { return body; },
+      };
     },
   });
   vm.runInContext(script, context);
@@ -239,4 +245,54 @@ test('late music issuance cannot restore a credential after management exit', as
   await issuing;
   assert.equal(page.element('music-token').value, '');
   assert.equal(page.element('workspace').hidden, true);
+});
+
+
+test('QQ membership setup keeps the QR in memory and manages grants for existing devices', async () => {
+  const qq = '/api/music/setup/qq';
+  const deviceId = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+  const attemptId = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+  let attempt = null;
+  let granted = false;
+  const page = createPage(request => {
+    if (request.path === qq + '/session') {
+      return { body: { status: 'connected', canLogin: true, attempt, devices: granted ? [deviceId] : [] } };
+    }
+    if (request.path === '/api/music/setup/devices') {
+      return { body: [{ id: deviceId, alias: '测试车机' }] };
+    }
+    if (request.path === qq + '/devices/' + deviceId) {
+      assert.equal(request.method, 'PUT');
+      granted = JSON.parse(request.body).enabled;
+      return { status: 204 };
+    }
+    if (request.path === qq + '/login') {
+      assert.equal(request.method, 'POST');
+      attempt = { id: attemptId, status: 'pending', qrReady: true };
+      return { status: 202, body: attempt };
+    }
+    if (request.path === qq + '/login/' + attemptId + '/qr') {
+      return { type: 'image/png', body: 'synthetic image' };
+    }
+    if (request.path === qq + '/login/' + attemptId) {
+      assert.equal(request.method, 'DELETE');
+      attempt = { ...attempt, status: 'canceled', qrReady: false };
+      return { status: 204 };
+    }
+    return standardResponse(request);
+  });
+  await page.authenticate();
+  await page.trigger('qq-load');
+  assert.equal(page.element('qq-login').textContent, '重新绑定');
+  assert.equal(page.element('qq-device').value, deviceId);
+  page.element('qq-grant').checked = true;
+  await page.trigger('qq-save');
+  assert.equal(granted, true);
+  await page.trigger('qq-login');
+  assert.equal(page.element('qq-qr').src, 'blob:synthetic-qr');
+  assert.equal(page.element('qq-qr-box').hidden, false);
+  await page.trigger('qq-cancel');
+  assert.equal(page.element('qq-qr').src, undefined);
+  assert.equal(page.element('qq-qr-box').hidden, true);
+  assert.match(page.element('qq-status').textContent, /已登录.*扫码已取消/);
 });

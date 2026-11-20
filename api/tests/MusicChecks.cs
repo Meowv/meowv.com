@@ -1,4 +1,5 @@
 using System.Net;
+using System.Security.Claims;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -10,6 +11,7 @@ using Meowv.Api.Modules.Chat;
 using Meowv.Api.Modules.Music;
 using Meowv.Api.Modules.Music.Contracts;
 using Meowv.Api.Modules.Music.Providers;
+using Meowv.Api.Modules.Music.QQ;
 using Meowv.Api.Modules.Music.Storage;
 using Meowv.Api.Modules.XiaomiCamera;
 using Meowv.Api.Security;
@@ -34,6 +36,7 @@ internal static class MusicChecks
         }
         Check(MusicCatalog.FallbackQuery(DateTimeOffset.FromUnixTimeSeconds(-1)) == styles[^1], "Negative epoch is floored");
         await SkillChecks(root);
+        await QQMembershipChecks(root);
         CheckExistingDatabase(root);
         Check(!JsonSerializer.IsReflectionEnabledByDefault, "JSON reflection must stay disabled");
         using var fixture = JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "music-v1.json")));
@@ -488,6 +491,100 @@ internal static class MusicChecks
             await run(client, app);
         }
         finally { await app.StopAsync(); }
+    }
+
+    private static async Task QQMembershipChecks(string root)
+    {
+        var database = new ApiDatabase("Data Source=" + Path.Combine(root, Guid.NewGuid().ToString("N") + ".db"));
+        var clock = new TestClock();
+        // 固定合成值用于验证密文格式与跨实例恢复。
+        var options = new MusicOptions { QQMusicMemberEnabled = true, QQMusicSessionKey = Convert.ToBase64String(new byte[32]) };
+        var devices = new MusicDeviceStore(database, clock);
+        var owner = devices.Issue("测试车机");
+        var other = devices.Issue("未授权设备");
+        var store = new QQSessionStore(database, options);
+        var fixture = new QQMemberFixture();
+        using var http = new HttpClient(fixture);
+        var client = new QQAccountClient(http, clock);
+        var session = new QQAccountClient.Credential(123, "SYNTHETIC_QQ_SESSION", 2, clock.Now.AddHours(2));
+        store.Save(session);
+        Check(store.SetDevice(owner.Id, true), "Device is explicitly granted");
+        using (var connection = database.OpenConnection())
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = "SELECT sealed_credential FROM music_qq_session;";
+            var value = (byte[])command.ExecuteScalar()!;
+            Check(value[0] == 1 && !Encoding.UTF8.GetString(value).Contains(session.MusicKey, StringComparison.Ordinal),
+                "Persisted QQ session is encrypted");
+        }
+        using var lifetime = new TestLifetime();
+        var member = new QQMembership(new QQSessionStore(database, options), client, options, devices, clock, lifetime);
+        Check(member.Status().Status == "connected" && member.Status().Devices.SequenceEqual([owner.Id]),
+            "Fresh service restores the session and grant");
+
+        static HttpContext Context(string id) => new DefaultHttpContext
+        {
+            User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, id)], "test"))
+        };
+        Check(member.ForDevice(Context(other.Id)) is null, "Other signed devices cannot use the QQ session");
+        var access = member.ForDevice(Context(owner.Id))!;
+        const string paid = "fixturePaid001";
+        const string denied = "fixturePaid002";
+        var tracks = new[] { new QQAccountClient.Mp3(paid, "fixtureMedia01", 3200000), new QQAccountClient.Mp3(denied, "fixtureMedia02", 3200000) };
+        var allowed = await access.CheckAsync(tracks, default);
+        Check(allowed.SetEquals([paid]), "Per-track upstream authorization excludes denied songs");
+        Check((await access.CheckAsync(tracks, default)).SetEquals([paid]) && fixture.StreamCalls == 1,
+            "Per-session cache reuses the entitlement decision");
+        Check(await access.ResolveAsync(tracks[0], default) is not null, "Player receives a matching whole MP3");
+        fixture.ShortRange = true;
+        Check(await access.ResolveAsync(tracks[0], default) is null, "CDN preview is rejected by exact Range total");
+
+        Check(devices.Revoke(owner.Id) && !access.Current && await access.ResolveAsync(tracks[0], default) is null,
+            "Revocation invalidates existing access and prevents issuance");
+        Check(store.SetDevice(other.Id, true), "Another device can be explicitly granted");
+        fixture.Expired = true;
+        Check(await member.ForDevice(Context(other.Id))!.ResolveAsync(tracks[0], default) is null &&
+              member.Status().Status == "expired" && store.Load() is null, "Explicit upstream expiry clears the saved credential");
+    }
+
+    private sealed class TestLifetime : IHostApplicationLifetime, IDisposable
+    {
+        private readonly CancellationTokenSource _stopping = new();
+        public CancellationToken ApplicationStarted => CancellationToken.None;
+        public CancellationToken ApplicationStopping => _stopping.Token;
+        public CancellationToken ApplicationStopped => CancellationToken.None;
+        public void StopApplication() => _stopping.Cancel();
+        public void Dispose() => _stopping.Dispose();
+    }
+
+    private sealed class QQMemberFixture : HttpMessageHandler
+    {
+        public int StreamCalls { get; private set; }
+        public bool ShortRange { get; set; }
+        public bool Expired { get; set; }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            if (request.Method == HttpMethod.Get)
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.PartialContent) { Content = new ByteArrayContent([0]) };
+                response.Content.Headers.ContentRange = new ContentRangeHeaderValue(0, 0, ShortRange ? 300000 : 3200000);
+                return response;
+            }
+
+            StreamCalls++;
+            using var json = JsonDocument.Parse(await request.Content!.ReadAsStringAsync(ct));
+            var payload = json.RootElement;
+            Check(payload.GetProperty("comm").GetProperty("authst").GetString() == "SYNTHETIC_QQ_SESSION",
+                "Authenticated stream request is sent to the fixed upstream");
+            var requestRows = payload.GetProperty("req_0").GetProperty("param").GetProperty("songmid");
+            const string success = """{"songmid":"fixturePaid001","result":0,"purl":"M500fixtureMedia01.mp3?fixture=yes"}""";
+            const string denied = """{"songmid":"fixturePaid002","result":104003,"purl":""}""";
+            var rows = requestRows.GetArrayLength() == 1 ? success : success + "," + denied;
+            var body = Expired ? """{"code":0,"req_0":{"code":104401,"data":{}}}""" :
+                """{"code":0,"req_0":{"code":0,"data":{"expiration":180,"midurlinfo":[""" + rows + "]}}}";
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(body, Encoding.UTF8, "application/json") };
+        }
     }
 
     private static async Task SkillChecks(string root)

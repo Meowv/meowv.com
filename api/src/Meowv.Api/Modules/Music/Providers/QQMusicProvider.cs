@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using Meowv.Api.Modules.Music.Contracts;
+using Meowv.Api.Modules.Music.QQ;
 
 namespace Meowv.Api.Modules.Music.Providers;
 
@@ -19,7 +20,7 @@ public sealed class QQMusicProvider(HttpClient http, TimeProvider clock) : IMusi
     private DateTimeOffset _retryAt;
     private int _failureStatus;
 
-    internal sealed record Entry(MusicTrack Track, string? MediaId, long Size, DateTimeOffset Deadline, int? Rank = null, DateTimeOffset UnplayableUntil = default);
+    internal sealed record Entry(MusicTrack Track, string? MediaId, long Size, DateTimeOffset Deadline, int? Rank = null, DateTimeOffset UnplayableUntil = default, bool? RequiresMembership = null);
 
     public string ProviderId => Id;
     public string DisplayName => "QQ 音乐";
@@ -51,7 +52,10 @@ public sealed class QQMusicProvider(HttpClient http, TimeProvider clock) : IMusi
                 var unplayable = _tracks.TryGetValue(entry.Track.Id, out var previous) && previous.UnplayableUntil > now
                     ? previous.UnplayableUntil
                     : default;
-                _tracks[entry.Track.Id] = entry with { Deadline = deadline, UnplayableUntil = unplayable };
+                var details = entry.RequiresMembership is null && previous?.RequiresMembership is not null
+                    ? entry with { MediaId = previous.MediaId, Size = previous.Size, RequiresMembership = previous.RequiresMembership }
+                    : entry;
+                _tracks[entry.Track.Id] = details with { Deadline = deadline, UnplayableUntil = unplayable };
             }
 
             foreach (var old in _tracks.OrderBy(x => x.Value.Deadline).Take(Math.Max(0, _tracks.Count - 1000)))
@@ -115,6 +119,62 @@ public sealed class QQMusicProvider(HttpClient http, TimeProvider clock) : IMusi
         return (ParseEntries(At(Data(recommendations), "song_list"), spec.Limit), null);
     }
 
+    internal async Task<MusicTrack[]> DetailsAsync(IEnumerable<string> mids, CancellationToken ct)
+    {
+        var ids = mids.Where(ValidId).Distinct(StringComparer.Ordinal).Take(30).ToArray();
+        if (ids.Length == 0) return [];
+        var keys = JsonSerializer.Serialize(ids, MusicJsonContext.Default.StringArray);
+        var zeros = string.Join(',', Enumerable.Repeat("0", ids.Length));
+        var args = $$"""{"ctx":0,"client":1,"types":[{{zeros}}],"modify_stamp":[{{zeros}}],"mids":{{keys}}}""";
+        using var body = await CallAsync("music.trackInfo.UniformRuleCtrl", "CgiGetTrackInfo", args, ct, affectAvailability: false);
+        var rows = At(Data(body), "tracks");
+        if (rows.ValueKind != JsonValueKind.Array || rows.GetArrayLength() > ids.Length) throw Failure(503);
+        var entries = ParseEntries(rows, ids.Length).Where(entry =>
+            ids.Contains(entry.Track.Sources[0].SourceTrackId, StringComparer.Ordinal)).ToArray();
+        Remember(entries);
+        return entries.Select(entry => entry.Track).ToArray();
+    }
+
+    internal async Task<QQAccountClient.Mp3[]> MemberTracksAsync(IEnumerable<string> mids, CancellationToken ct)
+    {
+        var ids = mids.Where(ValidId).Distinct(StringComparer.Ordinal).ToArray();
+        var now = clock.GetUtcNow();
+        var missing = ids.Where(mid => !_tracks.TryGetValue("qq-" + mid, out var entry) ||
+                                       entry.Deadline <= now || entry.RequiresMembership is null).Take(30).ToArray();
+        if (missing.Length > 0)
+        {
+            try
+            {
+                await DetailsAsync(missing, ct);
+            }
+            catch (MusicException)
+            {
+            }
+        }
+
+        var results = new List<QQAccountClient.Mp3>();
+        foreach (var mid in ids)
+        {
+            if (_tracks.TryGetValue("qq-" + mid, out var entry) && entry.Deadline > now &&
+                entry is { RequiresMembership: true, MediaId: { } mediaId, Size: > 0 })
+                results.Add(new QQAccountClient.Mp3(mid, mediaId, entry.Size));
+        }
+
+        return [.. results];
+    }
+
+    internal async Task<MusicResolvedTrack> ResolveMemberAsync(string id, QQMembership.Access access, CancellationToken ct)
+    {
+        var mid = id.StartsWith("qq-", StringComparison.Ordinal) ? id[3..] : "";
+        if (!ValidId(mid) || FindTrack(id) is null) throw NoMatch();
+        var songs = await MemberTracksAsync([mid], ct);
+        if (songs.Length == 0 || !_tracks.TryGetValue(id, out var entry)) throw NoMatch();
+        var resource = await access.ResolveAsync(songs[0], ct);
+        if (resource is null) throw NoMatch();
+        return new MusicResolvedTrack(id, Id, mid, 1,
+            new MusicAudio(resource.Url.AbsoluteUri, "audio/mpeg", entry.Track.DurationMs, resource.ExpiresAt.UtcDateTime, true));
+    }
+
     public async Task<MusicResolvedTrack> ResolveAsync(MusicResolveRequest request, CancellationToken ct)
     {
         if (request.TrackId is not { } id || request.Quality != "auto") throw MusicException.Invalid();
@@ -176,18 +236,19 @@ public sealed class QQMusicProvider(HttpClient http, TimeProvider clock) : IMusi
         return Number(body.RootElement, "code") == 0 ? WebUtility.HtmlDecode(Text(body.RootElement, "lyric")) : null;
     }
 
-    private async Task<JsonDocument> CallAsync(string module, string method, string args, CancellationToken ct, bool includeWebContext = true)
+    private async Task<JsonDocument> CallAsync(string module, string method, string args, CancellationToken ct, bool includeWebContext = true,
+        bool affectAvailability = true)
     {
         var context = includeWebContext ? """ "comm":{"ct":24,"cv":0}, """ : "";
         var payload = $$"""{ {{context}} "req":{"module":"{{module}}","method":"{{method}}","param":{{args}}""" + "}}";
-        var body = await ReadJsonAsync(Endpoint + Uri.EscapeDataString(payload), ct);
+        var body = await ReadJsonAsync(Endpoint + Uri.EscapeDataString(payload), ct, affectAvailability);
         if (At(body.RootElement, "code").ValueKind == JsonValueKind.Number && Number(body.RootElement, "code") == 0 &&
             At(body.RootElement, "req", "code").ValueKind == JsonValueKind.Number && Number(At(body.RootElement, "req"), "code") == 0) return body;
         body.Dispose();
         throw Failure(503);
     }
 
-    private async Task<JsonDocument> ReadJsonAsync(string url, CancellationToken ct)
+    private async Task<JsonDocument> ReadJsonAsync(string url, CancellationToken ct, bool affectAvailability = true)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeout.CancelAfter(TimeSpan.FromSeconds(6));
@@ -215,10 +276,13 @@ public sealed class QQMusicProvider(HttpClient http, TimeProvider clock) : IMusi
                     var now = clock.GetUtcNow();
                     var until = delay?.Date ?? now + (delay?.Delta ?? TimeSpan.FromSeconds(status == 503 ? 15 : 60));
                     var seconds = (int)Math.Clamp(Math.Ceiling((until - now).TotalSeconds), 1, 86400);
-                    lock (_gate)
+                    if (affectAvailability || status == 429)
                     {
-                        _retryAt = now.AddSeconds(seconds);
-                        _failureStatus = status;
+                        lock (_gate)
+                        {
+                            _retryAt = now.AddSeconds(seconds);
+                            _failureStatus = status;
+                        }
                     }
 
                     throw Failure(status, seconds);
@@ -288,11 +352,12 @@ public sealed class QQMusicProvider(HttpClient http, TimeProvider clock) : IMusi
         var pay = At(song, "pay", "pay_play");
         var preview = song.TryGetProperty("preview", out var trial) &&
                       (trial.ValueKind is JsonValueKind.True || Number(song, "preview") == 1);
-        var playable = pay.ValueKind == JsonValueKind.Number && pay.TryGetInt64(out var cost) && cost == 0 && !preview &&
-                       ValidId(mediaId) && size >= interval * 15000 && size <= interval * 17500;
+        var fullMp3 = ValidId(mediaId) && size >= interval * 15000 && size <= interval * 17500;
+        var cost = pay.ValueKind == JsonValueKind.Number && pay.TryGetInt64(out var price) ? price : -1;
+        var playable = cost == 0 && !preview && fullMp3;
         var track = new MusicTrack("qq-" + mid, title, artists, ValidText(albumName) ? albumName : null, interval * 1000,
             cover, null, playable ? "candidate" : "unavailable", [new MusicSource(Id, mid)]);
-        return new Entry(track, playable ? mediaId : null, playable ? size : 0, default);
+        return new Entry(track, fullMp3 ? mediaId : null, fullMp3 ? size : 0, default, RequiresMembership: cost > 0);
     }
 
     private static bool ValidText(string text) => text.Length is > 0 and <= 180 && !text.Any(char.IsControl);

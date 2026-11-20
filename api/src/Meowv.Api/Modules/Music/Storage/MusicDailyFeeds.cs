@@ -3,6 +3,7 @@ using System.Text.Json;
 using Meowv.Api.Infrastructure;
 using Meowv.Api.Modules.Music.Contracts;
 using Meowv.Api.Modules.Music.Providers;
+using Meowv.Api.Modules.Music.QQ;
 using Microsoft.Data.Sqlite;
 
 namespace Meowv.Api.Modules.Music.Storage;
@@ -34,8 +35,13 @@ internal sealed class MusicDailyFeeds(
 
     private sealed record SourceResult(string Provider, MusicChartSnapshot? Snapshot, bool Stale);
 
-    public Task<MusicDailyPage> GetDailyAsync(bool force, CancellationToken ct) =>
-        GetAsync(_feeds, "daily", force, ct);
+    public async Task<MusicDailyPage> GetDailyAsync(bool force, CancellationToken ct, QQMembership.Access? access = null)
+    {
+        var page = await GetAsync(_feeds, "daily", force, ct);
+        if (access is null) return page;
+        var tracks = await catalog.ProjectAvailabilityAsync(page.Items.Select(item => item.Track), access, ct);
+        return page with { Items = page.Items.Select((item, index) => item with { Track = tracks[index] }).ToArray() };
+    }
 
     private async Task<MusicDailyPage> GetAsync(FeedSpec[] feeds, string name, bool force, CancellationToken ct)
     {
@@ -56,7 +62,7 @@ internal sealed class MusicDailyFeeds(
             .Select(x => (x.Provider, x.Entry, Track: ToTrack(x.Provider, x.Entry))).Where(x => x.Track is not null).ToArray();
         netease.RememberDaily(entries.Where(x => x.Provider == NeteaseMusicProvider.Id).Select(x => x.Track!));
         qq.Remember(entries.Where(x => x.Provider == QQMusicProvider.Id)
-            .Select(x => new QQMusicProvider.Entry(x.Track!, x.Entry.MediaId, x.Entry.MediaSize, default)));
+            .Select(x => new QQMusicProvider.Entry(x.Track!, x.Entry.MediaId, x.Entry.MediaSize, default, RequiresMembership: x.Entry.RequiresMembership)));
         var items = catalog.MergeDaily(entries.Select(x => x.Track!)).Select(track => new MusicDailyItem(track,
         [
             .. track.Sources.Where(x => ranks.ContainsKey((x.ProviderId, x.SourceTrackId)))
@@ -66,7 +72,7 @@ internal sealed class MusicDailyFeeds(
         return new MusicDailyPage(name, LocalDate(clock.GetUtcNow()), summaries, items, warnings.Length > 0, warnings);
     }
 
-    public async Task<MusicRecommendationPage> RecommendAsync(CancellationToken ct)
+    public async Task<MusicRecommendationPage> RecommendAsync(CancellationToken ct, QQMembership.Access? access = null)
     {
         MusicDailyPage? page;
         try
@@ -78,24 +84,26 @@ internal sealed class MusicDailyFeeds(
             page = null;
         }
 
-        var tracks = catalog.PlayableCandidates(page?.Items.Select(x => x.Track) ?? []);
-        if (registry.Enabled.Contains(qq)) tracks = await skill.PersonalizeAsync(tracks, qq, catalog, ct);
-        tracks = catalog.PlayableCandidates(tracks);
-        if (tracks.Length == 0) return await FallbackAsync(ct);
+        var entries = page?.Items.Select(x => x.Track) ?? [];
+        var tracks = access is null ? catalog.PlayableCandidates(entries) : entries.ToArray();
+        if (registry.Enabled.Contains(qq)) tracks = await skill.PersonalizeAsync(tracks, qq, catalog, ct, access is not null);
+        tracks = (await catalog.ProjectAvailabilityAsync(tracks, access, ct)).Where(track => track.Availability == "candidate").ToArray();
+        if (tracks.Length == 0) return await FallbackAsync(ct, access);
         return new MusicRecommendationPage(tracks, null,
             "public_daily_music", page?.Sources.Max(x => x.CapturedAt.UtcDateTime) ?? clock.GetUtcNow().UtcDateTime,
             page?.Partial ?? true, page?.Warnings ?? ["daily_recommendations:source_unavailable"]);
     }
 
-    public async Task<MusicRecommendationPage> RadioAsync(CancellationToken ct)
+    public async Task<MusicRecommendationPage> RadioAsync(CancellationToken ct, QQMembership.Access? access = null)
     {
-        var tracks = registry.Enabled.Contains(qq) ? await skill.RadioAsync(qq, ct) : [];
-        return new MusicRecommendationPage(catalog.PlayableCandidates(catalog.MergeDaily(tracks)), null, "qq_skill_radio", clock.GetUtcNow().UtcDateTime);
+        var tracks = registry.Enabled.Contains(qq) ? await skill.RadioAsync(qq, ct, access is not null) : [];
+        var projected = await catalog.ProjectAvailabilityAsync(catalog.MergeDaily(tracks), access, ct);
+        return new MusicRecommendationPage(projected.Where(track => track.Availability == "candidate").ToArray(), null, "qq_skill_radio", clock.GetUtcNow().UtcDateTime);
     }
 
-    private async Task<MusicRecommendationPage> FallbackAsync(CancellationToken ct)
+    private async Task<MusicRecommendationPage> FallbackAsync(CancellationToken ct, QQMembership.Access? access)
     {
-        var page = await catalog.RecommendAsync(ct);
+        var page = await catalog.RecommendAsync(ct, access);
         return page with
         {
             Partial = true,
@@ -164,7 +172,7 @@ internal sealed class MusicDailyFeeds(
         else
         {
             var upstream = await qq.DailyAsync(feed, ct);
-            rows = [.. upstream.Tracks.Select((entry, i) => ToEntry(entry.Rank ?? i + 1, entry.Track, entry.MediaId, entry.Size))];
+            rows = [.. upstream.Tracks.Select((entry, i) => ToEntry(entry.Rank ?? i + 1, entry.Track, entry.MediaId, entry.Size, entry.RequiresMembership))];
             updated = upstream.Updated;
         }
 
@@ -176,9 +184,9 @@ internal sealed class MusicDailyFeeds(
         return new MusicChartSnapshot(feed.Id, provider, date, now, normalizedUpdated ?? now, Midnight(date), Midnight(date.AddDays(1)), rows);
     }
 
-    private static MusicChartEntry ToEntry(int rank, MusicTrack track, string? mediaId, long size) =>
+    private static MusicChartEntry ToEntry(int rank, MusicTrack track, string? mediaId, long size, bool? requiresMembership = null) =>
         new(rank, track.Sources[0].SourceTrackId, track.Title, track.Artists, track.DurationMs,
-            track.Isrc, track.Album, track.CoverUrl, track.Id, track.Availability, mediaId, size);
+            track.Isrc, track.Album, track.CoverUrl, track.Id, track.Availability, mediaId, size, requiresMembership);
 
     private static MusicTrack? ToTrack(string provider, MusicChartEntry entry) => entry.TrackId is { } id
         ? new MusicTrack(id, entry.Title, entry.Artists, entry.Album, entry.DurationMs, entry.CoverUrl, entry.Isrc,

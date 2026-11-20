@@ -1,5 +1,7 @@
+using System.Threading.RateLimiting;
 using Meowv.Api.Core;
 using Meowv.Api.Modules.Music.Providers;
+using Meowv.Api.Modules.Music.QQ;
 using Meowv.Api.Modules.Music.Storage;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -53,12 +55,26 @@ public static class MusicRegistration
         services.AddSingleton<IMusicSearchProvider>(provider => provider.GetRequiredService<QQMusicProvider>());
         services.AddSingleton<MusicProviderRegistry>();
         services.AddSingleton<MusicCatalog>();
+        services.AddSingleton<QQSessionStore>();
+        services.AddSingleton<QQMembership>();
+        services.AddSingleton(provider => new QQAccountClient(
+            provider.GetRequiredService<IHttpClientFactory>().CreateClient("MusicQQ"), provider.GetRequiredService<TimeProvider>()));
         services.AddSingleton<IEndpointModule, MusicModule>();
         services.ConfigureHttpJsonOptions(json => json.SerializerOptions.TypeInfoResolverChain.Add(MusicJsonContext.Default));
         services.AddAuthentication().AddScheme<AuthenticationSchemeOptions, MusicAccessHandler>(MusicAccessHandler.SchemeName, _ => { });
         services.AddAuthorization(auth => auth.AddPolicy(MusicAccessHandler.SchemeName,
             policy => policy.AddAuthenticationSchemes(MusicAccessHandler.SchemeName).RequireAuthenticatedUser()));
-        services.AddRateLimiter(limits => limits.AddPolicy("music", new MusicRatePolicy(options)));
+        services.AddRateLimiter(limits =>
+        {
+            limits.AddPolicy("music", new MusicRatePolicy(options));
+            // 二维码状态轮询使用独立配额，保留管理写操作的额度。
+            limits.AddPolicy("music-qq-status", context =>
+                RateLimitPartition.GetFixedWindowLimiter(context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                    _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 45, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true
+                    }));
+        });
         return services;
     }
 }

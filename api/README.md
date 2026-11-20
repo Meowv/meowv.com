@@ -91,6 +91,16 @@ dotnet run --project api/src/Meowv.Api -- --contentRoot /YOUR_CHECKOUT/api/src/M
 
 Tune 音乐端直连 `GET /api/music/recommendations`、`GET /api/music/search`、`GET /api/music/recommendations/radio`、`POST /api/music/resolve` 和 `GET /api/music/lyrics`。
 
+### QQ 音乐会员播放
+
+会员播放默认关闭。个人实例先启用音乐模块，再配置 `Modules__Music__QQMusicMemberEnabled=true` 和 `Modules__Music__QQMusicSessionKey`。后者是 32 字节随机密钥的 Base64 值，使用部署环境的密钥存储注入，重启时沿用同一密钥。QQ 会话以 AES-GCM 加密存入 API 的 SQLite，密钥不随数据库或发布产物分发。丢失密钥或 QQ 登录失效时，在 `/setup` 重新绑定。
+
+本机 Development 也可以在 Git 忽略的 `appsettings.Development.json` 中配置 `Modules:Music:QQMusicSessionKey`。配置后重启 API，并在 `/setup` 刷新 QQ 音乐状态。
+
+用 QQ 音乐 App 扫描 `/setup` 中的二维码，再选择允许使用会员的已签发设备。该功能会加入对应账号可取流的会员候选，播放时仍检查逐曲授权、标准 MP3 和整曲长度。同一账号的 QQ Music Skill 密钥继续独立配置，用于「每日 30 首」和「猜你喜欢」。QQ 登录凭证与播放地址不写进推荐快照。部署主机需能访问 QQ 音乐 HTTPS、扫码 WebSocket 和 CDN。
+
+关闭会员开关会使新请求退回公开曲库并保留加密会话。需要清除会话时，在 `/setup` 选择「退出 QQ 音乐」。已发给设备的 CDN 地址仍按上游有效期失效。
+
 ## 发布
 
 仓库根目录执行 `build.sh` 时，应用先发布到 `api/build/<RID>/`，再汇总到 `build/studio.meowv.com/api/<RID>/`。单独运行 `publish.sh` 只生成项目发布目录，也可用 `--output <目录>` 指定发布根目录。

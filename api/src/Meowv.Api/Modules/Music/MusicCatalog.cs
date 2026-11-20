@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Meowv.Api.Modules.Music.Contracts;
 using Meowv.Api.Modules.Music.Providers;
+using Meowv.Api.Modules.Music.QQ;
 using Microsoft.AspNetCore.WebUtilities;
 
 namespace Meowv.Api.Modules.Music;
@@ -27,7 +28,10 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
 
     public MusicProvider[] Providers() => registry.Describe();
 
-    public async Task<MusicSearchPage> SearchAsync(string? query, int? limit, string? cursor, CancellationToken ct)
+    public Task<MusicSearchPage> SearchAsync(string? query, int? limit, string? cursor, CancellationToken ct) =>
+        SearchAsync(query, limit, cursor, ct, null);
+
+    internal async Task<MusicSearchPage> SearchAsync(string? query, int? limit, string? cursor, CancellationToken ct, QQMembership.Access? access)
     {
         ct.ThrowIfCancellationRequested();
         if (query is null || query.Trim().Length is < 1 or > 100 || query.Any(char.IsControl)) throw MusicException.Invalid();
@@ -43,7 +47,7 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
                 var single = await Load(sources[0], query, count, cursor, ct);
                 if (single.Failure is { } error) throw error;
                 var page = single.Page!;
-                return page with { Items = CurrentAvailability(page.Items, sources) };
+                return page with { Items = await ProjectAvailabilityAsync(page.Items, access, ct) };
             }
         }
 
@@ -159,13 +163,15 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
             }
         }
 
-        return new MusicSearchPage(CurrentAvailability(items, sources), nextCursor, warnings.Count > 0, warnings.ToArray());
+        return new MusicSearchPage(await ProjectAvailabilityAsync(items, access, ct), nextCursor, warnings.Count > 0, warnings.ToArray());
     }
 
-    public async Task<MusicRecommendationPage> RecommendAsync(CancellationToken ct)
+    public Task<MusicRecommendationPage> RecommendAsync(CancellationToken ct) => RecommendAsync(ct, null);
+
+    internal async Task<MusicRecommendationPage> RecommendAsync(CancellationToken ct, QQMembership.Access? access)
     {
-        var page = await SearchAsync(FallbackQuery(clock.GetUtcNow()), 50, null, ct);
-        return new MusicRecommendationPage(PlayableCandidates(page.Items),
+        var page = await SearchAsync(FallbackQuery(clock.GetUtcNow()), 50, null, ct, access);
+        return new MusicRecommendationPage(page.Items.Where(x => x.Availability == "candidate").ToArray(),
             null, "search_candidates", clock.GetUtcNow().UtcDateTime, page.Partial, page.Warnings);
     }
 
@@ -182,6 +188,38 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
 
     internal MusicTrack[] PlayableCandidates(IEnumerable<MusicTrack> tracks) =>
         CurrentAvailability(tracks, registry.Enabled).Where(track => track.Availability == "candidate").ToArray();
+
+    internal async Task<MusicTrack[]> ProjectAvailabilityAsync(IEnumerable<MusicTrack> tracks, QQMembership.Access? access, CancellationToken ct)
+    {
+        var sources = registry.Enabled;
+        var neutral = CurrentAvailability(tracks, sources);
+        if (access is null || sources.OfType<QQMusicProvider>().FirstOrDefault() is not { } qq) return neutral;
+        var mids = neutral.Where(track => track.Availability == "unavailable")
+            .SelectMany(track => track.Sources)
+            .Where(source => source.ProviderId == QQMusicProvider.Id)
+            .Select(source => source.SourceTrackId)
+            .Distinct(StringComparer.Ordinal).Take(90).ToArray();
+        if (mids.Length == 0) return neutral;
+        using var budget = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        budget.CancelAfter(TimeSpan.FromSeconds(2));
+        try
+        {
+            var candidates = await qq.MemberTracksAsync(mids, budget.Token);
+            var verified = await access.CheckAsync(candidates, budget.Token);
+            if (verified.Count == 0) return neutral;
+            return
+            [
+                .. neutral.Select(track => track.Availability == "unavailable" && track.Sources
+                    .Any(source => source.ProviderId == QQMusicProvider.Id && verified.Contains(source.SourceTrackId))
+                    ? track with { Availability = "candidate" }
+                    : track)
+            ];
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            return neutral;
+        }
+    }
 
     private MusicTrack[] CurrentAvailability(IEnumerable<MusicTrack> tracks, IMusicSearchProvider[] sources)
     {
@@ -241,7 +279,10 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
         return new MusicLyrics(id, null, null);
     }
 
-    public async Task<MusicResolvedTrack> ResolveAsync(MusicResolveRequest request, CancellationToken ct)
+    public Task<MusicResolvedTrack> ResolveAsync(MusicResolveRequest request, CancellationToken ct) =>
+        ResolveAsync(request, ct, null);
+
+    internal async Task<MusicResolvedTrack> ResolveAsync(MusicResolveRequest request, CancellationToken ct, QQMembership.Access? access)
     {
         ct.ThrowIfCancellationRequested();
         if (string.IsNullOrWhiteSpace(request.TrackId) || request.TrackId.Length > 128 || request.Quality != "auto") throw MusicException.Invalid();
@@ -272,13 +313,17 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
             if (!registry.IsEnabled(source)) continue;
             var id = known is null ? request.TrackId : known.ProviderTrackIds.GetValueOrDefault(source.ProviderId);
             if (id is null) continue;
-            if (source.FindTrack(id) is not { Availability: "candidate" } track) continue;
+            if (source.FindTrack(id) is not { } track) continue;
+            var member = track.Availability == "unavailable" && source is QQMusicProvider && access is not null;
+            if (track.Availability != "candidate" && !member) continue;
             if (known is not null && (excluded is not null || source.ProviderId != primary) &&
                 !MusicCandidateMatcher.CanMerge(known.Track, track)) continue;
 
             try
             {
-                var audio = await ((IMusicResolverProvider)source).ResolveAsync(new MusicResolveRequest(id, source.ProviderId, request.Quality), ct);
+                var audio = member
+                    ? await ((QQMusicProvider)source).ResolveMemberAsync(id, access!, ct)
+                    : await ((IMusicResolverProvider)source).ResolveAsync(new MusicResolveRequest(id, source.ProviderId, request.Quality), ct);
                 ct.ThrowIfCancellationRequested();
                 return audio with { TrackId = request.TrackId };
             }
