@@ -37,6 +37,7 @@ internal static class MusicChecks
         Check(MusicCatalog.FallbackQuery(DateTimeOffset.FromUnixTimeSeconds(-1)) == styles[^1], "Negative epoch is floored");
         await SkillChecks(root);
         await QQMembershipChecks(root);
+        await RollingCandidatesCheck(root);
         CheckExistingDatabase(root);
         Check(!JsonSerializer.IsReflectionEnabledByDefault, "JSON reflection must stay disabled");
         using var fixture = JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "music-v1.json")));
@@ -491,6 +492,98 @@ internal static class MusicChecks
             await run(client, app);
         }
         finally { await app.StopAsync(); }
+    }
+
+    private static async Task RollingCandidatesCheck(string root)
+    {
+        var clock = new TestClock();
+        var upstream = new MusicUpstreamFixture { IncludeQqTracks = true, Clock = clock };
+        await Case(root, true, async (client, app) =>
+        {
+            const string path = "/api/music/recommendations/candidates";
+            using (var unauthorized = await client.GetAsync(path)) await Error(unauthorized, 401, "unauthorized");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+            var pool = app.Services.GetRequiredService<MusicCandidatePool>();
+            var store = app.Services.GetRequiredService<MusicCandidateStore>();
+            var configured = app.Services.GetRequiredService<MusicOptions>();
+            configured.QQMusicSkillApiKey = "qmk-synthetic-fixture";
+            using (var legacyRadio = await client.GetAsync("/api/music/recommendations/radio"))
+            {
+                var radio = JsonSerializer.Deserialize(await legacyRadio.Content.ReadAsStringAsync(),
+                    MusicJsonContext.Default.MusicRecommendationPage)!;
+                Check(radio.Items.Length == 0, "Legacy fallback cannot read private recommendations without an active grant");
+            }
+            configured.QQMusicSkillApiKey = "";
+
+            await pool.RefreshAsync(clock.Now, default);
+            var firstDay = store.Read();
+            Check(firstDay.Items.Length >= 4 && firstDay.Items.Any(x => x.Sources.Length == 2),
+                "Public chart and search candidates persist grouped by recording");
+            var firstPage = await pool.ReadAsync("fixture-owner", 1, null, null, default);
+            Check(firstPage.Items.Length == 1 && firstPage.NextCursor is not null, "First rolling page has a continuation");
+            try
+            {
+                await pool.ReadAsync("fixture-other", 1, firstPage.NextCursor, null, default);
+                throw new Exception("Candidate cursor was accepted for another device");
+            }
+            catch (MusicException error) when (error.Code == "candidate_cursor_expired") { }
+
+            clock.Now = clock.Now.AddMinutes(15);
+            await pool.RefreshAsync(clock.Now, default);
+            Check(store.Read().Refreshed == firstDay.Refreshed, "At most one persisted refresh per 30 minutes");
+            upstream.ExtraDiscovery = 8;
+            clock.Now = clock.Now.AddDays(1);
+            await pool.RefreshAsync(clock.Now, default);
+            using var newPage = await client.GetAsync(path);
+            var fresh = JsonSerializer.Deserialize(await newPage.Content.ReadAsStringAsync(),
+                MusicJsonContext.Default.MusicRecommendationPage)!;
+            var newTracks = fresh.Items.Where(track => track.Id.StartsWith("qq-QQdiscover", StringComparison.Ordinal)).ToArray();
+            Check(newTracks.Length == 8 && fresh.DiscoveryTrackIds is { } discovered &&
+                  newTracks.All(track => discovered.Contains(track.Id)), "Unchanged charts still gain eight playable discovery items");
+
+            var stableFirst = await pool.ReadAsync("stable-device", 1, null, null, default);
+            var existing = store.Read();
+            store.Write(existing with { Items = existing.Items.Reverse().ToArray() });
+            var stableNext = await pool.ReadAsync("stable-device", 1, stableFirst.NextCursor, null, default);
+            Check(stableNext.Items.Length == 1 && stableNext.Items[0].Id != stableFirst.Items[0].Id,
+                "Published cursors keep the batch order when SQLite is refreshed");
+
+            var options = app.Services.GetRequiredService<MusicOptions>();
+            using var qqClient = new HttpClient(upstream);
+            var qq = new QQMusicProvider(qqClient, clock);
+            var netease = app.Services.GetRequiredService<NeteaseMusicProvider>();
+            var registry = new MusicProviderRegistry(options, [qq, netease]);
+            var catalog = new MusicCatalog(registry, clock);
+            using var restored = new MusicCandidatePool(options, app.Services.GetRequiredService<MusicRuntime>(), store,
+                app.Services.GetRequiredService<MusicDailyFeeds>(), catalog, registry, qq, netease,
+                app.Services.GetRequiredService<QQMusicSkill>(), clock,
+                Microsoft.Extensions.Logging.Abstractions.NullLogger<MusicCandidatePool>.Instance);
+            foreach (var track in newTracks)
+            {
+                restored.Restore(track.Id);
+                var audio = await catalog.ResolveAsync(new MusicResolveRequest(track.Id, "qqmusic"), default);
+                Check(audio.Audio.DurationMs == 100000 && audio.Audio.Seekable, "Stored discovery resolves without an in-memory source index");
+            }
+
+            var seed = newTracks[0];
+            var oversize = Enumerable.Range(1, 151).Select(index =>
+            {
+                var id = "fixture-cap-" + index;
+                var source = new MusicCandidateSource(seed with { Id = id, Title = id,
+                    Sources = [new MusicSource("qqmusic", id)] });
+                return new MusicCandidate([source], clock.Now, clock.Now, true);
+            }).ToArray();
+            store.Write(store.Read() with { Items = oversize });
+            clock.Now = clock.Now.AddHours(1);
+            await pool.RefreshAsync(clock.Now, default);
+            Check(store.Read().Items.Length == 150, "Candidate pool is bounded");
+            clock.Now = clock.Now.AddDays(8);
+            upstream.Status = HttpStatusCode.TooManyRequests;
+            await pool.RefreshAsync(clock.Now, default);
+            Check(store.Read().Items.All(item => item.Seen > clock.Now.AddDays(-7) &&
+                  item.Sources.All(source => !source.Track.Id.StartsWith("fixture-cap-", StringComparison.Ordinal))),
+                "Expired items are pruned while rate-limited sources degrade");
+        }, change: new("RollingRecommendationsEnabled", "true"), qq: upstream, clock: clock);
     }
 
     private static async Task QQMembershipChecks(string root)

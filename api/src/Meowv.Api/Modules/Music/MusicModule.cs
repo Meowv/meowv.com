@@ -22,29 +22,31 @@ public sealed class MusicModule : IEndpointModule
         if (!endpoints.ServiceProvider.GetRequiredService<MusicOptions>().Enabled) return;
         if (endpoints.ServiceProvider.GetRequiredService<MusicRuntime>().Available)
         {
-            var setup = music.MapGroup("/setup/devices").RequireAuthorization(ApiAuthorization.ManagementPolicy)
-                .RequireRateLimiting("api-auth");
+            var setup = music.MapGroup("/setup/devices").RequireAuthorization(ApiAuthorization.ManagementPolicy);
             setup.MapGet("", (MusicDeviceStore devices) => Results.Json(devices.List(), MusicJsonContext.Default.MusicDeviceArray))
-                .WithSummary("列出已签发的音乐设备令牌。");
+                .WithSummary("列出已签发的音乐设备令牌。")
+                .RequireRateLimiting("setup-ui");
             setup.MapPost("", async (HttpContext context, MusicDeviceStore devices) =>
-            {
-                if (!context.Request.HasJsonContentType()) throw MusicException.Invalid();
-                var bytes = new byte[4097];
-                var length = 0;
-                while (length < bytes.Length)
                 {
-                    var read = await context.Request.Body.ReadAsync(bytes.AsMemory(length), context.RequestAborted);
-                    if (read == 0) break;
-                    length += read;
-                }
+                    if (!context.Request.HasJsonContentType()) throw MusicException.Invalid();
+                    var bytes = new byte[4097];
+                    var length = 0;
+                    while (length < bytes.Length)
+                    {
+                        var read = await context.Request.Body.ReadAsync(bytes.AsMemory(length), context.RequestAborted);
+                        if (read == 0) break;
+                        length += read;
+                    }
 
-                if (length > 4096) throw MusicException.Invalid();
-                var input = System.Text.Json.JsonSerializer.Deserialize(bytes.AsSpan(0, length), MusicJsonContext.Default.MusicDeviceRequest);
-                if (input is null) throw MusicException.Invalid();
-                return Results.Json(devices.Issue(input.Alias), MusicJsonContext.Default.MusicDeviceIssued, statusCode: 201);
-            }).WithSummary("签发新的音乐设备令牌。");
+                    if (length > 4096) throw MusicException.Invalid();
+                    var input = System.Text.Json.JsonSerializer.Deserialize(bytes.AsSpan(0, length), MusicJsonContext.Default.MusicDeviceRequest);
+                    if (input is null) throw MusicException.Invalid();
+                    return Results.Json(devices.Issue(input.Alias), MusicJsonContext.Default.MusicDeviceIssued, statusCode: 201);
+                }).WithSummary("签发新的音乐设备令牌。")
+                .RequireRateLimiting("api-auth");
             setup.MapDelete("/{id}", (string id, MusicDeviceStore devices) => devices.Revoke(id) ? Results.NoContent() : Results.NotFound())
-                .WithSummary("撤销指定的音乐设备令牌。");
+                .WithSummary("撤销指定的音乐设备令牌。")
+                .RequireRateLimiting("api-auth");
             QQSetupEndpoints.Map(music);
         }
 
@@ -71,13 +73,18 @@ public sealed class MusicModule : IEndpointModule
                 Results.Json(await feeds.RecommendAsync(context.RequestAborted, member.ForDevice(context)),
                     MusicJsonContext.Default.MusicRecommendationPage))
             .WithSummary("读取每日推荐曲目。");
+        secured.MapGet("/recommendations/candidates", async (HttpContext context, MusicCandidatePool pool, QQMembership member) =>
+                Results.Json(await pool.ReadAsync(context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                                                  ?? throw MusicException.Invalid(), Limit(context), One(context, "cursor"), member.ForDevice(context), context.RequestAborted),
+                    MusicJsonContext.Default.MusicRecommendationPage))
+            .WithSummary("分页读取滚动音乐推荐候选。");
         secured.MapGet("/recommendations/radio", async (HttpContext context, MusicDailyFeeds feeds, QQMembership member, CancellationToken ct) =>
                 Results.Json(await feeds.RadioAsync(ct, member.ForDevice(context)), MusicJsonContext.Default.MusicRecommendationPage))
             .WithSummary("读取「猜你喜欢」电台候选。");
         secured.MapGet("/lyrics", async (HttpContext context, MusicCatalog catalog) => Results.Json(
             await catalog.LyricsAsync(One(context, "trackId"), One(context, "providerId"), context.RequestAborted),
             MusicJsonContext.Default.MusicLyrics)).WithSummary("读取指定曲目的歌词。");
-        secured.MapPost("/resolve", async (HttpContext context, MusicCatalog catalog, QQMembership member) =>
+        secured.MapPost("/resolve", async (HttpContext context, MusicCatalog catalog, QQMembership member, MusicCandidatePool pool) =>
         {
             if (!context.Request.HasJsonContentType()) throw MusicException.Invalid();
             var bytes = new byte[4097];
@@ -92,6 +99,7 @@ public sealed class MusicModule : IEndpointModule
             if (length > 4096) throw MusicException.Invalid();
             var input = System.Text.Json.JsonSerializer.Deserialize(bytes.AsSpan(0, length), MusicJsonContext.Default.MusicResolveRequest);
             if (input is null) throw MusicException.Invalid();
+            if (input.TrackId is { Length: >= 1 and <= 128 } id && !catalog.HasTrack(id)) pool.Restore(id);
             return Results.Json(await catalog.ResolveAsync(input, context.RequestAborted, member.ForDevice(context)), MusicJsonContext.Default.MusicResolvedTrack);
         }).WithSummary("解析曲目的可播放资源地址。");
     }

@@ -28,6 +28,9 @@ public static class MusicRegistration
         services.AddSingleton<MusicDeviceStore>();
         services.AddSingleton<MusicChartStore>();
         services.AddSingleton<MusicDailyFeeds>();
+        services.AddSingleton<MusicCandidateStore>();
+        services.AddSingleton<MusicCandidatePool>();
+        services.AddHostedService(provider => provider.GetRequiredService<MusicCandidatePool>());
         services.AddHttpClient("MusicNetease", client => client.Timeout = TimeSpan.FromSeconds(6))
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
             {

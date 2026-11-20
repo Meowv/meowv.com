@@ -26,6 +26,15 @@ public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : 
         }
     }
 
+    internal MusicTrack? Candidate(string sourceId)
+    {
+        lock (_gate)
+            return _tracks.TryGetValue(TrackId(sourceId), out var entry) && entry.Until > clock.GetUtcNow() ? entry.Track : null;
+    }
+
+    private static string TrackId(string sourceId) =>
+        "nt-" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(sourceId)))[..32].ToLowerInvariant();
+
     private readonly Lock _gate = new();
     private readonly SemaphoreSlim _concurrency = new(2);
     private readonly SemaphoreSlim _search = new(1);
@@ -138,7 +147,7 @@ public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : 
         var cover = SafeAudioUrl(Text(album, "picUrl"));
 
         var sourceId = id.ToString(CultureInfo.InvariantCulture);
-        var trackId = "nt-" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(sourceId)))[..32].ToLowerInvariant();
+        var trackId = TrackId(sourceId);
         var privilege = song.TryGetProperty("privilege", out var right) ? Number(right, "st") : 0;
         var copyrighted = song.TryGetProperty("noCopyrightRcmd", out var noCopyright) &&
                           noCopyright.ValueKind is JsonValueKind.Object && noCopyright.EnumerateObject().Any();

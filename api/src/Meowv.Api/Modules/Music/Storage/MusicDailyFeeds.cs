@@ -15,7 +15,8 @@ internal sealed class MusicDailyFeeds(
     NeteaseMusicProvider netease,
     QQMusicProvider qq,
     TimeProvider clock,
-    QQMusicSkill skill)
+    QQMusicSkill skill,
+    MusicOptions options)
 {
     private static readonly TimeZoneInfo BusinessZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Shanghai");
 
@@ -86,7 +87,8 @@ internal sealed class MusicDailyFeeds(
 
         var entries = page?.Items.Select(x => x.Track) ?? [];
         var tracks = access is null ? catalog.PlayableCandidates(entries) : entries.ToArray();
-        if (registry.Enabled.Contains(qq)) tracks = await skill.PersonalizeAsync(tracks, qq, catalog, ct, access is not null);
+        if (registry.Enabled.Contains(qq) && (!options.RollingRecommendationsEnabled || access?.Current == true))
+            tracks = await skill.PersonalizeAsync(tracks, qq, catalog, ct, access is not null);
         tracks = (await catalog.ProjectAvailabilityAsync(tracks, access, ct)).Where(track => track.Availability == "candidate").ToArray();
         if (tracks.Length == 0) return await FallbackAsync(ct, access);
         return new MusicRecommendationPage(tracks, null,
@@ -96,7 +98,9 @@ internal sealed class MusicDailyFeeds(
 
     public async Task<MusicRecommendationPage> RadioAsync(CancellationToken ct, QQMembership.Access? access = null)
     {
-        var tracks = registry.Enabled.Contains(qq) ? await skill.RadioAsync(qq, ct, access is not null) : [];
+        var tracks = registry.Enabled.Contains(qq) && (!options.RollingRecommendationsEnabled || access?.Current == true)
+            ? await skill.RadioAsync(qq, ct, access is not null)
+            : [];
         var projected = await catalog.ProjectAvailabilityAsync(catalog.MergeDaily(tracks), access, ct);
         return new MusicRecommendationPage(projected.Where(track => track.Availability == "candidate").ToArray(), null, "qq_skill_radio", clock.GetUtcNow().UtcDateTime);
     }

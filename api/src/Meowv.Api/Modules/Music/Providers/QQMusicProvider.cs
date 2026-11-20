@@ -41,6 +41,9 @@ public sealed class QQMusicProvider(HttpClient http, TimeProvider clock) : IMusi
         return entry.UnplayableUntil > now ? entry.Track with { Availability = "unavailable" } : entry.Track;
     }
 
+    internal Entry? Candidate(string sourceId) =>
+        _tracks.TryGetValue("qq-" + sourceId, out var entry) && entry.Deadline > clock.GetUtcNow() ? entry : null;
+
     internal void Remember(IEnumerable<Entry> entries)
     {
         lock (_gate)

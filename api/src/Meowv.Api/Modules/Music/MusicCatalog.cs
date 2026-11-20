@@ -156,7 +156,7 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
                 {
                     foreach (var old in _pages.Where(x => x.Value.Until <= clock.GetUtcNow()).Select(x => x.Key).ToArray()) _pages.Remove(old);
                     if (_pages.Count >= 128) _pages.Remove(_pages.MinBy(x => x.Value.Until).Key);
-                    _pages[nextCursor] = new Continuation(signature, cursors, buffered.ToArray(), seen, clock.GetUtcNow().AddMinutes(5), deferred.ToArray());
+                    _pages[nextCursor] = new Continuation(signature, cursors, buffered.ToArray(), seen, clock.GetUtcNow().AddMinutes(5), [.. deferred]);
                 }
 
                 break;
@@ -176,8 +176,7 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
     }
 
     // 与 Tune 的 fallbackQuery 保持顺序和小时桶一致。
-    private static readonly string[] FallbackQueries =
-        ["华语流行", "摇滚", "民谣", "电子", "说唱", "轻音乐", "ACG", "爵士"];
+    private static readonly string[] FallbackQueries = ["华语流行", "摇滚", "民谣", "电子", "说唱", "轻音乐", "ACG", "爵士"];
 
     internal static string FallbackQuery(DateTimeOffset now)
     {
@@ -238,6 +237,16 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
                 });
                 return canResolve ? track : track with { Availability = "unavailable" };
             }).ToArray();
+        }
+    }
+
+    internal bool HasTrack(string id)
+    {
+        lock (_gate)
+        {
+            var known = _known.GetValueOrDefault(Canonical(id));
+            return registry.Enabled.Any(source => source.FindTrack(known?.ProviderTrackIds.GetValueOrDefault(source.ProviderId)
+                                                                   ?? id) is not null);
         }
     }
 
@@ -400,7 +409,7 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
         }
 
         caller.ThrowIfCancellationRequested();
-        return results.ToArray();
+        return [.. results];
     }
 
     private string Canonical(string id)
@@ -421,7 +430,7 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
 
     private async Task<SourcePage> Load(IMusicSearchProvider source, string query, int count, string? cursor, CancellationToken ct)
     {
-        if (!registry.IsEnabled(source)) return new(source, null, new MusicException("forbidden", "来源已关闭。", 403));
+        if (!registry.IsEnabled(source)) return new SourcePage(source, null, new MusicException("forbidden", "来源已关闭。", 403));
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeout.CancelAfter(TimeSpan.FromSeconds(6));
         try

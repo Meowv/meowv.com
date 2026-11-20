@@ -91,6 +91,12 @@ dotnet run --project api/src/Meowv.Api -- --contentRoot /YOUR_CHECKOUT/api/src/M
 
 Tune 音乐端直连 `GET /api/music/recommendations`、`GET /api/music/search`、`GET /api/music/recommendations/radio`、`POST /api/music/resolve` 和 `GET /api/music/lyrics`。
 
+### 滚动推荐候选
+
+使用 `Modules__Music__RollingRecommendationsEnabled=true` 启用。新版喵听听通过 `GET /api/music/recommendations/candidates` 拉取候选，使用设备鉴权和 `limit`、`cursor` 分页。旧推荐接口保留。首次请求会触发后台补充，候选池预热期间回退到原推荐。后台使用现有榜单、新歌和风格搜索，公共候选在 SQLite 中保留最近 7 天，最多 150 首。已授权设备首批候选还可包含账号的 QQ 每日推荐和猜你喜欢。
+
+设备端独立保存收听记录并排序。后端继续按设备校验会员播放权限，播放时使用原取流接口。
+
 ### QQ 音乐会员播放
 
 会员播放默认关闭。个人实例先启用音乐模块，再配置 `Modules__Music__QQMusicMemberEnabled=true` 和 `Modules__Music__QQMusicSessionKey`。后者是 32 字节随机密钥的 Base64 值，使用部署环境的密钥存储注入，重启时沿用同一密钥。QQ 会话以 AES-GCM 加密存入 API 的 SQLite，密钥不随数据库或发布产物分发。丢失密钥或 QQ 登录失效时，在 `/setup` 重新绑定。

@@ -11,6 +11,7 @@ internal sealed class MusicUpstreamFixture : HttpMessageHandler
     internal HttpStatusCode Status = HttpStatusCode.OK;
     internal int Count;
     internal bool IncludeQqTracks;
+    internal int ExtraDiscovery;
     internal bool EmptyRecommendations;
     internal string? LastSearch;
     internal long RangeLength = 1600000;
@@ -56,6 +57,18 @@ internal sealed class MusicUpstreamFixture : HttpMessageHandler
             var date = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(Clock.GetUtcNow(), "Asia/Shanghai").ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             var param = call.GetProperty("param");
             var topId = param.TryGetProperty("topid", out var top) && top.ValueKind == JsonValueKind.Number && top.TryGetInt64(out var parsed) ? parsed : 0;
+            var extra = Enumerable.Range(1, ExtraDiscovery).Select(index => $$$"""
+                {"mid":"QQdiscover{{{index:D4}}}","title":"探索歌曲{{{index}}}","interval":100,"singer":[{"name":"探索歌手{{{index}}}"}],"file":{"media_mid":"QQdiscover{{{index:D4}}}","size_128mp3":1600000},"pay":{"pay_play":0}}
+                """);
+            var search = IncludeQqTracks ? string.Join(',', new[] { QqFirst, QqSecond }.Concat(extra)) : "";
+            string Stream()
+            {
+                var mid = param.GetProperty("songmid")[0].GetString();
+                var filename = param.GetProperty("filename")[0].GetString();
+                return $$"""
+                    {"midurlinfo":[{"songmid":"{{mid}}","result":0,"purl":"{{filename}}?fixture=1"}],"sip":["https://aqqmusic.tc.qq.com/"]}
+                    """;
+            }
             var data = method switch
             {
                 "GetDetail" when EmptyRecommendations => """{}""",
@@ -68,9 +81,8 @@ internal sealed class MusicUpstreamFixture : HttpMessageHandler
                 },
                 "GetNewSong" when EmptyRecommendations => """{"song_list":[]}""",
                 "GetNewSong" => "{\"song_list\":[" + QqFirst + "," + QqSecond + "]}",
-                "DoSearchForQQMusicDesktop" => "{\"body\":{\"song\":{\"list\":[" + (IncludeQqTracks ? QqFirst + "," + QqSecond : "") + "]}}}",
-                "CgiGetVkey" =>
-                    """{"midurlinfo":[{"songmid":"QQfixture00001","result":0,"purl":"M500QQfixture00001.mp3?fixture=1"}],"sip":["https://aqqmusic.tc.qq.com/"]}""",
+                "DoSearchForQQMusicDesktop" => "{\"body\":{\"song\":{\"list\":[" + search + "]}}}",
+                "CgiGetVkey" => Stream(),
                 _ => throw new InvalidOperationException("Unexpected QQ method")
             };
             return Reply(Status, "{\"code\":0,\"req\":{\"code\":0,\"data\":" + (IncludeQqTracks ? data : "{\"body\":{\"song\":{\"list\":[]}}}") + "}}");

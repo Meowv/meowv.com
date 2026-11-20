@@ -38,9 +38,10 @@ internal sealed class QQMusicSkill(HttpClient http, MusicOptions options, TimePr
         }
     }
 
-    public async Task<MusicTrack[]> PersonalizeAsync(MusicTrack[] tracks, QQMusicProvider qq, MusicCatalog catalog, CancellationToken ct, bool includeMember = false)
+    public async Task<MusicTrack[]> PersonalizeAsync(MusicTrack[] tracks, QQMusicProvider qq, MusicCatalog catalog, CancellationToken ct,
+        bool includeMember = false, bool personalOnly = false)
     {
-        if (Key is not { } key) return tracks;
+        if (Key is not { } key) return personalOnly ? [] : tracks;
         var source = "qqskill-" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key))).ToLowerInvariant();
         using var budget = CancellationTokenSource.CreateLinkedTokenSource(ct);
         budget.CancelAfter(TimeSpan.FromSeconds(3));
@@ -69,7 +70,7 @@ internal sealed class QQMusicSkill(HttpClient http, MusicOptions options, TimePr
                     }
                 }
 
-                if (snapshot?.BusinessDate != today) return tracks;
+                if (snapshot?.BusinessDate != today) return personalOnly ? [] : tracks;
                 var daily = snapshot.Entries.Select(x => new Song(x.TrackKey, x.Title, x.Artists[0])).ToArray();
                 if (_extraDate != today || _extraSource != source)
                 {
@@ -86,10 +87,15 @@ internal sealed class QQMusicSkill(HttpClient http, MusicOptions options, TimePr
 
                 var rank = daily.Select((song, index) => (song.Mid, index)).ToDictionary(x => x.Mid, x => x.index);
                 var merged = extra.Length == 0 ? tracks : catalog.MergeDaily(tracks.Concat(extra));
-                return merged.Where(x => includeMember || x.Availability == "candidate").OrderBy(track => track.Sources
-                    .Where(x => x.ProviderId == QQMusicProvider.Id)
-                    .Select(x => rank.GetValueOrDefault(x.SourceTrackId, int.MaxValue))
-                    .DefaultIfEmpty(int.MaxValue).Min()).ToArray();
+                return
+                [
+                    .. merged.Where(track => (includeMember || track.Availability == "candidate") &&
+                                             (!personalOnly || track.Sources.Any(s => s.ProviderId == QQMusicProvider.Id && rank.ContainsKey(s.SourceTrackId))))
+                        .OrderBy(track => track.Sources
+                            .Where(x => x.ProviderId == QQMusicProvider.Id)
+                            .Select(x => rank.GetValueOrDefault(x.SourceTrackId, int.MaxValue))
+                            .DefaultIfEmpty(int.MaxValue).Min())
+                ];
             }
             finally
             {
@@ -98,11 +104,11 @@ internal sealed class QQMusicSkill(HttpClient http, MusicOptions options, TimePr
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
-            return tracks;
+            return personalOnly ? [] : tracks;
         }
         catch (Exception error) when (error is MusicException or SqliteException or ApiDatabaseSchemaException or IOException or JsonException or ArgumentException)
         {
-            return tracks;
+            return personalOnly ? [] : tracks;
         }
     }
 
