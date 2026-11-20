@@ -339,3 +339,21 @@ test('a rejected stored token is removed so the next load asks again', async () 
   assert.equal(page.element('workspace').hidden, true);
   assert.equal(page.storage.has('meowv.setup.bootstrapToken'), false);
 });
+
+test('daily chart snapshot can be refreshed from the setup page', async () => {
+  let refreshes = 0;
+  const page = createPage(request => {
+    if (request.path === '/api/music/admin/charts/refresh') {
+      assert.equal(request.method, 'POST');
+      refreshes++;
+      return { body: { chart: 'daily', period: '2026-11-20', items: [{ id: '1' }, { id: '2' }], partial: false, warnings: [] } };
+    }
+    return standardResponse(request);
+  });
+  await page.authenticate();
+  await page.trigger('charts-refresh');
+  assert.equal(refreshes, 1);
+  assert.match(page.element('charts-status').textContent, /2026-11-20/);
+  assert.match(page.element('charts-status').textContent, /共 2 首/);
+  assert.equal(page.element('message').textContent, '每日榜单快照已刷新。');
+});

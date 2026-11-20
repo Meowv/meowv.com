@@ -535,6 +535,10 @@ internal static class AuthSetupPage
                                                  <div id="music-device-list" class="device-list"></div>
                                                  <p id="music-status" class="hint">正在加载设备列表…</p>
                                                  <div><button id="music-revoke" class="text-button danger" data-private type="button">撤销选中设备</button></div>
+                                                 <div class="divider"></div>
+                                                 <div class="list-head"><strong>每日榜单快照</strong></div>
+                                                 <p id="charts-status" class="hint">可手动强制刷新每日榜单快照，生成后各设备立即可用。</p>
+                                                 <div><button id="charts-refresh" class="secondary" data-private type="button">强制刷新榜单</button></div>
                                                </div>
                                              </section>
                                              <section id="panel-qq" class="panel" aria-labelledby="qq-title">
@@ -1028,6 +1032,15 @@ internal static class AuthSetupPage
                                          });
                                        };
                                        const qqRoot = "/api/music/setup/qq";
+                                       $("charts-refresh").onclick = () => run(async () => {
+                                         const page = await request("/api/music/admin/charts/refresh", { method: "POST" });
+                                         const period = page?.period || "";
+                                         const count = Array.isArray(page?.items) ? page.items.length : 0;
+                                         const partial = page?.partial ? "（部分来源失败）" : "";
+                                         $("charts-status").textContent = "已刷新" + (period ? " " + period : "") + " 的每日榜单" + (count ? "，共 " + count + " 首" : "") + partial + "。";
+                                         notify("每日榜单快照已刷新。", "success");
+                                       });
+
                                        const loadQQDevices = async () => {
                                          const devices = await request("/api/music/setup/devices");
                                          if (!Array.isArray(devices)) throw new Error("设备列表格式无效。");

@@ -58,7 +58,7 @@ dotnet run --project api/src/Meowv.Api -- --contentRoot /YOUR_CHECKOUT/api/src/M
 
 默认地址为 `http://localhost:5000`，启动参数可通过标准 `--urls` 覆盖。
 
-打开 `http://localhost:5000/setup`，在统一初始化向导中输入一次公共管理密钥：首次使用自动生成服务级授权码，然后检查摄像头模块并引导账号登录或验证码验证；已有授权码和保存的云会话自动保留。浏览器会记住管理密钥，刷新页面自动恢复；点击「退出管理」后清除。音乐设备凭据与 QQ 会员设备以列表形式随页面加载自动显示，无需手动刷新。摄像头未启用或初始化失败时，系统授权仍可使用，页面显示模块状态并提供重新检查。
+打开 `http://localhost:5000/setup`，在统一初始化向导中输入一次公共管理密钥：首次使用自动生成服务级授权码，然后检查摄像头模块并引导账号登录或验证码验证；已有授权码和保存的云会话自动保留。浏览器会记住管理密钥，刷新页面自动恢复；点击「退出管理」后清除。音乐设备凭据与 QQ 会员设备以列表形式随页面加载自动显示，无需手动刷新；音乐分区还可手动强制刷新每日榜单快照。摄像头未启用或初始化失败时，系统授权仍可使用，页面显示模块状态并提供重新检查。
 
 一个授权码通用于所有声明公共授权的模块，客户端使用 `Authorization: Bearer YOUR_ACCESS_CODE`。只读方法（`GET`、`HEAD`、`OPTIONS`）也接受 `?access_token=YOUR_ACCESS_CODE`，供播放器、`<video>`、图片标签等无法自定义请求头的场景使用；写操作必须走请求头。URL 中的凭据会进入访问日志、浏览器历史和 Referer，服务对这类响应附加 `Cache-Control: no-store` 与 `Referrer-Policy: no-referrer`，但仍不要把它放进可分享链接。服务只保存盐和 PBKDF2 哈希；已有授权码不会再次返回明文，遗失后只能在向导中手动轮换。轮换立即废止旧授权码，并使旧摄像头播放票据失效。切换小米账号单独确认，不轮换公共授权码。授权状态保存在共享数据库的 `auth_state` 中，不依赖摄像头开关或小米登录状态。管理密钥保存在当前浏览器的本地存储中，刷新页面后自动恢复；点击「退出管理」或密钥被服务拒绝时立即清除。
 
@@ -72,6 +72,7 @@ dotnet run --project api/src/Meowv.Api -- --contentRoot /YOUR_CHECKOUT/api/src/M
 | `POST /api/auth/access-code/rotate` | 同上；轮换所有模块共用的授权码 |
 | `/api/xiaomi-camera/setup/...` | 同样使用 `X-Api-Bootstrap-Token`；小米账号登录、验证码验证和会话重置 |
 | `GET /api/xiaomi-camera/health` | 摄像头就绪状态；未就绪 `503`，禁用时不注册 |
+| `POST /api/music/admin/charts/refresh` | 管理密钥；强制刷新每日榜单快照，`/setup` 音乐分区可触发 |
 
 公共管理接口有限流，超过额度统一返回 `429`，授权码响应及初始化页面禁止缓存。`/setup` 自动加载使用的读取接口（读取授权码、设备列表、小米登录状态）使用独立的 `setup-ui` 配额：每客户端 IP 每分钟 60 次；轮换授权码、签发/撤销设备、摄像头登录与 QQ 扫码等写操作仍走原有 10 次/分钟的严格配额。宿主在限流前处理转发头，只信任本机 IPv4 / IPv6 回环代理的一跳 `X-Forwarded-For` 和 `X-Forwarded-Proto`；适用于仓库 Nginx 转发到 `127.0.0.1:5000` 的布局，其他来源的转发头不生效。普通业务通过标准认证 Scheme 校验 Bearer 授权码，缺失或错误返回 `401 access_code_unauthorized`，在业务参数绑定前拦截；管理密钥不代替应用授权码。三类凭据（通用授权码、公共管理密钥、Music 设备令牌）都支持请求头与 `?access_token=` 两种载体，同一请求同时使用两种载体、URL 凭据用于写操作或参数重复出现时按无效凭据处理。摄像头管理接口位于 `/api/xiaomi-camera/setup/...`，公共授权码由 `/api/auth/...` 管理。
 
