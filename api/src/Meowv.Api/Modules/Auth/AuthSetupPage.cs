@@ -13,824 +13,490 @@ internal static class AuthSetupPage
                                      <title>服务初始化 · Meowv API</title>
                                      <style>
                                        :root {
-                                         font-family:
-                                           Inter,
-                                           -apple-system,
-                                           BlinkMacSystemFont,
-                                           "Segoe UI",
-                                           "PingFang SC",
-                                           "Microsoft YaHei",
-                                           sans-serif;
-                                         color: #202534;
-                                         background: #f4f6fb;
+                                         font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+                                         color: #1f2937;
+                                         background: #f4f6fa;
                                          font-synthesis: none;
-                                         --accent: #6554d9;
-                                         --muted: #7b8192;
-                                         --line: #e9ebf2;
+                                         --accent: #5a50d8;
+                                         --accent-dark: #4a40c2;
+                                         --accent-soft: #efedfc;
+                                         --muted: #6b7280;
+                                         --line: #e6e9f0;
+                                         --ok: #2c9a70;
+                                         --warn: #bd8128;
                                        }
-                                       * {
-                                         box-sizing: border-box;
+                                       * { box-sizing: border-box; }
+                                       [hidden] { display: none !important; }
+                                       body { margin: 0; min-height: 100svh; background: #f4f6fa; }
+                                       h1, h2, h3, p, ol { margin: 0; }
+                                       svg { display: block; flex-shrink: 0; }
+                                       a { color: inherit; text-decoration: none; }
+                                       button, input, select { font: inherit; }
+                                       button { cursor: pointer; border: 0; }
+                                       button:disabled { cursor: not-allowed; opacity: .55; }
+                                       button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
+                                         outline: 3px solid #c9c2f8;
+                                         outline-offset: 2px;
                                        }
-                                       [hidden] {
-                                         display: none !important;
-                                       }
-                                       body {
-                                         margin: 0;
-                                         min-height: 100vh;
-                                         background:
-                                           radial-gradient(ellipse at 0 0, #ede9ff88, transparent 50%), #f4f6fb;
-                                       }
-                                       button,
-                                       input,
-                                       select {
-                                         font: inherit;
-                                       }
-                                       button {
-                                         cursor: pointer;
-                                       }
-                                       button:disabled {
-                                         cursor: wait;
-                                         opacity: 0.55;
-                                       }
-                                       input,
-                                       select {
+                                       input:not([type="checkbox"]), select {
                                          width: 100%;
                                          min-width: 0;
-                                         border: 1px solid #dce0ea;
-                                         border-radius: 10px;
-                                         padding: 12px 14px;
-                                         background: white;
-                                         color: inherit;
-                                         transition: border-color 0.15s;
+                                         border: 1px solid #dfe3ec;
+                                         border-radius: 8px;
+                                         padding: 10px 12px;
+                                         background: #fff;
+                                         color: #1f2937;
+                                         font-size: 13px;
+                                         transition: border-color .15s, box-shadow .15s;
                                        }
-                                       input::placeholder {
-                                         color: #a0a5b3;
-                                       }
-                                       input:focus-visible,
-                                       select:focus-visible,
-                                       button:focus-visible {
-                                         outline: 3px solid #bcb2ff;
-                                         outline-offset: 3px;
-                                       }
-                                       input:focus,
-                                       select:focus {
+                                       input::placeholder { color: #9aa1af; }
+                                       input:focus, select:focus {
+                                         outline: none;
                                          border-color: var(--accent);
+                                         box-shadow: 0 0 0 3px #5a50d81c;
                                        }
-                                       input[readonly] {
-                                         background: #f7f7fc;
-                                       }
-                                       label {
-                                         display: block;
-                                         font-size: 13px;
-                                         font-weight: 600;
-                                         line-height: 1.5;
-                                       }
-                                       label input,
-                                       label select {
-                                         margin-top: 8px;
-                                         font-weight: 400;
-                                       }
-                                       #qq-grant {
-                                         width: auto;
-                                         margin: 0 4px 0 0;
-                                         vertical-align: middle;
-                                       }
-                                       #qq-qr {
-                                         max-width: 100%;
-                                         height: auto;
-                                       }
-                                       p {
-                                         line-height: 1.75;
-                                       }
-                                       h1,
-                                       h2,
-                                       h3,
-                                       p {
-                                         margin: 0;
-                                       }
-                                       svg {
-                                         display: block;
-                                         flex-shrink: 0;
-                                       }
-                                       button {
-                                         border: 0;
-                                         border-radius: 10px;
-                                         padding: 11px 17px;
-                                         font-size: 13px;
-                                         font-weight: 600;
-                                         line-height: 1.5;
-                                         display: inline-flex;
-                                         align-items: center;
-                                         justify-content: center;
-                                         gap: 8px;
-                                       }
-                                       .primary {
-                                         color: white;
-                                         background: var(--accent);
-                                         box-shadow: 0 3px 8px #6554d926;
-                                       }
-                                       .primary:hover {
-                                         background: #5948ca;
-                                       }
-                                       .secondary {
-                                         background: #f0eefb;
-                                         color: #5948bc;
-                                       }
-                                       .secondary:hover {
-                                         background: #e8e3fa;
-                                       }
-                                       .text-button {
-                                         padding: 6px 0;
-                                         background: transparent;
-                                         color: var(--muted);
-                                         font-weight: 500;
-                                       }
-                                       .text-button:hover {
-                                         color: var(--accent);
-                                       }
-                                       .danger {
-                                         color: #b55050;
-                                       }
-                                       .shell {
-                                         max-width: 1000px;
-                                         min-height: 100svh;
-                                         margin: auto;
-                                         padding: 64px 32px;
-                                         display: flex;
-                                         flex-direction: column;
-                                         justify-content: center;
-                                       }
+                                       input[readonly] { background: #f8f9fc; color: #4b5563; }
+                                       label { display: block; font-size: 12px; font-weight: 600; color: #374151; }
+                                       label > input, label > select { margin-top: 7px; font-weight: 400; }
+                                       .check-line { display: flex; align-items: center; gap: 9px; font-weight: 500; line-height: 1.5; }
+                                       #qq-grant { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); flex-shrink: 0; }
+                                       #qq-qr { max-width: 100%; height: auto; }
                                        .sr-only {
-                                         position: absolute;
-                                         width: 1px;
-                                         height: 1px;
-                                         padding: 0;
-                                         margin: -1px;
-                                         overflow: hidden;
-                                         clip-path: inset(50%);
-                                         white-space: nowrap;
-                                         border: 0;
+                                         position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+                                         overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
                                        }
-                                       .pill {
-                                         display: inline-flex;
-                                         align-items: center;
-                                         gap: 7px;
-                                         padding: 7px 11px;
-                                         border: 1px solid #e4e6ef;
-                                         border-radius: 999px;
-                                         background: #ffffffb3;
-                                         color: #70788a;
-                                         font-size: 11px;
-                                         white-space: nowrap;
+
+                                       /* 顶栏 */
+                                       .topbar {
+                                         position: sticky; top: 0; z-index: 20;
+                                         display: flex; align-items: center; justify-content: space-between; gap: 16px;
+                                         height: 60px; padding: 0 28px;
+                                         background: #fff; border-bottom: 1px solid var(--line);
                                        }
-                                       .pill:before {
-                                         content: "";
-                                         width: 6px;
-                                         height: 6px;
-                                         border-radius: 50%;
-                                         background: #a6acba;
+                                       .brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
+                                       .brand-mark {
+                                         width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0;
+                                         display: grid; place-items: center; color: #fff;
+                                         background: linear-gradient(145deg, #756be4, #5146c6);
                                        }
-                                       .pill[data-state="done"] {
-                                         color: #2d826a;
-                                         background: #edf8f3;
-                                         border-color: #d8eee4;
+                                       .brand-name { font-size: 15px; font-weight: 700; letter-spacing: -.2px; white-space: nowrap; }
+                                       .brand-divider { width: 1px; height: 18px; background: #dfe3ec; }
+                                       .brand-sub { font-size: 12px; color: var(--muted); white-space: nowrap; }
+                                       .topbar-meta { display: flex; align-items: center; gap: 12px; }
+                                       .env-tag {
+                                         font-size: 11px; color: #7b8496; padding: 4px 9px;
+                                         border: 1px solid var(--line); border-radius: 6px; white-space: nowrap;
                                        }
-                                       .pill[data-state="done"]:before {
-                                         background: #389474;
+                                       .global-status {
+                                         display: inline-flex; align-items: center; gap: 7px;
+                                         padding: 5px 11px; border-radius: 999px;
+                                         background: #f3f4f8; color: #6b7280; font-size: 12px; font-weight: 600; white-space: nowrap;
                                        }
-                                       .pill[data-state="warning"] {
-                                         color: #ad7a31;
-                                         background: #fff8eb;
-                                         border-color: #f3e7cf;
+                                       .global-status:before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #9ca3af; }
+                                       .global-status[data-state="done"] { background: #e9f7f0; color: #25795a; }
+                                       .global-status[data-state="done"]:before { background: var(--ok); }
+                                       .global-status[data-state="warning"] { background: #fff5e6; color: #a46b1c; }
+                                       .global-status[data-state="warning"]:before { background: var(--warn); }
+
+                                       /* 侧边栏 */
+                                       .app-body { display: grid; grid-template-columns: 244px minmax(0, 1fr); }
+                                       .sidebar {
+                                         position: sticky; top: 60px; height: calc(100svh - 60px);
+                                         display: flex; flex-direction: column; gap: 24px;
+                                         padding: 26px 16px 20px; overflow-y: auto;
+                                         background: #15203a; color: #9aa8bf;
                                        }
-                                       .pill[data-state="warning"]:before {
-                                         background: #d39a42;
+                                       .side-heading {
+                                         padding: 0 10px; font-size: 10px; font-weight: 700;
+                                         letter-spacing: .16em; text-transform: uppercase; color: #6d7d9b;
                                        }
-                                       .layout {
-                                         display: grid;
-                                         grid-template-columns: 220px minmax(0, 1fr);
-                                         gap: 40px;
-                                         align-items: start;
-                                       }
-                                       .intro {
-                                         position: sticky;
-                                         top: 48px;
-                                         padding-top: 28px;
-                                       }
-                                       .steps {
-                                         padding: 0;
-                                         list-style: none;
-                                         margin: 0 0 26px;
-                                       }
-                                       .step {
-                                         display: flex;
-                                         gap: 13px;
-                                         position: relative;
-                                         padding-bottom: 28px;
-                                       }
-                                       .step:last-child {
-                                         padding-bottom: 0;
-                                       }
+                                       .steps { list-style: none; padding: 0; }
+                                       .step { position: relative; display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 11px; padding: 0 10px 22px; }
+                                       .step:last-child { padding-bottom: 0; }
                                        .step:not(:last-child):after {
-                                         content: "";
-                                         position: absolute;
-                                         left: 14px;
-                                         top: 35px;
-                                         bottom: 7px;
-                                         border-left: 1px solid #dfe1ec;
+                                         content: ""; position: absolute; left: 24px; top: 31px; bottom: 5px;
+                                         border-left: 1px dashed #33415d;
                                        }
                                        .step-number {
-                                         width: 29px;
-                                         height: 29px;
-                                         display: grid;
-                                         place-items: center;
-                                         flex-shrink: 0;
-                                         border: 1px solid #dce0eb;
-                                         background: #f8f9fd;
-                                         border-radius: 50%;
-                                         font-size: 11px;
-                                         color: #9a9fb0;
+                                         width: 28px; height: 28px; display: grid; place-items: center; flex-shrink: 0;
+                                         border: 1px solid #3a4762; border-radius: 50%; background: #1d2940;
+                                         font-size: 11px; font-weight: 700; color: #8898b3;
                                        }
-                                       .step strong {
-                                         font-size: 13px;
-                                         font-weight: 600;
-                                         display: block;
-                                         margin: 3px 0 5px;
-                                         color: #969bab;
-                                       }
-                                       .step p {
-                                         font-size: 11px;
-                                         line-height: 1.5;
-                                         color: #a0a5b3;
-                                       }
+                                       .step strong { display: block; margin: 3px 0 4px; font-size: 12.5px; font-weight: 600; color: #98a7bf; }
+                                       .step p { font-size: 11px; line-height: 1.5; color: #647591; }
                                        .step[data-state="current"] .step-number {
-                                         color: white;
-                                         background: var(--accent);
-                                         border-color: var(--accent);
-                                         box-shadow: 0 0 0 4px #ece8fb;
+                                         background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 0 0 4px #5a50d833;
                                        }
-                                       .step[data-state="current"] strong {
-                                         color: #37304f;
+                                       .step[data-state="current"] strong { color: #fff; }
+                                       .step[data-state="done"] .step-number { background: #1d4839; border-color: #2c7a5c; color: #8ee0ba; }
+                                       .step[data-state="done"] strong { color: #c2cfdd; }
+                                       .step[data-state="warning"] .step-number { background: #4a3b1f; border-color: #9a7226; color: #efc882; }
+                                       .side-nav { display: grid; gap: 3px; padding-top: 20px; border-top: 1px solid #2a3753; }
+                                       .nav-item {
+                                         display: flex; align-items: center; gap: 10px;
+                                         padding: 9px 11px; border-radius: 8px; font-size: 12.5px; color: #96a4bb;
+                                         transition: background .15s, color .15s;
                                        }
-                                       .step[data-state="done"] .step-number {
-                                         color: #31866c;
-                                         background: #e8f4ee;
-                                         border-color: #d4e9de;
-                                       }
-                                       .step[data-state="done"] strong {
-                                         color: #485862;
-                                       }
-                                       .step[data-state="warning"] .step-number {
-                                         color: #b27b2e;
-                                         background: #fff4df;
-                                         border-color: #eddcb9;
-                                       }
+                                       .nav-item:hover { background: #1e2b47; color: #fff; }
+                                       .nav-dot { width: 6px; height: 6px; border-radius: 50%; background: #70809d; flex-shrink: 0; }
+                                       .nav-item:nth-child(1) .nav-dot { background: #8b7ff0; }
+                                       .nav-item:nth-child(2) .nav-dot { background: #57b895; }
+                                       .nav-item:nth-child(3) .nav-dot { background: #d8a85e; }
+                                       .nav-item:nth-child(4) .nav-dot { background: #d47791; }
                                        .note {
-                                         display: flex;
-                                         gap: 9px;
-                                         color: #8e94a4;
-                                         font-size: 11px;
-                                         line-height: 1.8;
-                                         border-top: 1px solid #e4e6ef;
-                                         padding-top: 20px;
+                                         display: flex; gap: 9px; margin-top: auto;
+                                         padding: 13px; border: 1px solid #2b3853; border-radius: 10px;
+                                         background: #18233a; color: #7f8ea8; font-size: 11px; line-height: 1.7;
                                        }
-                                       .note svg {
-                                         margin-top: 3px;
+                                       .note svg { margin-top: 2px; }
+
+                                       /* 主内容 */
+                                       .main { width: 100%; max-width: 1240px; margin: 0 auto; padding: 28px 34px 70px; }
+                                       .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+                                       .eyebrow { margin-bottom: 6px; font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+                                       .page-title { font-size: 23px; font-weight: 700; letter-spacing: -.5px; color: #1f2937; }
+                                       .page-sub { margin-top: 6px; font-size: 12px; color: var(--muted); }
+                                       .workspace-toolbar { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+                                       .quick-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 20px; }
+                                       .quick-card {
+                                         display: flex; align-items: center; gap: 11px; min-width: 0;
+                                         padding: 13px; border: 1px solid var(--line); border-radius: 12px; background: #fff;
+                                         box-shadow: 0 1px 2px #1f293705; transition: border-color .15s, transform .15s;
                                        }
-                                       .content {
-                                         min-width: 0;
+                                       .quick-card:hover { border-color: #c9c3f2; transform: translateY(-1px); }
+                                       .quick-icon {
+                                         width: 34px; height: 34px; flex-shrink: 0; border-radius: 9px;
+                                         display: grid; place-items: center; background: var(--accent-soft); color: var(--accent);
                                        }
-                                       .card {
-                                         background: white;
-                                         border: 1px solid #e7e9f1;
-                                         border-radius: 16px;
-                                         padding: 28px;
-                                         box-shadow: 0 12px 36px #27305906;
-                                         margin-bottom: 16px;
+                                       .quick-card:nth-child(2) .quick-icon { background: #e8f6ef; color: var(--ok); }
+                                       .quick-card:nth-child(3) .quick-icon { background: #fff3e3; color: #b97920; }
+                                       .quick-card:nth-child(4) .quick-icon { background: #fdeef2; color: #bd5578; }
+                                       .quick-card strong { display: block; font-size: 12.5px; font-weight: 650; white-space: nowrap; }
+                                       .quick-card small { display: block; margin-top: 3px; font-size: 10.5px; color: var(--muted); white-space: nowrap; }
+
+                                       .panel {
+                                         background: #fff; border: 1px solid var(--line); border-radius: 14px;
+                                         padding: 21px 24px; margin-bottom: 18px; box-shadow: 0 1px 3px #1f293707;
+                                         scroll-margin-top: 78px;
                                        }
-                                       #gate {
-                                         margin-bottom: 0;
+                                       .panel:target { border-color: #c9c3f2; box-shadow: 0 0 0 3px #5a50d812; }
+                                       .panel-head {
+                                         display: flex; align-items: flex-start; justify-content: space-between; gap: 14px;
+                                         padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid #f0f2f6;
                                        }
-                                       .card-heading {
-                                         display: flex;
-                                         align-items: start;
-                                         justify-content: space-between;
-                                         gap: 15px;
-                                         margin-bottom: 22px;
-                                       }
-                                       .card-title {
-                                         display: flex;
-                                         align-items: center;
-                                         gap: 12px;
-                                       }
+                                       .card-title { display: flex; align-items: center; gap: 12px; min-width: 0; }
                                        .icon {
-                                         width: 37px;
-                                         height: 37px;
-                                         border-radius: 11px;
-                                         background: #f0edfc;
-                                         color: var(--accent);
-                                         display: grid;
-                                         place-items: center;
-                                         flex-shrink: 0;
+                                         width: 38px; height: 38px; flex-shrink: 0; border-radius: 10px;
+                                         display: grid; place-items: center; background: var(--accent-soft); color: var(--accent);
                                        }
-                                       .icon.green {
-                                         background: #edf7f1;
-                                         color: #3c9477;
+                                       .icon.green { background: #e8f6ef; color: var(--ok); }
+                                       .icon.amber { background: #fff3e3; color: #b97920; }
+                                       .icon.pink { background: #fdeef2; color: #bd5578; }
+                                       .panel h2 { font-size: 16px; font-weight: 700; letter-spacing: -.2px; color: #1f2937; }
+                                       .caption { margin-top: 4px; font-size: 11px; color: var(--muted); }
+                                       .pill {
+                                         display: inline-flex; align-items: center; gap: 7px; flex-shrink: 0;
+                                         padding: 5px 10px; border: 1px solid #e4e6ef; border-radius: 999px;
+                                         background: #f8f9fc; color: #70788a; font-size: 11px; white-space: nowrap;
                                        }
-                                       .card h2 {
-                                         font-size: 17px;
-                                         font-weight: 650;
-                                         letter-spacing: -0.3px;
-                                       }
-                                       .caption {
-                                         font-size: 11px;
-                                         color: var(--muted);
-                                         margin-top: 5px;
-                                       }
-                                       .description {
-                                         font-size: 13px;
-                                         color: var(--muted);
-                                         margin-bottom: 23px;
-                                       }
-                                       .form-stack {
-                                         display: grid;
-                                         gap: 18px;
-                                       }
-                                       .form-row {
-                                         display: grid;
-                                         grid-template-columns: 1fr 1fr;
-                                         gap: 16px;
-                                       }
-                                       .actions {
-                                         display: flex;
-                                         align-items: center;
-                                         gap: 12px;
-                                         flex-wrap: wrap;
-                                         margin-top: 20px;
-                                       }
-                                       .hint {
-                                         font-size: 11px;
-                                         color: #969cac;
-                                         line-height: 1.8;
-                                       }
+                                       .pill:before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #a6acba; }
+                                       .pill[data-state="done"] { color: #2d826a; background: #edf8f3; border-color: #d8eee4; }
+                                       .pill[data-state="done"]:before { background: var(--ok); }
+                                       .pill[data-state="warning"] { color: #ad7a31; background: #fff8eb; border-color: #f3e7cf; }
+                                       .pill[data-state="warning"]:before { background: var(--warn); }
+
+                                       .form-stack { display: grid; gap: 16px; }
+                                       .form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+                                       .actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+                                       .actions.tight { margin-top: 14px; }
+                                       #qq-qr-box, #qq-devices { margin-top: 14px; }
+                                       .hint { font-size: 11px; color: #8b93a3; line-height: 1.7; }
+                                       .description { font-size: 13px; color: var(--muted); margin-bottom: 18px; line-height: 1.7; }
+                                       .status-note { font-size: 12px; color: var(--muted); line-height: 1.75; }
+                                       .verification-hint { font-size: 12px; color: var(--muted); line-height: 1.8; margin-bottom: 14px; }
                                        .notice {
-                                         padding: 12px 15px;
-                                         border-radius: 10px;
-                                         background: #f0eefb;
-                                         color: #6556a2;
-                                         font-size: 12px;
-                                         line-height: 1.8;
-                                         margin-bottom: 18px;
-                                         overflow-wrap: anywhere;
+                                         padding: 12px 15px; margin-bottom: 18px; border: 1px solid #ded9f8; border-radius: 10px;
+                                         background: var(--accent-soft); color: #4d4594; font-size: 12px; line-height: 1.8; overflow-wrap: anywhere;
                                        }
-                                       .notice[data-kind="error"] {
-                                         background: #fff1f0;
-                                         color: #ac5653;
-                                       }
-                                       .notice[data-kind="success"] {
-                                         background: #edf7f1;
-                                         color: #39836a;
-                                       }
-                                       .code-box {
-                                         border: 1px solid #e5e0f6;
-                                         background: #faf9fe;
-                                         border-radius: 12px;
-                                         padding: 16px;
-                                         margin-top: 18px;
-                                       }
-                                       .code-box label {
-                                         font-size: 11px;
-                                         color: #71678e;
-                                       }
-                                       .code-row {
-                                         display: flex;
-                                         align-items: center;
-                                         gap: 9px;
-                                         margin-top: 9px;
-                                       }
+                                       .notice[data-kind="error"] { background: #fff1f0; border-color: #f6d8d5; color: #ac5653; }
+                                       .notice[data-kind="success"] { background: #edf7f1; border-color: #d7eee2; color: #39836a; }
+                                       .code-box { padding: 15px; border: 1px solid #e4e0f5; border-radius: 11px; background: #faf9ff; }
+                                       .code-box label { font-size: 11px; color: #71678e; }
+                                       .code-row { display: flex; align-items: center; gap: 9px; margin-top: 9px; }
                                        .code-row input {
-                                         font:
-                                           12px ui-monospace,
-                                           SFMono-Regular,
-                                           Consolas,
-                                           monospace;
-                                         margin: 0;
-                                         padding: 11px;
-                                         background: white;
-                                         letter-spacing: 0.1px;
+                                         font: 12px ui-monospace, SFMono-Regular, Consolas, monospace;
+                                         letter-spacing: .1px; margin: 0;
                                        }
-                                       .code-row button {
-                                         padding: 10px 13px;
-                                         flex-shrink: 0;
-                                       }
-                                       .code-box .hint {
-                                         margin-top: 10px;
-                                         color: #8b7fa0;
-                                       }
-                                       .divider {
-                                         height: 1px;
-                                         background: var(--line);
-                                         margin: 22px 0 16px;
-                                       }
-                                       .card-bottom {
-                                         display: flex;
-                                         align-items: center;
-                                         justify-content: space-between;
-                                         gap: 12px;
-                                       }
+                                       .code-row button { flex-shrink: 0; }
+                                       .code-box .hint { margin-top: 10px; color: #8b7fa0; }
+                                       .divider { height: 1px; margin: 18px 0 14px; background: #f0f2f6; }
+                                       .card-bottom { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
                                        .saved-state {
-                                         display: flex;
-                                         gap: 12px;
-                                         align-items: center;
-                                         padding: 17px;
-                                         background: #f5faf7;
-                                         border-radius: 12px;
-                                         margin-bottom: 15px;
+                                         display: flex; align-items: center; gap: 12px; padding: 14px;
+                                         border: 1px solid #d7eee2; border-radius: 10px; background: #f1faf5;
                                        }
-                                       .saved-state strong {
-                                         display: block;
-                                         font-size: 13px;
-                                         color: #3d7963;
-                                         margin-bottom: 5px;
+                                       .saved-state > span {
+                                         width: 28px; height: 28px; flex-shrink: 0; border-radius: 50%;
+                                         display: grid; place-items: center; background: #d9f1e5; color: #25805d; font-weight: 700;
                                        }
-                                       .saved-state p {
-                                         font-size: 11px;
-                                         color: #7d9387;
+                                       .saved-state strong { display: block; font-size: 12.5px; color: #3d7963; margin-bottom: 4px; }
+                                       .saved-state p { font-size: 11px; color: #7d9387; }
+                                       .gate-panel { max-width: 620px; padding: 28px; }
+                                       .gate-panel .form-stack { gap: 18px; }
+
+                                       /* 按钮 */
+                                       .primary, .secondary, .text-button {
+                                         display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+                                         padding: 9px 16px; border-radius: 8px; font-size: 12.5px; font-weight: 600;
+                                         line-height: 1.5; white-space: nowrap; transition: background .15s, color .15s, border-color .15s;
                                        }
-                                       .verification-hint {
-                                         font-size: 12px;
-                                         color: var(--muted);
-                                         line-height: 1.8;
-                                         margin-bottom: 18px;
-                                       }
-                                       .status-note {
-                                         font-size: 12px;
-                                         line-height: 1.8;
-                                         color: var(--muted);
-                                       }
-                                       .workspace-toolbar {
-                                         text-align: right;
-                                         margin-top: 5px;
-                                       }
+                                       .primary { color: #fff; background: var(--accent); box-shadow: 0 2px 6px #5a50d825; }
+                                       .primary:hover { background: var(--accent-dark); }
+                                       .secondary { color: #374151; background: #fff; border: 1px solid #d9dde7; }
+                                       .secondary:hover { background: #f8f9fc; border-color: #c4cad8; }
+                                       .text-button { padding: 8px 4px; color: var(--muted); background: transparent; }
+                                       .text-button:hover { color: var(--accent); }
+                                       .text-button.danger { color: #b85c55; }
+                                       .text-button.danger:hover { color: #9d3d36; }
                                        .busy-icon {
-                                         width: 13px;
-                                         height: 13px;
-                                         border: 2px solid currentColor;
-                                         border-right-color: transparent;
-                                         border-radius: 50%;
-                                         animation: spin 0.7s linear infinite;
+                                         width: 13px; height: 13px; border: 2px solid currentColor;
+                                         border-right-color: transparent; border-radius: 50%; animation: spin .7s linear infinite;
                                        }
-                                       @keyframes spin {
-                                         to {
-                                           transform: rotate(360deg);
-                                         }
-                                       }
+                                       @keyframes spin { to { transform: rotate(360deg); } }
                                        @media (prefers-reduced-motion: reduce) {
-                                         * {
-                                           animation: none !important;
-                                           transition: none !important;
-                                         }
+                                         *, *:before, *:after { animation: none !important; transition: none !important; }
                                        }
-                                       @media (max-width: 760px) {
-                                         .shell {
-                                           padding: 32px 20px;
-                                           justify-content: flex-start;
+
+                                       @media (max-width: 1080px) {
+                                         .main { padding: 24px 22px 60px; }
+                                         .app-body { grid-template-columns: 216px minmax(0, 1fr); }
+                                       }
+                                       @media (max-width: 900px) {
+                                         .app-body { grid-template-columns: 1fr; }
+                                         .sidebar {
+                                           position: static; height: auto; overflow: visible; gap: 14px;
+                                           padding: 14px 18px; border-bottom: 1px solid #27334d;
                                          }
-                                         .layout {
-                                           grid-template-columns: 1fr;
-                                           gap: 22px;
-                                         }
-                                         .intro {
-                                           position: static;
-                                           padding-top: 0;
-                                         }
-                                         .steps {
-                                           display: flex;
-                                           gap: 12px;
-                                           margin: 0;
-                                         }
-                                         .step {
-                                           flex: 1;
-                                           gap: 9px;
-                                           padding: 0;
-                                         }
-                                         .step:not(:last-child):after,
-                                         .step p,
-                                         .note {
-                                           display: none;
-                                         }
-                                         .step strong {
-                                           font-size: 11px;
-                                           line-height: 1.8;
-                                           margin: 3px 0;
-                                         }
-                                         .step-number {
-                                           width: 25px;
-                                           height: 25px;
-                                         }
-                                         .card {
-                                           padding: 23px 21px;
-                                           border-radius: 15px;
-                                         }
-                                         .pill {
-                                           font-size: 10px;
-                                           padding: 6px 9px;
-                                         }
+                                         .side-heading, .note { display: none; }
+                                         .steps { display: flex; gap: 16px; }
+                                         .step { flex: 1; grid-template-columns: 24px minmax(0, 1fr); gap: 8px; padding: 0; }
+                                         .step:not(:last-child):after, .step p { display: none; }
+                                         .step-number { width: 24px; height: 24px; font-size: 10px; }
+                                         .step strong { margin: 2px 0 0; font-size: 11px; line-height: 1.5; }
+                                         .side-nav { display: flex; gap: 4px; padding-top: 12px; border-top: 1px solid #2a3753; overflow-x: auto; }
+                                         .nav-item { flex: 1 0 auto; justify-content: center; white-space: nowrap; }
+                                       }
+                                       @media (max-width: 640px) {
+                                         .topbar { height: 56px; padding: 0 16px; }
+                                         .brand-sub, .brand-divider, .env-tag { display: none; }
+                                         .main { padding: 20px 14px 50px; }
+                                         .page-head { align-items: flex-start; flex-direction: column; gap: 14px; }
+                                         .page-title { font-size: 21px; }
+                                         .quick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+                                         .panel { padding: 18px; border-radius: 12px; }
+                                         .gate-panel { padding: 22px 18px; }
+                                         .form-row { grid-template-columns: 1fr; }
+                                         .panel-head { flex-wrap: wrap; }
+                                         .card-bottom { align-items: flex-start; flex-direction: column; }
+                                         .code-row { flex-wrap: wrap; }
+                                         .code-row input { flex-basis: 100%; }
+                                         .code-row button { width: 100%; }
                                        }
                                        @media (max-width: 420px) {
-                                         .form-row {
-                                           grid-template-columns: 1fr;
-                                         }
-                                         .card-heading {
-                                           flex-wrap: wrap;
-                                         }
-                                         .card-bottom {
-                                           align-items: start;
-                                           flex-direction: column;
-                                         }
-                                         .code-row {
-                                           flex-wrap: wrap;
-                                         }
-                                         .code-row input {
-                                           flex-basis: 100%;
-                                         }
-                                         .steps {
-                                           gap: 6px;
-                                         }
-                                         .step {
-                                           gap: 6px;
-                                         }
-                                         .step strong {
-                                           font-size: 10px;
-                                         }
+                                         .sidebar { padding: 12px; }
+                                         .steps { gap: 8px; }
+                                         .step { grid-template-columns: 1fr; justify-items: center; text-align: center; }
+                                         .step strong { font-size: 10px; }
+                                         .quick-card strong { font-size: 11.5px; }
+                                         .quick-card small { font-size: 10px; }
                                        }
                                      </style>
                                    </head>
                                    <body>
-                                     <div class="shell">
-                                       <h1 class="sr-only">服务初始化</h1>
-                                       <span id="overall-status" class="sr-only" role="status">等待初始化</span>
-                                       <main class="layout" aria-label="服务初始化">
-                                         <aside class="intro">
+                                     <div class="app">
+                                       <header class="topbar">
+                                         <div class="brand">
+                                           <span class="brand-mark" aria-hidden="true"
+                                             ><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                               <path d="M4 7h6l2 3h8v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z" />
+                                               <path d="M8 7 9 4h6l1 3" /></svg
+                                           ></span>
+                                           <span class="brand-name">Meowv API</span>
+                                           <span class="brand-divider"></span>
+                                           <span class="brand-sub">管理控制台</span>
+                                         </div>
+                                         <div class="topbar-meta">
+                                           <span class="env-tag">本地服务</span>
+                                           <span id="overall-status" class="global-status" role="status">等待初始化</span>
+                                         </div>
+                                       </header>
+                                       <div class="app-body">
+                                         <aside class="sidebar">
+                                           <div class="side-heading">初始化流程</div>
                                            <ol class="steps" aria-label="初始化进度">
                                              <li id="step-auth" class="step" data-state="current">
                                                <span class="step-number">1</span>
-                                               <div>
-                                                 <strong>验证管理权限</strong>
-                                                 <p>使用服务管理密钥继续</p>
-                                               </div>
+                                               <div><strong>验证管理权限</strong><p>使用服务管理密钥继续</p></div>
                                              </li>
                                              <li id="step-code" class="step">
                                                <span class="step-number">2</span>
-                                               <div>
-                                                 <strong>配置系统授权</strong>
-                                                 <p>一个授权码，连接所有模块</p>
-                                               </div>
+                                               <div><strong>配置系统授权</strong><p>一个授权码，连接所有模块</p></div>
                                              </li>
                                              <li id="step-camera" class="step">
                                                <span class="step-number">3</span>
-                                               <div>
-                                                 <strong>接入摄像头</strong>
-                                                 <p>登录账号，保存云端会话</p>
-                                               </div>
+                                               <div><strong>接入摄像头</strong><p>登录账号，保存云端会话</p></div>
                                              </li>
                                            </ol>
+                                           <nav class="side-nav" aria-label="配置分区">
+                                             <a class="nav-item" href="#panel-code"><span class="nav-dot"></span>系统授权</a>
+                                             <a class="nav-item" href="#panel-camera"><span class="nav-dot"></span>摄像头</a>
+                                             <a class="nav-item" href="#panel-music"><span class="nav-dot"></span>音乐凭据</a>
+                                             <a class="nav-item" href="#panel-qq"><span class="nav-dot"></span>QQ 会员</a>
+                                           </nav>
                                            <div class="note">
-                                             <svg
-                                               width="14"
-                                               height="16"
-                                               viewBox="0 0 24 24"
-                                               fill="none"
-                                               stroke="currentColor"
-                                               stroke-width="1.6"
-                                               aria-hidden="true"
-                                             >
-                                               <path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3Z" />
-                                               <path d="m8.5 12 2.5 2.5 4.5-5" /></svg
-                                             ><span
-                                               >管理密钥仅保留在当前页面内存中，<br />刷新或退出后需要重新验证。</span
-                                             >
+                                             <svg width="14" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                                               <path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3Z" /><path d="m8.5 12 2.5 2.5 4.5-5" />
+                                             </svg>
+                                             <span>管理密钥仅保留在当前页面内存中，刷新或退出后需要重新验证。</span>
                                            </div>
                                          </aside>
-                                         <div class="content">
-                                           <div
-                                             id="message"
-                                             class="notice"
-                                             role="status"
-                                             aria-live="polite"
-                                             hidden
-                                           ></div>
-                                           <section id="gate" class="card" aria-labelledby="gate-title">
-                                             <div class="card-heading">
+                                         <main class="main">
+                                           <h1 class="sr-only">服务初始化</h1>
+                                           <div id="message" class="notice" role="status" aria-live="polite" hidden></div>
+                                           <section id="gate" class="panel gate-panel" aria-labelledby="gate-title">
+                                             <div class="panel-head">
                                                <div class="card-title">
                                                  <span class="icon" aria-hidden="true"
-                                                   ><svg
-                                                     width="19"
-                                                     height="19"
-                                                     viewBox="0 0 24 24"
-                                                     fill="none"
-                                                     stroke="currentColor"
-                                                     stroke-width="1.7"
-                                                   >
-                                                     <rect x="5" y="10" width="14" height="11" rx="3" />
-                                                     <path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3" /></svg
+                                                   ><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+                                                     <rect x="5" y="10" width="14" height="11" rx="3" /><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3" /></svg
                                                  ></span>
-                                                 <div>
-                                                   <h2 id="gate-title">验证管理权限</h2>
-                                                   <p class="caption">欢迎使用 Meowv API</p>
-                                                 </div>
+                                                 <div><h2 id="gate-title">验证管理权限</h2><p class="caption">欢迎使用 Meowv API</p></div>
                                                </div>
                                              </div>
-                                             <p class="description">
-                                               输入管理密钥，开始配置服务。已有的授权码和登录状态将自动保留。
-                                             </p>
+                                             <p class="description">输入管理密钥，开始配置服务。已有的授权码和登录状态将自动保留。</p>
                                              <form id="auth-form" class="form-stack">
-                                               <label for="token"
-                                                 >管理密钥<input
-                                                   id="token"
-                                                   type="password"
-                                                   autocomplete="off"
-                                                   placeholder="输入服务的管理密钥"
-                                                   required
-                                               /></label>
-                                               <div>
-                                                 <button id="continue" class="primary" type="submit">
-                                                   验证并初始化 <span aria-hidden="true">→</span>
-                                                 </button>
-                                               </div>
+                                               <label for="token">管理密钥<input id="token" type="password" autocomplete="off" placeholder="输入服务的管理密钥" required /></label>
+                                               <div><button id="continue" class="primary" type="submit">验证并初始化 <span aria-hidden="true">→</span></button></div>
                                              </form>
                                            </section>
                                            <div id="workspace" hidden>
-                                             <section class="card" aria-labelledby="code-title">
-                                               <div class="card-heading">
+                                             <div class="page-head">
+                                               <div>
+                                                 <div class="eyebrow">Setup Console</div>
+                                                 <h2 class="page-title">服务初始化</h2>
+                                                 <p class="page-sub">集中管理系统授权、摄像头会话与音乐设备凭据。</p>
+                                               </div>
+                                               <div class="workspace-toolbar">
+                                                 <button id="exit" class="secondary" data-private type="button">退出管理</button>
+                                               </div>
+                                             </div>
+                                             <div class="quick-grid" aria-label="配置分区快捷入口">
+                                               <a class="quick-card" href="#panel-code">
+                                                 <span class="quick-icon" aria-hidden="true"
+                                                   ><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+                                                     <circle cx="8" cy="15" r="4" /><path d="m11 12 9-9M16 6l3 3M14 8l3 3" /></svg
+                                                 ></span>
+                                                 <span><strong>系统授权码</strong><small>通用授权与轮换</small></span>
+                                               </a>
+                                               <a class="quick-card" href="#panel-camera">
+                                                 <span class="quick-icon" aria-hidden="true"
+                                                   ><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+                                                     <path d="M6 7h12l2 12H4L6 7ZM9 7V4h6v3" /><circle cx="12" cy="13" r="3" /></svg
+                                                 ></span>
+                                                 <span><strong>小米摄像头</strong><small>登录会话接入</small></span>
+                                               </a>
+                                               <a class="quick-card" href="#panel-music">
+                                                 <span class="quick-icon" aria-hidden="true"
+                                                   ><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+                                                     <path d="M9 18V5l11-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="17" cy="16" r="3" /></svg
+                                                 ></span>
+                                                 <span><strong>音乐设备</strong><small>签发与撤销凭据</small></span>
+                                               </a>
+                                               <a class="quick-card" href="#panel-qq">
+                                                 <span class="quick-icon" aria-hidden="true"
+                                                   ><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+                                                     <path d="M12 3c-3.5 0-6 2.8-6 6.5 0 2.4-1 3.5-1 5 0 1 .8 1.7 1.8 1.7.5 2.3 2.4 3.8 5.2 3.8s4.7-1.5 5.2-3.8c1 0 1.8-.7 1.8-1.7 0-1.5-1-2.6-1-5C18 5.8 15.5 3 12 3Z" /></svg
+                                                 ></span>
+                                                 <span><strong>QQ 音乐会员</strong><small>扫码与设备授权</small></span>
+                                               </a>
+                                             </div>
+                                             <section id="panel-code" class="panel" aria-labelledby="code-title">
+                                               <div class="panel-head">
                                                  <div class="card-title">
                                                    <span class="icon" aria-hidden="true"
-                                                     ><svg
-                                                       width="19"
-                                                       height="19"
-                                                       viewBox="0 0 24 24"
-                                                       fill="none"
-                                                       stroke="currentColor"
-                                                       stroke-width="1.7"
-                                                     >
-                                                       <circle cx="8" cy="15" r="4" />
-                                                       <path d="m11 12 9-9M16 6l3 3M14 8l3 3" /></svg
+                                                     ><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+                                                       <circle cx="8" cy="15" r="4" /><path d="m11 12 9-9M16 6l3 3M14 8l3 3" /></svg
                                                    ></span>
-                                                   <div>
-                                                     <h2 id="code-title">系统授权码</h2>
-                                                     <p class="caption">所有接入公共授权的模块共用</p>
-                                                   </div>
+                                                   <div><h2 id="code-title">系统授权码</h2><p class="caption">所有接入公共授权的模块共用</p></div>
                                                  </div>
-                                                 <span id="code-status" class="pill" data-state="done"
-                                                   >已配置</span
-                                                 >
+                                                 <span id="code-status" class="pill" data-state="done">已配置</span>
                                                </div>
                                                <p id="code-description" class="status-note"></p>
                                                <div id="code-result" class="code-box" hidden>
                                                  <label for="access-code">你的通用授权码</label>
                                                  <div class="code-row">
-                                                   <input
-                                                     id="access-code"
-                                                     readonly
-                                                     autocomplete="off"
-                                                     spellcheck="false"
-                                                   /><button id="copy-code" class="secondary" type="button">
-                                                     复制
-                                                   </button>
+                                                   <input id="access-code" readonly autocomplete="off" spellcheck="false" />
+                                                   <button id="copy-code" class="secondary" type="button">复制</button>
                                                  </div>
-                                                 <p class="hint">
-                                                   请立即保存。离开页面后无法再次查看，遗失时可手动轮换。
-                                                 </p>
+                                                 <p class="hint">请立即保存。离开页面后无法再次查看，遗失时可手动轮换。</p>
                                                </div>
                                                <div class="divider"></div>
                                                <div class="card-bottom">
-                                                 <span class="hint">轮换后，旧授权码和旧播放票据将失效。</span
-                                                 ><button
-                                                   id="rotate"
-                                                   class="text-button"
-                                                   data-private
-                                                   type="button"
-                                                 >
-                                                   生成授权码 ↗
-                                                 </button>
+                                                 <span class="hint">轮换后，旧授权码和旧播放票据将失效。</span>
+                                                 <button id="rotate" class="text-button" data-private type="button">生成授权码 ↗</button>
                                                </div>
                                              </section>
-                                             <section class="card" aria-labelledby="camera-title">
-                                               <div class="card-heading">
+                                             <section id="panel-camera" class="panel" aria-labelledby="camera-title">
+                                               <div class="panel-head">
                                                  <div class="card-title">
                                                    <span class="icon green" aria-hidden="true"
-                                                     ><svg
-                                                       width="19"
-                                                       height="19"
-                                                       viewBox="0 0 24 24"
-                                                       fill="none"
-                                                       stroke="currentColor"
-                                                       stroke-width="1.7"
-                                                     >
-                                                       <path d="M6 7h12l2 12H4L6 7ZM9 7V4h6v3" />
-                                                       <circle cx="12" cy="13" r="3" /></svg
+                                                     ><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+                                                       <path d="M6 7h12l2 12H4L6 7ZM9 7V4h6v3" /><circle cx="12" cy="13" r="3" /></svg
                                                    ></span>
-                                                   <div>
-                                                     <h2 id="camera-title">小米摄像头</h2>
-                                                     <p class="caption">保存登录会话，连接你的设备</p>
-                                                   </div>
+                                                   <div><h2 id="camera-title">小米摄像头</h2><p class="caption">保存登录会话，连接你的设备</p></div>
                                                  </div>
                                                  <span id="camera-status" class="pill">待检查</span>
                                                </div>
-                                               <p id="camera-description" class="status-note">
-                                                 正在检查模块和登录状态…
-                                               </p>
+                                               <p id="camera-description" class="status-note">正在检查模块和登录状态…</p>
                                                <div id="camera-saved" class="saved-state" hidden>
                                                  <span aria-hidden="true">✓</span>
-                                                 <div>
-                                                   <strong>已保存小米登录会话</strong>
-                                                   <p>可以使用系统授权码连接摄像头服务。</p>
-                                                 </div>
+                                                 <div><strong>已保存小米登录会话</strong><p>可以使用系统授权码连接摄像头服务。</p></div>
                                                </div>
                                                <form id="login-form" class="form-stack" hidden>
                                                  <div class="form-row">
-                                                   <label for="username"
-                                                     >小米账号<input
-                                                       id="username"
-                                                       name="username"
-                                                       autocomplete="username"
-                                                       placeholder="手机号 / 邮箱 / 小米 ID"
-                                                       required /></label
-                                                   ><label for="password"
-                                                     >账号密码<input
-                                                       id="password"
-                                                       name="password"
-                                                       type="password"
-                                                       autocomplete="current-password"
-                                                       placeholder="输入小米账号密码"
-                                                       required
-                                                   /></label>
+                                                   <label for="username">小米账号<input id="username" name="username" autocomplete="username" placeholder="手机号 / 邮箱 / 小米 ID" required /></label>
+                                                   <label for="password">账号密码<input id="password" name="password" type="password" autocomplete="current-password" placeholder="输入小米账号密码" required /></label>
                                                  </div>
-                                                 <label for="region"
-                                                   >设备所在区域<select id="region" name="region">
-                                                     <option value="cn">中国大陆</option>
-                                                     <option value="de">欧洲</option>
-                                                     <option value="us">美国</option>
-                                                     <option value="sg">新加坡</option>
-                                                     <option value="ru">俄罗斯</option>
-                                                     <option value="i2">印度</option>
-                                                   </select></label
-                                                 >
-                                                 <div>
-                                                   <button class="primary" data-private type="submit">
-                                                     登录并保存会话 <span aria-hidden="true">→</span>
-                                                   </button>
-                                                 </div>
-                                                 <p class="hint">
-                                                   账号密码和验证码不写入数据库，仅保存换取的云会话。
-                                                 </p>
+                                                 <label for="region">设备所在区域<select id="region" name="region">
+                                                   <option value="cn">中国大陆</option><option value="de">欧洲</option><option value="us">美国</option>
+                                                   <option value="sg">新加坡</option><option value="ru">俄罗斯</option><option value="i2">印度</option>
+                                                 </select></label>
+                                                 <div><button class="primary" data-private type="submit">登录并保存会话 <span aria-hidden="true">→</span></button></div>
+                                                 <p class="hint">账号密码和验证码不写入数据库，仅保存换取的云会话。</p>
                                                </form>
                                                <form id="verify-form" hidden>
                                                  <p id="verification-hint" class="verification-hint"></p>
-                                                 <label for="verification-code"
-                                                   >验证码<input
-                                                     id="verification-code"
-                                                     name="code"
-                                                     inputmode="numeric"
-                                                     autocomplete="one-time-code"
-                                                     placeholder="输入收到的验证码"
-                                                     required
-                                                 /></label>
-                                                 <div class="actions">
-                                                   <button class="primary" data-private type="submit">
-                                                     完成验证</button
-                                                   ><button
-                                                     id="restart-login"
-                                                     class="text-button"
-                                                     data-private
-                                                     type="button"
-                                                   >
-                                                     重新登录
-                                                   </button>
+                                                 <label for="verification-code">验证码<input id="verification-code" name="code" inputmode="numeric" autocomplete="one-time-code" placeholder="输入收到的验证码" required /></label>
+                                                 <div class="actions tight">
+                                                   <button class="primary" data-private type="submit">完成验证</button>
+                                                   <button id="restart-login" class="text-button" data-private type="button">重新登录</button>
                                                  </div>
                                                </form>
-                                               <div class="actions">
-                                                 <button
-                                                   id="retry-camera"
-                                                   class="secondary"
-                                                   data-private
-                                                   type="button"
-                                                   hidden
-                                                 >
-                                                   重新检查</button
-                                                 ><button
-                                                   id="reset-session"
-                                                   class="text-button danger"
-                                                   data-private
-                                                   type="button"
-                                                   hidden
-                                                 >
-                                                   切换账号 / 重新登录
-                                                 </button>
+                                               <div class="actions tight">
+                                                 <button id="retry-camera" class="secondary" data-private type="button" hidden>重新检查</button>
+                                                 <button id="reset-session" class="text-button danger" data-private type="button" hidden>切换账号 / 重新登录</button>
                                                </div>
                                              </section>
-                                             <section class="card" aria-labelledby="music-title">
-                                               <h2 id="music-title">音乐设备凭据</h2>
+                                             <section id="panel-music" class="panel" aria-labelledby="music-title">
+                                               <div class="panel-head">
+                                                 <div class="card-title">
+                                                   <span class="icon amber" aria-hidden="true"
+                                                     ><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+                                                       <path d="M9 18V5l11-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="17" cy="16" r="3" /></svg
+                                                   ></span>
+                                                   <div><h2 id="music-title">音乐设备凭据</h2><p class="caption">按设备单独签发，仅授权音乐服务</p></div>
+                                                 </div>
+                                               </div>
                                                <p class="description">为手机或车机单独签发，仅授权音乐。撤销后该设备的新请求立即失效。</p>
                                                <div class="form-stack">
                                                  <label>设备别名<input id="music-alias" maxlength="80" autocomplete="off" placeholder="例如：我的车机" /></label>
@@ -846,15 +512,24 @@ internal static class AuthSetupPage
                                                      <button id="music-hide" class="text-button" type="button">隐藏凭据</button>
                                                    </div>
                                                  </div>
+                                                 <div class="divider"></div>
                                                  <label>已签发设备<select id="music-devices" aria-label="已签发音乐设备"></select></label>
                                                  <p id="music-status" class="hint">点击刷新查看已签发设备；模块需启用设备凭据管理。</p>
-                                                 <button id="music-revoke" class="text-button danger" data-private type="button">撤销选中设备</button>
+                                                 <div><button id="music-revoke" class="text-button danger" data-private type="button">撤销选中设备</button></div>
                                                </div>
                                              </section>
-                                             <section class="card" aria-labelledby="qq-title">
-                                               <h2 id="qq-title">QQ 音乐会员</h2>
-                                               <p id="qq-status" class="hint" role="status">刷新状态后管理登录和设备。</p>
-                                               <div class="actions">
+                                             <section id="panel-qq" class="panel" aria-labelledby="qq-title">
+                                               <div class="panel-head">
+                                                 <div class="card-title">
+                                                   <span class="icon pink" aria-hidden="true"
+                                                     ><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+                                                       <path d="M12 3c-3.5 0-6 2.8-6 6.5 0 2.4-1 3.5-1 5 0 1 .8 1.7 1.8 1.7.5 2.3 2.4 3.8 5.2 3.8s4.7-1.5 5.2-3.8c1 0 1.8-.7 1.8-1.7 0-1.5-1-2.6-1-5C18 5.8 15.5 3 12 3Z" /></svg
+                                                   ></span>
+                                                   <div><h2 id="qq-title">QQ 音乐会员</h2><p class="caption">扫码登录、扫码状态与设备播放权限</p></div>
+                                                 </div>
+                                               </div>
+                                               <p id="qq-status" class="status-note" role="status">刷新状态后管理登录和设备。</p>
+                                               <div class="actions tight">
                                                  <button id="qq-load" class="secondary" data-private type="button">刷新状态</button>
                                                  <button id="qq-login" class="primary" data-private type="button" hidden>扫码登录</button>
                                                  <button id="qq-cancel" class="text-button" data-private type="button" hidden>取消扫码</button>
@@ -865,21 +540,14 @@ internal static class AuthSetupPage
                                                  <img id="qq-qr" width="224" height="224" alt="QQ 音乐登录二维码" />
                                                </div>
                                                <div id="qq-devices" class="form-stack" hidden>
-                                                 <label>允许使用会员的设备
-                                                   <select id="qq-device" data-private></select>
-                                                 </label>
-                                                 <label><input id="qq-grant" data-private type="checkbox" /> 允许选中设备播放 QQ 音乐会员曲目</label>
-                                                 <button id="qq-save" class="secondary" data-private type="button">保存设备权限</button>
+                                                 <label>允许使用会员的设备<select id="qq-device" data-private></select></label>
+                                                 <label class="check-line"><input id="qq-grant" data-private type="checkbox" /> 允许选中设备播放 QQ 音乐会员曲目</label>
+                                                 <div><button id="qq-save" class="secondary" data-private type="button">保存设备权限</button></div>
                                                </div>
                                              </section>
-                                             <div class="workspace-toolbar">
-                                               <button id="exit" class="text-button" data-private type="button">
-                                                 退出管理
-                                               </button>
-                                             </div>
                                            </div>
-                                         </div>
-                                       </main>
+                                         </main>
+                                       </div>
                                      </div>
                                      <script>
                                        const $ = (id) => document.getElementById(id);
