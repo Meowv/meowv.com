@@ -39,10 +39,13 @@ public sealed class MusicModule : IEndpointModule
                     devices.Activate(deviceId) is { } active
                         ? Results.Json(active, MusicJsonContext.Default.MusicDeviceActivation)
                         : Results.NotFound())
-                .WithSummary("激活待审批音乐设备。").RequireRateLimiting("api-auth");
+                .WithSummary("激活待审批或已撤销的音乐设备。").RequireRateLimiting("api-auth");
             setup.MapDelete("/{deviceId}", (string deviceId, MusicDeviceStore devices) =>
                     devices.Revoke(deviceId) ? Results.NoContent() : Results.NotFound())
                 .WithSummary("撤销指定音乐设备。").RequireRateLimiting("api-auth");
+            setup.MapDelete("/{deviceId}/record", (string deviceId, MusicDeviceStore devices) =>
+                    devices.DeleteRevoked(deviceId) ? Results.NoContent() : Results.NotFound())
+                .WithSummary("删除已撤销的音乐设备记录。").RequireRateLimiting("api-auth");
             QQSetupEndpoints.Map(music);
         }
 

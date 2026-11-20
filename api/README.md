@@ -75,15 +75,16 @@ dotnet run --project api/src/Meowv.Api -- --contentRoot /YOUR_CHECKOUT/api/src/M
 | `POST /api/music/devices/register` | 匿名设备登记，提交安装 ID、公钥、设备型号和 Android 版本 |
 | `GET /api/music/devices/status/{installationId}` | 匿名查询登记，已激活时返回仅本机可解的密文 |
 | `GET /api/music/setup/devices` | 管理密钥，列出设备及审批状态 |
-| `POST /api/music/setup/devices/{deviceId}/activate` | 管理密钥，激活设备，重复操作沿用原令牌 |
+| `POST /api/music/setup/devices/{deviceId}/activate` | 管理密钥，激活设备。重新激活已撤销设备时签发新令牌，重复激活时沿用当前令牌 |
 | `DELETE /api/music/setup/devices/{deviceId}` | 管理密钥，撤销设备，随后发起的音乐 API 鉴权返回 `401` |
+| `DELETE /api/music/setup/devices/{deviceId}/record` | 管理密钥，删除已撤销设备记录。仍处于待激活或已激活的设备返回 `409` |
 | `POST /api/music/admin/charts/refresh` | 管理密钥；强制刷新每日榜单快照，`/setup` 音乐分区可触发 |
 
-公共管理接口有限流，超过额度统一返回 `429`，授权码响应及初始化页面禁止缓存。`/setup` 自动加载使用的读取接口（读取授权码、设备列表、小米登录状态）使用独立的 `setup-ui` 配额：每客户端 IP 每分钟 60 次；轮换授权码、激活/撤销设备、摄像头登录与 QQ 扫码等写操作仍走原有 10 次/分钟的严格配额。宿主在限流前处理转发头，只信任本机 IPv4 / IPv6 回环代理的一跳 `X-Forwarded-For` 和 `X-Forwarded-Proto`；适用于仓库 Nginx 转发到 `127.0.0.1:5000` 的布局，其他来源的转发头不生效。普通业务通过标准认证 Scheme 校验 Bearer 授权码，缺失或错误返回 `401 access_code_unauthorized`，在业务参数绑定前拦截；管理密钥不代替应用授权码。通用授权码和公共管理密钥支持请求头与 `?access_token=` 两种载体，同一请求同时使用两种载体、URL 凭据用于写操作或参数重复出现时按无效凭据处理。摄像头管理接口位于 `/api/xiaomi-camera/setup/...`，公共授权码由 `/api/auth/...` 管理。
+公共管理接口有限流，超过额度统一返回 `429`，授权码响应及初始化页面禁止缓存。`/setup` 自动加载使用的读取接口（读取授权码、设备列表、小米登录状态）使用独立的 `setup-ui` 配额：每客户端 IP 每分钟 60 次；轮换授权码、激活、撤销及删除设备、摄像头登录与 QQ 扫码等写操作仍走原有 10 次/分钟的严格配额。宿主在限流前处理转发头，只信任本机 IPv4 / IPv6 回环代理的一跳 `X-Forwarded-For` 和 `X-Forwarded-Proto`；适用于仓库 Nginx 转发到 `127.0.0.1:5000` 的布局，其他来源的转发头不生效。普通业务通过标准认证 Scheme 校验 Bearer 授权码，缺失或错误返回 `401 access_code_unauthorized`，在业务参数绑定前拦截；管理密钥不代替应用授权码。通用授权码和公共管理密钥支持请求头与 `?access_token=` 两种载体，同一请求同时使用两种载体、URL 凭据用于写操作或参数重复出现时按无效凭据处理。摄像头管理接口位于 `/api/xiaomi-camera/setup/...`，公共授权码由 `/api/auth/...` 管理。
 
 设备登记和状态查询是公共端点，按 IP 分别限制 5 次/分钟和 30 次/分钟。登记需要 32 位十六进制安装 ID、Base64url 编码的 RSA-2048 SPKI 公钥，待激活记录 24 小时过期，最多 1000 条待激活和 256 台已激活设备。同一安装 ID 的公钥固定，重复提交同一个公钥会返回当前状态，换公钥返回 `409`。服务端分配的 `deviceId` 用于管理操作和 QQ 会员授权，待激活记录过期后重新登记会分配新 `deviceId`。
 
-音乐业务接口只接受 `Authorization: Bearer` 设备令牌。激活时保存令牌的 SHA-256 摘要与 RSA-OAEP 密文。为适配 Android 9 Keystore，OAEP 摘要与 MGF1 均用 SHA-1。生产 App 通过 HTTPS 领取密文。已撤销记录保留，令牌摘要与密文清空。撤销作用于后续 API 鉴权，已下发的第三方媒体地址和已缓冲音频仍遵循各自的有效期。旧 `music_device_tokens` 表保留为历史数据，旧令牌停止使用。
+音乐业务接口只接受 `Authorization: Bearer` 设备令牌。激活时保存令牌的 SHA-256 摘要与 RSA-OAEP 密文。为适配 Android 9 Keystore，OAEP 摘要与 MGF1 均用 SHA-1。生产 App 通过 HTTPS 领取密文。撤销会清空令牌摘要与密文。管理员可在 `/setup` 重新激活或删除已撤销的记录。重新激活时保留设备及短码、签发新令牌，并需要重新授予 QQ 会员权限。删除时清除设备和对应的 QQ 授权记录，仅保留安装 ID 的 SHA-256 摘要以防旧身份重新入库。旧身份的状态查询与再次登记均返回 `410 device_removed`，App 收到后自动用新身份申请登记，进入待激活。撤销作用于后续 API 鉴权，已下发的第三方媒体地址和已缓冲音频仍遵循各自的有效期。旧 `music_device_tokens` 表保留为历史数据，旧令牌停止使用。
 
 ## 接口目录
 

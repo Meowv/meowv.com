@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using Meowv.Api.Infrastructure;
+using Microsoft.Data.Sqlite;
 
 namespace Meowv.Api.Modules.Music;
 
@@ -30,6 +31,11 @@ public sealed class MusicDeviceStore(ApiDatabase database, TimeProvider clock)
                                                                 CREATE UNIQUE INDEX music_pending_short_code ON music_device_activation(short_code) WHERE status='pending';
                                                                 CREATE INDEX music_device_activation_status ON music_device_activation(status,created_at);
                                                                 """);
+            database.EnsureSchema("music-device-removal", 1, """
+                                                             CREATE TABLE music_removed_installations (
+                                                                 installation_hash BLOB PRIMARY KEY NOT NULL
+                                                             );
+                                                             """);
             _initialized = true;
         }
     }
@@ -68,6 +74,10 @@ public sealed class MusicDeviceStore(ApiDatabase database, TimeProvider clock)
             }
         }
 
+        command.CommandText = "SELECT 1 FROM music_removed_installations WHERE installation_hash=$removed;";
+        command.Parameters.AddWithValue("$removed", InstallationHash(installationId));
+        if (command.ExecuteScalar() is not null) throw Removed();
+
         command.CommandText = "SELECT COUNT(*) FROM music_device_activation WHERE status='pending';";
         if ((long)command.ExecuteScalar()! >= 1000)
             throw new MusicException("device_queue_full", "待激活设备已达上限。", 429, 60);
@@ -97,16 +107,20 @@ public sealed class MusicDeviceStore(ApiDatabase database, TimeProvider clock)
         using var command = connection.CreateCommand();
         command.CommandText = """
                               SELECT short_code,status,encrypted_token FROM music_device_activation WHERE installation_id=$id
-                                AND (status<>'pending' OR created_at>$expiry);
+                                AND (status<>'pending' OR created_at>$expiry)
+                              UNION ALL
+                              SELECT NULL,'removed',NULL FROM music_removed_installations WHERE installation_hash=$removed;
                               """;
         var installationId = DeviceGuid(id);
         command.Parameters.AddWithValue("$id", installationId);
+        command.Parameters.AddWithValue("$removed", InstallationHash(installationId));
         command.Parameters.AddWithValue("$expiry", Timestamp(clock.GetUtcNow() - PendingLifetime));
         using var reader = command.ExecuteReader();
-        return reader.Read()
-            ? new MusicDeviceStatus(installationId, reader.GetString(0), reader.GetString(1),
-                reader.IsDBNull(2) ? null : reader.GetString(2))
-            : null;
+        if (!reader.Read()) return null;
+        var status = reader.GetString(1);
+        if (status == "removed") throw Removed();
+        return new MusicDeviceStatus(installationId, reader.GetString(0), status,
+            reader.IsDBNull(2) ? null : reader.GetString(2));
     }
 
     public MusicDeviceActivation? Activate(string id)
@@ -126,12 +140,12 @@ public sealed class MusicDeviceStore(ApiDatabase database, TimeProvider clock)
                               """;
         MusicDeviceActivation result;
         byte[] publicKey;
+        string status;
         using (var reader = command.ExecuteReader())
         {
             if (!reader.Read()) return null;
-            var status = reader.GetString(2);
+            status = reader.GetString(2);
             result = new MusicDeviceActivation(reader.GetString(0), deviceId, reader.GetString(1), "active");
-            if (status == "revoked") throw new MusicException("device_revoked", "设备已撤销。", 409);
             if (status == "active") return result;
             publicKey = (byte[])reader[3];
         }
@@ -144,8 +158,10 @@ public sealed class MusicDeviceStore(ApiDatabase database, TimeProvider clock)
         var token = Encoding.ASCII.GetBytes("mvm_" + Base64Url.EncodeToString(RandomNumberGenerator.GetBytes(32)));
         try
         {
+            if (status == "revoked") ClearQqGrant(command);
             command.CommandText = """
-                                  UPDATE music_device_activation SET status='active',token_hash=$hash,encrypted_token=$encrypted,activated_at=$now
+                                  UPDATE music_device_activation SET status='active',token_hash=$hash,encrypted_token=$encrypted,
+                                      activated_at=$now,revoked_at=NULL,last_seen=NULL
                                   WHERE device_id=$id;
                                   """;
             command.Parameters.AddWithValue("$hash", Convert.ToHexString(SHA256.HashData(token)));
@@ -220,6 +236,45 @@ public sealed class MusicDeviceStore(ApiDatabase database, TimeProvider clock)
         _lastUsedWrites.TryRemove(deviceId, out _);
         return true;
     }
+
+    public bool DeleteRevoked(string id)
+    {
+        Initialize();
+        using var connection = database.OpenConnection();
+        using var transaction = connection.BeginTransaction(deferred: false);
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        var deviceId = DeviceGuid(id);
+        command.Parameters.AddWithValue("$id", deviceId);
+        command.CommandText = "SELECT status FROM music_device_activation WHERE device_id=$id;";
+        if (command.ExecuteScalar() is not string status) return false;
+        if (status != "revoked")
+            throw new MusicException("device_not_revoked", "请先撤销设备，再删除记录。", 409);
+
+        command.CommandText = "DELETE FROM music_device_activation WHERE device_id=$id RETURNING installation_id;";
+        var installationId = (string)command.ExecuteScalar()!;
+        ClearQqGrant(command);
+        // 只保留安装 ID 的哈希，App 重新登记时必须使用新身份。
+        command.CommandText = "INSERT INTO music_removed_installations(installation_hash) VALUES($removed);";
+        command.Parameters.AddWithValue("$removed", InstallationHash(installationId));
+        command.ExecuteNonQuery();
+        transaction.Commit();
+        _lastUsedWrites.TryRemove(deviceId, out _);
+        return true;
+    }
+
+    private static void ClearQqGrant(SqliteCommand command)
+    {
+        // 会员模块可能从未初始化。
+        command.CommandText = "SELECT 1 FROM sqlite_schema WHERE type='table' AND name='music_qq_devices';";
+        if (command.ExecuteScalar() is null) return;
+        command.CommandText = "DELETE FROM music_qq_devices WHERE device_id=$id;";
+        command.ExecuteNonQuery();
+    }
+
+    private static MusicException Removed() => new("device_removed", "设备记录已删除，请重新登记新安装。", 410);
+
+    private static byte[] InstallationHash(string id) => SHA256.HashData(Encoding.ASCII.GetBytes(id));
 
     private static string DeviceGuid(string? value) =>
         Guid.TryParseExact(value, "N", out var id) && id != Guid.Empty ? id.ToString("N") : throw MusicException.Invalid();

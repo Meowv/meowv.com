@@ -161,6 +161,7 @@ internal static class MusicChecks
             Check(limited.Headers.RetryAfter?.Delta > TimeSpan.Zero, "429 Retry-After header");
         }, change: new("RequestsPerMinute", "1"));
         await ActivationChecks(root);
+        await ReactivationAndDeletionChecks(root);
         await ActivationCapacityCheck(root);
 
         await Case(root, true, async (client, app) =>
@@ -332,11 +333,9 @@ internal static class MusicChecks
             using var revokedAgain = await client.DeleteAsync(adminPath);
             Check(revoked.StatusCode == HttpStatusCode.NoContent && revokedAgain.StatusCode == HttpStatusCode.NoContent,
                 "Revocation is idempotent");
-            using var cannotReactivate = await client.PostAsync(adminPath + "/activate", null);
-            await Error(cannotReactivate, 409, "device_revoked");
             using var revokedStatus = await client.GetAsync(statusPath);
             Check((await ReadStatus(revokedStatus)).Status == "revoked" && store.Verify(token) is null,
-                "Revocation clears credential and keeps a terminal status");
+                "Revocation clears credentials");
             using var expired = await client.GetAsync("/api/music/providers");
             await Error(expired, 401, "unauthorized");
 
@@ -362,6 +361,68 @@ internal static class MusicChecks
         static async Task<MusicDeviceStatus> ReadStatus(HttpResponseMessage response) =>
             JsonSerializer.Deserialize(await response.Content.ReadAsStringAsync(), MusicJsonContext.Default.MusicDeviceStatus)!;
         static string Serialize(MusicDeviceRegister input) => JsonSerializer.Serialize(input, MusicJsonContext.Default.MusicDeviceRegister);
+    }
+
+    private static async Task ReactivationAndDeletionChecks(string root)
+    {
+        await Case(root, true, async (client, app) =>
+        {
+            var devices = app.Services.GetRequiredService<MusicDeviceStore>();
+            var membership = app.Services.GetRequiredService<QQSessionStore>();
+            using var key = RSA.Create(2048);
+            var installationId = Guid.NewGuid().ToString("N");
+            var input = RegisterInput(key, installationId, "Test car");
+            var initial = devices.Register(input);
+            var id = devices.List().Single().DeviceId;
+            var adminPath = "/api/music/setup/devices/" + id;
+            var deletePath = adminPath + "/record";
+            var statusPath = "/api/music/devices/status/" + installationId;
+            using var anonymous = await client.DeleteAsync(deletePath);
+            Check(anonymous.StatusCode == HttpStatusCode.Unauthorized, "Anonymous record deletion denied");
+
+            client.DefaultRequestHeaders.Add("X-Api-Bootstrap-Token", ManagementToken);
+            using var pendingDeletion = await client.DeleteAsync(deletePath);
+            await Error(pendingDeletion, 409, "device_not_revoked");
+            devices.Activate(id);
+            var oldToken = Decrypt(key, devices.Status(installationId)!);
+            Check(membership.SetDevice(id, true) && membership.Allowed(id), "Initial grant for the active device");
+            using var activeDeletion = await client.DeleteAsync(deletePath);
+            await Error(activeDeletion, 409, "device_not_revoked");
+            devices.Revoke(id);
+            Check(devices.Verify(oldToken) is null && !membership.Allowed(id), "Revocation disables both permissions");
+
+            using var reactivated = await client.PostAsync(adminPath + "/activate", null);
+            Check(reactivated.IsSuccessStatusCode, "Management can reactivate the same device");
+            var active = devices.Status(installationId)!;
+            var newToken = Decrypt(key, active);
+            Check(active.ShortCode == initial.ShortCode && oldToken != newToken &&
+                  devices.Verify(oldToken) is null && devices.Verify(newToken) == id,
+                "Reactivation preserves same identity, replaces the token and leaves the previous token invalid");
+            Check(!membership.Allowed(id), "Reactivated devices require a fresh QQ grant");
+            Check(membership.SetDevice(id, true), "QQ can be granted again");
+            devices.Revoke(id);
+
+            using var deleted = await client.DeleteAsync(deletePath);
+            Check(deleted.StatusCode == HttpStatusCode.NoContent && devices.List().Length == 0,
+                "Deletion removes the revoked device");
+            using var absent = await client.PostAsync(adminPath + "/activate", null);
+            Check(absent.StatusCode == HttpStatusCode.NotFound, "Deleted devices cannot be reactivated");
+            using var removed = await client.GetAsync(statusPath);
+            await Error(removed, 410, "device_removed");
+            using var registeredAgain = await client.PostAsync("/api/music/devices/register",
+                Json(JsonSerializer.Serialize(input, MusicJsonContext.Default.MusicDeviceRegister)));
+            await Error(registeredAgain, 410, "device_removed");
+
+            var database = app.Services.GetRequiredService<ApiDatabase>();
+            using var connection = database.OpenConnection();
+            using var command = connection.CreateCommand();
+            command.CommandText = "SELECT COUNT(*) FROM music_qq_devices WHERE device_id=$id;";
+            command.Parameters.AddWithValue("$id", id);
+            Check(command.ExecuteScalar() is 0L, "Deletion removes the old QQ grant");
+            var newInstallation = input with { InstallationId = Guid.NewGuid().ToString("N") };
+            Check(devices.Register(newInstallation).Status == "pending", "A new installation can register after deletion");
+        });
+        Console.WriteLine("PASS: Music reactivation, credential replacement and permanent record deletion");
     }
 
     private static async Task ActivationCapacityCheck(string root)

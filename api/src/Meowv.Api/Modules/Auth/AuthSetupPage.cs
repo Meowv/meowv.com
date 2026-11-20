@@ -249,7 +249,6 @@ internal static class AuthSetupPage
                                        }
                                        .device-row:hover { border-color: #c9c3f2; background: #faf9ff; }
                                        .device-row:has(input:checked) { border-color: var(--accent); background: #f7f6fe; }
-                                       .device-row.is-revoked { opacity: .6; cursor: default; }
                                        .device-row input {
                                          width: 15px; height: 15px; margin: 0; flex-shrink: 0;
                                          accent-color: var(--accent);
@@ -524,6 +523,7 @@ internal static class AuthSetupPage
                                                  <div class="actions">
                                                    <button id="music-activate" class="primary" data-private type="button" hidden>激活选中设备</button>
                                                    <button id="music-revoke" class="text-button danger" data-private type="button" hidden>撤销选中设备</button>
+                                                   <button id="music-delete" class="text-button danger" data-private type="button" hidden>删除记录</button>
                                                  </div>
                                                  <div class="divider"></div>
                                                  <div class="list-head"><strong>每日榜单快照</strong></div>
@@ -950,10 +950,10 @@ internal static class AuthSetupPage
                                        const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) => ({
                                          "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
                                        })[char]);
-                                       const deviceRow = (name, id, label, selected, state, stateClass, disabled) =>
-                                         '<label class="device-row' + (disabled ? " is-revoked" : "") + '">' +
+                                       const deviceRow = (name, id, label, selected, state, stateClass) =>
+                                         '<label class="device-row">' +
                                            '<input type="radio" name="' + name + '" value="' + escapeHtml(id) + '"' +
-                                             (disabled ? " disabled" : "") + (id === selected ? " checked" : "") + ' />' +
+                                             (id === selected ? " checked" : "") + ' />' +
                                            '<span class="device-name">' + escapeHtml(label) + '</span>' +
                                            '<span class="device-state ' + stateClass + '">' + state + '</span>' +
                                          '</label>';
@@ -972,7 +972,9 @@ internal static class AuthSetupPage
                                        const selectedMusicDevice = () => musicDevices.find(d => d.deviceId === $("music-devices").value);
                                        const syncMusicActions = () => {
                                          const status = selectedMusicDevice()?.status;
-                                         $("music-activate").hidden = status !== "pending";
+                                         $("music-activate").hidden = status !== "pending" && status !== "revoked";
+                                         $("music-activate").textContent = status === "revoked" ? "重新激活" : "激活选中设备";
+                                         $("music-delete").hidden = status !== "revoked";
                                          $("music-revoke").hidden = status !== "active" && status !== "pending";
                                        };
                                        const resetMusicDevices = () => {
@@ -984,22 +986,21 @@ internal static class AuthSetupPage
                                          const devices = await request("/api/music/setup/devices");
                                          if (!Array.isArray(devices)) throw new Error("设备列表格式无效。");
                                          musicDevices = devices;
-                                         const selected = devices.some(d => d.status !== "revoked" && d.deviceId === $("music-devices").value)
+                                         const selected = devices.some(d => d.deviceId === $("music-devices").value)
                                            ? $("music-devices").value
-                                           : (devices.find(d => d.status !== "revoked")?.deviceId || "");
+                                           : (devices.find(d => d.status !== "revoked")?.deviceId || devices[0]?.deviceId || "");
                                          $("music-devices").replaceChildren();
                                          const labels = { pending: "待激活", active: "已激活", revoked: "已撤销" };
                                          devices.forEach((device) => {
                                            const option = document.createElement("option");
                                            option.value = device.deviceId;
                                            option.textContent = deviceLabel(device);
-                                           option.disabled = device.status === "revoked";
                                            $("music-devices").appendChild(option);
                                          });
                                          $("music-devices").value = selected;
                                          $("music-device-list").innerHTML = devices.map(device =>
                                            deviceRow("music-device", device.deviceId, deviceLabel(device), selected,
-                                             labels[device.status] || "未知", device.status === "active" ? "on" : "", device.status === "revoked")
+                                             labels[device.status] || "未知", device.status === "active" ? "on" : "off")
                                          ).join("") || '<p class="hint">暂无设备登记。</p>';
                                          $("music-status").textContent = "";
                                          syncMusicActions();
@@ -1007,11 +1008,13 @@ internal static class AuthSetupPage
                                        $("music-load").onclick = () => run(loadMusicDevices);
                                        $("music-activate").onclick = () => {
                                          const device = selectedMusicDevice();
-                                         if (device?.status !== "pending" || !confirm("确认激活设备 " + device.shortCode + "？")) return;
+                                         if (!device || (device.status !== "pending" && device.status !== "revoked")) return;
+                                         const action = device.status === "revoked" ? "重新激活" : "激活";
+                                         if (!confirm("确认" + action + "设备 " + device.shortCode + "？")) return;
                                          run(async () => {
                                            await request("/api/music/setup/devices/" + encodeURIComponent(device.deviceId) + "/activate", { method: "POST" });
                                            await loadMusicDevices();
-                                           if (!$("qq-devices").hidden) await loadQQDevices();
+                                           if (!$("qq-devices").hidden) await loadQQ(true);
                                            $("music-status").textContent = "设备已激活。";
                                          });
                                        };
@@ -1021,8 +1024,18 @@ internal static class AuthSetupPage
                                          run(async () => {
                                            await request("/api/music/setup/devices/" + encodeURIComponent(device.deviceId), { method: "DELETE" });
                                            await loadMusicDevices();
-                                           if (!$("qq-devices").hidden) await loadQQDevices();
+                                           if (!$("qq-devices").hidden) await loadQQ(true);
                                            $("music-status").textContent = "设备已撤销。";
+                                         });
+                                       };
+                                       $("music-delete").onclick = () => {
+                                         const device = selectedMusicDevice();
+                                         if (device?.status !== "revoked" ||
+                                             !confirm("确认删除设备 " + device.shortCode + " 的记录？App 下次检查状态时会自动登记为新的待激活设备。")) return;
+                                         run(async () => {
+                                           await request("/api/music/setup/devices/" + encodeURIComponent(device.deviceId) + "/record", { method: "DELETE" });
+                                           await loadMusicDevices();
+                                           $("music-status").textContent = "设备记录已删除。";
                                          });
                                        };
                                        const qqRoot = "/api/music/setup/qq";
@@ -1051,7 +1064,7 @@ internal static class AuthSetupPage
                                          if (selected) $("qq-device").value = selected;
                                          $("qq-device-list").innerHTML = active.map((device) =>
                                            deviceRow("qq-device", device.deviceId, deviceLabel(device), selected, qqEnabled.has(device.deviceId) ? "已授权" : "未授权",
-                                             qqEnabled.has(device.deviceId) ? "on" : "off", false)
+                                             qqEnabled.has(device.deviceId) ? "on" : "off")
                                          ).join("") || '<p class="hint">暂无已激活的设备。</p>';
                                          $("qq-grant").checked = qqEnabled.has(selected);
                                        };

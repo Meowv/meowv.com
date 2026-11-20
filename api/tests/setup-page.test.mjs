@@ -212,17 +212,23 @@ test('removed camera setup page and compatibility initialization routes stay abs
   assert.doesNotMatch(source, /setup\/xiaomi/);
 });
 
-test('music management activates and revokes the selected short code without showing a token', async () => {
+test('music management activates, reactivates and deletes the selected device', async () => {
   let status = 'pending';
   const deviceId = 'device-1';
   const page = createPage(request => {
     if (request.path === '/api/music/setup/devices') {
-      return { body: [{ deviceId, installationId: 'installation-1', shortCode: 'BEEF-CAFE', model: '<img onerror=unsafe>', osVersion: '9', status }] };
+      return { body: status === 'removed' ? [] : [{ deviceId, installationId: 'installation-1', shortCode: 'BEEF-CAFE', model: '<img onerror=unsafe>', osVersion: '9', status }] };
     }
     if (request.path === '/api/music/setup/devices/device-1/activate') {
       assert.equal(request.method, 'POST');
       status = 'active';
       return { body: { deviceId, status } };
+    }
+    if (request.path === '/api/music/setup/devices/device-1/record') {
+      assert.equal(request.method, 'DELETE');
+      assert.equal(status, 'revoked');
+      status = 'removed';
+      return { status: 204 };
     }
     if (request.path === '/api/music/setup/devices/device-1') {
       assert.equal(request.method, 'DELETE');
@@ -251,6 +257,21 @@ test('music management activates and revokes the selected short code without sho
   await page.trigger('music-revoke');
   assert.equal(status, 'revoked');
   assert.equal(page.element('music-revoke').hidden, true);
+  assert.equal(page.element('music-activate').textContent, '重新激活');
+  assert.equal(page.element('music-activate').hidden, false);
+  assert.equal(page.element('music-delete').hidden, false);
+  await page.trigger('music-activate');
+  assert.equal(status, 'active');
+  assert.equal(page.element('music-delete').hidden, true);
+  await page.trigger('music-revoke');
+  page.setConfirmation(false);
+  await page.trigger('music-delete');
+  assert.equal(status, 'revoked');
+  page.setConfirmation(true);
+  await page.trigger('music-delete');
+  assert.equal(status, 'removed');
+  assert.equal(page.element('music-delete').hidden, true);
+  assert.equal(page.element('music-devices').children.length, 0);
   assert.equal(page.element('music-token'), undefined);
   await page.trigger('exit');
   assert.equal(page.element('music-devices').children.length, 0);
