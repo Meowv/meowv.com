@@ -143,12 +143,6 @@ internal static class AuthSetupPage
                                        .nav-item:nth-child(2) .nav-dot { background: #57b895; }
                                        .nav-item:nth-child(3) .nav-dot { background: #d8a85e; }
                                        .nav-item:nth-child(4) .nav-dot { background: #d47791; }
-                                       .note {
-                                         display: flex; gap: 9px; margin-top: auto;
-                                         padding: 13px; border: 1px solid #2b3853; border-radius: 10px;
-                                         background: #18233a; color: #7f8ea8; font-size: 11px; line-height: 1.7;
-                                       }
-                                       .note svg { margin-top: 2px; }
 
                                        /* 主内容 */
                                        .main { width: 100%; max-width: 1240px; margin: 0 auto; padding: 28px 34px 70px; }
@@ -277,7 +271,7 @@ internal static class AuthSetupPage
                                            position: static; height: auto; overflow: visible; gap: 14px;
                                            padding: 14px 18px; border-bottom: 1px solid #27334d;
                                          }
-                                         .side-heading, .note { display: none; }
+                                         .side-heading { display: none; }
                                          .steps { display: flex; gap: 16px; }
                                          .step { flex: 1; grid-template-columns: 24px minmax(0, 1fr); gap: 8px; padding: 0; }
                                          .step:not(:last-child):after, .step p { display: none; }
@@ -353,12 +347,6 @@ internal static class AuthSetupPage
                                              <a class="nav-item" href="#panel-music"><span class="nav-dot"></span>音乐凭据</a>
                                              <a class="nav-item" href="#panel-qq"><span class="nav-dot"></span>QQ 会员</a>
                                            </nav>
-                                           <div class="note">
-                                             <svg width="14" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-                                               <path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3Z" /><path d="m8.5 12 2.5 2.5 4.5-5" />
-                                             </svg>
-                                             <span>管理密钥仅保留在当前页面内存中，刷新或退出后需要重新验证。</span>
-                                           </div>
                                          </aside>
                                          <main class="main">
                                            <h1 class="sr-only">服务初始化</h1>
@@ -552,12 +540,25 @@ internal static class AuthSetupPage
                                      <script>
                                        const $ = (id) => document.getElementById(id);
                                        const apiRoot = location.pathname.replace(/\/setup\/?$/, "");
-                                       let managementEpoch = 0;
-                                       let managementToken = "",
-                                         authenticated = false,
-                                         busy = false,
-                                         cameraState = "pending",
-                                         attemptId = "";
+                                        let managementEpoch = 0;
+                                        let managementToken = "",
+                                          authenticated = false,
+                                          busy = false,
+                                          cameraState = "pending",
+                                          attemptId = "";
+                                        const savedTokenKey = "meowv.setup.bootstrapToken";
+                                        const readSavedToken = () => {
+                                          try { return globalThis.localStorage?.getItem(savedTokenKey) || ""; }
+                                          catch { return ""; }
+                                        };
+                                        const saveToken = (value) => {
+                                          try { globalThis.localStorage?.setItem(savedTokenKey, value); }
+                                          catch {}
+                                        };
+                                        const clearSavedToken = () => {
+                                          try { globalThis.localStorage?.removeItem(savedTokenKey); }
+                                          catch {}
+                                        };
                                        const notify = (text, kind = "info") => {
                                          const node = $("message");
                                          node.textContent = text;
@@ -662,11 +663,12 @@ internal static class AuthSetupPage
                                          const data = await response.json().catch(() => null);
                                          if (epoch !== managementEpoch) throw new Error("管理会话已结束，请重新验证。");
                                          if (!response.ok) {
-                                           if (response.status === 401) {
-                                             managementEpoch++;
-                                             authenticated = false;
-                                             managementToken = "";
-                                             clearMusicSecret();
+                                            if (response.status === 401) {
+                                              managementEpoch++;
+                                              authenticated = false;
+                                              managementToken = "";
+                                              clearSavedToken();
+                                              clearMusicSecret();
                                              resetQQ();
                                              $("access-code").value = "";
                                              $("code-result").hidden = true;
@@ -805,24 +807,26 @@ internal static class AuthSetupPage
                                            notify("小米登录会话已保存，初始化完成。", "success");
                                          } else throw new Error("无法识别登录结果，请重新登录。");
                                        };
-                                       $("auth-form").onsubmit = (event) => {
-                                         event.preventDefault();
-                                         run(async () => {
-                                           managementEpoch++;
-                                           managementToken = $("token").value.trim();
-                                           if (!managementToken) return;
-                                           const data = await request("/api/auth/access-code", {
-                                             method: "POST",
-                                           });
-                                           authenticated = true;
-                                           $("token").value = "";
-                                           $("gate").hidden = true;
-                                           $("workspace").hidden = false;
-                                           step("step-auth", "done");
-                                           showCode(data.accessCode);
-                                           await loadCamera();
-                                         });
-                                       };
+                                        const startSession = async (token) => {
+                                          managementEpoch++;
+                                          managementToken = token.trim();
+                                          if (!managementToken) return;
+                                          const data = await request("/api/auth/access-code", {
+                                            method: "POST",
+                                          });
+                                          authenticated = true;
+                                          saveToken(managementToken);
+                                          $("token").value = "";
+                                          $("gate").hidden = true;
+                                          $("workspace").hidden = false;
+                                          step("step-auth", "done");
+                                          showCode(data.accessCode);
+                                          await loadCamera();
+                                        };
+                                        $("auth-form").onsubmit = (event) => {
+                                          event.preventDefault();
+                                          run(() => startSession($("token").value));
+                                        };
                                        $("rotate").onclick = () => {
                                          if (!confirm("轮换将使所有模块的旧授权码和旧播放票据失效，确定继续？"))
                                            return;
@@ -1042,10 +1046,11 @@ internal static class AuthSetupPage
                                          });
                                          await loadQQ(true);
                                        });
-                                       $("exit").onclick = () => {
-                                         managementEpoch++;
-                                         clearMusicSecret();
-                                         resetQQ();
+                                        $("exit").onclick = () => {
+                                          managementEpoch++;
+                                          clearMusicSecret();
+                                          clearSavedToken();
+                                          resetQQ();
                                          $("music-alias").value = "";
                                          $("music-devices").replaceChildren();
                                          managementToken = "";
@@ -1067,8 +1072,9 @@ internal static class AuthSetupPage
                                          updateOverall();
                                          $("token").focus();
                                        };
-                                       globalThis.addEventListener?.("pagehide", () => $("exit").onclick());
-                                       setBusy(false);
+                                        setBusy(false);
+                                        const savedToken = readSavedToken();
+                                        if (savedToken) run(() => startSession(savedToken));
                                      </script>
                                    </body>
                                  </html>

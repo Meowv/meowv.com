@@ -10,7 +10,7 @@ const accessCode = 'YOUR_SYNTHETIC_ACCESS_CODE_FOR_UI_TESTS';
 const moduleName = { name: 'xiaomi-camera' };
 
 // 用内存 DOM 和合成响应验证页面状态转换，不调用账号、摄像头或真实服务。
-function createPage(respond) {
+function createPage(respond, storage = new Map()) {
   const elements = new Map();
   for (const tag of source.matchAll(/<[^>]+\bid="([^"]+)"[^>]*>/g)) {
     elements.set(tag[1], {
@@ -32,6 +32,11 @@ function createPage(respond) {
       querySelectorAll: () => ['rotate', 'retry-camera', 'reset-session', 'exit', 'restart-login'].map(id => elements.get(id)),
     },
     location: { pathname: '/nested/setup/' },
+    localStorage: {
+      getItem: key => storage.get(key) ?? null,
+      setItem: (key, value) => storage.set(key, value),
+      removeItem: key => storage.delete(key),
+    },
     URL: { createObjectURL: () => 'blob:synthetic-qr', revokeObjectURL() {} },
     setTimeout: () => 1,
     clearTimeout() {},
@@ -51,8 +56,15 @@ function createPage(respond) {
   });
   vm.runInContext(script, context);
   return {
-    element: id => elements.get(id), requests, copied, prompts,
+    element: id => elements.get(id), requests, copied, prompts, storage,
     setConfirmation(value) { confirmation = value; },
+    async settle() {
+      for (let i = 0; i < 20; i++) {
+        await new Promise(resolve => setImmediate(resolve));
+        if (!vm.runInContext('busy', context)) return;
+      }
+      throw new Error('Page action did not settle.');
+    },
     async trigger(id, event = 'onclick') {
       elements.get(id)[event]({ preventDefault() {} });
       for (let i = 0; i < 20; i++) {
@@ -195,7 +207,7 @@ test('removed camera setup page and compatibility initialization routes stay abs
   const module = readFileSync(new URL('../src/Meowv.Api/Modules/XiaomiCamera/XiaomiCameraModule.cs', import.meta.url), 'utf8');
   assert.doesNotMatch(module, /setup\/xiaomi|XiaomiSetupPage|setup\.MapPost\("\/access-code/);
   assert.equal(existsSync(new URL('../src/Meowv.Api/Modules/XiaomiCamera/XiaomiSetupPage.cs', import.meta.url)), false);
-  assert.doesNotMatch(source, /setup\/xiaomi|localStorage|sessionStorage/);
+  assert.doesNotMatch(source, /setup\/xiaomi/);
 });
 
 test('music credentials are scoped, shown once, revoked explicitly and cleared on exit', async () => {
@@ -295,4 +307,31 @@ test('QQ membership setup keeps the QR in memory and manages grants for existing
   assert.equal(page.element('qq-qr').src, undefined);
   assert.equal(page.element('qq-qr-box').hidden, true);
   assert.match(page.element('qq-status').textContent, /已登录.*扫码已取消/);
+});
+
+test('management token survives reload and is cleared only on explicit exit', async () => {
+  const page = createPage(standardResponse);
+  await page.authenticate();
+  assert.equal(page.storage.get('meowv.setup.bootstrapToken'), management);
+
+  const reloaded = createPage(standardResponse, page.storage);
+  await reloaded.settle();
+  assert.equal(reloaded.element('gate').hidden, true);
+  assert.equal(reloaded.element('workspace').hidden, false);
+  assert.equal(reloaded.element('access-code').value, accessCode);
+  assert.equal(reloaded.element('login-form').hidden, false);
+
+  await reloaded.trigger('exit');
+  assert.equal(reloaded.storage.has('meowv.setup.bootstrapToken'), false);
+  assert.equal(reloaded.element('gate').hidden, false);
+  assert.equal(reloaded.element('workspace').hidden, true);
+});
+
+test('a rejected stored token is removed so the next load asks again', async () => {
+  const storage = new Map([['meowv.setup.bootstrapToken', management]]);
+  const page = createPage(() => ({ status: 401, body: { message: '管理密钥无效' } }), storage);
+  await page.settle();
+  assert.equal(page.element('gate').hidden, false);
+  assert.equal(page.element('workspace').hidden, true);
+  assert.equal(page.storage.has('meowv.setup.bootstrapToken'), false);
 });

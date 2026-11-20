@@ -58,16 +58,16 @@ dotnet run --project api/src/Meowv.Api -- --contentRoot /YOUR_CHECKOUT/api/src/M
 
 默认地址为 `http://localhost:5000`，启动参数可通过标准 `--urls` 覆盖。
 
-打开 `http://localhost:5000/setup`，在统一初始化向导中输入一次公共管理密钥：首次使用自动生成服务级授权码，然后检查摄像头模块并引导账号登录或验证码验证；已有授权码和保存的云会话自动保留。摄像头未启用或初始化失败时，系统授权仍可使用，页面显示模块状态并提供重新检查。
+打开 `http://localhost:5000/setup`，在统一初始化向导中输入一次公共管理密钥：首次使用自动生成服务级授权码，然后检查摄像头模块并引导账号登录或验证码验证；已有授权码和保存的云会话自动保留。浏览器会记住管理密钥，刷新页面自动恢复；点击「退出管理」后清除。摄像头未启用或初始化失败时，系统授权仍可使用，页面显示模块状态并提供重新检查。
 
-一个授权码通用于所有声明公共授权的模块，客户端使用 `Authorization: Bearer YOUR_ACCESS_CODE`。只读方法（`GET`、`HEAD`、`OPTIONS`）也接受 `?access_token=YOUR_ACCESS_CODE`，供播放器、`<video>`、图片标签等无法自定义请求头的场景使用；写操作必须走请求头。URL 中的凭据会进入访问日志、浏览器历史和 Referer，服务对这类响应附加 `Cache-Control: no-store` 与 `Referrer-Policy: no-referrer`，但仍不要把它放进可分享链接。服务只保存盐和 PBKDF2 哈希；已有授权码不会再次返回明文，遗失后只能在向导中手动轮换。轮换立即废止旧授权码，并使旧摄像头播放票据失效。切换小米账号单独确认，不轮换公共授权码。授权状态保存在共享数据库的 `auth_state` 中，不依赖摄像头开关或小米登录状态。管理密钥只保留在当前页面内存，刷新或退出管理后重新验证。
+一个授权码通用于所有声明公共授权的模块，客户端使用 `Authorization: Bearer YOUR_ACCESS_CODE`。只读方法（`GET`、`HEAD`、`OPTIONS`）也接受 `?access_token=YOUR_ACCESS_CODE`，供播放器、`<video>`、图片标签等无法自定义请求头的场景使用；写操作必须走请求头。URL 中的凭据会进入访问日志、浏览器历史和 Referer，服务对这类响应附加 `Cache-Control: no-store` 与 `Referrer-Policy: no-referrer`，但仍不要把它放进可分享链接。服务只保存盐和 PBKDF2 哈希；已有授权码不会再次返回明文，遗失后只能在向导中手动轮换。轮换立即废止旧授权码，并使旧摄像头播放票据失效。切换小米账号单独确认，不轮换公共授权码。授权状态保存在共享数据库的 `auth_state` 中，不依赖摄像头开关或小米登录状态。管理密钥保存在当前浏览器的本地存储中，刷新页面后自动恢复；点击「退出管理」或密钥被服务拒绝时立即清除。
 
 | 接口 | 授权与行为 |
 | --- | --- |
 | `GET /api/health` | 宿主匿名存活探针，不检查模块依赖 |
 | `GET /api/modules` | 已装配模块及接口清单，不表示业务就绪 |
 | `GET /api/docs` | 按模块查看接口路径、描述、请求方式和认证要求，支持搜索与筛选 |
-| `GET /setup` | 统一初始化向导：系统授权码和摄像头登录，密钥只保留在页面内存 |
+| `GET /setup` | 统一初始化向导：系统授权码和摄像头登录，密钥保存在浏览器本地，退出管理时清除 |
 | `POST /api/auth/access-code` | `X-Api-Bootstrap-Token`；首次返回授权码，已存在时返回 `accessCode: null` |
 | `POST /api/auth/access-code/rotate` | 同上；轮换所有模块共用的授权码 |
 | `/api/xiaomi-camera/setup/...` | 同样使用 `X-Api-Bootstrap-Token`；小米账号登录、验证码验证和会话重置 |
@@ -161,7 +161,7 @@ node --test api/tests/publish-layout.test.mjs
 
 `RuntimeChecks.cs` 检查配置优先级、接口目录、公共授权、持久化、可信代理、限流及票据撤销；`ModuleInitializationChecks.cs` 检查模块故障隔离，登录和媒体依赖使用占位类型；`FfmpegPathChecks.cs` 在 Unix 上用合成可执行文件检查 FFmpeg 路径解析。它们由 `check-runtime.sh` 统一运行。
 
-`setup-page.test.mjs` 使用内存 DOM 和合成响应检查初始化、验证码、模块故障、授权码轮换及退出清理；`publish-layout.test.mjs` 使用发布和下载替身检查各 RID 的目录布局、缓存校验和打包白名单。
+`setup-page.test.mjs` 使用内存 DOM 和合成响应检查初始化、验证码、模块故障、授权码轮换、密钥记忆与清除及退出清理；`publish-layout.test.mjs` 使用发布和下载替身检查各 RID 的目录布局、缓存校验和打包白名单。
 
 这些检查不构建完整 API，不连接真实账号或摄像头，也不执行真实发布。完整构建、目标平台启动、真实设备预览及生产验证需分别确认。
 
