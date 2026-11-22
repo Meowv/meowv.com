@@ -10,6 +10,7 @@ internal static class MusicAggregationChecks
     {
         await EarlyReturnChecks();
         await ResolveFallbackChecks();
+        await SearchRelevanceChecks();
         var original = Track("nt-one", "Song", "Artist");
         foreach (var title in new[] { "Ｓｏｎｇ", "so\u200Bng", " SONG! " })
             Check(MusicCandidateMatcher.Compare(original, Track("other", title, "ARTIST")).Equivalent, "Unicode, zero-width and case normalization");
@@ -69,6 +70,34 @@ internal static class MusicAggregationChecks
         await Error(() => catalog.SearchAsync("different", 2, firstCursor, default), 400);
 
         Console.WriteLine("PASS: source registry, capability isolation, partial failures, pagination and conservative matching");
+    }
+
+    private static async Task SearchRelevanceChecks()
+    {
+        var native = new FullSource([
+            Track("nt-fuzzy", "Unrelated", "Other"),
+            Track("nt-contains", "听阿星Plus", "Other"),
+            Track("nt-artist", "First song", " 阿星ＰＬＵＳ ")
+        ]);
+        var metadata = new Source([
+            Track("qq-prefix", "阿星Plus精选", "Other", QQMusicProvider.Id),
+            Track("qq-title", "阿星Plus", "Other", QQMusicProvider.Id)
+        ]);
+        var (catalog, _) = Catalog(native, metadata);
+        var page = await catalog.SearchAsync(" 阿星plus ", 3, null, default);
+        Check(page.Items.Select(x => x.Id).SequenceEqual(["qq-title", "nt-artist", "qq-prefix"]),
+            "Full title and artist matches outrank prefixes across sources");
+        Check(page.Items[0].Availability == "metadata_only" && page.Items[1].Availability == "candidate",
+            "Search ranking preserves availability");
+        Check(page.NextCursor is not null, "Ranked overflow remains buffered");
+        page = await catalog.SearchAsync(" 阿星plus ", 3, page.NextCursor, default);
+        Check(page.Items.Select(x => x.Id).SequenceEqual(["nt-contains", "nt-fuzzy"]) && page.NextCursor is null,
+            "Continuation preserves ranked results without duplicates or lost candidates");
+
+        var single = new MusicCatalog(new MusicProviderRegistry(new MusicOptions { Enabled = true }, [native]), TimeProvider.System);
+        page = await single.SearchAsync("阿星plus", 2, null, default);
+        Check(page.Items.Select(x => x.Id).SequenceEqual(["nt-contains", "nt-fuzzy"]) && page.NextCursor is not null,
+            "Single-source search ranks the current page and preserves the provider cursor");
     }
 
     private static async Task EarlyReturnChecks()

@@ -31,10 +31,14 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
     public Task<MusicSearchPage> SearchAsync(string? query, int? limit, string? cursor, CancellationToken ct) =>
         SearchAsync(query, limit, cursor, ct, null);
 
-    internal async Task<MusicSearchPage> SearchAsync(string? query, int? limit, string? cursor, CancellationToken ct, QQMembership.Access? access)
+    internal Task<MusicSearchPage> SearchAsync(string? query, int? limit, string? cursor, CancellationToken ct, QQMembership.Access? access) =>
+        SearchCoreAsync(query, limit, cursor, ct, access, rankResults: true);
+
+    private async Task<MusicSearchPage> SearchCoreAsync(string? query, int? limit, string? cursor, CancellationToken ct, QQMembership.Access? access, bool rankResults)
     {
         ct.ThrowIfCancellationRequested();
         if (query is null || query.Trim().Length is < 1 or > 100 || query.Any(char.IsControl)) throw MusicException.Invalid();
+        var normalizedQuery = NormalizeSearchName(query);
         var count = limit ?? 20;
         if (count is < 1 or > 50) throw MusicException.Invalid();
         var sources = registry.Enabled.Take(3).ToArray();
@@ -47,11 +51,12 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
                 var single = await Load(sources[0], query, count, cursor, ct);
                 if (single.Failure is { } error) throw error;
                 var page = single.Page!;
-                return page with { Items = await ProjectAvailabilityAsync(page.Items, access, ct) };
+                var rankedPageItems = rankResults ? RankSearchResults(page.Items, normalizedQuery) : page.Items;
+                return page with { Items = await ProjectAvailabilityAsync(rankedPageItems, access, ct) };
             }
         }
 
-        var signature = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(query.Trim().Normalize(NormalizationForm.FormKC) + "|" + count + "|" + string.Join('|', sources.Select(x => x.ProviderId + ":" + x.Version)))));
+        var signature = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(normalizedQuery + "|" + count + "|" + string.Join('|', sources.Select(x => x.ProviderId + ":" + x.Version)))));
         Continuation? previous = null;
         if (cursor is not null)
         {
@@ -142,10 +147,11 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
         }
 
         var candidates = buffered.Select(x => Latest(Canonical(x.Id), x)).Where(x => !seen.Contains(x.Id)).GroupBy(x => x.Id, StringComparer.Ordinal)
-            .Select(group => Latest(group.Key, group.Last())).ToArray();
-        var items = candidates.Take(count).ToArray();
+            .Select(group => Latest(group.Key, group.Last()));
+        var ranked = rankResults ? RankSearchResults(candidates, normalizedQuery) : candidates.ToArray();
+        var items = ranked.Take(count).ToArray();
         foreach (var item in items) seen.Add(item.Id);
-        buffered = [.. candidates.Skip(count)];
+        buffered = [.. ranked.Skip(count)];
         string? nextCursor = null;
         switch (items.Length)
         {
@@ -166,11 +172,28 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
         return new MusicSearchPage(await ProjectAvailabilityAsync(items, access, ct), nextCursor, warnings.Count > 0, warnings.ToArray());
     }
 
+    private static string NormalizeSearchName(string name) => name.Trim().Normalize(NormalizationForm.FormKC);
+
+    private static MusicTrack[] RankSearchResults(IEnumerable<MusicTrack> candidates, string query) =>
+        candidates.OrderByDescending(track => SearchRelevance(track, query)).ToArray();
+
+    private static int SearchRelevance(MusicTrack track, string query)
+    {
+        const StringComparison comparison = StringComparison.OrdinalIgnoreCase;
+        var title = NormalizeSearchName(track.Title);
+        if (title.Equals(query, comparison)) return 4;
+        var artists = track.Artists.Select(NormalizeSearchName).ToArray();
+        if (artists.Any(artist => artist.Equals(query, comparison))) return 3;
+        if (title.StartsWith(query, comparison) || artists.Any(artist => artist.StartsWith(query, comparison))) return 2;
+        if (title.Contains(query, comparison) || artists.Any(artist => artist.Contains(query, comparison))) return 1;
+        return 0;
+    }
+
     public Task<MusicRecommendationPage> RecommendAsync(CancellationToken ct) => RecommendAsync(ct, null);
 
     internal async Task<MusicRecommendationPage> RecommendAsync(CancellationToken ct, QQMembership.Access? access)
     {
-        var page = await SearchAsync(FallbackQuery(clock.GetUtcNow()), 50, null, ct, access);
+        var page = await SearchCoreAsync(FallbackQuery(clock.GetUtcNow()), 50, null, ct, access, rankResults: false);
         return new MusicRecommendationPage(page.Items.Where(x => x.Availability == "candidate").ToArray(),
             null, "search_candidates", clock.GetUtcNow().UtcDateTime, page.Partial, page.Warnings);
     }
