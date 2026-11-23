@@ -25,11 +25,9 @@ public sealed class MusicModule : IEndpointModule
         {
             music.MapPost("/devices/register", async (HttpContext context, MusicDeviceStore devices) =>
             {
-                var credential = ApiCredentials.ReadAccessCode(context.Request);
-                var proof = credential is { State: ApiCredentialState.Valid, FromQuery: false } ? credential.Value : null;
-                var status = devices.Register(await ReadBody(context, MusicJsonContext.Default.MusicDeviceRegister), proof);
+                var status = devices.Register(await ReadBody(context, MusicJsonContext.Default.MusicDeviceRegister));
                 return Results.Json(status, MusicJsonContext.Default.MusicDeviceStatus, statusCode: status.Status == "active" ? 200 : 202);
-            }).WithSummary("登记待审批音乐设备；已激活设备需使用当前令牌换钥。").WithMetadata(new EndpointAccessMetadata("登记可匿名；换钥需音乐设备 Bearer 令牌")).AllowAnonymous().RequireRateLimiting("music-register");
+            }).WithSummary("登记待审批音乐设备；已激活设备按原安装标识自动换钥。").WithMetadata(new EndpointAccessMetadata("首次登记待审批；换钥需匹配已激活的安装标识")).AllowAnonymous().RequireRateLimiting("music-register");
 
             music.MapGet("/devices/status/{installationId}", (string installationId, MusicDeviceStore devices) => devices.Status(installationId) is { } status ? Results.Json(status, MusicJsonContext.Default.MusicDeviceStatus) : throw new MusicException("device_not_found", "设备登记不存在或已过期。", 404)).WithSummary("查询安装激活状态及设备加密令牌。").AllowAnonymous().RequireRateLimiting("music-activation-status");
 

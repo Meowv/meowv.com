@@ -7,7 +7,7 @@ using Microsoft.Data.Sqlite;
 
 namespace Meowv.Api.Modules.Music;
 
-public sealed class MusicDeviceStore(ApiDatabase database, TimeProvider clock)
+public sealed class MusicDeviceStore(ApiDatabase database, TimeProvider clock, ILogger<MusicDeviceStore>? logger = null)
 {
     private static readonly TimeSpan PendingLifetime = TimeSpan.FromHours(24);
     private const int MaxPending = 1000;
@@ -40,7 +40,7 @@ public sealed class MusicDeviceStore(ApiDatabase database, TimeProvider clock)
         }
     }
 
-    public MusicDeviceStatus Register(MusicDeviceRegister input, string? previousToken = null)
+    public MusicDeviceStatus Register(MusicDeviceRegister input)
     {
         var installationId = DeviceGuid(input.InstallationId);
         var model = Label(input.Model, 80);
@@ -59,7 +59,7 @@ public sealed class MusicDeviceStore(ApiDatabase database, TimeProvider clock)
 
         command.Parameters.Clear();
         command.Parameters.AddWithValue("$id", installationId);
-        command.CommandText = "SELECT public_key,status,device_id,encrypted_token,token_hash FROM music_device_activation WHERE installation_id=$id;";
+        command.CommandText = "SELECT public_key,status,device_id,encrypted_token FROM music_device_activation WHERE installation_id=$id;";
         using (var reader = command.ExecuteReader())
         {
             if (reader.Read())
@@ -68,21 +68,18 @@ public sealed class MusicDeviceStore(ApiDatabase database, TimeProvider clock)
                 var status = reader.GetString(1);
                 var deviceId = reader.GetString(2);
                 var encrypted = reader.IsDBNull(3) ? null : reader.GetString(3);
-                var tokenHash = reader.IsDBNull(4) ? null : reader.GetString(4);
                 reader.Close();
-                if (storedKey.AsSpan().SequenceEqual(publicKey))
+                if (status == "revoked" || storedKey.AsSpan().SequenceEqual(publicKey))
                 {
                     if (status == "active") encrypted ??= IssueToken(connection, transaction, deviceId, publicKey, now);
                     transaction.Commit();
-                    return new MusicDeviceStatus(installationId, deviceCode, status, encrypted);
+                    return new MusicDeviceStatus(installationId, deviceCode, status, status == "active" ? encrypted : null);
                 }
 
-                // 在同一事务内验证当前令牌，避免并发换钥复用已失效的令牌。
-                var proof = TokenHash(previousToken);
-                if (status != "active" || tokenHash is null || proof is null ||
-                    !CryptographicOperations.FixedTimeEquals(Encoding.ASCII.GetBytes(tokenHash), Encoding.ASCII.GetBytes(proof)))
-                    throw new MusicException("device_reapproval_required", "设备公钥已变更，请联系管理员重新登记。", 409);
+                if (status != "active")
+                    throw new MusicException("device_reapproval_required", "待激活设备的公钥已变更，请联系管理员重新登记。", 409);
 
+                // 仅对原 installationId 的有效授权无感换钥，设备码不作为单独的查询凭据。
                 command.CommandText = "UPDATE music_device_activation SET public_key=$key,model=$model,os_version=$os WHERE installation_id=$id;";
                 command.Parameters.AddWithValue("$key", publicKey);
                 command.Parameters.AddWithValue("$model", model);
@@ -90,6 +87,7 @@ public sealed class MusicDeviceStore(ApiDatabase database, TimeProvider clock)
                 command.ExecuteNonQuery();
                 var token = IssueToken(connection, transaction, deviceId, publicKey, now);
                 transaction.Commit();
+                logger?.LogInformation("音乐设备已自动换钥，deviceId={DeviceId}。", deviceId);
                 return new MusicDeviceStatus(installationId, deviceCode, "active", token);
             }
         }

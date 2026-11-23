@@ -317,24 +317,24 @@ internal static class MusicChecks
                   identicalStatus.DeviceCode == pending.DeviceCode &&
                   identicalStatus.EncryptedToken == claimedStatus.EncryptedToken,
                 "Active registration retry preserves the device code and ciphertext");
-            var changedKey = RegisterInput(anotherKey, id, "Other");
-            using var rejected = await client.PostAsync(devicesPath + "/register", Json(Serialize(changedKey)));
-            await Error(rejected, 409, "device_reapproval_required");
-            Check(store.Verify(token) == deviceId && store.Status(id) == claimedStatus,
-                "A rejected key change leaves the approved credential intact");
-
-            using var rotation = new HttpRequestMessage(HttpMethod.Post, devicesPath + "/register");
-            rotation.Content = Json(Serialize(changedKey));
-            rotation.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            using var rotated = await client.SendAsync(rotation);
+            var membership = app.Services.GetRequiredService<QQSessionStore>();
+            Check(membership.SetDevice(deviceId, true), "QQ grant is attached to the approved device");
+            var changedKey = RegisterInput(anotherKey, id, "Reinstalled car");
+            using var rotated = await client.PostAsync(devicesPath + "/register", Json(Serialize(changedKey)));
             var rotatedStatus = await ReadStatus(rotated);
             var rotatedToken = Decrypt(anotherKey, rotatedStatus);
             Check(rotated.StatusCode == HttpStatusCode.OK && rotatedStatus.Status == "active" &&
                   rotatedStatus.DeviceCode == pending.DeviceCode &&
                   rotatedStatus.EncryptedToken != claimedStatus.EncryptedToken &&
-                  store.Verify(token) is null && store.Verify(rotatedToken) == deviceId,
-                "Verified key rotation replaces the token and keeps the device code");
-            CheckRegistrationRejected(() => store.Register(register, token), 409, "device_reapproval_required");
+                  store.Verify(token) is null && store.Verify(rotatedToken) == deviceId &&
+                  membership.Allowed(deviceId),
+                "Reinstalling an active device replaces the token and preserves the device code and QQ grant");
+
+            var newDevice = RegisterInput(anotherKey, Guid.NewGuid().ToString("N"), "New device");
+            using var newRegistration = await client.PostAsync(devicesPath + "/register", Json(Serialize(newDevice)));
+            var newStatus = await ReadStatus(newRegistration);
+            Check(newRegistration.StatusCode == HttpStatusCode.Accepted && newStatus.Status == "pending" &&
+                  newStatus.EncryptedToken is null, "A new installation identity still requires approval");
             CheckRegistrationRejected(() => store.Register(register with { PublicKey = "bad" }), 400, "invalid_request");
             using var stillActive = await client.GetAsync(statusPath);
             Check((await ReadStatus(stillActive)) == rotatedStatus, "Failed registration leaves the rotated credential intact");
@@ -357,8 +357,11 @@ internal static class MusicChecks
             using var expired = await client.GetAsync("/api/music/providers");
             await Error(expired, 401, "unauthorized");
 
-            using var registerAgain = await client.PostAsync(devicesPath + "/register", Json(Serialize(changedKey)));
-            Check((await ReadStatus(registerAgain)).Status == "revoked", "Registration cannot undo revocation");
+            using var registerAgain = await client.PostAsync(devicesPath + "/register", Json(Serialize(register)));
+            var stillRevoked = await ReadStatus(registerAgain);
+            Check(registerAgain.StatusCode == HttpStatusCode.Accepted && stillRevoked.Status == "revoked" &&
+                  stillRevoked.EncryptedToken is null && !membership.Allowed(deviceId),
+                "Reinstalling with a different key cannot undo revocation");
             using var rateLimited = await client.PostAsync(devicesPath + "/register", Json(Serialize(register)));
             Check((int)rateLimited.StatusCode == 429, "Anonymous registrations use the dedicated IP quota");
 
@@ -432,7 +435,9 @@ internal static class MusicChecks
             Check(devices.Verify(oldToken) is null && !membership.Allowed(id), "Revocation disables both permissions");
 
             var replacementInput = RegisterInput(anotherKey, installationId, "Test car");
-            CheckRegistrationRejected(() => devices.Register(replacementInput), 409, "device_reapproval_required");
+            var revoked = devices.Register(replacementInput);
+            Check(revoked.Status == "revoked" && revoked.EncryptedToken is null,
+                "Revoked registration neither restores access nor replaces the approved key");
             using var reactivated = await client.PostAsync(adminPath + "/activate", null);
             Check(reactivated.IsSuccessStatusCode, "Management can reactivate the same device");
             var active = devices.Status(installationId)!;
