@@ -3,7 +3,7 @@ namespace Meowv.Api.Modules.Music;
 public sealed record MusicDevice(
     string InstallationId,
     string DeviceId,
-    string ShortCode,
+    string DeviceCode,
     string Model,
     string OsVersion,
     string Status,

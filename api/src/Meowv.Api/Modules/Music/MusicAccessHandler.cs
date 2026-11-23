@@ -13,8 +13,8 @@ public sealed class MusicAccessHandler(IOptionsMonitor<AuthenticationSchemeOptio
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         var credential = ApiCredentials.ReadAccessCode(Request);
-        if (!runtime.Available || credential.FromQuery || credential.State != ApiCredentialState.Valid ||
-            credential.Value is not { Length: 47 } raw)
+
+        if (!runtime.Available || credential.FromQuery || credential.State != ApiCredentialState.Valid || credential.Value is not { Length: 47 } raw)
             return Task.FromResult(AuthenticateResult.NoResult());
 
         string? deviceId;
@@ -28,7 +28,9 @@ public sealed class MusicAccessHandler(IOptionsMonitor<AuthenticationSchemeOptio
             return Task.FromResult(AuthenticateResult.Fail("音乐凭据存储暂不可用。"));
         }
 
-        if (deviceId is null) return Task.FromResult(AuthenticateResult.Fail("音乐访问凭据无效。"));
+        if (deviceId is null)
+            return Task.FromResult(AuthenticateResult.Fail("音乐访问凭据无效。"));
+
         var identity = new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, deviceId)], SchemeName);
         return Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(identity), SchemeName)));
     }
@@ -37,6 +39,7 @@ public sealed class MusicAccessHandler(IOptionsMonitor<AuthenticationSchemeOptio
     {
         if (Context.Items.ContainsKey("MusicCredentialStoreUnavailable"))
             return MusicErrors.Write(Context, 503, "source_unavailable", "音乐凭据存储暂不可用。");
+
         Response.Headers.WWWAuthenticate = "Bearer";
         return MusicErrors.Write(Context, 401, "unauthorized", "请先激活设备并使用有效的音乐访问凭据。");
     }

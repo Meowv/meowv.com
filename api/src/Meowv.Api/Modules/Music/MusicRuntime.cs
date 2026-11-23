@@ -12,8 +12,7 @@ public sealed class MusicRuntime(MusicOptions options, TimeProvider clock)
         public int Requests { get; set; }
     }
 
-    public bool Available => options is { Enabled: true, BindingFailed: false } &&
-                             options.RequestsPerMinute is >= 1 and <= 1000 && options.MaxConcurrentRequests is >= 1 and <= 16;
+    public bool Available => options is { Enabled: true, BindingFailed: false, RequestsPerMinute: >= 1 and <= 1000, MaxConcurrentRequests: >= 1 and <= 16 };
 
     public string Status => !options.Enabled ? "disabled" : !Available ? "unavailable" : "ready";
 

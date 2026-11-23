@@ -8,22 +8,13 @@ using Microsoft.Data.Sqlite;
 
 namespace Meowv.Api.Modules.Music.Storage;
 
-internal sealed class MusicDailyFeeds(
-    MusicChartStore store,
-    MusicProviderRegistry registry,
-    MusicCatalog catalog,
-    NeteaseMusicProvider netease,
-    QQMusicProvider qq,
-    TimeProvider clock,
-    QQMusicSkill skill,
-    MusicOptions options)
+internal sealed class MusicDailyFeeds(MusicChartStore store, MusicProviderRegistry registry, MusicCatalog catalog, NeteaseMusicProvider netease, QQMusicProvider qq, TimeProvider clock, QQMusicSkill skill, MusicOptions options)
 {
     private static readonly TimeZoneInfo BusinessZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Shanghai");
 
     private readonly FeedSpec[] _feeds = FeedSpec.Defaults;
 
-    private readonly Dictionary<(string Feed, string Provider), FeedSpec> _specs =
-        FeedSpec.Defaults.GroupBy(x => (x.Id, x.ProviderId)).ToDictionary(x => x.Key, x => x.First());
+    private readonly Dictionary<(string Feed, string Provider), FeedSpec> _specs = FeedSpec.Defaults.GroupBy(x => (x.Id, x.ProviderId)).ToDictionary(x => x.Key, x => x.First());
 
     private readonly ConcurrentDictionary<(string Feed, string Provider), RefreshState> _states = new();
 
@@ -47,23 +38,17 @@ internal sealed class MusicDailyFeeds(
     private async Task<MusicDailyPage> GetAsync(FeedSpec[] feeds, string name, bool force, CancellationToken ct)
     {
         var providers = registry.Enabled.Where(x => x is NeteaseMusicProvider or QQMusicProvider).Select(x => x.ProviderId).ToArray();
-        var tasks = feeds.SelectMany(feed => providers.Where(p => p == feed.ProviderId && _specs.ContainsKey((feed.Id, p)))
-            .Select(p => ReadAsync(feed, p, force, ct))).ToArray();
+        var tasks = feeds.SelectMany(feed => providers.Where(p => p == feed.ProviderId && _specs.ContainsKey((feed.Id, p))).Select(p => ReadAsync(feed, p, force, ct))).ToArray();
         var results = await Task.WhenAll(tasks);
         var available = results.Where(x => x.Snapshot is not null).ToArray();
         if (available.Length == 0) throw Unavailable();
 
-        var ordered = available.SelectMany(source => source.Snapshot!.Entries.Select(entry => (source.Provider, Entry: entry)))
-            .OrderBy(x => x.Entry.Rank).ToArray();
+        var ordered = available.SelectMany(source => source.Snapshot!.Entries.Select(entry => (source.Provider, Entry: entry))).OrderBy(x => x.Entry.Rank).ToArray();
         var summaries = available.Select(x => new MusicDailySource(x.Provider, x.Snapshot!.CapturedAt, x.Snapshot.SourceUpdatedAt, x.Stale)).ToArray();
-        var ranks = ordered.DistinctBy(x => (x.Provider, x.Entry.TrackKey))
-            .ToDictionary(x => (x.Provider, x.Entry.TrackKey), x => x.Entry.Rank);
-        var entries = ordered.GroupBy(x => (x.Provider, x.Entry.TrackKey))
-            .Select(group => group.OrderByDescending(x => x.Entry.Availability == "candidate").First())
-            .Select(x => (x.Provider, x.Entry, Track: ToTrack(x.Provider, x.Entry))).Where(x => x.Track is not null).ToArray();
+        var ranks = ordered.DistinctBy(x => (x.Provider, x.Entry.TrackKey)).ToDictionary(x => (x.Provider, x.Entry.TrackKey), x => x.Entry.Rank);
+        var entries = ordered.GroupBy(x => (x.Provider, x.Entry.TrackKey)).Select(group => group.OrderByDescending(x => x.Entry.Availability == "candidate").First()).Select(x => (x.Provider, x.Entry, Track: ToTrack(x.Provider, x.Entry))).Where(x => x.Track is not null).ToArray();
         netease.RememberDaily(entries.Where(x => x.Provider == NeteaseMusicProvider.Id).Select(x => x.Track!));
-        qq.Remember(entries.Where(x => x.Provider == QQMusicProvider.Id)
-            .Select(x => new QQMusicProvider.Entry(x.Track!, x.Entry.MediaId, x.Entry.MediaSize, default, RequiresMembership: x.Entry.RequiresMembership)));
+        qq.Remember(entries.Where(x => x.Provider == QQMusicProvider.Id).Select(x => new QQMusicProvider.Entry(x.Track!, x.Entry.MediaId, x.Entry.MediaSize, default, RequiresMembership: x.Entry.RequiresMembership)));
         var items = catalog.MergeDaily(entries.Select(x => x.Track!)).Select(track => new MusicDailyItem(track,
         [
             .. track.Sources.Where(x => ranks.ContainsKey((x.ProviderId, x.SourceTrackId)))
@@ -91,18 +76,14 @@ internal sealed class MusicDailyFeeds(
             tracks = await skill.PersonalizeAsync(tracks, qq, catalog, ct, access is not null);
         tracks = (await catalog.ProjectAvailabilityAsync(tracks, access, ct)).Where(track => track.Availability == "candidate").ToArray();
         if (tracks.Length == 0) return await FallbackAsync(ct, access);
-        return new MusicRecommendationPage(tracks, null,
-            "public_daily_music", page?.Sources.Max(x => x.CapturedAt.UtcDateTime) ?? clock.GetUtcNow().UtcDateTime,
-            page?.Partial ?? true, page?.Warnings ?? ["daily_recommendations:source_unavailable"]);
+        return new MusicRecommendationPage(tracks, null, "public_daily_music", page?.Sources.Max(x => x.CapturedAt.UtcDateTime) ?? clock.GetUtcNow().UtcDateTime, page?.Partial ?? true, page?.Warnings ?? ["daily_recommendations:source_unavailable"]);
     }
 
     public async Task<MusicRecommendationPage> RadioAsync(CancellationToken ct, QQMembership.Access? access = null)
     {
-        var tracks = registry.Enabled.Contains(qq) && (!options.RollingRecommendationsEnabled || access?.Current == true)
-            ? await skill.RadioAsync(qq, ct, access is not null)
-            : [];
+        var tracks = registry.Enabled.Contains(qq) && (!options.RollingRecommendationsEnabled || access?.Current == true) ? await skill.RadioAsync(qq, ct, access is not null) : [];
         var projected = await catalog.ProjectAvailabilityAsync(catalog.MergeDaily(tracks), access, ct);
-        return new MusicRecommendationPage(projected.Where(track => track.Availability == "candidate").ToArray(), null, "qq_skill_radio", clock.GetUtcNow().UtcDateTime);
+        return new MusicRecommendationPage([.. projected.Where(track => track.Availability == "candidate")], null, "qq_skill_radio", clock.GetUtcNow().UtcDateTime);
     }
 
     private async Task<MusicRecommendationPage> FallbackAsync(CancellationToken ct, QQMembership.Access? access)
@@ -150,8 +131,7 @@ internal sealed class MusicDailyFeeds(
 
             if (previous is null || previous.BusinessDate < today.AddDays(-1) || previous.Entries.Any(x => x.TrackId is null))
                 return new SourceResult(provider, null, true);
-            return new SourceResult(provider, previous,
-                state.Failed || previous.BusinessDate != today || feed.HasUpstreamDate && LocalDate(previous.SourceUpdatedAt) < today);
+            return new SourceResult(provider, previous, state.Failed || previous.BusinessDate != today || feed.HasUpstreamDate && LocalDate(previous.SourceUpdatedAt) < today);
         }
         catch (Exception error) when (error is SqliteException or ApiDatabaseSchemaException or IOException or JsonException)
         {
@@ -188,9 +168,7 @@ internal sealed class MusicDailyFeeds(
         return new MusicChartSnapshot(feed.Id, provider, date, now, normalizedUpdated ?? now, Midnight(date), Midnight(date.AddDays(1)), rows);
     }
 
-    private static MusicChartEntry ToEntry(int rank, MusicTrack track, string? mediaId, long size, bool? requiresMembership = null) =>
-        new(rank, track.Sources[0].SourceTrackId, track.Title, track.Artists, track.DurationMs,
-            track.Isrc, track.Album, track.CoverUrl, track.Id, track.Availability, mediaId, size, requiresMembership);
+    private static MusicChartEntry ToEntry(int rank, MusicTrack track, string? mediaId, long size, bool? requiresMembership = null) => new(rank, track.Sources[0].SourceTrackId, track.Title, track.Artists, track.DurationMs, track.Isrc, track.Album, track.CoverUrl, track.Id, track.Availability, mediaId, size, requiresMembership);
 
     private static MusicTrack? ToTrack(string provider, MusicChartEntry entry) => entry.TrackId is { } id
         ? new MusicTrack(id, entry.Title, entry.Artists, entry.Album, entry.DurationMs, entry.CoverUrl, entry.Isrc,

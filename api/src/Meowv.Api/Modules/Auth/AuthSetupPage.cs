@@ -513,7 +513,7 @@ internal static class AuthSetupPage
                                                    <div><h2 id="music-title">音乐设备</h2><p class="caption">按设备激活音乐服务</p></div>
                                                  </div>
                                                </div>
-                                               <p class="description">在 App 设置中核对设备短码，再激活该设备。QQ 会员播放需单独授权。</p>
+                                               <p class="description">在 App 设置中核对设备码，再激活该设备。QQ 会员播放需单独授权。</p>
                                                <div class="form-stack">
                                                  <div><button id="music-load" class="secondary" data-private type="button">刷新设备列表</button></div>
                                                  <div class="list-head"><strong>音乐设备</strong><span>状态</span></div>
@@ -968,7 +968,7 @@ internal static class AuthSetupPage
                                          $("qq-grant").checked = qqEnabled.has(event.target.value);
                                        };
                                        let musicDevices = [];
-                                       const deviceLabel = (device) => [device.shortCode, device.model, "Android " + device.osVersion].join(" · ");
+                                       const deviceLabel = (device) => [device.deviceCode, device.model, "Android " + device.osVersion].join(" · ");
                                        const selectedMusicDevice = () => musicDevices.find(d => d.deviceId === $("music-devices").value);
                                        const syncMusicActions = () => {
                                          const status = selectedMusicDevice()?.status;
@@ -1010,7 +1010,7 @@ internal static class AuthSetupPage
                                          const device = selectedMusicDevice();
                                          if (!device || (device.status !== "pending" && device.status !== "revoked")) return;
                                          const action = device.status === "revoked" ? "重新激活" : "激活";
-                                         if (!confirm("确认" + action + "设备 " + device.shortCode + "？")) return;
+                                         if (!confirm("确认" + action + "设备 " + device.deviceCode + "？")) return;
                                          run(async () => {
                                            await request("/api/music/setup/devices/" + encodeURIComponent(device.deviceId) + "/activate", { method: "POST" });
                                            await loadMusicDevices();
@@ -1020,7 +1020,7 @@ internal static class AuthSetupPage
                                        };
                                        $("music-revoke").onclick = () => {
                                          const device = selectedMusicDevice();
-                                         if (!device || device.status === "revoked" || !confirm("确认撤销设备 " + device.shortCode + "？")) return;
+                                         if (!device || device.status === "revoked" || !confirm("确认撤销设备 " + device.deviceCode + "？")) return;
                                          run(async () => {
                                            await request("/api/music/setup/devices/" + encodeURIComponent(device.deviceId), { method: "DELETE" });
                                            await loadMusicDevices();
@@ -1031,7 +1031,7 @@ internal static class AuthSetupPage
                                        $("music-delete").onclick = () => {
                                          const device = selectedMusicDevice();
                                          if (device?.status !== "revoked" ||
-                                             !confirm("确认删除设备 " + device.shortCode + " 的记录？App 下次检查状态时会自动登记为新的待激活设备。")) return;
+                                             !confirm("确认删除设备 " + device.deviceCode + " 的记录？App 下次检查状态时会以同一设备码重新登记为待激活设备。")) return;
                                          run(async () => {
                                            await request("/api/music/setup/devices/" + encodeURIComponent(device.deviceId) + "/record", { method: "DELETE" });
                                            await loadMusicDevices();

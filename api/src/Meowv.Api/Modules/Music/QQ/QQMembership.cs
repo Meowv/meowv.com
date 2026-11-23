@@ -7,13 +7,7 @@ using Microsoft.Data.Sqlite;
 
 namespace Meowv.Api.Modules.Music.QQ;
 
-internal sealed class QQMembership(
-    QQSessionStore store,
-    QQAccountClient client,
-    MusicOptions options,
-    MusicDeviceStore devices,
-    TimeProvider clock,
-    IHostApplicationLifetime lifetime)
+internal sealed class QQMembership(QQSessionStore store, QQAccountClient client, MusicOptions options, MusicDeviceStore devices, TimeProvider clock, IHostApplicationLifetime lifetime)
 {
     private readonly Lock _gate = new();
     private readonly SemaphoreSlim _checks = new(1);
@@ -39,17 +33,17 @@ internal sealed class QQMembership(
     {
         lock (_gate)
         {
-            if (!options.QQMusicMemberEnabled) return new("disabled", null, [], false);
-            if (store.ConfigurationIssue is { } issue) return new("unavailable", null, [], false, issue);
+            if (!options.QQMusicMemberEnabled) return new QQSessionStatus("disabled", null, [], false);
+            if (store.ConfigurationIssue is { } issue) return new QQSessionStatus("unavailable", null, [], false, issue);
             ReadSession();
             try
             {
                 devices.Initialize();
-                return new(_status, _attempt?.Snapshot(), store.Devices(), true);
+                return new QQSessionStatus(_status, _attempt?.Snapshot(), store.Devices(), true);
             }
             catch (Exception error) when (StorageError(error))
             {
-                return new("unavailable", _attempt?.Snapshot(), [], true);
+                return new QQSessionStatus("unavailable", _attempt?.Snapshot(), [], true);
             }
         }
     }
@@ -131,11 +125,9 @@ internal sealed class QQMembership(
     {
         public bool Current => owner.Current(device, credential);
 
-        public Task<HashSet<string>> CheckAsync(QQAccountClient.Mp3[] tracks, CancellationToken ct) =>
-            owner.CheckAsync(device, credential, tracks, ct);
+        public Task<HashSet<string>> CheckAsync(QQAccountClient.Mp3[] tracks, CancellationToken ct) => owner.CheckAsync(device, credential, tracks, ct);
 
-        public Task<QQAccountClient.Resource?> ResolveAsync(QQAccountClient.Mp3 track, CancellationToken ct) =>
-            owner.ResolveAsync(device, credential, track, ct);
+        public Task<QQAccountClient.Resource?> ResolveAsync(QQAccountClient.Mp3 track, CancellationToken ct) => owner.ResolveAsync(device, credential, track, ct);
     }
 
     private bool IsAllowed(string id)
@@ -159,8 +151,7 @@ internal sealed class QQMembership(
         }
     }
 
-    private async Task<HashSet<string>> CheckAsync(string device, QQAccountClient.Credential credential,
-        QQAccountClient.Mp3[] tracks, CancellationToken ct)
+    private async Task<HashSet<string>> CheckAsync(string device, QQAccountClient.Credential credential, QQAccountClient.Mp3[] tracks, CancellationToken ct)
     {
         var allowed = new HashSet<string>(StringComparer.Ordinal);
         if (tracks.Length == 0) return allowed;
@@ -222,8 +213,7 @@ internal sealed class QQMembership(
         return Current(device, credential) ? allowed : [];
     }
 
-    private async Task<QQAccountClient.Resource?> ResolveAsync(string device, QQAccountClient.Credential credential,
-        QQAccountClient.Mp3 track, CancellationToken ct)
+    private async Task<QQAccountClient.Resource?> ResolveAsync(string device, QQAccountClient.Credential credential, QQAccountClient.Mp3 track, CancellationToken ct)
     {
         if (!Current(device, credential)) return null;
         using var budget = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -333,8 +323,7 @@ internal sealed class QQMembership(
         {
             UpdateAttempt(attempt, "expired");
         }
-        catch (Exception error) when (RequestError(error, CancellationToken.None) || StorageError(error) ||
-                                      error is WebSocketException or TimeoutException)
+        catch (Exception error) when (RequestError(error, CancellationToken.None) || StorageError(error) || error is WebSocketException or TimeoutException)
         {
             UpdateAttempt(attempt, "failed");
         }
@@ -410,10 +399,7 @@ internal sealed class QQMembership(
         if (!store.Configured) throw QQAccountClient.Unavailable();
     }
 
-    private static bool RequestError(Exception error, CancellationToken ct) =>
-        error is MusicException or HttpRequestException or IOException or JsonException or UriFormatException ||
-        error is OperationCanceledException && !ct.IsCancellationRequested;
+    private static bool RequestError(Exception error, CancellationToken ct) => error is MusicException or HttpRequestException or IOException or JsonException or UriFormatException || error is OperationCanceledException && !ct.IsCancellationRequested;
 
-    private static bool StorageError(Exception error) =>
-        error is SqliteException or ApiDatabaseSchemaException or CryptographicException or IOException or JsonException;
+    private static bool StorageError(Exception error) => error is SqliteException or ApiDatabaseSchemaException or CryptographicException or IOException or JsonException;
 }

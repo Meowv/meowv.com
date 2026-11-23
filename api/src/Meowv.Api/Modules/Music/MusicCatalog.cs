@@ -28,11 +28,9 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
 
     public MusicProvider[] Providers() => registry.Describe();
 
-    public Task<MusicSearchPage> SearchAsync(string? query, int? limit, string? cursor, CancellationToken ct) =>
-        SearchAsync(query, limit, cursor, ct, null);
+    public Task<MusicSearchPage> SearchAsync(string? query, int? limit, string? cursor, CancellationToken ct) => SearchAsync(query, limit, cursor, ct, null);
 
-    internal Task<MusicSearchPage> SearchAsync(string? query, int? limit, string? cursor, CancellationToken ct, QQMembership.Access? access) =>
-        SearchCoreAsync(query, limit, cursor, ct, access, rankResults: true);
+    internal Task<MusicSearchPage> SearchAsync(string? query, int? limit, string? cursor, CancellationToken ct, QQMembership.Access? access) => SearchCoreAsync(query, limit, cursor, ct, access, rankResults: true);
 
     private async Task<MusicSearchPage> SearchCoreAsync(string? query, int? limit, string? cursor, CancellationToken ct, QQMembership.Access? access, bool rankResults)
     {
@@ -65,9 +63,7 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
                     throw MusicException.Invalid();
         }
 
-        var cursors = previous is null
-            ? sources.ToDictionary(x => x.ProviderId, _ => (string?)null, StringComparer.Ordinal)
-            : new Dictionary<string, string?>(previous.Cursors, StringComparer.Ordinal);
+        var cursors = previous is null ? sources.ToDictionary(x => x.ProviderId, _ => (string?)null, StringComparer.Ordinal) : new Dictionary<string, string?>(previous.Cursors, StringComparer.Ordinal);
         var seen = previous is null ? new HashSet<string>(StringComparer.Ordinal) : new HashSet<string>(previous.Seen, StringComparer.Ordinal);
         var buffered = previous?.Buffered.ToList() ?? [];
         var failures = new List<MusicException>();
@@ -119,6 +115,30 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
             warnings.Add("search:source_timeout");
         }
 
+        var candidates = buffered.Select(x => Latest(Canonical(x.Id), x)).Where(x => !seen.Contains(x.Id)).GroupBy(x => x.Id, StringComparer.Ordinal).Select(group => Latest(group.Key, group.Last()));
+        var ranked = rankResults ? RankSearchResults(candidates, normalizedQuery) : candidates.ToArray();
+        var items = ranked.Take(count).ToArray();
+        foreach (var item in items) seen.Add(item.Id);
+        buffered = [.. ranked.Skip(count)];
+        string? nextCursor = null;
+        switch (items.Length)
+        {
+            case > 0 when seen.Count < 1000 && (cursors.Count > 0 || buffered.Count > 0):
+            {
+                nextCursor = "mc-" + WebEncoders.Base64UrlEncode(RandomNumberGenerator.GetBytes(12));
+                lock (_gate)
+                {
+                    foreach (var old in _pages.Where(x => x.Value.Until <= clock.GetUtcNow()).Select(x => x.Key).ToArray()) _pages.Remove(old);
+                    if (_pages.Count >= 128) _pages.Remove(_pages.MinBy(x => x.Value.Until).Key);
+                    _pages[nextCursor] = new Continuation(signature, cursors, [.. buffered], seen, clock.GetUtcNow().AddMinutes(5), [.. deferred]);
+                }
+
+                break;
+            }
+        }
+
+        return new MusicSearchPage(await ProjectAvailabilityAsync(items, access, ct), nextCursor, warnings.Count > 0, [.. warnings]);
+
         void Apply(IEnumerable<SourcePage> pages)
         {
             foreach (var result in pages.OrderBy(x => x.Source is IMusicResolverProvider ? 0 : 1))
@@ -145,37 +165,11 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
                 foreach (var item in page.Items) buffered.Add(Merge(item, sources));
             }
         }
-
-        var candidates = buffered.Select(x => Latest(Canonical(x.Id), x)).Where(x => !seen.Contains(x.Id)).GroupBy(x => x.Id, StringComparer.Ordinal)
-            .Select(group => Latest(group.Key, group.Last()));
-        var ranked = rankResults ? RankSearchResults(candidates, normalizedQuery) : candidates.ToArray();
-        var items = ranked.Take(count).ToArray();
-        foreach (var item in items) seen.Add(item.Id);
-        buffered = [.. ranked.Skip(count)];
-        string? nextCursor = null;
-        switch (items.Length)
-        {
-            case > 0 when seen.Count < 1000 && (cursors.Count > 0 || buffered.Count > 0):
-            {
-                nextCursor = "mc-" + WebEncoders.Base64UrlEncode(RandomNumberGenerator.GetBytes(12));
-                lock (_gate)
-                {
-                    foreach (var old in _pages.Where(x => x.Value.Until <= clock.GetUtcNow()).Select(x => x.Key).ToArray()) _pages.Remove(old);
-                    if (_pages.Count >= 128) _pages.Remove(_pages.MinBy(x => x.Value.Until).Key);
-                    _pages[nextCursor] = new Continuation(signature, cursors, buffered.ToArray(), seen, clock.GetUtcNow().AddMinutes(5), [.. deferred]);
-                }
-
-                break;
-            }
-        }
-
-        return new MusicSearchPage(await ProjectAvailabilityAsync(items, access, ct), nextCursor, warnings.Count > 0, warnings.ToArray());
     }
 
     private static string NormalizeSearchName(string name) => name.Trim().Normalize(NormalizationForm.FormKC);
 
-    private static MusicTrack[] RankSearchResults(IEnumerable<MusicTrack> candidates, string query) =>
-        candidates.OrderByDescending(track => SearchRelevance(track, query)).ToArray();
+    private static MusicTrack[] RankSearchResults(IEnumerable<MusicTrack> candidates, string query) => [.. candidates.OrderByDescending(track => SearchRelevance(track, query))];
 
     private static int SearchRelevance(MusicTrack track, string query)
     {
@@ -194,7 +188,7 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
     internal async Task<MusicRecommendationPage> RecommendAsync(CancellationToken ct, QQMembership.Access? access)
     {
         var page = await SearchCoreAsync(FallbackQuery(clock.GetUtcNow()), 50, null, ct, access, rankResults: false);
-        return new MusicRecommendationPage(page.Items.Where(x => x.Availability == "candidate").ToArray(),
+        return new MusicRecommendationPage([.. page.Items.Where(x => x.Availability == "candidate")],
             null, "search_candidates", clock.GetUtcNow().UtcDateTime, page.Partial, page.Warnings);
     }
 
@@ -208,8 +202,7 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
         return FallbackQueries[(hour % FallbackQueries.Length + FallbackQueries.Length) % FallbackQueries.Length];
     }
 
-    internal MusicTrack[] PlayableCandidates(IEnumerable<MusicTrack> tracks) =>
-        CurrentAvailability(tracks, registry.Enabled).Where(track => track.Availability == "candidate").ToArray();
+    internal MusicTrack[] PlayableCandidates(IEnumerable<MusicTrack> tracks) => [.. CurrentAvailability(tracks, registry.Enabled).Where(track => track.Availability == "candidate")];
 
     internal async Task<MusicTrack[]> ProjectAvailabilityAsync(IEnumerable<MusicTrack> tracks, QQMembership.Access? access, CancellationToken ct)
     {
@@ -311,8 +304,7 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
         return new MusicLyrics(id, null, null);
     }
 
-    public Task<MusicResolvedTrack> ResolveAsync(MusicResolveRequest request, CancellationToken ct) =>
-        ResolveAsync(request, ct, null);
+    public Task<MusicResolvedTrack> ResolveAsync(MusicResolveRequest request, CancellationToken ct) => ResolveAsync(request, ct, null);
 
     internal async Task<MusicResolvedTrack> ResolveAsync(MusicResolveRequest request, CancellationToken ct, QQMembership.Access? access)
     {
@@ -331,15 +323,12 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
             known = _known.TryGetValue(canonical, out var value) && value.Until > clock.GetUtcNow() ? value : null;
         }
 
-        if (excluded is not null && (known?.ProviderTrackIds.ContainsKey(excluded) != true ||
-                                     !sources.Any(x => x.ProviderId == excluded && x is IMusicResolverProvider)))
+        if (excluded is not null && (known?.ProviderTrackIds.ContainsKey(excluded) != true || !sources.Any(x => x.ProviderId == excluded && x is IMusicResolverProvider)))
             throw new MusicException("no_playable_match", "当前歌曲没有其他可用来源。", 422);
 
         var primary = known?.Track.Sources.FirstOrDefault()?.ProviderId;
         MusicException? firstFailure = null;
-        foreach (var source in sources.Where(x => x is IMusicResolverProvider && x.ProviderId != excluded &&
-                                                  (requested is null || x.ProviderId == requested))
-                     .OrderByDescending(x => x.ProviderId == primary))
+        foreach (var source in sources.Where(x => x is IMusicResolverProvider && x.ProviderId != excluded && (requested is null || x.ProviderId == requested)).OrderByDescending(x => x.ProviderId == primary))
         {
             ct.ThrowIfCancellationRequested();
             if (!registry.IsEnabled(source)) continue;
@@ -372,8 +361,7 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
         throw new MusicException("track_not_found", "歌曲记录已失效，请重新搜索。", 404);
     }
 
-    private async Task<SourcePage[]> Collect(IMusicSearchProvider[] sources, string query, int count,
-        Dictionary<string, string?> cursors, CancellationToken budget, CancellationToken caller, TimeSpan? maximum)
+    private async Task<SourcePage[]> Collect(IMusicSearchProvider[] sources, string query, int count, Dictionary<string, string?> cursors, CancellationToken budget, CancellationToken caller, TimeSpan? maximum)
     {
         if (sources.Length == 0) return [];
         using var stage = CancellationTokenSource.CreateLinkedTokenSource(budget);
@@ -403,10 +391,14 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
                 }
 
                 results.Add(result);
-                if (grace is null && results.Any(x => x.Page?.Items.Length > 0))
+                switch (grace)
                 {
-                    var playable = results.Any(x => x.Source is IMusicResolverProvider && x.Page?.Items.Any(t => t.Availability == "candidate") == true);
-                    grace = Task.Delay(playable ? 150 : 750, stage.Token);
+                    case null when results.Any(x => x.Page?.Items.Length > 0):
+                    {
+                        var playable = results.Any(x => x.Source is IMusicResolverProvider && x.Page?.Items.Any(t => t.Availability == "candidate") == true);
+                        grace = Task.Delay(playable ? 150 : 750, stage.Token);
+                        break;
+                    }
                 }
             }
         }

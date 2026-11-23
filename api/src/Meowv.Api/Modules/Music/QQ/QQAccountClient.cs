@@ -46,8 +46,7 @@ internal sealed class QQAccountClient(HttpClient http, TimeProvider clock)
             throw Unavailable();
         }
 
-        if (!image.AsSpan().StartsWith(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 })) throw Unavailable();
-        return new Qr(id, image);
+        return !image.AsSpan().StartsWith(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }) ? throw Unavailable() : new Qr(id, image);
     }
 
     public async Task<Credential> CompleteLoginAsync(string qrId, JsonElement message, CancellationToken ct)
@@ -69,9 +68,7 @@ internal sealed class QQAccountClient(HttpClient http, TimeProvider clock)
         var type = Number(data, "loginType");
         var creation = Number(data, "musickeyCreateTime");
         var ttl = Number(data, "keyExpiresIn");
-        DateTimeOffset? expires = creation is > 0 and < 4102444800 && ttl is > 0 and < 31536000
-            ? DateTimeOffset.FromUnixTimeSeconds(creation + ttl)
-            : null;
+        DateTimeOffset? expires = creation is > 0 and < 4102444800 && ttl is > 0 and < 31536000 ? DateTimeOffset.FromUnixTimeSeconds(creation + ttl) : null;
         return new Credential(musicId, key, type is > 0 and <= 9 ? (int)type : key.StartsWith("W_X", StringComparison.Ordinal) ? 1 : 2, expires);
     }
 
@@ -96,8 +93,7 @@ internal sealed class QQAccountClient(HttpClient http, TimeProvider clock)
             writer.WriteEndArray();
         });
 
-        var roots = Hosts(At(data, "sip"))
-            .Append(new Uri("https://isure.stream.qqmusic.qq.com/")).Distinct().ToArray();
+        var roots = Hosts(At(data, "sip")).Append(new Uri("https://isure.stream.qqmusic.qq.com/")).Distinct().ToArray();
         var rows = At(data, "midurlinfo");
         if (rows.ValueKind != JsonValueKind.Array || rows.GetArrayLength() > songs.Length) throw Unavailable();
         var expiration = Number(data, "expiration");
@@ -116,9 +112,7 @@ internal sealed class QQAccountClient(HttpClient http, TimeProvider clock)
             if (result != 0) continue;
             var path = Text(row, "purl");
             if (!path.StartsWith(song.Filename + "?", StringComparison.Ordinal) || path.Length > 4096) continue;
-            var candidates = roots.Select(root => new Uri(root, path))
-                .Where(url => url.AbsolutePath == "/" + song.Filename && url.Fragment.Length == 0)
-                .Select(url => new Resource(url, expires)).ToArray();
+            var candidates = roots.Select(root => new Uri(root, path)).Where(url => url.AbsolutePath == "/" + song.Filename && url.Fragment.Length == 0).Select(url => new Resource(url, expires)).ToArray();
             if (candidates.Length > 0) streams.Add(mid, candidates);
         }
 
@@ -141,8 +135,7 @@ internal sealed class QQAccountClient(HttpClient http, TimeProvider clock)
         return null;
     }
 
-    private async Task<JsonElement> CallAsync(string module, string method, Credential? credential, CancellationToken ct,
-        Action<Utf8JsonWriter> parameters, bool qr = false, bool login = false)
+    private async Task<JsonElement> CallAsync(string module, string method, Credential? credential, CancellationToken ct, Action<Utf8JsonWriter> parameters, bool qr = false, bool login = false)
     {
         using var body = new MemoryStream();
         await using (var writer = new Utf8JsonWriter(body))
@@ -214,22 +207,19 @@ internal sealed class QQAccountClient(HttpClient http, TimeProvider clock)
     }
 
     private static bool Expired(long code) => code is 104400 or 104401;
+
     private static bool Token(string text, int limit) => text.Length > 0 && text.Length <= limit && text.All(c => c is >= '!' and <= '~');
 
-    private static JsonElement At(JsonElement value, string key) =>
-        value.ValueKind == JsonValueKind.Object && value.TryGetProperty(key, out var item) ? item : default;
+    private static JsonElement At(JsonElement value, string key) => value.ValueKind == JsonValueKind.Object && value.TryGetProperty(key, out var item) ? item : default;
 
-    private static string Text(JsonElement value, string key) =>
-        At(value, key) is { ValueKind: JsonValueKind.String } item ? item.GetString() ?? "" : "";
+    private static string Text(JsonElement value, string key) => At(value, key) is { ValueKind: JsonValueKind.String } item ? item.GetString() ?? "" : "";
 
     private static long Number(JsonElement value, string key) => TryNumber(value, key, out var number) ? number : 0;
 
     private static bool TryNumber(JsonElement value, string key, out long number)
     {
         var item = At(value, key);
-        return item.ValueKind == JsonValueKind.Number
-            ? item.TryGetInt64(out number)
-            : long.TryParse(item.ValueKind == JsonValueKind.String ? item.GetString() : null, NumberStyles.Integer, CultureInfo.InvariantCulture, out number);
+        return item.ValueKind == JsonValueKind.Number ? item.TryGetInt64(out number) : long.TryParse(item.ValueKind == JsonValueKind.String ? item.GetString() : null, NumberStyles.Integer, CultureInfo.InvariantCulture, out number);
     }
 
     internal static MusicException Unavailable() => new("source_unavailable", "QQ 音乐会员服务暂时不可用。", 503);

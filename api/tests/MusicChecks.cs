@@ -167,7 +167,7 @@ internal static class MusicChecks
         await Case(root, true, async (client, app) =>
         {
             var db = app.Services.GetRequiredService<ApiDatabase>();
-            db.EnsureSchema("music-device-activation", 99, "CREATE TABLE music_preserved_marker(id INTEGER);");
+            db.EnsureSchema("music-device-activation-v2", 99, "CREATE TABLE music_preserved_marker(id INTEGER);");
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "mvm_" + new string('A', 43));
             using var failed = await client.GetAsync("/api/music/providers");
             await Error(failed, 503, "source_unavailable");
@@ -313,16 +313,25 @@ internal static class MusicChecks
             Check(claimedStatus.Status == "active" && claimed.Headers.CacheControl?.NoStore == true, "Only device key can claim token");
             using var identical = await client.PostAsync(devicesPath + "/register", Json(Serialize(register)));
             var identicalStatus = await ReadStatus(identical);
-            Check(identicalStatus.Status == "active" && identicalStatus.EncryptedToken is null, "Active registration retry preserves state");
-            using var conflict = await client.PostAsync(devicesPath + "/register", Json(Serialize(RegisterInput(anotherKey, id, "Other"))));
-            await Error(conflict, 409, "device_key_conflict");
+            Check(identical.StatusCode == HttpStatusCode.OK && identicalStatus.Status == "active" &&
+                  identicalStatus.DeviceCode == pending.DeviceCode &&
+                  identicalStatus.EncryptedToken == claimedStatus.EncryptedToken,
+                "Active registration retry preserves the device code and ciphertext");
+            using var rotated = await client.PostAsync(devicesPath + "/register", Json(Serialize(RegisterInput(anotherKey, id, "Other"))));
+            var rotatedStatus = await ReadStatus(rotated);
+            var rotatedToken = Decrypt(anotherKey, rotatedStatus);
+            Check(rotated.StatusCode == HttpStatusCode.OK && rotatedStatus.Status == "active" &&
+                  rotatedStatus.DeviceCode == pending.DeviceCode &&
+                  rotatedStatus.EncryptedToken != claimedStatus.EncryptedToken &&
+                  store.Verify(token) is null && store.Verify(rotatedToken) == deviceId,
+                "Active re-registration rotates the key, replaces the token and keeps the device code");
             using var malformed = await client.PostAsync(devicesPath + "/register", Json(Serialize(register with { PublicKey = "bad" })));
             await Error(malformed, 400, "invalid_request");
             using var stillActive = await client.GetAsync(statusPath);
-            Check((await ReadStatus(stillActive)) == claimedStatus, "Registration conflict leaves the credential intact");
+            Check((await ReadStatus(stillActive)) == rotatedStatus, "Malformed key leaves the rotated credential intact");
             using var queryToken = await client.GetAsync("/api/music/providers?access_token=" + token);
             await Error(queryToken, 401, "unauthorized");
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", rotatedToken);
             using var allowed = await client.GetAsync("/api/music/providers");
             Check(allowed.IsSuccessStatusCode, "Claimed device uses protected endpoint");
             using var common = await client.GetAsync("/probe/common");
@@ -346,15 +355,23 @@ internal static class MusicChecks
 
             var unapprovedId = Guid.NewGuid().ToString("N");
             var input = RegisterInput(anotherKey, unapprovedId, "Pending");
-            store.Register(input);
+            var pendingRegistration = store.Register(input);
             var oldDeviceId = store.List().Single(d => d.InstallationId == unapprovedId).DeviceId;
+            var rotatedPending = store.Register(RegisterInput(key, unapprovedId, "Pending"));
+            Check(rotatedPending.Status == "pending" && rotatedPending.DeviceCode == pendingRegistration.DeviceCode,
+                "Pending re-registration rotates the key but keeps the device code");
             clock.Now = clock.Now.AddHours(24);
             using var missing = await client.GetAsync(devicesPath + "/status/" + unapprovedId);
             await Error(missing, 404, "device_not_found");
             Check(store.Activate(oldDeviceId) is null, "Expired pending devices cannot activate");
-            store.Register(input);
-            Check(store.List().Single(d => d.InstallationId == unapprovedId).DeviceId != oldDeviceId &&
-                  store.Activate(oldDeviceId) is null, "Management cannot activate replacement through an old ID");
+            var replacement = store.Register(input);
+            var replacementDevice = store.List().Single(d => d.InstallationId == unapprovedId);
+            Check(replacement.Status == "pending" && replacement.DeviceCode == pendingRegistration.DeviceCode &&
+                  replacementDevice.DeviceId != oldDeviceId && store.Activate(oldDeviceId) is null,
+                "Expired pending re-registration keeps the device code and cannot revive the old device ID");
+            Check(store.Activate(replacementDevice.DeviceId) is not null &&
+                  Decrypt(anotherKey, store.Status(unapprovedId)!) is { Length: > 0 },
+                "Replacement pending device activates with the rotated key");
         }, clock: clock);
         Console.WriteLine("PASS: Music registration, device claims, isolation, expiry and revocation");
 
@@ -370,6 +387,7 @@ internal static class MusicChecks
             var devices = app.Services.GetRequiredService<MusicDeviceStore>();
             var membership = app.Services.GetRequiredService<QQSessionStore>();
             using var key = RSA.Create(2048);
+            using var anotherKey = RSA.Create(2048);
             var installationId = Guid.NewGuid().ToString("N");
             var input = RegisterInput(key, installationId, "Test car");
             var initial = devices.Register(input);
@@ -391,13 +409,17 @@ internal static class MusicChecks
             devices.Revoke(id);
             Check(devices.Verify(oldToken) is null && !membership.Allowed(id), "Revocation disables both permissions");
 
+            var rotated = devices.Register(RegisterInput(anotherKey, installationId, "Test car"));
+            Check(rotated.Status == "revoked" && rotated.DeviceCode == initial.DeviceCode &&
+                  rotated.EncryptedToken is null,
+                "Revoked re-registration rotates the key but stays revoked with the same device code");
             using var reactivated = await client.PostAsync(adminPath + "/activate", null);
             Check(reactivated.IsSuccessStatusCode, "Management can reactivate the same device");
             var active = devices.Status(installationId)!;
-            var newToken = Decrypt(key, active);
-            Check(active.ShortCode == initial.ShortCode && oldToken != newToken &&
+            var newToken = Decrypt(anotherKey, active);
+            Check(active.DeviceCode == initial.DeviceCode && oldToken != newToken &&
                   devices.Verify(oldToken) is null && devices.Verify(newToken) == id,
-                "Reactivation preserves same identity, replaces the token and leaves the previous token invalid");
+                "Reactivation preserves the device code, replaces the token and leaves the previous token invalid");
             Check(!membership.Allowed(id), "Reactivated devices require a fresh QQ grant");
             Check(membership.SetDevice(id, true), "QQ can be granted again");
             devices.Revoke(id);
@@ -408,10 +430,14 @@ internal static class MusicChecks
             using var absent = await client.PostAsync(adminPath + "/activate", null);
             Check(absent.StatusCode == HttpStatusCode.NotFound, "Deleted devices cannot be reactivated");
             using var removed = await client.GetAsync(statusPath);
-            await Error(removed, 410, "device_removed");
+            await Error(removed, 404, "device_not_found");
             using var registeredAgain = await client.PostAsync("/api/music/devices/register",
                 Json(JsonSerializer.Serialize(input, MusicJsonContext.Default.MusicDeviceRegister)));
-            await Error(registeredAgain, 410, "device_removed");
+            var replacement = JsonSerializer.Deserialize(
+                await registeredAgain.Content.ReadAsStringAsync(), MusicJsonContext.Default.MusicDeviceStatus)!;
+            Check(registeredAgain.StatusCode == HttpStatusCode.Accepted && replacement.Status == "pending" &&
+                  replacement.DeviceCode == initial.DeviceCode && devices.List().Length == 1,
+                "Deleted device re-registers as pending with the same device code");
 
             var database = app.Services.GetRequiredService<ApiDatabase>();
             using var connection = database.OpenConnection();
@@ -419,10 +445,8 @@ internal static class MusicChecks
             command.CommandText = "SELECT COUNT(*) FROM music_qq_devices WHERE device_id=$id;";
             command.Parameters.AddWithValue("$id", id);
             Check(command.ExecuteScalar() is 0L, "Deletion removes the old QQ grant");
-            var newInstallation = input with { InstallationId = Guid.NewGuid().ToString("N") };
-            Check(devices.Register(newInstallation).Status == "pending", "A new installation can register after deletion");
         });
-        Console.WriteLine("PASS: Music reactivation, credential replacement and permanent record deletion");
+        Console.WriteLine("PASS: Music reactivation, credential replacement and re-registration after record deletion");
     }
 
     private static async Task ActivationCapacityCheck(string root)
@@ -431,6 +455,11 @@ internal static class MusicChecks
         var clock = new TestClock();
         var devices = new MusicDeviceStore(database, clock);
         devices.Initialize();
+        using var vectorKey = RSA.Create(2048);
+        var vectorStore = new MusicDeviceStore(
+            new ApiDatabase("Data Source=" + Path.Combine(root, Guid.NewGuid().ToString("N") + ".db")), new TestClock());
+        var vector = vectorStore.Register(RegisterInput(vectorKey, "a11c874b27122d3a43e3c8eef2fec1e3", "Vector"));
+        Check(vector.DeviceCode == "4412B-802DF", "Device code matches the shared client/server vector");
         using var key = RSA.Create(2048);
         using var secondKey = RSA.Create(2048);
         var first = RegisterInput(key, Guid.NewGuid().ToString("N"), "First");
@@ -442,8 +471,8 @@ internal static class MusicChecks
         {
             command.CommandText = """
                 WITH RECURSIVE records(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM records WHERE n<255)
-                INSERT INTO music_device_activation(installation_id,device_id,short_code,public_key,model,os_version,status,created_at)
-                SELECT lower(hex(randomblob(16))),lower(hex(randomblob(16))),'fixture',X'00','Fixture','9','active',$now FROM records;
+                INSERT INTO music_device_activation(installation_id,device_id,device_code,public_key,model,os_version,status,created_at)
+                SELECT lower(hex(randomblob(16))),lower(hex(randomblob(16))),lower(hex(randomblob(5))),X'00','Fixture','9','active',$now FROM records;
                 """;
             command.Parameters.AddWithValue("$now", clock.Now.UtcDateTime.ToString("O"));
             command.ExecuteNonQuery();

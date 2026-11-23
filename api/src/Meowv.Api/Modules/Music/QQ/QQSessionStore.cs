@@ -54,8 +54,7 @@ internal sealed class QQSessionStore(ApiDatabase database, MusicOptions options)
         try
         {
             using var cipher = Cipher();
-            cipher.Decrypt(envelope.AsSpan(1, 12), envelope.AsSpan(29), envelope.AsSpan(13, 16), plaintext,
-                "meowv/music/qq-session/v1"u8);
+            cipher.Decrypt(envelope.AsSpan(1, 12), envelope.AsSpan(29), envelope.AsSpan(13, 16), plaintext, "meowv/music/qq-session/v1"u8);
             return JsonSerializer.Deserialize(plaintext, QQJsonContext.Default.Credential) ?? throw new CryptographicException();
         }
         finally
@@ -74,8 +73,7 @@ internal sealed class QQSessionStore(ApiDatabase database, MusicOptions options)
         try
         {
             using var cipher = Cipher();
-            cipher.Encrypt(envelope.AsSpan(1, 12), plaintext, envelope.AsSpan(29), envelope.AsSpan(13, 16),
-                "meowv/music/qq-session/v1"u8);
+            cipher.Encrypt(envelope.AsSpan(1, 12), plaintext, envelope.AsSpan(29), envelope.AsSpan(13, 16), "meowv/music/qq-session/v1"u8);
             using var connection = database.OpenConnection();
             using var command = connection.CreateCommand();
             command.CommandText = """

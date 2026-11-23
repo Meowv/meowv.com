@@ -49,8 +49,7 @@ internal static class QQLoginSocket
             var ack = await reader.ReadAsync(connect.Token);
             if (ack.Header != 0x20) throw QQAccountClient.Unavailable();
             var reply = ParseAck(ack.Body);
-            if (reply.Reason is 0x9c or 0x9d && reply.Redirect is { Length: > 0 and <= 160 } node &&
-                node.All(c => char.IsAsciiLetterOrDigit(c) || c is '.' or '-' or '_' or ':'))
+            if (reply.Reason is 0x9c or 0x9d && reply.Redirect is { Length: > 0 and <= 160 } node && node.All(c => char.IsAsciiLetterOrDigit(c) || c is '.' or '-' or '_' or ':'))
             {
                 endpoint = Root + "/" + node;
                 continue;
@@ -70,7 +69,8 @@ internal static class QQLoginSocket
                 body.WriteByte(0);
             }), connect.Token);
             var subscribed = await reader.ReadAsync(connect.Token);
-            if (subscribed.Header != 0x90 || !Subscribed(subscribed.Body)) throw QQAccountClient.Unavailable();
+            if (subscribed.Header != 0x90 || !Subscribed(subscribed.Body))
+                throw QQAccountClient.Unavailable();
             ready();
 
             while (true)
@@ -90,8 +90,8 @@ internal static class QQLoginSocket
                 }
 
                 var packet = await next.WaitAsync(TimeSpan.FromSeconds(45), ct);
-                if ((packet.Header >> 4) == 13) continue;
-                if ((packet.Header >> 4) != 3) throw QQAccountClient.Unavailable();
+                if (packet.Header >> 4 == 13) continue;
+                if (packet.Header >> 4 != 3) throw QQAccountClient.Unavailable();
                 var published = ParsePublish(packet.Header, packet.Body);
                 if (published.PacketId != 0)
                     await Send(socket, 0x40, Compose(body => Word(body, published.PacketId)), ct);
@@ -115,9 +115,18 @@ internal static class QQLoginSocket
         while (props.Remaining > 0)
         {
             var key = props.Variable();
-            if (key == 0x1c) redirect = props.Utf8();
-            else if (key == 0x13) keepAlive = props.Word();
-            else SkipProperty(ref props, key);
+            switch (key)
+            {
+                case 0x1c:
+                    redirect = props.Utf8();
+                    break;
+                case 0x13:
+                    keepAlive = props.Word();
+                    break;
+                default:
+                    SkipProperty(ref props, key);
+                    break;
+            }
         }
 
         return (reason, redirect, keepAlive);

@@ -217,7 +217,7 @@ test('music management activates, reactivates and deletes the selected device', 
   const deviceId = 'device-1';
   const page = createPage(request => {
     if (request.path === '/api/music/setup/devices') {
-      return { body: status === 'removed' ? [] : [{ deviceId, installationId: 'installation-1', shortCode: 'BEEF-CAFE', model: '<img onerror=unsafe>', osVersion: '9', status }] };
+      return { body: status === 'removed' ? [] : [{ deviceId, installationId: 'installation-1', deviceCode: 'BEEF-CAFE', model: '<img onerror=unsafe>', osVersion: '9', status }] };
     }
     if (request.path === '/api/music/setup/devices/device-1/activate') {
       assert.equal(request.method, 'POST');
@@ -282,7 +282,7 @@ test('late device activation cannot update the music list after management exit'
   const page = createPage(request => {
     if (request.path === '/api/music/setup/devices/device-1/activate') return new Promise(resolve => { finish = resolve; });
     if (request.path === '/api/music/setup/devices')
-      return { body: [{ deviceId: 'device-1', shortCode: 'BEEF-CAFE', model: 'Test car', osVersion: '9', status: 'pending' }] };
+      return { body: [{ deviceId: 'device-1', deviceCode: 'BEEF-CAFE', model: 'Test car', osVersion: '9', status: 'pending' }] };
     return standardResponse(request);
   });
   await page.authenticate();
@@ -307,8 +307,8 @@ test('QQ membership setup keeps the QR in memory and manages grants for existing
     }
     if (request.path === '/api/music/setup/devices') {
       return { body: [
-        { deviceId: 'pending', shortCode: 'CCCC-DDDD', model: '未激活设备', osVersion: '9', status: 'pending' },
-        { deviceId, shortCode: 'AAAA-BBBB', model: '测试车机', osVersion: '9', status: 'active' },
+        { deviceId: 'pending', deviceCode: 'CCCC-DDDD', model: '未激活设备', osVersion: '9', status: 'pending' },
+        { deviceId, deviceCode: 'AAAA-BBBB', model: '测试车机', osVersion: '9', status: 'active' },
       ] };
     }
     if (request.path === qq + '/devices/' + deviceId) {

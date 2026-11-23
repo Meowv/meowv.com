@@ -41,8 +41,7 @@ public sealed class QQMusicProvider(HttpClient http, TimeProvider clock) : IMusi
         return entry.UnplayableUntil > now ? entry.Track with { Availability = "unavailable" } : entry.Track;
     }
 
-    internal Entry? Candidate(string sourceId) =>
-        _tracks.TryGetValue("qq-" + sourceId, out var entry) && entry.Deadline > clock.GetUtcNow() ? entry : null;
+    internal Entry? Candidate(string sourceId) => _tracks.TryGetValue("qq-" + sourceId, out var entry) && entry.Deadline > clock.GetUtcNow() ? entry : null;
 
     internal void Remember(IEnumerable<Entry> entries)
     {
@@ -52,12 +51,8 @@ public sealed class QQMusicProvider(HttpClient http, TimeProvider clock) : IMusi
             var deadline = now.AddHours(24);
             foreach (var entry in entries)
             {
-                var unplayable = _tracks.TryGetValue(entry.Track.Id, out var previous) && previous.UnplayableUntil > now
-                    ? previous.UnplayableUntil
-                    : default;
-                var details = entry.RequiresMembership is null && previous?.RequiresMembership is not null
-                    ? entry with { MediaId = previous.MediaId, Size = previous.Size, RequiresMembership = previous.RequiresMembership }
-                    : entry;
+                var unplayable = _tracks.TryGetValue(entry.Track.Id, out var previous) && previous.UnplayableUntil > now ? previous.UnplayableUntil : default;
+                var details = entry.RequiresMembership is null && previous?.RequiresMembership is not null ? entry with { MediaId = previous.MediaId, Size = previous.Size, RequiresMembership = previous.RequiresMembership } : entry;
                 _tracks[entry.Track.Id] = details with { Deadline = deadline, UnplayableUntil = unplayable };
             }
 
@@ -82,10 +77,8 @@ public sealed class QQMusicProvider(HttpClient http, TimeProvider clock) : IMusi
         var entries = ParseEntries(rows, count);
         Remember(entries);
         var total = Number(song, "totalnum");
-        var next = rows.GetArrayLength() >= count && page < 50 && (total == 0 || count * page < total)
-            ? (page + 1).ToString(CultureInfo.InvariantCulture)
-            : null;
-        return new MusicSearchPage(entries.Select(x => x.Track).ToArray(), next, false, []);
+        var next = rows.GetArrayLength() >= count && page < 50 && (total == 0 || count * page < total) ? (page + 1).ToString(CultureInfo.InvariantCulture) : null;
+        return new MusicSearchPage([.. entries.Select(x => x.Track)], next, false, []);
     }
 
     internal async Task<(Entry[] Tracks, DateTimeOffset? Updated)> DailyAsync(FeedSpec spec, CancellationToken ct)
@@ -101,9 +94,8 @@ public sealed class QQMusicProvider(HttpClient http, TimeProvider clock) : IMusi
                     CultureInfo.InvariantCulture, DateTimeStyles.None, out var date)) throw Failure(503);
             var ranks = At(chart, "song");
             var details = At(data, "songInfoList");
-            if (ranks.ValueKind is not JsonValueKind.Array || details.ValueKind is not JsonValueKind.Array ||
-                ranks.GetArrayLength() < 1 || ranks.GetArrayLength() > spec.Limit ||
-                details.GetArrayLength() != ranks.GetArrayLength()) throw Failure(503);
+            if (ranks.ValueKind is not JsonValueKind.Array || details.ValueKind is not JsonValueKind.Array || ranks.GetArrayLength() < 1 || ranks.GetArrayLength() > spec.Limit || details.GetArrayLength() != ranks.GetArrayLength())
+                throw Failure(503);
             var byId = details.EnumerateArray().ToDictionary(x => Number(x, "id"));
             var songs = new List<Entry>();
             foreach (var row in ranks.EnumerateArray())
@@ -132,8 +124,7 @@ public sealed class QQMusicProvider(HttpClient http, TimeProvider clock) : IMusi
         using var body = await CallAsync("music.trackInfo.UniformRuleCtrl", "CgiGetTrackInfo", args, ct, affectAvailability: false);
         var rows = At(Data(body), "tracks");
         if (rows.ValueKind != JsonValueKind.Array || rows.GetArrayLength() > ids.Length) throw Failure(503);
-        var entries = ParseEntries(rows, ids.Length).Where(entry =>
-            ids.Contains(entry.Track.Sources[0].SourceTrackId, StringComparer.Ordinal)).ToArray();
+        var entries = ParseEntries(rows, ids.Length).Where(entry => ids.Contains(entry.Track.Sources[0].SourceTrackId, StringComparer.Ordinal)).ToArray();
         Remember(entries);
         return entries.Select(entry => entry.Track).ToArray();
     }
@@ -142,8 +133,7 @@ public sealed class QQMusicProvider(HttpClient http, TimeProvider clock) : IMusi
     {
         var ids = mids.Where(ValidId).Distinct(StringComparer.Ordinal).ToArray();
         var now = clock.GetUtcNow();
-        var missing = ids.Where(mid => !_tracks.TryGetValue("qq-" + mid, out var entry) ||
-                                       entry.Deadline <= now || entry.RequiresMembership is null).Take(30).ToArray();
+        var missing = ids.Where(mid => !_tracks.TryGetValue("qq-" + mid, out var entry) || entry.Deadline <= now || entry.RequiresMembership is null).Take(30).ToArray();
         if (missing.Length > 0)
         {
             try
@@ -198,25 +188,22 @@ public sealed class QQMusicProvider(HttpClient http, TimeProvider clock) : IMusi
             if (info.ValueKind != JsonValueKind.Array || info.GetArrayLength() != 1) throw Failure(503);
             var row = info[0];
             var path = Text(row, "purl");
-            if (Text(row, "songmid") != sourceId || At(row, "result").ValueKind != JsonValueKind.Number ||
-                Number(row, "result") != 0 ||
-                !path.StartsWith(file + "?", StringComparison.Ordinal) || path.Length > 4096) throw NoMatch();
+            if (Text(row, "songmid") != sourceId || At(row, "result").ValueKind != JsonValueKind.Number || Number(row, "result") != 0 || !path.StartsWith(file + "?", StringComparison.Ordinal) || path.Length > 4096)
+                throw NoMatch();
             var cdns = At(data, "sip");
             if (cdns.ValueKind != JsonValueKind.Array) throw NoMatch();
             foreach (var item in cdns.EnumerateArray().Take(3))
             {
-                if (item.ValueKind != JsonValueKind.String || !Uri.TryCreate(item.GetString(), UriKind.Absolute, out var host) ||
-                    !host.IsDefaultPort || host.AbsolutePath != "/" || host.UserInfo.Length != 0 ||
-                    host.Query.Length != 0 || host.Fragment.Length != 0 || host.Scheme is not ("http" or "https") ||
-                    !(host.IdnHost == "aqqmusic.tc.qq.com" || host.IdnHost.EndsWith(".stream.qqmusic.qq.com", StringComparison.Ordinal))) continue;
+                if (item.ValueKind != JsonValueKind.String || !Uri.TryCreate(item.GetString(), UriKind.Absolute, out var host) || !host.IsDefaultPort || host.AbsolutePath != "/" || host.UserInfo.Length != 0 || host.Query.Length != 0 || host.Fragment.Length != 0 || host.Scheme is not ("http" or "https") || !(host.IdnHost == "aqqmusic.tc.qq.com" || host.IdnHost.EndsWith(".stream.qqmusic.qq.com", StringComparison.Ordinal)))
+                    continue;
                 var cdn = new UriBuilder(host) { Scheme = "https", Port = -1 }.Uri;
                 if (!Uri.TryCreate(cdn, path, out var url) || url.IdnHost != cdn.IdnHost || url.AbsolutePath != "/" + file || url.Fragment.Length != 0) continue;
                 using var probe = new HttpRequestMessage(HttpMethod.Get, url);
                 // 读响应头，验证服务端支持 Range 且资源长度与上游给出的整曲文件一致。
                 probe.Headers.Range = new RangeHeaderValue(0, 0);
                 using var response = await SendAsync(probe, ct);
-                if (response.StatusCode != HttpStatusCode.PartialContent ||
-                    response.Content.Headers.ContentRange is not { From: 0, To: 0 } range || range.Length != entry.Size) continue;
+                if (response.StatusCode != HttpStatusCode.PartialContent || response.Content.Headers.ContentRange is not { From: 0, To: 0 } range || range.Length != entry.Size)
+                    continue;
                 return new MusicResolvedTrack(id, Id, sourceId, 1,
                     new MusicAudio(url.AbsoluteUri, "audio/mpeg", entry.Track.DurationMs, clock.GetUtcNow().AddMinutes(5).UtcDateTime, true));
             }
@@ -296,8 +283,7 @@ public sealed class QQMusicProvider(HttpClient http, TimeProvider clock) : IMusi
                 await using var stream = await response.Content.ReadAsStreamAsync(token);
                 var bytes = new byte[max + 1];
                 var length = await stream.ReadAtLeastAsync(bytes, bytes.Length, false, token);
-                if (length > max) throw Failure(503);
-                return JsonDocument.Parse(bytes.AsMemory(0, length));
+                return length > max ? throw Failure(503) : JsonDocument.Parse(bytes.AsMemory(0, length));
             }
             finally
             {
@@ -332,8 +318,7 @@ public sealed class QQMusicProvider(HttpClient http, TimeProvider clock) : IMusi
 
     private static Entry[] ParseEntries(JsonElement songs, int count)
     {
-        if (songs.ValueKind != JsonValueKind.Array) throw Failure(503);
-        return songs.EnumerateArray().Take(count).Select(ParseEntry).OfType<Entry>().DistinctBy(x => x.Track.Id).ToArray();
+        return songs.ValueKind != JsonValueKind.Array ? throw Failure(503) : [.. songs.EnumerateArray().Take(count).Select(ParseEntry).OfType<Entry>().DistinctBy(x => x.Track.Id)];
     }
 
     private static Entry? ParseEntry(JsonElement song)
@@ -353,13 +338,11 @@ public sealed class QQMusicProvider(HttpClient http, TimeProvider clock) : IMusi
         var mediaId = Text(file, "media_mid");
         var size = Number(file, "size_128mp3");
         var pay = At(song, "pay", "pay_play");
-        var preview = song.TryGetProperty("preview", out var trial) &&
-                      (trial.ValueKind is JsonValueKind.True || Number(song, "preview") == 1);
+        var preview = song.TryGetProperty("preview", out var trial) && (trial.ValueKind is JsonValueKind.True || Number(song, "preview") == 1);
         var fullMp3 = ValidId(mediaId) && size >= interval * 15000 && size <= interval * 17500;
         var cost = pay.ValueKind == JsonValueKind.Number && pay.TryGetInt64(out var price) ? price : -1;
         var playable = cost == 0 && !preview && fullMp3;
-        var track = new MusicTrack("qq-" + mid, title, artists, ValidText(albumName) ? albumName : null, interval * 1000,
-            cover, null, playable ? "candidate" : "unavailable", [new MusicSource(Id, mid)]);
+        var track = new MusicTrack("qq-" + mid, title, artists, ValidText(albumName) ? albumName : null, interval * 1000, cover, null, playable ? "candidate" : "unavailable", [new MusicSource(Id, mid)]);
         return new Entry(track, fullMp3 ? mediaId : null, fullMp3 ? size : 0, default, RequiresMembership: cost > 0);
     }
 

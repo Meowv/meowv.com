@@ -31,42 +31,31 @@ public static class MusicRegistration
         services.AddSingleton<MusicCandidateStore>();
         services.AddSingleton<MusicCandidatePool>();
         services.AddHostedService(provider => provider.GetRequiredService<MusicCandidatePool>());
-        services.AddHttpClient("MusicNetease", client => client.Timeout = TimeSpan.FromSeconds(6))
-            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
-            {
-                AllowAutoRedirect = false, UseCookies = false, ConnectTimeout = TimeSpan.FromSeconds(3),
-                PooledConnectionLifetime = TimeSpan.FromMinutes(5)
-            });
-        services.AddSingleton<NeteaseMusicProvider>(provider => new NeteaseMusicProvider(
-            provider.GetRequiredService<IHttpClientFactory>().CreateClient("MusicNetease"), provider.GetRequiredService<TimeProvider>()));
-        services.AddHttpClient("MusicQQSkill", client => client.Timeout = TimeSpan.FromSeconds(3))
-            .RemoveAllLoggers()
-            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false, UseCookies = false });
-        services.AddSingleton(provider => new QQMusicSkill(
-            provider.GetRequiredService<IHttpClientFactory>().CreateClient("MusicQQSkill"),
-            options, provider.GetRequiredService<TimeProvider>(), provider.GetRequiredService<MusicChartStore>()));
-        services.AddHttpClient("MusicQQ", client => client.Timeout = TimeSpan.FromSeconds(6))
-            .RemoveAllLoggers()
-            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
-            {
-                AllowAutoRedirect = false, UseCookies = false, ConnectTimeout = TimeSpan.FromSeconds(3),
-                PooledConnectionLifetime = TimeSpan.FromMinutes(5)
-            });
-        services.AddSingleton<QQMusicProvider>(provider => new QQMusicProvider(
-            provider.GetRequiredService<IHttpClientFactory>().CreateClient("MusicQQ"), provider.GetRequiredService<TimeProvider>()));
+        services.AddHttpClient("MusicNetease", client => client.Timeout = TimeSpan.FromSeconds(6)).ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+        {
+            AllowAutoRedirect = false, UseCookies = false, ConnectTimeout = TimeSpan.FromSeconds(3),
+            PooledConnectionLifetime = TimeSpan.FromMinutes(5)
+        });
+        services.AddSingleton<NeteaseMusicProvider>(provider => new NeteaseMusicProvider(provider.GetRequiredService<IHttpClientFactory>().CreateClient("MusicNetease"), provider.GetRequiredService<TimeProvider>()));
+        services.AddHttpClient("MusicQQSkill", client => client.Timeout = TimeSpan.FromSeconds(3)).RemoveAllLoggers().ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false, UseCookies = false });
+        services.AddSingleton(provider => new QQMusicSkill(provider.GetRequiredService<IHttpClientFactory>().CreateClient("MusicQQSkill"), options, provider.GetRequiredService<TimeProvider>(), provider.GetRequiredService<MusicChartStore>()));
+        services.AddHttpClient("MusicQQ", client => client.Timeout = TimeSpan.FromSeconds(6)).RemoveAllLoggers().ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+        {
+            AllowAutoRedirect = false, UseCookies = false, ConnectTimeout = TimeSpan.FromSeconds(3),
+            PooledConnectionLifetime = TimeSpan.FromMinutes(5)
+        });
+        services.AddSingleton<QQMusicProvider>(provider => new QQMusicProvider(provider.GetRequiredService<IHttpClientFactory>().CreateClient("MusicQQ"), provider.GetRequiredService<TimeProvider>()));
         services.AddSingleton<IMusicSearchProvider>(provider => provider.GetRequiredService<NeteaseMusicProvider>());
         services.AddSingleton<IMusicSearchProvider>(provider => provider.GetRequiredService<QQMusicProvider>());
         services.AddSingleton<MusicProviderRegistry>();
         services.AddSingleton<MusicCatalog>();
         services.AddSingleton<QQSessionStore>();
         services.AddSingleton<QQMembership>();
-        services.AddSingleton(provider => new QQAccountClient(
-            provider.GetRequiredService<IHttpClientFactory>().CreateClient("MusicQQ"), provider.GetRequiredService<TimeProvider>()));
+        services.AddSingleton(provider => new QQAccountClient(provider.GetRequiredService<IHttpClientFactory>().CreateClient("MusicQQ"), provider.GetRequiredService<TimeProvider>()));
         services.AddSingleton<IEndpointModule, MusicModule>();
         services.ConfigureHttpJsonOptions(json => json.SerializerOptions.TypeInfoResolverChain.Add(MusicJsonContext.Default));
         services.AddAuthentication().AddScheme<AuthenticationSchemeOptions, MusicAccessHandler>(MusicAccessHandler.SchemeName, _ => { });
-        services.AddAuthorization(auth => auth.AddPolicy(MusicAccessHandler.SchemeName,
-            policy => policy.AddAuthenticationSchemes(MusicAccessHandler.SchemeName).RequireAuthenticatedUser()));
+        services.AddAuthorization(auth => auth.AddPolicy(MusicAccessHandler.SchemeName, policy => policy.AddAuthenticationSchemes(MusicAccessHandler.SchemeName).RequireAuthenticatedUser()));
         services.AddRateLimiter(limits =>
         {
             limits.AddPolicy("music", new MusicRatePolicy(options));

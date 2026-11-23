@@ -9,18 +9,7 @@ using Microsoft.Data.Sqlite;
 
 namespace Meowv.Api.Modules.Music.Storage;
 
-internal sealed class MusicCandidatePool(
-    MusicOptions options,
-    MusicRuntime runtime,
-    MusicCandidateStore store,
-    MusicDailyFeeds feeds,
-    MusicCatalog catalog,
-    MusicProviderRegistry registry,
-    QQMusicProvider qq,
-    NeteaseMusicProvider netease,
-    QQMusicSkill skill,
-    TimeProvider clock,
-    ILogger<MusicCandidatePool> logger) : BackgroundService
+internal sealed class MusicCandidatePool(MusicOptions options, MusicRuntime runtime, MusicCandidateStore store, MusicDailyFeeds feeds, MusicCatalog catalog, MusicProviderRegistry registry, QQMusicProvider qq, NeteaseMusicProvider netease, QQMusicSkill skill, TimeProvider clock, ILogger<MusicCandidatePool> logger) : BackgroundService
 {
     private static readonly TimeSpan Retention = TimeSpan.FromDays(7);
     private static readonly TimeSpan RefreshInterval = TimeSpan.FromMinutes(30);
@@ -66,8 +55,7 @@ internal sealed class MusicCandidatePool(
             foreach (var item in daily.Items)
             {
                 // 沿用榜单快照的实际抓取时间，陈旧快照不会延长候选寿命。
-                var seen = daily.Sources.Where(source => item.Track.Sources.Any(match => match.ProviderId == source.Source))
-                    .Select(source => source.CapturedAt).DefaultIfEmpty(now).Max();
+                var seen = daily.Sources.Where(source => item.Track.Sources.Any(match => match.ProviderId == source.Source)).Select(source => source.CapturedAt).DefaultIfEmpty(now).Max();
                 if (seen > now - Retention) Merge(items, Capture(item.Track), seen, false);
             }
         }
@@ -130,8 +118,7 @@ internal sealed class MusicCandidatePool(
         {
             lock (_gate)
             {
-                if (!_positions.TryGetValue(cursor, out var found) || found.Batch.Device != device ||
-                    found.Limit != count || found.Batch.Created.AddMinutes(30) <= now)
+                if (!_positions.TryGetValue(cursor, out var found) || found.Batch.Device != device || found.Limit != count || found.Batch.Created.AddMinutes(30) <= now)
                     throw new MusicException("candidate_cursor_expired", "推荐候选已刷新，请重新开始。");
                 position = found;
             }
@@ -140,8 +127,7 @@ internal sealed class MusicCandidatePool(
         var member = position.Batch.Member?.Current == true && access?.Current == true;
         var selected = position.Batch.Items.Skip(position.Offset).Take(count).Where(x => !x.Private || member).ToArray();
         var tracks = Rebuild(selected);
-        var playable = (await catalog.ProjectAvailabilityAsync(tracks, access, ct))
-            .Where(track => track.Availability == "candidate").ToArray();
+        var playable = (await catalog.ProjectAvailabilityAsync(tracks, access, ct)).Where(track => track.Availability == "candidate").ToArray();
         var memberStillCurrent = position.Batch.Member?.Current == true;
         if (member && !memberStillCurrent || access is not null && !access.Current)
         {
@@ -150,8 +136,7 @@ internal sealed class MusicCandidatePool(
             playable = catalog.PlayableCandidates(tracks);
         }
 
-        var discovery = playable.Where(track => selected.Any(row => row.Discovery && Same(track, row)))
-            .Select(track => track.Id).ToArray();
+        var discovery = playable.Where(track => selected.Any(row => row.Discovery && Same(track, row))).Select(track => track.Id).ToArray();
         var offset = position.Offset + count;
         string? next = null;
         if (offset < position.Batch.Items.Length)
@@ -160,8 +145,7 @@ internal sealed class MusicCandidatePool(
             {
                 foreach (var old in _positions.Where(x => x.Value.Batch.Created.AddMinutes(30) <= now).Select(x => x.Key).ToArray())
                     _positions.Remove(old);
-                next = _positions.FirstOrDefault(x => ReferenceEquals(x.Value.Batch, position.Batch) &&
-                                                      x.Value.Offset == offset && x.Value.Limit == count).Key;
+                next = _positions.FirstOrDefault(x => ReferenceEquals(x.Value.Batch, position.Batch) && x.Value.Offset == offset && x.Value.Limit == count).Key;
                 if (next is null)
                 {
                     if (_positions.Count >= 512) _positions.Remove(_positions.MinBy(x => x.Value.Batch.Created).Key);
@@ -171,17 +155,14 @@ internal sealed class MusicCandidatePool(
             }
         }
 
-        return new MusicRecommendationPage(playable, next, "rolling_candidates", position.Batch.Created.UtcDateTime,
-            DiscoveryTrackIds: discovery);
+        return new MusicRecommendationPage(playable, next, "rolling_candidates", position.Batch.Created.UtcDateTime, DiscoveryTrackIds: discovery);
     }
 
-    private async Task<Batch> CreateBatchAsync(string device, MusicCandidate[] publicItems, QQMembership.Access? access,
-        DateTimeOffset now, CancellationToken ct)
+    private async Task<Batch> CreateBatchAsync(string device, MusicCandidate[] publicItems, QQMembership.Access? access, DateTimeOffset now, CancellationToken ct)
     {
         // 同一设备短时间内重用候选集合，播放权益仍在每页返回前重新投影。
         lock (_gate)
-            if (_batches.TryGetValue(device, out var previous) && previous.Created.AddMinutes(2) > now &&
-                (access is null ? previous.Member is null : previous.Member?.Current == true))
+            if (_batches.TryGetValue(device, out var previous) && previous.Created.AddMinutes(2) > now && (access is null ? previous.Member is null : previous.Member?.Current == true))
                 return previous;
 
         var batch = new Batch(device, publicItems, access, now);
@@ -208,9 +189,7 @@ internal sealed class MusicCandidatePool(
                 var privateItems = new List<MusicCandidate>();
                 foreach (var track in daily.Take(12)) Merge(privateItems, Capture(track), now, false, personal: true);
                 foreach (var track in radio.Take(12)) Merge(privateItems, Capture(track), now, true, personal: true);
-                var ordered = Interleave(privateItems.Where(item =>
-                        !publicItems.Any(other => item.Sources.Any(source => Same(source.Track, other))))
-                    .Concat(publicItems));
+                var ordered = Interleave(privateItems.Where(item => !publicItems.Any(other => item.Sources.Any(source => Same(source.Track, other)))).Concat(publicItems));
                 batch = batch with { Items = ordered.ToArray() };
             }
         }
@@ -230,8 +209,7 @@ internal sealed class MusicCandidatePool(
         try
         {
             var now = clock.GetUtcNow();
-            var row = store.Read().Items.FirstOrDefault(item => item.Seen > now - Retention &&
-                                                                item.Sources.Any(source => source.Track.Id == id));
+            var row = store.Read().Items.FirstOrDefault(item => item.Seen > now - Retention && item.Sources.Any(source => source.Track.Id == id));
             if (row is not null) Rebuild([row]);
         }
         catch (Exception error) when (Recoverable(error))
@@ -244,11 +222,15 @@ internal sealed class MusicCandidatePool(
         var result = new List<MusicCandidateSource>();
         foreach (var match in track.Sources)
         {
-            if (match.ProviderId == QQMusicProvider.Id && qq.Candidate(match.SourceTrackId) is { } qqEntry &&
-                (qqEntry.Track.Availability == "candidate" || qqEntry is { RequiresMembership: true, MediaId: not null }))
-                result.Add(new MusicCandidateSource(qqEntry.Track, qqEntry.MediaId, qqEntry.Size, qqEntry.RequiresMembership));
-            if (match.ProviderId == NeteaseMusicProvider.Id && netease.Candidate(match.SourceTrackId) is { Availability: "candidate" } nt)
-                result.Add(new MusicCandidateSource(nt));
+            switch (match.ProviderId)
+            {
+                case QQMusicProvider.Id when qq.Candidate(match.SourceTrackId) is { } qqEntry && (qqEntry.Track.Availability == "candidate" || qqEntry is { RequiresMembership: true, MediaId: not null }):
+                    result.Add(new MusicCandidateSource(qqEntry.Track, qqEntry.MediaId, qqEntry.Size, qqEntry.RequiresMembership));
+                    break;
+                case NeteaseMusicProvider.Id when netease.Candidate(match.SourceTrackId) is { Availability: "candidate" } nt:
+                    result.Add(new MusicCandidateSource(nt));
+                    break;
+            }
         }
 
         return [.. result];
@@ -258,11 +240,9 @@ internal sealed class MusicCandidatePool(
     {
         var sources = candidates.SelectMany(item => item.Sources).ToArray();
         if (registry.IsEnabled(netease))
-            netease.RememberDaily(sources.Where(x => x.Track.Sources[0].ProviderId == NeteaseMusicProvider.Id &&
-                                                     netease.FindTrack(x.Track.Id) is null).Select(x => x.Track));
+            netease.RememberDaily(sources.Where(x => x.Track.Sources[0].ProviderId == NeteaseMusicProvider.Id && netease.FindTrack(x.Track.Id) is null).Select(x => x.Track));
         if (registry.IsEnabled(qq))
-            qq.Remember(sources.Where(x => x.Track.Sources[0].ProviderId == QQMusicProvider.Id && qq.FindTrack(x.Track.Id) is null)
-                .Select(x => new QQMusicProvider.Entry(x.Track, x.MediaId, x.MediaSize, default, RequiresMembership: x.RequiresMembership)));
+            qq.Remember(sources.Where(x => x.Track.Sources[0].ProviderId == QQMusicProvider.Id && qq.FindTrack(x.Track.Id) is null).Select(x => new QQMusicProvider.Entry(x.Track, x.MediaId, x.MediaSize, default, RequiresMembership: x.RequiresMembership)));
         var enabled = registry.Enabled.Select(provider => provider.ProviderId).ToHashSet(StringComparer.Ordinal);
         return catalog.MergeDaily(sources.Where(x => enabled.Contains(x.Track.Sources[0].ProviderId)).Select(x => x.Track));
     }
@@ -282,9 +262,7 @@ internal sealed class MusicCandidatePool(
         items[index] = previous with { Sources = merged, Seen = now > previous.Seen ? now : previous.Seen, Discovery = previous.Discovery && discovery };
     }
 
-    private static bool Same(MusicTrack track, MusicCandidate item) => item.Sources.Any(source =>
-        track.Sources.Any(a => source.Track.Sources.Any(b => a.ProviderId == b.ProviderId && a.SourceTrackId == b.SourceTrackId)) ||
-        MusicCandidateMatcher.CanMerge(track, source.Track));
+    private static bool Same(MusicTrack track, MusicCandidate item) => item.Sources.Any(source => track.Sources.Any(a => source.Track.Sources.Any(b => a.ProviderId == b.ProviderId && a.SourceTrackId == b.SourceTrackId)) || MusicCandidateMatcher.CanMerge(track, source.Track));
 
     private static IEnumerable<MusicCandidate> Interleave(IEnumerable<MusicCandidate> items)
     {
@@ -299,6 +277,5 @@ internal sealed class MusicCandidatePool(
         }
     }
 
-    private static bool Recoverable(Exception error) =>
-        error is SqliteException or ApiDatabaseSchemaException or JsonException or IOException or MusicException;
+    private static bool Recoverable(Exception error) => error is SqliteException or ApiDatabaseSchemaException or JsonException or IOException or MusicException;
 }

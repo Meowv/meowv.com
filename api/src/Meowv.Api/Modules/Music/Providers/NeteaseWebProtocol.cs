@@ -15,8 +15,7 @@ internal static class NeteaseWebProtocol
         var second = Encrypt(first, session);
         var number = new BigInteger(Encoding.ASCII.GetBytes(new string(session.Reverse().ToArray())), true, true);
         var modulus = new BigInteger(Convert.FromHexString(Modulus), true, true);
-        var encrypted = Convert.ToHexString(BigInteger.ModPow(number, 65537, modulus).ToByteArray(true, true))
-            .ToLowerInvariant().PadLeft(256, '0');
+        var encrypted = Convert.ToHexString(BigInteger.ModPow(number, 65537, modulus).ToByteArray(true, true)).ToLowerInvariant().PadLeft(256, '0');
         return new FormUrlEncodedContent(new Dictionary<string, string> { ["params"] = second, ["encSecKey"] = encrypted });
     }
 

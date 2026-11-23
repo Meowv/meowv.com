@@ -31,10 +31,7 @@ internal sealed class QQMusicSkill(HttpClient http, MusicOptions options, TimePr
         get
         {
             var key = options.QQMusicSkillApiKey.Trim();
-            return key.StartsWith("qmk-", StringComparison.Ordinal) && key.Length > 4 &&
-                   !key.Any(c => char.IsWhiteSpace(c) || char.IsControl(c))
-                ? key
-                : null;
+            return key.StartsWith("qmk-", StringComparison.Ordinal) && key.Length > 4 && !key.Any(c => char.IsWhiteSpace(c) || char.IsControl(c)) ? key : null;
         }
     }
 
@@ -64,8 +61,7 @@ internal sealed class QQMusicSkill(HttpClient http, MusicOptions options, TimePr
                         var start = today.ToDateTime(TimeOnly.MinValue);
                         var midnight = new DateTimeOffset(start, BusinessZone.GetUtcOffset(start));
                         var entries = songs.Select((song, index) => new MusicChartEntry(index + 1, song.Mid, song.Title, [song.Artist])).ToArray();
-                        store.Save(new MusicChartSnapshot(DailyFeed, source, today, now, now, midnight, midnight.AddDays(1), entries),
-                            keepFirstForDate: true);
+                        store.Save(new MusicChartSnapshot(DailyFeed, source, today, now, now, midnight, midnight.AddDays(1), entries), keepFirstForDate: true);
                         snapshot = store.Latest(DailyFeed, source);
                     }
                 }
@@ -89,12 +85,7 @@ internal sealed class QQMusicSkill(HttpClient http, MusicOptions options, TimePr
                 var merged = extra.Length == 0 ? tracks : catalog.MergeDaily(tracks.Concat(extra));
                 return
                 [
-                    .. merged.Where(track => (includeMember || track.Availability == "candidate") &&
-                                             (!personalOnly || track.Sources.Any(s => s.ProviderId == QQMusicProvider.Id && rank.ContainsKey(s.SourceTrackId))))
-                        .OrderBy(track => track.Sources
-                            .Where(x => x.ProviderId == QQMusicProvider.Id)
-                            .Select(x => rank.GetValueOrDefault(x.SourceTrackId, int.MaxValue))
-                            .DefaultIfEmpty(int.MaxValue).Min())
+                    .. merged.Where(track => (includeMember || track.Availability == "candidate") && (!personalOnly || track.Sources.Any(s => s.ProviderId == QQMusicProvider.Id && rank.ContainsKey(s.SourceTrackId)))).OrderBy(track => track.Sources.Where(x => x.ProviderId == QQMusicProvider.Id).Select(x => rank.GetValueOrDefault(x.SourceTrackId, int.MaxValue)).DefaultIfEmpty(int.MaxValue).Min())
                 ];
             }
             finally
@@ -126,9 +117,7 @@ internal sealed class QQMusicSkill(HttpClient http, MusicOptions options, TimePr
                 var now = clock.GetUtcNow();
                 if (_radioRetryAt > now && _radioFailure is { } cached)
                 {
-                    var retry = cached.RetryAfterSeconds is not null
-                        ? (int?)Math.Ceiling((_radioRetryAt - now).TotalSeconds)
-                        : null;
+                    var retry = cached.RetryAfterSeconds is not null ? (int?)Math.Ceiling((_radioRetryAt - now).TotalSeconds) : null;
                     throw new MusicException(cached.Code, cached.Message, cached.Status, retry);
                 }
 
@@ -170,11 +159,9 @@ internal sealed class QQMusicSkill(HttpClient http, MusicOptions options, TimePr
 
     private static async Task<MusicTrack[]> ResolveCandidatesAsync(Song[] songs, MusicTrack[] known, QQMusicProvider qq, CancellationToken ct, bool includeMember)
     {
-        var existing = known.SelectMany(x => x.Sources).Where(x => x.ProviderId == QQMusicProvider.Id)
-            .Select(x => x.SourceTrackId).ToHashSet(StringComparer.Ordinal);
+        var existing = known.SelectMany(x => x.Sources).Where(x => x.ProviderId == QQMusicProvider.Id).Select(x => x.SourceTrackId).ToHashSet(StringComparer.Ordinal);
         var candidates = songs.Where(song => !existing.Contains(song.Mid)).ToArray();
-        var results = candidates.Select(song => qq.FindTrack("qq-" + song.Mid))
-            .OfType<MusicTrack>().Where(track => includeMember || track.Availability == "candidate").ToList();
+        var results = candidates.Select(song => qq.FindTrack("qq-" + song.Mid)).OfType<MusicTrack>().Where(track => includeMember || track.Availability == "candidate").ToList();
         var found = results.Select(x => x.Id).ToHashSet(StringComparer.Ordinal);
         var missing = candidates.Where(x => !found.Contains("qq-" + x.Mid)).ToArray();
         if (includeMember && missing.Length > 0)
@@ -194,12 +181,11 @@ internal sealed class QQMusicSkill(HttpClient http, MusicOptions options, TimePr
             var query = (song.Title + " " + song.Artist).Trim();
             if (query.Length > 100) continue;
             var page = await qq.SearchAsync(query, 10, null, ct);
-            var exact = page.Items.FirstOrDefault(x => x.Id == "qq-" + song.Mid &&
-                                                       (includeMember || x.Availability == "candidate"));
+            var exact = page.Items.FirstOrDefault(x => x.Id == "qq-" + song.Mid && (includeMember || x.Availability == "candidate"));
             if (exact is not null) results.Add(exact);
         }
 
-        return includeMember ? InSongOrder(candidates, results) : results.ToArray();
+        return includeMember ? InSongOrder(candidates, results) : [.. results];
     }
 
     private static MusicTrack[] InSongOrder(Song[] songs, List<MusicTrack> tracks)
@@ -223,10 +209,8 @@ internal sealed class QQMusicSkill(HttpClient http, MusicOptions options, TimePr
                 {
                     case 429:
                     {
-                        var seconds = response.Headers.RetryAfter?.Delta?.TotalSeconds ??
-                                      (response.Headers.RetryAfter?.Date - clock.GetUtcNow())?.TotalSeconds ?? 60;
-                        throw new MusicException("rate_limited", "QQ 音乐猜你喜欢请求较多，请稍后重试。", 429,
-                            (int)Math.Clamp(Math.Ceiling(seconds), 1, 86400));
+                        var seconds = response.Headers.RetryAfter?.Delta?.TotalSeconds ?? (response.Headers.RetryAfter?.Date - clock.GetUtcNow())?.TotalSeconds ?? 60;
+                        throw new MusicException("rate_limited", "QQ 音乐猜你喜欢请求较多，请稍后重试。", 429, (int)Math.Clamp(Math.Ceiling(seconds), 1, 86400));
                     }
                     case 401 or 403:
                         throw new MusicException("forbidden", "QQ 音乐猜你喜欢拒绝了请求。", 403);
@@ -241,8 +225,8 @@ internal sealed class QQMusicSkill(HttpClient http, MusicOptions options, TimePr
             if (length == buffer.Length) throw new JsonException();
             using var json = JsonDocument.Parse(buffer.AsMemory(0, length));
             var root = json.RootElement;
-            if (root.ValueKind != JsonValueKind.Object ||
-                new[] { "ret", "sub_ret" }.Any(code => root.TryGetProperty(code, out var value) && value.ValueKind != JsonValueKind.Null && (value.ValueKind != JsonValueKind.Number || value.GetRawText() != "0")) || !root.TryGetProperty("songlist", out var rows) || rows.ValueKind != JsonValueKind.Array) throw new JsonException();
+            if (root.ValueKind != JsonValueKind.Object || new[] { "ret", "sub_ret" }.Any(code => root.TryGetProperty(code, out var value) && value.ValueKind != JsonValueKind.Null && (value.ValueKind != JsonValueKind.Number || value.GetRawText() != "0")) || !root.TryGetProperty("songlist", out var rows) || rows.ValueKind != JsonValueKind.Array)
+                throw new JsonException();
             return
             [
                 .. rows.EnumerateArray().Take(30).Select(row =>
@@ -250,11 +234,7 @@ internal sealed class QQMusicSkill(HttpClient http, MusicOptions options, TimePr
                     var mid = Text(row, "songMid");
                     var title = Text(row, "songName").Trim();
                     var artist = Text(row, "singerName").Trim();
-                    return mid.Length is >= 8 and <= 24 && mid.All(char.IsAsciiLetterOrDigit) &&
-                           title.Length is >= 1 and <= 180 && artist.Length is >= 1 and <= 180 &&
-                           !title.Any(char.IsControl) && !artist.Any(char.IsControl)
-                        ? new Song(mid, title, artist)
-                        : null;
+                    return mid.Length is >= 8 and <= 24 && mid.All(char.IsAsciiLetterOrDigit) && title.Length is >= 1 and <= 180 && artist.Length is >= 1 and <= 180 && !title.Any(char.IsControl) && !artist.Any(char.IsControl) ? new Song(mid, title, artist) : null;
                 }).OfType<Song>().DistinctBy(x => x.Mid)
             ];
         }

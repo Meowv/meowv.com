@@ -9,8 +9,7 @@ public sealed class MusicProviderRegistry(MusicOptions options, IEnumerable<IMus
     private readonly IMusicSearchProvider[] _sources = [.. sources];
     public IMusicSearchProvider[] Enabled => [.. _sources.Where(IsEnabled)];
 
-    public bool IsEnabled(IMusicSearchProvider source) =>
-        options.Enabled && _sources.Contains(source);
+    public bool IsEnabled(IMusicSearchProvider source) => options.Enabled && _sources.Contains(source);
 
     public string Version
     {

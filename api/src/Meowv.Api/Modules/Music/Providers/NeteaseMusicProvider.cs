@@ -32,8 +32,7 @@ public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : 
             return _tracks.TryGetValue(TrackId(sourceId), out var entry) && entry.Until > clock.GetUtcNow() ? entry.Track : null;
     }
 
-    private static string TrackId(string sourceId) =>
-        "nt-" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(sourceId)))[..32].ToLowerInvariant();
+    private static string TrackId(string sourceId) => "nt-" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(sourceId)))[..32].ToLowerInvariant();
 
     private readonly Lock _gate = new();
     private readonly SemaphoreSlim _concurrency = new(2);
@@ -123,10 +122,8 @@ public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : 
         if (songs.ValueKind != JsonValueKind.Array || songs.GetArrayLength() > 100) throw Unavailable();
         var tracks = songs.EnumerateArray().Take(count).Select(ParseTrack).OfType<MusicTrack>();
         var total = Number(result, "songCount");
-        var next = songs.GetArrayLength() >= count && offset + count < 1000 && (total <= 0 || offset + count < total)
-            ? WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(scope + (offset + count).ToString(CultureInfo.InvariantCulture)))
-            : null;
-        return new MusicSearchPage(tracks.DistinctBy(x => x.Id).ToArray(), next, false, []);
+        var next = songs.GetArrayLength() >= count && offset + count < 1000 && (total <= 0 || offset + count < total) ? WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(scope + (offset + count).ToString(CultureInfo.InvariantCulture))) : null;
+        return new MusicSearchPage([.. tracks.DistinctBy(x => x.Id)], next, false, []);
     }
 
     internal static MusicTrack? ParseTrack(JsonElement song)
@@ -137,10 +134,7 @@ public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : 
         var duration = Math.Max(Number(song, "duration"), Number(song, "dt"));
         if (id <= 0 || title.Length is < 1 or > 180 || title.Any(char.IsControl) || duration is < 1 or > 86400000) return null;
         var hasArtists = song.TryGetProperty("ar", out var names) || song.TryGetProperty("artists", out names);
-        var artists = hasArtists && names.ValueKind == JsonValueKind.Array
-            ? names.EnumerateArray().Take(8).Select(x => Text(x, "name"))
-                .Where(x => x.Length is > 0 and <= 180 && !x.Any(char.IsControl)).ToArray()
-            : [];
+        var artists = hasArtists && names.ValueKind == JsonValueKind.Array ? names.EnumerateArray().Take(8).Select(x => Text(x, "name")).Where(x => x.Length is > 0 and <= 180 && !x.Any(char.IsControl)).ToArray() : [];
         if (artists.Length == 0) return null;
         if (!song.TryGetProperty("al", out var album)) song.TryGetProperty("album", out album);
         var albumName = Text(album, "name");
@@ -149,11 +143,9 @@ public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : 
         var sourceId = id.ToString(CultureInfo.InvariantCulture);
         var trackId = TrackId(sourceId);
         var privilege = song.TryGetProperty("privilege", out var right) ? Number(right, "st") : 0;
-        var copyrighted = song.TryGetProperty("noCopyrightRcmd", out var noCopyright) &&
-                          noCopyright.ValueKind is JsonValueKind.Object && noCopyright.EnumerateObject().Any();
+        var copyrighted = song.TryGetProperty("noCopyrightRcmd", out var noCopyright) && noCopyright.ValueKind is JsonValueKind.Object && noCopyright.EnumerateObject().Any();
         var availability = Number(song, "fee") != 0 || privilege > 0 || copyrighted ? "unavailable" : "candidate";
-        return new MusicTrack(trackId, title, artists, albumName.Length <= 180 ? albumName : null, duration, cover, null,
-            availability, [new MusicSource(Id, sourceId)]);
+        return new MusicTrack(trackId, title, artists, albumName.Length <= 180 ? albumName : null, duration, cover, null, availability, [new MusicSource(Id, sourceId)]);
     }
 
     internal void RememberDaily(IEnumerable<MusicTrack> tracks)
@@ -169,13 +161,11 @@ public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : 
             using var document = await SendAsync("/api/playlist/detail?id=" + spec.UpstreamId, null, ct);
             var result = document.RootElement.GetProperty("result");
             var updated = Number(result, "updateTime");
-            return (result.GetProperty("tracks").EnumerateArray().Take(spec.Limit).Select(ParseTrack).OfType<MusicTrack>().ToArray(),
-                updated > 0 ? DateTimeOffset.FromUnixTimeMilliseconds(updated) : null);
+            return ([.. result.GetProperty("tracks").EnumerateArray().Take(spec.Limit).Select(ParseTrack).OfType<MusicTrack>()], updated > 0 ? DateTimeOffset.FromUnixTimeMilliseconds(updated) : null);
         }
 
         using var recommendations = await SendAsync("/api/personalized/newsong", null, ct);
-        return (recommendations.RootElement.GetProperty("result").EnumerateArray().Take(spec.Limit)
-            .Select(x => ParseTrack(x.GetProperty("song"))).OfType<MusicTrack>().ToArray(), null);
+        return ([.. recommendations.RootElement.GetProperty("result").EnumerateArray().Take(spec.Limit).Select(x => ParseTrack(x.GetProperty("song"))).OfType<MusicTrack>()], null);
     }
 
     public async Task<string?> LyricsAsync(string sourceId, CancellationToken ct)
@@ -241,18 +231,16 @@ public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : 
         var bitrate = Number(audio, "br");
         if (duration == 0 && size is > 0 and <= 2147483648 && bitrate is >= 8000 and <= 512000)
             duration = size * 8000 / bitrate;
-        if (url is null || !string.Equals(Text(audio, "type"), "mp3", StringComparison.OrdinalIgnoreCase) ||
-            duration < entry.Track.DurationMs!.Value * 0.95 || duration > entry.Track.DurationMs.Value * 1.1) throw NoMatch();
+        if (url is null || !string.Equals(Text(audio, "type"), "mp3", StringComparison.OrdinalIgnoreCase) || duration < entry.Track.DurationMs!.Value * 0.95 || duration > entry.Track.DurationMs.Value * 1.1)
+            throw NoMatch();
         var expiry = Number(audio, "expi") is > 0 and var seconds ? Math.Min(seconds, 300) : 300;
-        return new MusicResolvedTrack(entry.Track.Id, Id, entry.SourceId, 1,
-            new MusicAudio(url, "audio/mpeg", entry.Track.DurationMs, clock.GetUtcNow().AddSeconds(expiry).UtcDateTime, true));
+        return new MusicResolvedTrack(entry.Track.Id, Id, entry.SourceId, 1, new MusicAudio(url, "audio/mpeg", entry.Track.DurationMs, clock.GetUtcNow().AddSeconds(expiry).UtcDateTime, true));
     }
 
     internal static string? SafeAudioUrl(string value)
     {
-        if (value.Length > 8192 || !Uri.TryCreate(value, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https") ||
-            uri.UserInfo.Length != 0 || uri.Fragment.Length != 0 || !uri.IsDefaultPort ||
-            !uri.IdnHost.EndsWith(".music.126.net", StringComparison.OrdinalIgnoreCase)) return null;
+        if (value.Length > 8192 || !Uri.TryCreate(value, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https") || uri.UserInfo.Length != 0 || uri.Fragment.Length != 0 || !uri.IsDefaultPort || !uri.IdnHost.EndsWith(".music.126.net", StringComparison.OrdinalIgnoreCase))
+            return null;
         return new UriBuilder(uri) { Scheme = "https", Port = -1 }.Uri.AbsoluteUri;
     }
 
@@ -365,9 +353,7 @@ public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : 
         foreach (var expired in _tracks.Where(x => x.Value.Until <= clock.GetUtcNow()).Select(x => x.Key).ToArray()) _tracks.Remove(expired);
         foreach (var entry in entries)
         {
-            var value = _tracks.TryGetValue(entry.Track.Id, out var previous)
-                ? entry with { UnplayableUntil = previous.UnplayableUntil }
-                : entry;
+            var value = _tracks.TryGetValue(entry.Track.Id, out var previous) ? entry with { UnplayableUntil = previous.UnplayableUntil } : entry;
             if (_tracks.Count >= 1000 && !_tracks.ContainsKey(entry.Track.Id)) _tracks.Remove(_tracks.MinBy(x => x.Value.Used).Key);
             _tracks[entry.Track.Id] = value with { Used = ++_entrySequence };
         }
@@ -406,9 +392,7 @@ public sealed class NeteaseMusicProvider(HttpClient http, TimeProvider clock) : 
         _ => new MusicException("source_unavailable", "音乐源暂时不可用，请稍后重试。", 503, seconds)
     };
 
-    private int RetrySeconds(HttpResponseMessage response, long fallback) => (int)Math.Clamp(Math.Ceiling(
-        response.Headers.RetryAfter?.Delta?.TotalSeconds ??
-        (response.Headers.RetryAfter?.Date - clock.GetUtcNow())?.TotalSeconds ?? fallback), 1, 86400);
+    private int RetrySeconds(HttpResponseMessage response, long fallback) => (int)Math.Clamp(Math.Ceiling(response.Headers.RetryAfter?.Delta?.TotalSeconds ?? (response.Headers.RetryAfter?.Date - clock.GetUtcNow())?.TotalSeconds ?? fallback), 1, 86400);
 
     private static int Cursor(string? value, string scope)
     {

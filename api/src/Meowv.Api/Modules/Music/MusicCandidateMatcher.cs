@@ -12,7 +12,10 @@ public static partial class MusicCandidateMatcher
     {
         var (leftTitle, leftEdition) = Title(expected.Title);
         var (rightTitle, rightEdition) = Title(candidate.Title);
-        if (leftEdition != rightEdition || leftEdition != "studio" && Normalize(expected.Title) != Normalize(candidate.Title)) return new MusicMatch(0, false, rightEdition);
+
+        if (leftEdition != rightEdition || leftEdition != "studio" && Normalize(expected.Title) != Normalize(candidate.Title))
+            return new MusicMatch(0, false, rightEdition);
+
         var leftArtists = expected.Artists.Select(Normalize).Where(x => x.Length > 0).ToHashSet(StringComparer.Ordinal);
         var rightArtists = candidate.Artists.Select(Normalize).Where(x => x.Length > 0).ToHashSet(StringComparer.Ordinal);
         var title = Similarity(leftTitle, rightTitle);
@@ -23,11 +26,10 @@ public static partial class MusicCandidateMatcher
         var duration = durations && difference <= tolerance ? 1d : 0d;
         var leftIsrc = Isrc(expected.Isrc);
         var rightIsrc = Isrc(candidate.Isrc);
-        if (leftIsrc is not null && rightIsrc is not null && leftIsrc != rightIsrc) return new(0, false, rightEdition);
+        if (leftIsrc is not null && rightIsrc is not null && leftIsrc != rightIsrc) return new MusicMatch(0, false, rightEdition);
         var score = .55 * title + .30 * artist + .15 * duration;
         if (leftIsrc is not null && leftIsrc == rightIsrc) score = Math.Min(1, score + .02);
-        var equivalent = title == 1 && artist == 1 && duration == 1 && score >= .96 &&
-                         expected.Availability != "preview" && candidate.Availability != "preview";
+        var equivalent = title == 1 && artist == 1 && duration == 1 && score >= .96 && expected.Availability != "preview" && candidate.Availability != "preview";
         return new MusicMatch(Math.Round(score, 4), equivalent, rightEdition);
     }
 
@@ -42,10 +44,12 @@ public static partial class MusicCandidateMatcher
             return " ";
         });
         var suffix = Suffix().Match(basic);
-        if (suffix.Success)
+        switch (suffix.Success)
         {
-            edition.Add(Edition(suffix.Groups[1].Value));
-            basic = basic[..suffix.Index];
+            case true:
+                edition.Add(Edition(suffix.Groups[1].Value));
+                basic = basic[..suffix.Index];
+                break;
         }
 
         return (Normalize(basic), edition.Count == 0 ? "studio" : string.Join('+', edition));
@@ -63,8 +67,7 @@ public static partial class MusicCandidateMatcher
         return string.Join('+', kinds);
     }
 
-    private static string Normalize(string value) => string.Concat(value.Normalize(NormalizationForm.FormKC)
-        .ToLowerInvariant().Where(char.IsLetterOrDigit));
+    private static string Normalize(string value) => string.Concat(value.Normalize(NormalizationForm.FormKC).ToLowerInvariant().Where(char.IsLetterOrDigit));
 
     private static string? Isrc(string? value)
     {

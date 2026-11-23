@@ -1,24 +1,7 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using Meowv.Api.Infrastructure;
-using Meowv.Api.Modules.Music.Contracts;
 
 namespace Meowv.Api.Modules.Music.Storage;
-
-internal sealed record MusicCandidateSource(MusicTrack Track, string? MediaId = null, long MediaSize = 0, bool? RequiresMembership = null);
-
-internal sealed record MusicCandidate(
-    MusicCandidateSource[] Sources,
-    DateTimeOffset Added,
-    DateTimeOffset Seen,
-    bool Discovery,
-    bool Private = false);
-
-internal sealed record MusicCandidateState(MusicCandidate[] Items, Dictionary<string, string> Positions, int Turn, DateTimeOffset Refreshed);
-
-[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
-[JsonSerializable(typeof(MusicCandidateState))]
-internal sealed partial class MusicCandidateJsonContext : JsonSerializerContext;
 
 internal sealed class MusicCandidateStore(ApiDatabase database)
 {
