@@ -39,6 +39,8 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
         var normalizedQuery = NormalizeSearchName(query);
         var count = limit ?? 20;
         if (count is < 1 or > 50) throw MusicException.Invalid();
+        using var budget = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        budget.CancelAfter(TimeSpan.FromSeconds(6));
         var sources = registry.Enabled.Take(3).ToArray();
         switch (sources.Length)
         {
@@ -46,11 +48,23 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
                 throw new MusicException("source_unavailable", "当前没有启用的音乐来源。", 503, 15);
             case 1:
             {
-                var single = await Load(sources[0], query, count, cursor, ct);
+                SourcePage single;
+                try
+                {
+                    single = await Load(sources[0], query, count, cursor, budget.Token);
+                }
+                catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+                {
+                    throw new MusicException("source_timeout", "搜索响应超时，请稍后重试。", 504, 15);
+                }
+
                 if (single.Failure is { } error) throw error;
                 var page = single.Page!;
                 var rankedPageItems = rankResults ? RankSearchResults(page.Items, normalizedQuery) : page.Items;
-                return page with { Items = await ProjectAvailabilityAsync(rankedPageItems, access, ct) };
+                var projected = await ProjectAvailabilityAsync(rankedPageItems, access, ct, budget.Token);
+                return access is not null && budget.IsCancellationRequested
+                    ? page with { Items = projected, Partial = true, Warnings = [.. page.Warnings, "search:source_timeout"] }
+                    : page with { Items = projected };
             }
         }
 
@@ -70,8 +84,6 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
         var warnings = new List<string>();
         var deferred = new HashSet<string>(previous?.Deferred ?? [], StringComparer.Ordinal);
         warnings.AddRange(deferred.Select(x => x + ":deferred"));
-        using var budget = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        budget.CancelAfter(TimeSpan.FromSeconds(6));
         try
         {
             if (buffered.Count < count)
@@ -137,7 +149,10 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
             }
         }
 
-        return new MusicSearchPage(await ProjectAvailabilityAsync(items, access, ct), nextCursor, warnings.Count > 0, [.. warnings]);
+        var projectedItems = await ProjectAvailabilityAsync(items, access, ct, budget.Token);
+        if (access is not null && budget.IsCancellationRequested && !warnings.Contains("search:source_timeout"))
+            warnings.Add("search:source_timeout");
+        return new MusicSearchPage(projectedItems, nextCursor, warnings.Count > 0, [.. warnings]);
 
         void Apply(IEnumerable<SourcePage> pages)
         {
@@ -183,8 +198,6 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
         return 0;
     }
 
-    public Task<MusicRecommendationPage> RecommendAsync(CancellationToken ct) => RecommendAsync(ct, null);
-
     internal async Task<MusicRecommendationPage> RecommendAsync(CancellationToken ct, QQMembership.Access? access)
     {
         var page = await SearchCoreAsync(FallbackQuery(clock.GetUtcNow()), 50, null, ct, access, rankResults: false);
@@ -204,8 +217,9 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
 
     internal MusicTrack[] PlayableCandidates(IEnumerable<MusicTrack> tracks) => [.. CurrentAvailability(tracks, registry.Enabled).Where(track => track.Availability == "candidate")];
 
-    internal async Task<MusicTrack[]> ProjectAvailabilityAsync(IEnumerable<MusicTrack> tracks, QQMembership.Access? access, CancellationToken ct)
+    internal async Task<MusicTrack[]> ProjectAvailabilityAsync(IEnumerable<MusicTrack> tracks, QQMembership.Access? access, CancellationToken ct, CancellationToken deadline = default)
     {
+        ct.ThrowIfCancellationRequested();
         var sources = registry.Enabled;
         var neutral = CurrentAvailability(tracks, sources);
         if (access is null || sources.OfType<QQMusicProvider>().FirstOrDefault() is not { } qq) return neutral;
@@ -214,8 +228,8 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
             .Where(source => source.ProviderId == QQMusicProvider.Id)
             .Select(source => source.SourceTrackId)
             .Distinct(StringComparer.Ordinal).Take(90).ToArray();
-        if (mids.Length == 0) return neutral;
-        using var budget = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        if (mids.Length == 0 || deadline.IsCancellationRequested) return neutral;
+        using var budget = CancellationTokenSource.CreateLinkedTokenSource(ct, deadline);
         budget.CancelAfter(TimeSpan.FromSeconds(2));
         try
         {
@@ -483,14 +497,18 @@ public sealed class MusicCatalog(MusicProviderRegistry registry, TimeProvider cl
                 MusicCandidateMatcher.CanMerge(x.Track, incoming));
             var existing = previous?.Track;
             var baseline = existing is null || incoming.Availability == "candidate" && existing.Availability != "candidate" ? incoming : existing;
+            MusicMatch? match = null;
             var matches = (existing?.Sources ?? []).Concat(incoming.Sources).Where(x => enabled.Any(p => p.ProviderId == x.ProviderId))
                 .DistinctBy(x => (x.ProviderId, x.SourceTrackId)).OrderBy(x => x.ProviderId == baseline.Sources[0].ProviderId ? 0 : 1).Select(x => x.ProviderId == baseline.Sources[0].ProviderId
                     ? x
-                    : x with
-                    {
-                        Confidence = Math.Min(.99, existing is null ? 1 : MusicCandidateMatcher.Compare(existing, incoming).Confidence),
-                        Edition = MusicCandidateMatcher.Compare(baseline, incoming).Edition
-                    }).ToArray();
+                    : Match(x)).ToArray();
+
+            MusicSource Match(MusicSource source)
+            {
+                match ??= MusicCandidateMatcher.Compare(existing ?? incoming, incoming);
+                return source with { Confidence = Math.Min(.99, existing is null ? 1 : match.Confidence), Edition = match.Edition };
+            }
+
             var result = baseline with { Sources = matches, CoverUrl = baseline.CoverUrl ?? incoming.CoverUrl ?? existing?.CoverUrl };
             if (existing is not null && existing.Id != result.Id) _known.Remove(existing.Id);
             if (_known.Count >= 1000 && !_known.ContainsKey(result.Id)) _known.Remove(_known.MinBy(x => x.Value.Used).Key);

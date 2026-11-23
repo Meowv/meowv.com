@@ -317,18 +317,27 @@ internal static class MusicChecks
                   identicalStatus.DeviceCode == pending.DeviceCode &&
                   identicalStatus.EncryptedToken == claimedStatus.EncryptedToken,
                 "Active registration retry preserves the device code and ciphertext");
-            using var rotated = await client.PostAsync(devicesPath + "/register", Json(Serialize(RegisterInput(anotherKey, id, "Other"))));
+            var changedKey = RegisterInput(anotherKey, id, "Other");
+            using var rejected = await client.PostAsync(devicesPath + "/register", Json(Serialize(changedKey)));
+            await Error(rejected, 409, "device_reapproval_required");
+            Check(store.Verify(token) == deviceId && store.Status(id) == claimedStatus,
+                "A rejected key change leaves the approved credential intact");
+
+            using var rotation = new HttpRequestMessage(HttpMethod.Post, devicesPath + "/register");
+            rotation.Content = Json(Serialize(changedKey));
+            rotation.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            using var rotated = await client.SendAsync(rotation);
             var rotatedStatus = await ReadStatus(rotated);
             var rotatedToken = Decrypt(anotherKey, rotatedStatus);
             Check(rotated.StatusCode == HttpStatusCode.OK && rotatedStatus.Status == "active" &&
                   rotatedStatus.DeviceCode == pending.DeviceCode &&
                   rotatedStatus.EncryptedToken != claimedStatus.EncryptedToken &&
                   store.Verify(token) is null && store.Verify(rotatedToken) == deviceId,
-                "Active re-registration rotates the key, replaces the token and keeps the device code");
-            using var malformed = await client.PostAsync(devicesPath + "/register", Json(Serialize(register with { PublicKey = "bad" })));
-            await Error(malformed, 400, "invalid_request");
+                "Verified key rotation replaces the token and keeps the device code");
+            CheckRegistrationRejected(() => store.Register(register, token), 409, "device_reapproval_required");
+            CheckRegistrationRejected(() => store.Register(register with { PublicKey = "bad" }), 400, "invalid_request");
             using var stillActive = await client.GetAsync(statusPath);
-            Check((await ReadStatus(stillActive)) == rotatedStatus, "Malformed key leaves the rotated credential intact");
+            Check((await ReadStatus(stillActive)) == rotatedStatus, "Failed registration leaves the rotated credential intact");
             using var queryToken = await client.GetAsync("/api/music/providers?access_token=" + token);
             await Error(queryToken, 401, "unauthorized");
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", rotatedToken);
@@ -343,12 +352,12 @@ internal static class MusicChecks
             Check(revoked.StatusCode == HttpStatusCode.NoContent && revokedAgain.StatusCode == HttpStatusCode.NoContent,
                 "Revocation is idempotent");
             using var revokedStatus = await client.GetAsync(statusPath);
-            Check((await ReadStatus(revokedStatus)).Status == "revoked" && store.Verify(token) is null,
+            Check((await ReadStatus(revokedStatus)).Status == "revoked" && store.Verify(rotatedToken) is null,
                 "Revocation clears credentials");
             using var expired = await client.GetAsync("/api/music/providers");
             await Error(expired, 401, "unauthorized");
 
-            using var registerAgain = await client.PostAsync(devicesPath + "/register", Json(Serialize(register)));
+            using var registerAgain = await client.PostAsync(devicesPath + "/register", Json(Serialize(changedKey)));
             Check((await ReadStatus(registerAgain)).Status == "revoked", "Registration cannot undo revocation");
             using var rateLimited = await client.PostAsync(devicesPath + "/register", Json(Serialize(register)));
             Check((int)rateLimited.StatusCode == 429, "Anonymous registrations use the dedicated IP quota");
@@ -357,9 +366,8 @@ internal static class MusicChecks
             var input = RegisterInput(anotherKey, unapprovedId, "Pending");
             var pendingRegistration = store.Register(input);
             var oldDeviceId = store.List().Single(d => d.InstallationId == unapprovedId).DeviceId;
-            var rotatedPending = store.Register(RegisterInput(key, unapprovedId, "Pending"));
-            Check(rotatedPending.Status == "pending" && rotatedPending.DeviceCode == pendingRegistration.DeviceCode,
-                "Pending re-registration rotates the key but keeps the device code");
+            CheckRegistrationRejected(() => store.Register(RegisterInput(key, unapprovedId, "Pending")),
+                409, "device_reapproval_required");
             clock.Now = clock.Now.AddHours(24);
             using var missing = await client.GetAsync(devicesPath + "/status/" + unapprovedId);
             await Error(missing, 404, "device_not_found");
@@ -378,6 +386,20 @@ internal static class MusicChecks
         static async Task<MusicDeviceStatus> ReadStatus(HttpResponseMessage response) =>
             JsonSerializer.Deserialize(await response.Content.ReadAsStringAsync(), MusicJsonContext.Default.MusicDeviceStatus)!;
         static string Serialize(MusicDeviceRegister input) => JsonSerializer.Serialize(input, MusicJsonContext.Default.MusicDeviceRegister);
+    }
+
+    private static void CheckRegistrationRejected(Action register, int status, string code)
+    {
+        try
+        {
+            register();
+        }
+        catch (MusicException error) when (error.Status == status && error.Code == code)
+        {
+            return;
+        }
+
+        throw new InvalidOperationException("Expected device registration to be rejected with " + code);
     }
 
     private static async Task ReactivationAndDeletionChecks(string root)
@@ -409,14 +431,12 @@ internal static class MusicChecks
             devices.Revoke(id);
             Check(devices.Verify(oldToken) is null && !membership.Allowed(id), "Revocation disables both permissions");
 
-            var rotated = devices.Register(RegisterInput(anotherKey, installationId, "Test car"));
-            Check(rotated.Status == "revoked" && rotated.DeviceCode == initial.DeviceCode &&
-                  rotated.EncryptedToken is null,
-                "Revoked re-registration rotates the key but stays revoked with the same device code");
+            var replacementInput = RegisterInput(anotherKey, installationId, "Test car");
+            CheckRegistrationRejected(() => devices.Register(replacementInput), 409, "device_reapproval_required");
             using var reactivated = await client.PostAsync(adminPath + "/activate", null);
             Check(reactivated.IsSuccessStatusCode, "Management can reactivate the same device");
             var active = devices.Status(installationId)!;
-            var newToken = Decrypt(anotherKey, active);
+            var newToken = Decrypt(key, active);
             Check(active.DeviceCode == initial.DeviceCode && oldToken != newToken &&
                   devices.Verify(oldToken) is null && devices.Verify(newToken) == id,
                 "Reactivation preserves the device code, replaces the token and leaves the previous token invalid");
@@ -432,7 +452,7 @@ internal static class MusicChecks
             using var removed = await client.GetAsync(statusPath);
             await Error(removed, 404, "device_not_found");
             using var registeredAgain = await client.PostAsync("/api/music/devices/register",
-                Json(JsonSerializer.Serialize(input, MusicJsonContext.Default.MusicDeviceRegister)));
+                Json(JsonSerializer.Serialize(replacementInput, MusicJsonContext.Default.MusicDeviceRegister)));
             var replacement = JsonSerializer.Deserialize(
                 await registeredAgain.Content.ReadAsStringAsync(), MusicJsonContext.Default.MusicDeviceStatus)!;
             Check(registeredAgain.StatusCode == HttpStatusCode.Accepted && replacement.Status == "pending" &&

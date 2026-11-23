@@ -217,7 +217,7 @@ test('music management activates, reactivates and deletes the selected device', 
   const deviceId = 'device-1';
   const page = createPage(request => {
     if (request.path === '/api/music/setup/devices') {
-      return { body: status === 'removed' ? [] : [{ deviceId, installationId: 'installation-1', deviceCode: 'BEEF-CAFE', model: '<img onerror=unsafe>', osVersion: '9', status }] };
+      return { body: status === 'removed' ? [] : [{ deviceId, installationId: 'installation-1', deviceCode: 'BEEF-CAFE', keyFingerprint: '0123456789ABCDEF', model: '<img onerror=unsafe>', osVersion: '9', status }] };
     }
     if (request.path === '/api/music/setup/devices/device-1/activate') {
       assert.equal(request.method, 'POST');
@@ -245,7 +245,7 @@ test('music management activates, reactivates and deletes the selected device', 
   page.setConfirmation(false);
   await page.trigger('music-activate');
   assert.equal(status, 'pending');
-  assert.match(page.prompts.at(-1), /BEEF-CAFE/);
+  assert.match(page.prompts.at(-1), /BEEF-CAFE.*0123456789ABCDEF/);
   page.setConfirmation(true);
   await page.trigger('music-activate');
   assert.equal(status, 'active');

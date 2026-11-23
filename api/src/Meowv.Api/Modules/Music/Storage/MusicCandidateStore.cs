@@ -7,7 +7,7 @@ internal sealed class MusicCandidateStore(ApiDatabase database)
 {
     private readonly Lock _gate = new();
     private bool _initialized;
-    internal static MusicCandidateState Empty => new([], [], 0, default);
+    private static MusicCandidateState Empty => new([], [], 0, default);
 
     private void Initialize()
     {

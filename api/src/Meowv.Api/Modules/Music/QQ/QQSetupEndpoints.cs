@@ -28,12 +28,8 @@ internal static class QQSetupEndpoints
 
         group.MapPut("/devices/{id}", async (string id, HttpContext context, QQMembership member) =>
         {
-            if (!context.Request.HasJsonContentType()) throw MusicException.Invalid();
-            var buffer = new byte[257];
-            var length = await context.Request.Body.ReadAtLeastAsync(buffer, buffer.Length, false, context.RequestAborted);
-            if (length == buffer.Length) throw MusicException.Invalid();
-            var body = System.Text.Json.JsonSerializer.Deserialize(buffer.AsSpan(0, length), QQJsonContext.Default.QQDeviceGrant);
-            if (body?.Enabled is not { } enabled) throw MusicException.Invalid();
+            var body = await MusicModule.ReadBody(context, QQJsonContext.Default.QQDeviceGrant, maxBytes: 256);
+            if (body.Enabled is not { } enabled) throw MusicException.Invalid();
             return member.SetDevice(id, enabled) ? Results.NoContent() : Results.NotFound();
         }).WithSummary("设置指定设备的 QQ 音乐会员播放权限。").RequireRateLimiting("api-auth");
     }

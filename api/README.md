@@ -58,7 +58,7 @@ dotnet run --project api/src/Meowv.Api -- --contentRoot /YOUR_CHECKOUT/api/src/M
 
 默认地址为 `http://localhost:5000`，启动参数可通过标准 `--urls` 覆盖。
 
-打开 `http://localhost:5000/setup`，在统一初始化向导中输入一次公共管理密钥：首次使用自动生成服务级授权码，然后检查摄像头模块并引导账号登录或验证码验证；已有授权码和保存的云会话自动保留。浏览器会记住管理密钥，刷新页面自动恢复；点击「退出管理」后清除。音乐设备和 QQ 会员授权列表随页面加载。App 自动登记，管理员在音乐分区按设备码核对并激活；音乐分区还可手动强制刷新每日榜单快照。摄像头未启用或初始化失败时，系统授权仍可使用，页面显示模块状态并提供重新检查。
+打开 `http://localhost:5000/setup`，在统一初始化向导中输入一次公共管理密钥：首次使用自动生成服务级授权码，然后检查摄像头模块并引导账号登录或验证码验证；已有授权码和保存的云会话自动保留。浏览器会记住管理密钥，刷新页面自动恢复；点击「退出管理」后清除。音乐设备和 QQ 会员授权列表随页面加载。App 自动登记，管理员在音乐分区核对设备码和公钥指纹后激活；音乐分区还可手动强制刷新每日榜单快照。摄像头未启用或初始化失败时，系统授权仍可使用，页面显示模块状态并提供重新检查。
 
 一个授权码通用于所有声明公共授权的模块，客户端使用 `Authorization: Bearer YOUR_ACCESS_CODE`。只读方法（`GET`、`HEAD`、`OPTIONS`）也接受 `?access_token=YOUR_ACCESS_CODE`，供播放器、`<video>`、图片标签等无法自定义请求头的场景使用；写操作必须走请求头。URL 中的凭据会进入访问日志、浏览器历史和 Referer，服务对这类响应附加 `Cache-Control: no-store` 与 `Referrer-Policy: no-referrer`，但仍不要把它放进可分享链接。服务只保存盐和 PBKDF2 哈希；已有授权码不会再次返回明文，遗失后只能在向导中手动轮换。轮换立即废止旧授权码，并使旧摄像头播放票据失效。切换小米账号单独确认，不轮换公共授权码。授权状态保存在共享数据库的 `auth_state` 中，不依赖摄像头开关或小米登录状态。管理密钥保存在当前浏览器的本地存储中，刷新页面后自动恢复；点击「退出管理」或密钥被服务拒绝时立即清除。
 
@@ -72,7 +72,7 @@ dotnet run --project api/src/Meowv.Api -- --contentRoot /YOUR_CHECKOUT/api/src/M
 | `POST /api/auth/access-code/rotate` | 同上；轮换所有模块共用的授权码 |
 | `/api/xiaomi-camera/setup/...` | 同样使用 `X-Api-Bootstrap-Token`；小米账号登录、验证码验证和会话重置 |
 | `GET /api/xiaomi-camera/health` | 摄像头就绪状态；未就绪 `503`，禁用时不注册 |
-| `POST /api/music/devices/register` | 匿名设备登记，提交安装 ID、公钥、设备型号和 Android 版本 |
+| `POST /api/music/devices/register` | 匿名设备登记，提交安装 ID、公钥、设备型号和 Android 版本。已激活设备换钥须提供当前设备令牌 |
 | `GET /api/music/devices/status/{installationId}` | 匿名查询登记，已激活时返回仅本机可解的密文 |
 | `GET /api/music/setup/devices` | 管理密钥，列出设备及审批状态 |
 | `POST /api/music/setup/devices/{deviceId}/activate` | 管理密钥，激活设备。重新激活已撤销设备时签发新令牌，重复激活时沿用当前令牌 |
@@ -82,9 +82,9 @@ dotnet run --project api/src/Meowv.Api -- --contentRoot /YOUR_CHECKOUT/api/src/M
 
 公共管理接口有限流，超过额度统一返回 `429`，授权码响应及初始化页面禁止缓存。`/setup` 自动加载使用的读取接口（读取授权码、设备列表、小米登录状态）使用独立的 `setup-ui` 配额：每客户端 IP 每分钟 60 次；轮换授权码、激活、撤销及删除设备、摄像头登录与 QQ 扫码等写操作仍走原有 10 次/分钟的严格配额。宿主在限流前处理转发头，只信任本机 IPv4 / IPv6 回环代理的一跳 `X-Forwarded-For` 和 `X-Forwarded-Proto`；适用于仓库 Nginx 转发到 `127.0.0.1:5000` 的布局，其他来源的转发头不生效。普通业务通过标准认证 Scheme 校验 Bearer 授权码，缺失或错误返回 `401 access_code_unauthorized`，在业务参数绑定前拦截；管理密钥不代替应用授权码。通用授权码和公共管理密钥支持请求头与 `?access_token=` 两种载体，同一请求同时使用两种载体、URL 凭据用于写操作或参数重复出现时按无效凭据处理。摄像头管理接口位于 `/api/xiaomi-camera/setup/...`，公共授权码由 `/api/auth/...` 管理。
 
-设备登记和状态查询是公共端点，按 IP 分别限制 5 次/分钟和 30 次/分钟。登记需要 32 位十六进制安装 ID、Base64url 编码的 RSA-2048 SPKI 公钥，待激活记录 24 小时过期，最多 1000 条待激活和 256 台已激活设备。同一安装 ID 的公钥固定，重复提交同一个公钥会返回当前状态，换公钥返回 `409`。服务端分配的 `deviceId` 用于管理操作和 QQ 会员授权，待激活记录过期后重新登记会分配新 `deviceId`。
+设备登记和状态查询是公共端点，按 IP 分别限制 5 次/分钟和 30 次/分钟。登记需要 32 位十六进制安装 ID、Base64url 编码的 RSA-2048 SPKI 公钥，待激活记录 24 小时过期，最多 1000 条待激活和 256 台已激活设备。重复登记相同公钥会返回当前状态。已激活设备需凭当前设备令牌换钥，其余换钥请求返回 `409 device_reapproval_required`。管理员激活前，在 `/setup` 对照 App 设置中的设备码和公钥指纹。服务端分配的 `deviceId` 用于管理操作和 QQ 会员授权，待激活记录过期后重新登记会分配新 `deviceId`。
 
-音乐业务接口只接受 `Authorization: Bearer` 设备令牌。激活时保存令牌的 SHA-256 摘要与 RSA-OAEP 密文。为适配 Android 9 Keystore，OAEP 摘要与 MGF1 均用 SHA-1。生产 App 通过 HTTPS 领取密文。撤销会清空令牌摘要与密文。管理员可在 `/setup` 重新激活或删除已撤销的记录。重新激活时保留设备及设备码、签发新令牌，并需要重新授予 QQ 会员权限。删除时清除设备和对应的 QQ 授权记录，不保留永久拉黑记录；设备再次上线会以同一设备码重新登记为待激活。已激活设备换钥（重装/清数据）会自动轮换公钥并签发新令牌，设备码与 device_id 保持不变；已撤销设备不会被自动恢复。v2 设备表会重建设备 schema，升级前需备份 `api.db`。撤销作用于后续 API 鉴权，已下发的第三方媒体地址和已缓冲音频仍遵循各自的有效期。旧 `music_device_tokens` 表保留为历史数据，旧令牌停止使用。
+音乐业务接口只接受 `Authorization: Bearer` 设备令牌。激活时保存令牌的 SHA-256 摘要与 RSA-OAEP 密文。为适配 Android 9 Keystore，OAEP 摘要与 MGF1 均用 SHA-1。生产 App 通过 HTTPS 领取密文。撤销会清空令牌摘要与密文。管理员可在 `/setup` 重新激活或删除已撤销的记录。重新激活时保留设备及设备码、签发新令牌，并需要重新授予 QQ 会员权限。删除时清除设备和对应的 QQ 授权记录，不保留永久拉黑记录；设备再次上线会以同一设备码重新登记为待激活。已激活设备持当前令牌换钥会获得新令牌，并保留设备码与 `device_id`。重装或清数据丢失密钥及令牌后，管理员需撤销并删除旧记录，等待 App 以原设备码、新公钥重新登记后审批。v2 设备表会重建设备 schema，升级前需备份 `api.db`。撤销作用于后续 API 鉴权，已下发的第三方媒体地址和已缓冲音频仍遵循各自的有效期。旧 `music_device_tokens` 表保留为历史数据，旧令牌停止使用。
 
 ## 接口目录
 

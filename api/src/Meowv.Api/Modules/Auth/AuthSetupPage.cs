@@ -1010,7 +1010,7 @@ internal static class AuthSetupPage
                                          const device = selectedMusicDevice();
                                          if (!device || (device.status !== "pending" && device.status !== "revoked")) return;
                                          const action = device.status === "revoked" ? "重新激活" : "激活";
-                                         if (!confirm("确认" + action + "设备 " + device.deviceCode + "？")) return;
+                                         if (!confirm("请核对 App 中的设备码 " + device.deviceCode + " 和公钥指纹 " + device.keyFingerprint + "。两项一致后确认" + action + "。")) return;
                                          run(async () => {
                                            await request("/api/music/setup/devices/" + encodeURIComponent(device.deviceId) + "/activate", { method: "POST" });
                                            await loadMusicDevices();

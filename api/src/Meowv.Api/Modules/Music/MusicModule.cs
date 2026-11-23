@@ -25,9 +25,11 @@ public sealed class MusicModule : IEndpointModule
         {
             music.MapPost("/devices/register", async (HttpContext context, MusicDeviceStore devices) =>
             {
-                var status = devices.Register(await ReadBody(context, MusicJsonContext.Default.MusicDeviceRegister));
+                var credential = ApiCredentials.ReadAccessCode(context.Request);
+                var proof = credential is { State: ApiCredentialState.Valid, FromQuery: false } ? credential.Value : null;
+                var status = devices.Register(await ReadBody(context, MusicJsonContext.Default.MusicDeviceRegister), proof);
                 return Results.Json(status, MusicJsonContext.Default.MusicDeviceStatus, statusCode: status.Status == "active" ? 200 : 202);
-            }).WithSummary("登记待审批音乐设备；已激活设备换钥时自动重新激活。").AllowAnonymous().RequireRateLimiting("music-register");
+            }).WithSummary("登记待审批音乐设备；已激活设备需使用当前令牌换钥。").WithMetadata(new EndpointAccessMetadata("登记可匿名；换钥需音乐设备 Bearer 令牌")).AllowAnonymous().RequireRateLimiting("music-register");
 
             music.MapGet("/devices/status/{installationId}", (string installationId, MusicDeviceStore devices) => devices.Status(installationId) is { } status ? Results.Json(status, MusicJsonContext.Default.MusicDeviceStatus) : throw new MusicException("device_not_found", "设备登记不存在或已过期。", 404)).WithSummary("查询安装激活状态及设备加密令牌。").AllowAnonymous().RequireRateLimiting("music-activation-status");
 
@@ -70,20 +72,13 @@ public sealed class MusicModule : IEndpointModule
         }).WithSummary("解析曲目的可播放资源地址。");
     }
 
-    private static async Task<T> ReadBody<T>(HttpContext context, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> type)
+    internal static async Task<T> ReadBody<T>(HttpContext context, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> type, int maxBytes = 4096)
         where T : class
     {
-        if (!context.Request.HasJsonContentType()) throw MusicException.Invalid();
-        var bytes = new byte[4097];
-        var length = 0;
-        while (length < bytes.Length)
-        {
-            var read = await context.Request.Body.ReadAsync(bytes.AsMemory(length), context.RequestAborted);
-            if (read == 0) break;
-            length += read;
-        }
-
-        if (length > 4096) throw MusicException.Invalid();
+        if (!context.Request.HasJsonContentType() || context.Request.ContentLength > maxBytes) throw MusicException.Invalid();
+        var bytes = new byte[maxBytes + 1];
+        var length = await context.Request.Body.ReadAtLeastAsync(bytes, bytes.Length, false, context.RequestAborted);
+        if (length > maxBytes) throw MusicException.Invalid();
         return System.Text.Json.JsonSerializer.Deserialize(bytes.AsSpan(0, length), type) ?? throw MusicException.Invalid();
     }
 

@@ -10,4 +10,5 @@ public sealed record MusicDevice(
     DateTime CreatedAt,
     DateTime? ActivatedAt,
     DateTime? LastSeen,
-    DateTime? RevokedAt);
+    DateTime? RevokedAt,
+    string KeyFingerprint);

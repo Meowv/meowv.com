@@ -40,7 +40,7 @@ public sealed class MusicDeviceStore(ApiDatabase database, TimeProvider clock)
         }
     }
 
-    public MusicDeviceStatus Register(MusicDeviceRegister input)
+    public MusicDeviceStatus Register(MusicDeviceRegister input, string? previousToken = null)
     {
         var installationId = DeviceGuid(input.InstallationId);
         var model = Label(input.Model, 80);
@@ -59,7 +59,7 @@ public sealed class MusicDeviceStore(ApiDatabase database, TimeProvider clock)
 
         command.Parameters.Clear();
         command.Parameters.AddWithValue("$id", installationId);
-        command.CommandText = "SELECT public_key,status,device_id,encrypted_token FROM music_device_activation WHERE installation_id=$id;";
+        command.CommandText = "SELECT public_key,status,device_id,encrypted_token,token_hash FROM music_device_activation WHERE installation_id=$id;";
         using (var reader = command.ExecuteReader())
         {
             if (reader.Read())
@@ -68,30 +68,29 @@ public sealed class MusicDeviceStore(ApiDatabase database, TimeProvider clock)
                 var status = reader.GetString(1);
                 var deviceId = reader.GetString(2);
                 var encrypted = reader.IsDBNull(3) ? null : reader.GetString(3);
+                var tokenHash = reader.IsDBNull(4) ? null : reader.GetString(4);
                 reader.Close();
-                if (status == "active" && storedKey.AsSpan().SequenceEqual(publicKey))
+                if (storedKey.AsSpan().SequenceEqual(publicKey))
                 {
-                    encrypted ??= IssueToken(connection, transaction, deviceId, publicKey, now);
+                    if (status == "active") encrypted ??= IssueToken(connection, transaction, deviceId, publicKey, now);
                     transaction.Commit();
-                    return new MusicDeviceStatus(installationId, deviceCode, "active", encrypted);
+                    return new MusicDeviceStatus(installationId, deviceCode, status, encrypted);
                 }
 
-                command.CommandText = status == "active"
-                    ? "UPDATE music_device_activation SET public_key=$key,model=$model,os_version=$os WHERE installation_id=$id;"
-                    : "UPDATE music_device_activation SET public_key=$key,model=$model,os_version=$os,token_hash=NULL,encrypted_token=NULL WHERE installation_id=$id;";
+                // 在同一事务内验证当前令牌，避免并发换钥复用已失效的令牌。
+                var proof = TokenHash(previousToken);
+                if (status != "active" || tokenHash is null || proof is null ||
+                    !CryptographicOperations.FixedTimeEquals(Encoding.ASCII.GetBytes(tokenHash), Encoding.ASCII.GetBytes(proof)))
+                    throw new MusicException("device_reapproval_required", "设备公钥已变更，请联系管理员重新登记。", 409);
+
+                command.CommandText = "UPDATE music_device_activation SET public_key=$key,model=$model,os_version=$os WHERE installation_id=$id;";
                 command.Parameters.AddWithValue("$key", publicKey);
                 command.Parameters.AddWithValue("$model", model);
                 command.Parameters.AddWithValue("$os", osVersion);
                 command.ExecuteNonQuery();
-                if (status == "active")
-                {
-                    var token = IssueToken(connection, transaction, deviceId, publicKey, now);
-                    transaction.Commit();
-                    return new MusicDeviceStatus(installationId, deviceCode, "active", token);
-                }
-
+                var token = IssueToken(connection, transaction, deviceId, publicKey, now);
                 transaction.Commit();
-                return new MusicDeviceStatus(installationId, deviceCode, status);
+                return new MusicDeviceStatus(installationId, deviceCode, "active", token);
             }
         }
 
@@ -180,13 +179,12 @@ public sealed class MusicDeviceStore(ApiDatabase database, TimeProvider clock)
 
     public string? Verify(string token)
     {
-        if (token.Length != 47 || !token.StartsWith("mvm_", StringComparison.Ordinal) ||
-            token[4..].Any(c => !char.IsAsciiLetterOrDigit(c) && c is not '-' and not '_')) return null;
+        if (TokenHash(token) is not { } hash) return null;
         Initialize();
         var now = clock.GetUtcNow();
         using var connection = database.OpenConnection();
         using var command = connection.CreateCommand();
-        command.Parameters.AddWithValue("$hash", Convert.ToHexString(SHA256.HashData(Encoding.ASCII.GetBytes(token))));
+        command.Parameters.AddWithValue("$hash", hash);
         command.CommandText = "SELECT device_id FROM music_device_activation WHERE token_hash=$hash AND status='active';";
         if (command.ExecuteScalar() as string is not { } id) return null;
         if (_lastUsedWrites.TryGetValue(id, out var lastWrite) && now - lastWrite < TimeSpan.FromMinutes(1)) return id;
@@ -204,7 +202,7 @@ public sealed class MusicDeviceStore(ApiDatabase database, TimeProvider clock)
         using var connection = database.OpenConnection();
         using var command = connection.CreateCommand();
         command.CommandText = """
-                              SELECT installation_id,device_id,device_code,model,os_version,status,created_at,activated_at,last_seen,revoked_at
+                              SELECT installation_id,device_id,device_code,model,os_version,status,created_at,activated_at,last_seen,revoked_at,public_key
                               FROM music_device_activation WHERE status<>'pending' OR created_at>$expiry
                               ORDER BY status='pending' DESC, created_at DESC;
                               """;
@@ -213,7 +211,7 @@ public sealed class MusicDeviceStore(ApiDatabase database, TimeProvider clock)
         var devices = new List<MusicDevice>();
         while (reader.Read())
             devices.Add(new MusicDevice(reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.GetString(3),
-                reader.GetString(4), reader.GetString(5), reader.GetDateTime(6), Date(7), Date(8), Date(9)));
+                reader.GetString(4), reader.GetString(5), reader.GetDateTime(6), Date(7), Date(8), Date(9), Convert.ToHexString(SHA256.HashData((byte[])reader[10]).AsSpan(0, 8))));
         return [.. devices];
 
         DateTime? Date(int column) => reader.IsDBNull(column) ? null : reader.GetDateTime(column);
@@ -298,6 +296,15 @@ public sealed class MusicDeviceStore(ApiDatabase database, TimeProvider clock)
         {
             CryptographicOperations.ZeroMemory(token);
         }
+    }
+
+    private static string? TokenHash(string? token)
+    {
+        if (token is not { Length: 47 } || !token.StartsWith("mvm_", StringComparison.Ordinal)) return null;
+        foreach (var c in token.AsSpan(4))
+            if (!char.IsAsciiLetterOrDigit(c) && c is not '-' and not '_')
+                return null;
+        return Convert.ToHexString(SHA256.HashData(Encoding.ASCII.GetBytes(token)));
     }
 
     private static string DeviceCode(string installationId)

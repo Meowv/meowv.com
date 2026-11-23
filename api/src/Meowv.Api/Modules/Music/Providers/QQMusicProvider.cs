@@ -56,8 +56,10 @@ public sealed class QQMusicProvider(HttpClient http, TimeProvider clock) : IMusi
                 _tracks[entry.Track.Id] = details with { Deadline = deadline, UnplayableUntil = unplayable };
             }
 
-            foreach (var old in _tracks.OrderBy(x => x.Value.Deadline).Take(Math.Max(0, _tracks.Count - 1000)))
-                _tracks.TryRemove(old.Key, out _);
+            var overflow = _tracks.Count - 1000;
+            if (overflow > 0)
+                foreach (var old in _tracks.OrderBy(x => x.Value.Deadline).Take(overflow))
+                    _tracks.TryRemove(old.Key, out _);
         }
     }
 

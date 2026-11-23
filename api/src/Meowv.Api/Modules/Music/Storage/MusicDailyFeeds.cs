@@ -14,8 +14,6 @@ internal sealed class MusicDailyFeeds(MusicChartStore store, MusicProviderRegist
 
     private readonly FeedSpec[] _feeds = FeedSpec.Defaults;
 
-    private readonly Dictionary<(string Feed, string Provider), FeedSpec> _specs = FeedSpec.Defaults.GroupBy(x => (x.Id, x.ProviderId)).ToDictionary(x => x.Key, x => x.First());
-
     private readonly ConcurrentDictionary<(string Feed, string Provider), RefreshState> _states = new();
 
     private sealed class RefreshState
@@ -29,16 +27,17 @@ internal sealed class MusicDailyFeeds(MusicChartStore store, MusicProviderRegist
 
     public async Task<MusicDailyPage> GetDailyAsync(bool force, CancellationToken ct, QQMembership.Access? access = null)
     {
-        var page = await GetAsync(_feeds, "daily", force, ct);
+        var page = await ReadDailyAsync(force, ct);
         if (access is null) return page;
         var tracks = await catalog.ProjectAvailabilityAsync(page.Items.Select(item => item.Track), access, ct);
         return page with { Items = page.Items.Select((item, index) => item with { Track = tracks[index] }).ToArray() };
     }
 
-    private async Task<MusicDailyPage> GetAsync(FeedSpec[] feeds, string name, bool force, CancellationToken ct)
+    private async Task<MusicDailyPage> ReadDailyAsync(bool force, CancellationToken ct)
     {
-        var providers = registry.Enabled.Where(x => x is NeteaseMusicProvider or QQMusicProvider).Select(x => x.ProviderId).ToArray();
-        var tasks = feeds.SelectMany(feed => providers.Where(p => p == feed.ProviderId && _specs.ContainsKey((feed.Id, p))).Select(p => ReadAsync(feed, p, force, ct))).ToArray();
+        var providers = registry.Enabled.Where(x => x is NeteaseMusicProvider or QQMusicProvider).Select(x => x.ProviderId).ToHashSet(StringComparer.Ordinal);
+        var tasks = _feeds.Where(feed => providers.Contains(feed.ProviderId))
+            .Select(feed => ReadAsync(feed, feed.ProviderId, force, ct)).ToArray();
         var results = await Task.WhenAll(tasks);
         var available = results.Where(x => x.Snapshot is not null).ToArray();
         if (available.Length == 0) throw Unavailable();
@@ -55,7 +54,7 @@ internal sealed class MusicDailyFeeds(MusicChartStore store, MusicProviderRegist
                 .Select(x => new MusicDailyRank(x.ProviderId, ranks[(x.ProviderId, x.SourceTrackId)]))
         ])).ToArray();
         var warnings = results.Where(x => x.Stale).Select(x => x.Provider + (x.Snapshot is null ? ":source_unavailable" : ":stale")).Distinct().ToArray();
-        return new MusicDailyPage(name, LocalDate(clock.GetUtcNow()), summaries, items, warnings.Length > 0, warnings);
+        return new MusicDailyPage("daily", LocalDate(clock.GetUtcNow()), summaries, items, warnings.Length > 0, warnings);
     }
 
     public async Task<MusicRecommendationPage> RecommendAsync(CancellationToken ct, QQMembership.Access? access = null)
