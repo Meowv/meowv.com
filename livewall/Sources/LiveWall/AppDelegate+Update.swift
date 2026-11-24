@@ -11,13 +11,10 @@ extension AppDelegate {
     ///
     /// 动作不带 `representedObject`：同一时刻只可能有一个待更新版本，读
     /// `availableUpdate` 即可 —— 挂上去反而要处理「引用的是上一版」的问题。
-    func buildUpdateItem(_ feed: UpdateFeed) -> NSMenuItem {
-        let root = NSMenuItem(
-            title: UpdateMenu.rowTitle(version: feed.version, sizeBytes: feed.sizeBytes),
-            action: nil,
-            keyEquivalent: ""
-        )
-
+    private func configureAvailableUpdateItem(_ root: NSMenuItem, feed: UpdateFeed) {
+        root.title = UpdateMenu.rowTitle(version: feed.version, sizeBytes: feed.sizeBytes)
+        root.action = nil
+        root.target = nil
         let submenu = NSMenu()
         for line in UpdateMenu.detailLines(feed: feed) {
             let item = NSMenuItem(title: line, action: nil, keyEquivalent: "")
@@ -33,7 +30,7 @@ extension AppDelegate {
             submenu.addItem(item)
         }
         root.submenu = submenu
-        return root
+        root.isEnabled = true
     }
 
     func selector(for action: UpdateMenu.Action) -> Selector {
@@ -42,21 +39,28 @@ extension AppDelegate {
         }
     }
 
-    /// 当前待更新的版本。**只读** —— 状态本身由 `updateState` 持有，
-    /// 三个动作用它拿 feed，不改状态。
+    /// 下载动作使用菜单当前显示的版本。
     var availableUpdate: UpdateFeed? { updateState.feed }
 
-    /// **唯一的写入口**：改状态 + 重建菜单都在这一处。
-    ///
-    /// 幂等：值没变就直接返回，不重建菜单 —— 于是「同一个结果到了两次」
-    /// 「状态没变却重复刷新」都不会让菜单闪一下。
+    /// 菜单展开时直接更新检查入口，整份菜单仍在收起后重建。
     func setUpdateState(_ newState: UpdateState) {
-        guard newState != updateState else { return }
+        guard newState != updateState else {
+            // 后台检查结束时，图标的活动状态可能变了。
+            updateMenuBarIconAnimation()
+            return
+        }
         let old = updateState
         updateState = newState
         log("更新状态：\(old.label) → \(newState.label)")
-        // 「展开中不重建」现在由 `refreshStatusItem` 统一处理（展开期记待办、收起后补一次）。
-        // 这里不再自己判一次 —— 同一条约束写两处迟早会分叉，而它此前确实只在这一处分叉着。
+        if isMenuOpen, let item = updateCheckMenuItem {
+            if let feed = newState.feed {
+                configureAvailableUpdateItem(item, feed: feed)
+                updateCheckMenuItem = nil
+            } else {
+                item.title = newState.checkItemTitle
+                item.isEnabled = validateMenuItem(item)
+            }
+        }
         refreshStatusItem()
     }
 
@@ -71,28 +75,19 @@ extension AppDelegate {
             )
             item.target = self
             // 置灰判据在 `validateMenuItem(_:)`（构建时写 `isEnabled` 会被自动校验覆盖）。
+            updateCheckMenuItem = item
             menu.addItem(item)
         }
         if let feed = updateState.feed {
-            menu.addItem(buildUpdateItem(feed))
+            let item = NSMenuItem()
+            configureAvailableUpdateItem(item, feed: feed)
+            menu.addItem(item)
         }
     }
 
-    /// 发起检查。网络不可达时**根本不发请求**（状态区已经有「网络不可达」那一行了）。
-    func performUpdateCheck(force: Bool, manual: Bool = false) {
-        guard network.isReachable else { return }
-        // 先置位再发起：`check` 在「压根没发请求」时是**同步**回调的。
-        pendingManualUpdateCheck = manual
-        setUpdateState(updateState.afterCheckStarted)
-        updateChecker.check(preferences: preferences, localBuild: Self.appBuild, force: force)
-    }
-
-    /// 手动检查：无视节流，且**必须给回执**。
-    ///
-    /// 点完菜单立刻收起，异步结果不能只写回菜单 —— 不给一句「已是最新版本」
-    /// 或「检查失败：xxx」，用户看到的就是「点了没反应」。
-    @objc func checkForUpdates() {
-        guard network.isReachable else {
+    func performUpdateCheck(trigger: UpdateChecker.Trigger) {
+        guard network.isReachable || (trigger == .manual && updateChecker.isChecking) else {
+            guard trigger == .manual else { return }
             let result = UpdateMenu.Receipt(
                 text: "网络不可达，无法检查更新", isWarning: true, isOneShot: true)
             notice = .warning(result.text, oneShot: result.isOneShot)
@@ -100,23 +95,22 @@ extension AppDelegate {
             presentUpdateFeedback(result)
             return
         }
-        guard updateState != .checking else {
-            // 这一项在检查中是禁用的；走到这里多半是键盘等别的途径触发的，
-            // 那就只回一句「在查了」，**不再发第二个请求**。
-            let result = UpdateMenu.Receipt(
-                text: "正在检查更新…", isWarning: false, isOneShot: true)
-            notice = .info(result.text, oneShot: result.isOneShot)
-            refreshStatusItem()
-            presentUpdateFeedback(result)
-            return
+        updateChecker.check(preferences: preferences, localBuild: Self.appBuild, trigger: trigger) {
+            switch trigger {
+            case .automatic:
+                updateMenuBarIconAnimation()
+            case .manual:
+                setUpdateState(.checkingManually)
+            }
         }
-        notice = .info("正在检查更新…", oneShot: true)
-        performUpdateCheck(force: true, manual: true)
     }
 
-    func applyUpdateResult(_ decision: UpdateDecision, warnings: [String]) {
-        let manual = pendingManualUpdateCheck
-        pendingManualUpdateCheck = false
+    @objc func checkForUpdates() {
+        guard updateState.checkItemEnabled else { return }
+        performUpdateCheck(trigger: .manual)
+    }
+
+    func applyUpdateResult(_ decision: UpdateDecision, warnings: [String], trigger: UpdateChecker.Trigger) {
         for warning in warnings { log("更新检查：\(warning)") }
 
         // 状态迁移只有这一行：**非 available 一律回 idle**（失败按无更新处理，
@@ -133,7 +127,7 @@ extension AppDelegate {
         }
 
         // 回执只给手动检查：自动检查没人在等结果，弹提示是打扰。
-        if manual {
+        if trigger == .manual {
             let result = UpdateMenu.feedback(
                 decision, warnings: warnings, currentVersion: Self.appVersion)
             notice =

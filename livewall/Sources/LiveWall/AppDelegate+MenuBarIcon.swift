@@ -19,7 +19,7 @@ extension AppDelegate {
                 isMenuOpen: isMenuOpen,
                 isPlaying: engine.isPlaying,
                 isDownloading: downloader.isDownloading,
-                isCheckingUpdate: updateState == .checking,
+                isCheckingUpdate: updateChecker.isChecking,
                 hasPendingLoads: !loadTasksBySlot.isEmpty,
                 isPinApplying: isPinApplyInFlight
             )

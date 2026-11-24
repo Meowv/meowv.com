@@ -33,59 +33,57 @@ struct DefaultUpdateTransport: UpdateTransport {
 /// 版本检查。**只在被调用时发起请求**，没有定时器、没有后台轮询 ——
 /// 与进程占用采样同一条原则：一个常驻的菜单栏 App 不该为了「也许有新版本」反复唤醒自己。
 ///
-/// 失败一律静默：更新是附加功能，检查不出来就当没有，真相写进 `warnings` 交给日志。
-///
-/// **`@MainActor`**：`isChecking` / `lastCheckAt` / `onResult` 都按「只在主线程读写」
-/// 使用（旧版本的注释就是这么写的）。取数仍在后台队列上跑，只有结果回主 actor。
+/// 请求状态与回调在主 actor 上处理，取数在后台队列上执行。
 @MainActor
 final class UpdateChecker {
+
+    enum Trigger {
+        case automatic
+        case manual
+    }
 
     /// 两次检查之间的最短间隔。手动点「检查更新」可以无视它。
     static let throttleInterval: TimeInterval = 12 * 60 * 60
 
-    private(set) var isChecking = false
+    /// 用户点进一次后台检查后，这次检查也需要给手动回执。
+    private var activeTrigger: Trigger?
+    var isChecking: Bool { activeTrigger != nil }
     private var lastCheckAt: Date?
 
     private let queue = DispatchQueue(label: "com.meowv.livewall.update-checker", qos: .utility)
 
-    /// 检查结果（主线程）。调用方按 `UpdateDecision` 分支处理：
-    /// 只有 `.available` 值得在菜单里加一行，其余三态都不提示。
-    ///
-    /// `warnings` 是「为什么没有结果」，由调用方记日志；**手动**检查时也可以拿它当回执
-    /// —— 那时用户正在等一个答复，静默等于没反应。
-    var onResult: ((_ decision: UpdateDecision, _ warnings: [String]) -> Void)?
+    var onResult: ((_ decision: UpdateDecision, _ warnings: [String], _ trigger: Trigger) -> Void)?
 
-    /// 发起一次检查。**不会同时跑两次**：`isChecking` 期间再调用直接丢弃，
-    /// 节流窗口内的自动检查同样丢弃（`force: true` 可无视，用于手动点击）。
-    ///
-    /// 前置条件不满足时**同步回调一次** `.unusable` 并附原因（不发请求）：
-    /// 「没配地址」「读不到本地 build」属于配置问题，手动点击时用户需要知道原因。
-    /// 而「并发/节流被丢弃」**不回调** —— 那不是失败，回调反而会让调用方误判成「检查结束」。
+    /// 新请求启动或手动加入后台检查时调用 `onStarted`。节流和重复触发不产生回调。
+    /// 配置不完整时通过 `onResult` 同步返回失败原因。
     func check(
         preferences: Preferences,
         localBuild: Int?,
-        force: Bool = false,
-        transport: UpdateTransport = DefaultUpdateTransport()
+        trigger: Trigger,
+        transport: UpdateTransport = DefaultUpdateTransport(),
+        onStarted: () -> Void
     ) {
+        if let activeTrigger {
+            if trigger == .manual, activeTrigger == .automatic {
+                self.activeTrigger = .manual
+                onStarted()
+            }
+            return
+        }
         guard let url = preferences.resolvedUpdateURL else {
-            onResult?(.unusable, ["未配置更新地址（remoteUpdateURL 为空）"])
+            onResult?(.unusable, ["未配置更新地址（remoteUpdateURL 为空）"], trigger)
             return
         }
         guard let localBuild else {
-            onResult?(.unusable, ["读不到本地 build（Info.plist 的 CFBundleVersion）"])
+            onResult?(.unusable, ["读不到本地 build（Info.plist 的 CFBundleVersion）"], trigger)
             return
         }
-        guard !isChecking else {
-            // 并发的第二次**静默丢弃**：它不是失败，回调反而会让调用方把
-            // 「检查中」的状态打回「无更新」。挡重复请求本来就是这里的职责。
-            return
-        }
-        if !force, let lastCheckAt, Date().timeIntervalSince(lastCheckAt) < Self.throttleInterval {
-            // 节流命中同上：只发生在自动检查，没人等结果，静默即可。
+        if trigger == .automatic, let lastCheckAt, Date().timeIntervalSince(lastCheckAt) < Self.throttleInterval {
             return
         }
 
-        isChecking = true
+        activeTrigger = trigger
+        onStarted()
 
         // 两层闭包各自的所有权：
         //  - 外层跑在专用 utility 队列上（`resolveFeed` 内部是**同步阻塞**的取数，
@@ -99,10 +97,10 @@ final class UpdateChecker {
             let warnings = outcome.warnings
 
             Task { @MainActor [weak self] in
-                guard let self else { return }
-                self.isChecking = false
+                guard let self, let trigger = self.activeTrigger else { return }
+                self.activeTrigger = nil
                 self.lastCheckAt = Date()
-                self.onResult?(decision, warnings)
+                self.onResult?(decision, warnings, trigger)
             }
         }
     }

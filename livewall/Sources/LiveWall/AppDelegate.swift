@@ -322,9 +322,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// **更新功能在菜单里的唯一状态**。菜单显隐、可点性、文案全部由它派生，
     /// 改它必须走 `setUpdateState`（那里负责幂等与重建菜单）。
     var updateState: UpdateState = .idle
-    /// 进行中的这一次检查是不是用户点的。**只有手动检查才给界面回执** ——
-    /// 启动与网络恢复时的自动检查没人在等结果，静默才是对的。
-    var pendingManualUpdateCheck = false
+    /// 菜单展开时，用现有菜单项更新检查进度。
+    weak var updateCheckMenuItem: NSMenuItem?
     /// 手动检查的原生提示暂存。检查结果可能在菜单仍处于展开期返回；这时不能
     /// 直接弹出模态窗口，否则会和 AppKit 的菜单追踪竞争。等菜单收起后再展示。
     var pendingUpdateFeedback: (receipt: UpdateMenu.Receipt, canDownload: Bool)?
@@ -475,8 +474,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // `refreshStatusItem()` 发生在 `isDownloading` 变 true **之前**，不靠这个钩子，
         // 「下载中」这个信号对图标完全失效。
         downloader.onActivityChange = { [weak self] in self?.updateMenuBarIconAnimation() }
-        updateChecker.onResult = { [weak self] decision, warnings in
-            self?.applyUpdateResult(decision, warnings: warnings)
+        updateChecker.onResult = { [weak self] decision, warnings, trigger in
+            self?.applyUpdateResult(decision, warnings: warnings, trigger: trigger)
         }
 
         network.onChange = { [weak self] reachable in
@@ -489,8 +488,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self.advance()
             }
             self.refreshStatusItem()
-            // 断网时那次检查根本没发出去，恢复后补一次（内部有节流，不会重复打）。
-            if reachable { self.performUpdateCheck(force: false) }
+            if reachable { self.performUpdateCheck(trigger: .automatic) }
         }
         network.start()
 
@@ -635,7 +633,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             loadCatalogAndStart()
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in
-            self?.performUpdateCheck(force: false)
+            self?.performUpdateCheck(trigger: .automatic)
         }
     }
 

@@ -324,7 +324,7 @@ func updateTests() {
             expect(!UpdateState.available(feed).showsCheckItem, "有新版本 → 入口隐藏")
             expect(UpdateState.available(feed).showsUpdateRow, "有新版本 → 显示更新行")
             // 两者互斥：任何状态下都不该同时出现
-            for state in [UpdateState.idle, .checking, .available(feed)] {
+            for state in [UpdateState.idle, .checkingManually, .available(feed)] {
                 expect(
                     state.showsCheckItem != state.showsUpdateRow,
                     "\(state.label)：入口与更新行必须互斥"
@@ -332,31 +332,30 @@ func updateTests() {
             }
         }
 
-        test("检查中：入口保留但禁用，标题带省略号") {
-            expect(UpdateState.checking.showsCheckItem, "入口还在，用户看得到在跑")
-            expect(!UpdateState.checking.checkItemEnabled, "禁用挡住重复请求")
-            expectEqual(UpdateState.checking.checkItemTitle, "检查更新…", "")
+        test("手动等待时显示进度，无更新时入口可用") {
+            expect(UpdateState.idle.checkItemEnabled, "可发起手动检查")
+            expect(UpdateState.checkingManually.showsCheckItem, "入口还在，用户看得到在跑")
+            expect(!UpdateState.checkingManually.checkItemEnabled, "等待手动结果时禁用入口")
+            expectEqual(UpdateState.checkingManually.checkItemTitle, "正在检查更新…", "")
             expectEqual(UpdateState.idle.checkItemTitle, "检查更新", "")
         }
 
-        test("迁移：只有有新版本才离开入口态，失败按无更新处理") {
-            expectEqual(UpdateState.idle.afterCheckStarted, .checking, "开始检查")
-            expectEqual(UpdateState.checking.afterCheckFinished(.upToDate), .idle, "已是最新 → 入口不动")
-            expectEqual(UpdateState.checking.afterCheckFinished(.unusable), .idle, "失败 → 按无更新处理")
+        test("检查结束时恢复入口或显示新版本") {
+            expectEqual(UpdateState.checkingManually.afterCheckFinished(.upToDate), .idle, "已是最新 → 恢复入口")
+            expectEqual(UpdateState.checkingManually.afterCheckFinished(.unusable), .idle, "失败 → 恢复入口")
             expectEqual(
-                UpdateState.checking.afterCheckFinished(.available(feed)), .available(feed),
+                UpdateState.checkingManually.afterCheckFinished(.available(feed)), .available(feed),
                 "有新版本 → 切到更新行"
             )
+            expectEqual(UpdateState.idle.afterCheckFinished(.available(feed)), .available(feed), "后台检查也能提示新版本")
             // 已经显示更新行时再查一次却没有了（线上撤下 / 用户已装新版），入口要还回来
             expectEqual(UpdateState.available(feed).afterCheckFinished(.upToDate), .idle, "")
         }
 
         test("幂等：同一个事件重复到达，状态不变") {
-            expectEqual(UpdateState.checking.afterCheckStarted, .checking, "并发点击不该回到 idle")
             let once = UpdateState.idle.afterCheckFinished(.available(feed))
             expectEqual(once.afterCheckFinished(.available(feed)), once, "同一结果再来一次，值不变")
             expectEqual(UpdateState.idle.afterCheckFinished(.upToDate), .idle, "")
-            expectEqual(UpdateState.idle.afterCheckStarted.afterCheckStarted, .checking, "")
         }
     }
 }

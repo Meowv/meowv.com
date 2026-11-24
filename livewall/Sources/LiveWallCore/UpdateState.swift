@@ -1,28 +1,13 @@
 /// 更新功能在菜单里的**唯一状态**。
 ///
-/// 菜单的显隐、可点性、文案全部由这一个字段派生 —— 不允许别处再单独判
-/// `availableUpdate != nil` 或 `isChecking`：两个独立布尔量能组合出「既在检查中、
-/// 又有新版本」这种不存在的状态，而菜单只能二选一，迟早对不上。
-///
-/// 迁移规则（**幂等**：同一个事件重复到达，结果不变）：
-///
-/// | 当前 | 事件 | 迁移到 | 说明 |
-/// | --- | --- | --- | --- |
-/// | `.idle` | 开始检查（启动自动 / 手动点击） | `.checking` | |
-/// | `.checking` | 又开始一次（并发点击） | `.checking` | 不发第二个请求 |
-/// | `.checking` | 结果 `.available(f)` | `.available(f)` | 隐藏入口，显示更新行 |
-/// | `.checking` | 结果 `.upToDate` / `.unusable` | `.idle` | **失败按无更新处理**，入口不动 |
-/// | `.available` | 结果非 available（再次检查时） | `.idle` | 线上撤下后入口要还回来 |
-///
-/// 没有「忽略 / 稍后」这类从 `.available` 手动退回 `.idle` 的迁移：那两个动作已删除，
-/// 留着迁移函数也只是没有调用点的死代码。
+/// 自动检查只在收到结果时更新菜单。手动检查期间，菜单显示进度。
 public enum UpdateState: Equatable, Sendable {
 
     /// 没有可提示的更新：还没查过、查了没有、或查失败。
     /// 显示「检查更新」入口。
     case idle
-    /// 正在检查。入口**保留但禁用**，标题带省略号 —— 让用户看见在跑，同时挡掉重复请求。
-    case checking
+    /// 正在等待用户主动查询的结果。
+    case checkingManually
     /// 有新版本。**隐藏「检查更新」入口**，只显示「有新版本」那一行（子菜单里是下载动作）。
     case available(UpdateFeed)
 
@@ -41,22 +26,14 @@ public enum UpdateState: Equatable, Sendable {
         return false
     }
 
-    /// 「检查更新」入口的标题。检查中带省略号，是唯一的进度反馈
-    /// （菜单栏 App 不该为了进度弹窗）。
+    /// 手动检查时在入口原位显示进度。
     public var checkItemTitle: String {
-        self == .checking ? "检查更新…" : "检查更新"
+        self == .checkingManually ? "正在检查更新…" : "检查更新"
     }
 
-    /// 检查中的入口禁用 —— 与 `UpdateChecker` 的 `isChecking` 双保险，
-    /// 键盘触发或菜单没来得及重建时也挡得住。
-    public var checkItemEnabled: Bool { self != .checking }
+    public var checkItemEnabled: Bool { self == .idle }
 
     // MARK: - 迁移
-
-    /// 开始一次检查。已经在检查中就**保持不变**（幂等）—— 调用方据此不必先判 `isChecking`。
-    public var afterCheckStarted: UpdateState {
-        self == .checking ? self : .checking
-    }
 
     /// 检查结束后的状态。**只有 `.available` 才离开 `.idle`**，其余（已是最新 /
     /// 判不出来）一律回 `.idle` —— 失败与「没有更新」对菜单是同一件事。
@@ -77,7 +54,7 @@ public enum UpdateState: Equatable, Sendable {
     public var label: String {
         switch self {
         case .idle: return "无更新"
-        case .checking: return "检查中"
+        case .checkingManually: return "检查中"
         case .available(let feed): return "有新版本 \(feed.version)"
         }
     }
