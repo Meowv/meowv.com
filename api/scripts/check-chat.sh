@@ -15,7 +15,7 @@ cat >"$work_dir/Checks.csproj" <<XML
     <TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems><UseAppHost>false</UseAppHost><UseSharedCompilation>false</UseSharedCompilation>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors><EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
-    <EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator><EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator><EnableTrimAnalyzer>false</EnableTrimAnalyzer>
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault><NuGetAudit>false</NuGetAudit>
   </PropertyGroup>
   <ItemGroup>

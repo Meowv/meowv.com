@@ -30,6 +30,8 @@ internal static class ModuleInitializationChecks
             builder.Logging.ClearProviders();
             builder.Services.AddApiServices(builder.Configuration);
             builder.Services.AddXiaomiCameraModule(builder.Configuration);
+            builder.Services.AddSingleton<IEndpointModule, Meowv.Api.Modules.Auth.AuthModule>();
+            builder.Services.AddApiControllers();
             await using var app = builder.Build();
             var schemaMismatch = key == "DatabaseSchema";
             if (schemaMismatch)
@@ -45,7 +47,7 @@ internal static class ModuleInitializationChecks
             app.UseMiddleware<XiaomiModuleAvailabilityMiddleware>();
             app.UseAuthentication();
             app.UseAuthorization();
-            new Meowv.Api.Modules.Auth.AuthModule().MapEndpoints(app);
+            app.MapApiControllers();
             app.MapGet("/api/health", () => "healthy").AllowAnonymous();
             app.MapGet("/api/xiaomi-camera/probe", () => "must not run")
                 .WithMetadata(new XiaomiEndpointMetadata());
