@@ -1,5 +1,6 @@
 using Meowv.Api.Core;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Meowv.Api.Modules.Chat;
 
@@ -9,11 +10,14 @@ public sealed class ChatModule : IEndpointModule
     public string Description => "匿名公共聊天室、历史消息与内容管理。";
     public void ConfigureMiddleware(IApplicationBuilder application) => application.UseMiddleware<ChatMiddleware>();
 
-    // REST 端点已迁移至 ChatController；SignalR Hub 仍在此映射，须带完整元数据。
-    public void MapEndpoints(IEndpointRouteBuilder endpoints) =>
+    // REST 端点已迁移至 ChatController；SignalR Hub 仍在此映射，须带完整元数据与启用门控。
+    public void MapEndpoints(IEndpointRouteBuilder endpoints)
+    {
+        if (!endpoints.ServiceProvider.GetRequiredService<ChatOptions>().Enabled) return;
         endpoints.MapHub<ChatHub>("/api/chat/hub", transport => transport.CloseOnAuthenticationExpiration = true)
             .WithSummary("SignalR 实时消息通道。")
             .RequireAuthorization(ChatGuestAuthenticationHandler.SchemeName)
             .WithMetadata(new EndpointAccessMetadata("ChatGuest 匿名会话 Cookie + 可信 Origin"))
             .RequireRateLimiting("chat-http");
+    }
 }

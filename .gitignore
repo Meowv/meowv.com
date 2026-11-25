@@ -1,4 +1,6 @@
 /.vscode/
+/.idea/
+*.DotSettings.user
 /.workbuddy-ai/
 /build/
 /.build-staging.*/
