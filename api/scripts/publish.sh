@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# 发布为自包含单文件主程序，FFmpeg 与主程序放在同一 RID 目录并复用校验结果。
+# 发布为框架依赖单文件主程序（目标机需 .NET 10 运行时），FFmpeg 与主程序放在同一 RID 目录并复用校验结果。
 default_ffmpeg_release='v9.0.2'
 # Windows 使用包含 libx264 的 GPL 构建；该 tag 是 BtbN 发布的不可变快照。
 default_windows_ffmpeg_release='autobuild-2026-10-11-13-04'
@@ -13,7 +13,7 @@ usage() {
 --output 指定构建根目录，默认是项目中的 build/。应用产物位于 <DIR>/<RID>/，
 主程序为 Meowv.Api（Windows 为 Meowv.Api.exe），无需单独分发 .NET DLL。
 appsettings.json 作为公共配置放在主程序旁，开发配置和数据库不发布。
-默认启用代码裁剪和单文件压缩。仅部署非摄像头模块时可用 --without-ffmpeg 跳过工具准备。
+默认启用单文件压缩，依赖目标机安装 .NET 10 运行时（不裁剪）。仅部署非摄像头模块时可用 --without-ffmpeg 跳过工具准备。
 FFmpeg 和来源校验记录 SOURCE.txt 直接放在 <DIR>/<RID>/，整个目录即可独立分发。
 未传 --ffmpeg-release 时，Windows 使用固定的 BtbN GPL 快照，其他平台使用固定版本 v9.0.2。
 
@@ -74,13 +74,12 @@ esac
 dotnet publish "$project_dir/src/Meowv.Api/Meowv.Api.csproj" \
   --configuration Release \
   --runtime "$rid" \
-  --self-contained true \
+  --self-contained false \
   -p:PublishSingleFile=true \
-  -p:PublishTrimmed=true \
-  -p:TrimMode=full \
   -p:EnableCompressionInSingleFile=true \
   -p:IncludeNativeLibrariesForSelfExtract=true \
-  -p:DebugType=embedded \
+  -p:DebugType=none \
+  -p:DebugSymbols=false \
   -p:IsTransformWebConfigDisabled=true \
   --output "$publish_dir"
 

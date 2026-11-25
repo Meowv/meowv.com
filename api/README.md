@@ -130,7 +130,7 @@ bash scripts/publish.sh --rid osx-arm64
 bash scripts/publish.sh --rid linux-x64 --without-ffmpeg
 ```
 
-每个 `<RID>/` 是独立发布目录，主程序保持自包含、完整裁剪和压缩单文件；无密钥的 `appsettings.json`、FFmpeg 和来源校验记录 `SOURCE.txt` 均放在主程序旁。例如 Windows x64：
+每个 `<RID>/` 是独立发布目录，主程序为框架依赖的压缩单文件（目标机需安装 .NET 10 运行时，不裁剪）；无密钥的 `appsettings.json`、FFmpeg 和来源校验记录 `SOURCE.txt` 均放在主程序旁。例如 Windows x64：
 
 ```text
 win-x64/
@@ -164,7 +164,7 @@ nssm edit Meowv.Api
 
 | 脚本 | 作用 |
 | --- | --- |
-| `scripts/publish.sh` | 自包含单文件发布；准备或复用校验通过的 FFmpeg |
+| `scripts/publish.sh` | 框架依赖单文件发布（目标机需 .NET 10 运行时）；准备或复用校验通过的 FFmpeg |
 | `scripts/fetch-ffmpeg.sh` | 下载固定版本的校验清单与 FFmpeg 压缩包，校验后提取并记录来源 |
 | `scripts/check-runtime.sh` | 使用本机包缓存建立临时测试宿主，执行运行时定向检查 |
 
