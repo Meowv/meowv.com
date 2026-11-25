@@ -1,7 +1,4 @@
 using Meowv.Api.Core;
-using Meowv.Api.Modules.Music.Contracts;
-using Meowv.Api.Modules.Music.Storage;
-using Meowv.Api.Modules.Music.QQ;
 
 namespace Meowv.Api.Modules.Music;
 
@@ -13,84 +10,8 @@ public sealed class MusicModule : IEndpointModule
 
     public void ConfigureMiddleware(IApplicationBuilder application) => application.UseMiddleware<MusicMiddleware>();
 
+    // 端点已迁移至 MusicController / MusicQQSetupController；模块保留用于目录归属与中间件。
     public void MapEndpoints(IEndpointRouteBuilder endpoints)
     {
-        var music = endpoints.MapGroup("/api/music");
-
-        music.MapGet("/health", (MusicRuntime runtime, MusicCatalog catalog) => Results.Json(new MusicHealth(catalog.Status(runtime.Status), runtime.Available ? catalog.EnabledCount : 0, catalog.Version), MusicJsonContext.Default.MusicHealth, statusCode: runtime.Status is "disabled" or "unavailable" ? 503 : 200)).WithSummary("音乐模块与来源就绪状态。").AllowAnonymous();
-
-        if (!endpoints.ServiceProvider.GetRequiredService<MusicOptions>().Enabled) return;
-
-        if (endpoints.ServiceProvider.GetRequiredService<MusicRuntime>().Available)
-        {
-            music.MapPost("/devices/register", async (HttpContext context, MusicDeviceStore devices) =>
-            {
-                var status = devices.Register(await ReadBody(context, MusicJsonContext.Default.MusicDeviceRegister));
-                return Results.Json(status, MusicJsonContext.Default.MusicDeviceStatus, statusCode: status.Status == "active" ? 200 : 202);
-            }).WithSummary("登记待审批音乐设备；已激活设备按原安装标识自动换钥。").WithMetadata(new EndpointAccessMetadata("首次登记待审批；换钥需匹配已激活的安装标识")).AllowAnonymous().RequireRateLimiting("music-register");
-
-            music.MapGet("/devices/status/{installationId}", (string installationId, MusicDeviceStore devices) => devices.Status(installationId) is { } status ? Results.Json(status, MusicJsonContext.Default.MusicDeviceStatus) : throw new MusicException("device_not_found", "设备登记不存在或已过期。", 404)).WithSummary("查询安装激活状态及设备加密令牌。").AllowAnonymous().RequireRateLimiting("music-activation-status");
-
-            var setup = music.MapGroup("/setup/devices").RequireAuthorization(ApiAuthorization.ManagementPolicy);
-
-            setup.MapGet("", (MusicDeviceStore devices) => Results.Json(devices.List(), MusicJsonContext.Default.MusicDeviceArray)).WithSummary("列出音乐设备及激活状态。").RequireRateLimiting("setup-ui");
-
-            setup.MapPost("/{deviceId}/activate", (string deviceId, MusicDeviceStore devices) => devices.Activate(deviceId) is { } active ? Results.Json(active, MusicJsonContext.Default.MusicDeviceActivation) : Results.NotFound()).WithSummary("激活待审批或已撤销的音乐设备。").RequireRateLimiting("api-auth");
-
-            setup.MapDelete("/{deviceId}", (string deviceId, MusicDeviceStore devices) => devices.Revoke(deviceId) ? Results.NoContent() : Results.NotFound()).WithSummary("撤销指定音乐设备。").RequireRateLimiting("api-auth");
-
-            setup.MapDelete("/{deviceId}/record", (string deviceId, MusicDeviceStore devices) => devices.DeleteRevoked(deviceId) ? Results.NoContent() : Results.NotFound()).WithSummary("删除已撤销的音乐设备记录。").RequireRateLimiting("api-auth");
-
-            QQSetupEndpoints.Map(music);
-        }
-
-        var secured = music.MapGroup("").RequireAuthorization(MusicAccessHandler.SchemeName).WithMetadata(new MusicProtectedEndpoint(), new EndpointAccessMetadata("音乐专用 Bearer 设备令牌")).RequireRateLimiting("music");
-
-        music.MapPost("/admin/charts/refresh", async (MusicRuntime runtime, MusicDailyFeeds feeds, CancellationToken ct) => !runtime.Available ? throw new MusicException("source_unavailable", "音乐服务尚未就绪。", 503) : Results.Json(await feeds.GetDailyAsync(true, ct), MusicChartJsonContext.Default.MusicDailyPage)).WithSummary("强制刷新每日榜单快照。").RequireAuthorization(ApiAuthorization.ManagementPolicy).RequireRateLimiting("api-auth");
-
-        secured.MapGet("/providers", (MusicCatalog catalog) => Results.Json(new MusicProviders(catalog.Providers()), MusicJsonContext.Default.MusicProviders)).WithSummary("列出可用的音乐来源。");
-
-        secured.MapGet("/search", async (HttpContext context, MusicCatalog catalog, QQMembership member) => Results.Json(await catalog.SearchAsync(One(context, "q"), Limit(context), One(context, "cursor"), context.RequestAborted, member.ForDevice(context)), MusicJsonContext.Default.MusicSearchPage)).WithSummary("按关键词搜索曲目，支持游标分页。");
-
-        secured.MapGet("/charts/daily", async (HttpContext context, MusicDailyFeeds feeds, QQMembership member, CancellationToken ct) => Results.Json(await feeds.GetDailyAsync(false, ct, member.ForDevice(context)), MusicChartJsonContext.Default.MusicDailyPage)).WithSummary("读取当日榜单快照。");
-
-        secured.MapGet("/recommendations", async (HttpContext context, MusicDailyFeeds feeds, QQMembership member) => Results.Json(await feeds.RecommendAsync(context.RequestAborted, member.ForDevice(context)), MusicJsonContext.Default.MusicRecommendationPage)).WithSummary("读取每日推荐曲目。");
-
-        secured.MapGet("/recommendations/candidates", async (HttpContext context, MusicCandidatePool pool, QQMembership member) => Results.Json(await pool.ReadAsync(context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? throw MusicException.Invalid(), Limit(context), One(context, "cursor"), member.ForDevice(context), context.RequestAborted), MusicJsonContext.Default.MusicRecommendationPage)).WithSummary("分页读取滚动音乐推荐候选。");
-
-        secured.MapGet("/recommendations/radio", async (HttpContext context, MusicDailyFeeds feeds, QQMembership member, CancellationToken ct) => Results.Json(await feeds.RadioAsync(ct, member.ForDevice(context)), MusicJsonContext.Default.MusicRecommendationPage)).WithSummary("读取「猜你喜欢」电台候选。");
-
-        secured.MapGet("/lyrics", async (HttpContext context, MusicCatalog catalog) => Results.Json(await catalog.LyricsAsync(One(context, "trackId"), One(context, "providerId"), context.RequestAborted), MusicJsonContext.Default.MusicLyrics)).WithSummary("读取指定曲目的歌词。");
-
-        secured.MapPost("/resolve", async (HttpContext context, MusicCatalog catalog, QQMembership member, MusicCandidatePool pool) =>
-        {
-            var input = await ReadBody(context, MusicJsonContext.Default.MusicResolveRequest);
-            if (input.TrackId is { Length: >= 1 and <= 128 } id && !catalog.HasTrack(id)) pool.Restore(id);
-            return Results.Json(await catalog.ResolveAsync(input, context.RequestAborted, member.ForDevice(context)), MusicJsonContext.Default.MusicResolvedTrack);
-        }).WithSummary("解析曲目的可播放资源地址。");
-    }
-
-    internal static async Task<T> ReadBody<T>(HttpContext context, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> type, int maxBytes = 4096)
-        where T : class
-    {
-        if (!context.Request.HasJsonContentType() || context.Request.ContentLength > maxBytes) throw MusicException.Invalid();
-        var bytes = new byte[maxBytes + 1];
-        var length = await context.Request.Body.ReadAtLeastAsync(bytes, bytes.Length, false, context.RequestAborted);
-        if (length > maxBytes) throw MusicException.Invalid();
-        return System.Text.Json.JsonSerializer.Deserialize(bytes.AsSpan(0, length), type) ?? throw MusicException.Invalid();
-    }
-
-    private static string? One(HttpContext context, string name)
-    {
-        var values = context.Request.Query[name];
-        if (values.Count > 1) throw MusicException.Invalid();
-        return values.Count == 0 ? null : values[0];
-    }
-
-    private static int? Limit(HttpContext context)
-    {
-        var text = One(context, "limit");
-        if (text is null) return null;
-        return !int.TryParse(text, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var limit) ? throw MusicException.Invalid() : limit;
     }
 }
