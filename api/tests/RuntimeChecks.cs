@@ -144,6 +144,24 @@ try
             "Catalog exposes a non-empty endpoint description");
         Check(FindRoute("diagnostics", "/api/docs").GetProperty("description").GetString()!.Contains("接口目录", StringComparison.Ordinal),
             "Catalog description follows the endpoint, not the module");
+
+        // 目录整体快照：模块集合与每模块端点路径集合与迁移前基线一致。
+        var expected = new Dictionary<string, string[]>(StringComparer.Ordinal)
+        {
+            ["auth"] = ["/api/auth/access-code", "/api/auth/access-code/rotate", "/setup"],
+            ["diagnostics"] = ["/api/docs", "/api/modules"],
+            ["first"] = ["/api/compat/probe", "/api/first/limited", "/api/first/mvc-body", "/api/first/mvc-probe", "/api/first/probe", "/api/first/public"],
+            ["health"] = ["/api/health"],
+            ["second"] = ["/api/second/media/{ticket}", "/api/second/probe"],
+        };
+        Check(modules.Length == expected.Count, "Catalog module count matches baseline");
+        foreach (var (name, expectedPaths) in expected)
+        {
+            var actual = modules.Single(item => item.GetProperty("name").GetString() == name)
+                .GetProperty("endpoints").EnumerateArray().Select(e => e.GetProperty("path").GetString())
+                .OrderBy(p => p, StringComparer.Ordinal).ToArray();
+            Check(actual.SequenceEqual(expectedPaths.OrderBy(p => p, StringComparer.Ordinal)), "Catalog endpoint set matches baseline: " + name);
+        }
     }
 
     using (var docs = await client.GetAsync("/api/docs"))
