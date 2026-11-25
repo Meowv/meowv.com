@@ -24,7 +24,7 @@ public sealed class DiagnosticsModule : IEndpointModule
                 [
                     .. routes.Where(route => route.Metadata.GetMetadata<EndpointModuleMetadata>()?.Name == module.Name)
                         .Select(route => new EndpointDescriptor(
-                            route.RoutePattern.RawText ?? route.RoutePattern.ToString() ?? "/",
+                            NormalizePath(route.RoutePattern.RawText ?? route.RoutePattern.ToString() ?? "/"),
                             route.Metadata.GetMetadata<IEndpointSummaryMetadata>()?.Summary ?? "",
                             route.Metadata.GetMetadata<IHttpMethodMetadata>()?.HttpMethods.Order(StringComparer.Ordinal).ToArray() ?? ["ANY"],
                             DescribeAuthorization(route)))
@@ -41,6 +41,9 @@ public sealed class DiagnosticsModule : IEndpointModule
             return Results.Content(EndpointCatalogPage.Html, "text/html; charset=utf-8");
         }).WithSummary("浏览器可读的接口目录页面，支持搜索与按模块筛选。").AllowAnonymous();
     }
+
+    // MVC 端点的 RawText 不带前导斜杠，Minimal API 带；目录对外统一为 / 开头。
+    private static string NormalizePath(string path) => path.StartsWith('/') ? path : "/" + path;
 
     private static string DescribeAuthorization(RouteEndpoint endpoint)
     {

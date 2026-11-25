@@ -37,6 +37,7 @@ async Task<WebApplication> Start(Dictionary<string, string?> config)
     builder.Services.AddApiServices(builder.Configuration);
     builder.Services.AddChatModule(builder.Configuration);
     builder.Services.AddSingleton<IEndpointModule, HealthModule>();
+    builder.Services.AddApiControllers();
     await Task.CompletedTask;
     var app = builder.Build();
     app.Urls.Add("http://127.0.0.1:0");
@@ -46,6 +47,7 @@ async Task<WebApplication> Start(Dictionary<string, string?> config)
         module.ConfigureMiddleware(app);
         module.MapEndpoints(app.MapGroup("").WithMetadata(new EndpointModuleMetadata(module.Name)));
     }
+    app.MapApiControllers();
     app.UseAuthentication(); app.UseAuthorization();
     await app.StartAsync();
     if (config["Modules:Chat:Enabled"] == "true")

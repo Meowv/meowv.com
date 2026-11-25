@@ -743,6 +743,7 @@ internal static class MusicChecks
         builder.Services.AddSingleton<IEndpointModule, HealthModule>();
         builder.Services.AddSingleton<IEndpointModule, AuthModule>();
         builder.Services.AddSingleton<IEndpointModule, DiagnosticsModule>();
+        builder.Services.AddApiControllers();
         await using var app = builder.Build();
         app.Urls.Add("http://127.0.0.1:0");
         app.UseForwardedHeaders(); app.UseRouting(); app.UseCors(); app.UseRateLimiter();
@@ -751,6 +752,7 @@ internal static class MusicChecks
             module.ConfigureMiddleware(app);
             module.MapEndpoints(app.MapGroup("").WithMetadata(new EndpointModuleMetadata(module.Name)));
         }
+        app.MapApiControllers();
         app.UseAuthentication(); app.UseAuthorization();
         app.MapGet("/probe/common", () => "must not execute").RequireAuthorization();
         await app.StartAsync();
