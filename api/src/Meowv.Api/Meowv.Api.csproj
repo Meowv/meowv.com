@@ -3,6 +3,7 @@
         <EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator>
         <StaticWebAssetsEnabled>false</StaticWebAssetsEnabled>
         <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
+        <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
     </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />

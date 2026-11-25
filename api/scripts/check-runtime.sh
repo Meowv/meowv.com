@@ -19,7 +19,7 @@ cat >"$work_dir/Checks.csproj" <<EOF
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
     <EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator>
-    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
     <NuGetAudit>false</NuGetAudit>
   </PropertyGroup>

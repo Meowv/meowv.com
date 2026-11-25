@@ -15,6 +15,7 @@ using Meowv.Api.Modules.XiaomiCamera;
 using Meowv.Api.Modules.XiaomiCamera.Cloud;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Metadata;
+using Microsoft.AspNetCore.Mvc;
 
 var root = Path.Combine(Path.GetTempPath(), "meowv-api-check-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(root);
@@ -71,6 +72,7 @@ try
     builder.Services.AddSingleton<IEndpointModule, FirstProbeModule>();
     builder.Services.AddSingleton<IEndpointModule, SecondProbeModule>();
     builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.TypeInfoResolverChain.Insert(0, ProbeJsonContext.Default));
+    builder.Services.AddApiControllers();
     await using var app = builder.Build();
     app.Urls.Add("http://127.0.0.1:0");
     app.Use(async (context, next) =>
@@ -92,13 +94,17 @@ try
     app.UseAuthentication();
     app.UseAuthorization();
 
+    app.MapApiControllers();
     app.MapGet("/api/proxy/{kind}", (HttpContext context) => $"{context.Connection.RemoteIpAddress}|{context.Request.Scheme}")
         .WithSummary("Synthetic forwarded-identity probe.").AllowAnonymous();
     using var startupTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
     await app.StartAsync(startupTimeout.Token);
     var apiRoutes = app.Services.GetRequiredService<EndpointDataSource>().Endpoints.OfType<RouteEndpoint>()
-        .Where(endpoint => endpoint.RoutePattern.RawText?.StartsWith("/api/", StringComparison.Ordinal) == true)
-        .ToArray();
+        .Concat(app.Services.GetServices<Microsoft.AspNetCore.Routing.CompositeEndpointDataSource>()
+            .SelectMany(source => source.Endpoints).OfType<RouteEndpoint>())
+        .Where(endpoint => endpoint.RoutePattern.RawText is { } path &&
+            (path.StartsWith("/api/", StringComparison.Ordinal) || path.StartsWith("api/", StringComparison.Ordinal)))
+        .Distinct().ToArray();
     foreach (var route in apiRoutes)
     {
         var declared = route.Metadata.GetMetadata<IAllowAnonymous>() is not null ||
@@ -108,6 +114,11 @@ try
         Check(!string.IsNullOrWhiteSpace(route.Metadata.GetMetadata<IEndpointSummaryMetadata>()?.Summary),
             "API endpoint must declare a summary: " + route.RoutePattern.RawText);
     }
+    var mvcProbe = apiRoutes.Single(route => route.RoutePattern.RawText is "/api/first/mvc-probe" or "api/first/mvc-probe");
+    Check(mvcProbe.Metadata.GetMetadata<EndpointModuleMetadata>()?.Name == "first", "MVC module metadata");
+    Check(mvcProbe.Metadata.GetMetadata<EndpointAccessMetadata>()?.Requirement == "播放票据", "MVC access metadata");
+    Check(mvcProbe.Metadata.GetMetadata<XiaomiEndpointMetadata>() is not null, "MVC module marker metadata");
+    Check(mvcProbe.Metadata.GetMetadata<IEndpointSummaryMetadata>()?.Summary == "MVC probe", "MVC summary metadata");
     using var client = new HttpClient(new HttpClientHandler { UseProxy = false }) { BaseAddress = new Uri(app.Urls.Single()), Timeout = TimeSpan.FromSeconds(10) };
     Check((await client.GetAsync("/api/health")).StatusCode == HttpStatusCode.OK, "Anonymous health");
     using (var catalogResponse = await client.GetAsync("/api/modules"))
@@ -200,6 +211,8 @@ try
     Check(unauthorized.StatusCode == HttpStatusCode.Unauthorized && unauthorized.Headers.WwwAuthenticate.Any(), "Missing code challenge");
     Check((await client.PostAsync("/api/second/probe", new StringContent("invalid JSON", Encoding.UTF8, "application/json"))).StatusCode == HttpStatusCode.Unauthorized,
         "Authenticate before body binding");
+    Check((await client.PostAsync("/api/first/mvc-body", new StringContent("invalid JSON", Encoding.UTF8, "application/json"))).StatusCode == HttpStatusCode.Unauthorized,
+        "MVC authenticates before model binding");
     using var invalidAdmin = new HttpRequestMessage(HttpMethod.Post, "/api/auth/access-code");
     invalidAdmin.Headers.Add("X-Api-Bootstrap-Token", "YOUR_SYNTHETIC_INVALID_MANAGEMENT_TOKEN");
     Check((await client.SendAsync(invalidAdmin)).StatusCode == HttpStatusCode.Unauthorized, "Invalid management key rejected");
@@ -265,6 +278,9 @@ try
     var beforeAuthorized = codeChecks.VerificationCount;
     Check((await client.GetAsync("/api/first/probe")).StatusCode == HttpStatusCode.OK, "First module authorization");
     Check(codeChecks.VerificationCount == beforeAuthorized + 1, "Protected endpoint verifies the application code");
+    var mvcBody = await client.PostAsync("/api/first/mvc-body", new StringContent("{\"value\":\"ok\"}", Encoding.UTF8, "application/json"));
+    var mvcBodyText = await mvcBody.Content.ReadAsStringAsync();
+    Check(mvcBody.StatusCode == HttpStatusCode.OK && mvcBodyText.Trim('"') == "ok", "MVC source-generated body binding");
     Check((await client.PostAsync("/api/second/probe", new StringContent("{\"value\":\"ok\"}", Encoding.UTF8, "application/json"))).StatusCode == HttpStatusCode.OK,
         "Same code authorizes second module");
     Check(codes.Verify(code, out var version), "Stored code verification");
@@ -332,6 +348,23 @@ public sealed record ProbeRequest(string Value);
 
 [JsonSerializable(typeof(ProbeRequest))]
 internal partial class ProbeJsonContext : JsonSerializerContext;
+
+[ApiController]
+[EndpointModule("first")]
+public sealed class MvcProbeController : ControllerBase
+{
+    [HttpGet("/api/first/mvc-probe")]
+    [AllowAnonymous]
+    [EndpointSummary("MVC probe")]
+    [EndpointAccess("播放票据")]
+    [XiaomiEndpoint]
+    public IResult Probe() => Results.Ok("probe");
+
+    [HttpPost("/api/first/mvc-body")]
+    [Authorize]
+    [EndpointSummary("MVC body probe")]
+    public IResult Body([FromBody] ProbeRequest input) => Results.Ok(input.Value);
+}
 
 internal sealed class CountingAccessCodeService(ApiDatabase database) : IAccessCodeService
 {
