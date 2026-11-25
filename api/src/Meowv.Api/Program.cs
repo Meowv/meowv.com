@@ -12,6 +12,7 @@ foreach (var register in ModuleCatalog.Registrations)
 {
     register(builder.Services, builder.Configuration);
 }
+builder.Services.AddApiControllers();
 
 var app = builder.Build();
 app.UseExceptionHandler(errorApp => errorApp.Run(async context =>
@@ -30,6 +31,8 @@ foreach (var module in app.Services.GetRequiredService<IEnumerable<IEndpointModu
     module.ConfigureMiddleware(app);
     module.MapEndpoints(app.MapGroup("").WithMetadata(new EndpointModuleMetadata(module.Name)));
 }
+
+app.MapApiControllers();
 
 app.UseAuthentication();
 app.UseAuthorization();
