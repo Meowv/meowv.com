@@ -57,6 +57,7 @@ cat >"$work_dir/Checks.csproj" <<EOF
     <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/XiaomiMediaProfile.cs" />
     <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/XiaomiStorageJsonContext.cs" />
     <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/Cloud/XiaomiCloudCredentials.cs" />
+    <!-- 禁用模块的控制器不纳入定向测试宿主（占位服务不具备完整契约）；主工程完整编译覆盖。 -->
   </ItemGroup>
 </Project>
 EOF
