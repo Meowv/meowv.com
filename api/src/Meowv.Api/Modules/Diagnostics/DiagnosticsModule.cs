@@ -1,6 +1,4 @@
 using Meowv.Api.Core;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.Metadata;
 
 namespace Meowv.Api.Modules.Diagnostics;
 
@@ -10,65 +8,8 @@ public sealed class DiagnosticsModule : IEndpointModule
 
     public string Description => "已加载模块与接口目录。";
 
+    // 端点已迁移至 DiagnosticsController；模块保留用于目录归属。
     public void MapEndpoints(IEndpointRouteBuilder endpoints)
     {
-        var modules = endpoints.ServiceProvider.GetServices<IEndpointModule>()
-            .OrderBy(module => module.Name, StringComparer.Ordinal)
-            .ToArray();
-
-        endpoints.MapGet("/api/modules", (HttpContext context, EndpointDataSource source) =>
-        {
-            context.Response.Headers.CacheControl = "no-store";
-            var routes = source.Endpoints.OfType<RouteEndpoint>().ToArray();
-            var catalog = modules.Select(module => new ModuleDescriptor(module.Name, module.Description,
-                [
-                    .. routes.Where(route => route.Metadata.GetMetadata<EndpointModuleMetadata>()?.Name == module.Name)
-                        .Select(route => new EndpointDescriptor(
-                            NormalizePath(route.RoutePattern.RawText ?? route.RoutePattern.ToString() ?? "/"),
-                            route.Metadata.GetMetadata<IEndpointSummaryMetadata>()?.Summary ?? "",
-                            route.Metadata.GetMetadata<IHttpMethodMetadata>()?.HttpMethods.Order(StringComparer.Ordinal).ToArray() ?? ["ANY"],
-                            DescribeAuthorization(route)))
-                        .OrderBy(route => route.Path, StringComparer.Ordinal)
-                        .ThenBy(route => string.Join(',', route.Methods), StringComparer.Ordinal)
-                ]))
-                .ToArray();
-            return Results.Json(catalog, ApiJsonContext.Default.ModuleDescriptorArray);
-        }).WithSummary("以 JSON 返回已加载模块与接口清单，含路径、描述、请求方式与认证要求。").AllowAnonymous();
-
-        endpoints.MapGet("/api/docs", (HttpContext context) =>
-        {
-            context.Response.Headers.CacheControl = "no-store";
-            return Results.Content(EndpointCatalogPage.Html, "text/html; charset=utf-8");
-        }).WithSummary("浏览器可读的接口目录页面，支持搜索与按模块筛选。").AllowAnonymous();
-    }
-
-    // MVC 端点的 RawText 不带前导斜杠，Minimal API 带；目录对外统一为 / 开头。
-    private static string NormalizePath(string path) => path.StartsWith('/') ? path : "/" + path;
-
-    private static string DescribeAuthorization(RouteEndpoint endpoint)
-    {
-        var requirements = new List<string>();
-        var allowAnonymous = endpoint.Metadata.GetMetadata<IAllowAnonymous>() is not null;
-        var authorization = allowAnonymous ? [] : endpoint.Metadata.GetOrderedMetadata<IAuthorizeData>();
-        if (authorization.Any(data => data.Policy == ApiAuthorization.ManagementPolicy ||
-                                      data.AuthenticationSchemes?.Split(',').Any(scheme => scheme.Trim() == ApiAuthorization.ManagementScheme) == true))
-            requirements.Add("管理密钥");
-        else if (authorization.Any(data => string.IsNullOrEmpty(data.Policy) && string.IsNullOrEmpty(data.AuthenticationSchemes)))
-            requirements.Add("通用授权码");
-
-        foreach (var data in authorization)
-        {
-            if (!string.IsNullOrEmpty(data.Policy) && data.Policy != ApiAuthorization.ManagementPolicy)
-                requirements.Add("策略：" + data.Policy);
-            if (!string.IsNullOrEmpty(data.AuthenticationSchemes) && data.AuthenticationSchemes != ApiAuthorization.ManagementScheme)
-                requirements.Add("认证：" + data.AuthenticationSchemes);
-            if (!string.IsNullOrEmpty(data.Roles)) requirements.Add("角色：" + data.Roles);
-        }
-
-        foreach (var access in endpoint.Metadata.GetOrderedMetadata<EndpointAccessMetadata>())
-            requirements.Add(access.Requirement);
-        if (!allowAnonymous && endpoint.Metadata.GetOrderedMetadata<AuthorizationPolicy>().Count > 0)
-            requirements.Add("授权策略");
-        return requirements.Count == 0 ? "匿名" : string.Join(" + ", requirements.Distinct(StringComparer.Ordinal));
     }
 }
