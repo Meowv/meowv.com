@@ -33,35 +33,42 @@ public sealed class StudioTokenService(StudioJwtKeyProvider keys, StudioOptions 
             !TryBase64UrlDecode(parts[2], out var signatureBytes))
             return null;
 
-        using (var header = JsonDocument.Parse(headerBytes))
+        try
         {
-            if (!header.RootElement.TryGetProperty("alg", out var alg) || alg.GetString() != "HS256") return null;
-            if (!header.RootElement.TryGetProperty("typ", out var typ) || typ.GetString() != "JWT") return null;
+            using (var header = JsonDocument.Parse(headerBytes))
+            {
+                if (!header.RootElement.TryGetProperty("alg", out var alg) || alg.GetString() != "HS256") return null;
+                if (!header.RootElement.TryGetProperty("typ", out var typ) || typ.GetString() != "JWT") return null;
+            }
+
+            var expected = HMACSHA256.HashData(_key, Encoding.ASCII.GetBytes($"{parts[0]}.{parts[1]}"));
+            if (!CryptographicOperations.FixedTimeEquals(expected, signatureBytes)) return null;
+
+            using var payload = JsonDocument.Parse(payloadBytes);
+            var root = payload.RootElement;
+
+            if (!root.TryGetProperty("iss", out var iss) || iss.GetString() != options.Issuer) return null;
+            if (!root.TryGetProperty("aud", out var aud) || aud.GetString() != options.Audience) return null;
+            if (!root.TryGetProperty("sub", out var sub) || !Guid.TryParse(sub.GetString(), out var userId)) return null;
+            if (!root.TryGetProperty("jti", out var jti) || string.IsNullOrWhiteSpace(jti.GetString())) return null;
+            if (!root.TryGetProperty("exp", out var exp) || !exp.TryGetInt64(out var expires)) return null;
+            if (!root.TryGetProperty("nbf", out var nbf) || !nbf.TryGetInt64(out var notBefore)) return null;
+            if (!root.TryGetProperty("iat", out var iat) || !iat.TryGetInt64(out var issuedAt)) return null;
+
+            var nowSeconds = now.ToUnixTimeSeconds();
+            if (expires <= nowSeconds - (long)Skew.TotalSeconds) return null;
+            if (notBefore > nowSeconds + (long)Skew.TotalSeconds) return null;
+            if (issuedAt > nowSeconds + (long)Skew.TotalSeconds) return null;
+
+            return new StudioValidatedToken(userId, jti.GetString()!, DateTimeOffset.FromUnixTimeSeconds(expires));
         }
-
-        var expected = HMACSHA256.HashData(_key, Encoding.ASCII.GetBytes($"{parts[0]}.{parts[1]}"));
-        if (!CryptographicOperations.FixedTimeEquals(expected, signatureBytes)) return null;
-
-        using var payload = JsonDocument.Parse(payloadBytes);
-        var root = payload.RootElement;
-
-        if (!root.TryGetProperty("iss", out var iss) || iss.GetString() != options.Issuer) return null;
-        if (!root.TryGetProperty("aud", out var aud) || aud.GetString() != options.Audience) return null;
-        if (!root.TryGetProperty("sub", out var sub) || !Guid.TryParse(sub.GetString(), out var userId)) return null;
-        if (!root.TryGetProperty("jti", out var jti) || string.IsNullOrWhiteSpace(jti.GetString())) return null;
-        if (!root.TryGetProperty("exp", out var exp) || !exp.TryGetInt64(out var expires)) return null;
-        if (!root.TryGetProperty("nbf", out var nbf) || !nbf.TryGetInt64(out var notBefore)) return null;
-        if (!root.TryGetProperty("iat", out var iat) || !iat.TryGetInt64(out var issuedAt)) return null;
-
-        var nowSeconds = now.ToUnixTimeSeconds();
-        if (expires <= nowSeconds - (long)Skew.TotalSeconds) return null;
-        if (notBefore > nowSeconds + (long)Skew.TotalSeconds) return null;
-        if (issuedAt > nowSeconds + (long)Skew.TotalSeconds) return null;
-
-        return new StudioValidatedToken(userId, jti.GetString()!, DateTimeOffset.FromUnixTimeSeconds(expires));
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException)
+        {
+            return null;
+        }
     }
 
-    private static string EncodeHeader()
+    private string EncodeHeader()
     {
         var buffer = new ArrayBufferWriter<byte>();
         using (var writer = new Utf8JsonWriter(buffer))

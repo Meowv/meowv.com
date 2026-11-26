@@ -15,12 +15,16 @@ app_log="$work_dir/app.log"
 app_pid=''
 
 cleanup() {
-  if [ -n "$app_pid" ]; then kill "$app_pid" 2>/dev/null || true; wait "$app_pid" 2>/dev/null || true; fi
+  if [ -n "$app_pid" ]; then
+    pkill -TERM -P "$app_pid" 2>/dev/null || true
+    kill "$app_pid" 2>/dev/null || true
+    wait "$app_pid" 2>/dev/null || true
+  fi
 }
 trap cleanup EXIT
 
 if [ "${1:-}" = '--help' ] || [ "${1:-}" = '-h' ]; then
-  echo '用法：scripts/check-studio.sh；使用临时 SQLite 与端口验证 Studio 初始化、登录、布局 CAS、错误体与限流，不构建完整解决方案。'
+  echo '用法：scripts/check-studio.sh；先构建 HTTP 宿主及其模块，再用临时 SQLite/头像目录运行 Studio 定向检查，不连接真实 SMTP、不访问生产数据库。'
   exit 0
 fi
 

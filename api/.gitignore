@@ -10,3 +10,4 @@
 **/*.sqlite-*
 **/tools/ffmpeg/
 **/__pycache__/
+/src/Meowv.Api/studio/user-assets/

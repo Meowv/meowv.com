@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace Meowv.Api.Modules.Studio.Api.Controllers;
 
 [ApiController]
-[EndpointModule("studio")]
+[EndpointModule("studio", OptionsType = typeof(StudioOptions))]
 public sealed class StudioUserController(StudioUserService users, StudioOptions options) : StudioControllerBase
 {
     private static readonly Dictionary<string, string> AvatarContentTypes = new(StringComparer.OrdinalIgnoreCase)

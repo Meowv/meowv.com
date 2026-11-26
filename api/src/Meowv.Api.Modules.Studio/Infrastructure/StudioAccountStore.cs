@@ -488,7 +488,7 @@ public sealed class StudioAccountStore(StudioDatabase database) : IStudioStore
     public async Task<StudioLayoutPutResult> PutLayoutAsync(Guid userId, string json, long expectedRevision, DateTimeOffset now, CancellationToken cancellationToken)
     {
         await using var connection = database.OpenConnection();
-        using var transaction = connection.BeginTransaction(IsolationLevel.Serializable, false);
+        await using var transaction = connection.BeginTransaction(IsolationLevel.Serializable, false);
 
         var current = await ReadLayoutAsync(connection, transaction, userId, cancellationToken);
         var currentRevision = current?.Revision ?? 0;
@@ -549,19 +549,20 @@ public sealed class StudioAccountStore(StudioDatabase database) : IStudioStore
         };
     }
 
-    public async Task<List<StudioOutboxMessage>> GetPendingEmailsAsync(DateTimeOffset now, int limit, CancellationToken cancellationToken)
+    public async Task<List<StudioOutboxMessage>> GetPendingEmailsAsync(DateTimeOffset now, int limit, int maxAttempts, CancellationToken cancellationToken)
     {
         await using var connection = database.OpenConnection();
         await using var command = connection.CreateCommand();
         command.CommandText = """
                               SELECT id, user_id, purpose, recipient, subject, html_body, created_at, attempts, next_attempt_at, sent_at, last_error
                                 FROM studio_email_outbox
-                               WHERE sent_at IS NULL AND next_attempt_at <= $now
+                               WHERE sent_at IS NULL AND attempts < $maxAttempts AND next_attempt_at <= $now
                                ORDER BY next_attempt_at
                                LIMIT $limit;
                               """;
         command.Parameters.AddWithValue("$now", Ts(now));
         command.Parameters.AddWithValue("$limit", limit);
+        command.Parameters.AddWithValue("$maxAttempts", Math.Max(1, maxAttempts));
 
         var rows = new List<StudioOutboxMessage>();
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);

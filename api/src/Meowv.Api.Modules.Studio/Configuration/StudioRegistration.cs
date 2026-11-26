@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -72,6 +73,25 @@ public static class StudioRegistration
         services.AddRateLimiter(limits =>
         {
             limits.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            limits.OnRejected = async (context, cancellationToken) =>
+            {
+                var http = context.HttpContext;
+                http.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+                if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+                    http.Response.Headers.RetryAfter = Math.Ceiling(retryAfter.TotalSeconds).ToString(CultureInfo.InvariantCulture);
+
+                if (!http.Request.Path.StartsWithSegments("/api/studio")) return;
+
+                var requestId = StudioRequestIdMiddleware.ResolveOrCreate(http.Request);
+                http.Items[StudioRequestIdMiddleware.ItemKey] = requestId;
+                http.Response.Headers[StudioRequestIdMiddleware.HeaderName] = requestId;
+                http.Response.Headers.CacheControl = "no-store";
+                await http.Response.WriteAsJsonAsync(
+                    new StudioApiError("请求过于频繁，请稍后重试。", StudioErrorCodes.Throttled, requestId),
+                    StudioJson.Options,
+                    cancellationToken);
+            };
+
             AddIpPolicy(limits, "studio-auth", 20, TimeSpan.FromMinutes(1));
             AddIpPolicy(limits, "studio-read", 120, TimeSpan.FromMinutes(1));
             AddIpPolicy(limits, "studio-write", 60, TimeSpan.FromMinutes(1));

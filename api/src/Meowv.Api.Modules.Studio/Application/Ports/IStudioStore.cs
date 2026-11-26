@@ -60,7 +60,7 @@ public interface IStudioStore
 
     Task<StudioLayoutPutResult> PutLayoutAsync(Guid userId, string json, long expectedRevision, DateTimeOffset now, CancellationToken cancellationToken);
 
-    Task<List<StudioOutboxMessage>> GetPendingEmailsAsync(DateTimeOffset now, int limit, CancellationToken cancellationToken);
+    Task<List<StudioOutboxMessage>> GetPendingEmailsAsync(DateTimeOffset now, int limit, int maxAttempts, CancellationToken cancellationToken);
 
     Task DeleteOutboxAsync(Guid id, CancellationToken cancellationToken);
 

@@ -6,7 +6,7 @@ using Microsoft.Data.Sqlite;
 namespace Meowv.Api.Modules.Studio.Api.Controllers;
 
 [ApiController]
-[EndpointModule("studio")]
+[EndpointModule("studio", OptionsType = typeof(StudioOptions))]
 public sealed class StudioAdminController(StudioAdminService admins, IStudioClock clock, IConfiguration configuration, ApiPaths paths) : StudioControllerBase
 {
     [HttpGet("/api/studio/admin/users")]

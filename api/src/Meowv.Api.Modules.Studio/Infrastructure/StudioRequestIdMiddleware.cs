@@ -10,10 +10,7 @@ public sealed class StudioRequestIdMiddleware(RequestDelegate next, ILogger<Stud
 
     public async Task InvokeAsync(HttpContext context)
     {
-        var incoming = context.Request.Headers[HeaderName].ToString();
-        var requestId = IsAcceptable(incoming)
-            ? incoming
-            : Convert.ToHexString(RandomNumberGenerator.GetBytes(8)).ToLowerInvariant();
+        var requestId = ResolveOrCreate(context.Request);
 
         context.Items[ItemKey] = requestId;
         context.TraceIdentifier = requestId;
@@ -27,6 +24,14 @@ public sealed class StudioRequestIdMiddleware(RequestDelegate next, ILogger<Stud
         {
             await next(context);
         }
+    }
+
+    public static string ResolveOrCreate(HttpRequest request)
+    {
+        var incoming = request.Headers[HeaderName].ToString();
+        return IsAcceptable(incoming)
+            ? incoming
+            : Convert.ToHexString(RandomNumberGenerator.GetBytes(8)).ToLowerInvariant();
     }
 
     private static bool IsAcceptable(string value)

@@ -29,7 +29,8 @@ public sealed partial class StudioEmailDispatcher(
 
     private async Task DispatchAsync(CancellationToken cancellationToken)
     {
-        var pending = await store.GetPendingEmailsAsync(DateTimeOffset.UtcNow, 20, cancellationToken);
+        var maxAttempts = Math.Max(1, options.DispatcherMaxAttempts);
+        var pending = await store.GetPendingEmailsAsync(DateTimeOffset.UtcNow, 20, maxAttempts, cancellationToken);
         foreach (var message in pending)
             try
             {
@@ -39,6 +40,13 @@ public sealed partial class StudioEmailDispatcher(
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 var attempts = message.Attempts + 1;
+                if (attempts >= maxAttempts)
+                {
+                    LogAbandoned(message.Id, message.Purpose.ToString(), attempts, ex);
+                    await store.DeleteOutboxAsync(message.Id, cancellationToken);
+                    continue;
+                }
+
                 var delaySeconds = Math.Min(Math.Pow(2, Math.Min(attempts, 12)), 3600);
                 await store.RecordOutboxFailureAsync(
                     message.Id,
@@ -46,11 +54,7 @@ public sealed partial class StudioEmailDispatcher(
                     DateTimeOffset.UtcNow.AddSeconds(delaySeconds),
                     ex.Message,
                     cancellationToken);
-
-                if (attempts >= Math.Max(1, options.DispatcherMaxAttempts))
-                    LogAbandoned(message.Id, message.Purpose.ToString(), attempts, ex);
-                else
-                    LogRetry(message.Id, message.Purpose.ToString(), attempts, ex);
+                LogRetry(message.Id, message.Purpose.ToString(), attempts, ex);
             }
     }
 

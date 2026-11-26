@@ -210,7 +210,7 @@ Studio 模块挂载在 `/api/studio`，使用模块内 per-user JWT（`Authoriza
 | `/api/studio/layout` | 布局读写；`PUT` 必须带 `If-Match: "layout-N"`，冲突返回 `409` |
 | `/api/studio/admin/*` | 用户、角色、会话、统计；要求管理员角色 |
 
-头像读取改为登录后访问：`GET /api/studio/user/avatar` 仅允许本人或管理员；前端不能直接用 `<img src>`，需用 Bearer `fetch` 后转 `blob:` URL。注册/验证/重置邮件由数据库 outbox 异步发送，最多重试 `Modules:Studio:DispatcherMaxAttempts` 次。
+头像读取改为登录后访问：`GET /api/studio/user/avatar` 仅允许本人或管理员；前端不能直接用 `<img src>`，需用 Bearer `fetch` 后转 `blob:` URL。注册/验证/重置邮件由数据库 outbox 异步发送，指数退避重试；达到 `Modules:Studio:DispatcherMaxAttempts` 后放弃并删除待发送记录。`Modules:Studio:Enabled=false` 会取消注册全部 `/api/studio` 端点；默认头像目录 `studio/user-assets` 已由仓库 `.gitignore` 忽略。
 
 ## Chat 公共聊天室
 
