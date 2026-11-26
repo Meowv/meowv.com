@@ -58,6 +58,12 @@ test('模块项目之间零引用', () => {
   }
 });
 
+test('旧摄像头路由不再注册', () => {
+  const controller = readFileSync(join(srcRoot, 'Meowv.Api.Modules.XiaomiCamera', 'Api', 'XiaomiCameraController.cs'), 'utf8');
+  assert.doesNotMatch(controller, /"\/api\/cameras/);
+  assert.doesNotMatch(controller, /"\/api\/playback-sessions/);
+});
+
 test('共享契约保留 IEndpointModule 默认空 MapEndpoints', () => {
   const contract = readFileSync(join(srcRoot, 'Meowv.Api.SharedKernel', 'IEndpointModule.cs'), 'utf8');
   assert.match(contract, /void MapEndpoints\(IEndpointRouteBuilder endpoints\)\s*\{\s*\}/);
