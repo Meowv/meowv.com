@@ -8,6 +8,7 @@ const script = source.match(/<script>([\s\S]*?)<\/script>/)[1];
 const management = 'YOUR_SYNTHETIC_MANAGEMENT_TOKEN_FOR_UI_TESTS';
 const accessCode = 'YOUR_SYNTHETIC_ACCESS_CODE_FOR_UI_TESTS';
 const moduleName = { name: 'xiaomi-camera' };
+const studioModule = { name: 'studio' };
 
 // 用内存 DOM 和合成响应验证页面状态转换，不调用账号、摄像头或真实服务。
 function createPage(respond, storage = new Map()) {
@@ -82,9 +83,17 @@ function createPage(respond, storage = new Map()) {
   };
 }
 
+async function settleStudio() {
+  for (let i = 0; i < 10; i++) await new Promise(resolve => setImmediate(resolve));
+}
+
 function standardResponse({ path, method }) {
   if (path === '/api/auth/access-code') return { body: { accessCode } };
-  if (path === '/api/modules') return { body: [moduleName] };
+  if (path === '/api/modules') return { body: [moduleName, studioModule] };
+  if (path === '/api/studio/setup/admin') {
+    assert.equal(method, 'GET');
+    return { body: { adminExists: false } };
+  }
   if (path === '/api/xiaomi-camera/health') return { body: { status: 'ready' } };
   if (path === '/api/xiaomi-camera/setup/session') return method === 'DELETE' ? { status: 204 } : { body: { status: 'login_required' } };
   throw new Error('Unexpected test request: ' + path);
@@ -394,4 +403,32 @@ test('daily chart snapshot can be refreshed from the setup page', async () => {
   assert.match(page.element('charts-status').textContent, /2026-11-20/);
   assert.match(page.element('charts-status').textContent, /共 2 首/);
   assert.equal(page.element('message').textContent, '每日榜单快照已刷新。');
+});
+
+test('Studio setup hides the creation form when an admin already exists', async () => {
+  const page = createPage(request => {
+    if (request.path === '/api/studio/setup/admin') {
+      assert.equal(request.method, 'GET');
+      return { body: { adminExists: true } };
+    }
+    return standardResponse(request);
+  });
+  await page.authenticate();
+  await settleStudio();
+  assert.equal(page.element('studio-form').hidden, true);
+  assert.equal(page.element('studio-saved').hidden, false);
+  assert.equal(page.element('studio-password').value, '');
+  assert.match(page.element('studio-description').textContent, /已有管理员账号/);
+  assert.equal(page.element('studio-status').textContent, '已初始化');
+  assert.equal(page.requests.some(request => request.path === '/api/studio/setup/admin' && request.method === 'POST'), false);
+});
+
+test('Studio setup shows the creation form when no admin exists', async () => {
+  const page = createPage(standardResponse);
+  await page.authenticate();
+  await settleStudio();
+  assert.equal(page.element('studio-form').hidden, false);
+  assert.equal(page.element('studio-saved').hidden, true);
+  assert.equal(page.element('studio-status').textContent, '待初始化');
+  assert.match(page.element('studio-description').textContent, /创建第一个管理员/);
 });

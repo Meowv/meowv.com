@@ -374,6 +374,7 @@ internal static class AuthSetupPage
                                              <a class="nav-item" href="#panel-camera"><span class="nav-dot"></span>摄像头</a>
                                              <a class="nav-item" href="#panel-music"><span class="nav-dot"></span>音乐凭据</a>
                                              <a class="nav-item" href="#panel-qq"><span class="nav-dot"></span>QQ 会员</a>
+                                             <a class="nav-item" href="#panel-studio"><span class="nav-dot"></span>Studio 管理员</a>
                                            </nav>
                                          </aside>
                                          <main class="main">
@@ -434,6 +435,13 @@ internal static class AuthSetupPage
                                                      <path d="M12 3c-3.5 0-6 2.8-6 6.5 0 2.4-1 3.5-1 5 0 1 .8 1.7 1.8 1.7.5 2.3 2.4 3.8 5.2 3.8s4.7-1.5 5.2-3.8c1 0 1.8-.7 1.8-1.7 0-1.5-1-2.6-1-5C18 5.8 15.5 3 12 3Z" /></svg
                                                  ></span>
                                                  <span><strong>QQ 音乐会员</strong><small>扫码与设备授权</small></span>
+                                               </a>
+                                               <a class="quick-card" href="#panel-studio">
+                                                 <span class="quick-icon" aria-hidden="true"
+                                                   ><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+                                                     <path d="M15 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9.5" cy="7" r="4" /><path d="M19 8v6M22 11h-6" /></svg
+                                                 ></span>
+                                                 <span><strong>Studio 管理员</strong><small>创建首个工作台账号</small></span>
                                                </a>
                                              </div>
                                              <section id="panel-code" class="panel" aria-labelledby="code-title">
@@ -559,6 +567,32 @@ internal static class AuthSetupPage
                                                  <label class="check-line"><input id="qq-grant" data-private type="checkbox" /> 允许选中设备播放 QQ 音乐会员曲目</label>
                                                  <div><button id="qq-save" class="secondary" data-private type="button">保存设备权限</button></div>
                                                </div>
+                                             </section>
+                                             <section id="panel-studio" class="panel" aria-labelledby="studio-title">
+                                               <div class="panel-head">
+                                                 <div class="card-title">
+                                                   <span class="icon" aria-hidden="true"
+                                                     ><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+                                                       <path d="M15 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9.5" cy="7" r="4" /><path d="M19 8v6M22 11h-6" /></svg
+                                                   ></span>
+                                                   <div><h2 id="studio-title">Studio 管理员</h2><p class="caption">创建个人工作台的第一个管理员</p></div>
+                                                 </div>
+                                                 <span id="studio-status" class="pill">待检查</span>
+                                               </div>
+                                               <p id="studio-description" class="status-note">正在检查 Studio 模块状态…</p>
+                                               <div id="studio-saved" class="saved-state" hidden>
+                                                 <span aria-hidden="true">✓</span>
+                                                 <div><strong>Studio 管理员已就绪</strong><p>可以使用管理员账号直接登录 Studio 工作台。</p></div>
+                                               </div>
+                                               <form id="studio-form" class="form-stack" hidden>
+                                                 <div class="form-row">
+                                                   <label for="studio-username">用户名<input id="studio-username" name="username" autocomplete="off" placeholder="管理员用户名" required /></label>
+                                                   <label for="studio-email">邮箱<input id="studio-email" name="email" type="email" autocomplete="off" placeholder="admin@example.com" required /></label>
+                                                 </div>
+                                                 <label for="studio-password">密码<input id="studio-password" name="password" type="password" autocomplete="new-password" placeholder="至少 12 个字符" minlength="12" required /></label>
+                                                 <div><button class="primary" data-private type="submit">创建管理员 <span aria-hidden="true">→</span></button></div>
+                                                 <p class="hint">仅当服务尚无管理员时可创建；首个管理员默认通过邮箱验证，创建后可直接登录。</p>
+                                               </form>
                                              </section>
                                            </div>
                                          </main>
@@ -712,7 +746,7 @@ internal static class AuthSetupPage
                                            if (response.status === 429)
                                              throw new Error("操作过于频繁，请稍后重试。");
                                            throw new Error(
-                                             data?.error?.message || data?.message ||
+                                             (typeof data?.error === "string" ? data.error : data?.error?.message) || data?.message ||
                                                (path.startsWith("/api/music/") ? "音乐凭据管理不可用，请检查模块配置。" : "") ||
                                                (response.status === 503
                                                  ? "摄像头模块尚未就绪，请检查服务配置与 FFmpeg 后重启服务。"
@@ -853,6 +887,10 @@ internal static class AuthSetupPage
                                          await loadCamera();
                                          loadMusicDevices().catch((error) => { $("music-status").textContent = error.message; });
                                          loadQQ(true).catch((error) => { $("qq-status").textContent = error.message; });
+                                         loadStudio().catch((error) => {
+                                           badge("studio-status", "暂不可用", "warning");
+                                           $("studio-description").textContent = error.message;
+                                         });
                                        };
                                         $("auth-form").onsubmit = (event) => {
                                           event.preventDefault();
@@ -1138,11 +1176,76 @@ internal static class AuthSetupPage
                                          });
                                          await loadQQ(true);
                                        });
+                                       const resetStudio = () => {
+                                         $("studio-form").hidden = true;
+                                         $("studio-saved").hidden = true;
+                                         $("studio-description").hidden = false;
+                                         $("studio-description").textContent = "正在检查 Studio 模块状态…";
+                                         $("studio-password").value = "";
+                                         badge("studio-status", "待检查");
+                                       };
+                                       const showStudioReady = (message) => {
+                                         $("studio-form").hidden = true;
+                                         $("studio-saved").hidden = false;
+                                         $("studio-description").hidden = true;
+                                         $("studio-description").textContent = message;
+                                         badge("studio-status", "已初始化", "done");
+                                       };
+                                       const loadStudio = async () => {
+                                         resetStudio();
+                                         const modules = await request("/api/modules");
+                                         if (!Array.isArray(modules))
+                                           throw new Error("无法读取模块信息，请重试。");
+                                         if (!modules.some((module) => module.name === "studio")) {
+                                           badge("studio-status", "未启用", "warning");
+                                           $("studio-description").textContent =
+                                             "Studio 模块未启用。启用 Modules:Studio 并重启服务后，可在这里创建管理员。";
+                                           return;
+                                         }
+                                        const status = await request("/api/studio/setup/admin", { method: "GET" });
+                                        if (status?.adminExists === true) {
+                                          showStudioReady("服务已有管理员账号，请直接使用现有账号登录 Studio。");
+                                          return;
+                                        }
+                                        $("studio-form").hidden = false;
+                                        $("studio-description").textContent = "填写账号信息创建第一个管理员。";
+                                        badge("studio-status", "待初始化");
+                                       };
+                                       $("studio-form").onsubmit = (event) => {
+                                         event.preventDefault();
+                                         run(async () => {
+                                           const input = {
+                                             username: $("studio-username").value.trim(),
+                                             email: $("studio-email").value.trim(),
+                                             password: $("studio-password").value,
+                                           };
+                                           if (!input.username || !input.email || input.password.length < 12)
+                                             throw new Error("请填写用户名和邮箱，密码至少 12 个字符。");
+                                           try {
+                                             const user = await request("/api/studio/setup/admin", {
+                                               method: "POST",
+                                               headers: { "Content-Type": "application/json" },
+                                               body: JSON.stringify(input),
+                                             });
+                                             $("studio-form").reset();
+                                             $("studio-password").value = "";
+                                             showStudioReady("管理员 " + (user?.username || input.username) + " 已创建。");
+                                             notify("Studio 管理员创建成功，可直接登录工作台。", "success");
+                                           } catch (error) {
+                                             $("studio-password").value = "";
+                                             if (error.message.includes("已存在")) {
+                                               $("studio-form").reset();
+                                               showStudioReady("服务已有管理员账号，请直接使用现有账号登录 Studio。");
+                                             } else throw error;
+                                           }
+                                         });
+                                       };
                                         $("exit").onclick = () => {
                                           managementEpoch++;
                                           resetMusicDevices();
                                           clearSavedToken();
                                           resetQQ();
+                                          resetStudio();
                                           $("music-device-list").replaceChildren();
                                           $("qq-device-list").replaceChildren();
                                           managementToken = "";

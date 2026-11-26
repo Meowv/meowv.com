@@ -18,6 +18,7 @@ namespace Meowv.Api.Modules.Studio.Api.JsonContexts;
 [JsonSerializable(typeof(StudioRoleRequest))]
 [JsonSerializable(typeof(StudioRevokeSessionsRequest))]
 [JsonSerializable(typeof(StudioSetupAdminRequest))]
+[JsonSerializable(typeof(StudioSetupAdminStatusResponse))]
 [JsonSerializable(typeof(StudioLayoutWriteRequest))]
 [JsonSerializable(typeof(StudioLayoutConflictResponse))]
 [JsonSerializable(typeof(StudioUserProfileResponse))]

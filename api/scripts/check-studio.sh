@@ -53,8 +53,12 @@ done
 [ "$ready" = 1 ] || fail 'API did not become ready'
 
 expect_code "$(curl -s -o /dev/null -w '%{http_code}' "$base/api/health")" 200 'health'
+expect_code "$(curl -s -o "$work_dir/admin-status-before.json" -w '%{http_code}' "$base/api/studio/setup/admin" -H "X-Api-Bootstrap-Token: $bootstrap")" 200 'admin status before setup'
+python3 -c 'import json,sys; assert json.load(open(sys.argv[1]))["adminExists"] is False' "$work_dir/admin-status-before.json" || fail 'admin status before setup'
 expect_code "$(curl -s -o /dev/null -w '%{http_code}' -X POST "$base/api/studio/setup/admin" -H 'Content-Type: application/json' -H "X-Api-Bootstrap-Token: $bootstrap" --data '{"username":"admin","email":"admin@example.com","password":"AdminPass1234"}')" 201 'setup admin'
 expect_code "$(curl -s -o /dev/null -w '%{http_code}' -X POST "$base/api/studio/setup/admin" -H 'Content-Type: application/json' -H "X-Api-Bootstrap-Token: $bootstrap" --data '{"username":"admin2","email":"admin2@example.com","password":"AdminPass1234"}')" 409 'setup admin twice'
+expect_code "$(curl -s -o "$work_dir/admin-status-after.json" -w '%{http_code}' "$base/api/studio/setup/admin" -H "X-Api-Bootstrap-Token: $bootstrap")" 200 'admin status after setup'
+python3 -c 'import json,sys; assert json.load(open(sys.argv[1]))["adminExists"] is True' "$work_dir/admin-status-after.json" || fail 'admin status after setup'
 
 login_body="$work_dir/login.json"
 expect_code "$(curl -s -o "$login_body" -w '%{http_code}' -X POST "$base/api/studio/auth/login" -H 'Content-Type: application/json' --data '{"identifier":"admin","password":"AdminPass1234"}')" 200 'login'

@@ -70,6 +70,7 @@ dotnet run --project api/src/Meowv.Api -- --contentRoot /YOUR_CHECKOUT/api/src/M
 | `GET /api/modules` | 已装配模块及接口清单，不表示业务就绪 |
 | `GET /api/docs` | 按模块查看接口路径、描述、请求方式和认证要求，支持搜索与筛选 |
 | `GET /setup` | 统一初始化向导：系统授权码和摄像头登录，密钥保存在浏览器本地，退出管理时清除 |
+| `GET /api/studio/setup/admin` | 管理密钥；查询是否已有可登录 Studio 管理员，初始化向导据此隐藏或显示创建表单 |
 | `POST /api/auth/access-code` | `X-Api-Bootstrap-Token`；首次返回授权码，已存在时返回 `accessCode: null` |
 | `POST /api/auth/access-code/rotate` | 同上；轮换所有模块共用的授权码 |
 | `/api/xiaomi-camera/setup/...` | 同样使用 `X-Api-Bootstrap-Token`；小米账号登录、验证码验证和会话重置 |

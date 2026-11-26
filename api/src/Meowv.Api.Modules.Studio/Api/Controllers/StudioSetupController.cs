@@ -6,8 +6,18 @@ namespace Meowv.Api.Modules.Studio.Api.Controllers;
 
 [ApiController]
 [EndpointModule("studio", OptionsType = typeof(StudioOptions))]
-public sealed class StudioSetupController(StudioAdminService admins) : StudioControllerBase
+public sealed class StudioSetupController(StudioAdminService admins, IStudioStore store) : StudioControllerBase
 {
+    [HttpGet("/api/studio/setup/admin")]
+    [Authorize(Policy = ApiAuthorization.ManagementPolicy)]
+    [EnableRateLimiting("studio-read")]
+    [EndpointSummary("检查是否已有可登录 Studio 管理员。")]
+    public async Task<IResult> Status(CancellationToken cancellationToken)
+    {
+        var adminExists = await store.CountUsableAdminsAsync(null, cancellationToken) > 0;
+        return Results.Json(new StudioSetupAdminStatusResponse(adminExists), StudioJson.Options);
+    }
+
     [HttpPost("/api/studio/setup/admin")]
     [Authorize(Policy = ApiAuthorization.ManagementPolicy)]
     [EnableRateLimiting("studio-setup")]
