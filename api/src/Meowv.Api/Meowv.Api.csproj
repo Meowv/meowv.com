@@ -13,6 +13,7 @@
         <ProjectReference Include="../Meowv.Api.Modules.Auth/Meowv.Api.Modules.Auth.csproj"/>
         <ProjectReference Include="../Meowv.Api.Modules.Chat/Meowv.Api.Modules.Chat.csproj"/>
         <ProjectReference Include="../Meowv.Api.Modules.Music/Meowv.Api.Modules.Music.csproj"/>
+        <ProjectReference Include="../Meowv.Api.Modules.Studio/Meowv.Api.Modules.Studio.csproj"/>
         <ProjectReference Include="../Meowv.Api.Modules.XiaomiCamera/Meowv.Api.Modules.XiaomiCamera.csproj"/>
         <ProjectReference Include="../Meowv.Api.Modules.Health/Meowv.Api.Modules.Health.csproj"/>
         <ProjectReference Include="../Meowv.Api.Modules.Diagnostics/Meowv.Api.Modules.Diagnostics.csproj"/>
@@ -51,6 +52,14 @@
         <Using Include="Meowv.Api.Modules.Music.Infrastructure.Persistence"/>
         <Using Include="Meowv.Api.Modules.Music.Infrastructure.Providers"/>
         <Using Include="Meowv.Api.Modules.Music.Infrastructure.Runtime"/>
+        <Using Include="Meowv.Api.Modules.Studio.Api"/>
+        <Using Include="Meowv.Api.Modules.Studio.Api.Contracts"/>
+        <Using Include="Meowv.Api.Modules.Studio.Api.Controllers"/>
+        <Using Include="Meowv.Api.Modules.Studio.Api.JsonContexts"/>
+        <Using Include="Meowv.Api.Modules.Studio.Application"/>
+        <Using Include="Meowv.Api.Modules.Studio.Configuration"/>
+        <Using Include="Meowv.Api.Modules.Studio.Domain"/>
+        <Using Include="Meowv.Api.Modules.Studio.Infrastructure"/>
         <Using Include="Meowv.Api.Modules.XiaomiCamera.Api"/>
         <Using Include="Meowv.Api.Modules.XiaomiCamera.Api.Contracts"/>
         <Using Include="Meowv.Api.Modules.XiaomiCamera.Application"/>

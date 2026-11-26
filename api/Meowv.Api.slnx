@@ -1,11 +1,12 @@
 <Solution>
-    <Project Path="src/Meowv.Api/Meowv.Api.csproj" />
-    <Project Path="src/Meowv.Api.SharedKernel/Meowv.Api.SharedKernel.csproj" />
-    <Project Path="src/Meowv.Api.Platform/Meowv.Api.Platform.csproj" />
-    <Project Path="src/Meowv.Api.Modules.Auth/Meowv.Api.Modules.Auth.csproj" />
-    <Project Path="src/Meowv.Api.Modules.Chat/Meowv.Api.Modules.Chat.csproj" />
-    <Project Path="src/Meowv.Api.Modules.Music/Meowv.Api.Modules.Music.csproj" />
-    <Project Path="src/Meowv.Api.Modules.XiaomiCamera/Meowv.Api.Modules.XiaomiCamera.csproj" />
-    <Project Path="src/Meowv.Api.Modules.Health/Meowv.Api.Modules.Health.csproj" />
-    <Project Path="src/Meowv.Api.Modules.Diagnostics/Meowv.Api.Modules.Diagnostics.csproj" />
+    <Project Path="src/Meowv.Api/Meowv.Api.csproj"/>
+    <Project Path="src/Meowv.Api.SharedKernel/Meowv.Api.SharedKernel.csproj"/>
+    <Project Path="src/Meowv.Api.Platform/Meowv.Api.Platform.csproj"/>
+    <Project Path="src/Meowv.Api.Modules.Auth/Meowv.Api.Modules.Auth.csproj"/>
+    <Project Path="src/Meowv.Api.Modules.Chat/Meowv.Api.Modules.Chat.csproj"/>
+    <Project Path="src/Meowv.Api.Modules.Music/Meowv.Api.Modules.Music.csproj"/>
+    <Project Path="src/Meowv.Api.Modules.Studio/Meowv.Api.Modules.Studio.csproj"/>
+    <Project Path="src/Meowv.Api.Modules.XiaomiCamera/Meowv.Api.Modules.XiaomiCamera.csproj"/>
+    <Project Path="src/Meowv.Api.Modules.Health/Meowv.Api.Modules.Health.csproj"/>
+    <Project Path="src/Meowv.Api.Modules.Diagnostics/Meowv.Api.Modules.Diagnostics.csproj"/>
 </Solution>

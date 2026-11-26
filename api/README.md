@@ -1,13 +1,13 @@
 # Meowv.Api
 
-基于 .NET 10 / ASP.NET Core 的统一后端，提供公共授权、健康检查、接口目录、小米摄像头模块和匿名公共聊天室。Studio 通过 API 访问设备目录、实时预览和云台控制。
+基于 .NET 10 / ASP.NET Core 的统一后端，提供公共授权、健康检查、接口目录、小米摄像头模块、匿名公共聊天室和 Studio 账号/桌面布局。Studio 通过 API 访问账号、布局、设备目录、实时预览和云台控制。
 
 | 目录 | 职责 |
 | --- | --- |
 | `src/Meowv.Api/` | 唯一 HTTP 宿主与组合根，保留程序集名 `Meowv.Api` |
 | `src/Meowv.Api.SharedKernel/` | 跨模块契约、模块元数据、授权码契约与 `CallerContext` |
 | `src/Meowv.Api.Platform/` | SQLite、配置、认证、模块宿主约定与 MVC/JSON 同步 |
-| `src/Meowv.Api.Modules.*/` | 六个限界上下文，模块内分 `Api/Application/Domain/Infrastructure` |
+| `src/Meowv.Api.Modules.*/` | 七个限界上下文，模块内分 `Api/Application/Domain/Infrastructure` |
 | `scripts/` | 发布、FFmpeg 准备与运行时定向检查 |
 | `tests/` | 定向检查、契约测试与架构约束测试 |
 
@@ -185,6 +185,32 @@ node --test api/tests/publish-layout.test.mjs
 `setup-page.test.mjs` 使用内存 DOM 和合成响应检查初始化、验证码、模块故障、授权码轮换、密钥记忆与清除、设备激活与撤销、QQ 设备列表及退出清理；`publish-layout.test.mjs` 使用发布和下载替身检查各 RID 的目录布局、缓存校验和打包白名单。
 
 这些检查不构建完整 API，不连接真实账号或摄像头，也不执行真实发布。完整构建、目标平台启动、真实设备预览及生产验证需分别确认。
+
+## Studio 账号与桌面布局
+
+Studio 模块挂载在 `/api/studio`，使用模块内 per-user JWT（`Authorization: Bearer`），与公共授权码相互独立；共享同一 SQLite 数据库，但只读写 `studio_*` 表。模块默认启用，表由 `studio` schema（version 1）在启动时创建。
+
+| 配置 | 默认值 | 作用 |
+| --- | --- | --- |
+| `Modules:Studio:Enabled` | `true` | 启用模块与后台邮件发送 |
+| `Modules:Studio:RegistrationEnabled` | `false` | 开放公开注册 |
+| `Modules:Studio:RequireEmailVerification` | `true` | 未验证邮箱禁止登录 |
+| `Modules:Studio:TokenDays` | `30` | 用户 JWT 有效期 |
+| `Modules:Studio:PublicBaseUrl` | 空 | 验证/重置邮件链接前缀；空则用 `http://localhost:5000` |
+| `Modules:Studio:AvatarDirectory` | `studio/user-assets` | 头像私有目录，相对内容根 |
+| `Modules:Studio:Jwt:SigningKey` | 空 | 可选；空时用 HKDF 从 `Security:BootstrapToken` 派生 |
+| `Modules:Studio:Smtp:*` | 空 | 验证/重置邮件 SMTP；未配置时相关流程返回 503 |
+
+首个管理员通过 `POST /api/studio/setup/admin` 创建，请求头为 `X-Api-Bootstrap-Token`，请求体 `{username,email,password}`，密码至少 12 字符；已存在可登录管理员时返回 `409`。之后使用 `POST /api/studio/auth/login` 获取 Bearer 令牌。
+
+| 路径 | 用途 |
+| --- | --- |
+| `/api/studio/auth/*` | 注册、登录、登出、邮箱验证、重发验证、找回/重置密码 |
+| `/api/studio/user/*` | 资料、偏好、改密、头像、会话、注销 |
+| `/api/studio/layout` | 布局读写；`PUT` 必须带 `If-Match: "layout-N"`，冲突返回 `409` |
+| `/api/studio/admin/*` | 用户、角色、会话、统计；要求管理员角色 |
+
+头像读取改为登录后访问：`GET /api/studio/user/avatar` 仅允许本人或管理员；前端不能直接用 `<img src>`，需用 Bearer `fetch` 后转 `blob:` URL。注册/验证/重置邮件由数据库 outbox 异步发送，最多重试 `Modules:Studio:DispatcherMaxAttempts` 次。
 
 ## Chat 公共聊天室
 

@@ -11,6 +11,7 @@ IReadOnlyList<Action<IServiceCollection, IConfiguration>> registers =
     (services, configuration) => services.AddXiaomiCameraModule(configuration),
     (services, configuration) => services.AddChatModule(configuration),
     (services, configuration) => services.AddMusicModule(configuration),
+    (services, configuration) => services.AddStudioModule(configuration),
 ];
 foreach (var register in registers)
 {
@@ -25,6 +26,7 @@ IReadOnlyList<System.Reflection.Assembly> assemblies =
     typeof(XiaomiCameraModule).Assembly,
     typeof(ChatModule).Assembly,
     typeof(MusicModule).Assembly,
+    typeof(StudioModule).Assembly,
 ];
 builder.Services.AddApiControllers([.. assemblies]);
 
