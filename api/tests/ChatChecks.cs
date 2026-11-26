@@ -2,11 +2,11 @@ using System.Net;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
-using Meowv.Api.Core;
-using Meowv.Api.Infrastructure;
+using Meowv.Api.SharedKernel;
+using Meowv.Api.Platform;
+using Meowv.Api.Modules.Auth;
 using Meowv.Api.Modules.Chat;
 using Meowv.Api.Modules.Health;
-using Meowv.Api.Security;
 using Microsoft.Extensions.Options;
 
 var root = Path.Combine(Path.GetTempPath(), "meowv-chat-data-" + Guid.NewGuid().ToString("N"));
@@ -35,6 +35,7 @@ async Task<WebApplication> Start(Dictionary<string, string?> config)
     builder.Configuration.AddInMemoryCollection(config);
     builder.Logging.ClearProviders();
     builder.Services.AddApiServices(builder.Configuration);
+    builder.Services.AddAuthModule();
     builder.Services.AddChatModule(builder.Configuration);
     builder.Services.AddSingleton<IEndpointModule, HealthModule>();
     builder.Services.AddApiControllers();

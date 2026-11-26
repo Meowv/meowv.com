@@ -3,7 +3,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { test } from 'node:test';
 import vm from 'node:vm';
 
-const source = readFileSync(new URL('../src/Meowv.Api/Modules/Auth/AuthSetupPage.cs', import.meta.url), 'utf8');
+const source = readFileSync(new URL('../src/Meowv.Api.Modules.Auth/Api/AuthSetupPage.cs', import.meta.url), 'utf8');
 const script = source.match(/<script>([\s\S]*?)<\/script>/)[1];
 const management = 'YOUR_SYNTHETIC_MANAGEMENT_TOKEN_FOR_UI_TESTS';
 const accessCode = 'YOUR_SYNTHETIC_ACCESS_CODE_FOR_UI_TESTS';
@@ -206,9 +206,9 @@ test('management rejection leaves the gate visible without initializing camera',
 });
 
 test('removed camera setup page and compatibility initialization routes stay absent', () => {
-  const module = readFileSync(new URL('../src/Meowv.Api/Modules/XiaomiCamera/XiaomiCameraModule.cs', import.meta.url), 'utf8');
+  const module = readFileSync(new URL('../src/Meowv.Api.Modules.XiaomiCamera/Api/XiaomiCameraModule.cs', import.meta.url), 'utf8');
   assert.doesNotMatch(module, /setup\/xiaomi|XiaomiSetupPage|setup\.MapPost\("\/access-code/);
-  assert.equal(existsSync(new URL('../src/Meowv.Api/Modules/XiaomiCamera/XiaomiSetupPage.cs', import.meta.url)), false);
+  assert.equal(existsSync(new URL('../src/Meowv.Api.Modules.XiaomiCamera/Api/XiaomiSetupPage.cs', import.meta.url)), false);
   assert.doesNotMatch(source, /setup\/xiaomi/);
 });
 

@@ -26,6 +26,7 @@ cat >"$work_dir/Checks.csproj" <<EOF
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
     <Compile Include="$project_dir/tests/RuntimeChecks.cs" />
+    <Compile Include="$project_dir/tests/Usings.Runtime.cs" />
     <Compile Include="$project_dir/tests/MusicChecks.cs" />
     <Compile Include="$project_dir/tests/NeteaseSourceChecks.cs" />
     <Compile Include="$project_dir/tests/MusicUpstreamFixture.cs" />
@@ -35,28 +36,33 @@ cat >"$work_dir/Checks.csproj" <<EOF
     <Content Include="$project_dir/tests/fixtures/music-v1.json" Link="music-v1.json" CopyToOutputDirectory="PreserveNewest" />
     <Compile Include="$project_dir/tests/ModuleInitializationChecks.cs" />
     <Compile Include="$project_dir/tests/FfmpegPathChecks.cs" />
-    <Compile Include="$project_dir/src/Meowv.Api.Core/*.cs" />
-    <Compile Include="$project_dir/src/Meowv.Api/Infrastructure/*.cs" />
-    <Compile Include="$project_dir/src/Meowv.Api/Security/*.cs" />
-    <Compile Include="$project_dir/src/Meowv.Api/Modules/Auth/*.cs" />
-    <Compile Include="$project_dir/src/Meowv.Api/Modules/Diagnostics/*.cs" />
-    <Compile Include="$project_dir/src/Meowv.Api/Modules/Health/*.cs" />
-    <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/XiaomiCameraOptions.cs" />
-    <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/XiaomiModuleOptions.cs" />
-    <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/XiaomiMediaOptions.cs" />
-    <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/XiaomiCameraServiceCollectionExtensions.cs" />
-    <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/XiaomiPlaybackLimits.cs" />
-    <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/XiaomiPlaybackCapacityException.cs" />
-    <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/XiaomiModuleRuntime.cs" />
-    <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/XiaomiEndpointMetadata.cs" />
-    <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/XiaomiModuleAvailabilityMiddleware.cs" />
-    <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/XiaomiCredentialCache.cs" />
-    <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/XiaomiPlaybackTicketService.cs" />
-    <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/XiaomiPlaybackTarget.cs" />
-    <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/XiaomiFfmpegResolver.cs" />
-    <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/XiaomiMediaProfile.cs" />
-    <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/XiaomiStorageJsonContext.cs" />
-    <Compile Include="$project_dir/src/Meowv.Api/Modules/XiaomiCamera/Cloud/XiaomiCloudCredentials.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api.SharedKernel/*.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api.Platform/Infrastructure/*.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api.Platform/Hosting/*.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api.Platform/Security/*.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api.Modules.Auth/**/*.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api.Modules.Chat/**/*.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api.Modules.Diagnostics/**/*.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api.Modules.Health/**/*.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api.Modules.Music/**/*.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api.Modules.XiaomiCamera/Configuration/XiaomiCameraOptions.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api.Modules.XiaomiCamera/Configuration/XiaomiModuleOptions.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api.Modules.XiaomiCamera/Configuration/XiaomiMediaOptions.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api.Modules.XiaomiCamera/Configuration/XiaomiCameraServiceCollectionExtensions.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api.Modules.XiaomiCamera/Domain/XiaomiPlaybackLimits.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api.Modules.XiaomiCamera/Domain/XiaomiPlaybackCapacityException.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api.Modules.XiaomiCamera/Infrastructure/XiaomiModuleRuntime.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api.Modules.XiaomiCamera/Api/XiaomiEndpointMetadata.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api.Modules.XiaomiCamera/Infrastructure/XiaomiModuleAvailabilityMiddleware.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api.Modules.XiaomiCamera/Infrastructure/XiaomiCredentialCache.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api.Modules.XiaomiCamera/Application/XiaomiPlaybackTicketService.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api.Modules.XiaomiCamera/Domain/XiaomiPlaybackTarget.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api.Modules.XiaomiCamera/Infrastructure/XiaomiFfmpegResolver.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api.Modules.XiaomiCamera/Infrastructure/XiaomiMediaProfile.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api.Modules.XiaomiCamera/Api/XiaomiStorageJsonContext.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api.Modules.XiaomiCamera/Infrastructure/Cloud/XiaomiCloudCredentials.cs" />
+    <Compile Remove="$project_dir/src/**/obj/**/*.cs" />
+    <Compile Remove="$project_dir/src/**/bin/**/*.cs" />
     <!-- 禁用模块的控制器不纳入定向测试宿主（占位服务不具备完整契约）；主工程完整编译覆盖。 -->
   </ItemGroup>
 </Project>

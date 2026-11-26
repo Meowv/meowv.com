@@ -1,0 +1,11 @@
+using System.Text.Json.Serialization;
+
+namespace Meowv.Api.Modules.XiaomiCamera.Infrastructure.Protocol;
+
+internal sealed record Cs2MissAuthenticationRequest(
+    [property: JsonPropertyName("public_key")]
+    string PublicKey,
+    [property: JsonPropertyName("sign")] string Sign,
+    [property: JsonPropertyName("uuid")] Guid Uuid,
+    [property: JsonPropertyName("support_encrypt")]
+    int SupportEncrypt);

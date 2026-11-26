@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <RootNamespace>Meowv.Api.Modules.Diagnostics</RootNamespace>
+        <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    </PropertyGroup>
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="../Meowv.Api.SharedKernel/Meowv.Api.SharedKernel.csproj" />
+        <ProjectReference Include="../Meowv.Api.Platform/Meowv.Api.Platform.csproj" />
+    </ItemGroup>
+    <ItemGroup>
+        <Using Include="Meowv.Api.Modules.Diagnostics.Api" />
+        <Using Include="Meowv.Api.Modules.Diagnostics.Configuration" />
+        <Using Include="Meowv.Api.Platform.Hosting" />
+        <Using Include="Meowv.Api.Platform.Infrastructure" />
+        <Using Include="Meowv.Api.Platform.Security" />
+        <Using Include="Meowv.Api.SharedKernel" />
+    </ItemGroup>
+</Project>

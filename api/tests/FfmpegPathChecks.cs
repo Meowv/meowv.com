@@ -1,5 +1,5 @@
 using System.Runtime.InteropServices;
-using Meowv.Api.Infrastructure;
+using Meowv.Api.Platform;
 using Meowv.Api.Modules.XiaomiCamera;
 using Microsoft.Extensions.Options;
 

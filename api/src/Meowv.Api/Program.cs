@@ -1,18 +1,32 @@
-using Meowv.Api;
-using Meowv.Api.Core;
-using Meowv.Api.Infrastructure;
-using Meowv.Api.Security;
-
 var builder = ApiConfiguration.CreateBuilder(args);
 
 builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.TypeInfoResolverChain.Insert(0, ApiJsonContext.Default));
 builder.Services.AddApiServices(builder.Configuration);
 
-foreach (var register in ModuleCatalog.Registrations)
+IReadOnlyList<Action<IServiceCollection, IConfiguration>> registers =
+[
+    (services, _) => services.AddHealthModule(),
+    (services, _) => services.AddDiagnosticsModule(),
+    (services, _) => services.AddAuthModule(),
+    (services, configuration) => services.AddXiaomiCameraModule(configuration),
+    (services, configuration) => services.AddChatModule(configuration),
+    (services, configuration) => services.AddMusicModule(configuration),
+];
+foreach (var register in registers)
 {
     register(builder.Services, builder.Configuration);
 }
-builder.Services.AddApiControllers();
+
+IReadOnlyList<System.Reflection.Assembly> assemblies =
+[
+    typeof(HealthModule).Assembly,
+    typeof(DiagnosticsModule).Assembly,
+    typeof(AuthModule).Assembly,
+    typeof(XiaomiCameraModule).Assembly,
+    typeof(ChatModule).Assembly,
+    typeof(MusicModule).Assembly,
+];
+builder.Services.AddApiControllers([.. assemblies]);
 
 var app = builder.Build();
 app.UseExceptionHandler(errorApp => errorApp.Run(async context =>

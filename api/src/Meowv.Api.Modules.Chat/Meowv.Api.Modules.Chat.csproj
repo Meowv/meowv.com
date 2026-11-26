@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <RootNamespace>Meowv.Api.Modules.Chat</RootNamespace>
+        <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    </PropertyGroup>
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App"/>
+        <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12"/>
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="../Meowv.Api.SharedKernel/Meowv.Api.SharedKernel.csproj"/>
+        <ProjectReference Include="../Meowv.Api.Platform/Meowv.Api.Platform.csproj"/>
+    </ItemGroup>
+    <ItemGroup>
+        <Using Include="Meowv.Api.Modules.Chat.Api"/>
+        <Using Include="Meowv.Api.Modules.Chat.Api.Hubs"/>
+        <Using Include="Meowv.Api.Modules.Chat.Application"/>
+        <Using Include="Meowv.Api.Modules.Chat.Configuration"/>
+        <Using Include="Meowv.Api.Modules.Chat.Domain"/>
+        <Using Include="Meowv.Api.Modules.Chat.Infrastructure"/>
+        <Using Include="Meowv.Api.Platform.Hosting"/>
+        <Using Include="Meowv.Api.Platform.Infrastructure"/>
+        <Using Include="Meowv.Api.Platform.Security"/>
+        <Using Include="Meowv.Api.SharedKernel"/>
+    </ItemGroup>
+</Project>

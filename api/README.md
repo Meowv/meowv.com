@@ -4,10 +4,12 @@
 
 | 目录 | 职责 |
 | --- | --- |
-| `src/Meowv.Api/` | HTTP 宿主、配置、SQLite、认证与 `Modules/` 业务模块 |
-| `src/Meowv.Api.Core/` | 公共模块与授权契约 |
+| `src/Meowv.Api/` | 唯一 HTTP 宿主与组合根，保留程序集名 `Meowv.Api` |
+| `src/Meowv.Api.SharedKernel/` | 跨模块契约、模块元数据、授权码契约与 `CallerContext` |
+| `src/Meowv.Api.Platform/` | SQLite、配置、认证、模块宿主约定与 MVC/JSON 同步 |
+| `src/Meowv.Api.Modules.*/` | 六个限界上下文，模块内分 `Api/Application/Domain/Infrastructure` |
 | `scripts/` | 发布、FFmpeg 准备与运行时定向检查 |
-| `tests/` | 使用合成数据和临时目录的定向检查 |
+| `tests/` | 定向检查、契约测试与架构约束测试 |
 
 模块开发与修改边界见[协作指南](AGENTS.md)。
 

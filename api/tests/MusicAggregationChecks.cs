@@ -1,8 +1,6 @@
 using System.Net;
 using System.Text;
 using Meowv.Api.Modules.Music;
-using Meowv.Api.Modules.Music.Contracts;
-using Meowv.Api.Modules.Music.Providers;
 
 internal static class MusicAggregationChecks
 {

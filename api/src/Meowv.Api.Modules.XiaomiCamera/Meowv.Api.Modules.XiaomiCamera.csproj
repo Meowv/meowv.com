@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <RootNamespace>Meowv.Api.Modules.XiaomiCamera</RootNamespace>
+        <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    </PropertyGroup>
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+        <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
+        <PackageReference Include="NSec.Cryptography" Version="26.4.0" />
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="../Meowv.Api.SharedKernel/Meowv.Api.SharedKernel.csproj" />
+        <ProjectReference Include="../Meowv.Api.Platform/Meowv.Api.Platform.csproj" />
+    </ItemGroup>
+    <ItemGroup>
+        <Using Include="Meowv.Api.Modules.XiaomiCamera.Api" />
+        <Using Include="Meowv.Api.Modules.XiaomiCamera.Api.Contracts" />
+        <Using Include="Meowv.Api.Modules.XiaomiCamera.Application" />
+        <Using Include="Meowv.Api.Modules.XiaomiCamera.Configuration" />
+        <Using Include="Meowv.Api.Modules.XiaomiCamera.Domain" />
+        <Using Include="Meowv.Api.Modules.XiaomiCamera.Infrastructure" />
+        <Using Include="Meowv.Api.Modules.XiaomiCamera.Infrastructure.Cloud" />
+        <Using Include="Meowv.Api.Modules.XiaomiCamera.Infrastructure.Protocol" />
+        <Using Include="Meowv.Api.Platform.Hosting" />
+        <Using Include="Meowv.Api.Platform.Infrastructure" />
+        <Using Include="Meowv.Api.Platform.Security" />
+        <Using Include="Meowv.Api.SharedKernel" />
+    </ItemGroup>
+</Project>

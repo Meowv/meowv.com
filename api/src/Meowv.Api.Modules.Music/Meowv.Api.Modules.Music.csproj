@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <RootNamespace>Meowv.Api.Modules.Music</RootNamespace>
+        <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    </PropertyGroup>
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+        <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
+        <PackageReference Include="NSec.Cryptography" Version="26.4.0" />
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="../Meowv.Api.SharedKernel/Meowv.Api.SharedKernel.csproj" />
+        <ProjectReference Include="../Meowv.Api.Platform/Meowv.Api.Platform.csproj" />
+    </ItemGroup>
+    <ItemGroup>
+        <Using Include="Meowv.Api.Modules.Music.Api" />
+        <Using Include="Meowv.Api.Modules.Music.Api.Contracts" />
+        <Using Include="Meowv.Api.Modules.Music.Api.JsonContexts" />
+        <Using Include="Meowv.Api.Modules.Music.Application" />
+        <Using Include="Meowv.Api.Modules.Music.Application.Ports" />
+        <Using Include="Meowv.Api.Modules.Music.Configuration" />
+        <Using Include="Meowv.Api.Modules.Music.Domain" />
+        <Using Include="Meowv.Api.Modules.Music.Infrastructure" />
+        <Using Include="Meowv.Api.Modules.Music.Infrastructure.Persistence" />
+        <Using Include="Meowv.Api.Modules.Music.Infrastructure.Providers" />
+        <Using Include="Meowv.Api.Modules.Music.Infrastructure.Runtime" />
+        <Using Include="Meowv.Api.Platform.Hosting" />
+        <Using Include="Meowv.Api.Platform.Infrastructure" />
+        <Using Include="Meowv.Api.Platform.Security" />
+        <Using Include="Meowv.Api.SharedKernel" />
+    </ItemGroup>
+</Project>

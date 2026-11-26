@@ -5,19 +5,14 @@ using System.Security.Claims;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-using Meowv.Api.Core;
+using Meowv.Api.SharedKernel;
 using Meowv.Api.Modules.Diagnostics;
 using Meowv.Api.Modules.Health;
 using Meowv.Api.Modules.Auth;
 using Meowv.Api.Modules.Chat;
 using Meowv.Api.Modules.Music;
-using Meowv.Api.Modules.Music.Contracts;
-using Meowv.Api.Modules.Music.Providers;
-using Meowv.Api.Modules.Music.QQ;
-using Meowv.Api.Modules.Music.Storage;
 using Meowv.Api.Modules.XiaomiCamera;
-using Meowv.Api.Security;
-using Meowv.Api.Infrastructure;
+using Meowv.Api.Platform;
 using Microsoft.Data.Sqlite;
 
 internal static class MusicChecks
@@ -741,7 +736,7 @@ internal static class MusicChecks
             new HttpClient(qq ?? new MusicUpstreamFixture { Status = upstream.Status }), services.GetRequiredService<TimeProvider>()));
         builder.Services.AddChatModule(builder.Configuration);
         builder.Services.AddSingleton<IEndpointModule, HealthModule>();
-        builder.Services.AddSingleton<IEndpointModule, AuthModule>();
+        builder.Services.AddAuthModule();
         builder.Services.AddSingleton<IEndpointModule, DiagnosticsModule>();
         builder.Services.AddApiControllers();
         await using var app = builder.Build();
@@ -889,12 +884,8 @@ internal static class MusicChecks
         Check(member.Status().Status == "connected" && member.Status().Devices.SequenceEqual([owner.Id]),
             "Fresh service restores the session and grant");
 
-        static HttpContext Context(string id) => new DefaultHttpContext
-        {
-            User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, id)], "test"))
-        };
-        Check(member.ForDevice(Context(other.Id)) is null, "Other signed devices cannot use the QQ session");
-        var access = member.ForDevice(Context(owner.Id))!;
+        Check(member.ForDevice(other.Id) is null, "Other signed devices cannot use the QQ session");
+        var access = member.ForDevice(owner.Id)!;
         const string paid = "fixturePaid001";
         const string denied = "fixturePaid002";
         var tracks = new[] { new QQAccountClient.Mp3(paid, "fixtureMedia01", 3200000), new QQAccountClient.Mp3(denied, "fixtureMedia02", 3200000) };
@@ -910,7 +901,7 @@ internal static class MusicChecks
             "Revocation invalidates existing access and prevents issuance");
         Check(store.SetDevice(other.Id, true), "Another device can be explicitly granted");
         fixture.Expired = true;
-        Check(await member.ForDevice(Context(other.Id))!.ResolveAsync(tracks[0], default) is null &&
+        Check(await member.ForDevice(other.Id)!.ResolveAsync(tracks[0], default) is null &&
               member.Status().Status == "expired" && store.Load() is null, "Explicit upstream expiry clears the saved credential");
     }
 

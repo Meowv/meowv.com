@@ -2,7 +2,8 @@
 
 适用于 `api/` 及子目录。继承[根协作指南](../AGENTS.md)，用途、命令和模块约定见 [README](README.md)。
 
-- 解决方案固定为 `Meowv.Api` 和 `Meowv.Api.Core` 两个项目。前者是唯一 HTTP 宿主，所有业务模块放在其 `Modules/` 下，按目录细分职责，不新增模块类库；后者只保存公共契约。
+- 解决方案为 1 个 HTTP 宿主（`src/Meowv.Api`，程序集名 `Meowv.Api`）、1 个 `Meowv.Api.SharedKernel`、1 个 `Meowv.Api.Platform` 和 6 个 `Meowv.Api.Modules.*` 项目；模块项目之间零引用，REST 端点统一在模块 `Api/Controllers/`。
+- 命名空间必须与物理目录一致，例如 `Meowv.Api.Platform.Hosting`、`Meowv.Api.Modules.Music.Api.JsonContexts`；`csproj` 的 `RootNamespace` 保持项目根。每个 `.cs` 文件最多一个顶层类型，多类型文件必须拆分。
 - 使用显式、泛型的 DI 注册；模块入口保持无业务状态，不在构造函数中注入 scoped 业务服务或模块清单。
 - 宿主统一附加模块路由归属元数据；接口目录从实际注册端点读取，不维护独立路由清单。模块自行校验的访问凭据必须用 `EndpointAccessMetadata` 标明。
 - 模块自行登记配置、依赖与 JSON 源生成上下文。Web 项目关闭裁剪分析（控制器与 MVC 不支持裁剪），全仓保持反射式 JSON 禁用，不为方便改成反射扫描。

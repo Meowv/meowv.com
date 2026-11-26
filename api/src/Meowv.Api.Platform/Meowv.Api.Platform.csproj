@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <RootNamespace>Meowv.Api.Platform</RootNamespace>
+        <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    </PropertyGroup>
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+        <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="../Meowv.Api.SharedKernel/Meowv.Api.SharedKernel.csproj" />
+    </ItemGroup>
+    <ItemGroup>
+        <Using Include="Meowv.Api.Platform.Hosting" />
+        <Using Include="Meowv.Api.Platform.Infrastructure" />
+        <Using Include="Meowv.Api.Platform.Security" />
+        <Using Include="Meowv.Api.SharedKernel" />
+    </ItemGroup>
+</Project>

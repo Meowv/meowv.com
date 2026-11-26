@@ -1,0 +1,15 @@
+global using Meowv.Api.Modules.Auth.Api;
+global using Meowv.Api.Modules.Auth.Configuration;
+global using Meowv.Api.Modules.Auth.Infrastructure;
+global using Meowv.Api.Modules.Chat.Api;
+global using Meowv.Api.Modules.Chat.Api.Hubs;
+global using Meowv.Api.Modules.Chat.Application;
+global using Meowv.Api.Modules.Chat.Configuration;
+global using Meowv.Api.Modules.Chat.Domain;
+global using Meowv.Api.Modules.Chat.Infrastructure;
+global using Meowv.Api.Modules.Health.Api;
+global using Meowv.Api.Modules.Health.Configuration;
+global using Meowv.Api.Platform.Hosting;
+global using Meowv.Api.Platform.Infrastructure;
+global using Meowv.Api.Platform.Security;
+global using Meowv.Api.SharedKernel;

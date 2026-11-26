@@ -1,10 +1,10 @@
 using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Meowv.Api.Core;
-using Meowv.Api.Infrastructure;
+using Meowv.Api.SharedKernel;
+using Meowv.Api.Platform;
+using Meowv.Api.Modules.Auth;
 using Meowv.Api.Modules.XiaomiCamera;
-using Meowv.Api.Security;
 
 internal static class ModuleInitializationChecks
 {
@@ -30,7 +30,7 @@ internal static class ModuleInitializationChecks
             builder.Logging.ClearProviders();
             builder.Services.AddApiServices(builder.Configuration);
             builder.Services.AddXiaomiCameraModule(builder.Configuration);
-            builder.Services.AddSingleton<IEndpointModule, Meowv.Api.Modules.Auth.AuthModule>();
+            builder.Services.AddAuthModule();
             builder.Services.AddApiControllers();
             await using var app = builder.Build();
             var schemaMismatch = key == "DatabaseSchema";
@@ -99,6 +99,7 @@ internal static class ModuleInitializationChecks
             "--Modules:XiaomiCamera:MaxConcurrentStreams", "3",
         ]);
         valid.Services.AddApiServices(valid.Configuration);
+        valid.Services.AddAuthModule();
         valid.Services.AddXiaomiCameraModule(valid.Configuration);
         await using var validApp = valid.Build();
         if (validApp.Services.GetRequiredService<XiaomiPlaybackLimits>().MaxConcurrentStreams != 3)
@@ -128,9 +129,6 @@ namespace Meowv.Api.Modules.XiaomiCamera
     [JsonSourceGenerationOptions(JsonSerializerDefaults.Web)]
     [JsonSerializable(typeof(XiaomiSetupError))]
     internal partial class XiaomiHttpJsonContext : JsonSerializerContext;
-}
 
-namespace Meowv.Api.Modules.XiaomiCamera.Cloud
-{
     public sealed class XiaomiAccountLoginFlow;
 }

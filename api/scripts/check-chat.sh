@@ -21,11 +21,16 @@ cat >"$work_dir/Checks.csproj" <<XML
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
     <Compile Include="$project_dir/tests/ChatChecks.cs" />
-    <Compile Include="$project_dir/src/Meowv.Api.Core/*.cs" />
-    <Compile Include="$project_dir/src/Meowv.Api/Infrastructure/*.cs" />
-    <Compile Include="$project_dir/src/Meowv.Api/Security/*.cs" />
-    <Compile Include="$project_dir/src/Meowv.Api/Modules/Chat/*.cs" />
-    <Compile Include="$project_dir/src/Meowv.Api/Modules/Health/*.cs" />
+    <Compile Include="$project_dir/tests/Usings.Chat.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api.SharedKernel/*.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api.Platform/Infrastructure/*.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api.Platform/Hosting/*.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api.Platform/Security/*.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api.Modules.Auth/**/*.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api.Modules.Chat/**/*.cs" />
+    <Compile Include="$project_dir/src/Meowv.Api.Modules.Health/**/*.cs" />
+    <Compile Remove="$project_dir/src/**/obj/**/*.cs" />
+    <Compile Remove="$project_dir/src/**/bin/**/*.cs" />
   </ItemGroup>
 </Project>
 XML
