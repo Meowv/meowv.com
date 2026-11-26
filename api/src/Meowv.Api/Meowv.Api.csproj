@@ -8,69 +8,69 @@
         <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
     </PropertyGroup>
     <ItemGroup>
-        <ProjectReference Include="../Meowv.Api.SharedKernel/Meowv.Api.SharedKernel.csproj"/>
-        <ProjectReference Include="../Meowv.Api.Platform/Meowv.Api.Platform.csproj"/>
-        <ProjectReference Include="../Meowv.Api.Modules.Auth/Meowv.Api.Modules.Auth.csproj"/>
-        <ProjectReference Include="../Meowv.Api.Modules.Chat/Meowv.Api.Modules.Chat.csproj"/>
-        <ProjectReference Include="../Meowv.Api.Modules.Music/Meowv.Api.Modules.Music.csproj"/>
-        <ProjectReference Include="../Meowv.Api.Modules.Studio/Meowv.Api.Modules.Studio.csproj"/>
-        <ProjectReference Include="../Meowv.Api.Modules.XiaomiCamera/Meowv.Api.Modules.XiaomiCamera.csproj"/>
-        <ProjectReference Include="../Meowv.Api.Modules.Health/Meowv.Api.Modules.Health.csproj"/>
-        <ProjectReference Include="../Meowv.Api.Modules.Diagnostics/Meowv.Api.Modules.Diagnostics.csproj"/>
+        <ProjectReference Include="../Meowv.Api.SharedKernel/Meowv.Api.SharedKernel.csproj" />
+        <ProjectReference Include="../Meowv.Api.Platform/Meowv.Api.Platform.csproj" />
+        <ProjectReference Include="../Meowv.Api.Modules.Auth/Meowv.Api.Modules.Auth.csproj" />
+        <ProjectReference Include="../Meowv.Api.Modules.Chat/Meowv.Api.Modules.Chat.csproj" />
+        <ProjectReference Include="../Meowv.Api.Modules.Music/Meowv.Api.Modules.Music.csproj" />
+        <ProjectReference Include="../Meowv.Api.Modules.Studio/Meowv.Api.Modules.Studio.csproj" />
+        <ProjectReference Include="../Meowv.Api.Modules.XiaomiCamera/Meowv.Api.Modules.XiaomiCamera.csproj" />
+        <ProjectReference Include="../Meowv.Api.Modules.Health/Meowv.Api.Modules.Health.csproj" />
+        <ProjectReference Include="../Meowv.Api.Modules.Diagnostics/Meowv.Api.Modules.Diagnostics.csproj" />
     </ItemGroup>
     <ItemGroup>
-        <Content Remove="data/**"/>
-        <None Remove="data/**"/>
-        <Content Remove="**/*.db;**/*.db-*;**/*.sqlite;**/*.sqlite-*;tools/**"/>
-        <None Remove="**/*.db;**/*.db-*;**/*.sqlite;**/*.sqlite-*;tools/**"/>
-        <Content Update="appsettings.Development.json" CopyToOutputDirectory="Never" CopyToPublishDirectory="Never"/>
-        <Content Update="appsettings.json" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true"/>
+        <Content Remove="data/**" />
+        <None Remove="data/**" />
+        <Content Remove="**/*.db;**/*.db-*;**/*.sqlite;**/*.sqlite-*;tools/**" />
+        <None Remove="**/*.db;**/*.db-*;**/*.sqlite;**/*.sqlite-*;tools/**" />
+        <Content Update="appsettings.Development.json" CopyToOutputDirectory="Never" CopyToPublishDirectory="Never" />
+        <Content Update="appsettings.json" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
     </ItemGroup>
     <ItemGroup>
-        <Using Include="Meowv.Api"/>
-        <Using Include="Meowv.Api.Modules.Auth.Api"/>
-        <Using Include="Meowv.Api.Modules.Auth.Configuration"/>
-        <Using Include="Meowv.Api.Modules.Auth.Infrastructure"/>
-        <Using Include="Meowv.Api.Modules.Chat.Api"/>
-        <Using Include="Meowv.Api.Modules.Chat.Api.Hubs"/>
-        <Using Include="Meowv.Api.Modules.Chat.Application"/>
-        <Using Include="Meowv.Api.Modules.Chat.Configuration"/>
-        <Using Include="Meowv.Api.Modules.Chat.Domain"/>
-        <Using Include="Meowv.Api.Modules.Chat.Infrastructure"/>
-        <Using Include="Meowv.Api.Modules.Diagnostics.Api"/>
-        <Using Include="Meowv.Api.Modules.Diagnostics.Configuration"/>
-        <Using Include="Meowv.Api.Modules.Health.Api"/>
-        <Using Include="Meowv.Api.Modules.Health.Configuration"/>
-        <Using Include="Meowv.Api.Modules.Music.Api"/>
-        <Using Include="Meowv.Api.Modules.Music.Api.Contracts"/>
-        <Using Include="Meowv.Api.Modules.Music.Api.JsonContexts"/>
-        <Using Include="Meowv.Api.Modules.Music.Application"/>
-        <Using Include="Meowv.Api.Modules.Music.Application.Ports"/>
-        <Using Include="Meowv.Api.Modules.Music.Configuration"/>
-        <Using Include="Meowv.Api.Modules.Music.Domain"/>
-        <Using Include="Meowv.Api.Modules.Music.Infrastructure"/>
-        <Using Include="Meowv.Api.Modules.Music.Infrastructure.Persistence"/>
-        <Using Include="Meowv.Api.Modules.Music.Infrastructure.Providers"/>
-        <Using Include="Meowv.Api.Modules.Music.Infrastructure.Runtime"/>
-        <Using Include="Meowv.Api.Modules.Studio.Api"/>
-        <Using Include="Meowv.Api.Modules.Studio.Api.Contracts"/>
-        <Using Include="Meowv.Api.Modules.Studio.Api.Controllers"/>
-        <Using Include="Meowv.Api.Modules.Studio.Api.JsonContexts"/>
-        <Using Include="Meowv.Api.Modules.Studio.Application"/>
-        <Using Include="Meowv.Api.Modules.Studio.Configuration"/>
-        <Using Include="Meowv.Api.Modules.Studio.Domain"/>
-        <Using Include="Meowv.Api.Modules.Studio.Infrastructure"/>
-        <Using Include="Meowv.Api.Modules.XiaomiCamera.Api"/>
-        <Using Include="Meowv.Api.Modules.XiaomiCamera.Api.Contracts"/>
-        <Using Include="Meowv.Api.Modules.XiaomiCamera.Application"/>
-        <Using Include="Meowv.Api.Modules.XiaomiCamera.Configuration"/>
-        <Using Include="Meowv.Api.Modules.XiaomiCamera.Domain"/>
-        <Using Include="Meowv.Api.Modules.XiaomiCamera.Infrastructure"/>
-        <Using Include="Meowv.Api.Modules.XiaomiCamera.Infrastructure.Cloud"/>
-        <Using Include="Meowv.Api.Modules.XiaomiCamera.Infrastructure.Protocol"/>
-        <Using Include="Meowv.Api.Platform.Hosting"/>
-        <Using Include="Meowv.Api.Platform.Infrastructure"/>
-        <Using Include="Meowv.Api.Platform.Security"/>
-        <Using Include="Meowv.Api.SharedKernel"/>
+        <Using Include="Meowv.Api" />
+        <Using Include="Meowv.Api.Modules.Auth.Api" />
+        <Using Include="Meowv.Api.Modules.Auth.Configuration" />
+        <Using Include="Meowv.Api.Modules.Auth.Infrastructure" />
+        <Using Include="Meowv.Api.Modules.Chat.Api" />
+        <Using Include="Meowv.Api.Modules.Chat.Api.Hubs" />
+        <Using Include="Meowv.Api.Modules.Chat.Application" />
+        <Using Include="Meowv.Api.Modules.Chat.Configuration" />
+        <Using Include="Meowv.Api.Modules.Chat.Domain" />
+        <Using Include="Meowv.Api.Modules.Chat.Infrastructure" />
+        <Using Include="Meowv.Api.Modules.Diagnostics.Api" />
+        <Using Include="Meowv.Api.Modules.Diagnostics.Configuration" />
+        <Using Include="Meowv.Api.Modules.Health.Api" />
+        <Using Include="Meowv.Api.Modules.Health.Configuration" />
+        <Using Include="Meowv.Api.Modules.Music.Api" />
+        <Using Include="Meowv.Api.Modules.Music.Api.Contracts" />
+        <Using Include="Meowv.Api.Modules.Music.Api.JsonContexts" />
+        <Using Include="Meowv.Api.Modules.Music.Application" />
+        <Using Include="Meowv.Api.Modules.Music.Application.Ports" />
+        <Using Include="Meowv.Api.Modules.Music.Configuration" />
+        <Using Include="Meowv.Api.Modules.Music.Domain" />
+        <Using Include="Meowv.Api.Modules.Music.Infrastructure" />
+        <Using Include="Meowv.Api.Modules.Music.Infrastructure.Persistence" />
+        <Using Include="Meowv.Api.Modules.Music.Infrastructure.Providers" />
+        <Using Include="Meowv.Api.Modules.Music.Infrastructure.Runtime" />
+        <Using Include="Meowv.Api.Modules.Studio.Api" />
+        <Using Include="Meowv.Api.Modules.Studio.Api.Contracts" />
+        <Using Include="Meowv.Api.Modules.Studio.Api.Controllers" />
+        <Using Include="Meowv.Api.Modules.Studio.Api.JsonContexts" />
+        <Using Include="Meowv.Api.Modules.Studio.Application" />
+        <Using Include="Meowv.Api.Modules.Studio.Configuration" />
+        <Using Include="Meowv.Api.Modules.Studio.Domain" />
+        <Using Include="Meowv.Api.Modules.Studio.Infrastructure" />
+        <Using Include="Meowv.Api.Modules.XiaomiCamera.Api" />
+        <Using Include="Meowv.Api.Modules.XiaomiCamera.Api.Contracts" />
+        <Using Include="Meowv.Api.Modules.XiaomiCamera.Application" />
+        <Using Include="Meowv.Api.Modules.XiaomiCamera.Configuration" />
+        <Using Include="Meowv.Api.Modules.XiaomiCamera.Domain" />
+        <Using Include="Meowv.Api.Modules.XiaomiCamera.Infrastructure" />
+        <Using Include="Meowv.Api.Modules.XiaomiCamera.Infrastructure.Cloud" />
+        <Using Include="Meowv.Api.Modules.XiaomiCamera.Infrastructure.Protocol" />
+        <Using Include="Meowv.Api.Platform.Hosting" />
+        <Using Include="Meowv.Api.Platform.Infrastructure" />
+        <Using Include="Meowv.Api.Platform.Security" />
+        <Using Include="Meowv.Api.SharedKernel" />
     </ItemGroup>
 </Project>
